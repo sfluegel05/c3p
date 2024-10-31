@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "chebi-llm-classifier"
+version = "0.1.0"
+description = ""
+authors = ["Chris Mungall <cjm@berkeleybop.org>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+oaklib = "^0.6.18"
+llm = "^0.17"
+rdkit = "^2024.3.5"
+jupyter = "^1.1.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
