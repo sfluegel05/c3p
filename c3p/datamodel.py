@@ -125,3 +125,4 @@ class ClassificationResult(BaseModel):
     class_name: Optional[str] = None
     is_match: bool
     reason: Optional[str] = None
+    confidence: Optional[float] = None

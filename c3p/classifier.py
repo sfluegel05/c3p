@@ -5,6 +5,7 @@ from typing import Iterator, Annotated, List, Union, Optional
 from c3p.datamodel import ClassificationResult, SMILES_STRING
 from c3p.generator import run_code
 from c3p.programs import PROGRAM_DIR
+from c3p.programs.flavonoid import is_flavonoid
 
 logger = logging.getLogger(__name__)
 
@@ -44,12 +45,14 @@ def classify(smiles: Union[SMILES_STRING, List[SMILES_STRING]], program_director
                     try:
                         for _, satisfies, reason, metadata in run_code(code, fn, [smiles]):
                             cc = metadata.get("chemical_class", {})
+                            metric = "precision" if satisfies else "recall"
                             yield ClassificationResult(
                                 input_smiles=smiles,
                                 class_id = cc.get("id", "-"),
                                 class_name = cc.get("name", "-"),
                                 is_match=satisfies,
                                 reason=reason,
+                                confidence=metadata.get(metric)
                             )
                     except Exception as e:
                         if strict:
