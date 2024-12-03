@@ -1,17 +1,32 @@
 [tool.poetry]
-name = "chebi-llm-classifier"
-version = "0.1.0"
-description = ""
+name = "c3p"
+version = "0.0.0"
+description = "CHEBI Classification Programs"
 authors = ["Chris Mungall <cjm@berkeleybop.org>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
-oaklib = "^0.6.18"
-llm = "^0.17"
+typer = "^0.14.0"
 rdkit = "^2024.3.5"
-jupyter = "^1.1.1"
+oaklib = { version="*", optional = true }
+llm = { version="*", optional = true }
+jupyter = { version="*", optional = true }
+matplotlib = { version="*", optional = true }
+plotly = { version="*", optional = true }
+seaborn = { version="*", optional = true }
 
+[tool.poetry.group.dev.dependencies]
+pytest = {version = ">=7.1.2"}
+tox = {version = ">=3.25.1"}
+
+[tool.poetry.extras]
+eval = ["pandas", "matplotlib", "plotly", "seaborn"]
+learn = ["llm"]
+oaklib = ["oaklib"]
+
+[tool.poetry.scripts]
+c3p = "c3p.cli:app"
 
 [build-system]
 requires = ["poetry-core"]

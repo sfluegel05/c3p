@@ -40,5 +40,6 @@ def is_tyramines(smiles: str):
         return True, "Contains tyramine skeleton (phenol ring with aminoethyl chain)"
 
     return False, "Does not contain tyramine skeleton"
+
 # Pr=1.0
 # Recall=1.0
