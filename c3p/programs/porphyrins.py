@@ -2,58 +2,67 @@
 Classifies: CHEBI:26214 porphyrins
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdqueries
 
 def is_porphyrins(smiles: str):
     """
-    Determines if a molecule is a porphyrin.
-
+    Determines if a molecule is a porphyrin based on structural characteristics.
+    
     Args:
         smiles (str): SMILES string of the molecule
-
+        
     Returns:
         bool: True if molecule is a porphyrin, False otherwise
         str: Reason for classification
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return None, "Invalid SMILES string"
+    
+    # Check for presence of 4 pyrrole rings
+    pyrrole_pattern = Chem.MolFromSmarts('[nH]1cccc1')
+    pyrrole_matches = mol.GetSubstructMatches(pyrrole_pattern)
+    
+    n_pattern = Chem.MolFromSmarts('[n]')
+    n_matches = mol.GetSubstructMatches(n_pattern)
+    
+    if len(pyrrole_matches) + len(n_matches) < 4:
+        return False, "Does not contain 4 pyrrole/pyrrole-like rings"
 
-    # Generate the ring information
-    rings = mol.GetRingInfo()
-
-    # Check for exactly four 5-membered rings (pyrrole rings)
-    pyrrole_rings = [ring for ring in rings.AtomRings() if len(ring) == 5]
-    if len(pyrrole_rings) != 4:
-        return False, "Does not contain exactly four 5-membered rings"
-
-    # Check if each 5-membered ring is a pyrrole ring (contains one nitrogen)
-    for ring in pyrrole_rings:
-        atoms = [mol.GetAtomWithIdx(i) for i in ring]
-        if sum(1 for atom in atoms if atom.GetSymbol() == 'N') != 1:
-            return False, "One or more 5-membered rings is not a pyrrole ring"
-
-    # Check if the pyrrole rings are connected through the alpha-positions by methine groups
-    # Methine group: -CH-
-    alpha_positions = []
-    for ring in pyrrole_rings:
-        # Find the nitrogen atom in the ring
-        nitrogen_idx = next(i for i in ring if mol.GetAtomWithIdx(i).GetSymbol() == 'N')
-        # Alpha positions are the carbon atoms adjacent to the nitrogen
-        alpha_positions.append([i for i in ring if mol.GetBondBetweenAtoms(nitrogen_idx, i) is not None and mol.GetAtomWithIdx(i).GetSymbol() == 'C'])
-
-    # Check if the alpha positions are connected by methine groups
-    connected_by_methine = True
-    for i in range(len(alpha_positions)):
-        current_alpha = alpha_positions[i]
-        next_alpha = alpha_positions[(i + 1) % len(alpha_positions)]
-        if not any(mol.GetBondBetweenAtoms(a, b) is not None and mol.GetAtomWithIdx(b).GetSymbol() == 'C' and mol.GetAtomWithIdx(b).GetDegree() == 3 for a in current_alpha for b in next_alpha):
-            connected_by_methine = False
-            break
-
-    if not connected_by_methine:
-        return False, "Pyrrole rings are not connected through alpha-positions by methine groups"
-
-    return True, "Molecule is a porphyrin"
+    # Check for macrocyclic structure (at least one ring of size >= 16)
+    ri = mol.GetRingInfo()
+    ring_sizes = [len(ring) for ring in ri.AtomRings()]
+    if not any(size >= 16 for size in ring_sizes):
+        return False, "Does not contain macrocyclic structure"
+        
+    # Check for conjugated system connecting pyrroles
+    conjugated_pattern = Chem.MolFromSmarts('c:c')
+    if not mol.HasSubstructMatch(conjugated_pattern):
+        return False, "Does not have conjugated system"
+        
+    # Check for metal coordination (optional)
+    metal_pattern = Chem.MolFromSmarts('[Mg,Fe,Zn,Cu,Co,Ni,Pd]')
+    has_metal = mol.HasSubstructMatch(metal_pattern)
+    
+    # Check for substituents
+    substituents = []
+    if mol.HasSubstructMatch(Chem.MolFromSmarts('C(=O)O')):
+        substituents.append('carboxyl')
+    if mol.HasSubstructMatch(Chem.MolFromSmarts('C=C')):
+        substituents.append('vinyl')
+    if mol.HasSubstructMatch(Chem.MolFromSmarts('CO')):
+        substituents.append('methoxy')
+    if mol.HasSubstructMatch(Chem.MolFromSmarts('CC')):
+        substituents.append('alkyl')
+        
+    reason = "Contains 4 pyrrole rings in macrocyclic structure"
+    if has_metal:
+        reason += f" with metal coordination"
+    if substituents:
+        reason += f" and substituents: {', '.join(substituents)}"
+        
+    return True, reason
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:26214',
@@ -65,21 +74,28 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:26214',
                                         'groups to form a macrocyclic '
                                         'structure.',
                           'parents': ['CHEBI:36309']},
-    'config': {   'llm_model_name': 'lbl/gpt-4o',
-                  'accuracy_threshold': 0.95,
+    'config': {   'llm_model_name': 'lbl/claude-sonnet',
+                  'f1_threshold': 0.0,
                   'max_attempts': 5,
-                  'max_negative': 20,
+                  'max_negative_to_test': None,
+                  'max_positive_in_prompt': 50,
+                  'max_negative_in_prompt': 20,
+                  'max_instances_in_prompt': 100,
                   'test_proportion': 0.1},
-    'attempt': 0,
+    'message': "Attempt failed: cannot import name 'rdDecomposition' from "
+               "'rdkit.Chem' "
+               '(/Users/cjm/Library/Caches/pypoetry/virtualenvs/c3p-93U7KWO_-py3.11/lib/python3.11/site-packages/rdkit/Chem/__init__.py)',
+    'attempt': 1,
     'success': True,
     'best': True,
     'error': '',
-    'stdout': '',
-    'num_true_positives': 0,
-    'num_false_positives': 0,
-    'num_true_negatives': 16,
-    'num_false_negatives': 16,
-    'precision': 0.0,
-    'recall': 0.0,
-    'f1': 0.0,
-    'accuracy': None}
+    'stdout': None,
+    'num_true_positives': 8,
+    'num_false_positives': 100,
+    'num_true_negatives': 62527,
+    'num_false_negatives': 8,
+    'num_negatives': None,
+    'precision': 0.07407407407407407,
+    'recall': 0.5,
+    'f1': 0.12903225806451613,
+    'accuracy': 0.9982759446386668}

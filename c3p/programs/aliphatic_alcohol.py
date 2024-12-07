@@ -2,38 +2,51 @@
 Classifies: CHEBI:2571 aliphatic alcohol
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_aliphatic_alcohol(smiles: str):
     """
-    Determines if a molecule is an aliphatic alcohol (an alcohol derived from an aliphatic compound).
-
+    Determines if a molecule contains an aliphatic alcohol group.
+    
     Args:
         smiles (str): SMILES string of the molecule
-
+        
     Returns:
-        bool: True if molecule is an aliphatic alcohol, False otherwise
+        bool: True if molecule contains aliphatic alcohol, False otherwise
         str: Reason for classification
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
-
-    # Check for the presence of an alcohol group (hydroxyl group attached to a carbon)
-    alcohol_groups = [atom for atom in mol.GetAtoms() if atom.GetSymbol() == 'O' and any(neigh.GetSymbol() == 'C' for neigh in atom.GetNeighbors())]
-    if not alcohol_groups:
-        return False, "No alcohol groups found"
-
-    # Check if the molecule is aliphatic (contains no aromatic rings)
-    if any(atom.GetIsAromatic() for atom in mol.GetAtoms()):
-        return False, "Molecule contains aromatic rings"
-
-    # Ensure the alcohol group is attached to an aliphatic carbon
-    for alcohol in alcohol_groups:
-        for neighbor in alcohol.GetNeighbors():
-            if neighbor.GetSymbol() == 'C' and not neighbor.GetIsAromatic():
-                return True, "Molecule is an aliphatic alcohol"
-
-    return False, "Alcohol group is not attached to an aliphatic carbon"
+        return None, "Invalid SMILES string"
+    
+    # Find all OH groups
+    oh_matches = mol.GetSubstructMatches(Chem.MolFromSmarts('[OH1]'))
+    if not oh_matches:
+        return False, "No hydroxyl groups found"
+        
+    # For each OH group, check if it's attached to an aliphatic carbon
+    for match in oh_matches:
+        oh_atom = mol.GetAtomWithIdx(match[0])
+        carbon_neighbor = None
+        
+        # Get the carbon atom attached to OH
+        for neighbor in oh_atom.GetNeighbors():
+            if neighbor.GetSymbol() == 'C':
+                carbon_neighbor = neighbor
+                break
+                
+        if carbon_neighbor is None:
+            continue
+            
+        # Check if carbon is aliphatic (not aromatic)
+        if not carbon_neighbor.GetIsAromatic():
+            # Count the number of aliphatic alcohols found
+            n_aliphatic_oh = sum(1 for m in oh_matches 
+                               if not mol.GetAtomWithIdx(m[0]).GetNeighbors()[0].GetIsAromatic())
+            return True, f"Contains {n_aliphatic_oh} aliphatic hydroxyl group(s)"
+            
+    return False, "No aliphatic hydroxyl groups found"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:2571',
@@ -41,22 +54,27 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:2571',
                           'definition': 'An  alcohol derived from an aliphatic '
                                         'compound.',
                           'parents': ['CHEBI:30879']},
-    'config': {   'llm_model_name': 'lbl/gpt-4o',
-                  'accuracy_threshold': 0.95,
+    'config': {   'llm_model_name': 'lbl/claude-sonnet',
+                  'f1_threshold': 0.0,
                   'max_attempts': 5,
-                  'max_negative': 20,
+                  'max_negative_to_test': None,
+                  'max_positive_in_prompt': 50,
+                  'max_negative_in_prompt': 20,
+                  'max_instances_in_prompt': 100,
                   'test_proportion': 0.1},
+    'message': "Attempt failed: 'Atom' object has no attribute "
+               "'GetIsConjugated'",
     'attempt': 1,
     'success': True,
     'best': True,
-    'error': '[20:51:44] SMILES Parse Error: unclosed ring for input: '
-             "'[H][C@]12OC(=O)C(=C)[C@]1([H])[C@H](O)C\\C(C)=C\\CC\\C(C)=C\x02'\n",
-    'stdout': '',
-    'num_true_positives': 80,
-    'num_false_positives': 13,
-    'num_true_negatives': 7,
-    'num_false_negatives': 10,
-    'precision': 0.8602150537634409,
-    'recall': 0.8888888888888888,
-    'f1': 0.8743169398907102,
-    'accuracy': None}
+    'error': '',
+    'stdout': None,
+    'num_true_positives': 90,
+    'num_false_positives': 100,
+    'num_true_negatives': 73,
+    'num_false_negatives': 0,
+    'num_negatives': None,
+    'precision': 0.47368421052631576,
+    'recall': 1.0,
+    'f1': 0.6428571428571429,
+    'accuracy': 0.6197718631178707}

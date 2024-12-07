@@ -2,10 +2,11 @@
 Classifies: CHEBI:24727 hydroxynaphthalene
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_hydroxynaphthalene(smiles: str):
     """
-    Determines if a molecule is a hydroxynaphthalene (naphthalene carrying one or more hydroxy groups).
+    Determines if a molecule is a hydroxynaphthalene (naphthalene with one or more OH groups).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -16,33 +17,62 @@ def is_hydroxynaphthalene(smiles: str):
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return None, "Invalid SMILES string"
 
     # Check for naphthalene core
-    naphthalene_smarts = Chem.MolFromSmarts('c1ccc2ccccc2c1')
-    if not mol.HasSubstructMatch(naphthalene_smarts):
+    # Naphthalene consists of two fused benzene rings
+    rings = mol.GetRingInfo()
+    
+    # Find aromatic 6-membered rings
+    aromatic_rings = []
+    for ring in rings.AtomRings():
+        if len(ring) == 6:
+            atoms = [mol.GetAtomWithIdx(i) for i in ring]
+            if all(atom.GetIsAromatic() for atom in atoms):
+                aromatic_rings.append(set(ring))
+
+    # Need at least 2 aromatic rings
+    if len(aromatic_rings) < 2:
+        return False, "No naphthalene core found (requires 2 fused aromatic rings)"
+
+    # Check if there are two fused 6-membered aromatic rings
+    found_naphthalene = False
+    for i in range(len(aromatic_rings)):
+        for j in range(i+1, len(aromatic_rings)):
+            # Two rings are fused if they share exactly 2 atoms
+            shared_atoms = aromatic_rings[i].intersection(aromatic_rings[j])
+            if len(shared_atoms) == 2:
+                # Check if the fused rings form a naphthalene (all carbons)
+                ring1_atoms = [mol.GetAtomWithIdx(idx) for idx in aromatic_rings[i]]
+                ring2_atoms = [mol.GetAtomWithIdx(idx) for idx in aromatic_rings[j]]
+                if all(atom.GetSymbol() == 'C' for atom in ring1_atoms + ring2_atoms):
+                    found_naphthalene = True
+                    naphthalene_atoms = aromatic_rings[i].union(aromatic_rings[j])
+                    break
+        if found_naphthalene:
+            break
+
+    if not found_naphthalene:
         return False, "No naphthalene core found"
 
-    # Check for hydroxy groups directly attached to the naphthalene core
-    hydroxy_group = Chem.MolFromSmarts('[OH]')
-    hydroxy_matches = mol.GetSubstructMatches(hydroxy_group)
+    # Check for OH groups
+    hydroxyl_count = 0
+    hydroxyl_positions = []
     
-    if not hydroxy_matches:
-        return False, "No hydroxy groups found"
+    for atom in mol.GetAtoms():
+        if atom.GetSymbol() == 'O':
+            # Check if oxygen is part of an OH group
+            if atom.GetTotalNumHs() > 0:  # Has at least one H
+                # Check if OH is attached to naphthalene core
+                for neighbor in atom.GetNeighbors():
+                    if neighbor.GetIdx() in naphthalene_atoms:
+                        hydroxyl_count += 1
+                        hydroxyl_positions.append(str(neighbor.GetIdx()))
 
-    naphthalene_matches = [match for match in mol.GetSubstructMatches(naphthalene_smarts)]
-    for match in hydroxy_matches:
-        atom = mol.GetAtomWithIdx(match[0])
-        for neighbor in atom.GetNeighbors():
-            if neighbor.GetIdx() in [idx for submatch in naphthalene_matches for idx in submatch]:
-                return True, "Hydroxynaphthalene"
+    if hydroxyl_count == 0:
+        return False, "No hydroxyl groups found on naphthalene core"
 
-    return False, "No hydroxy groups attached to the naphthalene core found"
-
-# Example usage:
-# smiles = "O=C1C2=C(C(O)=CC=C2)C(C=3C=4C(=C(OC)C=CC4)C(O)=CC3)C[C@@H]1C"
-# result, reason = is_hydroxynaphthalene(smiles)
-# print(result, reason)
+    return True, f"Hydroxynaphthalene with {hydroxyl_count} OH group(s) at position(s): {', '.join(hydroxyl_positions)}"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:24727',
@@ -51,21 +81,26 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:24727',
                                         'naphthalenes that is naphthalene '
                                         'carrying one or more hydroxy groups.',
                           'parents': ['CHEBI:25477', 'CHEBI:33853']},
-    'config': {   'llm_model_name': 'lbl/gpt-4o',
-                  'accuracy_threshold': 0.95,
+    'config': {   'llm_model_name': 'lbl/claude-sonnet',
+                  'f1_threshold': 0.8,
                   'max_attempts': 5,
-                  'max_negative': 20,
+                  'max_negative_to_test': None,
+                  'max_positive_in_prompt': 50,
+                  'max_negative_in_prompt': 20,
+                  'max_instances_in_prompt': 100,
                   'test_proportion': 0.1},
-    'attempt': 4,
+    'message': None,
+    'attempt': 0,
     'success': True,
     'best': True,
     'error': '',
-    'stdout': '',
-    'num_true_positives': 20,
-    'num_false_positives': 0,
-    'num_true_negatives': 20,
-    'num_false_negatives': 4,
-    'precision': 1.0,
-    'recall': 0.8333333333333334,
-    'f1': 0.9090909090909091,
-    'accuracy': None}
+    'stdout': None,
+    'num_true_positives': 24,
+    'num_false_positives': 100,
+    'num_true_negatives': 15866,
+    'num_false_negatives': 0,
+    'num_negatives': None,
+    'precision': 0.1935483870967742,
+    'recall': 1.0,
+    'f1': 0.3243243243243243,
+    'accuracy': 0.9937460913070669}

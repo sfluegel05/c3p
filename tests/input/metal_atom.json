@@ -1,0 +1,2331 @@
+{
+  "train_results": {
+    "best_result": {
+      "chemical_class": {
+        "id": "CHEBI:33521",
+        "name": "metal atom",
+        "definition": "An atom of an element that exhibits typical metallic properties, being typically shiny, with high electrical and thermal conductivity.",
+        "parents": [
+          "CHEBI:33250"
+        ],
+        "instances": [
+          {
+            "name": "tin-118 atom",
+            "smiles": "[118Sn]"
+          },
+          {
+            "name": "lawrencium atom",
+            "smiles": "[Lr]"
+          },
+          {
+            "name": "caesium-137",
+            "smiles": "[137Cs]"
+          },
+          {
+            "name": "ytterbium",
+            "smiles": "[Yb]"
+          },
+          {
+            "name": "nickel atom",
+            "smiles": "[Ni]"
+          },
+          {
+            "name": "plutonium atom",
+            "smiles": "[Pu]"
+          },
+          {
+            "name": "polonium-205 atom",
+            "smiles": "[205Po]"
+          },
+          {
+            "name": "molybdenum atom",
+            "smiles": "[Mo]"
+          },
+          {
+            "name": "chromium-51",
+            "smiles": "[51Cr]"
+          },
+          {
+            "name": "zinc-65 atom",
+            "smiles": "[65Zn]"
+          },
+          {
+            "name": "meitnerium atom",
+            "smiles": "[Mt]"
+          },
+          {
+            "name": "polonium-217 atom",
+            "smiles": "[217Po]"
+          },
+          {
+            "name": "potassium atom",
+            "smiles": "[K]"
+          },
+          {
+            "name": "technetium atom",
+            "smiles": "[Tc]"
+          },
+          {
+            "name": "darmstadtium",
+            "smiles": "[Ds]"
+          }
+        ],
+        "negative_instances": [
+          {
+            "name": "DG(14:1(9Z)/18:1(11Z)/0:0)",
+            "smiles": "C([C@@](COC(CCCCCCC/C=C\\CCCC)=O)(OC(CCCCCCCCC/C=C\\CCCCCC)=O)[H])O"
+          },
+          {
+            "name": "xenon-129 atom",
+            "smiles": "[129Xe]"
+          },
+          {
+            "name": "1-[(4R,7R,8S)-8-methoxy-4,7,10-trimethyl-11-oxo-5-(1-oxopropyl)-2-oxa-5,10-diazabicyclo[10.4.0]hexadeca-1(12),13,15-trien-14-yl]-3-propylurea",
+            "smiles": "CCCNC(=O)NC1=CC2=C(C=C1)OC[C@H](N(C[C@H]([C@@H](CN(C2=O)C)OC)C)C(=O)CC)C"
+          },
+          {
+            "name": "CE(15:1)",
+            "smiles": "C1[C@@H](CC=2[C@](C1)([C@@]3([C@@](CC2)([C@]4([C@@](CC3)(C)C(CC4)[C@@H](CCCC(C)C)C)[H])[H])[H])C)OC(=O)CCCCCCC/C=C/CCCCC"
+          },
+          {
+            "name": "sulfur-38 atom",
+            "smiles": "[38S]"
+          },
+          {
+            "name": "brasixanthone D",
+            "smiles": "[H][C@]1(OC1(C)C)C(O)Cc1c2OC(C)(C)C=Cc2c(O)c2c1oc1ccc(O)cc1c2=O"
+          },
+          {
+            "name": "helium-8 atom",
+            "smiles": "[8He]"
+          },
+          {
+            "name": "bullatantriol",
+            "smiles": "[C@@]12([C@@H](CC[C@@]([C@@]1([C@H](CC2)CC(O)(C)C)[H])(O)C)O)C"
+          },
+          {
+            "name": "silicon-32 atom",
+            "smiles": "[32Si]"
+          },
+          {
+            "name": "sulfur atom",
+            "smiles": "[S]"
+          },
+          {
+            "name": "sulfur-34 atom",
+            "smiles": "[34S]"
+          },
+          {
+            "name": "boron-11 atom",
+            "smiles": "[11B]"
+          },
+          {
+            "name": "oxygen-19 atom",
+            "smiles": "[19O]"
+          },
+          {
+            "name": "iodine-127 atom",
+            "smiles": "[127I]"
+          },
+          {
+            "name": "silicon-31 atom",
+            "smiles": "[31Si]"
+          }
+        ]
+      },
+      "config": {
+        "llm_model_name": "lbl/gpt-4o",
+        "accuracy_threshold": 0.95,
+        "max_attempts": 5,
+        "max_negative": 20,
+        "test_proportion": 0.1
+      },
+      "code": "from rdkit import Chem\n\ndef is_metal_atom(smiles: str):\n    \"\"\"\n    Determines if a molecule is a metal atom.\n\n    Args:\n        smiles (str): SMILES string of the molecule\n\n    Returns:\n        bool: True if molecule is a metal atom, False otherwise\n        str: Reason for classification\n    \"\"\"\n    mol = Chem.MolFromSmiles(smiles)\n    if mol is None:\n        return False, \"Invalid SMILES string\"\n\n    # List of metal symbols based on typical metallic properties\n    metal_symbols = [\n        \"Li\", \"Be\", \"Na\", \"Mg\", \"Al\", \"K\", \"Ca\", \"Sc\", \"Ti\", \"V\", \"Cr\", \"Mn\", \"Fe\", \"Co\", \"Ni\", \"Cu\", \"Zn\",\n        \"Ga\", \"Rb\", \"Sr\", \"Y\", \"Zr\", \"Nb\", \"Mo\", \"Tc\", \"Ru\", \"Rh\", \"Pd\", \"Ag\", \"Cd\", \"In\", \"Sn\", \"Sb\", \"Cs\",\n        \"Ba\", \"La\", \"Ce\", \"Pr\", \"Nd\", \"Pm\", \"Sm\", \"Eu\", \"Gd\", \"Tb\", \"Dy\", \"Ho\", \"Er\", \"Tm\", \"Yb\", \"Lu\", \"Hf\",\n        \"Ta\", \"W\", \"Re\", \"Os\", \"Ir\", \"Pt\", \"Au\", \"Hg\", \"Tl\", \"Pb\", \"Bi\", \"Po\", \"Fr\", \"Ra\", \"Ac\", \"Th\", \"Pa\",\n        \"U\", \"Np\", \"Pu\", \"Am\", \"Cm\", \"Bk\", \"Cf\", \"Es\", \"Fm\", \"Md\", \"No\", \"Lr\", \"Rf\", \"Db\", \"Sg\", \"Bh\", \"Hs\",\n        \"Mt\", \"Ds\", \"Rg\", \"Cn\", \"Nh\", \"Fl\", \"Mc\", \"Lv\", \"Ts\", \"Og\"\n    ]\n\n    atoms = mol.GetAtoms()\n    if len(atoms) != 1:\n        return False, \"Not a single atom\"\n\n    atom = atoms[0]\n    symbol = atom.GetSymbol()\n    \n    if symbol in metal_symbols:\n        return True, f\"{symbol} is a metal atom\"\n    else:\n        return False, f\"{symbol} is not a metal atom\"",
+      "true_positives": [
+        [
+          "[118Sn]",
+          "Sn is a metal atom"
+        ],
+        [
+          "[Lr]",
+          "Lr is a metal atom"
+        ],
+        [
+          "[137Cs]",
+          "Cs is a metal atom"
+        ],
+        [
+          "[Yb]",
+          "Yb is a metal atom"
+        ],
+        [
+          "[Ni]",
+          "Ni is a metal atom"
+        ],
+        [
+          "[Pu]",
+          "Pu is a metal atom"
+        ],
+        [
+          "[205Po]",
+          "Po is a metal atom"
+        ],
+        [
+          "[Mo]",
+          "Mo is a metal atom"
+        ],
+        [
+          "[51Cr]",
+          "Cr is a metal atom"
+        ],
+        [
+          "[65Zn]",
+          "Zn is a metal atom"
+        ],
+        [
+          "[Mt]",
+          "Mt is a metal atom"
+        ],
+        [
+          "[217Po]",
+          "Po is a metal atom"
+        ],
+        [
+          "[K]",
+          "K is a metal atom"
+        ],
+        [
+          "[Tc]",
+          "Tc is a metal atom"
+        ],
+        [
+          "[Ds]",
+          "Ds is a metal atom"
+        ]
+      ],
+      "false_positives": [],
+      "true_negatives": [
+        [
+          "C([C@@](COC(CCCCCCC/C=C\\CCCC)=O)(OC(CCCCCCCCC/C=C\\CCCCCC)=O)[H])O",
+          "Not a single atom"
+        ],
+        [
+          "[129Xe]",
+          "Xe is not a metal atom"
+        ],
+        [
+          "CCCNC(=O)NC1=CC2=C(C=C1)OC[C@H](N(C[C@H]([C@@H](CN(C2=O)C)OC)C)C(=O)CC)C",
+          "Not a single atom"
+        ],
+        [
+          "C1[C@@H](CC=2[C@](C1)([C@@]3([C@@](CC2)([C@]4([C@@](CC3)(C)C(CC4)[C@@H](CCCC(C)C)C)[H])[H])[H])C)OC(=O)CCCCCCC/C=C/CCCCC",
+          "Not a single atom"
+        ],
+        [
+          "[38S]",
+          "S is not a metal atom"
+        ],
+        [
+          "[H][C@]1(OC1(C)C)C(O)Cc1c2OC(C)(C)C=Cc2c(O)c2c1oc1ccc(O)cc1c2=O",
+          "Not a single atom"
+        ],
+        [
+          "[8He]",
+          "He is not a metal atom"
+        ],
+        [
+          "[C@@]12([C@@H](CC[C@@]([C@@]1([C@H](CC2)CC(O)(C)C)[H])(O)C)O)C",
+          "Not a single atom"
+        ],
+        [
+          "[32Si]",
+          "Si is not a metal atom"
+        ],
+        [
+          "[S]",
+          "S is not a metal atom"
+        ],
+        [
+          "[34S]",
+          "S is not a metal atom"
+        ],
+        [
+          "[11B]",
+          "B is not a metal atom"
+        ],
+        [
+          "[19O]",
+          "O is not a metal atom"
+        ],
+        [
+          "[127I]",
+          "I is not a metal atom"
+        ],
+        [
+          "[31Si]",
+          "Si is not a metal atom"
+        ]
+      ],
+      "false_negatives": [],
+      "attempt": 0,
+      "success": true,
+      "best": true,
+      "error": "",
+      "stdout": "",
+      "num_true_positives": 15,
+      "num_false_positives": 0,
+      "num_true_negatives": 15,
+      "num_false_negatives": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "results": [
+      {
+        "chemical_class": {
+          "id": "CHEBI:33521",
+          "name": "metal atom",
+          "definition": "An atom of an element that exhibits typical metallic properties, being typically shiny, with high electrical and thermal conductivity.",
+          "parents": [
+            "CHEBI:33250"
+          ],
+          "instances": [
+            {
+              "name": "tin-118 atom",
+              "smiles": "[118Sn]"
+            },
+            {
+              "name": "lawrencium atom",
+              "smiles": "[Lr]"
+            },
+            {
+              "name": "caesium-137",
+              "smiles": "[137Cs]"
+            },
+            {
+              "name": "ytterbium",
+              "smiles": "[Yb]"
+            },
+            {
+              "name": "nickel atom",
+              "smiles": "[Ni]"
+            },
+            {
+              "name": "plutonium atom",
+              "smiles": "[Pu]"
+            },
+            {
+              "name": "polonium-205 atom",
+              "smiles": "[205Po]"
+            },
+            {
+              "name": "molybdenum atom",
+              "smiles": "[Mo]"
+            },
+            {
+              "name": "chromium-51",
+              "smiles": "[51Cr]"
+            },
+            {
+              "name": "zinc-65 atom",
+              "smiles": "[65Zn]"
+            },
+            {
+              "name": "meitnerium atom",
+              "smiles": "[Mt]"
+            },
+            {
+              "name": "polonium-217 atom",
+              "smiles": "[217Po]"
+            },
+            {
+              "name": "potassium atom",
+              "smiles": "[K]"
+            },
+            {
+              "name": "technetium atom",
+              "smiles": "[Tc]"
+            },
+            {
+              "name": "darmstadtium",
+              "smiles": "[Ds]"
+            }
+          ],
+          "negative_instances": [
+            {
+              "name": "DG(14:1(9Z)/18:1(11Z)/0:0)",
+              "smiles": "C([C@@](COC(CCCCCCC/C=C\\CCCC)=O)(OC(CCCCCCCCC/C=C\\CCCCCC)=O)[H])O"
+            },
+            {
+              "name": "xenon-129 atom",
+              "smiles": "[129Xe]"
+            },
+            {
+              "name": "1-[(4R,7R,8S)-8-methoxy-4,7,10-trimethyl-11-oxo-5-(1-oxopropyl)-2-oxa-5,10-diazabicyclo[10.4.0]hexadeca-1(12),13,15-trien-14-yl]-3-propylurea",
+              "smiles": "CCCNC(=O)NC1=CC2=C(C=C1)OC[C@H](N(C[C@H]([C@@H](CN(C2=O)C)OC)C)C(=O)CC)C"
+            },
+            {
+              "name": "CE(15:1)",
+              "smiles": "C1[C@@H](CC=2[C@](C1)([C@@]3([C@@](CC2)([C@]4([C@@](CC3)(C)C(CC4)[C@@H](CCCC(C)C)C)[H])[H])[H])C)OC(=O)CCCCCCC/C=C/CCCCC"
+            },
+            {
+              "name": "sulfur-38 atom",
+              "smiles": "[38S]"
+            },
+            {
+              "name": "brasixanthone D",
+              "smiles": "[H][C@]1(OC1(C)C)C(O)Cc1c2OC(C)(C)C=Cc2c(O)c2c1oc1ccc(O)cc1c2=O"
+            },
+            {
+              "name": "helium-8 atom",
+              "smiles": "[8He]"
+            },
+            {
+              "name": "bullatantriol",
+              "smiles": "[C@@]12([C@@H](CC[C@@]([C@@]1([C@H](CC2)CC(O)(C)C)[H])(O)C)O)C"
+            },
+            {
+              "name": "silicon-32 atom",
+              "smiles": "[32Si]"
+            },
+            {
+              "name": "sulfur atom",
+              "smiles": "[S]"
+            },
+            {
+              "name": "sulfur-34 atom",
+              "smiles": "[34S]"
+            },
+            {
+              "name": "boron-11 atom",
+              "smiles": "[11B]"
+            },
+            {
+              "name": "oxygen-19 atom",
+              "smiles": "[19O]"
+            },
+            {
+              "name": "iodine-127 atom",
+              "smiles": "[127I]"
+            },
+            {
+              "name": "silicon-31 atom",
+              "smiles": "[31Si]"
+            }
+          ]
+        },
+        "config": {
+          "llm_model_name": "lbl/gpt-4o",
+          "accuracy_threshold": 0.95,
+          "max_attempts": 5,
+          "max_negative": 20,
+          "test_proportion": 0.1
+        },
+        "code": "from rdkit import Chem\n\ndef is_metal_atom(smiles: str):\n    \"\"\"\n    Determines if a molecule is a metal atom.\n\n    Args:\n        smiles (str): SMILES string of the molecule\n\n    Returns:\n        bool: True if molecule is a metal atom, False otherwise\n        str: Reason for classification\n    \"\"\"\n    mol = Chem.MolFromSmiles(smiles)\n    if mol is None:\n        return False, \"Invalid SMILES string\"\n\n    # List of metal symbols based on typical metallic properties\n    metal_symbols = [\n        \"Li\", \"Be\", \"Na\", \"Mg\", \"Al\", \"K\", \"Ca\", \"Sc\", \"Ti\", \"V\", \"Cr\", \"Mn\", \"Fe\", \"Co\", \"Ni\", \"Cu\", \"Zn\",\n        \"Ga\", \"Rb\", \"Sr\", \"Y\", \"Zr\", \"Nb\", \"Mo\", \"Tc\", \"Ru\", \"Rh\", \"Pd\", \"Ag\", \"Cd\", \"In\", \"Sn\", \"Sb\", \"Cs\",\n        \"Ba\", \"La\", \"Ce\", \"Pr\", \"Nd\", \"Pm\", \"Sm\", \"Eu\", \"Gd\", \"Tb\", \"Dy\", \"Ho\", \"Er\", \"Tm\", \"Yb\", \"Lu\", \"Hf\",\n        \"Ta\", \"W\", \"Re\", \"Os\", \"Ir\", \"Pt\", \"Au\", \"Hg\", \"Tl\", \"Pb\", \"Bi\", \"Po\", \"Fr\", \"Ra\", \"Ac\", \"Th\", \"Pa\",\n        \"U\", \"Np\", \"Pu\", \"Am\", \"Cm\", \"Bk\", \"Cf\", \"Es\", \"Fm\", \"Md\", \"No\", \"Lr\", \"Rf\", \"Db\", \"Sg\", \"Bh\", \"Hs\",\n        \"Mt\", \"Ds\", \"Rg\", \"Cn\", \"Nh\", \"Fl\", \"Mc\", \"Lv\", \"Ts\", \"Og\"\n    ]\n\n    atoms = mol.GetAtoms()\n    if len(atoms) != 1:\n        return False, \"Not a single atom\"\n\n    atom = atoms[0]\n    symbol = atom.GetSymbol()\n    \n    if symbol in metal_symbols:\n        return True, f\"{symbol} is a metal atom\"\n    else:\n        return False, f\"{symbol} is not a metal atom\"",
+        "true_positives": [
+          [
+            "[118Sn]",
+            "Sn is a metal atom"
+          ],
+          [
+            "[Lr]",
+            "Lr is a metal atom"
+          ],
+          [
+            "[137Cs]",
+            "Cs is a metal atom"
+          ],
+          [
+            "[Yb]",
+            "Yb is a metal atom"
+          ],
+          [
+            "[Ni]",
+            "Ni is a metal atom"
+          ],
+          [
+            "[Pu]",
+            "Pu is a metal atom"
+          ],
+          [
+            "[205Po]",
+            "Po is a metal atom"
+          ],
+          [
+            "[Mo]",
+            "Mo is a metal atom"
+          ],
+          [
+            "[51Cr]",
+            "Cr is a metal atom"
+          ],
+          [
+            "[65Zn]",
+            "Zn is a metal atom"
+          ],
+          [
+            "[Mt]",
+            "Mt is a metal atom"
+          ],
+          [
+            "[217Po]",
+            "Po is a metal atom"
+          ],
+          [
+            "[K]",
+            "K is a metal atom"
+          ],
+          [
+            "[Tc]",
+            "Tc is a metal atom"
+          ],
+          [
+            "[Ds]",
+            "Ds is a metal atom"
+          ]
+        ],
+        "false_positives": [],
+        "true_negatives": [
+          [
+            "C([C@@](COC(CCCCCCC/C=C\\CCCC)=O)(OC(CCCCCCCCC/C=C\\CCCCCC)=O)[H])O",
+            "Not a single atom"
+          ],
+          [
+            "[129Xe]",
+            "Xe is not a metal atom"
+          ],
+          [
+            "CCCNC(=O)NC1=CC2=C(C=C1)OC[C@H](N(C[C@H]([C@@H](CN(C2=O)C)OC)C)C(=O)CC)C",
+            "Not a single atom"
+          ],
+          [
+            "C1[C@@H](CC=2[C@](C1)([C@@]3([C@@](CC2)([C@]4([C@@](CC3)(C)C(CC4)[C@@H](CCCC(C)C)C)[H])[H])[H])C)OC(=O)CCCCCCC/C=C/CCCCC",
+            "Not a single atom"
+          ],
+          [
+            "[38S]",
+            "S is not a metal atom"
+          ],
+          [
+            "[H][C@]1(OC1(C)C)C(O)Cc1c2OC(C)(C)C=Cc2c(O)c2c1oc1ccc(O)cc1c2=O",
+            "Not a single atom"
+          ],
+          [
+            "[8He]",
+            "He is not a metal atom"
+          ],
+          [
+            "[C@@]12([C@@H](CC[C@@]([C@@]1([C@H](CC2)CC(O)(C)C)[H])(O)C)O)C",
+            "Not a single atom"
+          ],
+          [
+            "[32Si]",
+            "Si is not a metal atom"
+          ],
+          [
+            "[S]",
+            "S is not a metal atom"
+          ],
+          [
+            "[34S]",
+            "S is not a metal atom"
+          ],
+          [
+            "[11B]",
+            "B is not a metal atom"
+          ],
+          [
+            "[19O]",
+            "O is not a metal atom"
+          ],
+          [
+            "[127I]",
+            "I is not a metal atom"
+          ],
+          [
+            "[31Si]",
+            "Si is not a metal atom"
+          ]
+        ],
+        "false_negatives": [],
+        "attempt": 0,
+        "success": true,
+        "best": true,
+        "error": "",
+        "stdout": "",
+        "num_true_positives": 15,
+        "num_false_positives": 0,
+        "num_true_negatives": 15,
+        "num_false_negatives": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      }
+    ]
+  },
+  "test_result": {
+    "chemical_class": {
+      "id": "CHEBI:33521",
+      "name": "metal atom",
+      "definition": "An atom of an element that exhibits typical metallic properties, being typically shiny, with high electrical and thermal conductivity.",
+      "parents": [
+        "CHEBI:33250"
+      ],
+      "instances": [
+        {
+          "name": "rhenium atom",
+          "smiles": "[Re]"
+        },
+        {
+          "name": "praseodymium atom",
+          "smiles": "[Pr]"
+        },
+        {
+          "name": "europium atom",
+          "smiles": "[Eu]"
+        },
+        {
+          "name": "molybdenum-98 atom",
+          "smiles": "[98Mo]"
+        },
+        {
+          "name": "rutherfordium atom",
+          "smiles": "[Rf]"
+        },
+        {
+          "name": "cerium",
+          "smiles": "[Ce]"
+        },
+        {
+          "name": "polonium-208 atom",
+          "smiles": "[208Po]"
+        },
+        {
+          "name": "gold atom",
+          "smiles": "[Au]"
+        },
+        {
+          "name": "californium atom",
+          "smiles": "[Cf]"
+        },
+        {
+          "name": "aluminium-27 atom",
+          "smiles": "[27Al]"
+        },
+        {
+          "name": "francium atom",
+          "smiles": "[Fr]"
+        },
+        {
+          "name": "lutetium atom",
+          "smiles": "[Lu]"
+        },
+        {
+          "name": "tin-116 atom",
+          "smiles": "[116Sn]"
+        },
+        {
+          "name": "yttrium-89 atom",
+          "smiles": "[89Y]"
+        },
+        {
+          "name": "holmium atom",
+          "smiles": "[Ho]"
+        },
+        {
+          "name": "gadolinium atom",
+          "smiles": "[Gd]"
+        },
+        {
+          "name": "polonium-206 atom",
+          "smiles": "[206Po]"
+        },
+        {
+          "name": "hafnium atom",
+          "smiles": "[Hf]"
+        },
+        {
+          "name": "polonium-191 atom",
+          "smiles": "[191Po]"
+        },
+        {
+          "name": "vanadium atom",
+          "smiles": "[V]"
+        },
+        {
+          "name": "rhodium atom",
+          "smiles": "[Rh]"
+        },
+        {
+          "name": "cobalt atom",
+          "smiles": "[Co]"
+        },
+        {
+          "name": "samarium atom",
+          "smiles": "[Sm]"
+        },
+        {
+          "name": "nickel-60 atom",
+          "smiles": "[60Ni]"
+        },
+        {
+          "name": "protactinium atom",
+          "smiles": "[Pa]"
+        },
+        {
+          "name": "polonium atom",
+          "smiles": "[Po]"
+        },
+        {
+          "name": "cadmium-113",
+          "smiles": "[113Cd]"
+        },
+        {
+          "name": "iridium atom",
+          "smiles": "[Ir]"
+        },
+        {
+          "name": "magnesium-25 atom",
+          "smiles": "[25Mg]"
+        },
+        {
+          "name": "silver atom",
+          "smiles": "[Ag]"
+        },
+        {
+          "name": "copper atom",
+          "smiles": "[Cu]"
+        },
+        {
+          "name": "ruthenium atom",
+          "smiles": "[Ru]"
+        },
+        {
+          "name": "iron-57 atom",
+          "smiles": "[57Fe]"
+        },
+        {
+          "name": "rubidium atom",
+          "smiles": "[Rb]"
+        },
+        {
+          "name": "radium atom",
+          "smiles": "[Ra]"
+        },
+        {
+          "name": "terbium atom",
+          "smiles": "[Tb]"
+        },
+        {
+          "name": "mercury atom",
+          "smiles": "[Hg]"
+        },
+        {
+          "name": "uranium atom",
+          "smiles": "[U]"
+        },
+        {
+          "name": "tin-120 atom",
+          "smiles": "[120Sn]"
+        },
+        {
+          "name": "sodium-23 atom",
+          "smiles": "[23Na]"
+        },
+        {
+          "name": "copernicium atom",
+          "smiles": "[Cn]"
+        },
+        {
+          "name": "potassium-39 atom",
+          "smiles": "[39K]"
+        },
+        {
+          "name": "calcium-43 atom",
+          "smiles": "[43Ca]"
+        },
+        {
+          "name": "polonium-210 atom",
+          "smiles": "[210Po]"
+        },
+        {
+          "name": "rubidium-87 atom",
+          "smiles": "[87Rb]"
+        },
+        {
+          "name": "neptunium atom",
+          "smiles": "[Np]"
+        },
+        {
+          "name": "molybdenum-95",
+          "smiles": "[95Mo]"
+        },
+        {
+          "name": "tungsten",
+          "smiles": "[W]"
+        },
+        {
+          "name": "calcium atom",
+          "smiles": "[Ca]"
+        },
+        {
+          "name": "seaborgium atom",
+          "smiles": "[Sg]"
+        },
+        {
+          "name": "yttrium atom",
+          "smiles": "[Y]"
+        },
+        {
+          "name": "thorium",
+          "smiles": "[Th]"
+        },
+        {
+          "name": "sodium atom",
+          "smiles": "[Na]"
+        },
+        {
+          "name": "niobium-93 atom",
+          "smiles": "[93Nb]"
+        },
+        {
+          "name": "bismuth atom",
+          "smiles": "[Bi]"
+        },
+        {
+          "name": "cadmium atom",
+          "smiles": "[Cd]"
+        },
+        {
+          "name": "aluminium atom",
+          "smiles": "[Al]"
+        },
+        {
+          "name": "lithium-7 atom",
+          "smiles": "[7Li]"
+        },
+        {
+          "name": "roentgenium atom",
+          "smiles": "[Rg]"
+        },
+        {
+          "name": "polonium-201 atom",
+          "smiles": "[201Po]"
+        },
+        {
+          "name": "polonium-202 atom",
+          "smiles": "[202Po]"
+        },
+        {
+          "name": "zinc atom",
+          "smiles": "[Zn]"
+        },
+        {
+          "name": "chromium atom",
+          "smiles": "[Cr]"
+        },
+        {
+          "name": "polonium-195 atom",
+          "smiles": "[195Po]"
+        },
+        {
+          "name": "magnesium atom",
+          "smiles": "[Mg]"
+        },
+        {
+          "name": "lead atom",
+          "smiles": "[Pb]"
+        },
+        {
+          "name": "polonium-211 atom",
+          "smiles": "[211Po]"
+        },
+        {
+          "name": "nobelium",
+          "smiles": "[No]"
+        },
+        {
+          "name": "manganese-55 atom",
+          "smiles": "[55Mn]"
+        },
+        {
+          "name": "polonium-193 atom",
+          "smiles": "[193Po]"
+        },
+        {
+          "name": "zirconium atom",
+          "smiles": "[Zr]"
+        },
+        {
+          "name": "manganese atom",
+          "smiles": "[Mn]"
+        },
+        {
+          "name": "osmium atom",
+          "smiles": "[Os]"
+        },
+        {
+          "name": "caesium-135",
+          "smiles": "[135Cs]"
+        },
+        {
+          "name": "cadmium-111",
+          "smiles": "[111Cd]"
+        },
+        {
+          "name": "lithium atom",
+          "smiles": "[Li]"
+        },
+        {
+          "name": "scandium-45 atom",
+          "smiles": "[45Sc]"
+        },
+        {
+          "name": "polonium-199 atom",
+          "smiles": "[199Po]"
+        },
+        {
+          "name": "rubidium-85 atom",
+          "smiles": "[85Rb]"
+        },
+        {
+          "name": "polonium-192 atom",
+          "smiles": "[192Po]"
+        },
+        {
+          "name": "scandium atom",
+          "smiles": "[Sc]"
+        },
+        {
+          "name": "fermium",
+          "smiles": "[Fm]"
+        },
+        {
+          "name": "caesium atom",
+          "smiles": "[Cs]"
+        },
+        {
+          "name": "thulium atom",
+          "smiles": "[Tm]"
+        },
+        {
+          "name": "curium atom",
+          "smiles": "[Cm]"
+        },
+        {
+          "name": "polonium-218 atom",
+          "smiles": "[218Po]"
+        },
+        {
+          "name": "polonium-194 atom",
+          "smiles": "[194Po]"
+        },
+        {
+          "name": "tungsten-183",
+          "smiles": "[183W]"
+        },
+        {
+          "name": "polonium-213 atom",
+          "smiles": "[213Po]"
+        },
+        {
+          "name": "neodymium atom",
+          "smiles": "[Nd]"
+        },
+        {
+          "name": "lanthanum atom",
+          "smiles": "[La]"
+        },
+        {
+          "name": "zinc-66 atom",
+          "smiles": "[66Zn]"
+        },
+        {
+          "name": "polonium-190 atom",
+          "smiles": "[190Po]"
+        },
+        {
+          "name": "lithium-6 atom",
+          "smiles": "[6Li]"
+        },
+        {
+          "name": "lanthanum-139 atom",
+          "smiles": "[139La]"
+        },
+        {
+          "name": "palladium",
+          "smiles": "[Pd]"
+        },
+        {
+          "name": "tin atom",
+          "smiles": "[Sn]"
+        },
+        {
+          "name": "tin-117 atom",
+          "smiles": "[117Sn]"
+        },
+        {
+          "name": "cobalt-59 atom",
+          "smiles": "[59Co]"
+        },
+        {
+          "name": "hassium atom",
+          "smiles": "[Hs]"
+        },
+        {
+          "name": "aluminium-28 atom",
+          "smiles": "[28Al]"
+        },
+        {
+          "name": "americium atom",
+          "smiles": "[Am]"
+        },
+        {
+          "name": "europium-151 atom",
+          "smiles": "[151Eu]"
+        },
+        {
+          "name": "erbium",
+          "smiles": "[Er]"
+        },
+        {
+          "name": "polonium-203 atom",
+          "smiles": "[203Po]"
+        },
+        {
+          "name": "technetium-99",
+          "smiles": "[99Tc]"
+        },
+        {
+          "name": "einsteinium atom",
+          "smiles": "[Es]"
+        },
+        {
+          "name": "polonium-209 atom",
+          "smiles": "[209Po]"
+        },
+        {
+          "name": "actinium atom",
+          "smiles": "[Ac]"
+        },
+        {
+          "name": "polonium-212 atom",
+          "smiles": "[212Po]"
+        },
+        {
+          "name": "mendelevium atom",
+          "smiles": "[Md]"
+        },
+        {
+          "name": "titanium atom",
+          "smiles": "[Ti]"
+        },
+        {
+          "name": "niobium atom",
+          "smiles": "[Nb]"
+        },
+        {
+          "name": "tantalum atom",
+          "smiles": "[Ta]"
+        },
+        {
+          "name": "promethium atom",
+          "smiles": "[Pm]"
+        },
+        {
+          "name": "polonium-197 atom",
+          "smiles": "[197Po]"
+        },
+        {
+          "name": "tin-119 atom",
+          "smiles": "[119Sn]"
+        },
+        {
+          "name": "berkelium atom",
+          "smiles": "[Bk]"
+        },
+        {
+          "name": "polonium-207 atom",
+          "smiles": "[207Po]"
+        },
+        {
+          "name": "dubnium atom",
+          "smiles": "[Db]"
+        },
+        {
+          "name": "polonium-200 atom",
+          "smiles": "[200Po]"
+        },
+        {
+          "name": "polonium-204 atom",
+          "smiles": "[204Po]"
+        },
+        {
+          "name": "beryllium atom",
+          "smiles": "[Be]"
+        },
+        {
+          "name": "aluminium-26 atom",
+          "smiles": "[26Al]"
+        },
+        {
+          "name": "dysprosium atom",
+          "smiles": "[Dy]"
+        },
+        {
+          "name": "iron atom",
+          "smiles": "[Fe]"
+        },
+        {
+          "name": "tin-115 atom",
+          "smiles": "[115Sn]"
+        },
+        {
+          "name": "polonium-196 atom",
+          "smiles": "[196Po]"
+        },
+        {
+          "name": "strontium atom",
+          "smiles": "[Sr]"
+        },
+        {
+          "name": "platinum",
+          "smiles": "[Pt]"
+        },
+        {
+          "name": "polonium-214 atom",
+          "smiles": "[214Po]"
+        },
+        {
+          "name": "polonium-216 atom",
+          "smiles": "[216Po]"
+        },
+        {
+          "name": "strontium-88 atom",
+          "smiles": "[88Sr]"
+        },
+        {
+          "name": "bohrium atom",
+          "smiles": "[Bh]"
+        },
+        {
+          "name": "polonium-215 atom",
+          "smiles": "[215Po]"
+        },
+        {
+          "name": "barium atom",
+          "smiles": "[Ba]"
+        },
+        {
+          "name": "polonium-198 atom",
+          "smiles": "[198Po]"
+        }
+      ],
+      "negative_instances": [
+        {
+          "name": "D-alloisoleucine residue",
+          "smiles": "O=C(*)[C@H](N*)[C@@H](C)CC"
+        },
+        {
+          "name": "carbon-10 atom",
+          "smiles": "[10C]"
+        },
+        {
+          "name": "Neosartorin",
+          "smiles": "O=C1C2=C(O)C3=C(C(C4=C(O)C=5C(O)=C6C(=O)CC[C@@H]([C@]6(C(=O)OC)OC5C=C4C)O)=CC=C3O)O[C@@]2(C(=O)OC)[C@@H](OC(=O)C)[C@H](C1)C"
+        },
+        {
+          "name": "(3-Aminopropoxy)guanidine",
+          "smiles": "O(N=C(N)N)CCCN"
+        },
+        {
+          "name": "LSM-10257",
+          "smiles": "C[C@H]1CN(C(=O)C2=CC=CC=C2C3=CC=CC=C3CO[C@@H]1CN(C)CC4=CC=C(C=C4)F)[C@H](C)CO"
+        },
+        {
+          "name": "selenium-77 atom",
+          "smiles": "[77Se]"
+        },
+        {
+          "name": "Degalloyltheaflavonin",
+          "smiles": "O1C(C(O)C(O)C(O)C1OC2=C(OC=3C(C2=O)=C(O)C=C(O)C3)C=4C(C=5C(C6OC=7C(CC6O)=C(O)C=C(O)C7)=CC(O)=C(O)C5O)=C(O)C(O)=C(O)C4)CO"
+        },
+        {
+          "name": "Panarine",
+          "smiles": "C/C=C\\1/C[N+]2(C)[C@]3(CC=4C5=CC=CC=C5NC4[C@@]2(C[C@@]1(C3C(=O)[O-])[H])[H])[H]"
+        },
+        {
+          "name": "flerovium atom",
+          "smiles": "[Fl]"
+        },
+        {
+          "name": "iodine(.)",
+          "smiles": "[I]"
+        },
+        {
+          "name": "2-[(3R,6aR,8R,10aR)-3-hydroxy-1-methyl-3,4,6,6a,8,9,10,10a-octahydro-2H-pyrano[2,3-c][1,5]oxazocin-8-yl]-N-cyclobutylacetamide",
+          "smiles": "CN1C[C@H](COC[C@H]2[C@H]1CC[C@@H](O2)CC(=O)NC3CCC3)O"
+        },
+        {
+          "name": "arsenic atom",
+          "smiles": "[As]"
+        },
+        {
+          "name": "beta-L-fructopyranose",
+          "smiles": "OC[C@]1(O)OC[C@H](O)[C@H](O)[C@H]1O"
+        },
+        {
+          "name": "Himeic acid G",
+          "smiles": "O=C1C(C(=O)N)=CNC(=C1)/C=C/CCCCCCCCC(=O)OC"
+        },
+        {
+          "name": "Homotrypanothione disulfide",
+          "smiles": "N[C@@H](CCC(=O)N[C@H]1CSSC[C@H](NC(=O)CC[C@H](N)C(O)=O)C(=O)NCC(=O)NCCCNCCCCCNC(=O)CNC1=O)C(O)=O"
+        },
+        {
+          "name": "Preubetailide D",
+          "smiles": "O=C1[C@H]([C@H]2C(=CC(C)=C([C@@H]2/C=C(/C=C(\\C=C\\C(=O)O)/C)\\C)CC(=O)C)C[C@H]1C)C"
+        },
+        {
+          "name": "alpha,beta-didehydrotryptophan",
+          "smiles": "C1(=CNC2=C1C=CC=C2)\\C=C(\\C(=O)O)/N"
+        },
+        {
+          "name": "boron-10 atom",
+          "smiles": "[10B]"
+        },
+        {
+          "name": "8,8-dimethyl-2,9-dioxo-10H-pyrano[2,3-f][1]benzopyran-10-carboxaldehyde oxime",
+          "smiles": "C1(C(=O)C(C2=C(O1)C=CC3=C2OC(=O)C=C3)C=NO)(C)C"
+        },
+        {
+          "name": "iodine-129 atom",
+          "smiles": "[129I]"
+        },
+        {
+          "name": "carbon atom",
+          "smiles": "[C]"
+        },
+        {
+          "name": "helium-4 atom",
+          "smiles": "[4He]"
+        },
+        {
+          "name": "caseanigrescen A",
+          "smiles": "[H][C@@]12C[C@@H](OC(=O)CCC)C=C3[C@H](O[C@@H](OC(C)=O)[C@@]13[C@@H](O)[C@H](OC(C)=O)[C@@H](C)[C@@]2(C)CCC(=C)C=C)OC(C)=O"
+        },
+        {
+          "name": "helium-3 atom",
+          "smiles": "[3He]"
+        },
+        {
+          "name": "2-[5-[(2,4-dichlorophenyl)methylthio]-4-(2-furanylmethyl)-1,2,4-triazol-3-yl]pyridine",
+          "smiles": "C1=CC=NC(=C1)C2=NN=C(N2CC3=CC=CO3)SCC4=C(C=C(C=C4)Cl)Cl"
+        },
+        {
+          "name": "indium atom",
+          "smiles": "[In]"
+        },
+        {
+          "name": "(2R,4S,5R,6R)-5-Acetamido-2-[[(2R,3S,4R,5R,6S)-5-acetamido-6-[(2R,3S,4S,5S,6R)-6-[(2S,3S,4S,5R,6R)-2-[(2R,3S,4R,5R,6S)-5-acetamido-6-[(2R,3S,4R,5R,6R)-5-acetamido-4,6-dihydroxy-2-(hydroxymethyl)oxan-3-yl]oxy-4-hydroxy-2-(hydroxymethyl)oxan-3-yl]oxy-6-[[(2S,3S,4S,5S,6R)-3-[(2S,3R,4R,5S,6R)-3-acetamido-4-hydroxy-6-(hydroxymethyl)-5-[(2R,3R,4S,5R,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxyoxan-2-yl]oxy-4,5-dihydroxy-6-(hydroxymethyl)oxan-2-yl]oxymethyl]-3,5-dihydroxyoxan-4-yl]oxy-5-[(2S,3R,4R,5S,6R)-3-acetamido-4-hydroxy-6-(hydroxymethyl)-5-[(2R,3R,4S,5R,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxyoxan-2-yl]oxy-4-hydroxy-2-(hydroxymethyl)oxan-3-yl]oxy-3-hydroxy-4-[(2R,3R,4S,5R,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxyoxan-2-yl]methoxy]-4-hydroxy-6-[(1R,2R)-1,2,3-trihydroxypropyl]oxane-2-carboxylic acid",
+          "smiles": "O([C@H]1[C@H](O)[C@H](O[C@@H]2O[C@@H]([C@@H](O[C@@H]3O[C@@H]([C@H](O)[C@H](O)[C@H]3O)CO)[C@H](O)[C@H]2NC(=O)C)CO)[C@H](O[C@@H]1CO)O[C@@H]4[C@H](O)[C@@H](O[C@@H]([C@H]4O)CO[C@H]5O[C@@H]([C@@H](O)[C@H](O)[C@@H]5O[C@@H]6O[C@@H]([C@@H](O[C@@H]7O[C@@H]([C@H](O)[C@H](O)[C@H]7O)CO)[C@H](O)[C@H]6NC(=O)C)CO)CO)O[C@H]8[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]8CO)O[C@H]9[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]9CO)O)[C@@H]%10O[C@@H]([C@@H](O)[C@H](O[C@@H]%11O[C@@H]([C@H](O)[C@H](O)[C@H]%11O)CO)[C@H]%10NC(=O)C)CO[C@]%12(O[C@H]([C@H](NC(=O)C)[C@@H](O)C%12)[C@H](O)[C@H](O)CO)C(O)=O"
+        },
+        {
+          "name": "sulfur-32 atom",
+          "smiles": "[32S]"
+        },
+        {
+          "name": "carbon-13 atom",
+          "smiles": "[13C]"
+        },
+        {
+          "name": "bromine(.)",
+          "smiles": "[Br]"
+        },
+        {
+          "name": "Applanatine C",
+          "smiles": "O([C@@H]1C2=C(C(=C(CCOC)C(=C2)CO)C)CC1(C)C)C"
+        },
+        {
+          "name": "4,6-dideoxy-4-(2-methoxypropanamido)-3-C-Me-L-Manp2Me-(1->3)-Fucp",
+          "smiles": "COC(C)C(=O)N[C@H]1[C@H](C)OC(O[C@@H]2[C@H](O)[C@H](C)OC(O)[C@H]2O)[C@H](OC)[C@]1(C)O"
+        },
+        {
+          "name": "1,2,4-Nonadecanetriol",
+          "smiles": "OC(CCCCCCCCCCCCCCC)CC(O)CO"
+        },
+        {
+          "name": "(2S,4S,5R,6R)-5-Acetamido-6-[(1S,2R)-2-[(2S,4S,5R,6R)-5-acetamido-2-carboxy-4-hydroxy-6-[(1R,2R)-1,2,3-trihydroxypropyl]oxan-2-yl]oxy-1,3-dihydroxypropyl]-2-[(2R,3S,4R,5R,6S)-3-[(2S,3R,4R,5R,6R)-3-acetamido-5-hydroxy-4-[(2R,3R,4S,5S,6R)-5-hydroxy-6-(hydroxymethyl)-4-[(2R,3R,4S,5R,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-3-[(2S,3S,4R,5S,6S)-3,4,5-trihydroxy-6-methyloxan-2-yl]oxyoxan-2-yl]oxy-6-(hydroxymethyl)oxan-2-yl]oxy-5-hydroxy-2-(hydroxymethyl)-6-[(2R,3S,4R,5R)-4,5,6-trihydroxy-2-(hydroxymethyl)oxan-3-yl]oxyoxan-4-yl]oxy-4-hydroxyoxane-2-carboxylic acid",
+          "smiles": "O([C@H]1[C@@H](O[C@@H]2O[C@@H]([C@H](O)[C@H](O[C@@H]3O[C@@H]([C@H](O)[C@H](O[C@H]4O[C@@H]([C@H](O)[C@H](O)[C@H]4O)CO)[C@H]3O[C@@H]5O[C@H]([C@@H](O)[C@@H](O)[C@@H]5O)C)CO)[C@H]2NC(=O)C)CO)[C@H](O[C@@H](O[C@H]6[C@H](O)[C@@H](O)C(O[C@@H]6CO)O)[C@@H]1O)CO)[C@]7(O[C@H]([C@H](NC(=O)C)[C@@H](O)C7)[C@H](O)[C@H](O[C@]8(O[C@H]([C@H](NC(=O)C)[C@@H](O)C8)[C@H](O)[C@H](O)CO)C(O)=O)CO)C(O)=O"
+        },
+        {
+          "name": "deuterium(.)",
+          "smiles": "[2H]"
+        },
+        {
+          "name": "oxygen-17 atom",
+          "smiles": "[17O]"
+        },
+        {
+          "name": "selenium-82 atom",
+          "smiles": "[82Se]"
+        },
+        {
+          "name": "moscovium atom",
+          "smiles": "[Mc]"
+        },
+        {
+          "name": "phosphorus-31 atom",
+          "smiles": "[31P]"
+        },
+        {
+          "name": "thallium",
+          "smiles": "[Tl]"
+        },
+        {
+          "name": "bromine-79 atom",
+          "smiles": "[79Br]"
+        },
+        {
+          "name": "radon(0)",
+          "smiles": "[Rn]"
+        },
+        {
+          "name": "Palmityl myristoleate",
+          "smiles": "O(CCCCCCCCCCCCCCCC)C(=O)CCCCCCC/C=C\\CCCC"
+        },
+        {
+          "name": "tellurium atom",
+          "smiles": "[Te]"
+        },
+        {
+          "name": "1,2-dihydroheudelotinol",
+          "smiles": "[H][C@@]12CCc3cc(C)c(O)cc3C=C1CC[C@H](O)C2(C)C"
+        },
+        {
+          "name": "methyl 3,8-dihydroxy-6-methyl-9-oxo-9H-xanthene-1-carboxylate",
+          "smiles": "COC(=O)c1cc(O)cc2oc3cc(C)cc(O)c3c(=O)c12"
+        },
+        {
+          "name": "livermorium atom",
+          "smiles": "[Lv]"
+        },
+        {
+          "name": "N-[(3S,9S,10R)-9-[[cyclohexylmethyl(methyl)amino]methyl]-12-[(2R)-1-hydroxypropan-2-yl]-3,10-dimethyl-13-oxo-2,8-dioxa-12-azabicyclo[12.4.0]octadeca-1(14),15,17-trien-16-yl]-4-pyridinecarboxamide",
+          "smiles": "C[C@H]1CCCCO[C@@H]([C@@H](CN(C(=O)C2=C(O1)C=CC(=C2)NC(=O)C3=CC=NC=C3)[C@H](C)CO)C)CN(C)CC4CCCCC4"
+        },
+        {
+          "name": "disodium (R)-malate",
+          "smiles": "[Na+].[Na+].[O-]C([C@@H](CC([O-])=O)O)=O"
+        },
+        {
+          "name": "2alpha-Fluoro-19-nor-22-oxa-1alpha,25-dihydroxyvitamin D3",
+          "smiles": "FC1[C@H](O)C/C(=C\\C=C/2\\[C@]3([C@@]([C@](CC3)([C@@H](OCCC(O)(C)C)C)[H])(CCC2)C)[H])/C[C@H]1O"
+        },
+        {
+          "name": "oxygen-16 atom",
+          "smiles": "[16O]"
+        },
+        {
+          "name": "N-[(2S,3R)-5-[(2S)-1-hydroxypropan-2-yl]-3-methyl-2-[[methyl-[(4-phenoxyphenyl)methyl]amino]methyl]-6-oxo-3,4-dihydro-2H-1,5-benzoxazocin-10-yl]-4-pyridinecarboxamide",
+          "smiles": "C[C@@H]1CN(C(=O)C2=C(C(=CC=C2)NC(=O)C3=CC=NC=C3)O[C@@H]1CN(C)CC4=CC=C(C=C4)OC5=CC=CC=C5)[C@@H](C)CO"
+        },
+        {
+          "name": "neosartoricin",
+          "smiles": "CC(=O)O[C@@H]1C(=O)c2c(O)c3c(O)cc(O)cc3c(CC=C(C)C)c2C[C@@]1(O)CC(=O)\\C=C(\\C)O"
+        },
+        {
+          "name": "imidazoline",
+          "smiles": "C1CN=CN1"
+        },
+        {
+          "name": "N-[(4-hydroxy-2-iodo-5-methoxyphenyl)methyl]nonanamide",
+          "smiles": "CCCCCCCCC(=O)NCC1=CC(=C(C=C1I)O)OC"
+        },
+        {
+          "name": "sulfur-37 atom",
+          "smiles": "[37S]"
+        },
+        {
+          "name": "Heptelidic acid chlorohydrin",
+          "smiles": "ClC[C@@]1(O)[C@H]2C(=O)OCC(=C[C@@H]2[C@@H](C(C)C)CC1)C(=O)O"
+        },
+        {
+          "name": "thallium-199",
+          "smiles": "[199Tl]"
+        },
+        {
+          "name": "Elatoside E",
+          "smiles": "O([C@@H]1C([C@]2([C@@]([C@@]3([C@]([C@]4(C([C@]5([C@@](CC4)(CCC(C5)(C)C)C(O)=O)[H])=CC3)C)(CC2)C)[H])(CC1)C)[H])(C)C)[C@@H]6OC[C@H](O)[C@H](O[C@@H]7O[C@@H]([C@@H](O)[C@H](O)[C@H]7O)CO)[C@H]6O[C@@H]8OC[C@@H](O)[C@H](O)[C@H]8O"
+        },
+        {
+          "name": "Momilactone C",
+          "smiles": "O1[C@]2([C@@]3([C@@]([C@]4(C(=C2)C[C@](CC4)(C)C=C)[H])(C[C@H](O)C[C@@]3(C1=O)C)C)[H])[H]"
+        },
+        {
+          "name": "Tyr-Cys-Arg",
+          "smiles": "SC[C@H](NC(=O)[C@@H](N)CC1=CC=C(O)C=C1)C(=O)N[C@@H](CCCN=C(N)N)C(O)=O"
+        },
+        {
+          "name": "carbon-11 atom",
+          "smiles": "[11C]"
+        },
+        {
+          "name": "silicon-29 atom",
+          "smiles": "[29Si]"
+        },
+        {
+          "name": "antimony-123 atom",
+          "smiles": "[123Sb]"
+        },
+        {
+          "name": "thallium-205",
+          "smiles": "[205Tl]"
+        },
+        {
+          "name": "helium-6 atom",
+          "smiles": "[6He]"
+        },
+        {
+          "name": "Gly-Ala-Val",
+          "smiles": "OC(=O)[C@@H](NC(=O)[C@@H](NC(=O)CN)C)C(C)C"
+        },
+        {
+          "name": "phosphorus-32 atom",
+          "smiles": "[32P]"
+        },
+        {
+          "name": "Glycinocin B",
+          "smiles": "O=C1N2C(C(=O)NCC(=O)N[C@H](C(=O)NCC(=O)N[C@H](C(=O)NCC(N[C@@H](C(N[C@H](C(N3[C@H](C(NC[C@@H]1NC(=O)[C@@H](NC(=O)/C=C/CCCCCCCCCCC(C)C)CC(=O)O)=O)CCC3)=O)C(CC)C)=O)C(O)C)=O)CC(=O)O)CC(=O)O)CCCC2"
+        },
+        {
+          "name": "Leu-Ala-Val",
+          "smiles": "O=C(N[C@H](C(=O)N[C@@H](C(C)C)C(O)=O)C)[C@@H](N)CC(C)C"
+        },
+        {
+          "name": "monooxygen",
+          "smiles": "[O]"
+        },
+        {
+          "name": "sulfur-36 atom",
+          "smiles": "[36S]"
+        },
+        {
+          "name": "germanium-73 atom",
+          "smiles": "[73Ge]"
+        },
+        {
+          "name": "alpha-L-Fucp-(1->2)-beta-D-Galp-(1->3)-beta-D-GlcpNAc-(1->4)-beta-D-Galp-(1->4)-D-Glcp",
+          "smiles": "C[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@@H](O)[C@@H](CO)O[C@H]2O[C@H]2[C@H](O)[C@@H](CO)O[C@@H](O[C@@H]3[C@H](O)[C@@H](O)[C@@H](O[C@@H]3CO)O[C@H]3[C@H](O)[C@@H](O)C(O)O[C@@H]3CO)[C@@H]2NC(C)=O)[C@@H](O)[C@H](O)[C@@H]1O"
+        },
+        {
+          "name": "phosphorus(.)",
+          "smiles": "[P]"
+        },
+        {
+          "name": "carbon-14 atom",
+          "smiles": "[14C]"
+        },
+        {
+          "name": "arsenic-75 atom",
+          "smiles": "[75As]"
+        },
+        {
+          "name": "silicon-28 atom",
+          "smiles": "[28Si]"
+        },
+        {
+          "name": "fluorine-19 atom",
+          "smiles": "[19F]"
+        },
+        {
+          "name": "tritium(.)",
+          "smiles": "[3H]"
+        },
+        {
+          "name": "oxygen-15 atom",
+          "smiles": "[15O]"
+        },
+        {
+          "name": "thallium-203",
+          "smiles": "[203Tl]"
+        },
+        {
+          "name": "carbon atom",
+          "smiles": "[C]"
+        },
+        {
+          "name": "tellurium-125 atom",
+          "smiles": "[125Te]"
+        },
+        {
+          "name": "chlorine(.)",
+          "smiles": "[Cl]"
+        },
+        {
+          "name": "Ser-Asn-Leu",
+          "smiles": "O=C(N[C@@H](CC(C)C)C(O)=O)[C@@H](NC(=O)[C@@H](N)CO)CC(=O)N"
+        },
+        {
+          "name": "neon(0)",
+          "smiles": "[Ne]"
+        },
+        {
+          "name": "argon atom",
+          "smiles": "[Ar]"
+        },
+        {
+          "name": "phosphorus-33 atom",
+          "smiles": "[33P]"
+        },
+        {
+          "name": "silicon-30 atom",
+          "smiles": "[30Si]"
+        },
+        {
+          "name": "radon-220 atom",
+          "smiles": "[220Rn]"
+        },
+        {
+          "name": "gallium atom",
+          "smiles": "[Ga]"
+        },
+        {
+          "name": "helium(0)",
+          "smiles": "[He]"
+        },
+        {
+          "name": "(5R)-5-hydroxyhexan-2-one",
+          "smiles": "C[C@@H](O)CCC(C)=O"
+        },
+        {
+          "name": "boron atom",
+          "smiles": "[B]"
+        },
+        {
+          "name": "1-stearoyl-2-(7Z,10Z,13Z,16Z-docosatetraenoyl)-sn-glycerol",
+          "smiles": "CCCCCCCCCCCCCCCCCC(=O)OC[C@H](CO)OC(=O)CCCCC\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCC"
+        },
+        {
+          "name": "thallium-201",
+          "smiles": "[201Tl]"
+        },
+        {
+          "name": "protium(.)",
+          "smiles": "[1H]"
+        },
+        {
+          "name": "(11S,16R)-misoprostol",
+          "smiles": "CCCC[C@@](C)(O)C\\C=C\\[C@@H]1[C@@H](O)CC(=O)[C@H]1CCCCCCC(=O)OC"
+        },
+        {
+          "name": "antimony atom",
+          "smiles": "[Sb]"
+        },
+        {
+          "name": "fluorine(.)",
+          "smiles": "[F]"
+        },
+        {
+          "name": "oxygen-18 atom",
+          "smiles": "[18O]"
+        },
+        {
+          "name": "germanium atom",
+          "smiles": "[Ge]"
+        },
+        {
+          "name": "radon-222 atom",
+          "smiles": "[222Rn]"
+        },
+        {
+          "name": "astatine(.)",
+          "smiles": "[At]"
+        },
+        {
+          "name": "Lividamine",
+          "smiles": "O([C@@H]1[C@@H](N)C[C@@H](N)[C@H](O)[C@H]1O)[C@H]2O[C@@H]([C@@H](O)C[C@H]2N)CO"
+        },
+        {
+          "name": "clonixin lysine salt",
+          "smiles": "NCCCC[C@H](N)C(O)=O.Cc1c(Cl)cccc1Nc1ncccc1C(O)=O"
+        },
+        {
+          "name": "fluorine-18 atom",
+          "smiles": "[18F]"
+        },
+        {
+          "name": "hydrogen atom",
+          "smiles": "[H]"
+        },
+        {
+          "name": "antimony-121 atom",
+          "smiles": "[121Sb]"
+        },
+        {
+          "name": "Angumycinone A",
+          "smiles": "O=C1C2=C(C(O)=CC=C2)C(=O)[C@]34[C@]1(O3)[C@@H]5C(=O)C=C(C)C[C@]5(O)CC4"
+        },
+        {
+          "name": "N-(omega-linoleoyloxydotricontanoyl)sphingosine",
+          "smiles": "[C@H]([C@@H](/C=C/CCCCCCCCCCCCC)O)(NC(=O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCOC(CCCCCCC/C=C\\C/C=C\\CCCCC)=O)CO"
+        },
+        {
+          "name": "krypton atom",
+          "smiles": "[Kr]"
+        },
+        {
+          "name": "7,2'-Dihydroxy-6,8-dimethyl-4',5'-methylenedioxyflavan",
+          "smiles": "O1[C@@](CCC2=C1C(=C(O)C(=C2)C)C)(C3=CC=4OCOC4C=C3O)[H]"
+        },
+        {
+          "name": "radon-219 atom",
+          "smiles": "[219Rn]"
+        },
+        {
+          "name": "carbon-12 atom",
+          "smiles": "[12C]"
+        },
+        {
+          "name": "nihonium atom",
+          "smiles": "[Nh]"
+        },
+        {
+          "name": "N.alpha.-Benzyl-D-alanine methyl ester",
+          "smiles": "O(C(=O)[C@H](NCC1=CC=CC=C1)C)C"
+        },
+        {
+          "name": "argon atom",
+          "smiles": "[Ar]"
+        },
+        {
+          "name": "tennessine atom",
+          "smiles": "[Ts]"
+        },
+        {
+          "name": "Ruakuric acid",
+          "smiles": "O=C(O)C1OC2=C(C(O)=C(C(=O)C)C=C2)C(C1)OC"
+        },
+        {
+          "name": "3-hydroxy-2-methylpropanoyl-CoA(4-)",
+          "smiles": "CC(CO)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP([O-])(=O)OP([O-])(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP([O-])([O-])=O)n1cnc2c(N)ncnc12"
+        },
+        {
+          "name": "1-Benzyl-7,8-dimethoxy-3-phenyl-3H-pyrazolo[3,4-c]isoquinoline",
+          "smiles": "COc1cc2cnc3n(nc(Cc4ccccc4)c3c2cc1OC)-c1ccccc1"
+        },
+        {
+          "name": "9Z,11E-Hexadecadienal",
+          "smiles": "O=CCCCCCCC/C=C\\C=C\\CCCC"
+        },
+        {
+          "name": "(1R,2aR,8bR)-N-(4-fluorophenyl)-1-(hydroxymethyl)-2-[(4-methoxyphenyl)methyl]-1,2a,3,8b-tetrahydroazeto[2,3-c]quinoline-4-carboxamide",
+          "smiles": "COC1=CC=C(C=C1)CN2[C@H]3CN(C4=CC=CC=C4[C@H]3[C@@H]2CO)C(=O)NC5=CC=C(C=C5)F"
+        },
+        {
+          "name": "Taxlllaid B",
+          "smiles": "O=C1O[C@@H]([C@H](NC(=O)CCCC(C)C)C(=O)N[C@H](C(=O)N[C@H](C(=O)N[C@@H](C(N[C@@H](C(N[C@H](C(N[C@H]1C)=O)CC(C)C)=O)CC(C)C)=O)CC(C)C)CC2=CC=C(O)C=C2)C)C"
+        },
+        {
+          "name": "1-(2,6-difluorophenyl)sulfonyl-4-(2,3-dihydro-1,4-benzodioxin-6-ylsulfonyl)-1,4-diazepane",
+          "smiles": "C1CN(CCN(C1)S(=O)(=O)C2=C(C=CC=C2F)F)S(=O)(=O)C3=CC4=C(C=C3)OCCO4"
+        },
+        {
+          "name": "Glu-Ser-Ser",
+          "smiles": "OC[C@H](NC(=O)[C@@H](N)CCC(O)=O)C(=O)N[C@@H](CO)C(O)=O"
+        },
+        {
+          "name": "1-[[(4S,5S)-2-[(2R)-1-hydroxypropan-2-yl]-4-methyl-8-(4-methylphenyl)-1,1-dioxo-4,5-dihydro-3H-6,1$l^{6},2-benzoxathiazocin-5-yl]methyl]-1-methyl-3-phenylurea",
+          "smiles": "C[C@H]1CN(S(=O)(=O)C2=C(C=C(C=C2)C3=CC=C(C=C3)C)O[C@@H]1CN(C)C(=O)NC4=CC=CC=C4)[C@H](C)CO"
+        },
+        {
+          "name": "selenium atom",
+          "smiles": "[Se]"
+        },
+        {
+          "name": "sulfur-33 atom",
+          "smiles": "[33S]"
+        },
+        {
+          "name": "xenon atom",
+          "smiles": "[Xe]"
+        },
+        {
+          "name": "sulfur-35 atom",
+          "smiles": "[35S]"
+        },
+        {
+          "name": "(2S,3R,4S,5R,6R)-2-[(2S,3R,4S,5S,6R)-4,5-Dihydroxy-6-(hydroxymethyl)-2-[(2R,3R,4R,5R,6R)-4,5,6-trihydroxy-2-(hydroxymethyl)oxan-3-yl]oxyoxan-3-yl]oxy-6-(hydroxymethyl)oxane-3,4,5-triol",
+          "smiles": "O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O[C@@H]2O[C@@H]([C@H](O)[C@H](O)[C@H]2O)CO)CO)[C@@H]3[C@H](O)[C@@H](O)[C@@H](O[C@@H]3CO)O"
+        },
+        {
+          "name": "silicon atom",
+          "smiles": "[Si]"
+        },
+        {
+          "name": "Sterebin C",
+          "smiles": "OC1C2C(C(C(O)(C1OC(=O)C)C)/C=C/C(=O)C)(CCCC2(C)C)C"
+        },
+        {
+          "name": "5-[(4-ethoxyphenoxy)methyl]-N-(3-pyridinyl)-2-furancarboxamide",
+          "smiles": "CCOC1=CC=C(C=C1)OCC2=CC=C(O2)C(=O)NC3=CN=CC=C3"
+        }
+      ]
+    },
+    "config": {
+      "llm_model_name": "lbl/gpt-4o",
+      "accuracy_threshold": 0.95,
+      "max_attempts": 5,
+      "max_negative": 20,
+      "test_proportion": 0.1
+    },
+    "code": "from rdkit import Chem\n\ndef is_metal_atom(smiles: str):\n    \"\"\"\n    Determines if a molecule is a metal atom.\n\n    Args:\n        smiles (str): SMILES string of the molecule\n\n    Returns:\n        bool: True if molecule is a metal atom, False otherwise\n        str: Reason for classification\n    \"\"\"\n    mol = Chem.MolFromSmiles(smiles)\n    if mol is None:\n        return False, \"Invalid SMILES string\"\n\n    # List of metal symbols based on typical metallic properties\n    metal_symbols = [\n        \"Li\", \"Be\", \"Na\", \"Mg\", \"Al\", \"K\", \"Ca\", \"Sc\", \"Ti\", \"V\", \"Cr\", \"Mn\", \"Fe\", \"Co\", \"Ni\", \"Cu\", \"Zn\",\n        \"Ga\", \"Rb\", \"Sr\", \"Y\", \"Zr\", \"Nb\", \"Mo\", \"Tc\", \"Ru\", \"Rh\", \"Pd\", \"Ag\", \"Cd\", \"In\", \"Sn\", \"Sb\", \"Cs\",\n        \"Ba\", \"La\", \"Ce\", \"Pr\", \"Nd\", \"Pm\", \"Sm\", \"Eu\", \"Gd\", \"Tb\", \"Dy\", \"Ho\", \"Er\", \"Tm\", \"Yb\", \"Lu\", \"Hf\",\n        \"Ta\", \"W\", \"Re\", \"Os\", \"Ir\", \"Pt\", \"Au\", \"Hg\", \"Tl\", \"Pb\", \"Bi\", \"Po\", \"Fr\", \"Ra\", \"Ac\", \"Th\", \"Pa\",\n        \"U\", \"Np\", \"Pu\", \"Am\", \"Cm\", \"Bk\", \"Cf\", \"Es\", \"Fm\", \"Md\", \"No\", \"Lr\", \"Rf\", \"Db\", \"Sg\", \"Bh\", \"Hs\",\n        \"Mt\", \"Ds\", \"Rg\", \"Cn\", \"Nh\", \"Fl\", \"Mc\", \"Lv\", \"Ts\", \"Og\"\n    ]\n\n    atoms = mol.GetAtoms()\n    if len(atoms) != 1:\n        return False, \"Not a single atom\"\n\n    atom = atoms[0]\n    symbol = atom.GetSymbol()\n    \n    if symbol in metal_symbols:\n        return True, f\"{symbol} is a metal atom\"\n    else:\n        return False, f\"{symbol} is not a metal atom\"",
+    "true_positives": [
+      [
+        "[Re]",
+        "Re is a metal atom"
+      ],
+      [
+        "[Pr]",
+        "Pr is a metal atom"
+      ],
+      [
+        "[Eu]",
+        "Eu is a metal atom"
+      ],
+      [
+        "[98Mo]",
+        "Mo is a metal atom"
+      ],
+      [
+        "[Rf]",
+        "Rf is a metal atom"
+      ],
+      [
+        "[Ce]",
+        "Ce is a metal atom"
+      ],
+      [
+        "[208Po]",
+        "Po is a metal atom"
+      ],
+      [
+        "[Au]",
+        "Au is a metal atom"
+      ],
+      [
+        "[Cf]",
+        "Cf is a metal atom"
+      ],
+      [
+        "[27Al]",
+        "Al is a metal atom"
+      ],
+      [
+        "[Fr]",
+        "Fr is a metal atom"
+      ],
+      [
+        "[Lu]",
+        "Lu is a metal atom"
+      ],
+      [
+        "[116Sn]",
+        "Sn is a metal atom"
+      ],
+      [
+        "[89Y]",
+        "Y is a metal atom"
+      ],
+      [
+        "[Ho]",
+        "Ho is a metal atom"
+      ],
+      [
+        "[Gd]",
+        "Gd is a metal atom"
+      ],
+      [
+        "[206Po]",
+        "Po is a metal atom"
+      ],
+      [
+        "[Hf]",
+        "Hf is a metal atom"
+      ],
+      [
+        "[191Po]",
+        "Po is a metal atom"
+      ],
+      [
+        "[V]",
+        "V is a metal atom"
+      ],
+      [
+        "[Rh]",
+        "Rh is a metal atom"
+      ],
+      [
+        "[Co]",
+        "Co is a metal atom"
+      ],
+      [
+        "[Sm]",
+        "Sm is a metal atom"
+      ],
+      [
+        "[60Ni]",
+        "Ni is a metal atom"
+      ],
+      [
+        "[Pa]",
+        "Pa is a metal atom"
+      ],
+      [
+        "[Po]",
+        "Po is a metal atom"
+      ],
+      [
+        "[113Cd]",
+        "Cd is a metal atom"
+      ],
+      [
+        "[Ir]",
+        "Ir is a metal atom"
+      ],
+      [
+        "[25Mg]",
+        "Mg is a metal atom"
+      ],
+      [
+        "[Ag]",
+        "Ag is a metal atom"
+      ],
+      [
+        "[Cu]",
+        "Cu is a metal atom"
+      ],
+      [
+        "[Ru]",
+        "Ru is a metal atom"
+      ],
+      [
+        "[57Fe]",
+        "Fe is a metal atom"
+      ],
+      [
+        "[Rb]",
+        "Rb is a metal atom"
+      ],
+      [
+        "[Ra]",
+        "Ra is a metal atom"
+      ],
+      [
+        "[Tb]",
+        "Tb is a metal atom"
+      ],
+      [
+        "[Hg]",
+        "Hg is a metal atom"
+      ],
+      [
+        "[U]",
+        "U is a metal atom"
+      ],
+      [
+        "[120Sn]",
+        "Sn is a metal atom"
+      ],
+      [
+        "[23Na]",
+        "Na is a metal atom"
+      ],
+      [
+        "[Cn]",
+        "Cn is a metal atom"
+      ],
+      [
+        "[39K]",
+        "K is a metal atom"
+      ],
+      [
+        "[43Ca]",
+        "Ca is a metal atom"
+      ],
+      [
+        "[210Po]",
+        "Po is a metal atom"
+      ],
+      [
+        "[87Rb]",
+        "Rb is a metal atom"
+      ],
+      [
+        "[Np]",
+        "Np is a metal atom"
+      ],
+      [
+        "[95Mo]",
+        "Mo is a metal atom"
+      ],
+      [
+        "[W]",
+        "W is a metal atom"
+      ],
+      [
+        "[Ca]",
+        "Ca is a metal atom"
+      ],
+      [
+        "[Sg]",
+        "Sg is a metal atom"
+      ],
+      [
+        "[Y]",
+        "Y is a metal atom"
+      ],
+      [
+        "[Th]",
+        "Th is a metal atom"
+      ],
+      [
+        "[Na]",
+        "Na is a metal atom"
+      ],
+      [
+        "[93Nb]",
+        "Nb is a metal atom"
+      ],
+      [
+        "[Bi]",
+        "Bi is a metal atom"
+      ],
+      [
+        "[Cd]",
+        "Cd is a metal atom"
+      ],
+      [
+        "[Al]",
+        "Al is a metal atom"
+      ],
+      [
+        "[7Li]",
+        "Li is a metal atom"
+      ],
+      [
+        "[Rg]",
+        "Rg is a metal atom"
+      ],
+      [
+        "[201Po]",
+        "Po is a metal atom"
+      ],
+      [
+        "[202Po]",
+        "Po is a metal atom"
+      ],
+      [
+        "[Zn]",
+        "Zn is a metal atom"
+      ],
+      [
+        "[Cr]",
+        "Cr is a metal atom"
+      ],
+      [
+        "[195Po]",
+        "Po is a metal atom"
+      ],
+      [
+        "[Mg]",
+        "Mg is a metal atom"
+      ],
+      [
+        "[Pb]",
+        "Pb is a metal atom"
+      ],
+      [
+        "[211Po]",
+        "Po is a metal atom"
+      ],
+      [
+        "[No]",
+        "No is a metal atom"
+      ],
+      [
+        "[55Mn]",
+        "Mn is a metal atom"
+      ],
+      [
+        "[193Po]",
+        "Po is a metal atom"
+      ],
+      [
+        "[Zr]",
+        "Zr is a metal atom"
+      ],
+      [
+        "[Mn]",
+        "Mn is a metal atom"
+      ],
+      [
+        "[Os]",
+        "Os is a metal atom"
+      ],
+      [
+        "[135Cs]",
+        "Cs is a metal atom"
+      ],
+      [
+        "[111Cd]",
+        "Cd is a metal atom"
+      ],
+      [
+        "[Li]",
+        "Li is a metal atom"
+      ],
+      [
+        "[45Sc]",
+        "Sc is a metal atom"
+      ],
+      [
+        "[199Po]",
+        "Po is a metal atom"
+      ],
+      [
+        "[85Rb]",
+        "Rb is a metal atom"
+      ],
+      [
+        "[192Po]",
+        "Po is a metal atom"
+      ],
+      [
+        "[Sc]",
+        "Sc is a metal atom"
+      ],
+      [
+        "[Fm]",
+        "Fm is a metal atom"
+      ],
+      [
+        "[Cs]",
+        "Cs is a metal atom"
+      ],
+      [
+        "[Tm]",
+        "Tm is a metal atom"
+      ],
+      [
+        "[Cm]",
+        "Cm is a metal atom"
+      ],
+      [
+        "[218Po]",
+        "Po is a metal atom"
+      ],
+      [
+        "[194Po]",
+        "Po is a metal atom"
+      ],
+      [
+        "[183W]",
+        "W is a metal atom"
+      ],
+      [
+        "[213Po]",
+        "Po is a metal atom"
+      ],
+      [
+        "[Nd]",
+        "Nd is a metal atom"
+      ],
+      [
+        "[La]",
+        "La is a metal atom"
+      ],
+      [
+        "[66Zn]",
+        "Zn is a metal atom"
+      ],
+      [
+        "[190Po]",
+        "Po is a metal atom"
+      ],
+      [
+        "[6Li]",
+        "Li is a metal atom"
+      ],
+      [
+        "[139La]",
+        "La is a metal atom"
+      ],
+      [
+        "[Pd]",
+        "Pd is a metal atom"
+      ],
+      [
+        "[Sn]",
+        "Sn is a metal atom"
+      ],
+      [
+        "[117Sn]",
+        "Sn is a metal atom"
+      ],
+      [
+        "[59Co]",
+        "Co is a metal atom"
+      ],
+      [
+        "[Hs]",
+        "Hs is a metal atom"
+      ],
+      [
+        "[28Al]",
+        "Al is a metal atom"
+      ],
+      [
+        "[Am]",
+        "Am is a metal atom"
+      ],
+      [
+        "[151Eu]",
+        "Eu is a metal atom"
+      ],
+      [
+        "[Er]",
+        "Er is a metal atom"
+      ],
+      [
+        "[203Po]",
+        "Po is a metal atom"
+      ],
+      [
+        "[99Tc]",
+        "Tc is a metal atom"
+      ],
+      [
+        "[Es]",
+        "Es is a metal atom"
+      ],
+      [
+        "[209Po]",
+        "Po is a metal atom"
+      ],
+      [
+        "[Ac]",
+        "Ac is a metal atom"
+      ],
+      [
+        "[212Po]",
+        "Po is a metal atom"
+      ],
+      [
+        "[Md]",
+        "Md is a metal atom"
+      ],
+      [
+        "[Ti]",
+        "Ti is a metal atom"
+      ],
+      [
+        "[Nb]",
+        "Nb is a metal atom"
+      ],
+      [
+        "[Ta]",
+        "Ta is a metal atom"
+      ],
+      [
+        "[Pm]",
+        "Pm is a metal atom"
+      ],
+      [
+        "[197Po]",
+        "Po is a metal atom"
+      ],
+      [
+        "[119Sn]",
+        "Sn is a metal atom"
+      ],
+      [
+        "[Bk]",
+        "Bk is a metal atom"
+      ],
+      [
+        "[207Po]",
+        "Po is a metal atom"
+      ],
+      [
+        "[Db]",
+        "Db is a metal atom"
+      ],
+      [
+        "[200Po]",
+        "Po is a metal atom"
+      ],
+      [
+        "[204Po]",
+        "Po is a metal atom"
+      ],
+      [
+        "[Be]",
+        "Be is a metal atom"
+      ],
+      [
+        "[26Al]",
+        "Al is a metal atom"
+      ],
+      [
+        "[Dy]",
+        "Dy is a metal atom"
+      ],
+      [
+        "[Fe]",
+        "Fe is a metal atom"
+      ],
+      [
+        "[115Sn]",
+        "Sn is a metal atom"
+      ],
+      [
+        "[196Po]",
+        "Po is a metal atom"
+      ],
+      [
+        "[Sr]",
+        "Sr is a metal atom"
+      ],
+      [
+        "[Pt]",
+        "Pt is a metal atom"
+      ],
+      [
+        "[214Po]",
+        "Po is a metal atom"
+      ],
+      [
+        "[216Po]",
+        "Po is a metal atom"
+      ],
+      [
+        "[88Sr]",
+        "Sr is a metal atom"
+      ],
+      [
+        "[Bh]",
+        "Bh is a metal atom"
+      ],
+      [
+        "[215Po]",
+        "Po is a metal atom"
+      ],
+      [
+        "[Ba]",
+        "Ba is a metal atom"
+      ],
+      [
+        "[198Po]",
+        "Po is a metal atom"
+      ]
+    ],
+    "false_positives": [
+      [
+        "[Fl]",
+        "Fl is a metal atom"
+      ]
+    ],
+    "true_negatives": [
+      [
+        "O=C(*)[C@H](N*)[C@@H](C)CC",
+        "Not a single atom"
+      ],
+      [
+        "[10C]",
+        "C is not a metal atom"
+      ],
+      [
+        "O=C1C2=C(O)C3=C(C(C4=C(O)C=5C(O)=C6C(=O)CC[C@@H]([C@]6(C(=O)OC)OC5C=C4C)O)=CC=C3O)O[C@@]2(C(=O)OC)[C@@H](OC(=O)C)[C@H](C1)C",
+        "Not a single atom"
+      ],
+      [
+        "O(N=C(N)N)CCCN",
+        "Not a single atom"
+      ],
+      [
+        "C[C@H]1CN(C(=O)C2=CC=CC=C2C3=CC=CC=C3CO[C@@H]1CN(C)CC4=CC=C(C=C4)F)[C@H](C)CO",
+        "Not a single atom"
+      ],
+      [
+        "[77Se]",
+        "Se is not a metal atom"
+      ],
+      [
+        "O1C(C(O)C(O)C(O)C1OC2=C(OC=3C(C2=O)=C(O)C=C(O)C3)C=4C(C=5C(C6OC=7C(CC6O)=C(O)C=C(O)C7)=CC(O)=C(O)C5O)=C(O)C(O)=C(O)C4)CO",
+        "Not a single atom"
+      ],
+      [
+        "C/C=C\\1/C[N+]2(C)[C@]3(CC=4C5=CC=CC=C5NC4[C@@]2(C[C@@]1(C3C(=O)[O-])[H])[H])[H]",
+        "Invalid SMILES string"
+      ],
+      [
+        "[I]",
+        "I is not a metal atom"
+      ],
+      [
+        "CN1C[C@H](COC[C@H]2[C@H]1CC[C@@H](O2)CC(=O)NC3CCC3)O",
+        "Not a single atom"
+      ],
+      [
+        "[As]",
+        "As is not a metal atom"
+      ],
+      [
+        "OC[C@]1(O)OC[C@H](O)[C@H](O)[C@H]1O",
+        "Not a single atom"
+      ],
+      [
+        "O=C1C(C(=O)N)=CNC(=C1)/C=C/CCCCCCCCC(=O)OC",
+        "Not a single atom"
+      ],
+      [
+        "N[C@@H](CCC(=O)N[C@H]1CSSC[C@H](NC(=O)CC[C@H](N)C(O)=O)C(=O)NCC(=O)NCCCNCCCCCNC(=O)CNC1=O)C(O)=O",
+        "Not a single atom"
+      ],
+      [
+        "O=C1[C@H]([C@H]2C(=CC(C)=C([C@@H]2/C=C(/C=C(\\C=C\\C(=O)O)/C)\\C)CC(=O)C)C[C@H]1C)C",
+        "Not a single atom"
+      ],
+      [
+        "C1(=CNC2=C1C=CC=C2)\\C=C(\\C(=O)O)/N",
+        "Not a single atom"
+      ],
+      [
+        "[10B]",
+        "B is not a metal atom"
+      ],
+      [
+        "C1(C(=O)C(C2=C(O1)C=CC3=C2OC(=O)C=C3)C=NO)(C)C",
+        "Not a single atom"
+      ],
+      [
+        "[129I]",
+        "I is not a metal atom"
+      ]
+    ],
+    "false_negatives": [],
+    "attempt": 0,
+    "success": true,
+    "best": false,
+    "error": "[23:03:16] SMILES Parse Error: syntax error while parsing: C/C=C\u0001/C[N+]2(C)[C@]3(CC=4C5=CC=CC=C5NC4[C@@]2(C[C@@]1(C3C(=O)[O-])[H])[H])[H]\n[23:03:16] SMILES Parse Error: Failed parsing SMILES 'C/C=C\u0001/C[N+]2(C)[C@]3(CC=4C5=CC=CC=C5NC4[C@@]2(C[C@@]1(C3C(=O)[O-])[H])[H])[H]' for input: 'C/C=C\u0001/C[N+]2(C)[C@]3(CC=4C5=CC=CC=C5NC4[C@@]2(C[C@@]1(C3C(=O)[O-])[H])[H])[H]'\n",
+    "stdout": "",
+    "num_true_positives": 137,
+    "num_false_positives": 1,
+    "num_true_negatives": 19,
+    "num_false_negatives": 0,
+    "precision": 0.9927536231884058,
+    "recall": 1.0,
+    "f1": 0.9963636363636363
+  }
+}

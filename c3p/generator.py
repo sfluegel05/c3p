@@ -1,6 +1,7 @@
+import json
 import logging
 import random
-from copy import copy
+from copy import copy, deepcopy
 from pathlib import Path
 from typing import Tuple, Optional
 from typing import List
@@ -15,7 +16,7 @@ test_dir = Path("tmp")
 
 logger = logging.getLogger(__name__)
 
-from c3p.datamodel import ChemicalStructure, Result, ChemicalClass, Config, ResultSet, EvaluationResult
+from c3p.datamodel import ChemicalStructure, Result, ChemicalClass, Config, ResultSet, EvaluationResult, Dataset
 
 example_dir = Path(__file__).parent.parent / "inputs"
 validated_examples = ["benzenoid"]
@@ -86,7 +87,7 @@ def generate_main_prompt(chemical_class: str, definition: str, instances: List[C
 
 
 
-def run_code(code_str: str, function_name: str, args: List[str]) -> List[Tuple[str, bool, str, dict]]:
+def run_code(code_str: str, function_name: str, args: List[str], neg_args: List[str], max_false=100) -> List[Tuple[str, bool, str, dict]]:
     """
     Run the generated code and return the results.
 
@@ -96,23 +97,24 @@ def run_code(code_str: str, function_name: str, args: List[str]) -> List[Tuple[s
     Example:
 
         >>> code = "def is_foo(x): return x == 'foo', 'it is foo'"
-        >>> run_code(code, 'is_foo', ['foo', 'bar'])
+        >>> run_code(code, 'is_foo', ['foo', 'bar'], [])
         [('foo', True, 'it is foo', {}), ('bar', False, 'it is foo', {})]
 
     Args:
         code_str:
         function_name:
         args:
+        neg_args:
 
     Returns:
 
     """
     # suppress rdkit logging
-    log_stream = io.StringIO()
-    handler = logging.StreamHandler(log_stream)
-    tmp_logger = logging.getLogger()
-    tmp_logger.addHandler(handler)
-    tmp_logger.setLevel(logging.FATAL)
+    #log_stream = io.StringIO()
+    #handler = logging.StreamHandler(log_stream)
+    #tmp_logger = logging.getLogger()
+    #tmp_logger.addHandler(handler)
+    #tmp_logger.setLevel(logging.FATAL)
     # suppress at C++ level
     # https://github.com/rdkit/rdkit/issues/2683
     from rdkit import RDLogger
@@ -129,12 +131,26 @@ def run_code(code_str: str, function_name: str, args: List[str]) -> List[Tuple[s
     with redirect_stdout(f), redirect_stderr(f):
         metadata = globals().get('__metadata__', {})
         vals = []
-        for arg in args:
-            func_exec_str = f"{function_name}('{arg}')"
-            r = eval(func_exec_str)
-            vals.append((arg, *r, metadata))
+        num_false_positives = 0
+        num_false_negatives = 0
+        for i, arg in enumerate(args + neg_args):
+            # use json.dumps to make sure that the argument is safely encoded
+            # e.g. SMILES may use backslashes
+            arg_encoded = json.dumps(arg)
+            func_exec_str = f"{function_name}({arg_encoded})"
+            # logger.debug(f"Executing: {func_exec_str}")
+            is_cls, reason = eval(func_exec_str)
+            if is_cls and i >= len(args):
+                num_false_positives += 1
+                if num_false_positives > max_false:
+                    break
+            if not is_cls and i < len(args):
+                num_false_negatives += 1
+                if num_false_negatives > max_false:
+                    break
+            vals.append((arg, is_cls, reason, metadata))
     logger.info(f"Output: {f.getvalue()}")
-    tmp_logger.removeHandler(handler)
+    #tmp_logger.removeHandler(handler)
     return vals
 
 
@@ -195,8 +211,12 @@ def generate_and_test_classifier(
     :param config: setup
     :return: iterator of results
     """
+    logger.info(f"Test: {cls.name} attempt={attempt} err={err} suppress_llm={suppress_llm} prog={prog}")
     if config is None:
         config = Config()
+    cls_lite = deepcopy(cls)
+    cls_lite.instances = []
+    cls_lite.negative_instances = []
     next_attempt = attempt + 1
     if next_attempt > config.max_attempts:
         print(f"FAILED: {cls.name} err={err[0:40]}")
@@ -208,7 +228,8 @@ def generate_and_test_classifier(
     else:
         system_prompt = generate_system_prompt(validated_examples)
         main_prompt = generate_main_prompt(cls.name, cls.definition, cls.instances, err=err, prog=prog)
-        # print(main_prompt)
+        logger.info(f"System Prompt: {system_prompt}")
+        logger.info(f"Main Prompt: {main_prompt}")
         model = get_model(config.llm_model_name)
         if model.needs_key:
             model.key = get_key(None, model.needs_key, model.key_env_var)
@@ -227,7 +248,15 @@ def generate_and_test_classifier(
         # print(code_str)
 
     positive_instances = cls.instances
-    negative_instances = cls.negative_instances[0:config.max_negative]
+    negative_instances = cls.negative_instances
+    if config.max_negative_to_test is not None:
+        random.shuffle(negative_instances)
+        negative_instances = negative_instances[:config.max_negative_to_test]
+    if not positive_instances:
+        raise ValueError(f"No positive instances for {cls.name}")
+    if not negative_instances:
+        raise ValueError(f"No negative instances for {cls.name}")
+    logger.info(f"Testing {cls.name} with {len(positive_instances)} positive instances and {len(negative_instances)} negative instances")
     # negative_instances = []
     smiles_to_cls = {instance.smiles: True for instance in positive_instances}
     # for s in structures.values():
@@ -238,20 +267,26 @@ def generate_and_test_classifier(
     for instance in negative_instances:
         smiles_to_cls[instance.smiles] = False
     try:
+        logger.info(f"Running code {len(code_str)} on {len(positive_instances)} + {len(negative_instances)} instances")
         with capture_output() as (stdout, stderr):
+            #inputs = [instance.smiles for instance in positive_instances + negative_instances]
             results = run_code(code_str, func_name,
-                               [instance.smiles for instance in positive_instances + negative_instances])
+                               [instance.smiles for instance in positive_instances],
+                               [instance.smiles for instance in negative_instances])
     except Exception as e:
+        logger.info(f"Attempt {attempt} failed: {e}")
         # problem executing; we still yield a result, as this
         # may be useful for post-processing all results;
         # we also try again with a new attempt, unless we are suppressing LLM
         yield Result(
-            chemical_class=cls,
+            chemical_class=cls_lite,
             config=config,
             code=code_str,
+            message=err,
             attempt=attempt,
             success=False,
-            error=str(e),
+            error=str(e) + stderr.getvalue(),
+            stdout=stdout.getvalue(),
         )
         msg = "Attempt failed: " + str(e)
         if not suppress_llm:
@@ -262,29 +297,35 @@ def generate_and_test_classifier(
                       not is_cls and not smiles_to_cls[smiles]]
     false_positives = [(smiles, reason) for smiles, is_cls, reason, _ in results if is_cls and not smiles_to_cls[smiles]]
     false_negatives = [(smiles, reason) for smiles, is_cls, reason, _ in results if not is_cls and smiles_to_cls[smiles]]
+    # We avoid placing all negatives in the payload as these can be large
     result = Result(
-        chemical_class=cls,
+        chemical_class=cls_lite,
         config=config,
         code=code_str,
+        message=err,
         true_positives=true_positives,
         false_positives=false_positives,
-        true_negatives=true_negatives,
-        false_negatives=false_negatives,
+        num_true_negatives=len(true_negatives),
+        num_false_negatives=len(false_negatives),
         attempt=attempt,
-        stdout=stdout.getvalue(),
+        #stdout=stdout.getvalue(),
         error=stderr.getvalue(),
         success=True,
     )
     result.calculate()
+    logger.info(f"Attempt {attempt} for {cls.name} F1={result.f1}")
     yield result
     if suppress_llm:
+        logger.info(f"No LLM - only executing")
         return
-    if result.f1 is None or result.f1 < config.accuracy_threshold and not suppress_llm:
+    if result.f1 is None or result.f1 < config.f1_threshold and not suppress_llm:
+        max_examples = config.max_instances_in_prompt
         # try again, feeding in the results of the current attempt
-        msg = f"\nAttempt failed: F1 score of {result.f1} is too low"
-        msg += "\nTrue positives: " + str(true_positives)
-        msg += "\nFalse positives: " + str(false_positives)
-        msg += "\nFalse negatives: " + str(false_negatives)
+        msg = f"\nAttempt failed: F1 score of {result.f1} is too low."
+        msg += "\nTrue positives: " + str(true_positives[:max_examples])
+        msg += "\nFalse positives: " + str(false_positives[:max_examples])
+        msg += "\nFalse negatives: " + str(false_negatives[:max_examples])
+        logger.info(f"Retrying {cls.name} with new prompt")
         yield from generate_and_test_classifier(cls, config=config, attempt=next_attempt, err=msg, prog=code_str)
 
 
@@ -303,17 +344,28 @@ def randomize_and_split_list(l: List, proportion: float) -> Tuple[List, List]:
     n = int(len(l) * proportion)
     return l[:n], l[n:]
 
-def evaluate_for_class(cls: ChemicalClass, config: Config) -> Optional[EvaluationResult]:
+def evaluate_for_class(cls: ChemicalClass, config: Config, dataset: Dataset) -> Optional[EvaluationResult]:
+    """
+    Evaluate a classifier for a single class.
+
+    Args:
+        cls:
+        config:
+
+    Returns:
+
+    """
     pos_train, pos_test = randomize_and_split_list(cls.instances, config.test_proportion)
     if len(pos_test) < 1:
         return
-    neg_train, neg_test = randomize_and_split_list(cls.negative_instances, config.test_proportion)
+    negative_instances = get_negative_examples(dataset, cls)
+    # neg_train, neg_test = randomize_and_split_list(negative_instances, config.test_proportion)
     train_cls = copy(cls)
     train_cls.instances = pos_train
-    train_cls.negative_instances = neg_train
+    train_cls.negative_instances = negative_instances
     test_cls = copy(cls)
     test_cls.instances = pos_test
-    test_cls.negative_instances = neg_test
+    test_cls.negative_instances = negative_instances
     train_result_set = learn_program(train_cls, config)
     if not train_result_set.results:
         return
@@ -325,4 +377,17 @@ def evaluate_for_class(cls: ChemicalClass, config: Config) -> Optional[Evaluatio
     test_result.calculate()
     return EvaluationResult(train_results=train_result_set, test_result=test_result)
 
+def get_negative_examples(dataset: Dataset, cc: ChemicalClass) -> List[ChemicalStructure]:
+    """
+    Get negative examples for a chemical class.
 
+    Args:
+        dataset:
+        cc:
+
+    Returns:
+
+    """
+    negative_examples = set(dataset.structures)
+    negative_examples = negative_examples.difference(cc.instances)
+    return list(negative_examples)

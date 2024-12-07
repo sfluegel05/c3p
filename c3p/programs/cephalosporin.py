@@ -3,55 +3,45 @@ Classifies: CHEBI:23066 cephalosporin
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import Descriptors
-from rdkit.Chem import rdMolDescriptors
-
 
 def is_cephalosporin(smiles: str):
     """
-    Determines if a molecule is a cephalosporin.
-
+    Determines if a molecule is a cephalosporin based on its core structure.
+    
     Args:
         smiles (str): SMILES string of the molecule
-
+        
     Returns:
         bool: True if molecule is a cephalosporin, False otherwise
         str: Reason for classification
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return None, "Invalid SMILES string"
 
-    # Generate the ring information
-    rings = mol.GetRingInfo()
-
-    # Check for a 4-membered beta-lactam ring
-    beta_lactam_ring = None
-    for ring in rings.AtomRings():
-        if len(ring) == 4:
-            atoms = [mol.GetAtomWithIdx(i) for i in ring]
-            if all(atom.GetSymbol() == 'C' or atom.GetSymbol() == 'N' for atom in atoms):
-                beta_lactam_ring = ring
-                break
-
-    if beta_lactam_ring is None:
-        return False, "No 4-membered beta-lactam ring found"
-
-    # Check for a 6-membered side ring attached to the beta-lactam ring
-    side_ring = None
-    for ring in rings.AtomRings():
-        if len(ring) == 6 and any(atom_idx in beta_lactam_ring for atom_idx in ring):
-            side_ring = ring
-            break
-
-    if side_ring is None:
-        return False, "No 6-membered side ring attached to the beta-lactam ring found"
-
-    # Check if the 6-membered side ring contains sulfur
-    if not any(mol.GetAtomWithIdx(atom_idx).GetSymbol() == 'S' for atom_idx in side_ring):
-        return False, "6-membered side ring does not contain sulfur"
-
-    return True, "Molecule is a cephalosporin"
+    # Define cephalosporin core SMARTS pattern
+    # Core structure is a beta-lactam (4-membered ring) fused to a 6-membered thiazine ring
+    ceph_core = Chem.MolFromSmarts('[#6]1[#6][#16][#6][#6]2[#7]1[#6](=O)[#6]2')
+    
+    if mol.HasSubstructMatch(ceph_core):
+        # Check for required carboxylic acid group
+        carboxyl = Chem.MolFromSmarts('C(=O)[OH]')
+        if not mol.HasSubstructMatch(carboxyl):
+            return False, "Missing carboxylic acid group characteristic of cephalosporins"
+            
+        # Check for characteristic beta-lactam carbonyl
+        beta_lactam = Chem.MolFromSmarts('N1C(=O)C2')
+        if not mol.HasSubstructMatch(beta_lactam):
+            return False, "Missing beta-lactam carbonyl group"
+            
+        # Additional validation - check for 6-membered thiazine ring
+        thiazine = Chem.MolFromSmarts('[#6]1[#6][#16][#6][#6][#7]1')
+        if not mol.HasSubstructMatch(thiazine):
+            return False, "Missing characteristic 6-membered thiazine ring"
+            
+        return True, "Contains cephalosporin core structure with required functional groups"
+        
+    return False, "Does not contain cephalosporin core structure"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:23066',
@@ -72,21 +62,26 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:23066',
                                         'immunoglobulin E (IgE)-mediated '
                                         'allergy.',
                           'parents': ['CHEBI:38311']},
-    'config': {   'llm_model_name': 'lbl/gpt-4o',
-                  'accuracy_threshold': 0.95,
+    'config': {   'llm_model_name': 'lbl/claude-sonnet',
+                  'f1_threshold': 0.0,
                   'max_attempts': 5,
-                  'max_negative': 20,
+                  'max_negative_to_test': None,
+                  'max_positive_in_prompt': 50,
+                  'max_negative_in_prompt': 20,
+                  'max_instances_in_prompt': 100,
                   'test_proportion': 0.1},
+    'message': None,
     'attempt': 0,
     'success': True,
     'best': True,
     'error': '',
-    'stdout': '',
-    'num_true_positives': 11,
+    'stdout': None,
+    'num_true_positives': 0,
     'num_false_positives': 0,
-    'num_true_negatives': 11,
-    'num_false_negatives': 0,
-    'precision': 1.0,
-    'recall': 1.0,
-    'f1': 1.0,
-    'accuracy': None}
+    'num_true_negatives': 183825,
+    'num_false_negatives': 11,
+    'num_negatives': None,
+    'precision': 0.0,
+    'recall': 0.0,
+    'f1': 0.0,
+    'accuracy': 0.9999401640592702}

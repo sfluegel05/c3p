@@ -2,54 +2,65 @@
 Classifies: CHEBI:22221 acyl group
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem.MolStandardize import rdMolStandardize
 
 def is_acyl_group(smiles: str):
     """
     Determines if a molecule is an acyl group.
-
+    
     Args:
         smiles (str): SMILES string of the molecule
-
+        
     Returns:
         bool: True if molecule is an acyl group, False otherwise
         str: Reason for classification
     """
+    # Replace * with dummy atom [X] for better handling
+    smiles = smiles.replace('*','[X]') 
+    
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for the presence of a carbonyl group (C=O)
-    carbonyl = False
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 6:  # Carbon
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetAtomicNum() == 8 and mol.GetBondBetweenAtoms(atom.GetIdx(), neighbor.GetIdx()).GetBondTypeAsDouble() == 2.0:
-                    carbonyl = True
-                    break
-        if carbonyl:
-            break
-
-    if not carbonyl:
-        return False, "No carbonyl group (C=O) found"
-
-    # Check for the presence of a carbon atom with a single bond to a hydrogen or heteroatom (excluding oxygen in carbonyl)
-    acyl_bond = False
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 6:  # Carbon
-            if atom.GetTotalNumHs() == 1 or any(neighbor.GetAtomicNum() not in (6, 8) for neighbor in atom.GetNeighbors()):
-                acyl_bond = True
+    # Look for C(=O)[X] pattern where [X] is the attachment point
+    acyl_pattern = Chem.MolFromSmarts('[C](=O)[X]')
+    if not mol.HasSubstructMatch(acyl_pattern):
+        return False, "No acyl group (C(=O)[X]) pattern found"
+        
+    # Get matches
+    matches = mol.GetSubstructMatches(acyl_pattern)
+    
+    # For each match, verify:
+    # 1. The carbon is attached to something else besides O and X
+    # 2. The oxygen has double bond to carbon
+    for match in matches:
+        c_idx = match[0] 
+        o_idx = match[1]
+        x_idx = match[2]
+        
+        c_atom = mol.GetAtomWithIdx(c_idx)
+        o_atom = mol.GetAtomWithIdx(o_idx)
+        
+        # Check carbon has other substituents
+        other_neighbors = False
+        for neighbor in c_atom.GetNeighbors():
+            if neighbor.GetIdx() not in [o_idx, x_idx]:
+                other_neighbors = True
                 break
-
-    if not acyl_bond:
-        return False, "No acyl bond found (carbon with single bond to hydrogen or heteroatom)"
-
-    return True, "Valid acyl group"
-
-# Example usage
-print(is_acyl_group("CCCCCCCCCC\C=C/CCC(-*)=O"))  # (4Z)-hexadecenoyl group
-print(is_acyl_group("C1=CC(=CC=C1)C(*)=O"))  # benzoyl group
-print(is_acyl_group("C(CNC(CCCCCCCCCCCCCCC)=O)(=O)*"))  # N-hexadecanoylglycyl group
-print(is_acyl_group("CC"))  # Invalid example, should return False, "No carbonyl group (C=O) found"
+                
+        if not other_neighbors:
+            continue
+            
+        # Check oxygen has double bond
+        bond = mol.GetBondBetweenAtoms(c_idx, o_idx)
+        if bond.GetBondType() != Chem.rdchem.BondType.DOUBLE:
+            continue
+            
+        # If we get here, we found a valid acyl group
+        return True, "Contains acyl group R-C(=O)-X"
+        
+    return False, "No valid acyl group pattern found"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:22221',
@@ -65,24 +76,26 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:22221',
                                         'from other types of acids such as '
                                         'sulfonic acids or phosphonic acids.',
                           'parents': ['CHEBI:33247']},
-    'config': {   'llm_model_name': 'lbl/gpt-4o',
-                  'accuracy_threshold': 0.95,
+    'config': {   'llm_model_name': 'lbl/claude-sonnet',
+                  'f1_threshold': 0.0,
                   'max_attempts': 5,
-                  'max_negative': 20,
+                  'max_negative_to_test': None,
+                  'max_positive_in_prompt': 50,
+                  'max_negative_in_prompt': 20,
+                  'max_instances_in_prompt': 100,
                   'test_proportion': 0.1},
-    'attempt': 1,
+    'message': None,
+    'attempt': 0,
     'success': True,
     'best': True,
     'error': '',
-    'stdout': "(True, 'Valid acyl group')\n"
-              "(True, 'Valid acyl group')\n"
-              "(True, 'Valid acyl group')\n"
-              "(False, 'No carbonyl group (C=O) found')\n",
-    'num_true_positives': 33,
-    'num_false_positives': 19,
-    'num_true_negatives': 1,
-    'num_false_negatives': 1,
-    'precision': 0.6346153846153846,
-    'recall': 0.9705882352941176,
-    'f1': 0.7674418604651162,
-    'accuracy': None}
+    'stdout': None,
+    'num_true_positives': 0,
+    'num_false_positives': 100,
+    'num_true_negatives': 2826,
+    'num_false_negatives': 34,
+    'num_negatives': None,
+    'precision': 0.0,
+    'recall': 0.0,
+    'f1': 0.0,
+    'accuracy': 0.9547297297297297}

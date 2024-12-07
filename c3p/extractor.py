@@ -1,9 +1,11 @@
 from pathlib import Path
+from typing import Tuple, Iterator
 
 import pandas as pd
 from oaklib.cli import ontology_versions
 from oaklib.datamodels.vocabulary import HAS_DEFINITION_CURIE, RDFS_LABEL, OWL_VERSION_IRI
 from rdflib.plugins.shared.jsonld.keys import VERSION
+from rdkit import Chem
 from semsql.sqla.semsql import Statements, Edge, EntailedEdge
 from sqlalchemy import select, Select, not_
 from sqlalchemy.orm import Session
@@ -13,6 +15,39 @@ from sssom.constants import RDFS_SUBCLASS_OF
 from c3p.datamodel import ChemicalStructure, ChemicalClass, Dataset
 
 SMILES = "obo:chebi/smiles"
+
+import re
+
+
+def sanitize_smiles(smiles_string):
+    """
+    Sanitizes a SMILES string by:
+    1. Removing whitespace
+    2. Removing invalid characters
+    3. Preserving valid SMILES characters including brackets, numbers, and symbols
+
+    Args:
+        smiles_string (str): Input SMILES string
+
+    Returns:
+        str: Sanitized SMILES string
+    """
+    # Remove whitespace
+    smiles = smiles_string.strip()
+
+    # Define valid SMILES characters
+    # Includes:
+    # - Atomic symbols (B, C, N, O, P, S, F, Cl, Br, I, etc.)
+    # - Numbers and % for ring closures
+    # - Special characters ([, ], (, ), =, #, /, \, @, +, -, ., *)
+    # - Colons for aromatic bonds
+    # - Commas for atom lists in brackets
+    pattern = r'[^A-Za-z0-9\[\]\(\)=#/\\@+\-\.\*%:,]'
+
+    # Remove invalid characters
+    sanitized = re.sub(pattern, '', smiles)
+
+    return sanitized
 
 def eav_to_df(eav_df: pd.DataFrame, value_column='value') -> pd.DataFrame:
     """
@@ -110,9 +145,13 @@ def get_ontology_version(session: Session):
     if len(versions) != 1:
         raise ValueError(f"Expected one version, got {len(versions)}")
     v = versions[0][0]
-    return v.split("/")[-2]
+    # include ontology
+    ont = "chebi"
+    if "chemessence" in v:
+        ont = "chemessence"
+    return ont + v.split("/")[-2]
 
-def create_benchmark(df: pd.DataFrame, session: Session, min_members=2, max_members=5000) -> Dataset:
+def create_benchmark(df: pd.DataFrame, session: Session, min_members=50, max_members=5000) -> Dataset:
     v = get_ontology_version(session)
     structure_df = df[df[SMILES].notnull()]
     defined_df = df[df[HAS_DEFINITION_CURIE].notnull()]
@@ -130,7 +169,11 @@ def create_benchmark(df: pd.DataFrame, session: Session, min_members=2, max_memb
         cc_map[cc.id] = cc
     s_map = {}
     for _, row in structure_df.iterrows():
-        structure = ChemicalStructure(name=row[RDFS_LABEL], smiles=row[SMILES])
+        smiles_str = row[SMILES]
+        #smiles_str_sanitized = sanitize_smiles(smiles_str)
+        #if smiles_str_sanitized != smiles_str:
+        #    raise ValueError(f"Invalid SMILES string: {smiles_str} != {smiles_str_sanitized}")
+        structure = ChemicalStructure(name=row[RDFS_LABEL], smiles=smiles_str)
         s_map[row[SMILES]] = structure
         for a in row["entailed_subclass_of"]:
             if a == row["subject"]:
@@ -141,25 +184,50 @@ def create_benchmark(df: pd.DataFrame, session: Session, min_members=2, max_memb
                 if len(cc.instances) > max_members:
                     del cc_map[a]
     ccs = [v for v in cc_map.values() if len(v.instances) >= min_members]
-    for cc in ccs:
-        negative_smiles = []
-        positive_smiles = [s.smiles for s in cc.instances]
-        num_positive = len(positive_smiles)
-        negative_candidates = list(set(s_map.keys()).difference(positive_smiles))
-        parents = cc.parents
-        for p in parents:
-            if p in cc_map:
-                for i in cc_map[p].instances:
-                    s = i.smiles
-                    if s not in positive_smiles:
-                        negative_smiles.append(s)
-        negative_smiles = negative_smiles[:num_positive]
-        if len(negative_smiles) < num_positive:
-            import random
-            random.shuffle(negative_candidates)
-            negative_smiles.extend(negative_candidates[:num_positive - len(negative_smiles)])
-        cc.negative_instances = [s_map[s] for s in negative_smiles]
-    return Dataset(ontology_version=v, min_members=min_members, max_members=max_members, classes=ccs)
+    if False:
+        # TODO: calculate negatives later as we want to include all
+        for cc in ccs:
+            negative_smiles = []
+            positive_smiles = [s.smiles for s in cc.instances]
+            num_positive = len(positive_smiles)
+            negative_candidates = list(set(s_map.keys()).difference(positive_smiles))
+            parents = cc.parents
+            for p in parents:
+                if p in cc_map:
+                    for i in cc_map[p].instances:
+                        s = i.smiles
+                        if s not in positive_smiles:
+                            negative_smiles.append(s)
+            negative_smiles = negative_smiles[:num_positive]
+            if len(negative_smiles) < num_positive:
+                import random
+                random.shuffle(negative_candidates)
+                negative_smiles.extend(negative_candidates[:num_positive - len(negative_smiles)])
+            cc.negative_instances = [s_map[s] for s in negative_smiles]
+    return Dataset(
+        ontology_version=v,
+        min_members=min_members,
+        max_members=max_members,
+        classes=ccs,
+        structures=list(s_map.values()),
+    )
+
+def validate_dataset(dataset: Dataset) -> Iterator[Tuple[ChemicalStructure, str]]:
+    """
+    Validate a dataset
+
+    Args:
+        dataset:
+
+    Returns:
+
+    """
+    for s in dataset.structures:
+        smiles_str = s.smiles
+        smiles_str_sanitized = sanitize_smiles(smiles_str)
+        if smiles_str_sanitized != smiles_str:
+            yield s, smiles_str_sanitized
+        _mol = Chem.MolFromSmiles(smiles_str)
 
 def create_and_save_benchmark(*args, **kwargs) -> Dataset:
     benchmark = create_benchmark(*args, **kwargs)

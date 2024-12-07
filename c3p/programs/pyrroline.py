@@ -2,54 +2,57 @@
 Classifies: CHEBI:23763 pyrroline
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_pyrroline(smiles: str):
     """
-    Determines if a molecule is a pyrroline (dihydropyrrole).
-
+    Determines if a molecule contains a pyrroline (dihydropyrrole) structure.
+    
     Args:
         smiles (str): SMILES string of the molecule
-
+        
     Returns:
-        bool: True if molecule is a pyrroline, False otherwise
+        bool: True if molecule contains pyrroline, False otherwise
         str: Reason for classification
     """
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
-
-    # Generate the ring information
+        return None, "Invalid SMILES string"
+        
+    # Get ring info
     rings = mol.GetRingInfo()
-
-    # Check for at least one 5-membered ring
-    if not any(len(ring) == 5 for ring in rings.AtomRings()):
-        return False, "No 5-membered rings found"
-
-    # Find all 5-membered rings containing nitrogen
-    pyrroline_rings = []
+    
+    # Look for 5-membered rings
+    five_rings = []
     for ring in rings.AtomRings():
         if len(ring) == 5:
-            atoms = [mol.GetAtomWithIdx(i) for i in ring]
-            if any(atom.GetSymbol() == 'N' for atom in atoms):
-                pyrroline_rings.append(ring)
-
-    if not pyrroline_rings:
-        return False, "No 5-membered rings containing nitrogen found"
-
-    # Check if the ring is partially saturated (dihydropyrrole)
-    for ring in pyrroline_rings:
-        atoms = [mol.GetAtomWithIdx(i) for i in ring]
-        double_bonds = sum(1 for bond in mol.GetBonds() if bond.GetBeginAtomIdx() in ring and bond.GetEndAtomIdx() in ring and bond.GetBondType() == Chem.BondType.DOUBLE)
-        single_bonds = sum(1 for bond in mol.GetBonds() if bond.GetBeginAtomIdx() in ring and bond.GetEndAtomIdx() in ring and bond.GetBondType() == Chem.BondType.SINGLE)
-        if double_bonds == 1 and single_bonds == 4:
-            return True, "Dihydropyrrole ring found"
-        elif double_bonds == 2 and single_bonds == 3:
-            return True, "Dihydropyrrole ring found"
-        # Additional check for partially saturated rings
-        elif double_bonds == 0 and single_bonds == 5:
-            return True, "Dihydropyrrole ring found"
-
-    return False, "No dihydropyrrole ring found"
+            five_rings.append(ring)
+            
+    if not five_rings:
+        return False, "No 5-membered rings found"
+        
+    # Check each 5-membered ring for pyrroline pattern
+    for ring in five_rings:
+        ring_atoms = [mol.GetAtomWithIdx(i) for i in ring]
+        
+        # Need exactly one nitrogen in ring
+        nitrogens = [a for a in ring_atoms if a.GetSymbol() == 'N']
+        if len(nitrogens) != 1:
+            continue
+            
+        # Count double bonds in ring
+        double_bonds = 0
+        for bond in mol.GetBonds():
+            if bond.GetBeginAtomIdx() in ring and bond.GetEndAtomIdx() in ring:
+                if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                    double_bonds += 1
+                    
+        # Pyrroline should have exactly one double bond
+        if double_bonds == 1:
+            return True, "Contains pyrroline (5-membered ring with 1 N and 1 double bond)"
+            
+    return False, "No pyrroline pattern found"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:23763',
@@ -58,25 +61,26 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:23763',
                                         'with a structure based on a '
                                         'dihydropyrrole.',
                           'parents': ['CHEBI:25693', 'CHEBI:38101']},
-    'config': {   'llm_model_name': 'lbl/gpt-4o',
-                  'accuracy_threshold': 0.95,
+    'config': {   'llm_model_name': 'lbl/claude-sonnet',
+                  'f1_threshold': 0.0,
                   'max_attempts': 5,
-                  'max_negative': 20,
+                  'max_negative_to_test': None,
+                  'max_positive_in_prompt': 50,
+                  'max_negative_in_prompt': 20,
+                  'max_instances_in_prompt': 100,
                   'test_proportion': 0.1},
-    'attempt': 3,
+    'message': None,
+    'attempt': 0,
     'success': True,
     'best': True,
-    'error': '[20:21:08] SMILES Parse Error: syntax error while parsing: '
-             'CC1=CC=C(/C=C\x02/CCN=C2)O1\n'
-             '[20:21:08] SMILES Parse Error: Failed parsing SMILES '
-             "'CC1=CC=C(/C=C\x02/CCN=C2)O1' for input: "
-             "'CC1=CC=C(/C=C\x02/CCN=C2)O1'\n",
-    'stdout': '',
-    'num_true_positives': 11,
-    'num_false_positives': 1,
-    'num_true_negatives': 11,
-    'num_false_negatives': 1,
-    'precision': 0.9166666666666666,
-    'recall': 0.9166666666666666,
-    'f1': 0.9166666666666666,
-    'accuracy': None}
+    'error': '',
+    'stdout': None,
+    'num_true_positives': 6,
+    'num_false_positives': 100,
+    'num_true_negatives': 9840,
+    'num_false_negatives': 6,
+    'num_negatives': None,
+    'precision': 0.05660377358490566,
+    'recall': 0.5,
+    'f1': 0.1016949152542373,
+    'accuracy': 0.9893488745980707}

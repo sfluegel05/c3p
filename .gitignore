@@ -1,5 +1,7 @@
 *.sqlite
-./latest/
+eval-latest
+latest
+results
 db/
 *.db
 .idea

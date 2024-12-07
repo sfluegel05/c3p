@@ -5,10 +5,19 @@ from typing import List, Optional, Tuple
 SMILES_STRING = str
 
 
+# make this hashable?
 class ChemicalStructure(BaseModel):
     """Represents a chemical entity with a known specific structure/formula."""
     name: str = Field(..., description="rdfs:label of the structure in CHEBI")
     smiles: SMILES_STRING = Field(..., description="SMILES string derived from CHEBI")
+
+    def __hash__(self):
+        return hash(self.smiles)
+
+    def __eq__(self, other):
+        if not isinstance(other, ChemicalStructure):
+            return NotImplemented
+        return self.smiles == other.smiles
 
 
 class ChemicalClass(BaseModel):
@@ -29,6 +38,7 @@ class Dataset(BaseModel):
     min_members: Optional[int] = None
     max_members: Optional[int] = None
     classes: List[ChemicalClass]
+    structures: List[ChemicalStructure] = None
 
     @property
     def name(self):
@@ -40,9 +50,12 @@ from typing import Optional
 class Config(BaseModel):
     """Experimental setup"""
     llm_model_name: str = "gpt-4o"
-    accuracy_threshold: float = 0.5
-    max_attempts: int = 3
-    max_negative: int = 20
+    f1_threshold: float = 0.8
+    max_attempts: int = 4
+    max_negative_to_test: Optional[int] = None
+    max_positive_in_prompt: int = 50
+    max_negative_in_prompt: int = 20
+    max_instances_in_prompt: Optional[int] = 100
     test_proportion: float = 0.2
 
 
@@ -54,6 +67,7 @@ class Result(BaseModel):
     chemical_class: ChemicalClass
     config: Optional[Config] = None
     code: str
+    message: Optional[str] = None
     true_positives: Optional[List[OUTCOME]] = None
     false_positives: Optional[List[OUTCOME]] = None
     true_negatives: Optional[List[OUTCOME]] = None
@@ -68,6 +82,7 @@ class Result(BaseModel):
     num_false_positives: Optional[int] = None
     num_true_negatives: Optional[int] = None
     num_false_negatives: Optional[int] = None
+    num_negatives: Optional[int] = None
 
     precision: Optional[float] = None
     recall: Optional[float] = None
@@ -78,8 +93,10 @@ class Result(BaseModel):
         """Calculate derived statistics"""
         self.num_true_positives = len(self.true_positives or [])
         self.num_false_positives = len(self.false_positives or [])
-        self.num_true_negatives = len(self.true_negatives or [])
-        self.num_false_negatives = len(self.false_negatives or [])
+        if self.num_true_negatives is None:
+            self.num_true_negatives = len(self.true_negatives or [])
+        if self.num_false_negatives is None:
+            self.num_false_negatives = len(self.false_negatives or [])
         if self.num_true_positives + self.num_false_positives:
             self.precision = self.num_true_positives / (self.num_true_positives + self.num_false_positives)
         else:

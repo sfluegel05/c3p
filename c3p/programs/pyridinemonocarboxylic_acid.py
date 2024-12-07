@@ -2,63 +2,80 @@
 Classifies: CHEBI:26420 pyridinemonocarboxylic acid
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_pyridinemonocarboxylic_acid(smiles: str):
     """
-    Determines if a molecule is a pyridinemonocarboxylic acid (a monocarboxylic acid in which the carboxy group is attached to a pyridine or substituted pyridine ring).
-
+    Determines if a molecule is a pyridine monocarboxylic acid.
+    
     Args:
         smiles (str): SMILES string of the molecule
-
+        
     Returns:
-        bool: True if molecule is a pyridinemonocarboxylic acid, False otherwise
+        bool: True if molecule is a pyridine monocarboxylic acid, False otherwise
         str: Reason for classification
     """
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return None, "Invalid SMILES string"
 
-    # Generate the aromatic ring information
-    rings = mol.GetRingInfo()
-
-    # Check for at least one 6-membered ring
-    if not any(len(ring) == 6 for ring in rings.AtomRings()):
-        return False, "No 6-membered rings found"
-
-    # Find all pyridine rings (aromatic 6-membered rings with one nitrogen)
+    # Find pyridine rings
     pyridine_rings = []
-    for ring in rings.AtomRings():
+    ring_info = mol.GetRingInfo()
+    
+    for ring in ring_info.AtomRings():
         if len(ring) == 6:
             atoms = [mol.GetAtomWithIdx(i) for i in ring]
-            if sum(1 for atom in atoms if atom.GetSymbol() == 'N') == 1 and all(atom.GetIsAromatic() for atom in atoms):
+            # Check if ring is aromatic and contains exactly one nitrogen
+            if (all(atom.GetIsAromatic() for atom in atoms) and
+                sum(1 for atom in atoms if atom.GetSymbol() == 'N') == 1):
                 pyridine_rings.append(ring)
-
+                
     if not pyridine_rings:
-        return False, "No pyridine rings found"
+        return False, "No pyridine ring found"
 
-    # Check for carboxylic acid group attached to the pyridine ring
-    carboxylic_acid_found = False
-    for ring in pyridine_rings:
-        ring_atoms = set(ring)
-        for atom_idx in ring_atoms:
-            atom = mol.GetAtomWithIdx(atom_idx)
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetSymbol() == 'C':
-                    # Check if the carbon has two oxygen neighbors (one double-bonded and one single-bonded)
-                    oxygen_neighbors = [n for n in neighbor.GetNeighbors() if n.GetSymbol() == 'O']
-                    if len(oxygen_neighbors) == 2:
-                        if any(bond.GetBondTypeAsDouble() == 2 for bond in neighbor.GetBonds() if bond.GetOtherAtom(neighbor).GetSymbol() == 'O'):
-                            carboxylic_acid_found = True
-                            break
-            if carboxylic_acid_found:
-                break
-        if carboxylic_acid_found:
+    # Find carboxylic acid groups (-C(=O)OH)
+    carboxyl_pattern = Chem.MolFromSmarts('[CX3](=O)[OX2H1]')
+    carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
+    
+    if not carboxyl_matches:
+        return False, "No carboxylic acid group found"
+        
+    if len(carboxyl_matches) > 1:
+        return False, "More than one carboxylic acid group found"
+
+    # Check if carboxylic acid is attached to pyridine ring
+    carboxyl_carbon = carboxyl_matches[0][0]
+    carboxyl_atom = mol.GetAtomWithIdx(carboxyl_carbon)
+    
+    for pyridine_ring in pyridine_rings:
+        ring_atoms = set(pyridine_ring)
+        # Check neighbors of carboxyl carbon
+        for neighbor in carboxyl_atom.GetNeighbors():
+            if neighbor.GetIdx() in ring_atoms:
+                position = get_pyridine_position(mol, pyridine_ring, neighbor.GetIdx())
+                return True, f"Pyridine-{position}-carboxylic acid"
+                
+    return False, "Carboxylic acid group not directly attached to pyridine ring"
+
+def get_pyridine_position(mol, ring_atoms, carbon_idx):
+    """Helper function to determine position of substituent on pyridine ring"""
+    # Find nitrogen atom in ring
+    n_idx = None
+    for idx in ring_atoms:
+        if mol.GetAtomWithIdx(idx).GetSymbol() == 'N':
+            n_idx = idx
             break
-
-    if carboxylic_acid_found:
-        return True, "Pyridinemonocarboxylic acid found"
+            
+    # Get path around ring from N to substituted C
+    path = Chem.GetShortestPath(mol, n_idx, carbon_idx)
+    if len(path) == 1:
+        return "2"  # Ortho
+    elif len(path) == 2:
+        return "3"  # Meta  
     else:
-        return False, "No carboxylic acid group attached to pyridine ring found"
+        return "4"  # Para
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:26420',
@@ -70,21 +87,26 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:26420',
                           'parents': [   'CHEBI:25384',
                                          'CHEBI:26421',
                                          'CHEBI:33859']},
-    'config': {   'llm_model_name': 'lbl/gpt-4o',
-                  'accuracy_threshold': 0.95,
+    'config': {   'llm_model_name': 'lbl/claude-sonnet',
+                  'f1_threshold': 0.0,
                   'max_attempts': 5,
-                  'max_negative': 20,
+                  'max_negative_to_test': None,
+                  'max_positive_in_prompt': 50,
+                  'max_negative_in_prompt': 20,
+                  'max_instances_in_prompt': 100,
                   'test_proportion': 0.1},
-    'attempt': 1,
+    'message': None,
+    'attempt': 0,
     'success': True,
     'best': True,
     'error': '',
-    'stdout': '',
-    'num_true_positives': 7,
-    'num_false_positives': 0,
-    'num_true_negatives': 10,
-    'num_false_negatives': 3,
-    'precision': 1.0,
-    'recall': 0.7,
-    'f1': 0.8235294117647058,
-    'accuracy': None}
+    'stdout': None,
+    'num_true_positives': 3,
+    'num_false_positives': 100,
+    'num_true_negatives': 67113,
+    'num_false_negatives': 7,
+    'num_negatives': None,
+    'precision': 0.02912621359223301,
+    'recall': 0.3,
+    'f1': 0.05309734513274337,
+    'accuracy': 0.9984082828793717}

@@ -8,37 +8,38 @@ from rdkit.Chem import rdMolDescriptors
 
 def is_methoxyflavone(smiles: str):
     """
-    Determines if a molecule is a methoxyflavone (a flavone with at least one methoxy substituent).
-
+    Determines if a molecule is a methoxyflavone (flavone with at least one methoxy substituent).
+    
     Args:
         smiles (str): SMILES string of the molecule
-
+        
     Returns:
         bool: True if molecule is a methoxyflavone, False otherwise
         str: Reason for classification
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return None, "Invalid SMILES string"
 
-    # Get the flavone core (2-phenylchromen-4-one)
-    flavone_smarts = "O=C1C=CC(=O)C2=C1C=CC=C2"
-    flavone_core = Chem.MolFromSmarts(flavone_smarts)
-    
-    if not mol.HasSubstructMatch(flavone_core):
-        return False, "No flavone core found"
+    # Check for flavone core structure
+    flavone_pattern = Chem.MolFromSmarts('[#6]1(=O)c2c(O[#6]1[#6]1=cc=cc=c1)cc([#6,#8,#1])cc2')
+    if not mol.HasSubstructMatch(flavone_pattern):
+        return False, "No flavone core structure found"
 
-    # Check for methoxy groups (OCH3)
-    methoxy_smarts = "CO"
-    methoxy_group = Chem.MolFromSmarts(methoxy_smarts)
-    
-    if not mol.HasSubstructMatch(methoxy_group):
-        return False, "No methoxy group found"
+    # Check for methoxy group
+    methoxy_pattern = Chem.MolFromSmarts('CO')
+    if not mol.HasSubstructMatch(methoxy_pattern):
+        return False, "No methoxy substituent found"
 
-    return True, "Methoxyflavone found"
+    # Count number of methoxy groups
+    methoxy_matches = len(mol.GetSubstructMatches(methoxy_pattern))
 
-# Example usage:
-# print(is_methoxyflavone("COc1cc(cc(O)c1O)-c1oc2cc(O)cc(O)c2c(=O)c1O[C@@H]1O[C@@H](C)[C@H](O)[C@@H](O)[C@H]1O"))
+    # Verify methoxy groups are attached to aromatic rings
+    methoxy_aromatic = Chem.MolFromSmarts('COc1ccccc1')
+    if not mol.HasSubstructMatch(methoxy_aromatic):
+        return False, "Methoxy groups not attached to aromatic ring"
+
+    return True, f"Methoxyflavone with {methoxy_matches} methoxy group(s)"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:25241',
@@ -47,21 +48,26 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:25241',
                                         'with at least one methoxy '
                                         'substituent.',
                           'parents': ['CHEBI:24043', 'CHEBI:25698']},
-    'config': {   'llm_model_name': 'lbl/gpt-4o',
-                  'accuracy_threshold': 0.95,
+    'config': {   'llm_model_name': 'lbl/claude-sonnet',
+                  'f1_threshold': 0.0,
                   'max_attempts': 5,
-                  'max_negative': 20,
+                  'max_negative_to_test': None,
+                  'max_positive_in_prompt': 50,
+                  'max_negative_in_prompt': 20,
+                  'max_instances_in_prompt': 100,
                   'test_proportion': 0.1},
+    'message': None,
     'attempt': 0,
     'success': True,
     'best': True,
     'error': '',
-    'stdout': '',
+    'stdout': None,
     'num_true_positives': 0,
     'num_false_positives': 0,
-    'num_true_negatives': 19,
+    'num_true_negatives': 183739,
     'num_false_negatives': 19,
+    'num_negatives': None,
     'precision': 0.0,
     'recall': 0.0,
-    'f1': 0.0,
-    'accuracy': None}
+    'f1': 0,
+    'accuracy': 0.9998966031410877}

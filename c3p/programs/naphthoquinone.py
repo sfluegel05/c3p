@@ -2,49 +2,57 @@
 Classifies: CHEBI:25481 naphthoquinone
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdDecomposition
 
 def is_naphthoquinone(smiles: str):
     """
-    Determines if a molecule is a naphthoquinone (a polycyclic aromatic ketone metabolite of naphthalene).
-
+    Determines if a molecule is a naphthoquinone.
+    
     Args:
         smiles (str): SMILES string of the molecule
-
+        
     Returns:
         bool: True if molecule is a naphthoquinone, False otherwise
         str: Reason for classification
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return None, "Invalid SMILES string"
 
-    # Generate the aromatic ring information
-    rings = mol.GetRingInfo()
+    # Check for naphthalene core
+    naphthalene_pattern = Chem.MolFromSmarts('c1ccc2ccccc2c1')
+    if not mol.HasSubstructMatch(naphthalene_pattern):
+        return False, "No naphthalene core found"
+    
+    # Check for two ketone groups
+    ketone_pattern = Chem.MolFromSmarts('C(=O)')
+    ketone_matches = mol.GetSubstructMatches(ketone_pattern)
+    if len(ketone_matches) < 2:
+        return False, "Less than 2 ketone groups found"
 
-    # Check for at least two 6-membered rings
-    six_membered_rings = [ring for ring in rings.AtomRings() if len(ring) == 6]
-    if len(six_membered_rings) < 2:
-        return False, "Less than two 6-membered rings found"
+    # Check specifically for 1,4-naphthoquinone pattern
+    naphthoquinone_pattern = Chem.MolFromSmarts('O=C1C=CC(=O)c2ccccc21')
+    naphthoquinone_pattern2 = Chem.MolFromSmarts('O=C1C(=O)c2ccccc2C=C1')
+    
+    if not (mol.HasSubstructMatch(naphthoquinone_pattern) or mol.HasSubstructMatch(naphthoquinone_pattern2)):
+        # Check for other naphthoquinone patterns with substituents
+        nq_pattern3 = Chem.MolFromSmarts('O=C1C(*)C(*)C(=O)c2ccccc21')
+        nq_pattern4 = Chem.MolFromSmarts('O=C1C(*)=C(*)C(=O)c2ccccc21')
+        if not (mol.HasSubstructMatch(nq_pattern3) or mol.HasSubstructMatch(nq_pattern4)):
+            return False, "No naphthoquinone core structure found"
 
-    # Check if the molecule contains ketone groups (C=O)
-    ketone_groups = [atom for atom in mol.GetAtoms() if atom.GetSymbol() == 'C' and atom.GetTotalDegree() == 3 and any(nb.GetSymbol() == 'O' and nb.GetTotalDegree() == 1 for nb in atom.GetNeighbors())]
-    if len(ketone_groups) < 2:
-        return False, "Less than two ketone groups found"
+    # Get number of substituents
+    substituents = []
+    core_atoms = set()
+    for match in mol.GetSubstructMatches(naphthalene_pattern):
+        core_atoms.update(match)
+    
+    for atom in mol.GetAtoms():
+        if atom.GetIdx() not in core_atoms and atom.GetSymbol() != 'H':
+            substituents.append(atom.GetSymbol())
 
-    # Check for naphthalene core structure
-    naphthalene_core = False
-    for ring1 in six_membered_rings:
-        for ring2 in six_membered_rings:
-            if ring1 != ring2 and any(atom in ring1 for atom in ring2):
-                naphthalene_core = True
-                break
-        if naphthalene_core:
-            break
-
-    if not naphthalene_core:
-        return False, "No naphthalene core structure found"
-
-    return True, "Naphthoquinone structure found"
+    return True, f"Naphthoquinone with {len(set(substituents))} types of substituents"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:25481',
@@ -52,21 +60,27 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:25481',
                           'definition': 'A polycyclic aromatic ketone '
                                         'metabolite of naphthalene.',
                           'parents': ['CHEBI:36141']},
-    'config': {   'llm_model_name': 'lbl/gpt-4o',
-                  'accuracy_threshold': 0.95,
+    'config': {   'llm_model_name': 'lbl/claude-sonnet',
+                  'f1_threshold': 0.0,
                   'max_attempts': 5,
-                  'max_negative': 20,
+                  'max_negative_to_test': None,
+                  'max_positive_in_prompt': 50,
+                  'max_negative_in_prompt': 20,
+                  'max_instances_in_prompt': 100,
                   'test_proportion': 0.1},
-    'attempt': 1,
-    'success': True,
+    'message': None,
+    'attempt': 0,
+    'success': False,
     'best': True,
-    'error': '',
+    'error': "cannot import name 'rdDecomposition' from 'rdkit.Chem' "
+             '(/Users/cjm/Library/Caches/pypoetry/virtualenvs/c3p-93U7KWO_-py3.11/lib/python3.11/site-packages/rdkit/Chem/__init__.py)',
     'stdout': '',
-    'num_true_positives': 25,
-    'num_false_positives': 18,
-    'num_true_negatives': 2,
+    'num_true_positives': 0,
+    'num_false_positives': 0,
+    'num_true_negatives': 0,
     'num_false_negatives': 0,
-    'precision': 0.5813953488372093,
-    'recall': 1.0,
-    'f1': 0.7352941176470588,
+    'num_negatives': None,
+    'precision': 0.0,
+    'recall': 0,
+    'f1': 0,
     'accuracy': None}

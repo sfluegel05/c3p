@@ -2,43 +2,60 @@
 Classifies: CHEBI:22478 amino alcohol
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
-
+from rdkit.Chem import AllChem
+from rdkit.Chem.MolStandardize import rdMolStandardize
 
 def is_amino_alcohol(smiles: str):
     """
-    Determines if a molecule is an amino alcohol (an alcohol containing an amino functional group).
-
+    Determines if a molecule is an amino alcohol (contains both amino and hydroxyl groups).
+    
     Args:
         smiles (str): SMILES string of the molecule
-
+        
     Returns:
         bool: True if molecule is an amino alcohol, False otherwise
         str: Reason for classification
     """
+    # Convert SMILES to molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for the presence of at least one hydroxyl group (OH)
-    hydroxyl_groups = [atom for atom in mol.GetAtoms() if atom.GetSymbol() == 'O' and any(neigh.GetSymbol() == 'C' for neigh in atom.GetNeighbors())]
-    if not hydroxyl_groups:
-        return False, "No hydroxyl groups found"
+    # Standardize the molecule (uncharge, neutralize, etc)
+    uncharger = rdMolStandardize.Uncharger()
+    mol = uncharger.uncharge(mol)
 
-    # Check for the presence of at least one amino group (NH2, NH, or N)
-    amino_groups = [atom for atom in mol.GetAtoms() if atom.GetSymbol() == 'N']
+    # Find alcohol (hydroxyl) groups
+    alcohol_pattern = Chem.MolFromSmarts("[#6][OX2H]")
+    alcohols = mol.GetSubstructMatches(alcohol_pattern)
+    
+    # Find primary and secondary amino groups
+    amino_patterns = [
+        Chem.MolFromSmarts("[NX3;H2][CX4]"), # Primary amine
+        Chem.MolFromSmarts("[NX3;H1]([CX4])[CX4]"), # Secondary amine
+        Chem.MolFromSmarts("[NX3]([CX4])([CX4])[CX4]"), # Tertiary amine
+        Chem.MolFromSmarts("[NX3]"), # Any amine
+    ]
+    
+    amino_groups = []
+    for pattern in amino_patterns:
+        matches = mol.GetSubstructMatches(pattern)
+        amino_groups.extend(matches)
+    
+    # Remove duplicates
+    amino_groups = list(set(amino_groups))
+    
+    if not alcohols:
+        return False, "No alcohol groups found"
+        
     if not amino_groups:
         return False, "No amino groups found"
-
-    # Ensure there is a carbon atom bonded to both a hydroxyl and an amino group
-    for hydroxyl in hydroxyl_groups:
-        for neighbor in hydroxyl.GetNeighbors():
-            if neighbor.GetSymbol() == 'C':
-                for neigh in neighbor.GetNeighbors():
-                    if neigh.GetSymbol() == 'N':
-                        return True, "Molecule is an amino alcohol"
+        
+    # Count the functional groups
+    n_alcohols = len(alcohols)
+    n_amines = len(amino_groups)
     
-    return False, "No carbon found bonded to both hydroxyl and amino groups"
+    return True, f"Found {n_alcohols} alcohol group(s) and {n_amines} amino group(s)"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:22478',
@@ -47,21 +64,26 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:22478',
                                         'functional group in addition to the '
                                         'alcohol-defining hydroxy group.',
                           'parents': ['CHEBI:30879', 'CHEBI:50047']},
-    'config': {   'llm_model_name': 'lbl/gpt-4o',
-                  'accuracy_threshold': 0.95,
+    'config': {   'llm_model_name': 'lbl/claude-sonnet',
+                  'f1_threshold': 0.0,
                   'max_attempts': 5,
-                  'max_negative': 20,
+                  'max_negative_to_test': None,
+                  'max_positive_in_prompt': 50,
+                  'max_negative_in_prompt': 20,
+                  'max_instances_in_prompt': 100,
                   'test_proportion': 0.1},
-    'attempt': 1,
+    'message': None,
+    'attempt': 0,
     'success': True,
     'best': True,
     'error': '',
-    'stdout': '',
-    'num_true_positives': 12,
-    'num_false_positives': 2,
-    'num_true_negatives': 18,
-    'num_false_negatives': 21,
-    'precision': 0.8571428571428571,
-    'recall': 0.36363636363636365,
-    'f1': 0.5106382978723404,
-    'accuracy': None}
+    'stdout': None,
+    'num_true_positives': 33,
+    'num_false_positives': 100,
+    'num_true_negatives': 137,
+    'num_false_negatives': 0,
+    'num_negatives': None,
+    'precision': 0.24812030075187969,
+    'recall': 1.0,
+    'f1': 0.3975903614457831,
+    'accuracy': 0.6296296296296297}

@@ -2,39 +2,49 @@
 Classifies: CHEBI:140325 secondary carboxamide
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_secondary_carboxamide(smiles: str):
     """
-    Determines if a molecule is a secondary carboxamide.
-
+    Determines if a molecule contains a secondary carboxamide group (RC(=O)NHR(1)).
+    
     Args:
         smiles (str): SMILES string of the molecule
-
+    
     Returns:
-        bool: True if molecule is a secondary carboxamide, False otherwise
+        bool: True if molecule contains secondary carboxamide, False otherwise
         str: Reason for classification
     """
+    
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Check for carboxamide group
-    carboxamide = False
-    primary_amine = False
-    for atom in mol.GetAtoms():
-        if atom.GetSymbol() == 'N' and atom.GetDegree() == 2:
-            neighbors = atom.GetNeighbors()
-            if any(neighbor.GetSymbol() == 'C' and neighbor.GetDegree() == 3 for neighbor in neighbors):
-                primary_amine = True
-        if atom.GetSymbol() == 'C' and atom.GetDegree() == 3:
-            neighbors = atom.GetNeighbors()
-            if any(neighbor.GetSymbol() == 'O' and neighbor.GetDegree() == 1 for neighbor in neighbors):
-                carboxamide = True
-
-    if carboxamide and primary_amine:
-        return True, "Molecule is a secondary carboxamide"
-    else:
-        return False, "Molecule is not a secondary carboxamide"
+        
+    # SMARTS pattern for secondary carboxamide: RC(=O)NHR
+    # [CX3](=O)[NX3H1][#6] means:
+    # [CX3] - carbon with 3 bonds
+    # (=O) - double bonded to oxygen
+    # [NX3H1] - nitrogen with 3 bonds and 1 hydrogen
+    # [#6] - connected to any carbon
+    pattern = Chem.MolFromSmarts('[CX3](=O)[NX3H1][#6]')
+    
+    # Find all matches
+    matches = mol.GetSubstructMatches(pattern)
+    
+    if not matches:
+        return False, "No secondary carboxamide group found"
+        
+    # Get atoms involved in the match
+    matched_atoms = []
+    for match in matches:
+        c = mol.GetAtomWithIdx(match[0])
+        o = mol.GetAtomWithIdx(match[1]) 
+        n = mol.GetAtomWithIdx(match[2])
+        r = mol.GetAtomWithIdx(match[3])
+        matched_atoms.extend([c,o,n,r])
+    
+    return True, f"Contains secondary carboxamide group with {len(matches)} instances"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:140325',
@@ -44,22 +54,26 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:140325',
                                         'acid with a primary amine; formula '
                                         'RC(=O)NHR(1).',
                           'parents': ['CHEBI:37622']},
-    'config': {   'llm_model_name': 'lbl/gpt-4o',
-                  'accuracy_threshold': 0.95,
+    'config': {   'llm_model_name': 'lbl/claude-sonnet',
+                  'f1_threshold': 0.8,
                   'max_attempts': 5,
-                  'max_negative': 20,
+                  'max_negative_to_test': None,
+                  'max_positive_in_prompt': 50,
+                  'max_negative_in_prompt': 20,
+                  'max_instances_in_prompt': 100,
                   'test_proportion': 0.1},
+    'message': None,
     'attempt': 0,
-    'success': False,
+    'success': True,
     'best': True,
-    'error': "(unicode error) 'unicodeescape' codec can't decode bytes in "
-             'position 2-3: malformed \\N character escape (<string>, line 1)',
+    'error': '',
     'stdout': None,
-    'num_true_positives': 0,
-    'num_false_positives': 0,
-    'num_true_negatives': 0,
-    'num_false_negatives': 0,
-    'precision': 0.0,
-    'recall': 0.0,
-    'f1': 0.0,
-    'accuracy': None}
+    'num_true_positives': 182,
+    'num_false_positives': 100,
+    'num_true_negatives': 181,
+    'num_false_negatives': 1,
+    'num_negatives': None,
+    'precision': 0.6453900709219859,
+    'recall': 0.994535519125683,
+    'f1': 0.7827956989247313,
+    'accuracy': 0.7823275862068966}

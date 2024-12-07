@@ -2,56 +2,59 @@
 Classifies: CHEBI:26605 saponin
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 from rdkit.Chem import Descriptors
 from rdkit.Chem import rdMolDescriptors
 
 def is_saponin(smiles: str):
     """
-    Determines if a molecule is a saponin (a glycoside combined with a triterpenoid or steroid derivative).
-
+    Determines if a molecule is a saponin based on structural characteristics.
+    
     Args:
         smiles (str): SMILES string of the molecule
-
+        
     Returns:
         bool: True if molecule is a saponin, False otherwise
         str: Reason for classification
     """
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-
-    # Check for glycoside moiety (presence of sugar units)
-    def has_glycoside(mol):
-        sugars = ['C1OC(CO)C(O)C(O)C1O', 'C1OC(CO)C(O)C(O)C1O', 'C1OC(CO)C(O)C(O)C1O']  # Glucose, Galactose, Rhamnose, etc.
-        for sugar in sugars:
-            sugar_mol = Chem.MolFromSmiles(sugar)
-            if mol.HasSubstructMatch(sugar_mol):
-                return True
-        return False
-
-    if not has_glycoside(mol):
-        return False, "No glycoside moiety found"
-
-    # Check for triterpenoid or steroid backbone
-    triterpenoid_steroid_motifs = [
-        'C1CCC2C(C1)CCC3C2CCC4C3(CCC5C4CCC6C5(CCC(C6)O)C)C',  # Example steroid backbone
-        'C1CCC2C(C1)CCC3C2CCC4C3(CCC5C4CCC6C5(CCC(C6)O)C)C'   # Example triterpenoid backbone
-    ]
-    has_backbone = False
-    for motif in triterpenoid_steroid_motifs:
-        motif_mol = Chem.MolFromSmiles(motif)
-        if mol.HasSubstructMatch(motif_mol):
-            has_backbone = True
-            break
-
-    if not has_backbone:
-        return False, "No triterpenoid or steroid backbone found"
-
-    return True, "Molecule is a saponin"
-
-# Example usage:
-# smiles = "O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O[C@@H]2O[C@@H]([C@H](O)[C@H](O)[C@H]2O[C@@H]3O[C@H]([C@H](O)[C@@H](O)[C@H]3O)C)CO)C(O)=O)[C@@H]4[C@]([C@]5([C@](CC4)([C@@]6([C@@](CC5)([C@]7(C(=CC6)[C@]8([C@@](CC7)([C@@H]([C@@H](C(C8)(C)C)O)O)C)[H])C)C)[H])C)[H])(C)CO"
-# print(is_saponin(smiles))
+    try:
+        mol = Chem.MolFromSmiles(smiles)
+        if mol is None:
+            return False, "Invalid SMILES string"
+            
+        # Check for minimum size - saponins are large molecules
+        num_atoms = mol.GetNumAtoms()
+        if num_atoms < 40:
+            return False, "Molecule too small to be a saponin"
+            
+        # Check for presence of sugar moiety (glycoside)
+        sugar_pattern = Chem.MolFromSmarts('[CH]1[CH][CH][CH][CH]O1') # Basic pyranose ring
+        if not mol.HasSubstructMatch(sugar_pattern):
+            return False, "No sugar/glycoside moiety found"
+            
+        # Check for steroid/triterpenoid core
+        # Look for multiple 6-membered rings characteristic of steroid/triterpenoid skeleton
+        rings = mol.GetRingInfo()
+        six_mem_rings = sum(1 for ring in rings.AtomRings() if len(ring) == 6)
+        if six_mem_rings < 4:
+            return False, "No steroid/triterpenoid core structure found"
+            
+        # Check for characteristic O-glycosidic linkage
+        glycosidic_pattern = Chem.MolFromSmarts('[CH]O[CH]1[CH][CH][CH][CH]O1')
+        if not mol.HasSubstructMatch(glycosidic_pattern):
+            return False, "No O-glycosidic linkage found"
+            
+        # Calculate lipophilicity using logP
+        logp = Descriptors.MolLogP(mol)
+        if logp < 0:
+            return False, "Molecule not sufficiently lipophilic"
+            
+        # Molecule has passed all saponin criteria
+        sugar_count = len(mol.GetSubstructMatches(sugar_pattern))
+        return True, f"Saponin with {sugar_count} sugar moieties detected"
+        
+    except:
+        return None, None
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:26605',
@@ -63,21 +66,26 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:26605',
                                         'derivative. Found in particular '
                                         'abundance in plant species.',
                           'parents': ['CHEBI:24400']},
-    'config': {   'llm_model_name': 'lbl/gpt-4o',
-                  'accuracy_threshold': 0.95,
+    'config': {   'llm_model_name': 'lbl/claude-sonnet',
+                  'f1_threshold': 0.0,
                   'max_attempts': 5,
-                  'max_negative': 20,
+                  'max_negative_to_test': None,
+                  'max_positive_in_prompt': 50,
+                  'max_negative_in_prompt': 20,
+                  'max_instances_in_prompt': 100,
                   'test_proportion': 0.1},
+    'message': None,
     'attempt': 0,
     'success': True,
     'best': True,
     'error': '',
-    'stdout': '',
-    'num_true_positives': 0,
-    'num_false_positives': 0,
-    'num_true_negatives': 20,
-    'num_false_negatives': 82,
-    'precision': 0.0,
-    'recall': 0.0,
-    'f1': 0.0,
-    'accuracy': None}
+    'stdout': None,
+    'num_true_positives': 39,
+    'num_false_positives': 100,
+    'num_true_negatives': 39917,
+    'num_false_negatives': 43,
+    'num_negatives': None,
+    'precision': 0.2805755395683453,
+    'recall': 0.47560975609756095,
+    'f1': 0.35294117647058815,
+    'accuracy': 0.9964338262799571}

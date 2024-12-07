@@ -6,29 +6,28 @@ from rdkit.Chem import AllChem
 from rdkit.Chem import Descriptors
 from rdkit.Chem import rdMolDescriptors
 
-
 def is_phenanthrenes(smiles: str):
     """
-    Determines if a molecule is a phenanthrene or its substituted derivatives.
-
+    Determines if a molecule is a phenanthrene or substituted phenanthrene.
+    
     Args:
         smiles (str): SMILES string of the molecule
-
+        
     Returns:
         bool: True if molecule is a phenanthrene, False otherwise
         str: Reason for classification
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
-
+        return None, "Invalid SMILES string"
+        
     # Generate the aromatic ring information
     rings = mol.GetRingInfo()
-
-    # Check for at least three 6-membered rings
-    if len([ring for ring in rings.AtomRings() if len(ring) == 6]) < 3:
-        return False, "Less than three 6-membered rings found"
-
+    
+    # Need at least 3 rings
+    if len(rings.AtomRings()) < 3:
+        return False, "Less than 3 rings found"
+        
     # Find all aromatic 6-membered rings
     aromatic_rings = []
     for ring in rings.AtomRings():
@@ -36,21 +35,38 @@ def is_phenanthrenes(smiles: str):
             atoms = [mol.GetAtomWithIdx(i) for i in ring]
             if all(atom.GetIsAromatic() for atom in atoms):
                 aromatic_rings.append(ring)
-
+                
     if len(aromatic_rings) < 3:
-        return False, "Less than three aromatic 6-membered rings found"
-
-    # Check for the phenanthrene structure (three fused benzene rings in a specific arrangement)
-    phenanthrene_pattern = Chem.MolFromSmarts('c1ccc2c(c1)ccc3ccccc23')
+        return False, "Less than 3 aromatic 6-membered rings found"
+        
+    # Check if we have a phenanthrene core structure
+    # First create a substructure match pattern for phenanthrene
+    phenanthrene_pattern = Chem.MolFromSmarts('c1cccc2c1ccc3ccccc32')
     if not mol.HasSubstructMatch(phenanthrene_pattern):
-        return False, "Phenanthrene core structure not found"
-
-    return True, "Phenanthrene core structure found"
-
-# Example usage
-smiles = "O1[C@H]2C=Cc3c(ccc4ccccc34)[C@@H]12"
-result, reason = is_phenanthrenes(smiles)
-print(result, reason)
+        return False, "No phenanthrene core structure found"
+        
+    # If we get here, we have a phenanthrene core
+    # Check for substituents
+    matches = mol.GetSubstructMatches(phenanthrene_pattern)
+    if len(matches) == 0:
+        return False, "No phenanthrene substructure found"
+        
+    core_atoms = set(matches[0])
+    substituents = []
+    
+    for atom_idx in range(mol.GetNumAtoms()):
+        if atom_idx not in core_atoms:
+            atom = mol.GetAtomWithIdx(atom_idx)
+            # Check if this non-core atom is connected to the core
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetIdx() in core_atoms:
+                    substituents.append(atom.GetSymbol())
+                    break
+                    
+    if len(substituents) > 0:
+        return True, f"Substituted phenanthrene with substituents: {', '.join(set(substituents))}"
+    else:
+        return True, "Unsubstituted phenanthrene"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:25961',
@@ -60,21 +76,26 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:25961',
                                         'and its substituted derivatives '
                                         'thereof.',
                           'parents': ['CHEBI:33836', 'CHEBI:38032']},
-    'config': {   'llm_model_name': 'lbl/gpt-4o',
-                  'accuracy_threshold': 0.95,
+    'config': {   'llm_model_name': 'lbl/claude-sonnet',
+                  'f1_threshold': 0.0,
                   'max_attempts': 5,
-                  'max_negative': 20,
+                  'max_negative_to_test': None,
+                  'max_positive_in_prompt': 50,
+                  'max_negative_in_prompt': 20,
+                  'max_instances_in_prompt': 100,
                   'test_proportion': 0.1},
+    'message': None,
     'attempt': 0,
     'success': True,
     'best': True,
     'error': '',
-    'stdout': 'False Less than three aromatic 6-membered rings found\n',
-    'num_true_positives': 11,
-    'num_false_positives': 0,
-    'num_true_negatives': 20,
-    'num_false_negatives': 20,
-    'precision': 1.0,
-    'recall': 0.3548387096774194,
-    'f1': 0.5238095238095238,
-    'accuracy': None}
+    'stdout': None,
+    'num_true_positives': 10,
+    'num_false_positives': 100,
+    'num_true_negatives': 77591,
+    'num_false_negatives': 21,
+    'num_negatives': None,
+    'precision': 0.09090909090909091,
+    'recall': 0.3225806451612903,
+    'f1': 0.14184397163120568,
+    'accuracy': 0.9984431692442294}

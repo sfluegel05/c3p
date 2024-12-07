@@ -7,7 +7,7 @@ from c3p.datamodel import EvaluationResult
 THIS_DIR = Path(__file__).parent
 OUTPUT_DIR = THIS_DIR / "output"
 INPUT_DIR = THIS_DIR / "input"
-PROGRAM_DIR = INPUT_DIR / "programs"
+TEST_PROGRAM_DIR = INPUT_DIR / "programs"
 
 @pytest.fixture
 def eval_result_metal_atom() -> EvaluationResult:

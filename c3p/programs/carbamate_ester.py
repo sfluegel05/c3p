@@ -2,30 +2,58 @@
 Classifies: CHEBI:23003 carbamate ester
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_carbamate_ester(smiles: str):
     """
-    Determines if a molecule is a carbamate ester (any ester of carbamic acid or its N-substituted derivatives).
-
+    Determines if a molecule contains a carbamate ester group (R-O-C(=O)-N).
+    
     Args:
         smiles (str): SMILES string of the molecule
-
+        
     Returns:
-        bool: True if molecule is a carbamate ester, False otherwise
+        bool: True if molecule contains carbamate ester, False otherwise
         str: Reason for classification
     """
+    # Check for valid SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return None, "Invalid SMILES string"
 
-    # Define the SMARTS pattern for carbamate ester
-    carbamate_ester_smarts = 'O=C(O)N'
-    carbamate_ester_pattern = Chem.MolFromSmarts(carbamate_ester_smarts)
-
-    if mol.HasSubstructMatch(carbamate_ester_pattern):
-        return True, "Molecule contains carbamate ester group"
-    else:
-        return False, "Molecule does not contain carbamate ester group"
+    # SMARTS pattern for carbamate ester: R-O-C(=O)-N
+    carbamate_pattern = Chem.MolFromSmarts('[#6,#1]-[O;X2]-[C;X3](=[O;X1])-[N;X3]')
+    
+    matches = mol.GetSubstructMatches(carbamate_pattern)
+    
+    if not matches:
+        return False, "No carbamate ester group found"
+        
+    # Get details about the carbamate group(s)
+    carbamate_details = []
+    for match in matches:
+        # Get the nitrogen atom
+        n_atom = mol.GetAtomWithIdx(match[3])
+        
+        # Check substituents on nitrogen
+        n_substituents = []
+        for neighbor in n_atom.GetNeighbors():
+            if neighbor.GetIdx() != match[2]:  # Skip the carbonyl carbon
+                if neighbor.GetSymbol() == 'H':
+                    n_substituents.append('H')
+                else:
+                    n_substituents.append('R')
+                    
+        if len(n_substituents) == 0:
+            n_desc = "unsubstituted"
+        elif len(n_substituents) == 1:
+            n_desc = "mono-substituted"
+        else:
+            n_desc = "di-substituted"
+            
+        carbamate_details.append(f"{n_desc} nitrogen")
+    
+    details_str = ", ".join(set(carbamate_details))
+    return True, f"Contains carbamate ester group(s) with {details_str}"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:23003',
@@ -33,32 +61,26 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:23003',
                           'definition': 'Any ester of carbamic acid or its '
                                         'N-substituted derivatives.',
                           'parents': ['CHEBI:33308']},
-    'config': {   'llm_model_name': 'lbl/gpt-4o',
-                  'accuracy_threshold': 0.95,
+    'config': {   'llm_model_name': 'lbl/claude-sonnet',
+                  'f1_threshold': 0.0,
                   'max_attempts': 5,
-                  'max_negative': 20,
+                  'max_negative_to_test': None,
+                  'max_positive_in_prompt': 50,
+                  'max_negative_in_prompt': 20,
+                  'max_instances_in_prompt': 100,
                   'test_proportion': 0.1},
+    'message': None,
     'attempt': 0,
     'success': True,
     'best': True,
-    'error': '[20:13:04] SMILES Parse Error: syntax error while parsing: '
-             'O=C(CCCCCCCCCC=1NC(/C=C\x02/N=C(C=3NC=CC3)C=C2OC)=CC1)C\n'
-             '[20:13:04] SMILES Parse Error: Failed parsing SMILES '
-             "'O=C(CCCCCCCCCC=1NC(/C=C\x02/N=C(C=3NC=CC3)C=C2OC)=CC1)C' for "
-             'input: '
-             "'O=C(CCCCCCCCCC=1NC(/C=C\x02/N=C(C=3NC=CC3)C=C2OC)=CC1)C'\n"
-             '[20:13:04] SMILES Parse Error: syntax error while parsing: '
-             'O=C(O)/C(/C1=CC=CC=C1)=C\x02/OCO/C2=C(\\C3=CC=CC=C3)/C(=O)NCC(=O)O\n'
-             '[20:13:04] SMILES Parse Error: Failed parsing SMILES '
-             "'O=C(O)/C(/C1=CC=CC=C1)=C\x02/OCO/C2=C(\\C3=CC=CC=C3)/C(=O)NCC(=O)O' "
-             'for input: '
-             "'O=C(O)/C(/C1=CC=CC=C1)=C\x02/OCO/C2=C(\\C3=CC=CC=C3)/C(=O)NCC(=O)O'\n",
-    'stdout': '',
-    'num_true_positives': 29,
-    'num_false_positives': 0,
-    'num_true_negatives': 20,
-    'num_false_negatives': 0,
-    'precision': 1.0,
-    'recall': 1.0,
-    'f1': 1.0,
-    'accuracy': None}
+    'error': '',
+    'stdout': None,
+    'num_true_positives': 28,
+    'num_false_positives': 100,
+    'num_true_negatives': 15614,
+    'num_false_negatives': 1,
+    'num_negatives': None,
+    'precision': 0.21875,
+    'recall': 0.9655172413793104,
+    'f1': 0.35668789808917195,
+    'accuracy': 0.993584450231849}

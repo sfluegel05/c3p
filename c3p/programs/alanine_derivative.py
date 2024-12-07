@@ -3,16 +3,15 @@ Classifies: CHEBI:22278 alanine derivative
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import Descriptors
 from rdkit.Chem import rdMolDescriptors
 
 def is_alanine_derivative(smiles: str):
     """
-    Determines if a molecule is an alanine derivative, defined as an amino acid derivative resulting from reaction of alanine at the amino group or the carboxy group, or from the replacement of any hydrogen of alanine by a heteroatom.
-
+    Determines if a molecule is an alanine derivative.
+    
     Args:
         smiles (str): SMILES string of the molecule
-
+        
     Returns:
         bool: True if molecule is an alanine derivative, False otherwise
         str: Reason for classification
@@ -21,31 +20,59 @@ def is_alanine_derivative(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the alanine structure
-    alanine_smiles = "CC(C(=O)O)N"
-    alanine_mol = Chem.MolFromSmiles(alanine_smiles)
+    # Check for presence of basic alanine backbone
+    # Look for C-C(N)-C(=O)O pattern
+    alanine_pattern = Chem.MolFromSmarts('[CH3][CH1](N)[CH0](=O)O')
+    if not mol.HasSubstructMatch(alanine_pattern):
+        return False, "Does not contain alanine backbone"
 
-    # Check for substructure match
-    if not mol.HasSubstructMatch(alanine_mol):
-        return False, "The molecule does not contain the alanine core structure"
+    # Get the matches for the alanine pattern
+    matches = mol.GetSubstructMatches(alanine_pattern)
+    
+    # For each match, analyze the substitution pattern
+    for match in matches:
+        carbon_idx = match[1]  # Get the alpha carbon index
+        nitrogen_idx = None
+        carboxyl_idx = None
+        
+        # Find connected N and C(=O)O atoms
+        for atom in mol.GetAtomWithIdx(carbon_idx).GetNeighbors():
+            if atom.GetSymbol() == 'N':
+                nitrogen_idx = atom.GetIdx()
+            elif atom.GetSymbol() == 'C' and atom.GetDegree() == 3:
+                carboxyl_idx = atom.GetIdx()
 
-    # Check for reactions at the amino group or carboxy group, or replacement of any hydrogen by a heteroatom
-    alanine_atoms = [atom.GetIdx() for atom in alanine_mol.GetAtoms()]
-    mol_atoms = [mol.GetAtomWithIdx(idx) for idx in range(mol.GetNumAtoms())]
-    
-    for idx in alanine_atoms:
-        atom = mol.GetAtomWithIdx(idx)
-        if atom.GetSymbol() != 'C' and atom.GetSymbol() != 'N' and atom.GetSymbol() != 'O':
-            return True, "The molecule is an alanine derivative with heteroatom substitution"
-    
-    for bond in alanine_mol.GetBonds():
-        begin_idx = bond.GetBeginAtomIdx()
-        end_idx = bond.GetEndAtomIdx()
-        if (mol_atoms[begin_idx].GetSymbol() != alanine_mol.GetAtomWithIdx(begin_idx).GetSymbol() or
-            mol_atoms[end_idx].GetSymbol() != alanine_mol.GetAtomWithIdx(end_idx).GetSymbol()):
-            return True, "The molecule is an alanine derivative with reaction at the amino or carboxy group"
-    
-    return False, "The molecule does not meet the criteria for being an alanine derivative"
+        if nitrogen_idx is None or carboxyl_idx is None:
+            continue
+
+        # Check substitution at nitrogen
+        n_atom = mol.GetAtomWithIdx(nitrogen_idx)
+        n_substituted = False
+        if n_atom.GetDegree() > 2:  # More than H2N-
+            n_substituted = True
+
+        # Check substitution at carboxyl
+        c_atom = mol.GetAtomWithIdx(carboxyl_idx)
+        c_substituted = False
+        for neighbor in c_atom.GetNeighbors():
+            if neighbor.GetSymbol() == 'O' and neighbor.GetDegree() > 1:
+                c_substituted = True
+                break
+
+        # Determine type of derivative
+        if n_substituted and c_substituted:
+            return True, "N- and C-substituted alanine derivative"
+        elif n_substituted:
+            return True, "N-substituted alanine derivative"
+        elif c_substituted:
+            return True, "C-substituted alanine derivative"
+        else:
+            # Check if it's a simple alanine with modified stereochemistry
+            if len(Chem.FindMolChiralCenters(mol)) > 0:
+                return True, "Alanine stereoisomer"
+            
+    # If we get here, it's not an alanine derivative
+    return False, "Structure does not match alanine derivative patterns"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:22278',
@@ -58,21 +85,26 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:22278',
                                         'definition normally excludes peptides '
                                         'containing alanine residues.',
                           'parents': ['CHEBI:83821']},
-    'config': {   'llm_model_name': 'lbl/gpt-4o',
-                  'accuracy_threshold': 0.95,
+    'config': {   'llm_model_name': 'lbl/claude-sonnet',
+                  'f1_threshold': 0.0,
                   'max_attempts': 5,
-                  'max_negative': 20,
+                  'max_negative_to_test': None,
+                  'max_positive_in_prompt': 50,
+                  'max_negative_in_prompt': 20,
+                  'max_instances_in_prompt': 100,
                   'test_proportion': 0.1},
+    'message': None,
     'attempt': 0,
     'success': True,
     'best': True,
     'error': '',
-    'stdout': '',
-    'num_true_positives': 11,
-    'num_false_positives': 1,
-    'num_true_negatives': 12,
-    'num_false_negatives': 2,
-    'precision': 0.9166666666666666,
-    'recall': 0.8461538461538461,
-    'f1': 0.8799999999999999,
-    'accuracy': None}
+    'stdout': None,
+    'num_true_positives': 7,
+    'num_false_positives': 100,
+    'num_true_negatives': 22640,
+    'num_false_negatives': 6,
+    'num_negatives': None,
+    'precision': 0.06542056074766354,
+    'recall': 0.5384615384615384,
+    'f1': 0.11666666666666665,
+    'accuracy': 0.9953412736781962}

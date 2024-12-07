@@ -2,10 +2,13 @@
 Classifies: CHEBI:26191 polyol
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import Descriptors
+from rdkit.Chem import rdMolDescriptors
 
 def is_polyol(smiles: str):
     """
-    Determines if a molecule is a polyol (a compound that contains two or more hydroxy groups).
+    Determines if a molecule is a polyol (contains 2 or more hydroxy groups).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -17,25 +20,17 @@ def is_polyol(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Count the number of hydroxy groups (-OH)
-    hydroxy_count = 0
-    for atom in mol.GetAtoms():
-        if atom.GetSymbol() == 'O':
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetSymbol() == 'C':
-                    if any(n.GetSymbol() == 'H' for n in neighbor.GetNeighbors()):
-                        hydroxy_count += 1
-                    elif any(n.GetSymbol() == 'C' for n in neighbor.GetNeighbors()):
-                        hydroxy_count += 1
-
-    if hydroxy_count >= 2:
-        return True, f"Contains {hydroxy_count} hydroxy groups"
-    else:
-        return False, f"Contains only {hydroxy_count} hydroxy groups"
-
-# Example usage:
-# print(is_polyol("COc1ccc(CC(O)C(=O)c2ccc(OC)cc2O)cc1"))  # Should return (True, "Contains 3 hydroxy groups")
+        
+    # Get all OH groups
+    oh_pattern = Chem.MolFromSmarts('[OH]')
+    oh_matches = mol.GetSubstructMatches(oh_pattern)
+    
+    num_oh = len(oh_matches)
+    
+    if num_oh < 2:
+        return False, f"Contains only {num_oh} hydroxy group(s), minimum 2 required"
+    
+    return True, f"Contains {num_oh} hydroxy groups"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:26191',
@@ -43,26 +38,26 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:26191',
                           'definition': 'A compound that contains two or more '
                                         'hydroxy groups.',
                           'parents': ['CHEBI:33822']},
-    'config': {   'llm_model_name': 'lbl/gpt-4o',
-                  'accuracy_threshold': 0.95,
+    'config': {   'llm_model_name': 'lbl/claude-sonnet',
+                  'f1_threshold': 0.0,
                   'max_attempts': 5,
-                  'max_negative': 20,
+                  'max_negative_to_test': None,
+                  'max_positive_in_prompt': 50,
+                  'max_negative_in_prompt': 20,
+                  'max_instances_in_prompt': 100,
                   'test_proportion': 0.1},
-    'attempt': 2,
+    'message': None,
+    'attempt': 0,
     'success': True,
     'best': True,
-    'error': '[13:39:42] SMILES Parse Error: syntax error while parsing: '
-             'CC[C@@H]1CC[C@@H]2O[C@@]3(O[C@@H](C[C@@H](C)O)[C@@H](C)CC3=O)[C@@H](C)[C@H](OC(=O)\\C=C\\[C@H](C)[C@@H](O)[C@H](C)C(=O)[C@H](C)[C@@H](O)[C@H](C)C(=O)[C@](C)(O)[C@@H](O)[C@H](C)C\\C=C\\C=C\x01)[C@@H]2C\n'
-             '[13:39:42] SMILES Parse Error: Failed parsing SMILES '
-             "'CC[C@@H]1CC[C@@H]2O[C@@]3(O[C@@H](C[C@@H](C)O)[C@@H](C)CC3=O)[C@@H](C)[C@H](OC(=O)\\C=C\\[C@H](C)[C@@H](O)[C@H](C)C(=O)[C@H](C)[C@@H](O)[C@H](C)C(=O)[C@](C)(O)[C@@H](O)[C@H](C)C\\C=C\\C=C\x01)[C@@H]2C' "
-             'for input: '
-             "'CC[C@@H]1CC[C@@H]2O[C@@]3(O[C@@H](C[C@@H](C)O)[C@@H](C)CC3=O)[C@@H](C)[C@H](OC(=O)\\C=C\\[C@H](C)[C@@H](O)[C@H](C)C(=O)[C@H](C)[C@@H](O)[C@H](C)C(=O)[C@](C)(O)[C@@H](O)[C@H](C)C\\C=C\\C=C\x01)[C@@H]2C'\n",
-    'stdout': '',
-    'num_true_positives': 147,
-    'num_false_positives': 19,
-    'num_true_negatives': 1,
-    'num_false_negatives': 1,
-    'precision': 0.8855421686746988,
-    'recall': 0.9932432432432432,
-    'f1': 0.9363057324840764,
-    'accuracy': None}
+    'error': '',
+    'stdout': None,
+    'num_true_positives': 148,
+    'num_false_positives': 100,
+    'num_true_negatives': 122,
+    'num_false_negatives': 0,
+    'num_negatives': None,
+    'precision': 0.5967741935483871,
+    'recall': 1.0,
+    'f1': 0.7474747474747475,
+    'accuracy': 0.7297297297297297}

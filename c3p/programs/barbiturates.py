@@ -3,37 +3,57 @@ Classifies: CHEBI:22693 barbiturates
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import Descriptors
-from rdkit.Chem import rdMolDescriptors
 
 def is_barbiturates(smiles: str):
     """
-    Determines if a molecule is a barbiturate.
-
+    Determines if a molecule is a barbiturate (derivative of barbituric acid).
+    
     Args:
         smiles (str): SMILES string of the molecule
-
+        
     Returns:
         bool: True if molecule is a barbiturate, False otherwise
         str: Reason for classification
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
-
-    # Generate the ring information
-    rings = mol.GetRingInfo()
-
-    # Check for at least one 6-membered ring
-    if not any(len(ring) == 6 for ring in rings.AtomRings()):
-        return False, "No 6-membered rings found"
-
-    # Check for the presence of pyrimidine-2,4,6(1H,3H,5H)-trione core structure
-    barbiturate_pattern = Chem.MolFromSmarts('O=C1NC(=O)NC(=O)C1')
+        return None, "Invalid SMILES string"
+    
+    # SMARTS pattern for barbituric acid core (pyrimidine-2,4,6-trione)
+    # Matches both O=C and S=C for thio-barbiturates
+    barbiturate_pattern = Chem.MolFromSmarts('[#7]1-[#6](=[#8,#16])-[#7]-[#6](=[#8])-[#6]-[#6](=[#8])-1')
+    
     if not mol.HasSubstructMatch(barbiturate_pattern):
-        return False, "Pyrimidine-2,4,6(1H,3H,5H)-trione core structure not found"
-
-    return True, "Molecule is a barbiturate"
+        return False, "No barbituric acid core structure found"
+        
+    # Get the atoms in the barbituric acid core
+    core_match = mol.GetSubstructMatch(barbiturate_pattern)
+    if not core_match:
+        return False, "Could not map barbituric acid core atoms"
+        
+    # Check if the core has proper substitution pattern
+    core_atoms = set(core_match)
+    
+    # Count number of thio (=S) groups
+    thio_count = 0
+    for atom_idx in core_atoms:
+        atom = mol.GetAtomWithIdx(atom_idx)
+        if atom.GetSymbol() == 'S' and atom.GetTotalNumHs() == 0:
+            thio_count += 1
+            
+    # Get substituents on the ring
+    substituents = []
+    for atom_idx in core_atoms:
+        atom = mol.GetAtomWithIdx(atom_idx)
+        for neighbor in atom.GetNeighbors():
+            if neighbor.GetIdx() not in core_atoms:
+                if neighbor.GetSymbol() != 'H':
+                    substituents.append(neighbor.GetSymbol())
+                    
+    if thio_count > 0:
+        return True, f"Thiobarbiturate with {len(substituents)} substituents"
+    else:
+        return True, f"Barbiturate with {len(substituents)} substituents"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:22693',
@@ -47,21 +67,26 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:22693',
                                         'a characteristic six-membered ring '
                                         'structure.',
                           'parents': ['CHEBI:38337']},
-    'config': {   'llm_model_name': 'lbl/gpt-4o',
-                  'accuracy_threshold': 0.95,
+    'config': {   'llm_model_name': 'lbl/claude-sonnet',
+                  'f1_threshold': 0.0,
                   'max_attempts': 5,
-                  'max_negative': 20,
+                  'max_negative_to_test': None,
+                  'max_positive_in_prompt': 50,
+                  'max_negative_in_prompt': 20,
+                  'max_instances_in_prompt': 100,
                   'test_proportion': 0.1},
+    'message': None,
     'attempt': 0,
     'success': True,
     'best': True,
     'error': '',
-    'stdout': '',
-    'num_true_positives': 9,
-    'num_false_positives': 0,
-    'num_true_negatives': 10,
-    'num_false_negatives': 1,
-    'precision': 1.0,
-    'recall': 0.9,
-    'f1': 0.9473684210526316,
-    'accuracy': None}
+    'stdout': None,
+    'num_true_positives': 10,
+    'num_false_positives': 63,
+    'num_true_negatives': 183766,
+    'num_false_negatives': 0,
+    'num_negatives': None,
+    'precision': 0.136986301369863,
+    'recall': 1.0,
+    'f1': 0.24096385542168672,
+    'accuracy': 0.999657308840888}

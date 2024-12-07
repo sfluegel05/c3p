@@ -3,46 +3,41 @@ Classifies: CHEBI:139588 alpha-hydroxy ketone
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import Descriptors
-from rdkit.Chem import rdMolDescriptors
-
 
 def is_alpha_hydroxy_ketone(smiles: str):
     """
-    Determines if a molecule is an alpha-hydroxy ketone.
+    Determines if a molecule contains an alpha-hydroxy ketone group.
+    An alpha-hydroxy ketone has a hydroxy group adjacent to a ketone.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is an alpha-hydroxy ketone, False otherwise
+        bool: True if molecule contains alpha-hydroxy ketone, False otherwise
         str: Reason for classification
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return None, "Invalid SMILES string"
 
-    # Identify carbonyl groups (C=O)
-    carbonyl_groups = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6 and any(neigh.GetAtomicNum() == 8 and mol.GetBondBetweenAtoms(atom.GetIdx(), neigh.GetIdx()).GetBondType() == Chem.rdchem.BondType.DOUBLE for neigh in atom.GetNeighbors())]
+    # SMARTS pattern for alpha-hydroxy ketone
+    # [OH1] matches hydroxyl group
+    # [CH,CH2] matches carbon with 1 or 2 hydrogens
+    # C(=O) matches ketone carbonyl
+    pattern = Chem.MolFromSmarts('[OH1]-[CH,CH2]-C(=O)')
+    
+    # Alternative pattern for alpha-hydroxy ketone where carbon has other substituents
+    pattern2 = Chem.MolFromSmarts('[OH1]-[C]-C(=O)')
 
-    if not carbonyl_groups:
-        return False, "No carbonyl groups found"
-
-    for carbonyl in carbonyl_groups:
-        carbonyl_idx = carbonyl.GetIdx()
-        neighbors = carbonyl.GetNeighbors()
-
-        # Check for alpha-hydroxy group
-        for neighbor in neighbors:
-            if neighbor.GetAtomicNum() == 6:  # Check if neighbor is a carbon
-                alpha_carbon_idx = neighbor.GetIdx()
-                alpha_carbon_neighbors = neighbor.GetNeighbors()
-
-                for alpha_carbon_neighbor in alpha_carbon_neighbors:
-                    if alpha_carbon_neighbor.GetAtomicNum() == 8 and alpha_carbon_neighbor.GetTotalNumHs() > 0:
-                        return True, "Alpha-hydroxy ketone found"
-
-    return False, "No alpha-hydroxy ketone structure found"
+    matches = mol.GetSubstructMatches(pattern)
+    matches2 = mol.GetSubstructMatches(pattern2)
+    
+    all_matches = matches + matches2
+    
+    if len(all_matches) > 0:
+        return True, f"Contains {len(all_matches)} alpha-hydroxy ketone group(s)"
+    else:
+        return False, "No alpha-hydroxy ketone group found"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:139588',
@@ -50,22 +45,26 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:139588',
                           'definition': 'An alpha-oxyketone that has a hydroxy '
                                         'group as the alpha-oxy moiety.',
                           'parents': ['CHEBI:30879', 'CHEBI:52396']},
-    'config': {   'llm_model_name': 'lbl/gpt-4o',
-                  'accuracy_threshold': 0.95,
+    'config': {   'llm_model_name': 'lbl/claude-sonnet',
+                  'f1_threshold': 0.8,
                   'max_attempts': 5,
-                  'max_negative': 20,
+                  'max_negative_to_test': None,
+                  'max_positive_in_prompt': 50,
+                  'max_negative_in_prompt': 20,
+                  'max_instances_in_prompt': 100,
                   'test_proportion': 0.1},
+    'message': None,
     'attempt': 0,
     'success': True,
     'best': True,
-    'error': '[19:23:43] SMILES Parse Error: unclosed ring for input: '
-             "'C[C@H]1C\\C=C\\[C@H]2[C@H](O)C(C)=C(C)[C@H]3[C@H](Cc4c[nH]c5ccccc45)NC(=O)[C@@]23C(=O)\\C=C\\C(=O)[C@H](O)\\C(C)=C\x01'\n",
-    'stdout': '',
+    'error': '',
+    'stdout': None,
     'num_true_positives': 50,
-    'num_false_positives': 1,
-    'num_true_negatives': 19,
+    'num_false_positives': 100,
+    'num_true_negatives': 1210,
     'num_false_negatives': 1,
-    'precision': 0.9803921568627451,
+    'num_negatives': None,
+    'precision': 0.3333333333333333,
     'recall': 0.9803921568627451,
-    'f1': 0.9803921568627451,
-    'accuracy': None}
+    'f1': 0.4975124378109452,
+    'accuracy': 0.925789860396767}

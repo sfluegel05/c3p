@@ -2,57 +2,60 @@
 Classifies: CHEBI:13643 glycol
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_glycol(smiles: str):
     """
-    Determines if a molecule is a glycol (a diol with hydroxy groups on different carbon atoms).
-
+    Determines if a molecule is a glycol (diol with hydroxy groups on different carbons).
+    
     Args:
         smiles (str): SMILES string of the molecule
-
+        
     Returns:
         bool: True if molecule is a glycol, False otherwise
         str: Reason for classification
     """
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
-
-    # Find all hydroxyl groups
-    hydroxyls = [atom for atom in mol.GetAtoms() if atom.GetSymbol() == 'O' and any(neigh.GetSymbol() == 'C' for neigh in atom.GetNeighbors())]
+        return None, "Invalid SMILES string"
+        
+    # Find all OH groups
+    oh_pattern = Chem.MolFromSmarts("[OH]")
+    oh_matches = mol.GetSubstructMatches(oh_pattern)
     
-    if len(hydroxyls) < 2:
-        return False, "Less than two hydroxyl groups found"
-
-    # Check if hydroxyl groups are on different carbon atoms
-    carbon_atoms_with_oh = [hydroxyl.GetNeighbors()[0] for hydroxyl in hydroxyls if hydroxyl.GetNeighbors()[0].GetSymbol() == 'C']
-
-    if len(carbon_atoms_with_oh) < 2:
-        return False, "Hydroxyl groups are not on different carbon atoms"
-
-    # Check if hydroxyl groups are on different carbon atoms
-    if len(set(carbon.GetIdx() for carbon in carbon_atoms_with_oh)) < 2:
-        return False, "Hydroxyl groups are on the same carbon atom"
-
-    return True, "Valid glycol"
-
-# Example usage
-smiles_list = [
-    "CCCCCCCCCCCCCCCCCC(O)CCO",
-    "COc1cc(ccc1O)C(O)C(CO)c1ccc(O)c(OC)c1",
-    "CCCCC\\C=C/C[C@@H](O)C(O)\\C=C\\C(O)C\\C=C/CCCC([O-])=O",
-    "OC(CC(O)CCC1=CC(OC)=C(O)C=C1)CCCCC",
-    "OC[C@@H](O)COc1ccc(Cl)cc1",
-    "OC(CC#CC(O)/C=C/CC)C=C",
-    "C[C@H](O)CCO",
-    "CCCCCCCCCCCCCCCCCCC[C@H](O)C[C@H](O)CCCC[C@@H](C)[C@H](CC)OC",
-    "C=CCCCCCCC(CO)O",
-    "C1=2C(=CC(C(C1=O)(OC(C(CC(CC)C)C)=O)C)=O)C=C(OC2)C(C(O)C)O"
-]
-
-for smiles in smiles_list:
-    result, reason = is_glycol(smiles)
-    print(f"SMILES: {smiles}\nIs glycol: {result}\nReason: {reason}\n")
+    if len(oh_matches) < 2:
+        return False, "Less than 2 OH groups found"
+        
+    # Get carbons attached to OH groups
+    oh_carbons = set()
+    for match in oh_matches:
+        oh_oxygen = mol.GetAtomWithIdx(match[0])
+        for neighbor in oh_oxygen.GetNeighbors():
+            if neighbor.GetSymbol() == 'C':
+                oh_carbons.add(neighbor.GetIdx())
+                
+    # Check if OH groups are on different carbons
+    if len(oh_carbons) < 2:
+        return False, "OH groups are on the same carbon"
+        
+    # Find shortest path between OH carbons to check if they are adjacent
+    paths = []
+    oh_carbons_list = list(oh_carbons)
+    for i in range(len(oh_carbons_list)):
+        for j in range(i+1, len(oh_carbons_list)):
+            path = Chem.GetShortestPath(mol, oh_carbons_list[i], oh_carbons_list[j])
+            if path:
+                paths.append(len(path)-1)
+    
+    min_distance = min(paths) if paths else 0
+    
+    if min_distance == 1:
+        return True, "Glycol with adjacent OH groups"
+    elif min_distance > 1:
+        return True, f"Glycol with OH groups separated by {min_distance-1} carbon(s)"
+    else:
+        return False, "OH groups are not properly connected"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:13643',
@@ -61,63 +64,28 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:13643',
                                         'groups are on different carbon atoms, '
                                         'usually but not necessarily adjacent.',
                           'parents': ['CHEBI:23824']},
-    'config': {   'llm_model_name': 'lbl/gpt-4o',
-                  'accuracy_threshold': 0.95,
+    'config': {   'llm_model_name': 'lbl/claude-sonnet',
+                  'f1_threshold': 0.8,
                   'max_attempts': 5,
-                  'max_negative': 20,
+                  'max_negative_to_test': None,
+                  'max_positive_in_prompt': 50,
+                  'max_negative_in_prompt': 20,
+                  'max_instances_in_prompt': 100,
                   'test_proportion': 0.1},
-    'attempt': 4,
+    'message': "Attempt failed: cannot import name 'rdDecomposition' from "
+               "'rdkit.Chem' "
+               '(/Users/cjm/Library/Caches/pypoetry/virtualenvs/c3p-93U7KWO_-py3.11/lib/python3.11/site-packages/rdkit/Chem/__init__.py)',
+    'attempt': 1,
     'success': True,
     'best': True,
     'error': '',
-    'stdout': 'SMILES: CCCCCCCCCCCCCCCCCC(O)CCO\n'
-              'Is glycol: True\n'
-              'Reason: Valid glycol\n'
-              '\n'
-              'SMILES: COc1cc(ccc1O)C(O)C(CO)c1ccc(O)c(OC)c1\n'
-              'Is glycol: True\n'
-              'Reason: Valid glycol\n'
-              '\n'
-              'SMILES: '
-              'CCCCC\\C=C/C[C@@H](O)C(O)\\C=C\\C(O)C\\C=C/CCCC([O-])=O\n'
-              'Is glycol: True\n'
-              'Reason: Valid glycol\n'
-              '\n'
-              'SMILES: OC(CC(O)CCC1=CC(OC)=C(O)C=C1)CCCCC\n'
-              'Is glycol: True\n'
-              'Reason: Valid glycol\n'
-              '\n'
-              'SMILES: OC[C@@H](O)COc1ccc(Cl)cc1\n'
-              'Is glycol: True\n'
-              'Reason: Valid glycol\n'
-              '\n'
-              'SMILES: OC(CC#CC(O)/C=C/CC)C=C\n'
-              'Is glycol: True\n'
-              'Reason: Valid glycol\n'
-              '\n'
-              'SMILES: C[C@H](O)CCO\n'
-              'Is glycol: True\n'
-              'Reason: Valid glycol\n'
-              '\n'
-              'SMILES: '
-              'CCCCCCCCCCCCCCCCCCC[C@H](O)C[C@H](O)CCCC[C@@H](C)[C@H](CC)OC\n'
-              'Is glycol: True\n'
-              'Reason: Valid glycol\n'
-              '\n'
-              'SMILES: C=CCCCCCCC(CO)O\n'
-              'Is glycol: True\n'
-              'Reason: Valid glycol\n'
-              '\n'
-              'SMILES: '
-              'C1=2C(=CC(C(C1=O)(OC(C(CC(CC)C)C)=O)C)=O)C=C(OC2)C(C(O)C)O\n'
-              'Is glycol: True\n'
-              'Reason: Valid glycol\n'
-              '\n',
+    'stdout': None,
     'num_true_positives': 10,
-    'num_false_positives': 10,
-    'num_true_negatives': 0,
+    'num_false_positives': 100,
+    'num_true_negatives': 150,
     'num_false_negatives': 0,
-    'precision': 0.5,
+    'num_negatives': None,
+    'precision': 0.09090909090909091,
     'recall': 1.0,
-    'f1': 0.6666666666666666,
-    'accuracy': None}
+    'f1': 0.16666666666666669,
+    'accuracy': 0.6153846153846154}

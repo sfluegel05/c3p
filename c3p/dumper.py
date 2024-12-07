@@ -1,7 +1,7 @@
 import pprint
 from distutils.command.config import config
 from pathlib import Path
-from typing import Union, List
+from typing import Union, List, Optional
 
 import pandas as pd
 import yaml
@@ -78,11 +78,13 @@ def result_as_dict(r: Result, e: EvaluationResult) -> dict:
     del d["code"]
     d["chemical_class"] = r.chemical_class.name
     del d["config"]
-    d["attempt"] = e.train_results.best_result.attempt
+    #d["attempt"] = e.train_results.best_result.attempt
     d["num_instances"] = len(r.chemical_class.instances)
+    for k in ["f1", "precision", "accuracy", "attempt"]:
+        d[f"train_{k}"] = getattr(e.train_results.best_result, k)
     return d
 
-def write_eval_results(expt: EvaluationExperiment, results_dir: Path) -> pd.DataFrame:
+def write_eval_results(expt: EvaluationExperiment, results_dir: Path, f1_threshold: Optional[float]=None) -> pd.DataFrame:
     """
     Write the results of an evaluation experiment to disk.
 
@@ -90,9 +92,11 @@ def write_eval_results(expt: EvaluationExperiment, results_dir: Path) -> pd.Data
         expt:
         results_dir:
 
-    Returns:
+    Returns: dataframe of filtered results
 
     """
+    if f1_threshold is None:
+        f1_threshold = expt.config.f1_threshold
     expt_path = results_dir / "experiment.yaml"
     with open(expt_path, "w") as f:
         f.write(yaml.dump(expt.model_dump()))
@@ -105,7 +109,7 @@ def write_eval_results(expt: EvaluationExperiment, results_dir: Path) -> pd.Data
     config = expt.config
 
     df_filtered = pd.DataFrame(
-        [result_as_dict(r.test_result, r) for r in eval_results if r.train_results.best_result.f1 > config.accuracy_threshold])
+        [result_as_dict(r.test_result, r) for r in eval_results if r.train_results.best_result.f1 > f1_threshold])
     df_filtered["num_test_instances"] = df_filtered["num_true_positives"] + df_filtered["num_false_negatives"]
     df_filtered = df_filtered[df_filtered["num_test_instances"] > 0]
     df_filtered.to_csv(results_dir / "filtered_results.csv", index=False)

@@ -2,10 +2,13 @@
 Classifies: CHEBI:16961 monoacylglycerol phosphate
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_monoacylglycerol_phosphate(smiles: str):
     """
     Determines if a molecule is a monoacylglycerol phosphate.
+    These are derivatives of phosphoglycerols with only one fatty acid ester linkage.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -19,22 +22,31 @@ def is_monoacylglycerol_phosphate(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for phosphate group
-    phosphate_group = Chem.MolFromSmarts('P(O)(O)=O')
-    if not mol.HasSubstructMatch(phosphate_group):
+    phosphate_pattern = Chem.MolFromSmarts('[P](=O)([O,OH])[O,OH]')
+    if not mol.HasSubstructMatch(phosphate_pattern):
         return False, "No phosphate group found"
 
     # Check for glycerol backbone
-    glycerol_backbone = Chem.MolFromSmarts('OCC(O)CO')
-    if not mol.HasSubstructMatch(glycerol_backbone):
+    glycerol_pattern = Chem.MolFromSmarts('[CH2][CH][CH2]')
+    if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
 
-    # Check for one fatty acid ester linkage
-    ester_linkage = Chem.MolFromSmarts('C(=O)O')
-    ester_count = len(mol.GetSubstructMatches(ester_linkage))
-    if ester_count != 1:
-        return False, f"Expected 1 ester linkage, found {ester_count}"
+    # Check for ester linkage
+    ester_pattern = Chem.MolFromSmarts('[C](=O)[O][CH2,CH]')
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    
+    if len(ester_matches) == 0:
+        return False, "No ester linkages found"
+    elif len(ester_matches) > 1:
+        return False, "More than one ester linkage found - not a monoacylglycerol phosphate"
 
-    return True, "Molecule is a monoacylglycerol phosphate"
+    # Check for fatty acid chain (carbon chain of length >= 4)
+    fatty_acid_pattern = Chem.MolFromSmarts('CC(=O)O[CH2,CH]')
+    if not mol.HasSubstructMatch(fatty_acid_pattern):
+        return False, "No fatty acid chain found"
+
+    # If all checks pass, it's a monoacylglycerol phosphate
+    return True, "Molecule contains one fatty acid ester linkage, glycerol backbone, and phosphate group"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:16961',
@@ -44,21 +56,26 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:16961',
                                         'of the glycerol backbone ester-linked '
                                         'with a fatty acid.',
                           'parents': ['CHEBI:26707', 'CHEBI:37739']},
-    'config': {   'llm_model_name': 'lbl/gpt-4o',
-                  'accuracy_threshold': 0.95,
+    'config': {   'llm_model_name': 'lbl/claude-sonnet',
+                  'f1_threshold': 0.8,
                   'max_attempts': 5,
-                  'max_negative': 20,
+                  'max_negative_to_test': None,
+                  'max_positive_in_prompt': 50,
+                  'max_negative_in_prompt': 20,
+                  'max_instances_in_prompt': 100,
                   'test_proportion': 0.1},
+    'message': None,
     'attempt': 0,
     'success': True,
     'best': True,
     'error': '',
-    'stdout': '',
-    'num_true_positives': 11,
-    'num_false_positives': 5,
-    'num_true_negatives': 8,
-    'num_false_negatives': 2,
-    'precision': 0.6875,
-    'recall': 0.8461538461538461,
-    'f1': 0.7586206896551724,
-    'accuracy': None}
+    'stdout': None,
+    'num_true_positives': 9,
+    'num_false_positives': 100,
+    'num_true_negatives': 17242,
+    'num_false_negatives': 4,
+    'num_negatives': None,
+    'precision': 0.08256880733944955,
+    'recall': 0.6923076923076923,
+    'f1': 0.1475409836065574,
+    'accuracy': 0.9940074906367041}

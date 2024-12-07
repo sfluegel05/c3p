@@ -2,14 +2,15 @@
 Classifies: CHEBI:167095 secondary fatty alcohol
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_secondary_fatty_alcohol(smiles: str):
     """
     Determines if a molecule is a secondary fatty alcohol.
-
+    
     Args:
         smiles (str): SMILES string of the molecule
-
+        
     Returns:
         bool: True if molecule is a secondary fatty alcohol, False otherwise
         str: Reason for classification
@@ -17,32 +18,79 @@ def is_secondary_fatty_alcohol(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Check for the presence of a hydroxyl group
-    hydroxyl_groups = [atom for atom in mol.GetAtoms() if atom.GetSymbol() == 'O' and atom.GetDegree() == 1]
-    if not hydroxyl_groups:
+        
+    # Check for presence of OH group
+    oh_pattern = Chem.MolFromSmarts('[OH1]')
+    oh_matches = mol.GetSubstructMatches(oh_pattern)
+    if not oh_matches:
         return False, "No hydroxyl group found"
-
-    # Check if the hydroxyl group is attached to a non-terminal carbon
-    for hydroxyl in hydroxyl_groups:
-        attached_carbons = [neighbor for neighbor in hydroxyl.GetNeighbors() if neighbor.GetSymbol() == 'C']
-        if len(attached_carbons) != 1:
-            continue
-        attached_carbon = attached_carbons[0]
+    
+    if len(oh_matches) > 1:
+        return False, "Multiple hydroxyl groups found"
         
-        # Check if the attached carbon is non-terminal
-        carbon_neighbors = [neighbor for neighbor in attached_carbon.GetNeighbors() if neighbor.GetSymbol() == 'C']
-        if len(carbon_neighbors) < 2:
-            continue
+    # Get the carbon atom connected to OH
+    oh_atom = mol.GetAtomWithIdx(oh_matches[0][0])
+    c_atom = oh_atom.GetNeighbors()[0]
+    
+    if c_atom.GetSymbol() != 'C':
+        return False, "Hydroxyl not attached to carbon"
         
-        # Check the length of the carbon chain
-        carbon_chain_length = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'C')
-        if carbon_chain_length < 3:
-            return False, f"Carbon chain length {carbon_chain_length} is less than 3"
+    # Check if OH is attached to secondary carbon
+    c_neighbors = c_atom.GetNeighbors()
+    carbon_neighbors = sum(1 for n in c_neighbors if n.GetSymbol() == 'C')
+    if carbon_neighbors != 2:
+        return False, "Hydroxyl not attached to secondary carbon"
+        
+    # Count total carbons in longest chain
+    carbon_pattern = Chem.MolFromSmarts('C-C-C') # Minimum 3 carbons
+    carbon_matches = mol.GetSubstructMatches(carbon_pattern)
+    if not carbon_matches:
+        return False, "No valid carbon chain found"
+        
+    # Find the longest carbon chain containing the OH group
+    def find_chain_length(atom, visited):
+        if atom.GetSymbol() != 'C':
+            return 0
+        max_length = 0
+        visited.add(atom.GetIdx())
+        for neighbor in atom.GetNeighbors():
+            if neighbor.GetIdx() not in visited and neighbor.GetSymbol() == 'C':
+                length = 1 + find_chain_length(neighbor, visited.copy())
+                max_length = max(max_length, length)
+        return max_length
 
-        return True, "Valid secondary fatty alcohol"
+    chain_length = 1 + find_chain_length(c_atom, {c_atom.GetIdx()})
+    
+    if chain_length < 3:
+        return False, "Chain too short (less than 3 carbons)"
+    if chain_length > 27:
+        return False, "Chain too long (more than 27 carbons)"
+    
+    # Check if carbon with OH is saturated
+    for bond in c_atom.GetBonds():
+        if bond.GetBondType() != Chem.BondType.SINGLE:
+            return False, "Carbon with hydroxyl group is not saturated"
+    
+    # Calculate position of OH group
+    def count_carbons_to_end(atom, visited, direction):
+        if atom.GetSymbol() != 'C':
+            return 0
+        count = 1
+        visited.add(atom.GetIdx())
+        max_chain = 0
+        for neighbor in atom.GetNeighbors():
+            if neighbor.GetIdx() not in visited and neighbor.GetSymbol() == 'C':
+                chain_length = count_carbons_to_end(neighbor, visited.copy(), direction)
+                max_chain = max(max_chain, chain_length)
+        return count + max_chain
 
-    return False, "Hydroxyl group not attached to a non-terminal carbon"
+    # Count carbons in both directions from OH
+    visited = {c_atom.GetIdx()}
+    pos1 = count_carbons_to_end(c_atom, visited.copy(), 'forward')
+    pos2 = count_carbons_to_end(c_atom, visited.copy(), 'backward')
+    oh_position = min(pos1, pos2)
+
+    return True, f"Secondary fatty alcohol with {chain_length} carbons, OH at position {oh_position}"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:167095',
@@ -56,21 +104,27 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:167095',
                                         'unsaturated and may be branched or '
                                         'unbranched.',
                           'parents': ['CHEBI:24026', 'CHEBI:35681']},
-    'config': {   'llm_model_name': 'lbl/gpt-4o',
-                  'accuracy_threshold': 0.95,
+    'config': {   'llm_model_name': 'lbl/claude-sonnet',
+                  'f1_threshold': 0.8,
                   'max_attempts': 5,
-                  'max_negative': 20,
+                  'max_negative_to_test': None,
+                  'max_positive_in_prompt': 50,
+                  'max_negative_in_prompt': 20,
+                  'max_instances_in_prompt': 100,
                   'test_proportion': 0.1},
-    'attempt': 2,
+    'message': "Attempt failed: 'Mol' object has no attribute "
+               "'HasSubstructMatches'",
+    'attempt': 3,
     'success': True,
     'best': True,
     'error': '',
-    'stdout': '',
+    'stdout': None,
     'num_true_positives': 13,
-    'num_false_positives': 4,
-    'num_true_negatives': 9,
+    'num_false_positives': 100,
+    'num_true_negatives': 2158,
     'num_false_negatives': 0,
-    'precision': 0.7647058823529411,
+    'num_negatives': None,
+    'precision': 0.11504424778761062,
     'recall': 1.0,
-    'f1': 0.8666666666666666,
-    'accuracy': None}
+    'f1': 0.20634920634920637,
+    'accuracy': 0.9559665345662703}

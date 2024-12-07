@@ -2,54 +2,63 @@
 Classifies: CHEBI:17135 long-chain fatty alcohol
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import Descriptors
+from rdkit.Chem import rdMolDescriptors
 
 def is_long_chain_fatty_alcohol(smiles: str):
     """
-    Determines if a molecule is a long-chain fatty alcohol (C13 to C22).
-
+    Determines if a molecule is a long-chain fatty alcohol (C13-C22 with at least one OH group).
+    
     Args:
         smiles (str): SMILES string of the molecule
-
+        
     Returns:
         bool: True if molecule is a long-chain fatty alcohol, False otherwise
         str: Reason for classification
     """
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
-
-    # Check for the presence of an alcohol group (-OH)
-    alcohol_group = False
-    for atom in mol.GetAtoms():
-        if atom.GetSymbol() == 'O' and any(neighbor.GetSymbol() == 'C' for neighbor in atom.GetNeighbors()):
-            alcohol_group = True
-            break
-
-    if not alcohol_group:
-        return False, "No alcohol group found"
-
-    # Count the number of carbon atoms in the longest chain
-    carbon_chains = []
-    for atom in mol.GetAtoms():
-        if atom.GetSymbol() == 'C':
-            chain_length = 1
+        return None, "Invalid SMILES string"
+        
+    # Check for presence of OH group
+    oh_pattern = Chem.MolFromSmarts('[OH]')
+    if not mol.HasSubstructMatch(oh_pattern):
+        return False, "No hydroxyl group found"
+    
+    # Count carbons
+    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'C')
+    
+    # Check carbon count range for long chain (C13-C22)
+    if carbon_count < 13:
+        return False, f"Carbon chain too short (C{carbon_count})"
+    if carbon_count > 22:
+        return False, f"Carbon chain too long (C{carbon_count})"
+        
+    # Check for continuous carbon chain
+    longest_chain = 0
+    for i in range(mol.GetNumAtoms()):
+        if mol.GetAtomWithIdx(i).GetSymbol() == 'C':
+            # Do BFS from each carbon to find longest chain
             visited = set()
-            stack = [(atom, chain_length)]
-            while stack:
-                current_atom, current_length = stack.pop()
-                if current_atom.GetIdx() not in visited:
-                    visited.add(current_atom.GetIdx())
-                    for neighbor in current_atom.GetNeighbors():
-                        if neighbor.GetSymbol() == 'C' and neighbor.GetIdx() not in visited:
-                            stack.append((neighbor, current_length + 1))
-            carbon_chains.append(current_length)
+            queue = [(i, 1)]
+            while queue:
+                current, length = queue.pop(0)
+                visited.add(current)
+                
+                for neighbor in mol.GetAtomWithIdx(current).GetNeighbors():
+                    if neighbor.GetIdx() not in visited and neighbor.GetSymbol() == 'C':
+                        queue.append((neighbor.GetIdx(), length + 1))
+                        longest_chain = max(longest_chain, length + 1)
 
-    max_chain_length = max(carbon_chains) if carbon_chains else 0
-
-    if 13 <= max_chain_length <= 22:
-        return True, f"Long-chain fatty alcohol with a chain length of {max_chain_length} carbons"
-    else:
-        return False, f"Chain length of {max_chain_length} carbons is outside the range of C13 to C22"
+    if longest_chain < 13:
+        return False, f"Longest continuous carbon chain too short (C{longest_chain})"
+        
+    # Count number of OH groups
+    oh_count = len(mol.GetSubstructMatches(oh_pattern))
+    
+    return True, f"Long-chain fatty alcohol with {carbon_count} carbons and {oh_count} OH groups"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:17135',
@@ -57,22 +66,26 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:17135',
                           'definition': 'A fatty alcohol with a chain length '
                                         'ranging from C13 to C22.',
                           'parents': ['CHEBI:24026']},
-    'config': {   'llm_model_name': 'lbl/gpt-4o',
-                  'accuracy_threshold': 0.95,
+    'config': {   'llm_model_name': 'lbl/claude-sonnet',
+                  'f1_threshold': 0.8,
                   'max_attempts': 5,
-                  'max_negative': 20,
+                  'max_negative_to_test': None,
+                  'max_positive_in_prompt': 50,
+                  'max_negative_in_prompt': 20,
+                  'max_instances_in_prompt': 100,
                   'test_proportion': 0.1},
+    'message': None,
     'attempt': 0,
     'success': True,
     'best': True,
-    'error': '[19:48:51] WARNING: not removing hydrogen atom without '
-             'neighbors\n',
-    'stdout': '',
-    'num_true_positives': 38,
-    'num_false_positives': 0,
-    'num_true_negatives': 20,
-    'num_false_negatives': 3,
-    'precision': 1.0,
-    'recall': 0.926829268292683,
-    'f1': 0.9620253164556963,
-    'accuracy': None}
+    'error': '',
+    'stdout': None,
+    'num_true_positives': 30,
+    'num_false_positives': 100,
+    'num_true_negatives': 2331,
+    'num_false_negatives': 11,
+    'num_negatives': None,
+    'precision': 0.23076923076923078,
+    'recall': 0.7317073170731707,
+    'f1': 0.3508771929824562,
+    'accuracy': 0.9550970873786407}

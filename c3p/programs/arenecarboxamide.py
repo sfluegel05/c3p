@@ -2,11 +2,14 @@
 Classifies: CHEBI:22645 arenecarboxamide
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import Descriptors
+from rdkit.Chem import rdMolDescriptors
 
 def is_arenecarboxamide(smiles: str):
     """
-    Determines if a molecule is an arenecarboxamide (a monocarboxylic acid amide in which the amide linkage
-    is bonded directly to an arene ring system).
+    Determines if a molecule is an arenecarboxamide (a monocarboxylic acid amide 
+    in which the amide linkage is bonded directly to an arene ring system).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -15,35 +18,38 @@ def is_arenecarboxamide(smiles: str):
         bool: True if molecule is an arenecarboxamide, False otherwise
         str: Reason for classification
     """
+    # Convert SMILES to RDKit molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for the presence of an amide group
-    amide_pattern = Chem.MolFromSmarts('C(=O)N')
-    if not mol.HasSubstructMatch(amide_pattern):
-        return False, "No amide group found"
-
-    # Check if the amide group is bonded directly to an arene ring
+    # Look for amide groups
+    amide_pattern = Chem.MolFromSmarts('[C;!$(C=[!#6])]=O[NH][#6]')
     amide_matches = mol.GetSubstructMatches(amide_pattern)
-    for amide_match in amide_matches:
-        amide_carbon, amide_nitrogen = amide_match[0], amide_match[1]
-        amide_carbon_atom = mol.GetAtomWithIdx(amide_carbon)
-        amide_nitrogen_atom = mol.GetAtomWithIdx(amide_nitrogen)
+    
+    if not amide_matches:
+        return False, "No amide groups found"
 
-        # Check if the carbon or nitrogen of the amide is bonded to an aromatic ring
-        for neighbor in amide_carbon_atom.GetNeighbors():
+    # For each amide group, check if carbonyl carbon is directly bonded to an aromatic ring
+    for match in amide_matches:
+        carbonyl_carbon = mol.GetAtomWithIdx(match[0])
+        
+        # Get neighbors of carbonyl carbon
+        neighbors = [n for n in carbonyl_carbon.GetNeighbors() if n.GetIdx() not in match]
+        
+        # Check if any neighbor is part of an aromatic ring
+        for neighbor in neighbors:
             if neighbor.GetIsAromatic():
-                return True, "Amide group is bonded directly to an arene ring"
-        for neighbor in amide_nitrogen_atom.GetNeighbors():
-            if neighbor.GetIsAromatic():
-                return True, "Amide group is bonded directly to an arene ring"
+                # Get the aromatic ring containing this atom
+                ring_info = mol.GetRingInfo()
+                for ring in ring_info.AtomRings():
+                    if neighbor.GetIdx() in ring:
+                        # Verify all atoms in ring are aromatic
+                        ring_atoms = [mol.GetAtomWithIdx(i) for i in ring]
+                        if all(atom.GetIsAromatic() for atom in ring_atoms):
+                            return True, "Found amide group directly bonded to aromatic ring"
 
-    return False, "Amide group is not bonded directly to an arene ring"
-
-# Example usage
-smiles = 'CCOC1=CC=C(C=C1)NC(=O)C2=CC=C(C=C2)CNC3=C(C(=O)C3=O)NC4CCCCC4'
-print(is_arenecarboxamide(smiles))  # Should return (True, "Amide group is bonded directly to an arene ring")
+    return False, "No amide groups directly bonded to aromatic rings found"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:22645',
@@ -52,21 +58,26 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:22645',
                                         'the amide linkage is bonded directly '
                                         'to an arene ring system.',
                           'parents': ['CHEBI:29347', 'CHEBI:62733']},
-    'config': {   'llm_model_name': 'lbl/gpt-4o',
-                  'accuracy_threshold': 0.95,
+    'config': {   'llm_model_name': 'lbl/claude-sonnet',
+                  'f1_threshold': 0.0,
                   'max_attempts': 5,
-                  'max_negative': 20,
+                  'max_negative_to_test': None,
+                  'max_positive_in_prompt': 50,
+                  'max_negative_in_prompt': 20,
+                  'max_instances_in_prompt': 100,
                   'test_proportion': 0.1},
-    'attempt': 2,
+    'message': None,
+    'attempt': 0,
     'success': True,
     'best': True,
     'error': '',
-    'stdout': "(True, 'Amide group is bonded directly to an arene ring')\n",
-    'num_true_positives': 102,
-    'num_false_positives': 5,
-    'num_true_negatives': 15,
-    'num_false_negatives': 0,
-    'precision': 0.9532710280373832,
-    'recall': 1.0,
-    'f1': 0.9760765550239235,
-    'accuracy': None}
+    'stdout': None,
+    'num_true_positives': 0,
+    'num_false_positives': 0,
+    'num_true_negatives': 0,
+    'num_false_negatives': 100,
+    'num_negatives': None,
+    'precision': 0.0,
+    'recall': 0.0,
+    'f1': 0.0,
+    'accuracy': 0.0}

@@ -2,10 +2,13 @@
 Classifies: CHEBI:24059 fluorenes
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem.AllChem import GetSymmSSSR
 
 def is_fluorenes(smiles: str):
     """
-    Determines if a molecule is a fluorene.
+    Determines if a molecule is a fluorene derivative.
+    Fluorenes contain two benzene rings ortho-fused to a cyclopentane ring.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -16,38 +19,47 @@ def is_fluorenes(smiles: str):
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return None, "Invalid SMILES string"
 
-    # Generate the ring information
-    rings = mol.GetRingInfo()
-    atom_rings = rings.AtomRings()
+    # Get ring information
+    rings = list(GetSymmSSSR(mol))
+    if len(rings) < 3:
+        return False, "Less than 3 rings found - fluorenes require 3 fused rings"
 
-    # Check for at least three rings
-    if len(atom_rings) < 3:
-        return False, "Less than three rings found"
+    # Find 5-membered rings
+    five_rings = []
+    for ring in rings:
+        if len(ring) == 5:
+            five_rings.append(ring)
 
-    # Find all 6-membered rings and 5-membered rings
-    six_membered_rings = [ring for ring in atom_rings if len(ring) == 6]
-    five_membered_rings = [ring for ring in atom_rings if len(ring) == 5]
+    # Find 6-membered aromatic rings
+    six_rings = []
+    for ring in rings:
+        if len(ring) == 6:
+            atoms = [mol.GetAtomWithIdx(i) for i in ring]
+            if all(atom.GetIsAromatic() for atom in atoms):
+                six_rings.append(ring)
 
-    if len(six_membered_rings) < 2:
-        return False, "Less than two 6-membered rings found"
+    if len(six_rings) < 2:
+        return False, "Less than 2 benzene rings found"
+    
+    if len(five_rings) < 1:
+        return False, "No 5-membered ring found"
 
-    if len(five_membered_rings) < 1:
-        return False, "No 5-membered rings found"
+    # Check if rings are properly fused
+    for five_ring in five_rings:
+        benzene_count = 0
+        for six_ring in six_rings:
+            # Check if rings share exactly 2 atoms (ortho-fusion)
+            shared_atoms = set(five_ring).intersection(set(six_ring))
+            if len(shared_atoms) == 2:
+                benzene_count += 1
+        
+        if benzene_count == 2:
+            # Found a 5-membered ring fused to 2 benzene rings
+            return True, "Contains fluorene core structure (two benzene rings ortho-fused to cyclopentane)"
 
-    # Check for ortho-fusion between the benzene rings and the cyclopentane ring
-    for five_ring in five_membered_rings:
-        five_ring_set = set(five_ring)
-        ortho_fused = 0
-        for six_ring in six_membered_rings:
-            six_ring_set = set(six_ring)
-            if len(five_ring_set.intersection(six_ring_set)) >= 2:
-                ortho_fused += 1
-        if ortho_fused >= 2:
-            return True, "Fluorene structure found"
-
-    return False, "No ortho-fused structure found"
+    return False, "Rings are not properly fused in fluorene arrangement"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:24059',
@@ -57,21 +69,26 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:24059',
                                         'benzene rings ortho-fused to '
                                         'cyclopentane.',
                           'parents': ['CHEBI:38032']},
-    'config': {   'llm_model_name': 'lbl/gpt-4o',
-                  'accuracy_threshold': 0.95,
+    'config': {   'llm_model_name': 'lbl/claude-sonnet',
+                  'f1_threshold': 0.0,
                   'max_attempts': 5,
-                  'max_negative': 20,
+                  'max_negative_to_test': None,
+                  'max_positive_in_prompt': 50,
+                  'max_negative_in_prompt': 20,
+                  'max_instances_in_prompt': 100,
                   'test_proportion': 0.1},
+    'message': None,
     'attempt': 0,
     'success': True,
     'best': True,
     'error': '',
-    'stdout': '',
-    'num_true_positives': 10,
-    'num_false_positives': 1,
-    'num_true_negatives': 9,
-    'num_false_negatives': 0,
-    'precision': 0.9090909090909091,
-    'recall': 1.0,
-    'f1': 0.9523809523809523,
-    'accuracy': None}
+    'stdout': None,
+    'num_true_positives': 7,
+    'num_false_positives': 100,
+    'num_true_negatives': 15885,
+    'num_false_negatives': 3,
+    'num_negatives': None,
+    'precision': 0.06542056074766354,
+    'recall': 0.7,
+    'f1': 0.11965811965811965,
+    'accuracy': 0.9935604876523914}

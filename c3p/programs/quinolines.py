@@ -6,9 +6,10 @@ from rdkit.Chem import AllChem
 from rdkit.Chem import Descriptors
 from rdkit.Chem import rdMolDescriptors
 
+
 def is_quinolines(smiles: str):
     """
-    Determines if a molecule is a quinoline (benzene ring ortho fused to carbons 2 and 3 of a pyridine ring).
+    Determines if a molecule is a quinoline (contains a benzene ring ortho fused to carbons 2 and 3 of a pyridine ring).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,40 +22,55 @@ def is_quinolines(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Generate the ring information
-    rings = mol.GetRingInfo()
-
     # Find all rings
-    atom_rings = rings.AtomRings()
+    rings = mol.GetRingInfo()
+    
+    # Get all aromatic rings
+    aromatic_rings = []
+    for ring in rings.AtomRings():
+        if len(ring) == 6:
+            atoms = [mol.GetAtomWithIdx(i) for i in ring]
+            if all(atom.GetIsAromatic() for atom in atoms):
+                aromatic_rings.append(ring)
 
-    # Check for the presence of a benzene ring and a pyridine ring
-    benzene_rings = []
+    if len(aromatic_rings) < 2:
+        return False, "Does not contain at least 2 aromatic rings"
+
+    # Find pyridine ring (6-membered aromatic ring with 1 nitrogen)
     pyridine_rings = []
-    for ring in atom_rings:
+    for ring in aromatic_rings:
         atoms = [mol.GetAtomWithIdx(i) for i in ring]
-        if len(ring) == 6 and all(atom.GetSymbol() == 'C' for atom in atoms):
-            benzene_rings.append(ring)
-        elif len(ring) == 6 and sum(1 for atom in atoms if atom.GetSymbol() == 'N') == 1:
+        n_count = sum(1 for atom in atoms if atom.GetSymbol() == 'N')
+        if n_count == 1:
             pyridine_rings.append(ring)
 
-    if not benzene_rings:
-        return False, "No benzene rings found"
     if not pyridine_rings:
-        return False, "No pyridine rings found"
+        return False, "No pyridine ring found"
 
-    # Check for ortho fusion between benzene and pyridine rings at carbons 2 and 3 of pyridine
-    for benzene_ring in benzene_rings:
-        for pyridine_ring in pyridine_rings:
-            common_atoms = set(benzene_ring).intersection(pyridine_ring)
-            if len(common_atoms) == 2:
+    # Find benzene ring (6-membered aromatic ring with all carbons)
+    benzene_rings = []
+    for ring in aromatic_rings:
+        atoms = [mol.GetAtomWithIdx(i) for i in ring]
+        if all(atom.GetSymbol() == 'C' for atom in atoms):
+            benzene_rings.append(ring)
+
+    if not benzene_rings:
+        return False, "No benzene ring found"
+
+    # Check if benzene and pyridine rings share exactly 2 atoms
+    for pyridine_ring in pyridine_rings:
+        for benzene_ring in benzene_rings:
+            shared_atoms = set(pyridine_ring).intersection(set(benzene_ring))
+            if len(shared_atoms) == 2:
+                # Check if shared atoms are carbons 2 and 3 of pyridine ring
                 pyridine_atoms = [mol.GetAtomWithIdx(i) for i in pyridine_ring]
-                pyridine_indices = [atom.GetIdx() for atom in pyridine_atoms]
-                # Check if the common atoms are adjacent in the pyridine ring
-                common_indices = sorted(common_atoms)
-                if pyridine_indices.index(common_indices[1]) - pyridine_indices.index(common_indices[0]) == 1:
-                    return True, "Quinoline structure found"
-    
-    return False, "No ortho fusion between benzene and pyridine rings at carbons 2 and 3 of pyridine"
+                nitrogen_idx = next(i for i, atom in enumerate(pyridine_atoms) if atom.GetSymbol() == 'N')
+                shared_positions = [(i-nitrogen_idx)%6 for i, atom in enumerate(pyridine_atoms) 
+                                 if atom.GetIdx() in shared_atoms]
+                if set(shared_positions) == {2,3}:
+                    return True, "Contains benzene ring ortho fused to carbons 2 and 3 of pyridine ring"
+
+    return False, "Benzene ring not properly fused to pyridine ring"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:26513',
@@ -64,21 +80,26 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:26513',
                                         'benzene ring ortho fused to carbons 2 '
                                         'and 3 of a pyridine ring.',
                           'parents': ['CHEBI:33659', 'CHEBI:38101']},
-    'config': {   'llm_model_name': 'lbl/gpt-4o',
-                  'accuracy_threshold': 0.95,
+    'config': {   'llm_model_name': 'lbl/claude-sonnet',
+                  'f1_threshold': 0.0,
                   'max_attempts': 5,
-                  'max_negative': 20,
+                  'max_negative_to_test': None,
+                  'max_positive_in_prompt': 50,
+                  'max_negative_in_prompt': 20,
+                  'max_instances_in_prompt': 100,
                   'test_proportion': 0.1},
-    'attempt': 4,
+    'message': None,
+    'attempt': 0,
     'success': True,
     'best': True,
     'error': '',
-    'stdout': '',
-    'num_true_positives': 103,
+    'stdout': None,
+    'num_true_positives': 0,
     'num_false_positives': 0,
-    'num_true_negatives': 20,
-    'num_false_negatives': 73,
-    'precision': 1.0,
-    'recall': 0.5852272727272727,
-    'f1': 0.7383512544802867,
-    'accuracy': None}
+    'num_true_negatives': 0,
+    'num_false_negatives': 100,
+    'num_negatives': None,
+    'precision': 0.0,
+    'recall': 0.0,
+    'f1': 0,
+    'accuracy': 0.0}

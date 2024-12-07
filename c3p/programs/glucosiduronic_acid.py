@@ -3,43 +3,41 @@ Classifies: CHEBI:24302 glucosiduronic acid
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import Descriptors
-from rdkit.Chem import rdMolDescriptors
 
 def is_glucosiduronic_acid(smiles: str):
     """
-    Determines if a molecule is a glucosiduronic acid (glucuronic acid linked to another substance via a glycosidic bond).
-
+    Determines if a molecule is a glucosiduronic acid (contains glucuronic acid linked via glycosidic bond).
+    
     Args:
         smiles (str): SMILES string of the molecule
-
+        
     Returns:
         bool: True if molecule is a glucosiduronic acid, False otherwise
         str: Reason for classification
     """
+    
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for presence of glucuronic acid fragment
-    glucuronic_acid_smiles = "O[C@@H]1[C@@H](O)[C@@H](O[C@@H]([C@H]1O)C(O)=O)"
-    glucuronic_acid_mol = Chem.MolFromSmiles(glucuronic_acid_smiles)
-    if glucuronic_acid_mol is None:
-        return None, "Error in glucuronic acid SMILES string"
-
-    # Check if the molecule contains the glucuronic acid fragment
-    if not mol.HasSubstructMatch(glucuronic_acid_mol):
-        return False, "No glucuronic acid fragment found"
-
-    # Check for glycosidic bond (an oxygen atom linking glucuronic acid to another part of the molecule)
-    for atom in mol.GetAtoms():
-        if atom.GetSymbol() == 'O':
-            neighbors = atom.GetNeighbors()
-            if len(neighbors) == 2:
-                if (neighbors[0].GetSymbol() == 'C' and neighbors[1].GetSymbol() == 'C') or (neighbors[0].GetSymbol() == 'C' and neighbors[1].GetSymbol() == 'H'):
-                    return True, "Glucuronic acid linked via glycosidic bond"
-
-    return False, "No glycosidic bond found"
+    # SMARTS pattern for glucuronic acid core with glycosidic bond
+    # Matches a pyranose ring with carboxylic acid and OH groups in glucuronic acid configuration
+    # connected via an oxygen to another carbon (glycosidic bond)
+    glucuronic_pattern = Chem.MolFromSmarts('[OX2]([#6])[C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O')
+    
+    if not mol.HasSubstructMatch(glucuronic_pattern):
+        return False, "No glucuronic acid core with glycosidic linkage found"
+    
+    # Count matches
+    matches = len(mol.GetSubstructMatches(glucuronic_pattern))
+    
+    if matches >= 1:
+        if matches == 1:
+            return True, "Contains one glucuronic acid moiety with glycosidic linkage"
+        else:
+            return True, f"Contains {matches} glucuronic acid moieties with glycosidic linkages"
+            
+    return False, "Structure does not match glucosiduronic acid pattern"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:24302',
@@ -48,21 +46,28 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:24302',
                                         'glucuronic acid to another substance '
                                         'via a glycosidic bond.',
                           'parents': ['CHEBI:35314', 'CHEBI:63436']},
-    'config': {   'llm_model_name': 'lbl/gpt-4o',
-                  'accuracy_threshold': 0.95,
+    'config': {   'llm_model_name': 'lbl/claude-sonnet',
+                  'f1_threshold': 0.0,
                   'max_attempts': 5,
-                  'max_negative': 20,
+                  'max_negative_to_test': None,
+                  'max_positive_in_prompt': 50,
+                  'max_negative_in_prompt': 20,
+                  'max_instances_in_prompt': 100,
                   'test_proportion': 0.1},
-    'attempt': 0,
+    'message': "Attempt failed: cannot import name 'rdDecomposition' from "
+               "'rdkit.Chem' "
+               '(/Users/cjm/Library/Caches/pypoetry/virtualenvs/c3p-93U7KWO_-py3.11/lib/python3.11/site-packages/rdkit/Chem/__init__.py)',
+    'attempt': 1,
     'success': True,
     'best': True,
     'error': '',
-    'stdout': '',
-    'num_true_positives': 0,
-    'num_false_positives': 0,
-    'num_true_negatives': 20,
-    'num_false_negatives': 47,
-    'precision': 0.0,
-    'recall': 0.0,
-    'f1': 0.0,
-    'accuracy': None}
+    'stdout': None,
+    'num_true_positives': 46,
+    'num_false_positives': 100,
+    'num_true_negatives': 16901,
+    'num_false_negatives': 1,
+    'num_negatives': None,
+    'precision': 0.3150684931506849,
+    'recall': 0.9787234042553191,
+    'f1': 0.47668393782383417,
+    'accuracy': 0.9940755513843266}

@@ -2,61 +2,52 @@
 Classifies: CHEBI:15889 sterol
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem.AllChem import GetMorganFingerprintAsBitVect
 from rdkit.Chem import rdMolDescriptors
 
 def is_sterol(smiles: str):
     """
-    Determines if a molecule is a sterol (3-hydroxy steroid closely related to cholestan-3-ol).
-
+    Determines if a molecule is a sterol based on structural characteristics.
+    
     Args:
         smiles (str): SMILES string of the molecule
-
+        
     Returns:
         bool: True if molecule is a sterol, False otherwise
         str: Reason for classification
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return None, "Invalid SMILES string"
 
-    # Check if the molecule contains a 3-hydroxy group
-    has_3_hydroxy = False
-    for atom in mol.GetAtoms():
-        if atom.GetSymbol() == 'O' and atom.GetTotalNumHs() == 1:
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetSymbol() == 'C':
-                    idx = neighbor.GetIdx()
-                    if any(bond.GetIdx() == 3 for bond in mol.GetBonds() if bond.GetBeginAtomIdx() == idx or bond.GetEndAtomIdx() == idx):
-                        has_3_hydroxy = True
-                        break
-        if has_3_hydroxy:
-            break
+    # Check for presence of OH group
+    if '[OH]' not in Chem.MolToSmiles(mol, allHsExplicit=True) and 'O' not in Chem.MolToSmiles(mol):
+        return False, "No hydroxyl group present"
 
-    if not has_3_hydroxy:
-        return False, "No 3-hydroxy group found"
+    # Count rings
+    ri = mol.GetRingInfo()
+    if len(ri.AtomRings()) < 4:
+        return False, "Does not have required 4-ring steroid core structure"
+        
+    # Check for tetracyclic structure characteristic of steroids
+    matches = mol.GetSubstructMatches(Chem.MolFromSmarts('[C]1~[C]~[C]~[C]2~[C]~[C]~[C]3~[C]~[C]~[C]4~[C]~[C]~[C](~[C]~4)~[C]~3~[C]~2~1'))
+    if not matches:
+        return False, "Does not match steroid core pattern"
 
-    # Check if the molecule has a steroid backbone (cyclopentanoperhydrophenanthrene)
-    steroid_backbone = False
-    ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() >= 4:
-        rings = ring_info.AtomRings()
-        if any(len(ring) == 5 for ring in rings) and sum(len(ring) == 6 for ring in rings) >= 3:
-            steroid_backbone = True
+    # Check for 3-hydroxyl group
+    matches = mol.GetSubstructMatches(Chem.MolFromSmarts('[CH2][CH2][CH](O)[CH2][CH2]'))
+    if not matches:
+        return False, "No 3-hydroxyl group found"
 
-    if not steroid_backbone:
-        return False, "No steroid backbone found"
+    # Look for cholestane-like skeleton
+    matches = mol.GetSubstructMatches(Chem.MolFromSmarts('CC(C)CCC[CH]'))
+    if not matches:
+        matches = mol.GetSubstructMatches(Chem.MolFromSmarts('CC(C)=CCC[CH]'))
+        if not matches:
+            return False, "Side chain not similar to cholestane"
 
-    # Check for additional carbon atoms in the side chain
-    additional_carbon_side_chain = False
-    for atom in mol.GetAtoms():
-        if atom.GetSymbol() == 'C' and len(atom.GetNeighbors()) == 4:
-            additional_carbon_side_chain = True
-            break
-
-    if additional_carbon_side_chain:
-        return True, "Sterol with additional carbon atoms in the side chain"
-    else:
-        return True, "Sterol without additional carbon atoms in the side chain"
+    return True, "Matches sterol structural requirements"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:15889',
@@ -66,21 +57,26 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:15889',
                                         '(additional carbon atoms may be '
                                         'present in the side chain).',
                           'parents': ['CHEBI:36834']},
-    'config': {   'llm_model_name': 'lbl/gpt-4o',
-                  'accuracy_threshold': 0.95,
+    'config': {   'llm_model_name': 'lbl/claude-sonnet',
+                  'f1_threshold': 0.8,
                   'max_attempts': 5,
-                  'max_negative': 20,
+                  'max_negative_to_test': None,
+                  'max_positive_in_prompt': 50,
+                  'max_negative_in_prompt': 20,
+                  'max_instances_in_prompt': 100,
                   'test_proportion': 0.1},
-    'attempt': 1,
+    'message': None,
+    'attempt': 0,
     'success': True,
     'best': True,
     'error': '',
-    'stdout': '',
-    'num_true_positives': 1,
-    'num_false_positives': 3,
-    'num_true_negatives': 16,
-    'num_false_negatives': 18,
-    'precision': 0.25,
-    'recall': 0.05263157894736842,
-    'f1': 0.08695652173913043,
-    'accuracy': None}
+    'stdout': None,
+    'num_true_positives': 0,
+    'num_false_positives': 0,
+    'num_true_negatives': 183744,
+    'num_false_negatives': 19,
+    'num_negatives': None,
+    'precision': 0.0,
+    'recall': 0.0,
+    'f1': 0.0,
+    'accuracy': 0.9998966059544087}

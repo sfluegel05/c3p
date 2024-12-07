@@ -3,16 +3,14 @@ Classifies: CHEBI:24373 glycine derivative
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import Descriptors
-from rdkit.Chem import rdMolDescriptors
 
 def is_glycine_derivative(smiles: str):
     """
     Determines if a molecule is a glycine derivative.
-
+    
     Args:
         smiles (str): SMILES string of the molecule
-
+        
     Returns:
         bool: True if molecule is a glycine derivative, False otherwise
         str: Reason for classification
@@ -20,31 +18,24 @@ def is_glycine_derivative(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+    
+    # Look for glycine substructure patterns
+    patterns = [
+        ("[NX3;H2,H1;!$(NC=O)][CH2]C(=O)[OH]", "unmodified glycine"),
+        ("[NX3;H1;$(NC=O)][CH2]C(=O)[OH]", "N-acylated glycine"),
+        ("[NX3;H2,H1][CH2]C(=O)[O;!$(OH)]", "glycine ester"),
+        ("[NX3;H2,H1][CH2]C(=O)[NX3]", "glycine amide"),
+        ("[NX3;H0,H1][CH2]C(=O)[OH]", "N-substituted glycine"),
+        ("[NX3;H2,H1][CH2]C(=O)[!OH]", "modified carboxy glycine"),
+        ("[NX3][CH][C](=O)[OH]", "alpha-substituted glycine")
+    ]
 
-    # Glycine SMILES: NCC(=O)O
-    glycine = Chem.MolFromSmiles('NCC(=O)O')
-    if glycine is None:
-        return False, "Error creating glycine molecule"
+    for pattern, reason in patterns:
+        patt = Chem.MolFromSmarts(pattern)
+        if patt is not None and mol.HasSubstructMatch(patt):
+            return True, f"Contains {reason}"
 
-    # Check if the molecule contains the glycine core structure
-    glycine_match = mol.HasSubstructMatch(glycine)
-    if not glycine_match:
-        return False, "Molecule does not contain the glycine core structure"
-
-    # Check for modifications at the amino group or carboxy group, or replacement of any hydrogen by a heteroatom
-    for atom in mol.GetAtoms():
-        if atom.GetSymbol() == 'N' and atom.GetDegree() > 1:
-            return True, "Modification at the amino group"
-        if atom.GetSymbol() == 'C' and atom.GetDegree() > 3:
-            return True, "Modification at the carboxy group"
-        if atom.GetSymbol() != 'C' and atom.GetSymbol() != 'H':
-            return True, "Replacement of hydrogen by a heteroatom"
-
-    return False, "No modifications found"
-
-# Test the function with a known glycine derivative
-smiles = "C(CNC(=O)CCC)(=O)O"  # butyrylglycine
-print(is_glycine_derivative(smiles))
+    return False, "No glycine-like substructure found"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:24373',
@@ -55,22 +46,38 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:24373',
                                         'or from the replacement of any '
                                         'hydrogen of glycine by a heteroatom.',
                           'parents': ['CHEBI:83811']},
-    'config': {   'llm_model_name': 'lbl/gpt-4o',
-                  'accuracy_threshold': 0.95,
+    'config': {   'llm_model_name': 'lbl/claude-sonnet',
+                  'f1_threshold': 0.0,
                   'max_attempts': 5,
-                  'max_negative': 20,
+                  'max_negative_to_test': None,
+                  'max_positive_in_prompt': 50,
+                  'max_negative_in_prompt': 20,
+                  'max_instances_in_prompt': 100,
                   'test_proportion': 0.1},
-    'attempt': 0,
-    'success': False,
+    'message': 'Attempt failed: Python argument types in\n'
+               '    Mol.HasSubstructMatch(Mol, NoneType)\n'
+               'did not match C++ signature:\n'
+               '    HasSubstructMatch(RDKit::ROMol self, RDKit::MolBundle '
+               'query, RDKit::SubstructMatchParameters params=True)\n'
+               '    HasSubstructMatch(RDKit::ROMol self, RDKit::ROMol query, '
+               'RDKit::SubstructMatchParameters params)\n'
+               '    HasSubstructMatch(RDKit::ROMol self, RDKit::MolBundle '
+               'query, bool recursionPossible=True, bool useChirality=False, '
+               'bool useQueryQueryMatches=False)\n'
+               '    HasSubstructMatch(RDKit::ROMol self, RDKit::ROMol query, '
+               'bool recursionPossible=True, bool useChirality=False, bool '
+               'useQueryQueryMatches=False)',
+    'attempt': 2,
+    'success': True,
     'best': True,
-    'error': "(unicode error) 'unicodeescape' codec can't decode bytes in "
-             'position 7-8: malformed \\N character escape (<string>, line 1)',
+    'error': '',
     'stdout': None,
-    'num_true_positives': 0,
-    'num_false_positives': 0,
-    'num_true_negatives': 0,
-    'num_false_negatives': 0,
-    'precision': 0.0,
-    'recall': 0.0,
-    'f1': 0.0,
-    'accuracy': None}
+    'num_true_positives': 24,
+    'num_false_positives': 100,
+    'num_true_negatives': 981,
+    'num_false_negatives': 4,
+    'num_negatives': None,
+    'precision': 0.1935483870967742,
+    'recall': 0.8571428571428571,
+    'f1': 0.3157894736842105,
+    'accuracy': 0.9062218214607755}

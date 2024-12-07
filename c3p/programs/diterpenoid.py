@@ -2,46 +2,60 @@
 Classifies: CHEBI:23849 diterpenoid
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import Descriptors
+from rdkit.Chem import rdMolDescriptors
 
 def is_diterpenoid(smiles: str):
     """
-    Determines if a molecule is a diterpenoid.
-
+    Determines if a molecule is a diterpenoid based on its SMILES string.
+    
     Args:
         smiles (str): SMILES string of the molecule
-
+        
     Returns:
         bool: True if molecule is a diterpenoid, False otherwise
         str: Reason for classification
     """
+    
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Calculate the molecular formula
-    formula = Chem.rdMolDescriptors.CalcMolFormula(mol)
+    # Check carbon count - diterpenoids have C20 skeleton base
+    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'C')
+    if carbon_count < 18 or carbon_count > 22: # Allow some variation from C20
+        return False, f"Carbon count {carbon_count} outside typical diterpenoid range (18-22)"
 
-    # Check if the molecular formula corresponds to a diterpenoid (C20 skeleton)
-    if 'C20' not in formula:
-        return False, "Molecular formula does not contain C20 skeleton"
-
-    # Check if the molecule is a terpenoid (contains oxygen)
-    if 'O' not in formula:
-        return False, "Molecule does not contain oxygen, not a terpenoid"
-
-    # Check for common diterpenoid features (e.g., rings, double bonds, functional groups)
+    # Check for cyclic structure
     ring_info = mol.GetRingInfo()
-    num_rings = ring_info.NumRings()
-    if num_rings < 1:
-        return False, "No rings found, not a typical diterpenoid structure"
+    if not ring_info.NumRings():
+        return False, "No ring structures found"
 
-    # Check for specific functional groups that are common in diterpenoids
-    functional_groups = ['C=O', 'C-O', 'C-OH']
-    has_functional_group = any(mol.HasSubstructMatch(Chem.MolFromSmarts(fg)) for fg in functional_groups)
-    if not has_functional_group:
-        return False, "No common diterpenoid functional groups found"
+    # Check for methyl groups
+    methyl_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts('C[CH3]')))
+    if methyl_count < 2:
+        return False, "Too few methyl groups"
 
-    return True, "Molecule is classified as a diterpenoid"
+    # Calculate number of sp2 carbons (for unsaturation)
+    sp2_carbons = len([atom for atom in mol.GetAtoms() if 
+                      atom.GetSymbol() == 'C' and 
+                      atom.GetHybridization() == Chem.HybridizationType.SP2])
+    
+    # Calculate number of oxygen atoms (for oxidation)
+    oxygen_count = len([atom for atom in mol.GetAtoms() if atom.GetSymbol() == 'O'])
+
+    # Typical diterpenoid characteristics found
+    reasons = []
+    if sp2_carbons > 0:
+        reasons.append(f"Contains {sp2_carbons} unsaturated carbons")
+    if oxygen_count > 0:
+        reasons.append(f"Contains {oxygen_count} oxygen atoms")
+    reasons.append(f"Contains {methyl_count} methyl groups")
+    reasons.append(f"Contains {ring_info.NumRings()} rings")
+    reasons.append(f"Contains {carbon_count} carbons")
+
+    return True, "; ".join(reasons)
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:23849',
@@ -54,44 +68,26 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:23849',
                                         'of one or more skeletal atoms '
                                         '(generally methyl groups).',
                           'parents': ['CHEBI:26873']},
-    'config': {   'llm_model_name': 'lbl/gpt-4o',
-                  'accuracy_threshold': 0.95,
+    'config': {   'llm_model_name': 'lbl/claude-sonnet',
+                  'f1_threshold': 0.0,
                   'max_attempts': 5,
-                  'max_negative': 20,
+                  'max_negative_to_test': None,
+                  'max_positive_in_prompt': 50,
+                  'max_negative_in_prompt': 20,
+                  'max_instances_in_prompt': 100,
                   'test_proportion': 0.1},
+    'message': None,
     'attempt': 0,
     'success': True,
     'best': True,
-    'error': '[15:19:39] SMILES Parse Error: syntax error while parsing: '
-             'CO[C@]1(C)CC\\C=C(C)\\C[C@H]2OC(=O)C(CC[C@](O)(C(C)C)\\C=C\x01)=C2\n'
-             '[15:19:39] SMILES Parse Error: Failed parsing SMILES '
-             "'CO[C@]1(C)CC\\C=C(C)\\C[C@H]2OC(=O)C(CC[C@](O)(C(C)C)\\C=C\x01)=C2' "
-             'for input: '
-             "'CO[C@]1(C)CC\\C=C(C)\\C[C@H]2OC(=O)C(CC[C@](O)(C(C)C)\\C=C\x01)=C2'\n"
-             '[15:19:39] SMILES Parse Error: syntax error while parsing: '
-             '[H][C@@]12OC(=O)C(=C)[C@]1([H])CC\\C(C)=C\\CC\\C(=C/CC\\C(C)=C\x02)C(O)=O\n'
-             '[15:19:39] SMILES Parse Error: Failed parsing SMILES '
-             "'[H][C@@]12OC(=O)C(=C)[C@]1([H])CC\\C(C)=C\\CC\\C(=C/CC\\C(C)=C\x02)C(O)=O' "
-             'for input: '
-             "'[H][C@@]12OC(=O)C(=C)[C@]1([H])CC\\C(C)=C\\CC\\C(=C/CC\\C(C)=C\x02)C(O)=O'\n"
-             '[15:19:39] SMILES Parse Error: syntax error while parsing: '
-             'CO[C@]1(C)CC\\C=C(C)\\C[C@H]2OC(=O)C(CC[C@@H](\\C=C\x01)C(C)C)=C2\n'
-             '[15:19:39] SMILES Parse Error: Failed parsing SMILES '
-             "'CO[C@]1(C)CC\\C=C(C)\\C[C@H]2OC(=O)C(CC[C@@H](\\C=C\x01)C(C)C)=C2' "
-             'for input: '
-             "'CO[C@]1(C)CC\\C=C(C)\\C[C@H]2OC(=O)C(CC[C@@H](\\C=C\x01)C(C)C)=C2'\n"
-             '[15:19:39] SMILES Parse Error: syntax error while parsing: '
-             'CC(=C)C1=C/C=C(C)/CC\\C=C(C)\\C[C@H]2OC(=O)C(CC\x01)=C2\n'
-             '[15:19:39] SMILES Parse Error: Failed parsing SMILES '
-             "'CC(=C)C1=C/C=C(C)/CC\\C=C(C)\\C[C@H]2OC(=O)C(CC\x01)=C2' for "
-             'input: '
-             "'CC(=C)C1=C/C=C(C)/CC\\C=C(C)\\C[C@H]2OC(=O)C(CC\x01)=C2'\n",
-    'stdout': '',
-    'num_true_positives': 66,
+    'error': '',
+    'stdout': None,
+    'num_true_positives': 57,
     'num_false_positives': 0,
-    'num_true_negatives': 20,
-    'num_false_negatives': 168,
+    'num_true_negatives': 0,
+    'num_false_negatives': 100,
+    'num_negatives': None,
     'precision': 1.0,
-    'recall': 0.28205128205128205,
-    'f1': 0.44000000000000006,
-    'accuracy': None}
+    'recall': 0.3630573248407643,
+    'f1': 0.5327102803738317,
+    'accuracy': 0.3630573248407643}

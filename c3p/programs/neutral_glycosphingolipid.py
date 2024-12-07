@@ -3,10 +3,13 @@ Classifies: CHEBI:25513 neutral glycosphingolipid
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import Descriptors
+from rdkit.Chem import rdMolDescriptors
 
 def is_neutral_glycosphingolipid(smiles: str):
     """
     Determines if a molecule is a neutral glycosphingolipid.
+    A neutral glycosphingolipid contains unsubstituted glycosyl moieties attached to a ceramide core.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -19,47 +22,39 @@ def is_neutral_glycosphingolipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for glycosphingolipid core structure
-    # Glycosphingolipids typically have a long-chain base (sphingosine or similar) and one or more sugar residues
-    found_sphingosine = False
-    found_sugar = False
+    # Check for ceramide core
+    ceramide_substructure = "[CH2]OC1O[CH]([CH]O)[CH]([CH]O)[CH]([CH]1O)O" # Basic ceramide core pattern
+    ceramide_pattern = Chem.MolFromSmarts(ceramide_substructure)
+    if not mol.HasSubstructMatch(ceramide_pattern):
+        return False, "No ceramide core found"
 
-    # Identify sphingosine-like structure
-    sphingosine_smarts = Chem.MolFromSmarts("C[C@@H](O)[C@H](NC=O)CO")
-    if mol.HasSubstructMatch(sphingosine_smarts):
-        found_sphingosine = True
+    # Check for glycosyl groups
+    glycosyl_substructure = "OC1[CH]([CH]O)[CH]([CH]O)[CH]O[CH]1" # Basic glycosyl pattern
+    glycosyl_pattern = Chem.MolFromSmarts(glycosyl_substructure)
+    if not mol.HasSubstructMatch(glycosyl_pattern):
+        return False, "No glycosyl groups found"
 
-    # Identify sugar residues (simple heuristic: presence of multiple hydroxyl groups)
-    hydroxyl_count = 0
-    for atom in mol.GetAtoms():
-        if atom.GetSymbol() == 'O' and any(neighbor.GetSymbol() == 'C' for neighbor in atom.GetNeighbors()):
-            hydroxyl_count += 1
-    if hydroxyl_count > 3:
-        found_sugar = True
+    # Check for absence of charged/acidic groups that would make it non-neutral
+    charged_groups = [
+        "[O-]", # Carboxylate
+        "[N+]", # Quaternary amine 
+        "[S](=O)(=O)[O-]", # Sulfate
+        "[P](=O)([O-])[O-]" # Phosphate
+    ]
+    
+    for group in charged_groups:
+        pattern = Chem.MolFromSmarts(group)
+        if mol.HasSubstructMatch(pattern):
+            return False, f"Contains charged group: {group}"
 
-    if not found_sphingosine:
-        return False, "No sphingosine-like structure found"
-    if not found_sugar:
-        return False, "No sugar residues found"
-
-    # Check if glycosyl moieties are unsubstituted
-    for atom in mol.GetAtoms():
-        if atom.GetSymbol() == 'O' and any(neighbor.GetSymbol() == 'S' for neighbor in atom.GetNeighbors()):
-            return False, "Glycosyl moieties are substituted"
-
-    return True, "Neutral glycosphingolipid"
-
-# Test examples
-smiles_examples = [
-    "CCCCCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC",
-    "CCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC",
-    "CCCCCCCCCCCC\C=C\[C@@H](O)[C@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@H]3O[C@H](CO)[C@H](O)[C@H](O)[C@H]3O)[C@H]2O)[C@H](O)[C@H]1O)NC([*])=O",
-    "O[C@@H]1[C@H]([C@H](O[C@@H]([C@@H]1O)CO)O[C@H]2[C@@H]([C@H](O[C@@H]([C@@H]2O)CO)O[C@H]3[C@@H]([C@H](O[C@@H]([C@@H]3O)CO)O[C@H]4[C@@H]([C@H](O[C@@H]([C@@H]4O)CO)O[C@H]5[C@@H]([C@H](O[C@@H]([C@@H]5O)CO)O[C@H]6[C@@H]([C@H](O[C@@H]([C@@H]6O)CO)OC[C@@H]([C@@H](*)O)NC(=O)*)O)O)O)NC(=O)C)O)O"
-]
-
-for smiles in smiles_examples:
-    result, reason = is_neutral_glycosphingolipid(smiles)
-    print(f"SMILES: {smiles}\nIs Neutral Glycosphingolipid: {result}\nReason: {reason}\n")
+    # Count number of glycosyl units
+    glycosyl_matches = len(mol.GetSubstructMatches(glycosyl_pattern))
+    
+    # Check for presence of ceramide and glycosyl parts
+    if glycosyl_matches >= 1:
+        return True, f"Neutral glycosphingolipid with {glycosyl_matches} glycosyl unit(s)"
+    else:
+        return False, "Missing required structural components"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:25513',
@@ -67,40 +62,26 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:25513',
                           'definition': 'Any glycosphingolipid containing '
                                         'unsubstituted glycosyl moieties.',
                           'parents': ['CHEBI:24402']},
-    'config': {   'llm_model_name': 'lbl/gpt-4o',
-                  'accuracy_threshold': 0.95,
+    'config': {   'llm_model_name': 'lbl/claude-sonnet',
+                  'f1_threshold': 0.0,
                   'max_attempts': 5,
-                  'max_negative': 20,
+                  'max_negative_to_test': None,
+                  'max_positive_in_prompt': 50,
+                  'max_negative_in_prompt': 20,
+                  'max_instances_in_prompt': 100,
                   'test_proportion': 0.1},
+    'message': None,
     'attempt': 0,
     'success': True,
     'best': True,
     'error': '',
-    'stdout': 'SMILES: '
-              'CCCCCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\\C=C\\CCCCCCCCCCCCC\n'
-              'Is Neutral Glycosphingolipid: True\n'
-              'Reason: Neutral glycosphingolipid\n'
-              '\n'
-              'SMILES: '
-              'CCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\\C=C\\CCCCCCCCCCCCC\n'
-              'Is Neutral Glycosphingolipid: True\n'
-              'Reason: Neutral glycosphingolipid\n'
-              '\n'
-              'SMILES: '
-              'CCCCCCCCCCCC\\C=C\\[C@@H](O)[C@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@H]3O[C@H](CO)[C@H](O)[C@H](O)[C@H]3O)[C@H]2O)[C@H](O)[C@H]1O)NC([*])=O\n'
-              'Is Neutral Glycosphingolipid: True\n'
-              'Reason: Neutral glycosphingolipid\n'
-              '\n'
-              'SMILES: '
-              'O[C@@H]1[C@H]([C@H](O[C@@H]([C@@H]1O)CO)O[C@H]2[C@@H]([C@H](O[C@@H]([C@@H]2O)CO)O[C@H]3[C@@H]([C@H](O[C@@H]([C@@H]3O)CO)O[C@H]4[C@@H]([C@H](O[C@@H]([C@@H]4O)CO)O[C@H]5[C@@H]([C@H](O[C@@H]([C@@H]5O)CO)O[C@H]6[C@@H]([C@H](O[C@@H]([C@@H]6O)CO)OC[C@@H]([C@@H](*)O)NC(=O)*)O)O)O)NC(=O)C)O)O\n'
-              'Is Neutral Glycosphingolipid: True\n'
-              'Reason: Neutral glycosphingolipid\n'
-              '\n',
-    'num_true_positives': 64,
-    'num_false_positives': 13,
-    'num_true_negatives': 7,
-    'num_false_negatives': 11,
-    'precision': 0.8311688311688312,
-    'recall': 0.8533333333333334,
-    'f1': 0.8421052631578949,
-    'accuracy': None}
+    'stdout': None,
+    'num_true_positives': 0,
+    'num_false_positives': 0,
+    'num_true_negatives': 183235,
+    'num_false_negatives': 75,
+    'num_negatives': None,
+    'precision': 0.0,
+    'recall': 0.0,
+    'f1': 0,
+    'accuracy': 0.999590857018166}

@@ -97,14 +97,14 @@ def calculate_macro_stats(data: Union[pd.Series, pd.DataFrame]) -> pd.Series:
 
         # Core metrics
         'accuracy': (tp + tn) / (tp + tn + fp + fn),
-        'precision': tp / (tp + fp),
-        'recall': tp / (tp + fn),
-        'specificity': tn / (tn + fp),
+        'precision': tp / (tp + fp) if tp + fp > 0 else 0,
+        'recall': tp / (tp + fn) if tp + fn > 0 else 0,
+        'specificity': tn / (tn + fp) if tn + fp > 0 else 0,
 
         # Additional metrics
         'f1_score': 2 * tp / (2 * tp + fp + fn),
-        'false_positive_rate': fp / (tn + fp),
-        'negative_predictive_value': tn / (tn + fn),
+        'false_positive_rate': fp / (tn + fp) if tn + fp > 0 else 0,
+        'negative_predictive_value': tn / (tn + fn) if tn + fn > 0 else 0,
     })
 
     metrics['balanced_accuracy'] = (metrics['recall'] + metrics['specificity']) / 2

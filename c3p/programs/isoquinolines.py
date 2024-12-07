@@ -2,39 +2,77 @@
 Classifies: CHEBI:24922 isoquinolines
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem.rdchem import HybridizationType
 
 def is_isoquinolines(smiles: str):
     """
-    Determines if a molecule is an isoquinoline or its substitution derivatives.
-
+    Determines if a molecule is an isoquinoline or derivative.
+    Isoquinolines contain a benzene ring fused to a pyridine ring.
+    
     Args:
         smiles (str): SMILES string of the molecule
-
+        
     Returns:
-        bool: True if molecule is an isoquinoline or its substitution derivatives, False otherwise
+        bool: True if molecule is an isoquinoline, False otherwise
         str: Reason for classification
     """
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the isoquinoline substructure
-    isoquinoline_smarts = "c1ccc2ncccc2c1"
-    isoquinoline_substructure = Chem.MolFromSmarts(isoquinoline_smarts)
+    # Get ring information
+    rings = mol.GetRingInfo()
     
-    # Define the 3,4-dihydroisoquinoline substructure
-    dihydroisoquinoline_smarts = "C1CNc2ccccc2C1"
-    dihydroisoquinoline_substructure = Chem.MolFromSmarts(dihydroisoquinoline_smarts)
-
-    if mol.HasSubstructMatch(isoquinoline_substructure) or mol.HasSubstructMatch(dihydroisoquinoline_substructure):
-        return True, "Isoquinoline or its substitution derivatives found"
-    else:
-        return False, "No isoquinoline core found"
-
-# Example usage:
-# smiles = "COc1cc(C[C@@H]2NCCc3cc(OC)c(O)cc23)ccc1O"
-# result, reason = is_isoquinolines(smiles)
-# print(result, reason)
+    # Look for 6-membered rings
+    ring_atoms_list = rings.AtomRings()
+    
+    for i in range(len(ring_atoms_list)):
+        ring1 = ring_atoms_list[i]
+        if len(ring1) != 6:
+            continue
+            
+        # Check if ring1 has exactly one aromatic nitrogen
+        ring1_atoms = [mol.GetAtomWithIdx(idx) for idx in ring1]
+        ring1_ar_n = sum(1 for atom in ring1_atoms if atom.GetSymbol() == 'N' and atom.GetIsAromatic())
+        
+        if ring1_ar_n != 1:
+            continue
+            
+        # Look for adjacent 6-membered ring
+        for j in range(len(ring_atoms_list)):
+            if i == j:
+                continue
+                
+            ring2 = ring_atoms_list[j]
+            if len(ring2) != 6:
+                continue
+                
+            # Check if rings share exactly 2 atoms (fused)
+            shared_atoms = set(ring1).intersection(set(ring2))
+            if len(shared_atoms) != 2:
+                continue
+                
+            # Check if ring2 is benzene (all carbons)
+            ring2_atoms = [mol.GetAtomWithIdx(idx) for idx in ring2]
+            if all(atom.GetSymbol() == 'C' and atom.GetIsAromatic() for atom in ring2_atoms):
+                # Found isoquinoline core
+                # Check for substituents
+                all_ring_atoms = set(ring1).union(set(ring2))
+                substituents = []
+                for atom_idx in all_ring_atoms:
+                    atom = mol.GetAtomWithIdx(atom_idx)
+                    for neighbor in atom.GetNeighbors():
+                        if neighbor.GetIdx() not in all_ring_atoms:
+                            substituents.append(neighbor.GetSymbol())
+                            
+                if substituents:
+                    return True, f"Substituted isoquinoline with substituents: {', '.join(set(substituents))}"
+                else:
+                    return True, "Unsubstituted isoquinoline"
+                
+    return False, "No isoquinoline core found"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:24922',
@@ -43,21 +81,28 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:24922',
                                         'compound consisting of isoquinoline '
                                         'and its substitution derivatives.',
                           'parents': ['CHEBI:38101', 'CHEBI:38166']},
-    'config': {   'llm_model_name': 'lbl/gpt-4o',
-                  'accuracy_threshold': 0.95,
+    'config': {   'llm_model_name': 'lbl/claude-sonnet',
+                  'f1_threshold': 0.8,
                   'max_attempts': 5,
-                  'max_negative': 20,
+                  'max_negative_to_test': None,
+                  'max_positive_in_prompt': 50,
+                  'max_negative_in_prompt': 20,
+                  'max_instances_in_prompt': 100,
                   'test_proportion': 0.1},
-    'attempt': 3,
+    'message': "Attempt failed: cannot import name 'rdDecomposition' from "
+               "'rdkit.Chem' "
+               '(/Users/cjm/Library/Caches/pypoetry/virtualenvs/c3p-93U7KWO_-py3.11/lib/python3.11/site-packages/rdkit/Chem/__init__.py)',
+    'attempt': 1,
     'success': True,
     'best': True,
     'error': '',
-    'stdout': '',
-    'num_true_positives': 3,
-    'num_false_positives': 0,
-    'num_true_negatives': 20,
-    'num_false_negatives': 63,
-    'precision': 1.0,
-    'recall': 0.045454545454545456,
-    'f1': 0.08695652173913045,
-    'accuracy': None}
+    'stdout': None,
+    'num_true_positives': 10,
+    'num_false_positives': 100,
+    'num_true_negatives': 8221,
+    'num_false_negatives': 56,
+    'num_negatives': None,
+    'precision': 0.09090909090909091,
+    'recall': 0.15151515151515152,
+    'f1': 0.11363636363636363,
+    'accuracy': 0.981399785382139}

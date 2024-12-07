@@ -4,10 +4,12 @@ Classifies: CHEBI:20857 C-glycosyl compound
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import Descriptors
+from rdkit.Chem import rdMolDescriptors
 
 def is_C_glycosyl_compound(smiles: str):
     """
-    Determines if a molecule is a C-glycosyl compound.
+    Determines if a molecule is a C-glycosyl compound based on the presence of a C-C bond
+    between a glycosidic moiety and another carbon atom.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,26 +22,49 @@ def is_C_glycosyl_compound(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Identify all glycosidic rings (oxane rings)
+    # Look for pyranose rings (6-membered rings with oxygen)
     rings = mol.GetRingInfo()
-    oxane_rings = [ring for ring in rings.AtomRings() if len(ring) == 6 and any(mol.GetAtomWithIdx(i).GetSymbol() == 'O' for i in ring)]
+    pyranose_rings = []
+    
+    for ring in rings.AtomRings():
+        if len(ring) == 6:
+            atoms = [mol.GetAtomWithIdx(i) for i in ring]
+            # Check if ring contains exactly one oxygen and rest carbons
+            if sum(1 for atom in atoms if atom.GetSymbol() == 'O') == 1:
+                # Check for hydroxyl groups typical in sugars
+                hydroxyls = 0
+                for atom in atoms:
+                    if atom.GetSymbol() == 'C':
+                        for neighbor in atom.GetNeighbors():
+                            if neighbor.GetSymbol() == 'O' and neighbor.GetDegree() == 1:
+                                hydroxyls += 1
+                if hydroxyls >= 2:  # Typical sugar has multiple OH groups
+                    pyranose_rings.append(ring)
 
-    if not oxane_rings:
-        return False, "No oxane rings found"
+    if not pyranose_rings:
+        return False, "No pyranose ring found"
 
-    # Check for C-glycosidic bond (C-C bond between glycosidic ring and another carbon)
-    for ring in oxane_rings:
+    # For each pyranose ring, look for C-C bond to non-ring carbon
+    for ring in pyranose_rings:
         ring_atoms = set(ring)
         for atom_idx in ring:
             atom = mol.GetAtomWithIdx(atom_idx)
             if atom.GetSymbol() == 'C':
                 for neighbor in atom.GetNeighbors():
-                    if neighbor.GetIdx() not in ring_atoms and neighbor.GetSymbol() == 'C':
-                        # Ensure the neighbor carbon is not part of a glycosidic hydroxy group
-                        if not any(neigh.GetSymbol() == 'O' for neigh in neighbor.GetNeighbors()):
-                            return True, "C-glycosidic bond (C-C bond) found"
+                    # Check if neighbor is carbon and not part of the same ring
+                    if (neighbor.GetSymbol() == 'C' and 
+                        neighbor.GetIdx() not in ring_atoms and 
+                        not neighbor.GetIsAromatic()):
+                        # Verify this carbon is not part of a glycosidic O-C-O linkage
+                        is_glycosidic = False
+                        oxygen_count = 0
+                        for n2 in neighbor.GetNeighbors():
+                            if n2.GetSymbol() == 'O':
+                                oxygen_count += 1
+                        if oxygen_count < 2:  # Not a typical glycosidic linkage
+                            return True, "C-C bond found between pyranose ring and non-glycosidic carbon"
 
-    return False, "No C-glycosidic bond (C-C bond) found"
+    return False, "No C-glycosidic linkage found"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:20857',
@@ -50,21 +75,26 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:20857',
                                         'atom bound to a carbon atom, thus '
                                         'creating a C-C bond.',
                           'parents': ['CHEBI:63161', 'CHEBI:63299']},
-    'config': {   'llm_model_name': 'lbl/gpt-4o',
-                  'accuracy_threshold': 0.95,
+    'config': {   'llm_model_name': 'lbl/claude-sonnet',
+                  'f1_threshold': 0.0,
                   'max_attempts': 5,
-                  'max_negative': 20,
+                  'max_negative_to_test': None,
+                  'max_positive_in_prompt': 50,
+                  'max_negative_in_prompt': 20,
+                  'max_instances_in_prompt': 100,
                   'test_proportion': 0.1},
-    'attempt': 1,
+    'message': None,
+    'attempt': 0,
     'success': True,
     'best': True,
     'error': '',
-    'stdout': '',
-    'num_true_positives': 214,
-    'num_false_positives': 6,
-    'num_true_negatives': 14,
-    'num_false_negatives': 10,
-    'precision': 0.9727272727272728,
-    'recall': 0.9553571428571429,
-    'f1': 0.963963963963964,
-    'accuracy': None}
+    'stdout': None,
+    'num_true_positives': 23,
+    'num_false_positives': 0,
+    'num_true_negatives': 0,
+    'num_false_negatives': 100,
+    'num_negatives': None,
+    'precision': 1.0,
+    'recall': 0.18699186991869918,
+    'f1': 0.3150684931506849,
+    'accuracy': 0.18699186991869918}
