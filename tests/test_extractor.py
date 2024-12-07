@@ -45,7 +45,7 @@ def test_get_negative_instances():
     assert len(neg_exs) > 1000
     assert all(n.smiles not in smiles for n in neg_exs)
 
-#@pytest.mark.integration
+@pytest.mark.integration
 def test_eval():
     with open(DATASET_PATH, "r") as f:
         dataset = Dataset.model_validate_json(f.read())

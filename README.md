@@ -10,7 +10,7 @@ See [Slides](https://docs.google.com/presentation/d/1VJvRptWu6FhTTmZGM4X3ymbxn9J
 
 ```bash
 pip install c3p
-c3po -x "CC1=CC=C(C=C1)C1=C(C#N)C2=NC3=CC=CC=C3N2C(N)=C1C#N"
+c3p -x "CC1=CC=C(C=C1)C1=C(C#N)C2=NC3=CC=CC=C3N2C(N)=C1C#N"
 ```
 
 ## Learning Programs

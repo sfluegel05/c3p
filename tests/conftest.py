@@ -18,3 +18,5 @@ def eval_result_metal_atom() -> EvaluationResult:
 METAL_ATOM = "CHEBI:33521"
 LAWRENCIUM_SMILES = "[Lr]"
 HYDRIDE_SMILES = "[H-]"
+
+collect_ignore = ["output/"]
