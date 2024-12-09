@@ -78,5 +78,5 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:25883',
     'num_negatives': None,
     'precision': 0.0,
     'recall': 0.0,
-    'f1': 0,
+    'f1': 0.0,
     'accuracy': 0.9999836871411171}
