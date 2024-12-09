@@ -8,7 +8,6 @@ from typing import List
 import sys
 import io
 from contextlib import contextmanager, redirect_stdout, redirect_stderr
-from llm import get_key, get_model
 from typing import Iterator
 from pathlib import Path
 
@@ -212,6 +211,7 @@ def generate_and_test_classifier(
     :return: iterator of results
     """
     logger.info(f"Test: {cls.name} attempt={attempt} err={err} suppress_llm={suppress_llm} prog={prog}")
+    from llm import get_key, get_model
     if config is None:
         config = Config()
     cls_lite = deepcopy(cls)

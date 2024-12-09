@@ -69,7 +69,29 @@ def classify(
         verbose: Annotated[int, verbose_option] = 0
 ) -> None:
     """
-    Classify SMILES strings
+    Classify SMILES strings.
+
+    Find all classifications for a list of SMILES strings.
+
+    Example:
+
+        c3p "CCCCCCCCCCCCCC(O)CCCCCC"
+
+    Only report positive matches:
+
+        c3p -x "CCCCCCCCCCCCCC(O)CCCCCC"
+
+    Only report positive matches with confidence above 0.75:
+
+        c3p -x -c 0.75 "CCCCCCCCCCCCCC(O)CCCCCC"
+
+    Pass in multiple SMILES strings:
+
+        c3p "CCCCCCCCCCCCCC(O)CCCCCC" "CCCCCCCCCCCCCCCCCCCCO"
+
+    TODO: fix stderr reporting.
+    You may wish to redirect output
+
     """
     n = 0
     configure_logging(verbose)

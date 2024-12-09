@@ -59,5 +59,6 @@ def classify(smiles: Union[SMILES_STRING, List[SMILES_STRING]], program_director
                         logger.error(f"Error running {fn} in {program}: {e}")
                 break
         if not found:
-            raise ValueError(f"Could not find is_ function in {program}")
+            if strict:
+                raise ValueError(f"Could not find is_ function in {program}")
 

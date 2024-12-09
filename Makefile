@@ -3,7 +3,7 @@ RUN = poetry run
 test: doctest pytest
 
 pytest:
-	poetry run pytest
+	poetry run pytest tests
 
 DOCTEST_DIR = c3p
 doctest:
