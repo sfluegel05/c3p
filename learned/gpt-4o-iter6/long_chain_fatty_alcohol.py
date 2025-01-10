@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_long_chain_fatty_alcohol(smiles: str):
     """
     Determines if a molecule is a long-chain fatty alcohol based on its SMILES string.
-    A long-chain fatty alcohol has a straight or branched carbon chain ranging from C13 to C22 with
-    at least one terminal hydroxyl (-OH) group.
+    A long-chain fatty alcohol is defined by having a carbon chain length ranging from C13 to C22
+    and containing a hydroxyl (-OH) group.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -25,31 +25,29 @@ def is_long_chain_fatty_alcohol(smiles: str):
     if not mol.HasSubstructMatch(oh_group):
         return False, "No hydroxyl group found"
 
-    # Calculate carbon chain lengths
-    chain_lengths = []
+    # Perform a more robust search for the longest carbon chain
+    longest_chain_length = 0
     for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 6:  # Only consider carbon atoms
+        if atom.GetAtomicNum() == 6:  # Start only with carbon atoms
             visited = set()
             visited.add(atom.GetIdx())
-            chain_lengths.append(longest_carbon_chain_including_oh(atom, visited, mol))
+            chain_length = longest_carbon_chain(atom, visited, mol)
+            if chain_length > longest_chain_length:
+                longest_chain_length = chain_length
 
-    # Verify if the longest carbon chain meets the C13 to C22 requirement
-    if not chain_lengths:
-        return False, "No valid carbon chain found"
-        
-    max_chain_length = max(chain_lengths)
-    if 13 <= max_chain_length <= 22:
-        return True, f"Contains a carbon chain of length {max_chain_length} and a hydroxyl group"
+    # Check if the longest chain fits the long-chain fatty alcohol criteria
+    if 13 <= longest_chain_length <= 22:
+        return True, f"Contains a carbon chain of length {longest_chain_length} and a hydroxyl group"
     else:
-        return False, f"Carbon chain length of {max_chain_length}, required between 13 and 22"
+        return False, f"Carbon chain length of {longest_chain_length}, required between 13 and 22"
 
-def longest_carbon_chain_including_oh(atom, visited, mol, chain_length=1):
+def longest_carbon_chain(atom, visited, mol, chain_length=0):
     max_length = chain_length
     for bond in atom.GetBonds():
         neighbor = bond.GetOtherAtom(atom)
-        if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:  # Continue with carbon
+        if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:  # Only extend for carbon atoms
             visited.add(neighbor.GetIdx())
-            max_length = max(max_length, longest_carbon_chain_including_oh(neighbor, visited, mol, chain_length + 1))
+            max_length = max(max_length, longest_carbon_chain(neighbor, visited, mol, chain_length + 1))
             visited.remove(neighbor.GetIdx())
     return max_length
 
