@@ -26,9 +26,17 @@ def is_indole_alkaloid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for indole skeleton pattern (benzene fused to pyrrole)
-    indole_pattern = Chem.MolFromSmarts("c1ccc2c(c1)[nH]cc2")
-    if not mol.HasSubstructMatch(indole_pattern):
+    # More flexible indole pattern that matches substituted nitrogens and fused systems
+    indole_patterns = [
+        Chem.MolFromSmarts("[nX3]1ccc2ccccc12"),  # Basic indole with any nitrogen type
+        Chem.MolFromSmarts("[nX2]1ccc2ccccc12"),  # Indole with double-bonded nitrogen
+        Chem.MolFromSmarts("[n+]1ccc2ccccc12"),   # Indole with charged nitrogen
+        Chem.MolFromSmarts("[nH]1ccc2ccccc12")    # Original pattern for completeness
+    ]
+
+    # Check for any indole pattern match
+    indole_found = any(mol.HasSubstructMatch(pattern) for pattern in indole_patterns)
+    if not indole_found:
         return False, "No indole skeleton found"
 
     # Check for nitrogen atoms (alkaloids typically contain nitrogen)
@@ -36,21 +44,12 @@ def is_indole_alkaloid(smiles: str):
     if nitrogen_count == 0:
         return False, "No nitrogen atoms found"
 
-    # Check for basic nitrogen (alkaloids often have basic nitrogen)
-    basic_nitrogen = False
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 7 and atom.GetTotalNumHs() > 0:
-            basic_nitrogen = True
-            break
-    if not basic_nitrogen:
-        return False, "No basic nitrogen found"
-
     # Check molecular weight - indole alkaloids typically >200 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 200:
         return False, "Molecular weight too low for indole alkaloid"
 
-    return True, "Contains indole skeleton and basic nitrogen atoms"
+    return True, "Contains indole skeleton and nitrogen atoms"
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:38958',
                           'name': 'indole alkaloid',
