@@ -21,11 +21,21 @@ def is_trichlorobenzene(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+
+    # Find all aromatic rings in the molecule
+    aromatic_rings = mol.GetAromaticRings()
     
-    # Define pattern for a benzene ring with exactly three chlorine atom substituents
-    trichlorobenzene_pattern = Chem.MolFromSmarts("c1c([Cl])c([Cl])c([Cl])c(*)c1")
-    if mol.HasSubstructMatch(trichlorobenzene_pattern):
-        return True, "Contains a trichlorobenzene motif (benzene ring with three chlorine atoms)"
+    # For each aromatic ring, count the number of chlorine substituents
+    for ring in aromatic_rings:
+        chlorine_count = 0
+        for atom_idx in ring:
+            atom = mol.GetAtomWithIdx(atom_idx)
+            if atom.GetAtomicNum() == 17:  # Check if atom is Chlorine (Cl)
+                chlorine_count += 1
+        
+        # Check if the ring contains exactly 3 chlorine atoms
+        if chlorine_count == 3:
+            return True, "Contains a trichlorobenzene motif (benzene ring with three chlorine atoms)"
 
     return False, "Does not contain a trichlorobenzene motif"
     
