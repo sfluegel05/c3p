@@ -15,18 +15,17 @@ def is_hopanoid(smiles: str):
         bool: True if molecule is a hopanoid, False otherwise
         str: Reason for classification
     """
-
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Hopanoid hopane skeleton pattern - capturing more diverse triterpenoid hopanoid structures
-    # This includes flexibility in stereochemistry and attached groups.
+    # Enhanced hopanoid patterns capturing more comprehensive diversity
     hopanoid_patterns = [
-        Chem.MolFromSmarts('[C@]12CC[C@@H]3[C@]4(C)CC[C@@]5([C@H]4CC[C@]35C)C2C1'),
-        Chem.MolFromSmarts('[C@@]12CC[C@H]3[C@]4([C@@]5(CCC(C5)C)C(CCC4)C3)C(CCC2)C1'),
-        # Additional patterns that allow for common modifications or stereochemical variants
+        Chem.MolFromSmarts('[C@@]12CC[C@H]3[C@@]([C@H]4CC[C@@]5([C@@H](CC[C@]45)C)C[C@@]3(C)CC2)C1'),
+        Chem.MolFromSmarts('[C@]12CCC[C@@]3([C@@H](CC4([C@@H]([C@H](CC34)C)C)C[C@@]2C)C1)C'),
+        # Include patterns with common functional groups or modifications
+        Chem.MolFromSmarts('[C@@]12CC[C@H]3[C@]4([C@@H](C[C@H](O)[C@@]45)C)CCC[C@]35(C)CC2)C1'),
     ]
 
     # Check if any of the patterns match
