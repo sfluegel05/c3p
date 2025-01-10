@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_alkanethiol(smiles: str):
     """
     Determines if a molecule is an alkanethiol based on its SMILES string.
-    An alkanethiol is a compound in which a sulfanyl group (-SH) is attached to an alkyl or alkene group (terminus).
+    An alkanethiol is a compound in which a sulfanyl group (-SH) is attached to an alkyl group.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,17 +26,15 @@ def is_alkanethiol(smiles: str):
     if not mol.HasSubstructMatch(sulfanol_pattern):
         return False, "No -SH group found"
     
-    # Broaden check to allow attachment to terminus carbon [sp3 include alkene endings]
-    alkyl_attachment_pattern = Chem.MolFromSmarts("([#6,#7,#8][SX2H])")
+    # Ensure -SH group is attached to an alkyl group (a saturated carbon)
+    alkyl_attachment_pattern = Chem.MolFromSmarts("[CX4H2,CX4H3,CX4H]S")  # Saturated carbon bound to sulfur
     if not mol.HasSubstructMatch(alkyl_attachment_pattern):
-        return False, "-SH group is not correctly attached to an alkyl or terminus alkene group"
+        return False, "-SH group is not attached to a saturated carbon group"
     
-    # Avoid complex peptides (like chains with many amino-acids)
-    potential_protein_pattern = Chem.MolFromSmarts("C(=O)N")  # look for amide bond
-    if mol.HasSubstructMatch(potential_protein_pattern):
-        return False, "Structure too complex, likely proteinaceous"
+    # Consider any higher complexity check outside the basic alkanethiol pattern unnecessary
+    # because alkanethiols can be present in larger molecules without additional exclusion patterns
 
-    return True, "-SH group found and suitably attached"
+    return True, "-SH group found and suitably attached to an alkyl group"
 
 # Example usage
 smiles_examples = [
