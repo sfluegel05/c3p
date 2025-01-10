@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_polyprenol(smiles: str):
     """
     Determines if a molecule is a polyprenol based on its SMILES string.
-    A polyprenol consists of more than one isoprene unit and ends with an alcohol group.
+    A polyprenol has more than one isoprene unit and ends with an alcohol group.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,22 +21,17 @@ def is_polyprenol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more flexible isoprene unit pattern
-    # Covers variations including potential branching and steric configurations
-    isoprene_pattern = Chem.MolFromSmarts("C(=C)CC=C[CH2]") # General pattern allowing variations in branching
-
-    # Verify isoprene unit matches
+    # Pattern for isoprene unit: C=C-C-C
+    isoprene_pattern = Chem.MolFromSmarts("C(=C)C-C")
     isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
+    
+    # Check if there is more than one isoprene unit
     if len(isoprene_matches) < 2:
         return False, f"Found {len(isoprene_matches)} isoprene units, need more than one"
 
-    # Define a generalized pattern for terminal alcohol group
-    # Detect primary alcohols at the end of the carbon chain
-    terminal_alcohol = Chem.MolFromSmarts("[CX4;R0][OH]")
-
-    # Verify terminal alcohol matches
-    alcohol_matches = mol.GetSubstructMatches(terminal_alcohol)
-    if not any(mol.GetAtomWithIdx(match[1]).GetSymbol() == 'O' for match in alcohol_matches):
+    # Pattern for terminal alcohol group
+    alcohol_pattern = Chem.MolFromSmarts("[OX2H1]")
+    if not mol.HasSubstructMatch(alcohol_pattern):
         return False, "No terminal alcohol group found"
-    
+
     return True, "Contains more than one isoprene unit and a terminal alcohol group"
