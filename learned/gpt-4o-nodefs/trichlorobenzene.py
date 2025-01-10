@@ -5,8 +5,9 @@ from rdkit import Chem
 
 def is_trichlorobenzene(smiles: str):
     """
-    Determines if a molecule is a trichlorobenzene based on its SMILES string.
-    A trichlorobenzene is defined as a benzene ring with exactly three chlorine atom substituents.
+    Determines if a molecule contains a trichlorobenzene motif based on its SMILES string.
+    A trichlorobenzene motif is defined as a benzene ring with exactly three chlorine atom substituents,
+    potentially part of larger molecules.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,21 +22,19 @@ def is_trichlorobenzene(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for benzene ring with exactly three chlorine atoms
-    trichlorobenzene_pattern = Chem.MolFromSmarts("c1c(Cl)c(Cl)c(Cl)c1")
-    matches = mol.GetSubstructMatches(trichlorobenzene_pattern)
-
-    if matches:
+    # Define pattern for a benzene ring with exactly three chlorine atom substituents
+    trichlorobenzene_pattern = Chem.MolFromSmarts("c1c([Cl])c([Cl])c([Cl])c(*)c1")
+    if mol.HasSubstructMatch(trichlorobenzene_pattern):
         return True, "Contains a trichlorobenzene motif (benzene ring with three chlorine atoms)"
 
     return False, "Does not contain a trichlorobenzene motif"
-
+    
 # Example usage
 smiles_strings = [
     "Clc1cc(Cl)cc(Cl)c1",     # 1,3,5-trichlorobenzene
     "Clc1cccc(Cl)c1Cl",       # 1,2,3-trichlorobenzene
     "Clc1ccc(Cl)c(Cl)c1",     # 1,2,4-trichlorobenzene
-    "COc1cc(Cl)c(Cl)cc1Cl"    # Not strictly trichlorobenzene due to additional functional groups
+    "COc1cc(Cl)c(Cl)cc1Cl"    # 2,4,6-trichloroanisole
 ]
 
 for smiles in smiles_strings:
