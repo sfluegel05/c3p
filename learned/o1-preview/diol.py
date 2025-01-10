@@ -5,7 +5,6 @@ Classifies: CHEBI:23824 diol
 Classifies: CHEBI:23824 diol
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_diol(smiles: str):
     """
@@ -24,26 +23,46 @@ def is_diol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define hydroxyl group pattern (Oxygen with two bonds, one to hydrogen)
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")  
+    # Initialize count of valid hydroxyl groups
+    hydroxyl_count = 0
 
-    # Find all hydroxyl groups in the molecule
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    num_hydroxyl_groups = len(hydroxyl_matches)
+    # Iterate over atoms to find hydroxyl groups
+    for atom in mol.GetAtoms():
+        # Check if atom is oxygen
+        if atom.GetAtomicNum() == 8:
+            # Check if oxygen is connected to hydrogen
+            has_hydrogen = False
+            has_carbon = False
+            carbonyl_bond = False
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 1:
+                    has_hydrogen = True
+                elif neighbor.GetAtomicNum() == 6:
+                    has_carbon = True
+                    carbon = neighbor
+            # If oxygen is bonded to hydrogen and carbon
+            if has_hydrogen and has_carbon:
+                # Check if carbon is part of a carbonyl group (C=O)
+                for bond in carbon.GetBonds():
+                    bonded_atom = bond.GetOtherAtom(carbon)
+                    if bonded_atom.GetAtomicNum() == 8 and bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                        carbonyl_bond = True
+                        break
+                if not carbonyl_bond:
+                    hydroxyl_count += 1
 
-    # Check if there are exactly two hydroxyl groups
-    if num_hydroxyl_groups == 2:
-        return True, "Molecule contains exactly two hydroxyl groups"
+    if hydroxyl_count >= 2:
+        return True, f"Molecule contains at least two hydroxyl groups attached to non-carbonyl carbons"
     else:
-        return False, f"Molecule contains {num_hydroxyl_groups} hydroxyl groups, diols must have exactly two"
-    
+        return False, f"Molecule contains {hydroxyl_count} valid hydroxyl groups, diols must have at least two"
+
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:23824',
                               'name': 'diol',
-                              'definition': 'A compound that contains two '
-                                            'hydroxy groups, generally assumed to be, '
-                                            'but not necessarily, alcoholic. Aliphatic diols '
-                                            'are also called glycols.',
+                              'definition': 'A compound that contains two hydroxy '
+                                            'groups, generally assumed to be, but not '
+                                            'necessarily, alcoholic. Aliphatic diols are '
+                                            'also called glycols.',
                               'parents': []},
         'config': {   'llm_model_name': 'lbl/claude-sonnet',
                       'f1_threshold': 0.8,
@@ -56,7 +75,7 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:23824',
                       'max_instances_in_prompt': 100,
                       'test_proportion': 0.1},
         'message': None,
-        'attempt': 0,
+        'attempt': 1,
         'success': True,
         'best': True,
         'error': '',
