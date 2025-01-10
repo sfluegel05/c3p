@@ -6,11 +6,12 @@ Classifies: anthocyanidin cation
 """
 
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_anthocyanidin_cation(smiles: str):
     """
     Determines if a molecule is an anthocyanidin cation based on its SMILES string.
-    An anthocyanidin cation is an aglycon of anthocyanin cation; they are oxygenated derivatives 
+    An anthocyanidin cation is an aglycone of anthocyanin cation; they are oxygenated derivatives 
     of flavylium (2-phenylchromenylium).
     
     Args:
@@ -25,25 +26,34 @@ def is_anthocyanidin_cation(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for positively charged oxygen atom in the flavylium core
-    # Define the flavylium core pattern based on flavylium cation SMILES
-    flavylium_core = Chem.MolFromSmarts('c1ccc(cc1)C2=CC=[O+]C3=CC=CC=C23')
-    if not mol.HasSubstructMatch(flavylium_core):
+    # Check for positive charge
+    charge = rdMolDescriptors.CalcFormalCharge(mol)
+    if charge <= 0:
+        return False, "Molecule is not a cation"
+
+    # Define SMARTS pattern for flavylium core (2-phenylchromenylium cation)
+    # Simplified pattern for flavylium core with positive charge on oxygen
+    flavylium_pattern = Chem.MolFromSmarts('c1ccccc1-c2cc3c([o+]cc3)cc2')
+    if not mol.HasSubstructMatch(flavylium_pattern):
         return False, "Flavylium core not found"
 
-    # Check for oxygenated substituents (e.g., hydroxyl or methoxy groups) on aromatic rings
-    # Phenolic OH groups and methoxy groups attached to aromatic carbons
-    oxy_substituent_pattern = Chem.MolFromSmarts('[cH]-[OH]')
-    methoxy_pattern = Chem.MolFromSmarts('[cH]-O-C')
-    has_oxy_substituent = mol.HasSubstructMatch(oxy_substituent_pattern)
-    has_methoxy = mol.HasSubstructMatch(methoxy_pattern)
-    if not (has_oxy_substituent or has_methoxy):
+    # Check for oxygenated substituents (hydroxyl or methoxy groups) on aromatic rings
+    oxygenated = False
+    oxy_substituent_pattern = Chem.MolFromSmarts('[cH]-[O;H1]')  # Phenolic OH
+    methoxy_pattern = Chem.MolFromSmarts('[cH]-O-C')  # Methoxy group
+
+    if mol.HasSubstructMatch(oxy_substituent_pattern):
+        oxygenated = True
+    elif mol.HasSubstructMatch(methoxy_pattern):
+        oxygenated = True
+
+    if not oxygenated:
         return False, "No oxygenated substituents found on aromatic rings"
 
-    # Check for positively charged oxygen atom
-    has_positive_oxygen = any(atom.GetSymbol() == 'O' and atom.GetFormalCharge() == 1 for atom in mol.GetAtoms())
-    if not has_positive_oxygen:
-        return False, "No positively charged oxygen atom found"
+    # Check for absence of sugar moieties (aglycone)
+    # Look for glycosidic bonds: C-O-C between carbons and oxygen
+    sugar_pattern = Chem.MolFromSmarts('[C;!R]-O-[C;!R]')
+    if mol.HasSubstructMatch(sugar_pattern):
+        return False, "Sugar moieties detected (glycosidic bonds present)"
 
-    # Passed all checks
-    return True, "Molecule is an anthocyanidin cation with flavylium core and oxygenated substituents"
+    return True, "Molecule is an anthocyanidin cation"
