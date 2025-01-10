@@ -20,12 +20,14 @@ def is_polypyrrole(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns for pyrrole and commonly fused pyrrole structures
+    # Define a comprehensive list of SMARTS for pyrrole and polypyrrole structures
     pyrrole_patterns = [
+        Chem.MolFromSmarts("c1c[nH]c1"),  # Basic Pyrrole
         Chem.MolFromSmarts("n1cccc1"),    # Pyrrole
-        Chem.MolFromSmarts("n1ccccc1"),   # Larger pyrrole-like ring systems
-        Chem.MolFromSmarts("c1c[nH]c1"),  # Generic pyrrole-like joint in larger rings
+        Chem.MolFromSmarts("n1ccccc1"),   # Larger systems incorporating pyrrole
+        Chem.MolFromSmarts("c1c[nH]c2c1nccc2"),  # Fused pyrrole systems
         Chem.MolFromSmarts("n2c1nc(nc1[nH]2)"),  # Azole-like structures
+        Chem.MolFromSmarts("c1ccc2c(c1)nccc2n"), # Expanded porphyrin-like structure
     ]
     
     # Count all occurrences of pyrrole-like structures
@@ -46,4 +48,4 @@ def is_polypyrrole(smiles: str):
 
 # Example usage:
 smiles_example = "CCC1=C(C)C(=O)NC1Cc1[nH]c(Cc2[nH]c(CC3NC(=O)C(CC)=C3C)c(C)c2CCC(O)=O)c(CCC(O)=O)c1C"
-is_polypyrrole(smiles_example)
+print(is_polypyrrole(smiles_example))
