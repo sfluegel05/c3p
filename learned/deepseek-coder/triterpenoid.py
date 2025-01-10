@@ -25,15 +25,9 @@ def is_triterpenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check molecular formula for C30 skeleton
-    formula = rdMolDescriptors.CalcMolFormula(mol)
-    c_count = formula.count('C')
-    if c_count < 30:
-        return False, f"Too few carbons ({c_count}) for a triterpenoid (C30 skeleton)"
-
-    # Check for polycyclic structure (at least 4 rings)
+    # Check for polycyclic structure (at least 3 rings, as some triterpenoids may have fewer rings due to modifications)
     n_rings = mol.GetRingInfo().NumRings()
-    if n_rings < 4:
+    if n_rings < 3:
         return False, f"Too few rings ({n_rings}) for a triterpenoid"
 
     # Check for common functional groups in triterpenoids
@@ -48,14 +42,19 @@ def is_triterpenoid(smiles: str):
     if not (has_hydroxyl or has_carbonyl or has_carboxyl):
         return False, "No common functional groups (hydroxyl, carbonyl, carboxyl) found"
 
-    # Check molecular weight (triterpenoids typically >400 Da)
+    # Check molecular weight (triterpenoids typically >300 Da, allowing for smaller derivatives)
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 400:
+    if mol_wt < 300:
         return False, "Molecular weight too low for a triterpenoid"
 
     # Check for long carbon chains or complex branching
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 5:
+    if n_rotatable < 3:
         return False, "Too few rotatable bonds for a triterpenoid"
 
-    return True, "Contains C30 skeleton with polycyclic structure and functional groups typical of triterpenoids"
+    # Check for a triterpenoid-like skeleton (polycyclic with at least 20 carbons, allowing for modifications)
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 20:
+        return False, f"Too few carbons ({c_count}) for a triterpenoid-like skeleton"
+
+    return True, "Contains polycyclic structure with functional groups typical of triterpenoids"
