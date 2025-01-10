@@ -6,9 +6,8 @@ from rdkit import Chem
 def is_diol(smiles: str):
     """
     Determines if a molecule is a diol based on its SMILES string.
-    A diol is defined as a compound containing exactly two hydroxy groups that are part of an aliphatic structure,
-    not part of aromatic rings or other complex functional groups.
-
+    A diol should contain exactly two hydroxy groups that are part of an aliphatic structure.
+    
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -22,26 +21,29 @@ def is_diol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for hydroxy group pattern (-OH) on aliphatic carbon
-    hydroxy_pattern = Chem.MolFromSmarts("[#6;!$(C=C)][OX2H]")  # Aliphatic carbon with attached hydroxyl
+    # Look for hydroxy group pattern (-OH) not explicitly tied to aromaticity but emphasizing aliphatic connections
+    hydroxy_pattern = Chem.MolFromSmarts("[CX4;!$(C@C(O)C)][OX2H]")  # Carbon with attached hydroxyl not in aromatic systems
     hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
     
     # Count the number of hydroxy groups
     num_hydroxy_groups = len(hydroxy_matches)
-    
+
     # A diol should have exactly two -OH groups
     if num_hydroxy_groups != 2:
         return False, f"Contains {num_hydroxy_groups} hydroxy groups, need exactly 2"
 
-    # Additional check to confirm hydroxyls are not part of aromatic or complex groups
+    # Additional check to confirm hydroxyls are part of aliphatic structure by looking at adjacent atoms
     for match in hydroxy_matches:
-        hydroxy_atom = mol.GetAtomWithIdx(match[0])
-        carbon_atom = hydroxy_atom.GetNeighbors()[0]
-        
-        # Ensure the carbon is part of an aliphatic chain or ring
-        if not carbon_atom.GetIsAromatic() and carbon_atom.GetHybridization() == Chem.rdchem.HybridizationType.SP3:
-            continue
-        else:
-            return False, "Hydroxyl groups are part of complex or aromatic groups, not simple diol"
+        hydroxyl_idx = match[1]  # Index of the hydroxyl oxygen
+        connected_carbons = [
+            neighbor for neighbor in mol.GetAtomWithIdx(hydroxyl_idx).GetNeighbors()
+            if neighbor.GetAtomicNum() == 6  # Ensure connected to carbon atoms
+        ]
 
-    return True, "Contains exactly two hydroxy groups forming a simple diol"
+        # Ensure this carbon is part of aliphatic chain or non-aromatic cycle within context
+        # Allow structures forming non-aromatic rings or simply linear
+        for carbon in connected_carbons:
+            if carbon.GetIsAromatic():
+                return False, "Hydroxyl group is tied within aromatic structure, not suitable for simple diol"
+
+    return True, "Contains exactly two hydroxy groups forming a suitable diol"
