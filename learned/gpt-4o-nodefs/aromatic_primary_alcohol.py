@@ -14,25 +14,23 @@ def is_aromatic_primary_alcohol(smiles: str):
         bool: True if molecule is an aromatic primary alcohol, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for primary alcohol attached directly to an aromatic ring
-    primary_alcohol_aromatic_pattern = Chem.MolFromSmarts("[#6]([CH2])[OH]")  # carbon with CH2 group attached to -OH
+    # Look for an aromatic ring
+    aromatic_pattern = Chem.MolFromSmarts("a")
+    if not mol.HasSubstructMatch(aromatic_pattern):
+        return False, "No aromatic ring found"
+    
+    # Look for a primary alcohol group
+    alcohol_pattern = Chem.MolFromSmarts("[CX4;H2][OX2H]")
+    if not mol.HasSubstructMatch(alcohol_pattern):
+        return False, "No primary alcohol (C-OH) group found"
 
-    # Find matches for the primary alcohol pattern in the molecule
-    matches = mol.GetSubstructMatches(primary_alcohol_aromatic_pattern)
+    return True, "Contains an aromatic ring and a primary alcohol group"
 
-    for match in matches:
-        # Check if the carbon is directly attached to an aromatic ring
-        carbon_idx = match[0]
-        carbon_atom = mol.GetAtomWithIdx(carbon_idx)
-
-        for neighbor in carbon_atom.GetNeighbors():
-            if neighbor.GetIsAromatic() and neighbor.GetAtomicNum() == 6:  # Check if aromatic neighbor is a carbon
-                return True, "Contains a primary alcohol group directly attached to an aromatic ring"
-
-    return False, "No primary alcohol group directly attached to an aromatic ring found"
+# Testing example
+# is_aromatic_primary_alcohol("C1=CC(=CN=C1)CO")  # 3-pyridinemethanol, expected True.
