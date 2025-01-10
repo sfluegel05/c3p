@@ -26,39 +26,61 @@ def is_guaiacols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # More specific SMARTS pattern for guaiacol core:
-    # [cH,c]:1 - aromatic carbon that's part of a ring
-    # ([OH1]) - hydroxyl group
-    # (:c([OX2][CH3])) - ortho carbon with methoxy group
-    # The rest just ensures it's part of a benzene ring
-    guaiacol_pattern = Chem.MolFromSmarts('[cH,c](:c([OH1]):c(:c([OX2][CH3])):c:c:c:1)')
-    alt_pattern = Chem.MolFromSmarts('[cH,c](:c([OX2][CH3]):c(:c([OH1])):c:c:c:1)')
+    # Basic requirements - must have both oxygen and carbon
+    if not all(mol.GetAtomWithIdx(i).GetAtomicNum() in [6, 8] for i in range(mol.GetNumAtoms())):
+        return False, "Missing required elements (C, O)"
 
-    if not (mol.HasSubstructMatch(guaiacol_pattern) or mol.HasSubstructMatch(alt_pattern)):
-        return False, "Does not contain guaiacol pattern"
+    # SMARTS pattern for guaiacol:
+    # c1(O)c(OC)cccc1 - phenol with ortho methoxy
+    # We'll try both orientations since they're equivalent
+    pattern1 = Chem.MolFromSmarts('c1(O)c(OC)cccc1')
+    pattern2 = Chem.MolFromSmarts('c1(OC)c(O)cccc1')
+    
+    if pattern1 is None or pattern2 is None:
+        return None, "Error in SMARTS patterns"
 
-    # Get matches
-    matches = mol.GetSubstructMatches(guaiacol_pattern)
-    alt_matches = mol.GetSubstructMatches(alt_pattern)
-    all_matches = list(matches) + list(alt_matches)
+    # Check for matches
+    matches1 = mol.GetSubstructMatches(pattern1)
+    matches2 = mol.GetSubstructMatches(pattern2)
+    
+    all_matches = list(matches1) + list(matches2)
+    
+    if not all_matches:
+        return False, "No guaiacol pattern found"
 
+    # Verify each match
     for match in all_matches:
-        # Get the atoms involved in the match
-        ring_atoms = set(match)
+        # Get the atoms involved
+        atoms = [mol.GetAtomWithIdx(idx) for idx in match]
         
-        # Verify these atoms are part of the same ring
-        ri = mol.GetRingInfo()
-        for ring in ri.AtomRings():
-            if all(idx in ring for idx in ring_atoms):
-                # Verify the ring is aromatic
-                if all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring):
-                    # Verify methoxy is truly -OCH3
-                    for atom_idx in match:
-                        atom = mol.GetAtomWithIdx(atom_idx)
-                        if atom.GetAtomicNum() == 8:  # Oxygen
-                            for neighbor in atom.GetNeighbors():
-                                if neighbor.GetAtomicNum() == 6:  # Carbon
-                                    if neighbor.GetDegree() == 4:  # sp3 carbon
-                                        return True, "Contains phenol with ortho methoxy group (guaiacol moiety)"
-
+        # Verify aromaticity
+        if not all(atom.GetIsAromatic() for atom in atoms if atom.GetAtomicNum() == 6):
+            continue
+            
+        # Find the oxygen atoms
+        o_atoms = [atom for atom in atoms if atom.GetAtomicNum() == 8]
+        
+        # Must have exactly two oxygens
+        if len(o_atoms) != 2:
+            continue
+            
+        # Verify one is a hydroxyl (OH) and one is part of methoxy (OCH3)
+        has_hydroxyl = False
+        has_methoxy = False
+        
+        for o_atom in o_atoms:
+            h_count = o_atom.GetTotalNumHs()
+            c_neighbors = [n for n in o_atom.GetNeighbors() if n.GetAtomicNum() == 6]
+            
+            if h_count == 1 and len(c_neighbors) == 1:
+                has_hydroxyl = True
+            elif h_count == 0 and len(c_neighbors) == 2:
+                # One neighbor should be aromatic, one should be sp3
+                if (any(n.GetIsAromatic() for n in c_neighbors) and 
+                    any(n.GetHybridization() == Chem.HybridizationType.SP3 for n in c_neighbors)):
+                    has_methoxy = True
+        
+        if has_hydroxyl and has_methoxy:
+            return True, "Contains phenol with ortho methoxy group (guaiacol moiety)"
+            
     return False, "Contains required elements but not in correct configuration"
