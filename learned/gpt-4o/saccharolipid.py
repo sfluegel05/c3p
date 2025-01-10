@@ -21,23 +21,33 @@ def is_saccharolipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for carbohydrate moiety: Presence of sugar-like structure (e.g., cyclic ethers)
-    carbohydrate_pattern = Chem.MolFromSmarts('[C;R](O)[C;R](O)')  # Simple representation for cyclic sugars
-    if not mol.HasSubstructMatch(carbohydrate_pattern):
+    # Look for comprehensive carbohydrate moiety pattern
+    carbohydrate_patterns = [
+        Chem.MolFromSmarts('[O;R]C(O)C(O)'),  # Represents carbohydrate rings with multiple hydroxyls
+        Chem.MolFromSmarts('O[C@H]1O[C@H]')   # Cyclic ether structure typical of sugars
+    ]
+    carbohydrate_found = any(mol.HasSubstructMatch(p) for p in carbohydrate_patterns)
+    
+    if not carbohydrate_found:
         return False, "No carbohydrate moiety found"
 
-    # Look for lipid moiety: Long carbon chains typically ending in a carboxyl group
-    lipid_pattern = Chem.MolFromSmarts('C(=O)[O][C@H](C)CCCCCCCC')  # Simple representation for lipids
-    if not mol.HasSubstructMatch(lipid_pattern):
+    # Look for comprehensive lipid moiety pattern
+    lipid_patterns = [
+        Chem.MolFromSmarts('C(=O)OCCCCC'),   # Carboxylic esters with long chains
+        Chem.MolFromSmarts('CCCCCCCCC(=O)')  # Long aliphatic chains ending in carbonyl
+    ]
+    lipid_found = any(mol.HasSubstructMatch(p) for p in lipid_patterns)
+    
+    if not lipid_found:
         return False, "No lipid moiety found"
     
-    # Confirm linkage between the carbohydrate and lipid regions
-    linkage_pattern = Chem.MolFromSmarts('[C@H](O)[C;R](O)C(=O)[O][C@H](C)CCCCCCCC')  # Example linkage pattern
-    if not mol.HasSubstructMatch(linkage_pattern):
+    # Check for established linkage between carbohydrate and lipid
+    linkage_patterns = [
+        Chem.MolFromSmarts('[C@H]([O][C@H](C)C)([O][C][C](=O))')  # Glycosidic linkages to lipid esters
+    ]
+    linkage_found = any(mol.HasSubstructMatch(p) for p in linkage_patterns)
+    
+    if not linkage_found:
         return False, "No linkage between carbohydrate and lipid found"
 
     return True, "Contains linked carbohydrate and lipid moieties, consistent with a saccharolipid"
-
-# Example usage:
-# result, reason = is_saccharolipid("input_smiles_here")
-# print(result, reason)
