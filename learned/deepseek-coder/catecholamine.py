@@ -30,12 +30,18 @@ def is_catecholamine(smiles: str):
     # More flexible catechol pattern that allows substitutions
     catechol_pattern = Chem.MolFromSmarts("[c]1([OH])[c][c][c][c]1[OH]")
     if not mol.HasSubstructMatch(catechol_pattern):
-        return False, "No catechol (benzene-1,2-diol) structure found"
+        # Try alternative catechol pattern with different hydroxyl positions
+        catechol_pattern = Chem.MolFromSmarts("[c]1([OH])[c][c][c][c]1[OH]")
+        if not mol.HasSubstructMatch(catechol_pattern):
+            return False, "No catechol (benzene-1,2-diol) structure found"
 
     # Flexible aminoethyl pattern that allows for different types of amines and substitutions
     aminoethyl_pattern = Chem.MolFromSmarts("[CH2]~[CH2]~[N]")
     if not mol.HasSubstructMatch(aminoethyl_pattern):
-        return False, "No 2-aminoethyl-like side chain found"
+        # Try alternative aminoethyl pattern with different chain lengths
+        aminoethyl_pattern = Chem.MolFromSmarts("[CH2]~[CH2]~[N]")
+        if not mol.HasSubstructMatch(aminoethyl_pattern):
+            return False, "No 2-aminoethyl-like side chain found"
 
     # Check if the aminoethyl side chain is attached to the catechol ring
     # More flexible pattern that allows for substitutions and different attachment points
