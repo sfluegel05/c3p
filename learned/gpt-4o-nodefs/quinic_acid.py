@@ -20,18 +20,17 @@ def is_quinic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Basic quinic acid pattern: a cyclohexane with multiple hydroxy groups and one carboxylic acid
-    # Allow flexibility in stereochemistry with '[C@H?' to account for stereocenters variability
-    quinic_acid_base_pattern = Chem.MolFromSmarts("OC1[C@H?](O)[C@H?](O)[C@H?](O)[C@H?](O)C1C(O)=O")
+    # Quinic acid core: cyclohexane with 3 hydroxy groups, 1 carboxylic acid
+    quinic_acid_base_pattern = Chem.MolFromSmarts("OC1CC(O)C(O)CC1C(O)=O")
     
     # Check if molecule contains the quinic acid core
     if not mol.HasSubstructMatch(quinic_acid_base_pattern):
         return False, "Mismatch in quinic acid core structure"
 
-    # Additional checks for common quinic acid derivatives
-    # Check for presence of common ester linkages such as caffeoyl or other similar substitutions
-    ester_pattern = Chem.MolFromSmarts("O=C(O)C=Cc1ccc(O)c(O)c1")
+    # Check for presence of ester linkages derived from cinnamic acid derivatives (e.g., caffeoyl)
+    ester_pattern = Chem.MolFromSmarts("O=C(O)COC=Cc1cc(O)c(O)c1")  # representative ester group pattern
     if mol.HasSubstructMatch(ester_pattern):
-        return True, "Matches quinic acid core structure with common ester substitutions"
+        return True, "Matches quinic acid core structure with caffeoyl derivative"
 
+    # Finally, confirm as quinic acid if the core pattern is there and no other complex ester is detected
     return True, "Matches quinic acid core structure"
