@@ -21,41 +21,45 @@ def is_2_monoglyceride(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
+    # Parse SMILES and standardize
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+    
+    # Add hydrogens and kekulize
+    mol = Chem.AddHs(mol)
+    Chem.Kekulize(mol, clearAromaticFlags=True)
 
     # Look for glycerol backbone pattern (C-C-C with oxygens attached)
-    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
+    glycerol_pattern = Chem.MolFromSmarts("[OX2]-[CH2X4]-[CHX4]-[CH2X4]-[OX2]")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
         
     # Look for exactly one ester group (-O-C(=O)-)
-    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
+    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])[#6]")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) != 1:
         return False, f"Found {len(ester_matches)} ester groups, need exactly 1"
 
-    # Look for exactly two free hydroxyl groups
-    hydroxyl_pattern = Chem.MolFromSmarts("[CX4][OX2][HX1]")
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    if len(hydroxyl_matches) != 2:
-        return False, f"Found {len(hydroxyl_matches)} free hydroxyl groups, need exactly 2"
+    # Pattern for terminal primary alcohols (more permissive)
+    terminal_oh_pattern = Chem.MolFromSmarts("[CH2X4]-[OX2]")
+    oh_matches = mol.GetSubstructMatches(terminal_oh_pattern)
+    if len(oh_matches) != 2:
+        return False, f"Found {len(oh_matches)} terminal hydroxyl groups, need exactly 2"
 
-    # Check for 2-position attachment
-    # Pattern matches glycerol with ester at position 2: 
-    # HO-CH2-CH(O-C(=O))-CH2-OH
-    position2_pattern = Chem.MolFromSmarts("[OX2H][CH2X4][CHX4]([OX2][CX3](=[OX1]))[CH2X4][OX2H]")
+    # Check for 2-position attachment using a simpler pattern
+    # Matches central carbon with ester attachment
+    position2_pattern = Chem.MolFromSmarts("[CH2X4]-[CHX4]([OX2][CX3]=[OX1])-[CH2X4]")
     if not mol.HasSubstructMatch(position2_pattern):
         return False, "Ester group not at position 2"
 
     # Verify presence of fatty acid chain (at least 4 carbons)
-    fatty_chain_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    # More flexible pattern that handles both saturated and unsaturated chains
+    fatty_chain_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[#6]~[#6]~[#6]~[#6]")
     if not mol.HasSubstructMatch(fatty_chain_pattern):
         return False, "No fatty acid chain found"
 
-    # Count carbons and oxygens to ensure reasonable composition
+    # Count carbons and oxygens
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     
