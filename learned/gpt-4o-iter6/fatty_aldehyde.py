@@ -22,25 +22,38 @@ def is_fatty_aldehyde(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for aldehyde group [CX3H]=O at the end
-    # Aldehyde group pattern
-    aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)[#6]")
-    if not mol.HasSubstructMatch(aldehyde_pattern):
+    # Check for terminal aldehyde group [CH]=O pattern
+    aldehyde_pattern = Chem.MolFromSmarts("[CX3H1;!R]=O")
+    aldehyde_matches = mol.GetSubstructMatches(aldehyde_pattern)
+    if not aldehyde_matches:
         return False, "No terminal aldehyde group found"
-
-    # Check for a long carbon chain
-    num_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if num_carbons < 6:
-        return False, f"Carbon chain too short for fatty aldehyde (found {num_carbons} carbons)"
-
-    # Check molecular weight to ensure it's consistent with fatty aldehydes
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 100:  # Rough estimate, could be adjusted based on chain length
-        return False, "Molecular weight too low for a typical fatty aldehyde"
     
-    # Ensure there are no conflicting functional groups that invalidate the molecule.
-    # WARNING: Simplified check. More comprehensive checks depend on other aldehyde inhibitors.
-    if mol.HasSubstructMatch(Chem.MolFromSmarts("[#6][#8]")):
-        return False, "Unexpected functional groups present"
+    # Look for long aliphatic carbon chain
+    chain_length = 0
+    for match in aldehyde_matches:
+        # Traverse the structure from aldehyde and count consecutive aliphatic carbons
+        start_atom_idx = match[0]  # Assuming terminal bond to aldehyde is [C]=O
+        visited = set()
+
+        def traverse(atom_idx, length):
+            nonlocal chain_length
+            if atom_idx in visited:
+                return
+            visited.add(atom_idx)
+            if length > chain_length:
+                chain_length = length
+            for neighbor in mol.GetAtomWithIdx(atom_idx).GetNeighbors():
+                if neighbor.GetAtomicNum() == 6:  # Carbon
+                    next_idx = neighbor.GetIdx()
+                    traverse(next_idx, length + 1)
+
+        traverse(start_atom_idx, 1)
+    
+    if chain_length < 6:
+        return False, f"Carbon chain too short for typical fatty aldehyde (found {chain_length} carbons)"
+    
+    # Avoid false positives: check for presence of aromatic rings
+    if mol.HasSubstructMatch(Chem.MolFromSmarts("a")):
+        return False, "Aromatic rings present, not a simple fatty aldehyde"
 
     return True, "Valid fatty aldehyde: Terminal aldehyde group with a long aliphatic chain"
