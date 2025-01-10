@@ -27,32 +27,48 @@ def is_corrinoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check if molecule contains cobalt
-    has_cobalt = any(atom.GetAtomicNum() == 27 for atom in mol.GetAtoms())
-    if not has_cobalt:
-        return False, "Molecule does not contain cobalt"
+    # Define SMARTS pattern for corrin nucleus (approximate)
+    # This pattern looks for four pyrrole-like rings connected in a macrocycle
+    corrin_smarts = '[#7]-[#6]:[#6]-[#6]:[#7]-[#6]:[#6]-[#6]:[#7]-[#6]:[#6]-[#6]:[#7]-[#6]:[#6]-[#6]:[#6]-[#7]'
 
-    # Find macrocycles (rings of size >= 13)
-    ring_info = mol.GetRingInfo()
-    atom_rings = ring_info.AtomRings()
-    macrocycles = [ring for ring in atom_rings if len(ring) >= 13]
+    corrin_pattern = Chem.MolFromSmarts(corrin_smarts)
+    if corrin_pattern is None:
+        return False, "Invalid SMARTS pattern for corrin nucleus"
 
-    if not macrocycles:
-        return False, "No macrocycles of size >= 13 found"
+    # Check if molecule has substructure match with corrin nucleus
+    if mol.HasSubstructMatch(corrin_pattern):
+        return True, "Molecule contains corrin nucleus"
+    else:
+        # As an alternative, check for ring systems with at least 4 nitrogen atoms
+        ring_info = mol.GetRingInfo()
+        atom_rings = ring_info.AtomRings()
 
-    for ring in macrocycles:
-        atoms_in_ring = [mol.GetAtomWithIdx(idx) for idx in ring]
-        atomic_nums = [atom.GetAtomicNum() for atom in atoms_in_ring]
+        # Build ring systems by merging connected rings
+        ring_systems = []
+        for ring in atom_rings:
+            ring_set = set(ring)
+            merged = False
+            for idx, existing_set in enumerate(ring_systems):
+                if not ring_set.isdisjoint(existing_set):
+                    ring_systems[idx] = existing_set.union(ring_set)
+                    merged = True
+                    break
+            if not merged:
+                ring_systems.append(ring_set)
 
-        # Count number of nitrogen and cobalt atoms in the ring
-        num_N = atomic_nums.count(7)
-        num_Co = atomic_nums.count(27)
+        # Check each ring system
+        for ring_sys in ring_systems:
+            atoms_in_system = [mol.GetAtomWithIdx(idx) for idx in ring_sys]
+            atomic_nums = [atom.GetAtomicNum() for atom in atoms_in_system]
 
-        # Check if ring contains at least 4 nitrogen atoms and 1 cobalt atom
-        if num_N >= 4 and num_Co >= 1:
-            return True, "Molecule contains macrocycle with cobalt and nitrogen atoms characteristic of corrin nucleus"
+            num_N = atomic_nums.count(7)
+            num_atoms = len(atomic_nums)
 
-    return False, "Molecule does not contain corrin nucleus"
+            # Corrin nucleus typically has at least 15 atoms and 4 nitrogen atoms
+            if num_N >= 4 and num_atoms >= 15:
+                return True, "Molecule contains ring system characteristic of corrin nucleus"
+
+        return False, "Molecule does not contain corrin nucleus"
 
 __metadata__ = {
     'chemical_class': {
@@ -65,7 +81,7 @@ __metadata__ = {
         # Configuration parameters can be included here if necessary
     },
     'message': None,
-    'attempt': 1,
+    'attempt': 2,
     'success': True,
     'best': True,
     'error': '',
