@@ -24,50 +24,73 @@ def is_tocol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for basic chroman core (benzene fused to pyran)
-    chroman_pattern = Chem.MolFromSmarts("O1CCCc2ccccc12")
-    if not mol.HasSubstructMatch(chroman_pattern):
-        return False, "No chroman core found"
+    # Check for chromanol core - including both saturated and unsaturated variants
+    # Also matches the required hydroxyl position
+    chromanol_patterns = [
+        # Saturated chromanol core with hydroxyl
+        "O1CCCc2c(c(O)c(C)cc2)C1",
+        # Alternative pattern for variations
+        "O1CCCc2c(c(O)ccc2)C1",
+        # Pattern for unsaturated pyran ring
+        "O1C=CCc2c(c(O)c(C)cc2)C1"
+    ]
     
-    # Check for hydroxyl group (or modified hydroxyl) at position 6
-    # Note: Position 6 corresponds to para position relative to oxygen
-    hydroxy_pattern = Chem.MolFromSmarts("O1CCCc2cc([OH,O])ccc12")
-    hydroxy_ester_pattern = Chem.MolFromSmarts("O1CCCc2cc(O[C,P])ccc12")
-    if not (mol.HasSubstructMatch(hydroxy_pattern) or mol.HasSubstructMatch(hydroxy_ester_pattern)):
-        return False, "No hydroxyl group (or derivative) at position 6"
+    core_found = False
+    for pattern in chromanol_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            core_found = True
+            break
     
-    # Check for substitution at position 2 (carbon next to oxygen in pyran ring)
-    # Looking for branched carbon chain
-    c2_substitution = Chem.MolFromSmarts("O1[C](CC)CCc2ccccc12")
+    if not core_found:
+        return False, "No valid chromanol core found"
+    
+    # Check for proper substitution at position 2
+    # This ensures the side chain is attached at the correct position
+    c2_substitution = Chem.MolFromSmarts("O1[C]([CH2,CH3])[CH2,CH]Cc2c(c(O)ccc2)C1")
     if not mol.HasSubstructMatch(c2_substitution):
-        return False, "No substitution at position 2"
+        return False, "Incorrect substitution at position 2"
     
-    # Count carbons in the longest chain from position 2
-    # This checks for the presence of the isoprenoid chain
-    side_chain_pattern = Chem.MolFromSmarts("[CH3]C(C)CCC[CH](C)CCC[CH](C)CCC")
-    side_chain_unsat = Chem.MolFromSmarts("[CH3]C(C)=CCC[CH](C)=CCC[CH](C)=CCC")
+    # Check for proper isoprenoid chain - both saturated and unsaturated versions
+    isoprenoid_patterns = [
+        # Saturated chain pattern
+        "[CH3]C(C)CCC[CH](C)CCC[CH](C)CCC",
+        # Unsaturated chain pattern
+        "[CH3]C(C)CCC([CH3])=CCC([CH3])=CCC",
+        # Alternative unsaturated pattern
+        "[CH3]C(C)=CCC([CH3])=CCC([CH3])=CCC"
+    ]
     
-    if not (mol.HasSubstructMatch(side_chain_pattern) or mol.HasSubstructMatch(side_chain_unsat)):
-        return False, "Missing required isoprenoid chain"
+    chain_found = False
+    for pattern in isoprenoid_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            chain_found = True
+            break
     
-    # Check total number of carbons to ensure proper chain length
+    if not chain_found:
+        return False, "Missing required isoprenoid chain structure"
+    
+    # Check for proper carbon count and overall structure
     carbon_count = len([atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6])
     if carbon_count < 20:  # Minimum carbons for a tocol
         return False, "Insufficient carbons for tocol structure"
-        
-    # Additional check for common modifications that don't invalidate tocol status
-    valid_modifications = [
-        ("acetate", "CC(=O)O"),
-        ("succinate", "O=C(O)CCC(=O)O"),
-        ("carboxyl", "C(=O)O"),
-    ]
     
-    # Look for common modifications
+    # Check for allowed modifications without affecting classification
     modifications = []
-    for mod_name, mod_smarts in valid_modifications:
-        pattern = Chem.MolFromSmarts(mod_smarts)
-        if mol.HasSubstructMatch(pattern):
+    mod_patterns = {
+        "acetate": "CC(=O)O",
+        "succinate": "O=C(O)CCC(=O)O",
+        "carboxyl": "C(=O)O"
+    }
+    
+    for mod_name, pattern in mod_patterns.items():
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
             modifications.append(mod_name)
+    
+    # Additional check to prevent false positives with modified chains
+    # Exclude molecules with hydroxyl groups in the side chain
+    side_chain_oh = Chem.MolFromSmarts("O1CCCc2ccccc12CC[CH2][OH]")
+    if mol.HasSubstructMatch(side_chain_oh):
+        return False, "Invalid modification in side chain"
     
     base_message = "Contains chroman-6-ol core with appropriate isoprenoid chain"
     if modifications:
