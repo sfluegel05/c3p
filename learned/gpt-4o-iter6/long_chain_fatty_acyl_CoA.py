@@ -12,7 +12,7 @@ def is_long_chain_fatty_acyl_CoA(smiles: str):
         smiles (str): SMILES string of the molecule
         
     Returns:
-        bool: True if molecule is a long-chain fatty acyl-CoA, False otherwise
+        bool: True if the molecule is a long-chain fatty acyl-CoA, False otherwise
         str: Reason for classification
     """
     # Parse SMILES string into RDKit molecule object
@@ -20,45 +20,47 @@ def is_long_chain_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the Coenzyme A motif more loosely, capturing the adenine and ribose phosphate components
-    ribose_pattern = Chem.MolFromSmarts("O[C@@H]1[C@@H]([C@H](O)[C@@H]([C@@H]1O)O)OP(O)(O)=O")
-    adenine_pattern = Chem.MolFromSmarts("n1cnc2c(N)ncnc12")
-    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)O")
-    
-    if not (mol.HasSubstructMatch(ribose_pattern) and
-            mol.HasSubstructMatch(adenine_pattern) and
-            mol.HasSubstructMatch(phosphate_pattern)):
+    # Redefine Coenzyme A motif with broader pattern recognition
+    coa_pattern = Chem.MolFromSmarts("C(=O)NCCSC(=O)CCNC(=O)C(C)(C)COP(=O)(O)OC[C@@H]1O[C@H](n2cnc3c(N)ncnc23)[C@@H](O)[C@H]1O")
+    if not mol.HasSubstructMatch(coa_pattern):
         return False, "No Coenzyme A moiety found"
-
+    
     # Define thioester linkage pattern
     thioester_pattern = Chem.MolFromSmarts("C(=O)SCC")
     thioester_matches = mol.GetSubstructMatches(thioester_pattern)
     if not thioester_matches:
         return False, "No thioester linkage found"
     
-    # Attempt to find the carbon chain length from the thioester linkage
+    # Check the fatty acid part for carbon chain length
+    valid_long_chain = False
     for match in thioester_matches:
-        carbon_chain_atoms = set()
-        # Start from the carbonyl carbon attached to sulfur
-        carbon = mol.GetAtomWithIdx(match[0]) 
-        visited_atoms = set()
+        # Assume the carbon following the thioester is the beginning of the chain
+        start_atom = match[0]  # Carbonyl carbon atom index
+        
+        # Count the number of carbons in the fatty acid chain
+        carbon_chain = set()
+        carbon = mol.GetAtomWithIdx(start_atom)
+        visited = set([carbon.GetIdx()])
         queue = [carbon]
         
         while queue:
             current_atom = queue.pop()
-            if current_atom.GetIdx() not in visited_atoms:
-                visited_atoms.add(current_atom.GetIdx())
-                # Count contiguous C's moving away from the thioester oxygen
-                if current_atom.GetSymbol() == 'C' and current_atom.GetIdx() != match[-1]:
-                    carbon_chain_atoms.add(current_atom.GetIdx())
-                # Explore unvisited neighbors
-                for neighbor in current_atom.GetNeighbors():
-                    if neighbor.GetIdx() not in visited_atoms:
-                        queue.append(neighbor)
+            # Consider all continuous carbon atoms
+            if current_atom.GetSymbol() == 'C':
+                carbon_chain.add(current_atom.GetIdx())
 
-        carbon_count = len(carbon_chain_atoms)
-        
-        if 13 <= carbon_count <= 22:
-            return True, f"Valid long-chain fatty acyl-CoA with {carbon_count} C atoms in chain"
+            for neighbor in current_atom.GetNeighbors():
+                if neighbor.GetIdx() not in visited:
+                    visited.add(neighbor.GetIdx())
+                    queue.append(neighbor)
 
-    return False, "Carbon chain length not in C13-C22 for long-chain fatty acid"
+        carbon_chain_length = len(carbon_chain)
+        # Check if chain length is within the specified range
+        if 13 <= carbon_chain_length <= 22:
+            valid_long_chain = True
+            break
+            
+    if not valid_long_chain:
+        return False, f"Carbon chain length not in valid range (C13-C22), got {carbon_chain_length}"
+    
+    return True, f"Valid long-chain fatty acyl-CoA with {carbon_chain_length} carbon atoms"
