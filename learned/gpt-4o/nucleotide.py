@@ -19,26 +19,28 @@ def is_nucleotide(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return None, "Invalid SMILES string"
 
-    # Define SMARTS patterns for nucleobases (purines and pyrimidines), sugar, and phosphate groups
-    purine_pattern = Chem.MolFromSmarts("n1cnc2ncnc12")  # Recognize purine rings
-    pyrimidine_pattern = Chem.MolFromSmarts("n1ccc(N)nc1=O")  # Recognize pyrimidine rings
-    # Updated sugar pattern to match ribose and deoxyribose more generally
-    sugar_pattern = Chem.MolFromSmarts("[C@H]1([C@H]([C@H]([C@H](O1)CO)O)O)O")  # All parts of ribose/deoxyribose with stereo variations
-    # Updated phosphate pattern to consider multiple phosphates with various bond/orders
-    phosphate_pattern = Chem.MolFromSmarts("OP(=O)([O-])[O-]")  # Recognize basic phosphate structure
+    # Define SMARTS patterns for nucleobases (purines and pyrimidines)
+    purine_pattern = Chem.MolFromSmarts("c1ncnc2[nH]c[nH]c12")  # General purine ring
+    pyrimidine_pattern = Chem.MolFromSmarts("c1ncnc(N)c1=O")  # General pyrimidine ring
 
-    # Check for nucleobase presence (only basic check of purine or pyrimidine)
+    # Define pattern for ribose or deoxyribose sugars, allowing for some variation
+    sugar_pattern = Chem.MolFromSmarts("[C@@H]1(O)[C@@H](O)[C@H](CO)O[C@H]1")  # Ribose structure generalized
+
+    # General phosphate pattern, accounting for potential variations
+    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)(O)")
+
+    # Check for the presence of nucleobase (purine or pyrimidine)
     if not (mol.HasSubstructMatch(purine_pattern) or mol.HasSubstructMatch(pyrimidine_pattern)):
         return False, "No nucleobase found"
 
-    # Check for sugar structure presence
+    # Check for the presence of a sugar structure
     if not mol.HasSubstructMatch(sugar_pattern):
         return False, "No sugar structure (ribose or deoxyribose) found"
     
-    # Check for phosphate group presence
+    # Check for the presence of at least one phosphate group
     if not mol.HasSubstructMatch(phosphate_pattern):
         return False, "No phosphate group found"
 
-    return True, "Contains nucleobase attached to a sugar with a phosphate group"
+    return True, "Molecule contains nucleobase, sugar, and phosphate group consistent with a nucleotide"
