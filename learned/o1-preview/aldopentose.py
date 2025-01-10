@@ -5,7 +5,6 @@ Classifies: CHEBI:33916 aldopentose
 Classifies: CHEBI:28053 aldopentose
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_aldopentose(smiles: str):
     """
@@ -32,38 +31,34 @@ def is_aldopentose(smiles: str):
         return False, f"Contains {num_carbons} carbon atoms, should be 5 for an aldopentose"
     
     # Check for open-chain form with aldehyde group at one end
-    aldehyde_chain_pattern = Chem.MolFromSmarts("[O]=[C!-;!$(*=,#[!#6])]C([O,H])([O,H])[C@H]([O,H])[C@H]([O,H])CO")
-    if mol.HasSubstructMatch(aldehyde_chain_pattern):
-        return True, "Contains aldehyde group at end of five-carbon chain (open-chain aldopentose)"
-    
-    # Check for cyclic forms (furanose and pyranose rings)
-    # Furanose ring pattern (5-membered ring with oxygen, derived from aldopentose)
-    furanose_pattern = Chem.MolFromSmarts("C1OC([C@@H]([O,H])[C@H]([O,H])CO)C1[O,H]")
-    if mol.HasSubstructMatch(furanose_pattern):
-        return True, "Contains furanose ring derived from aldopentose"
-    
-    # Pyranose ring pattern (6-membered ring with oxygen, derived from aldopentose)
-    pyranose_pattern = Chem.MolFromSmarts("C1OC([C@@H]([O,H])[C@H]([O,H])CO)C([O,H])C1[O,H]")
-    if mol.HasSubstructMatch(pyranose_pattern):
-        return True, "Contains pyranose ring derived from aldopentose"
-    
-    # Alternative patterns for cyclic forms (less strict stereochemistry)
-    # General furanose ring from aldopentose
-    general_furanose = Chem.MolFromSmarts("C1OC(C(O)C(O)CO)C1O")
-    if mol.HasSubstructMatch(general_furanose):
-        return True, "Contains furanose ring indicative of aldopentose"
-    
-    # General pyranose ring from aldopentose
-    general_pyranose = Chem.MolFromSmarts("C1OC(C(O)C(O)C(O)CO)C1O")
-    if mol.HasSubstructMatch(general_pyranose):
-        return True, "Contains pyranose ring indicative of aldopentose"
-    
-    # If none of the patterns match, check for aldehyde at terminal carbon
-    aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)[CH2][CH]([O,H])[CH]([O,H])CO")
+    aldehyde_pattern = Chem.MolFromSmarts('[CX3H1](=O)[CH2][CH](O)[CH](O)CO')
     if mol.HasSubstructMatch(aldehyde_pattern):
-        return True, "Contains terminal aldehyde on five-carbon chain"
+        return True, "Contains open-chain aldopentose with terminal aldehyde group"
     
-    # If still no match, molecule is not an aldopentose
+    # Check for furanose ring (5-membered ring with oxygen)
+    furanose_pattern = Chem.MolFromSmarts('[C;!R]1OC([C;!R])([C;!R])C1[O]')
+    if mol.HasSubstructMatch(furanose_pattern):
+        # Ensure total carbons are 5 (excluding the ring oxygen)
+        ring_atoms = mol.GetSubstructMatch(furanose_pattern)
+        num_ring_carbons = sum(1 for idx in ring_atoms if mol.GetAtomWithIdx(idx).GetAtomicNum() == 6)
+        if num_ring_carbons == 4:
+            return True, "Contains furanose ring derived from aldopentose"
+    
+    # Check for pyranose ring (6-membered ring with oxygen)
+    pyranose_pattern = Chem.MolFromSmarts('[C;!R]1OC([C;!R])([C;!R])[C;!R][C;!R]1[O]')
+    if mol.HasSubstructMatch(pyranose_pattern):
+        # Ensure total carbons are 5 (excluding the ring oxygen)
+        ring_atoms = mol.GetSubstructMatch(pyranose_pattern)
+        num_ring_carbons = sum(1 for idx in ring_atoms if mol.GetAtomWithIdx(idx).GetAtomicNum() == 6)
+        if num_ring_carbons == 5:
+            return True, "Contains pyranose ring derived from aldopentose"
+    
+    # Alternative open-chain pattern (less strict)
+    general_aldopentose = Chem.MolFromSmarts('[O]=[C][C@H](O)[C@H](O)CO')
+    if mol.HasSubstructMatch(general_aldopentose):
+        return True, "Contains open-chain aldopentose structure"
+    
+    # If none of the patterns match, molecule is not an aldopentose
     return False, "Does not match aldopentose structures (must have five carbons and aldehyde group at end or form specific cyclic structures)"
     
 
@@ -82,7 +77,7 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:28053',
                       'max_instances_in_prompt': 100,
                       'test_proportion': 0.1},
         'message': None,
-        'attempt': 1,
+        'attempt': 2,
         'success': True,
         'best': True,
         'error': '',
