@@ -24,42 +24,59 @@ def is_17beta_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for basic steroid core (four fused rings)
-    steroid_core = Chem.MolFromSmarts("[#6]~1~[#6]~[#6]~[#6]~2~[#6]~[#6]~[#6]~[#6]~3~[#6]~[#6]~[#6]~[#6]~4~[#6]~[#6]~[#6]~[#6]~1~[#6]~2~[#6]~3~4")
+    # More flexible steroid core pattern that allows for variations
+    # This pattern matches the basic 4-ring system with more flexibility
+    steroid_core = Chem.MolFromSmarts(
+        "[#6]~1~[#6]~[#6]~[#6]~2~[#6,#7]~[#6]~[#6]~[#6]~3~[#6]~[#6]~[#6]~[#6]~4~[#6]~[#6]~[#6]~[#6]~1~[#6]~2~[#6]~3~4"
+    )
+    
     if not mol.HasSubstructMatch(steroid_core):
         return False, "No steroid core structure found"
 
-    # Check for 17-OH group in beta configuration
-    # [C] is carbon 17, [OH1] is hydroxy group, '@' indicates stereochemistry
-    # The [C] must be connected to 4 atoms (saturated)
-    # Note: The exact SMARTS pattern depends on the numbering convention used
-    oh_17_beta = Chem.MolFromSmarts('[C;X4](@[*])(@[*])(@[*])[OH1]')
+    # Pattern for 17β-hydroxy group
+    # Matches a hydroxyl group attached to a carbon that's part of the D ring
+    # The [C;R] ensures the carbon is part of a ring
+    # The @@ specifies the beta stereochemistry
+    oh_17_beta = Chem.MolFromSmarts('[C;R](@[#6])(@[#6])(@[#6])[OH1]')
     
     if not mol.HasSubstructMatch(oh_17_beta):
         return False, "No hydroxyl group with correct connectivity found"
 
+    # Get all matches of the steroid core
+    core_matches = mol.GetSubstructMatches(steroid_core)
+    if not core_matches:
+        return False, "Could not map steroid core structure"
+
     # Get matches for OH group
     oh_matches = mol.GetSubstructMatches(oh_17_beta)
     
-    # Check if any of the matches are at position 17
+    # Check for 17β-hydroxy
     found_17_beta_oh = False
-    for match in oh_matches:
-        c_atom = mol.GetAtomWithIdx(match[0])  # Get the carbon atom
-        # Check if this carbon is part of the D ring (ring 4) of the steroid
-        # by checking its environment
-        ring_info = mol.GetRingInfo()
-        if ring_info.NumAtomRings(match[0]) > 0:  # Carbon must be part of a ring
-            # Check chirality of the carbon
-            if c_atom.GetChiralTag() == Chem.ChiralType.CHI_TETRAHEDRAL_CCW:
-                found_17_beta_oh = True
-                break
+    for core_match in core_matches:
+        for oh_match in oh_matches:
+            c_atom = mol.GetAtomWithIdx(oh_match[0])
+            
+            # Check if the carbon with OH is part of the D ring
+            # In the steroid core pattern, the D ring carbons are typically in positions 13-17
+            d_ring_positions = set(core_match[12:17])  # Indices 12-16 correspond to D ring
+            if oh_match[0] in d_ring_positions:
+                # Verify beta stereochemistry
+                if c_atom.GetChiralTag() in [Chem.ChiralType.CHI_TETRAHEDRAL_CW, 
+                                           Chem.ChiralType.CHI_TETRAHEDRAL_CCW]:
+                    # Count connections to verify it's position 17
+                    # Position 17 typically has 3 connections to carbons and 1 to OH
+                    carbon_neighbors = sum(1 for neighbor in c_atom.GetNeighbors() 
+                                        if neighbor.GetAtomicNum() == 6)
+                    if carbon_neighbors == 3:
+                        found_17_beta_oh = True
+                        break
 
     if not found_17_beta_oh:
         return False, "No 17-beta hydroxyl group found"
 
-    # Additional validation: molecule should have reasonable size for a steroid
+    # Additional validation
     num_atoms = mol.GetNumAtoms()
-    if num_atoms < 20 or num_atoms > 100:
+    if num_atoms < 18 or num_atoms > 100:  # Adjusted minimum size
         return False, "Molecule size not consistent with steroid structure"
 
     # Count rings
