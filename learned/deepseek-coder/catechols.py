@@ -24,9 +24,10 @@ def is_catechols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the catechol substructure pattern (o-diphenol)
-    # This pattern allows for substitutions on the benzene ring
-    catechol_pattern = Chem.MolFromSmarts("[c]1:[c]([OH]):[c]:[c]:[c]:[c]:1[OH]")
+    # Define a more flexible catechol substructure pattern
+    # This pattern matches any benzene ring with two hydroxyl groups on adjacent carbons
+    # and allows for any substitution on the ring
+    catechol_pattern = Chem.MolFromSmarts("[c;H0]1:[c;H0]([OH]):[c;H0]:[c;H0]:[c;H0]:[c;H0]:1[OH]")
     
     # Check if the molecule contains the catechol pattern
     if mol.HasSubstructMatch(catechol_pattern):
