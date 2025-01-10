@@ -23,31 +23,27 @@ def is_saturated_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for terminal carboxylic acid group using modified pattern
-    carboxylic_pattern = Chem.MolFromSmarts("C(=O)O")
+    # Look for terminal carboxylic acid group with a long alkyl chain
+    carboxylic_pattern = Chem.MolFromSmarts("CC(=O)[O-]")  # Match carboxyl group attached to carbon
     if not mol.HasSubstructMatch(carboxylic_pattern):
         return False, "No terminal carboxylic acid group found"
     
-    # Check for carbon-carbon double and triple bonds specifically between carbons
+    # Ensure absence of carbon-carbon multiple bonds
     for bond in mol.GetBonds():
         begin_atom, end_atom = bond.GetBeginAtom(), bond.GetEndAtom()
         if bond.GetBondType() in [Chem.rdchem.BondType.DOUBLE, Chem.rdchem.BondType.TRIPLE]:
-            if begin_atom.GetAtomicNum() == 6 and end_atom.GetAtomicNum() == 6:  # Both atoms are carbons
+            if begin_atom.GetAtomicNum() == 6 and end_atom.GetAtomicNum() == 6:
                 return False, "Contains carbon-carbon multiple bond indicating unsaturation"
     
-    # Ensure there is a sufficiently long chain of saturated atoms
-    # Specifically handle typical fatty acids, flexible in chain branches and decorations like methyl groups
-    # Improved pattern for generic alkyl chains with carboxylic end
-    carbon_chain_pattern = Chem.MolFromSmarts("C-C(=O)O")  # Ensure the carboxyl end
-
-    # Count number of carbons in linear fashion
-    num_carbons = sum(atom.GetAtomicNum() == 6 for atom in mol.GetAtoms())
-    if num_carbons < 8:  # Conservative lower bound for even smallest acids
+    # Count the number of linearly connected carbon atoms
+    carbon_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
+    num_carbons = len(carbon_atoms)
+    if num_carbons < 12:  # Fatty acids generally have longer carbon chains
         return False, "Insufficient carbon length for typical fatty acid"
-
-    # Validate appropriate chain types (in real fatty acid structure, non-linears not matching expected pattern)
-    main_chain = Chem.MolFromSmarts("[CX4]~[CX4]")  # Match carbons bound using sp3 bonds, allowing for small branches
-    if not mol.HasSubstructMatch(main_chain):
+    
+    # Validate the proper hydrocarbon chain pattern with terminal carboxylic acid
+    chain_pattern = Chem.MolFromSmarts("CC(=O)[O-]")  # Ensure alkyls form a linear chain ending in carboxyl
+    if not mol.HasSubstructMatch(chain_pattern):
         return False, "Does not contain sufficiently long saturated carbon chain"
 
     return True, "Classified as a saturated fatty acid with appropriate structure"
