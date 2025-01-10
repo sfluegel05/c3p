@@ -25,22 +25,22 @@ def is_triterpenoid(smiles: str):
 
     # Count the number of carbons
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if not (25 <= c_count <= 35):  # Assuming some flexibility around 30 carbons
+    if not (25 <= c_count <= 40):  # Allow a broader carbon range
         return False, f"Carbon count {c_count} is not in the typical range for triterpenoids"
 
     # Check for polycyclic structure, common in terpenoids
     ring_count = rdMolDescriptors.CalcNumRings(mol)
-    if ring_count < 4:
+    if ring_count < 3:  # Allow for more flexibility in ring structures
         return False, "Too few rings, typically polycyclic structures are seen in triterpenoids"
 
-    # Check for isoprene units
-    isoprene_pattern = Chem.MolFromSmarts("C(C)(C)C")
-    if not mol.HasSubstructMatch(isoprene_pattern):
-        return False, "No isoprene-like units found"
-
-    # Check for common functional groups like hydroxyl, carbonyl, etc.
-    # These checks ensure that we have functional group diversity typical of triterpenoids
-    if not any(Chem.MolFromSmarts(sm).HasSubstructMatch(mol) for sm in ["C=O", "O"]):
-        return False, "No characteristic functional groups (e.g., carbonyl or hydroxyl) found"
+    # Check for a variety of functional groups commonly found in triterpenoids
+    functional_groups = [
+        Chem.MolFromSmarts("C=O"),  # Carbonyl group
+        Chem.MolFromSmarts("O"),    # Hydroxyl/methoxy group
+        Chem.MolFromSmarts("CO"),   # Carboxylate ester structures
+        Chem.MolFromSmarts("O=C(O)"), # Carboxylic acid group
+    ]
+    if not any(mol.HasSubstructMatch(fg) for fg in functional_groups):
+        return False, "No characteristic triterpenoid functional groups found"
 
     return True, "Structure conforms with general criteria for triterpenoids"
