@@ -26,50 +26,52 @@ def is_cyclic_fatty_acid(smiles: str):
         return False, "Invalid SMILES string"
     
     # Check for rings
-    if rdMolDescriptors.CalcNumRings(mol) == 0:
+    num_rings = rdMolDescriptors.CalcNumRings(mol)
+    if num_rings == 0:
         return False, "No rings found in structure"
+    if num_rings > 5:
+        return False, "Too many rings for a typical fatty acid"
         
     # Count atoms
     num_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     num_nitrogens = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
     num_oxygens = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     
-    # Check for peptides (too many nitrogens)
-    if num_nitrogens > 2:
+    # Check atom ratios
+    if num_nitrogens > 1:
         return False, "Too many nitrogens for a fatty acid"
+    if num_oxygens > 4:
+        return False, "Too many oxygens for a typical fatty acid"
+    if num_carbons < 8:
+        return False, "Too few carbons for a fatty acid"
     
-    # Check for carbohydrates (too many oxygens relative to carbons)
-    if num_oxygens > num_carbons/2:
-        return False, "Too many oxygens relative to carbons"
-    
-    # Check for fatty acid characteristic groups
+    # Check for carboxylic acid group
     carboxylic_acid = Chem.MolFromSmarts('[CX3](=O)[OX2H1]')
-    ester = Chem.MolFromSmarts('[CX3](=O)[OX2][CX4]')
-    
-    has_acid = mol.HasSubstructMatch(carboxylic_acid)
-    has_ester = mol.HasSubstructMatch(ester)
-    
-    if not (has_acid or has_ester):
-        return False, "No carboxylic acid or ester group found"
-    
-    # Check for long carbon chain
-    alkyl_chain = Chem.MolFromSmarts('CCCC')  # At least 4 consecutive carbons
-    if not mol.HasSubstructMatch(alkyl_chain):
-        return False, "No significant alkyl chain found"
+    if not mol.HasSubstructMatch(carboxylic_acid):
+        return False, "No carboxylic acid group found"
     
     # Get ring information
     ring_info = mol.GetRingInfo()
     ring_sizes = [len(ring) for ring in ring_info.AtomRings()]
     
-    # Fatty acids typically don't have very large rings
+    # Check ring sizes
     if any(size > 8 for size in ring_sizes):
         return False, "Ring size too large for typical fatty acid"
+    if any(size < 3 for size in ring_sizes):
+        return False, "Ring size too small to be stable"
     
-    # Check molecular weight
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 130 or mol_wt > 600:  # Upper limit to exclude complex compounds
-        return False, "Molecular weight outside typical fatty acid range"
+    # Count aromatic rings
+    num_aromatic_rings = sum(1 for ring in ring_info.AtomRings() 
+                            if all(mol.GetAtomWithIdx(i).GetIsAromatic() for i in ring))
     
+    if num_aromatic_rings > 1:
+        return False, "Too many aromatic rings for a typical fatty acid"
+    
+    # Check for common non-fatty acid structures
+    steroid_pattern = Chem.MolFromSmarts('C1CC2CCC3C(C2)CCC4C3(CCC4)C1')
+    if mol.HasSubstructMatch(steroid_pattern):
+        return False, "Steroid-like structure detected"
+        
     # Compile ring description
     ring_desc = []
     for size in sorted(set(ring_sizes)):
@@ -78,14 +80,9 @@ def is_cyclic_fatty_acid(smiles: str):
     
     ring_details = ", ".join(ring_desc)
     
-    # Check ring types
-    num_aromatic_rings = sum(1 for ring in ring_info.AtomRings() 
-                            if all(mol.GetAtomWithIdx(i).GetIsAromatic() for i in ring))
-    
-    ring_type = "aromatic" if num_aromatic_rings > 0 else "aliphatic"
-    if num_aromatic_rings > 0 and len(ring_sizes) > num_aromatic_rings:
+    # Determine ring type
+    ring_type = "aromatic" if num_aromatic_rings == len(ring_sizes) else "aliphatic"
+    if num_aromatic_rings > 0 and num_aromatic_rings < len(ring_sizes):
         ring_type = "mixed aromatic and aliphatic"
     
-    acid_type = "carboxylic acid" if has_acid else "ester"
-    
-    return True, f"Contains {ring_details} ({ring_type}) and a {acid_type} group"
+    return True, f"Contains {ring_details} ({ring_type}) and a carboxylic acid group"
