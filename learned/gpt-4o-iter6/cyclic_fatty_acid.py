@@ -22,21 +22,26 @@ def is_cyclic_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for carboxylic acid group or similar terminal groups
-    fatty_acid_groups = Chem.MolFromSmarts("C(=O)O")  # Carboxylic acid or very similar linear chains ending
-    has_fatty_acid_group = mol.HasSubstructMatch(fatty_acid_groups)
-    
-    # Check for a ring structure
+    # Ensure there are ring structures
     ring_info = mol.GetRingInfo()
+    if ring_info.NumRings() < 1:
+        return False, "No ring structures found"
 
-    # To be a cyclic fatty acid, we need both a ring and a feature that suggests fatty acid character
-    if ring_info.NumRings() > 0 and has_fatty_acid_group:
+    # Look for carboxylic acid groups
+    carboxylic_acid_group = Chem.MolFromSmarts("C(=O)O")
+    has_carboxylic_acid = mol.HasSubstructMatch(carboxylic_acid_group)
+
+    # Check for additional cyclic structures linked with extended functionality (e.g., furans, epoxides)
+    alternative_cyclic_structures = Chem.MolFromSmarts("[c,O,N,S]-[C:1]1:[!c1]")
+    has_alternative_cycle = mol.HasSubstructMatch(alternative_cyclic_structures)
+    
+    if has_carboxylic_acid and (ring_info.NumRings() > 1 or has_alternative_cycle):
         return True, "Contains both cyclic and fatty acid features, classifying as a cyclic fatty acid"
     
     # Advanced checks for structures with known cyclic or linked nature with additional elements and atoms suggestive.
     # This bonus condition allows for classification based on observed extension patterns or stereo links overlooked before.
     # This can involve additional fine details about the ring types and known extensions (like epoxides or phenyl-like rings)
-    
+
     return False, "Does not fully fit the cyclic fatty acid criteria based on initial checks"
 
 # Example usage:
