@@ -26,9 +26,9 @@ def is_triterpenoid_saponin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for triterpenoid backbone (30 carbons, typically with multiple rings)
+    # Check for triterpenoid backbone (typically 27-30 carbons, with multiple rings)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 30:
+    if c_count < 27:
         return False, "Not enough carbons for a triterpenoid backbone"
 
     # Check for glycosidic linkages (presence of sugar moieties)
@@ -39,7 +39,7 @@ def is_triterpenoid_saponin(smiles: str):
 
     # Check for multiple rings (typical of triterpenoids)
     n_rings = rdMolDescriptors.CalcNumRings(mol)
-    if n_rings < 4:
+    if n_rings < 3:
         return False, "Not enough rings for a triterpenoid backbone"
 
     # Check for hydroxyl groups (common in triterpenoids and saponins)
@@ -48,15 +48,9 @@ def is_triterpenoid_saponin(smiles: str):
     if len(hydroxyl_matches) < 2:
         return False, "Not enough hydroxyl groups for a saponin"
 
-    # Check for carboxylic acid groups (common in triterpenoids)
-    carboxyl_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
-    carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
-    if len(carboxyl_matches) == 0:
-        return False, "No carboxylic acid groups found"
-
     # Check molecular weight (triterpenoid saponins are typically large)
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 500:
+    if mol_wt < 400:
         return False, "Molecular weight too low for a triterpenoid saponin"
 
     return True, "Contains a triterpenoid backbone with glycosidic linkages"
