@@ -2,7 +2,6 @@
 Classifies: CHEBI:67197 endocannabinoid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_endocannabinoid(smiles: str):
     """
@@ -21,34 +20,33 @@ def is_endocannabinoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for any long polyunsaturated chains with flexibility on length
-    unsaturated_chain_pattern = Chem.MolFromSmarts("C=CCCC=CCCC=C")  # Partial structure
-    long_chain_match = mol.HasSubstructMatch(unsaturated_chain_pattern)
-    
-    if not long_chain_match:
+    # Look for long polyunsaturated chains with more flexible pattern
+    unsaturated_chain_pattern = Chem.MolFromSmarts("C=C-C=C-C=C")  # Partial structure for more chains
+    if not mol.HasSubstructMatch(unsaturated_chain_pattern):
         return False, "No polyunsaturated long carbon chain typical of endocannabinoids found."
     
-    # Check for key functional groups more comprehensively
-    ethanolamine_pattern = Chem.MolFromSmarts("[NX3][CH2][CH2][OX2H]")
-    amide_pattern = Chem.MolFromSmarts("N[C]=O")
-    glycerol_pattern = Chem.MolFromSmarts("[OX2H][CX4]([OX2H])[CX4][OX2H]")
-    has_key_group = mol.HasSubstructMatch(ethanolamine_pattern) or \
-                    mol.HasSubstructMatch(amide_pattern) or \
-                    mol.HasSubstructMatch(glycerol_pattern)
+    # Check for key functional groups with variations
+    ethanolamine_pattern = Chem.MolFromSmarts("NCCO")
+    amide_pattern = Chem.MolFromSmarts("NC(=O)")
+    glycerol_pattern = Chem.MolFromSmarts("OCC(O)CO")
+    has_key_group = any(mol.HasSubstructMatch(pattern) for pattern in [ethanolamine_pattern, amide_pattern, glycerol_pattern])
 
     if not has_key_group:
         return False, "No identified endocannabinoid functional group found (ethanolamine, amide, glycerol)."
 
-    # Verify typical linkages more specifically
+    # Check linkages, focusing on typical endocannabinoid pattern
     ether_pattern = Chem.MolFromSmarts("COC")
-    ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2]")
-    amide_linkage_pattern = Chem.MolFromSmarts("[CX3](=O)[NX3]")
+    ester_pattern = Chem.MolFromSmarts("C(=O)OC")
+    amide_linkage_pattern = Chem.MolFromSmarts("C(=O)N")
     
-    has_linkages = mol.HasSubstructMatch(ether_pattern) or \
-                   mol.HasSubstructMatch(ester_pattern) or \
-                   mol.HasSubstructMatch(amide_linkage_pattern)
+    has_linkages = any(mol.HasSubstructMatch(pattern) for pattern in [ether_pattern, ester_pattern, amide_linkage_pattern])
 
     if not has_linkages:
         return False, "No ether, ester, or amide linkages characteristic of endocannabinoids found."
     
+    # Optional: Check molecular weight (common range typical for endocannabinoids 300-400 g/mol)
+    # mol_wt = Chem.rdMolDescriptors.CalcExactMolWt(mol)
+    # if not (300 <= mol_wt <= 400):
+    #     return False, "Molecular weight not typical of endocannabinoids."
+
     return True, "Matches characteristics of known endocannabinoids."
