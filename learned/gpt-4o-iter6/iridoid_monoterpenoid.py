@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_iridoid_monoterpenoid(smiles: str):
     """
     Determines if a molecule is an iridoid monoterpenoid based on its SMILES string.
-    Acknowledging structural diversity, especially of the core cyclopentane-fused to an oxygen-containing heterocycle.
+    Incorporates a diverse set of structural motifs typically found in iridoid monoterpenoids.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,18 +21,19 @@ def is_iridoid_monoterpenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define potential structural patterns for iridoid monoterpenoids
+    # Define a more comprehensive set of structural patterns for iridoid monoterpenoids
     core_patterns = [
-        Chem.MolFromSmarts("C1CCC2OCCC1O2"),  # Basic Iridoid core
-        Chem.MolFromSmarts("C1C=CC2OC=CC1C2"), # Variations with double bond
-        Chem.MolFromSmarts("C1CCC2(O)OCC1O2"), # Secoiridoid structures
+        Chem.MolFromSmarts("C1=CC2OC(O)C=C1OC2"),  # Simplified iridoid-like structure with heterocyclic nature
+        Chem.MolFromSmarts("C1=CO[C@@H]2[C@@H]2C=C[C@H]1"),  # More complex bicyclic structures
+        Chem.MolFromSmarts("O1C=CC2C(O)C1C2"),  # Considering secoridoid breakages
     ]
     
-    # Common functional groups in iridoids
+    # Include patterns for common functional groups
     functional_groups = [
         Chem.MolFromSmarts("[CH]=O"),  # Aldehyde group
-        Chem.MolFromSmarts("[C@H]([OH])[CH]=O"), # Hydroxyl paired with aldehydes
-        Chem.MolFromSmarts("C[C@H](O)COC=O")  # Esters in secoiridoids
+        Chem.MolFromSmarts("[C@H](O)[C]=O"),  # Secondary alcohols with adjacent carbonyls
+        Chem.MolFromSmarts("C(=O)OC"),  # Ester groups
+        Chem.MolFromSmarts("C=C(O)C=O"),  # Enols with carbonyls common in breakdown products
     ]
     
     # Check for core patterns
@@ -41,7 +42,7 @@ def is_iridoid_monoterpenoid(smiles: str):
             # Check for additional identification via functional groups
             for fg in functional_groups:
                 if mol.HasSubstructMatch(fg):
-                    return True, "Contains iridoid monoterpenoid core with characteristic functional groups"
+                    return True, "Contains iridoid monoterpenoid core with indicative functional groups"
             return True, "Contains iridoid monoterpenoid core"
 
     return False, "Does not match the typical iridoid monoterpenoid core structure"
