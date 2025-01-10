@@ -20,12 +20,12 @@ def is_fatty_acyl_CoA(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if not mol:
         return False, "Invalid SMILES string"
+
+    # Broadened CoA SMARTS pattern for adenine phosphate-ribose structure
+    coa_pattern = Chem.MolFromSmarts("n1cnc2c1ncnc2N[CH2]COP(=O)(O)O[C@H]1[C@H](O)[C@H](O)O[C@H]1COP(=O)(O)O")
     
-    # Broadened CoA SMARTS pattern
-    coa_pattern = Chem.MolFromSmarts("n1cnc2c1ncnc2N[CH2]COP(=O)(O)O[C@@H]1O[C@H](COP(O)(=O)OP(O)=O)[C@@H](O)[C@H]1O")
-    
-    # Thioester SMARTS pattern
-    thioester_pattern = Chem.MolFromSmarts("C(=O)SCCNC(=O)C")
+    # Thioester SMARTS pattern with potential variability
+    thioester_pattern = Chem.MolFromSmarts("C(=O)S")
     
     # Check for presence of the CoA structure
     if not mol.HasSubstructMatch(coa_pattern):
