@@ -13,19 +13,29 @@ def is_thiol(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a thiol, False otherwise
-        str: Reason for classification
+        (bool, str): True if molecule is a thiol, False otherwise with reason
     """
     # Parse SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Update the thiol group pattern to check for an S-H group directly attached
-    thiol_pattern = Chem.MolFromSmarts("[C,c]-[SH]")
+    # Define SMARTS pattern for thiol group (-SH) directly attached to carbon
+    thiol_pattern = Chem.MolFromSmarts("[CH2,CH,CH3,cH]-[S;H1]")  # Considering sp3 hybridized carbons
     
-    # Check for presence of thiol group
+    # Check for the presence of thiol group strictly following the new pattern
     if mol.HasSubstructMatch(thiol_pattern):
         return True, "Contains thiol group (-SH) attached to carbon"
     
     return False, "No thiol group attached to carbon found"
+
+# Test the function with some SMILES examples
+examples = [
+    ("SC(CCCCC)C", True),  # 2-Heptanethiol
+    ("CO[C@@H]1\\C=C\\C=C(C)\\Cc2cc(OC)c(Cl)c(c2)N(C)C(=O)C[C@H](OC(=O)[C@H](C)N(C)C(=O)CCS)[C@]2(C)O[C@H]2[C@H](C)[C@@H]2C[C@@]1(O)NC(=O)O2", True),  # mertansine
+    ("SC1=CC=C(F)C=C1", True)  # 4-Fluorothiophenol
+]
+
+for smiles, expected in examples:
+    result, reason = is_thiol(smiles)
+    print(f"SMILES: {smiles} --> Is Thiol: {result}, Expected: {expected}, Reason: {reason}")
