@@ -36,15 +36,17 @@ def is_alkene(smiles: str):
     if double_bond_count != 1:
         return False, f"Expected 1 C=C double bond, found {double_bond_count}"
     
-    # Verify the formula CnH2n
-    atom_counts = {}
+    # Count carbons and hydrogens, including implicit hydrogens
+    num_carbons = 0
+    num_hydrogens = 0
     for atom in mol.GetAtoms():
         symbol = atom.GetSymbol()
-        atom_counts[symbol] = atom_counts.get(symbol, 0) + 1
-    
-    num_carbons = atom_counts.get('C', 0)
-    num_hydrogens = atom_counts.get('H', 0)
-    
+        if symbol == 'C':
+            num_carbons += 1
+        # RDKit can provide implicit hydrogen count
+        num_hydrogens += atom.GetTotalNumHs()
+
+    # Verify the formula CnH2n
     if num_hydrogens != 2 * num_carbons:
         return False, f"Formula check failed: CnH2n expected, got C{num_carbons}H{num_hydrogens}"
     
