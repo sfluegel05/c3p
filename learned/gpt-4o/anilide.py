@@ -21,12 +21,13 @@ def is_anilide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS pattern for an aromatic amide
-    # This is a carbonyl connected to nitrogen and the nitrogen should be part of an aromatic system
-    anilide_smarts = Chem.MolFromSmarts("aN-C(=O)-")
+    # Define SMARTS pattern for anilide
+    # Need an acyl group connected to an amine N, and that N is part of aniline structure
+    # 'c1ccc(cc1)NC(=O)' - Phenyl ring connected to amide nitrogen
+    anilide_smarts = Chem.MolFromSmarts("c1ccc(cc1)NC(=O)")
     
-    # Find the anilide pattern
+    # Check for anilide pattern in the given molecule
     if mol.HasSubstructMatch(anilide_smarts):
-        return True, "Contains an aromatic amide linkage characteristic of anilides"
+        return True, "Contains the distinct acylated aniline linkage of anilides"
     
-    return False, "No anilide linkage detected"
+    return False, "No distinct anilide motif detected"
