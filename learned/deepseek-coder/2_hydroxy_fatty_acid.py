@@ -32,9 +32,10 @@ def is_2_hydroxy_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
 
-    # Use a more specific SMARTS pattern to ensure the hydroxyl group is at the 2-position
+    # Use a more flexible SMARTS pattern to detect the hydroxyl group at the 2-position
     # relative to the carboxylic acid group
-    hydroxy_fatty_acid_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H1][CX4H1][CX4H1][OX2H1]")
+    # This pattern allows for branching and double bonds in the carbon chain
+    hydroxy_fatty_acid_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H1][CX4H1,CX3H1][OX2H1]")
     if not mol.HasSubstructMatch(hydroxy_fatty_acid_pattern):
         return False, "No hydroxyl group at the 2-position relative to the carboxylic acid group"
 
