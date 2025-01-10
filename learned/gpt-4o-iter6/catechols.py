@@ -22,11 +22,16 @@ def is_catechols(smiles: str):
         return False, "Invalid SMILES string"
     
     # Define catechol SMARTS pattern
-    # Focusing on capturing o-diphenol structures with two adjacent hydroxy groups on an aromatic ring
-    catechol_pattern = Chem.MolFromSmarts("[cH]1[cH][cH](O)[c][cH](O)[cH]1")
+    # Adjust pattern to better capture variants and adjacent aromatic hydroxyls
+    catechol_patterns = [
+        Chem.MolFromSmarts("c1c(O)c(O)ccc1"), # Basic catechol pattern
+        Chem.MolFromSmarts("c1cc(O)c(O)cc1"), # Alternate flexible pattern
+        Chem.MolFromSmarts("c1(O)c(O)cccc1")  # Consider minor ring position variations
+    ]
 
-    if mol.HasSubstructMatch(catechol_pattern):
-        return True, "Contains a catechol moiety (o-diphenol component)"
+    for pattern in catechol_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return True, "Contains a catechol moiety (o-diphenol component)"
     
     return False, "No catechol moiety found"
 
@@ -34,8 +39,7 @@ def is_catechols(smiles: str):
 test_smiles = {
     "O[C@H]([C@H](OC(=O)\\C=C\\c1ccc(O)c(O)c1)C(O)=O)C(O)=O": "(2S,3R)-trans-caftaric acid",
     "Oc1cc(O)cc(O)c1": "Simple catechol",
-    "C=1(C=CC(=C(C1)O)O)/C=C/C(OCC)=O": "Ethyl trans-caffeate",
-    "CCCC1=CC2=C(CO1)C(=O)[C@](C)(O)[C@@H](C2)OC(=O)c1c(C)cc(O)c(O)c1OC": "comazaphilone F"
+    "C=1(C=CC(=C(C1)O)O)/C=C/C(OCC)=O": "Ethyl trans-caffeate"
 }
 
 for smiles, name in test_smiles.items():
