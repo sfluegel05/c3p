@@ -25,86 +25,94 @@ def is_prenylquinone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Expanded quinone patterns to catch more variants
+    # More comprehensive quinone patterns
     quinone_patterns = [
-        "C1(=O)C=CC(=O)C=C1",  # para-quinone
-        "C1(=O)C(=O)C=CC=C1",   # ortho-quinone
-        "O=C1C(=C)C(=O)C=CC1",  # alternative quinone
-        "O=C1C=CC(=O)C(*)=C1",  # substituted quinone
-        "O=C1C(*)=C(*)C(=O)C(*)=C1*",  # heavily substituted quinone
-        "O=C1C(O)=C(*)C(=O)C(*)=C1*",  # hydroxyquinone
-        "[#6]1(=O)[#6]=,:[#6][#6](=O)[#6]=,:[#6]1",  # generic quinone
-        "O=C1C(=C)C(=O)C(*)C(*)=C1*"  # complex quinone
+        "[#6]1(=O)[#6]=,:[#6][#6](=O)[#6]=,:[#6]1",  # basic quinone
+        "O=C1C(=O)C=CC=C1",  # ortho-quinone
+        "O=C1C=CC(=O)C=C1",  # para-quinone
+        "O=C1C(O)=C(*)C(=O)C=C1*",  # hydroxyquinone
+        "O=C1C(O)=C(*)C(=O)C(*)=C1*",  # substituted hydroxyquinone
+        "O=C1C(*)=C(*)C(=O)C(*)=C1*",  # fully substituted quinone
+        "O=C1[#6]=C([#6])[#6](=O)[#6]=C1",  # generic quinone core
+        "O=C1C(=C)C(=O)C(*)C=C1",  # alternative quinone
     ]
-    
+
+    # More specific prenyl patterns
+    prenyl_patterns = [
+        "CC(C)=CCC[C@H]?(C)",  # basic prenyl with optional stereochem
+        "C/C=C(/C)CC/C=C(/C)",  # extended prenyl
+        "CC(C)=CCCC(=C)C",  # branched prenyl
+        "C/C=C(/C)CC/C=C(/C)CC/C=C(/C)",  # long prenyl chain
+        "[CH3][C](=C)[CH2][CH2][C](=C)[CH3]",  # isoprene units
+    ]
+
+    # Check for quinone core
     has_quinone = False
     for pattern in quinone_patterns:
         if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
             has_quinone = True
             break
-            
-    if not has_quinone:
-        return False, "No quinone core structure found"
 
-    # Improved prenyl/polyprenyl patterns
-    prenyl_patterns = [
-        "CC(C)=CCC",  # basic prenyl
-        "C/C=C(/C)CC",  # trans prenyl
-        "CC(C)=CCCC(C)=C",  # diprenyl
-        "[CH3][C]=[C][CH2][CH2]",  # isoprene unit
-        "C/C=C(/C)CC/C=C(/C)",  # extended prenyl
-        "[CH3][C](=[CH2])[CH2][CH2]",  # terminal prenyl
-        "CC(C)=CCCC(=C)C",  # branched prenyl
-    ]
-    
+    # Count prenyl units and check chain length
     prenyl_count = 0
+    long_chain = False
     for pattern in prenyl_patterns:
         matches = mol.GetSubstructMatches(Chem.MolFromSmarts(pattern))
         prenyl_count += len(matches)
+        if len(matches) > 0 and rdMolDescriptors.CalcNumRotatableBonds(mol) >= 8:
+            long_chain = True
 
-    if prenyl_count == 0:
-        return False, "No prenyl/polyprenyl chain found"
+    # Specific prenylquinone class patterns
+    class_patterns = {
+        "ubiquinone": "COC1=C(OC)C(=O)C(C/C=C(/C)C)=C(C)C1=O",
+        "menaquinone": "CC1=C(C)C(=O)c2ccccc2C1=O",
+        "plastoquinone": "CC1=C(C)C(=O)C=C(CC=C(C)C)C1=O",
+        "tocopherolquinone": "CC1=C(O)C(=O)C(C)=C(C)C1=O"
+    }
 
-    # Calculate molecular descriptors
+    # Check for specific class matches
+    class_matches = []
+    for class_name, pattern in class_patterns.items():
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            class_matches.append(class_name)
+
+    # Calculate descriptors
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    ring_count = rdMolDescriptors.CalcNumRings(mol)
     
-    # Count carbons and oxygens
+    # Count key atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
 
-    # Specific subclass patterns
-    menaquinone_pattern = Chem.MolFromSmarts("[#6]1=CC=CC2=C1C(=O)C=C(CC=C)C2=O")
-    ubiquinone_pattern = Chem.MolFromSmarts("COC1=C(OC)C(=O)C=C(CC=C)C1=O")
-    plastoquinone_pattern = Chem.MolFromSmarts("CC1=C(C)C(=O)C=C(CC=C)C1=O")
+    # Classification logic
+    if not has_quinone:
+        return False, "No quinone core structure found"
 
-    features = []
-    if mol.HasSubstructMatch(menaquinone_pattern):
-        features.append("menaquinone-like")
-    if mol.HasSubstructMatch(ubiquinone_pattern):
-        features.append("ubiquinone-like")
-    if mol.HasSubstructMatch(plastoquinone_pattern):
-        features.append("plastoquinone-like")
-    
-    # Check for characteristic substitution
-    if mol.HasSubstructMatch(Chem.MolFromSmarts("COC")):
-        features.append("methoxy-substituted")
-    if n_rotatable >= 7:
-        features.append("long prenyl chain")
+    if prenyl_count == 0 and not long_chain:
+        return False, "No significant prenyl/polyprenyl chain found"
 
-    # Classification criteria
-    is_prenylquinone = False
-    reason = "Missing characteristic prenylquinone features"
+    # Strong evidence for prenylquinone
+    if has_quinone and (long_chain or prenyl_count >= 2) and class_matches:
+        return True, f"Matches known prenylquinone class: {', '.join(class_matches)}"
 
-    # Main classification logic
+    # Check for characteristic features
     if has_quinone and prenyl_count >= 1:
-        if len(features) >= 1:
-            is_prenylquinone = True
-            reason = f"Prenylquinone with features: {', '.join(features)}"
-        elif n_rotatable >= 5 and c_count >= 15 and o_count >= 2:
-            # Check for minimum size and composition
-            if mol_wt >= 200:  # Minimum weight for a basic prenylquinone
-                is_prenylquinone = True
-                reason = "Basic prenylquinone structure with prenyl chain"
+        features = []
+        if long_chain:
+            features.append("long prenyl chain")
+        if mol.HasSubstructMatch(Chem.MolFromSmarts("COC")):
+            features.append("methoxy-substituted")
+        if o_count >= 4:
+            features.append("multiple oxygen functionalities")
+        
+        # Stricter criteria for classification
+        if (long_chain or prenyl_count >= 2) and len(features) >= 2:
+            if mol_wt >= 250 and c_count >= 15:
+                return True, f"Prenylquinone with features: {', '.join(features)}"
 
-    return is_prenylquinone, reason
+    # Basic prenylquinone structure
+    if has_quinone and long_chain and mol_wt >= 250 and n_rotatable >= 8:
+        return True, "Basic prenylquinone structure with significant prenyl chain"
+
+    return False, "Does not meet prenylquinone structural requirements"
