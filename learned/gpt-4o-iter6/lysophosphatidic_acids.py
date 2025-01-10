@@ -2,7 +2,6 @@
 Classifies: CHEBI:32957 lysophosphatidic acids
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_lysophosphatidic_acids(smiles: str):
     """
@@ -22,16 +21,23 @@ def is_lysophosphatidic_acids(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Identify glycerol backbone linked to phosphate: 
-    # Considering patterns like [O][C@@H](CO)COP(=O)(O)O
-    glycerol_phosphate_pattern = Chem.MolFromSmarts("O[C@H](CO)COP(=O)(O)O")
-    if not mol.HasSubstructMatch(glycerol_phosphate_pattern):
+    # Identify a more general glycerol-phosphate linkage pattern
+    # Variations include different stereochemistry
+    glycerol_phosphate_patterns = [
+        Chem.MolFromSmarts("OCC(O)COP(=O)(O)O"),  # without stereochemistry
+        Chem.MolFromSmarts("O[C@H](CO)COP(=O)(O)O"),  # specific stereochemistry
+        Chem.MolFromSmarts("O[C@@H](CO)COP(=O)(O)O")   # specific opposite stereochemistry
+    ]
+    
+    if not any(mol.HasSubstructMatch(pattern) for pattern in glycerol_phosphate_patterns):
         return False, "No glycerol-phosphate linkage found"
         
-    # Check for only one acyl chain, accounting for variations: OC(=O)C(C)*
-    acyl_chain_pattern = Chem.MolFromSmarts("OC(=O)C(C)C")
+    # Use a broad pattern to check for exactly one acyl chain
+    # Allow for chain variation and different carbon lengths
+    acyl_chain_pattern = Chem.MolFromSmarts("C(=O)[CX4,CX3]")  # Simple ester linkage 
     acyl_matches = mol.GetSubstructMatches(acyl_chain_pattern)
     if len(acyl_matches) != 1:
         return False, f"Found {len(acyl_matches)} acyl chains, need exactly 1"
 
+    # If all conditions are met, it is classified as a lysophosphatidic acid
     return True, "Matches all structural features of a lysophosphatidic acid"
