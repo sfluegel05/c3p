@@ -11,6 +11,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_glycosaminoglycan(smiles: str):
     """
     Determines if a molecule is a glycosaminoglycan based on its SMILES string.
+    A glycosaminoglycan is a polysaccharide containing aminomonosaccharide residues.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -27,15 +28,16 @@ def is_glycosaminoglycan(smiles: str):
     # Count key atoms
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     
-    if o_count < 3:  # Relaxed oxygen requirement
-        return False, "Too few oxygen atoms for aminomonosaccharide structure"
+    if o_count < 4:
+        return False, "Too few oxygen atoms for polysaccharide structure"
     
-    if n_count == 0:  # Still need nitrogen for amino groups
+    if n_count == 0:
         return False, "No nitrogen atoms found - required for aminosugar"
 
-    # Look for various sugar-like ring patterns
-    patterns = [
+    # Look for sugar ring patterns
+    sugar_patterns = [
         "[CR1]1[CR1][CR1][CR1][CR1]O1",  # pyranose
         "[CR1]1[CR1][CR1][CR1]O1",       # furanose
         "[CR0,CR1]1[CR0,CR1][CR0,CR1][CR0,CR1][CR0,CR1]O1",  # modified pyranose
@@ -43,26 +45,29 @@ def is_glycosaminoglycan(smiles: str):
     ]
     
     total_sugar_matches = 0
-    for pattern in patterns:
+    for pattern in sugar_patterns:
         sugar_pattern = Chem.MolFromSmarts(pattern)
         if sugar_pattern:
             matches = len(mol.GetSubstructMatches(sugar_pattern))
             total_sugar_matches += matches
 
-    # Look for amino groups in various contexts
-    amino_patterns = [
-        "[NX3H,NX3H2][CH1,CH2][OH1,OR]",  # classic amino sugar
-        "[NX3H,NX3H2][CR0,CR1][OR0,OR1]",  # modified amino sugar
-        "[NX3H,NX3H2]C(=O)",               # N-acetyl group
-        "[NX3]C[CR1]1O[CR1][CR1][CR1][CR1]1"  # N-substituted sugar
+    # Look for glycosidic linkages
+    glycosidic = Chem.MolFromSmarts("[CR1]O[CR1]")
+    glycosidic_count = len(mol.GetSubstructMatches(glycosidic)) if glycosidic else 0
+
+    # Look for amino sugar patterns
+    amino_sugar_patterns = [
+        "[NX3H,NX3H2][CH1,CH2][CR1]1O[CR1][CR1][CR1][CR1]1",  # amino directly on sugar
+        "[NX3H,NX3H2][CR0,CR1]1O[CR0,CR1][CR0,CR1][CR0,CR1][CR0,CR1]1",  # modified amino sugar
+        "[NX3]C(=O)C[CR1]1O[CR1][CR1][CR1][CR1]1"  # N-acetylated sugar
     ]
     
-    total_amino_matches = 0
-    for pattern in amino_patterns:
-        amino_pattern = Chem.MolFromSmarts(pattern)
-        if amino_pattern:
-            matches = len(mol.GetSubstructMatches(amino_pattern))
-            total_amino_matches += matches
+    amino_sugar_matches = 0
+    for pattern in amino_sugar_patterns:
+        pattern_mol = Chem.MolFromSmarts(pattern)
+        if pattern_mol:
+            matches = len(mol.GetSubstructMatches(pattern_mol))
+            amino_sugar_matches += matches
 
     # Look for characteristic modifications
     sulfate = Chem.MolFromSmarts("OS(=O)(=O)[OH1,O-]")
@@ -73,12 +78,18 @@ def is_glycosaminoglycan(smiles: str):
     has_carboxyl = mol.HasSubstructMatch(carboxyl) if carboxyl else False
     has_acetyl = mol.HasSubstructMatch(acetyl) if acetyl else False
 
+    # Calculate ring fraction to distinguish from peptides
+    ring_atoms = len(Chem.GetSymmSSSR(mol))
+    ring_fraction = ring_atoms / mol.GetNumAtoms() if mol.GetNumAtoms() > 0 else 0
+
     # Build features list
     features = []
     if total_sugar_matches > 0:
-        features.append(f"Contains {total_sugar_matches} sugar-like rings")
-    if total_amino_matches > 0:
-        features.append(f"{total_amino_matches} amino groups")
+        features.append(f"Contains {total_sugar_matches} sugar rings")
+    if glycosidic_count > 0:
+        features.append(f"{glycosidic_count} glycosidic linkages")
+    if amino_sugar_matches > 0:
+        features.append(f"{amino_sugar_matches} amino sugar residues")
     if has_sulfate:
         features.append("sulfate groups")
     if has_carboxyl:
@@ -86,11 +97,15 @@ def is_glycosaminoglycan(smiles: str):
     if has_acetyl:
         features.append("acetyl groups")
 
-    # Classification criteria
+    # Classification criteria - more stringent requirements
     is_gag = (
-        (total_sugar_matches > 0 or (o_count >= 4 and n_count >= 1)) and  # Either has sugar rings or enough O/N atoms
-        total_amino_matches > 0 and                                        # Must have amino groups
-        (has_sulfate or has_carboxyl or has_acetyl)                       # Must have at least one characteristic modification
+        total_sugar_matches >= 1 and                    # Must have at least one sugar ring
+        glycosidic_count >= 1 and                      # Must have glycosidic linkages
+        amino_sugar_matches >= 1 and                    # Must have amino sugar residues
+        (has_sulfate or has_carboxyl or has_acetyl) and # Must have characteristic modifications
+        ring_fraction >= 0.2 and                        # Significant ring content
+        o_count >= 4 and                                # Minimum oxygen requirement
+        c_count >= 12                                   # Minimum carbon requirement
     )
 
     if not features:
