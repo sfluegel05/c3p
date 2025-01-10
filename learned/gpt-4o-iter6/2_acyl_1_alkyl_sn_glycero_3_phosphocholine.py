@@ -20,23 +20,23 @@ def is_2_acyl_1_alkyl_sn_glycero_3_phosphocholine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for glycerol backbone with sn stereochemistry pattern
-    sn_glycerol_pattern = Chem.MolFromSmarts("[C@H](CO*)(O*)")
+    # Glycerol backbone with sn stereochemistry pattern
+    sn_glycerol_pattern = Chem.MolFromSmarts("[C@H](CO[CX4])[O]")
     if not mol.HasSubstructMatch(sn_glycerol_pattern):
         return False, "No sn-glycerol backbone found"
     
-    # Check for Alkyl chain at sn-1 position
-    alkyl_chain_pattern = Chem.MolFromSmarts("COC")
+    # Alkyl chain at sn-1 - ether linkage and long chain
+    alkyl_chain_pattern = Chem.MolFromSmarts("OCC[CX4]~[CX4]~[CX4]~[CX4]")
     if not mol.HasSubstructMatch(alkyl_chain_pattern):
         return False, "No alkyl chain at sn-1 position"
     
-    # Check for Acyl chain at sn-2 position
-    acyl_chain_pattern = Chem.MolFromSmarts("[C](O*)(=O)*")
+    # Acyl chain at sn-2 - ester linkage and long chain
+    acyl_chain_pattern = Chem.MolFromSmarts("C(=O)O[CX4]~[CX4]~[CX4]~[CX4]")
     if not mol.HasSubstructMatch(acyl_chain_pattern):
         return False, "No acyl chain at sn-2 position"
     
-    # Check for phosphate and choline group
-    phosphocholine_pattern = Chem.MolFromSmarts("COP([O-])(=O)OCC[N+](C)(C)C")
+    # Phosphocholine group: check for phosphate and choline segments
+    phosphocholine_pattern = Chem.MolFromSmarts("COP(=O)(OCC[N+](C)(C)C)[O-]")
     if not mol.HasSubstructMatch(phosphocholine_pattern):
         return False, "No phosphate and choline group"
     
