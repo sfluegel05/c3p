@@ -21,25 +21,25 @@ def is_N_acyl_L_alpha_amino_acid(smiles: str):
     if mol is None:
         return (False, "Invalid SMILES string")
     
-    # General pattern for L-alpha-amino acid backbone with stereochemistry specified
-    l_alpha_amino_acid_pattern = Chem.MolFromSmarts('[C@H](N)([CX4])C(=O)O')  # Chiral carbon with amine and carboxyl connected
+    # General pattern for L-alpha-amino acid backbone with stereochemistry
+    l_alpha_amino_acid_pattern = Chem.MolFromSmarts('[NX3;H2][C@H]([CX4])[CX3](=O)O')  # Primary amine with chiral alpha-carbon and carboxyl
     if not mol.HasSubstructMatch(l_alpha_amino_acid_pattern):
         return (False, "No L-alpha-amino acid backbone found")
 
-    # Pattern for nitrogen with acyl group
-    n_acyl_pattern = Chem.MolFromSmarts('N([CX3](=O)[CX4,CX3])')  # N attached to carbonyl and possibly a chain
+    # Pattern for nitrogen with a connected acyl group
+    n_acyl_pattern = Chem.MolFromSmarts('[NX3;H1][CX3](=O)[!#1]')
     n_acyl_matches = mol.GetSubstructMatches(n_acyl_pattern)
 
     if not n_acyl_matches:
         return (False, "No N-acyl group found attached to nitrogen")
 
-    # Ensure N-acyl is on the alpha-amino nitrogen
+    # Locate if the N-acyl is attached to the nitrogen within the context of an L-alpha-amino acid pattern
     for match in n_acyl_matches:
         nitrogen_idx = match[0]
-        atom = mol.GetAtomWithIdx(nitrogen_idx)
-        for neighbor in atom.GetNeighbors():
-            if neighbor.GetSymbol() == 'C' and neighbor.HasProp('_CIPCode'):
-                if neighbor.GetProp('_CIPCode') in ['S', 'R']:  # chiral center
-                    return (True, "Contains L-alpha-amino acid backbone with an N-acyl substituent correctly attached")
+        for neighbor in mol.GetAtomWithIdx(nitrogen_idx).GetNeighbors():
+            idx = neighbor.GetIdx()
+            # The alpha carbon should be part of the L-alpha-amino acid structure and connected to the n-acyl nitrogen
+            if mol.HasSubstructMatch(l_alpha_amino_acid_pattern, atoms=[idx]):
+                return (True, "Contains L-alpha-amino acid backbone with an N-acyl substituent correctly attached")
 
     return (False, "N-acyl group not correctly integrated into L-alpha-amino acid nitrogen")
