@@ -20,20 +20,20 @@ def is_4__hydroxyflavanones(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Refined SMARTS pattern for flavanone core structure
-    flavanone_core_pattern = Chem.MolFromSmarts("O=C1C[C@H](Oc2ccccc12)c3ccccc3")  # Flavanone with stereochemistry inclination
-
-    # Check for flavanone core in molecule
+    
+    # Define a generic flavanone core pattern
+    flavanone_core_pattern = Chem.MolFromSmarts("O=C1CC(Oc2ccccc2)C(O1)c3ccccc3")
+    
+    # Check for the presence of the flavanone core structure
     if not mol.HasSubstructMatch(flavanone_core_pattern):
         return False, "No flavanone core structure identified"
-
-    # Improved SMARTS pattern for identifying 4'-hydroxyphenyl group
-    four_prime_hydroxy_pattern = Chem.MolFromSmarts("c1ccc(O)cc1C2C(=O)CC(O2)c3ccccc3")  # Ensures a para-position from attachment
-
-    # Check if the flavanone core is correctly placed
-    matches = mol.GetSubstructMatches(four_prime_hydroxy_pattern)
-    if matches:
-        return True, "Contains 4'-hydroxyflavanone core and a 4'-hydroxy group"
-
+    
+    # Define pattern for 4'-hydroxy group on an aromatic ring adjacent to the flavanone core
+    four_prime_hydroxy_pattern = Chem.MolFromSmarts("c1cc(O)ccc1")
+    
+    # Check for a 4'-OH group on the phenyl ring
+    atom_indices = mol.GetSubstructMatch(four_prime_hydroxy_pattern)
+    if atom_indices:
+        return True, "Contains 4'-hydroxy group on aromatic ring of flavanone core"
+    
     return False, "4'-hydroxy group not found at the correct position"
