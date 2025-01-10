@@ -21,15 +21,17 @@ def is_11beta_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Steroid core pattern: we identify the four ring structure (cyclopentanoperhydrophenanthrene)
-    steroid_pattern = Chem.MolFromSmarts("C1CCC2C1CCC3C2CCC4C3CCC4")  # Simplified four-ring system
-    if not mol.HasSubstructMatch(steroid_pattern):
+    # More detailed steroid core pattern
+    steroid_core_patterns = [
+        "C[C@H]1CC[C@H]2[C@@H]3CC[C@H]4C(=O)C=C[C@@]4(C)[C@@H]3CC[C@]12C",  # Fully stereospecific pattern
+        "C1CCC2C1CCC3C2CCC4C3CCC4",  # Typical steroid stereochemistry
+        "C[C@@H]1CC[C@@H]2[C@@H]3CC[C@H]4C(=O)OCCCC4(C)[C@@H]3CCC2C1"  # Alternate forms
+    ]
+    if not any(mol.HasSubstructMatch(Chem.MolFromSmarts(p)) for p in steroid_core_patterns):
         return False, "Steroid core structure not found"
 
-    # 11beta-hydroxy group position 
-    # Specific atom mapping and ordering can be challenging, simplified by assuming position
-    # Recognize by position after ensuring steroid skeleton presence
-    hydroxyl_pattern = Chem.MolFromSmarts("[C;H2][C;H2][C;H][OH]")  # Simplification for hydroxyl on a carbon chain
+    # 11beta-hydroxy group: targeting specific position in the steroid skeletal
+    hydroxyl_pattern = Chem.MolFromSmarts("[C@]([C@H])([OH])")
     if not mol.HasSubstructMatch(hydroxyl_pattern):
         return False, "Missing 11beta-hydroxy group"
 
