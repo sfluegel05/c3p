@@ -12,7 +12,7 @@ def is_polypeptide(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a polypeptide, False otherwise
+        bool: True if the molecule is a polypeptide, False otherwise
         str: Reason for classification
     """
     
@@ -21,8 +21,12 @@ def is_polypeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define more comprehensive peptide bond patterns, including cyclic and extended structures:
-    peptide_bond_pattern = Chem.MolFromSmarts("N[C@@H](C)C(=O)|N[C@H](C)C(=O)|N-C(=O)C")
+    # Define peptide bond pattern, paying careful attention to common peptide bonds:
+    peptide_bond_pattern = Chem.MolFromSmarts("N-C(=O)-C")
+    if peptide_bond_pattern is None:
+        return None, "Failed to parse peptide bond SMARTS pattern"
+
+    # Check for recognizable peptide bonds in the molecule
     if not mol.HasSubstructMatch(peptide_bond_pattern):
         return False, "No recognizable peptide sequence found"
 
