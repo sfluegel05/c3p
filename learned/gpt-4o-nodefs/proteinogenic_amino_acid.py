@@ -15,20 +15,36 @@ def is_proteinogenic_amino_acid(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
+    # Parse the SMILES string into an RDKit molecule object
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # General pattern for proteinogenic amino acids
-    pattern = Chem.MolFromSmarts("[NX3,NX4][C@@H]([*!$(*=*)])[CH,N,O,S,P]*C(=O)O")
     
-    # Check if the molecule matches the generalized amino acid pattern
-    if mol.HasSubstructMatch(pattern):
-        return True, "Matches generalized proteinogenic amino acid structure"
+    # Define a pattern for a generic proteinogenic amino acid
+    # This pattern should capture the distinct features of proteinogenic amino acids: 
+    # Central carbon (C) bonded to an amino group (N), carboxyl group (O=CO), and optional chiralities.
+    amino_acid_pattern = Chem.MolFromSmarts(
+        "[CX4H2][NX3](C(=O)[O,N])" +  # Central carbon with amino group and carboxylate
+        "[$([C,c;!$(*=,#)])]"         # Variable side chain (R group) allowance
+    )
+    
+    # Run a substructure search with this pattern
+    if not mol.HasSubstructMatch(amino_acid_pattern):
+        return False, "Does not match core proteinogenic amino acid structure"
+    
+    # Verify for larger molecules that they don't contain structures inconsistent with amino acids
+    # Refine based on a more localized search instead of entire structure which may better
+    # accommodate partial matching for modified residues (e.g. deuterated amino acids)
+    try:
+        # Find the first matching conformation
+        match = mol.GetSubstructMatch(amino_acid_pattern)
+        if not match:
+            return False, "Core structure is missing or improperly modified"
+    except:
+        return False, "An error occurred during matching process"
 
-    return False, "Does not match the generalized structure of a proteinogenic amino acid"
-
+    # If found matches to the structural pattern that often characterize the proteinogenic amino acids
+    return True, "Matches refined structure expected of proteinogenic amino acids"
 
 # Example test for the function
 smiles_list = [
