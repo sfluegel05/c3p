@@ -2,6 +2,7 @@
 Classifies: CHEBI:17002 cholesteryl ester
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_cholesteryl_ester(smiles: str):
     """
@@ -22,8 +23,8 @@ def is_cholesteryl_ester(smiles: str):
     if mol is None:
         return (False, "Invalid SMILES string")
 
-    # More refined cholesterol pattern to recognize key structural features
-    cholesterol_pattern = Chem.MolFromSmarts("CC(C)CCC[C@H](C)[C@H]1CC[C@H]2[C@@H](C3=CC=CC=C3)[C@@H]3CC[C@]4([C@H]3CC=C4C2)C1")
+    # Broad cholesterol pattern focusing on steroid structure (four rings)
+    cholesterol_pattern = Chem.MolFromSmarts("C1CC2C3C(C1)CC(C2)CC4(C3=CC=C4)C")
     if not mol.HasSubstructMatch(cholesterol_pattern):
         return (False, "No cholesterol framework identified")
 
@@ -32,14 +33,14 @@ def is_cholesteryl_ester(smiles: str):
     if not mol.HasSubstructMatch(ester_pattern):
         return (False, "No ester linkage found")
 
-    # Verify that the ester is connected to the C3 position of the cholesterol framework
-    c3_ester_connection_pattern = Chem.MolFromSmarts("C[C@H](OC(=O))C1CC1")
-    if not mol.HasSubstructMatch(c3_ester_connection_pattern):
-        return (False, "Ester linkage not correctly connected to C3 hydroxyl of cholesterol")
+    # Look for ester linkage at 3β-position in steroids using a less strict pattern
+    c3_position_pattern = Chem.MolFromSmarts("OC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@H]4([C@@H]3CC=C4[C@H]2CC1)C")
+    if not mol.HasSubstructMatch(c3_position_pattern):
+        return (False, "Ester linkage not correctly connected to the 3β-position of cholesterol")
 
     return (True, "SMILES indicates a cholesteryl ester structure")
 
 # Example test
-smiles_example = "C[H][C@@]1(CC[C@@]2([H])[C@]3([H])CC=C4C[C@H](CC[C@]4(C)[C@@]3([H])CC[C@]12C)OC(=O)CCCCCCC\C=C/C\C=C/CCCCC)"
+smiles_example = "CC(C)CCC[C@@H](C)[C@H]1CC[C@H]2[C@@H]3CC=C4C[C@H](CC[C@]4(C)[C@@H]3CC=C2C1)OC(=O)CCCCCCC\C=C/C\C=C/CCCCC"
 result = is_cholesteryl_ester(smiles_example)
 print(result)
