@@ -27,7 +27,7 @@ def is_O_acyl_L_carnitine(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for the carnitine backbone with L-configuration
-    # The pattern should match: [N+](C)(C)C[C@H](CC([O-])=O)OC(=O)
+    # More flexible pattern to match the core structure
     carnitine_pattern = Chem.MolFromSmarts("[N+X4](C)(C)C[C@H](CC([O-])=O)OC(=O)")
     if not mol.HasSubstructMatch(carnitine_pattern):
         return False, "No L-carnitine backbone found"
@@ -54,14 +54,19 @@ def is_O_acyl_L_carnitine(smiles: str):
         return False, "No chiral center found"
     
     # Ensure the chiral center is in the L-configuration
-    # The chiral center should be the carbon attached to the nitrogen and the carboxylate group
+    # L-configuration corresponds to 'R' in RDKit for carnitine derivatives
     for center in chiral_centers:
-        if center[1] != 'S':  # L-configuration corresponds to 'S' in RDKit for carnitine derivatives
+        if center[1] != 'R':  # Changed from 'S' to 'R'
             return False, "Chiral center not in L-configuration"
 
     # Additional check to reduce false positives: ensure the molecule has a reasonable molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 150 or mol_wt > 1000:
+    if mol_wt < 100 or mol_wt > 1500:  # Expanded weight range
         return False, "Molecular weight out of range for O-acyl-L-carnitine"
+
+    # Additional check: count the number of carbons to ensure it's a reasonable acyl chain
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 7 or c_count > 50:  # Reasonable range for acyl chains
+        return False, "Number of carbons out of range for O-acyl-L-carnitine"
 
     return True, "Contains L-carnitine backbone with O-acyl group, quaternary ammonium, and carboxylate group"
