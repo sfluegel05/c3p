@@ -48,17 +48,22 @@ def is_prostaglandin(smiles: str):
 
     # Check molecular weight - prostaglandins typically have a molecular weight around 300-600 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 250 or mol_wt > 650:
+    if mol_wt < 300 or mol_wt > 600:
         return False, f"Molecular weight {mol_wt:.2f} is outside the typical range for prostaglandins"
 
     # Count carbons - prostaglandins typically have 20 carbons, but allow some flexibility
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 15 or c_count > 25:
+    if c_count < 18 or c_count > 22:
         return False, f"Number of carbons {c_count} is outside the typical range for prostaglandins"
 
     # Check for the presence of a specific prostaglandin-like structure
     prostaglandin_pattern = Chem.MolFromSmarts("[C]1[C][C][C][C]1.[CX3](=O)[OX2H0].[OX2H].[CX3]=[CX3]")
     if not mol.HasSubstructMatch(prostaglandin_pattern):
         return False, "No prostaglandin-like structure found"
+
+    # Additional check for the presence of a specific prostaglandin backbone
+    backbone_pattern = Chem.MolFromSmarts("[C]1[C][C][C][C]1.[CX3](=O)[OX2H0].[OX2H].[CX3]=[CX3]")
+    if not mol.HasSubstructMatch(backbone_pattern):
+        return False, "No prostaglandin backbone found"
 
     return True, "Contains cyclopentane ring, carboxyl group, hydroxyl group, and double bond, with appropriate molecular weight and carbon count"
