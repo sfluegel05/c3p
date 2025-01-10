@@ -21,15 +21,16 @@ def is_3alpha_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define the steroid backbone pattern
-    steroid_pattern = Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2CCC4C3(CCC4)C")
+    # More generalized steroid backbone pattern considering cis-trans variations
+    steroid_pattern = Chem.MolFromSmarts("C1CCC2(CC1)CCC3C2CCC4C3(CCC4C)C")
     
     # Check for steroid backbone presence
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
     
-    # Define the 3alpha-hydroxy pattern
-    hydroxy_3alpha_pattern = Chem.MolFromSmarts("[C@@H]1(O)[C@@H](C)C2CCC3C4CCC(C3)C4(C)CC2C1")
+    # Generalized pattern for 3alpha-hydroxy group
+    # Checking C attached directly to O somewhere around the steroid backbone
+    hydroxy_3alpha_pattern = Chem.MolFromSmarts("[C@@H](O)[C]:[C][C]:[C]:[C]")
     
     # Check for 3alpha-hydroxy group
     if not mol.HasSubstructMatch(hydroxy_3alpha_pattern):
