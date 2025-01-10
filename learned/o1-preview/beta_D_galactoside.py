@@ -26,11 +26,8 @@ def is_beta_D_galactoside(smiles: str):
 
     # Define the SMARTS pattern for beta-D-galactoside
     # This pattern represents the beta-D-galactopyranoside moiety with correct stereochemistry
-    beta_D_galactoside_smarts = (
-        "[C@H]1([O][#6])"
-        "[O][C@H]([C@@H](O)[C@@H](O)[C@H]1O)"
-        "[C@@H](O)[C@@H](O)[C@H](O)"
-    )
+    # The anomeric carbon (C1) is connected via an oxygen to any group ([*])
+    beta_D_galactoside_smarts = "[C@H]1([O][*])O[C@H]([C@@H](O)[C@@H](O)[C@H]1O)CO"
 
     beta_D_galactoside_mol = Chem.MolFromSmarts(beta_D_galactoside_smarts)
     if beta_D_galactoside_mol is None:
