@@ -1,13 +1,16 @@
 """
 Classifies: CHEBI:17962 CDP-diacylglycerol
 """
+"""
+Classifies: CHEBI: 
+"""
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_CDP_diacylglycerol(smiles: str):
     """
     Determines if a molecule is a CDP-diacylglycerol based on its SMILES string.
-    A CDP-diacylglycerol is characterized by a glycerol backbone with two acyl chains 
-    at positions 1 and 2, and a cytidine diphosphate group.
+    A CDP-diacylglycerol has a glycerol backbone with two acyl chains at positions 1 and 2, and a cytidine diphosphate group.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,34 +25,29 @@ def is_CDP_diacylglycerol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Accurate pattern for the CDP (cytidine diphosphate) group
-    cdp_smarts = "n1c(COP(O)(=O)OP(O)(=O)O)cnc1C2OC(CO)C(O)C2O"
-    cdp_pattern = Chem.MolFromSmarts(cdp_smarts)
-    if not mol.HasSubstructMatch(cdp_pattern):
-        return False, "No CDP (Cytidine diphosphate) group found"
-
-    # Flexible glycerol backbone pattern
-    glycerol_pattern = Chem.MolFromSmarts("OCC(CO)(O)CO")
+    # Look for glycerol backbone pattern (C[C@H](O)C(O))
+    glycerol_pattern = Chem.MolFromSmarts("C[C@H](O)C(O)")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
+        
+    # Look for cytidine diphosphate group
+    cdp_pattern = Chem.MolFromSmarts("[nH]1ccc(nc1=O)P(OP(=O)(O)O)(=O)OC[C@H]")
+    if not mol.HasSubstructMatch(cdp_pattern):
+        return False, "No cytidine diphosphate group found"
 
-    # Look for two ester groups (-C(=O)O-)
-    ester_pattern = Chem.MolFromSmarts("C(=O)OC[C@H](CO)O")  # Match positions in glycerol
+    # Look for ester linkages indicating acyl chains (-C(=O)OC-)
+    ester_pattern = Chem.MolFromSmarts("C(=O)OC")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) < 2:
-        return False, f"Found {len(ester_matches)} ester groups, need exactly 2"
+        return False, f"Found {len(ester_matches)} acyl chains, need at least 2"
 
-    # Check carbon chain length in acyl groups
-    carbon_chain_length = sum(
+    # Acyl chains should be long, let's check the carbon count on them
+    acyl_chain_count = sum(
         1 for atom in mol.GetAtoms()
-        if atom.GetAtomicNum() == 6 and len(atom.GetNeighbors()) > 1
+        if atom.GetAtomicNum() == 6 and len(atom.GetBonds()) == 3 # indicative of C-C bonds in hydrocarbon chains
     )
-    if carbon_chain_length < 20:
-        return False, f"Acyl chains too short, carbon count {carbon_chain_length}"
+    
+    if acyl_chain_count < 20:
+        return False, "Acyl chains too short"
 
-    # Verify unique attachment positions in glycerol
-    attachment_positions = {match[1] for match in ester_matches}
-    if len(attachment_positions) < 2:
-        return False, "Acyl chains not correctly attached at glycerol 1,2 positions"
-
-    return True, "Contains CDP structure, glycerol backbone, and suitable acyl chains"
+    return True, "Contains glycerol backbone with cytidine diphosphate and two acyl chains"
