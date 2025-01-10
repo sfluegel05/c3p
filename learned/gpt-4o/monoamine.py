@@ -2,7 +2,6 @@
 Classifies: CHEBI:63534 monoamine
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_monoamine(smiles: str):
     """
@@ -16,29 +15,29 @@ def is_monoamine(smiles: str):
         bool: True if molecule is a monoamine, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for an aromatic ring (using benzene as a pattern)
-    aromatic_pattern = Chem.MolFromSmarts("c1ccccc1")
+    # Simplified aromatic ring pattern
+    aromatic_pattern = Chem.MolFromSmarts("a")
     if not mol.HasSubstructMatch(aromatic_pattern):
         return False, "No aromatic ring found"
     
-    # Look for an amino group (-NH2 or primary/secondary/tertiary amine)
-    amine_pattern = Chem.MolFromSmarts("[NX3;H2,H1,H0;!$(NC=O)]")  # this matches primary/secondary/tertiary amines
+    # Primary, secondary, and tertiary amine check
+    amine_pattern = Chem.MolFromSmarts("[NX3;H2,H1,H0]")  # General amine group pattern
     if not mol.HasSubstructMatch(amine_pattern):
         return False, "No amino group found"
 
-    # Look for two-carbon chain connecting amino group to aromatic ring
-    chain_pattern = Chem.MolFromSmarts("[$(c)-C-C-N]")  # Aromatic carbon connected to C-C-N
+    # Two-carbon chain linking amine to aromatic ring
+    chain_pattern = Chem.MolFromSmarts("a-C-C-[NX3]")  # Arbitrary aromatic -> carbon chain -> amine
     if not mol.HasSubstructMatch(chain_pattern):
-        return False, "No C-C chain connecting amino to aromatic ring found"
+        return False, "No two-carbon chain connecting amino to aromatic ring found"
 
     return True, "Contains amino group connected to aromatic ring by a two-carbon chain"
 
-# Examples of monoamines, you can test with these SMILES strings
-# is_monoamine("CNC[C@H](O)c1ccc(O)c(O)c1")
-# is_monoamine("CNCC(O)C1=CC(O)=C(O)C=C1")
+# Example debugging
+# print(is_monoamine("CNC[C@H](O)c1ccc(O)c(O)c1"))
+# print(is_monoamine("NCCc1ccc(O)c(O)c1"))
