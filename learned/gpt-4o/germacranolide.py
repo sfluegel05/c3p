@@ -21,24 +21,24 @@ def is_germacranolide(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Look for germacrane skeleton (10-membered carbon ring)
-    germacrane_pattern = Chem.MolFromSmarts('C1CCCCC[CH]CCC1')  # simplified carbon ring structure
-    if not mol.HasSubstructMatch(germacrane_pattern):
-        return False, "No germacrane skeleton found"
     
-    # Look for lactone group (-C(=O)O-)
-    lactone_pattern = Chem.MolFromSmarts('C(=O)O')
+    # Detailed pattern matching for the germacrane 10-membered carbon ring.
+    germacrane_pattern = Chem.MolFromSmarts('C1C=CCC2OC(=O)C=CC(=O)C1C2') 
+    if not mol.HasSubstructMatch(germacrane_pattern):
+        return False, "No specific germacrane skeleton found"
+
+    # Look for lactone group specifically within macrocyclic context
+    lactone_pattern = Chem.MolFromSmarts('C1OC(=O)C1')
     lactone_matches = mol.GetSubstructMatches(lactone_pattern)
     if len(lactone_matches) < 1:
-        return False, "No lactone group found"
-    
-    # Check for the presence of typical sesquiterpene traits like double bonds/epoxides
-    # Note: This is a simplification; exact stereochemistry consideration requires more complex checks
+        return False, "No lactone group in macrocyclic ring found"
+
+    # Count double bonds to enforce typical sesquiterpene traits
     double_bond_count = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE)
     if double_bond_count < 2:
         return False, "Insufficient number of double bonds for sesquiterpene lactone"
 
-    # (Optional) Further detailed stereochemical checks and substituents specific to known germacranolides
+    # Check stereochemistry if needed, this can be expanded with more specific patterns for known stereochemistry
+    # Consider known substituents common in germacranolides
 
-    return True, "Contains germacrane skeleton with lactone group, typical of germacranolides"
+    return True, "Contains structured germacrane skeleton with lactone group, typical of germacranolides"
