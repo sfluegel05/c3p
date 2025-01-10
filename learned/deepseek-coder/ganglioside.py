@@ -32,8 +32,8 @@ def is_ganglioside(smiles: str):
             return False, "No sphingosine backbone found (ceramide missing)"
 
     # Check for fatty acid (long carbon chain attached to NH2 of sphingosine)
-    # Look for at least 12 carbons in a chain
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    # Look for at least 8 carbons in a chain
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
     fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
     if len(fatty_acid_matches) < 1:
         return False, "Missing fatty acid chain in ceramide"
