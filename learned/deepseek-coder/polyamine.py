@@ -24,17 +24,22 @@ def is_polyamine(smiles: str):
     if mol is None:
         return None, None  # Invalid SMILES string
 
-    # Define amino group patterns: -NH2, -NH-, -NR2
+    # Define amino group patterns: -NH2, -NH-, -NR2, [NH3+], [NH2+], etc.
     amino_patterns = [
         Chem.MolFromSmarts("[NX3;H2]"),  # -NH2
         Chem.MolFromSmarts("[NX3;H1]"),  # -NH-
-        Chem.MolFromSmarts("[NX3;H0]")   # -NR2
+        Chem.MolFromSmarts("[NX3;H0]"),  # -NR2
+        Chem.MolFromSmarts("[NH3+]"),    # [NH3+]
+        Chem.MolFromSmarts("[NH2+]"),    # [NH2+]
+        Chem.MolFromSmarts("[N+](=O)[O-]"),  # Nitro group
+        Chem.MolFromSmarts("[N+]([O-])=O"),  # Nitro group (alternative)
     ]
 
     # Count amino groups
     amino_count = 0
     for pattern in amino_patterns:
-        amino_count += len(mol.GetSubstructMatches(pattern))
+        if pattern is not None:  # Ensure the pattern is valid
+            amino_count += len(mol.GetSubstructMatches(pattern))
 
     # Check if there are at least two amino groups
     if amino_count >= 2:
