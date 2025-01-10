@@ -31,11 +31,11 @@ def is_2_oxo_monocarboxylic_acid_anion(smiles: str):
     if not any(charge == -1 for charge in negative_charges):
         return False, "Molecule is not an anion"
 
-    # Check for the presence of a carboxylate group (C(=O)[O-])
+    # Check for the presence of exactly one carboxylate group (C(=O)[O-])
     carboxylate_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[O-]")
     carboxylate_matches = mol.GetSubstructMatches(carboxylate_pattern)
-    if not carboxylate_matches:
-        return False, "No carboxylate group found"
+    if len(carboxylate_matches) != 1:
+        return False, "Molecule does not contain exactly one carboxylate group"
 
     # Check for the presence of an oxo group (C=O) at the 2-position relative to the carboxylate
     # The oxo group should be on the carbon adjacent to the carboxylate carbon
