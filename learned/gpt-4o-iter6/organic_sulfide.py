@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_organic_sulfide(smiles: str):
     """
     Determines if a molecule is an organic sulfide based on its SMILES string.
-    An organic sulfide (thioether) has the structure R-S-R', where R and R' are carbon chains.
+    An organic sulfide (thioether) has the structure R-S-R', where R and R' are not just hydrogen.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,15 +21,15 @@ def is_organic_sulfide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the SMARTS pattern for an organic sulfide (thioether): sulfur bonded to two carbon atoms
-    sulfide_pattern = Chem.MolFromSmarts("[C]-[S]-[C]")
+    # Define patterns to match sulfide group
+    sulfide_pattern = Chem.MolFromSmarts("[#6]-[#16]-[#6]")
+    organic_sulfur_exclusions = Chem.MolFromSmarts("[#16](=[OX1])")
 
-    # Avoid classification for sulfur in sulfoxides and sulfones, which have oxygen atoms attached
-    sulfoxide_sulfone_or_sulfate_pattern = Chem.MolFromSmarts("[S](=O)")
+    # Match organic sulfide pattern and exclude sulfoxide or sulfone pattern
+    sulfide_matches = mol.GetSubstructMatches(sulfide_pattern)
+    exclusion_matches = mol.GetSubstructMatches(organic_sulfur_exclusions)
 
-    if mol.HasSubstructMatch(sulfide_pattern):
-        if mol.HasSubstructMatch(sulfoxide_sulfone_or_sulfate_pattern):
-            return False, "Contains sulfur in a non-sulfide form, such as sulfoxide or sulfone"
+    if len(sulfide_matches) > 0 and len(exclusion_matches) == 0:
         return True, "Contains an organic sulfide (thioether) group"
 
     return False, "No organic sulfide (thioether) group found"
