@@ -19,72 +19,62 @@ def is_tetradecanoate_ester(smiles: str):
         bool: True if molecule is a tetradecanoate ester, False otherwise
         str: Reason for classification
     """
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define ester SMARTS pattern
-    ester_pattern = Chem.MolFromSmarts("[C](=O)[O][#6]")  # Ester group with carbonyl carbon connected to oxygen and carbon
+    # Define a SMARTS pattern for ester group: carbonyl carbon connected to oxygen connected to carbon
+    ester_pattern = Chem.MolFromSmarts("[#6X3](=O)[OX2H0][#6]")
     if ester_pattern is None:
         return False, "Failed to create ester SMARTS pattern"
 
-    # Find ester groups
+    # Find all ester groups in the molecule
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if not ester_matches:
         return False, "No ester groups found"
 
-    # For each ester group, check if acyl chain is tetradecanoyl (14 carbons)
+    # For each ester group, check if the acyl chain has exactly 14 carbons
     for match in ester_matches:
-        carbonyl_c_idx = match[0]  # Index of carbonyl carbon
-        ester_o_idx = match[2]     # Index of ester oxygen
+        carbonyl_c_idx = match[0]  # Carbonyl carbon index
+        ester_o_idx = match[1]     # Ester oxygen index
+        alcohol_c_idx = match[2]   # Alcohol carbon index
 
-        # Initialize variables for traversal
+        # Initialize a set to keep track of visited atoms
         visited = set()
-        chain_length = 0
-        is_linear = True
-        is_saturated = True
+        acyl_carbons = set()
 
-        # Traverse acyl chain starting from carbonyl carbon (excluding ester oxygen side)
-        def traverse_acyl_chain(atom_idx, prev_atom_idx):
-            nonlocal chain_length, is_linear, is_saturated
-
-            atom = mol.GetAtomWithIdx(atom_idx)
+        # Traverse the acyl chain starting from the carbonyl carbon (excluding ester oxygen side)
+        to_visit = [carbonyl_c_idx]
+        while to_visit:
+            atom_idx = to_visit.pop()
             if atom_idx in visited:
-                return
+                continue
             visited.add(atom_idx)
+            atom = mol.GetAtomWithIdx(atom_idx)
 
-            if atom.GetAtomicNum() != 6:
-                return  # Non-carbon atom
+            if atom.GetAtomicNum() == 6:
+                # Add carbon atom to acyl carbons set
+                acyl_carbons.add(atom_idx)
 
-            # Increment chain length
-            chain_length += 1
+                # Visit neighboring atoms
+                for neighbor in atom.GetNeighbors():
+                    neighbor_idx = neighbor.GetIdx()
+                    # Do not go back to ester oxygen or previously visited atoms
+                    if neighbor_idx != ester_o_idx and neighbor_idx not in visited:
+                        to_visit.append(neighbor_idx)
+            else:
+                # Continue traversal for non-carbon atoms (e.g., to handle branching)
+                for neighbor in atom.GetNeighbors():
+                    neighbor_idx = neighbor.GetIdx()
+                    if neighbor_idx != ester_o_idx and neighbor_idx not in visited:
+                        to_visit.append(neighbor_idx)
 
-            # Check for branching (more than two carbon neighbors, excluding previous atom)
-            neighbor_carbons = [nbr for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() == 6 and nbr.GetIdx() != prev_atom_idx]
-            if len(neighbor_carbons) > 1:
-                is_linear = False
+        # Count the number of carbons in the acyl chain
+        num_carbons = len(acyl_carbons)
 
-            # Check for unsaturation (non-single bonds)
-            for bond in atom.GetBonds():
-                if bond.GetBeginAtomIdx() == prev_atom_idx or bond.GetEndAtomIdx() == prev_atom_idx:
-                    continue  # Skip bond to previous atom
-                if bond.GetBondTypeAsDouble() != 1.0:
-                    is_saturated = False
-
-            # Continue traversal to neighbor carbons (excluding previous atom and ester oxygen)
-            for neighbor in atom.GetNeighbors():
-                neighbor_idx = neighbor.GetIdx()
-                if neighbor_idx == prev_atom_idx or neighbor_idx == ester_o_idx:
-                    continue
-                if neighbor.GetAtomicNum() == 6:
-                    traverse_acyl_chain(neighbor_idx, atom_idx)
-
-        # Start traversal from carbonyl carbon
-        traverse_acyl_chain(carbonyl_c_idx, ester_o_idx)
-
-        # Check if acyl chain has exactly 14 carbons
-        if chain_length == 14 and is_linear and is_saturated:
+        if num_carbons == 14:
             return True, "Contains tetradecanoate ester group"
 
     return False, "Does not contain tetradecanoate ester group"
@@ -109,7 +99,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 2,
+    'attempt': 3,
     'success': True,
     'best': True,
     'error': '',
