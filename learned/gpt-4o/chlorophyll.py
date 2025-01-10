@@ -24,20 +24,25 @@ def is_chlorophyll(smiles: str):
     # Magnesium ion
     mg_pattern = Chem.MolFromSmarts("[Mg]")
 
-    # Porphyrin pattern with magnesium
-    porphyrin_pattern = Chem.MolFromSmarts("n1c2[cH][cH]c3[n-]c(-[Mg])c4[cH][cH]c[n]14")
+    # Basic porphyrin pattern with magnesium - checking for tetrapyrrole with central Mg
+    porphyrin_core_pattern = Chem.MolFromSmarts("[n]1[n][NH][n]c1-[Mg]-[n]2[n][NH][n]c2") 
 
-    # Check for magnesium ion
+    # Check for magnesium ion presence
     if not mol.HasSubstructMatch(mg_pattern):
         return False, "No magnesium ion found"
 
-    # Check for the porphyrin core
-    if not mol.HasSubstructMatch(porphyrin_pattern):
+    # Check for the porphyrin core with magnesium
+    if not mol.HasSubstructMatch(porphyrin_core_pattern):
         return False, "No porphyrin core with magnesium found"
 
-    # Check for long hydrophobic chains typical for chlorophylls
-    long_chain_pattern = Chem.MolFromSmarts("C(CCCC)CCCC")
-    if not mol.HasSubstructMatch(long_chain_pattern):
-        return False, "No long hydrophobic chain detected"
+    # Check for the fifth ring beyond the porphyrin core
+    fifth_ring_pattern = Chem.MolFromSmarts("c12cccc(nc1nccc2)") 
+    if not mol.HasSubstructMatch(fifth_ring_pattern):
+        return False, "No fifth ring found in structure"
 
+    # Check for long hydrophobic chains typical of chlorophylls
+    phytol_chain_pattern = Chem.MolFromSmarts("C(=O)OCC(C)CC(C)CCCC(C)C")
+    if not mol.HasSubstructMatch(phytol_chain_pattern):
+        return False, "No long phytol chain or similar hydrophobic chain detected"
+    
     return True, "Contains magnesium-bound porphyrin core with a fifth ring and hydrophobic chain"
