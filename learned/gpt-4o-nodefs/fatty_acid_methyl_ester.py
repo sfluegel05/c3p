@@ -21,14 +21,20 @@ def is_fatty_acid_methyl_ester(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for methyl ester group pattern (O=C(OC))
-    ester_pattern = Chem.MolFromSmarts("OC(=O)")
+    ester_pattern = Chem.MolFromSmarts("O=C(OC)")
     if not mol.HasSubstructMatch(ester_pattern):
         return False, "No methyl ester group found"
 
-    # Check for a long hydrocarbon chain
-    num_carbon_atoms = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if num_carbon_atoms < 8:  # Arbitrary choice for "long chain", can be adjusted
-        return False, f"Chain too short for typical fatty acid methyl ester: {num_carbon_atoms} carbons"
+    # Count carbon atoms, excluding the methyl group in the ester
+    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6) - 1
+
+    # Minimum number of carbon atoms typically found in fatty acids is 4 (excluding methyl)
+    if carbon_count < 4:
+        return False, f"Chain too short for typical fatty acid methyl ester: {carbon_count + 1} carbons"
+
+    # Check for presence of unwanted functional groups:
+    # Add logic here to exclude molecules exhibiting complex structures atypical for simple FAMEs.
+    # This might include looking for heteroatoms or unsaturations that aren't characteristic of typical fatty acid chains.
 
     return True, "Contains a methyl ester group with a sufficiently long carbon chain"
 
