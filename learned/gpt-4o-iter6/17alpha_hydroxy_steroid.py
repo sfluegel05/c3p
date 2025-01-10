@@ -21,13 +21,14 @@ def is_17alpha_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # SMARTS pattern for the steroid backbone - cyclopenta[a]phenanthrene skeleton
-    steroid_pattern = Chem.MolFromSmarts("[C@]12CC[C@H]3[C@@H](C(=O)CC[C@]3(C)[C@@]1([H])[C@@H](O)CC[C@@]2([H])[C@@H](O))")
+    # General SMARTS pattern for the steroid backbone
+    steroid_pattern = Chem.MolFromSmarts("C1CCC2C3CCC4=CC(=O)CCC4C3C(CC2C1)C")
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
     
-    # SMARTS for a 17alpha-hydroxy group in context with potential attached sub-structures
-    hydroxyl_pattern = Chem.MolFromSmarts("[C@](O)C[C@H](C)O")
+    # SMARTS for a 17alpha-hydroxy group with stereochemistry
+    # A broader pattern considering variability around the steroid nucleus
+    hydroxyl_pattern = Chem.MolFromSmarts("[C@@]1(C)CC[C@]2(O)CCCC1C3=CC(=O)CCC23")
     if not mol.HasSubstructMatch(hydroxyl_pattern):
         return False, "No 17alpha-hydroxyl group found"
     
