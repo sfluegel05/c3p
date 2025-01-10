@@ -7,9 +7,8 @@ def is_monoacylglycerol(smiles: str):
     """
     Determines if a molecule is a monoacylglycerol based on its SMILES string.
     
-    A monoacylglycerol consists of a glycerol backbone in which one hydroxy group
-    is esterified with a fatty acid, and the other two
-    hydroxy groups can be either free or substituted.
+    A monoacylglycerol has a glycerol backbone with one acyl group esterified at one of the hydroxyl positions,
+    while the other two hydroxyl groups might remain free or chemically substituted.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,26 +21,26 @@ def is_monoacylglycerol(smiles: str):
     # Parse SMILES to RDKit molecule object
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return None, "Invalid SMILES string" 
 
-    # Look for a glycerol backbone which is C-C-C with hydroxyl groups
-    glycerol_pattern = Chem.MolFromSmarts("C(CO)CO")
+    # Identify glycerol backbone - C1(CO)C(O)C1O pattern
+    glycerol_pattern = Chem.MolFromSmarts("C(CO)(CO)CO")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
 
-    # Look for an ester linkage (C(=O)O) 
+    # Check for exactly one ester linkage - C(=O)O pattern
     ester_pattern = Chem.MolFromSmarts("C(=O)O")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) != 1:
         return False, f"Found {len(ester_matches)} ester groups, need exactly 1"
 
-    # We assume that a long hydrocarbon chain is an acyl group
-    acyl_group_pattern = Chem.MolFromSmarts("C(=O)[C;!R]")
+    # Validate long chain presence - typical acyl group, avoiding rings
+    acyl_group_pattern = Chem.MolFromSmarts("C(=O)C-[C;!R]")
     if not mol.HasSubstructMatch(acyl_group_pattern):
         return False, "No appropriate acyl group found attached to ester linkage"
 
     return True, "Contains glycerol backbone with one acyl group and two hydroxyl groups"
 
-# Test example
-# smiles = "O(C(=O)CCCCCCC/C=C\CCCCCCCC)CC(O)CO" # Example of a monoacylglycerol
+# Example Test
+# smiles = "O(C(=O)CCCCCCC/C=C\CCCCCCCC)CC(O)CO" # Example of a monacylglycerol
 # print(is_monoacylglycerol(smiles))
