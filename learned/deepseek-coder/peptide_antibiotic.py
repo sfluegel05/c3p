@@ -37,51 +37,34 @@ def is_peptide_antibiotic(smiles: str):
     if n_amino_acids < 4:
         return False, f"Only {n_amino_acids} amino acids, need at least 4"
 
-    # Check for modified amino acids or unusual structures
-    # Look for D-amino acids, N-methylation, or other modifications
-    modified_aa_pattern = Chem.MolFromSmarts("[NX3H][CX4H]([CX4H])[CX3](=[OX1])")
-    modified_aa_matches = mol.GetSubstructMatches(modified_aa_pattern)
-    if len(modified_aa_matches) == 0:
-        # Also check for other common modifications
-        other_mod_pattern = Chem.MolFromSmarts("[NX3H][CX4H]([CX4H])[CX3](=[OX1])[NX3H]")
-        other_mod_matches = mol.GetSubstructMatches(other_mod_pattern)
-        if len(other_mod_matches) == 0:
-            # Check for D-amino acids
-            d_aa_pattern = Chem.MolFromSmarts("[NX3H][CX4H]([CX4H])[CX3](=[OX1])[CX4H]([CX4H])[CX3](=[OX1])")
-            d_aa_matches = mol.GetSubstructMatches(d_aa_pattern)
-            if len(d_aa_matches) == 0:
-                return False, "No modified amino acids found, peptide antibiotics often contain modified amino acids"
-
-    # Check molecular weight - peptide antibiotics typically have MW > 1000 Da
+    # Check molecular weight - peptide antibiotics typically have MW > 500 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 1000:
+    if mol_wt < 500:
         return False, f"Molecular weight too low ({mol_wt:.1f} Da) for peptide antibiotic"
 
     # Count nitrogen and oxygen atoms - peptide antibiotics typically have a high N/O count
     n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     
-    if n_count < 8:
+    if n_count < 4:
         return False, f"Too few nitrogen atoms ({n_count}) for peptide antibiotic"
-    if o_count < 8:
+    if o_count < 4:
         return False, f"Too few oxygen atoms ({o_count}) for peptide antibiotic"
 
-    # Check for hydrophobic regions (common in peptide antibiotics)
-    hydrophobic_pattern = Chem.MolFromSmarts("[CX4H][CX4H][CX4H][CX4H]")
-    hydrophobic_matches = mol.GetSubstructMatches(hydrophobic_pattern)
-    if len(hydrophobic_matches) < 2:
-        return False, "Insufficient hydrophobic regions for peptide antibiotic"
-
-    # Check for cationic residues (lysine, arginine)
+    # Check for at least one of: modified amino acids, cationic residues, or heterocycles
+    # Modified amino acids
+    modified_aa_pattern = Chem.MolFromSmarts("[NX3H][CX4H]([CX4H])[CX3](=[OX1])")
+    modified_aa_matches = mol.GetSubstructMatches(modified_aa_pattern)
+    
+    # Cationic residues (lysine, arginine)
     cationic_pattern = Chem.MolFromSmarts("[NX3H2][CX4H2][CX4H2][CX4H2][NX3H2]")
     cationic_matches = mol.GetSubstructMatches(cationic_pattern)
-    if len(cationic_matches) == 0:
-        return False, "No cationic residues found, peptide antibiotics often contain lysine or arginine"
-
-    # Check for heterocycles (thiazole, oxazole, etc.)
+    
+    # Heterocycles (thiazole, oxazole, etc.)
     heterocycle_pattern = Chem.MolFromSmarts("[#6]1[#7][#6][#7][#6]1")
     heterocycle_matches = mol.GetSubstructMatches(heterocycle_pattern)
-    if len(heterocycle_matches) == 0:
-        return False, "No heterocycles found, peptide antibiotics often contain thiazole or oxazole rings"
+    
+    if len(modified_aa_matches) == 0 and len(cationic_matches) == 0 and len(heterocycle_matches) == 0:
+        return False, "No modified amino acids, cationic residues, or heterocycles found"
 
-    return True, "Contains peptide backbone with multiple amino acids, modifications, and structural features typical of peptide antibiotics"
+    return True, "Contains peptide backbone with multiple amino acids and at least one characteristic feature of peptide antibiotics"
