@@ -27,7 +27,7 @@ def is_gas_molecular_entity(smiles: str):
 
     # Check if the molecule is a main group molecular entity
     # Main group elements are those in groups 1, 2, and 13-18 of the periodic table
-    main_group_elements = {1, 2, 5, 6, 7, 8, 9, 10, 13, 14, 15, 16, 17, 18, 36, 54, 86}  # Added Kr, Xe, Rn
+    main_group_elements = {1, 2, 5, 6, 7, 8, 9, 10, 13, 14, 15, 16, 17, 18, 36, 54, 86}  # Includes Kr, Xe, Rn
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() not in main_group_elements:
             return False, "Contains non-main group elements"
@@ -35,33 +35,40 @@ def is_gas_molecular_entity(smiles: str):
     # Calculate molecular weight
     mol_wt = Descriptors.MolWt(mol)
 
-    # Heuristic: Molecules with molecular weight < 300 g/mol are more likely to be gases at STP
-    if mol_wt > 300:
-        return False, f"Molecular weight {mol_wt:.2f} g/mol is too high for a gas at STP"
-
     # Check for noble gases (including isotopes)
-    noble_gases = {"[He]", "[Ne]", "[Ar]", "[Kr]", "[Xe]", "[Rn]",
-                  "[4He]", "[3He]", "[6He]", "[219Rn]", "[220Rn]", "[222Rn]"}
-    if smiles in noble_gases:
+    noble_gas_patterns = [
+        "[He]", "[Ne]", "[Ar]", "[Kr]", "[Xe]", "[Rn]",
+        "[*He]", "[*Ne]", "[*Ar]", "[*Kr]", "[*Xe]", "[*Rn]"
+    ]
+    if any(pattern in smiles for pattern in noble_gas_patterns):
         return True, "Noble gas"
 
     # Check for diatomic molecules (including isotopes)
-    diatomic_molecules = {"[H][H]", "[1H][1H]", "[3H][3H]", "N#N", "[O][O]", "FF", "ClCl", "[C-]#[O+]", "I[H]", "Cl[H]"}
-    if smiles in diatomic_molecules:
+    diatomic_patterns = [
+        "[H][H]", "[1H][1H]", "[3H][3H]", "N#N", "[O][O]", "FF", "ClCl", "[C-]#[O+]",
+        "I[H]", "Cl[H]", "Br[H]", "F[H]", "O=O", "N=N"
+    ]
+    if any(pattern in smiles for pattern in diatomic_patterns):
         return True, "Diatomic molecule"
 
-    # Check for small hydrocarbons and common gases
-    # Include molecules with up to 8 carbons and molecular weight < 300 g/mol
-    hydrocarbon_pattern = Chem.MolFromSmarts("[C,c]")
-    if mol.HasSubstructMatch(hydrocarbon_pattern):
-        c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-        if c_count <= 8 and mol_wt < 300:
-            return True, "Small hydrocarbon"
-
-    # Other common gases
-    common_gases = {"O=C=O", "[H]N([H])[H]", "O", "N", "C", "[O-][O+]=O", "C1CO1"}  # Added ozone and oxirane
+    # Check for small molecules and common gases
+    common_gases = {
+        "O=C=O", "[H]N([H])[H]", "[O-][O+]=O", "C1CO1",  # CO2, NH3, O3, oxirane
+        "C#C", "C=C", "C-C",  # Acetylene, ethene, ethane
+        "C(=O)=O", "C#N", "C=N"  # CO2, HCN, etc.
+    }
     if smiles in common_gases:
         return True, "Common gas molecule"
+
+    # Check for small hydrocarbons (up to 4 carbons)
+    if mol.HasSubstructMatch(Chem.MolFromSmarts("[C,c]")):
+        c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+        if c_count <= 4 and mol_wt < 150:
+            return True, "Small hydrocarbon"
+
+    # Check for other small molecules (MW < 150 g/mol)
+    if mol_wt < 150:
+        return True, "Small molecule likely to be gas at STP"
 
     # If none of the above conditions are met, return None
     return None, "Cannot determine if the molecule is a gas at STP based on SMILES alone"
