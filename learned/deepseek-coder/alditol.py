@@ -35,13 +35,7 @@ def is_alditol(smiles: str):
     # Count the number of carbon atoms
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
 
-    # Check if the molecule has the general formula HOCH2[CH(OH)]nCH2OH
-    # This means:
-    # - The molecule should have at least 2 hydroxyl groups on the terminal carbons
-    # - Each internal carbon should have at least one hydroxyl group
-    # - The molecule should have at least 3 carbons (n >= 1)
-
-    # Check terminal carbons (should have one hydroxyl group each)
+    # Check if the molecule has at least two terminal carbons with at least one hydroxyl group each
     terminal_carbons = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6 and atom.GetDegree() == 1]
     if len(terminal_carbons) < 2:
         return False, "Molecule does not have at least two terminal carbons"
@@ -49,8 +43,8 @@ def is_alditol(smiles: str):
     for terminal_carbon in terminal_carbons:
         neighbors = terminal_carbon.GetNeighbors()
         hydroxyl_neighbors = [neighbor for neighbor in neighbors if neighbor.GetAtomicNum() == 8 and neighbor.GetDegree() == 1]
-        if len(hydroxyl_neighbors) != 1:
-            return False, "Terminal carbons do not have exactly one hydroxyl group"
+        if len(hydroxyl_neighbors) < 1:
+            return False, "Terminal carbons do not have at least one hydroxyl group"
 
     # Check internal carbons (should have at least one hydroxyl group)
     internal_carbons = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6 and atom.GetDegree() > 1]
@@ -61,8 +55,8 @@ def is_alditol(smiles: str):
             return False, "Internal carbons do not have at least one hydroxyl group"
 
     # Check the general formula HOCH2[CH(OH)]nCH2OH
-    # The number of hydroxyl groups should be equal to the number of carbons + 2
-    if hydroxyl_count != carbon_count + 2:
-        return False, f"Hydroxyl count ({hydroxyl_count}) does not match the general formula HOCH2[CH(OH)]nCH2OH"
+    # The number of hydroxyl groups should be at least the number of carbons
+    if hydroxyl_count < carbon_count:
+        return False, f"Hydroxyl count ({hydroxyl_count}) is less than the number of carbons ({carbon_count})"
 
     return True, "Molecule is an acyclic polyol with the general formula HOCH2[CH(OH)]nCH2OH"
