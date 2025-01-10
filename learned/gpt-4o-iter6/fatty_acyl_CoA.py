@@ -19,19 +19,18 @@ def is_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Broader Coenzyme A structure including adenosine and phosphate groups
-    coenzyme_a_pattern = Chem.MolFromSmarts("O=P(OC[C@@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)O)n1cnc2c(N)ncnc12)O")
+    # Broader Coenzyme A structure including adenosine, thiol, and phosphate groups
+    coenzyme_a_pattern = Chem.MolFromSmarts("O=S(=O)(O[C@H]1[C@H]([C@@H]([C@H](O1)n2cnc3c(ncnc23)N)OP(=O)(O)O)OP(=O)(O)O)")
     if not mol.HasSubstructMatch(coenzyme_a_pattern):
         return False, "Coenzyme A structure not found"
     
-    # Thioester linkage pattern (R-C(=O)-S-CoA)
-    thioester_pattern = Chem.MolFromSmarts("C(=O)SSCCNC(=O)C")
+    # Revised thioester linkage pattern (R-C(=O)-S-CoA)
+    thioester_pattern = Chem.MolFromSmarts("C(=O)SCCNC(=O)C")
     if not mol.HasSubstructMatch(thioester_pattern):
         return False, "Thioester linkage with CoA not found"
     
-    # More flexible pattern for a fatty acid hydrocarbon chain to allow for variations
-    # Matches a series of carbon atoms which may include some branching and double bonds
-    hydrocarbon_chain_pattern = Chem.MolFromSmarts("C-C-C-C-C-C-C-C")  # Representing an ideal fluid portion
+    # Allowing for double bonds in a flexible fatty acid hydrocarbon chain
+    hydrocarbon_chain_pattern = Chem.MolFromSmarts("[CH2,CH]~[CH2,CH]~[CH2,CH]~[CH2,CH]~[CH2,CH]~[CH2,CH]~[CH2,CH]~[CH2,CH]")
     if not mol.HasSubstructMatch(hydrocarbon_chain_pattern):
         return False, "No sufficient hydrocarbon chain part detected"
 
