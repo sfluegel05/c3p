@@ -21,21 +21,20 @@ def is_tetrapeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a pattern for N-C=O (amide bond) that indicates peptide linkages
-    peptide_pattern = Chem.MolFromSmarts("N[C;$(C(=O)[N])]C")  # sample pattern for dipeptide linkage
+    # Generalized peptide bond pattern N-C(=O)
+    peptide_pattern = Chem.MolFromSmarts("[NX3,NX2H1,NX2H2][C](=O)")  # captures peptide/cyclic bonds
     
-    # Match the peptide patterns (three linkages for a tetrapeptide)
+    # Checking at least 3 peptide linkages implies a tetrapeptide
     peptide_matches = mol.GetSubstructMatches(peptide_pattern)
-    if len(peptide_matches) != 3:
-        return False, f"Contains {len(peptide_matches)} peptide bonds, expected 3"
+    if len(peptide_matches) < 3:
+        return False, f"Contains {len(peptide_matches)} peptide bonds, expected at least 3"
 
-    # Define a pattern for amino acids (N-C-C(alpha) backbone)
-    # N-linking through peptide bond and C in amino acids for backbones
-    amino_acid_pattern = Chem.MolFromSmarts("[NX3][CX4][CX3](=O)")
+    # Refine the amino acid backbone pattern
+    amino_acid_pattern = Chem.MolFromSmarts("[NX3,NX2H1,NX2H2][CX4][CX3](=O)")  # generalized backbone with flexibility
     
-    # Count amino acid residues by detecting the backbone units
+    # Look for the presence of four amino residues
     amino_acid_matches = mol.GetSubstructMatches(amino_acid_pattern)
     if len(amino_acid_matches) < 4:
         return False, f"Detected {len(amino_acid_matches)} amino acid residues, expected 4"
-    
+
     return True, "Contains four amino-acid residues connected by peptide linkages"
