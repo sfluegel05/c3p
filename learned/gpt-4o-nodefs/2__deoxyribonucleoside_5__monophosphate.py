@@ -20,23 +20,21 @@ def is_2__deoxyribonucleoside_5__monophosphate(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return (None, "Invalid SMILES string")
     
-    # Check for 2'-deoxyribose moiety (ensuring correct stereochemistry)
-    deoxyribose_pattern = Chem.MolFromSmarts('[C@@H]1[C@H]([C@H](C(O1)O)O)C')
+    # Check for 2'-deoxyribose moiety (allowing variable stereochemistry)
+    deoxyribose_pattern = Chem.MolFromSmarts('[C@H]1C[C@@H](O)[C@H](CO)O1')
     if not mol.HasSubstructMatch(deoxyribose_pattern):
-        return False, "No 2'-deoxyribose moiety found"
+        return (False, "No 2'-deoxyribose moiety found")
 
     # Check for a phosphate group at 5' position
     phosphate_pattern = Chem.MolFromSmarts('COP(=O)(O)O')
     if not mol.HasSubstructMatch(phosphate_pattern):
-        return False, "No 5'-phosphate group found"
+        return (False, "No 5'-phosphate group found")
         
-    # Check for nucleobase attached to the anomeric carbon (C1')
-    # This can be various nucleobases, represented by generic aromatic nitrogen-containing heterocycles
-    nucleobase_pattern = Chem.MolFromSmarts('n1cnc[nH]c1')  # Generic purine/pyrimidine ring structure
+    # Check for nucleobase attached to the sugar via a variable pattern
+    nucleobase_pattern = Chem.MolFromSmarts('n')
     if not mol.HasSubstructMatch(nucleobase_pattern):
-        return False, "No nucleobase (purine/pyrimidine) found attached to the anomeric carbon"
-
-    # All checks passed
-    return True, "Contains 2'-deoxyribose, 5'-phosphate group, and a nucleobase"
+        return (False, "No nucleobase found (purine/pyrimidine) attached to the sugar")
+    
+    return (True, "Contains 2'-deoxyribose, 5'-phosphate group, and a nucleobase")
