@@ -30,26 +30,34 @@ def is_branched_chain_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
 
-    # Check for a long hydrocarbon chain (at least 6 carbons)
+    # Check for a hydrocarbon chain (at least 4 carbons)
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if carbon_count < 6:
+    if carbon_count < 4:
         return False, "Carbon chain too short to be a fatty acid"
 
-    # Check for alkyl substituents (branches)
-    # A branch is defined as a carbon with at least 3 neighbors (sp3 hybridized)
+    # Check for alkyl substituents (branches) on the main carbon chain
+    # A branch is defined as a carbon with at least 3 neighbors (sp3 hybridized) and not part of the carboxylic acid group
     branch_pattern = Chem.MolFromSmarts("[CX4H3,CX4H2,CX4H1,CX4H0]")
     branch_matches = mol.GetSubstructMatches(branch_pattern)
-    if len(branch_matches) < 2:  # At least one branch (excluding the carboxylic acid carbon)
+    
+    # Exclude the carboxylic acid carbon from branch count
+    carboxylic_acid_carbon = mol.GetSubstructMatch(carboxylic_acid_pattern)[0]
+    branch_count = 0
+    for match in branch_matches:
+        if match[0] != carboxylic_acid_carbon:
+            branch_count += 1
+
+    if branch_count < 1:
         return False, "No alkyl substituents (branches) found"
 
-    # Check if the branches are alkyl groups (methyl, ethyl, etc.)
-    alkyl_branch_pattern = Chem.MolFromSmarts("[CX4H3,CX4H2,CX4H1,CX4H0]")
-    alkyl_branch_matches = mol.GetSubstructMatches(alkyl_branch_pattern)
-    if len(alkyl_branch_matches) < 2:  # At least one alkyl branch
-        return False, "No alkyl substituents (branches) found"
+    # Check if the molecule is a fatty acid by ensuring it has a long hydrocarbon chain
+    # and not a peptide or other complex structure
+    # Calculate the number of rotatable bonds to ensure it's a fatty acid
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 2:
+        return False, "Not a fatty acid (too few rotatable bonds)"
 
     # Check for unsaturation (optional, as some branched-chain fatty acids can be unsaturated)
-    # This is not strictly necessary but can be used to refine the classification
     double_bond_count = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.BondType.DOUBLE)
     if double_bond_count > 0:
         return True, "Branched-chain fatty acid with unsaturation"
