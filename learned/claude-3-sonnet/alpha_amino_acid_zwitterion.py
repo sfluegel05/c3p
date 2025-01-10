@@ -23,71 +23,72 @@ def is_alpha_amino_acid_zwitterion(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Count total charge
-    total_charge = sum(atom.GetFormalCharge() for atom in mol.GetAtoms())
-    if total_charge != 0:
-        return False, "Total charge must be 0 for a zwitterion"
-    
-    # Look specifically for primary ammonium (NH3+)
-    nh3_pattern = Chem.MolFromSmarts("[NH3+]")
-    nh3_matches = mol.GetSubstructMatches(nh3_pattern)
-    
-    # Also look for other charged nitrogens for dizwitterions
-    other_n_pattern = Chem.MolFromSmarts("[$([NH2+]),$([NH+]),$([N+])]")
-    other_n_matches = mol.GetSubstructMatches(other_n_pattern)
-    
-    if not nh3_matches:
-        return False, "No primary ammonium (NH3+) group found"
-    
-    # Look for carboxylate group (C(=O)[O-])
+    # Check for counter ions like Na+, K+, etc.
+    metal_pattern = Chem.MolFromSmarts("[Na+,K+,Li+,Mg+2,Ca+2]")
+    if mol.HasSubstructMatch(metal_pattern):
+        return False, "Contains metal counter ions - not a pure zwitterion"
+
+    # Look for carboxylate group(s)
     carboxylate_pattern = Chem.MolFromSmarts("[C](=[O])[O-]")
     carboxylate_matches = mol.GetSubstructMatches(carboxylate_pattern)
     if not carboxylate_matches:
         return False, "No carboxylate group found"
 
-    # Pattern for alpha-amino acid core structure: NH3+-CH-C(=O)[O-]
-    core_pattern = Chem.MolFromSmarts("[NH3+][CH1,CH2][C](=[O])[O-]")
-    core_matches = mol.GetSubstructMatches(core_pattern)
+    # Look for charged nitrogen groups
+    nh3_pattern = Chem.MolFromSmarts("[NH3+]")
+    nh2_pattern = Chem.MolFromSmarts("[NH2+]")
+    nh_pattern = Chem.MolFromSmarts("[NH+]")
+    n_pattern = Chem.MolFromSmarts("[N+]")
     
-    # Alternative pattern for diazaniumyl compounds
-    diaza_pattern = Chem.MolFromSmarts("[NH3+,NH2+][CH1]([NH1,NH2])[C](=[O])[O-]")
-    diaza_matches = mol.GetSubstructMatches(diaza_pattern)
+    n_matches = (mol.GetSubstructMatches(nh3_pattern) + 
+                mol.GetSubstructMatches(nh2_pattern) +
+                mol.GetSubstructMatches(nh_pattern) +
+                mol.GetSubstructMatches(n_pattern))
     
-    if not (core_matches or diaza_matches):
-        return False, "No alpha-amino acid zwitterion core structure found"
-    
-    # For each potential core, verify it's a proper alpha-amino acid structure
-    valid_cores = 0
-    for matches, is_diaza in [(core_matches, False), (diaza_matches, True)]:
-        for match in matches:
-            n_idx = match[0]
-            alpha_c_idx = match[1]
-            
-            # Get the atoms
-            alpha_carbon = mol.GetAtomWithIdx(alpha_c_idx)
-            n_atom = mol.GetAtomWithIdx(n_idx)
-            
-            # Check if alpha carbon has correct hybridization (sp3)
-            if alpha_carbon.GetHybridization() != Chem.HybridizationType.SP3:
-                continue
-                
-            # Check connectivity
-            if alpha_carbon.GetDegree() < 2 or alpha_carbon.GetDegree() > 4:
-                continue
-                
-            # For dizwitterions, allow additional charged groups
-            n_charged_groups = len(nh3_matches) + len(other_n_matches)
-            n_carboxylates = len(carboxylate_matches)
-            
-            if n_charged_groups > 2 or n_carboxylates > 2:
-                continue
-                
-            if n_charged_groups != n_carboxylates:
-                continue
-                
-            valid_cores += 1
+    if not n_matches:
+        return False, "No positively charged nitrogen group found"
 
-    if valid_cores > 0:
-        return True, "Contains alpha-amino acid zwitterion structure with charged N and COO- groups"
+    # Multiple patterns for alpha-amino acid core structure
+    core_patterns = [
+        # Standard alpha-amino acid
+        Chem.MolFromSmarts("[NX4+]-[CH1](-[*])-C(=[O])[O-]"),
+        # Cyclic amino acids (like proline)
+        Chem.MolFromSmarts("[NX4+]1-[CH2]-[CH2]-[CH1](-C(=[O])[O-])-[CH2]-1"),
+        # Alternative connectivity
+        Chem.MolFromSmarts("[NX4+]-[CH2]-[CH1](-C(=[O])[O-])-[*]"),
+        # Diazaniumyl compounds
+        Chem.MolFromSmarts("[NX4+]-[CH1](-[NX3])-C(=[O])[O-]"),
+    ]
+
+    found_valid_core = False
+    for pattern in core_patterns:
+        if mol.HasSubstructMatch(pattern):
+            found_valid_core = True
+            break
+
+    if not found_valid_core:
+        return False, "No valid alpha-amino acid core structure found"
+
+    # Check for reasonable number of charged groups
+    n_pos_charges = len(n_matches)
+    n_neg_charges = len(carboxylate_matches)
     
-    return False, "No valid alpha-amino acid zwitterion structure found"
+    if n_pos_charges > 2 or n_neg_charges > 2:
+        return False, "Too many charged groups"
+        
+    if n_pos_charges != n_neg_charges:
+        return False, "Unbalanced charges"
+
+    # Additional validation for dizwitterions
+    if n_pos_charges == 2:
+        # Check if the charged groups are properly separated
+        for match1 in carboxylate_matches:
+            for match2 in carboxylate_matches:
+                if match1 == match2:
+                    continue
+                # Get shortest path between carboxylates
+                path_len = len(Chem.GetShortestPath(mol, match1[0], match2[0]))
+                if path_len < 4:  # Must be reasonably separated
+                    return False, "Charged groups too close together"
+
+    return True, "Valid alpha-amino acid zwitterion structure found"
