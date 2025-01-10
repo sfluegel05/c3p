@@ -16,19 +16,18 @@ def is_N_sulfonylurea(smiles: str):
         bool: True if molecule is an N-sulfonylurea, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Refined SMARTS pattern for N-sulfonylurea (Consider context & variations)
-    nsulfonylurea_pattern = Chem.MolFromSmarts("NC(=O)N([#6,#1])S(=O)(=O)[#6,#7]")  # Ensure attachment points and single alkyl/aryl specific
+
+    # Define a comprehensive SMARTS pattern for N-sulfonylurea
+    nsulfonylurea_pattern = Chem.MolFromSmarts("NC(=O)N[SX4](=O)(=O)")
 
     # Find matches of the N-sulfonylurea pattern
     nsulfonylurea_matches = mol.GetSubstructMatches(nsulfonylurea_pattern)
     if nsulfonylurea_matches:
-        # Further validate match context (if needed, based on further structure validation)
         return True, "Contains N-sulfonylurea moiety"
 
     return False, "No N-sulfonyl substitution on urea nitrogen"
