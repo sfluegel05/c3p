@@ -20,23 +20,22 @@ def is_prenylquinone(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define a more generalized SMARTS pattern for quinone core presence
-    quinone_pattern = Chem.MolFromSmarts("C1=CC(=O)C=C(C=O)C1")  # 1,4-Benzoquinone
-    naphthoquinone_pattern = Chem.MolFromSmarts("C1=CC2=C(C=C1)C(=O)C=CC2=O")  # 1,4-Naphthoquinone
-    other_quinone_patterns = [
-        "O=C1C=CC(=O)C=C1",      # Additional quinone representations
-        "C1=CC(=O)C2=CC(=O)C(C=CC2=C1)=O"  # Variety of quinone representations
+    
+    # Define core quinone patterns
+    quinone_patterns = [ 
+        Chem.MolFromSmarts("C1=CC(=O)C=C(C=O)C1"), # Benzoquinone
+        Chem.MolFromSmarts("C1=CC2=C(C=C1)C(=O)C=CC2=O"), # Naphthoquinone
+        Chem.MolFromSmarts("C1=CC(=O)C2=CC=CC(=O)C2=C1"), # Other quinones
+        Chem.MolFromSmarts("O=C1C=CC(=O)C=C1") # Generalized quinone
     ]
     
     # Check if molecule contains any expected quinone structure
-    if not (mol.HasSubstructMatch(quinone_pattern) or 
-            mol.HasSubstructMatch(naphthoquinone_pattern) or 
-            any(mol.HasSubstructMatch(Chem.MolFromSmarts(p)) for p in other_quinone_patterns)):
+    quinone_found = any(mol.HasSubstructMatch(pattern) for pattern in quinone_patterns)
+    if not quinone_found:
         return False, "No quinone core structure found"
     
-    # Define SMARTS pattern for polyprenyl chain (repeating isoprene units - C=C-C-C)
-    prenyl_chain_pattern = Chem.MolFromSmarts("C=C-C-C")
+    # Define SMARTS pattern for prenyl chain
+    prenyl_chain_pattern = Chem.MolFromSmarts("C=C-C-C")  # Basic isoprene unit pattern
     
     # Check for presence of at least two prenyl units
     prenyl_matches = mol.GetSubstructMatches(prenyl_chain_pattern)
