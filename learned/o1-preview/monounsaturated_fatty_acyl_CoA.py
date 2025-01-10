@@ -50,6 +50,9 @@ def is_monounsaturated_fatty_acyl_CoA(smiles: str):
 
         # Create the acyl chain sub-molecule
         acyl_chain_mol = Chem.PathToSubmol(mol, acyl_chain_atom_indices)
+        
+        # Initialize ring information to prevent RingInfo error
+        Chem.GetSSSR(acyl_chain_mol)
 
         # Analyze the acyl chain
         if acyl_chain_mol.GetRingInfo().NumRings() > 0:
@@ -94,7 +97,7 @@ def collect_acyl_chain(mol, start_idx, exclude_idx):
     '''
     visited = set()
     to_visit = [start_idx]
-
+    
     while to_visit:
         current_idx = to_visit.pop()
         if current_idx in visited:
