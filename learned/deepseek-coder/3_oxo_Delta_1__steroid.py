@@ -28,19 +28,20 @@ def is_3_oxo_Delta_1__steroid(smiles: str):
 
     # Check for steroid backbone (4 fused rings)
     steroid_pattern = Chem.MolFromSmarts("[C@H]1CC[C@H]2[C@@H]3CCC4=CC(=O)C=C[C@]4(C)[C@H]3CC[C@]12C")
-    if not mol.HasSubstructMatch(steroid_pattern):
+    steroid_matches = mol.GetSubstructMatches(steroid_pattern)
+    if not steroid_matches:
         return False, "No steroid backbone found"
 
     # Check for 3-oxo group (carbonyl at position 3)
-    oxo_pattern = Chem.MolFromSmarts("[CX3]=[OX1]")
+    oxo_pattern = Chem.MolFromSmarts("[C@@H]1CC[C@H]2[C@@H]3CCC4=CC(=O)C=C[C@]4(C)[C@H]3CC[C@]12C=O")
     oxo_matches = mol.GetSubstructMatches(oxo_pattern)
-    if not any(match[0] == 2 for match in oxo_matches):  # Assuming position 3 is atom index 2
+    if not oxo_matches:
         return False, "No 3-oxo group found"
 
     # Check for Delta(1) double bond (double bond between positions 1 and 2)
-    delta1_pattern = Chem.MolFromSmarts("[C]=[C]")
+    delta1_pattern = Chem.MolFromSmarts("[C@@H]1=C[C@H]2[C@@H]3CCC4=CC(=O)C=C[C@]4(C)[C@H]3CC[C@]12C")
     delta1_matches = mol.GetSubstructMatches(delta1_pattern)
-    if not any(match[0] == 0 and match[1] == 1 for match in delta1_matches):  # Assuming positions 1 and 2 are atom indices 0 and 1
+    if not delta1_matches:
         return False, "No Delta(1) double bond found"
 
     return True, "Contains steroid backbone with 3-oxo group and Delta(1) double bond"
