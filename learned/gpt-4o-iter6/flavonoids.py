@@ -6,10 +6,10 @@ from rdkit import Chem
 def is_flavonoids(smiles: str):
     """
     Determines if a molecule is a flavonoid based on its SMILES string.
-    
+
     Args:
         smiles (str): SMILES string of the molecule
-    
+
     Returns:
         bool: True if molecule is a flavonoid, False otherwise
         str: Reason for classification
@@ -20,16 +20,17 @@ def is_flavonoids(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Expanded SMARTS patterns for flavonoids
+    # Expanded and more generic SMARTS patterns for flavonoids
     flavonoid_smarts = [
-        "c1cc2oc(c(c2c(c1)O)O)-c3ccccc3",  # Basic flavonoid structure
-        "c1cc(O)c2c(c1)oc3c(c2=O)cc(O)c(c3)O",  # Flavonoid variant
-        "c1cc2c(cc1)c(=O)c3c(o2)cc(O)c(O)c3",  # Isoflavonoid pattern
-        "O=C1c2ccccc2OC3=CC=CC=C13",  # Chromanone/chalcone pattern
-        "c1cc(O)c2c(c1)oc3c(c2=O)cc(OC)c(c3)O"  # Methoxy-substituted flavonoids
-        # Add more as needed
+        "c1cc(O)c2c(c1)oc3c(c2=O)cc(O)c(c3)O",  # General flavonoid structure
+        "c1cc2c(oc=c(O)c2=O)c3ccc(O)cc13",  # Isoflavonoid structure
+        "c1c(O)cc2c(c1)C(=O)c3c(cccc3)oc2",  # Neoflavonoid structure
+        "c1c(O)cc(O)cc1-c2ccc(=O)oc2",  # Chalcone structure
+        "[OH]c1c(O)cc(C(=O)CC2=CC=CC=C2)ccc1",  # Flavonone structure
+        "c1cc2c(c(c1)O)oc(=O)c3c2c(ccc3)O",  # Flavanol structure
+        "[O][C@H]1COC(c2cc(O)cc(O)c2)c3cc(O)cc(O)c13"  # Glycosylated flavonoid
     ]
-    
+
     for pattern in flavonoid_smarts:
         flavonoid_pattern = Chem.MolFromSmarts(pattern)
         if mol.HasSubstructMatch(flavonoid_pattern):
@@ -39,7 +40,7 @@ def is_flavonoids(smiles: str):
 
 # Example usage:
 smiles_examples = [
-    "O1[C@@H]([C@@H](O)[C@H](O)[C@@H](O)[C@@H]1OC=2C=C3C(O[C@@H]4O[C@@H]([C@@H](O)[C@H](O)[C@H]4O)CO)=CC(O)=CC3=[O+]C2C5=CC=C(O)C=C5)CO",
+    "O1[C@@H]([C@@H](O)[C@H](O)[C@@H](O)[C@@H]1OC2=C(OC=3C(C2=O)=C(O)C=C(O)C3)C4=CC(O)=C(O)C(O)=C4)CO",
     "C=1C(=CC2=C(C1O)C([C@@H]([C@H](O2)C=3C=CC(=CC3)O)O[C@H]4[C@@H]([C@@H]([C@H]([C@@H](O4)CO)O)O)O)=O)O",
     "C1(C2=C(O[C@@H](C1)C3=C(C=C(C=C3)O)O)C(=C(C=C2O)O)C[C@@H](CCC(=C)C)C(=C)C)=O"
     # Add more SMILES strings for testing
