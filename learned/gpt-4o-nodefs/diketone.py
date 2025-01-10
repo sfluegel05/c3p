@@ -7,7 +7,7 @@ def is_diketone(smiles: str):
     """
     Determines if a molecule is a diketone based on its SMILES string.
     A diketone is defined as having exactly two ketone groups (C=O),
-    where each carbonyl carbon is bonded to two carbon atoms.
+    where each carbonyl carbon is bonded to two atoms which can be carbon or other heteroatoms.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,8 +22,9 @@ def is_diketone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for ketone carbon pattern (generic pattern for C(=O)C)
-    ketone_pattern = Chem.MolFromSmarts("[CX3](=O)[CX3]")
+    # Look for ketone pattern, where carbonyl C may have heteroatom neighbors
+    # Broadened pattern: allow [#6,#7,#8] neighbors, common in diketone systems
+    ketone_pattern = Chem.MolFromSmarts("[#6,#7,#8]C(=O)[#6,#7,#8]")
     ketone_matches = mol.GetSubstructMatches(ketone_pattern)
     
     # Count the number of ketone groups
