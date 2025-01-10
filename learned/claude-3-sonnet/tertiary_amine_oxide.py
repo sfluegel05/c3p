@@ -9,11 +9,12 @@ from rdkit.Chem import AllChem
 
 def is_organic_group(mol, atom):
     """Helper function to check if an atom is part of an organic group"""
+    # Consider atom organic if it's carbon or part of common organic substituents
     if atom.GetAtomicNum() == 6:  # Carbon
-        # Check if it's not bound to problematic atoms
-        for neighbor in atom.GetNeighbors():
-            if neighbor.GetAtomicNum() not in [1, 6, 7, 8, 9, 15, 16, 17, 35, 53]:  # H,C,N,O,F,P,S,Cl,Br,I
-                return False
+        return True
+    if atom.GetAtomicNum() == 7:  # Nitrogen in organic group
+        return True
+    if atom.GetAtomicNum() == 8 and atom.GetTotalNumHs() == 0:  # Oxygen in ether/ester
         return True
     return False
 
@@ -37,6 +38,7 @@ def is_tertiary_amine_oxide(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for N+-O- pattern
+    # Match any N+ connected to O- where N has 4 bonds total
     n_oxide_pattern = Chem.MolFromSmarts("[NX4+]-[O-]")
     if not mol.HasSubstructMatch(n_oxide_pattern):
         return False, "No N-oxide group found"
@@ -44,57 +46,41 @@ def is_tertiary_amine_oxide(smiles: str):
     # Get matches for N-oxide groups
     n_oxide_matches = mol.GetSubstructMatches(n_oxide_pattern)
     
-    # Check each N-oxide nitrogen
     for match in n_oxide_matches:
         n_idx = match[0]  # Index of nitrogen atom
+        o_idx = match[1]  # Index of oxygen atom
         n_atom = mol.GetAtomWithIdx(n_idx)
+        o_atom = mol.GetAtomWithIdx(o_idx)
         
-        # Check formal charge of N is +1
-        if n_atom.GetFormalCharge() != 1:
+        # Verify charges
+        if n_atom.GetFormalCharge() != 1 or o_atom.GetFormalCharge() != -1:
             continue
             
-        # Count organic neighbors
-        organic_neighbors = 0
-        non_oxide_neighbors = []
-        
+        # Count non-oxide neighbors of nitrogen
+        neighbors = []
         for neighbor in n_atom.GetNeighbors():
-            if neighbor.GetAtomicNum() == 8 and neighbor.GetFormalCharge() == -1:
-                continue  # Skip the oxide oxygen
-            non_oxide_neighbors.append(neighbor)
-            if is_organic_group(mol, neighbor):
-                organic_neighbors += 1
-
+            if neighbor.GetIdx() != o_idx:
+                neighbors.append(neighbor)
+        
         # Must have exactly 3 non-oxide neighbors
-        if len(non_oxide_neighbors) != 3:
+        if len(neighbors) != 3:
             continue
             
-        # All three non-oxide neighbors must be organic groups
-        if organic_neighbors != 3:
+        # Check that all neighbors are part of organic groups
+        organic_count = sum(1 for neighbor in neighbors if is_organic_group(mol, neighbor))
+        if organic_count != 3:
             continue
             
         # Check that nitrogen has no hydrogens
         if n_atom.GetTotalNumHs() != 0:
             continue
             
-        # Additional structural checks
-        
-        # Exclude problematic patterns that shouldn't be classified as tertiary amine oxides
-        problematic_patterns = [
-            "[N+]1([O-])", # N-oxide in small ring
-            "[N+]([O-])C=O", # N-oxide next to carbonyl
-            "[N+]([O-])S", # N-oxide next to sulfur
-            "[N+]([O-])P", # N-oxide next to phosphorus
-        ]
-        
-        is_problematic = False
-        for pattern in problematic_patterns:
-            if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
-                is_problematic = True
-                break
-                
-        if is_problematic:
+        # Exclude N-oxides that are part of very small rings (likely not stable)
+        ring_size_pattern = Chem.MolFromSmarts("[NX4+]1-[O-]-[*]1")
+        if mol.HasSubstructMatch(ring_size_pattern):
             continue
-
+            
+        # All checks passed
         return True, "Found nitrogen with three organic groups and N-oxide"
     
-    return False, "No nitrogen found with exactly three organic groups and N-oxide"
+    return False, "No valid tertiary amine N-oxide found"
