@@ -26,10 +26,13 @@ def is_hydroxynaphthoquinone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the naphthoquinone core pattern
-    naphthoquinone_pattern = Chem.MolFromSmarts("c1ccc2C(=O)C=CC(=O)c2c1")
+    # Define a more general naphthoquinone core pattern
+    naphthoquinone_pattern = Chem.MolFromSmarts("c1ccc2C(=O)C=CC(=O)c2c1 |c1:1,2,3,4,5,6,7,8|")
     if not mol.HasSubstructMatch(naphthoquinone_pattern):
-        return False, "No naphthoquinone core found"
+        # Try another possible naphthoquinone pattern (1,2-naphthoquinone)
+        naphthoquinone_pattern = Chem.MolFromSmarts("c1ccc2C(=O)C(=O)C=Cc2c1 |c1:1,2,3,4,5,6,7,8|")
+        if not mol.HasSubstructMatch(naphthoquinone_pattern):
+            return False, "No naphthoquinone core found"
 
     # Define the hydroxy group pattern
     hydroxy_pattern = Chem.MolFromSmarts("[OH]")
@@ -37,9 +40,7 @@ def is_hydroxynaphthoquinone(smiles: str):
     if len(hydroxy_matches) == 0:
         return False, "No hydroxy group found"
 
-    # Check if at least one hydroxy group is attached to the naphthoquinone core
-    # We need to ensure that the hydroxy group is directly attached to the naphthoquinone core
-    # This can be done by checking if the hydroxy group is connected to any atom in the naphthoquinone core
+    # Check if at least one hydroxy group is directly attached to the naphthoquinone core
     naphthoquinone_atoms = mol.GetSubstructMatch(naphthoquinone_pattern)
     for match in hydroxy_matches:
         hydroxy_atom = match[0]
@@ -47,7 +48,7 @@ def is_hydroxynaphthoquinone(smiles: str):
             if neighbor.GetIdx() in naphthoquinone_atoms:
                 return True, "Contains a naphthoquinone core with at least one hydroxy group attached"
 
-    return False, "Hydroxy group not attached to the naphthoquinone core"
+    return False, "Hydroxy group not directly attached to the naphthoquinone core"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:XXXXX',
