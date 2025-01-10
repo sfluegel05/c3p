@@ -21,13 +21,12 @@ def is_anthocyanidin_cation(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for 2-phenylchromenylium core with positive charge on oxygen or carbon
-    flavylium_pattern = Chem.MolFromSmarts("[O+]1[cH]cc2c(O)ccc(O)c2c1")  
-    # The pattern captures the positively charged oxygen(O+) or carbon in the flavylium cation core
+    # Flavylium core pattern with a positively charged carbon
+    flavylium_pattern = Chem.MolFromSmarts("[O]=[c+]1cc2c(O)ccc(O)c2c(c1)c1cc(O)cc(O)c1")  
     if not mol.HasSubstructMatch(flavylium_pattern):
         return False, "Does not match the anthocyanidin cation core (flavylium) pattern"
     
-    # Check for sufficient oxygenation, typical for anthocyanidins
+    # Check for sufficient number of oxygen atoms (common in anthocyanidins)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     if o_count < 3:
         return False, "Insufficient number of oxygen substituents for anthocyanidin cation"
