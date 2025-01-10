@@ -20,28 +20,21 @@ def is_hopanoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define comprehensive hopanoid SMARTS patterns
-    hopanoid_patterns = [
-        '[C@@]12CC[C@@]3(C)[C@]1(CC[C@@H](C2)C3)C',  # Core hopanoid skeleton
-        '[C@]12(CC[C@@H](CC3=C2CCC[C@]3C1(C)C)C)C',  # Another core-style skeleton
-        '[C@@H]1CC[C@]2(C)[C@]1(CC[C@@]3([C@@H]2CC3)C)C',  # Alternate stereochemistry
-        '[C@@]1(CC[C@]2([C@@H]1CC[C@@H](C2)C)C)C',  # Integration of core structures
-        '[C@H]1[C@@]2(CC[C@]3([C@@H]2CCC[C@@]13C(C)(C)C)C)C',  # Expanded cyclic structure
-        # Patterns can be extended or modified to cater to detected false negatives
-    ]
-
-    # Convert SMARTS into RDKit Mol objects
+    # Refined SMARTS for core hopanoid skeleton, including stereochemistry
+    hopanoid_smarts = "[C@]12CC[C@@H]3C[C@H](C[C@@H]4[C@]([C@H](C[C@@H]5[C@]4(CC[C@@]5(C3)C)C)(C)C)C2)C1"
+    
+    # Convert SMARTS into RDKit Mol object
     try:
-        hopanoid_mols = [Chem.MolFromSmarts(pattern) for pattern in hopanoid_patterns]
+        hopanoid_pattern = Chem.MolFromSmarts(hopanoid_smarts)
     except Exception as e:
         return None, f"Error in SMARTS pattern conversion: {e}"
     
-    if any(hopanoid_mol is None for hopanoid_mol in hopanoid_mols):
+    if hopanoid_pattern is None:
         return False, "Invalid SMARTS pattern detected, unable to match"
 
-    # Check if any pattern matches the SMILES structure
-    for pattern in hopanoid_mols:
-        if pattern and mol.HasSubstructMatch(pattern):
-            return True, "Contains hopanoid skeleton with appropriate stereochemistry and pentacyclic structure"
+    # Check if pattern matches the SMILES structure
+    if mol.HasSubstructMatch(hopanoid_pattern):
+        return True, "Contains hopanoid skeleton with appropriate stereochemistry and pentacyclic structure"
 
+    # Further verifications could be added here
     return False, "Hopanoid structure not detected"
