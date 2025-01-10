@@ -25,33 +25,37 @@ def is_beta_carbolines(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS patterns for beta-carboline core structure
-    # Pattern 1: Fully aromatic beta-carboline core
-    beta_carboline_pattern1 = Chem.MolFromSmarts("c1ccc2c(c1)[nH]c3c2nccc3")
+    # Core SMARTS patterns for beta-carboline/pyrido[3,4-b]indole structure
+    # Pattern 1: Basic pyrido[3,4-b]indole core with flexible saturation
+    core_pattern1 = Chem.MolFromSmarts("[#6]1[#6][#6]2[#6]([#6]1)[#7X3]([#6,#1])[#6]3=[#6]2[#7][#6][#6]=[#6]3")
     
-    # Pattern 2: Partially hydrogenated beta-carboline core (allowing for variations in saturation)
-    beta_carboline_pattern2 = Chem.MolFromSmarts("C1CCc2c(C1)[nH]c3c2nccc3")
-    beta_carboline_pattern3 = Chem.MolFromSmarts("[#6]1[#6][#6]c2c([#6]1)[nH]c3c2[#7][#6][#6][#6]3")
+    # Pattern 2: Alternative core pattern allowing for spiro fusion
+    core_pattern2 = Chem.MolFromSmarts("[#6]1[#6][#6]2[#6]([#6]1)[#7X3][#6]3=[#6]2[#7][#6][#6]=[#6]3")
     
-    # Pattern 4: N-substituted variants (common in the examples)
-    beta_carboline_pattern4 = Chem.MolFromSmarts("c1ccc2c(c1)n([#6,#1])c3c2nccc3")
-    beta_carboline_pattern5 = Chem.MolFromSmarts("[#6]1[#6][#6]c2c([#6]1)n([#6,#1])c3c2[#7][#6][#6][#6]3")
+    # Pattern 3: More general pattern for hydrogenated variants
+    core_pattern3 = Chem.MolFromSmarts("[#6]1[#6][#6]2[#6]([#6]1)[#7X3][#6]3[#6]2[#7][#6][#6][#6]3")
 
-    # Check for any of the patterns
-    if mol.HasSubstructMatch(beta_carboline_pattern1):
-        return True, "Contains fully aromatic beta-carboline core structure"
-    elif mol.HasSubstructMatch(beta_carboline_pattern2):
-        return True, "Contains partially hydrogenated beta-carboline core structure"
-    elif mol.HasSubstructMatch(beta_carboline_pattern3):
-        return True, "Contains modified beta-carboline core structure"
-    elif mol.HasSubstructMatch(beta_carboline_pattern4):
-        return True, "Contains N-substituted beta-carboline core structure"
-    elif mol.HasSubstructMatch(beta_carboline_pattern5):
-        return True, "Contains modified N-substituted beta-carboline core structure"
+    # Pattern 4: Specific pattern for common substituted variants seen in examples
+    core_pattern4 = Chem.MolFromSmarts("[#6]1[#6][#6]2[#6]([#6]1)[#7X3]([CH3,CH2])[#6]3=[#6]2[#7][#6][#6]=[#6]3")
 
-    # Additional checks for identifying potential false negatives
+    # Check for required ring systems
     ring_info = mol.GetRingInfo()
     if ring_info.NumRings() < 3:
         return False, "Insufficient ring systems for beta-carboline structure"
+
+    # Check for any of the core patterns
+    if mol.HasSubstructMatch(core_pattern1):
+        return True, "Contains pyrido[3,4-b]indole core structure"
+    elif mol.HasSubstructMatch(core_pattern2):
+        return True, "Contains spiro-fused pyrido[3,4-b]indole core"
+    elif mol.HasSubstructMatch(core_pattern3):
+        return True, "Contains hydrogenated pyrido[3,4-b]indole core"
+    elif mol.HasSubstructMatch(core_pattern4):
+        return True, "Contains N-substituted pyrido[3,4-b]indole core"
+
+    # Additional check for tricyclic system with correct atom types
+    tricyclic_pattern = Chem.MolFromSmarts("[#6]1[#6][#6]2[#6]([#6]1)[#7][#6]3[#6]2[#7][#6][#6][#6]3")
+    if mol.HasSubstructMatch(tricyclic_pattern):
+        return True, "Contains beta-carboline-like tricyclic system"
 
     return False, "Does not contain beta-carboline core structure"
