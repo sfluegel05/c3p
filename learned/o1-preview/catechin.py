@@ -19,26 +19,19 @@ def is_catechin(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
+    # Parse SMILES to molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for flavan-3-ol skeleton
-    # The pattern represents the flavan nucleus with a hydroxyl at position 3
-    flavan_3_ol_smarts = """
-    [#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1
-    [C@@H]2[C@H](O)CCO2
-    """
-    
-    # Remove whitespace and newlines
-    flavan_3_ol_smarts = ''.join(flavan_3_ol_smarts.split())
-    
+    # Define SMARTS pattern for flavan-3-ol skeleton without stereochemistry
+    # This pattern represents the core flavan-3-ol structure
+    flavan_3_ol_smarts = 'c1ccc2c(c1)CC(O)CO2'
     flavan_3_ol_pattern = Chem.MolFromSmarts(flavan_3_ol_smarts)
     if flavan_3_ol_pattern is None:
         return False, "Invalid SMARTS pattern for flavan-3-ol skeleton"
     
-    # Check for flavan-3-ol skeleton
+    # Check if molecule has the flavan-3-ol substructure
     if not mol.HasSubstructMatch(flavan_3_ol_pattern):
         return False, "Flavan-3-ol skeleton not found"
     
