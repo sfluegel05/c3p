@@ -11,8 +11,8 @@ from rdkit.Chem import rdMolDescriptors
 def is_sphingoid(smiles: str):
     """
     Determines if a molecule is a sphingoid based on its SMILES string.
-    Sphingoids are characterized by a long carbon chain with an amino group
-    and at least one hydroxyl group.
+    Sphingoids are sphinganine, its homologs and stereoisomers, and their hydroxy/unsaturated derivatives.
+    Excludes N-acylated derivatives (ceramides) and complex sphingolipids.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -33,63 +33,63 @@ def is_sphingoid(smiles: str):
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     
     # Basic requirements
-    if c_count < 12:  # Need a long carbon chain
+    if c_count < 12:
         return False, "Carbon chain too short for sphingoid"
-    if n_count == 0:  # Must have at least one nitrogen
+    if n_count == 0:
         return False, "No amino group found"
-    if o_count == 0:  # Must have at least one oxygen
+    if o_count == 0:
         return False, "No hydroxyl groups found"
 
-    # Look for primary alcohol (-CH2OH) or phosphocholine
-    alcohol_pattern = Chem.MolFromSmarts("[CH2][OH]")
-    phosphocholine = Chem.MolFromSmarts("[CH2]OP(=O)([O-])OCC[N+](C)(C)C")
-    if not (mol.HasSubstructMatch(alcohol_pattern) or mol.HasSubstructMatch(phosphocholine)):
-        return False, "No primary alcohol or phosphocholine group found"
+    # Exclude N-acylated derivatives (ceramides)
+    if mol.HasSubstructMatch(Chem.MolFromSmarts("[NH]C(=O)C")):
+        return False, "N-acylated derivative (ceramide)"
 
-    # Look for amino group patterns (free NH2, NH3+, or N-acylated)
-    amino_patterns = [
-        Chem.MolFromSmarts("[NH2,NH3+][CH]"), # Free amino
-        Chem.MolFromSmarts("[NH]C(=O)"), # N-acylated
-        Chem.MolFromSmarts("[NH+](C)C") # N,N-dimethyl
+    # Core structure patterns for different sphingoid types
+    core_patterns = [
+        # Standard sphingoid core (2-amino-1,3-diol)
+        "[CH2][CH]([NH2,NH3+])[CH](O)",
+        # 3-dehydro variant
+        "[CH2][CH]([NH2,NH3+])C(=O)",
+        # 1-deoxy variant with methyl
+        "[CH3][CH]([NH2,NH3+])[CH](O)",
+        # Phytosphingosine-like core
+        "[CH2][CH]([NH2,NH3+])[CH](O)[CH](O)",
+        # N,N-dimethyl variant
+        "[CH2][CH]([NH+](C)C)[CH](O)",
+        # Branched variants
+        "[CH2][CH]([NH2,NH3+])[CH](O)C(C)C"
     ]
     
-    has_amino = any(mol.HasSubstructMatch(pattern) for pattern in amino_patterns if pattern is not None)
-    if not has_amino:
-        return False, "No characteristic amino group found"
-
-    # Look for characteristic 2-amino-1,3-diol or similar motif
-    sphingoid_core_patterns = [
-        Chem.MolFromSmarts("[CH2][CH]([NH2,NH3+,NH])[CH](O)"), # Basic sphingoid core
-        Chem.MolFromSmarts("[CH2][CH]([NH2,NH3+,NH])[CH](=O)"), # 3-dehydro variant
-        Chem.MolFromSmarts("[CH2][CH]([NH2,NH3+,NH])[CH](O)[CH](O)") # Phytosphingosine-like
-    ]
-    
-    has_core = any(mol.HasSubstructMatch(pattern) for pattern in sphingoid_core_patterns if pattern is not None)
+    has_core = False
+    for pattern in core_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            has_core = True
+            break
+            
     if not has_core:
         return False, "No characteristic sphingoid core structure found"
 
     # Look for long carbon chain
-    chain_pattern = Chem.MolFromSmarts("CCCCCCCCCC")  # At least 10 carbons in a chain
+    chain_pattern = Chem.MolFromSmarts("CCCCCCCC")  # At least 8 carbons in a chain
     if not mol.HasSubstructMatch(chain_pattern):
         return False, "No long carbon chain found"
 
-    # Additional checks for common modifications
+    # Identify specific features
     has_double_bond = mol.HasSubstructMatch(Chem.MolFromSmarts("C=C"))
-    has_glucose = mol.HasSubstructMatch(Chem.MolFromSmarts("C1C(O)C(O)C(O)C(O)C1"))
-    has_acyl = mol.HasSubstructMatch(Chem.MolFromSmarts("NC(=O)"))
+    has_extra_oh = mol.HasSubstructMatch(Chem.MolFromSmarts("[CH](O)[CH](O)"))
+    has_phosphocholine = mol.HasSubstructMatch(Chem.MolFromSmarts("[CH2]OP(=O)([O-])OCC[N+](C)(C)C"))
     
     # Build classification reason
-    reason = "Contains sphingoid core structure with "
     features = []
     if has_double_bond:
         features.append("unsaturation")
-    if has_glucose:
-        features.append("glucosyl modification")
-    if has_acyl:
-        features.append("N-acylation")
-    if len(features) > 0:
-        reason += ", ".join(features)
-    else:
-        reason += "required functional groups"
+    if has_extra_oh:
+        features.append("additional hydroxylation")
+    if has_phosphocholine:
+        features.append("phosphocholine group")
+        
+    reason = "Contains sphingoid core structure"
+    if features:
+        reason += " with " + ", ".join(features)
 
     return True, reason
