@@ -25,40 +25,38 @@ def is_2_oxo_monocarboxylic_acid_anion(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for carboxylate group pattern ([O-]C(=O)-)
-    carboxylate_pattern = Chem.MolFromSmarts("[O-]C(=O)")
-    carboxylate_matches = mol.GetSubstructMatches(carboxylate_pattern)
+    # Look for 2-oxo carboxylate pattern
+    # [O-]C(=O)C(=O)* pattern ensures the oxo group is exactly at position 2
+    pattern = Chem.MolFromSmarts("[O-]C(=O)C(=O)[#6,#7,#8,#9,#16,#15,H]")
+    matches = mol.GetSubstructMatches(pattern)
     
-    if not carboxylate_matches:
-        return False, "No carboxylate group found"
-    
-    if len(carboxylate_matches) > 1:
-        return False, "More than one carboxylate group found"
+    if not matches:
+        return False, "No 2-oxo carboxylate group found"
 
-    # Look for the 2-oxo pattern: [O-]C(=O)C(=O)R
-    oxo_acid_pattern = Chem.MolFromSmarts("[O-]C(=O)C(=O)[#6,#7,#8,#9,#16,#15]")
-    if not mol.HasSubstructMatch(oxo_acid_pattern):
-        return False, "No 2-oxo group adjacent to carboxylate found"
-    
-    # Make sure there's only one ketone group
-    ketone_pattern = Chem.MolFromSmarts("[#6]C(=O)[#6]")
-    additional_ketones = mol.GetSubstructMatches(ketone_pattern)
-    
-    # The 2-oxo group will be counted in additional_ketones, so we check if there are more than 1
-    if len(additional_ketones) > 1:
-        return False, "Additional ketone groups found beyond the 2-position"
-    
-    # Additional check to ensure the oxo group is at position 2
-    # First get the carboxylate carbon atom
-    carboxylate_carbon = carboxylate_matches[0][1]  # Index 1 is the carbon of C(=O)[O-]
-    
-    # Get all ketone carbons
-    ketone_carbons = [match[1] for match in mol.GetSubstructMatches(Chem.MolFromSmarts("C(=O)"))]
-    
-    # Check if any ketone carbon is directly bonded to the carboxylate carbon
-    for ketone_carbon in ketone_carbons:
-        bond = mol.GetBondBetweenAtoms(carboxylate_carbon, ketone_carbon)
-        if bond is not None:
-            return True, "Contains carboxylate with oxo group at 2-position"
-    
-    return False, "Oxo group not at 2-position"
+    # For each match, verify it's a valid 2-oxo carboxylate
+    for match in matches:
+        carboxylate_carbon = match[1]  # C of C(=O)[O-]
+        oxo_carbon = match[2]  # C of C(=O)R
+        
+        # Check that the oxo carbon is not part of another carboxylate
+        # This prevents matching molecules where the pattern is part of other structures
+        other_carboxylate = Chem.MolFromSmarts("[O-]C(=O)")
+        other_matches = mol.GetSubstructMatches(other_carboxylate)
+        is_valid = True
+        
+        for other_match in other_matches:
+            if other_match[1] == oxo_carbon:  # If oxo carbon is part of another carboxylate
+                is_valid = False
+                break
+        
+        if is_valid:
+            # Additional validation: ensure the oxo group is not part of an acid anhydride
+            anhydride_pattern = Chem.MolFromSmarts("C(=O)OC(=O)")
+            if not mol.HasSubstructMatch(anhydride_pattern):
+                # Get the atom attached to the oxo group
+                for neighbor in mol.GetAtomWithIdx(oxo_carbon).GetNeighbors():
+                    if neighbor.GetIdx() not in [carboxylate_carbon]:
+                        # If we found a valid 2-oxo carboxylate, return True
+                        return True, "Contains carboxylate with oxo group at 2-position"
+
+    return False, "No valid 2-oxo carboxylate group found"
