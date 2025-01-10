@@ -21,19 +21,22 @@ def is_tripeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Peptide bond pattern - typical connection between amino acids [N-C(=O)-]
-    peptide_bond_pattern = Chem.MolFromSmarts("N[C;!H0]=C")
+    # Define the peptide bond pattern: N-C(=O)
+    peptide_bond_pattern = Chem.MolFromSmarts("N-C(=O)")
     peptide_bond_matches = mol.GetSubstructMatches(peptide_bond_pattern)
     
     # Ensure exactly 2 peptide bonds since tripeptides consist of three residues connected by two peptide bonds
     if len(peptide_bond_matches) != 2:
         return False, f"Expected 2 peptide bonds, found {len(peptide_bond_matches)}"
     
-    # Amino acid identification based on the central structure includes typical variations.
-    amino_acid_varied_pattern = Chem.MolFromSmarts("[NX3][CX3](=O)[CX4]")
-    backbone_matches = mol.GetSubstructMatches(amino_acid_varied_pattern)
-    n_amino_acids = len(set(match[0] for match in backbone_matches))  # Unique amino group presence
+    # Check for presence of 3 amino acid residues
+    # Amino acids typically have a structure like: N-C-C(=O)
+    amino_acid_pattern = Chem.MolFromSmarts("N-C-C(=O)")
+    amino_acid_matches = mol.GetSubstructMatches(amino_acid_pattern)
     
+    # Count unique alpha carbon atoms bonded to amino groups and carboxyl groups
+    n_amino_acids = len(set(match[1] for match in amino_acid_matches))  # Index 1 is the central C in N-C-C(=O)
+
     # Validate exactly 3 amino acids
     if n_amino_acids != 3:
         return False, f"Molecule spans {n_amino_acids} amino acids, should have 3"
