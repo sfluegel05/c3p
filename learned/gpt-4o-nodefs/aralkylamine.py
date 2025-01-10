@@ -21,22 +21,11 @@ def is_aralkylamine(smiles: str):
     if mol is None:
         return None, "Invalid SMILES string"
 
-    # Check for aromatic rings [aromatic in context]
-    aromatic_pattern = Chem.MolFromSmarts("a")
-    if not mol.HasSubstructMatch(aromatic_pattern):
-        return False, "No aromatic ring found"
+    # A specific SMARTS pattern for an aralkylamine
+    # An aromatic ring bonded to an alkyl chain which then links to an amine
+    aralkylamine_pattern = Chem.MolFromSmarts("a[A;R0][CX4][NX3;H2,H1,H0]")
 
-    # Check for amine group containing primary, secondary, or tertiary nitrogen
-    amine_pattern = Chem.MolFromSmarts("[NX3;H2,H1,H0;!$(N-[!#6])]") 
-    if not mol.HasSubstructMatch(amine_pattern):
-        return False, "No amino group found"
+    if not mol.HasSubstructMatch(aralkylamine_pattern):
+        return False, "Structure doesn't match aralkylamine pattern"
 
-    # Check for alkyl chains - carbon atoms not in a ring
-    alkyl_pattern = Chem.MolFromSmarts("[CX4;!R]")
-    if not mol.HasSubstructMatch(alkyl_pattern):
-        return False, "No alkyl chain found"
-
-    # Attempt to define specific connectivity checking amino to aromatic via the alkyl
-    # An ideal SMARTS solution isn't straightforward; imply presence suffices here till explicit linkage validation
-
-    return True, "Contains aromatic ring, alkyl chain, and amine group"
+    return True, "Contains an aromatic ring linked via alkyl to an amine group"
