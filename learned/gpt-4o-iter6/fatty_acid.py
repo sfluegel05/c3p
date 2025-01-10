@@ -30,11 +30,24 @@ def is_fatty_acid(smiles: str):
     # Get number of carbon atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     # Fatty acids typically have between 4 and 28 carbon atoms
-    if c_count < 4 or c_count > 28:
-        return False, f"Carbon chain length {c_count} not in [4, 28]"
+    # Adjust criteria to allow for more complexity than strictly chain length
+    if c_count < 4:
+        return False, f"Carbon chain length {c_count} too short for typical fatty acid"
+    
+    # We need to be cautious with long chains that might just be complex esters
+    # Look at length but allow higher values with more checks
+    if c_count > 28:
+        larger_chain_info = f"Carbon chain length {c_count} for complexities beyond typical"
+        # If structure is simple and exceeds typical complexity of these types
+        if mol.GetRingInfo().NumRings() == 0:
+            return False, larger_chain_info
+        connected_heavy_atoms = mol.GetNumHeavyAtoms()
+        if connected_heavy_atoms < c_count * 1.5: # Allow some connectivity above simple alkane chains
+            return True, f"Larger but valid fatty acid: {larger_chain_info}"
 
-    # Check for presence of rings
-    if mol.GetRingInfo().NumRings() > 0:
-        return False, "Contains ring structure(s), usually not characteristic of typical fatty acids"
+    # Check for presence of rings and ensure they are small if present
+    ring_info = mol.GetRingInfo()
+    if ring_info.NumRings() > 0 and all(len(r) > 6 for r in ring_info.AtomRings()):
+        return False, "Contains large ring structure(s), not characteristic of typical fatty acids"
 
-    return True, "Valid fatty acid: Aliphatic monocarboxylic acid with between 4 and 28 carbons"
+    return True, "Valid fatty acid: Aliphatic monocarboxylic acid with primarily aliphatic character"
