@@ -4,6 +4,7 @@ Classifies: CHEBI:27300 vitamin D
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
 
+
 def is_vitamin_D(smiles: str):
     """
     Determines if a molecule is a vitamin D compound based on its SMILES string.
@@ -23,30 +24,33 @@ def is_vitamin_D(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # A broader pattern capturing the typical seco-steroid structure of vitamin D.
-    # This includes a triene system and common substituents.
-    seco_steroid_pattern = Chem.MolFromSmarts("C1=CCC(=CC1)C=C2C[C@H](O)CC[C@]3(C3=CC=C4[C@H](CC[C@@H](O)C4)C)C2")
-
-    if seco_steroid_pattern is None:
+    # Primary pattern for identifying the core seco-steroid structure
+    # Vitamin D compounds typically have the A- and C-rings intact with a Seco-B-ring structure, sometimes a triene.
+    seco_B_ring_pattern = Chem.MolFromSmarts("C1CCC2C(C1)CCC=C2C=C")
+    if seco_B_ring_pattern is None:
         return (None, None)  # Avoid failure if the pattern itself wasn't set up correctly
 
-    if not mol.HasSubstructMatch(seco_steroid_pattern):
-        return False, "Seco-steroid structure typical of vitamin D not identified"
+    # Match for the primary structure
+    matched_primary = mol.HasSubstructMatch(seco_B_ring_pattern)
 
-    # Check for hydroxyl groups, which can vary but must be present.
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]") # Detect OH groups
+    # Check for hydroxyl groups
+    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
     hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    if len(hydroxyl_matches) < 1:
-        return False, f"Insufficient hydroxyl groups found, at least 1 expected"
+    if len(hydroxyl_matches) < 2:  # At least two hydroxy groups are necessary for primary vitamin D
+        return False, "Insufficient hydroxyl groups found, at least 2 expected"
 
-    # Verify molecular lipophilicity, modifying the threshold to avoid false negatives.
+    # Confirm hydrophobic characteristics
     mol_logP = rdMolDescriptors.CalcCrippenDescriptors(mol)[0]
     if mol_logP < 4:
         return False, "Molecule not sufficiently hydrophobic for vitamin D classification"
 
-    # Check molecular weight to ensure it's within vitamin D range.
+    # Confirm molecular weight
     mol_weight = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_weight < 360 or mol_weight > 600:
+    if mol_weight < 360 or mol_weight > 580:
         return False, "Molecular weight not typical for vitamin D compounds"
 
-    return True, "Matches expected vitamin D seco-steroid structure with hydroxyl groups and lipophilicity"
+    if matched_primary:
+        return True, "Matches typical vitamin D seco-steroid structure"
+
+    # If primary matching fails, return non-classification
+    return False, "Does not match vitamin D chemical description"
