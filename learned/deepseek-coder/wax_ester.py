@@ -32,7 +32,7 @@ def is_wax_ester(smiles: str):
         return False, f"Found {len(ester_matches)} ester groups, need exactly 1"
 
     # Check for long hydrocarbon chains (at least 8 carbons in each chain)
-    # We look for a pattern of at least 8 consecutive carbons, allowing for double bonds
+    # We look for a pattern of at least 8 consecutive carbons, allowing for double bonds and branching
     long_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
     long_chain_matches = mol.GetSubstructMatches(long_chain_pattern)
     if len(long_chain_matches) < 2:
@@ -40,7 +40,7 @@ def is_wax_ester(smiles: str):
 
     # Count rotatable bonds to verify long chains
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 10:
+    if n_rotatable < 8:
         return False, "Chains too short to be fatty acid and fatty alcohol"
 
     # Check molecular weight - wax esters typically >200 Da
@@ -54,8 +54,8 @@ def is_wax_ester(smiles: str):
     
     if c_count < 16:
         return False, "Too few carbons for wax ester"
-    if o_count != 2:
-        return False, "Must have exactly 2 oxygens (1 ester group)"
+    if o_count < 2:
+        return False, "Must have at least 2 oxygens (1 ester group)"
 
     # Exclude molecules with additional functional groups or structures
     # Exclude cholesteryl esters, retinyl esters, etc.
@@ -63,38 +63,7 @@ def is_wax_ester(smiles: str):
         return False, "Excluded cholesteryl ester"
     if mol.HasSubstructMatch(Chem.MolFromSmarts("C1=C(C(=O)C=C(C1=O)C)C")):
         return False, "Excluded retinyl ester"
+    if mol.HasSubstructMatch(Chem.MolFromSmarts("[CX3](=[OX1])[OX2][CX4][OX2][CX3](=[OX1])")):
+        return False, "Excluded molecules with multiple ester groups"
 
     return True, "Contains one ester group with two long hydrocarbon chains"
-
-
-__metadata__ = {   'chemical_class': {   'id': 'CHEBI:17855',
-                          'name': 'wax ester',
-                          'definition': 'A fatty acid ester resulting from the '
-                                        'condensation of the carboxy group of a fatty acid '
-                                        'with the alcoholic hydroxy group of a fatty alcohol.',
-                          'parents': ['CHEBI:47778', 'CHEBI:76579']},
-    'config': {   'llm_model_name': 'lbl/claude-sonnet',
-                  'f1_threshold': 0.8,
-                  'max_attempts': 5,
-                  'max_positive_instances': None,
-                  'max_positive_to_test': None,
-                  'max_negative_to_test': None,
-                  'max_positive_in_prompt': 50,
-                  'max_negative_in_prompt': 20,
-                  'max_instances_in_prompt': 100,
-                  'test_proportion': 0.1},
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 150,
-    'num_false_positives': 4,
-    'num_true_negatives': 182407,
-    'num_false_negatives': 23,
-    'num_negatives': None,
-    'precision': 0.974025974025974,
-    'recall': 0.8670520231213873,
-    'f1': 0.9174311926605504,
-    'accuracy': 0.9998521228585199}
