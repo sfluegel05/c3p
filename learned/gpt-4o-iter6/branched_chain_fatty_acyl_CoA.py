@@ -21,19 +21,19 @@ def is_branched_chain_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Update Coenzyme A pattern, ensuring it covers known cases accurately.
-    coa_smarts = (
-        "C(=O)SCCNC(=O)CCNC(=O)C[C@@H](O)C(C)COP(=O)(O)O"
-        "P(=O)(O)OC[C@H]1O[C@H]([C@@H](O)[C@H](O)C1)n2cnc3c(N)ncnc23"
-    )  # Expanding based on flexible structures in examples
-    coa_pattern = Chem.MolFromSmarts(coa_smarts)
+    # Refined Coenzyme A pattern covering more structural diversity
+    coa_patterns = [
+        "NC(=O)CCNC(=O)C[C@@H](O)C(C)(C)COP(=O)(O)O",  # Part of the molecule closer to base
+        "n1cnc2c(N)ncnc12"  # adenine ring found at the very end
+    ]
+    # Check multiple parts of CoA to ensure full identification
+    for pattern in coa_patterns:
+        substruct = Chem.MolFromSmarts(pattern)
+        if not mol.HasSubstructMatch(substruct):
+            return False, f"No Coenzyme A part with pattern {pattern} found"
 
-    if not mol.HasSubstructMatch(coa_pattern):
-        return False, "No Coenzyme A moiety found"
-    
-    # Define improved pattern for identifying branched carbon chains
-    # Considering primary and secondary branching as a versatile descriptor.
-    branched_smarts = "[CX3,CX4]([C])([C])[C]"  # Adjusting pattern to catch various branched structures
+    # Improved pattern for identifying a branched carbon chain
+    branched_smarts = "[CX3,CX4]([C])([C])[C]"  # general branched C
     branched_pattern = Chem.MolFromSmarts(branched_smarts)
     
     if not mol.HasSubstructMatch(branched_pattern):
