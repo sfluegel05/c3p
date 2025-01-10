@@ -9,8 +9,8 @@ from rdkit import Chem
 def is_porphyrins(smiles: str):
     """
     Determines if a molecule is a porphyrin based on its SMILES string.
-    A porphyrin contains a skeleton of four pyrrole nuclei united through the alpha-positions 
-    by four methine (-CH=) groups that form a macrocyclic structure, often coordinating a metal ion.
+    A porphyrin contains a skeleton made of four pyrrole rings linked by methine (-CH=) bridges,
+    forming a macrocyclic structure potentially coordinating a metal ion.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -25,15 +25,15 @@ def is_porphyrins(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more flexible SMARTS pattern for porphyrins
-    # Pattern description: Four pyrrole rings connected through methine groups, possibly forming a macrocycle
-    porphyrin_ring_pattern = Chem.MolFromSmarts("n1c(ccc1)-c2c(-c3[nH]ccc3)-c(-c4[nH]ccc4)n5cccc5")
+    # Define a flexible SMARTS pattern for porphyrins
+    # Pattern: Four pyrrole rings connected through methine bridges, arranged in a macrocycle
+    porphyrin_ring_pattern = Chem.MolFromSmarts("n1c(ccc1)-c2c(-c3[nH]ccc3)-c(-c4[nH]ccc4)n5ccc(c5*c6[nH]ccc6)")
     
-    # Check for the porphyrin macrocycle structure
+    # Check for the porphyrin macrocyclic structure
     if not mol.HasSubstructMatch(porphyrin_ring_pattern):
         return False, "Structure does not match porphyrin macrocycle"
 
-    # Optional: Check presence of metal ions often found in porphyrins
+    # Optional: Check presence of metal ions often coordinated in porphyrins
     metal_cations = ["Fe", "Mg", "Zn", "Co", "Ni", "Cu", "Mn"]
     metal_atoms = [atom for atom in mol.GetAtoms() if atom.GetSymbol() in metal_cations]
     
