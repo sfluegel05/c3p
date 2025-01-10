@@ -35,20 +35,16 @@ def is_quinone(smiles: str):
     if len(carbonyl_matches) < 2:
         return False, f"Found {len(carbonyl_matches)} carbonyl groups, need at least 2"
 
-    # Check if the carbonyl groups are in a 1,4-relationship within the same ring
-    quinone_pattern = Chem.MolFromSmarts("[CX3]=[OX1]1[CX3]=[CX3][CX3]=[CX3]1")
+    # Check if the carbonyl groups are in the same ring system
+    # We'll use a more flexible pattern that looks for two carbonyls in any ring system
+    quinone_pattern = Chem.MolFromSmarts("[CX3]=[OX1]~[CX3]~[CX3]=[OX1]")
     if not mol.HasSubstructMatch(quinone_pattern):
-        # Try alternative patterns for polycyclic and heterocyclic quinones
-        extended_pattern = Chem.MolFromSmarts("[CX3]=[OX1]1[CX3]=[CX3][CX3]=[CX3][CX3]=[CX3]1")
-        if not mol.HasSubstructMatch(extended_pattern):
-            return False, "No 1,4-dione structure found"
+        return False, "No conjugated dione structure found"
 
-    # Check for conjugation by ensuring the molecule is planar
-    # This is a more reliable indicator of conjugation than simple double bond checks
-    if not rdMolDescriptors.CalcNumAromaticRings(mol):
-        # If not aromatic, check for extended conjugation
-        conjugated_pattern = Chem.MolFromSmarts("[CX3]=[CX3]~[CX3]=[CX3]")
-        if not mol.HasSubstructMatch(conjugated_pattern):
-            return False, "No conjugated system found"
+    # Check that the carbonyl groups are in a conjugated system
+    # We'll look for alternating single and double bonds between the carbonyls
+    conjugated_pattern = Chem.MolFromSmarts("[CX3]=[OX1]~[CX3]=[CX3]~[CX3]=[OX1]")
+    if not mol.HasSubstructMatch(conjugated_pattern):
+        return False, "No conjugated system between carbonyl groups"
 
     return True, "Contains a fully conjugated cyclic dione structure"
