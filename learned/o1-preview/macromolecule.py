@@ -7,7 +7,6 @@ Classifies: macromolecule
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
 from rdkit.Chem import Descriptors
-from rdkit.Chem import rdFMCS
 
 def is_macromolecule(smiles: str):
     """
@@ -27,59 +26,47 @@ def is_macromolecule(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Calculate molecular weight
+    # Check for high molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 1000:
         return False, f"Molecular weight is {mol_wt:.2f} Da, which is below the macromolecule threshold"
 
-    # Attempt to detect repeating units
-    # Create a list of fragments by breaking rotatable bonds
-    frags = Chem.FragmentOnBonds(mol, mol.GetSubstructMatches(Chem.MolFromSmarts("[!$(*#*)&!D1]-!@[!$(*#*)&!D1]")), addDummies=False)
-    frag_mols = Chem.GetMolFrags(frags, asMols=True)
-    
-    # Count unique fragments
-    frag_smiles = [Chem.MolToSmiles(frag, isomericSmiles=True) for frag in frag_mols]
-    unique_frags = set(frag_smiles)
-    if len(unique_frags) < len(frag_smiles) / 2:
-        return True, "Molecule has high molecular weight and contains repeating units"
-    else:
-        return False, "No significant repeating units detected despite high molecular weight"
+    # Count potential repeating units
+    # Common monomer units: amino acids, monosaccharides, nucleotides
+    # Define SMARTS patterns for peptide bonds, glycosidic bonds, and phosphodiester bonds
 
-    # If unable to determine, return None
-    # return None, None
+    # Peptide bond pattern (amide linkage between amino acids)
+    peptide_bond = Chem.MolFromSmarts("C(=O)N")
+    num_peptide_bonds = len(mol.GetSubstructMatches(peptide_bond))
 
-__metadata__ = {
-    'chemical_class': {
-        'id': None,
-        'name': 'macromolecule',
-        'definition': 'A macromolecule is a molecule of high relative molecular mass, the structure of which essentially comprises the multiple repetition of units derived, actually or conceptually, from molecules of low relative molecular mass.',
-        'parents': []
-    },
-    'config': {
-        'llm_model_name': 'lbl/claude-sonnet',
-        'f1_threshold': 0.8,
-        'max_attempts': 5,
-        'max_positive_instances': None,
-        'max_positive_to_test': None,
-        'max_negative_to_test': None,
-        'max_positive_in_prompt': 50,
-        'max_negative_in_prompt': 20,
-        'max_instances_in_prompt': 100,
-        'test_proportion': 0.1
-    },
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': None,
-    'num_false_positives': None,
-    'num_true_negatives': None,
-    'num_false_negatives': None,
-    'num_negatives': None,
-    'precision': None,
-    'recall': None,
-    'f1': None,
-    'accuracy': None
-}
+    # Glycosidic bond pattern (ether linkage between sugars)
+    glycosidic_bond = Chem.MolFromSmarts("[C;H1,H2,H3][O][C;H1,H2,H3]")
+    num_glycosidic_bonds = len(mol.GetSubstructMatches(glycosidic_bond))
+
+    # Phosphodiester bond pattern (linkage in nucleic acids)
+    phosphodiester_bond = Chem.MolFromSmarts("P(=O)(O)O[C;H1,H2,H3]")
+    num_phosphodiester_bonds = len(mol.GetSubstructMatches(phosphodiester_bond))
+
+    # Check if the molecule has multiple repeating units
+    total_repeating_bonds = num_peptide_bonds + num_glycosidic_bonds + num_phosphodiester_bonds
+
+    if total_repeating_bonds >= 5:
+        return True, f"Molecule has high molecular weight and contains {total_repeating_bonds} repeating linkage units characteristic of macromolecules"
+
+    # Alternatively, check for large number of similar substructures
+    # Use fingerprints to detect repeating patterns
+    fingerprints = {}
+    for atom in mol.GetAtoms():
+        # Get local environment (e.g., atom and neighbors)
+        env = Chem.PathToSubmol(mol, [atom.GetIdx()])
+        smi = Chem.MolToSmiles(env, canonical=True)
+        fingerprints[smi] = fingerprints.get(smi, 0) + 1
+
+    # If any substructure appears multiple times, it may indicate repeating units
+    max_repeat = max(fingerprints.values())
+    if max_repeat >= 5:
+        return True, f"Molecule has high molecular weight and contains repeating units detected by substructure frequency"
+
+    return False, "Molecule does not meet the criteria for a macromolecule"
+
+# __metadata__ section can remain the same as before
