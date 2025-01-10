@@ -22,23 +22,24 @@ def is_monoradylglycerol(smiles: str):
         return None, "Invalid SMILES string"
 
     # Check for glycerol backbone
-    # [O][C][C][O] and [O][C][C][O] are interchangeable to allow flexibility in attachment points.
-    glycerol_pattern = Chem.MolFromSmarts("OCC(O)CO")
+    glycerol_pattern = Chem.MolFromSmarts("[OH][CX4]([OH])[CX4][OH]")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
 
-    # Look for substituents (acyloxy, alkoxy, alkenyl) attached to glycerol
-    substituent_patterns = [
-        Chem.MolFromSmarts("C(=O)OCC"),  # Acyl group attached to an ether
-        Chem.MolFromSmarts("C=C-OCC"),  # Alkenyl group via ether
-        Chem.MolFromSmarts("COCC")      # Additional ethers or alkyl-type ranges
-    ]
+    # Acyl, alkyl, and alkenyl patterns reflecting varying lengths and stereochemistry
+    acyl_pattern = Chem.MolFromSmarts("C(=O)OC(CO)CO")
+    alkyl_pattern = Chem.MolFromSmarts("[CH2]OC(CO)CO")
+    alkenyl_pattern = Chem.MolFromSmarts("[CH2]=C[CH2]OC(CO)CO")
 
-    # Count non-glycerol chain attachments
-    substituent_count = sum(mol.HasSubstructMatch(pattern) for pattern in substituent_patterns)
+    # Search for substituents
+    acyl_count = len(mol.GetSubstructMatches(acyl_pattern))
+    alkyl_count = len(mol.GetSubstructMatches(alkyl_pattern))
+    alkenyl_count = len(mol.GetSubstructMatches(alkenyl_pattern))
 
-    # Exactly one large substituent characterizes monoradylglycerol
-    if substituent_count != 1:
+    # Total distinct substituents should be 1 for a monoradylglycerol
+    substituent_count = acyl_count + alkyl_count + alkenyl_count
+
+    if substituent_count == 1:
+        return True, "Contains glycerol backbone with one acyl, alkyl, or alk-1-enyl substituent"
+    else:
         return False, f"Expected 1 substituent group, found {substituent_count}"
-
-    return True, "Contains glycerol backbone with one acyl, alkyl, or alk-1-enyl substituent"
