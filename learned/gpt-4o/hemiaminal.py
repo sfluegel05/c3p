@@ -21,21 +21,21 @@ def is_hemiaminal(smiles: str):
     if not mol:
         return False, "Invalid SMILES string"
     
-    # Refined SMARTS pattern for hemiaminal (C bonded to any N and O atom)
-    hemiaminal_pattern = Chem.MolFromSmarts("[#6][OH][#7]")  # More flexible, catering for any nitrogen attachment
+    # SMARTS pattern for hemiaminal: C bonded to OH and NRx (where R can vary)
+    hemiaminal_pattern = Chem.MolFromSmarts("[C]([OH])([NH2,NHR,NHR2])")  
     
     # Check if the molecule matches the hemiaminal pattern
     matches = mol.GetSubstructMatches(hemiaminal_pattern)
     if matches:
-        # Further validate matches - ensure C-N and C-O are not part of different functionalities
+        # Verify each match to ensure it is not part of larger functional groups
         for match in matches:
             carbon_atom = mol.GetAtomWithIdx(match[0])
             oxygen_atom = mol.GetAtomWithIdx(match[1])
             nitrogen_atom = mol.GetAtomWithIdx(match[2])
             
-            # Ensure OH and NHx are both attached to the same central C atom
-            if carbon_atom.GetTotalNumHs() >= 1 and nitrogen_atom.GetTotalNumHs() >= 1:
-                return True, "Contains a hemiaminal motif: C with OH and NHx attached"
+            # Ensure OH and NR group are both directly attached to the same carbon
+            if carbon_atom.GetTotalValence() <= 4 and oxygen_atom.GetAtomicNum() == 8 and nitrogen_atom.GetAtomicNum() == 7:
+                return True, "Contains hemiaminal motif: C with OH and NR attached"
     
     return False, "No hemiaminal motif found"
 
