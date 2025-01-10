@@ -49,16 +49,34 @@ def is_aliphatic_nitrile(smiles: str):
         if len(neighbors) < 2:
             return False, "Nitrile group is not part of an aliphatic chain"
         
-        # Check if at least one neighbor is an aliphatic carbon
-        has_aliphatic_neighbor = False
+        # Check if all neighbors are aliphatic carbons
         for neighbor in neighbors:
-            if neighbor.GetSymbol() == "C" and not neighbor.GetIsAromatic():
-                has_aliphatic_neighbor = True
-                break
-        if not has_aliphatic_neighbor:
-            return False, "Nitrile group is not attached to an aliphatic chain"
+            if neighbor.GetSymbol() != "C" or neighbor.GetIsAromatic():
+                return False, "Nitrile group is not fully attached to aliphatic carbons"
 
-    # Allow aromatic rings elsewhere in the molecule
-    # Only require that the nitrile group itself is attached to aliphatic carbons
+        # Check for conjugation with aromatic systems
+        # Get all atoms within 3 bonds of the nitrile carbon
+        env = Chem.FindAtomEnvironmentOfRadiusN(mol, 3, carbon_idx)
+        atoms_in_env = set()
+        for bond_idx in env:
+            bond = mol.GetBondWithIdx(bond_idx)
+            atoms_in_env.add(bond.GetBeginAtomIdx())
+            atoms_in_env.add(bond.GetEndAtomIdx())
+        
+        # Check if any atom in the environment is aromatic
+        for atom_idx in atoms_in_env:
+            if mol.GetAtomWithIdx(atom_idx).GetIsAromatic():
+                return False, "Nitrile group is conjugated with aromatic system"
+
+    # Additional checks for molecular complexity
+    # Count aromatic rings
+    n_aromatic_rings = rdMolDescriptors.CalcNumAromaticRings(mol)
+    if n_aromatic_rings > 0:
+        return False, "Molecule contains aromatic rings"
+
+    # Count rotatable bonds to ensure simple aliphatic structure
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable > 10:
+        return False, "Molecule is too complex for simple aliphatic nitrile"
 
     return True, "Contains a nitrile group attached to an aliphatic carbon chain"
