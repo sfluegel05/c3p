@@ -5,7 +5,6 @@ Classifies: CHEBI:16701 nucleoside 5'-phosphate
 Classifies: nucleoside 5'-phosphate
 """
 from rdkit import Chem
-from rdkit.Chem import rdchem
 
 def is_nucleoside_5__phosphate(smiles: str):
     """
@@ -26,80 +25,60 @@ def is_nucleoside_5__phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Identify purine or pyrimidine base (allowing for substitutions)
-    # Purine core: two fused rings with four nitrogens
-    purine_base = Chem.MolFromSmarts('c1nc[nH0,n]c2ncnc12')
-    # Pyrimidine core: six-membered ring with two nitrogens
-    pyrimidine_base = Chem.MolFromSmarts('c1cncnc1')
+    # Define nucleobase patterns
+    adenine = Chem.MolFromSmarts('n1cnc2c1ncnc2')  # adenine
+    guanine = Chem.MolFromSmarts('n1[cH]nc2c1ncnc2O')  # guanine
+    cytosine = Chem.MolFromSmarts('n1ccnc1=O')  # cytosine
+    thymine = Chem.MolFromSmarts('Cc1c[nH]c(=O)[nH]c1=O')  # thymine
+    uracil = Chem.MolFromSmarts('O=C1NC=CC(=O)N1')  # uracil
 
-    has_purine = mol.HasSubstructMatch(purine_base)
-    has_pyrimidine = mol.HasSubstructMatch(pyrimidine_base)
+    nucleobases = [adenine, guanine, cytosine, thymine, uracil]
 
-    if not (has_purine or has_pyrimidine):
-        return False, "Nucleobase not found (purine or pyrimidine base)"
+    # Define ribose and deoxyribose sugar patterns (five-membered ring with oxygen)
+    ribose = Chem.MolFromSmarts('[C@H]1(O)[C@@H](O)[C@H](O)[C@@H](CO)O1')  # ribose
+    deoxyribose = Chem.MolFromSmarts('C1(O)C(O)C(O)C(CO)O1')  # deoxyribose
 
-    # Identify sugar ring (ribose or deoxyribose with possible modifications)
-    # Five-membered ring with an oxygen and four carbons
-    sugar = Chem.MolFromSmarts('[C;R1]1-[C;R1]-[O;R1]-[C;R1]-[C;R1]1')
-    sugar_matches = mol.GetSubstructMatches(sugar)
-    if not sugar_matches:
-        return False, "Sugar ring (ribose or deoxyribose) not found"
+    sugars = [ribose, deoxyribose]
 
-    # Find the anomeric carbon (connected to both the sugar oxygen and the nucleobase)
-    anomeric_carbons = []
-    for match in sugar_matches:
-        ring_atoms = set(match)
-        for atom_idx in match:
-            atom = mol.GetAtomWithIdx(atom_idx)
-            if atom.GetAtomicNum() == 6:
-                neighbors = [nbr.GetIdx() for nbr in atom.GetNeighbors()]
-                if any(mol.GetAtomWithIdx(nbr_idx).GetAtomicNum() == 7 for nbr_idx in neighbors):
-                    # Atom is bonded to nitrogen (possible glycosidic bond)
-                    if any(nbr_idx in ring_atoms for nbr_idx in neighbors if mol.GetAtomWithIdx(nbr_idx).GetAtomicNum() == 8):
-                        # Atom is also bonded to oxygen in ring (anomeric carbon)
-                        anomeric_carbons.append(atom_idx)
-    if not anomeric_carbons:
-        return False, "N-glycosidic bond between nucleobase and sugar not found"
+    # Define phosphate group patterns (mono-, di-, tri-, tetra-phosphate)
+    monophosphate = Chem.MolFromSmarts('OP(=O)(O)O')  # monophosphate
+    diphosphate = Chem.MolFromSmarts('OP(=O)(O)OP(=O)(O)O')  # diphosphate
+    triphosphate = Chem.MolFromSmarts('OP(=O)(O)OP(=O)(O)OP(=O)(O)O')  # triphosphate
+    tetraphosphate = Chem.MolFromSmarts('OP(=O)(O)OP(=O)(O)OP(=O)(O)OP(=O)(O)O')  # tetraphosphate
 
-    # Check for phosphate group(s) attached to the 5' carbon of the sugar
-    # Phosphate group pattern (allowing for multiple phosphates)
-    phosphate = Chem.MolFromSmarts('OP(=O)(O)O')
-    phosphate_matches = mol.GetSubstructMatches(phosphate)
-    if not phosphate_matches:
-        return False, "Phosphate group not found"
+    phosphates = [monophosphate, diphosphate, triphosphate, tetraphosphate]
 
-    # Identify the 5' carbon: carbon attached to sugar ring and to phosphate group
-    phosphate_bonded = False
-    for match in sugar_matches:
-        ring_atoms = set(match)
-        for atom_idx in match:
-            atom = mol.GetAtomWithIdx(atom_idx)
-            if atom.GetAtomicNum() == 6:
-                # Look for carbon bonded to oxygen outside the ring (possible 5' carbon)
-                for nbr in atom.GetNeighbors():
-                    nbr_idx = nbr.GetIdx()
-                    if nbr_idx not in ring_atoms:
-                        if nbr.GetAtomicNum() == 8:
-                            # Check if oxygen is connected to phosphate
-                            for nbr2 in nbr.GetNeighbors():
-                                if nbr2.GetAtomicNum() == 15:
-                                    phosphate_bonded = True
-                                    break
-                    if phosphate_bonded:
-                        break
-            if phosphate_bonded:
+    # Check for nucleobase attached to sugar via N-glycosidic bond
+    nucleoside_found = False
+    for base in nucleobases:
+        for sugar in sugars:
+            # Combine base and sugar patterns with an anomeric bond
+            nucleoside_pattern = Chem.MolFromSmarts('[nH]1c2c(nc[nH]2)ncn1[C@H]3O[C@H](CO)[C@@H](O)[C@H]3O')
+            if mol.HasSubstructMatch(nucleoside_pattern):
+                nucleoside_found = True
                 break
-        if phosphate_bonded:
+        if nucleoside_found:
             break
 
-    if not phosphate_bonded:
-        return False, "Phosphate group at 5' position not found"
+    if not nucleoside_found:
+        return False, "Nucleobase attached to sugar not found"
 
-    # Count the number of phosphate groups attached (mono-, di-, tri-, or tetra-phosphate)
-    phosphorous_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15]
-    num_phosphates = len(phosphorous_atoms)
-    if num_phosphates < 1 or num_phosphates > 4:
-        return False, f"Found {num_phosphates} phosphate groups, but need between 1 and 4"
+    # Check for sugar with phosphate group at 5' position
+    phosphate_found = False
+    for phosphate in phosphates:
+        # Define sugar-phosphate pattern: phosphate attached to 5' carbon of sugar
+        sugar_phosphate_pattern = Chem.MolFromSmarts('O[C@H]1[C@@H](O)[C@H](O)[C@@H](OP(=O)(O)O)CO1')  # ribose-5'-phosphate
+        if mol.HasSubstructMatch(sugar_phosphate_pattern):
+            phosphate_found = True
+            break
+        # Check deoxyribose as well
+        deoxy_sugar_phosphate_pattern = Chem.MolFromSmarts('O[C@H]1[C@@H](O)[C@H](O)[C@@H](OP(=O)(O)O)CO1')  # deoxyribose-5'-phosphate
+        if mol.HasSubstructMatch(deoxy_sugar_phosphate_pattern):
+            phosphate_found = True
+            break
+
+    if not phosphate_found:
+        return False, "Phosphate group at 5' position not found"
 
     return True, "Molecule is a nucleoside 5'-phosphate"
 
