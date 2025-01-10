@@ -3,7 +3,6 @@ Classifies: CHEBI:47788 3-oxo steroid
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_3_oxo_steroid(smiles: str):
     """
@@ -23,15 +22,17 @@ def is_3_oxo_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define a more general pattern for the steroid backbone: four fused rings, allowing for variation
-    steroid_pattern = Chem.MolFromSmarts("C1CCC2C3C(C1)CCC3CCC4=C2C=CC4")
+    # Define a general pattern for a steroid backbone (four fused rings with some flexibility)
+    steroid_pattern = Chem.MolFromSmarts("C1CC2CCC3C4CCC(C=O)C4CCC3C2C=C1") # typical cyclopentanoperhydrophenanthrene structure
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
     
-    # Define a pattern for an oxo group at position 3
-    # This should involve a carbonyl bonded at the 3 position, recognizing typical labeling
-    oxo_pattern = Chem.MolFromSmarts("C[C@@H]1CCCC2=C1C=CC(=O)C2")
-    if not mol.HasSubstructMatch(oxo_pattern):
+    # Define a more flexible pattern for an oxo group at position 3 to cover diverse structures
+    oxo_3_pattern = Chem.MolFromSmarts("C1=CC(=O)CC1") # Testing if 3-position has a carbonyl group connected in a ring system
+    matches = mol.GetSubstructMatches(oxo_3_pattern)
+    if not any(mol.GetAtomWithIdx(match[1]).GetNeighbors() and len(mol.GetAtomWithIdx(match[1]).GetNeighbors()) == 3 for match in matches):
         return False, "No 3-oxo group found on steroid skeleton"
 
     return True, "3-oxo group found at position 3 on steroid skeleton"
+
+# End of code block
