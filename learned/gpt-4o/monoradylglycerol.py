@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_monoradylglycerol(smiles: str):
     """
     Determines if a molecule is a monoradylglycerol based on its SMILES string.
-    A monoradylglycerol has a glycerol backbone with a single acyl, alkyl, or alk-1-enyl
+    A monoradylglycerol has a glycerol backbone with a single acyl, alkyl, or alk-1-enyl 
     substituent at an unspecified position.
 
     Args:
@@ -22,33 +22,26 @@ def is_monoradylglycerol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Identify glycerol backbone pattern: C-C-C with at least two hydroxyls
+    # Identify glycerol backbone with one substituent
+    # Glycerol backbone pattern: (two OH groups on adjoining carbons)
     glycerol_pattern = Chem.MolFromSmarts("C(CO)CO")
     if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone found"
+        return False, "No glycerol backbone with two OH groups found"
     
-    # Collect substituents attached to the backbone
-    long_chain_smarts = "[R]C(=O)C([R])"  # Common long chains in lipids
-    potential_substituents = mol.GetSubstructMatches(Chem.MolFromSmarts(long_chain_smarts))
+    # Patterns for acyl, alkyl, and alk-1-enyl linked to glycerol
+    acyl_pattern = Chem.MolFromSmarts("[$([CX3](=O)[OX2H1]),$([CX3](=O)[O][CX4])]")
+    ether_pattern = Chem.MolFromSmarts("[OX2][CX4]")
+    vinyl_ether_pattern = Chem.MolFromSmarts("[C,C]=[C][O]")
     
-    # Further filter to ensure connection to one glycerol center only
-    glycerol_matches = mol.GetSubstructMatches(glycerol_pattern)
+    # Count the occurrence of these patterns
+    acyl_matches = mol.GetSubstructMatches(acyl_pattern)
+    ether_matches = mol.GetSubstructMatches(ether_pattern)
+    vinyl_ether_matches = mol.GetSubstructMatches(vinyl_ether_pattern)
     
-    # We assume all substituents are connected to one glycerol carbon
-    num_glycerol_substituents = 0
+    # Check if it contains exactly one type of lipid chain substituent
+    num_matches = len(acyl_matches) + len(ether_matches) + len(vinyl_ether_matches)
     
-    for a, b, c in glycerol_matches:
-        # Get the neighbors of the central glycerol carbon that are part of larger chains
-        # counting substituents directly connected to glycerol carbons
-        central_carbon_conn = mol.GetAtomWithIdx(a+1).GetNeighbors()
-        substituent_atoms = [atom for atom in central_carbon_conn if atom.GetIdx() not in [a, b, c]]
-        
-        for sub_atom in substituent_atoms:
-            for substituent in potential_substituents:
-                if sub_atom.GetIdx() in substituent:
-                    num_glycerol_substituents += 1
-
-    if num_glycerol_substituents != 1:
-        return False, f"Expected one connected substituent, found {num_glycerol_substituents}"
+    if num_matches != 1:
+        return False, f"Expected one lipid substituent, found {num_matches}"
     
-    return True, "Contains glycerol backbone with exactly one lipid substituent"
+    return True, "Contains a glycerol backbone with one lipid substituent"
