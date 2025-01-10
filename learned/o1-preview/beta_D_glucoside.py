@@ -28,10 +28,10 @@ def is_beta_D_glucoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the beta-D-glucoside SMARTS pattern
+    # Define the corrected beta-D-glucoside SMARTS pattern
     # This pattern matches beta-D-glucopyranose attached via the anomeric oxygen
     beta_D_glucoside_smarts = """
-    [C@@H]1([O][#6])[O][C@@H]([C@@H]([C@H]([C@H]1O)O)O)O
+    [C@@H]1([O][#6])[O][C@H]([C@@H](O)[C@H](O)[C@H](O)[C@H]1O)
     """
 
     # Remove whitespace and newlines from SMARTS pattern
@@ -67,7 +67,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 1,
+    'attempt': 2,
     'success': None,
     'best': None,
     'error': '',
