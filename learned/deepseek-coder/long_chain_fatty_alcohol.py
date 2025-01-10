@@ -31,13 +31,54 @@ def is_long_chain_fatty_alcohol(smiles: str):
     if not hydroxyl_matches:
         return False, "No hydroxyl group found"
 
-    # Count the number of carbon atoms in the longest chain
-    longest_chain = rdMolDescriptors.CalcLongestChain(mol)
+    # Function to calculate the longest carbon chain
+    def get_longest_carbon_chain(mol):
+        chains = []
+        for atom in mol.GetAtoms():
+            if atom.GetAtomicNum() == 6:  # Carbon atom
+                visited = set()
+                stack = [(atom, 1)]  # (atom, chain_length)
+                while stack:
+                    current_atom, length = stack.pop()
+                    visited.add(current_atom.GetIdx())
+                    chains.append(length)
+                    for neighbor in current_atom.GetNeighbors():
+                        if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:
+                            stack.append((neighbor, length + 1))
+        return max(chains) if chains else 0
+
+    # Calculate the longest carbon chain
+    longest_chain = get_longest_carbon_chain(mol)
     if longest_chain < 13 or longest_chain > 22:
         return False, f"Chain length is {longest_chain}, must be between 13 and 22"
 
+    # Check if the hydroxyl group is attached to the longest chain
+    hydroxyl_attached_to_longest_chain = False
+    for match in hydroxyl_matches:
+        hydroxyl_atom = mol.GetAtomWithIdx(match[0])
+        for neighbor in hydroxyl_atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 6:  # Carbon atom
+                # Check if this carbon is part of the longest chain
+                visited = set()
+                stack = [(neighbor, 1)]
+                while stack:
+                    current_atom, length = stack.pop()
+                    visited.add(current_atom.GetIdx())
+                    if length == longest_chain:
+                        hydroxyl_attached_to_longest_chain = True
+                        break
+                    for next_neighbor in current_atom.GetNeighbors():
+                        if next_neighbor.GetAtomicNum() == 6 and next_neighbor.GetIdx() not in visited:
+                            stack.append((next_neighbor, length + 1))
+                if hydroxyl_attached_to_longest_chain:
+                    break
+        if hydroxyl_attached_to_longest_chain:
+            break
+
+    if not hydroxyl_attached_to_longest_chain:
+        return False, "Hydroxyl group not attached to the longest carbon chain"
+
     # Check for other functional groups that disqualify it as a fatty alcohol
-    # For example, carboxylic acids, esters, etc.
     disallowed_patterns = [
         Chem.MolFromSmarts("[CX3](=O)[OX2H1]"),  # Carboxylic acid
         Chem.MolFromSmarts("[CX3](=O)[OX2H0]"),  # Ester
@@ -49,4 +90,4 @@ def is_long_chain_fatty_alcohol(smiles: str):
         if mol.HasSubstructMatch(pattern):
             return False, "Contains disallowed functional groups"
 
-    return True, f"Contains a hydroxyl group and a carbon chain of length {longest_chain}"
+    return True, f"Contains a hydroxyl group attached to a carbon chain of length {longest_chain}"
