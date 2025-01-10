@@ -51,4 +51,8 @@ def is_mononitrophenol(smiles: str):
     if not nitro_bonded_to_benzene:
         return False, "Nitro group is not attached to the benzene ring"
 
+    # Check for additional nitro groups
+    if len(nitro_matches) > 1:
+        return False, "Found more than one nitro group"
+
     return True, "Contains a phenol group with exactly one nitro substituent on the benzene ring"
