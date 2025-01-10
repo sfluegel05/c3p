@@ -14,7 +14,7 @@ def is_3beta_hydroxy_Delta_5__steroid(smiles: str):
 
     Args:
         smiles (str): SMILES string of the molecule
-    
+
     Returns:
         bool: True if molecule is a 3beta-hydroxy-Delta(5)-steroid, False otherwise
         str: Reason for classification
@@ -24,20 +24,20 @@ def is_3beta_hydroxy_Delta_5__steroid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # General steroid backbone pattern (tetracyclic ABCD ring system with flexibility)
-    steroid_pattern = Chem.MolFromSmarts("*1CCC2C(C1)CCC3C2CCC4C3(CCC(C4)O)C")
+
+    # More flexible steroid backbone pattern incorporating ABCD ring system
+    steroid_pattern = Chem.MolFromSmarts("[#6]1([#8])[#6][#6][#6]2[#6][#6][#6]3[#6][#6][#6]4[#6]([#6][#6][#6]34)[#6]21")
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
-    
-    # 3beta-hydroxyl group pattern
-    beta_hydroxyl_pattern = Chem.MolFromSmarts("[C@H](O)C")
+
+    # 3beta-hydroxyl group, allowing flexibility with stereochemistry
+    beta_hydroxyl_pattern = Chem.MolFromSmarts("[C@@H](O)[#6]")
     if not mol.HasSubstructMatch(beta_hydroxyl_pattern):
         return False, "No 3beta-hydroxyl group found"
-    
-    # Delta-5 double bond pattern (double bond between the specific positions)
-    delta5_double_bond_pattern = Chem.MolFromSmarts("C1=CCC2C(C1)CCC3=C2C(O)CC4C3CCCC4")
+
+    # Delta-5 double bond pattern (any double bond between positions 5 and 6)
+    delta5_double_bond_pattern = Chem.MolFromSmarts("C1=CC(=C2C)C12")
     if not mol.HasSubstructMatch(delta5_double_bond_pattern):
         return False, "No Delta-5 double bond found"
-    
+
     return True, "Contains steroid backbone, 3beta-hydroxyl group, and Delta-5 double bond"
