@@ -29,22 +29,43 @@ def is_long_chain_fatty_acyl_CoA_4__(smiles: str):
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No CoA moiety with deprotonated phosphate and diphosphate groups found"
 
-    # Check for thioester bond (S-C(=O)-)
+    # Check for thioester bond (S-C(=O)-) connected to the CoA moiety
     thioester_pattern = Chem.MolFromSmarts("[SX2][CX3](=[OX1])")
     thioester_matches = mol.GetSubstructMatches(thioester_pattern)
     if len(thioester_matches) == 0:
         return False, "No thioester bond found"
 
-    # Check for long-chain fatty acid (14-24 carbons)
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
-    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
-    if len(fatty_acid_matches) == 0:
-        return False, "No long-chain fatty acid found"
+    # Ensure the thioester bond is connected to the CoA moiety
+    coa_atoms = set(mol.GetSubstructMatch(coa_pattern))
+    thioester_connected = False
+    for match in thioester_matches:
+        if any(atom in coa_atoms for atom in match):
+            thioester_connected = True
+            break
+    if not thioester_connected:
+        return False, "Thioester bond not connected to CoA moiety"
 
     # Count carbons in the fatty acid chain
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 14 or c_count > 24:
-        return False, f"Fatty acid chain length ({c_count} carbons) is not within the expected range (14-24 carbons)"
+    # Find the carbon chain connected to the thioester bond
+    fatty_acid_carbons = set()
+    for match in thioester_matches:
+        if any(atom in coa_atoms for atom in match):
+            # The carbon in the thioester bond is part of the fatty acid chain
+            fatty_acid_carbons.add(match[1])
+            # Traverse the chain from this carbon
+            stack = [match[1]]
+            while stack:
+                atom_idx = stack.pop()
+                atom = mol.GetAtomWithIdx(atom_idx)
+                if atom.GetAtomicNum() == 6:
+                    fatty_acid_carbons.add(atom_idx)
+                    for neighbor in atom.GetNeighbors():
+                        if neighbor.GetIdx() not in fatty_acid_carbons and neighbor.GetAtomicNum() == 6:
+                            stack.append(neighbor.GetIdx())
+
+    # Check if the fatty acid chain length is within the expected range (14-24 carbons)
+    if len(fatty_acid_carbons) < 14 or len(fatty_acid_carbons) > 24:
+        return False, f"Fatty acid chain length ({len(fatty_acid_carbons)} carbons) is not within the expected range (14-24 carbons)"
 
     # Check molecular weight - long-chain fatty acyl-CoA(4-) typically >700 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
