@@ -21,82 +21,58 @@ def is_N_hydroxy_alpha_amino_acid(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
+    # Parse SMILES and sanitize
+    try:
+        mol = Chem.MolFromSmiles(smiles, sanitize=True)
+        if mol is None:
+            return False, "Invalid SMILES string"
+    except:
         return False, "Invalid SMILES string"
 
-    # Look for carboxylic acid group
-    carboxyl_pattern = Chem.MolFromSmarts("C(=O)O")
-    if not mol.HasSubstructMatch(carboxyl_pattern):
+    # Define key SMARTS patterns
+    patterns = {
+        # Alpha-amino acid with N-hydroxy group (more specific pattern)
+        'n_hydroxy_aa': "[OX2H1,OX2H0]-[NX3](-[#1,*])-[CX4H1](-[#1,*])-C(=O)[OH1,O-]",
+        # N,N-dihydroxy pattern
+        'n_dihydroxy_aa': "[OX2H1,OX2H0]-[NX3](-[OX2H1,OX2H0])-[CX4H1](-[#1,*])-C(=O)[OH1,O-]",
+        # Hydroxyimino patterns
+        'hydroxyimino_aa': "[CX4H1](-[#1,*])(-[NX3](-[#1,*])-C(=N-[OX2H1,OX2H0])-[#1,*])-C(=O)[OH1,O-]",
+        # Exclude patterns - functional groups that should not be present
+        'ester': "[#6]-O-C(=O)-[#6]",
+        'amide': "[#6]-N-C(=O)-[#6]",
+        'anhydride': "[#6]-C(=O)-O-C(=O)-[#6]"
+    }
+
+    # Convert patterns to RDKit molecules
+    queries = {name: Chem.MolFromSmarts(pattern) for name, pattern in patterns.items()}
+
+    # Check for presence of core N-hydroxy amino acid structure
+    is_n_hydroxy = mol.HasSubstructMatch(queries['n_hydroxy_aa'])
+    is_n_dihydroxy = mol.HasSubstructMatch(queries['n_dihydroxy_aa'])
+    is_hydroxyimino = mol.HasSubstructMatch(queries['hydroxyimino_aa'])
+
+    if not (is_n_hydroxy or is_n_dihydroxy or is_hydroxyimino):
+        return False, "No N-hydroxy-alpha-amino acid structure found"
+
+    # Count the number of carboxylic acid groups
+    carboxyl_pattern = Chem.MolFromSmarts("C(=O)[OH1,O-]")
+    carboxyl_count = len(mol.GetSubstructMatches(carboxyl_pattern))
+    
+    if carboxyl_count == 0:
         return False, "No carboxylic acid group found"
     
-    # Define patterns for N-hydroxy groups
-    n_hydroxy_patterns = [
-        # Simple N-hydroxy
-        "[C][N]O",
-        # N,N-dihydroxy
-        "[C][N](O)O",
-        # Hydroxyimino groups (various configurations)
-        "[C]N=NO",
-        "[C]NC(=NO)",
-        "[C]NC(=N)NO",
-        # Cover both E and Z isomers
-        "[C]N/C(=N/O)",
-        "[C]N\C(=N\O)",
-        "[C]N/C(=N\O)",
-        "[C]N\C(=N/O)",
-        # Additional patterns for completeness
-        "[C]N([H])O",
-        "[C]N(O)[H]"
-    ]
-    
-    # Check for alpha-amino acid backbone with N-hydroxy group
-    found_n_hydroxy = False
-    matched_pattern = None
-    
-    for pattern in n_hydroxy_patterns:
-        substructure = Chem.MolFromSmarts(pattern)
-        if mol.HasSubstructMatch(substructure):
-            found_n_hydroxy = True
-            matched_pattern = pattern
-            break
-            
-    if not found_n_hydroxy:
-        return False, "No N-hydroxy group found"
+    # Additional checks for false positives
+    for exclude_pattern in ['ester', 'amide', 'anhydride']:
+        if mol.HasSubstructMatch(queries[exclude_pattern]):
+            matches = mol.GetSubstructMatches(queries[exclude_pattern])
+            # Allow if the match doesn't involve the alpha-amino acid part
+            if len(matches) > 1:
+                return False, f"Contains {exclude_pattern} groups"
 
-    # Check for alpha-amino acid backbone
-    # More general pattern that captures various configurations
-    alpha_patterns = [
-        # Basic alpha-amino acid pattern
-        "[C]([C](=O)O)([#1,*])[N,n]",
-        # Pattern for cyclic amino acids
-        "C1([C](=O)O)([#1,*])N([OH1,OH0])CCC1",
-        # Pattern for substituted alpha carbons
-        "[C]([C](=O)O)([#1,*])[N]"
-    ]
-    
-    found_alpha = False
-    for pattern in alpha_patterns:
-        substructure = Chem.MolFromSmarts(pattern)
-        if mol.HasSubstructMatch(substructure):
-            found_alpha = True
-            break
-    
-    if not found_alpha:
-        return False, "Not an alpha-amino acid structure"
-
-    # Additional validation for correct connectivity
-    carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
-    n_hydroxy_matches = mol.GetSubstructMatches(Chem.MolFromSmarts(matched_pattern))
-    
-    if not carboxyl_matches or not n_hydroxy_matches:
-        return False, "Required groups not properly connected"
-
-    # Success cases with specific classifications
-    if "[N](O)O" in matched_pattern:
+    # Determine specific type of N-hydroxy amino acid
+    if is_n_dihydroxy:
         return True, "Contains N,N-dihydroxy group on alpha-amino acid"
-    elif "N=NO" in matched_pattern or "C(=NO)" in matched_pattern:
+    elif is_hydroxyimino:
         return True, "Contains hydroxyimino group on alpha-amino acid"
     else:
         return True, "Contains N-hydroxy group on alpha-amino acid"
