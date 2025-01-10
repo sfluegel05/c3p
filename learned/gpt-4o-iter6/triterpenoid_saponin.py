@@ -7,7 +7,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_triterpenoid_saponin(smiles: str):
     """
     Determines if a molecule is a triterpenoid saponin based on its SMILES string.
-    A triterpenoid saponin is defined as a terpene glycoside where the terpene moiety is a triterpenoid.
+    A triterpenoid saponin is a terpene glycoside where the terpene moiety is a triterpenoid.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,29 +22,29 @@ def is_triterpenoid_saponin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for triterpenoid backbone pattern
-    # This is a complex pattern; approximate through number of rings and carbon count
-    if rdMolDescriptors.CalcNumRings(mol) < 4:
-        return False, "Triterpenoid structures commonly have at least 4 rings"
+    # Check for triterpenoid backbone (typically involves at least 4-6 rings)
+    num_rings = rdMolDescriptors.CalcNumRings(mol)
+    if num_rings < 4:
+        return False, f"Triterpenoid structures typically have at least 4 rings, found {num_rings}"
 
-    # Further check if backbone resembles typical triterpene structure (30 carbon atoms, potentially more depending on the backbone)
-    # Simplified characteristic of triterpenoid
+    # Adjust carbon count range based on known examples
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if carbon_count < 27 or carbon_count > 36:  # Triterpenoid core typically has 30 carbons
-        return False, f"Carbon count {carbon_count} not within typical range for triterpenoids"
+    if carbon_count < 27 or carbon_count > 70:  # Updated to accommodate structures like dianversicoside G
+        return False, f"Carbon count {carbon_count} not within extended range for triterpenoids (27-70)"
 
-    # Look for glycosidic linkage patterns
-    # Using a generic pattern for sugar connections (O-C glycosidic bond)
-    glycosidic_pattern = Chem.MolFromSmarts("C-O-C")
+    # Advanced sugar moieties and glycosidic linkages detection
+    # Expanded to check for common sugar units (glucose, rhamnose) and their linkages
+    glycosidic_pattern = Chem.MolFromSmarts("O[C@@H]1[C@H](O)[C@@H](O)[C@H](O)[C@H]1O")  # Glucopyranoside unit
     
+    # Check for the presence of at least one glycosidic linkage pattern
     if not mol.HasSubstructMatch(glycosidic_pattern):
-        return False, "No glycosidic linkage detected"
+        return False, "No detectable glycosidic linkage pattern found"
 
-    # Count the number of potential sugar moieties
-    sugars = Chem.MolFromSmarts("[C@H]1O[C@@H](CO)[C@@H](O)[C@H](O)[C@H]1O |1:2,3,4,5,6|")
-    num_sugars = mol.GetSubstructMatches(sugars)
+    # Ensure we detect presence of sugar moieties
+    sugars = Chem.MolFromSmarts("[C@H]1O[C@@H](CO)[C@@H](O)[C@H](O)[C@H]1O")
+    num_sugars = len(mol.GetSubstructMatches(sugars))
 
-    if len(num_sugars) == 0:
-        return False, "No attached sugar moieties found"
+    if num_sugars < 1:
+        return False, "No attached sugar moieties identified"
 
     return True, "Contains triterpenoid backbone with glycosidic linkages"
