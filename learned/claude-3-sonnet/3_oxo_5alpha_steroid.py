@@ -28,45 +28,49 @@ def is_3_oxo_5alpha_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for basic steroid core (four fused rings)
-    # More flexible pattern that allows for variations
-    steroid_core = Chem.MolFromSmarts("C1C[C@H]2[C@@H]3CC[C@H]4CCCC[C@]4(C)[C@H]3CC[C@]12C")
+    # Basic steroid core pattern - more flexible version
+    # Matches the four-ring system without being too specific about substituents
+    steroid_core = Chem.MolFromSmarts("[C]1[C][C]2[C][C][C]3[C][C][C]4[C][C][C][C]4[C]3[C][C]2[C]1")
     if not mol.HasSubstructMatch(steroid_core):
         return False, "No steroid core structure found"
 
-    # Check for ketone at position 3
-    # Pattern specifically looks for C=O at position 3 of the A ring
-    oxo_3_pattern = Chem.MolFromSmarts("[CH2][CH2]C(=O)[CH2][C@@H]")
-    if not mol.HasSubstructMatch(oxo_3_pattern):
+    # Check for 3-oxo group
+    # Pattern looks for ketone at position 3, allowing for various substituents
+    oxo_3_pattern = Chem.MolFromSmarts("[CH2][CH2]C(=O)[CH2][CH]")
+    if not mol.HasSubstructMatches(oxo_3_pattern):
         return False, "No ketone group at position 3"
 
-    # Check for 5-alpha configuration
-    # In 5-alpha steroids, rings A/B are trans-fused
-    # The hydrogen at C5 is in alpha (below plane) orientation
+    # Check 5-alpha stereochemistry
+    # This pattern specifically looks for the trans fusion of rings A/B
+    # with the hydrogen at C5 in alpha (below plane) orientation
     alpha_5_pattern = Chem.MolFromSmarts("[C]1[CH2]C(=O)[CH2][C@@H]([CH2])[CH2]")
     if not mol.HasSubstructMatch(alpha_5_pattern):
         return False, "No 5-alpha configuration found"
 
-    # Verify A/B ring fusion stereochemistry
-    ab_fusion_pattern = Chem.MolFromSmarts("[C]1[CH2]C(=O)[CH2][C@@H]2[CH2][CH2]")
-    if not mol.HasSubstructMatch(ab_fusion_pattern):
-        return False, "Incorrect A/B ring fusion stereochemistry"
-
-    # Additional validation checks
-    
-    # Count carbons (steroids typically have 19+ carbons)
-    carbon_count = len([atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6])
-    if carbon_count < 19:
-        return False, "Too few carbons for a steroid structure"
-
-    # Check for reasonable molecular weight
-    mol_wt = sum([atom.GetMass() for atom in mol.GetAtoms()])
-    if mol_wt < 250 or mol_wt > 1000:
-        return False, "Molecular weight outside typical range for steroids"
-
-    # Check ring count (steroids should have at least 4 rings)
+    # Additional validation of ring system
     ring_info = mol.GetRingInfo()
     if ring_info.NumRings() < 4:
-        return False, "Insufficient number of rings"
+        return False, "Insufficient number of rings for steroid structure"
 
-    return True, "Molecule contains 3-oxo-5alpha-steroid structure with correct stereochemistry"
+    # Count carbons (most steroids have at least 19 carbons)
+    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if carbon_count < 17:  # Being more lenient with minimum carbon count
+        return False, "Too few carbons for steroid structure"
+
+    # Check for reasonable molecular weight
+    mol_wt = Chem.Descriptors.ExactMolWt(mol)
+    if mol_wt < 200 or mol_wt > 1000:  # More lenient range
+        return False, "Molecular weight outside typical range for steroids"
+
+    # Verify basic connectivity of steroid core
+    # Look for the characteristic four-ring system with correct fusion points
+    steroid_connectivity = Chem.MolFromSmarts("C1CC2CCC3C4CCCC4CCC3C2C1")
+    if not mol.HasSubstructMatch(steroid_connectivity):
+        return False, "Incorrect steroid ring connectivity"
+
+    # Additional check for A/B ring trans fusion characteristic of 5-alpha steroids
+    ab_fusion = Chem.MolFromSmarts("[C]1[CH2]C(=O)[CH2][C@@H]2[CH2][CH2]")
+    if not mol.HasSubstructMatch(ab_fusion):
+        return False, "Incorrect A/B ring fusion stereochemistry"
+
+    return True, "Contains 3-oxo-5alpha-steroid structure with correct stereochemistry"
