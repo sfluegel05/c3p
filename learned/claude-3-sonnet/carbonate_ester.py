@@ -26,32 +26,23 @@ def is_carbonate_ester(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define patterns
-    # Linear carbonate ester pattern
-    carbonate_pattern = Chem.MolFromSmarts("[O;X2][C;X3](=[O;X1])[O;X2]")
+    # Carbonate ester pattern: R-O-C(=O)-O-R where R is carbon-based
+    carbonate_pattern = Chem.MolFromSmarts("[C][O;X2][C;X3](=[O;X1])[O;X2][C]")
     
-    # Cyclic carbonate pattern
-    cyclic_carbonate_pattern = Chem.MolFromSmarts("O=C1OCC1") 
+    # Monocarbonate pattern (R-O-C(=O)-OH)
+    monocarbonate_pattern = Chem.MolFromSmarts("[C][O;X2][C;X3](=[O;X1])[O;X2][H]")
     
-    # Monocarbonate ester pattern (R-O-C(=O)-OH)
-    monocarbonate_pattern = Chem.MolFromSmarts("[O;X2][C;X3](=[O;X1])[O;H1]")
+    # Cyclic carbonate pattern (specifically for 5-membered rings)
+    cyclic_carbonate_pattern = Chem.MolFromSmarts("O=C1OC[C]1")
     
     # Exclusion patterns
+    lactone_pattern = Chem.MolFromSmarts("O=C1[C,O][C,O][C,O]1")  # Cyclic esters
     anhydride_pattern = Chem.MolFromSmarts("[C;X3](=[O;X1])[O;X2][C;X3](=[O;X1])")
     carbamate_pattern = Chem.MolFromSmarts("[NX3][C;X3](=[O;X1])[O;X2]")
-    
-    # Find matches
-    carbonate_matches = mol.GetSubstructMatches(carbonate_pattern)
-    cyclic_matches = mol.GetSubstructMatches(cyclic_carbonate_pattern)
-    monocarbonate_matches = mol.GetSubstructMatches(monocarbonate_pattern)
-    
-    # Check exclusions
-    anhydride_matches = mol.GetSubstructMatches(anhydride_pattern)
-    carbamate_matches = mol.GetSubstructMatches(carbamate_pattern)
-    
-    if not (carbonate_matches or cyclic_matches or monocarbonate_matches):
-        return False, "No carbonate ester group found"
+    ester_pattern = Chem.MolFromSmarts("[C;!$(C(=O)O)][C;X3](=[O;X1])[O;X2][C]")
     
     def is_valid_carbonate(match, mol):
+        """Helper function to validate carbonate group"""
         c_atom = match[1]  # Central carbon
         c_atom_obj = mol.GetAtomWithIdx(c_atom)
         
@@ -60,38 +51,45 @@ def is_carbonate_ester(smiles: str):
         if o_neighbors != 3:
             return False
             
-        # At least one oxygen must be connected to carbon (organic group)
-        for o_idx in [match[0], match[2]]:
-            o_atom = mol.GetAtomWithIdx(o_idx)
-            for neighbor in o_atom.GetNeighbors():
-                if (neighbor.GetAtomicNum() == 6 and 
-                    neighbor.GetIdx() != c_atom and 
-                    not any(neighbor.GetIdx() in m for m in anhydride_matches)):
-                    return True
-        return False
+        # Check that both O atoms are connected to carbon-based groups
+        o1_atom = mol.GetAtomWithIdx(match[0])
+        o2_atom = mol.GetAtomWithIdx(match[3])
+        
+        def has_carbon_neighbor(o_atom, exclude_idx):
+            return any(n.GetAtomicNum() == 6 and n.GetIdx() != exclude_idx 
+                      for n in o_atom.GetNeighbors())
+        
+        return (has_carbon_neighbor(o1_atom, c_atom) and 
+                has_carbon_neighbor(o2_atom, c_atom))
+    
+    # Find matches
+    carbonate_matches = mol.GetSubstructMatches(carbonate_pattern)
+    monocarbonate_matches = mol.GetSubstructMatches(monocarbonate_pattern)
+    
+    # Get exclusion matches
+    lactone_matches = mol.GetSubstructMatches(lactone_pattern)
+    anhydride_matches = mol.GetSubstructMatches(anhydride_pattern)
+    carbamate_matches = mol.GetSubstructMatches(carbamate_pattern)
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
     
     # Check linear carbonate matches
     for match in carbonate_matches:
-        # Skip if part of anhydride or carbamate
+        # Skip if part of excluded groups
         if any(match[1] in m for m in anhydride_matches):
             continue
         if any(match[1] in m for m in carbamate_matches):
             continue
+        if any(match[1] in m for m in lactone_matches):
+            continue
             
         if is_valid_carbonate(match, mol):
-            return True, "Contains linear carbonate ester group (R-O-C(=O)-O-R)"
-            
-    # Check cyclic carbonate matches
-    for match in cyclic_matches:
-        c_atom = match[0]  # Central carbon
-        if not any(c_atom in m for m in anhydride_matches):
-            return True, "Contains cyclic carbonate ester group"
+            return True, "Contains carbonate ester group (R-O-C(=O)-O-R)"
             
     # Check monocarbonate matches
     for match in monocarbonate_matches:
-        if any(match[1] in m for m in anhydride_matches):
+        if any(match[1] in m for m in anhydride_matches + lactone_matches):
             continue
         if is_valid_carbonate(match, mol):
             return True, "Contains monocarbonate ester group (R-O-C(=O)-OH)"
     
-    return False, "No valid carbonate ester group found"
+    return False, "No carbonate ester group found"
