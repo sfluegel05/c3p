@@ -32,22 +32,25 @@ def is_nitrohydrocarbon(smiles: str):
 
     # Check for at least one nitro group
     nitro_pattern = Chem.MolFromSmarts("[N+](=O)[O-]")
-    if not mol.HasSubstructMatch(nitro_pattern):
+    nitro_matches = mol.GetSubstructMatches(nitro_pattern)
+    if not nitro_matches:
         return False, "No nitro group found"
 
-    # Ensure that the molecule is a hydrocarbon (only C and H, except for nitro groups)
-    # Count the number of non-C, non-H atoms (excluding nitro groups)
-    non_CH_atoms = 0
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() not in {6, 1}:  # Not C or H
-            non_CH_atoms += 1
+    # Ensure that all oxygen atoms are part of nitro groups
+    oxygen_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8]
+    nitro_oxygen_atoms = set()
+    for match in nitro_matches:
+        nitro_oxygen_atoms.add(match[1])  # Index of oxygen in the nitro group pattern
+        nitro_oxygen_atoms.add(match[2])  # Index of the other oxygen in the nitro group pattern
 
-    # Subtract the number of nitro groups (each nitro group has 1 N and 2 O atoms)
-    nitro_matches = mol.GetSubstructMatches(nitro_pattern)
-    nitro_group_count = len(nitro_matches)
-    non_CH_atoms -= 3 * nitro_group_count  # Each nitro group contributes 3 non-CH atoms (1 N + 2 O)
+    if len(oxygen_atoms) != len(nitro_oxygen_atoms):
+        return False, "Contains oxygen atoms not part of nitro groups"
 
-    if non_CH_atoms > 0:
-        return False, "Contains non-hydrocarbon atoms other than nitro groups"
+    # Ensure that all nitrogen atoms are part of nitro groups
+    nitrogen_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7]
+    nitro_nitrogen_atoms = set(match[0] for match in nitro_matches)  # Index of nitrogen in the nitro group pattern
+
+    if len(nitrogen_atoms) != len(nitro_nitrogen_atoms):
+        return False, "Contains nitrogen atoms not part of nitro groups"
 
     return True, "Hydrocarbon with at least one nitro group"
