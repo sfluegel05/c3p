@@ -25,14 +25,14 @@ def is_B_vitamin(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define SMARTS patterns for key structural features of B vitamins
-    thiamine_pattern = Chem.MolFromSmarts("C1=CSC([N+]=C1)CCCOP")
-    riboflavin_pattern = Chem.MolFromSmarts("C1=C2C=CC([N]=C3[C@H]([C@H](O)[C@@H](O)[C@H](O)CO)NC3=O)=N2N=C1")
-    niacin_pattern = Chem.MolFromSmarts("c1cccnc1C(=O)O")
-    pantothenic_acid_pattern = Chem.MolFromSmarts("C(C(CCC(=O)O)NC(=O)C(C)C)(O)O")
-    pyridoxine_pattern = Chem.MolFromSmarts("C1=NC=C(C(=C1CO)CO)CO")
-    biotin_pattern = Chem.MolFromSmarts("C1(C(=O)NC2C(S1)CCC2)CCC(C(=O)O)O")
-    folate_pattern = Chem.MolFromSmarts("c1nc(NCC2=CC=C(C=C2)C(=O)NC(CC(=O)O)C(=O)O)[nH]c3[nH]cnc1c3=O")
-    cobalamin_pattern = Chem.MolFromSmarts("[H][C@](C)(P(=O)(O)OCC[C@@H](CO)[C@H](O[C@@H]1O[C@H](n2cnc3c(ncnc23)N)[C@H]([C@H]1O)O)O)c1ccc(cc1)C#N")
+    thiamine_pattern = Chem.MolFromSmarts("C1=CSC([N+]=C1)CCO")  # Adjusted to capture phosphorylated derivatives
+    riboflavin_pattern = Chem.MolFromSmarts("C1=NC2=C(C=C1C)N=C(NC2=O)N")  # Adjusted for simpler ring matches
+    niacin_pattern = Chem.MolFromSmarts("c1cccnc1C(=O)[O,N]")  # Can match broader functional groups
+    pantothenic_acid_pattern = Chem.MolFromSmarts("C(C(C(C(=O)O)NC(=O)C(C)C)O)O")  # Retained initially
+    pyridoxine_pattern = Chem.MolFromSmarts("C1=NC=C(C(=C1CO)CO)CO")  # Retained initially
+    biotin_pattern = Chem.MolFromSmarts("C1(C(=O)NC2C(S1)CCC2)CCC(C(=O)O)O")  # Revalidate for ring closure
+    folate_pattern = Chem.MolFromSmarts("c1nc(NC2=CC=CC=C2)nc(N)c1=O")  # Simplified p-aminobenzoate portion
+    cobalamin_pattern = Chem.MolFromSmarts("C[cH]1cC[nH]c2c[nH][nH]c21")  # Simplify and expand for B12 complexity
 
     # Check against each B vitamin pattern
     if mol.HasSubstructMatch(thiamine_pattern):
