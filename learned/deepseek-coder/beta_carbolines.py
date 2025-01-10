@@ -25,29 +25,19 @@ def is_beta_carbolines(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a flexible beta-carboline core structure pattern
-    # This pattern accounts for substitutions and hydrogenations
-    beta_carboline_pattern = Chem.MolFromSmarts("[nX2]1c2ccccc2c3c1cc[nX2,cX3]3")
+    # Define the beta-carboline core structure (pyrido[3,4-b]indole)
+    beta_carboline_pattern = Chem.MolFromSmarts("[nH]1c2ccccc2c3c1ccnc3")
     
     # Check if the molecule contains the beta-carboline core
     if mol.HasSubstructMatch(beta_carboline_pattern):
         return True, "Contains the beta-carboline core structure (pyrido[3,4-b]indole)"
     
-    # Define a pattern for hydrogenated derivatives
-    # This pattern accounts for fully or partially hydrogenated rings
-    hydrogenated_pattern = Chem.MolFromSmarts("[nX2]1c2cccc[cX3,cX2]2c3c1cc[nX2,cX3]3")
+    # If the core is not found, check for hydrogenated derivatives
+    # Hydrogenated derivatives may have partially or fully saturated rings
+    # We can check for the presence of the core with possible hydrogenation
+    hydrogenated_pattern = Chem.MolFromSmarts("[nH]1c2ccccc2c3c1cc[nH,c]3")
     if mol.HasSubstructMatch(hydrogenated_pattern):
         return True, "Contains a hydrogenated beta-carboline core structure"
-    
-    # Define a pattern for more complex structures with additional rings or substitutions
-    complex_pattern = Chem.MolFromSmarts("[nX2]1c2ccccc2c3c1cc[nX2,cX3]3~*")
-    if mol.HasSubstructMatch(complex_pattern):
-        return True, "Contains a complex beta-carboline core structure with additional rings or substitutions"
-    
-    # Define a pattern for fully hydrogenated beta-carboline derivatives
-    fully_hydrogenated_pattern = Chem.MolFromSmarts("[nX2]1c2cccc[cX3,cX2]2c3c1cc[nX2,cX3]3")
-    if mol.HasSubstructMatch(fully_hydrogenated_pattern):
-        return True, "Contains a fully hydrogenated beta-carboline core structure"
     
     # If no match is found, return False
     return False, "No beta-carboline core structure found"
