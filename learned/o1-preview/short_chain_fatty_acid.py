@@ -28,7 +28,7 @@ def is_short_chain_fatty_acid(smiles: str):
     # Check that molecule contains only C, H, and O atoms
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() not in (1, 6, 8):
-            return False, f"Contains heteroatom {atom.GetSymbol()}, not permitted"
+            return False, f"Contains disallowed atom {atom.GetSymbol()}, only C, H, O are permitted"
 
     # Check for carboxylic acid group (monocarboxylic acid)
     carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[OH]")
@@ -41,32 +41,19 @@ def is_short_chain_fatty_acid(smiles: str):
         return False, "Contains rings, should be acyclic"
 
     # Check for aromaticity (should be aliphatic)
-    if mol.GetNumAromaticAtoms() > 0:
+    if any(atom.GetIsAromatic() for atom in mol.GetAtoms()):
         return False, "Contains aromatic atoms, should be aliphatic"
 
     # Get the carboxyl carbon index
     carboxyl_carbon_idx = carboxylic_acid_matches[0][0]
     carboxyl_carbon = mol.GetAtomWithIdx(carboxyl_carbon_idx)
 
-    # Find the alpha carbon(s) (carbon(s) connected to the carboxyl carbon)
-    alpha_carbons = [
-        neighbor.GetIdx()
-        for neighbor in carboxyl_carbon.GetNeighbors()
-        if neighbor.GetAtomicNum() == 6
-    ]
-    if not alpha_carbons:
-        # If no alpha carbon, the molecule is formic acid, which is a short-chain fatty acid
-        chain_length = 0
-    else:
-        # Traverse the molecule to find the longest carbon chain starting from any alpha carbon
-        chain_lengths = []
-        for alpha_c_idx in alpha_carbons:
-            chain_length = get_longest_carbon_chain_length(mol, alpha_c_idx, {carboxyl_carbon_idx})
-            chain_lengths.append(chain_length)
-        chain_length = max(chain_lengths)
+    # Traverse the molecule to find the longest carbon chain starting from the carboxyl carbon
+    visited = set()
+    chain_length = get_longest_carbon_chain_length(mol, carboxyl_carbon_idx, visited)
 
-    if chain_length >= 5:
-        return False, f"Chain length is {chain_length}, must be less than 5 carbons (excluding carboxyl carbon)"
+    if chain_length >= 6:
+        return False, f"Chain length is {chain_length}, must be less than 6 carbons (including carboxyl carbon)"
 
     return True, "Is an aliphatic monocarboxylic acid with chain length less than C6 and only C, H, O atoms"
 
