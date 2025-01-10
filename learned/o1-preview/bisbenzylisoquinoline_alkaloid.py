@@ -8,13 +8,12 @@ Definition: A type of benzylisoquinoline alkaloid whose structures are built up 
 """
 
 from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_bisbenzylisoquinoline_alkaloid(smiles: str):
     """
     Determines if a molecule is a bisbenzylisoquinoline alkaloid based on its SMILES string.
-    A bisbenzylisoquinoline alkaloid consists of two benzylisoquinoline units linked by ether bridges.
+    A bisbenzylisoquinoline alkaloid consists of two benzylisoquinoline units linked by ether bridges,
+    methylenedioxy groups, or direct carbon-carbon bonds.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -28,80 +27,64 @@ def is_bisbenzylisoquinoline_alkaloid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define isoquinoline pattern
-    isoquinoline_smarts = 'c1ccc2ncccc2c1'  # Isoquinoline ring
-    isoquinoline_pattern = Chem.MolFromSmarts(isoquinoline_smarts)
-    if isoquinoline_pattern is None:
-        return False, "Invalid isoquinoline SMARTS pattern"
     
-    # Find isoquinoline units
-    isoquinoline_matches = mol.GetSubstructMatches(isoquinoline_pattern)
-    num_isoquinoline_units = len(isoquinoline_matches)
-    if num_isoquinoline_units < 2:
-        return False, f"Found {num_isoquinoline_units} isoquinoline unit(s), need at least 2"
+    # Define benzylisoquinoline unit pattern (allows for substitutions and saturation)
+    benzylisoquinoline_smarts = '''
+    [
+        # Isoquinoline or tetrahydroisoquinoline core
+        $([
+            $([nH]1ccccc1),                # Tetrahydroisoquinoline
+            $([n]1ccccc1)                  # Isoquinoline
+        ]),
+        # Connected to benzyl group
+        $(C[cH1,cH0][cR]),                # Benzyl group connected to aromatic ring
+        # Allow for substitutions on the rings
+        $(*)
+    ]
+    '''
+    benzylisoquinoline_pattern = Chem.MolFromSmarts(benzylisoquinoline_smarts)
+    if benzylisoquinoline_pattern is None:
+        return False, "Invalid benzylisoquinoline SMARTS pattern"
     
-    # Collect isoquinoline units atom indices
-    isoquinoline_units = [set(match) for match in isoquinoline_matches]
+    # Find benzylisoquinoline units
+    benzylisoquinoline_matches = mol.GetSubstructMatches(benzylisoquinoline_pattern)
+    num_units = len(benzylisoquinoline_matches)
+    if num_units < 2:
+        return False, f"Found {num_units} benzylisoquinoline unit(s), need at least 2"
     
-    # Identify ether bridges (C-O-C)
-    ether_oxygen_atoms = []
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 8:  # Oxygen atom
-            neighbors = atom.GetNeighbors()
-            carbon_neighbors = [n for n in neighbors if n.GetAtomicNum() == 6]
-            if len(carbon_neighbors) == 2:
-                # Ether oxygen found
-                ether_oxygen_atoms.append(atom.GetIdx())
+    # Get atom indices of benzylisoquinoline units
+    unit_atoms = []
+    for match in benzylisoquinoline_matches:
+        unit_atoms.append(set(match))
     
-    # Check if ether bridges connect isoquinoline units
-    for oxygen_idx in ether_oxygen_atoms:
-        oxygen_atom = mol.GetAtomWithIdx(oxygen_idx)
-        neighbor_carbons = [n for n in oxygen_atom.GetNeighbors() if n.GetAtomicNum() == 6]
-        units_connected = set()
-        for carbon_atom in neighbor_carbons:
-            carbon_idx = carbon_atom.GetIdx()
-            for i, unit in enumerate(isoquinoline_units):
-                if carbon_idx in unit:
-                    units_connected.add(i)
-        if len(units_connected) >= 2:
-            return True, "Contains two isoquinoline units connected via ether bridge(s)"
-    
-    # Check for methylenedioxy bridges (O-CH2-O)
-    methylenedioxy_pattern = Chem.MolFromSmarts('COC')  # Simplified pattern
-    methylenedioxy_matches = mol.GetSubstructMatches(methylenedioxy_pattern)
-    for match in methylenedioxy_matches:
-        # Check if methylenedioxy group connects two isoquinoline units
-        units_connected = set()
-        for atom_idx in match:
-            atom = mol.GetAtomWithIdx(atom_idx)
-            if atom.GetAtomicNum() == 6:  # Carbon atom in CH2
-                neighbors = atom.GetNeighbors()
-                oxygen_neighbors = [n for n in neighbors if n.GetAtomicNum() == 8]
-                for oxygen_atom in oxygen_neighbors:
-                    carbon_neighbors = [n for n in oxygen_atom.GetNeighbors() if n.GetAtomicNum() == 6 and n.GetIdx() != atom_idx]
-                    for carbon_neighbor in carbon_neighbors:
-                        carbon_idx = carbon_neighbor.GetIdx()
-                        for i, unit in enumerate(isoquinoline_units):
-                            if carbon_idx in unit:
-                                units_connected.add(i)
-        if len(units_connected) >= 2:
-            return True, "Contains two isoquinoline units connected via methylenedioxy bridge(s)"
-    
-    # Check for direct carbon-carbon bridges between isoquinoline units
+    # Identify bridges between units
+    units_connected = set()
     for bond in mol.GetBonds():
-        atom1 = bond.GetBeginAtom()
-        atom2 = bond.GetEndAtom()
-        if atom1.GetAtomicNum() == 6 and atom2.GetAtomicNum() == 6:
-            units_connected = set()
-            for i, unit in enumerate(isoquinoline_units):
-                if atom1.GetIdx() in unit or atom2.GetIdx() in unit:
-                    units_connected.add(i)
-            if len(units_connected) >= 2:
-                return True, "Contains two isoquinoline units connected via direct carbon-carbon bridge(s)"
+        atom1_idx = bond.GetBeginAtomIdx()
+        atom2_idx = bond.GetEndAtomIdx()
+        units_involved = []
+        for i, unit in enumerate(unit_atoms):
+            if atom1_idx in unit or atom2_idx in unit:
+                units_involved.append(i)
+        if len(units_involved) == 2:
+            # Check if bridge is ether (C-O-C), methylenedioxy (O-CH2-O), or C-C bond
+            atom1 = mol.GetAtomWithIdx(atom1_idx)
+            atom2 = mol.GetAtomWithIdx(atom2_idx)
+            if bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
+                if atom1.GetAtomicNum() == 8 or atom2.GetAtomicNum() == 8:
+                    # Oxygen bridge
+                    units_connected.update(units_involved)
+                elif atom1.GetAtomicNum() == 6 and atom2.GetAtomicNum() == 6:
+                    # Carbon bridge
+                    units_connected.update(units_involved)
+            elif bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                # Possible methylenedioxy bridge (but simplified here)
+                units_connected.update(units_involved)
     
-    return False, "No bridges connecting isoquinoline units found"
-
+    if len(units_connected) < 2:
+        return False, "No bridges connecting benzylisoquinoline units found"
+    
+    return True, "Contains two benzylisoquinoline units connected via bridge(s)"
 
 __metadata__ = {   
     'chemical_class': {   
