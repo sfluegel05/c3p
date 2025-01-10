@@ -21,15 +21,12 @@ def is_octanoate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define octanoic acid ester pattern: O=C-O and a long carbon chain (7 carbon atoms connected linearly)
-    # This will match ester groups with an 8-carbon chain, allowing more flexibility in esterifying groups
-    octanoate_ester_pattern = Chem.MolFromSmarts("C(=O)OCCCCCCC")
+    # Define detailed octanoic acid ester pattern: ester group (O=C-O) followed by a straight or branched 8-carbon chain
+    octanoate_ester_pattern = Chem.MolFromSmarts("C(=O)OCCCCCCCC")
+    branched_octanoate_pattern = Chem.MolFromSmarts("C(=O)O[C;R0]1CCCCCC1")  # Anchoring for ring closure or branching at first carbon
     
-    # Alternative definition for octanoate ester linkage to ensure better pattern:
-    detailed_pattern = Chem.MolFromSmarts("*C(=O)OCCCCCCC")
-    
-    # Check if the molecule contains the octanoic ester group
-    if mol.HasSubstructMatch(detailed_pattern) or mol.HasSubstructMatch(octanoate_ester_pattern):
+    # Check for the presence of the octanoic ester group with branching consideration
+    if mol.HasSubstructMatch(octanoate_ester_pattern) or mol.HasSubstructMatch(branched_octanoate_pattern):
         return True, "Contains octanoic acid ester linkage"
     
     return False, "Does not contain octanoic acid ester linkage"
