@@ -23,9 +23,11 @@ def is_chalcones(smiles: str):
 
     # Chalcone pattern: aromatic ring -> C=C -> C(=O) -> aromatic ring
     # Allow for additional substitutions like OH, OCH3, etc on the rings
-    chalcone_pattern_smarts = '[$([a]:[c]):!$(c1cc(C(=O)C=c2ccccc2)[cH]c1)](=C)=C(=O)[$([c]:[a]):!$(c1ccccc1C(=O)C=Cc2ccccc2)]'
+    chalcone_pattern_smarts = 'c:1:c:c:c:c:c:1/C=C/C(=O)c:2:c:c:c:c:c:2'
     
     chalcone_pattern = Chem.MolFromSmarts(chalcone_pattern_smarts)
+    if chalcone_pattern is None:
+        return (None, "Unable to construct chalcone pattern.")
 
     if mol.HasSubstructMatch(chalcone_pattern):
         return True, "Molecule contains the chalcone core structure"
@@ -34,11 +36,11 @@ def is_chalcones(smiles: str):
 
 # Example usage:
 smiles_examples = [
-    "COc1cc(O)c(C(=O)\C=C\c2ccccc2)c(OC)c1",  # flavokawain B
-    "CC(C)=CCc1cc(O)[C@@H](O)c(C(=O)\C=C\c2ccc(O)cc2)c1O",  # example chalcone
-    "O=C(\C=C\c1ccccc1)c1ccccc1",  # trans-chalcone
-    "CC(C)=CCc1c(O)ccc(C(=O)\C=C\c2ccc(O)cc2)c1O",  # isobavachalcone
-    "OC1=C(C(O)=C(C(=O)CCC2=CC=CC=C2)C(O)=C1)CC=C(C)C", # missed chalcone
+    "COc1cc(O)c(C(=O)\\C=C\\c2ccccc2)c(OC)c1",  # flavokawain B
+    "CC(C)=CCc1cc(O)[C@@H](O)c(C(=O)\\C=C\\c2ccc(O)cc2)c1O",  # example chlcone
+    "O=C(\\C=C\\c1ccccc1)c1ccccc1",  # trans-chalcone
+    "CC(C)=CCc1c(O)ccc(C(=O)\\C=C\\c2ccc(O)cc2)c1O",  # isobavachalcone
+    "OC1=C(C(O)=C(C(=O)CCC2=CC=CC=C2)C(O)=C1)CC=C(C)C"  # missed chalcone
 ]
 
 for smiles in smiles_examples:
