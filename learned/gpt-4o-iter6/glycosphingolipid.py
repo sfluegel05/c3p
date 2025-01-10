@@ -23,19 +23,28 @@ def is_glycosphingolipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Identify the sphingoid base (Ceramide). Typically a long-chain base with an amide.
-    ceramide_pattern = Chem.MolFromSmarts("C(=O)N[C@@H](C)CCCCCCCC[C@@H](O)CO") # Example pattern
+    # Broadened pattern for ceramide: long chain base, typically with an amide linkage & an OH group
+    # Simplified pattern to be more inclusive
+    ceramide_pattern = Chem.MolFromSmarts("C(=O)N[C@@H]CO")
     if not mol.HasSubstructMatch(ceramide_pattern):
         return False, "No ceramide backbone detected"
 
-    # Identify carbohydrate moieties attached via a glycosidic linkage
-    sugar_pattern = Chem.MolFromSmarts("[C@H]1(O[C@H]2[C@H]([C@H](O)[C@@H](CO)[C@@H]([C@@H]2O)O)OC1)")
-    if not mol.HasSubstructMatch(sugar_pattern):
+    # Patterns to detect common sugar moieties
+    # Adjusted SMARTS to include broader configurations of cyclic acetal groups
+    sugar_patterns = [
+        Chem.MolFromSmarts("[C@H]1(O[C@@H]([C@H](O)[C@@H](CO)O)C(O)C1)"),  # Example glucose
+        Chem.MolFromSmarts("[C@@H]1(O[C@H]([C@@H](O)CO)C(O)C(O1)O)")  # Example galactose
+    ]
+
+    # Check for any sugar pattern match
+    sugar_found = any(mol.HasSubstructMatch(sp) for sp in sugar_patterns)
+    if not sugar_found:
         return False, "No carbohydrate moiety detected"
 
-    # Check for the glycosidic linkage to O-1 of the sphingoid
-    linkage_pattern = Chem.MolFromSmarts("CO[C@H]1") # O-1 linkage pattern
-    if not mol.HasSubstructMatch(linkage_pattern):
+    # Glycosidic linkages - bonds typically occur via oxygen atoms
+    # Pattern checks for alcohol or ether linkages indicative of glycosidic bonds
+    glycosidic_linkage_pattern = Chem.MolFromSmarts("O[C@H](C)CO")  # Simplified pattern
+    if not mol.HasSubstructMatch(glycosidic_linkage_pattern):
         return False, "Glycosidic linkage to O-1 not identified"
-    
-    return True, "Contains a sphingoid base with a carbohydrate moiety attached via glycosidic linkage"
+
+    return True, "Contains a sphingoid or ceramide backbone with a carbohydrate moiety attached via glycosidic linkage"
