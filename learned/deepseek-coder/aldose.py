@@ -29,39 +29,31 @@ def is_aldose(smiles: str):
     # Check for aldehyde group (C=O) in open-chain form
     aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)")
     if mol.HasSubstructMatch(aldehyde_pattern):
-        # Count hydroxyl groups (OH)
-        hydroxyl_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetDegree() == 1)
+        # Ensure the aldehyde is connected to a carbon chain with multiple hydroxyl groups
+        aldehyde_match = mol.GetSubstructMatch(aldehyde_pattern)
+        aldehyde_carbon = aldehyde_match[0]
+        hydroxyl_count = 0
+        for neighbor in mol.GetAtomWithIdx(aldehyde_carbon).GetNeighbors():
+            if neighbor.GetAtomicNum() == 6:  # Carbon
+                for neighbor_neighbor in neighbor.GetNeighbors():
+                    if neighbor_neighbor.GetAtomicNum() == 8 and neighbor_neighbor.GetDegree() == 1:  # Hydroxyl
+                        hydroxyl_count += 1
         if hydroxyl_count >= 2:
             return True, "Contains aldehyde group with multiple hydroxyl groups"
-    
+
     # Check for hemiacetal form (cyclic structure with oxygen in the ring)
     hemiacetal_pattern = Chem.MolFromSmarts("[OX2;R][CX4;R][CX3;R](=O)")
     if mol.HasSubstructMatch(hemiacetal_pattern):
-        # Count hydroxyl groups (OH)
-        hydroxyl_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetDegree() == 1)
+        # Ensure the hemiacetal is part of a carbon chain with multiple hydroxyl groups
+        hemiacetal_match = mol.GetSubstructMatch(hemiacetal_pattern)
+        hemiacetal_carbon = hemiacetal_match[1]
+        hydroxyl_count = 0
+        for neighbor in mol.GetAtomWithIdx(hemiacetal_carbon).GetNeighbors():
+            if neighbor.GetAtomicNum() == 6:  # Carbon
+                for neighbor_neighbor in neighbor.GetNeighbors():
+                    if neighbor_neighbor.GetAtomicNum() == 8 and neighbor_neighbor.GetDegree() == 1:  # Hydroxyl
+                        hydroxyl_count += 1
         if hydroxyl_count >= 2:
             return True, "Contains hemiacetal group with multiple hydroxyl groups"
-    
-    # Broaden the hemiacetal pattern to include more variations
-    broad_hemiacetal_pattern = Chem.MolFromSmarts("[OX2;R][CX4;R][CX3;R](=O)")
-    if mol.HasSubstructMatch(broad_hemiacetal_pattern):
-        # Count hydroxyl groups (OH)
-        hydroxyl_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetDegree() == 1)
-        if hydroxyl_count >= 2:
-            return True, "Contains broad hemiacetal group with multiple hydroxyl groups"
-    
-    # Check for cyclic structure with oxygen in the ring (hemiacetal form)
-    ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() > 0:
-        # Ensure the ring contains an oxygen (hemiacetal form)
-        ring_atoms = set()
-        for ring in ring_info.AtomRings():
-            ring_atoms.update(ring)
-        oxygen_in_ring = any(mol.GetAtomWithIdx(idx).GetAtomicNum() == 8 for idx in ring_atoms)
-        if oxygen_in_ring:
-            # Count hydroxyl groups (OH)
-            hydroxyl_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetDegree() == 1)
-            if hydroxyl_count >= 2:
-                return True, "Contains cyclic structure with oxygen and multiple hydroxyl groups"
 
     return False, "No aldehyde or hemiacetal group found with multiple hydroxyl groups"
