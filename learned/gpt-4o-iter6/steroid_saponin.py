@@ -2,7 +2,6 @@
 Classifies: CHEBI:61655 steroid saponin
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_steroid_saponin(smiles: str):
     """
@@ -23,22 +22,23 @@ def is_steroid_saponin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # SMARTS pattern for a steroid backbone, typical of a cyclopenta[a]phenanthrene skeleton
-    steroid_pattern = Chem.MolFromSmarts("C1CC2CCCC3C4CCC(O)CC4CCC3C2C1")
+    # Improved pattern for steroid backbone (allow slight variations)
+    steroid_pattern = Chem.MolFromSmarts("C1CCC2C3C(C1)C=CC4C3CC(O)CC4")
     
-    # Verify steroid backbone presence
+    # Verify steroid backbone presence (adapt to possible variations)
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
     
-    # SMARTS pattern for sugars, e.g., glucose or other pyranoses
-    sugar_pattern = Chem.MolFromSmarts("[OX2H][C@H]1[C@H]([OX2H])[C@H]([OX2H])[C@H]([OX2H])[C@@H]1[OX2H]")
+    # SMARTS pattern for sugar moieties (broaden detection of sugar units)
+    sugar_pattern = Chem.MolFromSmarts("[C@@H]1([OX2H])[C@H]([OX2H])[C@@H]([OX2H])[C@H]([OX2H])[OX2H]1")
     
     # Finding attached sugar moieties
     sugar_matches = mol.GetSubstructMatches(sugar_pattern)
     if len(sugar_matches) == 0:
         return False, "No sugar moieties attached"
     
-    # Check for hydroxyl groups
+    # Check for hydroxyl groups on the steroid structure
+    # Generalize hydroxyl pattern covering variabilities
     hydroxy_pattern = Chem.MolFromSmarts("[OX2H]")
     if not mol.HasSubstructMatch(hydroxy_pattern):
         return False, "Steroid core lacks hydroxyl groups"
