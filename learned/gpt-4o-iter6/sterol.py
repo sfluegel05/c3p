@@ -6,13 +6,13 @@ from rdkit import Chem
 def is_sterol(smiles: str):
     """
     Determines if a molecule is a sterol based on its SMILES string.
-    A sterol is defined as a 3-hydroxy steroid with a structure closely related to cholestan-3-ol.
+    A sterol is defined as a 3-hydroxy steroid closely related to cholestan-3-ol.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if the molecule is a sterol, False otherwise
+        bool: True if molecule is a sterol, False otherwise
         str: Reason for classification
     """
     
@@ -21,28 +21,14 @@ def is_sterol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for the steroid backbone:
-    # Three six-membered rings and one five-membered ring, allowing some flexibility/variation
-    steroid_core_pattern = Chem.MolFromSmarts("C1CCC2C1CCC3C2CCC4C3CCC4")
-    if not steroid_core_pattern:
-        return (None, "Invalid steroid core SMARTS pattern")
+    # Steroid backbone SMARTS pattern: four-ring steroid core 
+    steroid_pattern = Chem.MolFromSmarts("C1CCC2C3CCC4CCCC(C4)C3C2C1")
+    if not mol.HasSubstructMatch(steroid_pattern):
+        return False, "No steroid backbone found"
 
-    # Match steroid core pattern
-    if not mol.HasSubstructMatch(steroid_core_pattern):
-        return False, "No appropriate steroid backbone (3 six-membered and 1 five-membered ring) found"
+    # Check for hydroxyl group at the 3-position (3-hydroxy group)
+    steroid_3_oh_pattern = Chem.MolFromSmarts("C1(CCC2C3CCC4CCCC(C4)C3C2C1)O")
+    if not mol.HasSubstructMatch(steroid_3_oh_pattern):
+        return False, "No 3-hydroxy group found in the steroid backbone"
 
-    # Check for hydroxyl group [-OH] in the C3 position
-    hydroxyl_pattern = Chem.MolFromSmarts("C(O)C1CCC2C3CCC4C(C)CCC4C3CCC12")
-    if not hydroxyl_pattern:
-        return (None, "Invalid hydroxyl position SMARTS pattern")
-        
-    if not mol.HasSubstructMatch(hydroxyl_pattern):
-        return False, "No hydroxyl group found on the C3 position"
-
-    # Assume presence of side chains typical of sterols due to sterol diversity
-    side_chain_check = True
-
-    if side_chain_check:
-        return True, "Contains steroid backbone with hydroxyl group; structure consistent with sterol definition"
-    
-    return False, "Missing structural features typical of sterols"
+    return True, "Contains steroid backbone with 3-hydroxy group"
