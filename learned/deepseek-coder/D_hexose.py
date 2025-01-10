@@ -26,47 +26,34 @@ def is_D_hexose(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check if the molecule has exactly 6 carbon atoms
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count != 6:
-        return False, f"Not a hexose: found {c_count} carbon atoms, need exactly 6"
+    # Check if the molecule has a ring structure
+    if not mol.GetRingInfo().NumRings():
+        return False, "No ring structure found"
 
-    # Check for the presence of a hydroxyl group at position 5 with D-configuration
-    # We need to find a carbon with a hydroxyl group and check its chirality
-    # The fifth carbon is typically the second-to-last carbon in the chain
-    # We will look for a carbon with a hydroxyl group and check its stereochemistry
-
-    # Define a pattern for a carbon with a hydroxyl group
+    # Check for the presence of multiple hydroxyl groups
     hydroxyl_pattern = Chem.MolFromSmarts("[C][O]")
     hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    
-    if not hydroxyl_matches:
-        return False, "No hydroxyl groups found"
+    if len(hydroxyl_matches) < 4:
+        return False, "Not enough hydroxyl groups for a hexose"
 
-    # Check the stereochemistry of the hydroxyl group at position 5
-    # We need to find the carbon at position 5 and check its chirality
-    # The fifth carbon is typically the second-to-last carbon in the chain
-    # We will look for a carbon with a hydroxyl group and check its stereochemistry
+    # Find the carbon at position 5 (second-to-last carbon in the ring)
+    # We assume that the ring is a 6-membered ring (typical for hexoses)
+    ring_atoms = mol.GetRingInfo().AtomRings()[0]
+    if len(ring_atoms) != 6:
+        return False, "Not a 6-membered ring"
 
-    # Get the atoms in the molecule
-    atoms = mol.GetAtoms()
-    
-    # Find the carbon at position 5 (second-to-last carbon)
-    # Assuming the molecule is linear, we can find the second-to-last carbon
-    # with a hydroxyl group
-    carbon_at_position_5 = None
-    for atom in atoms:
-        if atom.GetAtomicNum() == 6 and atom.GetDegree() == 4:
-            # Check if this carbon has a hydroxyl group
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetAtomicNum() == 8 and neighbor.GetDegree() == 1:
-                    carbon_at_position_5 = atom
-                    break
-            if carbon_at_position_5:
-                break
+    # Position 5 is the second-to-last carbon in the ring
+    carbon_at_position_5 = mol.GetAtomWithIdx(ring_atoms[-2])
 
-    if not carbon_at_position_5:
-        return False, "No carbon at position 5 with a hydroxyl group found"
+    # Check if the carbon at position 5 has a hydroxyl group
+    has_hydroxyl = False
+    for neighbor in carbon_at_position_5.GetNeighbors():
+        if neighbor.GetAtomicNum() == 8 and neighbor.GetDegree() == 1:
+            has_hydroxyl = True
+            break
+
+    if not has_hydroxyl:
+        return False, "No hydroxyl group at position 5"
 
     # Check the stereochemistry of the carbon at position 5
     # In RDKit, the chirality is represented by the ChiralTag
