@@ -10,7 +10,8 @@ from rdkit.Chem import rdMolDescriptors
 def is_tetraterpenoid(smiles: str):
     """
     Determines if a molecule is a tetraterpenoid based on its SMILES string.
-    Tetraterpenoids are derived from tetraterpenes, which have a C40 skeleton.
+    Tetraterpenoids are derived from tetraterpenes, which have a C40 skeleton,
+    but the skeleton can be modified or rearranged.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -29,11 +30,11 @@ def is_tetraterpenoid(smiles: str):
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     
     # Tetraterpenoids typically have around 40 carbon atoms, but allow for modifications
-    if c_count < 30 or c_count > 55:
-        return False, f"Carbon count ({c_count}) is not consistent with a tetraterpenoid (expected ~40)"
+    if c_count < 25 or c_count > 55:
+        return False, f"Carbon count ({c_count}) is not consistent with a tetraterpenoid (expected ~40, but allowing for modifications)"
 
     # Check for extended conjugated systems (characteristic of tetraterpenoids)
-    # Look for at least 4 conjugated double bonds in a chain
+    # Look for at least 3 conjugated double bonds in a chain
     conjugated_pattern = Chem.MolFromSmarts("[CX3]=[CX3]~[CX3]=[CX3]~[CX3]=[CX3]")
     conjugated_matches = mol.GetSubstructMatches(conjugated_pattern)
     if len(conjugated_matches) < 1:
@@ -54,13 +55,14 @@ def is_tetraterpenoid(smiles: str):
 
     # Check molecular weight (tetraterpenoids are typically large molecules)
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 400:
+    if mol_wt < 300:
         return False, "Molecular weight too low for a tetraterpenoid"
 
     # Check for isoprene units (common building blocks of terpenoids)
+    # Relaxed requirement to allow for modified skeletons
     isoprene_pattern = Chem.MolFromSmarts("[CX4H2][CX4H]=[CX3H][CX4H2]")
     isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
-    if len(isoprene_matches) < 3:
+    if len(isoprene_matches) < 1:
         return False, "Insufficient isoprene units for a tetraterpenoid"
 
     return True, "Molecule has a C40-like skeleton with conjugated double bonds, oxygen-containing functional groups, and isoprene units, consistent with a tetraterpenoid"
