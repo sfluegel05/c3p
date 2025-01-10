@@ -2,7 +2,6 @@
 Classifies: CHEBI:33848 polycyclic arene
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_polycyclic_arene(smiles: str):
     """
@@ -21,18 +20,41 @@ def is_polycyclic_arene(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Calculate number of aromatic rings
-    ring_info = mol.GetRingInfo()
-    aromatic_rings = [ring for ring in ring_info.BondRings() if all(mol.GetBondBetweenAtoms(a1, a2).GetIsAromatic() for a1, a2 in zip(ring, ring[1:] + ring[:1]))]
+    # Aromaticity perception
+    Chem.SanitizeMol(mol, Chem.SanitizeFlags.SANITIZE_PROPERTIES)
 
-    # Check if there is more than one aromatic ring
+    # Get ring information
+    ring_info = mol.GetRingInfo()
+    
+    # Identify aromatic rings
+    aromatic_rings = []
+    for ring in ring_info.BondRings():
+        is_aromatic = True
+        for a1, a2 in zip(ring, ring[1:] + ring[:1]):
+            bond = mol.GetBondBetweenAtoms(a1, a2)
+            if not bond or not bond.GetIsAromatic():
+                is_aromatic = False
+                break
+        if is_aromatic:
+            aromatic_rings.append(ring)
+
+    # Check number of aromatic rings
     if len(aromatic_rings) < 2:
         return False, "Less than two aromatic rings, not a polycyclic arene"
-
-    # Check for presence of fused aromatic rings (shared edges)
-    has_fused_rings = any(len(set(aromatic_rings[i]).intersection(aromatic_rings[j])) > 1 for i in range(len(aromatic_rings)) for j in range(i+1, len(aromatic_rings)))
     
-    if not has_fused_rings:
+    # Check for fused aromatic structures (shared edges)
+    fused = False
+    for i in range(len(aromatic_rings)):
+        for j in range(i+1, len(aromatic_rings)):
+            # Check if rings share two or more atoms (indicating a fused structure)
+            shared_atoms = set(aromatic_rings[i]).intersection(aromatic_rings[j])
+            if len(shared_atoms) > 1:
+                fused = True
+                break
+        if fused:
+            break
+
+    if not fused:
         return False, "No fused aromatic rings, not a polycyclic arene"
     
     return True, "Structure is consistent with a polycyclic aromatic hydrocarbon"
