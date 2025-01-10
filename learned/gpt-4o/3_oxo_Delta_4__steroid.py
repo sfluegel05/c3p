@@ -16,7 +16,7 @@ def is_3_oxo_Delta_4__steroid(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a 3-oxo-Δ(4) steroid, False otherwise
+        bool: True if the molecule is a 3-oxo-Δ(4) steroid, False otherwise
         str: Reason for classification
     """
     
@@ -25,19 +25,22 @@ def is_3_oxo_Delta_4__steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Identify 4-ring steroid backbone (ABCD ring system), a more robust pattern
-    steroid_backbone_pattern = Chem.MolFromSmarts('C1CC2CCC3C4CCC(=O)C=CC4CCC3C2C1')
+    # Use a more generalized steroid backbone pattern
+    steroid_backbone_pattern = Chem.MolFromSmarts('C1CCC2C(C1)CCC3C2CCC4(C3=CC(=O)CC4)')
+    
     if not mol.HasSubstructMatch(steroid_backbone_pattern):
         return False, "No steroid backbone found"
 
-    # Identify 3-oxo group (ketone at the C3 position)
-    oxo_group_pattern = Chem.MolFromSmarts('C(=O)C[C;R]')
+    # Identify 3-oxo group (ketone at the C3 position) with flexibility for substitution around
+    oxo_group_pattern = Chem.MolFromSmarts('O=C[C;R]')
+
     if not mol.HasSubstructMatch(oxo_group_pattern):
         return False, "No 3-oxo group found"
     
-    # Identify Δ(4) double bond (between C4 and C5)
-    delta_4_pattern = Chem.MolFromSmarts('C=C[C;R]')
+    # Identify Δ(4) double bond (between C4 and C5), ensuring it matches within a steroid context
+    delta_4_pattern = Chem.MolFromSmarts('C=CC(C)=O')
+
     if not mol.HasSubstructMatch(delta_4_pattern):
         return False, "No Δ(4) double bond found"
 
-    return True, "Contains steroid backbone with 3-oxo group and Δ(4) double bond"
+    return True, "Contains steroid backbone with a 3-oxo group and a Δ(4) double bond"
