@@ -19,14 +19,22 @@ def is_3_oxo_5alpha_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define the SMARTS pattern for 3-oxo group and 5alpha-steroid framework
-    # 3-Oxo group (C=O) in the third position and key features of the steroid structure
-    # The SMARTS pattern focuses on 3-oxo group presence and fused steroid rings with specific stereochemistry
-    oxo_5alpha_pattern = Chem.MolFromSmarts("C1C2C3[C@H](CC[C@@H]3C(=O))C4CCC[C@@H]4C[C@@H]2CC1")
+    # Define a more general SMARTS pattern for 3-oxo and 5alpha-steroid framework
+    # Allow flexibility in stereochemistry - important for recognizing variants
+    # Note: Ensure SMARTS is broader to capture alternative positions of core the structures
+    stereocenters_pattern = "[C@H]1CC[C@H]2[C@H]3CC[C@@H]4"  # Ring centers with stereochemistry
+    core_steroid_pattern = Chem.MolFromSmarts(f"{stereocenters_pattern}[C@](C(=O))CC4=C2C1")
     
-    if mol.HasSubstructMatch(oxo_5alpha_pattern):
-        return True, "Matches the 3-oxo-5alpha-steroid pattern"
-    else:
-        return False, "Does not contain 3-oxo group in a 5alpha-steroid framework"
+    # Check if any part of the steroid framework is present
+    ring_pattern = Chem.MolFromSmarts("C1C2C3C4CCCC4C3C2C1") # Basic steroid ring system - ignore stereochemistry here
+
+    # Check for the 3-oxo group; separate check for versatility
+    oxo_group_pattern = Chem.MolFromSmarts("C(=O)")
+
+    if mol.HasSubstructMatch(ring_pattern) and mol.HasSubstructMatch(oxo_group_pattern):
+        if mol.HasSubstructMatch(core_steroid_pattern):
+            return True, "Contains 3-oxo group in a compatible 5alpha-steroid framework"
+        return False, "Contains 3-oxo group but lacks proper 5alpha-steroid stereocenter configuration"
+    return False, "Does not contain 3-oxo group or any steroidal feature"
 
     return None, None
