@@ -21,20 +21,11 @@ def is_dodecanoate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define advanced lauroyl ester pattern using SMARTS
-    # This captures the diversity in ester linkages and stereochemistry
-    lauroyl_patterns = [
-        Chem.MolFromSmarts("C(=O)OCCCCCCCCCCC"),  # General lauric acid chain to ester
-        Chem.MolFromSmarts("C(=O)OC[C@H](O)CCCCCCCCCCC"),  # Stereo-specific pattern
-        Chem.MolFromSmarts("C(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C"),  # Lactone-like ester
-        Chem.MolFromSmarts("C(=O)OCCOC(=O)CCCCCCCCCCC"),  # Glycerol esterified lauroyl
-        Chem.MolFromSmarts("C(=O)OCCCCCCCCCCC[P](=O)([O-])[O-]"),  # Phosphoesters or similar
-        Chem.MolFromSmarts("CCCCCCCCCCCC(=O)O")  # Additional lauroyl functional groups
-    ]
-
-    # Iterate over patterns and check for matches
-    for pattern in lauroyl_patterns:
-        if mol.HasSubstructMatch(pattern):
-            return True, "Contains characteristic lauroyl ester group indicative of dodecanoate ester"
+    # Define the lauroyl ester pattern (C12 chain with carbonyl and oxygen)
+    lauroyl_pattern = Chem.MolFromSmarts("CCCCCCCCCCCC(=O)O")
     
-    return False, "Does not contain characteristic lauroyl ester group"
+    # Check for the lauroyl ester pattern
+    if mol.HasSubstructMatch(lauroyl_pattern):
+        return True, "Contains lauroyl ester group, characteristic of dodecanoate ester"
+    else:
+        return False, "Does not contain lauroyl ester group"
