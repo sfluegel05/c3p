@@ -32,7 +32,9 @@ def is_B_vitamin(smiles: str):
         "[n]1ccncc1",  # Pyrimidine
         "[n]1cncc1",   # Imidazole
         "[n]1ccnc1",   # Pyrazole
-        "[n]1cc[nH]c1" # Pyrrole
+        "[n]1cc[nH]c1", # Pyrrole
+        "[n]1c[nH]cc1", # Pyrimidine (alternative)
+        "[n]1c[nH]cn1"  # Imidazole (alternative)
     ]
     has_heterocycle = any(mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)) for pattern in heterocycle_patterns)
     if not has_heterocycle:
@@ -45,7 +47,12 @@ def is_B_vitamin(smiles: str):
         "[PX4](=O)([OX2H1])",# Phosphate
         "[CX3](=O)[OX1H0-]", # Carboxylate
         "[CX3](=O)[NX3]",    # Amide
-        "[SX2](=O)(=O)[OX2H1]" # Sulfonate
+        "[SX2](=O)(=O)[OX2H1]", # Sulfonate
+        "[OX2H1]",           # Hydroxyl
+        "[NX3H2]",           # Primary amine
+        "[NX3H1]",           # Secondary amine
+        "[NX3H0]",           # Tertiary amine
+        "[CX3](=O)[OX2H0-]"  # Ester
     ]
     has_functional_group = any(mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)) for pattern in functional_group_patterns)
     if not has_functional_group:
@@ -53,13 +60,25 @@ def is_B_vitamin(smiles: str):
 
     # Check for water solubility (B vitamins are water-soluble)
     logP = rdMolDescriptors.CalcCrippenDescriptors(mol)[0]
-    if logP > 1.5:  # Arbitrary threshold for water solubility
+    if logP > 0.5:  # More stringent threshold for water solubility
         return False, "Molecule is likely not water-soluble"
 
     # Check molecular weight (B vitamins typically have MW < 1000 Da)
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt > 1000:
+    if mol_wt > 800:  # More stringent threshold for molecular weight
         return False, "Molecular weight too high for a B vitamin"
+
+    # Additional check for specific B vitamin structures
+    b_vitamin_patterns = [
+        "Cc1ncc(CO)c(C(O)=O)c1O",  # 4-pyridoxic acid
+        "OC(=O)c1cccnc1",           # Nicotinic acid
+        "OC(=O)C(NC(=O)C1=CC=C(N(CC2=NC=3C(NC2=O)=NC(=NC3N)N)C)C=C1)CCC(O)=O",  # 7-Hydroxymethotrexate
+        "[O-]C(=O)c1cccnc1",        # Nicotinate
+        "OC(=O)[C@@H](NC(=O)C1=CC=C(N(CC=2N=C3C(=NC2)N=C(N=C3N)N)C)C=C1)CCC(O)=O.O"  # Methotrexate hydrate
+    ]
+    has_b_vitamin_structure = any(mol.HasSubstructMatch(Chem.MolFromSmiles(pattern)) for pattern in b_vitamin_patterns)
+    if not has_b_vitamin_structure:
+        return False, "No specific B vitamin structure found"
 
     return True, "Contains nitrogen-containing heterocycle and functional groups common in B vitamins, and is water-soluble"
 
