@@ -35,29 +35,41 @@ def is_2_oxo_monocarboxylic_acid(smiles: str):
     elif len(carboxylic_matches) > 1:
         return False, "Multiple carboxylic acid groups found"
 
-    # Pattern for 2-oxo monocarboxylic acid:
-    # - Carbon with single ketone (not part of carboxyl)
-    # - Connected to carbon of carboxylic acid
-    # - Not part of an ester or other carboxylic acid
-    alpha_keto_pattern = Chem.MolFromSmarts("[#6]-[CX3](=[OX1])-[CX3](=[OX1])[OX2H1]")
-    if not mol.HasSubstructMatch(alpha_keto_pattern):
+    # Pattern for alpha-keto acid (2-oxo monocarboxylic acid)
+    # Matches both direct connection and cases with substituents
+    alpha_keto_patterns = [
+        # Direct alpha-keto acid pattern
+        Chem.MolFromSmarts("[CX3](=[OX1])[CX3](=[OX1])[OX2H1]"),
+        # Pattern with possible substituents
+        Chem.MolFromSmarts("[#6][CX3](=[OX1])[CX3](=[OX1])[OX2H1]"),
+        # Alternative pattern for resonance forms
+        Chem.MolFromSmarts("[#6]-[CX3](=O)-[CX3](=O)[OX2H1]")
+    ]
+    
+    found_pattern = False
+    for pattern in alpha_keto_patterns:
+        if mol.HasSubstructMatch(pattern):
+            found_pattern = True
+            break
+            
+    if not found_pattern:
         return False, "No alpha-keto acid pattern found"
 
-    # Additional checks to exclude false positives
+    # Exclude problematic cases
     
-    # Exclude cases where the ketone is part of a carboxylic acid or ester
-    problematic_pattern = Chem.MolFromSmarts("[OX2H1,OX2R]-[CX3](=[OX1])-[CX3](=[OX1])[OX2H1]")
-    if mol.HasSubstructMatch(problematic_pattern):
-        return False, "The ketone is part of another acid or ester group"
+    # Exclude compounds with multiple ketone groups adjacent to the acid
+    multiple_ketone_pattern = Chem.MolFromSmarts("[OX1]=[CX3]-[CX3](=[OX1])[CX3](=[OX1])[OX2H1]")
+    if mol.HasSubstructMatch(multiple_ketone_pattern):
+        return False, "Multiple ketone groups found adjacent to acid"
 
-    # Check that carbon between ketone and acid is not part of other functional groups
-    connecting_c_pattern = Chem.MolFromSmarts("[#6]-[CX3](=[OX1])-[CX3](=[OX1])[OX2H1]")
-    matches = mol.GetSubstructMatches(connecting_c_pattern)
-    
-    for match in matches:
-        connecting_carbon = mol.GetAtomWithIdx(match[2])
-        if connecting_carbon.GetDegree() > 2:  # Should only connect to C=O and COOH
-            continue
-        return True, "Contains a valid 2-oxo monocarboxylic acid pattern"
+    # Exclude cases where the ketone is part of an anhydride or similar structure
+    anhydride_pattern = Chem.MolFromSmarts("[OX2]-[CX3](=[OX1])[CX3](=[OX1])[OX2H1]")
+    if mol.HasSubstructMatch(anhydride_pattern):
+        return False, "Ketone is part of an anhydride or similar structure"
 
-    return False, "The structure does not match required 2-oxo monocarboxylic acid pattern"
+    # Check that the ketone carbon is not part of a ring system containing the acid
+    ring_pattern = Chem.MolFromSmarts("[CX3]1(=[OX1])[CX3](=[OX1])[OX2H1]1")
+    if mol.HasSubstructMatch(ring_pattern):
+        return False, "Ketone and acid are part of the same ring"
+
+    return True, "Contains a valid 2-oxo monocarboxylic acid pattern"
