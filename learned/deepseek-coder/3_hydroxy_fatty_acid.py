@@ -36,8 +36,6 @@ def is_3_hydroxy_fatty_acid(smiles: str):
         return False, "No hydroxyl group at the 3-position found"
 
     # Verify that the hydroxyl group is at the 3-position relative to the carboxylic acid
-    # We need to ensure that the hydroxyl group is on the third carbon from the carboxylic acid
-    # This can be done by checking the distance between the carboxylic acid carbon and the hydroxyl carbon
     carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
     hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
 
@@ -48,16 +46,23 @@ def is_3_hydroxy_fatty_acid(smiles: str):
             # Calculate the shortest path between the carboxylic acid carbon and the hydroxyl carbon
             path = Chem.GetShortestPath(mol, ca_carbon, oh_carbon)
             if len(path) == 4:  # Path length of 4 means 3 bonds between the two carbons
-                break
+                # Ensure that the hydroxyl group is on the third carbon from the carboxylic acid
+                if mol.GetAtomWithIdx(path[1]).GetAtomicNum() == 6 and mol.GetAtomWithIdx(path[2]).GetAtomicNum() == 6:
+                    break
         else:
             continue
         break
     else:
         return False, "Hydroxyl group is not at the 3-position relative to the carboxylic acid"
 
-    # Check for a long carbon chain (at least 6 carbons)
+    # Check for a long carbon chain (at least 10 carbons)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 6:
+    if c_count < 10:
         return False, "Carbon chain too short for a fatty acid"
 
-    return True, "Contains a carboxylic acid group and a hydroxyl group at the 3-position with a long carbon chain"
+    # Check for aliphatic chain (no rings)
+    ring_info = mol.GetRingInfo()
+    if ring_info.NumRings() > 0:
+        return False, "Molecule contains rings, not a typical fatty acid"
+
+    return True, "Contains a carboxylic acid group and a hydroxyl group at the 3-position with a long aliphatic carbon chain"
