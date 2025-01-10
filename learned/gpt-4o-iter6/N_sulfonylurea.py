@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_N_sulfonylurea(smiles: str):
     """
     Determines if a molecule is an N-sulfonylurea based on its SMILES string.
-    An N-sulfonylurea contains a urea group where one of the nitrogen hydrogens
-    is replaced by a sulfonyl group (-S(=O)(=O)-).
+    An N-sulfonylurea contains a urea group where one nitrogen is substituted 
+    with a sulfonyl group (-S(=O)(=O)-).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -16,33 +16,36 @@ def is_N_sulfonylurea(smiles: str):
         bool: True if molecule is an N-sulfonylurea, False otherwise
         str: Reason for classification
     """
-  
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define patterns
-    # Urea group: N-C(=O)-N (simplified depiction for pattern matching)
-    urea_pattern = Chem.MolFromSmarts("NC(=O)N")  
-    # N-sulfonyl group: N-S(=O)(=O)
-    sulfonyl_pattern = Chem.MolFromSmarts("[NX3,NX4][SX4](=[OX1])(=[OX1])")
+    # Define SMARTS patterns
+    # Urea group: N-C(=O)-N
+    urea_pattern = Chem.MolFromSmarts("NC(=O)N")
+    # N-sulfonyl: N-S(=O)(=O)
+    nsulfonyl_pattern = Chem.MolFromSmarts("N[SX4](=O)(=O)")
 
-    # Check urea group presence
-    if not mol.HasSubstructMatch(urea_pattern):
+    # Find matches of the urea pattern
+    urea_matches = mol.GetSubstructMatches(urea_pattern)
+    if not urea_matches:
         return False, "No urea group found"
     
-    # Check sulfonyl group substitution on nitrogen of urea
-    if mol.HasSubstructMatch(sulfonyl_pattern):
-        # Ensure the sulfonyl group is attached to one of the nitrogens of the urea
-        for match in mol.GetSubstructMatches(urea_pattern):
-            # Check the nitrogens of the matched urea structure
-            urea_nitrogen_atoms = [match[0], match[2]]
-            for n_idx in urea_nitrogen_atoms:
-                ref_atom = mol.GetAtomWithIdx(n_idx)
-                for neighbor in ref_atom.GetNeighbors():
-                    if all([neighbor.GetSymbol() == "S", 
-                            any(bond.GetBondTypeAsDouble() == 2.0 for bond in neighbor.GetBonds())]):
-                        return True, "Contains N-sulfonylurea moiety"
+    # Find matches of the sulfonyl pattern
+    nsulfonyl_matches = mol.GetSubstructMatches(nsulfonyl_pattern)
+    if not nsulfonyl_matches:
+        return False, "No N-sulfonyl group found"
 
-    return False, "Does not contain an N-sulfonylurea moiety"
+    # We need to verify that the sulfonyl is attached to one of the urea nitrogen atoms
+    for urea_match in urea_matches:
+        # The nitrogen atoms are at indices 0 and 2 of urea_match
+        urea_nitrogens = [urea_match[0], urea_match[2]]
+        for n_idx in urea_nitrogens:
+            nitrogen = mol.GetAtomWithIdx(n_idx)
+            for neighbor in nitrogen.GetNeighbors():
+                if neighbor.GetIdx() in [match[1] for match in nsulfonyl_matches]:
+                    return True, "Contains N-sulfonylurea moiety"
+    
+    return False, "No N-sulfonyl substitution on urea nitrogen"
