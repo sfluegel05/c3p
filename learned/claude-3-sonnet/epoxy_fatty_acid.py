@@ -8,7 +8,6 @@ A heterocyclic fatty acid containing an epoxide ring as part of its structure.
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
-from rdkit.Chem.AllChem import FindMolChiralCenters
 
 def is_epoxy_fatty_acid(smiles: str):
     """
@@ -31,7 +30,7 @@ def is_epoxy_fatty_acid(smiles: str):
         return False, "No carboxylic acid group found"
     
     # Check for epoxide ring
-    epoxide = Chem.MolFromSmarts('[C]1[O][C]1')
+    epoxide = Chem.MolFromSmarts('[CR0]1[OR0][CR0]1')
     if not mol.HasSubstructMatch(epoxide):
         return False, "No epoxide ring found"
     
@@ -42,67 +41,63 @@ def is_epoxy_fatty_acid(smiles: str):
     if carbon_count > 30:
         return False, f"Carbon chain too long ({carbon_count} carbons) for fatty acid"
     
-    # Count epoxide rings
+    # Validate fatty acid chain
+    fatty_chain_patterns = [
+        'CCCCCCCC',  # Minimum 8-carbon chain
+        'CCCCC/C=C/CC',  # Unsaturated chain
+        'CCCC/C=C/C/C=C/C',  # Polyunsaturated chain
+        'CCCCC1OC1CC'  # Chain with epoxide
+    ]
+    
+    chain_found = False
+    for pattern in fatty_chain_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            chain_found = True
+            break
+    
+    if not chain_found:
+        return False, "No characteristic fatty acid chain found"
+    
+    # Count epoxide rings and validate their position
     epoxide_matches = len(mol.GetSubstructMatches(epoxide))
     if epoxide_matches > 3:
         return False, f"Too many epoxide rings ({epoxide_matches})"
+        
+    # Check epoxide is connected to main chain
+    epoxide_chain = Chem.MolFromSmarts('C(CC)C1OC1C(CC)')
+    if not mol.HasSubstructMatch(epoxide_chain):
+        return False, "Epoxide not properly connected to main chain"
     
-    # Count oxygen atoms
+    # Count oxygen atoms (excluding carboxylic acid oxygens)
     oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     if oxygen_count < 3:
         return False, f"Too few oxygen atoms ({oxygen_count})"
     if oxygen_count > 10:
         return False, f"Too many oxygen atoms ({oxygen_count})"
     
-    # Check for excessive rings (excluding epoxide)
-    ring_info = mol.GetRingInfo()
-    ring_count = ring_info.NumRings()
-    if ring_count > epoxide_matches + 1:  # Allow epoxide rings plus maybe one other
-        return False, "Contains too many ring systems"
-    
-    # Count double bonds
-    double_bond_count = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.BondType.DOUBLE)
-    alkene_count = double_bond_count - 1  # Subtract carboxylic C=O
-    
-    # Check for fatty acid chain patterns - multiple possibilities
-    fatty_patterns = [
-        'CCCCCC',  # straight chain
-        'CCC(C)CC',  # branched
-        'CC=CC',  # unsaturated
-        'CCCCC1OC1',  # epoxide containing
+    # Check for non-fatty acid structures
+    problematic_patterns = [
+        '[#6]1[#6][#6]1',  # cyclopropane
+        'C1CCCCC1',  # cyclohexane
+        'C(=O)OC(=O)',  # anhydride
+        'C(=O)NC(=O)',  # imide
+        'C1CCOC1'  # tetrahydrofuran
     ]
     
-    chain_found = False
-    for pattern in fatty_patterns:
+    for pattern in problematic_patterns:
         if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
-            chain_found = True
-            break
-            
-    if not chain_found:
-        return False, "No characteristic fatty acid chain found"
+            return False, "Contains non-fatty acid structural elements"
     
-    # Check for characteristic epoxy fatty acid patterns
-    epoxy_patterns = [
-        'CC1OC1CC(=O)O',  # terminal epoxide
-        'CC1OC1CCC',  # mid-chain epoxide
-        'C=CC1OC1CC',  # unsaturated epoxide
-    ]
-    
-    characteristic_pattern = False
-    for pattern in epoxy_patterns:
-        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
-            characteristic_pattern = True
-            break
-    
-    if not characteristic_pattern:
-        return False, "No characteristic epoxy fatty acid pattern found"
+    # Count double bonds (excluding carboxylic acid)
+    double_bond_count = rdMolDescriptors.CalcNumAliphicDoubleBonds(mol) - 1
     
     # Build description
     features = []
-    if alkene_count > 0:
-        features.append(f"{alkene_count} double bonds")
+    if double_bond_count > 0:
+        features.append(f"{double_bond_count} double bonds")
     features.append(f"{epoxide_matches} epoxide ring(s)")
-    if oxygen_count > 3:
-        features.append(f"{oxygen_count-3} additional oxygen-containing groups")
+    additional_oxygens = oxygen_count - (2 + epoxide_matches)  # Subtract COOH and epoxide oxygens
+    if additional_oxygens > 0:
+        features.append(f"{additional_oxygens} additional oxygen-containing groups")
     
     return True, f"Epoxy fatty acid with {carbon_count} carbons, " + ", ".join(features)
