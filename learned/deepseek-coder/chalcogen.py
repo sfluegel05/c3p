@@ -36,7 +36,11 @@ def is_chalcogen(smiles: str):
     chalcogen_atomic_nums = {8, 16, 34, 52, 84}
 
     if atomic_num in chalcogen_atomic_nums:
-        return True, f"Element with atomic number {atomic_num} is a chalcogen"
+        # Ensure the atom is neutral (no charge)
+        if atom.GetFormalCharge() == 0:
+            return True, f"Element with atomic number {atomic_num} is a chalcogen"
+        else:
+            return False, f"Element with atomic number {atomic_num} has a charge and is not a neutral chalcogen atom"
     else:
         return False, f"Element with atomic number {atomic_num} is not a chalcogen"
 
