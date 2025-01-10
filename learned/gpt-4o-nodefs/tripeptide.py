@@ -23,26 +23,22 @@ def is_tripeptide(smiles: str):
 
     # Look for peptide bond pattern: N-C(=O)
     peptide_bond_pattern = Chem.MolFromSmarts("N-C(=O)")
-    
-    # Find peptide bonds in the molecule
     peptide_bond_matches = mol.GetSubstructMatches(peptide_bond_pattern)
-    num_peptide_bonds = len(peptide_bond_matches)
+    
+    # Ensure exactly two peptide bonds for linear tripeptides
+    if len(peptide_bond_matches) == 2:
+        return True, "Contains exactly 2 peptide bonds typical of a linear tripeptide"
 
-    # Check for typical amino acid side chains e.g., side chains involved in common amino acids
-    # This is a more complex analysis requiring pattern matching for common side chains
+    # Determine if the molecule is cyclic
+    kekulized_mol = Chem.Mol(mol)
+    contains_ring = kekulized_mol.GetRingInfo().NumRings() > 0
 
-    # Check for cyclic structures using SSRS count (number of ring structures in the molecule)
-    ssr = Chem.GetSSSR(mol)
-    contains_ring = ssr > 0
+    # If it's cyclic, we may need different logic, but we'll assume cyclic tripeptides for simplicity
+    if contains_ring and len(peptide_bond_matches) >= 1:
+        return True, f"Contains cyclic structure with peptide bonds, indicative of a cyclic tripeptide"
 
-    # Logic combining these insights:
-    # - A linear tripeptide would usually contain two peptide bonds
-    # - Cyclic peptides might show different patterns but should also be considered
-    if num_peptide_bonds == 2 or contains_ring:
-        return True, f"Contains {num_peptide_bonds} peptide bonds typical of a tripeptide structure with possible cyclic structure"
-
-    # Default to false if pattern doesn't align with expected tripeptide characteristics
-    return False, f"Found {num_peptide_bonds} peptide bonds, cannot confirm tripeptide without further structure analysis"
+    # Default to false if none of the expected patterns is properly detected
+    return False, f"Found {len(peptide_bond_matches)} peptide bonds, does not match expected tripeptide structure"
 
 # Example usage
 # result, reason = is_tripeptide("CC[C@H](C)[C@H](NC(=O)[C@@H](N)CCC(O)=O)C(=O)N[C@@H](CO)C(O)=O")
