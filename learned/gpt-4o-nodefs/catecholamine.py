@@ -22,14 +22,14 @@ def is_catecholamine(smiles: str):
         return False, "Invalid SMILES string"
     
     # Look for catechol moiety (benzene with hydroxyl groups on adjacent carbons)
-    catechol_pattern = Chem.MolFromSmarts("c1cc(O)c(O)cc1")
+    catechol_pattern = Chem.MolFromSmarts("c1c(O)ccc(O)c1")
     if not mol.HasSubstructMatch(catechol_pattern):
         return False, "No catechol moiety found"
     
-    # Ensure presence of an amine group attached by a two-carbon side chain
-    side_chain_amine_pattern = Chem.MolFromSmarts("C[C@H](O)[C,N]")
+    # Look for two-carbon side chain with terminal amine attached to the catechol moiety
+    side_chain_amine_pattern = Chem.MolFromSmarts("[OH]c1cc(O)c(cc1)[CX4H2][CX4H2][NH2]")
     if not mol.HasSubstructMatch(side_chain_amine_pattern):
-        return False, "No appropriate amine group found"
+        return False, "No appropriate amine side chain found"
     
     return True, "Contains catechol moiety and amine group indicating a catecholamine"
 
