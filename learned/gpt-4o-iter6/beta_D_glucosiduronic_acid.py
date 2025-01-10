@@ -21,16 +21,14 @@ def is_beta_D_glucosiduronic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Broaden the search pattern for beta-D-glucuronic acid moiety (considering flexibility in stereochemistry and attaching points)
-    # Central pattern in D-glucuronic acid with possible glycosidic and carboxy terminal
-    glucuronic_acid_pattern = Chem.MolFromSmarts("O[C@@H]1[C@H]([C@H](O)[C@@H](O)CO1)C(=O)O")
-    if not mol.HasSubstructMatch(glucuronic_acid_pattern):
-        return False, "No beta-D-glucuronic acid moiety found"
+    # Pattern for a glucuronic acid moiety allowing for flexibility in stereochemistry
+    glucuronic_acid_pattern = Chem.MolFromSmarts("O[C@@H]1[C@H](O)[C@H](O)[C@@H](O)CO1")
+    
+    # Combined pattern to check for the core glucuronic acid ring with the glycosidic bond
+    glycosidic_bond_pattern = Chem.MolFromSmarts("O[C@@H]1O[C@H](O)[C@H](O)[C@H]1O[C@H]")
 
-    # Broaden glycosidic linkage pattern to account for diversity in bond attachment
-    # Checks if there is a heteroatom linkage to the sugar
-    glycosidic_bond_pattern = Chem.MolFromSmarts("O[C@H]1O[C@H](O)[C@@H](O)[C@H]1O[!H]")  # Make sure to capture ring-opening connections too
-    if not mol.HasSubstructMatch(glycosidic_bond_pattern):
-        return False, "No appropriate glycosidic linkage found"
+    # Ensure the glucuronic acid core and its glycosidic connections are present
+    if not mol.HasSubstructMatch(glucuronic_acid_pattern) or not mol.HasSubstructMatch(glycosidic_bond_pattern):
+        return False, "No beta-D-glucuronic acid moiety found or improper linkage"
 
     return True, "Contains the required beta-D-glucuronic acid moiety with correct linkage form"
