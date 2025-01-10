@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_glycosaminoglycan(smiles: str):
     """
     Determines if a molecule is a glycosaminoglycan based on its SMILES string.
-    A glycosaminoglycan is characterized by polysaccharides containing substantial proportions of aminomonosaccharide residues.
+    A glycosaminoglycan is characterized by polysaccharides containing a substantial proportion of aminomonosaccharide residues.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,15 +21,24 @@ def is_glycosaminoglycan(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more generalized pattern for aminosugar (contains nitrogen in cyclic form)
-    # Recognize aminosugar as any cyclic structure having nitrogen bonded to a carbon in the ring
-    amino_cyclic_pattern = Chem.MolFromSmarts("C1[NH2,NH,N]C(O)C(O)C1")  # Generic pattern for aminocyclic structures
-    if not mol.HasSubstructMatch(amino_cyclic_pattern):
+    # Define a more generalized pattern for aminosugar
+    # Aminosugars typically have an NH group attached to a sugar (ring structure with carbon and oxygen)
+    aminosugar_patterns = [
+        Chem.MolFromSmarts("CC(O)C1OC(CO)C(O)C1N"),  # Pattern similar to glucosamine
+        Chem.MolFromSmarts("CC(O)C1OC(CO)C(N)C1O"),  # Pattern similar to galactosamine
+        Chem.MolFromSmarts("CC(O)C1OC(C)C(N)C1O"),   # Considering variations
+    ]
+    
+    # Check if any aminosugar pattern matches the structure
+    aminosugar_match_found = any(mol.HasSubstructMatch(pattern) for pattern in aminosugar_patterns)
+    if not aminosugar_match_found:
         return False, "No aminomonosaccharide residues found"
 
-    # Extending length consideration to qualify as substantial polysaccharide
-    aminomonosaccharide_matches = mol.GetSubstructMatches(amino_cyclic_pattern)
-    if len(aminomonosaccharide_matches) < 3:
-        return False, "Does not meet the threshold for aminomonosaccharide residues"
+    # Count matching substructures as a form of quantification
+    total_matches = sum(len(mol.GetSubstructMatches(pattern)) for pattern in aminosugar_patterns)
+    
+    # Determine if there's a substantial polymetric chain (as heuristics, more than 5 subunits)
+    if total_matches < 5:
+        return False, f"Found {total_matches} aminomonosaccharide matches, need more for classification"
 
-    return True, "Contains polysaccharide chain with substantial aminomonosaccharide residues"
+    return True, "Polysaccharide chain with substantial aminomonosaccharide residues found"
