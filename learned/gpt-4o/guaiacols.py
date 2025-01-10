@@ -22,18 +22,22 @@ def is_guaiacols(smiles: str):
 
     # Define the guaiacol SMARTS pattern
     # This pattern looks for a benzene ring with OH and OCH3 groups in ortho positions
-    guaiacol_pattern = Chem.MolFromSmarts("Oc1cc(OC)ccc1")
+    # or additional groups that might add complexity without affecting the ortho formation
+    guaiacol_pattern_ortho = Chem.MolFromSmarts("Oc1c(OC)cccc1")
+    guaiacol_pattern_meta = Chem.MolFromSmarts("Oc1cc(OC)ccc1")
     
     # Check for the guaiacol pattern
-    if mol.HasSubstructMatch(guaiacol_pattern):
+    if mol.HasSubstructMatch(guaiacol_pattern_ortho):
         return True, "Molecule contains a phenol group with an ortho methoxy substituent"
-    
+    if mol.HasSubstructMatch(guaiacol_pattern_meta):
+        return True, "Molecule contains a phenol group with a nearby methoxy substituent and potential flexibility in aromatic system"
+
     return False, "Molecule does not match the guaiacol structure with phenol and ortho methoxy"
 
 # Example usage
 smiles_examples = [
     "COc1ccccc1O",  # guaiacol
-    "C12=CC=CC=C1C(=CC=C2OC)O"  # Example of similar structures for clarity, depending on the specific examples.
+    "C12=CC=CC=C1C(=CC=C2OC)O"  # Example of similar structures for clarity
 ]
 
 for smiles in smiles_examples:
