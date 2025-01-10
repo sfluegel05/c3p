@@ -11,6 +11,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_short_chain_fatty_acyl_CoA(smiles: str):
     """
     Determines if a molecule is a short-chain fatty acyl-CoA based on its SMILES string.
+    Short-chain fatty acids typically have 2-6 carbons.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -24,42 +25,10 @@ def is_short_chain_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Essential structural components of CoA
-    
-    # Adenine base (multiple patterns to catch different representations)
-    adenine_patterns = [
-        "[#7]1:[#6]:[#7]:[#6]2:[#6](:[#7]:[#6]:[#7]:[#6]:2:[#7]1)[#7]",  # Most generic form
-        "n1cnc2c(N)ncnc12",  # Common form
-        "N1C=NC2=C1N=CN=C2N"  # Alternative form
-    ]
-    
-    has_adenine = False
-    for pattern in adenine_patterns:
-        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
-            has_adenine = True
-            break
-    if not has_adenine:
-        return False, "Missing adenine base structure"
-
-    # Ribose with phosphate
-    ribose_phosphate = Chem.MolFromSmarts("[CH2]OP(O)(O)=O")
-    if not mol.HasSubstructMatch(ribose_phosphate):
-        return False, "Missing ribose phosphate group"
-
-    # Pantetheine arm patterns (more flexible)
-    pantetheine_patterns = [
-        "NCCC(=O)NCCSC(=O)",  # Basic pattern
-        "NC(=O)CCNC(=O)CCSC(=O)",  # Alternative pattern
-        "[NH2][CH2][CH2][C](=[O])[NH][CH2][CH2]SC(=O)"  # More explicit pattern
-    ]
-    
-    has_pantetheine = False
-    for pattern in pantetheine_patterns:
-        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
-            has_pantetheine = True
-            break
-    if not has_pantetheine:
-        return False, "Missing pantetheine arm structure"
+    # Check for CoA core structure
+    coa_pattern = Chem.MolFromSmarts("[#7]1:[#6]:[#7]:[#6]2:[#6](:[#7]:[#6]:[#7]:[#6]:2:1)[#7]")
+    if not mol.HasSubstructMatch(coa_pattern):
+        return False, "Missing CoA adenine base structure"
 
     # Check for thioester linkage
     thioester_pattern = Chem.MolFromSmarts("[CX3](=O)[SX2]")
@@ -67,38 +36,53 @@ def is_short_chain_fatty_acyl_CoA(smiles: str):
     if not thioester_matches:
         return False, "Missing thioester linkage"
 
-    # Find the acyl chain
-    acyl_carbon = thioester_matches[0][0]
-    
-    # Get the fragment containing the acyl chain
-    # Break the S-C bond of thioester to isolate acyl part
-    fragments = Chem.FragmentOnBonds(mol, [mol.GetBondBetweenAtoms(thioester_matches[0][0], 
-                                         thioester_matches[0][1]).GetIdx()], addDummies=False)
-    
-    if fragments is None:
-        return False, "Could not analyze acyl chain"
-        
-    # Count carbons in the acyl fragment
-    acyl_fragment = Chem.GetMolFrags(fragments, asMols=True)[0]
-    carbon_count = sum(1 for atom in acyl_fragment.GetAtoms() if atom.GetAtomicNum() == 6)
-    
-    if carbon_count > 6:
-        return False, f"Acyl chain too long ({carbon_count} carbons) for short-chain fatty acid"
-    if carbon_count < 2:
-        return False, f"Acyl chain too short ({carbon_count} carbons)"
+    # Check for pantetheine arm
+    pantetheine_pattern = Chem.MolFromSmarts("NCCC(=O)NCCS")
+    if not mol.HasSubstructMatch(pantetheine_pattern):
+        return False, "Missing pantetheine arm"
 
-    # Check for modifications
+    # Find the acyl portion by first identifying the thioester carbon
+    thioester_carbon = thioester_matches[0][0]
+    
+    # Create visited atoms set starting from thioester carbon
+    visited = set()
+    queue = [thioester_carbon]
+    acyl_carbons = 0
+    
+    # Breadth-first search to count carbons in acyl chain
+    while queue:
+        current = queue.pop(0)
+        if current in visited:
+            continue
+        visited.add(current)
+        
+        atom = mol.GetAtomWithIdx(current)
+        # Count carbon atoms (excluding the thioester carbon)
+        if atom.GetAtomicNum() == 6 and current != thioester_carbon:
+            acyl_carbons += 1
+            
+        # Add neighbors to queue, but stop at sulfur (thioester linkage)
+        for neighbor in atom.GetNeighbors():
+            if neighbor.GetAtomicNum() != 16:  # not sulfur
+                queue.append(neighbor.GetIdx())
+
+    if acyl_carbons < 2:
+        return False, f"Acyl chain too short ({acyl_carbons} carbons)"
+    if acyl_carbons > 6:
+        return False, f"Acyl chain too long ({acyl_carbons} carbons) for short-chain fatty acid"
+
+    # Check for common modifications in the acyl portion
     modifications = []
     mod_patterns = {
         "hydroxy": ("[OX2H1]", "hydroxyl"),
         "amino": ("[NX3H2]", "amino"),
         "unsaturated": ("[CX3]=[CX3]", "unsaturated"),
-        "branched": ("[CX4]([CX4])([CX4])[CX4]", "branched")
+        "methyl-branched": ("[CH3][CH]([!H])[!H]", "methyl-branched")
     }
     
     for mod_name, (pattern, desc) in mod_patterns.items():
-        if acyl_fragment.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
             modifications.append(desc)
 
     mod_text = " with " + ", ".join(modifications) if modifications else ""
-    return True, f"Short-chain ({carbon_count} carbons) fatty acyl-CoA{mod_text}"
+    return True, f"Short-chain ({acyl_carbons} carbons) fatty acyl-CoA{mod_text}"
