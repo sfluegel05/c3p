@@ -11,8 +11,9 @@ from rdkit.Chem import rdMolDescriptors
 def is_phosphatidylinositol_phosphate(smiles: str):
     """
     Determines if a molecule is a phosphatidylinositol phosphate based on its SMILES string.
-    PIPs contain a myo-inositol ring with at least one phosphate group, connected via 
-    phosphodiester linkage to a glycerol backbone with two fatty acid chains.
+    PIPs contain a myo-inositol ring with at least one phosphate group attached directly
+    to the ring. Most common forms are PI(3)P, PI(4)P, PI(5)P, PI(3,4)P2, PI(3,5)P2,
+    PI(4,5)P2, and PI(3,4,5)P3.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -27,52 +28,61 @@ def is_phosphatidylinositol_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for inositol ring (cyclohexane with multiple OH groups)
+    # Look for inositol ring with at least one OH/OP group
     inositol_pattern = Chem.MolFromSmarts("[CH1]1[CH1][CH1][CH1][CH1][CH1]1")
     if not mol.HasSubstructMatch(inositol_pattern):
         return False, "No inositol ring found"
 
-    # Look for phosphate groups (-OP(=O)(O)-)
-    phosphate_pattern = Chem.MolFromSmarts("[OX2]P(=O)([OX2])[OX2]")
-    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
-    if len(phosphate_matches) < 1:
-        return False, "No phosphate groups found"
+    # Look for phosphate groups attached to inositol ring
+    # Pattern matches inositol carbon with attached phosphate
+    inositol_phosphate_pattern = Chem.MolFromSmarts("[C]1[C][C][C][C][C]1[OX2]P(=O)([OX2])[OX2]")
+    phosphate_on_ring = mol.GetSubstructMatches(inositol_phosphate_pattern)
+    
+    if not phosphate_on_ring:
+        return False, "No phosphate groups attached to inositol ring"
 
-    # Look for glycerol backbone (C-C-C with O attachments)
-    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone found"
-
-    # Look for ester groups (-O-C(=O)-)
-    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) < 2:
-        return False, f"Found {len(ester_matches)} ester groups, need at least 2"
-
-    # Count phosphorus atoms
+    # Count total phosphorus atoms
     p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
+    
+    # Count oxygen atoms
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    
     if p_count < 1:
         return False, "No phosphorus atoms found"
-
-    # Count oxygen atoms (PIPs typically have many oxygens from phosphates and OH groups)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count < 10:
+    
+    if o_count < 8:
         return False, "Too few oxygen atoms for a PIP"
 
-    # Verify presence of fatty acid chains
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
-    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
-    if len(fatty_acid_matches) < 2:
-        return False, "Missing fatty acid chains"
+    # Look for either:
+    # 1. Standard glycerol-based PIP structure
+    # 2. Modified PIP structure (like the hexakis ester)
+    
+    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
+    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
+    ester_matches = len(mol.GetSubstructMatches(ester_pattern))
+    
+    # Check for standard glycerol-based structure
+    if mol.HasSubstructMatch(glycerol_pattern):
+        # Verify fatty acid chains for glycerol-based PIPs
+        fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+        fatty_acid_matches = len(mol.GetSubstructMatches(fatty_acid_pattern))
+        
+        if fatty_acid_matches < 2 and ester_matches < 2:
+            return False, "Missing fatty acid chains in glycerol-based PIP"
+    
+    # For non-glycerol PIPs, check for sufficient modifications
+    elif ester_matches < 1:
+        return False, "No ester groups found in modified PIP"
 
-    # Check molecular weight (PIPs are large molecules)
+    # Check molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 500:
+    if mol_wt < 400:  # Lowered threshold to accommodate modified PIPs
         return False, "Molecular weight too low for PIP"
 
-    # Look for phosphodiester linkage between glycerol and inositol
-    phosphodiester_pattern = Chem.MolFromSmarts("[OX2]P(=O)([OX2])[OX2]")
-    if not mol.HasSubstructMatch(phosphodiester_pattern):
-        return False, "No phosphodiester linkage found"
-
-    return True, "Contains inositol ring with phosphate(s), glycerol backbone with fatty acids, and phosphodiester linkage"
+    # Classify based on number of phosphates
+    if p_count >= 4:
+        return True, "Contains inositol ring with trisphosphate modification (PIP3)"
+    elif p_count >= 3:
+        return True, "Contains inositol ring with bisphosphate modification (PIP2)"
+    else:
+        return True, "Contains inositol ring with monophosphate modification (PIP)"
