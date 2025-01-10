@@ -29,44 +29,56 @@ def is_N_acylsphingosine(smiles: str):
 
     # Look for key structural features:
     
-    # 1. Amide group (N-C(=O)-)
-    amide_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])")
+    # 1. Amide group (N-C(=O)-) - more general pattern
+    amide_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[#6]")
     if not mol.HasSubstructMatch(amide_pattern):
         return False, "No amide group found"
     
-    # 2. Two hydroxyl groups characteristic of sphingosine
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    if len(hydroxyl_matches) < 2:
-        return False, "Missing required hydroxyl groups"
-        
-    # 3. Long carbon chain with double bond (sphingosine backbone)
-    alkene_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX2]=[CX2]~[CX4,CX3]")
-    if not mol.HasSubstructMatch(alkene_pattern):
-        return False, "Missing characteristic sphingosine backbone with double bond"
+    # 2. Core sphingosine structure with flexibility for stereochemistry
+    # [CH2OH]-[CH]-[NH]-[C]=O backbone with nearby OH and double bond
+    sphingosine_core = Chem.MolFromSmarts("[CH2][OH].[CH]([NH])[CH]([OH])*.*=*")
+    if not mol.HasSubstructMatch(sphingosine_core):
+        return False, "Missing core sphingosine structure"
+
+    # 3. Check for required functional groups
     
-    # 4. Check for primary alcohol (CH2-OH)
-    primary_alcohol = Chem.MolFromSmarts("[CX4H2][OX2H]")
+    # Primary alcohol (CH2-OH)
+    primary_alcohol = Chem.MolFromSmarts("[CH2][OH]")
     if not mol.HasSubstructMatch(primary_alcohol):
         return False, "Missing primary alcohol group"
+    
+    # Secondary alcohol
+    secondary_alcohol = Chem.MolFromSmarts("[CH]([#6])[OH]")
+    if not mol.HasSubstructMatch(secondary_alcohol):
+        return False, "Missing secondary alcohol group"
+    
+    # Double bond in chain
+    alkene = Chem.MolFromSmarts("C=C")
+    if not mol.HasSubstructMatch(alkene):
+        return False, "Missing double bond"
 
     # Count carbons and check molecular weight
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 18:  # Minimum for sphingosine (C18) plus small acyl group
+    if c_count < 16:  # Minimum for basic N-acylsphingosine
         return False, "Carbon count too low for N-acylsphingosine"
     
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 250:
         return False, "Molecular weight too low for N-acylsphingosine"
 
-    # Count rotatable bonds to verify long chains
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 10:
-        return False, "Too few rotatable bonds for N-acylsphingosine structure"
+    # Count nitrogens - should have exactly one (in the amide)
+    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
+    if n_count != 1:
+        return False, f"Should have exactly 1 nitrogen, found {n_count}"
 
-    # Check for basic sphingosine structure with attached acyl group
-    sphingosine_pattern = Chem.MolFromSmarts("[CX4H2][OX2H][CX4H]([NX3H])[CX4H]([OX2H])[CX3H]=[CX3H]")
-    if not mol.HasSubstructMatch(sphingosine_pattern):
-        return False, "Missing characteristic sphingosine structure"
+    # Count oxygens - should have at least 3 (2 OH groups + 1 C=O)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if o_count < 3:
+        return False, "Insufficient oxygen count for N-acylsphingosine"
+
+    # Verify long chain nature
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 5:
+        return False, "Too few rotatable bonds for N-acylsphingosine structure"
 
     return True, "Contains sphingosine backbone with N-acyl group and characteristic structural features"
