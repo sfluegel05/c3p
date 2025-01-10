@@ -27,39 +27,31 @@ def is_polar_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Add hydrogens (explicit)
+    # Add hydrogens to accurately identify functional groups
     mol = Chem.AddHs(mol)
 
-    # Define the amino acid backbone pattern
-    # Matches different protonation states and isotopic labels
-    backbone_pattern = Chem.MolFromSmarts('[N;!H0;!$(N-*=[O,N]);!$(N-C=O)][C@@H,H1,C@H1,C,H2][C](=O)[O;!$([O]-[!H])]')
-
+    # Define the amino acid backbone pattern: N-C-C(=O)-O
+    backbone_pattern = Chem.MolFromSmarts('[N;H1,H2][C;X4][C](=O)[O;H1,H0-]')
     matches = mol.GetSubstructMatches(backbone_pattern)
     if not matches:
         return False, "Molecule is not an alpha-amino acid"
 
-    # Ensure there is only one amino acid backbone in the molecule
-    if len(matches) != 1:
-        return False, "Molecule contains multiple amino acid backbones"
-
+    # Assume the first match corresponds to the amino acid backbone
     match = matches[0]
     n_atom_idx = match[0]
     alpha_c_idx = match[1]
-    c_atom_idx = match[2]
+    c_prime_idx = match[2]
     o_atom_idx = match[3]
 
     # Identify backbone atoms
     backbone_atoms = set(match)
 
-    # Include connected backbone atoms (hydrogens and atoms double-bonded to backbone atoms)
+    # Also include hydrogens attached to backbone atoms
     for idx in match:
         atom = mol.GetAtomWithIdx(idx)
         for neighbor in atom.GetNeighbors():
-            neighbor_idx = neighbor.GetIdx()
-            if neighbor_idx not in backbone_atoms:
-                bond = mol.GetBondBetweenAtoms(atom.GetIdx(), neighbor_idx)
-                if neighbor.GetAtomicNum() == 1 or bond.GetBondTypeAsDouble() == 2:
-                    backbone_atoms.add(neighbor_idx)
+            if neighbor.GetAtomicNum() == 1:  # Hydrogen
+                backbone_atoms.add(neighbor.GetIdx())
 
     # Identify side chain atoms connected to the alpha carbon
     side_chain_atoms = set()
@@ -86,14 +78,6 @@ def is_polar_amino_acid(smiles: str):
     if not side_chain_atoms:
         return False, "Glycine has no side chain, hence non-polar"
 
-    # Check for additional peptide bonds (exclude N-C bonds in backbone)
-    amide_pattern = Chem.MolFromSmarts('N-C(=O)')
-    amide_matches = mol.GetSubstructMatches(amide_pattern)
-    num_amide_bonds = len(amide_matches)
-    # One amide bond is expected in the amino acid backbone
-    if num_amide_bonds > 1:
-        return False, "Molecule contains peptide bonds, not a single amino acid"
-
     # Check for hydrogen bond donors or acceptors in the side chain
     hbd_atoms = []
     hba_atoms = []
@@ -103,17 +87,14 @@ def is_polar_amino_acid(smiles: str):
         atomic_num = atom.GetAtomicNum()
         # Hydrogen bond donors: N-H, O-H, S-H
         if atomic_num in [7, 8, 16]:  # N, O, S
-            has_hydrogen = False
             for neighbor in atom.GetNeighbors():
                 if neighbor.GetAtomicNum() == 1:  # Hydrogen
-                    has_hydrogen = True
-                    break
-            if has_hydrogen:
-                hbd_atoms.append(idx)
-        # Hydrogen bond acceptors: N, O, S (exclude positively charged)
-        if atomic_num in [7, 8, 16] and atom.GetFormalCharge() <= 0:
-            # Exclude amide nitrogens (already involved in resonance)
-            if not (atomic_num == 7 and len(atom.GetNeighbors()) == 3):
+                    hbd_atoms.append(idx)
+                    break  # Only need one hydrogen to be a donor
+        # Hydrogen bond acceptors: N, O, S with lone pairs
+        if atomic_num in [7, 8, 16]:  # N, O, S
+            # Exclude positively charged atoms (e.g., protonated amino groups)
+            if atom.GetFormalCharge() >= 0:
                 hba_atoms.append(idx)
 
     num_hbd = len(hbd_atoms)
