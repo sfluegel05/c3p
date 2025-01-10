@@ -6,7 +6,8 @@ from rdkit import Chem
 def is_flavonoid(smiles: str):
     """
     Determines if a molecule is a flavonoid based on its SMILES string.
-    A flavonoid is characterized by a 1-benzopyran structure with an aryl group at position 2.
+    A flavonoid is typically a 1-benzopyran structure with an aryl group at position 2,
+    but can include various substituents.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,20 +21,20 @@ def is_flavonoid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Core structure of flavonoid: 1-benzopyran with flexible aryl substitution
-    flavonoid_core_pattern = Chem.MolFromSmarts("c1cc2occ(=O)cc2c1-c3:c4:c:c:c:c:c:c4c:c3") # Captures variations with flexible extensions
+    
+    # Core flavonoid: 1-benzopyran ring with an attached phenyl ring on position 2
+    flavonoid_core_pattern = Chem.MolFromSmarts("c1cc2c(cc1)c(coc2)c3ccccc3")
     if not mol.HasSubstructMatch(flavonoid_core_pattern):
-        return False, "No flavonoid core (1-benzopyran structure) with appropriate substitution found"
+        return False, "No core flavonoid 1-benzopyran structure with aryl substitution found"
     
-    # Ensure that it has a well-formed aryl substitution on position 2
-    aryl_substitution_check = Chem.MolFromSmarts("c1cc2occ(=O)cc2c1-c3c:cc:cc:c3")  # specifically check if an aryl group is present
-    if not mol.HasSubstructMatch(aryl_substitution_check):
-        return False, "No aryl substitution found at position 2"
+    # Check for typical flavonoid functional groups (e.g., -OH, =O)
+    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
+    carbonyl_pattern = Chem.MolFromSmarts("[CX3]=O")
     
-    # Additional checks for common flavonoid modifications (e.g., glycosylations)
-    glycoside_pattern = Chem.MolFromSmarts("[OX2H1]C[CX4H2][O]")
-    if mol.HasSubstructMatch(glycoside_pattern):
-        return True, "Identified flavonoid structure with glycosylation"
+    has_hydroxyl = mol.HasSubstructMatch(hydroxyl_pattern)
+    has_carbonyl = mol.HasSubstructMatch(carbonyl_pattern)
 
-    return True, "Identified flavonoid structure with 1-benzopyran core and aryl substitution at position 2"
+    if has_hydroxyl or has_carbonyl:
+        return True, "Identified flavonoid structure with typical functional groups"
+
+    return True, "Identified basic flavonoid structure (1-benzopyran core with aryl substitution)"
