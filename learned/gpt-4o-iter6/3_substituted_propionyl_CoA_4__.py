@@ -19,27 +19,25 @@ def is_3_substituted_propionyl_CoA_4__(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return False, "Invalid SMILES string, cannot parse"
 
-    # 1. Check for phosphopantetheine moiety
-    coA_pattern = Chem.MolFromSmarts("OC(C)C(NC(=O)CCNC(=O)S)COP(=O)([O-])OP(=O)([O-])")
+    # 1. Check for coenzyme A (CoA) backbone structure
+    # This includes pantetheine connected via its phosphate groups
+    coA_pattern = Chem.MolFromSmarts("C(C)(C)COP(=O)([O-])OP(=O)([O-])[O]c1ncnc2ncnc12")
     if not mol.HasSubstructMatch(coA_pattern):
-        return False, "Missing phosphopantetheine and diphosphate connections"
+        return False, "Missing coenzyme A structure"
 
-    # 2. Possibly match adenine-related structure
-    adenine_pattern = Chem.MolFromSmarts("N1C=NC2=C(N=CN=C2N1)")
-    if not mol.HasSubstructMatch(adenine_pattern):
-        return False, "Adenine-related structure not found"
+    # 2. Check for 3-substituted propionyl chain
+    # The 3-position should have the branching or substitution
+    # This is a simplified assumption
+    propionyl_pattern = Chem.MolFromSmarts("SC(=O)CCC")
+    if not mol.HasSubstructMatch(propionyl_pattern):
+        return False, "Missing 3-substituted propionyl chain"
 
-    # 3. Check acyl chain with 3-position branching
-    acyl_pattern = Chem.MolFromSmarts("CCC(=O)")
-    if not mol.HasSubstructMatch(acyl_pattern):
-        return False, "Missing 3-substituted propionyl linkage"
+    # 3. Check for correct negative charges
+    # Verify the number of deprotonated phosphate oxygens
+    neg_charge_matches = mol.GetSubstructMatches(Chem.MolFromSmarts("[O-]"))
+    if len(neg_charge_matches) < 4:
+        return False, f"Insufficient negative charges, found {len(neg_charge_matches)}"
 
-    # 4. Check for negative charge states
-    neg_charge_pat = Chem.MolFromSmarts("[O-]")
-    neg_charge_matches = mol.GetSubstructMatches(neg_charge_pat)
-    if len(neg_charge_matches) < 3:
-        return False, "Insufficient deprotonated groups for 4- charge"
-
-    return True, "Contains features of 3-substituted propionyl-CoA(4-)"
+    return True, "Matches 3-substituted propionyl-CoA(4-) structure"
