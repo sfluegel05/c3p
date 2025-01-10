@@ -21,12 +21,20 @@ def is_polyamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Identify amino groups (primary, secondary, and possibly tertiary amines)
-    amino_pattern = Chem.MolFromSmarts("[NX3;H2,H1,H0]")
-    amino_matches = mol.GetSubstructMatches(amino_pattern)
+    # Identify primary amine pattern (should capture NH2 groups)
+    primary_amine_pattern = Chem.MolFromSmarts("[NX3H2]")
+    primary_amine_matches = mol.GetSubstructMatches(primary_amine_pattern)
+
+    # Identify secondary amine pattern (focus on NH with two carbons attached)
+    secondary_amine_pattern = Chem.MolFromSmarts("[NX3H1]([CX4])[CX4]")
+    secondary_amine_matches = mol.GetSubstructMatches(secondary_amine_pattern)
+
+    # Identify charged nitrogen which might indicate amino groups in ionic form
+    charged_amine_pattern = Chem.MolFromSmarts("[NX4+]")
+    charged_amine_matches = mol.GetSubstructMatches(charged_amine_pattern)
     
-    # Count the amino groups
-    num_amino_groups = len(amino_matches)
+    # Total possible amino group matches 
+    num_amino_groups = len(primary_amine_matches) + len(secondary_amine_matches) + len(charged_amine_matches)
     
     if num_amino_groups >= 2:
         return True, f"Molecule contains {num_amino_groups} amino groups, indicating a polyamine"
