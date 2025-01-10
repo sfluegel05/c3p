@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_mineral(smiles: str):
     """
     Determines if a molecule is a mineral based on its SMILES string.
-    Common characteristics of minerals include metal cations paired 
-    with anions or complex ions, often hydrated.
+    Minerals typically have metal cations paired with inorganic anions,
+    often with complex ion structures and/or hydration.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -40,20 +40,27 @@ def is_mineral(smiles: str):
         '[S-]',               # sulfide used in pyrite etc.
         '[O-]',               # oxide
         'N',                  # for nitrides, cyanides etc.
+        '[B-]',               # borates
+        '~[Si]',              # silicates
     ]
     anion_found = any(mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)) for pattern in patterns)
+    
     if not anion_found:
         return False, "No typical inorganic anions or complex elements found"
     
-    # Check for representative hydration patterns (water molecules)
-    hydrate_pattern = Chem.MolFromSmarts("O")  # Simplified hydrate check
-    hydrate_count = len(mol.GetSubstructMatches(hydrate_pattern))
-    
     # Consider the presence of non-hydrocarbon organic structure as a warning sign
     organic_elements = set(['C', 'H'])
-    organic_count = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() in organic_elements)
+    organic_atoms = [atom for atom in mol.GetAtoms() if atom.GetSymbol() in organic_elements]
     
-    if organic_count > 5:  # Arbitrarily assuming most minerals have minimal organic components
-        return False, "Too many organic components indicative of a non-mineral"
+    if len(organic_atoms) > 5:  # Arbitrarily assuming most minerals have minimal organic components
+        organic_structure = Chem.MolFromSmiles('C')  # Simplistic pattern to detect organic content
+        if any(mol.HasSubstructMatch(organic_structure) for organic_structure in organic_atoms):
+            return False, "Too many organic components indicative of a non-mineral"
 
-    return True, f"Contains metal elements ({', '.join(sorted(metal_atoms_in_mol))}) and inorganic anions{' with hydration' if hydrate_count > 0 else ''}"
+    # Check for representative hydration patterns (water molecules)
+    hydrate_patterns = [
+        Chem.MolFromSmarts("O"),
+    ]
+    hydrate_found = any(mol.HasSubstructMatch(hydrate_pattern) for hydrate_pattern in hydrate_patterns)
+
+    return True, f"Contains metal elements ({', '.join(sorted(metal_atoms_in_mol))}) and inorganic anions{' with hydration' if hydrate_found else ''}"
