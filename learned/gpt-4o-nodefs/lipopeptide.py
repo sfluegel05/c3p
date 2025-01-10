@@ -21,19 +21,30 @@ def is_lipopeptide(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for presence of long aliphatic chain as part of lipid moiety
-    num_chains = len(rdmolops.FindAllPathsOfLengthN(mol, 16, useBonds=True))  # Example path length for fatty acid chain
-    if num_chains < 1:
+    # Let's check for paths of length 12 to 24, which are representative of typical fatty acids
+    long_chain_found = False
+    for length in range(12, 25):
+        num_chains = len(rdmolops.FindAllPathsOfLengthN(mol, length, useBonds=True))
+        if num_chains > 0:
+            long_chain_found = True
+            break
+
+    if not long_chain_found:
         return False, "No long hydrocarbon chain found (indicating lipid motif)"
 
     # Check for presence of amide bonds typically found in peptide chains
-    amide_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[#6]")
+    amide_pattern = Chem.MolFromSmarts("C(=O)N")
     amide_matches = mol.GetSubstructMatches(amide_pattern)
-    if len(amide_matches) < 2:
-        return False, f"Found {len(amide_matches)} amide bonds, need at least 2 for peptide linkage"
+    if len(amide_matches) < 3:  # Increased the requirement to a minimum of 3
+        return False, f"Found {len(amide_matches)} amide bonds, need at least 3 for peptide linkage"
 
     # Count chiral centers as a proxy for peptide sequence complexity
     chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
-    if len(chiral_centers) < 3:
+    if len(chiral_centers) < 2:  # Reduced to 2, as lipopeptides may be simple in structure
         return False, f"Found {len(chiral_centers)} chiral centers, indicating insufficient peptide component"
+
+    # This additional pattern can help identify more peptide-like properties
+    # e.g., looking for typical N-terminus
+    # nitrogen_pattern = Chem.MolFromSmarts("[NH2,NH3+,NH+]")
 
     return True, "Contains long hydrocarbon chain and multiple amide bonds and chiral centers indicative of lipopeptide structure"
