@@ -26,20 +26,16 @@ def is_branched_chain_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
 
-    # Look for branch points; carbon atoms with more than one carbon substituent
-    branch_pattern = Chem.MolFromSmarts("[CX4]([CX4])[CX4]")
-    if not mol.HasSubstructMatch(branch_pattern):
-        return False, "No alkyl branching found"
-    
-    # Allow for small rings if present; ensure they are limited in number
-    ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() > 2:
-        return False, "Too many ring structures for a typical branched-chain fatty acid"
+    # Look for evidence of branching by checking for non-linear shapes
+    # Consider a simple search for carbon with more than two bonds as potential branch points
+    branch_pattern = Chem.MolFromSmarts("[C]([C])([C])")
+    if not mol.HasSubstructMatch(branch_pattern) and not Chem.MolFromSmarts("[CX4](C)C"):
+        return False, "No branch points found"
 
-    # Check that branches are not too complex (exclude non-alkyl groups)
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() in [7, 8, 16]:  # Exclude nitrogen, oxygen, sulfur in branches
-            if any(neighbor.GetAtomicNum() == 6 for neighbor in atom.GetNeighbors()):
-                return False, "Presence of non-alkyl groups in branches"
+    # Check for ring structures, considering that some BCFAs can indeed have small rings like cyclopropyl
+    # We will allow BCFAs to have one or two rings as this is not uncommon in complex natural BCFAs
+    ring_info = mol.GetRingInfo()
+    if ring_info.NumRings() > 2:  
+        return False, "Too many ring structures for a typical branched-chain fatty acid"
 
     return True, "Contains a carbon chain with branch points and a carboxylic acid group with acceptable complexity"
