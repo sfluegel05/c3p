@@ -31,25 +31,36 @@ def is_gas_molecular_entity(smiles: str):
     if smiles in noble_gases:
         return (True, "Single atom noble gas or specific isotope")
 
-    # Check if molecular weight fits within typical gas range
-    if mol_weight < 100:
+    # Check if molecular weight fits within typical gas range (refined)
+    if mol_weight < 50:
         # Known gaseous patterns (e.g., small hydrocarbons, diatomic gases)
         specific_gas_smarts = [
             Chem.MolFromSmarts("O=C=O"),  # CO2
             Chem.MolFromSmarts("[H][H]"),  # H2
             Chem.MolFromSmarts("[O][O]"),  # O2
-            Chem.MolFromSmarts("N"),  # N2
+            Chem.MolFromSmarts("N#N"),  # N2
+            Chem.MolFromSmarts("C#C"),  # Acetylene
             Chem.MolFromSmarts("CC"),  # Ethane
             Chem.MolFromSmarts("C=C"),  # Ethylene
-            Chem.MolFromSmarts("[H]C#[O+]")  # Hydrogen cyanide
+            Chem.MolFromSmarts("C(C)C"),  # Propane
+            Chem.MolFromSmarts("C#C")   # Propyne
         ]
         
         for gas_pattern in specific_gas_smarts:
             if mol.HasSubstructMatch(gas_pattern):
                 return (True, "Matches specific small gas molecular pattern")
-
-        return (True, f"Molecular weight is {mol_weight}, typical for gases")
     
-    # Further checks could include complexity or functionality, omitted for brevity
+        return (True, f"Molecular weight is {mol_weight}, typical for small gases")
+    
+    if mol_weight < 100:
+        small_gas_patterns = [
+            Chem.MolFromSmarts("C=C=C"),  # Allenes
+            Chem.MolFromSmarts("F[C]=O"), # Fluoroform
+        ]
+        for small_gas_pattern in small_gas_patterns:
+            if mol.HasSubstructMatch(small_gas_pattern):
+                return (True, "Matches specific small gas molecular pattern")
+
+    # Further checks could include complexity or functionality adjustments, omitted for brevity
     
     return (False, "Does not match gas molecular entity criteria")
