@@ -1,13 +1,15 @@
 """
 Classifies: CHEBI:133004 bisbenzylisoquinoline alkaloid
 """
+"""
+Classifies: bisbenzylisoquinoline alkaloid
+"""
 from rdkit import Chem
 
 def is_bisbenzylisoquinoline_alkaloid(smiles: str):
     """
     Determines if a molecule is a bisbenzylisoquinoline alkaloid based on its SMILES string.
-    A bisbenzylisoquinoline is defined by two benzylisoquinoline units linked by ether bridges,
-    with additional possible bridging such as carbon-carbon bridges or methylenedioxy groups.
+    A bisbenzylisoquinoline is defined by two benzylisoquinoline units linked by ether bridges.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -17,33 +19,23 @@ def is_bisbenzylisoquinoline_alkaloid(smiles: str):
         str: Reason for classification
     """
     
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Adjusted pattern for detecting isoquinoline-like structures
-    # Allow benzyl isoquinoline variations by detecting segments typical for bisbenzylisoquinoline
-    isoquinoline_pattern = Chem.MolFromSmarts("c1ccc2ncccc2c1")
-
-    # Improved pattern to detect ether linkages, including aromatic oxygens
-    ether_linkage_pattern = Chem.MolFromSmarts("cOc")
-
-    # Search for benzylisoquinoline units
-    isoquinoline_matches = mol.GetSubstructMatches(isoquinoline_pattern)
-    if len(isoquinoline_matches) < 2:
-        return False, "Less than two benzylisoquinoline-like units detected"
-
-    # Ensure there is at least one ether linkage
-    ether_matches = mol.GetSubstructMatches(ether_linkage_pattern)
-    if len(ether_matches) < 1:
-        return False, "No ether linkages detected"
-
-    # Check for additional bridging patterns, such as methylenedioxy groups
-    methylenedioxy_pattern = Chem.MolFromSmarts("OCcO")
-    methylenedioxy_matches = mol.GetSubstructMatches(methylenedioxy_pattern)
     
-    # Consider either ether or methylenedioxy bridging for at least one linking
-    if (len(ether_matches) + len(methylenedioxy_matches)) < 1:
-        return False, "Missing bridging between two units"
+    # Define SMARTS for benzylisoquinoline unit (simplified)
+    benzylisoquinoline_pattern = Chem.MolFromSmarts("c1ccccc1Cc1cc2c(ccc3CCN(CCc4ccccc4)c3)c2cc1")
 
-    return True, "Contains two benzylisoquinoline units linked by ether bridges and possible additional bridging"
+    # Check for two such units connected by oxygen linkage
+    ether_bridge_pattern = Chem.MolFromSmarts("c-O-c")
+    
+    # Check for two benzylisoquinoline units
+    if len(mol.GetSubstructMatches(benzylisoquinoline_pattern)) < 2:
+        return False, "Less than two benzylisoquinoline units detected"
+    
+    # Check for ether bridges
+    if not mol.HasSubstructMatch(ether_bridge_pattern):
+        return False, "No ether bridge detected between units"
+
+    return True, "Contains two benzylisoquinoline units linked by ether bridges"
