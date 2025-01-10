@@ -5,7 +5,6 @@ Classifies: CHEBI:33184 long-chain fatty acyl-CoA
 Classifies: CHEBI:57395 long-chain fatty acyl-CoA
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_long_chain_fatty_acyl_CoA(smiles: str):
@@ -27,46 +26,61 @@ def is_long_chain_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the Coenzyme A (CoA) pattern
-    coa_smarts = """
-    C[C@@H](O)[C@@H](COP(O)(=O)OCC1OC(O)[C@H](OP(O)(O)=O)[C@@H](O)[C@H]1O)n1cnc2c(N)ncnc12
-    """
-    coa_pattern = Chem.MolFromSmarts(coa_smarts)
-    if coa_pattern is None:
-        return False, "Failed to construct CoA pattern"
+    # Define the Coenzyme A (CoA) molecule from SMILES
+    coa_smiles = "C[C@H](O)[C@H](OP(=O)(O)OCC1OC(O)[C@H](OP(=O)(O)O)[C@@H](O)[C@H]1O)n1cnc2c(N)ncnc12"
+    coa_mol = Chem.MolFromSmiles(coa_smiles)
+    if coa_mol is None:
+        return False, "Failed to construct CoA molecule"
 
     # Check for CoA substructure
-    if not mol.HasSubstructMatch(coa_pattern):
+    if not mol.HasSubstructMatch(coa_mol):
         return False, "Coenzyme A moiety not found"
 
     # Define thioester linkage pattern (S-C(=O)-)
     thioester_pattern = Chem.MolFromSmarts("SC(=O)C")
-    if not mol.HasSubstructMatch(thioester_pattern):
-        return False, "Thioester linkage not found"
+    if thioester_pattern is None:
+        return False, "Failed to construct thioester pattern"
 
-    # Find the fatty acyl chain attached via thioester linkage
+    # Find the thioester linkage
     thioester_matches = mol.GetSubstructMatches(thioester_pattern)
     if not thioester_matches:
         return False, "Thioester linkage not found"
 
-    # Identify the fatty acyl chain
+    # Identify the fatty acyl chain attached via thioester linkage
     for match in thioester_matches:
         sulfur_idx = match[0]
-        # Traverse the chain from the carbonyl carbon
         carbonyl_c_idx = match[1]
-        fatty_acyl_chain = Chem.FragmentOnBonds(mol, [carbonyl_c_idx], addDummies=True)
-        # Extract the fatty acyl fragment
-        fragments = Chem.GetMolFrags(fatty_acyl_chain, asMols=True, sanitizeFrags=False)
-        for frag in fragments:
-            atom_nums = [atom.GetAtomicNum() for atom in frag.GetAtoms()]
-            if 6 in atom_nums and 1 in atom_nums:  # Contains carbon and hydrogen
-                # Count number of carbons excluding the carbonyl carbon
-                c_count = sum(1 for atom in frag.GetAtoms() if atom.GetAtomicNum() == 6)
-                c_count -= 1  # Exclude the carbonyl carbon
-                if 13 <= c_count <= 22:
-                    return True, f"Contains long-chain fatty acyl group with {c_count} carbons"
-                else:
-                    return False, f"Fatty acyl chain length is {c_count} carbons, not in range 13-22"
+
+        # Get the carbon adjacent to the carbonyl carbon (start of fatty acyl chain)
+        fatty_acyl_atom = mol.GetAtomWithIdx(carbonyl_c_idx)
+        neighbors = [atom.GetIdx() for atom in fatty_acyl_atom.GetNeighbors() if atom.GetIdx() != sulfur_idx]
+        if not neighbors:
+            continue
+        fatty_acyl_start_idx = neighbors[0]
+
+        # Use a BFS traversal to find the length of the fatty acyl chain
+        visited = set()
+        queue = [fatty_acyl_start_idx]
+        carbon_count = 0
+
+        while queue:
+            current_idx = queue.pop(0)
+            if current_idx in visited:
+                continue
+            visited.add(current_idx)
+            atom = mol.GetAtomWithIdx(current_idx)
+            if atom.GetAtomicNum() == 6:  # Carbon atom
+                carbon_count += 1
+                for neighbor in atom.GetNeighbors():
+                    neighbor_idx = neighbor.GetIdx()
+                    if neighbor_idx not in visited and neighbor.GetAtomicNum() == 6:
+                        queue.append(neighbor_idx)
+
+        # Check if carbon count is within the long-chain fatty acid range (C13 to C22)
+        if 13 <= carbon_count <= 22:
+            return True, f"Contains long-chain fatty acyl group with {carbon_count} carbons"
+        else:
+            return False, f"Fatty acyl chain length is {carbon_count} carbons, not in range 13-22"
 
     return False, "Failed to identify long-chain fatty acyl chain"
 
