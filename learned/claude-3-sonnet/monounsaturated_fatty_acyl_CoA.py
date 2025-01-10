@@ -8,7 +8,6 @@ from rdkit.Chem import rdMolDescriptors
 def is_monounsaturated_fatty_acyl_CoA(smiles: str):
     """
     Determines if a molecule is a monounsaturated fatty acyl-CoA based on its SMILES string.
-    Must have exactly one carbon-carbon double bond in the fatty acyl chain.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,60 +20,59 @@ def is_monounsaturated_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for adenine nucleotide (part of CoA)
+    # Check for CoA moiety components
+    # Look for adenine pattern
     adenine_pattern = Chem.MolFromSmarts("c1nc(N)c2ncnc2n1")
     if not mol.HasSubstructMatch(adenine_pattern):
         return False, "No CoA moiety found (missing adenine)"
     
-    # Look for phosphate groups characteristic of CoA
-    phosphate_pattern = Chem.MolFromSmarts("OP(=O)(O)OP(=O)(O)O")
-    if not mol.HasSubstructMatch(phosphate_pattern):
-        return False, "Missing characteristic CoA phosphate groups"
+    # Look for phosphate groups (need at least 3 for CoA)
+    phosphate_pattern = Chem.MolFromSmarts("OP(=O)(O)O")
+    phosphate_matches = len(mol.GetSubstructMatches(phosphate_pattern))
+    if phosphate_matches < 3:
+        return False, f"Insufficient phosphate groups for CoA (found {phosphate_matches}, need ≥3)"
 
-    # Look for thioester linkage
-    thioester_pattern = Chem.MolFromSmarts("[C;X3](=[O;X1])[S;X2]")
-    thioester_matches = mol.GetSubstructMatches(thioester_pattern)
-    if not thioester_matches:
+    # Look for thioester linkage (more flexible pattern)
+    thioester_pattern = Chem.MolFromSmarts("[S;X2][C;X3](=[O;X1])")
+    if not mol.HasSubstructMatch(thioester_pattern):
         return False, "No thioester linkage found"
 
-    # Count all double bonds in the molecule
-    double_bond_pattern = Chem.MolFromSmarts("[C;X3]=[C;X3]")
-    all_double_bonds = mol.GetSubstructMatches(double_bond_pattern)
+    # Look for amide bonds characteristic of pantetheine
+    amide_pattern = Chem.MolFromSmarts("[NX3][C;X3](=[O;X1])[CX4]")
+    amide_matches = len(mol.GetSubstructMatches(amide_pattern))
+    if amide_matches < 2:
+        return False, f"Missing pantetheine amide bonds (found {amide_matches}, need ≥2)"
+
+    # Count non-aromatic double bonds
+    double_bond_pattern = Chem.MolFromSmarts("[CX3]=[CX3]")
+    double_bonds = mol.GetSubstructMatches(double_bond_pattern)
     
-    # Filter out double bonds in adenine ring
+    # Filter out aromatic bonds
     non_aromatic_double_bonds = []
-    for bond in all_double_bonds:
-        atom1 = mol.GetAtomWithIdx(bond[0])
-        atom2 = mol.GetAtomWithIdx(bond[1])
-        if not (atom1.GetIsAromatic() or atom2.GetIsAromatic()):
+    for bond in double_bonds:
+        atom1, atom2 = mol.GetAtomWithIdx(bond[0]), mol.GetAtomWithIdx(bond[1])
+        if not (atom1.IsInRing() and atom2.IsInRing() and atom1.GetIsAromatic() and atom2.GetIsAromatic()):
             non_aromatic_double_bonds.append(bond)
-
+    
     if len(non_aromatic_double_bonds) != 1:
-        return False, f"Found {len(non_aromatic_double_bonds)} non-aromatic C=C double bonds, need exactly 1"
+        return False, f"Found {len(non_aromatic_double_bonds)} C=C double bonds, need exactly 1"
 
-    # Verify the double bond is in a fatty acid chain by checking connectivity to thioester
-    thioester_sulfur = mol.GetAtomWithIdx(thioester_matches[0][2])  # Get sulfur atom
-    double_bond_atoms = [mol.GetAtomWithIdx(non_aromatic_double_bonds[0][0]),
-                        mol.GetAtomWithIdx(non_aromatic_double_bonds[0][1])]
-    
-    # Check if there's a path between thioester and double bond
-    path_exists = False
-    for atom in double_bond_atoms:
-        if len(Chem.GetShortestPath(mol, thioester_sulfur.GetIdx(), atom.GetIdx())) > 0:
-            path_exists = True
-            break
-    
-    if not path_exists:
-        return False, "Double bond not connected to fatty acyl chain"
+    # Verify the presence of a fatty acid chain
+    # Get carbon chain length
+    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if carbon_count < 20:  # CoA itself has about 23 carbons, so fatty acyl-CoA should have more
+        return False, f"Carbon count ({carbon_count}) too low for fatty acyl-CoA"
 
-    # Count carbons in the fatty acid chain
-    carbon_chain = Chem.MolFromSmarts("[C;X4,X3]~[C;X4,X3]~[C;X4,X3]~[C;X4,X3]")
-    if not mol.HasSubstructMatch(carbon_chain):
-        return False, "Fatty acid chain too short"
+    # Verify the double bond is in the fatty acyl portion
+    thioester_matches = mol.GetSubstructMatches(thioester_pattern)
+    if thioester_matches:
+        sulfur_idx = thioester_matches[0][0]
+        for db_atoms in non_aromatic_double_bonds:
+            # Check if we can find a path from the sulfur to both double bond carbons
+            # that doesn't go through the CoA part
+            paths_exist = any(len(Chem.FindAllPathsOfLengthN(mol, 2, sulfur_idx, db_atom)) > 0 
+                            for db_atom in db_atoms)
+            if not paths_exist:
+                return False, "Double bond not in fatty acyl chain"
 
-    # Additional check for pantetheine arm
-    pantetheine = Chem.MolFromSmarts("NCCC(=O)NCCS")
-    if not mol.HasSubstructMatch(pantetheine):
-        return False, "Missing pantetheine arm of CoA"
-
-    return True, "Contains CoA moiety with single double bond in fatty acyl chain"
+    return True, "Contains CoA moiety and single double bond in fatty acyl chain"
