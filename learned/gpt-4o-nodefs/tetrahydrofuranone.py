@@ -6,13 +6,14 @@ from rdkit import Chem
 def is_tetrahydrofuranone(smiles: str):
     """
     Determines if a molecule is a tetrahydrofuranone based on its SMILES string.
-    The molecule should have a five-membered lactone ring that includes an oxygen atom.
+    A tetrahydrofuranone typically involves a five-membered lactone ring and
+    may contain various levels of saturation and substitution.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is likely a tetrahydrofuranone derivative, False otherwise
+        bool: True if the molecule is likely a tetrahydrofuranone derivative, False otherwise
         str: Reason for classification
     """
     
@@ -21,14 +22,15 @@ def is_tetrahydrofuranone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define more comprehensive SMARTS patterns for tetrahydrofuranone-like structures
-    # Include alpha-beta unsaturated structures, and variants supporting various substitutions
+    # Define SMARTS patterns for various tetrahydrofuranone-like structures
     patterns = [Chem.MolFromSmarts(smarts) for smarts in [
-        "C1C(=O)OC=C1",     # Classical tetrahydrofuranone with double-bond adjacencies
-        "C1C(=O)OCC1",      # Saturated tetrahydrofuranone
-        "C1COC(=O)C=C1",    # Ensuring variations in connectivity
-        "C1COC(=O)CC1",     # Including more flexible lactones
-        "O1CC=C(=O)C1"      # Another isomer possibility with slight variance
+        "O1C=CC(=O)C1",      # Unsaturated furanone with double bond
+        "O1CC(=O)C=C1",      # Another variation with a double bond
+        "O1CCOC1=O",         # Saturated with ester group
+        "O1CCC(=O)C1",       # Simple saturated cyclic ester
+        "O1C(=O)CC=C1",      # Alpha-beta unsaturated lactone
+        "O1CC=C(O)C1",       # Unsaturated, with hydroxyl variations
+        "O1C(=O)CCC1"        # Various saturated configurations
     ]]
 
     # Check if the molecule matches any of the defined tetrahydrofuranone patterns
