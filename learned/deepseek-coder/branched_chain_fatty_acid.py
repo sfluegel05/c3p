@@ -61,15 +61,46 @@ def is_branched_chain_fatty_acid(smiles: str):
     elif carbon_count >= 8 and n_rotatable < 2:
         return False, "Not a fatty acid (too few rotatable bonds)"
 
-    # Additional check to exclude peptides and complex structures
-    # Look for nitrogen atoms which are common in peptides
-    nitrogen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
-    if nitrogen_count > 0:
-        return False, "Contains nitrogen, likely not a fatty acid"
-
     # Check for unsaturation (optional, as some branched-chain fatty acids can be unsaturated)
     double_bond_count = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.BondType.DOUBLE)
     if double_bond_count > 0:
         return True, "Branched-chain fatty acid with unsaturation"
     else:
         return True, "Saturated branched-chain fatty acid"
+
+
+__metadata__ = {
+    'chemical_class': {
+        'id': 'CHEBI:59826',
+        'name': 'branched-chain fatty acid',
+        'definition': 'Any fatty acid in which the parent hydrocarbon chain has one or more alkyl substituents; a common component in animal and bacterial lipids.',
+        'parents': ['CHEBI:35366', 'CHEBI:26607']
+    },
+    'config': {
+        'llm_model_name': 'lbl/claude-sonnet',
+        'f1_threshold': 0.8,
+        'max_attempts': 5,
+        'max_positive_instances': None,
+        'max_positive_to_test': None,
+        'max_negative_to_test': None,
+        'max_positive_in_prompt': 50,
+        'max_negative_in_prompt': 20,
+        'max_instances_in_prompt': 100,
+        'test_proportion': 0.1
+    },
+    'message': None,
+    'attempt': 0,
+    'success': True,
+    'best': True,
+    'error': '',
+    'stdout': None,
+    'num_true_positives': 150,
+    'num_false_positives': 4,
+    'num_true_negatives': 182407,
+    'num_false_negatives': 23,
+    'num_negatives': None,
+    'precision': 0.974025974025974,
+    'recall': 0.8670520231213873,
+    'f1': 0.9174311926605504,
+    'accuracy': 0.9998521228585199
+}
