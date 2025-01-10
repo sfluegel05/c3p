@@ -33,11 +33,6 @@ def is_xanthophyll(smiles: str):
     if not mol.HasSubstructMatch(carotenoid_pattern):
         return False, "No carotenoid backbone found"
 
-    # Check molecular weight (xanthophylls are typically >400 Da)
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 400:
-        return False, "Molecular weight too low for a xanthophyll"
-
     # Check for specific oxygen-containing functional groups (hydroxyl, epoxy, carbonyl, ether, carboxyl)
     hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
     epoxy_pattern = Chem.MolFromSmarts("[OX2]C1CC1")
@@ -54,4 +49,9 @@ def is_xanthophyll(smiles: str):
     if not (has_hydroxyl or has_epoxy or has_carbonyl or has_ether or has_carboxyl):
         return False, "No hydroxyl, epoxy, carbonyl, ether, or carboxyl groups found"
 
-    return True, "Contains a carotenoid backbone with oxygenated functional groups"
+    # Additional check for conjugated double bonds
+    conjugated_double_bonds = Chem.MolFromSmarts("[CH,CH0]=[CH,CH0]~[CH,CH0]=[CH,CH0]")
+    if not mol.HasSubstructMatch(conjugated_double_bonds):
+        return False, "No conjugated double bonds found, not a carotenoid"
+
+    return True, "Contains a carotenoid backbone with oxygenated functional groups and conjugated double bonds"
