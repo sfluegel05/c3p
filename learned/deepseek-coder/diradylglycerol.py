@@ -37,19 +37,16 @@ def is_diradylglycerol(smiles: str):
     
     # Count substituent groups attached to the glycerol backbone
     substituent_count = 0
-    for atom in mol.GetAtoms():
-        if atom.GetIdx() in glycerol_atoms:
-            continue  # Skip glycerol backbone atoms
+    for atom_idx in glycerol_atoms:
+        atom = mol.GetAtomWithIdx(atom_idx)
         for neighbor in atom.GetNeighbors():
-            if neighbor.GetIdx() in glycerol_atoms:
-                # Check if the substituent is an acyl, alkyl, or alk-1-enyl group
-                if atom.GetAtomicNum() == 8:  # Oxygen
-                    # Check if the oxygen is part of an ester or ether group
-                    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
-                    ether_pattern = Chem.MolFromSmarts("[OX2][CX4]")
-                    if mol.HasSubstructMatch(ester_pattern) or mol.HasSubstructMatch(ether_pattern):
-                        substituent_count += 1
-                        break
+            if neighbor.GetIdx() not in glycerol_atoms:
+                # Check if the neighbor is part of an ester or ether group
+                ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
+                ether_pattern = Chem.MolFromSmarts("[OX2][CX4]")
+                if mol.HasSubstructMatch(ester_pattern) or mol.HasSubstructMatch(ether_pattern):
+                    substituent_count += 1
+                    break
     
     if substituent_count != 2:
         return False, f"Found {substituent_count} substituent groups attached to glycerol backbone, need exactly 2"
