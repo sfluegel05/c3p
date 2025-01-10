@@ -26,18 +26,18 @@ def is_3beta_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more general steroid core pattern (four fused rings)
-    steroid_core_pattern = Chem.MolFromSmarts("[C]12[C][C][C]3[C]([C][C][C]4[C]([C][C][C]34)[C])[C]1([C][C]2)[C]")
+    # Define the steroid core pattern (four fused rings)
+    steroid_core_pattern = Chem.MolFromSmarts("[C@H]12CC[C@H]3[C@@H](CC[C@H]4[C@@H](CC[C@H]34)C)[C@@]1(CC2)C")
     if not mol.HasSubstructMatch(steroid_core_pattern):
         return False, "No steroid core structure found"
 
     # Define the 3beta-hydroxy pattern (hydroxyl at position 3 in beta orientation)
-    beta_hydroxy_pattern = Chem.MolFromSmarts("[C]1([C](O)[C][C][C]2[C]1[C][C][C]3[C]2[C][C][C]4[C]3[C][C][C]4[C])[C]")
+    beta_hydroxy_pattern = Chem.MolFromSmarts("[C@H]1([C@@H](O)CC[C@H]2[C@@H]1CC[C@H]3[C@@H]2CC[C@H]4[C@@H]3CC[C@H]4C)C")
     if not mol.HasSubstructMatch(beta_hydroxy_pattern):
         return False, "No 3beta-hydroxy group found"
 
     # Check for the presence of a hydroxyl group at the 3rd position
-    hydroxyl_at_3 = Chem.MolFromSmarts("[C]1([C](O)[C][C][C]2[C]1[C][C][C]3[C]2[C][C][C]4[C]3[C][C][C]4[C])[C]")
+    hydroxyl_at_3 = Chem.MolFromSmarts("[C@H]1([C@@H](O)CC[C@H]2[C@@H]1CC[C@H]3[C@@H]2CC[C@H]4[C@@H]3CC[C@H]4C)C")
     if not mol.HasSubstructMatch(hydroxyl_at_3):
         return False, "No hydroxyl group at the 3rd position"
 
