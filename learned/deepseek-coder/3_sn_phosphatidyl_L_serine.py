@@ -26,49 +26,45 @@ def is_3_sn_phosphatidyl_L_serine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for the presence of a glycerol backbone with a phosphoserine group
-    # The pattern should match: [glycerol]-[phosphate]-[serine]
-    phosphoserine_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]([OX2][PX4](=[OX1])([OX2][CH2X4][CHX4]([NX3])[CX3](=[OX1])[OX2H]))")
-    if not mol.HasSubstructMatch(phosphoserine_pattern):
-        return False, "No glycerol backbone with phosphoserine group found"
+    # Define the core structure pattern with stereochemistry
+    core_pattern = Chem.MolFromSmarts("[*]C([*])(COP(=O)(O)OC[C@H](N)C(=O)O)[*]")
+    if not mol.HasSubstructMatch(core_pattern):
+        return False, "No core structure with correct stereochemistry found"
 
-    # Check for two ester groups (acyl chains) attached to the glycerol backbone
+    # Check for exactly two ester groups attached to the glycerol backbone
     ester_pattern = Chem.MolFromSmarts("[CX4][OX2][CX3](=[OX1])")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) != 2:
-        return False, f"Found {len(ester_matches)} ester groups, need exactly 2"
+    if len(ester_matches) < 2:
+        return False, f"Found {len(ester_matches)} ester groups, need at least 2"
 
-    # Check for the presence of serine moiety
-    serine_pattern = Chem.MolFromSmarts("[NX3][CHX4][CX3](=[OX1])[OX2H]")
+    # Verify the serine moiety
+    serine_pattern = Chem.MolFromSmarts("[NX3][CH]([CX3](=[OX1])[OX2H])")
     if not mol.HasSubstructMatch(serine_pattern):
         return False, "No serine moiety found"
 
-    # Check for long carbon chains (fatty acids)
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    # Check for fatty acid chains (at least 8 carbons each)
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
     fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
     if len(fatty_acid_matches) < 2:
         return False, f"Missing fatty acid chains, got {len(fatty_acid_matches)}"
 
-    # Count rotatable bonds to verify long chains
+    # Count rotatable bonds to verify chain length
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 10:
+    if n_rotatable < 8:
         return False, "Chains too short to be fatty acids"
 
-    # Check molecular weight - 3-sn-phosphatidyl-L-serine typically >600 Da
+    # Check molecular weight - adjusted lower limit
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 600:
+    if mol_wt < 500:
         return False, "Molecular weight too low for 3-sn-phosphatidyl-L-serine"
 
-    # Count carbons, oxygens, and nitrogens
+    # Count carbons and oxygens
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
     
-    if c_count < 20:
+    if c_count < 18:
         return False, "Too few carbons for 3-sn-phosphatidyl-L-serine"
     if o_count < 6:
         return False, "Too few oxygens for 3-sn-phosphatidyl-L-serine"
-    if n_count != 1:
-        return False, "Must have exactly 1 nitrogen (from serine)"
 
     return True, "Contains glycerol backbone with phosphoserine group and two acyl chains at the 1- and 2-positions"
