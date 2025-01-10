@@ -37,7 +37,11 @@ def is_polypyrrole(smiles: str):
     
     # Check if there are at least two pyrrole units
     if len(pyrrole_matches) < 2:
-        return False, f"Found {len(pyrrole_matches)} pyrrole units, need at least 2"
+        # Try a more flexible pattern that matches pyrrole-like structures
+        flexible_pyrrole_pattern = Chem.MolFromSmarts("[n;H0,H1]1[c;H1,H0][c;H1,H0][c;H1,H0][c;H1,H0]1")
+        flexible_pyrrole_matches = mol.GetSubstructMatches(flexible_pyrrole_pattern)
+        if len(flexible_pyrrole_matches) < 2:
+            return False, f"Found {len(flexible_pyrrole_matches)} pyrrole units, need at least 2"
 
     return True, "Contains two or more pyrrole units"
 
