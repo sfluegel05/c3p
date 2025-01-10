@@ -21,39 +21,26 @@ def is_alkanesulfonate_oxoanion(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define sulfonate group pattern, potentially considering different variants
-    sulfonate_pattern = Chem.MolFromSmarts("[S](=O)(=O)[O-]")  
+    # Define sulfonate group pattern
+    sulfonate_pattern = Chem.MolFromSmarts("[S](=[O])(=[O])[O-]")
     if not mol.HasSubstructMatch(sulfonate_pattern):
         return False, "Missing sulfonate group S(=O)(=O)[O-]"
 
-    # Initialize flag to detect aliphatic attachment to sulfonate
+    # Check for aliphatic carbon connection
     aliphatic_connected = False
-    for atom in mol.GetAtoms():
-        if atom.GetSymbol() == 'S':
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetSymbol() == 'C' and not neighbor.GetIsAromatic():
-                    # Check for linear aliphatic chain length, seeking chains of at least three carbons
-                    chain_length = 0
-                    current_atom = neighbor
-                    visited = set()
-                    stack = [current_atom]
-                    while stack:
-                        current = stack.pop()
-                        if current.GetIdx() in visited:
-                            continue
-                        visited.add(current.GetIdx())
+    for bond in mol.GetBonds():
+        atom1 = bond.GetBeginAtom()
+        atom2 = bond.GetEndAtom()
 
-                        if current.GetSymbol() == 'C' and not current.GetIsAromatic():
-                            chain_length += 1
-                            for next_atom in current.GetNeighbors():
-                                if next_atom.GetIdx() not in visited and next_atom.GetSymbol() == 'C':
-                                    stack.append(next_atom)
-
-                    if chain_length >= 2:
-                        aliphatic_connected = True
-                        break
+        # Check if either atom is sulfur from sulfonate
+        if (atom1.GetSymbol() == 'S' and atom2.GetSymbol() == 'C' and not atom2.GetIsAromatic()) or \
+           (atom2.GetSymbol() == 'S' and atom1.GetSymbol() == 'C' and not atom1.GetIsAromatic()):
+            # Ensure the carbon is connected to a sulfonate sulfur
+            if mol.GetAtomWithIdx(atom1.GetIdx()).GetSymbol() == 'S' or mol.GetAtomWithIdx(atom2.GetIdx()).GetSymbol() == 'S':
+                aliphatic_connected = True
+                break
     
     if aliphatic_connected:
         return True, "Sulfonate group attached to an aliphatic structure"
-        
-    return False, "Sulfonate group not connected to an adequate aliphatic structure"
+    
+    return False, "Sulfonate group not connected to an aliphatic structure"
