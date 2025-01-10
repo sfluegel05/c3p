@@ -2,12 +2,11 @@
 Classifies: CHEBI:17088 monoacyl-sn-glycerol 3-phosphate
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_monoacyl_sn_glycerol_3_phosphate(smiles: str):
     """
     Determines if a molecule is a monoacyl-sn-glycerol 3-phosphate based on its SMILES string.
-    A monoacyl-sn-glycerol 3-phosphate includes a glycerol backbone with one acyl chain and a phosphate 
-    group attached to the third position.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,20 +21,20 @@ def is_monoacyl_sn_glycerol_3_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for a glycerol backbone (3 carbon chain with 3 oxygens)
-    glycerol_pattern = Chem.MolFromSmarts("[OX2][CH2][CH](O[H0])CO")
+    # Identify glycerol structure (C3 chain with OH groups similar to C[OH]C[OH]C[OH])
+    glycerol_pattern = Chem.MolFromSmarts("C(CO)CO")
     if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "Glycerol backbone not found"
+        return False, "No glycerol backbone found"
 
-    # Check for exactly one ester group (-O-C(=O)R)
-    ester_pattern = Chem.MolFromSmarts("C(=O)O")
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) != 1:
-        return False, f"Expected exactly one ester group, found {len(ester_matches)}"
-
-    # Ensure presence of phosphate group (P=O(O)(O)O) bonded to glycerol
-    phosphate_pattern = Chem.MolFromSmarts("COP(=O)(O)O")
+    # Identify the presence of a single acyl chain (long carbon chain with ester linkage to glycerol)
+    acyl_pattern = Chem.MolFromSmarts("C(=O)OCC")  # Simplified ester linkage pattern
+    acyl_matches = mol.GetSubstructMatches(acyl_pattern)
+    if len(acyl_matches) != 1:
+        return False, f"Expected 1 acyl chain, found {len(acyl_matches)}"
+    
+    # Ensure a phosphate group is present at the third position
+    phosphate_pattern = Chem.MolFromSmarts("COP(=O)(O)O")  # Simplified phosphate group attached to glycerol
     if not mol.HasSubstructMatch(phosphate_pattern):
-        return False, "Phosphate group not found at third position"
+        return False, "No phosphate group found attached to glycerol"
 
-    return True, "Contains glycerol backbone, single acyl chain, and phosphate group at the third position"
+    return True, "Contains glycerol, single acyl chain, and phosphate group at the third position"
