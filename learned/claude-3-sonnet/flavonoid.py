@@ -25,55 +25,78 @@ def is_flavonoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Basic benzopyran core pattern (O1c2ccccc2CC1)
-    benzopyran_pattern = Chem.MolFromSmarts("O1c2ccccc2CC1")
-    
-    # Chromene core pattern (O1c2ccccc2C=C1)
-    chromene_pattern = Chem.MolFromSmarts("O1c2ccccc2C=C1")
-    
-    # Chromenone (4-oxo) pattern
-    chromenone_pattern = Chem.MolFromSmarts("O1c2ccccc2C(=O)C=C1")
-    
-    # Check for any of the core patterns
-    has_benzopyran = mol.HasSubstructMatch(benzopyran_pattern)
-    has_chromene = mol.HasSubstructMatch(chromene_pattern)
-    has_chromenone = mol.HasSubstructMatch(chromenone_pattern)
-    
-    if not (has_benzopyran or has_chromene or has_chromenone):
-        return False, "No benzopyran/chromene core structure found"
-
-    # Look for aromatic ring attached at position 2
-    # Multiple SMARTS to catch different variations
-    aryl_patterns = [
-        Chem.MolFromSmarts("O1[cX3]2[cX3][cX3][cX3][cX3][cX3]2C(Ar)=C1"),  # chromene with aryl
-        Chem.MolFromSmarts("O1[cX3]2[cX3][cX3][cX3][cX3][cX3]2C(Ar)C1"),   # benzopyran with aryl
-        Chem.MolFromSmarts("O1[cX3]2[cX3][cX3][cX3][cX3][cX3]2C(Ar)C(=O)C1")  # flavanone pattern
+    # Basic flavonoid core patterns - more flexible versions
+    core_patterns = [
+        # Basic chromene/flavone core (O1c2ccccc2C(=O)C=C1)
+        Chem.MolFromSmarts("O1c2c([c,C][c,C][c,C][c,C]2)C(=O)C=C1"),
+        
+        # Flavanone core (O1c2ccccc2C(=O)CC1)
+        Chem.MolFromSmarts("O1c2c([c,C][c,C][c,C][c,C]2)C(=O)CC1"),
+        
+        # Isoflavone core
+        Chem.MolFromSmarts("O1c2c([c,C][c,C][c,C][c,C]2)C(=C)C(=O)C1"),
+        
+        # More general benzopyran core
+        Chem.MolFromSmarts("O1c2c([c,C][c,C][c,C][c,C]2)[C,c][C,c]1"),
+        
+        # Flavonol core
+        Chem.MolFromSmarts("O1c2c([c,C][c,C][c,C][c,C]2)C(O)=C(C1=O)")
     ]
     
-    has_aryl = any(mol.HasSubstructMatch(pattern) for pattern in aryl_patterns if pattern is not None)
+    has_core = False
+    for pattern in core_patterns:
+        if pattern is not None and mol.HasSubstructMatch(pattern):
+            has_core = True
+            break
+    
+    if not has_core:
+        return False, "No flavonoid core structure found"
+
+    # Check for aromatic ring system connected to the core
+    # More flexible patterns for the aryl substituent
+    aryl_patterns = [
+        # General aryl group at position 2
+        Chem.MolFromSmarts("O1[c,C]2[c,C][c,C][c,C][c,C][c,C]2[C,c]([a;r6])[C,c]1"),
+        
+        # Alternative connection pattern
+        Chem.MolFromSmarts("O1[c,C]2[c,C][c,C][c,C][c,C][c,C]2[C,c](=O)[C,c]([a;r6])")
+    ]
+    
+    has_aryl = False
+    for pattern in aryl_patterns:
+        if pattern is not None and mol.HasSubstructMatch(pattern):
+            has_aryl = True
+            break
+
     if not has_aryl:
-        return False, "No aryl substituent at position 2"
+        return False, "Missing required aryl substituent"
 
-    # Common substitution patterns in flavonoids
-    # Look for hydroxyl or methoxy groups
-    oh_pattern = Chem.MolFromSmarts("[OH]")
-    ome_pattern = Chem.MolFromSmarts("[OX2][CH3]")
+    # Check for typical flavonoid characteristics
+    # Look for hydroxyl, methoxy groups, or glycosidic linkages
+    substitution_patterns = [
+        Chem.MolFromSmarts("[OH]"),  # hydroxyl
+        Chem.MolFromSmarts("[OX2][CH3]"),  # methoxy
+        Chem.MolFromSmarts("[OX2][CH]"),  # possible glycosidic linkage
+        Chem.MolFromSmarts("O=C")  # carbonyl groups
+    ]
     
-    num_oh = len(mol.GetSubstructMatches(oh_pattern)) if oh_pattern else 0
-    num_ome = len(mol.GetSubstructMatches(ome_pattern)) if ome_pattern else 0
+    substitution_count = sum(
+        len(mol.GetSubstructMatches(pattern)) 
+        for pattern in substitution_patterns 
+        if pattern is not None
+    )
     
-    # Most flavonoids have at least one OH or OMe group
-    if num_oh + num_ome == 0:
-        return False, "No typical flavonoid substitution pattern found"
+    if substitution_count < 2:  # Most flavonoids have multiple substituents
+        return False, "Insufficient number of typical flavonoid substituents"
 
-    # Count rings
+    # Ring count check - flavonoids typically have at least 3 rings
     ring_info = mol.GetRingInfo()
     if ring_info.NumRings() < 2:
         return False, "Insufficient number of rings"
 
-    # Additional check for typical atom counts
+    # Size check
     num_atoms = mol.GetNumAtoms()
-    if num_atoms < 15:  # Flavonoids typically have at least 15 atoms
+    if num_atoms < 15:
         return False, "Molecule too small to be a flavonoid"
 
-    return True, "Contains benzopyran core with aryl substituent at position 2 and typical flavonoid substitution pattern"
+    return True, "Contains flavonoid core structure with appropriate substituents"
