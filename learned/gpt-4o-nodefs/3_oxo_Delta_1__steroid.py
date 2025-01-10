@@ -21,8 +21,8 @@ def is_3_oxo_Delta_1_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a SMARTS pattern for the steroid backbone with a 3-keto group and a Delta(1) (1-position) double bond
-    steroid_pattern = Chem.MolFromSmarts("C=1C[C@H]2[C@@H](C(C)=O)CCC3=CCC=C[C@]3(C)[C@@H]2CC1")
+    # Define a broad steroid backbone pattern with a 3-keto group and Delta(1) double bond
+    steroid_pattern = Chem.MolFromSmarts("C1=CC2CCC3C(=O)CC[C@@]3(C)C2CC1")
     
     # Check for the steroid pattern in the molecule
     if not mol.HasSubstructMatch(steroid_pattern):
