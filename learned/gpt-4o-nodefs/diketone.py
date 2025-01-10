@@ -6,7 +6,8 @@ from rdkit import Chem
 def is_diketone(smiles: str):
     """
     Determines if a molecule is a diketone based on its SMILES string.
-    A diketone has exactly two ketone groups (C=O).
+    A diketone is defined as having exactly two ketone groups (C=O),
+    where each carbonyl carbon is bonded to two carbon atoms.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,16 +22,12 @@ def is_diketone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for ketone pattern (C=O)
-    ketone_pattern = Chem.MolFromSmarts("C=O")
+    # Look for ketone carbon pattern (generic pattern for C(=O)C)
+    ketone_pattern = Chem.MolFromSmarts("[CX3](=O)[CX3]")
     ketone_matches = mol.GetSubstructMatches(ketone_pattern)
     
-    # Count the number of unique ketone groups
-    unique_ketone_indices = set()
-    for match in ketone_matches:
-        unique_ketone_indices.update(match)
-
-    ketone_count = len(unique_ketone_indices) // 2  # divide by 2 since each match includes two atoms
+    # Count the number of ketone groups
+    ketone_count = len(ketone_matches)
     
     if ketone_count == 2:
         return True, "Contains exactly two ketone groups"
