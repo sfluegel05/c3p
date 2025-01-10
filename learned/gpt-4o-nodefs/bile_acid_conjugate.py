@@ -22,10 +22,18 @@ def is_bile_acid_conjugate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # General SMARTS pattern for bile acids with steroid nucleus
-    steroid_pattern = Chem.MolFromSmarts("[#6]1:[#6]:[#6]:[#6]2:[#6]3:[#6]4:[#6]:1:[#6](=[#8]):[#6]:[#6]:2:[#6](=[#8]):[#6]3:[#6]:[#6]4")
-    if not mol.HasSubstructMatch(steroid_pattern):
+    # Correct SMARTS pattern for the steroid nucleus (A/B/C/D-ring structure)
+    # This pattern represents a four-ring system typical in steroids
+    steroid_nucleus_pattern = Chem.MolFromSmarts("C1CCC2C3CCC4(C)C(C3)CCC4C2C1")
+    if not mol.HasSubstructMatch(steroid_nucleus_pattern):
         return False, "No recognizable steroid nucleus found"
+
+    # Check for carboxylic acid group or sulfate group as part of bile acids
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
+    sulfate_group_pattern = Chem.MolFromSmarts("OS(=O)(=O)O")
+    
+    if not (mol.HasSubstructMatch(carboxylic_acid_pattern) or mol.HasSubstructMatch(sulfate_group_pattern)):
+        return False, "Lacks acidic group typical of bile acids"
 
     # SMARTS patterns for known conjugations, expanded for common amino acids
     glycine_pattern = Chem.MolFromSmarts("NCC(=O)O")
