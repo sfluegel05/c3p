@@ -20,22 +20,24 @@ def is_cholesteryl_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define the general sterol core pattern including cholesteryl specifics (as flexible as needed)
-    cholesterol_backbone_pattern = Chem.MolFromSmarts("C[C@H]1CC[C@]2(C)[C@H]3CC[C@H]4[C@H](CC[C@]4(C)[C@@H]3CC=C2C1)O")
-    if not mol.HasSubstructMatch(cholesterol_backbone_pattern):
-        return False, "No cholesterol steroid backbone found"
+    # Expand the cholesterol core pattern
+    steroid_pattern = Chem.MolFromSmarts("C[C@H]1CCC2C(C1)CC[C@H]3[C@H]4CC[C@@H](C4)C[C@](C2)=[C@H]3")
     
-    # Define pattern for ester linkage
-    ester_linkage_pattern = Chem.MolFromSmarts("C(=O)O[C@H]1")
-    if not mol.HasSubstructMatch(ester_linkage_pattern):
-        return False, "No ester linkage found"
+    # Define expanded ester linkage pattern (flexible enough)
+    ester_pattern = Chem.MolFromSmarts("C(=O)O[C@H]1CC[C@]2(C)C[C@H]3CC[C@H]4[C@H](CC[C@]4(C)C3)C2")
 
-    # Find if the ester linkage is correctly connected to the cholesterol structure
-    ester_matches = mol.GetSubstructMatches(ester_linkage_pattern)
-    cholesterol_matches = mol.GetSubstructMatches(cholesterol_backbone_pattern)
+    if not mol.HasSubstructMatch(steroid_pattern):
+        return False, "No steroid core found representative of cholesteryl"
 
-    # Cross-check the specific connection point for a more precise ester linkage connection
-    if not any(set(ester_match) & set(cholesterol_match) for ester_match in ester_matches for cholesterol_match in cholesterol_matches):
-        return False, "Ester linkage not specifically with cholesterol's 3-hydroxy position"
-
-    return True, "Contains cholesterol backbone with specific ester linkage indicative of cholesteryl ester"
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    steroid_matches = mol.GetSubstructMatches(steroid_pattern)
+    
+    # Checking if the ester linkage directly involves a steroid core hydroxyl group
+    for ester_match in ester_matches:
+        ester_atom_indices = set(ester_match)
+        for steroid_match in steroid_matches:
+            steroid_atom_indices = set(steroid_match)
+            if ester_atom_indices & steroid_atom_indices: # Checks if patterns overlap at critical points
+                return True, "Contains cholesterol backbone with ester functionality indicative of cholesteryl ester"
+    
+    return False, "Ester linkage not appropriately connected to cholesterol core"
