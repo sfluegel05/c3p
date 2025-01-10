@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_anthoxanthin(smiles: str):
     """
     Determines if a molecule is an anthoxanthin based on its SMILES string.
-    Anthoxanthins are flavonoid pigments with a variety of core structures and multiple oxygen substitutions.
+    Anthoxanthins are flavonoid pigments with flavone, flavonol, or isoflavone cores and various oxygen substitutions.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,26 +21,29 @@ def is_anthoxanthin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Expand flavonoid core patterns to cover varied anthoxanthin core structures
+    # Expanded flavonoid core patterns to cover anthoxanthin core structures
     flavonoid_core_patterns = [
-        Chem.MolFromSmarts("c1cc2oc(=O)cc(c2c1)-c1ccccc1"),  # General flavone structure
-        Chem.MolFromSmarts("c1cc2oc(=O)cc(c2c1)-c1c([!#1])c([!#1])c([!#1])c([!#1])c1"),  # Extended core
-        Chem.MolFromSmarts("c1cc2nc(=O)cc(c2c1)-c1ccccc1O"),  # Other chromone-like derivatives
+        Chem.MolFromSmarts("c1cc2oc(=O)cc(c2c1)-c1ccccc1"),  # Flavone
+        Chem.MolFromSmarts("c1cc2oc(=O)c(c2c1)-c1ccc(O)c(c1)"),  # Flavonol
+        Chem.MolFromSmarts("c1cc2oc(=O)c(c2c1)c1c(O)cc(O)c(O)c1"),  # Isoflavone
+        Chem.MolFromSmarts("c1c(O)c2c(c1=O)cc(O)cc2"),  # General chromone derivatives
     ]
     
     core_match = any(mol.HasSubstructMatch(core) for core in flavonoid_core_patterns)
     if not core_match:
         return False, "Flavonoid core structure not found"
 
-    # Check for common high degree of oxygenation
+    # Check for diversity of oxygenation
+    # Consider combinations of hydroxyl, methoxy, and sugar moieties
     oxygenated_patterns = [
         Chem.MolFromSmarts("[OH]"),  # Hydroxyl groups
         Chem.MolFromSmarts("[OX2H]"),  # Methoxy groups
-        Chem.MolFromSmarts("c-O"),  # General oxygen bonded to aromatic carbon
+        Chem.MolFromSmarts("OC"),  # Glycosidic linkages
+        Chem.MolFromSmarts("c-O-c"),  # Oxygens in aromatic ethers
     ]
-    oxy_matches = sum(mol.HasSubstructMatch(pat) for pat in oxygenated_patterns)
+    oxy_matches = set(mol.GetSubstructMatches(Chem.MolFromSmarts("|".join([Chem.MolToSmarts(pat) for pat in oxygenated_patterns]))))
     
-    if oxy_matches < 4:
-        return False, f"Insufficient oxygen substitutions, found {oxy_matches}. Need at least 4."
+    if len(oxy_matches) < 3:
+        return False, f"Insufficient variety of oxygen substitutions, found {len(oxy_matches)} types. Need at least 3."
 
-    return True, "Contains anthoxanthin characteristics with flavonoid scaffold and adequate oxygen substitutions"
+    return True, "Contains anthoxanthin characteristics with flavonoid scaffold and diverse oxygen substitutions"
