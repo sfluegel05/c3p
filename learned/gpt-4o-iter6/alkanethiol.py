@@ -20,14 +20,19 @@ def is_alkanethiol(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+    
+    # Define SMARTS pattern correctly for alkanethiol (simple alkyl group + thiol group)
+    # A simple chain or branch ending with a thiol group
+    thiol_pattern = Chem.MolFromSmarts("[CX4][SX2H1]")  # Aliphatic carbon directly attached to sulfur with hydrogen
 
-    # Define the SMARTS pattern for a thiol group: sulfur connected to carbon and with one hydrogen
-    thiol_pattern = Chem.MolFromSmarts("[SX2H1][#6]")  # sulfur with single hydrogen bound to carbon
-    
+    # We assume we're looking for an aliphatic (sp3) carbon bonded to the thiol group
     if not mol.HasSubstructMatch(thiol_pattern):
-        return False, "No alkanethiol with thiol group (-SH) attached to a carbon group found"
+        return False, "No alkanethiol with a thiol group (-SH) attached directly to an alkyl group found"
     
-    return True, "Contains alkanethiol pattern with -SH group specifically bound to a carbon group"
+    # Further checks can be added here to ensure no unexpected heteroatoms or rings in simple alkane context
+    # Such constraints help narrow down false positives from complex molecules
+    
+    return True, "Contains alkanethiol pattern with -SH group specifically bound to an aliphatic carbon"
 
 # Example usage
 print(is_alkanethiol("SCC(CC)C"))  # Example SMILES for 2-Methyl-1-butanethiol
