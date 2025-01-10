@@ -2,7 +2,7 @@
 Classifies: CHEBI:47923 tripeptide
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import rdChemReactions
 
 def is_tripeptide(smiles: str):
     """
@@ -21,21 +21,22 @@ def is_tripeptide(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-        
-    # Check for three peptide bonds (N-C(=O)-C)
-    peptide_bond_pattern = Chem.MolFromSmarts("N-C(=O)-C")
+    
+    # Improved peptide bond pattern considering branching and stereochemistry
+    peptide_bond_pattern = Chem.MolFromSmarts("[NX3][CX3]=[OX1]")
     peptide_bond_matches = mol.GetSubstructMatches(peptide_bond_pattern)
+    
+    # Count peptide bonds
     if len(peptide_bond_matches) < 2:
         return False, "Insufficient peptide bonds, need at least 2 to form a tripeptide"
     
-    # Count number of peptides
-    n_peptides = len(peptide_bond_matches) + 1  # one more than peptide bonds
-    if n_peptides != 3:
-        return False, f"Molecule has {n_peptides} amino acids, should have 3"
-    
-    # Ensure amino acid backbone (Cα - N - C(=O) - C backbone pattern)
-    amino_acid_backbone_pattern = Chem.MolFromSmarts("[CX4H]-[NH]-C(=O)-[CX3]")
-    if not mol.HasSubstructMatch(amino_acid_backbone_pattern):
-        return False, "No amino acid backbone detected"
+    # Amino acid backbone pattern more inclusive
+    amino_acid_backbone_pattern = Chem.MolFromSmarts("[N][CX3](=O)[CX4]")
+    backbone_matches = mol.GetSubstructMatches(amino_acid_backbone_pattern)
+
+    # Count amino acid residues (each matching the pattern once forms part of a single amino acid)
+    n_amino_acids = len(backbone_matches)
+    if n_amino_acids != 3:
+        return False, f"Molecule has {n_amino_acids} amino acids, should have 3"
     
     return True, "Molecule is a tripeptide with three amino acids connected by peptide linkages"
