@@ -21,19 +21,27 @@ def is_arenecarbaldehyde(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for the aldehyde group (C=O attached to something, excluding full carbonyls in esters/acids)
+    # Look for the aldehyde group (C=O attached to one hydrogen and another carbon)
     aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)[#6]")
     if not mol.HasSubstructMatch(aldehyde_pattern):
         return False, "No aldehyde group found"
 
-    # Iterate through matched aldehyde carbons to check for attachment to aromatic ring
+    # Look for specific aromatic ring patterns attached to the aldehyde's carbon
+    aromatic_patterns = [
+        Chem.MolFromSmarts("[c]"),  # aromatic carbon
+        Chem.MolFromSmarts("n1ccccc1"),  # pyridine-like
+        Chem.MolFromSmarts("[cH][c][c][c][c][c]"),  # benzene-like
+        Chem.MolFromSmarts("n2c[nH]nc2"),  # pyrrole-like with nitrogen consideration
+    ]
+    
+    # Iterate through matched aldehyde carbons to check for attachment to an aromatic system
     matches = mol.GetSubstructMatches(aldehyde_pattern)
     for match in matches:
         aldehyde_carbon = match[0]
-        
-        # Check if aldehyde carbon is attached to aromatic
         for neighbor in mol.GetAtomWithIdx(aldehyde_carbon).GetNeighbors():
-            if neighbor.GetIsAromatic():
-                return True, "Aldehyde group attached to an aromatic moiety"
+            # Check if the neighbor is part of any of the defined aromatic patterns
+            for aromatic_pattern in aromatic_patterns:
+                if mol.HasSubstructMatch(aromatic_pattern, useChirality=False):
+                    return True, "Aldehyde group attached to an aromatic moiety"
 
     return False, "Aldehyde group not attached to aromatic moiety"
