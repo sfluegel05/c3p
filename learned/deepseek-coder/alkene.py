@@ -26,8 +26,7 @@ def is_alkene(smiles: str):
         return False, "Invalid SMILES string"
 
     # Add hydrogens to the molecule if not already present
-    if not mol.GetNumAtoms(onlyExplicit=True):
-        mol = Chem.AddHs(mol)
+    mol = Chem.AddHs(mol)
 
     # Check if the molecule is acyclic
     if rdMolDescriptors.CalcNumRings(mol) != 0:
@@ -49,12 +48,13 @@ def is_alkene(smiles: str):
         if atom.GetAtomicNum() not in [1, 6]:
             return False, "Molecule contains non-carbon and non-hydrogen atoms"
 
-    # Relax the strict CnH2n formula check for branched alkenes
+    # Calculate the expected hydrogen count for an alkene (CnH2n)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     h_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 1)
-    expected_h_count = 2 * c_count - 2 * (c_count - 1)  # Adjusted for branching
+    expected_h_count = 2 * c_count
 
-    if h_count < expected_h_count:
-        return False, f"Hydrogen count ({h_count}) is less than expected for a branched alkene"
+    # Allow for slight deviations due to branching
+    if abs(h_count - expected_h_count) > 2:
+        return False, f"Hydrogen count ({h_count}) does not match expected count ({expected_h_count}) for an alkene"
 
     return True, "Acyclic hydrocarbon with exactly one carbon-carbon double bond"
