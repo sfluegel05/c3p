@@ -25,34 +25,39 @@ def is_isoflavones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Core structure of isoflavone (3-aryl-1-benzopyran-4-one)
-    # [#6]:benzene ring connected to oxygen in chromone
-    # [#6]=O: carbonyl group
-    # [#6]1: carbon forming the pyrone ring
-    # [#6]: carbon at position 3 where aryl group attaches
-    isoflavone_core = Chem.MolFromSmarts('[#6]2~[#6]:,[#6]~[#6]:,[#6]~[#6]:,[#6]~[#6]2~[#8]~[#6]1~[#6](=[#8])~[#6](~[#6]3:[#6]:[#6]:[#6]:[#6]:[#6]:3)~[#6]~[#8]~1')
+    # Basic checks
+    if mol.GetNumAtoms() < 15:  # Minimum atoms for isoflavone core
+        return False, "Too few atoms for isoflavone"
+
+    # Core structure patterns - break it down into parts
     
-    if not mol.HasSubstructMatch(isoflavone_core):
-        return False, "Missing isoflavone core structure (3-aryl-1-benzopyran-4-one)"
+    # 1. Chromone core (benzopyran-4-one)
+    # Note: Using simpler pattern that matches both aromatic and non-aromatic forms
+    chromone_pattern = Chem.MolFromSmarts('O=C1c2ccccc2OC=C1')
+    if chromone_pattern is None:
+        return None, "Invalid SMARTS pattern for chromone"
+    if not mol.HasSubstructMatch(chromone_pattern):
+        return False, "Missing chromone core structure"
 
-    # Verify presence of ketone group in correct position
-    ketone_pattern = Chem.MolFromSmarts('O=C1C=COC2=CC=CC=C12')
-    if not mol.HasSubstructMatch(ketone_pattern):
-        return False, "Missing ketone group in correct position"
+    # 2. Check for aryl group at position 3
+    # This pattern looks for the connection between chromone and phenyl ring
+    isoflavone_pattern = Chem.MolFromSmarts('O=C1c2ccccc2OC(c3ccccc3)=C1')
+    if isoflavone_pattern is None:
+        return None, "Invalid SMARTS pattern for isoflavone"
+    if not mol.HasSubstructMatch(isoflavone_pattern):
+        return False, "Missing aryl group at position 3 (not an isoflavone)"
 
-    # Check for aryl group at position 3
-    aryl_at_3_pattern = Chem.MolFromSmarts('O=C1C=C(c2ccccc2)Oc2ccccc12')
-    if not mol.HasSubstructMatch(aryl_at_3_pattern):
-        return False, "Missing aryl group at position 3"
-
-    # Count rings to ensure proper structure
+    # 3. Ring count check (should have at least 3 rings)
     ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() < 3:  # Must have at least 3 rings (2 from chromone + 1 from aryl)
+    if ring_info.NumRings() < 3:
         return False, "Insufficient number of rings"
 
-    # Additional check to ensure proper fusion of rings
-    fused_rings_pattern = Chem.MolFromSmarts('c2cc1occ(c3ccccc3)c(=O)c1cc2')
-    if not mol.HasSubstructMatch(fused_rings_pattern):
-        return False, "Incorrect ring fusion pattern"
+    # Additional validation - check atom types
+    # Isoflavones should only contain C, H, O (and possibly other common substituents)
+    allowed_atoms = {6, 1, 8, 7, 9, 17, 35, 53}  # C,H,O,N,F,Cl,Br,I
+    atom_nums = {atom.GetAtomicNum() for atom in mol.GetAtoms()}
+    if not atom_nums.issubset(allowed_atoms):
+        return False, "Contains disallowed atoms for isoflavone"
 
-    return True, "Contains 3-aryl-1-benzopyran-4-one skeleton with proper substitution pattern"
+    # Success - all patterns matched
+    return True, "Contains 3-aryl-1-benzopyran-4-one skeleton with appropriate substitution pattern"
