@@ -2,11 +2,11 @@
 Classifies: CHEBI:39437 tocol
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_tocol(smiles: str):
     """
     Determines if a molecule is a tocol based on its SMILES string.
+    Tocols such as tocopherols and tocotrienols have a chroman structure, long hydrocarbon tail, and hydroxyl groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,21 +20,31 @@ def is_tocol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Broadly define chroman/chromene core structure: aromatic + oxygen in six-membered ring
-    chroman_core_pattern = Chem.MolFromSmarts("C1=CC(O)C=C1")
-
+    # More explicit chroman/chromene core with variation in aromatic substitution
+    chroman_core_pattern = Chem.MolFromSmarts("C1=C(O)C=CC2=C1CCCC2")  # Allow varied substitution in chroman core
     if not mol.HasSubstructMatch(chroman_core_pattern):
-        return False, "No chroman or chromene moiety detected"
+        return False, "No discernible chroman or chromene moiety found"
 
-    # Check for a sufficient hydrocarbon tail that typically characterizes tocols.
-    long_hydrocarbon_pattern = Chem.MolFromSmarts("C(C)C")
+    # Check for long isoprenoid side chains with repetitive methyl substituents, common in tocotrienols
+    long_hydrocarbon_pattern = Chem.MolFromSmarts("C(C)CCC(C)CCCC=C")  # Should match isoprenoid chain features
     tail_matches = mol.GetSubstructMatches(long_hydrocarbon_pattern)
-    if len(tail_matches) < 3:
-        return False, "Insufficient hydrocarbon tail length"
+    if len(tail_matches) < 1:
+        return False, "Couldn't identify characteristic long isoprenoid tail"
 
-    # Make sure at least one hydroxyl group is attached to the aromatic core
-    hydroxyl_pattern = Chem.MolFromSmarts("cO")
+    # Ensure at least one hydroxyl group attached to the aromatic core
+    hydroxyl_pattern = Chem.MolFromSmarts("c(O)C")  # Hydroxyl group on aromatic carbon
     if not mol.HasSubstructMatch(hydroxyl_pattern):
-        return False, "No aromatic-linked hydroxyl found"
+        return False, "Missing aromatic hydroxyl group connection"
 
-    return True, "Contains appropriate chroman/chromene moiety with hydrocarbon tail and hydroxyl group"
+    return True, "Contains chroman/chromene moiety with key hydrocarbon tail and hydroxyl group"
+
+# Testing for some cases
+example_smiles = [
+    "CC(C)CCC[C@H](C)CCC[C@H](C)CCC[C@]1(C)CCC2=C(C)C(O)=C(C)C(C)=C2O1",  # Example of valid tocol
+    "ClC1=C2C=CC3=C1C4=CC=C[C@]4(O[C@@H]5OC([C@@H](N(C)C)[C@H]([C@H]5O)O)(C)C)[C@@H]3OC6=C(Cl)C=C([C@H](CC(OC[C@@H]2O)=O)N)C=C6O"  # Example of invalid tocol
+]
+
+# Check examples
+for smiles in example_smiles:
+    result, reason = is_tocol(smiles)
+    print(f"SMILES: {smiles} -> Is Tocol: {result}, Reason: {reason}")
