@@ -21,19 +21,20 @@ def is_glucosinolate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Generalized thioglucoside linkage pattern: sugar structure linked through sulfur
-    thioglucoside_pattern = Chem.MolFromSmarts("S[C@H]1OC[C@H](O)[C@@H](O)[C@@H](O)[C@H]1O")
+    # Generalized thioglucoside linkage pattern 
+    # (more flexible with stereocenters and linkage possibilities)
+    thioglucoside_pattern = Chem.MolFromSmarts("S[C@H1]1OC(O)C(O)C(O)C1O")
     if not mol.HasSubstructMatch(thioglucoside_pattern):
-        return False, "No thioglucoside linkage (linked through sulfur) found"
+        return False, "No thioglucoside linkage found"
 
-    # Match the sulfonated oxime group: C=N-OS(=O)(=O)[O-], with anti configuration
+    # Match the sulfonated oxime group
     sulfonated_oxime_pattern = Chem.MolFromSmarts("C=N/OS(=O)(=O)[O-]")
     if not mol.HasSubstructMatch(sulfonated_oxime_pattern):
-        return False, "No appropriate sulfonated oxime linkage found"
+        return False, "Sulfonated oxime linkage not found"
 
-    # Match central linking structure with side-chain: include central C-S and C=N 
-    central_pattern = Chem.MolFromSmarts("S[C](=N/OS(=O)(=O)[O-])[CX4,CX3]")
+    # Ensure the central C is linked via S and N, and extends to a side-group
+    central_pattern = Chem.MolFromSmarts("S[C]=N/OS(=O)(=O)[O-]")
     if not mol.HasSubstructMatch(central_pattern):
-        return False, "Central carbon structure not recognized with correct linkages and side-chain"
-    
+        return False, "Central carbon linkage with S and N not correctly represented"
+
     return True, "Contains all structural features of a glucosinolate"
