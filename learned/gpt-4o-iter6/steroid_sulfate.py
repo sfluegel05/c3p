@@ -21,49 +21,37 @@ def is_steroid_sulfate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Expanded steroid core patterns - including variations found commonly in steroids
-    core_patterns = [
-        "C1CCC2C(C1)CCC3C2CCC4C3CCC4",  # Basic steroid backbone
-        "[C@H]1([C@@H]2CCC3C=C(C2)CC4[C@@H]1CC(O)CC34)",  # Additional possible steroid core
-        "C1C2CC3CCC4C(CCC4C3)C2C1"  # Simplified pattern with stereochemistry consideration
+    # Expand potential patterns for a steroid backbone
+    steroid_patterns = [
+        Chem.MolFromSmarts("[C@@H]1CC[C@@]2[C@H]3CC[C@]4(C)[C@]3(CC[C@H]2[C@@H]1C)O4"),  # More detailed steroid core
+        Chem.MolFromSmarts("[C@H]1CC[C@@]2(C[C@@H](CC[C@@]2C1)O)C"),  # Core with oxygen/hydroxyl groups included
     ]
 
-    # Check presence of a steroid-like core
-    steroid_match = any(mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)) for pattern in core_patterns)
+    # Check if there's any pattern matching a steroid backbone
+    steroid_match = any(mol.HasSubstructMatch(pattern) for pattern in steroid_patterns)
     if not steroid_match:
         return False, "No steroid backbone found"
 
-    # Sulfate group matching, focusing on ester linkages
-    sulfate_patterns = [
-        "O[S](=O)(=O)[O-]",   # With negative charge for salts
-        "O[S](=O)(=O)O",      # Neutral sulfate ester
-        "O[S](=O)(=O)[O0]"    # Consider neutral sulfate without explicit charge
-    ]
+    # SMARTS pattern to identify sulfate group bound through an ester linkage (with slight flexibility)
+    sulfate_pattern = Chem.MolFromSmarts("OS(=O)(=O)[O-]")
 
-    # Verification of sulfate connected to hydroxy group
-    sulfate_found = False
-    for sulfate_pattern in sulfate_patterns:
-        sulfate = Chem.MolFromSmarts(sulfate_pattern)
-        matches = mol.GetSubstructMatches(sulfate)
-        sulfate_group_atoms = [mol.GetAtomWithIdx(match[0]) for match in matches]
+    # Look for sulfate groups connected to hydroxyl groups
+    sulfate_matches = mol.GetSubstructMatches(sulfate_pattern)
+    for match in sulfate_matches:
+        oxygen_atom = [mol.GetAtomWithIdx(idx) for idx in match if mol.GetAtomWithIdx(idx).GetSymbol() == 'O'][0]
+        carbon_neighbors = [nbr for nbr in oxygen_atom.GetNeighbors() if nbr.GetSymbol() == 'C']
         
-        for sulfur_atom in sulfate_group_atoms:
-            oxygen_neighbors = [n for n in sulfur_atom.GetNeighbors() if n.GetSymbol() == 'O']
-            for oxygen in oxygen_neighbors:
-                carbon_neighbors = [n for n in oxygen.GetNeighbors() if n.GetSymbol() == 'C']
-                for carbon in carbon_neighbors:
-                    if mol.HasSubstructMatch(Chem.MolFromSmarts("CO")):  # Check if connected to OH group
-                        for neighbor in carbon.GetNeighbors():
-                            if neighbor.GetSymbol() == 'O' and 'H' in [a.GetSymbol() for a in neighbor.GetNeighbors()]:
-                                sulfate_found = True
-                                break
+        for carbon in carbon_neighbors:
+            # Check if carbon originally belongs to hydroxy group of steroid (OH pattern)
+            if carbon.GetDegree() == 3:  # Simple way to ensure it's part of a larger chain, not dangling
+                for o_neighbor in carbon.GetNeighbors():
+                    if o_neighbor.GetSymbol() == 'O' and o_neighbor != oxygen_atom:
+                        if any(nbr.GetSymbol() == 'H' for nbr in o_neighbor.GetNeighbors()):
+                            return True, "Contains sulfate ester linked to steroid backbone at a hydroxy group"
 
-    if not sulfate_found:
-        return False, "Sulfate groups found but not linked properly to steroid backbone"
-
-    return True, "Contains sulfate ester linked to steroid backbone at a hydroxy group"
+    return False, "Sulfate groups found but not linked properly to steroid backbone"
 
 # Example for testing
-smiles = "[Na+].C[C@]12CC[C@H]3C(=CCc4cc(OS([O-])(=O)=O)ccc34)[C@@H]1CCC2=O"
+smiles = "[Na+].[H][C@]12CC[C@]3(C)C(=O)CC[C@@]3([H])[C@]1([H])CCc1cc(OS([O-])(=O)=O)ccc21"
 result, reason = is_steroid_sulfate(smiles)
 print(f"Result: {result}, Reason: {reason}")
