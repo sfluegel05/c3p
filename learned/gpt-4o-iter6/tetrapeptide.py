@@ -2,7 +2,6 @@
 Classifies: CHEBI:48030 tetrapeptide
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_tetrapeptide(smiles: str):
     """
@@ -22,19 +21,24 @@ def is_tetrapeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Search for amide (peptide) bonds
-    amide_pattern = Chem.MolFromSmarts("CON")
-    amide_matches = [match for match in mol.GetSubstructMatches(amide_pattern)]
-
-    # Check for the presence of C and N termini
-    has_n_terminus = any(atom.GetAtomicNum() == 7 and atom.GetDegree() == 3 for atom in mol.GetAtoms())
-    has_c_terminus = any(atom.GetAtomicNum() == 6 and atom.GetDegree() == 3 for atom in mol.GetAtoms())
-
-    # Count amide groups (should be exactly 3 for a linear tetrapeptide)
-    if len(amide_matches) == 3 and has_n_terminus and has_c_terminus:
-        return True, "Contains four amino-acid residues connected by peptide bonds"
+    # Search for the generic amide bond pattern and count them
+    amide_pattern = Chem.MolFromSmarts("N-[C;$(C(=O))]-[!#1]")
+    amide_matches = mol.GetSubstructMatches(amide_pattern)
+    if len(amide_matches) != 3:
+        return False, f"Contains {len(amide_matches)} peptide bonds, expected 3"
     
-    return False, f"Contains {len(amide_matches)+1} amide bonds, but terminus analysis failed"
+    # Determine the number of amino acid residues (look for repeating CN backbone units)
+    residue_count = 0
+    for match in amide_matches:
+        carbon_idx, nitrogen_idx = match[1], match[0]
+        carbon = mol.GetAtomWithIdx(carbon_idx)
+        nitrogen = mol.GetAtomWithIdx(nitrogen_idx)
+        
+        # Verify if these match the typical amino acid backbone (considering variable side chains)
+        if carbon.GetDegree() >= 3 and nitrogen.GetDegree() >= 2:
+            residue_count += 1
+    
+    if residue_count != 4:
+        return False, f"Peptide linkages found, but amino acid count is {residue_count}, expected 4"
 
-# The is_tetrapeptide function has been enhanced to additionally consider chemical environment,
-# such as the presence of N and C termini, to reduce false positives from cyclic and modified peptides.
+    return True, "Contains four amino-acid residues connected by peptide linkages"
