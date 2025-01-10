@@ -21,27 +21,15 @@ def is_acyl_CoA(smiles: str) -> (bool, str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern to identify the fundamental Coenzyme A structure
-    # CoA comprises a phosphopantetheine group and ADP
-    phosphopantetheine_pattern = Chem.MolFromSmarts("P(=O)(O)OP(=O)(O)OC[C@H]1O[C@H](CO)COP(=O)(O)OP(=O)(O)OC[C@H]_4O[C@H]([C@H](O)[C@@H]_4OP(=O)(O)O)n1c2nc[nH]c2n1")
-    
-    # Adjusted to match fully expanded CoA moieties. Patterns leftover from simplification:
-    adp_pattern = Chem.MolFromSmarts("N1C=NC2=C1C(=O)NC=N2")
-    coa_core_pattern = Chem.MolFromSmarts("NC(=O)CCSC(=O)")
-    
-    # Combine checks for the updated components
-    if not mol.HasSubstructMatch(phosphopantetheine_pattern):
-        return False, "CoA moiety (phosphopantetheine group) not identified"
-    
-    if not mol.HasSubstructMatch(adp_pattern):
-        return False, "CoA moiety (adenine group) not identified"
-    
-    if not mol.HasSubstructMatch(coa_core_pattern):
-        return False, "Core thioester-linked CoA structure not identified"
+    # SMARTS pattern to identify key acyl-CoA components
+    # Coenzyme A part: presence of ADP and pantetheine phosphate structure
+    coa_pattern = Chem.MolFromSmarts("C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H](COP(=O)(O)[O-])([C@H](O)[C@@H]1OP(=O)(O)O)n1cnc2c(N)ncnc12")
+    if not mol.HasSubstructMatch(coa_pattern):
+        return False, "CoA moiety not identified"
 
-    # To confirm, searching for thioester linkage
-    thioester_pattern = Chem.MolFromSmarts("C(=O)SCCN")
+    # Thioester pattern to confirm acyl linkage
+    thioester_pattern = Chem.MolFromSmarts("C(=O)SCC[NH]C(=O)")
     if not mol.HasSubstructMatch(thioester_pattern):
-        return False, "No thioester bond with CoA moiety"
+        return False, "Thioester bond with CoA moiety not identified"
 
-    return True, "Contains CoA moiety with a thioester bond, characteristic of acyl-CoA"
+    return True, "Contains CoA moiety and thioester bond, characteristic of acyl-CoA"
