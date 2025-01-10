@@ -27,7 +27,7 @@ def is_gas_molecular_entity(smiles: str):
 
     # Check if the molecule is a main group molecular entity
     # Main group elements are those in groups 1, 2, and 13-18 of the periodic table
-    main_group_elements = {1, 2, 5, 6, 7, 8, 9, 10, 13, 14, 15, 16, 17, 18}
+    main_group_elements = {1, 2, 5, 6, 7, 8, 9, 10, 13, 14, 15, 16, 17, 18, 36, 54, 86}  # Added Kr, Xe, Rn
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() not in main_group_elements:
             return False, "Contains non-main group elements"
@@ -35,8 +35,8 @@ def is_gas_molecular_entity(smiles: str):
     # Calculate molecular weight
     mol_wt = Descriptors.MolWt(mol)
 
-    # Heuristic: Molecules with molecular weight < 200 g/mol are more likely to be gases at STP
-    if mol_wt > 200:
+    # Heuristic: Molecules with molecular weight < 300 g/mol are more likely to be gases at STP
+    if mol_wt > 300:
         return False, f"Molecular weight {mol_wt:.2f} g/mol is too high for a gas at STP"
 
     # Check for noble gases (including isotopes)
@@ -46,20 +46,20 @@ def is_gas_molecular_entity(smiles: str):
         return True, "Noble gas"
 
     # Check for diatomic molecules (including isotopes)
-    diatomic_molecules = {"[H][H]", "[1H][1H]", "[3H][3H]", "N#N", "[O][O]", "FF", "ClCl", "[C-]#[O+]"}
+    diatomic_molecules = {"[H][H]", "[1H][1H]", "[3H][3H]", "N#N", "[O][O]", "FF", "ClCl", "[C-]#[O+]", "I[H]", "Cl[H]"}
     if smiles in diatomic_molecules:
         return True, "Diatomic molecule"
 
     # Check for small hydrocarbons and common gases
-    # Include molecules with up to 8 carbons and molecular weight < 200 g/mol
+    # Include molecules with up to 8 carbons and molecular weight < 300 g/mol
     hydrocarbon_pattern = Chem.MolFromSmarts("[C,c]")
     if mol.HasSubstructMatch(hydrocarbon_pattern):
         c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-        if c_count <= 8 and mol_wt < 200:
+        if c_count <= 8 and mol_wt < 300:
             return True, "Small hydrocarbon"
 
     # Other common gases
-    common_gases = {"O=C=O", "[H]N([H])[H]", "O", "N", "C", "I[H]", "Cl[H]"}
+    common_gases = {"O=C=O", "[H]N([H])[H]", "O", "N", "C", "[O-][O+]=O", "C1CO1"}  # Added ozone and oxirane
     if smiles in common_gases:
         return True, "Common gas molecule"
 
