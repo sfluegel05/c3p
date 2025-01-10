@@ -27,9 +27,9 @@ def is_3_oxo_5beta_steroid(smiles: str):
     # Assign stereochemistry
     Chem.AssignStereochemistry(mol, cleanIt=True, force=True, flagPossibleStereoCenters=True)
 
-    # Define the steroid core using a SMARTS pattern with atom mapping to identify positions
+    # Define the steroid nucleus SMARTS pattern
     steroid_core_smarts = """
-    [#6]1([#6][#6]2[#6]([#6]1)[#6][#6]3[#6]([#6]2)[#6][#6][#6]4[#6]([#6]3)[#6][#6]([#6][#6]4))
+    [#6]1CC[C@H]2C[C@H]3C[C@@H](C)C[C@H]4CC(=O)CC[C@]34C[C@H]2C1
     """
     steroid_core = Chem.MolFromSmarts(steroid_core_smarts)
     if steroid_core is None:
@@ -40,38 +40,39 @@ def is_3_oxo_5beta_steroid(smiles: str):
     if not matches:
         return False, "Steroid core not found"
 
-    # Define SMARTS pattern for ketone at position 3 with atom mapping
-    ketone_smarts = "[C;R1]-[C;R2](=O)-[C;R1]"
+    # Define SMARTS pattern for ketone at position 3
+    ketone_smarts = "[C;R1]=O"
     ketone_pattern = Chem.MolFromSmarts(ketone_smarts)
     if ketone_pattern is None:
         return False, "Invalid ketone SMARTS pattern"
 
     # Check for ketone at position 3
-    ketone_matches = mol.GetSubstructMatches(ketone_pattern)
+    ketone_matches = []
+    for match in mol.GetSubstructMatches(ketone_pattern):
+        atom = mol.GetAtomWithIdx(match[0])
+        if atom.IsInRing() and atom.GetIdx() in matches[0]:
+            # Assuming atom indices correspond to position 3
+            ketone_matches.append(match)
+            break
     if not ketone_matches:
         return False, "Ketone group at position 3 not found"
 
-    # Identify chiral centers
-    stereocenters = Chem.FindMolChiralCenters(mol, includeUnassigned=True, includeCIP=True)
+    # Identify chiral center at position 5
+    # Position 5 corresponds to a specific atom in the steroid nucleus
+    # We need to map the SMARTS pattern to actual atom indices
+    steroid_match = matches[0]
+    # The index of position 5 in the SMARTS pattern (adjusted for zero-based indexing)
+    position5_idx_in_smarts = 4  # Adjust this index based on the SMARTS pattern
+    position5_atom_idx = steroid_match[position5_idx_in_smarts]
 
-    # Assume position 5 is a chiral center in a ring connected to two other ring carbons
-    position5_atom = None
-    for atom in mol.GetAtoms():
-        if atom.GetChiralTag() != Chem.rdchem.ChiralType.CHI_UNSPECIFIED:
-            if atom.IsInRing():
-                neighbors = atom.GetNeighbors()
-                ring_neighbors = sum(1 for nbr in neighbors if nbr.IsInRing())
-                if ring_neighbors >= 2:
-                    position5_atom = atom
-                    break
-
-    if position5_atom is None:
+    position5_atom = mol.GetAtomWithIdx(position5_atom_idx)
+    if position5_atom.GetChiralTag() == Chem.rdchem.ChiralType.CHI_UNSPECIFIED:
         return False, "Chiral center at position 5 not found"
 
     # Check stereochemistry at position 5
-    # Beta-configuration often corresponds to 'alpha' (R) configuration in RDKit
+    # Beta-configuration corresponds to 'S' absolute configuration for position 5
     cip_code = position5_atom.GetProp('_CIPCode') if position5_atom.HasProp('_CIPCode') else None
-    if cip_code != 'R':
+    if cip_code != 'S':
         return False, f"Position 5 is not in beta-configuration (found {cip_code})"
 
     return True, "Molecule is a 3-oxo-5beta-steroid"
