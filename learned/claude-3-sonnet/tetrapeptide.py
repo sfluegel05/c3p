@@ -7,7 +7,6 @@ A molecule containing exactly four amino acid residues connected by peptide link
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_tetrapeptide(smiles: str):
     """
@@ -23,80 +22,58 @@ def is_tetrapeptide(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Pattern for peptide bonds (including proline-type)
-    peptide_pattern = Chem.MolFromSmarts("[NX3][CX4][CX3](=[OX1])[NX3]")
     
-    # More flexible pattern for amino acid residues
-    aa_pattern = Chem.MolFromSmarts("[NX3][CX4][CX3](=[OX1])[*]")
+    # Look for peptide bonds (-C(=O)-NH-)
+    peptide_pattern = Chem.MolFromSmarts("[NX3,NX4;H1,H2][CX4][CX3](=[OX1])[NX3,NX4;H1,H2]")
+    peptide_matches = mol.GetSubstructMatches(peptide_pattern)
     
-    # Pattern for N-terminal amino group (including modifications)
-    n_term_pattern = Chem.MolFromSmarts("[$([NX3H2]),$([NX3H](C=O)),$([NX3](C=O)C)][CX4][CX3]=O")
-    
-    # Pattern for C-terminal group (including modifications)
-    c_term_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[$([OX2H]),$([OX2]C),$([NX3H2]),$([NX3H]C)]")
-    
-    # Get all matches
-    peptide_bonds = mol.GetSubstructMatches(peptide_pattern)
-    aa_residues = mol.GetSubstructMatches(aa_pattern)
-    
-    # Get ring info
-    ring_info = mol.GetRingInfo()
-    is_cyclic = ring_info.NumRings() > 0
-    
-    # Count unique amino acid residues (avoiding overlaps)
-    unique_residues = set()
-    for match in aa_residues:
-        central_C = match[1]  # The alpha carbon
-        if central_C not in unique_residues:
-            unique_residues.add(central_C)
-    
-    aa_count = len(unique_residues)
-    
-    # Check sequence connectivity
-    if not is_cyclic:
-        # For linear peptides, check termini
-        n_term_matches = mol.GetSubstructMatches(n_term_pattern)
-        c_term_matches = mol.GetSubstructMatches(c_term_pattern)
+    # For tetrapeptide, we expect 3 peptide bonds (connecting 4 amino acids)
+    if len(peptide_matches) < 3:
+        return False, f"Found only {len(peptide_matches)} peptide bonds, need 3 for tetrapeptide"
         
-        if not (n_term_matches and c_term_matches):
-            return False, "Missing required N- or C-terminus"
+    # Look for alpha carbons with attached NH group
+    alpha_carbon_pattern = Chem.MolFromSmarts("[NX3,NX4;H1,H2][CX4][CX3](=O)")
+    alpha_carbons = mol.GetSubstructMatches(alpha_carbon_pattern)
+    
+    # We expect 4 alpha carbons for a tetrapeptide
+    if len(alpha_carbons) < 4:
+        return False, f"Found only {len(alpha_carbons)} alpha carbons, need 4 for tetrapeptide"
+    
+    # Look for N-terminus (primary or secondary amine)
+    n_terminus_pattern = Chem.MolFromSmarts("[NX3H2,NX4H3+][CX4][CX3](=O)")
+    n_terminus = mol.GetSubstructMatches(n_terminus_pattern)
+    
+    # Look for C-terminus (carboxyl or similar group)
+    c_terminus_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H,OX1-,N]")
+    c_terminus = mol.GetSubstructMatches(c_terminus_pattern)
+    
+    # Check for minimum required terminal groups
+    if not (n_terminus or c_terminus):
+        return False, "Missing both N-terminus and C-terminus"
         
-        # Check for continuous peptide backbone
-        backbone = set()
-        for bond in peptide_bonds:
-            backbone.update(bond)
-        
-        if len(backbone) < 12:  # Minimum atoms for tetrapeptide backbone
-            return False, "Insufficient peptide backbone connectivity"
-    else:
-        # For cyclic peptides, check ring size and connectivity
-        rings = ring_info.AtomRings()
-        max_ring_size = max(len(ring) for ring in rings)
-        
-        if max_ring_size < 12 or max_ring_size > 16:
-            return False, "Ring size not consistent with tetrapeptide"
+    # Count nitrogens that are part of peptide bonds or terminal groups
+    peptide_n_pattern = Chem.MolFromSmarts("[NX3,NX4;H1,H2][CX4][CX3]=O")
+    peptide_nitrogens = len(mol.GetSubstructMatches(peptide_n_pattern))
     
-    # Count peptide bonds (avoiding overlaps)
-    unique_peptide_bonds = set()
-    for bond in peptide_bonds:
-        if bond[0] not in unique_peptide_bonds and bond[-1] not in unique_peptide_bonds:
-            unique_peptide_bonds.update(bond)
+    # For a tetrapeptide, we expect 4 nitrogens involved in peptide bonds/terminals
+    if peptide_nitrogens < 4:
+        return False, f"Found only {peptide_nitrogens} peptide nitrogens, need 4 for tetrapeptide"
     
-    peptide_bond_count = len(peptide_bonds)
+    # Count carbonyls that are part of peptide bonds or terminal groups
+    carbonyl_pattern = Chem.MolFromSmarts("[CX3](=O)[NX3,OX2H,OX1-]")
+    carbonyls = len(mol.GetSubstructMatches(carbonyl_pattern))
     
-    # Classification logic
-    if aa_count != 4:
-        return False, f"Found {aa_count} amino acid residues, need exactly 4"
+    # For a tetrapeptide, we expect 4 carbonyls (3 peptide bonds + C-terminus)
+    if carbonyls < 4:
+        return False, f"Found only {carbonyls} peptide carbonyls, need 4 for tetrapeptide"
     
-    if peptide_bond_count < 3:
-        return False, f"Found only {peptide_bond_count} peptide bonds, need at least 3"
+    # Additional check for cyclic peptides
+    cycle_pattern = Chem.MolFromSmarts("[NX3,NX4;H1,H2][CX4][CX3](=[OX1])[NX3,NX4;H1,H2]")
+    cycle_matches = mol.GetSubstructMatches(cycle_pattern)
+    is_cyclic = len(cycle_matches) >= 4  # If we find 4 or more peptide bonds, it might be cyclic
     
-    if peptide_bond_count > 4:
-        return False, f"Found {peptide_bond_count} peptide bonds, too many for tetrapeptide"
-    
-    # Success cases
+    # Final classification
     if is_cyclic:
-        return True, "Cyclic tetrapeptide with 4 amino acid residues"
+        return True, "Cyclic tetrapeptide with 4 amino acid residues connected by peptide bonds"
     else:
-        return True, "Linear tetrapeptide with 4 amino acid residues"
+        return True, "Linear tetrapeptide with 4 amino acid residues connected by peptide bonds"
