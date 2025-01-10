@@ -26,65 +26,79 @@ def is_monoterpenoid_indole_alkaloid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for basic nitrogen (required for alkaloid)
+    # Check molecular weight (typically between 250-800 Da for MIAs)
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 250 or mol_wt > 800:
+        return False, f"Molecular weight {mol_wt:.1f} outside typical MIA range"
+
+    # Count basic statistics
     n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    ring_count = rdMolDescriptors.CalcNumRings(mol)
+
+    # Basic requirements
     if n_count == 0:
         return False, "No nitrogen atoms found - required for alkaloid"
-
-    # Look for indole or modified indole core
-    indole_pattern = Chem.MolFromSmarts("c1ccc2[nH]ccc2c1")  # Basic indole
-    modified_indole_pattern = Chem.MolFromSmarts("c1ccc2nccc2c1")  # Modified indole
-    if not (mol.HasSubstructMatch(indole_pattern) or mol.HasSubstructMatch(modified_indole_pattern)):
-        return False, "No indole or modified indole core found"
-
-    # Check for complex polycyclic structure typical of MIAs
-    ring_info = rdMolDescriptors.CalcMolFormula(mol)
-    ring_count = rdMolDescriptors.CalcNumRings(mol)
-    if ring_count < 4:
+    if c_count < 16:
+        return False, f"Too few carbons ({c_count}) for MIA structure"
+    if ring_count < 3:
         return False, f"Too few rings ({ring_count}) for MIA structure"
 
-    # Check carbon count (typically >18 for MIA skeleton)
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 18:
-        return False, f"Too few carbons ({c_count}) for MIA structure"
-
-    # Check for presence of bridged bicyclic systems common in MIAs
-    bridged_pattern = Chem.MolFromSmarts("[C]1[C][C]2[C][C][C]1[C]2")
-    if not mol.HasSubstructMatch(bridged_pattern):
-        return False, "Missing typical bridged ring systems"
-
-    # Look for typical MIA features:
-    # - Often contains methyl ester
-    # - Often contains ethyl group
-    # - Often contains additional oxygenation
-    methyl_ester = Chem.MolFromSmarts("CC(=O)O")
-    ethyl = Chem.MolFromSmarts("CC")
-    oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    # Look for indole or modified indole cores using multiple patterns
+    indole_patterns = [
+        "c1ccc2[nH]ccc2c1",  # Basic indole
+        "c1ccc2nccc2c1",     # Modified indole
+        "c1ccc2N=CCc2c1",    # Another modified form
+        "c1ccc2NCCc2c1",     # Dihydroindole
+        "C1=CC=C2C(=C1)NC=C2",  # Alternative representation
+        "C1=CC=C2C(=C1)N=CC2"   # Another variant
+    ]
     
+    has_indole = False
+    for pattern in indole_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            has_indole = True
+            break
+            
+    if not has_indole:
+        return False, "No indole or modified indole core found"
+
+    # Check for nitrogen-containing rings (essential for MIA skeleton)
+    n_ring_pattern = Chem.MolFromSmarts("[N;R]")
+    if not mol.HasSubstructMatch(n_ring_pattern):
+        return False, "No nitrogen-containing rings found"
+
+    # Look for typical structural features
     features = []
-    if mol.HasSubstructMatch(methyl_ester):
-        features.append("methyl ester")
-    if mol.HasSubstructMatch(ethyl):
-        features.append("ethyl group")
-    if oxygen_count > 0:
-        features.append(f"{oxygen_count} oxygen atoms")
+    
+    # Check for ester groups (common in MIAs)
+    if mol.HasSubstructMatch(Chem.MolFromSmarts("C(=O)OC")):
+        features.append("ester group")
+    
+    # Check for ethyl/vinyl groups (common in monoterpene portion)
+    if mol.HasSubstructMatch(Chem.MolFromSmarts("CC")) or mol.HasSubstructMatch(Chem.MolFromSmarts("C=C")):
+        features.append("ethyl/vinyl group")
 
-    # Check for sp2 carbons (common in terpene portion)
+    # Count sp2 carbons (common in terpene portion)
     sp2_carbons = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[C]=[C,N,O]")))
-    if sp2_carbons == 0:
-        return False, "No sp2 carbons found - unusual for MIA"
+    if sp2_carbons > 0:
+        features.append(f"{sp2_carbons} sp2 carbons")
 
-    # Calculate complexity score
+    # Calculate complexity score based on multiple factors
     complexity_contributors = [
-        ring_count * 2,  # Rings contribute to complexity
-        n_count * 3,     # Nitrogens contribute to complexity
-        oxygen_count * 2, # Oxygens contribute to complexity
-        sp2_carbons,     # sp2 carbons contribute to complexity
+        ring_count * 2,      # Rings
+        n_count * 3,         # Nitrogens
+        sp2_carbons,         # sp2 carbons
+        len(features) * 2    # Typical features
     ]
     complexity_score = sum(complexity_contributors)
     
-    if complexity_score < 15:
+    if complexity_score < 12:
         return False, f"Complexity score ({complexity_score}) too low for typical MIA"
 
+    # Check for fused ring systems (common in MIAs)
+    if rdMolDescriptors.CalcNumSpiroAtoms(mol) + rdMolDescriptors.CalcNumBridgeheadAtoms(mol) == 0:
+        return False, "Missing typical fused/spiro ring systems"
+
     feature_str = ", ".join(features) if features else "typical structural features"
-    return True, f"Contains indole core, complex polycyclic system ({ring_count} rings), and {feature_str}"
+    return True, f"Contains indole core, complex ring system ({ring_count} rings), and {feature_str}"
