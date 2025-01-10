@@ -21,13 +21,13 @@ def is_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define various SMARTS patterns for the steroid core (CPPP structure)
-    # This includes several common variations to allow for different steroid conformations
+    # Define more flexible SMARTS patterns for the steroid core (CPPP structure)
+    # Allow variations in chirality and ring junctions
     steroid_patterns = [
-        Chem.MolFromSmarts("C1CCC2C3CCC4C(C)CCC4C3C=C2C1"),  # Basic CPPP pattern
-        Chem.MolFromSmarts("C1CCC2C3CCC4C(C)CCC4C3CC2C1"),  # Variant with different orientations
-        Chem.MolFromSmarts("C1CC2CC3CCC4C(C)CCC4(C)C3C2C1"),  # Allowing some random substitutions
-        Chem.MolFromSmarts("C1CC2C3(C)CCC4C(CC)(C)CCC4(CC3C=C2)C1"),  # Steroid-like flexibility
+        Chem.MolFromSmarts("C1CCC2C3CCCCC3CCC2C1"),  # Simplified pattern without chirality
+        Chem.MolFromSmarts("C1CC2CCC3CCC4CCCCC4C3C2C1"),  # Including additional flexibility
+        Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2CCC4C3CC4"),  # Allowing for different ring assemblies
+        Chem.MolFromSmarts("C1CC2CC3CCC4C(CC3)CCC4C2C1"),  # Variants in the five-membered ring
     ]
     
     # Check for any steroid pattern in the molecule
