@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_decanoate_ester(smiles: str):
     """
     Determines if a molecule is a decanoate ester based on its SMILES string.
-    A decanoate ester specifically incorporates a 10-carbon alkyl chain linked via an ester group.
+    A decanoate ester has a decanoic acid moiety (10-carbon chain) attached to an alcohol through an ester linkage.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,20 +21,9 @@ def is_decanoate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for the presence of a specific decanoate structure using broader pattern recognition 
-    # This pattern should account for the ester linkage rO-C(=O)-CCCCCCCCCC which represents the decanoate framework
-    # and accommodate permutations and ester group positions in larger structures
+    # Look for decanoate pattern (10-carbon chain followed by an ester group)
+    decanoate_pattern = Chem.MolFromSmarts("CCCCCCCCCC(=O)O")
+    if not mol.HasSubstructMatch(decanoate_pattern):
+        return False, "No decanoate ester pattern found"
     
-    # ether and carboxylate variations
-    decanoate_patterns = [
-        Chem.MolFromSmarts("CCCCCCCCCCCC(=O)O"),  # standard decanoate ester backbone
-        Chem.MolFromSmarts("C(=O)OCCCCCCCCCC"),   # reversed ester representation
-        Chem.MolFromSmarts("CCCCCCCCCC(=O)O[R]")  # ester linkage as part of larger structures
-    ]
-
-    # Attempt to match any of the known patterns
-    for pattern in decanoate_patterns:
-        if mol.HasSubstructMatch(pattern):
-            return True, "Contains valid decanoate ester structure"
-
-    return False, "No decanoate ester pattern found"
+    return True, "Contains decanoate ester structure"
