@@ -22,17 +22,23 @@ def is_sesterterpenoid(smiles: str):
 
     # Count carbon atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 20 or c_count > 25:
-        return False, f"Carbon count ({c_count}) not typical for a sesterterpenoid (usually around 25)"
+    # Adjust range to consider unusual configurations or modifications
+    if c_count < 20 or c_count > 40:
+        return False, f"Carbon count ({c_count}) not typical or too large for a sesterterpenoid"
 
-    # Check for typical terpenoid structure features
-    # Terpenoids are often composed of isoprene units (C5H8), seeking patterns
-    isoprene_pattern = Chem.MolFromSmarts("C=C(C)C")
-    if not mol.HasSubstructMatch(isoprene_pattern):
-        return False, "No isoprene units found which are common in terpenoids"
-
-    # Additional checks can be implemented as necessary
-    # For complex cases, consider manual curation and expert judgment
+    # Check for the presence of isoprene and related patterns
+    # Consider rearranged/demethylated versions typical in sesterterpenoids
+    isoprene_patterns = [
+        Chem.MolFromSmarts("C=C(C)C"),  # Basic isoprene unit
+        Chem.MolFromSmarts("C=CC(C)C"), # Rearranged form
+        Chem.MolFromSmarts("CC(C)=C"),  # Different alkene location
+    ]
     
-    # If C25 skeleton and terpenoid features present, classify as sesterterpenoid
+    # Check if any isoprene or similar pattern is present
+    if not any(mol.HasSubstructMatch(pattern) for pattern in isoprene_patterns):
+        return False, "No isoprene-like units found, which are common in terpenoids"
+
+    # Further terpenoid-specific structures could be checked here, e.g., certain cyclic structures
+
+    # If structure fits broadened criteria
     return True, "Likely a sesterterpenoid based on carbon count and structural features"
