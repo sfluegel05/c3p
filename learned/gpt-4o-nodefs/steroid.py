@@ -7,11 +7,11 @@ def is_steroid(smiles: str):
     """
     Determines if a molecule is a steroid based on its SMILES string.
     Steroids are characterized by the tetracyclic cyclopentanoperhydrophenanthrene (CPPP) core structure,
-    which includes three six-membered rings and one five-membered ring.
-
+    which includes three six-membered rings and one five-membered ring in various conformations.
+    
     Args:
         smiles (str): SMILES string of the molecule.
-
+    
     Returns:
         bool: True if molecule is a steroid, False otherwise.
         str: Reason for classification.
@@ -20,23 +20,23 @@ def is_steroid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
+    
     # Define various SMARTS patterns for the steroid core (CPPP structure)
-    # This allows some flexibility in ring orientations
+    # This includes several common variations to allow for different steroid conformations
     steroid_patterns = [
-        Chem.MolFromSmarts("C1CCC2C3CCC4CCCCC4C3C=C2C1"),  # Original pattern to be used as baseline
-        Chem.MolFromSmarts("C1CC2C3CCC4C2CCC4C3C1"),  # Tetracyclic core without explicit double bonds
-        Chem.MolFromSmarts("C1CC2CC3CCC4C(C)CCC4(C)C3C2C1"),  # Allowing substitutions and stereochemistry
-        Chem.MolFromSmarts("C1CCC2CC(CC3CCC4CCCCC4C3)C2C1"),  # Variant pattern to account for different conformations
+        Chem.MolFromSmarts("C1CCC2C3CCC4C(C)CCC4C3C=C2C1"),  # Basic CPPP pattern
+        Chem.MolFromSmarts("C1CCC2C3CCC4C(C)CCC4C3CC2C1"),  # Variant with different orientations
+        Chem.MolFromSmarts("C1CC2CC3CCC4C(C)CCC4(C)C3C2C1"),  # Allowing some random substitutions
+        Chem.MolFromSmarts("C1CC2C3(C)CCC4C(CC)(C)CCC4(CC3C=C2)C1"),  # Steroid-like flexibility
     ]
-
+    
     # Check for any steroid pattern in the molecule
     for pattern in steroid_patterns:
         if mol.HasSubstructMatch(pattern):
-            return True, "Contains the cyclopentanoperhydrophenanthrene core structure"
-
+            return True, "Contains the cyclopentanoperhydrophenanthrene core structure indicative of steroids"
+    
     return False, "Does not match the steroid structural core"
 
 # Example usage
-example_smiles = "O1[C@@]23[C@]([C@@]4([C@]([C@]5([C@](CC3)([C@](Oc6ccccc6)(C5)C)[H])[H])(CC4)[H])[H])[H](C=O)CC3O)C(CC2C)C(=O)C=C1"
+example_smiles = "O=C1[C@@]2(C(=CC[C@H]1[C@H]3[C@@]([C@@H]([C@@H](CC(=O)C(C(C)C)C)C)CC3)(CCO)C)C[C@@H](O)CC2)C"
 print(is_steroid(example_smiles))
