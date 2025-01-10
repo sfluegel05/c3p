@@ -2,6 +2,7 @@
 Classifies: CHEBI:17135 long-chain fatty alcohol
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_long_chain_fatty_alcohol(smiles: str):
     """
@@ -21,36 +22,43 @@ def is_long_chain_fatty_alcohol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for a hydroxyl group (-OH) attached to carbon
-    hydroxyl_pattern = Chem.MolFromSmarts("CO")
-    if not mol.HasSubstructMatch(hydroxyl_pattern):
-        return False, "No hydroxyl group on a carbon chain found"
+    # Look for a hydroxyl group (-OH) attached to aliphatic carbon
+    hydroxyl_pattern = Chem.MolFromSmarts("[CX4][OX2H]")  # Aliphatic carbon with OH
+    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
 
-    # Function to count the longest continuous carbon chain
-    def longest_chain_length(mol):
-        max_length = 0
-        for bond in mol.GetBonds():
-            if bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
+    if not hydroxyl_matches:
+        return False, "No aliphatic hydroxyl group (-OH) found on a carbon chain"
+
+    # Check longest aliphatic carbon chain with the attached hydroxyl group
+    def max_aliphatic_chain_length(attached_idx):
+        max_chain_length = 0
+        for atom in mol.GetAtoms():
+            if atom.GetAtomicNum() == 6:  # Carbon
                 visited = set()
-                current_chain = []
-                current_chain.append(bond.GetBeginAtomIdx())
-                current_chain.append(bond.GetEndAtomIdx())
-                while current_chain:
-                    atom_idx = current_chain.pop()
-                    if atom_idx not in visited:
-                        visited.add(atom_idx)
-                        atom = mol.GetAtomWithIdx(atom_idx)
-                        if atom.GetAtomicNum() == 6:  # Carbon
-                            for neighbor in atom.GetNeighbors():
-                                if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:
-                                    current_chain.append(neighbor.GetIdx())
-                max_length = max(max_length, len(visited))
-        return max_length
+                stack = [(atom.GetIdx(), 1)]  # (Current atom index, chain length)
+                while stack:
+                    current_atom_idx, current_length = stack.pop()
+                    if current_atom_idx not in visited:
+                        visited.add(current_atom_idx)
+                        current_atom = mol.GetAtomWithIdx(current_atom_idx)
+                        for neighbor in current_atom.GetNeighbors():
+                            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:
+                                stack.append((neighbor.GetIdx(), current_length + 1))
+                        if current_atom.GetIdx() == attached_idx:
+                            max_chain_length = max(max_chain_length, current_length)
+        return max_chain_length
 
-    longest_chain = longest_chain_length(mol)
+    # Evaluate each hydroxyl group's attachment
+    valid_alcohol = False
+    reason = ""
+    for match in hydroxyl_matches:
+        carbon_idx, oxygen_idx = match
+        chain_length = max_aliphatic_chain_length(carbon_idx)
+        if 13 <= chain_length <= 22:
+            valid_alcohol = True
+            reason = "Has a hydroxyl group and the carbon chain length is within range for long-chain fatty alcohol"
+            break
+        else:
+            reason = f"Carbon chain length is {chain_length}, expected between 13 and 22"
 
-    # Check if carbon count is within 13 to 22
-    if longest_chain < 13 or longest_chain > 22:
-        return False, f"Carbon chain length is {longest_chain}, expected between 13 and 22"
-    
-    return True, "Has a hydroxyl group and the carbon chain length is within range for long-chain fatty alcohol"
+    return valid_alcohol, reason
