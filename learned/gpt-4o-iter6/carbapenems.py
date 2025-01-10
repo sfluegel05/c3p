@@ -15,15 +15,14 @@ def is_carbapenems(smiles: str):
         str: Explanation of the reasoning for the classification.
     """
     
-    # Define the refined SMARTS pattern for the carbapenem bicyclic core:
-    # Structure with a beta-lactam ring and common substitution positions
-    core_pattern = Chem.MolFromSmarts("O=C1N2C([C@@H]3C[C@@H]23)C1")  # Bicyclic [3.2.0] with a beta-lactam ring
+    # Define the core carbapenem pattern:
+    # Bicyclic system with the beta-lactam ring
+    core_pattern = Chem.MolFromSmarts("C1C(C)C2C1N(C2=O)C(=O)C")  # Captures [3.2.0] with beta-lactam
 
-    # Additional patterns capturing functional groups and typical substitutions
+    # Additional patterns capturing variations in substitution that retain carbapenem identity
     additional_patterns = [
-        Chem.MolFromSmarts("C(=O)O"),  # Carboxylate group, usually present
-        Chem.MolFromSmarts("CS"),  # Thioether group, common in side chains
-        Chem.MolFromSmarts("CC(=O)N"),  # Amide linkage
+        Chem.MolFromSmarts("C(=O)O"),  # Carboxylic acid group
+        Chem.MolFromSmarts("[S]"),  # Presence of a sulfur atom, often in thioether form
     ]
 
     # Parse SMILES
@@ -31,17 +30,14 @@ def is_carbapenems(smiles: str):
     if mol is None:
         return None, "Invalid SMILES string"
     
-    # Check for the core carbapenem pattern in the molecule
+    # Check for the core carbapenem structure
     if not mol.HasSubstructMatch(core_pattern):
         return False, "Does not match the carbapenem core structure"
 
-    # Check for additional common substructures
-    missing_structures = []
+    # Check for characteristic functional groups or atoms
     for pattern in additional_patterns:
         if not mol.HasSubstructMatch(pattern):
-            missing_structures.append("Missing functional group matching pattern: " + Chem.MolToSmiles(pattern))
-    if missing_structures:
-        return False, "; ".join(missing_structures)
+            return False, "Missing common functional group"
 
-    # If core and additional features are present, classify as carbapenem
-    return True, "Contains characteristic carbapenem core and common functional groups"
+    # If the characteristic features are present, classify as carbapenem
+    return True, "Contains characteristic carbapenem core and functional groups"
