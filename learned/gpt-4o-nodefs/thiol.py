@@ -6,7 +6,8 @@ from rdkit import Chem
 def is_thiol(smiles: str):
     """
     Determines if a molecule is a thiol based on its SMILES string.
-    A thiol typically contains the -SH group connected to a carbon.
+    A thiol typically contains the -SH group connected to a carbon, 
+    but can also be attached as part of different molecular contexts.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,16 +22,21 @@ def is_thiol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for a thiol group (must be connected to carbon)
-    thiol_pattern = Chem.MolFromSmarts("[CX4,CX3;!R][SX2H]")  # upgrade aliphatic context only
+    # Define a more comprehensive SMARTS pattern for a thiol group
+    thiol_patterns = [
+        Chem.MolFromSmarts("[CX4,CX3;!R][SX2H]"),  # Aliphatic thiol
+        Chem.MolFromSmarts("[c][SX2H]"),           # Aromatic thiol
+        Chem.MolFromSmarts("[SX2H]")               # General -SH group
+    ]
     
-    # Search for the thiol group in the molecule structure
-    if mol.HasSubstructMatch(thiol_pattern):
-        return True, "Contains a thiol group (-SH) attached to a carbon"
+    # Check for the presence of any thiol pattern
+    for pattern in thiol_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return True, "Contains a thiol group (-SH)"
 
     return False, "No thiol group found"
 
-# Example usage
+# Example usage (for controlled testing)
 smiles_examples = [
     "CCSCCS", "CC(C)(CO)[C@@H](O)C(=O)NCCC(=O)NCCS", "SCC(CC)C",
     "NC(=O)CCCCC(S)CCS", "SC(CS)(C)C", "NCCS", "OC(=O)C(=O)CS", 
