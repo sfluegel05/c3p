@@ -65,12 +65,6 @@ def is_omega_hydroxy_fatty_acid(smiles: str):
     if not has_hydroxyl:
         return False, "No hydroxyl group found at the terminal position"
 
-    # Check if the molecule is a straight-chain fatty acid (no branching)
-    # Count the number of carbons in the longest chain
-    chain_length = len(chain_matches[0])
-    if chain_length < 6:
-        return False, "Chain too short to be a fatty acid"
-
     # Ensure no branching in the chain
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() == 6 and atom.GetDegree() > 2:  # Carbon with more than 2 non-hydrogen connections (branching)
