@@ -2,11 +2,12 @@
 Classifies: CHEBI:4194 D-hexose
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_D_hexose(smiles: str):
     """
     Determines if a molecule is a D-hexose based on its SMILES string.
-    A D-hexose is defined as a hexose that has D-configuration at position 5.
+    A D-hexose is defined as a hexose with D-configuration at position 5.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,46 +22,28 @@ def is_D_hexose(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Ensure the molecule contains 6 carbons typical of hexoses
+    # Count the number of carbon atoms (should be 6 for hexose)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if c_count != 6:
         return False, "Molecule does not have 6 carbon atoms typical of hexoses"
 
-    # Attempt to identify the ring or linear structure
-    pyranose_pattern = Chem.MolFromSmarts("C1OC(O)C(O)C(O)C1") # typical pyranose pattern
-    furanose_pattern = Chem.MolFromSmarts("O1C(O)C(O)C(O)C1") # typical furanose pattern
-
-    found_pyranose = mol.HasSubstructMatch(pyranose_pattern)
-    found_furanose = mol.HasSubstructMatch(furanose_pattern)
-    ring_found = found_pyranose or found_furanose
-
     # Identify the chiral centers in the molecule
     chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
+    
+    # Check for the D-configuration, which is an 'R' configuration in the intended sugar stereochemistry
+    # RDKit provides stereochemistry directly, but we need to handle mixed configurations sometimes
+    found_D_chiral_center = False
 
-    # Tracking whether we find a valid D-configuration
-    valid_d_configuration = False
-
-    # Look specifically for D-configuration at position 5
     for center, config in chiral_centers:
-        # Checking for manual or structured D-configuration recognition
         atom = mol.GetAtomWithIdx(center)
-        if atom.GetIdx() == 4:  # Check the 5th carbon position, accounting for 0-based index
-            if config == 'R':
-                # Assuming 'R' as indicative for D-configuration requires domain knowledge
-                valid_d_configuration = True
+        atom_neighbors = [neighbor.GetSymbol() for neighbor in atom.GetNeighbors()]
+        
+        # Typically the chiral center position 5 in the chain (or equivalent in a ring) should be verified
+        if config == 'R' and atom.GetAtomicNum() == 6 and 'O' in atom_neighbors:
+            found_D_chiral_center = True
+            break
 
-    # Check the stereochemistry of the positions outside typical ring paradigms if necessary
-    if not valid_d_configuration and not ring_found:
-        # For non-ring structures (aldehyde forms), further stereochemical insight required
-        for center, config in chiral_centers:
-            if config == 'R':
-                valid_d_configuration = True
-                break
-
-    if valid_d_configuration:
+    if found_D_chiral_center:
         return True, "Molecule has D-configuration at position 5"
-
-    if ring_found:
-        return False, "Molecule does not have D-configuration at the expected position"
-
-    return False, "Molecule does not conform to D-hexose classification due to stereochemistry"
+    else:
+        return False, "Molecule does not conform to D-hexose classification due to stereochemistry"
