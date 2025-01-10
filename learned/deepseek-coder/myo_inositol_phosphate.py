@@ -43,7 +43,7 @@ def is_myo_inositol_phosphate(smiles: str):
     if len(phosphate_matches) < 1:
         return False, "No phosphate groups found"
 
-    # Check molecular formula (should have C6H(11-6)O(6-12)P(1-6))
+    # Check molecular formula (should have C6H(6-12)O(6-12)P(1-6))
     formula = rdMolDescriptors.CalcMolFormula(mol)
     c_count = formula.count('C')
     h_count = formula.count('H')
@@ -52,7 +52,7 @@ def is_myo_inositol_phosphate(smiles: str):
     
     if c_count != 6:
         return False, f"Wrong number of carbons: {c_count}"
-    if h_count < 6 or h_count > 11:
+    if h_count < 6 or h_count > 12:
         return False, f"Wrong number of hydrogens: {h_count}"
     if o_count < 6 or o_count > 12:
         return False, f"Wrong number of oxygens: {o_count}"
