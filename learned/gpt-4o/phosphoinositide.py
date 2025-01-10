@@ -2,7 +2,6 @@
 Classifies: CHEBI:18179 phosphoinositide
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_phosphoinositide(smiles: str):
     """
@@ -22,25 +21,21 @@ def is_phosphoinositide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for glycerol backbone pattern with at least two long carbon chains (C18+)
-    glycerol_pattern = Chem.MolFromSmarts("OCC(O)COP")
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone found"
-
-    acyl_chain_pattern = Chem.MolFromSmarts("CCCCCCCCCCCCCCCC")
-    acyl_matches = mol.GetSubstructMatches(acyl_chain_pattern)
-    if len(acyl_matches) < 2:
-        return False, f"Fewer than 2 acyl chains found, got {len(acyl_matches)}"
-
-    # Look for inositol ring pattern (6-membered ring with 5 hydroxy groups)
-    inositol_pattern = Chem.MolFromSmarts("C1C(O)C(O)C(O)C(O)C(O)1")
+    # Look for inositol ring pattern (6-membered ring with hydroxy groups)
+    inositol_pattern = Chem.MolFromSmarts("C1C(O)C(O)C(O)C(O)C(O)C1")
     if not mol.HasSubstructMatch(inositol_pattern):
         return False, "No inositol ring found"
 
-    # Check for phosphorylation on the inositol hydroxy groups
-    phosphate_pattern = Chem.MolFromSmarts("OP(=O)(O)O")
+    # Check for phosphate groups connected to inositol
+    phosphate_pattern = Chem.MolFromSmarts("O[P](=O)([O-])[O-]")
     phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
     if len(phosphate_matches) < 1:
         return False, "No phosphorylation found on inositol"
 
-    return True, "Contains glycerol backbone, inositol ring, and phosphorylations on inositol hydroxy groups"
+    # Count the C(=O)O side chains indicating lipid linkage
+    lipid_linkage_pattern = Chem.MolFromSmarts("C(=O)O[C@@H]")
+    acyl_matches = mol.GetSubstructMatches(lipid_linkage_pattern)
+    if not acyl_matches:
+        return False, "No lipid linkage found"
+
+    return True, "Contains inositol ring with phosphorylations and lipid linkages indicating a phosphoinositide"
