@@ -25,9 +25,15 @@ def is_anthoxanthin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
+    # Aromaticity perception (ensure correct handling of aromatic rings)
+    Chem.SanitizeMol(mol)
+
     # Define SMARTS patterns for flavone and flavonol cores
-    flavone_pattern = Chem.MolFromSmarts('[O]=C1C=CC(=CC1)c1ccccc1')  # 2-phenylchromen-4-one
-    flavonol_pattern = Chem.MolFromSmarts('[O]=C1C=C(O)C=CC1c1ccccc1')  # 3-hydroxyflavone
+    # Flavone core: 2-phenylchromen-4-one
+    flavone_pattern = Chem.MolFromSmarts('c1cc(-c2oc3ccccc3c(=O)c2)ccc1')
+
+    # Flavonol core: 3-hydroxyflavone
+    flavonol_pattern = Chem.MolFromSmarts('c1cc(-c2oc3ccccc3c(=O)c2O)ccc1')
 
     # Check for flavone core
     if mol.HasSubstructMatch(flavone_pattern):
@@ -37,41 +43,35 @@ def is_anthoxanthin(smiles: str):
     if mol.HasSubstructMatch(flavonol_pattern):
         return True, "Contains flavonol core structure"
 
-    # Check for glycosides of flavone or flavonol
-    # Define SMARTS pattern for O-glycosylation at position 3 or 7
-    glycosylation_pattern = Chem.MolFromSmarts('[O]-[*]')  # Simplified pattern for glycosidic bond
-    flavone_oglycoside = Chem.CombineMols(flavone_pattern, glycosylation_pattern)
-    flavonol_oglycoside = Chem.CombineMols(flavonol_pattern, glycosylation_pattern)
+    # Define patterns for glycosylated flavones/flavonols (O-glycosides)
+    # Simplified pattern: flavone or flavonol core with any sugar attached via oxygen
+    o_glycoside_pattern = Chem.MolFromSmarts('[$([cO][CX4H]),$([cO][CX4H][CX4H]),$([cO][CX4H][CX4H][CX4H])]')
+    flavone_oglycoside_pattern = Chem.CombineMols(flavone_pattern, o_glycoside_pattern)
+    flavonol_oglycoside_pattern = Chem.CombineMols(flavonol_pattern, o_glycoside_pattern)
 
-    if mol.HasSubstructMatch(flavone_oglycoside):
+    if mol.HasSubstructMatch(flavone_oglycoside_pattern):
         return True, "Contains flavone O-glycoside structure"
 
-    if mol.HasSubstructMatch(flavonol_oglycoside):
+    if mol.HasSubstructMatch(flavonol_oglycoside_pattern):
         return True, "Contains flavonol O-glycoside structure"
 
-    # Check for C-glycosides at position 6 or 8
-    # Define SMARTS pattern for C-glycosylation
-    c_glycosylation_pattern = Chem.MolFromSmarts('[C]-[C@H]1O[C@@H](O)[C@H](O)[C@@H](O)[C@H]1O')
+    # Check for C-glycosides (sugar attached directly to carbon)
+    # C-glycoside pattern: flavone or flavonol core with sugar attached to C6 or C8
+    c_glycoside_pattern = Chem.MolFromSmarts('c1cc(-c2oc3ccccc3c(=O)c2[c,C])ccc1')
+    if mol.HasSubstructMatch(c_glycoside_pattern):
+        return True, "Contains flavone or flavonol C-glycoside structure"
 
-    # Positions 6 and 8 on flavone core
-    flavone_cglycoside6 = Chem.MolFromSmarts('[O]=C1C=CC(=CC1-[C])c1ccccc1')
-    flavone_cglycoside8 = Chem.MolFromSmarts('[O]=C1C=CC(=CC1C=C-[C])c1ccccc1')
-
-    if mol.HasSubstructMatch(flavone_cglycoside6):
-        if mol.HasSubstructMatch(c_glycosylation_pattern):
-            return True, "Contains flavone C-glycoside at position 6"
-
-    if mol.HasSubstructMatch(flavone_cglycoside8):
-        if mol.HasSubstructMatch(c_glycosylation_pattern):
-            return True, "Contains flavone C-glycoside at position 8"
-
-    # Check for methylated derivatives
-    # Define SMARTS pattern for methoxy groups attached to aromatic rings
-    methoxy_pattern = Chem.MolFromSmarts('c-OC')
-
+    # Check for methylated derivatives (methoxy groups)
+    methoxy_pattern = Chem.MolFromSmarts('c-oc')
     if mol.HasSubstructMatch(flavone_pattern) or mol.HasSubstructMatch(flavonol_pattern):
         if mol.HasSubstructMatch(methoxy_pattern):
             return True, "Contains methylated flavone or flavonol core"
+
+    # Check for sulfonated derivatives (sulfo groups)
+    sulfo_pattern = Chem.MolFromSmarts('S(=O)(=O)[O-]')
+    if mol.HasSubstructMatch(sulfo_pattern):
+        if mol.HasSubstructMatch(flavone_pattern) or mol.HasSubstructMatch(flavonol_pattern):
+            return True, "Contains sulfonated flavone or flavonol"
 
     # No anthoxanthin core structure found
     return False, "Does not contain anthoxanthin core structure"
