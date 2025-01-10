@@ -22,14 +22,10 @@ def is_2_5_diketopiperazines(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define SMARTS pattern for a 2,5-diketopiperazine
-    # Allowing for stereochemistry (optional '@')
-    diketopiperazine_core = Chem.MolFromSmarts("N1[C@H](=O)C[C@H](C(=O))
-                                               )N1 |@|")
-
+    # This pattern represents a six-membered ring containing two carbonyl groups and two nitrogen atoms
+    diketopiperazine_core = Chem.MolFromSmarts("O=C1NCC(=O)NC1")
+    
     if mol.HasSubstructMatch(diketopiperazine_core):
-        # Verify the matched substructure is indeed a piperazine-2,5-dione
-        core_atoms = mol.GetSubstructMatch(diketopiperazine_core)
-        if core_atoms:
-            return True, "Contains a piperazine-2,5-dione skeleton"
+        return True, "Contains a piperazine-2,5-dione skeleton"
         
     return False, "Does not contain a piperazine-2,5-dione skeleton"
