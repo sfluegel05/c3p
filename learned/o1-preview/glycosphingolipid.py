@@ -5,6 +5,7 @@ Classifies: CHEBI:24402 glycosphingolipid
 Classifies: glycosphingolipid
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_glycosphingolipid(smiles: str):
     """
@@ -25,56 +26,40 @@ def is_glycosphingolipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a general SMARTS pattern for the amide bond (N-acylation)
-    amide_smarts = "[NX3][CX3](=O)[CX4,CX3]"
-    amide_pattern = Chem.MolFromSmarts(amide_smarts)
-
-    # Find all amide groups
-    amide_matches = mol.GetSubstructMatches(amide_pattern)
-    if not amide_matches:
-        return False, "No amide (N-acylation) found"
-
-    # Define a general SMARTS pattern for the sphingoid base (long-chain amino alcohol)
-    # Nitrogen connected to a chain with at least one hydroxyl group
-    sphingoid_smarts = "[NX3][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][OX2H1,OX1H0]"
+    # Define SMARTS pattern for sphingoid base (long-chain amino alcohol)
+    # Sphingoid base: long hydrocarbon chain with an amino group and two hydroxyl groups
+    sphingoid_smarts = "[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6;R0]-[#6;R0]-[O]-[C]-[N]"
     sphingoid_pattern = Chem.MolFromSmarts(sphingoid_smarts)
 
-    # Check if sphingoid base is present
+    # Define SMARTS pattern for ceramide (sphingoid base with amide-linked fatty acid)
+    ceramide_smarts = "[C;R0](=O)-[N]-[C]-[C]-[C]-[C]-[C]-[C]-[C]-[C]-[C]-[C]-[C]-[C]-[C]-[C]-[C]-[C]-[C]-[C]"
+    ceramide_pattern = Chem.MolFromSmarts(ceramide_smarts)
+
+    # Check for sphingoid base or ceramide backbone
     has_sphingoid = mol.HasSubstructMatch(sphingoid_pattern)
-    if not has_sphingoid:
-        return False, "No sphingoid base (long-chain amino alcohol) found"
+    has_ceramide = mol.HasSubstructMatch(ceramide_pattern)
 
-    # Define SMARTS pattern for sugar moiety (pyranose ring)
-    sugar_ring_smarts = "[OX2H][C@@H]1[O,C][C@@H][C@@H][C@@H][O,C]1"
-    sugar_ring_pattern = Chem.MolFromSmarts(sugar_ring_smarts)
-
-    # Check for sugar ring
-    has_sugar_ring = mol.HasSubstructMatch(sugar_ring_pattern)
-    if not has_sugar_ring:
-        return False, "No sugar moiety detected"
+    if not (has_sphingoid or has_ceramide):
+        return False, "No sphingoid base or ceramide backbone found"
 
     # Define SMARTS pattern for glycosidic linkage to O-1 of sphingoid
-    glycosidic_linkage_smarts = "[OX2H]-[C]"
-    glycosidic_linkage_pattern = Chem.MolFromSmarts(glycosidic_linkage_smarts)
+    # Looking for an oxygen atom connected to a sugar ring (pyranose or furanose)
+    glycosidic_smarts = "[C;R0]-[O]-[C;R]-[C;R]-[O;R]"
+    glycosidic_pattern = Chem.MolFromSmarts(glycosidic_smarts)
 
-    # Check for glycosidic linkage between sphingoid base and sugar
-    # Find oxygen connected to sphingoid carbon and sugar anomeric carbon
-    found_glycosidic_linkage = False
-    for match in mol.GetSubstructMatches(glycosidic_linkage_pattern):
-        o_atom = mol.GetAtomWithIdx(match[0])
-        neighbors = o_atom.GetNeighbors()
-        has_sphingoid_carbon = False
-        has_sugar_carbon = False
-        for neighbor in neighbors:
-            if neighbor.IsInRing():  # Sugar ring carbon
-                has_sugar_carbon = True
-            elif neighbor.GetAtomicNum() == 6:  # Carbon connected to sphingoid base
-                has_sphingoid_carbon = True
-        if has_sphingoid_carbon and has_sugar_carbon:
-            found_glycosidic_linkage = True
-            break
+    has_glycosidic_linkage = mol.HasSubstructMatch(glycosidic_pattern)
 
-    if not found_glycosidic_linkage:
-        return False, "No glycosidic linkage between sphingoid base and sugar moiety found"
+    if not has_glycosidic_linkage:
+        return False, "No carbohydrate residue attached via glycosidic linkage to O-1"
 
-    return True, "Contains sphingoid base with sugar moiety attached via glycosidic linkage to O-1"
+    # Optionally, we can check for the sugar ring more specifically
+    # Define SMARTS pattern for sugar rings (pyranose and furanose)
+    sugar_ring_smarts = "[$([C@H]1O[C@@H](CO)[C@H](O)[C@@H](O)[C@H]1O),$([C@H]1O[C@H](O)[C@@H](O)[C@H](O)[C@H]1O)]"
+    sugar_ring_pattern = Chem.MolFromSmarts(sugar_ring_smarts)
+
+    has_sugar_ring = mol.HasSubstructMatch(sugar_ring_pattern)
+
+    if not has_sugar_ring:
+        return False, "No sugar ring detected"
+
+    return True, "Contains sphingoid or ceramide backbone with sugar moiety attached via glycosidic linkage to O-1"
