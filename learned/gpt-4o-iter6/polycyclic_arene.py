@@ -2,12 +2,11 @@
 Classifies: CHEBI:33848 polycyclic arene
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_polycyclic_arene(smiles: str):
     """
     Determines if a molecule is a polycyclic arene based on its SMILES string.
-    A polycyclic arene consists of multiple condensed aromatic rings.
+    A polycyclic arene consists of multiple fused aromatic rings.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -30,11 +29,18 @@ def is_polycyclic_arene(smiles: str):
     if len(aromatic_benzenes) < 2:
         return False, f"Found {len(aromatic_benzenes)} aromatic benzene rings, need at least 2"
     
-    # Check rings are fused
+    # Check if rings are fused by deciding if they share atoms
     ring_info = mol.GetRingInfo()
-    fused_rings = ring_info.NumFusedRings()
-    if fused_rings < 2:
-        return False, f"Only {fused_rings} fused rings found, need at least 2"
+    num_fused_rings = 0
+
+    for i, ring1 in enumerate(ring_info.AtomRings()):
+        for ring2 in ring_info.AtomRings():
+            if ring1 != ring2 and any(atom in ring1 for atom in ring2):
+                num_fused_rings += 1
+                break
+
+    if num_fused_rings < 2:
+        return False, "Rings need to be fused"
 
     # Ensure no heteroatoms in rings (only carbon/hydrogen allowed for simple PAHs)
     for ring in ring_info.AtomRings():
