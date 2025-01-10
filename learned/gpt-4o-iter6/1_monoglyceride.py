@@ -20,25 +20,26 @@ def is_1_monoglyceride(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+    
+    # Improved SMARTS pattern: Acyl group attached at C1 with intact secondary alcohols
+    # We identify C1-O-CO-[C] structure and ensure it's exclusive to this position
+    # with a secondary alcohol configuration remaining nearby
 
-    # Pattern for extracting the 1-monoglyceride features:
-    # - Primary carbon ester linkage [C@](O)COC(=O)
-    # - Secondary alcohol remains [C@@](O)COH
-    # - Exact chain length or variations
+    # Pattern for ester at first carbon including stereochemistry/sn-glycerol form:
+    monoglyceride_pattern = Chem.MolFromSmarts('OCC(OC=O)[C@@H](O)CO')  # Matching glycerol ester at primary position
 
-    # Look for 1-monoglyceride specific structural patterns
-    monoglyceride_pattern = Chem.MolFromSmarts('O[C@@H](CO)COC(=O)C')  # Active ester and secondary alcohol pattern
+    # Check for presence of the specific pattern
     if not mol.HasSubstructMatch(monoglyceride_pattern):
-        return False, "No 1-monoglyceride backbone detected"
+        return False, "1-monoglyceride structural pattern not matched"
 
-    # Validity check on the specific esterified position:
-    ester_pattern = Chem.MolFromSmarts('OC([C@H](CO)C(=O)O)')
+    # Verify esterification is at the primary position of glycerol's backbone
+    ester_pattern = Chem.MolFromSmarts('O=C[O][CH2][CH](O)CO')
     if not mol.HasSubstructMatch(ester_pattern):
-        return False, "Acyl linkage not located at position 1"
+        return False, "Acyl linkage not specifically at position 1"
+    
+    # Additional: Ensure there's no other ester linkage taking away features
+    branch_matches = mol.GetSubstructMatches(monoglyceride_pattern)
+    if len(branch_matches) > 1:
+        return False, f"Multiple esterification detected, expected only one at the primary position"
 
-    # Check for additional branches if any so that primary criteria are met
-    branches = mol.GetSubstructMatches(ester_pattern)
-    if len(branches) != 1:
-        return False, f"Found {len(branches)} branches of esterification, expected exactly 1 at the primary position"
-
-    return True, "Verified 1-monoglyceride with acyl linkage at position 1"
+    return True, "Verified 1-monoglyceride with correct acyl linkage at the position 1"
