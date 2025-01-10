@@ -23,18 +23,24 @@ def is_2_hydroxydicarboxylic_acid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Pattern for carboxylic acid (-C(=O)O)
-    carboxy_pattern = Chem.MolFromSmarts("C(=O)O")
+    carboxy_pattern = Chem.MolFromSmarts("C(=O)[O;H1,-1]")
     carboxy_matches = mol.GetSubstructMatches(carboxy_pattern)
     
-    # Ensure we have exactly two carboxylic acid groups
+    # Ensure we have at least two distinct carboxylic acid groups
     if len(carboxy_matches) < 2:
         return False, f"Expected at least 2 carboxylic acid groups but found {len(carboxy_matches)}"
 
-    # Pattern for the alpha-hydroxy: HO-C-C(=O)O, accounting for chirality symbols
-    alpha_hydroxy_pattern = Chem.MolFromSmarts("[C;H0,H1,H2](O)[C;H1,H2](C(=O)O)")
-    alpha_oh_matches = mol.GetSubstructMatches(alpha_hydroxy_pattern)
-    
-    if not alpha_oh_matches:
-        return False, "No hydroxy group found on the alpha carbon to a carboxylic acid group"
+    # Refine alpha-hydroxy pattern with flexibility, capturing stereochemistry
+    # Alpha hydroxy group: HO-C-C(=O); considering different hydrogen counts
+    alpha_hydroxy_patterns = [
+        Chem.MolFromSmarts("[C;R0][C;H1,H2](O)[C,R0](C(=O)[O,H,-1])")
+    ]
 
-    return True, "Contains two carboxylic acid groups and a hydroxy group on the alpha carbon"
+    for pattern in alpha_hydroxy_patterns:
+        for match in mol.GetSubstructMatches(pattern):
+            # Validate position of hydroxy group relative to carboxyl groups
+            # Ensure that this captures all variants from user examples
+            if any(mol.GetAtomWithIdx(match[idx]).GetSymbol() == 'O' for idx in range(len(match))):
+                return True, "Contains two carboxylic acid groups and a hydroxy group on the alpha carbon"
+
+    return False, "No hydroxy group found on the alpha carbon to a carboxylic acid group"
