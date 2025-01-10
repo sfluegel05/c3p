@@ -21,22 +21,22 @@ def is_branched_chain_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define and detect Coenzyme A pattern using SMARTS
+    # Update Coenzyme A pattern, ensuring it covers known cases accurately.
     coa_smarts = (
-        "C(=O)SCCNC(=O)CCNC(=O)C[C@H](O)C(C)COP(O)(=O)OP(O)(=O)OCC1OC"
-        "(n2cnc3c(ncnc23)N)[C@H]1O"
-    )
+        "C(=O)SCCNC(=O)CCNC(=O)C[C@@H](O)C(C)COP(=O)(O)O"
+        "P(=O)(O)OC[C@H]1O[C@H]([C@@H](O)[C@H](O)C1)n2cnc3c(N)ncnc23"
+    )  # Expanding based on flexible structures in examples
     coa_pattern = Chem.MolFromSmarts(coa_smarts)
 
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No Coenzyme A moiety found"
     
-    # Define pattern for branched chains in fatty acids
-    # A carbon atom connected to three other carbons
-    branched_smarts = "[CX4](C)(C)C"  # Detects _branched_ carbon patterns: tertiary or quaternary carbons
+    # Define improved pattern for identifying branched carbon chains
+    # Considering primary and secondary branching as a versatile descriptor.
+    branched_smarts = "[CX3,CX4]([C])([C])[C]"  # Adjusting pattern to catch various branched structures
     branched_pattern = Chem.MolFromSmarts(branched_smarts)
     
     if not mol.HasSubstructMatch(branched_pattern):
-        return False, "No branched-chain in the fatty acid"
+        return False, "No branched-chain found in the fatty acid ligand"
 
-    return True, "Contains CoA moiety and branched-chain in the fatty acid"
+    return True, "Contains both CoA moiety and appropriate branched-chain in fatty acid"
