@@ -21,19 +21,10 @@ def is_arenecarbaldehyde(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define an aldehyde pattern with the carbonyl carbon adjacent to an aromatic carbon
-    aldehyde_with_aromatic_attachment = Chem.MolFromSmarts("[CX3H1]=[O]")
+    # Define an aldehyde pattern where the carbonyl carbon is attached to an aromatic carbon
+    aldehyde_aromatic_attachment = Chem.MolFromSmarts("[C](=[O])[c]")
 
-    # Check if the molecule has an aldehyde group.
-    matches = mol.GetSubstructMatches(aldehyde_with_aromatic_attachment)
-
-    for aldehyde_carbon in matches:
-        # Find the carbon atom involved in the aldehyde
-        aldehyde_atom = mol.GetAtomWithIdx(aldehyde_carbon[0])
-
-        # Check if this carbon atom is attached to an aromatic system
-        for neighbor in aldehyde_atom.GetNeighbors():
-            if neighbor.GetIsAromatic():
-                return True, "Aldehyde group attached to an aromatic moiety"
+    if mol.HasSubstructMatch(aldehyde_aromatic_attachment):
+        return True, "Aldehyde group attached to an aromatic moiety"
     
     return False, "Aldehyde group not attached to aromatic moiety"
