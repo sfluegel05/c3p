@@ -22,18 +22,19 @@ def is_nucleoside_5__phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define sugar pattern for both ribose and deoxyribose
-    sugar_pattern = Chem.MolFromSmarts("C1([C@@H]2C(O)[C@@H](O)CO2)O1")  # General 5-membered sugar ring
+    # Define improved sugar patterns
+    ribose_pattern = Chem.MolFromSmarts("C1([C@H](O)[C@H](O)CO)O[C@@H]1")
+    deoxyribose_pattern = Chem.MolFromSmarts("C1([C@H](C[CH2]O)O)O[C@@H]1")
 
-    # Generalized phosphate group pattern for mono-, di-, tri-, tetra-phosphate
-    phosphate_pattern = Chem.MolFromSmarts("COP(O)(=O)(O)O")  # Attaching phosphate to ribose
+    # Improved phosphate group pattern for attachments at C-5 position
+    phosphate_pattern = Chem.MolFromSmarts("C(OP(O)(=O)(O))=O")
 
-    # Simplified purine and pyrimidine patterns
+    # Improved purine and pyrimidine base patterns
     purine_pattern = Chem.MolFromSmarts("c1ncnc2ncnc12")
     pyrimidine_pattern = Chem.MolFromSmarts("c1[nH]cnc(N)c1=O")
 
     # Check for sugar pattern matches in the molecule
-    if not mol.HasSubstructMatch(sugar_pattern):
+    if not mol.HasSubstructMatch(ribose_pattern) and not mol.HasSubstructMatch(deoxyribose_pattern):
         return False, "Does not contain a ribose or deoxyribose sugar structure"
 
     # Check for phosphate group patterns
