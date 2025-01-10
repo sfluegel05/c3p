@@ -24,62 +24,47 @@ def is_beta_D_galactoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Basic pyranose ring pattern
-    pyranose_pattern = Chem.MolFromSmarts("[OX2][C][C][C][C][C]1")
-    if not mol.HasSubstructMatch(pyranose_pattern):
-        return False, "No pyranose ring found"
-
-    # Find all potential pyranose rings
-    matches = mol.GetSubstructMatches(pyranose_pattern)
+    # Add explicit Hs - this helps with stereochemistry
+    mol = Chem.AddHs(mol)
     
-    for match in matches:
-        ring_O = mol.GetAtomWithIdx(match[0])
-        C1 = mol.GetAtomWithIdx(match[1])  # anomeric carbon
-        C2 = mol.GetAtomWithIdx(match[2])
-        C3 = mol.GetAtomWithIdx(match[3])
-        C4 = mol.GetAtomWithIdx(match[4])
-        C5 = mol.GetAtomWithIdx(match[5])
+    # Beta-D-galactopyranoside core pattern with stereochemistry
+    # [OH1] represents the glycosidic oxygen
+    # First carbon is the anomeric carbon with beta configuration
+    # Fourth carbon has axial OH (characteristic of galactose)
+    beta_gal_pattern = Chem.MolFromSmarts(
+        "[OD2]-[C@H]1[C@H](O)[C@H](O)[C@@H](O)[C@H]([CH2]O)O1"
+    )
+    
+    if beta_gal_pattern is None:
+        return None, "Invalid SMARTS pattern"
+    
+    # Look for matches using stereochemistry
+    params = Chem.SubstructMatchParameters()
+    params.useChirality = True
+    matches = mol.GetSubstructMatches(beta_gal_pattern, params)
+    
+    if not matches:
+        return False, "No beta-D-galactoside moiety found"
         
-        # Check if this is potentially a galactose ring
-        # 1. Each carbon should have one oxygen
-        carbons = [C1, C2, C3, C4, C5]
-        if not all(sum(1 for n in c.GetNeighbors() if n.GetAtomicNum() == 8) >= 1 for c in carbons):
-            continue
-            
-        # 2. Check for required stereocenters
-        if any(c.GetChiralTag() == Chem.ChiralType.CHI_UNSPECIFIED for c in carbons):
-            continue
-            
-        # 3. Check C4 has axial hydroxyl (characteristic of galactose)
-        c4_neighbors = [n for n in C4.GetNeighbors() if n.GetAtomicNum() == 8 and n != ring_O]
-        if not c4_neighbors:
-            continue
-            
-        # 4. Check for beta configuration at anomeric center
-        c1_neighbors = C1.GetNeighbors()
-        non_ring_O = [n for n in c1_neighbors if n.GetAtomicNum() == 8 and n != ring_O]
-        if not non_ring_O:
-            continue
-            
-        # Check if the non-ring oxygen is connected to something (glycosidic bond)
-        glycosidic_O = non_ring_O[0]
-        if len(glycosidic_O.GetNeighbors()) != 2:
-            continue
-            
-        # Verify D-galactose stereochemistry
-        # C1(@H) - beta
-        # C2(@H), C3(@H) - equatorial OH
-        # C4(@@H) - axial OH
-        # C5(@H) - maintains ring shape
-        if (C1.GetChiralTag() == Chem.ChiralType.CHI_TETRAHEDRAL_CCW and
-            C2.GetChiralTag() == Chem.ChiralType.CHI_TETRAHEDRAL_CCW and
-            C3.GetChiralTag() == Chem.ChiralType.CHI_TETRAHEDRAL_CCW and
-            C4.GetChiralTag() == Chem.ChiralType.CHI_TETRAHEDRAL_CW):
-            
-            # Check for CH2OH at C5
-            c5_neighbors = [n for n in C5.GetNeighbors() if n.GetAtomicNum() == 6]
-            if any(sum(1 for nn in n.GetNeighbors() if nn.GetAtomicNum() == 8) == 1 
-                  for n in c5_neighbors):
-                return True, "Contains beta-D-galactoside moiety with correct stereochemistry"
+    # Verify glycosidic bond
+    for match in matches:
+        glycosidic_O = mol.GetAtomWithIdx(match[0])
+        
+        # Check if oxygen is part of a glycosidic bond (connected to two carbons)
+        carbon_neighbors = [n for n in glycosidic_O.GetNeighbors() 
+                          if n.GetAtomicNum() == 6]
+        
+        if len(carbon_neighbors) == 2:
+            # Found a valid glycosidic bond
+            return True, "Contains beta-D-galactoside moiety with correct stereochemistry"
     
-    return False, "No beta-D-galactoside configuration found"
+    return False, "Found galactose ring but no glycosidic bond"
+
+def test_smiles():
+    """Test function with a known beta-D-galactoside"""
+    test_mol = "CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O"  # methyl beta-D-galactoside
+    result, reason = is_beta_D_galactoside(test_mol)
+    print(f"Test result: {result}, Reason: {reason}")
+
+if __name__ == "__main__":
+    test_smiles()
