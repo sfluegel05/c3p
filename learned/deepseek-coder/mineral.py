@@ -22,8 +22,8 @@ def is_mineral(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
+    # Parse SMILES with allowCXSMILES to handle disconnected components
+    mol = Chem.MolFromSmiles(smiles, sanitize=False, allowCXSMILES=True)
     if mol is None:
         return False, "Invalid SMILES string"
 
@@ -52,6 +52,7 @@ def is_mineral(smiles: str):
         "water": "O"
     }
 
+    # Check for common mineral patterns
     for name, pattern in patterns.items():
         if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
             return True, f"Contains {name} group, common in minerals"
@@ -60,6 +61,12 @@ def is_mineral(smiles: str):
     if len(mol.GetAtoms()) <= 5 and all(atom.GetAtomicNum() in metal_atomic_nums or 
                                       atom.GetAtomicNum() in {6, 7, 8, 9, 15, 16, 17, 35, 53} for atom in mol.GetAtoms()):
         return True, "Simple inorganic salt, common in minerals"
+
+    # Check for presence of both cations and anions
+    cations = [atom for atom in mol.GetAtoms() if atom.GetFormalCharge() > 0]
+    anions = [atom for atom in mol.GetAtoms() if atom.GetFormalCharge() < 0]
+    if cations and anions:
+        return True, "Contains both cations and anions, typical of mineral salts"
 
     # If none of the above patterns match, return False
     return False, "Does not match common mineral patterns"
