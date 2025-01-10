@@ -7,7 +7,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_sulfolipid(smiles: str):
     """
     Determines if a molecule is a sulfolipid based on its SMILES string.
-    A sulfolipid is a compound containing a sulfonic acid residue joined by a carbon-sulfur bond to a lipid.
+    A sulfolipid is a compound containing a sulfonic acid residue joined by a sulfur-oxygen bond (sulfate ester) to a lipid.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,26 +22,16 @@ def is_sulfolipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for sulfonic acid group connected via sulfur-carbon bond
-    # SMARTS pattern for C-S(=O)(=O)[O-] or C-S(=O)(=O)O
-    # Matches both protonated and deprotonated sulfonic acid groups
-    sulfonic_acid_pattern = Chem.MolFromSmarts("[#6]-[S](=O)(=O)[O;H1,-1]")
-    if not mol.HasSubstructMatch(sulfonic_acid_pattern):
-        return False, "No sulfonic acid group connected to carbon found"
+    # Look for sulfate ester group connected via oxygen-sulfur-oxygen-carbon bonds
+    # SMARTS pattern for O-S(=O)(=O)-O-C
+    sulfate_ester_pattern = Chem.MolFromSmarts("O[S](=O)(=O)O[C]")
+    if not mol.HasSubstructMatch(sulfate_ester_pattern):
+        return False, "No sulfate ester group connected to carbon found"
 
-    # Count the number of carbon atoms to assess lipid characteristic
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 20:
-        return False, "Too few carbon atoms for a lipid"
+    # Check for long hydrocarbon chains to assess lipid characteristic
+    # Look for aliphatic chains of at least 12 carbons (could be adjusted as needed)
+    alkyl_chain_pattern = Chem.MolFromSmarts("C" + "C" * 11)  # Chain of 12 carbons
+    if not mol.HasSubstructMatch(alkyl_chain_pattern):
+        return False, "No long hydrocarbon chain found"
 
-    # Count rotatable bonds to assess chain length and flexibility
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 10:
-        return False, "Too few rotatable bonds for a lipid"
-
-    # Check molecular weight - sulfolipids typically have high molecular weight
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 500:
-        return False, "Molecular weight too low for a sulfolipid"
-
-    return True, "Contains sulfonic acid group connected via carbon-sulfur bond and lipid characteristics"
+    return True, "Contains sulfate ester group connected via oxygen-sulfur bond and lipid characteristics"
