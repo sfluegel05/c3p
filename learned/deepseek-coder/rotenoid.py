@@ -26,8 +26,8 @@ def is_rotenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more general core rotenoid skeleton pattern
-    rotenoid_pattern = Chem.MolFromSmarts("[O]1[C@@H]2[C@@H]([C@@H]3[C@@H]([C@@H]4[C@@H]([C@@H]1[C@@H]2)[C@@H]3)[C@@H]4)")
+    # Define the core rotenoid skeleton pattern
+    rotenoid_pattern = Chem.MolFromSmarts("[O]1[C@@]2([C@]([C]=O)([C]=3[C@@H]([O]4[C@@H]3)[C@@H]4)[C@@H]2)[C@@H]1")
     
     # Check if the molecule contains the rotenoid skeleton
     if not mol.HasSubstructMatch(rotenoid_pattern):
