@@ -11,6 +11,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_methyl_branched_fatty_acid(smiles: str):
     """
     Determines if a molecule is a methyl-branched fatty acid based on its SMILES string.
+    A methyl-branched fatty acid is a fatty acid containing only methyl branches.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -29,51 +30,64 @@ def is_methyl_branched_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(carboxylic_pattern):
         return False, "No carboxylic acid group found"
     
-    # Count carboxylic acid groups - should typically have just one
+    # Count carboxylic acid groups - should have just one
     carboxylic_matches = len(mol.GetSubstructMatches(carboxylic_pattern))
-    if carboxylic_matches > 2:  # allowing up to 2 for some edge cases
-        return False, f"Too many carboxylic acid groups ({carboxylic_matches})"
+    if carboxylic_matches != 1:
+        return False, f"Invalid number of carboxylic acid groups ({carboxylic_matches})"
     
-    # Look for methyl branches (excluding those part of carboxylic group)
-    # Pattern matches methyl group attached to carbon that's not part of COOH
-    methyl_branch_pattern = Chem.MolFromSmarts("[CH3][CX4]")
-    methyl_matches = len(mol.GetSubstructMatches(methyl_branch_pattern))
-    if methyl_matches == 0:
-        return False, "No methyl branches found"
-    
-    # Check for non-methyl branches (e.g. ethyl, propyl)
-    # This pattern matches longer branches (C-C-C or more)
-    long_branch_pattern = Chem.MolFromSmarts("[CH2][CH2][CH2,CH3]")
-    branch_matches = mol.GetSubstructMatches(long_branch_pattern)
+    # Check for cyclic structures (excluding small rings that might be part of side groups)
+    ring_info = mol.GetRingInfo()
+    ring_sizes = [len(r) for r in ring_info.AtomRings()]
+    if any(size >= 6 for size in ring_sizes):
+        return False, "Contains large ring structure"
     
     # Count carbons and check if it's a reasonable size for a fatty acid
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 4:  # minimum size for a branched fatty acid
+    if c_count < 4:
         return False, "Carbon chain too short"
-    
-    # Check for predominantly aliphatic character
-    aromatic_pattern = Chem.MolFromSmarts("a")
-    if mol.HasSubstructMatch(aromatic_pattern):
+    if c_count > 30:
+        return False, "Carbon chain too long for typical fatty acid"
+        
+    # Check for aromatic character
+    if any(atom.GetIsAromatic() for atom in mol.GetAtoms()):
         return False, "Contains aromatic rings"
     
     # Count heteroatoms (excluding O from COOH)
     n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
     s_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 16)
     p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     
-    # Allow some nitrogen-containing compounds but limit other heteroatoms
     if s_count > 0 or p_count > 0:
         return False, "Contains unexpected heteroatoms (S, P)"
-    if n_count > 2:  # allowing up to 2 nitrogens for some derivatives
+    if n_count > 1:  # More restrictive on N
         return False, "Too many nitrogen atoms"
+    if o_count > 3:  # Allow COOH (2 O) plus maybe one extra O
+        return False, "Too many oxygen atoms"
     
-    # Calculate fraction of carbons that are sp3 hybridized
-    sp3_pattern = Chem.MolFromSmarts("[CX4]")
-    sp3_count = len(mol.GetSubstructMatches(sp3_pattern))
-    sp3_fraction = sp3_count / c_count
+    # Look for methyl branches using multiple patterns
+    methyl_patterns = [
+        "[CH3][CX4]", # Standard methyl branch
+        "[CH3][CH1]", # Methyl on branching point
+        "[CH3][C]([CH3])[CH3]" # Geminal dimethyl
+    ]
     
-    # Most carbons should be sp3 (allowing some unsaturation)
-    if sp3_fraction < 0.5:
-        return False, "Too many unsaturated carbons"
+    total_methyl_branches = 0
+    for pattern in methyl_patterns:
+        matches = len(mol.GetSubstructMatches(Chem.MolFromSmarts(pattern)))
+        total_methyl_branches += matches
     
-    return True, f"Contains carboxylic acid group with {methyl_matches} methyl branch(es)"
+    if total_methyl_branches == 0:
+        return False, "No methyl branches found"
+    
+    # Check for non-methyl branches (e.g. ethyl, propyl)
+    # This pattern matches carbon chains longer than methyl attached to the main chain
+    non_methyl_branch = Chem.MolFromSmarts("[CH2][CH2][CH2,CH3]")
+    if mol.HasSubstructMatch(non_methyl_branch):
+        # Verify if it's part of the main chain rather than a branch
+        matches = len(mol.GetSubstructMatches(non_methyl_branch))
+        if matches > 1:  # Allow one match which might be the main chain
+            return False, "Contains non-methyl branches"
+    
+    # Success case
+    return True, f"Contains carboxylic acid group with methyl branching"
