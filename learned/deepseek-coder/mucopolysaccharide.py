@@ -11,8 +11,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_mucopolysaccharide(smiles: str):
     """
     Determines if a molecule is a mucopolysaccharide based on its SMILES string.
-    Mucopolysaccharides are polysaccharides composed of alternating units of uronic acids and glycosamines,
-    and are commonly partially esterified with sulfuric acid.
+    Mucopolysaccharides are polysaccharides composed of alternating units of uronic acids and glycosamines.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -28,7 +27,7 @@ def is_mucopolysaccharide(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for presence of uronic acid pattern (carboxyl group attached to a sugar)
-    uronic_acid_pattern = Chem.MolFromSmarts("[CX4][CX3](=[OX1])[OX2H]")
+    uronic_acid_pattern = Chem.MolFromSmarts("[CX4][CX3](=[OX1])[OX2H0]")
     if not mol.HasSubstructMatch(uronic_acid_pattern):
         return False, "No uronic acid pattern found"
 
@@ -37,13 +36,7 @@ def is_mucopolysaccharide(smiles: str):
     if not mol.HasSubstructMatch(glycosamine_pattern):
         return False, "No glycosamine pattern found"
 
-    # Check for sulfuric acid ester pattern (sulfate group attached to a sugar)
-    sulfate_pattern = Chem.MolFromSmarts("[OX2][SX4](=[OX1])(=[OX1])[OX2]")
-    if not mol.HasSubstructMatch(sulfate_pattern):
-        return False, "No sulfuric acid ester pattern found"
-
     # Check for alternating pattern of uronic acids and glycosamines
-    # This is a simplified check and may not catch all cases
     uronic_acid_count = len(mol.GetSubstructMatches(uronic_acid_pattern))
     glycosamine_count = len(mol.GetSubstructMatches(glycosamine_pattern))
     if abs(uronic_acid_count - glycosamine_count) > 1:
@@ -51,7 +44,7 @@ def is_mucopolysaccharide(smiles: str):
 
     # Check molecular weight - mucopolysaccharides are typically large molecules
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 500:
+    if mol_wt < 300:
         return False, "Molecular weight too low for mucopolysaccharide"
 
     # Count carbons, oxygens, and nitrogens
@@ -66,7 +59,7 @@ def is_mucopolysaccharide(smiles: str):
     if n_count < 1:
         return False, "Too few nitrogens for mucopolysaccharide"
 
-    return True, "Contains alternating uronic acids and glycosamines with sulfuric acid esterification"
+    return True, "Contains alternating uronic acids and glycosamines"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:37395',
