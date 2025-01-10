@@ -2,12 +2,13 @@
 Classifies: CHEBI:74716 withanolide
 """
 from rdkit import Chem
+from rdkit.Chem import rdchem
 
 def is_withanolide(smiles: str):
     """
     Determines if a molecule is a withanolide based on its SMILES string.
     Withanolides are C28 steroid lactones with modified side chains forming lactone rings and substituted derivatives.
-    
+
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -19,31 +20,30 @@ def is_withanolide(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return (None, "Invalid SMILES string")
+        return None, "Invalid SMILES string"
 
-    # Check for the steroid backbone (using a composite flexible core steroid pattern)
-    steroid_patterns = [
-        Chem.MolFromSmarts("C1CC(C2CCC3C4CC=CC5C4(C)CCC2C1=C35)"),  # Standard steroid scaffold
-        Chem.MolFromSmarts("C1CC2CCC3C(C=CC4C3C=CC5=C4C2=C5C)C1"),  # Another steroid variation
-    ]
+    # Check for the basic steroidal backbone (four fused rings)
+    steroid_pattern = Chem.MolFromSmarts("C1CCC2C(C1)CC3C(C2)CCCC3")
+    if not mol.HasSubstructMatch(steroid_pattern):
+        return False, "No steroid backbone detected"
     
-    if not any(mol.HasSubstructMatch(pattern) for pattern in steroid_patterns):
-        return (False, "No steroid backbone detected")
+    # Check for the lactone ring (cyclic ester)
+    lactone_pattern = Chem.MolFromSmarts("C1OC(=O)C=CC1")
+    if not mol.HasSubstructMatch(lactone_pattern):
+        return False, "No lactone group found"
     
-    # Check for lactone ring (generalized to more complex structures)
-    lactone_patterns = [
-        Chem.MolFromSmarts("O=C1OC=C(C)C(C)C1"),  # Variation for withanolide lactones
-        Chem.MolFromSmarts("O[C@@]1([C@@H]2[C@H]3[C@@H](C(=O)O1)OC=C[C@@H]3C2)"),  # Larger lactones
-    ]
-    if not any(mol.HasSubstructMatch(pattern) for pattern in lactone_patterns):
-        return (False, "No lactone group found")
-    
-    # Check for common functional groups specific to withanolides
-    hemiacetal_or_hydroxyl_patterns = [
-        Chem.MolFromSmarts("C1(O)C(CO)CC1"),  # Pattern for hydroxyl containing rings
-        Chem.MolFromSmarts("COC1=C[C@@H](O)C(O)=C(C)C1"),  # Hydroxy and ether functionalities
-    ]
-    if not any(mol.HasSubstructMatch(pattern) for pattern in hemiacetal_or_hydroxyl_patterns):
-        return (False, "Lacks characteristic oxygenated functionalities of withanolides")
+    # Count the carbon atoms to check for a C28 steroid
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 28:
+        return False, f"Not enough carbon atoms: found {c_count}, expected at least 28"
 
-    return (True, "Contains features consistent with withanolides: steroid backbone, lactone ring, and functional groups")
+    # Check for hydroxyl and ketone functional groups
+    hydroxyl_pattern = Chem.MolFromSmarts("[CX4][OX2H]")
+    ketone_pattern = Chem.MolFromSmarts("[CX3](=O)[#6]")
+    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
+    ketone_matches = mol.GetSubstructMatches(ketone_pattern)
+    
+    if not hydroxyl_matches and not ketone_matches:
+        return False, "No hydroxyl or ketone functionalities detected"
+
+    return True, "Contains features consistent with withanolides (steroid backbone, lactone group, C28)"
