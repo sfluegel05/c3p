@@ -2,6 +2,7 @@
 Classifies: CHEBI:61703 nonclassic icosanoid
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_nonclassic_icosanoid(smiles: str):
     """
@@ -17,36 +18,40 @@ def is_nonclassic_icosanoid(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for approximately 20 carbon atoms
+    # Allow for a slightly wider range for carbon count
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 18 or c_count > 22:
-        return False, f"Carbon count is {c_count}, typically expected around 20"
+    if not (18 <= c_count <= 25):
+        return False, f"Carbon count out of range: {c_count}"
 
     # Check for diverse oxygenation patterns
     hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")  # -OH
     epoxy_pattern = Chem.MolFromSmarts("[C@H]1O[C@H]1")  # Epoxy group
-    carbonyl_pattern = Chem.MolFromSmarts("[CX3](=O)")  # General carbonyl C=O group
-    carboxyl_pattern = Chem.MolFromSmarts("C(=O)[OX1H0,-]")  # Carboxyl group
+    carboxyl_pattern = Chem.MolFromSmarts("C(=O)O")  # Carboxyl
 
     has_hydroxyl = mol.HasSubstructMatch(hydroxyl_pattern)
     has_epoxy = mol.HasSubstructMatch(epoxy_pattern)
-    has_carbonyl = mol.HasSubstructMatch(carbonyl_pattern)
     has_carboxyl = mol.HasSubstructMatch(carboxyl_pattern)
 
-    # Ensure presence of at least two diverse oxygen functional groups
-    if sum([has_hydroxyl, has_epoxy, has_carbonyl, has_carboxyl]) < 2:
-        return False, "Insufficient oxygenation features for a nonclassic icosanoid"
+    # Ensure at least two types of oxygen-containing functional groups
+    if sum([has_hydroxyl, has_epoxy, has_carboxyl]) < 2:
+        return False, "Insufficient diversity in oxygenation features"
 
     # Exclude typical leukotriene and prostanoid structures
-    leukotriene_warning = Chem.MolFromSmarts('C=CC=CC=')  # Simplified constraint for linear triene
-    prostanoid_ring = Chem.MolFromSmarts('C1C=CCC=C1')  # Simple prostanoid ring pattern
+    leukotriene_pattern = Chem.MolFromSmarts("CCCCC(C=CC=CC=CC=CC=CC=C)C")  # Core leukotriene pattern
+    prostanoid_like_pattern = Chem.MolFromSmarts("CC(C)CCC")  # Very simplified (more research is needed)
 
-    if mol.HasSubstructMatch(leukotriene_warning) or mol.HasSubstructMatch(prostanoid_ring):
-        return False, "Contains features of typical leukotriene/prostanoid structures"
+    if mol.HasSubstructMatch(leukotriene_pattern):
+        return False, "Structure matches that of typical leukotrienes"
 
-    return True, "Contains characteristics of nonclassic icosanoids: C20 carbon atoms with diverse oxygenation patterns"
+    if mol.HasSubstructMatch(prostanoid_like_pattern):
+        return False, "Structure is similar to known prostanoid arrangements"
+    
+    # Examine long-chain fatty acid property (presence of carboxyl)
+    if not has_carboxyl:
+        return False, "Missing carboxyl group, typical of fatty acids"
+    
+    return True, "Contains characteristics of nonclassic icosanoids: C20 carbon atoms with oxygenation patterns"
