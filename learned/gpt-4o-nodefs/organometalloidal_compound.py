@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_organometalloidal_compound(smiles: str):
     """
     Determines if a molecule is an organometalloidal compound based on its SMILES string.
-    An organometalloidal compound involves a metalloid element, we focus on arsenic (As) for this class.
+    We focus on identifying the presence of arsenic bonded within typical organic structures.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,16 +26,22 @@ def is_organometalloidal_compound(smiles: str):
     if not has_arsenic:
         return False, "No arsenic atom found, not an organometalloidal compound"
     
-    # Check for organic framework (at least one carbon is attached to the arsenic)
-    organic_framework = any(
-        atom.GetAtomicNum() == 6 and 
-        any(neighbor.GetAtomicNum() == 33 for neighbor in atom.GetNeighbors())
-        for atom in mol.GetAtoms()
-    )
-    if organic_framework:
-        return True, "Arsenic bonded to an organic structure, classified as organometalloidal"
-    else:
-        return False, "Arsenic not adequately bonded to an organic structure, classify with caution"
+    # Define SMARTS patterns for typical organometalloidal features
+    organometalloidal_patterns = [
+        "[As]=O",    # Arsenic with double bonded oxygen, a common feature
+        "[As][C]",   # Arsenic directly bonded to carbon
+        "[As][C][C]", # Extended bonding with carbons to form a chain
+        "[As][C][N]", # Arsenic with carbon and heteroatom (organometallic environment)
+        "[As][C][O]", # Functional groups like arsenates
+        "c[As]",     # Aromatic carbon (phenyl) attached to arsenic
+    ]
+    
+    # Check for any structural pattern indicative of organometalloidal compounds
+    for pattern in organometalloidal_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            return True, f"Pattern '{pattern}' matched, classified as organometalloidal"
+    
+    return False, "Arsenic present but not in an organometalloidal context"
 
 # Example Usage:
 # print(is_organometalloidal_compound("C[As](O)(O)=O"))  # Should return True with a valid reason
