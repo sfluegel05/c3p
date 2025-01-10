@@ -26,71 +26,69 @@ def is_D_hexose(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check if the molecule has a ring structure
-    if not mol.GetRingInfo().NumRings():
-        # Allow linear forms (aldehydo forms)
+    # Check basic hexose requirements
+    # Should have 6 carbons and at least 5 oxygens (including ring oxygen)
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    
+    if c_count != 6:
+        return False, "Not exactly 6 carbons"
+    if o_count < 5:
+        return False, "Not enough oxygens for a hexose"
+
+    # Generate 3D coordinates to better determine stereochemistry
+    mol = Chem.AddHs(mol)
+    AllChem.EmbedMolecule(mol)
+    AllChem.MMFFOptimizeMolecule(mol)
+
+    # Find the carbon at position 5
+    # In linear form: C5 is the 5th carbon from the aldehyde end
+    # In cyclic form: C5 is the carbon before the ring oxygen
+    position_5_carbon = None
+    
+    # Try to find linear form first
+    aldehyde = None
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6 and atom.GetTotalDegree() == 1:  # Aldehyde carbon
+            aldehyde = atom
+            break
+    
+    if aldehyde:
+        # Linear form - trace the chain
+        current = aldehyde
+        for i in range(5):
+            neighbors = [n for n in current.GetNeighbors() if n.GetAtomicNum() == 6]
+            if not neighbors:
+                break
+            current = neighbors[0]
+            if i == 4:  # Position 5
+                position_5_carbon = current
+    else:
+        # Cyclic form - find the carbon before the ring oxygen
+        ring_info = mol.GetRingInfo()
+        for ring in ring_info.AtomRings():
+            if len(ring) == 5 or len(ring) == 6:  # Furanose or pyranose
+                for i, atom_idx in enumerate(ring):
+                    atom = mol.GetAtomWithIdx(atom_idx)
+                    if atom.GetAtomicNum() == 8:  # Ring oxygen
+                        # The previous atom in the ring is position 5
+                        prev_idx = ring[i-1] if i > 0 else ring[-1]
+                        position_5_carbon = mol.GetAtomWithIdx(prev_idx)
+                        break
+
+    if not position_5_carbon:
+        return False, "Could not identify position 5 carbon"
+
+    # Check stereochemistry at position 5
+    try:
+        Chem.AssignStereochemistry(mol, force=True, cleanIt=True)
+        if position_5_carbon.GetProp('_CIPCode') == 'R':
+            return True, "Hexose with D-configuration at position 5"
+    except:
         pass
 
-    # Check for at least 4 oxygen atoms (hydroxyl or ring oxygen)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count < 4:
-        return False, "Not enough oxygen atoms for a hexose"
+    # Alternative check using chiral tag
+    if position_5_carbon.GetChiralTag() == Chem.ChiralType.CHI_TETRAHEDRAL_CW:
+        return True, "Hexose with D-configuration at position 5"
 
-    # Find all potential position 5 carbons
-    # Look for carbons with a hydroxyl group and chirality
-    potential_position_5 = []
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 6:  # Carbon
-            # Check for hydroxyl group
-            has_hydroxyl = False
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetAtomicNum() == 8 and neighbor.GetDegree() == 1:
-                    has_hydroxyl = True
-                    break
-            if has_hydroxyl and atom.GetChiralTag() != Chem.ChiralType.CHI_UNSPECIFIED:
-                potential_position_5.append(atom)
-
-    # Check if any potential position 5 carbon has D-configuration
-    for carbon in potential_position_5:
-        # Check stereochemistry - D-configuration is R in Cahn-Ingold-Prelog
-        try:
-            Chem.AssignStereochemistry(mol, force=True, cleanIt=True)
-            if carbon.GetProp('_CIPCode') == 'R':
-                return True, "Hexose with D-configuration at position 5"
-        except:
-            # If stereochemistry assignment fails, try alternative method
-            if carbon.GetChiralTag() == Chem.ChiralType.CHI_TETRAHEDRAL_CW:
-                return True, "Hexose with D-configuration at position 5"
-
-    return False, "No carbon with D-configuration found at position 5"
-
-
-__metadata__ = {   'chemical_class': {   'id': 'CHEBI:15903',
-                          'name': 'D-hexose',
-                          'definition': 'A hexose that has D-configuration at position 5.',
-                          'parents': ['CHEBI:15903', 'CHEBI:15903']},
-    'config': {   'llm_model_name': 'lbl/claude-sonnet',
-                  'f1_threshold': 0.8,
-                  'max_attempts': 5,
-                  'max_positive_instances': None,
-                  'max_positive_to_test': None,
-                  'max_negative_to_test': None,
-                  'max_positive_in_prompt': 50,
-                  'max_negative_in_prompt': 20,
-                  'max_instances_in_prompt': 100,
-                  'test_proportion': 0.1},
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 150,
-    'num_false_positives': 4,
-    'num_true_negatives': 182407,
-    'num_false_negatives': 23,
-    'num_negatives': None,
-    'precision': 0.974025974025974,
-    'recall': 0.8670520231213873,
-    'f1': 0.9174311926605504,
-    'accuracy': 0.9998521228585199}
+    return False, "No D-configuration found at position 5"
