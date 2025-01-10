@@ -21,52 +21,63 @@ def is_tripeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define peptide bond pattern: amide bond between carbonyl carbon and nitrogen
-    peptide_bond_pattern = Chem.MolFromSmarts("C(=O)N")
-    peptide_bond_matches = mol.GetSubstructMatches(peptide_bond_pattern)
-    num_peptide_bonds = len(peptide_bond_matches)
+    # Function to identify backbone peptide bonds
+    def get_peptide_bonds(mol):
+        peptide_bond_idxs = []
+        for bond in mol.GetBonds():
+            if bond.GetBondType() != Chem.rdchem.BondType.SINGLE:
+                continue
+            begin_atom = bond.GetBeginAtom()
+            end_atom = bond.GetEndAtom()
+            # Look for C-N single bonds
+            if (begin_atom.GetAtomicNum() == 6 and end_atom.GetAtomicNum() == 7) or \
+               (begin_atom.GetAtomicNum() == 7 and end_atom.GetAtomicNum() == 6):
+                C_atom = begin_atom if begin_atom.GetAtomicNum() == 6 else end_atom
+                N_atom = begin_atom if begin_atom.GetAtomicNum() == 7 else end_atom
+                # Check if C atom is carbonyl carbon (connected to O via double bond)
+                is_carbonyl = False
+                for neighbor in C_atom.GetNeighbors():
+                    if neighbor.GetAtomicNum() == 8:
+                        bond_to_O = mol.GetBondBetweenAtoms(C_atom.GetIdx(), neighbor.GetIdx())
+                        if bond_to_O.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                            is_carbonyl = True
+                            break
+                if not is_carbonyl:
+                    continue
+                # Check that N atom is connected to alpha carbon (C)
+                N_connected_to_Calpha = False
+                for neighbor in N_atom.GetNeighbors():
+                    if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() != C_atom.GetIdx():
+                        N_connected_to_Calpha = True
+                        break
+                if not N_connected_to_Calpha:
+                    continue
+                # Check that C atom is connected to alpha carbon (C)
+                C_connected_to_Calpha = False
+                for neighbor in C_atom.GetNeighbors():
+                    if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() != N_atom.GetIdx():
+                        if neighbor.GetAtomicNum() == 6:
+                            C_connected_to_Calpha = True
+                            break
+                if not C_connected_to_Calpha:
+                    continue
+                peptide_bond_idxs.append(bond.GetIdx())
+        return peptide_bond_idxs
 
-    # For tripeptide, there should be exactly 2 peptide bonds
-    if num_peptide_bonds != 2:
-        return False, f"Found {num_peptide_bonds} peptide bonds, expected 2 for tripeptide"
+    peptide_bonds = get_peptide_bonds(mol)
 
-    # Define amino acid residue pattern: backbone N-C(alpha)-C(=O)
-    amino_acid_pattern = Chem.MolFromSmarts("N[C@@H]C(=O)")
-    amino_acid_matches = mol.GetSubstructMatches(amino_acid_pattern)
-    num_residues = len(amino_acid_matches)
+    if len(peptide_bonds) < 2:
+        return False, f"Found {len(peptide_bonds)} peptide bonds, expected at least 2 for tripeptide"
 
-    # Some amino acids might not match the pattern due to stereochemistry; try a more general pattern
-    if num_residues == 0:
-        amino_acid_pattern = Chem.MolFromSmarts("NCC(=O)")
-        amino_acid_matches = mol.GetSubstructMatches(amino_acid_pattern)
-        num_residues = len(amino_acid_matches)
+    # Break molecule at peptide bonds
+    fragments = Chem.FragmentOnBonds(mol, peptide_bonds, addDummies=True)
+    frags = Chem.GetMolFrags(fragments, asMols=True)
+    num_fragments = len(frags)
 
-    # For tripeptide, there should be exactly 3 amino acid residues
+    # The number of amino acid residues is number of peptide bonds + 1
+    num_residues = len(peptide_bonds) + 1
+
     if num_residues != 3:
         return False, f"Found {num_residues} amino acid residues, expected 3 for tripeptide"
-
-    # Optionally, verify that peptide bonds connect the amino acids
-    # For each peptide bond, check if it connects two amino acid residues
-    connected_residues = 0
-    for match in peptide_bond_matches:
-        c_index = match[0]  # Carbonyl carbon
-        n_index = match[1]  # Amide nitrogen
-        c_atom = mol.GetAtomWithIdx(c_index)
-        n_atom = mol.GetAtomWithIdx(n_index)
-
-        # Check if the C and N atoms are part of amino acid backbones
-        c_in_residue = False
-        n_in_residue = False
-        for residue_match in amino_acid_matches:
-            if c_index in residue_match:
-                c_in_residue = True
-            if n_index in residue_match:
-                n_in_residue = True
-
-        if c_in_residue and n_in_residue:
-            connected_residues += 1
-
-    if connected_residues != 2:
-        return False, "Peptide bonds do not properly connect amino acid residues"
 
     return True, "Molecule is a tripeptide with three amino acid residues connected by peptide bonds"
