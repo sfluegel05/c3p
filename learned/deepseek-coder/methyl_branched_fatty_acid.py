@@ -26,12 +26,12 @@ def is_methyl_branched_fatty_acid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for carboxylic acid group (-C(=O)O or -C(=O)[O-])
-    carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H0-,OX1H1]")
+    carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1,OX1H0-]")
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
 
     # Check for at least one methyl branch (C attached to exactly 3 other carbons)
-    methyl_branch_pattern = Chem.MolFromSmarts("[CX4H3]")
+    methyl_branch_pattern = Chem.MolFromSmarts("[CH3]")
     methyl_branch_matches = mol.GetSubstructMatches(methyl_branch_pattern)
     if len(methyl_branch_matches) == 0:
         return False, "No methyl branches found"
@@ -49,6 +49,8 @@ def is_methyl_branched_fatty_acid(smiles: str):
             neighbors = atom.GetNeighbors()
             for neighbor in neighbors:
                 if neighbor.GetAtomicNum() == 6 and neighbor.GetDegree() > 1:
-                    return False, "Non-methyl branches detected"
+                    # Check if the neighbor is part of a longer branch
+                    if len([n for n in neighbor.GetNeighbors() if n.GetAtomicNum() == 6 and n.GetDegree() > 1]) > 0:
+                        return False, "Non-methyl branches detected"
 
     return True, "Contains carboxylic acid group, methyl branches, and a long carbon chain"
