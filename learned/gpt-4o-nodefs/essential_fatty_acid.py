@@ -24,23 +24,23 @@ def is_essential_fatty_acid(smiles: str):
         return False, "Invalid SMILES string"
     
     # Check for terminal carboxylic acid group
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[O;H1,-]")
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
-        return False, "Missing terminal carboxylic acid group (C(=O)O)"
+        return False, "Missing terminal carboxylic acid group (C(=O)OH)"
     
-    # Check for multiple cis double bonds (excluding potentially aromatic)
+    # Check for multiple cis configuration double bonds
     cis_double_bond_pattern = Chem.MolFromSmarts("C/C=C/C")
     cis_double_bond_matches = mol.GetSubstructMatches(cis_double_bond_pattern)
-    if len(cis_double_bond_matches) < 3:  # Adjusted minimum number of cis double bonds
+    if len(cis_double_bond_matches) < 2:  # Adjusted minimum number of cis double bonds
         return False, f"Insufficient number of cis double bonds, found {len(cis_double_bond_matches)}"
     
-    # Check the overall length of the carbon chain
-    carbon_chain_pattern = Chem.MolFromSmarts("C" * 12)  # Assume minimum 12 continuous carbons
-    if not mol.HasSubstructMatch(carbon_chain_pattern):
-        return False, "Insufficient carbon chain length consistent with essential fatty acids"
+    # Check the carbon chain length
+    carbon_atom_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if carbon_atom_count < 16:  # Essential fatty acids have at least 16 carbons
+        return False, "Insufficient carbon chain length for essential fatty acids"
 
-    # Include check for phosphocholine group
-    phosphocholine_pattern = Chem.MolFromSmarts("[N+](C)(C)[C]")
+    # Include recognition of phosphocholine group in more complex structures
+    phosphocholine_pattern = Chem.MolFromSmarts("P(=O)([O-])[O-]C[N+](C)(C)C")
     if mol.HasSubstructMatch(phosphocholine_pattern):
         return True, "Matches essential fatty acid criteria including phosphocholine functionality"
 
