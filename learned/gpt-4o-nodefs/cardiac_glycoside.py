@@ -12,7 +12,7 @@ def is_cardiac_glycoside(smiles: str):
         smiles (str): SMILES string of the molecule
     
     Returns:
-        bool: True if molecule is a cardiac glycoside, False otherwise
+        bool: True if the molecule is a cardiac glycoside, False otherwise
         str: Reason for classification
     """
     
@@ -21,22 +21,34 @@ def is_cardiac_glycoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Substructure pattern for a steroid backbone
-    steroid_pattern = Chem.MolFromSmarts('C1CCC2CC3CC(C2C1)CCC4C3CCCC4')
-    if not mol.HasSubstructMatch(steroid_pattern):
+    # Define a broader substructure pattern for the steroid core including stereochemistry
+    steroid_patterns = [
+        Chem.MolFromSmarts('C1CCC2C(C1)CCC3C2CC(C4=C3CC[C@@H]4)C'), # A possible general steroid pattern
+        Chem.MolFromSmarts('C1CC[C@H]2[C@@H]([C@H]1)CC[C@@H]1[C@H]2CC[C@@H]1C') # Including stereochemistry
+    ]
+    
+    if not any(mol.HasSubstructMatch(steroid_pattern) for steroid_pattern in steroid_patterns):
         return False, "No steroid core found"
 
-    # Check for glycosidic linkage to sugars
-    glycoside_pattern = Chem.MolFromSmarts('OC[C@H]1O[C@@H]([C@H](O)[C@@H](O)[C@H]1O]')
-    if not mol.HasSubstructMatch(glycoside_pattern):
+    # Check for glycosidic linkages in a broader sense
+    glycoside_patterns = [
+        Chem.MolFromSmarts('OC1C(O)C(O)C(O)C(O)C1O'),
+        Chem.MolFromSmarts('OC1OCC(O)C(O)C1O'),  # Alternate sugar ring patterns
+    ]
+    
+    if not any(mol.HasSubstructMatch(glycoside_pattern) for glycoside_pattern in glycoside_patterns):
         return False, "No glycosidic linkage found"
 
-    # Check for lactone ring (e.g., butenolide)
-    lactone_pattern = Chem.MolFromSmarts('O=C1CCOC1')
-    if not mol.HasSubstructMatch(lactone_pattern):
-        return False, "No lactone ring found"
+    # Check for the presence of a lactone ring or similar ester structures
+    lactone_patterns = [
+        Chem.MolFromSmarts('O=C1COCC1'),  # Common lactone structure
+        Chem.MolFromSmarts('O=C1CCC(O1)') # Broader cyclic ester patterns
+    ]
     
-    # Further verification can involve looking at hydroxyl groups on steroid, sugar counts, etc.
+    if not any(mol.HasSubstructMatch(lactone_pattern) for lactone_pattern in lactone_patterns):
+        return False, "No lactone or related ester ring found"
+    
+    # Additional characterizations like hydroxyl groups
     hydroxyl_count = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'O' and atom.GetTotalDegree() == 1)
     if hydroxyl_count < 3:
         return False, f"Insufficient hydroxyl groups in the molecule: {hydroxyl_count} found"
