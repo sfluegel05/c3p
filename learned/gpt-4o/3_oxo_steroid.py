@@ -2,7 +2,6 @@
 Classifies: CHEBI:47788 3-oxo steroid
 """
 from rdkit import Chem
-from rdkit.Chem import rdqueries
 
 def is_3_oxo_steroid(smiles: str):
     """
@@ -22,22 +21,19 @@ def is_3_oxo_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns
-    steroid_backbone_pattern = Chem.MolFromSmarts("[#6]1[#6][#6]2[#6]([#6]1)[#6][#6]3[#6]([#6]2)[#6][#6]([#6](=O)[#6]3)")
-    
-    # Verify steroid backbone with at least 3 rings
+    # Verify steroid backbone with 4-ring system
     ring_info = mol.GetRingInfo()
-    if not ring_info.IsInitialized() or len(ring_info.AtomRings()) < 3:
+    if len(ring_info.AtomRings()) < 4:
         return False, "Not enough rings for a steroid backbone"
 
-    # Check for matching steroid backbone
+    # Check for steroid backbone pattern
+    steroid_backbone_pattern = Chem.MolFromSmarts("C1[C@H]2CCC3=CC(=O)CC4=C[C@H]2CC[C@]3(C)[C@@H]4CC1")
     if not mol.HasSubstructMatch(steroid_backbone_pattern):
-        return False, "No steroid backbone with 3-oxo group at position 3 found"
+        return False, "No steroid backbone found"
 
-    # Confirm 3-oxo group specifically
-    # Search for C=O at position 3 of a steroid backbone
-    oxo_group_pattern = Chem.MolFromSmarts("C=O")
-    if not any(mol.HasSubstructMatch(oxo_group_pattern) for _ in ring_info.AtomRings()):
-        return False, "No 3-oxo group at appropriate position"
+    # Check for oxo (C=O) group at the third position
+    oxo_group_pattern = Chem.MolFromSmarts("C3(=O)")
+    if not mol.HasSubstructMatch(oxo_group_pattern):
+        return False, "No 3-oxo group found"
 
     return True, "Molecule is a 3-oxo steroid"
