@@ -2,7 +2,6 @@
 Classifies: CHEBI:134045 polychlorinated dibenzodioxines and related compounds
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_polychlorinated_dibenzodioxines_and_related_compounds(smiles: str):
     """
@@ -20,20 +19,24 @@ def is_polychlorinated_dibenzodioxines_and_related_compounds(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for chlorine atoms
-    chlorine_count = sum(atom.GetSymbol() == 'Cl' for atom in mol.GetAtoms())
-    if chlorine_count < 2:
-        return False, "Not enough chlorine atoms"
+    # Check for sufficient halogen atoms (Cl or Br)
+    halogen_count = sum(atom.GetSymbol() in ['Cl', 'Br'] for atom in mol.GetAtoms())
+    if halogen_count < 3:
+        return False, "Not enough halogen atoms for a polychlorinated or polybrominated compound"
 
-    # SMARTS pattern for a polychlorinated biphenyl (biphenyl structure with chlorine)
-    pcb_pattern = Chem.MolFromSmarts('c1ccccc1-c2ccccc2')
-    
-    # SMARTS pattern for dioxin/furan-like structures with chlorine substituents
-    dioxin_pattern = Chem.MolFromSmarts('c1cc2Oc3ccccc3Oc2cc1')
-    furan_pattern = Chem.MolFromSmarts('c1cc2oc3ccccc3c2cc1')
+    # SMARTS patterns for checking the relevant structures
+    pcb_pattern = Chem.MolFromSmarts('c1ccccc1-c2ccccc2')  # Biphenyl structure
+    dioxin_pattern = Chem.MolFromSmarts('c1cc2Oc3cc(Cl)ccc3Oc2cc1')  # Chlorinated dibenzodioxin
+    furan_pattern = Chem.MolFromSmarts('c1cc2oc3cc(Cl)ccc3c2cc1')   # Chlorinated dibenzofuran
+
+    # SMARTS pattern for a more general polychlorinated aromatic compound
+    polychlorinated_aromatics_pattern = Chem.MolFromSmarts('c1cc(-c2ccccc2)cc1')
 
     # Check for presence of these patterns in the molecule
-    if mol.HasSubstructMatch(pcb_pattern) or mol.HasSubstructMatch(dioxin_pattern) or mol.HasSubstructMatch(furan_pattern):
+    if (mol.HasSubstructMatch(pcb_pattern) or
+        mol.HasSubstructMatch(dioxin_pattern) or
+        mol.HasSubstructMatch(furan_pattern) or
+        mol.HasSubstructMatch(polychlorinated_aromatics_pattern)):
         return True, "Matches polychlorinated dibenzodioxin or related compound pattern"
 
     return False, "Does not match polychlorinated dibenzodioxin or related compound pattern"
