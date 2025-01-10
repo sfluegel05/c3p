@@ -21,11 +21,11 @@ def is_primary_amine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more specific SMARTS pattern for primary amine (RNH2)
-    # Ensuring nitrogen is singly bonded to one carbon and has two hydrogens
-    primary_amine_pattern = Chem.MolFromSmarts("[NX3;H2;!$(N(C)C);!$(N-C(=O))]")
+    # Updated SMARTS pattern for primary amine (RNH2)
+    # Ensure nitrogen is singly bonded to one carbon, has two hydrogens, and is not part of a larger nitrogen-bonded system
+    primary_amine_pattern = Chem.MolFromSmarts("[NX3;H2;!$(NC);!$(N-*=[O,N])]")
 
-    # Check if the structure matches the primary amine SMARTS pattern
+    # Check if the molecule matches the primary amine SMARTS pattern
     if mol.HasSubstructMatch(primary_amine_pattern):
         return True, "Contains a primary amine group (RNH2 structure identified)"
 
