@@ -16,28 +16,16 @@ def is_tetrahydrofuranone(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
+    # Parse the SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Identifying a five-membered ring with one oxygen atom (oxolane)
-    oxolane_pattern = Chem.MolFromSmarts("C1COCC1")  # 5-membered ring with O and 4 carbons
-    if not mol.HasSubstructMatch(oxolane_pattern):
-        return False, "No oxolane ring found"
+    # Pattern for tetrahydrofuranone: five-membered ring with one oxygen and a carbonyl group
+    # The SMARTS pattern accounts for any substituents and a carbonyl group connected
+    tetrahydrofuranone_pattern = Chem.MolFromSmarts("O1CC(=O)C(C)CC1")
+    
+    if mol.HasSubstructMatch(tetrahydrofuranone_pattern):
+        return True, "Tetrahydrofuranone structure confirmed"
 
-    # Identifying the presence of a carbonyl group on the oxolane
-    carbonyl_pattern = Chem.MolFromSmarts("C=O")
-    carbonyl_matches = mol.GetSubstructMatches(carbonyl_pattern)
-    if not carbonyl_matches:
-        return False, "No carbonyl group found on the ring"
-
-    # Verify the carbonyl is attached to the ring
-    for match in carbonyl_matches:
-        # Check if any of the carbonyl carbon is part of the oxolane ring
-        carbon = mol.GetAtomWithIdx(match[0])
-        for neighbor in carbon.GetNeighbors():
-            if neighbor.IsInRing() and neighbor.GetAtomicNum() == 8:  # Check if neighbor is oxygen in a ring
-                return True, "Tetrahydrofuranone structure confirmed"
-
-    return False, "Carbonyl group not part of an oxolane ring"
+    return False, "No valid tetrahydrofuranone structure found"
