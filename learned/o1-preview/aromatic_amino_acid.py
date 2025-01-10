@@ -24,80 +24,66 @@ def is_aromatic_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Identify alpha carbons: carbons connected to both an amino group and a carboxyl group
-    alpha_carbons = []
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() != 6:
-            continue  # Skip non-carbon atoms
-        neighbor_elements = [nbr.GetAtomicNum() for nbr in atom.GetNeighbors()]
-        if 7 in neighbor_elements and 6 in neighbor_elements:
-            # Carbon connected to nitrogen (possible amino group) and carbon (possible carboxyl carbon)
-            has_amino_group = False
-            has_carboxyl_group = False
-            for nbr in atom.GetNeighbors():
-                if nbr.GetAtomicNum() == 7:
-                    # Nitrogen atom possibly part of amino group
-                    if nbr.GetDegree() <= 3:
-                        has_amino_group = True
-                elif nbr.GetAtomicNum() == 6:
-                    # Neighbor carbon atom possibly part of carboxyl group
-                    oxygen_count = sum(1 for nnbr in nbr.GetNeighbors() if nnbr.GetAtomicNum() == 8)
-                    if oxygen_count >= 2:
-                        has_carboxyl_group = True
-            if has_amino_group and has_carboxyl_group:
-                alpha_carbons.append(atom)
+    # Define amino acid backbone SMARTS pattern accounting for protonation states
+    backbone_smarts = '[N;D2,D3,D4][C;H1,H2][C](=O)[O;H1,H0,-1]'
+    pattern = Chem.MolFromSmarts(backbone_smarts)
+    matches = mol.GetSubstructMatches(pattern)
 
-    if not alpha_carbons:
+    if not matches:
         return False, "No amino acid backbone found"
 
-    # For each alpha carbon, check the side chain
-    for alpha_c in alpha_carbons:
-        alpha_c_idx = alpha_c.GetIdx()
-        # Identify amino group and carboxyl group atoms to exclude
-        exclude_idxs = {alpha_c_idx}
-        for nbr in alpha_c.GetNeighbors():
-            if nbr.GetAtomicNum() == 7:
-                # Amino group nitrogen
-                exclude_idxs.add(nbr.GetIdx())
-                # Exclude hydrogens attached to nitrogen
-                for hnbr in nbr.GetNeighbors():
-                    if hnbr.GetAtomicNum() == 1:
-                        exclude_idxs.add(hnbr.GetIdx())
-            elif nbr.GetAtomicNum() == 6:
-                # Carboxyl carbon
-                exclude_idxs.add(nbr.GetIdx())
-                for nnbr in nbr.GetNeighbors():
-                    if nnbr.GetAtomicNum() in [8,1]:
-                        # Oxygens and hydrogens of carboxyl group
-                        exclude_idxs.add(nnbr.GetIdx())
-        # Traverse the side chain starting from the alpha carbon
-        side_chain_atoms = set()
-        visited = set(exclude_idxs)
-        def dfs(atom_idx):
-            for neighbor in mol.GetAtomWithIdx(atom_idx).GetNeighbors():
-                nbr_idx = neighbor.GetIdx()
-                if nbr_idx not in visited:
-                    visited.add(nbr_idx)
-                    side_chain_atoms.add(nbr_idx)
-                    dfs(nbr_idx)
-        dfs(alpha_c_idx)
+    # For each match, check for aromatic ring in side chain
+    for match in matches:
+        N_idx = match[0]
+        C_alpha_idx = match[1]
+        C_carboxyl_idx = match[2]
+        O_carboxyl_idx = match[3]
 
-        if not side_chain_atoms:
-            continue  # No side chain
+        # Define backbone atom indices
+        backbone_indices = set([N_idx, C_alpha_idx, C_carboxyl_idx, O_carboxyl_idx])
 
-        # Check if side chain contains aromatic ring(s)
+        # Include hydrogens attached to backbone atoms
+        for idx in list(backbone_indices):
+            atom = mol.GetAtomWithIdx(idx)
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 1:
+                    backbone_indices.add(neighbor.GetIdx())
+
+        # Collect side chain atoms
+        side_chain_indices = set()
+        visited = set()
+        stack = [C_alpha_idx]
+
+        while stack:
+            atom_idx = stack.pop()
+            if atom_idx in visited or atom_idx in backbone_indices:
+                continue
+            visited.add(atom_idx)
+            side_chain_indices.add(atom_idx)
+            atom = mol.GetAtomWithIdx(atom_idx)
+            for neighbor in atom.GetNeighbors():
+                neighbor_idx = neighbor.GetIdx()
+                if neighbor_idx not in visited:
+                    stack.append(neighbor_idx)
+
+        if not side_chain_indices:
+            continue  # No side chain atoms
+
+        # Check if side chain contains an aromatic ring
         ring_info = mol.GetRingInfo()
-        atom_rings = ring_info.AtomRings()
-        if not atom_rings:
-            continue  # No rings
-        for ring in atom_rings:
+        ring_atom_indices = ring_info.AtomRings()
+        if not ring_atom_indices:
+            continue  # No rings in molecule
+
+        for ring in ring_atom_indices:
             ring_set = set(ring)
-            if ring_set & side_chain_atoms:
+            if ring_set & side_chain_indices:
                 # Side chain contains a ring
                 # Check if all atoms in ring are aromatic
                 if all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring):
-                    return True, "Aromatic ring found in side chain connected to amino acid backbone"
-        # If no aromatic ring in side chain for this alpha carbon, continue to next
+                    return True, "Contains aromatic ring in side chain connected to amino acid backbone"
+
+    # If no aromatic ring found in side chain for any backbone match
     return False, "Aromatic ring not found in side chain connected to amino acid backbone"
 
 __metadata__ = {
