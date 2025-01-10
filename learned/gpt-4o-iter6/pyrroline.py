@@ -22,13 +22,13 @@ def is_pyrroline(smiles: str):
     if mol is None:
         return None, "Invalid or non-parsable SMILES string"
 
-    # Improved pyrroline pattern: focusing on five-membered rings with nitrogen
+    # Improved pyrroline pattern: focusing on five-membered rings with nitrogen and double bond
     pyrroline_patterns = [
-        "C1=CNCC1",   # 2-Pyrroline with specific bond positions
-        "C1=CCNC1",  # several pyrroline isomeric patterns
-        "N1C=CCC1",   # generic pyrroline with flexible bonding
-        "C1CNC=C1",   # another isomeric form considering different positions 
-        "C1=CC=CN1",  # possible tautomeric forms
+        "C1=CC=CN1",  # Pyrrole-like structures with flexibility in double bonds
+        "C1C=CCN1",   # Ensuring the nitrogen and one double bond
+        "C1=CCNC1",   # Accounting for alternative double bond positions
+        "N1=CC=CC1",  # Including different tautomeric forms
+        "C1=NC=CC1",  # Another ring formation pattern
     ]
 
     # Check all substructure patterns
