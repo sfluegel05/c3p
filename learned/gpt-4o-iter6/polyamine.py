@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_polyamine(smiles: str):
     """
     Determines if a molecule is a polyamine based on its SMILES string.
-    A polyamine is an organic compound with two or more amino groups, including different ammonia forms and charged states.
+    A polyamine is an organic compound with two or more amino groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,14 +21,16 @@ def is_polyamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Updated SMARTS pattern to match amino groups, excluding amides and nitrogen in aromatic rings
-    amine_pattern = Chem.MolFromSmarts("[NX3,NX4+;!$(NC=O);!n]")  # Exclude amide nitrogens and aromatic nitrogens
+    # Refined SMARTS pattern to match amino groups
+    # Includes primary (NH2), secondary (NHR), tertiary (NR2) amines,
+    # and quaternary ammonium groups
+    amino_pattern = Chem.MolFromSmarts("[NX3,NX4+;!$(NC=O),!$(N~N)]")
 
-    # Find matches for amino groups in the molecule
-    amine_matches = mol.GetSubstructMatches(amine_pattern)
-    num_amino_groups = len(amine_matches)
-
+    # Find all matches for amino groups in the molecule
+    amino_matches = mol.GetSubstructMatches(amino_pattern)
+    
     # Check if there are 2 or more amino groups
+    num_amino_groups = len(amino_matches)
     if num_amino_groups >= 2:
         return True, f"Contains {num_amino_groups} amino groups"
     else:
