@@ -25,34 +25,46 @@ def is_carboxamidine(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define the carboxamidine pattern: RC(=NR)NR2
-    # More specific pattern to avoid false positives
+    # More specific pattern to match exactly one central carbon with =NR and NR2 groups
     carboxamidine_pattern = Chem.MolFromSmarts("[CX3](=[NX2])[NX3H2,NX3H1,NX3H0]")
     
-    # Check for the basic pattern
-    if not mol.HasSubstructMatch(carboxamidine_pattern):
+    # Find all matches of the carboxamidine pattern
+    matches = mol.GetSubstructMatches(carboxamidine_pattern)
+    if not matches:
         return False, "No carboxamidine structure (RC(=NR)NR2) found"
 
-    # Additional checks to reduce false positives
-    # 1. Ensure the nitrogen atoms are not part of a guanidine group
-    guanidine_pattern = Chem.MolFromSmarts("[NX3H2,NX3H1,NX3H0][CX3](=[NX2])[NX3H2,NX3H1,NX3H0]")
-    if mol.HasSubstructMatch(guanidine_pattern):
-        return False, "Contains guanidine structure, not carboxamidine"
+    # Check each potential carboxamidine center
+    for match in matches:
+        central_carbon = match[0]
+        double_bond_nitrogen = match[1]
+        single_bond_nitrogen = match[2]
+        
+        # Verify the central carbon has exactly 3 bonds
+        if len(mol.GetAtomWithIdx(central_carbon).GetBonds()) != 3:
+            continue
+            
+        # Verify the double bond nitrogen has exactly 2 bonds
+        if len(mol.GetAtomWithIdx(double_bond_nitrogen).GetBonds()) != 2:
+            continue
+            
+        # Verify the single bond nitrogen has exactly 3 bonds
+        if len(mol.GetAtomWithIdx(single_bond_nitrogen).GetBonds()) != 3:
+            continue
+            
+        # Check that the single bond nitrogen is not part of a guanidine group
+        # by ensuring it's not bonded to another carbon with =NR group
+        guanidine_check = False
+        for neighbor in mol.GetAtomWithIdx(single_bond_nitrogen).GetNeighbors():
+            if neighbor.GetAtomicNum() == 6:  # Carbon
+                for bond in neighbor.GetBonds():
+                    if bond.GetBondType() == Chem.BondType.DOUBLE:
+                        if bond.GetBeginAtom().GetAtomicNum() == 7 or bond.GetEndAtom().GetAtomicNum() == 7:
+                            guanidine_check = True
+                            break
+                if guanidine_check:
+                    break
+                    
+        if not guanidine_check:
+            return True, "Contains the carboxamidine structure (RC(=NR)NR2)"
 
-    # 2. Ensure the central carbon has exactly one double bond to nitrogen
-    central_carbon_pattern = Chem.MolFromSmarts("[CX3](=[NX2])")
-    matches = mol.GetSubstructMatches(central_carbon_pattern)
-    if len(matches) != 1:
-        return False, "Multiple potential carboxamidine centers found"
-
-    # 3. Verify the connectivity of the atoms
-    # Get the matched atoms
-    match = mol.GetSubstructMatch(carboxamidine_pattern)
-    if len(match) < 3:
-        return False, "Invalid carboxamidine structure"
-
-    # Check that the central carbon is bonded to exactly 3 atoms
-    central_carbon = match[0]
-    if len(mol.GetAtomWithIdx(central_carbon).GetBonds()) != 3:
-        return False, "Central carbon has incorrect connectivity"
-
-    return True, "Contains the carboxamidine structure (RC(=NR)NR2)"
+    return False, "No valid carboxamidine structure found after detailed checks"
