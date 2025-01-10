@@ -10,6 +10,7 @@ import re
 def is_metal_atom(smiles: str):
     """
     Determines if a SMILES string represents a metal atom.
+    Must be a neutral, unbonded metal atom.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -19,8 +20,7 @@ def is_metal_atom(smiles: str):
         str: Reason for classification
     """
     
-    # List of metal elements (includes alkali metals, alkaline earth metals, transition metals,
-    # post-transition metals, lanthanides, and actinides)
+    # List of metal elements
     metal_elements = {
         'Li', 'Na', 'K', 'Rb', 'Cs', 'Fr',  # Alkali metals
         'Be', 'Mg', 'Ca', 'Sr', 'Ba', 'Ra',  # Alkaline earth metals
@@ -39,8 +39,9 @@ def is_metal_atom(smiles: str):
     if not isinstance(smiles, str):
         return False, "Input must be a string"
     
-    # Check basic SMILES format for single atom: [<optional_mass>Element]
-    pattern = r'^\[(\d+)?([A-Z][a-z]?).*\]$'
+    # Strict SMILES format for single atom: [<optional_mass>Element]
+    # Only allows numbers (isotope) and element symbol inside brackets
+    pattern = r'^\[(\d+)?([A-Z][a-z]?)\]$'
     match = re.match(pattern, smiles)
     if not match:
         return False, "Not a single atom SMILES (should be in format [Element] or [massElement])"
@@ -54,7 +55,7 @@ def is_metal_atom(smiles: str):
     if mol.GetNumAtoms() != 1:
         return False, "Must contain exactly one atom"
     
-    # Get the element symbol
+    # Get the atom
     atom = mol.GetAtomWithIdx(0)
     symbol = atom.GetSymbol()
     
@@ -62,4 +63,16 @@ def is_metal_atom(smiles: str):
     if symbol not in metal_elements:
         return False, f"{symbol} is not a metal element"
     
+    # Check for formal charge - must be neutral
+    if atom.GetFormalCharge() != 0:
+        return False, f"{symbol} has a formal charge, not a neutral atom"
+    
+    # Check for implicit or explicit hydrogens
+    if atom.GetNumImplicitHs() > 0 or atom.GetNumExplicitHs() > 0:
+        return False, f"{symbol} has bonded hydrogens, not a free atom"
+    
+    # Check for any bonds
+    if atom.GetDegree() > 0:
+        return False, f"{symbol} has bonds to other atoms"
+        
     return True, f"Single atom of metal element {symbol}"
