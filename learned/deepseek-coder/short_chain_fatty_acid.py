@@ -41,14 +41,36 @@ def is_short_chain_fatty_acid(smiles: str):
     if len(non_hydrocarbon_atoms) > 0:
         return False, "Molecule contains non-hydrocarbon substituents"
 
-    # Calculate the number of carbon atoms in the longest chain excluding the carboxylic acid carbon
-    longest_chain = rdMolDescriptors.CalcLongestChain(mol)
-    if longest_chain >= 6:
-        return False, f"Chain length is {longest_chain}, which is too long for a short-chain fatty acid"
-
     # Check that the molecule is a monocarboxylic acid (only one carboxylic acid group)
     carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
     if len(carboxylic_acid_matches) != 1:
         return False, f"Found {len(carboxylic_acid_matches)} carboxylic acid groups, need exactly 1"
+
+    # Calculate the longest carbon chain excluding the carboxylic acid carbon
+    def get_longest_carbon_chain(mol):
+        # Get all carbon atoms
+        carbon_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
+        # Exclude the carboxylic acid carbon
+        carboxylic_acid_carbon = carboxylic_acid_matches[0][0]
+        carbon_atoms = [atom for atom in carbon_atoms if atom.GetIdx() != carboxylic_acid_carbon]
+        
+        # Find the longest chain of connected carbon atoms
+        longest_chain = 0
+        for atom in carbon_atoms:
+            visited = set()
+            stack = [(atom, 1)]
+            while stack:
+                current_atom, chain_length = stack.pop()
+                visited.add(current_atom.GetIdx())
+                if chain_length > longest_chain:
+                    longest_chain = chain_length
+                for neighbor in current_atom.GetNeighbors():
+                    if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:
+                        stack.append((neighbor, chain_length + 1))
+        return longest_chain
+
+    longest_chain = get_longest_carbon_chain(mol)
+    if longest_chain >= 6:
+        return False, f"Chain length is {longest_chain}, which is too long for a short-chain fatty acid"
 
     return True, "Aliphatic monocarboxylic acid with a chain length of less than C6 and no non-hydrocarbon substituents"
