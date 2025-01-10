@@ -22,16 +22,16 @@ def is_penicillin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # More accurate beta-lactam pattern considering chiral centers
-    beta_lactam_pattern = Chem.MolFromSmarts("[C@H]1([C@@H]([NX3])C(=O)[CX3])S[C@H]2N1C([C@@H]2C)=O")
+    # General beta-lactam pattern (four-membered lactam ring without restrictive chiral centers)
+    beta_lactam_pattern = Chem.MolFromSmarts("C1(=O)NC[C@@H]1")
     
-    # Thiazolidine pattern including chiral specificity
-    thiazolidine_pattern = Chem.MolFromSmarts("[C@H]1([C@@H]([N])SC2)C2C1")
+    # General thiazolidine ring pattern (five-membered sulfur-containing ring)
+    thiazolidine_pattern = Chem.MolFromSmarts("C1SCCN1")
     
-    # Carboxylate group being considered more generally near beta-lactam
+    # Carboxyl group pattern typically near beta-lactam
     carboxylate_pattern = Chem.MolFromSmarts("C(=O)O")
     
-    # Check for elements of the penicillin structure
+    # Check for the core elements of the penicillin structure
     if not mol.HasSubstructMatch(beta_lactam_pattern):
         return False, "No beta-lactam ring found"
 
