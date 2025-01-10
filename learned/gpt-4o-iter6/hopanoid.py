@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_hopanoid(smiles: str):
     """
     Determines if a molecule is a hopanoid based on its SMILES string.
-    A hopanoid is a triterpenoid based on a hopane skeleton, featuring a pentacyclic structure with specific stereochemistry.
+    A hopanoid is a triterpenoid based on a hopane skeleton, typically featuring a pentacyclic structure with specific stereochemistry.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,13 +22,15 @@ def is_hopanoid(smiles: str):
 
     # Define comprehensive hopanoid SMARTS patterns
     hopanoid_patterns = [
-        '[C@@H]1C[C@@H]2[C@@]3(CC[C@@H]4[C@]5(C[C@@H](CC5)C[C@@H]4C[C@]3(C)CC2)C)C1',
-        '[C@H]1[C@@H]2CC[C@@]3(C)[C@]([C@@H]4C[C@@H](CC4)C[C@@H]3C)[C@H]2CC1',
-        '[C@@H]1CC[C@@]2([C@H]([C@@H]3C[C@@H](CC3)[C@@]2(C)CC1)C)C',
-        # More hopanoid patterns can be added here
+        '[C@@]12CC[C@@]3(C)[C@]1(CC[C@@H](C2)C3)C',  # Core hopanoid skeleton
+        '[C@]12(CC[C@@H](CC3=C2CCC[C@]3C1(C)C)C)C',  # Another core-style skeleton
+        '[C@@H]1CC[C@]2(C)[C@]1(CC[C@@]3([C@@H]2CC3)C)C',  # Alternate stereochemistry
+        '[C@@]1(CC[C@]2([C@@H]1CC[C@@H](C2)C)C)C',  # Integration of core structures
+        '[C@H]1[C@@]2(CC[C@]3([C@@H]2CCC[C@@]13C(C)(C)C)C)C',  # Expanded cyclic structure
+        # Patterns can be extended or modified to cater to detected false negatives
     ]
 
-    # Convert SMARTS to RDKit Mol objects
+    # Convert SMARTS into RDKit Mol objects
     try:
         hopanoid_mols = [Chem.MolFromSmarts(pattern) for pattern in hopanoid_patterns]
     except Exception as e:
@@ -37,7 +39,7 @@ def is_hopanoid(smiles: str):
     if any(hopanoid_mol is None for hopanoid_mol in hopanoid_mols):
         return False, "Invalid SMARTS pattern detected, unable to match"
 
-    # Check for matches with any of the defined patterns
+    # Check if any pattern matches the SMILES structure
     for pattern in hopanoid_mols:
         if pattern and mol.HasSubstructMatch(pattern):
             return True, "Contains hopanoid skeleton with appropriate stereochemistry and pentacyclic structure"
