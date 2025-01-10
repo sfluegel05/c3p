@@ -20,14 +20,17 @@ def is_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for thioester bond pattern S-C(=O) as basic indicator
-    thioester_pattern = Chem.MolFromSmarts("S(=O)[CX3]")  # More correctly specifies sulfur bonded to a carbonyl carbon
+    # Corrected pattern for thioester bond: C(=O)S
+    thioester_pattern = Chem.MolFromSmarts("C(=O)S")
     if not mol.HasSubstructMatch(thioester_pattern):
         return False, "No thioester linkage found"
     
-    # Simplified pattern for major structural elements of Coenzyme A (e.g., pantetheine connected to adenine moiety)
-    coa_pattern = Chem.MolFromSmarts("NCC(=O)CCNC(=O)[C@H](O)[C@H](C)[C@H](O)COP(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12")
-    if not mol.HasSubstructMatch(coa_pattern):
-        return False, "No Coenzyme A moiety found"
+    # Coenzyme A component: Pantetheine and adenine moieties
+    pantetheine_pattern = Chem.MolFromSmarts("NCC(=O)CCNC(=O)[C@H](O)[C@H](C)[C@H](O)COP(O)O")
+    adenine_moiety_pattern = Chem.MolFromSmarts("n1cnc2c(N)ncnc12")  # Simple adenine structure
+    if not mol.HasSubstructMatch(pantetheine_pattern):
+        return False, "No pantetheine moiety found"
+    if not mol.HasSubstructMatch(adenine_moiety_pattern):
+        return False, "No adenine moiety found"
 
     return True, "Contains thioester linkage and Coenzyme A structure"
