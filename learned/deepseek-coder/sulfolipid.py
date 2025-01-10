@@ -36,57 +36,55 @@ def is_sulfolipid(smiles: str):
     if not mol.HasSubstructMatch(carbon_sulfur_bond_pattern):
         return False, "No carbon-sulfur bond connected to sulfonic acid group"
 
-    # Check for lipid-like structure (long hydrocarbon chains or ester/amide bonds)
+    # Check for lipid-like structure (long hydrocarbon chains)
     # We can approximate this by checking for a minimum number of carbons and a certain ratio of carbons to other atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     s_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 16)
 
     # A lipid typically has a high carbon-to-oxygen ratio
-    if c_count < 20 or c_count / (o_count + s_count) < 2:
+    if c_count < 10 or c_count / (o_count + s_count) < 2:
         return False, "Molecule does not have a lipid-like structure (insufficient carbon content)"
 
-    # Check for long hydrocarbon chains (at least 8 carbons in a row)
-    long_chain_pattern = Chem.MolFromSmarts("[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]")
+    # Check for long hydrocarbon chains (at least 10 carbons in a row)
+    long_chain_pattern = Chem.MolFromSmarts("[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]")
     if not mol.HasSubstructMatch(long_chain_pattern):
-        # If no long chain, check for ester or amide bonds
-        ester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2][CX4]")
-        amide_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[NX3][CX4]")
-        if not (mol.HasSubstructMatch(ester_pattern) or mol.HasSubstructMatch(amide_pattern)):
-            return False, "No long hydrocarbon chain or ester/amide bond found"
+        return False, "No long hydrocarbon chain found"
 
     # Check molecular weight - sulfolipids typically have a higher molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 400:
+    if mol_wt < 300:
         return False, "Molecular weight too low for sulfolipid"
 
-    # Ensure the sulfonic acid group is directly connected to a lipid-like structure
-    # by checking that the carbon connected to sulfur is part of a long chain or ester/amide bond
-    sulfur_atom = None
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 16 and atom.GetDegree() == 4:  # Sulfur in sulfonic acid
-            sulfur_atom = atom
-            break
-
-    if sulfur_atom is None:
-        return False, "No sulfonic acid group found"
-
-    carbon_neighbor = None
-    for neighbor in sulfur_atom.GetNeighbors():
-        if neighbor.GetAtomicNum() == 6:  # Carbon
-            carbon_neighbor = neighbor
-            break
-
-    if carbon_neighbor is None:
-        return False, "No carbon-sulfur bond found"
-
-    # Check if the carbon connected to sulfur is part of a long chain or ester/amide bond
-    long_chain_carbon_pattern = Chem.MolFromSmarts("[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]")
-    ester_carbon_pattern = Chem.MolFromSmarts("[CX4]-[CX3](=[OX1])[OX2][CX4]")
-    amide_carbon_pattern = Chem.MolFromSmarts("[CX4]-[CX3](=[OX1])[NX3][CX4]")
-    if not (mol.HasSubstructMatch(long_chain_carbon_pattern) or 
-            mol.HasSubstructMatch(ester_carbon_pattern) or 
-            mol.HasSubstructMatch(amide_carbon_pattern)):
-        return False, "Carbon connected to sulfur is not part of a long chain or ester/amide bond"
-
     return True, "Contains a sulfonic acid group connected to a lipid-like structure via a carbon-sulfur bond"
+
+
+__metadata__ = {   'chemical_class': {   'id': 'CHEBI:63505',
+                          'name': 'sulfolipid',
+                          'definition': 'A compound containing a sulfonic acid residue joined by a carbon-sulfur bond to a lipid.',
+                          'parents': ['CHEBI:63505', 'CHEBI:63505']},
+    'config': {   'llm_model_name': 'lbl/claude-sonnet',
+                  'f1_threshold': 0.8,
+                  'max_attempts': 5,
+                  'max_positive_instances': None,
+                  'max_positive_to_test': None,
+                  'max_negative_to_test': None,
+                  'max_positive_in_prompt': 50,
+                  'max_negative_in_prompt': 20,
+                  'max_instances_in_prompt': 100,
+                  'test_proportion': 0.1},
+    'message': None,
+    'attempt': 0,
+    'success': True,
+    'best': True,
+    'error': '',
+    'stdout': None,
+    'num_true_positives': 150,
+    'num_false_positives': 4,
+    'num_true_negatives': 182407,
+    'num_false_negatives': 23,
+    'num_negatives': None,
+    'precision': 0.974025974025974,
+    'recall': 0.8670520231213873,
+    'f1': 0.9174311926605504,
+    'accuracy': 0.9998521228585199}
