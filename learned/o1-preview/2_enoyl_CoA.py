@@ -22,51 +22,91 @@ def is_2_enoyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for CoA moiety
-    # CoA contains an adenosine moiety with a ribose ring and adenine base
-    adenosine_smarts = "n1cnc2c1ncnc2N[C@H]3O[C@H]([C@H](O)[C@@H]3O)CO"
-    adenosine_pattern = Chem.MolFromSmarts(adenosine_smarts)
-    if not mol.HasSubstructMatch(adenosine_pattern):
-        return False, "Adenosine moiety of CoA not found"
-
-    # Check for phosphate groups (simplified as phosphorus atoms with four oxygens)
-    phosphate_smarts = "P(=O)(O)O"
-    phosphate_pattern = Chem.MolFromSmarts(phosphate_smarts)
-    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
-    if len(phosphate_matches) < 3:
-        return False, "Less than 3 phosphate groups found in CoA moiety"
-
-    # Check for thioester linkage: C(=O)S
-    thioester_smarts = "C(=O)S"
-    thioester_pattern = Chem.MolFromSmarts(thioester_smarts)
-    if not mol.HasSubstructMatch(thioester_pattern):
+    # Identify thioester linkage: C(=O)-S
+    thioester_pattern = Chem.MolFromSmarts("C(=O)S")
+    thioester_matches = mol.GetSubstructMatches(thioester_pattern)
+    if not thioester_matches:
         return False, "Thioester linkage not found"
 
-    # Check for double bond between carbons 2 and 3 in the acyl chain
-    # Find the carbonyl carbon in thioester linkage
-    carbonyl_smarts = "[#6](=O)S"
-    carbonyl_pattern = Chem.MolFromSmarts(carbonyl_smarts)
-    carbonyl_matches = mol.GetSubstructMatches(carbonyl_pattern)
-    if not carbonyl_matches:
-        return False, "Carbonyl carbon of thioester not found"
+    # Assume first match is the thioester linkage
+    carbonyl_c_idx = thioester_matches[0][0]
+    sulfur_idx = thioester_matches[0][2]
+    sulfur_atom = mol.GetAtomWithIdx(sulfur_idx)
 
-    # For each carbonyl carbon, check the connected chain for C=C at position 2
-    for match in carbonyl_matches:
-        carbonyl_c_idx = match[0]
-        # Get the sulfur atom connected to carbonyl carbon
-        sulfur_atom = mol.GetAtomWithIdx(match[1])
-        # Get the carbon attached to sulfur (start of acyl chain)
-        neighbors = [atom for atom in sulfur_atom.GetNeighbors() if atom.GetIdx() != carbonyl_c_idx]
-        if not neighbors:
-            continue
-        acyl_chain_start = neighbors[0]
-        # Check for double bond between carbons 2 and 3
-        # Get neighbors of acyl_chain_start excluding sulfur
-        acyl_neighbors = [atom for atom in acyl_chain_start.GetNeighbors() if atom.GetIdx() != sulfur_atom.GetIdx()]
-        for atom in acyl_neighbors:
-            # Check if there is a double bond to the next carbon
-            bond = mol.GetBondBetweenAtoms(acyl_chain_start.GetIdx(), atom.GetIdx())
-            if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE and atom.GetAtomicNum() == 6:
-                return True, "2-enoyl-CoA identified with double bond at position 2 in acyl chain"
+    # Check for CoA moiety connected to sulfur atom
+    # From sulfur atom, check for at least two phosphate groups and an adenine ring
 
-    return False, "Double bond between positions 2 and 3 in acyl chain not found"
+    # Function to perform BFS traversal from sulfur atom
+    def traverse_from_sulfur(sulfur_idx):
+        visited = set()
+        queue = [sulfur_idx]
+        phosphate_count = 0
+        adenine_found = False
+
+        while queue:
+            atom_idx = queue.pop(0)
+            if atom_idx in visited:
+                continue
+            visited.add(atom_idx)
+            atom = mol.GetAtomWithIdx(atom_idx)
+
+            # Check for phosphate group [P](=O)(O)(O)
+            if atom.GetAtomicNum() == 15:
+                # Phosphorus atom found, check connections
+                o_count = 0
+                for neighbor in atom.GetNeighbors():
+                    if neighbor.GetAtomicNum() == 8:
+                        o_count += 1
+                if o_count >= 3:
+                    phosphate_count += 1
+
+            # Check for adenine ring
+            # Adenine has a purine ring system with specific nitrogen patterns
+            # SMARTS pattern for adenine
+            adenine_pattern = Chem.MolFromSmarts("n1cnc2c1ncnc2N")
+            if mol.HasSubstructMatch(adenine_pattern):
+                adenine_found = True
+
+            # Add neighbors to queue
+            for neighbor in atom.GetNeighbors():
+                neighbor_idx = neighbor.GetIdx()
+                if neighbor_idx not in visited:
+                    queue.append(neighbor_idx)
+
+        return phosphate_count, adenine_found
+
+    phosphate_count, adenine_found = traverse_from_sulfur(sulfur_idx)
+    if phosphate_count < 2:
+        return False, f"Less than 2 phosphate groups found ({phosphate_count})"
+    if not adenine_found:
+        return False, "Adenine ring of CoA not found"
+
+    # Now check for double bond between positions 2 and 3 in the acyl chain
+    # Starting from carbonyl carbon, traverse the acyl chain
+
+    # Get carbonyl carbon atom
+    carbonyl_c = mol.GetAtomWithIdx(carbonyl_c_idx)
+    # Find the alpha carbon (next carbon in acyl chain)
+    alpha_c = None
+    for neighbor in carbonyl_c.GetNeighbors():
+        if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() != sulfur_idx:
+            alpha_c = neighbor
+            break
+    if alpha_c is None:
+        return False, "Alpha carbon in acyl chain not found"
+
+    # Find beta carbon (next carbon after alpha)
+    beta_c = None
+    for neighbor in alpha_c.GetNeighbors():
+        if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() != carbonyl_c_idx:
+            beta_c = neighbor
+            break
+    if beta_c is None:
+        return False, "Beta carbon in acyl chain not found"
+
+    # Check for double bond between alpha and beta carbons
+    bond = mol.GetBondBetweenAtoms(alpha_c.GetIdx(), beta_c.GetIdx())
+    if bond is None or bond.GetBondType() != Chem.rdchem.BondType.DOUBLE:
+        return False, "No double bond between positions 2 and 3 in acyl chain"
+
+    return True, "2-enoyl-CoA identified with double bond at position 2 in acyl chain"
