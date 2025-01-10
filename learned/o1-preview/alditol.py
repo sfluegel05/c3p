@@ -24,50 +24,156 @@ def is_alditol(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Define the SMARTS pattern for an alditol chain
-    # This matches an acyclic chain of carbons with attached hydroxyl groups,
-    # starting and ending with CH2OH groups.
-    pattern_str = '[O][CH2][CH](O){1,10}[CH2][O]'
-    pattern = Chem.MolFromSmarts(pattern_str)
-    if pattern is None:
-        return False, "Invalid SMARTS pattern"
 
-    # Search for matches in the molecule
-    matches = mol.GetSubstructMatches(pattern)
-    if not matches:
-        return False, "Molecule does not contain an alditol chain"
+    # Check if molecule is acyclic (no rings)
+    if mol.GetRingInfo().NumRings() > 0:
+        return False, "Molecule contains rings"
 
-    # Check each match for additional criteria
-    for match in matches:
-        atoms = [mol.GetAtomWithIdx(idx) for idx in match]
+    # Identify all carbon chains in the molecule
+    chains = []
+    for bond in mol.GetBonds():
+        atom1 = bond.GetBeginAtom()
+        atom2 = bond.GetEndAtom()
+        if atom1.GetAtomicNum() == 6 and atom2.GetAtomicNum() == 6:
+            chains.append((atom1.GetIdx(), atom2.GetIdx()))
 
-        # Check that the matched atoms are not in rings
-        if any(atom.IsInRing() for atom in atoms):
-            continue  # Skip this match
+    # Find all paths (carbon chains) in the molecule
+    from rdkit.Chem import rdmolops
+    paths = rdmolops.FindAllPathsOfLengthN(mol, minPath=2, maxPath=mol.GetNumAtoms(), useBonds=True)
 
-        # Check that all carbons are sp3 hybridized and have OH groups
-        carbons = [atom for atom in atoms if atom.GetAtomicNum() == 6]
-        all_sp3 = all(atom.GetHybridization() == Chem.HybridizationType.SP3 for atom in carbons)
-        all_has_OH = True
-        for atom in carbons:
-            # Check that carbon has an attached hydroxyl group
-            has_OH = False
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetAtomicNum() == 8:  # Oxygen
-                    bond = mol.GetBondBetweenAtoms(atom.GetIdx(), neighbor.GetIdx())
-                    if bond is not None and bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
-                        has_OH = True
-                        break
-            if not has_OH:
-                all_has_OH = False
-                break
-        if not all_sp3 or not all_has_OH:
-            continue  # Skip this match
+    # Filter paths that are continuous carbon chains
+    carbon_chains = []
+    for path in paths:
+        path_atoms = [mol.GetAtomWithIdx(idx) for idx in path]
+        if all(atom.GetAtomicNum() == 6 for atom in path_atoms):
+            carbon_chains.append(path)
 
-        # Passed all checks
-        n_carbons = len(carbons)
+    # Check for alditol structure in the carbon chains
+    for chain in carbon_chains:
+        # Check that the chain is linear (no branches)
+        if any(mol.GetAtomWithIdx(idx).GetDegree() > 3 for idx in chain):
+            continue  # Skip branched chains
+        
+        # Check that terminal carbons are CH2OH groups
+        start_atom = mol.GetAtomWithIdx(chain[0])
+        end_atom = mol.GetAtomWithIdx(chain[-1])
+
+        if not is_CH2OH(start_atom, mol):
+            continue
+        if not is_CH2OH(end_atom, mol):
+            continue
+
+        # Check that internal carbons are CH(OH)
+        internal_atoms = [mol.GetAtomWithIdx(idx) for idx in chain[1:-1]]
+        all_internal_CHOH = all(is_CHOH(atom, mol) for atom in internal_atoms)
+        if not all_internal_CHOH:
+            continue
+
+        # Check for extra functional groups
+        if has_extra_functional_groups(mol, chain):
+            continue  # Skip chains with extra groups
+
+        n_carbons = len(chain)
         return True, f"Contains an alditol chain of length {n_carbons} carbons"
 
     # No valid alditol chain found
     return False, "Molecule does not contain an alditol chain"
+
+def is_CH2OH(atom, mol):
+    """
+    Checks if an atom is a terminal carbon in a CH2OH group.
+
+    Args:
+        atom (Chem.Atom): Atom to check
+        mol (Chem.Mol): Molecule containing the atom
+
+    Returns:
+        bool: True if atom is CH2OH, False otherwise
+    """
+    if atom.GetAtomicNum() != 6:
+        return False
+    if atom.GetDegree() != 3:
+        return False
+    neighbors = atom.GetNeighbors()
+    num_H = atom.GetTotalNumHs()
+    num_OH = 0
+    for neighbor in neighbors:
+        if neighbor.GetAtomicNum() == 8:  # Oxygen
+            if is_hydroxyl(neighbor, atom):
+                num_OH += 1
+    return num_H == 2 and num_OH == 1
+
+def is_CHOH(atom, mol):
+    """
+    Checks if an atom is an internal carbon in a CH(OH) group.
+
+    Args:
+        atom (Chem.Atom): Atom to check
+        mol (Chem.Mol): Molecule containing the atom
+
+    Returns:
+        bool: True if atom is CH(OH), False otherwise
+    """
+    if atom.GetAtomicNum() != 6:
+        return False
+    if atom.GetDegree() != 3:
+        return False
+    neighbors = atom.GetNeighbors()
+    num_H = atom.GetTotalNumHs()
+    num_OH = 0
+    for neighbor in neighbors:
+        if neighbor.GetAtomicNum() == 8:  # Oxygen
+            if is_hydroxyl(neighbor, atom):
+                num_OH += 1
+    return num_H == 1 and num_OH == 1
+
+def is_hydroxyl(oxygen_atom, carbon_atom):
+    """
+    Checks if an oxygen atom is part of a hydroxyl group attached to the given carbon.
+
+    Args:
+        oxygen_atom (Chem.Atom): Oxygen atom
+        carbon_atom (Chem.Atom): Carbon atom
+
+    Returns:
+        bool: True if oxygen is part of hydroxyl group on carbon, False otherwise
+    """
+    if oxygen_atom.GetDegree() != 1:
+        return False
+    bond = carbon_atom.GetBondBetweenAtoms(carbon_atom.GetIdx(), oxygen_atom.GetIdx())
+    if bond is None:
+        return False
+    return bond.GetBondType() == Chem.BondType.SINGLE
+
+def has_extra_functional_groups(mol, chain_atom_indices):
+    """
+    Checks if the molecule has extra functional groups outside the given chain.
+
+    Args:
+        mol (Chem.Mol): Molecule to check
+        chain_atom_indices (list of int): Atom indices of the chain
+
+    Returns:
+        bool: True if there are extra functional groups, False otherwise
+    """
+    chain_set = set(chain_atom_indices)
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6:
+            continue  # Ignore carbons
+        if atom.GetAtomicNum() == 1:
+            continue  # Ignore hydrogens
+        if atom.GetAtomicNum() == 8:
+            # Allow only hydroxyl oxygens attached to chain carbons
+            neighbors = atom.GetNeighbors()
+            if len(neighbors) != 1:
+                return True  # Oxygen connected to more than one atom
+            neighbor = neighbors[0]
+            if neighbor.GetIdx() not in chain_set:
+                return True  # Oxygen attached outside the chain
+            # Check if oxygen is part of hydroxyl group
+            if not is_hydroxyl(atom, neighbor):
+                return True
+            continue
+        # Any other atom indicates extra functional group
+        return True
+    return False
