@@ -29,7 +29,10 @@ def is_N_hydroxy_alpha_amino_acid(smiles: str):
     # Check for amino acid backbone: alpha-carbon with NH2 and COOH
     amino_acid_pattern = Chem.MolFromSmarts("[CX4H]([NH2,NH,NH1,NX3])([CX3](=[OX1])[OX2H1])")
     if not mol.HasSubstructMatch(amino_acid_pattern):
-        return False, "No amino acid backbone found"
+        # Check for the simplest amino acid backbone (glycine)
+        glycine_pattern = Chem.MolFromSmarts("[NH2][CH2][CX3](=[OX1])[OX2H1]")
+        if not mol.HasSubstructMatch(glycine_pattern):
+            return False, "No amino acid backbone found"
 
     # Check for N-hydroxy group (N with at least one OH attached)
     n_hydroxy_pattern = Chem.MolFromSmarts("[NX3][OH]")
@@ -42,7 +45,10 @@ def is_N_hydroxy_alpha_amino_acid(smiles: str):
         # Check if the N-hydroxy group is part of the amino acid backbone but not directly attached to the alpha-carbon
         n_hydroxy_backbone_pattern = Chem.MolFromSmarts("[CX4H]([NH2,NH,NH1,NX3])([CX3](=[OX1])[OX2H1])-[NX3][OH]")
         if not mol.HasSubstructMatch(n_hydroxy_backbone_pattern):
-            return False, "N-hydroxy group not attached to alpha-carbon or part of the amino acid backbone"
+            # Check for more complex structures where the N-hydroxy group is part of a larger structure
+            complex_n_hydroxy_pattern = Chem.MolFromSmarts("[NX3][OH]~[CX4H]([NH2,NH,NH1,NX3])([CX3](=[OX1])[OX2H1])")
+            if not mol.HasSubstructMatch(complex_n_hydroxy_pattern):
+                return False, "N-hydroxy group not attached to alpha-carbon or part of the amino acid backbone"
 
     return True, "Contains amino acid backbone with N-hydroxy group attached to alpha-carbon or part of the backbone"
 
