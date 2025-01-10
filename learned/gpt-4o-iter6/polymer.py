@@ -25,30 +25,30 @@ def is_polymer(smiles: str):
     
     # Consider excluding entities with very low molecular weight first
     mol_wt = Descriptors.ExactMolWt(mol)
-    if mol_wt < 500:  # Increased threshold to better capture polymers
+    if mol_wt < 1000:  # More stringent threshold considering polymers are large
         return False, "Molecular weight too low for a typical polymer"
     
     # Count heteroatoms (non-carbon and non-hydrogen) to check for complexity
     heteroatom_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() not in [6, 1])
-    if heteroatom_count < 2:
+    if heteroatom_count < 5:
         return False, "Too few heteroatoms to suggest polymer complexity"
     
     # Look for a high number of rotatable bonds
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 10:
+    if n_rotatable < 20:  # Assuming more flexible structures
         return False, "Insufficient rotatable bonds to be a polymer"
 
     # Look for various common functional group linkages that indicate repeated units
     repeating_unit_patterns = [
-        Chem.MolFromSmarts("C=C"),
+        Chem.MolFromSmarts("C=C"),  # Double bonds, often as monomeric units
         Chem.MolFromSmarts("C-O-C"),  # Ethers, common in polyethers
-        Chem.MolFromSmarts("O-C(=O)-C"),  # Esters, common in polyesters
+        Chem.MolFromSmarts("O=C-O"),  # Esters, common in polyesters
         Chem.MolFromSmarts("N-C(=O)-C"),  # Amide linkages, common in polyamides
     ]
     
     for pattern in repeating_unit_patterns:
         repeating_matches = mol.GetSubstructMatches(pattern)
         if len(repeating_matches) >= 3:
-            return True, f"Contains repeating units indicative of polymer structure: {pattern.GetSmarts()}"
+            return True, f"Contains repeating units indicative of polymer structure: {pattern}"
 
     return False, "Does not match typical polymer characteristics"
