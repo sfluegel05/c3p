@@ -6,8 +6,7 @@ from rdkit import Chem
 def is_tertiary_amine_oxide(smiles: str):
     """
     Determines if a molecule is a tertiary amine oxide based on its SMILES string.
-    A tertiary amine oxide is characterized by a nitrogen atom bonded to three carbon atoms
-    and an oxygen atom (N+ → O-), possibly within a diverse array of structural contexts.
+    A tertiary amine oxide is characterized by a nitrogen atom bonded to three carbon atoms and an oxygen atom (N+ → O-).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,17 +21,19 @@ def is_tertiary_amine_oxide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define tertiary amine oxide patterns
-    # Pattern for tertiary amine oxide with various structural contexts
+    # Define more comprehensive patterns for tertiary amine oxides
     patterns = [
-        Chem.MolFromSmarts("[N+](C)(C)(C)[O-]"), # Exact match
-        Chem.MolFromSmarts("[N+](C)(C)(C)O"), # Allow unconjugated O
-        Chem.MolFromSmarts("[N+](C)(C)C[O-]"), # Oxygen bonded to outer carbon
-        Chem.MolFromSmarts("[R][N+](C)(C)[O-]"), # Incorporate ring
-        Chem.MolFromSmarts("[N+](C)(C)[O-]C"), # Different configurations with O
+        Chem.MolFromSmarts("[N+](C)(C)(C)[O-]"), # Basic tertiary amine oxide
+        Chem.MolFromSmarts("[N+](C)(C)(C)O"), # Allow O without formal charge
+        Chem.MolFromSmarts("[N+]([R][C])(C)[O-]"), # Ring-substituted
+        Chem.MolFromSmarts("[N+](C)[C](C)[O-]"), # Close proximity of O
+        Chem.MolFromSmarts("[N+](C)([O-])[R]"), # Alternative ring positions
+        Chem.MolFromSmarts("[R][N+]([R])([R])[O-]"), # Extensive ring systems
+        Chem.MolFromSmarts("[N+](C)(C)[O-]C"), # Variant of configurations
+        Chem.MolFromSmarts("[C][N+]([C])([C])[O-]R") # More general contexts
     ]
 
-    # Check for the pattern in the molecule
+    # Check for any of the patterns in the molecule
     for pattern in patterns:
         if mol.HasSubstructMatch(pattern):
             return True, "Contains a variant of the tertiary amine oxide structure (N+ → O-)"
