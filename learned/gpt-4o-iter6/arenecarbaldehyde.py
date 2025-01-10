@@ -20,28 +20,20 @@ def is_arenecarbaldehyde(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Look for the aldehyde group (C=O attached to one hydrogen and another carbon)
-    aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)[#6]")
-    if not mol.HasSubstructMatch(aldehyde_pattern):
-        return False, "No aldehyde group found"
-
-    # Look for specific aromatic ring patterns attached to the aldehyde's carbon
-    aromatic_patterns = [
-        Chem.MolFromSmarts("[c]"),  # aromatic carbon
-        Chem.MolFromSmarts("n1ccccc1"),  # pyridine-like
-        Chem.MolFromSmarts("[cH][c][c][c][c][c]"),  # benzene-like
-        Chem.MolFromSmarts("n2c[nH]nc2"),  # pyrrole-like with nitrogen consideration
-    ]
     
-    # Iterate through matched aldehyde carbons to check for attachment to an aromatic system
-    matches = mol.GetSubstructMatches(aldehyde_pattern)
-    for match in matches:
-        aldehyde_carbon = match[0]
-        for neighbor in mol.GetAtomWithIdx(aldehyde_carbon).GetNeighbors():
-            # Check if the neighbor is part of any of the defined aromatic patterns
-            for aromatic_pattern in aromatic_patterns:
-                if mol.HasSubstructMatch(aromatic_pattern, useChirality=False):
-                    return True, "Aldehyde group attached to an aromatic moiety"
+    # Define an aldehyde pattern with the carbonyl carbon adjacent to an aromatic carbon
+    aldehyde_with_aromatic_attachment = Chem.MolFromSmarts("[CX3H1]=[O]")
 
+    # Check if the molecule has an aldehyde group.
+    matches = mol.GetSubstructMatches(aldehyde_with_aromatic_attachment)
+
+    for aldehyde_carbon in matches:
+        # Find the carbon atom involved in the aldehyde
+        aldehyde_atom = mol.GetAtomWithIdx(aldehyde_carbon[0])
+
+        # Check if this carbon atom is attached to an aromatic system
+        for neighbor in aldehyde_atom.GetNeighbors():
+            if neighbor.GetIsAromatic():
+                return True, "Aldehyde group attached to an aromatic moiety"
+    
     return False, "Aldehyde group not attached to aromatic moiety"
