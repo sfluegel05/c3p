@@ -21,17 +21,20 @@ def is_octanoate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Octanoic acid ester pattern: highlight ester linkage (C(=O)O) followed by 8-carbon chain
-    # Use flexible branching that accounts for different positions and potential ring formations
-    octanoate_ester_patterns = [
-        Chem.MolFromSmarts("C(=O)OCCCCCCC[CH2]"),  # Linear octanoate ester
-        Chem.MolFromSmarts("C(=O)O[C;R0]C(CCCCCC)"), # Branched ending or initial branching
-        Chem.MolFromSmarts("[C;R]C(=O)OCCCCCCC"),    # Ring with ester
-    ]
-
-    # Check for the presence of the octanoic ester group among different patterns
-    for pattern in octanoate_ester_patterns:
-        if mol.HasSubstructMatch(pattern):
-            return True, "Contains octanoic acid ester linkage"
+    # Define octanoic acid ester pattern: R-O-C(=O)-CCCCCCC
+    octanoate_ester_pattern = Chem.MolFromSmarts("C(=O)OCCCCCCC")
+    if mol.HasSubstructMatch(octanoate_ester_pattern):
+        return True, "Contains octanoic acid ester linkage"
     
     return False, "Does not contain octanoic acid ester linkage"
+
+# Test the function with sample SMILES strings
+test_smiles = [
+    "CCCCCCCC(=O)OC(COC(=O)CCCCCCC)OC(=O)CCCCCCC",  # Trioctanoin
+    "CCCCCCCC(=O)OC",  # Methyl octanoate
+    "CCCCCCCC",  # Octane, not an ester
+]
+
+for smiles in test_smiles:
+    result, reason = is_octanoate_ester(smiles)
+    print(f"SMILES: {smiles} -> Is Octanoate Ester: {result}, Reason: {reason}")
