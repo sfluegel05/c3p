@@ -26,66 +26,90 @@ def is_monounsaturated_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, 'Invalid SMILES string'
 
-    # Check for thioester linkage [C(=O)S]
+    # Check for adenine ring (as part of CoA)
+    adenine_pattern = Chem.MolFromSmarts('n1cnc2c1ncnc2')
+    if not mol.HasSubstructMatch(adenine_pattern):
+        return False, 'No adenine moiety found (not a CoA derivative)'
+
+    # Find thioester linkage [C(=O)S]
     thioester_pattern = Chem.MolFromSmarts('C(=O)S')
     thioester_matches = mol.GetSubstructMatches(thioester_pattern)
     if not thioester_matches:
         return False, 'No thioester linkage found'
 
-    # Check for adenine ring (as part of CoA)
-    adenine_pattern = Chem.MolFromSmarts('n1cnc2c1ncnc2')
-    adenine_matches = mol.GetSubstructMatches(adenine_pattern)
-    if not adenine_matches:
-        return False, 'No adenine moiety found (not a CoA derivative)'
+    # Assume the fatty acyl chain is attached via the thioester linkage to CoA
+    for match in thioester_matches:
+        carbonyl_c_idx = match[0]  # Carbonyl carbon index
+        sulfur_idx = match[2]      # Sulfur atom index
 
-    # Assume the first thioester is the fatty acyl linkage
-    thioester_match = thioester_matches[0]
-    carbonyl_c_idx = thioester_match[0]  # Carbonyl carbon index
-    sulfur_idx = thioester_match[2]      # Sulfur atom index
+        # From the carbonyl carbon, collect the acyl chain atoms, excluding the sulfur atom
+        acyl_chain_atom_indices = collect_acyl_chain(mol, carbonyl_c_idx, sulfur_idx)
 
-    # Break the bond between carbonyl carbon and sulfur to isolate the acyl chain
-    emol = Chem.EditableMol(mol)
-    emol.RemoveBond(carbonyl_c_idx, sulfur_idx)
-    fragmented_mol = emol.GetMol()
+        if not acyl_chain_atom_indices:
+            continue  # Try the next thioester linkage
 
-    # Get the fragments - acyl chain and CoA moiety
-    fragments = Chem.GetMolFrags(fragmented_mol, asMols=True, sanitizeFrags=True)
+        # Create the acyl chain sub-molecule
+        acyl_chain_mol = Chem.PathToSubmol(mol, acyl_chain_atom_indices)
 
-    # Identify the acyl chain fragment (should contain the carbonyl carbon)
-    acyl_chain = None
-    coa_moiety = None
-    for frag in fragments:
-        atom_indices = [atom.GetIdx() for atom in frag.GetAtoms()]
-        if carbonyl_c_idx in atom_indices:
-            acyl_chain = frag
-        elif sulfur_idx in atom_indices:
-            coa_moiety = frag
+        # Analyze the acyl chain
+        if acyl_chain_mol.GetRingInfo().NumRings() > 0:
+            # Acyl chain contains rings
+            continue
 
-    if acyl_chain is None:
-        return False, 'Could not isolate acyl chain'
+        # Count number of carbon atoms (excluding the carbonyl carbon)
+        carbon_atoms = [atom for atom in acyl_chain_mol.GetAtoms() if atom.GetAtomicNum() == 6]
+        num_carbons = len(carbon_atoms) - 1  # Exclude carbonyl carbon
+        if num_carbons < 4:
+            # Acyl chain too short
+            continue
 
-    # Check that the acyl chain is linear and aliphatic
-    if acyl_chain.GetRingInfo().NumRings() > 0:
-        return False, 'Acyl chain contains rings (not linear)'
+        # Count carbon-carbon double bonds in the acyl chain
+        num_double_bonds = 0
+        for bond in acyl_chain_mol.GetBonds():
+            begin_atom = bond.GetBeginAtom()
+            end_atom = bond.GetEndAtom()
+            if begin_atom.GetAtomicNum() == 6 and end_atom.GetAtomicNum() == 6:
+                if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                    num_double_bonds += 1
 
-    # Count number of carbon atoms in the acyl chain (excluding carbonyl carbon)
-    carbon_atoms = [atom for atom in acyl_chain.GetAtoms() if atom.GetAtomicNum() == 6]
-    if len(carbon_atoms) < 4:
-        return False, 'Acyl chain too short to be a fatty acid'
+        if num_double_bonds == 1:
+            return True, 'Molecule is a monounsaturated fatty acyl-CoA (contains exactly one carbon-carbon double bond in the acyl chain)'
+        else:
+            continue  # Try the next thioester linkage
 
-    # Count carbon-carbon double bonds in the acyl chain
-    num_double_bonds = 0
-    for bond in acyl_chain.GetBonds():
-        begin_atom = bond.GetBeginAtom()
-        end_atom = bond.GetEndAtom()
-        if begin_atom.GetAtomicNum() == 6 and end_atom.GetAtomicNum() == 6:
-            if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-                num_double_bonds += 1
+    return False, 'Could not find an acyl chain with exactly one carbon-carbon double bond'
 
-    if num_double_bonds != 1:
-        return False, f'Acyl chain contains {num_double_bonds} carbon-carbon double bonds (expected exactly 1)'
+def collect_acyl_chain(mol, start_idx, exclude_idx):
+    '''
+    Collects the atom indices of the acyl chain starting from the carbonyl carbon,
+    excluding the sulfur atom and CoA moiety.
 
-    return True, 'Molecule is a monounsaturated fatty acyl-CoA (contains exactly one carbon-carbon double bond in the acyl chain)'
+    Args:
+        mol (Chem.Mol): RDKit molecule
+        start_idx (int): Starting atom index (carbonyl carbon)
+        exclude_idx (int): Atom index to exclude (sulfur atom)
+    
+    Returns:
+        list: Atom indices of the acyl chain
+    '''
+    visited = set()
+    to_visit = [start_idx]
+
+    while to_visit:
+        current_idx = to_visit.pop()
+        if current_idx in visited:
+            continue
+        visited.add(current_idx)
+
+        atom = mol.GetAtomWithIdx(current_idx)
+        for neighbor in atom.GetNeighbors():
+            neighbor_idx = neighbor.GetIdx()
+            if neighbor_idx == exclude_idx:
+                continue
+            if neighbor_idx not in visited:
+                to_visit.append(neighbor_idx)
+
+    return list(visited)
 
 __metadata__ = {
     'chemical_class': {
