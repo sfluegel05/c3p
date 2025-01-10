@@ -6,11 +6,11 @@ from rdkit import Chem
 def is_proanthocyanidin(smiles: str):
     """
     Determines if a molecule is a proanthocyanidin based on its SMILES string.
-    A proanthocyanidin is a flavonoid oligomer consisting of two or more hydroxyflavan units, often linked by C4-C8 or C4-C6 bonds.
-    
+    A proanthocyanidin is a flavonoid oligomer consisting of two or more hydroxyflavan units.
+
     Args:
         smiles (str): SMILES string of the molecule
-        
+
     Returns:
         bool: True if the molecule is a proanthocyanidin, False otherwise
         str: Reason for classification
@@ -20,22 +20,18 @@ def is_proanthocyanidin(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Pattern for hydroxy groups in phenolic rings as part of flavan units
-    phenol_pattern = Chem.MolFromSmarts("c1c(O)ccc(O)c1")  # Phenolic pattern
-    phenol_matches = mol.GetSubstructMatches(phenol_pattern)
-    if len(phenol_matches) < 4:  # Ensure at least indicative of two flavan units
-        return False, "Insufficient phenolic groups to suggest multiple hydroxyflavan units"
-    
-    # Patterns for interflavan C4-C8 or C4-C6 linkages
-    linkage_pattern_c8 = Chem.MolFromSmarts("[C@H]1c(O)cc(O)c1-c2c(O)ccc(O)c2")  # One approach to C4-C8 linkage with stereochemistry
-    linkage_pattern_c6 = Chem.MolFromSmarts("[C@H]1c(O)cc(O)c1-c2cc(O)ccc2")  # One approach to C4-C6 linkage
-    
-    # Check for presence of any valid linkage
-    linkage_matches_c8 = mol.GetSubstructMatches(linkage_pattern_c8)
-    linkage_matches_c6 = mol.GetSubstructMatches(linkage_pattern_c6)
-    
-    if len(linkage_matches_c8) < 1 and len(linkage_matches_c6) < 1:
-        return False, "No interflavan linkage found"
-    
-    return True, "Contains multiple hydroxyflavan units with at least one interflavan linkage"
+
+    # Proanthocyanidins usually have multiple aromatic rings and hydroxyl groups
+    # Look for flavan skeleton with hydroxy groups, typically C6-C3-C6 unit
+    flavan_pattern = Chem.MolFromSmarts("c1cc(O)ccc1[C@H]2Oc3cc(O)cc(O)c3[C@@H]2")
+    flavan_matches = mol.GetSubstructMatches(flavan_pattern)
+    if len(flavan_matches) < 2:
+        return False, "Less than two hydroxyflavan units found"
+
+    # Check for plausible interflavan linkages, such as 4->8 linkages
+    linkage_pattern = Chem.MolFromSmarts("[c,C]1[c,C][c,C]([C@H]2O[c,C][c,C][c,C][c,C]2)[c,C][c,C]1")
+    linkage_matches = mol.GetSubstructMatches(linkage_pattern)
+    if len(linkage_matches) < 1:
+        return False, "No interflavan linkages found"
+
+    return True, "Contains multiple hydroxyflavan units with appropriate linkages"
