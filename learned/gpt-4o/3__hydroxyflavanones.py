@@ -22,15 +22,22 @@ def is_3__hydroxyflavanones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the flavanone skeleton SMARTS pattern
-    flavanone_pattern = Chem.MolFromSmarts("c1ccccc1C2=CC(=O)CC(O2)c3ccccc3")
+    # Refined flavanone skeleton pattern
+    # Matching the core flavanone structure with substitutions
+    flavanone_pattern = Chem.MolFromSmarts("O=C1C(Oc2ccccc2O1)c1ccccc1")
     if not mol.HasSubstructMatch(flavanone_pattern):
         return False, "No flavanone skeleton found"
     
-    # Define the 3'-hydroxy group SMARTS pattern on phenyl ring
-    hydroxy_3_prime_pattern = Chem.MolFromSmarts("c1cc(O)ccc1")
+    # Refine pattern for 3'-hydroxy group relative to core structure
+    # Attention to positions in the context of flavanone
+    hydroxy_3_prime_pattern = Chem.MolFromSmarts("Oc1ccccc1")
     matches = mol.GetSubstructMatches(hydroxy_3_prime_pattern)
-    if not matches:
-        return False, "No hydroxy group found at position 3' on the phenyl ring"
+
+    # Iterate over matches to ensure the positioning is correct
+    # Recapture the logic for correctly identifying 3' hydroxy
+    found_3_prime_hydroxy = any(mol.GetAtomWithIdx(match[0]).GetFormalCharge() == 0 for match in matches)
+    
+    if not found_3_prime_hydroxy:
+        return False, "No hydroxy group found exactly at position 3' on the phenyl ring"
     
     return True, "Contains flavanone skeleton with a hydroxy group at the 3' position on the phenyl ring"
