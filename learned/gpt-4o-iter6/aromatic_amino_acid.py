@@ -28,19 +28,18 @@ def is_aromatic_amino_acid(smiles: str):
     
     # Look for amino acid structure (amino group NH2 and carboxylate C(=O)O)
     amino_group_pattern = Chem.MolFromSmarts("[NX3][CX4]")
-    carboxylate_group_pattern = Chem.MolFromSmarts("[CX3](=O)[O]")
+    carboxylate_group_pattern = Chem.MolFromSmarts("C(=O)[O]")
     
     if not mol.HasSubstructMatch(amino_group_pattern):
         return False, "No amino group found"
         
     if not mol.HasSubstructMatch(carboxylate_group_pattern):
         return False, "No carboxylic acid group found"
-
-    # Check connectivity between aromatic ring and amino acid moiety
-    # Aromatic ring connected to a carbon which is bonded to amino and carboxylate groups
-    aromatic_amino_acid_pattern = Chem.MolFromSmarts("a-[CX4](N)[CX3](=O)O")
+    
+    # Check for connectivity: aromatic ring, alpha carbon, amino group, and carboxylate group
+    aromatic_amino_acid_pattern = Chem.MolFromSmarts("a-[C](N)-C(=O)[O]")
     if not mol.HasSubstructMatch(aromatic_amino_acid_pattern):
-        return False, "Aromatic ring not connected to amino acid moiety"
+        return False, "Aromatic ring not properly connected to amino acid functionality"
 
     return True, "Contains aromatic ring and amino acid moiety connected appropriately"
 
