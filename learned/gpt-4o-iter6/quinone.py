@@ -7,7 +7,7 @@ def is_quinone(smiles: str):
     """
     Determines if a molecule is a quinone based on its SMILES string.
     
-    Quinones have a fully conjugated cyclic dione structure, including simple benzoquinones and complex polycyclic forms, derived from aromatic compounds by converting specific groups into carbonyls, covering aromatic and pseudo-aromatic systems.
+    Quinones have a fully conjugated cyclic dione structure, which can be simple benzoquinones or complex polycyclic forms derived from aromatics by converting specific groups into carbonyls, covering aromatic and pseudo-aromatic systems.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,22 +22,27 @@ def is_quinone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Expanded SMARTS patterns for quinones, accounting for broader structural motifs
+    # SMARTS patterns for quinones
     quinone_patterns = [
-        Chem.MolFromSmarts("C1=CC(=O)C=CC(=O)C1"),             # Simple 1,4-benzoquinone
-        Chem.MolFromSmarts("O=C1C=CC2=CC=CC=C2C1=O"),           # Polycyclic quinone
-        Chem.MolFromSmarts("O=C1C(C=CC2=CC=CC=C12)=O"),         # Anthraquinone-like
-        Chem.MolFromSmarts("C1=CC2=C(C=C1)C(=O)C=CC2=O"),       # Naphthoquinone-like structures
-        Chem.MolFromSmarts("O=C1C=C2C3=CC=CC=C3C2=CC1=O"),      # Tetracyclic-like
-        Chem.MolFromSmarts("C1=CC(=O)C=C2C=CC=C3C(=O)OC=C2C3"), # Extended aromatic conjugation
-        Chem.MolFromSmarts("O=C1C(=O)C=CC2=C1C=CC(=C2)O"),      # Cross-conjugated
-        Chem.MolFromSmarts("O=C1OC=C2C=CC3=CC=COC3C2=C1"),      # Heterocyclic derivatives with oxygen
-        Chem.MolFromSmarts("O=C1C(N)=CC=C(O)C1=O"),             # Quinoid nitrogen heterocycle
+        "[O]=C1C=CC(=O)C=C1",                # Simple 1,4-benzoquinone
+        "[O]=C1C2=CC=CC=C2C(=O)C=C1",        # Naphthoquinone-like
+        "[O]=C1CC=CC(=O)C2=CC=CC=C12",      # Anthraquinone
+        "[O]=C1C=CC2=CC=CC=C2C1=O",          # Polycyclic-like
+        "O=C1C=C2C3=CC=CC=C3C2=CC1=O",      # Tetracyclic-like
+        "[O]=C1C2=C(C=CC=C2)C=CC1=O",       # Extended aromatic naphthalene
+        "[O]=C1OC=CC2=C1C=CC=C2",           # Heterocyclic with oxygen
+        "[C,N]1-2=[C-3]=[C,X2]=[C]=[C-2]=O" # Generalized quinoid ring with heteroatom inclusions
+        # Include any other relevant quinone patterns as needed for broad coverage
     ]
     
-    # Check for any pattern match
     for pattern in quinone_patterns:
-        if mol.HasSubstructMatch(pattern):
-            return True, "Molecule contains a fully conjugated cyclic dione structure indicative of a quinone"
-    
+        try:
+            smarts = Chem.MolFromSmarts(pattern)
+            if smarts is None:
+                continue
+            if mol.HasSubstructMatch(smarts):
+                return True, "Molecule contains a fully conjugated cyclic dione structure indicative of a quinone"
+        except:
+            continue
+
     return False, "Molecule does not contain a quinone structural feature"
