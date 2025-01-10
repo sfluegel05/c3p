@@ -8,7 +8,7 @@ def is_phosphatidylinositol_phosphate(smiles: str):
     Determines if a molecule is a phosphatidylinositol phosphate
     based on its SMILES string.
     
-    A phosphatidylinositol phosphate is characterized by a glycerol backbone with fatty acids,
+    A phosphatidylinositol phosphate is characterized by a glycerol backbone with esterified fatty acids,
     an inositol ring (C6 sugar alcohol), and one or multiple phosphate groups attached to the inositol.
     
     Args:
@@ -24,28 +24,24 @@ def is_phosphatidylinositol_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for a glycerol backbone pattern with ester linkages to fatty acids
-    # We need a flexible pattern that allows for variable ester chains
-    glycerol_pattern = Chem.MolFromSmarts("C(COC(=O))OCC(=O)")
+    # Improved pattern for glycerol backbone with ester linkages
+    glycerol_pattern = Chem.MolFromSmarts("OCC(O)COC(=O)C")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone with ester linkages found"
 
-    # Check for inositol ring structure
-    # This should match any form of an inositol ring, typically represented as a hexahydroxycyclohexane
-    inositol_pattern = Chem.MolFromSmarts("OC1C(O)C(O)C(O)C(O)C1O")
-    if not mol.HasSubstructMatch(inositol_pattern):
-        return False, "No inositol ring found"
+    # General pattern for an inositol ring (may include attached phosphates)
+    inositol_phosphate_pattern = Chem.MolFromSmarts("C1(O)C(O)C(O)C(O)C(O)C1(OP(=O)(O)O)")
+    matched = mol.GetSubstructMatches(inositol_phosphate_pattern)
+    phosphate_attached_to_inositol = any(
+        mol.mol.GetSubstructMatch(Chem.MolFromSmarts("C1(O)C(O)C(O)C(O)C(O)C1OP(=O)(O)O"))
+        for inositol_ring in matched)
 
-    # Check for at least one phosphate group attached
-    phosphate_pattern = Chem.MolFromSmarts("PO(O)O")
-    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
-    if len(phosphate_matches) < 1:
-        return False, "No phosphates attached to the molecule"
+    if not phosphate_attached_to_inositol:
+        return False, "Inositol ring with phosphates not found"
 
-    # Verify significant phosphate connection to inositol ring
-    # Accept a range of phosphate attachments from mono- to trisphosphate
-    inositol_phosphate_pattern = Chem.MolFromSmarts("c1c(O)cc(OP(=O)(O)O)cc(OP(=O)(O)O)c1O")
-    if not mol.HasSubstructMatch(inositol_phosphate_pattern):
-        return False, "No significant phosphate attachment on inositol"
+    # Check for at least one ester linkage implying fatty acid
+    ester_pattern = Chem.MolFromSmarts("C(=O)OC")
+    if len(mol.GetSubstructMatches(ester_pattern)) < 2:
+        return False, "Does not have at least two ester groups indicating fatty acids"
 
-    return True, "Molecule contains glycerol, phosphates, and an inositol core"
+    return True, "Molecule is a phosphatidylinositol phosphate with appropriate glycerol, inositol, and phosphate structure"
