@@ -9,7 +9,7 @@ def is_phosphatidylinositol_phosphate(smiles: str):
     based on its SMILES string.
     
     A phosphatidylinositol phosphate is characterized by a glycerol backbone with esterified fatty acids,
-    an inositol ring (C6 sugar alcohol), and one or multiple phosphate groups attached to the inositol.
+    an inositol ring (C6 sugar alcohol), and one or more phosphate groups attached to the inositol.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -24,22 +24,17 @@ def is_phosphatidylinositol_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Improved pattern for glycerol backbone with ester linkages
-    glycerol_pattern = Chem.MolFromSmarts("OCC(O)COC(=O)C")
-    if not mol.HasSubstructMatch(glycerol_pattern):
+    # Pattern for glycerol backbone with ester linkages. Adjusting to ensure fatty acid tails.
+    glycerol_esterified_pattern = Chem.MolFromSmarts("OCC(O)COC(=O)C")
+    if not mol.HasSubstructMatch(glycerol_esterified_pattern):
         return False, "No glycerol backbone with ester linkages found"
 
-    # General pattern for an inositol ring (may include attached phosphates)
+    # Pattern for an inositol ring with attached phosphate groups.
     inositol_phosphate_pattern = Chem.MolFromSmarts("C1(O)C(O)C(O)C(O)C(O)C1(OP(=O)(O)O)")
-    matched = mol.GetSubstructMatches(inositol_phosphate_pattern)
-    phosphate_attached_to_inositol = any(
-        mol.mol.GetSubstructMatch(Chem.MolFromSmarts("C1(O)C(O)C(O)C(O)C(O)C1OP(=O)(O)O"))
-        for inositol_ring in matched)
-
-    if not phosphate_attached_to_inositol:
+    if not mol.HasSubstructMatch(inositol_phosphate_pattern):
         return False, "Inositol ring with phosphates not found"
 
-    # Check for at least one ester linkage implying fatty acid
+    # Check for at least two ester linkages indicating fatty acids
     ester_pattern = Chem.MolFromSmarts("C(=O)OC")
     if len(mol.GetSubstructMatches(ester_pattern)) < 2:
         return False, "Does not have at least two ester groups indicating fatty acids"
