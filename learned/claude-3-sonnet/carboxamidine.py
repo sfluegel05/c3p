@@ -24,54 +24,54 @@ def is_carboxamidine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # More specific carboxamidine pattern:
-    # [CX3] - sp2 carbon
-    # [NX2] - sp2 nitrogen (double bond)
-    # [NX3] - sp3 nitrogen (single bond)
-    # !$([C]=[O,S,P]) - not carbonyl, thiocarbonyl, or phosphorus
-    # !$(C=N[N,O,S]) - not hydrazone, oxime, or thiohydrazone
-    # !$(C([NX3])[NX3][NX3]) - not guanidine
-    pattern = Chem.MolFromSmarts("""
-        [CX3;!$([C]=[O,S,P]);!$(C=N[N,O,S]);!$(C([NX3])[NX3][NX3])]
-        (
-            [#6,#1;!$(C=N),!$(C=O)]
-        )
-        (
-            [NX3;!$(N(C=O));!$(N(N=*));!$(N(C=N)[#7,#8,#16])]
-        )
-        =[NX2;!$(N=CN=*);!$(N=CC=O);!$(N=CN([#7,#8,#16]))]
-    """)
+    # Basic carboxamidine pattern: C(=N)N where C is not part of C(=O) or C(=S)
+    pattern = Chem.MolFromSmarts("[CX3;!$(C=O);!$(C=S)](=[NX2])[NX3]")
+    
+    if pattern is None:
+        return False, "Error in SMARTS pattern"
 
-    # Find matches
     matches = mol.GetSubstructMatches(pattern)
     
     if not matches:
         return False, "No carboxamidine group found"
     
-    # Additional checks for problematic cases
+    # For each potential match, do additional validation
     for match in matches:
         carbon_idx = match[0]
+        imine_n_idx = match[1]
+        amine_n_idx = match[2]
         
-        # Get all atoms connected to the carbon
-        neighbors = mol.GetAtomWithIdx(carbon_idx).GetNeighbors()
+        carbon = mol.GetAtomWithIdx(carbon_idx)
+        imine_n = mol.GetAtomWithIdx(imine_n_idx)
+        amine_n = mol.GetAtomWithIdx(amine_n_idx)
         
-        # Check if part of problematic cyclic structures
-        ring_info = mol.GetRingInfo()
-        if ring_info.IsAtomInRingOfSize(carbon_idx, 5):
-            ring_atoms = set()
-            for ring in ring_info.AtomRings():
-                if carbon_idx in ring:
-                    ring_atoms.update(ring)
+        # Exclude guanidines: avoid cases where both nitrogens have additional nitrogen neighbors
+        imine_n_neighbors = set(n.GetAtomicNum() for n in imine_n.GetNeighbors())
+        amine_n_neighbors = set(n.GetAtomicNum() for n in amine_n.GetNeighbors())
+        
+        nitrogen_count_imine = sum(1 for x in imine_n_neighbors if x == 7)
+        nitrogen_count_amine = sum(1 for x in amine_n_neighbors if x == 7)
+        
+        if nitrogen_count_imine > 1 or nitrogen_count_amine > 1:
+            continue
             
-            # Check if both nitrogens are in same 5-membered ring
-            n_count = 0
-            for n_idx in [match[2], match[3]]:  # indices of N atoms
-                if n_idx in ring_atoms:
-                    n_count += 1
-            if n_count == 2:
-                continue  # Skip this match as it's likely a cyclic imine
-    
+        # Exclude cases where the imine nitrogen is part of N=C-N=C pattern
+        # (to avoid certain cyclic imines)
+        imine_neighbors = imine_n.GetNeighbors()
+        has_additional_imine = False
+        for neighbor in imine_neighbors:
+            if neighbor.GetIdx() != carbon_idx:  # don't check the carboxamidine carbon
+                for next_neighbor in neighbor.GetNeighbors():
+                    if next_neighbor.GetAtomicNum() == 7 and next_neighbor.GetIdx() != imine_n_idx:
+                        bond = mol.GetBondBetween(neighbor, next_neighbor)
+                        if bond.GetBondType() == Chem.BondType.DOUBLE:
+                            has_additional_imine = True
+                            break
+        
+        if has_additional_imine:
+            continue
+            
         # Valid carboxamidine found
-        return True, f"Contains carboxamidine group"
+        return True, "Contains carboxamidine group"
     
     return False, "No valid carboxamidine group found"
