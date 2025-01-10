@@ -23,27 +23,19 @@ def is_glycerophosphoinositol(smiles: str):
         return False, "Invalid SMILES string"
     
     # Define patterns for key structural components
-    glycerol_pattern = Chem.MolFromSmarts("O[C@H](COP)C(O)")  # Glycerol backbone with phosphate
+    glycerol_backbone_pattern = Chem.MolFromSmarts("C(CO)CO[P,O](=O)(OCC1)C1")
     inositol_pattern = Chem.MolFromSmarts("C1(O)C(O)C(O)C(O)C(O)C1O")
-    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)(O)")
+    # Phosphate group next to the glycerol
+    phosphate_inositol_pattern = Chem.MolFromSmarts("O[C@H](COP(=O)(O)O[C@H]1C(O)C(O)C(O)C(O)C1O)CO")
 
-    # Check for the presence of glycerol backbone with phosphate
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone with phosphate group found"
+    # Check for the presence of glycerol backbone with phosphate linking to inositol
+    if not mol.HasSubstructMatch(phosphate_inositol_pattern):
+        return False, "No correct phosphate linkage to inositol found attached to glycerol"
 
-    # Check for inositol attached to phosphate
-    if not mol.HasSubstructMatch(inositol_pattern):
-        return False, "No inositol group found"
+    # Check for fatty acid chains (represented simplistically by C(=O)C)
+    fatty_acid_pattern = Chem.MolFromSmarts("C(=O)C")
+    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
+    if len(fatty_acid_matches) < 1:  # Expect at least one fatty acid chain
+        return False, "Missing fatty acid chains"
 
-    # Confirm phosphate linkage to inositol
-    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
-    inositol_matches = mol.GetSubstructMatches(inositol_pattern)
-    
-    for p_match in phosphate_matches:
-        for i_match in inositol_matches:
-            phosphate_atom = mol.GetAtomWithIdx(p_match[0])  # Assuming first atom of match is P
-            if phosphate_atom.GetSymbol() == 'P' and \
-               any(neighbor.GetIdx() in i_match for neighbor in phosphate_atom.GetNeighbors()):
-                return True, "Contains glycerophosphoinositol structure (glycerol backbone, attached phosphate group to inositol, inositol, and fatty acids)"
-
-    return False, "Phosphate group is not correctly connected to inositol"
+    return True, "Contains glycerophosphoinositol structure (glycerol backbone, attached phosphate group to inositol, inositol, and fatty acids)"
