@@ -30,11 +30,9 @@ def is_alkene(smiles: str):
     # Check for cycles; alkenes must be acyclic
     # But ensure C=C bond is not part of a cycle
     ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() > 0:
-        for bond in mol.GetBonds():
-            if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-                if bond.IsInRing():
-                    return False, "C=C bond is in a ring; alkenes must have acyclic double bonds" 
+    for bond in mol.GetBonds():
+        if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE and bond.IsInRing():
+            return False, "C=C bond is in a ring; alkenes must have acyclic double bonds" 
     
     # Count carbon-carbon double bonds
     double_bond_count = sum(1 for bond in mol.GetBonds() 
@@ -47,15 +45,9 @@ def is_alkene(smiles: str):
         return False, f"Expected 1 C=C double bond, found {double_bond_count}"
     
     # Count carbons and hydrogens, including implicit hydrogens
-    num_carbons = 0
-    num_hydrogens = 0
-    for atom in mol.GetAtoms():
-        symbol = atom.GetSymbol()
-        if symbol == 'C':
-            num_carbons += 1
-        # RDKit can provide implicit hydrogen count
-        num_hydrogens += atom.GetTotalNumHs()
-
+    num_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'C')
+    num_hydrogens = sum(atom.GetTotalNumHs() for atom in mol.GetAtoms())
+    
     # Verify the formula CnH2n
     if num_hydrogens != 2 * num_carbons:
         return False, f"Formula check failed: CnH2n expected, got C{num_carbons}H{num_hydrogens}"
