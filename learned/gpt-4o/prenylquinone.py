@@ -25,22 +25,25 @@ def is_prenylquinone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for quinone pattern (1,4-benzoquinone or naphthoquinone)
-    quinone_pattern1 = Chem.MolFromSmarts("C1=CC(=O)C=CC1=O")
-    quinone_pattern2 = Chem.MolFromSmarts("C1=CC=C(O)C(=O)C=C1")
-    if not mol.HasSubstructMatch(quinone_pattern1) and not mol.HasSubstructMatch(quinone_pattern2):
+    # Define diverse quinone patterns
+    quinone_patterns = [
+        Chem.MolFromSmarts("C1=CC(=O)C=CC1=O"), # Benzoquinone
+        Chem.MolFromSmarts("C1=CC=C(O)C(=O)C=C1"), # Hydroquinone
+        Chem.MolFromSmarts("C1=CC=C2C(=C1)C=CC(=O)C2=O"), # Naphthoquinone
+        # Additional quinone patterns can be added here
+    ]
+    
+    # Check for the presence of any quinone core structure
+    has_quinone = any(mol.HasSubstructMatch(pattern) for pattern in quinone_patterns)
+    if not has_quinone:
         return False, "No quinone backbone found"
 
-    # Look for isoprenoid-like motifs in the side chain (C=C-C repetition)
-    prenyl_pattern = Chem.MolFromSmarts("C(=C)C")
-    prenyl_matches = mol.GetSubstructMatches(prenyl_pattern)
-    if len(prenyl_matches) < 1:
-        return False, "No prenyl side-chain detected"
+    # Look for longer prenyl side-chain patterns with repeated isoprenoid units (e.g., C=C-C-C)
+    prenyl_pattern_long = Chem.MolFromSmarts("C(=C)CC[C@]+")
+    prenyl_matches = mol.GetSubstructMatches(prenyl_pattern_long)
+    if len(prenyl_matches) < 2:  # A minimum of 2 matches indicate a decent length side-chain
+        return False, "Prenyl side-chain too short"
     
-    # (Optional) Check for additional stereochemistry or patterns specific to subclasses
-    # This step can be expanded based on specific knowledge of menaquinones, phylloquinones, etc.
+    # Additional checks (e.g., stereochemistry, specific side-chains for subclasses) can be added.
 
-    return True, "Contains quinone backbone with prenyl side-chain"
-
-# Note: This is a basic implementation to demonstrate the concept. Actual classification may require
-#       more comprehensive patterns and checks to ensure accurate identification of prenylquinones.
+    return True, "Contains quinone backbone with adequate prenyl side-chain"
