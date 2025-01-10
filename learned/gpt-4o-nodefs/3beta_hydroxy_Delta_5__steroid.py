@@ -20,19 +20,19 @@ def is_3beta_hydroxy_Delta_5__steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Core steroid structure: cyclopentanoperhydrophenanthrene
-    steroid_core_pattern = Chem.MolFromSmarts("C1CC2CCC3C4CCC(C4)C3CCC2C1")
-    if not mol.HasSubstructMatch(steroid_core_pattern):
+    # SMARTS pattern for the steroid core
+    steroid_pattern = Chem.MolFromSmarts("C1CCC2C(C1)CC3C4C2CCC4CCC3")
+    if not mol.HasSubstructMatch(steroid_pattern):
         return False, "Steroid backbone not found"
 
-    # 3beta-hydroxy group pattern (considering stereochemistry)
-    hydroxy_3beta_pattern = Chem.MolFromSmarts("[C@H](O)C1(C)CCC2C(C1)CCC3C2CC3")
+    # Check for 3beta-hydroxy group
+    hydroxy_3beta_pattern = Chem.MolFromSmarts("[C@@H]1([C@H]2CCCC3CC(O)CCC3C2)C[C@@H](C1)O")
     if not mol.HasSubstructMatch(hydroxy_3beta_pattern):
         return False, "3beta-hydroxy group not found"
 
-    # Ensure Delta(5) double bond presence between C5 and C6
-    delta5_pattern = Chem.MolFromSmarts("C=C(C1CCC2C(C1)CCC3C2CC3)")
-    if not mol.HasSubstructMatch(delta5_pattern):
-        return False, "Delta(5) double bond not found"
+    # Check for 5-ene (double bond in Delta(5)-position)
+    delta5_double_bond_pattern = Chem.MolFromSmarts("C1=C[C@@H]([C@@H]2CCCC3CCCCC3C2)C[C@@H](C1)O")
+    if not mol.HasSubstructMatch(delta5_double_bond_pattern):
+        return False, "Delta(5)-double bond not found"
 
     return True, "Molecule is classified as a 3beta-hydroxy-Delta(5)-steroid"
