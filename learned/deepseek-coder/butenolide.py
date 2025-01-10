@@ -27,7 +27,7 @@ def is_butenolide(smiles: str):
 
     # Define a more flexible pattern for the 2-furanone skeleton
     # This pattern looks for a 5-membered ring with an oxygen and a carbonyl group, allowing for substitutions
-    furanone_pattern = Chem.MolFromSmarts("[O;R1]1[C;R1]=[C;R1][C;R1](=O)1")
+    furanone_pattern = Chem.MolFromSmarts("[O;R1]1[C;R1]=,:[C;R1][C;R1](=O)1")
     
     # Check for the 2-furanone skeleton
     if not mol.HasSubstructMatch(furanone_pattern):
