@@ -26,16 +26,16 @@ def is_beta_carbolines(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define the beta-carboline core structure (pyrido[3,4-b]indole)
-    beta_carboline_pattern = Chem.MolFromSmarts("[nH]1c2ccccc2c3c1ccnc3")
+    # This pattern is more flexible and accounts for substitutions and hydrogenations
+    beta_carboline_pattern = Chem.MolFromSmarts("[nX2]1c2ccccc2c3c1cc[nX2,cX3]3")
     
     # Check if the molecule contains the beta-carboline core
     if mol.HasSubstructMatch(beta_carboline_pattern):
         return True, "Contains the beta-carboline core structure (pyrido[3,4-b]indole)"
     
     # If the core is not found, check for hydrogenated derivatives
-    # Hydrogenated derivatives may have partially or fully saturated rings
-    # We can check for the presence of the core with possible hydrogenation
-    hydrogenated_pattern = Chem.MolFromSmarts("[nH]1c2ccccc2c3c1cc[nH,c]3")
+    # This pattern accounts for fully or partially hydrogenated rings
+    hydrogenated_pattern = Chem.MolFromSmarts("[nX2]1c2cccc[cX3,cX2]2c3c1cc[nX2,cX3]3")
     if mol.HasSubstructMatch(hydrogenated_pattern):
         return True, "Contains a hydrogenated beta-carboline core structure"
     
