@@ -26,9 +26,9 @@ def is_bioconjugate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define patterns for biological molecules
-    amino_acid_pattern = Chem.MolFromSmarts("[NH2,NH][CX4H][CX3](=O)[OH]")  # Amino acid pattern
-    peptide_pattern = Chem.MolFromSmarts("[NH][CX4H][CX3](=O)[NH]")  # Peptide bond pattern
+    # Define more specific patterns for biological molecules
+    amino_acid_pattern = Chem.MolFromSmarts("[NH2,NH][CX4H]([!O])[CX3](=O)[OH]")  # Amino acid pattern with side chain
+    peptide_pattern = Chem.MolFromSmarts("[NH][CX4H]([!O])[CX3](=O)[NH]")  # Peptide bond pattern with side chain
     nucleotide_pattern = Chem.MolFromSmarts("[NX3][CX4][CX4][OX2][CX3](=O)")  # Nucleotide pattern
     carbohydrate_pattern = Chem.MolFromSmarts("[CX4H][OX2H][CX4H][OX2H][CX4H][OX2H]")  # Carbohydrate pattern
     lipid_pattern = Chem.MolFromSmarts("[CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4]")  # Lipid pattern (long carbon chain)
@@ -41,18 +41,7 @@ def is_bioconjugate(smiles: str):
     lipid_matches = len(mol.GetSubstructMatches(lipid_pattern))
 
     # Check if at least two biological molecules are present
-    biological_molecules_count = 0
-    if amino_acid_matches > 0:
-        biological_molecules_count += 1
-    if peptide_matches > 0:
-        biological_molecules_count += 1
-    if nucleotide_matches > 0:
-        biological_molecules_count += 1
-    if carbohydrate_matches > 0:
-        biological_molecules_count += 1
-    if lipid_matches > 0:
-        biological_molecules_count += 1
-
+    biological_molecules_count = amino_acid_matches + peptide_matches + nucleotide_matches + carbohydrate_matches + lipid_matches
     if biological_molecules_count < 2:
         return False, f"Only {biological_molecules_count} biological molecule(s) found, need at least 2"
 
@@ -61,6 +50,11 @@ def is_bioconjugate(smiles: str):
     covalent_linkage_matches = len(mol.GetSubstructMatches(covalent_linkage_pattern))
     if covalent_linkage_matches == 0:
         return False, "No covalent linkage found between biological molecules"
+
+    # Additional checks to reduce false positives
+    # Check if the molecule is a simple peptide (not a bioconjugate)
+    if amino_acid_matches > 1 and peptide_matches > 0 and nucleotide_matches == 0 and carbohydrate_matches == 0 and lipid_matches == 0:
+        return False, "Molecule is a simple peptide, not a bioconjugate"
 
     return True, "Contains at least 2 biological molecules covalently linked together"
 
