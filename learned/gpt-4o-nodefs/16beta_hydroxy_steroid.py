@@ -15,31 +15,23 @@ def is_16beta_hydroxy_steroid(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Steroid backbone pattern: cyclopenta[a]phenanthrene.
-    # Simplified pattern to capture the essence: A/B/C/D ring system
-    steroid_backbone = Chem.MolFromSmarts('C1CCC2C3CCC4CCCC(C4)C3C2C1')
-
+    # Steroid backbone pattern (cyclopenta[a]phenanthrene system)
+    steroid_backbone = Chem.MolFromSmarts('C1CC2CCC3C4CCC(CCC4)C3C2CC1')
+    
     if not mol.HasSubstructMatch(steroid_backbone):
         return False, "No steroid backbone found"
-
-    # Hydroxy group at the 16beta position
-    # In the steroid, the 16beta position (stereochemistry notation) is specific; 
-    # this requires understanding of steroid structure. Typically involves C17 as a reference.
-    # Use a pipecleaner pattern to match hydroxyl in beta orientation on correct carbon
-    hydroxyl_pattern = Chem.MolFromSmarts('C[C@H](O)C')  # Placeholder pattern, needs specificity
-
-    # Check atom positions and their neighbors for hydroxyl group at 16beta
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 6:  # Carbon
-            bond = [b for b in atom.GetBonds() if b.GetBeginAtom().GetSymbol() == 'O' or b.GetEndAtom().GetSymbol() == 'O']
-            if bond:
-                # Check for beta configuration, commonly using neighboring hydrogens/bonds
-                if mol.HasSubstructMatch(hydroxyl_pattern):
-                    return True, "Contains steroid backbone with 16beta-hydroxy group"
+        
+    # Detect the 16beta-hydroxy group
+    # Pattern reflects possible stereochemistry at C16 position
+    # Exact position of hydroxyl requires neighboring analysis
+    pattern_16beta_hydroxy = '[C@@H]1(O)C(CCC2C1CCC3C2CC4CCC(C4)C3)C'
+    hydroxyl_pattern = Chem.MolFromSmarts(pattern_16beta_hydroxy)
     
-    return False, "16beta-hydroxy group not found or incorrectly positioned"
+    if not mol.HasSubstructMatch(hydroxyl_pattern):
+        return False, "16beta-hydroxy group not found or incorrectly positioned"
+
+    return True, "Contains steroid backbone with 16beta-hydroxy group"
