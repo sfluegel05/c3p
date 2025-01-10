@@ -32,40 +32,37 @@ def is_2_hydroxydicarboxylic_acid(smiles: str):
     if len(carboxyl_matches) != 2:
         return False, f"Found {len(carboxyl_matches)} carboxylic acid groups, need exactly 2"
 
-    # Pattern for alpha-hydroxy carboxylic acid structure
-    # Matches a carbon that has both an OH and a COOH group attached
-    # Two possible arrangements are checked
-    pattern1 = Chem.MolFromSmarts('[OH1]-[C](-[*,#1;!$(C(=O)[OH1])])-C(=O)[OH1]')  # OH-C-COOH
-    pattern2 = Chem.MolFromSmarts('[OH1]-[C](-C(=O)[OH1])-[*,#1;!$(C(=O)[OH1])]')  # HOOC-C-OH
+    # Find alpha-hydroxy carboxylic acid pattern
+    # Carbon with OH group that's also connected to a carboxyl group
+    alpha_hydroxy_pattern = Chem.MolFromSmarts('[OH1]-[CH1,CH0]-C(=O)[OH1]')
+    alpha_hydroxy_matches = mol.GetSubstructMatches(alpha_hydroxy_pattern)
     
-    # Check for either pattern
-    matches1 = mol.GetSubstructMatches(pattern1)
-    matches2 = mol.GetSubstructMatches(pattern2)
-    
-    if not (matches1 or matches2):
+    if not alpha_hydroxy_matches:
         return False, "No alpha-hydroxy carboxylic acid group found"
+
+    # Get total atom count (excluding H)
+    heavy_atom_count = mol.GetNumHeavyAtoms()
     
-    # Verify that the second carboxylic acid group is not directly attached to the alpha carbon
-    alpha_carbons = set()
-    for match in matches1:
-        alpha_carbons.add(match[1])  # Index 1 is the alpha carbon
-    for match in matches2:
-        alpha_carbons.add(match[1])
-        
-    # For each potential alpha carbon, verify it has exactly one COOH group
-    for alpha_carbon_idx in alpha_carbons:
-        alpha_carbon = mol.GetAtomWithIdx(alpha_carbon_idx)
-        cooh_count = 0
-        
-        # Count COOH groups attached to this carbon
-        for neighbor in alpha_carbon.GetNeighbors():
-            if neighbor.GetSymbol() == 'C':
-                # Check if this carbon is part of a COOH group
-                if any(alpha_carbon_idx == match[1] and neighbor.GetIdx() == match[2] 
-                      for match in carboxyl_matches):
-                    cooh_count += 1
-        
-        if cooh_count == 1:
-            return True, "Contains two carboxylic acid groups with a hydroxy group on the alpha carbon"
-            
-    return False, "No valid alpha-hydroxy carboxylic acid structure found"
+    # Check if molecule is too complex (likely not a simple dicarboxylic acid)
+    if heavy_atom_count > 15:  # Most 2-hydroxydicarboxylic acids are relatively small
+        return False, "Molecule too complex for a simple 2-hydroxydicarboxylic acid"
+
+    # Count number of carbons and oxygens to ensure reasonable composition
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    
+    if o_count != 5:  # 2 from carboxylic acids (2*2=4) + 1 from hydroxy = 5
+        return False, "Must have exactly 5 oxygen atoms"
+
+    # Check for presence of unexpected elements
+    allowed_elements = {1, 6, 8}  # H, C, O
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() not in allowed_elements:
+            return False, "Contains elements other than C, H, and O"
+
+    # Check ring count - most simple 2-hydroxydicarboxylic acids are not cyclic
+    ring_info = mol.GetRingInfo()
+    if ring_info.NumRings() > 0:
+        return False, "Contains rings - most 2-hydroxydicarboxylic acids are acyclic"
+
+    return True, "Contains two carboxylic acid groups with a hydroxy group on the alpha carbon"
