@@ -22,8 +22,21 @@ def is_octanoate_ester(smiles: str):
         return False, "Invalid SMILES string"
 
     # SMARTS pattern for octanoyl ester linkage (-C(=O)OCCCCCCCC)
-    octanoyl_ester_pattern = Chem.MolFromSmarts("CCCCCCCC(=O)O")
-    if not mol.HasSubstructMatch(octanoyl_ester_pattern):
+    octanoyl_ester_pattern = Chem.MolFromSmarts("C(=O)OCCCCCCCC")
+    matches = mol.GetSubstructMatches(octanoyl_ester_pattern)
+    
+    if len(matches) == 0:
         return False, "No octanoyl ester linkage found"
     
-    return True, "Contains octanoyl ester linkage"
+    # Further verification of the carbon chain length
+    for match in matches:
+        carbon_chain_atoms = match[3:]  # The last eight atoms should be the carbon chain
+        carbon_chain_length = 0
+        for atom_idx in carbon_chain_atoms:
+            if mol.GetAtomWithIdx(atom_idx).GetAtomicNum() == 6:  # Check for carbon atoms
+                carbon_chain_length += 1
+        
+        if carbon_chain_length == 8:
+            return True, "Contains valid octanoyl ester linkage"
+    
+    return False, "Octanoyl group found, but carbon chain length is incorrect"
