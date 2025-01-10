@@ -21,14 +21,17 @@ def is_polypeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a peptide bond pattern: N-C(=O)C
-    peptide_bond_pattern = Chem.MolFromSmarts("N-C(=O)C")
+    # Define more comprehensive peptide bond patterns, including cyclic and extended structures:
+    peptide_bond_pattern = Chem.MolFromSmarts("N[C@@H](C)C(=O)|N[C@H](C)C(=O)|N-C(=O)C")
     if not mol.HasSubstructMatch(peptide_bond_pattern):
-        return False, "No peptide bonds found"
+        return False, "No recognizable peptide sequence found"
 
-    # Find all peptide bond matches
+    # Find all peptide bond matches 
     matches = mol.GetSubstructMatches(peptide_bond_pattern)
-    if len(matches) < 10:
-        return False, f"Contains {len(matches)} amino acid residues, need at least 10 for a polypeptide"
+    
+    # Count consecutive sequences
+    amino_acid_count = len(matches)
+    if amino_acid_count < 10:
+        return False, f"Contains {amino_acid_count} amino acid residues, need at least 10 for a polypeptide"
 
     return True, "Contains 10 or more amino acid residues; classified as a polypeptide"
