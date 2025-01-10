@@ -21,29 +21,30 @@ def is_N_acetyl_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for acetyl group attached to nitrogen ('CC(=O)N')
+    # Look for acetyl group ('CC(=O)N') attached directly to nitrogen
     acetyl_pattern = Chem.MolFromSmarts('CC(=O)N')
-    if not mol.HasSubstructMatch(acetyl_pattern):
+    acetyl_matches = mol.GetSubstructMatches(acetyl_pattern)
+    if not acetyl_matches:
         return False, "No acetyl group attached to nitrogen found"
     
-    # Ensure it has an amino acid structure: a backbone with a carboxylic acid group
-    amino_acid_pattern = Chem.MolFromSmarts('[NX3][C;!R]C(=O)O')
-    if not mol.HasSubstructMatch(amino_acid_pattern):
-        return False, "No amino acid backbone identified"
-
-    # Check if the structure seems to be an amino acid derivative
-    # Example: Ensure presence of carboxylic acid and amino groups
-    carboxylic_count = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'O')
-    nitrogen_count = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'N')
+    # Look for carboxylic acid group (could be: 'C(=O)[O-]' or 'C(=O)O') as part of backbone
+    carboxyl_pattern = Chem.MolFromSmarts('C(=O)[O,#8]')
+    carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
+    if not carboxyl_matches:
+        return False, "No carboxylic acid group found"
     
-    if carboxylic_count < 2:
-        return False, "Insufficient oxygen for carboxylic acid group"
-    if nitrogen_count < 1:
-        return False, "No nitrogen atom found for amino group"
+    # Ensure the amino group (N) is part of the central amino acid chain, not elsewhere
+    amino_acid_pattern = Chem.MolFromSmarts('[NX3][C;R0][C;!R0]')  # Free N attached to a non-ring C
+    amino_acid_matches = mol.GetSubstructMatches(amino_acid_pattern)
+    if not amino_acid_matches:
+        return False, "No amino acid backbone identified"
+    
+    # Check the attachment of acetyl group is at an amino acid nitrogen site
+    for match in acetyl_matches:
+        # Check if the nitrogen in the acetyl group is linked as part of the amino acid.
+        acetyl_nitrogen_idx = [idx for idx in match if mol.GetAtomWithIdx(idx).GetAtomicNum() == 7]
+        for idx in acetyl_nitrogen_idx:
+            if any(mol.GetAtomWithIdx(nei.GetIdx()).GetSmarts() == '[C;R0;$(C=[OX1,OX2])]C(=O)[O,#8]' for nei in mol.GetAtomWithIdx(idx).GetNeighbors()):
+                return True, "Contains acetyl group attached to amino acid nitrogen with carboxylic acid group"
 
-    return True, "Contains acetyl group attached to amino acid nitrogen with carboxylic acid group"
-
-
-# Example use:
-# result, reason = is_N_acetyl_amino_acid('CC(=O)N[C@@H](Cc1c[nH]c2ccccc12)C(O)=O')
-# print(result, reason)
+    return False, "Acetyl group not correctly bound to amino acid nitrogen"
