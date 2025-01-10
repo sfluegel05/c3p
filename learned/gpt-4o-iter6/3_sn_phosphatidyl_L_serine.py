@@ -2,41 +2,51 @@
 Classifies: CHEBI:11750 3-sn-phosphatidyl-L-serine
 """
 from rdkit import Chem
-
+from rdkit.Chem import rdMolDescriptors
 
 def is_3_sn_phosphatidyl_L_serine(smiles: str):
     """
-    Determines if a molecule corresponds to 3-sn-phosphatidyl-L-serine based on its SMILES string.
-    This class is defined by having acyl substituents at sn-1 and sn-2 positions and a phosphoserine group
-    at the sn-3 position of a glycerol backbone.
+    Determines if a molecule is a 3-sn-phosphatidyl-L-serine based on its SMILES string.
+    A molecule is classified as such if it contains a glycerol backbone with specific stereochemistry,
+    acyl substituents at the sn-1 and sn-2 positions, and a phosphoserine at the sn-3 position.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a 3-sn-phosphatidyl-L-serine, False otherwise
+        bool: True if molecule is 3-sn-phosphatidyl-L-serine, False otherwise
         str: Reason for classification
     """
-    # Parse SMILES string into RDKit molecule object
+    
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Refine glycerol backbone recognition with improved flexibility and stereo precision
-    glycerol_pattern = Chem.MolFromSmarts("O[C@H](COP(O)(=O)O)C")  # Basic stereo for sn-3 configuration
-    
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No proper glycerol backbone with sufficient stereo specificity"
+    # Look for the glycerol backbone with correct stereochemistry
+    glycerol_sn3_pattern = Chem.MolFromSmarts("[C@H](C([O])(=O)O)[O]C(C(=O)[*])[C@@H](O)COP=O")
+    if not mol.HasSubstructMatch(glycerol_sn3_pattern):
+        return False, "No proper glycerol sn-3 stereochemistry found"
 
-    # Improved acyl groups recognition: look for esters broadly
-    acyl_pattern = Chem.MolFromSmarts("C(=O)O[C@H]")  # considers adjacent stereochemistry
+    # Look for acyl groups on sn-1 and sn-2 positions
+    acyl_pattern = Chem.MolFromSmarts("C(=O)O[C@H]C(=O)[*]")
     acyl_matches = mol.GetSubstructMatches(acyl_pattern)
-    if len(acyl_matches) < 2:
-        return False, f"Found {len(acyl_matches)} acyl groups, need at least 2 for sn-1 and sn-2"
+    if len(acyl_matches) != 2:
+        return False, f"Found {len(acyl_matches)} acyl groups, need exactly 2"
 
-    # Check for phosphoserine at sn-3, allow for more configs
-    phosphoserine_pattern = Chem.MolFromSmarts("COP(O)(=O)OC[C@H](N)C(=O)O")  # include any serine variation
+    # Look for phosphoserine moiety
+    phosphoserine_pattern = Chem.MolFromSmarts("COP(=O)(O)OC[C@H](N)C(=O)O")
     if not mol.HasSubstructMatch(phosphoserine_pattern):
-        return False, "No phosphoserine group found, or it lacks relevant stereochemistry"
+        return False, "No phosphoserine group found"
 
     return True, "Contains the structures indicative of a 3-sn-phosphatidyl-L-serine"
+
+# Example of metadata, not necessary for the function itself
+__metadata__ = {
+    'chemical_class': {
+        'id': 'CHEBI:17855',
+        'name': '3-sn-phosphatidyl-L-serine',
+        'definition': 'A 3-sn-glycerophosphoserine compound having acyl substituents at the 1- and 2-hydroxy positions.',
+        'parents': ['CHEBI:47778', 'CHEBI:76886']
+    }
+}
