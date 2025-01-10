@@ -34,57 +34,12 @@ def is_2_enoyl_CoA(smiles: str):
     sulfur_atom = mol.GetAtomWithIdx(sulfur_idx)
 
     # Check for CoA moiety connected to sulfur atom
-    # From sulfur atom, check for at least two phosphate groups and an adenine ring
+    # Use a SMARTS pattern for the CoA fragment (pantetheine with diphosphate adenine)
+    coa_pattern = Chem.MolFromSmarts("SCCNC(=O)CCNC(=O)[C@@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OCC1OC(C(O)C1O)N2C=NC3=C2N=CN=C3N")
+    if not mol.HasSubstructMatch(coa_pattern):
+        return False, "CoA moiety not found connected to sulfur atom"
 
-    # Function to perform BFS traversal from sulfur atom
-    def traverse_from_sulfur(sulfur_idx):
-        visited = set()
-        queue = [sulfur_idx]
-        phosphate_count = 0
-        adenine_found = False
-
-        while queue:
-            atom_idx = queue.pop(0)
-            if atom_idx in visited:
-                continue
-            visited.add(atom_idx)
-            atom = mol.GetAtomWithIdx(atom_idx)
-
-            # Check for phosphate group [P](=O)(O)(O)
-            if atom.GetAtomicNum() == 15:
-                # Phosphorus atom found, check connections
-                o_count = 0
-                for neighbor in atom.GetNeighbors():
-                    if neighbor.GetAtomicNum() == 8:
-                        o_count += 1
-                if o_count >= 3:
-                    phosphate_count += 1
-
-            # Check for adenine ring
-            # Adenine has a purine ring system with specific nitrogen patterns
-            # SMARTS pattern for adenine
-            adenine_pattern = Chem.MolFromSmarts("n1cnc2c1ncnc2N")
-            if mol.HasSubstructMatch(adenine_pattern):
-                adenine_found = True
-
-            # Add neighbors to queue
-            for neighbor in atom.GetNeighbors():
-                neighbor_idx = neighbor.GetIdx()
-                if neighbor_idx not in visited:
-                    queue.append(neighbor_idx)
-
-        return phosphate_count, adenine_found
-
-    phosphate_count, adenine_found = traverse_from_sulfur(sulfur_idx)
-    if phosphate_count < 2:
-        return False, f"Less than 2 phosphate groups found ({phosphate_count})"
-    if not adenine_found:
-        return False, "Adenine ring of CoA not found"
-
-    # Now check for double bond between positions 2 and 3 in the acyl chain
-    # Starting from carbonyl carbon, traverse the acyl chain
-
-    # Get carbonyl carbon atom
+    # Identify the carbonyl carbon atom
     carbonyl_c = mol.GetAtomWithIdx(carbonyl_c_idx)
     # Find the alpha carbon (next carbon in acyl chain)
     alpha_c = None
@@ -95,18 +50,32 @@ def is_2_enoyl_CoA(smiles: str):
     if alpha_c is None:
         return False, "Alpha carbon in acyl chain not found"
 
-    # Find beta carbon (next carbon after alpha)
+    # Check if alpha carbon is sp2 hybridized (double-bonded to beta carbon)
+    if alpha_c.GetHybridization() != Chem.rdchem.HybridizationType.SP2:
+        return False, "Alpha carbon is not sp2 hybridized"
+
+    # Identify beta carbon (double-bonded to alpha carbon)
     beta_c = None
     for neighbor in alpha_c.GetNeighbors():
         if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() != carbonyl_c_idx:
-            beta_c = neighbor
-            break
+            bond = mol.GetBondBetweenAtoms(alpha_c.GetIdx(), neighbor.GetIdx())
+            if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                beta_c = neighbor
+                break
     if beta_c is None:
-        return False, "Beta carbon in acyl chain not found"
+        return False, "Beta carbon double-bonded to alpha carbon not found"
 
-    # Check for double bond between alpha and beta carbons
-    bond = mol.GetBondBetweenAtoms(alpha_c.GetIdx(), beta_c.GetIdx())
-    if bond is None or bond.GetBondType() != Chem.rdchem.BondType.DOUBLE:
-        return False, "No double bond between positions 2 and 3 in acyl chain"
+    # Ensure the double bond is not part of a ring
+    if alpha_c.IsInRing() or beta_c.IsInRing():
+        return False, "Double bond is part of a ring"
 
-    return True, "2-enoyl-CoA identified with double bond at position 2 in acyl chain"
+    # Check that the acyl chain continues beyond beta carbon
+    chain_continues = False
+    for neighbor in beta_c.GetNeighbors():
+        if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() != alpha_c.GetIdx():
+            chain_continues = True
+            break
+    if not chain_continues:
+        return False, "Acyl chain does not continue beyond beta carbon"
+
+    return True, "2-enoyl-CoA identified with double bond between positions 2 and 3 in acyl chain"
