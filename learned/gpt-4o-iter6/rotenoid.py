@@ -21,10 +21,10 @@ def is_rotenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Update the SMARTS pattern to better match the rotenoid core
-    # This pattern attempts to capture the tetracyclic core structure of rotenoids
-    # Adjusts for cis-fusion via precise sequence of aromatic and aliphatic carbons
-    rotenoid_pattern = Chem.MolFromSmarts("Oc1cc2ccc3c(c2c(c1)C(=O)c4ccc5ccc(OC)cc5c43)")
+    # Updated SMARTS pattern to better represent the core structure of rotenoids.
+    # Taking into account the cis-fused aromatic rings and chromene features.
+    # The pattern is a guess based on common rotenoid substructures and may need adjustments
+    rotenoid_pattern = Chem.MolFromSmarts("c1ccc2c(c1)C(=O)c3cc4ccc(OC)c4c5c(cc3O2)c(c5)O")
 
     if rotenoid_pattern is None:
         return False, "Invalid SMARTS pattern"
@@ -33,9 +33,4 @@ def is_rotenoid(smiles: str):
     if not mol.HasSubstructMatch(rotenoid_pattern):
         return False, "No tetracyclic rotenoid core structure found"
     
-    # Further checks could evaluate substitutions and stereo-chemical aspects
-    # This typically requires empirical data on structure-activity relationships
-    
     return True, "Contains the tetracyclic rotenoid core structure"
-
-# Testing with known examples outside the function tests
