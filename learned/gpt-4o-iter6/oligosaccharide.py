@@ -15,36 +15,37 @@ def is_oligosaccharide(smiles: str):
         bool: True if the molecule is an oligosaccharide, False otherwise
         str: Reason for classification
     """
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS patterns to match typical sugar rings (e.g., hexose, pentose)
-    sugar_patterns = [
-        Chem.MolFromSmarts("OC[C@H]1O[C@@H](O)[C@H](O)[C@@H](O)[C@H]1"),  # Hexose
-        Chem.MolFromSmarts("OC[C@H]1O[C@H](O)[C@H](O)[C@H]1"),  # Pentose
-        # Add more patterns here for specific sugar alterations if needed
-    ]
-
-    # Identify sugar rings
-    sugar_count = 0
-    sugar_atoms = set()
-    for pattern in sugar_patterns:
-        matches = mol.GetSubstructMatches(pattern)
-        sugar_count += len(matches)
-        for match in matches:
-            sugar_atoms.update(match)
-
+    # Define SMARTS patterns for hexose and pentose sugar rings
+    hexose_pattern = Chem.MolFromSmarts("[C@H]1(O)[C@@H](O)[C@@H](O)[C@H](O)[C@H]1O")
+    pentose_pattern = Chem.MolFromSmarts("[C@@H]1O[C@H](O)[C@H](O)[C@H]1")
+    
+    # Find sugar rings
+    hexose_matches = mol.GetSubstructMatches(hexose_pattern)
+    pentose_matches = mol.GetSubstructMatches(pentose_pattern)
+    sugar_count = len(hexose_matches) + len(pentose_matches)
+    
     if sugar_count < 2:
         return False, f"Found {sugar_count} sugar units, need at least 2 to be an oligosaccharide"
 
-    # Check for glycosidic linkages (C-O-C) between distinct sugar rings
-    linkage_pattern = Chem.MolFromSmarts("[CX4]-O-[CX4]")
+    # Collect sugar atoms
+    sugar_atoms = set()
+    for match in hexose_matches + pentose_matches:
+        sugar_atoms.update(match)
+    
+    # Define SMARTS pattern for glycosidic linkage (simplified: C-O-C)
+    linkage_pattern = Chem.MolFromSmarts("[#6]-O-[#6]")
     linkage_matches = mol.GetSubstructMatches(linkage_pattern)
 
+    # Check if linkages connect different sugar rings
     connected_sugars = any(
-        all(sugar in link for sugar in sugar_atoms)
-        for link in linkage_matches
+        {sugar1, sugar2}.issubset(link)
+        for link in linkage_matches for sugar1 in sugar_atoms for sugar2 in sugar_atoms
+        if sugar1 != sugar2
     )
 
     if connected_sugars:
