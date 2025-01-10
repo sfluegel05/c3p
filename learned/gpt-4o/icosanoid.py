@@ -2,11 +2,12 @@
 Classifies: CHEBI:23899 icosanoid
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_icosanoid(smiles: str):
     """
     Determines if a molecule is an icosanoid based on its SMILES string.
-    Icosanoids are characterized by a C20 backbone with oxidation at various sites.
+    Icosanoids are characterized by essential fatty acid oxidation products often having C20 backbones with unsaturation and oxidation sites.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,12 +22,12 @@ def is_icosanoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for a C20 carbon backbone
+    # Look for long-chain carbon backbone typical of EFAs
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 20:
-        return False, f"Expected at least 20 carbons, found {c_count}"
+    if c_count < 18 or c_count > 22:
+        return False, f"Expected 18-22 carbons, found {c_count}"
     
-    # Look for oxidation patterns: hydroxyls, ketones, epoxy groups
+    # Look for oxidation patterns: hydroxyls, ketones, epoxide, lactone groups
     has_oxidation = False
     
     # Hydroxyl groups
@@ -34,7 +35,7 @@ def is_icosanoid(smiles: str):
     if mol.HasSubstructMatch(hydroxyl_pattern):
         has_oxidation = True
     
-    # Keto groups
+    # Keto and aldehydes
     keto_pattern = Chem.MolFromSmarts('[CX3](=O)[#6]')
     if mol.HasSubstructMatch(keto_pattern):
         has_oxidation = True
@@ -43,14 +44,24 @@ def is_icosanoid(smiles: str):
     epoxide_pattern = Chem.MolFromSmarts('C1OC1')
     if mol.HasSubstructMatch(epoxide_pattern):
         has_oxidation = True
-        
-    if not has_oxidation:
-        return False, "No typical oxidation patterns (hydroxy, keto, epoxy) found"
     
-    # Check for unsaturated bonds typical of icosanoids
+    # Ester/Lactone groups
+    ester_pattern = Chem.MolFromSmarts('C(=O)O')
+    if mol.HasSubstructMatch(ester_pattern):
+        has_oxidation = True
+
+    if not has_oxidation:
+        return False, "No typical oxidation patterns (hydroxy, keto, epoxy, ester) found"
+    
+    # Check for multiple unsaturations in carbon backbone
     cc_double_bond_pattern = Chem.MolFromSmarts('C=C')
     double_bond_matches = len(mol.GetSubstructMatches(cc_double_bond_pattern))
-    if double_bond_matches < 3:
-        return False, f"Expected at least 3 double bonds, found {double_bond_matches}"
+    if double_bond_matches < 2:
+        return False, f"Expected at least 2 double bonds, found {double_bond_matches}"
     
-    return True, "Contains a C20 backbone with oxidation and multiple double bonds, characteristic of icosanoids"
+    # Check for other common features, such as fused or aromatic rings if any
+    if rdMolDescriptors.CalcNumAromaticRings(mol) > 0:
+        return True, "Contains aromaticity, possibly derived from cycle opens in cs"
+
+    # If all patterns match
+    return True, "Contains a C18-22 backbone with oxidation and multiple unsaturations, characteristic of icosanoids"
