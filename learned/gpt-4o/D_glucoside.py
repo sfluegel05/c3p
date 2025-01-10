@@ -21,33 +21,24 @@ def is_D_glucoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS for D-glucose moiety having either alpha or beta configuration
-    d_glucose_smarts = '[C@H]1(O)[C@@H]([C@H](O)[C@@H](CO)O)O[C@@H]1O |#1:3@1:0,@3:6&@4|'
+    # Define corrected SMARTS for a glucose moiety
+    # Using a more generalized depiction of the glucose ring backbone
+    d_glucose_smarts = "OC[C@H]1O[C@@H](CO)[C@H](O)[C@H](O)[C@@H]1O"
     d_glucose_mol = Chem.MolFromSmarts(d_glucose_smarts)
+    if d_glucose_mol is None:
+        return None, "Error in setting up D-glucose SMARTS pattern."
     
     # Check if D-glucose moiety is present
     if not mol.HasSubstructMatch(d_glucose_mol):
         return False, "D-glucose moiety not found"
     
-    # Look for any glycosidic linkage by checking for ether bond from anomeric carbon
-    anomeric_c = None
+    # Simple check for glycosidic linkage using an anomeric carbon connected to an ether
+    # Anomeric carbon will typically be attached to another oxygen and further ether bonds 
     for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 6 and atom.GetDegree() == 3:
-            connected_oxygen = False
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetAtomicNum() == 8:
-                    connected_oxygen = True
-            if connected_oxygen:
-                anomeric_c = atom
-                break
-
-    if anomeric_c is None:
-        return False, "Anomeric carbon not found; probably not a glycoside"
-
-    # Check for ether linkage from anomeric carbon
-    for neighbor in anomeric_c.GetNeighbors():
-        if neighbor.GetAtomicNum() == 8:
-            if len([n for n in neighbor.GetNeighbors() if n.GetIdx() != anomeric_c.GetIdx()]) > 0:
+        if atom.GetAtomicNum() == 6 and atom.GetDegree() == 4:
+            oxygen_neighbors = [neighbor for neighbor in atom.GetNeighbors() if neighbor.GetAtomicNum() == 8]
+            if len(oxygen_neighbors) == 2:  # Connected to two oxygens for glycosidic bond
+                # Assuming one is within the ring and another outside the ring (glycosidic bond)
                 return True, "Contains D-glucose moiety with glycosidic linkage"
 
     return False, "Glycosidic linkage not found to D-glucose moiety"
