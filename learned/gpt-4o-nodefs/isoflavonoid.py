@@ -2,11 +2,14 @@
 Classifies: CHEBI:50753 isoflavonoid
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_isoflavonoid(smiles: str):
     """
     Determines if a molecule is an isoflavonoid based on its SMILES string.
-    Isoflavonoids are characterized by a chromen-4-one structure with a phenyl group at the C2 position.
+    Isoflavonoids are characterized by a 1-benzopyran-4-one structure.
+    
+    NOTE: This is a heuristic approach and may not capture all isoflavonoids accurately.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -19,20 +22,14 @@ def is_isoflavonoid(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return None, "Invalid SMILES string"
+        return False, "Invalid SMILES string"
 
-    # Updated pattern for isoflavonoid core structure with variability
-    isoflavonoid_patterns = [
-        Chem.MolFromSmarts("O=C1C=CC2=C(O)C=CC=C2O1"),  # More generalized chromenone structure
-        Chem.MolFromSmarts("C1=CC(=O)C2=C(C1)C=CC(O)=C2"), # Basic 3-phenylchromen-4-one form
-        Chem.MolFromSmarts("c1coc2c1c(=O)cc(O)c2"), # Common isoflavonoid features
-        Chem.MolFromSmarts("Oc1ccc2C=CC(=O)C=C2c1"),   # Variations with phenolic hydroxyl groups
-    ]
+    # Look for 1-benzopyran-4-one pattern
+    isoflavonoid_pattern = Chem.MolFromSmarts("O=C1C=CC2=CC=CC=C2OC1")
+    if not mol.HasSubstructMatch(isoflavonoid_pattern):
+        return False, "No 1-benzopyran-4-one core structure found"
 
-    # Allow for variations by checking several patterns
-    for pattern in isoflavonoid_patterns:
-        if mol.HasSubstructMatch(pattern):
-            return True, "Contains a core isoflavonoid structure characteristic of isoflavonoids"
+    # Additional checks could be performed based on other isoflavonoid features, such as substituents
+    # These can include methoxy/hydroxy groups or various phenolic substructures
 
-    # Inform about the potential misclassification
-    return False, "No core isoflavonoid structure found"
+    return True, "Contains the core 1-benzopyran-4-one structure characteristic of isoflavonoids"
