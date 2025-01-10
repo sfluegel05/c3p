@@ -21,25 +21,14 @@ def is_aromatic_primary_alcohol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for a primary alcohol (-OH connected to a non-aromatic carbon)
-    # which is directly bonded to an aromatic ring atom
-    pattern = Chem.MolFromSmarts("[CX4H2][OH]")
+    # SMARTS pattern for a primary alcohol where the OH is bonded to sp3 carbon
+    # and that sp3 carbon is bonded to an aromatic carbon
+    pattern = Chem.MolFromSmarts("[CX4;$([CH2]O)]-[OH]-[a]")
 
-    # Check for the presence of the primary alcohol pattern
-    if not mol.HasSubstructMatch(pattern):
-        return False, "No primary alcohol group detected"
-
-    # SMARTS pattern to represent any aromatic atom
-    aromatic_pattern = Chem.MolFromSmarts("[a]")
-
-    # Check if any carbon bonded to -OH is also bonded to an aromatic atom
-    substruct_matches = mol.GetSubstructMatches(pattern)
-    for match in substruct_matches:
-        carbon_atom = mol.GetAtomWithIdx(match[0])
-        for neighbor in carbon_atom.GetNeighbors():
-            if neighbor.HasSubstructMatch(aromatic_pattern):
-                return True, "Contains hydroxy group attached to an aromatic ring"
-        
-    return False, "Alcohol group not attached to an aromatic carbon"
+    # Check for the presence of the aromatic primary alcohol pattern
+    if mol.HasSubstructMatch(pattern):
+        return True, "Contains hydroxy group attached to a carbon connected to an aromatic ring"
+    
+    return False, "Does not contain aromatic primary alcohol structure"
 
 # The function can now be used to classify SMILES strings for aromatic primary alcohols.
