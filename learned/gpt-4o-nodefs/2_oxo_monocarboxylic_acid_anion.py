@@ -12,7 +12,7 @@ def is_2_oxo_monocarboxylic_acid_anion(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a 2-oxo monocarboxylic acid anion, False otherwise
+        bool: True if the molecule is a 2-oxo monocarboxylic acid anion, False otherwise
         str: Reason for classification
     """
     
@@ -21,21 +21,30 @@ def is_2_oxo_monocarboxylic_acid_anion(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for carboxylate group pattern (C(=O)[O-])
-    carboxylate_pattern = Chem.MolFromSmarts("C(=O)[O-]")
-    if not mol.HasSubstructMatch(carboxylate_pattern):
-        return False, "No carboxylate group found"
+    # Look for strict carboxylate and 2-oxo group pattern (O=C-[C=O][O-])
+    carboxylate_with_oxo_pattern = Chem.MolFromSmarts("O=C-[CX3](=O)[O-]")
+    if not mol.HasSubstructMatch(carboxylate_with_oxo_pattern):
+        return False, "No 2-oxo and carboxylate linkage found"
 
-    # Check for presence of adjacent oxo group (C=O) in the 2-position
-    oxo_pattern = Chem.MolFromSmarts("[CX3](=O)")
-    oxo_matches = mol.GetSubstructMatches(oxo_pattern)
-    if not oxo_matches:
-        return False, "No oxo group found"
+    # Initiate a more specific search given structural complexity
+    carb_position_oxo_pattern = Chem.MolFromSmarts("C(=O)[CX3](=O)C([O-])")
+    if not mol.HasSubstructMatch(carb_position_oxo_pattern):
+        return False, "No valid 2-oxo and monocarboxylate anion configuration"
 
-    # Check if the molecule contains only one carboxylate group
-    # and the overall anionic character is due to the carboxylate group
-    num_carboxylate = len(mol.GetSubstructMatches(carboxylate_pattern))
-    if num_carboxylate != 1:
-        return False, f"Contains {num_carboxylate} carboxylate groups, need exactly 1"
+    # Check for only one such specific contiguous pattern
+    pattern_matches = mol.GetSubstructMatches(carboxylate_with_oxo_pattern)
+    if len(pattern_matches) != 1:
+        return False, f"Pattern mismatch; contains non-matching configurations"
 
-    return True, "Molecule has 2-oxo configuration with a monocarboxylate anion"
+    # Additional molecular checks to ensure it's the main anionic group
+    total_neg_charge = sum(atom.GetFormalCharge() for atom in mol.GetAtoms())
+    
+    if total_neg_charge != -1:
+        return False, "Total charge does not match expected single charge"
+
+    return True, "Molecule matches 2-oxo monocarboxylic acid anion structure"
+
+# Example usage
+example_smiles = "NCCCC(=O)C([O-])=O"  # 5-amino-2-oxopentanoate
+result, reason = is_2_oxo_monocarboxylic_acid_anion(example_smiles)
+print(f"Classification result: {result}, Reason: {reason}")
