@@ -11,8 +11,11 @@ from rdkit.Chem import rdMolDescriptors
 def is_lipopolysaccharide(smiles: str):
     """
     Determines if a molecule is a lipopolysaccharide based on its SMILES string.
-    Lipopolysaccharides are complex molecules containing both sugar and lipid components.
-
+    Lipopolysaccharides contain:
+    - Trisaccharide repeating unit (two heptose units and octulosonic acid)
+    - Oligosaccharide side chains
+    - 3-hydroxytetradecanoic acid units
+    
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -26,59 +29,66 @@ def is_lipopolysaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Calculate basic properties
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 400:  # Lipopolysaccharides are typically large molecules
-        return False, "Molecular weight too low for lipopolysaccharide"
-
     # Count key atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     
-    if o_count < 6:  # Need multiple oxygen atoms for glycosidic bonds and hydroxyl groups
+    if o_count < 4:  # Need multiple oxygen atoms for glycosidic bonds
         return False, "Too few oxygen atoms for lipopolysaccharide"
     
-    if c_count < 12:  # Need carbon chains for both sugar and lipid components
+    if c_count < 10:  # Need carbon chains for sugar components
         return False, "Too few carbon atoms for lipopolysaccharide"
 
-    # Look for sugar ring patterns (pyranose or furanose)
-    sugar_pattern = Chem.MolFromSmarts("[CR1][OR1][CR1][CR1][CR1][CR1]")  # 6-membered sugar ring
-    sugar_pattern2 = Chem.MolFromSmarts("[CR1][OR1][CR1][CR1][CR1]")  # 5-membered sugar ring
-    sugar_matches = len(mol.GetSubstructMatches(sugar_pattern)) + len(mol.GetSubstructMatches(sugar_pattern2))
+    # Look for sugar ring patterns characteristic of LPS
+    pyranose_pattern = Chem.MolFromSmarts("[CR1][OR1][CR1][CR1][CR1][CR1]")  # 6-membered sugar ring
+    heptose_pattern = Chem.MolFromSmarts("[CR1][OR1][CR1][CR1][CR1][CR1][CR1]")  # 7-membered heptose ring
+    sugar_matches = len(mol.GetSubstructMatches(pyranose_pattern))
+    heptose_matches = len(mol.GetSubstructMatches(heptose_pattern))
     
-    if sugar_matches < 1:
+    # Look for keto-deoxy-octulosonic acid (KDO) pattern
+    kdo_pattern = Chem.MolFromSmarts("[CX4][CX3](=O)[CX4][CX4][CX4][CX4][CX4][CX4]")
+    kdo_matches = len(mol.GetSubstructMatches(kdo_pattern))
+
+    # Check for minimum sugar components
+    if sugar_matches < 1 and heptose_matches < 1:
         return False, "No sugar rings found"
 
     # Look for hydroxyl groups (characteristic of sugars)
     hydroxyl_pattern = Chem.MolFromSmarts("[OX2H1]")
     hydroxyl_matches = len(mol.GetSubstructMatches(hydroxyl_pattern))
     
-    if hydroxyl_matches < 3:
+    if hydroxyl_matches < 2:
         return False, "Too few hydroxyl groups for lipopolysaccharide"
 
-    # Look for lipid characteristics (long carbon chains)
-    alkyl_chain = Chem.MolFromSmarts("[CH2][CH2][CH2][CH2]")
-    alkyl_matches = len(mol.GetSubstructMatches(alkyl_chain))
-    
-    if alkyl_matches < 1:
-        return False, "No long alkyl chains found"
+    # Look for 3-hydroxytetradecanoic acid pattern
+    hydroxy_fatty_acid = Chem.MolFromSmarts("[CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4]")
+    fatty_acid_matches = len(mol.GetSubstructMatches(hydroxy_fatty_acid))
 
-    # Look for glycosidic bonds or ester linkages
+    # Look for glycosidic bonds
     glycosidic_pattern = Chem.MolFromSmarts("[CX4][OX2][CX4]")
-    ester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2]")
-    linkage_matches = len(mol.GetSubstructMatches(glycosidic_pattern)) + len(mol.GetSubstructMatches(ester_pattern))
+    glycosidic_matches = len(mol.GetSubstructMatches(glycosidic_pattern))
     
-    if linkage_matches < 2:
-        return False, "Insufficient glycosidic/ester linkages"
+    if glycosidic_matches < 1:
+        return False, "No glycosidic linkages found"
 
-    # Count rotatable bonds to verify structural complexity
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 5:
-        return False, "Structure too rigid for lipopolysaccharide"
+    # Check for characteristic LPS features
+    lps_features = 0
+    if heptose_matches >= 1:
+        lps_features += 1
+    if kdo_matches >= 1:
+        lps_features += 1
+    if fatty_acid_matches >= 1:
+        lps_features += 1
+    if glycosidic_matches >= 2:
+        lps_features += 1
+    
+    # Must have at least 2 characteristic features to be classified as LPS
+    if lps_features < 2:
+        return False, "Insufficient characteristic LPS features"
 
-    # Check for minimum structural complexity
+    # Count rings to verify oligosaccharide structure
     ring_info = mol.GetRingInfo()
     if ring_info.NumRings() < 1:
         return False, "No rings found"
 
-    return True, "Contains sugar units, lipid components, and appropriate linkages characteristic of lipopolysaccharides"
+    return True, "Contains characteristic lipopolysaccharide features including sugar units and appropriate linkages"
