@@ -21,14 +21,16 @@ def is_6_aminopurines(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define adenine substructure patterns considering common variations of adenine
+    # Define adenine substructure patterns with improved coverage
     adenine_patterns = [
-        Chem.MolFromSmarts("n1cnc2c(ncn2)n1"),  # Basic adenine
-        Chem.MolFromSmarts("c1[nH]c2[nH]cnc2n1"),  # Alternative tautomer
-        Chem.MolFromSmarts("n1c[nH]c2c1ncn2")    # Another common form
+        Chem.MolFromSmarts("n1cnc2c(nc[nH]c2)n1"),  # Basic adenine pattern
+        Chem.MolFromSmarts("c1[nH]c2c(ncnc2)n1"),  # Another common structure
+        Chem.MolFromSmarts("n1cnc2c(nc[nH]c2)n1"), # Variant with different hydrogen positions
+        Chem.MolFromSmarts("n1c[nH]c2cncnc12"),    # Recognition of other tautomeric variations
+        Chem.MolFromSmarts("n1cnc2[nH]cnc2c1"),    # Pattern for common protonation states
     ]
     
-    # Search for adenine substructure in the molecule
+    # Search for any adenine substructure in the molecule
     for pattern in adenine_patterns:
         if mol.HasSubstructMatch(pattern):
             return True, "Contains 6-aminopurine (adenine) as part of its structure"
