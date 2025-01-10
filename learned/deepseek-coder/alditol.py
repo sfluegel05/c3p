@@ -43,8 +43,8 @@ def is_alditol(smiles: str):
 
     # Check terminal carbons (should have one hydroxyl group each)
     terminal_carbons = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6 and atom.GetDegree() == 1]
-    if len(terminal_carbons) != 2:
-        return False, "Molecule does not have exactly two terminal carbons"
+    if len(terminal_carbons) < 2:
+        return False, "Molecule does not have at least two terminal carbons"
 
     for terminal_carbon in terminal_carbons:
         neighbors = terminal_carbon.GetNeighbors()
