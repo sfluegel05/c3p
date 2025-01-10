@@ -22,19 +22,18 @@ def is_flavonols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Update SMARTS pattern for flavonols to capture 3-hydroxyflavone backbone
-    # Flavonoid skeleton: 2-phenyl, 3-hydroxy, 4H-1-benzopyran-4-one
-    # General structure: c1cc2c(cc1)-c1c(O)cc(O)cc1oc2=O
-    # Acknowledging variability in the core while ensuring hydroxyl at position 3
-    flavonol_pattern = Chem.MolFromSmarts('c1cc(-c2oc3cc(O)cc(O)c3c(=O)c2=c1)C=O')
+    # Update SMARTS pattern for flavonols to capture 3-hydroxyflavone backbone more generally
+    # Revised pattern to not restrict overly and permit flavonol central structure
+    flavonol_pattern = Chem.MolFromSmarts('c1c(oc2c(c1)ccc(c2=O)O)c1ccccc1')
+    hydroxy_position_pattern = Chem.MolFromSmarts('[OH]c1oc2c(ccc(c2=O)O)c(c1)')
+    
     if not mol.HasSubstructMatch(flavonol_pattern):
         return False, "No flavonol backbone found"
-    
-    # Check for hydroxy group on the main flavone structure and particularly the key 3 position
-    # Ensures that even if pattern matches, presence of hydroxy is cross-verified
-    pattern_match = mol.GetSubstructMatches(flavonol_pattern)
-    for match in pattern_match:
-        # Key 3-hydroxy position check could be further validated if needed
-        pass
+
+    # Ensure the presence of a hydroxy group at the 3 position in the core
+    if not mol.HasSubstructMatch(hydroxy_position_pattern):
+        return False, "No hydroxy group at the 3 position in the flavonol structure"
 
     return True, "Structure matches flavonol features with 3-hydroxyflavone backbone"
+
+# This approach should cover more cases as it focuses on essential structural markers for flavonols.
