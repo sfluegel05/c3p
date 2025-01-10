@@ -2,16 +2,15 @@
 Classifies: CHEBI:33704 alpha-amino acid
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_alpha_amino_acid(smiles: str):
     """
     Determines if a molecule is an alpha-amino acid based on its SMILES string.
-    An alpha-amino acid has a central alpha carbon atom bonded to an amino group (NH2), a carboxylic acid group (COOH), and a side chain.
+    An alpha-amino acid typically has a central alpha carbon atom bonded to an amino group (NH2),
+    a carboxylic acid group (COOH or COO-), and a side chain.
 
     Args:
         smiles (str): SMILES string of the molecule
-
     Returns:
         bool: True if molecule is an alpha-amino acid, False otherwise
         str: Reason for classification
@@ -22,11 +21,11 @@ def is_alpha_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for alpha amino acids: [C](N)(C(=O)O)
-    # This pattern identifies a carbon bonded to NH, a COO group, and another carbon (side chain R)
-    alpha_amino_acid_pattern = Chem.MolFromSmarts("[C;H2,H3](N)(C(=O)[O,H])[!#1]")
+    # SMARTS pattern for alpha amino acids: a central carbon bonded to N, C(=O)[O,H-], and side chains (excluding hydrogens)
+    # This pattern is flexible to capture common amino acids as well as some modified residues
+    alpha_amino_pattern = Chem.MolFromSmarts("[C;H1,H2,H3](N)([CX3](=O)[OX1H0-,OX2H1])")
 
-    if mol.HasSubstructMatch(alpha_amino_acid_pattern):
+    if mol.HasSubstructMatch(alpha_amino_pattern):
         return True, "Structure matches an alpha-amino acid pattern"
 
     return False, "No match to the alpha-amino acid structure"
