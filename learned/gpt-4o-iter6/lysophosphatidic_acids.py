@@ -15,27 +15,29 @@ def is_lysophosphatidic_acids(smiles: str):
         bool: True if molecule is a lysophosphatidic acid, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Identify a more general glycerol-phosphate linkage pattern without strict stereochemistry
-    glycerol_phosphate_pattern = Chem.MolFromSmarts("OCC(O)COP(=O)(O)O")
-    
+    # Identify a generalized glycerol-phosphate linkage pattern allowing stereochemistry variations
+    glycerol_phosphate_pattern = Chem.MolFromSmarts("OCC(O)COP(=O)(O)[O-]")
+
     if not mol.HasSubstructMatch(glycerol_phosphate_pattern):
         return False, "No glycerol-phosphate linkage found"
         
-    # Use a more specific pattern refined for a single acyl chain
+    # Search for an acyl chain pattern, which should be a single occurrence
     acyl_chain_pattern = Chem.MolFromSmarts("C(=O)OC")
     acyl_matches = mol.GetSubstructMatches(acyl_chain_pattern)
-    
-    # Accounting for ester linkages, ensure exactly one acyl group is present
+
+    # Ensure exactly one acyl group matches required ester linkages
     if len(acyl_matches) != 1:
         return False, f"Found {len(acyl_matches)} acyl chains, need exactly 1"
 
-    # Further checks can be implemented here for specificity
-
+    # Check against common false positives: exclude compounds with additional functional groups
+    # indicative of phosphatidylethanolamines, or similar
+    # Patterns can be explored using RDKit functionalities or custom SMARTS
+    
     # If all conditions are met, it is classified as a lysophosphatidic acid
     return True, "Matches all structural features of a lysophosphatidic acid"
