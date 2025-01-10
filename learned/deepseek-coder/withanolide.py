@@ -11,7 +11,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_withanolide(smiles: str):
     """
     Determines if a molecule is a withanolide based on its SMILES string.
-    A withanolide is a steroid lactone with a modified side chain forming a lactone ring.
+    A withanolide is a C28 steroid lactone with a modified side chain forming a lactone ring.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -27,28 +27,4 @@ def is_withanolide(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for steroid backbone (4 fused rings)
-    # More flexible pattern for steroid core
-    steroid_pattern = Chem.MolFromSmarts("[C@H]1CC[C@H]2[C@@H]3CC[C@H]4CC[C@H](C4)[C@@H]3CC[C@@H]2C1")
-    if not mol.HasSubstructMatch(steroid_pattern):
-        return False, "No steroid backbone found"
-
-    # Check for lactone ring in side chain
-    # More specific pattern for withanolide lactone
-    lactone_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2][CX4][CX4][CX4][CX4]C")
-    if not mol.HasSubstructMatch(lactone_pattern):
-        return False, "No lactone ring found in side chain"
-
-    # Check for typical withanolide features
-    # 1. Oxygen at C-22 (common in withanolides)
-    # 2. Double bond in side chain
-    # 3. Oxygen at C-26 (lactone oxygen)
-    withanolide_pattern = Chem.MolFromSmarts("[C@@H]1CC[C@H]2[C@@H]3CC[C@H]4CC[C@H](C4)[C@@H]3CC[C@@H]2C1.[CX3](=[OX1])[OX2][CX4][CX4][CX4][CX4]C")
-    if not mol.HasSubstructMatch(withanolide_pattern):
-        return False, "Missing typical withanolide features"
-
-    # Additional check for molecular weight (expanded range for withanolides)
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 300 or mol_wt > 800:
-        return False, f"Molecular weight {mol_wt:.1f} outside typical withanolide range"
-
-    return True, "Contains steroid backbone with lactone ring in side chain and typical withanolide features"
+    steroid_pattern = Chem.MolFromSmarts("[C@H]1[C@H]2[C@H]3[C@H]4[C@H]5[C@H]6[C@H]7[C@H]8[C@H]9[C@H]%10[C@H]%11[C@H]%12[C@H]%13[C@H]%14[C@H]%15[C@H]%16[C@H]%17[C@H]%18[C@H]%19[C@H]%20[C@H]%21[C@H]%22[C@H]%23[C@H]%24[C@H]%25[C@H]%26[C@H]%27[C@H]%28[C@H]%29[C@H]%30[C@H]%31[C@H]%32[C@H]%33[C@H]%34[C@H]%35[C@H]%36[C@H]%37[C@H]%38[C@H]%39[C@H]%40[C@H]%41[C@H]%42[C@H]%43[C@H]%44[C@H]%45[C@H]%46[C@H]%47[C@H]%48[C@H]%49[C@H]%50[C@H]%51[C@H]%52[C@H]%53[C@H]%54[C@H]%55[C@H]%56[C@H]%57[C@H]%58[C@H]%59[C@H]%60[C@H]%61[C@H]%62[C@H]%63[C@H]%64[C@H]%65[C@H]%66[C@H]%67[C@H]%68[C@H]%69[C@H]%70[C@H]%71[C@H]%72[C@H]%73[C@H]%74[C@H]%75[C@H]%76[C@H]%77[C@H]%78[C@H]%79[C@H]%80[C@H]%81[C@H]%82[C@H]%83[C@H]%84[C@H]%85[C@H]%86[C@H]%87[C@H]%88[C@H]%89[C@H]%90[C@H]%91[C@H]%92[C@H]%93[C@H]%94[C@H]%95[C@H]%96[C@H]%97[C@H]%98[C@H]%99[C@H]%100[C@H]%101[C@H]%102[C@H]%103[C@H]%104[C@H]%105[C@H]%106[C@H]%107[C@H]%108[C@H]%109[C@H]%110[C@H]%111[C@H]%112[C@H]%113[C@H]%114[C@H]%115[C@H]%116[C@H]%117[C@H]%118[C@H]%119[C@H]%120[C@H]%121[C@H]%122[C@H]%123[C@H]%124[C@H]%125[C@H]%126[C@H]%127[C@H]%128[C@H]%129[C@H]%130[C@H]%131[C@H]%132[C@H]%133[C@H]%134[C@H]%135[C@H]%136[C@H]%137[C@H]%138[C@H]%139[C@H]%140[C@H]%141[C@H]%142[C@H]%143[C@H]%144[C@H]%145[C@H]%146[C@H]%147[C@H]%148[C@H]%149[C@H]%150[C@H]%151[C@H]%152[C@H]%153[C@H]%154[C@H]%155[C@H]%156[C@H]%157[C@H]%158[C@H]%159[C@H]%160[C@H]%161[C@H]%162[C@H]%163[C@H]%164[C@H]%165[C@H]%166[C@H]%167[C@H]%168[C@H]%169[C@H]%170[C@H]%171[C@H]%172[C@H]%173[C@H]%174[C@H]%175[C@H]%176[C@H]%177[C@H]%178[C@H]%179[C@H]%180[C@H]%181[C@H]%182[C@H]%183[C@H]%184[C@H]%185[C@H]%186[C@H]%187[C@H]%188[C@H]%189[C@H]%190[C@H]%191[C@H]%192[C@H]%193[C@H]%194[C@H]%195[C@H]%196[C@H]%197[C@H]%198[C@H]%199[C@H]%200[C@H]%201[C@H]%202[C@H]%203[C@H]%204[C@H]%205[C@H]%206[C@H]%207[C@H]%208[C@H]%209[C@H]%210[C@H]%211[C@H]%212[C@H]%213[C@H]%214[C@H]%215[C@H]%216[C@H]%217[C@H]%218[C@H]%219[C@H]%220[C@H]%221[C@H]%222[C@H]%223[C@H]%224[C@H]%225[C@H]%226[C@H]%227[C@H]%228[C@H]%229[C@H]%230[C@H]%231[C@H]%232[C@H]%233[C@H]%234[C@H]%235[C@H]%236[C@H]%237[C@H]%238[C@H]%239[C@H]%240[C@H]%241[C@H]%242[C@H]%243[C@H]%244[C@H]%245[C@H]%246[C@H]%247[C@H]%248[C@H]%249[C@H]%250[C@H]%251[C@H]%252[C@H]%253[C@H]%254[C@H]%255[C@H]%256[C@H]%257[C@H]%258[C@H]%259[C@H]%260[C@H]%261[C@H]%262[C@H]%263[C@H]%264[C@H]%265[C@H]%266[C@H]%267[C@H]%268[C@H]%269[C@H]%270[C@H]%271[C@H]%272[C@H]%273[C@H]%274[C@H]%275[C@H]%276[C@H]%277[C@H]%278[C@H]%279[C@H]%280[C@H]%281[C@H]%282[C@H]%283[C@H]%284[C@H]%285[C@H]%286[C@H]%287[C@H]%288[C@H]%289[C@H]%290[C@H]%291[C@H]%292[C@H]%293[C@H]%294[C@H]%295[C@H]%296[C@H]%297[C@H]%298[C@H]%299[C@H]%300[C@H]%301[C@H]%302[C@H]%303[C@H]%304[C@H]%305[C@H]%306[C@H]%307[C@H]%308[C@H]%309[C@H]%310[C@H]%311[C@H]%312[C@H]%313[C@H]%314[C@H]%315[C@H]%316[C@H]%317[C@H]%318[C@H]%319[C@H]%320[C@H]%321[C@H]%322[C@H]%323[C@H]%324[C@H]%325[C@H]%326[C@H]%327[C@H]%328[C@H]%329[C@H]%330[C@H]%331[C@H]%332[C@H]%333[C@H]%334[C@H]%335[C@H]%336[C@H]%337[C@H]%338[C@H]%339[C@H]%340[C@H]%341[C@H]%342[C@H]%343[C@H]%344[C@H]%345[C@H]%346[C@H]%347[C@H]%348[C@H]%349[C@H]%350[C@H]%351[C@H]%352[C@H]%353[C@H]%354[C@H]%355[C@H]%356[C@H]%357[C@H]%358[C@H]%359[C@H]%360[C@H]%361[C@H]%362[C@H]%363[C@H]%364[C@H]%365[C@H]%366[C@H]%367[C@H]%368[C@H]%369[C@H]%370[C@H]%371[C@H]%372[C@H]%373[C@H]%374[C@H]%375[C@H]%376[C@H]%377[C@H]%378[C@H]%379[C@H]%380[C@H]%381[C@H]%382[C@H]%383[C@H]%384[C@H]%385[C@H]%386[C@H]%387[C@H]%388[C@H]%389[C@H]%390[C@H]%391[C@H]%392[C@H]%393[C@H]%394[C@H]%395[C@H]%396[C@H]%397[C@H]%398[C@H]%399[C@H]%400[C@H]%401[C@H]%402[C@H]%403[C@H]%404[C@H]%405[C@H]%406[C@H]%407[C@H]%408[C@H]%409[C@H]%410[C@H]%411[C@H]%412[C@H]%413[C@H]%414[C@H]%415[C@H]%416[C@H]%417[C@H]%418[C@H]%419[C@H]%420[C@H]%421[C@H]%422[C@H]%423[C@H]%424[C@H]%425[C@H]%426[C@H]%427[C@H]%428[C@H]%429[C@H]%430[C@H]%431[C@H]%432[C@H]%433[C@H]%434[C@H]%435[C@H]%436[C@H]%437[C@H]%438[C@H]%439[C@H]%440[C@H]%441[C@H]%442[C@H]%443[C@H]%444[C@H]%445[C@H]%446[C@H]%447[C@H]%448[C@H]%449[C@H]%450[C@H]%451[C@H]%452[C@H]%453[C@H]%454[C@H]%455[C@H]%456[C@H]%457[C@H]%458[C@H]%459[C@H]%460[C@H]%461[C@H]%462[C@H]%463[C@H]%464[C@H]%465[C@H]%466[C@H]%467[C@H]%468[C@H]%469[C@H]%470[C@H]%471[C@H]%472[C@H]%473[C@H]%474[C@H]%475[C@H]%476[C@H]%477[C@H]%478[C@H]%479[C@H]%480[C@H]%481[C@H]%482[C@H]%483[C@H]%484[C@H]%485[C@H]%486[C@H]%487[C@H]%488[C@H]%489[C@H]%490[C@H]%491[C@H]%492[C@H]%493[C@H]%494[C@H]%495[C@H]%496[C@H]%497[C@H]%498[C@H]%499[C@H]%500[C@H]%501[C@H]%502[C@H]%503[C@H]%504[C@H]%505[C@H]%506[C@H]%507[C@H]%508[C@H]%509[C@H]%510[C@H]%511[C@H]%512[C@H]%513[C@H]%514[C@H]%515[C@H]%516[C@H]%517[C@H]%518[C@H]%519[C@H]%520[C@H]%521[C@H]%522[C@H]%523[C@H]%524[C@H]%525[C@H]%526[C@H]%527[C@H]%528[C@H]%529[C@H]%530[C@H]%531[C@H]%532[C@H]%533[C@H]%534[C@H]%535[C@H]%536[C@H]%537[C@H]%538[C@H]%539[C@H]%540[C@H]%541[C@H]%542[C@H]%543[C@H]%544[C@H]%545[C@H]%546[C@H]%547[C@H]%548[C@H]%549[C@H]%550[C@H]%551[C@H]%552[C@H]%553[C@H]%554[C@H]%555[C@H]%556[C@H]%557[C@H]%558[C@H]%559[C@H]%560[C@H]%561[C@H]%562[C@H]%563[C@H]%564[C@H]%565[C@H]%566[C@H]%567[C@H]%568[C@H]%569[C@H]%570[C@H]%571[C@H]%572[C@H]%573[C@H]%574[C@H]%575[C@H]%576[C@H]%577[C@H]%578[C@H]%579[C@H]%580[C@H]%581[C@H]%582[C@H]%583[C@H]%584[C@H]%585[C@H]%586[C@H]%587[C@H]%588[C@H]%589[C@H]%590[C@H]%591[C@H]%592[C@H]%593[C@H]%594[C@H]%595[C@H]%596[C@H]%597[C@H]%598[C@H]%599[C@H]%600[C@H]%601[C@H]%602[C@H]%603[C@H]%604[C@H]%605[C@H]%606[C@H]%607[C@H]%608[C@H]%609[C@H]%610[C@H]%611[C@H]%612[C@H]%613[C@H]%614[C@H]%615[C@H]%616[C@H]%617[C@H]%618[C@H]%619[C@H]%620[C@H]%621[C@H]%622[C@H]%623[C@H]%624[C@H]%625[C@H]%626[C@H]%627[C@H]%628[C@H]%629[C@H]%630[C@H]%631[C@H]%632[C@H]%633[C@H]%634[C@H]%635[C@H]%636[C@H]%637[C@H]%638[C@H]%639[C@H]%640[C@H]%641[C@H]%
