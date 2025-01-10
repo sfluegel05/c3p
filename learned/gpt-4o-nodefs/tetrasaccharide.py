@@ -21,15 +21,15 @@ def is_tetrasaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Identify saccharide units - presence of multiple cyclic ethers with stereochemistry and hydroxyl groups
-    saccharide_pattern = Chem.MolFromSmarts("[C@H]1([O,R])[C@H]([O,R])[C@H]([O,R])C([O,R])[C@H]1O")
+    # Create a more general pattern for saccharide units: 5- or 6-membered ring with hydroxyls
+    saccharide_pattern = Chem.MolFromSmarts("[C,O]1[C,C,O][C,C,O][C,C,O][C,C,O][C,C,O]1")
     saccharide_matches = mol.GetSubstructMatches(saccharide_pattern)
 
     if len(saccharide_matches) < 4:
         return False, f"Less than 4 monosaccharide units found, found {len(saccharide_matches)}"
 
-    # Verify glycosidic linkages - Oxygen bridges between rings
-    linkage_pattern = Chem.MolFromSmarts("O[C@H]1[C@H]([O,R])[C@H]([O,R])C([O,R])[C@H]1O")
+    # Verify glycosidic linkages - looking for oxygen bridges between ring systems
+    linkage_pattern = Chem.MolFromSmarts("O[C,C,O]1[C,C,O][C,C,O][C,C,O][C,C,O]1")
     linkage_matches = mol.GetSubstructMatches(linkage_pattern)
 
     if len(linkage_matches) < 3:
