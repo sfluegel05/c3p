@@ -22,20 +22,22 @@ def is_essential_fatty_acid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for terminal carboxylic acid group (-C(=O)O)
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
-    if not mol.HasSubstructMatch(carboxylic_acid_pattern):
+    if not mol.GetSubstructMatches(Chem.MolFromSmarts("C(=O)O")):
         return False, "No terminal carboxylic acid group found"
     
-    # Identify cis double bonds (Z or \), which are critical for polyunsaturation
-    cis_double_bond_pattern = Chem.MolFromSmarts("C/C=C/C")
-    cis_bond_count = len(mol.GetSubstructMatches(cis_double_bond_pattern))
-    if cis_bond_count < 4:
-        return False, f"Insufficient cis double bonds (found {cis_bond_count}), need at least 4 for polyunsaturation"
+    # Count total number of carbons to ensure minimum chain length
+    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if carbon_count < 16:
+        return False, f"Insufficient aliphatic chain length (found {carbon_count} carbons), need at least 16"
 
-    # Check for sufficiently long aliphatic carbon chain, involving at least 16 carbons
-    # Allow flexibility in chain construction with any length from 16 to larger
-    aliphatic_chain_pattern = Chem.MolFromSmarts("C" * 16)
-    if not mol.HasSubstructMatch(aliphatic_chain_pattern):
-        return False, "Aliphatic chain length insufficient for essential fatty acid, requires 16 carbons at minimum"
-    
-    return True, "Contains key characteristics of essential fatty acid: carboxylic acid group, multiple cis double bonds, and sufficiently long aliphatic chain"
+    # Check for linear chain structure
+    linear_chain_pattern = Chem.MolFromSmarts("[#6]-[#6]")
+    if not mol.HasSubstructMatch(linear_chain_pattern):
+        return False, "Molecule doesn't have a linear hydrocarbon chain"
+
+    # Identify cis double bonds (Z or \), which are critical for polyunsaturation
+    cis_double_bond_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts("C/C=C\C|C\C=C/C")))
+    if cis_double_bond_count < 2:
+        return False, f"Insufficient cis double bonds (found {cis_double_bond_count}), need at least 2 for polyunsaturation"
+
+    return True, "Contains key characteristics of essential fatty acid: carboxylic acid group, multiple cis double bonds, and sufficiently long linear aliphatic chain"
