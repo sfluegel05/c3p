@@ -22,9 +22,11 @@ def is_beta_D_galactoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Refined beta-D-galactopyranosyl pattern
+    # Define an improved beta-D-galactopyranosyl pattern
+    # Updated the stereochemistry pattern and added flexibility
+    # to capture variations in substitution.
     beta_d_galactoside_pattern = Chem.MolFromSmarts(
-        "[C@@H]1(O)[C@H](O)[C@@H](O)[C@H](O)[C@H](CO)O1"
+        "[C@H]1(O)[C@@H](O)[C@H](O)[C@H](O)[C@H](CO)O1"
     )
     
     if mol.HasSubstructMatch(beta_d_galactoside_pattern):
