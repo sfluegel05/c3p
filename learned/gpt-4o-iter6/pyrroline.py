@@ -20,21 +20,23 @@ def is_pyrroline(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return None, "Invalid or non-parsable SMILES string"
+        return False, "Invalid SMILES string"
 
-    # Improved pyrroline pattern: focusing on five-membered rings with nitrogen and double bond
+    # Define more comprehensive pyrroline pattern: five-membered ring with one nitrogen
     pyrroline_patterns = [
-        "C1=CC=CN1",  # Pyrrole-like structures with flexibility in double bonds
-        "C1C=CCN1",   # Ensuring the nitrogen and one double bond
-        "C1=CCNC1",   # Accounting for alternative double bond positions
-        "N1=CC=CC1",  # Including different tautomeric forms
-        "C1=NC=CC1",  # Another ring formation pattern
+        "C1=CCNC1",  # 1-Pyrroline
+        "C1=CNCC1",  # Alternate positions of double bond
+        "C1CC=NC1",  # 2-Pyrroline
+        "C1C=CCN1",  # 3-Pyrroline
+        "C1CCNC1",   # Dihydropyrrole (both double bonds saturated)
+        "C1=CN=CC1", # Pyrrolone variations
+        "C1N=CCC1",  # Another pyrroline pattern
     ]
 
-    # Check all substructure patterns
+    # Check for any pyrroline substructure match
     for pattern in pyrroline_patterns:
-        pyrroline_mol = Chem.MolFromSmarts(pattern)
+        pyrroline_mol = Chem.MolFromSmarts(pattern) # convert SMARTS pattern to molecule
         if pyrroline_mol and mol.HasSubstructMatch(pyrroline_mol):
-            return True, f"Contains pyrroline-like structure: matched pattern {pattern}"
+            return True, f"Contains pyrroline-like structure: match for pattern {pattern}"
 
-    return False, "No pyrroline structure detected"
+    return False, "No pyrroline-like structure detected"
