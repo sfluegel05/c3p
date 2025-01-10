@@ -2,6 +2,7 @@
 Classifies: CHEBI:20156 3-oxo-Delta(1) steroid
 """
 from rdkit import Chem
+from rdkit.Chem import rdqueries
 
 def is_3_oxo_Delta_1_steroid(smiles: str):
     """
@@ -22,20 +23,22 @@ def is_3_oxo_Delta_1_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # SMARTS pattern for a ketone group at the 3-position
-    ketone_pattern = Chem.MolFromSmarts("[C;R1](=O)[C;R1]")
-    if not mol.HasSubstructMatch(ketone_pattern):
-        return False, "No ketone group at the 3-position"
+    # KE each ring can have any stereochemistry, and they need not all be hydrogens).
+    # Adjusted SMARTS for steroid backbone with consideration of ring junctions
+    steroid_backbone_pattern = "C1C[C@H]2C[C@H](C1)C3C=C(C(C2=O)CC4CCC(=O)C=C3)C4"
+    
+    # Combined SMARTS pattern for 3-oxo group and Delta 1 double bond within a steroid
+    # We need to enforce specific positions for the 3-oxo group and Delta(1) bond
+    substructure_pattern = Chem.MolFromSmarts("C1C=C2C3CC[C@@H]4[C@H](C=O)C[C@]4([C@H]3CC=C2C1)")
+    
+    # Check if the molecule contains the substructure
+    if not mol.HasSubstructMatch(Chem.MolFromSmarts(substructure_pattern)):
+        return False, "Does not match the 3-oxo-Delta(1) steroid pattern"
+    
+    # SMARTS pattern Verifying stereochemistry remains flexible for the relevant chiral centers without demanding unnecessary \@/ in SMARTS.
+    stereo_pattern = "C1C[C@@H]2C[C@H](C1)C3C=C(/C=O)[C@@]4([C@H]3CCCC4)C2"
+    stereo_match = mol.HasSubstructMatch(Chem.MolFromSmarts(stereo_pattern))
+    if not stereo_match:
+        return False, "Stereochemistry mismatch in the steroid scaffold"
 
-    # SMARTS pattern for a double bond between positions 1 and 2
-    delta_1_bond_pattern = Chem.MolFromSmarts("C=C")
-    if not mol.HasSubstructMatch(delta_1_bond_pattern):
-        return False, "No double bond between positions 1 and 2"
-    
-    # SMARTS pattern for a general steroid structure (ABCDE ring system)
-    # This is more flexible and may need further adjustment based on stereo descriptors
-    steroid_backbone_pattern = Chem.MolFromSmarts("C1CC2CCC3C4C(CCC4)CCC3C2C1")
-    if not mol.HasSubstructMatch(steroid_backbone_pattern):
-        return False, "No valid steroid backbone found"
-    
     return True, "Matches the 3-oxo-Delta(1) steroid pattern"
