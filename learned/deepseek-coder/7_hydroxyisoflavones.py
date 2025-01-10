@@ -25,10 +25,10 @@ def is_7_hydroxyisoflavones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the isoflavone core pattern with a hydroxy group at the 7-position
+    # Define a more flexible isoflavone core pattern with a hydroxy group at the 7-position
     # The pattern matches the benzopyran-4-one structure with a phenyl group at the 2-position
-    # and a hydroxy group at the 7-position.
-    isoflavone_pattern = Chem.MolFromSmarts("[O]=[C]1[C]=[C][C]([OH])=[C][C]=[C]1-c2ccccc2")
+    # and a hydroxy group at the 7-position, allowing for substitutions on the phenyl ring.
+    isoflavone_pattern = Chem.MolFromSmarts("[O]=[C]1[C]=[C][C]([OH])=[C][C]=[C]1-c2:c:c:c:c:c:2")
     
     # Check if the molecule matches the isoflavone core pattern with a hydroxy group at the 7-position
     if not mol.HasSubstructMatch(isoflavone_pattern):
