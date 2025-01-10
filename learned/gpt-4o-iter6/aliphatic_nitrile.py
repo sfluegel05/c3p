@@ -22,8 +22,10 @@ def is_aliphatic_nitrile(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define nitrile pattern
+    # Define nitrile and non-aromatic carbon pattern
     nitrile_pattern = Chem.MolFromSmarts("[CX2]#[NX1]")
+    aliphatic_carbon_pattern = Chem.MolFromSmarts("[CX4;!R][#6]")
+    
     nitrile_matches = mol.GetSubstructMatches(nitrile_pattern)
 
     if not nitrile_matches:
@@ -34,13 +36,11 @@ def is_aliphatic_nitrile(smiles: str):
         carbon_idx = match[0]
         carbon_atom = mol.GetAtomWithIdx(carbon_idx)
         
-        # Ensure the carbon atom bound to nitrile is aliphatic
+        # Ensure the carbon atom bound to nitrile is not aromatic or in a ring
         if not carbon_atom.GetIsAromatic() and not carbon_atom.IsInRing():
-            # Check neighboring atoms for aliphatic structure
+            # Check neighboring atoms to confirm this is part of an aliphatic structure
             neighbors = carbon_atom.GetNeighbors()
-            aliphatic_neighbors = all(neigh.GetIsAromatic() == False and neigh.GetHybridization() != Chem.rdchem.HybridizationType.SP for neigh in neighbors)
-            
-            if aliphatic_neighbors or any(neigh.GetHybridization() in (Chem.rdchem.HybridizationType.SP3, Chem.rdchem.HybridizationType.SP2) for neigh in neighbors):
-                return True, "Nitrile group attached to aliphatic carbon or part of an aliphatic chain"
+            if any(neigh.GetHybridization() in (Chem.rdchem.HybridizationType.SP3, Chem.rdchem.HybridizationType.SP2) for neigh in neighbors):
+                return True, "Nitrile group attached to non-aromatic aliphatic carbon"
 
-    return False, "Nitrile group not part of an aliphatic chain"
+    return False, "Nitrile group not appropriately part of an aliphatic chain"
