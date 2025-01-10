@@ -7,7 +7,8 @@ from rdkit.Chem import rdMolDescriptors
 def is_volatile_organic_compound(smiles: str):
     """
     Determines if a molecule is a volatile organic compound (VOC) based on its SMILES string.
-    A VOC is assumed to have a boiling point less than or equal to 250 degreeC, often characterized by lower molecular weight.
+    A VOC is assumed to have a boiling point less than or equal to 250 degree C, suggesting lower molecular weight
+    and structural characteristics that favor volatility.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,12 +24,27 @@ def is_volatile_organic_compound(smiles: str):
 
     # Calculate molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    # Count number of carbons
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    # Count number of rotatable bonds
+    n_rotatable_bonds = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    # Determine presence of functional groups
+    alcohol_pattern = Chem.MolFromSmarts("[OX2H]")
+    is_alcohol = mol.HasSubstructMatch(alcohol_pattern)
+    ester_pattern = Chem.MolFromSmarts("[$(OC(=O))$(C(=O)O)]")
+    is_ester = mol.HasSubstructMatch(ester_pattern)
+    simple_aromatic_pattern = Chem.MolFromSmarts("c1ccccc1")
+    is_simple_aromatic = mol.HasSubstructMatch(simple_aromatic_pattern)
     
-    # For approximation, assume a compound with mol_wt less than 300 g/mol could be a VOC
-    if mol_wt <= 300:
-        return True, f"Molecular weight {mol_wt} suggests potential volatility"
+    # Rule-based combination
+    if mol_wt <= 300 and (
+        c_count <= 20 or (
+        is_alcohol or is_ester or is_simple_aromatic or
+        n_rotatable_bonds > 1
+    )):
+        return True, f"Molecular weight {mol_wt}, carbon count {c_count}, and structural features suggest potential volatility."
     else:
-        return False, f"Molecular weight {mol_wt} is too high for typical VOC classification"
+        return False, f"Molecular weight {mol_wt}, carbon count {c_count}, and lack of indicative structural features suggest non-volatility."
 
 # Test the function with a SMILES string
 # Example: 1-dodecene (SMILES: CCCCCCCCCCC=C), expected to be a VOC
