@@ -9,6 +9,13 @@ from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 from rdkit.Chem.GraphDescriptors import BertzCT
 
+def check_smarts_match(mol, smarts_pattern):
+    """Helper function to safely check SMARTS matches"""
+    pattern = Chem.MolFromSmarts(smarts_pattern)
+    if pattern is None:
+        return False
+    return mol.HasSubstructMatch(pattern)
+
 def is_semisynthetic_derivative(smiles: str):
     """
     Determines if a molecule is likely a semisynthetic derivative based on its SMILES string.
@@ -32,73 +39,78 @@ def is_semisynthetic_derivative(smiles: str):
     num_stereocenters = len(Chem.FindMolChiralCenters(mol))
     
     # Too small or simple to be semisynthetic
-    if num_atoms < 15:
+    if num_atoms < 12:
         return False, "Too small to be a semisynthetic derivative"
-    if num_rings < 2:
-        return False, "Too few rings for a typical semisynthetic derivative"
     
     # Check for common modification patterns
+    modification_patterns = {
+        "halogen": "[F,Cl,Br,I]",
+        "n_alkyl": "[CH3,CH2][N;!$(N=*)]",
+        "o_alkyl": "[CH3,CH2]O",
+        "acetyl": "CC(=O)O",
+        "methoxy": "COC",
+        "phosphate": "[PX4](=O)([O-,OH])([O-,OH])",
+        "sulfate": "OS(=O)(=O)[O-,OH]",
+        "amine": "[NX3;H2,H1;!$(NC=O)]",
+        "amide": "[NX3;H1,H0;$(NC=O)]",
+        "ester": "[#6]C(=O)O[#6]"
+    }
     
-    # Halogenation pattern
-    halogen_pattern = Chem.MolFromSmarts("[F,Cl,Br,I]")
-    has_halogens = mol.HasSubstructMatch(halogen_pattern)
+    modifications_found = []
+    for mod_name, pattern in modification_patterns.items():
+        if check_smarts_match(mol, pattern):
+            modifications_found.append(mod_name)
     
-    # N-alkylation pattern
-    n_alkyl_pattern = Chem.MolFromSmarts("[CH3,CH2][N;!$(N=*)]")
-    has_n_alkyl = mol.HasSubstructMatch(n_alkyl_pattern)
+    # Natural product scaffold patterns
+    scaffold_patterns = {
+        "steroid": "C1CC2CCC3C(C2(C1))",
+        "beta_lactam": "N1C(=O)C2CSC21",
+        "macrolide": "O=C1CCC(OC)CCC1",
+        "tetracycline": "C1C(=O)C=C2C(=O)C3(O)C(=O)C(C(N)=O)C(=O)C3CC2C1",
+        "alkaloid": "C1CN2CCC1CC2",
+        "flavonoid": "C1=CC(=O)C2=C(C=C(O)C=C2)O1"
+    }
     
-    # O-acetylation pattern
-    acetyl_pattern = Chem.MolFromSmarts("CC(=O)O")
-    has_acetyl = mol.HasSubstructMatch(acetyl_pattern)
+    scaffolds_found = []
+    for scaffold_name, pattern in scaffold_patterns.items():
+        if check_smarts_match(mol, pattern):
+            scaffolds_found.append(scaffold_name)
     
-    # O-methylation pattern
-    methoxy_pattern = Chem.MolFromSmarts("CO")
-    has_methoxy = mol.HasSubstructMatch(methoxy_pattern)
+    # Decision making with adjusted criteria
+    num_modifications = len(modifications_found)
     
-    # Phosphorylation pattern
-    phosphate_pattern = Chem.MolFromSmarts("[P](=O)([O-,OH])([O-,OH])")
-    has_phosphate = mol.HasSubstructMatch(phosphate_pattern)
+    # Complex natural product with modifications
+    if len(scaffolds_found) > 0 and num_modifications >= 1:
+        return True, f"Natural product scaffold ({', '.join(scaffolds_found)}) with synthetic modifications ({', '.join(modifications_found)})"
     
-    # Count modifications
-    num_modifications = sum([has_halogens, has_n_alkyl, has_acetyl, 
-                           has_methoxy, has_phosphate])
+    # High complexity with multiple modifications
+    if complexity > 800 and num_modifications >= 2:
+        return True, f"Complex molecule (complexity={int(complexity)}) with multiple modifications ({', '.join(modifications_found)})"
     
-    # Complex natural product-like features
-    has_complex_ring_system = num_rings >= 3 and complexity > 500
-    has_significant_chirality = num_stereocenters >= 2
+    # Significant stereochemistry with modifications
+    if num_stereocenters >= 3 and num_modifications >= 1:
+        return True, f"Stereochemically complex molecule ({num_stereocenters} stereocenters) with modifications ({', '.join(modifications_found)})"
     
-    # Decision making
-    if has_complex_ring_system and has_significant_chirality:
-        if num_modifications >= 1:
-            return True, "Complex natural product scaffold with synthetic modifications"
-            
-    if complexity > 1000 and num_modifications >= 2:
-        return True, "Highly complex molecule with multiple synthetic modifications"
-        
-    if num_stereocenters >= 4 and num_modifications >= 1:
-        return True, "Stereochemically complex molecule with synthetic modifications"
-        
-    if has_complex_ring_system and (has_halogens or has_phosphate):
-        return True, "Natural product-like structure with characteristic synthetic modifications"
-        
-    if num_rings >= 4 and (has_n_alkyl or has_acetyl or has_methoxy):
-        return True, "Multi-ring system with typical semisynthetic modifications"
-        
-    # Special cases for common semisynthetic classes
-    penicillin_pattern = Chem.MolFromSmarts("S1CC2N(C1)C(=O)C2")
-    if mol.HasSubstructMatch(penicillin_pattern):
-        return True, "Modified β-lactam antibiotic structure"
-        
-    steroid_pattern = Chem.MolFromSmarts("C1CC2CCC3C(C2(C1))")
-    if mol.HasSubstructMatch(steroid_pattern) and num_modifications >= 1:
-        return True, "Modified steroid structure"
-        
-    macrolide_pattern = Chem.MolFromSmarts("O=C1CCC(OC)CCC1")
-    if mol.HasSubstructMatch(macrolide_pattern) and num_modifications >= 1:
-        return True, "Modified macrolide structure"
+    # Ring system with modifications
+    if num_rings >= 3 and num_modifications >= 2:
+        return True, f"Multi-ring system ({num_rings} rings) with synthetic modifications ({', '.join(modifications_found)})"
     
-    # If none of the above conditions are met
-    if complexity < 300 or num_stereocenters < 2:
-        return False, "Lacks complexity typical of semisynthetic derivatives"
-        
+    # Special cases for specific modifications
+    if "halogen" in modifications_found and complexity > 400:
+        return True, "Halogenated complex molecule"
+    
+    if "phosphate" in modifications_found and num_rings >= 2:
+        return True, "Phosphorylated ring system"
+    
+    if num_modifications >= 3 and num_atoms > 20:
+        return True, f"Multiple synthetic modifications ({', '.join(modifications_found)})"
+    
+    # Reject cases
+    if complexity < 250 or num_stereocenters == 0:
+        return False, "Insufficient complexity for semisynthetic derivative"
+    
+    if num_rings == 0 and num_modifications < 2:
+        return False, "Lacks characteristic ring systems and modifications"
+    
+    # Default case
     return False, "Does not match typical semisynthetic patterns"
