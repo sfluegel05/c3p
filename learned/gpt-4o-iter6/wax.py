@@ -16,24 +16,23 @@ def is_wax(smiles: str):
         bool: True if molecule is a wax, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Check for ester group presence: O=C-O
+   
+    # Check for ester group presence: C(=O)O
     ester_pattern = Chem.MolFromSmarts("C(=O)O")
-    if not mol.HasSubstructMatch(ester_pattern):
+    if ester_pattern is None or not mol.HasSubstructMatch(ester_pattern):
         return False, "No ester linkages found"
-
+    
     # Identify long alkyl chains
-    # This pattern looks for a chain of at least 10 carbon atoms
-    long_alkyl_chain = Chem.MolFromSmarts("C(-*){10,}")
-    alkyl_chain_matches = mol.GetSubstructMatches(long_alkyl_chain)
-    if len(alkyl_chain_matches) < 1:
-        return False, "No long alkyl chains found, required at least 10 carbon atoms"
-
+    # Corrected pattern that matches at least 10 contiguous C-C bonds
+    long_alkyl_pattern = Chem.MolFromSmarts("[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]")
+    if long_alkyl_pattern is None or not mol.HasSubstructMatch(long_alkyl_pattern):
+        return False, "No long alkyl chains of at least 10 carbon atoms found"
+    
     # Check for molecular weight to confirm large size
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 400:  # Waxes are generally larger molecules
