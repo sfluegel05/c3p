@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_lipopeptide(smiles: str):
     """
     Determines if a molecule is a lipopeptide based on its SMILES string.
-    A lipopeptide comprises a peptide moiety and an attached lipid (long hydrocarbon chain).
-    
+    A lipopeptide comprises a peptide moiety and an attached lipid (flexible long hydrocarbon chain).
+
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -27,9 +27,9 @@ def is_lipopeptide(smiles: str):
         return False, "No peptide bonds found"
     
     # Improved pattern for flexible identification of long hydrocarbon chains
-    # Allow for some branching - target a minimum of 8 carbon atoms overall
-    lipid_pattern = Chem.MolFromSmarts("C~C~C~C~C~C~C~C")  # Flexible pattern with connectivity
+    # Allow for variability in chain length, branching, and unsaturation
+    lipid_pattern = Chem.MolFromSmarts("C(C)(C)C~C~C~C~C~C~C")  # More inclusive pattern allowing some branching
     if not mol.HasSubstructMatch(lipid_pattern):
         return False, "No sufficient long hydrocarbon chains found"
-
+    
     return True, "Contains both peptide bonds and sufficient long hydrocarbon chains, characteristic of lipopeptides"
