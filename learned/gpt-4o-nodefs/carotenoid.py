@@ -7,8 +7,8 @@ from rdkit.Chem import rdMolDescriptors
 def is_carotenoid(smiles: str):
     """
     Determines if a molecule is a carotenoid based on its SMILES string.
-    Carotenoids typically have long conjugated polyene chains and may include 
-    functional groups such as hydroxyl or carbonyl groups.
+    Carotenoids typically have long conjugated polyene chains and/or cyclic end groups with
+    functional groups such as hydroxyl, carbonyl, or epoxide groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,32 +23,37 @@ def is_carotenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS patterns for characteristics of carotenoids
-    conjugated_chain_pattern = Chem.MolFromSmarts("[C]=[C]-[C]=[C]-[C]=[C]-[C]=[C]")  # at least three conjugated double bonds as minimum example
-    hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
-    carbonyl_pattern = Chem.MolFromSmarts("[CX3]=[OX1]")
+    # Revised SMARTS patterns for carotenoid features
+    long_conjugated_chain_pattern = Chem.MolFromSmarts("[C]=[C]-[C]=[C]-[C]=[C](=[C]-[C]){3,}")  # more flexible on chain length
+    cyclic_end_group_pattern = Chem.MolFromSmarts("[C]1=C(C(=C1)[C](=[C]-[C]){3,})")  # cyclic with extended conjugation
 
-    # Check for conjugated chain
-    if not mol.HasSubstructMatch(conjugated_chain_pattern):
-        return False, "No long conjugated polyene chain detected; fundamental for carotenoids"
+    # Check for a long conjugated chain
+    has_conjugated_chain = mol.HasSubstructMatch(long_conjugated_chain_pattern)
+    has_cyclic_end_group = mol.HasSubstructMatch(cyclic_end_group_pattern)
 
     # Check for functional groups
+    hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
+    carbonyl_pattern = Chem.MolFromSmarts("[CX3]=[OX1]")
+    epoxide_pattern = Chem.MolFromSmarts("[C]-[O]-[C]")
+
     has_hydroxyl = mol.HasSubstructMatch(hydroxyl_pattern)
     has_carbonyl = mol.HasSubstructMatch(carbonyl_pattern)
-
-    if has_hydroxyl or has_carbonyl:
-        return True, "Contains long conjugated polyene chain and carotenoid-like functional groups"
+    has_epoxide = mol.HasSubstructMatch(epoxide_pattern)
     
-    # Check for generic carotenoid structure based on size and molecular weight (as carotenoids are typically large)
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)  # Large number implies complexity typical of carotenoids
+    # Basic criteria: Must have a polyene chain and either functional groups or cyclic end groups
+    if has_conjugated_chain and (has_cyclic_end_group or has_hydroxyl or has_carbonyl or has_epoxide):
+        return True, "Contains long conjugated polyene chain and carotenoid-like features, including possible cyclic structures"
+
+    # General framework of carotenoids: Atom count, bond count, molecular weight for complexity
+    atom_count = mol.GetNumAtoms()
+    bond_count = mol.GetNumBonds()
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    
+    if atom_count > 40 and bond_count > 45 and mol_wt > 550:
+        return True, "Large molecular framework and weight typical of carotenoids"
 
-    # Arbitrary cutoff values based on typical carotenoids' properties
-    if n_rotatable > 20 and mol_wt > 500:
-        return True, "Contains long conjugated polyene chain typical of carotenoids"
-
-    return False, "Lacks typical carotenoid functional groups and size"
+    return False, "Lacks typical carotenoid characteristics or size"
 
 # Example usage (replace with actual example SMILES for testing)
-example_smiles = "CC(=C)CCCC(=C)C(=C)C(C)=CC"
+example_smiles = "CC(\C=C\C=C(C)\C=C\C=C(C)\C=C\[C@@H](O)C(C)(C)C)=C/C=C/C=C(C)\C=C/C=C(C)/C=C/C1=C(C)C(O)[C@@H](O)CC1(C)C"
 print(is_carotenoid(example_smiles))
