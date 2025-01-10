@@ -19,10 +19,12 @@ def is_long_chain_fatty_acid(smiles: str):
         bool: True if molecule is a long-chain fatty acid, False otherwise
         str: Reason for classification
     """
-    # Parse SMILES
+    # Parse SMILES and add explicit hydrogens
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+    
+    mol = Chem.AddHs(mol)
     
     # Check for carboxylic acid group
     carboxyl_pattern = Chem.MolFromSmarts('C(=O)[OH]')
@@ -47,34 +49,36 @@ def is_long_chain_fatty_acid(smiles: str):
     num_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if num_carbons < 13:
         return False, f"Too few carbons ({num_carbons}) for long-chain fatty acid"
-    if num_carbons > 30:  # Allow some extra carbons for modifications
-        return False, f"Too many carbons ({num_carbons}) for long-chain fatty acid"
+    if num_carbons > 22:
+        # Allow slightly more carbons for modifications, but not too many
+        if num_carbons > 26:
+            return False, f"Too many carbons ({num_carbons}) for long-chain fatty acid"
     
-    # Look for long aliphatic chain pattern
-    # Match carbons connected by single, double, or triple bonds
-    chain_pattern = Chem.MolFromSmarts('C(~C~C~C~C~C~C~C~C~C~C~C~C)')
+    # Look for carbon chain pattern - more flexible version
+    # Match at least 10 carbons in a row (allowing for branching)
+    chain_pattern = Chem.MolFromSmarts('C(~C~C~C~C~C~C~C~C~C)')
     if not mol.HasSubstructMatch(chain_pattern):
         return False, "No continuous carbon chain of sufficient length"
     
     # Count oxygens (fatty acids typically don't have too many oxygens unless modified)
     num_oxygens = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if num_oxygens > 8:  # Allow for some modifications (hydroxy, epoxy, etc.)
+    if num_oxygens > 12:  # Increased limit to allow for more modifications
         return False, f"Too many oxygen atoms ({num_oxygens}) for typical fatty acid"
     
     # Check for reasonable molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 200 or mol_wt > 500:  # Typical range for C13-C22 fatty acids with modifications
+    if mol_wt < 180 or mol_wt > 600:  # Expanded range to allow for modifications
         return False, f"Molecular weight ({mol_wt:.1f}) outside typical range for long-chain fatty acids"
     
-    # Additional check for reasonable H/C ratio (allowing for some unsaturation)
-    num_hydrogens = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 1)
-    hc_ratio = num_hydrogens / num_carbons
-    if not (1.0 <= hc_ratio <= 2.1):  # Allow for unsaturated and slightly modified structures
-        return False, f"Unusual hydrogen/carbon ratio ({hc_ratio:.1f})"
-    
-    # Count rings - fatty acids typically have 0-1 rings
+    # Count rings - fatty acids typically have 0-2 rings
     num_rings = rdMolDescriptors.CalcNumRings(mol)
     if num_rings > 2:
         return False, f"Too many rings ({num_rings}) for typical fatty acid"
+    
+    # Check that most atoms are carbon and hydrogen
+    total_atoms = mol.GetNumAtoms(onlyExplicit=False)
+    c_and_h = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() in [1, 6])
+    if c_and_h / total_atoms < 0.7:  # At least 70% should be C or H
+        return False, "Too many non-carbon/hydrogen atoms for typical fatty acid"
         
     return True, f"Long-chain fatty acid with {num_carbons} carbons"
