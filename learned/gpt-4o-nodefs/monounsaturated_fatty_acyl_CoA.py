@@ -24,15 +24,21 @@ def is_monounsaturated_fatty_acyl_CoA(smiles: str):
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "CoA structure not found"
 
-    # Define pattern for one double bond in an aliphatic chain
-    # An aliphatic chain here excludes functional groups like esters, amides, etc.
-    # Here we are assuming a simple double bond with some assumptions about surrounding chain
-    long_aliphatic_with_one_double_bond = Chem.MolFromSmarts('CCC=CCCC')  # Assuming a simple chain pattern
+    # Define a flexible pattern for an aliphatic chain with one double bond
+    # The pattern '[C;H2]C=C[C;H2]' corresponds to any chain segment with a double bond and 2 hydrogens (indicative of the chain's ends)
+    double_bond_pattern = Chem.MolFromSmarts('[C]!@!=[C]')
+    double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
 
-    # Check for exact count of double bonds within aliphatic chain context
-    double_bond_matches = mol.GetSubstructMatches(long_aliphatic_with_one_double_bond)
-    if len(double_bond_matches) != 1:
-        return False, f"Found {len(double_bond_matches)} aliphatic double bonds, need exactly 1 for monounsaturation"
+    # Filter matches to count only those in long carbon chains
+    valid_double_bond_count = 0
+    for match in double_bond_matches:
+        # Simple conditions to ensure it's part of a long carbon chain
+        chain_length = len(Chem.GetMolFrags(Chem.PathToSubmol(mol, match, useQueryQueryMatches=True), asMols=False))
+        if chain_length >= 8:  # Arbitrarily chosen, adjust if needed
+            valid_double_bond_count += 1
+
+    if valid_double_bond_count != 1:
+        return False, f"Found {valid_double_bond_count} aliphatic double bonds, need exactly 1 for monounsaturation"
 
     return True, "Monounsaturated fatty acyl-CoA compound identified"
 
