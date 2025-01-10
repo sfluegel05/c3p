@@ -6,8 +6,7 @@ from rdkit import Chem
 def is_2_oxo_monocarboxylic_acid_anion(smiles: str):
     """
     Determines if a molecule is a 2-oxo monocarboxylic acid anion based on its SMILES string.
-    This involves identifying a 2-oxo group at the 2-position and a carboxylate anion where the
-    oxo group is strategically placed adjacent to the carboxylate group.
+    This involves identifying a 2-oxo group at the 2-position in relation to a carboxylate anion.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,18 +21,13 @@ def is_2_oxo_monocarboxylic_acid_anion(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define substructure pattern for a carboxylate anion
-    carboxylate_pattern = Chem.MolFromSmarts("C(=O)[O-]")
-    if not mol.HasSubstructMatch(carboxylate_pattern):
-        return False, "No carboxylate anion found"
-    
-    # Define substructure pattern for a 2-oxo group
-    # Revised pattern to be less restrictive on the backbone and allow additional substitutions
-    two_oxo_pattern = Chem.MolFromSmarts("[#6]C(=O)[#6]-[#6](=O)[O-]") 
-    if not mol.HasSubstructMatch(two_oxo_pattern):
-        return False, "2-oxo group not present at expected position relative to carboxylate"
+    # Define substructure pattern for a 2-oxo group adjacent to a carboxylate anion
+    # Pattern matches a carbon doubly bonded to oxygen (oxo group) adjacent to a carbon with a carboxylate group
+    pattern = Chem.MolFromSmarts("[#6]-[#6;D3](=O)-[#6](=O)[O-]")
+    if not mol.HasSubstructMatch(pattern):
+        return False, "2-oxo and carboxylate group not adjacent as expected"
 
-    # If both patterns match the substructure, classify as 2-oxo monocarboxylic acid anion
-    return True, "Contains a 2-oxo group at the 2-position and a carboxylate anion"
+    # If pattern matches the substructure, classify as 2-oxo monocarboxylic acid anion
+    return True, "Contains a 2-oxo group at the 2-position adjacent to a carboxylate anion"
 
-# With the defined test cases, user can verify the accuracy in a separate testing environment
+# Test this function with SMILES examples to ensure proper classification
