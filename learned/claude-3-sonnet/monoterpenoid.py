@@ -32,69 +32,74 @@ def is_monoterpenoid(smiles: str):
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     
-    # Most monoterpenoids have 7-10 carbons (some may have lost methyl groups)
-    if c_count < 7 or c_count > 12:
-        return False, f"Carbon count ({c_count}) outside typical range for monoterpenoids (7-12)"
+    # Expanded carbon range (7-15) to include substituted monoterpenoids
+    if c_count < 7 or c_count > 15:
+        return False, f"Carbon count ({c_count}) outside typical range for monoterpenoids (7-15)"
     
-    # Check molecular weight - should typically be between 120-250 Da
-    # (allowing for addition of oxygen-containing groups)
-    if mol_wt < 100 or mol_wt > 300:
+    # Adjusted molecular weight range
+    if mol_wt < 100 or mol_wt > 350:
         return False, f"Molecular weight ({mol_wt:.1f}) outside typical range for monoterpenoids"
 
-    # Look for common structural features
-    
-    # Isopropyl group pattern
-    isopropyl_pattern = Chem.MolFromSmarts("CC(C)[CH1,CH2]")
-    
-    # Gem-dimethyl pattern
-    gem_dimethyl_pattern = Chem.MolFromSmarts("C[C](C)")
-    
-    # Common cyclic patterns in monoterpenoids
-    cyclohexane_pattern = Chem.MolFromSmarts("C1CCCCC1")
-    cyclopentane_pattern = Chem.MolFromSmarts("C1CCCC1")
-    
-    # Check for presence of at least one of these characteristic patterns
-    has_isopropyl = mol.HasSubstructMatch(isopropyl_pattern)
-    has_gem_dimethyl = mol.HasSubstructMatch(gem_dimethyl_pattern)
-    has_cyclohexane = mol.HasSubstructMatch(cyclohexane_pattern)
-    has_cyclopentane = mol.HasSubstructMatch(cyclopentane_pattern)
+    # Core structural patterns
+    patterns = {
+        "isopropyl": "[CH3][CH1]([CH3])[CH1,CH2]",
+        "gem_dimethyl": "[CH3][C]([CH3])",
+        "cyclohexane": "C1CCCCC1",
+        "cyclopentane": "C1CCCC1",
+        "bridged_bicycle": "C12CCC1CC2",
+        "isoprene_unit": "CC(=C)C",
+        "menthane_skeleton": "CC1CCC(C(C)C)CC1",
+        "carane_skeleton": "C12CC1C(CC2)",
+        "pinane_skeleton": "C12CCC(C1(C)C)C2",
+    }
     
     structural_features = []
-    if has_isopropyl:
-        structural_features.append("isopropyl group")
-    if has_gem_dimethyl:
-        structural_features.append("gem-dimethyl group")
-    if has_cyclohexane:
-        structural_features.append("cyclohexane ring")
-    if has_cyclopentane:
-        structural_features.append("cyclopentane ring")
-        
-    if not any([has_isopropyl, has_gem_dimethyl, has_cyclohexane, has_cyclopentane]):
-        return False, "Missing characteristic monoterpenoid structural features"
     
-    # Check for presence of oxygen-containing functional groups
-    if o_count > 0:
-        # Look for common oxygen-containing functional groups
-        alcohol_pattern = Chem.MolFromSmarts("[OH1]")
-        ether_pattern = Chem.MolFromSmarts("[OR0]")
-        ketone_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[#6]")
-        ester_pattern = Chem.MolFromSmarts("[#6][CX3](=[OX1])[OX2][#6]")
-        
-        has_alcohol = mol.HasSubstructMatch(alcohol_pattern)
-        has_ether = mol.HasSubstructMatch(ether_pattern)
-        has_ketone = mol.HasSubstructMatch(ketone_pattern)
-        has_ester = mol.HasSubstructMatch(ester_pattern)
-        
-        if any([has_alcohol, has_ether, has_ketone, has_ester]):
-            structural_features.append("oxygen-containing functional groups")
+    # Check for core patterns
+    for name, smarts in patterns.items():
+        pattern = Chem.MolFromSmarts(smarts)
+        if pattern and mol.HasSubstructMatch(pattern):
+            structural_features.append(name.replace("_", " "))
 
-    # Calculate ring count
+    # Oxygen-containing functional groups
+    o_patterns = {
+        "alcohol": "[OH1]",
+        "ether": "[OR0]",
+        "ketone": "[CX3](=[OX1])[#6]",
+        "ester": "[#6][CX3](=[OX1])[OX2][#6]",
+        "aldehyde": "[CX3H1](=O)[#6]",
+        "epoxide": "C1OC1",
+    }
+    
+    o_features = []
+    for name, smarts in o_patterns.items():
+        pattern = Chem.MolFromSmarts(smarts)
+        if pattern and mol.HasSubstructMatch(pattern):
+            o_features.append(name)
+    
+    if o_features:
+        structural_features.append("oxygen-containing groups")
+
+    # Ring analysis
     ring_count = rdMolDescriptors.CalcNumRings(mol)
     if ring_count > 0:
         structural_features.append(f"{ring_count} ring(s)")
-
-    # Final classification
-    if len(structural_features) >= 2:  # Require at least two characteristic features
-        return True, f"Monoterpenoid features found: {', '.join(structural_features)}"
+        
+    # Analyze ring systems
+    ring_info = mol.GetRingInfo()
+    ring_sizes = [len(r) for r in ring_info.AtomRings()]
+    
+    # Score calculation
+    score = 0
+    score += len(structural_features)  # Base score from structural features
+    score += 1 if 5 <= ring_count <= 3 else 0  # Typical ring count
+    score += 1 if any(rs in [5,6] for rs in ring_sizes) else 0  # Common ring sizes
+    score += 1 if 7 <= c_count <= 12 else 0  # Ideal carbon range
+    score += 1 if o_count > 0 else 0  # Presence of oxygen
+    
+    # Classification
+    if score >= 3 and len(structural_features) >= 2:
+        features_str = ", ".join(structural_features)
+        return True, f"Monoterpenoid features found: {features_str}"
     else:
         return False, "Insufficient characteristic features for monoterpenoid classification"
