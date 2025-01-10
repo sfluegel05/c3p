@@ -22,17 +22,11 @@ def is_alpha_amino_acid_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the alpha-amino acid ester pattern
-    # -N[C@H](C)C(=O)O linking to an alkyl or aryl group for the ester
-
-    # Find carboxyl linked to ester (-C(=O)O)
-    ester_pattern = Chem.MolFromSmarts("C(=O)O")
-    if not mol.HasSubstructMatch(ester_pattern):
-        return False, "No ester linkage found"
-
-    # Find alpha-amino acid pattern with ester linkage
-    alpha_amino_acid_pattern = Chem.MolFromSmarts("[NX3;H2,H1;!$(NC=O)][C@H](C)C(=O)O")
-    if mol.HasSubstructMatch(alpha_amino_acid_pattern):
-        return True, "Contains alpha-amino acid backbone with ester linkage"
+    # Relaxed pattern for alpha-amino acid to allow for more structures
+    # Example: find NR-C(R)(R)-C(=O)O where N is connected to central C and there's an ester
+    alpha_amino_acid_ester_pattern = Chem.MolFromSmarts("[NX3][CX4](R)[C](=O)O[!H]")
     
-    return False, "Does not match alpha-amino acid ester pattern"
+    if mol.HasSubstructMatch(alpha_amino_acid_ester_pattern):
+        return True, "Contains likely alpha-amino acid backbone with ester linkage"
+    
+    return False, "Does not match common alpha-amino acid ester pattern"
