@@ -6,7 +6,8 @@ from rdkit import Chem
 def is_fatty_aldehyde(smiles: str):
     """
     Determines if a molecule is a fatty aldehyde based on its SMILES string.
-    A fatty aldehyde is an aldehyde with a carbonyl group at one end of an aliphatic carbon chain.
+    A fatty aldehyde is characterized by a terminal aldehyde attached to a long
+    aliphatic carbon chain, which may have double bonds.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -16,39 +17,50 @@ def is_fatty_aldehyde(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
+    # Parse SMILES to get the molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for terminal aldehyde group [C]=O pattern
-    aldehyde_pattern = Chem.MolFromSmarts("[CX3H1]=O")
+    # SMARTS pattern to identify a terminal aldehyde group: alkyl chain ending with =O
+    # It looks for a carbonyl carbon attached to another carbon
+    aldehyde_pattern = Chem.MolFromSmarts('O=[C;!R]') # Ensures non-branching, non-ring
+    
+    # Check the main features
     aldehyde_matches = mol.GetSubstructMatches(aldehyde_pattern)
+    
     if not aldehyde_matches:
         return False, "No terminal aldehyde group found"
     
-    # Check if surrounds are aliphatic and chainlike
+    # Check for qualifiable aliphatic chains, looking for long chain structures
     for match in aldehyde_matches:
-        start_atom_idx = match[0]  # Assuming terminal bond to aldehyde is [C]=O
-        visited = set()
-        carbon_chain = 0
+        aldehyde_atom_idx = match[1] # The carbon atom in [C]=O
 
-        def is_aliphatic(atom):
+        # Traverse from aldehyde C to assess chain structure
+        def is_valid_aliphatic(atom):
+            # Carbon atoms that are not in rings and are part of the main chain
             return atom.GetAtomicNum() == 6 and not atom.IsInRing()
 
-        def traverse(atom_idx):
-            nonlocal carbon_chain
+        visited = set()
+        chain_length = 0
+        
+        def traverse_chain(atom_idx, prev_idx):
+            nonlocal chain_length
             if atom_idx not in visited:
                 visited.add(atom_idx)
-                for neighbor in mol.GetAtomWithIdx(atom_idx).GetNeighbors():
-                    if is_aliphatic(neighbor):
-                        carbon_chain += 1
-                        traverse(neighbor.GetIdx())
+                atom = mol.GetAtomWithIdx(atom_idx)
+                if is_valid_aliphatic(atom):
+                    chain_length += 1
+                    # Traverse neighbors except the one we came from
+                    for neighbor in atom.GetNeighbors():
+                        next_idx = neighbor.GetIdx()
+                        if next_idx != prev_idx:
+                            traverse_chain(next_idx, atom_idx)
 
-        traverse(start_atom_idx)
+        # Start from the connected carbon, and ensure a long chain
+        traverse_chain(aldehyde_atom_idx - 1, -1)  # Go from the non-oxygen side
 
-        # Adjust chain length criteria
-        if carbon_chain >= 5:
+        if chain_length >= 6:  # Typical chain length criteria for fatty structures
             return True, "Valid fatty aldehyde: Terminal aldehyde group with a suitable aliphatic chain"
     
-    return False, f"Carbon chain too short for typical fatty aldehyde (found {carbon_chain} carbons)"
+    return False, "Carbon chain too short for typical fatty aldehyde"
