@@ -2,7 +2,6 @@
 Classifies: CHEBI:59238 cyclic fatty acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_cyclic_fatty_acid(smiles: str):
     """
@@ -23,8 +22,9 @@ def is_cyclic_fatty_acid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Identify ring structures
-    has_ring = mol.GetRingInfo().NumRings() > 0
-    if not has_ring:
+    ring_info = mol.GetRingInfo()
+    num_rings = ring_info.NumRings()
+    if num_rings == 0:
         return False, "No ring structure found"
 
     # Look for carboxylic acid group
@@ -32,9 +32,10 @@ def is_cyclic_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
 
-    # Check for long hydrocarbon chains (consider 6+ contiguous carbons as 'long')
-    chain_pattern = Chem.MolFromSmarts("[CH2]~[CH2]~[CH2]~[CH2]~[CH2]")
-    if not mol.HasSubstructMatch(chain_pattern):
-        return False, "No long hydrocarbon chains found"
+    # Check for hydrocarbon chains - adjusting the pattern to capture broader lengths
+    # Altered to check for smaller sequences that could form longer chains through fragments
+    hydrocarbon_chain_pattern = Chem.MolFromSmarts("[CH2]~[CH2]~[CH2]")
+    if not mol.HasSubstructMatch(hydrocarbon_chain_pattern):
+        return False, "No significant hydrocarbon chains found"
 
-    return True, "Contains ring structure with fatty acid traits (carboxylic acid group and long hydrocarbon chain)"
+    return True, f"Contains {num_rings} ring structure(s) with fatty acid traits (carboxylic acid group and hydrocarbon chain)"
