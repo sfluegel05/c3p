@@ -25,48 +25,44 @@ def is_UDP_sugar(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
         
-    # Check for uracil ring - more flexible pattern
-    uracil_pattern = Chem.MolFromSmarts("[#7]1[#6](=[O,S])[#7][#6][#6]1=[O,S]")
+    # Check for uracil ring with specific pattern found in UDP sugars
+    uracil_pattern = Chem.MolFromSmarts("n1ccc(=O)[nH]c1=O")
     if not mol.HasSubstructMatch(uracil_pattern):
         return False, "No uracil ring found"
     
-    # Check for ribose attached to uracil (uridine) - more flexible pattern
-    uridine_pattern = Chem.MolFromSmarts("[#7]1[#6](=[O,S])[#7][#6][#6]1=[O,S].[#6]1[#8][#6][#6][#6][#6]1")
+    # Check for ribose attached to uracil
+    # Pattern: ribose with hydroxyl groups and connection to uracil
+    uridine_pattern = Chem.MolFromSmarts("[OH1][C@H]1O[C@H]([C@H]([OH1])[C@@H]1[OH1])n1ccc(=O)[nH]c1=O")
     if not mol.HasSubstructMatch(uridine_pattern):
         return False, "No uridine moiety found"
         
-    # Check for diphosphate group - more flexible pattern
-    diphosphate_pattern = Chem.MolFromSmarts("[O,S]-[P](=[O,S])([O,S])-[O,S]-[P](=[O,S])([O,S])[O,S]")
+    # Check for diphosphate group with specific UDP pattern
+    diphosphate_pattern = Chem.MolFromSmarts("OP(O)(=O)OP(O)(=O)O")
     if not mol.HasSubstructMatch(diphosphate_pattern):
         return False, "No diphosphate linkage found"
         
-    # Check for sugar characteristics (ring with multiple oxygens)
-    # More flexible pattern that can match various sugar modifications
-    sugar_pattern = Chem.MolFromSmarts("[#6]1[#8,#7][#6][#6][#6][#6]1")
+    # Check for sugar moiety - more flexible to account for various sugars
+    sugar_pattern = Chem.MolFromSmarts("[C][O,N][C]([!$(C=O)])[C]([OH,NH2,NC,O])[C]")
     if not mol.HasSubstructMatch(sugar_pattern):
         return False, "No sugar moiety found"
         
-    # Verify UDP core structure
+    # Verify complete UDP core structure with correct connectivity
     udp_core = Chem.MolFromSmarts("""
-        [#7]1[#6](=[O,S])[#7][#6][#6]1=[O,S]  # Uracil
-        .[#6]1[#8][#6][#6][#6][#6]1            # Ribose
-        .[O,S]-[P](=[O,S])([O,S])-[O,S]-[P]    # Diphosphate
+        [C][C]1O[C@H]([CH2]OP(O)(=O)OP(O)(=O)O)[C@H]([OH1])[C@@H]1[OH1]  # Ribose-phosphate
+        .[#7]1[#6](=[O])[#7][#6][#6]1=[O]                                 # Uracil
     """)
     if not mol.HasSubstructMatch(udp_core):
-        return False, "Missing UDP core structure"
+        return False, "Missing or incorrect UDP core structure"
     
-    # Count phosphorus atoms - should be exactly 2 for UDP
-    p_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[P]")))
-    if p_count != 2:
-        return False, f"Found {p_count} phosphorus atoms, need exactly 2"
+    # Check for proper connection between UDP and sugar
+    connection_pattern = Chem.MolFromSmarts("[C]OP(O)(=O)OP(O)(=O)O[C]")
+    if not mol.HasSubstructMatch(connection_pattern):
+        return False, "UDP not properly connected to sugar"
     
-    # Check connectivity between components
-    # Look for ribose-phosphate and phosphate-sugar connections
-    connections_pattern = Chem.MolFromSmarts("""
-        [#6]1[#8][#6][#6][#6][#6]1[#8][P]  # Ribose-phosphate
-        .[P][#8][#6]                        # Phosphate-sugar
-    """)
-    if not mol.HasSubstructMatch(connections_pattern):
-        return False, "Components not properly connected"
-        
+    # Additional check for anomeric linkage to sugar
+    # The sugar should be connected via an anomeric carbon
+    anomeric_pattern = Chem.MolFromSmarts("OP(O)(=O)OP(O)(=O)O[C]1[O][C]")
+    if not mol.HasSubstructMatch(anomeric_pattern):
+        return False, "Sugar not connected via anomeric position"
+
     return True, "Contains UDP moiety connected to sugar via anomeric diphosphate linkage"
