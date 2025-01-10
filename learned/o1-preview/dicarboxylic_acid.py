@@ -10,7 +10,7 @@ from rdkit import Chem
 def is_dicarboxylic_acid(smiles: str):
     """
     Determines if a molecule is a dicarboxylic acid based on its SMILES string.
-    A dicarboxylic acid is any carboxylic acid containing two carboxy groups (-COOH).
+    A dicarboxylic acid is any carboxylic acid containing two carboxy groups (-COOH or -COO-).
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -24,8 +24,12 @@ def is_dicarboxylic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
+    # Add explicit hydrogens
+    mol = Chem.AddHs(mol)
+
     # Define carboxylic acid group SMARTS pattern
-    carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX1H]")
+    # Matches both protonated (-COOH) and deprotonated (-COO-) forms
+    carboxylic_acid_pattern = Chem.MolFromSmarts('[CX3](=O)[O;H1,-1]')
     if carboxylic_acid_pattern is None:
         return False, "Invalid SMARTS pattern for carboxylic acid group"
 
@@ -55,7 +59,7 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:35727',
                                  'max_instances_in_prompt': 100,
                                  'test_proportion': 0.1},
                    'message': None,
-                   'attempt': 0,
+                   'attempt': 1,
                    'success': True,
                    'best': True,
                    'error': '',
