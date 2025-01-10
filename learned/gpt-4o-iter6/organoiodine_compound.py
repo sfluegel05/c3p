@@ -21,21 +21,14 @@ def is_organoiodine_compound(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Enhanced check for presence of C-I bond
-    c_i_bond_exists = False
+    # Check for presence of C-I bond
     for bond in mol.GetBonds():
         atom1 = bond.GetBeginAtom()
         atom2 = bond.GetEndAtom()
         
-        # Broaden pattern matching for C-I bonds (consider aromatic, etc.)
-        is_c_i_bond = (atom1.GetAtomicNum() == 6 and atom2.GetAtomicNum() == 53) or \
-                      (atom1.GetAtomicNum() == 53 and atom2.GetAtomicNum() == 6)
-                      
-        if is_c_i_bond:
-            c_i_bond_exists = True
-            break
-
-    if c_i_bond_exists:
-        return True, "Contains a carbon-iodine bond"
+        # Checking for C-I bond
+        if (atom1.GetAtomicNum() == 6 and atom2.GetAtomicNum() == 53) or \
+           (atom1.GetAtomicNum() == 53 and atom2.GetAtomicNum() == 6):
+            return True, "Contains a carbon-iodine bond"
 
     return False, "No carbon-iodine bond found"
