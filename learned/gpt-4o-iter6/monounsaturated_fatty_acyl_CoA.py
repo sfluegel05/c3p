@@ -2,6 +2,7 @@
 Classifies: CHEBI:139575 monounsaturated fatty acyl-CoA
 """
 from rdkit import Chem
+from rdkit.Chem import rdchem
 
 def is_monounsaturated_fatty_acyl_CoA(smiles: str):
     """
@@ -22,23 +23,25 @@ def is_monounsaturated_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the CoA group substructure - includes phosphate and ribose moiety components
-    coa_pattern = Chem.MolFromSmarts("SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)O")
+    # Define the CoA group substructure
+    coa_pattern = Chem.MolFromSmarts("C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)C")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No CoA group found"
 
-    # Define a pattern for carbon-carbon double bonds in aliphatic chains
-    double_bond_pattern = Chem.MolFromSmarts("C=C")  # Flexible C=C bond for aliphatic chains
+    # Define a pattern for any carbon-carbon double bond in a chain
+    double_bond_pattern = Chem.MolFromSmarts("C=C")
+
+    # Get matches for double bonds
     double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
-
-    # Ensure there's exactly one carbon-carbon double bond in the fatty acyl chain
     num_double_bonds = len(double_bond_matches)
-    if num_double_bonds != 1:
-        return False, f"Found {num_double_bonds} double bonds in aliphatic chain, need exactly 1"
 
-    # Check for the fatty acyl chain pattern starting from the CoA
-    fatty_acid_chain_pattern = Chem.MolFromSmarts("C(=O)[!#1]C=C")  # C=O followed by any carbon chain with a double bond
-    if not mol.HasSubstructMatch(fatty_acid_chain_pattern):
-        return False, "No valid monounsaturated fatty acyl chain found"
+    # Validate that exactly one double bond exists in the fatty acyl chain
+    if num_double_bonds != 1:
+        return False, f"Found {num_double_bonds} double bonds, need exactly 1"
     
     return True, "Contains CoA and a fatty acyl chain with one carbon-carbon double bond"
+
+# Example usage:
+# smiles = "CCCCC/C=C\\CCCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)N1C=NC2=C1N=CN=C2N"
+# result, reason = is_monounsaturated_fatty_acyl_CoA(smiles)
+# print(result, reason)
