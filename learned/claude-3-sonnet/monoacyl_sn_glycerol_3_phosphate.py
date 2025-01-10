@@ -23,38 +23,52 @@ def is_monoacyl_sn_glycerol_3_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
+    # Create and verify SMARTS patterns
+    patterns = {
+        'phosphate': '[OX2]P(=O)([O,OH])([O,OH])',
+        'ester': '[CX3](=O)[OX2]',
+        'glycerol_backbone': '[CH2X4][CHX4][CH2X4]',
+        'hydroxyl': '[OX2H]'
+    }
+    
+    compiled_patterns = {}
+    for name, pattern in patterns.items():
+        pat = Chem.MolFromSmarts(pattern)
+        if pat is None:
+            return False, f"Invalid SMARTS pattern for {name}"
+        compiled_patterns[name] = pat
+
     # Check for phosphate group
-    phosphate_pattern = Chem.MolFromSmarts("[OX2]P(=O)([OX2H,OX1-])[OX2H,OX1-]")
-    if not mol.HasSubstructMatch(phosphate_pattern):
+    if not mol.HasSubstructMatch(compiled_patterns['phosphate']):
         return False, "No phosphate group found"
 
-    # Check for ester group (acyl chain)
-    ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2]")
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    # Check for single ester group (acyl chain)
+    ester_matches = mol.GetSubstructMatches(compiled_patterns['ester'])
     if len(ester_matches) != 1:
         return False, f"Found {len(ester_matches)} ester groups, need exactly 1"
 
-    # Check for glycerol backbone with correct substitution pattern
-    # [OH]-C-C(OH)-C-O-P pattern or [OH]-C-C(O-acyl)-C-O-P pattern
-    glycerol_phosphate_pattern1 = Chem.MolFromSmarts("[OX2H]C[CH]([OX2H,OX2C(=O)])[CH2]OP(=O)([OX2H,OX1-])[OX2H,OX1-]")
-    glycerol_phosphate_pattern2 = Chem.MolFromSmarts("[OX2H,OX2C(=O)]C[CH]([OX2H])[CH2]OP(=O)([OX2H,OX1-])[OX2H,OX1-]")
-    
-    if not (mol.HasSubstructMatch(glycerol_phosphate_pattern1) or mol.HasSubstructMatch(glycerol_phosphate_pattern2)):
-        return False, "No glycerol backbone with correct substitution pattern found"
+    # Check for glycerol backbone
+    if not mol.HasSubstructMatch(compiled_patterns['glycerol_backbone']):
+        return False, "No glycerol backbone found"
 
-    # Count carbons in acyl chain (should be at least 4)
-    acyl_chain_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2][CH2][CH]([OX2H,OX2C(=O)])[CH2]OP")
-    if not mol.HasSubstructMatch(acyl_chain_pattern):
-        return False, "No proper acyl chain attachment found"
+    # Count oxygen atoms - should be 6 or 7 (3 from phosphate, 2 from ester, 1-2 from hydroxyls)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if not (6 <= o_count <= 7):
+        return False, f"Incorrect number of oxygen atoms ({o_count}), expected 6-7"
 
-    # Verify only one acyl chain by counting ester carbonyls
-    carbonyl_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2]")
-    if len(mol.GetSubstructMatches(carbonyl_pattern)) != 1:
-        return False, "Incorrect number of acyl groups"
+    # Count phosphorus atoms - should be exactly 1
+    p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
+    if p_count != 1:
+        return False, f"Found {p_count} phosphorus atoms, need exactly 1"
 
-    # Count free hydroxyls on glycerol backbone
-    free_oh_pattern = Chem.MolFromSmarts("[CH2,CH]([CH2,CH][OX2H,OX2P,OX2C(=O)])[OX2H]")
-    if not mol.HasSubstructMatch(free_oh_pattern):
-        return False, "Missing free hydroxyl group on glycerol backbone"
+    # Verify the presence of at least one hydroxyl group
+    hydroxyl_matches = mol.GetSubstructMatches(compiled_patterns['hydroxyl'])
+    if len(hydroxyl_matches) < 1:
+        return False, "No free hydroxyl groups found"
 
-    return True, "Contains glycerol backbone with one acyl chain and phosphate group at position 3"
+    # Additional check for acyl chain length (at least 4 carbons)
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 7:  # minimum 3 for glycerol + 4 for shortest acyl chain
+        return False, "Acyl chain too short"
+
+    return True, "Contains glycerol backbone with one acyl chain and phosphate group"
