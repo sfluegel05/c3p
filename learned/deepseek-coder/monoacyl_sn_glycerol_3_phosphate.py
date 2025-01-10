@@ -32,15 +32,10 @@ def is_monoacyl_sn_glycerol_3_phosphate(smiles: str):
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
 
-    # Check for phosphate group attached to the 3rd carbon (more flexible pattern)
-    phosphate_pattern = Chem.MolFromSmarts("[CH2X4][OX2][PX4](=[OX1])([OX2H0-1])[OX2H0-1]")
-    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
-    if not phosphate_matches:
-        # Try alternative phosphate pattern
-        phosphate_pattern = Chem.MolFromSmarts("[CH2X4][OX2][PX4](=[OX1])([OX2H0-1])[OX2H0-1]")
-        phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
-        if not phosphate_matches:
-            return False, "No phosphate group found at the 3rd position"
+    # Check for phosphate group attached to the 3rd carbon
+    phosphate_pattern = Chem.MolFromSmarts("[CH2X4][OX2][PX4](=[OX1])([OX2-])[OX2]")
+    if not mol.HasSubstructMatch(phosphate_pattern):
+        return False, "No phosphate group found at the 3rd position"
 
     # Check for a single ester group (acyl group attached via ester bond)
     ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
@@ -70,7 +65,7 @@ def is_monoacyl_sn_glycerol_3_phosphate(smiles: str):
     
     if c_count < 10:
         return False, "Too few carbons for monoacyl-sn-glycerol 3-phosphate"
-    if o_count < 5 or o_count > 7:
-        return False, "Incorrect number of oxygens for monoacyl-sn-glycerol 3-phosphate"
+    if o_count != 6:
+        return False, "Must have exactly 6 oxygens (1 ester group and 1 phosphate group)"
 
     return True, "Contains glycerol backbone with a single acyl group and a phosphate group at the 3rd position"
