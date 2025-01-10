@@ -26,17 +26,30 @@ def is_furanocoumarin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # General SMARTS pattern for furanocoumarin core (tricyclic ring system)
-    furanocoumarin_pattern = Chem.MolFromSmarts('c1cc2c(c1)oc(=O)c3ccoc23')
+    # General SMARTS pattern for furanocoumarin core
+    # This pattern captures the fusion of a furan ring with a coumarin in different ways
 
-    if mol.HasSubstructMatch(furanocoumarin_pattern):
-        return True, "Contains furanocoumarin core"
+    # Linear furanocoumarin (psoralen-type)
+    linear_pattern = Chem.MolFromSmarts('c1cc2oc(=O)c3ccoc3cc2cc1')
 
+    # Angular furanocoumarin (angelicin-type)
+    angular_pattern = Chem.MolFromSmarts('c1ccc2c(c1)oc(=O)c1ccoc21')
+
+    # Check for linear furanocoumarin core
+    if mol.HasSubstructMatch(linear_pattern):
+        return True, "Contains linear furanocoumarin core (psoralen-type)"
+    
+    # Check for angular furanocoumarin core
+    elif mol.HasSubstructMatch(angular_pattern):
+        return True, "Contains angular furanocoumarin core (angelicin-type)"
+    
     else:
-        # Check for angular furanocoumarin core (angelicin-type)
-        angular_pattern = Chem.MolFromSmarts('c1ccc2c(c1)oc(=O)c3ccoc23')
-        if mol.HasSubstructMatch(angular_pattern):
-            return True, "Contains angular furanocoumarin core"
+        # Alternative approach: Check for coumarin fused with furan ring
+        # General pattern for furanocoumarin core
+        general_pattern = Chem.MolFromSmarts('c1cc2oc(=O)c3ccoc3cc2cc1')
+
+        if mol.HasSubstructMatch(general_pattern):
+            return True, "Contains furanocoumarin core"
         else:
             return False, "Does not contain furanocoumarin core"
 
