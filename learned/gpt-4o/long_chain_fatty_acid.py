@@ -2,7 +2,6 @@
 Classifies: CHEBI:15904 long-chain fatty acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdmolops
 
 def is_long_chain_fatty_acid(smiles: str):
     """
@@ -27,17 +26,18 @@ def is_long_chain_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
     
-    # Count total number of carbon atoms
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    # Identify the longest carbon chain
+    chains = []
+    for bond in mol.GetBonds():
+        if bond.GetBondType() == Chem.BondType.SINGLE:
+            path = Chem.rdmolops.GetShortestPath(mol, bond.GetBeginAtomIdx(), bond.GetEndAtomIdx())
+            chain_length = sum(1 for atom_idx in path if mol.GetAtomWithIdx(atom_idx).GetAtomicNum() == 6)
+            chains.append(chain_length)
     
-    # Check if the number of carbons fits the long-chain fatty acid range
-    if c_count < 13 or c_count > 22:
-        return False, f"Carbon count out of range for long-chain fatty acid: {c_count} carbons"
+    # Get the maximum chain length found
+    longest_chain_length = max(chains) if chains else 0
     
-    # Detect the longest carbon chain
-    longest_chain_length = max(len(path) for path in rdmolops.FindAllPathsOfLengthN(mol, n=c_count, onlyBonds=False))
-    
-    # Validate the longest chain is within specified range
+    # Check if the longest chain length fits the long-chain fatty acid range
     if longest_chain_length < 13 or longest_chain_length > 22:
         return False, f"Longest carbon chain length out of range: {longest_chain_length} carbons"
     
