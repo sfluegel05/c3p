@@ -21,8 +21,8 @@ def is_para_terphenyl(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Modified SMARTS pattern for para-terphenyl
-    para_terphenyl_pattern = Chem.MolFromSmarts("c1(c2ccc(cc2)c3ccccc3)ccc(cc1)-c4cccc5ccccc45")
+    # Refined SMARTS pattern for para-terphenyl
+    para_terphenyl_pattern = Chem.MolFromSmarts("c1ccc(cc1)c2ccc(cc2)c3ccccc3")
     
     # Check if the molecule matches the para-terphenyl pattern
     if mol.HasSubstructMatch(para_terphenyl_pattern):
