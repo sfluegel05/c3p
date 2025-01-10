@@ -2,13 +2,10 @@
 Classifies: CHEBI:4986 fatty acid methyl ester
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_fatty_acid_methyl_ester(smiles: str):
     """
     Determines if a molecule is a fatty acid methyl ester based on its SMILES string.
-    A fatty acid methyl ester is characterized by an ester linkage from methanol 
-    and an aliphatic carbon chain similar to fatty acids, potentially with unsaturations or branching.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,21 +20,24 @@ def is_fatty_acid_methyl_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for methyl ester group (methanol-derived ester link)
-    ester_methyl_pattern = Chem.MolFromSmarts("O=C(OC)")
+    # Look for ester group pattern with methanol
+    ester_methyl_pattern = Chem.MolFromSmarts("C(=O)OC")
     if not mol.HasSubstructMatch(ester_methyl_pattern):
-        return False, "Methyl ester group missing"
+        return False, "Ester group with methanol (methyl ester) missing"
+    
+    # Check for long carbon chains
+    # A simple way is to count the number of carbon atoms
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
 
-    # Look for long carbon chains, accounting for branching or double bonds
-    long_chain_pattern = Chem.MolFromSmarts("C(C)(C)(C)C")  # Detect at least a 4-carbon chain allowing branches
-    unsat_chain_pattern = Chem.MolFromSmarts("C=CC")        # Detect carbon double bonds in chains
-    
-    long_chain_matches = mol.GetSubstructMatches(long_chain_pattern)
-    unsat_chain_matches = mol.GetSubstructMatches(unsat_chain_pattern)
-    
-    # A valid fatty acid methyl ester should have sufficient carbon length
-    # and optionally unsaturation or branches
-    if len(long_chain_matches) < 3 and len(unsat_chain_matches) < 1:  # Adjusted to consider >3 carbons more flexibly
-        return False, "Missing sufficient long carbon chain or unsaturation for fatty acid"
+    # Typically, fatty acids have at least 6 carbons in their chain, often many more
+    # We include a generic rule that 8 or more is indicative of a fatty acid chain
+    if c_count < 8:
+        return False, "Too few carbon atoms for a fatty acid"
+
+    # Verify only one ester group is present
+    ester_matches = mol.GetSubstructMatches(ester_methyl_pattern)
+    if len(ester_matches) != 1:
+        return False, f"Found {len(ester_matches)} ester groups, need exactly 1"
 
     return True, "Structure matches fatty acid methyl ester requirements"
