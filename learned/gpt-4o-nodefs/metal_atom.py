@@ -5,14 +5,14 @@ from rdkit import Chem
 
 def is_metal_atom(smiles: str):
     """
-    Determines if a single atom molecule is a metal atom based on its SMILES string.
+    Determines if a single neutral atom molecule is a metal atom based on its SMILES string.
     Metal atoms are identified from the periodic table, and they have specific atomic numbers.
     
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if the molecule is a metal atom, False otherwise
+        bool: True if the molecule is a neutral metal atom, False otherwise
         str: Reason for classification
     """
     # Parse SMILES string
@@ -28,6 +28,11 @@ def is_metal_atom(smiles: str):
     atom = mol.GetAtomWithIdx(0)
     atomic_num = atom.GetAtomicNum()
     isotope = atom.GetIsotope()  # Retrieve isotope information
+    formal_charge = atom.GetFormalCharge()
+    
+    # Ensure the atom is neutral
+    if formal_charge != 0:
+        return False, f"Atom has a non-zero formal charge: {formal_charge}"
 
     # List of metal atomic numbers based on a comprehensive periodic table inclusion
     metal_atomic_numbers = {
@@ -39,8 +44,8 @@ def is_metal_atom(smiles: str):
         112, 113, 114, 115, 116, 117
     }
     
-    # Check if atomic number is classified as a metal
+    # Check if atomic number is classified as a metal and the atom is neutral
     if atomic_num in metal_atomic_numbers:
-        return True, f"Atom with atomic number {atomic_num}{(' with isotope ' + str(isotope)) if isotope else ''} is a metal atom"
+        return True, f"Neutral atom with atomic number {atomic_num}{(' with isotope ' + str(isotope)) if isotope else ''} is a metal atom"
     else:
         return False, f"Atom with atomic number {atomic_num}{(' with isotope ' + str(isotope)) if isotope else ''} is not a metal atom"
