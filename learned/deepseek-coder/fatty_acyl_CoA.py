@@ -32,8 +32,8 @@ def is_fatty_acyl_CoA(smiles: str):
         return False, "No thioester bond found"
 
     # Check for the presence of the CoA moiety (adenine, ribose, and phosphate groups)
-    # This pattern matches the core CoA structure including the adenine, ribose, and phosphate groups
-    coa_pattern = Chem.MolFromSmarts("N1C=NC2=C1N=CN2[C@H]1O[C@H](COP(=O)(O)OP(=O)(O)O[C@H]2O[C@H](CO)[C@@H](O)[C@H]2O)[C@@H](O)[C@H]1O")
+    # Simplified pattern to match the core CoA structure
+    coa_pattern = Chem.MolFromSmarts("N1C=NC2=C1N=CN2[C@H]1O[C@H](COP(=O)(O)OP(=O)(O)O)[C@@H](O)[C@H]1O")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No CoA moiety found"
 
@@ -52,9 +52,9 @@ def is_fatty_acyl_CoA(smiles: str):
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     
-    if c_count < 20:
+    if c_count < 10:
         return False, "Too few carbons for fatty acyl-CoA"
-    if o_count < 10:
+    if o_count < 6:
         return False, "Too few oxygens for fatty acyl-CoA"
 
     return True, "Contains thioester bond, CoA moiety, and fatty acid chain"
