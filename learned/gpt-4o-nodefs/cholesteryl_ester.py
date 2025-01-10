@@ -21,18 +21,11 @@ def is_cholesteryl_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Create SMARTS pattern for the steroid structure
-    cholesterol_pattern = Chem.MolFromSmarts("[#6]1[#6]2[#6]3[#6]4[C@H]([#6]C=CC4C3CC(C2C1)OC(=O)C)CCCCC")
+    # Create more general SMARTS pattern for the steroid structure (fused tetracyclic ring)
+    steroid_pattern = Chem.MolFromSmarts("C1CCC2C(C1)C3CCC4(C3CC(C2)CC4)OC(=O)")
 
-    # Check if the molecule has a cholesteryl backbone
-    if not mol.HasSubstructMatch(cholesterol_pattern):
-        return False, "No cholesteryl backbone found"
-
-    # Create SMARTS pattern for ester linkage (R-COO-R)
-    ester_pattern = Chem.MolFromSmarts("C(=O)O")
-    
-    # Check for presence of ester linkage in the compound
-    if not mol.HasSubstructMatch(ester_pattern):
-        return False, "No ester linkage found"
+    # Check if the molecule has a steroid backbone with an ester linked
+    if not mol.HasSubstructMatch(steroid_pattern):
+        return False, "No cholesteryl backbone found or improperly attached ester linkage"
 
     return True, "Contains cholesteryl backbone with ester linkage"
