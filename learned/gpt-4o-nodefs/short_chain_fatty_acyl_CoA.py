@@ -21,8 +21,8 @@ def is_short_chain_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define updated Coenzyme A pattern
-    coa_structure_pattern = Chem.MolFromSmarts("NC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OCC1OC(C(O)C1O)N2C=NC3=C2N=CN=C3N")
+    # Define potentially updated Coenzyme A pattern (allowing for slight structural variations)
+    coa_structure_pattern = Chem.MolFromSmarts("NCC(=O)CNC(=O)C(O)C(O)COP(=O)(O)OP(=O)(O)OCC1OC2C(OP(=O)(O)O)OC1C2N3C=NC4=N3C=NC=N4")
     if not mol.HasSubstructMatch(coa_structure_pattern):
         return False, "No Coenzyme A structure found"
 
@@ -37,10 +37,17 @@ def is_short_chain_fatty_acyl_CoA(smiles: str):
     num_carbons = 0
 
     # Count carbons starting after the thioester sulfur
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 6:
-            if atom.GetIdx() > fatty_acid_start_idx:
+    visited_atoms = set()  # To avoid circular traversal
+    def count_carbons(atom_idx):
+        nonlocal num_carbons
+        for neighbor in mol.GetAtomWithIdx(atom_idx).GetNeighbors():
+            n_idx = neighbor.GetIdx()
+            if n_idx not in visited_atoms and neighbor.GetAtomicNum() == 6:  # Only count carbon atoms
+                visited_atoms.add(n_idx)
                 num_carbons += 1
+                count_carbons(n_idx)
+
+    count_carbons(fatty_acid_start_idx)
 
     if num_carbons >= 8:
         return False, f"Fatty acid chain is not short (has {num_carbons} carbons)"
