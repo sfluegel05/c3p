@@ -22,7 +22,7 @@ def is_dodecanoate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the lauric acid moiety pattern (C12 chain with a carboxyl group)
+    # Define a more flexible lauric acid moiety pattern (C12 chain with a carboxyl group)
     lauric_acid_pattern = Chem.MolFromSmarts("CCCCCCCCCCCC(=O)[OX2]")
     if not mol.HasSubstructMatch(lauric_acid_pattern):
         return False, "No lauric acid moiety found"
@@ -40,7 +40,14 @@ def is_dodecanoate_ester(smiles: str):
     for match in ester_matches:
         ester_atoms.update(match)
     
+    # Ensure that the ester bond is connected to the lauric acid moiety
     if not lauric_acid_atoms.intersection(ester_atoms):
         return False, "Ester bond not connected to lauric acid moiety"
 
-    return True, "Contains lauric acid moiety with an ester bond"
+    # Additional check to ensure the ester bond is part of the lauric acid moiety
+    lauric_acid_carbonyl = lauric_acid_match[-2]  # Carbonyl carbon in the lauric acid moiety
+    for match in ester_matches:
+        if lauric_acid_carbonyl in match:
+            return True, "Contains lauric acid moiety with an ester bond"
+
+    return False, "Ester bond not part of lauric acid moiety"
