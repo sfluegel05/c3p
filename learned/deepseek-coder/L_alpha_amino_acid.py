@@ -26,55 +26,35 @@ def is_L_alpha_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # More robust carboxyl group pattern (including zwitterionic forms)
-    carboxyl_patterns = [
-        Chem.MolFromSmarts("[CX3](=O)[OX1H0-,OX2H1]"),  # Normal carboxyl
-        Chem.MolFromSmarts("[CX3](=O)[O-]"),           # Zwitterionic form
-        Chem.MolFromSmarts("[CX3](=O)O")               # Protonated form
-    ]
-    
-    carboxyl_matches = []
-    for pattern in carboxyl_patterns:
-        matches = mol.GetSubstructMatches(pattern)
-        if matches:
-            carboxyl_matches.extend(matches)
+    # More flexible carboxyl group pattern
+    carboxyl_pattern = Chem.MolFromSmarts("[CX3](=O)[OX1H0-,OX2H1]")
+    carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
     
     if not carboxyl_matches:
         return False, "No carboxyl group found"
 
-    # More robust amino group pattern (including zwitterionic forms)
-    amino_patterns = [
-        Chem.MolFromSmarts("[NX3;H2,H1,H0]"),          # Normal amino
-        Chem.MolFromSmarts("[NH3+]"),                  # Zwitterionic form
-        Chem.MolFromSmarts("[NX3H2]")                  # Protonated form
-    ]
-    
-    amino_matches = []
-    for pattern in amino_patterns:
-        matches = mol.GetSubstructMatches(pattern)
-        if matches:
-            amino_matches.extend(matches)
+    # More flexible amino group pattern
+    amino_pattern = Chem.MolFromSmarts("[NX3;H2,H1,H0;!$(N=*);!$(N#*)]")
+    amino_matches = mol.GetSubstructMatches(amino_pattern)
     
     if not amino_matches:
         return False, "No amino group found"
 
-    # Find potential alpha-carbons (carbons connected to both amino and carboxyl groups)
-    alpha_candidates = set()
-    for carboxyl_match in carboxyl_matches:
-        carboxyl_carbon = carboxyl_match[0]
-        carboxyl_neighbors = mol.GetAtomWithIdx(carboxyl_carbon).GetNeighbors()
-        for neighbor in carboxyl_neighbors:
-            if neighbor.GetSymbol() == 'C':
-                alpha_candidates.add(neighbor.GetIdx())
-
+    # Find alpha-carbon (carbon connected to both amino and carboxyl groups)
     alpha_carbon = None
     for amino_match in amino_matches:
         amino_nitrogen = amino_match[0]
         amino_neighbors = mol.GetAtomWithIdx(amino_nitrogen).GetNeighbors()
         for neighbor in amino_neighbors:
-            if neighbor.GetSymbol() == 'C' and neighbor.GetIdx() in alpha_candidates:
-                alpha_carbon = neighbor.GetIdx()
-                break
+            if neighbor.GetSymbol() == 'C':
+                # Check if this carbon is connected to a carboxyl group
+                carboxyl_neighbors = neighbor.GetNeighbors()
+                for carboxyl_neighbor in carboxyl_neighbors:
+                    if carboxyl_neighbor.GetSymbol() == 'C' and any(carboxyl_neighbor.GetIdx() in match for match in carboxyl_matches):
+                        alpha_carbon = neighbor.GetIdx()
+                        break
+                if alpha_carbon is not None:
+                    break
         if alpha_carbon is not None:
             break
 
@@ -92,6 +72,10 @@ def is_L_alpha_amino_acid(smiles: str):
             if config == 'R':  # L-configuration corresponds to S in RDKit
                 return False, "Alpha-carbon has D-configuration"
             elif config == 'S':
+                # Additional check to ensure this is a single amino acid
+                # Count the number of carboxyl and amino groups
+                if len(carboxyl_matches) > 1 or len(amino_matches) > 1:
+                    return False, "Multiple amino or carboxyl groups found - likely a peptide"
                 return True, "Alpha-carbon has L-configuration"
             else:
                 return False, "Chirality at alpha-carbon is unassigned"
