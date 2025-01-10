@@ -24,11 +24,18 @@ def is_pyrroline(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the pyrroline pattern: a five-membered ring with one nitrogen and one double bond
+    # Define a more flexible pyrroline pattern: a five-membered ring with one nitrogen and one double bond
     pyrroline_pattern = Chem.MolFromSmarts("[nH0]1[CH]=[CH][CH2]1")
+    pyrroline_pattern_alt = Chem.MolFromSmarts("[nH0]1[CH2][CH]=[CH]1")
     
-    # Check if the molecule contains the pyrroline pattern
-    if mol.HasSubstructMatch(pyrroline_pattern):
-        return True, "Contains a dihydropyrrole ring (pyrroline)"
-    else:
-        return False, "No dihydropyrrole ring (pyrroline) found"
+    # Check if the molecule contains either of the pyrroline patterns
+    if mol.HasSubstructMatch(pyrroline_pattern) or mol.HasSubstructMatch(pyrroline_pattern_alt):
+        # Ensure the matched ring is a five-membered ring
+        ring_info = mol.GetRingInfo()
+        for atom in mol.GetAtoms():
+            if atom.GetAtomicNum() == 7:  # Nitrogen atom
+                for ring in ring_info.AtomRings():
+                    if len(ring) == 5 and atom.GetIdx() in ring:
+                        return True, "Contains a dihydropyrrole ring (pyrroline)"
+        
+    return False, "No dihydropyrrole ring (pyrroline) found"
