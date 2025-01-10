@@ -21,28 +21,32 @@ def is_oligopeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Try to identify peptide bonds
+    # Try to identify peptide bonds (amide linkage)
     peptide_bond_pattern = Chem.MolFromSmarts("C(=O)N")
     num_peptide_bonds = len(mol.GetSubstructMatches(peptide_bond_pattern))
+    
     if num_peptide_bonds < 1:
         return False, "No peptide bonds identified"
     
-    # Check if the number of peptide bonds is reasonable for an oligopeptide
-    if num_peptide_bonds > 20:
+    # Check if the number of peptide bonds exceeds typical oligopeptide range
+    if num_peptide_bonds > 25:
         return False, f"Excessive peptide bonds for an oligopeptide: {num_peptide_bonds}"
     
-    # Look for recognizable amino acid structures
+    # Recognize standard and modified amino acid residues
     amino_acid_patterns = [
         Chem.MolFromSmarts("[C@@H](N)C(=O)O"),  # L-alpha amino acids
         Chem.MolFromSmarts("[C@H](N)C(=O)O"),   # D-alpha amino acids
-        Chem.MolFromSmarts("OC(=O)[C@@H](N)C"), # Alternative structures common in peptides
+        Chem.MolFromSmarts("OC(=O)[C@@H](N)C"), # Alternative common structures
+        Chem.MolFromSmarts("[N]C(=O)C")         # General amides for unusual side-chains
     ]
-    
-    # Attempt to match with any recognized amino acid patterns
+
     if not any(mol.HasSubstructMatch(pattern) for pattern in amino_acid_patterns):
         return False, "Missing recognizable amino acid residues"
     
-    # Cyclic peptides or complex sequences may not be fully captured by standard patterns
-    # Calculate a proxy for size using complexity or length if computationally feasible
+    # Check for cyclic structures
+    if mol.GetRingInfo().IsAtomInRingOfSize(3):
+        return False, "Detected a very small ring, likely not an oligopeptide"
     
-    return True, "Oligopeptide structure identified with appropriate number of peptide bonds"
+    # Additional criteria may include molecular weight checks, specific atom counts, etc.
+    
+    return True, "Oligopeptide structure identified with recognized peptide bonds and amino acid patterns"
