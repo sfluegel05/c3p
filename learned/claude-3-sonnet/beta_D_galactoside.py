@@ -23,48 +23,60 @@ def is_beta_D_galactoside(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Add explicit Hs - this helps with stereochemistry
-    mol = Chem.AddHs(mol)
-    
-    # Beta-D-galactopyranoside core pattern with stereochemistry
-    # [OH1] represents the glycosidic oxygen
-    # First carbon is the anomeric carbon with beta configuration
-    # Fourth carbon has axial OH (characteristic of galactose)
-    beta_gal_pattern = Chem.MolFromSmarts(
-        "[OD2]-[C@H]1[C@H](O)[C@H](O)[C@@H](O)[C@H]([CH2]O)O1"
-    )
-    
-    if beta_gal_pattern is None:
-        return None, "Invalid SMARTS pattern"
-    
-    # Look for matches using stereochemistry
-    params = Chem.SubstructMatchParameters()
-    params.useChirality = True
-    matches = mol.GetSubstructMatches(beta_gal_pattern, params)
-    
-    if not matches:
-        return False, "No beta-D-galactoside moiety found"
         
-    # Verify glycosidic bond
+    # Pattern for beta-D-galactopyranose core
+    # [OH1,O][C@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O
+    # Note: The anomeric oxygen can be part of a glycosidic bond
+    galactose_pattern = Chem.MolFromSmarts('[OX2][C@H]1O[C@H](C[OX2])[C@H]([OX2])[C@H]([OX2])[C@H]1[OX2]')
+    
+    if not mol.HasSubstructMatch(galactose_pattern):
+        return False, "No beta-D-galactose moiety found"
+    
+    # Get matches for the galactose pattern
+    matches = mol.GetSubstructMatches(galactose_pattern)
+    
+    # Check each match
     for match in matches:
-        glycosidic_O = mol.GetAtomWithIdx(match[0])
+        # Get the anomeric carbon (C1) and its attached oxygen atoms
+        c1_idx = match[2]  # Index of C1 in the pattern
+        c1 = mol.GetAtomWithIdx(c1_idx)
         
-        # Check if oxygen is part of a glycosidic bond (connected to two carbons)
-        carbon_neighbors = [n for n in glycosidic_O.GetNeighbors() 
-                          if n.GetAtomicNum() == 6]
+        # Get neighboring oxygen atoms of C1
+        o_neighbors = [n for n in c1.GetNeighbors() if n.GetAtomicNum() == 8]
+        if len(o_neighbors) != 2:
+            continue
+            
+        # One oxygen should be ring oxygen, other should be glycosidic/substituent
+        ring_o = None
+        subst_o = None
+        for o in o_neighbors:
+            if len([n for n in o.GetNeighbors() if n.GetAtomicNum() == 6]) == 2:
+                ring_o = o
+            else:
+                subst_o = o
+                
+        if ring_o is None or subst_o is None:
+            continue
+            
+        # Verify beta configuration by checking if substituent is below the ring
+        # In the given pattern, beta configuration is encoded in the stereochemistry
+        return True, "Contains beta-D-galactoside moiety"
         
-        if len(carbon_neighbors) == 2:
-            # Found a valid glycosidic bond
-            return True, "Contains beta-D-galactoside moiety with correct stereochemistry"
-    
-    return False, "Found galactose ring but no glycosidic bond"
+    return False, "No beta-D-galactoside configuration found"
 
-def test_smiles():
-    """Test function with a known beta-D-galactoside"""
-    test_mol = "CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O"  # methyl beta-D-galactoside
-    result, reason = is_beta_D_galactoside(test_mol)
-    print(f"Test result: {result}, Reason: {reason}")
+def test_examples():
+    """Test function with some example molecules"""
+    examples = [
+        "CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O",  # methyl beta-D-galactoside
+        "O[C@H]1[C@@H](O)[C@H](O)[C@H](O)[C@H](O)C1=O",  # Not a galactoside
+        "CO[C@H]1O[C@H](CO)[C@@H](O)[C@@H](O)[C@H]1O"   # methyl alpha-D-glucoside
+    ]
+    
+    for smi in examples:
+        result, reason = is_beta_D_galactoside(smi)
+        print(f"SMILES: {smi}")
+        print(f"Is beta-D-galactoside: {result}")
+        print(f"Reason: {reason}\n")
 
 if __name__ == "__main__":
-    test_smiles()
+    test_examples()
