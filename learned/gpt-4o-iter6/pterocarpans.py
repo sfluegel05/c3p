@@ -6,7 +6,8 @@ from rdkit import Chem
 def is_pterocarpans(smiles: str):
     """
     Determines if a molecule is a pterocarpan based on its SMILES string.
-    A pterocarpan is characterized by a benzofurochromene skeleton.
+    Pterocarpans are characterized by a benzofurochromene skeleton with
+    additional potential substructures.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,18 +22,23 @@ def is_pterocarpans(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define the substructure pattern for the core of pterocarpans
-    # Updated SMARTS pattern to be more flexible with stereochemistry
-    pterocarpan_pattern = Chem.MolFromSmarts("O1[C@@H]2CC3=C(O)C=C(O)C=C3COC2=C(O1)")
-
+    # Define the core structure of pterocarpans
+    # Below SMARTS pattern is a generic representation of the benzofurochromene skeleton
+    # Considering the 6a,11a-dihydro-6H-[1]benzofuro[3,2-c]chromene core and variants
+    # Example SMARTS pattern for this structure
+    pterocarpan_pattern = Chem.MolFromSmarts("c1cc2oc3cccc4occc(c1)c2c34")
     if pterocarpan_pattern is None:
         return None, "Error in defining SMARTS pattern"
 
     # Check if the core structure is present
     if not mol.HasSubstructMatch(pterocarpan_pattern):
         return False, "No pterocarpan core found"
+
+    # Additional functional group checks, such as hydroxyl, methoxy, etc.
+    hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
+    methoxy_pattern = Chem.MolFromSmarts("CO")
     
-    # Further checks can be added here for additional modifications common in pterocarpans,
-    # such as specific hydroxylation patterns or attached isoflavonoid-like structures.
+    if mol.HasSubstructMatch(hydroxyl_pattern) and mol.HasSubstructMatch(methoxy_pattern):
+        return True, "Contains pterocarpan core with common functional groups"
     
     return True, "Contains pterocarpan core structure"
