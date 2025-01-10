@@ -22,18 +22,18 @@ def is_phosphatidylcholine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Improved glycerol backbone with correct stereochemistry
-    glycerol_pattern = Chem.MolFromSmarts("[C@H](O[C])[C@@H](OC(=O)C)COP(=O)(OCC[N+](C)(C)C)O")
+    # Glycerol backbone pattern with correct stereochemistry
+    glycerol_pattern = Chem.MolFromSmarts("[C@H](OC(=O)[CX4,CX3])[C@@H](OC(=O)[CX4,CX3])COP([O-])(=O)OCC[N+](C)(C)C")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "Glycerol backbone and/or stereochemistry not found"
 
-    # Phosphocholine head group pattern
-    phosphocholine_pattern = Chem.MolFromSmarts("O=P(O)(OCC[N+](C)(C)C)O")
+    # Phosphocholine head group pattern without specific charges
+    phosphocholine_pattern = Chem.MolFromSmarts("OP([O-])(=O)OCC[N+](C)(C)C")
     if not mol.HasSubstructMatch(phosphocholine_pattern):
         return False, "Phosphocholine head group not found"
 
     # Check for two ester-linked acyl chains connected to glycerol
-    ester_pattern = Chem.MolFromSmarts("COC(=O)C")
+    ester_pattern = Chem.MolFromSmarts("OC(=O)[CX4,CX3]")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) < 2:
         return False, f"Found {len(ester_matches)} ester-linked acyl chains, need exactly 2"
