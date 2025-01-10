@@ -2,7 +2,7 @@
 Classifies: CHEBI:36615 triterpenoid
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_triterpenoid(smiles: str):
     """
@@ -24,14 +24,14 @@ def is_triterpenoid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check molecular weight as it helps in balancing possible different substitutions
-    mol_weight = Chem.rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_weight < 400 or mol_weight > 600:
+    mol_weight = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_weight < 400 or mol_weight > 700:
         return False, f"Molecular weight of {mol_weight} is not typical for triterpenoids"
 
     # Check for the number of rings (generally 4 to 6)
-    ring_count = Chem.rdMolDescriptors.CalcNumRings(mol)
-    if ring_count < 4:
-        return False, f"Number of rings ({ring_count}) is not enough for triterpenoids"
+    ring_count = rdMolDescriptors.CalcNumRings(mol)
+    if ring_count < 4 or ring_count > 6:
+        return False, f"Number of rings ({ring_count}) is not typical for triterpenoids"
 
     # Count carbon atoms to ensure appropriate isoprene skeleton
     num_carbon = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
@@ -39,22 +39,30 @@ def is_triterpenoid(smiles: str):
         return False, f"Number of carbon atoms ({num_carbon}) not typical for triterpenoids"
 
     # Check for common triterpenoid skeletons (a simplified approximation using SMARTS)
-    # Example SMARTS for backbone structure -- needs customization for each case
-    typical_triterpenoid_smarts = "[C;R]1[C;R][C;R][C;R]2[C;R][C;R]3[C;R]([C;R]4[C;R][C;R][C;R][C;R]12)[C;R]3"
-    backbone_match = mol.HasSubstructMatch(Chem.MolFromSmarts(typical_triterpenoid_smarts))
+    typical_triterpenoid_smarts = "C1CCC2C3C4C(C2)C(C1)C3C5C4C6C(C5)C(C6)=O"
+    substruct_mol = Chem.MolFromSmarts(typical_triterpenoid_smarts)
+    if not substruct_mol:
+        return None, None  # Handle if the SMARTS pattern is incorrectly parsed
+    
+    backbone_match = mol.HasSubstructMatch(substruct_mol)
     
     if not backbone_match:
         return False, "Backbone structure doesn't match common triterpenoids"
 
     # Consider major functionalizations observed in triterpenoids
-    functional_groups_smarts = ["[OH]", "[=O]", "[O;R]", "[O;H0]"]  # Hydroxyl, ketone, cyclic ethers
-    if any(mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)) for pattern in functional_groups_smarts):
-        return True, "Structure matches characteristics of triterpenoids"
-    else:
-        return False, "No relevant functional groups detected"
+    functional_groups_smarts = ["[OH]", "[=O]", "[O;R]"]  # Hydroxyl, ketone, cyclic ethers
+    for pattern in functional_groups_smarts:
+        substruct_mol = Chem.MolFromSmarts(pattern)
+        if not substruct_mol:
+            return None, None  # Handle if the SMARTS pattern is incorrectly parsed
+
+        if mol.HasSubstructMatch(substruct_mol):
+            return True, "Structure matches characteristics of triterpenoids"
+    
+    return False, "No relevant functional groups detected"
 
 # Example usage
 # Test with a known triterpenoid SMILES
-smiles = 'OC1C(C=2C(C3(C(C4(C(C(CC4)C(CCC=C(C)C)C)(CC3)C)C)CC2)C)CC1)(C)C'
+smiles = 'CC1(C)CCC2C3C(C(C4(C(C5(C(CC4)C(CCC=C(C)C)C)CC3)C)CC2)C1)C'
 result = is_triterpenoid(smiles)
 print(result)
