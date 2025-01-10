@@ -21,9 +21,9 @@ def is_unsaturated_fatty_acyl_CoA(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # CoA pattern: Presence of phosphate groups and adenosine-like structure
-    coa_pattern = Chem.MolFromSmarts("COP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12")
+    
+    # Improved CoA pattern covering more of the key structural elements
+    coa_pattern = Chem.MolFromSmarts("SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No CoA moiety found"
 
@@ -38,7 +38,6 @@ def is_unsaturated_fatty_acyl_CoA(smiles: str):
     if not mol.HasSubstructMatch(unsaturated_pattern):
         return False, "No unsaturated bonds found"
 
-    # Check that the unsaturated chain connects to the thioester and CoA moiety
     # Additional structural validation may be required to fully verify authenticity
 
     return True, "Molecule is an unsaturated fatty acyl-CoA"
