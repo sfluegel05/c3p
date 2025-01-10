@@ -19,15 +19,14 @@ def is_11_oxo_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Generalized steroid framework: three cyclohexane rings and one cyclopentane ring 
-    # Combined as: [6-6-6-5] with possible connections
-    steroid_pattern = Chem.MolFromSmarts("C1CCC2CC3CCC4C(C3)CC2C1C4")
-    if not mol.HasSubstructMatch(steroid_pattern):
+    # General steroid-like framework: allows for typical steroid four fused rings (A/B/C/D)
+    steroid_framework_pattern = Chem.MolFromSmarts("C1CC2CCC3C4CCC(=O)CC4CCC3=C2C1")
+    if not mol.HasSubstructMatch(steroid_framework_pattern):
         return False, "No generalized steroid-like backbone found"
     
-    # Identify an oxo group on the C ring, which is usually the third ring in a steroid structure
-    oxo_11_pattern = Chem.MolFromSmarts("[C,c;R]{3}[C;R]=O") 
-    if mol.HasSubstructMatch(oxo_11_pattern):
-        return True, "Structure has a generalized steroid backbone with an oxo group at position 11"
-    
-    return False, "Oxo group not accurately identified at position 11 or missing entirely"
+    # 11-oxo group: look for an oxo group attached at potential position 11 in typical frameworks
+    oxo_11_specific_pattern = Chem.MolFromSmarts("C1CC2CCC3C(=O)CC4CCC3=C2C1")
+    if not mol.HasSubstructMatch(oxo_11_specific_pattern):
+        return False, "No oxo group found at position 11"
+
+    return True, "Contains steroid backbone with oxo group at position 11"
