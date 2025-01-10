@@ -22,21 +22,27 @@ def is_very_long_chain_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Identify the thioester group pattern (C(=O)S)
+    # Identify the thioester group pattern
     thioester_pattern = Chem.MolFromSmarts("C(=O)S")
     if not mol.HasSubstructMatch(thioester_pattern):
         return False, "No thioester group found"
 
-    # Identify the CoA moiety pattern as complex nucleotide structure,
-    # Simplifying by looking for typical nucleotide structure in CoA example
-    coa_nucleotide_pattern = Chem.MolFromSmarts("Nc1ncnc2c1ncn2")
-    if not mol.HasSubstructMatch(coa_nucleotide_pattern):
+    # Identify the CoA moiety using a more complete SMARTS pattern, including adenylate moiety
+    coa_pattern = Chem.MolFromSmarts("[P](=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)N1C=NC2=C1N=CN=C2N")
+    if not mol.HasSubstructMatch(coa_pattern):
         return False, "CoA moiety not detected"
 
-    # Look for a long aliphatic carbon chain (C-C-C-C-C-C-…)
-    # Long chain defined as more than 21 carbon atoms before the thioester linkage
-    chain_pattern = Chem.MolFromSmarts("CCCCCCCCCCCCCCCCCCCCCCC")
-    if not mol.HasSubstructMatch(chain_pattern):
+    # Count carbon atoms in the longest aliphatic chain prior to the thioester linkage
+    # Assume the aliphatic chain ends at the carbonyl carbon in thioester
+    fragments = mol.GetSubstructMatches(thioester_pattern)
+    longest_chain_length = 0
+    if fragments:
+        for frag in fragments:
+            carbon_chain = Chem.RWMol(mol).GetFragmentAtoms(frag[0])
+            carbon_count = sum(1 for atom in carbon_chain if atom.GetAtomicNum() == 6)
+            longest_chain_length = max(longest_chain_length, carbon_count)
+    
+    if longest_chain_length < 22:
         return False, "Aliphatic chain not sufficiently long (very long-chain fatty acids typically have ≥22 carbons)"
 
     return True, "Contains a long fatty acyl chain and CoA moiety with thioester bond"
