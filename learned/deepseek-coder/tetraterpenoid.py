@@ -28,30 +28,39 @@ def is_tetraterpenoid(smiles: str):
     # Count the number of carbon atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     
-    # Tetraterpenoids typically have around 40 carbon atoms
-    if c_count < 35 or c_count > 45:
+    # Tetraterpenoids typically have around 40 carbon atoms, but allow for modifications
+    if c_count < 35 or c_count > 50:
         return False, f"Carbon count ({c_count}) is not consistent with a tetraterpenoid (expected ~40)"
 
-    # Check for long conjugated systems (characteristic of tetraterpenoids)
-    conjugated_system_pattern = Chem.MolFromSmarts("[CX3]=[CX3]")
-    conjugated_matches = mol.GetSubstructMatches(conjugated_system_pattern)
-    if len(conjugated_matches) < 8:
+    # Check for extended conjugated systems (characteristic of tetraterpenoids)
+    # Look for at least 6 conjugated double bonds in a chain
+    conjugated_pattern = Chem.MolFromSmarts("[CX3]=[CX3]~[CX3]=[CX3]~[CX3]=[CX3]~[CX3]=[CX3]")
+    conjugated_matches = mol.GetSubstructMatches(conjugated_pattern)
+    if len(conjugated_matches) < 1:
         return False, "Insufficient conjugated double bonds for a tetraterpenoid"
 
     # Check for oxygen-containing functional groups (common in tetraterpenoids)
-    oxygen_pattern = Chem.MolFromSmarts("[OX2]")
-    oxygen_matches = mol.GetSubstructMatches(oxygen_pattern)
-    if len(oxygen_matches) < 1:
+    oxygen_patterns = [
+        "[OX2]",  # Alcohols, ethers
+        "[OX1]=[CX3]",  # Carbonyl groups
+        "[OX2][CX3](=[OX1])",  # Esters, carboxylic acids
+        "[OX2][SX4](=[OX1])(=[OX1])"  # Sulfates
+    ]
+    oxygen_matches = 0
+    for pattern in oxygen_patterns:
+        oxygen_matches += len(mol.GetSubstructMatches(Chem.MolFromSmarts(pattern)))
+    if oxygen_matches < 1:
         return False, "No oxygen-containing functional groups found"
-
-    # Check for cyclic structures (common in tetraterpenoids)
-    ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() < 1:
-        return False, "No cyclic structures found, which are common in tetraterpenoids"
 
     # Check molecular weight (tetraterpenoids are typically large molecules)
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 500:
         return False, "Molecular weight too low for a tetraterpenoid"
 
-    return True, "Molecule has a C40-like skeleton with conjugated double bonds and oxygen-containing functional groups, consistent with a tetraterpenoid"
+    # Check for isoprene units (common building blocks of terpenoids)
+    isoprene_pattern = Chem.MolFromSmarts("[CX4H2][CX4H]=[CX3H][CX4H2]")
+    isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
+    if len(isoprene_matches) < 4:
+        return False, "Insufficient isoprene units for a tetraterpenoid"
+
+    return True, "Molecule has a C40-like skeleton with conjugated double bonds, oxygen-containing functional groups, and isoprene units, consistent with a tetraterpenoid"
