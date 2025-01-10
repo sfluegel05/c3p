@@ -2,7 +2,6 @@
 Classifies: CHEBI:17297 UDP-sugar
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_UDP_sugar(smiles: str):
     """
@@ -14,7 +13,7 @@ def is_UDP_sugar(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is an UDP-sugar, False otherwise
+        bool: True if molecule is a UDP-sugar, False otherwise
         str: Reason for classification
     """
     
@@ -33,9 +32,11 @@ def is_UDP_sugar(smiles: str):
     if not mol.HasSubstructMatch(diphosphate_pattern):
         return False, "No diphosphate linkage found"
 
-    # Look for sugar moiety attached via diphosphate (unrestricted sugar form)
-    sugar_attachment_pattern = Chem.MolFromSmarts("O[C@H]1[C@H]([C@@H]([C@H]([C@H]1O)O)O)OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O")
-    if not mol.HasSubstructMatch(sugar_attachment_pattern):
-        return False, "No suitable sugar attachment found via diphosphate linkage"
-
-    return True, "Contains UDP group with appropriate sugar attachment"
+    # General pattern for sugar moiety attached to the diphosphate linkage
+    # O-C1-C-O pattern is a simplified representation of various sugars
+    sugar_moiety_pattern = Chem.MolFromSmarts("OC([OH1])([OH1])[C;!H0]")
+    diphosphate_and_sugar_pattern = Chem.MolFromSmarts("OP(O)(=O)OP(O)(=O)OC([OH1])([OH1])[C;!H0]")
+    if not mol.HasSubstructMatch(diphosphate_and_sugar_pattern):
+        return False, "No suitable sugar moiety attached via diphosphate linkage"
+    
+    return True, "Contains UDP group with a suitable sugar moiety attached via diphosphate linkage"
