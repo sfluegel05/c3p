@@ -26,15 +26,10 @@ def is_clavulone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for cyclopentane ring with a ketone group (C=O)
-    cyclopentane_ketone_pattern = Chem.MolFromSmarts("[C]1[C][C][C][C]1(=O)")
-    if not mol.HasSubstructMatch(cyclopentane_ketone_pattern):
-        return False, "No cyclopentane ring with ketone group found"
-
-    # Check for at least one hydroxyl group (OH) anywhere in the molecule
-    hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
-    if not mol.HasSubstructMatch(hydroxyl_pattern):
-        return False, "No hydroxyl group found"
+    # Check for cyclopentane ring with a ketone group (C=O) and hydroxyl group (OH)
+    clavulone_core_pattern = Chem.MolFromSmarts("[C]1[C][C][C][C]1(=O)[OH]")
+    if not mol.HasSubstructMatch(clavulone_core_pattern):
+        return False, "No cyclopentane ring with ketone and hydroxyl group found"
 
     # Check for ester groups (acetates or similar) with specific patterns
     ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])[CX4]")
@@ -53,5 +48,10 @@ def is_clavulone(smiles: str):
     double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
     if len(double_bond_matches) < 1:
         return False, "No double bonds found in hydrocarbon chains"
+
+    # Check for specific arrangement of functional groups around the cyclopentane ring
+    functional_group_pattern = Chem.MolFromSmarts("[C]1[C][C][C][C]1(=O)[OH][CX3](=[OX1])[CX4]")
+    if not mol.HasSubstructMatch(functional_group_pattern):
+        return False, "No specific arrangement of functional groups around the cyclopentane ring"
 
     return True, "Contains cyclopentane ring with ketone, hydroxyl, ester groups, and long hydrocarbon chains with double bonds"
