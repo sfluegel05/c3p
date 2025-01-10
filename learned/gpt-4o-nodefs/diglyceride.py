@@ -2,14 +2,12 @@
 Classifies: CHEBI:18035 diglyceride
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_diglyceride(smiles: str):
     """
     Determines if a molecule is a diglyceride based on its SMILES string.
     A diglyceride is a glycerol backbone with two fatty acid chains attached via ester bonds.
-
+    
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -23,27 +21,25 @@ def is_diglyceride(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for glycerol backbone pattern (C-C-C with hydroxyl groups)
-    glycerol_pattern = Chem.MolFromSmarts("[CX3](OC)[CX3](OC)[CX3](O)")
+    # Look for glycerol-like backbone (C-C-C with two -OH in any arrangement)
+    glycerol_pattern = Chem.MolFromSmarts("[O][CH2][CH](O[CX3,CX2])[CH2]O[CX3,CX2]")
     if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone with two hydroxyl groups found"
+        return False, "No suitable glycerol-like backbone found"
         
-    # Look for 2 ester groups (-O-C(=O)-)
-    ester_pattern = Chem.MolFromSmarts("[C](=O)[OX2]")
+    # Look for exactly 2 ester groups (-O-C(=O)-) 
+    ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H0][#6]")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) != 2:
         return False, f"Found {len(ester_matches)} ester groups, need exactly 2"
 
-    # Check for at least two long carbon chains (fatty acids)
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]") 
-    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
-    if len(fatty_acid_matches) < 2:
-        return False, "Too few long carbon chains for fatty acids"
+    # Counting carbons to ensure reasonably long fatty acid chains
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 10: # Assuming a minimum combined carbon count for fatty acids
+        return False, "Too few carbons, likely not a diglyceride"
 
     return True, "Contains glycerol backbone with two fatty acid chains attached via ester bonds"
 
-## Test Cases (Examples provided)
-# Examples of diglyceride SMILES
+# Example Test Cases for the function
 smiles_examples = [
     "CCCCCCCCCCCC(=O)OCC(CO)OC(=O)CCCCCCC/C=C\\CCCCCCCC",  # 1-lauroyl-2-oleoylglycerol
     "O(C(=O)CCCCCCCCC/C=C\\C/C=C\\CCCCC)C[C@@H](O)COC(=O)CCC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCCC",  # DG(20:2n6/0:0/22:5n6)
