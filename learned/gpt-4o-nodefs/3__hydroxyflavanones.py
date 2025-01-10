@@ -22,15 +22,15 @@ def is_3__hydroxyflavanones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more comprehensive flavanone pattern, cautiously broadening scope
-    flavanone_structure = Chem.MolFromSmarts("C1=CC=C2C(=C1)CC=C(O2)C(=O)C")
+    # Flavanone structure: benzene ring attached to a chromane core
+    flavanone_pattern = Chem.MolFromSmarts("C1=CC=C2C(=C1)C(=O)CC2-O")
     
-    if not mol.HasSubstructMatch(flavanone_structure):
+    if not mol.HasSubstructMatch(flavanone_pattern):
         return False, "No flavanone backbone found"
 
-    # Define 3'-hydroxy substitution more flexibly
-    # Assume the traditional '3' position on one benzene ring for a hydroxy 
-    hydroxy_3prime_pattern = Chem.MolFromSmarts("c1c(O)cc(cc1)O")
+    # Define the 3'-hydroxy substitution more broadly
+    # By looking for the hydroxy group on a phenyl group that is part of a flavanone system
+    hydroxy_3prime_pattern = Chem.MolFromSmarts("c1cc(O)cc(c1)-C2=CC(O)=C(O2)")
     
     if not mol.HasSubstructMatch(hydroxy_3prime_pattern):
         return False, "No 3'-hydroxy substitution on phenyl ring found"
