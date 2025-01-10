@@ -5,8 +5,6 @@ Classifies: CHEBI:35179 2-oxo monocarboxylic acid anion
 Classifies: CHEBI:25450 2-oxo monocarboxylic acid anion
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_2_oxo_monocarboxylic_acid_anion(smiles: str):
     """
@@ -20,45 +18,40 @@ def is_2_oxo_monocarboxylic_acid_anion(smiles: str):
         bool: True if molecule is a 2-oxo monocarboxylic acid anion, False otherwise
         str: Reason for classification
     """
+
     # Parse the SMILES string into an RDKit molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for exactly one carboxylate group (-C(=O)[O-])
-    carboxylate_pattern = Chem.MolFromSmarts("[CX3](=O)[O-]")
+    # Check for carboxylate groups (-C(=O)[O-])
+    carboxylate_pattern = Chem.MolFromSmarts("[C](=O)[O-]")
     carboxylate_matches = mol.GetSubstructMatches(carboxylate_pattern)
-    num_carboxylate = len(carboxylate_matches)
-    if num_carboxylate != 1:
-        return False, f"Found {num_carboxylate} carboxylate groups, require exactly 1"
+    if not carboxylate_matches:
+        return False, "No carboxylate groups found"
 
-    # Get the index of the carboxylate carbon atom
-    carboxylate_C_idx = carboxylate_matches[0][0]
-    carboxylate_C = mol.GetAtomWithIdx(carboxylate_C_idx)
+    # For each carboxylate group, check for an oxo group at the alpha carbon
+    for match in carboxylate_matches:
+        carboxylate_C_idx = match[0]
+        carboxylate_C = mol.GetAtomWithIdx(carboxylate_C_idx)
 
-    # Find the alpha carbon (adjacent to the carboxylate carbon)
-    alpha_carbons = [nbr for nbr in carboxylate_C.GetNeighbors() if nbr.GetAtomicNum() == 6]
-    if len(alpha_carbons) == 0:
-        return False, "No alpha carbon adjacent to carboxylate group"
+        # Find alpha carbons (adjacent carbons)
+        alpha_carbons = [nbr for nbr in carboxylate_C.GetNeighbors() if nbr.GetAtomicNum() == 6]
+        if not alpha_carbons:
+            continue  # No alpha carbon, move to next carboxylate group
 
-    # Check if any alpha carbon has an oxo group (=O) attached
-    has_oxo_at_alpha = False
-    for alpha_C in alpha_carbons:
-        # Look for a double bond to oxygen on the alpha carbon
-        oxo_found = False
-        for bond in alpha_C.GetBonds():
-            neighbor = bond.GetOtherAtom(alpha_C)
-            if neighbor.GetAtomicNum() == 8 and bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-                oxo_found = True
-                break
-        if oxo_found:
-            has_oxo_at_alpha = True
-            break
+        for alpha_C in alpha_carbons:
+            # Check if alpha_C has a double bond to oxygen (oxo group)
+            oxo_found = False
+            for bond in alpha_C.GetBonds():
+                neighbor = bond.GetOtherAtom(alpha_C)
+                if neighbor.GetAtomicNum() == 8 and bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                    oxo_found = True
+                    break
+            if oxo_found:
+                return True, "Molecule is a 2-oxo monocarboxylic acid anion"
 
-    if not has_oxo_at_alpha:
-        return False, "No oxo group (=O) at the alpha carbon (2-position)"
-
-    return True, "Molecule is a 2-oxo monocarboxylic acid anion"
+    return False, "No alpha carbon with oxo group found adjacent to any carboxylate group"
 
 __metadata__ = {
     'chemical_class': {
@@ -80,9 +73,9 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
+    'attempt': 1,
+    'success': False,
+    'best': False,
     'error': '',
     'stdout': None,
     'num_true_positives': None,
