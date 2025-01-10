@@ -2,17 +2,17 @@
 Classifies: CHEBI:47016 tetrahydrofuranone
 """
 from rdkit import Chem
-from rdkit.Chem import rdchem
 
 def is_tetrahydrofuranone(smiles: str):
     """
     Determines if a molecule is a tetrahydrofuranone based on its SMILES string.
+    The molecule should have a five-membered lactone ring that includes an oxygen atom.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a tetrahydrofuranone derivative, False otherwise
+        bool: True if molecule is likely a tetrahydrofuranone derivative, False otherwise
         str: Reason for classification
     """
     
@@ -21,20 +21,25 @@ def is_tetrahydrofuranone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS pattern for tetrahydrofuranone
-    # This pattern matches a five-membered ring with one oxygen (tetrahydrofuran)
-    # containing a carbonyl group (=O), but allows for attached groups
-    tetrahydrofuranone_pattern1 = Chem.MolFromSmarts("C1COC(=O)C1")
-    tetrahydrofuranone_pattern2 = Chem.MolFromSmarts("C1C(=O)OCC1") # for variations
+    # Define more comprehensive SMARTS patterns for tetrahydrofuranone-like structures
+    # Include alpha-beta unsaturated structures, and variants supporting various substitutions
+    patterns = [Chem.MolFromSmarts(smarts) for smarts in [
+        "C1C(=O)OC=C1",     # Classical tetrahydrofuranone with double-bond adjacencies
+        "C1C(=O)OCC1",      # Saturated tetrahydrofuranone
+        "C1COC(=O)C=C1",    # Ensuring variations in connectivity
+        "C1COC(=O)CC1",     # Including more flexible lactones
+        "O1CC=C(=O)C1"      # Another isomer possibility with slight variance
+    ]]
 
-    # Check if the structure matches any of the tetrahydrofuranone patterns
-    if mol.HasSubstructMatch(tetrahydrofuranone_pattern1) or mol.HasSubstructMatch(tetrahydrofuranone_pattern2):
-        return True, "Contains a tetrahydrofuranone-like structure"
-    else:
-        return False, "Does not contain a tetrahydrofuranone-like structure"
+    # Check if the molecule matches any of the defined tetrahydrofuranone patterns
+    for pattern in patterns:
+        if mol.HasSubstructMatch(pattern):
+            return True, "Contains a tetrahydrofuranone-like structure"
+
+    return False, "Does not contain a tetrahydrofuranone-like structure"
 
 # Example usage
-# Test the function with a sample SMILES string of a known tetrahydrofuranone
+# Test the function with a sample SMILES string from known examples
 test_smiles = "CCCCCCCC1OC(=O)C(=C)C1C(O)=O"
 result, reason = is_tetrahydrofuranone(test_smiles)
 print(f"Is Tetrahydrofuranone: {result}, Reason: {reason}")
