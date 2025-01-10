@@ -2,44 +2,51 @@
 Classifies: CHEBI:18085 glycosaminoglycan
 """
 from rdkit import Chem
-from rdkit.Chem import rdchem
-from rdkit.Chem import Descriptors
+from rdkit.Chem import Descriptors, rdMolDescriptors
 
 def is_glycosaminoglycan(smiles: str):
     """
     Determines if a molecule is classified as a glycosaminoglycan based on its SMILES string.
     
-    Currently, this task is challenging to accurately implement due to the complexity
-    and variety of glycosaminoglycan structures.
-    
     Args:
         smiles (str): SMILES string of the molecule
     
     Returns:
-        bool, str: False and reason for classification impossibility or True otherwise
+        bool, str: True if molecule is likely a glycosaminoglycan, False otherwise
     """
     
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Placeholder implementation - actual identification of glycosaminoglycans
-    # involves checking for repeating disaccharide units, presence of amino sugars
-    # and uronic acids, and possibly sulfate attachments. This is complicated and
-    # requires extensive chemical knowledge often outside the scope of basic RDKit use.
-    
-    # Check for notable elements that might appear in GAGs (e.g., SO3 group, amino sugars)
-    # This check will assume the presence of any sulfur, nitrogen, and many oxygen atoms 
-    # may contribute to identifying polysaccharides and sulfates - simplistic approach
-    sulfur_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 16)
+    # Check for significant number of nitrogen atoms (amino component)
     nitrogen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
+    if nitrogen_count < 2:
+        return False, "Insufficient nitrogen atoms for typical glycosaminoglycan structure."
+
+    # Check for a significant number of oxygen atoms (suggesting polysaccharides)
     oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if oxygen_count < 8:
+        return False, "Insufficient oxygen atoms for typical polysaccharide structure."
 
-    # Assuming very simple logic where having large numbers imply complexity akin to polysaccharides
-    if sulfur_count >= 3 and nitrogen_count >= 2 and oxygen_count >= 8:
-        return True, "Structure suggests likely complex sugar with sulfate groups. However, detailed glycosaminoglycan patterns are not confirmed."
+    # Check for sulfur atoms (sulfate groups)
+    sulfur_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 16)
 
-    return False, "SMILES does not match patterns typically expected for glycosaminoglycans -> detailed pattern matching needed."
+    # Since GAGs generally are long chains, check the number of rotatable bonds
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 10:
+        return False, "Insufficient flexibility for a polymer structure"
 
-# Note: True/False decision here is naive; real glycosaminoglycan identification will require complex logic 
-# regarding specific polymer patterns and would normally be supported by additional domain-specific libraries or databases.
+    # Molecular weight typically higher due to the polysaccharide chain
+    mol_wt = Descriptors.ExactMolWt(mol)
+    if mol_wt < 400:
+        return False, "Molecular weight too low for a glycosaminoglycan."
+
+    reason = "The molecule has characteristics consistent with glycosaminoglycans: "
+    reason += f"Nitrogen atoms: {nitrogen_count}, Oxygen atoms: {oxygen_count}, "
+    reason += f"Sulfur atoms: {sulfur_count}, Molecular weight: {mol_wt:.2f}"
+
+    return True, reason
+
+# Note: This is still a heuristic approach and might not cover all specific characteristics 
+# and structural diversity of glycosaminoglycans.
