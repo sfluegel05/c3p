@@ -20,26 +20,24 @@ def is_UDP_sugar(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # SMARTS patterns for components of UDP-sugar
-    # Uracil pattern
-    uracil_pattern = Chem.MolFromSmarts("n1ccc2[nH]c(=O)n(C)c2=O1")
+    # Modified SMARTS patterns for components of UDP-sugar
+    # General Uracil-like moiety (simplifying to account for potential tautomeric forms)
+    uracil_pattern = Chem.MolFromSmarts("c1cc(=O)[nH]c(=O)n1") 
     
-    # Ribose with diphosphate linkage
-    diphosphate_ribose_pattern = Chem.MolFromSmarts("O[C@H]1[C@@H](OP(O)(=O)OP(O)(=O)O)C(O)C(O)C1O")
-
-    # Sugar moiety connected through glycosidic bond
-    sugar_glycosidic_pattern = Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H]1O")
-
-    # Check for uracil presence
+    # Ribose ring with possible diphosphate attachment
+    diphosphate_ribose_pattern = Chem.MolFromSmarts("O[P](=O)(O)O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H]1O") 
+    
+    # Look for uracil presence (allow flexibility for tautomers and variations in representation)
     if not mol.HasSubstructMatch(uracil_pattern):
         return False, "No uracil moiety found"
 
-    # Check for diphosphate linkage with ribose
+    # Check for diphosphate linkage which may include or exclude a specific ribose configuration
     if not mol.HasSubstructMatch(diphosphate_ribose_pattern):
-        return False, "No diphosphate ribose linkage found"
-
-    # Check for sugar moiety linked via glycosidic bond
-    if not mol.HasSubstructMatch(sugar_glycosidic_pattern):
-        return False, "No sugar moiety linked via glycosidic bond"
+        return False, "No compatible diphosphate ribose linkage found"
     
-    return True, "Contains uracil, diphosphate ribose linkage, and sugar moiety characteristic of UDP-sugars"
+    # General sugar moiety linked via glycosidic bond, now including variability for sugar loop size
+    sugar_glycosidic_pattern = Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@@H](O)[C@H](O*)[C@@H]1O") 
+    if not mol.HasSubstructMatch(sugar_glycosidic_pattern):
+        return False, "No suitable sugar moiety linked via glycosidic bond"
+
+    return True, "Contains uracil, compatible diphosphate ribose linkage, and appropriate sugar moiety characteristic of UDP-sugars"
