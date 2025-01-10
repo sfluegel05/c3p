@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_galactosylceramide(smiles: str):
     """
     Determines if a molecule is a galactosylceramide based on its SMILES string.
-    A galactosylceramide is defined by a galactose head group and a long-chain
+    A galactosylceramide includes a galactose head group and a long-chain
     ceramide backbone.
 
     Args:
@@ -22,25 +22,29 @@ def is_galactosylceramide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Recognize beta-D-galactose moiety pattern
-    galactose_pattern = Chem.MolFromSmarts("OC[C@@H]1O[C@H](O)[C@H](O)[C@@H](CO)C1O")
+    # Recognize galactose moiety pattern (generalized to match more cases)
+    galactose_pattern = Chem.MolFromSmarts("OC[C@H]1OC(O)C(O)C(O)C1")  # Less specific to capture more variants
     if not mol.HasSubstructMatch(galactose_pattern):
-        return False, "No beta-D-galactose residue found"
+        return False, "No galactose residue found"
 
-    # Recognize amide linkage pattern (C(=O)N)
+    # Look for amide (C(=O)N) linkage pattern
     amide_pattern = Chem.MolFromSmarts("C(=O)N")
     if not mol.HasSubstructMatch(amide_pattern):
         return False, "No amide linkage found"
     
-    # Detect a long-chain sphingosine backbone: [NH](C1CCCCC1)([C@H](O))
-    # Typically a long carbon chain with some functionalization
-    sphingosine_pattern = Chem.MolFromSmarts("*-N-*-[C@H](O)-[C@H](O)-C=C") 
+    # Detect a long-chain backbone: generalized sphingosine detection
+    sphingosine_pattern = Chem.MolFromSmarts("[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-N-[C@H](O)-C=C")  # Looking for a typical backbone
     if not mol.HasSubstructMatch(sphingosine_pattern):
         return False, "Sphingosine-like backbone not detected"
 
-    # Ensuring no phosphate groups (filter them out)
+    # Ensuring absence of phosphate groups (filter them out)
     phosphate_pattern = Chem.MolFromSmarts("OP(=O)(O)O")
     if mol.HasSubstructMatch(phosphate_pattern):
         return False, "Contains phosphate group, not a galactosylceramide"
+    
+    # Exclude non-standard linkages and ensure sulfonate handling if necessary
+    sulfonate_pattern = Chem.MolFromSmarts("S(=O)(=O)O")
+    if mol.HasSubstructMatch(sulfonate_pattern):
+        return False, "Contains unexpected sulfonate group"
 
-    return True, "Contains beta-D-galactose, amide linkage, and sphingosine backbone"
+    return True, "Contains galactose, amide linkage, and sphingosine backbone"
