@@ -31,8 +31,8 @@ def is_phosphatidylethanolamine(smiles: str):
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
         
-    # Look for phosphate group attached to glycerol (more flexible pattern to account for different protonation states)
-    phosphate_pattern = Chem.MolFromSmarts("[OX2,OX1-]P(=O)([OX2,OX1-])[OX2,OX1-]")
+    # Look for phosphate group attached to glycerol
+    phosphate_pattern = Chem.MolFromSmarts("[OX2]P(=O)([OX2])[OX2]")
     phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
     if len(phosphate_matches) == 0:
         return False, "No phosphate group found"
@@ -50,28 +50,20 @@ def is_phosphatidylethanolamine(smiles: str):
     if not phosphate_attached:
         return False, "Phosphate group not attached to glycerol backbone"
 
-    # More flexible ethanolamine pattern to catch different protonation states and connectivity
-    ethanolamine_pattern = Chem.MolFromSmarts("[NX3,nX3+][CH2X4][OX2,oX1-]?")
+    # Look for ethanolamine group attached to phosphate
+    ethanolamine_pattern = Chem.MolFromSmarts("[NX3][CH2X4][OX2]")
     ethanolamine_matches = mol.GetSubstructMatches(ethanolamine_pattern)
     if len(ethanolamine_matches) == 0:
         return False, "No ethanolamine group found"
 
-    # Check if ethanolamine is attached to phosphate (directly or through oxygen)
+    # Check if ethanolamine is attached to phosphate
     ethanolamine_attached = False
     for match in ethanolamine_matches:
         ethanolamine_atom = mol.GetAtomWithIdx(match[0])
-        # Check direct P-N bond or P-O-C-N connection
         for neighbor in ethanolamine_atom.GetNeighbors():
             if neighbor.GetSymbol() == 'P':
                 ethanolamine_attached = True
                 break
-            elif neighbor.GetSymbol() == 'O':
-                for o_neighbor in neighbor.GetNeighbors():
-                    if o_neighbor.GetSymbol() == 'P':
-                        ethanolamine_attached = True
-                        break
-                if ethanolamine_attached:
-                    break
         if ethanolamine_attached:
             break
     if not ethanolamine_attached:
