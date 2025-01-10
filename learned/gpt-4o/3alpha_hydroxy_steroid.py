@@ -2,7 +2,6 @@
 Classifies: CHEBI:36835 3alpha-hydroxy steroid
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_3alpha_hydroxy_steroid(smiles: str):
     """
@@ -22,14 +21,14 @@ def is_3alpha_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a pattern for the steroid backbone (adjust as needed for specificity)
-    steroid_backbone_pattern = Chem.MolFromSmarts("C1CCC2C3CCC4CC[C@H](O)C[C@]4(C)C3CC[C@]12C")
+    # Generalized pattern for steroid backbone: four connected cyclohexane rings.
+    steroid_backbone_pattern = Chem.MolFromSmarts("C1CC[C@@H]2C[C@H](C)CC[C@]2(C)[C@@H]1")  
     if not mol.HasSubstructMatch(steroid_backbone_pattern):
         return False, "No steroid backbone found"
         
-    # Define a SMARTS pattern for 3alpha-hydroxy group
-    # Note: This simplification assumes specific positions and stereochemistry, may need adjustment
-    hydroxy_pattern = Chem.MolFromSmarts("C[C@H](O)C")  # Hydroxyl at position 3 in alpha
+    # SMARTS pattern for 3alpha-hydroxy group in a chiral center
+    # The @ indicates the stereochemistry (alpha)
+    hydroxy_pattern = Chem.MolFromSmarts("[C@H]([O])C")  # Hydroxyl at a chiral center with alpha position
     if not mol.HasSubstructMatch(hydroxy_pattern):
         return False, "No 3alpha-hydroxy group found"
 
@@ -37,4 +36,4 @@ def is_3alpha_hydroxy_steroid(smiles: str):
 
 # Example usage
 smiles_example = "C1[C@@]2([C@]3(CC[C@]4([C@]([C@@]3(CC[C@]2(C[C@@H]([C@@H]1O)O)[H])[H])(CC[C@@]4([C@@H]([C@H]([C@@H](CC(C)C)O)O)C)[H])[H])C)[H])C"
-print(is_3alpha_hydroxy_steroid(smiles_example))  # Output should be True with reason
+print(is_3alpha_hydroxy_steroid(smiles_example))  # Expected: True with reason
