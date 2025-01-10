@@ -33,7 +33,10 @@ def is_ceramide(smiles: str):
         # Try alternative pattern with double bonds
         sphingoid_pattern = Chem.MolFromSmarts("[CH2X4][CHX4]/[CHX4]=[CHX4]/[CHX4]([OH])[NH]")
         if not mol.HasSubstructMatch(sphingoid_pattern):
-            return False, "No sphingoid base found"
+            # Try another alternative pattern with additional hydroxyl groups
+            sphingoid_pattern = Chem.MolFromSmarts("[CH2X4][CHX4]([OH])[CHX4]([OH])[NH]")
+            if not mol.HasSubstructMatch(sphingoid_pattern):
+                return False, "No sphingoid base found"
 
     # Look for amide group (-C(=O)-N-)
     amide_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[NX3]")
