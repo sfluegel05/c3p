@@ -7,8 +7,9 @@ def is_quinic_acid(smiles: str):
     """
     Determines if a molecule is quinic acid or its derivative based on its SMILES string.
     
-    Quinic acid is a cyclitol carboxylic acid with specific hydroxyl and carboxylic acid groups on a cyclohexane ring.
-    The molecule may have additional groups like caffeoyl or feruloyl.
+    Quinic acid is a cyclitol carboxylic acid derivative characterized by a cyclohexane ring
+    with multiple hydroxyl groups and a carboxylic acid group.
+    The molecule may have additional ester-linked groups like caffeoyl or feruloyl.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,27 +24,30 @@ def is_quinic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more generalized SMARTS pattern for cyclohexane with hydroxyl and carboxylic acid groups
-    quinic_acid_pattern = Chem.MolFromSmarts("[C@H]1(O)[C@@H](O)C(O)C(O)[C@@H](O)C1C(=O)O")
+    # More generalized pattern for quinic acid backbone
+    quinic_acid_pattern = Chem.MolFromSmarts("C1(CC(C(C(C1O)O)O)O)C(=O)O")
+    
+    # Look for stereochemistry-independent quinic acid pattern
     if not mol.HasSubstructMatch(quinic_acid_pattern):
         return False, "Missing quinic acid backbone structure"
 
-    # Look for modification patterns like caffeoyl or feruloyl
+    # Patterns for common ester-linked modifications
     caffeoyl_pattern = Chem.MolFromSmarts("c1ccc(O)c(O)c1/C=C/C(=O)O")
     feruloyl_pattern = Chem.MolFromSmarts("c1cc(O)c(OC)cc1/C=C/C(=O)O")
+    
+    # General ester pattern linked to cyclohexane ring
+    general_ester_pattern = Chem.MolFromSmarts("C(=O)O[C@H]1C(O)C(O)C(O)C(C1)O")
 
-    caffeoyl_matches = mol.GetSubstructMatches(caffeoyl_pattern)
-    feruloyl_matches = mol.GetSubstructMatches(feruloyl_pattern)
+    caffeoyl_matches = mol.HasSubstructMatch(caffeoyl_pattern)
+    feruloyl_matches = mol.HasSubstructMatch(feruloyl_pattern)
+    ester_matches = mol.HasSubstructMatch(general_ester_pattern)
 
-    if len(caffeoyl_matches) > 0:
+    if caffeoyl_matches:
         return True, "Quinic acid derivative with caffeoyl group(s)"
-    if len(feruloyl_matches) > 0:
+    if feruloyl_matches:
         return True, "Quinic acid derivative with feruloyl group(s)"
-
-    # Check for other common ester linkages using general patterns
-    ester_pattern = Chem.MolFromSmarts("C(=O)O[C@H]1C([C@@H](O)C(=O))C(O)C[C@H]1O")
-    if mol.HasSubstructMatch(ester_pattern):
+    if ester_matches:
         return True, "Quinic acid derivative with esterified oxy groups"
 
-    # If nothing additional is matched, assume it's a form of base quinic acid
-    return True, "Quinic acid with no recognized additional groups"
+    # Default to basic quinic acid if only backbone is present
+    return True, "Base quinic acid present"
