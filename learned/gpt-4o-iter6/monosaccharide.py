@@ -29,26 +29,23 @@ def is_monosaccharide(smiles: str):
     if c_count < 3:
         return False, "Too few carbon atoms"
 
-    # Check for hydroxyl groups (monosaccharides usually have several -OH groups)
+    # Check for at least three hydroxyl groups (monosaccharides typically have multiple -OH groups)
     hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
     hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    if len(hydroxyl_matches) < 2:
-        return False, "Less than 2 hydroxyl groups"
+    if len(hydroxyl_matches) < 3:
+        return False, "Less than 3 hydroxyl groups"
 
-    # Detect ring structures (capture furanose, pyranose rings, etc.)
-    furanose_pattern = Chem.MolFromSmarts("O1[C@@H]([*])C([*])O[*]1")
+    # Detect cyclic structures and presence of carbonyl
+    furanose_pattern = Chem.MolFromSmarts("O1[C@@H]([*])[C@@H]([*])O[C@H]1")
     pyranose_pattern = Chem.MolFromSmarts("O1[C@H]([*])[C@H]([*])O[C@@H]([*])O1")
-    has_ring = mol.HasSubstructMatch(furanose_pattern) or mol.HasSubstructMatch(pyranose_pattern)
-
-    # Verify presence of either a linear carbonyl group or a ring
     carbonyl_pattern = Chem.MolFromSmarts("[CX3]=[OX1]")
-    if not mol.HasSubstructMatch(carbonyl_pattern) and not has_ring:
-        return False, "No carbonyl or cyclic structure indicative of monosaccharide"
+
+    if not any(mol.HasSubstructMatch(p) for p in [furanose_pattern, pyranose_pattern, carbonyl_pattern]):
+        return False, "No indicative cyclic structure or carbonyl found for monosaccharide"
 
     # Ensure no glycosidic connections
-    # Check for any potential ether linkages involving anomeric carbons
-    ether_linkage_pattern = Chem.MolFromSmarts("[OD2]([C@H]1)[*]")
-    if mol.HasSubstructMatch(ether_linkage_pattern):
-        return False, "Contains glycosidic connection"
+    anomeric_carbon_pattern = Chem.MolFromSmarts("[C@@H]1O[C@H](OC=*1)[*]")
+    if mol.HasSubstructMatch(anomeric_carbon_pattern):
+        return False, "Contains glycosidic connections"
 
-    return True, "Matches structure of a monosaccharide with polyhydroxyl groups and potentially hidden cyclic carbonyl group"
+    return True, "Matches structure of a monosaccharide with polyhydroxyl groups and cyclic or linear carbonyl group"
