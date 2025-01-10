@@ -2,7 +2,6 @@
 Classifies: CHEBI:33838 nucleoside
 """
 from rdkit import Chem
-from rdkit.Chem import MolFromSmiles
 
 def is_nucleoside(smiles: str):
     """
@@ -18,35 +17,34 @@ def is_nucleoside(smiles: str):
     """
     
     # Parse SMILES
-    mol = MolFromSmiles(smiles)
+    mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS patterns for identifying nucleobases
-    purine_pattern = Chem.MolFromSmarts('n1(cnc2c1ncnc2)n')
-    pyrimidine_pattern = Chem.MolFromSmarts('c1c[nH]c(=O)[nH]c1=O')
+    # Generalized SMARTS patterns for identifying nucleobases including common modifications
+    purine_pattern = Chem.MolFromSmarts('[nH]1cnc2[nH]cnc12')
+    pyrimidine_pattern = Chem.MolFromSmarts('[nH]1c([nH])nc(=O)[nH]c1=O')
 
     # Check for presence of nucleobase
     has_purine = mol.HasSubstructMatch(purine_pattern)
     has_pyrimidine = mol.HasSubstructMatch(pyrimidine_pattern)
     if not (has_purine or has_pyrimidine):
-        return False, "No nucleobase found"
+        return False, "No recognizable nucleobase pattern found"
 
-    # SMARTS pattern for ribose or deoxyribose
+    # Generalized SMARTS pattern for ribose or deoxyribose considering possible modifications
     ribose_pattern = Chem.MolFromSmarts('O[C@@H]1[C@H](O)[C@@H](O)[C@H](CO)O1')
-    deoxyribose_pattern = Chem.MolFromSmarts('O[C@@H]1[C@H](O)[C@H](O)[C@H](CO)O1')
+    deoxyribose_pattern = Chem.MolFromSmarts('O[C@@H]1[C@H](O)[C@@H](O)[C@@H](CO)O1')
 
     # Check for sugar moiety
     has_ribose = mol.HasSubstructMatch(ribose_pattern)
     has_deoxyribose = mol.HasSubstructMatch(deoxyribose_pattern)
     if not (has_ribose or has_deoxyribose):
-        return False, "No ribose or deoxyribose found"
-    
-    # Check for glycosidic bond connectivity
-    # Example glycosidic bond pattern check (simplified for illustration)
-    glycosidic_bond_pattern = Chem.MolFromSmarts('n-C-O')
+        return False, "No recognizable ribose or deoxyribose pattern found"
+
+    # Check for glycosidic bond connectivity using a more precise SMARTS pattern 
+    glycosidic_bond_pattern = Chem.MolFromSmarts('n1c-O-[C@H]1')
     if not mol.HasSubstructMatch(glycosidic_bond_pattern):
-        return False, "No glycosidic bond between sugar and base"
+        return False, "No proper glycosidic bond between sugar and base"
 
     return True, "Contains nucleobase and sugar moiety with appropriate glycosidic bond"
 
@@ -54,7 +52,7 @@ def is_nucleoside(smiles: str):
 # Metadata and configuration
 __metadata__ = {
     'chemical_class': {
-        'id': 'None',  # Replace with actual ID if available
+        'id': 'None',
         'name': 'nucleoside',
         'definition': 'Nucleosides are compounds formed by linking a nucleobase to a sugar moiety through a glycosidic bond.',
     },
