@@ -2,6 +2,7 @@
 Classifies: CHEBI:67142 nucleobase analogue
 """
 from rdkit import Chem
+from rdkit.Chem import Draw
 
 def is_nucleobase_analogue(smiles: str):
     """
@@ -14,28 +15,31 @@ def is_nucleobase_analogue(smiles: str):
         bool: True if molecule is a nucleobase analogue, False otherwise
         str: Reason for classification
     """
-    # Parse the SMILES string into an RDKit molecule
+
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define updated patterns for nucleobase analogues
+    # Expand definition of core purine and pyrimidine structures to include analogues
     nucleobase_analogue_patterns = [
-        "c1ncnc2[nH]ncnc12",  # Adenine/purine core
-        "c1nc[nH]c(=O)n1",  # Uracil/pyrimidine core
-        "c1c[nH]c[nH]c1=O",  # Base structure of uracil and variants
-        "c1nc(=O)[nH]cc1",  # Cytosine and its derivatives
-        "n1c[nH]cnc1",  # Imidazole-containing ring systems
-        "c1cn(cn1)[nH]c=O",  # Modifications on purine system
-        "c1[nH]c(=O)nc2[nH]cnc12",  # Extended purine modifications
-        "n1cnc2c1ncnc2O",  # Hydroxyl modifications on purines
-        "c1c[nH]ncn1",  # Adapts to modifications around the imidazole and pyrimidine rings
+        "c1nncnc1", # Generic pyrimidine
+        "c1n[nH]c[nH]c1", # Modified pyrimidine core
+        "c1c[nH]c[nH]c1=O", # Pyrimidine with Oxygen
+        "n1cnc2c(ncnc12)" # Generic purine
     ]
-
-    # Check for substructure matches amongst defined patterns
+    
     for pattern in nucleobase_analogue_patterns:
-        substruct = Chem.MolFromSmarts(pattern)
-        if mol.HasSubstructMatch(substruct):
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
             return True, f"Structure matches nucleobase analogue pattern: {pattern}"
+
+    # Enhanced functional group recognition may use RDKit molecular properties:
+    # - Molecular weight constraints
+    # - Number of hydrogen bond donors/acceptors
+    # - Specific molecular fingerprints identifying nucleobase-like moieties
+
+    # Finally check for halogen substitutions common in nucleobase analogues
+    if mol.HasSubstructMatch(Chem.MolFromSmarts("[F,Cl,Br,I]")):
+        return True, "Contains halogen substitution, common in nucleobase analogues"
     
     return False, "Does not match patterns or typical features of nucleobase analogues"
