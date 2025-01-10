@@ -26,61 +26,77 @@ def is_mineral_nutrient(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Essential mineral elements (including trace elements)
-    essential_elements = {
-        'Ca', 'Mg', 'K', 'Na', 'Fe', 'Zn', 'Cu', 'Mn', 'I', 'Se', 'Mo',
-        'Cr', 'Co', 'F', 'P', 'Cl', 'S', 'Al', 'Ba', 'Sr', 'La', 'Cs',
-        'Sb', 'Pd'  # Including some less common but potentially beneficial elements
+    # Essential mineral nutrient cations
+    essential_cations = {
+        'Ca', 'Mg', 'K', 'Na', 'Fe', 'Zn', 'Cu', 'Mn',  # Major and trace minerals
+        'Ba', 'Sr', 'La', 'Cs', 'Al',  # Less common but nutritionally relevant
+        'Pd', 'Sb'  # Special cases
     }
     
-    # Common anions in mineral nutrients
-    common_anions = {'Cl', 'F', 'P', 'S', 'O', 'C', 'N', 'Si'}
+    # Common nutritionally relevant anions
+    common_anions = {
+        'Cl', 'F', 'P', 'S', 'Si',  # Inorganic
+        'C', 'O'  # For carbonates, phosphates, etc.
+    }
 
-    # Get all elements present in the molecule
+    # Get all elements and charges present
     elements = set()
+    has_cation = False
+    has_anion = False
     for atom in mol.GetAtoms():
         elements.add(atom.GetSymbol())
+        if atom.GetFormalCharge() > 0:
+            has_cation = True
+        elif atom.GetFormalCharge() < 0:
+            has_anion = True
 
-    # Check if at least one essential mineral element is present
-    essential_elements_found = elements.intersection(essential_elements)
-    if not essential_elements_found:
-        return False, "No essential mineral elements found"
+    # Check if at least one essential mineral cation is present
+    essential_cations_found = elements.intersection(essential_cations)
+    if not essential_cations_found:
+        return False, "No essential mineral cations found"
 
-    # Count carbon atoms - too many carbons suggest organic compound
+    # Verify ionic nature for most compounds
+    if not (has_cation or has_anion) and not any(x in elements for x in ['La', 'Sb']):
+        return False, "Not an ionic compound"
+
+    # Count atoms to identify molecular complexity
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'C')
-    if carbon_count > 3:  # Allow simple carbonates, acetates, etc.
-        return False, "Too many carbon atoms for a mineral nutrient"
-
-    # Check for complex organic structures
+    oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'O')
+    
+    # Allow higher carbon counts only for specific nutritional organic salts
+    if carbon_count > 20:  # Allow for stearates and similar long-chain salts
+        if not (has_cation and has_anion and oxygen_count >= 2):
+            return False, "Organic compound too complex for mineral nutrient"
+    
+    # Check for complex structures
     ring_count = rdMolDescriptors.CalcNumRings(mol)
     if ring_count > 0:
         return False, "Contains rings - too complex for mineral nutrient"
 
-    # Look for ionic species or simple covalent compounds
-    has_ionic_species = False
-    for atom in mol.GetAtoms():
-        if atom.GetFormalCharge() != 0:
-            has_ionic_species = True
-            break
-    
-    # Check if remaining elements are common anions
-    non_essential_elements = elements - essential_elements
+    # Check remaining elements are acceptable anions
+    non_essential_elements = elements - essential_cations
     if not non_essential_elements.issubset(common_anions):
         unexpected_elements = non_essential_elements - common_anions
         return False, f"Contains unexpected elements: {unexpected_elements}"
 
-    # Additional checks for molecular complexity
-    if rdMolDescriptors.CalcNumRotatableBonds(mol) > 5:
-        return False, "Structure too complex for mineral nutrient"
+    # Specific exclusions for toxic or non-nutritive forms
+    if 'Se' in elements and carbon_count > 0:  # Exclude organic selenium compounds
+        return False, "Organic selenium compounds not considered mineral nutrients"
+    
+    if 'S' in elements and not has_cation:  # Exclude pure sulfur compounds
+        return False, "Pure sulfur compounds not considered mineral nutrients"
 
     # Success case - construct reason string
     reason_parts = []
-    if has_ionic_species:
+    if has_cation or has_anion:
         reason_parts.append("ionic compound")
-    reason_parts.append(f"contains essential elements: {', '.join(essential_elements_found)}")
-    if carbon_count > 0:
+    reason_parts.append(f"contains essential elements: {', '.join(essential_cations_found)}")
+    
+    if carbon_count > 3:
+        reason_parts.append("nutritionally relevant organic salt")
+    elif carbon_count > 0:
         reason_parts.append("simple inorganic/organic salt")
     else:
-        reason_parts.append("inorganic compound")
+        reason_parts.append("inorganic nutrient")
     
     return True, " - ".join(reason_parts)
