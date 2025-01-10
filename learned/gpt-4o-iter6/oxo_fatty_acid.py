@@ -27,27 +27,27 @@ def is_oxo_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(carboxylic_pattern):
         return False, "No carboxylic acid group found"
     
-    # Look for aldehyde or ketone groups (excluding those within amide, ester, and acids)
-    # Note: Redefining aldehyde/ketone SMARTS to capture more diverse cases, including aldehyde RCHO pattern
-    aldehyde_ketone_pattern = Chem.MolFromSmarts("[CX3](=O)[#6;!R]")  # Regular ketone
-    aldehyde_ketone_ring_pattern = Chem.MolFromSmarts("[CX3]=[O]")  # Can be adapted to specific constraints
+    # Look for distinct aldehyde (R-CHO) and ketone (R2C=O) groups
+    aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)[CX4,CH2,CH3]")  # Aldehyde R-CHO
+    ketone_pattern = Chem.MolFromSmarts("[CX3](=O)[CX4]")  # Ketone R2C=O
+    
+    aldehyde_matches = mol.GetSubstructMatches(aldehyde_pattern)
+    ketone_matches = mol.GetSubstructMatches(ketone_pattern)
 
-    # Exclude carboxylic group matches
-    aldehyde_ketone_matches = mol.GetSubstructMatches(aldehyde_ketone_pattern)
-    aldehyde_ketone_ring_matches = mol.GetSubstructMatches(aldehyde_ketone_ring_pattern)
-
+    # Ensure those matches are not part of carboxylic acids
     carboxylic_matches = mol.GetSubstructMatches(carboxylic_pattern)
     carboxylic_atoms = {idx for match in carboxylic_matches for idx in match}
-    effective_carbonyls = [
-        match for match in aldehyde_ketone_matches + aldehyde_ketone_ring_matches 
+    
+    # Identify effective oxo groups, excluding carboxyl carbon and oxygen
+    effective_oxo_groups = [
+        match for match in aldehyde_matches + ketone_matches 
         if not set(match).intersection(carboxylic_atoms)
     ]
 
-    # Check for at least one non-carboxylic ketone or aldehyde group
-    if not effective_carbonyls:
+    if not effective_oxo_groups:
         return False, "No distinct ketone or aldehyde group found"
 
-    # Allow oxo fatty acids of various lengths
+    # Check the length of the carbon chain to confirm fatty acid nature
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if c_count < 5:
         return False, "Not enough carbons for a fatty acid"
