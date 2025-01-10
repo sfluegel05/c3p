@@ -22,35 +22,35 @@ def is_withanolide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Potential steroid core - typically (6-6-6-5) rings but with more flexibility and rearrangements
+    # Expanded steroid core patterns to include more diverse arrangements
     steroid_core_patterns = [
-        # A more flexible pattern that accounts for different steroid core arrangements
-        Chem.MolFromSmarts("C1CCC2C3CCC4[C,C](C)C[C,c]4C3CCC2C1"),
-        Chem.MolFromSmarts("C1=CC2CCC3[C,C](C)C[C,c]3C2CCC1"), # other plausible ring arrangements
+        Chem.MolFromSmarts("C1CC2=C(C3CC[C@@H]4C=C[C@H]4[C@@H]3C2)C=CC=C1"),  # 6-6-6-5 with conjugations
+        Chem.MolFromSmarts("C1CCC2C3CCC4(C)C=CC4C3CC2C1C"),                 # Common steroid nucleus
     ]
     
     # Check if any steroid core pattern is present
     if not any(mol.HasSubstructMatch(pattern) for pattern in steroid_core_patterns):
         return False, "No valid steroid core structure found"
     
-    # Ensure presence of lactone ring
+    # Flexible lactone recognition
     lactone_patterns = [
-        Chem.MolFromSmarts("O=C1OC=C[C,C]1"),   # 5-membered lactone ring
-        Chem.MolFromSmarts("O=C2C=C1C=CC=C1C=C2"), # other plausible lactone formations        
+        Chem.MolFromSmarts("O=C1O[C@@H]1"),            # 3 to 7-member lactone configurations
+        Chem.MolFromSmarts("O=C1COC=C1"),              # possibility of substitutions
     ]
     
-    # Check for any lactone pattern
+    # Check for lactone presence
     if not any(mol.HasSubstructMatch(pattern) for pattern in lactone_patterns):
         return False, "No lactone ring found"
     
-    # Ensure sufficient number of carbons, typical of a C28 steroid
+    # Count total carbons
     carbon_count = sum(atom.GetAtomicNum() == 6 for atom in mol.GetAtoms())
-    if carbon_count < 25 or carbon_count > 32:
-        return False, f"Molecule has {carbon_count} carbons, expected around 28"
+    if not (26 <= carbon_count <= 30):
+        return False, f"Molecule has {carbon_count} carbons, outside expected range for withanolides"
     
-    # Known functionalities like hydroxyl groups (OH)
+    # Presence of hydroxyl groups matching common withanolide substituent
     hydroxyl_pattern = Chem.MolFromSmarts("[CX4H1][OH]")
     if not mol.HasSubstructMatch(hydroxyl_pattern):
-        return False, "No hydroxyl group found, typically often present in withanolides"
-    
+        return False, "No hydroxyl group found"
+
+    # Return True if all conditions hold
     return True, "The molecule contains key features of a withanolide"
