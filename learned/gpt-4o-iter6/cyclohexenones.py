@@ -12,7 +12,7 @@ def is_cyclohexenones(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if the molecule is a cyclohexenone, False otherwise
+        bool: True if molecule is a cyclohexenone, False otherwise
         str: Reason for classification
     """
     
@@ -21,18 +21,11 @@ def is_cyclohexenones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # SMARTS pattern for cyclohexenone structure: Six-membered cycloalkenone with flexibility in substituents
-    cyclohexenone_pattern = Chem.MolFromSmarts("C1=CC(=O)C[CH2][CH2]1")
+    # Define a SMARTS pattern for a six-membered ring with one double bond and a ketone group
+    cyclohexenone_pattern = Chem.MolFromSmarts("C1=CC(=O)CCC1")
     
     # Check for the cyclohexenone pattern
-    if mol.HasSubstructMatch(cyclohexenone_pattern):
-        return True, "Cyclohexenone structure identified in the molecule"
+    if not mol.HasSubstructMatch(cyclohexenone_pattern):
+        return False, "No cyclohexenone structure found"
     
-    # Alternative SMARTS with relaxed structure to capture missed configurations
-    alt_pattern = Chem.MolFromSmarts("C1=C(C)CC(=O)C1")  # Accommodates substitutions at any carbon
-    
-    # Check for the alternative cyclohexenone pattern
-    if mol.HasSubstructMatch(alt_pattern):
-        return True, "Cyclohexenone structure identified in the molecule (alternative pattern)"
-    
-    return False, "No cyclohexenone structure found"
+    return True, "Cyclohexenone structure identified with appropriate ring and ketone"
