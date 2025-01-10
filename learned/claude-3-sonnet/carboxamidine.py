@@ -23,45 +23,55 @@ def is_carboxamidine(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Basic carboxamidine pattern: carbon with double bond to N and single bond to N
-    # [C;!$(C=O)] ensures we don't match amides
-    # [$([NX2]=[CX3]);!$(N=C=N)] ensures we match C=N but not N=C=N
-    # [NX3;!$(NC=O)] ensures we match C-N but not amide N
-    pattern = Chem.MolFromSmarts("[C;!$(C=O)]([#6,#1,N])([NX3;!$(NC=O)])=[$([NX2]=[CX3]);!$(N=C=N)]")
-    
-    # Alternative pattern for cases where N order might be swapped
-    pattern2 = Chem.MolFromSmarts("[C;!$(C=O)]([#6,#1,N])(=[$([NX2]=[CX3]);!$(N=C=N)])[NX3;!$(NC=O)]")
-    
-    # Check for matches
+
+    # More specific carboxamidine pattern:
+    # [CX3] - sp2 carbon
+    # [NX2] - sp2 nitrogen (double bond)
+    # [NX3] - sp3 nitrogen (single bond)
+    # !$([C]=[O,S,P]) - not carbonyl, thiocarbonyl, or phosphorus
+    # !$(C=N[N,O,S]) - not hydrazone, oxime, or thiohydrazone
+    # !$(C([NX3])[NX3][NX3]) - not guanidine
+    pattern = Chem.MolFromSmarts("""
+        [CX3;!$([C]=[O,S,P]);!$(C=N[N,O,S]);!$(C([NX3])[NX3][NX3])]
+        (
+            [#6,#1;!$(C=N),!$(C=O)]
+        )
+        (
+            [NX3;!$(N(C=O));!$(N(N=*));!$(N(C=N)[#7,#8,#16])]
+        )
+        =[NX2;!$(N=CN=*);!$(N=CC=O);!$(N=CN([#7,#8,#16]))]
+    """)
+
+    # Find matches
     matches = mol.GetSubstructMatches(pattern)
-    matches2 = mol.GetSubstructMatches(pattern2)
-    all_matches = matches + matches2
     
-    if not all_matches:
+    if not matches:
         return False, "No carboxamidine group found"
     
-    # Additional check to exclude guanidine (N=C(N)N) pattern
-    guanidine_pattern = Chem.MolFromSmarts("[NX3][CX3](=[NX2])[NX3]")
-    guanidine_matches = mol.GetSubstructMatches(guanidine_pattern)
-    
-    # If all matches are part of guanidine groups, it's not a carboxamidine
-    non_guanidine_matches = False
-    for match in all_matches:
+    # Additional checks for problematic cases
+    for match in matches:
         carbon_idx = match[0]
-        is_guanidine = False
-        for g_match in guanidine_matches:
-            if carbon_idx in g_match:
-                is_guanidine = True
-                break
-        if not is_guanidine:
-            non_guanidine_matches = True
-            break
-    
-    if not non_guanidine_matches and guanidine_matches:
-        return False, "Contains guanidine but not carboxamidine group"
         
-    # Count number of unique carboxamidine groups
-    unique_carbons = set(match[0] for match in all_matches)
+        # Get all atoms connected to the carbon
+        neighbors = mol.GetAtomWithIdx(carbon_idx).GetNeighbors()
+        
+        # Check if part of problematic cyclic structures
+        ring_info = mol.GetRingInfo()
+        if ring_info.IsAtomInRingOfSize(carbon_idx, 5):
+            ring_atoms = set()
+            for ring in ring_info.AtomRings():
+                if carbon_idx in ring:
+                    ring_atoms.update(ring)
+            
+            # Check if both nitrogens are in same 5-membered ring
+            n_count = 0
+            for n_idx in [match[2], match[3]]:  # indices of N atoms
+                if n_idx in ring_atoms:
+                    n_count += 1
+            if n_count == 2:
+                continue  # Skip this match as it's likely a cyclic imine
     
-    return True, f"Contains {len(unique_carbons)} carboxamidine group(s)"
+        # Valid carboxamidine found
+        return True, f"Contains carboxamidine group"
+    
+    return False, "No valid carboxamidine group found"
