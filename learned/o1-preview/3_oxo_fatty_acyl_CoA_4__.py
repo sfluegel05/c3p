@@ -6,6 +6,7 @@ Classifies: 3-oxo-fatty acyl-CoA(4-)
 """
 
 from rdkit import Chem
+from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_3_oxo_fatty_acyl_CoA_4__(smiles: str):
@@ -26,73 +27,31 @@ def is_3_oxo_fatty_acyl_CoA_4__(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Coenzyme A moiety SMILES (deprotonated form)
-    coa_smiles = 'NC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)([O-])OP(=O)([O-])OCC1OC(n2cnc3c(N)ncnc23)C(O)C1OP(=O)([O-])[O-]'
-    coa_mol = Chem.MolFromSmiles(coa_smiles)
-    if coa_mol is None:
-        return False, "Invalid CoA SMILES pattern"
-
-    # Check for Coenzyme A moiety
-    if not mol.HasSubstructMatch(coa_mol):
+    # Check for Coenzyme A (CoA) moiety
+    # CoA SMARTS pattern (simplified version)
+    coa_smarts = Chem.MolFromSmarts('NC(=O)CCNC(=O)C(O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H](CN2C=NC3=C(N)N=CN=C32)[C@H](O)[C@@H]1OP(O)(O)=O')
+    if not mol.HasSubstructMatch(coa_smarts):
         return False, "Coenzyme A moiety not found"
 
-    # Find thioester linkage: C(=O)-S-C (between acyl chain and CoA)
-    thioester_smarts = 'C(=O)SC'
-    thioester_mol = Chem.MolFromSmarts(thioester_smarts)
-    if thioester_mol is None:
-        return False, "Invalid thioester SMARTS pattern"
-
-    thioester_matches = mol.GetSubstructMatches(thioester_mol)
-    if not thioester_matches:
+    # Check for thioester linkage: C(=O)-S-
+    thioester_smarts = Chem.MolFromSmarts('C(=O)SC')
+    if not mol.HasSubstructMatch(thioester_smarts):
         return False, "Thioester linkage not found"
 
-    # For each thioester linkage found
-    for match in thioester_matches:
-        carbonyl_c_idx = match[0]  # C in C(=O)
-        sulfur_idx = match[2]      # S in C-S-C
-        beta_c = None
-        gamma_c = None
+    # Check for beta-ketoacyl group
+    # Pattern: O=C-C-C(=O)-C (beta-keto group in fatty acyl chain)
+    beta_ketoacyl_smarts = Chem.MolFromSmarts('O=CCC(=O)C')
+    if not mol.HasSubstructMatch(beta_ketoacyl_smarts):
+        return False, "3-oxo (beta-ketoacyl) group not found in acyl chain"
 
-        # Get the alpha carbon (adjacent to carbonyl carbon in acyl chain)
-        alpha_c = None
-        carbonyl_c = mol.GetAtomWithIdx(carbonyl_c_idx)
-        for neighbor in carbonyl_c.GetNeighbors():
-            if neighbor.GetIdx() != match[1] and neighbor.GetAtomicNum() == 6:
-                alpha_c = neighbor
-                break
-        if alpha_c is None:
-            continue  # Can't find alpha carbon, move to next match
+    # Check for deprotonated phosphate groups
+    # Count total negative charges (should be -4)
+    total_charge = Chem.GetFormalCharge(mol)
+    if total_charge != -4:
+        return False, f"Incorrect net charge ({total_charge}), expected -4 for deprotonated phosphate groups"
 
-        # Get the beta carbon (next carbon in acyl chain)
-        for neighbor in alpha_c.GetNeighbors():
-            if neighbor.GetIdx() != carbonyl_c.GetIdx() and neighbor.GetAtomicNum() == 6:
-                beta_c = neighbor
-                break
-        if beta_c is None:
-            continue  # Can't find beta carbon, move to next match
-
-        # Check if the beta carbon has a carbonyl group (C=O) attached (3-oxo group)
-        has_beta_keto = False
-        for neighbor in beta_c.GetNeighbors():
-            if neighbor.GetAtomicNum() == 8:
-                bond = beta_c.GetBondBetween(beta_c, neighbor)
-                if bond and bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-                    has_beta_keto = True
-                    break
-        if not has_beta_keto:
-            continue  # Beta carbon does not have keto group, move to next match
-
-        # If we reach here, the molecule has a 3-oxo-fatty acyl chain attached via thioester linkage
-        # Now, check for deprotonated phosphate groups (net charge -4)
-        total_charge = Chem.GetFormalCharge(mol)
-        if total_charge != -4:
-            return False, f"Incorrect net charge ({total_charge}), expected -4 for deprotonated phosphate groups"
-
-        # All checks passed
-        return True, "Molecule is a 3-oxo-fatty acyl-CoA(4-) with deprotonated phosphate groups"
-
-    # If no thioester linkage with beta-keto group found
-    return False, "No 3-oxo-fatty acyl chain attached via thioester linkage found"
+    # The molecule passes all checks
+    return True, "Molecule is a 3-oxo-fatty acyl-CoA(4-) with deprotonated phosphate groups"
 
 __metadata__ = {
     'chemical_class': {
