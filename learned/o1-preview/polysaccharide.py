@@ -5,8 +5,6 @@ Classifies: CHEBI:18154 polysaccharide
 Classifies: polysaccharide
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdqueries
 
 def is_polysaccharide(smiles: str):
     """
@@ -27,25 +25,30 @@ def is_polysaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Kekulize the molecule (necessary for some substructure searches)
-    try:
-        Chem.Kekulize(mol)
-    except:
-        pass  # Kekulization may fail for some molecules
+    # Get ring information
+    ring_info = mol.GetRingInfo()
+    atom_rings = ring_info.AtomRings()
 
-    # Define a pattern for monosaccharide units (pyranose and furanose rings)
-    # This is a simplified pattern for a 5 or 6 membered ring with one oxygen and multiple hydroxyl groups
-    monosaccharide_pattern = Chem.MolFromSmarts("""
-        [C,c]1[C,c][C,c][C,c][C,c][O]1  # 6-membered ring with oxygen (pyranose)
-        |
-        [C,c]1[C,c][C,c][C,c][O]1       # 5-membered ring with oxygen (furanose)
-    """)
-    if monosaccharide_pattern is None:
-        return False, "Failed to create monosaccharide SMARTS pattern"
+    # Identify monosaccharide rings (5- or 6-membered rings with 1 oxygen and rest carbons)
+    num_monosaccharides = 0
+    monosaccharide_rings = []
 
-    # Find all monosaccharide units
-    mono_matches = mol.GetSubstructMatches(monosaccharide_pattern)
-    num_monosaccharides = len(mono_matches)
+    for ring in atom_rings:
+        ring_size = len(ring)
+        if ring_size == 5 or ring_size == 6:
+            num_oxygen = 0
+            num_non_carbon = 0
+            for idx in ring:
+                atom = mol.GetAtomWithIdx(idx)
+                atomic_num = atom.GetAtomicNum()
+                if atomic_num == 8:
+                    num_oxygen += 1
+                if atomic_num != 6:
+                    num_non_carbon += 1
+            if num_oxygen == 1 and num_non_carbon == 1:
+                # Found a monosaccharide ring
+                num_monosaccharides += 1
+                monosaccharide_rings.append(set(ring))
 
     if num_monosaccharides == 0:
         return False, "No monosaccharide units found"
@@ -53,36 +56,30 @@ def is_polysaccharide(smiles: str):
     if num_monosaccharides <= 10:
         return False, f"Only {num_monosaccharides} monosaccharide units found, need more than 10"
 
-    # Check for glycosidic linkages between monosaccharide units
-    # Glycosidic bond pattern: an ether linkage connecting two carbons from different rings
-    glycosidic_bond_pattern = Chem.MolFromSmarts("[C]-O-[C]")
-    if glycosidic_bond_pattern is None:
-        return False, "Failed to create glycosidic bond SMARTS pattern"
+    # Check for glycosidic bonds between monosaccharide units
+    # Glycosidic bonds are ether linkages (C-O-C) connecting different rings
+    glycosidic_bonds = 0
 
-    glycosidic_bonds = mol.GetSubstructMatches(glycosidic_bond_pattern)
-    num_glycosidic_bonds = len(glycosidic_bonds)
-
-    if num_glycosidic_bonds < (num_monosaccharides - 1):
-        return False, f"Insufficient glycosidic linkages: found {num_glycosidic_bonds}, expected at least {num_monosaccharides - 1}"
-
-    # Additional check: Ensure that glycosidic bonds connect different monosaccharide units
-    # Build a graph of monosaccharide units connected via glycosidic bonds
-    from collections import defaultdict
-    mono_atom_indices = [atom_idx for match in mono_matches for atom_idx in match]
-    mono_atoms = set(mono_atom_indices)
-
-    glyco_bonds_connecting_monosaccharides = 0
     for bond in mol.GetBonds():
-        if bond.GetBondType() != Chem.rdchem.BondType.SINGLE:
-            continue
         atom1 = bond.GetBeginAtom()
         atom2 = bond.GetEndAtom()
-        if bond.GetSmarts() != "O":
-            continue
-        if (atom1.GetIdx() in mono_atoms) and (atom2.GetIdx() in mono_atoms):
-            glyco_bonds_connecting_monosaccharides += 1
+        atomic_num1 = atom1.GetAtomicNum()
+        atomic_num2 = atom2.GetAtomicNum()
+        idx1 = atom1.GetIdx()
+        idx2 = atom2.GetIdx()
 
-    if glyco_bonds_connecting_monosaccharides < (num_monosaccharides - 1):
-        return False, f"Insufficient glycosidic bonds connecting monosaccharide units: found {glyco_bonds_connecting_monosaccharides}"
+        # Look for C-O single bonds
+        if bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
+            if (atomic_num1 == 6 and atomic_num2 == 8) or (atomic_num1 == 8 and atomic_num2 == 6):
+                # Check if this bond connects two different monosaccharide rings
+                rings1 = [ring for ring in monosaccharide_rings if idx1 in ring]
+                rings2 = [ring for ring in monosaccharide_rings if idx2 in ring]
+                if rings1 and rings2 and rings1 != rings2:
+                    # Ether linkage between two monosaccharide units
+                    glycosidic_bonds += 1
+
+    expected_bonds = num_monosaccharides - 1
+    if glycosidic_bonds < expected_bonds:
+        return False, f"Insufficient glycosidic bonds connecting monosaccharide units: found {glycosidic_bonds}, expected at least {expected_bonds}"
 
     return True, f"Contains {num_monosaccharides} monosaccharide units connected via glycosidic bonds"
