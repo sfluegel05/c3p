@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_dipeptide(smiles: str):
     """
     Determines if a molecule is a dipeptide based on its SMILES string.
-    A dipeptide contains two amino-acid residues connected by peptide linkages.
+    A dipeptide contains two amino-acid residues connected by a single peptide linkage (amide bond).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,26 +20,24 @@ def is_dipeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Improved pattern for identifying an amide bond [N-C(=O)] with potential variations
-    amide_pattern = Chem.MolFromSmarts("[$([NX3][CX3]=[O])]")
-    amide_matches = mol.GetSubstructMatches(amide_pattern)
+    # Identify peptide bond patterns: carbonyl connected to nitrogen
+    peptide_bond_pattern = Chem.MolFromSmarts("N[CX3](=O)C")
+    peptide_matches = mol.GetSubstructMatches(peptide_bond_pattern)
+    
+    # Check for exactly one peptide (amide) bond
+    if len(peptide_matches) != 1:
+        return False, f"Found {len(peptide_matches)} peptide bonds, need exactly 1 for a dipeptide"
+    
+    # Identify amino acid patterns: presence of amine group and carboxyl group
+    amine_pattern = Chem.MolFromSmarts("[NX3H2,NX3H]")
+    carboxyl_pattern = Chem.MolFromSmarts("C(=O)[OX1H]")
+    amine_matches = len(mol.GetSubstructMatches(amine_pattern))
+    carboxyl_matches = len(mol.GetSubstructMatches(carboxyl_pattern))
+    
+    # A dipeptide should have two amines and two carboxyl groups
+    if amine_matches != 2 or carboxyl_matches != 2:
+        return False, f"Found {amine_matches} amine and {carboxyl_matches} carboxyl groups, need 2 of each for two amino acids"
+    
+    return True, "Contains two amino-acid residues connected by a single peptide linkage"
 
-    # Check for at least two amide bonds
-    if len(amide_matches) < 2:
-        return False, f"Found {len(amide_matches)} amide bonds, need at least 2 for a dipeptide"
-
-    # Improved pattern for identifying amino acid residues
-    amino_acid_pattern = Chem.MolFromSmarts("[NX3H,$(N-C-C(=O))]")
-    amino_acid_matches = mol.GetSubstructMatches(amino_acid_pattern)
-
-    # Check for at least two amino acid residues
-    if len(amino_acid_matches) < 2:
-        return False, f"Found {len(amino_acid_matches)} amino acid residues, need at least 2"
-
-    # Check overall connectivity for typical dipeptide configuration
-    # This assumes two amino acids connected through a peptide bond
-    peptide_bond_count = sum(1 for bond in mol.GetBonds() if bond.GetBondTypeAsDouble() == 1.33)
-    if peptide_bond_count < 2:
-        return False, "Insufficient connectivity pattern for dipeptide"
-
-    return True, "Contains at least two amino-acid residues with peptide linkages (amide bonds)"
+# This function is meant to classify dipeptides based on the structural requirements.
