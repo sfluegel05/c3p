@@ -9,11 +9,11 @@ def is_semisynthetic_derivative(smiles: str):
     Heuristic detection of synthetic modifications, focusing on unique structural alerts.
 
     Args:
-        smiles (str): SMILES string of the molecule
+        smiles (str): SMILES string of the molecule.
 
     Returns:
-        bool: True if molecule may be a semisynthetic derivative, False otherwise
-        str: Reason for classification
+        bool: True if molecule may be a semisynthetic derivative, False otherwise.
+        str: Reason for classification.
     """
 
     # Parse SMILES
@@ -22,19 +22,25 @@ def is_semisynthetic_derivative(smiles: str):
         return False, "Invalid SMILES string"
 
     # Expanded patterns that may indicate synthetic modifications
-    # Look for amides linked to unusual groups, exotic rings, or complex modifications
-    amide_pattern = Chem.MolFromSmarts("C(=O)N")  # Simple amide group
-    exotic_ring_pattern = Chem.MolFromSmarts("c1[cR2][cR2][cR2][cR2][cR2]c1")  # Aromatic ring with potential modifications
-    ether_pattern = Chem.MolFromSmarts("C-O-C(O)-C")  # Ethers attached to unconventional oxygens/groups
+    # Look for amides and unusual ester linkages, exotic rings, lactones, and chiral centers
+    amide_pattern = Chem.MolFromSmarts("C(=O)N")  # Amide group
+    exotic_ring_pattern = Chem.MolFromSmarts("c1[cR2][cR2][cR2][cR2][cR2]c1")  # Aromatic ring potentially modified
+    ether_pattern = Chem.MolFromSmarts("C-O-C(O)-C")  # Specific ether patterns
+    ester_pattern = Chem.MolFromSmarts("C(=O)OC")  # General ester group
+    lactone_pattern = Chem.MolFromSmarts("O=C1OC[C@H]1")  # Lactone ring
+    chiral_pattern = Chem.MolFromSmarts("[C@]")  # Chiral center indicator
 
     # Check for synthetic signatures
     has_amide = mol.HasSubstructMatch(amide_pattern)
     has_exotic_ring = mol.HasSubstructMatch(exotic_ring_pattern)
     has_specific_ether = mol.HasSubstructMatch(ether_pattern)
+    has_unusual_ester = mol.HasSubstructMatch(ester_pattern)
+    has_lactone = mol.HasSubstructMatch(lactone_pattern)
+    has_chiral_centers = mol.HasSubstructMatch(chiral_pattern)
 
     # Combine indicators for a more robust system
-    if has_amide and (has_specific_ether or has_exotic_ring):
-        return True, "Synthetic markers detected including complex amide or exotic modifications"
+    if has_amide or has_exotic_ring or has_specific_ether or has_unusual_ester or has_lactone or has_chiral_centers:
+        return True, "Synthetic markers detected including complex amide, exotic modifications, or stereochemistry"
 
     # Without explicit synthesis pathway info, classification remains speculative
     return False, "No sufficient synthetic indicators in SMILES"
