@@ -2,7 +2,6 @@
 Classifies: CHEBI:61910 very long-chain fatty acyl-CoA
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_very_long_chain_fatty_acyl_CoA(smiles: str):
     """
@@ -33,9 +32,8 @@ def is_very_long_chain_fatty_acyl_CoA(smiles: str):
         return False, "No carbonyl linked to CoA structure found"
 
     # Starting from carbonyl carbon, find longest consecutive chain of carbon atoms
-    carbonyl_carbon = carbonyl_match[0]
-    coo_sulfur = carbonyl_match[2]
-    
+    carbonyl_carbon = carbonyl_match[0]  # carbon of the carbonyl group
+
     visited = set()
     longest_chain_length = 0
 
@@ -48,12 +46,12 @@ def is_very_long_chain_fatty_acyl_CoA(smiles: str):
             longest_chain_length = length
 
         for neighbor in atom.GetNeighbors():
-            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited and neighbor.GetIdx() != coo_sulfur:
+            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:
                 dfs(neighbor, length + 1)
 
-    # Begin DFS from carbonyl carbon (while ensuring we don't count the sulfur/CoA link)
+    # Begin DFS from carbon atom adjacent to our identified starting point
     for atom in mol.GetAtomWithIdx(carbonyl_carbon).GetNeighbors():
-        if atom.GetAtomicNum() == 6 and atom.GetIdx() != coo_sulfur:
+        if atom.GetAtomicNum() == 6:
             dfs(atom, 1)
 
     if longest_chain_length <= 22:
