@@ -24,49 +24,49 @@ def is_mononitrophenol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # More general phenol pattern that allows substitutions
-    phenol_pattern = Chem.MolFromSmarts("c1([OH])c([*,H])c([*,H])c([*,H])c([*,H])c1([*,H])")
-    if not mol.HasSubstructMatch(phenol_pattern):
+    # First find all aromatic rings with OH substituents (phenols)
+    # This pattern matches any aromatic ring with an OH group
+    phenol_pattern = Chem.MolFromSmarts("c1([OH])ccccc1")
+    phenol_matches = mol.GetSubstructMatches(phenol_pattern)
+    
+    if not phenol_matches:
         return False, "No phenol group found"
 
     # Check for nitro groups - both resonance forms
     nitro_patterns = [
         Chem.MolFromSmarts("[N+](=[O-])=O"),  # Charged form
-        Chem.MolFromSmarts("N(=O)=O"),         # Uncharged form
-        Chem.MolFromSmarts("[N+]([O-])=O")     # Alternative charged form
+        Chem.MolFromSmarts("[N+]([O-])=O"),    # Alternative charged form
+        Chem.MolFromSmarts("N(=O)=O")          # Uncharged form
     ]
     
     total_nitro = 0
+    nitro_matches = []
     for pattern in nitro_patterns:
-        if pattern is not None:  # Ensure pattern is valid
-            matches = len(mol.GetSubstructMatches(pattern))
-            total_nitro += matches
+        if pattern is not None:
+            matches = mol.GetSubstructMatches(pattern)
+            total_nitro += len(matches)
+            nitro_matches.extend(matches)
 
     if total_nitro == 0:
         return False, "No nitro group found"
     elif total_nitro > 1:
         return False, f"Found {total_nitro} nitro groups, must have exactly one"
 
-    # Check if nitro group is attached to the phenol ring
-    # More flexible pattern that allows for different positions
-    nitrophenol_patterns = [
-        Chem.MolFromSmarts("c1([OH])c([*,H])c([*,H])c([*,H])c([*,H])c1([N+]([O-])=O)"),
-        Chem.MolFromSmarts("c1([OH])c([N+]([O-])=O)c([*,H])c([*,H])c([*,H])c1([*,H])"),
-        Chem.MolFromSmarts("c1([OH])c([*,H])c([N+]([O-])=O)c([*,H])c([*,H])c1([*,H])"),
-        Chem.MolFromSmarts("c1([OH])c([*,H])c([*,H])c([N+]([O-])=O)c([*,H])c1([*,H])"),
-        # Add uncharged form patterns
-        Chem.MolFromSmarts("c1([OH])c([*,H])c([*,H])c([*,H])c([*,H])c1(N(=O)=O)"),
-        Chem.MolFromSmarts("c1([OH])c(N(=O)=O)c([*,H])c([*,H])c([*,H])c1([*,H])"),
-        Chem.MolFromSmarts("c1([OH])c([*,H])c(N(=O)=O)c([*,H])c([*,H])c1([*,H])"),
-        Chem.MolFromSmarts("c1([OH])c([*,H])c([*,H])c(N(=O)=O)c([*,H])c1([*,H])")
-    ]
-
-    for pattern in nitrophenol_patterns:
-        if pattern is not None and mol.HasSubstructMatch(pattern):
-            return True, "Contains phenol ring with single nitro substituent"
+    # For each phenol ring found, check if it has exactly one nitro group attached
+    for phenol_match in phenol_matches:
+        phenol_atoms = set(phenol_match)
+        
+        # Check if the nitro group is attached to this specific phenol ring
+        for nitro_match in nitro_matches:
+            nitro_N = nitro_match[0]  # Get the nitrogen atom index
+            nitro_neighbors = mol.GetAtomWithIdx(nitro_N).GetNeighbors()
+            
+            for neighbor in nitro_neighbors:
+                if neighbor.GetIdx() in phenol_atoms:
+                    # Found a nitro group attached to this phenol ring
+                    return True, "Contains phenol ring with single nitro substituent"
 
     return False, "Nitro group not properly attached to phenol ring"
-
 
 __metadata__ = {
     'chemical_class': {
