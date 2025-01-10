@@ -5,7 +5,6 @@ Classifies: CHEBI:76579 triradylglycerol
 Classifies: CHEBI:<ID> triradylglycerol
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_triradylglycerol(smiles: str):
     """
@@ -26,43 +25,51 @@ def is_triradylglycerol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for glycerol backbone
-    # Glycerol backbone with carbons connected to oxygens
-    glycerol_pattern = Chem.MolFromSmarts("C(O*)C(O*)C(O*)")
+    # Define SMARTS pattern for glycerol backbone with substituted oxygens
+    glycerol_pattern = Chem.MolFromSmarts("[CH2](O[*])[CH](O[*])[CH2](O[*])")
+    
     matches = mol.GetSubstructMatches(glycerol_pattern)
     if not matches:
-        return False, "No glycerol backbone with three substituted positions found"
+        return False, "No glycerol backbone with substituted oxygens found"
 
     # For each match, check substituents
     for match in matches:
-        c1_idx, c2_idx, c3_idx, o1_idx, o2_idx, o3_idx = match
-        c_atoms = [mol.GetAtomWithIdx(idx) for idx in [c1_idx, c2_idx, c3_idx]]
-        o_atoms = [mol.GetAtomWithIdx(idx) for idx in [o1_idx, o2_idx, o3_idx]]
+        # The pattern has 6 atoms: C1-O1-C2-O2-C3-O3
+        c1_idx, o1_idx, c2_idx, o2_idx, c3_idx, o3_idx = match
+        c_indices = [c1_idx, c2_idx, c3_idx]
+        o_indices = [o1_idx, o2_idx, o3_idx]
 
-        # Check that each oxygen is connected to a substituent (not hydrogen)
-        for o_atom in o_atoms:
-            connected_atoms = [nbr for nbr in o_atom.GetNeighbors() if nbr.GetAtomicNum() > 1 and nbr.GetIdx() not in match]
-            if not connected_atoms:
-                break  # Oxygen is not connected to any substituent
-            substituent = connected_atoms[0]
+        # For each oxygen, check that it is connected to a substituent
+        for o_idx in o_indices:
+            o_atom = mol.GetAtomWithIdx(o_idx)
+            substituent_found = False
+            for nbr in o_atom.GetNeighbors():
+                nbr_idx = nbr.GetIdx()
+                if nbr_idx not in c_indices:
+                    # Found substituent connected to oxygen
+                    substituent_found = True
+                    
+                    # Get the fragment connected via oxygen excluding the glycerol backbone
+                    fragment = Chem.PathToSubmol(mol, Chem.FindAtomEnvironmentOfRadiusN(mol, 5, nbr_idx))
+                    
+                    # Define SMARTS patterns
+                    acyl_pattern = Chem.MolFromSmarts("C(=O)[#6]")
+                    alkyl_pattern = Chem.MolFromSmarts("[#6][#6]")
+                    alk1enyl_pattern = Chem.MolFromSmarts("C=C[#6]")
+                    
+                    is_acyl = fragment.HasSubstructMatch(acyl_pattern)
+                    is_alkyl = fragment.HasSubstructMatch(alkyl_pattern)
+                    is_alk1enyl = fragment.HasSubstructMatch(alk1enyl_pattern)
 
-            # Check if substituent is acyl, alkyl, or alk-1-enyl
-            # Define SMARTS patterns for acyl, alkyl, alk-1-enyl groups
-            acyl_pattern = Chem.MolFromSmarts("C(=O)[#6]")
-            alkyl_pattern = Chem.MolFromSmarts("[#6][#6]")
-            alk1enyl_pattern = Chem.MolFromSmarts("C=C[#6]")
+                    if not (is_acyl or is_alkyl or is_alk1enyl):
+                        return False, "Substituent attached to oxygen is not acyl, alkyl, or alk-1-enyl group"
+                    break
+            if not substituent_found:
+                return False, "Oxygen is not connected to any substituent"
+        # All oxygens have valid substituents
+        return True, "Contains glycerol backbone fully substituted with acyl, alkyl, or alk-1-enyl groups"
 
-            frag = Chem.PathToSubmol(mol, Chem.FindAtomEnvironmentOfRadiusN(mol, 1, substituent.GetIdx()))
-            smiles_frag = Chem.MolToSmiles(frag)
-            is_acyl = frag.HasSubstructMatch(acyl_pattern)
-            is_alkyl = frag.HasSubstructMatch(alkyl_pattern)
-            is_alk1enyl = frag.HasSubstructMatch(alk1enyl_pattern)
-            if not (is_acyl or is_alkyl or is_alk1enyl):
-                break  # Substituent is not acyl, alkyl, or alk-1-enyl
-        else:
-            # All oxygens are connected to valid substituents
-            return True, "Contains glycerol backbone fully substituted with acyl, alkyl, or alk-1-enyl groups"
-
+    # If no matches passed the checks
     return False, "Does not match triradylglycerol structure"
 
 __metadata__ = {   'chemical_class': {   'id': '<CHEBI ID>',
