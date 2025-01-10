@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_sesquiterpenoid(smiles: str):
     """
     Determines if a molecule is a sesquiterpenoid based on its SMILES string.
-    A sesquiterpenoid is typically characterized by its 15-carbon skeleton derived from three isoprene units.
-    Consideration is given to common structural motifs such as cyclic structures.
+    A sesquiterpenoid typically has a 15-carbon skeleton derived from three isoprene units,
+    often arranged in complex ring structures.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,25 +22,22 @@ def is_sesquiterpenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Approximate count of 15 carbons but allow for small variations
+    # Check for approximately 15 carbons, allowing some variance
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 12 or c_count > 18:
-        return False, f"Carbon count is {c_count}, expected roughly between 12 and 18 for sesquiterpenoid"
+    if not (13 <= c_count <= 17):
+        return False, f"Carbon count is {c_count}, expected closer to 15 for sesquiterpenoid"
 
-    # Basic structural motifs can be identified using SMARTS
-    # Common motifs include isoprene units, terpenic rings
-    # Here we use a simplification to detect basic ring structures (e.g., cyclohexane)
-    # A full set of realistic patterns needs refining.
+    # Identify sesquiterpenoid-specific ring patterns
+    # Example pattern: bicyclic structures (proxy)
+    bicyclic_pattern = Chem.MolFromSmarts("C1CCC2CCC(C1)C2")  # Example tweak
+    if not mol.HasSubstructMatch(bicyclic_pattern):
+        return False, "No complex bicyclic-like structure found"
+
+    # Check for functional groups commonly found in terpenoids
+    alcohol_pattern = Chem.MolFromSmarts("[CX4][OH]")
+    lactone_pattern = Chem.MolFromSmarts("O=C1OC(C=CC1)C")
     
-    # Cyclohexane-like structure, a proxy for bicyclic sesquiterpene patterns
-    cyclohexane_pattern = Chem.MolFromSmarts("C1CCCCC1")
-
-    if not mol.HasSubstructMatch(cyclohexane_pattern):
-        return False, "No basic cyclohexane-like structure found"
-
-    # Validate additional sesquiterpenoid-like features, like multiple rings or specific functionalities,
-    # which are not straightforward with basic SMARTS
-    # (Extend with more sophisticated patterns based on terpenoid biology)
+    if not mol.HasSubstructMatch(alcohol_pattern) and not mol.HasSubstructMatch(lactone_pattern):
+        return False, "Missing common functional groups like alcohols or lactones"
     
-    # This simplified model assumes basic ring presence as indicative of potential sesquiterpenoid.
-    return True, "Contains structures consistent with sesquiterpenoid skeleton"
+    return True, "Contains 15-carbon skeleton with sesquiterpenoid-like complex ring structures and functional groups"
