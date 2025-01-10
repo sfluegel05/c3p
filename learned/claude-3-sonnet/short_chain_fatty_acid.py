@@ -8,34 +8,61 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
-def count_longest_carbon_chain(mol):
-    """Helper function to count the longest carbon chain including the carboxyl carbon"""
-    # Find carboxyl carbon first
+def has_non_hydrocarbon_substituents(mol):
+    """Check if molecule has any non-hydrocarbon substituents besides the carboxyl group"""
+    # Find carboxyl group atoms
+    carboxyl_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H1]")
+    if not mol.HasSubstructMatch(carboxyl_pattern):
+        return True
+    
+    carboxyl_atoms = set(mol.GetSubstructMatch(carboxyl_pattern))
+    
+    # Check each atom
+    for atom in mol.GetAtoms():
+        # Skip hydrogens and atoms in carboxyl group
+        if atom.GetAtomicNum() == 1 or atom.GetIdx() in carboxyl_atoms:
+            continue
+        
+        # Only allow carbon atoms
+        if atom.GetAtomicNum() != 6:
+            return True
+            
+        # Check for any oxygen attachments (except in carboxyl group)
+        for neighbor in atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 8 and neighbor.GetIdx() not in carboxyl_atoms:
+                return True
+    
+    return False
+
+def get_carbon_chain_length(mol):
+    """Get the length of the main carbon chain including the carboxyl carbon"""
+    # Find carboxyl carbon
     carboxyl_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H1]")
     if not mol.HasSubstructMatch(carboxyl_pattern):
         return 0
-        
-    # Get all carbons in molecule
-    carbon_indices = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
-    if not carbon_indices:
-        return 0
-        
-    # Get carboxyl carbon index
+    
     carboxyl_match = mol.GetSubstructMatch(carboxyl_pattern)
-    if not carboxyl_match:
-        return 0
-    carboxyl_carbon_idx = carboxyl_match[0]
+    carboxyl_carbon = carboxyl_match[0]
     
-    # Find longest path from carboxyl carbon
-    max_length = 0
-    for c_idx in carbon_indices:
-        if c_idx != carboxyl_carbon_idx:
-            path = Chem.GetShortestPath(mol, carboxyl_carbon_idx, c_idx)
-            if path:
-                # Count only carbons in path
-                carbon_count = sum(1 for idx in path if mol.GetAtomWithIdx(idx).GetAtomicNum() == 6)
-                max_length = max(max_length, carbon_count)
+    # Get all carbons
+    carbon_atoms = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
     
+    # Find longest chain from carboxyl carbon
+    max_length = 1  # Start with 1 to count carboxyl carbon
+    visited = set([carboxyl_carbon])
+    
+    def dfs(atom_idx, current_length):
+        nonlocal max_length
+        max_length = max(max_length, current_length)
+        
+        atom = mol.GetAtomWithIdx(atom_idx)
+        for neighbor in atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:
+                visited.add(neighbor.GetIdx())
+                dfs(neighbor.GetIdx(), current_length + 1)
+                visited.remove(neighbor.GetIdx())
+    
+    dfs(carboxyl_carbon, 1)
     return max_length
 
 def is_short_chain_fatty_acid(smiles: str):
@@ -54,17 +81,15 @@ def is_short_chain_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
         
-    # Check for carboxylic acid group
+    # Check for exactly one carboxylic acid group
     carboxyl_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H1]")
-    if not mol.HasSubstructMatch(carboxyl_pattern):
-        return False, "No carboxylic acid group found"
-    
-    # Count number of carboxylic acid groups - should be exactly one
     carboxyl_matches = len(mol.GetSubstructMatches(carboxyl_pattern))
+    if carboxyl_matches == 0:
+        return False, "No carboxylic acid group found"
     if carboxyl_matches > 1:
         return False, "Multiple carboxylic acid groups found"
         
-    # Check for aromatic rings - should have none
+    # Check for aromatic rings
     if any(atom.GetIsAromatic() for atom in mol.GetAtoms()):
         return False, "Contains aromatic rings"
         
@@ -74,26 +99,20 @@ def is_short_chain_fatty_acid(smiles: str):
         if atom.GetAtomicNum() not in allowed_atoms:
             return False, f"Contains atoms other than C, H, O"
             
-    # Get longest carbon chain length
-    chain_length = count_longest_carbon_chain(mol)
-    if chain_length < 2:
-        return False, "Carbon chain too short"
-    if chain_length > 5:
-        return False, f"Carbon chain too long ({chain_length} carbons)"
-        
     # Check for cyclic structures
     ring_info = mol.GetRingInfo()
     if ring_info.NumRings() > 0:
         return False, "Contains cyclic structures"
     
+    # Check for non-hydrocarbon substituents
+    if has_non_hydrocarbon_substituents(mol):
+        return False, "Contains non-hydrocarbon substituents"
+    
+    # Get carbon chain length
+    chain_length = get_carbon_chain_length(mol)
+    if chain_length < 2:
+        return False, "Carbon chain too short"
+    if chain_length >= 6:
+        return False, f"Carbon chain too long ({chain_length} carbons)"
+        
     return True, f"Aliphatic monocarboxylic acid with {chain_length} carbons in longest chain"
-
-__metadata__ = {
-    'chemical_class': {
-        'id': 'CHEBI:27283',
-        'name': 'short-chain fatty acid',
-        'definition': 'An aliphatic monocarboxylic acid with a chain length of less than C6. '
-                     'If any non-hydrocarbon substituent is present, the compound is not normally '
-                     'regarded as a short-chain fatty acid.',
-    }
-}
