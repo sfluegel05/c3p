@@ -22,73 +22,42 @@ def is_3_oxo_fatty_acyl_CoA(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Check for core structural elements of CoA:
     
-    # 1. Adenine base - more flexible pattern
-    adenine = Chem.MolFromSmarts("n1cnc2c(N)ncnc12")
-    if not mol.HasSubstructMatch(adenine):
-        return False, "Missing adenine moiety"
+    # Check for CoA moiety
+    # Look for adenine base
+    adenine_pattern = Chem.MolFromSmarts("n1cnc2c(N)ncnc12")
+    if not mol.HasSubstructMatch(adenine_pattern):
+        return False, "Missing adenine moiety of CoA"
     
-    # 2. Ribose-phosphate
-    ribose_phosphate = Chem.MolFromSmarts("O[CH]1[CH][CH](O)[CH](O1)COP(O)(O)=O")
+    # Look for ribose phosphate
+    ribose_phosphate = Chem.MolFromSmarts("OCC1OC(n2cnc3c2ncnc3)C(O)C1OP(O)(O)=O")
     if not mol.HasSubstructMatch(ribose_phosphate):
-        return False, "Missing ribose-phosphate moiety"
+        return False, "Missing ribose phosphate portion of CoA"
     
-    # 3. Diphosphate
-    diphosphate = Chem.MolFromSmarts("OP(O)(=O)OP(O)(=O)O")
-    if not mol.HasSubstructMatch(diphosphate):
-        return False, "Missing diphosphate bridge"
+    # Look for pantetheine portion with thioester
+    # [CX4]C(=O)NCCC(=O)NCCS represents the pantetheine chain
+    # The C(=O)S represents the thioester linkage
+    pantetheine_thioester = Chem.MolFromSmarts("[CX4]C(=O)NCCC(=O)NCCSC(=O)")
+    if not mol.HasSubstructMatch(pantetheine_thioester):
+        return False, "Missing pantetheine-thioester portion"
     
-    # 4. Pantetheine with thiol
-    pantetheine = Chem.MolFromSmarts("SCCNC(=O)CCNC(=O)")
-    if not mol.HasSubstructMatch(pantetheine):
-        return False, "Missing pantetheine moiety"
-
-    # 5. Check for 3-oxo-fatty acyl pattern
-    # This is the key characteristic - a thioester connected to a beta-ketone
-    oxo_pattern = Chem.MolFromSmarts("[#6]-C(=O)CC(=O)S")
+    # Check for 3-oxo group pattern
+    # Pattern: carbon chain - C(=O)CC(=O)S- 
+    # This represents the 3-oxo group followed by the thioester
+    oxo_pattern = Chem.MolFromSmarts("C-C(=O)CC(=O)S")
     if not mol.HasSubstructMatch(oxo_pattern):
-        return False, "Missing 3-oxo-fatty acyl pattern"
-
-    # Get the carbon chain length
-    chain_atoms = mol.GetSubstructMatch(oxo_pattern)
-    if not chain_atoms:
-        return False, "Cannot analyze carbon chain"
+        return False, "Missing 3-oxo group pattern"
     
-    # Check carbon chain characteristics
-    fatty_acid_end = chain_atoms[0]  # First carbon of the pattern
+    # Additional checks for fatty acid portion
+    # Count carbons in the main chain
+    # We'll be lenient here as fatty acids can vary in length
+    carbon_chain = Chem.MolFromSmarts("CCCCC")  # At least 5 carbons
+    if not mol.HasSubstructMatch(carbon_chain):
+        return False, "Carbon chain too short for fatty acid portion"
+
+    # Check for reasonable molecular weight
+    mol_wt = Chem.Descriptors.ExactMolWt(mol)
+    if mol_wt < 800:  # CoA itself is quite large
+        return False, "Molecular weight too low for 3-oxo-fatty acyl-CoA"
     
-    # Count carbons in the fatty acid chain
-    def count_chain_carbons(mol, start_idx, visited=None):
-        if visited is None:
-            visited = set()
-        visited.add(start_idx)
-        count = 1
-        atom = mol.GetAtomWithIdx(start_idx)
-        for neighbor in atom.GetNeighbors():
-            n_idx = neighbor.GetIdx()
-            if n_idx not in visited and neighbor.GetAtomicNum() == 6:
-                count += count_chain_carbons(mol, n_idx, visited)
-        return count
-    
-    chain_length = count_chain_carbons(mol, fatty_acid_end)
-    
-    if chain_length < 2:
-        return False, "Fatty acid chain too short"
-
-    # Check for presence of thioester
-    thioester = Chem.MolFromSmarts("SC(=O)")
-    if not mol.HasSubstructMatch(thioester):
-        return False, "Missing thioester linkage"
-
-    # Optional: Check for unsaturation (double bonds)
-    double_bond = Chem.MolFromSmarts("C=C")
-    has_double_bonds = mol.HasSubstructMatch(double_bond)
-
-    # Count number of carbons and oxygens to verify overall composition
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 20:
-        return False, "Too few carbons for 3-oxo-fatty acyl-CoA"
-
-    return True, f"Valid 3-oxo-fatty acyl-CoA structure with {chain_length} carbons in fatty acid chain" + (" and unsaturation" if has_double_bonds else "")
+    return True, "Contains CoA moiety, 3-oxo group, and appropriate fatty acid chain"
