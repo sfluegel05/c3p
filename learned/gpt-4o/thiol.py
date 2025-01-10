@@ -21,11 +21,12 @@ def is_thiol(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return None, "Invalid SMILES string"
+
+    # Check for thiol using a flexible SMARTS pattern
+    # - Allow for different types of carbon atoms to be matched, including those with unusual hybridizations
+    thiol_pattern = Chem.MolFromSmarts("[SX2H1][#6]")  # Matches sulfur with one hydrogen bound to any carbon
     
-    # Improved SMARTS pattern to detect thiol groups specifically
-    thiol_pattern = Chem.MolFromSmarts("[SX2H1][CX4,c]")  # Explicitly uses sulfur with one hydrogen
-    
-    # Check if the specific thiol pattern is found in the molecule
+    # Adjust flexible pattern to include resonance or alternative carbon bonding
     if mol.HasSubstructMatch(thiol_pattern):
         return True, "Contains a thiol group (-SH) attached to a carbon atom"
     
