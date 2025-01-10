@@ -2,26 +2,27 @@
 Classifies: CHEBI:33184 long-chain fatty acyl-CoA
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_long_chain_fatty_acyl_CoA(smiles: str):
     """
     Determines if a molecule is a long-chain fatty acyl-CoA based on its SMILES string.
-    A fatty acyl-CoA includes a long-chain fatty acid esterified with the thiol group of coenzyme A.
-    
+    This class is characterized by the inclusion of a thioester-linked long-chain fatty acid with Coenzyme A.
+
     Args:
         smiles (str): SMILES string of the molecule
-        
+
     Returns:
-        bool: True if the molecule is a long-chain fatty acyl-CoA, False otherwise
+        bool: True if molecule is a long-chain fatty acyl-CoA, False otherwise
         str: Reason for classification
     """
-    # Parse SMILES string into RDKit molecule object
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Comprehensive Coenzyme A motif pattern including ribose adenosine portion
-    coa_pattern = Chem.MolFromSmarts("C(=O)NCCC(=O)NCCSC(=O)[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H](n2cnc3c[nH]cnc23)[C@H](O)[C@H]1O)C(C)(C)O")
+    # Define Coenzyme A moiety pattern (simplified for illustrative purposes)
+    coa_pattern = Chem.MolFromSmarts("OP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No Coenzyme A moiety found"
     
@@ -30,44 +31,13 @@ def is_long_chain_fatty_acyl_CoA(smiles: str):
     thioester_matches = mol.GetSubstructMatches(thioester_pattern)
     if not thioester_matches:
         return False, "No thioester linkage found"
-    
-    # Check the fatty acid part for carbon chain length
-    valid_long_chain = False
+
+    # Analyze carbon chain length to ensure it is between C13 and C22
+    # (Assume C chain follows C=O in match)
     for match in thioester_matches:
-        # Assume the carbon following the thioester is the beginning of the chain
-        start_atom = match[2]  # Index of the first carbon in the chain
-        
-        # Use DFS/BFS to explore the length of the carbon chain
-        carbon_chain_length = count_carbon_chain(mol, start_atom)
-        
-        # Check if chain length is within the specified range
-        if 13 <= carbon_chain_length <= 22:
-            valid_long_chain = True
-            break
-            
-    if not valid_long_chain:
-        return False, f"Carbon chain length not in valid range (C13-C22), got {carbon_chain_length}"
-    
-    return True, f"Valid long-chain fatty acyl-CoA with {carbon_chain_length} carbon atoms"
+        carbon_chain_atoms = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetIdx() > match[0]]
+        carbon_count = sum(1 for atom_idx in carbon_chain_atoms if mol.GetAtomWithIdx(atom_idx).GetAtomicNum() == 6)
+        if 13 <= carbon_count <= 22:
+            return True, f"Valid long-chain fatty acyl-CoA with {carbon_count} C atoms in chain"
 
-
-def count_carbon_chain(mol, start_atom):
-    """Count the number of carbon atoms in the longest unbroken chain starting from the given atom."""
-    visited = set()
-    max_length = 0
-    stack = [(start_atom, 0)]
-
-    while stack:
-        current_atom, length = stack.pop()
-        if current_atom in visited:
-            continue
-        visited.add(current_atom)
-        max_length = max(max_length, length)
-
-        # Expand to neighbors
-        current_atom_obj = mol.GetAtomWithIdx(current_atom)
-        for neighbor in current_atom_obj.GetNeighbors():
-            if neighbor.GetSymbol() == 'C' and neighbor.GetIdx() not in visited:
-                stack.append((neighbor.GetIdx(), length + 1))
-
-    return max_length
+    return False, "Carbon chain length not in C13-C22 for long-chain fatty acid"
