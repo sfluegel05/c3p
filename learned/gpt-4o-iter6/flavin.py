@@ -21,22 +21,25 @@ def is_flavin(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define the dimethylisoalloxazine-like core structure
-    dimethylisoalloxazine_core = Chem.MolFromSmarts("Cc1cc2nc3c(nc(=O)[nH]c3=O)n(C)cc2cc1C")
-
-    # Check if the molecule contains the core structure
-    core_match = mol.GetSubstructMatch(dimethylisoalloxazine_core)
-    if not core_match:
-        return False, "Does not contain the dimethylisoalloxazine core"
-
-    # Mapping atom indexes in core_match to check the 10th position
-    # Atom indices should reflect the relevant positions based on the SMARTS pattern
-    carbon_10_index = core_match[7]  # Adjust index based on true position of 10 in matched SMARTS
-
-    # Evaluate if there is a substitution at position 10
-    carbon_10_atom = mol.GetAtomWithIdx(carbon_10_index)
-    is_substituted = any(neighbor.GetIdx() not in core_match for neighbor in carbon_10_atom.GetNeighbors())
+    dimethylisoalloxazine_core = Chem.MolFromSmarts("Cc1c(C)cc2nc3c([nH]c(=O)[nH]c3=O)n2cc1")
     
-    if is_substituted:
-        return True, "Contains dimethylisoalloxazine core with substitution at position 10"
+    # Check if the molecule contains the core structure
+    core_matches = mol.GetSubstructMatches(dimethylisoalloxazine_core)
+    if not core_matches:
+        return False, "Does not contain the dimethylisoalloxazine core"
+    
+    # Analyze each match to find substitution at the correct position
+    for match in core_matches:
+        # Determine the position corresponding to '10' in the core
+        core_at_index = match[5]  # Adjust index based on manual validation if 5 is '10'
+        
+        # Get the atom and its neighbors
+        core_atom = mol.GetAtomWithIdx(core_at_index)
+        
+        # Check if there is a substitution (at least one neighbor not in core)
+        is_substituted = any(neighbor.GetIdx() not in match for neighbor in core_atom.GetNeighbors())
+        
+        if is_substituted:
+            return True, "Contains dimethylisoalloxazine core with substitution at position 10"
 
     return False, "No substitution at position 10 of the dimethylisoalloxazine core"
