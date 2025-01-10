@@ -20,20 +20,21 @@ def is_methyl_branched_fatty_acid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Look for terminal carboxylic acid or carboxylate group -COOH or -COO- (smarts pattern: [CH2,CH][CX3](=O)[OH])
-    carboxylic_acid_pattern = Chem.MolFromSmarts("[CH2,CH][CX3](=O)[OH]")
+
+    # Look for carboxylic acid group -COOH (smarts pattern: C(=O)[O;H])
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[O;H]")
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
-        return False, "No terminal carboxylic acid or carboxylate group found"
-
-    # Look for methyl group branching not on terminal positions
-    methyl_branch_pattern = Chem.MolFromSmarts("[CX4H2]C(C)(C)[C;!H0]")  # Methyl branch in chain
-    if not mol.HasSubstructMatch(methyl_branch_pattern):
-        return False, "No methyl branching found in the chain"
-
-    # Count total carbon atoms to ensure sufficient chain length for fatty acids
-    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if carbon_count < 10:  # Adjusted minimum length to ensure it's considered a fatty acid
-        return False, "Not enough carbon atoms for a fatty acid backbone"
-
-    return True, "Contains carboxylic acid or carboxylate group and appropriate methyl branching in chain"
+        return False, "No carboxylic acid group found"
+        
+    # Look for methyl branches (smarts pattern: [CH3X4] - methyl group)
+    methyl_branch_pattern = Chem.MolFromSmarts("[CH3X4]")
+    methyl_branch_matches = mol.GetSubstructMatches(methyl_branch_pattern)
+    if len(methyl_branch_matches) < 1:
+        return False, "No methyl branches found"
+    
+    # Count number of carbon atoms to confirm it's a fatty acid
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 6: # Fatty acids typically have at least 6 carbons
+        return False, "Not enough carbon atoms (need at least 6 for a fatty acid)"
+    
+    return True, "Contains carboxylic acid group and has methyl branches"
