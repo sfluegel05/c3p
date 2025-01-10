@@ -26,16 +26,16 @@ def is_2_enoyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for CoA moiety
+    # Check for CoA moiety (more flexible pattern)
     coa_pattern = Chem.MolFromSmarts("SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No CoA moiety found"
 
-    # Check for thioester bond
-    thioester_pattern = Chem.MolFromSmarts("SC(=O)")
+    # Check for thioester bond in the acyl chain
+    thioester_pattern = Chem.MolFromSmarts("[CX3]=[CX3]C(=O)S")
     thioester_matches = mol.GetSubstructMatches(thioester_pattern)
     if len(thioester_matches) == 0:
-        return False, "No thioester bond found"
+        return False, "No thioester bond found in the acyl chain"
 
     # Check for double bond between positions 2 and 3 in the acyl chain
     double_bond_pattern = Chem.MolFromSmarts("[CX3]=[CX3]C(=O)S")
@@ -43,4 +43,15 @@ def is_2_enoyl_CoA(smiles: str):
     if len(double_bond_matches) == 0:
         return False, "No double bond between positions 2 and 3 in the acyl chain"
 
-    return True, "Contains CoA moiety with a double bond between positions 2 and 3 in the acyl chain attached via a thioester bond"
+    # Ensure the double bond is between positions 2 and 3 relative to the thioester bond
+    for match in double_bond_matches:
+        # Get the atoms involved in the double bond
+        atom1, atom2 = match[0], match[1]
+        # Get the atom connected to the thioester bond
+        thioester_atom = match[2]
+        # Check if the double bond is between positions 2 and 3
+        if mol.GetBondBetweenAtoms(atom1, atom2).GetBondType() == Chem.BondType.DOUBLE:
+            if mol.GetBondBetweenAtoms(atom1, thioester_atom) or mol.GetBondBetweenAtoms(atom2, thioester_atom):
+                return True, "Contains CoA moiety with a double bond between positions 2 and 3 in the acyl chain attached via a thioester bond"
+
+    return False, "No double bond between positions 2 and 3 in the acyl chain"
