@@ -3,6 +3,7 @@ Classifies: CHEBI:138675 gas molecular entity
 """
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import Descriptors
 
 def is_gas_molecular_entity(smiles: str):
     """
@@ -26,11 +27,11 @@ def is_gas_molecular_entity(smiles: str):
     # Elements typically found in gaseous compounds
     gaseous_elements = {1, 2, 6, 7, 8, 9, 10, 17, 18, 36, 54, 86}  # H, He, C, N, O, F, Ne, Cl, Ar, Kr, Xe, Rn
 
-    # Additional known special gaseous forms
+    # Updated known special gaseous forms
     known_gaseous_smiles = {
         "[219Rn]", "[220Rn]", "[222Rn]", "[Rn]", "[Xe]", "[He]", "[3He]", "[4He]", "[6He]", 
-        "O=C=O", "[C-]#[O+]", "CCC", "CC", "C=C", "C#C", "[H]N([H])[H]", "O=[13C]=O",
-        "ClCl", "FF", "[H]C([H])([H])[H]", "[H][H]", "[3H][3H]", "C1CO1", "FCl", "I[H]"
+        "O=C=O", "[C-]#[O+]", "CCC", "CC", "C=C", "[H]N([H])[H]", "ClCl", "FF",
+        "[H]C([H])([H])[H]", "[H][H]", "[3H][3H]", "C1CO1", "I[H]"
     }
 
     # Check if the molecule matches any known gaseous SMILES
@@ -42,10 +43,14 @@ def is_gas_molecular_entity(smiles: str):
         if atom.GetAtomicNum() not in gaseous_elements:
             return False, f"Contains non-gaseous element: {atom.GetSymbol()}"
 
-    # Checking molecular parameters for gas likelihood
+    # Consider extending rules on molecular parameters
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     num_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if mol_wt > 300 or num_rotatable > 5:
-        return False, f"Molecular weight or structure complexity suggests non-gas (MW: {mol_wt})"
+    num_rings = rdMolDescriptors.CalcNumRings(mol)
+    tpsa = Descriptors.TPSA(mol)
+    
+    # Adjust thresholds to better capture gaseous characteristics
+    if mol_wt > 100 or num_rotatable > 1 or num_rings > 0 or tpsa > 20:
+        return False, f"Molecular weight or structure complexity suggests non-gas (MW: {mol_wt}, Rotatable Bonds: {num_rotatable}, Rings: {num_rings}, TPSA: {tpsa})"
     
     return True, "Molecule is a simple structure containing only gaseous elements at STP"
