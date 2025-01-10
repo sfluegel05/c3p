@@ -28,7 +28,6 @@ def is_short_chain_fatty_acyl_CoA(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for CoA moiety
-    # CoA has a characteristic structure with a pantothenic acid derivative, phosphate, and ADP
     # Use a more general pattern to match different protonation states and slight variations
     coa_pattern = Chem.MolFromSmarts("[O-]P(=O)([O-])OP(=O)([O-])OCC1OC([C@H](O)[C@@H]1OP(=O)([O-])[O-])n1cnc2c(N)ncnc12")
     if not mol.HasSubstructMatch(coa_pattern):
