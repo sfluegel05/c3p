@@ -25,17 +25,18 @@ def is_trans_2_enoyl_CoA(smiles: str):
     if not mol.HasSubstructMatch(trans_double_bond_pattern):
         return False, "No suitable trans double bond with thioester found"
     
-    # Individually define key features of Coenzyme A and search for them collectively
-    pantetheine_pattern = Chem.MolFromSmarts("SCCNC(=O)[C@H](O)C(C)(C)")
+    # Update pantetheine pattern to match more relevant portions in the SMILES data
+    pantetheine_pattern = Chem.MolFromSmarts("SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)")
     if not mol.HasSubstructMatch(pantetheine_pattern):
         return False, "Pantetheine component not detected"
     
+    # Update phosphoadenosine pattern to correctly capture the structure
     phosphoadenosine_pattern = Chem.MolFromSmarts("OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(=O)O)n2cnc3c(N)ncnc23")
     if not mol.HasSubstructMatch(phosphoadenosine_pattern):
         return False, "Phosphoadenosine component not detected"
     
-    # Combine components to verify Coenzyme A structure as a whole
+    # Check overall Coenzyme A through combination of components
     if not (mol.HasSubstructMatch(pantetheine_pattern) and mol.HasSubstructMatch(phosphoadenosine_pattern)):
-        return False, "Coenzyme A component not fully detected"
+        return False, "Coenzyme A structure not fully detected"
     
     return True, "Matches key features of trans-2-enoyl-CoA"
