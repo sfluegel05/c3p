@@ -21,34 +21,35 @@ def is_clavulone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for long aliphatic chain pattern
-    aliphatic_chain = Chem.MolFromSmarts("C/C=C/CCCC")
-    if not mol.HasSubstructMatch(aliphatic_chain):
-        return False, "Missing long aliphatic chain"
+    # Check for complex unsaturated chain (approximate)
+    unsaturated_chain = Chem.MolFromSmarts("C=CCCC")
+    if not mol.HasSubstructMatch(unsaturated_chain):
+        return False, "Missing complex unsaturated carbon chain"
 
-    # Check for presence of ester groups
+    # Check for cyclic structures
+    ring_info = mol.GetRingInfo()
+    if not ring_info.NumRings() > 0:
+        return False, "Lacking necessary cyclic structures"
+
+    # Check for ester groups with specific position
     ester_pattern = Chem.MolFromSmarts("OC(=O)C")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) < 1:
-        return False, "Missing ester group"
+    if len(ester_matches) < 2:
+        return False, "Insufficient ester groups in the expected positions"
 
-    # Check for presence of rings, specifically looking for aromatic/conjugated ones
-    ring_info = mol.GetRingInfo()
-    if not ring_info.IsAtomInRingOfSize(0, 6):
-        return False, "Expected conjugated/aromatic ring not found"
-
-    # Check for chiral centers, which are common in the examples
+    # Check for chiral centers
     chiral_centers = len(Chem.FindMolChiralCenters(mol, includeUnassigned=True))
-    if chiral_centers < 1:
+    if chiral_centers < 2:
         return False, "Lacking required stereochemical centers"
 
-    # Check for halogens
+    # Check for presence of halogens
     halogen = Chem.MolFromSmarts("[Cl,Br,I]")
     has_halogen = mol.HasSubstructMatch(halogen)
 
+    # Classify based on the structural features
     if has_halogen:
-        return True, "Contains long aliphatic chain, ester group, cyclic structure, and halogen"
+        return True, "Contains complex unsaturated chain, ester groups, cyclic structures, and halogen"
     else:
-        return True, "Contains long aliphatic chain, ester group, and cyclic structure"
+        return False, "Missing required halogen"
 
     return None, None
