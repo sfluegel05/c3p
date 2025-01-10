@@ -41,4 +41,9 @@ def is_polychlorobiphenyl(smiles: str):
     if chlorine_count < 2 or chlorine_count > 10:
         return False, f"Found {chlorine_count} chlorine atoms on biphenyl rings, should be between 2 and 10"
 
+    # Check for presence of disruptive functional groups directly on biphenyl
+    disruptive_groups = Chem.MolFromSmarts("[OH,N(=O)=O]")
+    if mol.HasSubstructMatch(disruptive_groups):
+        return False, "Contains disruptive functional groups like hydroxyls or nitro"
+
     return True, f"Contains biphenyl structure with {chlorine_count} chlorine atoms attached"
