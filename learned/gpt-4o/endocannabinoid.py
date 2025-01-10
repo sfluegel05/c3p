@@ -20,25 +20,26 @@ def is_endocannabinoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Prepare more flexible patterns
-    # Recognize long unsaturated carbon chains generally, allowing for flexibility
-    chain_pattern = Chem.MolFromSmarts("C=C")
-    if not mol.HasSubstructMatch(chain_pattern):
-        return False, "Does not have recognizable unsaturated carbon chain"
+    # Potential Substructure Matches for Endocannabinoids
+
+    # Longer polyunsaturated carbon chain
+    extended_chain_pattern = Chem.MolFromSmarts("C=C.C=C.C=C")
+    if not mol.HasSubstructMatch(extended_chain_pattern):
+        return False, "Does not have recognizable polyunsaturated carbon chain"
     
-    # Recognize either ethanolamine or glycerol-like structure
+    # Backbone patterns: ethanolamine or glycerol-like linkage
     ethanolamine_pattern = Chem.MolFromSmarts("NCCO")
     glycerol_pattern = Chem.MolFromSmarts("C(O)C(O)C")
     if not (mol.HasSubstructMatch(ethanolamine_pattern) or mol.HasSubstructMatch(glycerol_pattern)):
         return False, "No characteristic endocannabinoid backbone found"
-
-    # Look for either ester or amide linkage to ensure linkage to long chain
+    
+    # Attachment via ester or amide linkage
     ester_pattern = Chem.MolFromSmarts("C(=O)O")
     amide_pattern = Chem.MolFromSmarts("C(=O)N")
     if not (mol.HasSubstructMatch(ester_pattern) or mol.HasSubstructMatch(amide_pattern)):
         return False, "No ester or amide linkage found"
     
-    # Check for presence of hydroxyl or epoxy groups, optional but common in endocannabinoids
+    # Optional but common functional groups
     hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
     epoxy_pattern = Chem.MolFromSmarts("C1OC1")
     if mol.HasSubstructMatch(hydroxyl_pattern) or mol.HasSubstructMatch(epoxy_pattern):
