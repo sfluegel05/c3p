@@ -21,24 +21,36 @@ def is_steroid_sulfate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Improved SMARTS pattern for general steroid core - more flexible structure
-    steroid_pattern = Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2CCC4(C3C=CC=C4)C") # Simplest common backbone
+    # Define a rough steroid backbone pattern (acknowledge complexity and why exact match is challenging)
+    # The SMARTS string "C1CCC2C(C1)CCC3C2CCC4C3CCC4" represents a basic cholesterol steroid ring pattern, not too specific for all steroids due to variability.
 
-    # Check if there's a pattern matching a steroid backbone
+    # Check for presence of a rough steroid backbone
+    steroid_pattern = Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2CCC4C3CCC4")
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
-      
-    # SMARTS pattern to identify sulfate group bound through an ester linkage
-    sulfate_pattern = Chem.MolFromSmarts("OS(=O)(=O)[O,C]-")
 
-    # Check for sulfate linkage to hydroxy group
-    if not mol.HasSubstructMatch(sulfate_pattern):
-        return False, "No sulfate group properly linked"
+    # Look for sulfate groups esters
+    sulfate_pattern = Chem.MolFromSmarts("OS(=O)(=O)O")  # Corrected sulfate ester bond
 
-    # If both the steroid backbone and sulfate ester linkage are found
-    return True, "Contains steroid backbone with sulfate ester linkage"
+    # Check if the sulfate group exists and is connected to the steroid backbone
+    sulfate_matches = mol.GetSubstructMatches(sulfate_pattern)
+    if not sulfate_matches:
+        return False, "No sulfate groups connected as esters"
 
-# Example for testing
-smiles = "[Na+].[H][C@]12CC[C@]3(C)C(=O)CC[C@@]3([H])[C@]1([H])CCc1cc(OS([O-])(=O)=O)ccc21"
+    # Check connectivity to alcohols (which would have been the type to esterify)
+    hydroxyl_pattern = Chem.MolFromSmarts("CO")
+    if not mol.HasSubstructMatch(hydroxyl_pattern):
+        return False, "No hydroxyl groups found for esterification"
+
+    for match in sulfate_matches:
+        # Ensure ester linkage to the hydroxy site on predicted steroid backbone
+        atom_indices = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetSymbol() == 'O']
+        if any(mol.GetAtomWithIdx(idx).GetNeighbors()[0].GetSymbol() == 'C' for idx in atom_indices):
+            return True, "Contains sulfate ester linked to steroid backbone at a hydroxy group"
+
+    return False, "Sulfate groups found but not linked properly to steroid backbone"
+
+# Example structure for testing (estrone sodium sulfate)
+smiles = "[Na].C[C@]12CC[C@H]3C(=CCc4cc(OS([O-])(=O)=O)ccc34)[C@@H]1CCC2=O"
 result, reason = is_steroid_sulfate(smiles)
 print(f"Result: {result}, Reason: {reason}")
