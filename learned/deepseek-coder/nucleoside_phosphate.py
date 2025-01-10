@@ -27,17 +27,17 @@ def is_nucleoside_phosphate(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for sugar pattern (more general pattern for ribose, deoxyribose, and other sugars)
-    sugar_pattern = Chem.MolFromSmarts("[C@H]1O[C@H]([C@H](O)[C@@H]1O) | [C@H]1O[C@H]([C@H](O)[C@@H]1O) | [C@H]1O[C@H]([C@H](O)[C@@H]1O)")
+    sugar_pattern = Chem.MolFromSmarts("[C@H]1O[C@H]([C@H](O)[C@@H]1O)")
     if not mol.HasSubstructMatch(sugar_pattern):
         return False, "No sugar pattern found"
 
     # Look for nucleobase pattern (more general pattern for purines and pyrimidines)
-    nucleobase_pattern = Chem.MolFromSmarts("[nX3]1[cX3][cX3][cX3][cX3]1 | [nX3]1[cX3][cX3][cX3][cX3]1 | [nX3]1[cX3][cX3][cX3][cX3]1")
+    nucleobase_pattern = Chem.MolFromSmarts("[nX3]1[cX3][cX3][cX3][cX3]1 | [nX3]1[cX3][cX3][cX3][cX3]1")
     if not mol.HasSubstructMatch(nucleobase_pattern):
         return False, "No nucleobase pattern found"
 
     # Look for phosphate groups (more general pattern)
-    phosphate_pattern = Chem.MolFromSmarts("[PX4](=O)([OX2])[OX2] | [PX4](=O)([OX2])[OX2] | [PX4](=O)([OX2])[OX2]")
+    phosphate_pattern = Chem.MolFromSmarts("[PX4](=O)([OX2])[OX2]")
     phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
     if len(phosphate_matches) == 0:
         return False, "No phosphate groups found"
