@@ -8,6 +8,9 @@ def is_clavulone(smiles: str):
     Determines if a molecule is a clavulone based on its SMILES string.
     A clavulone is a class of esterified prostanoids obtained from marine corals.
     
+    It's characterized by complex cyclic structures, multiple ester groups, conjugated diene
+    arrangements, and may contain halogens.
+
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -20,33 +23,31 @@ def is_clavulone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for the presence of ester groups
+    # General ester pattern more flexible
     ester_pattern = Chem.MolFromSmarts("C(=O)O")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) < 2:
         return False, "Insufficient ester groups found"
     
-    # Check for cyclic structures possibly linked by esters
-    cyclic_pattern = Chem.MolFromSmarts("C1CCCCC1")
-    if not mol.HasSubstructMatch(cyclic_pattern):
-        return False, "No prominent cyclic structure found"
-    
-    # Check for conjugated diene arrangements flexible for marine prostanoids
+    # Define more flexible cyclic arrangements potentially combined with esters
+    cyclic_patterns = [
+        Chem.MolFromSmarts("C1=CC=CCC1"),  # Simple aromatic cycles
+        Chem.MolFromSmarts("C1CCC(C1)=O"), # Cyclohexanone as representative
+    ]
+    has_cycle = any(mol.HasSubstructMatch(cp) for cp in cyclic_patterns)
+    if not has_cycle:
+        return False, "No typical cyclic structure found"
+
+    # Check for conjugated diene flexibility within the cycles
     diene_patterns = [
-        Chem.MolFromSmarts("C=CC=C"),
-        Chem.MolFromSmarts("C=CC")
+        Chem.MolFromSmarts("C=CC=C"),      # Conjugated diene
+        Chem.MolFromSmarts("C=CCC=C"),     # Extended conjugation
     ]
     has_diene = any(mol.HasSubstructMatch(dp) for dp in diene_patterns)
     if not has_diene:
         return False, "No suitable conjugated diene arrangement found"
-    
-    # Check for long-chain hydrocarbons typical of marine-origin compounds
-    long_chain_pattern = Chem.MolFromSmarts("C=C-C-C=C")
-    has_long_chain = mol.HasSubstructMatch(long_chain_pattern)
-    if not has_long_chain:
-        return False, "No suitable long carbon chain found"
-    
-    # Recognize halogens that may be indicative of specific clavulone subtypes
+
+    # Recognize halogens presence indicative of specific clavulone subtypes
     halogen_pattern = Chem.MolFromSmarts("[Cl,Br,I]")
     has_halogen = mol.HasSubstructMatch(halogen_pattern)
     
@@ -55,6 +56,4 @@ def is_clavulone(smiles: str):
     else:
         return True, "Matches clavulone structure possibly without halogens"
 
-# Example debug print for iodine-containing clavulone structure
-# result, reason = is_clavulone("IC1=C[C@](O)(C/C=C\\CCCCC)/C(/C1=O)=C\\C=C/CCCC(OC)=O")
-# print(result, reason)
+# Improved with nuances for each specification for clavulone structures.
