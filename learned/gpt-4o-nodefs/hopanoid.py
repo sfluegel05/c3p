@@ -21,11 +21,14 @@ def is_hopanoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # A more generalized pattern to capture hopanoid backbones, including functional variations
+    # Updated patterns capturing a broad set of characteristics for hopanoids
     hopanoid_patterns = [
-        Chem.MolFromSmarts("C1CCC2CC3CC4C5CC(C4)C5CC3C2C1"),  # Basic hopane pattern
-        Chem.MolFromSmarts("C1CCC2CC3CC(C4)C4CC3C2C1"),        # Allow for modified hopanes
-        Chem.MolFromSmarts("C1CCC2C(C3CC(C4)C4CCC23)CCC1"),     # Other cyclization variations
+        # Basic hopane structure with possible methyl groups
+        Chem.MolFromSmarts("C1CC[C@]2(C)[C@H](CC[C@@H]3[C@@]4(CC[C@H]5[C@@]6(C)CCCC(C)(C)[C@@H]6CC[C@@H]5C)C)[C@@H](C4)CC3C2)C1"),
+        # Consider variations where cyclopentane motifs might differ
+        Chem.MolFromSmarts("C1CCC2(CC3CC4(C)C5CCC5C4CC3C2C1)C"),
+        # Allow for functionalized hopanoids (with flexible oxygen or nitrogens)
+        Chem.MolFromSmarts("C1[C@H]2C[C@]3(CC[C@@H]4[C@@]5(C(C)(C)C)CCCC(C@@H]5CC[C@@H]4C3C2)[C@@H](C1)[NX2,O]"),
     ]
 
     for hopanoid_pattern in hopanoid_patterns:
@@ -34,4 +37,5 @@ def is_hopanoid(smiles: str):
 
     return False, "No hopanoid backbone found"
 
-# This updated pattern attempts to broadly detect the triterpenoid backbone characteristic of hopanoids.
+# This code includes broader SMARTS patterns that cover hopanoid structures, considering common variations
+# in functional groups, stereochemistry, and ring structures.
