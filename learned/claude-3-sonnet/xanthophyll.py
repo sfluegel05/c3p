@@ -30,37 +30,36 @@ def is_xanthophyll(smiles: str):
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     
-    # Xanthophylls are typically C40 terpenoids
-    if c_count < 30 or c_count > 50:
-        return False, f"Carbon count {c_count} outside typical range for xanthophylls (30-50)"
+    # Allow C20-C50 to include apo-carotenoids
+    if c_count < 20 or c_count > 50:
+        return False, f"Carbon count {c_count} outside typical range for xanthophylls (20-50)"
     
     # Must have oxygen atoms
     if o_count == 0:
         return False, "No oxygen atoms found - xanthophylls must be oxygenated"
 
-    # Look for conjugated polyene patterns (characteristic of carotenoids)
-    conjugated_patterns = [
-        "C=CC=CC=CC=C",  # Basic conjugated system
+    # Look for characteristic carotenoid backbone patterns
+    carotenoid_patterns = [
         "C=CC=CC=CC=CC=C",  # Extended conjugation
-        r"[CH2,CH3]/C=C/C=C/C=C"  # Trans conjugated system
+        "CC(C)=CC=CC=C",    # Typical end portion
+        "C=CC(C)=CC=CC=C",  # Methylated conjugation
+        "C=CC=C(C)C=CC=C"   # Alternative methylation
     ]
     
-    has_conjugation = False
-    for pattern in conjugated_patterns:
+    backbone_matches = 0
+    for pattern in carotenoid_patterns:
         pat = Chem.MolFromSmarts(pattern)
         if pat and mol.HasSubstructMatch(pat):
-            has_conjugation = True
-            break
-            
-    if not has_conjugation:
-        return False, "Missing characteristic conjugated polyene system"
+            backbone_matches += len(mol.GetSubstructMatches(pat))
+    
+    if backbone_matches < 2:
+        return False, "Missing characteristic carotenoid conjugated system"
 
-    # Look for oxygen-containing functional groups
+    # Look for oxygen-containing functional groups in typical xanthophyll positions
     oxygen_patterns = {
-        "hydroxy": "[OX2H1]",  # Hydroxyl group
+        "hydroxy": "[OX2H1]C",  # Hydroxyl group
         "keto": "[CX3](=O)[CX4]",  # Ketone
         "epoxy": "[OX2r3]1[CX4r3][CX4r3]1",  # Epoxide
-        "ester": "[CX3](=O)[OX2]",  # Ester
         "ether": "[OX2]([CX4])[CX4]"  # Ether
     }
     
@@ -75,41 +74,36 @@ def is_xanthophyll(smiles: str):
             total_o_groups += matches
     
     if total_o_groups == 0:
-        return False, "No oxygen-containing functional groups found"
+        return False, "No characteristic oxygen-containing functional groups found"
 
-    # Look for characteristic end groups (cyclohexene rings common in xanthophylls)
-    end_group_patterns = [
-        "C1=C(C)CCCC1(C)C",  # Common end group
-        "C1C(C)=CCCC1(C)C",  # Alternative end group
+    # Count double bonds
+    double_bond_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts("C=C")))
+    if double_bond_count < 5:
+        return False, f"Insufficient conjugated system (found {double_bond_count} double bonds, need at least 5)"
+
+    # Look for alternating methyl branching pattern characteristic of carotenoids
+    methyl_patterns = [
+        "CC(C)=CC=C",  # Terminal methyl pattern
+        "C=C(C)C=CC",  # Internal methyl pattern
+        "C=CC(C)=CC"   # Alternative internal pattern
     ]
     
-    has_end_group = False
-    for pattern in end_group_patterns:
+    methyl_matches = 0
+    for pattern in methyl_patterns:
         pat = Chem.MolFromSmarts(pattern)
-        if pat and mol.HasSubstructMatch(pat):
-            has_end_group = True
-            break
+        if pat:
+            methyl_matches += len(mol.GetSubstructMatches(pat))
+    
+    if methyl_matches < 2:
+        return False, "Missing characteristic carotenoid methyl branching pattern"
 
     # Calculate molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 450 or mol_wt > 850:
+    if mol_wt < 350 or mol_wt > 850:
         return False, f"Molecular weight {mol_wt:.1f} outside typical range for xanthophylls"
-
-    # Count double bonds by looking at bond types
-    double_bond_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts("C=C")))
-    if double_bond_count < 7:
-        return False, f"Insufficient conjugated system (found {double_bond_count} double bonds, need at least 7)"
-
-    # Check for characteristic branching methyl groups
-    methyl_pattern = Chem.MolFromSmarts("C[C](C)C")
-    methyl_groups = len(mol.GetSubstructMatches(methyl_pattern))
-    if methyl_groups < 2:
-        return False, "Missing characteristic methyl branching"
 
     # If all checks pass, classify as xanthophyll
     features = []
-    if has_end_group:
-        features.append("cyclic end groups")
     features.append(f"{double_bond_count} double bonds")
     features.append(f"{o_count} oxygen atoms")
     oxygen_groups_str = ", ".join(f"{count} {name}" for name, count in oxygen_group_counts.items() if count > 0)
