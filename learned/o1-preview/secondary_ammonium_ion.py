@@ -24,31 +24,42 @@ def is_secondary_ammonium_ion(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for secondary ammonium ion
-    # Nitrogen with positive charge, two hydrogens, bonded to two carbons
-    pattern = Chem.MolFromSmarts("[N+H2]([C])[C]")
-    if pattern is None:
-        return False, "Invalid SMARTS pattern"
+    found_secondary_ammonium = False
 
-    # Search for the pattern in the molecule
-    matches = mol.GetSubstructMatches(pattern)
-    if not matches:
+    # Iterate over all nitrogen atoms in the molecule
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 7:
+            # Check if the nitrogen has a +1 formal charge
+            if atom.GetFormalCharge() == 1:
+                # Get neighbors of the nitrogen atom
+                neighbors = atom.GetNeighbors()
+                carbon_count = 0
+                hydrogen_count = 0
+                other_neighbors = 0
+                valid_carbons = True
+
+                for neighbor in neighbors:
+                    atomic_num = neighbor.GetAtomicNum()
+                    if atomic_num == 6:
+                        carbon_count += 1
+                        # Check if the carbon is part of a carbonyl group (exclude amides)
+                        for bond in neighbor.GetBonds():
+                            if bond.GetBondType() == Chem.BondType.DOUBLE:
+                                bonded_atom = bond.GetOtherAtom(neighbor)
+                                if bonded_atom.GetAtomicNum() == 8:
+                                    valid_carbons = False  # Carbon is carbonyl carbon
+                    elif atomic_num == 1:
+                        hydrogen_count += 1
+                    else:
+                        other_neighbors +=1  # Nitrogen bonded to other heteroatom
+
+                # Check if nitrogen is bonded to exactly two carbons and two hydrogens
+                if (carbon_count == 2 and hydrogen_count == 2 and other_neighbors == 0 and valid_carbons):
+                    found_secondary_ammonium = True
+                    return True, "Contains secondary ammonium ion group (protonated secondary amine)"
+    
+    if not found_secondary_ammonium:
         return False, "No secondary ammonium ion group found"
-
-    # Check each match to ensure the nitrogen atom has only two carbon attachments
-    for match in matches:
-        n_idx = match[0]  # Index of the nitrogen atom
-        n_atom = mol.GetAtomWithIdx(n_idx)
-        # Check that the nitrogen has a +1 formal charge
-        if n_atom.GetFormalCharge() != 1:
-            continue
-        # Check that the nitrogen is bonded to exactly two carbons
-        neighbor_carbons = [atom.GetAtomicNum() for atom in n_atom.GetNeighbors() if atom.GetAtomicNum() == 6]
-        if len(neighbor_carbons) != 2:
-            continue
-        return True, "Contains secondary ammonium ion group ([N+H2]([C])[C])"
-
-    return False, "No secondary ammonium ion group found"
 
 __metadata__ = {
     'chemical_class': {
@@ -70,7 +81,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 0,
+    'attempt': 1,
     'success': True,
     'best': True,
     'error': '',
