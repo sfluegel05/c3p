@@ -7,7 +7,7 @@ from rdkit.Chem import rdmolops
 def is_macrolide(smiles: str):
     """
     Determines if a molecule is a macrolide based on its SMILES string.
-    Macrolides are characterized by a large macrocyclic lactone ring, typically with an ester linkage.
+    Macrolides are characterized by a large macrocyclic lactone ring.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,19 +21,30 @@ def is_macrolide(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Get the molecular rings information with a focus on larger macrocycles
+
+    # Get ring information
     ring_info = mol.GetRingInfo()
     atom_rings = ring_info.AtomRings()
 
-    # SMARTS pattern for a lactone, which is a cyclic ester
-    lactone_pattern = Chem.MolFromSmarts('O=C-O')
-
+    # Identify candidate macrolide rings
     for ring in atom_rings:
-        if 10 <= len(ring) <= 18:  # Expanded range to include broader macrolide sizes
-            # Create a sub-molecule of just this ring to match patterns within it
-            submol = Chem.PathToSubmol(mol, ring)
-            if submol.HasSubstructMatch(lactone_pattern):
+        # Check if ring size is in typical macrolide range
+        if 12 <= len(ring) <= 16:
+            # Check for an ester linkage within the ring
+            found_ester = False
+            for bond in ring:
+                atom1 = mol.GetAtomWithIdx(bond)
+                for neighbor in atom1.GetNeighbors():
+                    # Identify the ester pattern: "C(=O)O"
+                    if neighbor.GetAtomicNum() == 8:  # Oxygen
+                        carbon_atom = neighbor.GetNeighbors()[0]
+                        if carbon_atom.GetAtomicNum() == 6:  # Check carbon
+                            if carbon_atom.GetTotalNumHs() == 0 and any(nb.GetAtomicNum() == 8 for nb in carbon_atom.GetNeighbors() if nb.GetIdx() != atom1.GetIdx()):
+                                found_ester = True
+                                break
+                if found_ester:
+                    break
+            if found_ester:
                 return True, "Contains macrocyclic lactone ring with an ester linkage"
-    
+
     return False, "No characteristic macrolide macrocyclic lactone ring found"
