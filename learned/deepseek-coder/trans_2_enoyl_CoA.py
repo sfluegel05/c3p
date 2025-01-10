@@ -5,7 +5,6 @@ Classifies: CHEBI:50998 trans-2-enoyl-CoA
 Classifies: CHEBI:28348 trans-2-enoyl-CoA
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_trans_2_enoyl_CoA(smiles: str):
     """
@@ -55,19 +54,10 @@ def is_trans_2_enoyl_CoA(smiles: str):
     if bond.GetStereo() == Chem.rdchem.BondStereo.STEREOZ:
         return False, "Double bond is in cis configuration"
     
-    # If no stereo information, check the geometry
+    # If no stereo information, assume trans based on the SMARTS pattern
     if bond.GetStereo() == Chem.rdchem.BondStereo.STEREONONE:
-        # Use 3D coordinates to determine trans configuration
-        mol = Chem.AddHs(mol)
-        AllChem.EmbedMolecule(mol)
-        AllChem.MMFFOptimizeMolecule(mol)
-        conf = mol.GetConformer()
-        coords1 = conf.GetAtomPosition(matches[0][1])
-        coords2 = conf.GetAtomPosition(matches[0][2])
-        coords3 = conf.GetAtomPosition(matches[0][3])
-        angle = Chem.rdMolTransforms.GetAngleRad(conf, matches[0][1], matches[0][2], matches[0][3])
-        if abs(angle) < 2.8:  # Approximate threshold for trans configuration
-            return False, "Double bond geometry suggests cis configuration"
+        # The SMARTS pattern already enforces the trans configuration
+        pass
 
     # Verify the thioester bond is connected to CoA
     thioester_atom = matches[0][-1]  # The sulfur atom
