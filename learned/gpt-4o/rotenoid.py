@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_rotenoid(smiles: str):
     """
     Determines if a molecule is a rotenoid based on its SMILES string.
-    Rotenoids are defined by the presence of a cis-fused tetrahydrochromeno[3,4-b]chromene skeleton.
+    A rotenoid consists of a cis-fused tetrahydrochromeno[3,4-b]chromene skeleton.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,9 +21,9 @@ def is_rotenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Revised SMARTS pattern for tetrahydrochromeno[3,4-b]chromene skeleton
-    # A more general pattern for rotenoid structure
-    rotenoid_pattern = Chem.MolFromSmarts("C1OC(C2=CC3=C(C2O1)C=CC=C3)=O")
+    # Revised SMARTS pattern for rotenoid structure
+    # The pattern aims to capture essential features of the rotenoid scaffold, including the cis-fused rings.
+    rotenoid_pattern = Chem.MolFromSmarts("C12OC3=C(O1)C=CC4=C3OC5=CC=CC5=C24")
     
     # Check if the molecule has the rotenoid pattern
     if mol.HasSubstructMatch(rotenoid_pattern):
