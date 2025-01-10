@@ -6,12 +6,14 @@ Classifies: cucurbitacin
 """
 
 from rdkit import Chem
+from rdkit.Chem import Descriptors
 
 def is_cucurbitacin(smiles: str):
     """
     Determines if a molecule is a cucurbitacin based on its SMILES string.
     Cucurbitacins are tetracyclic triterpenoids derived from cucurbitane.
-    They have a characteristic tetracyclic skeleton with specific functional groups.
+    They have a characteristic fused ring system of three six-membered rings
+    and one five-membered ring.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,44 +28,80 @@ def is_cucurbitacin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Remove stereochemistry from the molecule to make matching less specific
-    Chem.RemoveStereochemistry(mol)
+    # Get ring information
+    ring_info = mol.GetRingInfo()
+    atom_rings = ring_info.AtomRings()  # List of tuples of atom indices
+    num_rings = len(atom_rings)
+    if num_rings < 4:
+        return False, f"Contains {num_rings} rings, less than 4 required for tetracyclic system"
 
-    # Use the cucurbitane backbone as substructure pattern
-    # Cucurbitane SMILES without stereochemistry
-    cucurbitane_smiles = 'CC1CCC2(C)C1CCC3(C)C(C)CCC4C(C)(C)CCC23C4'
-    cucurbitane_mol = Chem.MolFromSmiles(cucurbitane_smiles)
-    if cucurbitane_mol is None:
-        return False, "Invalid cucurbitane SMILES"
+    # Build a list of ring atoms and ring sizes
+    ring_atoms_list = [set(ring) for ring in atom_rings]
+    ring_sizes = [len(ring) for ring in atom_rings]
 
-    # Remove stereochemistry from the cucurbitane molecule
-    Chem.RemoveStereochemistry(cucurbitane_mol)
+    # Build ring fusion graph
+    # Nodes are ring indices, edges exist if rings share two or more atoms
+    ring_graph = {}
+    for i in range(num_rings):
+        ring_graph[i] = set()
+        for j in range(num_rings):
+            if i != j:
+                # Check if rings i and j are fused
+                shared_atoms = ring_atoms_list[i] & ring_atoms_list[j]
+                if len(shared_atoms) >= 2:
+                    ring_graph[i].add(j)
 
-    # Check for cucurbitane skeleton
-    if not mol.HasSubstructMatch(cucurbitane_mol):
-        return False, "Does not contain the cucurbitane skeleton characteristic of cucurbitacins"
+    # Find connected components (fused ring systems)
+    visited = set()
+    fused_ring_systems = []
 
-    # Check for characteristic functional groups
-    # Cucurbitacins often have multiple hydroxyl groups and ketones
-    num_hydroxyl = len(mol.GetSubstructMatches(Chem.MolFromSmarts('[OX2H]')))
-    num_ketone = len(mol.GetSubstructMatches(Chem.MolFromSmarts('C(=O)[!$([O-])]')))
+    for i in range(num_rings):
+        if i not in visited:
+            # Perform DFS to find all rings in this fused system
+            stack = [i]
+            component = set()
+            while stack:
+                ring_idx = stack.pop()
+                if ring_idx not in visited:
+                    visited.add(ring_idx)
+                    component.add(ring_idx)
+                    stack.extend(ring_graph[ring_idx] - visited)
+            fused_ring_systems.append(component)
 
-    total_functional_groups = num_hydroxyl + num_ketone
-    if total_functional_groups < 3:
-        return False, f"Contains {total_functional_groups} hydroxyls and ketones, less than 3 total characteristic functional groups"
+    # Look for a fused ring system with four rings: 3 six-membered and 1 five-membered
+    tetracyclic_found = False
+    for system in fused_ring_systems:
+        if len(system) == 4:
+            sizes = [ring_sizes[idx] for idx in system]
+            num_6 = sizes.count(6)
+            num_5 = sizes.count(5)
+            if num_6 == 3 and num_5 == 1:
+                tetracyclic_found = True
+                break
 
-    # Check for triterpenoid skeleton (at least 30 carbons)
+    if not tetracyclic_found:
+        return False, "Does not contain the characteristic tetracyclic ring system of cucurbitacins"
+
+    # Check for triterpenoid skeleton (30 carbons)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if c_count < 30:
         return False, f"Carbon count {c_count} is less than 30, not a triterpenoid"
 
-    return True, "Contains cucurbitane skeleton and characteristic functional groups of cucurbitacins"
+    # Check for characteristic functional groups
+    # Cucurbitacins often have multiple hydroxyl and ketone groups
+    num_hydroxyl = len(mol.GetSubstructMatches(Chem.MolFromSmarts('[OX2H]')))
+    num_ketone = len(mol.GetSubstructMatches(Chem.MolFromSmarts('[$([CX3]=O)]')))
+    if num_hydroxyl + num_ketone < 3:
+        return False, f"Contains {num_hydroxyl} hydroxyl and {num_ketone} ketone groups, less than 3 total"
+
+    # Passed all checks
+    return True, "Contains characteristic tetracyclic ring system and functional groups of cucurbitacins"
 
 __metadata__ = {
     'chemical_class': {
         'id': None,
         'name': 'cucurbitacin',
-        'definition': 'Any one of a class of tetracyclic triterpenoids, formally derived from the triterpene hydrocarbon cucurbitane, developed by some plants (especially those of the family Cucurbitaceae) as a defence mechanism against herbivores.',
+        'definition': 'Any one of a class of tetracyclic triterpenoids, formally derived from the triterpene hydrocarbon cucurbitane, developed by some plants (especially those of the family Cucurbitaceaeas) as a defence mechanism against herbivores.',
         'parents': []
     }
 }
