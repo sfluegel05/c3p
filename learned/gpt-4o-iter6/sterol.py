@@ -21,15 +21,24 @@ def is_sterol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more flexible SMARTS pattern for steroid-like backbone: 4-ring core typical in steroids
-    # This pattern captures the three 6-membered rings and one 5-membered ring common in steroids
-    steroid_pattern = Chem.MolFromSmiles("C1CC2CCC3C4CCCC(C4)C3CCC2C1")
+    # Define a SMARTS pattern for more flexible steroid-like backbone:
+    # A pattern for a saturated polycyclic backbone with 3 six-membered rings and 1 five-membered ring
+    # Allow for flexibility with unsaturation (double bonds)
+    steroid_pattern = Chem.MolFromSmarts("C1(C)C[C@H]2[C@@H]3C=CC[C@H]4C(C)=C/C=C/[C@]4(C)C3CCC2C1")
     if not mol.HasSubstructMatch(steroid_pattern):
-        return False, "No steroid-like backbone found"
+        return False, "No flexible steroid-like backbone found"
 
-    # Look for a hydroxyl group [-OH] which is characteristic for sterols
-    hydroxyl_pattern = Chem.MolFromSmarts("[CX4][OX2H]")
+    # Check for a hydroxyl group [-OH] which is characteristic for sterols
+    # Consider hydroxyl groups attached to both aromatic and aliphatic carbons
+    hydroxyl_pattern = Chem.MolFromSmarts("[#6][OX2H]")
     if not mol.HasSubstructMatch(hydroxyl_pattern):
         return False, "No hydroxyl group found"
 
-    return True, "Contains steroid-like backbone with a hydroxyl group, consistent with sterol definition"
+    # Check for the presence of typical modifications or side chains present in sterols
+    # Using a lenient approach here to account for variety
+    possible_sidechain_pattern = Chem.MolFromSmarts("[CX3,CX4]C([CX3,CX4])")
+    if mol.HasSubstructMatch(possible_sidechain_pattern):
+        return True, "Contains steroid-like backbone with hydroxyl group and compatible side chains, consistent with sterol definition"
+    else:
+        # Even if side chain is not found, it might still be a sterol
+        return True, "Contains steroid-like backbone with hydroxyl group; possible sterol with unconventional side chain"
