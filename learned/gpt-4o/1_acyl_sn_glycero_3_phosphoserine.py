@@ -2,7 +2,6 @@
 Classifies: CHEBI:52603 1-acyl-sn-glycero-3-phosphoserine
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_1_acyl_sn_glycero_3_phosphoserine(smiles: str):
     """
@@ -22,12 +21,12 @@ def is_1_acyl_sn_glycero_3_phosphoserine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define substructure patterns 
-    glycerol_pattern = Chem.MolFromSmarts("OCC(O)CO")
-    phosphoserine_pattern = Chem.MolFromSmarts("OC1COP([O-])([O-])=O")  # phosphate with serine
-    acyl_pattern = Chem.MolFromSmarts("C(=O)O")  # Simple acyl ester linkage
-
-    # Check for glycerol pattern (may need to adjust based on stereochemistry specifics)
+    # Define substructure patterns
+    glycerol_pattern = Chem.MolFromSmarts("O[C@H](CO)CO")  # Specific stereo representation
+    phosphoserine_pattern = Chem.MolFromSmarts("COP(=O)(O)OC[C@H](N)C(=O)O")
+    acyl_pattern = Chem.MolFromSmarts("C(=O)OC[C@H]")  # Ensure correct orientation
+    
+    # Check for glycerol pattern
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
         
@@ -35,8 +34,9 @@ def is_1_acyl_sn_glycero_3_phosphoserine(smiles: str):
     if not mol.HasSubstructMatch(phosphoserine_pattern):
         return False, "No phosphoserine group found"
 
-    # Check for acyl ester linkage at the 1-position (simplified check for one acyl linkage)
-    if not mol.HasSubstructMatch(acyl_pattern):
+    # Check for acyl ester linkage at the 1-position
+    acyl_matches = mol.GetSubstructMatches(acyl_pattern)
+    if len(acyl_matches) == 0:
         return False, "Missing acyl group at sn-1 position"
 
     return True, "Molecule contains sn-glycero-3-phosphoserine with acyl group at sn-1 position"
