@@ -21,15 +21,21 @@ def is_3_oxo_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a general SMARTS pattern for steroid backbone (rings: B-C-D)
-    steroid_backbone_pattern = Chem.MolFromSmarts("[#6]1[#6][#6]2[#6][#6]3[#6][#6][#6]4[#6][#6][#6]1[#6]2[#6][#6]3")
+    # Define the steroid backbone structure
+    # Steroid backbone: three six-membered rings followed by a five-membered ring
+    steroid_backbone_pattern = Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2CCC4=CC(=O)CCC34")
     if not mol.HasSubstructMatch(steroid_backbone_pattern):
         return False, "No steroid backbone found"
 
-    # Identify the correct 3-position for the oxo group in the steroid structure
-    # Use a pattern that identifies a C=O group at possible positions
-    oxo_group_pattern = Chem.MolFromSmarts("[#6;r3](=O)")
-    if not any(mol.GetSubstructMatches(oxo_group_pattern)):
+    # Check for the 3-oxo group
+    # This checks for a carbonyl group (=O) bound to the third carbon which is a part of the steroid backbone
+    oxo_group_pattern = Chem.MolFromSmarts("C2=COCC(=O)CC3C2CCC4")
+    if not mol.HasSubstructMatch(oxo_group_pattern):
         return False, "No 3-oxo group found"
 
     return True, "Molecule is a 3-oxo steroid"
+
+# Example usage: Check if a given SMILES string is a 3-oxo steroid
+# Call the function with a SMILES string as argument, for example:
+# is_3_oxo_steroid('CC(=O)[C@H]1CC[C@H]2[C@@H]3CC=C4C(F)(F)C(=O)CC[C@]4(C)[C@H]3CC[C@]12C')
+# This would return (True, "Molecule is a 3-oxo steroid") if the SMILES string matches the criteria.
