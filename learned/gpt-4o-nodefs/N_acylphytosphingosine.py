@@ -22,26 +22,19 @@ def is_N_acylphytosphingosine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for the N-acylphytosphingosine backbone pattern:
-    # − Include hydroxylated long chain (typically 18 carbons)
-    # − Carbon chain with secondary amine
-    # − Multiple hydroxyl groups, generally two close to the amine group
-
-    # Define SMARTS pattern for phytosphingosine backbone
-    # General structure: C(CO)O-CH-(CH2)n-CH(NC)-CH2O
-    backbone_pattern = Chem.MolFromSmarts("[C@@H](O)[C@@H](N)[C@@H](O)")  # Looking for amino-alcohol pattern
+    # Broad pattern for phytosphingosine backbone recognition:
+    # Allow for multiple stereochemistry configurations and variations
+    # Include hydroxylated long chain and secondary amide connections
+    # Pattern components: Long chain with hydroxyls and a secondary amine
+    backbone_pattern = Chem.MolFromSmarts("[C@@H,O][C@@H](N(C=O))([C@@H,O])+") # A rougher generalization
     
     if not mol.HasSubstructMatch(backbone_pattern):
-        return False, "No phytosphingosine backbone found"
+        return False, "No N-acylphytosphingosine backbone pattern found"
 
-    # Define pattern for an acyl group attached to the nitrogen
-    acyl_pattern = Chem.MolFromSmarts("NC(=O)C")  # Acyl group pattern; nitrogen connected to carbonyl
-    if not mol.HasSubstructMatch(acyl_pattern):
+    # Acyl group should be attached to the nitrogen, we check for a carbonyl group connected to the nitrogen
+    acyl_group_pattern = Chem.MolFromSmarts("N[C;$(C=O)]")  # Highlight carbonyl linkage
+    
+    if not mol.HasSubstructMatch(acyl_group_pattern):
         return False, "No acyl group attached to the nitrogen"
 
-    return True, "Contains phytosphingosine backbone with N-acyl group"
-
-# Test the function
-example_smiles = "CCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO)[C@H](O)[C@H](O)CCCCCCCCCCCCCC"
-result, reason = is_N_acylphytosphingosine(example_smiles)
-print(f"Result: {result}, Reason: {reason}")
+    return True, "Contains N-acylphytosphingosine pattern with a matching backbone and acyl group"
