@@ -24,12 +24,26 @@ def is_secondary_alcohol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the substructure pattern for a secondary alcohol
+    # Define a more flexible substructure pattern for a secondary alcohol
     # The pattern is: [C](-[C])(-[C])-[OH]
-    secondary_alcohol_pattern = Chem.MolFromSmarts("[CX4H1][CX4H1][OH]")
+    secondary_alcohol_pattern = Chem.MolFromSmarts("[C;!$(C=O)][C;!$(C=O)]([C;!$(C=O)])[OH]")
     
-    # Check if the molecule contains the secondary alcohol pattern
-    if mol.HasSubstructMatch(secondary_alcohol_pattern):
-        return True, "Contains a hydroxyl group attached to a carbon with two other carbon atoms"
-    else:
-        return False, "Does not contain a hydroxyl group attached to a carbon with two other carbon atoms"
+    # Find all matches of the pattern in the molecule
+    matches = mol.GetSubstructMatches(secondary_alcohol_pattern)
+    
+    # Check if any of the matches are valid secondary alcohols
+    for match in matches:
+        # Get the carbon atom with the hydroxyl group
+        carbon_idx = match[1]
+        carbon_atom = mol.GetAtomWithIdx(carbon_idx)
+        
+        # Ensure the carbon is saturated (sp3 hybridized)
+        if carbon_atom.GetHybridization() != Chem.HybridizationType.SP3:
+            continue
+        
+        # Ensure the carbon is attached to exactly two other carbons
+        carbon_neighbors = [n for n in carbon_atom.GetNeighbors() if n.GetAtomicNum() == 6]
+        if len(carbon_neighbors) == 2:
+            return True, "Contains a hydroxyl group attached to a carbon with two other carbon atoms"
+    
+    return False, "Does not contain a hydroxyl group attached to a carbon with two other carbon atoms"
