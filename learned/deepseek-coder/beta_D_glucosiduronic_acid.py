@@ -48,7 +48,11 @@ def is_beta_D_glucosiduronic_acid(smiles: str):
             
             # Verify the glycosidic oxygen is connected to another carbon
             glycosidic_oxygen_atom = mol.GetAtomWithIdx(glycosidic_oxygen)
-            if any(neighbor.GetAtomicNum() == 6 for neighbor in glycosidic_oxygen_atom.GetNeighbors()):
-                return True, "Contains beta-D-glucuronic acid moiety connected via beta-glycosidic bond"
+            neighbors = glycosidic_oxygen_atom.GetNeighbors()
+            if any(neighbor.GetAtomicNum() == 6 for neighbor in neighbors):
+                # Ensure the glycosidic oxygen is connected to another molecule
+                for neighbor in neighbors:
+                    if neighbor.GetIdx() != anomeric_carbon:
+                        return True, "Contains beta-D-glucuronic acid moiety connected via beta-glycosidic bond"
 
     return False, "No beta-glycosidic bond found between glucuronic acid and another molecule"
