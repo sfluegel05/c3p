@@ -6,7 +6,8 @@ from rdkit import Chem
 def is_penicillin(smiles: str):
     """
     Determines if a molecule is a penicillin based on its SMILES string.
-    Penicillins are characterized by a beta-lactam ring and a thiazolidine ring.
+    Penicillins are characterized by a beta-lactam ring and a thiazolidine ring, 
+    typically with a carboxyl group adjacent to the beta-lactam group.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,16 +22,23 @@ def is_penicillin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns for beta-lactam and thiazolidine rings
-    beta_lactam_pattern = Chem.MolFromSmarts("C1C(=O)N(C)C1")
-    thiazolidine_pattern = Chem.MolFromSmarts("C1C(SC)NC1")
+    # More general beta-lactam pattern
+    beta_lactam_pattern = Chem.MolFromSmarts("[NX3]1C(=O)[CX3H]C1")
     
-    # Check for beta-lactam ring
+    # Thiazolidine pattern including variable attachments
+    thiazolidine_pattern = Chem.MolFromSmarts("[NX3]1CC(SC2)C2C1")
+    
+    # Carboxylate adjacent to beta-lactam
+    carboxylate_pattern = Chem.MolFromSmarts("C(=O)[O-]")
+    
+    # Check for elements of the penicillin structure
     if not mol.HasSubstructMatch(beta_lactam_pattern):
         return False, "No beta-lactam ring found"
-    
-    # Check for thiazolidine ring
+
     if not mol.HasSubstructMatch(thiazolidine_pattern):
         return False, "No thiazolidine ring found"
+    
+    if not mol.HasSubstructMatch(carboxylate_pattern):
+        return False, "No carboxyl group near beta-lactam site"
 
-    return True, "Contains both beta-lactam and thiazolidine rings indicative of penicillins"
+    return True, "Contains beta-lactam, thiazolidine, and carboxylate group indicative of penicillins"
