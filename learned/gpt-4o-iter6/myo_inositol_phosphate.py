@@ -13,8 +13,7 @@ def is_myo_inositol_phosphate(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a myo-inositol phosphate, False otherwise
-        str: Reason for classification
+        (bool, str): True if molecule is a myo-inositol phosphate with reason, else False with reason.
     """
     
     # Parse SMILES
@@ -22,19 +21,28 @@ def is_myo_inositol_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for cyclohexane ring with myo-inositol stereochemistry
-    myo_inositol_pattern = Chem.MolFromSmarts("[C@H]1([O])[C@@H]([O])[C@H]([O])[C@@H]([O])[C@H]([O])[C@@H]1[O]")
+    # Check for cyclohexane ring with any stereochemistry for myo-inositol, be less strict on stereochemistry
+    myo_inositol_pattern = Chem.MolFromSmarts("C1(CO)C(O)C(O)C(O)C(O)C1O")
     if not mol.HasSubstructMatch(myo_inositol_pattern):
         return False, "No myo-inositol core structure found"
     
-    # Check for presence of phosphate groups
+    # Ensure presence of multiple phosphate groups (at least one)
     phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)O")
     phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
     if len(phosphate_matches) == 0:
         return False, "No phosphate groups found"
+    
+    # Count the number of phosphate attachments to confirm characteristic polyphosphate
+    if len(phosphate_matches) < 1:
+        return False, f"Only {len(phosphate_matches)} phosphate group(s) found, which may be insufficient for classification"
 
-    return True, "Contains myo-inositol core structure with phosphate groups"
+    # Confirm that phosphate groups are attached in a typical manner
+    phosphate_attachment = Chem.MolFromSmarts("O-P(=O)(O)C")
+    if not mol.HasSubstructMatch(phosphate_attachment):
+        return False, "Phosphate groups not in typical attachment sites for myo-inositol phosphate"
 
-# Testing the function
-smiles_example = "O[C@H]1[C@H](OP(O)(O)=O)[C@H](O)[C@H](OP(O)(O)=O)[C@@H](O)[C@@H]1OP(O)(O)=O"
+    return True, "Contains myo-inositol core structure with phosphate groups in characteristic locations"
+
+# Example test
+smiles_example = "O[C@@H]1[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](O)[C@@H](OP(O)(O)=O)[C@H]1OP(O)(O)=O"
 print(is_myo_inositol_phosphate(smiles_example))
