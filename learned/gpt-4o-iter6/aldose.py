@@ -16,19 +16,19 @@ def is_aldose(smiles: str):
         str: Reason for classification
     """
     
-    # Parse the SMILES string to a molecule
+    # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # More flexible aldehyde pattern
-    aldehyde_pattern = Chem.MolFromSmarts("[CH]=O")
+    # Linear aldehyde pattern - terminal C(=O)H
+    aldehyde_pattern = Chem.MolFromSmarts("[#6][CX3H](=O)[#6]")
     
-    # Updated furanose pattern considering oxygen linkage
-    furanose_pattern = Chem.MolFromSmarts("OC1C[C@H](O)[C@@H]O1")
-    pyranose_pattern = Chem.MolFromSmarts("OC1C[C@H](O)[C@@H](O)C1O")
+    # Cyclic hemiacetal pattern - allowing 5 or 6-membered rings with oxygen
+    furanose_pattern = Chem.MolFromSmarts("O1CCCC1")
+    pyranose_pattern = Chem.MolFromSmarts("O1CCCCC1")
 
-    # Check for the presence of an aldehyde group or modified furanose/pyranose ring structure
+    # Check for the presence of an aldehyde group or furanose/pyranose ring structure
     if not (mol.HasSubstructMatch(aldehyde_pattern) or 
             mol.HasSubstructMatch(furanose_pattern) or 
             mol.HasSubstructMatch(pyranose_pattern)): 
@@ -37,7 +37,7 @@ def is_aldose(smiles: str):
     # Check for sufficient hydroxyl groups (polyhydroxy structure)
     hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
     hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    if len(hydroxyl_matches) < 3:
-        return False, f"Insufficient hydroxyl groups for polyhydroxy structure, found {len(hydroxyl_matches)}"
+    if len(hydroxyl_matches) < 2:
+        return False, "Insufficient number of hydroxyl groups for polyhydroxy structure"
 
     return True, "Contains structural features consistent with aldose - polyhydroxy aldehyde or cyclic form"
