@@ -19,23 +19,22 @@ def is_sphingomyelin_d18_1(smiles: str):
     
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
-    
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Pattern for d18:1 sphingosine backbone: long chain with a hydroxyl at C3, a trans double bond typically between C4 and C5
-    sphingosine_backbone = Chem.MolFromSmarts("[C@H](O)[C@H](NC(=O)C)[C](C=C)CC")
-    
+    # More accurate pattern for d18:1 sphingosine backbone: 18 carbon atoms, a hydroxyl on C1 or C3, and one double bond
+    # This SMARTS pattern still requires knowledge of the specific configuration and positions, assumes C1 hydroxyl
+    sphingosine_backbone = Chem.MolFromSmarts("C[C@H](O)CCCCCCCC=C[C@H](NC(=O)C)") 
     if not mol.HasSubstructMatch(sphingosine_backbone):
         return False, "No sphingosine d18:1 backbone found"
     
-    # Phosphocholine group
-    phosphocholine_group = Chem.MolFromSmarts("COP(=O)([O-])OCC[N+](C)(C)C") 
+    # Check for phosphocholine headgroup
+    phosphocholine_group = Chem.MolFromSmarts("COP(=O)([O-])OCC[N+](C)(C)C")
     if not mol.HasSubstructMatch(phosphocholine_group):
         return False, "No phosphocholine group found"
 
-    # Amide linkage for N-acyl chain
-    amide_linkage = Chem.MolFromSmarts("NC(=O)C")  # Adapted to identify the N-acyl connection
+    # Check for amide linkage indicating N-acyl chain
+    amide_linkage = Chem.MolFromSmarts("NC(=O)C")
     if not mol.HasSubstructMatch(amide_linkage):
         return False, "No amide linkage found"
 
