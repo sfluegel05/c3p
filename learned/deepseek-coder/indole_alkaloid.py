@@ -50,7 +50,7 @@ def is_indole_alkaloid(smiles: str):
 
     # Check if at least one nitrogen is part of the indole skeleton
     indole_nitrogen_found = any(
-        any(atom.GetAtomicNum() == 7 for atom in mol.GetAtoms()[match[0]:match[-1]+1])
+        any(mol.GetAtomWithIdx(atom_idx).GetAtomicNum() == 7 for atom_idx in match)
         for pattern in indole_patterns
         for match in mol.GetSubstructMatches(pattern)
     )
