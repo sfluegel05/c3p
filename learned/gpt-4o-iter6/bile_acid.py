@@ -15,33 +15,34 @@ def is_bile_acid(smiles: str):
         bool: True if molecule is a bile acid, False otherwise
         str: Reason for classification
     """
-    
-    # Parse SMILES
+
+    # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for cholanic acid framework (basic steroid skeleton)
-    steroid_skeleton = Chem.MolFromSmarts('[C@]12[C@]3([C@]4CC[C@@H]5[C@]1(CC[C@]5([C@@H]4C[C@H]3C2)C)C)C')
-    if not mol.HasSubstructMatch(steroid_skeleton):
-        return False, "Cholanic acid steroid skeleton not found"
+    # Look for the 5beta-cholanic acid framework
+    cholanic_pattern = Chem.MolFromSmarts('[C@]2([C@H]([C@H]1[C@@H](C(CCC3[C@H](CC(=O)O)C=C(C)C3)CC1)CC2=O)C(C)C)C')
+    if not mol.HasSubstructMatch(cholanic_pattern):
+        return False, "5beta-cholanic acid framework not found"
 
-    # Check for at least three hydroxyl groups
-    hydroxy_pattern = Chem.MolFromSmarts('[OH]')
-    if len(mol.GetSubstructMatches(hydroxy_pattern)) < 3:
+    # Look for the presence of hydroxyl groups at specific positions
+    hydroxy_pattern = Chem.MolFromSmarts('[C@H](O)')
+    hydroxyl_matches = mol.GetSubstructMatches(hydroxy_pattern)
+    if len(hydroxyl_matches) < 3:
         return False, "Insufficient number of hydroxy groups (less than three)"
-    
-    # Check for correct stereochemistry (5beta configuration)
-    fivebeta_pattern = Chem.MolFromSmarts('[C@@H]1CCC[C@@H]2[C@]1(CCC3[C@@]2(CCC3)C)C')
-    if not mol.HasSubstructMatch(fivebeta_pattern):
-        return False, "5beta configuration not found"
-    
-    # Check for terminal carboxylic acid group
+
+    # Ensure configuration includes 5beta stereochemistry
+    fivebeta_stereo = Chem.MolFromSmarts('[C@@H]1[C@H](CCC2[C@@H](CCC3(C4=CCC(=O)CC4)C3)[C@@H]12)C')
+    if not mol.HasSubstructMatch(fivebeta_stereo):
+        return False, "5beta stereochemistry not correctly found"
+
+    # Check for a carboxylic acid group
     carboxylic_pattern = Chem.MolFromSmarts('C(=O)O')
     if not mol.HasSubstructMatch(carboxylic_pattern):
-        return False, "Terminal carboxylic acid group not found"
+        return False, "Carboxylic acid group not found"
 
-    return True, "Valid bile acid: contains steroid core with hydroxy groups, 5beta stereochemistry, and terminal carboxylic group"
+    return True, "Valid bile acid: contains steroid core with hydroxy groups, the 5beta stereochemistry, and a terminal carboxylic group"
 
-# Example test (Using one of the example SMILES)
+# Example usage:
 # result, reason = is_bile_acid("O[C@@H]1[C@]2([C@]...")
