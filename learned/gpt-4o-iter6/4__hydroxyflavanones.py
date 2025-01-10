@@ -2,7 +2,6 @@
 Classifies: CHEBI:140331 4'-hydroxyflavanones
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_4__hydroxyflavanones(smiles: str):
     """
@@ -22,19 +21,18 @@ def is_4__hydroxyflavanones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Generic flavanone structure SMARTS pattern 
-    flavanone_pattern = Chem.MolFromSmarts("O=C1C=Cc2ccccc2O[C@@H]1c1ccccc1")
+    # Improved SMARTS pattern for flavanone core structure
+    flavanone_core_pattern = Chem.MolFromSmarts("c1ccc2c(c1)O[C@@H](C2=O)Cc3ccccc3")
 
-    # Check if the molecule has the flavanone structure
-    if not mol.HasSubstructMatch(flavanone_pattern):
-        return False, "No flavanone backbone present"
+    # Check for flavanone core in molecule
+    if not mol.HasSubstructMatch(flavanone_core_pattern):
+        return False, "No flavanone core structure identified"
 
-    # Specific 4'-hydroxy pattern
-    four_prime_hydroxy_pattern = Chem.MolFromSmarts("c1(O)cccc1")
+    # Detect 4'-hydroxy group
+    # Based on typical numbering in flavanones where 4'-OH is on the phenyl ring opposite the benzopyranone moiety
+    four_prime_hydroxy_pattern = Chem.MolFromSmarts("c1cc(O)ccc1[C@H]2COc3ccccc3C2=O")
     
-    # Find all phenyl rings and check for -OH at the 4' position
-    ring_matches = mol.GetSubstructMatches(four_prime_hydroxy_pattern)
-    if not ring_matches:
-        return False, "4'-hydroxy group not found"
-    
-    return True, "Contains flavanone backbone with a 4'-hydroxy group"
+    if not mol.HasSubstructMatch(four_prime_hydroxy_pattern):
+        return False, "4'-hydroxy group not found at the correct position"
+
+    return True, "Contains 4'-hydroxyflavanone core and a 4'-hydroxy group"
