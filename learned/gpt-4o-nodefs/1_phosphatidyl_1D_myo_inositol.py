@@ -2,7 +2,6 @@
 Classifies: CHEBI:16749 1-phosphatidyl-1D-myo-inositol
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_1_phosphatidyl_1D_myo_inositol(smiles: str):
     """
@@ -20,21 +19,20 @@ def is_1_phosphatidyl_1D_myo_inositol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Key checks with enhanced SMARTS for inositol phosphate pattern
-    # Glycerol backbone with ester linkage
-    glycerol_ester_pattern = Chem.MolFromSmarts("[C@H](COC(=O)[C:1])O[C:2](=O)[C:3]")
+    # Define glycerol backbone with ester linkages (R1COO - glycerol - OOR2)
+    glycerol_ester_pattern = Chem.MolFromSmarts("[C@H](COP(=O)(O)[O:2])[O:3]C(=O)[C:4]")
     if not mol.HasSubstructMatch(glycerol_ester_pattern):
         return False, "No glycerol backbone with ester linkages"
-    
-    # Phosphate linkage incorporating phosphoric acid group
-    phosphate_pattern = Chem.MolFromSmarts("[C:1]OP(=O)(O)[O:2]")
-    if not mol.HasSubstructMatch(phosphate_pattern):
-        return False, "No phosphate linkage found"
 
-    # Inositol ring which should be cyclohexane with hydroxyl groups
-    inositol_pattern = Chem.MolFromSmarts("C1([C@@H](O)[C@H](O)[C@@H](O)[C@H](O)[C@H](O)C1O)O")
+    # Define the phosphate linkage pattern connecting to the inositol ring
+    phosphate_linkage_pattern = Chem.MolFromSmarts("COP(=O)(O)O[C@H]1[C@@H](O)[C@H](O)[C@@H](O)[C@H](O)[C@H]1O") 
+    if not mol.HasSubstructMatch(phosphate_linkage_pattern):
+        return False, "No inositol phosphate linkage found"
+
+    # Check for myo-inositol (cyclohexane with specific hydroxyl groups configuration)
+    inositol_pattern = Chem.MolFromSmarts("O[C@H]1[C@@H](O)[C@H](O)[C@@H](O)[C@H](O)[C@H]1")
     if not mol.HasSubstructMatch(inositol_pattern):
-        return False, "No inositol cyclohexane ring with hydroxyl groups"
+        return False, "No myo-inositol ring found with correct hydroxyl configurations"
 
     return True, "Successfully matches 1-phosphatidyl-1D-myo-inositol structural features"
 
