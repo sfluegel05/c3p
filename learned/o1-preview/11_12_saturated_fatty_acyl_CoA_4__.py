@@ -5,6 +5,7 @@ Classifies: CHEBI:84948 11,12-saturated fatty acyl-CoA(4-)
 Classifies: 11,12-saturated fatty acyl-CoA(4-)
 """
 from rdkit import Chem
+from rdkit.Chem import rdchem
 
 def is_11_12_saturated_fatty_acyl_CoA_4__(smiles: str):
     """
@@ -24,73 +25,71 @@ def is_11_12_saturated_fatty_acyl_CoA_4__(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define thioester pattern to find the fatty acyl-CoA linkage
-    thioester_pattern = Chem.MolFromSmarts('[#6](=O)[#16]')  # C(=O)S
+    # Define SMARTS pattern for fatty acyl-CoA thioester linkage
+    # The fatty acyl chain is connected via a thioester linkage: C(=O)SCCN
+    # We will capture the carbonyl carbon of the fatty acyl chain
+    fatty_acyl_pattern = Chem.MolFromSmarts('C(=O)SCCNC(=O)')
+    fatty_acyl_matches = mol.GetSubstructMatches(fatty_acyl_pattern)
 
-    # Find matches of the thioester pattern
-    matches = mol.GetSubstructMatches(thioester_pattern)
-    if len(matches) == 0:
-        return False, "No thioester linkage found (not a fatty acyl-CoA)"
+    if not fatty_acyl_matches:
+        return False, "No fatty acyl-CoA thioester linkage found"
 
-    # Assume the first match is the fatty acyl-CoA linkage
-    thioester_carbon_idx = matches[0][0]
+    # Assume the first match is the fatty acyl chain
+    fatty_acyl_match = fatty_acyl_matches[0]
+    acyl_carbon_idx = fatty_acyl_match[0]  # Carbonyl carbon of the fatty acyl chain
 
-    # Function to get the longest carbon chain starting from the carbonyl carbon
-    def get_longest_path(mol, start_atom_idx):
-        from collections import deque
+    # Traverse the fatty acyl chain starting from the carbonyl carbon
+    # We will build the acyl chain by moving from the carbonyl carbon along alkyl chain
+    acyl_chain_atoms = []
+    visited = set()
 
-        visited = set()
-        max_path = []
+    def traverse_acyl_chain(atom_idx):
+        """Recursively traverse the acyl chain starting from the given atom index."""
+        atom = mol.GetAtomWithIdx(atom_idx)
+        visited.add(atom_idx)
+        if atom.GetAtomicNum() != 6:
+            return  # Only consider carbon atoms
 
-        queue = deque()
-        queue.append((start_atom_idx, [start_atom_idx]))
+        acyl_chain_atoms.append(atom_idx)
+        neighbors = [nbr.GetIdx() for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() == 6]
 
-        while queue:
-            current_atom_idx, path = queue.popleft()
+        for nbr_idx in neighbors:
+            bond = mol.GetBondBetweenAtoms(atom_idx, nbr_idx)
+            # Exclude the direction back towards the CoA moiety
+            if nbr_idx in visited or nbr_idx == acyl_carbon_idx:
+                continue
 
-            atom = mol.GetAtomWithIdx(current_atom_idx)
-            neighbors = atom.GetNeighbors()
+            # Check if the neighbor is part of the acyl chain
+            # Ensure that we are not traversing into the CoA moiety
+            traverse_acyl_chain(nbr_idx)
 
-            terminal_atom = True
-            for nbr in neighbors:
-                nbr_idx = nbr.GetIdx()
-                if nbr_idx in path:
-                    continue
-                # Proceed only along carbons
-                if nbr.GetAtomicNum() != 6:
-                    continue
-                bond = mol.GetBondBetweenAtoms(current_atom_idx, nbr_idx)
-                if bond.GetBondType() not in (Chem.rdchem.BondType.SINGLE, Chem.rdchem.BondType.DOUBLE):
-                    continue
-                new_path = path + [nbr_idx]
-                queue.append((nbr_idx, new_path))
-                terminal_atom = False
+    # Start traversal from the carbon next to the carbonyl carbon
+    carbonyl_carbon = mol.GetAtomWithIdx(acyl_carbon_idx)
+    for neighbor in carbonyl_carbon.GetNeighbors():
+        nbr_idx = neighbor.GetIdx()
+        if neighbor.GetAtomicNum() == 6 and nbr_idx != fatty_acyl_match[1]:  # Exclude the sulfur atom
+            # Begin traversal
+            traverse_acyl_chain(nbr_idx)
+            break
 
-            if terminal_atom:
-                # Reached a terminal carbon
-                if len(path) > len(max_path):
-                    max_path = path
+    # Ensure the acyl chain has at least 12 carbons
+    if len(acyl_chain_atoms) < 12:
+        return False, f"Fatty acyl chain has {len(acyl_chain_atoms)} carbons, less than 12"
 
-        return max_path
-
-    # Get the acyl chain as the longest path from the thioester carbon
-    acyl_chain = get_longest_path(mol, thioester_carbon_idx)
-
-    if len(acyl_chain) < 12:
-        return False, "Fatty acyl chain is too short, less than 12 carbons"
-
-    # Get the atoms at positions 11 and 12 (C11 and C12)
-    c11_atom_idx = acyl_chain[10]  # Indexing from 0
-    c12_atom_idx = acyl_chain[11]
+    # Get the atom indices for C11 and C12
+    # Note: acyl_chain_atoms[0] is the alpha carbon (adjacent to carbonyl carbon)
+    c11_idx = acyl_chain_atoms[10]
+    c12_idx = acyl_chain_atoms[11]
 
     # Get the bond between C11 and C12
-    bond = mol.GetBondBetweenAtoms(c11_atom_idx, c12_atom_idx)
+    bond = mol.GetBondBetweenAtoms(c11_idx, c12_idx)
     if bond is None:
         return False, "No bond between C11 and C12"
 
-    if bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
+    bond_type = bond.GetBondType()
+    if bond_type == rdchem.BondType.SINGLE:
         return True, "C11-C12 bond is saturated (single bond)"
-    elif bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+    elif bond_type == rdchem.BondType.DOUBLE:
         return False, "C11-C12 bond is unsaturated (double bond)"
     else:
-        return False, "C11-C12 bond is neither single nor double"
+        return False, f"C11-C12 bond is neither single nor double (bond type: {bond_type})"
