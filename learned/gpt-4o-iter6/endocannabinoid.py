@@ -20,33 +20,24 @@ def is_endocannabinoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for long polyunsaturated chains with more flexible pattern
-    unsaturated_chain_pattern = Chem.MolFromSmarts("C=C-C=C-C=C")  # Partial structure for more chains
-    if not mol.HasSubstructMatch(unsaturated_chain_pattern):
-        return False, "No polyunsaturated long carbon chain typical of endocannabinoids found."
-    
-    # Check for key functional groups with variations
+    # Check for presence of long carbon chain, with or without double bonds
+    long_chain_pattern = Chem.MolFromSmarts("[C;!$(C(=O))]~[C;!$(C(=O))]~[C;!$(C(=O))]~[C;!$(C(=O))]")
+    if not mol.HasSubstructMatch(long_chain_pattern):
+        return False, "No long carbon chain found typical of endocannabinoids."
+
+    # Check for possible functional groups: ethanolamine, amide, or glycerol backbone
     ethanolamine_pattern = Chem.MolFromSmarts("NCCO")
-    amide_pattern = Chem.MolFromSmarts("NC(=O)")
+    amide_pattern = Chem.MolFromSmarts("NCC(=O)")
     glycerol_pattern = Chem.MolFromSmarts("OCC(O)CO")
-    has_key_group = any(mol.HasSubstructMatch(pattern) for pattern in [ethanolamine_pattern, amide_pattern, glycerol_pattern])
-
+    has_key_group = mol.HasSubstructMatch(ethanolamine_pattern) or mol.HasSubstructMatch(amide_pattern) or mol.HasSubstructMatch(glycerol_pattern)
     if not has_key_group:
-        return False, "No identified endocannabinoid functional group found (ethanolamine, amide, glycerol)."
+        return False, "No ethanolamine, amide, or glycerol backbone found."
 
-    # Check linkages, focusing on typical endocannabinoid pattern
-    ether_pattern = Chem.MolFromSmarts("COC")
-    ester_pattern = Chem.MolFromSmarts("C(=O)OC")
+    # Check for ether, ester, or amide linkages
+    ether_pattern = Chem.MolFromSmarts("OCC")
+    ester_pattern = Chem.MolFromSmarts("C(=O)O")
     amide_linkage_pattern = Chem.MolFromSmarts("C(=O)N")
-    
-    has_linkages = any(mol.HasSubstructMatch(pattern) for pattern in [ether_pattern, ester_pattern, amide_linkage_pattern])
-
-    if not has_linkages:
-        return False, "No ether, ester, or amide linkages characteristic of endocannabinoids found."
-    
-    # Optional: Check molecular weight (common range typical for endocannabinoids 300-400 g/mol)
-    # mol_wt = Chem.rdMolDescriptors.CalcExactMolWt(mol)
-    # if not (300 <= mol_wt <= 400):
-    #     return False, "Molecular weight not typical of endocannabinoids."
+    if not (mol.HasSubstructMatch(ether_pattern) or mol.HasSubstructMatch(ester_pattern) or mol.HasSubstructMatch(amide_linkage_pattern)):
+        return False, "No ether, ester, or amide linkages found."
 
     return True, "Matches characteristics of known endocannabinoids."
