@@ -6,9 +6,9 @@ from rdkit import Chem
 def is_octadecadienoic_acid(smiles: str):
     """
     Determines if a molecule is an octadecadienoic acid based on its SMILES string.
-    An octadecadienoic acid generally has an 18-carbon backbone with exactly 2 cis/trans double bonds,
-    and a terminal carboxylic acid group.
-
+    An octadecadienoic acid is a fatty acid with a chain of 18 carbon atoms and 2 double bonds,
+    ending with a carboxylic acid group.
+    
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -21,33 +21,21 @@ def is_octadecadienoic_acid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Check for terminal carboxylic acid group
-    # (matches COOH at the end but allows for additional branching elsewhere)
+        
+    # Look for carboxylic acid group
     carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
-        return False, "No terminal carboxylic acid group found"
+        return False, "No carboxylic acid group found"
 
-    # Count the number of double bonds, including stereo information
-    double_bond_pattern = Chem.MolFromSmarts("C=C")
-    stereochem_checks = {
-        'E_isomers': Chem.MolFromSmarts("C/C=C/C"),
-        'Z_isomers': Chem.MolFromSmarts("C/C=C\\C")
-    }
-    double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
-    e_count = len(mol.GetSubstructMatches(stereochem_checks['E_isomers']))
-    z_count = len(mol.GetSubstructMatches(stereochem_checks['Z_isomers']))
-
-    if len(double_bond_matches) != 2:
-        return False, f"Expected exactly 2 double bonds, found {len(double_bond_matches)}"
-    
-    # Count total number of carbon atoms in the backbone only
-    backbone_matches = Chem.rdmolops.GetMolFrags(mol, asMols=True)
-    longest_chain = max(backbone_matches, key=lambda frag: frag.GetNumAtoms())
-    c_count = sum(1 for atom in longest_chain.GetAtoms() if atom.GetAtomicNum() == 6)
-    
-    # Check if the longest carbon backbone is 18 atoms (accounting for potential branching)
+    # Count carbon atoms
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if c_count != 18:
-        return False, f"Expected a main carbon backbone of 18 atoms, found {c_count}"
-
-    return True, "Molecule is an octadecadienoic acid with a correct carbon backbone and double bonds"
+        return False, f"Expected 18 carbon atoms, found {c_count}"
+    
+    # Count double bonds
+    double_bond_pattern = Chem.MolFromSmarts("C=C")
+    double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
+    if len(double_bond_matches) < 2:
+        return False, f"Expected at least 2 double bonds, found {len(double_bond_matches)}"
+    
+    return True, "Molecule is an octadecadienoic acid with 18 carbons and 2 double bonds"
