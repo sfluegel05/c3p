@@ -21,25 +21,18 @@ def is_tetrapeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for peptide bonds, considering possible variations
-    peptide_bond_pattern = Chem.MolFromSmarts("[NX3][CX3](=O)")
+    # Define revised SMARTS pattern for peptide bonds, considering more diverse connectivity
+    peptide_bond_pattern = Chem.MolFromSmarts("[NX3][CX3](=O)[C]")
     peptide_bond_matches = mol.GetSubstructMatches(peptide_bond_pattern)
     
-    if len(peptide_bond_matches) < 3:
+    if len(peptide_bond_matches) != 3:
         return False, f"Found {len(peptide_bond_matches)} peptide bonds, need exactly 3 for tetrapeptide"
 
-    # Define SMARTS pattern for typical amino acid residues
-    # This includes patterns for amino and carboxyl groups connected by alpha carbon
-    # Cannot rely entirely on SMARTS here due to the variability of peptide side chains
-    amide_linked = Chem.MolFromSmarts("[NX3][CX3](=O)[C;R0]")
-
-    # Check for typical alpha carbon, amide/link patterns should be >= 4 chunks matching typical amino acid sections
-    aa_residue_count = 0
-    for residue in mol.GetSubstructMatches(amide_linked):
-        aa_residue_count += 1
+    # Check for the presence of four amino acid residues by expanding scope
+    aa_residue_pattern = Chem.MolFromSmarts("[N](C[CX4])[CX3](=O)[C;R0]")
+    aa_residue_matches = mol.GetSubstructMatches(aa_residue_pattern)
     
-    # Validate that there are four amino acid residues
-    if aa_residue_count != 4:
-        return False, f"Detected {aa_residue_count} amino acid residues, need exactly 4"
-
+    if len(aa_residue_matches) != 4:
+        return False, f"Detected {len(aa_residue_matches)} amino acid residues, need exactly 4"
+    
     return True, "Contains four amino-acid residues connected by three peptide bonds, valid tetrapeptide structure"
