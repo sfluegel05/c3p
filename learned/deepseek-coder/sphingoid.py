@@ -52,6 +52,12 @@ def is_sphingoid(smiles: str):
     double_bond_pattern = Chem.MolFromSmarts("[CX3]=[CX3]")
     has_double_bond = mol.HasSubstructMatch(double_bond_pattern)
 
+    # Check for additional hydroxyl groups (optional, as some sphingoids have more than one)
+    additional_hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
+    hydroxyl_matches = mol.GetSubstructMatches(additional_hydroxyl_pattern)
+    if len(hydroxyl_matches) < 1:
+        return False, "No additional hydroxyl groups found"
+
     # Exclude complex carbohydrates and glycoconjugates
     # These molecules often have multiple hydroxyl groups and amino groups but are not sphingoids
     carbohydrate_pattern = Chem.MolFromSmarts("[OX2H]~[CX4]~[OX2H]~[CX4]~[OX2H]")
@@ -62,11 +68,6 @@ def is_sphingoid(smiles: str):
     peptide_pattern = Chem.MolFromSmarts("[CX3](=O)[NX3H]")
     if mol.HasSubstructMatch(peptide_pattern):
         return False, "Molecule is likely a peptide or complex structure"
-
-    # Exclude phospholipids and other complex lipids
-    phospholipid_pattern = Chem.MolFromSmarts("[CX3](=O)OC[C@H](OC(=O)[CX4])COP(=O)([OX2])[OX2]")
-    if mol.HasSubstructMatch(phospholipid_pattern):
-        return False, "Molecule is likely a phospholipid or complex lipid"
 
     return True, "Contains a long hydrocarbon chain with a hydroxyl group, an amino group, and a 2-amino-1,3-diol or 2-amino-1,3,4-triol backbone"
 
