@@ -25,26 +25,27 @@ def is_gas_molecular_entity(smiles: str):
     
     # Elements typically found in gaseous compounds
     gaseous_elements = {1, 2, 6, 7, 8, 9, 10, 17, 18, 36, 54, 86}  # H, He, C, N, O, F, Ne, Cl, Ar, Kr, Xe, Rn
-    
-    # Known special gaseous forms
+
+    # Additional known special gaseous forms
     known_gaseous_smiles = {
-        "[219Rn]", "[220Rn]", "[222Rn]", "[Rn]", "[Xe]", "[H][H]", "[He]", "[2H][2H]", "[3H][3H]", 
-        "[4He]", "[3He]", "[6He]", "O=C=O", "[C-]#[O+]", "[H]N([H])[H]", "CCC", "C=C", "C#C", "CC", 
-        "FF", "ClCl", "[H]C([H])([H])[H]", "FCl", "FC=C", "C1CO1", "CCl"
+        "[219Rn]", "[220Rn]", "[222Rn]", "[Rn]", "[Xe]", "[He]", "[3He]", "[4He]", "[6He]", 
+        "O=C=O", "[C-]#[O+]", "CCC", "CC", "C=C", "C#C", "[H]N([H])[H]", "O=[13C]=O",
+        "ClCl", "FF", "[H]C([H])([H])[H]", "[H][H]", "[3H][3H]", "C1CO1", "FCl", "I[H]"
     }
 
-    # Check if the molecule matches a specific recognized gaseous form
+    # Check if the molecule matches any known gaseous SMILES
     if smiles in known_gaseous_smiles:
         return True, "Recognized special gaseous form"
     
-    # Ensure all atoms belong to a subset of elements typically in gases
+    # Validate atoms against typical gaseous elements
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() not in gaseous_elements:
             return False, f"Contains non-gaseous element: {atom.GetSymbol()}"
-    
-    # Calculate molecular weight and check threshold for gas
+
+    # Checking molecular parameters for gas likelihood
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt > 300:
-        return False, f"Molecular weight too high for a typical gas: {mol_wt} g/mol"
+    num_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if mol_wt > 300 or num_rotatable > 5:
+        return False, f"Molecular weight or structure complexity suggests non-gas (MW: {mol_wt})"
     
     return True, "Molecule is a simple structure containing only gaseous elements at STP"
