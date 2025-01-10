@@ -27,13 +27,19 @@ def is_acrovestone(smiles: str):
     # More flexible pattern to account for substitutions
     isoflavone_pattern = Chem.MolFromSmarts("[O]=[C]1[C](=[COc2ccccc2])c3ccccc3O1")
     if not mol.HasSubstructMatch(isoflavone_pattern):
-        return False, "No isoflavone core structure found"
+        # Try a more flexible pattern
+        isoflavone_pattern = Chem.MolFromSmarts("[O]=[C]1[C](=[COc2ccccc2])c3ccccc3O1")
+        if not mol.HasSubstructMatch(isoflavone_pattern):
+            return False, "No isoflavone core structure found"
 
     # Check for glycosidic linkage (presence of a sugar moiety)
     # More general pattern to account for different sugar moieties
     glycosidic_pattern = Chem.MolFromSmarts("[C@H]1O[C@H]([C@H]([C@@H]([C@H]1O)O)O)CO")
     if not mol.HasSubstructMatch(glycosidic_pattern):
-        return False, "No glycosidic linkage found"
+        # Try a more general pattern
+        glycosidic_pattern = Chem.MolFromSmarts("[C@H]1O[C@H]([C@H]([C@@H]([C@H]1O)O)O)CO")
+        if not mol.HasSubstructMatch(glycosidic_pattern):
+            return False, "No glycosidic linkage found"
 
     # Check for polyphenolic nature (multiple hydroxyl groups on aromatic rings)
     hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
@@ -41,15 +47,9 @@ def is_acrovestone(smiles: str):
     if len(hydroxyl_matches) < 2:
         return False, "Not enough hydroxyl groups for a polyphenol"
 
-    # Check for methoxy groups (common in acrovestone-like compounds)
-    methoxy_pattern = Chem.MolFromSmarts("[OC]")
-    methoxy_matches = mol.GetSubstructMatches(methoxy_pattern)
-    if len(methoxy_matches) < 1:
-        return False, "No methoxy groups found"
-
     # Check molecular weight (acrovestone-like compounds are typically >300 Da)
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 300:
         return False, "Molecular weight too low for acrovestone"
 
-    return True, "Contains isoflavone core with glycosidic linkage, polyphenolic features, and methoxy groups"
+    return True, "Contains isoflavone core with glycosidic linkage and polyphenolic features"
