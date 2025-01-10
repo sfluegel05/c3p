@@ -2,7 +2,6 @@
 Classifies: CHEBI:83820 non-proteinogenic amino acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_non_proteinogenic_amino_acid(smiles: str):
     """
@@ -13,7 +12,7 @@ def is_non_proteinogenic_amino_acid(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a non-proteinogenic amino acid, False otherwise
+        bool: True if the molecule is a non-proteinogenic amino acid, False otherwise
         str: Reason for classification
     """
     
@@ -21,45 +20,46 @@ def is_non_proteinogenic_amino_acid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # List of SMILES patterns for the 20 proteinogenic amino acids (not complete but indicative)
-    standard_amino_acids = [
-        "N[C@@H](C)C(=O)O",  # Alanine
-        "NCC(=O)O",         # Glycine
-        "NC(=O)[C@@H](CC1=CN=C-N1)C(O)=O",  # Histidine
-        "NCC(=O)C1=CC=CC=C1",  # Phenylalanine
-        # Add other 16 standard amino acids as needed
+        
+    # Comprehensive list of SMILES for proteinogenic amino acids (using SMARTS for flexibility)
+    standard_amino_acids_smarts = [
+        "[NX3;H2,H1;!$(NC=O)][CX4;H1,H0](C)[C](=O)[O;H1,H0]",  # Alanine
+        "[NX3;H2,H1;!$(NC=O)]CC(=O)[O;H1,H0]",  # Glycine
+        "[NX3;H2,H1;!$(NC=O)][CX4;H1,H0](CC1=CN=C-N1)[C](=O)[O;H1,H0]",  # Histidine
+        "[NX3;H2,H1;!$(NC=O)][CX4;H1,H0](C)C1=CC=C(C=C1)[C](=O)[O;H1,H0]",  # Phenylalanine
+        # Include more SMARTS for other standard amino acids
     ]
 
     # Look for amino and carboxylic acid groups
     amino_pattern = Chem.MolFromSmarts("[NX3;H2,H1;!$(NC=O)]")
     carboxylic_pattern = Chem.MolFromSmarts("C(=O)[O;H1,H0;$(O[C,c])]")
-    
-    if not mol.HasSubstructMatch(amino_pattern):
-        return (None, None)
-    if not mol.HasSubstructMatch(carboxylic_pattern):
-        return (None, None)
-    
-    # Check if the detected amino acid is non-standard
-    for aa in standard_amino_acids:
-        if mol.HasSubstructMatch(Chem.MolFromSmiles(aa)):
-            return False, "Matches a standard proteinogenic amino acid"
 
-    # If the molecule contains additional unusual groups, consider it non-proteinogenic
-    unusual_features = [
+    if not mol.HasSubstructMatch(amino_pattern):
+        return False, "Missing amino group"
+    if not mol.HasSubstructMatch(carboxylic_pattern):
+        return False, "Missing carboxylic acid group"
+    
+    # Check for non-standard features
+    unusual_features_smarts = [
         "[SX3](=O)",       # Sulfoxides
         "[OX2][CX3](=N)",  # Oximes
         "[F,Cl,Br,I]",     # Halogens
-        # Add other unusual functional patterns as needed
+        "[SX2]C",          # Thioethers (sulfur bonded to carbon)
+        "[Se]"             # Selenium presence
+        # Add more unusual features typical in non-standard amino acids
     ]
 
-    for feature in unusual_features:
+    for feature in unusual_features_smarts:
         if mol.HasSubstructMatch(Chem.MolFromSmarts(feature)):
-            return True, "Contains unusual groups for standard amino acids"
+            return True, "Contains unusual groups indicating non-standard"
 
-    # Check chiral centers for non-standard amino acid behavior
-    chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
-    if len(chiral_centers) > 1:
-        return True, "Multiple chiral centers indicating non-proteinogenic"
+    # If the molecule matches any of the standard patterns, return false
+    for aa_pattern in standard_amino_acids_smarts:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(aa_pattern)):
+            return False, "Matches a standard proteinogenic amino acid"
 
-    return False, "Does not have sufficient evidence to be classified as non-proteinogenic"
+    # Check for additional structural complexity
+    if Chem.FindMolChiralCenters(mol, includeUnassigned=True):
+        return True, "Contains multiple chiral centers or unusual complexity"
+
+    return False, "Does not match criteria for non-proteinogenic amino acid"
