@@ -16,40 +16,40 @@ def is_CDP_diacylglycerol(smiles: str):
         bool: True if molecule is a CDP-diacylglycerol, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
     # Generalized pattern for the CDP group
-    # This pattern searches for cytidine with two phosphates, allowing variations
-    # using flexible phospho linkages and positional adaptations
-    cdp_smarts = "n1c(COC(OP(O)=O)P(O)=O)[C@H]([C@@H]1O)COP(O)(O)=O"
+    # This pattern searches for cytidine with two phosphates
+    # The phosphate groups must be connected to cytidine in a typical way
+    cdp_smarts = "n1c(COP(=O)(O)OP(=O)(O)O)[C@H]([C@@H]1O)CO"  # Adjusted general recognition pattern
     cdp_pattern = Chem.MolFromSmarts(cdp_smarts)
     if not mol.HasSubstructMatch(cdp_pattern):
         return False, "No CDP (Cytidine diphosphate) group found"
 
     # Look for glycerol backbone allowing for some stereochemical variability
-    glycerol_pattern = Chem.MolFromSmarts("[C@H](O)C(CO)O")
+    glycerol_pattern = Chem.MolFromSmarts("C(CO)(O)CO")  # Simplified for backbone detection
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
 
-    # Look for two ester groups (-C(=O)O-), specifically at glycerol 1,2 positions.
-    ester_pattern = Chem.MolFromSmarts("C(=O)O(C(O)CO)")
+    # Look for two acyl chain attachments (-C(=O)O), should be specifically at glycerol 1,2 positions.
+    ester_pattern = Chem.MolFromSmarts("C(=O)OCC(CO)O")  # Adjusted to capture participation in ester linkages
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) < 2:
         return False, f"Found {len(ester_matches)} acyl chains, need at least 2"
 
-    # Verify that ester patterns are connected to glycerol correct positions
+    # Consider uniqueness of structure to check on attachment positions
     attachment_positions = {match[1] for match in ester_matches}
     if len(attachment_positions) < 2:
-        return False, "Acyl chains not correctly placed at 1,2-glycerol positions"
+        return False, "Acyl chains not placed correctly at 1,2-glycerol positions"
 
-    # Verify the length criteria of acyl chains to ensure they are sufficiently long
+    # Ensure the length criteria of acyl chains by counting carbon nodes on chains
     acyl_chain_count = sum(
         1 for atom in mol.GetAtoms()
-        if atom.GetAtomicNum() == 6 and len(atom.GetBonds()) in [2, 3]
+        if atom.GetAtomicNum() == 6 and any(bond.GetBondTypeAsDouble() == 1.0 for bond in atom.GetBonds())
     )
     
     if acyl_chain_count < 20:
