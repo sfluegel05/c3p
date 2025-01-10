@@ -6,32 +6,33 @@ from rdkit import Chem
 def is_ubiquinones(smiles: str):
     """
     Determines if a molecule is a ubiquinone based on its SMILES string.
-    Ubiquinones typically have a 2,3-dialkoxy benzoquinone core and a polyisoprenyl side chain.
+    Ubiquinones generally have a 2,3-dialkoxy benzoquinone core and a polyisoprenyl side chain.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a ubiquinone, False otherwise
+        bool: True if the molecule is a ubiquinone, False otherwise
         str: Reason for classification
     """
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for 2,3-dialkoxy benzoquinone core
-    benzoquinone_core_pattern = Chem.MolFromSmarts("COc1c(OC)cc(=O)cc1=O")
+    # Look for a more flexible 2,3-dialkoxy benzoquinone core pattern
+    benzoquinone_core_pattern = Chem.MolFromSmarts("COC1=CC(=O)C=C(C1=O)OC")
     if not mol.HasSubstructMatch(benzoquinone_core_pattern):
-        return False, "No 2,3-dialkoxy benzoquinone core found"
+        return False, "No flexible 2,3-dialkoxy benzoquinone core found"
 
-    # Look for long isoprenoid chain
-    isoprenoid_pattern = Chem.MolFromSmarts("C=C(C)C")
+    # Look for isoprenoid units
+    isoprenoid_pattern = Chem.MolFromSmarts("(C=C(C)C)")
     isoprenoid_matches = mol.GetSubstructMatches(isoprenoid_pattern)
-    if len(isoprenoid_matches) < 3:  # Typically ubiquinones have 6-10 units
+    if len(isoprenoid_matches) < 3:  # Consider typical isoprenoid chains in ubiquinones
         return False, "Insufficient isoprenoid units, found " + str(len(isoprenoid_matches))
 
-    return True, "Contains 2,3-dialkoxy benzoquinone core with sufficient isoprenoid units"
+    return True, "Contains flexible 2,3-dialkoxy benzoquinone core with sufficient isoprenoid units"
 
 # Test cases for debugging
 test_smiles = [
