@@ -24,76 +24,83 @@ def is_mucopolysaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # More flexible patterns for sugar-like rings
-    sugar_ring_pattern = Chem.MolFromSmarts("[C;R][C;R][C;R][C;R][C;R]")
+    # Helper function to safely create and check SMARTS patterns
+    def create_pattern(smarts):
+        pattern = Chem.MolFromSmarts(smarts)
+        if pattern is None:
+            print(f"Warning: Invalid SMARTS pattern: {smarts}")
+            return None
+        return pattern
+
+    # Basic structural patterns
+    patterns = {
+        'sugar_ring': '[C;R][C;R][C;R][C;R][C;R]',  # Basic ring
+        'uronic': '[C;R]C(=O)O',  # Carboxylic acid
+        'amine': '[C;R][NH2,NH]',  # Amine group
+        'glycosidic': '[C;R]O[C;R]',  # Glycosidic linkage
+        'sulfate': 'OS(=O)(=O)O',  # Sulfate group
+        'amide': '[C;R]NC(=O)',  # Amide linkage
+        'hydroxy': '[C;R][OH]'  # Hydroxyl group
+    }
     
-    # Patterns for uronic acid variations (including lactones and modified forms)
-    uronic_patterns = [
-        Chem.MolFromSmarts("[C;R]C(=O)O"), # Simple uronic acid
-        Chem.MolFromSmarts("[C;R]1[O;R]C(=O)"), # Lactone form
-        Chem.MolFromSmarts("[C;R]C(=O)OC"), # Methyl ester
-        Chem.MolFromSmarts("[C;R]C(=O)N"), # Uronic acid amide
-    ]
-    
-    # Patterns for glycosamine variations
-    glycosamine_patterns = [
-        Chem.MolFromSmarts("[C;R][NH2,NH]"), # Simple amine
-        Chem.MolFromSmarts("[C;R]NC(=O)C"), # N-acetyl
-        Chem.MolFromSmarts("[C;R]N[C;R]"), # Ring nitrogen
-        Chem.MolFromSmarts("[C;R]NC(=O)"), # Amide
-    ]
-    
-    # Patterns for glycosidic and related linkages
-    linkage_patterns = [
-        Chem.MolFromSmarts("[C;R]O[C;R]"), # Classical glycosidic
-        Chem.MolFromSmarts("[C;R]OC(=O)[C;R]"), # Ester linkage
-        Chem.MolFromSmarts("[C;R]N[C;R]"), # N-glycosidic
-    ]
-    
-    # Count matches
-    sugar_rings = len(mol.GetSubstructMatches(sugar_ring_pattern))
-    
-    uronic_matches = sum(1 for pat in uronic_patterns if mol.HasSubstructMatch(pat))
-    glycosamine_matches = sum(1 for pat in glycosamine_patterns if mol.HasSubstructMatch(pat))
-    linkage_matches = sum(1 for pat in linkage_patterns if mol.HasSubstructMatch(pat))
-    
+    # Create patterns
+    valid_patterns = {}
+    for name, smarts in patterns.items():
+        pattern = create_pattern(smarts)
+        if pattern is not None:
+            valid_patterns[name] = pattern
+
+    # Count matches for each pattern
+    matches = {}
+    for name, pattern in valid_patterns.items():
+        matches[name] = len(mol.GetSubstructMatches(pattern))
+
     # Count rings
     ring_info = mol.GetRingInfo()
     ring_count = ring_info.NumRings()
     
-    # Count key atoms
+    # Basic element counts
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
     
-    # Calculate molecular weight
+    # Molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    
+
     # Scoring system
     score = 0
-    if sugar_rings >= 1: score += 1
-    if uronic_matches >= 1: score += 1
-    if glycosamine_matches >= 1: score += 1
-    if linkage_matches >= 1: score += 1
+    if matches.get('sugar_ring', 0) >= 1: score += 2
+    if matches.get('uronic', 0) >= 1: score += 2
+    if matches.get('amine', 0) >= 1: score += 1
+    if matches.get('glycosidic', 0) >= 1: score += 1
+    if matches.get('sulfate', 0) >= 1: score += 1
+    if matches.get('hydroxy', 0) >= 2: score += 1
     if ring_count >= 2: score += 1
-    if o_count >= 4: score += 1
+    if o_count >= 6: score += 1
     if n_count >= 1: score += 1
-    if mol_wt >= 250: score += 1
+    if mol_wt >= 500: score += 1
+
+    # Build detailed reason
+    features = []
+    if matches.get('sugar_ring', 0) >= 1:
+        features.append(f"{matches['sugar_ring']} sugar-like rings")
+    if matches.get('uronic', 0) >= 1:
+        features.append(f"{matches['uronic']} uronic acid groups")
+    if matches.get('amine', 0) >= 1:
+        features.append(f"{matches['amine']} amine groups")
+    if matches.get('sulfate', 0) >= 1:
+        features.append(f"{matches['sulfate']} sulfate groups")
 
     # Classification logic
-    if score >= 6:
-        reason = "Contains sugar-like rings with uronic acid and glycosamine components"
-        if uronic_matches > 1 or glycosamine_matches > 1:
-            reason += f" (found {uronic_matches} uronic and {glycosamine_matches} glycosamine units)"
+    if score >= 7:
+        reason = "Contains " + ", ".join(features)
         return True, reason
-        
-    # Specific rejection reasons
-    if sugar_rings == 0:
-        return False, "No sugar-like ring structures found"
-    if uronic_matches == 0:
-        return False, "No uronic acid components found"
-    if glycosamine_matches == 0:
-        return False, "No glycosamine components found"
-    if linkage_matches == 0:
-        return False, "No appropriate linkages found"
     
-    return False, f"Insufficient structural features (score: {score}/8)"
+    # Rejection with specific reason
+    if matches.get('sugar_ring', 0) == 0:
+        return False, "No sugar-like ring structures found"
+    if matches.get('uronic', 0) == 0:
+        return False, "No uronic acid components found"
+    if matches.get('amine', 0) == 0 and matches.get('amide', 0) == 0:
+        return False, "No amine/amide components found"
+    
+    return False, f"Insufficient structural features (score: {score}/11)"
