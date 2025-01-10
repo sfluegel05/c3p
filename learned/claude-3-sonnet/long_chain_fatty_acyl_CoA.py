@@ -6,7 +6,38 @@ Classifies: long-chain fatty acyl-CoA
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+
+def count_chain_carbons(mol, start_atom_idx):
+    """Helper function to count carbons in a chain from starting atom"""
+    visited = set()
+    def dfs(atom_idx, in_chain=True):
+        if atom_idx in visited:
+            return 0
+        visited.add(atom_idx)
+        
+        atom = mol.GetAtomWithIdx(atom_idx)
+        count = 1 if (in_chain and atom.GetAtomicNum() == 6) else 0
+        
+        for neighbor in atom.GetNeighbors():
+            # Don't count carbons in CoA part
+            if neighbor.GetAtomicNum() == 16:  # Sulfur
+                continue
+            neighbor_idx = neighbor.GetIdx()
+            if neighbor_idx not in visited:
+                count += dfs(neighbor_idx, in_chain)
+        return count
+    
+    return dfs(start_atom_idx)
+
+def count_double_bonds(mol, in_chain_atoms):
+    """Helper function to count double bonds in the fatty acid chain"""
+    count = 0
+    for bond in mol.GetBonds():
+        if bond.GetBondType() == Chem.BondType.DOUBLE:
+            # Only count if both atoms are in the chain
+            if bond.GetBeginAtomIdx() in in_chain_atoms and bond.GetEndAtomIdx() in in_chain_atoms:
+                count += 1
+    return count
 
 def is_long_chain_fatty_acyl_CoA(smiles: str):
     """
@@ -51,30 +82,42 @@ def is_long_chain_fatty_acyl_CoA(smiles: str):
         if not mol.HasSubstructMatch(smarts_patterns[feature]):
             return False, f"Missing {feature} moiety required for CoA structure"
 
-    # Find the thioester carbon and traverse the fatty acid chain
+    # Find the thioester carbon
     thioester_matches = mol.GetSubstructMatches(smarts_patterns['thioester'])
     if not thioester_matches:
         return False, "Could not identify thioester linkage"
     
-    # Get the total number of carbons and oxygens
-    total_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    # Get the carbon atom connected to the thioester sulfur
+    thioester_carbon = thioester_matches[0][0]
     
-    # CoA typically has 21-23 carbons depending on configuration
-    # Subtract from total to get fatty acid chain length
-    # Allow for some variation in CoA structure
-    estimated_coa_carbons = 22  # Average
-    chain_carbons = total_carbons - estimated_coa_carbons
+    # Count carbons in the fatty acid chain
+    chain_carbons = count_chain_carbons(mol, thioester_carbon)
     
     # Check chain length (C13-C22)
     if chain_carbons < 13:
-        return False, f"Fatty acid chain too short (approximately C{chain_carbons}, need C13-C22)"
+        return False, f"Fatty acid chain too short (C{chain_carbons}, need C13-C22)"
     if chain_carbons > 22:
-        return False, f"Fatty acid chain too long (approximately C{chain_carbons}, need C13-C22)"
+        return False, f"Fatty acid chain too long (C{chain_carbons}, need C13-C22)"
 
-    # Additional checks for common features
-    # Count unsaturations
-    double_bonds = rdMolDescriptors.CalcNumAliphaticDoubleBonds(mol)
-    triple_bonds = rdMolDescriptors.CalcNumAliphaticTripleBonds(mol)
+    # Get atoms in the chain for checking modifications
+    visited = set()
+    def get_chain_atoms(atom_idx):
+        if atom_idx in visited:
+            return set()
+        visited.add(atom_idx)
+        atom = mol.GetAtomWithIdx(atom_idx)
+        chain_atoms = {atom_idx}
+        
+        for neighbor in atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 16:  # Skip sulfur and beyond
+                continue
+            chain_atoms.update(get_chain_atoms(neighbor.GetIdx()))
+        return chain_atoms
+    
+    chain_atoms = get_chain_atoms(thioester_carbon)
+    
+    # Count modifications
+    double_bonds = count_double_bonds(mol, chain_atoms)
     
     # Look for common modifications
     hydroxy_pattern = Chem.MolFromSmarts('CO')
@@ -92,4 +135,4 @@ def is_long_chain_fatty_acyl_CoA(smiles: str):
     if feature_str:
         feature_str = f" with {feature_str}"
     
-    return True, f"Long-chain fatty acyl-CoA (approximately C{chain_carbons}){feature_str}"
+    return True, f"Long-chain fatty acyl-CoA (C{chain_carbons}){feature_str}"
