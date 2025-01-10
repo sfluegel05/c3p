@@ -20,34 +20,23 @@ def is_phosphoinositide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for potential glycerol backbone with fatty acids (ester connections for flexibility in patterns)
-    glycerol_patterns = [
-        Chem.MolFromSmarts("[CX3](=O)OC[CH](O)"),
-        Chem.MolFromSmarts("OCC(OC(=O))")  # Allowing different orientations
-    ]
-
-    if not any(mol.HasSubstructMatch(pattern) for pattern in glycerol_patterns):
-        return False, "No glycerol backbone with fatty acids found"
-
-    # Inositol ring detection: Stereochemistry may vary or not be depicted
-    inositol_patterns = [
-        Chem.MolFromSmarts("C1([C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@H](O1)O)"),
-        Chem.MolFromSmarts("C1(C(O)C(O)C(O)C(O)C1O)")  # Non-chiral
-    ]
-
-    if not any(mol.HasSubstructMatch(pattern) for pattern in inositol_patterns):
+    # Verify existence of a phosphatidylglycerol structure
+    glycerol_pattern = Chem.MolFromSmarts("C(COP(O)(O)=O)OC(=O)C")
+    if not mol.HasSubstructMatch(glycerol_pattern):
+        return False, "No recognizable phosphatidylglycerol backbone found"
+    
+    # Inositol ring pattern
+    # Look for a six-membered ring with hydroxyl groups (R groups can be oxygens for phosphates)
+    inositol_pattern = Chem.MolFromSmarts("C1(O)C(O)C(O)C(O)C(O)C1")
+    if not mol.HasSubstructMatch(inositol_pattern):
         return False, "Inositol ring not found"
 
-    # Check for phosphate groups bonded to the inositol ring
-    phosphate_patterns = [
-        Chem.MolFromSmarts("C(OP(=O)(O)O)C"),
-        Chem.MolFromSmarts("C(OP(O)(O)=O)")  # Different pattern recognition
-    ]
-
-    phosphate_matches = [mol.GetSubstructMatches(pattern) for pattern in phosphate_patterns]
-
-    # Ensure at least one phosphate attachment is found
-    if not any(len(matches) > 0 for matches in phosphate_matches):
+    # Phosphate groups directly attached to the inositol ring
+    phosphate_pattern = Chem.MolFromSmarts("C(OP(=O)(O)O)C")
+    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
+    
+    # Ensure at least one phosphate group is found
+    if len(phosphate_matches) == 0:
         return False, "No phosphorylated inositol ring found"
-
+    
     return True, "Molecule has a phosphatidylinositol backbone with one or more phosphate groups on the inositol ring"
