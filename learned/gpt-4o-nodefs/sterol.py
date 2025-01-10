@@ -21,10 +21,8 @@ def is_sterol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more generalized core sterol structure using a SMARTS pattern
-    # - Four-ring steroid backbones are captured
-    # - Hydroxyl group at position 3
-    sterol_pattern = Chem.MolFromSmarts("[#6]1[#6][#6]2[#6]3[#6]([#6]14)[#6][#6][C@H](O)[#6]3[#6]([#6]2)[#6]4")
+    # Define a core sterol structure using a more inclusive SMARTS pattern
+    sterol_pattern = Chem.MolFromSmarts("C1CCC2C3CCC4(C)C(C3C2C1)CC[C@H](O)C4")  # more representative sterol pattern
 
     # Check if the molecule contains the sterol pattern
     if mol.HasSubstructMatch(sterol_pattern):
