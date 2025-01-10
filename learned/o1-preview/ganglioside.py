@@ -24,26 +24,27 @@ def is_ganglioside(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
+
     # Check for ceramide substructure
-    # General ceramide pattern: amide bond connected to a sphingoid base (long-chain amino alcohol)
-    ceramide_smarts = 'C(=O)N[C][C][C](O)'  # Amide bond connected to chain with hydroxyl group
+    # Ceramide: sphingosine backbone linked via amide bond to fatty acid chain
+    # Define a simplified ceramide pattern
+    ceramide_smarts = '[NX3][CX3](=O)[C@@H]([C@H](O)[C@H](O)CO)[C@H](O)C=C'
     ceramide_pattern = Chem.MolFromSmarts(ceramide_smarts)
     if not mol.HasSubstructMatch(ceramide_pattern):
         return False, "No ceramide substructure found"
     
-    # Check for sialic acid residue
-    # Simplified sialic acid pattern: a sugar ring with carboxylic acid group
-    sialic_acid_smarts = 'C(=O)O[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@@H]1O'  # Sialic acid pattern
+    # Check for sialic acid substructure
+    # Sialic acid: N-acetylneuraminic acid (Neu5Ac) backbone
+    sialic_acid_smarts = 'O=C([O-])[C@@H]1[C@@H](O)[C@H](O)[C@H](O[C@H]1CO)NC(C)=O'
     sialic_acid_pattern = Chem.MolFromSmarts(sialic_acid_smarts)
-    if not mol.HasSubstructMatch(sialic_acid_pattern):
-        return False, "No sialic acid residue found"
-    
-    # Check for glycosidic bonds (sugar chain)
-    glycosidic_bond_smarts = '[C;R][O;!R][C;R]'  # Oxygen between two ring carbons (glycosidic bond)
-    glycosidic_bond_pattern = Chem.MolFromSmarts(glycosidic_bond_smarts)
-    glycosidic_bond_matches = mol.GetSubstructMatches(glycosidic_bond_pattern)
-    if len(glycosidic_bond_matches) < 2:
-        return False, "Insufficient glycosidic linkages (sugar chain)"
-    
-    return True, "Contains ceramide backbone, sialic acid residue, and glycosidic linkages"
+    sialic_acid_matches = mol.GetSubstructMatches(sialic_acid_pattern)
+    if len(sialic_acid_matches) == 0:
+        return False, "No sialic acid substructure found"
+
+    # Check for glycosidic linkage between ceramide and sugar chain
+    glycosidic_linkage_smarts = '[C@H](O[C@H])CO'
+    glycosidic_linkage_pattern = Chem.MolFromSmarts(glycosidic_linkage_smarts)
+    if not mol.HasSubstructMatch(glycosidic_linkage_pattern):
+        return False, "No glycosidic linkage found between ceramide and sugar chain"
+
+    return True, "Contains ceramide backbone, glycosidic-linked sugar chain, and sialic acid residue"
