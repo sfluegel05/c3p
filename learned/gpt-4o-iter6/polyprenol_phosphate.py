@@ -20,33 +20,44 @@ def is_polyprenol_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Pattern to capture both trans and cis-isoprene units: CH2=C-CH=CH2 and variations
-    isoprene_pattern = Chem.MolFromSmarts("[CH2]=C([CH3])[CH]=[CH2]")
+    # Extend isoprene pattern to include cis/trans configurations detected via varied SMILES junction
+    isoprene_pattern = Chem.MolFromSmarts("[CH2]=C[CH]=C[CH2]")  # General pattern for isoprene units
     
+    # Special check for polyprenol chains
+    long_isoprene_chain = Chem.MolFromSmarts("(C=C\C=C\C=C)+")
+
     # Find isoprene matches
     isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
-    if len(isoprene_matches) < 4:
-        return False, "Insufficient isoprene units for a polyprenol chain (need at least 4)"
+    long_chain_matches = mol.HasSubstructMatch(long_isoprene_chain)
+    
+    # Check if there is a sensible amount linked as a single chain for polyprenol property
+    if len(isoprene_matches) < 4 or not long_chain_matches:
+        return False, "Insufficient linked isoprene units for a polyprenol chain (need at least 4 in sequence)"
 
-    # Recognize phosphate and diphosphate groups
-    phosphate_pattern = Chem.MolFromSmarts("OP(=O)(O)[O-]")
-    diphosphate_pattern = Chem.MolFromSmarts("OP(=O)([O-])OP(=O)([O-])[O-]")
+    # Recognize phosphate groups;
+    phosphate_pattern = Chem.MolFromSmarts("OP(=O)(O)O")
+    diphosphate_pattern = Chem.MolFromSmarts("OP(=O)([O-])OP(=O)(O)O")
     
     # Find phosphate matches
     phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
     diphosphate_matches = mol.GetSubstructMatches(diphosphate_pattern)
+
     if not phosphate_matches and not diphosphate_matches:
         return False, "No phosphate or diphosphate group found"
     
-    # Ensure the phosphate or diphosphate group is at the end of the isoprene chain
+    # Ensure the phosphate or diphosphate group is linked at what can be considered the terminal of the isoprene chain
     terminal_atoms = {match[0] for match in isoprene_matches}.union({match[-1] for match in isoprene_matches})
+
+    # Test for correct phosphate linkage
     attached_phosphate = False
+    
     for match in phosphate_matches + diphosphate_matches:
-        if any(atom in terminal_atoms for atom in match):
+        phosphate_end = {bond.GetBeginAtomIdx() for bond in mol.GetBonds() if bond.IsInRingSize(5)}
+        if any(atom in terminal_atoms for atom in match) or any(atom in phosphate_end for atom in match):
             attached_phosphate = True
             break
 
     if attached_phosphate:
-        return True, "Valid polyprenol phosphate discovered"
+        return True, "Valid polyprenol phosphate with correct phosphate attachment to isoprene chain"
     
-    return False, "Phosphate group is not correctly positioned"
+    return False, "Phosphate group is incorrectly positioned in the isoprene chain"
