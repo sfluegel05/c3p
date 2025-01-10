@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_chalcones(smiles: str):
     """
     Determines if a molecule is a chalcone based on its SMILES string.
-    A chalcone contains an aromatic ketone with an extended conjugated system:
-    Ar-CH=CH-C(=O)-Ar with potential substitutions.
+    Chalcones are characterized by the presence of an aromatic ketone
+    with an extended conjugated system: Ar-CH=CH-C(=O)-Ar and derivatives.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -16,16 +16,16 @@ def is_chalcones(smiles: str):
         bool: True if the molecule is a chalcone, False otherwise
         str: Reason for classification
     """
-    # Parse SMILES string
+
+    # Parse the SMILES string into a molecule object
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+
+    # Flexible SMARTS pattern for chalcones considering potential substituents and resonance structures
+    chalcone_pattern_smarts = '[$([a])]C(=O)C=CC[$([a])]'  # Aromatic with a ketone, conjugated diene, and aromatic or heteroaromatic end
     
-    # SMARTS pattern for chalcone core structure with flexibility
-    # Pattern: aromatic ring -> single bond or double bond -> C(=O) -> aromatic ring
-    chalcone_pattern_smarts = 'c1ccccc1[C]=[C]-[C](=O)-c2ccccc2'
-    
-    # Create a molecule from the SMARTS pattern
+    # Convert SMARTS pattern into a molecule object for matching
     chalcone_pattern = Chem.MolFromSmarts(chalcone_pattern_smarts)
     if chalcone_pattern is None:
         return (None, "Unable to construct chalcone pattern.")
