@@ -6,14 +6,15 @@ from rdkit import Chem
 def is_porphyrins(smiles: str):
     """
     Determines if a molecule is a porphyrin based on its SMILES string.
-    Porphyrins are characterized by a macrocyclic structure consisting of four 
-    pyrrole rings connected mainly through methine bridges, forming a 16-membered macrocycle.
+    Porphyrins are natural pigments characterized by a macrocyclic structure
+    consisting of four pyrrole rings connected through methine bridges 
+    (-CH=) forming a large conjugated 16-membered macrocycle.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if the molecule is a porphyrin, False otherwise
+        bool: True if molecule is a porphyrin, False otherwise
         str: Reason for classification
     """
     
@@ -22,9 +23,10 @@ def is_porphyrins(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # New SMARTS pattern for a macrocyclic structure typical of porphyrins.
-    # The pattern varies to include potential porphyrin derivatives with different linkage styles.
-    porphyrin_pattern = Chem.MolFromSmarts('n1ccccc1-[n+]-2C=CC=C-3C=CC=C[n+]3-2[nH]c4c[n+]ccc4')
+    # Define a new, broader SMARTS pattern for porphyrins
+    # n: pyrrole nitrogen, c: pyrrole carbon, C: methine (-CH=)
+    porphyrin_pattern = Chem.MolFromSmarts('n1ccc2[nH]c(c1)C=Cc3c[nH]c(c3)C=Cc2C=Cc4c[nH]cc4')
+
     if porphyrin_pattern is None:
         return None, "Error in SMARTS pattern definition"
 
