@@ -29,15 +29,10 @@ def is_organoiodine_compound(smiles: str):
     if not iodine_atoms:
         return False, "No iodine atoms found in the molecule"
 
-    # Check if any iodine atom is directly bonded to a carbon atom
+    # Check if any iodine atom is bonded to at least one carbon atom
     for iodine_atom in iodine_atoms:
         for neighbor in iodine_atom.GetNeighbors():
             if neighbor.GetAtomicNum() == 6:  # Carbon has atomic number 6
-                # Ensure that iodine is only bonded to carbon atoms
-                if all(neighbor.GetAtomicNum() == 6 for neighbor in iodine_atom.GetNeighbors()):
-                    return True, "Contains at least one carbon-iodine bond"
-                else:
-                    # If iodine is bonded to non-carbon atoms, it's not a simple organoiodine compound
-                    return False, "Iodine is bonded to non-carbon atoms"
+                return True, "Contains at least one carbon-iodine bond"
 
     return False, "No carbon-iodine bonds found"
