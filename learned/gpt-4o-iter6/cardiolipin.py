@@ -5,9 +5,8 @@ from rdkit import Chem
 
 def is_cardiolipin(smiles: str):
     """
-    Determines if a molecule is a cardiolipin based on its SMILES string.
-    A cardiolipin is defined as a phosphatidylglycerol composed of two molecules 
-    of phosphatidic acid covalently linked to a molecule of glycerol.
+    Determines if a molecule is cardiolipin based on its SMILES string.
+    A cardiolipin consists of two phosphatidic acids linked to a glycerol phosphate backbone.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,19 +20,19 @@ def is_cardiolipin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS for identifying the glycerol backbone linked to phosphates
-    glycerol_with_phosphate_pattern = Chem.MolFromSmarts("O[C@H](COP(=O)(O)O)[C@@H](O)CO")
+    # SMARTS pattern to identify the core glycerol phosphate backbone typical of cardiolipins
+    glycerol_phosphate_pattern = Chem.MolFromSmarts("[O,P](C[CH](CO[P,O]=O)[O,P])C[CH](CO[P,O]=O)[O,P]")
 
-    # SMARTS for phosphatidic acid moiety: a phosphate-linked glycerol with ester linkages
-    phosphatidic_acid_pattern = Chem.MolFromSmarts("C(=O)O[C@H](COP(O)(=O)O)")
+    # SMARTS for phosphatidic acid moiety: phosphate linked with glycerol and esters
+    phosphatidic_acid_pattern = Chem.MolFromSmarts("C(=O)O[CH]COP(O)(=O)O")
 
-    # Match glycerol backbone connected to phosphates
-    if not mol.HasSubstructMatch(glycerol_with_phosphate_pattern):
-        return False, "Glycerol backbone with phosphate not found"
+    # Check for glycerol phosphate backbone
+    if not mol.HasSubstructMatch(glycerol_phosphate_pattern):
+        return False, "Core glycerol phosphate backbone not found"
 
-    # Ensure there are two phosphatidic acid linkages
-    phos_matches = mol.GetSubstructMatches(phosphatidic_acid_pattern)
-    if len(phos_matches) < 2:
-        return False, f"Found {len(phos_matches)} phosphatidic acid moieties, need at least 2"
+    # Ensure there are at least two phosphatidic acid moieties
+    phosphatidic_acid_matches = mol.GetSubstructMatches(phosphatidic_acid_pattern)
+    if len(phosphatidic_acid_matches) < 2:
+        return False, f"Found {len(phosphatidic_acid_matches)} phosphatidic acid moieties, need at least 2"
 
     return True, "Molecule matches cardiolipin structure"
