@@ -25,36 +25,48 @@ def is_beta_lactam(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Handle salts and charged species by splitting on '.'
-    fragments = smiles.split('.')
-    for fragment in fragments:
-        mol = Chem.MolFromSmiles(fragment)
-        if mol is None:
-            continue
-            
-        # Basic beta-lactam pattern: 4-membered ring containing N-C(=O)
-        # [#7] = any nitrogen
-        # ~2 = exactly 2 bonds
-        # [#6] = any carbon
-        # [#8] = any oxygen
-        beta_lactam_pattern = Chem.MolFromSmarts('[#7]1~2[#6][#6](=[#8])[#6]1')
+    # Convert to neutral form if possible (to handle charged species)
+    mol = Chem.AddHs(mol)
+    
+    # SMARTS pattern for beta-lactam ring
+    # [N;R1]1[C;R1][C;R1](=O)[C;R1]1 represents:
+    # - N in a ring (R1) connected to
+    # - C in same ring connected to
+    # - C(=O) in same ring connected to
+    # - C in same ring closing back to N
+    beta_lactam_pattern = Chem.MolFromSmarts("[N;R1]1[C;R1][C;R1](=O)[C;R1]1")
+    
+    # Look for the beta-lactam ring
+    if not mol.HasSubstructMatch(beta_lactam_pattern):
+        return False, "No beta-lactam ring found"
+    
+    # Count number of beta-lactam rings
+    matches = mol.GetSubstructMatches(beta_lactam_pattern)
+    num_rings = len(matches)
+    
+    # Additional validation - check ring size
+    ring_info = mol.GetRingInfo()
+    
+    # For each match, verify it's part of a 4-membered ring
+    valid_rings = 0
+    for match in matches:
+        ring_atoms = set(match)
+        for ring in ring_info.AtomRings():
+            if ring_atoms.issubset(set(ring)) and len(ring) == 4:
+                valid_rings += 1
+                break
+    
+    if valid_rings == 0:
+        return False, "Found amide but not in correct 4-membered ring configuration"
+    
+    # Additional check for carbonyl
+    carbonyl_pattern = Chem.MolFromSmarts("[C;R1](=O)")
+    if not mol.HasSubstructMatch(carbonyl_pattern):
+        return False, "No carbonyl group found in ring"
         
-        if mol.HasSubstructMatch(beta_lactam_pattern):
-            # Additional validation: confirm it's part of a 4-membered ring
-            ring_info = mol.GetRingInfo()
-            if any(len(ring) == 4 for ring in ring_info.AtomRings()):
-                # Check for specific beta-lactam types
-                patterns = [
-                    ('[#7]1[#6]2[#6](=[#8])[#6]1[#16][#6]', 'penicillin/cephalosporin-type'),
-                    ('[#7]1[#6]2[#6](=[#8])[#6]1[#6][#6]2', 'carbapenem-type'),
-                    ('[#7]1[#6][#6](=[#8])[#6]1[#16](=[#8])(=[#8])[#8]', 'monobactam-type')
-                ]
-                
-                for pattern, desc in patterns:
-                    pat = Chem.MolFromSmarts(pattern)
-                    if pat and mol.HasSubstructMatch(pat):
-                        return True, f"Contains beta-lactam structure ({desc})"
-                        
-                return True, "Contains beta-lactam ring with amide bond"
-                
-    return False, "No beta-lactam ring found"
+    # Check that nitrogen is part of amide
+    amide_n_pattern = Chem.MolFromSmarts("[N;R1]C(=O)")
+    if not mol.HasSubstructMatch(amide_n_pattern):
+        return False, "Nitrogen not part of amide bond"
+    
+    return True, f"Contains {valid_rings} beta-lactam ring(s) - 4-membered ring(s) with amide bond"
