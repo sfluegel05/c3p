@@ -2,37 +2,41 @@
 Classifies: CHEBI:27096 trichlorobenzene
 """
 from rdkit import Chem
+from rdkit.Chem import rdchem
 
 def is_trichlorobenzene(smiles: str):
     """
-    Determines if a molecule contains a trichlorobenzene core based on its SMILES string.
-    The core is any benzene ring carrying three chloro substituents at unspecified positions.
+    Determines if a molecule is a trichlorobenzene based on its SMILES string.
+    A trichlorobenzene is a chlorobenzene with three chloro substituents on at least one benzene ring.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule contains a trichlorobenzene core, False otherwise.
+        bool: True if molecule is a trichlorobenzene, False otherwise
         str: Reason for classification
     """
     
-    # Parse the SMILES string into an RDKit molecule
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define a SMARTS pattern for a benzene ring
-    benzene_pattern = Chem.MolFromSmarts("c1ccccc1")
     
-    # Check if the molecule contains a benzene ring
-    if not mol.HasSubstructMatch(benzene_pattern):
-        return False, "No benzene ring found"
+    # Identify aromatic rings in the molecule
+    aromatic_rings = [ring for ring in Chem.GetSymmSSSR(mol) if all(mol.GetAtomWithIdx(atom_idx).GetIsAromatic() for atom_idx in ring)]
     
-    # Count chlorine atoms in the molecule
-    chlorine_count = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == "Cl")
+    # Check each aromatic ring for Cl substituents
+    for ring in aromatic_rings:
+        chloro_count = 0
+        for atom_idx in ring:
+            atom = mol.GetAtomWithIdx(atom_idx)
+            # Check if the atom is a carbon and has a chlorine neighbor
+            if atom.GetSymbol() == 'C':
+                is_cl_substituent = any(neighbor.GetSymbol() == 'Cl' for neighbor in atom.GetNeighbors())
+                if is_cl_substituent:
+                    chloro_count += 1
+        
+        if chloro_count == 3:
+            return True, "Contains an aromatic benzene ring with three chloro substituents"
     
-    # Check for exactly three chlorine atoms in the molecule
-    if chlorine_count != 3:
-        return False, f"Contains {chlorine_count} Cl atoms, requires exactly 3"
-
-    return True, "Contains a benzene ring with exactly three chloro substituents at unspecified positions"
+    return False, "Benzene ring with three chloro substituents not found"
