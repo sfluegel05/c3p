@@ -2,7 +2,6 @@
 Classifies: CHEBI:55493 1-O-acylglycerophosphoethanolamine
 """
 from rdkit import Chem
-from rdkit.Chem import rdqueries
 
 def is_1_O_acylglycerophosphoethanolamine(smiles: str):
     """
@@ -21,14 +20,14 @@ def is_1_O_acylglycerophosphoethanolamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for glycerol backbone pattern with 1 acyl ester
-    glycerol_acyl_pattern = Chem.MolFromSmarts("[C@H](O)COC(=O)")
+    # Check for glycerol backbone with O-acyl at 1-position ([C@@H](COC(=O))
+    glycerol_acyl_pattern = Chem.MolFromSmarts("[C@@H](COC(=O))[C@@H](O)CO")
     acyl_match = mol.HasSubstructMatch(glycerol_acyl_pattern)
     if not acyl_match:
         return False, "No acyl ester at the 1-position of glycerol fragment"
 
-    # Check for phosphoethanolamine group pattern
-    phosphoethanolamine_pattern = Chem.MolFromSmarts("COP(O)(=O)OCCN")
+    # Check for phosphoethanolamine group (P(O)(=O)OCCN)
+    phosphoethanolamine_pattern = Chem.MolFromSmarts("POC[C@@H](O)COC(=O)CP(=O)(O)OCCN")
     phospho_match = mol.HasSubstructMatch(phosphoethanolamine_pattern)
     if not phospho_match:
         return False, "No phosphoethanolamine group attached"
