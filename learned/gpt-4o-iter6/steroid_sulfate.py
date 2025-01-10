@@ -21,35 +21,22 @@ def is_steroid_sulfate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Expand potential patterns for a steroid backbone
-    steroid_patterns = [
-        Chem.MolFromSmarts("[C@@H]1CC[C@@]2[C@H]3CC[C@]4(C)[C@]3(CC[C@H]2[C@@H]1C)O4"),  # More detailed steroid core
-        Chem.MolFromSmarts("[C@H]1CC[C@@]2(C[C@@H](CC[C@@]2C1)O)C"),  # Core with oxygen/hydroxyl groups included
-    ]
+    # Improved SMARTS pattern for general steroid core - more flexible structure
+    steroid_pattern = Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2CCC4(C3C=CC=C4)C") # Simplest common backbone
 
-    # Check if there's any pattern matching a steroid backbone
-    steroid_match = any(mol.HasSubstructMatch(pattern) for pattern in steroid_patterns)
-    if not steroid_match:
+    # Check if there's a pattern matching a steroid backbone
+    if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
+      
+    # SMARTS pattern to identify sulfate group bound through an ester linkage
+    sulfate_pattern = Chem.MolFromSmarts("OS(=O)(=O)[O,C]-")
 
-    # SMARTS pattern to identify sulfate group bound through an ester linkage (with slight flexibility)
-    sulfate_pattern = Chem.MolFromSmarts("OS(=O)(=O)[O-]")
+    # Check for sulfate linkage to hydroxy group
+    if not mol.HasSubstructMatch(sulfate_pattern):
+        return False, "No sulfate group properly linked"
 
-    # Look for sulfate groups connected to hydroxyl groups
-    sulfate_matches = mol.GetSubstructMatches(sulfate_pattern)
-    for match in sulfate_matches:
-        oxygen_atom = [mol.GetAtomWithIdx(idx) for idx in match if mol.GetAtomWithIdx(idx).GetSymbol() == 'O'][0]
-        carbon_neighbors = [nbr for nbr in oxygen_atom.GetNeighbors() if nbr.GetSymbol() == 'C']
-        
-        for carbon in carbon_neighbors:
-            # Check if carbon originally belongs to hydroxy group of steroid (OH pattern)
-            if carbon.GetDegree() == 3:  # Simple way to ensure it's part of a larger chain, not dangling
-                for o_neighbor in carbon.GetNeighbors():
-                    if o_neighbor.GetSymbol() == 'O' and o_neighbor != oxygen_atom:
-                        if any(nbr.GetSymbol() == 'H' for nbr in o_neighbor.GetNeighbors()):
-                            return True, "Contains sulfate ester linked to steroid backbone at a hydroxy group"
-
-    return False, "Sulfate groups found but not linked properly to steroid backbone"
+    # If both the steroid backbone and sulfate ester linkage are found
+    return True, "Contains steroid backbone with sulfate ester linkage"
 
 # Example for testing
 smiles = "[Na+].[H][C@]12CC[C@]3(C)C(=O)CC[C@@]3([H])[C@]1([H])CCc1cc(OS([O-])(=O)=O)ccc21"
