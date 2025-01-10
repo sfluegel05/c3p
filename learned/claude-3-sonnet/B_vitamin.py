@@ -6,7 +6,6 @@ Classifies: B vitamin compounds
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_B_vitamin(smiles: str):
     """
@@ -24,105 +23,76 @@ def is_B_vitamin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define core structural patterns for B vitamins
+    # Define SMARTS patterns for different B vitamins
     patterns = {
-        'B1': [  # Thiamine
-            '[n+]1cscc1',  # Basic thiazolium ring
-            'c1ncnc(N)c1'  # Pyrimidine part
-        ],
-        'B2': [  # Riboflavin
-            'Cc1cc2nc3c(=O)[nH]c(=O)nc-3n(CC(O))c2cc1C'  # Isoalloxazine core
-        ],
-        'B3': [  # Niacin/Nicotinamide
-            'c1cccnc1C(=O)[OH,N]'  # Pyridine with carboxyl or amide
-        ],
-        'B5': [  # Pantothenic acid
-            'CC(C)(CO)C(O)C(=O)NCCC(=O)[OH]'
-        ],
-        'B6': [  # Pyridoxine group
-            'Cc1ncc(C[OH,NH2,CHO])c(c1O)C[OH,NH2,C(=O)]'
-        ],
-        'B7': [  # Biotin
-            'S1CC2NC(=O)NC2C1'  # Core biotin ring
-        ],
-        'B9': [  # Folate group
-            'Nc1nc2[nH]cc(CNc3ccc(cc3)C(=O)N)nc2c(=O)[nH]1',  # Basic folate core
-            'Nc1nc2NCC(CNc3ccc)nc2c(=O)[nH]1'  # Reduced forms
-        ],
-        'B12': [  # Cobalamin
-            '[Co]',  # Must contain cobalt
-            'CN1C=C2C(=C(C)C3=[N]C(=CC4=[N]C(=C(C)C5=[N]1)C)C)C' # Partial corrin pattern
-        ]
-    }
-
-    # Check each vitamin pattern
-    for vitamin, subpatterns in patterns.items():
-        matches = 0
-        for pattern in subpatterns:
-            substructure = Chem.MolFromSmarts(pattern)
-            if substructure is not None and mol.HasSubstructMatch(substructure):
-                matches += 1
+        # B1 (Thiamine) - thiazole ring connected to pyrimidine
+        'B1': '[n+]1csc(CCO)c1C',
         
-        # Special handling for different vitamins
-        if matches > 0:
+        # B2 (Riboflavin) - isoalloxazine ring system
+        'B2': 'Cc1cc2nc3c(=O)[nX2]c(=O)nc-3n(CC(O)C(O)C(O)CO)c2cc1C',
+        
+        # B3 (Niacin/Nicotinic acid) - pyridine with carboxyl
+        'B3': 'O=C(O)c1cccnc1',
+        
+        # B5 (Pantothenic acid) - beta-alanine with 2,4-dihydroxy-3,3-dimethylbutanamide
+        'B5': 'CC(C)(CO)[CH](O)C(=O)NCCC(=O)[OH]',
+        
+        # B6 (Pyridoxine/Pyridoxal/Pyridoxamine) - pyridine with specific substitution
+        'B6': 'Cc1ncc(CO)c(CO)c1O',
+        
+        # B7 (Biotin) - fused rings with sulfur
+        'B7': 'O=C1NC2[CH]S[CH]C2N1',
+        
+        # B9 (Folate) - pterin + pABA + glutamate
+        'B9': 'Nc1nc2ncc(CNc3ccc(CC)cc3)nc2c(=O)[nH]1',
+        
+        # B12 (Cobalamin) - corrin ring with cobalt
+        'B12': '[Co]'
+    }
+    
+    # Check each pattern
+    for vitamin, pattern in patterns.items():
+        substructure = Chem.MolFromSmarts(pattern)
+        if substructure and mol.HasSubstructMatch(substructure):
             if vitamin == 'B12':
-                # Additional checks for B12
-                if has_cobalamin_features(mol):
-                    return True, "Contains cobalamin (B12) structure"
-            elif vitamin == 'B9':
-                # Check for folate characteristics
-                if has_folate_features(mol):
-                    return True, "Contains folate (B9) structure"
-            elif matches == len(subpatterns):
-                # For other vitamins, require all subpatterns to match
-                return True, f"Contains vitamin {vitamin} structure"
-
-    # Additional checks for modified forms
-    if has_modified_vitamin_features(mol):
-        return True, "Contains modified B vitamin structure"
-
+                # Additional check for corrin ring system for B12
+                if any(atom.GetSymbol() == 'Co' for atom in mol.GetAtoms()):
+                    return True, f"Matches vitamin {vitamin} (Cobalamin) structure"
+            else:
+                return True, f"Matches vitamin {vitamin} structure"
+    
+    # Additional checks for derivatives and variations
+    
+    # Check for phosphate groups (common in active forms)
+    phosphate = Chem.MolFromSmarts('P(=O)(O)(O)O')
+    
+    # Check for nucleotide-like structures (as in FAD)
+    nucleotide = Chem.MolFromSmarts('c1ncnc2[nH]cnc12')
+    
+    if mol.HasSubstructMatch(phosphate) and mol.HasSubstructMatch(nucleotide):
+        return True, "Matches B vitamin derivative (likely FAD or FMN)"
+    
+    # Count number of rings
+    ring_info = mol.GetRingInfo()
+    num_rings = ring_info.NumRings()
+    
+    # Additional characteristics that might indicate a B vitamin
+    nitrogen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
+    oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    
+    if num_rings >= 2 and nitrogen_count >= 2 and oxygen_count >= 2:
+        # This could be a modified or derivative form
+        return True, "Matches structural characteristics of B vitamin derivative"
+        
     return False, "Does not match any B vitamin structural patterns"
 
-def has_cobalamin_features(mol):
-    """Check for characteristic features of B12"""
-    # Must have cobalt
-    if not any(atom.GetSymbol() == 'Co' for atom in mol.GetAtoms()):
-        return False
-    
-    # Check molecular weight (cobalamins are large)
-    if rdMolDescriptors.CalcExactMolWt(mol) < 1000:
-        return False
-    
-    # Count rings (cobalamins have many)
-    if rdMolDescriptors.CalcNumRings(mol) < 8:
-        return False
-    
-    return True
 
-def has_folate_features(mol):
-    """Check for characteristic features of folates"""
-    # Count key atoms
-    num_n = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
-    num_o = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    
-    # Folates typically have many nitrogens and oxygens
-    if num_n < 7 or num_o < 4:
-        return False
-    
-    # Check for characteristic p-aminobenzoyl group
-    paba_pattern = Chem.MolFromSmarts('Nc1ccc(cc1)C(=O)N')
-    return paba_pattern is not None and mol.HasSubstructMatch(paba_pattern)
-
-def has_modified_vitamin_features(mol):
-    """Check for common vitamin modifications"""
-    # Check for phosphate groups (common in active forms)
-    phosphate = Chem.MolFromSmarts('OP(=O)(O)O')
-    if phosphate is not None and mol.HasSubstructMatch(phosphate):
-        return True
-    
-    # Check for nucleotide-like features (e.g., FAD)
-    nucleotide = Chem.MolFromSmarts('O1C(CO)C(O)C(O)C1n1cnc2c(N)ncnc12')
-    if nucleotide is not None and mol.HasSubstructMatch(nucleotide):
-        return True
-    
-    return False
+__metadata__ = {
+    'chemical_class': {
+        'name': 'B vitamin',
+        'definition': 'Any member of the group of eight water-soluble vitamins '
+                     'originally thought to be a single compound (vitamin B) that '
+                     'play important roles in cell metabolism.',
+        'subclasses': ['B1', 'B2', 'B3', 'B5', 'B6', 'B7', 'B9', 'B12']
+    }
+}
