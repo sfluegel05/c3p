@@ -21,16 +21,28 @@ def is_polycyclic_arene(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Find all aromatic (benzene-like) rings
-    aromatic_rings = [ring for ring in mol.GetRingInfo().AtomRings() if all(mol.GetAtomWithIdx(atom).GetIsAromatic() for atom in ring)]
+    # Acquire ring information
+    ri = mol.GetRingInfo()
+    
+    # Extract all aromatic rings from the molecule
+    aromatic_rings = [ring for ring in ri.AtomRings() if all(mol.GetAtomWithIdx(atom).GetIsAromatic() for atom in ring)]
     
     # Check if there are at least two aromatic rings
     if len(aromatic_rings) < 2:
         return False, "Less than two aromatic rings found"
     
-    # Check for fused rings - a polycyclic structure should have interconnected aromatic rings
-    fused_rings = Chem.GetSymmSSSR(mol) >= 2
-    if not fused_rings:
+    # Check for fused rings - aromatic rings sharing at least one bond or more
+    fused = False
+    for i, ring1 in enumerate(aromatic_rings):
+        for ring2 in aromatic_rings[i+1:]:
+            # Check for shared atoms indicating fusion
+            if set(ring1).intersection(set(ring2)):
+                fused = True
+                break
+        if fused:
+            break
+    
+    if not fused:
         return False, "Aromatic rings are not fused"
 
     return True, "Contains multiple fused aromatic rings characteristic of polycyclic arenes"
