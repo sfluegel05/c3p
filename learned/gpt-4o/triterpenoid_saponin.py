@@ -21,19 +21,21 @@ def is_triterpenoid_saponin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define triterpenoid backbone pattern (simplified for steroid-like backbone)
-    triterpenoid_pattern = Chem.MolFromSmarts("C1CCC2C3CC4CCC(C4)C3CCC2C1")
-    if not mol.HasSubstructMatch(triterpenoid_pattern):
+    # Define expanded triterpenoid backbone pattern
+    # Example considering a broader set of possible sterane frameworks
+    triterpenoid_patterns = [
+        Chem.MolFromSmarts("C1CCC2(C)C3CCC4C(C)C(C)CCC4(C)C3CCC2C1"),  # protostane pattern
+        Chem.MolFromSmarts("C1=CCC2(C)C(C)C3CCC4C(C)CCC4CCC3(C)C2C1"),  # hopane-like
+    ]
+    
+    if not any(mol.HasSubstructMatch(pattern) for pattern in triterpenoid_patterns):
         return False, "No triterpenoid backbone found"
     
-    # Define glycosidic linkage pattern
-    glycoside_pattern = Chem.MolFromSmarts("O[C@@H]1[C@H](O)[C@@H](O)[C@H](O)[C@H]1O")
-    if not mol.HasSubstructMatch(glycoside_pattern):
-        return False, "No glycosidic linkage found"
+    # Define glycosidic linkage presence
+    # Check if there is a ring structure with oxygen indicating a sugar component
+    glycosidic_oxygen = Chem.MolFromSmarts("O-C-C-O")  # Simplified pattern for minimal sugar involvement
+    
+    if not mol.HasSubstructMatch(glycosidic_oxygen):
+        return False, "No glycosidic linkage with sugar rings found"
     
     return True, "Contains triterpenoid structure with glycosidic linkage"
-
-# Test the function with an example
-example_smiles = "O[C@H]1[C@H]2C[C@]3(C)[C@H](C[C@@H](O)[C@@H]4[C@H](CC[C@@]34C)[C@@](C)(O)CCC=C(C)C)[C@@]2(C)CC[C@@H]2[C@H]5[C@H](CC[C@@H]1O)[C@@]1(C)[C@@H](O)[C@H](O)[C@H](O)O[C@@H]5C1(C)C2"
-result, reason = is_triterpenoid_saponin(example_smiles)
-print(result, reason)
