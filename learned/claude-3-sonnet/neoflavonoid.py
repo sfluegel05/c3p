@@ -6,6 +6,7 @@ Classifies: CHEBI:75768 neoflavonoid
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import Descriptors
 
 def is_neoflavonoid(smiles: str):
     """
@@ -24,21 +25,15 @@ def is_neoflavonoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Basic benzopyran core pattern
-    # More general pattern for the core structure
-    benzopyran_pattern = Chem.MolFromSmarts("O1CCc2ccccc2C1")
-    if benzopyran_pattern is None:
-        return False, "Invalid benzopyran SMARTS pattern"
-    
+    # Basic benzopyran core pattern - allowing for various bond types
+    # [#6] represents any carbon, ~ represents any bond
+    benzopyran_pattern = Chem.MolFromSmarts("O1[#6]~[#6]c2ccccc2[#6]1")
     if not mol.HasSubstructMatch(benzopyran_pattern):
         return False, "No benzopyran core found"
 
     # Check for aromatic ring at position 4
-    # This pattern looks for an aromatic ring connected at position 4
-    aryl_pattern = Chem.MolFromSmarts("O1CCc2ccccc2C1c3ccccc3")
-    if aryl_pattern is None:
-        return False, "Invalid aryl SMARTS pattern"
-    
+    # More flexible pattern for aryl substituent
+    aryl_pattern = Chem.MolFromSmarts("O1[#6]~[#6]c2ccccc2[#6]1[#6]3[#6]~[#6]~[#6]~[#6]~[#6]3")
     if not mol.HasSubstructMatch(aryl_pattern):
         return False, "No aryl substituent at position 4"
 
@@ -48,15 +43,12 @@ def is_neoflavonoid(smiles: str):
         return False, "Insufficient number of rings"
 
     # Check for common substituents
-    # Look for common oxygen-containing groups
-    oxygen_pattern = Chem.MolFromSmarts("[OH,OC]")
-    if oxygen_pattern is None:
-        return False, "Invalid oxygen SMARTS pattern"
-        
+    # Look for oxygen-containing groups (hydroxyl, methoxy, carbonyl)
+    oxygen_pattern = Chem.MolFromSmarts("[$([OH]),$([O][CH3]),$(O=[#6])]")
     oxygen_matches = mol.GetSubstructMatches(oxygen_pattern)
     
-    # Most neoflavonoids have oxygen-containing substituents
-    if len(oxygen_matches) < 2:  # At least the pyran oxygen and one more
+    # Most neoflavonoids have multiple oxygen-containing substituents
+    if len(oxygen_matches) < 1:  # At least one besides the pyran oxygen
         return False, "Insufficient oxygen-containing substituents"
 
     # Verify aromatic character
@@ -64,22 +56,30 @@ def is_neoflavonoid(smiles: str):
     if aromatic_atoms < 6:
         return False, "Insufficient aromatic character"
 
-    # Additional structural requirements
-    # Check for presence of carbonyl group (often present in neoflavonoids)
-    carbonyl_pattern = Chem.MolFromSmarts("[CX3](=[OX1])")
-    if carbonyl_pattern is not None and mol.HasSubstructMatch(carbonyl_pattern):
-        confidence = "high"
-    else:
-        confidence = "medium"
-
     # Check molecular weight
-    mol_wt = Chem.Descriptors.ExactMolWt(mol)
-    if mol_wt < 200:
-        return False, "Molecular weight too low for neoflavonoid"
+    mol_wt = Descriptors.ExactMolWt(mol)
+    if mol_wt < 200 or mol_wt > 800:
+        return False, "Molecular weight outside typical range for neoflavonoids"
 
     # Count carbons to ensure reasonable size
     carbon_count = len([atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6])
     if carbon_count < 15:
         return False, "Too few carbons for neoflavonoid structure"
+
+    # Additional checks for common neoflavonoid features
+    confidence = "medium"
+    
+    # Check for common substitution patterns
+    hydroxy_pattern = Chem.MolFromSmarts("[OH]")
+    methoxy_pattern = Chem.MolFromSmarts("[O][CH3]")
+    carbonyl_pattern = Chem.MolFromSmarts("[CX3](=[OX1])")
+    
+    if (mol.HasSubstructMatch(hydroxy_pattern) and 
+        mol.HasSubstructMatch(carbonyl_pattern)):
+        confidence = "high"
+    
+    # Check for common positions of substitution
+    if mol.HasSubstructMatch(Chem.MolFromSmarts("O1[#6]~[#6]c2c(O)cccc2[#6]1")):
+        confidence = "high"
 
     return True, f"Contains benzopyran core with aryl substituent at position 4 ({confidence} confidence)"
