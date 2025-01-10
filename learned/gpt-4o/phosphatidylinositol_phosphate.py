@@ -5,40 +5,40 @@ from rdkit import Chem
 
 def is_phosphatidylinositol_phosphate(smiles: str):
     """
-    Identifies if a molecule is a phosphatidylinositol phosphate based on its SMILES string.
-    The essential structural elements include a glycerol backbone, a myo-inositol
-    head group, and one or more phosphate groups attached.
+    Identifies phosphatidylinositol phosphates with a glycerol backbone, an inositol ring,
+    and one or more phosphate groups.
 
     Args:
-        smiles (str): SMILES string of the chemical entity
+        smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if SMILES represents a phosphatidylinositol phosphate, False otherwise
-        str: Explanation for classification
+        bool: Identification result, True if molecule is a phosphatidylinositol phosphate
+        str: Explanation for the classification
     """
     
-    # Convert SMILES to RDKit Molecule
+    # Create rdkit Molecule object
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+    
+    # Adjusted glycerol pattern, more generalized
+    glycerol_pattern = Chem.MolFromSmarts("[C@@H](COC=O)OC=O")
+    if not mol.HasSubstructMatch(glycerol_pattern):
+        return False, "No glycerol backbone found with two ester bonds"
 
-    # Check for a phosphoglycerol moiety
-    phosphoglycerol_pattern = Chem.MolFromSmarts("O[C@H](COP(O)(=O)(O))COC(=O)")
-    if not mol.HasSubstructMatch(phosphoglycerol_pattern):
-        return False, "No phosphoglycerol subgroup found"
+    # Improved inositol pattern: oxygen and correct stereochemistry (no stereo matching for simplicity)
+    inositol_pattern = Chem.MolFromSmarts("C1C(O)C(O)C(O)C(O)C1(O)")
+    if not mol.HasSubstructMatch(inositol_pattern):
+        return False, "No inositol ring found"
 
-    # Check for a myo-inositol ring
-    myo_inositol_pattern = Chem.MolFromSmarts("C1(O)[C@H](O)[C@H](O)[C@H](O)[C@H](O)[C@H]1(O)")
-    if not mol.HasSubstructMatch(myo_inositol_pattern):
-        return False, "No myo-inositol ring found"
+    # Improved phosphate group pattern: matches both charged and neutral phosphate ester
+    phosphate_pattern = Chem.MolFromSmarts("O=P(O)(O)O")
+    phosphate_count = len(mol.GetSubstructMatches(phosphate_pattern))
+    if phosphate_count == 0:
+        return False, "No phosphate groups found"
 
-    # Check for phosphate groups, allowing multiple phosphates
-    phosphate_groups = mol.GetSubstructMatches(Chem.MolFromSmarts("OP(O)(O)=O"))
-    if len(phosphate_groups) < 1:
-        return False, "No phosphate groups attached to inositol"
+    return True, "Contains glycerol backbone with inositol ring and one or more phosphate groups"
 
-    return True, "Identified as a phosphatidylinositol phosphate with a glycerol backbone, myo-inositol ring, and phosphate groups"
-
-# Test Example
+# Test example
 result, reason = is_phosphatidylinositol_phosphate("CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](O)[C@@H](OP(O)(O)=O)[C@H](O)[C@H]1O)OC(=O)CCCCCCC\C=C/CCCCCCCC")
-print(result, reason)
+print(result, reason)  # Expected output: True, with detailed reason
