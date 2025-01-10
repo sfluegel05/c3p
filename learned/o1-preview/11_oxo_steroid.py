@@ -5,6 +5,7 @@ Classifies: CHEBI:47787 11-oxo steroid
 Classifies: 11-oxo steroid
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_11_oxo_steroid(smiles: str):
     """
@@ -22,43 +23,53 @@ def is_11_oxo_steroid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+
+    # Check for steroid fused ring system: three 6-membered rings and one 5-membered ring fused together
+    ri = mol.GetRingInfo()
+    rings = ri.BondRings()
+    if len(rings) < 4:
+        return False, "Molecule does not have enough rings to be a steroid"
     
-    # Define a general SMARTS pattern for the steroid nucleus
-    steroid_smarts = "[#6]1-[#6]-[#6]-[#6]2-[#6]-[#6]3-[#6]([#6]-[#6]1)-[#6]-[#6]4-[#6]([#6]-[#6]([#6]-2)-[#6]3)-[#6]-[#6]-[#6]-4"
+    # Identify ring sizes
+    ring_sizes = [len(ring) for ring in ri.AtomRings()]
+    if ring_sizes.count(6) < 3 or ring_sizes.count(5) < 1:
+        return False, "Molecule does not have the characteristic steroid ring sizes"
+
+    # Check for fused ring system
+    fused_rings = rdMolDescriptors.CalcNumSpiroAtoms(mol) + rdMolDescriptors.CalcNumBridgeheadAtoms(mol)
+    if fused_rings < 3:
+        return False, "Molecule does not have a fused steroid ring system"
+
+    # Define SMARTS pattern for steroid nucleus
+    steroid_smarts = 'C1CCC2C(C1)CCC3C2CCC4C3(CCCC4)C'  # Simplified pattern
     steroid_pattern = Chem.MolFromSmarts(steroid_smarts)
-    if steroid_pattern is None:
-        return False, "Invalid steroid SMARTS pattern"
+    if not mol.HasSubstructMatch(steroid_pattern):
+        return False, "Molecule does not match steroid nucleus pattern"
+
+    # Define SMARTS pattern for 11-oxo group attached to ring C
+    # Position 11 is in ring C, we can look for ketone attached to the steroid nucleus at specific position
+    oxo_smarts = '[#6;R][#6;R](=O)[#6;R]'  # Carbonyl group within a ring
+    oxo_pattern = Chem.MolFromSmarts(oxo_smarts)
+    oxo_matches = mol.GetSubstructMatches(oxo_pattern)
+    if not oxo_matches:
+        return False, "No oxo group (=O) found in the molecule"
+
+    # Attempt to locate oxo group at position 11
+    # Since direct mapping is difficult, we approximate by checking if the ketone is attached to ring C
+    ring_atoms = ri.AtomRings()
+    ringC_atoms = None
+    # Find the third 6-membered ring (ring C)
+    six_membered_rings = [ring for ring in ring_atoms if len(ring) == 6]
+    if len(six_membered_rings) >= 3:
+        ringC_atoms = six_membered_rings[2]  # Assuming rings are ordered A, B, C
+    else:
+        return False, "Cannot identify ring C in the steroid nucleus"
+
+    # Check if any oxo group is attached to ring C
+    for match in oxo_matches:
+        # Check if the carbonyl carbon is in ring C
+        carbonyl_carbon_idx = match[1]
+        if carbonyl_carbon_idx in ringC_atoms:
+            return True, "Molecule is an 11-oxo steroid with oxo group at position 11"
     
-    # Check if molecule has a steroid nucleus
-    steroid_match = mol.GetSubstructMatch(steroid_pattern)
-    if not steroid_match:
-        return False, "Molecule does not have a steroid nucleus"
-    
-    # Create a template steroid without stereochemistry to map atom positions
-    steroid_template_smiles = "CC1CCC2CC3CCC4=CC(=O)CCC4(C)C3CCC12C"
-    steroid_template = Chem.MolFromSmiles(steroid_template_smiles)
-    if steroid_template is None:
-        return False, "Failed to create steroid template"
-    
-    # Align the molecule to the steroid template
-    match = mol.GetSubstructMatch(steroid_template)
-    if not match:
-        return False, "Molecule does not align with steroid template"
-    
-    # Position 11 corresponds to atom index 9 in the template (zero-based indexing)
-    pos11_atom_idx = match[9]
-    pos11_atom = mol.GetAtomWithIdx(pos11_atom_idx)
-    
-    # Check if position 11 has a ketone group (=O)
-    found_oxo = False
-    for neighbor in pos11_atom.GetNeighbors():
-        bond = mol.GetBondBetweenAtoms(pos11_atom.GetIdx(), neighbor.GetIdx())
-        if bond is not None and bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-            if neighbor.GetAtomicNum() == 8:  # Oxygen atom
-                found_oxo = True
-                break
-    
-    if not found_oxo:
-        return False, "No oxo group (=O) at position 11"
-    
-    return True, "Molecule has a steroid nucleus with an oxo group at position 11"
+    return False, "No oxo group (=O) at position 11 of the steroid nucleus"
