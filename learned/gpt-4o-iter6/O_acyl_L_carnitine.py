@@ -20,21 +20,27 @@ def is_O_acyl_L_carnitine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for quaternary ammonium ion pattern [N+](C)(C)C
+    # Look for O-acyl L-carnitine core structure with key patterns
+    # 1. Quaternary ammonium group [N+](C)(C)C
     quaternary_ammonium_pattern = Chem.MolFromSmarts("[N+](C)(C)C")
     if not mol.HasSubstructMatch(quaternary_ammonium_pattern):
         return False, "No quaternary ammonium ion pattern found"
 
-    # Look for ester linkage pattern OC(=O)
-    ester_linkage_pattern = Chem.MolFromSmarts("OC(=O)")
+    # 2. Ester linkage pattern typical of acyl-carnitine
+    ester_linkage_pattern = Chem.MolFromSmarts("OC(=O)C")
     if not mol.HasSubstructMatch(ester_linkage_pattern):
         return False, "No ester linkage pattern found"
 
-    # Check for chiral center ensuring L-configuration
-    chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
-    has_l_configuration = any((symbol == "C" and chirality in {"R", "S"}) for (idx, chirality) in chiral_centers for symbol in mol.GetAtomWithIdx(idx).GetSymbol())
+    # Check for L-configuration at specific chiral centers
+    expected_l_chiral_centers = [(atom.GetIdx(), atom.GetChiralTag()) 
+                                 for atom in mol.GetAtoms() 
+                                 if atom.GetChiralTag() == Chem.CHI_TETRAHEDRAL_CCW]
+    
+    if not expected_l_chiral_centers:
+        return False, "No chiral centers with L-configuration found"
 
-    if not has_l_configuration:
-        return False, "No chiral centers ensuring L-configuration found"
+    # Additional checks could include:
+    # - Expected bond patterns and lengths consistent with O-acyl-L-carnitine molecules
+    # - Allowed functional groups without additional substitutions typical of other classes
 
-    return True, "Contains quaternary ammonium ion, ester linkage, and L-configuration"
+    return True, "Contains key features of O-acyl-L-carnitine, including quaternary ammonium ion, ester linkage, and L-configuration"
