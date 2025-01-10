@@ -2,7 +2,6 @@
 Classifies: CHEBI:29348 fatty amide
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_fatty_amide(smiles: str):
     """
@@ -25,20 +24,18 @@ def is_fatty_amide(smiles: str):
     amide_pattern = Chem.MolFromSmarts("C(=O)N")
     if not mol.HasSubstructMatch(amide_pattern):
         return False, "No amide group found"
-    
-    # Analyze carbon chain structure
-    carbon_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
-    longest_chain = 0
-    
-    for atom in carbon_atoms:
-        visited = set()
-        chain_length = _dfs_longest_chain(atom, visited)
-        if chain_length > longest_chain:
-            longest_chain = chain_length
-    
-    # Check for a minimum chain length of 12 carbon atoms
-    if longest_chain < 12:
-        return False, "Carbon chain too short to be a fatty acid-derived amide"
+
+    # Identify all carbon chains - flexible to account for both straight and branched
+    carbon_chains = []
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6:  # Carbon atom
+            chain_length = _dfs_longest_chain(atom, set())
+            if chain_length > 0:
+                carbon_chains.append(chain_length)
+
+    # Check for at least one long carbon chain typical of fatty acids
+    if not any(chain >= 12 for chain in carbon_chains):
+        return False, "No sufficiently long carbon chain detected"
     
     return True, "Contains an amide group and a long carbon chain characteristic of fatty amides"
 
@@ -59,7 +56,7 @@ def _dfs_longest_chain(atom, visited):
     
     chain_length = 1  # Count the current atom
     for neighbor in atom.GetNeighbors():
-        if neighbor.GetAtomicNum() == 6:
+        if neighbor.GetAtomicNum() == 6:  # Check only carbon neighbors for the chain
             chain_length = max(chain_length, 1 + _dfs_longest_chain(neighbor, visited))
     
     visited.remove(atom.GetIdx())
