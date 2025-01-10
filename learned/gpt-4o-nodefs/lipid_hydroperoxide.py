@@ -2,7 +2,6 @@
 Classifies: CHEBI:61051 lipid hydroperoxide
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_lipid_hydroperoxide(smiles: str):
     """
@@ -21,24 +20,25 @@ def is_lipid_hydroperoxide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for hydroperoxide group (-OOH)
-    hydroperoxide_pattern = Chem.MolFromSmarts("[OH,OX2]-[OX1H0,R0]")
+    # Define a precise hydroperoxide group pattern
+    hydroperoxide_pattern = Chem.MolFromSmarts("O[OH]")
     if not mol.HasSubstructMatch(hydroperoxide_pattern):
         return False, "No hydroperoxide group found"
     
-    # Check for a carboxylic acid group (-COOH)
+    # Define a carboxylic acid group pattern
     carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
     
-    # Check for long carbon chains (at least 12 carbons)
-    carbon_chain_length = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if carbon_chain_length < 12:
-        return False, f"Carbon chain is too short, found {carbon_chain_length} carbons"
+    # Ensure long carbon chain presence (minimum 12 carbons for lipid-like)
+    carbon_chain = Chem.MolFromSmarts("[C;X4][C;X4][C;X4][C;X4][C;X4][C;X4][C;X4][C;X4][C;X4][C;X4][C;X4][C;X4]")
+    if not mol.HasSubstructMatch(carbon_chain):
+        return False, "Carbon chain is too short for a lipid"
     
-    # Check for multiple double bonds (polyunsaturation)
-    double_bonds = len([bond for bond in mol.GetBonds() if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE])
-    if double_bonds < 2:
-        return False, f"Insufficient double bonds, found {double_bonds}"
-    
+    # Check for sufficient polyunsaturation (at least 2 double bonds)
+    double_bond_pattern = Chem.MolFromSmarts("C=C")
+    double_bonds = mol.GetSubstructMatches(double_bond_pattern)
+    if len(double_bonds) < 2:
+        return False, "Insufficient double bonds"
+        
     return True, "Molecule matches structure of a lipid hydroperoxide"
