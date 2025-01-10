@@ -25,37 +25,19 @@ def is_lactol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define improved SMARTS pattern for lactol (cyclic hemiacetal)
+    # Define SMARTS pattern for lactol (cyclic hemiacetal)
     # Pattern explanation:
-    # - Ring structure with an ether oxygen: [O;R]
-    # - Connected to ring carbon: [C;R]
-    # - That carbon has a hydroxyl group: [C;R]([OH])
-    # - This pattern allows for unsaturation and aromatic rings
-    lactol_pattern = Chem.MolFromSmarts("[O;R][C;R]([OH])")
-    
+    # - [C;R;X4]: sp3-hybridized ring carbon atom
+    # - [OH]: hydroxyl group attached to the carbon
+    # - [O;R]: ring oxygen connected to the carbon
+    # The carbon is connected to both a hydroxyl group and a ring oxygen
+    lactol_pattern = Chem.MolFromSmarts("[C;R;X4]([OH])([O;R])")
+
     if lactol_pattern is None:
         return False, "Invalid SMARTS pattern"
 
     # Search for lactol substructure
-    matches = mol.GetSubstructMatches(lactol_pattern)
-    if matches:
-        # Additional checks to exclude sugars and polysaccharides
-        # Count the number of hydroxyl groups attached to ring carbons
-        ring_info = mol.GetRingInfo()
-        num_rings = ring_info.NumRings()
-        if num_rings > 0:
-            for ring in ring_info.AtomRings():
-                hydroxyls_on_ring = 0
-                for idx in ring:
-                    atom = mol.GetAtomWithIdx(idx)
-                    # Check if atom is a carbon with hydroxyl group
-                    if atom.GetAtomicNum() == 6:
-                        for neighbor in atom.GetNeighbors():
-                            if neighbor.GetAtomicNum() == 8 and neighbor.GetTotalNumHs() > 0:
-                                hydroxyls_on_ring +=1
-                # If more than one hydroxyl on ring, likely a sugar, exclude
-                if hydroxyls_on_ring >1:
-                    return False, "Ring has multiple hydroxyl groups, likely a sugar"
+    if mol.HasSubstructMatch(lactol_pattern):
         return True, "Contains lactol moiety (cyclic hemiacetal)"
     else:
         return False, "No lactol moiety found"
