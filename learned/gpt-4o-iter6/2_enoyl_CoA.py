@@ -20,19 +20,19 @@ def is_2_enoyl_CoA(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Improved enoyl pattern: Capture the double bond specifically between positions 2 and 3
-    enoyl_pattern = Chem.MolFromSmarts("[CX3](=O)S[CH2][CH]=[CH].[CX3](=O)S[CH]=[CH2]") 
-    
-    # More generalized CoA pattern recognizing common features
-    coA_pattern = Chem.MolFromSmarts("COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O[C@@H]1O)O)N2C=NC3=C2N=CN=C3N") # Focus on key linkage regions
 
-    # Check for the 2-enoyl double bond pattern
+    # Define the specific enoyl-CoA pattern for the double bond at positions 2-3
+    enoyl_pattern = Chem.MolFromSmarts("C(=C)C(=O)SCC(N)C(=O)NC(C(=O)O)CCC(=O)NC")  # Capturing a generic enoyl thioester pattern
+    
+    # Define the CoA moiety pattern using components
+    coa_pattern = Chem.MolFromSmarts("COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H](CO[P](=O)(O)O)[C@@H](O)[C@H]1N2C=NC3=C2N=CN=C3N")  # Focusing on the sugar and phosphate backbone with adenine
+    
+    # Check for the specific enoyl double bond pattern
     if not mol.HasSubstructMatch(enoyl_pattern):
-        return False, "No 2-enoyl pattern (enoyl thioester linkage with correct positioning) found"
-
+        return False, "No 2-enoyl pattern detected (missing double bond between positions 2 and 3 or thioester linkage)"
+    
     # Ensure the Coenzyme A (CoA) structure is present
-    if not mol.HasSubstructMatch(coA_pattern):
-        return False, "No Coenzyme A backbone detected"
+    if not mol.HasSubstructMatch(coa_pattern):
+        return False, "No Coenzyme A structure detected"
 
-    return True, "Contains 2-enoyl feature with Coenzyme A structure"
+    return True, "Molecule matches the 2-enoyl-CoA definition"
