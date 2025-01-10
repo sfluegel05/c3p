@@ -22,24 +22,27 @@ def is_aromatic_primary_alcohol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for any aromatic atoms
-    if not any(atom.GetIsAromatic() for atom in mol.GetAtoms()):
-        return False, "No aromatic rings found"
+    # Kekulize the molecule to ensure proper aromatic detection
+    Chem.Kekulize(mol, clearAromaticFlags=True)
+    # Set aromaticity based on RDKit's model
+    Chem.SetAromaticity(mol)
 
     # Pattern for primary alcohol (-CH2OH) connected to aromatic carbon
-    # [c,n,o,s] matches any aromatic atom
+    # [cR] matches aromatic carbon in ring
     # [CH2X4] matches CH2 group with 4 connections
     # [OX2H1] matches OH group
-    pattern = Chem.MolFromSmarts("[c,n,o,s][CH2X4][OX2H1]")
+    patterns = [
+        Chem.MolFromSmarts("[cR][CH2X4][OX2H1]"),  # Aromatic carbon
+        Chem.MolFromSmarts("[nR][CH2X4][OX2H1]"),  # Aromatic nitrogen
+    ]
     
-    if not mol.HasSubstructMatch(pattern):
-        # Try alternate pattern for cases where H is not explicit
-        pattern2 = Chem.MolFromSmarts("[c,n,o,s][CH2X4][OX2]")
-        if not mol.HasSubstructMatch(pattern2):
-            return False, "No primary alcohol (-CH2OH) attached to aromatic ring found"
+    matches = []
+    for pattern in patterns:
+        if pattern is not None:
+            matches.extend(mol.GetSubstructMatches(pattern))
     
-    # Get matches to analyze the environment
-    matches = mol.GetSubstructMatches(pattern) or mol.GetSubstructMatches(pattern2)
+    if not matches:
+        return False, "No primary alcohol (-CH2OH) attached to aromatic ring found"
     
     # Verify at least one valid match
     valid_match = False
@@ -48,14 +51,30 @@ def is_aromatic_primary_alcohol(smiles: str):
         ch2_atom = mol.GetAtomWithIdx(match[1])
         oh_atom = mol.GetAtomWithIdx(match[2])
         
-        # Verify aromatic atom is part of an aromatic ring
-        if aromatic_atom.GetIsAromatic():
-            # Verify CH2 group
-            if ch2_atom.GetTotalNumHs() == 2:
-                # Verify OH group
-                if oh_atom.GetTotalNumHs() >= 1:
-                    valid_match = True
-                    break
+        # Additional checks for true aromaticity
+        if not aromatic_atom.GetIsAromatic():
+            continue
+            
+        # Check if the aromatic atom is part of a valid aromatic ring
+        ring_info = mol.GetRingInfo()
+        if not ring_info.IsAtomInRingOfSize(aromatic_atom.GetIdx(), 5) and \
+           not ring_info.IsAtomInRingOfSize(aromatic_atom.GetIdx(), 6):
+            continue
+            
+        # Verify the ring is truly aromatic (all atoms in the ring are aromatic)
+        rings = ring_info.AtomRings()
+        for ring in rings:
+            if aromatic_atom.GetIdx() in ring:
+                if all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring):
+                    # Verify CH2 group
+                    if ch2_atom.GetTotalNumHs() == 2:
+                        # Verify OH group
+                        if oh_atom.GetTotalNumHs() >= 1:
+                            valid_match = True
+                            break
+        
+        if valid_match:
+            break
     
     if not valid_match:
         return False, "No valid aromatic primary alcohol structure found"
