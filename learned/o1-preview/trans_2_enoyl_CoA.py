@@ -27,9 +27,22 @@ def is_trans_2_enoyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define CoA pattern (simplified)
-    coa_pattern_smiles = "NC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@@H]1O[C@H](n2cnc3c(N)ncnc32)[C@H](O)[C@H]1OP(=O)(O)O"
-    coa_pattern = Chem.MolFromSmiles(coa_pattern_smiles)
+    # Generate 3D coordinates to perceive stereochemistry
+    Chem.AssignStereochemistry(mol, cleanIt=True, force=True)
+
+    # Define key substructures of CoA
+    # Adenosine monophosphate part
+    adenine_smarts = "n1cnc2c(ncnc12)"
+    ribose_smarts = "OC[C@H]1O[C@H](n2cnc3c(ncnc32))[C@H](O)[C@@H]1O"
+    phosphate_smarts = "OP(=O)(O)O"
+
+    # Pantetheine arm with thiol group (we'll look for the thiol converted to thioester)
+    pantetheine_smarts = "NCC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)O"
+
+    # Combine to define simplified CoA pattern
+    coa_pattern_smarts = f"{pantetheine_smarts}.{adenine_smarts}"
+
+    coa_pattern = Chem.MolFromSmarts(coa_pattern_smarts)
     if coa_pattern is None:
         return False, "Failed to generate CoA substructure"
 
@@ -37,50 +50,95 @@ def is_trans_2_enoyl_CoA(smiles: str):
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "CoA moiety not found"
 
-    # Define thioester linkage pattern: C(=O)-S
+    # Define thioester linkage pattern: carbonyl carbon connected to sulfur
     thioester_pattern = Chem.MolFromSmarts("C(=O)S")
     thioester_matches = mol.GetSubstructMatches(thioester_pattern)
     if not thioester_matches:
         return False, "Thioester linkage not found"
 
-    # Iterate over thioester matches
-    for thioester_match in thioester_matches:
-        # Indices in thioester_match correspond to [carbonyl carbon, sulfur atom]
-        carbonyl_c_idx = thioester_match[0]
-        sulfur_idx = thioester_match[1]
+    # Find the acyl chain attached to the thioester
+    for match in thioester_matches:
+        carbonyl_c_idx = match[0]
+        sulfur_idx = match[1]
 
-        # Check that sulfur is part of CoA by ensuring sulfur atom is included in the CoA match
-        # Get the CoA substructure match
-        coa_match = mol.GetSubstructMatch(coa_pattern)
-        if sulfur_idx not in coa_match:
-            continue  # Sulfur is not part of CoA, skip this thioester
+        # Check that sulfur is part of CoA by ensuring it's in the CoA match
+        coa_matches = mol.GetSubstructMatches(coa_pattern)
+        if not coa_matches:
+            continue  # Should not happen, CoA already checked
+        coa_atom_indices = set(idx for match in coa_matches for idx in match)
+        if sulfur_idx not in coa_atom_indices:
+            continue  # Sulfur not part of CoA
 
-        # Extract the acyl chain attached to the carbonyl carbon
-        # Break bond between carbonyl carbon and sulfur atom to isolate acyl chain
-        emol = Chem.RWMol(mol)
-        emol.RemoveBond(carbonyl_c_idx, sulfur_idx)
-        mol_frag = emol.GetMol()
+        # Traverse the acyl chain starting from the carbonyl carbon
+        acyl_chain_atoms = set()
+        visited = set()
+        stack = [carbonyl_c_idx]
+        while stack:
+            atom_idx = stack.pop()
+            if atom_idx in visited:
+                continue
+            visited.add(atom_idx)
+            acyl_chain_atoms.add(atom_idx)
+            atom = mol.GetAtomWithIdx(atom_idx)
+            for neighbor in atom.GetNeighbors():
+                neighbor_idx = neighbor.GetIdx()
+                if neighbor_idx == sulfur_idx:
+                    continue  # Skip sulfur atom (part of CoA)
+                if neighbor_idx in coa_atom_indices:
+                    continue  # Skip atoms in CoA
+                if neighbor_idx not in visited:
+                    stack.append(neighbor_idx)
 
-        # Get the fragments after bond removal
-        frags = Chem.GetMolFrags(mol_frag, asMols=True, sanitizeFrags=False)
+        # Sort acyl chain atoms by connectivity starting from carbonyl carbon
+        acyl_chain = Chem.PathToSubmol(mol, acyl_chain_atoms)
+        acyl_chain = Chem.AddHs(acyl_chain)
+        Chem.AssignStereochemistry(acyl_chain, cleanIt=True, force=True)
 
-        # Identify the acyl chain fragment (containing the carbonyl carbon)
-        acyl_chain = None
-        for frag in frags:
-            if frag.HasSubstructMatch(Chem.MolFromSmiles("C=O")):
-                acyl_chain = frag
+        # Check if acyl chain has at least 3 carbons
+        acyl_carbons = [atom for atom in acyl_chain.GetAtoms() if atom.GetAtomicNum() == 6]
+        if len(acyl_carbons) < 3:
+            continue  # Not a fatty acyl chain
+
+        # Get atoms for C1, C2, and C3
+        carbonyl_c_ac = None
+        c2_ac = None
+        c3_ac = None
+
+        # Find carbonyl carbon (C1)
+        for atom in acyl_chain.GetAtoms():
+            if atom.GetAtomicNum() == 6:
+                for bond in atom.GetBonds():
+                    if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE and bond.GetOtherAtom(atom).GetAtomicNum() == 8:
+                        carbonyl_c_ac = atom
+                        break
+            if carbonyl_c_ac:
                 break
 
-        if acyl_chain is None:
-            continue  # Could not find acyl chain fragment
+        if carbonyl_c_ac is None:
+            continue  # Cannot find carbonyl carbon
 
-        # Check for trans double bond between C2 and C3 in the acyl chain
-        # Define a pattern for the acyl chain starting with carbonyl carbon
-        # and having a trans double bond between C2 and C3
-        trans_double_bond_pattern = Chem.MolFromSmarts("C(=O)C\C=C\C")
+        # Traverse to find C2 and C3
+        neighbors_c1 = [nbr for nbr in carbonyl_c_ac.GetNeighbors() if nbr.GetAtomicNum() == 6]
+        if not neighbors_c1:
+            continue
+        c2_ac = neighbors_c1[0]
 
-        if acyl_chain.HasSubstructMatch(trans_double_bond_pattern):
-            return True, "Contains CoA moiety with acyl chain having trans double bond between C2 and C3"
+        neighbors_c2 = [nbr for nbr in c2_ac.GetNeighbors() if nbr.GetAtomicNum() == 6 and nbr.GetIdx() != carbonyl_c_ac.GetIdx()]
+        if not neighbors_c2:
+            continue
+        c3_ac = neighbors_c2[0]
+
+        # Check for double bond between C2 and C3
+        bond_c2_c3 = acyl_chain.GetBondBetweenAtoms(c2_ac.GetIdx(), c3_ac.GetIdx())
+        if bond_c2_c3 is None or bond_c2_c3.GetBondType() != Chem.rdchem.BondType.DOUBLE:
+            continue  # No double bond between C2 and C3
+
+        # Check if the double bond between C2 and C3 is trans
+        stereo = bond_c2_c3.GetStereo()
+        if stereo != Chem.rdchem.BondStereo.STEREOE:
+            return False, "Double bond between C2 and C3 is not trans"
+
+        return True, "Contains CoA moiety with acyl chain having trans double bond between C2 and C3"
 
     return False, "Does not contain acyl chain with trans double bond between C2 and C3 attached to CoA"
 
