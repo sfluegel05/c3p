@@ -16,26 +16,27 @@ def is_steroid_saponin(smiles: str):
     Returns:
         bool: True if molecule is a steroid saponin, False otherwise
         str: Reason for classification
-    """    
+    """
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Flexible steroid nucleus pattern (includes typical steroid ring scaffolds)
-    steroid_nucleus_pattern = Chem.MolFromSmarts("[#6]1[#6][#6][#6]2[#6]1[#6][#6][#6]3[#6]2[#6][#6][#6]4[#6]3(CCCC4)")
+    # Comprehensive steroid nucleus pattern (common four-ring steroid structure)
+    steroid_nucleus_pattern = Chem.MolFromSmarts("C1CC2CCC3C(C4CCC(C)(C4)C3)C2C1")
     if not mol.HasSubstructMatch(steroid_nucleus_pattern):
         return False, "No steroid nucleus found"
     
     # Check for hydroxyl group(s) on the steroid backbone
-    hydroxyl_pattern = Chem.MolFromSmarts("C[CH1]O")
+    # Broader pattern to capture variations in hydroxyl group placement
+    hydroxyl_pattern = Chem.MolFromSmarts("[#6][#8]")
     hydroxyl_count = len(mol.GetSubstructMatches(hydroxyl_pattern))
     if hydroxyl_count < 1:
         return False, "No hydroxyl group found on the steroid backbone"
 
     # Check for sugar moieties (glycosidic bonds), more generic pattern
-    # This pattern identifies common sugar-like structures
-    sugar_pattern = Chem.MolFromSmarts("C1OC[C@H](O)[C@@H](O)[C@@H]1O")
+    # Looks for sugars and their attachment points on steroids
+    sugar_pattern = Chem.MolFromSmarts("O[C@H]1[C@H]([C@H](O)[C@H](O1)[C@H]O)CO")
     if not mol.HasSubstructMatch(sugar_pattern):
         return False, "No sugar moieties (glycosides) found"
 
