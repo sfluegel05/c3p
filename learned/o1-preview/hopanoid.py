@@ -24,33 +24,68 @@ def is_hopanoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Remove stereochemistry from the input molecule
-    mol_no_stereo = Chem.Mol(mol)
-    Chem.RemoveStereochemistry(mol_no_stereo)
+    # Remove hydrogens from the molecule
+    mol = Chem.RemoveHs(mol)
 
-    # Define the hopane molecule
-    hopane_smiles = "CC1(C)CCC2(C)CCC3CC4(C)CCC5CC(C)(CCCC5(C)C)CC4(C)C3CC2C1"
-    hopane_mol = Chem.MolFromSmiles(hopane_smiles)
-    if hopane_mol is None:
-        return False, "Failed to generate hopane structure"
+    # Get ring information
+    ri = mol.GetRingInfo()
+    ring_count = ri.NumRings()
+    if ring_count < 5:
+        return False, f"Contains {ring_count} rings, less than 5 rings required for hopanoid"
 
-    # Get ring atoms of hopane_mol
-    ring_info = hopane_mol.GetRingInfo()
-    ring_atom_idxs = set()
-    for ring in ring_info.AtomRings():
-        ring_atom_idxs.update(ring)
+    # Get ring atom indices
+    rings = ri.AtomRings()
+    ring_sizes = [len(r) for r in rings]
 
-    # Create submol of hopane ring skeleton
-    hopane_ring_mol = Chem.PathToSubmol(hopane_mol, sorted(ring_atom_idxs))
-    
-    # Remove hydrogens from ring mol
-    hopane_ring_mol = Chem.RemoveHs(hopane_ring_mol)
-    
-    # Prepare input molecule for matching
-    mol_no_stereo = Chem.RemoveHs(mol_no_stereo)
-    
-    # Perform substructure match to check for the hopane ring system
-    if mol_no_stereo.HasSubstructMatch(hopane_ring_mol):
-        return True, "Contains hopane ring skeleton characteristic of hopanoids"
+    # Count six-membered and five-membered rings
+    num_six_membered = ring_sizes.count(6)
+    num_five_membered = ring_sizes.count(5)
+
+    if num_six_membered < 4 or num_five_membered < 1:
+        return False, f"Requires at least 4 six-membered rings and 1 five-membered ring (found {num_six_membered} six-membered and {num_five_membered} five-membered rings)"
+
+    # Check for fused rings
+    # Build an adjacency list of rings
+    ring_adjacency = {i: set() for i in range(len(rings))}
+
+    for i in range(len(rings)):
+        for j in range(i+1, len(rings)):
+            # Check if rings i and j share at least two atoms (fused)
+            shared_atoms = set(rings[i]) & set(rings[j])
+            if len(shared_atoms) >= 2:
+                ring_adjacency[i].add(j)
+                ring_adjacency[j].add(i)
+
+    # Find connected components (fused ring systems)
+    def dfs(ring_idx, visited):
+        visited.add(ring_idx)
+        for neighbor in ring_adjacency[ring_idx]:
+            if neighbor not in visited:
+                dfs(neighbor, visited)
+
+    # Find all fused ring systems
+    fused_systems = []
+    visited_rings = set()
+    for i in range(len(rings)):
+        if i not in visited_rings:
+            component = set()
+            dfs(i, component)
+            fused_systems.append(component)
+            visited_rings.update(component)
+
+    # Look for a fused ring system with at least 5 rings
+    hopanoid_system = None
+    for system in fused_systems:
+        if len(system) >= 5:
+            # Check if the system contains at least 4 six-membered and 1 five-membered rings
+            system_ring_sizes = [ring_sizes[i] for i in system]
+            six_membered = system_ring_sizes.count(6)
+            five_membered = system_ring_sizes.count(5)
+            if six_membered >= 4 and five_membered >= 1:
+                hopanoid_system = system
+                break
+
+    if hopanoid_system is not None:
+        return True, "Contains ring system characteristic of hopanoids (at least 5 fused rings with 4 six-membered and 1 five-membered ring)"
     else:
-        return False, "Does not contain hopane ring skeleton"
+        return False, "Does not have the fused ring system characteristic of hopanoids"
