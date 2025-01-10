@@ -2,7 +2,6 @@
 Classifies: CHEBI:27096 trichlorobenzene
 """
 from rdkit import Chem
-from rdkit.Chem import rdchem
 
 def is_trichlorobenzene(smiles: str):
     """
@@ -31,18 +30,18 @@ def is_trichlorobenzene(smiles: str):
     if not benzene_matches:
         return False, "No benzene ring found"
 
+    # Go through each benzene ring
     for match in benzene_matches:
-        # For each benzene ring found, count chlorine atoms directly attached
-        chlorine_count = 0
+        chlorine_atoms = set()  # Use a set to ensure chlorine atoms are counted once per ring
 
         for atom_idx in match:
             atom = mol.GetAtomWithIdx(atom_idx)
             for neighbor in atom.GetNeighbors():
                 if neighbor.GetSymbol() == 'Cl':
-                    chlorine_count += 1
+                    chlorine_atoms.add(neighbor.GetIdx())
 
-        # Check if this particular benzene ring has exactly three chlorines
-        if chlorine_count == 3:
+        # Check if this particular benzene ring has exactly three unique chlorines
+        if len(chlorine_atoms) == 3:
             return True, "Contains a benzene ring with exactly three chlorine substituents"
 
     return False, "No benzene ring with exactly three chlorine substituents found"
