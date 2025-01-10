@@ -7,7 +7,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_dihydroflavonols(smiles: str):
     """
     Determines if a molecule is a dihydroflavonol based on its SMILES string.
-    A dihydroflavonol typically contains a characteristic flavanone core structure
+    A dihydroflavonol typically contains a characteristic dihydroflavanone core structure
     with hydroxylation and specific chiral centers.
 
     Args:
@@ -23,24 +23,24 @@ def is_dihydroflavonols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define the flavanone core structure pattern (3-ring system with chirality)
-    flavanone_pattern = Chem.MolFromSmarts("C1([C@@H]2[C@H](C(=O)c3cc(O)ccc23)c2cc(O)ccc12)O")
-    if not mol.HasSubstructMatch(flavanone_pattern):
-        return False, "No flavanone core with required chirality found"
+    # Adjust the SMARTS pattern to detect a broader range of dihydroflavonol structures
+    flavanone_pattern = Chem.MolFromSmarts("[C@H]1(C=O)Oc2cc(O)cc(O)c2C1")  # Basic flavanone core
+    if not mol.HasSubstructMatch(flananone_pattern):
+        return False, "No dihydroflavanone core found"
     
-    # Look for hydroxylation pattern on rings
-    hydroxyl_benzene = Chem.MolFromSmarts("c1cc(O)c(O)c(O)c1")
-    if not mol.HasSubstructMatch(hydroxyl_benzene):
-        return False, "Hydroxylation pattern typical of dihydroflavonols not found"
+    # Check for necessary chiral centers, potential fine-tuning required for stereo-specific compounds
+    stereo = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
+    if len(stereo) < 2:
+        return False, "Chiral centers do not match typical dihydroflavonol structure"
     
-    # Number of aromatic rings - at least 2 are needed
-    n_aromatic_rings = rdMolDescriptors.CalcNumAromaticRings(mol)
-    if n_aromatic_rings < 2:
-        return False, "Fewer than 2 aromatic rings, typical of non-flavonoid structures"
+    # Look for hydroxylation on the phenyl group and the pyran ring - basic pattern coverage
+    hydroxyl_pattern = Chem.MolFromSmarts("c1cc(O)c(O)c(O)c1")
+    if not mol.HasSubstructMatch(hydroxyl_pattern):
+        return False, "Dihydroflavonol likely incomplete, lacking expected hydroxylation"
     
     # Validate that it matches known hydroxylated dihydroflavonol structures
-    n_hydroxyls = len([atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetDegree() == 1])
-    if n_hydroxyls < 4:
-        return False, "Insufficient hydroxyl groups, expected at least 4"
+    n_hydroxyls = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetSymbol() == 'O')
+    if n_hydroxyls < 3:  # This threshold can be adjusted if needed
+        return False, f"Found {n_hydroxyls} hydroxyl groups, expected at least 3"
     
-    return True, "Contains dihydroflavonol features including flavanone core with proper hydroxylation and chirality"
+    return True, "Contains dihydroflavonol features including core structure, chiral centers, and appropriate hydroxylation"
