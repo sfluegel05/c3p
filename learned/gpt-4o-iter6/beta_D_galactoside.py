@@ -22,22 +22,20 @@ def is_beta_D_galactoside(smiles: str):
         if mol is None:
             return (False, "Invalid SMILES string")
 
-        # Define SMARTS pattern for beta-D-galactose ring
-        # Pattern includes: six-membered pyranose ring, hydroxyl groups in correct orientation
-        beta_glucose_ring = Chem.MolFromSmarts('OC[C@@H]1O[C@H]([C@H](O)[C@@H](O)[C@H]1O)')
+        # Define SMARTS pattern for beta-D-galactose ring with beta-linkage at anomeric center
+        beta_galactose_pattern = Chem.MolFromSmarts('C1(O)C(O)C(O)C[C@@H](O)O1')
+        
+        # Check if the molecule contains the beta-D-galactose pattern
+        if not mol.HasSubstructMatch(beta_galactose_pattern):
+            return (False, "No beta-D-galactose structural pattern found")
 
-        # Check if the molecule contains the beta-D-galactose ring pattern
-        if not mol.HasSubstructMatch(beta_glucose_ring):
-            return (False, "No beta-D-galactose ring pattern found")
-
-        # Extract potential glycosidic bonds (e.g., -O-R) that might be attached to the anomeric center
-        anomeric_oxygen_pattern = Chem.MolFromSmarts("OC")
-
-        if not mol.HasSubstructMatch(anomeric_oxygen_pattern):
-            return (False, "No potential glycosidic bond at anomeric center")
+        # Define SMARTS pattern to check for typical beta glycosidic linkage: attached -O-R
+        glycosidic_pattern = Chem.MolFromSmarts('[C@H]1(O[*])')  # Looking for O-substituent at anomeric center
+        if not mol.GetSubstructMatches(glycosidic_pattern):
+            return (False, "Anomeric center lacks characteristic glycosidic bond")
 
         return (True, "Contains beta-D-galactoside structural pattern with beta configuration")
-    
+
     except Exception as e:
         return (None, f"Error in processing: {str(e)}")
 
