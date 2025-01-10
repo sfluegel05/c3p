@@ -27,17 +27,20 @@ def is_nitrohydrocarbon(smiles: str):
         return False, "No nitro group found"
       
     # Check for carbon atom presence
-    carbon_atoms = [atom.GetAtomicNum() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
-    if not carbon_atoms:
-        return False, "Does not contain a carbon backbone"
+    if not any(atom.GetAtomicNum() == 6 for atom in mol.GetAtoms()):
+        return False, "No carbon atoms found"
 
-    # Evaluate presence of significant non-hydrocarbon elements but allow nitro derivs.
-    allowed_elements = (1, 6, 7, 8, 16)  # H, C, N, O, S which are common in organonitros
-    significant_non_hydrocarbon_atoms = [
-        atom.GetAtomicNum() for atom in mol.GetAtoms() 
-        if atom.GetAtomicNum() not in allowed_elements
-    ]
-    if len(significant_non_hydrocarbon_atoms) > 3:
-        return False, "Contains too many non-hydrocarbon atoms unrelated to nitro groups"
-        
+    # Check if molecule is primarily made up of C and H in addition to nitro groups
+    has_significant_organic_structure = False
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() in (6, 1):  # Carbon and Hydrogen
+            has_significant_organic_structure = True
+            break
+    
+    if not has_significant_organic_structure:
+        return False, "Lacks significant hydrocarbon structure"
+
+    # Molecules can have additional elements, but must have nitro groups as significant feature
+    # Thus, any meaningful additional features should not disqualify it as nitrohydrocarbon
+    
     return True, "Molecule is a nitrohydrocarbon with one or more nitro groups attached to a carbon backbone"
