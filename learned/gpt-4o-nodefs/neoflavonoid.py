@@ -6,7 +6,6 @@ from rdkit import Chem
 def is_neoflavonoid(smiles: str):
     """
     Determines if a molecule is a neoflavonoid based on its SMILES string.
-    A neoflavonoid is typically characterized by a core benzopyran with a phenyl group at the 4-position and various functional group substitutions.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,27 +20,16 @@ def is_neoflavonoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define potential neoflavonoid core patterns
-    benzopyran_coumarin_patterns = [
-        # Neoflavonoid pattern: benzopyran core with phenyl at 4-position
-        Chem.MolFromSmarts('O1C=CC2=CC=CC=C2C=1C3=CC=CC=C3'),  # Basic benzopyran with phenyl group
-        Chem.MolFromSmarts('O=C1OC=CC2=CC=CC=C12'),  # Coumarin core
-    ]
+    # Define a coumarin-like pattern (primary structure for many neoflavonoids)
+    coumarin_pattern = Chem.MolFromSmarts('O=C1OC2=CC=CC=C2C1=O')
+    if not mol.HasSubstructMatch(coumarin_pattern):
+        return False, "No coumarin-like backbone found"
 
-    # Checking for neoflavonoid core structures
-    if not any(mol.HasSubstructMatch(pattern) for pattern in benzopyran_coumarin_patterns):
-        return False, "No core benzopyran or coumarin backbone found typical of neoflavonoids"
-    
-    # Check for functional groups
-    functional_group_patterns = [
-        Chem.MolFromSmarts('[OX2H]'),      # Hydroxyl
-        Chem.MolFromSmarts('CO'),          # Methoxy/Ether
-        Chem.MolFromSmarts('[CX3](=O)O'),  # Ester
-        Chem.MolFromSmarts('C=O')          # Carbonyl
-    ]
+    # Look for phenyl group (aromatic ring) which is a common substitution on coumarins
+    phenyl_pattern = Chem.MolFromSmarts('c1ccccc1')
+    if not mol.HasSubstructMatch(phenyl_pattern):
+        return False, "No phenyl group substitution found"
 
-    # Ensure molecule has several of the functional groups for neoflavonoids
-    if not any(mol.HasSubstructMatch(fg_pattern) for fg_pattern in functional_group_patterns):
-        return False, "Lacks characteristic oxygenated functional groups of neoflavonoids"
+    return True, "Contains coumarin-like structure with phenyl substitution"
 
-    return True, "Contains core benzopyran or coumarin backbone with characteristic functional groups of neoflavonoids"
+# Examples: The provided examples can be tested to verify the functionality.
