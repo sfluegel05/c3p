@@ -20,18 +20,12 @@ def is_hemiaminal(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+    
+    # Enhanced and comprehensive SMARTS pattern for hemiaminal detection
+    hemiaminal_pattern = Chem.MolFromSmarts("[CX4](O)(N)")
 
-    # Enhanced SMARTS patterns for hemiaminal detection
-    hemiaminal_patterns = [
-        Chem.MolFromSmarts("[CX4;R0](O)(N)"),  # Accommodating both open-chain and ring hemiaminals
-        Chem.MolFromSmarts("[CX3;R0](O)(N)"),  # Permit sp2 carbon within non-ring systems
-        Chem.MolFromSmarts("[R][CX4](O)(N)"),  # Cyclic with an aliphatic carbon
-        Chem.MolFromSmarts("[R][CX3](O)(N)"),  # Cyclic with a planar carbon
-    ]
-
-    # Check for matches with any defined pattern
-    for pattern in hemiaminal_patterns:
-        if mol.HasSubstructMatch(pattern):
-            return True, "Contains hemiaminal structure: amino and hydroxy groups attached to the same carbon"
+    # Check for matches with the defined pattern
+    if mol.HasSubstructMatch(hemiaminal_pattern):
+        return True, "Contains hemiaminal structure: amino and hydroxy groups attached to the same carbon"
     
     return False, "No hemiaminal structure found: missing amino and hydroxy groups on the same carbon"
