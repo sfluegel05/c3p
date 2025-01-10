@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_butyrate_ester(smiles: str):
     """
     Determines if a molecule is a butyrate ester based on its SMILES string.
-    A butyrate ester is characterized by the presence of a butyric acid moiety
-    ('CCC(=O)O') within an ester linkage.
+    A butyrate ester is any carboxylic ester with a carboxylic acid component
+    derived from butyric acid.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,11 +20,12 @@ def is_butyrate_ester(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return None, "Invalid SMILES string"
     
     # BUTYRATE ESTER Signature
-    # Patterns: butyric acid part (CCC(=O)O) in an ester
-    butyrate_ester_pattern = Chem.MolFromSmarts("CCC(=O)O")
+    # Look for ester linkage pattern with the appropriate connectivity for butyric acid (CCCC(=O)O part of an ester)
+    # This searches for general ester "R1-O-C(=O)R2" and checks the R1 part as the butyric acid
+    butyrate_ester_pattern = Chem.MolFromSmarts("C(CCC)(=O)O")
     
     # Look for the butyrate ester substructure in the molecule
     if mol.HasSubstructMatch(butyrate_ester_pattern):
