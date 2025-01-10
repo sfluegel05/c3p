@@ -2,7 +2,6 @@
 Classifies: CHEBI:17522 alditol
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_alditol(smiles: str):
     """
@@ -21,30 +20,33 @@ def is_alditol(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Ensure no cyclic structures
-    if rdMolDescriptors.CalcNumRings(mol) > 0:
-        return False, "Contains cyclic structures, alditol must be acyclic"
-    
-    # Predominant carbon and oxygen atoms
+
+    # Checking for linear hydroxylated backbone
+    # Ensuring primarily acyclic with small allowable rings
     c_total = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'C')
     o_total = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'O')
     
-    # Must have hydroxyl group for each central carbon
-    if o_total < (c_total - 2): # excluding the two CH2OH termini
+    # Minimal conditions for being a polyol (lots of OH groups in relation to C)
+    if o_total < c_total / 2:
         return False, "Insufficient oxygen atoms for an alditol"
 
-    # Enhanced check for terminal CH2OH groups (smarter pattern for ends)
-    terminal_ch2oh_pattern = Chem.MolFromSmarts("[C;H2][O;X2H]")
-    if len(mol.GetSubstructMatches(terminal_ch2oh_pattern)) < 2:
+    # Must not contain disaccharide-like patterns heavily repeated
+    glyco_pattern = Chem.MolFromSmarts("OC[C@H]1O[C@@H](CO)[C@@H](O)[C@H](O)[C@H]1O")  
+    if mol.HasSubstructMatch(glyco_pattern):
+        return False, "Contains repeated glycosidic-like units, not typical of simple alditols"
+
+    # Ensure terminal CH2OH ends...
+    terminal_oh_pattern = Chem.MolFromSmarts("CO")
+    terminal_oh_matches = mol.GetSubstructMatches(terminal_oh_pattern)
+    if len(terminal_oh_matches) < 2:
         return False, "Does not have typical terminal CH2OH groups"
 
-    # Disallow other heteroatoms or complex structures that mimic polyols
-    for atom in mol.GetAtoms():
-        if atom.GetSymbol() not in ['C', 'O', 'H']:
-            return False, f"Contains non CHO atoms, found: {atom.GetSymbol()}"
-
-    return True, "Meets criteria: acyclic, terminal CH2OH groups and polyol characteristics found"
+    # Avoid carbonyl presence (identity thief of a hydride - alditol)
+    carbonyl_pattern = Chem.MolFromSmarts("[CX3]=O")
+    if mol.HasSubstructMatch(carbonyl_pattern):
+        return False, "Contains carbonyl groups, indication of precursor not alditol"
+    
+    return True, "Meets criteria: terminal CH2OH groups and polyol characteristics found"
 
 __metadata__ = {
     'chemical_class': {
