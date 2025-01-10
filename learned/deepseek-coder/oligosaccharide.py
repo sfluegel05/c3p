@@ -27,7 +27,7 @@ def is_oligosaccharide(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for glycosidic linkage pattern (more specific pattern)
-    glycosidic_pattern = Chem.MolFromSmarts("[C;H1,H2][O][C;H1,H2]")
+    glycosidic_pattern = Chem.MolFromSmarts("[C;H1,H2][O][C;H1,H2][C@H](O)[C@H](O)[C@H](O)[C@H](O)")
     if not mol.HasSubstructMatch(glycosidic_pattern):
         return False, "No glycosidic linkage found"
 
@@ -38,7 +38,7 @@ def is_oligosaccharide(smiles: str):
         return False, f"Found {len(hydroxyl_matches)} hydroxyl groups, need at least 4"
 
     # Check for multiple sugar units (more flexible pattern)
-    sugar_unit_pattern = Chem.MolFromSmarts("[C;H1,H2][C@H](O)[C@H](O)[C@H](O)[C@H](O)[C@H]1O")
+    sugar_unit_pattern = Chem.MolFromSmarts("[C;H1,H2][C@H](O)[C@H](O)[C@H](O)[C@H](O)")
     sugar_unit_matches = mol.GetSubstructMatches(sugar_unit_pattern)
     if len(sugar_unit_matches) < 2:
         return False, f"Found {len(sugar_unit_matches)} sugar units, need at least 2"
