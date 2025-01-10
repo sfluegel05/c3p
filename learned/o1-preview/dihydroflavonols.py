@@ -23,28 +23,39 @@ def is_dihydroflavonols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the flavanone core SMARTS pattern
-    # This pattern represents the flavanone skeleton without substitutions
-    flavanone_smarts = 'O=C1CC(Oc2ccccc2)Cc3ccccc13'
-    flavanone_pattern = Chem.MolFromSmarts(flavanone_smarts)
-    if flavanone_pattern is None:
-        return False, "Invalid flavanone SMARTS pattern"
-
-    # Check if the molecule contains the flavanone core
-    flavanone_matches = mol.GetSubstructMatches(flavanone_pattern)
-    if not flavanone_matches:
-        return False, "Molecule does not contain the flavanone skeleton"
-
-    # Define the dihydroflavonol SMARTS pattern
-    # This pattern includes a hydroxy group at position 3 of the heterocyclic ring
-    dihydroflavonol_smarts = 'O[C@H]1C[C@@H](O)C(=O)c2ccccc12'
+    # Define the dihydroflavonol core SMARTS pattern without stereochemistry
+    # This pattern represents the dihydroflavonol skeleton with a hydroxy group at position 3
+    dihydroflavonol_smarts = 'O=C1CC(O)Oc2ccccc12'
     dihydroflavonol_pattern = Chem.MolFromSmarts(dihydroflavonol_smarts)
     if dihydroflavonol_pattern is None:
         return False, "Invalid dihydroflavonol SMARTS pattern"
 
-    # Check if the molecule contains the dihydroflavonol pattern
-    dihydroflavonol_matches = mol.GetSubstructMatches(dihydroflavonol_pattern)
-    if not dihydroflavonol_matches:
-        return False, "Molecule does not have a hydroxy group at position 3 of the heterocyclic ring"
+    # Check if the molecule contains the dihydroflavonol core
+    matches = mol.GetSubstructMatches(dihydroflavonol_pattern)
+    if not matches:
+        return False, "Molecule does not contain the dihydroflavonol core structure"
 
-    return True, "Molecule is a dihydroflavonol"
+    # For each match, verify the hydroxy group at position 3
+    for match in matches:
+        # Atom indices in the SMARTS pattern:
+        # 0: O (ketone oxygen at C4)
+        # 1: C1 (carbonyl carbon at C4)
+        # 2: C2 (C3 carbon with OH)
+        # 3: C3 (C2 carbon connected to chroman oxygen)
+        # 4: O (chroman oxygen)
+        # 5-10: aromatic ring fused to chroman ring
+
+        c3_idx = match[2]  # Index of the carbon at position 3 (with OH)
+        atom_c3 = mol.GetAtomWithIdx(c3_idx)
+
+        # Check if carbon at position 3 is attached to a hydroxy group
+        has_oh = False
+        for neighbor in atom_c3.GetNeighbors():
+            if neighbor.GetAtomicNum() == 8:  # Oxygen atom
+                if neighbor.GetTotalDegree() == 1:  # Should be -OH group
+                    has_oh = True
+                    break
+        if has_oh:
+            return True, "Molecule is a dihydroflavonol"
+
+    return False, "Hydroxy group at position 3 not found"
