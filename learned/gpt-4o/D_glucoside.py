@@ -21,24 +21,18 @@ def is_D_glucoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define corrected SMARTS for a glucose moiety
-    # Using a more generalized depiction of the glucose ring backbone
-    d_glucose_smarts = "OC[C@H]1O[C@@H](CO)[C@H](O)[C@H](O)[C@@H]1O"
-    d_glucose_mol = Chem.MolFromSmarts(d_glucose_smarts)
-    if d_glucose_mol is None:
-        return None, "Error in setting up D-glucose SMARTS pattern."
-    
-    # Check if D-glucose moiety is present
-    if not mol.HasSubstructMatch(d_glucose_mol):
+    # D-glucose substructure (common cyclic form with oxygens and hydroxyls)
+    # D-glucose has a six-membered ring and hydroxyl group pattern
+    d_glucose_pattern = Chem.MolFromSmarts('C1([C@@H]2[C@@H]([C@H](C([C@H](O1)O)O)O)O2)O') # Simplified representation
+
+    # Check for D-glucose substructure
+    if not mol.HasSubstructMatch(d_glucose_pattern):
         return False, "D-glucose moiety not found"
-    
-    # Simple check for glycosidic linkage using an anomeric carbon connected to an ether
-    # Anomeric carbon will typically be attached to another oxygen and further ether bonds 
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 6 and atom.GetDegree() == 4:
-            oxygen_neighbors = [neighbor for neighbor in atom.GetNeighbors() if neighbor.GetAtomicNum() == 8]
-            if len(oxygen_neighbors) == 2:  # Connected to two oxygens for glycosidic bond
-                # Assuming one is within the ring and another outside the ring (glycosidic bond)
-                return True, "Contains D-glucose moiety with glycosidic linkage"
+
+    # Glycosidic linkage pattern (oxygen connected to glucose ring and another moiety)
+    glycosidic_linkage_pattern = Chem.MolFromSmarts('[O][C@H]1[C@@H]([C@H]([C@@H](O[C@@H]2O[C@H](O)[C@H](O)[C@@H](O)C2)O)O)O1')
+
+    if mol.HasSubstructMatch(glycosidic_linkage_pattern):
+        return True, "Contains D-glucose moiety with glycosidic linkage"
 
     return False, "Glycosidic linkage not found to D-glucose moiety"
