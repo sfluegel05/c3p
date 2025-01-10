@@ -21,11 +21,18 @@ def is_alpha_amino_acid_zwitterion(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Adjust pattern to be more inclusive for zwitterions
-    zwitterion_pattern = Chem.MolFromSmarts("[NH3+][C](C)([!#1])[C](=O)[O-]")
-    
-    if not mol.HasSubstructMatch(zwitterion_pattern):
-        return False, "Does not match the alpha-amino-acid zwitterion pattern"
 
-    return True, "Matches the alpha-amino-acid zwitterion pattern"
+    # Pattern for protonated amine group connected to a central carbon
+    amine_pattern = Chem.MolFromSmarts("[CH]([NH3+])[C]([C])[C](=O)[O-]")
+
+    # Search pattern for common alpha-amino-acid layouts with zwitterion features
+    if mol.HasSubstructMatch(amine_pattern):
+        return True, "Matches the alpha-amino-acid zwitterion pattern"
+    
+    # Add flexibility to identify structures with complex side chains
+    generic_amino_acid_pattern = Chem.MolFromSmarts("[NH3+]C([#6])[C](=O)[O-]") 
+    
+    if mol.HasSubstructMatch(generic_amino_acid_pattern):
+        return True, "Matches flexible alpha-amino-acid zwitterion pattern"
+    
+    return False, "Does not match the zwitterion pattern"
