@@ -6,49 +6,40 @@ from rdkit import Chem
 def is_carotenoid(smiles: str):
     """
     Determines if a molecule is a carotenoid based on its SMILES string.
-    A carotenoid is a tetraterpenoid (C40) with characteristic structural features.
+    A carotenoid is characterized as a tetraterpenoid (C40) with possible structural variations.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a carotenoid, False otherwise
+        bool: True if the molecule is a carotenoid, False otherwise
         str: Reason for classification
     """
 
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return None, "Invalid SMILES string"
 
-    # Carotenoids are derived from a C40 framework, flexible around 40 carbons
-    # Tetraterpenoid typically implies ~40 carbons or conmplex derivative structures
+    # Count carbon atoms - carotenoids typically have a C40 backbone with flexibility
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if not (33 <= c_count <= 48):  # Flexible range based on derivations
-        return False, f"Carbon count {c_count} not typical for carotenoid derivatives"
+    if c_count < 30 or c_count > 50:
+        return False, f"Carbon count {c_count} is not typical for carotenoids"
 
-    # Extended conjugated system: at least several consecutive conjugated C=C bonds
-    conjugated_pattern = Chem.MolFromSmarts("C=C(-C=C)+")
-    conjugated_matches = mol.GetSubstructMatches(conjugated_pattern)
-    if len(conjugated_matches) < 5:
-        return False, f"Extended conjugation pattern lacking; detected {len(conjugated_matches)} sections"
+    # Look for extended conjugation: characteristic long chains of conjugated C=C
+    conjugated_pattern = Chem.MolFromSmarts("C=C-C=C")
+    if not mol.HasSubstructMatch(conjugated_pattern):
+        return False, "Lacks extended conjugated system typical of carotenoids"
 
-    # Looser cyclization check for more flexibility - explore multiple ring types or lack thereof
-    cyclization_flexible_patterns = [
-        Chem.MolFromSmarts("C1CCCC1"),  # Cyclopentane-like
-        Chem.MolFromSmarts("C1CCCCC1"),  # Cyclohexane-like
-        Chem.MolFromSmarts("C1C=CCC1"),  # Cyclopentene-like
-        Chem.MolFromSmarts("C1C=CCCC1")  # Cyclohexene-like
-    ]
-    # Evaluate if any acceptable cyclization is present or can be derived
-    has_ring = any(mol.HasSubstructMatch(pattern) for pattern in cyclization_flexible_patterns)
-    if not has_ring and c_count == 40:  # Allow more flexibility if precisely a C40 backbone
-        return True, "Structure consistent with carotenoid (C40 tetraterpenoid) despite limited cyclization"
-
-    # Allow presence of oxygen-based functional groups (reflects class diversity by including xanthophylls)
+    # Check for presence of functional groups, which are common in carotenoid derivatives
+    # Includes hydroxyl (OH), ketone (C=O), etc.
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count > 0:
-        return True, "Presence of oxygen groups indicates possible carotenoid derivative (xanthophyll or similar)"
+    if c_count < 36 and o_count == 0:
+        return False, "Few carbons and no oxygen; atypical for this class"
 
-    # Final fallback return if comprehensive traits match
-    return True, "Structure generally consistent with carotenoid framework after pattern analysis"
+    # Carotenoids may have a ring structure derived from cyclizations (flexible check)
+    possible_ring_smarts = ["C1CCCC1", "C1CCCCC1", "C1C=CCC1", "C1C=CCCC1"]
+    if not any(mol.HasSubstructMatch(Chem.MolFromSmarts(smarts)) for smarts in possible_ring_smarts):
+        return False, "No ring or cyclic derivatives detected; inconsistent with typical carotenoids"
+
+    return True, "Structure fits the classification of a carotenoid based on core patterns"
