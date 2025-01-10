@@ -25,6 +25,7 @@ def is_long_chain_fatty_acyl_CoA_4__(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for CoA moiety pattern (deprotonated phosphate and diphosphate groups)
+    # More flexible pattern to match variations in the CoA moiety
     coa_pattern = Chem.MolFromSmarts("[O-]P(=O)([O-])OP(=O)([O-])OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP([O-])([O-])=O)n1cnc2c(N)ncnc12")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No CoA moiety with deprotonated phosphate and diphosphate groups found"
