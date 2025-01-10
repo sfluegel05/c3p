@@ -11,7 +11,7 @@ def is_1_acyl_sn_glycero_3_phosphoserine(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is 1-acyl-sn-glycero-3-phosphoserine, False otherwise
+        bool: True if the molecule is 1-acyl-sn-glycero-3-phosphoserine, False otherwise
         str: Reason for classification
     """
     
@@ -20,24 +20,12 @@ def is_1_acyl_sn_glycero_3_phosphoserine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define individual patterns for key structural components:
-    # - Phosphate group connected to glycerol
-    phosphate_glycerol_pattern = Chem.MolFromSmarts("P(=O)(O)OC[C@H](O)CO")
-
-    # - Acyl chain connected to glycerol
-    acyl_glycerol_pattern = Chem.MolFromSmarts("C(=O)O[C@H](CO)")
-
-    # - Phosphoserine side chain
-    phosphoserine_pattern = Chem.MolFromSmarts("OC[C@H](N)C(O)=O")
-
-    # Check each key structural component pattern in the molecule
-    if not mol.HasSubstructMatch(phosphate_glycerol_pattern):
-        return False, "Phosphate group linked to glycerol not found"
-
-    if not mol.HasSubstructMatch(acyl_glycerol_pattern):
-        return False, "Acyl chain linkage to glycerol missing"
-
-    if not mol.HasSubstructMatch(phosphoserine_pattern):
-        return False, "Phosphoserine structure not identified"
+    # Define patterns for key structural components:
+    # - Glycerol with phosphate and acyl chain (stereospecifically)
+    acyl_glycerol_phosphate_pattern = Chem.MolFromSmarts("[C@@H](OC(=O)C)[CH2]O[P](=O)(O[CH][CH](C(O)=O)N)[O]")
+    
+    # Check for the key structural component patterns
+    if not mol.HasSubstructMatch(acyl_glycerol_phosphate_pattern):
+        return False, "1-acyl-sn-glycero-3-phosphoserine structure not matched"
 
     return True, "Contains 1-acyl-sn-glycero-3-phosphoserine structure"
