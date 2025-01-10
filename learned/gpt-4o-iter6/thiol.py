@@ -20,9 +20,9 @@ def is_thiol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define a broader SMARTS pattern for thiol group (-SH)
-    # The pattern considers any carbon (C, c) bound to sulfur (S) with hydrogen (H) attached to sulfur
-    thiol_pattern = Chem.MolFromSmarts("[#6]-[SH]")
+    # Enhanced SMARTS pattern considering sulfur-bound to carbon with expanding functionalities
+    # Specific check for sulfur with a hydrogen, potentially also bound to an sp2/sp3 carbon
+    thiol_pattern = Chem.MolFromSmarts("[#6][S;H1]")
 
     # Check for the presence of thiol group
     if mol.HasSubstructMatch(thiol_pattern):
