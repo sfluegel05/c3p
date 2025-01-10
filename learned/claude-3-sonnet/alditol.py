@@ -6,18 +6,18 @@ Classifies: CHEBI:15972 alditol
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_alditol(smiles: str):
     """
-    Determines if a molecule is an alditol based on its SMILES string.
-    An alditol is an acyclic polyol with formula HOCH2[CH(OH)]nCH2OH.
+    Determines if a molecule contains an alditol moiety based on its SMILES string.
+    An alditol is formally derivable from an aldose by reduction of the carbonyl group,
+    having the general pattern HOCH2[CH(OH)]nCH2OH, where the hydroxyls may be substituted.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is an alditol, False otherwise
+        bool: True if molecule contains an alditol moiety, False otherwise
         str: Reason for classification
     """
     
@@ -26,56 +26,74 @@ def is_alditol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Reject any molecule with rings
-    ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() > 0:
-        return False, "Contains rings (alditols must be acyclic)"
-
-    # Count atoms
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    other_atoms = sum(1 for atom in mol.GetAtoms() 
-                     if atom.GetAtomicNum() not in [1, 6, 8])
+    # First look for basic alditol backbone pattern:
+    # A chain of carbons where each carbon has an oxygen attached
+    # The SMARTS pattern allows for substituted oxygens
+    alditol_backbone = """
+        # Start with carbon-oxygen
+        [CX4]([OX2])
+        # Connected to at least 2 more similar carbons
+        [CX4]([OX2])[CX4]([OX2])
+        # End with carbon-oxygen
+        [CX4]([OX2])
+    """
+    alditol_pattern = Chem.MolFromSmarts(alditol_backbone.replace('\n',''))
     
-    if other_atoms > 0:
-        return False, "Contains atoms other than C, H, O"
-    
-    if c_count < 3:
-        return False, "Too few carbons for an alditol (minimum 3)"
-
-    # Look for terminal CH2OH groups
-    terminal_oh_pattern = Chem.MolFromSmarts("[CH2X4][OX2H1]")
-    terminal_oh_matches = len(mol.GetSubstructMatches(terminal_oh_pattern))
-    
-    if terminal_oh_matches < 2:
-        return False, "Missing terminal CH2OH groups"
-
-    # Pattern for internal carbons with hydroxyls: -CH(OH)-
-    internal_oh_pattern = Chem.MolFromSmarts("[CHX4]([CX4])[OX2H1]")
-    internal_oh_matches = len(mol.GetSubstructMatches(internal_oh_pattern))
-    
-    # For a valid alditol, each internal carbon should have one hydroxyl
-    expected_internal_oh = c_count - 2  # subtract terminal carbons
-    if internal_oh_matches < expected_internal_oh:
-        return False, "Missing required hydroxyl groups on internal carbons"
-
-    # Check for continuous carbon chain with correct hydroxyl pattern
-    # HOCH2-[CHOH]n-CH2OH
-    alditol_pattern = Chem.MolFromSmarts("[CH2X4][OX2H1].[CHX4]([OX2H1])[CHX4].[CH2X4][OX2H1]")
     if not mol.HasSubstructMatch(alditol_pattern):
-        return False, "Does not match required alditol carbon chain pattern"
+        return False, "No alditol backbone found (needs continuous chain of carbons with oxygen substituents)"
 
-    # Count total hydroxyl groups
-    oh_groups = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[OX2H1]")))
+    # Get the matches
+    matches = mol.GetSubstructMatches(alditol_pattern)
     
-    # For a valid alditol:
-    # - Each carbon should have exactly one hydroxyl
-    # - Number of hydroxyls should equal number of carbons
-    if oh_groups != c_count:
-        return False, "Number of hydroxyl groups does not match number of carbons"
-
-    # Additional check for carbonyl groups (should not be present)
-    if mol.HasSubstructMatch(Chem.MolFromSmarts("[CX3](=O)")):
-        return False, "Contains carbonyl group (not allowed in alditols)"
-
-    return True, "Valid alditol structure with required hydroxyl pattern"
+    for match in matches:
+        # Convert match atoms to a submolecule for analysis
+        match_atoms = set(match)
+        
+        # Check if these carbons form a continuous chain
+        # by looking at bonds between matched atoms
+        is_continuous = True
+        for i in range(len(match)-1):
+            bond = mol.GetBondBetweenAtoms(match[i], match[i+1])
+            if bond is None:
+                is_continuous = False
+                break
+                
+        if not is_continuous:
+            continue
+            
+        # For each carbon in the match, verify it has proper connectivity
+        valid_carbons = True
+        for atom_idx in match:
+            atom = mol.GetAtomWithIdx(atom_idx)
+            
+            # Each carbon should:
+            # - Be sp3 hybridized
+            # - Have one oxygen substituent
+            # - Have correct number of carbons attached (1 or 2 depending on position)
+            if atom.GetHybridization() != Chem.HybridizationType.SP3:
+                valid_carbons = False
+                break
+                
+            # Count oxygen and carbon neighbors
+            o_neighbors = sum(1 for n in atom.GetNeighbors() if n.GetAtomicNum() == 8)
+            c_neighbors = sum(1 for n in atom.GetNeighbors() if n.GetAtomicNum() == 6)
+            
+            if o_neighbors < 1:
+                valid_carbons = False
+                break
+                
+            # Terminal carbons should have 1 carbon neighbor
+            # Internal carbons should have 2 carbon neighbors
+            if atom_idx in (match[0], match[-1]):
+                if c_neighbors != 1:
+                    valid_carbons = False
+                    break
+            else:
+                if c_neighbors != 2:
+                    valid_carbons = False
+                    break
+        
+        if valid_carbons:
+            return True, "Contains valid alditol structure (continuous carbon chain with hydroxyl/substituted hydroxyl groups)"
+            
+    return False, "No valid alditol structure found"
