@@ -24,59 +24,36 @@ def is_hydroxynaphthoquinone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Get ring information
-    ri = mol.GetRingInfo()
-    atom_rings = ri.AtomRings()
+    # Define SMARTS pattern for naphthoquinone core (both 1,4- and 1,2-naphthoquinone)
+    naphthoquinone_smarts = Chem.MolFromSmarts('C1=CC=CC=C1C(=O)C=CC=O')  # Simplified pattern
+    if not mol.HasSubstructMatch(naphthoquinone_smarts):
+        return False, "No naphthoquinone core found"
 
-    # Merge rings into fused ring systems
-    fused_ring_systems = []
-    visited_atoms = set()
-    for ring in atom_rings:
-        ring_set = set(ring)
-        if not visited_atoms.intersection(ring_set):
-            # Start a new fused ring system
-            fused_ring_systems.append(ring_set)
-            visited_atoms.update(ring_set)
-        else:
-            # Add to existing fused ring system
-            for frs in fused_ring_systems:
-                if frs.intersection(ring_set):
-                    frs.update(ring_set)
-                    visited_atoms.update(ring_set)
-                    break
+    # Get the matches of the naphthoquinone core
+    matches = mol.GetSubstructMatches(naphthoquinone_smarts)
+    if not matches:
+        return False, "No naphthoquinone core found"
 
-    # Check each fused ring system for naphthoquinone characteristics
-    for ring_system in fused_ring_systems:
-        # Check if ring system is aromatic and has at least 8 atoms (allowing for substitutions)
-        if len(ring_system) >= 8:
-            is_aromatic = all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring_system)
-            if not is_aromatic:
+    # Define SMARTS pattern for hydroxy group attached to an aromatic ring carbon
+    hydroxy_smarts = Chem.MolFromSmarts('[OX1H]-[#6]')  # Hydroxy group attached to carbon
+
+    # Check if any atom in the naphthoquinone core is substituted with a hydroxy group
+    for match in matches:
+        naphthoquinone_atoms = set(match)
+        # Check all atoms for hydroxy substitution
+        for atom_idx in naphthoquinone_atoms:
+            atom = mol.GetAtomWithIdx(atom_idx)
+            # Skip non-carbon atoms
+            if atom.GetAtomicNum() != 6:
                 continue
+            # Check neighbors for hydroxy group
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 8 and neighbor.GetTotalDegree() == 1:
+                    bond = mol.GetBondBetweenAtoms(atom_idx, neighbor.GetIdx())
+                    if bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
+                        return True, "Contains naphthoquinone moiety substituted with at least one hydroxy group"
 
-            # Count ketone groups (C=O) attached to ring carbons
-            ketone_count = 0
-            hydroxy_count = 0
-
-            for idx in ring_system:
-                atom = mol.GetAtomWithIdx(idx)
-                if atom.GetAtomicNum() == 6:  # Carbon atom
-                    # Check for ketone group (C=O)
-                    for bond in atom.GetBonds():
-                        nbr = bond.GetOtherAtom(atom)
-                        if nbr.GetAtomicNum() == 8 and bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-                            ketone_count += 1
-                            break
-                    # Check for hydroxy group (C-OH)
-                    for nbr in atom.GetNeighbors():
-                        bond = mol.GetBondBetweenAtoms(atom.GetIdx(), nbr.GetIdx())
-                        if nbr.GetAtomicNum() == 8 and bond.GetBondType() == Chem.rdchem.BondType.SINGLE and nbr.GetDegree() == 1:
-                            hydroxy_count += 1
-                            break
-
-            if ketone_count >= 2 and hydroxy_count >= 1:
-                return True, "Contains naphthoquinone moiety substituted with at least one hydroxy group"
-
-    return False, "No hydroxylated naphthoquinone moiety found"
+    return False, "Naphthoquinone core found but no hydroxy substitution on the ring carbons"
 
 __metadata__ = {
     'chemical_class': {
@@ -98,7 +75,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 2,
+    'attempt': 3,
     'success': True,
     'best': True,
     'error': '',
