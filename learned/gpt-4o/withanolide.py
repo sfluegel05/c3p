@@ -2,7 +2,6 @@
 Classifies: CHEBI:74716 withanolide
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_withanolide(smiles: str):
     """
@@ -22,21 +21,26 @@ def is_withanolide(smiles: str):
     if mol is None:
         return (None, "Invalid SMILES string")
 
-    # Check for the steroid backbone (a more generic pattern for four fused rings)
-    steroid_pattern = Chem.MolFromSmarts("C1C[C@@H]2[C@@H](CC[C@]3([C@@]2(CC[C@H]4[C@@]3(CCCC4)C)C)C)C1")  # Upgraded SMARTS for steroids
-    if not mol.HasSubstructMatch(steroid_pattern):
+    # Check for the steroid backbone (pattern tuned for flexibility)
+    steroid_patterns = [
+        Chem.MolFromSmarts("C1C2CC3CC4(C)CCC1C4C=C3C2"),  # A more flexible core steroid pattern
+    ]
+    
+    if not any(mol.HasSubstructMatch(pattern) for pattern in steroid_patterns):
         return (False, "No steroid backbone detected")
     
-    # Flexible pattern for lactone rings
-    lactone_pattern = Chem.MolFromSmarts("C1OC(=O)C=CC1|C1O[C@H](C)C(=O)C=C1")  # Consider different lactone ring sizes/patterns
-    if not mol.HasSubstructMatch(lactone_pattern):
+    # Check for lactone ring (flexible size and configurations)
+    lactone_patterns = [
+        Chem.MolFromSmarts("C1OC(=O)C=CC1"),  # Gamma-lactone
+        Chem.MolFromSmarts("C1OC(=O)CC1"),    # Delta-lactone
+    ]
+    if not any(mol.HasSubstructMatch(pattern) for pattern in lactone_patterns):
         return (False, "No lactone group found")
     
-    # Broad feature detection for functional groups (hydroxyl, ketone)
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
-    ketone_pattern = Chem.MolFromSmarts("C(=O)[C]")
-    if not (mol.HasSubstructMatch(hydroxyl_pattern) or mol.HasSubstructMatch(ketone_pattern)):
-        return (False, "No hydroxyl or ketone functionalities detected")
+    # Consider presence of oxygens which may indicate functional groups
+    oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    
+    if oxygen_count < 3:  # Assuming minimum functionalization
+        return (False, "Insufficient oxygen-containing functionalities for withanolides")
 
-    # Success case
     return (True, "Contains features consistent with withanolides: steroid backbone, lactone ring, and functional groups")
