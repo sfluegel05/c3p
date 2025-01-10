@@ -20,16 +20,16 @@ def is_B_vitamin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS patterns for different B vitamins
+    # Define more accurate SMARTS patterns for different B vitamins
     patterns = {
-        'Thiamine (B1)': Chem.MolFromSmarts('Cc1nc(N)ncc1C'),
-        'Riboflavin (B2)': Chem.MolFromSmarts('C1=CC2=NC(=O)N(C=C2N1)C[C@H](O)[C@H](O)CO'),
-        'Niacin (B3)': Chem.MolFromSmarts('n1cccc1C(=O)O'),
+        'Thiamine (B1)': Chem.MolFromSmarts('Cc1ncc(C[n+]2csc(CCO)c2C)c(N)n1'),
+        'Riboflavin (B2)': Chem.MolFromSmarts('C[C@H]1O[C@@H](CO)n2cnc3c2nc(=O)[nH]c3=O1'),
+        'Niacin (B3)': Chem.MolFromSmarts('c1ccccn1C(=O)O'),
         'Pantothenic acid (B5)': Chem.MolFromSmarts('CC(C)(CO)[C@@H](O)C(=O)NCCC(O)=O'),
-        'Pyridoxine (B6)': Chem.MolFromSmarts('CC1=NC(C)=C(O1)CO'),
-        'Biotin (B7)': Chem.MolFromSmarts('C1C2CS[C@@H](CCCCC(O)=O)[C@@H]2NC(=O)N1'),
-        'Folate (B9)': Chem.MolFromSmarts('Nc1nc2n(ccc2c(=O)[nH]1)NCC3=CC=CC=C3'),
-        'Cobalamin (B12)': Chem.MolFromSmarts('Oc1nc2c(c(=O)[nH]1)CNC2C')
+        'Pyridoxine (B6)': Chem.MolFromSmarts('CC1=C(C)C=C(CO)C(O)=N1'),
+        'Biotin (B7)': Chem.MolFromSmarts('N1C(=O)N[C@H]2[C@@H](CCC(=O)O)S[C@@H]12'),
+        'Folate (B9)': Chem.MolFromSmarts('Nc1nc2NCC(c3c(=O)[nH]c(nc3)c2c(=O)[nH]1)N'),
+        'Cobalamin (B12)': Chem.MolFromSmarts('C[C@]1(CC(N)=O)[C@@H]2C[C@H](OC)[C@H](O)[C@H](O)[C@@H]2O[C@@H]1n3c4cc(C)c(C)cc4c5[n+](c3)c6ccc(nc6)[Co]5')
     }
     
     # Check for matches
@@ -38,7 +38,3 @@ def is_B_vitamin(smiles: str):
             return True, f'Matches {vitamin_name}'
     
     return False, "No B vitamin pattern matched"
-
-# Testing with a known B vitamin SMILES
-example_smiles = "CN1[C@@H](CNC2=CC=C(C=C2)C(=O)N[C@@H](CCC(O)=O)C(O)=O)CNC2=C1C(=O)NC(N)=N2"
-print(is_B_vitamin(example_smiles))
