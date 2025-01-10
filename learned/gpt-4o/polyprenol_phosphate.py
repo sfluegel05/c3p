@@ -2,15 +2,14 @@
 Classifies: CHEBI:16460 polyprenol phosphate
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_polyprenol_phosphate(smiles: str):
     """
     Determines if a given SMILES string corresponds to a polyprenol phosphate.
-    
+
     Args:
         smiles (str): SMILES string of the molecule
-    
+
     Returns:
         bool: True if molecule is a polyprenol phosphate, False otherwise
         str: Reason for classification
@@ -20,22 +19,21 @@ def is_polyprenol_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for isoprene units, generalized pattern to capture stereochemistry and variations
-    # Generically detect: [C=C(C)CC]
-    isoprene_pattern_general = Chem.MolFromSmarts("C=C(C)CC")
-    isoprene_matches = len(mol.GetSubstructMatches(isoprene_pattern_general))
-    if isoprene_matches < 3:
-        return False, f"Found {isoprene_matches} isoprene units, need at least 3 for a polyprenol chain"
-    
-    # Identify phosphate group, adjusted pattern: [OP(=O)(O)]
-    phosphate_pattern_general = Chem.MolFromSmarts("OP(=O)(O)")
-    phosphate_matches = len(mol.GetSubstructMatches(phosphate_pattern_general))
-    if phosphate_matches < 1:
-        return False, "No phosphate group found"
+    # Detect isoprene units; allow for various stereochemistries using more general unsaturation patterns
+    isoprene_pattern = Chem.MolFromSmarts("[C;c]=[C;c][C;H2][C;H,CH3]") # Generalized isoprene unit
+    isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
+    if len(isoprene_matches) < 3:
+        return False, f"Found {len(isoprene_matches)} isoprene units, need at least 3 for a polyprenol chain"
 
-    # Check for connection between polyprenol chain and phosphate group (terminal C to P linkage)
-    # Relax strict terminal checking, check extension from one end involves O-P linkage
-    connection_pattern = Chem.MolFromSmarts("C-O-P(=O)(O)C") 
+    # Detect phosphate group; allow capturing both mono- and diphosphate groups 
+    phosphate_pattern = Chem.MolFromSmarts("[OX2]P(=O)([O-])[O-]")
+    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
+    if len(phosphate_matches) < 1:
+        return False, "No phosphate or diphosphate group found"
+
+    # Check if polyprenol is linked to phosphate group by O-P
+    # This pattern accounts for the terminal linkage on the polyprenol side to a phosphoric group
+    connection_pattern = Chem.MolFromSmarts("[C;H2][OX2]P(=O)([O-])[O-]")
     if not mol.HasSubstructMatch(connection_pattern):
         return False, "Polyprenol chain not appropriately connected to phosphate group"
 
