@@ -26,37 +26,35 @@ def is_hexose(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Get the main carbon skeleton
-    main_skeleton = Chem.DeleteSubstructs(mol, Chem.MolFromSmarts('[!#6]'))
-    c_count = main_skeleton.GetNumAtoms()
+    # Count carbons and oxygens
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     
-    # Hexose must have exactly 6 carbons in the main skeleton
+    # Hexose must have exactly 6 carbons and multiple oxygens
     if c_count != 6:
-        return False, f"Found {c_count} carbons in main skeleton, need exactly 6"
+        return False, f"Found {c_count} carbons, need exactly 6"
+    if o_count < 3:
+        return False, f"Found {o_count} oxygens, need at least 3"
 
     # Check for aldehyde group (C=O at position 1 in linear form)
     aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)[CX4]")
     if mol.HasSubstructMatch(aldehyde_pattern):
         return True, "Contains aldehyde group at position 1 (aldohexose)"
 
+    # More general pattern for cyclic hexoses
+    cyclic_pattern = Chem.MolFromSmarts("[C@H]1([C@H](O)[C@H](O)[C@H](O)[C@H](O1)CO)")
+    if mol.HasSubstructMatch(cyclic_pattern):
+        # Check for potential ketone group in cyclic form
+        ketone_pattern = Chem.MolFromSmarts("[CX3](=O)[CX4]")
+        ketone_matches = mol.GetSubstructMatches(ketone_pattern)
+        if ketone_matches:
+            return True, "Cyclic hexose form with ketone group detected"
+        return True, "Cyclic hexose form detected"
+
     # Check for ketone group (C=O at position 2 in linear form)
     ketone_pattern = Chem.MolFromSmarts("[CX3](=O)[CX4]")
     ketone_matches = mol.GetSubstructMatches(ketone_pattern)
     
-    # For cyclic forms, check if the molecule has characteristic hexose patterns
-    # More general pattern for cyclic hexoses
-    cyclic_pattern = Chem.MolFromSmarts("[C@H]1([C@H](O)[C@H](O)[C@H](O)[C@H](O1)CO)")
-    if mol.HasSubstructMatch(cyclic_pattern):
-        # Check if it has a potential ketone group
-        for match in ketone_matches:
-            # Check if the ketone is on a carbon that could be position 2
-            atom = mol.GetAtomWithIdx(match[0])
-            neighbors = [n.GetAtomicNum() for n in atom.GetNeighbors()]
-            if 8 in neighbors:  # Check if connected to oxygen (carbonyl)
-                return True, "Cyclic hexose form with potential ketone group detected"
-        return True, "Cyclic hexose form detected"
-
-    # Check for ketone in linear form
     if ketone_matches:
         # Try to find a ketone at position 2 in a linear chain
         for match in ketone_matches:
