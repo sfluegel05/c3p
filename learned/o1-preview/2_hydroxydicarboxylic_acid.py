@@ -5,7 +5,6 @@ Classifies: CHEBI:50263 2-hydroxydicarboxylic acid
 Classifies: CHEBI:73199 2-hydroxydicarboxylic acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_2_hydroxydicarboxylic_acid(smiles: str):
     """
@@ -26,20 +25,44 @@ def is_2_hydroxydicarboxylic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns
-    carboxy_pattern = Chem.MolFromSmarts("[CX3](=O)[OX1H]")
-    alpha_hydroxy_pattern = Chem.MolFromSmarts("[CX3](=O)[OX1H][CX4][OX2H]")
-
     # Find all carboxylic acid groups
+    carboxy_pattern = Chem.MolFromSmarts("C(=O)[O,H]")
     carboxy_matches = mol.GetSubstructMatches(carboxy_pattern)
     num_carboxy_groups = len(carboxy_matches)
+
     if num_carboxy_groups < 2:
         return False, f"Found {num_carboxy_groups} carboxylic acid groups, need at least 2"
 
-    # Find alpha-hydroxy carboxylic acid groups
-    alpha_hydroxy_matches = mol.GetSubstructMatches(alpha_hydroxy_pattern)
-    if not alpha_hydroxy_matches:
-        return False, "No alpha-hydroxy carboxylic acid group found"
+    # Flag to check if at least one alpha-hydroxy group is present
+    has_alpha_hydroxy = False
+
+    # Iterate over carboxylic acid groups
+    for carboxy_match in carboxy_matches:
+        carboxy_c_idx = carboxy_match[0]
+        carboxy_c = mol.GetAtomWithIdx(carboxy_c_idx)
+
+        # Get neighbors of the carboxylic carbon
+        neighbors = [nb for nb in carboxy_c.GetNeighbors() if nb.GetAtomicNum() == 6]
+        for alpha_c in neighbors:
+            alpha_c_idx = alpha_c.GetIdx()
+            # Check if alpha carbon has a hydroxyl group
+            hydroxyl = False
+            for nb in alpha_c.GetNeighbors():
+                if nb.GetAtomicNum() == 8:  # Oxygen atom
+                    bond = alpha_c.GetBondBetweenAtoms(alpha_c_idx, nb.GetIdx())
+                    if bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
+                        if nb.GetTotalDegree() == 1 or nb.GetExplicitValence() == 1:
+                            hydroxyl = True
+                            break
+            if hydroxyl:
+                has_alpha_hydroxy = True
+                break  # No need to check other neighbors
+
+        if has_alpha_hydroxy:
+            break  # At least one alpha-hydroxy found
+
+    if not has_alpha_hydroxy:
+        return False, "No alpha-hydroxy group found adjacent to carboxylic acid group"
 
     return True, "Molecule is a 2-hydroxydicarboxylic acid (dicarboxylic acid with hydroxy group on alpha carbon)"
 
@@ -63,7 +86,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 0,
+    'attempt': 1,
     'success': True,
     'best': True,
     'error': '',
