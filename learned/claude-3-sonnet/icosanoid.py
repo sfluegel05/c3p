@@ -26,64 +26,70 @@ def is_icosanoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Count carbons and oxygens
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    # Count oxygens (should have multiple from oxidation)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    
-    # Most icosanoids should have around 20 carbons (allowing some variation due to metabolism)
-    if c_count < 15 or c_count > 25:
-        return False, f"Carbon count ({c_count}) outside typical range for icosanoids"
-    
-    # Should have multiple oxygens from oxidation
     if o_count < 2:
         return False, "Too few oxygen atoms for an icosanoid"
 
-    # Look for carboxylic acid group (common in fatty acid derivatives)
-    acid_pattern = Chem.MolFromSmarts('C(=O)[OH]')
-    if not mol.HasSubstructMatch(acid_pattern):
-        return False, "No carboxylic acid group found"
-
-    # Look for carbon chain of suitable length
-    chain_pattern = Chem.MolFromSmarts('[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]')
-    if not mol.HasSubstructMatch(chain_pattern):
-        return False, "No suitable carbon chain found"
-
-    # Look for common icosanoid features
+    # Look for key structural features
     features_found = []
     
-    # Double bonds (common in fatty acid derivatives)
-    double_bond_pattern = Chem.MolFromSmarts('C=C')
-    if mol.HasSubstructMatch(double_bond_pattern):
-        features_found.append("double bonds")
+    # Carbon chain patterns characteristic of icosanoids
+    chain_patterns = [
+        'C~C~C~C~C~C~C~C~C~C~C~C', # Basic long chain
+        'C~C=C~C=C~C~C', # Conjugated double bonds
+        'C1CCCC1C~C~C~C', # Prostaglandin-like
+    ]
     
-    # Hydroxyl groups (from oxidation)
-    hydroxyl_pattern = Chem.MolFromSmarts('[OH]')
-    if mol.HasSubstructMatch(hydroxyl_pattern):
-        features_found.append("hydroxyl groups")
-    
-    # Cyclopentane ring (as in prostaglandins)
-    cyclopentane_pattern = Chem.MolFromSmarts('C1CCCC1')
-    if mol.HasSubstructMatch(cyclopentane_pattern):
-        features_found.append("cyclopentane ring")
-        
-    # Epoxide groups (as in EETs)
-    epoxide_pattern = Chem.MolFromSmarts('C1OC1')
-    if mol.HasSubstructMatch(epoxide_pattern):
-        features_found.append("epoxide group")
-    
-    # Ketone groups (as in prostaglandins)
-    ketone_pattern = Chem.MolFromSmarts('C(=O)C')
-    if mol.HasSubstructMatch(ketone_pattern):
-        features_found.append("ketone group")
+    for pattern in chain_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            features_found.append("characteristic carbon chain")
+            break
 
-    # Need at least some oxidation features to be an icosanoid
-    if len(features_found) < 1:
+    if not features_found:
+        return False, "No characteristic icosanoid carbon chain found"
+
+    # Oxidation and functional group patterns
+    patterns = {
+        'C=C': "double bonds",
+        '[OH]': "hydroxyl groups",
+        'C1CCCC1': "cyclopentane ring",
+        'C1OC1': "epoxide group",
+        'C(=O)C': "ketone group",
+        'C(=O)[OH]': "carboxylic acid",
+        'C(=O)O[CH2,CH3]': "ester group",
+        '[OO]': "peroxide group",
+        'C(=O)N': "amide group",
+    }
+    
+    for smart, feature in patterns.items():
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(smart)):
+            features_found.append(feature)
+
+    # Need multiple oxidation features to be an icosanoid
+    oxidation_features = ["hydroxyl groups", "epoxide group", "ketone group", 
+                         "carboxylic acid", "peroxide group"]
+    oxidation_count = sum(1 for f in oxidation_features if f in features_found)
+    
+    if oxidation_count < 1:
         return False, "Lacks typical icosanoid oxidation features"
 
-    # Calculate molecular weight - should be in reasonable range for C20 oxidized fatty acid
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 250 or mol_wt > 500:
-        return False, f"Molecular weight ({mol_wt:.1f}) outside typical range for icosanoids"
+    # Look for specific icosanoid substructures
+    icosanoid_patterns = [
+        'C(=O)CCC=CCC1C(O)CC(O)C1', # Prostaglandin core
+        'C=CC=CC=CC(O)', # Characteristic hydroxylated polyene
+        'CC=CC=CC=CC(OO)', # Hydroperoxy pattern
+        'C1OC1CC=CC=C', # Epoxy-fatty acid pattern
+    ]
+    
+    for pattern in icosanoid_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            features_found.append("characteristic icosanoid substructure")
+            break
 
-    features_str = ", ".join(features_found)
-    return True, f"Contains characteristic icosanoid features: {features_str}"
+    # If we have enough characteristic features, classify as icosanoid
+    if len(set(features_found)) >= 3:  # Need at least 3 different features
+        features_str = ", ".join(set(features_found))
+        return True, f"Contains characteristic icosanoid features: {features_str}"
+    
+    return False, "Insufficient characteristic icosanoid features"
