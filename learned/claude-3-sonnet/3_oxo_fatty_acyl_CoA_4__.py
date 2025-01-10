@@ -26,11 +26,20 @@ def is_3_oxo_fatty_acyl_CoA_4__(smiles: str):
     if not (mol.HasSubstructMatch(adenine) and mol.HasSubstructMatch(ribose)):
         return False, "Missing CoA core structure (adenine/ribose)"
 
-    # Check for 4 negative charges (phosphates)
-    phosphate = Chem.MolFromSmarts("[O-]P([O-])")
+    # Check for phosphate groups and negative charges
+    # Match any phosphate group with negative charge(s)
+    phosphate = Chem.MolFromSmarts("P([O-,OH])([O-,OH])(=O)[O-,OH]")
     phosphate_matches = len(mol.GetSubstructMatches(phosphate))
-    if phosphate_matches < 2:  # Need at least 2 doubly charged phosphates
-        return False, f"Insufficient negative charges, found {phosphate_matches} phosphate groups"
+    if phosphate_matches != 3:
+        return False, f"Expected 3 phosphate groups, found {phosphate_matches}"
+
+    # Count total negative charges
+    negative_charges = 0
+    for atom in mol.GetAtoms():
+        negative_charges += abs(min(0, atom.GetFormalCharge()))
+    
+    if negative_charges != 4:
+        return False, f"Expected 4 negative charges, found {negative_charges}"
 
     # Check for 3-oxo group and thioester linkage
     oxo_thioester = Chem.MolFromSmarts("C(=O)CC(=O)S")
@@ -47,9 +56,17 @@ def is_3_oxo_fatty_acyl_CoA_4__(smiles: str):
     if not mol.HasSubstructMatch(pantetheine):
         return False, "Missing pantetheine moiety"
 
-    # Count total carbons in fatty acid chain
-    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if carbon_count < 25:  # Rough minimum for CoA + short fatty acid
-        return False, f"Carbon count too low ({carbon_count}), expecting at least 25"
+    # Count total carbons in fatty acid portion
+    # First find the thioester carbon
+    thioester = mol.GetSubstructMatch(Chem.MolFromSmarts("C(=O)S"))
+    if not thioester:
+        return False, "Cannot locate thioester group"
+    
+    # Verify it's part of a 3-oxo structure
+    oxo_carbon = thioester[0]
+    neighbors = [n for n in mol.GetAtomWithIdx(oxo_carbon).GetNeighbors() 
+                if n.GetAtomicNum() == 6]
+    if not any(n.GetTotalNumHs() == 2 for n in neighbors):
+        return False, "Missing proper 3-oxo group structure"
 
     return True, "Contains 3-oxo fatty acid chain connected to CoA(4-) via thioester bond"
