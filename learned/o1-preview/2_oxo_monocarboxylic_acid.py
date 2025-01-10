@@ -10,8 +10,7 @@ from rdkit import Chem
 def is_2_oxo_monocarboxylic_acid(smiles: str):
     """
     Determines if a molecule is a 2-oxo monocarboxylic acid based on its SMILES string.
-    A 2-oxo monocarboxylic acid is a molecule that contains at least one monocarboxylic acid group
-    with a ketone (oxo) group at the alpha carbon.
+    A 2-oxo monocarboxylic acid is a monocarboxylic acid with a ketone group at the 2-position (alpha carbon).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,44 +25,38 @@ def is_2_oxo_monocarboxylic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[O;H1]")  # Carboxylic acid group
-    ketone_pattern = Chem.MolFromSmarts("C=O")  # Ketone group
-
-    # Find all carboxylic acid groups
+    # Check for exactly one carboxylic acid group (-C(=O)OH)
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[O;H1]")
     carboxy_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
-    if not carboxy_matches:
-        return False, "No carboxylic acid groups found"
+    if len(carboxy_matches) != 1:
+        return False, f"Found {len(carboxy_matches)} carboxylic acid groups, need exactly 1"
 
-    # Iterate over all carboxylic acid groups
-    for carboxy_match in carboxy_matches:
-        carboxyl_c_idx = carboxy_match[0]  # Index of the carbon in the carboxylic acid
-        carboxyl_c_atom = mol.GetAtomWithIdx(carboxyl_c_idx)
+    # Get the carboxyl carbon atom index
+    carboxyl_c_idx = carboxy_matches[0][0]
+    carboxyl_c_atom = mol.GetAtomWithIdx(carboxyl_c_idx)
 
-        # Find alpha carbons (neighboring carbons to carboxyl carbon that are carbons)
-        alpha_c_atoms = [nbr for nbr in carboxyl_c_atom.GetNeighbors() if nbr.GetAtomicNum() == 6]
+    # Find alpha carbon (carbon neighbor of carboxyl carbon)
+    alpha_c_atoms = [atom for atom in carboxyl_c_atom.GetNeighbors() if atom.GetAtomicNum() == 6]
+    if len(alpha_c_atoms) == 0:
+        return False, "No alpha carbon connected to carboxyl carbon"
 
-        # Check each alpha carbon for a ketone group
-        for alpha_c_atom in alpha_c_atoms:
-            alpha_c_idx = alpha_c_atom.GetIdx()
+    # Check if alpha carbon has a ketone group (=O)
+    ketone_found = False
+    for alpha_c_atom in alpha_c_atoms:
+        # Check for double bond to oxygen on alpha carbon
+        for bond in alpha_c_atom.GetBonds():
+            if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                other_atom = bond.GetOtherAtom(alpha_c_atom)
+                if other_atom.GetAtomicNum() == 8:  # Oxygen atom
+                    ketone_found = True
+                    break
+        if ketone_found:
+            break
 
-            # Check for ketone group attached to alpha carbon
-            for bond in alpha_c_atom.GetBonds():
-                if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-                    other_atom = bond.GetOtherAtom(alpha_c_atom)
-                    if other_atom.GetAtomicNum() == 8:  # Oxygen atom
-                        # Verify that this oxygen is part of a ketone group
-                        # Ensure it's not part of the carboxylic acid group itself
-                        if other_atom.GetIdx() != carboxy_match[1] and other_atom.GetIdx() != carboxy_match[2]:
-                            return True, "Contains monocarboxylic acid group with oxo group at alpha carbon (2-oxo)"
+    if not ketone_found:
+        return False, "No ketone group at alpha carbon"
 
-            # Alternatively, use SMARTS to find ketone attached to alpha carbon
-            ketone_matches = alpha_c_atom.Match(ketone_pattern)
-            if ketone_matches:
-                return True, "Contains monocarboxylic acid group with oxo group at alpha carbon (2-oxo)"
-
-    # If no alpha carbon with ketone group is found
-    return False, "No 2-oxo monocarboxylic acid substructure found"
+    return True, "Contains monocarboxylic acid group with ketone at alpha carbon (2-oxo)"
 
 __metadata__ = {
     'chemical_class': {
@@ -84,7 +77,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 3,
+    'attempt': 0,
     'success': True,
     'best': True,
     'error': '',
