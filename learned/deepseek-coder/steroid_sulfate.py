@@ -25,7 +25,8 @@ def is_steroid_sulfate(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define SMARTS patterns
-    steroid_pattern = Chem.MolFromSmarts("[C@]12[C@]3([C@]4([C@](CC1)(CC[C@@H]4[C@@H]3CC2)C)C)")  # General steroid backbone
+    # A more general steroid backbone pattern that captures the core structure of steroids
+    steroid_pattern = Chem.MolFromSmarts("[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2C)C")  # General steroid backbone
     sulfate_pattern = Chem.MolFromSmarts("[OX2]S(=O)(=O)[OX1H0-]")  # Sulfate group
 
     # Check for steroid backbone
