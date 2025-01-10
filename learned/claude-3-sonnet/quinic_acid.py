@@ -24,38 +24,60 @@ def is_quinic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for cyclohexane core with carboxylic acid
-    cyclohexane_carboxylic = Chem.MolFromSmarts("[C]1[C][C][C][C][C]1[C](=O)[OH]")
-    if not mol.HasSubstructMatch(cyclohexane_carboxylic):
-        return False, "No cyclohexane ring with carboxylic acid group found"
+    # Look for basic cyclohexane core
+    cyclohexane = Chem.MolFromSmarts("[C]1[C][C][C][C][C]1")
+    if not mol.HasSubstructMatch(cyclohexane):
+        return False, "No cyclohexane ring found"
 
-    # Count hydroxyl groups (both free and esterified)
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H1]")
-    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
+    # Find cyclohexane rings
+    ring_matches = mol.GetSubstructMatches(cyclohexane)
     
-    hydroxyl_count = len(mol.GetSubstructMatches(hydroxyl_pattern))
-    ester_count = len(mol.GetSubstructMatches(ester_pattern))
+    found_valid_core = False
+    for ring_match in ring_matches:
+        ring_atoms = set(ring_match)
+        
+        # Check for carboxylic acid or ester attached to ring
+        carboxyl_pattern = Chem.MolFromSmarts("[$([CX3](=[OX1])[OX2H1]),$([CX3](=[OX1])[OX2][C])]")
+        if not mol.HasSubstructMatch(carboxyl_pattern):
+            continue
+            
+        # Count oxygens attached to ring carbons
+        oxygen_count = 0
+        for ring_atom_idx in ring_atoms:
+            atom = mol.GetAtomWithIdx(ring_atom_idx)
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 8:  # Oxygen
+                    oxygen_count += 1
+        
+        # Quinic acid should have at least 4 oxygens attached to ring
+        # (including the carboxyl group)
+        if oxygen_count >= 4:
+            found_valid_core = True
+            break
     
-    total_oxy_groups = hydroxyl_count + ester_count
-    
-    # Quinic acid derivatives should have at least 3 oxygen-containing groups
-    # (including both free hydroxyls and ester groups) attached to the cyclohexane ring
-    if total_oxy_groups < 3:
-        return False, f"Insufficient oxygen-containing groups (found {total_oxy_groups}, need at least 3)"
+    if not found_valid_core:
+        return False, "No cyclohexane ring with sufficient oxygen substitution found"
 
-    # Check for basic carbon framework
+    # Additional checks for overall composition
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    
     if carbon_count < 7:  # minimum carbons in quinic acid
         return False, "Too few carbons for quinic acid structure"
+    
+    if oxygen_count < 5:  # minimum oxygens in quinic acid
+        return False, "Too few oxygens for quinic acid structure"
 
-    # Additional check for cyclohexane ring with multiple oxygens
-    cyclohexane_with_oxygens = Chem.MolFromSmarts("[C]1[C]([O])[C]([O])[C]([O])[C]([O])[C]1")
-    if not mol.HasSubstructMatch(cyclohexane_with_oxygens):
-        return False, "Cyclohexane ring lacks required oxygen substitution pattern"
-
-    # Check if it's a simple carboxylic acid (must have COOH group)
-    carboxyl_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H1]")
-    if not mol.HasSubstructMatch(carboxyl_pattern) and not mol.HasSubstructMatch(Chem.MolFromSmarts("[CX3](=[OX1])[OX2][C]")):
-        return False, "No carboxylic acid or ester group found"
+    # Look for ester groups (for derivatives)
+    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
+    ester_count = len(mol.GetSubstructMatches(ester_pattern))
+    
+    # Check for hydroxyl groups
+    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H1]")
+    hydroxyl_count = len(mol.GetSubstructMatches(hydroxyl_pattern))
+    
+    # Must have either free hydroxyls or ester groups
+    if hydroxyl_count + ester_count < 3:
+        return False, "Insufficient hydroxyl/ester groups"
 
     return True, "Contains cyclohexane core with carboxylic acid and multiple hydroxyl/ester groups characteristic of quinic acid"
