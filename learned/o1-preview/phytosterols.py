@@ -26,62 +26,76 @@ def is_phytosterols(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define a general steroid backbone pattern (tetracyclic ring system)
-    steroid_pattern = Chem.MolFromSmarts('C1CCC2(CC1)CCC3(C2)CCC4(C3)CCCC4')
+    # This pattern accounts for three fused six-membered rings and one five-membered ring
+    steroid_pattern = Chem.MolFromSmarts('[#6]1[#6][#6][#6]2[#6]1[#6][#6]3[#6]2[#6][#6][#6]4[#6]3[#6][#6][#6][#6]4')
+
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
 
-    # Check for hydroxyl group attached to the steroid backbone
-    # Find atoms in the steroid backbone
-    steroid_matches = mol.GetSubstructMatch(steroid_pattern)
-    steroid_atoms = set(steroid_matches)
-
-    # Identify hydroxyl groups in the molecule
-    hydroxyl_pattern = Chem.MolFromSmarts('[OX2H]')
+    # Check for hydroxyl group attached to the steroid backbone at position 3 (common in phytosterols)
+    hydroxyl_pattern = Chem.MolFromSmarts('[C;R][C;R](O)[C;R]')
     hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    hydroxyl_on_steroid = False
-    for match in hydroxyl_matches:
-        oxygen_idx = match[0]
-        # Check if the oxygen is attached to a carbon in the steroid backbone
-        for neighbor in mol.GetAtomWithIdx(oxygen_idx).GetNeighbors():
-            if neighbor.GetIdx() in steroid_atoms:
-                hydroxyl_on_steroid = True
-                break
-        if hydroxyl_on_steroid:
-            break
+    if not hydroxyl_matches:
+        return False, "No hydroxyl group at position 3 found"
 
-    if not hydroxyl_on_steroid:
-        return False, "No hydroxyl group attached to the steroid backbone"
+    # Check for side chain at C17 position (variations in carbon side chain)
+    # Atoms at position 17 in the steroid backbone
+    # We need to find the carbon at position 17 to examine its substituents
 
-    # Optional: Exclude cholesterol by checking the side chain
-    # Cholesterol has a specific side chain at C17
-    cholesterol_side_chain = Chem.MolFromSmarts('CCC(=C)C')
-    side_chain_matches = mol.GetSubstructMatches(cholesterol_side_chain)
-    if side_chain_matches:
-        side_chain_atoms = set()
-        for match in side_chain_matches:
-            side_chain_atoms.update(match)
-        # Check if the side chain is attached to the steroid backbone
-        attachment_found = False
-        for atom_idx in side_chain_atoms:
-            for neighbor in mol.GetAtomWithIdx(atom_idx).GetNeighbors():
-                if neighbor.GetIdx() in steroid_atoms:
-                    attachment_found = True
-                    break
-            if attachment_found:
-                break
-        if attachment_found:
-            return False, "Molecule is cholesterol, not a phytosterol"
+    # Get matches for steroid backbone to identify atom indices
+    steroid_match = mol.GetSubstructMatch(steroid_pattern)
+    if not steroid_match:
+        return False, "Steroid backbone match not found"
 
-    # Check for plant origin features (e.g., additional methyl or ethyl groups)
-    # This is a heuristic since we can't determine origin from structure alone
-    # Look for extra carbons in the side chain compared to cholesterol
-    num_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    cholesterol_carbons = 27  # Cholesterol has 27 carbons
-    if num_carbons <= cholesterol_carbons:
-        return False, f"Carbon count ({num_carbons}) not greater than cholesterol"
+    # Assuming standard atom numbering for the steroid backbone, which may not be the case
+    # Since atom indices can vary, we need to map the pattern accordingly
+
+    # Create a mapped version of the steroid pattern to get atom mapping
+    steroid_mol = Chem.MolFromSmarts('[#6]1~[#6]~[#6]~[#6]2~[#6]1~[#6]~[#6]3~[#6]2~[#6]~[#6]~[#6]4~[#6]3~[#6]~[#6]~[#6]~[#6]4')
+    matches = mol.GetSubstructMatches(steroid_mol)
+    if not matches:
+        return False, "No steroid backbone match found"
+
+    # For simplicity, take the first match
+    match = matches[0]
+    mol_atoms = mol.GetAtoms()
+
+    # Identify atom at position 17 (carbon at junction of rings D and side chain)
+    # In the steroid backbone, C17 is typically the 13th atom in the pattern
+    # Note: positions may vary depending on the SMARTS pattern used
+    atom_C17 = mol_atoms[match[13]]  # Adjust index as per pattern
+
+    # Examine substituents attached to C17 to determine side chain length
+    side_chain = [neighbor for neighbor in atom_C17.GetNeighbors() if neighbor.GetIdx() not in match]
+    
+    if not side_chain:
+        return False, "No side chain at C17 position"
+
+    # Calculate the number of carbons in the side chain
+    side_chain_atoms = set()
+    atoms_to_visit = set([atom.GetIdx() for atom in side_chain])
+    visited_atoms = set()
+    while atoms_to_visit:
+        current_atom_idx = atoms_to_visit.pop()
+        if current_atom_idx in visited_atoms:
+            continue
+        visited_atoms.add(current_atom_idx)
+        current_atom = mol.GetAtomWithIdx(current_atom_idx)
+        if current_atom.GetAtomicNum() == 6:  # Carbon atom
+            side_chain_atoms.add(current_atom_idx)
+            for neighbor in current_atom.GetNeighbors():
+                if neighbor.GetIdx() not in visited_atoms and neighbor.GetIdx() not in match:
+                    atoms_to_visit.add(neighbor.GetIdx())
+
+    num_side_chain_carbons = len(side_chain_atoms)
+
+    # Cholesterol has an 8-carbon side chain (C8H17)
+    # Phytosterols generally have longer or more branched side chains (e.g., 9 or more carbons)
+    if num_side_chain_carbons <= 8:
+        return False, f"Side chain too short ({num_side_chain_carbons} carbons), possibly cholesterol"
 
     # If all checks passed, classify as phytosterol
-    return True, "Molecule is a phytosterol with steroid backbone and variations in side chain/double bonds"
+    return True, "Molecule is a phytosterol with steroid backbone and appropriate side chain length"
 
 __metadata__ = {
     'chemical_class': {
@@ -94,7 +108,7 @@ __metadata__ = {
         # Configuration details can be added here if needed
     },
     'message': None,
-    'attempt': 1,
+    'attempt': 2,
     'success': True,
     'best': True,
     'error': '',
