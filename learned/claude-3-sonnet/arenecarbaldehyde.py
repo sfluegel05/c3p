@@ -24,55 +24,40 @@ def is_arenecarbaldehyde(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Find all aldehyde groups directly connected to aromatic atoms
-    # [CH,CH2]=O attached to aromatic atom
-    aldehyde_pattern = Chem.MolFromSmarts("[a]!@[$([CH]=O)]")
+    # Find all aldehyde groups
+    # Match both explicit and implicit hydrogen representations
+    aldehyde_pattern = Chem.MolFromSmarts("[$([CH](=O))]")
     matches = mol.GetSubstructMatches(aldehyde_pattern)
     
-    if matches:
-        # Verify each match
-        for match in matches:
-            aromatic_atom = mol.GetAtomWithIdx(match[0])
-            aldehyde_carbon = mol.GetAtomWithIdx(match[1])
-            
-            # Double check the aldehyde carbon
-            if aldehyde_carbon.GetTotalNumHs() != 1:
+    if not matches:
+        return False, "No aldehyde group found"
+
+    # For each aldehyde carbon, check if it's connected to an aromatic system
+    for match in matches:
+        aldehyde_carbon = mol.GetAtomWithIdx(match[0])
+        
+        # Get all neighboring atoms of the aldehyde carbon
+        for neighbor in aldehyde_carbon.GetNeighbors():
+            # Skip the oxygen of the aldehyde group
+            if neighbor.GetAtomicNum() == 8 and neighbor.GetTotalNumHs() == 0:
                 continue
                 
-            # Verify the aromatic atom is part of a valid aromatic system
-            if aromatic_atom.GetIsAromatic():
-                # Get the ring this atom belongs to
-                ring_info = mol.GetRingInfo()
-                atom_rings = ring_info.AtomRings()
-                
-                for ring in atom_rings:
-                    if aromatic_atom.GetIdx() in ring:
-                        # Verify the ring is truly aromatic (all atoms in ring are aromatic)
-                        ring_atoms = [mol.GetAtomWithIdx(i) for i in ring]
-                        if all(atom.GetIsAromatic() for atom in ring_atoms):
-                            return True, "Contains aldehyde group directly attached to aromatic ring"
-
-    # Alternative pattern for formyl groups
-    formyl_pattern = Chem.MolFromSmarts("[a]!@C(=O)[H]")
-    matches = mol.GetSubstructMatches(formyl_pattern)
-    
-    if matches:
-        # Similar verification as above
-        for match in matches:
-            aromatic_atom = mol.GetAtomWithIdx(match[0])
-            formyl_carbon = mol.GetAtomWithIdx(match[1])
+            # Check if the neighbor is part of an aromatic system
+            if neighbor.GetIsAromatic():
+                return True, "Contains aldehyde group directly attached to aromatic ring"
             
-            if aromatic_atom.GetIsAromatic():
-                ring_info = mol.GetRingInfo()
-                atom_rings = ring_info.AtomRings()
-                
-                for ring in atom_rings:
-                    if aromatic_atom.GetIdx() in ring:
-                        ring_atoms = [mol.GetAtomWithIdx(i) for i in ring]
-                        if all(atom.GetIsAromatic() for atom in ring_atoms):
-                            return True, "Contains aldehyde group directly attached to aromatic ring"
+            # Check if neighbor is part of a ring that might be aromatic
+            ring_info = mol.GetRingInfo()
+            atom_rings = ring_info.AtomRings()
+            
+            for ring in atom_rings:
+                if neighbor.GetIdx() in ring:
+                    # Check if any atom in this ring is aromatic
+                    ring_atoms = [mol.GetAtomWithIdx(i) for i in ring]
+                    if any(atom.GetIsAromatic() for atom in ring_atoms):
+                        return True, "Contains aldehyde group directly attached to aromatic ring system"
 
-    return False, "No aldehyde group directly attached to aromatic ring"
+    return False, "No aldehyde group attached to aromatic ring"
 
 def test_smiles():
     """Test function with known examples"""
