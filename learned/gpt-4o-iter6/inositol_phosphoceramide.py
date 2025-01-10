@@ -11,8 +11,7 @@ def is_inositol_phosphoceramide(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is an inositol phosphoceramide, False otherwise
-        str: Reason for classification
+        bool, str: True and reason if the molecule is an inositol phosphoceramide, False otherwise
     """
     
     # Parse SMILES
@@ -20,25 +19,25 @@ def is_inositol_phosphoceramide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Identify inositol ring (6-membered carbocycle with multiple hydroxyl groups)
-    inositol_smarts = "C1[C@H](O)[C@H](O)[C@H](O)[C@H](O)[C@H](O)O1"
+    # Identify inositol ring (general form)
+    inositol_smarts = "C1OC(O)C(O)C(O)C(O)C1O"  # Allow variations, ignore stereochemistry
     inositol_pattern = Chem.MolFromSmarts(inositol_smarts)
     if not mol.HasSubstructMatch(inositol_pattern):
         return False, "No inositol ring detected"
 
-    # Identify phosphodiester bridge
-    phospho_smarts = "OP(=O)(O)OC"
+    # Identify phosphodiester bridge (general form)
+    phospho_smarts = "OP(=O)([O-])O"  # Focus on the bridge between inositol and ceramide
     phospho_pattern = Chem.MolFromSmarts(phospho_smarts)
     if not mol.HasSubstructMatch(phospho_pattern):
         return False, "No phosphodiester bridge found"
 
-    # Identify ceramide moiety (amide bond plus long hydrocarbon chain)
-    ceramide_smarts = "N[C@@H](CO)C(=O)[C@H](O)C"
+    # Identify ceramide moiety (general form)
+    ceramide_smarts = "NC(=O)C[OH]"  # More general to allow for different ceramide-like structures
     ceramide_pattern = Chem.MolFromSmarts(ceramide_smarts)
     if not mol.HasSubstructMatch(ceramide_pattern):
         return False, "No ceramide moiety found"
 
-    # Ensure sufficient length of hydrocarbon chains
+    # General checks for minimum carbon count
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if c_count < 30:
         return False, "Insufficient carbon atoms for long chain characteristic of ceramides"
