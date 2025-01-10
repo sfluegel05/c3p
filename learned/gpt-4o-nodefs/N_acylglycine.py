@@ -21,19 +21,18 @@ def is_N_acylglycine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for the glycine moiety, accounting for stereochemistry.
+    # Look for the glycine pattern (NCC(=O)O)
     glycine_pattern = Chem.MolFromSmarts("NCC(=O)O")
     if not mol.HasSubstructMatch(glycine_pattern):
         return False, "No glycine moiety found"
 
-    # Look for the acyl group directly attached to the nitrogen of the glycine moiety.
-    # Allows variable carbon attachment to cover more diverse N-acyl variations.
-    n_acyl_pattern = Chem.MolFromSmarts("N[C;R0][CX4,CX3](=O)")
+    # Determine if the nitrogen has a carbonyl group (acyl group) attached
+    n_acyl_pattern = Chem.MolFromSmarts("N-C(=O)")
     if not mol.HasSubstructMatch(n_acyl_pattern):
-        return False, "No correctly attached acyl group found"
+        return False, "No acyl group attached to the glycine nitrogen"
 
-    return True, "Contains glycine moiety linked to an acyl group with proper attachment"
+    return True, "Contains glycine moiety linked to an acyl group"
 
-# Example usage:
+# Example usage of the function
 # test_smiles = "CCCCCCCCCCCC(=O)NCC(O)=O"  # SMILES for N-dodecanoylglycine
 # is_N_acylglycine(test_smiles)
