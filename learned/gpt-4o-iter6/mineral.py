@@ -19,36 +19,32 @@ def is_mineral(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for the presence of metal cations (basic metal types: Alkali, Alkaline earth, transition metals)
-    metals = ['Na', 'K', 'Ca', 'Mg', 'Fe', 'Zn', 'Cu', 'Ba', 'Cs', 'La', 'Sb', 'Ni', 'Al']
-    metal_count = 0
-
+    # Check for presence of metal cations or major mineral components
+    elements = ['Na', 'K', 'Ca', 'Mg', 'Fe', 'Zn', 'Cu', 'Ba', 'Cs', 'La', 'Sb', 'Ni', 'Al', 'Si']
+    element_count = 0
     for atom in mol.GetAtoms():
-        if atom.GetSymbol() in metals:
-            metal_count += 1
+        if atom.GetSymbol() in elements:
+            element_count += 1
 
-    if metal_count < 1:
-        return False, "No metal ions detected, unlikely to be a mineral"
+    if element_count < 1:
+        return False, "No typical mineral components detected"
 
-    # Check if there are counter ions or complex anions often found in minerals
+    # Check for mineral cationic or anionic patterns
     anion_patterns = [
-        Chem.MolFromSmarts('[O-]', asSmarts=True),  # Common oxide or simple anionic pattern
-        Chem.MolFromSmarts('P([O-])(=O)', asSmarts=True),  # Phosphate type pattern
-        Chem.MolFromSmarts('S([O-])(=O)', asSmarts=True)  # Sulfate type pattern
+        Chem.MolFromSmarts('[O-]'),  # Oxide pattern
+        Chem.MolFromSmarts('P(=O)([O-])[O-]'),  # Phosphate pattern
+        Chem.MolFromSmarts('S(=O)([O-])[O-]'),  # Sulfate pattern
+        Chem.MolFromSmarts('[C](=O)([O-])'),  # Carbonate pattern
     ]
-    anion_count = 0
 
     for pattern in anion_patterns:
         if mol.HasSubstructMatch(pattern):
-            anion_count += 1
+            return True, "Contains characteristic anions and elements typical of minerals"
 
-    if anion_count > 0:
-        return True, "Contains characteristic anions and metal ions typical of minerals"
-
-    # Check for hydrate structures (e.g., multiple water molecules present)
-    water_pattern = Chem.MolFromSmarts("O")
+    # Check for hydrate or water patterns suggesting geological or hydrated forms
+    water_pattern = Chem.MolFromSmarts('O')
     water_matches = mol.GetSubstructMatches(water_pattern)
-    if len(water_matches) >= 4:
-        return True, "Contains multiple water molecules similar to hydrates found in minerals"
+    if len(water_matches) >= 3:
+        return True, "Contains multiple water molecules characteristic of hydrated minerals"
 
     return False, "Does not meet typical mineral structure criteria"
