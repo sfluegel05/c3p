@@ -24,23 +24,21 @@ def is_monoacylglycerol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for glycerol backbone pattern with two hydroxyl groups
+    # Look for a glycerol backbone which is C-C-C with hydroxyl groups
     glycerol_pattern = Chem.MolFromSmarts("C(CO)CO")
     if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone with two hydroxyl groups found"
-    
-    # Look for ester linkage
+        return False, "No glycerol backbone found"
+
+    # Look for an ester linkage (C(=O)O) 
     ester_pattern = Chem.MolFromSmarts("C(=O)O")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) != 1:
         return False, f"Found {len(ester_matches)} ester groups, need exactly 1"
 
-    # Verify the presence of a single acyl group
-    # There should be a carbon chain attached to the ester linkage
-    fatty_acid_chain_pattern = Chem.MolFromSmarts("C(=O)OC(C)C")
-    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_chain_pattern)
-    if not fatty_acid_matches:
-        return False, "Missing acyl group attached to the ester linkage"
+    # We assume that a long hydrocarbon chain is an acyl group
+    acyl_group_pattern = Chem.MolFromSmarts("C(=O)[C;!R]")
+    if not mol.HasSubstructMatch(acyl_group_pattern):
+        return False, "No appropriate acyl group found attached to ester linkage"
 
     return True, "Contains glycerol backbone with one acyl group and two hydroxyl groups"
 
