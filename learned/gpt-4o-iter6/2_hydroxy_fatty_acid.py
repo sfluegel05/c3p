@@ -10,29 +10,30 @@ def is_2_hydroxy_fatty_acid(smiles: str):
     
     Args:
         smiles (str): SMILES string of the molecule
-
+    
     Returns:
         bool: True if molecule is a 2-hydroxy fatty acid, False otherwise
         str: Reason for classification
     """
-    # Parse SMILES
+    # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for carboxylic acid group (C(=O)O)
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
-    carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
-    if not carboxylic_acid_matches:
-        return False, "No carboxylic acid group found"
+    # Look for both saturated and unsaturated carboxylic acid chains
+    # Match carboxylic acid group (C(=O)O) and ensure the hydroxy is at the second carbon
+    pattern = Chem.MolFromSmarts("[C;!R](O)[C;!R;!D4](O)[C;!R](=O)O")
+    
+    # Ensure no complex rings or other large functionalities exist
+    complex_functional_groups = Chem.MolFromSmarts("[R]=[!N,#7,#8,#16]") # Any rings or non-S/O/N heteroatoms 
+    if mol.HasSubstructMatch(complex_functional_groups):
+        return False, "Molecule contains complex or cyclic functionalities typical of multi-ring structures"
 
-    # Check for alpha/2-hydroxy group
-    # General pattern for alpha-hydroxy positioning: longest carbon chain ending in CO group, 2nd carbon having OH
-    alpha_hydroxy_pattern = Chem.MolFromSmarts("[CX4,cX3][CX4,cX3](O)[CX3](=O)O")
-    if not mol.HasSubstructMatch(alpha_hydroxy_pattern):
+    # Perform the matching
+    if mol.HasSubstructMatch(pattern):
+        return True, "Contains 2-hydroxy group with carboxylic acid at the 2-position"
+    else:
         return False, "No 2-hydroxy group found at the alpha position"
-
-    return True, "Contains 2-hydroxy group with carboxylic acid"
 
 # Example usage
 print(is_2_hydroxy_fatty_acid("CCCCCCC[C@@H](O)C(O)=O"))  # (R)-2-hydroxynonanoic acid
