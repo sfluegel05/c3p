@@ -27,15 +27,18 @@ def is_cyclic_fatty_acid(smiles: str):
     if num_rings == 0:
         return False, "No ring structure found"
 
-    # Look for carboxylic acid group
+    # Look for carboxylic acid group or similar structures
     carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[OH]")
-    if not mol.HasSubstructMatch(carboxylic_acid_pattern):
-        return False, "No carboxylic acid group found"
+    ester_pattern = Chem.MolFromSmarts("C(=O)O")  # to include ester-like patterns
+    if not mol.HasSubstructMatch(carboxylic_acid_pattern) and not mol.HasSubstructMatch(ester_pattern):
+        return False, "No carboxylic acid or ester group found"
 
-    # Check for hydrocarbon chains - adjusting the pattern to capture broader lengths
-    # Altered to check for smaller sequences that could form longer chains through fragments
-    hydrocarbon_chain_pattern = Chem.MolFromSmarts("[CH2]~[CH2]~[CH2]")
+    # Check for hydrocarbon chains, allowing for flexibility in length and interruptions
+    hydrocarbon_chain_pattern = Chem.MolFromSmarts("[CH2]~[CH,CH2]*~[CH2]")
     if not mol.HasSubstructMatch(hydrocarbon_chain_pattern):
         return False, "No significant hydrocarbon chains found"
 
-    return True, f"Contains {num_rings} ring structure(s) with fatty acid traits (carboxylic acid group and hydrocarbon chain)"
+    # Consider inclusion of exocyclic functionalities or specific structural features if appropriate
+    # For example, epoxy, hydroxyl, or double bonds adjacent to rings
+
+    return True, f"Contains {num_rings} ring structure(s) with fatty acid traits (carboxylic acid or ester group and hydrocarbon chain)"
