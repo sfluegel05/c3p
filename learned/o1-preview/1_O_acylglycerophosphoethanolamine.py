@@ -2,10 +2,12 @@
 Classifies: CHEBI:55493 1-O-acylglycerophosphoethanolamine
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_1_O_acylglycerophosphoethanolamine(smiles: str):
     """
     Determines if a molecule is a 1-O-acylglycerophosphoethanolamine based on its SMILES string.
+
     A 1-O-acylglycerophosphoethanolamine is a glycerophosphoethanolamine having an O-acyl substituent at the 1-position of the glycerol fragment.
 
     Args:
@@ -15,33 +17,37 @@ def is_1_O_acylglycerophosphoethanolamine(smiles: str):
         bool: True if molecule is a 1-O-acylglycerophosphoethanolamine, False otherwise
         str: Reason for classification
     """
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS for phosphoethanolamine group (allowing for different protonation states)
-    phosphoethanolamine_smarts = 'O[P](=O)(O)-O-CC[N]'
-    phosphoethanolamine = Chem.MolFromSmarts(phosphoethanolamine_smarts)
-    if not mol.HasSubstructMatch(phosphoethanolamine):
-        return False, "Phosphoethanolamine group not found"
+    # Look for phosphoethanolamine group
+    phosphoethanolamine_smarts = "O[P](O)(=O)OCCN"
+    phosphoethanolamine_pattern = Chem.MolFromSmarts(phosphoethanolamine_smarts)
+    if not mol.HasSubstructMatch(phosphoethanolamine_pattern):
+        return False, "No phosphoethanolamine group found"
 
-    # Define SMARTS for glycerol backbone with free hydroxyl at position 2
-    glycerol_smarts = 'OCC(O)CO'
-    glycerol = Chem.MolFromSmarts(glycerol_smarts)
-    if not mol.HasSubstructMatch(glycerol):
-        return False, "Glycerol backbone with free hydroxyl at position 2 not found"
+    # Look for ester groups (acyl chains attached via ester linkage)
+    ester_pattern = Chem.MolFromSmarts("C(=O)O[C]")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    if len(ester_matches) != 1:
+        return False, f"Expected one ester group, found {len(ester_matches)}"
 
-    # Define SMARTS for ester linkage at position 1 (acyl group)
-    ester_smarts = 'OC(=O)[C]'
-    ester = Chem.MolFromSmarts(ester_smarts)
-    if not mol.HasSubstructMatch(ester):
-        return False, "Ester linkage at position 1 not found"
+    # Optionally, check for a free hydroxyl group (at position 2)
+    hydroxyl_pattern = Chem.MolFromSmarts("[C;H1][OH]")
+    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
+    if len(hydroxyl_matches) < 1:
+        return False, "No free hydroxyl group at position 2 found"
 
-    # Ensure correct connectivity by defining a full pattern
-    full_pattern_smarts = 'OC(=O)C(O)COP(O)(=O)OCC[N]'
-    full_pattern = Chem.MolFromSmarts(full_pattern_smarts)
-    if not mol.HasSubstructMatch(full_pattern):
-        return False, "Molecule does not match the complete 1-O-acylglycerophosphoethanolamine structure"
+    return True, "Contains phosphoethanolamine group and one acyl chain attached via ester linkage"
 
-    return True, "Matches 1-O-acylglycerophosphoethanolamine structure"
+__metadata__ = {
+    'chemical_class': {
+        'id': None,
+        'name': '1-O-acylglycerophosphoethanolamine',
+        'definition': 'A glycerophosphoethanolamine having an unspecified O-acyl substituent at the 1-position of the glycerol fragment.',
+        'parents': []
+    }
+}
