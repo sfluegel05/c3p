@@ -21,9 +21,9 @@ def is_isoflavones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Update SMARTS pattern for the 3-aryl-1-benzopyran-4-one structure
-    # This pattern should capture the core structure with variations
-    isoflavone_pattern = Chem.MolFromSmarts("[cC]1[cC](-c2ccccc2)[cC](=O)oc3ccccc13")
+    # Updated SMARTS pattern for the 3-aryl-1-benzopyran-4-one structure
+    # The pattern ensures the core structure is captured with flexibility for variations
+    isoflavone_pattern = Chem.MolFromSmarts("c1cc([cH]2c(=O)c3ccccc3o2)cc1-c4ccccc4")
 
     # Check if the molecule contains the isoflavone pattern
     if not mol.HasSubstructMatch(isoflavone_pattern):
