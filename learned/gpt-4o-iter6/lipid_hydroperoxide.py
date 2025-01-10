@@ -21,27 +21,14 @@ def is_lipid_hydroperoxide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for hydroperoxy groups (-OOH)
-    hydroperoxy_pattern = Chem.MolFromSmarts("[O][O][H]")
-    hydroperoxy_matches = mol.GetSubstructMatches(hydroperoxy_pattern)
-    if not hydroperoxy_matches:
+    # Look for hydroperoxy groups (-OO[H])
+    hydroperoxy_pattern = Chem.MolFromSmarts("[CX4,CX3,CX2][OX2][OX2H]")
+    if not mol.HasSubstructMatch(hydroperoxy_pattern):
         return False, "No hydroperoxy group found"
-    
-    # Improve lipid detection by refining carbon chain pattern and checking for common lipid features
-    # Check for long carbon chains including possible double bonds and branching
-    carbon_chain_pattern = Chem.MolFromSmarts("[C](=[C])[C]")  # Assumes presence of bonds typical of lipids
-    carbon_chain_matches = mol.GetSubstructMatches(carbon_chain_pattern)
-    if carbon_chain_matches:
-        # Checking for long carbon chain with bonds resembling lipid characteristics
-        carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-        double_bond_count = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE)
-        
-        if carbon_count >= 10 and double_bond_count >= 2:
-            return True, "Contains hydroperoxy group(s) within a lipid structure"
-        
-    # Checking for the presence of end groups like carboxylic acid that are common in lipids
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[O]")
-    if mol.HasSubstructMatch(carboxylic_acid_pattern):
-        return True, "Contains hydroperoxy group(s) within a lipid structure"
-    
-    return False, "Does not fit lipid hydroperoxide profile"
+
+    # Assume lipid if it contains a long hydrocarbon chain
+    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if carbon_count < 12:
+        return False, f"Carbon chain too short for typical lipids: found {carbon_count} carbons"
+
+    return True, "Contains hydroperoxy group(s) within a lipid structure"
