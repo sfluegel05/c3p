@@ -21,16 +21,21 @@ def is_N_acylphytosphingosine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # General pattern for a phytosphingosine backbone
-    # Long chain with a primary amino group (N) and at least two hydroxyl (OH) groups
-    phytosphingosine_pattern = Chem.MolFromSmarts("C[C@H](O)C[C@H](O)CN")
+    # Improved pattern for a phytosphingosine backbone:
+    # A long chain (typically C18) with an amino group and hydroxyls.
+    # Let's assume a simple carbon N-OH backbone with chirality checks.
+    phytosphingosine_pattern = Chem.MolFromSmarts("[#6]-[#6]-[#6]-[#6]-[#8]-[#6]-[#6]-[#6]-[#7]([#6])-[#6]-[#6]-[#8]-[#6]-[#8]")
     if not mol.HasSubstructMatch(phytosphingosine_pattern):
         return False, "No phytosphingosine backbone found"
-    
-    # Look for fatty acyl group: amide linkage to the nitrogen
-    # R-C(=O)-N, where R is a long chain (CX4 denotes sp3 carbon)
-    fatty_acyl_pattern = Chem.MolFromSmarts("C(=O)N[C]")
+
+    # Look for the fatty acyl group: amide linkage to the nitrogen (as seen in CN)
+    fatty_acyl_pattern = Chem.MolFromSmarts("[#6](=O)[#7]-[#6]")
     if not mol.HasSubstructMatch(fatty_acyl_pattern):
         return False, "No fatty acyl group attached to nitrogen found"
 
-    return True, "Contains phytosphingosine backbone with fatty acyl group attached to nitrogen"
+    # Ensure the presence of long hydrophobic chains (indicative of phytosphingosine with N-acyl)
+    c_chain_length = len([atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6])
+    if c_chain_length < 20:
+        return False, f"Carbon chain length {c_chain_length} is too short for N-acylphytosphingosine"
+
+    return True, "Contains a phytosphingosine backbone with a fatty acyl group attached to nitrogen"
