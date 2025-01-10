@@ -6,12 +6,13 @@ Classifies: vitamin D
 """
 
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_vitamin_D(smiles: str):
     """
     Determines if a molecule is a vitamin D compound based on its SMILES string.
-    Vitamin D compounds are secosteroids with a broken B-ring (9,10-seco-steroids),
-    characterized by a triene system in the opened ring and specific stereochemistry.
+    Vitamin D compounds are secosteroids with a broken B-ring, resulting in three rings.
+    They have a conjugated triene system and contain hydroxyl groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,28 +27,29 @@ def is_vitamin_D(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the vitamin D secosteroid skeleton SMARTS pattern
-    # The pattern represents the opened B-ring with a conjugated triene system
-    vitamin_d_skeleton_smarts = """
-    C1=C[C@H]2CC[C@@]3(C1)C=C\C=C\C4=C3CCCC4
-    """
-    vitamin_d_pattern = Chem.MolFromSmarts(vitamin_d_skeleton_smarts.strip())
-    if vitamin_d_pattern is None:
-        return False, "Invalid SMARTS pattern"
+    # Get ring information
+    ring_info = mol.GetRingInfo()
+    num_rings = ring_info.NumRings()
+    if num_rings != 3:
+        return False, f"Molecule has {num_rings} rings, expected 3 for a secosteroid"
 
-    # Check for the secosteroid skeleton match
-    if not mol.HasSubstructMatch(vitamin_d_pattern):
-        return False, "No vitamin D secosteroid skeleton found"
-    
+    # Check for conjugated triene system (C=C-C=C-C=C)
+    triene_pattern = Chem.MolFromSmarts('C=C-C=C-C=C')
+    if not mol.HasSubstructMatch(triene_pattern):
+        return False, "No conjugated triene system found"
+
     # Check for at least one hydroxyl group
     hydroxyl_pattern = Chem.MolFromSmarts('[OX2H]')
     hydroxyls = mol.GetSubstructMatches(hydroxyl_pattern)
     if len(hydroxyls) == 0:
         return False, "No hydroxyl groups found"
-    
-    # Additional check for secosteroid core with triene system
-    triene_pattern = Chem.MolFromSmarts('C=C-C=C-C=C')
-    if not mol.HasSubstructMatch(triene_pattern):
-        return False, "No conjugated triene system found"
 
-    return True, "Contains vitamin D secosteroid skeleton with triene system"
+    # Optionally, check for secosteroid core using a subset of the steroid skeleton
+    # This pattern represents a fused ring system with one ring opened
+    secosteroid_pattern = Chem.MolFromSmarts('C1CCC2C(C1)CC=C2')
+    if not mol.HasSubstructMatch(secosteroid_pattern):
+        return False, "Secosteroid core structure not found"
+
+    # Additional checks can be added as needed to improve specificity
+
+    return True, "Molecule matches vitamin D structural features"
