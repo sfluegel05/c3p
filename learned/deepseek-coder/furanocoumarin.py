@@ -26,13 +26,10 @@ def is_furanocoumarin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more general coumarin pattern (benzene fused to pyrone)
+    # Define the coumarin pattern (benzene fused to pyrone)
     coumarin_pattern = Chem.MolFromSmarts("c1ccc2c(c1)C(=O)OC=C2")
     if not mol.HasSubstructMatch(coumarin_pattern):
-        # Try an alternative coumarin pattern
-        coumarin_pattern_alt = Chem.MolFromSmarts("c1cc2c(cc1)C(=O)OC=C2")
-        if not mol.HasSubstructMatch(coumarin_pattern_alt):
-            return False, "No coumarin structure found"
+        return False, "No coumarin structure found"
 
     # Define the furan pattern (five-membered ring with one oxygen)
     furan_pattern = Chem.MolFromSmarts("o1cccc1")
@@ -41,13 +38,9 @@ def is_furanocoumarin(smiles: str):
 
     # Check if the furan ring is fused to the coumarin structure
     # We look for a pattern where the furan ring is fused to the coumarin
-    # This pattern is more general and allows for different fusion positions
-    fused_pattern = Chem.MolFromSmarts("[o;$(o1cccc1)]1cccc1.c1ccc2c(c1)C(=O)OC=C2")
+    fused_pattern = Chem.MolFromSmarts("c1ccc2c(c1)C(=O)OC=C2.o1cccc1")
     if not mol.HasSubstructMatch(fused_pattern):
-        # Try an alternative fused pattern
-        fused_pattern_alt = Chem.MolFromSmarts("[o;$(o1cccc1)]1cccc1.c1cc2c(cc1)C(=O)OC=C2")
-        if not mol.HasSubstructMatch(fused_pattern_alt):
-            return False, "Furan ring is not fused to the coumarin structure"
+        return False, "Furan ring is not fused to the coumarin structure"
 
     return True, "Contains a furan ring fused to a coumarin structure"
 
