@@ -20,77 +20,51 @@ def is_N_hydroxy_alpha_amino_acid(smiles: str):
         str: Reason for classification
     """
 
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Iterate over atoms to find nitrogen atoms
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() != 7:  # Nitrogen
-            continue
+    # Find alpha-amino acid backbone: N-C-C(=O)-O
+    amino_acid_pattern = Chem.MolFromSmarts("N-C-C(=O)[O;H1]")
+    aa_matches = mol.GetSubstructMatches(amino_acid_pattern)
+    if not aa_matches:
+        return False, "No alpha-amino acid backbone found"
 
-        nitrogen = atom
-        # Check if nitrogen is connected to an alpha carbon
-        for neighbor in nitrogen.GetNeighbors():
-            if neighbor.GetAtomicNum() != 6:  # Carbon
-                continue
-            alpha_carbon = neighbor
+    # For each match, check if nitrogen has at least one oxygen substituent
+    for match in aa_matches:
+        nitrogen_idx = match[0]
+        nitrogen_atom = mol.GetAtomWithIdx(nitrogen_idx)
 
-            # Check if alpha carbon is connected to a carboxyl group
-            has_carboxyl = False
-            oxygens = []
-            for ac_neighbor in alpha_carbon.GetNeighbors():
-                if ac_neighbor.GetAtomicNum() == 8:  # Oxygen
-                    oxygens.append(ac_neighbor)
+        # Get neighbors of nitrogen
+        n_neighbors = nitrogen_atom.GetNeighbors()
 
-            if len(oxygens) >= 2:
-                # Check bonds to oxygens
-                double_bonded = False
-                single_bonded = False
-                for oxygen in oxygens:
-                    bond = mol.GetBondBetweenAtoms(alpha_carbon.GetIdx(), oxygen.GetIdx())
-                    if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-                        double_bonded = True
-                    elif bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
-                        single_bonded = True
-                if double_bonded and single_bonded:
-                    has_carboxyl = True
+        # Check for oxygen substituents on nitrogen
+        has_n_oxygen = False
+        for neighbor in n_neighbors:
+            if neighbor.GetAtomicNum() == 8:
+                has_n_oxygen = True
+                break
+            elif neighbor.GetAtomicNum() == 7:
+                # Check for imino or oxime group (N=NOH)
+                n2_neighbors = neighbor.GetNeighbors()
+                for n2_neighbor in n2_neighbors:
+                    if n2_neighbor.GetIdx() != nitrogen_idx and n2_neighbor.GetAtomicNum() == 8:
+                        has_n_oxygen = True
+                        break
 
-            if has_carboxyl:
-                # Now check substitutions on nitrogen
-                n_has_oh = False
-                n_has_noh = False
+        if has_n_oxygen:
+            return True, "Contains N-hydroxy-alpha-amino-acid structure"
 
-                # Check for direct N-OH substitutions
-                for n_neighbor in nitrogen.GetNeighbors():
-                    if n_neighbor.GetIdx() == alpha_carbon.GetIdx():
-                        continue  # Skip alpha carbon
+        # Check for double-bonded oxygen (N=O)
+        for bond in nitrogen_atom.GetBonds():
+            if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                other_atom = bond.GetOtherAtom(nitrogen_atom)
+                if other_atom.GetAtomicNum() == 8:
+                    has_n_oxygen = True
+                    break
 
-                    if n_neighbor.GetAtomicNum() == 8:  # Oxygen
-                        # Check if oxygen is hydroxyl group
-                        if n_neighbor.GetDegree() == 1:
-                            n_has_oh = True
-
-                    elif n_neighbor.GetAtomicNum() == 7:  # Another nitrogen (possible N-hydroxyimino group)
-                        n2 = n_neighbor
-                        # Check for N-hydroxyimino group connected to amino nitrogen
-                        has_n2_double_bond = False
-                        has_n2_oh = False
-                        for n2_neighbor in n2.GetNeighbors():
-                            if n2_neighbor.GetIdx() == nitrogen.GetIdx():
-                                continue  # Skip amino nitrogen
-                            if n2_neighbor.GetAtomicNum() == 8:
-                                bond = mol.GetBondBetweenAtoms(n2.GetIdx(), n2_neighbor.GetIdx())
-                                if bond.GetBondType() == Chem.rdchem.BondType.SINGLE and n2_neighbor.GetDegree() == 1:
-                                    has_n2_oh = True
-                            elif n2_neighbor.GetAtomicNum() == 7:
-                                bond = mol.GetBondBetweenAtoms(n2.GetIdx(), n2_neighbor.GetIdx())
-                                if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-                                    has_n2_double_bond = True
-                        if has_n2_double_bond and has_n2_oh:
-                            n_has_noh = True
-
-                if n_has_oh or n_has_noh:
-                    return True, "Contains N-hydroxy-alpha-amino-acid structure"
+        if has_n_oxygen:
+            return True, "Contains N-hydroxy-alpha-amino-acid structure"
 
     return False, "Does not contain N-hydroxy-alpha-amino-acid structure"
