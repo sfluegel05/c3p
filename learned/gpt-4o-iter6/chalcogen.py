@@ -6,8 +6,7 @@ from rdkit import Chem
 def is_chalcogen(smiles: str):
     """
     Determines if a molecule is a chalcogen element based on its SMILES string.
-    Chalcogens are elements belonging to group 16 of the periodic table, including O, S, Se, Te, Po,
-    and their isotopes.
+    Chalcogens are elements belonging to group 16 of the periodic table, including O, S, Se, Te, Po.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,23 +22,19 @@ def is_chalcogen(smiles: str):
         return False, "Invalid SMILES string"
     
     # Ensure the molecule consists of a single atom
-    if mol.GetNumAtoms() == 1:
-        # Get the single atom in the molecule
-        atom = mol.GetAtomWithIdx(0)
-        
-        # Define atomic numbers for chalcogen elements (O, S, Se, Te, Po)
-        chalcogen_atomic_numbers = {8, 16, 34, 52, 84}
-        
-        # Check if the atom is a chalcogen
-        if (atom.GetAtomicNum() in chalcogen_atomic_numbers 
-            and atom.GetFormalCharge() == 0 
-            and atom.GetIsotope() == 0):
-            return True, f"Contains neutral chalcogen element with atomic number: {atom.GetAtomicNum()}"
-        elif atom.GetAtomicNum() in chalcogen_atomic_numbers:
-            # Consider isotopic forms of chalcogen elements
-            return True, f"Contains isotopic chalcogen element with atomic number: {atom.GetAtomicNum()}"
-        else:
-            return False, "No neutral chalcogen elements or isotopes found"
-    else:
-        # Specifically exclude molecules
-        return False, "SMILES does not represent a single atom; it represents a molecule"
+    if mol.GetNumAtoms() != 1:
+        return False, "SMILES does not represent a single atom"
+
+    # Define atomic numbers for chalcogen elements
+    chalcogen_atomic_numbers = {8, 16, 34, 52, 84}  # O, S, Se, Te, Po
+
+    # Check if the single atom in the molecule is a chalcogen and is neutral
+    atom = mol.GetAtomWithIdx(0)
+    atomic_num = atom.GetAtomicNum()
+    formal_charge = atom.GetFormalCharge()
+    
+    # Ensure the atom is a recognized chalcogen and is neutral
+    if atomic_num in chalcogen_atomic_numbers and formal_charge == 0:
+        return True, f"Contains neutral chalcogen element with atomic number: {atomic_num}"
+    
+    return False, "No neutral chalcogen elements found"
