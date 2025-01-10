@@ -22,24 +22,26 @@ def is_tocol(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Identify the chromanol core (chroman-6-ol)
-    chromanol_pattern = Chem.MolFromSmarts("O1CC(C)C2=C(C1)C=C(C=C2)C")
+    
+    # Define chroman-6-ol core pattern
+    chromanol_pattern = Chem.MolFromSmarts("c1(ccc2c(c1)CC(O2)C)O")
     if not mol.HasSubstructMatch(chromanol_pattern):
         return False, "No chroman-6-ol core found"
 
-    # Find the isoprenoid-like hydrocarbon chain (e.g., -CCC=C)
-    hydrocarbon_chain_pattern = Chem.MolFromSmarts("CCC=C")
-    matches = mol.GetSubstructMatches(hydrocarbon_chain_pattern)
+    # Define isoprenoid pattern as a flexible five-carbon chain structure
+    isoprenoid_pattern = Chem.MolFromSmarts("C(C)=C-C")
+    matches = mol.GetSubstructMatches(isoprenoid_pattern)
     if len(matches) < 3:
         return False, f"Found {len(matches)} isoprenoid units, need at least 3"
 
-    # Check for the correct substitution at position 2
-    # Assuming position 2 is the second carbon in the chromanol core:
-    chain_attachment_site = chromanol_pattern.GetSubstructMatch(mol)[1]
-    num_attached = sum(1 for atom in mol.GetAtomWithIdx(chain_attachment_site).GetNeighbors() if atom.GetSymbol() == 'C')
-    if num_attached < 1:
-        return False, "No valid hydrocarbon chain substitution at position 2"
+    # Check if the hydrocarbon chain is correctly attached to the position 2 carbon
+    chroman_6_ol_match = mol.GetSubstructMatch(chromanol_pattern)
+    if chroman_6_ol_match:
+        carbon_2_index = chroman_6_ol_match[1]  # position 2 in chroman-6-ol
+        carbon_2_atom = mol.GetAtomWithIdx(carbon_2_index)
+        # Check for carbon attachment
+        if not any(neighbor.GetSymbol() == 'C' for neighbor in carbon_2_atom.GetNeighbors()):
+            return False, "No valid hydrocarbon chain substitution at position 2"
 
     # Return true if all checks passed
     return True, "Contains chroman-6-ol core with valid hydrocarbon chain"
