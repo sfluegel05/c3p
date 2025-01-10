@@ -21,28 +21,28 @@ def is_phosphoinositide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS patterns for myo-inositol (consider hydroxy positioning and chiral centers)
-    inositol_pattern = Chem.MolFromSmarts("C([C@H]1[C@H]([C@@H]([C@@H]([C@H]([C@H]1O)O)O)O)O)O")
+    # Define SMARTS pattern for myo-inositol ring
+    inositol_pattern = Chem.MolFromSmarts("C1(CO)C(O)C(O)C(O)C(O)O1")
     if not mol.HasSubstructMatch(inositol_pattern):
         return False, "No myo-inositol structure found"
 
-    # Check for phosphate groups (tripleS patterns to match P(=O)(O)(O) on inositols)
+    # Check for phosphate groups (P(=O)(O)(O))
     phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)O")
     phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
     if len(phosphate_matches) < 1:
         return False, "Less than one phosphate group found"
     
-    # Define pattern for glycerol backbone linking to inositol
-    glycerol_with_fatty_acid = Chem.MolFromSmarts("OC[C@H](O)COC(=O)CC")
+    # Define pattern for glycerol backbone linking to inositol with ester linkage
+    glycerol_with_fatty_acid = Chem.MolFromSmarts("OC[C@H](O)COP(=O)(O)O")
     if not mol.HasSubstructMatch(glycerol_with_fatty_acid):
-        return False, "No glycerol backbone with fatty acid chains found"
-    
-    # Check for long hydrocarbon chains attached to glycerol backbone
-    carbon_chain_pattern = Chem.MolFromSmarts("CCCCCCCC")
-    if len(mol.GetSubstructMatches(carbon_chain_pattern)) < 2:  # At least two long chains
-        return False, "Not enough hydrocarbon chains found to match fatty acid chains"
+        return False, "No glycerol backbone with ester-linked phosphate found"
 
-    return True, "Contains myo-inositol ring with phosphate group(s) and fatty acid chains"
+    # Check for long hydrocarbon fatty acid chains (C=12 or more)
+    long_chain_pattern = Chem.MolFromSmarts("CCCCCCCCCCCC")  # At least 12 carbon chain
+    if len(mol.GetSubstructMatches(long_chain_pattern)) < 2:  # At least two such chains
+        return False, "Not enough long hydrocarbon chains found to match fatty acid chains"
+
+    return True, "Contains myo-inositol ring with phosphate group(s) and long fatty acid chains"
 
 # Example usage
 # smiles_str = "a SMILES string for a known phosphoinositide"
