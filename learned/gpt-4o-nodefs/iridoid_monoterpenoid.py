@@ -6,14 +6,12 @@ from rdkit import Chem
 def is_iridoid_monoterpenoid(smiles: str):
     """
     Determines if a molecule is an iridoid monoterpenoid based on its SMILES string.
-    An iridoid monoterpenoid typically contains a cyclopentanopyran framework and may
-    include characteristic functional groups such as lactones or carboxylic esters.
     
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if the molecule matches the iridoid monoterpenoid class, False otherwise
+        bool: True if molecule is an iridoid monoterpenoid, False otherwise
         str: Reason for classification
     """
     # Parse SMILES
@@ -21,29 +19,13 @@ def is_iridoid_monoterpenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Fixing unterminated string and checking cyclopentanopyran frameworks
-    cyclopentanopyran_smarts_variants = [
-        "C1C(O)C=CC2C1CC=C2",  # Cyclopentanopyran with different attachments
-        "C1CC2C(C1)OC=C2",  # Traditional cyclopentanopyran core
-        "C1C=CC(C1)C=O"  # Open chain forms leading to cyclic structures
-    ]
-
-    # Check for common functional groups associated with iridoid monoterpenoids
-    functional_groups_smarts = [
-        "[CX3](=O)[OX2H1]",  # Carboxylic acid
-        "[CX3](=O)[O][CX3](=O)[OX2H1]",  # Ester linkage
-        "C[C@H]1CC[C@@H](O)[C@H](O)C(=O)O1"  # Lactone ring
-    ]
-
-    # Attempt to match any of the SMARTS patterns to the molecule
-    for cp_smarts in cyclopentanopyran_smarts_variants:
-        pattern = Chem.MolFromSmarts(cp_smarts)
-        if mol.HasSubstructMatch(pattern):
-            # Further validate the presence of functional groups
-            for fg_smarts in functional_groups_smarts:
-                fg_pattern = Chem.MolFromSmarts(fg_smarts)
-                if mol.HasSubstructMatch(fg_pattern):
-                    return True, ("Compound contains a cyclopentanopyran-related framework "
-                                  "with characteristic functional groups")
-
-    return False, "No cyclopentanopyran or related framework with characteristic functional groups found; does not match typical iridoid monoterpenoid structure"
+    # Define a SMARTS pattern for a cyclopentanopyran system
+    # Note: this is simplified and may not cover all varieties of iridoid monoterpenoids
+    cyclopentanopyran_smarts = "C1CCC2C(C1)OC=C2"  # Example of pattern for a cyclopentanopyran
+    
+    # Convert the SMARTS to a molecule object
+    cyclopentanopyran_pattern = Chem.MolFromSmarts(cyclopentanopyran_smarts)
+    if mol.HasSubstructMatch(cyclopentanopyran_pattern):
+        return True, "Compound contains a cyclopentanopyran framework indicative of iridoid monoterpenoids"
+    
+    return False, "No cyclopentanopyran framework found; does not match typical iridoid monoterpenoid structure"
