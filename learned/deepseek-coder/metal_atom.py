@@ -36,12 +36,13 @@ def is_metal_atom(smiles: str):
     if atom.GetFormalCharge() != 0:
         return False, "Atom must be neutral (charge 0)"
 
-    # List of atomic numbers corresponding to metals
+    # List of atomic numbers corresponding to metals (including heavier elements)
     metal_atomic_numbers = {
         3, 4, 11, 12, 13, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
         37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51,
         55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83,
-        87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103
+        84,  # Polonium
+        87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109  # Meitnerium
     }
 
     # Check if the atomic number is in the list of metals
@@ -49,37 +50,3 @@ def is_metal_atom(smiles: str):
         return True, f"Atom with atomic number {atomic_number} is a metal"
     else:
         return False, f"Atom with atomic number {atomic_number} is not a metal"
-
-
-__metadata__ = {   'chemical_class': {   'id': 'CHEBI:33521',
-                          'name': 'metal atom',
-                          'definition': 'An atom of an element that exhibits '
-                                        'typical metallic properties, being '
-                                        'typically shiny, with high electrical '
-                                        'and thermal conductivity.',
-                          'parents': ['CHEBI:24835', 'CHEBI:24836']},
-    'config': {   'llm_model_name': 'lbl/claude-sonnet',
-                  'f1_threshold': 0.8,
-                  'max_attempts': 5,
-                  'max_positive_instances': None,
-                  'max_positive_to_test': None,
-                  'max_negative_to_test': None,
-                  'max_positive_in_prompt': 50,
-                  'max_negative_in_prompt': 20,
-                  'max_instances_in_prompt': 100,
-                  'test_proportion': 0.1},
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 150,
-    'num_false_positives': 4,
-    'num_true_negatives': 182407,
-    'num_false_negatives': 23,
-    'num_negatives': None,
-    'precision': 0.974025974025974,
-    'recall': 0.8670520231213873,
-    'f1': 0.9174311926605504,
-    'accuracy': 0.9998521228585199}
