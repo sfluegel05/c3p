@@ -21,14 +21,21 @@ def is_diketone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the SMARTS pattern for a ketone functionality
-    ketone_pattern = Chem.MolFromSmarts("C(=O)C")
+    # Define the SMARTS pattern for a ketone functionality.
+    # Ensure end atoms to prevent overlap bias in detection
+    ketone_pattern = Chem.MolFromSmarts("[CX3](=O)[CX3]")
 
-    # Find all matches of ketone functionalities
+    # Find all matches of ketone functionalities, ensuring proper atom constraints
     ketone_matches = mol.GetSubstructMatches(ketone_pattern)
 
-    # Count the number of ketone functionalities found
-    num_ketones = len(ketone_matches)
+    # Improving the accuracy of ketone count by ensuring non-overlapping detection
+    # Filtering the matches if there are any overlaps that might lead to double-counting
+    unique_ketone_centers = set()
+    for match in ketone_matches:
+        unique_ketone_centers.add(match[1])  # Considering center of ketone (carbon)
+
+    # Count the unique ketone functionalities by considering the core atom involved
+    num_ketones = len(unique_ketone_centers)
 
     if num_ketones == 2:
         return True, "Molecule contains exactly two ketone functionalities"
