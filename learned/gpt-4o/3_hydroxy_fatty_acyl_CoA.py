@@ -6,25 +6,31 @@ from rdkit import Chem
 def is_3_hydroxy_fatty_acyl_CoA(smiles: str):
     """
     Determines if a molecule is a 3-hydroxy fatty acyl-CoA based on its SMILES string.
-    A 3-hydroxy fatty acyl-CoA is a fatty acyl-CoA with a hydroxyl group attached to the third carbon.
+    A 3-hydroxy fatty acyl-CoA is represented as a fatty acyl-CoA with a hydroxyl group
+    attached at the third carbon atom of the fatty acid chain, combined with the CoA moiety.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if the molecule is a 3-hydroxy fatty acyl-CoA, False otherwise
+        bool: True if the molecule matches the 3-hydroxy fatty acyl-CoA class, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse the SMILES string to a molecule object
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define a SMARTS pattern for the 3-hydroxy group on a fatty acyl chain (R-CO-CH(OH)-R)
-    # The pattern represents a carbon chain with a hydroxyl group on the 3rd carbon,
-    # and a coenzyme A thioester group (C(=O)SCCNC(=O)...) attached
-    pattern = Chem.MolFromSmarts("CC[C@@H](O)C(=O)SCCNC(=O)")
+    # Define a SMARTS pattern for the 3-hydroxy fatty acyl-CoA
+    # Broaden the capturing of 3rd-hydroxy (tolerant to chain stereochemistry)
+    co_a_part = "C(=O)SCCNC(=O)"
+    hydroxy_fatty_acid = "CC(O)[CH2:CH]"
+    
+    # Combine patterns to look for the full motif of coenzyme and terminus
+    pattern = Chem.MolFromSmarts(hydroxy_fatty_acid + co_a_part)
+    
+    # Perform structure matching
     if mol.HasSubstructMatch(pattern):
         return True, "Contains 3-hydroxy fatty acyl-CoA structure"
 
