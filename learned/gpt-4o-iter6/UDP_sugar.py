@@ -23,18 +23,20 @@ def is_UDP_sugar(smiles: str):
         return False, "Invalid SMILES string"
 
     # SMARTS pattern for identifying the uracil part of uridine
-    uracil_pattern = Chem.MolFromSmarts("n1c(=O)[nH]c(=O)c(=C1)[*]")  # Capture the uracil ring with possible extensions
+    uracil_pattern = Chem.MolFromSmarts("n1c(=O)[nH]c(=O)c[nH]1")  # modified uracil pattern
     if not mol.HasSubstructMatch(uracil_pattern):
         return False, "No uracil moiety found"
     
-    # SMARTS pattern for diphosphate linkage
-    diphosphate_pattern = Chem.MolFromSmarts("OP(=O)([O-])[O]P(=O)([O-])O")  # Account for phosphates
+    # SMARTS pattern for the diphosphate linkage
+    diphosphate_pattern = Chem.MolFromSmarts("OP(=O)(O)OP(=O)(O)O")  # adjusted for esterified phosphates
     if not mol.HasSubstructMatch(diphosphate_pattern):
         return False, "No diphosphate linkage found"
     
     # Pattern to ensure sugar is attached through the diphosphate
-    sugar_attached_pattern = Chem.MolFromSmarts("O[C@H]1[C@@H](O)[C@H](O)[C@@H](O)[C@H]1O")  # General sugar structure
-    if not mol.HasSubstructMatch(sugar_attached_pattern):
-        return False, "No suitable sugar moiety found"
+    # The sugar pattern is difficult to generalize due to diversity, check general attachment only
+    sugar_attached_pattern = Chem.MolFromSmarts("O[C@H]([C@H](O)[C@@H](O)C(O)[C@H]O)O")  # generic aldose sugar attachment
+    phosphate_sugar_link_pattern = Chem.MolFromSmarts("O[C@H]1O[C@@H](O[C@H](O)([C@@H]1O)[O-1])O")
+    if not mol.HasSubstructMatch(sugar_attached_pattern) and not mol.HasSubstructMatch(phosphate_sugar_link_pattern):
+        return False, "No suitable sugar moiety found attached via phosphate linkage"
 
     return True, "Contains UDP group with correct sugar moiety attached via diphosphate linkage"
