@@ -5,15 +5,16 @@ Classifies: CHEBI:59238 cyclic fatty acid
 Classifies: cyclic fatty acid
 """
 from rdkit import Chem
+from rdkit.Chem import rdmolops
 
 def is_cyclic_fatty_acid(smiles: str):
     """
     Determines if a molecule is a cyclic fatty acid based on its SMILES string.
-    A cyclic fatty acid is defined as a long-chain aliphatic carboxylic acid containing anywhere in its structure a ring of atoms.
+    A cyclic fatty acid is defined as any fatty acid containing anywhere in its structure a ring of atoms.
 
     Criteria:
     - Contains a carboxylic acid group (–COOH) or carboxylate anion (–COO⁻)
-    - Has a long aliphatic chain (typically at least 8 carbons) connected to the carboxyl group
+    - Has an aliphatic chain connected to the carboxyl group (chain length can vary)
     - Contains at least one ring (aliphatic or aromatic) anywhere in the molecule
 
     Args:
@@ -46,51 +47,40 @@ def is_cyclic_fatty_acid(smiles: str):
     carboxylate_matches = mol.GetSubstructMatches(carboxylate_pattern)
     carboxyl_carbons = [match[0] for match in carboxylic_acid_matches + carboxylate_matches]
 
-    # Function to count the length of the aliphatic carbon chain connected to the carboxyl carbon
-    def count_aliphatic_chain(atom_idx, visited):
-        atom = mol.GetAtomWithIdx(atom_idx)
-        if atom_idx in visited:
-            return 0
-        visited.add(atom_idx)
-        if atom.GetAtomicNum() != 6 or atom.GetIsAromatic():
-            return 0
-        max_length = 1
-        for neighbor in atom.GetNeighbors():
-            neighbor_idx = neighbor.GetIdx()
-            bond = mol.GetBondBetweenAtoms(atom_idx, neighbor_idx)
-            # Exclude non-single bonds and bonds that lead back to the carboxyl group
-            if bond.GetBondType() != Chem.BondType.SINGLE:
-                continue
-            if neighbor.GetAtomicNum() != 6:
-                continue
-            if neighbor_idx in carboxyl_carbons:
-                continue
-            chain_length = 1 + count_aliphatic_chain(neighbor_idx, visited.copy())
-            if chain_length > max_length:
-                max_length = chain_length
-        return max_length
-
-    # Check for a long aliphatic chain connected to the carboxyl carbon
-    has_long_chain = False
+    # Check for aliphatic chain connected to the carboxyl carbon
+    has_chain = False
     for carboxyl_carbon_idx in carboxyl_carbons:
-        # Skip atoms that are part of a ring
-        if mol.GetAtomWithIdx(carboxyl_carbon_idx).IsInRing():
-            continue
-        chain_length = 0
-        for neighbor in mol.GetAtomWithIdx(carboxyl_carbon_idx).GetNeighbors():
-            neighbor_idx = neighbor.GetIdx()
-            if neighbor.GetAtomicNum() == 6 and not neighbor.GetIsAromatic():
-                length = count_aliphatic_chain(neighbor_idx, set([carboxyl_carbon_idx]))
-                if length > chain_length:
-                    chain_length = length
-        if chain_length >= 8:
-            has_long_chain = True
+        # Get the atom corresponding to the carboxyl carbon
+        carboxyl_carbon_atom = mol.GetAtomWithIdx(carboxyl_carbon_idx)
+        # Get neighbors excluding oxygens (focus on carbon chain)
+        for neighbor in carboxyl_carbon_atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 6:  # Carbon atom
+                # Use BFS to find the carbon chain length
+                visited = set()
+                queue = [(neighbor, 1)]
+                max_chain_length = 0
+                while queue:
+                    current_atom, length = queue.pop(0)
+                    idx = current_atom.GetIdx()
+                    if idx in visited:
+                        continue
+                    visited.add(idx)
+                    if current_atom.GetAtomicNum() != 6:
+                        continue
+                    max_chain_length = max(max_chain_length, length)
+                    for nbr in current_atom.GetNeighbors():
+                        if nbr.GetAtomicNum() == 6 and nbr.GetIdx() not in visited:
+                            queue.append((nbr, length + 1))
+                if max_chain_length >= 4:
+                    has_chain = True
+                    break
+        if has_chain:
             break
 
-    if not has_long_chain:
-        return False, "No sufficiently long aliphatic chain connected to carboxylic acid group"
+    if not has_chain:
+        return False, "No aliphatic chain connected to carboxylic acid group"
 
-    return True, "Molecule meets criteria for cyclic fatty acid: carboxylic acid group with long aliphatic chain and ring structure present"
+    return True, "Molecule meets criteria for cyclic fatty acid: contains carboxylic acid group, aliphatic chain, and ring structure"
 
 __metadata__ = {
     'chemical_class': {
@@ -112,7 +102,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 2,
+    'attempt': 3,
     'success': True,
     'best': True,
     'error': '',
