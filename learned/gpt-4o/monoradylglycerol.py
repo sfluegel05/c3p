@@ -22,28 +22,30 @@ def is_monoradylglycerol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Identify glycerol backbone with one substituent
-    # Glycerol backbone pattern (allowing for one substitution): (two OH groups on adjoining carbons)
-    glycerol_pattern = Chem.MolFromSmarts("[OX2H][CX4H](O)[CX4](O)O")
+    # Identify glycerol backbone pattern: C-C-C with 2 or 3 hydroxyl groups allowed
+    glycerol_pattern = Chem.MolFromSmarts("C(CO)CO")
     glycerol_matches = mol.GetSubstructMatches(glycerol_pattern)
     
     if not glycerol_matches:
         return False, "No glycerol backbone found"
     
-    # Patterns for acyl (ester linkage), alkyl, and alk-1-enyl groups
-    acyl_pattern = Chem.MolFromSmarts("C(=O)[OX2]")
-    alkyl_pattern = Chem.MolFromSmarts("C-C")
-    alk1_enyl_pattern = Chem.MolFromSmarts("C=C-C")
+    # Verify presence of exactly one substituent
+    # Patterns for substituents
+    acyl_pattern = Chem.MolFromSmarts("C(=O)O")
+    alkyl_pattern = Chem.MolFromSmarts("CC")
+    alk1_enyl_pattern = Chem.MolFromSmarts("C=CC")
     
-    # Check for exactly one type of lipid chain substituent
-    acyl_matches = mol.HasSubstructMatch(acyl_pattern)
-    alkyl_matches = mol.HasSubstructMatch(alkyl_pattern)
-    alk1_enyl_matches = mol.HasSubstructMatch(alk1_enyl_pattern)
+    # Check for the number of matching substituents
+    acyl_count = len(mol.GetSubstructMatches(acyl_pattern))
+    alkyl_count = len(mol.GetSubstructMatches(alkyl_pattern))
+    alk1_enyl_count = len(mol.GetSubstructMatches(alk1_enyl_pattern))
     
-    # Count the occurrences
-    num_matches = sum([acyl_matches, alkyl_matches, alk1_enyl_matches])
+    # Ensure only one type of substituent is detected
+    if sum([acyl_count, alkyl_count, alk1_enyl_count]) != 1:
+        return False, f"Expected one substituent, found {sum([acyl_count, alkyl_count, alk1_enyl_count])}"
     
-    if num_matches != 1:
-        return False, f"Expected one substituent, found {num_matches}"
+    # Ensure only one total substituent
+    if acyl_count > 1 or alkyl_count > 1 or alk1_enyl_count > 1:
+        return False, f"Found multiple substituents of the same type"
     
     return True, "Contains a glycerol backbone with exactly one lipid substituent"
