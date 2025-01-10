@@ -21,9 +21,8 @@ def is_isoflavones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Updated isoflavone pattern to account for common variations
-    # SMARTS pattern attempts to match the 3-phenylchromen-4-one core
-    isoflavone_pattern = Chem.MolFromSmarts('O=C1C=CC2=CC=CC=C2C1-c1ccccn1')
+    # Improved isoflavone pattern matching the 3-phenylchromen-4-one core
+    isoflavone_pattern = Chem.MolFromSmarts('O=C1C=CC2=COC3=C(C=CC=C3)C=C12')
     
     if mol.HasSubstructMatch(isoflavone_pattern):
         return True, "Contains isoflavone core structure (3-phenylchromen-4-one) with potential substituents"
