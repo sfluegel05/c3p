@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_1_2_4_triazines(smiles: str):
     """
     Determines if a molecule is a 1,2,4-triazine based on its SMILES string.
-    A 1,2,4-triazine is characterized by nitrogen atoms at positions 1, 2, and 4
-    of a six-membered ring.
+    A 1,2,4-triazine is characterized by a six-membered aromatic ring with nitrogen atoms at 
+    positions 1, 2, and 4.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,18 +22,17 @@ def is_1_2_4_triazines(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # SMARTS pattern allowing for aromatic and non-aromatic forms
-    # Example pattern (broad, to capture nitrogens at positions): 
-    triazine_patterns = [
-        Chem.MolFromSmarts("n1cnnc1"),  # Non-aromatic core
-        Chem.MolFromSmarts("c1ncnnc1"), # Aromatic core
-        Chem.MolFromSmarts("n1c[nH]nc1"), # Mixed aromaticity core
-        Chem.MolFromSmarts("c1nnc[nH]c1") # Alternative tautomeric/core form
-    ]
+    # SMARTS pattern for aromatic 1,2,4-triazine core (non-tautomeric)
+    triazine_pattern = Chem.MolFromSmarts("n1cnnc1")
     
-    # Check if the molecule contains any of the 1,2,4-triazine substructures
-    for pattern in triazine_patterns:
-        if mol.HasSubstructMatch(pattern):
-            return True, "Contains the 1,2,4-triazine core structure"
+    # Check if the molecule contains the 1,2,4-triazine substructure
+    if mol.HasSubstructMatch(triazine_pattern):
+        num_aromatic_nitrogens = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'N' and atom.GetIsAromatic())
+        
+        # Ensure exactly three aromatic nitrogen atoms as expected
+        if num_aromatic_nitrogens == 3:
+            return True, "Contains the 1,2,4-triazine core structure with appropriate aromatic nitrogen configuration"
+        else:
+            return False, "Incorrect configuration of nitrogen atoms"
     
     return False, "Does not contain the 1,2,4-triazine core structure"
