@@ -24,21 +24,43 @@ def is_11beta_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Basic steroid core pattern that's more flexible
-    # Allows for both single and double bonds in the skeleton
-    steroid_core = Chem.MolFromSmarts("[#6]~1~[#6]~[#6]~[#6]~2~[#6]~[#6]~[#6]~[#6]~3~[#6]~[#6]~[#6]~[#6]~[#6]~3~[#6]~2~[#6]~[#6]~1")
+    # Define steroid core patterns - try multiple patterns to catch different representations
+    steroid_patterns = [
+        # Basic steroid core with flexible bonds
+        "[#6]~1~[#6]~[#6]~[#6]~2~[#6]~[#6]~[#6]~[#6]~3~[#6]~[#6]~[#6]~[#6]~[#6]~3~[#6]~2~[#6]~[#6]~1",
+        # Alternative pattern focusing on the ABCD ring connectivity
+        "[#6]1~[#6]~[#6]~[#6]2~[#6]~[#6]~[#6]3~[#6]~[#6]~[#6]4~[#6]~[#6]~[#6](~[#6]~4)~[#6]~3~[#6]~2~1"
+    ]
     
-    if not mol.HasSubstructMatch(steroid_core):
+    has_steroid_core = False
+    for pattern in steroid_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            has_steroid_core = True
+            break
+            
+    if not has_steroid_core:
         return False, "No steroid core structure found"
 
-    # More specific pattern for 11β-hydroxy group
-    # This pattern looks for the characteristic 11β-OH configuration in the context of rings C and D
-    hydroxy_11beta_pattern = Chem.MolFromSmarts("[#6]~1~[#6]~[#6]~[#6]~2~[#6]~[#6]~[C@@H](O)~[#6]~[#6]~2~[#6]~1")
+    # Look for 11β-hydroxy group with correct stereochemistry
+    # This pattern specifically looks for the beta-oriented OH at position 11
+    # The pattern includes the key carbon atoms around position 11 to ensure correct connectivity
+    beta_hydroxy_patterns = [
+        # Pattern for 11β-OH with explicit stereochemistry
+        "[#6]~1~[#6]~[#6]~[#6]~2~[#6](@[H])~[#6]~[C@@]([H])(O)~[#6]~[#6]~2~[#6]~1",
+        # Alternative pattern for cases where stereochemistry is implicit
+        "[#6]~1~[#6]~[#6]~[#6]~2~[#6]~[#6]~[C@H](O)~[#6]~[#6]~2~[#6]~1"
+    ]
     
-    if not mol.HasSubstructMatch(hydroxy_11beta_pattern):
-        return False, "No 11-beta hydroxy group found"
+    has_beta_hydroxy = False
+    for pattern in beta_hydroxy_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            has_beta_hydroxy = True
+            break
+            
+    if not has_beta_hydroxy:
+        return False, "No 11-beta hydroxy group found with correct stereochemistry"
 
-    # Validate ring structure
+    # Basic validation of structure
     ring_info = mol.GetRingInfo()
     if ring_info.NumRings() < 4:
         return False, "Insufficient number of rings for steroid structure"
@@ -50,28 +72,12 @@ def is_11beta_hydroxy_steroid(smiles: str):
     if num_carbons < 19:
         return False, f"Too few carbons ({num_carbons}) for steroid structure"
     
-    if num_oxygens < 2:
-        return False, "Insufficient oxygen atoms for 11-beta-hydroxy steroid"
+    if num_oxygens < 1:
+        return False, "Must have at least one oxygen atom"
 
-    # Check for common steroid features
-    ketone_pattern = Chem.MolFromSmarts("C(=O)")
-    has_ketone = mol.HasSubstructMatch(ketone_pattern)
-    
-    hydroxy_pattern = Chem.MolFromSmarts("[#6][OH]")
-    num_hydroxy = len(mol.GetSubstructMatches(hydroxy_pattern))
-    
-    if num_hydroxy < 1:
+    # Look for hydroxy groups
+    hydroxy_pattern = Chem.MolFromSmarts("[OH]")
+    if not mol.HasSubstructMatch(hydroxy_pattern):
         return False, "No hydroxy groups found"
 
-    # Additional check for common substituents at C-17 and C-21 positions
-    c17_c21_pattern = Chem.MolFromSmarts("[#6]-[#6](=O)-[#6,#8]")
-    if not mol.HasSubstructMatch(c17_c21_pattern) and not has_ketone:
-        return False, "Missing typical steroid oxygenated substituents"
-
-    # Check molecular weight
-    mol_weight = Chem.Descriptors.ExactMolWt(mol)
-    if mol_weight < 250 or mol_weight > 800:  # Increased upper limit to account for larger derivatives
-        return False, f"Molecular weight {mol_weight:.1f} outside typical range for steroids"
-
-    # If all checks pass, it's likely an 11β-hydroxy steroid
-    return True, "Contains steroid core with 11-beta hydroxy group and appropriate substituents"
+    return True, "Contains steroid core with 11-beta hydroxy group"
