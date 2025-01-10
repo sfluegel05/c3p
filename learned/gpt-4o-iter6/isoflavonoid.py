@@ -26,9 +26,11 @@ def is_isoflavonoid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for the isoflavonoid pattern (benzopyran with aryl at position 3)
-    # General SMARTS for benzopyran with an aryl group at position 3 could be approximated as:
-    isoflavonoid_pattern = Chem.MolFromSmarts("c1cc2c(ccc3)oc3c(c2c1)c1ccccc1")
-
+    # Isoflavonoids are 1-benzopyran derivatives with an aryl group at the 3 position.
+    
+    # Isoflavonoid SMARTS pattern
+    isoflavonoid_pattern = Chem.MolFromSmarts("c1cc2oc(cc3ccc[nH]3)c3ccccc3c2c1")  # Adjust to better capture isoflavonoid structure
+    
     if mol.HasSubstructMatch(isoflavonoid_pattern):
         return True, "Contains a 1-benzopyran core with an aryl group at position 3"
     else:
