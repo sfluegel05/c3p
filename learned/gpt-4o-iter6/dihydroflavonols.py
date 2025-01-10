@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_dihydroflavonols(smiles: str):
     """
     Determines if a molecule is a dihydroflavonol based on its SMILES string.
-    Dihydroflavonols are characterized by a hydroxyflavanone structure with a hydroxy group at position 3.
+    A dihydroflavonol is a hydroxyflavanone with a hydroxyl group at position 3 of the C-ring.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -15,26 +15,22 @@ def is_dihydroflavonols(smiles: str):
         bool: True if molecule is a dihydroflavonol, False otherwise
         str: Reason for classification
     """
-    # Parse the SMILES string
+    
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more flexible SMARTS pattern for the dihydroflavonol core
-    # Allow for possible variance in stereochemistry and flexible position of hydroxyl groups
-    core_pattern = Chem.MolFromSmarts("O[C@@H]1Cc2cc(O)ccc2/C(=O)[C@H](O1)c1cc(O)ccc1")
+    # SMARTS pattern for flavanone backbone with 3-hydroxy group
+    flavanone_pattern = Chem.MolFromSmarts("O[C@H]1[C@H](O)c2ccc(O)cc2:C1=O")
+    if mol.HasSubstructMatch(flavanone_pattern):
+        return True, "Contains flavanone backbone with 3-hydroxy group"
     
-    # Check if the molecule contains the dihydroflavonol core pattern
-    if not mol.HasSubstructMatch(core_pattern):
-        return False, "Does not match generalized dihydroflavonol core structure"
+    # Check alternative orientation for stereo chemistry
+    flavanone_pattern_alternative = Chem.MolFromSmarts("O[C@@H]1[C@@H](O)c2ccc(O)cc2:C1=O")
+    if mol.HasSubstructMatch(flavanone_pattern_alternative):
+        return True, "Contains flavanone backbone with 3-hydroxy group (alternative stereochemistry)"
+    
+    return False, "Does not contain the 3-hydroxyflavanone structure"
 
-    # Pattern for the presence of hydroxy groups; focus less on specific atom indexing to match class characteristics
-    hydroxy_groups = mol.GetSubstructMatches(Chem.MolFromSmarts("O"))
-    if len(hydroxy_groups) < 3:
-        return False, "Less than three hydroxy groups detected, typical for dihydroflavonols"
-
-    # If passes all checks, it's identified as a dihydroflavonol
-    return True, "Contains dihydroflavonol core structure with sufficient hydroxylation"
-
-# Example for testing the function
-# is_dihydroflavonols("OC1C(Oc2cc(O)cc(O)c2C1=O)c1cc(O)c(O)c(O)c1")
+# Example usage: is_dihydroflavonols("OC1C(Oc2cc(O)cc(O)c2C1=O)c1cc(O)c(O)c(O)c1")
