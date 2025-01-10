@@ -6,7 +6,8 @@ from rdkit import Chem
 def is_1_monoglyceride(smiles: str):
     """
     Determines if a molecule is a 1-monoglyceride based on its SMILES string.
-    A 1-monoglyceride has a single fatty acid chain attached to the primary hydroxyl group of glycerol.
+    A 1-monoglyceride typically has a single fatty acid chain attached to the primary 
+    hydroxyl group of glycerol.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,21 +21,15 @@ def is_1_monoglyceride(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Look for glycerol backbone pattern with two free hydroxyl groups
-    glycerol_pattern = Chem.MolFromSmarts("OCC(O)CO")
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone with two free hydroxyl groups found"
-
-    # Pattern matching for ester linkage at the primary oxygen of glycerol
-    ester_pattern = Chem.MolFromSmarts("C(=O)OCC(O)CO")
-    if not mol.HasSubstructMatch(ester_pattern):
-        return False, "Ester linkage not found at primary oxygen of glycerol"
-
-    # Ensure the ester linkage leads to a long carbon chain (at least 3 carbon atoms)
-    # Start after the ester carbonyl [C(=O)] leading to a long alkyl chain
-    long_chain_pattern = Chem.MolFromSmarts("C(=O)O[C]"+"~[CH2~CH/*]")
+    
+    # Glycerol backbone with ester group at primary position
+    glycerol_ester_pattern = Chem.MolFromSmarts("O[C@@H]([C@@H](O)CO)C(=O)")
+    if not mol.HasSubstructMatch(glycerol_ester_pattern):
+        return False, "No ester linkage found at primary 1-position of glycerol"
+    
+    # Ensure ester linkage leads to a long carbon chain pattern (C3-C22)
+    long_chain_pattern = Chem.MolFromSmarts("C(=O)OC[C](C)[O]~[CH2,CH](~[CH2,CH]){2,20}")
     if not mol.HasSubstructMatch(long_chain_pattern):
-        return False, "Ester linkage does not lead to a sufficiently long carbon chain"
-
-    return True, "Contains glycerol backbone with a single fatty acid chain esterified at the 1-position"
+        return False, "Chain too short, does not match expected fatty acid chain length"
+    
+    return True, "Contains glycerol backbone with an ester linkage at the 1-position and a long fatty acid chain"
