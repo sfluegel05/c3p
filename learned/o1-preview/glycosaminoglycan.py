@@ -7,7 +7,7 @@ Classifies: glycosaminoglycan
 
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import rdqueries
 
 def is_glycosaminoglycan(smiles: str):
     """
@@ -27,46 +27,43 @@ def is_glycosaminoglycan(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Find all ring information
-    ri = mol.GetRingInfo()
-    ring_atom_sets = ri.AtomRings()
-    sugar_ring_count = 0
-    amino_sugar_count = 0
+    # Kekulize the molecule to ensure proper valence perception
+    try:
+        Chem.Kekulize(mol)
+    except Chem.KekulizeException:
+        pass
 
-    # Define SMARTS patterns
-    # General pattern for sugar ring (5 or 6-membered ring with one oxygen)
-    sugar_ring_smarts = Chem.MolFromSmarts("[#6,#8]1[#6,#8][#6,#8][#6,#8][#6,#8][#6,#8]1")
-    amino_group_smarts = Chem.MolFromSmarts("[#6]-[NX3;H2,H1]")  # Carbon attached to NH2 or NH
+    # Detect sugar rings using a more comprehensive pattern
+    # Monosaccharide rings (pyranose and furanose)
+    sugar_smarts = Chem.MolFromSmarts("""
+        [C;R]1([O;R][C;R][C;R][C;R][C;R]1) | 
+        [C;R]1([O;R][C;R][C;R][C;R]1)
+    """)
+    sugar_matches = mol.GetSubstructMatches(sugar_smarts)
+    sugar_rings = set()
+    for match in sugar_matches:
+        ring = set(match)
+        sugar_rings.add(frozenset(ring))
 
-    # Set to keep track of sugar rings
-    sugar_ring_atoms = []
-
-    # Identify sugar rings
-    for ring_atoms in ring_atom_sets:
-        ring_size = len(ring_atoms)
-        if ring_size not in (5, 6):
-            continue
-        # Extract the substructure of the ring
-        ring_mol = Chem.PathToSubmol(mol, ring_atoms)
-        # Check if ring matches sugar ring pattern
-        if ring_mol.HasSubstructMatch(sugar_ring_smarts):
-            sugar_ring_count += 1
-            sugar_ring_atoms.extend(ring_atoms)
+    sugar_ring_count = len(sugar_rings)
 
     if sugar_ring_count < 2:
         return False, f"Only found {sugar_ring_count} sugar ring(s), not a polysaccharide"
 
     # Identify amino sugars
-    amino_sugar_atoms = set()
-    for atom in mol.GetAtoms():
-        if atom.GetIdx() in sugar_ring_atoms:
+    amino_sugar_count = 0
+    for ring_atoms in sugar_rings:
+        for atom_idx in ring_atoms:
+            atom = mol.GetAtomWithIdx(atom_idx)
             if atom.GetAtomicNum() == 6:  # Carbon atom
-                # Check for amino group attached to carbon
-                if atom.HasSubstructMatch(amino_group_smarts):
-                    amino_sugar_atoms.add(atom.GetIdx())
-
-    # Count amino sugars
-    amino_sugar_count = len(amino_sugar_atoms)
+                # Look for attached amino group
+                for neighbor in atom.GetNeighbors():
+                    if neighbor.GetAtomicNum() == 7:  # Nitrogen atom
+                        # Check if it is an amino group (NH2 or NH)
+                        num_H = neighbor.GetTotalNumHs()
+                        if num_H > 0 and neighbor.GetDegree() <= 3:
+                            amino_sugar_count += 1
+                            break
 
     if amino_sugar_count == 0:
         return False, "No amino sugars found in the sugar rings"
@@ -74,6 +71,22 @@ def is_glycosaminoglycan(smiles: str):
     proportion = amino_sugar_count / sugar_ring_count
     if proportion < 0.3:
         return False, f"Amino sugars make up {proportion:.0%} of sugar units, not substantial"
+
+    # Check for glycosidic linkages between sugar rings
+    # Glycosidic bond pattern: sugar ring oxygen connected to carbon of another sugar ring
+    glycosidic_bonds = 0
+    for bond in mol.GetBonds():
+        atom1 = bond.GetBeginAtom()
+        atom2 = bond.GetEndAtom()
+        if atom1.GetIdx() in ring_atoms and atom2.GetIdx() in ring_atoms:
+            if bond.IsInRing():
+                continue
+            if (atom1.GetAtomicNum() == 8 and atom2.GetAtomicNum() == 6) or \
+               (atom1.GetAtomicNum() == 6 and atom2.GetAtomicNum() == 8):
+                glycosidic_bonds += 1
+
+    if glycosidic_bonds < sugar_ring_count - 1:
+        return False, "Not enough glycosidic linkages to form a polysaccharide"
 
     return True, f"Molecule is a polysaccharide with {amino_sugar_count} amino sugar(s) out of {sugar_ring_count} sugar rings"
 
