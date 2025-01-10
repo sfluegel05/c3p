@@ -2,12 +2,11 @@
 Classifies: CHEBI:15693 aldose
 """
 from rdkit import Chem
-from rdkit.Chem import rdqueries
 
 def is_aldose(smiles: str):
     """
     Determines if a molecule is an aldose based on its SMILES string.
-    An aldose is defined as a polyhydroxy aldehyde or its intramolecular hemiacetal.
+    An aldose is a polyhydroxy aldehyde or its intramolecular hemiacetal.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,10 +21,10 @@ def is_aldose(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Search for aldehyde group (-C(=O)H)
-    aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)[#6]")
-    if not mol.HasSubstructMatch(aldehyde_pattern):
-        return False, "No terminal aldehyde group found"
+    # Modified aldehyde pattern to account for potential hemiacetal forms
+    aldehyde_or_hemiacetal_pattern = Chem.MolFromSmarts("[CX3H1](=O)[#6] | [O][CX4H2][CX3](=O)[#6]")
+    if not mol.HasSubstructMatch(aldehyde_or_hemiacetal_pattern):
+        return False, "No aldehyde or cyclic hemiacetal forms detected"
 
     # Check for multiple hydroxyl groups (polyhydroxy structure)
     hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
@@ -33,21 +32,10 @@ def is_aldose(smiles: str):
     if len(hydroxyl_matches) < 2:
         return False, "Insufficient number of hydroxyl groups for polyhydroxy structure"
 
-    # Check for potential cyclic form of sugar (hemiacetal)
-    ring_info = mol.GetRingInfo()
-    ring_shapes = ring_info.AtomRings()
-    if not any(len(ring) in [5, 6] for ring in ring_shapes):
-        return False, "No 5 or 6-membered rings detected for cyclic form"
+    # Checking for cyclic forms - furanose or pyranose
+    furanose_or_pyranose_pattern = Chem.MolFromSmarts("[O][C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H]1 | [O][C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](O)[C@H]1")
+    cyclic_match = mol.HasSubstructMatch(furanose_or_pyranose_pattern)
+    if not cyclic_match:
+        return False, "No matching 5 or 6-membered cyclic forms typical of aldoses"
 
-    # Verify each identified ring has Ether (O-C-O) linkage and at least additional 2 hydroxyl groups
-    ether_and_oh_count = 0
-    for ring in ring_shapes:
-        if len(ring) in [5, 6]:
-            ethers = [atom for atom in ring if mol.GetAtomWithIdx(atom).GetSymbol() == 'O']
-            if len(ethers) == 1:
-                ether_and_oh_count += sum(1 for atom in ethers if mol.GetAtomWithIdx(atom).GetDegree() == 2)
-    
-    if ether_and_oh_count < 1:
-        return False, "Cyclic form doesn't meet ether linkage and hydroxyl condition for an aldose"
-
-    return True, "Contains aldehyde group with polyhydroxy and potential cyclic structure matching an aldose"
+    return True, "Contains structural features consistent with aldose, including polyhydroxy and potential cyclic (hemiacetal) forms"
