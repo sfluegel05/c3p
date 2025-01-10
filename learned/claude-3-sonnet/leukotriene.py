@@ -11,6 +11,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_leukotriene(smiles: str):
     """
     Determines if a molecule is a leukotriene based on its SMILES string.
+    Leukotrienes are icosanoids with conjugated triene system and specific structural features.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -24,7 +25,7 @@ def is_leukotriene(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for C20 backbone
+    # Check for C20 backbone (allowing some variation for derivatives)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if c_count < 20:
         return False, "Not a C20 backbone structure"
@@ -34,36 +35,40 @@ def is_leukotriene(smiles: str):
     if not mol.HasSubstructMatch(carboxylic_pattern):
         return False, "No carboxylic acid group found"
     
-    # Count double bonds
-    double_bond_pattern = Chem.MolFromSmarts("C=C")
-    double_bonds = len(mol.GetSubstructMatches(double_bond_pattern))
-    if double_bonds < 4:
-        return False, f"Insufficient double bonds (found {double_bonds}, need at least 4)"
+    # Look for specific leukotriene conjugated triene patterns
+    # This pattern looks for three double bonds that could be conjugated
+    triene_patterns = [
+        Chem.MolFromSmarts("C=CC=CC=C"),  # Basic conjugated triene
+        Chem.MolFromSmarts("C=CC=CC=CC"),  # Extended conjugated system
+        Chem.MolFromSmarts("CC=CC=CC=CC")  # Alternative conjugated system
+    ]
     
-    # Look for conjugated triene system (three consecutive double bonds)
-    conjugated_triene = Chem.MolFromSmarts("C=CC=CC=C")
-    if not mol.HasSubstructMatch(conjugated_triene):
-        return False, "No conjugated triene system found"
+    has_triene = False
+    for pattern in triene_patterns:
+        if mol.HasSubstructMatch(pattern):
+            has_triene = True
+            break
     
-    # Additional checks for common leukotriene features
+    if not has_triene:
+        return False, "No characteristic conjugated triene system found"
     
-    # Check for hydroxyl groups (common in many leukotrienes)
+    # Check for characteristic carbon chain with double bonds
+    chain_pattern = Chem.MolFromSmarts("CCCCC[CD2]~[CD2]~[CD2]~[CD2]~[CD2]~[CD2]~[CD2]CCCC")
+    if not mol.HasSubstructMatch(chain_pattern):
+        return False, "Missing characteristic carbon chain structure"
+    
+    # Additional structural features common in leukotrienes
     hydroxyl_pattern = Chem.MolFromSmarts("[OH1]")
     hydroxyl_count = len(mol.GetSubstructMatches(hydroxyl_pattern))
     
-    # Check for potential cysteinyl group (present in LTC4, LTD4, LTE4)
+    # Check for cysteinyl group (present in cysteinyl leukotrienes)
     cysteinyl_pattern = Chem.MolFromSmarts("SCC(N)C(=O)")
     has_cysteinyl = mol.HasSubstructMatch(cysteinyl_pattern)
     
-    # Calculate the number of rotatable bonds to ensure flexibility
+    # Count rotatable bonds to ensure appropriate flexibility
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
     if n_rotatable < 5:
         return False, "Structure too rigid for leukotriene"
-    
-    # Verify molecular weight is in reasonable range for leukotrienes
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 300 or mol_wt > 1000:
-        return False, f"Molecular weight {mol_wt:.1f} outside typical range for leukotrienes"
     
     # Build classification reason
     features = []
@@ -71,6 +76,12 @@ def is_leukotriene(smiles: str):
         features.append(f"{hydroxyl_count} hydroxyl groups")
     if has_cysteinyl:
         features.append("cysteinyl group")
-    features_str = ", ".join(features)
     
-    return True, f"C20 structure with conjugated triene system, carboxylic acid, and {features_str}"
+    # Additional check for characteristic oxygen pattern
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if o_count < 2:
+        return False, "Insufficient oxygen content for leukotriene"
+    
+    features_str = ", ".join(features) if features else "basic structure"
+    
+    return True, f"C20 icosanoid with conjugated triene system, carboxylic acid, and {features_str}"
