@@ -22,15 +22,15 @@ def is_pyrroline(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define more comprehensive pyrroline pattern: five-membered ring with one nitrogen
+    # Refined pyrroline pattern: five-membered ring with specific nitrogen and double bond arrangements
     pyrroline_patterns = [
-        "C1=CCNC1",  # 1-Pyrroline
-        "C1=CNCC1",  # Alternate positions of double bond
-        "C1CC=NC1",  # 2-Pyrroline
-        "C1C=CCN1",  # 3-Pyrroline
-        "C1CCNC1",   # Dihydropyrrole (both double bonds saturated)
-        "C1=CN=CC1", # Pyrrolone variations
-        "C1N=CCC1",  # Another pyrroline pattern
+        "C1C=CN=C1",  # 1-Pyrroline with specific double bond
+        "C1=CNCC1",   # 2-Pyrroline with specific bond positions
+        "C1=CC=NC1",  # Allow aromatic pyrroline derivatives
+        "C1=CCN=C1",  # Alt form capturing tautomeric shifts
+        "C1=CN=CC1",  # Pyrrolone variations more definitively
+        "[n;H1]1cccc1",  # Aromatic pyrroline recognition
+        "n1cccc1",    # Non-hydrogen bonded variants for aromaticity check
     ]
 
     # Check for any pyrroline substructure match
