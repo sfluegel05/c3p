@@ -19,18 +19,18 @@ def is_branched_chain_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a broader CoA pattern
-    coa_pattern = Chem.MolFromSmarts("NC(=O)CCNC(=O)[C@@H](O)C(C)(C)COP(=O)(O)OC[C@H]1O[C@H](O)[C@@H](OP(=O)(O)O1)n1cnc2c(N)ncnc12")
+    # Expanded CoA pattern to cover the full pantetheine moiety and nucleotide fragments
+    coa_pattern = Chem.MolFromSmarts("C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(=O)(O)O)n1cnc2c(N)ncnc12")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "Coenzyme A structure not found"
     
-    # Pattern for the thioester bond linking CoA
+    # Check for thioester linkage indicative of acyl-CoA compounds
     thioester_pattern = Chem.MolFromSmarts("C(=O)S")
     if not mol.HasSubstructMatch(thioester_pattern):
         return False, "Thioester bond not found"
     
-    # Pattern for branching: allow more generic branched structures
-    branch_pattern = Chem.MolFromSmarts("C(C)(C)[C;!H1,XR]")
+    # Pattern to detect branching (R' groups in side chains)
+    branch_pattern = Chem.MolFromSmarts("C(C)(C)[C;!H1]")
     if not mol.HasSubstructMatch(branch_pattern):
         return False, "No branched alkyl chain found"
 
