@@ -20,19 +20,17 @@ def is_dihydroflavonols(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # SMARTS for dihydroflavonol core: 2-phenyl-3-chromanol (OH group at C3, ketone at C4)
-    core_pattern = Chem.MolFromSmarts("O[C@@H]1C[C@H](=O)[C@H](Oc2ccccc12)c3ccccc3")
+
+    # SMARTS for dihydroflavonol core: 2-phenyl-3-chromanol with hydroxyl at C3 (stereochemistry agnostic)
+    core_pattern = Chem.MolFromSmarts("Oc1c(C(=O)[C@H]([C@@H]1O)c2ccccc2)c3ccccc3")
+
+    # Check if the molecule contains the dihydroflavonol core pattern
     if not mol.HasSubstructMatch(core_pattern):
         return False, "Does not match basic dihydroflavonol core structure"
-    
-    # Check for presence of hydroxyl groups at required positions (3rd on central ring and potential substitutions on rings)
-    hydroxyl_pattern = Chem.MolFromSmarts("[$([OH]-c1ccccc1),$([OH]-c1ccc(O)cc1),$([OH]-c1ccc(O)c(O)c1)]")
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    if len(hydroxyl_matches) < 2:
-        return False, "Insufficient hydroxyl groups at key positions"
-    
-    # If passes all checks, it is a dihydroflavonol
-    return True, "Contains dihydroflavonol core structure and appropriate hydroxylation"
+
+    # Additional hydroxyl group checks are inherently part of the above SMARTS pattern
+
+    # If passes all checks, it's identified as a dihydroflavonol
+    return True, "Contains dihydroflavonol core structure with hydroxyl group at position 3"
 
 # Example usage for testing: is_dihydroflavonols("OC1C(Oc2cc(O)cc(O)c2C1=O)c1cc(O)c(O)c(O)c1")
