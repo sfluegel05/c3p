@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_nitrohydrocarbon(smiles: str):
     """
     Determines if a molecule is a nitrohydrocarbon based on its SMILES string.
-    A nitrohydrocarbon is a hydrocarbon in which one or more hydrogens have been replaced by nitro groups.
+    A nitrohydrocarbon is a hydrocarbon where one or more hydrogens have been replaced by nitro groups.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,27 +20,26 @@ def is_nitrohydrocarbon(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+    
+    # Define nitro group pattern: -[N+](=O)[O-]
+    nitro_pattern = Chem.MolFromSmarts("[NX3](=O)[O-]")
 
-    # Define nitro group pattern -[N+](=O)[O-]
-    nitro_pattern = Chem.MolFromSmarts("[N+](=O)[O-]")
+    # Check for nitrate group presence
     if not mol.HasSubstructMatch(nitro_pattern):
         return False, "No nitro group found"
-      
-    # Check for carbon atom presence
-    if not any(atom.GetAtomicNum() == 6 for atom in mol.GetAtoms()):
-        return False, "No carbon atoms found"
 
-    # Check if molecule is primarily made up of C and H in addition to nitro groups
-    has_significant_organic_structure = False
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() in (6, 1):  # Carbon and Hydrogen
-            has_significant_organic_structure = True
-            break
+    # Verify the molecule contains carbon besides nitro group(s)
+    carbon_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
+    if not carbon_atoms:
+        return False, "No carbon atoms found, not a hydrocarbon base"
     
-    if not has_significant_organic_structure:
-        return False, "Lacks significant hydrocarbon structure"
+    # Count nitro groups
+    nitro_matches = mol.GetSubstructMatches(nitro_pattern)
+    nitro_count = len(nitro_matches)
+    
+    # Ensure primarily a hydrocarbon with nitro substitutions
+    non_carbon_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() not in (1, 6, 7, 8)] # N and O are part of nitro
+    if len(non_carbon_atoms) > nitro_count:
+        return False, "Too many non-nitro functional groups"
 
-    # Molecules can have additional elements, but must have nitro groups as significant feature
-    # Thus, any meaningful additional features should not disqualify it as nitrohydrocarbon
-    
     return True, "Molecule is a nitrohydrocarbon with one or more nitro groups attached to a carbon backbone"
