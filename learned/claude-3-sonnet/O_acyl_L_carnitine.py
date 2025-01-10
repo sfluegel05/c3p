@@ -26,31 +26,26 @@ def is_O_acyl_L_carnitine(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for basic carnitine backbone structure:
-    # - A carbon with an ester group
-    # - Connected to a CH2 with carboxylate
-    # - Connected to a CH2 with trimethylammonium
-    # Note: [C@H] or [C@@H] represents the L-configuration
-    carnitine_pattern = Chem.MolFromSmarts('[C@H,C@@H](CC([O-])=O)(CO)C[N+](C)(C)C')
+    # [C@H] or [C@@H] central carbon with:
+    # - CH2 with carboxylate
+    # - CH2 with trimethylammonium
+    # - Oxygen (part of ester)
+    carnitine_pattern = Chem.MolFromSmarts('[C@H,C@@H]([CH2][C]([O-])=O)([CH2][N+](C)(C)C)[OX2]')
     
     if not mol.HasSubstructMatch(carnitine_pattern):
-        return False, "Missing L-carnitine backbone structure"
+        return False, "Missing carnitine backbone structure"
         
-    # Verify the ester linkage is present
-    # This pattern matches any acyl group (-C(=O)R) attached to oxygen
-    ester_pattern = Chem.MolFromSmarts('OC(=O)[#6]')
-    if not mol.HasSubstructMatches(ester_pattern):
-        return False, "Missing ester linkage"
+    # Check for ester linkage
+    # The oxygen from carnitine should be connected to a C(=O)R group
+    ester_pattern = Chem.MolFromSmarts('[C@H,C@@H]([CH2][C]([O-])=O)([CH2][N+])O[C](=O)')
+    if not mol.HasSubstructMatch(ester_pattern):
+        return False, "Missing or incorrect ester linkage"
 
     # Check for trimethylammonium group
-    # Allow for deuterated methyl groups
+    # Allow for deuterated methyl groups ([CH3,CD3])
     trimethyl_pattern = Chem.MolFromSmarts('[N+]([CH3,CD3])([CH3,CD3])([CH3,CD3])')
     if not mol.HasSubstructMatch(trimethyl_pattern):
         return False, "Missing trimethylammonium group"
-    
-    # Check for carboxylate group
-    carboxylate_pattern = Chem.MolFromSmarts('CC([O-])=O')
-    if not mol.HasSubstructMatch(carboxylate_pattern):
-        return False, "Missing carboxylate group"
     
     # Verify charges
     pos_charge = sum(atom.GetFormalCharge() for atom in mol.GetAtoms() if atom.GetFormalCharge() > 0)
@@ -60,15 +55,28 @@ def is_O_acyl_L_carnitine(smiles: str):
         return False, f"Incorrect charge distribution: +{pos_charge}, {neg_charge}"
 
     # Check stereochemistry
-    # In L-carnitine, the ester group and the trimethylammonium-methylene group 
-    # should be on opposite sides of the central carbon
-    chiral_centers = Chem.FindMolChiralCenters(mol)
+    # Get all chiral centers
+    chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
     if not chiral_centers:
         return False, "Missing required stereocenter"
     
-    # Additional check for deuterated versions
-    deuterium_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts('[2H]')))
-    if deuterium_count > 0:
-        return True, "Valid O-acyl-L-carnitine (deuterated form)"
+    # Find the central carbon (the one with OH, CH2COO-, and CH2N+)
+    central_matches = mol.GetSubstructMatches(carnitine_pattern)
+    if not central_matches:
+        return False, "Cannot determine stereochemistry"
         
-    return True, "Valid O-acyl-L-carnitine structure"
+    # The central carbon should have R configuration for L-carnitine
+    # (Note: The R configuration gives L-carnitine due to CIP priority rules)
+    central_carbon_idx = central_matches[0][0]
+    found_correct_config = False
+    
+    for idx, config in chiral_centers:
+        if idx == central_carbon_idx:
+            if config == 'R':  # R configuration corresponds to L-carnitine
+                found_correct_config = True
+            break
+            
+    if not found_correct_config:
+        return False, "Incorrect stereochemistry - must be L-configuration"
+
+    return True, "Valid O-acyl-L-carnitine structure with correct L-configuration"
