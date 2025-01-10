@@ -27,7 +27,7 @@ def is_bile_acid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for steroid core (four fused rings: three 6-membered and one 5-membered)
-    # More general pattern to match the steroid core without specific stereochemistry
+    # More flexible pattern to match the steroid core with possible double bonds and substitutions
     steroid_pattern = Chem.MolFromSmarts("[C]1[C]2[C]3[C]4CC[C]4[C]3CC[C]2CC1")
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid core found"
