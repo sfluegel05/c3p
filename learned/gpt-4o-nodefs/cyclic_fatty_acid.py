@@ -22,7 +22,7 @@ def is_cyclic_fatty_acid(smiles: str):
         return False, "Invalid SMILES string"
     
     # Check for the presence of a carboxylic acid group
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
+    carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
 
@@ -35,14 +35,16 @@ def is_cyclic_fatty_acid(smiles: str):
     if carbon_chain_length < 8:
         return False, f"Carbon chain too short: {carbon_chain_length} carbons"
 
-    # Check for specific cyclic substructures such as epoxides or furan rings
-    furan_pattern = Chem.MolFromSmarts("c1ccoc1")
-    lactone_pattern = Chem.MolFromSmarts("O=C1OC=CC1")
+    # Check for specific cyclic substructures such as epoxides, furans, or lactones
+    substructure_patterns = [
+        Chem.MolFromSmarts("c1ccoc1"),    # Furan ring
+        Chem.MolFromSmarts("O=C1OC=CC1"), # Lactone ring
+        Chem.MolFromSmarts("[O]-[C]1-[C][C]1"), # Epoxide
+        Chem.MolFromSmarts("[O]-[C]1-[C]-[C]1") # Oxetane
+    ]
     
-    has_furan = mol.HasSubstructMatch(furan_pattern)
-    has_lactone = mol.HasSubstructMatch(lactone_pattern)
-
-    if has_furan or has_lactone:
-        return True, "Contains a furan or lactone ring typical of cyclic fatty acids"
+    for pattern in substructure_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return True, f"Contains a ring structure ({Chem.MolToSmarts(pattern)}) typical of cyclic fatty acids"
 
     return False, "Does not contain a recognized cyclic fatty acid substructure"
