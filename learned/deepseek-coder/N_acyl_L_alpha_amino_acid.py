@@ -31,20 +31,20 @@ def is_N_acyl_L_alpha_amino_acid(smiles: str):
     if not mol.HasSubstructMatch(amino_acid_pattern):
         return False, "No L-alpha-amino acid backbone found"
 
+    # Get the nitrogen atom in the amino acid backbone
+    amino_acid_matches = mol.GetSubstructMatches(amino_acid_pattern)
+    amino_acid_nitrogen = amino_acid_matches[0][2]  # Nitrogen atom index in the amino acid pattern
+
     # Check for N-acyl substituent: N-C(=O)
     acyl_pattern = Chem.MolFromSmarts("NC(=O)")
     if not mol.HasSubstructMatch(acyl_pattern):
         return False, "No N-acyl substituent found"
 
-    # Verify that the N-acyl group is attached to the amino group of the amino acid
-    # The nitrogen in the N-acyl group should be the same as the nitrogen in the amino acid backbone
-    amino_acid_matches = mol.GetSubstructMatches(amino_acid_pattern)
+    # Get the nitrogen atom in the N-acyl group
     acyl_matches = mol.GetSubstructMatches(acyl_pattern)
-    
-    # Ensure that the nitrogen in the amino acid backbone is part of the N-acyl group
-    amino_acid_nitrogen = amino_acid_matches[0][2]  # Nitrogen atom index in the amino acid pattern
     acyl_nitrogen = acyl_matches[0][0]  # Nitrogen atom index in the acyl pattern
-    
+
+    # Verify that the N-acyl group is attached to the nitrogen of the amino acid backbone
     if amino_acid_nitrogen != acyl_nitrogen:
         return False, "N-acyl group is not attached to the amino group of the amino acid"
 
