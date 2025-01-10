@@ -13,7 +13,7 @@ def is_lactol(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a lactol, False otherwise
+        bool: True if the molecule is a lactol, False otherwise
         str: Reason for classification
     """
 
@@ -22,16 +22,11 @@ def is_lactol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a SMARTS pattern for lactol structure
-    # Lactol has a ring-embedded oxygen linked to a hydroxyl group and another oxygen
-    lactol_pattern = Chem.MolFromSmarts("C1OC[OH]1")  # Simplified hypothetical lactol pattern
+    # Define a more accurate SMARTS pattern for lactol structure
+    # Lactol: cyclic structure with an ether linkage (O in a cycle) and a hydroxyl group near
+    lactol_pattern = Chem.MolFromSmarts("C1OC(O1)")
 
-    # Get the ring information 
-    ring_info = mol.GetRingInfo()
-    rings = [set(indices) for indices in ring_info.AtomRings() if len(indices) in [5, 6]]
+    if mol.HasSubstructMatch(lactol_pattern):
+        return True, "Contains a lactol structural pattern (cyclic ether with hydroxyl group)"
 
-    # Check if the molecule matches the lactol pattern in an appropriate ring
-    if not any(mol.HasSubstructMatch(lactol_pattern, atoms=ring) for ring in rings):
-        return False, "No lactol pattern found (cyclic hemiacetal)"
-
-    return True, "Contains a lactol structural pattern (cyclic hemiacetal with adjacent hydroxyl) in the molecule"
+    return False, "No lactol pattern found (cyclic hemiacetal)"
