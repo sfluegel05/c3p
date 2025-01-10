@@ -6,7 +6,6 @@ Classifies: prenylquinone
 """
 
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_prenylquinone(smiles: str):
     """
@@ -25,60 +24,85 @@ def is_prenylquinone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for quinone ring (1,4-benzoquinone and 1,4-naphthoquinone)
-    quinone_smarts = ['O=C1C=CC=CC1=O', 'O=C1C=CC2=CC=CC=C12']  # benzoquinone and naphthoquinone
-    quinone_patterns = [Chem.MolFromSmarts(s) for s in quinone_smarts]
+    # Identify quinone ring
+    ring_info = mol.GetRingInfo()
+    atom_rings = ring_info.AtomRings()
+    quinone_ring_found = False
+    quinone_ring_atoms = None
 
-    # Search for quinone ring
-    quinone_matches = []
-    for qp in quinone_patterns:
-        matches = mol.GetSubstructMatches(qp)
-        if matches:
-            quinone_matches.extend(matches)
-    if not quinone_matches:
+    for ring in atom_rings:
+        ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
+        num_carbonyls = 0
+        for atom in ring_atoms:
+            if atom.GetAtomicNum() == 6:  # Carbon
+                for neighbor in atom.GetNeighbors():
+                    neighbor_idx = neighbor.GetIdx()
+                    bond = mol.GetBondBetweenAtoms(atom.GetIdx(), neighbor_idx)
+                    if neighbor.GetAtomicNum() == 8 and bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                        num_carbonyls +=1
+                        break
+        if num_carbonyls >=2:
+            # Found a quinone ring
+            quinone_ring_found = True
+            quinone_ring_atoms = set(ring)
+            break  # Stop at first quinone ring found
+
+    if not quinone_ring_found:
         return False, "No quinone ring found"
 
-    # Define SMARTS pattern for prenyl unit
-    prenyl_smarts = '[CH2]=C([CH3])[CH2]'  # Prenyl group
-    prenyl_pattern = Chem.MolFromSmarts(prenyl_smarts)
-
-    # Identify atoms in quinone ring(s)
-    quinone_ring_atoms = set()
-    for match in quinone_matches:
-        quinone_ring_atoms.update(match)
-
-    # Check for polyprenyl-derived side chain attached to quinone ring
-    side_chain_found = False
+    # Identify side chains attached to the quinone ring
+    side_chains = []
     for atom_idx in quinone_ring_atoms:
         atom = mol.GetAtomWithIdx(atom_idx)
         for bond in atom.GetBonds():
             neighbor = bond.GetOtherAtom(atom)
             neighbor_idx = neighbor.GetIdx()
             if neighbor_idx not in quinone_ring_atoms:
-                # Found an atom outside the quinone ring
-                # Check if this leads to a polyprenyl side chain
+                # Found an atom outside the ring
+                # Traverse the side chain starting from neighbor
                 side_chain_atoms = set()
                 atoms_to_visit = [neighbor_idx]
                 while atoms_to_visit:
                     current_idx = atoms_to_visit.pop()
-                    if current_idx not in side_chain_atoms:
+                    if current_idx not in side_chain_atoms and current_idx not in quinone_ring_atoms:
                         side_chain_atoms.add(current_idx)
                         current_atom = mol.GetAtomWithIdx(current_idx)
                         for nbr in current_atom.GetNeighbors():
                             nbr_idx = nbr.GetIdx()
-                            if nbr_idx not in side_chain_atoms:
+                            if nbr_idx not in side_chain_atoms and nbr_idx not in quinone_ring_atoms:
                                 atoms_to_visit.append(nbr_idx)
-                # Create sub-molecule of the side chain
-                side_chain_mol = Chem.PathToSubmol(mol, list(side_chain_atoms))
-                # Search for prenyl repeats
-                num_prenyl_units = len(side_chain_mol.GetSubstructMatches(prenyl_pattern))
-                if num_prenyl_units >= 2:
-                    side_chain_found = True
-                    break
-        if side_chain_found:
+                side_chains.append(side_chain_atoms)
+
+    # Analyze side chains
+    prenyl_side_chain_found = False
+    for side_chain_atoms in side_chains:
+        num_carbons = 0
+        num_double_bonds = 0
+        num_methyl_branches = 0
+        visited_bonds = set()
+        for idx in side_chain_atoms:
+            atom = mol.GetAtomWithIdx(idx)
+            if atom.GetAtomicNum() == 6:
+                num_carbons +=1
+                neighbor_indices = [a.GetIdx() for a in atom.GetNeighbors() if a.GetIdx() in side_chain_atoms]
+                if len(neighbor_indices) > 2:
+                    # Branch point
+                    num_methyl_branches +=1
+            for bond in atom.GetBonds():
+                bond_idx = bond.GetIdx()
+                if bond_idx in visited_bonds:
+                    continue
+                visited_bonds.add(bond_idx)
+                begin_idx = bond.GetBeginAtomIdx()
+                end_idx = bond.GetEndAtomIdx()
+                if begin_idx in side_chain_atoms and end_idx in side_chain_atoms:
+                    if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                        num_double_bonds +=1
+        if num_carbons >=10 and num_double_bonds >=2 and num_methyl_branches >=2:
+            prenyl_side_chain_found = True
             break
 
-    if not side_chain_found:
+    if not prenyl_side_chain_found:
         return False, "No polyprenyl-derived side chain attached to quinone ring"
 
     return True, "Contains quinone ring with polyprenyl-derived side chain"
@@ -103,7 +127,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 3,
+    'attempt': 2,
     'success': True,
     'best': True,
     'error': '',
