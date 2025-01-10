@@ -6,50 +6,36 @@ from rdkit import Chem
 def is_polypyrrole(smiles: str):
     """
     Determines if a molecule is a polypyrrole based on its SMILES string.
-    A polypyrrole is a compound composed of two or more pyrrole units or pyrrole-like structures.
+    A polypyrrole is defined as a compound composed of two or more pyrrole units.
 
     Args:
-        smiles (str): SMILES string of the molecule.
+        smiles (str): SMILES string of the molecule
 
     Returns:
-        tuple: A tuple containing a boolean indicating if the molecule is a polypyrrole,
-               and a reason for the classification.
+        bool: True if molecule is a polypyrrole, False otherwise
+        str: Reason for classification
     """
-    # Parse SMILES string to RDKit molecule object
+
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a comprehensive list of SMARTS for pyrrole and pyrrole-like structures
-    pyrrole_patterns = [
-        Chem.MolFromSmarts("n1cccc1"),      # Basic Pyrrole
-        Chem.MolFromSmarts("c1cn[nH]c1"),   # N-substituted pyrroles
-        Chem.MolFromSmarts("c2c[nH]c1ccccc12"),  # Fused pyrrole systems
-        Chem.MolFromSmarts("c1cnc2c1cccc2"),     # Benzopyrrole system
-        Chem.MolFromSmarts("n2c1nc(nc1[nH]2)"),  # Azole-like structures
-        Chem.MolFromSmarts("c1ccc2c(c1)nccc2n"), # Porphyrin-like structures
-        Chem.MolFromSmarts("c1[nH]c2c(c1)c[nH]c2"), # Indole systems
-        Chem.MolFromSmarts("n1ccc2ccc[nH]c2c1"),  # Carbazole variations
-        Chem.MolFromSmarts("n1cccn1"),     # Pyrrolidine ring
-        Chem.MolFromSmarts("n1ccccc1"),    # Pyridine-pyrrole hybrids
-    ]
+    # Define the SMARTS pattern for a pyrrole unit
+    pyrrole_pattern = Chem.MolFromSmarts("n1cccc1")
+    if pyrrole_pattern is None:
+        return False, "Failed to generate SMARTS pattern for pyrrole"
+
+    # Find all pyrrole matches in the molecule
+    pyrrole_matches = mol.GetSubstructMatches(pyrrole_pattern)
     
-    # Count all occurrences of pyrrole-like structures
-    num_pyrrole_structures = 0
-    for pattern in pyrrole_patterns:
-        if pattern is None:
-            continue
-
-        # Find matches for each pattern and accumulate the count
-        matches = mol.GetSubstructMatches(pattern)
-        num_pyrrole_structures += len(matches)
-
-    # Check for polypyrrole condition: at least two pyrrole or pyrrole-like structures
-    if num_pyrrole_structures >= 2:
-        return True, f"Contains {num_pyrrole_structures} pyrrole-like structures"
+    # Check if there are two or more pyrrole units
+    num_pyrroles = len(pyrrole_matches)
+    if num_pyrroles >= 2:
+        return True, f"Contains {num_pyrroles} pyrrole units"
     else:
-        return False, "Contains less than two pyrrole-like structures"
+        return False, "Contains less than two pyrrole units"
 
-# Example usage
-smiles_example = "CCC1=C(C)C(=O)NC1Cc1[nH]c(Cc2[nH]c(CC3NC(=O)C(CC)=C3C)c(C)c2CCC(O)=O)c(CCC(O)=O)c1C"
-print(is_polypyrrole(smiles_example))
+# Example usage:
+smiles_example = "C1=CNC=C1C1=CC=CN=C1"
+is_polypyrrole(smiles_example)
