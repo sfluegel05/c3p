@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_3_hydroxy_fatty_acid(smiles: str):
     """
     Determines if a molecule is a 3-hydroxy fatty acid based on its SMILES string.
-    A 3-hydroxy fatty acid has a hydroxy functional group at the beta- or 3-position
+    A 3-hydroxy fatty acid has a hydroxy group at the beta- or 3-position
     from the carboxylic acid and is characterized by a long carbon chain.
 
     Args:
@@ -22,8 +22,11 @@ def is_3_hydroxy_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS: C(=O)O (the carboxylic acid part) - C - C(O)
-    pattern = Chem.MolFromSmarts("C(=O)O-C-C(O)")
+    # Define a more comprehensive 3-hydroxy fatty acid pattern
+    # C(=O)O represents the carboxylic acid.
+    # [C;H2][C;H](O) represents a methine group with a hydroxy group at 3-position.
+    # The long chain is implicit and these patterns should suffice to wrap around it.
+    pattern = Chem.MolFromSmarts("C(=O)O[C;H2][C;H](O)")
 
     if mol.HasSubstructMatch(pattern):
         return True, "Contains a hydroxy group at the 3-position"
