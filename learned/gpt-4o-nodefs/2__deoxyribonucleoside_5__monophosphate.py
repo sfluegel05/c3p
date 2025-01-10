@@ -22,19 +22,28 @@ def is_2__deoxyribonucleoside_5__monophosphate(smiles: str):
     if mol is None:
         return (None, "Invalid SMILES string")
     
-    # Check for 2'-deoxyribose moiety (allowing variable stereochemistry)
-    deoxyribose_pattern = Chem.MolFromSmarts('[C@H]1C[C@@H](O)[C@H](CO)O1')
+    # Check for 2'-deoxyribose moiety 
+    # A more flexible pattern allowing both alpha and beta anomers and specific deoxyribose configuration
+    deoxyribose_pattern = Chem.MolFromSmarts('[C@@H]1(O)[C@H](O)[C@@H](CO)O[C@H](C1)O')
     if not mol.HasSubstructMatch(deoxyribose_pattern):
         return (False, "No 2'-deoxyribose moiety found")
-
-    # Check for a phosphate group at 5' position
-    phosphate_pattern = Chem.MolFromSmarts('COP(=O)(O)O')
+    
+    # Check for a phosphate group at 5' position (more anchoring to deoxyribose hydroxyl)
+    phosphate_pattern = Chem.MolFromSmarts('[O-]P(=O)(O)O[C@H])')  # indicates 5' terminal position 
     if not mol.HasSubstructMatch(phosphate_pattern):
         return (False, "No 5'-phosphate group found")
         
-    # Check for nucleobase attached to the sugar via a variable pattern
-    nucleobase_pattern = Chem.MolFromSmarts('n')
-    if not mol.HasSubstructMatch(nucleobase_pattern):
+    # Check for nucleobase attached to the sugar
+    # More specific nucleobase patterns - adenine, guanine, cytosine, thymine, and uracil
+    nucleobase_patterns = [Chem.MolFromSmarts('n1cnc2c1ncnc2'),  # adenine
+                           Chem.MolFromSmarts('n1cnc2c1[nH]cn2'),  # guanine
+                           Chem.MolFromSmarts('n1ccn(C)c(=O)c1'),   # cytosine
+                           Chem.MolFromSmarts('c1ncnc2[nH]ccc12'),  # uracil
+                           Chem.MolFromSmarts('c1ccn(C)c(=O)n1')]   # thymine
+
+    nucleobase_found = any(mol.HasSubstructMatch(pattern) for pattern in nucleobase_patterns)
+    
+    if not nucleobase_found:
         return (False, "No nucleobase found (purine/pyrimidine) attached to the sugar")
     
     return (True, "Contains 2'-deoxyribose, 5'-phosphate group, and a nucleobase")
