@@ -22,16 +22,16 @@ def is_2_enoyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Finding the 2-enoyl pattern involving C2=C3 with carbon chain pattern
-    # This pattern captures the double bond between positions 2 and 3 adjacent to the carbonyl
-    enoyl_pattern = Chem.MolFromSmarts("CC=C(=O)C")
+    # Refined searching for 2-enoyl pattern
+    # This updated pattern attempts to better match the exemplified enoyl groups
+    enoyl_pattern = Chem.MolFromSmarts("[#6]=[#6][CX3](=O)")
     if not mol.HasSubstructMatch(enoyl_pattern):
-        return False, "No characteristic C2=C3 enoyl C=C bond found"
+        return False, "No characteristic enoyl C=C bond found near carbonyl group"
 
-    # Standard CoA linkage check
-    # Broader and more flexible pattern for CoA linkage
-    coa_pattern = Chem.MolFromSmarts("SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H](O)C(O)C(O)C1OP1")
+    # Refined Standard CoA linkage checking for more general CoA patterns
+    # Adding flexibility to handle different representations of CoA linkages
+    coa_pattern = Chem.MolFromSmarts("SCCNC(=O)CCNC(=O)[CX4][OX2]")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "CoA linkage pattern not found"
 
-    return True, "Contains 2-enoyl C2=C3 bond with CoA linkage"
+    return True, "Contains 2-enoyl C=C bond with CoA linkage"
