@@ -6,8 +6,7 @@ from rdkit import Chem
 def is_mineral_nutrient(smiles: str):
     """
     Determines if a compound is a mineral nutrient based on its SMILES string.
-    Mineral nutrients are typically inorganic compounds containing metallic elements
-    necessary for metabolic/structural functions in the human body.
+    Focuses on essential inorganic nutrients with simple structures.
     
     Args:
         smiles (str): SMILES string of the compound
@@ -22,19 +21,27 @@ def is_mineral_nutrient(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define common metallic elements in mineral nutrients
-    metallic_elements = {'Ca', 'Mg', 'K', 'Na', 'Fe', 'Zn', 'Al', 'Ba', 'Cs', 'Sb', 'Pd', 'La'}
+    # Define essential metallic elements typically found in nutrients
+    essential_metallic_elements = {'Ca', 'Mg', 'K', 'Na', 'Fe', 'Zn'}
     # Define essential non-metallic elements associated with nutrients
-    non_metallic_anions = {'P', 'S', 'Cl', 'F', 'O', 'N'}  # Part of common inorganic anions
+    nutrient_anions = {'P', 'S', 'Cl', 'F', 'O', 'N'}  # Common in simple inorganic salts
 
-    # Check for presence of at least one metallic element using their symbols
-    metal_found = any(atom.GetSymbol() in metallic_elements for atom in mol.GetAtoms())
+    # Check for presence of at least one essential metallic element
+    metal_found = any(atom.GetSymbol() in essential_metallic_elements for atom in mol.GetAtoms())
     if not metal_found:
-        return False, "No metallic elements found"
+        return False, "No essential metallic elements found"
 
-    # Check for presence of common inorganic anions (e.g., sulfates, phosphates, chlorides)
-    anion_found = any(atom.GetSymbol() in non_metallic_anions for atom in mol.GetAtoms())
+    # Check for presence of common inorganic anions (e.g., sulfates, phosphates, chlorides) in simpler structures
+    anion_found = any(atom.GetSymbol() in nutrient_anions for atom in mol.GetAtoms())
     if not anion_found:
-        return False, "No common inorganic anions or ions found"
+        return False, "No relevant mineral nutrient anions found"
 
-    return True, "Contains metallic elements and common inorganic anions indicative of a mineral nutrient"
+    # Ensure the structure is relatively simple (e.g., not too many rings)
+    if mol.GetRingInfo().NumRings() > 0:
+        return False, "Complex organic structures detected"
+
+    # Determine the simplicity of structure (controlled number of elements)
+    if mol.GetNumAtoms() > 25:
+        return False, "Structure too complex to be a typical nutrient"
+
+    return True, "Structure consistent with mineral nutrients containing essential elements and simple inorganic anions"
