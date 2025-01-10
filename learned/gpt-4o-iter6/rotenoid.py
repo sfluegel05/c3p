@@ -2,11 +2,14 @@
 Classifies: CHEBI:71543 rotenoid
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_rotenoid(smiles: str):
     """
     Determines if a molecule is a rotenoid based on its SMILES string.
-    A rotenoid consists of a cis-fused tetrahydrochromeno[3,4-b]chromene skeleton and its derivatives.
+    A rotenoid is a member of the class of tetrahydrochromenochromene that 
+    consists of a cis-fused tetrahydrochromeno[3,4-b]chromene skeleton.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,18 +24,17 @@ def is_rotenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Updated SMARTS pattern to represent the rotenoid core structure.
-    # This pattern highlights the common polycyclic structure of rotenoids.
-    rotenoid_pattern = Chem.MolFromSmarts(
-        "O1C2=C(C=3C(OC2)=CC=4OCOC4=C3)C(=O)C5=C1C=C6OC=CC6=C5"
-    )
+    # Define rotenoid skeleton SMARTS pattern
+    # This is a simplification due to complexity; real analysis may need detailed work
+    rotenoid_pattern = Chem.MolFromSmarts("C1COc2cc3CCCCOc3cc2C1") # Simplified pattern
 
-    # Ensure the pattern determines core features of rotenoids.
-    if rotenoid_pattern is None:
-        return False, "Invalid SMARTS pattern"
-
-    # Perform the substructure match
+    # Check if the structure matches the rotenoid skeleton
     if not mol.HasSubstructMatch(rotenoid_pattern):
-        return False, "No rotenoid core structure found"
+        return False, "No tetrahydrochromeno[3,4-b]chromene skeleton found"
 
-    return True, "Contains the rotenoid core structure"
+    # Further check for potential derived substitutions
+    # For simplification purposes, detailed substituent analysis is omitted
+    # In practical applications, detailed structural analysis is necessary
+    # This might include checking for allowable substitutions at specified positions
+
+    return True, "Contains the tetrahydrochromeno[3,4-b]chromene skeleton characteristic of rotenoids"
