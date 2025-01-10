@@ -7,9 +7,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_isoflavonoid(smiles: str):
     """
     Determines if a molecule is an isoflavonoid based on its SMILES string.
-    Isoflavonoids are characterized by a 1-benzopyran-4-one structure.
-    
-    NOTE: This is a heuristic approach and may not capture all isoflavonoids accurately.
+    Isoflavonoids are characterized by a 3-phenylchromen-4-one structure.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,14 +20,18 @@ def is_isoflavonoid(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return None, "Invalid SMILES string"
 
     # Look for 1-benzopyran-4-one pattern
-    isoflavonoid_pattern = Chem.MolFromSmarts("O=C1C=CC2=CC=CC=C2OC1")
-    if not mol.HasSubstructMatch(isoflavonoid_pattern):
-        return False, "No 1-benzopyran-4-one core structure found"
+    # The SMARTS pattern considers variability in isoflavonoid derivatives.
+    isoflavonoid_patterns = [
+        Chem.MolFromSmarts("O=C1C=CC2=CC=CC=C2OC1"),  # Basic 1-benzopyran-4-one
+        Chem.MolFromSmarts("C1=CC=C2C=C(C=O)C=CO2C1"),  # 3-phenylchromen-4-one
+    ]
 
-    # Additional checks could be performed based on other isoflavonoid features, such as substituents
-    # These can include methoxy/hydroxy groups or various phenolic substructures
+    for pattern in isoflavonoid_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return True, "Contains a core 1-benzopyran-4-one or 3-phenylchromen-4-one structure characteristic of isoflavonoids"
 
-    return True, "Contains the core 1-benzopyran-4-one structure characteristic of isoflavonoids"
+    # Note for potential misidentification due to missing patterns
+    return False, "No core 1-benzopyran-4-one or 3-phenylchromen-4-one structure found"
