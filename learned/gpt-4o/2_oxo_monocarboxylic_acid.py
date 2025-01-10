@@ -21,11 +21,11 @@ def is_2_oxo_monocarboxylic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for 2-oxo group: [CX3](=O)[#6] where #6 is a carbon
-    oxo_pattern = Chem.MolFromSmarts("[#6][CX3](=O)[#6]")
-    
-    # SMARTS pattern for carboxylic acid: C(=O)O
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
+    # Refined SMARTS pattern for 2-oxo group: carbon double-bonded to oxygen, flexible to neighboring atoms
+    oxo_pattern = Chem.MolFromSmarts("[#6][CX3](=O)[#6,#1,#8,#7]")
+
+    # Refined SMARTS pattern for monocarboxylic acid group, allowing variations
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[O;!N]")
 
     # Check for 2-oxo group
     if not mol.HasSubstructMatch(oxo_pattern):
