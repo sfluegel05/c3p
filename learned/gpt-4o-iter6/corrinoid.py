@@ -20,13 +20,16 @@ def is_corrinoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Defining the corrin-like pattern using SMARTS (note: may not be entirely accurate; 
-    #       this is a simplified representation of a complex macrocycle)
-    # This is a very simplified and abstract pattern, not covering all specific features of full corrin rings
-    corrin_pattern = Chem.MolFromSmarts("C1CCC=C1")  # placeholder pattern, not accurate for actual corrin
+    # SMARTS pattern for detecting a corrin-like structure
+    # This pattern tries to capture the four pyrrole rings connectivity and macrocyclic nature
+    # Example SMARTS for pyrrole: c1cc[nH]c1; 
+    # Modification here is a task-specific guess and must be refined
+    corrin_pattern = Chem.MolFromSmarts(
+        "[nH]1cc[cH][cH]1-[cH]2[cH][cH][c][cH]2"  # simplified and abstract; more detail would be needed
+    )  
     
-    # Try matching the pattern with the molecule
+    # Match the molecule to the corrin pattern
     if mol.HasSubstructMatch(corrin_pattern):
-        return True, "Contains a corrin nucleus-like pattern"
+        return True, "Contains a corrin nucleus pattern"
 
-    return False, "Does not contain a corrin nucleus-like pattern"
+    return False, "Does not contain a corrin nucleus pattern"
