@@ -26,46 +26,20 @@ def is_2_hydroxydicarboxylic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
+    # Define SMARTS patterns
+    carboxy_pattern = Chem.MolFromSmarts("[CX3](=O)[OX1H]")
+    alpha_hydroxy_pattern = Chem.MolFromSmarts("[CX3](=O)[OX1H][CX4][OX2H]")
+
     # Find all carboxylic acid groups
-    carboxy_pattern = Chem.MolFromSmarts("C(=O)[O;H,-]")
     carboxy_matches = mol.GetSubstructMatches(carboxy_pattern)
     num_carboxy_groups = len(carboxy_matches)
     if num_carboxy_groups < 2:
         return False, f"Found {num_carboxy_groups} carboxylic acid groups, need at least 2"
 
-    # Flag to check if any carboxy group has an alpha hydroxy group
-    alpha_hydroxy_found = False
-
-    # For each carboxylic acid group
-    for match in carboxy_matches:
-        # Get the carboxyl carbon atom index
-        carboxyl_carbon_idx = match[0]
-        carboxyl_carbon = mol.GetAtomWithIdx(carboxyl_carbon_idx)
-
-        # Find alpha carbon (neighboring carbon excluding carboxyl oxygens)
-        alpha_carbons = []
-        for neighbor in carboxyl_carbon.GetNeighbors():
-            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in match:
-                alpha_carbons.append(neighbor)
-
-        # For each alpha carbon
-        for alpha_carbon in alpha_carbons:
-            # Check if alpha carbon has a hydroxy group attached
-            hydroxy_attached = False
-            for neighbor in alpha_carbon.GetNeighbors():
-                if neighbor.GetAtomicNum() == 8:  # Oxygen
-                    if neighbor.GetTotalDegree() == 1:  # Single bond
-                        if neighbor.GetTotalNumHs(includeNeighbors=True) >= 1:
-                            hydroxy_attached = True
-                            break
-            if hydroxy_attached:
-                alpha_hydroxy_found = True
-                break  # No need to check other alpha carbons
-        if alpha_hydroxy_found:
-            break  # No need to check other carboxy groups
-
-    if not alpha_hydroxy_found:
-        return False, "No hydroxy group found on alpha carbon to any carboxylic acid group"
+    # Find alpha-hydroxy carboxylic acid groups
+    alpha_hydroxy_matches = mol.GetSubstructMatches(alpha_hydroxy_pattern)
+    if not alpha_hydroxy_matches:
+        return False, "No alpha-hydroxy carboxylic acid group found"
 
     return True, "Molecule is a 2-hydroxydicarboxylic acid (dicarboxylic acid with hydroxy group on alpha carbon)"
 
