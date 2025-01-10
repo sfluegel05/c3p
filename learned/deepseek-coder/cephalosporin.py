@@ -37,7 +37,7 @@ def is_cephalosporin(smiles: str):
 
     # Check for the presence of a carboxyl group (or ester) at position 4 of the dihydrothiazine ring
     # This pattern is more flexible and allows for esterified carboxyl groups
-    carboxyl_pattern = Chem.MolFromSmarts("[C@H]12SCC(=C(N1C(=O)[C@@H]2*)*)[C;$(C(=O)[OH,O])]")
+    carboxyl_pattern = Chem.MolFromSmarts("[C@H]12SCC(=C(N1C(=O)[C@@H]2*)*)[C;$(C(=O)[OH,O,C])]")
     if not mol.HasSubstructMatch(carboxyl_pattern):
         return False, "No carboxyl group (or ester) at position 4 of the dihydrothiazine ring"
 
