@@ -24,43 +24,35 @@ def is_3__hydroxyflavanones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for basic flavanone core (chroman-4-one)
-    # More flexible pattern that allows for substitutions
-    flavanone_core = Chem.MolFromSmarts("O1CC(=O)c2ccccc2O1")
-    if flavanone_core is None:
-        return False, "Error in flavanone SMARTS pattern"
-    
+    # Basic flavanone core pattern - more flexible to allow substitutions
+    # [#6~2] means any carbon in a ring of size 2 or more
+    # This pattern matches the essential C-O-C-C(=O)-C framework
+    flavanone_core = Chem.MolFromSmarts("""
+        [OX2]1[CH2][CH1]([#6;R1])[CX3](=[OX1])[#6;R1]2[#6;R1]=,:[#6;R1]=,:[#6;R1]=,:[#6;R1]=,:[#6;R1]12
+    """)
     if not mol.HasSubstructMatch(flavanone_core):
         return False, "Missing flavanone core structure"
 
-    # Check for 2-phenyl-chroman-4-one with 3'-OH
-    # This pattern specifically looks for:
-    # - The flavanone core
-    # - A phenyl ring at position 2
-    # - A hydroxyl group at the 3' position
-    pattern = Chem.MolFromSmarts("""
-        [O;D2]1[CH2][CH1]([#6;R1]2)C(=O)c3c(O1)cccc3
-        [$([#6]:c:c:c(O):c)]
+    # Pattern for 3'-hydroxyl group on the phenyl ring
+    # The pattern looks for:
+    # 1. The flavanone core with the 2-position carbon as the attachment point
+    # 2. A phenyl ring attached at position 2
+    # 3. A hydroxyl group at the meta position (3') relative to the attachment point
+    hydroxyflavanone_pattern = Chem.MolFromSmarts("""
+        [OX2]1[CH2][CH1]([#6;R1]2=CC(O)=CC=C2)[CX3](=[OX1])[#6;R1]3[#6;R1]=,:[#6;R1]=,:[#6;R1]=,:[#6;R1]=,:[#6;R1]13
     """)
     
-    if pattern is None:
-        return False, "Error in SMARTS pattern"
+    if not mol.HasSubstructMatch(hydroxyflavanone_pattern):
+        # Try alternative pattern that's more flexible with substitutions
+        alt_pattern = Chem.MolFromSmarts("""
+            [OX2]1[CH2][CH1]([#6;R1]2[#6;R1]=,:[#6;R1](O)[#6;R1]=,:[#6;R1]=,:[#6;R1]2)[CX3](=[OX1])[#6;R1]3[#6;R1]=,:[#6;R1]=,:[#6;R1]=,:[#6;R1]=,:[#6;R1]13
+        """)
+        if not mol.HasSubstructMatch(alt_pattern):
+            return False, "Missing 3'-hydroxy group on phenyl ring"
 
-    # Alternative pattern focusing on the 3'-OH phenyl ring
-    alt_pattern = Chem.MolFromSmarts("""
-        [OH]-[c]1[cH,$(c[#6])]c([cH,$(c[#6])])c([CH1]2OCC(=O)c3ccccc3O2)cc1
-    """)
-    
-    if alt_pattern is None:
-        return False, "Error in alternative SMARTS pattern"
+    # Verify it's a flavanone (not a flavone) by checking for sp3 carbon at position 2
+    sp3_check = Chem.MolFromSmarts("[OX2]1[CH2][CH1][CX3](=[OX1])")
+    if not mol.HasSubstructMatch(sp3_check):
+        return False, "Not a flavanone (missing sp3 carbon at position 2)"
 
-    if mol.HasSubstructMatch(pattern) or mol.HasSubstructMatch(alt_pattern):
-        # Additional check for ketone group to ensure we're not matching flavones
-        ketone_pattern = Chem.MolFromSmarts("O=C1CC(Oc2ccccc12)")
-        if ketone_pattern is None:
-            return False, "Error in ketone SMARTS pattern"
-            
-        if mol.HasSubstructMatch(ketone_pattern):
-            return True, "Contains flavanone core with 3'-hydroxy substituent"
-    
-    return False, "Missing required 3'-hydroxy flavanone structure"
+    return True, "Contains flavanone core with 3'-hydroxy substituent"
