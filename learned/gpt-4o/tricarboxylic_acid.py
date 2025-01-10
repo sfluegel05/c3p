@@ -7,7 +7,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_tricarboxylic_acid(smiles: str):
     """
     Determines if a molecule is a tricarboxylic acid based on its SMILES string.
-    A tricarboxylic acid contains exactly three carboxy groups (-C(=O)OH).
+    A tricarboxylic acid contains exactly three distinct carboxy groups (-C(=O)OH).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,16 +22,15 @@ def is_tricarboxylic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for carboxylic acid pattern (C(=O)O)
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
+    # Look for carboxylic acid pattern (C(=O)O[HYDROGEN])
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[O;H]")
     carboxy_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
 
-    # Filter out non-distinct carboxylic acids based on having distinct atom sets connected by C(=O)OH pattern
-    carboxy_atoms = set()
-    for match in carboxy_matches:
-        carboxy_atoms.add(tuple(sorted(match)))
+    # Collect distinct carboxylic acids
+    carboxy_atoms_sets = {frozenset(match) for match in carboxy_matches}
 
-    num_distinct_carboxy = len(carboxy_atoms)
+    # Count distinct carboxylic acid groups
+    num_distinct_carboxy = len(carboxy_atoms_sets)
 
     if num_distinct_carboxy == 3:
         return True, "Contains exactly three distinct carboxylic acid groups"
