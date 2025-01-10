@@ -5,12 +5,11 @@ Classifies: CHEBI:33856 aromatic amino acid
 Classifies: aromatic amino acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdmolops
 
 def is_aromatic_amino_acid(smiles: str):
     """
     Determines if a molecule is an aromatic amino acid based on its SMILES string.
-    An aromatic amino acid is an amino acid whose structure includes an aromatic ring.
+    An aromatic amino acid is an amino acid whose structure includes an aromatic ring in its side chain.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -25,44 +24,53 @@ def is_aromatic_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Identify amino acid backbone: [N][C][C(=O)O]
-    amino_acid_pattern = Chem.MolFromSmarts("[N;D2]-[C;D3]-[C](=O)-O")
+    # Identify amino acid backbone: [N]-[C@H]-[C](=O)-O
+    amino_acid_pattern = Chem.MolFromSmarts("[N;D2]-[C;D3]([C;!H0,H1,H2,H3])[C](=O)-O")
     aa_matches = mol.GetSubstructMatches(amino_acid_pattern)
     if not aa_matches:
         return False, "No amino acid backbone found"
 
-    # Check for aromatic ring
-    aromatic_rings = mol.GetAromaticRings()
-    if not aromatic_rings:
-        return False, "No aromatic rings found in molecule"
+    # Assume first match is the amino acid backbone
+    n_idx, alpha_c_idx, c_idx = aa_matches[0][0], aa_matches[0][1], aa_matches[0][2]
 
-    # Check if aromatic ring is part of the side chain connected to alpha carbon
-    for match in aa_matches:
-        n_idx, alpha_c_idx, c_idx = match  # Indices of N, alpha C, and carbonyl C
+    # Find side chain attached to alpha carbon
+    alpha_c = mol.GetAtomWithIdx(alpha_c_idx)
+    side_chain_atom_indices = set()
+    visited = set([n_idx, alpha_c_idx, c_idx])
 
-        # Find side chain attached to alpha carbon
-        alpha_c = mol.GetAtomWithIdx(alpha_c_idx)
-        side_chain_atoms = []
-        for neighbor in alpha_c.GetNeighbors():
+    def dfs(atom_idx):
+        for neighbor in mol.GetAtomWithIdx(atom_idx).GetNeighbors():
             nbr_idx = neighbor.GetIdx()
-            if nbr_idx != n_idx and nbr_idx != c_idx:
-                # Traverse side chain to find if it contains aromatic atoms
-                visited = set()
-                stack = [nbr_idx]
-                while stack:
-                    atom_idx = stack.pop()
-                    if atom_idx in visited:
-                        continue
-                    visited.add(atom_idx)
-                    atom = mol.GetAtomWithIdx(atom_idx)
-                    if atom.GetIsAromatic():
-                        return True, "Aromatic ring found in side chain"
-                    for nbr in atom.GetNeighbors():
-                        nbr_idx2 = nbr.GetIdx()
-                        if nbr_idx2 != alpha_c_idx and nbr_idx2 not in visited:
-                            stack.append(nbr_idx2)
+            if nbr_idx not in visited:
+                visited.add(nbr_idx)
+                side_chain_atom_indices.add(nbr_idx)
+                dfs(nbr_idx)
+    dfs(alpha_c_idx)
 
-    return False, "Aromatic ring not part of side chain connected to amino acid backbone"
+    # Remove backbone atoms from side chain atoms
+    side_chain_atom_indices -= set([n_idx, alpha_c_idx, c_idx])
 
-__metadata__ = {   'chemical_class': {   'name': 'aromatic amino acid',
-                                         'definition': 'An amino acid whose structure includes an aromatic ring.'}}
+    if not side_chain_atom_indices:
+        return False, "No side chain found"
+
+    # Get ring information
+    ring_info = mol.GetRingInfo()
+    atom_rings = ring_info.AtomRings()
+    if not atom_rings:
+        return False, "No rings found in molecule"
+
+    # Check if any ring in side chain is aromatic
+    for ring in atom_rings:
+        ring_set = set(ring)
+        if ring_set & side_chain_atom_indices:
+            # Check if all atoms in ring are aromatic
+            if all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring):
+                return True, "Aromatic ring found in side chain"
+    return False, "Aromatic ring not found in side chain connected to amino acid backbone"
+
+__metadata__ = {
+    'chemical_class': {
+        'name': 'aromatic amino acid',
+        'definition': 'An amino acid whose structure includes an aromatic ring.'
+    }
+}
