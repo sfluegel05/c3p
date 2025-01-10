@@ -2,11 +2,12 @@
 Classifies: CHEBI:67194 cannabinoid
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_cannabinoid(smiles: str):
     """
     Determines if a molecule is a cannabinoid based on its SMILES string.
-    Cannabinoids are characterized by aromatic rings, long hydrocarbon chains, and oxygen-containing functional groups.
+    Cannabinoids are characterized by pharmacological activity and presence of oxygen in heterocyclic rings or as functional groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,23 +21,26 @@ def is_cannabinoid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Pattern for aromatic systems (e.g., phenolic or indole rings)
-    aromatic_pattern = Chem.MolFromSmarts("c1ccccc1")
-    if not mol.HasSubstructMatch(aromatic_pattern):
-        return False, "No aromatic system characteristic found"
-    
-    # Check for presence of oxygen atoms (indicating potential functional groups)
+
+    # Check for long hydrocarbon chain patterns
+    long_chain_pattern = Chem.MolFromSmarts("C~C~C~C~C~C~C~C~C")
+    if not mol.HasSubstructMatch(long_chain_pattern):
+        return False, "No long hydrocarbon chain found"
+
+    # Check for oxygen in functional groups or heterocyclic rings
     oxygen_pattern = Chem.MolFromSmarts("[#8]")
     if not mol.HasSubstructMatch(oxygen_pattern):
         return False, "No oxygen-containing functional groups found"
+
+    # Optional: Check for heterocycles (aromatic rings that may include oxygen)
+    heterocycle_pattern = Chem.MolFromSmarts("[r6,r7,r8]")
+    if not mol.HasSubstructMatch(heterocycle_pattern):
+        return False, "No heterocyclic rings found"
+
+    # Additional feature check for diverse cannabinoid structures
+    # Here, consider adding more specific substructure searches based on known cannabinoids
     
-    # Check for long aliphatic chains (substantially long CH-chains)
-    long_chain_pattern = Chem.MolFromSmarts("CCCCCCCC")
-    if not mol.HasSubstructMatch(long_chain_pattern):
-        return False, "No long hydrocarbon chains detected"
-    
-    return True, "Aromatic rings, long hydrocarbon chains, and oxygen functional groups are present"
+    return True, "Contains characteristic long hydrocarbon chain and oxygen-containing functional groups"
 
 # Example SMILES strings for testing
 smiles_examples = [
