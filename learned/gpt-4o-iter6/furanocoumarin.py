@@ -15,38 +15,30 @@ def is_furanocoumarin(smiles: str):
         bool: True if molecule is a furanocoumarin, False otherwise
         str: Reason for classification
     """
-    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for furan-like pattern (5-membered oxygen-containing ring)
-    furan_like_patterns = [
-        Chem.MolFromSmarts("o1cccc1"),  # Typical furan ring
-        Chem.MolFromSmarts("C1=COC=C1")  # Alternate depiction of furan
-    ]
-    furan_found = any(mol.HasSubstructMatch(f_pattern) for f_pattern in furan_like_patterns)
-    if not furan_found:
+    # Define substructure patterns for furan and coumarin
+    furan_pattern = Chem.MolFromSmarts('c1ccoc1')  # A simple furan ring
+    coumarin_pattern = Chem.MolFromSmarts('O=c1cc2ccccc2oc1')  # A common coumarin structure
+
+    # Check for the presence of a furan ring
+    furan_matches = mol.GetSubstructMatches(furan_pattern)
+    if not furan_matches:
         return False, "No furan-like ring found"
-    
-    # Look for coumarin-like structure pattern (various configurations)
-    coumarin_like_patterns = [
-        Chem.MolFromSmarts("O=c1ccc2c(c1)occ2"),  # Common coumarin pattern
-        Chem.MolFromSmarts("O=c1cc2ccc(oc2c1)O")  # Alternate rings
-    ]
-    coumarin_found = any(mol.HasSubstructMatch(c_pattern) for c_pattern in coumarin_like_patterns)
-    if not coumarin_found:
+
+    # Check for the presence of a coumarin structure
+    coumarin_matches = mol.GetSubstructMatches(coumarin_pattern)
+    if not coumarin_matches:
         return False, "No coumarin-like structure found"
-    
-    # Cross-check could involve examining the proximity connection of detected rings
-    furan_atoms = [atom.GetIdx() for f_pattern in furan_like_patterns for atom in mol.GetSubstructMatches(f_pattern)]
-    coumarin_atoms = [atom.GetIdx() for c_pattern in coumarin_like_patterns for atom in mol.GetSubstructMatches(c_pattern)]
 
-    # Check if any atom from furan rings is neighboring any atom from coumarin
-    for f_atom in furan_atoms:
-        for c_atom in coumarin_atoms:
-            if mol.GetBondBetweenAtoms(f_atom, c_atom):
-                return True, "Furan ring and coumarin structure are connected, indicating fusion"
+    # Verify fusion by checking atom connectivity between matched furan and coumarin substructures
+    for furan_match in furan_matches:
+        for coumarin_match in coumarin_matches:
+            # Check if there is a direct atom connection between end atoms of furan and coumarin rings
+            if any(mol.GetBondBetweenAtoms(furan_atom, coumarin_atom) for furan_atom in furan_match for coumarin_atom in coumarin_match):
+                return True, "Furan ring and coumarin structure are fused"
 
-    return False, "Furan and coumarin structures not properly fused or no proper substructure found"
+    return False, "Furan and coumarin structures not properly fused"
