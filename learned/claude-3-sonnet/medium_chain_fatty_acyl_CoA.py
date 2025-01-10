@@ -11,6 +11,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_medium_chain_fatty_acyl_CoA(smiles: str):
     """
     Determines if a molecule is a medium-chain fatty acyl-CoA based on its SMILES string.
+    Medium-chain fatty acids typically have 6-12 carbons.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -25,59 +26,77 @@ def is_medium_chain_fatty_acyl_CoA(smiles: str):
         return False, "Invalid SMILES string"
     
     # Check for CoA moiety patterns
-    # Adenine base
-    adenine_pattern = Chem.MolFromSmarts("n1c(N)nc2c(ncnc12)")
-    # Phosphate groups
-    phosphate_pattern = Chem.MolFromSmarts("OP(O)(=O)O")
-    # Pantetheine part
-    pantetheine_pattern = Chem.MolFromSmarts("CC(C)(COP)C(O)C(=O)NCCC(=O)NCCS")
+    # More flexible adenine pattern
+    adenine_pattern = Chem.MolFromSmarts("[nX2r5]1c([nX3H2,NX3H])nc2c(ncnc12)")
     
-    if not all(mol.HasSubstructMatch(p) for p in [adenine_pattern, phosphate_pattern, pantetheine_pattern]):
-        return False, "Missing essential CoA structural elements"
+    # Multiple phosphate groups
+    phosphate_pattern = Chem.MolFromSmarts("OP(O)(=O)O")
+    
+    # More flexible pantetheine pattern - breaking it into parts
+    thiol_pattern = Chem.MolFromSmarts("CCNC(=O)CCNC(=O)[CH]([OH])C(C)(C)COP")
+    
+    # Check for key structural elements
+    if not mol.HasSubstructMatch(adenine_pattern):
+        return False, "Missing adenine moiety"
+    
+    phosphate_matches = len(mol.GetSubstructMatches(phosphate_pattern))
+    if phosphate_matches < 2:
+        return False, f"Insufficient phosphate groups (found {phosphate_matches}, need at least 2)"
+    
+    if not mol.HasSubstructMatch(thiol_pattern):
+        return False, "Missing pantetheine moiety"
     
     # Check for thioester linkage (R-C(=O)-S-)
     thioester_pattern = Chem.MolFromSmarts("[CX3](=O)[SX2]")
     if not mol.HasSubstructMatch(thioester_pattern):
         return False, "No thioester linkage found"
     
-    # Count carbons in the fatty acid chain
-    # First, get the thioester carbon
+    # Find the fatty acid chain
     thioester_matches = mol.GetSubstructMatches(thioester_pattern)
     if not thioester_matches:
         return False, "Could not analyze fatty acid chain"
     
     # Get the carbon atom index of the thioester carbonyl
     carbonyl_idx = thioester_matches[0][0]
-    carbonyl_atom = mol.GetAtomWithIdx(carbonyl_idx)
     
-    # Count carbons in the chain (excluding the carbonyl)
-    chain_carbons = set()
-    def count_chain_carbons(atom, visited):
-        if atom.GetAtomicNum() != 6:  # not carbon
-            return
-        if atom.GetIdx() in visited:
-            return
-        visited.add(atom.GetIdx())
-        chain_carbons.add(atom.GetIdx())
-        for neighbor in atom.GetNeighbors():
-            if neighbor.GetIdx() != carbonyl_idx:  # don't go back through carbonyl
-                count_chain_carbons(neighbor, visited)
+    # Count carbons in the chain using BFS
+    def count_chain_atoms(mol, start_idx):
+        visited = set()
+        chain_carbons = set()
+        queue = [start_idx]
+        
+        while queue:
+            current_idx = queue.pop(0)
+            if current_idx in visited:
+                continue
+                
+            visited.add(current_idx)
+            current_atom = mol.GetAtomWithIdx(current_idx)
+            
+            # Count carbons (excluding the carbonyl carbon)
+            if current_atom.GetAtomicNum() == 6 and current_idx != carbonyl_idx:
+                chain_carbons.add(current_idx)
+                
+            # Add neighbors to queue
+            for neighbor in current_atom.GetNeighbors():
+                neighbor_idx = neighbor.GetIdx()
+                # Don't traverse through the thioester sulfur
+                if neighbor.GetAtomicNum() != 16:  # not sulfur
+                    queue.append(neighbor_idx)
+        
+        return len(chain_carbons)
     
-    # Start counting from carbons attached to carbonyl
-    for neighbor in carbonyl_atom.GetNeighbors():
-        if neighbor.GetAtomicNum() == 6:  # carbon
-            count_chain_carbons(neighbor, set())
+    chain_length = count_chain_atoms(mol, carbonyl_idx)
     
-    chain_length = len(chain_carbons)
-    
+    # Check chain length (6-12 carbons for medium chain)
     if chain_length < 6:
         return False, f"Fatty acid chain too short ({chain_length} carbons)"
     if chain_length > 12:
         return False, f"Fatty acid chain too long ({chain_length} carbons)"
-        
+    
     # Additional checks for reasonable molecular properties
     mol_weight = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_weight < 750 or mol_weight > 1100:
+    if mol_weight < 700 or mol_weight > 1200:
         return False, f"Molecular weight {mol_weight:.1f} outside typical range"
     
     return True, f"Medium-chain fatty acyl-CoA with {chain_length} carbons in fatty acid chain"
