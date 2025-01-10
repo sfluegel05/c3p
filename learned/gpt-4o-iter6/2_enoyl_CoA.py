@@ -21,16 +21,16 @@ def is_2_enoyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Updated pattern for the 2-enoyl group where double bond between the C2 and C3 positions is checked
-    enoyl_pattern = Chem.MolFromSmarts("C(=O)SC=C[CH2,C]")  # More flexible match ensuring a double bond C2=C3
+    # More comprehensive pattern capturing the C(=O)S-C=C motif, allowing flexibility for substitution and stereochemistry
+    enoyl_pattern = Chem.MolFromSmarts("C(=O)SC([#6&v4])=C([#6])")  # Flexibility in stereochemistry and substituents
     
     # Comprehensive pattern for CoA based on characteristic phosphopantetheine structure
-    coA_pattern = Chem.MolFromSmarts("COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O[C@@H]1OP(=O)(O)O)O)n2cnc3c(N)ncnc23")
+    coA_pattern = Chem.MolFromSmarts("COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O[C@@H]1O)O)n2cnc3c(N)ncnc23")
 
-    # Check for 2-enoyl pattern
+    # Check for the 2-enoyl pattern
     if not mol.HasSubstructMatch(enoyl_pattern):
         return False, "No 2-enoyl pattern (enoyl thioester linkage with correct positioning) found"
-        
+
     # Ensure the Coenzyme A (CoA) structure is present
     if not mol.HasSubstructMatch(coA_pattern):
         return False, "No Coenzyme A backbone detected"
