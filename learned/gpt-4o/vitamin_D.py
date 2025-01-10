@@ -2,14 +2,11 @@
 Classifies: CHEBI:27300 vitamin D
 """
 from rdkit import Chem
-from rdkit.Chem.rdMolDescriptors import CalcNumRotatableBonds
-from rdkit.Chem.rdmolops import SanitizeFlags
 
 def is_vitamin_D(smiles: str):
     """
     Determines if a molecule is a vitamin D compound based on its SMILES string.
-    Includes tests for open B-ring and typical secosteroid configurations.
-
+    
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -22,33 +19,24 @@ def is_vitamin_D(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+
+    # Check for secosteroid structure: look for a broken B-ring pattern
+    # General simplified pattern for secosteroids could be further improved
+    seco_steroid_pattern = Chem.MolFromSmarts("C1CCC2=C(CC1)CCC3C2CCC4[C@@H]3[C@@H](CCCC4)C")
+    if not mol.HasSubstructMatch(seco_steroid_pattern):
+        return False, "No secosteroid core structure found"
+        
+    # Check for hydroxyl groups at specific vitamin D positions (3 position is critical)
+    # SMARTS for hydroxyl group
+    hydroxyl_pattern = Chem.MolFromSmarts("[CX4][OX2H]")
+    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
     
-    try:
-        # Sanitize molecule (previously applied but omitted; RDKit usually autoinfers sanitization need)
-        Chem.SanitizeMol(mol)
-        
-        # Corrected SMARTS pattern for typical secosteroid-like structure
-        open_b_ring_pattern = Chem.MolFromSmarts("C1C=C2CCCCC2=C1")
-        if not mol.HasSubstructMatch(open_b_ring_pattern):
-            return False, "No typical secosteroid-like open B-ring structure found"
-        
-        # Identify conjugated triene system with flexibility
-        triene_pattern = Chem.MolFromSmarts("C=C-C=C-C=C")
-        if not mol.HasSubstructMatch(triene_pattern):
-            return False, "No conjugated triene system detected"
-        
-        # Detect two or more hydroxyl groups
-        hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
-        hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-        if len(hydroxyl_matches) < 2:
-            return False, "Less than two hydroxyl groups detected"
+    if len(hydroxyl_matches) < 2:  # Vitamin D3 generally has two primary hydroxyl groups
+        return False, "Not enough hydroxyl groups, found less than 2"
+    
+    # Check for the presence of a conjugated triene system, specific to the vitamin D3 structure
+    triene_pattern = Chem.MolFromSmarts("C=C/C=C/C=C")
+    if not mol.HasSubstructMatch(triene_pattern):
+        return False, "No conjugated triene system detected for Vitamin D"
 
-        # Structural flexibility in secosteroid structure characterized by sufficient rotatable bonds
-        if CalcNumRotatableBonds(mol) < 3:
-            return False, "Insufficient structural flexibility for vitamin D"
-
-    except Exception as e:
-        return False, f"SMILES parsing or feature detection failed: {str(e)}"
-
-    # If all checks are passed, classify as vitamin D
-    return True, "Matches typical vitamin D structural features"
+    return True, "Matches vitamin D core structure and functional groups"
