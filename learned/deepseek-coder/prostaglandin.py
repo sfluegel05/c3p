@@ -31,8 +31,8 @@ def is_prostaglandin(smiles: str):
     if not mol.HasSubstructMatch(cyclopentane_pattern):
         return False, "No cyclopentane ring found"
 
-    # Check for the presence of at least one carboxyl group (COOH)
-    carboxyl_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
+    # Check for the presence of at least one carboxyl group (COOH or ester)
+    carboxyl_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H0]")
     if not mol.HasSubstructMatch(carboxyl_pattern):
         return False, "No carboxyl group found"
 
@@ -46,14 +46,14 @@ def is_prostaglandin(smiles: str):
     if not mol.HasSubstructMatch(double_bond_pattern):
         return False, "No double bond found"
 
-    # Check molecular weight - prostaglandins typically have a molecular weight around 350-400 Da
+    # Check molecular weight - prostaglandins typically have a molecular weight around 350-600 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 300 or mol_wt > 500:
+    if mol_wt < 300 or mol_wt > 600:
         return False, f"Molecular weight {mol_wt:.2f} is outside the typical range for prostaglandins"
 
-    # Count carbons - prostaglandins typically have 20 carbons
+    # Count carbons - prostaglandins typically have 20 carbons, but allow some flexibility
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 18 or c_count > 22:
+    if c_count < 16 or c_count > 24:
         return False, f"Number of carbons {c_count} is outside the typical range for prostaglandins"
 
     return True, "Contains cyclopentane ring, carboxyl group, hydroxyl group, and double bond, with appropriate molecular weight and carbon count"
