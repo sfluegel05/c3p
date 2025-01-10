@@ -20,22 +20,28 @@ def is_bioconjugate(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+    
+    # Simple fragments for known bioconjugates
+    patterns = {
+        "peptide_bond": Chem.MolFromSmarts("N[C@H](C)C(=O)"),
+        "disulfide_bond": Chem.MolFromSmarts("S-S"),
+        "glutathione_like": Chem.MolFromSmarts("N[C@H](CC(=O)NCCS)C(=O)NCC(=O)O"),
+        "coenzyme_a_link": Chem.MolFromSmarts("SCCNC(=O)CCNC(=O)C@[O,P]")
+    }
+    
+    # Flag to check if we match any bioconjugate-like pattern
+    matched_patterns = []
+    for name, pattern in patterns.items():
+        if mol.HasSubstructMatch(pattern):
+            matched_patterns.append(name)
 
-    # Check for peptide bond patterns (typically featuring amide bonds)
-    peptide_bond_pattern = Chem.MolFromSmarts("N[C@H](C)C(=O)")  # Simplification: looks for alpha-amino acid amidation
-    if mol.HasSubstructMatch(peptide_bond_pattern):
-        return True, "Contains peptide bond(s), indicative of protein/peptide bioconjugate"
+    # We check for the presence of at least two distinct biological units
+    if len(matched_patterns) >= 2:
+        return True, f"Contains patterns: {', '.join(matched_patterns)}"
 
-    # Check for disulfide bond patterns
-    disulfide_pattern = Chem.MolFromSmarts("S-S")
-    if mol.HasSubstructMatch(disulfide_pattern):
-        return True, "Contains disulfide bond(s), indicative of bioconjugate involving cysteine/dithiol"
-
-    # Check for nucleotide-like structures linked together (common in coenzyme A type bioconjugates)
-    cofactor_pattern = Chem.MolFromSmarts("NC(=O)CCNC(=O)C@[O,P]")  # Simplified nucleotide linkage
-    if mol.HasSubstructMatch(cofactor_pattern):
-        return True, "Contains cofactor-like nucleotide structure"
+    # For failed cases, provide the reason for classification based on detected patterns
+    if matched_patterns:
+        return False, f"Partially matched patterns, only found: {', '.join(matched_patterns)}"
 
     # More complex logic might be needed to cover diverse examples encountered in real applications
-    # Return None, None for inconclusive results based on available patterns
-    return (None, None)
+    return False, "No definitive bioconjugate patterns found"
