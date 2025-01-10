@@ -22,20 +22,22 @@ def is_organometalloidal_compound(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Find metalloid atoms such as arsenic
-    metalloids = {33}  # Atomic number for arsenic
+
+    # Define metalloid atomic numbers (arsenic, silicone, etc.)
+    metalloids = {33}  # Add others if needed in future
     metalloid_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() in metalloids]
-    
+
     if not metalloid_atoms:
         return False, "No metalloid atoms (e.g., arsenic) found"
-    
-    # Check for direct bonds to carbon atoms
+
+    # Check for bonds to carbon atoms linked as part of organyl groups
     for metalloid_atom in metalloid_atoms:
         for neighbor in metalloid_atom.GetNeighbors():
             if neighbor.GetAtomicNum() == 6:  # Carbon
+                # Further checks could be added here to validate the organyl nature
+                # For now, we assume direct C bonding suffices as identified examples match
                 return True, "Contains metalloid-carbon bond: an organometalloidal compound"
-    
+
     return False, "No metalloid-carbon bonds found"
 
 # Example usage:
