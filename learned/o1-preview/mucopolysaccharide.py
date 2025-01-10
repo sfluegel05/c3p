@@ -6,7 +6,6 @@ Classifies: mucopolysaccharide
 """
 
 from rdkit import Chem
-from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_mucopolysaccharide(smiles: str):
@@ -28,29 +27,29 @@ def is_mucopolysaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Detect 5- or 6-membered rings with at least two heteroatoms (O or N)
-    sugar_ring_pattern = Chem.MolFromSmarts("[!R;R5,R6;$(C1~[O,N]~[C,N,O]~[C,N,O]~[C,N,O]~[C,N,O]1)]")
+    # Check for at least two sugar rings
+    sugar_ring_pattern = Chem.MolFromSmarts("[C;R1]1[C,O,N][C,O,N][C,O,N][C,O,N][C,O,N]1")
     sugar_rings = mol.GetSubstructMatches(sugar_ring_pattern)
     num_sugar_rings = len(sugar_rings)
     if num_sugar_rings < 2:
-        return False, f"Found {num_sugar_rings} sugar-like rings, need at least 2"
+        return False, f"Found {num_sugar_rings} sugar rings, need at least 2"
 
-    # Detect glycosidic bonds (oxygen bridges between rings)
+    # Detect glycosidic bonds (C-O-C between rings)
     glycosidic_bond_pattern = Chem.MolFromSmarts("[C;R]-O-[C;R]")
     glycosidic_bonds = mol.GetSubstructMatches(glycosidic_bond_pattern)
     num_glycosidic_bonds = len(glycosidic_bonds)
     if num_glycosidic_bonds < 1:
         return False, "No glycosidic bonds found between sugar rings"
 
-    # Check for uronic acid units (sugar ring with carboxylic acid substituent)
-    uronic_acid_pattern = Chem.MolFromSmarts("[C;R][C;R][C;R][C;R][C;R][O;R][C]=O")
+    # Check for uronic acid units (sugar ring with carboxylic acid group)
+    uronic_acid_pattern = Chem.MolFromSmarts("[C;R][C;R][C;R](=O)[O;H1]")
     uronic_acid_units = mol.GetSubstructMatches(uronic_acid_pattern)
     num_uronic_acids = len(uronic_acid_units)
     if num_uronic_acids < 1:
         return False, "No uronic acid units found"
 
     # Check for glycosamine units (sugar ring with amino group)
-    glycosamine_pattern = Chem.MolFromSmarts("[C;R][C;R][C;R][C;R][C;R][O;R][C][N]")
+    glycosamine_pattern = Chem.MolFromSmarts("[C;R][C;R][C;R][C;R][C;R][O;H1][C;R][N]")
     glycosamine_units = mol.GetSubstructMatches(glycosamine_pattern)
     num_glycosamines = len(glycosamine_units)
     if num_glycosamines < 1:
@@ -62,22 +61,24 @@ def is_mucopolysaccharide(smiles: str):
     num_sulfate_groups = len(sulfate_groups)
     # Sulfate groups are common but not mandatory
 
-    # Calculate the total number of rings
+    # Count total number of rings
     ring_info = mol.GetRingInfo()
     num_rings = ring_info.NumRings()
+    if num_rings < 2:
+        return False, "Too few rings for a polysaccharide"
 
     # Calculate molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 500:
         return False, "Molecular weight too low for typical mucopolysaccharide"
 
-    # Check if molecule is a large polymer (due to polysaccharide nature)
-    num_atoms = mol.GetNumAtoms()
-    if num_atoms < 50:
-        return False, "Molecule too small to be a mucopolysaccharide"
+    # Check for repeating units (polymer)
+    repeating_unit_pattern = Chem.MolFromSmarts("([C;R]-O-[C;R])n")
+    if not mol.HasSubstructMatch(repeating_unit_pattern):
+        return False, "No repeating sugar units found"
 
     return True, (
-        f"Contains {num_sugar_rings} sugar-like rings connected by glycosidic bonds, "
+        f"Contains {num_sugar_rings} sugar rings connected by glycosidic bonds, "
         f"with uronic acid and glycosamine units"
     )
 
