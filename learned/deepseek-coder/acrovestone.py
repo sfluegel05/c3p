@@ -24,27 +24,19 @@ def is_acrovestone(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for isoflavone core structure (benzopyran-4-one with a phenyl group at the 2-position)
-    # More flexible pattern to account for substitutions
-    isoflavone_pattern = Chem.MolFromSmarts("[O]=[C]1[C](=[COc2ccccc2])c3ccccc3O1")
+    isoflavone_pattern = Chem.MolFromSmarts("O=C1C(=COc2ccccc2)c3ccccc3O1")
     if not mol.HasSubstructMatch(isoflavone_pattern):
-        # Try a more flexible pattern
-        isoflavone_pattern = Chem.MolFromSmarts("[O]=[C]1[C](=[COc2ccccc2])c3ccccc3O1")
-        if not mol.HasSubstructMatch(isoflavone_pattern):
-            return False, "No isoflavone core structure found"
+        return False, "No isoflavone core structure found"
 
     # Check for glycosidic linkage (presence of a sugar moiety)
-    # More general pattern to account for different sugar moieties
     glycosidic_pattern = Chem.MolFromSmarts("[C@H]1O[C@H]([C@H]([C@@H]([C@H]1O)O)O)CO")
     if not mol.HasSubstructMatch(glycosidic_pattern):
-        # Try a more general pattern
-        glycosidic_pattern = Chem.MolFromSmarts("[C@H]1O[C@H]([C@H]([C@@H]([C@H]1O)O)O)CO")
-        if not mol.HasSubstructMatch(glycosidic_pattern):
-            return False, "No glycosidic linkage found"
+        return False, "No glycosidic linkage found"
 
     # Check for polyphenolic nature (multiple hydroxyl groups on aromatic rings)
     hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
     hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    if len(hydroxyl_matches) < 2:
+    if len(hydroxyl_matches) < 3:
         return False, "Not enough hydroxyl groups for a polyphenol"
 
     # Check molecular weight (acrovestone-like compounds are typically >300 Da)
