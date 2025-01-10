@@ -13,7 +13,7 @@ def is_chalcones(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a chalcone, False otherwise
+        bool: True if the molecule is a chalcone, False otherwise
         str: Reason for classification
     """
     # Parse SMILES string
@@ -21,16 +21,16 @@ def is_chalcones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Improved chalcone pattern: aromatic ring -> C=C -> C(=O) -> aromatic ring
-    # Match both E and Z isomers, allow substitutions
-    chalcone_pattern_smarts = '[cH1]:[c]:[c]:[c]:[c]:[c][C]=[C][C](=O)[cH1]:[c]:[c]:[c]:[c]:[c]'
+    # SMARTS pattern for chalcone core structure with flexibility
+    # Pattern: aromatic ring -> single bond or double bond -> C(=O) -> aromatic ring
+    chalcone_pattern_smarts = 'c1ccccc1[C]=[C]-[C](=O)-c2ccccc2'
     
     # Create a molecule from the SMARTS pattern
     chalcone_pattern = Chem.MolFromSmarts(chalcone_pattern_smarts)
     if chalcone_pattern is None:
         return (None, "Unable to construct chalcone pattern.")
 
-    # Check if the molecule matches the extended chalcone SMARTS pattern
+    # Check if the molecule matches the chalcone SMARTS pattern
     if mol.HasSubstructMatch(chalcone_pattern):
         return True, "Molecule contains the chalcone core structure"
     
