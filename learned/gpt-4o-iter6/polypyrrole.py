@@ -22,12 +22,16 @@ def is_polypyrrole(smiles: str):
 
     # Define a comprehensive list of SMARTS for pyrrole and pyrrole-like structures
     pyrrole_patterns = [
-        Chem.MolFromSmarts("n1cccc1"),    # Basic Pyrrole
-        Chem.MolFromSmarts("c1cn[nH]c1"), # Pyrrole with substitution
+        Chem.MolFromSmarts("n1cccc1"),      # Basic Pyrrole
+        Chem.MolFromSmarts("c1cn[nH]c1"),   # N-substituted pyrroles
         Chem.MolFromSmarts("c2c[nH]c1ccccc12"),  # Fused pyrrole systems
-        Chem.MolFromSmarts("c1cnc2c1cccc2"), # Benzopyrrole system
+        Chem.MolFromSmarts("c1cnc2c1cccc2"),     # Benzopyrrole system
         Chem.MolFromSmarts("n2c1nc(nc1[nH]2)"),  # Azole-like structures
-        Chem.MolFromSmarts("c1ccc2c(c1)nccc2n"), # Expanded porphyrin-like structure
+        Chem.MolFromSmarts("c1ccc2c(c1)nccc2n"), # Porphyrin-like structures
+        Chem.MolFromSmarts("c1[nH]c2c(c1)c[nH]c2"), # Indole systems
+        Chem.MolFromSmarts("n1ccc2ccc[nH]c2c1"),  # Carbazole variations
+        Chem.MolFromSmarts("n1cccn1"),     # Pyrrolidine ring
+        Chem.MolFromSmarts("n1ccccc1"),    # Pyridine-pyrrole hybrids
     ]
     
     # Count all occurrences of pyrrole-like structures
@@ -46,6 +50,6 @@ def is_polypyrrole(smiles: str):
     else:
         return False, "Contains less than two pyrrole-like structures"
 
-# Example usage:
+# Example usage
 smiles_example = "CCC1=C(C)C(=O)NC1Cc1[nH]c(Cc2[nH]c(CC3NC(=O)C(CC)=C3C)c(C)c2CCC(O)=O)c(CCC(O)=O)c1C"
 print(is_polypyrrole(smiles_example))
