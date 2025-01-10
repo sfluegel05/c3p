@@ -26,66 +26,40 @@ def is_oligosaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for glycosidic linkage pattern (C-O-C between two sugar units)
-    glycosidic_pattern = Chem.MolFromSmarts("[C][O][C]")
+    # Look for glycosidic linkage pattern (more specific pattern)
+    glycosidic_pattern = Chem.MolFromSmarts("[C;H1,H2][O][C;H1,H2]")
     if not mol.HasSubstructMatch(glycosidic_pattern):
         return False, "No glycosidic linkage found"
 
     # Look for multiple hydroxyl groups (-OH)
     hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
     hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    if len(hydroxyl_matches) < 3:
-        return False, f"Found {len(hydroxyl_matches)} hydroxyl groups, need at least 3"
+    if len(hydroxyl_matches) < 4:
+        return False, f"Found {len(hydroxyl_matches)} hydroxyl groups, need at least 4"
 
-    # Check for multiple sugar rings (pyranose or furanose)
-    sugar_ring_pattern = Chem.MolFromSmarts("[C1][C@H](O)[C@H](O)[C@H](O)[C@H](O)[C@H]1O")
-    sugar_ring_matches = mol.GetSubstructMatches(sugar_ring_pattern)
-    if len(sugar_ring_matches) < 2:
-        return False, f"Found {len(sugar_ring_matches)} sugar rings, need at least 2"
+    # Check for multiple sugar units (more flexible pattern)
+    sugar_unit_pattern = Chem.MolFromSmarts("[C;H1,H2][C@H](O)[C@H](O)[C@H](O)[C@H](O)[C@H]1O")
+    sugar_unit_matches = mol.GetSubstructMatches(sugar_unit_pattern)
+    if len(sugar_unit_matches) < 2:
+        return False, f"Found {len(sugar_unit_matches)} sugar units, need at least 2"
 
-    # Check molecular weight - oligosaccharides typically >200 Da
+    # Check molecular weight - oligosaccharides typically >300 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 200:
+    if mol_wt < 300:
         return False, "Molecular weight too low for oligosaccharide"
 
     # Count carbons and oxygens
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     
-    if c_count < 6:
+    if c_count < 8:
         return False, "Too few carbons for oligosaccharide"
-    if o_count < 5:
+    if o_count < 6:
         return False, "Too few oxygens for oligosaccharide"
 
+    # Check for common sugar configurations
+    sugar_config_pattern = Chem.MolFromSmarts("[C@H](O)[C@H](O)[C@H](O)[C@H](O)")
+    if not mol.HasSubstructMatch(sugar_config_pattern):
+        return False, "No typical sugar configuration found"
+
     return True, "Contains multiple sugar units joined by glycosidic linkages"
-
-
-__metadata__ = {   'chemical_class': {   'id': 'CHEBI:50699',
-                          'name': 'oligosaccharide',
-                          'definition': 'A compound in which monosaccharide units are joined by glycosidic linkages. The term is commonly used to refer to a defined structure as opposed to a polymer of unspecified length or a homologous mixture. When the linkages are of other types the compounds are regarded as oligosaccharide analogues.',
-                          'parents': ['CHEBI:16646', 'CHEBI:47778']},
-    'config': {   'llm_model_name': 'lbl/claude-sonnet',
-                  'f1_threshold': 0.8,
-                  'max_attempts': 5,
-                  'max_positive_instances': None,
-                  'max_positive_to_test': None,
-                  'max_negative_to_test': None,
-                  'max_positive_in_prompt': 50,
-                  'max_negative_in_prompt': 20,
-                  'max_instances_in_prompt': 100,
-                  'test_proportion': 0.1},
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 150,
-    'num_false_positives': 4,
-    'num_true_negatives': 182407,
-    'num_false_negatives': 23,
-    'num_negatives': None,
-    'precision': 0.974025974025974,
-    'recall': 0.8670520231213873,
-    'f1': 0.9174311926605504,
-    'accuracy': 0.9998521228585199}
