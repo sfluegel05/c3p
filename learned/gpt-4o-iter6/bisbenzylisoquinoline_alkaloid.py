@@ -24,23 +24,22 @@ def is_bisbenzylisoquinoline_alkaloid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS for benzylisoquinoline unit with more details
-    benzylisoquinoline_pattern = Chem.MolFromSmarts("c1ccc2[nH]c3ccccc3c2c1")  # Example pattern, should be elaborated
+    # Define SMARTS for benzylisoquinoline unit (this should capture common features of isoquinolines)
+    isoquinoline_pattern = Chem.MolFromSmarts("c1ccccc2c1ccn2")  # Captures the isoquinoline core
+    benzyl_substituent_pattern = Chem.MolFromSmarts("c1ccccc1")  # Simple benzyl group
 
     # Check for two such units
-    benzyl_matches = mol.GetSubstructMatches(benzylisoquinoline_pattern)
-    if len(benzyl_matches) < 2:
+    isoquinoline_matches = mol.GetSubstructMatches(isoquinoline_pattern)
+    benzyl_matches = mol.GetSubstructMatches(benzyl_substituent_pattern)
+
+    if len(isoquinoline_matches) < 2 or len(benzyl_matches) < 2:
         return False, "Less than two benzylisoquinoline units detected"
 
-    # Define patterns for different types of bridging
-    # Ether bridge (more specific than C-O-C)
+    # Define patterns for ether bridging
     ether_bridge_pattern = Chem.MolFromSmarts("c-O-c")
 
-    # Methylenedioxy bridge (additional possibility)
-    methylenedioxy_bridge_pattern = Chem.MolFromSmarts("c1oc2c(oc1)cccc2")
-    
     # Check for any valid bridge connecting the benzylisoquinoline units
-    if not (mol.HasSubstructMatch(ether_bridge_pattern) or mol.HasSubstructMatch(methylenedioxy_bridge_pattern)):
-        return False, "No valid bridge detected between benzylisoquinoline units"
-    
-    return True, "Contains two benzylisoquinoline units linked by ether or alternative bridges"
+    if not mol.HasSubstructMatch(ether_bridge_pattern):
+        return False, "No valid ether bridge detected between benzylisoquinoline units"
+
+    return True, "Contains two benzylisoquinoline units linked by ether bridges"
