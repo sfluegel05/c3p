@@ -6,7 +6,6 @@ from rdkit import Chem
 def is_fatty_acyl_CoA(smiles: str):
     """
     Determines if a molecule is a fatty acyl-CoA based on its SMILES string.
-    A fatty acyl-CoA contains a Coenzyme A conjugated to a fatty acyl chain via a thioester linkage.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,19 +19,22 @@ def is_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Refined Coenzyme A structure: including adenine ring, riboses, phosphates, and thiol linkage.
-    coenzyme_a_pattern = Chem.MolFromSmarts("NC1=NC=CN=C1N2C=NC(N)N=C2.C3(O[C@H](COP(=O)(O)OP(=O)(O)OCC4O[C@@H](O)[C@H](O)[C@H]4O)O3).SC(=O)[C@@H](N)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)O")
+    # Coenzyme A structure patterns using SMARTS
+    # This pattern detects phosphate groups and ribose sugar components
+    coenzyme_a_pattern = Chem.MolFromSmarts("O=P(OC[C@@H]1O[C@H]([C@H](O)[C@@H]1OP(=O)(O)O)n1cnc2c(N)ncnc12)O")
     if not mol.HasSubstructMatch(coenzyme_a_pattern):
-        return False, "Incomplete CoA structure not detected"
+        return False, "Coenzyme A structure not found"
     
-    # Thioester linkage pattern with some flexibility in the acyl-CoA linkage.
-    thioester_pattern = Chem.MolFromSmarts("C(=O)SCCN")
+    # Thioester linkage pattern (R-C(=O)-S-R)
+    thioester_pattern = Chem.MolFromSmarts("C(=O)S")
     if not mol.HasSubstructMatch(thioester_pattern):
-        return False, "Thioester linkage with CoA not found"
+        return False, "Thioester linkage not found"
     
-    # Fatty acyl chain pattern allowing variations in length and double bonds.
-    hydrocarbon_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]{4,}")
+    # Verify presence of a fatty acid hydrocarbon chain
+    # Fatty acids typically have long hydrocarbon chains (e.g., C12+)
+    hydrocarbon_chain_pattern = Chem.MolFromSmarts("CC[CH2]CCCCCCCCCC")
     if not mol.HasSubstructMatch(hydrocarbon_chain_pattern):
-        return False, "No sufficient hydrocarbon chain detected"
+        return False, "Long fatty acid hydrocarbon chain not found"
 
-    return True, "Contains complete Coenzyme A structure, thioester linkage, and fatty acyl moiety"
+    # If all patterns are found, it is a fatty acyl-CoA
+    return True, "Contains Coenzyme A structure, thioester linkage, and fatty acid moiety"
