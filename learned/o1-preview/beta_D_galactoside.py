@@ -5,7 +5,6 @@ Classifies: CHEBI:28034 beta-D-galactoside
 Classifies: beta-D-galactoside
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_beta_D_galactoside(smiles: str):
     """
@@ -20,19 +19,24 @@ def is_beta_D_galactoside(smiles: str):
         str: Reason for classification
     """
 
-    # Parse SMILES
+    # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for beta-D-galactoside unit
-    beta_D_galactoside_smarts = "[C@H]1([O][*])[O][C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO"
-    beta_D_galactoside_pattern = Chem.MolFromSmarts(beta_D_galactoside_smarts)
-    if beta_D_galactoside_pattern is None:
+    # Define the SMARTS pattern for beta-D-galactoside with specific stereochemistry
+    beta_D_galactoside_smarts = """
+    [C@@H]1([O][#6])[O][C@H]([C@@H](O)[C@@H](O)[C@@H]1O)CO
+    """
+    # Remove whitespace and newlines
+    beta_D_galactoside_smarts = beta_D_galactoside_smarts.replace('\n', '').replace(' ', '')
+    beta_D_galactoside_mol = Chem.MolFromSmarts(beta_D_galactoside_smarts)
+    if beta_D_galactoside_mol is None:
         return False, "Failed to create beta-D-galactoside pattern"
 
-    # Search for beta-D-galactoside substructure
-    if mol.HasSubstructMatch(beta_D_galactoside_pattern):
+    # Search for beta-D-galactoside substructure with chirality
+    matches = mol.GetSubstructMatches(beta_D_galactoside_mol, useChirality=True)
+    if matches:
         return True, "Contains beta-D-galactoside substructure"
     else:
         return False, "No beta-D-galactoside substructure found"
