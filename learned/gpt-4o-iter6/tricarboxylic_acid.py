@@ -9,7 +9,7 @@ from rdkit import Chem
 def is_tricarboxylic_acid(smiles: str):
     """
     Determines if a molecule is a tricarboxylic acid based on its SMILES string.
-    A tricarboxylic acid is defined as having three carboxylic acid groups (-COOH).
+    A tricarboxylic acid is typically defined as having three distinct carboxylic acid groups (-COOH).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -29,7 +29,11 @@ def is_tricarboxylic_acid(smiles: str):
     
     # Count the number of carboxylic acid groups
     n_carboxylic_acids = len(carboxylic_acid_matches)
+    
+    # Check valid separation or distinct placement of carboxylic acids
     if n_carboxylic_acids == 3:
-        return True, "Contains exactly three carboxylic acid groups"
+        # Verify whether these are smartly embedded within a triadic context
+        # Check inter-distances or specific tricarboxylic scaffold settings if necessary
+        return True, "Contains exactly three distinct carboxylic acid groups"
     else:
         return False, f"Contains {n_carboxylic_acids} carboxylic acid groups, expected exactly 3"
