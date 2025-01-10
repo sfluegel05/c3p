@@ -6,6 +6,7 @@ Classifies: CHEBI:26873 sesquiterpenoid
 """
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
+from collections import Counter
 
 def is_sesquiterpenoid(smiles: str):
     """
@@ -20,42 +21,65 @@ def is_sesquiterpenoid(smiles: str):
         bool: True if molecule is a sesquiterpenoid, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+        
+    # Get elemental composition
+    atoms = mol.GetAtoms()
+    elem_counts = Counter()
+    for atom in atoms:
+        elem_counts[atom.GetSymbol()] += 1
+    C = elem_counts.get('C', 0)
+    H = elem_counts.get('H', 0)
+    N = elem_counts.get('N', 0)
+    O = elem_counts.get('O', 0)
+    halogens = elem_counts.get('F',0)+elem_counts.get('Cl',0)+elem_counts.get('Br',0)+elem_counts.get('I',0)
+    
+    # Sesquiterpenoids typically have around 15 carbons, allow some variation
+    if C < 13 or C > 17:
+        return False, f"Carbon count is {C}, which is not typical for sesquiterpenoids"
+    
+    # Calculate the degree of unsaturation
+    unsaturation = (2 * C + 2 + N - H - halogens) / 2
+    if unsaturation < 4:
+        return False, f"Degree of unsaturation is {unsaturation}, which is low for sesquiterpenoids"
 
-    # Count carbon atoms
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 12 or c_count > 15:
-        return False, f"Carbon count is {c_count}, which is not in the range of 12-15"
+    # Check for isoprene units or their rearranged forms
+    # Define SMARTS patterns for isoprene units and common sesquiterpene skeletons
+    isoprene_smarts_list = [
+        'C(=C)C-C=C',           # Standard isoprene unit
+        'C-C(=C)-C=C',          # Rearranged isoprene
+        'C=C-C=C-C',            # Another rearranged isoprene
+        'C=C-C-C-C=C',          # Extended isoprene pattern
+    ]
+    found_isoprene = False
+    for smarts in isoprene_smarts_list:
+        pattern = Chem.MolFromSmarts(smarts)
+        if mol.HasSubstructMatch(pattern):
+            found_isoprene = True
+            break
+    if not found_isoprene:
+        return False, "No isoprene units or sesquiterpene skeletons detected"
 
-    # Check for terpenoid functional groups (oxygen-containing groups)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count == 0:
-        return False, "No oxygen atoms detected, not a terpenoid"
+    # Check for common sesquiterpene skeletons
+    sesquiterpene_skeletons = [
+        'C1CCC2(C1)CCC(C=C2)C',  # Germacrane skeleton
+        'C1=CC=CC2(C1)CCCCC2',   # Cadinane skeleton
+        'C1CCC2=C(C1)CCCC2',     # Eudesmane skeleton
+        'C1CC2CC3CC(C3)CC2C1',   # Guaiane skeleton
+        'C1CC2CCC3=C(CC3)C2C1',  # Aromadendrane skeleton
+    ]
+    found_skeleton = False
+    for smarts in sesquiterpene_skeletons:
+        pattern = Chem.MolFromSmarts(smarts)
+        if mol.HasSubstructMatch(pattern):
+            found_skeleton = True
+            break
+    if not found_skeleton:
+        return False, "Molecule does not match common sesquiterpene skeletons"
 
-    # Estimate number of isoprene units by counting C=C bonds
-    num_double_bonds = 0
-    for bond in mol.GetBonds():
-        if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-            begin_atom = bond.GetBeginAtom()
-            end_atom = bond.GetEndAtom()
-            if begin_atom.GetAtomicNum() == 6 and end_atom.GetAtomicNum() == 6:
-                num_double_bonds +=1
-    if num_double_bonds < 2:
-        return False, f"Only {num_double_bonds} carbon-carbon double bonds detected, less than expected for sesquiterpenoids"
-
-    # Check for isoprene unit patterns (heuristic)
-    isoprene_pattern = Chem.MolFromSmarts("C=C-C-C=C")
-    matches = mol.GetSubstructMatches(isoprene_pattern)
-    if len(matches) < 1:
-        return False, "No isoprene units detected"
-
-    # Evaluate molecular weight
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 180 or mol_wt > 300:
-        return False, f"Molecular weight of {mol_wt:.2f} is not typical for sesquiterpenoids"
-
-    return True, "Molecule matches criteria for a sesquiterpenoid"
+    # If the molecule passes all checks
+    return True, "Molecule meets criteria for a sesquiterpenoid"
