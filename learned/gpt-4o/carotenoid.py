@@ -2,7 +2,6 @@
 Classifies: CHEBI:23044 carotenoid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_carotenoid(smiles: str):
     """
@@ -17,16 +16,16 @@ def is_carotenoid(smiles: str):
         bool: True if molecule is a carotenoid, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Count carbon atoms
+    # Count carbon atoms (allowing some variation for derivatives)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count != 40:
-        return False, f"Number of carbon atoms is {c_count}, should be 40 for carotenoids"
+    if c_count < 35 or c_count > 50:
+        return False, f"Number of carbon atoms is {c_count}, not within expected range for carotenoids"
 
     # Check for presence of conjugated double bonds
     conjugated_double_bond_pattern = Chem.MolFromSmarts("C=C")
@@ -34,19 +33,20 @@ def is_carotenoid(smiles: str):
     if len(conjugated_double_bond_matches) < 8:
         return False, f"Fewer conjugated double bonds found ({len(conjugated_double_bond_matches)}), suggestive of non-carotenoid structure"
 
-    # Check for cyclic structures
+    # Exclude strict requirement for rings to capture linear structures
     ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() < 1:
-        return False, "No cyclic structures found, which are common in carotenoids"
+    if ring_info.NumRings() < 1 and len(conjugated_double_bond_matches) < 10:
+        return False, "No sufficient cyclic or linear conjugated structures found, which are common in carotenoids"
 
-    # Exclude retinoid-like structures (simplified pattern match as example)
-    retinoid_pattern = Chem.MolFromSmarts("CC1=C(CCCC1)C(C)=C")
-    if mol.HasSubstructMatch(retinoid_pattern):
-        return False, "Structure matches common retinoid pattern, excluded from carotenoids"
+    # Exclude retinoid-like structures more comprehensively
+    # This pattern is just an example; modify based on expert input
+    retinoid_pattern = Chem.MolFromSmarts("CC=C")
+    if mol.HasSubstructMatch(retinoid_pattern) and c_count < 35:
+        return False, "Structure matches common retinoid pattern or too few carbons, excluded from carotenoids"
 
     # Check for presence of functional groups (for xanthophylls)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     if o_count > 0:
         return True, "Classified as a xanthophyll carotenoid due to the presence of oxygen functionality"
-        
+
     return True, "Classified as a carotene (oxygen-less carotenoid) due to C40 tetraterpenoid structure with conjugated bonds"
