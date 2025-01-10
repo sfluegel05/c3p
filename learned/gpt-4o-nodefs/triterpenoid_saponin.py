@@ -10,25 +10,27 @@ def is_triterpenoid_saponin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for triterpene characteristic patterns (complex patterns may vary, example given)
-    # Here, use a broad pattern for a polycyclic triterpene
-    triterpene_pattern = Chem.MolFromSmarts('C1CCC2(CCC3C(CCC4C3CCC5C4CCCC5)C2)C1')
-    if not mol.HasSubstructMatch(triterpene_pattern):
+    # Generalized triterpenoid-related backbones: Oleanane, Ursolane, etc.
+    triterpene_patterns = [
+        Chem.MolFromSmarts('C1CCC2(CC[C@]3(CC[C@]4(C)C3[C@H](CC[C@@H]5[C@](C)(CCC2[C@H]1)C4=O)C)C)C'),
+        Chem.MolFromSmarts('C1CCC2(CC[C@]3(CC[C@]4(C)[C@]3(C)CCC2[C@H]1)C)C'),
+    ]
+
+    if not any(mol.HasSubstructMatch(pattern) for pattern in triterpene_patterns):
         return False, "No triterpene backbone found"
-    
-    # Check for glycosidic linkage patterns
-    # Example pattern for sugar moiety attachment -O[C@H] (glycosidic ether linkage)
+
+    # More generalized glycoside attachment
     glycoside_pattern = Chem.MolFromSmarts('O[C@H]')
     if not mol.HasSubstructMatch(glycoside_pattern):
         return False, "No glycosidic linkage found"
 
-    # Check for additional sugar moiety patterns (to confirm presence of polysaccharides)
-    sugar_pattern = Chem.MolFromSmarts('C1OC(O)C(O)C(O)C1')
-    sugar_matches = mol.GetSubstructMatches(sugar_pattern)
-    if len(sugar_matches) < 1:
-        return False, "No sugar moieties detected"
+    # Flexible pattern for sugar moieties (supporting round a wide variety of configurations)
+    polysaccharide_pattern = Chem.MolFromSmarts('C1OC(O[C@@H])C(O)C(O)C1')
+    polysaccharide_matches = mol.GetSubstructMatches(polysaccharide_pattern)
+    if len(polysaccharide_matches) < 1:
+        return False, "No polysaccharide sugar moieties detected"
 
-    # Verifications for common triterpenoid features can be added as needed here
+    # Additional checks for atom types and counts could be included here
     return True, "Structure matches triterpenoid saponin characteristics"
 
 # Example execution
