@@ -24,8 +24,8 @@ def is_N_acylphytosphingosine(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for the phytosphingosine backbone pattern
-    # Phytosphingosine typically has a long carbon chain with hydroxyl groups
-    phytosphingosine_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]([OH])[CHX4]([OH])[CH2X4]([OH])")
+    # Phytosphingosine typically has a long carbon chain with multiple hydroxyl groups
+    phytosphingosine_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4][CHX4][CH2X4]")
     if not mol.HasSubstructMatch(phytosphingosine_pattern):
         return False, "No phytosphingosine backbone found"
 
@@ -37,8 +37,8 @@ def is_N_acylphytosphingosine(smiles: str):
     # Check for the presence of hydroxyl groups on the sphingosine backbone
     hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
     hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    if len(hydroxyl_matches) < 3:
-        return False, f"Found {len(hydroxyl_matches)} hydroxyl groups, need at least 3"
+    if len(hydroxyl_matches) < 2:
+        return False, f"Found {len(hydroxyl_matches)} hydroxyl groups, need at least 2"
 
     # Check molecular weight - N-acylphytosphingosine typically has a high molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
@@ -52,6 +52,6 @@ def is_N_acylphytosphingosine(smiles: str):
     if c_count < 20:
         return False, "Too few carbons for N-acylphytosphingosine"
     if o_count < 3:
-        return False, "Must have at least 3 oxygens (hydroxyl groups)"
+        return False, "Must have at least 3 oxygens (hydroxyl groups and amide bond)"
 
     return True, "Contains phytosphingosine backbone with a fatty acyl group attached to the nitrogen and hydroxyl groups"
