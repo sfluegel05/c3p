@@ -25,69 +25,49 @@ def is_medium_chain_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Identify the thioester bond: C(=O)-S
-    pattern = Chem.MolFromSmarts("C(=O)S")
-    matches = mol.GetSubstructMatches(pattern)
-    if len(matches) == 0:
-        return False, "Thioester linkage to CoA not found"
+    # Identify the thioester linkage: C(=O)S
+    thioester_pattern = Chem.MolFromSmarts("C(=O)S")
+    thioester_matches = mol.GetSubstructMatches(thioester_pattern)
+    if len(thioester_matches) != 1:
+        return False, f"Expected one thioester linkage, found {len(thioester_matches)}"
 
-    # Iterate over all thioester matches
-    for match in matches:
-        c_idx = match[0]  # Carbonyl carbon atom index
-        s_idx = match[2]  # Sulfur atom index
+    # Get indices of carbonyl carbon and sulfur atom in the thioester linkage
+    carbonyl_c_idx = thioester_matches[0][0]
+    sulfur_idx = thioester_matches[0][2]
 
-        # Get the bond between carbonyl carbon and sulfur
-        bond = mol.GetBondBetweenAtoms(c_idx, s_idx)
-        if bond is None:
-            continue  # Skip if bond is not found
+    # Collect atoms of the acyl chain excluding the sulfur atom
+    visited_atoms = set()
 
-        # Break the bond between carbonyl carbon and sulfur
-        bond_idx = bond.GetIdx()
-        fragments = Chem.FragmentOnBonds(mol, [bond_idx], addDummies=True)
-        frags = Chem.GetMolFrags(fragments, asMols=True, sanitizeFrags=True)
+    def traverse_acyl_chain(atom_idx, exclude_idx):
+        """
+        Recursively traverse the acyl chain starting from the carbonyl carbon,
+        excluding the path towards the sulfur atom (CoA moiety).
+        """
+        if atom_idx in visited_atoms:
+            return
+        visited_atoms.add(atom_idx)
+        atom = mol.GetAtomWithIdx(atom_idx)
+        for neighbor in atom.GetNeighbors():
+            neighbor_idx = neighbor.GetIdx()
+            if neighbor_idx != exclude_idx:
+                traverse_acyl_chain(neighbor_idx, exclude_idx)
 
-        # Identify the acyl chain fragment and CoA fragment
-        acyl_chain = None
-        coa_moiety = None
+    # Start traversal from the carbonyl carbon, exclude sulfur atom
+    traverse_acyl_chain(carbonyl_c_idx, sulfur_idx)
 
-        for frag in frags:
-            atom_nums = {atom.GetAtomicNum() for atom in frag.GetAtoms()}
-            # CoA contains phosphorus (15) and multiple nitrogen atoms (7)
-            if 15 in atom_nums and atom_nums.count(7) >= 5:
-                coa_moiety = frag
-            elif 6 in atom_nums and 15 not in atom_nums:
-                acyl_chain = frag
+    # Count the number of carbons in the acyl chain
+    num_carbons = sum(1 for idx in visited_atoms if mol.GetAtomWithIdx(idx).GetAtomicNum() == 6)
 
-        if acyl_chain is None or coa_moiety is None:
-            continue  # Try next thioester linkage
+    # Check if the number of carbons is within medium-chain length (6-12)
+    if num_carbons < 6:
+        return False, f"Acyl chain too short ({num_carbons} carbons), not medium-chain"
+    if num_carbons > 12:
+        return False, f"Acyl chain too long ({num_carbons} carbons), not medium-chain"
 
-        # Count the number of carbons in the acyl chain
-        num_carbons = sum(1 for atom in acyl_chain.GetAtoms() if atom.GetAtomicNum() == 6)
+    # Verify the presence of coenzyme A moiety
+    # Define a SMARTS pattern for key features of CoA
+    coa_pattern = Chem.MolFromSmarts("NC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(O)=O")
+    if not mol.HasSubstructMatch(coa_pattern):
+        return False, "Coenzyme A moiety not found"
 
-        if num_carbons < 6:
-            return False, f"Acyl chain too short ({num_carbons} carbons), not medium-chain"
-        if num_carbons > 12:
-            return False, f"Acyl chain too long ({num_carbons} carbons), not medium-chain"
-
-        # Check for key features of CoA in coa_moiety
-
-        # Adenine ring pattern
-        adenine_pattern = Chem.MolFromSmarts("n1cnc2c(ncnc12)")
-        if not coa_moiety.HasSubstructMatch(adenine_pattern):
-            return False, "Adenine moiety not found in CoA fragment"
-
-        # Diphosphate linkage pattern
-        diphosphate_pattern = Chem.MolFromSmarts("OP(=O)(O)OP(=O)(O)O")
-        if not coa_moiety.HasSubstructMatch(diphosphate_pattern):
-            return False, "Diphosphate linkage not found in CoA fragment"
-
-        # Pantetheine moiety pattern
-        pantetheine_pattern = Chem.MolFromSmarts("SCCNC(=O)CC(O)C(C)(C)")
-        if not coa_moiety.HasSubstructMatch(pantetheine_pattern):
-            return False, "Pantetheine moiety not found in CoA fragment"
-
-        # If all checks pass, classify as medium-chain fatty acyl-CoA
-        return True, f"Contains medium-chain acyl group ({num_carbons} carbons) attached to Coenzyme A via thioester linkage"
-
-    # If no valid thioester linkage is found
-    return False, "Does not contain medium-chain fatty acyl-CoA moiety"
+    return True, f"Contains medium-chain acyl group ({num_carbons} carbons) attached to coenzyme A via thioester linkage"
