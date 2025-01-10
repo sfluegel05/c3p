@@ -45,17 +45,18 @@ def is_volatile_organic_compound(smiles: str):
     simple_alkane_pattern = Chem.MolFromSmarts("[CX4;!R][CX4;!R]")
     is_simple_alkane = mol.HasSubstructMatch(simple_alkane_pattern)
     
-    # Consider known volatile structures
+    # Consider known volatile structures like cyclic ethers or small lactones
     small_lactone_pattern = Chem.MolFromSmarts("C1OC(=O)CC1")
     is_small_lactone = mol.HasSubstructMatch(small_lactone_pattern)
     
     small_cyclic_alcohol_pattern = Chem.MolFromSmarts("C1(CCCCC1)O")
     is_small_cyclic_alcohol = mol.HasSubstructMatch(small_cyclic_alcohol_pattern)
 
-    # Rules for classification based on refined criteria
-    if (((mol_wt <= 350 and c_count <= 20) or is_alcohol or is_alkene or 
-         is_halogenated or is_simple_alkane or is_small_lactone or is_small_cyclic_alcohol) and 
-        n_rotatable_bonds <= 15):
+    # Updated rules for classification based on refined criteria
+    if (((mol_wt <= 300 and c_count <= 20) or (is_alcohol and c_count <= 15) or 
+         (is_alkene and c_count <= 15) or (is_halogenated and c_count <= 12) or 
+         is_small_lactone or is_small_cyclic_alcohol) and 
+        n_rotatable_bonds <= 6):
         
         return True, f"Molecular weight {mol_wt}, carbon count {c_count}, functional groups, and structural properties suggest volatility."
     
