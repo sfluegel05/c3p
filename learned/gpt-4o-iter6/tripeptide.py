@@ -21,30 +21,31 @@ def is_tripeptide(smiles: str):
     if mol is None:
         return (False, "Invalid SMILES string")
     
-    # Define the pattern for amide bonds denoting peptide linkage
-    amide_bond_pattern = Chem.MolFromSmarts("N[C](=O)")
-    
-    # Find all amide bond matches
-    amide_matches = mol.GetSubstructMatches(amide_bond_pattern)
+    # Define the pattern for alpha-carbon backbone N-C-C next to amide bonds
+    alpha_carbon_pattern = Chem.MolFromSmarts("[NX3][CX4][CX3](=O)N")
 
-    if len(amide_matches) < 2:
-        return (False, f"Less than 2 amide bonds found; found: {len(amide_matches)}")
+    # Find all alpha-carbon backbone matches
+    backbone_matches = mol.GetSubstructMatches(alpha_carbon_pattern)
+
+    if len(backbone_matches) != 2:
+        return (False, f"Backbone does not correspond to three contiguous residues; found: {len(backbone_matches)}")
     
-    # Count sequence of N-C(=O)-C (should be two for precise tripeptide with three residues)
-    peptide_pattern = Chem.MolFromSmarts("[NX3][CX3](=O)[NX3]")
-    peptides = mol.GetSubstructMatches(peptide_pattern)
+    # Count peptide bonds (amide bonds)
+    peptide_bond_pattern = Chem.MolFromSmarts("[NX3][CX3](=O)[NX3]")
+    peptide_bonds = mol.GetSubstructMatches(peptide_bond_pattern)
     
-    # Tripeptide must have exactly two linkages characteristic of its backbone
-    if len(peptides) != 2:
-        return (False, f"Does not have the exact backbone characteristic of a tripeptide: {len(peptides)} found")
+    # Tripeptide must have exactly two peptide linkages characteristic of its backbone
+    if len(peptide_bonds) != 2:
+        return (False, f"Does not have the exact backbone characteristic of a tripeptide: {len(peptide_bonds)} found")
     
-    # Check for expected termini (either NH2 and COOH or other cyclic ends)
+    # Check for termini or cyclic structure
     amine_pattern = Chem.MolFromSmarts("[NH2]")
     carboxylic_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
     terminal_amine = mol.HasSubstructMatch(amine_pattern)
     terminal_carboxyl = mol.HasSubstructMatch(carboxylic_pattern)
     
-    if not (terminal_amine or terminal_carboxyl):
-        return (False, "No valid peptide termini found")
+    # Accept cyclic or capped structures that still have 3 residues and 2 peptide bonds
+    if not (terminal_amine or terminal_carboxyl or len(peptide_bonds) == 2):
+        return (False, "No valid peptide termini found.")
     
     return (True, "Contains three amino-acid residues connected by peptide linkages")
