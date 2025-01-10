@@ -28,11 +28,10 @@ def is_short_chain_fatty_acid(smiles: str):
 
     # Check for the presence of a carboxylic acid group (-C(=O)OH)
     carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
-    carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
-    if len(carboxylic_acid_matches) != 1:
-        return False, f"Found {len(carboxylic_acid_matches)} carboxylic acid groups, need exactly 1"
+    if not mol.HasSubstructMatch(carboxylic_acid_pattern):
+        return False, "No carboxylic acid group found"
 
-    # Check that the molecule is aliphatic (no aromatic rings in the main chain)
+    # Check that the molecule is aliphatic (no aromatic rings)
     aromatic_atoms = [atom for atom in mol.GetAtoms() if atom.GetIsAromatic()]
     if len(aromatic_atoms) > 0:
         return False, "Molecule contains aromatic rings"
@@ -42,17 +41,18 @@ def is_short_chain_fatty_acid(smiles: str):
     if len(non_hydrocarbon_atoms) > 0:
         return False, "Molecule contains non-hydrocarbon substituents"
 
-    # Check for oxygen atoms that are not part of the carboxylic acid group
-    oxygen_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8]
-    carboxylic_acid_oxygen = carboxylic_acid_matches[0][1]
-    for oxygen in oxygen_atoms:
-        if oxygen.GetIdx() != carboxylic_acid_oxygen:
-            return False, "Molecule contains non-carboxylic acid oxygen atoms"
+    # Check that the molecule is a monocarboxylic acid (only one carboxylic acid group)
+    carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
+    if len(carboxylic_acid_matches) != 1:
+        return False, f"Found {len(carboxylic_acid_matches)} carboxylic acid groups, need exactly 1"
 
-    # Calculate the longest carbon chain including the carboxylic acid carbon
+    # Calculate the longest carbon chain excluding the carboxylic acid carbon
     def get_longest_carbon_chain(mol):
         # Get all carbon atoms
         carbon_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
+        # Exclude the carboxylic acid carbon
+        carboxylic_acid_carbon = carboxylic_acid_matches[0][0]
+        carbon_atoms = [atom for atom in carbon_atoms if atom.GetIdx() != carboxylic_acid_carbon]
         
         # Find the longest chain of connected carbon atoms
         longest_chain = 0
