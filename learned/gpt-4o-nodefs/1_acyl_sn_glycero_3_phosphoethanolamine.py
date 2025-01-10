@@ -20,18 +20,18 @@ def is_1_acyl_sn_glycero_3_phosphoethanolamine(smiles: str):
     if mol is None:
         return None, "Invalid SMILES string"
     
-    # Glycerol backbone pattern (C-C-C with two oxygens)
-    glycerol_pattern = Chem.MolFromSmarts("[C@H](O)[CH2]O")
+    # Improved glycerol backbone pattern: ensuring chirality and glycerol marks accurately
+    glycerol_pattern = Chem.MolFromSmarts("C(CO)[C@@H]O")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
     
-    # Acyl group - typically a long carbon chain connected to the glycerol backbone via ester bond
-    acyl_pattern = Chem.MolFromSmarts("C(=O)O[C@H]")
+    # Improved acyl pattern to match a carbonyl group bound to the remaining glycerol
+    acyl_pattern = Chem.MolFromSmarts("C(=O)OC[C@H]")
     if not mol.HasSubstructMatch(acyl_pattern):
         return False, "No acyl group found"
     
-    # Phosphoethanolamine group - phosphate group with ethanolamine attached
-    phospho_ethanolamine_pattern = Chem.MolFromSmarts("COP(O)(=O)OCCN")
+    # Enhanced pattern for phosphoethanolamine, accounting for possible ionization
+    phospho_ethanolamine_pattern = Chem.MolFromSmarts("COP(O)(=O)OCC[N]")
     if not mol.HasSubstructMatch(phospho_ethanolamine_pattern):
         return False, "No phosphoethanolamine group found"
 
