@@ -2,8 +2,6 @@
 Classifies: CHEBI:17761 ceramide
 """
 from rdkit import Chem
-from rdkit.Chem import rdmolops
-from rdkit.Chem.rdchem import Mol
 
 def is_ceramide(smiles: str):
     """
@@ -23,7 +21,7 @@ def is_ceramide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Search for the sphingosine backbone pattern (long chain with amine)
+    # Search for the sphingosine backbone pattern (long chain with amine and hydroxyl)
     sphingosine_pattern = Chem.MolFromSmarts("C[C@H](O)[C@@H](N)CO")
     if not mol.HasSubstructMatch(sphingosine_pattern):
         return False, "No sphingosine backbone found"
@@ -34,16 +32,24 @@ def is_ceramide(smiles: str):
         return False, "No amide linkage found"
 
     # Verify that the amide linkage connects to a long aliphatic fatty acid chain
-    connected_fatty_acid = False
     for atom in mol.GetAtoms():
         if atom.GetSymbol() == 'N':
+            # Check for carbon neighbors forming a link to the amide bond
             for neighbor in atom.GetNeighbors():
                 if neighbor.GetSymbol() == 'C':
-                    chain = rdmolops.GetLongestHomogeneousAtomPath(mol, neighbor.GetIdx(), 6)
-                    if len(chain) > 10:
-                        connected_fatty_acid = True
-                        break
-    if not connected_fatty_acid:
-        return False, "Amide linkage not connected to a long fatty acid chain"
+                    chain_length = 0
+                    visited_atoms = set()
+                    atoms_to_visit = [neighbor]
+                    while atoms_to_visit and chain_length <= 20:
+                        current_atom = atoms_to_visit.pop()
+                        if current_atom.GetIdx() not in visited_atoms:
+                            visited_atoms.add(current_atom.GetIdx())
+                            if current_atom.GetSymbol() == 'C':
+                                chain_length += 1
+                            for n in current_atom.GetNeighbors():
+                                if n.GetIdx() not in visited_atoms:
+                                    atoms_to_visit.append(n)
+                    if chain_length > 10:
+                        return True, "Molecule contains a sphingosine backbone with a fatty acid linked via an amide bond"
 
-    return True, "Molecule contains a sphingosine backbone with a fatty acid linked via an amide bond"
+    return False, "Amide linkage not connected to a long fatty acid chain"
