@@ -2,12 +2,13 @@
 Classifies: CHEBI:33855 arenecarbaldehyde
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_arenecarbaldehyde(smiles: str):
     """
-    Determines if a molecule is an arenecarbaldehyde using its SMILES string.
-    An arenecarbaldehyde is an aldehyde where the carbonyl group is attached to an aromatic moiety.
-    
+    Determines if a molecule is an arenecarbaldehyde based on its SMILES string.
+    An arenecarbaldehyde is defined as an aldehyde in which the carbonyl group is attached to an aromatic moiety.
+
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -15,27 +16,30 @@ def is_arenecarbaldehyde(smiles: str):
         bool: True if molecule is an arenecarbaldehyde, False otherwise
         str: Reason for classification
     """
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Ensure aromaticity is set
+    # Detect aromaticity in the molecule
     Chem.SanitizeMol(mol, Chem.SanitizeFlags.SANITIZE_SETAROMATICITY)
     
-    # Check for aldehyde group pattern (C=O)
+    # Check for presence of aromatic rings
+    aromatic_atoms = [atom for atom in mol.GetAtoms() if atom.GetIsAromatic()]
+    if not aromatic_atoms:
+        return False, "No aromatic moiety found"
+    
+    # Look for aldehyde group pattern (-C(=O)H)
     aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)[#6]")
     aldehyde_matches = mol.GetSubstructMatches(aldehyde_pattern)
     if not aldehyde_matches:
         return False, "No aldehyde group found"
     
-    # Check for aromatic moiety directly attached to the aldehyde carbon
-    aromatic_ring_pattern = Chem.MolFromSmarts("[#6]a1aaaaa1")
-    
+    # Verify that the aldehyde is connected to an aromatic atom
     for match in aldehyde_matches:
-        aldehyde_carbon_idx = match[0]
-        for neighbor in mol.GetAtomWithIdx(aldehyde_carbon_idx).GetNeighbors():
-            if neighbor.GetIsAromatic() and mol.HasSubstructMatch(aromatic_ring_pattern):
-                return True, "Contains aldehyde group directly attached to an aromatic moiety"
-    
-    return False, "Aldehyde group not properly attached to aromatic moiety"
+        for idx in match:
+            if mol.GetAtomWithIdx(idx).GetIsAromatic():
+                return True, "Contains aldehyde group attached to an aromatic moiety"
+
+    return False, "Aldehyde group not attached to aromatic moiety"
