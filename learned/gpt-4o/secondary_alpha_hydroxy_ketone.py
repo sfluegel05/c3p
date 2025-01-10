@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_secondary_alpha_hydroxy_ketone(smiles: str):
     """
     Determines if a molecule is a secondary alpha-hydroxy ketone based on its SMILES string.
-    A secondary alpha-hydroxy ketone (acyloin) has a carbonyl group and hydroxy group linked by
+    A secondary alpha-hydroxy ketone (acyloin) has a carbonyl group and a hydroxyl group linked by
     a secondary carbon bearing one hydrogen and one organyl group.
 
     Args:
@@ -21,11 +21,13 @@ def is_secondary_alpha_hydroxy_ketone(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Detect a secondary carbon with both a hydroxyl and a carbonyl group
-    # [CH] - secondary carbon, [CX3](=O) - carbonyl, [OX2H] - hydroxy connected at the alpha position
-    secondary_alpha_hydroxy_ketone_pattern = Chem.MolFromSmarts("[CH1]([OX2H])[CX3](=O)")
-    
+
+    # Improved pattern for alpha-hydroxy ketone (secondary carbon with OH and adjacent C=O)
+    # [C;!H0] - non-primary carbon, should have at least one hydrogen
+    # [CX3](=O) - carbonyl group adjacent
+    # [OX2H] - hydroxy group
+    secondary_alpha_hydroxy_ketone_pattern = Chem.MolFromSmarts("[C;!H0](C=O)[OX2H]")
+
     # Check for the presence of the substructure pattern
     if mol.HasSubstructMatch(secondary_alpha_hydroxy_ketone_pattern):
         return True, "Molecule contains the characteristic structure of a secondary alpha-hydroxy ketone"
