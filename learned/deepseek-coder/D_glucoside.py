@@ -36,9 +36,14 @@ def is_D_glucoside(smiles: str):
     if not mol.HasSubstructMatch(glycosidic_bond_pattern):
         return False, "No glycosidic bond found"
 
-    # Check that the glucose moiety is not free (i.e., it is attached to another group)
-    free_glucose_pattern = Chem.MolFromSmiles("C([C@H]1[C@H]([C@@H]([C@H]([C@@H](O1)O)O)O)O)O")
-    if mol.HasSubstructMatch(free_glucose_pattern):
-        return False, "Glucose moiety is not attached to another group"
+    # Check that the glucose moiety is attached to another group
+    # We do this by ensuring that the glucose moiety is not free (i.e., it has at least one bond to a non-hydrogen atom)
+    glucose_atoms = mol.GetSubstructMatch(glucose_pattern)
+    glucose_mol = Chem.PathToSubmol(mol, glucose_atoms)
+    for atom in glucose_mol.GetAtoms():
+        if atom.GetAtomicNum() == 8:  # Oxygen atom
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetAtomicNum() != 1:  # Not hydrogen
+                    return True, "Contains a D-glucose moiety attached via a glycosidic bond"
 
-    return True, "Contains a D-glucose moiety attached via a glycosidic bond"
+    return False, "Glucose moiety is not attached to another group"
