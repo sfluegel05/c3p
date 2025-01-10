@@ -21,9 +21,8 @@ def is_cyclohexenones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Create the SMARTS pattern for a six-membered ring with one double bond and a ketone
-    # Note: RDKit uses SMARTS for substructure queries
-    cyclohexenone_pattern = Chem.MolFromSmarts("C1=CCCC(=O)C1")
+    # Create a more generic SMARTS pattern for a six-membered ring with one double bond and a ketone
+    cyclohexenone_pattern = Chem.MolFromSmarts("C1=CC(=O)CCC1 |$;c;;;;;c$|")
     
     # Check if the molecule matches the pattern
     if not mol.HasSubstructMatch(cyclohexenone_pattern):
