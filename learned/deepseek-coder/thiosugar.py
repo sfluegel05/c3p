@@ -30,7 +30,7 @@ def is_thiosugar(smiles: str):
     # Check if the molecule has a sugar-like structure (ring with multiple hydroxyl groups)
     sugar_pattern = Chem.MolFromSmarts("[C;H1,H2][OH]")  # Pattern for a carbon with a hydroxyl group
     sugar_matches = mol.GetSubstructMatches(sugar_pattern)
-    if len(sugar_matches) < 2:  # At least 2 hydroxyl groups for a sugar-like structure
+    if len(sugar_matches) < 3:  # At least 3 hydroxyl groups for a sugar-like structure
         return False, "Not enough hydroxyl groups for a sugar-like structure"
 
     # Check for sulfur atoms in the molecule
@@ -38,18 +38,23 @@ def is_thiosugar(smiles: str):
     if not sulfur_atoms:
         return False, "No sulfur atoms found"
 
-    # Check if sulfur is part of the sugar-like structure
-    sulfur_in_sugar = False
-    ring_info = mol.GetRingInfo()
+    # Check if sulfur is attached to any part of the molecule, not just the sugar backbone
+    sulfur_attached = False
     for sulfur in sulfur_atoms:
-        for ring in ring_info.AtomRings():
-            if sulfur.GetIdx() in ring:
-                sulfur_in_sugar = True
+        neighbors = sulfur.GetNeighbors()
+        for neighbor in neighbors:
+            if neighbor.GetAtomicNum() == 6:  # Carbon atom
+                sulfur_attached = True
                 break
-        if sulfur_in_sugar:
+        if sulfur_attached:
             break
 
-    if not sulfur_in_sugar:
-        return False, "Sulfur is not part of the sugar-like structure"
+    if not sulfur_attached:
+        return False, "Sulfur not attached to the molecule"
 
-    return True, "Contains a sugar-like structure with sulfur atoms"
+    # Check for the presence of a ring structure (carbohydrate-like)
+    ring_info = mol.GetRingInfo()
+    if not ring_info.AtomRings():
+        return False, "No ring structure found"
+
+    return True, "Contains a sugar-like structure with sulfur attached"
