@@ -22,11 +22,17 @@ def is_isoflavonoid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define isoflavonoid core pattern:
-    # Core benzopyran with a phenyl group attached at position 3
-    isoflavonoid_pattern = Chem.MolFromSmarts("c1cc(-c2coc3c(c2)c(cc(c3)O)=O)ccc1")
+    # Flexible core benzopyran with a phenyl group attached at position 3
+    isoflavonoid_patterns = [
+        Chem.MolFromSmarts("c1cc(-c2coc3c(c2)c(cc(c3)O)=O)ccc1"),  # The initial pattern
+        Chem.MolFromSmarts("c1coc2c(c1)c(ccc2-c3ccccc3)=O"),      # Alternate tautomeric structure
+        Chem.MolFromSmarts("Oc1ccc2nc(=O)c(cc2c1)-c3ccccc3")       # Open form possibility
+        # Additional patterns can be added to match different stereochemistry or tautomeric forms
+    ]
 
-    # Check if it matches the pattern
-    if mol.HasSubstructMatch(isoflavonoid_pattern):
-        return True, "Contains 1-benzopyran with aryl substituent at position 3, matching isoflavonoid structure"
+    # Check if it matches any of the isoflavonoid patterns
+    for pattern in isoflavonoid_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return True, "Contains 1-benzopyran with aryl substituent at position 3, matching isoflavonoid structure"
     
     return False, "Does not match isoflavonoid structure: 1-benzopyran with aryl at position 3"
