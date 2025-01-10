@@ -2,6 +2,7 @@
 Classifies: CHEBI:87658 decanoate ester
 """
 from rdkit import Chem
+from rdkit.Chem import rdqueries
 
 def is_decanoate_ester(smiles: str):
     """
@@ -31,25 +32,29 @@ def is_decanoate_ester(smiles: str):
         carbonyl_c, ester_o = match[0], match[2]
 
         # Explore chains emerging from oxygen to find decanoic carbon chain
-        # It should ideally be linear with 10 carbons starting from the ester oxygen
         atom = mol.GetAtomWithIdx(ester_o)
+        visited_atoms = {ester_o}
+        
+        def traverse(atom_idx, depth):
+            if depth == 10:
+                return True
+            atom = mol.GetAtomWithIdx(atom_idx)
+            if atom.GetAtomicNum() != 6:  # Check if current atom is carbon
+                return False
+            for neighbor in atom.GetNeighbors():
+                neighbor_idx = neighbor.GetIdx()
+                if neighbor_idx not in visited_atoms:
+                    visited_atoms.add(neighbor_idx)
+                    if traverse(neighbor_idx, depth+1):
+                        return True
+                    visited_atoms.remove(neighbor_idx)
+            return False
+        
+        # Start traversal from the atom next to ester oxygen
         for neighbor in atom.GetNeighbors():
-            if neighbor.GetAtomicNum() == 6:  # Verify it's a carbon
-                carbon_chain = [neighbor.GetIdx()]
-                current_atom = neighbor
-                # Traverse the chain and count carbons
-                while True:
-                    for next_atom in current_atom.GetNeighbors():
-                        if (next_atom.GetIdx() not in carbon_chain and 
-                            next_atom.GetAtomicNum() == 6):
-                            carbon_chain.append(next_atom.GetIdx())
-                            current_atom = next_atom
-                            break
-                    else:
-                        break
-
-                if len(carbon_chain) == 10:
-                    # We found a 10-carbon chain
+            if neighbor.GetAtomicNum() == 6:  # Must be Carbon
+                visited_atoms.add(neighbor.GetIdx())
+                if traverse(neighbor.GetIdx(), 1):
                     return True, "Contains ester group with a decanoic acid (10-carbon) chain"
 
     return False, "Ester group without a proper decanoic acid chain"
