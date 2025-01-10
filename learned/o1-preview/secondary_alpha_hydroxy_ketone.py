@@ -12,7 +12,7 @@ def is_secondary_alpha_hydroxy_ketone(smiles: str):
     Determines if a molecule is a secondary alpha-hydroxy ketone based on its SMILES string.
     A secondary alpha-hydroxy ketone contains a ketone group (C=O) and a hydroxyl group (OH)
     attached to the alpha carbon, which is secondary (attached to one hydrogen, one carbonyl carbon,
-    one hydroxyl group, and one other carbon group).
+    one hydroxyl group, and one other organyl group).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -27,18 +27,45 @@ def is_secondary_alpha_hydroxy_ketone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for secondary alpha-hydroxy ketone
-    # Pattern explanation:
-    # [#6](=O)          - Carbonyl carbon (C=O) attached to...
-    # [#6;H1](-[OH])    - Alpha carbon [#6;H1] with one hydrogen and a hydroxyl group (-OH)
-    # -[#6]             - Alpha carbon connected to another carbon (organyl group)
-    pattern = Chem.MolFromSmarts("[#6](=O)-[#6;H1](-[OH])-[#6]")
-
-    # Check for substructure match
-    if mol.HasSubstructMatch(pattern):
-        return True, "Molecule matches secondary alpha-hydroxy ketone pattern"
-    else:
-        return False, "Molecule does not match secondary alpha-hydroxy ketone pattern"
+    # Iterate over all atoms in the molecule
+    for atom in mol.GetAtoms():
+        # Check for carbonyl carbon (C=O)
+        if atom.GetAtomicNum() == 6:
+            is_carbonyl = False
+            carbonyl_oxygen = None
+            for neighbor in atom.GetNeighbors():
+                bond = mol.GetBondBetweenAtoms(atom.GetIdx(), neighbor.GetIdx())
+                if neighbor.GetAtomicNum() == 8 and bond.GetBondType() == Chem.BondType.DOUBLE:
+                    is_carbonyl = True
+                    carbonyl_oxygen = neighbor
+                    break
+            if is_carbonyl:
+                carbonyl_c = atom
+                # Examine neighbors of the carbonyl carbon
+                for alpha_c in carbonyl_c.GetNeighbors():
+                    if alpha_c.GetIdx() == carbonyl_oxygen.GetIdx():
+                        continue  # Skip the carbonyl oxygen
+                    if alpha_c.GetAtomicNum() == 6:
+                        # Check if alpha carbon has exactly one hydrogen
+                        if alpha_c.GetTotalNumHs() == 1:
+                            # Check if alpha carbon has hydroxyl group
+                            has_oh = False
+                            hydroxyl_oxygen = None
+                            for nbr in alpha_c.GetNeighbors():
+                                bond = mol.GetBondBetweenAtoms(alpha_c.GetIdx(), nbr.GetIdx())
+                                if nbr.GetAtomicNum() == 8 and bond.GetBondType() == Chem.BondType.SINGLE:
+                                    # Check if oxygen is bonded to hydrogen (hydroxyl group)
+                                    if nbr.GetTotalNumHs() == 1:
+                                        has_oh = True
+                                        hydroxyl_oxygen = nbr
+                                        break
+                            if has_oh:
+                                # Check if alpha carbon is connected to another organyl group
+                                organyl_groups = [nbr for nbr in alpha_c.GetNeighbors() if nbr.GetIdx() not in [carbonyl_c.GetIdx(), hydroxyl_oxygen.GetIdx()]]
+                                if len(organyl_groups) == 1:
+                                    return True, "Molecule matches secondary alpha-hydroxy ketone pattern"
+    # If no matching functional group is found
+    return False, "Molecule does not match secondary alpha-hydroxy ketone pattern"
 
 __metadata__ = {
     'chemical_class': {
@@ -63,7 +90,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 0,
+    'attempt': 1,
     'success': None,
     'best': None,
     'error': '',
