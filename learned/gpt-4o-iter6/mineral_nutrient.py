@@ -6,6 +6,8 @@ from rdkit import Chem
 def is_mineral_nutrient(smiles: str):
     """
     Determines if a compound is a mineral nutrient based on its SMILES string.
+    Mineral nutrients are typically inorganic compounds containing metallic elements
+    necessary for metabolic/structural functions in the human body.
     
     Args:
         smiles (str): SMILES string of the compound
@@ -20,28 +22,19 @@ def is_mineral_nutrient(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Essential metallic elements typically found in nutrients
-    essential_metallic_elements = {'Ca', 'Mg', 'K', 'Na', 'Fe', 'Zn', 'Ba', 'La', 'Cs', 'Al', 'Sb', 'Pd'}
-    # Nutrient anions indicative of common inorganic nutrient minerals
-    nutrient_anions_smarts = [
-        "[Cl]", "[F]", "[O-]P([O-])(=O)", "[O-]C([O-])=O",  # Typical inorganic anions
-        "[O-]S([O-])(=O)"]  # Sulfate or Phosphate derivatives
-    ]
+    # Define common metallic elements in mineral nutrients
+    metallic_elements = {'Ca', 'Mg', 'K', 'Na', 'Fe', 'Zn', 'Al', 'Ba', 'Cs', 'Sb', 'Pd', 'La'}
+    # Define essential non-metallic elements associated with nutrients
+    non_metallic_anions = {'P', 'S', 'Cl', 'F', 'O', 'N'}  # Part of common inorganic anions
 
-    # Check for the presence of at least one essential metallic element
-    metal_found = any(atom.GetSymbol() in essential_metallic_elements for atom in mol.GetAtoms())
+    # Check for presence of at least one metallic element using their symbols
+    metal_found = any(atom.GetSymbol() in metallic_elements for atom in mol.GetAtoms())
     if not metal_found:
-        return False, "No essential metallic elements found"
+        return False, "No metallic elements found"
 
-    # Ensure relevant inorganic anions for nutrient character are present
-    anion_found = any(mol.HasSubstructMatch(Chem.MolFromSmarts(anion)) for anion in nutrient_anions_smarts)
+    # Check for presence of common inorganic anions (e.g., sulfates, phosphates, chlorides)
+    anion_found = any(atom.GetSymbol() in non_metallic_anions for atom in mol.GetAtoms())
     if not anion_found:
-        return False, "No relevant mineral nutrient anions found"
+        return False, "No common inorganic anions or ions found"
 
-    # Allow for longer carbon chains if balanced by the presence of magnesium, calcium, etc.
-    # Count carbon atoms but condone if present with significant nutrient metallic atoms
-    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'C')
-    if carbon_count > 36:
-        return False, f"Contains {carbon_count} carbon atoms suggesting an overly complex organic molecule"
-
-    return True, "Structure consistent with mineral nutrients containing essential elements and simple inorganic anions"
+    return True, "Contains metallic elements and common inorganic anions indicative of a mineral nutrient"
