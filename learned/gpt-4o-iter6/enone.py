@@ -22,11 +22,27 @@ def is_enone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Enhanced SMARTS pattern to match enone structures with more flexibility for branch/cyclic/aromatic settings
-    enone_pattern = Chem.MolFromSmarts("[CX3](=O)[C;R0]C=C")  # Capture both aliphatic and possibly cyclic/branch structures
-    
+    # SMARTS pattern to match enone structures: C=O conjugated to C=C
+    # The pattern ensures the C=C bond in conjugation with the C=O group
+    enone_pattern = Chem.MolFromSmarts("C=CC=O")
+
     # Check if the molecule has the enone substructure
     if mol.HasSubstructMatch(enone_pattern):
-        return True, "Contains alpha, beta-unsaturated ketone (enone) structure"
-    
+        # Further verify that the carbonyl carbon is not attached to hydrogen
+        # R1RC=CR-C(=O)R4, where R4 != H
+        carbonyl_oxygen = "[CX3]=[OX1]"    # Standard carbonyl group
+        ketone_check_pattern = Chem.MolFromSmarts(carbonyl_oxygen)
+        match = mol.GetSubstructMatch(ketone_check_pattern)
+
+        if match:
+            carbon = match[0]   # Get the carbonyl carbon
+            neighbor_atoms = mol.GetAtomWithIdx(carbon).GetNeighbors()
+
+            # Ensure none of the neighbors is hydrogen
+            for atom in neighbor_atoms:
+                if atom.GetAtomicNum() == 1:
+                    return False, "Carbonyl carbon in SMILES structure is bonded to hydrogen"
+
+            return True, "Contains alpha, beta-unsaturated ketone (enone) structure"
+            
     return False, "No enone structure found"
