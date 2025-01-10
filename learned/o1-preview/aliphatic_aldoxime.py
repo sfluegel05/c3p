@@ -34,9 +34,27 @@ def is_aliphatic_aldoxime(smiles: str):
     if mol.GetRingInfo().NumRings() > 0:
         return False, "Contains cyclic structures"
 
-    # Define aldoxime SMARTS pattern (C=NO)
-    aldoxime_pattern = Chem.MolFromSmarts('[C]=[N]-[O]')
-    if not mol.HasSubstructMatch(aldoxime_pattern):
+    # Define more specific aldoxime SMARTS pattern (R-CH=N-OH)
+    aldoxime_pattern = Chem.MolFromSmarts('[CH1]=[N][OH1]')
+    matches = mol.GetSubstructMatches(aldoxime_pattern)
+    if not matches:
         return False, "No aldoxime functional group found"
 
-    return True, "Contains aldoxime group derived from an aliphatic aldehyde"
+    # Iterate over matches to ensure no extra substituents on N or O
+    for match in matches:
+        carbon = mol.GetAtomWithIdx(match[0])
+        nitrogen = mol.GetAtomWithIdx(match[1])
+        oxygen = mol.GetAtomWithIdx(match[2])
+
+        # Check that nitrogen has only two neighbors (carbon and oxygen)
+        if nitrogen.GetDegree() != 2:
+            continue
+
+        # Check that oxygen has only one neighbor (nitrogen)
+        if oxygen.GetDegree() != 1:
+            continue
+
+        # If all checks pass, return True
+        return True, "Contains aldoxime group derived from an aliphatic aldehyde"
+
+    return False, "No valid aldoxime group found"
