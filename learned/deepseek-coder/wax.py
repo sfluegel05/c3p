@@ -25,11 +25,11 @@ def is_wax(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for ester group (-O-C(=O)-)
+    # Look for exactly one ester group (-O-C(=O)-)
     ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) == 0:
-        return False, "No ester group found"
+    if len(ester_matches) != 1:
+        return False, f"Found {len(ester_matches)} ester groups, need exactly 1"
 
     # Count rotatable bonds to verify long chains
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
@@ -47,7 +47,13 @@ def is_wax(smiles: str):
     
     if c_count < 20:
         return False, "Too few carbons for a wax"
-    if o_count < 2:
-        return False, "Must have at least 2 oxygens (ester group)"
+    if o_count != 2:
+        return False, "Must have exactly 2 oxygens (one ester group)"
 
-    return True, "Contains ester group with long carbon chains, characteristic of waxes"
+    # Check for other functional groups that are not typical of waxes
+    other_functional_groups = ["[NX3]", "[SX2]", "[PX4]", "[CX3](=O)[OX2H1]", "[CX3](=O)[NX3]"]
+    for pattern in other_functional_groups:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            return False, f"Contains non-wax functional group: {pattern}"
+
+    return True, "Contains one ester group with long carbon chains, characteristic of waxes"
