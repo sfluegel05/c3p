@@ -22,21 +22,37 @@ def is_proanthocyanidin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for flavan-3-ol (catechin/epicatechin) unit
+    # Define SMARTS pattern for flavan-3-ol (without stereochemistry)
     # This pattern matches the core structure of hydroxyflavans
-    flavan3ol_smarts = """
-    [#6]1=CC(=CC=C1)[C@@H]2O[C@H](C[C@H](O)[C@@H]2O)c3cc(O)ccc3
-    """
+    flavan3ol_smarts = 'c1cc(O)ccc1[C]2OC[C](O)C2'  # Simplified flavan-3-ol core
 
     flavan3ol_mol = Chem.MolFromSmarts(flavan3ol_smarts)
     if flavan3ol_mol is None:
         return False, "Invalid flavan-3-ol SMARTS pattern"
 
     # Find all flavan-3-ol units in the molecule
-    matches = mol.GetSubstructMatches(flavan3ol_mol, useChirality=True)
+    matches = mol.GetSubstructMatches(flavan3ol_mol, useChirality=False)
     num_units = len(matches)
 
-    if num_units >= 2:
-        return True, f"Contains {num_units} hydroxyflavan (flavan-3-ol) units"
-    else:
+    if num_units < 2:
         return False, f"Contains only {num_units} hydroxyflavan unit(s), need at least 2"
+
+    # Now check for linkages between flavan-3-ol units
+    # Typical linkages are C4-C8 or C4-C6 bonds
+    # Define possible linkage patterns
+    linkage_patterns = [
+        '[C;R1]1([C;R1])[C;R1][C;R1][C;R1][C;R1][C;R1]1',  # Ring structure
+        '[C;R1][C;R1][C;R1][C;R1][C;R1][C;R1]'             # Chain structure
+    ]
+
+    has_linkage = False
+    for patt in linkage_patterns:
+        linkage_mol = Chem.MolFromSmarts(patt)
+        if linkage_mol is not None and mol.HasSubstructMatch(linkage_mol):
+            has_linkage = True
+            break
+
+    if not has_linkage:
+        return False, "No typical linkage between flavan-3-ol units found"
+
+    return True, f"Contains {num_units} hydroxyflavan units with typical linkages"
