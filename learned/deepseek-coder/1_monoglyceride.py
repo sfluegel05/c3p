@@ -28,7 +28,7 @@ def is_1_monoglyceride(smiles: str):
 
     # Define the glycerol backbone pattern with a single ester at position 1
     glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
-    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
+    ester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2]")
 
     # Check for the presence of a glycerol backbone
     if not mol.HasSubstructMatch(glycerol_pattern):
@@ -40,14 +40,18 @@ def is_1_monoglyceride(smiles: str):
         return False, f"Found {len(ester_matches)} ester groups, need exactly 1"
 
     # Verify that the ester is attached to the first carbon of the glycerol backbone
-    ester_atom = ester_matches[0][0]  # Oxygen atom of the ester
+    ester_carbon = ester_matches[0][0]  # Carbonyl carbon of the ester
     glycerol_atoms = mol.GetSubstructMatch(glycerol_pattern)
-    if ester_atom not in glycerol_atoms:
-        return False, "Ester group not attached to the glycerol backbone"
-
-    # Check if the ester is attached to the first carbon (position 1)
     first_carbon = glycerol_atoms[0]
-    if ester_atom != first_carbon:
+
+    # Check if the ester carbon is bonded to the first carbon of the glycerol backbone
+    ester_bonded_to_first_carbon = False
+    for neighbor in mol.GetAtomWithIdx(ester_carbon).GetNeighbors():
+        if neighbor.GetIdx() == first_carbon:
+            ester_bonded_to_first_carbon = True
+            break
+
+    if not ester_bonded_to_first_carbon:
         return False, "Ester group not attached to the first carbon of the glycerol backbone"
 
     # Check for a fatty acid chain (long carbon chain attached to the ester)
