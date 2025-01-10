@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_N_acylsphingosine(smiles: str):
     """
     Determines if a molecule is an N-acylsphingosine based on its SMILES string.
-    An N-acylsphingosine has a sphingosine backbone with an N-linked fatty acyl group.
+    An N-acylsphingosine consists of a sphingosine backbone with an N-linked acyl group.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,27 +20,19 @@ def is_N_acylsphingosine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Correct pattern for sphingosine backbone
-    sphingosine_pattern = Chem.MolFromSmarts("C[C@H](O)C[C@@H](N)CO")  # Elongated pattern with C-N acyl and double bond
-    
-    # Check for presence of sphingosine backbone
+    # Pattern for sphingosine backbone: part of long chain with alcohols and double bond structure
+    sphingosine_pattern = Chem.MolFromSmarts("[NH][C@@H]([CH2]O)[C@H](O)C=C") 
     if not mol.HasSubstructMatch(sphingosine_pattern):
         return False, "No sphingosine backbone found"
-        
-    # Correct pattern for N-acyl group across a range of chain lengths
-    n_acyl_pattern = Chem.MolFromSmarts("NC(=O)[C,CX4][C,CX4][C,CX4]*")  # Matches N-acyl group with long hydrocarbon chains
+    
+    # Pattern for N-acyl group: N-attached acyl group (NH-C(=O)-C)
+    n_acyl_pattern = Chem.MolFromSmarts("N[C;X4](=O)[C;X4]")
     if not mol.HasSubstructMatch(n_acyl_pattern):
         return False, "No N-acyl group found"
     
     return True, "Contains sphingosine backbone with N-linked acyl group"
 
-# Test examples
-smiles_examples = [
-    "CCCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO)[C@H](O)\\C=C\\CCCCCCCCCCCCC",  # N-tetracosanoylsphingosine
-    "CCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO)[C@H](O)\\C=C\\CCCCCCCCCCCCC",    # N-2-hydroxystearoylsphingosine
-    "C(CCCCCCCCCC)CC\\C=C\\[C@@H](O)[C@@H](NC(=O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCO)CO",  # N-(omega-hydroxytriacontanoyl)sphingosine
-]
-
-for smiles in smiles_examples:
-    result, reason = is_N_acylsphingosine(smiles)
-    print(f"SMILES: {smiles} -> {result}, Reason: {reason}")
+# Example usage
+smiles_example = "CCCCCCCCCCCCCCCCC(=O)N[C@@H](CO)[C@H](O)\\C=C\\CCCCCCCCCCCCC"
+result, reason = is_N_acylsphingosine(smiles_example)
+print(result, reason)
