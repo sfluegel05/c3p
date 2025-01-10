@@ -26,75 +26,69 @@ def is_ribonucleoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check molecular weight - should be reasonable for a nucleoside
+    # Check molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt > 500:  # Most simple nucleosides are under 500 Da
-        # Look for phosphate groups that would indicate a nucleotide
-        phosphate_pattern = Chem.MolFromSmarts("[P](=[O])([O,OH])([O,OH])[O,OH]")
-        if mol.HasSubstructMatch(phosphate_pattern):
-            return False, "Contains phosphate group - likely a nucleotide"
-        
-        # Look for CoA-like structures
-        coa_pattern = Chem.MolFromSmarts("SCCNC(=O)CCNC(=O)")
-        if mol.HasSubstructMatch(coa_pattern):
-            return False, "Contains CoA-like structure"
+    if mol_wt > 1000:  # Increased threshold for complex modifications
+        return False, "Molecular weight too high"
 
-    # Look for ribose pattern with correct stereochemistry
-    ribose_pattern = Chem.MolFromSmarts("[CH2]-[CH]-[CH]-[CH]-[CH]-[O]")
+    # Look for phosphate groups that would indicate a nucleotide
+    phosphate_pattern = Chem.MolFromSmarts("[P](=[O])([O,OH])([O,OH])[O,OH]")
+    if mol.HasSubstructMatch(phosphate_pattern):
+        return False, "Contains phosphate group - likely a nucleotide"
+
+    # Check for ribose with correct stereochemistry
+    # Beta-D-ribofuranose pattern with explicit stereochemistry
+    ribose_pattern = Chem.MolFromSmarts("[CH2][C@H]1O[C@H]([*])[C@H](O)[C@@H]1O")
     if not mol.HasSubstructMatch(ribose_pattern):
-        return False, "No ribose sugar found"
+        return False, "No beta-D-ribose sugar found"
 
-    # Check for hydroxyl groups on ribose
+    # Check for hydroxyl groups
     hydroxyl_pattern = Chem.MolFromSmarts("[OX2H1]")
     hydroxyl_matches = len(mol.GetSubstructMatches(hydroxyl_pattern))
     if hydroxyl_matches < 2:
         return False, f"Insufficient hydroxyl groups ({hydroxyl_matches})"
 
-    # Expanded nucleobase patterns
-    pyrimidine_patterns = [
-        # Basic pyrimidine
-        "c1[n]c[n]c1",
-        # Uracil-like
-        "[nX3]1c(=O)[nH]c(=O)cc1",
-        # Cytosine-like
-        "[nX3]1c(N)nc(=O)cc1",
-        # Modified pyrimidines
-        "[nX3]1c(=O)[nH]c(=S)cc1",  # thio-derivatives
-        "[nX3]1c(=O)[nH]cc(F)c1",    # fluoro-derivatives
-        "[nX3]1c(=O)[nH]cc(Br)c1",   # bromo-derivatives
-        "[nX3]1c(=O)[nH]cc(C)c1",    # methyl-derivatives
-    ]
-    
-    purine_patterns = [
-        # Basic purine
-        "c1[n]c2[n]c[n]c2[n]1",
-        # Adenine-like
-        "c1nc(N)[nH]c2ncnc12",
-        # Guanine-like
-        "c1nc(=O)[nH]c2nc(N)[nH]c12",
-        # Modified purines
-        "c1nc(N)[nH]c2nc(O)[nH]c12",
-        "c1nc(N)nc2[nH]cnc12"
+    # Comprehensive nucleobase patterns
+    base_patterns = [
+        # Pyrimidines
+        "[nX3]1c(=O)[nH]c(=O)cc1",  # Uracil
+        "[nX3]1c(=O)[nH]c(=S)cc1",  # Thiouracil
+        "[nX3]1c(N)nc(=O)cc1",      # Cytosine
+        "[nX3]1c(=O)nc(N)cc1",      # Cytosine tautomer
+        "[nX3]1cc[nH]c(=O)1",       # Basic pyrimidine
+        
+        # Purines
+        "c1nc2c([nH]1)nc[nH]c2=O",  # Guanine
+        "c1nc2c([nH]1)ncnc2N",      # Adenine
+        "c1nc2c([nH]1)[nH]c(=O)nc2=O",  # Xanthine
+        "c1[nH]c2ncnc-2n1",         # Basic purine
+        
+        # Modified bases
+        "[nX3]1c(=O)[nH]c(=O)c(F)c1",  # Fluoropyrimidine
+        "[nX3]1c(=O)[nH]c(=O)c(Br)c1", # Bromopyrimidine
+        "[nX3]1c(=O)[nH]c(=O)c(C)c1",  # Methylpyrimidine
+        "[nX3]1c(=O)[nH]c(=O)c(CC)c1", # Modified pyrimidine
+        "c1nc2c([nH]1)nc(N)nc2=O",     # Modified purine
     ]
 
     has_base = False
-    for pattern in pyrimidine_patterns + purine_patterns:
+    for pattern in base_patterns:
         if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
             has_base = True
             break
-    
+            
     if not has_base:
-        return False, "No nucleobase found"
+        return False, "No recognized nucleobase found"
 
-    # Check for N-glycosidic bond connecting nucleobase to ribose
-    n_glycosidic_pattern = Chem.MolFromSmarts("[#7][CH]1[O][CH]([CH2][OH])[CH]([OH])[CH]1[OH]")
+    # Check for proper N-glycosidic bond with correct stereochemistry
+    n_glycosidic_pattern = Chem.MolFromSmarts("[#7][C@H]1[O][C@H]([CH2][OH])[C@H]([OH])[C@@H]1[OH]")
     if not mol.HasSubstructMatch(n_glycosidic_pattern):
-        return False, "No proper N-glycosidic bond found"
+        return False, "No proper N-glycosidic bond with correct stereochemistry"
 
-    # Check ring count (should have ribose + base rings)
+    # Ring count check
     ring_info = mol.GetRingInfo()
     if ring_info.NumRings() < 2:
         return False, "Insufficient ring count"
 
     # Success case
-    return True, "Contains ribose sugar connected to nucleobase via N-glycosidic bond"
+    return True, "Contains beta-D-ribose sugar connected to nucleobase via N-glycosidic bond"
