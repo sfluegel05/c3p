@@ -2,7 +2,7 @@
 Classifies: CHEBI:29017 1-acyl-sn-glycero-3-phosphoethanolamine
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import rdMolDescriptors, AllChem
 
 def is_1_acyl_sn_glycero_3_phosphoethanolamine(smiles: str):
     """
@@ -23,20 +23,24 @@ def is_1_acyl_sn_glycero_3_phosphoethanolamine(smiles: str):
         return False, "Invalid SMILES string"
     
     # Recognize the glycerol backbone with chiral center at sn-2
-    # Specifically check for (R)-configuration using InChI to handle stereo
-    glycerol_backbone_pattern = Chem.MolFromSmarts("[O][C@H](CO[CX3])")
-    subs = mol.GetSubstructMatches(glycerol_backbone_pattern)
-    if not any(Chem.FindMolChiralCenters(mol, includeUnassigned=True)):
-        return False, "No glycerol backbone with proper stereochemistry (R) found"
+    chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
+    chiral_center_at_sn2 = any(center[1] == 'R' for center in chiral_centers if center[0] == 1)  # Ideally index should match sn-2 position
+    if not chiral_center_at_sn2:
+        return False, "No glycerol backbone with (R)-configuration at sn-2 position found"
 
-    # Check for attached phosphate group in broader way ensuring one oxygen link to ethanolamine
-    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)OCCN")
-    if not mol.HasSubstructMatch(phosphate_pattern):
+    # Check for the presence of glycerol-like structure
+    glycerol_pattern = Chem.MolFromSmarts("[C@H](O)[C@H](O)CO")
+    if not mol.HasSubstructMatch(glycerol_pattern):
+        return False, "No glycerol-like backbone found"
+
+    # Confirm the attached phosphoethanolamine group
+    phosphate_ethanolamine_pattern = Chem.MolFromSmarts("P(=O)(O)OCCN")
+    if not mol.HasSubstructMatch(phosphate_ethanolamine_pattern):
         return False, "No phosphoethanolamine group found"
     
-    # Look for ester bond at sn-1 position
-    ester_linkage_pattern = Chem.MolFromSmarts("C(=O)O[C@H]") 
-    if not mol.HasSubstructMatch(ester_linkage_pattern):
-        return False, "No ester linkage detected at sn-1 position"
+    # Detect ester bond location strictly at sn-1 position
+    ester_sn1_pattern = Chem.MolFromSmarts("O[C@H](CO)C(=O)")  
+    if not mol.HasSubstructMatch(ester_sn1_pattern):
+        return False, "No ester linkage at sn-1 position detected"
     
     return True, "Molecule matches 1-acyl-sn-glycero-3-phosphoethanolamine structural criteria"
