@@ -7,7 +7,7 @@ def is_disaccharide(smiles: str):
     """
     Determines if a molecule is a disaccharide based on its SMILES string.
     A disaccharide is two monosaccharides joined by a glycosidic bond.
-    
+
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -20,14 +20,13 @@ def is_disaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS patterns for 5- and 6-membered sugar rings (furanose and pyranose)
+    # Define a SMARTS pattern for identifying sugar-like structures (generic)
     sugar_patterns = [
-        Chem.MolFromSmarts("O1[C@@H](CO)[C@H](O)[C@@H](O)[C@H]1"),  # 5-Membered ring
-        Chem.MolFromSmarts("O1[C@H](O)[C@H](O[C@@H](O)C)[C@@H](O)C1"),  # 6-Membered ring (example)
-        Chem.MolFromSmarts("O1[C@H](O[C@@H](O)[C@H](O)[C@@]1)C"),  # Generic 6-membered, reverse roles
+        Chem.MolFromSmarts("C1(CO)OC(O)C(O)C1"),  # Generic 5-membered
+        Chem.MolFromSmarts("C1(CO)OC(O)C(O)C(O)C1"),  # Generic 6-membered
     ]
 
-    # Detect sugar rings
+    # Detect sugar rings using the SMARTS patterns
     sugar_ring_count = 0
     for pattern in sugar_patterns:
         matches = mol.GetSubstructMatches(pattern)
@@ -36,21 +35,9 @@ def is_disaccharide(smiles: str):
     if sugar_ring_count < 2:
         return False, f"Expected 2 sugar rings, found {sugar_ring_count}"
 
-    # Patterns for glycosidic linkage (anomeric carbon connected through oxygen)
-    glycosidic_patterns = [
-        Chem.MolFromSmarts("[C@H]1(O[C@H]2[*:1])[*:2]1C2"),
-        Chem.MolFromSmarts("[C@H]1(O[C@@H]2[*:1])[*:2]1C2"),
-        Chem.MolFromSmarts("[C@@H]1(O[C@H]2[*:1])[*:2]1C2"),
-        Chem.MolFromSmarts("[C@@H]1(O[C@@H]2[*:1])[*:2]1C2"),
-    ]
-
-    # Check for at least one valid glycosidic linkage
-    glyco_bond_count = 0
-    for pattern in glycosidic_patterns:
-        matches = mol.GetSubstructMatches(pattern)
-        glyco_bond_count += len(matches)
-
-    if glyco_bond_count < 1:
-        return False, "No appropriate glycosidic link found to connect sugars"
+    # Check for any oxygen link between anomeric carbon of one sugar and another (glycosidic bond)
+    glycosidic_pattern = Chem.MolFromSmarts("[C@H1]O[C&D2]")  # Basic glycosidic structure
+    if not mol.HasSubstructMatch(glycosidic_pattern):
+        return False, "No appropriate glycosidic bond found to connect sugars"
 
     return True, "Contains two sugar rings joined by a glycosidic bond"
