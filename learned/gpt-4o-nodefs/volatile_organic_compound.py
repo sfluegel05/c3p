@@ -21,20 +21,24 @@ def is_volatile_organic_compound(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Count types of atoms
-    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    hydrogen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 1)
-    oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    nitrogen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
-    halogen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() in [9, 17, 35, 53])  # F, Cl, Br, I
-    
     # Calculate molecular weight
-    mol_wt = Descriptors.MolWt(mol)
+    mol_wt = Descriptors.ExactMolWt(mol)  # More accurate calculation
     
-    # Determine if it's a VOC
-    # Basic check: must have more carbon than any other element and not exceed a certain molecular weight
-    # Set an arbitrary upper limit to 300 g/mol to assume volatility; larger molecules tend to be less volatile
-    if carbon_count >= 1 and carbon_count > oxygen_count + nitrogen_count + halogen_count and mol_wt <= 300:
-        return True, "Likely a volatile organic compound based on moderate molecular weight and composition"
+    # New criteria for volatile organic compounds
+    # Allow higher molecular weight for long chains and specific functional groups
+    if mol_wt > 500:
+        return False, "Molecular weight exceeds typical range for volatility"
+
+    # Check presence of aromatic rings
+    aromatic_count = sum(1 for atom in mol.GetAromaticAtoms())
+    
+    # Check for specific volatile functional groups: alcohols, alkenes, aldehydes
+    alcohol_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[CX3](O)")))
+    alkene_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[CX3]=[CX3]")))
+    aldehyde_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[CX3H](=O)" )))
+    
+    # Simple rules to consider more volatility-related structures 
+    if (alcohol_count > 0 or alkene_count > 0 or aldehyde_count > 0 or aromatic_count > 0) or mol_wt <= 300:
+        return True, "Likely a volatile organic compound based on molecular structure and composition"
     else:
-        return False, "Does not match basic characteristics of a volatile organic compound"
+        return False, "Does not match enhanced characteristics of a volatile organic compound"
