@@ -6,12 +6,12 @@ Classifies: oligosaccharide
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdqueries
+from rdkit.Chem import rdMolDescriptors
 
 def is_oligosaccharide(smiles: str):
     """
     Determines if a molecule is an oligosaccharide based on its SMILES string.
-    An oligosaccharide is composed of monosaccharide units joined by glycosidic linkages.
+    An oligosaccharide is composed of 2 to 20 monosaccharide units joined by glycosidic linkages.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,52 +20,72 @@ def is_oligosaccharide(smiles: str):
         bool: True if molecule is an oligosaccharide, False otherwise
         str: Reason for classification
     """
-    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Kekulize the molecule (helps with certain valence issues)
-    try:
-        Chem.Kekulize(mol)
-    except Chem.KekulizeException as e:
-        pass  # Kekulization may fail for some molecules, but we can continue
 
-    # Define monosaccharide pattern (5 or 6 membered ring with oxygen and hydroxyl groups)
-    monosaccharide_patterns = [
-        Chem.MolFromSmarts('[C;H1,H2][O][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2]'),  # Pyranose ring
-        Chem.MolFromSmarts('[C;H1,H2][O][C;H1,H2][C;H1,H2][C;H1,H2]')             # Furanose ring
-    ]
-    
-    # Find monosaccharide units
-    monosaccharide_matches = []
-    for pattern in monosaccharide_patterns:
-        matches = mol.GetSubstructMatches(pattern)
-        monosaccharide_matches.extend(matches)
-    
-    num_monosaccharides = len(set([tuple(sorted(match)) for match in monosaccharide_matches]))
-    
+    # Initialize variables
+    sugar_rings = []
+    glycosidic_bonds = []
+
+    # Detect rings in the molecule
+    ri = mol.GetRingInfo()
+    atom_rings = ri.AtomRings()
+
+    # Identify sugar rings (5 or 6 membered rings with one oxygen)
+    for ring in atom_rings:
+        if len(ring) in [5,6]:
+            o_count = 0
+            c_count = 0
+            for idx in ring:
+                atom = mol.GetAtomWithIdx(idx)
+                if atom.GetAtomicNum() == 8:
+                    o_count += 1
+                elif atom.GetAtomicNum() == 6:
+                    c_count += 1
+            # Sugar rings have exactly one oxygen in the ring
+            if o_count == 1 and c_count == (len(ring)-1):
+                sugar_rings.append(set(ring))
+
+    num_monosaccharides = len(sugar_rings)
+
     if num_monosaccharides < 2:
         return False, f"Found {num_monosaccharides} monosaccharide unit(s), need at least 2 for oligosaccharide"
-    
-    # Identify glycosidic linkages (C-O-C between rings)
-    glycosidic_bond_pattern = Chem.MolFromSmarts('[C;R][O;$(*-[#6]);R][$([C;R]),$([C;r3,r4,r5,r6])]')
-    glycosidic_bonds = mol.GetSubstructMatches(glycosidic_bond_pattern)
-    
+
+    # Identify glycosidic linkages
+    for bond in mol.GetBonds():
+        # Look for bonds connecting two sugar rings via an oxygen
+        a1 = bond.GetBeginAtom()
+        a2 = bond.GetEndAtom()
+        if a1.GetAtomicNum() == 8 or a2.GetAtomicNum() == 8:
+            # One atom is oxygen
+            other_atom = a1 if a2.GetAtomicNum() == 8 else a2
+            o_atom = a2 if a2.GetAtomicNum() == 8 else a1
+            # Oxygen connected to carbons in two different sugar rings
+            if other_atom.GetAtomicNum() == 6:
+                # Check if the carbon atom is part of a sugar ring
+                for ring in sugar_rings:
+                    if other_atom.GetIdx() in ring:
+                        # Check if oxygen is connected to another carbon in a different ring
+                        for nbr in o_atom.GetNeighbors():
+                            if nbr.GetAtomicNum() == 6 and nbr.GetIdx() != other_atom.GetIdx():
+                                for other_ring in sugar_rings:
+                                    if nbr.GetIdx() in other_ring and other_ring != ring:
+                                        glycosidic_bonds.append(bond)
     num_glycosidic_bonds = len(glycosidic_bonds)
-    
+
     if num_glycosidic_bonds < 1:
         return False, "No glycosidic linkages found between monosaccharide units"
-    
+
     # Check if the number of glycosidic bonds corresponds to number of monosaccharides minus one
     if num_glycosidic_bonds < num_monosaccharides - 1:
         return False, f"Insufficient glycosidic linkages: found {num_glycosidic_bonds}, expected at least {num_monosaccharides - 1}"
-    
+
     # Additional check: ensure that the molecule is not too large (exclude polysaccharides)
-    if num_monosaccharides > 10:
+    if num_monosaccharides > 20:
         return False, f"Found {num_monosaccharides} monosaccharide units, which may indicate a polysaccharide"
-    
+
     return True, f"Contains {num_monosaccharides} monosaccharide units connected via glycosidic linkages"
 
 __metadata__ = {   'chemical_class': {   'id': None,
