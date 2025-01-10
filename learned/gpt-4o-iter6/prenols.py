@@ -21,27 +21,31 @@ def is_prenols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define a more complex isoprene unit pattern to account for variation and repetition
-    isoprene_pattern = Chem.MolFromSmarts("[C;R0](=C)[C;R0]-C-C")
-    
-    # Define more flexible terminal alcohol pattern considering possible connectivity
-    terminal_alcohol_pattern = Chem.MolFromSmarts("[C;R0][OH]")
+    # Pattern for isoprene unit with optional methyl branching
+    isoprene_pattern = Chem.MolFromSmarts("[CH2]-C(=C)-C[CH3]")
     
     # Search for isoprene units
     isoprene_blocks = mol.GetSubstructMatches(isoprene_pattern)
     if len(isoprene_blocks) < 1:
         return False, "No or insufficient isoprene units found"
     
-    # Check alcohol presence and ensure it is terminal
-    alcohol_matches = mol.GetSubstructMatches(terminal_alcohol_pattern)
-    if len(alcohol_matches) == 0:
-        return False, "No or non-terminal alcohol group found"
-
+    # Check for precisely one alcohol group
+    alcohol_pattern = Chem.MolFromSmarts("[OH]")
+    alcohol_matches = mol.GetSubstructMatches(alcohol_pattern)
+    if len(alcohol_matches) != 1:
+        return False, "There must be exactly one alcohol group"
+    
     # Validate the position of OH to be at the terminus of the molecule
-    terminal_endings = [match for match in alcohol_matches if mol.GetAtomWithIdx(match[0]).GetDegree() == 1]
-    if len(terminal_endings) == 0:
-        return False, "Alcohol group not at the terminal end"
+    terminal_oxygen = [a.GetIdx() for a in mol.GetAtomsWithQuery(Chem.MolFromSmarts("[OX2H]")) if a.GetDegree() == 1]
+    if not terminal_oxygen:
+        return False, "Alcohol group must be terminal"
 
-    return True, "Contains isoprene units with a terminal alcohol group"
+    # Ensure alcohol group is part of the main structure, not isolated
+    for atom_idx in terminal_oxygen:
+        neighboring_atoms = [n.GetAtomicNum() for n in mol.GetAtomWithIdx(atom_idx).GetNeighbors()]
+        if 6 in neighboring_atoms:  # Carbon is present
+            return True, "Contains isoprene units with a terminal alcohol group"
+    
+    return False, "Can't confirm isoprene-alcohol linkage"
 
 __metadata__ = {'chemical_class': {'name': 'prenol'}}
