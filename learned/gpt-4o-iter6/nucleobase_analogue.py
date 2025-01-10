@@ -20,9 +20,10 @@ def is_nucleobase_analogue(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Purine and pyrimidine SMARTS patterns
-    purine_pattern = Chem.MolFromSmarts("c1ncnc2n[nH]nc12")
-    pyrimidine_pattern = Chem.MolFromSmarts("c1ccncn1")
+    # Purine SMARTS pattern: two fused rings
+    purine_pattern = Chem.MolFromSmarts("c1ncnc2ncnc12")
+    # Pyrimidine SMARTS pattern: single six-membered ring
+    pyrimidine_pattern = Chem.MolFromSmarts("c1cncnc1")
     
     # Check for core nucleobase structures
     has_purine_structure = mol.HasSubstructMatch(purine_pattern)
@@ -31,17 +32,19 @@ def is_nucleobase_analogue(smiles: str):
     if has_purine_structure or has_pyrimidine_structure:
         return True, "Core nucleobase structure detected"
 
-    # Common nucleobase analogue modifications
+    # Common nucleobase analogue modifications: extra rings, unusual groups, etc.
     modification_patterns = [
-        Chem.MolFromSmarts("[OH0,S,NH1,NH2,C=O,Cl,Br,I,F]"),  # Common modifications
-        Chem.MolFromSmarts("c1[nH]nnc1")  # Recognizing imidazole-like modifications
+        Chem.MolFromSmarts("Nc1ncnc2ncnc12"),  # 8-aza modifications
+        Chem.MolFromSmarts("O=C1NC(=O)C=C1"),  # 5-fluoro analogues
+        Chem.MolFromSmarts("O=C1C=CC(=O)NC1"),  # Thioanalogues
+        Chem.MolFromSmarts("c1n[nH]c(=O)c2c1ncn2"),  # Imidazole incorporation
     ]
-
+    
     for pattern in modification_patterns:
         if mol.HasSubstructMatch(pattern):
-            return True, "Nucleobase and modification patterns detected"
+            return True, "Modification consistent with nucleobase analogue detected"
 
     return False, "No significant nucleobase analogue characteristics detected"
 
-# Examples of how to use the function
+# Test the function on some sample data
 # result, reason = is_nucleobase_analogue('SMILES_STRING_HERE')
