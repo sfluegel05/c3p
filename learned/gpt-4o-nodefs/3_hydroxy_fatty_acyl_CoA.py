@@ -22,14 +22,16 @@ def is_3_hydroxy_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for 3-hydroxy fatty acid part: -C(3)-[O]-C(=O)-
-    hydroxy_fatty_acid_pattern = Chem.MolFromSmarts("C[C@H](O)C(=O)")
-    if not mol.HasSubstructMatch(hydroxy_fatty_acid_pattern):
-        return False, "No 3-hydroxy fatty acid group found"
-        
-    # Check for CoA moiety: Coenzyme A structure recognition
-    coa_pattern = Chem.MolFromSmarts("COP(=O)(O)OC[C@H]1O[C@@H]([C@@H](O)[C@H]1O)OP(=O)(O)OCSc1ncnc2n(ccn12)[C@H]3O[C@H]([C@H]([C@@H]3O)OP(=O)(O)O)CO")
+    # Check for 3-hydroxy group within a larger fatty acid chain 
+    # -C(3)-[O]-C(=O)- can be more flexibly aware of longer carbon chains
+    hydroxy_pattern = Chem.MolFromSmarts("[C@@H](O)[CH2][CH2][CX3](=O)")
+    if not mol.HasSubstructMatch(hydroxy_pattern):
+        return False, "No appropriate 3-hydroxy group in fatty acid chain found"
+    
+    # Coenzyme A moiety detection
+    # Simplify or broaden pattern; CoA is typically a phosphate, pantetheine structure 
+    coa_pattern = Chem.MolFromSmarts("C1[C@H](O)CO[C@H]1OP(=O)(O)OC[C@H]2[C@H](O)[C@H](O)[C@H](O2)OP(=O)(O)OCC[NH2+]CCCC(=O)[C@H](O)CCS")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No Coenzyme A moiety found"
-    
+
     return True, "Contains 3-hydroxy fatty acid group with Coenzyme A moiety"
