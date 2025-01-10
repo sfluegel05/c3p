@@ -2,7 +2,6 @@
 Classifies: CHEBI:18154 polysaccharide
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_polysaccharide(smiles):
     """
@@ -21,11 +20,12 @@ def is_polysaccharide(smiles):
     if not mol:
         return False, "Invalid SMILES string"
 
-    # Define a general pattern for cyclic monosaccharide units (e.g., hexose)
-    cyclic_mono_pattern = Chem.MolFromSmarts("C1OC(CO)C(O)C1O")  # Simplified pyranose form
-    acetamido_pattern = Chem.MolFromSmarts("N(C(*=O)C)C")  # Acetamido group indicating sugar derivatives like GlcNAc
-    
-    # Count cyclic monosaccharide units
+    # Define a more comprehensive pattern for monosaccharide units
+    # Modified to potentially fit more common variations e.g. glucose unit
+    cyclic_mono_pattern = Chem.MolFromSmarts("[C&R]1([O])[C&R]([C&R]([CO])[C&R]([O])[C&R]1O)")  # Pyranose-like structure
+    acetamido_pattern = Chem.MolFromSmarts("NC(=O)C")  # Acetamido group common in GlcNAc
+
+    # Iterate over potential substructures and count
     cycle_mono_count = len(mol.GetSubstructMatches(cyclic_mono_pattern))
     acetamido_count = len(mol.GetSubstructMatches(acetamido_pattern))
 
@@ -35,8 +35,8 @@ def is_polysaccharide(smiles):
     if mono_count < 10:
         return False, f"Contains {mono_count} probable monosaccharide rings/units, less than required 10 for polysaccharide"
 
-    # Glycosidic linkage pattern (C-O-C bond excluding terminal connections)
-    glycosidic_link_pattern = Chem.MolFromSmarts("[!#1]O[#6&R]([!#1])")  # Ether-like O-C linkage
+    # Define pattern for glycosidic linkages
+    glycosidic_link_pattern = Chem.MolFromSmarts("[C&R]O[C&R]")  # Ether-like linkage focusing on C-O-C
 
     # Count glycosidic linkages
     glyco_count = len(mol.GetSubstructMatches(glycosidic_link_pattern))
