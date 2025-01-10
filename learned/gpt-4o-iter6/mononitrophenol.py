@@ -22,22 +22,24 @@ def is_mononitrophenol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define phenol pattern
-    phenol_pattern = Chem.MolFromSmarts("c1ccccc1O")
+    # Define phenol pattern (aromatic ring with -OH group)
+    phenol_pattern = Chem.MolFromSmarts("c1ccc(cc1)O")
     # Define nitro group pattern
     nitro_pattern = Chem.MolFromSmarts("[N+](=O)[O-]")
     
-    # Check for phenol substructure
-    if not mol.HasSubstructMatch(phenol_pattern):
+    # Check if phenol structure is present
+    phenol_matches = mol.GetSubstructMatches(phenol_pattern)
+    if len(phenol_matches) == 0:
         return False, "No phenol group found"
     
-    # Check nitro groups in molecule
+    # Check for nitro group and its attachment to the aromatic ring
     nitro_matches = mol.GetSubstructMatches(nitro_pattern)
     if len(nitro_matches) != 1:
         return False, f"Found {len(nitro_matches)} nitro groups, need exactly 1"
     
-    # Ensure the nitro is part of the aromatic structure in phenol
-    if not any(mol.GetAtomWithIdx(match[0]).GetIsAromatic() for match in nitro_matches):
+    # Ensure at least one match within aromatic system
+    phenol_aromatic_atoms = {atom_idx for match in phenol_matches for atom_idx in match}
+    if not any(atom_idx in phenol_aromatic_atoms for atom_idx, _, _ in nitro_matches):
         return False, "Nitro group is not attached to the aromatic ring of phenol"
     
     return True, "Molecule is a mononitrophenol with a single nitro group attached to the phenol ring"
