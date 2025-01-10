@@ -21,8 +21,8 @@ def is_diketone(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define a SMARTS pattern for ketone functional group
-    # Carbonyl carbon (C=O) where the carbon is single-bonded to two carbons
-    ketone_pattern = Chem.MolFromSmarts("[C;X3](=O)([C])([C])")
+    # Carbonyl carbon (C=O) where the carbon is single-bonded to any carbon
+    ketone_pattern = Chem.MolFromSmarts("[CX3](=O)[#6]")
     if ketone_pattern is None:
         return False, "Invalid ketone SMARTS pattern"
 
