@@ -23,7 +23,7 @@ def is_beta_D_glucosiduronic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define more specific glucuronic acid pattern with stereochemistry
+    # Define a more specific glucuronic acid pattern with stereochemistry
     glucuronic_acid_pattern = Chem.MolFromSmarts("[C@H]1([C@@H]([C@H]([C@@H]([C@H](O1)C(=O)O)O)O)O)[OX2]")
     if not mol.HasSubstructMatch(glucuronic_acid_pattern):
         return False, "No beta-D-glucuronic acid moiety found"
@@ -53,6 +53,8 @@ def is_beta_D_glucosiduronic_acid(smiles: str):
                 # Ensure the glycosidic oxygen is connected to another molecule
                 for neighbor in neighbors:
                     if neighbor.GetIdx() != anomeric_carbon:
-                        return True, "Contains beta-D-glucuronic acid moiety connected via beta-glycosidic bond"
+                        # Check if the neighbor is part of another molecule
+                        if not any(atom.GetIdx() in match for atom in neighbor.GetNeighbors()):
+                            return True, "Contains beta-D-glucuronic acid moiety connected via beta-glycosidic bond"
 
     return False, "No beta-glycosidic bond found between glucuronic acid and another molecule"
