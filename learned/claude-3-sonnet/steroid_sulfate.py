@@ -24,38 +24,69 @@ def is_steroid_sulfate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
         
-    # Look for steroid core (four fused rings - three 6-membered and one 5-membered)
-    # This SMARTS pattern represents the basic steroid skeleton
-    steroid_pattern = Chem.MolFromSmarts("[#6]~1~[#6]~[#6]~[#6]~2~[#6]~[#6]~[#6]~3~[#6]~[#6]~[#6]~4~[#6]~[#6]~[#6]~[#6]~[#6]~4~[#6]~[#6]~3~[#6]~[#6]~2~[#6]~1")
-    if not mol.HasSubstructMatch(steroid_pattern):
+    # More flexible steroid core patterns to match different variations
+    steroid_patterns = [
+        # Basic steroid core with flexible bond types
+        "[#6]~1~[#6]~[#6]~[#6]~2~[#6]~[#6]~[#6]~3~[#6]~[#6]~[#6]~4~[#6]~[#6]~[#6]~[#6]~[#6]~4~[#6]~[#6]~3~[#6]~[#6]~2~[#6]~1",
+        # Alternative pattern allowing for aromatic rings
+        "c1cc2[C,c]~[C,c]~[C,c]3~[C,c]~[C,c]~[C,c]4~[C,c]~[C,c]~[C,c]~[C,c]~4~[C,c]~[C,c]3~[C,c]~[C,c]2c1",
+        # Pattern for estrone-like steroids
+        "[#6]~1~[#6]~[#6]~[#6]~2~[#6]~[#6]~[#6]~3~[#6,c]~[#6,c]~[#6,c]~[#6,c]~[#6,c]~3~[#6]~[#6]~2~[#6]~1"
+    ]
+    
+    found_steroid = False
+    for pattern in steroid_patterns:
+        steroid_pat = Chem.MolFromSmarts(pattern)
+        if mol.HasSubstructMatch(steroid_pat):
+            found_steroid = True
+            break
+            
+    if not found_steroid:
         return False, "No steroid core structure found"
     
-    # Look for sulfate group (-OS(=O)(=O)O or -OS(=O)(=O)[O-])
-    sulfate_pattern1 = Chem.MolFromSmarts("OS(=O)(=O)O")
-    sulfate_pattern2 = Chem.MolFromSmarts("OS(=O)(=O)[O-]")
+    # Various sulfate group patterns
+    sulfate_patterns = [
+        "OS(=O)(=O)O",  # neutral sulfate
+        "OS(=O)(=O)[O-]",  # deprotonated sulfate
+        "[#6]-[#8]S(=O)(=O)[O-]",  # alternative form
+        "[#6]-[#8]S(=O)(=O)O",  # alternative neutral form
+        "[#6]-OS([O-])(=O)=O"  # another ionic form
+    ]
     
-    has_sulfate1 = mol.HasSubstructMatch(sulfate_pattern1)
-    has_sulfate2 = mol.HasSubstructMatch(sulfate_pattern2)
-    
-    if not (has_sulfate1 or has_sulfate2):
+    found_sulfate = False
+    for pattern in sulfate_patterns:
+        sulfate_pat = Chem.MolFromSmarts(pattern)
+        if mol.HasSubstructMatch(sulfate_pat):
+            found_sulfate = True
+            break
+            
+    if not found_sulfate:
         return False, "No sulfate group found"
     
     # Count sulfate groups
-    sulfate_matches1 = len(mol.GetSubstructMatches(sulfate_pattern1))
-    sulfate_matches2 = len(mol.GetSubstructMatches(sulfate_pattern2))
-    total_sulfates = sulfate_matches1 + sulfate_matches2
+    total_sulfates = sum(len(mol.GetSubstructMatches(Chem.MolFromSmarts(pat))) 
+                        for pat in sulfate_patterns)
     
-    # Verify that sulfate is attached to steroid core
-    # Look for O-S bond where O is attached to carbon (part of steroid)
-    sulfate_linkage = Chem.MolFromSmarts("[#6]-[#8]-[#16](=[#8])(=[#8])-[#8]")
-    if not mol.HasSubstructMatch(sulfate_linkage):
+    # Verify sulfate is attached to carbon (part of steroid)
+    sulfate_linkage_patterns = [
+        "[#6]-[#8]-[#16](=[#8])(=[#8])-[#8]",
+        "[#6]-[#8]S([O-])(=O)=O"
+    ]
+    
+    proper_linkage = False
+    for pattern in sulfate_linkage_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            proper_linkage = True
+            break
+            
+    if not proper_linkage:
         return False, "Sulfate group not properly connected to steroid core"
     
-    # Count carbons to ensure reasonable size for steroid
+    # Basic size check for steroid structure
     carbon_count = len([atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6])
-    if carbon_count < 19:  # Most steroids have 19+ carbons
+    if carbon_count < 17:  # Most steroids have 17+ carbons
         return False, "Too few carbons for steroid structure"
-        
+    
     if total_sulfates == 1:
         return True, "Found steroid core with one sulfate group"
     else:
