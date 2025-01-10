@@ -21,8 +21,8 @@ def is_diketone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define ketone group pattern accounting for different environments (aromatic, aliphatic)
-    ketone_pattern = Chem.MolFromSmarts("C(=O)[C!O]")  # Carbon double-bonded to oxygen and single-bonded to non-oxygen
+    # Define a ketone group pattern (an aliphatic or aromatic carbon double-bonded to oxygen)
+    ketone_pattern = Chem.MolFromSmarts("C(=O)[!#8]")  # Carbon double-bonded to oxygen and not bound to oxygen (exclude esters/acid carbonyls)
 
     if ketone_pattern is None:
         return False, "Invalid ketone SMARTS pattern"
@@ -30,10 +30,10 @@ def is_diketone(smiles: str):
     # Find substructure matches for ketone groups
     ketone_matches = mol.GetSubstructMatches(ketone_pattern)
 
-    # Check for exactly two ketone groups, ensuring non-overlapping matches
-    # Using set for collecting unique carbon atoms in ketone groups
+    # Count unique carbon positions for ketone groups to ensure a valid ketone context
     unique_ketone_carbons = {match[0] for match in ketone_matches}
 
+    # Check for exactly two ketone groups
     if len(unique_ketone_carbons) == 2:
         return True, "Contains exactly 2 ketone groups, sufficient for diketone classification"
     
