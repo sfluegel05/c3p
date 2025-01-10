@@ -2,12 +2,12 @@
 Classifies: CHEBI:47916 flavonoid
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_flavonoid(smiles: str):
     """
     Determines if a molecule is a flavonoid based on its SMILES string.
-    A flavonoid is typically a 1-benzopyran structure with an aryl group at position 2,
-    but can include various substituents.
+    A flavonoid is characterized by a 1-benzopyran structure with an aryl group at position 2.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,21 +21,20 @@ def is_flavonoid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Refined pattern for core flavonoid: 1-benzopyran structure with an aryl group at position 2
-    flavonoid_core_pattern = Chem.MolFromSmarts("c1cc(-c2ccccc2)c2occ(c2)c1")
-    if not mol.HasSubstructMatch(flavonoid_core_pattern):
-        return False, "No core flavonoid 1-benzopyran structure with aryl substitution found"
-    
-    # Check for common functional groups like hydroxyls [OH] or carbonyls (=O)
-    # Note: Position is not restricted; we're checking for general presence
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
-    carbonyl_pattern = Chem.MolFromSmarts("C=O")
-    
-    has_hydroxyl = mol.HasSubstructMatch(hydroxyl_pattern)
-    has_carbonyl = mol.HasSubstructMatch(carbonyl_pattern)
 
-    if has_hydroxyl or has_carbonyl:
-        return True, f"Identified flavonoid structure with {'hydroxyl' if has_hydroxyl else ''}{' and ' if has_hydroxyl and has_carbonyl else ''}{'carbonyl' if has_carbonyl else ''} functional groups"
+    # Look for 1-benzopyran ring system (simplified chromene core) with an aryl at position 2
+    chromene_pattern = Chem.MolFromSmarts("C1=CC=C2C(=C1)OC=C2")  # Basic 1-benzopyran
+    if not mol.HasSubstructMatch(chromene_pattern):
+        return False, "No 1-benzopyran core found"
 
-    return True, "Identified basic flavonoid structure (1-benzopyran core with aryl substitution)"
+    # Look for aryl substitution at position 2
+    aryl_pattern = Chem.MolFromSmarts("c1ccc(cc1)-C2=CC=CO2")  # Aryl at position 2 of chromene
+    if not mol.HasSubstructMatch(aryl_pattern):
+        return False, "No aryl group at correct position"
+
+    # Count hydroxyl groups
+    hydroxyl_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetTotalNumHs() == 1)
+    if hydroxyl_count < 1:
+        return False, "Insufficient hydroxyl groups for a typical flavonoid structure"
+
+    return True, "Contains flavonoid core with aryl substitution at position 2"
