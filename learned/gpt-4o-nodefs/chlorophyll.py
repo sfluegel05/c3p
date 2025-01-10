@@ -25,19 +25,16 @@ def is_chlorophyll(smiles: str):
     if not mg_atom:
         return False, "No magnesium atom found"
 
-    # Improved pattern for detecting chlorin-like macrocyclic structure
-    chlorin_pattern = Chem.MolFromSmarts("n1c(c2nc(cc3c2c1)c(c4cc(c(c5[nH]c(nc5c6ccc(n6)c3)c4))c7[nH]c8c(c7)c(c9cc(nc(n9)c8)c0ccc(nc0)c1)c2)n3)cc4)c2n8c(c)c(=n9)ccn(c9)cc8c3c(c4)n(cc3)c2")
+    # Check for a simplified macrocycle structure (porphyrin/chlorin-like)
+    # Chlorin is a more reduced form of porphyrin, so a simpler pattern
+    chlorin_pattern = Chem.MolFromSmarts("c1cc[nH]c2ccc(nc3cc[nH]c(cc4[nH]c5ccccc5[nH]4)c23)c1")
     if not mol.HasSubstructMatch(chlorin_pattern):
         return False, "No chlorin-like macrocyclic structure found"
 
-    # Check for presence of phytol or geranylgeranyl-like hydrocarbon chains commonly found
-    phytol_chain_pattern = Chem.MolFromSmarts("C(CC)=C/C\\C=C/C\\C=C/C")
-    if not mol.HasSubstructMatch(phytol_chain_pattern):
-        return False, "No suitable phytol or similar hydrocarbon chains found"
+    # Check for presence of hydrocarbon chains that resemble the phytol group
+    # More generalized pattern to match varied hydrocarbon tails
+    hydrocarbon_chain_pattern = Chem.MolFromSmarts("C=C([C@H](CC)C)C")
+    if not mol.HasSubstructMatch(hydrocarbon_chain_pattern):
+        return False, "No suitable hydrocarbon chains found"
 
-    # Expanded pattern for presence of ester groups in given positions
-    ester_pattern = Chem.MolFromSmarts("CO[C](=O)")
-    if not mol.HasSubstructMatch(ester_pattern):
-        return False, "No ester groups in appropriate locations found"
-
-    return True, "Matches chlorophyll characteristics: macrocyclic structure with magnesium, phytol-like chains, and ester groups"
+    return True, "Matches chlorophyll characteristics: macrocyclic structure with magnesium and hydrocarbon chains"
