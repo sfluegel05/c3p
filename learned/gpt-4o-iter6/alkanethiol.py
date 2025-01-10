@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_alkanethiol(smiles: str):
     """
     Determines if a molecule is an alkanethiol based on its SMILES string.
-    An alkanethiol is characterized by a sulfanyl group (-SH) attached to an alkyl group.
+    An alkanethiol has a sulfanyl group (-SH) attached directly to an alkyl group (carbon).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,24 +21,14 @@ def is_alkanethiol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Thiol group pattern - we need to find sulfur atoms with a single hydrogen attached
-    thiol_pattern = Chem.MolFromSmarts("[SHX1]")
+    # Thiol group pattern - sulfur with hydrogen and a bonding carbon
+    # This searches for sulfur with one attached hydrogen and a connection to a carbon atom
+    thiol_pattern = Chem.MolFromSmarts("[SX2][H]C")
+    
     if not mol.HasSubstructMatch(thiol_pattern):
-        return False, "No thiol (-SH) group found"
+        return False, "No thiol (-SH) group directly attached to carbon found"
     
-    # Check if thiol is attached to an alkyl (carbon and hydrogens forming a non-aromatic chain or ring)
-    alkyl_pattern = Chem.MolFromSmarts("[CX4;!R]")
-    thiol_matches = mol.GetSubstructMatches(thiol_pattern)
-    
-    for match in thiol_matches:
-        sulfur_atom = mol.GetAtomWithIdx(match[0])
-        neighbors = sulfur_atom.GetNeighbors()
-        for atom in neighbors:
-            if atom.GetSymbol() == "C" and atom.GetHybridization() == Chem.rdchem.HybridizationType.SP3:
-                # Found an SP3 carbon, typically indicative of an alkyl or basic alkane environment
-                return True, "Contains sulfanyl group attached to an SP3 hybridized carbon (alkyl group)"
-        
-    return False, "Thiol group not attached to an appropriate alkyl (saturated carbon)"
+    return True, "Contains alkanethiol pattern with -SH group attached to carbon"
 
 # Example usage
 print(is_alkanethiol("SCC(CC)C"))  # Example SMILES for 2-Methyl-1-butanethiol
