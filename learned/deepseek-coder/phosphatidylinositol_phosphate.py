@@ -43,15 +43,16 @@ def is_phosphatidylinositol_phosphate(smiles: str):
     if not mol.HasSubstructMatch(glycerol_phosphate_pattern):
         return False, "No phosphate group attached to glycerol"
 
-    # Look for inositol ring (6 carbons with multiple hydroxyls)
+    # Look for inositol ring (6 carbons with multiple hydroxyls, allowing for substitutions)
     inositol_pattern = Chem.MolFromSmarts("C1C(O)C(O)C(O)C(O)C(O)C1")
     if not mol.HasSubstructMatch(inositol_pattern):
         return False, "No inositol ring found"
 
     # Look for at least one additional phosphate group on inositol
-    inositol_phosphate_pattern = Chem.MolFromSmarts("C1C(O)C(O)C(O)C(O)C(O)C1OP(O)(=O)")
-    if not mol.HasSubstructMatch(inositol_phosphate_pattern):
-        return False, "No additional phosphate group on inositol"
+    phosphate_pattern = Chem.MolFromSmarts("OP(O)(=O)")
+    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
+    if len(phosphate_matches) < 2:
+        return False, "Need at least two phosphate groups (one on glycerol and one on inositol)"
 
     # Check molecular weight - PIPs typically >600 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
