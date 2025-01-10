@@ -7,6 +7,8 @@ from rdkit.Chem import rdMolDescriptors
 def is_fatty_acid_methyl_ester(smiles: str):
     """
     Determines if a molecule is a fatty acid methyl ester based on its SMILES string.
+    A fatty acid methyl ester is characterized by an ester linkage derived from methanol 
+    and a long aliphatic carbon chain representative of fatty acids.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,24 +23,19 @@ def is_fatty_acid_methyl_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for ester group pattern with methanol
-    ester_methyl_pattern = Chem.MolFromSmarts("OC(=O)C")
+    # Check for methyl ester group
+    ester_methyl_pattern = Chem.MolFromSmarts("OC(=O)[C]")
     if not mol.HasSubstructMatch(ester_methyl_pattern):
         return False, "Ester group with methanol (methyl ester) missing"
 
-    # Count carbon chains; assume fatty acids will have reasonably long carbon chains
-    max_long_carbon_chain_length = 0
-    for chain in mol.GetSubstructMatches(Chem.MolFromSmarts("[C]!@[C].[C]!@[C]!@[C]!@[C]!@[C]!@[C]")):
-        chain_length = len(chain)
-        if chain_length > max_long_carbon_chain_length:
-            max_long_carbon_chain_length = chain_length
+    # Look for at least one long carbon chain indicative of a fatty acid (e.g., minimum of 6 consecutive carbons)
+    long_chain_pattern = Chem.MolFromSmarts("C(CCCCCC)C")
+    if not mol.HasSubstructMatch(long_chain_pattern):
+        return False, "Missing sufficient long carbon chain for fatty acid"
 
-    if max_long_carbon_chain_length < 8:  # strict checks for minimal carbon length for a fatty acid
-        return False, "Too few carbon atoms for a fatty acid chain"
-
-    # Ensure exactly one ester linkage derived from methanol is present
+    # Allow up to two methyl ester groups if the molecule remains a typical fatty acid methyl structure
     ester_matches = mol.GetSubstructMatches(ester_methyl_pattern)
-    if len(ester_matches) != 1:
-        return False, f"Found {len(ester_matches)} methyl ester groups, need exactly 1"
+    if not (1 <= len(ester_matches) <= 2):
+        return False, f"Found {len(ester_matches)} methyl ester groups, acceptable is 1 or 2"
 
     return True, "Structure matches fatty acid methyl ester requirements"
