@@ -25,35 +25,37 @@ def is_tripeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for peptide bonds (-C(=O)-N-) with more flexible pattern
-    peptide_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[#6]")
+    # Basic peptide bond pattern (amide bond)
+    peptide_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])")
+    if peptide_pattern is None:
+        return False, "Invalid peptide SMARTS pattern"
+    
     peptide_matches = mol.GetSubstructMatches(peptide_pattern)
     
     # For a tripeptide, we need exactly 2 peptide bonds
     if len(peptide_matches) < 2:
         return False, f"Found {len(peptide_matches)} peptide bonds, need at least 2"
-    if len(peptide_matches) > 3:
-        return False, f"Found {len(peptide_matches)} peptide bonds, too many for a tripeptide"
 
-    # Look for amino acid residue pattern - more flexible version
-    aa_pattern = Chem.MolFromSmarts("[NX3][CX4][CX3](=[OX1])")
-    aa_matches = mol.GetSubstructMatches(aa_pattern)
-    if len(aa_matches) < 2:
-        return False, "Too few amino acid residue patterns found"
-
-    # Check for terminal groups with more flexible patterns
-    terminal_amine_pattern = Chem.MolFromSmarts("[NX3H2,NX3H3+,$(N([H])[C])]")
-    terminal_carboxyl_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H,OX1-]")
+    # Look for amino group pattern
+    amino_pattern = Chem.MolFromSmarts("[NX3H2,NX3H3+][CX4]")
+    if amino_pattern is None:
+        return False, "Invalid amino SMARTS pattern"
+        
+    # Look for carboxyl group pattern
+    carboxyl_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H,OX1-]")
+    if carboxyl_pattern is None:
+        return False, "Invalid carboxyl SMARTS pattern"
     
-    if not (mol.HasSubstructMatch(terminal_amine_pattern) and 
-            mol.HasSubstructMatch(terminal_carboxyl_pattern)):
-        return False, "Missing terminal amino or carboxyl group"
+    if not mol.HasSubstructMatch(amino_pattern):
+        return False, "Missing terminal amino group"
+    if not mol.HasSubstructMatch(carboxyl_pattern):
+        return False, "Missing terminal carboxyl group"
 
     # Count nitrogens and oxygens
     n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     
-    # Revised minimum requirements:
+    # Minimum requirements for tripeptide:
     # - At least 3 nitrogens (1 terminal + 2 peptide bonds)
     # - At least 4 oxygens (2 peptide C=O + 1 terminal COOH)
     if n_count < 3:
@@ -61,19 +63,33 @@ def is_tripeptide(smiles: str):
     if o_count < 4:
         return False, f"Too few oxygens ({o_count}) for a tripeptide"
 
-    # Check molecular weight
+    # Check molecular weight - more permissive range
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 180:  # Adjusted minimum weight
-        return False, f"Molecular weight ({mol_wt}) too low for tripeptide"
-    if mol_wt > 1200:  # Adjusted maximum weight
-        return False, f"Molecular weight ({mol_wt}) too high for tripeptide"
+    if mol_wt < 150:  # More permissive minimum weight
+        return False, f"Molecular weight ({mol_wt:.1f}) too low for tripeptide"
+    if mol_wt > 2000:  # More permissive maximum weight
+        return False, f"Molecular weight ({mol_wt:.1f}) too high for tripeptide"
 
-    # Look for backbone connectivity
-    backbone_pattern = Chem.MolFromSmarts("[NX3][CX4][CX3](=[OX1])[NX3][CX4][CX3](=[OX1])[NX3][CX4][CX3](=[OX1])")
-    if not mol.HasSubstructMatch(backbone_pattern):
-        # Try alternative pattern for cyclic residues (like proline)
-        alt_backbone = Chem.MolFromSmarts("[$(N([C])[C])[CX4][CX3](=[OX1])[$(N([C])[C])][CX4][CX3](=[OX1])[$(N([C])[C])][CX4][CX3](=[OX1])")
-        if not mol.HasSubstructMatch(alt_backbone):
-            return False, "Missing characteristic tripeptide backbone pattern"
+    # Look for alpha-amino acid pattern (including proline-like residues)
+    aa_pattern = Chem.MolFromSmarts("[NX3,NX4+][CX4][CX3](=[OX1])")
+    if aa_pattern is None:
+        return False, "Invalid amino acid SMARTS pattern"
+        
+    aa_matches = mol.GetSubstructMatches(aa_pattern)
+    
+    # Should find at least 2 internal amino acid residues
+    # (the terminal one might not match this pattern exactly)
+    if len(aa_matches) < 2:
+        return False, f"Found only {len(aa_matches)} amino acid residues"
 
-    return True, "Contains 3 amino acid residues connected by peptide bonds"
+    # Check for reasonable number of rotatable bonds
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 4:  # Minimum expected for tripeptide
+        return False, "Too few rotatable bonds for tripeptide"
+
+    # Count carbon atoms (should have at least 6 for smallest possible tripeptide)
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 6:
+        return False, f"Too few carbons ({c_count}) for tripeptide"
+
+    return True, "Contains characteristic tripeptide structure with 3 amino acid residues"
