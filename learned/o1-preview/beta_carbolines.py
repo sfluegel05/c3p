@@ -20,24 +20,30 @@ def is_beta_carbolines(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the beta-carboline core structure using SMILES (pyrido[3,4-b]indole)
-    beta_carboline_smiles = 'c1cc2[nH]c3ccccc3c2cn1'  # Beta-carboline core
-    beta_carboline_mol = Chem.MolFromSmiles(beta_carboline_smiles)
+    # Define the beta-carboline core skeleton using SMARTS
+    # This pattern represents the fused pyridine and indole ring system
+    beta_carboline_smarts = """
+    [#7H]1c2ccccc2c2nccccc12   # beta-carboline skeleton
+    """
+    # Remove comments and whitespace in SMARTS
+    beta_carboline_smarts = beta_carboline_smarts.strip().split('#')[0].strip()
 
-    if beta_carboline_mol is None:
-        return False, "Invalid SMILES for beta-carboline core structure"
+    beta_carboline_pattern = Chem.MolFromSmarts(beta_carboline_smarts)
+    if beta_carboline_pattern is None:
+        return False, "Invalid SMARTS pattern for beta-carboline skeleton"
 
     # Check for beta-carboline skeleton
-    if mol.HasSubstructMatch(beta_carboline_mol):
+    if mol.HasSubstructMatch(beta_carboline_pattern):
         return True, "Contains beta-carboline skeleton"
     else:
-        # Check for hydrogenated derivatives
-        # Generalized pattern allowing for saturation in the rings
-        hydrogenated_smarts = '[nH]1c2cccc(c2c2ccccn12)'  # Generalized pattern
+        # Allow for hydrogenated derivatives by allowing non-aromatic atoms and bonds
+        hydrogenated_smarts = """
+        [#7H]1[c;R][c;R][c;R][c;R][c;R]2[c;R]1[c;R][n;R][c;R][c;R][c;R]2    # hydrogenated beta-carboline skeleton
+        """
+        hydrogenated_smarts = hydrogenated_smarts.strip().split('#')[0].strip()
         hydrogenated_pattern = Chem.MolFromSmarts(hydrogenated_smarts)
-
         if hydrogenated_pattern is None:
-            return False, "Invalid SMARTS for hydrogenated beta-carboline core"
+            return False, "Invalid SMARTS pattern for hydrogenated beta-carboline"
 
         if mol.HasSubstructMatch(hydrogenated_pattern):
             return True, "Contains hydrogenated beta-carboline skeleton"
