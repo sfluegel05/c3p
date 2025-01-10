@@ -25,44 +25,63 @@ def is_polypeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for peptide bonds pattern [NH]-[C](=O)-[C]
-    peptide_pattern = Chem.MolFromSmarts("[NX3H][CX3](=[OX1])[CX4]")
-    peptide_matches = mol.GetSubstructMatches(peptide_pattern)
+    # Multiple patterns for peptide bonds including modified variants
+    peptide_patterns = [
+        "[NX3H][CX3](=[OX1])[CX4]",  # Standard peptide bond
+        "[NX3][CX3](=[OX1])[CX4]",    # N-modified peptide bond
+        "[NX3H0][CX3](=[OX1])[CX4]",  # N-substituted peptide bond
+    ]
     
-    if not peptide_matches:
-        return False, "No peptide bonds found"
+    all_peptide_nitrogens = set()
     
-    # Count unique nitrogen atoms involved in peptide bonds
-    # This helps avoid counting the same residue multiple times in cyclic peptides
-    peptide_nitrogens = set()
-    for match in peptide_matches:
-        peptide_nitrogens.add(match[0])  # First atom in match is nitrogen
+    # Find all peptide bonds using multiple patterns
+    for pattern in peptide_patterns:
+        patt = Chem.MolFromSmarts(pattern)
+        matches = mol.GetSubstructMatches(patt)
+        for match in matches:
+            all_peptide_nitrogens.add(match[0])
     
-    num_residues = len(peptide_nitrogens)
+    # Additional patterns for terminal residues and special cases
+    terminal_patterns = [
+        "[NX3H2][CX4][CX3](=[OX1])",  # N-terminal
+        "[NX3H1][CX4][CX3](=[OX1])",  # Modified N-terminal
+        "[CX4][CX3](=[OX1])[OH]",     # C-terminal
+        "[CX4][CX3](=[OX1])[O-]",     # C-terminal ionized
+    ]
     
-    # Additional check for terminal amino group (H2N-CH-)
-    terminal_amine_pattern = Chem.MolFromSmarts("[NX3H2][CX4]")
-    if mol.HasSubstructMatch(terminal_amine_pattern):
+    # Check for terminal residues
+    terminal_residue_found = False
+    for pattern in terminal_patterns:
+        patt = Chem.MolFromSmarts(pattern)
+        if mol.HasSubstructMatch(patt):
+            terminal_residue_found = True
+            break
+            
+    # Base count from peptide bonds
+    num_residues = len(all_peptide_nitrogens)
+    
+    # Add one for terminal residue if found
+    if terminal_residue_found:
         num_residues += 1
         
-    # Check for minimum number of residues (10)
+    # Check for cyclic peptide patterns
+    cyclic_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[CX4]~[NX3][CX3](=[OX1])[CX4]~[NX3][CX3](=[OX1])[CX4]")
+    if mol.HasSubstructMatch(cyclic_pattern):
+        # Cyclic peptides might need adjustment to residue count
+        ring_size = len(mol.GetRingInfo().AtomRings())
+        if ring_size > 0:
+            num_residues = max(num_residues, len(all_peptide_nitrogens))
+    
+    # Check for minimum number of residues
     if num_residues < 10:
         return False, f"Only {num_residues} amino acid residues found, minimum 10 required"
+    
+    # Verify peptide nature by looking for amino acid characteristics
+    alpha_carbon_pattern = Chem.MolFromSmarts("[NX3][CX4][CX3](=[OX1])")
+    alpha_matches = len(mol.GetSubstructMatches(alpha_carbon_pattern))
+    
+    if alpha_matches < 5:
+        return False, "Structure lacks typical amino acid backbone pattern"
         
-    # Additional validation to ensure we're dealing with a peptide structure
-    # Look for alpha carbons with attached hydrogens (typical in amino acids)
-    alpha_carbon_pattern = Chem.MolFromSmarts("[NX3][CX4H1][CX3](=[OX1])")
-    alpha_carbon_matches = mol.GetSubstructMatches(alpha_carbon_pattern)
-    
-    if len(alpha_carbon_matches) < 5:  # Arbitrary threshold to confirm peptide nature
-        return False, "Structure lacks typical amino acid alpha carbon pattern"
-    
-    # Calculate ratio of peptide bonds to molecule size
-    # In peptides, this should be relatively high
-    num_atoms = mol.GetNumAtoms()
-    peptide_ratio = len(peptide_matches) / num_atoms
-    
-    if peptide_ratio < 0.1:  # Arbitrary threshold
-        return False, "Too few peptide bonds relative to molecule size"
-    
+    # Success case
     return True, f"Contains {num_residues} amino acid residues connected by peptide bonds"
