@@ -20,28 +20,25 @@ def is_ribonucleoside(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define an expanded pattern for D-ribose, allowing modifications like methoxy
-    ribose_pattern = Chem.MolFromSmarts("O[c@H]1[c@H](O)[c@@H](C)[c@@H](O)[C@H](O)1")  # More flexible ribose pattern
+    
+    # Identify the ribose sugar pattern
+    ribose_pattern = Chem.MolFromSmarts("C1[C@@H](O)[C@@H](O)[C@H](CO)O1")
     if not mol.HasSubstructMatch(ribose_pattern):
         return False, "No ribose sugar component found"
+    
+    # Identify a common nucleobase attached (for simplicity, we use a generic pattern)
+    nucleobase_pattern = Chem.MolFromSmarts("n1cnc2c1[nH]c(=O)[nH]c2=O")
+    purine_base_pattern = Chem.MolFromSmarts("c1ncnc2n1cnc2")
+    pyrimidine_base_pattern = Chem.MolFromSmarts("c1[nH]c(=O)nc(=O)[nH]c1")
 
-    # Define broader patterns for nucleobases in ribonucleosides
-    extended_nucleobase_patterns = [
-        Chem.MolFromSmarts("n1cnc2n(cnc12)"),  # Purine base pattern
-        Chem.MolFromSmarts("c1cnc[nH]c1"),     # Pyrimidine base pattern
-        Chem.MolFromSmarts("c1c[nH]c(=O)n(c1)"),  # Modified pyrimidine pattern
-        Chem.MolFromSmarts("n1cnc2c(ncnc2)n1"), # Include potential alternate purine patterns
-        Chem.MolFromSmarts("n1cncc1N"),        # Generalized pattern to include possible modifications
-    ]
+    has_nucleobase = mol.HasSubstructMatch(nucleobase_pattern) or \
+                     mol.HasSubstructMatch(purine_base_pattern) or \
+                     mol.HasSubstructMatch(pyrimidine_base_pattern)
 
-    # Check for nucleobase attachment
-    has_nucleobase = any(mol.HasSubstructMatch(pattern) for pattern in extended_nucleobase_patterns)
-
-    if has_nucleobase:
-        return True, "Contains D-ribose sugar with an attached nucleobase"
-    else:
+    if not has_nucleobase:
         return False, "No nucleobase found attached to the ribose"
+
+    return True, "Contains D-ribose sugar with an attached nucleobase"
 
 # Example usage
 # smiles = "CN(C)c1ncnc2n(cnc12)[C@@H]1O[C@H](CO)[C@@H](N)[C@H]1O"  # Example ribonucleoside SMILES
