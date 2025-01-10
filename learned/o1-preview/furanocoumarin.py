@@ -26,19 +26,19 @@ def is_furanocoumarin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns for linear (psoralen-type) furanocoumarins
-    linear_pattern = Chem.MolFromSmarts('O=C1Oc2ccccc2Oc3ccccc13')  # Psoralen core
-    # Define SMARTS patterns for angular (angelicin-type) furanocoumarins
-    angular_pattern = Chem.MolFromSmarts('O=C1Oc2ccccc2C3=C1C=CO3')  # Angelicin core
+    # General SMARTS pattern for furanocoumarin core (tricyclic ring system)
+    furanocoumarin_pattern = Chem.MolFromSmarts('c1cc2c(c1)oc(=O)c3ccoc23')
 
-    # Check for matches with linear pattern
-    if mol.HasSubstructMatch(linear_pattern):
-        return True, "Contains linear furanocoumarin core"
-    # Check for matches with angular pattern
-    elif mol.HasSubstructMatch(angular_pattern):
-        return True, "Contains angular furanocoumarin core"
+    if mol.HasSubstructMatch(furanocoumarin_pattern):
+        return True, "Contains furanocoumarin core"
+
     else:
-        return False, "Does not contain furanocoumarin core"
+        # Check for angular furanocoumarin core (angelicin-type)
+        angular_pattern = Chem.MolFromSmarts('c1ccc2c(c1)oc(=O)c3ccoc23')
+        if mol.HasSubstructMatch(angular_pattern):
+            return True, "Contains angular furanocoumarin core"
+        else:
+            return False, "Does not contain furanocoumarin core"
 
 __metadata__ = {
     'chemical_class': {
