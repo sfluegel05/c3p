@@ -19,11 +19,15 @@ def is_aliphatic_alcohol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for hydroxyl group attached to an aliphatic carbon
-    # [CX4;H] for sp3 hybridized carbon (saturated), or [CX3;H] for sp2 hybridized (unsaturated, but not aromatic)
-    aliphatic_alcohol_pattern = Chem.MolFromSmarts("[CX4;!r][OH] | [CX3;!r][OH]")
-    
-    if mol.HasSubstructMatch(aliphatic_alcohol_pattern):
+    # Define pattern for aliphatic alcohols
+    # CARBOXYLIC acids can also have carbonyls, check for non-aromatic carbon
+    # Note: The pattern 'C[OH]' also matched diols (OH-C-CH(OH)-C) without aromaticity.
+    pattern = Chem.MolFromSmarts("[$([CX4][OH]),$([CX3]=[CX3][OH]),$([CX2]#[CX0][OH]),$([C!r;R][OH])]")
+
+    if pattern is None:
+        return None, "Invalid SMARTS pattern"
+
+    if mol.HasSubstructMatch(pattern):
         return True, "Molecule contains a hydroxyl group attached to an aliphatic carbon"
 
     return False, "No aliphatic alcohol pattern found"
