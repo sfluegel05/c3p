@@ -2,6 +2,7 @@
 Classifies: CHEBI:36702 2-acyl-1-alkyl-sn-glycero-3-phosphocholine
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_2_acyl_1_alkyl_sn_glycero_3_phosphocholine(smiles: str):
     """
@@ -21,25 +22,25 @@ def is_2_acyl_1_alkyl_sn_glycero_3_phosphocholine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Proper glycerol sn-backbone with stereochemistry set
-    glycerol_sn_pattern = Chem.MolFromSmarts("[C@H]([O][CH2])[C@@H](O)CO")
-    if not mol.HasSubstructMatch(glycerol_sn_pattern):
-        return False, "No correct glycerol (sn) backbone found"
+    # Look for the glycerol backbone with stereochemistry [C@H](COC)(O)
+    glycerol_pattern = Chem.MolFromSmarts("[C@H](COP)(O)CO")
+    if not mol.HasSubstructMatch(glycerol_pattern):
+        return False, "No correct glycerol backbone found"
     
-    # Check for ether linkage: an alkyl chain at position 1
-    alkyl_ether_pattern = Chem.MolFromSmarts("O[C@H](CO)CC")
-    if not mol.HasSubstructMatch(alkyl_ether_pattern):
-        return False, "No ether linkage indicating alkyl chain found"
+    # Look for ether linkage to identify alkyl chain at position 1
+    ether_linkage = Chem.MolFromSmarts("OCC")
+    if not mol.HasSubstructMatch(ether_linkage):
+        return False, "No ether linkage for alkyl chain found"
 
-    # Check for ester linkage: an acyl chain at position 2
-    ester_acyl_pattern = Chem.MolFromSmarts("C(=O)O[C@H](CO)")
-    if not mol.HasSubstructMatch(ester_acyl_pattern):
-        return False, "No ester linkage indicating acyl chain found"
+    # Look for ester linkage to identify acyl chain at position 2
+    ester_linkage = Chem.MolFromSmarts("OC(=O)C")
+    if not mol.HasSubstructMatch(ester_linkage):
+        return False, "No ester linkage for acyl chain found"
     
-    # Verify presence of phosphocholine group correctly linked
-    phosphocholine_pattern = Chem.MolFromSmarts("N(C)(C)CCOP(=O)([O-])O")
-    if not mol.HasSubstructMatch(phosphocholine_pattern):
-        return False, "No complete phosphocholine moiety found"
+    # Phosphocholine group verification
+    phosphocholine_group = Chem.MolFromSmarts("N(C)(C)CCOP(=O)(O)O")
+    if not mol.HasSubstructMatch(phosphocholine_group):
+        return False, "No phosphocholine group found"
 
-    # If all matches are found, it is a correct structure
+    # If all checks pass
     return True, "Structure matches 2-acyl-1-alkyl-sn-glycero-3-phosphocholine"
