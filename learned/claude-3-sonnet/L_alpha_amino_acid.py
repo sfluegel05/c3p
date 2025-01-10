@@ -6,7 +6,6 @@ Classifies: L-alpha-amino acid
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem.rdchem import ChiralType
 
 def is_L_alpha_amino_acid(smiles: str):
     """
@@ -25,85 +24,46 @@ def is_L_alpha_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Generate 3D coordinates for chirality checking
-    try:
-        mol = Chem.AddHs(mol)
-        AllChem.EmbedMolecule(mol, randomSeed=42)
-        AllChem.MMFFOptimizeMolecule(mol)
-    except:
-        pass  # Continue even if 3D generation fails
-
-    # SMARTS patterns for alpha-amino acid core
-    patterns = [
-        # Various forms of alpha-amino acids including charged states and substituted amines
-        '[NX3,NX4+][CX4;H1,H2]([*])[CX3](=[OX1])[OX1-,OX2H1]',
-        '[NX3,NX4+][CX4;H1,H2]([*])[CX3](=[OX1])[OX2][*]',  # Ester or other derivatives
-        '[NX3,NX4+;H0,H1,H2,H3][CX4;H1,H2]([*])[CX3](=[OX1])[OX1-,OX2H1,OX2]'  # More general pattern
-    ]
-
-    for pattern in patterns:
-        aa_pattern = Chem.MolFromSmarts(pattern)
-        if aa_pattern is None:
+    # Basic alpha-amino acid pattern:
+    # [N] - [C@H|@@H] - C(=O)O
+    # The pattern looks for a carbon with exactly one hydrogen (alpha carbon)
+    # connected to an amine group and a carboxyl group
+    aa_pattern = Chem.MolFromSmarts('[NX3;H2,H3,H4+][CX4;H1]([#6,#1])[CX3](=[OX1])[OX2H,OX1-]')
+    if not mol.HasSubstructMatch(aa_pattern):
+        return False, "No alpha-amino acid pattern found"
+    
+    matches = mol.GetSubstructMatches(aa_pattern)
+    
+    # Check each match for correct stereochemistry
+    for match in matches:
+        alpha_carbon_idx = match[1]  # Second atom in pattern is alpha carbon
+        alpha_carbon = mol.GetAtomWithIdx(alpha_carbon_idx)
+        
+        # Must have specified stereochemistry
+        if alpha_carbon.GetChiralTag() == Chem.rdchem.ChiralType.CHI_UNSPECIFIED:
             continue
             
-        matches = mol.GetSubstructMatches(aa_pattern)
-        for match in matches:
-            # Get the alpha carbon (second atom in pattern)
-            alpha_carbon = mol.GetAtomWithIdx(match[1])
-            
-            # Must be chiral
-            if alpha_carbon.GetChiralTag() == ChiralType.CHI_UNSPECIFIED:
-                continue
+        # Get canonical SMILES with stereochemistry information
+        canonical_smiles = Chem.MolToSmiles(mol, isomericSmiles=True)
+        
+        # Find the chirality marker for this carbon in the SMILES
+        for i, atom in enumerate(mol.GetAtoms()):
+            if atom.GetIdx() == alpha_carbon_idx:
+                # Check if this is a cysteine or cysteine derivative
+                is_cysteine = False
+                for neighbor in atom.GetNeighbors():
+                    if neighbor.GetAtomicNum() == 6:  # Carbon
+                        for next_neighbor in neighbor.GetNeighbors():
+                            if next_neighbor.GetAtomicNum() == 16:  # Sulfur
+                                is_cysteine = True
+                                break
                 
-            # Get neighbors
-            neighbors = list(alpha_carbon.GetNeighbors())
-            if len(neighbors) != 4:
-                continue
+                # For L-amino acids:
+                # - Normal case: S configuration (@@ in SMILES)
+                # - Cysteine case: R configuration (@ in SMILES)
+                if (is_cysteine and '@' in canonical_smiles and '@@' not in canonical_smiles) or \
+                   (not is_cysteine and '@@' in canonical_smiles):
+                    return True, "Found L-alpha-amino acid with correct stereochemistry"
                 
-            # Classify neighbor types
-            n_types = {'N': None, 'C': None, 'H': None, 'R': None}
-            for n in neighbors:
-                if n.GetAtomicNum() == 7:  # N
-                    n_types['N'] = n
-                elif n.GetAtomicNum() == 1:  # H
-                    n_types['H'] = n
-                elif n.GetAtomicNum() == 6 and any(a.GetAtomicNum() == 8 for a in n.GetNeighbors()):  # C(=O)
-                    n_types['C'] = n
-                else:
-                    n_types['R'] = n
-                    
-            # Must have all required groups
-            if not all(n_types[k] is not None for k in ['N', 'C', 'H']):
-                continue
-
-            # Check configuration
-            # For L-amino acids:
-            # - Looking from H: N, R, COOH should be counterclockwise (S configuration)
-            # - Exception: If R group has higher CIP priority than COOH, should be clockwise (R configuration)
-            
-            # Use RDKit's assignStereochemistry to get the correct configuration
-            Chem.AssignStereochemistry(mol, force=True, cleanIt=True)
-            
-            # L-amino acids typically have S configuration (except cysteine derivatives)
-            # Check for sulfur-containing R group which would invert the expected configuration
-            has_sulfur = False
-            if n_types['R'] is not None:
-                for atom in mol.GetAtoms():
-                    if atom.GetAtomicNum() == 16:  # Sulfur
-                        has_sulfur = True
-                        break
-            
-            expected_tag = '@' if has_sulfur else '@@'
-            atom_smiles = Chem.MolToSmiles(mol, rootedAtAtom=match[1])
-            
-            if (has_sulfur and '@' in atom_smiles and '@@' not in atom_smiles) or \
-               (not has_sulfur and '@@' in atom_smiles):
-                return True, "Found L-alpha-amino acid with correct stereochemistry"
-            
-    # If we get here, check if we found any amino acid pattern
-    for pattern in patterns:
-        aa_pattern = Chem.MolFromSmarts(pattern)
-        if aa_pattern and mol.HasSubstructMatch(aa_pattern):
-            return False, "Found alpha-amino acid pattern but incorrect or unspecified stereochemistry"
-    
-    return False, "No alpha-amino acid pattern found"
+    # If we get here, we found the pattern but not the correct stereochemistry
+    return False, "Found alpha-amino acid pattern but incorrect or unspecified stereochemistry"
