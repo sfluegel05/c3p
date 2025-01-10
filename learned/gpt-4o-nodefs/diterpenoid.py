@@ -6,7 +6,8 @@ from rdkit import Chem
 def is_diterpenoid(smiles: str):
     """
     Determines if a molecule is a diterpenoid based on its SMILES string.
-    Diterpenoids typically contain 20 carbons (allowing for some variation) and exhibit complex ring structures.
+    Diterpenoids typically contain around 20 carbons and exhibit complex ring structures 
+    and a variety of functional groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,11 +21,11 @@ def is_diterpenoid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
+    
     # Count carbon atoms
     num_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if num_carbons < 18 or num_carbons > 22:
-        return False, f"Contains {num_carbons} carbon atoms, typical diterpenoids vary around 20"
+    if num_carbons < 18 or num_carbons > 28:
+        return False, f"Contains {num_carbons} carbon atoms, most diterpenoids have carbon count close to 20, but larger range is considered"
 
     # Get the ring information about the molecule
     ring_info = mol.GetRingInfo()
@@ -36,12 +37,20 @@ def is_diterpenoid(smiles: str):
     alcohol_pattern = Chem.MolFromSmarts("[OX2H]")
     ketone_pattern = Chem.MolFromSmarts("C=O")
     ether_pattern = Chem.MolFromSmarts("[OX2]([#6])[#6]")
-    
-    has_alcohol = mol.HasSubstructMatch(alcohol_pattern)
-    has_ketone = mol.HasSubstructMatch(ketone_pattern)
-    has_ether = mol.HasSubstructMatch(ether_pattern)
+    isocyano_pattern = Chem.MolFromSmarts("[NX1]#[CX2]")
+    ester_pattern = Chem.MolFromSmarts("COC(=O)")
+    olefin_pattern = Chem.MolFromSmarts("C=C")  # Double bonded carbons
 
-    if not (has_alcohol or has_ketone or has_ether):
-        return False, "Lacks common functional groups like alcohols, ketones, or ethers"
+    has_functional_group = any([
+        mol.HasSubstructMatch(alcohol_pattern),
+        mol.HasSubstructMatch(ketone_pattern),
+        mol.HasSubstructMatch(ether_pattern),
+        mol.HasSubstructMatch(isocyano_pattern),
+        mol.HasSubstructMatch(ester_pattern),
+        mol.HasSubstructMatch(olefin_pattern),
+    ])
+
+    if not has_functional_group:
+        return False, "Lacks common functional groups like alcohols, ketones, ethers, isocyano groups, esters, or alkenes"
 
     return True, "Contains characteristics typical of diterpenoids, such as complex ring structures and varied functional groups"
