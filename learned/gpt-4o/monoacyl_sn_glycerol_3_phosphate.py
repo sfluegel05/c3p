@@ -2,7 +2,6 @@
 Classifies: CHEBI:17088 monoacyl-sn-glycerol 3-phosphate
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_monoacyl_sn_glycerol_3_phosphate(smiles: str):
     """
@@ -22,21 +21,27 @@ def is_monoacyl_sn_glycerol_3_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for glycerol backbone pattern with phosphate group
-    glycerol_phosphate_pattern = Chem.MolFromSmarts("OCC(O)COP(=O)(O)O")
-    if not mol.HasSubstructMatch(glycerol_phosphate_pattern):
-        return False, "No glycerol backbone with phosphate group found"
+    # Look for glycerol backbone with phosphate group
+    sn_glycerol_3_phosphate_pattern = Chem.MolFromSmarts("C(COP(=O)(O)O)O")  # Part of glycerol + phosphate
+    if not mol.HasSubstructMatch(sn_glycerol_3_phosphate_pattern):
+        return False, "No glycerol 3-phosphate backbone found"
     
-    # Look for a single acyl chain
-    # Note: We assume the acyl chain is a long carbon chain esterified to the glycerol at position 1 or 2
-    acyl_pattern = Chem.MolFromSmarts("O=C(O)C")
+    # Look for a single acyl chain bound as ester
+    acyl_pattern = Chem.MolFromSmarts("C(=O)O")  # Represents ester linkage
     acyl_matches = mol.GetSubstructMatches(acyl_pattern)
     if len(acyl_matches) != 1:
-        return False, f"Found {len(acyl_matches)} acyl chains, need exactly 1"
+        return False, f"Found {len(acyl_matches)} acyl linkages, need exactly 1"
 
-    # Check for correct stereochemistry at the glycerol's second carbon
-    stereo_center = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetChiralTag() != Chem.CHI_UNSPECIFIED]
-    if not stereo_center:
-        return False, "Stereochemistry not specified for the glycerol backbone"
+    # Confirming its binding to the glycerol backbone but excluding second acyl group
+    esterified = False
+    for match in acyl_matches:
+        atom_indices = [match[0], match[1]]
+        acyl_bonded_to_glycerol = any(mol.GetBondBetweenAtoms(i, j).IsInRing() == False for i in atom_indices for j in mol.GetSubstructMatches(sn_glycerol_3_phosphate_pattern))
+        if acyl_bonded_to_glycerol:
+            esterified = True
+            break
 
-    return True, "Contains glycerol backbone with one acyl group and a phosphate group"
+    if not esterified:
+        return False, "Acyl chain is not correctly bound to the glycerol backbone via ester linkage"
+    
+    return True, "Contains glycerol 3-phosphate backbone and one acyl group esterified to it"
