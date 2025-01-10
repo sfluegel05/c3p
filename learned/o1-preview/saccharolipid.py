@@ -5,7 +5,7 @@ Classifies: CHEBI:166828 saccharolipid
 Classifies: saccharolipid
 """
 from rdkit import Chem
-from rdkit.Chem import SugarRemovalUtils
+from rdkit.Chem import rdMolDescriptors
 
 def is_saccharolipid(smiles: str):
     """
@@ -25,20 +25,27 @@ def is_saccharolipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for carbohydrate moiety (sugar rings)
-    sugars = SugarRemovalUtils.FindSugars(mol)
-    if len(sugars) == 0:
-        return False, "No carbohydrate moiety found"
+    # Define SMARTS patterns for carbohydrate moieties (sugar rings)
+    # Furanose: 5-membered ring with 4 carbons and 1 oxygen
+    furanose_pattern = Chem.MolFromSmarts("[#6]-1-[#6]-[#8]-[#6]-[#6]-1")
     
-    # Check for long aliphatic chains (lipid moiety)
-    # Define a SMARTS pattern for a linear chain of at least 8 carbons
-    chain_pattern = Chem.MolFromSmarts("[CH2]"+("[CH2]")*6+"[CH3]")
-    chain_matches = mol.GetSubstructMatches(chain_pattern)
+    # Pyranose: 6-membered ring with 5 carbons and 1 oxygen
+    pyranose_pattern = Chem.MolFromSmarts("[#6]-1-[#6]-[#6]-[#8]-[#6]-[#6]-1")
+    
+    # Search for sugar rings
+    has_furanose = mol.HasSubstructMatch(furanose_pattern)
+    has_pyranose = mol.HasSubstructMatch(pyranose_pattern)
+    
+    if not (has_furanose or has_pyranose):
+        return False, "No carbohydrate moiety (sugar ring) found"
+    
+    # Define a SMARTS pattern for long aliphatic chains (at least 8 carbons)
+    aliphatic_chain_pattern = Chem.MolFromSmarts("[C;R0][C;R0][C;R0][C;R0][C;R0][C;R0][C;R0][C;R0]")
+    chain_matches = mol.GetSubstructMatches(aliphatic_chain_pattern)
     if len(chain_matches) == 0:
-        return False, "No long aliphatic chain found"
+        return False, "No long aliphatic chain (lipid moiety) found"
     
     return True, "Contains both carbohydrate moiety and long aliphatic chain(s)"
-
 
 __metadata__ = {
     'chemical_class': {
