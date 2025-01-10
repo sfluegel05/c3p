@@ -6,6 +6,7 @@ Classifies: CHEBI:48477 alkanethiol
 An alkanethiol is a compound in which a sulfanyl group, -SH, is attached to an alkyl group.
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_alkanethiol(smiles: str):
     """
@@ -39,6 +40,21 @@ def is_alkanethiol(smiles: str):
         neighbors = sulfur_atom.GetNeighbors()
         for neighbor in neighbors:
             if neighbor.GetAtomicNum() == 6:  # Carbon atom
-                return True, "Sulfanyl group (-SH) attached to an alkyl group"
+                # Check if the carbon is part of a simple alkyl chain
+                # Exclude carbons that are part of complex functional groups
+                if neighbor.GetDegree() <= 4:  # Simple alkyl carbons have degree <= 4
+                    # Ensure the molecule is relatively simple
+                    # Exclude molecules with peptide bonds or complex functional groups
+                    peptide_pattern = Chem.MolFromSmarts("[CX3](=O)[NX3H0]")
+                    if not mol.HasSubstructMatch(peptide_pattern):
+                        # Check for other complex functional groups
+                        complex_functional_groups = ["[OH]", "[NH2]", "[C=O]", "[N+]", "[O-]", "[S=O]", "[P]", "[Cl]", "[Br]", "[I]"]
+                        has_complex_group = False
+                        for group in complex_functional_groups:
+                            if mol.HasSubstructMatch(Chem.MolFromSmarts(group)):
+                                has_complex_group = True
+                                break
+                        if not has_complex_group:
+                            return True, "Sulfanyl group (-SH) attached to an alkyl group"
 
-    return False, "Sulfanyl group (-SH) not attached to an alkyl group"
+    return False, "Sulfanyl group (-SH) not attached to an alkyl group or molecule is too complex"
