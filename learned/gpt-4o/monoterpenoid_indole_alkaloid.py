@@ -21,22 +21,28 @@ def is_monoterpenoid_indole_alkaloid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Broader SMARTS pattern for various indole ring substructures
+    # Expanded SMARTS pattern for various indole rings
+    # Include additional structures for indole-related features
     indole_patterns = [
-        Chem.MolFromSmarts('c1cc2c[nH]c2cc1'),  # Basic indole structure
-        Chem.MolFromSmarts('c1ccc2c(c1)[nH]c3c2cccc3')  # Expanded indole-like structures
+        Chem.MolFromSmarts('c1c2[nH]c3c(c2ccc1)c[nH]c3'),  # Multi-fusion indole structures
+        Chem.MolFromSmarts('c1cc2cc[nH]c2cc1'),  # Basic indole structure
+        Chem.MolFromSmarts('c1ccc2nc3ccc4ccccc4c3[nH]c2c1'),  # Complex indole-like structures
+        Chem.MolFromSmarts('c1c[nH]c2ccccc12'),  # Simple indole motif
     ]
     if not any(mol.HasSubstructMatch(pattern) for pattern in indole_patterns):
         return False, "No indole ring found"
 
-    # SMARTS pattern for terpenoid-like structures (complex isoprene-related units)
+    # Refined SMARTS pattern for terpenoid features
+    # Include common cyclic and acyclic patterns typical of monoterpenoids
     terpenoid_patterns = [
         Chem.MolFromSmarts('C1(C)C=CC=C1'),  # Acyclic monoterpenoid-like structure
-        Chem.MolFromSmarts('C(C)(C)C=C'),  # More generic pattern already tried
-        Chem.MolFromSmarts('C1(C)C2=CCC=C2C1')  # Cyclic terpenoid rings
+        Chem.MolFromSmarts('C(C)(C)C=C'),  # Simple acyclic isoprene-like features
+        Chem.MolFromSmarts('C1(C)CCC(C1)'),  # Monocyclic monoterpenoids
+        Chem.MolFromSmarts('C1(CCCCC1)'),  # Saturated rings
+        Chem.MolFromSmarts('C1CCC=C(C1)')  # Cyclic with double bonds
     ]
     if not any(mol.HasSubstructMatch(pattern) for pattern in terpenoid_patterns):
-        return False, "No terpenoid features found (missing complex isoprene-related structures)"
+        return False, "No terpenoid features found"
 
     # If molecule passes all checks, classify as a monoterpenoid indole alkaloid
     return True, "Contains both indole ring and terpenoid features."
