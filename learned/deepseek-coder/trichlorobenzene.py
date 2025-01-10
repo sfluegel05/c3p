@@ -26,16 +26,25 @@ def is_trichlorobenzene(smiles: str):
 
     # Look for benzene ring pattern
     benzene_pattern = Chem.MolFromSmarts("c1ccccc1")
-    if not mol.HasSubstructMatch(benzene_pattern):
+    benzene_matches = mol.GetSubstructMatches(benzene_pattern)
+    
+    if not benzene_matches:
         return False, "No benzene ring found"
+    
+    # Ensure there is only one benzene ring
+    if len(benzene_matches) != 1:
+        return False, "Multiple benzene rings found, need exactly one"
+
+    # Get the benzene ring atoms
+    benzene_atoms = benzene_matches[0]
 
     # Count the number of chlorine atoms attached to the benzene ring
     chlorine_count = 0
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() == 17:  # Chlorine has atomic number 17
-            # Check if the chlorine is attached to a benzene ring
+            # Check if the chlorine is attached to a benzene ring atom
             for neighbor in atom.GetNeighbors():
-                if neighbor.IsInRing() and neighbor.GetAtomicNum() == 6:  # Carbon in a ring
+                if neighbor.GetIdx() in benzene_atoms:
                     chlorine_count += 1
                     break
 
