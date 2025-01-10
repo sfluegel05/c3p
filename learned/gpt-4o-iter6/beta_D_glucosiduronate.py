@@ -24,25 +24,28 @@ def is_beta_D_glucosiduronate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string."
 
-    # Enhanced SMARTS for beta-D-glucuronic acid in its salt form or any tautomer
+    # Define SMARTS for beta-D-glucuronic acid in its salt form, including stereochemistry variants
     glucuronate_smarts = [
-        'O[C@H]1[C@@H](O)[C@H](O)[C@@H](O[C@@H]1)C(=O)[O-]', # A common form
-        'O[C@@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1)C(=O)[O-]'   # Considering stereochemistry variations
+        'O[C@H]1[C@@H](O)[C@H](O)[C@H](O[C@@H]1)C(=O)[O-]', # Major form
+        'O[C@@H]1[C@@H](O)[C@H](O)[C@H](O[C@H]1)C(=O)[O-]', # Stereochemistry variants
+        'O[C@H]1[C@H](O)[C@@H](O)[C@@H](O[C@@H]1)C(=O)[O-]'  # All possible isomers
     ]
     
-    # Check for presence of the glucuronate patterns
+    # Check for presence of the glucuronate moiety
     has_glucuronate = any(mol.HasSubstructMatch(Chem.MolFromSmarts(smarts)) for smarts in glucuronate_smarts)
     
     if not has_glucuronate:
-        return False, "No beta-D-glucuronic acid moiety found."
+        return False, "Beta-D-glucuronic acid moiety not found."
 
-    # Broaden the scope of possible linkages; include other bonds like sulfates, amides, etc.
+    # Comprehensive linkage patterns
     linkage_patterns = [
-        'O[C@]',  # Common ether link
-        'O=C-O[#6]',  # Ester linkage
-        'N-C=O',  # Possible amide linkage
-        'OS(=O)',  # Possible sulfate linkage
-        '[#6]-C(=O)O[#6]',  # More generic ester form
+        '[O][C@H]',         # Ether link
+        '[C](=O)[O][C]',    # Ester link
+        '[N][C](=O)',       # Amide link
+        '[O](S=O)',         # Sulfate link
+        'c:[O][C]',         # Aromatic ether	      
+        '[O][S](=O)(=O)[C]', # Sulfonation link
+        '[C](=O)[N]',        # More generic amide
     ]
 
     # Check for any valid linkage pattern around the glucuronate moiety
