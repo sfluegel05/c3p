@@ -23,24 +23,23 @@ def is_tannin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # More flexible search for aromatic phenolic rings
-    phenolic_ring_pattern = Chem.MolFromSmarts('c1c([OH])c(O)c(O)cc1')
-    if not mol.HasSubstructMatch(phenolic_ring_pattern):
-        return False, "No aromatic phenolic rings found with multiple hydroxyl groups"
-    
-    # Count phenolic rings
-    phenolic_ring_count = len(mol.GetSubstructMatches(phenolic_ring_pattern))
-    if phenolic_ring_count < 3:
-        return False, f"Found only {phenolic_ring_count} phenolic rings, need at least 3"
+    # Check for phenolic groups but be flexible with count
+    phenolic_pattern = Chem.MolFromSmarts('c:c:c:c:c:c')
+    phenolic_matches = mol.GetSubstructMatches(phenolic_pattern)
+    if len(phenolic_matches) < 2:
+        return False, f"Found only {len(phenolic_matches)} phenolic-like structures, need at least 2"
 
-    # Explore more diverse connectivity: ester and glycosidic linkages
-    ester_pattern = Chem.MolFromSmarts('C(=O)O')
-    glycosidic_pattern = Chem.MolFromSmarts('O[C@H]1[C@H](O)C[C@H](O)[C@@H](O)[C@@H]1O')
-    
-    has_ester_bond = mol.HasSubstructMatch(ester_pattern)
-    has_glycosidic_linkage = mol.HasSubstructMatch(glycosidic_pattern)
-    
-    if not (has_ester_bond or has_glycosidic_linkage):
-        return False, "Lacking ester or glycosidic linkages typical of tannins"
+    # Check for ester and glycosidic-like linkages, broaden patterns
+    linkage_patterns = [
+        Chem.MolFromSmarts('C(=O)O'),  # ester bond
+        Chem.MolFromSmarts('O[C@H]1[C@H](O)C[C@H](O)[C@@H](O)[C@@H]1O'),  # glycosidic linkage
+        Chem.MolFromSmarts('c-c(=O)-o'),  # approximation of ester in a ring
+    ]
 
-    return True, "Molecule matches tannin profile with multiple phenolic rings and appropriate linkages"
+    # Flag for found linkages
+    linkage_found = any(mol.HasSubstructMatch(pattern) for pattern in linkage_patterns)
+    
+    if not linkage_found:
+        return False, "Lacking typical tannin linkages"
+
+    return True, "Molecule matches tannin profile with multiple phenolic-like structures and appropriate linkages"
