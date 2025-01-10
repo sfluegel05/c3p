@@ -6,51 +6,47 @@ Classifies: cannabinoids
 """
 from rdkit import Chem
 
-
 def is_cannabinoid(smiles: str):
     """
     Determines if a molecule is a cannabinoid based on its SMILES string.
-    This function checks for structures typical in cannabinoids such as cyclic
-    structures with oxygen, long chains with conjugated double bonds or ether linkages,
-    and amides linked to ethanolamines.
-    
+    A cannabinoid typically contains long hydrocarbon chains, oxygen in a heterocyclic ring or 
+    as part of functional groups, and often ester/amide/ether formations.
+
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if the molecule is classified as a cannabinoid, False otherwise
+        bool: True if molecule is classified as a cannabinoid, False otherwise
         str: Reason for classification
     """
     
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for cannabinoid features:
+    # Check for long hydrocarbon alkene/alkyne chains
+    chain_pattern = Chem.MolFromSmarts("C=C")
+    if not mol.HasSubstructMatch(chain_pattern):
+        return False, "No long hydrocarbon chain found"
     
-    # Pattern for cyclic heteroaromatic rings common in THC, CBD derivatives
-    heterocyclic_oxygen = Chem.MolFromSmarts("c1cc(O)c(C)c(O)c1")
-    if mol.HasSubstructMatch(heterocyclic_oxygen):
-        return True, "Classified as cannabinoid by presence of a heteroaromatic ring with oxygen"
+    # Check for presence of oxygen function groups (hydroxyls, carbonyl, ether, ester linkage)
+    oxygen_pattern = Chem.MolFromSmarts("[OX2,OX1]")
+    if not mol.HasSubstructMatch(oxygen_pattern):
+        return False, "No oxygen-containing functional group found"
     
-    # Amide bound to ethanolamine, indicative of anandamide derivatives
-    ethanolamine_amide = Chem.MolFromSmarts("CC(=O)NCCO")
-    if mol.HasSubstructMatch(ethanolamine_amide):
-        return True, "Classified as cannabinoid by presence of an amide bound to ethanolamine"
+    # Check for presence of heteroatoms, indicating non-simple hydrocarbon
+    heteroatoms = set()
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() not in [6, 1]:  # Exclude carbon and hydrogen
+            heteroatoms.add(atom.GetAtomicNum())
     
-    # Long unsaturated hydrocarbon chain and ether-like structures
-    long_ether_chain = Chem.MolFromSmarts("C=CCCCCCCC(=O)OCC")
-    if mol.HasSubstructMatch(long_ether_chain):
-        return True, "Classified as cannabinoid by presence of ether-linked unsaturated chains"
+    if len(heteroatoms) == 0:
+        return False, "Lacks heteroatoms, not a cannabinoid"
 
-    # Include tricyclic and polycyclic patterns found in Delta-9-THC and analogs
-    tricyclic_pattern = Chem.MolFromSmarts("C1CCC2=C(C1)C=CC3=C2C=CC=C3")
-    if mol.HasSubstructMatch(tricyclic_pattern):
-        return True, "Classified as cannabinoid by presence of a polycyclic structure typical of THC"
-
-    # Consider additional cannabinoid-like patterns based on known metabolites
-    polyol_chain = Chem.MolFromSmarts("C(O)C(O)CC(=O)OCCO")
-    if mol.HasSubstructMatch(polyol_chain):
-        return True, "Classified as cannabinoid by presence of polyol chains similar to endocannabinoids"
+    # Optional: Handle specific functionalities, e.g., amide linkage
+    amide_pattern = Chem.MolFromSmarts("C(=O)N")
+    if mol.HasSubstructMatch(amide_pattern):
+        return True, "Classified as cannabinoid by presence of amide linkage"
     
-    return False, "Lacks distinct structural features typical of cannabinoids"
+    return True, "Classified as cannabinoid by general structural features"
