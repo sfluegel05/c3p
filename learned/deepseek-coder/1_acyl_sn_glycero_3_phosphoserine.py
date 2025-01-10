@@ -33,7 +33,8 @@ def is_1_acyl_sn_glycero_3_phosphoserine(smiles: str):
 
     # Check for acyl group at the 1-position
     # The acyl group is attached to the oxygen at the 1-position of the glycerol backbone
-    acyl_pattern = Chem.MolFromSmarts("[CX4][CX3](=O)O[C@@H](CO)COP(O)(=O)OC[C@H](N)C(O)=O")
+    # Relaxed pattern to match any acyl chain
+    acyl_pattern = Chem.MolFromSmarts("[CX3](=O)O[C@@H](CO)COP(O)(=O)OC[C@H](N)C(O)=O")
     if not mol.HasSubstructMatch(acyl_pattern):
         return False, "No acyl group found at the 1-position"
 
