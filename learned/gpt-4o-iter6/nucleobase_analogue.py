@@ -20,11 +20,10 @@ def is_nucleobase_analogue(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Purine SMARTS pattern: two fused rings
-    purine_pattern = Chem.MolFromSmarts("c1ncnc2ncnc12")
-    # Pyrimidine SMARTS pattern: single six-membered ring
-    pyrimidine_pattern = Chem.MolFromSmarts("c1cncnc1")
-    
+    # Basic purine and pyrimidine structure patterns
+    purine_pattern = Chem.MolFromSmarts("c1nc2ncnc(n2c1)N")  # Generalized purine core with possible substitution
+    pyrimidine_pattern = Chem.MolFromSmarts("c1ncncc1")      # Pyrimidine structure
+
     # Check for core nucleobase structures
     has_purine_structure = mol.HasSubstructMatch(purine_pattern)
     has_pyrimidine_structure = mol.HasSubstructMatch(pyrimidine_pattern)
@@ -32,19 +31,17 @@ def is_nucleobase_analogue(smiles: str):
     if has_purine_structure or has_pyrimidine_structure:
         return True, "Core nucleobase structure detected"
 
-    # Common nucleobase analogue modifications: extra rings, unusual groups, etc.
+    # Patterns for common modifications found in nucleobase analogues
     modification_patterns = [
-        Chem.MolFromSmarts("Nc1ncnc2ncnc12"),  # 8-aza modifications
-        Chem.MolFromSmarts("O=C1NC(=O)C=C1"),  # 5-fluoro analogues
-        Chem.MolFromSmarts("O=C1C=CC(=O)NC1"),  # Thioanalogues
-        Chem.MolFromSmarts("c1n[nH]c(=O)c2c1ncn2"),  # Imidazole incorporation
+        Chem.MolFromSmarts("n1cnc2ncnc(n1)c2"),  # Azapurine
+        Chem.MolFromSmarts("O=C1NC=2N(C=3NC=NC31)C(=O)N2"),  # Ethylene bridged
+        Chem.MolFromSmarts("c1c[nH]c(=O)[nH]c1=O"),  # Thio- and halogen modifications
+        Chem.MolFromSmarts("c1ncnc(c1)NC(=O)C"),  # Miscellaneous functional groups
     ]
     
+    # Search patterns specific to modifications identified in nucleobase analogues
     for pattern in modification_patterns:
         if mol.HasSubstructMatch(pattern):
             return True, "Modification consistent with nucleobase analogue detected"
 
     return False, "No significant nucleobase analogue characteristics detected"
-
-# Test the function on some sample data
-# result, reason = is_nucleobase_analogue('SMILES_STRING_HERE')
