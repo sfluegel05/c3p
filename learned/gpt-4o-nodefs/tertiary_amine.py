@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_tertiary_amine(smiles: str):
     """
     Determines if a molecule is a tertiary amine based on its SMILES string.
-    A tertiary amine is characterized by a nitrogen atom bonded to exactly 
-    three carbon atoms, considering potential aromatic and aliphatic contexts.
+    A tertiary amine has a nitrogen atom bonded only through single bonds to exactly 
+    three carbon atoms.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,16 +22,10 @@ def is_tertiary_amine(smiles: str):
     if mol is None:
         return None, "Invalid SMILES string"
     
-    # Iterate through each atom in the molecule
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 7:  # Check if the atom is nitrogen
-            # List carbon atom neighbors
-            carbon_neighbors = [neighbor for neighbor in atom.GetNeighbors() if neighbor.GetAtomicNum() == 6]
-            
-            # Check if the nitrogen has exactly three carbon neighbors
-            if len(carbon_neighbors) == 3:
-                # Ensure nitrogen has no other types of bonded atoms
-                if all(neighbor.GetAtomicNum() == 6 for neighbor in atom.GetNeighbors()):
-                    return True, "Molecule contains a tertiary amine (N bonded to 3 carbon atoms)"
-
-    return False, "No tertiary amine found (N not bonded to 3 carbon atoms)"
+    # SMARTS pattern for tertiary amine: Nitrogen bonded to three carbon atoms, all single bonds
+    tertiary_amine_pattern = Chem.MolFromSmarts("[NX3;R0][C;R0]([R0])[C;R0][C;R0]")
+    
+    if mol.HasSubstructMatch(tertiary_amine_pattern):
+        return True, "Molecule contains a tertiary amine (N bonded to 3 carbon atoms)"
+    
+    return False, "No tertiary amine structure found"
