@@ -2,7 +2,6 @@
 Classifies: CHEBI:17408 monoacylglycerol
 """
 from rdkit import Chem
-from rdkit.Chem import rdqueries
 
 def is_monoacylglycerol(smiles: str):
     """
@@ -22,22 +21,21 @@ def is_monoacylglycerol(smiles: str):
     # Parse SMILES to RDKit molecule object
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return None, "Invalid SMILES string"
+        return False, "Invalid SMILES string"
     
-    # Define glycerol backbone as C-C-C with at least two oxygens
-    glycerol_query = Chem.MolFromSmarts("[C][C](O)[C](O)")
-    if not mol.HasSubstructMatch(glycerol_query):
+    # Define glycerol backbone as a three-carbon chain where each carbon is bonded to at least one oxygen
+    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
+    if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "Glycerol backbone not found"
 
-    # Define ester group pattern
+    # Ensure there is exactly one ester group
     ester_pattern = Chem.MolFromSmarts("C(=O)O")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
-    
     if len(ester_matches) != 1:
         return False, f"Need exactly 1 primary ester group, found {len(ester_matches)}"
     
-    # Define Acyl chain pattern
-    acyl_pattern = Chem.MolFromSmarts("C(=O)[C,c]")  # Long chain carbon attached pattern
+    # Identify acyl chain; should have at least 10 carbon atoms (arbitrary approximation for acyl chain)
+    acyl_pattern = Chem.MolFromSmarts("C(=O)[CH2][CH2][CH2][CH2]")
     if not mol.HasSubstructMatch(acyl_pattern):
         return False, "No proper acyl group found"
 
