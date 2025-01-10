@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_anthoxanthin(smiles: str):
     """
     Determines if a molecule is an anthoxanthin based on its SMILES string.
-    Anthoxanthins are flavonoid pigments characterized by a benzopyran-4-one structure often with oxygen substitutions.
+    Anthoxanthins are flavonoid pigments with a variety of core structures and multiple oxygen substitutions.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,19 +21,23 @@ def is_anthoxanthin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Flavonoid basic skeleton: benzopyran and phenyl ring
-    # Searching benzopyran-4-one (flavone) core structure with variable substitution
-    flavonoid_core_pattern = Chem.MolFromSmarts("c1cc(c2c(c1)C(=O)c3c(occ3)c2)")
-    if not mol.HasSubstructMatch(flavonoid_core_pattern):
-        return False, "Flavonoid core structure (benzopyran-4-one) not found"
+    # Broader pattern for flavonoid cores matching variations of benzopyran structures
+    flavonoid_core_patterns = [
+        # Basic flavonoid core with consideration for flexible structures
+        Chem.MolFromSmarts("c1cc2c(c3ccc(O)cc3)c(=O)oc2cc1"),  # benzopyran-4-one core
+        Chem.MolFromSmarts("c1cc2c(c1)OC(=O)c3ccccc23"),         # variations of flavone structures
+        Chem.MolFromSmarts("c1cc2oc(=O)c3ccccc3cc2c1"),          # isoflavone pattern
+    ]
     
-    # Check for common oxygen substitutions (like OH and OCH3)
-    oxy_substitutions = Chem.MolFromSmarts("[OH0,O]")
-    oxy_matches = len(mol.GetSubstructMatches(oxy_substitutions))
-    if oxy_matches < 2:
+    core_match = any(mol.HasSubstructMatch(core) for core in flavonoid_core_patterns)
+    if not core_match:
+        return False, "Flavonoid core structure not found"
+
+    # Check for sufficient oxygen substitutions (e.g., hydroxyl, methoxy)
+    oxygenated_patterns = [Chem.MolFromSmarts("[O]"), Chem.MolFromSmarts("[OH]")]
+    oxy_matches = sum(mol.HasSubstructMatch(pat) for pat in oxygenated_patterns)
+    
+    if oxy_matches < 3:
         return False, f"Insufficient oxygen substitutions, found {oxy_matches}"
 
-    # If necessary, further checks can consider specific methoxy groups, hydrophilic groups
-    # that enhance water solubility, which are common in anthoxanthins.
-    
-    return True, "Contains anthoxanthin characteristics: flavonoid scaffold and oxygen substitutions"
+    return True, "Contains anthoxanthin characteristics: flavonoid scaffold and adequate oxygen substitutions"
