@@ -2,6 +2,7 @@
 Classifies: CHEBI:33848 polycyclic arene
 """
 from rdkit import Chem
+from rdkit.Chem import rdchem
 
 def is_polycyclic_arene(smiles: str):
     """
@@ -21,40 +22,31 @@ def is_polycyclic_arene(smiles: str):
         return False, "Invalid SMILES string"
 
     # Aromaticity perception
-    Chem.SanitizeMol(mol, Chem.SanitizeFlags.SANITIZE_PROPERTIES)
+    try:
+        Chem.SanitizeMol(mol, Chem.SanitizeFlags.SANITIZE_SETAROMATICITY)
+    except Exception as e:
+        return False, f"Failed to sanitize and process aromatics: {str(e)}"
 
     # Get ring information
     ring_info = mol.GetRingInfo()
     
-    # Identify aromatic rings
-    aromatic_rings = []
-    for ring in ring_info.BondRings():
-        is_aromatic = True
-        for a1, a2 in zip(ring, ring[1:] + ring[:1]):
-            bond = mol.GetBondBetweenAtoms(a1, a2)
-            if not bond or not bond.GetIsAromatic():
-                is_aromatic = False
-                break
-        if is_aromatic:
-            aromatic_rings.append(ring)
+    # Identify aromatic rings using rdkit functionalities
+    aromatic_rings = [ring for ring in ring_info.BondRings() if all(mol.GetBondBetweenAtoms(a1, a2).GetIsAromatic() for a1, a2 in zip(ring, ring[1:] + ring[:1]))]
 
-    # Check number of aromatic rings
+    # Check number of rings
     if len(aromatic_rings) < 2:
         return False, "Less than two aromatic rings, not a polycyclic arene"
     
-    # Check for fused aromatic structures (shared edges)
-    fused = False
-    for i in range(len(aromatic_rings)):
-        for j in range(i+1, len(aromatic_rings)):
+    # Check for fused aromatic structures (shared bonds)
+    fused_aromatic_rings = set()
+    for i, ring1 in enumerate(aromatic_rings):
+        for ring2 in aromatic_rings[i+1:]:
             # Check if rings share two or more atoms (indicating a fused structure)
-            shared_atoms = set(aromatic_rings[i]).intersection(aromatic_rings[j])
-            if len(shared_atoms) > 1:
-                fused = True
-                break
-        if fused:
-            break
-
-    if not fused:
+            shared_bonds = set(ring1).intersection(ring2)
+            if len(shared_bonds) > 0:  # Changed to bond sharing
+                fused_aromatic_rings.update(shared_bonds)
+    
+    if len(fused_aromatic_rings) == 0:
         return False, "No fused aromatic rings, not a polycyclic arene"
     
     return True, "Structure is consistent with a polycyclic aromatic hydrocarbon"
