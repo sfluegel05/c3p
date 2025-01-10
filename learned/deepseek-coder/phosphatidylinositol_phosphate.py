@@ -45,8 +45,14 @@ def is_phosphatidylinositol_phosphate(smiles: str):
 
     # Look for inositol ring (6 carbons with multiple hydroxyls, allowing for substitutions)
     inositol_pattern = Chem.MolFromSmarts("C1C(O)C(O)C(O)C(O)C(O)C1")
-    if not mol.HasSubstructMatch(inositol_pattern):
+    inositol_matches = mol.GetSubstructMatches(inositol_pattern)
+    if not inositol_matches:
         return False, "No inositol ring found"
+
+    # Ensure the inositol ring is connected to the glycerol backbone via a phosphate group
+    inositol_phosphate_pattern = Chem.MolFromSmarts("C1C(O)C(O)C(O)C(O)C(O)C1OP(O)(=O)")
+    if not mol.HasSubstructMatch(inositol_phosphate_pattern):
+        return False, "Inositol ring not connected to glycerol via phosphate"
 
     # Look for at least one additional phosphate group on inositol
     phosphate_pattern = Chem.MolFromSmarts("OP(O)(=O)")
