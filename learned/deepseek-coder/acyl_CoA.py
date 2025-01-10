@@ -32,29 +32,14 @@ def is_acyl_CoA(smiles: str):
         return False, "No thioester bond found"
 
     # Check for the presence of the CoA moiety
-    # The CoA moiety includes a pantothenic acid derivative, an ADP group, and a cysteamine group.
-    # We will check for these components separately and ensure they are connected.
-
-    # Pattern for the pantothenic acid derivative (amide bond)
-    pantothenate_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[CX4][CX4][CX4]")
-    # Pattern for the ADP group (phosphate chain)
-    adp_pattern = Chem.MolFromSmarts("[OX2][PX4](=[OX1])([OX2])[OX2][CX4][CX4][CX4]")
-    # Pattern for the cysteamine group (thiol)
-    cysteamine_pattern = Chem.MolFromSmarts("[SX2][CX4][CX4][NX3]")
-
-    # Check if all three patterns are present
-    if not (mol.HasSubstructMatch(pantothenate_pattern) and 
-            mol.HasSubstructMatch(adp_pattern) and 
-            mol.HasSubstructMatch(cysteamine_pattern)):
-        return False, "Missing one or more components of the CoA moiety"
-
-    # Ensure the thioester bond is connected to the cysteamine group
-    thioester_match = mol.GetSubstructMatch(thioester_pattern)
-    cysteamine_match = mol.GetSubstructMatch(cysteamine_pattern)
-    if not any(atom in cysteamine_match for atom in thioester_match):
-        return False, "Thioester bond not connected to cysteamine group"
+    # The CoA moiety includes a specific pattern of atoms and bonds, including the ADP group, pantothenic acid derivative, and cysteamine group.
+    # This is a simplified pattern that captures the key features of CoA.
+    coa_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[CX4][CX4][NX3][CX3](=[OX1])[CX4][CX4][SX2][CX3](=[OX1])[CX4]")
+    if not mol.HasSubstructMatch(coa_pattern):
+        return False, "No CoA moiety found"
 
     # Check for the presence of a carboxylic acid derivative attached to the thioester bond
+    # This is a simplified pattern that captures the key features of a carboxylic acid derivative.
     carboxylic_acid_derivative_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H0]")
     if not mol.HasSubstructMatch(carboxylic_acid_derivative_pattern):
         return False, "No carboxylic acid derivative found"
