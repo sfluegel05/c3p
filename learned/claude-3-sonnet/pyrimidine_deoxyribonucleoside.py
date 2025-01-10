@@ -27,46 +27,41 @@ def is_pyrimidine_deoxyribonucleoside(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for deoxyribose sugar pattern
-    # [OH0] means oxygen can't have H attached (ring oxygen)
-    # The [CH2] ensures one position lacks an OH (2' deoxy position)
-    sugar_pattern = Chem.MolFromSmarts("[OH0;R1]1[CH2;R1][CH1;R1][CH1;R1][CH1;R1]1")
+    # More flexible pattern that matches 5-membered sugar ring
+    # with a 2' deoxy position
+    sugar_pattern = Chem.MolFromSmarts("[O;R1]1[CH2][CH1][CH1][CH1]1")
     if not mol.HasSubstructMatch(sugar_pattern):
         return False, "No deoxyribose sugar ring found"
 
-    # Check for pyrimidine base - more general pattern
-    # Matches 6-membered ring with two nitrogens in 1,3 positions
-    # [nX3] means 3-connected nitrogen (in ring)
-    # [#6] means any carbon
-    pyrimidine_pattern = Chem.MolFromSmarts("[nX3]1[#6][nX3][#6][#6][#6]1")
-    if not mol.HasSubstructMatch(pyrimidine_pattern):
-        return False, "No pyrimidine base found"
+    # Check for pyrimidine base patterns
+    # Match common pyrimidine bases (uracil, thymine, cytosine)
+    uracil_pattern = Chem.MolFromSmarts("O=c1[nH]c(=O)ccn1")
+    thymine_pattern = Chem.MolFromSmarts("O=c1[nH]c(=O)c(C)cn1")
+    cytosine_pattern = Chem.MolFromSmarts("[NH2]c1nc(=O)ccn1")
+    
+    has_pyrimidine = any(mol.HasSubstructMatch(pattern) for pattern in 
+                        [uracil_pattern, thymine_pattern, cytosine_pattern])
+    
+    if not has_pyrimidine:
+        # Fallback to more general pyrimidine pattern
+        general_pyrimidine = Chem.MolFromSmarts("n1c[c,n]c[c,n]c1")
+        if not mol.HasSubstructMatch(general_pyrimidine):
+            return False, "No pyrimidine base found"
 
     # Check for N-glycosidic bond between sugar and base
-    # More general pattern that just ensures sugar oxygen and base nitrogen are connected
-    # through the right carbons
-    glycosidic_pattern = Chem.MolFromSmarts("[OH0;R1]1[CH2][CH1][CH1][CH1]1[NH0;R1]2[#6][#6][#6][#6][#6]2")
+    # More flexible pattern that allows for various substitutions
+    glycosidic_pattern = Chem.MolFromSmarts("[O;R1]1[CH2][CH1][CH1][CH1]1[N;R1]2[#6][#6][#6][#6][#6]2")
     if not mol.HasSubstructMatch(glycosidic_pattern):
         return False, "No N-glycosidic bond between sugar and base"
 
-    # Verify presence of at least one carbonyl group (characteristic of pyrimidine bases)
-    carbonyl_pattern = Chem.MolFromSmarts("C(=O)N")
-    if not mol.HasSubstructMatch(carbonyl_pattern):
-        return False, "Missing characteristic carbonyl group"
-
-    # Check for primary alcohol (5' position)
-    primary_oh_pattern = Chem.MolFromSmarts("[CH2]O")
+    # Check for primary alcohol (5' position) - allow for modifications
+    primary_oh_pattern = Chem.MolFromSmarts("[CH2][O,N,S]")
     if not mol.HasSubstructMatch(primary_oh_pattern):
-        return False, "Missing 5' hydroxyl group"
+        return False, "Missing 5' substituent"
 
-    # Check for at least one hydroxyl on sugar (3' position)
-    sugar_oh_pattern = Chem.MolFromSmarts("[CH1;R1][OH1,O[C,H]]")
-    if not mol.HasSubstructMatch(sugar_oh_pattern):
-        return False, "Missing sugar hydroxyl groups"
-
-    # Additional check to ensure the molecule isn't too complex
-    # Most pyrimidine nucleosides should have 2 rings (sugar + base)
-    rings = mol.GetRingInfo().NumRings()
-    if rings > 3:  # Allow up to 3 rings to account for some modifications
-        return False, "Structure too complex - too many rings"
+    # Check for 3' position - allow for various substituents
+    three_prime_pattern = Chem.MolFromSmarts("[CH1;R1][OH1,O,N,F]")
+    if not mol.HasSubstructMatch(three_prime_pattern):
+        return False, "Missing 3' substituent"
 
     return True, "Contains pyrimidine base connected to deoxyribose via N-glycosidic bond"
