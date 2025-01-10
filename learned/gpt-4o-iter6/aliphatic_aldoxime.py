@@ -21,13 +21,12 @@ def is_aliphatic_aldoxime(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Identify aldoxime group pattern (C=N-OH)
+    # Identify the aldoxime group pattern (C=N-OH)
     aldoxime_pattern = Chem.MolFromSmarts('[CX3]=N[OH]')
     if not mol.HasSubstructMatch(aldoxime_pattern):
         return False, "No aldoxime group found"
     
-    # Verify the aldehyde precursor is aliphatic
-    # Search for aliphatic carbons attached directly or indirectly without aromatic adjacency
+    # Ensure the aldoxime group is part of an aliphatic aldehyde
     aliphatic_aldoxime_pattern = Chem.MolFromSmarts('[CX3;!r]=N[OH]')
     if not mol.HasSubstructMatch(aliphatic_aldoxime_pattern):
         return False, "No aliphatic aldehyde origin for aldoxime"
@@ -36,6 +35,11 @@ def is_aliphatic_aldoxime(smiles: str):
     if mol.HasSubstructMatch(Chem.MolFromSmarts('a')):
         return False, "Aromatic structures detected in the molecule"
 
+    # Additional check: Ensure the adjacent to the C=N-OH group is aliphatic
+    adj_aliphatic_check = Chem.MolFromSmarts('[CX3]([!r])=N[OH]')
+    if not mol.HasSubstructMatch(adj_aliphatic_check):
+        return False, "Neighboring structures to C=N-OH are not entirely aliphatic"
+    
     return True, "Contains aliphatic structure with aldoxime group"
 
 # Example usage:
