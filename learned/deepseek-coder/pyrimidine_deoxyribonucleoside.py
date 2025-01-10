@@ -26,7 +26,7 @@ def is_pyrimidine_deoxyribonucleoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for pyrimidine base pattern (more general pattern)
+    # Check for pyrimidine base pattern (more specific and flexible pattern)
     pyrimidine_pattern = Chem.MolFromSmarts("[nH]1[c,n][c,n][c,n][c,n]1(=O)")
     if not mol.HasSubstructMatch(pyrimidine_pattern):
         # Try alternative pyrimidine patterns
@@ -34,7 +34,7 @@ def is_pyrimidine_deoxyribonucleoside(smiles: str):
         if not mol.HasSubstructMatch(pyrimidine_pattern_alt):
             return False, "No pyrimidine base found"
 
-    # Check for deoxyribose sugar pattern (more general pattern)
+    # Check for deoxyribose sugar pattern (more specific and flexible pattern)
     deoxyribose_pattern = Chem.MolFromSmarts("[C@H]1[C@H](O)[C@H](O)[C@@H](CO)O1")
     if not mol.HasSubstructMatch(deoxyribose_pattern):
         # Try alternative deoxyribose patterns
