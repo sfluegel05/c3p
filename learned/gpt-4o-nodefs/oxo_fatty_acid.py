@@ -30,16 +30,20 @@ def is_oxo_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(ketone_pattern):
         return False, "No additional ketone group found"
 
-    # Check for a bigger carbon skeleton; allow for more carbons, rings, and unsaturations
-    # This pattern now allows for any arrangement of carbons while ensuring a long chain backbone
-    carbon_chain_pattern = Chem.MolFromSmarts("C-C-C-C-C-C-C")  # flexible pattern allowing more configurations
+    # Improved check for a sufficient carbon skeleton
+    carbon_chain_pattern = Chem.MolFromSmarts("CCCCCCCC")  # more specific for a longer alkane chain
     if not mol.HasSubstructMatch(carbon_chain_pattern):
         return False, "Insufficient carbon backbone"
+    
+    # Unsaturation checking with multiple bonds or rings
+    unsaturation_pattern = Chem.MolFromSmarts("C=C")
+    if not mol.HasSubstructMatch(unsaturation_pattern):
+        cyclic_pattern = Chem.MolFromSmarts("C1CCCCC1")  # check if cyclic when double bonds aren't present
+        if not mol.HasSubstructMatch(cyclic_pattern):
+            return False, "Lacks unsaturation or cyclic components typical of oxo fatty acids"
 
-    # Optionally verify unsaturations or cyclic components in more complex molecules
-    if Chem.MolFromSmarts("C=C") and mol.HasSubstructMatch(carboxylic_acid_pattern):
-        unsaturation_pattern = Chem.MolFromSmarts("C=C")
-        if not mol.HasSubstructMatch(unsaturation_pattern):
-            return False, "Lacks unsaturation often present in oxo fatty acids"
-     
-    return True, "Contains carboxylic acid and additional ketone group with sufficient carbon backbone"
+    # Considering stereochemistry by tracking stereocenters
+    if any(atom.GetChiralTag() != Chem.rdchem.ChiralType.CHI_UNSPECIFIED for atom in mol.GetAtoms()):
+        return True, "Contains carboxylic acid, ketone group, and a carbon skeleton with stereochemistry"
+
+    return True, "Contains carboxylic acid, additional ketone group, and a sufficient carbon backbone"
