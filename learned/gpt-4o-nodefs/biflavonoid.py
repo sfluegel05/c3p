@@ -6,13 +6,12 @@ from rdkit import Chem
 def is_biflavonoid(smiles: str):
     """
     Determines if a molecule is a biflavonoid based on its SMILES string.
-    Biflavonoids generally contain two flavonoid moieties connected by covalent bonds.
     
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if the molecule is a biflavonoid, False otherwise
+        bool: True if molecule is a biflavonoid, False otherwise
         str: Reason for classification
     """
     
@@ -21,33 +20,16 @@ def is_biflavonoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # General aromatic ring pattern and typical flavonoid backbone
-    flavonoid_core_patterns = [
-        Chem.MolFromSmarts("c1(ccc(c(c1)c2=cc(oc2=O)c)C(=O)C)"),  # example flavonoid core
-        Chem.MolFromSmarts("c1cc(c2c(c1O)oc(=O)c(c2)C)"),  # another example pattern
-        Chem.MolFromSmarts("C1=CC=C(C=C1)C2=CC(=O)C3=C(O2)C=CC=C3"), # basic flavan-3-ol
-    ]
+    # Biflavonoids typically consist of two flavonoid units. We'll define a simple pattern to look for such units.
+    # This is a general check and may not match all biflavonoids precisely.
+    flavonoid_pattern_1 = Chem.MolFromSmarts("c1cc(O)c2c(c1)oc(=O)cc2-c1c(O)cc(O)cc1")  # Example flavonoid unit
+    flavonoid_pattern_2 = Chem.MolFromSmarts("Oc1cccc2c1c(=O)c(O)cc2-c1c(O)cc(O)cc1")  # Example flavonoid unit
 
-    # Check for at least two occurrences of flavonoid core patterns
-    match_count = 0
-    for core_pattern in flavonoid_core_patterns:
-        matches = mol.GetSubstructMatches(core_pattern)
-        match_count += len(matches)
+    # Check if the molecule matches the flavonoid pattern at least twice
+    match_1 = mol.HasSubstructMatch(flavonoid_pattern_1)
+    match_2 = mol.HasSubstructMatch(flavonoid_pattern_2)
 
-    if match_count < 2:
-        return False, "Less than two flavonoid units found"
-
-    # Check for connections typical of biflavonoids, (C-O, C-C, or C=C between flavonoid units)
-    linkage_patterns = [
-        Chem.MolFromSmarts("[c]~[o]~[c]"),  # C-O-C linkage
-        Chem.MolFromSmarts("[c]-[c]-[c]"),  # C-C linkage
-        Chem.MolFromSmarts("[c]=[c]"),  # C=C linkage
-    ]
+    if match_1 and match_2:
+        return True, "Molecule contains two flavonoid units typical of biflavonoids"
     
-    # Verify the presence of covalent linkage between flavonoid units
-    has_linkage = any(mol.HasSubstructMatch(linkage) for linkage in linkage_patterns)
-
-    if has_linkage:
-        return True, "Contains dual flavonoid units connected by typical biflavonoid linkage patterns"
-    
-    return False, "Molecule does not consist of connected flavonoid units typical of biflavonoids"
+    return False, "Molecule does not match typical biflavonoid substructure patterns"
