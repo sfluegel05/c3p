@@ -27,20 +27,14 @@ def is_isoflavonoid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define a more flexible 1-benzopyran core pattern
-    benzopyran_pattern = Chem.MolFromSmarts("O1C=C2C=CC=CC2=C1")
+    benzopyran_pattern = Chem.MolFromSmarts("[O;X2]1[C;X3]=[C;X3]2[C;X3]=[C;X3][C;X3]=[C;X3][C;X3]=[C;X3]2[C;X3]=1")
     if not mol.HasSubstructMatch(benzopyran_pattern):
-        # Try a more flexible pattern
-        benzopyran_pattern = Chem.MolFromSmarts("O1C=C2C=CC=CC2=C1")
-        if not mol.HasSubstructMatch(benzopyran_pattern):
-            return False, "No 1-benzopyran core found"
+        return False, "No 1-benzopyran core found"
 
     # Define the aryl substituent at position 3 pattern
-    aryl_substituent_pattern = Chem.MolFromSmarts("O1C=C2C=CC=CC2=C1-c")
+    aryl_substituent_pattern = Chem.MolFromSmarts("[O;X2]1[C;X3]=[C;X3]2[C;X3]=[C;X3][C;X3]=[C;X3][C;X3]=[C;X3]2[C;X3]=1-[c;X3]")
     if not mol.HasSubstructMatch(aryl_substituent_pattern):
-        # Try a more flexible pattern
-        aryl_substituent_pattern = Chem.MolFromSmarts("O1C=C2C=CC=CC2=C1-[c]")
-        if not mol.HasSubstructMatch(aryl_substituent_pattern):
-            return False, "No aryl substituent at position 3 found"
+        return False, "No aryl substituent at position 3 found"
 
     # Check for the presence of at least one aromatic ring (aryl group)
     aromatic_rings = [ring for ring in mol.GetRingInfo().AtomRings() if all(mol.GetAtomWithIdx(atom).GetIsAromatic() for atom in ring)]
