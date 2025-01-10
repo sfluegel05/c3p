@@ -6,7 +6,8 @@ from rdkit import Chem
 def is_polypyrrole(smiles: str):
     """
     Determines if a molecule is a polypyrrole based on its SMILES string.
-    Polypyrroles generally consist of pyrrole rings, but are ambiguously defined here.
+    Since the definition is ambiguous, this analysis extends to multiple pyrrole rings
+    and potential polymeric structures containing pyrroles.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,11 +22,18 @@ def is_polypyrrole(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for pyrrole-like substructure
-    # Pyrrole ring is C1=CNC=C1, using SMARTS pattern for pyrrole
+    # Consider pyrrole and possible linked multiple pyrrole structures
     pyrrole_pattern = Chem.MolFromSmarts('n1cccc1')
-    if mol.HasSubstructMatch(pyrrole_pattern):
-        # Since specific definition is not given, assume any molecule containing pyrrole ring is polypyrrole
-        return True, "Contains pyrrole ring"
+    
+    # If multiple pyrroles might be required in sequence, look for linked dimers or more
+    polypyrrole_pattern = Chem.MolFromSmarts('n1cccc1-n2cccc2')
+    
+    # Check if any pattern relevant to polypyrrole structures matches
+    if mol.HasSubstructMatch(polypyrrole_pattern):
+        return True, "Contains multiple linked pyrrole rings pattern"
 
-    return False, "No pyrrole structure found or definition for polypyrrole is 'None'"
+    # Fallback on single pyrrole detection if polymeric form not specific
+    if mol.HasSubstructMatch(pyrrole_pattern):
+        return True, "Contains pyrrole ring, but not polymeric"
+
+    return False, "No polypyrrole-defining structure found or definition is too vague"
