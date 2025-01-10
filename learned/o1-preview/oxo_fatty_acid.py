@@ -6,6 +6,7 @@ Classifies: CHEBI:52214 oxo fatty acid
 """
 from rdkit import Chem
 from rdkit.Chem import rdchem
+from rdkit.Chem import rdMolDescriptors
 
 def is_oxo_fatty_acid(smiles: str):
     """
@@ -32,7 +33,7 @@ def is_oxo_fatty_acid(smiles: str):
     if not carboxylic_acid_matches:
         return False, "No carboxylic acid group found"
 
-    # Identify atoms in carboxylic acid groups to exclude from aldehyde/ketone search
+    # Identify atoms in carboxylic acid groups to exclude
     carboxylic_acid_atoms = set()
     for match in carboxylic_acid_matches:
         carboxylic_acid_atoms.update(match)
@@ -46,19 +47,22 @@ def is_oxo_fatty_acid(smiles: str):
             aldehyde_matches.append(match)
 
     # Check for ketone groups (excluding carboxylic acid)
-    # Ketone carbonyl carbon attached to two carbons, excluding carboxylic acids, esters, amides
-    ketone_pattern = Chem.MolFromSmarts("[#6][C](=O)[#6]")
+    ketone_pattern = Chem.MolFromSmarts("[#6][CX3](=O)[#6,#1]")
     ketone_matches = []
     for match in mol.GetSubstructMatches(ketone_pattern):
         atom_indices = set(match)
         # Ensure the ketone is not part of the carboxylic acid or other excluded groups
         if not atom_indices & carboxylic_acid_atoms:
             carbonyl_c = mol.GetAtomWithIdx(match[1])
-            is_not_in_ring = not carbonyl_c.IsInRing()
-            # Exclude esters, amides, acids by checking neighbors
+            # Exclude esters, amides by checking neighboring oxygens or nitrogens
             neighbors = carbonyl_c.GetNeighbors()
-            has_only_carbon_neighbors = all(neigh.GetAtomicNum() == 6 for neigh in neighbors if neigh.GetIdx() != match[2] and neigh.GetIdx() != match[0])
-            if is_not_in_ring and has_only_carbon_neighbors:
+            is_simple_ketone = True
+            for neigh in neighbors:
+                if neigh.GetIdx() != match[0] and neigh.GetIdx() != match[2]:
+                    if neigh.GetAtomicNum() in [7,8]:
+                        is_simple_ketone = False
+                        break
+            if is_simple_ketone:
                 ketone_matches.append(match)
 
     # If no aldehyde or ketone groups are found, it's not an oxo fatty acid
@@ -70,17 +74,28 @@ def is_oxo_fatty_acid(smiles: str):
     if num_carbons < 4:
         return False, f"Too few carbon atoms ({num_carbons}) for a fatty acid"
 
-    # Ensure molecule is mostly linear (fatty acids are typically linear chains)
-    is_linear = True
+    # Check for other functional groups not typical in fatty acids
     for atom in mol.GetAtoms():
-        if atom.GetDegree() > 3:
-            is_linear = False
-            break
-    if not is_linear:
-        return False, "Molecule is not linear enough to be a fatty acid"
+        if atom.GetAtomicNum() == 7:
+            return False, "Contains nitrogen, not typical for fatty acids"
+        if atom.GetAtomicNum() == 15:
+            return False, "Contains phosphorus, not typical for fatty acids"
+        if atom.GetAtomicNum() == 16:
+            return False, "Contains sulfur, not typical for fatty acids"
+
+    # Check for number of carboxylic acid groups (should be one)
+    if len(carboxylic_acid_matches) != 1:
+        return False, f"Contains {len(carboxylic_acid_matches)} carboxylic acid groups, expected 1"
+
+    # Calculate fraction of sp3 carbons (should be high in fatty acids)
+    num_sp3_carbons = sum(1 for atom in mol.GetAtoms()
+                          if atom.GetAtomicNum() == 6 and atom.GetHybridization() == Chem.rdchem.HybridizationType.SP3)
+    sp3_fraction = num_sp3_carbons / num_carbons
+    if sp3_fraction < 0.5:
+        return False, f"Low fraction of sp3 carbons ({sp3_fraction:.2f}), molecule may not be aliphatic enough for fatty acid"
 
     # If all checks pass, it's an oxo fatty acid
-    return True, "Contains carboxylic acid and aldehyde/ketone groups with sufficient carbon chain"
+    return True, "Contains carboxylic acid and aldehyde/ketone groups with sufficient aliphatic carbon chain"
 
 __metadata__ = {
     'chemical_class': {
@@ -102,7 +117,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 2,
+    'attempt': 3,
     'success': True,
     'best': True,
     'error': '',
