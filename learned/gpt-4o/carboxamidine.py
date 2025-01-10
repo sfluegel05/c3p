@@ -2,7 +2,6 @@
 Classifies: CHEBI:35359 carboxamidine
 """
 from rdkit import Chem
-from rdkit.Chem import rdqueries
 
 def is_carboxamidine(smiles: str):
     """
@@ -17,19 +16,21 @@ def is_carboxamidine(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
+    # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for carboxamidine pattern C(=NR)NR2
-    # Create a query for C(=N)N structure
-    carboxamidine_pattern = Chem.MolFromSmarts("C(=N)N")
+    # This SMARTS pattern accounts for the carboxamidine group: RC(=NR)NR2
+    # It checks for the central carbon with two nitrogens attached
+    # and allows for varied R groups
+    carboxamidine_pattern = Chem.MolFromSmarts('C(=[N;H1,H2,H3])(N)[N;!H0]')
+    
+    # Check for matches
     if mol.HasSubstructMatch(carboxamidine_pattern):
-        return True, "Contains carboxamidine (C(=NR)NR2) group"
-
-    # If no matches found, it's not a carboxamidine
+        return True, "Contains carboxamidine (RC(=NR)NR2) group"
+    
     return False, "No carboxamidine structure found"
 
-# Example Usage
-print(is_carboxamidine("CC(Oc1c(Cl)cccc1Cl)C1=NCCN1"))  # Should be True for lofexidine
+# Example Usage:
+print(is_carboxamidine("CC(Oc1c(Cl)cccc1Cl)C1=NCCN1"))  # Expected: True for lofexidine
