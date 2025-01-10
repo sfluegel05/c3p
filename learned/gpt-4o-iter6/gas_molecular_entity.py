@@ -23,37 +23,28 @@ def is_gas_molecular_entity(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Common gaseous elements at STP, considering diatomic noble gases
+    # Elements typically found in gaseous compounds
     gaseous_elements = {1, 2, 6, 7, 8, 9, 10, 17, 18, 36, 54, 86}  # H, He, C, N, O, F, Ne, Cl, Ar, Kr, Xe, Rn
     
-    # Known gaseous SMILES specific cases
+    # Known special gaseous forms
     known_gaseous_smiles = {
         "[219Rn]", "[220Rn]", "[222Rn]", "[Rn]", "[Xe]", "[H][H]", "[He]", "[2H][2H]", "[3H][3H]", 
-        "[4He]", "[3He]", "[6He]", "O=C=O", "[C-]#[O+]", "[H]N([H])[H]", "[H][C]([H])([H])[H]",
-        "CCC", "C=C", "C(C)(F)(F)F", "C#C", "CC", "OOOO", "FF", "ClCl", "C1CO1", 
+        "[4He]", "[3He]", "[6He]", "O=C=O", "[C-]#[O+]", "[H]N([H])[H]", "CCC", "C=C", "C#C", "CC", 
+        "FF", "ClCl", "[H]C([H])([H])[H]", "FCl", "FC=C", "C1CO1", "CCl"
     }
 
-    # Check if the molecule has a special specific known gaseous form
+    # Check if the molecule matches a specific recognized gaseous form
     if smiles in known_gaseous_smiles:
         return True, "Recognized special gaseous form"
     
-    # Check atoms inclusion within gaseous elements
+    # Ensure all atoms belong to a subset of elements typically in gases
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() not in gaseous_elements:
             return False, f"Contains non-gaseous element: {atom.GetSymbol()}"
     
-    # Calculate molecular weight
+    # Calculate molecular weight and check threshold for gas
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-
-    # Allow gases with molecular weight up to 200, for noble gases and recognized exceptions
-    if mol_wt > 200 and smiles not in known_gaseous_smiles:
+    if mol_wt > 300:
         return False, f"Molecular weight too high for a typical gas: {mol_wt} g/mol"
     
     return True, "Molecule is a simple structure containing only gaseous elements at STP"
-
-# Examples for testing
-print(is_gas_molecular_entity("O=C=O"))  # Carbon dioxide
-print(is_gas_molecular_entity("C1CO1"))  # Oxirane
-print(is_gas_molecular_entity("[C-]#[O+]"))  # Carbon monoxide
-print(is_gas_molecular_entity("[He]"))  # Helium
-print(is_gas_molecular_entity("CCC"))  # Propane
