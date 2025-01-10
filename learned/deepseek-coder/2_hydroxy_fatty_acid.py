@@ -32,38 +32,21 @@ def is_2_hydroxy_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
 
-    # Find the carbon atom in the carboxylic acid group
-    carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
-    if not carboxylic_acid_matches:
-        return False, "No carboxylic acid group found"
-    
-    # Get the carbon atom in the carboxylic acid group
-    carboxylic_carbon = carboxylic_acid_matches[0][0]
-
-    # Check for a hydroxyl group (-OH) at the 2-position (alpha position)
-    alpha_carbon = None
-    for neighbor in mol.GetAtomWithIdx(carboxylic_carbon).GetNeighbors():
-        if neighbor.GetAtomicNum() == 6:  # Carbon atom
-            alpha_carbon = neighbor.GetIdx()
-            break
-
-    if alpha_carbon is None:
-        return False, "No alpha carbon found"
-
-    # Check if the alpha carbon has a hydroxyl group
-    alpha_carbon_atom = mol.GetAtomWithIdx(alpha_carbon)
-    has_hydroxyl = False
-    for neighbor in alpha_carbon_atom.GetNeighbors():
-        if neighbor.GetAtomicNum() == 8 and neighbor.GetTotalNumHs() == 1:  # Hydroxyl group
-            has_hydroxyl = True
-            break
-
-    if not has_hydroxyl:
-        return False, "No hydroxyl group at the 2-position"
+    # Use a more specific SMARTS pattern to ensure the hydroxyl group is at the 2-position
+    # relative to the carboxylic acid group
+    hydroxy_fatty_acid_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H1][CX4H1][CX4H1][OX2H1]")
+    if not mol.HasSubstructMatch(hydroxy_fatty_acid_pattern):
+        return False, "No hydroxyl group at the 2-position relative to the carboxylic acid group"
 
     # Check for a sufficiently long carbon chain (fatty acid)
+    # Allow for shorter chains, as some 2-hydroxy fatty acids can have fewer than 6 carbons
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if carbon_count < 6:
+    if carbon_count < 4:
         return False, "Carbon chain too short to be a fatty acid"
+
+    # Additional check to ensure the molecule is a fatty acid (linear or branched carbon chain)
+    # Exclude molecules with complex structures like rings or multiple functional groups
+    if rdMolDescriptors.CalcNumRings(mol) > 0:
+        return False, "Molecule contains rings, not a typical fatty acid"
 
     return True, "Contains a carboxylic acid group, a hydroxyl group at the 2-position, and a sufficiently long carbon chain"
