@@ -23,32 +23,49 @@ def is_wax_ester(smiles: str):
         return False, "Invalid SMILES string"
 
     # Ester linkage pattern: C(=O)O
-    ester_pattern = Chem.MolFromSmarts("C(=O)OC")
+    ester_pattern = Chem.MolFromSmarts("C(=O)O")
     if not mol.HasSubstructMatch(ester_pattern):
         return False, "No ester linkage found"
     
-    # Find ester group and analyze chains on either side
+    # Find ester group and consider the carbon chains extending from it
     matches = mol.GetSubstructMatches(ester_pattern)
 
-    # Check for both sides of the ester
+    # Check for both sides of the ester for sufficient chain length
     for match in matches:
-        # Get atoms on either side of the ester linkage
         carbonyl_carbon = match[0]
-        oxygen = match[2]
+        ester_oxygen = match[2]
+        
+        side1_chain_length = _get_chain_length(mol, carbonyl_carbon)
+        side2_chain_length = _get_chain_length(mol, ester_oxygen)
 
-        # Check for carbon chains extending from each side
-        carbon_chain_1 = set([atom.GetIdx() for atom in mol.GetAtomWithIdx(carbonyl_carbon).GetNeighbors() if atom.GetAtomicNum() == 6])
-        carbon_chain_2 = set([atom.GetIdx() for atom in mol.GetAtomWithIdx(oxygen).GetNeighbors() if atom.GetAtomicNum() == 6])
-
-        # Exclude ester group and check length of chains
-        carbon_chain_1.discard(carbonyl_carbon)
-        carbon_chain_1.discard(oxygen)
-
-        carbon_chain_2.discard(carbonyl_carbon)
-        carbon_chain_2.discard(oxygen)
-
-        # Check if both chains are sufficiently long
-        if len(carbon_chain_1) >= 8 and len(carbon_chain_2) >= 8:
+        if side1_chain_length >= 12 and side2_chain_length >= 12:
             return True, "Molecule contains a fatty acid ester linkage with sufficient carbon chain length"
     
     return False, "Carbon chains are too short to be considered fatty acid/alcohol"
+
+def _get_chain_length(mol, start_atom_index, max_chain_length=0):
+    """
+    Recursively finds the length of a carbon chain starting from a given atom.
+    Only considers carbon atoms in a linear sequence.
+    """
+    visited = set()
+    def _traverse_chain(atom_index):
+        nonlocal max_chain_length
+        if atom_index in visited:
+            return 0
+        visited.add(atom_index)
+
+        atom = mol.GetAtomWithIdx(atom_index)
+        if atom.GetAtomicNum() != 6:  # Only consider carbon atoms
+            return 0
+
+        local_chain_length = 1  # Count the current carbon atom
+        for neighbor in atom.GetNeighbors():
+            if neighbor.GetIdx() not in visited:
+                local_chain_length += _traverse_chain(neighbor.GetIdx())
+        
+        max_chain_length = max(max_chain_length, local_chain_length)
+        return local_chain_length
+
+    _traverse_chain(start_atom_index)
+    return max_chain_length
