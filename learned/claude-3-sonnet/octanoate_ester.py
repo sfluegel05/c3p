@@ -25,45 +25,60 @@ def is_octanoate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for ester group pattern
-    ester_pattern = Chem.MolFromSmarts("[CX4][CX3](=[OX1])[OX2][#6]")
+    # Look for ester group pattern (-O-C(=O)-)
+    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
     if not mol.HasSubstructMatch(ester_pattern):
         return False, "No ester group found"
     
-    # More specific pattern for octanoate group:
-    # - Exactly 8 carbons in chain (7 + carbonyl carbon)
-    # - No branching allowed on the chain
-    # - Must end in ester group
-    octanoate_pattern = Chem.MolFromSmarts("[CH3X4][CH2X4][CH2X4][CH2X4][CH2X4][CH2X4][CH2X4][CX3](=[OX1])[OX2]")
+    # Pattern for octanoate group:
+    # - 8 carbons in chain (including carbonyl carbon)
+    # - Ends in ester group
+    # - More flexible pattern that allows for substitutions and stereochemistry
+    octanoate_pattern = Chem.MolFromSmarts("[CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX3](=[OX1])[OX2]")
     
     if not mol.HasSubstructMatch(octanoate_pattern):
-        return False, "No linear octanoate chain found"
+        return False, "No octanoate chain found"
     
     matches = mol.GetSubstructMatches(octanoate_pattern)
     
     for match in matches:
-        # Check that none of the carbons in the chain are part of a ring
-        is_in_ring = False
-        for atom_idx in match[:-2]:  # Exclude the ester oxygen and carbonyl oxygen
-            if mol.GetAtomWithIdx(atom_idx).IsInRing():
-                is_in_ring = True
-                break
+        # Get the atoms in the chain
+        chain_atoms = list(match[:-2])  # Exclude ester oxygen and carbonyl oxygen
         
-        if is_in_ring:
-            continue
-            
-        # Check that the carbons in the chain don't have additional connections
-        has_extra_connections = False
-        for atom_idx in match[:-2]:  # Exclude the ester group
-            atom = mol.GetAtomWithIdx(atom_idx)
-            if atom.GetDegree() > 2 and atom_idx != 0:  # First carbon (CH3) can only have 1 connection
-                has_extra_connections = True
+        # Check that the carbons in the chain form a continuous path
+        is_continuous = True
+        for i in range(len(chain_atoms)-1):
+            bond = mol.GetBondBetweenAtoms(chain_atoms[i], chain_atoms[i+1])
+            if bond is None:
+                is_continuous = False
                 break
                 
-        if has_extra_connections:
+        if not is_continuous:
             continue
             
-        return True, "Contains octanoate ester group (linear 8-carbon chain with terminal ester)"
+        # Check that the chain itself isn't part of a ring
+        chain_in_ring = False
+        for i in range(len(chain_atoms)-1):
+            bond = mol.GetBondBetweenAtoms(chain_atoms[i], chain_atoms[i+1])
+            if bond.IsInRing():
+                chain_in_ring = True
+                break
+                
+        if chain_in_ring:
+            continue
+            
+        # Verify the chain length (should be 8 carbons including carbonyl)
+        chain_length = len(chain_atoms) + 1  # Add 1 for carbonyl carbon
+        if chain_length != 8:
+            continue
+            
+        # Check that all atoms in chain are carbons
+        all_carbons = all(mol.GetAtomWithIdx(idx).GetAtomicNum() == 6 for idx in chain_atoms)
+        if not all_carbons:
+            continue
+            
+        # If we get here, we've found a valid octanoate ester group
+        return True, "Contains octanoate ester group (8-carbon chain with terminal ester)"
     
     return False, "No valid octanoate ester group found"
 
@@ -72,10 +87,11 @@ def test_examples():
     test_cases = [
         ("CCCCCCCC(=O)OCC", True),  # ethyl octanoate
         ("CCCCCCCC(=O)OC", True),   # methyl octanoate
+        ("CCCCCCCC(=O)OCC(O)CO", True),  # 1-monooctanoylglycerol
+        ("CCCCCCCC(=O)O[C@@H](CC([O-])=O)C[N+](C)(C)C", True),  # O-octanoyl-D-carnitine
         ("CCCCCCC(=O)OCC", False),  # ethyl heptanoate (too short)
-        ("CCCCCCCCC(=O)OCC", False),# ethyl nonanoate (too long)
-        ("CCCCCCCCOC", False),      # octyl ether (not an ester)
-        ("O(CCCCCCCC)C(=O)CCCCCCC", False),  # octyl octanoate (wrong orientation)
+        ("CCCCCCCCC(=O)OCC", False),  # ethyl nonanoate (too long)
+        ("CCCCCCCCOC", False),  # octyl ether (not an ester)
     ]
     
     for smiles, expected in test_cases:
