@@ -8,7 +8,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_tannin(smiles: str):
     """
     Determines if a molecule is a tannin based on its SMILES string.
-    Tannins are complex polyphenolic compounds with multiple phenolic hydroxyl groups.
+    Tannins are complex polyphenolic compounds including both hydrolyzable and condensed types.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -25,7 +25,7 @@ def is_tannin(smiles: str):
 
     # Check molecular weight (tannins are typically >500 Da)
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 400:  # Using 400 as lower threshold to catch some smaller tannins
+    if mol_wt < 500:
         return False, f"Molecular weight ({mol_wt:.1f}) too low for tannin"
 
     # Count aromatic rings
@@ -33,59 +33,61 @@ def is_tannin(smiles: str):
     if aromatic_rings < 2:
         return False, f"Too few aromatic rings ({aromatic_rings}) for tannin"
 
-    # Look for phenol groups
-    phenol_pattern = Chem.MolFromSmarts("[OH]c1ccccc1")
-    phenol_matches = len(mol.GetSubstructMatches(phenol_pattern))
-    if phenol_matches < 2:
-        return False, f"Too few phenol groups ({phenol_matches}) for tannin"
+    # Define structural patterns
+    patterns = {
+        'galloyl': ['O=C(O)c1c(O)c(O)c(O)cc1', 'O=C([O,N])c1c(O)c(O)c(O)cc1'],
+        'catechol': ['Oc1ccc(O)cc1', 'Oc1cccc(O)c1'],
+        'pyrogallol': ['Oc1c(O)c(O)ccc1', 'Oc1cc(O)c(O)cc1'],
+        'flavonoid': ['O=C1CC(c2ccccc2)Oc2ccccc12'],
+        'ester': ['C(=O)O[CH0]', 'C(=O)OC'],
+        'hydroxyl': ['[OH]'],
+        'linked_flavonoid': ['O1c2c(cc(O)cc2)C(c2ccc(O)cc2)C[C@H]1c1c(O)cc(O)c2c1O[C@H](c1ccc(O)cc1)CC2']
+    }
+    
+    # Count structural features
+    counts = {}
+    for name, smarts_list in patterns.items():
+        counts[name] = 0
+        for smarts in smarts_list:
+            pattern = Chem.MolFromSmarts(smarts)
+            if pattern:
+                counts[name] += len(mol.GetSubstructMatches(pattern))
+    
+    # Basic requirements
+    if counts['hydroxyl'] < 5:
+        return False, f"Too few hydroxyl groups ({counts['hydroxyl']}) for tannin"
 
-    # Look for galloyl groups (3,4,5-trihydroxybenzoyl)
-    galloyl_pattern = Chem.MolFromSmarts("O=C(O)c1c(O)c(O)c(O)cc1")
-    catechol_pattern = Chem.MolFromSmarts("Oc1ccc(O)cc1")
-    pyrogallol_pattern = Chem.MolFromSmarts("Oc1c(O)c(O)ccc1")
-    
-    galloyl_matches = len(mol.GetSubstructMatches(galloyl_pattern))
-    catechol_matches = len(mol.GetSubstructMatches(catechol_pattern))
-    pyrogallol_matches = len(mol.GetSubstructMatches(pyrogallol_pattern))
-    
-    # Count total hydroxyl groups
-    hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
-    hydroxyl_count = len(mol.GetSubstructMatches(hydroxyl_pattern))
-    
-    if hydroxyl_count < 3:
-        return False, f"Too few hydroxyl groups ({hydroxyl_count}) for tannin"
-
-    # Check for characteristic structural features
-    has_galloyl = galloyl_matches > 0
-    has_catechol = catechol_matches > 0
-    has_pyrogallol = pyrogallol_matches > 0
-    
-    if not (has_galloyl or has_catechol or has_pyrogallol):
-        return False, "Missing characteristic tannin structural features (galloyl/catechol/pyrogallol groups)"
-
-    # Look for ester bonds (common in hydrolyzable tannins)
-    ester_pattern = Chem.MolFromSmarts("[#6]-C(=O)O-[#6]")
-    ester_matches = len(mol.GetSubstructMatches(ester_pattern))
-    
-    # Calculate ring complexity
     ring_count = rdMolDescriptors.CalcNumRings(mol)
-    
-    # Classify based on combined features
-    if (hydroxyl_count >= 3 and 
-        (has_galloyl or (has_catechol and has_pyrogallol)) and
-        ring_count >= 2 and
-        mol_wt >= 400):
+    if ring_count < 3:
+        return False, f"Too few rings ({ring_count}) for tannin"
+
+    # Check for characteristic tannin features
+    is_hydrolyzable = (counts['galloyl'] > 0 and counts['ester'] > 0)
+    is_condensed = (counts['catechol'] + counts['pyrogallol'] >= 2) or counts['linked_flavonoid'] > 0
+    has_phenolic_groups = (counts['catechol'] + counts['pyrogallol'] + counts['galloyl'] >= 2)
+
+    if not (is_hydrolyzable or is_condensed) or not has_phenolic_groups:
+        return False, "Insufficient tannin structural features"
+
+    # Build description of features
+    features = []
+    if counts['galloyl'] > 0:
+        features.append(f"{counts['galloyl']} galloyl groups")
+    if counts['catechol'] > 0:
+        features.append(f"{counts['catechol']} catechol groups")
+    if counts['pyrogallol'] > 0:
+        features.append(f"{counts['pyrogallol']} pyrogallol groups")
+    if counts['ester'] > 0:
+        features.append(f"{counts['ester']} ester bonds")
+    if counts['linked_flavonoid'] > 0:
+        features.append("linked flavonoid units")
+
+    # Final classification
+    if ((is_hydrolyzable or is_condensed) and 
+        has_phenolic_groups and 
+        counts['hydroxyl'] >= 5 and 
+        ring_count >= 3):
         
-        features = []
-        if has_galloyl:
-            features.append(f"{galloyl_matches} galloyl groups")
-        if has_catechol:
-            features.append(f"{catechol_matches} catechol groups")
-        if has_pyrogallol:
-            features.append(f"{pyrogallol_matches} pyrogallol groups")
-        if ester_matches > 0:
-            features.append(f"{ester_matches} ester bonds")
-            
-        return True, f"Contains {hydroxyl_count} hydroxyl groups, {ring_count} rings, and {', '.join(features)}"
+        return True, f"Contains {counts['hydroxyl']} hydroxyl groups, {ring_count} rings, and {', '.join(features)}"
 
     return False, "Does not meet minimum structural requirements for tannin classification"
