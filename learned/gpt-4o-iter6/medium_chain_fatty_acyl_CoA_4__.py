@@ -15,43 +15,37 @@ def is_medium_chain_fatty_acyl_CoA_4__(smiles: str):
         bool: True if molecule is a medium-chain fatty acyl-CoA(4-), False otherwise
         str: Reason for classification
     """
-
+    
     # Parse the SMILES string into a molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for the thioester bond pattern: non-H atoms in C(=O)S
+    # Check for the thioester bond pattern C(=O)S
     thioester_pattern = Chem.MolFromSmarts("C(=O)S")
-    if thioester_pattern is None or not mol.HasSubstructMatch(thioester_pattern):
+    if not mol.HasSubstructMatch(thioester_pattern):
         return False, "No thioester bond found"
 
-    # Check for presence of CoA structure using a truncated pattern
-    coA_pattern = Chem.MolFromSmarts("NC(=O)C[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)O[C@H]1O[C@H](N)
-                                      [C@@H](O[C@H]-*)[C@@H]1OP(=O)([O-])[O-]") # CoA key pattern
-    if coA_pattern is None or not mol.HasSubstructMatch(coA_pattern):
-        return False, "No Coenzyme A structure found"
+    # Check for the CoA structure using an accurate pattern, capturing critical components
+    coA_pattern = Chem.MolFromSmarts("CCC(=O)NCCSC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)O[C@H]1O[C@H](N2C3=C(C(=NC=N3)N)N=C2)[C@@H](C1)OP(=O)([O-])[O-]")
+    if not mol.HasSubstructMatch(coA_pattern):
+        return False, "No complete Coenzyme A structure found"
 
-    # Find the fatty acyl chain length, should be between 6 and 12 carbons
-    chain_length = 0
-    for match in mol.GetSubstructMatches(thioester_pattern):
+    # Calculate the fatty acid chain length between the thioester carbonyl group and the rest of the chain
+    matches = mol.GetSubstructMatches(thioester_pattern)
+    for match in matches:
+        chain_length = 0
         for idx in range(match[-1] + 1, mol.GetNumAtoms()):
             atom = mol.GetAtomWithIdx(idx)
-            if atom.GetAtomicNum() == 6:  # carbon atom
-                chain_length += 1
-            else:
+            if atom.GetAtomicNum() != 6:  # Must be a carbon atom for chain confirmation
                 break
-    if not (6 <= chain_length <= 12):
-        return False, f"Fatty acid chain not within medium-chain length, found length {chain_length}"
+            chain_length += 1
+        if 6 <= chain_length <= 12:
+            break
+    else:
+        return False, "Fatty acid chain not within medium-chain length"
 
-    # Ensure the molecule is deprotonated to a 4- charge (using phosphate pattern count)
-    phosphate_pattern = Chem.MolFromSmarts("P(=O)([O-])([O-])")
-    phosphate_count = len(mol.GetSubstructMatches(phosphate_pattern))
-
-    if phosphate_count < 3:
-        return False, f"Insufficient deprotonated phosphate groups (expected 3-4), found {phosphate_count}"
-
-    # Validate the formal charge of the molecule
+    # Confirm the deprotonated state to carry a -4 charge
     total_charge = Descriptors.CalcFormalCharge(mol)
     if total_charge != -4:
         return False, f"Total charge is not -4, found {total_charge}"
