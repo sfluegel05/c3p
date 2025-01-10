@@ -30,43 +30,46 @@ def is_polar_amino_acid(smiles: str):
     # Add hydrogens to accurately identify functional groups
     mol = Chem.AddHs(mol)
 
-    # Look for alpha-amino acid backbone: N-C-C(=O)-O
-    amino_acid_pattern = Chem.MolFromSmarts('[N;!$(N-C=O)][C;!$(C=O)]([H,R0])[C](=O)[O;H1,H0-]')
+    # Define the amino acid backbone pattern: N-C-C(=O)-O
+    amino_acid_pattern = Chem.MolFromSmarts('[N;H1,H2][C;X4][C](=O)[O;H1,H0-]')
     matches = mol.GetSubstructMatches(amino_acid_pattern)
     if not matches:
         return False, "Molecule is not an alpha-amino acid"
 
-    # Identify the alpha carbon (the second atom in the pattern)
-    alpha_carbons = [match[1] for match in matches]
-    alpha_carbon = alpha_carbons[0]  # Assuming one amino acid per molecule
+    # Assume the first match corresponds to the amino acid backbone
+    match = matches[0]
+    n_atom_idx = match[0]
+    alpha_c_idx = match[1]
+    c_prime_idx = match[2]
+    o_atom_idx = match[3]
 
-    # Get the side chain atoms (R group)
-    atom_indices = set()
-    backbone_atoms = set()
-    backbone_atoms.update(matches[0])
+    # Identify backbone atoms
+    backbone_atoms = set(match)
 
-    # Use a breadth-first search to find all atoms connected to the alpha carbon except backbone atoms
-    to_visit = [alpha_carbon]
-    visited = set()
+    # Identify side chain atoms connected to the alpha carbon
+    side_chain_atoms = set()
+    to_visit = [alpha_c_idx]
+    visited = set(backbone_atoms)
     while to_visit:
-        atom_idx = to_visit.pop()
-        if atom_idx in visited or atom_idx in backbone_atoms:
+        current_idx = to_visit.pop()
+        if current_idx in visited:
             continue
-        visited.add(atom_idx)
-        atom = mol.GetAtomWithIdx(atom_idx)
+        visited.add(current_idx)
+        atom = mol.GetAtomWithIdx(current_idx)
         for neighbor in atom.GetNeighbors():
             neighbor_idx = neighbor.GetIdx()
-            if neighbor_idx not in backbone_atoms and neighbor_idx not in visited:
+            if neighbor_idx not in visited and neighbor_idx not in backbone_atoms:
                 to_visit.append(neighbor_idx)
-        atom_indices.add(atom_idx)
+                side_chain_atoms.add(neighbor_idx)
 
     # If there are no side chain atoms, it's glycine (non-polar)
-    if not atom_indices:
+    if not side_chain_atoms:
         return False, "Glycine has no side chain, hence non-polar"
 
     # Create side chain molecule
-    side_chain = Chem.PathToSubmol(mol, atom_indices)
-    if side_chain is None:
+    side_chain_atom_list = list(side_chain_atoms)
+    side_chain = Chem.PathToSubmol(mol, side_chain_atom_list)
+    if side_chain is None or side_chain.GetNumAtoms() == 0:
         return False, "Cannot extract side chain"
 
     # Analyze side chain for hydrogen bond donors or acceptors
