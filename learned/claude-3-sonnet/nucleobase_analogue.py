@@ -25,83 +25,70 @@ def is_nucleobase_analogue(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Basic size checks
+    # Check molecular weight - should be reasonable for a nucleobase analogue
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt > 500:
         return False, "Molecular weight too high for nucleobase analogue"
     
-    num_heavy = mol.GetNumHeavyAtoms()
-    if num_heavy > 40:  # Increased from 30 to allow for more modifications
-        return False, "Too many heavy atoms for nucleobase analogue"
-    
-    # Count atoms - made ranges more permissive
-    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
-    if n_count < 2:  # Must have at least 2 nitrogens
-        return False, "Too few nitrogen atoms for nucleobase analogue"
-    
-    # Ring analysis
-    ring_info = mol.GetRingInfo()
-    if not ring_info.NumRings():
+    # Must contain at least one ring
+    if not mol.GetRingInfo().NumRings():
         return False, "No rings found"
     
-    # Core structure patterns - made more general
-    nucleobase_cores = [
-        # Pyrimidine cores (uracil, thymine, cytosine-like)
-        # Allow for more variation in oxidation states and substitution
-        "[n,N]1[c,C][c,C][n,N][c,C][c,C]1",  # Basic pyrimidine ring
-        "[n,N]1[c,C][c,C][n,N][c,C]1",  # 5-membered variant
-        
-        # Purine cores (adenine, guanine-like)
-        # More permissive patterns that allow for modifications
-        "[n,N]1[c,C]2[n,N][c,C][n,N][c,C][c,C]2[n,N][c,C]1",  # Basic purine
-        "[n,N]1[c,C]2[n,N][c,C][n,N][c,C]2[n,N][c,C]1",  # Modified purine
-        "[n,N]1[c,C]2[n,N][n,N][c,C][c,C]2[n,N][c,C]1",  # Aza-variant
+    # Count number of nitrogen atoms - nucleobases have multiple nitrogens
+    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
+    if n_count < 2:
+        return False, "Too few nitrogen atoms"
+    
+    # Look for basic nucleobase-like patterns
+    patterns = [
+        # Pyrimidine-like pattern (uracil, thymine, cytosine)
+        "[#7]1[#6][#6][#7][#6][#6]1",
+        # Purine-like pattern (adenine, guanine)
+        "[#7]1[#6]2[#7][#6][#7][#6][#6]2[#7][#6]1",
+        # Modified pyrimidine pattern
+        "[#7]1[#6][#6][#7][#6,#7][#6]1",
+        # Modified purine pattern
+        "[#7]1[#6]2[#7][#6][#7][#6,#7][#6]2[#7][#6]1"
     ]
     
-    # Check for core structures
-    found_core = False
-    matched_core = None
-    for pattern in nucleobase_cores:
+    found_base_pattern = False
+    for pattern in patterns:
         if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
-            found_core = True
-            matched_core = pattern
+            found_base_pattern = True
             break
             
-    if not found_core:
-        return False, "No nucleobase core structure found"
+    if not found_base_pattern:
+        return False, "No nucleobase-like ring pattern found"
     
-    # Common modifications to look for
-    modifications = [
-        ("C(=O)", "carbonyl"),
-        ("N", "amino"),
-        ("O", "hydroxy"),
-        ("S", "thio"),
-        ("F,Cl,Br,I", "halogen"),
-        ("C=C", "alkene"),
-    ]
+    # Look for common functional groups in nucleobases
+    carbonyl_pattern = Chem.MolFromSmarts("[#6]=O")
+    amine_pattern = Chem.MolFromSmarts("[NX3;H2,H1;!$(NC=O)]")
+    imine_pattern = Chem.MolFromSmarts("[NX2]=[#6]")
     
-    found_mods = []
-    for pattern, mod_name in modifications:
-        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
-            found_mods.append(mod_name)
+    has_carbonyl = mol.HasSubstructMatch(carbonyl_pattern)
+    has_amine = mol.HasSubstructMatch(amine_pattern)
+    has_imine = mol.HasSubstructMatch(imine_pattern)
     
-    # Must have at least one typical nucleobase modification
-    if not found_mods:
-        return False, "Missing characteristic nucleobase modifications"
+    if not (has_carbonyl or has_amine or has_imine):
+        return False, "Missing characteristic nucleobase functional groups"
     
-    # Check for characteristic features
-    characteristic_features = [
-        ("[n,N]1[c,C]([c,C])[n,N][c,C](=O)", "pyrimidine with carbonyl"),
-        ("[n,N]1[c,C]2[n,N][c,C][n,N][c,C](N)", "purine with amino"),
-        ("[n,N]1[c,C]2[n,N][c,C][n,N][c,C](=O)", "purine with carbonyl"),
-    ]
+    # Count aromatic atoms
+    num_aromatic = sum(1 for atom in mol.GetAtoms() if atom.GetIsAromatic())
+    if num_aromatic < 3:
+        return False, "Insufficient aromatic character"
     
-    found_features = []
-    for pattern, feature_name in characteristic_features:
-        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
-            found_features.append(feature_name)
+    # Check for reasonable number of substituents
+    num_heavy_atoms = mol.GetNumHeavyAtoms()
+    if num_heavy_atoms > 30:
+        return False, "Too many heavy atoms for nucleobase analogue"
+        
+    # Success case - provide detailed reason
+    reason = "Contains nucleobase-like ring system with appropriate functional groups"
+    if has_carbonyl:
+        reason += ", carbonyl groups"
+    if has_amine:
+        reason += ", amine groups"
+    if has_imine:
+        reason += ", imine groups"
     
-    # Success case
-    core_type = "purine-like" if len(matched_core) > 30 else "pyrimidine-like"
-    mods_str = ", ".join(found_mods[:3])  # List first 3 modifications
-    return True, f"Contains {core_type} core with {mods_str} modifications"
+    return True, reason
