@@ -34,23 +34,32 @@ def is_phenylpropanoid(smiles: str):
 
     # Common phenylpropanoid substructures
     substructures = {
-        # Basic phenylpropane skeleton
-        "phenylpropane": "[$(c1ccccc1CCC),$(c1ccccc1CC=C),$(c1ccccc1C(=O)CC)]",
+        # Basic phenylpropane skeleton (more flexible)
+        "phenylpropane": "[$(c1ccccc1CCC),$(c1ccccc1CC=C),$(c1ccccc1C(=O)CC),$(c1ccccc1CCO)]",
         
-        # Coumarin core
-        "coumarin": "O=C1OC=Cc2ccccc12",
+        # Coumarin core (more general)
+        "coumarin": "[$(O=C1Oc2ccccc2C=C1),$(O=C1Oc2ccccc2CC1)]",
         
-        # Flavonoid core (includes flavones, flavanones, etc.)
-        "flavonoid": "O=C1CC(c2ccccc2)Oc2ccccc12",
+        # Chromone core
+        "chromone": "[$(O=C1C=COc2ccccc12),$(O=C1CCOc2ccccc12)]",
         
-        # Isoflavonoid core
-        "isoflavonoid": "O=C1C=C(c2ccccc2)Oc2ccccc12",
+        # Benzofuran core
+        "benzofuran": "c1ccc2occc2c1",
+        
+        # Flavonoid cores (more comprehensive)
+        "flavonoid": "[$(O=C1CC(c2ccccc2)Oc2ccccc12),$(O=C1C(c2ccccc2)=COc2ccccc12)]",
+        
+        # Isoflavonoid core (more flexible)
+        "isoflavonoid": "[$(O=C1C=C(c2ccccc2)Oc2ccccc12),$(O1C=C(c2ccccc2)C(=O)c2ccccc12)]",
         
         # Lignin building blocks (monolignols)
-        "monolignol": "[$(c1cc(O)c(O)cc1CC=CO),$(c1cc(OC)c(O)cc1CC=CO)]",
+        "monolignol": "[$(c1cc(O)c(O)cc1CC=CO),$(c1cc(OC)c(O)cc1CC=CO),$(c1cc(O)cc(OC)c1CC=CO)]",
         
         # Cinnamate derivatives
-        "cinnamate": "[$(C=CC(=O)O),$(C=CC(=O)OC)]",
+        "cinnamate": "[$(C=CC(=O)O),$(C=CC(=O)OC),$(C=CC(=O)N)]",
+        
+        # General oxygen-containing heterocycle pattern
+        "oxyheterocycle": "[$(O=C1Oc2ccccc2C=C1),$(O=C1Oc2ccccc2CC1),$(c1cc2OCOc2cc1)]"
     }
 
     # Check for any of the characteristic substructures
@@ -60,30 +69,28 @@ def is_phenylpropanoid(smiles: str):
         if pattern and mol.HasSubstructMatch(pattern):
             found_substructures.append(name)
 
-    if not found_substructures:
-        return False, "No characteristic phenylpropanoid substructures found"
-
-    # Additional checks
-    # Count aromatic rings
+    # Additional structure checks
     ring_info = mol.GetRingInfo()
     aromatic_rings = sum(1 for x in ring_info.AtomRings() 
                         if all(mol.GetAtomWithIdx(i).GetIsAromatic() for i in x))
     
-    # Count oxygen atoms (phenylpropanoids typically have oxygen-containing groups)
+    # Count oxygen atoms
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     
-    # Most phenylpropanoids have at least one oxygen
-    if o_count == 0:
-        return False, "No oxygen atoms found - unusual for phenylpropanoids"
-
     # Calculate molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    
-    # Very small molecules are unlikely to be phenylpropanoids
-    if mol_wt < 120:  # Approximate minimum weight for phenylpropanoids
-        return False, "Molecule too small to be a phenylpropanoid"
 
-    reason = f"Contains phenylpropanoid features: {', '.join(found_substructures)}. "
-    reason += f"Has {aromatic_rings} aromatic rings and {o_count} oxygen atoms."
+    # Decision logic
+    if found_substructures:
+        reason = f"Contains phenylpropanoid features: {', '.join(found_substructures)}. "
+        reason += f"Has {aromatic_rings} aromatic rings and {o_count} oxygen atoms."
+        return True, reason
     
-    return True, reason
+    # Check for complex polycyclic structures with oxygen
+    if aromatic_rings >= 2 and o_count >= 2 and mol_wt >= 250:
+        # Look for characteristic oxygen patterns in aromatic context
+        o_pattern = Chem.MolFromSmarts("[$(cOc),$(C(=O)Oc),$(COc)]")
+        if mol.HasSubstructMatch(o_pattern):
+            return True, f"Complex polycyclic structure with {aromatic_rings} aromatic rings and {o_count} oxygens in characteristic patterns"
+
+    return False, "No characteristic phenylpropanoid substructures found"
