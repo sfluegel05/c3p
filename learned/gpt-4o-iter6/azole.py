@@ -7,6 +7,7 @@ def is_azole(smiles: str):
     """
     Determines if a molecule is an azole based on its SMILES string.
     Azoles are defined as a monocyclic heteroarene consisting of a five-membered ring containing nitrogen.
+    The ring may also contain one or more other non-carbon atoms such as nitrogen, sulfur, or oxygen.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,7 +23,7 @@ def is_azole(smiles: str):
         return False, "Invalid SMILES string"
 
     # SMARTS pattern for azole ring: five-membered ring with at least one nitrogen and may include O or S
-    azole_pattern = Chem.MolFromSmarts("[#6,#7,#8,#16]1:[#6,#7,#8,#16]:[#6,#7,#8,#16]:[#6,#7,#8,#16]:[#7](:1)")
+    azole_pattern = Chem.MolFromSmarts("[n]-1[c,o,s,n]-[c,o,s,n]-[c,o,s,n]-[c,o,s,n]-1")
     
     # Check if the molecule has a substructure match with the azole pattern
     if mol.HasSubstructMatch(azole_pattern):
