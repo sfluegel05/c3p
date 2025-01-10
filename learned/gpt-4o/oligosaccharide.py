@@ -11,7 +11,7 @@ def is_oligosaccharide(smiles: str):
 
     Args:
         smiles (str): SMILES string of the molecule
-    
+
     Returns:
         bool: True if molecule is an oligosaccharide, False otherwise
         str: Reason for classification
@@ -22,23 +22,21 @@ def is_oligosaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define pyranose and furanose SMARTS pattern
-    pyranose_pattern = Chem.MolFromSmarts("OC1C(O)C(O)C(OC(O)C1)CO")
-    furanose_pattern = Chem.MolFromSmarts("OC1C(O)C(O)OC1")
-
-    # Check for multiple monosaccharide units
-    pyranose_matches = mol.GetSubstructMatches(pyranose_pattern)
-    furanose_matches = mol.GetSubstructMatches(furanose_pattern)
-    total_units = len(pyranose_matches) + len(furanose_matches)
+    # Define general monosaccharide (pyranose or furanose) SMARTS pattern
+    sugar_pattern = Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H]1O | O[C@H]1[C@@H](O)[C@H](O)[C@H]1")
+    
+    # Match monosaccharide units
+    sugar_matches = mol.GetSubstructMatches(sugar_pattern)
+    total_units = len(sugar_matches)
 
     if total_units < 2:
         return False, f"Insufficient monosaccharide units, found {total_units}"
 
-    # Check for glycosidic linkages (ether linkages between monosaccharides)
-    ether_pattern = Chem.MolFromSmarts("OCCO")
-    ether_matches = mol.GetSubstructMatches(ether_pattern)
+    # Define glycosidic linkage pattern (broader for ether linkages and some variants)
+    glycosidic_pattern = Chem.MolFromSmarts("[C;!R]-O-[C;!R]")
+    glycosidic_matches = mol.GetSubstructMatches(glycosidic_pattern)
 
-    if len(ether_matches) < total_units - 1:
-        return False, f"Insufficient glycosidic linkages for an oligosaccharide, found {len(ether_matches)}"
+    if len(glycosidic_matches) < total_units - 1:
+        return False, f"Insufficient glycosidic linkages for an oligosaccharide, found {len(glycosidic_matches)}"
 
     return True, "Molecule has multiple monosaccharide units connected by glycosidic linkages"
