@@ -26,24 +26,24 @@ def is_tetrasaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for glycosidic bonds (C-O-C)
-    glycosidic_pattern = Chem.MolFromSmarts("[CX4][OX2][CX4]")
+    # Look for glycosidic bonds (C-O-C) specific to saccharides
+    glycosidic_pattern = Chem.MolFromSmarts("[C;H1,H2][O][C;H1,H2]")
     glycosidic_matches = mol.GetSubstructMatches(glycosidic_pattern)
     if len(glycosidic_matches) < 3:
         return False, f"Found {len(glycosidic_matches)} glycosidic bonds, need at least 3 for a tetrasaccharide"
 
-    # Count the number of monosaccharide units by counting the number of rings
-    # Each monosaccharide typically forms a ring structure
-    ring_info = mol.GetRingInfo()
-    num_rings = ring_info.NumRings()
-    if num_rings < 4:
-        return False, f"Found {num_rings} rings, need at least 4 for a tetrasaccharide"
+    # Count the number of monosaccharide units by looking for characteristic patterns
+    # Each monosaccharide typically has multiple hydroxyl groups and a ring structure
+    monosaccharide_pattern = Chem.MolFromSmarts("[C;H1,H2][O][C;H1,H2]")
+    monosaccharide_matches = mol.GetSubstructMatches(monosaccharide_pattern)
+    if len(monosaccharide_matches) < 4:
+        return False, f"Found {len(monosaccharide_matches)} monosaccharide units, need at least 4 for a tetrasaccharide"
 
     # Check for the presence of multiple hydroxyl groups (OH)
     hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
     hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    if len(hydroxyl_matches) < 4:
-        return False, f"Found {len(hydroxyl_matches)} hydroxyl groups, need at least 4 for a tetrasaccharide"
+    if len(hydroxyl_matches) < 8:
+        return False, f"Found {len(hydroxyl_matches)} hydroxyl groups, need at least 8 for a tetrasaccharide"
 
     # Check molecular weight - tetrasaccharides typically have a molecular weight > 500 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
