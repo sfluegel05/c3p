@@ -26,20 +26,25 @@ def is_indole_alkaloid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define SMARTS patterns for indole ring
-    # Indole with protonated nitrogen
-    indole_nh_smarts = 'c1c[nH]c2ccccc12'
-    # Indole with substituted nitrogen
-    indole_n_smarts = 'c1cnc2ccccc12'
+    indole_patterns = [
+        'c1c2ccccc2[nH]c1',     # Indole with protonated nitrogen
+        'c1c2ccccc2nc1',        # Indole with substituted nitrogen
+        'c1nccc2ccccc12',       # Indole with nitrogen at different positions
+        'c1nc2ccccc2c1',        # Another indole variation
+        'n1c2ccccc2c[cH]c1',    # Indole with nitrogen at position 1
+        'c1c2[nH]ccc2cc1',      # Indole with fused rings
+        'c1c2nccc2cc1',         # Indole with nitrogen in different tautomer
+        'c1c2cccnc2cc1',        # Indole with nitrogen in six-membered ring
+    ]
 
-    # Create RDKit molecule objects for SMARTS patterns
-    indole_nh = Chem.MolFromSmarts(indole_nh_smarts)
-    indole_n = Chem.MolFromSmarts(indole_n_smarts)
+    # Check if molecule contains any of the indole substructures
+    for smarts in indole_patterns:
+        pattern = Chem.MolFromSmarts(smarts)
+        if mol.HasSubstructMatch(pattern):
+            return True, "Contains indole skeleton"
 
-    # Check if molecule contains indole substructure
-    if mol.HasSubstructMatch(indole_nh) or mol.HasSubstructMatch(indole_n):
-        return True, "Contains indole skeleton"
-    else:
-        return False, "No indole skeleton found"
+    # If no patterns matched
+    return False, "No indole skeleton found"
 
 __metadata__ = {
     'chemical_class': {
