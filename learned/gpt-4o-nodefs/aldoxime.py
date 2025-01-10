@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_aldoxime(smiles: str):
     """
     Determines if a molecule is an aldoxime based on its SMILES string.
-    An aldoxime contains a carbon-nitrogen double bond (C=N) and an oxygen 
-    single-bonded to hydrogen (OH group) forming part of an aldehyde's oxime.
+    An aldoxime typically contains a carbon-nitrogen double bond (C=N) 
+    and a hydroxyl group directly attached to the nitrogen (C=N-O structure).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,10 +22,10 @@ def is_aldoxime(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the SMARTS pattern for an aldoxime (R-CH=NOH)
-    aldoxime_pattern = Chem.MolFromSmarts("[#6:1]=[N:2][O:3][H]")
+    # Define a more flexible SMARTS pattern for an aldoxime, allowing for isomerism and substitution
+    aldoxime_pattern = Chem.MolFromSmarts("[#6]=[N]O")  # Highlighting that N-O follows =C
 
     if mol.HasSubstructMatch(aldoxime_pattern):
-        return True, "Contains the characteristic C=N-OH structure of aldoximes"
+        return True, "Contains the characteristic C=N-O structure of aldoximes"
     
-    return False, "Does not contain the characteristic C=N-OH structure of aldoximes"
+    return False, "Does not contain the characteristic C=N-O structure of aldoximes"
