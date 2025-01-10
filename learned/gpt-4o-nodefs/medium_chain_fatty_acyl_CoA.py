@@ -2,6 +2,7 @@
 Classifies: CHEBI:61907 medium-chain fatty acyl-CoA
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_medium_chain_fatty_acyl_CoA(smiles: str):
     """
@@ -19,32 +20,32 @@ def is_medium_chain_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Coenzyme A moiety pattern
-    coa_pattern = (
-        "[C@H](COP(O)(=O)OP(O)(O)=O)C(O)[C@H]1O[C@H](n2cnc3c(N)ncnc32)[C@H](O)[C@H]1O"
-    )
-    coa_mol = Chem.MolFromSmarts(coa_pattern)
-    if not mol.HasSubstructMatch(coa_mol):
+    # Improved Coenzyme A moiety pattern
+    # A wide-capturing SMARTS for the CoA moiety
+    coa_pattern = Chem.MolFromSmarts("NC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)([O-])=O")
+    if not mol.HasSubstructMatch(coa_pattern):
         return False, "No CoA moiety found"
 
     # Thioester bond pattern
-    thioester_pattern = "C(=O)SC"
-    thioester_mol = Chem.MolFromSmarts(thioester_pattern)
-    if not mol.HasSubstructMatch(thioester_mol):
+    thioester_pattern = Chem.MolFromSmarts("C(=O)SCC")
+    if not mol.HasSubstructMatch(thioester_pattern):
         return False, "No thioester linkage found"
 
-    # Identify the fatty acyl chain
-    carbon_chain_pattern = Chem.MolFromSmarts("[*]CCCC[*]")  # Broad definition to catch various carbon chain lengths
-    carbon_chain_matches = mol.GetSubstructMatches(carbon_chain_pattern)
+    # Get Thioester Group and Attached Acyl Chain
+    # Consider all carbon chains attached to the C=O-S group
+    thioester_matches = mol.GetSubstructMatches(thioester_pattern)
     
-    # Calculate the length of the carbon chains
-    chain_lengths = [
-        sum(1 for atom in match if mol.GetAtomWithIdx(atom).GetAtomicNum() == 6)
-        for match in carbon_chain_matches
-    ]
-    
-    # Check if it contains a medium chain (6-12 carbons)
-    if any(6 <= length <= 12 for length in chain_lengths):
+    # Identifying Acyl Chains
+    acyl_chain_lengths = []
+    for match in thioester_matches:
+        atom_idx = match[0]  # Starting from the carbon in C(=O)
+        acyl_chain = Chem.FragmentOnBonds(mol, [atom_idx])
+        acyl_atoms = [atom for atom in acyl_chain.GetAtoms() if atom.GetAtomicNum() == 6]
+        acyl_length = len(acyl_atoms)
+        acyl_chain_lengths.append(acyl_length)
+
+    # Check if there is any medium chain (6-12 carbons) acyl component
+    if any(6 <= length <= 12 for length in acyl_chain_lengths):
         return True, "Contains a CoA moiety with medium-chain fatty acyl group"
-    
+
     return False, "Fatty acyl chain not of medium length"
