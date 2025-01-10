@@ -29,22 +29,7 @@ def is_cyclic_fatty_acid(smiles: str):
     num_rings = rdMolDescriptors.CalcNumRings(mol)
     if num_rings == 0:
         return False, "No rings found in structure"
-    if num_rings > 5:
-        return False, "Too many rings for a typical fatty acid"
         
-    # Count atoms
-    num_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    num_nitrogens = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
-    num_oxygens = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    
-    # Check atom ratios
-    if num_nitrogens > 1:
-        return False, "Too many nitrogens for a fatty acid"
-    if num_oxygens > 4:
-        return False, "Too many oxygens for a typical fatty acid"
-    if num_carbons < 8:
-        return False, "Too few carbons for a fatty acid"
-    
     # Check for carboxylic acid group
     carboxylic_acid = Chem.MolFromSmarts('[CX3](=O)[OX2H1]')
     if not mol.HasSubstructMatch(carboxylic_acid):
@@ -60,18 +45,39 @@ def is_cyclic_fatty_acid(smiles: str):
     if any(size < 3 for size in ring_sizes):
         return False, "Ring size too small to be stable"
     
+    # Count atoms
+    num_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    
+    if num_carbons < 8:
+        return False, "Too few carbons for a fatty acid"
+        
+    # Check for long carbon chain characteristic of fatty acids
+    # Look for chain of at least 4 carbons attached to carboxylic acid
+    fatty_chain = Chem.MolFromSmarts('[CX3](=O)[OX2H1]-[#6]-[#6]-[#6]-[#6]')
+    if not mol.HasSubstructMatch(fatty_chain):
+        return False, "No characteristic fatty acid chain found"
+    
+    # Improved steroid detection
+    steroid_patterns = [
+        '[C]1[C][C]2[C][C][C]3[C]([C]2)[C][C][C]4[C]3([C][C][C]4)[C]1', # Basic steroid
+        '[C]1[C][C]2[C][C][C]3[C]4[C][C][C][C]4[C][C][C]3[C]2[C][C]1',  # Alternative steroid
+        '[C]1[C][C]2[C][C][C]3[C]([C]2)[C][C][C]4[C]3[C][C][C][C]4[C]1' # Another variant
+    ]
+    
+    for pattern in steroid_patterns:
+        steroid = Chem.MolFromSmarts(pattern)
+        if mol.HasSubstructMatch(steroid):
+            return False, "Steroid-like structure detected"
+    
     # Count aromatic rings
     num_aromatic_rings = sum(1 for ring in ring_info.AtomRings() 
                             if all(mol.GetAtomWithIdx(i).GetIsAromatic() for i in ring))
     
-    if num_aromatic_rings > 1:
-        return False, "Too many aromatic rings for a typical fatty acid"
+    # If structure is purely aromatic with just one carboxylic acid, it's probably not a fatty acid
+    if num_aromatic_rings == len(ring_sizes) and len(mol.GetSubstructMatches(carboxylic_acid)) == 1:
+        if num_carbons < 15:  # Unless it's a large structure
+            return False, "Simple aromatic acid rather than cyclic fatty acid"
     
-    # Check for common non-fatty acid structures
-    steroid_pattern = Chem.MolFromSmarts('C1CC2CCC3C(C2)CCC4C3(CCC4)C1')
-    if mol.HasSubstructMatch(steroid_pattern):
-        return False, "Steroid-like structure detected"
-        
     # Compile ring description
     ring_desc = []
     for size in sorted(set(ring_sizes)):
@@ -85,4 +91,4 @@ def is_cyclic_fatty_acid(smiles: str):
     if num_aromatic_rings > 0 and num_aromatic_rings < len(ring_sizes):
         ring_type = "mixed aromatic and aliphatic"
     
-    return True, f"Contains {ring_details} ({ring_type}) and a carboxylic acid group"
+    return True, f"Contains {ring_details} ({ring_type}) and a carboxylic acid group with fatty acid chain"
