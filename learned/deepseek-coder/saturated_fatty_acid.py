@@ -26,14 +26,14 @@ def is_saturated_fatty_acid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for carboxylic acid group (including deprotonated form)
-    carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H0-,OX1H1]")
+    carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1,OX1H0-]")
     if carboxylic_acid_pattern is None:
         return False, "Invalid SMARTS pattern for carboxylic acid"
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
 
-    # Check for unsaturation (double or triple bonds)
-    unsaturated_pattern = Chem.MolFromSmarts("[!$(*#*)&!$(*=*)]")
+    # Check for unsaturation (double or triple bonds in the carbon chain)
+    unsaturated_pattern = Chem.MolFromSmarts("[C,c]=,#[C,c]")
     if unsaturated_pattern is None:
         return False, "Invalid SMARTS pattern for unsaturation"
     if mol.HasSubstructMatch(unsaturated_pattern):
