@@ -27,58 +27,53 @@ def is_N_acylsphingosine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for key structural features:
-    
-    # 1. Amide group (N-C(=O)-) - more general pattern
-    amide_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[#6]")
-    if not mol.HasSubstructMatch(amide_pattern):
-        return False, "No amide group found"
-    
-    # 2. Core sphingosine structure with flexibility for stereochemistry
-    # [CH2OH]-[CH]-[NH]-[C]=O backbone with nearby OH and double bond
-    sphingosine_core = Chem.MolFromSmarts("[CH2][OH].[CH]([NH])[CH]([OH])*.*=*")
+    # Check for glycosidic bonds - exclude glycosylated ceramides
+    glycosidic = Chem.MolFromSmarts("[OX2]([#6])[#6;R]")
+    if mol.HasSubstructMatch(glycosidic):
+        return False, "Contains glycosidic bonds - likely a glycosylated ceramide"
+
+    # More specific sphingosine core pattern including the double bond position
+    # [CH2OH]-[CH]-[NH]-C(=O) with OH and double bond in specific positions
+    sphingosine_core = Chem.MolFromSmarts("[CH2][OH]-[CH]([NH][C]=[O])-[CH]([OH])-[CH]=[CH]")
     if not mol.HasSubstructMatch(sphingosine_core):
-        return False, "Missing core sphingosine structure"
+        return False, "Missing specific sphingosine core structure"
 
-    # 3. Check for required functional groups
-    
-    # Primary alcohol (CH2-OH)
-    primary_alcohol = Chem.MolFromSmarts("[CH2][OH]")
-    if not mol.HasSubstructMatch(primary_alcohol):
-        return False, "Missing primary alcohol group"
-    
-    # Secondary alcohol
-    secondary_alcohol = Chem.MolFromSmarts("[CH]([#6])[OH]")
-    if not mol.HasSubstructMatch(secondary_alcohol):
-        return False, "Missing secondary alcohol group"
-    
-    # Double bond in chain
-    alkene = Chem.MolFromSmarts("C=C")
-    if not mol.HasSubstructMatch(alkene):
-        return False, "Missing double bond"
+    # Check for amide group with proper context
+    amide_pattern = Chem.MolFromSmarts("[NX3H]([CX4])[CX3](=[OX1])[#6]")
+    if not mol.HasSubstructMatch(amide_pattern):
+        return False, "No properly connected amide group found"
 
-    # Count carbons and check molecular weight
+    # Count carbons in longest chain from amide
+    long_chain = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[#6][#6][#6][#6][#6][#6]")
+    if not mol.HasSubstructMatch(long_chain):
+        return False, "N-acyl chain too short"
+
+    # Basic element counts
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 16:  # Minimum for basic N-acylsphingosine
-        return False, "Carbon count too low for N-acylsphingosine"
-    
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 250:
-        return False, "Molecular weight too low for N-acylsphingosine"
-
-    # Count nitrogens - should have exactly one (in the amide)
-    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
-    if n_count != 1:
-        return False, f"Should have exactly 1 nitrogen, found {n_count}"
-
-    # Count oxygens - should have at least 3 (2 OH groups + 1 C=O)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
+    
+    if c_count < 16:
+        return False, "Carbon count too low for N-acylsphingosine"
     if o_count < 3:
-        return False, "Insufficient oxygen count for N-acylsphingosine"
+        return False, "Insufficient oxygen count"
+    
+    # Allow for some nitrogen-containing modifications if core structure is intact
+    if n_count > 5:
+        return False, "Too many nitrogens for N-acylsphingosine"
 
-    # Verify long chain nature
+    # Check for phosphate groups that might indicate complex derivatives
+    phosphate = Chem.MolFromSmarts("[P](=[O])([O,N])[O,N]")
+    if mol.HasSubstructMatch(phosphate):
+        return False, "Contains phosphate group - likely a complex derivative"
+
+    # Verify aliphatic nature and chain length
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
     if n_rotatable < 5:
         return False, "Too few rotatable bonds for N-acylsphingosine structure"
 
-    return True, "Contains sphingosine backbone with N-acyl group and characteristic structural features"
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 250 or mol_wt > 1000:
+        return False, "Molecular weight outside expected range"
+
+    return True, "Contains characteristic N-acylsphingosine structure with proper backbone and N-acyl chain"
