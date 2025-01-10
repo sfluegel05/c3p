@@ -28,7 +28,7 @@ def is_mineral(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for the presence of metal ions (common in minerals)
-    metal_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() in [3, 11, 12, 13, 19, 20, 26, 29, 30, 38, 56, 82]]
+    metal_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() in [3, 11, 12, 13, 19, 20, 22, 24, 25, 26, 27, 28, 29, 30, 38, 40, 42, 47, 50, 56, 74, 78, 79, 80, 82, 83, 88, 92]]
     if not metal_atoms:
         return False, "No metal ions found, which are common in minerals"
 
@@ -41,6 +41,7 @@ def is_mineral(smiles: str):
     sulfate_pattern = Chem.MolFromSmarts("[O-]S(=O)(=O)[O-]")
     carbonate_pattern = Chem.MolFromSmarts("[O-]C(=O)[O-]")
     phosphate_pattern = Chem.MolFromSmarts("[O-]P(=O)([O-])[O-]")
+    silicate_pattern = Chem.MolFromSmarts("[O-][Si]([O-])([O-])[O-]")
     
     if mol.HasSubstructMatch(sulfate_pattern):
         return True, "Contains sulfate group, common in minerals"
@@ -48,6 +49,8 @@ def is_mineral(smiles: str):
         return True, "Contains carbonate group, common in minerals"
     if mol.HasSubstructMatch(phosphate_pattern):
         return True, "Contains phosphate group, common in minerals"
+    if mol.HasSubstructMatch(silicate_pattern):
+        return True, "Contains silicate group, common in minerals"
 
     # Check for simple salts (e.g., NaCl, KCl)
     if len(mol.GetAtoms()) <= 3:
@@ -58,13 +61,8 @@ def is_mineral(smiles: str):
     if mol.HasSubstructMatch(hydrate_pattern):
         return True, "Contains water of hydration, common in minerals"
 
-    # Check for complex inorganic structures (e.g., silicates)
-    silicate_pattern = Chem.MolFromSmarts("[O-][Si]([O-])([O-])[O-]")
-    if mol.HasSubstructMatch(silicate_pattern):
-        return True, "Contains silicate group, common in minerals"
-
-    # If none of the above patterns match, return None
-    return None, "Does not match common mineral patterns"
+    # If none of the above patterns match, return False
+    return False, "Does not match common mineral patterns"
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:46662',
                           'name': 'mineral',
