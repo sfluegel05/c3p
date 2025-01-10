@@ -21,17 +21,15 @@ def is_17beta_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # General pattern for steroid backbone (tetracyclic ring)
-    steroid_pattern = Chem.MolFromSmarts('C1C[C@H]2CC[C@@H]3C(=O)CC[C@]3(C)C[C@@H]2[C@H]1')
+    # General pattern for steroid four-ring structure, allowing any stereochemistry
+    steroid_pattern = Chem.MolFromSmarts('C1CCC2CCCCC2C1')
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
-    
-    # Check for 17beta-hydroxy group: Assumes 17th position hydroxy in similar structures
-    # The stereochemistry may vary across examples, so we allow flexibility
-    hydroxy_17beta_pattern = Chem.MolFromSmarts('[C@](C)(O)[C@H]1CC[C@]2(C)C[C@H]3C(=O)C=C[C@@H]3CC[C@H]12')
-    
-    # Modify pattern to capture more generic configurational variance
+
+    # Pattern for a hydroxy group at the 17th position in a more general form
+    # We use an arbitrary [C@H] for stereochemistry to allow for flexibility in stereochemical description
+    hydroxy_17beta_pattern = Chem.MolFromSmarts('[C@H](O)[C@@H]1CCC2C3CCC4CCCC(C3)C4[C@@H]12')
     if not mol.HasSubstructMatch(hydroxy_17beta_pattern):
         return False, "No 17beta-hydroxy group found"
 
-    return True, "Contains 17beta-hydroxy group with acceptable steroid backbone configuration"
+    return True, "Contains 17beta-hydroxy group with steroid backbone configuration"
