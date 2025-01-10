@@ -31,19 +31,15 @@ def is_straight_chain_saturated_fatty_acid(smiles: str):
         return False, "No carboxylic acid group found"
 
     # Check for unsaturation (double/triple bonds)
-    # Using rdMolDescriptors.CalcNumAliphaticRings to check for unsaturation
-    if rdMolDescriptors.CalcNumAliphaticRings(mol) > 0:
-        return False, "Molecule contains double or triple bonds (unsaturated)"
+    for bond in mol.GetBonds():
+        if bond.GetBondType() not in [Chem.BondType.SINGLE, Chem.BondType.AROMATIC]:
+            return False, "Molecule contains double or triple bonds (unsaturated)"
 
-    # Check for branching (number of non-terminal carbons with >2 connections)
-    branch_pattern = Chem.MolFromSmarts("[CX4;H0,H1,H2]")
-    branch_matches = mol.GetSubstructMatches(branch_pattern)
-    if len(branch_matches) > 0:
-        return False, "Molecule contains branches (not a straight chain)"
-
-    # Check for rings
-    if mol.GetRingInfo().NumRings() > 0:
-        return False, "Molecule contains rings"
+    # Check for branching in the carbon chain
+    # We look for carbons connected to more than 2 other carbons
+    carbon_chain_branch_pattern = Chem.MolFromSmarts("[CX4;H0,H1,H2]([CX4])([CX4])[CX4]")
+    if mol.HasSubstructMatch(carbon_chain_branch_pattern):
+        return False, "Molecule contains branches in the carbon chain"
 
     # Check carbon chain length (at least 4 carbons)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
