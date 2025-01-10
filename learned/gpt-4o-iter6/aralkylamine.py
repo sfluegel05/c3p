@@ -22,14 +22,14 @@ def is_aralkylamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for primary, secondary, or tertiary amine not part of an amide
+    # Look for a primary, secondary, or tertiary amine not part of an amide
     amine_pattern = Chem.MolFromSmarts("[NX3;H2,H1,H0;!$([NX3][C]=O)]")
     if not mol.HasSubstructMatch(amine_pattern):
         return False, "No amine group found"
     
-    # Check for an aromatic-carbon connected to an alkyl chain
-    connected_amine_pattern = Chem.MolFromSmarts("[NX3;H2,H1,H0;!$([NX3][C]=O)]~[CX4,CH,CH2]~c") 
-    if not mol.HasSubstructMatch(connected_amine_pattern):
+    # Check for an aromatic group connected to an alkyl chain (with an amine)
+    aralkylamine_pattern = Chem.MolFromSmarts("[c]~[CX4,CH,CH2]~[NX3;H2,H1,H0;!$([NX3][C]=O)]") 
+    if not mol.HasSubstructMatch(aralkylamine_pattern):
         return False, "No aralkylamine feature found"
 
     return True, "Contains alkylamine group with aromatic substitution"
