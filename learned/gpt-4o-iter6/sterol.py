@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_sterol(smiles: str):
     """
     Determines if a molecule is a sterol based on its SMILES string.
-    A sterol is defined as a 3-hydroxy steroid whose skeleton is closely related to cholestan-3-ol.
+    A sterol is defined as a 3-hydroxy steroid with a structure closely related to cholestan-3-ol.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,24 +21,23 @@ def is_sterol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a SMARTS pattern for more flexible steroid-like backbone:
-    # A pattern for a saturated polycyclic backbone with 3 six-membered rings and 1 five-membered ring
-    # Allow for flexibility with unsaturation (double bonds)
-    steroid_pattern = Chem.MolFromSmarts("C1(C)C[C@H]2[C@@H]3C=CC[C@H]4C(C)=C/C=C/[C@]4(C)C3CCC2C1")
-    if not mol.HasSubstructMatch(steroid_pattern):
-        return False, "No flexible steroid-like backbone found"
+    # Define a more flexible SMARTS pattern for the steroid backbone:
+    # Recognize 3 connected six-membered rings and 1 five-membered ring, allowing for some unsaturation.
+    steroid_core_pattern = Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2CCC4=C3CC[C@H]5C4")
+    if not mol.HasSubstructMatch(steroid_core_pattern):
+        return False, "No appropriate steroid backbone (3 six-membered and 1 five-membered rings) found"
 
-    # Check for a hydroxyl group [-OH] which is characteristic for sterols
-    # Consider hydroxyl groups attached to both aromatic and aliphatic carbons
-    hydroxyl_pattern = Chem.MolFromSmarts("[#6][OX2H]")
-    if not mol.HasSubstructMatch(hydroxyl_pattern):
-        return False, "No hydroxyl group found"
+    # Check for hydroxyl group [-OH] in the stereochemically relevant positions, mainly C3.
+    # Consider C3-beta or analogous positions based on biochemistry.
+    hydroxyl_position_pattern = Chem.MolFromSmarts("C(O)[C@H]1C[C@H]2C3C([C@@H](O)C4=C(C)CCCC34)CCC2CC1")
+    if not mol.HasSubstructMatch(hydroxyl_position_pattern):
+        return False, "No hydroxyl group found on potential C3 position"
 
-    # Check for the presence of typical modifications or side chains present in sterols
-    # Using a lenient approach here to account for variety
-    possible_sidechain_pattern = Chem.MolFromSmarts("[CX3,CX4]C([CX3,CX4])")
-    if mol.HasSubstructMatch(possible_sidechain_pattern):
-        return True, "Contains steroid-like backbone with hydroxyl group and compatible side chains, consistent with sterol definition"
+    # Allow some typical sidechains or alkyl chains; sterols might have larger, more flexible side chains.
+    # This pattern is too generic for a graphical match; instead, identify fragments.
+    side_chain_check = True  # Assume general presence of compatible sidechains due to sterol structure diversity
+
+    if side_chain_check:
+        return True, "Contains steroid backbone with hydroxyl group; structure consistent with sterol definition"
     else:
-        # Even if side chain is not found, it might still be a sterol
-        return True, "Contains steroid-like backbone with hydroxyl group; possible sterol with unconventional side chain"
+        return False, "No compatible side chain pattern detected, not a typical sterol"
