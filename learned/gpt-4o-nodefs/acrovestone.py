@@ -24,19 +24,22 @@ def is_acrovestone(smiles: str):
     
     # Expanded pattern for isoflavone core (4H-chromen-4-one derivatives)
     isoflavone_patterns = [
-        Chem.MolFromSmarts("O=C1C=C(O)C2=CC=CC=C2C1C"),  # main flavone pattern
-        Chem.MolFromSmarts("O=C1C=C(O)C=CC=C2C1=CC=CC2") # more generic isoflavone structure
+        Chem.MolFromSmarts("O=C1C2=C(OC=C1)C=CC=C2"),  # Standard chromen structure
+        Chem.MolFromSmarts("C1=C2C(=O)C=CC=C2C=CC2=C1C=CC=C2"),  # Extended aromatic forms
+        Chem.MolFromSmarts("O=C1C=CC2=CC=C(O)C=C2O1"),  # More generic isoflavone structures
+        # Add more extensive patterns if necessary
     ]
 
     # Ensure the presence of one isoflavone core structure 
     if not any(mol.HasSubstructMatch(pat) for pat in isoflavone_patterns):
         return False, "No isoflavone core structure found"
     
-    # Check for glycosidic patterns (Generic pattern including potential O-glycosidic  bonds)
+    # Check for glycosidic patterns (Generic pattern including potential O-glycosidic bonds)
     glycoside_patterns = [
-        Chem.MolFromSmarts("O[C@H]1[C@@H]([C@H](O)[C@@H](O)[C@H]1O)"),  # Polyol Ring
-        Chem.MolFromSmarts("O[C@H]1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1O)")  # Variations of glycosides
-        # Add patterns for common sugar attachments- both linear and cyclic forms
+        Chem.MolFromSmarts("COC1C(O)C(O)C(O)C(O)C1O"),  # Common glucose ring
+        Chem.MolFromSmarts("COC1C(C(O)C(C(C1O)O)O)O"),  # Rhamnose or other sugar variants
+        Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H]1O"),  # Generic glycoside with stereochemistry
+        # Additional saccharide attachments
     ]
     
     # Verify a matching glycosidic pattern
