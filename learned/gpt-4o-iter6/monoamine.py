@@ -20,18 +20,13 @@ def is_monoamine(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return None, "Invalid SMILES string"
 
-    # Updated SMARTS patterns for an amino group connected to an aromatic system
-    # Primary amine SMARTS: N([H])(H)
-    two_carbon_amino_pattern_primary = Chem.MolFromSmarts("[NX3;H2]-[CH2]-[CH2]-[c]") 
-    # Include patterns for secondary amines
-    two_carbon_amino_pattern_secondary = Chem.MolFromSmarts("[NX3;H1]-[CH2]-[CH2]-[c]") 
+    # Update SMARTS pattern: Detect primary or secondary amine connected to a two-carbon chain leading to an aromatic ring
+    two_carbon_amino_pattern = Chem.MolFromSmarts("[NX3;R0]-[CH2]-[CH2]-[c]")  # 'c' is lowercase to ensure it's aromatic
+    
+    # Check for a two-carbon chain with amino group connected to an aromatic system
+    if mol.HasSubstructMatch(two_carbon_amino_pattern):
+        return True, "Contains an amino group connected to aromatic ring by a two-carbon chain"
 
-    # Check for two-carbon chain with amino group connected to aromatic system
-    if mol.HasSubstructMatch(two_carbon_amino_pattern_primary):
-        return True, "Contains primary amino group connected to aromatic ring by a two-carbon chain"
-    elif mol.HasSubstructMatch(two_carbon_amino_pattern_secondary):
-        return True, "Contains secondary amino group connected to aromatic ring by a two-carbon chain"
-
-    return False, "Missing two-carbon chain with amino group connected to an aromatic ring"
+    return False, "Missing correct structure configuration for monoamine classification"
