@@ -25,7 +25,7 @@ def is_beta_carbolines(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more flexible beta-carboline core structure pattern
+    # Define a flexible beta-carboline core structure pattern
     # This pattern accounts for substitutions and hydrogenations
     beta_carboline_pattern = Chem.MolFromSmarts("[nX2]1c2ccccc2c3c1cc[nX2,cX3]3")
     
@@ -39,10 +39,15 @@ def is_beta_carbolines(smiles: str):
     if mol.HasSubstructMatch(hydrogenated_pattern):
         return True, "Contains a hydrogenated beta-carboline core structure"
     
-    # Define a pattern for more complex structures with additional rings
+    # Define a pattern for more complex structures with additional rings or substitutions
     complex_pattern = Chem.MolFromSmarts("[nX2]1c2ccccc2c3c1cc[nX2,cX3]3~*")
     if mol.HasSubstructMatch(complex_pattern):
         return True, "Contains a complex beta-carboline core structure with additional rings or substitutions"
+    
+    # Define a pattern for fully hydrogenated beta-carboline derivatives
+    fully_hydrogenated_pattern = Chem.MolFromSmarts("[nX2]1c2cccc[cX3,cX2]2c3c1cc[nX2,cX3]3")
+    if mol.HasSubstructMatch(fully_hydrogenated_pattern):
+        return True, "Contains a fully hydrogenated beta-carboline core structure"
     
     # If no match is found, return False
     return False, "No beta-carboline core structure found"
