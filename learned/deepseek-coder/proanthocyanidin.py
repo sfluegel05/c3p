@@ -27,7 +27,7 @@ def is_proanthocyanidin(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define a more flexible hydroxyflavan pattern
-    hydroxyflavan_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]([OX2])[cX3]1[cX3][cX3][cX3][cX3][cX3]1")
+    hydroxyflavan_pattern = Chem.MolFromSmarts("[cX3]1[cX3][cX3][cX3][cX3][cX3]1[C@@H]2[C@H](O)[C@H](O)[C@H](O)[C@H](O2)")
     if not mol.HasSubstructMatch(hydroxyflavan_pattern):
         return False, "No hydroxyflavan unit found"
 
