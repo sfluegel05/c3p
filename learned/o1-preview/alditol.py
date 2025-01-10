@@ -6,7 +6,6 @@ Classifies: CHEBI:18385 alditol
 """
 
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_alditol(smiles: str):
     """
@@ -26,55 +25,28 @@ def is_alditol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check if the molecule is acyclic
-    if mol.GetRingInfo().NumRings() > 0:
-        return False, "Molecule is cyclic"
+    # Remove the check for cyclic molecules to allow alditol chains within larger structures
+    # Define the maximum length of the alditol chain to search for
+    max_n = 10  # Adjust as needed
 
-    # Get all carbon atoms in the molecule
-    carbons = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
-    if len(carbons) == 0:
-        return False, "No carbon atoms found"
+    # Initialize a flag to indicate if an alditol chain is found
+    alditol_found = False
 
-    # Find the main carbon chain (ignore branches for now)
-    paths = Chem.rdmolops.FindAllPathsOfLengthN(mol, len(carbons), useBonds=False)
-    if not paths:
-        return False, "No continuous carbon chain found"
+    # Try matching alditol chains of varying lengths
+    for n in range(1, max_n + 1):  # n is the number of internal CH(OH) units
+        # Build the SMARTS pattern for the alditol chain
+        chain = '-'.join(['[C@H](O)'] * n)
+        pattern_str = f'[OH]-[CH2]-{chain}-[CH2]-[OH]'
+        pattern = Chem.MolFromSmarts(pattern_str)
+        if pattern is None:
+            continue  # Skip invalid patterns
 
-    # Choose the longest carbon chain
-    max_path = max(paths, key=lambda p: len(p))
-    chain_atoms = [mol.GetAtomWithIdx(idx) for idx in max_path]
+        # Search for the pattern in the molecule
+        matches = mol.GetSubstructMatches(pattern)
+        if matches:
+            alditol_found = True
+            return True, f"Molecule contains an alditol chain of length {n + 2} carbons"
 
-    # Check terminal carbons for CH2OH groups
-    termini = [chain_atoms[0], chain_atoms[-1]]
-    for term_atom in termini:
-        # Terminal carbon should be connected to CH2OH
-        neighbors = term_atom.GetNeighbors()
-        oxygen_neighbors = [nbr for nbr in neighbors if nbr.GetAtomicNum() == 8]
-        if len(oxygen_neighbors) != 1:
-            return False, "Terminal carbon does not have an -OH group"
-        # Check that terminal carbon is connected to two hydrogens
-        if term_atom.GetTotalNumHs() != 2:
-            return False, "Terminal carbon does not have two hydrogens"
-
-    # Check internal carbons
-    for atom in chain_atoms[1:-1]:
-        # Internal carbons should be connected to one -OH and one hydrogen
-        neighbors = atom.GetNeighbors()
-        oxygen_neighbors = [nbr for nbr in neighbors if nbr.GetAtomicNum() == 8]
-        if len(oxygen_neighbors) != 1:
-            return False, "Internal carbon does not have exactly one -OH group"
-        # Check that internal carbon is connected to one hydrogen
-        if atom.GetTotalNumHs() != 1:
-            return False, "Internal carbon does not have one hydrogen"
-
-    # Ensure there are no other functional groups
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() not in [6, 8, 1]:  # C, O, H
-            return False, "Molecule contains atoms other than C, O, and H"
-        if atom.GetAtomicNum() == 8:
-            # Oxygen atoms should be attached to hydrogen (hydroxyl groups)
-            neighbors = atom.GetNeighbors()
-            if len(neighbors) != 1 or neighbors[0].GetAtomicNum() != 1:
-                return False, "Oxygen atom is not part of a hydroxyl group"
-
-    return True, "Molecule is an alditol with the general formula HOCH2[CH(OH)]nCH2OH"
+    # If no alditol chain is found
+    if not alditol_found:
+        return False, "Molecule does not contain an alditol chain"
