@@ -19,13 +19,16 @@ def is_guaiacols(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return (None, "Invalid SMILES string")
+        return False, "Invalid SMILES string"
 
-    # Updated SMARTS pattern for ortho-methoxyphenol
-    guaiacol_pattern_ortho = Chem.MolFromSmarts('c1c(OC)ccc(O)c1')
+    # Look for phenol pattern: benzene ring with an -OH group
+    phenol_pattern = Chem.MolFromSmarts('c1cc(O)ccc1')
+    if not mol.HasSubstructMatch(phenol_pattern):
+        return False, "No phenol group found"
 
-    # Match for the ortho methoxy group pattern
-    if mol.HasSubstructMatch(guaiacol_pattern_ortho):
-        return (True, "Molecule is classified as a guaiacol: contains phenol with ortho-position methoxy group")
-    
-    return (False, "Molecule lacks the specific ortho-methoxyphenol structure")
+    # Look for ortho-methoxy pattern: methoxy at ortho position to -OH group
+    guaiacol_pattern = Chem.MolFromSmarts('c1cc(OC)c(O)cc1')
+    if not mol.HasSubstructMatch(guaiacol_pattern):
+        return False, "No ortho-methoxy group found"
+
+    return True, "Molecule is classified as a guaiacol: contains phenol with ortho-position methoxy group"
