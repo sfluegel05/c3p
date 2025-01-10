@@ -21,15 +21,13 @@ def is_butyrate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Butyric acid ester linkage pattern
-    # The pattern allows for variations by considering potential isomers and flexibility in the ester component
-    # Match a C3 or longer chain following "CCC(=O)O" that allows for alkyl or aryl variations following the ester group
-    pat1 = Chem.MolFromSmarts("CCC(=O)OC")
-    pat2 = Chem.MolFromSmarts("C[CH](C)C(=O)O")  # Including possible isomers like isobutyrate
-    pat3 = Chem.MolFromSmarts("CC(C)C(=O)O")     # Including tert-butyrate
+    # Define a more comprehensive pattern for butyrate ester
+    # Target 'CCC(=O)O' for the butyric acid part with flexibly integrated esters (alkyl/aryl)
+    # Extend search to match potential substituent variations and longer tail chains
+    butyrate_pattern = Chem.MolFromSmarts("[$([CH3]C(=O)O),$([CH2]CC(=O)O),$([CH2][CH2]C(=O)O)]")
 
-    # Check for match with any defined pattern
-    if mol.HasSubstructMatch(pat1) or mol.HasSubstructMatch(pat2) or mol.HasSubstructMatch(pat3):
+    # Check for presence of butyric acid ester component
+    if mol.HasSubstructMatch(butyrate_pattern):
         return True, "Contains butyric acid ester linkage"
 
     return False, "No butyric acid ester linkage found"
