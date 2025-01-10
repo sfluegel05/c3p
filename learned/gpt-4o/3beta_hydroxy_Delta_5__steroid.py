@@ -16,28 +16,25 @@ def is_3beta_hydroxy_Delta_5__steroid(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
+    # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # General SMARTS pattern for 3beta-hydroxy group
-    hydroxy_pattern = Chem.MolFromSmarts("[C@@H](O)[C;R1]")  # A 3beta-hydroxy group on a cyclic structure
+    # Define SMARTS patterns
+    ## More precise pattern for 3beta-hydroxy
+    hydroxy_beta_pattern = Chem.MolFromSmarts("[C@@H]([O])[C;R1]")
     
-    # General SMARTS pattern for Delta(5) double bond in steroid
-    delta5_pattern = Chem.MolFromSmarts("C=C[C;R]")  # A double bond in a cyclic structure
-
+    ## Properly specify Delta(5) double bond in steroid context
+    # it usually involves specific connectivity
+    delta5_specific_pattern = Chem.MolFromSmarts("C1[C@@]2(C=C[C@@H]3)C[C@@H](C)(CCC3)CC2C(C1)O")  # generalization
+    
     # Check for 3beta-hydroxy group
-    if not mol.HasSubstructMatch(hydroxy_pattern):
+    if not mol.HasSubstructMatch(hydroxy_beta_pattern):
         return False, "No 3beta-hydroxy group found"
     
-    # Check for Delta(5) double bond
-    # We manually check by identifying positions between rings where double bonds occur
-    carbon_bond_info = [(bond.GetBeginAtomIdx(), bond.GetEndAtomIdx())
-                        for bond in mol.GetBonds() if bond.GetBondTypeAsDouble() == 2.0]
-    delta_5_present = any((5 in pair and 6 in pair) or (pair == sorted(pair)[::-1] and all(5 <= idx < 7 for idx in pair)) for pair in carbon_bond_info)
-
-    if not delta_5_present:
+    # Check for Delta(5) double bond match
+    if not mol.HasSubstructMatch(delta5_specific_pattern):
         return False, "No Delta(5) double bond found (C5-C6 double bond)"
 
     return True, "Contains 3beta-hydroxy group with Delta(5) double bond (C5-C6 double bond)"
