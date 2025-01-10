@@ -26,38 +26,44 @@ def is_3_oxo_steroid(smiles: str):
         return False, "Invalid SMILES string"
     
     # Define the steroid nucleus with atom mapping to positions
-    steroid_core = Chem.MolFromSmarts("""
-    [#6]12[#6]3[#6](~[#6]~[#6]~[#6]~1)~[#6]~[#6]~[#6]~[#6]~2~[#6]~[#6]~3
-    """)
+    steroid_core_smarts = """
+    [#6]1([#6H])-[#6]2-[#6]3([#6H])-[#6H]-[#6]-[#6]-4-[#6H]-[#6]-[#6]-[#6]-[#6]-[#6]-4-[#6]-3-[#6H]-[#6]-2-[#6]-1
+    """
+    steroid_core = Chem.MolFromSmarts(steroid_core_smarts)
     if steroid_core is None:
         return False, "Invalid steroid core SMARTS pattern"
-
+    
     # Find the steroid core in the molecule
     match = mol.GetSubstructMatch(steroid_core)
     if not match:
         return False, "No steroid backbone detected"
     
     # Map positions based on the steroid core
-    # Assuming atom indices in match correspond to positions 1 to 17
-    # This is a simplification; actual mapping may require more precise definition
-    pos3_atom_idx = match[2]  # Index of the atom at position 3
+    # Standard steroid numbering has positions 1 to 17
+    # For accurate mapping, we should use a SMARTS pattern with atom mapping numbers
+    steroid_numbering_smarts = """
+    [$([#6]1)](-[#6H])-[#6]2(-[#6H])-[#6](=[#6])-[$([#6H])]-[#6]3=[#6]-[#6]-[#6]-[#6]-[#6]-3-[#6]-2-[#6]-1
+    """
+    steroid_numbering = Chem.MolFromSmarts(steroid_numbering_smarts)
+    steroid_matches = mol.GetSubstructMatches(steroid_numbering)
     
-    # Check if the atom at position 3 is a carbon
+    if not steroid_matches:
+        return False, "Steroid core not matched with numbering"
+
+    # Assuming the first match is the steroid nucleus
+    atom_indices = steroid_matches[0]
+    
+    # Position 3 is the third atom in the SMARTS pattern (index 2 in atom_indices)
+    pos3_atom_idx = atom_indices[2]
     pos3_atom = mol.GetAtomWithIdx(pos3_atom_idx)
     if pos3_atom.GetAtomicNum() != 6:
         return False, "Atom at position 3 is not carbon"
     
     # Check for a ketone (C=O) at position 3
-    ketone_pattern = Chem.MolFromSmarts("[#6](=O)")
-
-    # Check if the carbon at position 3 has a double bond to oxygen
-    has_ketone = False
-    for bond in pos3_atom.GetBonds():
-        neighbor = bond.GetOtherAtom(pos3_atom)
-        if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE and neighbor.GetAtomicNum() == 8:
-            has_ketone = True
-            break
-    if not has_ketone:
+    ketone_pattern = Chem.MolFromSmarts("[#6]=O")
+    ketone_matches = mol.GetSubstructMatches(ketone_pattern)
+    ketone_atom_indices = [match[0] for match in ketone_matches]
+    if pos3_atom_idx not in ketone_atom_indices:
         return False, "No ketone group at position 3"
     
     return True, "Molecule is a 3-oxo steroid with ketone at position 3"
@@ -82,7 +88,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 0,
+    'attempt': 1,
     'success': True,
     'best': True,
     'error': '',
