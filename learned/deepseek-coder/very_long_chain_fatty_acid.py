@@ -30,8 +30,24 @@ def is_very_long_chain_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
 
-    # Calculate the number of carbon atoms in the longest chain
-    longest_chain_length = rdMolDescriptors.CalcCarbons(mol)
+    # Find the longest carbon chain
+    def find_longest_carbon_chain(mol):
+        longest_chain = 0
+        for atom in mol.GetAtoms():
+            if atom.GetAtomicNum() == 6:  # Carbon atom
+                visited = set()
+                stack = [(atom, 1)]  # (atom, current_chain_length)
+                while stack:
+                    current_atom, chain_length = stack.pop()
+                    visited.add(current_atom.GetIdx())
+                    if chain_length > longest_chain:
+                        longest_chain = chain_length
+                    for neighbor in current_atom.GetNeighbors():
+                        if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:
+                            stack.append((neighbor, chain_length + 1))
+        return longest_chain
+
+    longest_chain_length = find_longest_carbon_chain(mol)
 
     # Check if the longest chain length is greater than 22
     if longest_chain_length > 22:
