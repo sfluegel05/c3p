@@ -21,38 +21,52 @@ def is_polyprenol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for isoprene unit (C(=C)C-C)
-    isoprene_pattern = Chem.MolFromSmarts("C=C-C-C")
+    # Define SMARTS pattern for isoprene unit: allowing for double bond variations
+    isoprene_pattern_options = [
+        Chem.MolFromSmarts("C(=C)C"),  # Common isoprene motif
+        Chem.MolFromSmarts("C(=C)CC"),
+        Chem.MolFromSmarts("C=C(C)C")
+    ]
     
-    # Find all isoprene units
-    isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
-    if len(isoprene_matches) < 2:
-        return False, f"Found {len(isoprene_matches)} isoprene units, need more than 1"
-
-    # Check for connectivity of isoprene units
-    visited_atoms = set()
-    chain_length = 0
-    for match in isoprene_matches:
-        for idx in match:
-            if idx not in visited_atoms:
-                chain_length += 1
-                visited_atoms.add(idx)
+    # Check for multiple isoprene units
+    match_count = 0
+    for pattern in isoprene_pattern_options:
+        matches = mol.GetSubstructMatches(pattern)
+        match_count += len(matches)
     
-    if chain_length < 2 * len(isoprene_matches):
-        return False, "Isoprene units not connected as a chain"
+    if match_count < 2:
+        return False, f"Found {match_count} isoprene units, need more than 1"
 
-    # Identify hydroxyl group
+    # Check for terminal hydroxyl group
     hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
     hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    
+
     if not hydroxyl_matches:
         return False, "No hydroxyl group found"
 
-    # Check if hydroxyl is terminal
-    for match in hydroxyl_matches:
-        oh_atom_idx = match[0]
-        oh_neighbors = mol.GetAtomWithIdx(oh_atom_idx).GetNeighbors()
-        if all(neighbor.GetIdx() in visited_atoms for neighbor in oh_neighbors):
-            return True, "Contains more than one isoprene unit with terminal hydroxyl group"
+    # Try to ensure connectivity and positioning of the hydroxyl
+    visited_atoms = set()
+    chain_length = 0
+    for pattern in isoprene_pattern_options:
+        matches = mol.GetSubstructMatches(pattern)
+        for match in matches:
+            for idx in match:
+                if idx not in visited_atoms:
+                    chain_length += 1
+                    visited_atoms.add(idx)
+    
+    # Check if chain is long enough proportional to matches
+    if chain_length < match_count * 3:  # Rough estimate for chain length
+        return False, "Isoprene units not connected properly in a chain"
 
-    return False, "Hydroxyl group is not positioned correctly relative to isoprene units"
+    # Verify that at least one hydroxyl is terminal
+    for oh_idx in hydroxyl_matches:
+        # Check if hydroxyl is on a terminal carbon
+        oh_atom_idx = oh_idx[0]
+        atom = mol.GetAtomWithIdx(oh_atom_idx)
+        neighbors = atom.GetNeighbors()
+        carbon_count = sum(1 for atom in neighbors if atom.GetAtomicNum() == 6)
+        if carbon_count == 1:
+            return True, "Contains more than one isoprene unit with a terminal hydroxyl group"
+
+    return False, "Hydroxyl group is not terminal as required"
