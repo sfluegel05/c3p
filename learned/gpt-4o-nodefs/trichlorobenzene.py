@@ -6,13 +6,13 @@ from rdkit import Chem
 def is_trichlorobenzene(smiles: str):
     """
     Determines if a molecule is a trichlorobenzene based on its SMILES string.
-    A trichlorobenzene is defined as a benzene ring with three chlorine atoms substituents.
+    A trichlorobenzene is defined as a benzene ring with exactly three chlorine atom substituents.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if the molecule is a trichlorobenzene, False otherwise
+        bool: True if the molecule contains a trichlorobenzene motif, False otherwise
         str: Reason for classification
     """
     
@@ -21,14 +21,14 @@ def is_trichlorobenzene(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for benzene ring with three chlorine atoms
-    trichlorobenzene_pattern = Chem.MolFromSmarts("c1cc(Cl)cc(Cl)c(Cl)c1")
-    
-    if mol.HasSubstructMatch(trichlorobenzene_pattern):
-        return True, "Contains a benzene ring with three chlorine atoms"
+    # Look for benzene ring with exactly three chlorine atoms
+    trichlorobenzene_pattern = Chem.MolFromSmarts("c1c(Cl)c(Cl)c(Cl)c1")
+    matches = mol.GetSubstructMatches(trichlorobenzene_pattern)
 
-    return False, "Does not contain a trichlorobenzene structure"
+    if matches:
+        return True, "Contains a trichlorobenzene motif (benzene ring with three chlorine atoms)"
 
+    return False, "Does not contain a trichlorobenzene motif"
 
 # Example usage
 smiles_strings = [
