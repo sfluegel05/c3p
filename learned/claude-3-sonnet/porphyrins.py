@@ -23,75 +23,41 @@ def is_porphyrins(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # List of common metals found in porphyrins
-    metals = {"Fe", "Mg", "Zn", "Co", "Ni", "Cu", "Pd", "Pt"}
+        
+    # Look for the basic porphyrin core pattern:
+    # Four pyrrole rings connected by methine bridges
+    porphyrin_core = Chem.MolFromSmarts("[nH,n-,n+0]1ccc2c1[c,C]=c1[c,C]=c3[nH,n-,n+0]c(cc4[nH,n-,n+0]c(cc5[nH,n-,n+0]c(c1)cc5)cc4)cc3c2")
+    metal_porphyrin_core = Chem.MolFromSmarts("[nX2,nX2-,nX2+0]1ccc2c1[c,C]=c1[c,C]=c3[nX2,nX2-,nX2+0]c(cc4[nX2,nX2-,nX2+0]c(cc5[nX2,nX2-,nX2+0]c(c1)cc5)cc4)cc3c2")
     
-    # Basic patterns for porphyrin core structures
-    patterns = [
-        # Basic porphyrin core (more flexible)
-        "[#7]1~[#6]~[#6]~[#6]2~[#7]~[#6]~[#6]~[#6]3~[#7]~[#6]~[#6]~[#6]4~[#7]~[#6]~[#6]~[#6]~1~2~3~4",
-        
-        # Metalloporphyrin pattern
-        "[#7]1~[#6]~[#6]~[#6]2~[#7]~[#6]~[#6]~[#6]3~[#7]~[#6]~[#6]~[#6]4~[#7]~[#6]~[#6]~[#6]~1~2~3~4~[Fe,Mg,Zn,Co,Ni,Cu,Pd,Pt]",
-        
-        # Pattern for reduced forms (chlorins/bacteriochlorins)
-        "[#7]1~[#6]~[#6]~[#6]2~[#7]~[#6]~[#6]~[#6]3~[#7]~[#6]~[#6]~[#6]4~[#7]~[#6]~[#6]~[#6]~1~2~3~4",
-        
-        # Alternative pattern with explicit pyrrole rings
-        "[nX2,nX3]1[cX3]~[cX3]~[#6]~[nX2,nX3]~[cX3]~[cX3]~[#6]~[nX2,nX3]~[cX3]~[cX3]~[#6]~[nX2,nX3]~[cX3]~[cX3]~[#6]~1"
-    ]
-
-    # Check for any matching pattern
-    found_pattern = False
-    for pattern in patterns:
-        patt = Chem.MolFromSmarts(pattern)
-        if patt and mol.HasSubstructMatch(patt):
-            found_pattern = True
-            break
-            
-    if not found_pattern:
+    has_core = mol.HasSubstructMatch(porphyrin_core) or mol.HasSubstructMatch(metal_porphyrin_core)
+    if not has_core:
         return False, "No porphyrin core structure found"
 
-    # Count nitrogens and check their environment
-    n_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7]
-    if len(n_atoms) < 4:
+    # Count nitrogens - should have at least 4 for the core structure
+    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
+    if n_count < 4:
         return False, "Insufficient nitrogen atoms for porphyrin structure"
-
-    # Check for metal coordination
-    metal_atoms = [atom for atom in mol.GetAtoms() if atom.GetSymbol() in metals]
-    has_metal = len(metal_atoms) > 0
-
-    # Ring analysis
-    ring_info = mol.GetRingInfo()
-    if not ring_info.NumRings():
-        return False, "No rings found"
-
-    # Find rings containing nitrogens
-    n_containing_rings = 0
-    large_ring_size = 0
-    for ring in ring_info.AtomRings():
-        ring_atoms = set(ring)
-        n_atoms = sum(1 for idx in ring if mol.GetAtomWithIdx(idx).GetAtomicNum() == 7)
-        if n_atoms > 0:
-            n_containing_rings += 1
-            if len(ring) > large_ring_size:
-                large_ring_size = len(ring)
-
-    if n_containing_rings < 4:
-        return False, "Insufficient number of nitrogen-containing rings"
-
-    if large_ring_size < 16:
-        return False, "Macrocyclic ring too small for porphyrin structure"
-
-    # Count aromatic nitrogens vs total nitrogens
-    aromatic_n = sum(1 for atom in n_atoms if atom.GetIsAromatic())
+        
+    # Look for aromatic system
+    aromatic_atoms = sum(1 for atom in mol.GetAtoms() if atom.GetIsAromatic())
+    if aromatic_atoms < 20:  # Core should have at least 20 aromatic atoms
+        return False, "Insufficient aromatic system for porphyrin"
+        
+    # Check for presence of metal coordination (optional)
+    metals = ["Fe", "Mg", "Zn", "Co", "Ni", "Cu", "Pd", "Pt"]
+    has_metal = any(atom.GetSymbol() in metals for atom in mol.GetAtoms())
     
-    # Determine the specific type of porphyrin
+    # Verify macrocyclic structure by checking ring count
+    ring_info = mol.GetRingInfo()
+    if ring_info.NumRings() < 5:  # Should have at least 5 rings (4 pyrroles + central)
+        return False, "Insufficient ring count for porphyrin structure"
+        
+    # Additional check for conjugated system
+    conjugated_pattern = Chem.MolFromSmarts("c1ccccc1")
+    if not mol.HasSubstructMatch(conjugated_pattern):
+        return False, "Lacks required conjugated system"
+
     if has_metal:
-        metal = metal_atoms[0].GetSymbol()
-        return True, f"Metalloporphyrin containing {metal}"
-    elif aromatic_n >= 2:
-        return True, "Free-base porphyrin"
+        return True, "Metalloporphyrin with characteristic tetrapyrrole macrocycle"
     else:
-        return True, "Reduced porphyrin (chlorin/bacteriochlorin)"
+        return True, "Free-base porphyrin with characteristic tetrapyrrole macrocycle"
