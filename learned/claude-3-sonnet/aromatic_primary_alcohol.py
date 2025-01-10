@@ -22,11 +22,16 @@ def is_aromatic_primary_alcohol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
+    # Kekulize the molecule to ensure proper aromatic perception
+    Chem.Kekulize(mol, clearAromaticFlags=True)
+    # Set aromaticity again using RDKit's standard model
+    Chem.SetAromaticity(mol)
+
     # Pattern for primary alcohol (-CH2OH) connected to aromatic atom
-    # [a] matches any aromatic atom
+    # [aR] matches aromatic atom in ring
     # [CH2X4] matches CH2 group with exactly 4 connections
-    # [OH1] matches hydroxyl group with exactly 1 hydrogen
-    pattern = Chem.MolFromSmarts("[a][CH2X4][OH1]")
+    # [OH1X2] matches hydroxyl group with exactly 1 hydrogen and 2 connections
+    pattern = Chem.MolFromSmarts("[aR][CH2X4][OH1X2]")
     
     if not pattern or not mol.HasSubstructMatch(pattern):
         return False, "No primary alcohol (-CH2OH) attached to aromatic ring found"
@@ -40,7 +45,7 @@ def is_aromatic_primary_alcohol(smiles: str):
         ch2_atom = mol.GetAtomWithIdx(match[1])
         oh_atom = mol.GetAtomWithIdx(match[2])
         
-        # Verify aromaticity
+        # Additional checks for aromaticity
         if not aromatic_atom.GetIsAromatic():
             continue
             
@@ -50,11 +55,19 @@ def is_aromatic_primary_alcohol(smiles: str):
             if aromatic_atom.GetIdx() in ring:
                 # Check if the ring is aromatic (all atoms in ring are aromatic)
                 ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
+                
+                # Verify ring aromaticity
                 if all(atom.GetIsAromatic() for atom in ring_atoms):
-                    # Verify CH2OH group
-                    if (ch2_atom.GetTotalNumHs() == 2 and 
-                        oh_atom.GetTotalNumHs() == 1 and
-                        ch2_atom.GetHybridization() == Chem.HybridizationType.SP3):
-                        return True, "Contains primary alcohol (-CH2OH) attached to aromatic ring"
+                    # Check ring size (5 or 6 members are most common for aromatic rings)
+                    if len(ring) in [5, 6]:
+                        # Verify CH2OH group connectivity
+                        if (ch2_atom.GetTotalNumHs() == 2 and 
+                            oh_atom.GetTotalNumHs() == 1 and
+                            ch2_atom.GetHybridization() == Chem.HybridizationType.SP3 and
+                            len(ch2_atom.GetBonds()) == 2):  # CH2 should have exactly 2 bonds
+                            
+                            # Additional check to ensure CH2OH is not part of a ring
+                            if not any(ch2_atom.GetIdx() in r for r in rings):
+                                return True, "Contains primary alcohol (-CH2OH) attached to aromatic ring"
     
     return False, "No valid aromatic primary alcohol structure found"
