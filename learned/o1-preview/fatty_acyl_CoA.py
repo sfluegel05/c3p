@@ -27,9 +27,9 @@ def is_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define Coenzyme A substructure pattern (simplified)
-    # Focused on key functional groups: adenine ring, ribose sugar, diphosphate, and pantetheine unit
-    coa_smarts = 'NC(=O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H](n2cnc3c(N)ncnc32)[C@@H](O)[C@H]1O'
+    # Define a more general Coenzyme A substructure pattern
+    # Capture key features: adenine ring, ribose sugar, diphosphate, and pantetheine unit
+    coa_smarts = '[#8]-[#3]-[#15](=O)([*])-[#8]-[#15](=O)([*])-[#8]-[#6]-1-[#8]-[#6](-[#8])-[#6](-[#8])-O1-[#7]-2-[#6]-3(=[#7]-[#6](=[#7]-[#6]-2=[#7]-3)-[#7])'
 
     coa_pattern = Chem.MolFromSmarts(coa_smarts)
     if coa_pattern is None:
@@ -38,8 +38,8 @@ def is_fatty_acyl_CoA(smiles: str):
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No Coenzyme A moiety found"
 
-    # Define thioester linkage pattern
-    thioester_pattern = Chem.MolFromSmarts('C(=O)SCCNC(=O)')
+    # Define thioester linkage pattern connecting fatty acid to CoA
+    thioester_pattern = Chem.MolFromSmarts('C(=O)SCCN')
     if thioester_pattern is None:
         return False, "Error in thioester SMARTS pattern"
 
@@ -57,23 +57,31 @@ def is_fatty_acyl_CoA(smiles: str):
     carbonyl_c_idx = match[0]  # Index of the carbonyl carbon
 
     # Traverse the acyl chain starting from the carbonyl carbon
-    visited = set(match)  # Start with atoms in the thioester_pattern to avoid revisiting
+    visited = set()
     def traverse_acyl_chain(atom_idx):
         chain_atoms = []
-        atom = mol.GetAtomWithIdx(atom_idx)
-        if atom.GetIdx() in visited:
-            return chain_atoms
-        visited.add(atom.GetIdx())
-        if atom.GetAtomicNum() != 6:
-            return chain_atoms  # Only consider carbon atoms
-        chain_atoms.append(atom_idx)
-        for neighbor in atom.GetNeighbors():
-            neighbor_idx = neighbor.GetIdx()
-            if neighbor_idx in visited:
+        stack = [atom_idx]
+        while stack:
+            idx = stack.pop()
+            if idx in visited:
                 continue
-            bond = mol.GetBondBetweenAtoms(atom_idx, neighbor_idx)
-            if bond.GetBondType() in [Chem.BondType.SINGLE, Chem.BondType.DOUBLE]:
-                chain_atoms.extend(traverse_acyl_chain(neighbor_idx))
+            visited.add(idx)
+            atom = mol.GetAtomWithIdx(idx)
+            if atom.GetAtomicNum() != 6:
+                continue  # Only consider carbon atoms
+            chain_atoms.append(idx)
+            for neighbor in atom.GetNeighbors():
+                neighbor_idx = neighbor.GetIdx()
+                if neighbor_idx in visited:
+                    continue
+                bond = mol.GetBondBetweenAtoms(idx, neighbor_idx)
+                # Stop traversal if we reach the sulfur atom (to avoid including CoA carbons)
+                if neighbor.GetAtomicNum() == 16:
+                    continue
+                # Exclude atoms towards CoA (nitrogen connected to the sulfur)
+                if neighbor.GetAtomicNum() == 7 and neighbor_idx in match:
+                    continue
+                stack.append(neighbor_idx)
         return chain_atoms
 
     acyl_chain_atoms = traverse_acyl_chain(carbonyl_c_idx)
