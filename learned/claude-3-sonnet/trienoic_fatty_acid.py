@@ -28,54 +28,69 @@ def is_trienoic_fatty_acid(smiles: str):
     # Check for carboxylic acid group
     carboxylic_pattern = Chem.MolFromSmarts('[CX3](=[OX1])[OX2H1]')
     if not mol.HasSubstructMatch(carboxylic_pattern):
-        return False, "No carboxylic acid group found"
+        # Check if it's part of a larger lipid (ester)
+        ester_pattern = Chem.MolFromSmarts('[CX3](=[OX1])[OX2]')
+        if not mol.HasSubstructMatch(ester_pattern):
+            return False, "No carboxylic acid or ester group found"
     
     # Count carbon chain length
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if carbon_count < 12:  # Most natural fatty acids have at least 12 carbons
         return False, f"Carbon chain too short ({carbon_count} carbons)"
     
-    # Count double bonds
-    double_bond_pattern = Chem.MolFromSmarts('C=C')
-    double_bonds = len(mol.GetSubstructMatches(double_bond_pattern))
+    # Look for main fatty acid chain pattern
+    fatty_chain = Chem.MolFromSmarts('CCCCC')  # At least 5 consecutive carbons
+    if not mol.HasSubstructMatch(fatty_chain):
+        return False, "No significant aliphatic chain found"
     
-    # Check for triple bonds (should not be present)
-    triple_bond_pattern = Chem.MolFromSmarts('C#C')
-    if mol.HasSubstructMatch(triple_bond_pattern):
-        return False, "Contains triple bonds"
+    # Count double bonds more carefully
+    double_bond_patterns = [
+        ('C=C', 'standard'),
+        ('C/C=C/C', 'trans'),
+        ('C/C=C\\C', 'cis')
+    ]
     
-    if double_bonds != 3:
-        return False, f"Found {double_bonds} double bonds, need exactly 3"
+    total_double_bonds = 0
+    for pattern, _ in double_bond_patterns:
+        pattern_mol = Chem.MolFromSmarts(pattern)
+        matches = mol.GetSubstructMatches(pattern_mol)
+        total_double_bonds += len(matches)
     
-    # Check for aromatic rings
-    aromatic_pattern = Chem.MolFromSmarts('a')
-    if mol.HasSubstructMatch(aromatic_pattern):
+    # Normalize double bond count (avoid double counting)
+    total_double_bonds = total_double_bonds // 2
+    
+    if total_double_bonds != 3:
+        return False, f"Found {total_double_bonds} double bonds, need exactly 3"
+    
+    # Check for aromatic rings (not allowed in fatty acids)
+    if any(atom.GetIsAromatic() for atom in mol.GetAtoms()):
         return False, "Contains aromatic rings"
     
-    # Count rings but exclude small rings (epoxides)
-    ring_count = rdMolDescriptors.CalcNumRings(mol)
-    epoxide_pattern = Chem.MolFromSmarts('C1OC1')
-    epoxide_matches = len(mol.GetSubstructMatches(epoxide_pattern))
-    non_epoxide_rings = ring_count - epoxide_matches
-    
-    if non_epoxide_rings > 0:
-        return False, f"Contains {non_epoxide_rings} non-epoxide rings"
-        
-    # Allow common substituents found in fatty acids
+    # Allow common substituents but limit their number
     allowed_groups = [
         ('[OH]', 'hydroxyl'),
         ('[OOH]', 'hydroperoxy'),
-        ('C1OC1', 'epoxy')
+        ('C1OC1', 'epoxy'),
+        ('C(=O)C', 'keto')
     ]
     
-    # Check if molecule has a reasonable fatty acid backbone
-    aliphatic_chain = Chem.MolFromSmarts('CCCC')  # At least 4 consecutive carbons
-    if not mol.HasSubstructMatch(aliphatic_chain):
-        return False, "No significant aliphatic chain found"
+    substituent_count = 0
+    for pattern, name in allowed_groups:
+        pattern_mol = Chem.MolFromSmarts(pattern)
+        matches = len(mol.GetSubstructMatches(pattern_mol))
+        substituent_count += matches
     
-    # Verify oxygen count is reasonable (carboxylic acid = 2, plus allowed substituents)
+    if substituent_count > 3:
+        return False, f"Too many substituents ({substituent_count}) for a typical fatty acid"
+    
+    # Check for reasonable oxygen count
     oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if oxygen_count > 8:  # Allow up to 3 additional oxygen-containing groups
+    if oxygen_count > 8:
         return False, f"Too many oxygen atoms ({oxygen_count}) for a fatty acid"
+    
+    # Verify chain connectivity (avoid highly branched structures)
+    chain_pattern = Chem.MolFromSmarts('CCCCCCCC')  # Look for 8 consecutive carbons
+    if not mol.HasSubstructMatch(chain_pattern):
+        return False, "No continuous carbon chain of sufficient length"
         
-    return True, "Contains carboxylic acid group and exactly three double bonds in a fatty acid structure"
+    return True, "Contains a fatty acid structure with exactly three double bonds"
