@@ -23,13 +23,13 @@ def is_cephalosporin(smiles: str):
         return False, "Invalid SMILES string"
     
     # Check for beta-lactam ring (4-membered lactam with carbon-nitrogen amidic bond)
-    beta_lactam_pattern = Chem.MolFromSmarts("C1C(=O)NC1")
+    beta_lactam_pattern = Chem.MolFromSmarts("C1C(=O)N[C@@H]1")
     if not mol.HasSubstructMatch(beta_lactam_pattern):
         return False, "No beta-lactam ring found"
 
-    # Check for 6-membered dihydrothiazine ring (incorporating possible variations)
-    # This pattern accounts for the variability seen in specific cephalosporin scaffolds.
-    dihydrothiazine_pattern = Chem.MolFromSmarts("C1=CC(=O)N2[C@@H](S1)C2")
+    # Check for 6-membered dihydrothiazine ring
+    # Update the SMARTS pattern to more accurately capture the ring
+    dihydrothiazine_pattern = Chem.MolFromSmarts("C1(C)C(=O)N2[C@H](SC1)C2")
     if not mol.HasSubstructMatch(dihydrothiazine_pattern):
         return False, "No dihydrothiazine ring found or incorrect stereochemistry"
 
