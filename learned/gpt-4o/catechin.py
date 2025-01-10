@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_catechin(smiles: str):
     """
     Determines if a molecule is a catechin based on its SMILES string.
-    Catechins are flavan-3-ol compounds characterized by a flavan skeleton and hydroxylation patterns.
-    
+    Catechins are flavan-3-ol compounds with specific hydroxyflavan substitution patterns.
+
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -22,16 +22,15 @@ def is_catechin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a broader SMARTS pattern for catechins with a focus on the flavan-3-ol core
-    # Allowing flexibility in hydroxylation and aromatic substitution patterns
-    catechin_pattern = Chem.MolFromSmarts("c1(c2ccc(OC)c(O)c2)cc3CC(O)C(O)Oc3c1")
-
-    if not mol.HasSubstructMatch(catechin_pattern):
+    # Define the SMARTS pattern for flavan-3-ol skeleton (simplified)
+    flavan_3_ol_pattern = Chem.MolFromSmarts("Oc1ccc2c(c1)C[C@@H]3O[C@@H]3c2")
+    
+    if not mol.HasSubstructMatch(flavan_3_ol_pattern):
         return False, "No flavan-3-ol skeleton match found"
 
-    # Additional checks for common functional group attachments can be added here if necessary
-
+    # Further checks for the presence of typical catechin hydroxylation patterns can be added here
+    
     return True, "Matches flavan-3-ol skeleton of catechins"
 
-# Note: SMARTS pattern is updated to focus on structure rather than specific stereochemistry,
-# to accommodate the stereochemical diversity in catechins effectively.
+# Note: While this function checks for the basic flavan-3-ol structure, additional patterns
+# and logic would be required to robustly categorize the wide variety of catechin derivatives.
