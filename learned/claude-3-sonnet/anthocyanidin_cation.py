@@ -24,56 +24,49 @@ def is_anthocyanidin_cation(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
+        
     # Check for positive charge
     total_charge = sum(atom.GetFormalCharge() for atom in mol.GetAtoms())
     if total_charge != 1:
         return False, "Must have a total charge of +1"
-
-    # Look for the basic flavylium cation core:
-    # More flexible pattern for the chromenylium system with phenyl substituent
-    flavylium_core = Chem.MolFromSmarts('[o+]1c(c2)cc(c1)-c3ccccc3')
-    if not mol.HasSubstructMatch(flavylium_core):
-        return False, "No flavylium cation core structure found"
-
-    # Check for the fused benzene ring
-    fused_ring = Chem.MolFromSmarts('[o+]1c(c2ccccc2)cc*c1')
-    if not mol.HasSubstructMatch(fused_ring):
-        return False, "Missing required fused ring system"
-
-    # Count oxygen-containing substituents (excluding the charged oxygen)
+        
+    # Look for flavylium core structure (2-phenylchromenylium)
+    # [O+]=C1C=CC=CC=C1 connected to phenyl ring
+    flavylium_pattern = Chem.MolFromSmarts('[O+]=C1c2ccccc2C=Cc3ccccc13')
+    if not mol.HasSubstructMatch(flavylium_pattern):
+        return False, "No flavylium core structure found"
+        
+    # Must have oxygen atoms (typically hydroxyls) on the rings
     oxygen_pattern = Chem.MolFromSmarts('cO')
-    oxygen_matches = len(mol.GetSubstructMatches(oxygen_pattern))
-    if oxygen_matches < 2:
-        return False, "Insufficient oxygen substituents"
-
-    # Look for characteristic substitution patterns
-    patterns = {
-        'hydroxyl': Chem.MolFromSmarts('cO[H]'),
-        'methoxy': Chem.MolFromSmarts('cOC'),
-        'glycoside': Chem.MolFromSmarts('OC1OC(CO)C(O)C'),
-        'acyl': Chem.MolFromSmarts('C(=O)'),
-    }
-    
-    found_patterns = []
-    for name, pattern in patterns.items():
-        if mol.HasSubstructMatch(pattern):
-            found_patterns.append(name)
-            
-    if not found_patterns:
-        return False, "Missing characteristic oxygen-containing substituents"
-
-    # Additional check for proper ring system
+    oxygen_matches = mol.GetSubstructMatches(oxygen_pattern)
+    if len(oxygen_matches) < 2:
+        return False, "Insufficient hydroxyl/oxygen substituents"
+        
+    # Check for characteristic benzopyran structure
+    benzopyran_pattern = Chem.MolFromSmarts('c1c2c(cc1)OC=CC2')
+    if not mol.HasSubstructMatch(benzopyran_pattern):
+        return False, "No benzopyran structure found"
+        
+    # Count number of rings
     ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() < 2:
-        return False, "Insufficient ring systems"
-
-    # Build classification message
-    base_msg = "Contains flavylium cation core with proper ring system"
-    if found_patterns:
-        substituents_str = ", ".join(found_patterns)
-        message = f"{base_msg} and {substituents_str} substituents"
+    if ring_info.NumRings() < 3:
+        return False, "Must have at least 3 rings"
+        
+    # Look for characteristic hydroxyl pattern on A and B rings
+    hydroxyl_pattern = Chem.MolFromSmarts('c(O)c(O)')
+    if not mol.HasSubstructMatch(hydroxyl_pattern):
+        return False, "Missing characteristic hydroxyl pattern"
+        
+    # Additional checks for substituents commonly found in anthocyanidins
+    # (optional methoxy groups)
+    methoxy_pattern = Chem.MolFromSmarts('cOC')
+    has_methoxy = mol.HasSubstructMatch(methoxy_pattern)
+    
+    # Success message varies based on presence of methoxy groups
+    base_message = "Contains flavylium core with characteristic hydroxyl pattern"
+    if has_methoxy:
+        message = base_message + " and methoxy substituents"
     else:
-        message = base_msg
-
+        message = base_message
+        
     return True, message
