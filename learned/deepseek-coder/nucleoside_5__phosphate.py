@@ -29,7 +29,7 @@ def is_nucleoside_5__phosphate(smiles: str):
 
     # Define more flexible patterns
     # Sugar with phosphate group (less specific stereochemistry)
-    sugar_phosphate_pattern = Chem.MolFromSmarts("[C@H]1O[C@H](COP(=O)([OX1]))[C@@H]([OX2])[C@H]1[OX2]")
+    sugar_phosphate_pattern = Chem.MolFromSmarts("[C@H]1O[C@H](COP(=O)([OX1,O])([OX2,O]))[C@@H]([OX2,O])[C@H]1[OX2,O]")
     
     # More general purine pattern
     purine_pattern = Chem.MolFromSmarts("[nX2]1[cX2][nX2][cX2]2[nX2][cX2][nX2][cX2]12")
@@ -49,7 +49,7 @@ def is_nucleoside_5__phosphate(smiles: str):
         return False, "No purine or pyrimidine base found"
     
     # Check for phosphate group (including esterified forms)
-    phosphate_pattern = Chem.MolFromSmarts("[PX4](=O)([OX2])[OX2]")
+    phosphate_pattern = Chem.MolFromSmarts("[PX4](=O)([OX2,O])([OX2,O])[OX2,O]")
     phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
     if len(phosphate_matches) < 1:
         return False, "No phosphate group found"
