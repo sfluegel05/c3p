@@ -24,8 +24,8 @@ def is_sphingomyelin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for phosphocholine group - simplified pattern
-    phosphocholine = Chem.MolFromSmarts('OP(=O)([O-])OCC[N+](C)(C)C')
+    # Check for phosphocholine group
+    phosphocholine = Chem.MolFromSmarts('[O,OH1]-P(=O)([O-])OCC[N+](C)(C)C')
     if not mol.HasSubstructMatch(phosphocholine):
         return False, "Missing phosphocholine group"
 
@@ -33,6 +33,32 @@ def is_sphingomyelin(smiles: str):
     amide = Chem.MolFromSmarts('[NX3][CX3](=O)')
     if not mol.HasSubstructMatch(amide):
         return False, "Missing amide linkage"
+
+    # Multiple patterns for sphingoid base to account for different variants
+    sphingoid_patterns = [
+        # Basic sphinganine backbone
+        '[CH2X4]-[CH1X4]([NX3])-[CH1X4]([OX2])-[CH2X4]',
+        # Sphingosine backbone (with double bond)
+        '[CH2X4]-[CH1X4]([NX3])-[CH1X4]([OX2])-[CH1]=[CH1]',
+        # More general pattern for modified sphingoid bases
+        '[CH2X4]-[CX4]([NX3])-[CX4]([OX2])-[#6]'
+    ]
+    
+    found_sphingoid = False
+    for pattern in sphingoid_patterns:
+        sphinx = Chem.MolFromSmarts(pattern)
+        if mol.HasSubstructMatch(sphinx):
+            found_sphingoid = True
+            break
+    
+    if not found_sphingoid:
+        return False, "Missing sphingoid base structure"
+
+    # Verify phosphocholine is connected to sphingoid base
+    # Look for O-CH2-CH(NH)-CH(O)-CH2-O-P pattern
+    phospho_connection = Chem.MolFromSmarts('[OX2]-[CH2X4]-[CH1X4]([NX3])-[CH1X4]([OX2])-[CH2X4]-[OX2]-P')
+    if not mol.HasSubstructMatch(phospho_connection):
+        return False, "Phosphocholine not properly connected to sphingoid base"
 
     # Count key atoms
     atom_counts = {}
@@ -45,33 +71,22 @@ def is_sphingomyelin(smiles: str):
         return False, "Must have exactly 2 nitrogen atoms"
     if atom_counts.get('P', 0) != 1:
         return False, "Must have exactly 1 phosphorus atom"
-    if atom_counts.get('O', 0) < 5:  # At least 5 oxygens (phosphate, amide, hydroxyl)
+    if atom_counts.get('O', 0) < 5:  # Phosphate, amide, hydroxyl
         return False, "Insufficient oxygen atoms"
-    if atom_counts.get('C', 0) < 20:  # Sphingomyelins typically have many carbons
-        return False, "Insufficient carbon atoms"
-
-    # Check for hydroxyl group(s)
-    hydroxyl = Chem.MolFromSmarts('[OX2H,OX2R]')  # Include both free and bonded OH
-    if not mol.HasSubstructMatch(hydroxyl):
-        return False, "Missing required hydroxyl group"
-
-    # Check for long carbon chains
-    long_chain = Chem.MolFromSmarts('CCCCCCCC')  # At least 8 carbons in a chain
-    if not mol.HasSubstructMatch(long_chain):
-        return False, "Missing required long carbon chain"
+    
+    # Check for long carbon chains (fatty acid + sphingoid base)
+    n_carbons = atom_counts.get('C', 0)
+    if n_carbons < 20:
+        return False, "Insufficient carbon atoms for sphingomyelin"
 
     # Calculate molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 600:
         return False, "Molecular weight too low for sphingomyelin"
 
-    # Check for sphingoid base connectivity
-    # Pattern looks for -CH2-CH(NH)-CH(O)- backbone connected to phosphate
-    sphingoid_base = Chem.MolFromSmarts('[CH2X4][CHX4]([NX3])[CHX4]([OX2,OX2H])COP(=O)')
-    if not mol.HasSubstructMatch(sphingoid_base):
-        # Try alternative pattern for different tautomers/representations
-        alt_sphingoid = Chem.MolFromSmarts('[CH2X4][CX4]([NX3])[CX4]([OX2,OX2H])COP(=O)')
-        if not mol.HasSubstructMatch(alt_sphingoid):
-            return False, "Missing sphingoid base structure"
+    # Check for fatty acid chain
+    fatty_acid = Chem.MolFromSmarts('C(=O)-[CH2][CH2][CH2]')
+    if not mol.HasSubstructMatch(fatty_acid):
+        return False, "Missing fatty acid chain"
 
     return True, "Contains sphingoid base with amide-linked fatty acid and phosphocholine group"
