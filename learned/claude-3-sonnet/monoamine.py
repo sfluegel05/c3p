@@ -6,7 +6,6 @@ Classifies: monoamine compounds
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import Descriptors
 
 def is_monoamine(smiles: str):
     """
@@ -30,80 +29,91 @@ def is_monoamine(smiles: str):
     frags = Chem.GetMolFrags(mol, asMols=True)
     if len(frags) > 1:
         mol = max(frags, key=lambda m: m.GetNumAtoms())
+
+    # Basic structure requirements
+    if mol.GetNumAtoms() < 8:  # Minimum size for a monoamine
+        return False, "Molecule too small for monoamine structure"
     
-    # Size/complexity filters
-    mol_wt = Descriptors.ExactMolWt(mol)
-    if mol_wt > 500:  # Most monoamines are relatively small
+    if mol.GetNumAtoms() > 50:  # Maximum reasonable size
         return False, "Molecule too large for typical monoamine"
-    
+
     # Check for aromatic ring
-    aromatic_pattern = Chem.MolFromSmarts("a1aaaaa1")  # 6-membered aromatic ring
-    if not mol.HasSubstructMatch(aromatic_pattern):
+    aromatic_ring = Chem.MolFromSmarts("a1aaaaa1")  # 6-membered aromatic ring
+    if not mol.HasSubstructMatch(aromatic_ring):
         return False, "No aromatic ring found"
 
-    # Exclude peptides and amino acids
-    peptide_bond = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[CX4]")
-    if mol.HasSubstructMatch(peptide_bond):
-        return False, "Contains peptide bonds"
-        
-    # Count carboxylic acids - typical amino acids have these
-    carboxyl_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H1]")
-    if len(mol.GetSubstructMatches(carboxyl_pattern)) > 1:
-        return False, "Multiple carboxylic acid groups suggest amino acid/peptide"
-
-    # Define monoamine patterns more precisely
+    # Define core monoamine patterns more precisely
     monoamine_patterns = [
-        # Basic patterns
-        "[aR1]!@[CH2][CH2][NX3;!R;!$(NC=O)]",  # Basic ethylamine
-        "[aR1]!@[CH2][CH1]([OH1])[NX3;!R;!$(NC=O)]",  # Beta-hydroxyl
-        "[aR1]!@[CH1]([OH1])[CH2][NX3;!R;!$(NC=O)]",  # Alpha-hydroxyl
+        # Basic ethylamine patterns with explicit connection to aromatic ring
+        "a[CH2][CH2][NH2]",  # Simple primary amine
+        "a[CH2][CH2][NH][CH3]",  # Secondary amine (methyl)
+        "a[CH2][CH2][NH]C",  # Secondary amine (any alkyl)
+        "a[CH2][CH2][N]([CH3])[CH3]",  # Tertiary amine (dimethyl)
         
-        # Methylated variants
-        "[aR1]!@[CH2][CH2][NX3H2;!R;!$(NC=O)]C",
-        "[aR1]!@[CH2][CH2][NX3H1;!R;!$(NC=O)](C)C",
-        "[aR1]!@[CH2][CH1]([OH1])[NX3H1;!R;!$(NC=O)]C",
+        # Beta-hydroxyl patterns
+        "a[CH2][CH]([OH])[NH2]",
+        "a[CH2][CH]([OH])[NH][CH3]",
+        "a[CH2][CH]([OH])[N]([CH3])[CH3]",
         
         # Charged variants
-        "[aR1]!@[CH2][CH2][NX4H3+;!R]",
-        "[aR1]!@[CH2][CH2][NX4H2+;!R]C",
-        "[aR1]!@[CH2][CH2][NX4H1+;!R](C)C",
+        "a[CH2][CH2][NH3+]",
+        "a[CH2][CH2][NH2+][CH3]",
+        "a[CH2][CH2][NH+]([CH3])[CH3]",
         
-        # Additional substituted patterns
-        "[aR1]!@[CX4H2][CX4H2][NX3;!R;!$(NC=O)]",  # Strict ethylamine
-        "[aR1]!@[CX4H2][CX4H1]([OH1])[NX3;!R;!$(NC=O)]",  # Strict beta-hydroxyl
-        "[aR1]!@[CX4H1]([OH1])[CX4H2][NX3;!R;!$(NC=O)]"  # Strict alpha-hydroxyl
+        # Alpha-hydroxyl patterns
+        "a[CH]([OH])[CH2][NH2]",
+        "a[CH]([OH])[CH2][NH][CH3]",
+        "a[CH]([OH])[CH2][N]([CH3])[CH3]"
     ]
 
-    found_valid_pattern = False
+    found_pattern = False
     for pattern in monoamine_patterns:
         patt = Chem.MolFromSmarts(pattern)
         if patt and mol.HasSubstructMatch(patt):
-            found_valid_pattern = True
+            found_pattern = True
             break
             
-    if not found_valid_pattern:
-        return False, "No valid two-carbon chain connecting amine to aromatic ring"
+    if not found_pattern:
+        return False, "No valid monoamine pattern found"
 
-    # Count non-aromatic amines
-    amine_pattern = Chem.MolFromSmarts("[NX3;!R;!$(NC=O)]")
-    charged_amine_pattern = Chem.MolFromSmarts("[NX4H+;!R]")
+    # Count total amine groups (including charged)
+    amine_patterns = [
+        "[NH2]", "[NH][CH3]", "[N]([CH3])[CH3]",  # Neutral amines
+        "[NH3+]", "[NH2+][CH3]", "[NH+]([CH3])[CH3]"  # Charged amines
+    ]
     
-    amine_count = len(mol.GetSubstructMatches(amine_pattern))
-    charged_amine_count = len(mol.GetSubstructMatches(charged_amine_pattern))
-    total_amines = amine_count + charged_amine_count
-    
+    total_amines = 0
+    for pattern in amine_patterns:
+        patt = Chem.MolFromSmarts(pattern)
+        if patt:
+            total_amines += len(mol.GetSubstructMatches(patt))
+
     if total_amines == 0:
         return False, "No amine groups found"
-    if total_amines > 2:  # Stricter limit on number of amines
+    if total_amines > 2:  # Allow maximum two amine groups
         return False, "Too many amine groups"
 
-    # Check for aromatic hydroxyl groups (common in monoamines)
-    aromatic_oh_pattern = Chem.MolFromSmarts("aO[H]")
-    has_aromatic_oh = mol.HasSubstructMatch(aromatic_oh_pattern)
+    # Additional checks for common monoamine features
+    aromatic_oh = Chem.MolFromSmarts("aO[H]")
+    has_aromatic_oh = mol.HasSubstructMatch(aromatic_oh)
     
-    detail = "monoamine with"
+    # Check for problematic features that might indicate non-monoamine
+    problematic_features = [
+        (Chem.MolFromSmarts("[N]1[C]=[N][C]=[N][C]1"), "Contains tetrazole"),
+        (Chem.MolFromSmarts("[N]1[C]=[O][C]="), "Contains oxazole"),
+        (Chem.MolFromSmarts("[N]1[N]=[N][N]="), "Contains tetrazine"),
+        (Chem.MolFromSmarts("C(=O)O[H]"), "Contains free carboxylic acid")
+    ]
+    
+    for pattern, reason in problematic_features:
+        if pattern and mol.HasSubstructMatches(pattern):
+            matches = mol.GetSubstructMatches(pattern)
+            if len(matches) > 1:  # Allow one instance
+                return False, f"Multiple instances of {reason}"
+
+    detail = "Contains aromatic ring with"
     if has_aromatic_oh:
-        detail += " hydroxylated"
-    detail += " aromatic ring and two-carbon amine linker"
+        detail += " hydroxyl group(s) and"
+    detail += " two-carbon chain connected to amine group"
     
-    return True, f"Confirmed {detail}"
+    return True, detail
