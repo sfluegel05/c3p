@@ -25,38 +25,36 @@ def is_diterpenoid(smiles: str):
     # Count the number of carbon atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
 
-    # More flexible carbon count check
-    if c_count < 16 or c_count > 40:
+    # Broaden carbon count range based on diterpenoids' variability
+    if c_count < 15 or c_count > 50:
         return False, f"Uncommon carbon count ({c_count}) for diterpenoids"
     
-    # Check for presence of ring structures
+    # Allow for diverse structures including cyclic, bicyclic, etc.
     ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() < 1:
-        return False, "Diterpenoids typically have ring structures"
+    if ring_info.NumRings() < 1 and c_count < 20:
+        return False, "Structures like cyclic or polycyclic are typical for diterpenoids"
 
-    # Check for presence of double bonds (C=C, includes alkene SMARTS)
+    # Check for double bonds
     double_bond_count = sum(1 for bond in mol.GetBonds() if bond.GetBondTypeAsDouble() == 2)
-    if double_bond_count < 1:
+    if double_bond_count < 1:  # May check minimum double bond occurrence for diterpenoids
         return False, "Few double bonds; uncommon for diterpenoids"
 
-    # Look for functional groups using SMARTS patterns typical for diterpenoids
-    patterns = {
-        "hydroxyl": Chem.MolFromSmarts("[CX4][OX2H]"),
-        "carbonyl": Chem.MolFromSmarts("[CX3](=O)"),
-        "ether": Chem.MolFromSmarts("[OX2][CX4]"),
-        "epoxide": Chem.MolFromSmarts("C1OC1"),
-        "methyl": Chem.MolFromSmarts("[CH3]"),
-    }
+    # Look for common functional groups
+    possible_groups = [
+        "[CX4][OX2H]",  # hydroxyl
+        "[CX3](=O)",    # carbonyl
+        "[OX2][CX4]",   # ether
+        "C1OC1",        # epoxide
+        "[CH3]",        # methyl
+        "[OX2H]",       # hydroxyl group
+    ]
 
-    for name, pattern in patterns.items():
-        if mol.HasSubstructMatch(pattern):
-            break
-    else:
-        return False, "Missing typical functional groups like hydroxyls, epoxides, or methyl groups"
+    if not any(mol.HasSubstructMatch(Chem.MolFromSmarts(p)) for p in possible_groups):
+        return False, "Missing typical functional groups like hydroxyls, carbonyls, ethers, epoxides, or methyl groups"
 
-    # Check stereochemistry, including unassigned
+    # Ensure presence of at least one chiral center
     chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
     if len(chiral_centers) < 1:
         return False, "Lack of chiral centers; uncommon for diterpenoids"
 
-    return True, "Molecule matches diterpenoid characteristics with flexible carbon count, ring structures, and typical functional groups"
+    return True, "Molecule matches diterpenoid characteristics with flexible carbon count, diverse structures, and typical functional groups"
