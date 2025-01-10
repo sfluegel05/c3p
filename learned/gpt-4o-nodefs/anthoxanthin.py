@@ -6,14 +6,15 @@ from rdkit import Chem
 def is_anthoxanthin(smiles: str):
     """
     Determines if a molecule is an anthoxanthin based on its SMILES string.
-    Anthoxanthins are flavonoids characterized by a benzopyranone core structure,
-    often with multiple hydroxyl/methoxy groups and potential glycosylation.
+    Anthoxanthins are a type of flavonoid, typically containing two aromatic rings
+    connected by a three-carbon bridge forming a pyran ring, often with several hydroxyl
+    groups and sometimes glycosidic attachments.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if the molecule is an anthoxanthin, False otherwise
+        bool: True if molecule is an anthoxanthin, False otherwise
         str: Reason for classification
     """
     
@@ -21,24 +22,23 @@ def is_anthoxanthin(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+
+    # Pattern for flavonoid backbone (C6-C3-C6)
+    flavonoid_pattern = Chem.MolFromSmarts("c1ccccc1C2=COC(=O)c3ccccc23")
+    if not mol.HasSubstructMatch(flavonoid_pattern):
+        return False, "Does not contain typical flavonoid backbone structure"
+
+    # Check for hydroxyl and ketone groups
+    hydroxyl_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and any(bond.GetBondType() == Chem.rdchem.BondType.SINGLE for bond in atom.GetBonds()))
+    ketone_pattern = Chem.MolFromSmarts("C(=O)")
+    ketone_matches = mol.GetSubstructMatches(ketone_pattern)
     
-    # Broadened anthoxanthin benzopyranone backbone pattern
-    anthoxanthin_pattern = Chem.MolFromSmarts("O=C1C=COC2=CC=CCC12") # Earlier pattern was too restrictive
-    
-    # Check for backbone structure match
-    if not mol.HasSubstructMatch(anthoxanthin_pattern):
-        return False, "Does not contain typical anthoxanthin benzopyranone backbone structure"
-         
-    # Look for hydroxyl or methoxy groups
-    hydroxyl_methoxy_pattern = Chem.MolFromSmarts("[OX2H] | [OX1CH3]")  # Focus on OH and OCH3 groups 
-    hydroxyl_methoxy_matches = mol.GetSubstructMatches(hydroxyl_methoxy_pattern)
-    if len(hydroxyl_methoxy_matches) < 2:  # Typically multiple groups are expected
-        return False, "Insufficient hydroxyl or methoxy groups present"
-    
-    # Check for possible complex glycosylation
-    glycoside_pattern = Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@H]1O")  # Possible glycoside linkages
-    if mol.HasSubstructMatch(glycoside_pattern):
-        return True, "Anthoxanthin with glycosidic linkage"
-    
-    # If all checks pass, classify as anthoxanthin
-    return True, "Contains anthoxanthin benzopyranone backbone and relevant functional groups"
+    if hydroxyl_count < 3 or len(ketone_matches) < 1:
+        return False, "Does not have sufficient hydroxyl or ketone groups"
+
+    # Optional: Check for glycoside groups, identified by oxygen-containing rings
+    glycoside_pattern = Chem.MolFromSmarts("OC1COC(O)C(O)C1O")
+    if not mol.HasSubstructMatch(glycoside_pattern):
+        return False, "No glycoside groups, which are common but not essential"
+
+    return True, "Contains anthoxanthin characteristic flavonoid backbone with appropriate functional groups"
