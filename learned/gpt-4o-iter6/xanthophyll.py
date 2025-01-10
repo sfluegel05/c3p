@@ -2,7 +2,6 @@
 Classifies: CHEBI:27325 xanthophyll
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_xanthophyll(smiles: str):
     """
@@ -22,23 +21,24 @@ def is_xanthophyll(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for a flexible long conjugated chain pattern
-    chain_pattern = Chem.MolFromSmarts("C=C" + "(-,-,[#6])" * 5 + "=C=C")  
-    if not mol.HasSubstructMatch(chain_pattern):
-        return False, "No proper long conjugated chain pattern, which is typical for carotenoids"
+    # General pattern representing alternation of double and single bonds (conjugation common in carotenoids)
+    conjugation_pattern = Chem.MolFromSmarts("C=C(-,=C)*=C")
+    if conjugation_pattern and not mol.HasSubstructMatch(conjugation_pattern):
+        return False, "No proper alternating double-bonds pattern typically found in carotenoids"
     
     # Check for the presence of oxygen atoms in various functional groups
-    o_pattern = Chem.MolFromSmarts("[#8]")  # General oxygen pattern to match -OH, =O, ethers, etc.
-    if not mol.HasSubstructMatch(o_pattern):
-        return False, "Carotene derivative must be oxygenated"
+    oxygen_pattern = Chem.MolFromSmarts("[OX1,OX2,OX3]")
+    if oxygen_pattern and not mol.HasSubstructMatch(oxygen_pattern):
+        return False, "Carotenoid derivative must be oxygenated (No oxygen detected)"
+    
+    # Check for possible multiple types of oxygen functionalization present
+    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")  # Detect -OH groups
+    carbonyl_pattern = Chem.MolFromSmarts("[CX3]=[OX1]")  # Detect =O groups
+    ether_pattern = Chem.MolFromSmarts("[CX3][OX2R]")  # Detect -O- groups
 
-    # Check for presence of at least one six-membered carbon ring
-    ring_info = mol.GetRingInfo()
-    six_membered_carbon_rings = [
-        ring for ring in ring_info.AtomRings() 
-        if len(ring) == 6 and all(mol.GetAtomWithIdx(idx).GetAtomicNum() == 6 for idx in ring)
-    ]
-    if len(six_membered_carbon_rings) < 1:
-        return False, "Carotenoid backbone typically includes cyclic rings"
+    if not (mol.HasSubstructMatch(hydroxyl_pattern) or mol.HasSubstructMatch(carbonyl_pattern) or mol.HasSubstructMatch(ether_pattern)):
+        return False, "At least one oxygen functional group required (such as hydroxyl, carbonyl, or ether not found)"
+
+    # Additional pattern checks and logic improvements as needed
 
     return True, "Contains features of an oxygenated carotenoid (xanthophyll)"
