@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_beta_carbolines(smiles: str):
     """
     Determines if a molecule is a beta-carboline based on its SMILES string.
-    Beta-carbolines have a pyridoindole core and can have hydrogenated derivatives or 
-    various substitutions.
+    A beta-carboline contains a pyridoindole core structure and can include 
+    their hydrogenated derivatives.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -16,31 +16,22 @@ def is_beta_carbolines(smiles: str):
         bool: True if molecule is a beta-carboline, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+
+    # Define the beta-carboline core pattern (pyridoindole structure)
+    # Example SMARTS string may vary, it requires fine-tuning
+    beta_carboline_pattern = Chem.MolFromSmarts('C1=NC2=CC=CC=C2C3=C1C=CC=C3')
     
-    # Refined SMARTS patterns for beta-carboline core structure
-    # Including possible hydrogenation and core variations
-    beta_carboline_patterns = [
-        'n1c2ccccc2c3[nH]c1c3',  # Fully aromatic core
-        'Cn1c2ccccc2c3nccc3c1',  # Methylated indole nitrogen
-        'n1c2ccccc2c3ccc[nH]c13',  # Another variation in hydrogenation
-        'n1c2ccccc2c3[nH]ccc13',  # Original pattern
-        '[nH]1c2ccccc2c3cccnc13',  # Another possible pattern with heterocycles
-    ]
+    # Check for the beta-carboline pattern
+    if not mol.HasSubstructMatch(beta_carboline_pattern):
+        return False, "No beta-carboline structure found"
 
-    # Check for any beta-carboline pattern match
-    for pattern in beta_carboline_patterns:
-        matcher = Chem.MolFromSmarts(pattern)
-        if mol.HasSubstructMatch(matcher):
-            return True, f"Contains a beta-carboline structure matching the pattern: {pattern}"
+    return True, "Contains beta-carboline structure"
 
-    # If no pattern matches
-    return False, "No beta-carboline structure found matching the refined patterns"
-
-# Example usage with one of the provided beta-carboline SMILES
-smiles_example = "CCCNC(=O)N1CC2(C1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)S(=O)(=O)C"
+# Example usage:
+smiles_example = "CC1=NC2=CC=CC=C2C3=C1C=CC=C3"  # Example beta-carboline SMILES
 print(is_beta_carbolines(smiles_example))
