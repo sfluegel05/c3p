@@ -26,26 +26,59 @@ def is_cholesteryl_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for steroid core (four fused rings) - simplified pattern
-    steroid_core = Chem.MolFromSmarts("C1CC2CCC3C(C2)CCC4CCCC34C1")
-    if not mol.HasSubstructMatch(steroid_core):
+    # Define multiple SMARTS patterns for steroid core to catch different representations
+    steroid_patterns = [
+        # Basic steroid core with flexible bond types
+        "[#6]~1~[#6]~[#6]~2~[#6]~[#6]~[#6]~3~[#6](~[#6]~2)~[#6]~[#6]~4~[#6]~[#6]~[#6]~[#6]~4~3~1",
+        # Alternative pattern focusing on ring connectivity
+        "C1CC2CCC3(C)C(CCC4C3CC=C4)C2CC1",
+        # More specific pattern including double bond
+        "C1CC2=CCC3C(CC[C@@H]4CCCC[C@]34C)C2(C)CC1"
+    ]
+    
+    core_found = False
+    for pattern in steroid_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            core_found = True
+            break
+            
+    if not core_found:
         return False, "No steroid core structure found"
 
-    # Look for ester group (-O-C(=O)-)
-    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])[#6]")
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) != 1:
-        return False, f"Found {len(ester_matches)} ester groups, need exactly 1"
+    # Look for ester group at position 3 (-O-C(=O)-)
+    # More specific pattern that includes connection to ring
+    ester_pattern = Chem.MolFromSmarts("[#6]~1~[#6]~[#6]~[#6;X4]~[#6]~[#6]~[#6]~1[OX2][CX3](=[OX1])[#6]")
+    if not mol.HasSubstructMatch(ester_pattern):
+        return False, "Missing ester group in correct position"
 
-    # Check for double bond characteristic of cholesterol (typically at C5-C6)
-    double_bond = Chem.MolFromSmarts("C=CC1CCC2C(C1)CCC")
-    if not mol.HasSubstructMatch(double_bond):
-        return False, "Missing characteristic cholesterol double bond"
+    # Check for characteristic cholesterol features
+    
+    # Double bond (typically at C5-C6, but allow flexibility)
+    double_bond_patterns = [
+        "C=CC1CCC2C(C1)CCC",
+        "CC1CC=C2CC1CCC2"
+    ]
+    double_bond_found = False
+    for pattern in double_bond_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            double_bond_found = True
+            break
+    
+    if not double_bond_found:
+        return False, "Missing characteristic steroid double bond"
 
-    # Check for branched side chain characteristic of cholesterol
-    # Pattern matches iso-octyl tail: -CH2-CH2-CH2-CH(CH3)-CH2-CH(CH3)-CH3
-    side_chain = Chem.MolFromSmarts("CCC(C)CCC(C)C")
-    if not mol.HasSubstructMatch(side_chain):
+    # Check for branched side chain with flexible pattern
+    side_chain_patterns = [
+        "CCC(C)CCC(C)C",
+        "[#6][#6][#6]([#6])[#6][#6][#6]([#6])[#6]"
+    ]
+    side_chain_found = False
+    for pattern in side_chain_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            side_chain_found = True
+            break
+            
+    if not side_chain_found:
         return False, "Missing characteristic cholesterol side chain"
 
     # Verify oxygen count (exactly 2 for ester group)
@@ -53,20 +86,14 @@ def is_cholesteryl_ester(smiles: str):
     if oxygen_count != 2:
         return False, f"Found {oxygen_count} oxygens, should be exactly 2 for cholesteryl ester"
 
-    # Count carbons - cholesteryl esters typically have >27 carbons 
-    # (27 from cholesterol + at least 2 from acyl group)
+    # Count carbons - cholesteryl esters typically have >27 carbons
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 29:
+    if c_count < 27:
         return False, "Too few carbons for cholesteryl ester"
 
-    # Check for reasonable molecular weight
+    # Check molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 400:  # Lowered threshold to catch smaller esters
+    if mol_wt < 350:  # Adjusted threshold
         return False, "Molecular weight too low for cholesteryl ester"
-
-    # Check for fatty acid chain length via rotatable bonds
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 2:
-        return False, "Acyl chain too short for typical cholesteryl ester"
 
     return True, "Contains cholesterol core with ester-linked fatty acid chain"
