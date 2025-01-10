@@ -20,31 +20,32 @@ def is_ether_lipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Identify glycerol backbone pattern (C-C-C with O attached)
-    glycerol_pattern = Chem.MolFromSmarts("[CH2][CH][CH2]")  # basic CH2-CH-CH2 pattern
+    # Updated glycerol backbone pattern to include stereochemistry and complex variations
+    glycerol_pattern = Chem.MolFromSmarts("[O][C@H][CH2][O]")  # Example pattern for stereo and oxygen groups
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
     
-    # Look for ether linkage (C-O-C)
-    ether_pattern = Chem.MolFromSmarts("C-O-C")  # basic ether pattern
-    if not mol.HasSubstructMatch(ether_pattern):
+    # Look for ether linkage (C-O-[!C])
+    ether_pattern = Chem.MolFromSmarts("[CX4][OX2H0][!#1]")  # ether linkage with non-hydrogen atom
+    ether_matches = mol.GetSubstructMatches(ether_pattern)
+    if not ether_matches:
         return False, "No ether linkages found"
 
     # Count ether vs ester groups (O=C-O)
-    ester_pattern = Chem.MolFromSmarts("C(=O)O")
+    ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H0]")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
-    ether_matches = mol.GetSubstructMatches(ether_pattern)
 
-    if len(ether_matches) <= len(ester_matches):
+    # Ensuring more or equivalent ethers to esters for classification
+    if not (len(ether_matches) > len(ester_matches)):
         return False, "Not enough ether linkages compared to ester linkages"
 
-    # Look for phosphate groups (P=O)
-    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)O")
+    # Look for phosphate groups (P(=O)(O)O)
+    phosphate_pattern = Chem.MolFromSmarts("[PX4](=O)(O)O")
     if mol.HasSubstructMatch(phosphate_pattern):
         return True, "Contains ether linkage with glycerol backbone and phosphate group"
 
     return True, "Contains ether linkage with glycerol backbone, but no phosphate group found"
 
-# Example of how this function might be used:
+# You can test the function with examples:
 # result, reason = is_ether_lipid("CCCCCCCCCCCOC[C@H](COP([O-])(=O)OCC[N+](C)(C)C)OC(C)=O")
 # print(result, reason)  # Expected output: True, "Contains ether linkage with glycerol backbone and phosphate group"
