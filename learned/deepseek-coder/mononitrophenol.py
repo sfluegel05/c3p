@@ -38,9 +38,17 @@ def is_mononitrophenol(smiles: str):
         return False, f"Found {len(nitro_matches)} nitro groups, need exactly 1"
 
     # Ensure the nitro group is attached to the benzene ring
-    nitro_atom = nitro_matches[0][0]
+    nitro_atom = nitro_matches[0][0]  # Nitrogen atom of the nitro group
     benzene_atoms = [atom.GetIdx() for atom in mol.GetAtoms() if atom.IsInRing() and atom.GetAtomicNum() == 6]
-    if nitro_atom not in benzene_atoms:
+    
+    # Check if the nitro group is bonded to a carbon in the benzene ring
+    nitro_bonded_to_benzene = False
+    for neighbor in mol.GetAtomWithIdx(nitro_atom).GetNeighbors():
+        if neighbor.GetIdx() in benzene_atoms:
+            nitro_bonded_to_benzene = True
+            break
+
+    if not nitro_bonded_to_benzene:
         return False, "Nitro group is not attached to the benzene ring"
 
     return True, "Contains a phenol group with exactly one nitro substituent on the benzene ring"
