@@ -23,22 +23,22 @@ def is_3_oxo_fatty_acyl_CoA_4__(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for 3-oxo-fatty acyl pattern - refined to include keto group
-    oxo_fatty_acyl_pattern = Chem.MolFromSmarts("C(=O)C(=O)")
+    # New pattern: Check for a 3-oxo-fatty acyl pattern (O=C-C(=O))
+    oxo_fatty_acyl_pattern = Chem.MolFromSmarts("C(=O)[CH2]C(=O)C")
     if not mol.HasSubstructMatch(oxo_fatty_acyl_pattern):
         return False, "No 3-oxo-fatty acyl group found"
 
-    # Improved check for CoA moiety specific pattern
-    coa_pattern = Chem.MolFromSmarts("C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)OP([O-])=O")
+    # Improved CoA moiety pattern
+    coa_pattern = Chem.MolFromSmarts("C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP([O-])(=O)")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "CoA moiety not found"
 
-    # Check for chirality and extended parts of CoA
-    extended_pattern = Chem.MolFromSmarts("[C@H](O)C(C)(C)COP([O-])(=O)OP([O-])(=O)OC[C@H]1O[C@H]n2cnc3c(N)ncnc32")
-    if not mol.HasSubstructMatch(extended_pattern):
+    # Full structure check including phosphates
+    extended_coa_pattern = Chem.MolFromSmarts("[C@@H](O)C(C)(C)COP([O-])(=O)OP([O-])(=O)OC[C@@H]1O[C@@H]([C@H](O)[C@H]1OP([O-])([O-])=O)n2cnc3c(N)ncnc32")
+    if not mol.HasSubstructMatch(extended_coa_pattern):
         return False, "Extended CoA parts with chirality not found"
 
-    # Ensure presence of at least 2 phosphates with correct deprotonation
+    # Count deprotonated phosphates
     phosphate_pattern = Chem.MolFromSmarts("OP([O-])(=O)[O-]")
     phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
     if len(phosphate_matches) < 2:
