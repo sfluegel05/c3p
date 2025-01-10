@@ -19,23 +19,23 @@ def is_phosphatidyl_L_serine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Updated phosphate group pattern: Specifically checks for a phosphatidyl linkage
-    phosphate_pattern = Chem.MolFromSmarts("O=P(O)(OC[C@H](O)COP)O")
+    # Correcting the phosphate pattern to match phosphate ester found in phosphatidyl-L-serine
+    phosphate_pattern = Chem.MolFromSmarts("O=P(O)(OCC[N])(OC)OC(=O)")
     if not mol.HasSubstructMatch(phosphate_pattern):
         return False, "No phosphatidyl linkage found"
         
-    # Updated serine pattern: accommodates stereochemistry and ester linkage
-    serine_pattern = Chem.MolFromSmarts("C[C@H](N)C(=O)O[P]")
+    # Correcting the serine linkage: Capture the serine esterified to phosphate and glycerol
+    serine_pattern = Chem.MolFromSmarts("N[C@@H](C(=O)O)COP(=O)(O)OC")
     if not mol.HasSubstructMatch(serine_pattern):
-        return False, "No serine group pattern found esterified to the phosphate"
+        return False, "No esterified serine group pattern found"
 
-    # Glycerol backbone attached to phosphate
-    glycerol_pattern = Chem.MolFromSmarts("OCC(O)COP")
+    # Glycerol backbone bound through ester linkages to two fatty acids
+    glycerol_pattern = Chem.MolFromSmarts("OC[C@H](COP(=O)(O)O)OC(=O)")
     if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No correct glycerol backbone pattern found"
+        return False, "No glycerol backbone with ester linkages found"
 
-    # Two ester linkages for fatty acid chains
-    ester_pattern = Chem.MolFromSmarts("C(=O)O")
+    # Verify two ester groups bound (indicative of fatty acid chains)
+    ester_pattern = Chem.MolFromSmarts("OC(=O)C")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) < 2:
         return False, f"Insufficient ester groups; found {len(ester_matches)}, need at least 2"
