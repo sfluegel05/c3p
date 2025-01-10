@@ -9,14 +9,14 @@ from rdkit import Chem
 def is_chalcogen(smiles: str):
     """
     Determines if a molecule is a chalcogen atom based on its SMILES string.
-    A chalcogen is any p-block element belonging to group 16 of the periodic table:
+    A chalcogen is any neutral p-block element belonging to group 16 of the periodic table:
     Oxygen (O), Sulfur (S), Selenium (Se), Tellurium (Te), Polonium (Po), Livermorium (Lv).
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a chalcogen atom, False otherwise
+        bool: True if molecule is a neutral chalcogen atom, False otherwise
         str: Reason for classification
     """
     # Parse the SMILES string
@@ -29,22 +29,28 @@ def is_chalcogen(smiles: str):
 
     # Check if the molecule consists of a single atom
     if len(atoms) != 1:
-        return False, "Molecule is not a single atom"
+        return False, "Molecule does not consist of a single atom"
 
     # Get the atom
     atom = atoms[0]
 
     # Get the atomic number
     atomic_num = atom.GetAtomicNum()
+    # Get the formal charge
+    formal_charge = atom.GetFormalCharge()
 
     # List of atomic numbers of chalcogens
     chalcogen_atomic_numbers = [8, 16, 34, 52, 84, 116]
 
     # Check if the atomic number is in the list of chalcogens
-    if atomic_num in chalcogen_atomic_numbers:
-        return True, f"Atom is a chalcogen element with atomic number {atomic_num}"
-    else:
+    if atomic_num not in chalcogen_atomic_numbers:
         return False, f"Atom is not a chalcogen element (atomic number {atomic_num})"
+
+    # Check if the atom is neutral
+    if formal_charge != 0:
+        return False, f"Atom has a formal charge of {formal_charge}, not neutral"
+
+    return True, f"Atom is a neutral chalcogen element with atomic number {atomic_num}"
 
 __metadata__ = {
     'chemical_class': {
