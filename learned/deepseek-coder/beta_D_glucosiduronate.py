@@ -28,6 +28,7 @@ def is_beta_D_glucosiduronate(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define a more flexible beta-D-glucuronide substructure pattern
+    # This pattern matches the core structure of beta-D-glucuronide without being overly specific about stereochemistry
     glucuronide_pattern = Chem.MolFromSmarts("[C@H]1([C@H]([C@@H]([C@H]([C@@H](O1)O)O)O)C(=O)[O-])")
     if not mol.HasSubstructMatch(glucuronide_pattern):
         return False, "No beta-D-glucuronide moiety found"
