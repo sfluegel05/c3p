@@ -25,6 +25,10 @@ def is_lactol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
+    # Verify that the molecule is cyclic
+    if not mol.GetRingInfo().NumRings():
+        return False, "Molecule is not cyclic (lactols are cyclic hemiacetals)"
+
     # Look for the general lactol pattern: a ring with an oxygen and a hydroxyl group
     # This pattern is more flexible and accounts for different ring sizes
     lactol_pattern = Chem.MolFromSmarts("[OH]-[C;R]-[O;R]")
@@ -35,10 +39,6 @@ def is_lactol(smiles: str):
     carbonyl_pattern = Chem.MolFromSmarts("[CX3]=[OX1]")
     if not mol.HasSubstructMatch(carbonyl_pattern):
         return False, "No carbonyl group found (aldehyde or ketone required for lactol formation)"
-
-    # Verify that the molecule is cyclic
-    if not mol.GetRingInfo().NumRings():
-        return False, "Molecule is not cyclic (lactols are cyclic hemiacetals)"
 
     # Check that the hydroxyl group and oxygen are in the same ring
     ring_info = mol.GetRingInfo()
