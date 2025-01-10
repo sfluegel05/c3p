@@ -5,13 +5,12 @@ Classifies: CHEBI:46662 mineral
 Classifies: CHEBI:46662 mineral
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_mineral(smiles: str):
     """
     Determines if a molecule is a mineral based on its SMILES string.
-    A mineral is an inorganic substance, typically formed through geological processes,
-    consisting of metals and non-metals, and lacking complex organic structures.
+    A mineral is a naturally occurring chemical substance formed through geological processes,
+    typically inorganic, and has a characteristic chemical composition.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -42,33 +41,24 @@ def is_mineral(smiles: str):
         if element not in mineral_elements:
             return False, f"Element '{element}' not commonly found in minerals"
 
-    # Check for presence of carbon-carbon bonds
-    has_c_c_bond = False
-    for bond in mol.GetBonds():
-        atom1 = bond.GetBeginAtom()
-        atom2 = bond.GetEndAtom()
-        if atom1.GetSymbol() == 'C' and atom2.GetSymbol() == 'C':
-            has_c_c_bond = True
-            break
-    if has_c_c_bond:
-        return False, "Contains carbon-carbon bonds, indicative of organic compounds"
+    # Remove check for carbon-carbon bonds and rings, as minerals can contain them
 
-    # Check for presence of rings
-    sssr = Chem.GetSSSR(mol)
-    if sssr > 0:
-        return False, f"Contains {sssr} ring(s), which is not typical for minerals"
-
-    # Check for presence of functional groups typical of organic molecules
-    # (e.g., alcohols, amines, alkenes, aromatic rings)
+    # Check for presence of complex organic functional groups
+    # Define SMARTS patterns for functional groups typical of organic molecules
     organic_functional_groups = [
-        Chem.MolFromSmarts("[CX3]=[CX3]"),     # Alkenes
-        Chem.MolFromSmarts("[CX3]#[CX2]"),     # Alkynes
-        Chem.MolFromSmarts("[CX3](=O)[OX2H1]"),# Carboxylic acids
-        Chem.MolFromSmarts("[NX3][CX3]=[OX1]"),# Amides
-        Chem.MolFromSmarts("[OX2H]"),          # Alcohols
-        Chem.MolFromSmarts("[NX3H2]"),         # Primary amines
-        Chem.MolFromSmarts("[SX2H]"),          # Thiols
-        Chem.MolFromSmarts("c")]               # Aromatic carbons
+        Chem.MolFromSmarts("[#6][#6][#6][#6]"),  # Long carbon chains (4 or more carbons)
+        Chem.MolFromSmarts("[#6]=[#6]"),         # Alkenes
+        Chem.MolFromSmarts("[#6]#[#6]"),         # Alkynes
+        Chem.MolFromSmarts("[#6][OX2H]"),        # Alcohols
+        Chem.MolFromSmarts("[#6][NX3]"),         # Amines
+        Chem.MolFromSmarts("c1ccccc1"),          # Benzene ring
+        Chem.MolFromSmarts("[#6]=O"),            # Carbonyl groups
+        Chem.MolFromSmarts("[#6]C(=O)[#6]"),     # Ketones
+        Chem.MolFromSmarts("[#6]C(=O)O[#6]"),    # Esters
+        Chem.MolFromSmarts("[#6]C(=O)O[H]"),     # Carboxylic acids
+        Chem.MolFromSmarts("[#6][#7][#6]"),      # Secondary amines
+        Chem.MolFromSmarts("[#6][#16][#6]"),     # Thioethers
+    ]
 
     for fg in organic_functional_groups:
         if mol.HasSubstructMatch(fg):
@@ -80,7 +70,7 @@ __metadata__ = {
     'chemical_class': {
         'id': 'CHEBI:46662',
         'name': 'mineral',
-        'definition': 'A naturally occurring solid formed through geological processes that has characteristic chemical composition, a highly ordered atomic structure, and specific physical properties.',
+        'definition': 'In general, a mineral is a chemical substance that is normally crystalline formed and has been formed as a result of geological processes. The term also includes metamict substances (naturally occurring, formerly crystalline substances whose crystallinity has been destroyed by ionising radiation) and can include naturally occurring amorphous substances that have never been crystalline (\'mineraloids\') such as georgite and calciouranoite as well as substances formed by the action of geological processes on bigenic compounds (\'biogenic minerals\').',
         'parents': ['CHEBI:24437']
     },
     'config': {
@@ -96,7 +86,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 0,
+    'attempt': 1,
     'success': True,
     'best': True,
     'error': '',
