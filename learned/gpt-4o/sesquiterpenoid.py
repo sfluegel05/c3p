@@ -7,15 +7,15 @@ from rdkit.Chem import rdMolDescriptors
 def is_sesquiterpenoid(smiles: str):
     """
     Determines if a molecule is a sesquiterpenoid based on its SMILES string.
-    A sesquiterpenoid is derived from a sesquiterpene with structural modifications
-    possible. Typically a C15 skeleton but may involve rearrangements or minor
-    subtractive modifications.
+    A sesquiterpenoid is derived from a sesquiterpene, typically a C15 skeleton
+    but may involve structural modifications such as rearrangements or subtractive
+    modifications.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a sesquiterpenoid, False otherwise
+        bool: True if the molecule is a sesquiterpenoid, False otherwise
         str: Reason for classification
     """
 
@@ -23,29 +23,30 @@ def is_sesquiterpenoid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Check for carbon backbone size with flexible range
-    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if not (12 <= carbon_count <= 16):  # Allowing for rearrangements
-        return False, f"Expected approximately C15 count, found {carbon_count}"
 
-    # Check for minimum number of rings to suggest cyclization
+    # Check for approximate carbon backbone size
+    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if carbon_count < 10 or carbon_count > 25:  # Allow more flexibility
+        return False, f"Expected more carbon atoms typical of sesquiterpenoids, found {carbon_count}"
+
+    # Check for any ring structure
     ring_count = mol.GetRingInfo().NumRings()
-    if ring_count < 1:
-        return False, "Typical sesquiterpenoids feature rings"
-    
-    # Detect key sesquiterpenoid functional groups using SMARTS patterns
-    functional_groups = ['[OX2H]', '[C=O]', '[OX1C](=[OX1])', '[C-0]!@[C-0]']
-    if not any(mol.HasSubstructMatch(Chem.MolFromSmarts(group)) for group in functional_groups):
+    if ring_count == 0:
+        return False, "No ring structures, which are common in sesquiterpenoids"
+
+    # Check for common sesquiterpenoid functionalities
+    common_smarts = [
+        '[C;X4]',  # Tetrahedral carbons (indicating complex alkyl chains)
+        '[O][C]=O',  # Ester groups 
+        '[O][#6]',   # Possible alcohols or ethers
+        '[C](=O)[C]',  # Ketones often found in sesquiterpene lactones
+    ]
+    found_group = False
+    for smarts in common_smarts:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(smarts)):
+            found_group = True
+            break
+    if not found_group:
         return False, "No typical sesquiterpenoid functional groups found"
 
-    # Look for characteristic chemical complexity
-    num_stereocenters = len(Chem.FindMolChiralCenters(mol, includeUnassigned=True))
-    if num_stereocenters < 3:
-        return False, "Low number of stereocenters, uncharacteristic of sesquiterpenoids"
-    
-    num_rotatable_bonds = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if num_rotatable_bonds > 3:
-        return True, "Possible sesquiterpenoid with characteristic chemical complexity"
-
-    return True, "C15-like backbone with sesquiterpenoid characteristics including functional or structural modifications"
+    return True, "C15-like skeleton with sesquiterpenoid functional groups and possible structural modifications"
