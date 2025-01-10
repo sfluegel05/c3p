@@ -25,72 +25,68 @@ def is_cannabinoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Classical cannabinoid patterns (more specific)
-    thc_core = Chem.MolFromSmarts("c1c(O)cc(CCCCC)c2c1OC(C)(C)[C@H]1CC=C(C)[C@H]21") # THC core
-    cbd_core = Chem.MolFromSmarts("c1c(O)c(CC2=CCCC(C(=C)C)C2)cc(CCCCC)c1O") # CBD core
-    cbg_core = Chem.MolFromSmarts("c1c(O)c(CC=C(C)CCC=C(C)C)cc(CCCCC)c1O") # CBG core
+    # Classical cannabinoid patterns (more general)
+    thc_core = Chem.MolFromSmarts("c1c(O)cc(CCCCC)c2c1OC(C)(C)C1CCC(C)=CC21") # THC core
+    cbd_core = Chem.MolFromSmarts("c1c(O)cc(CCCCC)c(O)c1CC1C=C(C)CCC1") # CBD core
+    cbg_core = Chem.MolFromSmarts("c1c(O)cc(CCCCC)c(O)c1CC=C(C)CCC=C(C)C") # CBG core
+    
+    # Cannabinoid acid patterns
+    thca_core = Chem.MolFromSmarts("c1c(O)c(C(=O)O)c(CCCCC)c2c1OC(C)(C)C1CCC(C)=CC21")
+    cbda_core = Chem.MolFromSmarts("c1c(O)c(C(=O)O)c(CCCCC)c(O)c1CC1C=C(C)CCC1")
+    cbga_core = Chem.MolFromSmarts("c1c(O)c(C(=O)O)c(CCCCC)c(O)c1CC=C(C)CCC=C(C)C")
     
     # Synthetic cannabinoid patterns
-    indole_core = Chem.MolFromSmarts("c1ccc2c(c1)c(C(=O))cn2CCCCC") # Indole-based
-    pyrrole_core = Chem.MolFromSmarts("c1ccc(CC(=O)c2[nH]c3ccccc3c2)cc1") # Pyrrole-based
-    cp_core = Chem.MolFromSmarts("[OH]C1CCC([c,C]2ccc(O)cc2)CC1") # CP-like core
+    indole_core = Chem.MolFromSmarts("c1ccc2c(c1)c(C(=O)[#6])n([CH2][CH2][CH2][CH2][#6])2") # More specific indole
+    cp_core = Chem.MolFromSmarts("c1c(O)c([CH2,CH]C2CC[CH](O)CC2)cc(C(C)(C)[CH2,CH3])c1") # CP-like
     
     # Endocannabinoid patterns
-    fatty_amide = Chem.MolFromSmarts("CCCCC(=CC=CC=CC=CC=CC)CC(=O)NCCO") # Anandamide-like
-    glycerol_ester = Chem.MolFromSmarts("OCC(O)COC(=O)CCCCC=CC=CC=CC=C") # 2-AG-like
-    ether_core = Chem.MolFromSmarts("CCCCC=CC=CC=CC=CCCCOC(CO)CO") # 2-AG ether-like
+    arachidonic_chain = Chem.MolFromSmarts("CCCCC=CC=CC=CC=CC=CC") # Arachidonic acid chain
+    glycerol_ester = Chem.MolFromSmarts("OCC(O)COC(=O)[CH2][CH2]") # Glycerol ester
+    ethanolamine = Chem.MolFromSmarts("C(=O)NCCO") # Ethanolamine
 
-    # Check for characteristic substitution patterns
-    classical_cores = [
-        (thc_core, "THC-like"), 
-        (cbd_core, "CBD-like"),
-        (cbg_core, "CBG-like")
-    ]
-    
-    synthetic_cores = [
-        (indole_core, "indole-based synthetic"),
-        (pyrrole_core, "pyrrole-based synthetic"),
-        (cp_core, "CP-like synthetic")
-    ]
-    
-    endocannabinoid_cores = [
-        (fatty_amide, "fatty acid ethanolamide"),
-        (glycerol_ester, "monoacylglycerol"),
-        (ether_core, "glyceryl ether")
-    ]
-
-    # Calculate molecular properties
+    # Check molecular properties
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     ring_count = rdMolDescriptors.CalcNumRings(mol)
     rotatable_bonds = rdMolDescriptors.CalcNumRotatableBonds(mol)
     
-    # Check for classical cannabinoids
+    # Count oxygens (cannabinoids typically have 2-3 oxygens)
+    o_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[O]")))
+    
+    # Classical cannabinoids and their acids
+    classical_cores = [
+        (thc_core, "THC-like"), 
+        (cbd_core, "CBD-like"),
+        (cbg_core, "CBG-like"),
+        (thca_core, "THCA-like"),
+        (cbda_core, "CBDA-like"),
+        (cbga_core, "CBGA-like")
+    ]
+    
     for core, core_type in classical_cores:
         if mol.HasSubstructMatch(core):
-            if 280 < mol_wt < 400 and ring_count >= 2:
+            if 280 < mol_wt < 400 and ring_count >= 2 and 2 <= o_count <= 4:
                 return True, f"Classical cannabinoid with {core_type} core structure"
 
-    # Check for synthetic cannabinoids
-    for core, core_type in synthetic_cores:
-        if mol.HasSubstructMatch(core):
-            if 300 < mol_wt < 450 and ring_count >= 2:
-                return True, f"Synthetic cannabinoid with {core_type} core structure"
+    # Synthetic cannabinoids
+    if mol.HasSubstructMatch(indole_core):
+        if 300 < mol_wt < 450 and ring_count >= 3:
+            return True, "Synthetic cannabinoid with indole core"
+            
+    if mol.HasSubstructMatch(cp_core):
+        if 300 < mol_wt < 450 and ring_count >= 2:
+            return True, "Synthetic cannabinoid with CP-like core"
 
-    # Check for endocannabinoids
-    for core, core_type in endocannabinoid_cores:
-        if mol.HasSubstructMatch(core):
-            if 300 < mol_wt < 500 and rotatable_bonds > 10:
-                return True, f"Endocannabinoid ({core_type})"
-
-    # Additional checks for MAGs and ethanolamides
-    if "COC(=O)" in smiles and "CO" in smiles:  # Potential MAG
-        if rotatable_bonds > 10 and "C=C" in smiles:  # Long unsaturated chain
-            if 300 < mol_wt < 500:
-                return True, "Monoacylglycerol (MAG) cannabinoid"
-                
-    if "NCCO" in smiles and "C(=O)" in smiles:  # Potential ethanolamide
-        if rotatable_bonds > 10 and "C=C" in smiles:  # Long unsaturated chain
-            if 300 < mol_wt < 500:
-                return True, "Fatty acid ethanolamide cannabinoid"
+    # Endocannabinoids
+    has_arachidonic = mol.HasSubstructMatch(arachidonic_chain)
+    has_glycerol = mol.HasSubstructMatch(glycerol_ester)
+    has_ethanolamine = mol.HasSubstructMatch(ethanolamine)
+    
+    if has_arachidonic:
+        if has_glycerol:
+            if 300 < mol_wt < 500 and rotatable_bonds > 10 and o_count == 4:
+                return True, "2-arachidonoyl glycerol (2-AG) type endocannabinoid"
+        if has_ethanolamine:
+            if 300 < mol_wt < 500 and rotatable_bonds > 10 and o_count == 3:
+                return True, "Anandamide-type endocannabinoid"
 
     return False, "Does not match cannabinoid structural patterns"
