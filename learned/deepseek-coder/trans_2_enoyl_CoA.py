@@ -32,17 +32,32 @@ def is_trans_2_enoyl_CoA(smiles: str):
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No CoA moiety found"
 
-    # Define the trans-2-enoyl group pattern (trans double bond at position 2, carbonyl at position 1)
-    trans_2_enoyl_pattern = Chem.MolFromSmarts("[CX3]=[CX3H1]\\C=C\\C(=O)[SX2]")
-    if not mol.HasSubstructMatch(trans_2_enoyl_pattern):
+    # More specific trans-2-enoyl pattern:
+    # - Must have exactly one trans double bond at position 2
+    # - Must have exactly one carbonyl at position 1
+    # - Must be connected to CoA via thioester bond
+    trans_2_enoyl_pattern = Chem.MolFromSmarts("[CX3H1,CX4H2]\\C=C\\C(=O)[SX2]")
+    matches = mol.GetSubstructMatches(trans_2_enoyl_pattern)
+    
+    if not matches:
         return False, "No trans-2-enoyl group found"
+    
+    # Verify there's exactly one trans-2-enoyl group
+    if len(matches) != 1:
+        return False, f"Found {len(matches)} potential enoyl groups, need exactly 1"
 
-    # Verify the thioester bond between the CoA thiol and the enoyl group
-    thioester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[SX2]")
-    if not mol.HasSubstructMatch(thioester_pattern):
-        return False, "No thioester bond found between CoA and enoyl group"
+    # Verify the double bond is truly trans
+    bond = mol.GetBondBetweenAtoms(matches[0][1], matches[0][2])
+    if not bond or not bond.GetStereo() == Chem.rdchem.BondStereo.STEREOE:
+        return False, "Double bond is not in trans configuration"
 
-    return True, "Contains CoA moiety and trans-2-enoyl group with a thioester bond"
+    # Verify the thioester bond is connected to CoA
+    thioester_atom = matches[0][-1]  # The sulfur atom
+    for neighbor in mol.GetAtomWithIdx(thioester_atom).GetNeighbors():
+        if neighbor.GetSymbol() == "C" and neighbor.GetDegree() == 3:  # CoA connection
+            return True, "Contains CoA moiety and trans-2-enoyl group with a thioester bond"
+
+    return False, "Thioester bond not properly connected to CoA moiety"
 
 
 __metadata__ = {
