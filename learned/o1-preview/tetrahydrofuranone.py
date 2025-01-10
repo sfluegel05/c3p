@@ -6,8 +6,10 @@ from rdkit import Chem
 def is_tetrahydrofuranone(smiles: str):
     """
     Determines if a molecule is a tetrahydrofuranone based on its SMILES string.
-    A tetrahydrofuranone is any oxolane (tetrahydrofuran ring) having an oxo substituent (C=O) 
-    at any position on the ring. This includes lactones where the carbonyl is part of the ring.
+    A tetrahydrofuranone is any oxolane (tetrahydrofuran ring with 4 carbons and 1 oxygen)
+    having an oxo substituent (C=O) at any position on the ring. This includes lactones
+    where the carbonyl is part of the ring, and compounds where a C=O is attached to 
+    any atom of the ring.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -25,7 +27,6 @@ def is_tetrahydrofuranone(smiles: str):
     # Get ring information
     ring_info = mol.GetRingInfo()
     atom_rings = ring_info.AtomRings()
-    bond_rings = ring_info.BondRings()
 
     # Iterate over all rings in the molecule
     for idx_ring, ring in enumerate(atom_rings):
@@ -38,17 +39,10 @@ def is_tetrahydrofuranone(smiles: str):
         carbon_count = 0
         other_atom = False
 
-        # Check for ring fusion
-        fused = False
-        for idx in ring:
-            if ring_info.NumAtomRings(idx) > 1:
-                fused = True
-                break
-        if fused:
-            continue  # Skip fused rings
-
-        # Count atoms in the ring and check for unsaturation
+        # Collect ring atoms
         ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
+
+        # Count atoms in the ring
         for atom in ring_atoms:
             atomic_num = atom.GetAtomicNum()
             if atomic_num == 8:
@@ -70,53 +64,52 @@ def is_tetrahydrofuranone(smiles: str):
         if oxygen_count != 1 or carbon_count != 4:
             continue
 
-        # Check for unsaturation within the ring (exclude aromatic or double bonds)
-        bonds_in_ring = [mol.GetBondWithIdx(bond_idx) for bond_idx in bond_rings[idx_ring]]
+        # Check for unsaturation within the ring (exclude aromatic bonds)
+        bonds_in_ring = [bond for bond in mol.GetBonds() if bond.GetBeginAtomIdx() in ring and bond.GetEndAtomIdx() in ring]
         ring_unsaturation = False
         for bond in bonds_in_ring:
-            if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE and not (
-                (bond.GetBeginAtom().GetAtomicNum() == 6 and bond.GetEndAtom().GetAtomicNum() == 8) or
-                (bond.GetBeginAtom().GetAtomicNum() == 8 and bond.GetEndAtom().GetAtomicNum() == 6)
-            ):
-                # Found double bond in ring that is not C=O
-                ring_unsaturation = True
-                break
-            # Check if bond is aromatic
-            if bond.GetIsAromatic():
+            if bond.GetBondType() == Chem.rdchem.BondType.AROMATIC:
                 ring_unsaturation = True
                 break
         if ring_unsaturation:
             continue
 
-        # Now check for presence of C=O bond in ring (lactone) or attached to ring carbons
-        found_C_O_double_in_ring = False
+        # Check for presence of C=O bond either in the ring (lactone) or attached to ring atoms
+        found_C_O_double = False
+
+        # First, check for C=O bonds in the ring (lactone)
         for bond in bonds_in_ring:
             if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
                 begin_atom = bond.GetBeginAtom()
                 end_atom = bond.GetEndAtom()
                 if ((begin_atom.GetAtomicNum() == 6 and end_atom.GetAtomicNum() == 8) or
                     (begin_atom.GetAtomicNum() == 8 and end_atom.GetAtomicNum() == 6)):
-                    found_C_O_double_in_ring = True
+                    found_C_O_double = True
                     break
 
-        # Now check for C=O attached to ring carbons (outside the ring)
-        found_C_O_double_attached = False
-        for atom in ring_atoms:
-            if atom.GetAtomicNum() != 6:
-                continue  # Skip non-carbon atoms
-            for neighbor in atom.GetNeighbors():
-                if neighbor in ring_atoms:
-                    continue  # Skip atoms in the ring
-                bond = mol.GetBondBetweenAtoms(atom.GetIdx(), neighbor.GetIdx())
-                if neighbor.GetAtomicNum() == 8 and bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-                    found_C_O_double_attached = True
+        # If not found in ring, check for C=O attached to ring atoms
+        if not found_C_O_double:
+            for atom in ring_atoms:
+                for neighbor in atom.GetNeighbors():
+                    if neighbor.GetIdx() in ring:
+                        continue  # Skip ring atoms
+                    bond = mol.GetBondBetweenAtoms(atom.GetIdx(), neighbor.GetIdx())
+                    if bond is None:
+                        continue
+                    if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                        if neighbor.GetAtomicNum() == 8:
+                            # Found exocyclic C=O attached to ring atom
+                            found_C_O_double = True
+                            break
+                if found_C_O_double:
                     break
-            if found_C_O_double_attached:
-                break
 
-        if found_C_O_double_in_ring or found_C_O_double_attached:
+        if found_C_O_double:
             # Match found
-            return True, "Contains non-fused, saturated tetrahydrofuran ring with oxo substituent"
+            return True, "Contains tetrahydrofuran ring with oxo substituent at ring position"
+        else:
+            continue  # No C=O found, check next ring
+
     # No matching ring found
     return False, "No tetrahydrofuranone ring found"
 
