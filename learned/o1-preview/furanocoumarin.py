@@ -6,6 +6,7 @@ Classifies: furanocoumarin
 """
 
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_furanocoumarin(smiles: str):
     """
@@ -25,29 +26,19 @@ def is_furanocoumarin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS patterns for different furanocoumarin cores
-    # These patterns capture various fusion isomers between furan and coumarin rings
+    # Define SMARTS patterns for linear (psoralen-type) furanocoumarins
+    linear_pattern = Chem.MolFromSmarts('O=C1Oc2ccccc2Oc3ccccc13')  # Psoralen core
+    # Define SMARTS patterns for angular (angelicin-type) furanocoumarins
+    angular_pattern = Chem.MolFromSmarts('O=C1Oc2ccccc2C3=C1C=CO3')  # Angelicin core
 
-    patterns = []
-
-    # Linear furanocoumarin (psoralen-type)
-    patterns.append(Chem.MolFromSmarts('c1cc2oc(=O)c3ccoc3cc2cc1'))
-    
-    # Angular furanocoumarin (angelicin-type)
-    patterns.append(Chem.MolFromSmarts('c1ccc2c(c1)oc(=O)c1ccoc21'))
-    
-    # Additional patterns to capture other isomers
-    patterns.append(Chem.MolFromSmarts('c1cc2oc(=O)c3ccoc3c2c1'))  # Extended linear
-    patterns.append(Chem.MolFromSmarts('c1ccc2c(c1)oc(=O)c3cocc23'))  # Alternative angular
-    patterns.append(Chem.MolFromSmarts('c1cc2c(c1)oc(=O)c3ccoc23'))  # Fusion variation
-    patterns.append(Chem.MolFromSmarts('c1ccc2oc(=O)c3ccoc3c2c1'))    # Another variation
-
-    # Check for matches to any of the patterns
-    for pattern in patterns:
-        if mol.HasSubstructMatch(pattern):
-            return True, "Contains furanocoumarin core"
-
-    return False, "Does not contain furanocoumarin core"
+    # Check for matches with linear pattern
+    if mol.HasSubstructMatch(linear_pattern):
+        return True, "Contains linear furanocoumarin core"
+    # Check for matches with angular pattern
+    elif mol.HasSubstructMatch(angular_pattern):
+        return True, "Contains angular furanocoumarin core"
+    else:
+        return False, "Does not contain furanocoumarin core"
 
 __metadata__ = {
     'chemical_class': {
