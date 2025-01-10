@@ -2,11 +2,13 @@
 Classifies: CHEBI:16412 lipopolysaccharide
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_lipopolysaccharide(smiles: str):
     """
     Determines if a molecule is a lipopolysaccharide based on its SMILES string.
-    Lipopolysaccharides contain a complex mixture of specific trisaccharide units, oligosaccharide structures, and long fatty acid chains.
+    Lipopolysaccharides contain a complex mixture of specific trisaccharide units,
+    oligosaccharide structures, and long fatty acid chains.
 
     Args:
         smiles (str): SMILES string of the molecule.
@@ -21,26 +23,34 @@ def is_lipopolysaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a possible improved trisaccharide pattern (simplified)
-    # Focuses on common sugar rings and their linkages
-    trisaccharide_pattern = Chem.MolFromSmarts("O[C@H]([C@@H](O)CO)[C@@H](O)C(O)C[C@H](O)C=O")
+    # Define a more complex potential polysaccharide pattern (broader sugar units)
+    trisaccharide_pattern = Chem.MolFromSmarts("O[C@H]([C@@H](O)CO)[C@H](O[C@H]1O[C@H](O)[C@@H]([C@H]1O)CO)C(O)C[C@H](O)C=O")
     if not mol.HasSubstructMatch(trisaccharide_pattern):
         return False, "No complex trisaccharide-like unit found"
 
-    # Define a fatty acid mimic pattern targeting long chains (including hydroxyl groups and length robustness)
-    lipid_chain_pattern = Chem.MolFromSmarts("C(=O)OCC([CH2])[CH2]([CH2])[CH2]([CH2])[CH2]([CH2])[CH2]C(=O)O")
+    # Extended fatty acid pattern - enhanced to accommodate varying chain lengths and modifications
+    lipid_chain_pattern = Chem.MolFromSmarts("C(=O)O[C@H]([CH2]10)[CH2]([CH2]1)[CH2]([CH2]1)[CH2]([CH2]1)[CH2]([CH2]1)[CH2]([CH2]1)C(=O)O")
     if not mol.HasSubstructMatch(lipid_chain_pattern):
         return False, "No adequate long fatty acid chain detected"
 
-    # Attempt to capture general polysaccharide richness
-    # Pattern could include or target common linkages with high connectivity
-    side_chain_pattern = Chem.MolFromSmarts("O[C@H]([C@H](O)C(O)C)[C@H](O)CO")  # General polysaccharide motif
+    # Increased complexity check for polysaccharide richness
+    side_chain_pattern = Chem.MolFromSmarts("O[C@H]([C@H](O)C(O)C)[C@H](O)CO")
     if not mol.HasSubstructMatch(side_chain_pattern):
         return False, "No sufficient oligosaccharide side chains detected"
     
-    # Overall heuristic rate: Monitor patterns related to complexity
-    n_rings = Chem.rdMolDescriptors.CalcNumRings(mol)
-    if n_rings < 3:
+    # Evaluate overall molecular complexity
+    n_rings = rdMolDescriptors.CalcNumRings(mol)
+    if n_rings < 5:
         return False, "Insufficient complex ring systems indicative of lipopolysaccharide structure"
 
-    return True, "Contains key structural features of lipopolysaccharides: specific trisaccharide units, complex side chains, and long fatty acid chains"
+    # Probe for presence of sugars/aromatic systems to hint polysaccharide involvement
+    n_rotatable_bonds = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable_bonds < 8:
+        return False, "Insufficient complexity in rotatable bonds"
+
+    # Ensure the presence of numerous oxygen atoms indicating polysaccharide presence
+    oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if oxygen_count < 12:
+        return False, "Lack of oxygen atoms, not typical of a polysaccharide-rich lipopolysaccharide"
+
+    return True, "Contains key structural features of lipopolysaccharides: complex polysaccharide units, side chains, and fatty acid chains"
