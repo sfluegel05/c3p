@@ -24,11 +24,12 @@ def is_secondary_ammonium_ion(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the substructure pattern for a secondary ammonium ion (R2NH2+)
-    secondary_ammonium_pattern = Chem.MolFromSmarts("[NX3;H2;+1]([#6])([#6])")
+    # Define a more flexible substructure pattern for a secondary ammonium ion
+    # This pattern matches a nitrogen with two non-hydrogen atoms and a positive charge
+    secondary_ammonium_pattern = Chem.MolFromSmarts("[NX3;H1,H2;+1]([!H])([!H])")
     
     # Check if the molecule contains the secondary ammonium ion pattern
     if mol.HasSubstructMatch(secondary_ammonium_pattern):
-        return True, "Contains a secondary ammonium ion (R2NH2+)"
+        return True, "Contains a secondary ammonium ion (R2NH2+ or R2NH+)"
     else:
-        return False, "No secondary ammonium ion (R2NH2+) found"
+        return False, "No secondary ammonium ion (R2NH2+ or R2NH+) found"
