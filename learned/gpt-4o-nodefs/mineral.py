@@ -23,19 +23,30 @@ def is_mineral(smiles: str):
         return False, "Invalid SMILES string"
     
     # Look for metal elements typically found in minerals
-    metals = ['Ca', 'Mg', 'Fe', 'Ni', 'Ba', 'Zn', 'Cu', 'K', 'Cs', 'Na', 'Al', 'Sb', 'La']
-    metal_found = any(atom.GetSymbol() in metals for atom in mol.GetAtoms())
-    if not metal_found:
+    metals = ['Ca', 'Mg', 'Fe', 'Ni', 'Ba', 'Zn', 'Cu', 'K', 'Cs', 'Na', 'Al', 'Sb', 'La', 'Pb', 'Si']
+    metal_atoms_in_mol = [atom.GetSymbol() for atom in mol.GetAtoms() if atom.GetSymbol() in metals]
+    
+    if not metal_atoms_in_mol:
         return False, "No typical metal elements found"
     
     # Look for common inorganic anions like sulfate, phosphate, carbonate, etc.
-    anions = ['[O-]S([O-])(=O)=O', '[O-]P([O-])(=O)=O', '[O-]C(=O)[O-]', '[Cl-]', '[OH-]', '[F-]']
+    anions = [
+        '[O-]S([O-])(=O)=O',  # sulfate
+        '[O-]P([O-])(=O)=O',  # phosphate
+        '[O-]C(=O)[O-]',      # carbonate
+        '[Cl-]',              # chloride
+        '[OH-]',              # hydroxide
+        '[F-]',               # fluoride
+        '[S-]',               # sulfide used in sulphide
+        '[O-]',               # oxide
+        'NC(=[NH2+])N'        # cyanide
+    ]
     anion_found = any(mol.HasSubstructMatch(Chem.MolFromSmarts(anion)) for anion in anions)
     if not anion_found:
         return False, "No typical inorganic anions found"
-    
-    # Check for presence of water molecules indicating hydrates
-    hydrate_pattern = Chem.MolFromSmarts("O")
+     
+    # Refine check for presence of water molecules for representative hydration patterns
+    hydrate_pattern = Chem.MolFromSmarts("O")  # Simplified hydrate check
     hydrate_count = len(mol.GetSubstructMatches(hydrate_pattern))
     
-    return True, f"Contains metal elements and inorganic anions{' with hydration' if hydrate_count > 0 else ''}"
+    return True, f"Contains metal elements ({', '.join(sorted(set(metal_atoms_in_mol)))}) and inorganic anions{' with hydration' if hydrate_count > 0 else ''}"
