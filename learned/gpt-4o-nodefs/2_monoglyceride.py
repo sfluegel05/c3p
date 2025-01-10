@@ -21,26 +21,33 @@ def is_2_monoglyceride(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a pattern for the glycerol backbone with a middle ester linkage
-    glycerol_2_mono_ester_pattern = Chem.MolFromSmarts("OCC(CO)OC(=O)C")
-
-    if mol.HasSubstructMatch(glycerol_2_mono_ester_pattern):
-        # Get matches to verify the structure in detail
-        matches = mol.GetSubstructMatches(glycerol_2_mono_ester_pattern)
-        
-        # Validate the ester group and esterification at the glycerol 2 position
-        for match in matches:
-            ester_carbon_idx = match[2]  # Index of the central esterified carbon
-            ester_carbon = mol.GetAtomWithIdx(ester_carbon_idx)
-            neighbor_atoms = [neighbor.GetSymbol() for neighbor in ester_carbon.GetNeighbors()]
-
-            if 'O' in neighbor_atoms and len(neighbor_atoms) == 2:
-                # Confirm the attachment pattern fits expected for a 2-monoglyceride
-                return True, "Structure matches 2-monoglyceride with ester linkage at glycerol 2 position"
+    # Define SMARTS pattern for the glycerol backbone with ester linkage at 2-position.
+    glycerol_2_mono_pattern = Chem.MolFromSmarts("C(CO)(CO)OC(=O)C")
     
-    return False, "Structure does not match 2-monoglyceride pattern"
+    if not mol.HasSubstructMatch(glycerol_2_mono_pattern):
+        return False, "Structure does not match glycerol backbone with ester at 2-position pattern"
+    
+    # Check that the ester-part is a long chain (fatty acid like)
+    ester_part_smarts = "[C](=O)OC(*)"
+    ester_matches = mol.GetSubstructMatches(Chem.MolFromSmarts(ester_part_smarts))
+    
+    for match in ester_matches:
+        # Check length of the hydrocarbon chain attached to the ester
+        ester_carbon_idx = match[3]  # The atom in the ester
+        hydrocarbon_chain_length = 0
+        atom_queue = [mol.GetAtomWithIdx(ester_carbon_idx)]
+        visited_atoms = set()
+        
+        while atom_queue:
+            current_atom = atom_queue.pop(0)
+            visited_atoms.add(current_atom.GetIdx())
+            if current_atom.GetSymbol() == 'C' and current_atom.GetIdx() != ester_carbon_idx:
+                hydrocarbon_chain_length += 1
+            for neighbor in current_atom.GetNeighbors():
+                if neighbor.GetIdx() not in visited_atoms:
+                    atom_queue.append(neighbor)
 
-# Example usage
-smiles_example = "O(C(=O)CCCCCCCCCCCCCCCCCCCCC)C(CO)CO"  # Example SMILES from dataset
-result, reason = is_2_monoglyceride(smiles_example)
-print(f"Classification: {result}, Reason: {reason}")
+        if hydrocarbon_chain_length > 10:  # Arbitrarily demanding the presence of at least 11 carbons
+            return True, "Structure matches 2-monoglyceride with ester linkage at glycerol 2 position"
+    
+    return False, "No sufficient fatty acid-like esterification at glycerol 2 position found"
