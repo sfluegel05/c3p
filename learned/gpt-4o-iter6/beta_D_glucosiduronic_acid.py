@@ -22,23 +22,18 @@ def is_beta_D_glucosiduronic_acid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for beta-D-glucuronic acid moiety pattern
-    glucuronic_pattern = Chem.MolFromSmarts("[C@H]1OC[C@@H](O)[C@@H](O)[C@H]1O")
+    glucuronic_pattern = Chem.MolFromSmarts("[C@H]1(O)OC[C@@H](O)[C@@H](O)[C@H]1O")
     if not mol.HasSubstructMatch(glucuronic_pattern):
         return False, "No beta-D-glucuronic acid moiety found"
     
-    # Look for carboxylic acid group [C(=O)O]
-    carboxylic_pattern = Chem.MolFromSmarts("C(=O)O")
-    if not mol.HasSubstructMatch(carboxylic_pattern):
-        return False, "No carboxylic acid group attached to the glucuronic acid moiety"
- 
-    # Check for glycosidic linkage -O- connectivity from glucuronic acid
-    glycosidic_pattern = Chem.MolFromSmarts("O[C@H]1OC[C@@H](O)[C@@H](O)[C@H]1O")
-    if not mol.HasSubstructMatch(glycosidic_pattern):
-        return False, "Missing glycosidic bond attached to glucuronic acid"
+    # Check for a glycosidic linkage
+    glycosidic_link_pattern = Chem.MolFromSmarts("O[C@H]1O[C@@H](O)[C@@H](O)[C@H](O)[C@H]1O")
+    if not mol.HasSubstructMatch(glycosidic_link_pattern):
+        return False, "Missing glycosidic bond indicating beta linkage"
+    
+    # Ensuring presence of a carbonyl group in the acid-end
+    carboxylic_link_pattern = Chem.MolFromSmarts("C(=O)O")
+    if not mol.HasSubstructMatch(carboxylic_link_pattern):
+        return False, "No carboxylic acid group attached to form beta-D-glucuronic acid linkage"
 
-    # Look for anomeric carbon linkage via glycosidic bond
-    anomeric_link_pattern = Chem.MolFromSmarts("[C@H]1OC[C@@H](O)[C@@H](O)[C@H](O1)-O")
-    if not mol.HasSubstructMatch(anomeric_link_pattern):
-        return False, "Anomeric carbon linkage via a glycosidic bond not found"
-
-    return True, "Contains beta-D-glucuronic acid moiety attached via glycosidic bond"
+    return True, "Contains the required beta-D-glucuronic acid moiety with correct glycosidic linkage"
