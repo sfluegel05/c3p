@@ -28,7 +28,8 @@ def is_steroid_saponin(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define a SMARTS pattern for the steroid nucleus (cyclopentanoperhydrophenanthrene)
-    steroid_smarts = '[#6]1([#6])[#6][#6]2[#6]([#6]1)[#6][#6]3[#6]([#6]2)[#6]([#6])[#6]4[#6]([#6]3)[#6][#6][#6][#6]4'
+    # This pattern represents three fused six-membered rings and one five-membered ring
+    steroid_smarts = '[#6]1[#6][#6][#6][#6][#6]1[#6]2[#6][#6][#6][#6][#6]2[#6]3[#6][#6][#6][#6][#6]3[#6]4[#6][#6][#6][#6][#6]4'
     steroid_pattern = Chem.MolFromSmarts(steroid_smarts)
 
     if steroid_pattern is None:
@@ -44,54 +45,45 @@ def is_steroid_saponin(smiles: str):
     for match in steroid_matches:
         steroid_atoms.update(match)
 
-    # Check for hydroxyl groups on the steroid nucleus
+    # Check for hydroxyl groups attached to the steroid nucleus
     hydroxyl_on_steroid = False
     for atom_idx in steroid_atoms:
         atom = mol.GetAtomWithIdx(atom_idx)
-        for neighbor in atom.GetNeighbors():
-            if neighbor.GetAtomicNum() == 8:
-                # Check if oxygen is part of a hydroxyl group (OH)
-                if neighbor.GetDegree() == 1 and neighbor.GetTotalNumHs() == 1:
-                    hydroxyl_on_steroid = True
-                    break
-        if hydroxyl_on_steroid:
-            break
+        if atom.GetAtomicNum() == 6:  # Carbon atoms in the steroid nucleus
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 8:  # Oxygen atom
+                    # Check if oxygen is part of a hydroxyl group (OH)
+                    if neighbor.GetDegree() == 1 and neighbor.GetTotalNumHs() == 0:
+                        hydroxyl_on_steroid = True
+                        break
+            if hydroxyl_on_steroid:
+                break
 
     if not hydroxyl_on_steroid:
         return False, "No hydroxyl groups on steroid nucleus found"
 
-    # Define SMARTS patterns for sugar moieties (pyranose and furanose rings)
-    sugar_smarts_list = [
-        '[OX2H][CX4H][CX4H][OX2][CX4H][CX4H]',  # Furanose ring
-        '[OX2H][CX4H][CX4H][CX4H][CX4H][OX2H]'   # Pyranose ring
-    ]
-    sugar_patterns = [Chem.MolFromSmarts(s) for s in sugar_smarts_list]
-
     # Check for sugar moieties attached via glycosidic bonds
-    glycosidic_bond = False
+    # Identify glycosidic bonds: C-O-C linkage where one carbon is anomeric (attached to two oxygens)
+    has_sugar = False
     for bond in mol.GetBonds():
-        # Look for C-O single bonds
         if bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
             atom1 = bond.GetBeginAtom()
             atom2 = bond.GetEndAtom()
-            if ((atom1.GetAtomicNum() == 6 and atom2.GetAtomicNum() == 8) or
-                (atom1.GetAtomicNum() == 8 and atom2.GetAtomicNum() == 6)):
-                # Check if one atom is in the steroid nucleus and the other is in a sugar moiety
-                atom1_in_steroid = atom1.GetIdx() in steroid_atoms
-                atom2_in_steroid = atom2.GetIdx() in steroid_atoms
+            if (atom1.GetAtomicNum() == 6 and atom2.GetAtomicNum() == 8) or \
+               (atom1.GetAtomicNum() == 8 and atom2.GetAtomicNum() == 6):
+                # Check for glycosidic bond
+                carbon = atom1 if atom1.GetAtomicNum() == 6 else atom2
+                oxygen = atom2 if atom2.GetAtomicNum() == 8 else atom1
+                # Check if the carbon is anomeric (attached to two oxygens)
+                num_oxygen_neighbors = sum(1 for nbr in carbon.GetNeighbors() if nbr.GetAtomicNum() == 8)
+                if num_oxygen_neighbors >= 2:
+                    # Check if one of the oxygens is connected to the steroid nucleus
+                    oxygen_in_steroid = any(nbr.GetIdx() in steroid_atoms for nbr in oxygen.GetNeighbors())
+                    if oxygen_in_steroid:
+                        has_sugar = True
+                        break
 
-                if atom1_in_steroid != atom2_in_steroid:
-                    # Identify the non-steroid atom
-                    sugar_atom = atom1 if not atom1_in_steroid else atom2
-                    # Check if the non-steroid atom is part of a sugar ring
-                    for sugar_pattern in sugar_patterns:
-                        if mol.HasSubstructMatch(sugar_pattern, useChirality=False):
-                            glycosidic_bond = True
-                            break
-                if glycosidic_bond:
-                    break
-
-    if not glycosidic_bond:
+    if not has_sugar:
         return False, "No sugar moieties attached via glycosidic bonds found"
 
     return True, "Contains steroid nucleus with hydroxyl groups and sugar moieties attached via glycosidic bonds"
@@ -117,7 +109,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 1,
+    'attempt': 2,
     'success': True,
     'best': True,
     'error': '',
