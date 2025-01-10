@@ -24,19 +24,28 @@ def is_3beta_hydroxy_Delta_5__steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Correct steroid backbone pattern
-    steroid_pattern = Chem.MolFromSmarts("C1CCC2C3CCC4=CC(=O)CCC4C3C2C1")
+    # General steroid backbone pattern (tetracyclic core)
+    steroid_pattern = Chem.MolFromSmarts("C1CC2CCC3C4CCC=CC4C3CC2C1")
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
     
     # 3beta-hydroxyl group pattern
-    beta_hydroxyl_pattern = Chem.MolFromSmarts("[C@H]([C@@H](C)O)[CH2]")
+    beta_hydroxyl_pattern = Chem.MolFromSmarts("C[C@H](O)C")
     if not mol.HasSubstructMatch(beta_hydroxyl_pattern):
         return False, "No 3beta-hydroxyl group found"
     
-    # Delta-5 double bond pattern (specific 5,6 position)
-    delta5_double_bond_pattern = Chem.MolFromSmarts("C=CC1(CC1)C2CCCCC2")
-    if not mol.HasSubstructMatch(delta5_double_bond_pattern):
+    # Delta-5 double bond pattern (specific 5,6 position in the tetracyclic system)
+    delta5_double_bond_pattern = Chem.MolFromSmarts("C=C")
+    match_found = False
+    for match in mol.GetSubstructMatches(delta5_double_bond_pattern):
+        atom1 = mol.GetAtomWithIdx(match[0])
+        atom2 = mol.GetAtomWithIdx(match[1])
+        neighbors1 = {n.GetIdx() for n in atom1.GetNeighbors()}
+        neighbors2 = {n.GetIdx() for n in atom2.GetNeighbors()}
+        if len(neighbors1.intersection(neighbors2)) == 1:  # Ensures shared cyclic closure
+            match_found = True
+            break
+    if not match_found:
         return False, "No Delta-5 double bond found"
     
     return True, "Contains steroid backbone, 3beta-hydroxyl group, and Delta-5 double bond"
