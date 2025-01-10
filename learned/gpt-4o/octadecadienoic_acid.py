@@ -2,6 +2,7 @@
 Classifies: CHEBI:25627 octadecadienoic acid
 """
 from rdkit import Chem
+from rdkit.Chem import rdqueries
 
 def is_octadecadienoic_acid(smiles: str):
     """
@@ -21,28 +22,40 @@ def is_octadecadienoic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for 18 carbon atoms
-    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if carbon_count != 18:
-        return False, f"Has {carbon_count} carbon atoms, expected 18"
+    # Perform DFS or BFS to check if there's a straight chain of 18 carbons
+    def find_longest_carbon_chain(atom):
+        visited = [False] * mol.GetNumAtoms()
+        max_depth = [0]
 
-    # Look for two C=C double bonds along a continuous chain
-    c_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
-    # Count noble atoms as bonds connecting C atoms
-    c_bond_count = sum(1 for atom in c_atoms if atom.GetDegree() >= 3)
-    double_bond_count = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE and bond.GetBeginAtom().GetAtomicNum() == 6 and bond.GetEndAtom().GetAtomicNum() == 6)
+        def dfs(current, depth):
+            visited[current.GetIdx()] = True
+            if current.GetAtomicNum() == 6:  # Carbon atom
+                max_depth[0] = max(max_depth[0], depth)
+                for neighbor in current.GetNeighbors():
+                    if not visited[neighbor.GetIdx()]:
+                        dfs(neighbor, depth + 1)
+
+        dfs(atom, 0)
+        return max_depth[0]
+
+    # Start BFS or DFS from each carbon atom
+    max_c_chain = max(find_longest_carbon_chain(atom) for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if max_c_chain < 17:  # Because we're counting bonds, 18 carbons means 17 bonds
+        return False, f"Has chain length {max_c_chain+1}, expected 18-carbon chain"
     
-    if double_bond_count != 2 or c_bond_count > 0:
-        return False, f"Has {double_bond_count} C=C double bonds on a non-linear chain; expected exactly 2 on a linear chain"
+    # Count double bonds (consider them only within the main chain detected if possible)
+    double_bond_pattern = Chem.MolFromSmarts("[C]=[C]")
+    double_bonds = mol.GetSubstructMatches(double_bond_pattern)
+    if len(double_bonds) != 2:
+        return False, f"Found {len(double_bonds)} C=C double bonds, expected 2"
 
-    # Check for carboxylic acid group, which is an oxygen double bonded to a carbon (C=O) and a hydroxyl group (O-H) on the same carbon
+    # Check for carboxylic acid group
     carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
-    
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "Missing carboxylic acid group"
 
     # If all checks pass, it's an octadecadienoic acid
-    return True, "Contains an 18-carbon straight chain, 2 C=C double bonds, and a carboxylic acid group"
+    return True, "Contains an 18-carbon chain with 2 C=C double bonds and a carboxylic acid group"
 
 # Sample usage
 smiles = "CCCCCC\C=C\C=C/CCCCCCCC(O)=O"
