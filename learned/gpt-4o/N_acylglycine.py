@@ -21,13 +21,13 @@ def is_N_acylglycine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Glycine core pattern (more flexible)
-    glycine_pattern = Chem.MolFromSmarts("NCC(=O)[O,N]")  # allows flexibility with acids or derivatives
+    # Refined glycine core pattern
+    glycine_pattern = Chem.MolFromSmarts("[N+0]CC(=O)O")  # Match neutral nitrogen, ensure terminal carboxylate group
     if not mol.HasSubstructMatch(glycine_pattern):
         return False, "No glycine core structure found"
     
-    # N-acyl linkage pattern (specific to an acyl group attached via nitrogen)
-    acyl_glycine_pattern = Chem.MolFromSmarts("C(=O)NCC(=O)[O,N]")  # carbonyl group bonded to nitrogen with glycine motif
+    # Specific N-acyl linkage pattern
+    acyl_glycine_pattern = Chem.MolFromSmarts("C(=O)NCC(=O)O") # Ensure acyl specifically bonded to nitrogen of glycine
     if not mol.HasSubstructMatch(acyl_glycine_pattern):
         return False, "No acyl group bonded to glycine nitrogen as expected for N-acylglycine"
 
