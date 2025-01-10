@@ -5,7 +5,6 @@ Classifies: CHEBI:35436 D-glucoside
 Classifies: D-glucoside
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_D_glucoside(smiles: str):
     """
@@ -27,10 +26,7 @@ def is_D_glucoside(smiles: str):
     
     # Define the D-glucoside pattern with correct stereochemistry
     # D-glucose unit connected via O-glycosidic bond at C1
-    d_glucoside_smarts = """
-    [C@H]1([O][#6])
-    [O][C@@H]([C@H]([C@@H]([C@H]1O)O)O)O
-    """
+    d_glucoside_smarts = "[C@H]1([O][#6])[O][C@H]([C@@H]([C@H]([C@@H]1O)O)O)O"
     pattern = Chem.MolFromSmarts(d_glucoside_smarts)
     if pattern is None:
         return False, "Error creating SMARTS pattern for D-glucoside"
@@ -62,7 +58,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 0,
+    'attempt': 1,
     'success': True,
     'best': True,
     'error': '',
