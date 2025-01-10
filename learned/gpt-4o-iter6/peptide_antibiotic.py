@@ -34,20 +34,20 @@ def is_peptide_antibiotic(smiles: str):
     n_atoms = mol.GetNumAtoms()
     n_heteroatoms = sum(atom.GetAtomicNum() not in [6, 1] for atom in mol.GetAtoms())
 
-    # Additional functional group patterns and motifs
+    # Specific patterns common in known peptide antibiotics
     extended_patterns = [
         Chem.MolFromSmarts("C1SCCN1"),  # Thiazoline ring
         Chem.MolFromSmarts("n1c2ccc[nH]c2c[nH]c1"),  # Indole-like
         Chem.MolFromSmarts("C1=NC=CN=C1"),  # Pyrimidine ring
-        Chem.MolFromSmarts("C1=CN=CO1"),  # Oxazole/thiazole ring
-        Chem.MolFromSmarts("C1=CC=CN=C1"),  # Pyridine ring
-        Chem.MolFromSmarts("C1=CC=CN=N1"),  # Pyrazine ring
-        Chem.MolFromSmarts("C1=COC=C1")  # Furan ring
+        Chem.MolFromSmarts("[nH]1cc[nH]c1"),  # Imidazole
+        Chem.MolFromSmarts("C1=COC=C1"),  # Furan ring
+        Chem.MolFromSmarts("C1=CSC=N1"),  # Thiazole
+        Chem.MolFromSmarts("C1=C[N+](=O)C=C1")  # Nitrobenzene (indicative of complex structures)
     ]
     
     for pattern in extended_patterns:
         if mol.HasSubstructMatch(pattern):
-            return True, "Contains unique group common in peptide antibiotics"
+            return True, "Contains unique groups common in peptide antibiotics"
     
     # Check for complex cyclic structures
     if Descriptors.MolWt(mol) > 1000 and n_heteroatoms > 10:
