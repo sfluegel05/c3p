@@ -29,65 +29,60 @@ def is_polyamine(smiles: str):
     if not any(atom.GetAtomicNum() == 6 for atom in mol.GetAtoms()):
         return False, "Not an organic compound"
 
-    # Define patterns for different types of amino groups
+    # Define patterns for amino groups and groups to exclude
     patterns = {
         # Primary amines (aliphatic and aromatic)
-        'primary_amine': '[NX3H2]',
+        'primary_amine': '[NX3H2][CX4,cX3]',
         
-        # Secondary amines (aliphatic and aromatic)
-        'secondary_amine': '[NX3H1]([#6,#1])[#6]',
+        # Secondary amines (not in rings)
+        'secondary_amine': '[NX3H1;!R]([CX4,cX3])[CX4,cX3]',
         
-        # Tertiary amines (aliphatic and aromatic)
-        'tertiary_amine': '[NX3H0]([#6])[#6]',
+        # Secondary amines (in rings, but not aromatic)
+        'cyclic_amine': '[NX3H1;R;!a]([CX4,cX3])[CX4,cX3]',
+        
+        # Substituted amines (including N-hydroxy)
+        'substituted_amine': '[NX3;!$(NC=O);!$(N=*);!$(N#*)]([CX4,cX3])',
         
         # Protonated amines
         'protonated_amine': '[NX4H3+,NX4H2+,NX4H+]',
         
-        # Triazine amino groups
-        'triazine_amine': '[NX3H2,NX3H1,NX3H0]([#6])[#6]',
+        # Amino groups in triazines (if not part of amide)
+        'triazine_amine': '[NX3;!$(NC=O);!$(N=*)]([c])',
         
         # Patterns to exclude
-        'amide': '[NX3][CX3](=[OX1])',
-        'nitro': '[$([NX3](=O)=O),$([NX3+](=O)[O-])]',
-        'azo': '[NX2]=[NX2]',
-        'nitrile': '[NX1]#[CX2]',
+        'exclude_amide': '[NX3][CX3](=[OX1])',
+        'exclude_nitro': '[$([NX3](=O)=O),$([NX3+](=O)[O-])]',
+        'exclude_azo': '[NX2]=[NX2]',
+        'exclude_nitrile': '[NX1]#[CX2]',
+        'exclude_aromatic': '[nX2,nX3;a]', # aromatic N in 5 or 6 membered rings
+        'exclude_imine': '[NX2]=[CX3]',
+        'exclude_hydrazine': '[NX3H2]-[NX3H2]'
     }
 
     # Convert patterns to RDKit molecules
     patterns = {name: Chem.MolFromSmarts(pattern) for name, pattern in patterns.items()}
 
-    # Count different types of amino groups
-    counts = {}
-    for name, pattern in patterns.items():
-        matches = mol.GetSubstructMatches(pattern)
-        counts[name] = len(matches)
-
-    # Get all nitrogen atoms
-    nitrogens = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7]
+    # Get all matches for amino groups
+    amino_matches = set()
     
-    # Count amino groups (excluding those in excluded patterns)
-    amino_nitrogens = set()
-    
-    for n in nitrogens:
-        # Skip if nitrogen is part of excluded groups
-        is_excluded = False
-        for exclude_pattern in ['amide', 'nitro', 'azo', 'nitrile']:
-            matches = mol.GetSubstructMatches(patterns[exclude_pattern])
+    for pattern_name in ['primary_amine', 'secondary_amine', 'cyclic_amine', 
+                        'substituted_amine', 'protonated_amine', 'triazine_amine']:
+        if patterns[pattern_name] is not None:
+            matches = mol.GetSubstructMatches(patterns[pattern_name])
             for match in matches:
-                if n.GetIdx() in match:
-                    is_excluded = True
-                    break
-        if is_excluded:
-            continue
-            
-        # Check if nitrogen has hydrogens or is part of valid amino group
-        if (n.GetTotalNumHs() > 0 or  # Has hydrogens
-            n.GetFormalCharge() == 1 or  # Protonated
-            any(n.GetIdx() in match for match in mol.GetSubstructMatches(patterns['triazine_amine']))  # Triazine amino
-           ):
-            amino_nitrogens.add(n.GetIdx())
+                amino_matches.add(match[0])  # Add nitrogen atom index
 
-    total_amino_groups = len(amino_nitrogens)
+    # Remove matches that are part of excluded groups
+    for exclude_pattern in ['exclude_amide', 'exclude_nitro', 'exclude_azo', 
+                          'exclude_nitrile', 'exclude_aromatic', 'exclude_imine',
+                          'exclude_hydrazine']:
+        if patterns[exclude_pattern] is not None:
+            exclude_matches = mol.GetSubstructMatches(patterns[exclude_pattern])
+            for match in exclude_matches:
+                if match[0] in amino_matches:
+                    amino_matches.remove(match[0])
+
+    total_amino_groups = len(amino_matches)
 
     if total_amino_groups >= 2:
         return True, f"Contains {total_amino_groups} amino groups"
