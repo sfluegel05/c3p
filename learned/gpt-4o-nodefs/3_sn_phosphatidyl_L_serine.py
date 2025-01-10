@@ -22,22 +22,20 @@ def is_3_sn_phosphatidyl_L_serine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # General glycerol backbone pattern, omitting specific stereo requirements
-    glycerol_pattern = Chem.MolFromSmarts("OCCO")
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "Missing glycerol backbone"
-
-    # Check for more generalized phosphate-serine linkage allowing flexibility
-    phosphate_serine_pattern = Chem.MolFromSmarts("O[P](=O)(O)OCC(N)C(=O)O")
-    if not mol.HasSubstructMatch(phosphate_serine_pattern):
-        phosphate_serine_alt_pattern = Chem.MolFromSmarts("O[P](=O)([O-])OCC(N)C(=O)O")
-        if not mol.HasSubstructMatch(phosphate_serine_alt_pattern):
-            return False, "No phosphate-serine link found"
+    # Specific glycerol backbone with stereochemistry for 3-sn-glycerol
+    glycerol_stereo_pattern = Chem.MolFromSmarts("O[C@@H](COP(O)(=O)O[C@H](N)C(=O)O)COC(=O)")
+    if not mol.HasSubstructMatch(glycerol_stereo_pattern):
+        return False, "Missing specific 3-sn-glycerol backbone with correct stereochemistry"
     
-    # More general ester pattern allowing for flexibility in chain length and stereochemistry
-    ester_pattern = Chem.MolFromSmarts("C(=O)O")
+    # Specific phosphate linkage to serine
+    phosphate_serine_stereo_pattern = Chem.MolFromSmarts("O[P](=O)(O)OC[C@H](N)C(=O)O")
+    if not mol.HasSubstructMatch(phosphate_serine_stereo_pattern):
+        return False, "No specific phosphate-serine linkage found with the correct stereochemistry"
+    
+    # Check for ester groups with specific stereochemistry
+    ester_pattern = Chem.MolFromSmarts("O[C@H](C)C(=O)[C@H](O)COC(=O)")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) < 2:
-        return False, f"Found {len(ester_matches)} ester linkages, need at least 2"
+        return False, f"Found {len(ester_matches)} ester linkages with the correct stereochemistry, need at least 2"
     
-    return True, "Contains 3-sn-phosphatidyl-L-serine structure with glycerol, phosphate-serine, and fatty acids"
+    return True, "Contains 3-sn-phosphatidyl-L-serine structure with specific glycerol, phosphate-serine, and fatty acids"
