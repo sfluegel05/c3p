@@ -12,7 +12,7 @@ def is_alkanesulfonate_oxoanion(smiles: str):
     """
     Determines if a molecule is an alkanesulfonate oxoanion based on its SMILES string.
     An alkanesulfonate oxoanion is characterized by the presence of at least one sulfonate group (-SO3-)
-    attached to a carbon atom, with the carbon potentially being part of a chain or other groups.
+    attached to a carbon atom, with the carbon potentially being part of a chain or other simple groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -37,6 +37,15 @@ def is_alkanesulfonate_oxoanion(smiles: str):
     if not mol.HasSubstructMatch(sulfonate_carbon_pattern):
         return False, "Sulfonate group not attached to a carbon atom"
 
+    # Check that the carbon attached to the sulfonate is part of a simple alkyl chain
+    # and not part of a ring or conjugated system
+    sulfonate_carbon = mol.GetSubstructMatch(sulfonate_carbon_pattern)[0]
+    carbon_atom = mol.GetAtomWithIdx(sulfonate_carbon)
+    if carbon_atom.IsInRing():
+        return False, "Sulfonate group attached to a carbon in a ring"
+    if carbon_atom.GetHybridization() != Chem.HybridizationType.SP3:
+        return False, "Sulfonate group attached to a non-SP3 hybridized carbon"
+
     # Check for the presence of at least one carbon atom in the molecule
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if c_count < 1:
@@ -57,11 +66,11 @@ def is_alkanesulfonate_oxoanion(smiles: str):
     if negative_charge_count < 1:
         return False, "No negative charge found on the sulfonate group"
 
-    # Check for invalid functional groups (e.g., thiols, sulfides)
-    invalid_functional_groups = ["[SX2]", "[SX1]"]
+    # Check for invalid functional groups (e.g., thiols, sulfides, complex structures)
+    invalid_functional_groups = ["[SX2]", "[SX1]", "[c]", "[C]=[C]", "[C]#[C]"]
     for group in invalid_functional_groups:
         pattern = Chem.MolFromSmarts(group)
         if mol.HasSubstructMatch(pattern):
             return False, f"Molecule contains invalid functional group: {group}"
 
-    return True, "Contains a sulfonate group (-SO3-) attached to a carbon chain or other groups"
+    return True, "Contains a sulfonate group (-SO3-) attached to a simple carbon chain or other groups"
