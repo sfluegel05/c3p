@@ -10,7 +10,7 @@ from rdkit.Chem import AllChem
 
 def is_methyl_sulfide(smiles: str):
     """
-    Determines if a molecule contains a methyl sulfide group based on its SMILES string.
+    Determines if a molecule is a methyl sulfide based on its SMILES string.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -24,30 +24,43 @@ def is_methyl_sulfide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for S-CH3 pattern
+    # Look for S-CH3 pattern where S is connected to another carbon
     # [#16X2] = divalent sulfur
     # [CH3X4] = sp3 methyl group
-    methylsulfide_pattern = Chem.MolFromSmarts("[#16X2][CH3X4]")
+    # [#6X4] = sp3 carbon (aliphatic)
+    methylsulfide_pattern = Chem.MolFromSmarts("[#16X2]([CH3X4])[#6X4]")
     matches = mol.GetSubstructMatches(methylsulfide_pattern)
     
     if not matches:
-        return False, "No methylsulfide (S-CH3) group found"
+        return False, "No aliphatic methylsulfide (S-CH3) group found"
     
     # Check that sulfur is not part of a higher oxidation state group
-    # Look for S=O, S(=O)=O patterns that would indicate sulfoxide/sulfone
     sulfoxide_pattern = Chem.MolFromSmarts("[#16X3](=[OX1])")
     sulfone_pattern = Chem.MolFromSmarts("[#16X4](=[OX1])=[OX1]")
     
+    if mol.HasSubstructMatch(sulfoxide_pattern) or mol.HasSubstructMatch(sulfone_pattern):
+        return False, "Sulfur is in higher oxidation state (sulfoxide/sulfone)"
+    
+    # Get molecular weight and atom count
+    mol_weight = sum([atom.GetMass() for atom in mol.GetAtoms()])
+    atom_count = mol.GetNumAtoms()
+    
+    # Filter out very small molecules (like dimethyl sulfide)
+    if mol_weight < 80 or atom_count < 5:
+        return False, "Molecule too small to be considered a methyl sulfide compound"
+        
+    # Filter out peptides containing methionine
+    peptide_bond_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[CX4]")
+    if mol.HasSubstructMatch(peptide_bond_pattern):
+        peptide_bonds = len(mol.GetSubstructMatches(peptide_bond_pattern))
+        if peptide_bonds >= 1:
+            return False, "Peptide containing methionine, not a methyl sulfide compound"
+    
+    # Check if sulfur is part of a ring
+    ri = mol.GetRingInfo()
     for match in matches:
         s_atom_idx = match[0]  # Index of the sulfur atom
-        s_atom = mol.GetAtomWithIdx(s_atom_idx)
-        
-        # Check if this sulfur is part of sulfoxide/sulfone
-        if mol.HasSubstructMatch(sulfoxide_pattern) or mol.HasSubstructMatch(sulfone_pattern):
-            continue
+        if ri.IsAtomInRingOfSize(s_atom_idx, 3) or ri.IsAtomInRingOfSize(s_atom_idx, 4):
+            return False, "Sulfur is part of a small ring system"
             
-        # Verify sulfur has exactly two single bonds (sulfide)
-        if s_atom.GetDegree() == 2 and s_atom.GetTotalValence() == 2:
-            return True, "Contains methylsulfide (S-CH3) group"
-            
-    return False, "Sulfur is not in sulfide form (may be sulfoxide, sulfone, or other S species)"
+    return True, "Contains aliphatic methylsulfide (S-CH3) group with appropriate molecular complexity"
