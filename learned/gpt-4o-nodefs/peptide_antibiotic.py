@@ -7,15 +7,14 @@ Classifies: Peptide Antibiotic
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
 from rdkit.Chem import Descriptors
-# Import necessary RDKit function for cycle detection
 from rdkit.Chem import rdmolops
 
 def is_peptide_antibiotic(smiles: str):
     """
     Determines if a molecule is a peptide antibiotic based on its SMILES string.
     A peptide antibiotic typically contains multiple amide bonds, cyclic structures,
-    and possibly additional features like hydroxyl groups.
-
+    and functional groups indicative of bioactive peptides.
+    
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -29,23 +28,24 @@ def is_peptide_antibiotic(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Count amide bonds (R-C(=O)-NR)
+    # Count amide bonds (R-C(=O)-NR) and require more than 5
     amide_pattern = Chem.MolFromSmarts("C(=O)N")
     amide_matches = mol.GetSubstructMatches(amide_pattern)
-    if len(amide_matches) < 3:
+    if len(amide_matches) < 5:
         return False, "Insufficient amide (peptide) bonds"
 
-    # Check for cyclic structures - ensure there's at least one ring
+    # Check for complex cyclic structures - ensure there's more than one ring
     num_rings = rdmolops.GetSSSR(mol)
     if num_rings < 1:
         return False, "No cyclic structures detected"
 
-    # Optionally count additional features, such as hydroxyls, indicative of unusual residues
-    hydroxyl_count = Descriptors.NumHDonors(mol)
-    if hydroxyl_count < 1:
-        return False, "No hydroxyl groups detected; unusual for peptide antibiotics"
+    # Molecular features like specific ring systems or unusual amino acids could be added here
+    # For example, adding detection for Thiazole ring systems which are common in some peptide antibiotics
+    thiazole_pattern = Chem.MolFromSmarts("c1scnc1")
+    if not mol.HasSubstructMatch(thiazole_pattern):
+        return False, "No thiazole rings detected; common in some peptide antibiotics"
 
-    # Molecular weight check - peptide antibiotics are generally >1000 Da
+    # Molecular weight check - peptide antibiotics are generally large 
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 1000:
         return False, "Molecular weight too low for complex peptide antibiotic"
