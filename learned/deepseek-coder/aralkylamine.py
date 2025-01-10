@@ -46,14 +46,14 @@ def is_aralkylamine(smiles: str):
     if not mol.HasSubstructMatch(aralkyl_pattern):
         return False, "No aromatic group attached to the alkyl group"
 
-    # Verify that the aromatic group is connected to the alkylamine
-    # We need to ensure that the aromatic group is part of the same molecule as the alkylamine
-    # and that it is connected to the alkyl group of the alkylamine
+    # Verify that the aromatic group is connected to the alkyl group of the alkylamine
     for nitrogen in nitrogen_atoms:
         for neighbor in nitrogen.GetNeighbors():
             if neighbor.GetAtomicNum() == 6:  # Carbon atom (alkyl group)
                 for carbon_neighbor in neighbor.GetNeighbors():
                     if carbon_neighbor.GetIsAromatic():
-                        return True, "Contains an alkylamine group with an aromatic substituent"
+                        # Ensure that the aromatic group is directly connected to the alkyl group
+                        if carbon_neighbor.GetIdx() in [atom.GetIdx() for atom in neighbor.GetNeighbors()]:
+                            return True, "Contains an alkylamine group with an aromatic substituent"
 
     return False, "No aromatic group connected to the alkyl group of the alkylamine"
