@@ -32,8 +32,7 @@ def is_catecholamine(smiles: str):
     if not mol.HasSubstructMatch(catechol_pattern):
         return False, "No catechol (benzene-1,2-diol) structure found"
 
-    # Flexible aminoethyl pattern that allows for different types of amines
-    # [CH2]~[CH2]~[N] where ~ means any bond type
+    # Flexible aminoethyl pattern that allows for different types of amines and substitutions
     aminoethyl_pattern = Chem.MolFromSmarts("[CH2]~[CH2]~[N]")
     if not mol.HasSubstructMatch(aminoethyl_pattern):
         return False, "No 2-aminoethyl-like side chain found"
