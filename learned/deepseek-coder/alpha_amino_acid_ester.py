@@ -32,41 +32,45 @@ def is_alpha_amino_acid_ester(smiles: str):
     if len(ester_matches) == 0:
         return False, "No ester group found"
 
-    # Look for the alpha-amino acid pattern (NH2-CH-COOH or NH2-CH-COOR)
-    amino_acid_pattern = Chem.MolFromSmarts("[NX3;H2][CX4H][CX3](=[OX1])[OX2][CX4]")
+    # Look for the alpha-amino acid pattern (NH2/NH/N-CH-COOH/COOR)
+    # More flexible pattern that accounts for substituted amines and different carboxylate forms
+    amino_acid_pattern = Chem.MolFromSmarts("[NX3;H2,H1,H0][CX4H][CX3](=[OX1])[OX2]")
     amino_acid_matches = mol.GetSubstructMatches(amino_acid_pattern)
     if len(amino_acid_matches) == 0:
         return False, "No alpha-amino acid moiety found"
 
-    # Check if the ester group is connected to the alpha-carbon of the amino acid
-    alpha_carbon = None
-    for match in amino_acid_matches:
-        for atom_idx in match:
-            atom = mol.GetAtomWithIdx(atom_idx)
-            if atom.GetSymbol() == 'C' and atom.GetDegree() == 4:  # Alpha carbon
-                alpha_carbon = atom_idx
-                break
-        if alpha_carbon is not None:
-            break
-
-    if alpha_carbon is None:
-        return False, "No alpha-carbon found in the amino acid moiety"
-
-    # Check if the ester group is connected to the alpha-carbon
+    # Check if the ester group is connected to the carboxylate of the amino acid
     ester_connected = False
-    for match in ester_matches:
-        for atom_idx in match:
-            atom = mol.GetAtomWithIdx(atom_idx)
-            if atom.GetSymbol() == 'C' and atom.GetIdx() == alpha_carbon:
+    for aa_match in amino_acid_matches:
+        # Get the carboxylate carbon and oxygen indices
+        carboxyl_c = aa_match[2]
+        carboxyl_o = aa_match[3]
+        
+        # Check if any ester group is connected to the carboxylate oxygen
+        for ester_match in ester_matches:
+            ester_o = ester_match[1]
+            if ester_o == carboxyl_o:
                 ester_connected = True
                 break
         if ester_connected:
             break
 
     if not ester_connected:
-        return False, "Ester group not connected to the alpha-carbon of the amino acid"
+        return False, "Ester group not connected to the carboxylate of the amino acid"
 
-    return True, "Contains alpha-amino acid moiety with ester group connected to the alpha-carbon"
+    # Check if the amino acid has an alpha-carbon with at least one hydrogen
+    alpha_carbon_valid = False
+    for aa_match in amino_acid_matches:
+        alpha_c = aa_match[1]
+        atom = mol.GetAtomWithIdx(alpha_c)
+        if atom.GetTotalNumHs() > 0:
+            alpha_carbon_valid = True
+            break
+
+    if not alpha_carbon_valid:
+        return False, "No valid alpha-carbon found in the amino acid moiety"
+
+    return True, "Contains alpha-amino acid moiety with ester group connected to the carboxylate"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:85259',
