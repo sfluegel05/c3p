@@ -20,14 +20,14 @@ def is_medium_chain_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for thioester pattern
-    thioester_pattern = Chem.MolFromSmarts("C(=O)SCC")
+    # Check for thioester pattern (C(=O)SCC)
+    thioester_pattern = Chem.MolFromSmarts("C(=O)SC")
     if not mol.HasSubstructMatch(thioester_pattern):
         return False, "No thioester linkage to CoA found"
 
-    # Broadened Coenzyme A moiety pattern focusing on adenine, ribose, phosphates, and pantetheine
+    # Broadened Coenzyme A moiety pattern
     coa_moiety_pattern = Chem.MolFromSmarts(
-        "NC(C=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(O)=O"
+        "[NH2]C(=O)CCNC(=O)C[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(=O)(O)=O)N"
     )
     if not mol.HasSubstructMatch(coa_moiety_pattern):
         return False, "CoA moiety structure not matched"
@@ -40,7 +40,6 @@ def is_medium_chain_fatty_acyl_CoA(smiles: str):
         return False, f"Aliphatic chain length of {fatty_chain_length} not within medium-chain range (6-12 carbons)"
     
     return True, "Molecule is a medium-chain fatty acyl-CoA with proper CoA moiety and chain length"
-
 
 def calculate_chain_length(mol, pattern):
     """
@@ -58,7 +57,7 @@ def calculate_chain_length(mol, pattern):
     if not match_idx:
         return 0  # Failed to find starting point
 
-    start_atom = match_idx[1]  # S carbon in C(=O)SCC
+    start_atom = match_idx[1]  # S carbon in C(=O)SC
 
     # Use BFS to determine the longest carbon chain from start_atom
     def bfs_max_chain_length(start_idx):
