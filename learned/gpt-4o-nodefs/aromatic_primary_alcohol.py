@@ -20,17 +20,19 @@ def is_aromatic_primary_alcohol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Improved SMARTS pattern for primary alcohol attached directly to an aromatic ring
-    primary_alcohol_aromatic_pattern = Chem.MolFromSmarts("[#6;H2][OH]")  # carbon with 2 hydrogens [H2] attached to -OH
+    # SMARTS pattern for primary alcohol attached directly to an aromatic ring
+    primary_alcohol_aromatic_pattern = Chem.MolFromSmarts("[#6]([CH2])[OH]")  # carbon with CH2 group attached to -OH
 
-    # Check if any aromatic carbon (aromatic atoms) is directly bonded to this primary alcohol group
-    aromatic_carbons = [atom for atom in mol.GetAtoms() if atom.GetIsAromatic() and atom.GetAtomicNum() == 6]
-    primary_alcohol_matches = mol.GetSubstructMatches(primary_alcohol_aromatic_pattern)
+    # Find matches for the primary alcohol pattern in the molecule
+    matches = mol.GetSubstructMatches(primary_alcohol_aromatic_pattern)
 
-    for carbon_atom in aromatic_carbons:
-        carbon_neighbors = [neighbor.GetIdx() for neighbor in carbon_atom.GetNeighbors()]
-        for match in primary_alcohol_matches:
-            if match[0] in carbon_neighbors:
+    for match in matches:
+        # Check if the carbon is directly attached to an aromatic ring
+        carbon_idx = match[0]
+        carbon_atom = mol.GetAtomWithIdx(carbon_idx)
+
+        for neighbor in carbon_atom.GetNeighbors():
+            if neighbor.GetIsAromatic() and neighbor.GetAtomicNum() == 6:  # Check if aromatic neighbor is a carbon
                 return True, "Contains a primary alcohol group directly attached to an aromatic ring"
 
     return False, "No primary alcohol group directly attached to an aromatic ring found"
