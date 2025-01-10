@@ -21,12 +21,13 @@ def is_isoflavonoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define core patterns for isoflavonoids, accommodating both possible orientations and substitutions
+    # Define a simplified core pattern for isoflavonoids
+    # 1-Benzopyran with an aryl (phenyl or similar aromatic ring) at position 3
     isoflavonoid_patterns = [
-        Chem.MolFromSmarts("c1cc-2coc3c(c2c(c1)O)cc(=O)c4c(cccc4)-c3"),  # 1-benzopyran with aryl
-        Chem.MolFromSmarts("c1cc-2c(c3c(cccc3)cc(=O)c4c2oc(c1C4)*)Oc"),  # Expanded for variety in aromatics
-        Chem.MolFromSmarts("c1c-2c(c3c(coc3)cc(=O)c4c2oc(c1)C4)-c5ccccc5") # Open form and tautomers
-        # Additional robust patterns to cover stereochemistry
+        Chem.MolFromSmarts("c1cc2occc2c3ccccc3c1"),  # Basic 1-benzopyran system with aryl
+        Chem.MolFromSmarts("c1cc2occc2c(c1)-c3ccccc3"),  # Basic form with alternative aryl linker
+        Chem.MolFromSmarts("c1cc2occc2c(c1C3)C3"), # Open form with different tautomers
+        # Consider more specific patterns if needed
     ]
 
     # Check if the molecule matches any of the isoflavonoid patterns
