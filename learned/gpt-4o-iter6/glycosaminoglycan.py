@@ -21,24 +21,29 @@ def is_glycosaminoglycan(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define patterns for aminomonosaccharides with broader generalization
+    # Define patterns for aminomonosaccharides
     aminomonosaccharide_patterns = [
-        # More generic aminosugar patterns captured
-        Chem.MolFromSmarts("[C@H]([NH2])C([OH])C([OH])C([OH])C([OH])O"),  # General
-        Chem.MolFromSmarts("[C@H]([NH][C@H](C=O)])C([OH])C([OH])C([OH])O")  # Acetylated
+        Chem.MolFromSmarts("[C@H]([NH2])[C@H]([OH])[C@H]([OH])[C@H]([OH])O"),  # General aminosugar
+        Chem.MolFromSmarts("C([NH][C=O])([OH])C([OH])C([OH])O"),  # Acetylated amino sugar
+        Chem.MolFromSmarts("[C@H]([NH2])C([OH])([OH])C([OH])C([OH]")  # Another variant
     ]
 
+    # Verify patterns creation, avoid patterns that return None
+    for pattern in aminomonosaccharide_patterns:
+        if pattern is None:
+            return (None, "Failed to create a valid SMARTS pattern for an aminomonosaccharide")
+
+    # Count matching substructures for aminomonosaccharides
     total_aminomonosaccharide_matches = 0
     for pattern in aminomonosaccharide_patterns:
         matches = mol.GetSubstructMatches(pattern)
         total_aminomonosaccharide_matches += len(matches)
 
-    # Estimate number of sugar units from oxygen atoms
+    # Estimate number of sugar units from oxygen atoms (heuristic)
     oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     sugar_units_estimation = max(1, oxygen_count // 3)  # Rough estimate of sugars
 
-    # Modify the threshold to determine glycosaminoglycans
-    # Assuming a significant portion >= 25% of the sugar units should be aminomonosaccharide
+    # Determine if a significant portion are aminomonosaccharides
     if total_aminomonosaccharide_matches / sugar_units_estimation >= 0.25:
         return True, f"Glycosaminoglycan identified. Aminomonosaccharide count: {total_aminomonosaccharide_matches}"
 
