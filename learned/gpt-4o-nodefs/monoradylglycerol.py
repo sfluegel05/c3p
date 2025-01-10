@@ -7,7 +7,7 @@ def is_monoradylglycerol(smiles: str):
     """
     Determines if a molecule is a monoradylglycerol based on its SMILES string.
     A monoradylglycerol is a derivative of glycerol where one hydroxyl group is esterified 
-    with a fatty acid or similar aliphatic acid.
+    with a fatty acid or similar aliphatic or aromatic acid.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,29 +22,26 @@ def is_monoradylglycerol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for glycerol backbone with a single ester group
-    glycerol_pattern = Chem.MolFromSmarts("OCC(O)CO")  # Glycerol structure
+    # Broader SMARTS pattern for mostly intact glycerol with one esterified group
+    glycerol_ester_pattern = Chem.MolFromSmarts("O[C@H]([CX4H2,CX3H1]!@)O[C](=O)C")  # Allow flexibility in ester linkage
+    if not mol.HasSubstructMatch(glycerol_ester_pattern):
+        return False, "No suitable esterified glycerol backbone found"
 
-    # Single ester linkage
-    mono_ester_pattern = Chem.MolFromSmarts("C(=O)OC")  # Ester linkage
-
-    # Check for glycerol backbone with exact esterification
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone found"
-
-    # Count the ester linkages (should be exactly 1)
-    ester_matches = mol.GetSubstructMatches(mono_ester_pattern)
+    # Validate presence of just a single ester linkage on glycerol
+    ester_pattern = Chem.MolFromSmarts("C(=O)O")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    
     if len(ester_matches) != 1:
         return False, f"Found {len(ester_matches)} ester linkages, expected exactly 1"
 
-    # Ensure there is a sufficiently long hydrocarbon chain attached
-    hydrocarbon_chain_pattern = Chem.MolFromSmarts("CCCC")
-    hydrocarbon_matches = mol.GetSubstructMatches(hydrocarbon_chain_pattern)
+    # Extended recognition of carbon chains attached to the ester
+    varied_hydrocarbon_chain_pattern = Chem.MolFromSmarts("C[CH2,C](C)[C,C]=C")
+    hydrocarbon_matches = mol.GetSubstructMatches(varied_hydrocarbon_chain_pattern)
     if len(hydrocarbon_matches) < 1:
         return False, "Missing or too short hydrocarbon chain"
 
-    # Check for any specific stereochemistry
-    sn_glycerol_pattern = Chem.MolFromSmarts("[C@H](CO)CO[C](=O)O")  # Example for sn-glycerol
+    # Check for any specific stereochemistry for sn-configurations
+    sn_glycerol_pattern = Chem.MolFromSmarts("C[C@@H](CO)OC")
     stereo_info = ""
     if mol.HasSubstructMatch(sn_glycerol_pattern):
         stereo_info = "sn-glycerol configuration detected"
