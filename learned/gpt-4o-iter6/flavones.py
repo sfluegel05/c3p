@@ -21,8 +21,8 @@ def is_flavones(smiles: str) -> (bool, str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define the core structure for flavones: 2-aryl-1-benzopyran-4-one
-    flavone_core_pattern = Chem.MolFromSmarts("c1ccccc1-c2coc(=O)cc2")
+    # Define a more flexible core structure for flavones: 2-aryl-1-benzopyran-4-one
+    flavone_core_pattern = Chem.MolFromSmarts("c1cc(ccc1)-c2cc(=O)c3ccccc3o2")
     
     # Ensure pattern was defined correctly
     if flavone_core_pattern is None:
@@ -32,12 +32,4 @@ def is_flavones(smiles: str) -> (bool, str):
     if not mol.HasSubstructMatch(flavone_core_pattern):
         return False, "No flavone core structure found"
 
-    # Count at least 2 aromatic rings
-    try:
-        num_aromatic_rings = rdMolDescriptors.CalcNumAromaticRings(mol)
-        if num_aromatic_rings < 2:
-            return False, "Insufficient aromatic ring count for a typical flavone structure"
-    except Exception as e:
-        return None, f"Error calculating aromatic rings: {str(e)}"
-
-    return True, "Contains flavone core structure with appropriate derivatives"
+    return True, "Contains flavone core structure"
