@@ -37,11 +37,9 @@ def is_wax_ester(smiles: str):
         side1_chain_length = _get_chain_length(mol, carbonyl_carbon)
         side2_chain_length = _get_chain_length(mol, ester_oxygen)
         
-        # Consider a total minimum chain length threshold
-        total_chain_length = side1_chain_length + side2_chain_length
-
-        # Relax the minimum requirement for individual chains, while emphasizing total
-        if total_chain_length >= 20 and side1_chain_length >= 8 and side2_chain_length >= 8:
+        # Updated requirement for chain length
+        # Either side must have a chain length of at least 10 carbons
+        if side1_chain_length >= 10 or side2_chain_length >= 10:
             return True, "Molecule contains a fatty acid ester linkage with adequate carbon chain length"
     
     return False, "Carbon chains are too short to be considered fatty acid/alcohol"
@@ -52,10 +50,8 @@ def _get_chain_length(mol, start_atom_index):
     Only considers carbon atoms in a linear sequence.
     """
     visited = set()
-    max_chain_length = 0
 
     def _traverse_chain(atom_index):
-        nonlocal max_chain_length
         if atom_index in visited:
             return 0
         visited.add(atom_index)
@@ -69,8 +65,6 @@ def _get_chain_length(mol, start_atom_index):
             if neighbor.GetIdx() not in visited:
                 local_chain_length += _traverse_chain(neighbor.GetIdx())
         
-        max_chain_length = max(max_chain_length, local_chain_length)
         return local_chain_length
 
-    _traverse_chain(start_atom_index)
-    return max_chain_length
+    return _traverse_chain(start_atom_index)
