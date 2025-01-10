@@ -32,26 +32,18 @@ def is_tannin(smiles: str):
     # Count phenolic hydroxyl groups (-OH attached to aromatic rings)
     phenolic_oh_pattern = Chem.MolFromSmarts("[OH][c]")
     phenolic_oh_matches = mol.GetSubstructMatches(phenolic_oh_pattern)
-    if len(phenolic_oh_matches) < 1:
-        return False, f"Found {len(phenolic_oh_matches)} phenolic hydroxyl groups, need at least 1"
+    if len(phenolic_oh_matches) < 2:
+        return False, f"Found {len(phenolic_oh_matches)} phenolic hydroxyl groups, need at least 2"
 
-    # Check for galloyl groups (common in tannins)
-    galloyl_pattern = Chem.MolFromSmarts("c1(O)c(O)c(O)c(O)c(O)c1")
-    galloyl_matches = mol.GetSubstructMatches(galloyl_pattern)
-    
-    # Check for glycosidic or ester linkages
-    glycosidic_pattern = Chem.MolFromSmarts("[OX2][C@H]1[C@@H](O)[C@H](O)[C@@H](O)[C@H](O1)")  # Glycosidic linkage
-    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")  # Ester linkage
-    glycosidic_matches = mol.GetSubstructMatches(glycosidic_pattern)
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    
-    # If no galloyl groups, glycosidic, or ester linkages, it's not a tannin
-    if len(galloyl_matches) == 0 and len(glycosidic_matches) == 0 and len(ester_matches) == 0:
-        return False, "No galloyl groups, glycosidic, or ester linkages found"
+    # Check for polyphenolic structure (multiple aromatic rings with hydroxyl groups)
+    polyphenolic_pattern = Chem.MolFromSmarts("[c][OH].[c][OH]")
+    polyphenolic_matches = mol.GetSubstructMatches(polyphenolic_pattern)
+    if len(polyphenolic_matches) < 1:
+        return False, "No polyphenolic structure found"
 
     # Check molecular weight - tannins are typically large molecules
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 300:
+    if mol_wt < 200:
         return False, "Molecular weight too low for tannin"
 
     # Count carbons and oxygens
@@ -60,7 +52,7 @@ def is_tannin(smiles: str):
     
     if c_count < 10:
         return False, "Too few carbons for tannin"
-    if o_count < 5:
+    if o_count < 4:
         return False, "Too few oxygens for tannin"
 
-    return True, "Contains phenolic hydroxyl groups on aromatic rings with galloyl groups, glycosidic, or ester linkages"
+    return True, "Contains multiple phenolic hydroxyl groups on aromatic rings, indicating a polyphenolic structure typical of tannins"
