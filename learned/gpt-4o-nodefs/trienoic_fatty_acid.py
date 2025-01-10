@@ -2,12 +2,11 @@
 Classifies: CHEBI:73155 trienoic fatty acid
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_trienoic_fatty_acid(smiles: str):
     """
     Determines if a molecule is a trienoic fatty acid based on its SMILES string.
-    A trienoic fatty acid typically has a carboxylic acid end group, an aliphatic chain with
-    three double bonds.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,31 +21,22 @@ def is_trienoic_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for carboxylic acid group
+    # Look for carboxylic acid group pattern (-COOH)
     carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
-
-    # Identify double bonds (general case)
-    double_bond_pattern = Chem.MolFromSmarts("[CD2]=[CD2]")
+    
+    # Look for three or more double bonds; consider cis/trans isomerism
+    double_bond_pattern = Chem.MolFromSmarts("C=C")
     double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
     if len(double_bond_matches) < 3:
         return False, f"Found {len(double_bond_matches)} double bonds, need at least 3 for trienoic structure"
-
-    # Check for long carbon chain via carbon count
+    
+    # Count number of carbon atoms to check for long chain
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    
+    # Typically, a trienoic fatty acid has a moderate to long chain
     if c_count < 12:
-        return False, "Too short carbon chain for a typical trienoic fatty acid"
-
-    # Ensure that double bonds form part of a continuous carbon chain
-    # Simplified check: the molecule's carbon backbone should allow for a reasonable chain of carbons
-    sp2_carbon_indices = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetHybridization() == Chem.rdchem.HybridizationType.SP2]
-    if len(sp2_carbon_indices) < 3:
-        return False, "Not enough sp2 hybridized carbons in a chain to indicate trienoic characteristic"
-
-    # Additional flexibility in chain definition
-    alkene_chain_pattern = Chem.MolFromSmarts("C=C")
-    if not mol.HasSubstructMatch(alkene_chain_pattern):
-        return False, "Lacks continuous alkene chain structure typical of trienoic fatty acids"
-
-    return True, "Contains carboxylic acid group and three or more double bonds in a long carbon chain typical of trienoic fatty acid"
+        return False, "Too short hydrocarbon chain for a typical trienoic fatty acid"
+    
+    return True, "Contains carboxylic acid group and at least three double bonds, typical of trienoic fatty acid"
