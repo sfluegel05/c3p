@@ -27,14 +27,12 @@ def is_dihydroflavonols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more flexible flavanone backbone pattern
-    # This pattern matches the core structure of a flavanone, allowing for various substituents
-    flavanone_pattern = Chem.MolFromSmarts("[O]=C1C(=O)C=C2C(=C1)OC=C2")
+    # Define the flavanone backbone pattern (2-phenylchromen-4-one)
+    flavanone_pattern = Chem.MolFromSmarts("O=C1C(=O)C=C2C(=C1)OC=C2c3ccccc3")
     if not mol.HasSubstructMatch(flavanone_pattern):
         return False, "No flavanone backbone found"
 
     # Define the pattern for a hydroxyl group at position 3 of the heterocyclic ring
-    # This pattern matches the hydroxyl group at position 3, considering the flexibility of the backbone
     hydroxyl_at_3_pattern = Chem.MolFromSmarts("[OH]C1C(=O)C=C2C(=C1)OC=C2")
     if not mol.HasSubstructMatch(hydroxyl_at_3_pattern):
         return False, "No hydroxyl group at position 3 of the heterocyclic ring"
