@@ -55,9 +55,9 @@ def is_3_hydroxy_fatty_acid(smiles: str):
     else:
         return False, "Hydroxyl group is not at the 3-position relative to the carboxylic acid"
 
-    # Check for a long carbon chain (at least 6 carbons)
+    # Check for a long carbon chain (at least 10 carbons)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 6:
+    if c_count < 10:
         return False, "Carbon chain too short for a fatty acid"
 
     return True, "Contains a carboxylic acid group and a hydroxyl group at the 3-position with a long carbon chain"
