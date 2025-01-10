@@ -2,7 +2,6 @@
 Classifies: CHEBI:26004 phenylpropanoid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_phenylpropanoid(smiles: str):
     """
@@ -18,24 +17,32 @@ def is_phenylpropanoid(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return None, "Invalid SMILES string"
 
-    # Look for phenyl group (benzene ring)
-    phenyl_pattern = Chem.MolFromSmarts('c1ccccc1')
-    if not mol.HasSubstructMatch(phenyl_pattern):
+    # Check for phenyl group (benzene ring)
+    phenyl_group = Chem.MolFromSmarts('c1ccccc1')
+    if not mol.HasSubstructMatch(phenyl_group):
         return False, "No phenyl group (benzene ring) found"
 
-    # Look for a three-carbon chain connected to a phenyl group
-    propenyl_pattern = Chem.MolFromSmarts('c-C=C-C')
-    if not mol.HasSubstructMatch(propenyl_pattern):
-        return False, "No phenylpropanoid-like 3-carbon chain found"
+    # Look for structure typical of phenylpropanoids, like 3-carbon chain
+    # connected to phenyl group with possible modifications
+    three_carbon_chain_connected = Chem.MolFromSmarts('c-[C!H0]-[C!H0]-[C!H0]')
+    if not mol.HasSubstructMatch(three_carbon_chain_connected):
+        return False, "No 3-carbon chain connected to phenyl group found"
 
-    # Count number of oxygens and hydroxyl groups, typical in phenylpropanoids
-    hydroxyl_pattern = Chem.MolFromSmarts('[OH]')
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    n_oxygens = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    # Count the number of oxygens or typical functional groups (e.g., hydroxyl, carbonyl)
+    relevant_oxygen_substructures = [
+        Chem.MolFromSmarts('[OH]'),   # Hydroxyl
+        Chem.MolFromSmarts('[CX3]=[OX1]'),  # Carbonyl in ketones/aldehydes
+        Chem.MolFromSmarts('[CX3](=O)[OX2H1]'),  # Carboxyl group
+        Chem.MolFromSmarts('[OX2][CX4]')  # Ether linkages
+    ]
 
-    if len(hydroxyl_matches) == 0 and n_oxygens == 0:
-        return False, "No functional groups typical of phenylpropanoids found"
+    oxygen_functions = sum(
+        mol.HasSubstructMatch(functional_group) for functional_group in relevant_oxygen_substructures
+    )
+    
+    if oxygen_functions == 0:
+        return False, "No typical functional groups found"
 
-    return True, "Has phenyl group, 3-carbon chain, and typical functional groups"
+    return True, "Contains phenyl group, 3-carbon chain, and functional groups typical of phenylpropanoids"
