@@ -21,27 +21,31 @@ def is_bioconjugate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Simple fragments for known bioconjugates
+    # Expanded patterns for detecting common bioconjugate motifs
     patterns = {
         "peptide_bond": Chem.MolFromSmarts("N[C@H](C)C(=O)"),
         "disulfide_bond": Chem.MolFromSmarts("S-S"),
         "glutathione_like": Chem.MolFromSmarts("N[C@H](CC(=O)NCCS)C(=O)NCC(=O)O"),
-        "coenzyme_a_link": Chem.MolFromSmarts("SCCNC(=O)CCNC(=O)C@[O,P]")
+        "coenzyme_a_linkage": Chem.MolFromSmarts("SCCNC(=O)CCNC(=O)[C@H](O)"),
+        "thioester_bond": Chem.MolFromSmarts("C(=O)S"),
+        "ester_bond": Chem.MolFromSmarts("C(=O)O"),
+        "amide_bond": Chem.MolFromSmarts("C(=O)N"),
+        "heterocyclic_nitrogen": Chem.MolFromSmarts("n")
     }
     
-    # Flag to check if we match any bioconjugate-like pattern
-    matched_patterns = []
+    # Track which patterns we match
+    matched_patterns = set()
     for name, pattern in patterns.items():
         if mol.HasSubstructMatch(pattern):
-            matched_patterns.append(name)
+            matched_patterns.add(name)
 
-    # We check for the presence of at least two distinct biological units
+    # Determine if there are at least two distinctive substructures suggesting bioconjugation
     if len(matched_patterns) >= 2:
         return True, f"Contains patterns: {', '.join(matched_patterns)}"
 
-    # For failed cases, provide the reason for classification based on detected patterns
+    # For failed cases, provide reasoning based on detected patterns
     if matched_patterns:
         return False, f"Partially matched patterns, only found: {', '.join(matched_patterns)}"
 
-    # More complex logic might be needed to cover diverse examples encountered in real applications
+    # Provide explanation when no patterns are matched
     return False, "No definitive bioconjugate patterns found"
