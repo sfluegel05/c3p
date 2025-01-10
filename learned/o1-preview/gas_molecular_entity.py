@@ -6,28 +6,29 @@ Classifies: gas molecular entity
 """
 
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import AllChem
 
 def is_gas_molecular_entity(smiles: str):
     """
     Determines if a molecule is a gas molecular entity based on its SMILES string.
     A gas molecular entity is any main group molecular entity that is gaseous at standard temperature and pressure (STP; 0°C and 100 kPa).
-
-    This function checks if the molecule consists only of main group elements and estimates its physical state at STP based on molecular weight.
-
+    
+    This function estimates the normal boiling point of the molecule using the Joback method.
+    If the estimated boiling point is below 0°C (273.15 K), it is classified as a gas at STP.
+    
     Args:
         smiles (str): SMILES string of the molecule
-
+    
     Returns:
-        bool: True if molecule is a gas molecular entity, False otherwise
+        bool: True if the molecule is a gas molecular entity, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
+    
     # Define main group elements (atomic numbers)
     main_group_atomic_numbers = {
         # Elements of groups 1, 2, and 13-18
@@ -40,32 +41,74 @@ def is_gas_molecular_entity(smiles: str):
         49, 50, 51, 52, 53, 54,                  # In, Sn, Sb, Te, I, Xe
         81, 82, 83, 84, 85, 86                   # Tl, Pb, Bi, Po, At, Rn
     }
-
+    
     # Check that all atoms are main group elements
     for atom in mol.GetAtoms():
         atomic_num = atom.GetAtomicNum()
         if atomic_num not in main_group_atomic_numbers:
             elem_symbol = atom.GetSymbol()
             return False, f"Contains non-main group element: {elem_symbol} (atomic number {atomic_num})"
-
-    # Calculate molecular weight
-    mol_weight = rdMolDescriptors.CalcExactMolWt(mol)
-
-    # Define molecular weight threshold (approximate)
-    weight_threshold = 60.0  # g/mol
-
-    # Special handling for noble gases (monoatomic molecules)
-    noble_gases = {2, 10, 18, 36, 54, 86}  # He, Ne, Ar, Kr, Xe, Rn
-    if mol.GetNumAtoms() == 1:
-        atomic_num = mol.GetAtomWithIdx(0).GetAtomicNum()
-        if atomic_num in noble_gases:
-            return True, f"Single atom of noble gas element: {mol.GetAtomWithIdx(0).GetSymbol()}"
-
-    # Classify based on molecular weight
-    if mol_weight <= weight_threshold:
-        return True, f"Molecular weight {mol_weight:.2f} g/mol is below threshold of {weight_threshold} g/mol, likely a gas at STP"
+    
+    # Estimate boiling point using the Joback method
+    try:
+        tb = estimate_boiling_point_joback(mol)
+    except Exception as e:
+        return False, f"Error in boiling point estimation: {e}"
+    
+    # Classify based on boiling point
+    if tb < 273.15:  # 0°C in Kelvin
+        return True, f"Estimated boiling point {tb:.2f} K is below 273.15 K (0°C), likely a gas at STP"
     else:
-        return False, f"Molecular weight {mol_weight:.2f} g/mol exceeds threshold of {weight_threshold} g/mol, likely not a gas at STP"
+        return False, f"Estimated boiling point {tb:.2f} K is above 273.15 K (0°C), likely not a gas at STP"
+        
+def estimate_boiling_point_joback(mol):
+    """
+    Estimates the normal boiling point (in Kelvin) of a molecule using the Joback method.
+    
+    Args:
+        mol (Chem.Mol): RDKit molecule object
+    
+    Returns:
+        float: Estimated boiling point in Kelvin
+    """
+    # Joback group contributions for boiling point
+    group_contributions = {
+        # Format: ('Smarts pattern', Tb increment in Kelvin)
+        '[C;H3]':       23.58,  # -CH3
+        '[C;H2]':       22.88,  # -CH2-
+        '[C;H1]':       21.74,  # >CH-
+        '[C;H0]':       20.56,  # >C<
+        '[C;c]':        0.0,    # Aromatic carbons
+        '[O;H1]':       9.09,   # -OH (alcohol)
+        '[O;H0]':       9.04,   # >O (ether)
+        '[N;H2]':       13.89,  # -NH2
+        '[N;H1]':       13.60,  # >NH
+        '[N;H0]':       14.13,  # >N-
+        '[F]':          10.73,  # -F
+        '[Cl]':         21.23,  # -Cl
+        '[Br]':         21.86,  # -Br
+        '[I]':          22.88,  # -I
+        '[S;H0]':       19.22,  # >S<
+        '[S;H1]':       13.81,  # -SH
+        '[P]':          24.42,  # Phosphorus
+        '[=O]':         7.97,   # C=O (carbonyl)
+        '[#1]':         0.0,    # Hydrogen atoms (not counted)
+    }
+    
+    # Initialize sum of group increments
+    tb_increment = 198.0  # Base value in Kelvin
+    
+    # Create a copy of the molecule and add Hs to ensure all atoms are explicit
+    mol = Chem.AddHs(mol)
+    
+    # Assign atom types based on hybridization and aromaticity
+    for pattern, increment in group_contributions.items():
+        smarts = Chem.MolFromSmarts(pattern)
+        matches = mol.GetSubstructMatches(smarts)
+        n_matches = len(matches)
+        tb_increment += increment * n_matches
+
+    return tb_increment
 
 __metadata__ = {
     'chemical_class': {
@@ -87,7 +130,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 2,
+    'attempt': 3,
     'success': True,
     'best': True,
     'error': '',
