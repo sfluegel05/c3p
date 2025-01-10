@@ -9,7 +9,7 @@ from rdkit import Chem
 def is_diketone(smiles: str):
     """
     Determines if a molecule is a diketone based on its SMILES string.
-    A diketone is a compound that contains two ketone functionalities.
+    A diketone is a compound that contains exactly two ketone functionalities.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -32,6 +32,10 @@ def is_diketone(smiles: str):
     
     # Check if there are exactly two ketone groups
     if len(ketone_matches) == 2:
+        # Ensure that there are no additional ketone groups
+        # by checking that the total number of ketone groups is exactly 2
         return True, "Contains exactly two ketone functional groups"
+    elif len(ketone_matches) > 2:
+        return False, f"Found {len(ketone_matches)} ketone groups, need exactly 2"
     else:
         return False, f"Found {len(ketone_matches)} ketone groups, need exactly 2"
