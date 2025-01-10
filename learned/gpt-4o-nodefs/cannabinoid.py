@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_cannabinoid(smiles: str):
     """
     Determines if a molecule is a cannabinoid based on its SMILES string.
-    Cannabinoids generally feature a phenolic structure connected to 
-    a potentially polyunsaturated hydrophobic side chain.
+    Cannabinoids often feature distinctive structural motifs such as a repeating alkyl 
+    side chain with possible saturation, and sometimes a phenolic ring.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,22 +20,31 @@ def is_cannabinoid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return None, "Invalid SMILES string"
-
-    # Define a basic cannabinoid pattern (example pattern covering phenolic structure and tail)
-    # Note: This pattern is overly simplistic and may not correctly cover all cannabinoids
-    phenolic_pattern = Chem.MolFromSmarts("c1cc(O)ccc1") # Phenolic ring
-    if not mol.HasSubstructMatch(phenolic_pattern):
-        return False, "No phenolic structure found, generally common in cannabinoids"
-
-    # Check for a long hydrophobic chain often present in cannabinoids (possibly unsaturated)
-    # Here we simply look for a series of CC repeating units suggesting a long chain
-    hydrophobic_chain_pattern = Chem.MolFromSmarts("C(C)C")
-    chain_matches = mol.GetSubstructMatches(hydrophobic_chain_pattern)
-    if len(chain_matches) < 3:
-        return False, "Insufficient hydrophobic chain, expected in many cannabinoids"
     
-    # If both structural criteria are met, assume cannabinoid
-    return True, "Contains a phenolic structure and a hydrophobic chain, typical of many cannabinoids"
+    # Define potential cannabinoid patterns
+    # Pattern A: Phenolic ring common in classical cannabinoids (CBD, THC)
+    phenolic_pattern = Chem.MolFromSmarts("c1cc(O)ccc1")
+    
+    # Pattern B: Long carbon chain often observed in cannabinoids (e.g., arachidonyl tail)
+    hydrophobic_chain_pattern = Chem.MolFromSmarts("CCCCCCCCCCCCCCC")  # Verify presence of a long C chain
 
-# Note: This function is intended as a starting point. Cannabinoid classification often requires
-# additional structural rules and data curation.
+    # Check any substructure matches
+    phenolic_match = mol.HasSubstructMatch(phenolic_pattern)
+    hydrophobic_match = mol.HasSubstructMatch(hydrophobic_chain_pattern)
+    
+    # Implementing logic: Recognize cannabinoids without phenolic groups but possessing alkyl chains
+    if phenolic_match or hydrophobic_match:
+        reason = "Potential cannabinoid structure found with:"
+        if phenolic_match:
+            reason += " phenolic ring"
+        if hydrophobic_match:
+            if phenolic_match:
+                reason += " and"
+            reason += " long carbon chain"
+
+        return True, reason
+
+    return False, "No specific cannabinoid structure detected"
+
+# Note: This function takes a broader approach acknowledging possible cannabinoid diversity,
+# including common structural motifs, but may still require refinement with further data.
