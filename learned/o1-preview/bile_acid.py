@@ -29,9 +29,7 @@ def is_bile_acid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define SMARTS pattern for steroid nucleus with 5β-configuration
-    steroid_smarts = """
-    [C@H]1CC[C@H]2[C@@H]1CC[C@H]3[C@@H]2CC[C@@]4(CC[C@@H](O)C4)C3
-    """
+    steroid_smarts = "[C@H]1CC[C@H]2[C@@H]([C@H]1)CC[C@H]3[C@@H]2CC[C@@]4(C)CC[C@@H](O)C4C3"
     steroid_pattern = Chem.MolFromSmarts(steroid_smarts)
     if steroid_pattern is None:
         return False, "Error parsing steroid SMARTS pattern"
@@ -48,7 +46,7 @@ def is_bile_acid(smiles: str):
     # Amide pattern (including glycine and taurine conjugates)
     amide_pattern = Chem.MolFromSmarts('C(=O)N')
     # Sulfonate pattern (for taurine conjugates)
-    sulfonate_pattern = Chem.MolFromSmarts('S(=O)(=O)[O-,O][C,N]')
+    sulfonate_pattern = Chem.MolFromSmarts('S(=O)(=O)[O][C,N]')
 
     side_chain_match = False
     for pattern in [carboxylic_acid_pattern, ester_pattern, amide_pattern, sulfonate_pattern]:
@@ -60,11 +58,9 @@ def is_bile_acid(smiles: str):
         return False, "No carboxylic acid or derivative found in side chain"
 
     # Check for at least one hydroxyl group (-OH)
-    hydroxyl_pattern = Chem.MolFromSmarts('[CX4][CX3](O)[CH]')
-    hydroxyl_pattern2 = Chem.MolFromSmarts('[#6][#6][OX2H]')
+    hydroxyl_pattern = Chem.MolFromSmarts('[OX2H]')
     hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    hydroxyl_matches2 = mol.GetSubstructMatches(hydroxyl_pattern2)
-    total_hydroxyls = len(hydroxyl_matches) + len(hydroxyl_matches2)
+    total_hydroxyls = len(hydroxyl_matches)
     if total_hydroxyls == 0:
         return False, "No hydroxyl groups found"
 
