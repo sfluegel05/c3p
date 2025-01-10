@@ -28,8 +28,8 @@ def is_xanthophyll(smiles: str):
         return False, "No oxygen atoms found, not a xanthophyll"
 
     # Check for the presence of a long polyene chain (carotenoid backbone)
-    # Use a more specific pattern to identify the carotenoid backbone
-    carotenoid_pattern = Chem.MolFromSmarts("[CH2X4,CHX4,CH0X4]~[CHX4,CH0X4]~[CHX4,CH0X4]~[CHX4,CH0X4]~[CHX4,CH0X4]~[CHX4,CH0X4]~[CHX4,CH0X4]~[CHX4,CH0X4]")
+    # Use a more flexible pattern to identify the carotenoid backbone
+    carotenoid_pattern = Chem.MolFromSmarts("[CH2,CH,CH0]~[CH,CH0]~[CH,CH0]~[CH,CH0]~[CH,CH0]~[CH,CH0]~[CH,CH0]~[CH,CH0]")
     if not mol.HasSubstructMatch(carotenoid_pattern):
         return False, "No carotenoid backbone found"
 
