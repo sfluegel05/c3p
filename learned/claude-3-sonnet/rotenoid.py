@@ -3,7 +3,7 @@ Classifies: CHEBI:71543 rotenoid
 """
 """
 Classifies: rotenoid compounds
-Based on tetrahydrochromeno[3,4-b]chromene skeleton with specific substitution patterns
+Based on tetrahydrochromenochromene skeleton with specific substitution patterns
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
@@ -26,75 +26,49 @@ def is_rotenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Basic requirements first
-    ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() < 4:
-        return False, "Insufficient number of rings (need at least 4)"
+    # Core structure patterns
+    # Basic chromeno-chromene skeleton
+    core_pattern = Chem.MolFromSmarts("O1c2ccccc2C(=O)C2=C1CCOc1ccccc12")
+    
+    # Alternative core pattern with different saturation
+    core_pattern2 = Chem.MolFromSmarts("O1c2ccccc2C3OC4=C(C3=O)c3ccccc3O4")
+    
+    # Check for presence of core structure
+    if not (mol.HasSubstructMatch(core_pattern) or mol.HasSubstructMatch(core_pattern2)):
+        return False, "Missing core chromenochromene skeleton"
 
-    # Count oxygen atoms (rotenoids typically have 4+ oxygens)
+    # Count oxygen atoms - rotenoids typically have multiple oxygens
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count < 4:
-        return False, f"Too few oxygen atoms ({o_count}), need at least 4"
+    if o_count < 3:
+        return False, "Too few oxygen atoms for rotenoid structure"
 
-    # Core structure patterns - multiple simpler patterns that must all match
-    # Basic chromene pattern
-    chromene = Chem.MolFromSmarts("O1CCc2ccccc12")
-    
-    # Fused ring system with ketone
-    fused_system = Chem.MolFromSmarts("O1c2ccccc2C(=O)C2=C1cccc2")
-    
-    # Alternative pattern for the core
-    core_alt = Chem.MolFromSmarts("O1c2c(C3OC4ccccc4C3=O)cccc2")
-    
-    # Pattern for characteristic oxygen bridge
-    oxygen_bridge = Chem.MolFromSmarts("O1CCc2c1cc1OC(=O)c3c1cc2")
+    # Look for carbonyl group (typically present in rotenoids)
+    carbonyl_pattern = Chem.MolFromSmarts("[#6]=O")
+    if not mol.HasSubstructMatch(carbonyl_pattern):
+        return False, "Missing carbonyl group characteristic of rotenoids"
 
-    if not all(pat is not None for pat in [chromene, fused_system, core_alt, oxygen_bridge]):
-        return False, "Invalid SMARTS patterns"
-
-    # Check for presence of key structural features
-    matches = []
-    if mol.HasSubstructMatch(chromene):
-        matches.append("chromene")
-    if mol.HasSubstructMatch(fused_system):
-        matches.append("fused ketone system")
-    if mol.HasSubstructMatch(core_alt):
-        matches.append("core structure")
-    if mol.HasSubstructMatch(oxygen_bridge):
-        matches.append("oxygen bridge")
-
-    if len(matches) < 2:  # Need at least two confirming patterns
-        return False, "Missing key structural features of rotenoid skeleton"
-
-    # Look for characteristic substitution patterns
-    features = []
-    
-    # Check for methoxy groups
+    # Check for common substituents (methoxy groups are common)
     methoxy_pattern = Chem.MolFromSmarts("OC")
     methoxy_count = len(mol.GetSubstructMatches(methoxy_pattern))
+
+    # Count rings
+    ring_info = mol.GetRingInfo()
+    ring_count = ring_info.NumRings()
+    if ring_count < 4:
+        return False, "Insufficient ring count for rotenoid structure"
+
+    # Additional structural features that might be present
+    features = []
     if methoxy_count > 0:
-        features.append(f"{methoxy_count} methoxy groups")
-
-    # Check for dioxole ring (common in rotenoids)
-    dioxole_pattern = Chem.MolFromSmarts("OCO")
+        features.append(f"contains {methoxy_count} methoxy groups")
+    
+    # Check for specific ring patterns often found in rotenoids
+    dioxole_pattern = Chem.MolFromSmarts("OCOCO")
     if mol.HasSubstructMatch(dioxole_pattern):
-        features.append("dioxole ring")
+        features.append("contains dioxole ring")
 
-    # Check for hydroxyl groups
-    hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
-    hydroxyl_count = len(mol.GetSubstructMatches(hydroxyl_pattern))
-    if hydroxyl_count > 0:
-        features.append(f"{hydroxyl_count} hydroxyl groups")
-
-    # Check for ketone group (essential for most rotenoids)
-    ketone_pattern = Chem.MolFromSmarts("C(=O)C")
-    if not mol.HasSubstructMatch(ketone_pattern):
-        return False, "Missing required ketone group"
-
-    # Combine structural features into description
-    feature_str = ", ".join(features)
+    feature_str = " and ".join(features)
     if feature_str:
-        feature_str = f" with {feature_str}"
+        feature_str = f", {feature_str}"
 
-    matched_str = ", ".join(matches)
-    return True, f"Contains rotenoid skeleton ({matched_str}){feature_str}"
+    return True, f"Contains chromenochromene core skeleton with required oxygenation pattern{feature_str}"
