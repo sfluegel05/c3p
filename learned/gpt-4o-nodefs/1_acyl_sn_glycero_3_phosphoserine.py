@@ -20,20 +20,14 @@ def is_1_acyl_sn_glycero_3_phosphoserine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for glycerol backbone pattern
-    glycerol_pattern = Chem.MolFromSmarts("OCC(O)CO")
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone found"
-        
-    # Look for phosphoserine group
-    phosphoserine_pattern = Chem.MolFromSmarts("P(O)(OC[C@H](N)C(O)=O)(O)=O")
-    if not mol.HasSubstructMatch(phosphoserine_pattern):
-        return False, "No phosphoserine group found"
+    # Define pattern for entire 1-acyl-sn-glycero-3-phosphoserine structure
+    # Ensure stereochemistry at the glycerol carbon and full integration with phosphoserine
+    # The pattern ensures a single acyl chain is attached correctly
+    pattern = Chem.MolFromSmarts(
+        "[C@@H](CO[P](=O)(O)OC[C@H](N)C(O)=O)OCOC(=O)[C][C...]"
+    )
 
-    # Look for acyl chain esterified to glycerol
-    acyl_chain_pattern = Chem.MolFromSmarts("OC(=O)C")
-    ester_matches = mol.GetSubstructMatches(acyl_chain_pattern)
-    if len(ester_matches) == 0:
-        return False, "No acyl chain esterified to glycerol"
+    if mol.HasSubstructMatch(pattern):
+        return True, "Contains 1-acyl-sn-glycero-3-phosphoserine structure"
 
-    return True, "Contains 1-acyl-sn-glycero-3-phosphoserine structure"
+    return False, "Does not match 1-acyl-sn-glycero-3-phosphoserine structure"
