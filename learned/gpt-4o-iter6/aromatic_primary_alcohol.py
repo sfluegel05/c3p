@@ -22,18 +22,25 @@ def is_aromatic_primary_alcohol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define primary alcohol attached to aromatic pattern:
-    # It is [CH2][OH] where [CH2] connects to an aromatic ring [c].
-    aromatic_primary_alcohol_pattern = Chem.MolFromSmarts("[c][CH2][OH]")
+    # Define pattern for primary alcohol attached to an aromatic ring:
+    # [cR] - any aromatic atom
+    # [CH2OH] - primary alcohol group
+    # This pattern reflects an aromatic carbon connected to a primary alcohol group
+    primary_alcohol_pattern = Chem.MolFromSmarts("[c][CX2H2][OH]")
 
-    # Find substructures matching the aromatic primary alcohol pattern
-    if aromatic_primary_alcohol_pattern is None:
+    if primary_alcohol_pattern is None:
         return False, "Invalid SMARTS pattern"
 
-    matches = mol.GetSubstructMatches(aromatic_primary_alcohol_pattern)
-    
+    matches = mol.GetSubstructMatches(primary_alcohol_pattern)
+
     if matches:
-        return True, "Primary alcohol bonded to aromatic ring found"
+        for match in matches:
+            atom_index = match[1]  # Index of the CH2 group
+            atom = mol.GetAtomWithIdx(atom_index)
+            # Ensure that the CH2 group is not part of a larger chain or cycle
+            # by counting hydrogens and ensuring direct bond to OH is primary
+            if atom.GetTotalDegree() == 2:  # CH2 connected to only OH and one aromatic
+                return True, "Primary alcohol bonded to aromatic ring found"
 
     return False, "Primary alcohol not bonded to an aromatic ring"
 
