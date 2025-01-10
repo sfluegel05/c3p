@@ -5,8 +5,6 @@ Classifies: CHEBI:75874 para-terphenyl
 Classifies: CHEBI:XXXXX para-terphenyl
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_para_terphenyl(smiles: str):
     """
@@ -28,7 +26,7 @@ def is_para_terphenyl(smiles: str):
 
     # Define a more flexible pattern for 1,4-diphenylbenzene skeleton
     # This pattern allows for substitutions on the phenyl rings and the central benzene ring
-    para_terphenyl_pattern = Chem.MolFromSmarts("[c;H0]1[c;H0][c;H0](-[c;H0]2[c;H0][c;H0][c;H0][c;H0][c;H0]2)[c;H0][c;H0]1-[c;H0]3[c;H0][c;H0][c;H0][c;H0][c;H0]3")
+    para_terphenyl_pattern = Chem.MolFromSmarts("c1ccc(-c2ccccc2)cc1-c3ccccc3")
     
     # Check if the molecule matches the pattern
     if mol.HasSubstructMatch(para_terphenyl_pattern):
