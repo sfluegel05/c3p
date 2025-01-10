@@ -23,7 +23,7 @@ def is_mononitrophenol(smiles: str):
         return False, "Invalid SMILES string"
     
     # Define phenol pattern (aromatic ring with -OH group)
-    phenol_pattern = Chem.MolFromSmarts("c1ccc(cc1)O")
+    phenol_pattern = Chem.MolFromSmarts("aO")
     # Define nitro group pattern
     nitro_pattern = Chem.MolFromSmarts("[N+](=O)[O-]")
     
@@ -32,14 +32,19 @@ def is_mononitrophenol(smiles: str):
     if len(phenol_matches) == 0:
         return False, "No phenol group found"
     
-    # Check for nitro group and its attachment to the aromatic ring
+    # Check for nitro group
     nitro_matches = mol.GetSubstructMatches(nitro_pattern)
     if len(nitro_matches) != 1:
         return False, f"Found {len(nitro_matches)} nitro groups, need exactly 1"
     
-    # Ensure at least one match within aromatic system
+    # Check if the nitro group is directly bonded to the aromatic ring
     phenol_aromatic_atoms = {atom_idx for match in phenol_matches for atom_idx in match}
-    if not any(atom_idx in phenol_aromatic_atoms for atom_idx, _, _ in nitro_matches):
-        return False, "Nitro group is not attached to the aromatic ring of phenol"
+    nitro_atom_idx, _, _ = nitro_matches[0]
     
-    return True, "Molecule is a mononitrophenol with a single nitro group attached to the phenol ring"
+    # Ensure nitro is bonded to any aromatic carbon (part of phenol)
+    for bond in mol.GetBonds():
+        if bond.GetBeginAtomIdx() == nitro_atom_idx or bond.GetEndAtomIdx() == nitro_atom_idx:
+            if {bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()} & phenol_aromatic_atoms:
+                return True, "Molecule is a mononitrophenol with a single nitro group attached to the phenol ring"
+    
+    return False, "Nitro group is not attached to the aromatic ring of phenol"
