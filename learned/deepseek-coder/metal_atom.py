@@ -32,10 +32,17 @@ def is_metal_atom(smiles: str):
     atom = mol.GetAtomWithIdx(0)
     atomic_number = atom.GetAtomicNum()
 
+    # Check if the atom is neutral (charge 0)
+    if atom.GetFormalCharge() != 0:
+        return False, "Atom must be neutral (charge 0)"
+
     # List of atomic numbers corresponding to metals
-    metal_atomic_numbers = set(range(3, 4)) | set(range(11, 13)) | set(range(19, 32)) | \
-                           set(range(37, 51)) | set(range(55, 84)) | set(range(87, 104)) | \
-                           set(range(104, 119))
+    metal_atomic_numbers = {
+        3, 4, 11, 12, 13, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
+        37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51,
+        55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83,
+        87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103
+    }
 
     # Check if the atomic number is in the list of metals
     if atomic_number in metal_atomic_numbers:
