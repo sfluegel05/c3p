@@ -22,9 +22,8 @@ def is_galactosylceramide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for sphingosine backbone pattern
-    # This is typically represented as a long chain amino alcohol
-    sphingosine_pattern = Chem.MolFromSmarts("C[C@@H](O)[C@H](N)CCO")
+    # Look for sphingosine backbone pattern - broadening search to cover variations
+    sphingosine_pattern = Chem.MolFromSmarts("[C@@H](O)[C@H](NC(=O))")
     if not mol.HasSubstructMatch(sphingosine_pattern):
         return False, "No sphingosine backbone found"
     
@@ -33,10 +32,10 @@ def is_galactosylceramide(smiles: str):
     if not mol.HasSubstructMatch(amide_pattern):
         return False, "No amide linkage found"
     
-    # Look for galactose head group
-    # Galactose is a specific sugar which can be recognized by its stereochemistry - a hexose sugar with specific hydroxyl group orientations
-    galactose_pattern = Chem.MolFromSmarts("OC[C@@H]1O[C@@H]([C@H](O)[C@H](O)[C@@H]1O)CO")
-    if not mol.HasSubstructMatch(galactose_pattern):
+    # Look for beta-D-galactose head group
+    galactose_pattern_beta = Chem.MolFromSmarts("OC[C@@H]1O[C@H](COS(=O)(=O)O)[C@H](O)[C@@H](O)[C@H]1O")
+    galactose_pattern_alpha = Chem.MolFromSmarts("OC[C@H]1O[C@@H](COS(=O)(=O)O)[C@@H](O)[C@@H](O)[C@H]1O")
+    if not mol.HasSubstructMatch(galactose_pattern_beta) and not mol.HasSubstructMatch(galactose_pattern_alpha):
         return False, "No galactose head group found"
     
     # If all the substructures are found, classify as a galactosylceramide
