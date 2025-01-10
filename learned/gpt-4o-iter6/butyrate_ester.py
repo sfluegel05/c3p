@@ -21,15 +21,19 @@ def is_butyrate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS pattern for butyrate ester group
-    butyrate_pattern = Chem.MolFromSmarts("OC(=O)CCC")
+    # Define a more flexible SMARTS pattern for butyrate ester group
+    # Look for -C-C(=O)O-C structure where the C before O could vary
+    butyrate_pattern = Chem.MolFromSmarts("CCC(=O)O")
     
-    # Check if molecule has the butyrate ester substructure
-    if mol.HasSubstructMatch(butyrate_pattern):
+    # Ensure the butanoate is part of a larger ester linkage
+    esters_side_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H0]")
+    
+    # Combine general butyrate pattern with ester linkage check
+    if mol.HasSubstructMatch(butyrate_pattern) and mol.HasSubstructMatch(esters_side_pattern):
         return True, "Contains butyrate ester substructure"
     else:
         return False, "Does not contain butyrate ester substructure"
 
 # Example usage:
-# result, reason = is_butyrate_ester("O=C(OCCCCC)CCC")  # Example, replace with actual SMILES
+# result, reason = is_butyrate_ester("CCC(=O)OC")  # Example: isobutyl butyrate SMILES
 # print(result, reason)
