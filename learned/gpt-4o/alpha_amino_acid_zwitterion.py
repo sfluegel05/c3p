@@ -22,8 +22,8 @@ def is_alpha_amino_acid_zwitterion(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for alpha-amino-acid zwitterion; allow for flexible stereochemistry
-    zwitterion_pattern = Chem.MolFromSmarts("[NH3+][CH1]([*!H0])[C](=O)[O-]")
+    # Adjust pattern to be more inclusive for zwitterions
+    zwitterion_pattern = Chem.MolFromSmarts("[NH3+][C](C)([!#1])[C](=O)[O-]")
     
     if not mol.HasSubstructMatch(zwitterion_pattern):
         return False, "Does not match the alpha-amino-acid zwitterion pattern"
