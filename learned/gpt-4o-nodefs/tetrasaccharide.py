@@ -21,18 +21,38 @@ def is_tetrasaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Create a more general pattern for saccharide units: 5- or 6-membered ring with hydroxyls
-    saccharide_pattern = Chem.MolFromSmarts("[C,O]1[C,C,O][C,C,O][C,C,O][C,C,O][C,C,O]1")
-    saccharide_matches = mol.GetSubstructMatches(saccharide_pattern)
+    # Define SMARTS patterns for common saccharide units and linkages
+    glucose_pattern = Chem.MolFromSmarts("[C@H]1([O])[C@H](O)[C@@H](O)[C@H](O)[C@H](O1)")
+    mannoside_pattern = Chem.MolFromSmarts("[C@H]1([C@H](O)[C@H](O)[C@@H](O)[C@H](CO)[O]1)")
+    galactose_pattern = Chem.MolFromSmarts("[C@H]1([O])[C@@H](O)[C@H](O)[C@H](O)[C@H](O1)")
+    
+    # Common glycosidic linkage pattern: an ether oxygen bridging two saccharides
+    glycosidic_linkage_pattern = Chem.MolFromSmarts("[OH]1[C@](O)([CH])C(O)O1")
 
-    if len(saccharide_matches) < 4:
-        return False, f"Less than 4 monosaccharide units found, found {len(saccharide_matches)}"
+    # Initialize counts
+    saccharide_count = 0
+    linkage_count = 0
 
-    # Verify glycosidic linkages - looking for oxygen bridges between ring systems
-    linkage_pattern = Chem.MolFromSmarts("O[C,C,O]1[C,C,O][C,C,O][C,C,O][C,C,O]1")
-    linkage_matches = mol.GetSubstructMatches(linkage_pattern)
+    # Check for saccharide units
+    if mol.HasSubstructMatch(glucose_pattern):
+        saccharide_count += len(mol.GetSubstructMatches(glucose_pattern))
+    if mol.HasSubstructMatch(mannoside_pattern):
+        saccharide_count += len(mol.GetSubstructMatches(mannoside_pattern))
+    if mol.HasSubstructMatch(galactose_pattern):
+        saccharide_count += len(mol.GetSubstructMatches(galactose_pattern))
 
-    if len(linkage_matches) < 3:
-        return False, f"Insufficient glycosidic linkages, found {len(linkage_matches)}"
+    # Check for glycosidic linkages
+    if mol.HasSubstructMatch(glycosidic_linkage_pattern):
+        linkage_count = len(mol.GetSubstructMatches(glycosidic_linkage_pattern))
 
-    return True, "Molecule is a tetrasaccharide with appropriate saccharide units and glycosidic linkages"
+    # Assess if it's a tetrasaccharide
+    if saccharide_count >= 4 and linkage_count >= 3:
+        return True, "Molecule is a tetrasaccharide with appropriate saccharide units and glycosidic linkages"
+
+    # Provide reason for failure if not a tetrasaccharide
+    if saccharide_count < 4:
+        return False, f"Less than 4 monosaccharide units found, found {saccharide_count}"
+    if linkage_count < 3:
+        return False, f"Insufficient glycosidic linkages, found {linkage_count}"
+
+    return False, "Unclassified - unexpected structure"
