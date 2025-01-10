@@ -27,71 +27,99 @@ def is_triterpenoid_saponin(smiles: str):
     
     # Count carbons to check if it's a triterpenoid (should have ~30 carbons in core)
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if carbon_count < 25:  # Allow some flexibility
+    if carbon_count < 25:
         return False, f"Too few carbons ({carbon_count}) for a triterpenoid core"
     
-    # Look for glycosidic linkage patterns - multiple SMARTS to catch different cases
-    glycosidic_patterns = [
-        Chem.MolFromSmarts("[CR]-[OR2]-[CR]"),  # Basic glycosidic bond
-        Chem.MolFromSmarts("[CR]-O-[C;R1][C;R1][C;R1]"),  # Connection to sugar ring
-        Chem.MolFromSmarts("[CR]-O-[C;R1]1O[C;R1][C;R1][C;R1][C;R1]1")  # More specific sugar pattern
+    # Define common triterpenoid core patterns
+    triterpenoid_patterns = [
+        # Oleanane type core (pentacyclic)
+        "[C]1[C][C]2[C]3[C]([C]4[C]([C]5[C]([C][C]4)[C]([C][C]5)[C])[C][C]3)[C][C]2[C][C]1",
+        # Ursane type core
+        "[C]1[C][C]2[C]3[C]([C]4[C]([C]5[C]([C][C]4)[C]([C][C]5)[C])[C][C]3)[C][C]2[C][C]1",
+        # Dammarane type core (tetracyclic)
+        "[C]1[C][C]2[C]3[C]([C]4[C]([C][C]3)[C]([C][C]4)[C])[C][C]2[C][C]1",
+        # Cycloartane type core
+        "[C]1[C][C]2[C]3[C]([C]4[C]([C]5[C]([C][C]4)[C]([C][C]5))[C][C]3)[C][C]2[C][C]1",
+        # More general fused ring pattern for triterpenoids
+        "[C]1[C][C]2[C]3[C]([C]4[C]([C][C]3)[C]([C][C]4))[C][C]2[C][C]1"
     ]
-    has_glycosidic = False
-    for pattern in glycosidic_patterns:
-        if mol.HasSubstructMatch(pattern):
-            has_glycosidic = True
-            break
-    if not has_glycosidic:
-        return False, "No glycosidic linkage found"
     
-    # Look for sugar moiety patterns (multiple patterns to catch variations)
+    has_triterpenoid = False
+    for pattern in triterpenoid_patterns:
+        patt = Chem.MolFromSmarts(pattern)
+        if patt is not None and mol.HasSubstructMatch(patt):
+            has_triterpenoid = True
+            break
+    
+    if not has_triterpenoid:
+        return False, "No characteristic triterpenoid ring system found"
+    
+    # Look for sugar patterns with specific stereochemistry
     sugar_patterns = [
-        Chem.MolFromSmarts("[CR1]1O[CR1][CR1][CR1][CR1]1"), # Basic pyranose
-        Chem.MolFromSmarts("[CR1]1O[CR1][CR1][CR1][CR1][CR1]1"), # 6-membered sugar
-        Chem.MolFromSmarts("[CR1]1O[CR1]([CR1][CR1][CR1]1)O") # Sugar with OH group
+        # Pyranose sugar with hydroxyl groups
+        "O[C@H]1[C@@H](O)[C@H](O)[C@@H](O)[C@H](O)O1",
+        # More general pyranose pattern
+        "O1[C][C]([O,C])[C]([O,C])[C]([O,C])[C]1[O,C]",
+        # Furanose sugar pattern
+        "O1[C][C]([O,C])[C]([O,C])[C]1[O,C]"
     ]
+    
     has_sugar = False
     for pattern in sugar_patterns:
-        if mol.HasSubstructMatch(pattern):
+        patt = Chem.MolFromSmarts(pattern)
+        if patt is not None and mol.HasSubstructMatch(patt):
             has_sugar = True
             break
+            
     if not has_sugar:
         return False, "No sugar moiety found"
     
-    # Look for triterpenoid core patterns (multiple connected rings)
-    triterpenoid_patterns = [
-        Chem.MolFromSmarts("C1~C~C~C~C~1~C1~C~C~C~C~1"), # Basic two rings
-        Chem.MolFromSmarts("C12CCC3C(C1)CCC4C3(C)CCC2C4"), # More specific steroid-like core
-        Chem.MolFromSmarts("C1CC2CCC3(C)C(C2)C(CC4C3(C)CCC4)C1") # Alternative core pattern
+    # Look for glycosidic linkage
+    glycosidic_patterns = [
+        # O-glycosidic bond
+        "[C;R0]-[O;R0]-[C;R1]1[O;R1][C;R1][C;R1][C;R1][C;R1]1",
+        # More general glycosidic bond pattern
+        "[C;R]-[O;R0]-[C;R1]"
     ]
-    has_triterpenoid = False
-    for pattern in triterpenoid_patterns:
-        if pattern is not None and mol.HasSubstructMatch(pattern):
-            has_triterpenoid = True
-            break
-    if not has_triterpenoid:
-        return False, "Missing characteristic triterpenoid ring pattern"
     
-    # Check ring count (triterpenoids typically have 4-6 rings)
+    has_glycosidic = False
+    for pattern in glycosidic_patterns:
+        patt = Chem.MolFromSmarts(pattern)
+        if patt is not None and mol.HasSubstructMatch(patt):
+            has_glycosidic = True
+            break
+            
+    if not has_glycosidic:
+        return False, "No glycosidic linkage found"
+    
+    # Check for characteristic functional groups
+    functional_groups = {
+        "hydroxyl": "[OH]",
+        "carboxyl": "[C;!R](=O)[OH]",
+        "ketone": "[C;!R](=O)[C;!R]",
+        "methyl": "[CH3]"
+    }
+    
+    # Count functional groups
+    group_counts = {}
+    for name, pattern in functional_groups.items():
+        patt = Chem.MolFromSmarts(pattern)
+        if patt is not None:
+            group_counts[name] = len(mol.GetSubstructMatches(patt))
+    
+    # Check ring count
     ring_info = mol.GetRingInfo()
     ring_count = ring_info.NumRings()
     if ring_count < 4:
         return False, f"Too few rings ({ring_count}) for a triterpenoid"
     
-    # Count oxygens (should have multiple due to glycosylation and hydroxyl groups)
-    oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if oxygen_count < 5:  # Reduced threshold
-        return False, f"Too few oxygens ({oxygen_count}) for a triterpenoid saponin"
-    
     # Calculate molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 500:  # Lowered threshold
+    if mol_wt < 600:  # Increased threshold for triterpenoid saponins
         return False, f"Molecular weight ({mol_wt:.1f}) too low for triterpenoid saponin"
     
-    # Count hydroxyl groups
-    hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
-    hydroxyl_matches = len(mol.GetSubstructMatches(hydroxyl_pattern))
-    if hydroxyl_matches < 2:
-        return False, f"Too few hydroxyl groups ({hydroxyl_matches}) for a saponin"
-        
+    # Verify minimum requirements for functional groups
+    if group_counts.get("hydroxyl", 0) < 3:
+        return False, "Too few hydroxyl groups for a saponin"
+    
     return True, "Contains triterpenoid core with glycosidic linkages and characteristic structural features"
