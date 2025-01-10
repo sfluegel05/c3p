@@ -6,6 +6,7 @@ Classifies: CHEBI:24863 organoiodine compound
 Definition: A compound containing at least one carbon-iodine bond.
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_organoiodine_compound(smiles: str):
     """
@@ -25,20 +26,16 @@ def is_organoiodine_compound(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for C-I bonds using SMARTS pattern
-    # This will match any carbon-iodine bond regardless of charge/isotope
-    ci_pattern = Chem.MolFromSmarts('C-I')
+    # Find all iodine atoms
+    iodine_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 53]
     
-    if mol.HasSubstructMatch(ci_pattern):
-        # Count how many C-I bonds for the explanation
-        matches = len(mol.GetSubstructMatches(ci_pattern))
-        return True, f"Contains {matches} carbon-iodine bond{'s' if matches > 1 else ''}"
-    
-    # Alternative pattern to catch aromatic carbon-iodine bonds
-    ci_aromatic_pattern = Chem.MolFromSmarts('c-I')
-    
-    if mol.HasSubstructMatch(ci_aromatic_pattern):
-        matches = len(mol.GetSubstructMatches(ci_aromatic_pattern))
-        return True, f"Contains {matches} aromatic carbon-iodine bond{'s' if matches > 1 else ''}"
+    if not iodine_atoms:
+        return False, "No iodine atoms found"
 
+    # Check if any iodine is bonded to carbon
+    for iodine in iodine_atoms:
+        for neighbor in iodine.GetNeighbors():
+            if neighbor.GetAtomicNum() == 6:  # Carbon atomic number
+                return True, "Contains at least one carbon-iodine bond"
+    
     return False, "No carbon-iodine bonds found"
