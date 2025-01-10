@@ -5,7 +5,6 @@ Classifies: CHEBI:26255 prenylquinone
 Classifies: Prenylquinone
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_prenylquinone(smiles: str):
     """
@@ -25,25 +24,25 @@ def is_prenylquinone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define diverse quinone patterns
+    # Define quinone patterns
     quinone_patterns = [
-        Chem.MolFromSmarts("C1=CC(=O)C=CC1=O"), # Benzoquinone
-        Chem.MolFromSmarts("C1=CC=C(O)C(=O)C=C1"), # Hydroquinone
-        Chem.MolFromSmarts("C1=CC=C2C(=C1)C=CC(=O)C2=O"), # Naphthoquinone
-        # Additional quinone patterns can be added here
+        Chem.MolFromSmarts("C1=CC(=O)C=CC1=O"),            # Benzoquinone
+        Chem.MolFromSmarts("C1=CC=C(C=O)C=C1O"),           # Hydroquinone
+        Chem.MolFromSmarts("C1=CC=C2C(=C1)C=CC(=O)C2=O"),  # Naphthoquinone
+        # Additional specific patterns can be added
     ]
-    
+
     # Check for the presence of any quinone core structure
     has_quinone = any(mol.HasSubstructMatch(pattern) for pattern in quinone_patterns)
     if not has_quinone:
         return False, "No quinone backbone found"
 
-    # Look for longer prenyl side-chain patterns with repeated isoprenoid units (e.g., C=C-C-C)
-    prenyl_pattern_long = Chem.MolFromSmarts("C(=C)CC[C@]+")
-    prenyl_matches = mol.GetSubstructMatches(prenyl_pattern_long)
-    if len(prenyl_matches) < 2:  # A minimum of 2 matches indicate a decent length side-chain
+    # Define prenyl side-chain patterns (e.g., repeated isoprenoid units)
+    isoprene_unit = Chem.MolFromSmarts("C(=C)CC")
+    prenyl_matches = mol.GetSubstructMatches(isoprene_unit)
+
+    # We expect multiple isoprene units for a significant prenyl side-chain
+    if len(prenyl_matches) < 2:
         return False, "Prenyl side-chain too short"
-    
-    # Additional checks (e.g., stereochemistry, specific side-chains for subclasses) can be added.
 
     return True, "Contains quinone backbone with adequate prenyl side-chain"
