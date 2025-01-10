@@ -20,25 +20,34 @@ def is_polyprenol_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Pattern for isoprene unit (C=C-C-C=C)
-    isoprene_pattern = Chem.MolFromSmarts("[CX3]=[CX3][CX3][CX3]=[CX3]")
-    if not mol.HasSubstructMatch(isoprene_pattern):
-        return False, "No polyprenol chain found, missing isoprene unit pattern"
+    # Define improved isoprene unit patterns. These include more flexible configurations.
+    isoprene_pattern = Chem.MolFromSmarts("C(=C)C=C")  # Simplified for linking head-to-tail
+    # Check for repeated isoprene units
+    if mol.GetNumAtoms() < 15:  # Assuming polyprenols are larger molecules with multiple isoprene units
+        return False, "Molecule too small to contain a significant polyprenol chain"
 
-    # Pattern for phosphoric acid ester, e.g., O-P(=O)(O)-
+    if not mol.HasSubstructMatch(isoprene_pattern):
+        return False, "No significant polyprenol chain found, missing isoprene repeats"
+
+    # Pattern for phosphoric acid ester, e.g., phosphate group
     phosphate_pattern = Chem.MolFromSmarts("O-P(=O)(O)-")
     if not mol.HasSubstructMatch(phosphate_pattern):
         return False, "No phosphate ester group found"
 
-    # Ensure phosphate is at the end of polyprenol (though positional specific check might be complex)
+    # Ensure phosphate is structurally positioned at the molecule end
     phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
-    isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
+    num_isoprene_units = len(mol.GetSubstructMatches(isoprene_pattern))
 
-    # Simple positional check: ensure a phosphate group is on any terminal end
-    # Note: This assumes linear topology and might not handle cyclic variations
-    ends = [0, len(mol.GetAtoms()) - 1]
-    for end in ends:
+    # Neglect molecules with fewer than a polynomial apt isoprene chain (heuristic)
+    if num_isoprene_units < 3:
+        return False, "Insufficient isoprene units for classification as a polyprenol"
+
+    # Check for terminal phosphate connection (based localization and match, assuming it end-caps an isoprene chain setup)
+    atom_count = len(mol.GetAtoms())  # crude size estimate
+    end_atoms = [0, atom_count - 1]
+
+    for end in end_atoms:
         if any(end in match for match in phosphate_matches):
-            return True, "Contains polyprenol chain with attached phosphate group"
+            return True, "Valid polyprenol phosphate classified"
 
     return False, "Phosphate group does not attach correctly to the polyprenol chain"
