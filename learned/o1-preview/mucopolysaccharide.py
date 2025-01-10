@@ -21,42 +21,44 @@ def is_mucopolysaccharide(smiles: str):
         bool: True if molecule is a mucopolysaccharide, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for glycosidic bonds (O-linked sugars)
-    glycosidic_bond_pattern = Chem.MolFromSmarts("[C;!$(C=O)]1O[C;!$(C=O)][C;!$(C=O)][C;!$(C=O)][C;!$(C=O)][O][C;!$(C=O)]1")
+    # Detect sugar rings (5 or 6 membered rings with oxygen)
+    sugar_ring_pattern = Chem.MolFromSmarts("[C,O]1[C,O][C,O][C,O][C,O][C,O]1")
+    sugar_rings = mol.GetSubstructMatches(sugar_ring_pattern)
+    if len(sugar_rings) < 2:
+        return False, "Insufficient sugar rings found"
+    
+    # Detect glycosidic bonds (ether linkages connecting sugar rings)
+    glycosidic_bond_pattern = Chem.MolFromSmarts("[C,O;R]-O-[C,O;R]")
     glycosidic_bonds = mol.GetSubstructMatches(glycosidic_bond_pattern)
-    if not glycosidic_bonds:
+    if len(glycosidic_bonds) < 1:
         return False, "No glycosidic bonds found"
     
-    # Check for uronic acid units (sugar ring with carboxylic acid)
-    uronic_acid_pattern = Chem.MolFromSmarts("[C@@H]1([O])[C@@H](O)[C@H](O)[C@@H](O)[C@H](O)[C@@H]1C(=O)[O;H1,-]")
+    # Check for uronic acid units (sugar ring with carboxylic acid group)
+    uronic_acid_pattern = Chem.MolFromSmarts("[C;R][C;R][C;R][C;R][C;R][O;R]-C(=O)[O;H1,-1]")
     uronic_acid_units = mol.GetSubstructMatches(uronic_acid_pattern)
-    if not uronic_acid_units:
+    if len(uronic_acid_units) < 1:
         return False, "No uronic acid units found"
     
     # Check for glycosamine units (sugar ring with amino group)
-    glycosamine_pattern = Chem.MolFromSmarts("[C@@H]1([O])[C@@H](O)[C@H](O)[C@@H](O)[C@H](N)[C@@H]1O")
+    glycosamine_pattern = Chem.MolFromSmarts("[C;R][C;R][C;R][C;R][C;R][O;R]-[CH2][N]")
     glycosamine_units = mol.GetSubstructMatches(glycosamine_pattern)
-    if not glycosamine_units:
+    if len(glycosamine_units) < 1:
         return False, "No glycosamine units found"
     
     # Check for sulfate ester groups (-O-S(=O)(=O)-O-)
-    sulfate_ester_pattern = Chem.MolFromSmarts("O[S](=O)(=O)[O]")
+    sulfate_ester_pattern = Chem.MolFromSmarts("O-S(=O)(=O)-O")
     sulfate_groups = mol.GetSubstructMatches(sulfate_ester_pattern)
-    if not sulfate_groups:
+    if len(sulfate_groups) < 1:
         return False, "No sulfate ester groups found"
     
-    # Check for alternating units (simplified check)
-    if len(uronic_acid_units) < 1 or len(glycosamine_units) < 1:
-        return False, "Does not contain both uronic acid and glycosamine units"
-    
-    # Assuming that the presence of these units indicates alternating pattern
-    return True, "Contains polysaccharide chain with uronic acid and glycosamine units and sulfate groups"
+    # Assuming that the presence of these units indicates a mucopolysaccharide
+    return True, "Contains polysaccharide chain with uronic acid, glycosamine units, and sulfate groups"
 
 __metadata__ = {
     'chemical_class': {
