@@ -20,17 +20,27 @@ def is_iridoid_monoterpenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a SMARTS pattern for the iridoid core (cyclopentane fused to a six-membered oxygen heterocycle)
-    # This pattern is an approximation due to the complexity of variations
-    iridoid_pattern = Chem.MolFromSmarts("C1CCC2OCCCC2C1")  # Simplified core structure pattern
+    # Define a comprehensive SMARTS pattern for iridoid monoterpenoid structures
+    # A cyclopentane with a fused oxygen-containing six-membered ring
+    # This considers potential exocyclic double bonds and functionality adjustments
+    iridoid_pattern = Chem.MolFromSmarts("C1CC[C@@]2(C1)OC=C2")  # Core cyclopentane and oxygen-heterocycle
 
-    # Check for the iridoid pattern in the molecule
+    # Check for iridoid core along with functional groups common in iridoid monoterpenoids
     if mol.HasSubstructMatch(iridoid_pattern):
-        return True, "Contains iridoid monoterpenoid core structure"
-    else:
-        return False, "Does not match the typical iridoid monoterpenoid core structure"
+        # Check for significant functional motifs that might aid in identification
+        known_functional_groups = [
+            Chem.MolFromSmarts("[OH]"),  # Hydroxyl group
+            Chem.MolFromSmarts("[O=C]"),  # Ketone group
+            Chem.MolFromSmarts("[O=CO]"), # Ester linkage typically seen
+        ]
+        for fg in known_functional_groups:
+            if mol.HasSubstructMatch(fg):
+                return True, "Contains iridoid monoterpenoid core with characteristic functional groups"
+
+    return False, "Does not match the typical iridoid monoterpenoid core structure"
+
 
 # Example usage
-smiles_example = 'OCC1=C(C=O)[C@H](C[C@@H]1OC(=O)\C=C/c1ccc(O)cc1)C(=C)C=O'  # Example SMILES of luzonidial B
+smiles_example = 'OCC1=C(C=O)[C@H](C[C@@H]1OC(=O)\\C=C/c1ccc(O)cc1)C(=C)C=O'  # Example SMILES of luzonidial B
 result, reason = is_iridoid_monoterpenoid(smiles_example)
 print(f"Result: {result}, Reason: {reason}")
