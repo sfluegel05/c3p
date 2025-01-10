@@ -7,8 +7,7 @@ def is_fatty_acid_anion(smiles: str):
     """
     Determines if a molecule is a fatty acid anion based on its SMILES string.
     A fatty acid anion is characterized by a deprotonated carboxylic acid group (-C([O-])=O)
-    and a hydrocarbon chain, which may include double bonds, rings, or functional groups,
-    and should have sufficient chain length.
+    and a hydrocarbon chain, which may include double bonds, but typically form straight or slightly branched chains.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -32,11 +31,14 @@ def is_fatty_acid_anion(smiles: str):
     if not mol.HasSubstructMatch(carboxylate_pattern):
         return False, "No carboxylate group (-C([O-])=O) found"
 
-    # Count carbon atoms sufficient to indicate a fatty acid type structure
-    carbon_pattern = Chem.MolFromSmarts("[CH,CH2,CH3]")
-    carbon_matches = mol.GetSubstructMatches(carbon_pattern)
-    
-    if len(carbon_matches) < 6:
-        return False, "Not enough carbons for a typical fatty acid chain"
+    # Define a pattern for a simple hydrocarbon chain
+    # Allow straight or lightly branched alkyl chains
+    chain_pattern = Chem.MolFromSmarts("[C;!$(C=O)]~[C;!$(C=O)]~[C;!$(C=O)]~[C;!$(C=O)]")
+    if chain_pattern is None:
+        return (None, "Error creating chain pattern")
 
-    return True, "Contains a deprotonated carboxylate group with a sufficiently long hydrocarbon chain"
+    # Ensure it contains a sufficiently long chain
+    if not mol.HasSubstructMatch(chain_pattern):
+        return False, "Hydrocarbon chain does not match typical fatty acid anion structure"
+
+    return True, "Contains a deprotonated carboxylate group with a suitable hydrocarbon chain characteristic of fatty acid anions"
