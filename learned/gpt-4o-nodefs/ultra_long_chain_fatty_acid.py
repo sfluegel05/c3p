@@ -14,7 +14,7 @@ def is_ultra_long_chain_fatty_acid(smiles: str):
         bool: True if molecule is an ultra-long-chain fatty acid, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
@@ -24,28 +24,30 @@ def is_ultra_long_chain_fatty_acid(smiles: str):
     carboxylic_pattern = Chem.MolFromSmarts("C(=O)[O;H1,-1]")
     if not mol.HasSubstructMatch(carboxylic_pattern):
         return False, "No carboxylic acid group found"
-
-    # Count the carbon atoms
+    
+    # Count number of carbon atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 28:
+    if c_count < 22:
         return False, f"Not enough carbon atoms for ultra-long-chain fatty acid: {c_count}"
 
-    # Look for long carbon chain
-    chain_pattern = Chem.MolFromSmarts("[CH2]~[CH2]~[CH2]~[CH2]~[CH2]~[CH2]~[CH2]~[CH2]~[CH2]")  # At least 9 CH2 in sequence
-    num_long_chains = len(mol.GetSubstructMatches(chain_pattern))
+    # Look for continuous carbon chain; match ~C6 or longer (covers both straight and with minimal branching or unsaturation)
+    chain_pattern = Chem.MolFromSmarts("[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]")
+    long_chain_matches = mol.GetSubstructMatches(chain_pattern)
     
-    if num_long_chains < 2:  # Preferably two or more segments of long chains, considering branching or other motifs
-        return False, f"Insufficient long hydrocarbon chains: {num_long_chains}"
-
+    total_long_chain_atoms = sum(len(match) for match in long_chain_matches)
+    if total_long_chain_atoms < 16:  # Ensure overall contribution to a lengthy span
+        return False, f"Insufficient long hydrocarbon chain contribution: {total_long_chain_atoms}"
+    
     # Check for characteristic ULCFA substructures
-    polyunsaturated_pattern = Chem.MolFromSmarts("C=C")
-    hydroxyl_pattern = Chem.MolFromSmarts("[CX4][OX2H]")
-    methoxy_pattern = Chem.MolFromSmarts("[C][O][C]")
-    cyclopropyl_pattern = Chem.MolFromSmarts("C1CC1")
+    hydroxyl_pattern = Chem.MolFromSmarts("[CX4][OX2H]")  # OH group
+    methoxy_pattern = Chem.MolFromSmarts("[C][O][C]")  # Methoxy group
+    cyclopropyl_pattern = Chem.MolFromSmarts("C1CC1")  # Cyclopropyl ring
 
-    has_required_groups = any(mol.HasSubstructMatch(pattern) for pattern in [polyunsaturated_pattern, hydroxyl_pattern, methoxy_pattern, cyclopropyl_pattern])
-
-    if has_required_groups:
+    has_functional_groups = any(mol.HasSubstructMatch(pattern) for pattern in [
+        hydroxyl_pattern, methoxy_pattern, cyclopropyl_pattern
+    ])
+    
+    if has_functional_groups:
         return True, "Contains ultra-long-chain fatty acid features"
 
     return False, "Insufficient structural features for an ultra-long-chain fatty acid"
