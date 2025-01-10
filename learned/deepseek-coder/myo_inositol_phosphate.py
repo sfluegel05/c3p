@@ -26,25 +26,16 @@ def is_myo_inositol_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for the myo-inositol backbone pattern (6-membered ring with hydroxyl groups)
-    myo_inositol_pattern = Chem.MolFromSmarts("[C@H]1([C@@H](O)[C@H](O)[C@@H](O)[C@H](O)[C@@H]1O)")
+    # Check for the myo-inositol backbone pattern (6-membered ring with hydroxyl or phosphate groups)
+    myo_inositol_pattern = Chem.MolFromSmarts("[C@H]1([C@@H]([OH,OP])([C@H]([OH,OP])([C@@H]([OH,OP])([C@H]([OH,OP])([C@@H]1[OH,OP])))))")
     if not mol.HasSubstructMatch(myo_inositol_pattern):
         return False, "No myo-inositol backbone found"
 
-    # Look for at least one phosphate group (-OP(O)(O)=O)
-    phosphate_pattern = Chem.MolFromSmarts("[OX2][PX4](=[OX1])([OX2-])[OX2-]")
+    # Look for at least one phosphate group (-OP(O)(O)=O or -OP(O)(O)-)
+    phosphate_pattern = Chem.MolFromSmarts("[OX2][PX4](=[OX1])([OX2H,OX2-])[OX2H,OX2-]")
     phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
     if len(phosphate_matches) < 1:
         return False, "No phosphate groups found"
-
-    # Check for the correct number of carbons and oxygens
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    
-    if c_count != 6:
-        return False, "Incorrect number of carbons for myo-inositol"
-    if o_count < 6:
-        return False, "Too few oxygens for myo-inositol phosphate"
 
     return True, "Contains myo-inositol backbone with at least one phosphate group"
 
