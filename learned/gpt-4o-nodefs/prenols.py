@@ -26,9 +26,20 @@ def is_prenols(smiles: str):
     if not mol.HasSubstructMatch(alcohol_pattern):
         return False, "Missing alcohol group"
 
-    # Check for isoprene units. Isoprene units in prenols are often arranged with repeated C(=C)-C-C=C motifs
-    isoprene_pattern = Chem.MolFromSmarts('C(=C)-C-C=C')
-    isoprene_count = len(mol.GetSubstructMatches(isoprene_pattern))
+    # Enhanced check for isoprene units; we broadened the pattern to capture alternative connections
+    # Isoprene units: (C=C-C-C) or (C-C=C-C) or (C=C-C) or (C-C=C)
+    isoprene_patterns = [
+        Chem.MolFromSmarts('C=C-C-C'),
+        Chem.MolFromSmarts('C-C=C-C'),
+        Chem.MolFromSmarts('C=C-C'),
+        Chem.MolFromSmarts('C-C=C')
+    ]
+
+    isoprene_count = 0
+    for pattern in isoprene_patterns:
+        matches = mol.GetSubstructMatches(pattern)
+        isoprene_count += len(matches)
+
     if isoprene_count < 1:
         return False, f"Insufficient isoprene-like units (found {isoprene_count})"
 
