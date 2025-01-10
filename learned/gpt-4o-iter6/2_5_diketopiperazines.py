@@ -22,11 +22,12 @@ def is_2_5_diketopiperazines(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define SMARTS pattern for a 2,5-diketopiperazine
-    # A non-stereospecific representation to match molecules more broadly
-    diketopiperazine_core = Chem.MolFromSmarts("N1C(=O)CN(C(=O)C)C1")
+    # Allowing for stereochemistry (optional '@')
+    diketopiperazine_core = Chem.MolFromSmarts("N1[C@H](=O)C[C@H](C(=O))
+                                               )N1 |@|")
 
     if mol.HasSubstructMatch(diketopiperazine_core):
-        # Ensuring the matched substructure is indeed a piperazine-2,5-dione
+        # Verify the matched substructure is indeed a piperazine-2,5-dione
         core_atoms = mol.GetSubstructMatch(diketopiperazine_core)
         if core_atoms:
             return True, "Contains a piperazine-2,5-dione skeleton"
