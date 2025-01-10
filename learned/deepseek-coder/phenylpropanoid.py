@@ -26,33 +26,36 @@ def is_phenylpropanoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check if the molecule is aromatic
-    if not any(atom.GetIsAromatic() for atom in mol.GetAtoms()):
-        return False, "Molecule is not aromatic"
+    # Check for at least one aromatic ring
+    aromatic_rings = [ring for ring in Chem.GetSymmSSSR(mol) if all(mol.GetAtomWithIdx(i).GetIsAromatic() for i in ring)]
+    if not aromatic_rings:
+        return False, "No aromatic ring found"
 
-    # Look for phenylpropane skeleton pattern (C6H5-C3H7)
-    phenylpropane_pattern = Chem.MolFromSmarts("[c]1[c][c][c][c][c]1-[CX4][CX4][CX4]")
-    if not mol.HasSubstructMatch(phenylpropane_pattern):
-        return False, "No phenylpropane skeleton found"
+    # More flexible phenylpropane pattern matching
+    # Allows for variations in the propyl chain (e.g., double bonds, substitutions)
+    phenylpropane_patterns = [
+        Chem.MolFromSmarts("[c]1[c][c][c][c][c]1-[CX4][CX4][CX4]"),  # Standard phenylpropane
+        Chem.MolFromSmarts("[c]1[c][c][c][c][c]1-[CX4]=[CX4]"),      # Double bond in chain
+        Chem.MolFromSmarts("[c]1[c][c][c][c][c]1-[CX4][CX4]"),       # Shorter chain
+        Chem.MolFromSmarts("[c]1[c][c][c][c][c]1-[CX4][CX4][CX4][CX4]")  # Longer chain
+    ]
 
-    # Check for additional functional groups or modifications
-    # Phenylpropanoids can have various functional groups, so we don't enforce strict rules here
-    # but we can check for common ones like hydroxyl, methoxy, etc.
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
-    methoxy_pattern = Chem.MolFromSmarts("[OX2][CX4]")
-    carbonyl_pattern = Chem.MolFromSmarts("[CX3]=[OX1]")
+    has_phenylpropane = any(mol.HasSubstructMatch(pattern) for pattern in phenylpropane_patterns)
+    if not has_phenylpropane:
+        return False, "No phenylpropane-like skeleton found"
 
-    has_hydroxyl = mol.HasSubstructMatch(hydroxyl_pattern)
-    has_methoxy = mol.HasSubstructMatch(methoxy_pattern)
-    has_carbonyl = mol.HasSubstructMatch(carbonyl_pattern)
+    # Check for common phenylpropanoid features
+    # These are not required but increase confidence
+    common_features = [
+        Chem.MolFromSmarts("[OX2H]"),  # Hydroxyl
+        Chem.MolFromSmarts("[OX2][CX4]"),  # Methoxy
+        Chem.MolFromSmarts("[CX3]=[OX1]"),  # Carbonyl
+        Chem.MolFromSmarts("[CX3]=[CX3]")  # Double bond
+    ]
 
-    # Count the number of carbons and hydrogens to ensure it fits the general formula
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    h_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 1)
-
-    # Phenylpropanoids typically have at least 9 carbons (C6H5-C3H7)
-    if c_count < 9:
-        return False, "Too few carbons for phenylpropanoid"
+    feature_count = sum(mol.HasSubstructMatch(feat) for feat in common_features)
+    if feature_count == 0:
+        return False, "No common phenylpropanoid features found"
 
     # Check molecular weight - phenylpropanoids typically >100 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
@@ -60,4 +63,4 @@ def is_phenylpropanoid(smiles: str):
         return False, "Molecular weight too low for phenylpropanoid"
 
     # If all checks pass, classify as phenylpropanoid
-    return True, "Contains phenylpropane skeleton and is aromatic"
+    return True, "Contains phenylpropane-like skeleton and common features"
