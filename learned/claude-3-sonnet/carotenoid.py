@@ -24,34 +24,54 @@ def is_carotenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Count carbons - carotenoids typically have ~40 carbons but can be degraded
+    # Get basic molecular properties
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 20:  # Allow for apocarotenoids
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    
+    # Check for glycosylated/esterified carotenoids
+    is_glycosylated = mol.HasSubstructMatch(Chem.MolFromSmarts("OC1OC(CO)C(O)C(O)C1"))
+    is_esterified = mol.HasSubstructMatch(Chem.MolFromSmarts("CC(=O)OC"))
+    
+    # Adjust carbon count limits based on modifications
+    max_carbons = 50
+    if is_glycosylated:
+        max_carbons = 80  # Allow for glycosylated forms
+    if is_esterified:
+        max_carbons = 60  # Allow for esterified forms
+        
+    if c_count < 20:
         return False, f"Too few carbons ({c_count}) for a carotenoid"
-    if c_count > 50:  # Allow for some modifications but not too many
+    if c_count > max_carbons:
         return False, f"Too many carbons ({c_count}) for a carotenoid"
     
-    # Look for extended polyene chain patterns
-    polyene_pattern1 = Chem.MolFromSmarts("C=CC=CC=CC=CC=C")  # Longer pattern
-    polyene_pattern2 = Chem.MolFromSmarts("C=CC=CC=CC=C")     # Shorter pattern
+    # Check for carotenoid backbone patterns
+    backbone_patterns = [
+        "C(/C=C/C(/C)=C/C=C/C(/C)=C/C=C/C=C(/C))",  # All-trans polyene
+        "C(/C=C/C=C(/C)C=C/C=C(/C))",                # Shorter polyene
+        "CC(C)=CCC/C(C)=C/CC/C(C)=C/CC"              # Carotenoid precursor
+    ]
     
-    if not (mol.HasSubstructMatch(polyene_pattern1) or 
-            len(mol.GetSubstructMatches(polyene_pattern2)) >= 2):
-        return False, "No characteristic polyene chain found"
+    has_backbone = False
+    for pattern in backbone_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            has_backbone = True
+            break
+            
+    if not has_backbone:
+        return False, "No characteristic carotenoid backbone found"
     
-    # Count conjugated double bonds using SMARTS
-    db_pattern = Chem.MolFromSmarts("C=C")
-    num_double_bonds = len(mol.GetSubstructMatches(db_pattern))
-    if num_double_bonds < 7:  # Minimum for most carotenoids
-        return False, f"Insufficient conjugation ({num_double_bonds} double bonds)"
+    # Count conjugated double bonds
+    conjugated_pattern = Chem.MolFromSmarts("C=CC=C")
+    num_conjugated = len(mol.GetSubstructMatches(conjugated_pattern))
     
-    # Look for common end groups
+    # Look for common end groups with more specific patterns
     end_groups = [
-        ("beta", "C1C=C(C)CCC1(C)C"),          # Beta-type end
-        ("epsilon", "C1C=C(C)CC1(C)C"),         # Epsilon-type end
-        ("gamma", "C1C(C)=CCCC1(C)C"),         # Gamma-type end
-        ("acyclic", "CC(C)=CCCC(C)(C)O"),      # Acyclic oxygenated end
-        ("keto", "CC(=O)C=C"),                 # Keto end group
+        ("beta", "C1=C(C)C(C)(C)CCC1"),           # Beta-type end
+        ("epsilon", "C1C(C)=C(C)CC1(C)C"),        # Epsilon-type end
+        ("gamma", "C1=C(C)CCCC1(C)C"),            # Gamma-type end
+        ("keto", "C(=O)C=CC=C"),                  # Keto end group
+        ("acyclic", "C(C)(C)C=CC=C"),             # Acyclic end
+        ("cyclopentyl", "C1CCCC1(C)C"),           # Cyclopentyl end
     ]
     
     found_ends = []
@@ -60,32 +80,41 @@ def is_carotenoid(smiles: str):
         if pattern and mol.HasSubstructMatch(pattern):
             found_ends.append(name)
     
-    # Check for common modifications
+    # Check for modifications
     modifications = []
-    
-    # Hydroxyl groups (xanthophylls)
+    if is_glycosylated:
+        modifications.append("glycosylated")
+    if is_esterified:
+        modifications.append("esterified")
     if mol.HasSubstructMatch(Chem.MolFromSmarts("CO")):
         modifications.append("hydroxylated")
-    
-    # Keto groups
     if mol.HasSubstructMatch(Chem.MolFromSmarts("C(=O)C")):
         modifications.append("keto")
-    
-    # Epoxide groups
     if mol.HasSubstructMatch(Chem.MolFromSmarts("C1OC1")):
         modifications.append("epoxidated")
-    
-    # Carboxylic acid groups
     if mol.HasSubstructMatch(Chem.MolFromSmarts("C(=O)O")):
         modifications.append("carboxylated")
     
-    # Final classification
-    if not found_ends:
-        if c_count >= 30 and num_double_bonds >= 9:
-            # Might be a carotenoid with unusual end groups
-            return True, "Likely carotenoid based on carbon count and conjugation"
-        return False, "No characteristic end groups found"
+    # Count methyl branches (characteristic of carotenoids)
+    methyl_pattern = Chem.MolFromSmarts("C-C(C)-C")
+    num_methyls = len(mol.GetSubstructMatches(methyl_pattern))
     
-    mod_str = " (" + ", ".join(modifications) + ")" if modifications else ""
-    end_str = ", ".join(found_ends)
-    return True, f"Carotenoid with {end_str} end group(s){mod_str}"
+    # Final classification logic
+    is_likely_carotenoid = False
+    reason = ""
+    
+    if found_ends and num_conjugated >= 4:
+        is_likely_carotenoid = True
+        mod_str = f" ({', '.join(modifications)})" if modifications else ""
+        end_str = ", ".join(found_ends)
+        reason = f"Carotenoid with {end_str} end group(s){mod_str}"
+    elif num_conjugated >= 7 and num_methyls >= 4:
+        is_likely_carotenoid = True
+        reason = "Carotenoid based on conjugation pattern and methyl branching"
+    elif c_count >= 30 and num_conjugated >= 6 and has_backbone:
+        is_likely_carotenoid = True
+        reason = "Carotenoid based on backbone structure"
+    else:
+        reason = "Does not match carotenoid structural requirements"
+        
+    return is_likely_carotenoid, reason
