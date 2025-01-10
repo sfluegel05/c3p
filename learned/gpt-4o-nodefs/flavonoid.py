@@ -20,19 +20,31 @@ def is_flavonoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for structure characteristic of flavonoids: C6-C3-C6 system
-    # Typically, 2 phenolic rings connected by a 3-carbon bridge 
-    # forming a 6-membered heterocyclic ring flavonoid backbone.
-    flavonoid_pattern = Chem.MolFromSmarts('c1cc(O)ccc1-c2ccccc2') # Basic flavonoid-like pattern
-    if not mol.HasSubstructMatch(flavonoid_pattern):
-        return False, "No flavonoid-like backbone found"
-    
-    # Check for additional hydroxy or methoxy groups which are common
-    hydroxy_pattern = Chem.MolFromSmarts('[OX2H]')  # Hydroxy group
-    methoxy_pattern = Chem.MolFromSmarts('OC')  # Methoxy group
-    if not mol.HasSubstructMatch(hydroxy_pattern):
-        return False, "Missing hydroxy groups found in flavonoids"
-    if not mol.HasSubstructMatch(methoxy_pattern):
-        return False, "Missing optional methoxy groups found in flavonoids"
+    # Recognize several common flavonoid patterns
+    # Basic flavonoid-like backbones and common substructures
 
-    return True, "Flavonoid-like structure with phenolic rings and 3-carbon bridge"
+    patterns = [
+        # Flavone and flavonol basic pattern
+        Chem.MolFromSmarts('c1cc(O)ccc1-c2c(=O)cc(-c3cc(O)ccc3)oc2'),  
+    
+        # Isoflavone pattern
+        Chem.MolFromSmarts('c1cc(O)ccc1-c2cc(-c3cc(O)ccc3)oc(=O)c2'),
+        
+        # Flavanol pattern
+        Chem.MolFromSmarts('c1cc(O)ccc1-c2c(O)cc(-c3cc(O)ccc3)oc2'),
+
+        # Anthocyanidin pattern
+        Chem.MolFromSmarts('[o+]=c1c(cc(O)cc1-c2cc(O)ccc2)cc(O)c3cc(O)ccc3'),
+        
+        # Generalized tricyclic system with hydroxy groups
+        Chem.MolFromSmarts('c1cc(O)c(O)cc1-c2cc(O)cc(-c3cc(O)c(O)cc3)o2'),
+        
+        # Catechin pattern
+        Chem.MolFromSmarts('c1cc(O)ccc1-c2cc(O)cc(-c3cc(O)ccc3)o2')
+    ]
+
+    for pattern in patterns:
+        if mol.HasSubstructMatch(pattern):
+            return True, "Contains flavonoid-like backbone"
+
+    return False, "No flavonoid-like backbone found"
