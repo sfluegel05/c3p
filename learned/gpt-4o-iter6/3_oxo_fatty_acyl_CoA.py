@@ -20,22 +20,22 @@ def is_3_oxo_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a pattern for the 3-oxo-fatty acid group (ketone at position 3)
-    oxo_fatty_acid_pattern = Chem.MolFromSmarts("C(=O)CC")
-    if not mol.HasSubstructMatch(oxo_fatty_acid_pattern):
-        return False, "No 3-oxo-fatty acid group found"
-    
-    # Define a more flexible pattern for the core CoA moiety
-    coa_core_pattern = Chem.MolFromSmarts("P(=O)(O)OC[C@@H]1O[C@H]([C@@H](OP(=O)(O)O)[C@H]1O)N2C=NC3=C2N=CN=C3N")
+    # Define a comprehensive pattern for the CoA moiety
+    coa_core_pattern = Chem.MolFromSmarts("[C@@H]1N(C=NC2=C1N=CN=C2N)C3C(C(C(O3)(COP(=O)(O)OCC[N+](C)(C)C))O)OP(=O)(O)O")
     if not mol.HasSubstructMatch(coa_core_pattern):
         return False, "No core CoA moiety found"
 
-    # Look for the thioester linkage (C(=O)S-C, ester linkage with sulfur)
-    thioester_pattern = Chem.MolFromSmarts("C(=O)SC")
+    # Define a pattern for the 3-oxo group with flexibility
+    oxo_fatty_acid_pattern = Chem.MolFromSmarts("C(=O)CC(=O)")
+    if not mol.HasSubstructMatch(oxo_fatty_acid_pattern):
+        return False, "No 3-oxo-fatty acid group found"
+    
+    # Look for the thioester linkage
+    thioester_pattern = Chem.MolFromSmarts("C(=O)S")
     if not mol.HasSubstructMatch(thioester_pattern):
-        return False, "No thioester linkage found between 3-oxo and CoA"
+        return False, "No thioester linkage found"
 
-    return True, "Structure matches 3-oxo-fatty acyl-CoA with 3-oxo group, core CoA moiety, and thioester linkage"
+    return True, "Structure matches 3-oxo-fatty acyl-CoA with core CoA moiety, 3-oxo group, and thioester linkage"
 
 __metadata__ = {
     'chemical_class': {
