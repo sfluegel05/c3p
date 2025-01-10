@@ -28,7 +28,7 @@ def is_1_monoglyceride(smiles: str):
 
     # Define the glycerol backbone pattern with a single ester at position 1
     glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
-    ester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2]")
+    ester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2][CH2X4]")
 
     # Check for the presence of a glycerol backbone
     if not mol.HasSubstructMatch(glycerol_pattern):
