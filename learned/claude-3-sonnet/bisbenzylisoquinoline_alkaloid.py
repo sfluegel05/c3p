@@ -24,65 +24,83 @@ def is_bisbenzylisoquinoline_alkaloid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for minimum complexity
-    if mol.GetNumAtoms() < 30:  # These are large molecules
+    if mol.GetNumAtoms() < 30:
         return False, "Molecule too small for bisbenzylisoquinoline alkaloid"
 
-    # Look for isoquinoline-like cores (more flexible patterns)
-    # Pattern 1: Basic tetrahydroisoquinoline core
-    thiq_pattern1 = Chem.MolFromSmarts("[#6]1[#6][#6][#7][#6][#6]2[#6][#6][#6][#6]=1[#6]2")
-    # Pattern 2: Alternative with different oxidation states
-    thiq_pattern2 = Chem.MolFromSmarts("[#6]1[#6][#6][#7][#6][#6]2[#6][#6]=,:[#6][#6]=1[#6]2")
-    # Pattern 3: N-methylated version
-    thiq_pattern3 = Chem.MolFromSmarts("[#6]1[#6][#6][N;!H0,$(NC)][#6][#6]2[#6][#6][#6][#6]=1[#6]2")
+    # More flexible patterns for isoquinoline-like cores
+    # Basic tetrahydroisoquinoline pattern with variations
+    patterns = [
+        # Basic tetrahydroisoquinoline core with flexible bonds
+        "[#6]1~[#6]~[#6]~[#7]~[#6]~[#6]2~[#6]~[#6]~[#6]~[#6]~1~[#6]2",
+        # Pattern with N-methyl variation
+        "[#6]1~[#6]~[#6]~[#7X3]($([CH3]))~[#6]~[#6]2~[#6]~[#6]~[#6]~[#6]~1~[#6]2",
+        # Pattern allowing for different oxidation states
+        "[#6]1~[#6]~[#6]~[#7]~[#6]~[#6]2~[#6]=,:[#6]~[#6]~[#6]~1~[#6]2"
+    ]
     
-    thiq_matches = (len(mol.GetSubstructMatches(thiq_pattern1)) + 
-                   len(mol.GetSubstructMatches(thiq_pattern2)) +
-                   len(mol.GetSubstructMatches(thiq_pattern3)))
+    total_matches = 0
+    for pattern in patterns:
+        patt = Chem.MolFromSmarts(pattern)
+        if patt:
+            matches = len(mol.GetSubstructMatches(patt))
+            total_matches += matches
+
+    if total_matches < 2:
+        return False, "Must contain at least two isoquinoline-like cores"
+
+    # Check for ether bridges between aromatic rings (more flexible pattern)
+    ether_patterns = [
+        "c-[#8]-c",  # Basic ether bridge
+        "c-[#8]-[#6]-c",  # Extended ether bridge
+        "c1ccc2OCOc2c1"   # Methylenedioxy bridge
+    ]
     
-    if thiq_matches < 2:
-        return False, "Must contain two isoquinoline-like cores"
+    ether_matches = 0
+    for pattern in ether_patterns:
+        patt = Chem.MolFromSmarts(pattern)
+        if patt:
+            ether_matches += len(mol.GetSubstructMatches(patt))
 
-    # Look for benzyl groups attached to nitrogen (more flexible pattern)
-    benzyl_n_pattern = Chem.MolFromSmarts("[#7]C[c]1[c][c][c][c][c]1")
-    if len(mol.GetSubstructMatches(benzyl_n_pattern)) < 1:
-        return False, "Must contain benzyl groups attached to nitrogen"
+    if ether_matches < 1:
+        return False, "Must contain ether bridges between units"
 
-    # Look for ether bridges between aromatic rings (including various positions)
-    ether_bridge_pattern = Chem.MolFromSmarts("c-[#8]-c")
-    ether_matches = mol.GetSubstructMatches(ether_bridge_pattern)
-    if len(ether_matches) < 1:
-        return False, "Must contain ether bridges between aromatic rings"
-
-    # Check for typical substituents (methoxy, hydroxy) on aromatic rings
-    methoxy_pattern = Chem.MolFromSmarts("c-[#8]-[CH3]")
-    hydroxy_pattern = Chem.MolFromSmarts("c-[#8;H1]")
-    substituents = len(mol.GetSubstructMatches(methoxy_pattern)) + len(mol.GetSubstructMatches(hydroxy_pattern))
+    # Check for typical substituents with more flexible patterns
+    substituent_patterns = [
+        "c-[#8]-[CH3]",  # Methoxy
+        "c-[#8;H1]",     # Hydroxy
+        "c1ccc2OCOc2c1"  # Methylenedioxy
+    ]
     
-    if substituents < 2:
-        return False, "Insufficient number of typical substituents (methoxy/hydroxy)"
+    total_substituents = 0
+    for pattern in substituent_patterns:
+        patt = Chem.MolFromSmarts(pattern)
+        if patt:
+            total_substituents += len(mol.GetSubstructMatches(patt))
 
-    # Count nitrogen atoms (should have at least 2 for the two isoquinoline units)
+    if total_substituents < 2:
+        return False, "Insufficient number of characteristic substituents"
+
+    # Count nitrogen atoms
     n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
     if n_count < 2:
         return False, "Must contain at least two nitrogen atoms"
 
     # Count aromatic rings
-    aromatic_rings = 0
     ring_info = mol.GetRingInfo()
+    aromatic_rings = 0
     for ring in ring_info.AtomRings():
         if any(mol.GetAtomWithIdx(i).GetIsAromatic() for i in ring):
             aromatic_rings += 1
-            
-    if aromatic_rings < 4:  # Should have at least 4 aromatic rings
+
+    if aromatic_rings < 4:
         return False, "Insufficient number of aromatic rings"
 
-    # Verify molecular weight is in typical range
+    # Check molecular weight range
     mol_wt = Chem.Descriptors.ExactMolWt(mol)
     if not (400 <= mol_wt <= 800):
         return False, "Molecular weight outside typical range"
 
-    # Additional check for connected system
-    # The molecule should be one connected system, not fragments
+    # Verify molecule is a single connected system
     if len(Chem.GetMolFrags(mol)) > 1:
         return False, "Structure appears to be fragmented"
 
