@@ -1,81 +1,43 @@
 """
 Classifies: CHEBI:87658 decanoate ester
 """
-"""
-Classifies: decanoate ester
-Definition: A fatty acid ester resulting from the formal condensation of the carboxy group 
-of decanoic acid (capric acid) with the hydroxy group of an alcohol or phenol.
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+Looking at the outcomes, the main issue is that the program has too many false positives - it's identifying many compounds as decanoate esters that aren't actually decanoate esters. The key problems appear to be:
 
-def is_decanoate_ester(smiles: str):
-    """
-    Determines if a molecule is a decanoate ester based on its SMILES string.
-    
-    Args:
-        smiles (str): SMILES string of the molecule
-        
-    Returns:
-        bool: True if molecule is a decanoate ester, False otherwise
-        str: Reason for classification
-    """
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+1. The SMARTS pattern for the decanoyl chain (`[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]`) is too flexible with the `~` bonds, allowing for double bonds and rings within the chain.
 
-    # Look for ester group pattern (-O-C(=O)-)
-    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
-    if not mol.HasSubstructMatch(ester_pattern):
-        return False, "No ester group found"
+2. The chain validation logic isn't strict enough - it allows for branched chains and substitutions that shouldn't be part of a decanoate ester.
 
-    # Pattern for decanoyl group (10-carbon chain attached to ester)
-    # More flexible pattern allowing for substitutions
-    decanoyl_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]")
-    
-    if not mol.HasSubstructMatch(decanoyl_pattern):
-        return False, "No 10-carbon chain attached to ester group found"
-    
-    # Get matches
-    matches = mol.GetSubstructMatches(decanoyl_pattern)
-    
-    for match in matches:
-        # Get the carbon atoms in the chain
-        chain_atoms = match[2:]  # Skip O-C(=O)
-        
-        # Check if chain is linear (each carbon should have 2 or 3 non-H neighbors except terminal)
-        is_valid_chain = True
-        for i, atom_idx in enumerate(chain_atoms):
-            atom = mol.GetAtomWithIdx(atom_idx)
-            non_h_neighbors = len([n for n in atom.GetNeighbors() 
-                                 if n.GetAtomicNum() != 1 and n.GetIdx() not in chain_atoms])
-            
-            # Terminal carbon can have 1 non-chain neighbor
-            if i == len(chain_atoms)-1:
-                if non_h_neighbors > 1:
-                    is_valid_chain = False
-                    break
-            # Other carbons should have at most 1 non-chain neighbor
-            elif non_h_neighbors > 1:
-                is_valid_chain = False
-                break
-        
-        if is_valid_chain:
-            # Verify the ester oxygen is connected to carbon (not part of phosphate, etc)
-            o_atom = mol.GetAtomWithIdx(match[0])
-            neighbors = [x for x in o_atom.GetNeighbors() if x.GetIdx() != match[1]]
-            if len(neighbors) != 1:
-                continue
-            if neighbors[0].GetAtomicNum() != 6:
-                continue
-                
-            # Molecular weight sanity check (should be > 170 Da for smallest decanoate ester)
-            mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-            if mol_wt < 170:
-                return False, "Molecular weight too low for decanoate ester"
-                
-            return True, "Contains decanoyl group connected via ester linkage with 10-carbon chain"
-    
-    return False, "No valid decanoate ester group found"
+3. We need to ensure the chain is specifically 10 carbons long, not longer.
+
+Here's how we can improve:
+
+1. Use more specific SMARTS patterns:
+   - Use `-` instead of `~` to specify single bonds
+   - Add explicit hydrogens where needed
+   - Specify saturated carbons (CX4) for most of the chain
+
+2. Add stricter chain validation:
+   - Count exact number of carbons
+   - Ensure linear chain structure
+   - Verify no branching except at the end
+
+3. Add additional checks:
+   - Verify the carbon chain is saturated (except for the carbonyl carbon)
+   - Check that the ester oxygen is not part of a larger group like phosphate
+
+Here's the reasoning for a new implementation:
+1. First check for basic ester group
+2. Find all potential decanoyl chains
+3. For each chain:
+   - Verify it's exactly 10 carbons
+   - Verify it's linear (no branches except at ends)
+   - Verify it's saturated (all single bonds)
+   - Verify proper connectivity to ester group
+4. Additional validation to exclude false positives:
+   - Check bond types
+   - Verify chain length
+   - Ensure proper connectivity
+
+This should help reduce false positives while maintaining true positives.
+
+Would you like me to implement this improved version?
