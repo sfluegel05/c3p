@@ -21,37 +21,43 @@ def is_short_chain_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Ensure molecule has a carboxylic acid group
+    # Look for carboxylic acid group pattern
     carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid functional group found"
 
-    # Identify carbon atoms that are not part of aromatic rings or other complex structures
-    carbons = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6 and not atom.IsInRing()]
-    
+    # Identify the carbon atoms in the carboxylic acid
+    matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
     longest_chain_length = 0
-    
-    for carbon in carbons:
-        # Perform a breadth-first search originating from the carbon atom connected to the carboxylic acid group
-        queue = [(carbon.GetIdx(), 0)]
-        visited = set()
+
+    for match in matches:
+        # Assume the first carbon is the carboxylic acid carbon
+        carboxyl_carbon = match[0]
         
+        # Perform a breadth-first search from the carboxyl carbon to find the longest aliphatic chain
+        visited = set()
+        queue = [(carboxyl_carbon, 0)]  # Start from the carboxyl carbon, initial length 0
+
         while queue:
-            current_idx, length = queue.pop(0)
-            
-            if current_idx in visited:
+            current_atom, length = queue.pop(0)
+
+            # Skip if this atom has been visited
+            if current_atom in visited:
                 continue
+
+            # Mark this atom as visited
+            visited.add(current_atom)
             
-            visited.add(current_idx)
-            
-            for neighbor in mol.GetAtomWithIdx(current_idx).GetNeighbors():
-                if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:
+            # Update the longest chain length
+            longest_chain_length = max(longest_chain_length, length)
+
+            # Add neighbors to the queue if they are carbon atoms and not part of the carboxyl group
+            for neighbor in mol.GetAtomWithIdx(current_atom).GetNeighbors():
+                if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited and neighbor.GetIdx() not in match:
                     queue.append((neighbor.GetIdx(), length + 1))
 
-            longest_chain_length = max(longest_chain_length, length)
-    
-    # A short-chain fatty acid has an aliphatic chain length of up to 5 excluding the carboxylic group carbon
-    if longest_chain_length > 4:
-        return False, f"Aliphatic chain too long ({longest_chain_length}), must be 4 or fewer excluding carboxyl carbon"
+    # A short-chain fatty acid should have the longest aliphatic chain length of 5 or fewer
+    if longest_chain_length > 5:
+        return False, f"Aliphatic chain too long ({longest_chain_length}), must be 5 or fewer excluding carboxyl carbon"
 
     return True, "Contains carboxylic acid group with a short aliphatic chain"
