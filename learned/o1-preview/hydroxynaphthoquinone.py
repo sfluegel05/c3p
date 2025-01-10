@@ -24,36 +24,55 @@ def is_hydroxynaphthoquinone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for naphthoquinone core (both 1,4- and 1,2-naphthoquinone)
-    naphthoquinone_smarts = Chem.MolFromSmarts('C1=CC=CC=C1C(=O)C=CC=O')  # Simplified pattern
-    if not mol.HasSubstructMatch(naphthoquinone_smarts):
-        return False, "No naphthoquinone core found"
+    # Define the naphthoquinone SMARTS pattern (1,4-naphthoquinone core)
+    naphthoquinone_smarts = 'O=C1C=CC=CC2=CC=CC(=O)C12'
+    naphthoquinone_mol = Chem.MolFromSmarts(naphthoquinone_smarts)
 
-    # Get the matches of the naphthoquinone core
-    matches = mol.GetSubstructMatches(naphthoquinone_smarts)
+    # Find substructure matches of the naphthoquinone moiety
+    matches = mol.GetSubstructMatches(naphthoquinone_mol)
     if not matches:
-        return False, "No naphthoquinone core found"
+        return False, "No naphthoquinone moiety found"
 
-    # Define SMARTS pattern for hydroxy group attached to an aromatic ring carbon
-    hydroxy_smarts = Chem.MolFromSmarts('[OX1H]-[#6]')  # Hydroxy group attached to carbon
-
-    # Check if any atom in the naphthoquinone core is substituted with a hydroxy group
+    # For each match, check for hydroxy substitutions on the naphthoquinone ring
     for match in matches:
+        # Get the atoms involved in the naphthoquinone moiety
         naphthoquinone_atoms = set(match)
-        # Check all atoms for hydroxy substitution
-        for atom_idx in naphthoquinone_atoms:
-            atom = mol.GetAtomWithIdx(atom_idx)
-            # Skip non-carbon atoms
-            if atom.GetAtomicNum() != 6:
-                continue
-            # Check neighbors for hydroxy group
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetAtomicNum() == 8 and neighbor.GetTotalDegree() == 1:
-                    bond = mol.GetBondBetweenAtoms(atom_idx, neighbor.GetIdx())
-                    if bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
-                        return True, "Contains naphthoquinone moiety substituted with at least one hydroxy group"
 
-    return False, "Naphthoquinone core found but no hydroxy substitution on the ring carbons"
+        # Identify ketone carbons (carbons double-bonded to oxygen)
+        ketone_carbons = []
+        for idx in match:
+            atom = mol.GetAtomWithIdx(idx)
+            if atom.GetAtomicNum() == 6:  # carbon atom
+                for bond in atom.GetBonds():
+                    neighbor = bond.GetOtherAtom(atom)
+                    if neighbor.GetAtomicNum() == 8 and bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                        ketone_carbons.append(idx)
+                        break
+
+        # Identify ring carbons excluding ketone carbons
+        ring_carbons = [idx for idx in match if idx not in ketone_carbons and
+                        mol.GetAtomWithIdx(idx).GetAtomicNum() == 6 and
+                        mol.GetAtomWithIdx(idx).IsInRing()]
+
+        # Check for hydroxy groups attached to ring carbons
+        has_hydroxy = False
+        for idx in ring_carbons:
+            atom = mol.GetAtomWithIdx(idx)
+            for neighbor in atom.GetNeighbors():
+                # Look for oxygen atom with degree 1 (hydroxy group)
+                if neighbor.GetAtomicNum() == 8 and neighbor.GetDegree() == 1:
+                    # Check if oxygen is connected to hydrogen
+                    if neighbor.GetTotalNumHs() > 0:
+                        has_hydroxy = True
+                        break
+            if has_hydroxy:
+                break
+
+        if has_hydroxy:
+            return True, "Contains naphthoquinone moiety substituted with at least one hydroxy group"
+
+    return False, "No hydroxy substitution on naphthoquinone moiety found"
+
 
 __metadata__ = {
     'chemical_class': {
@@ -75,7 +94,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 3,
+    'attempt': 0,
     'success': True,
     'best': True,
     'error': '',
