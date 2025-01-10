@@ -6,11 +6,13 @@ Classifies: cannabinoids
 """
 from rdkit import Chem
 
+
 def is_cannabinoid(smiles: str):
     """
     Determines if a molecule is a cannabinoid based on its SMILES string.
-    Cannabinoids often have features like a resorcinol core, amide groups, long
-    unsaturated carbon chains, and diverse cyclic structures. 
+    This function checks for structures typical in cannabinoids such as cyclic
+    structures with oxygen, long chains with conjugated double bonds or ether linkages,
+    and amides linked to ethanolamines.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,29 +28,29 @@ def is_cannabinoid(smiles: str):
     
     # Look for cannabinoid features:
     
-    # Resorcinol core typical of THC, CBD derivatives
-    resorcinol_core = Chem.MolFromSmarts("c1cc(O)c(O)cc1")
-    if mol.HasSubstructMatch(resorcinol_core):
-        return True, "Classified as cannabinoid by presence of resorcinol core"
+    # Pattern for cyclic heteroaromatic rings common in THC, CBD derivatives
+    heterocyclic_oxygen = Chem.MolFromSmarts("c1cc(O)c(C)c(O)c1")
+    if mol.HasSubstructMatch(heterocyclic_oxygen):
+        return True, "Classified as cannabinoid by presence of a heteroaromatic ring with oxygen"
     
     # Amide bound to ethanolamine, indicative of anandamide derivatives
-    ethanolamine_amide = Chem.MolFromSmarts("C(=O)NCCO")
+    ethanolamine_amide = Chem.MolFromSmarts("CC(=O)NCCO")
     if mol.HasSubstructMatch(ethanolamine_amide):
         return True, "Classified as cannabinoid by presence of an amide bound to ethanolamine"
     
-    # Long unsaturated hydrocarbon chain, common in many cannabinoids
-    long_unsaturated_chain = Chem.MolFromSmarts("C=CCCCCCCC(=O)OCC")
-    if mol.HasSubstructMatch(long_unsaturated_chain):
-        return True, "Classified as cannabinoid by presence of long unsaturated hydrocarbon chains"
+    # Long unsaturated hydrocarbon chain and ether-like structures
+    long_ether_chain = Chem.MolFromSmarts("C=CCCCCCCC(=O)OCC")
+    if mol.HasSubstructMatch(long_ether_chain):
+        return True, "Classified as cannabinoid by presence of ether-linked unsaturated chains"
 
-    # Incorporate cyclohexene and pentyl chain patterns, typical in Delta-9-THC
-    thc_type_pattern = Chem.MolFromSmarts("C1CC[C@H]2[C@H](C1)C(=C)C2")
-    if mol.HasSubstructMatch(thc_type_pattern):
-        return True, "Classified as cannabinoid by presence of cyclohexene-related structures"
+    # Include tricyclic and polycyclic patterns found in Delta-9-THC and analogs
+    tricyclic_pattern = Chem.MolFromSmarts("C1CCC2=C(C1)C=CC3=C2C=CC=C3")
+    if mol.HasSubstructMatch(tricyclic_pattern):
+        return True, "Classified as cannabinoid by presence of a polycyclic structure typical of THC"
 
-    # Presence of ether linkage and polycyclic backbones
-    ether_polycyclic = Chem.MolFromSmarts("C1COC2=C(C1)C=CC=C2")
-    if mol.HasSubstructMatch(ether_polycyclic):
-        return True, "Classified as cannabinoid by presence of ether-linked polycyclic structures"
+    # Consider additional cannabinoid-like patterns based on known metabolites
+    polyol_chain = Chem.MolFromSmarts("C(O)C(O)CC(=O)OCCO")
+    if mol.HasSubstructMatch(polyol_chain):
+        return True, "Classified as cannabinoid by presence of polyol chains similar to endocannabinoids"
     
     return False, "Lacks distinct structural features typical of cannabinoids"
