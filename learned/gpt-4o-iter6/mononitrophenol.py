@@ -22,10 +22,10 @@ def is_mononitrophenol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define phenol pattern (aromatic ring with -OH group)
-    phenol_pattern = Chem.MolFromSmarts("aO")
+    # Define phenol pattern (benzene ring with -OH group)
+    phenol_pattern = Chem.MolFromSmarts("c1ccccc1O")
     # Define nitro group pattern
-    nitro_pattern = Chem.MolFromSmarts("[N+](=O)[O-]")
+    nitro_pattern = Chem.MolFromSmarts("[$(a-[N+](=O)[O-])]")
     
     # Check if phenol structure is present
     phenol_matches = mol.GetSubstructMatches(phenol_pattern)
@@ -37,14 +37,13 @@ def is_mononitrophenol(smiles: str):
     if len(nitro_matches) != 1:
         return False, f"Found {len(nitro_matches)} nitro groups, need exactly 1"
     
-    # Check if the nitro group is directly bonded to the aromatic ring
-    phenol_aromatic_atoms = {atom_idx for match in phenol_matches for atom_idx in match}
-    nitro_atom_idx, _, _ = nitro_matches[0]
-    
-    # Ensure nitro is bonded to any aromatic carbon (part of phenol)
-    for bond in mol.GetBonds():
-        if bond.GetBeginAtomIdx() == nitro_atom_idx or bond.GetEndAtomIdx() == nitro_atom_idx:
-            if {bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()} & phenol_aromatic_atoms:
-                return True, "Molecule is a mononitrophenol with a single nitro group attached to the phenol ring"
+    # Verify nitro is directly bonded to the aromatic carbon of phenol
+    for match in phenol_matches:
+        benzene_atoms = set(match[:-1])  # exclude the OH
+        for bond in mol.GetBonds():
+            begin_idx = bond.GetBeginAtomIdx()
+            end_idx = bond.GetEndAtomIdx()
+            if ({begin_idx, end_idx} & benzene_atoms) and (begin_idx in nitro_matches[0] or end_idx in nitro_matches[0]):
+                return True, "Molecule is a mononitrophenol with a nitro group attached to the phenol ring"
     
     return False, "Nitro group is not attached to the aromatic ring of phenol"
