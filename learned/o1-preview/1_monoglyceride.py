@@ -21,34 +21,63 @@ def is_1_monoglyceride(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the monoglyceride pattern with acyl group at position 1
-    monoglyceride_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H0][CH2][CH](O)[CH2]O")
-    if not mol.HasSubstructMatch(monoglyceride_pattern):
-        return False, "Molecule does not match 1-monoglyceride pattern"
+    # Define glycerol backbone pattern with free hydroxyls at positions 2 and 3
+    glycerol_pattern = Chem.MolFromSmarts("[CH2][CH](O)[CH2]O")
+    glycerol_matches = mol.GetSubstructMatches(glycerol_pattern)
+    if len(glycerol_matches) == 0:
+        return False, "Glycerol backbone not found"
 
-    # Ensure there is exactly one ester group
-    ester_pattern = Chem.MolFromSmarts("[$([CX3](=O)[OX2H1]),$([CX3](=O)[O–][#6])]")
+    # Define ester group pattern
+    ester_pattern = Chem.MolFromSmarts("C(=O)O")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) != 1:
         return False, f"Found {len(ester_matches)} ester groups, need exactly 1"
 
-    # Check that positions 2 and 3 have free hydroxyl groups
-    glycerol_oh_pattern = Chem.MolFromSmarts("[CH2][CH](O)[CH2]O")
-    if not mol.HasSubstructMatch(glycerol_oh_pattern):
-        return False, "Positions 2 and/or 3 do not have free hydroxyl groups"
+    # Check if ester group is attached to position 1 of glycerol
+    for glycerol_match in glycerol_matches:
+        c1_idx = glycerol_match[0]
+        c2_idx = glycerol_match[1]
+        c3_idx = glycerol_match[2]
+        o3_idx = glycerol_match[3]  # Oxygen attached to C3
 
-    # Check that there are no additional acyl chains or ester groups
-    # Count total number of acyl chains (ester and amide bonds)
-    acyl_chain_count = len(ester_matches)
-    amide_pattern = Chem.MolFromSmarts("C(=O)N")
-    amide_matches = mol.GetSubstructMatches(amide_pattern)
-    acyl_chain_count += len(amide_matches)
-    if acyl_chain_count != 1:
-        return False, f"Molecule has {acyl_chain_count} acyl chains, expected 1"
+        c1_atom = mol.GetAtomWithIdx(c1_idx)
+        c2_atom = mol.GetAtomWithIdx(c2_idx)
+        c3_atom = mol.GetAtomWithIdx(c3_idx)
+        o3_atom = mol.GetAtomWithIdx(o3_idx)
 
-    # Check molecular weight - monoglycerides typically >200 Da
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 200:
-        return False, "Molecular weight too low for a 1-monoglyceride"
+        # Check that C2 and C3 have hydroxyl groups
+        c2_has_oh = False
+        c3_has_oh = False
 
-    return True, "Molecule is a 1-monoglyceride with acyl group at position 1 and free hydroxyls at positions 2 and 3"
+        for neighbor in c2_atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 8:  # Oxygen
+                bond = mol.GetBondBetweenAtoms(c2_atom.GetIdx(), neighbor.GetIdx())
+                if bond.GetBondType() == Chem.rdchem.BondType.SINGLE and neighbor.GetDegree() == 1:
+                    c2_has_oh = True
+
+        for neighbor in c3_atom.GetNeighbors():
+            if neighbor.GetIdx() == o3_atom.GetIdx():
+                # Confirm that O3 is a hydroxyl group
+                if o3_atom.GetDegree() == 1:
+                    c3_has_oh = True
+
+        if not c2_has_oh or not c3_has_oh:
+            continue  # This glycerol backbone doesn't have OH groups at positions 2 and 3
+
+        # Check if C1 is connected to ester oxygen
+        c1_has_ester = False
+        for neighbor in c1_atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 8:  # Oxygen
+                o_atom = neighbor
+                # Check if this oxygen is part of the ester group
+                for ester_match in ester_matches:
+                    if o_atom.GetIdx() in ester_match:
+                        c1_has_ester = True
+                        break
+            if c1_has_ester:
+                break
+
+        if c1_has_ester:
+            return True, "Molecule is a 1-monoglyceride with acyl group at position 1 and free hydroxyls at positions 2 and 3"
+
+    return False, "Molecule does not match 1-monoglyceride structure"
