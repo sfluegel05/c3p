@@ -5,13 +5,12 @@ Classifies: CHEBI:38131 lactol
 Classifies: lactol
 """
 from rdkit import Chem
-from rdkit.Chem import rdchem
 
 def is_lactol(smiles: str):
     """
     Determines if a molecule is a lactol based on its SMILES string.
-    A lactol is a cyclic hemiacetal formed by intramolecular addition of a hydroxy group to an aldehyde or ketone.
-    They are 1-oxacycloalkan-2-ols or unsaturated analogues.
+    A lactol is a cyclic hemiacetal formed by intramolecular addition of a hydroxy group to an aldehydic or ketonic carbonyl group.
+    They are thus 1-oxacycloalkan-2-ols or unsaturated analogues.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,15 +25,12 @@ def is_lactol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for lactol
+    # Define SMARTS pattern for lactol (cyclic hemiacetal)
     # Pattern explanation:
-    # - Ring structure containing O (ether oxygen)
-    # - Hydroxyl group [OH] attached to adjacent carbon
-    # - Adjacent carbon to oxygen in the ring
-    # - Exclude ethers (no carbonyl involved)
-    lactol_pattern = Chem.MolFromSmarts("""
-    [#6;R][O;R][#6;R]([OH])[#6;R]
-    """)
+    # - Ring structure with an ether oxygen: [O;R]
+    # - Adjacent carbon [C;R] connected to hydroxyl group [OH]
+    lactol_pattern = Chem.MolFromSmarts("[O;R][C;R]([OH])[C;R]")
+
     if lactol_pattern is None:
         return False, "Invalid SMARTS pattern"
 
