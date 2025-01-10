@@ -6,6 +6,7 @@ from rdkit import Chem
 def is_biflavonoid(smiles: str):
     """
     Determines if a molecule is a biflavonoid based on its SMILES string.
+    Biflavonoid typically contains two flavonoid moieties connected by a covalent bond.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,16 +21,18 @@ def is_biflavonoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Biflavonoids typically consist of two flavonoid units. We'll define a simple pattern to look for such units.
-    # This is a general check and may not match all biflavonoids precisely.
-    flavonoid_pattern_1 = Chem.MolFromSmarts("c1cc(O)c2c(c1)oc(=O)cc2-c1c(O)cc(O)cc1")  # Example flavonoid unit
-    flavonoid_pattern_2 = Chem.MolFromSmarts("Oc1cccc2c1c(=O)c(O)cc2-c1c(O)cc(O)cc1")  # Example flavonoid unit
+    # Updated and broader pattern to search for flavonoid like connectivity
+    # This tries to capture phenyl-benzopyran moieties connected in known ways in biflavonoids
+    flavonoid_pattern = Chem.MolFromSmarts("c1ccccc1-c2c(O)cc3oc(=O)cc(=c3c2)-c2c(O)cc4oc(=O)cc(=c4c2)")
 
-    # Check if the molecule matches the flavonoid pattern at least twice
-    match_1 = mol.HasSubstructMatch(flavonoid_pattern_1)
-    match_2 = mol.HasSubstructMatch(flavonoid_pattern_2)
+    # This ensures the presence of two flavonoid units connected typically by a single bond or through oxygen
+    flavonoid_linker = Chem.MolFromSmarts("c1c2cc(O)cc3oc(=O)cc(=c3c2c(c1O)-c1ccccc1))")
 
-    if match_1 and match_2:
-        return True, "Molecule contains two flavonoid units typical of biflavonoids"
+    # Check if the molecule matches the flavonoid pattern twice and confirms suitable linkage
+    match_basic = mol.HasSubstructMatch(flavonoid_pattern)
+    has_linkage = mol.HasSubstructMatch(flavonoid_linker)
+
+    if match_basic and has_linkage:
+        return True, "Molecule contains dual connected flavonoid units typical of biflavonoids"
     
     return False, "Molecule does not match typical biflavonoid substructure patterns"
