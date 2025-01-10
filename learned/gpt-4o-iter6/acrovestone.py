@@ -20,19 +20,21 @@ def is_acrovestone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Isoflavone core structure with room for substitution allowances
-    isoflavone_pattern = Chem.MolFromSmarts("c1cc2oc3c(ccc4ccccc34)c(=O)c2c[cH]1")
+    # Generalized isoflavone core structure pattern
+    # Allowing for flexibility for substitution
+    isoflavone_pattern = Chem.MolFromSmarts("c1ccc2[o,c]c(=O)[c,C]c3c(c2c1)c(=O)c[c,C]4[c,C][c,C][c,C][c,C][c,C]4")
     if not mol.HasSubstructMatch(isoflavone_pattern):
         return False, "No isoflavone core structure found"
 
-    # Simplified glycosidic linkage pattern/common sugar units
-    glycoside_pattern = Chem.MolFromSmarts("[OX2H,[OX2CH3]R]1[C@H]([C@@H](O)C(O)C1O[*])")
+    # Flexible glycosidic linkage or sugar moiety patterns
+    # Accommodating common sugar units and linkages
+    glycoside_pattern = Chem.MolFromSmarts("O[C@@H]1[C@H]([C@H]([C@@H](O)[C@@H]1O)O[*])")
     if not mol.HasSubstructMatch(glycoside_pattern):
-        return False, "No glycosidic linkage found"
+        return False, "No suitable glycosidic linkage found"
     
-    # Flexible hydroxy and methoxy group patterns on aromatic rings
-    hydroxy_methoxy_pattern = Chem.MolFromSmarts("[c][OX2H] | [c][OX2CH3]")
-    if not mol.HasSubstructMatch(hydroxy_methoxy_pattern):
+    # Flexible check for hydroxy and methoxy groups
+    hydroxyl_methoxy_pattern = Chem.MolFromSmarts("[c][OH] | [c][OMe] | [c][OX2H] | [c][OX2CH3]")
+    if not mol.HasSubstructMatch(hydroxyl_methoxy_pattern):
         return False, "No relevant hydroxy or methoxy substitutions found"
-    
+
     return True, "Matches isoflavone core with glycosidic linkage and typical polyphenol substituents"
