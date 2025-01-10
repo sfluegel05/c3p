@@ -28,8 +28,8 @@ def is_lipopeptide(smiles: str):
     
     # Identify long hydrocarbon chains typical of lipids
     # Long aliphatic chain pattern: CH2 chain of length 6 or greater
-    lipid_pattern = Chem.MolFromSmarts("C[CH2]5,CC")
+    lipid_pattern = Chem.MolFromSmarts("C(CCCCC)C")
     if not mol.HasSubstructMatch(lipid_pattern):
         return False, "No long hydrocarbon chains found"
-    
+
     return True, "Contains both peptide bonds and long hydrocarbon chains, characteristic of lipopeptides"
