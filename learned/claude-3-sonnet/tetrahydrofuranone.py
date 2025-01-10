@@ -7,7 +7,6 @@ on the tetrahydrofuran ring
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem.AllChem import GetSymmSSSR
 
 def is_tetrahydrofuranone(smiles: str):
     """
@@ -27,57 +26,82 @@ def is_tetrahydrofuranone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for basic tetrahydrofuran ring
-    thf_pattern = Chem.MolFromSmarts("[O;R1]1[CH2,CH1,C][CH2,CH1,C][CH2,CH1,C][CH2,CH1,C]1")
-    if not mol.HasSubstructMatch(thf_pattern):
-        return False, "No tetrahydrofuran ring found"
-
-    # Check if the ring is aromatic
-    aromatic_thf = Chem.MolFromSmarts("[o]1cccc1")
-    if mol.HasSubstructMatch(aromatic_thf):
-        return False, "Core ring structure must be saturated (tetrahydro-)"
-
-    # Count rings
-    ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() > 2:  # Allow for at most 2 rings (THF + possibly one more)
-        return False, "Structure too complex - too many rings"
-
+    # Look for basic tetrahydrofuran ring with ketone
     # Define patterns for different types of tetrahydrofuranones
     patterns = [
-        # Simple lactone (ketone as part of the ring)
-        Chem.MolFromSmarts("O1CC[CH2,CH1,C]C(=O)1"),
+        # Lactone pattern (ketone as part of the ring)
+        "[O;R1]1[CH2,CH1][CH2,CH1][CH2,CH1]C1(=O)",
         
         # Ketone at position 2
-        Chem.MolFromSmarts("[O;R1]1[C;R1](=O)[CH2,CH1,C][CH2,CH1,C][CH2,CH1,C]1"),
+        "[O;R1]1[C;R1](=O)[CH2,CH1][CH2,CH1][CH2,CH1]1",
         
         # Ketone at position 3
-        Chem.MolFromSmarts("[O;R1]1[CH2,CH1,C][C;R1](=O)[CH2,CH1,C][CH2,CH1,C]1"),
+        "[O;R1]1[CH2,CH1][C;R1](=O)[CH2,CH1][CH2,CH1]1",
         
         # Ketone at position 4
-        Chem.MolFromSmarts("[O;R1]1[CH2,CH1,C][CH2,CH1,C][C;R1](=O)[CH2,CH1,C]1"),
+        "[O;R1]1[CH2,CH1][CH2,CH1][C;R1](=O)[CH2,CH1]1",
         
-        # Ketone substituent patterns
-        Chem.MolFromSmarts("[O;R1]1[CH2,CH1,C][CH2,CH1,C][CH2,CH1,C]([CH2,CH1,C]1)C(=O)"),
-        Chem.MolFromSmarts("[O;R1]1[CH2,CH1,C][CH2,CH1,C][CH2,CH1,C]([C;R1]1)C(=O)"),
+        # Exocyclic ketone patterns
+        "[O;R1]1[CH2,CH1][CH2,CH1][CH2,CH1][C;R1]1C(=O)",
+        "[O;R1]1[CH2,CH1][CH2,CH1][C;R1]([CH2,CH1]1)C(=O)",
+        "[O;R1]1[CH2,CH1][C;R1]([CH2,CH1][CH2,CH1]1)C(=O)",
+        "[O;R1]1[C;R1]([CH2,CH1][CH2,CH1][CH2,CH1]1)C(=O)"
     ]
 
     # Check for any of the tetrahydrofuranone patterns
     found_pattern = False
+    matched_atoms = set()
+    
     for pattern in patterns:
-        if mol.HasSubstructMatch(pattern):
+        pattern_mol = Chem.MolFromSmarts(pattern)
+        matches = mol.GetSubstructMatches(pattern_mol)
+        if matches:
             found_pattern = True
+            for match in matches:
+                matched_atoms.update(match)
             break
 
     if not found_pattern:
-        return False, "No ketone group properly positioned on tetrahydrofuran ring"
+        return False, "No tetrahydrofuranone core structure found"
 
-    # Additional check for ring fusion
-    ring_atoms = set()
-    for ring in ring_info.AtomRings():
-        ring_atoms.update(ring)
-    if len(ring_atoms) < sum(len(ring) for ring in ring_info.AtomRings()):
-        # If rings share atoms (fused), be more selective
-        if ring_info.NumRings() > 1:  # If there's more than one ring and they're fused
-            return False, "Complex fused ring system detected"
+    # Check for aromatic character in the matched atoms
+    for atom_idx in matched_atoms:
+        if mol.GetAtomWithIdx(atom_idx).GetIsAromatic():
+            return False, "Core ring structure must be saturated"
+
+    # Count carbonyls
+    carbonyl_pattern = Chem.MolFromSmarts("C(=O)")
+    carbonyl_matches = mol.GetSubstructMatches(carbonyl_pattern)
+    
+    # Verify that at least one carbonyl is associated with the tetrahydrofuran ring
+    carbonyl_connected = False
+    for match in carbonyl_matches:
+        if any(idx in matched_atoms for idx in match):
+            carbonyl_connected = True
+            break
+            
+    if not carbonyl_connected:
+        return False, "No ketone group properly connected to tetrahydrofuran ring"
+
+    # Additional structural checks
+    ring_info = mol.GetRingInfo()
+    ring_systems = ring_info.AtomRings()
+    
+    # Find the THF ring atoms
+    thf_ring = None
+    for ring in ring_systems:
+        if all(idx in matched_atoms for idx in ring):
+            thf_ring = ring
+            break
+    
+    if thf_ring is None:
+        return False, "Could not identify clear THF ring"
+
+    # Check if the THF ring is part of a valid structure
+    for atom_idx in thf_ring:
+        atom = mol.GetAtomWithIdx(atom_idx)
+        # Allow normal substituents but prevent certain complex cases
+        if atom.GetDegree() > 4:  # Too many connections
+            return False, "Invalid substitution pattern on THF ring"
 
     return True, "Contains tetrahydrofuran ring with ketone group"
