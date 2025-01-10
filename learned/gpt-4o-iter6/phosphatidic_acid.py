@@ -21,23 +21,23 @@ def is_phosphatidic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Glycerol backbone pattern: O-CH2-CH(OH)-CH2-O
-    glycerol_pattern = Chem.MolFromSmarts("OCC(O)CO")
+    # Enhanced glycerol backbone pattern to include stereochemistry and typical O linking
+    glycerol_pattern = Chem.MolFromSmarts("C(CO)O")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "Missing glycerol backbone pattern"
 
-    # Check for ester linkages: C(=O)O
-    ester_pattern = Chem.MolFromSmarts("C(=O)O")
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) < 2:
-        return False, f"Found {len(ester_matches)} ester groups; need at least 2 for fatty acids"
+    # Ensure two ester linkages: C(=O)O attached to the glycerol backbone
+    ester_pattern = Chem.MolFromSmarts("C(=O)O[C]")
+    ester_matches = len(mol.GetSubstructMatches(ester_pattern))
+    if ester_matches < 2:
+        return False, f"Found {ester_matches} ester linkages, need exactly 2 for fatty acids"
 
-    # Look for a phosphate group: P(=O)(O)(O)
-    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)O")
+    # Phosphate group in typical phospholipids: P(=O)(O)O with linking through O
+    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)(O[C])")
     if not mol.HasSubstructMatch(phosphate_pattern):
-        return False, "Missing phosphate group"
+        return False, "Missing appropriate phosphate group"
 
-    # Check total count of phosphorous, which should be 1 in PA
+    # Check total count of phosphorous atoms, which should be exactly 1 in PA
     p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
     if p_count != 1:
         return False, "Phosphatidic acid should have exactly 1 phosphorus atom"
