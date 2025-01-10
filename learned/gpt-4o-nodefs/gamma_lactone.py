@@ -21,8 +21,9 @@ def is_gamma_lactone(smiles: str):
     if mol is None:
         return None, "Invalid SMILES string"
 
-    # Identify gamma-lactone pattern: 5-membered lactone ring (O=C1OC(C)C1)
-    gamma_lactone_pattern = Chem.MolFromSmarts("O=C1OC[C@H]2[C@H](O)CC2O1")
+    # Generalize pattern for a 5-membered lactone ring
+    # Note: [O] represents oxygen in the ester linkage, [C] across the ring, and =O for ester carbonyl.
+    gamma_lactone_pattern = Chem.MolFromSmarts("O=C1OCCC1")
     if mol.HasSubstructMatch(gamma_lactone_pattern):
         return True, "Contains a 5-membered gamma-lactone ring"
     else:
@@ -30,8 +31,8 @@ def is_gamma_lactone(smiles: str):
 
 # Example test case
 smiles_list = [
-    "C/C=C/C1=C(C)CCCC1(C)C",  # Random example
-    "O1CC(O)C(C1=O)=C"         # Beta-Hydroxy-alpha-methylene-gamma-butyllactone
+    "O=C1OCCC1",  # A basic gamma-lactone structure
+    "O=C1OC2(C)C(O)OCC12",  # Example: Beta-Hydroxy-alpha-methylene-gamma-butyllactone
 ]
 
 for smiles in smiles_list:
