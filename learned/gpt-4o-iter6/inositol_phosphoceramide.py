@@ -2,6 +2,7 @@
 Classifies: CHEBI:60245 inositol phosphoceramide
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_inositol_phosphoceramide(smiles: str):
     """
@@ -11,35 +12,33 @@ def is_inositol_phosphoceramide(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool, str: True and reason if the molecule is an inositol phosphoceramide, False otherwise
+        bool: True if molecule is an inositol phosphoceramide, False otherwise
+        str: Reason for classification
     """
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Inositol ring, more relaxed matching, ignoring stereochemistry
-    inositol_smarts = "C1OC(O)C(O)C(O)C(O)C1O"
-    inositol_pattern = Chem.MolFromSmarts(inositol_smarts)
+    # Identify inositol ring (6-membered carbocycl with stereochemistry and multiple hydroxyl groups)
+    inositol_pattern = Chem.MolFromSmarts("C1([C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@H](O)O)C(O)C(O)C(O)C(O)O")
     if not mol.HasSubstructMatch(inositol_pattern):
-        return False, "No inositol ring detected"
-
-    # Phosphodiester bridge detection
-    phospho_smarts = "O[P](=O)(O)OC"
-    phospho_pattern = Chem.MolFromSmarts(phospho_smarts)
+        return False, "No inositol ring found"
+    
+    # Identify phosphodiester bridge
+    phospho_pattern = Chem.MolFromSmarts("O=P(O)(OC)OC")
     if not mol.HasSubstructMatch(phospho_pattern):
         return False, "No phosphodiester bridge found"
-
-    # Ceramide moiety pattern, generic structure
-    ceramide_smarts = "[NH][C](=O)[C@H]"
-    ceramide_pattern = Chem.MolFromSmarts(ceramide_smarts)
+    
+    # Identify ceramide moiety (amide bond plus long chain)
+    ceramide_pattern = Chem.MolFromSmarts("N[C@@H](CO)C(=O)C")
     if not mol.HasSubstructMatch(ceramide_pattern):
         return False, "No ceramide moiety found"
 
-    # Long aliphatic chain detection, ensure it is long enough
-    aliphatic_chain_smarts = "CCCCCCCCCCCCCCCC"
-    long_chain_pattern = Chem.MolFromSmarts(aliphatic_chain_smarts)
-    if not mol.HasSubstructMatch(long_chain_pattern):
-        return False, "Missing long aliphatic chain typical of ceramides"
-
-    return True, "Inositol phosphoceramide structure detected"
+    # Additional check for long alkyl chain in ceramide
+    alkane_chain_length = sum([1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6 and any(neighbor.GetAtomicNum() == 1 for neighbor in atom.GetNeighbors())])
+    if alkane_chain_length < 12:
+        return False, f"Alkyl chain length in ceramide too short: {alkane_chain_length}"
+    
+    return True, "Pattern matches inositol phosphoceramide structure"
