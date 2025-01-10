@@ -6,7 +6,8 @@ from rdkit import Chem
 def is_aromatic_amino_acid(smiles: str):
     """
     Determines if a molecule is an aromatic amino acid based on its SMILES string.
-    An aromatic amino acid should have an aromatic ring and a simple amino acid backbone.
+    An aromatic amino acid should have at least one aromatic ring and a primary amino acid structure, 
+    characterized by an amino group, a central carbon, and a carboxylic group, without additional peptide bonds.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,22 +22,20 @@ def is_aromatic_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Detect any aromatic ring within the molecule
-    aromatic_ring_pattern = Chem.MolFromSmarts("a")
+    # Define SMARTS pattern for detecting any aromatic ring
+    aromatic_ring_pattern = Chem.MolFromSmarts("a1aaaaa1")  # Represents a generic six-membered aromatic ring
     has_aromatic_ring = mol.HasSubstructMatch(aromatic_ring_pattern)
     
-    # Use a SMARTS pattern for a simple amino acid backbone:
-    # - [NX3;H2] for a primary amine group
-    # - [CX4;H] for the alpha carbon with a side chain
-    # - [CX3](=O)[OX1H] representing the carboxylic acid group
-    amino_acid_pattern = Chem.MolFromSmarts("[NX3H2][CX4H1]([*])[CX3](=O)[OX1H]")
+    # Define a SMARTS pattern for a basic amino acid backbone structure
+    amino_acid_pattern = Chem.MolFromSmarts("[NX3H2][CX4H]([CX4])([CX3](=O)[OX1H])")  # Amino group - alpha carbon - carboxylic group
     has_amino_acid_backbone = mol.HasSubstructMatch(amino_acid_pattern)
     
-    # Ensure there's only one primary amine and one carboxylic acid without intervening peptide bonds
+    # Ensure the amino acid backbone appears only once to rule out peptide chains
     is_single_amino_acid = len(mol.GetSubstructMatches(amino_acid_pattern)) == 1
 
+    # Classification logic
     if has_aromatic_ring and has_amino_acid_backbone and is_single_amino_acid:
-        return True, "Molecule is an aromatic amino acid with one aromatic ring and one simple amino acid backbone"
+        return True, "Molecule is an aromatic amino acid with an aromatic ring and a simple amino acid backbone"
     elif not has_aromatic_ring:
         return False, "Missing aromatic ring"
     elif not has_amino_acid_backbone:
