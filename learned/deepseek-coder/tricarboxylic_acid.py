@@ -31,7 +31,7 @@ def is_tricarboxylic_acid(smiles: str):
     carboxy_matches = mol.GetSubstructMatches(carboxy_pattern)
     
     # Check if there are exactly 3 carboxylic acid groups
-    if len(carboxy_matches) != 3:
+    if len(carboxy_matches) == 3:
+        return True, "Contains exactly 3 carboxylic acid groups"
+    else:
         return False, f"Found {len(carboxy_matches)} carboxylic acid groups, need exactly 3"
-
-    return True, "Contains exactly 3 carboxylic acid groups"
