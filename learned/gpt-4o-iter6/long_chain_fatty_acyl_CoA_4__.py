@@ -22,18 +22,25 @@ def is_long_chain_fatty_acyl_CoA_4__(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define improved thioester linkage pattern for CoA
-    thioester_pattern = Chem.MolFromSmarts("C(=O)SC")  # Focus specifically on thioester linkage  
-    if not mol.HasSubstructMatch(thioester_pattern):
+    # Define the CoA thioester linkage pattern
+    # The pattern for the thioester linkage of CoA to the fatty acid chain
+    thioester_patterns = [
+        Chem.MolFromSmarts("C(=O)SCCNC(=O)CCNC(=O)C"),
+        Chem.MolFromSmarts("C(=O)SCCNC(=O)CCN")
+    ]
+    if not any(mol.HasSubstructMatch(pattern) for pattern in thioester_patterns):
         return False, "No CoA thioester linkage found"
 
-    # Check for a long chain in the acyl group (12+ carbons)
-    long_acyl_chain_pattern = Chem.MolFromSmarts("CCCCCCCCCCCC")  # Require at least 12 carbons
-    if not mol.HasSubstructMatch(long_acyl_chain_pattern):
-        return False, "Insufficient carbon chain length in the fatty acid"
+    # Check for a long fatty acid chain, allowing for both straight and unsaturated chains
+    long_chain_patterns = [
+        Chem.MolFromSmarts("C(=O)SCCC[C;R0]"),  # Long chain allowing flexibility
+        Chem.MolFromSmarts("[C;R0]C(=O)SCCNC(=O)CCN")  # Include variations in long chain lengths
+    ]
+    if not any(mol.HasSubstructMatch(pattern) for pattern in long_chain_patterns):
+        return False, "Insufficient carbon chain length or structure in the fatty acid"
 
     # Look for the CoA backbone with deprotonated phosphate groups
-    coa_diphosphate_pattern = Chem.MolFromSmarts("COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H](CO[P]=O)[C@@H]1")  # Specific to CoA's phosphate
+    coa_diphosphate_pattern = Chem.MolFromSmarts("COP([O-])(=O)OP([O-])(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP([O-])([O-])=O)")
     if not mol.HasSubstructMatch(coa_diphosphate_pattern):
         return False, "CoA backbone or deprotonated phosphate groups not found"
 
