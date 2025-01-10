@@ -21,17 +21,21 @@ def is_polyprenol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Pattern for isoprene unit: C=C-C-C
-    isoprene_pattern = Chem.MolFromSmarts("C(=C)C-C")
-    isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
+    # Broader pattern for isoprene units - consider variations, ensures two C=C bonds
+    isoprene_pattern_a = Chem.MolFromSmarts("C=C-C")
+    isoprene_pattern_b = Chem.MolFromSmarts("C=C-C=C")
+    isoprene_matches_a = mol.GetSubstructMatches(isoprene_pattern_a)
+    isoprene_matches_b = mol.GetSubstructMatches(isoprene_pattern_b)
+    isoprene_matches = len(isoprene_matches_a) + len(isoprene_matches_b)
     
-    # Check if there is more than one isoprene unit
-    if len(isoprene_matches) < 2:
-        return False, f"Found {len(isoprene_matches)} isoprene units, need more than one"
+    # Check if there are more than one isoprene units across both patterns
+    if isoprene_matches < 2:
+        return False, f"Found {isoprene_matches} isoprene units, need more than one"
 
-    # Pattern for terminal alcohol group
-    alcohol_pattern = Chem.MolFromSmarts("[OX2H1]")
-    if not mol.HasSubstructMatch(alcohol_pattern):
-        return False, "No terminal alcohol group found"
+    # Ensure terminal alcohol group - check for groups bonded to terminal carbons
+    alcohol_pattern = Chem.MolFromSmarts("[CX4;H2,O]O")
+    terminal_atoms = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetDegree() == 1]
+    if not any(mol.GetSubstructMatches(alcohol_pattern, atomId=idx) for idx in terminal_atoms):
+        return False, "No terminal alcohol group found or alcohol group not at terminal position"
 
     return True, "Contains more than one isoprene unit and a terminal alcohol group"
