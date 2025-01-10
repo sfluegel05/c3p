@@ -22,12 +22,13 @@ def is_mineral_nutrient(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define common metallic and essential non-metallic elements in mineral nutrients
+    # Define common metallic elements in mineral nutrients
     metallic_elements = {'Ca', 'Mg', 'K', 'Na', 'Fe', 'Zn', 'Al', 'Ba', 'Cs', 'Sb', 'Pd', 'La'}
+    # Define essential non-metallic elements associated with nutrients
     non_metallic_anions = {'P', 'S', 'Cl', 'F', 'O', 'N'}  # Part of common inorganic anions
 
-    # Check for presence of at least one metallic element
-    metal_found = any(Chem.MolFromSmarts(f"[#{elem}]") and mol.HasSubstructMatch(Chem.MolFromSmarts(f"[#{elem}]")) for elem in metallic_elements)
+    # Check for presence of at least one metallic element using their symbols
+    metal_found = any(atom.GetSymbol() in metallic_elements for atom in mol.GetAtoms())
     if not metal_found:
         return False, "No metallic elements found"
 
