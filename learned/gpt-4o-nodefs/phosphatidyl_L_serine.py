@@ -20,19 +20,15 @@ def is_phosphatidyl_L_serine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for glycerol backbone with 2 ester bonds
-    glycerol_pattern = Chem.MolFromSmarts("C(COC(=O))C(O)COC(=O)")
+    # SMARTS pattern for glycerol backbone linked to esters and phosphate
+    glycerol_pattern = Chem.MolFromSmarts("[C@H](CO[P](=O)(O)O[C@H](COC(=O)[CX4,CX3])OC(=O)[CX4,CX3])")
     if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone with two ester bonds found"
+        return False, "No glycerol backbone with two ester bonds and a phosphate found"
 
-    # SMARTS pattern for phosphate group
-    phosphate_pattern = Chem.MolFromSmarts("COP(=O)(O)O")
-    if not mol.HasSubstructMatch(phosphate_pattern):
-        return False, "No phosphate group found"
-
-    # SMARTS pattern for L-serine head group (amino acid moiety)
-    serine_pattern = Chem.MolFromSmarts("NCC(C(O)=O)OP")
+    # SMARTS pattern for serine attached via the phosphate group
+    # Ensure it can catch variations in the phosphatidyl-L-serine moiety
+    serine_pattern = Chem.MolFromSmarts("N[C@@H](C(O)=O)COP(=O)(O)O")
     if not mol.HasSubstructMatch(serine_pattern):
-        return False, "No L-serine head group found attached to phosphate"
+        return False, "No L-serine head group found attached via phosphate linkage"
 
     return True, "Contains phosphatidyl-L-serine structure"
