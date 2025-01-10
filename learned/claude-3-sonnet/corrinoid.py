@@ -3,7 +3,6 @@ Classifies: CHEBI:33913 corrinoid
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_corrinoid(smiles: str) -> tuple[bool, str]:
     """
@@ -22,43 +21,38 @@ def is_corrinoid(smiles: str) -> tuple[bool, str]:
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # More specific corrin core pattern capturing the characteristic connectivity
-    # Four nitrogens in specific arrangement with connecting carbons
-    corrin_core = Chem.MolFromSmarts('[#7]1~[#6]~[#6]~[#6]~[#7]~[#6]~[#6]~[#6]~[#7]~[#6]~[#6]~[#6]~[#7]~[#6]~[#6]1')
+    # Look for corrin nucleus - a more specific pattern for the core structure
+    # This pattern describes the four nitrogen atoms in their characteristic arrangement
+    # with connecting carbons, allowing for different oxidation states and substituents
+    corrin_core = Chem.MolFromSmarts('[#7]~[#6]~[#6]~[#6]~[#7]~[#6]~[#6]~[#6]~[#7]~[#6]~[#6]~[#6]~[#7]~[#6]~[#6]')
     if not mol.HasSubstructMatch(corrin_core):
-        return False, "Missing characteristic corrin macrocycle"
+        return False, "Missing corrin nucleus structure"
 
-    # Check for reduced/partly reduced pyrrole rings
-    # Pattern matches both fully and partially reduced forms
-    pyrrole = Chem.MolFromSmarts('[#7]1(-[#6])[#6]~[#6][#6]1')
-    matches = mol.GetSubstructMatches(pyrrole)
+    # Look for the four modified pyrrole rings with more flexible matching
+    # This pattern allows for reduced and substituted forms
+    pyrrole_pattern = Chem.MolFromSmarts('[#7]([#6]~[#6])~[#6]~[#6]')
+    matches = mol.GetSubstructMatches(pyrrole_pattern)
     if len(matches) < 4:
-        return False, "Missing required reduced pyrrole rings"
+        return False, "Missing required pyrrole-like rings"
 
-    # Count rings to ensure macrocyclic structure
-    ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() < 5:  # At least 4 pyrrole rings plus macrocycle
-        return False, "Insufficient ring systems for corrinoid"
-
-    # Check molecular composition
-    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if n_count < 4 or c_count < 20:
-        return False, "Insufficient atoms for corrinoid structure"
-
-    # Look for characteristic linking pattern (three =C- groups and one C-C bond)
-    link_pattern = Chem.MolFromSmarts('[#7]~[#6](~[#6])~[#6]~[#7]')
-    direct_link = Chem.MolFromSmarts('[#7]~[#6]-[#6]~[#7]')
-    if not (mol.HasSubstructMatch(link_pattern) and mol.HasSubstructMatch(direct_link)):
-        return False, "Missing characteristic linking pattern"
-
-    # Check for cobalt (common but not required)
+    # Check for presence of cobalt (common in corrinoids but not required)
     has_cobalt = any(atom.GetAtomicNum() == 27 for atom in mol.GetAtoms())
+    
+    # Count nitrogens in the core structure
+    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
+    if n_count < 4:
+        return False, "Insufficient nitrogen atoms for corrin structure"
 
-    # Verify molecular weight is in typical range for corrinoids
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 500:
-        return False, "Molecular weight too low for corrinoid"
+    # Check molecular size - corrinoids are large molecules
+    num_atoms = mol.GetNumAtoms()
+    if num_atoms < 20:
+        return False, "Molecule too small for corrinoid structure"
+
+    # Look for characteristic carbon-carbon connections
+    # This includes both double bonds and single bonds between rings
+    ring_connections = Chem.MolFromSmarts('[#7]~[#6](~[#6])~[#6]~[#7]')
+    if not mol.HasSubstructMatch(ring_connections):
+        return False, "Missing required ring connections"
 
     # Success message varies depending on cobalt presence
     if has_cobalt:
