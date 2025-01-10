@@ -12,7 +12,7 @@ def is_chalcogen(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if the molecule is a single chalcogen atom or isotope, False otherwise
+        bool: True if the molecule is a single, neutral chalcogen atom or isotope, False otherwise
         str: Reason for classification
     """
     
@@ -25,13 +25,16 @@ def is_chalcogen(smiles: str):
     if mol.GetNumAtoms() != 1:
         return False, "SMILES does not represent a single atom"
 
-    # Define chalcogen elements
-    chalcogen_elements = {'O', 'S', 'Se', 'Te', 'Po'}
+    # Define atomic numbers for chalcogen elements
+    chalcogen_atomic_numbers = {8, 16, 34, 52, 84}  # O, S, Se, Te, Po
 
-    # Check if the single atom in the molecule is a chalcogen
+    # Check if the single atom in the molecule is a chalcogen and is neutral
     atom = mol.GetAtomWithIdx(0)
-    symbol = atom.GetSymbol()
-    if symbol in chalcogen_elements:
-        return True, f"Contains chalcogen element: {symbol}"
+    atomic_num = atom.GetAtomicNum()
+    formal_charge = atom.GetFormalCharge()
     
-    return False, "No chalcogen elements found"
+    # Ensure the atom is a recognized chalcogen and is neutral
+    if atomic_num in chalcogen_atomic_numbers and formal_charge == 0:
+        return True, f"Contains neutral chalcogen element with atomic number: {atomic_num}"
+    
+    return False, "No neutral chalcogen elements found"
