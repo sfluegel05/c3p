@@ -25,68 +25,60 @@ def is_very_long_chain_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a simplified Coenzyme A (CoA) SMARTS pattern
-    # Focus on key structural features of CoA without stereochemistry
-    coa_smarts = """
-    NC(=O)CCNC(=O)C(O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C]1OC(CO[P](=O)(O)O)C(O)C1O
-    """
-    coa_pattern = Chem.MolFromSmarts(coa_smarts)
-    if not mol.HasSubstructMatch(coa_pattern):
-        return False, "CoA moiety not found"
-
-    # Find the thioester linkage: C(=O)-S-C
-    thioester_smarts = 'C(=O)SC'
+    # Define thioester group pattern: C(=O)S
+    thioester_smarts = 'C(=O)S'
     thioester_pattern = Chem.MolFromSmarts(thioester_smarts)
+    if thioester_pattern is None:
+        return False, "Invalid thioester SMARTS pattern"
+
     thioester_matches = mol.GetSubstructMatches(thioester_pattern)
     if not thioester_matches:
         return False, "Thioester linkage not found"
 
+    # Simplified CoA moiety pattern
+    coa_smarts = 'NC(=O)CCNC(=O)C(O)C(C)(C)CO'
+    coa_pattern = Chem.MolFromSmarts(coa_smarts)
+    if coa_pattern is None:
+        return False, "Invalid CoA SMARTS pattern"
+
+    if not mol.HasSubstructMatch(coa_pattern):
+        return False, "CoA moiety not found"
+
     # For each thioester linkage, attempt to find the acyl chain
     for match in thioester_matches:
-        carbonyl_c_idx = match[0]
-        sulfur_idx = match[2]
+        carbonyl_c_idx = match[0]  # Index of carbonyl carbon
+        sulfur_idx = match[2]      # Index of sulfur atom
 
-        # Get the carbon atom attached to the carbonyl carbon that is not the sulfur
+        # Get the atom connected to carbonyl carbon that is not sulfur
         carbonyl_carbon = mol.GetAtomWithIdx(carbonyl_c_idx)
         acyl_chain_atom = None
         for neighbor in carbonyl_carbon.GetNeighbors():
             neighbor_idx = neighbor.GetIdx()
-            if neighbor_idx != sulfur_idx and neighbor.GetAtomicNum() == 6:
-                # This is the start of the acyl chain
+            if neighbor_idx != sulfur_idx:
                 acyl_chain_atom = neighbor
                 break
 
         if acyl_chain_atom is None:
-            continue  # Try the next thioester linkage
+            continue  # Move to next thioester linkage if no acyl chain found
 
-        # Traverse the acyl chain to count the number of carbons
-        acyl_chain_carbon_idxs = set()
-        visited_atoms = set()
-        atoms_to_visit = [acyl_chain_atom.GetIdx()]
+        # Traverse the acyl chain starting from acyl_chain_atom
+        acyl_chain_carbons = set()
+        atoms_to_visit = [(acyl_chain_atom.GetIdx(), carbonyl_c_idx)]  # (current_atom_idx, previous_atom_idx)
         while atoms_to_visit:
-            atom_idx = atoms_to_visit.pop()
-            if atom_idx in visited_atoms:
-                continue
-            visited_atoms.add(atom_idx)
-            atom = mol.GetAtomWithIdx(atom_idx)
-            if atom.GetAtomicNum() == 6:  # Carbon atom
-                acyl_chain_carbon_idxs.add(atom_idx)
-                for neighbor in atom.GetNeighbors():
-                    neighbor_idx = neighbor.GetIdx()
-                    neighbor_atomic_num = neighbor.GetAtomicNum()
-                    bond = mol.GetBondBetweenAtoms(atom_idx, neighbor_idx)
-                    bond_type = bond.GetBondType()
-                    if neighbor_atomic_num in [6, 1] and neighbor_idx not in visited_atoms:
-                        # Continue traversing carbons and hydrogens
-                        atoms_to_visit.append(neighbor_idx)
-                    elif neighbor_atomic_num not in [6, 1]:
-                        # Stop traversal at heteroatoms
-                        continue
-            else:
-                # Stop traversal at heteroatoms
-                continue
+            current_atom_idx, previous_atom_idx = atoms_to_visit.pop()
+            current_atom = mol.GetAtomWithIdx(current_atom_idx)
+            if current_atom.GetAtomicNum() != 6:
+                continue  # Only consider carbon atoms
+            acyl_chain_carbons.add(current_atom_idx)
+            for neighbor in current_atom.GetNeighbors():
+                neighbor_idx = neighbor.GetIdx()
+                if neighbor_idx == previous_atom_idx:
+                    continue  # Avoid going back to previous atom
+                neighbor_atom = mol.GetAtomWithIdx(neighbor_idx)
+                if neighbor_atom.GetAtomicNum() == 6 and neighbor_idx not in acyl_chain_carbons:
+                    atoms_to_visit.append((neighbor_idx, current_atom_idx))
 
-        chain_length = len(acyl_chain_carbon_idxs)
+        chain_length = len(acyl_chain_carbons)
         if chain_length > 22:
             return True, f"Acyl chain length is {chain_length}, which is greater than 22 carbons"
         else:
@@ -112,18 +104,5 @@ __metadata__ = {
         'max_instances_in_prompt': 100,
         'test_proportion': 0.1},
     'message': None,
-    'attempt': 2,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': None,
-    'num_false_positives': None,
-    'num_true_negatives': None,
-    'num_false_negatives': None,
-    'num_negatives': None,
-    'precision': None,
-    'recall': None,
-    'f1': None,
-    'accuracy': None
+    'attempt': 3
 }
