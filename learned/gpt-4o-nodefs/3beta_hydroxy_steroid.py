@@ -14,30 +14,16 @@ def is_3beta_hydroxy_steroid(smiles: str):
         bool: True if molecule is a 3beta-hydroxy steroid, False otherwise
         str: Reason for classification
     """
-    # Parse the SMILES string
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more general SMARTS pattern for a steroid skeleton:
-    # This pattern model assumes a basic ring structure common to steroids
-    steroid_core_pattern = Chem.MolFromSmarts("C1CC[C@H]2C(=O)C3CCC[C@]3(C)C2C1")
-    
-    # The pattern specifically for the beta-oriented hydroxyl group on the third carbon
-    hydroxyl_beta_pattern = Chem.MolFromSmarts("[C@@H](O)")
+    # Define SMARTS pattern for a steroid backbone with a 3beta-hydroxyl group
+    # This is a generalized pattern, since exact SMARTS is complex for this class; it matches steroid backbone and generic beta-hydroxylating
+    steroid_pattern = Chem.MolFromSmarts("[C@@H]1([C@@H]2CC[C@]3(C)[C@@H](O)CC[C@]3(C)[C@@H]2[C@H](C)CC1)")
 
-    # Check if the molecule has a steroid core structure
-    if not mol.HasSubstructMatch(steroid_core_pattern):
-        return False, "Does not match steroid core"
+    if not mol.HasSubstructMatch(steroid_pattern):
+        return False, "Does not match 3beta-hydroxy steroid pattern"
 
-    # Check if there's a 3-beta hydroxyl
-    # Define multiple possible attachment sites and orientations
-    substructure_matches = mol.GetSubstructMatches(hydroxyl_beta_pattern)
-    
-    # Look through substructure matches to ensure attachment at correct position
-    for match in substructure_matches:
-        if any(mol.GetAtomWithIdx(atom_idx).GetChiralTag() == Chem.CHI_TETRAHEDRAL_CCW and
-               mol.GetAtomWithIdx(atom_idx).GetDegree() == 3 for atom_idx in match):
-            return True, "Matches 3beta-hydroxy steroid pattern"
-
-    return False, "3-beta hydroxyl group not in correct configuration"
+    return True, "Matches 3beta-hydroxy steroid pattern"
