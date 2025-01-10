@@ -22,19 +22,21 @@ def is_bile_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Refined steroid core pattern considering three six-membered rings fused with a five-membered ring
-    steroid_core_pattern = Chem.MolFromSmarts("C1CCC2C3C(C1)CC4CCCC(C3)C24")
+    # Improved steroid core pattern considering general connectivity of cyclopentane-perhydrophenanthrene
+    steroid_core_pattern = Chem.MolFromSmarts(
+        "[C@@]1(C)[C@H]2[C@H]3CC[C@@H](CC3)[C@]2(C)CC1"
+    )
     if not mol.HasSubstructMatch(steroid_core_pattern):
         return False, "No steroid core found"
 
-    # Check for hydroxyl and/or keto groups
-    # Specific number is not too critical, general presence is sufficient
-    hydroxyl_keto_pattern = Chem.MolFromSmarts("[OX2H1,C=O]")
-    if not mol.HasSubstructMatch(hydroxyl_keto_pattern):
+    # Check for hydroxyl (-OH) and/or keto (C=O) groups
+    # More inclusive pattern to broadly capture these functional groups
+    hydroxyl_keto_pattern = Chem.MolFromSmarts("[OX2H1,C=O,C(=O)[O;H1,-]]")
+    if len(mol.GetSubstructMatches(hydroxyl_keto_pattern)) == 0:
         return False, "No hydroxyl or keto groups found"
 
-    # Look for a carboxylic acid group, critical for bile acids
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
+    # Look for a carboxylic acid group (COOH)
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O[H1,-]")
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
 
