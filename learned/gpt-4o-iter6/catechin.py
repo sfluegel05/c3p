@@ -13,7 +13,7 @@ def is_catechin(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a catechin, False otherwise
+        bool: True if the molecule is a catechin, False otherwise
         str: Reason for classification
     """
 
@@ -21,21 +21,30 @@ def is_catechin(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Catechin is a hydroxyflavan: Check for flavan-3-ol structure
-    flavan_3_ol_pattern = Chem.MolFromSmarts("C1[C@@H](OC2=CC=C(O)C=C2)C(=O)CC3=CC(O)=CC(O)=C13")
+    
+    # Improved SMARTS pattern for flavan-3-ol backbone (C6-C3-C6 with a hydroxyl on C3)
+    flavan_3_ol_pattern = Chem.MolFromSmarts("C1C(C2=C(O)C=CC(O)=C2)O[C@H]([C@@H]1)c3ccc(O)cc3")
     if not mol.HasSubstructMatch(flavan_3_ol_pattern):
         return False, "No flavan-3-ol backbone found"
     
-    # Check for hydroxyl substitutions
-    hydroxy_pattern = Chem.MolFromSmarts("c(O)c")
+    # Counting hydroxyl and other typical substituents (flexible substitution pattern)
+    hydroxy_pattern = Chem.MolFromSmarts("[OX2H]")
+    methoxy_pattern = Chem.MolFromSmarts("CO")
+    ester_pattern = Chem.MolFromSmarts("O=C(O)")
+    
     hydroxyl_matches = mol.GetSubstructMatches(hydroxy_pattern)
-    if len(hydroxyl_matches) < 2:
-        return False, f"Insufficient hydroxyl groups, found {len(hydroxyl_matches)}"
+    methoxy_matches = mol.GetSubstructMatches(methoxy_pattern)
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
 
-    # Verify stereochemistry
+    num_oxygen_containing_subs = len(hydroxyl_matches) + len(methoxy_matches) + len(ester_matches)
+    
+    if num_oxygen_containing_subs < 2:
+        return False, f"Insufficient oxygen-containing groups, found {num_oxygen_containing_subs}"
+
+    # Verify stereochemistry if there are chiral centers
     chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
-    if len(chiral_centers) < 2:
+    if len(chiral_centers) > 0 and len(chiral_centers) < 2:
         return False, f"Insufficient chiral centers, found {len(chiral_centers)}"
 
-    return True, "Contains flavan-3-ol backbone with appropriate hydroxyl groups and stereochemistry"
+    # Assume various substitutions while maintaining flavan-3-ol identity
+    return True, "Contains flavan-3-ol backbone with sufficient oxygen-containing groups and stereochemistry"
