@@ -2,7 +2,6 @@
 Classifies: CHEBI:25106 macrolide
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_macrolide(smiles: str):
     """
@@ -22,22 +21,25 @@ def is_macrolide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Improved SMARTS pattern for cyclic ester rings (lactone)
-    # We define a ring with a simple ester group as well as accounting for oxygen and carbon cycling properly
-    ester_lactone_pattern = Chem.MolFromSmarts("C1OC(=O)[C;R1]1")
-    
-    # Explore ring information within the molecule
+    # Make sure ring info is initialized
     ring_info = mol.GetRingInfo()
+    if not ring_info.IsInitialized():
+        return False, "Ring information not initialized"
+    
+    # Define the SMARTS pattern for a macrocyclic lactone
+    lactone_pattern = Chem.MolFromSmarts("C1OC(=O)[C;R1]1")
+    
+    # Check each ring within the molecule
     for ring_atoms in ring_info.AtomRings():
         if len(ring_atoms) >= 12:
-            # We confirm the presence of a lactone functional group in the ring
+            # Extract substructure corresponding to the ring
             submol = Chem.PathToSubmol(mol, ring_atoms)
-            if submol.HasSubstructMatch(ester_lactone_pattern):
-                return True, "Contains a macrocyclic lactone with 12 or more atoms"
-
-    # Additional refinement and confirmation would use domain-specific rules if further customization is needed
-    return False, "Does not contain a macrocyclic lactone with 12 or more atoms"
+            # Check if the ring matches the lactone pattern
+            if submol.HasSubstructMatch(lactone_pattern):
+                return True, "Contains a macrocyclic lactone with 12 or more members"
+    
+    return False, "Does not contain a macrocyclic lactone with 12 or more members"
 
 # Example usage:
-# result, reason = is_macrolide("SMILES_STRING_HERE")
+# result, reason = is_macrolide("O=C1O[C@H](C(=O)NC[C@@H](O)C[C@@H](O)[C@@H](O)CCC(=CC=C[C@H](CCCC(CCCC[C@H](C[C@H]1C)C)=O)CC)COC)CCC")
 # print(result, reason)
