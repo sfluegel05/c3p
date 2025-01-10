@@ -26,11 +26,13 @@ def is_unsaturated_fatty_acyl_CoA(smiles: str):
     if not mol.HasSubstructMatch(adenine_pattern):
         return False, "Adenine component of Coenzyme A not found"
     
-    ribose_pattern = Chem.MolFromSmarts("OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)OP(=O)(O)O")
+    # Improve ribose pattern to detect nucleotides properly
+    ribose_pattern = Chem.MolFromSmarts("OC[C@@H]1O[C@H]([C@H](O)[C@@H]1O)P(=O)(O)O")
     if not mol.HasSubstructMatch(ribose_pattern):
         return False, "Ribose component of Coenzyme A not found"
     
-    phosphopantetheine_pattern = Chem.MolFromSmarts("[C@H](O)C(C)(C)COP(=O)(O)O")
+    # Target phosphopantetheine arm using more flexible pattern
+    phosphopantetheine_pattern = Chem.MolFromSmarts("C(C)(C)[C@H](O)COP(=O)(O)O")
     if not mol.HasSubstructMatch(phosphopantetheine_pattern):
         return False, "Phosphopantetheine component of Coenzyme A not found"
 
