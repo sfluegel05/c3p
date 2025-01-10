@@ -12,7 +12,7 @@ def is_sterol(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a sterol, False otherwise
+        bool: True if the molecule is a sterol, False otherwise
         str: Reason for classification
     """
     
@@ -21,23 +21,28 @@ def is_sterol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more flexible SMARTS pattern for the steroid backbone:
-    # Recognize 3 connected six-membered rings and 1 five-membered ring, allowing for some unsaturation.
-    steroid_core_pattern = Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2CCC4=C3CC[C@H]5C4")
+    # Define SMARTS pattern for the steroid backbone:
+    # Three six-membered rings and one five-membered ring, allowing some flexibility/variation
+    steroid_core_pattern = Chem.MolFromSmarts("C1CCC2C1CCC3C2CCC4C3CCC4")
+    if not steroid_core_pattern:
+        return (None, "Invalid steroid core SMARTS pattern")
+
+    # Match steroid core pattern
     if not mol.HasSubstructMatch(steroid_core_pattern):
-        return False, "No appropriate steroid backbone (3 six-membered and 1 five-membered rings) found"
+        return False, "No appropriate steroid backbone (3 six-membered and 1 five-membered ring) found"
 
-    # Check for hydroxyl group [-OH] in the stereochemically relevant positions, mainly C3.
-    # Consider C3-beta or analogous positions based on biochemistry.
-    hydroxyl_position_pattern = Chem.MolFromSmarts("C(O)[C@H]1C[C@H]2C3C([C@@H](O)C4=C(C)CCCC34)CCC2CC1")
-    if not mol.HasSubstructMatch(hydroxyl_position_pattern):
-        return False, "No hydroxyl group found on potential C3 position"
+    # Check for hydroxyl group [-OH] in the C3 position
+    hydroxyl_pattern = Chem.MolFromSmarts("C(O)C1CCC2C3CCC4C(C)CCC4C3CCC12")
+    if not hydroxyl_pattern:
+        return (None, "Invalid hydroxyl position SMARTS pattern")
+        
+    if not mol.HasSubstructMatch(hydroxyl_pattern):
+        return False, "No hydroxyl group found on the C3 position"
 
-    # Allow some typical sidechains or alkyl chains; sterols might have larger, more flexible side chains.
-    # This pattern is too generic for a graphical match; instead, identify fragments.
-    side_chain_check = True  # Assume general presence of compatible sidechains due to sterol structure diversity
+    # Assume presence of side chains typical of sterols due to sterol diversity
+    side_chain_check = True
 
     if side_chain_check:
         return True, "Contains steroid backbone with hydroxyl group; structure consistent with sterol definition"
-    else:
-        return False, "No compatible side chain pattern detected, not a typical sterol"
+    
+    return False, "Missing structural features typical of sterols"
