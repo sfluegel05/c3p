@@ -21,19 +21,18 @@ def is_diketone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define a refined SMARTS pattern for ketone functionality:
-    # carbonyl group (C=O) bonded only to carbons, allowing no heteroatom
-    ketone_pattern = Chem.MolFromSmarts("[CH3X4,CH2X4,CHX4]C(=O)[CH3X4,CH2X4,CHX4]")  # Ketone specific
+    # Define a refined SMARTS pattern for ketone functionality: carbonyl groups
+    # Ensure precise matching by anchoring carbonyl to specific supported contexts
+    ketone_pattern = Chem.MolFromSmarts("C(=O)[#6]")  # C=O directly attached to another carbon
 
     # Finding non-overlapping substructure matches in the molecule
     ketone_matches = mol.GetSubstructMatches(ketone_pattern, uniquify=True)
 
-    # Extract unique center carbon atoms (carbonyl carbon atom) to avoid overlapping biases
-    # Ensure extraction accurately represents distinct ketone occurrences
-    unique_ketone_matches = {match[1] for match in ketone_matches}
+    # Extract unique center carbon atoms to avoid overlapping biases
+    unique_ketone_centers = set(match[0] for match in ketone_matches)
 
     # Count unique ketone functionalities by core atom presence
-    num_ketones = len(unique_ketone_matches)
+    num_ketones = len(unique_ketone_centers)
 
     if num_ketones == 2:
         return True, "Molecule contains exactly two ketone functionalities"
