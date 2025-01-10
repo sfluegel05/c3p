@@ -7,7 +7,7 @@ def is_cephalosporin(smiles: str):
     """
     Determines if a molecule is a cephalosporin based on its SMILES string.
     A cephalosporin is characterized by having a beta-lactam ring and a 6-membered
-    dihydrothiazine ring fused together with variable side chains.
+    dihydrothiazine ring.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,22 +21,23 @@ def is_cephalosporin(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Check for beta-lactam ring
-    beta_lactam_pattern = Chem.MolFromSmarts("C1C(=O)N[C@@H]1")
+
+    # Define the beta-lactam ring pattern (4-membered cyclic amide)
+    beta_lactam_pattern = Chem.MolFromSmarts("C1CN([C@@H]1)C(=O)")
     if not mol.HasSubstructMatch(beta_lactam_pattern):
         return False, "No beta-lactam ring found"
 
-    # Check for 6-membered dihydrothiazine ring
-    # The pattern for a 6-membered ring with sulfur (S), carbon (C), and nitrogen (N)
-    # Correct the stereochemistry and atom connectivity within the ring pattern
-    # Note: The specific SMARTS may require optimization based on cephalosporins' specific stereo and bonding requirements
-    dihydrothiazine_pattern = Chem.MolFromSmarts("C1CN(C(=O)[C@@H](S1))C")
+    # Define the six-membered dihydrothiazine ring pattern
+    dihydrothiazine_pattern = Chem.MolFromSmarts("C1SC([NX3H,OX2H1])C(=O)N([C@H]1)")
     if not mol.HasSubstructMatch(dihydrothiazine_pattern):
-        return False, "No dihydrothiazine ring found or incorrect stereochemistry"
+        return False, "No dihydrothiazine ring found"
 
-    # Successful match for cephalosporin scaffold
-    return True, "Molecule contains a beta-lactam and a 6-membered dihydrothiazine ring consistent with cephalosporins"
+    # Ensure it does not have a penicillin-like structure
+    penicillin_pattern = Chem.MolFromSmarts("C1CN2C(S1)C(=O)N(C2)C")
+    if mol.HasSubstructMatch(penicillin_pattern):
+        return False, "Molecule is more penicillin-like"
+
+    return True, "Molecule contains a beta-lactam and a dihydrothiazine ring consistent with cephalosporins"
 
 __metadata__ = {
     'chemical_class': {
