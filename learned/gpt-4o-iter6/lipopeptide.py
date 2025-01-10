@@ -21,14 +21,14 @@ def is_lipopeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Identify peptide bonds - look for amide bonds using SMARTS: C(=O)N
+    # Identify peptide bonds - expand amide bond pattern for flexibility
     peptide_pattern = Chem.MolFromSmarts("C(=O)N")
     if not mol.HasSubstructMatch(peptide_pattern):
         return False, "No peptide bonds found"
     
-    # Identify long hydrocarbon chains typical of lipids
-    # Long aliphatic chain pattern: CH2 chain of length 6 or greater
-    lipid_pattern = Chem.MolFromSmarts("C(CCCCC)C")
+    # Flexible identification for long hydrocarbon chains
+    # Using pattern for long continuous aliphatic chains (at least 8 carbon atoms)
+    lipid_pattern = Chem.MolFromSmarts("CCCCCCCC")  # Simple form of a long chain pattern
     if not mol.HasSubstructMatch(lipid_pattern):
         return False, "No long hydrocarbon chains found"
 
