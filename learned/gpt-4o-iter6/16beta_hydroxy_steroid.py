@@ -2,12 +2,13 @@
 Classifies: CHEBI:17354 16beta-hydroxy steroid
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_16beta_hydroxy_steroid(smiles: str):
     """
     Determines if a molecule is a 16beta-hydroxy steroid based on its SMILES string.
-    A 16beta-hydroxy steroid has a hydroxyl group at position 16 of the steroid backbone
-    with a beta-configuration.
+    A 16beta-hydroxy steroid is defined by the presence of a hydroxyl group at position 16
+    in the steroid backbone with a beta-configuration.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,21 +23,22 @@ def is_16beta_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Pattern for steroid backbone, flexible to slight structural deviations
-    steroid_pattern = Chem.MolFromSmarts("[#6]1-[#6R2]-[#6R2]-[#6R2]-2-[#6R2]-[#6R2]-[#6R2]3-[#6R2]-[#6R2]-[#6R2]-[#6R2]-[#6R2]4-[#6R2]-[#6R2]-[#6R2]-[#6R2]-2-[#6R2]-1-3-4") 
+    # Look for steroid backbone pattern (cyclopentanoperhydrophenanthrene structure)
+    steroid_pattern = Chem.MolFromSmarts("C1CCC2C1CCC3C2CC4CC[C@]34C")
     if not mol.HasSubstructMatch(steroid_pattern):
-        return False, "No recognizable steroid backbone found"
+        return False, "No steroid backbone found"
 
-    # Simplified pattern that looks for the presence of an alcohol group on position 16, beta-configuration
-    # Simplifying to check for a connected alcohol group (OH) to a carbon with at least one methyl group
-    # Requires flexible positioning based on backbone assumptions
-    position_16_beta_hydroxy = Chem.MolFromSmarts("[#6][C@H](O)[#6]([#6])C1CC(C)(C)C")
-    if not mol.HasSubstructMatch(position_16_beta_hydroxy):
+    # Check for the 16beta-hydroxy group
+    beta_hydroxy_16_pattern = Chem.MolFromSmarts("[C@@H](O)[C@H](C)C")
+    if not mol.HasSubstructMatch(beta_hydroxy_16_pattern):
         return False, "No 16beta-hydroxy group found"
-    
-    return True, "Contains a steroid backbone with a 16beta-hydroxy group"
 
-# Example test-case (a valid 16beta-hydroxy steroid example)
-example_smiles = "C1=C2C(CC[C@]3([C@@]4(C[C@@H]([C@@H]([C@]4(CC[C@@]32[H])C)O)O)[H])[H])=CC(=C1)O"  # Assuming valid steroids as SMILES
-result, reason = is_16beta_hydroxy_steroid(example_smiles)
-print(f"Classification: {result}, Reason: {reason}")
+    # Verify additional stereochemistry for typical steroidal structure
+    stereo_matches = mol.GetSubstructMatches(beta_hydroxy_16_pattern)
+    if any(mol.GetAtomWithIdx(match[1]).GetChiralTag() != Chem.CHI_TETRAHEDRAL_CCW for match in stereo_matches):
+        return False, "Incorrect stereochemistry at position 16"
+
+    return True, "Contains a steroid backbone with 16beta-hydroxy group"
+
+# Example usage
+print(is_16beta_hydroxy_steroid("C[C@]12CC[C@H]3[C@@H](CCC4=CC(=O)CC[C@]34C)[C@@H]1C[C@H](O)[C@@H]2O"))
