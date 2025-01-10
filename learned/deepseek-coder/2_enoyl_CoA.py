@@ -32,25 +32,23 @@ def is_2_enoyl_CoA(smiles: str):
         return False, "No CoA moiety found"
 
     # Check for thioester bond in the acyl chain
-    thioester_pattern = Chem.MolFromSmarts("[CX3]=[CX3]C(=O)S")
+    thioester_pattern = Chem.MolFromSmarts("[CX3]=[OX1]S")
     thioester_matches = mol.GetSubstructMatches(thioester_pattern)
     if len(thioester_matches) == 0:
         return False, "No thioester bond found in the acyl chain"
 
     # Check for double bond between positions 2 and 3 in the acyl chain
-    double_bond_pattern = Chem.MolFromSmarts("[CX3]=[CX3]C(=O)S")
+    double_bond_pattern = Chem.MolFromSmarts("[CX3]=[CX3]")
     double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
     if len(double_bond_matches) == 0:
         return False, "No double bond between positions 2 and 3 in the acyl chain"
 
     # Ensure the double bond is between positions 2 and 3 relative to the thioester bond
-    for match in double_bond_matches:
-        # Get the atoms involved in the double bond
-        atom1, atom2 = match[0], match[1]
-        # Get the atom connected to the thioester bond
-        thioester_atom = match[2]
-        # Check if the double bond is between positions 2 and 3
-        if mol.GetBondBetweenAtoms(atom1, atom2).GetBondType() == Chem.BondType.DOUBLE:
+    for thioester_match in thioester_matches:
+        thioester_atom = thioester_match[1]  # The sulfur atom in the thioester bond
+        for double_bond_match in double_bond_matches:
+            atom1, atom2 = double_bond_match[0], double_bond_match[1]
+            # Check if the double bond is between positions 2 and 3 relative to the thioester bond
             if mol.GetBondBetweenAtoms(atom1, thioester_atom) or mol.GetBondBetweenAtoms(atom2, thioester_atom):
                 return True, "Contains CoA moiety with a double bond between positions 2 and 3 in the acyl chain attached via a thioester bond"
 
