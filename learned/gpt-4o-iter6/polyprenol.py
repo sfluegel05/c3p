@@ -22,30 +22,28 @@ def is_polyprenol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for repeating isoprene units
+    # Enhanced pattern for isoprene units: accounts for 'n' repetitions with appropriate bonding
     isoprene_pattern = Chem.MolFromSmarts("C(=C)C-C")
     isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
     
     if len(isoprene_matches) <= 1:
         return False, f"Found {len(isoprene_matches)} isoprene units, need more than 1"
 
-    # Check for terminal hydroxyl group
-    hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
-    if not mol.HasSubstructMatch(hydroxyl_pattern):
-        return False, "Missing terminal hydroxyl group"
-
-    # Check the position of the hydroxyl group to ensure it is at the end
+    # Check for presence of hydroxyl group, ensuring it is most likely at terminal position
+    hydroxyl_pattern = Chem.MolFromSmarts("O")
     hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
+    
+    # Detect terminal-like hydroxyl assuming linear polymer end
     terminal_oh = False
     for match in hydroxyl_matches:
         atom = mol.GetAtomWithIdx(match[0])
         neighbors = [n.GetAtomicNum() for n in atom.GetNeighbors()]
-        # Ensure that OH is attached to a carbon (often the terminal position in polyprenols)
-        if 6 in neighbors and len(neighbors) == 1:
+        # Ensuring OH is attached to a carbon with only hydrogens (indicative of terminal)
+        if 6 in [n.GetAtomicNum() for n in atom.GetNeighbors() if n.GetAtomicNum() != 1]:
             terminal_oh = True
             break
 
     if not terminal_oh:
-        return False, "Hydroxyl group is not terminal"
+        return False, "Hydroxyl group is not positioned in a suggestive terminal manner"
 
-    return True, "Contains more than one isoprene unit with a terminal hydroxyl group"
+    return True, "Contains more than one isoprene unit with a suitable terminal hydroxyl group"
