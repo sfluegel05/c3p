@@ -13,26 +13,32 @@ def is_phospho_sugar(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if the molecule is a phospho sugar, False otherwise
+        bool: True if the molecule is a phospho sugar, False otherwise.
         str: Reason for classification
     """
-    
+
     # Parse SMILES to RDKit molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Redefining a pattern for sugar-like hydroxy structures
-    # This accounts for both furanose and pyranose ring sugars
-    sugar_ring_pattern = Chem.MolFromSmarts("C1OC(CO)C(O)C1O")  # Typical hexose as an example
-    # Linear sugar parts (e.g., glyceraldehyde phosphate)
-    sugar_linear_pattern = Chem.MolFromSmarts("OCC(O)CO")
+    # Patterns for cyclic sugars (furanose and pyranose rings)
+    furanose_pattern = Chem.MolFromSmarts("C1OC[C@H]([C@@H](O)C1)O")
+    pyranose_pattern = Chem.MolFromSmarts("C1O[C@H]([C@@H](CO)O)C[C@H]1O")
+    
+    # Patterns for linear sugars like glyceraldehyde
+    linear_sugar_pattern = Chem.MolFromSmarts("CO[C@H](O)C=O") 
 
-    # Refine patterns for phosphate groups (covering monophosphate, diphosphate, etc.)
-    phosphate_pattern = Chem.MolFromSmarts("OP(=O)([O])[O]")  # Phosphate group
+    # Pattern for phosphate groups (includes possibilities of di- and tri-phosphate linkages)
+    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)O")
 
-    # Check for presence of sugar structure
-    has_sugar_structure = mol.HasSubstructMatch(sugar_ring_pattern) or mol.HasSubstructMatch(sugar_linear_pattern)
+    # Check for presence of sugar structures
+    has_sugar_structure = (
+        mol.HasSubstructMatch(furanose_pattern) or
+        mol.HasSubstructMatch(pyranose_pattern) or
+        mol.HasSubstructMatch(linear_sugar_pattern)
+    )
+    
     if not has_sugar_structure:
         return False, "No sugar-like structure found"
 
