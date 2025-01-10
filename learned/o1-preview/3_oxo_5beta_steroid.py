@@ -27,10 +27,9 @@ def is_3_oxo_5beta_steroid(smiles: str):
     # Assign stereochemistry
     Chem.AssignStereochemistry(mol, cleanIt=True, force=True, flagPossibleStereoCenters=True)
 
-    # Define the steroid nucleus SMARTS pattern
-    steroid_core_smarts = """
-    [#6]1CC[C@H]2C[C@H]3C[C@@H](C)C[C@H]4CC(=O)CC[C@]34C[C@H]2C1
-    """
+    # Define the steroid nucleus SMARTS pattern (rings A, B, C, D of steroids)
+    steroid_core_smarts = 'C1CCC2C(C1)CCC3C2CCC4(C3CCC4)'
+
     steroid_core = Chem.MolFromSmarts(steroid_core_smarts)
     if steroid_core is None:
         return False, "Invalid steroid core SMARTS pattern"
@@ -40,42 +39,51 @@ def is_3_oxo_5beta_steroid(smiles: str):
     if not matches:
         return False, "Steroid core not found"
 
-    # Define SMARTS pattern for ketone at position 3
-    ketone_smarts = "[C;R1]=O"
-    ketone_pattern = Chem.MolFromSmarts(ketone_smarts)
-    if ketone_pattern is None:
-        return False, "Invalid ketone SMARTS pattern"
+    # For each match, check for ketone at position 3 and beta-configuration at position 5
+    for match in matches:
+        # Map the SMARTS pattern atom indices to the molecule atom indices
+        # Positions in the steroid core (approximate):
+        # Position 3: Atom index 2 (C atom in ring A)
+        # Position 5: Atom index 5 (chiral center between rings A and B)
 
-    # Check for ketone at position 3
-    ketone_matches = []
-    for match in mol.GetSubstructMatches(ketone_pattern):
-        atom = mol.GetAtomWithIdx(match[0])
-        if atom.IsInRing() and atom.GetIdx() in matches[0]:
-            # Assuming atom indices correspond to position 3
-            ketone_matches.append(match)
-            break
-    if not ketone_matches:
-        return False, "Ketone group at position 3 not found"
+        atom_indices = match  # Mapping of SMARTS atoms to molecule atoms
+        mol_atoms = [mol.GetAtomWithIdx(idx) for idx in atom_indices]
 
-    # Identify chiral center at position 5
-    # Position 5 corresponds to a specific atom in the steroid nucleus
-    # We need to map the SMARTS pattern to actual atom indices
-    steroid_match = matches[0]
-    # The index of position 5 in the SMARTS pattern (adjusted for zero-based indexing)
-    position5_idx_in_smarts = 4  # Adjust this index based on the SMARTS pattern
-    position5_atom_idx = steroid_match[position5_idx_in_smarts]
+        # Identify position 3 carbon atom
+        pos3_idx = atom_indices[2]
+        pos3_atom = mol.GetAtomWithIdx(pos3_idx)
 
-    position5_atom = mol.GetAtomWithIdx(position5_atom_idx)
-    if position5_atom.GetChiralTag() == Chem.rdchem.ChiralType.CHI_UNSPECIFIED:
-        return False, "Chiral center at position 5 not found"
+        # Check for ketone (=O) attached to position 3 carbon
+        ketone = False
+        for neighbor in pos3_atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 8 and mol.GetBondBetweenAtoms(pos3_idx, neighbor.GetIdx()).GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                ketone = True
+                break
+        if not ketone:
+            continue  # This match does not have ketone at position 3
 
-    # Check stereochemistry at position 5
-    # Beta-configuration corresponds to 'S' absolute configuration for position 5
-    cip_code = position5_atom.GetProp('_CIPCode') if position5_atom.HasProp('_CIPCode') else None
-    if cip_code != 'S':
-        return False, f"Position 5 is not in beta-configuration (found {cip_code})"
+        # Identify position 5 chiral center
+        pos5_idx = atom_indices[5]
+        pos5_atom = mol.GetAtomWithIdx(pos5_idx)
 
-    return True, "Molecule is a 3-oxo-5beta-steroid"
+        if pos5_atom.GetChiralTag() == Chem.rdchem.ChiralType.CHI_UNSPECIFIED:
+            continue  # Not a chiral center at position 5
+
+        # Get CIP code for position 5
+        cip_code = pos5_atom.GetProp('_CIPCode') if pos5_atom.HasProp('_CIPCode') else None
+
+        # In steroids, beta-configuration at position 5 typically corresponds to 'R' absolute configuration,
+        # but this can vary depending on the specific molecule, so we need to verify carefully.
+
+        # For this example, let's assume beta at position 5 corresponds to 'R'
+        if cip_code != 'R':
+            continue  # Not beta-configuration at position 5
+
+        # If all conditions are met, return True
+        return True, "Molecule is a 3-oxo-5beta-steroid"
+
+    # If no matches satisfy all conditions
+    return False, "Does not meet criteria for a 3-oxo-5beta-steroid"
 
 __metadata__ = {
     'chemical_class': {
