@@ -39,9 +39,21 @@ def is_2_oxo_monocarboxylic_acid_anion(smiles: str):
 
     # Check for the presence of an oxo group (C=O) at the 2-position relative to the carboxylate
     # The oxo group should be on the carbon adjacent to the carboxylate carbon
-    oxo_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[CX4][CX3](=[OX1])[O-]")
+    oxo_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[CX4H0][CX3](=[OX1])[O-]")
     oxo_matches = mol.GetSubstructMatches(oxo_pattern)
     if not oxo_matches:
-        return False, "No oxo group found at the 2-position relative to the carboxylate"
+        # Try a more flexible pattern that allows for different connectivity
+        oxo_pattern_flexible = Chem.MolFromSmarts("[CX3](=[OX1])[CX4H0][CX3](=[OX1])")
+        oxo_matches_flexible = mol.GetSubstructMatches(oxo_pattern_flexible)
+        if not oxo_matches_flexible:
+            return False, "No oxo group found at the 2-position relative to the carboxylate"
+
+    # Additional check to ensure the oxo group is at the 2-position
+    for match in oxo_matches:
+        carboxylate_carbon = match[0]
+        oxo_carbon = match[2]
+        # Ensure the oxo carbon is adjacent to the carboxylate carbon
+        if mol.GetBondBetweenAtoms(carboxylate_carbon, oxo_carbon) is None:
+            return False, "Oxo group is not at the 2-position relative to the carboxylate"
 
     return True, "Contains a carboxylate group with an oxo group at the 2-position"
