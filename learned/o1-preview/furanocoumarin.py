@@ -6,7 +6,6 @@ Classifies: furanocoumarin
 """
 
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_furanocoumarin(smiles: str):
     """
@@ -26,32 +25,29 @@ def is_furanocoumarin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # General SMARTS pattern for furanocoumarin core
-    # This pattern captures the fusion of a furan ring with a coumarin in different ways
+    # SMARTS patterns for different furanocoumarin cores
+    # These patterns capture various fusion isomers between furan and coumarin rings
+
+    patterns = []
 
     # Linear furanocoumarin (psoralen-type)
-    linear_pattern = Chem.MolFromSmarts('c1cc2oc(=O)c3ccoc3cc2cc1')
-
+    patterns.append(Chem.MolFromSmarts('c1cc2oc(=O)c3ccoc3cc2cc1'))
+    
     # Angular furanocoumarin (angelicin-type)
-    angular_pattern = Chem.MolFromSmarts('c1ccc2c(c1)oc(=O)c1ccoc21')
-
-    # Check for linear furanocoumarin core
-    if mol.HasSubstructMatch(linear_pattern):
-        return True, "Contains linear furanocoumarin core (psoralen-type)"
+    patterns.append(Chem.MolFromSmarts('c1ccc2c(c1)oc(=O)c1ccoc21'))
     
-    # Check for angular furanocoumarin core
-    elif mol.HasSubstructMatch(angular_pattern):
-        return True, "Contains angular furanocoumarin core (angelicin-type)"
-    
-    else:
-        # Alternative approach: Check for coumarin fused with furan ring
-        # General pattern for furanocoumarin core
-        general_pattern = Chem.MolFromSmarts('c1cc2oc(=O)c3ccoc3cc2cc1')
+    # Additional patterns to capture other isomers
+    patterns.append(Chem.MolFromSmarts('c1cc2oc(=O)c3ccoc3c2c1'))  # Extended linear
+    patterns.append(Chem.MolFromSmarts('c1ccc2c(c1)oc(=O)c3cocc23'))  # Alternative angular
+    patterns.append(Chem.MolFromSmarts('c1cc2c(c1)oc(=O)c3ccoc23'))  # Fusion variation
+    patterns.append(Chem.MolFromSmarts('c1ccc2oc(=O)c3ccoc3c2c1'))    # Another variation
 
-        if mol.HasSubstructMatch(general_pattern):
+    # Check for matches to any of the patterns
+    for pattern in patterns:
+        if mol.HasSubstructMatch(pattern):
             return True, "Contains furanocoumarin core"
-        else:
-            return False, "Does not contain furanocoumarin core"
+
+    return False, "Does not contain furanocoumarin core"
 
 __metadata__ = {
     'chemical_class': {
