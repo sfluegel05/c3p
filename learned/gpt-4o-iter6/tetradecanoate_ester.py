@@ -2,17 +2,18 @@
 Classifies: CHEBI:87691 tetradecanoate ester
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_tetradecanoate_ester(smiles: str):
     """
     Determines if a molecule is a tetradecanoate ester based on its SMILES string.
-    A tetradecanoate ester is an ester formed via the esterification of tetradecanoic acid.
+    A tetradecanoate ester is formed by the esterification of tetradecanoic acid (C13H27COOH).
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if the molecule is a tetradecanoate ester, False otherwise
+        bool: True if molecule is a tetradecanoate ester, False otherwise
         str: Reason for classification
     """
     
@@ -20,24 +21,17 @@ def is_tetradecanoate_ester(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Enhanced SMARTS pattern for tetradecanoate ester
-    # Look for ester sequence: 14-carbon chain with ester bond component
-    tetradecanoate_pattern = Chem.MolFromSmarts("CCCCCCCCCCCCCC(=O)O")
-
-    if mol.HasSubstructMatch(tetradecanoate_pattern):
-        # Get matches and ensure they conform to expected structure
-        matches = mol.GetSubstructMatches(tetradecanoate_pattern)
-        for match in matches:
-            # Ensuring the ester oxygen is bonded correctly
-            # Count carbons in the match for validation
-            c_count = 0
-            for atom_idx in match:
-                atom = mol.GetAtomWithIdx(atom_idx)
-                if atom.GetAtomicNum() == 6:
-                    c_count += 1
-        
-            if c_count == 14:
-                return True, "Valid tetradecanoate ester group found"
     
-    return False, "No valid tetradecanoate ester group found or incorrect structure"
+    # Define SMARTS pattern for tetradecanoic acid esterified group: C13H27C(=O)O-
+    tetradecanoate_pattern = Chem.MolFromSmarts("CCCCCCCCCCCCC(=O)O")
+    
+    # Check for presence of tetradecanoate ester functionality
+    if not mol.HasSubstructMatch(tetradecanoate_pattern):
+        return False, "No tetradecanoate ester group found"
+    
+    # Verify if multiple such groups are present
+    ester_matches = mol.GetSubstructMatches(tetradecanoate_pattern)
+    if len(ester_matches) < 1:
+        return False, "Missing tetradecanoate esters, none detected"
+
+    return True, "Contains tetradecanoate ester functionality"
