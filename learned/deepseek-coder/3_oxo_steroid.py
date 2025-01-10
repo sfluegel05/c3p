@@ -26,17 +26,12 @@ def is_3_oxo_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more flexible steroid backbone pattern (four fused rings)
-    # This pattern captures the four-fused-ring structure with possible double bonds and substitutions
+    # Define the steroid backbone pattern (four fused rings)
     steroid_backbone_pattern = Chem.MolFromSmarts("[C@]12[C@]3([C@]4([C@]([C@H]1CC2)(CC3)CC4)C)")
     if not mol.HasSubstructMatch(steroid_backbone_pattern):
-        # Try a more general pattern if the first one fails
-        steroid_backbone_pattern = Chem.MolFromSmarts("[C@]12[C@]3([C@]4([C@]([C@H]1CC2)(CC3)CC4)C)")
-        if not mol.HasSubstructMatch(steroid_backbone_pattern):
-            return False, "No steroid backbone found"
+        return False, "No steroid backbone found"
 
     # Define the 3-oxo pattern (ketone at position 3)
-    # The ketone should be attached to the carbon at position 3 in the steroid backbone
     oxo_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[C@]12[C@]3([C@]4([C@]([C@H]1CC2)(CC3)CC4)C)")
     if not mol.HasSubstructMatch(oxo_pattern):
         return False, "No ketone group found at position 3"
