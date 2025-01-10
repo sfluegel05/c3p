@@ -30,29 +30,40 @@ def is_cyclic_fatty_acid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for carboxylic acid group or carboxylate anion (-C(=O)OH or -C(=O)O-)
-    carboxylic_acid_pattern = Chem.MolFromSmarts('C(=O)[OH,-]')
-    carboxylic_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
-    if not carboxylic_matches:
+    carboxylic_acid_pattern = Chem.MolFromSmarts('C(=O)[OH]')
+    carboxylate_pattern = Chem.MolFromSmarts('C(=O)[O-]')
+    has_carboxylic_acid = mol.HasSubstructMatch(carboxylic_acid_pattern)
+    has_carboxylate = mol.HasSubstructMatch(carboxylate_pattern)
+    if not (has_carboxylic_acid or has_carboxylate):
         return False, "No carboxylic acid group found"
 
     # Check for ring structures in the molecule
     if not mol.GetRingInfo().NumRings():
         return False, "No ring structures found in the molecule"
 
-    # Function to count the length of the aliphatic carbon chain connected to carboxyl carbon
+    # Find the carboxyl carbon atoms
+    carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
+    carboxylate_matches = mol.GetSubstructMatches(carboxylate_pattern)
+    carboxyl_carbons = [match[0] for match in carboxylic_acid_matches + carboxylate_matches]
+
+    # Function to count the length of the aliphatic carbon chain connected to the carboxyl carbon
     def count_aliphatic_chain(atom_idx, visited):
         atom = mol.GetAtomWithIdx(atom_idx)
         if atom_idx in visited:
             return 0
         visited.add(atom_idx)
-        if atom.GetAtomicNum() != 6 or atom.IsAromatic():
+        if atom.GetAtomicNum() != 6 or atom.GetIsAromatic():
             return 0
         max_length = 1
         for neighbor in atom.GetNeighbors():
             neighbor_idx = neighbor.GetIdx()
             bond = mol.GetBondBetweenAtoms(atom_idx, neighbor_idx)
-            # Exclude double/triple bonds (focus on single-bonded aliphatic chains)
+            # Exclude non-single bonds and bonds that lead back to the carboxyl group
             if bond.GetBondType() != Chem.BondType.SINGLE:
+                continue
+            if neighbor.GetAtomicNum() != 6:
+                continue
+            if neighbor_idx in carboxyl_carbons:
                 continue
             chain_length = 1 + count_aliphatic_chain(neighbor_idx, visited.copy())
             if chain_length > max_length:
@@ -61,9 +72,17 @@ def is_cyclic_fatty_acid(smiles: str):
 
     # Check for a long aliphatic chain connected to the carboxyl carbon
     has_long_chain = False
-    for match in carboxylic_matches:
-        carboxyl_carbon_idx = match[0]  # Index of the carbonyl carbon
-        chain_length = count_aliphatic_chain(carboxyl_carbon_idx, set())
+    for carboxyl_carbon_idx in carboxyl_carbons:
+        # Skip atoms that are part of a ring
+        if mol.GetAtomWithIdx(carboxyl_carbon_idx).IsInRing():
+            continue
+        chain_length = 0
+        for neighbor in mol.GetAtomWithIdx(carboxyl_carbon_idx).GetNeighbors():
+            neighbor_idx = neighbor.GetIdx()
+            if neighbor.GetAtomicNum() == 6 and not neighbor.GetIsAromatic():
+                length = count_aliphatic_chain(neighbor_idx, set([carboxyl_carbon_idx]))
+                if length > chain_length:
+                    chain_length = length
         if chain_length >= 8:
             has_long_chain = True
             break
@@ -93,7 +112,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 1,
+    'attempt': 2,
     'success': True,
     'best': True,
     'error': '',
