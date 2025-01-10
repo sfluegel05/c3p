@@ -10,7 +10,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_butenolide(smiles: str):
     """
     Determines if a molecule is a butenolide based on its SMILES string.
-    A butenolide is a gamma-lactone that consists of a 2-furanone skeleton and its substituted derivatives.
+    A butenolide is a gamma-lactone with a 2-furanone skeleton and its substituted derivatives.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -25,12 +25,11 @@ def is_butenolide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more flexible pattern for the 2-furanone skeleton
-    # This pattern looks for a 5-membered ring with an oxygen and a carbonyl group, allowing for substitutions
-    furanone_pattern = Chem.MolFromSmarts("[O;R1]1[C;R1]=,:[C;R1][C;R1](=O)1")
+    # Define the core butenolide pattern (2-furanone skeleton)
+    butenolide_pattern = Chem.MolFromSmarts("[O;R]=[C;R][C;R]=[C;R][C;R]=O")
     
-    # Check for the 2-furanone skeleton
-    if not mol.HasSubstructMatch(furanone_pattern):
+    # Check for the core pattern
+    if not mol.HasSubstructMatch(butenolide_pattern):
         return False, "No 2-furanone skeleton found"
 
     # Verify it's a 5-membered ring
@@ -39,19 +38,19 @@ def is_butenolide(smiles: str):
     if not any(len(ring) == 5 for ring in atom_rings):
         return False, "No 5-membered ring found"
 
-    # Check for the gamma-lactone structure (a lactone with a 5-membered ring)
-    # This pattern looks for a 5-membered ring with an ester group
-    gamma_lactone_pattern = Chem.MolFromSmarts("[O;R1][C;R1]=O")
-    gamma_lactone_matches = mol.GetSubstructMatches(gamma_lactone_pattern)
-    if len(gamma_lactone_matches) < 1:
-        return False, "No gamma-lactone structure found"
+    # Count ester groups (should have at least one)
+    ester_pattern = Chem.MolFromSmarts("[O;R]=[C;R][O;R]")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    if len(ester_matches) < 1:
+        return False, "No ester group found"
 
-    # Ensure the gamma-lactone is part of the 5-membered ring
-    for match in gamma_lactone_matches:
-        if any(atom_idx in ring for ring in atom_rings for atom_idx in match):
-            return True, "Contains 2-furanone skeleton with gamma-lactone structure"
+    # Check for double bond in the ring
+    double_bond_pattern = Chem.MolFromSmarts("[C;R]=[C;R]")
+    double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
+    if len(double_bond_matches) < 1:
+        return False, "No double bond found in the ring"
 
-    return False, "Gamma-lactone structure not part of the 5-membered ring"
+    return True, "Contains 2-furanone skeleton with gamma-lactone structure"
 
 __metadata__ = {
     'chemical_class': {
