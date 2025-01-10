@@ -36,27 +36,43 @@ def is_xanthophyll(smiles: str):
     if o_count == 0:
         return False, "No oxygen atoms found; not an oxygenated carotenoid"
 
-    # Check for carotenoid backbone (conjugated polyene chain)
-    # Approximate by counting longest conjugated chain of double bonds between carbons
-    def get_longest_conj_chain(mol):
-        longest = 0
-        for bond in mol.GetBonds():
-            if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE and bond.GetIsConjugated():
-                visited = set()
-                queue = [(bond, 1)]
-                while queue:
-                    current_bond, length = queue.pop(0)
-                    longest = max(longest, length)
-                    for neighbor_bond in current_bond.GetBeginAtom().GetBonds() + current_bond.GetEndAtom().GetBonds():
-                        if neighbor_bond.GetIdx() != current_bond.GetIdx() and neighbor_bond.GetIsConjugated() and neighbor_bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-                            if neighbor_bond.GetIdx() not in visited:
-                                visited.add(neighbor_bond.GetIdx())
-                                queue.append((neighbor_bond, length + 1))
-        return longest
+    # Check for carotenoid backbone (long conjugated polyene chain)
+    # Create a graph of conjugated double bonds
+    bonds = mol.GetBonds()
+    conj_double_bonds = [bond for bond in bonds if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE and bond.GetIsConjugated()]
+    if not conj_double_bonds:
+        return False, "No conjugated double bonds found; not a carotenoid"
 
-    max_conj_double_bonds = get_longest_conj_chain(mol)
-    if max_conj_double_bonds < 7:
-        return False, f"Insufficient conjugated double bonds ({max_conj_double_bonds}); not a carotenoid"
+    # Build adjacency list of conjugated double bonds
+    bond_graph = {}
+    for bond in conj_double_bonds:
+        idx = bond.GetIdx()
+        begin_atom = bond.GetBeginAtom()
+        end_atom = bond.GetEndAtom()
+        connected_bonds = []
+        for neighbor in begin_atom.GetBonds() + end_atom.GetBonds():
+            if neighbor.GetIdx() == idx:
+                continue
+            if neighbor.GetBondType() == Chem.rdchem.BondType.DOUBLE and neighbor.GetIsConjugated():
+                connected_bonds.append(neighbor.GetIdx())
+        bond_graph[idx] = connected_bonds
+
+    # Find the longest path in the bond graph
+    def dfs(bond_idx, visited):
+        visited.add(bond_idx)
+        lengths = [1]
+        for neighbor_idx in bond_graph[bond_idx]:
+            if neighbor_idx not in visited:
+                lengths.append(1 + dfs(neighbor_idx, visited.copy()))
+        return max(lengths)
+
+    max_conj_chain_length = 0
+    for bond in conj_double_bonds:
+        length = dfs(bond.GetIdx(), set())
+        max_conj_chain_length = max(max_conj_chain_length, length)
+
+    if max_conj_chain_length < 7:
+        return False, f"Insufficient conjugated double bonds ({max_conj_chain_length}); not a carotenoid"
 
     # Check that the molecule has sufficient carbon atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
@@ -67,8 +83,9 @@ def is_xanthophyll(smiles: str):
     has_hydroxyl = mol.HasSubstructMatch(Chem.MolFromSmarts("[OX2H]"))      # Hydroxyl group
     has_keto = mol.HasSubstructMatch(Chem.MolFromSmarts("C=O"))             # Carbonyl group
     has_epoxide = mol.HasSubstructMatch(Chem.MolFromSmarts("[C]1-[O]-[C]1"))  # Epoxide ring
+    has_either = mol.HasSubstructMatch(Chem.MolFromSmarts("C-O-C"))         # Ether group
 
-    if not (has_hydroxyl or has_keto or has_epoxide):
+    if not (has_hydroxyl or has_keto or has_epoxide or has_either):
         return False, "No typical xanthophyll functional groups found"
 
     # Check molecular weight
