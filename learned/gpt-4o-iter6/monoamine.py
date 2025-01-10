@@ -22,8 +22,9 @@ def is_monoamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define more general SMARTS pattern for the amino group connected to an aromatic system via a two-carbon chain
-    two_carbon_amino_pattern = Chem.MolFromSmarts("N-C-C-[c]", mergeHs=True)
+    # Updated SMARTS pattern for an amino group connected to an aromatic system via a two-carbon chain
+    # The pattern: [NX3;H2] for primary amine, [CH2] for methylene, and [c] for aromatic carbon.
+    two_carbon_amino_pattern = Chem.MolFromSmarts("[NX3;H2]-[CH2]-[CH2]-[c]")
 
     # Check for two-carbon chain with amino group connected to aromatic system
     if mol.HasSubstructMatch(two_carbon_amino_pattern):
