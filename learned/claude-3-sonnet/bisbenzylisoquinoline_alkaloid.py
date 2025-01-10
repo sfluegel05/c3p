@@ -24,84 +24,61 @@ def is_bisbenzylisoquinoline_alkaloid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for minimum complexity
-    if mol.GetNumAtoms() < 30:
+    if mol.GetNumAtoms() < 30:  # These are large molecules
         return False, "Molecule too small for bisbenzylisoquinoline alkaloid"
 
-    # More flexible patterns for isoquinoline-like cores
-    # Basic tetrahydroisoquinoline pattern with variations
-    patterns = [
-        # Basic tetrahydroisoquinoline core with flexible bonds
-        "[#6]1~[#6]~[#6]~[#7]~[#6]~[#6]2~[#6]~[#6]~[#6]~[#6]~1~[#6]2",
-        # Pattern with N-methyl variation
-        "[#6]1~[#6]~[#6]~[#7X3]($([CH3]))~[#6]~[#6]2~[#6]~[#6]~[#6]~[#6]~1~[#6]2",
-        # Pattern allowing for different oxidation states
-        "[#6]1~[#6]~[#6]~[#7]~[#6]~[#6]2~[#6]=,:[#6]~[#6]~[#6]~1~[#6]2"
-    ]
+    # Look for isoquinoline cores (can be N-methylated or not)
+    isoquinoline_pattern = Chem.MolFromSmarts("[#6]1[#6][#6][#7][#6][#6]2[#6](=[#6][#6]=1)[#6]=[#6][#6]=2")
+    isoquinoline_matches = mol.GetSubstructMatches(isoquinoline_pattern)
     
-    total_matches = 0
-    for pattern in patterns:
-        patt = Chem.MolFromSmarts(pattern)
-        if patt:
-            matches = len(mol.GetSubstructMatches(patt))
-            total_matches += matches
+    if len(isoquinoline_matches) < 2:
+        return False, "Must contain two isoquinoline cores"
 
-    if total_matches < 2:
-        return False, "Must contain at least two isoquinoline-like cores"
-
-    # Check for ether bridges between aromatic rings (more flexible pattern)
-    ether_patterns = [
-        "c-[#8]-c",  # Basic ether bridge
-        "c-[#8]-[#6]-c",  # Extended ether bridge
-        "c1ccc2OCOc2c1"   # Methylenedioxy bridge
-    ]
+    # Look for ether bridges (-O-)
+    ether_pattern = Chem.MolFromSmarts("[#6]-[#8]-[#6]")
+    ether_matches = mol.GetSubstructMatches(ether_pattern)
     
-    ether_matches = 0
-    for pattern in ether_patterns:
-        patt = Chem.MolFromSmarts(pattern)
-        if patt:
-            ether_matches += len(mol.GetSubstructMatches(patt))
-
-    if ether_matches < 1:
+    if len(ether_matches) < 1:
         return False, "Must contain ether bridges between units"
 
-    # Check for typical substituents with more flexible patterns
-    substituent_patterns = [
-        "c-[#8]-[CH3]",  # Methoxy
-        "c-[#8;H1]",     # Hydroxy
-        "c1ccc2OCOc2c1"  # Methylenedioxy
-    ]
+    # Check for N-methyl groups or NH (typical in these alkaloids)
+    n_methyl_pattern = Chem.MolFromSmarts("[#7]-[CH3]")
+    nh_pattern = Chem.MolFromSmarts("[#7;H1]")
+    n_methyl_matches = mol.GetSubstructMatches(n_methyl_pattern)
+    nh_matches = mol.GetSubstructMatches(nh_pattern)
     
-    total_substituents = 0
-    for pattern in substituent_patterns:
-        patt = Chem.MolFromSmarts(pattern)
-        if patt:
-            total_substituents += len(mol.GetSubstructMatches(patt))
+    if len(n_methyl_matches) + len(nh_matches) < 2:
+        return False, "Must contain two nitrogen centers (N-methyl or NH)"
 
-    if total_substituents < 2:
-        return False, "Insufficient number of characteristic substituents"
+    # Look for benzyl groups attached to isoquinoline
+    benzyl_pattern = Chem.MolFromSmarts("[#6]1[#6][#6][#6][#6][#6]1-[CH2]")
+    benzyl_matches = mol.GetSubstructMatches(benzyl_pattern)
+    
+    if len(benzyl_matches) < 2:
+        return False, "Must contain two benzyl groups"
 
-    # Count nitrogen atoms
-    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
-    if n_count < 2:
-        return False, "Must contain at least two nitrogen atoms"
-
+    # Optional: Check for common substituents (methoxy, hydroxy)
+    methoxy_pattern = Chem.MolFromSmarts("[#6]-[#8]-[CH3]")
+    hydroxy_pattern = Chem.MolFromSmarts("[#6]-[#8;H1]")
+    methoxy_matches = mol.GetSubstructMatches(methoxy_pattern)
+    hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
+    
     # Count aromatic rings
-    ring_info = mol.GetRingInfo()
     aromatic_rings = 0
+    ring_info = mol.GetRingInfo()
     for ring in ring_info.AtomRings():
-        if any(mol.GetAtomWithIdx(i).GetIsAromatic() for i in ring):
+        if all(mol.GetAtomWithIdx(i).GetIsAromatic() for i in ring):
             aromatic_rings += 1
-
-    if aromatic_rings < 4:
+            
+    if aromatic_rings < 4:  # Should have at least 4 aromatic rings
         return False, "Insufficient number of aromatic rings"
 
-    # Check molecular weight range
-    mol_wt = Chem.Descriptors.ExactMolWt(mol)
-    if not (400 <= mol_wt <= 800):
-        return False, "Molecular weight outside typical range"
+    # Additional check for methylenedioxy groups (common in this class)
+    methylenedioxy_pattern = Chem.MolFromSmarts("[#6]1[#8][#6][#8]1")
+    methylenedioxy_matches = mol.GetSubstructMatches(methylenedioxy_pattern)
 
-    # Verify molecule is a single connected system
-    if len(Chem.GetMolFrags(mol)) > 1:
-        return False, "Structure appears to be fragmented"
+    # Verify overall connectivity
+    if not mol.HasSubstructMatch(Chem.MolFromSmarts("[#6]1~[#6]~[#6]~[#7]~[#6]~[#6]~[#6]~[#6]~1")):
+        return False, "Missing key ring connectivity"
 
-    return True, "Contains two benzylisoquinoline units with appropriate bridging and substitution patterns"
+    return True, "Contains two benzylisoquinoline units connected by ether bridges with appropriate substitution patterns"
