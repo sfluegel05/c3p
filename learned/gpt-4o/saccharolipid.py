@@ -21,29 +21,29 @@ def is_saccharolipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for comprehensive carbohydrate moiety pattern
+    # Define patterns for carbohydrate moieties (varied sugar structures)
     carbohydrate_patterns = [
-        Chem.MolFromSmarts('[O;R]C(O)C(O)'),  # Represents carbohydrate rings with multiple hydroxyls
-        Chem.MolFromSmarts('O[C@H]1O[C@H]')   # Cyclic ether structure typical of sugars
+        Chem.MolFromSmarts('[O&R]1[C&R]([O&R])[C&R]([O&R])[C&R]1'),  # Generic sugar ring with hydroxyls
+        Chem.MolFromSmarts('OC[C@H](O)[C@H](O)[C@H](O)'),  # Specific open-chain fragments of sugars
     ]
     carbohydrate_found = any(mol.HasSubstructMatch(p) for p in carbohydrate_patterns)
     
     if not carbohydrate_found:
         return False, "No carbohydrate moiety found"
 
-    # Look for comprehensive lipid moiety pattern
+    # Define patterns for lipid moieties
     lipid_patterns = [
-        Chem.MolFromSmarts('C(=O)OCCCCC'),   # Carboxylic esters with long chains
-        Chem.MolFromSmarts('CCCCCCCCC(=O)')  # Long aliphatic chains ending in carbonyl
+        Chem.MolFromSmarts('C(=O)OCCCCCCCC'),  # Long acyl chains linked via ester
+        Chem.MolFromSmarts('CCCCCCCCCC(=O)')  # Terminal carbonyl in long chains
     ]
     lipid_found = any(mol.HasSubstructMatch(p) for p in lipid_patterns)
     
     if not lipid_found:
         return False, "No lipid moiety found"
-    
-    # Check for established linkage between carbohydrate and lipid
+
+    # Check for established linkage (ether or ester linkage) between carbohydrate and lipid
     linkage_patterns = [
-        Chem.MolFromSmarts('[C@H]([O][C@H](C)C)([O][C][C](=O))')  # Glycosidic linkages to lipid esters
+        Chem.MolFromSmarts('[O][C@H]([C@H](O)C)C(=O)O'),  # Example of glycosidic-ester linkage
     ]
     linkage_found = any(mol.HasSubstructMatch(p) for p in linkage_patterns)
     
