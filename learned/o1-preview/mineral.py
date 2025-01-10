@@ -33,7 +33,7 @@ def is_mineral(smiles: str):
                         'Ag', 'Cd', 'In', 'Sn', 'Sb', 'Te', 'I', 'Cs', 'Ba', 'La',
                         'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho',
                         'Er', 'Tm', 'Yb', 'Lu', 'Hf', 'Ta', 'W', 'Re', 'Os', 'Ir',
-                        'Pt', 'Au', 'Hg', 'Tl', 'Pb', 'Bi', 'Po', 'At', 'Rn', 'Th', 'U'}
+                        'Pt', 'Au', 'Hg', 'Tl', 'Pb', 'Bi', 'Po', 'Th', 'U'}
 
     # Get set of elements in the molecule
     atom_symbols = set(atom.GetSymbol() for atom in mol.GetAtoms())
@@ -41,23 +41,41 @@ def is_mineral(smiles: str):
         if element not in mineral_elements:
             return False, f"Element '{element}' not commonly found in minerals"
 
-    # Remove check for carbon-carbon bonds and rings, as minerals can contain them
+    # Exclude molecules with direct metal-carbon bonds (organometallics)
+    metals_atomic_nums = [3, 4, 11, 12, 13, 19, 20, 21, 22, 23, 24,
+                          25, 26, 27, 28, 29, 30, 31, 37, 38, 39,
+                          40, 41, 42, 43, 44, 45, 46, 47, 48, 49,
+                          55, 56, 57, 58, 59, 60, 61, 62, 63, 64,
+                          65, 66, 67, 68, 69, 70, 71, 72, 73, 74,
+                          75, 76, 77, 78, 79, 80, 81, 82, 83, 84,
+                          90, 92]  # Atomic numbers of metals
+    for bond in mol.GetBonds():
+        begin_atom = bond.GetBeginAtom()
+        end_atom = bond.GetEndAtom()
+        if ((begin_atom.GetAtomicNum() in metals_atomic_nums and end_atom.GetAtomicNum() == 6) or
+            (end_atom.GetAtomicNum() in metals_atomic_nums and begin_atom.GetAtomicNum() == 6)):
+            return False, "Contains metal-carbon bond typical of organometallic compounds"
 
-    # Check for presence of complex organic functional groups
-    # Define SMARTS patterns for functional groups typical of organic molecules
+    # Exclude molecules with aromatic rings
+    aromatic_ring = Chem.MolFromSmarts("a1aaaaa1")
+    if mol.HasSubstructMatch(aromatic_ring):
+        return False, "Contains aromatic ring typical of organic molecules"
+
+    # Exclude molecules with long carbon chains (more than 4 contiguous carbons)
+    long_carbon_chain = Chem.MolFromSmarts("[CH2]([CH2])[CH2][CH2]")
+    if mol.HasSubstructMatch(long_carbon_chain):
+        return False, "Contains long carbon chain typical of organic molecules"
+
+    # Exclude molecules with functional groups typical of complex organic molecules
     organic_functional_groups = [
-        Chem.MolFromSmarts("[#6][#6][#6][#6]"),  # Long carbon chains (4 or more carbons)
-        Chem.MolFromSmarts("[#6]=[#6]"),         # Alkenes
-        Chem.MolFromSmarts("[#6]#[#6]"),         # Alkynes
-        Chem.MolFromSmarts("[#6][OX2H]"),        # Alcohols
-        Chem.MolFromSmarts("[#6][NX3]"),         # Amines
-        Chem.MolFromSmarts("c1ccccc1"),          # Benzene ring
-        Chem.MolFromSmarts("[#6]=O"),            # Carbonyl groups
-        Chem.MolFromSmarts("[#6]C(=O)[#6]"),     # Ketones
-        Chem.MolFromSmarts("[#6]C(=O)O[#6]"),    # Esters
-        Chem.MolFromSmarts("[#6]C(=O)O[H]"),     # Carboxylic acids
-        Chem.MolFromSmarts("[#6][#7][#6]"),      # Secondary amines
-        Chem.MolFromSmarts("[#6][#16][#6]"),     # Thioethers
+        Chem.MolFromSmarts("[#6]=[#6]"),              # Alkenes
+        Chem.MolFromSmarts("[#6]#[#6]"),              # Alkynes
+        Chem.MolFromSmarts("[#6][OX2H]"),             # Alcohols
+        Chem.MolFromSmarts("[#6][NX3;H2,H1;!$([N][O])]"),  # Amines (primary and secondary)
+        Chem.MolFromSmarts("[#6]C(=O)[#6]"),          # Ketones
+        Chem.MolFromSmarts("[#6]C(=O)O[#6]"),         # Esters
+        Chem.MolFromSmarts("[#6][#16][#6]"),          # Thioethers
+        Chem.MolFromSmarts("c"),                      # Any aromatic carbon atom
     ]
 
     for fg in organic_functional_groups:
@@ -86,7 +104,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 1,
+    'attempt': 2,
     'success': True,
     'best': True,
     'error': '',
