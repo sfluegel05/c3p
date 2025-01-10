@@ -8,8 +8,35 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
-def has_non_hydrocarbon_substituents(mol):
-    """Check if molecule has any non-hydrocarbon substituents besides the carboxyl group"""
+def get_main_chain_length(mol, carboxyl_carbon_idx):
+    """
+    Get the length of the longest carbon chain starting from the carboxyl carbon.
+    Uses a breadth-first search to find the longest continuous carbon chain.
+    """
+    visited = set([carboxyl_carbon_idx])
+    current_level = {carboxyl_carbon_idx}
+    chain_length = 1  # Start with 1 to count carboxyl carbon
+    
+    while current_level:
+        next_level = set()
+        for atom_idx in current_level:
+            atom = mol.GetAtomWithIdx(atom_idx)
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:
+                    next_level.add(neighbor.GetIdx())
+                    visited.add(neighbor.GetIdx())
+        if next_level:
+            chain_length += 1
+        current_level = next_level
+    
+    return chain_length
+
+def has_invalid_substituents(mol):
+    """
+    Check if molecule has invalid substituents.
+    Returns True if invalid substituents are found.
+    Allows hydroxy (-OH) and oxo (=O) groups.
+    """
     # Find carboxyl group atoms
     carboxyl_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H1]")
     if not mol.HasSubstructMatch(carboxyl_pattern):
@@ -17,57 +44,43 @@ def has_non_hydrocarbon_substituents(mol):
     
     carboxyl_atoms = set(mol.GetSubstructMatch(carboxyl_pattern))
     
+    # Allowed patterns (besides carboxyl)
+    hydroxy_pattern = Chem.MolFromSmarts("[CX4][OX2H1]")  # -OH
+    oxo_pattern = Chem.MolFromSmarts("[CX3]=[OX1]")  # =O
+    allowed_o_patterns = [hydroxy_pattern, oxo_pattern]
+    
+    # Get all oxygen atoms in allowed patterns
+    allowed_o_atoms = set()
+    for pattern in allowed_o_patterns:
+        if pattern is not None and mol.HasSubstructMatch(pattern):
+            matches = mol.GetSubstructMatches(pattern)
+            for match in matches:
+                for atom_idx in match:
+                    atom = mol.GetAtomWithIdx(atom_idx)
+                    if atom.GetAtomicNum() == 8:
+                        allowed_o_atoms.add(atom_idx)
+    
     # Check each atom
     for atom in mol.GetAtoms():
-        # Skip hydrogens and atoms in carboxyl group
-        if atom.GetAtomicNum() == 1 or atom.GetIdx() in carboxyl_atoms:
+        # Skip hydrogens
+        if atom.GetAtomicNum() == 1:
             continue
-        
-        # Only allow carbon atoms
-        if atom.GetAtomicNum() != 6:
+            
+        # Only allow C, H, O atoms
+        if atom.GetAtomicNum() not in [1, 6, 8]:
             return True
             
-        # Check for any oxygen attachments (except in carboxyl group)
-        for neighbor in atom.GetNeighbors():
-            if neighbor.GetAtomicNum() == 8 and neighbor.GetIdx() not in carboxyl_atoms:
+        # Check oxygen atoms
+        if atom.GetAtomicNum() == 8:
+            if atom.GetIdx() not in carboxyl_atoms and atom.GetIdx() not in allowed_o_atoms:
                 return True
     
     return False
 
-def get_carbon_chain_length(mol):
-    """Get the length of the main carbon chain including the carboxyl carbon"""
-    # Find carboxyl carbon
-    carboxyl_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H1]")
-    if not mol.HasSubstructMatch(carboxyl_pattern):
-        return 0
-    
-    carboxyl_match = mol.GetSubstructMatch(carboxyl_pattern)
-    carboxyl_carbon = carboxyl_match[0]
-    
-    # Get all carbons
-    carbon_atoms = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
-    
-    # Find longest chain from carboxyl carbon
-    max_length = 1  # Start with 1 to count carboxyl carbon
-    visited = set([carboxyl_carbon])
-    
-    def dfs(atom_idx, current_length):
-        nonlocal max_length
-        max_length = max(max_length, current_length)
-        
-        atom = mol.GetAtomWithIdx(atom_idx)
-        for neighbor in atom.GetNeighbors():
-            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:
-                visited.add(neighbor.GetIdx())
-                dfs(neighbor.GetIdx(), current_length + 1)
-                visited.remove(neighbor.GetIdx())
-    
-    dfs(carboxyl_carbon, 1)
-    return max_length
-
 def is_short_chain_fatty_acid(smiles: str):
     """
     Determines if a molecule is a short-chain fatty acid based on its SMILES string.
+    Short-chain fatty acids are aliphatic monocarboxylic acids with chain length < C6.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -83,36 +96,32 @@ def is_short_chain_fatty_acid(smiles: str):
         
     # Check for exactly one carboxylic acid group
     carboxyl_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H1]")
-    carboxyl_matches = len(mol.GetSubstructMatches(carboxyl_pattern))
-    if carboxyl_matches == 0:
+    carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
+    if len(carboxyl_matches) == 0:
         return False, "No carboxylic acid group found"
-    if carboxyl_matches > 1:
+    if len(carboxyl_matches) > 1:
         return False, "Multiple carboxylic acid groups found"
         
     # Check for aromatic rings
     if any(atom.GetIsAromatic() for atom in mol.GetAtoms()):
         return False, "Contains aromatic rings"
         
-    # Check for non C,H,O atoms
-    allowed_atoms = {6, 1, 8}  # C, H, O
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() not in allowed_atoms:
-            return False, f"Contains atoms other than C, H, O"
-            
     # Check for cyclic structures
     ring_info = mol.GetRingInfo()
     if ring_info.NumRings() > 0:
         return False, "Contains cyclic structures"
     
-    # Check for non-hydrocarbon substituents
-    if has_non_hydrocarbon_substituents(mol):
-        return False, "Contains non-hydrocarbon substituents"
+    # Check for invalid substituents
+    if has_invalid_substituents(mol):
+        return False, "Contains non-allowed substituents"
     
     # Get carbon chain length
-    chain_length = get_carbon_chain_length(mol)
+    carboxyl_carbon_idx = carboxyl_matches[0][0]
+    chain_length = get_main_chain_length(mol, carboxyl_carbon_idx)
+    
     if chain_length < 2:
         return False, "Carbon chain too short"
-    if chain_length >= 6:
+    if chain_length > 5:
         return False, f"Carbon chain too long ({chain_length} carbons)"
         
     return True, f"Aliphatic monocarboxylic acid with {chain_length} carbons in longest chain"
