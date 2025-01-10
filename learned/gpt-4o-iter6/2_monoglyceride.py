@@ -6,7 +6,8 @@ from rdkit import Chem
 def is_2_monoglyceride(smiles: str):
     """
     Determines if a molecule is a 2-monoglyceride based on its SMILES string.
-    A 2-monoglyceride is defined by an ester linkage at the second carbon of a glycerol backbone.
+    A 2-monoglyceride is defined by an ester linkage at the second carbon of a glycerol backbone,
+    leaving the first and third carbons with hydroxyl groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -16,31 +17,35 @@ def is_2_monoglyceride(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
+    # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for 2-monoglyceride pattern with ester at the second carbon
-    glycerol_2_mono_pattern = Chem.MolFromSmarts("C(CO)C(OC(=O))CO")
-    
-    # Validate that the ester is specifically linked to the second carbon
+    # Define a SMARTS pattern for a 2-monoglyceride
+    # The pattern looks for the glycerol core with an ester linkage at the second carbon:
+    # [OH]-C([OH])COC(=O)
+    # This pattern checks for the ester at C2 specifically with C1 and C3 having hydroxyls
+    glycerol_2_mono_pattern = Chem.MolFromSmarts("[OH]C(COC(=O))CO")
+
+    # Search for matches
     matches = mol.GetSubstructMatches(glycerol_2_mono_pattern)
+    
     if not matches:
-        return False, "No specific 2-monoglyceride pattern found with esterification at C2"
+        return False, "No 2-monoglyceride pattern found with esterification at C2"
 
-    # Check the matches for the correct configuration
+    # Confirm the ester linkage is correctly situated
     for match in matches:
-        c1_index, c2_index, ester_oxygen_index, c3_index = match
-        
-        # Ensure C1 and C3 have the hydroxyl group ([CX2H] corresponds to a carbon with one hydrogen and -OH)
-        c1_oh_check = mol.GetAtomWithIdx(c1_index).GetDegree() == 3  # Non-terminal carbon, typically connected to -OH 
-        c3_oh_check = mol.GetAtomWithIdx(c3_index).GetDegree() == 3  # Same for C3
+        c1_index, c2_index, ester_oxygen_index = match[:3]
 
-        # Ester oxygen should be bonded to C2
-        ester_oxygen_bonded_to_c2 = any(bond.GetEndAtomIdx() == c2_index for bond in mol.GetAtomWithIdx(ester_oxygen_index).GetBonds())
+        # Check bonding for C1 (should have hydroxyl group)
+        c1 = mol.GetAtomWithIdx(c1_index)
+        if not any(neigh.GetAtomicNum() == 8 for neigh in c1.GetNeighbors()):
+            return False, "C1 does not have a hydroxyl group"
 
-        if c1_oh_check and c3_oh_check and ester_oxygen_bonded_to_c2:
-            return True, "Contains 2-monoglyceride structure with acyl group esterified at the second position"
+        # Check bonding for C2 (should be linked to the ester oxygen)
+        ester_o = mol.GetAtomWithIdx(ester_oxygen_index)
+        if not any(neigh.GetIdx() == c2_index for neigh in ester_o.GetNeighbors()):
+            return False, "Ester linkage not at C2"
 
-    return False, "The structure does not match the specific pattern of a 2-monoglyceride"
+    return True, "Contains the structure of 2-monoglyceride with ester at C2"
