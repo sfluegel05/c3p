@@ -22,13 +22,15 @@ def is_1_2_4_triazines(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # General 1,2,4-triazine pattern allowing substituents
+    # SMARTS patterns for identifying 1,2,4-triazine ring
     triazine_patterns = [
-        Chem.MolFromSmarts("n1cncnc1"),  # Basic 1,2,4-triazine ring with variable substituents
-        Chem.MolFromSmarts("n1c[nH]c[nH]c1")  # another potential protonated variant, etc.
-        # Add more patterns if needed for other structural variants
+        Chem.MolFromSmarts("n1ncncc1"),  # 1,2,4-triazine minimal pattern
+        Chem.MolFromSmarts("c1ncncn1"),  # aromatic representation
+        Chem.MolFromSmarts("n1c[nH]cnc1"),  # potential tautomer/protonated form
+        Chem.MolFromSmarts("n1[nH]cc[nH]c1")  # another possible variant
     ]
 
+    # Check for a match with any of the patterns
     for pattern in triazine_patterns:
         if mol.HasSubstructMatch(pattern):
             return True, "Contains a 1,2,4-triazine ring structure"
