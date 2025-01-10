@@ -20,25 +20,24 @@ def is_acrovestone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Isoflavone core with phenolic ring exemplified with C-C-C-C-C-O pattern
-    # Used a more generic pattern to allow variability and substitution
-    isoflavone_pattern = Chem.MolFromSmarts("C1=CC=C2C(=C1)C(=O)CC3=C2OCC3")
-    if not mol.HasSubstructMatch(isoflavone_pattern):
-        return False, "No isoflavone core structure found"
+    # Generic isoflavone-like ring core pattern
+    isoflavone_core_pattern = Chem.MolFromSmarts("c1ccc2c(c1)C(=O)c3cc(O)ccc3O2")
+    if not mol.HasSubstructMatch(isoflavone_core_pattern):
+        return False, "No broad isoflavone-like core structure found"
 
-    # Look for glycosidic linkage pattern (allow for diverse sugars, assume a simple ring with O-atoms)
-    glycoside_pattern = Chem.MolFromSmarts("[OX2H][C@H]1[C@H]([C@H](O)[C@@H](O)[C@H]1O)")
+    # Flexible glycosidic linkage pattern allowing for diverse sugars
+    glycoside_pattern = Chem.MolFromSmarts("O[C@H]1[C@@H](O)[C@@H](O)[C@H](O)[C@@H](O1)C")
     if not mol.HasSubstructMatch(glycoside_pattern):
-        return False, "No common glycosidic linkage found"
+        return False, "No flexible glycosidic linkage found"
     
-    # Check for the presence of hydroxy groups
-    hydroxy_pattern = Chem.MolFromSmarts("[CX3]=[CX3][OH]")
-    if not mol.HasSubstructMatch(hydroxy_pattern):
-        return False, "No relevant hydroxy substitutions found"
-
-    # Check for the presence of methoxy groups
-    methoxy_pattern = Chem.MolFromSmarts("[CX3]=[CX3][OCH3]")
-    if not mol.HasSubstructMatch(methoxy_pattern):
-        return False, "No relevant methoxy substitutions found"
-
-    return True, "Matches isoflavone core with glycosidic linkage and common polyphenolic substituents"
+    # Check for the presence of hydroxy and/or methoxy groups flexibly
+    substitutions_pattern_hydroxy = Chem.MolFromSmarts("[OX2H]")
+    substitutions_pattern_methoxy = Chem.MolFromSmarts("C[OX2H]")
+    
+    has_hydroxy = mol.HasSubstructMatch(substitutions_pattern_hydroxy)
+    has_methoxy = mol.HasSubstructMatch(substitutions_pattern_methoxy)
+    
+    if not (has_hydroxy or has_methoxy):
+        return False, "No relevant hydroxy or methoxy substitutions found"
+    
+    return True, "Matches acrovestone structure with flexible isoflavone core and polyphenolic substituents"
