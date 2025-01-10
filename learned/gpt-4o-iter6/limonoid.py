@@ -23,25 +23,24 @@ def is_limonoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for the presence of at least one furan ring
+    # Check for the presence of at least one furan ring (highly oxygenated domain)
     furan_pattern = Chem.MolFromSmarts("c1ccoc1")
     if not mol.HasSubstructMatch(furan_pattern):
         return False, "No furan ring identified, which is typical for limonoid"
 
-    # Inspect for a potential limonoid core pattern
-    limonoid_core_pattern = Chem.MolFromSmarts("C1CCC2CCC3C4CCC5=C3C2=C1C=5")  # Simplified core pattern
-    if not mol.HasSubstructMatch(limonoid_core_pattern):
+    # Check for a pattern representing a highly oxygenated triterpenoid structure
+    # Highly simplified suggestion that might not represent exact core, more definition needed
+    core_pattern = Chem.MolFromSmarts("C1CC2(C)CC3C4(CCC5(C(OC)=O)C(O)=C)[C@]123C(=O)OC4=O")  # Example pattern
+    if not mol.HasSubstructMatch(core_pattern):
         return False, "Lacks core structural features typical of limonoids"
 
-    # Evaluate the extent of oxygenation through number of oxygen atoms
+    # Advanced check for oxygenation extent, typically higher in oxygen atoms
     oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if oxygen_count < 5:
-        return False, "Insufficient oxygen atoms for high oxygenation typical of limonoids"
- 
-    # Consider molecular weight as a supportive factor
+    if oxygen_count < 8:  # Based on empirical examples that show extensive oxygenation
+        return False, f"Insufficient oxygen atoms ({oxygen_count}) for high oxygenation typical of limonoids"
+
     mol_wt = Descriptors.MolWt(mol)
-    # While generally realistic, avoid overstrict limitations
     if mol_wt < 400 or mol_wt > 1200:
-        return False, "Molecular weight falls outside typical range but still possible limonoid"
+        return False, "Molecular weight falls outside typical range for limonoids"
 
     return True, "Molecule exhibits characteristics consistent with the limonoid class"
