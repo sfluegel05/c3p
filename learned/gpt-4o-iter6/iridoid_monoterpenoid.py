@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_iridoid_monoterpenoid(smiles: str):
     """
     Determines if a molecule is an iridoid monoterpenoid based on its SMILES string.
-    Incorporates a diverse set of structural motifs typically found in iridoid monoterpenoids.
+    This includes core characteristics such as a cyclopentane ring fused to a six-membered oxygen heterocycle.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,31 +21,25 @@ def is_iridoid_monoterpenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define a more comprehensive set of structural patterns for iridoid monoterpenoids
-    core_patterns = [
-        Chem.MolFromSmarts("C1=CC2OC(O)C=C1OC2"),  # Simplified iridoid-like structure with heterocyclic nature
-        Chem.MolFromSmarts("C1=CO[C@@H]2[C@@H]2C=C[C@H]1"),  # More complex bicyclic structures
-        Chem.MolFromSmarts("O1C=CC2C(O)C1C2"),  # Considering secoridoid breakages
-    ]
+    # Defining core iridoid structure with a cyclopentane ring fused to a six-membered oxygen-containing ring
+    cyclic_pattern = Chem.MolFromSmarts("C1C=CO[C@H]2[C@H]1OC=C2")
     
-    # Include patterns for common functional groups
-    functional_groups = [
-        Chem.MolFromSmarts("[CH]=O"),  # Aldehyde group
-        Chem.MolFromSmarts("[C@H](O)[C]=O"),  # Secondary alcohols with adjacent carbonyls
-        Chem.MolFromSmarts("C(=O)OC"),  # Ester groups
-        Chem.MolFromSmarts("C=C(O)C=O"),  # Enols with carbonyls common in breakdown products
+    # Additional functionalities seen in iridoids
+    functional_patterns = [
+        Chem.MolFromSmarts("C=O"),   # Aldehyde/Carbonyl
+        Chem.MolFromSmarts("O=C(O)"), # Carboxylic acid/ester
+        Chem.MolFromSmarts("O[C@H]"),  # Hydroxyl group
     ]
-    
-    # Check for core patterns
-    for pattern in core_patterns:
-        if mol.HasSubstructMatch(pattern):
-            # Check for additional identification via functional groups
-            for fg in functional_groups:
-                if mol.HasSubstructMatch(fg):
-                    return True, "Contains iridoid monoterpenoid core with indicative functional groups"
-            return True, "Contains iridoid monoterpenoid core"
 
-    return False, "Does not match the typical iridoid monoterpenoid core structure"
+    # Verify the core heterocyclic structure
+    if mol.HasSubstructMatch(cyclic_pattern):
+        # Check for presence of at least one functional group
+        for func_pattern in functional_patterns:
+            if mol.HasSubstructMatch(func_pattern):
+                return True, "Contains cyclopentane and oxygenated ring with functional groups typical of iridoid monoterpenoids"
+        return True, "Contains the core cyclopentane and oxygenated ring structure typical of iridoids"
+    
+    return False, "Does not match the typical iridoid monoterpenoid structure"
 
 # Example usage
 smiles_example = 'OCC1=C(C=O)[C@H](C[C@@H]1OC(=O)\\C=C/c1ccc(O)cc1)'  # Example SMILES of luzonidial B
