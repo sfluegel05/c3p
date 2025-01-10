@@ -2,7 +2,6 @@
 Classifies: CHEBI:16701 nucleoside 5'-phosphate
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_nucleoside_5__phosphate(smiles: str):
     """
@@ -22,26 +21,26 @@ def is_nucleoside_5__phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Ribose and 2'-deoxyribose pattern
-    sugar_pattern = Chem.MolFromSmarts("O[C@@H]1[C@H](O)[C@H](CO)[C@@H](O)O1")
-    deoxyribose_pattern = Chem.MolFromSmarts("O[C@@H]1[C@H](CO)[C@H](O)[C@@H](O)O1")
+    # General pattern for ribose and 2'-deoxyribose with more flexibility
+    ribose_pattern = Chem.MolFromSmarts("OC1COC(CO)C1O")  # Looser match for ribose
+    deoxyribose_pattern = Chem.MolFromSmarts("OC1COC(C)C1O") # Looser match for deoxyribose
 
-    has_sugar = mol.HasSubstructMatch(sugar_pattern) or mol.HasSubstructMatch(deoxyribose_pattern)
+    has_sugar = mol.HasSubstructMatch(ribose_pattern) or mol.HasSubstructMatch(deoxyribose_pattern)
     
     if not has_sugar:
         return False, "No ribose or deoxyribose sugar found"
 
-    # Purine and Pyrimidine base pattern
-    purine_pattern = Chem.MolFromSmarts("c1ncnc2ncnn2c1")
-    pyrimidine_pattern = Chem.MolFromSmarts("c1cncnc1")
+    # More general pattern for Purine and Pyrimidine base to cover variations
+    purine_pattern = Chem.MolFromSmarts("n1cnc2nc[nH]c2n1")  # A typical purine pattern
+    pyrimidine_pattern = Chem.MolFromSmarts("n1c[nH]cnc1")  # A typical pyrimidine pattern
 
     has_base = mol.HasSubstructMatch(purine_pattern) or mol.HasSubstructMatch(pyrimidine_pattern)
     
     if not has_base:
         return False, "No purine or pyrimidine base found"
 
-    # Correct phosphate group at the 5' position
-    phosphate_pattern = Chem.MolFromSmarts("COP(=O)(O)O")
+    # Phosphate group patterns with flexibility in position
+    phosphate_pattern = Chem.MolFromSmarts("COP(O)(=O)O")
     phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
     
     if not phosphate_matches:
