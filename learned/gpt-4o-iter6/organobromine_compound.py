@@ -8,7 +8,7 @@ from rdkit import Chem
 
 def is_organobromine_compound(smiles: str):
     """
-    Determines if a molecule is an organobromine based on its SMILES string.
+    Determines if a molecule is an organobromine compound based on its SMILES string.
     An organobromine compound contains at least one carbon-bromine bond.
 
     Args:
@@ -24,15 +24,17 @@ def is_organobromine_compound(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Enhanced SMARTS patterns for carbon-bromine bonds
-    # "[C]-[Br]" for aliphatic carbon-bromine bonds
-    # "[c]-[Br]" for aromatic carbon-bromine bonds
-    smarts_patterns = ["[C]-[Br]", "[c]-[Br]"]
+    # Check for presence of bromine
+    contains_bromine = any(atom.GetAtomicNum() == 35 for atom in mol.GetAtoms())
     
-    # Check each pattern for a match
-    for pattern in smarts_patterns:
-        cb_bond_pattern = Chem.MolFromSmarts(pattern)
-        if mol.HasSubstructMatch(cb_bond_pattern):
-            return True, f"Contains at least one carbon-bromine bond matching pattern: {pattern}"
+    if not contains_bromine:
+        return False, "No bromine atom found"
+    
+    # Enhanced querying for carbon-bromine bonds
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 35:  # Look for Br
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 6:  # Check if it's bonded to a carbon
+                    return True, "Contains a carbon-bromine bond"
     
     return False, "No carbon-bromine bond found"
