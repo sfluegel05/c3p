@@ -10,7 +10,8 @@ from rdkit.Chem import AllChem
 def is_beta_D_galactoside(smiles: str):
     """
     Determines if a molecule is a beta-D-galactoside based on its SMILES string.
-    A beta-D-galactoside is a galactose ring in the beta-configuration, where the hydroxyl group at the anomeric carbon (C1) is in the axial position.
+    A beta-D-galactoside is a galactose ring in the beta-configuration, where the hydroxyl group at the anomeric carbon (C1) is in the axial position,
+    and the anomeric carbon is part of a glycosidic bond (connected to another group via an oxygen atom).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,14 +27,15 @@ def is_beta_D_galactoside(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define the beta-D-galactoside pattern
-    # The pattern matches a galactose ring with the beta-configuration at the anomeric center
-    beta_D_galactoside_pattern = Chem.MolFromSmarts("[C@@H]1([C@@H]([C@H]([C@H]([C@H](O1)CO)O)O)O)")
-    
+    # The pattern matches a galactose ring with the beta-configuration at the anomeric center (C1)
+    # and ensures that the anomeric carbon is part of a glycosidic bond (connected to another group via an oxygen atom).
+    beta_D_galactoside_pattern = Chem.MolFromSmarts("[C@@H]1([C@@H]([C@H]([C@H]([C@H](O1)CO)O)O)O)[OX2]")
+
     # Check if the molecule contains the beta-D-galactoside pattern
     if mol.HasSubstructMatch(beta_D_galactoside_pattern):
-        return True, "Contains a galactose ring in the beta-configuration"
+        return True, "Contains a galactose ring in the beta-configuration with a glycosidic bond at the anomeric carbon"
     else:
-        return False, "No galactose ring in the beta-configuration found"
+        return False, "No galactose ring in the beta-configuration with a glycosidic bond found"
 
 # Example usage:
 # smiles = "CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O"  # Methyl beta-D-galactoside
