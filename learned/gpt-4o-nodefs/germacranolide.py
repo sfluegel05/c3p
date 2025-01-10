@@ -7,7 +7,7 @@ def is_germacranolide(smiles: str):
     """
     Determines if a molecule is a germacranolide based on its SMILES string.
     Germacranolides are a subclass of sesquiterpene lactones typically having
-    a cyclodecadiene core with a lactone group attached.
+    a multi-ring system including a cyclodecadiene and a lactone group.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,25 +21,29 @@ def is_germacranolide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Broadening lactone pattern check
-    # Check for 5- and 6-membered lactone rings with possible saturation/unsaturation and common variations
+    # Check for a 5- or 6-membered lactone ring with considering diverse linkages
     lactone_patterns = [
-        Chem.MolFromSmarts("[C;R][O][C;R](=O)"),  # General lactone pattern
-        Chem.MolFromSmarts("O[C;R]=C"),           # Alternative oxygen and carbon positions
+        Chem.MolFromSmarts("O=C1COC=C1"),  # 5-membered lactone with unsaturation
+        Chem.MolFromSmarts("O=C1CCCCO1"),  # 6-membered lactone without unsaturation
+        Chem.MolFromSmarts("O=C1COCC1"),   # 5-membered lactone variation
+        Chem.MolFromSmarts("O1CC=COC1=O")  # 6-membered lactone with double bonds
     ]
     
     if not any(mol.HasSubstructMatch(pattern) for pattern in lactone_patterns):
         return False, "Lactone group not found"
     
-    # Check for decalin (fused cyclohexane) systems as germacranolides typically have complex ring structures
-    decalin_pattern = Chem.MolFromSmarts("C1CC2CCCC(C1)C2")  # Generalized large ring system, often found in germacranolides
-    
-    if not mol.HasSubstructMatch(decalin_pattern):
-        return False, "No decalin or cyclodecadiene structure found"
-    
-    # Check for multiple double bonds in ring systems
+    # Ensure some form of a decane or fused multi-ring system is present
+    ring_info = mol.GetRingInfo()
+    has_large_ring = any(len(ring) >= 8 for ring in ring_info.AtomRings())  # Modified threshold to be more inclusive
+    if not has_large_ring:
+        return False, "No large ring system characteristic of germacranolides found"
+
+    # Check for multiple double bonds present indicating poly-unsaturation
     num_double_bonds = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE)
-    if num_double_bonds < 3:  # Increasing threshold for more specificity
-        return False, "Insufficient number of double bonds for germacranolides"
+    if num_double_bonds < 2:
+        return False, "Insufficient double bonds, typical germacranolides are polyunsaturated"
     
-    return True, "Contains a characteristic lactone group and complex ring system of germacranolides"
+    # Consider stereochemistry as it might be crucial in classification
+    # However, it's typically complicated without visual assessment, so this step is non-mandatory unless specific needs arise
+
+    return True, "Matches typical structure of a germacranolide"
