@@ -19,19 +19,21 @@ def is_beta_D_galactoside(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return (False, "Invalid SMILES string")
 
-    # Beta-D-galactopyranose pattern - Updated
-    # Matching the galactopyranose ring with beta-OH on anomeric carbon
+    # Beta-D-Galactoside structural pattern focusing on the configuration and glycosidic linkage
     beta_d_galactoside_pattern = Chem.MolFromSmarts(
-        "[C@H]1(O)[C@@H](O)[C@@H](O)[C@H](O)[C@H](CO)O1"  # Simplified pattern for beta-D-galactopyranosides
+        "[C@@H]1([O,H])[C@H]([O,H])[C@@H]([O,H])[C@H]([O,H])[C@H](CO)O1"  # Focus on the Beta configuration and C-O-C linkage
     )
 
+    # An additional pattern for ensuring an O-linked sugar, to verify external linkage
+    o_linked_glycoside_pattern = Chem.MolFromSmarts("[C@@H]1([O])O[*]")
+
     # Check if the molecule matches the beta-D-galactoside pattern
-    if mol.HasSubstructMatch(beta_d_galactoside_pattern):
-        return True, "Contains beta-D-galactoside pattern"
+    if mol.HasSubstructMatch(beta_d_galactoside_pattern) and mol.HasSubstructMatch(o_linked_glycoside_pattern):
+        return (True, "Contains beta-D-galactoside pattern and O-linkage")
     else:
-        return False, "No beta-D-galactoside pattern found"
+        return (False, "No beta-D-galactoside pattern with appropriate linkage found")
 
 # Example usage
 smiles_example = "OC[C@H]1O[C@@H](Oc2cc(O)c3c(c2)oc(-c2ccc(O)cc2)c(O)c3=O)[C@H](O)[C@@H](O)[C@H]1O"
