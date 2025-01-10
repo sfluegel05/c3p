@@ -2,35 +2,36 @@
 Classifies: CHEBI:22798 beta-D-glucoside
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors, AllChem
+from rdkit.Chem import AllChem
 
 def is_beta_D_glucoside(smiles: str):
     """
     Determines if a molecule is a beta-D-glucoside based on its SMILES string.
-    A beta-D-glucoside features a D-glucose unit with the anomeric carbon in the beta configuration.
+    A beta-D-glucoside is characterized by a beta-configuration at the anomeric carbon of a D-glucose unit.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a beta-D-glucoside, False otherwise
+        bool: True if the molecule contains a beta-D-glucoside, False otherwise
         str: Reason for classification
     """
     
-    # Parse SMILES
+    # Parse the SMILES string into an RDKit Mol object
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # SMARTS pattern for beta-D-glucopyranose
-    beta_D_glucose_pattern = Chem.MolFromSmarts("O[C@@H]1[C@@H]([C@H]([C@@H]([C@H]([C@H]1O)CO)O)O)O")
-    
-    if not mol.HasSubstructMatch(beta_D_glucose_pattern):
+
+    # SMARTS pattern to detect a beta-D-glucopyranoside
+    beta_D_glucoside_pattern = Chem.MolFromSmarts("O[C@H]1[C@@H](O)[C@H](O)[C@@H](O)[C@H](O)[C@H]1")
+
+    # Check if the molecule has at least one beta-D-glucopyranoside unit
+    if not mol.HasSubstructMatch(beta_D_glucoside_pattern):
         return False, "No beta-D-glucose unit with the correct configuration found"
-    
-    # Check for glycosidic bond (O-linked to another part of the molecule)
-    # Assuming the sugar oxygen connects to an anomeric carbon
-    if not mol.HasSubstructMatch(Chem.MolFromSmarts("O[C@H]1[C@H](O)C[C@@H](O)C[C@@H]1O")):
-        return False, "No glycosidic bond found connecting the beta-D-glucose"
-    
-    return True, "Contains beta-D-glucose with a glycosidic linkage"
+
+    # Check for the presence of a glycosidic bond involving the anomeric oxygen (assuming it is linked to another moiety)
+    glycosidic_bond_pattern = Chem.MolFromSmarts("O[C@@H]1[C@@H](O)[C@H](O)[C@@H](O)[C@H](O)[C@H]1[*]")
+    if not mol.HasSubstructMatch(glycosidic_bond_pattern):
+        return False, "No glycosidic bond found involving the beta-D-glucose unit"
+
+    return True, "Contains beta-D-glucoside with a glycosidic linkage"
