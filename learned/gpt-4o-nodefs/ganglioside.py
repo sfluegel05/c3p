@@ -2,12 +2,13 @@
 Classifies: CHEBI:28892 ganglioside
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_ganglioside(smiles: str):
     """
     Determines if a molecule is a ganglioside based on its SMILES string.
     Gangliosides are glycosphingolipids that contain one or more sialic acid residues
-    linked to the sugar chain, and a ceramide backbone.
+    linked on the sugar chain.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,24 +21,22 @@ def is_ganglioside(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return None, "Invalid SMILES string"
 
-    # Refined pattern for ceramide backbone with sphingosine structure
-    ceramide_pattern = Chem.MolFromSmarts("C(=O)NC(CO)C\C=C\CCCCC")
+    # Look for ceramide backbone pattern
+    ceramide_pattern = Chem.MolFromSmarts("NC([C@@H](O)CO)C(=O)")
     if not mol.HasSubstructMatch(ceramide_pattern):
-        return False, "No valid ceramide backbone found"
+        return False, "No ceramide backbone found"
 
-    # Enhanced pattern for sialic acid residues substructure
-    sialic_acid_pattern = Chem.MolFromSmarts("C[C@H](O)C(=O)OC")  # Accommodates variations in sialic acids
+    # Look for sialic acid residue (NeuAc)
+    sialic_acid_pattern = Chem.MolFromSmarts("C[C@H](O1)C(=O)O[C@@H]([C@@H](CO)O)[C@@H]1NC=O")
     if not mol.HasSubstructMatch(sialic_acid_pattern):
-        return False, "No valid sialic acid residue found"
-
-    # Sufficient variety and linkage of sugar residues (flexible glycans)
-    sugar_pattern_1 = Chem.MolFromSmarts("COC[C@H]1O[C@H](COP(O)(=O)O)[C@H](O)[C@@H]1O")
-    sugar_pattern_2 = Chem.MolFromSmarts("C1OC(O)C(O)C(O)C1")  # Generic pyranose form
-    sugar_matches_1 = mol.GetSubstructMatches(sugar_pattern_1)
-    sugar_matches_2 = mol.GetSubstructMatches(sugar_pattern_2)
-    if len(sugar_matches_1) + len(sugar_matches_2) < 3:
+        return False, "No sialic acid residue found"
+        
+    # Look for glycan residues: glucose and galactose
+    glycan_pattern = Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@H](CO)O[C@H]1O[C@H]1[C@H](O)[C@H](C=O)O[C@@H]1O")
+    glycan_matches = mol.GetSubstructMatches(glycan_pattern)
+    if len(glycan_matches) < 1:
         return False, "Missing necessary glycan residues"
-
-    return True, "Contains ceramide backbone with sialic acid and necessary glycan residues"
+        
+    return True, "Contains ceramide backbone with sialic acid and glycan residues"
