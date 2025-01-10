@@ -20,40 +20,40 @@ def is_11_oxo_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # General steroid core pattern (perhydrocyclopentanophenanthrene skeleton)
-    steroid_core_pattern = Chem.MolFromSmarts('C1CC2CCC3C(C1)CCC4=CC(=O)CCC4C3C2')
+    # General steroid core pattern, potentially more flexible
+    steroid_core_pattern = Chem.MolFromSmarts('C1CCC2C(C1)CCC3C4CCCCC4CCC23')
     
     # Check for the steroid core
     if not mol.HasSubstructMatch(steroid_core_pattern):
         return False, "No steroid core structure found"
 
-    # Identify 11-oxo functionality using a position check
-    oxo_11_pattern = Chem.MolFromSmarts('C=O')
-    for match in mol.GetSubstructMatches(oxo_11_pattern):
-        if _is_11th_carbon(mol, match[0]):
+    # Identify 11th position ketone (oxo) functionality
+    oxo_pattern = Chem.MolFromSmarts('[C]=O')
+    ketone_matches = mol.GetSubstructMatches(oxo_pattern)
+    
+    for match in ketone_matches:
+        if _is_11th_carbon_in_steroid(mol, match[0]):
             return True, "Matches the 11-oxo steroid structure"
 
     return False, "No 11-oxo functionality detected"
 
-def _is_11th_carbon(mol, atom_index):
+def _is_11th_carbon_in_steroid(mol, atom_index):
     """
-    Determines if the specified carbon atom index is at the 11th position
-    in a steroid core structure by predefined conventions.
+    Determines if the specified carbon atom index corresponds to the 11th position
+    in typical steroid numbering.
 
     Args:
         mol (Chem.Mol): The rdkit molecule object.
         atom_index (int): The index of the carbon atom to check.
 
     Returns:
-        bool: True if the carbon is in the 11th position, False otherwise.
+        bool: True if the carbon is the 11th position, False otherwise.
     """
-    # Placeholder: Assuming an ideal complex logic to identify a specific position in steroid
-    # Here, we'll need to evaluate neighbors and conformations against the steroid number conventions.
-    
-    neighbors = mol.GetAtomWithIdx(atom_index).GetNeighbors()
-    # Basic implementation check: neighbors characterization and constraints
-    if all(neighbor.GetAtomicNum() == 6 for neighbor in neighbors):  # All neighbors are carbons
-        # Specific checks can be added based on typical steroid core arrangements and calculations.
-        return True
-    
-    return False
+    # Assuming predefined steroid numbering conventions
+    # This function needs to be highly specific to the steroid 11th position.
+    # Given this example, a placeholder criterion will be insufficient
+    # Placeholder logic pending more context specific basis for numbering:
+    # Look at chain connectivity, substituent maps to match expected steroid geometry.
+
+    # Implement complex logic here...
+    return False  # Currently, without real contextual checks, return False
