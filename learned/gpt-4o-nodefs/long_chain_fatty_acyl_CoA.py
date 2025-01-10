@@ -2,7 +2,7 @@
 Classifies: CHEBI:33184 long-chain fatty acyl-CoA
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import AllChem
 
 def is_long_chain_fatty_acyl_CoA(smiles: str):
     """
@@ -20,31 +20,29 @@ def is_long_chain_fatty_acyl_CoA(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Create a pattern for Coenzyme A-like structure
-    coa_pattern = Chem.MolFromSmarts("NC(=O)CCNC(=O)[C@H](O)C(C)(C)C")
+    
+    # Define the Coenzymes A structure pattern
+    coa_pattern_smarts = "NC(=O)CCNC(=O)[C@H](O)C(C)COP(=O)(O)OP(=O)(O)O"
+    coa_pattern = Chem.MolFromSmarts(coa_pattern_smarts)
     if not mol.HasSubstructMatch(coa_pattern):
-        return False, "Missing Coenzyme A-like structure"
-
-    # Check for the presence of a thiol ester linkage and COA pattern
-    thiol_ester_coa_pattern = Chem.MolFromSmarts("C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)")
-    if not mol.HasSubstructMatch(thiol_ester_coa_pattern):
-        return False, "Missing proper thiol ester and CoA linkage"
-
-    # Check for the presence of a long-chain (12-24 carbons) fatty acid-like alkyl chain
-    long_chain_pattern = Chem.MolFromSmarts("C(C)(C)COP([O-])([O-])=O")
+        return False, "Missing Coenzyme A structure"
+        
+    # Define the thiol ester connectivity pattern
+    thiol_ester_pattern = Chem.MolFromSmarts("C(=O)SCCNC(=O)")
+    if not mol.HasSubstructMatch(thiol_ester_pattern):
+        return False, "Missing proper thiol ester linkage"
+    
+    # Define a long hydrocarbon chain pattern, allowing for flexibility in length (16+ carbons)
+    long_chain_pattern_smarts = "C(=O)C{14,}CCC"
+    long_chain_pattern = Chem.MolFromSmarts(long_chain_pattern_smarts)
     if not mol.HasSubstructMatch(long_chain_pattern):
-        return False, "No long hydrocarbon chain found"
+        return False, "No sufficiently long hydrocarbon chain found"
 
-    # Check number of double bonds in the chain
+    # Check for unsaturations (double bonds)
+    # This should be more flexible to allow the range of possibilities seen in sample SMILES.
     double_bond_pattern = Chem.MolFromSmarts("C=C")
     double_bond_count = len(mol.GetSubstructMatches(double_bond_pattern))
-    if double_bond_count > 5:
+    if double_bond_count > 6:
         return False, "Too many double bonds for typical long-chain fatty acyl-CoA"
-
-    # Count total number of carbons, which should be typical of long fatty acyl groups
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if not 16 <= c_count <= 24:
-        return False, "Carbon count not typical for long-chain fatty acyl group"
-
+    
     return True, "Matches long-chain fatty acyl-CoA features"
