@@ -2,7 +2,6 @@
 Classifies: CHEBI:73702 wax
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_wax(smiles: str):
     """
@@ -27,21 +26,28 @@ def is_wax(smiles: str):
     if not mol.HasSubstructMatch(ester_pattern):
         return False, "No ester group found"
 
-    # Identify carbon chain lengths
-    carbon_chains = []
+    # Use a search algorithm to determine the longest continuous carbon chain
+    def get_longest_chain_length(atom, visited):
+        # Depth-first search to find the longest path
+        visited.add(atom.GetIdx())
+        chain_lengths = [
+            get_longest_chain_length(neighbor, visited.copy()) + 1
+            for neighbor in atom.GetNeighbors()
+            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited
+        ]
+        return max(chain_lengths, default=0)
+
+    max_chain_length = 0
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() == 6:
-            chain_length = 0
-            for nbr in atom.GetNeighbors():
-                if nbr.GetAtomicNum() == 6:
-                    chain_length += 1
-            carbon_chains.append(chain_length)
-    
-    # Check if there are sufficiently long carbon chains
-    long_chain_threshold = 12  # Minimum chain length for wax, could adjust as needed
-    long_chains = [length for length in carbon_chains if length >= long_chain_threshold]
-    if len(long_chains) < 2:
-        return False, f"Insufficient long carbon chains, found {len(long_chains)} long chains"
+            chain_length = get_longest_chain_length(atom, set())
+            if chain_length > max_chain_length:
+                max_chain_length = chain_length
+
+    # Wax should have at least two long carbon chains
+    long_chain_threshold = 12  # This could be adjusted as needed
+    if max_chain_length < long_chain_threshold:
+        return False, f"Insufficient long carbon chains, longest found is {max_chain_length}"
 
     # Check for exactly one ester linkage
     ester_matches = mol.GetSubstructMatches(ester_pattern)
