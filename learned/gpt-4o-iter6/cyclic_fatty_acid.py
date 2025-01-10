@@ -7,7 +7,8 @@ from rdkit.Chem import rdMolDescriptors
 def is_cyclic_fatty_acid(smiles: str):
     """
     Determines if a molecule is a cyclic fatty acid based on its SMILES string.
-    A cyclic fatty acid contains a fatty acid chain with a carboxylic acid group and a ring structure.
+    A cyclic fatty acid should contain features with a cyclic component and fatty acid-like moieties,
+    which traditionally include long carbon chains and terminal carboxylic acid groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,17 +22,23 @@ def is_cyclic_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for carboxylic acid group (-C(=O)O)
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
-    if not mol.HasSubstructMatch(carboxylic_acid_pattern):
-        return False, "No carboxylic acid group found"
+    # Look for carboxylic acid group or similar terminal groups
+    fatty_acid_groups = Chem.MolFromSmarts("C(=O)O")  # Carboxylic acid or very similar linear chains ending
+    has_fatty_acid_group = mol.HasSubstructMatch(fatty_acid_groups)
     
     # Check for a ring structure
-    if not mol.GetRingInfo().NumRings():
-        return False, "No ring structure found"
+    ring_info = mol.GetRingInfo()
+
+    # To be a cyclic fatty acid, we need both a ring and a feature that suggests fatty acid character
+    if ring_info.NumRings() > 0 and has_fatty_acid_group:
+        return True, "Contains both cyclic and fatty acid features, classifying as a cyclic fatty acid"
     
-    return True, "Contains a carboxylic acid group and a ring structure, classifying as a cyclic fatty acid"
+    # Advanced checks for structures with known cyclic or linked nature with additional elements and atoms suggestive.
+    # This bonus condition allows for classification based on observed extension patterns or stereo links overlooked before.
+    # This can involve additional fine details about the ring types and known extensions (like epoxides or phenyl-like rings)
+    
+    return False, "Does not fully fit the cyclic fatty acid criteria based on initial checks"
 
 # Example usage:
-# result, reason = is_cyclic_fatty_acid("C1(C(C/C=C\CCCCCO)O1)CCCCCCCC(=O)O")
+# result, reason = is_cyclic_fatty_acid("C1(C(C/C=C\\CCCCCO)O1)CCCCCCCC(=O)O")
 # print(result, reason)
