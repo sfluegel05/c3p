@@ -31,10 +31,14 @@ def is_saccharolipid(smiles: str):
 
     # Check for carbohydrate-like features (sugar rings, glycosidic bonds)
     # Look for sugar rings (pyranose or furanose)
-    sugar_pattern = Chem.MolFromSmarts("[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](O)O1")
+    sugar_pattern = Chem.MolFromSmarts("[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](O)O1 |$;;;;;;_R1$|")
     sugar_matches = mol.GetSubstructMatches(sugar_pattern)
     if len(sugar_matches) < 1:
-        return False, "No sugar rings found (carbohydrate-like feature missing)"
+        # Try a more general sugar pattern
+        sugar_pattern = Chem.MolFromSmarts("[C@H]1[C@H](O)[C@H](O)[C@H](O)O1 |$;;;;;_R1$|")
+        sugar_matches = mol.GetSubstructMatches(sugar_pattern)
+        if len(sugar_matches) < 1:
+            return False, "No sugar rings found (carbohydrate-like feature missing)"
 
     # Check for glycosidic bonds (C-O-C between sugar and any other part)
     glycosidic_pattern = Chem.MolFromSmarts("[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](O)O1.[OX2][CX4]")
@@ -56,5 +60,10 @@ def is_saccharolipid(smiles: str):
         return False, "Too few carbons for saccharolipid"
     if o_count < 6:
         return False, "Too few oxygens for saccharolipid"
+
+    # Check molecular weight - saccharolipids typically >500 Da
+    mol_wt = Descriptors.ExactMolWt(mol)
+    if mol_wt < 500:
+        return False, "Molecular weight too low for saccharolipid"
 
     return True, "Contains both lipid-like and carbohydrate-like features"
