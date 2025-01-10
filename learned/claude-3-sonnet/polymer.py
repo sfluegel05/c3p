@@ -23,59 +23,87 @@ def is_polymer(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+    # Parse SMILES and check for multiple components
+    components = smiles.split('.')
+    if len(components) == 1:
+        mol = Chem.MolFromSmiles(smiles)
+        if mol is None:
+            return False, "Invalid SMILES string"
+        mols = [mol]
+    else:
+        mols = [Chem.MolFromSmiles(c) for c in components]
+        if any(m is None for m in mols):
+            return False, "Invalid SMILES string"
 
-    # Check if molecule contains multiple components (separated by dots)
-    components = smiles.count('.')
+    # Analyze molecular properties of components
+    component_props = []
+    total_mw = 0
+    for mol in mols:
+        props = {
+            'mw': Descriptors.ExactMolWt(mol),
+            'atoms': mol.GetNumAtoms(),
+            'rings': rdMolDescriptors.CalcNumRings(mol),
+            'rot_bonds': rdMolDescriptors.CalcNumRotatableBonds(mol),
+            'charge': Chem.GetFormalCharge(mol)
+        }
+        component_props.append(props)
+        total_mw += props['mw']
+
+    # Check for polymer characteristics
+    num_components = len(mols)
     
-    # Calculate molecular descriptors
-    mol_wt = Descriptors.ExactMolWt(mol)
-    num_atoms = mol.GetNumAtoms()
-    num_rings = rdMolDescriptors.CalcNumRings(mol)
-    num_rotatable_bonds = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    # Look for common polymer patterns
+    polymer_patterns = [
+        ('[*]-[*]-[*]-[*]-[*]-[*]', 'linear chain'),
+        ('C(=O)O', 'carboxylic acid'),
+        ('C(=O)N', 'amide'),
+        ('COC', 'ether linkage'),
+        ('CC(C)(C)C', 'branched alkyl')
+    ]
     
-    # Look for repeating units using common patterns
-    repeating_carbon_chain = Chem.MolFromSmarts("[CH2][CH2][CH2][CH2]")
-    repeating_matches = len(mol.GetSubstructMatches(repeating_carbon_chain))
-    
-    # Check for presence of metal ions
-    metal_pattern = Chem.MolFromSmarts("[Li,Na,K,Rb,Cs,Be,Mg,Ca,Sr,Ba,Sc,Ti,V,Cr,Mn,Fe,Co,Ni,Cu,Zn,Al,Ga,In,Sn,Pb,Bi]")
-    has_metals = mol.HasSubstructMatch(metal_pattern) if metal_pattern else False
-    
-    # Define criteria for polymer classification
-    is_large = mol_wt > 500
-    has_many_atoms = num_atoms > 30
-    has_long_chains = num_rotatable_bonds > 10
-    has_repeating_units = repeating_matches >= 2
-    has_multiple_components = components >= 1
-    has_multiple_rings = num_rings >= 2
+    pattern_counts = {}
+    for pattern, name in polymer_patterns:
+        patt = Chem.MolFromSmarts(pattern)
+        if patt:
+            pattern_counts[name] = sum(len(mol.GetSubstructMatches(patt)) for mol in mols)
 
     # Classification logic
-    if is_large and (has_repeating_units or has_long_chains):
-        return True, "Contains repeating units or long chains with high molecular weight"
+    if num_components >= 2:
+        # Check for salt forms and charged species
+        charges = [p['charge'] for p in component_props]
+        if any(c != 0 for c in charges):
+            large_components = sum(1 for p in component_props if p['mw'] > 300)
+            if large_components >= 1:
+                return True, "Multi-component ionic polymer system"
         
-    if has_multiple_components and has_many_atoms:
-        return True, "Multiple component mixture with large molecular size"
+        # Check for repeating structural motifs
+        if any(count >= 3 for count in pattern_counts.values()):
+            return True, "Contains repeating polymer subunits"
         
-    if has_metals and has_multiple_components:
-        return True, "Metal-containing polymer complex"
-        
-    if has_repeating_units and has_multiple_rings and has_long_chains:
-        return True, "Complex structure with repeating units and multiple rings"
-        
-    if mol_wt > 1000 and (has_long_chains or has_multiple_rings):
-        return True, "Very large molecule with complex structure"
-        
-    if components >= 2 and has_many_atoms and (has_multiple_rings or has_long_chains):
-        return True, "Multi-component mixture with complex molecular structure"
+        # Check for size diversity in components
+        mw_std = sum((p['mw'] - total_mw/num_components)**2 for p in component_props)**0.5
+        if mw_std > 100 and num_components >= 3:
+            return True, "Mixture of diverse macromolecular components"
 
-    # Count carbon chain length
-    carbon_chain = Chem.MolFromSmarts("C~C~C~C~C~C")
-    if carbon_chain and len(mol.GetSubstructMatches(carbon_chain)) > 2:
-        return True, "Contains multiple long carbon chains"
+    # Single component analysis
+    for mol, props in zip(mols, component_props):
+        # Check for very large molecules with repeating units
+        if props['mw'] > 800 and props['rot_bonds'] > 15:
+            # Look for repeating units
+            for patt_name, count in pattern_counts.items():
+                if count >= 4:
+                    return True, f"Large molecule with repeating {patt_name} units"
+        
+        # Check for branched structures
+        branch_points = len(mol.GetSubstructMatches(Chem.MolFromSmarts('[*]([*])([*])[*]')))
+        if branch_points >= 3 and props['mw'] > 500:
+            return True, "Highly branched macromolecular structure"
 
-    # If none of the above criteria are met, it's probably not a polymer
+    # Special cases for known polymer types
+    if any('mer' in comp.lower() for comp in smiles.split('.')):
+        return True, "Contains explicit polymer notation"
+        
+    if num_components >= 3 and all(p['mw'] > 200 for p in component_props):
+        return True, "Complex mixture of large molecules"
+
     return False, "Does not meet polymer characteristics"
