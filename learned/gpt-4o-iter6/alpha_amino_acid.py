@@ -22,30 +22,26 @@ def is_alpha_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for carboxy group pattern (C(=O)O)
-    carboxyl_pattern = Chem.MolFromSmarts("C(=O)O")
-    if not mol.HasSubstructMatch(carboxyl_pattern):
+    # Look for carboxyl group pattern (C(=O)O)
+    carboxyl_pattern = Chem.MolFromSmarts("C(=O)[O-]")  # or protonated form if applicable, adjust accordingly
+    carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
+    if not carboxyl_matches:
         return False, "No carboxyl group found"
 
-    # Look for alpha-amino group pattern (N attached to the carbon next to carboxyl group)
-    # Define the patterns for fragments:
-    # C[N] - an amino group must be attached directly to a carbon
-    c_n_pattern = Chem.MolFromSmarts("[C][NX3][H]") # Nitrogen with three connections and at least one hydrogen (NH2)
-    
-    # The amino group must be alpha to the carboxy group
-    for carboxyl_match in mol.GetSubstructMatches(carboxyl_pattern):      
-        carboxyl_c = carboxyl_match[0] # C in 'C(=O)O'
+    # Look for an alpha-amino group (nitrogen bonded to alpha-carbon)
+    amino_group_pattern = Chem.MolFromSmarts("[C;!R][NX3;H2,H1,H0;!$(N=*)]")  # Nitrogen with at least one hydrogen 
+    amino_matches = mol.GetSubstructMatches(amino_group_pattern)
 
-        # Get neighbors of this C, find the alpha carbon
-        neighbors = mol.GetAtomWithIdx(carboxyl_c).GetNeighbors()
-        for neighbor in neighbors:
-            if neighbor.GetAtomicNum() == 6:  # Check if it is carbon (alpha-carbon)
-                # Check it has a nitrogen attached
-                alpha_c = neighbor.GetIdx()
-                alpha_c_neighbors = neighbor.GetNeighbors()
-                for nn in alpha_c_neighbors:
-                    if nn.GetAtomicNum() == 7 and mol.HasSubstructMatch(c_n_pattern, nn.GetIdx()): 
-                        return True, "Contains carboxyl group and amino group at alpha position"
+    for carboxyl_match in carboxyl_matches:
+        carboxyl_c = carboxyl_match[0]  # C in 'C(=O)O'
+        # Get neighbors of this C to find the alpha carbon
+        neighbors = [nbr.GetIdx() for nbr in mol.GetAtomWithIdx(carboxyl_c).GetNeighbors() if nbr.GetAtomicNum() == 6]
+        
+        for alpha_c in neighbors:
+            # For an identified alpha carbon, check for attachment to an amino group using SMARTS pattern
+            for amino_match in amino_matches:
+                if amino_match[0] == alpha_c:
+                    return True, "Contains carboxyl group and amino group at alpha position"
                 
     return False, "No amino group at alpha position found"
 
