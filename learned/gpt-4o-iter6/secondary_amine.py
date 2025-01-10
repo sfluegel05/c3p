@@ -7,7 +7,7 @@ def is_secondary_amine(smiles: str):
     """
     Determines if a molecule is a secondary amine based on its SMILES string.
     A secondary amine is characterized by a nitrogen atom bonded to two carbon atoms and one hydrogen atom,
-    excluding configurations where nitrogen is part of an interfering group like nitroso, urea, or amide.
+    excluding configurations where nitrogen is part of nitroso, amide, urea, or sulfonamide groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,19 +22,22 @@ def is_secondary_amine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Secondary amine detection pattern with additional specificity
-    secondary_amine_pattern = Chem.MolFromSmarts("[NX3;H1][C;$([CDATA1,#6X4]),!$(C=#[!#6])][C,$([CDATA1,#6X4]),!$(C=#[!#6])]")
-        
-    # Interfering group patterns
+    # Define the secondary amine SMARTS pattern
+    # [NX3] specifies a 3-connected (secondary amine) nitrogen
+    # [C] specifies any carbon atom
+    secondary_amine_pattern = Chem.MolFromSmarts("[NX3;H1;R0][C][C]")
+
+    # Patterns for interfering groups (exclude these)
     nitroso_pattern = Chem.MolFromSmarts("[NX2]=O")
-    amide_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[NX3]")
+    amide_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[#6]")
     urea_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[NX3]")
     sulfonamide_pattern = Chem.MolFromSmarts("[NX3][#16](=[OX1])=[OX1]")
 
+    # Check for secondary amine substructure match
     if mol.HasSubstructMatch(secondary_amine_pattern):
-        # Check for interfering groups
+        # Check for any interfering functional groups
         if any(mol.HasSubstructMatch(pattern) for pattern in [nitroso_pattern, amide_pattern, urea_pattern, sulfonamide_pattern]):
-            return False, "Contains an interfering group (e.g., nitroso, urea, sulfonamide, or amide), not a secondary amine"
+            return False, "Contains interfering groups (e.g., nitroso, urea, amide, sulfonamide), not a secondary amine"
         
         return True, "Contains a nitrogen atom bonded to two carbon atoms and one hydrogen atom, characteristic of a secondary amine"
     
