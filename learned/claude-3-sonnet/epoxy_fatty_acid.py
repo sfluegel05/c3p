@@ -35,40 +35,53 @@ def is_epoxy_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(epoxide):
         return False, "No epoxide ring found"
     
-    # Count carbons to verify fatty acid chain length
+    # Count carbons
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if carbon_count < 12:  # Most fatty acids have 12+ carbons
+    if carbon_count < 12:
         return False, f"Carbon chain too short ({carbon_count} carbons) for fatty acid"
-        
-    # Verify the molecule is not too large for a fatty acid
-    if carbon_count > 30:  # Most fatty acids have less than 30 carbons
+    if carbon_count > 30:
         return False, f"Carbon chain too long ({carbon_count} carbons) for fatty acid"
+    
+    # Count double bonds
+    double_bond_count = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.BondType.DOUBLE)
+    # Subtract one for the carboxylic acid C=O
+    alkene_count = double_bond_count - 1
+    if alkene_count > 6:
+        return False, f"Too many double bonds ({alkene_count}) for typical epoxy fatty acid"
     
     # Check molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 200 or mol_wt > 500:  # Typical range for epoxy fatty acids
+    if mol_wt < 200 or mol_wt > 500:
         return False, f"Molecular weight ({mol_wt:.1f}) outside typical range for epoxy fatty acids"
     
     # Count epoxide rings
     epoxide_matches = len(mol.GetSubstructMatches(epoxide))
-    if epoxide_matches > 3:  # Most epoxy fatty acids have 1-3 epoxide rings
+    if epoxide_matches > 3:
         return False, f"Too many epoxide rings ({epoxide_matches})"
         
-    # Check for reasonable number of oxygen atoms
+    # Check oxygen count and distribution
     oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     if oxygen_count < 3:  # Minimum: 1 for epoxide + 2 for carboxylic acid
         return False, f"Too few oxygen atoms ({oxygen_count})"
-    if oxygen_count > 8:  # Maximum: typically not more than 8
+    if oxygen_count > 10:  # Maximum: typically not more than 10
         return False, f"Too many oxygen atoms ({oxygen_count})"
     
-    # Calculate degree of unsaturation
-    double_bonds = rdMolDescriptors.CalcNumDoubleBonds(mol)
-    if double_bonds > 6:  # Most epoxy fatty acids have 0-6 double bonds
-        return False, f"Too many double bonds ({double_bonds})"
-        
     # Verify the presence of an aliphatic chain
     aliphatic_chain = Chem.MolFromSmarts('[CH2][CH2][CH2]')
     if not mol.HasSubstructMatch(aliphatic_chain):
         return False, "No aliphatic chain found"
+        
+    # Look for common fatty acid patterns
+    fatty_chain = Chem.MolFromSmarts('C[CH2][CH2][CH2]')
+    if not mol.HasSubstructMatch(fatty_chain):
+        return False, "No typical fatty acid chain pattern found"
+
+    # Success case
+    features = []
+    if alkene_count > 0:
+        features.append(f"{alkene_count} double bonds")
+    features.append(f"{epoxide_matches} epoxide ring(s)")
+    if oxygen_count > 3:
+        features.append(f"{oxygen_count-3} additional oxygen-containing groups")
     
-    return True, f"Contains epoxide ring and fatty acid chain with {carbon_count} carbons"
+    return True, f"Epoxy fatty acid with {carbon_count} carbons, " + ", ".join(features)
