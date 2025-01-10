@@ -36,13 +36,17 @@ def is_thiol(smiles: str):
         sulfone_pattern = Chem.MolFromSmarts("[C,c][S](=O)(=O)[C,c]")
         thiocarbonyl_pattern = Chem.MolFromSmarts("[C,c][S]=[C,c]")
         
+        # Exclude peptides by checking for amide bonds
+        amide_pattern = Chem.MolFromSmarts("[C,c][C](=O)[N]")
+        
         if (not mol.HasSubstructMatch(sulfide_pattern) and
             not mol.HasSubstructMatch(disulfide_pattern) and
             not mol.HasSubstructMatch(sulfoxide_pattern) and
             not mol.HasSubstructMatch(sulfone_pattern) and
-            not mol.HasSubstructMatch(thiocarbonyl_pattern)):
+            not mol.HasSubstructMatch(thiocarbonyl_pattern) and
+            not mol.HasSubstructMatch(amide_pattern)):
             return True, "Contains a thiol group (-SH) attached to a carbon atom"
         else:
-            return False, "Sulfur is part of a non-thiol functional group"
+            return False, "Sulfur is part of a non-thiol functional group or molecule is a peptide"
     else:
         return False, "No thiol group (-SH) found attached to a carbon atom"
