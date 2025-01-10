@@ -2,12 +2,11 @@
 Classifies: CHEBI:27096 trichlorobenzene
 """
 from rdkit import Chem
-from rdkit.Chem import rdchem
 
 def is_trichlorobenzene(smiles: str):
     """
     Determines if a molecule is a trichlorobenzene based on its SMILES string.
-    A trichlorobenzene is a chlorobenzene with three chloro substituents on at least one benzene ring.
+    A trichlorobenzene is specifically a benzene ring with three chloro substituents.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,22 +20,12 @@ def is_trichlorobenzene(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+
+    # Define a SMARTS pattern for a benzene ring with specifically three Cl atoms
+    trichlorobenzene_pattern = Chem.MolFromSmarts("c1c(Cl)cc(Cl)cc1Cl")
     
-    # Identify aromatic rings in the molecule
-    aromatic_rings = [ring for ring in Chem.GetSymmSSSR(mol) if all(mol.GetAtomWithIdx(atom_idx).GetIsAromatic() for atom_idx in ring)]
+    # Check if the molecule matches the pattern
+    if mol.HasSubstructMatch(trichlorobenzene_pattern):
+        return True, "Contains a benzene ring with exactly three chloro substituents"
     
-    # Check each aromatic ring for Cl substituents
-    for ring in aromatic_rings:
-        chloro_count = 0
-        for atom_idx in ring:
-            atom = mol.GetAtomWithIdx(atom_idx)
-            # Check if the atom is a carbon and has a chlorine neighbor
-            if atom.GetSymbol() == 'C':
-                is_cl_substituent = any(neighbor.GetSymbol() == 'Cl' for neighbor in atom.GetNeighbors())
-                if is_cl_substituent:
-                    chloro_count += 1
-        
-        if chloro_count == 3:
-            return True, "Contains an aromatic benzene ring with three chloro substituents"
-    
-    return False, "Benzene ring with three chloro substituents not found"
+    return False, "Does not contain a benzene ring with exactly three chloro substituents"
