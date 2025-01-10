@@ -6,8 +6,9 @@ from rdkit import Chem
 def is_phosphatidylinositol_phosphate(smiles: str):
     """
     Determines if a molecule is a phosphatidylinositol phosphate based on its SMILES string.
-    Phosphatidylinositol phosphates are characterized by a glycerol backbone with two fatty acid chains,
-    a phosphate group, and an inositol ring that is phosphorylated.
+    Phosphatidylinositol phosphates (PIPs) are lipids containing a glycerol backbone, 
+    two fatty acids, a phosphate group, and an inositol ring that is phosphorylated at 
+    least on one position.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,26 +23,15 @@ def is_phosphatidylinositol_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for glycerol backbone pattern
-    glycerol_pattern = Chem.MolFromSmarts("OCC(O)CO")  # Basic glycerol pattern
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone found"
+    # Improved glycerol backbone pattern typically with phosphate: allowing flexibility with fatty chain attachments
+    glycerol_backbone_with_ester = Chem.MolFromSmarts("C(OC(=O)C)COC(=O)C")  # Allows ester linkages
+    if not mol.HasSubstructMatch(glycerol_backbone_with_ester):
+        return False, "No glycerol backbone with ester linkages found"
         
-    # Recognize two fatty acid ester linkages on glycerol
-    ester_pattern = Chem.MolFromSmarts("C(=O)OCC")
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) < 2:
-        return False, f"Found {len(ester_matches)} ester linkages, need at least 2"
-
-    # Inositol ring identification with variable positions of phosphates
-    inositol_pattern = Chem.MolFromSmarts("C1(O)C(O)C(O)C(O)C(O)C1OP")
-    if not mol.HasSubstructMatch(inositol_pattern):
-        return False, "Inositol ring with phosphates not found"
-
-    # Check phosphate groups on inositol ring
-    phosphate_groups_pattern = Chem.MolFromSmarts("P(=O)(O)O")
-    phosphate_count = len(mol.GetSubstructMatches(phosphate_groups_pattern))
+    # Check for an inositol ring with one or more phosphate attachments
+    inositol_with_phosphate = Chem.MolFromSmarts("C1(COP(O)(O)=O)C(O)C(O)C(O)C(O)C1O")
+    phosphate_count = len(mol.GetSubstructMatches(inositol_with_phosphate))
     if phosphate_count < 1:
-        return False, "Insufficient number of phosphate groups on inositol"
+        return False, "Inositol ring with at least one phosphate not found"
 
     return True, "Structure consistent with phosphatidylinositol phosphate"
