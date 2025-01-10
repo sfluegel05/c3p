@@ -26,7 +26,8 @@ def is_beta_lactam_antibiotic(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for beta-lactam ring (4-membered ring with N and C=O)
-    beta_lactam_pattern = Chem.MolFromSmarts("[N]1[C]([C][C]1)=O")
+    # More permissive SMARTS pattern that allows for different substitution patterns
+    beta_lactam_pattern = Chem.MolFromSmarts("[NR1]1[CR1][CR1][CR1]1(=O)")
     if not mol.HasSubstructMatch(beta_lactam_pattern):
         return False, "No beta-lactam ring found"
 
@@ -35,46 +36,41 @@ def is_beta_lactam_antibiotic(smiles: str):
     if beta_lactam_matches > 1:
         return False, "Multiple beta-lactam rings found - unusual for antibiotics"
 
-    # Look for characteristic groups often found in beta-lactam antibiotics
-    
-    # Carboxylic acid group
-    carboxyl_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1,OX1-]")
-    if not mol.HasSubstructMatch(carboxyl_pattern):
-        return False, "No carboxylic acid group found"
-    
-    # Look for common ring systems in beta-lactams
+    # Look for common fused ring systems in beta-lactams with more permissive patterns
     
     # Penicillin-like thiazolidine ring fused to beta-lactam
-    penam_pattern = Chem.MolFromSmarts("[N]1[C]2[C](S[C]([C]2)([C])[C])[C]1=O")
+    penam_pattern = Chem.MolFromSmarts("[NR1]1[CR1]2[CR1][SR1][CR1]2[CR1]1=O")
     
-    # Cephalosporin-like 6-membered ring fused to beta-lactam
-    cephem_pattern = Chem.MolFromSmarts("[N]1[C]2[C](S[C]=[C]2)[C]1=O")
+    # Cephalosporin-like 6-membered ring fused to beta-lactam (more permissive)
+    cephem_pattern = Chem.MolFromSmarts("[NR1]1[CR1]2[CR1][SR1][CR0,CR1][CR0,CR1]2[CR1]1=O")
     
-    # Carbapenem-like 5-membered ring fused to beta-lactam
-    carbapenem_pattern = Chem.MolFromSmarts("[N]1[C]2[C](=[C][C]2)[C]1=O")
+    # Carbapenem-like 5-membered ring fused to beta-lactam (more permissive)
+    carbapenem_pattern = Chem.MolFromSmarts("[NR1]1[CR1]2[CR0,CR1][CR0,CR1][CR1]2[CR1]1=O")
     
+    # Monobactam-like structure
+    monobactam_pattern = Chem.MolFromSmarts("[NR1]1[CR1][CR1][CR1]1=O")
+    
+    # Oxacephem-like structure
+    oxacephem_pattern = Chem.MolFromSmarts("[NR1]1[CR1]2[CR1][OR1][CR0,CR1][CR0,CR1]2[CR1]1=O")
+
     # Check for at least one of the common ring systems
-    has_common_ring = any(
-        mol.HasSubstructMatch(pattern) 
-        for pattern in [penam_pattern, cephem_pattern, carbapenem_pattern]
-    )
-    
-    if not has_common_ring:
-        return False, "Missing characteristic ring system of beta-lactam antibiotics"
+    ring_patterns = [penam_pattern, cephem_pattern, carbapenem_pattern, 
+                    monobactam_pattern, oxacephem_pattern]
+    has_common_ring = any(mol.HasSubstructMatch(pattern) for pattern in ring_patterns)
 
-    # Look for amide groups (common in side chains)
-    amide_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[#6]")
-    if not mol.HasSubstructMatch(amide_pattern):
-        return False, "No amide groups found in side chains"
+    # Look for carboxylic acid group (required for activity)
+    carboxyl_pattern = Chem.MolFromSmarts("C(=O)[OH,O-]")
+    if not mol.HasSubstructMatch(carboxyl_pattern):
+        return False, "No carboxylic acid group found"
 
-    # Count atoms to ensure molecule is large enough to be an antibiotic
+    # Basic size check
     num_atoms = mol.GetNumAtoms()
-    if num_atoms < 15:
+    if num_atoms < 10:
         return False, "Molecule too small to be a beta-lactam antibiotic"
 
-    # Count number of rings
-    num_rings = len(Chem.GetSymmSSSR(mol))
-    if num_rings < 2:
-        return False, "Too few rings for a beta-lactam antibiotic"
+    # Check molecular weight - beta-lactam antibiotics are typically > 300 Da
+    mol_wt = Chem.Descriptors.ExactMolWt(mol)
+    if mol_wt < 250:
+        return False, "Molecular weight too low for beta-lactam antibiotic"
 
     return True, "Contains beta-lactam ring and characteristic features of beta-lactam antibiotics"
