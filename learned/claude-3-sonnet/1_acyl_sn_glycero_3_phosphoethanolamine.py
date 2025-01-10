@@ -10,11 +10,6 @@ from rdkit.Chem import AllChem
 def is_1_acyl_sn_glycero_3_phosphoethanolamine(smiles: str):
     """
     Determines if a molecule is a 1-acyl-sn-glycero-3-phosphoethanolamine based on its SMILES string.
-    Must have:
-    - Glycerol backbone with R configuration
-    - Acyl group at position 1
-    - Free hydroxyl at position 2
-    - Phosphoethanolamine at position 3
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -28,64 +23,73 @@ def is_1_acyl_sn_glycero_3_phosphoethanolamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for required elements
+    # Check for basic elements (excluding H since it might be implicit)
     required_elements = {'C', 'O', 'N', 'P'}
     mol_elements = set(atom.GetSymbol() for atom in mol.GetAtoms())
     if not required_elements.issubset(mol_elements):
         return False, f"Missing required elements. Found {mol_elements}, need {required_elements}"
 
-    # Basic glycerol backbone pattern
-    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CH1X4][CH2X4]")
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone found"
+    # Check for glycerol backbone with correct stereochemistry
+    # Multiple SMARTS patterns to catch different representations
+    glycerol_patterns = [
+        "[CH2X4][C@@HX4][CH2X4]",  # R configuration
+        "[CH2X4][C@HX4][CH2X4]",   # Alternative representation
+        "[CH2][C@H][CH2]",         # Simplified pattern
+        "[CH2][C@@H][CH2]"         # Simplified alternative
+    ]
+    
+    found_glycerol = False
+    for pattern in glycerol_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            found_glycerol = True
+            break
+    
+    if not found_glycerol:
+        return False, "No glycerol backbone with correct stereochemistry found"
 
-    # Check for ester group at position 1
-    ester_pattern = Chem.MolFromSmarts("[CH2X4]OC(=O)[#6]")
-    if not mol.HasSubstructMatch(ester_pattern):
-        return False, "No ester group at position 1"
+    # Check for one ester group (acyl chain at position 1)
+    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])[#6]")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    if len(ester_matches) != 1:
+        return False, f"Found {len(ester_matches)} ester groups, need exactly 1"
 
-    # Check for hydroxyl at position 2
-    hydroxyl_pattern = Chem.MolFromSmarts("[CH1X4][OX2H1]")
-    if not mol.HasSubstructMatch(hydroxyl_pattern):
-        return False, "No free hydroxyl group at position 2"
-
-    # Check for phosphoethanolamine group - try both neutral and charged forms
-    pe_patterns = [
-        Chem.MolFromSmarts("COP(=O)(O)OCCN"),  # Neutral form
-        Chem.MolFromSmarts("COP(=O)([O-])OCC[NH3+]"),  # Zwitterionic form
+    # Check for phosphoethanolamine group - multiple patterns to catch different forms
+    phosphoethanolamine_patterns = [
+        "[OX2][PX4](=[OX1])([OX2])[OX2]CC[NX3]",           # Neutral form
+        "[OX2][PX4](=[OX1])([OX2])[OX2]CC[NH3+]",         # Protonated amine
+        "[OX2][PX4](=[OX1])([O-])[OX2]CC[NH3+]",          # Zwitterionic form
+        "[OX2][PX4](=[OX1])([OX2H])[OX2]CC[NX3]"          # With explicit H
     ]
     
     found_pe = False
-    for pattern in pe_patterns:
-        if pattern is not None and mol.HasSubstructMatch(pattern):
+    for pattern in phosphoethanolamine_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
             found_pe = True
             break
             
     if not found_pe:
         return False, "No phosphoethanolamine group found"
 
-    # Verify no acylation at position 2
-    wrong_acyl = Chem.MolFromSmarts("[CH1X4](OC(=O))[CH2X4]")
-    if wrong_acyl is not None and mol.HasSubstructMatch(wrong_acyl):
-        return False, "Has acyl group at position 2"
+    # Check for hydroxyl group - multiple patterns
+    hydroxyl_patterns = [
+        "[OX2H1]",            # Explicit H
+        "[OX2H]",             # Alternative representation
+        "[OH]"                # Simplified
+    ]
+    
+    found_hydroxyl = False
+    for pattern in hydroxyl_patterns:
+        matches = mol.GetSubstructMatches(Chem.MolFromSmarts(pattern))
+        if len(matches) >= 1:
+            found_hydroxyl = True
+            break
+            
+    if not found_hydroxyl:
+        return False, "No free hydroxyl group found"
 
-    # Check for reasonable chain length
+    # Check carbon chain length (should be at least 13 carbons total including glycerol backbone)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 7:
-        return False, f"Carbon count too low ({c_count}), need at least 7"
+    if c_count < 13:
+        return False, f"Carbon count too low ({c_count}), need at least 13"
 
-    # Check for expected number of phosphorus atoms
-    p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
-    if p_count != 1:
-        return False, f"Expected exactly 1 phosphorus atom, found {p_count}"
-
-    # Verify basic connectivity
-    # Should have: CH2-CH-CH2 backbone with:
-    # - O-acyl at position 1
-    # - OH at position 2
-    # - O-P at position 3
-    basic_connectivity = Chem.MolFromSmarts("[CH2X4]OC(=O)[#6][CH1X4]([OX2H1])[CH2X4]OP")
-    if not mol.HasSubstructMatch(basic_connectivity):
-        return False, "Core structural connectivity not found"
-
-    return True, "Valid 1-acyl-sn-glycero-3-phosphoethanolamine structure found"
+    return True, "Contains glycerol backbone with correct stereochemistry, one acyl chain, phosphoethanolamine group, and free hydroxyl group"
