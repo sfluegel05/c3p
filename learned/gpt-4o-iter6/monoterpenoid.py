@@ -24,23 +24,33 @@ def is_monoterpenoid(smiles: str):
     # Count carbon atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     
-    # Allow some flexibility in carbon count due to rearrangement/modification
-    if not (8 <= c_count <= 12):
-        return False, f"Carbon count {c_count} not typical for monoterpenoids (expected ~10)"
+    # Relax the carbon count criteria
+    if not (5 <= c_count <= 20):
+        return False, f"Carbon count {c_count} not typical for some monoterpenoids but including possible highly modified structures"
 
-    # Look for typical monoterpenoid motifs (simplified rule example)
-    # This is a placeholder for a more informed pattern or set of checks
-    # Look for a simple cyclohexene pattern indicative of a monoterpene origin:
-    cyclohexene_pattern = Chem.MolFromSmarts("C1=CCCCC1")
-    if not mol.HasSubstructMatch(cyclohexene_pattern):
-        return False, "No typical monoterpenoid backbone detected"
+    # Expanded set of structural patterns
+    structural_patterns = [
+        "C1=CC=CC=C1",  # Benzene - to accommodate aromatic transformations
+        "C1CCC(CC1)C",  # Cyclohexane - common in monoterpenoids
+        "C1CCC(CC1)C=O", # Cyclic ketone patterns
+        "C1C=C(C)CC1",  # Cyclic structures often found in monoterpene derivatives
+    ]
 
-    # Presence of terpenoid functional groups, example alcohol, ketone or ester
-    # Placeholder patterns for specificity can be defined
-    functional_groups = ["[CX3](=O)", "[OX2H]", "[CX3](=O)O[CX3]"]  # ketone, alcohol, ester
-    for fg_smarts in functional_groups:
-        fg_pattern = Chem.MolFromSmarts(fg_smarts)
-        if mol.HasSubstructMatch(fg_pattern):
-            return True, "Contains structural features typical of monoterpenoids"
+    for pattern in structural_patterns:
+        pattern_mol = Chem.MolFromSmarts(pattern)
+        if mol.HasSubstructMatch(pattern_mol):
+            return True, "Contains structural features typical of modified monoterpene skeletons"
+
+    # Check for presence of common monoterpenoid functional groups, extending previous attempts
+    functional_group_patterns = [
+        "[CX3](=O)[O,C]",  # Ketone and possible ester
+        "[OX2H]",          # Alcohols
+        "[NX3;H2,H1;!$(NC=O)]",  # Amines avoiding amides, commonly found in more complex rearrangements
+    ]
+    
+    for fg in functional_group_patterns:
+        fg_mol = Chem.MolFromSmarts(fg)
+        if mol.HasSubstructMatch(fg_mol):
+            return True, "Contains functional groups common to monoterpenoids"
 
     return False, "Does not have identifiable monoterpenoid features"
