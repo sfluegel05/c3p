@@ -40,15 +40,19 @@ def is_N_acyl_L_alpha_amino_acid(smiles: str):
     if not mol.HasSubstructMatch(acyl_pattern):
         return False, "No N-acyl substituent found"
 
-    # Get the nitrogen atom in the N-acyl group
-    acyl_matches = mol.GetSubstructMatches(acyl_pattern)
-    acyl_nitrogen = acyl_matches[0][0]  # Nitrogen atom index in the acyl pattern
+    # Get all nitrogen atoms in the molecule
+    nitrogen_atoms = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7]
 
-    # Verify that the N-acyl group is attached to the nitrogen of the amino acid backbone
-    if amino_acid_nitrogen != acyl_nitrogen:
-        return False, "N-acyl group is not attached to the amino group of the amino acid"
+    # Check if any nitrogen atom is part of an N-acyl group and is connected to the amino acid structure
+    for nitrogen in nitrogen_atoms:
+        # Check if the nitrogen is part of an N-acyl group
+        for neighbor in mol.GetAtomWithIdx(nitrogen).GetNeighbors():
+            if neighbor.GetAtomicNum() == 6 and any(bond.GetBondType() == Chem.rdchem.BondType.DOUBLE for bond in neighbor.GetBonds()):
+                # Check if the nitrogen is part of the amino acid structure (backbone or side chain)
+                if nitrogen == amino_acid_nitrogen or mol.GetAtomWithIdx(nitrogen).GetDegree() > 1:
+                    return True, "Contains L-alpha-amino acid backbone with N-acyl substituent"
 
-    return True, "Contains L-alpha-amino acid backbone with N-acyl substituent"
+    return False, "N-acyl group is not attached to the amino group of the amino acid"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:58937',
