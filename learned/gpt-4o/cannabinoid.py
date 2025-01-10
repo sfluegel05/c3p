@@ -7,8 +7,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_cannabinoid(smiles: str):
     """
     Determines if a molecule is a cannabinoid based on its SMILES string.
-    Cannabinoids are characterized by complex hydrocarbon chains and oxygen within specific ring systems or as functional groups,
-    typically linked to Cannabis plant metabolites and associated products.
+    Cannabinoids are characterized by aromatic rings with attached complex hydrocarbon chains, oxygen in heterocycles or functional groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,24 +21,26 @@ def is_cannabinoid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+    
+    # Pattern for aromatic system (such as phenolic rings)
+    aromatic_pattern = Chem.MolFromSmarts("c1ccccc1")
+    if not mol.HasSubstructMatch(aromatic_pattern):
+        return False, "No aromatic system characteristic found"
+    
+    # Check for oxygen-containing functional groups
+    oxygen_pattern = Chem.MolFromSmarts("[#8]")
+    if not mol.HasSubstructMatch(oxygen_pattern):
+        return False, "No oxygen-containing functional groups found"
+    
+    # Check for long aliphatic chains typically found in cannabinoids
+    long_chain_pattern = Chem.MolFromSmarts("CCCCCCCC")
+    if not mol.HasSubstructMatch(long_chain_pattern):
+        return False, "No long hydrocarbon chain detected"
 
-    # Check improved long chain patterns with flexibility in structure
-    long_chain_pattern = Chem.MolFromSmarts("CCCCCCCC")  # Needs other contextual checks
-    if mol.HasSubstructMatch(long_chain_pattern):
-        # Check for oxygen functional groups
-        oxygen_pattern = Chem.MolFromSmarts("[#8]")
-        if not mol.HasSubstructMatch(oxygen_pattern):
-            return False, "Detected long chain but no oxygen-containing functional groups found"
-
-        # Check for at least one heterocycle 
-        heterocycle_pattern = Chem.MolFromSmarts("[n,r;!R0]")
-        if not mol.HasSubstructMatch(heterocycle_pattern):
-            return False, "No heterocyclic rings or accepted substituents found"
-
-        # Specific cannabinoid substructure patterns (potentially based on known variations)
-        cannabinoid_substructure_pattern = Chem.MolFromSmarts("C1(CCCCC1)C=CC")
-        if mol.HasSubstructMatch(cannabinoid_substructure_pattern):
-            return True, "Contains characteristic cannabinoid substructures"
+    # Flexible pattern to identify potential cannabinoids, accounting for structure diversity
+    cannabinoid_flex_pattern = Chem.MolFromSmarts("[CX4,CX3,CX2]~[*]~[CX4,CX3]~[CX4,CX3]~[OX2H1,OX2,oxide]")  
+    if mol.HasSubstructMatch(cannabinoid_flex_pattern):
+        return True, "Contains aromatic systems with associated cannabinoid structures"
 
     return False, "Does not meet cannabinoid criteria"
 
