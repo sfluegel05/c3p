@@ -2,7 +2,7 @@
 Classifies: CHEBI:18254 ribonucleoside
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_ribonucleoside(smiles: str):
     """
@@ -16,23 +16,35 @@ def is_ribonucleoside(smiles: str):
         bool: True if molecule is a ribonucleoside, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+
+    # General pattern for ribose - 5-membered carbon ring with multiple hydroxyl or oxygen attachments
+    ribose_pattern = Chem.MolFromSmarts("C1OC[C@H](O)[C@@H]1O")
+    deoxyribose_pattern = Chem.MolFromSmarts("C1OC[C@H](O)C1")
+
+    ribose_match = mol.HasSubstructMatch(ribose_pattern)
+    deoxyribose_match = mol.HasSubstructMatch(deoxyribose_pattern)
     
-    # Pattern for ribose sugar - 5-membered ring with C-C-C-C-O and three OH groups
-    ribose_pattern = Chem.MolFromSmarts("C1OC([H,C])([H,C])C(O)C1O")
-    if not mol.HasSubstructMatch(ribose_pattern):
-        return False, "No ribose sugar moiety found"
-    
-    # Pattern for glycosidic bond to base (simplified) - base nitrogen bonded to ribose
-    base_linkage_pattern = Chem.MolFromSmarts("[nH]1[c,n,o][c,n,o][nH][c,n,o]1[C@H]1O[C@H]([C@@H](O)[C@H]1O)C")
-    if not mol.HasSubstructMatch(base_linkage_pattern):
-        return False, "No base linked to ribose sugar"
-    
-    return True, "Contains ribose sugar with glycosidic linkage to a base"
+    if not ribose_match and not deoxyribose_match:
+        return False, "No ribose or deoxyribose sugar moiety found"
+
+    # Allow variance in bases
+    purine_pattern = Chem.MolFromSmarts("n1cnc2[nH]cnc12")
+    pyrimidine_pattern = Chem.MolFromSmarts("c1ncn[C@H]1")
+
+    if not (mol.HasSubstructMatch(purine_pattern) or mol.HasSubstructMatch(pyrimidine_pattern)):
+        return False, "No purine or pyrimidine moiety found"
+
+    # Ensure there is a glycosidic bond to the sugar
+    linkage_pattern = Chem.MolFromSmarts("[n][C@H]1O")
+    if not mol.HasSubstructMatch(linkage_pattern):
+        return False, "No glycosidic bond connecting base and sugar"
+
+    return True, "Contains ribose or deoxyribose sugar with glycosidic linkage to a purine or pyrimidine base"
 
 # Example usage
 smiles_examples = [
