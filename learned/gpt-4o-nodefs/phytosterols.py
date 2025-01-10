@@ -23,29 +23,32 @@ def is_phytosterols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for steroid backbone pattern: Cyclopentanoperhydrophenanthrene skeleton
-    steroid_pattern = Chem.MolFromSmarts("C1CCC2C1(CCC3C2CCC4C3(CCCC4)C)C")
-    if not mol.HasSubstructMatch(steroid_pattern):
+    # Look for steroid backbone pattern
+    steroid_patterns = [
+        Chem.MolFromSmarts("C1CCC2C1(CCC3C2CCC4C3(CCCC4)C)C"),  # basic steroid skeleton
+        Chem.MolFromSmarts("C1=CC[C@H]2[C@@H]3CC[C@@]4([H])CCC[C@]4(C)[C@H]3CC[C@@]21[H]")  # alternate stereo/unsaturated
+    ]
+    if not any(mol.HasSubstructMatch(pattern) for pattern in steroid_patterns):
         return False, "No steroid backbone found"
         
     # Check for hydroxyl group at position 3
-    hydroxy_pattern = Chem.MolFromSmarts("[#6]1:2:[OX2H]:[#6](:[#6]:[#6]1):3")
-    if not mol.HasSubstructMatch(hydroxy_pattern):
+    hydroxy_position_3 = Chem.MolFromSmarts("O[C@@H]1CC[C@H](C2CCCC3C2CCC4CC(C)(C)C3(C)CC4)C1")
+    if not mol.HasSubstructMatch(hydroxy_position_3):
         return False, "Missing hydroxyl group at position 3"
 
-    # Check for common double bond configuration in the rings or side chains
-    common_double_bond_patterns = [
-        Chem.MolFromSmarts("C=C"),  # generic example, specific positions can be enumerated
+    # Check for typical phytosterol double bond positions, e.g., at C5, C6
+    double_bond_patterns = [
+        Chem.MolFromSmarts("C1=CC[C@H]2[C@@H]3CC=C4C(C2)[C@H]3CC[C@@]41C")  # common phytosterol unsaturations
     ]
-    if not any(mol.HasSubstructMatch(pattern) for pattern in common_double_bond_patterns):
-        return False, "No double bonds found in expected locations"
+    if not any(mol.HasSubstructMatch(pattern) for pattern in double_bond_patterns):
+        return False, "No expected double bonds found in rings"
 
-    # Check for side chain modifications (e.g., methyl or ethyl groups) 
-    # at common steroid positions such as C24
+    # Check for side chain modifications (e.g., methyl or ethyl groups)
     side_chain_patterns = [
-        Chem.MolFromSmarts("[CX4]C"),  # Generic side chain methyls
+        Chem.MolFromSmarts("[CX4,CX3](C)"),  # broader search for alkylation
+        Chem.MolFromSmarts("[C@H](C)[C@H](CC)C(C)C")  # specific for C24 modification linked to sitosterol-like structures
     ]
     if not any(mol.HasSubstructMatch(pattern) for pattern in side_chain_patterns):
         return False, "No typical phytosterol side chain alkylations found"
 
-    return True, "Contains steroid nucleus with hydroxyl group at C3, double bonds, and side chain alkylations indicating a phytosterol"
+    return True, "Steroid nucleus with typical phytosterol hydroxyl, double bonds, and side chain modifications found"
