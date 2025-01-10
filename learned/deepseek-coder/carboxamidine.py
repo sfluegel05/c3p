@@ -25,8 +25,8 @@ def is_carboxamidine(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define the carboxamidine pattern: RC(=NR)NR2
-    # More specific pattern to match exactly one central carbon with =NR and NR2 groups
-    carboxamidine_pattern = Chem.MolFromSmarts("[CX3](=[NX2])[NX3H2,NX3H1,NX3H0]")
+    # This pattern is more inclusive to capture variations
+    carboxamidine_pattern = Chem.MolFromSmarts("[CX3](=[NX2])[NX3]")
     
     # Find all matches of the carboxamidine pattern
     matches = mol.GetSubstructMatches(carboxamidine_pattern)
@@ -51,20 +51,7 @@ def is_carboxamidine(smiles: str):
         if len(mol.GetAtomWithIdx(single_bond_nitrogen).GetBonds()) != 3:
             continue
             
-        # Check that the single bond nitrogen is not part of a guanidine group
-        # by ensuring it's not bonded to another carbon with =NR group
-        guanidine_check = False
-        for neighbor in mol.GetAtomWithIdx(single_bond_nitrogen).GetNeighbors():
-            if neighbor.GetAtomicNum() == 6:  # Carbon
-                for bond in neighbor.GetBonds():
-                    if bond.GetBondType() == Chem.BondType.DOUBLE:
-                        if bond.GetBeginAtom().GetAtomicNum() == 7 or bond.GetEndAtom().GetAtomicNum() == 7:
-                            guanidine_check = True
-                            break
-                if guanidine_check:
-                    break
-                    
-        if not guanidine_check:
-            return True, "Contains the carboxamidine structure (RC(=NR)NR2)"
+        # If all checks pass, it is a carboxamidine
+        return True, "Contains the carboxamidine structure (RC(=NR)NR2)"
 
     return False, "No valid carboxamidine structure found after detailed checks"
