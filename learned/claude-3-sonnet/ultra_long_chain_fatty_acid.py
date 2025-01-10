@@ -41,9 +41,9 @@ def is_ultra_long_chain_fatty_acid(smiles: str):
     if carbon_count <= 27:
         return False, f"Carbon chain too short (C{carbon_count}), needs >C27"
 
-    # Look for a continuous carbon chain
-    # This SMARTS pattern matches carbon chains (both saturated and unsaturated)
-    chain_pattern = Chem.MolFromSmarts('C~C~C~C~C~C~C~C~C~C~C~C~C~C~C~C~C~C~C~C~C~C~C~C~C~C~C')
+    # Look for a long carbon chain - allow for branching and cyclopropyl groups
+    # Match any combination of single/double bonds between carbons
+    chain_pattern = Chem.MolFromSmarts('[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]')
     if not mol.HasSubstructMatch(chain_pattern):
         return False, "No continuous long carbon chain found"
 
@@ -52,18 +52,20 @@ def is_ultra_long_chain_fatty_acid(smiles: str):
     if mol_wt < 400:  # Rough minimum for C28 fatty acid
         return False, f"Molecular weight ({mol_wt:.1f}) too low for ultra-long chain fatty acid"
 
-    # Additional checks for reasonable fatty acid composition
-    # Count oxygens - should have at least 2 (from COOH) but not too many
+    # Count oxygens - should have at least 2 (from COOH) but allow for modifications
     oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     if oxygen_count < 2:
         return False, "Too few oxygen atoms for a fatty acid"
-    if oxygen_count > 10:  # Arbitrary cutoff for reasonable number of oxygens
-        return False, "Too many oxygen atoms for a typical fatty acid"
+    
+    # Allow for various modifications (hydroxy, methoxy groups)
+    # Check that the majority of atoms are carbons
+    total_atoms = len(mol.GetAtoms())
+    if carbon_count < total_atoms * 0.6:  # At least 60% should be carbon
+        return False, "Carbon content too low for a fatty acid"
 
-    # Check for reasonable H/C ratio
-    hydrogen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 1)
-    hc_ratio = hydrogen_count / carbon_count
-    if not (1.0 <= hc_ratio <= 2.1):  # Reasonable range for fatty acids
-        return False, f"H/C ratio ({hc_ratio:.1f}) outside typical range for fatty acids"
+    # Check for reasonable molecular formula
+    # Allow for various modifications but ensure it's primarily hydrocarbon
+    if rdMolDescriptors.CalcMolFormula(mol).count('C') < 28:
+        return False, "Insufficient carbon content for ultra-long chain fatty acid"
 
     return True, f"Ultra-long chain fatty acid with {carbon_count} carbons"
