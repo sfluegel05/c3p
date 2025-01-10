@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_3_oxo_Delta_1_steroid(smiles: str):
     """
     Determines if a molecule is a 3-oxo-Delta(1) steroid based on its SMILES string.
-    A 3-oxo-Delta(1) steroid is characterized by a double bond between positions 1 and 2
-    and a ketone group at the 3-position on the steroid backbone.
+    A 3-oxo-Delta(1) steroid is characterized by a steroid structure with
+    a double bond between positions 1 and 2 and a ketone group at the 3-position.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,16 +22,11 @@ def is_3_oxo_Delta_1_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for double bond between positions 1 and 2 in a steroid backbone
-    delta_1_pattern = Chem.MolFromSmarts("C1=CCCCC1")
-
-    # SMARTS pattern for ketone group at the 3-position
-    ketone_3_pattern = Chem.MolFromSmarts("C(=O)[C;R]") 
-
-    if not mol.HasSubstructMatch(delta_1_pattern):
-        return False, "No double bond between positions 1 and 2"
-        
-    if not mol.HasSubstructMatch(ketone_3_pattern):
-        return False, "No ketone group at the 3-position"
-
+    # SMARTS pattern for steroid structure with Delta(1) double bond 
+    steroid_pattern = Chem.MolFromSmarts("C1(=C)[C@@H]2CC[C@]3([C@H]4CCC(=O)C=C[C@]4(C)[C@@H]3CC[C@@H]12)") 
+    
+    # Check if the steroid structure with Delta(1) double bond and 3-oxo group is present
+    if not mol.HasSubstructMatch(steroid_pattern):
+        return False, "Structure does not match a 3-oxo-Delta(1) steroid pattern"
+    
     return True, "Matches the 3-oxo-Delta(1) steroid pattern"
