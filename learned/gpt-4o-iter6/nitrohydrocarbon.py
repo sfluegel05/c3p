@@ -22,13 +22,22 @@ def is_nitrohydrocarbon(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define nitro group pattern -[N+](=O)[O-]
-    nitro_pattern = Chem.MolFromSmarts("[NX3](=O)[O-]")
+    nitro_pattern = Chem.MolFromSmarts("[N+](=O)[O-]")
     if not mol.HasSubstructMatch(nitro_pattern):
         return False, "No nitro group found"
+      
+    # Check for carbon atom presence
+    carbon_atoms = [atom.GetAtomicNum() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
+    if not carbon_atoms:
+        return False, "Does not contain a carbon backbone"
 
-    # Check carbon backbone by verifying that the primary atoms are Carbon and possibly Hydrogen
-    non_hydrocarbon_atoms = [atom.GetAtomicNum() for atom in mol.GetAtoms() if atom.GetAtomicNum() not in (1, 6, 7, 8)]
-    if non_hydrocarbon_atoms:
-        return False, "Contains non-hydrocarbon atoms"
-
+    # Evaluate presence of significant non-hydrocarbon elements but allow nitro derivs.
+    allowed_elements = (1, 6, 7, 8, 16)  # H, C, N, O, S which are common in organonitros
+    significant_non_hydrocarbon_atoms = [
+        atom.GetAtomicNum() for atom in mol.GetAtoms() 
+        if atom.GetAtomicNum() not in allowed_elements
+    ]
+    if len(significant_non_hydrocarbon_atoms) > 3:
+        return False, "Contains too many non-hydrocarbon atoms unrelated to nitro groups"
+        
     return True, "Molecule is a nitrohydrocarbon with one or more nitro groups attached to a carbon backbone"
