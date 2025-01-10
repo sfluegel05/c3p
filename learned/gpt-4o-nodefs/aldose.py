@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_aldose(smiles: str):
     """
     Determines if a molecule is an aldose based on its SMILES string.
-    An aldose typically contains an aldehyde group, with hydroxyl groups on carbon atoms,
-    forming either open-chain or cyclic hemiacetal forms (pyranoses/furanoses).
+    An aldose is typically characterized by an aldehyde group in the open chain
+    and can form cyclic structures such as pyranoses or furanoses.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -16,24 +16,29 @@ def is_aldose(smiles: str):
         bool: True if the molecule is an aldose, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Aldehyde group pattern - check for linear aldose form
-    aldehyde_pattern = Chem.MolFromSmarts("[CH](=O)")
+    # Check for open-chain form with aldehyde group
+    aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)[CH2][OH]")  # General aldehyde and hydroxyl match
     if mol.HasSubstructMatch(aldehyde_pattern):
-        # Check for open chain with hydroxyls suitable for aldose
-        oh_pattern = Chem.MolFromSmarts("[CX4H2][OH]")
+        oh_pattern = Chem.MolFromSmarts("[CX4H1]([OH])[CX4][OH]")
         oh_matches = mol.GetSubstructMatches(oh_pattern)
-        if len(oh_matches) >= 2:
-            return True, "Open-chain form with aldehyde and sufficient hydroxyl groups"
+        if len(oh_matches) >= 1:
+            return True, "Open-chain form with aldehyde and hydroxyls"
 
-    # Check for cyclic hemiacetal (pyranose/furanose) forms
-    hemiacetal_pattern = Chem.MolFromSmarts("O[C@H]1[CH2][C@H][O][C@H]1")
-    if mol.HasSubstructMatch(hemiacetal_pattern):
-        return True, "Cyclic form consistent with aldose (hemiacetal pyranose/furanose)"
+    # Check for cyclic structures - pyranose or furanose forms
+    # Check for pyranose form (six-membered ring with oxygens and hydroxyls)
+    pyranose_pattern = Chem.MolFromSmarts("C1OC(CO)C(O)C1O")
+    if mol.HasSubstructMatch(pyranose_pattern):
+        return True, "Cyclic pyranose form detected consistent with aldose"
+
+    # Check for furanose form (five-membered ring)
+    furanose_pattern = Chem.MolFromSmarts("C1OC(CO)C1O")
+    if mol.HasSubstructMatch(furanose_pattern):
+        return True, "Cyclic furanose form detected consistent with aldose"
 
     return False, "Structure does not fit typical aldose characteristics"
