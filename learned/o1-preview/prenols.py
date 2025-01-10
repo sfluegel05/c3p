@@ -25,62 +25,42 @@ def is_prenols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Allow atoms commonly found in prenols
-    allowed_atoms = {1, 6, 7, 8, 15}  # H, C, N, O, P
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() not in allowed_atoms:
-            return False, f"Contains atom not typical of prenols: {atom.GetSymbol()}"
+    # Ensure molecule is acyclic (no rings)
+    if mol.GetRingInfo().NumRings() > 0:
+        return False, "Molecule contains rings; prenols are acyclic"
     
-    # Check for a hydroxyl group (-OH)
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
+    # Check for hydroxyl group (-OH) attached to a carbon chain
+    hydroxyl_pattern = Chem.MolFromSmarts("[CX4][OX2H]")
     if not mol.HasSubstructMatch(hydroxyl_pattern):
-        return False, "No hydroxyl group (-OH) found"
-
-    # Define isoprene unit SMARTS pattern
-    isoprene_pattern = Chem.MolFromSmarts("C(=C(C))CC")
+        return False, "No terminal hydroxyl group (-OH) found attached to carbon"
     
-    # Find all isoprene units
-    isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
+    # Ensure only allowed atoms are present (C, H, O)
+    allowed_atomic_nums = {1, 6, 8}  # H, C, O
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() not in allowed_atomic_nums:
+            return False, f"Atom {atom.GetSymbol()} not allowed in prenols"
+    
+    # Count the number of carbon atoms
+    num_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if num_carbons % 5 != 0:
+        return False, f"Number of carbon atoms ({num_carbons}) is not a multiple of 5"
+    
+    # Check for repeating isoprene units
+    # Define a pattern for the isoprene unit: C=C-C-C
+    # This pattern allows for variations in double bond positions due to stereochemistry
+    isoprene_unit_pattern = Chem.MolFromSmarts("C=C-C-C")
+    isoprene_matches = mol.GetSubstructMatches(isoprene_unit_pattern)
     num_isoprene_units = len(isoprene_matches)
     if num_isoprene_units == 0:
         return False, "No isoprene units found"
     
-    # Check if isoprene units are connected head-to-tail
-    # Get the atom indices of all isoprene units
-    isoprene_atoms = set()
-    for match in isoprene_matches:
-        isoprene_atoms.update(match)
+    # Verify that the number of isoprene units corresponds to the number of carbons
+    expected_isoprene_units = num_carbons // 5
+    if num_isoprene_units < expected_isoprene_units:
+        return False, f"Expected at least {expected_isoprene_units} isoprene units, found {num_isoprene_units}"
     
-    # Generate a subgraph containing only isoprene atoms
-    isoprene_submol = Chem.PathToSubmol(mol, list(isoprene_atoms))
-    
-    # Check that isoprene units form a continuous chain
-    # Count the number of connected components in the isoprene subgraph
-    num_components = Chem.GetMolFrags(isoprene_submol, asMols=False, sanitizeFrags=False)
-    if len(num_components) > 1:
-        return False, "Isoprene units are not connected head-to-tail"
-    
-    # Check for terminal -OH group attached to the isoprene chain
-    # Find hydroxyl groups in the molecule
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    # Check if any hydroxyl group is attached to the isoprene chain
-    isoprene_neighbors = set()
-    for atom_idx in isoprene_atoms:
-        atom = mol.GetAtomWithIdx(atom_idx)
-        for neighbor in atom.GetNeighbors():
-            isoprene_neighbors.add(neighbor.GetIdx())
-    hydroxyl_attached = False
-    for match in hydroxyl_matches:
-        hydroxyl_atom_idx = match[0]
-        if hydroxyl_atom_idx in isoprene_neighbors:
-            hydroxyl_attached = True
-            break
-    if not hydroxyl_attached:
-        return False, "No terminal hydroxyl group attached to isoprene chain"
-    
-    # All checks passed
-    return True, f"Molecule contains {num_isoprene_units} isoprene units with terminal hydroxyl group"
-    
+    # All checks passed; classify as prenol
+    return True, f"Molecule is a prenol with {num_isoprene_units} isoprene units and a terminal hydroxyl group"
 
 __metadata__ = {   
     'chemical_class': {   
