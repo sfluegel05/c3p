@@ -27,6 +27,7 @@ def is_tocol(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for chroman-6-ol skeleton pattern
+    # The pattern should match the chroman-6-ol skeleton with a hydroxyl group at position 6
     chromanol_pattern = Chem.MolFromSmarts("[O]1[C@@]([C])([C])([C])[C]2=C1C(=C([C])C(=C2)O)")
     if not mol.HasSubstructMatch(chromanol_pattern):
         return False, "No chroman-6-ol skeleton found"
