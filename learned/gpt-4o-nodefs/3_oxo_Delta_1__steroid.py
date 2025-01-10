@@ -14,15 +14,15 @@ def is_3_oxo_Delta_1_steroid(smiles: str):
         bool: True if molecule is a 3-oxo-Delta(1) steroid, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
     # Define a broad steroid backbone pattern with a 3-keto group and Delta(1) double bond
-    # The carbonyl group (C=O) at the third position and a double bond between the first and second carbon.
-    steroid_pattern = Chem.MolFromSmarts("C1=CC2CC[C@H]3C(=O)CC[C@@]3(C)C2CC1")
+    # Using wildcard bond types (~) and stereochemistry indicators @/@H to capture potential variability
+    steroid_pattern = Chem.MolFromSmarts("C1=CC2CC(=O)C3C~C~C~C3C2~C1")
 
     # Check for the steroid pattern in the molecule
     if not mol.HasSubstructMatch(steroid_pattern):
