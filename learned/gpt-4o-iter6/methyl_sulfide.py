@@ -22,12 +22,12 @@ def is_methyl_sulfide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Improved SMARTS pattern to precisely match methyl sulfide
-    # This pattern looks for a sulfur atom single-bonded to a methyl group and another carbon-based group
-    # Avoids matching more complex sulfide groups, such as disulfides, polysulfides, or where sulfur has additional functional group attachments
-    methyl_sulfide_pattern = Chem.MolFromSmarts("[CH3][S;D2;!$(*~[#8,#7,#16])][#6]")
-    
+    # Create a SMARTS pattern for sulfur bonded to a methyl group.
+    # This pattern allows any other atoms or groups to be bonded to sulfur.
+    methyl_sulfide_pattern = Chem.MolFromSmarts("[CH3][S;X1][#6,#1]")
+
+    # Check if the molecule has the substructure pattern
     if mol.HasSubstructMatch(methyl_sulfide_pattern):
-        return True, "Contains a sulfur atom bonded to a simple methyl group (methyl sulfide)"
-    
-    return False, "No simple methyl sulfide pattern found"
+        return True, "Contains a sulfur atom bonded to a methyl group (methyl sulfide)"
+
+    return False, "No methyl sulfide pattern found"
