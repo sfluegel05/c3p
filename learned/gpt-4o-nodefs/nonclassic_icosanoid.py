@@ -2,13 +2,13 @@
 Classifies: CHEBI:61703 nonclassic icosanoid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import AllChem
 
 def is_nonclassic_icosanoid(smiles: str):
     """
     Determines if a molecule is a nonclassic icosanoid based on its SMILES string.
-    Nonclassic icosanoids often include epoxy groups, multiple hydroxyl groups,
-    polyunsaturation, and a terminal carboxylic acid. They generally have around 20 carbons.
+    Nonclassic icosanoids are derivatives characterized by polyunsaturated chains, 
+    epoxy groups, and multiple hydroxyl groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,27 +23,25 @@ def is_nonclassic_icosanoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Flexible epoxy group detection
+    # Look for epoxy group (epoxide, cyclic ether: -O-)
     epoxy_pattern = Chem.MolFromSmarts("C1OC1")
-    epoxy_matches = mol.GetSubstructMatches(epoxy_pattern)
+    if not mol.HasSubstructMatch(epoxy_pattern):
+        return False, "No epoxy group found"
     
-    # Polyunsaturations: count overall double bonds
-    n_double_bonds = len([bond for bond in mol.GetBonds() if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE])
-    
-    # Check hydroxyl groups; presence of multiple rather than fixed number
-    hydroxyl_pattern = Chem.MolFromSmarts("[CX4][OX2H]")
+    # Look for polyunsaturated chain (conjugated double bonds pattern)
+    polyunsaturated_pattern = Chem.MolFromSmarts("C=C-C=C-C=C")
+    if not mol.HasSubstructMatch(polyunsaturated_pattern):
+        return False, "No polyunsaturated chain pattern found"
+
+    # Look for multiple hydroxyl groups, accounting for stereochemistry
+    hydroxyl_pattern = Chem.MolFromSmarts("[C@H](O)")
     hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    
-    # Check for carboxylic acid terminal group
+    if len(hydroxyl_matches) < 2:
+        return False, f"Found {len(hydroxyl_matches)} hydroxyl group(s), require at least 2 with stereochemistry"
+
+    # Check for carboxylic acid group presence
     carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
 
-    # Count the total carbon atoms
-    total_carbon_atoms = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-
-    # Final evaluation using refined criteria
-    if len(epoxy_matches) >= 1 and len(hydroxyl_matches) >= 2 and n_double_bonds >= 3 and total_carbon_atoms >= 18 and total_carbon_atoms <= 22:
-        return True, "Matches the criteria for nonclassic icosanoids"
-
-    return False, "Does not satisfy all criteria for a nonclassic icosanoid"
+    return True, "Contains epoxy group, polyunsaturated chain, multiple hydroxyl groups, and carboxylic acid"
