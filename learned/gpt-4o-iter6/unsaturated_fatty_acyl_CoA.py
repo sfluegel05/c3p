@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_unsaturated_fatty_acyl_CoA(smiles: str):
     """
     Determines if a molecule is an unsaturated fatty acyl-CoA based on its SMILES string.
-    An unsaturated fatty acyl-CoA is defined as a fatty acyl-CoA with a coenzyme A moiety linked
-    via a thioester bond to an unsaturated fatty acid (contains C=C bonds).
+    An unsaturated fatty acyl-CoA is defined as a fatty acyl-CoA with a coenzyme A moiety 
+    linked via a thioester bond to an unsaturated fatty acid (contains C=C bonds).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,13 +21,21 @@ def is_unsaturated_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define functional group patterns:
-    # Look for coenzyme A moiety pattern (specific parts)
-    coenzyme_a_pattern = Chem.MolFromSmarts("P(=O)(O)OC[C@H]1O[C@H](CN2C=NC3=C2N=CN=C3N)[C@H](O)[C@H]1OP(O)(=O)O")
-    if not mol.HasSubstructMatch(coenzyme_a_pattern):
-        return False, "Coenzyme A moiety not found"
-
-    # Look for thioester linkage pattern
+    # Define patterns for detection:
+    # Coenzyme A moiety components (look for consistent CoA structure portions)
+    phosphopantetheine_pattern = Chem.MolFromSmarts("[C@H](O)C(C)(C)COP(=O)(O)O")
+    if not mol.HasSubstructMatch(phosphopantetheine_pattern):
+        return False, "Phosphopantetheine component of Coenzyme A not found"
+    
+    adenine_pattern = Chem.MolFromSmarts("N1C=NC2=C1N=CN=C2N")
+    if not mol.HasSubstructMatch(adenine_pattern):
+        return False, "Adenine component of Coenzyme A not found"
+    
+    ribose_pattern = Chem.MolFromSmarts("C1OC(OP(O)(O)=O)C(O)C1O")
+    if not mol.HasSubstructMatch(ribose_pattern):
+        return False, "Ribose component of Coenzyme A not found"
+    
+    # Thioester linkage pattern
     thioester_pattern = Chem.MolFromSmarts("C(=O)SC")
     if not mol.HasSubstructMatch(thioester_pattern):
         return False, "No thioester linkage found"
@@ -43,7 +51,3 @@ def is_unsaturated_fatty_acyl_CoA(smiles: str):
         return False, f"Carbon chain too short, found only {carbon_count} carbons"
 
     return True, "Molecule is an unsaturated fatty acyl-CoA with required functional groups"
-
-# Example usage:
-smiles_example = "CCC\C=C\C=C\C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)N1C=NC2=C1N=CN=C2N"
-is_unsaturated_fatty_acyl_CoA(smiles_example)
