@@ -24,29 +24,50 @@ def is_alditol(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+    
+    # Define the SMARTS pattern for an alditol chain
+    # This matches an acyclic chain of carbons with attached hydroxyl groups,
+    # starting and ending with CH2OH groups.
+    pattern_str = '[O][CH2][CH](O){1,10}[CH2][O]'
+    pattern = Chem.MolFromSmarts(pattern_str)
+    if pattern is None:
+        return False, "Invalid SMARTS pattern"
 
-    # Remove the check for cyclic molecules to allow alditol chains within larger structures
-    # Define the maximum length of the alditol chain to search for
-    max_n = 10  # Adjust as needed
-
-    # Initialize a flag to indicate if an alditol chain is found
-    alditol_found = False
-
-    # Try matching alditol chains of varying lengths
-    for n in range(1, max_n + 1):  # n is the number of internal CH(OH) units
-        # Build the SMARTS pattern for the alditol chain
-        chain = '-'.join(['[C@H](O)'] * n)
-        pattern_str = f'[OH]-[CH2]-{chain}-[CH2]-[OH]'
-        pattern = Chem.MolFromSmarts(pattern_str)
-        if pattern is None:
-            continue  # Skip invalid patterns
-
-        # Search for the pattern in the molecule
-        matches = mol.GetSubstructMatches(pattern)
-        if matches:
-            alditol_found = True
-            return True, f"Molecule contains an alditol chain of length {n + 2} carbons"
-
-    # If no alditol chain is found
-    if not alditol_found:
+    # Search for matches in the molecule
+    matches = mol.GetSubstructMatches(pattern)
+    if not matches:
         return False, "Molecule does not contain an alditol chain"
+
+    # Check each match for additional criteria
+    for match in matches:
+        atoms = [mol.GetAtomWithIdx(idx) for idx in match]
+
+        # Check that the matched atoms are not in rings
+        if any(atom.IsInRing() for atom in atoms):
+            continue  # Skip this match
+
+        # Check that all carbons are sp3 hybridized and have OH groups
+        carbons = [atom for atom in atoms if atom.GetAtomicNum() == 6]
+        all_sp3 = all(atom.GetHybridization() == Chem.HybridizationType.SP3 for atom in carbons)
+        all_has_OH = True
+        for atom in carbons:
+            # Check that carbon has an attached hydroxyl group
+            has_OH = False
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 8:  # Oxygen
+                    bond = mol.GetBondBetweenAtoms(atom.GetIdx(), neighbor.GetIdx())
+                    if bond is not None and bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
+                        has_OH = True
+                        break
+            if not has_OH:
+                all_has_OH = False
+                break
+        if not all_sp3 or not all_has_OH:
+            continue  # Skip this match
+
+        # Passed all checks
+        n_carbons = len(carbons)
+        return True, f"Contains an alditol chain of length {n_carbons} carbons"
+
+    # No valid alditol chain found
+    return False, "Molecule does not contain an alditol chain"
