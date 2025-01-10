@@ -25,43 +25,54 @@ def is_nucleotide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for phosphate group
-    phosphate_pattern = Chem.MolFromSmarts("[PX4](=[OX1])([$([OX2H]),$([OX2-])])[$([OX2H]),$([OX2-])][$([OX2H]),$([OX2-]),$(O)]")
-    if not mol.HasSubstructMatch(phosphate_pattern):
+    # Check for phosphate group - more general pattern
+    phosphate_patterns = [
+        Chem.MolFromSmarts("[PX4](=[OX1])([OX2H,OX2-,OX2])[OX2H,OX2-,OX2][OX2H,OX2-,OX2]"),  # Regular phosphate
+        Chem.MolFromSmarts("[PX4](=[OX1])([OX2H,OX2-,OX2])[OX2H,OX2-,OX2][OX2]"),  # Phosphoester
+        Chem.MolFromSmarts("[PX4]([OX2H,OX2-,OX2])([OX2H,OX2-,OX2])[OX2H,OX2-,OX2][OX2]")  # Cyclic phosphate
+    ]
+    
+    has_phosphate = any(mol.HasSubstructMatch(pattern) for pattern in phosphate_patterns)
+    if not has_phosphate:
         return False, "No phosphate group found"
 
-    # Check for sugar (furanose) ring
-    furanose_pattern = Chem.MolFromSmarts("[CH2]-[CH1]-[CH1]-[CH1]-O1")
-    deoxy_furanose_pattern = Chem.MolFromSmarts("[CH2]-[CH2]-[CH1]-[CH1]-O1")
-    has_furanose = mol.HasSubstructMatch(furanose_pattern)
-    has_deoxy_furanose = mol.HasSubstructMatch(deoxy_furanose_pattern)
+    # Check for sugar (furanose) ring - more general pattern
+    sugar_patterns = [
+        Chem.MolFromSmarts("[CH2,CH][CH1,CH2][CH1][CH1]O1"),  # Various forms of ribose/deoxyribose
+        Chem.MolFromSmarts("[CH2]1O[CH]([CH])[CH]([CH2,CH])[CH]1"),  # Alternative sugar pattern
+        Chem.MolFromSmarts("[CH2]1O[CH]([CH,CH2])[CH]([CH,OH])[CH]1")  # More flexible sugar pattern
+    ]
     
-    if not (has_furanose or has_deoxy_furanose):
+    has_sugar = any(mol.HasSubstructMatch(pattern) for pattern in sugar_patterns)
+    if not has_sugar:
         return False, "No sugar (ribose/deoxyribose) moiety found"
 
-    # Check for nucleobase patterns
-    # Purine bases (adenine, guanine, or derivatives)
-    purine_pattern = Chem.MolFromSmarts("c12ncnc1ncn2")
+    # Check for nucleobase patterns - expanded to catch more variants
+    base_patterns = [
+        Chem.MolFromSmarts("c12ncnc1[nX3]c[nX3]2"),  # Purine core
+        Chem.MolFromSmarts("c1c[nX3]c(=O)[nX3]c1"),  # Pyrimidine core
+        Chem.MolFromSmarts("c1nc2c([nX3]1)nc[nX3]2"),  # Alternative purine
+        Chem.MolFromSmarts("c1c[nX3]c(=O)nc1[NX3]"),  # Cytosine-like
+        Chem.MolFromSmarts("c1[nX3]c(=O)[nX3]c(=O)c1"),  # Uracil/thymine-like
+        Chem.MolFromSmarts("c1nc([NX3])nc2c1nc[nX3]2"),  # Modified purine
+        Chem.MolFromSmarts("c1nc(O)nc2c1[nX3]c[nX3]2")  # Alternative purine with oxo group
+    ]
     
-    # Pyrimidine bases (cytosine, thymine, uracil, or derivatives)
-    pyrimidine_pattern = Chem.MolFromSmarts("c1cn([*])c(=O)nc1")
-    
-    has_purine = mol.HasSubstructMatch(purine_pattern)
-    has_pyrimidine = mol.HasSubstructMatch(pyrimidine_pattern)
-    
-    if not (has_purine or has_pyrimidine):
-        return False, "No nucleobase (purine/pyrimidine) found"
+    has_base = any(mol.HasSubstructMatch(pattern) for pattern in base_patterns)
+    if not has_base:
+        return False, "No nucleobase found"
 
-    # Check connection between sugar and phosphate
-    # This is a simplified check - looking for C-O-P pattern
-    sugar_phosphate_pattern = Chem.MolFromSmarts("[CH2]OP(=O)")
-    if not mol.HasSubstructMatch(sugar_phosphate_pattern):
-        return False, "Phosphate not properly connected to sugar"
-
-    # Check connection between sugar and base
-    # Looking for N-glycosidic bond
-    glycosidic_pattern = Chem.MolFromSmarts("[NX3]1-[#6]-[#6]-[#6]-[#6](-[#6])-O1")
-    if not mol.HasSubstructMatch(glycosidic_pattern):
-        return False, "No proper N-glycosidic bond between base and sugar"
+    # Check for connectivity between components
+    # More general patterns for sugar-phosphate and sugar-base connections
+    connections = [
+        Chem.MolFromSmarts("[CH2,CH]OP(=O)"),  # Sugar-phosphate
+        Chem.MolFromSmarts("[CH2,CH]OP([OH,O-])"),  # Alternative sugar-phosphate
+        Chem.MolFromSmarts("[NX3]1[CH1][CH1,CH2][CH1][CH1]O1"),  # N-glycosidic bond
+        Chem.MolFromSmarts("[NX3][CH]1O[CH][CH][CH]1")  # Alternative N-glycosidic bond
+    ]
+    
+    has_connections = any(mol.HasSubstructMatch(pattern) for pattern in connections)
+    if not has_connections:
+        return False, "Components not properly connected"
 
     return True, "Contains nucleobase, sugar, and phosphate with correct connectivity"
