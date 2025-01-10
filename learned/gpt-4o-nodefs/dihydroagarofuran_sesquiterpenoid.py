@@ -21,15 +21,20 @@ def is_dihydroagarofuran_sesquiterpenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Example structural pattern could include fused bicyclic ring system typical in these compounds
-    # This is a simplification. Actual patterns would be more complex.
-    # Note: Such patterns are placeholders and may not be precise for the class without expert derivation.
-    dihydroagarofuran_core_pattern = Chem.MolFromSmarts("C1[C@@H]2[C@H](O)[C@H](O)C[C@@H]1C2")
-    
+    # Refined pattern to match more accurately typical dihydroagarofuran core features
+    # This example assumes a typical bicyclic framework for dihydroagarofuran cores
+    dihydroagarofuran_core_pattern = Chem.MolFromSmarts("C1[C@@H]2[C@H](OC(=O)C)[C@@H]3OC(=O)[C@H]23")  # Example refined pattern
+
     if not mol.HasSubstructMatch(dihydroagarofuran_core_pattern):
         return False, "Core structure of dihydroagarofuran not found"
 
-    # Further checks could be added for the extensive ester groups or other characteristic features
-    # This would require detailed knowledge of the variations in functional groups
+    # Check for more specific functional group / ester presence
+    # Typical dihydroagarofuran sesquiterpenoids have extensive ester groups
+    ester_pattern = Chem.MolFromSmarts("O=C(O)C")  # Basic ester pattern
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    if len(ester_matches) < 2:  # Expect at least two ester matches in these molecules
+        return False, f"Ester groups absent or fewer than expected, found {len(ester_matches)}"
 
-    return True, "Molecule matches dihydroagarofuran sesquiterpenoid core structure"
+    return True, "Molecule matches dihydroagarofuran sesquiterpenoid core structure with ester characteristics"
+
+# Test examples (update patterns based on dihydroagarofuran specific knowledge if necessary)
