@@ -21,20 +21,24 @@ def is_prenols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Refined isoprene unit pattern to match more variations, including E/Z isomers
-    isoprene_unit = Chem.MolFromSmarts("[C](=C)[C][C]")
-    num_isoprene_units = len(mol.GetSubstructMatches(isoprene_unit))
+    # Refined isoprene unit patterns
+    # Common isoprene configurations - linear or terminal methyl as seen in prenol forms
+    isoprene_unit_1 = Chem.MolFromSmarts("C(=C)C(C)C")  # Example pattern for typical isoprene
+    isoprene_unit_2 = Chem.MolFromSmarts("CC(=CC)C")    # Alternate pattern
+    
+    # Searching both isoprene patterns 
+    num_isoprene_units = len(mol.GetSubstructMatches(isoprene_unit_1)) + len(mol.GetSubstructMatches(isoprene_unit_2))
 
     # Check for isoprene units
     if num_isoprene_units == 0:
         return False, "No isoprene units found"
 
-    # Check for alcohol group (OH) or phosphate groups
-    oh_group = Chem.MolFromSmarts("O")
+    # Check for alcohol group
+    oh_group = Chem.MolFromSmarts("[OX2H]")
     has_oh_group = mol.HasSubstructMatch(oh_group)
     
-    # Checking the presence of diphosphate
-    phosphate_group = Chem.MolFromSmarts("P(=O)(O)O")
+    # Check for phosphate groups
+    phosphate_group = Chem.MolFromSmarts("P(=O)(O)[O-]")    # Refine to reflect divalent portrayal and deoxidized forms
     has_phosphate_group = mol.HasSubstructMatch(phosphate_group)
 
     # Ensure at least one of the groups (OH/phosphate) is present
