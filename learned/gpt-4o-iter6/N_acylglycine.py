@@ -6,9 +6,7 @@ from rdkit import Chem
 def is_N_acylglycine(smiles: str):
     """
     Determines if a molecule is an N-acylglycine based on its SMILES string.
-    An N-acylglycine is characterized by an acyl group attached to the nitrogen atom
-    of glycine, typically involving a C(=O)N-C-C(=O)O structure where the nitrogen is
-    attached directly to an acyl group.
+    An N-acylglycine is characterized by an acyl group attached to the nitrogen atom of glycine.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,11 +21,9 @@ def is_N_acylglycine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Improved pattern for N-acylglycine: Specifically look for the N-acyl group attached to glycine
-    # The pattern represents: Acyl group (R-C(=O)-) attached to nitrogen (N-C-C(=O)O)
-    n_acylglycine_pattern = Chem.MolFromSmarts("[CX3](=O)[NX3][CX4H2][CX3](=O)[O]")
-    
-    if mol.HasSubstructMatch(n_acylglycine_pattern):
-        return True, "Molecule contains an N-acylglycine structure"
+    # Improved pattern for N-acylglycine
+    n_acylglycine_pattern = Chem.MolFromSmarts("C(=O)NCC(=O)O")  # N-acyl linkage and glycine structure
+    if not mol.HasSubstructMatch(n_acylglycine_pattern):
+        return False, "No N-acylglycine structure found in the molecule"
 
-    return False, "No N-acylglycine structure found in the molecule"
+    return True, "Molecule contains an N-acylglycine structure"
