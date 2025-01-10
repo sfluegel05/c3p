@@ -2,7 +2,6 @@
 Classifies: CHEBI:61905 short-chain fatty acyl-CoA
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_short_chain_fatty_acyl_CoA(smiles: str):
     """
@@ -22,28 +21,24 @@ def is_short_chain_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Updated Coenzyme A pattern (this must be verified for accuracy)
-    coa_structure_pattern = Chem.MolFromSmarts("NC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)N1C=NC2=C1N=CN=C2N")
+    # Define updated Coenzyme A pattern
+    coa_structure_pattern = Chem.MolFromSmarts("NC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OCC1OC(C(O)C1O)N2C=NC3=C2N=CN=C3N")
     if not mol.HasSubstructMatch(coa_structure_pattern):
         return False, "No Coenzyme A structure found"
 
     # Look for thioester group pattern (-C(=O)S-)
     thioester_pattern = Chem.MolFromSmarts("C(=O)S")
-    if not mol.HasSubstructMatch(thioester_pattern):
-        return False, "No thioester group found"
-
-    # Modify logic to identify the fatty acid chain start position
-    # Get match for thioester and check carbon chain
     thioester_match = mol.GetSubstructMatch(thioester_pattern)
     if not thioester_match:
-        return False, "Could not find thioester group start"
+        return False, "No thioester group found"
 
-    fatty_acid_start_idx = thioester_match[0]
+    # Find the fatty acid chain starting position just after sulfur
+    fatty_acid_start_idx = thioester_match[-1]
     num_carbons = 0
 
-    # Update logic: count carbons from the position after the thioester sulfur
+    # Count carbons starting after the thioester sulfur
     for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 6:  # counting carbons
+        if atom.GetAtomicNum() == 6:
             if atom.GetIdx() > fatty_acid_start_idx:
                 num_carbons += 1
 
