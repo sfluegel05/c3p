@@ -22,17 +22,19 @@ def is_sterol_ester(smiles: str):
     if not mol:
         return False, "Invalid SMILES string"
 
-    # Sterol substructure (cyclopentanoperhydrophenanthrene with a hydroxyl group)
-    sterol_pattern = Chem.MolFromSmarts("C1CCC2C(C1)CC3C4CCC(C4)C(O)C3(C2)C")
+    # Sterol substructure pattern (modified for any typical sterol backbone)
+    # using a more general cyclopentanoperhydrophenanthrene pattern
+    sterol_pattern = Chem.MolFromSmarts("C1CCC2C3CC(C4CCC(C4)C3)C2C1")  # General sterol-like backbone
     if not mol.HasSubstructMatch(sterol_pattern):
         return False, "No sterol backbone found"
 
-    # Ester functional group pattern, focusing on linkage with OH at sterol
-    ester_pattern = Chem.MolFromSmarts("C(=O)O[C@H]")
+    # Ester functional group pattern, general for esters
+    # O-C(=O)- linkage indicative of ester bonds
+    ester_pattern = Chem.MolFromSmarts("C(=O)O")
     if not mol.HasSubstructMatch(ester_pattern):
-        return False, "No ester linkage at 3-hydroxy position found"
+        return False, "No ester linkage found"
 
-    return True, "Contains sterol backbone with ester linkage at 3-hydroxy position"
+    return True, "Contains sterol backbone with ester linkage"
 
 # Test the function with an example
 example_smiles = "C1[C@@]2([C@]3(CC[C@]4([C@]([C@@]3(CC=C2C[C@H](C1)OC(=O)CCCCCCCCC/C=C\\C/C=C\\C/C=C\\CC)[H])(CC[C@@]4([C@H](C)CCCC(C)C)[H])[H])C)[H])C"
