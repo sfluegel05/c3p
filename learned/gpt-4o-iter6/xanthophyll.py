@@ -12,7 +12,7 @@ def is_xanthophyll(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if the molecule is a xanthophyll, False otherwise
+        bool: True if molecule is a xanthophyll, False otherwise
         str: Reason for classification
     """
     
@@ -21,29 +21,24 @@ def is_xanthophyll(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # General pattern of polyene chain characteristic in carotenoids
-    polyene_pattern = Chem.MolFromSmarts("C=C(-C=C)*")  # A more flexible pattern
-    if not mol.HasSubstructMatch(polyene_pattern):
-        return False, "Basic polyene chain characteristic of carotenoids not found"
+    # General pattern representing alternation of double and single bonds (conjugation common in carotenoids)
+    conjugation_pattern = Chem.MolFromSmarts("C=C(-,=C)*=C")
+    if conjugation_pattern and not mol.HasSubstructMatch(conjugation_pattern):
+        return False, "No proper alternating double-bonds pattern typically found in carotenoids"
     
-    # Ensure there is a significant polyene backbone
-    num_double_bonds = sum(1 for bond in mol.GetBonds() if bond.GetBondTypeAsDouble() == 2)
-    if num_double_bonds < 5:
-        return False, "Not enough conjugated double bonds for a carotenoid"
+    # Check for the presence of oxygen atoms in various functional groups
+    oxygen_pattern = Chem.MolFromSmarts("[OX1,OX2,OX3]")
+    if oxygen_pattern and not mol.HasSubstructMatch(oxygen_pattern):
+        return False, "Carotenoid derivative must be oxygenated (No oxygen detected)"
+    
+    # Check for possible multiple types of oxygen functionalization present
+    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")  # Detect -OH groups
+    carbonyl_pattern = Chem.MolFromSmarts("[CX3]=[OX1]")  # Detect =O groups
+    ether_pattern = Chem.MolFromSmarts("[CX3][OX2R]")  # Detect -O- groups
 
-    # Check for the presence of oxygen atoms indicating oxidation
-    oxy_func_groups = [
-        "[OX2H]",  # hydroxy group
-        "[C]=O",   # ketone group
-        "[R0, R1; $([O]), $([O-][#6])]", # epoxy and other relevant groups
-    ]
-    
-    oxygen_presence = any(
-        mol.HasSubstructMatch(Chem.MolFromSmarts(pattern))
-        for pattern in oxy_func_groups
-    )
-    
-    if not oxygen_presence:
-        return False, "No significant oxygen-based functional groups found"
+    if not (mol.HasSubstructMatch(hydroxyl_pattern) or mol.HasSubstructMatch(carbonyl_pattern) or mol.HasSubstructMatch(ether_pattern)):
+        return False, "At least one oxygen functional group required (such as hydroxyl, carbonyl, or ether not found)"
+
+    # Additional pattern checks and logic improvements as needed
 
     return True, "Contains features of an oxygenated carotenoid (xanthophyll)"
