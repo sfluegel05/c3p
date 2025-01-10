@@ -2,14 +2,17 @@
 Classifies: CHEBI:47916 flavonoid
 """
 """
-Classifies: CHEBI:47916 flavonoid
+Classifies: flavonoid
 """
+
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_flavonoid(smiles: str):
     """
     Determines if a molecule is a flavonoid based on its SMILES string.
-    A flavonoid is any compound based on 1-benzopyran with an aryl substituent at position 2.
+
+    A flavonoid is defined as any member of the superclass flavonoids whose skeleton is based on 1-benzopyran with an aryl substituent at position 2.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -24,43 +27,39 @@ def is_flavonoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the flavonoid core SMARTS pattern
-    # This pattern represents a 1-benzopyran ring fused to a benzene ring (A and C rings)
-    # with an aryl group at position 2 (B ring)
-    flavonoid_smarts = """
-    [$([cH]1ccc2c(c1)occ2[$(c3ccccc3),$(c3ccc(cc3)O),$(c3ccc(cc3)OC),$(c3ccc(cc3)C)])]
-    """
-
-    # Remove whitespace and newlines from SMARTS
-    flavonoid_smarts = ''.join(flavonoid_smarts.split())
-
-    # Convert SMARTS to RDKit mol object
+    # Define the flavonoid core pattern (1-benzopyran fused ring with aryl at position 2)
+    flavonoid_smarts = "c1cc2c(cc1)c(O)cc2-c3cccccc3"  # Simplified pattern for flavonoid core
     flavonoid_pattern = Chem.MolFromSmarts(flavonoid_smarts)
     if flavonoid_pattern is None:
-        return False, "Invalid SMARTS pattern"
+        return None, "Invalid SMARTS pattern"
 
-    # Perform substructure search
+    # Check for the flavonoid core pattern
     if mol.HasSubstructMatch(flavonoid_pattern):
         return True, "Contains flavonoid core structure with aryl substituent at position 2"
     else:
         return False, "Does not contain flavonoid core structure with aryl substituent at position 2"
 
-
-__metadata__ = {   'chemical_class': {   'id': 'CHEBI:47916',
-                              'name': 'flavonoid',
-                              'definition': 'Any member of the \'superclass\' '
-                                            'flavonoids whose skeleton is based '
-                                            'on 1-benzopyran with an aryl '
-                                            'substituent at position 2. The '
-                                            'term was originally restricted to '
-                                            'natural products, but is now also '
-                                            'used to describe semi-synthetic '
-                                            'and fully synthetic compounds.',
-                              'parents': []},
-        'config': {},
-        'message': None,
-        'attempt': 1,
-        'success': True,
-        'best': True,
-        'error': '',
-        'stdout': None}
+__metadata__ = {
+    'chemical_class': {
+        'name': 'flavonoid',
+        'definition': 'Any member of the \'superclass\' flavonoids whose skeleton is based on 1-benzopyran with an aryl substituent at position 2. The term was originally restricted to natural products, but is now also used to describe semi-synthetic and fully synthetic compounds.'
+    },
+    'config': {
+        'llm_model_name': 'lbl/claude-sonnet',
+        'f1_threshold': 0.8,
+        'max_attempts': 5,
+        'max_positive_instances': None,
+        'max_positive_to_test': None,
+        'max_negative_to_test': None,
+        'max_positive_in_prompt': 50,
+        'max_negative_in_prompt': 20,
+        'max_instances_in_prompt': 100,
+        'test_proportion': 0.1
+    },
+    'message': None,
+    'attempt': 0,
+    'success': True,
+    'best': True,
+    'error': '',
+    'stdout': None
+}
