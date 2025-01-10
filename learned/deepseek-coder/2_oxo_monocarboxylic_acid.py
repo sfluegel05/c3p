@@ -34,13 +34,17 @@ def is_2_oxo_monocarboxylic_acid(smiles: str):
 
     # Check for a 2-oxo substituent (carbonyl group within two bonds of the carboxylic acid)
     # The pattern looks for a carbonyl group (C=O) within two bonds of the carboxylic acid
-    oxo_pattern = Chem.MolFromSmarts("[CX3](=O)[CX4][CX4][CX3](=O)[OX2H1]")
+    oxo_pattern = Chem.MolFromSmarts("[CX3](=O)[CX4,CX3][CX4,CX3][CX3](=O)[OX2H1]")
     oxo_matches = mol.GetSubstructMatches(oxo_pattern)
     if len(oxo_matches) == 0:
         # If no matches, try a more flexible pattern that allows for a single bond between the carbonyl and carboxylic acid
-        oxo_pattern = Chem.MolFromSmarts("[CX3](=O)[CX4][CX3](=O)[OX2H1]")
+        oxo_pattern = Chem.MolFromSmarts("[CX3](=O)[CX4,CX3][CX3](=O)[OX2H1]")
         oxo_matches = mol.GetSubstructMatches(oxo_pattern)
         if len(oxo_matches) == 0:
-            return False, "No 2-oxo substituent found"
+            # If still no matches, check for a carbonyl group directly attached to the carboxylic acid
+            oxo_pattern = Chem.MolFromSmarts("[CX3](=O)[CX3](=O)[OX2H1]")
+            oxo_matches = mol.GetSubstructMatches(oxo_pattern)
+            if len(oxo_matches) == 0:
+                return False, "No 2-oxo substituent found"
 
     return True, "Contains a single carboxylic acid group and a 2-oxo substituent"
