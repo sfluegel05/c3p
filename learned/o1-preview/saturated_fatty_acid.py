@@ -5,6 +5,7 @@ Classifies: CHEBI:26607 saturated fatty acid
 Classifies: CHEBI:15841 saturated fatty acid
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_saturated_fatty_acid(smiles: str):
     """
@@ -18,17 +19,16 @@ def is_saturated_fatty_acid(smiles: str):
         bool: True if molecule is a saturated fatty acid, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Check for carboxylic acid group (-C(=O)OH or deprotonated form -C(=O)O-)
-    carboxylic_acid_pattern = Chem.MolFromSmarts('C(=O)[O,H,-1]')
-    carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
-    if len(carboxylic_acid_matches) != 1:
-        return False, f"Expected exactly one carboxylic acid group, found {len(carboxylic_acid_matches)}"
+    
+    # Check for carboxylic acid group (-C(=O)OH or deprotonated -C(=O)O-)
+    carboxylic_acid_pattern = Chem.MolFromSmarts('C(=O)[O,H,-]')
+    if not mol.HasSubstructMatch(carboxylic_acid_pattern):
+        return False, "No carboxylic acid group found"
 
     # Check for carbon-carbon double bonds
     if mol.HasSubstructMatch(Chem.MolFromSmarts('C=C')):
@@ -37,93 +37,67 @@ def is_saturated_fatty_acid(smiles: str):
     # Check for carbon-carbon triple bonds
     if mol.HasSubstructMatch(Chem.MolFromSmarts('C#C')):
         return False, "Contains carbon-carbon triple bonds (unsaturation)"
-
+        
     # Check for ring structures
     if mol.GetRingInfo().NumRings() > 0:
         return False, "Contains ring structures, not a fatty acid"
-
-    # Check for heteroatoms other than O in carboxylic acid group
-    allowed_atoms = {1, 6, 8}  # H, C, O
-    for atom in mol.GetAtoms():
-        atomic_num = atom.GetAtomicNum()
-        if atomic_num not in allowed_atoms:
-            return False, f"Contains heteroatoms other than C, H, and O (found atomic number {atomic_num})"
-        # Exclude oxygen atoms not part of the carboxylic acid group
-        if atomic_num == 8:
-            atom_idx = atom.GetIdx()
-            is_in_carboxyl = any(atom_idx in match for match in carboxylic_acid_matches)
-            if not is_in_carboxyl:
-                return False, "Contains oxygen atoms outside carboxylic acid group"
-
-    # Check for additional functional groups beyond carboxylic acid
-    # Exclude hydroxyl groups beyond carboxylic acid hydroxyl
-    hydroxyl_pattern = Chem.MolFromSmarts('[OX2H]')
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    # Count hydroxyl groups not in carboxylic acid
-    num_hydroxyls = 0
-    for match in hydroxyl_matches:
-        atom_idx = match[0]
-        is_in_carboxyl = any(atom_idx in match for match in carboxylic_acid_matches)
-        if not is_in_carboxyl:
-            num_hydroxyls += 1
-    if num_hydroxyls > 0:
-        return False, f"Contains {num_hydroxyls} additional hydroxyl group(s)"
-
-    # Exclude amine groups
-    amine_pattern = Chem.MolFromSmarts('[NX3;H2,H1,H0;!$(NC=O)]')
-    if mol.HasSubstructMatch(amine_pattern):
-        return False, "Contains amine group"
-
-    # Exclude other functional groups like ketones, aldehydes, esters, amides, halogens
-    forbidden_patterns = [
-        Chem.MolFromSmarts('C=O'),        # Carbonyl (ketones, aldehydes)
-        Chem.MolFromSmarts('C(=O)O[C,H]'),  # Esters
-        Chem.MolFromSmarts('C(=O)N'),     # Amides
-        Chem.MolFromSmarts('[F,Cl,Br,I]'), # Halogens
-        Chem.MolFromSmarts('O=CN'),       # Amides
-        Chem.MolFromSmarts('S'),          # Sulfur-containing groups
-        Chem.MolFromSmarts('P'),          # Phosphorus-containing groups
-    ]
-    for pattern in forbidden_patterns:
-        if mol.HasSubstructMatch(pattern):
-            return False, "Contains forbidden functional groups"
-
-    # Get the carbon chain length (number of carbons excluding the carboxyl carbon)
-    carboxyl_c_idx = carboxylic_acid_matches[0][0]
-    visited = set()
-    chain_length = get_aliphatic_chain_length(mol, carboxyl_c_idx, visited)
-    if chain_length < 1:
-        return False, f"Carbon chain too short for fatty acid (found {chain_length} carbon)"
-
+    
+    # Find the carboxylic acid carbon atom
+    carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
+    carboxylic_acid_carbons = [match[0] for match in carboxylic_acid_matches]
+    
+    if not carboxylic_acid_carbons:
+        return False, "No carboxylic acid group found"
+    
+    # Find the longest carbon chain attached to the carboxylic acid group
+    max_chain_length = 0
+    for carboxylic_carbon_idx in carboxylic_acid_carbons:
+        chain_length = get_longest_aliphatic_chain(mol, carboxylic_carbon_idx)
+        max_chain_length = max(max_chain_length, chain_length)
+    
+    # A fatty acid should have at least 4 carbons in the chain excluding the carboxyl carbon
+    if max_chain_length < 4:
+        return False, f"Carbon chain too short for fatty acid (found {max_chain_length} carbons)"
+    
     return True, "Molecule is a saturated fatty acid"
 
-def get_aliphatic_chain_length(mol, atom_idx, visited):
+def get_longest_aliphatic_chain(mol, start_atom_idx):
     """
-    Recursively counts the number of carbon atoms connected in the aliphatic chain.
+    Finds the length of the longest aliphatic carbon chain starting from the given atom.
 
     Args:
         mol: RDKit molecule object
-        atom_idx: Index of the current atom
-        visited: Set of visited atom indices
+        start_atom_idx: Index of the starting atom (carboxylic acid carbon)
 
     Returns:
-        int: Length of the carbon chain excluding the carboxyl carbon
+        int: Length of the longest carbon chain
     """
-    visited.add(atom_idx)
-    atom = mol.GetAtomWithIdx(atom_idx)
-    length = 0
-    for neighbor in atom.GetNeighbors():
-        neighbor_idx = neighbor.GetIdx()
-        if neighbor_idx in visited:
+    visited = set()
+    max_length = 0
+    stack = [(start_atom_idx, 0)]
+    
+    while stack:
+        atom_idx, length = stack.pop()
+        if atom_idx in visited:
             continue
-        neighbor_atom = mol.GetAtomWithIdx(neighbor_idx)
-        if neighbor_atom.GetAtomicNum() == 6:  # Carbon atom
+        visited.add(atom_idx)
+        atom = mol.GetAtomWithIdx(atom_idx)
+        
+        if atom.GetAtomicNum() != 6:
+            continue  # Only consider carbon atoms
+        
+        max_length = max(max_length, length)
+        
+        for neighbor in atom.GetNeighbors():
+            neighbor_idx = neighbor.GetIdx()
             bond = mol.GetBondBetweenAtoms(atom_idx, neighbor_idx)
-            # Only consider single bonds
+            # Skip if bond is not single
             if bond.GetBondType() != Chem.rdchem.BondType.SINGLE:
                 continue
-            length += 1 + get_aliphatic_chain_length(mol, neighbor_idx, visited)
-    return length
+            if neighbor_idx not in visited:
+                stack.append((neighbor_idx, length + 1))
+                
+    return max_length
 
 __metadata__ = {
     'chemical_class': {
@@ -145,7 +119,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 3,
+    'attempt': 2,
     'success': True,
     'best': True,
     'error': '',
