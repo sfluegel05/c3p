@@ -26,41 +26,45 @@ def is_primary_alcohol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Add explicit hydrogens
-    mol = Chem.AddHs(mol)
+    # Pattern 1: CH2OH connected to carbon (most common case)
+    # [CD1,CD2,CD3,CD4] means a carbon with 1-4 connections total
+    # [$([CH2][OH])] means CH2 group connected to OH
+    pattern1 = Chem.MolFromSmarts('[$([CH2][OH])]([CD1,CD2,CD3,CD4])')
     
-    # Find all OH groups
-    oh_pattern = Chem.MolFromSmarts("[OH]")
-    oh_matches = mol.GetSubstructMatches(oh_pattern)
+    # Pattern 2: Isolated CH2OH group (terminal)
+    pattern2 = Chem.MolFromSmarts('[CH2][OH]')
     
-    if not oh_matches:
-        return False, "No hydroxyl groups found"
+    # Pattern 3: CH3OH type (methanol type)
+    pattern3 = Chem.MolFromSmarts('[CH3][OH]')
     
-    # For each OH group, check if it's a primary alcohol
-    for match in oh_matches:
-        oh_oxygen = mol.GetAtomWithIdx(match[0])
+    # Check each pattern
+    matches1 = mol.GetSubstructMatches(pattern1)
+    matches2 = mol.GetSubstructMatches(pattern2)
+    matches3 = mol.GetSubstructMatches(pattern3)
+    
+    # For each match, verify it's a true primary alcohol
+    for match in matches1 + matches2 + matches3:
+        # Get the carbon atom
+        carbon = mol.GetAtomWithIdx(match[0])
         
-        # Get the carbon attached to the OH
-        for neighbor in oh_oxygen.GetNeighbors():
-            if neighbor.GetAtomicNum() == 6:  # Carbon
-                # Check if carbon is sp3 (saturated)
-                if neighbor.GetHybridization() != Chem.HybridizationType.SP3:
-                    continue
+        # Skip if carbon is not sp3 (must be saturated)
+        if carbon.GetHybridization() != Chem.HybridizationType.SP3:
+            continue
+            
+        # Count non-hydrogen connections
+        heavy_neighbors = [n for n in carbon.GetNeighbors() 
+                         if n.GetAtomicNum() != 1]
+        
+        # For CH3OH type
+        if len(heavy_neighbors) == 1 and carbon.GetTotalNumHs() == 3:
+            if any(n.GetAtomicNum() == 8 for n in heavy_neighbors):
+                return True, "Found methanol-type primary alcohol (CH3-OH)"
                 
-                # Count hydrogens and non-hydrogen neighbors on the carbon
-                h_count = neighbor.GetTotalNumHs()
-                heavy_neighbors = [n for n in neighbor.GetNeighbors() 
-                                 if n.GetAtomicNum() != 1]  # Exclude hydrogens
-                
-                # Case 1: CH3-OH type (3 H, 1 O)
-                if h_count == 3 and len(heavy_neighbors) == 1:
-                    return True, "Found CH3-OH type primary alcohol"
-                
-                # Case 2: RCH2-OH type (2 H, 1 C, 1 O)
-                if h_count == 2 and len(heavy_neighbors) == 2:
-                    # One neighbor must be oxygen, other must be carbon
-                    non_oh_neighbors = [n for n in heavy_neighbors if n.GetIdx() != oh_oxygen.GetIdx()]
-                    if len(non_oh_neighbors) == 1 and non_oh_neighbors[0].GetAtomicNum() == 6:
-                        return True, "Found RCH2-OH type primary alcohol"
+        # For RCH2OH type
+        elif len(heavy_neighbors) == 2 and carbon.GetTotalNumHs() == 2:
+            # One must be oxygen, other must be carbon
+            if (sum(1 for n in heavy_neighbors if n.GetAtomicNum() == 8) == 1 and
+                sum(1 for n in heavy_neighbors if n.GetAtomicNum() == 6) == 1):
+                return True, "Found RCH2-OH type primary alcohol"
     
     return False, "No primary alcohol groups found"
