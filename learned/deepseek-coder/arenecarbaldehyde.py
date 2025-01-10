@@ -31,19 +31,28 @@ def is_arenecarbaldehyde(smiles: str):
     if not aldehyde_matches:
         return False, "No aldehyde group found"
 
-    # Check if the aldehyde carbon is attached to an aromatic atom
-    aromatic_aldehyde_pattern = Chem.MolFromSmarts("[c;$(c-[CX3H1]=O)]")
+    # Check if the aldehyde carbon is directly attached to an aromatic atom
+    aromatic_aldehyde_pattern = Chem.MolFromSmarts("[a]-[CX3H1]=O")
     aromatic_aldehyde_matches = mol.GetSubstructMatches(aromatic_aldehyde_pattern)
     if not aromatic_aldehyde_matches:
-        return False, "Aldehyde group not attached to an aromatic ring"
+        return False, "Aldehyde group not directly attached to an aromatic atom"
 
     # Check if the molecule contains at least one aromatic ring
-    aromatic_ring_pattern = Chem.MolFromSmarts("[c]1[c][c][c][c][c]1")
+    aromatic_ring_pattern = Chem.MolFromSmarts("[a]")
     aromatic_ring_matches = mol.GetSubstructMatches(aromatic_ring_pattern)
     if not aromatic_ring_matches:
         return False, "No aromatic ring found in the molecule"
 
-    return True, "Contains an aldehyde group attached to an aromatic ring"
+    # Ensure the molecule is primarily an aromatic aldehyde
+    # by checking that the aldehyde is the only significant functional group
+    # (excluding simple substituents like -OH, -OCH3, etc.)
+    # This is a heuristic and may need refinement
+    significant_functional_groups = ["[CX3](=O)[OX2H1]", "[NX3]", "[SX2]", "[PX3]"]
+    for pattern in significant_functional_groups:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            return False, f"Contains additional significant functional group: {pattern}"
+
+    return True, "Contains an aldehyde group directly attached to an aromatic atom"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:22680',
