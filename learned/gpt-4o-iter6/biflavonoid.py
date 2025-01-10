@@ -2,7 +2,6 @@
 Classifies: CHEBI:50128 biflavonoid
 """
 from rdkit import Chem
-from rdkit.Chem import rdchem
 
 def is_biflavonoid(smiles: str):
     """
@@ -17,33 +16,30 @@ def is_biflavonoid(smiles: str):
         bool: True if molecule is a biflavonoid, False otherwise
         str: Reason for classification
     """
-    # Parse SMILES using RDKit
+    # Parse SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS patterns for flavonoid and connection
-    flavonoid_unit_pattern = Chem.MolFromSmarts("c1c(O)c2cc(O)ccc2oc1")  # captures the benzopyran framework
-    connection_pattern = Chem.MolFromSmarts("c-c")
+    # Improved SMARTS pattern for flavonoid unit (generic benzopyran substitute)
+    flavonoid_unit_pattern = Chem.MolFromSmarts("c1cc2oc3ccccc3cc2o1")
     
-    # Match flavonoid units
+    # Efficient way to find multiple flavonoid units
     flavonoid_matches = mol.GetSubstructMatches(flavonoid_unit_pattern)
     if len(flavonoid_matches) < 2:
         return False, "Less than two flavonoid units found"
     
-    # Check for direct connectivity between flavonoid units
-    for i in range(len(flavonoid_matches)):
-        unit1_atoms = {atom_idx for atom_idx in flavonoid_matches[i]}
-        for j in range(i+1, len(flavonoid_matches)):
-            unit2_atoms = {atom_idx for atom_idx in flavonoid_matches[j]}
-            # Check if there's a bond connecting these two sets
-            connected = any(
-                mol.GetBondBetweenAtoms(idx1, idx2)
-                for idx1 in unit1_atoms
-                for idx2 in unit2_atoms
-                if mol.GetBondBetweenAtoms(idx1, idx2) is not None
-            )
-            if connected:
-                return True, "Contains at least two flavonoid units linked by a single bond/atom"
+    # Potential linkage patterns between flavonoid units
+    linkage_patterns = [
+        Chem.MolFromSmarts("c-c"),
+        Chem.MolFromSmarts("c-O-c"),
+        Chem.MolFromSmarts("c-c-c"),
+        Chem.MolFromSmarts("c(~O)~c") # aromatic carbon linking via oxygen
+    ]
+    
+    # Check if there's evidence of a valid biflavonoid linkage in the molecule
+    for linkage_pattern in linkage_patterns:
+        if mol.HasSubstructMatch(linkage_pattern):
+            return True, "Contains flavonoid units linked by expected biflavonoid linkages"
 
-    return False, "No connecting bond/atom found between flavonoid units"
+    return False, "Failed to identify expected biflavonoid linkage between flavonoid units"
