@@ -27,14 +27,14 @@ def is_essential_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for carboxylic acid group
-    carboxylic_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H1]")
-    if not mol.HasSubstructMatch(carboxylic_pattern):
-        return False, "No carboxylic acid group found"
-    
+    # Check for modified compounds (deuterated, fluorinated, etc.)
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() not in [1, 6, 8, 15, 7]:  # Allow only H,C,O,P,N
+            return False, f"Contains non-standard atoms"
+
     # Count carbons
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 10:  # Allow shorter chains like C10
+    if c_count < 16:  # Minimum C16 for essential fatty acids
         return False, f"Carbon chain too short ({c_count} carbons)"
     if c_count > 40:  # Maximum reasonable length
         return False, f"Carbon chain too long ({c_count} carbons)"
@@ -44,49 +44,54 @@ def is_essential_fatty_acid(smiles: str):
     double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
     n_double_bonds = len(double_bond_matches)
     
-    if n_double_bonds < 1:
-        return False, f"Not unsaturated (no double bonds)"
+    if n_double_bonds < 2:  # Must be polyunsaturated
+        return False, f"Not polyunsaturated (needs at least 2 double bonds)"
     if n_double_bonds > 6:
         return False, f"Too many double bonds ({n_double_bonds})"
 
-    # Look for common essential fatty acid patterns (omega-3, omega-6)
-    omega3_pattern = Chem.MolFromSmarts("CC\C=C/C\C=C/C")
-    omega6_pattern = Chem.MolFromSmarts("CCCCC\C=C/C\C=C/C")
+    # Check for carboxylic acid group or valid ester in phospholipid
+    carboxylic_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H1]")
+    phospholipid_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2][CH2][CH]([OX2])[CH2][OX2]P(=[OX1])([OX2])")
     
-    has_omega3 = mol.HasSubstructMatch(omega3_pattern)
-    has_omega6 = mol.HasSubstructMatch(omega6_pattern)
+    is_acid = mol.HasSubstructMatch(carboxylic_pattern)
+    is_phospholipid = mol.HasSubstructMatch(phospholipid_pattern)
     
-    if not (has_omega3 or has_omega6):
-        return False, "Does not match omega-3 or omega-6 fatty acid patterns"
+    if not (is_acid or is_phospholipid):
+        return False, "Neither free fatty acid nor valid phospholipid"
 
-    # Check for conjugated double bonds pattern (common in essential fatty acids)
-    conjugated_pattern = Chem.MolFromSmarts("C=CC=C")
-    has_conjugated = mol.HasSubstructMatch(conjugated_pattern)
+    # Essential fatty acid patterns
+    patterns = {
+        "linoleic": Chem.MolFromSmarts("CCCCC/C=C/C/C=C/CCCCC"),  # omega-6 (9,12)
+        "alpha_linolenic": Chem.MolFromSmarts("CC/C=C/C/C=C/C/C=C/CCCC"),  # omega-3 (9,12,15)
+        "arachidonic": Chem.MolFromSmarts("CCCCC/C=C/C/C=C/C/C=C/C/C=C/C"),  # omega-6 (5,8,11,14)
+        "epa": Chem.MolFromSmarts("CC/C=C/C/C=C/C/C=C/C/C=C/C/C=C/C"),  # omega-3 (5,8,11,14,17)
+        "dha": Chem.MolFromSmarts("CC/C=C/C/C=C/C/C=C/C/C=C/C/C=C/C/C=C/C")  # omega-3 (4,7,10,13,16,19)
+    }
 
-    # Check for methylene-interrupted double bonds (common in essential fatty acids)
-    methylene_interrupted = Chem.MolFromSmarts("C=CCC=C")
-    has_methylene_interrupted = mol.HasSubstructMatch(methylene_interrupted)
+    # Check for essential fatty acid patterns
+    matched_patterns = []
+    for name, pattern in patterns.items():
+        if mol.HasSubstructMatch(pattern):
+            matched_patterns.append(name)
 
-    if not (has_conjugated or has_methylene_interrupted):
-        return False, "Lacks typical essential fatty acid double bond patterns"
+    if not matched_patterns:
+        # Check for methylene-interrupted double bond system
+        methylene_interrupted = Chem.MolFromSmarts("C/C=C/CC/C=C/")
+        if not mol.HasSubstructMatch(methylene_interrupted):
+            return False, "Does not match essential fatty acid patterns"
 
-    # Verify it's a fatty acid by checking molecular formula
-    formula = rdMolDescriptors.CalcMolFormula(mol)
-    if not ('C' in formula and 'O2' in formula and 'H' in formula):
-        return False, "Molecular formula not consistent with fatty acid"
+    # Verify basic fatty acid properties
+    if not is_phospholipid:
+        formula = rdMolDescriptors.CalcMolFormula(mol)
+        if not ('C' in formula and 'O2' in formula and 'H' in formula):
+            return False, "Molecular formula not consistent with fatty acid"
 
-    # Check for phospholipid pattern - if present, still classify as essential fatty acid
-    phospholipid_pattern = Chem.MolFromSmarts("[P](=[O])([O-])")
-    if mol.HasSubstructMatch(phospholipid_pattern):
-        return True, "Essential fatty acid (as part of phospholipid)"
-
-    # Get total hydrogen count (including implicit hydrogens)
-    h_count = sum(atom.GetTotalNumHs() + int(atom.GetNumImplicitHs()) 
-                 for atom in mol.GetAtoms())
-    
     # Calculate molecular properties
     rotatable_bonds = rdMolDescriptors.CalcNumRotatableBonds(mol)
     if rotatable_bonds < 3:
         return False, "Too rigid for an essential fatty acid"
 
-    return True, f"Essential fatty acid with {n_double_bonds} double bonds and {c_count} carbons"
+    structure_type = "phospholipid" if is_phospholipid else "free fatty acid"
+    pattern_desc = f" ({', '.join(matched_patterns)})" if matched_patterns else ""
+    
+    return True, f"Essential {structure_type} with {n_double_bonds} double bonds and {c_count} carbons{pattern_desc}"
