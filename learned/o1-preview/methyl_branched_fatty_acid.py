@@ -5,7 +5,7 @@ Classifies: CHEBI:62499 methyl-branched fatty acid
 Classifies: methyl-branched fatty acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdqueries
+from rdkit.Chem import rdMolDescriptors
 
 def is_methyl_branched_fatty_acid(smiles: str):
     """
@@ -24,59 +24,49 @@ def is_methyl_branched_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for carboxylic acid group at terminal position
+    # Check for carboxylic acid group
     carboxylic_acid = Chem.MolFromSmarts("C(=O)[OH]")
-    matches = mol.GetSubstructMatches(carboxylic_acid)
-    if not matches:
+    if not mol.HasSubstructMatch(carboxylic_acid):
         return False, "No carboxylic acid group found"
 
     # Exclude molecules with rings
     if mol.GetRingInfo().NumRings() > 0:
         return False, "Molecule contains ring structures"
 
-    # Exclude molecules with functional groups other than carboxylic acid
-    allowed_atoms = {1, 6, 8}  # H, C, O
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() not in allowed_atoms:
-            return False, "Molecule contains heteroatoms not characteristic of fatty acids"
+    # Find all carboxylic acid groups
+    carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid)
+    if not carboxylic_acid_matches:
+        return False, "No carboxylic acid group found"
 
-    # Check for functional groups other than carboxylic acid
-    undesirable_groups = [
-        Chem.MolFromSmarts("C(=O)N"),  # Amides
-        Chem.MolFromSmarts("N"),       # Amines
-        Chem.MolFromSmarts("O[H]"),    # Alcohols (exclude carboxylic OH)
-        Chem.MolFromSmarts("[#6]=[O]"),# Ketones and aldehydes
-    ]
-    for group in undesirable_groups:
-        if mol.HasSubstructMatch(group):
-            return False, "Molecule contains functional groups other than carboxylic acid"
-
-    # Identify the carboxyl carbon atom
-    carboxyl_carbons = [match[0] for match in matches]  # First atom in pattern is the carbon
-    carboxyl_c = carboxyl_carbons[0]
+    # Assume the molecule is a fatty acid if it contains a carboxylic acid group
+    # Identify the carbon atom of the carboxylic acid group
+    carboxyl_carbons = [match[0] for match in carboxylic_acid_matches]  # First atom in match is carbon
+    # For simplicity, consider the first carboxylic acid group
+    carboxyl_c_idx = carboxyl_carbons[0]
 
     # Find the longest carbon chain ending at the carboxyl carbon
-    def find_longest_chain(atom_idx, visited):
+    def get_longest_chain(atom_idx, visited):
         atom = mol.GetAtomWithIdx(atom_idx)
         if atom_idx in visited or atom.GetAtomicNum() != 6:
             return []
         visited.add(atom_idx)
-        paths = []
+        max_path = []
         for neighbor in atom.GetNeighbors():
             n_idx = neighbor.GetIdx()
-            if neighbor.GetAtomicNum() == 6:
-                sub_path = find_longest_chain(n_idx, visited.copy())
-                paths.append([atom_idx] + sub_path)
-        if not paths:
-            return [atom_idx]
-        else:
-            longest = max(paths, key=len)
-            return longest
+            if neighbor.GetAtomicNum() == 6 and n_idx != carboxyl_c_idx:
+                path = get_longest_chain(n_idx, visited.copy())
+                if len(path) > len(max_path):
+                    max_path = path
+        return [atom_idx] + max_path
 
-    longest_chain = find_longest_chain(carboxyl_c, set())
+    longest_chain = get_longest_chain(carboxyl_c_idx, set())
+    if len(longest_chain) < 2:
+        return False, "Main carbon chain is too short"
+
+    # Collect atoms in the main chain
     main_chain_atoms = set(longest_chain)
 
-    # Check for branches off the main chain
+    # Check branches off the main chain
     for atom_idx in longest_chain:
         atom = mol.GetAtomWithIdx(atom_idx)
         if atom.GetAtomicNum() != 6:
@@ -84,18 +74,25 @@ def is_methyl_branched_fatty_acid(smiles: str):
         for neighbor in atom.GetNeighbors():
             n_idx = neighbor.GetIdx()
             if n_idx not in main_chain_atoms:
-                branch = mol.GetAtomWithIdx(n_idx)
-                # Check if branch is a methyl group
-                if branch.GetAtomicNum() != 6:
-                    return False, "Branch contains non-carbon atoms"
-                # Methyl group should have only one heavy atom neighbor (the main chain carbon)
-                heavy_neighbors = [nbr for nbr in branch.GetNeighbors() if nbr.GetAtomicNum() > 1]
-                if len(heavy_neighbors) != 1:
-                    return False, "Branch larger than methyl group found"
-                # Ensure no further branching from the methyl group
-                for nbr in branch.GetNeighbors():
-                    if nbr.GetIdx() != atom_idx and nbr.GetAtomicNum() != 1:
-                        return False, "Branch larger than methyl group found"
+                branch_atom = mol.GetAtomWithIdx(n_idx)
+                if branch_atom.GetAtomicNum() != 6:
+                    return False, "Branch contains heteroatoms"
+                # Check if the branch is a methyl group
+                branch_size = 1
+                branch_visited = {atom_idx}
+                atoms_to_visit = [n_idx]
+                while atoms_to_visit:
+                    current_atom_idx = atoms_to_visit.pop()
+                    branch_visited.add(current_atom_idx)
+                    current_atom = mol.GetAtomWithIdx(current_atom_idx)
+                    for nbr in current_atom.GetNeighbors():
+                        nbr_idx = nbr.GetIdx()
+                        if nbr_idx not in branch_visited and nbr_idx not in main_chain_atoms:
+                            if nbr.GetAtomicNum() != 1:  # Exclude hydrogens
+                                branch_size += 1
+                                atoms_to_visit.append(nbr_idx)
+                if branch_size > 1:
+                    return False, f"Branch larger than methyl group found at atom index {atom_idx}"
 
     return True, "Molecule is a methyl-branched fatty acid with only methyl branches"
 
