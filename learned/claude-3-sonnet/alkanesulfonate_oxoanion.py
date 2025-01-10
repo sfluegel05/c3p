@@ -11,7 +11,6 @@ def is_alkanesulfonate_oxoanion(smiles: str):
     """
     Determines if a molecule is an alkanesulfonate oxoanion based on its SMILES string.
     An alkanesulfonate oxoanion has a sulfonate group (-SO3-) attached to a carbon.
-    The carbon at position 1 can be attached to hydrogens, a carbon chain, or other groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,33 +25,38 @@ def is_alkanesulfonate_oxoanion(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for basic alkanesulfonate pattern:
-    # [#6] - any carbon
-    # -[SX4] - connected to sulfur with 4 connections
-    # (=[OX1])(=[OX1]) - two double bonded oxygens
-    # [O-] - one negatively charged oxygen
-    alkanesulfonate_pattern = Chem.MolFromSmarts(
-        '[#6]-[SX4](=[OX1])(=[OX1])[O-]'
-    )
+    # Look for sulfonate group pattern: -S([O-])(=O)=O
+    sulfonate_pattern = Chem.MolFromSmarts("[SX4](=[OX1])(=[OX1])[O-]")
+    if not mol.HasSubstructMatch(sulfonate_pattern):
+        return False, "No sulfonate group found"
+
+    # Get sulfonate group matches
+    sulfonate_matches = mol.GetSubstructMatches(sulfonate_pattern)
     
-    if not mol.HasSubstructMatch(alkanesulfonate_pattern):
-        return False, "No alkanesulfonate group found"
-
-    # Get matches
-    matches = mol.GetSubstructMatches(alkanesulfonate_pattern)
-    
-    # Check each match
-    for match in matches:
-        carbon_idx = match[0]
-        sulfur_idx = match[1]
+    # Check each sulfonate group
+    valid_sulfonate = False
+    for match in sulfonate_matches:
+        sulfur_idx = match[0]  # Get sulfur atom index
+        sulfur_atom = mol.GetAtomWithIdx(sulfur_idx)
         
-        carbon_atom = mol.GetAtomWithIdx(carbon_idx)
-        
-        # Verify carbon is bonded to sulfur with single bond
-        bond = mol.GetBondBetweenAtoms(carbon_idx, sulfur_idx)
-        if bond.GetBondType() != Chem.BondType.SINGLE:
-            continue
+        # Check neighbors of sulfur
+        for neighbor in sulfur_atom.GetNeighbors():
+            # If neighbor is carbon, we have an alkanesulfonate
+            if neighbor.GetAtomicNum() == 6:  # Carbon atomic number
+                valid_sulfonate = True
+                break
+                
+    if not valid_sulfonate:
+        return False, "Sulfonate group not attached to carbon"
 
-        return True, "Contains alkanesulfonate group (C-SO3-)"
+    # Count formal charges to ensure single negative charge on sulfonate
+    total_negative_charge = sum(1 for atom in mol.GetAtoms() if atom.GetFormalCharge() < 0)
+    if total_negative_charge < 1:
+        return False, "No negative charge found"
 
-    return False, "No valid alkanesulfonate group found"
+    # Additional validation: check for S-C bond explicitly
+    sc_bond_pattern = Chem.MolFromSmarts("[#6]-[SX4](=[OX1])(=[OX1])[O-]")
+    if not mol.HasSubstructMatch(sc_bond_pattern):
+        return False, "No carbon-sulfur bond found in sulfonate group"
+
+    return True, "Contains sulfonate group (-SO3-) attached to carbon"
