@@ -8,7 +8,7 @@ def is_macrolide(smiles: str):
     """
     Determines if a molecule is a macrolide based on its SMILES string.
     Macrolides are characterized by a large macrocyclic lactone ring.
-    
+
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -22,21 +22,29 @@ def is_macrolide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Identify if the molecule has a macrolide ring.
+    # Get ring information
     ring_info = mol.GetRingInfo()
-    ring_bonds = ring_info.BondRings()
-    solvent_heavy_fragments = list(Chem.GetMolFrags(mol, sanitizeFrags=False, asMols=True))
+    atom_rings = ring_info.AtomRings()
 
-    # Identifying candidate macrolide rings
-    for ring in ring_bonds:
-        if len(ring) >= 12 and len(ring) <= 16:
-            ring_atoms = [mol.GetBondWithIdx(bond_idx).GetBeginAtomIdx() for bond_idx in ring] + \
-                         [mol.GetBondWithIdx(ring[-1]).GetEndAtomIdx()]
-            submol = rdmolops.FragmentOnBonds(mol, bondsToBreak=[], atomsToKeep=ring_atoms)
-
-            # Look for ester linkage within the ring
-            submol_smarts = Chem.MolToSmiles(submol)
-            if "C(=O)O" in submol_smarts:
-                return True, "Contains macrocyclic lactone ring with ester linkage"
+    # Identify candidate macrolide rings
+    for ring in atom_rings:
+        # Check if ring size is in typical macrolide range
+        if 12 <= len(ring) <= 16:
+            # Check for an ester linkage within the ring
+            found_ester = False
+            for bond in ring:
+                atom1 = mol.GetAtomWithIdx(bond)
+                for neighbor in atom1.GetNeighbors():
+                    # Identify the ester pattern: "C(=O)O"
+                    if neighbor.GetAtomicNum() == 8:  # Oxygen
+                        carbon_atom = neighbor.GetNeighbors()[0]
+                        if carbon_atom.GetAtomicNum() == 6:  # Check carbon
+                            if carbon_atom.GetTotalNumHs() == 0 and any(nb.GetAtomicNum() == 8 for nb in carbon_atom.GetNeighbors() if nb.GetIdx() != atom1.GetIdx()):
+                                found_ester = True
+                                break
+                if found_ester:
+                    break
+            if found_ester:
+                return True, "Contains macrocyclic lactone ring with an ester linkage"
 
     return False, "No characteristic macrolide macrocyclic lactone ring found"
