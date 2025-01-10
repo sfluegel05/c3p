@@ -27,55 +27,62 @@ def is_B_vitamin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
+    # Normalize molecule (protonation states, tautomers)
+    # This can be complex; for simplicity, let's assume input SMILES are standardized
+
     # Define SMARTS patterns for each B vitamin
     patterns = []
 
-    # Vitamin B1 (thiamine)
-    # Thiazole ring connected to pyrimidine ring via methylene bridge
-    b1_pattern = Chem.MolFromSmarts("Cc1ncc(C[n+]2csc(CCO)c2C)c(N)n1")
+    # Vitamin B1 (Thiamine)
+    # Thiazolium ring connected to pyrimidine ring via methylene bridge
+    b1_pattern = Chem.MolFromSmarts("C[n+;H]1csc(C)c1C-Cc2ncnc(N)[nH]2")
     patterns.append(('Vitamin B1 (Thiamine)', b1_pattern))
 
-    # Vitamin B2 (riboflavin)
-    # Isoalloxazine ring system
-    b2_pattern = Chem.MolFromSmarts("Cc1cc2nc3c(nc(=O)[nH]c3=O)n(C[C@H](O)[C@H](O)[C@H](O)CO)c2cc1C")
+    # Vitamin B2 (Riboflavin)
+    # Isoalloxazine ring system with ribitol side chain
+    b2_pattern = Chem.MolFromSmarts("C[C@@H](O)[C@@H](O)[C@@H](O)COc1nc2c3c(n1)nc(=O)[nH]c3=Nc2c1cc(C)c(C)cc1N2")
     patterns.append(('Vitamin B2 (Riboflavin)', b2_pattern))
 
-    # Vitamin B3 (niacin)
-    # Pyridine ring with carboxylic acid at position 3
-    b3_pattern = Chem.MolFromSmarts("c1cc(cnc1)C(=O)[O,H]")
-    patterns.append(('Vitamin B3 (Niacin)', b3_pattern))
+    # Vitamin B3 (Niacin and Niacinamide)
+    # Nicotinic acid or nicotinamide
+    b3_pattern1 = Chem.MolFromSmarts("n1ccccc1C(=O)[O,N]")
+    b3_pattern2 = Chem.MolFromSmarts("n1ccccc1C(=O)N")
+    patterns.append(('Vitamin B3 (Niacin)', b3_pattern1))
+    patterns.append(('Vitamin B3 (Niacinamide)', b3_pattern2))
 
-    # Vitamin B5 (pantothenic acid)
+    # Vitamin B5 (Pantothenic acid)
     # Pantoic acid moiety linked to beta-alanine via amide bond
-    b5_pattern = Chem.MolFromSmarts("CC(C)(O)C(C(=O)NCCC(=O)[O,H])O")
+    b5_pattern = Chem.MolFromSmarts("CC(C)(O)C(C(=O)NCCC(=O)[O,N])O")
     patterns.append(('Vitamin B5 (Pantothenic acid)', b5_pattern))
 
-    # Vitamin B6 (pyridoxine, pyridoxal, pyridoxamine)
-    # Substituted pyridine rings
+    # Vitamin B6 (Pyridoxine, Pyridoxal, Pyridoxamine)
+    # Substituted pyridine rings, including phosphorylated forms
     # Pyridoxine
     b6_pyridoxine_pattern = Chem.MolFromSmarts("COc1cc(CO)c(C)c(O)n1")
-    patterns.append(('Vitamin B6 (Pyridoxine)', b6_pyridoxine_pattern))
     # Pyridoxal
     b6_pyridoxal_pattern = Chem.MolFromSmarts("O=CC1=NC=C(CO)C(C)C1O")
-    patterns.append(('Vitamin B6 (Pyridoxal)', b6_pyridoxal_pattern))
     # Pyridoxamine
     b6_pyridoxamine_pattern = Chem.MolFromSmarts("NCc1cc(CO)c(C)c(O)n1")
+    # Phosphorylated forms
+    b6_phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)(O)OCC1=NC=C(CO)C(C)C1[O,N]")
+    patterns.append(('Vitamin B6 (Pyridoxine)', b6_pyridoxine_pattern))
+    patterns.append(('Vitamin B6 (Pyridoxal)', b6_pyridoxal_pattern))
     patterns.append(('Vitamin B6 (Pyridoxamine)', b6_pyridoxamine_pattern))
+    patterns.append(('Vitamin B6 Phosphate', b6_phosphate_pattern))
 
-    # Vitamin B7 (biotin)
-    # Fused ureido and tetrahydrothiophene rings
-    b7_pattern = Chem.MolFromSmarts("O=C1NC(=O)N2[C@@H](CS[C@@H]2CCCCC(=O)[O,H])[C@H]1")
+    # Vitamin B7 (Biotin)
+    # Heterocyclic fused ring system with valeric acid side chain
+    b7_pattern = Chem.MolFromSmarts("O=C1NC(=O)N2C[C@H](SC1)[C@H]2CCCCCC(=O)[O,N]")
     patterns.append(('Vitamin B7 (Biotin)', b7_pattern))
 
-    # Vitamin B9 (folic acid)
-    # Pteridine ring system connected to p-aminobenzoic acid and glutamic acid
-    b9_pattern = Chem.MolFromSmarts("Nc1nc2NCC(CNc3ccc(cc3)C(=O)N[C@@H](CCC(=O)[O,H])C(=O)[O,H])Nc2c(=O)[nH]1")
+    # Vitamin B9 (Folic acid and derivatives)
+    # Pteridine ring connected to p-aminobenzoic acid and glutamic acid
+    b9_pattern = Chem.MolFromSmarts("Nc1nc2[nH]ccc2n1-CNc1ccc(cc1)C(=O)N[C@@H](CCC(=O)[O,N])C(=O)[O,N]")
     patterns.append(('Vitamin B9 (Folic acid)', b9_pattern))
 
-    # Vitamin B12 (cobalamin)
-    # Complex corrin ring with cobalt ion
-    # Simplified pattern to check for cobalt atom in corrin ring
-    b12_pattern = Chem.MolFromSmarts("[Co]")  # Checks for presence of cobalt
+    # Vitamin B12 (Cobalamin)
+    # Corrin ring with central cobalt atom and dimethylbenzimidazole
+    b12_pattern = Chem.MolFromSmarts("[Co].[C,c]1=C[C,c]2[C,c]=[C,c][C,c]=[C,c][C,c]=[C,c][C,c]=1[C,c]=[C,c]2")
     patterns.append(('Vitamin B12 (Cobalamin)', b12_pattern))
 
     # Check for matches
