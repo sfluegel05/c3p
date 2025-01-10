@@ -2,6 +2,7 @@
 Classifies: CHEBI:57347 3-oxo-fatty acyl-CoA(4-)
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_3_oxo_fatty_acyl_CoA_4__(smiles: str):
     """
@@ -22,20 +23,25 @@ def is_3_oxo_fatty_acyl_CoA_4__(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for 3-oxo-fatty acyl pattern C(=O)C(=O)C
-    oxo_fatty_acyl_pattern = Chem.MolFromSmarts("C(=O)CC(=O)")
+    # Check for 3-oxo-fatty acyl pattern - refined to include keto group
+    oxo_fatty_acyl_pattern = Chem.MolFromSmarts("C(=O)C(=O)")
     if not mol.HasSubstructMatch(oxo_fatty_acyl_pattern):
         return False, "No 3-oxo-fatty acyl group found"
 
-    # Check for Coenzyme A (CoA) moiety specific pattern
-    coa_pattern = Chem.MolFromSmarts("SCCNC(=O)CCNC(=O)[C@H](O)COP(=O)([O-])OP(=O)([O-])OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12")
+    # Improved check for CoA moiety specific pattern
+    coa_pattern = Chem.MolFromSmarts("C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)OP([O-])=O")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "CoA moiety not found"
 
-    # Ensure presence of at least 1 phosphate with correct deprotonation
-    phosphate_pattern = Chem.MolFromSmarts("P(=O)([O-])[O-]")
-    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
-    if len(phosphate_matches) < 1:
-        return False, "No correctly deprotonated phosphate groups found"
+    # Check for chirality and extended parts of CoA
+    extended_pattern = Chem.MolFromSmarts("[C@H](O)C(C)(C)COP([O-])(=O)OP([O-])(=O)OC[C@H]1O[C@H]n2cnc3c(N)ncnc32")
+    if not mol.HasSubstructMatch(extended_pattern):
+        return False, "Extended CoA parts with chirality not found"
 
-    return True, "Contains 3-oxo-fatty acyl chain with CoA moiety and deprotonated phosphates"
+    # Ensure presence of at least 2 phosphates with correct deprotonation
+    phosphate_pattern = Chem.MolFromSmarts("OP([O-])(=O)[O-]")
+    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
+    if len(phosphate_matches) < 2:
+        return False, "Insufficient deprotonated phosphate groups found"
+
+    return True, "Contains 3-oxo-fatty acyl chain with CoA moiety including deprotonated phosphates"
