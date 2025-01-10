@@ -6,7 +6,8 @@ from rdkit import Chem
 def is_3_oxo_5alpha_steroid(smiles: str):
     """
     Determines if a molecule is a 3-oxo-5alpha-steroid based on its SMILES string.
-    This class of compounds has a steroid backbone, a ketone at the third position, and alpha configuration at position 5.
+    This class of compounds has a steroid backbone, a ketone at the third position, 
+    and alpha configuration at position 5.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,18 +22,25 @@ def is_3_oxo_5alpha_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define 3-oxo group pattern (ketone at position 3, generic for alpha and beta stereochemistry)
-    three_oxo_pattern = Chem.MolFromSmarts("C(=O)[C@@H]")  # Adjust (add more valid patterns)
+    # Define 3-oxo group pattern: General ketone group
+    three_oxo_pattern = Chem.MolFromSmarts("C(=O)C")  
     
     # Check for 3-oxo group
     if not mol.HasSubstructMatch(three_oxo_pattern):
         return False, "Missing 3-oxo (ketone) group"
     
-    # Steroid backbone pattern with 5alpha configuration
-    five_alpha_steroid_pattern = Chem.MolFromSmarts("[C@H]1CC[C@@H]2[C@H]3CC[C@H]4[C@@H](C(=O))CC[C@]4(C)[C@@H]3CC[C@]12C")
+    # Steroid backbone pattern allowing some flexibility in the rings
+    steroid_backbone_pattern = Chem.MolFromSmarts("C1CCC2C3CCC4C(CCC4C3)C2C1")  # General steroid scaffold
     
-    # Check for 5alpha configuration and steroid-like structure
-    if not mol.HasSubstructMatch(five_alpha_steroid_pattern):
+    # Check for steroid backbone
+    if not mol.HasSubstructMatch(steroid_backbone_pattern):
+        return False, "Does not match steroid-like structure"
+    
+    # Specific pattern for 5alpha stereochemistry (allow more stereochemical flexibility)
+    five_alpha_pattern = Chem.MolFromSmarts("[C@@H]([C@@H]1)[C@@H]2[C@H]3CC[C@@H](C2)C[C@H]1")
+    
+    # Check for 5alpha configuration in the context of a steroid
+    if not mol.HasSubstructMatch(five_alpha_pattern):
         return False, "Does not match 5alpha-steroid configuration"
     
     return True, "Matches 3-oxo-5alpha-steroid structure"
