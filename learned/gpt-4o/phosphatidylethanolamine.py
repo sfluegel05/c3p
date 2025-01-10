@@ -2,7 +2,6 @@
 Classifies: CHEBI:16038 phosphatidylethanolamine
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_phosphatidylethanolamine(smiles: str):
     """
@@ -23,27 +22,25 @@ def is_phosphatidylethanolamine(smiles: str):
     if mol is None:
         return None, "Invalid SMILES string"
 
-    # Look for glycerol backbone pattern with generic chiral carbon connectivity
-    glycerol_pattern = Chem.MolFromSmarts("[C@H](COP(O)OCCN)(OC([CX3](=O))[CX3](=O))") 
+    # Look for glycerol backbone pattern without chiral specifity
+    glycerol_pattern = Chem.MolFromSmarts("OCC(O)COP(O)(O)")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
     
-    # Check presence of phosphate group connected: O=P(O)(O)
-    phosphate_pattern = Chem.MolFromSmarts("O=P(O)(O)")
+    # Check presence of phosphate group within the backbone: O=P(O)(O)
+    phosphate_pattern = Chem.MolFromSmarts("COP(O)(O)")
     if not mol.HasSubstructMatch(phosphate_pattern):
-        return False, "No phosphate group identified"
+        return False, "Phosphate group connectivity not found"
     
-    # Look for ethanolamine group
+    # Look for ethanolamine group, which is a key feature
     ethanolamine_pattern = Chem.MolFromSmarts("OCCN")
     if not mol.HasSubstructMatch(ethanolamine_pattern):
         return False, "No ethanolamine group found"
 
-    # Ensure two ester linkages
+    # Ensure presence of two ester linkages
     ester_pattern = Chem.MolFromSmarts("C(=O)OC")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) < 2:
         return False, f"Expected 2 ester linkages, found {len(ester_matches)}"
 
     return True, "Molecule classified as phosphatidylethanolamine"
-
-# Test cases for phosphatidylethanolamine would be added here for validation
