@@ -10,24 +10,26 @@ def is_triterpenoid_saponin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define triterpene backbones: Oleanane, Ursolane
+    # Define triterpene backbones: Oleanane, Ursane, Dammarane
     triterpene_patterns = [
         Chem.MolFromSmarts('C1CCC2(CC[C@]3(CC[C@]4(C)C3CCC[C@]4(C2)C1)C)C'),  # Oleanane-like
-        Chem.MolFromSmarts('C1CCC2(CC[C@]3(CC[C@]4(C)C3CCC[C@@]4(C2)C1)C)C'),  # Ursane-like
+        Chem.MolFromSmarts('C1CCC2(CC[C@]3(CC[C@]4(C)C3CCC[C@]4(C2)C1)C)C'),  # Ursane-like
+        Chem.MolFromSmarts('C1CCC2(C3CCC4(C3CCC34CCCC1)C)C4CC2'),  # Dammarane-like
     ]
 
     if not any(mol.HasSubstructMatch(pattern) for pattern in triterpene_patterns):
-        return False, "No triterpene backbone found"
+        return False, "No triterpenoid backbone found"
 
-    # Detect glycosidic linkages (general pattern)
-    glycoside_pattern = Chem.MolFromSmarts('[CX4:1][OX2:2][C]')
+    # Detect glycosidic linkages (particular focus on ether/ester bonds)
+    glycoside_pattern = Chem.MolFromSmarts('O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@H]1')  # Example for glucose linkage
     if not mol.HasSubstructMatch(glycoside_pattern):
         return False, "No glycosidic linkage found"
 
-    # Detect sugar moieties (e.g., glucose, rhamnose); flexible to various ring forms
+    # Detect common sugar moieties (e.g., glucose, rhamnose, xylose)
     sugar_patterns = [
-        Chem.MolFromSmarts('C1O[C@H](C)CO[C@H]1O'),  # Glucose-like
-        Chem.MolFromSmarts('C1O[C@H](C)[C@@H](O)[C@H](O)[C@H]1O')  # Rhamnose-like
+        Chem.MolFromSmarts('C1O[C@H](CO)[C@H](O)[C@@H](O)[C@H]1O'),  # Glucose
+        Chem.MolFromSmarts('C1O[C@H](C)[C@@H](O)[C@H](O)[C@H]1O'),  # Rhamnose
+        Chem.MolFromSmarts('C1O[C@H](C)[C@@H](O)COC1=O'),          # Xylose (linear)
     ]
 
     sugar_count = 0
@@ -39,4 +41,4 @@ def is_triterpenoid_saponin(smiles: str):
 
     return True, "Structure matches triterpenoid saponin characteristics"
 
-# An example execution is not provided due to complexity, but test with real SMILES strings.
+# This function can be tested by invoking it with valid SMILES strings of known triterpenoid saponins.
