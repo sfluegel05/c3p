@@ -2,11 +2,13 @@
 Classifies: CHEBI:25608 nucleoside phosphate
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_nucleoside_phosphate(smiles: str):
     """
     Determines if a molecule is a nucleoside phosphate based on its SMILES string.
+    
+    A nucleoside phosphate is characterized by a nucleobase connected to a sugar
+    moiety, which is phosphorylated.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,21 +23,24 @@ def is_nucleoside_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for nucleobase pattern (purine or pyrimidine)
-    purine_pattern = Chem.MolFromSmarts('n1cnc2c1ncnc2N')
-    pyrimidine_pattern = Chem.MolFromSmarts('n1ccncn1')
-    if not (mol.HasSubstructMatch(purine_pattern) or mol.HasSubstructMatch(pyrimidine_pattern)):
-        return False, "No nucleobase (purine or pyrimidine) found"
-    
-    # Look for sugar pattern (ribose or deoxyribose)
-    ribose_pattern = Chem.MolFromSmarts('C1C(O)C(O)C(O)C1O')
-    if not mol.HasSubstructMatch(ribose_pattern):
-        return False, "No ribose or deoxyribose sugar found"
+    # Look for a broader nucleobase pattern (purines and pyrimidines with variations)
+    purine_patt = Chem.MolFromSmarts('n1cnc2[nH]cnc12')  # Simplified for common purine bases
+    pyrimidine_patt = Chem.MolFromSmarts('n1cncnc1')     # Simplified for pyrimidine bases
 
-    # Look for phosphate group(s) (-O-P(=O)(O)-)
-    phosphate_pattern = Chem.MolFromSmarts('O=P(O)(O)O')
-    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
-    if len(phosphate_matches) == 0:
-        return False, "No phosphate group(s) found"
+    nucleobase_found = mol.HasSubstructMatch(purine_patt) or mol.HasSubstructMatch(pyrimidine_patt)
+    if not nucleobase_found:
+        return False, "No nucleobase detected (common purine or pyrimidine)"
 
-    return True, "Molecule contains a nucleoside structure with one or more phosphate groups"
+    # Look for ribose/deoxyribose-like structures, including flexibility for hydroxyl variations
+    sugar_pattern = Chem.MolFromSmarts('C1O[C@@H](CO)[C@@H](O)[C@H]1O')  # Ribofuranose
+    deoxy_sugar_pattern = Chem.MolFromSmarts('C1[C@H](O)[C@@H](O)[C@@H](O)C[O]1')  # Allow minor variations
+
+    if not (mol.HasSubstructMatch(sugar_pattern) or mol.HasSubstructMatch(deoxy_sugar_pattern)):
+        return False, "No ribose or deoxyribose sugar found or mismatched structure"
+
+    # Check for phosphate groups including possible variations
+    phosphate_patt = Chem.MolFromSmarts('P(=O)(O)O')  # Allow attachment to other oxygens or sugars
+    if not mol.HasSubstructMatch(phosphate_patt):
+        return False, "No phosphate group(s) detected"
+
+    return True, "Molecule matches nucleoside phosphate structure due to presence of nucleobase, sugar, and phosphate"
