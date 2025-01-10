@@ -27,7 +27,7 @@ def is_monoacylglycerol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # More specific glycerol backbone pattern (C-C-C with at least 2 hydroxyls)
+    # More flexible glycerol backbone pattern (C-C-C with at least 1 hydroxyl)
     glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4]([OH])[CH2X4]")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
@@ -56,14 +56,14 @@ def is_monoacylglycerol(smiles: str):
     if len(acyl_matches) < 1:
         return False, "Missing acyl group"
 
-    # Check molecular weight - monoacylglycerols typically >200 Da
+    # Check molecular weight - monoacylglycerols typically >300 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 200:
+    if mol_wt < 300:
         return False, "Molecular weight too low for monoacylglycerol"
 
-    # Count hydroxyl groups (should be at least 2)
+    # Count hydroxyl groups (should be at least 1)
     hydroxyl_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetTotalNumHs() > 0)
-    if hydroxyl_count < 2:
+    if hydroxyl_count < 1:
         return False, "Not enough hydroxyl groups"
 
     return True, "Contains glycerol backbone with one acyl group and two H/alkyl groups"
