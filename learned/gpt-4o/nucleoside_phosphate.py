@@ -23,24 +23,40 @@ def is_nucleoside_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for a broader nucleobase pattern (purines and pyrimidines with variations)
-    purine_patt = Chem.MolFromSmarts('n1cnc2[nH]cnc12')  # Simplified for common purine bases
-    pyrimidine_patt = Chem.MolFromSmarts('n1cncnc1')     # Simplified for pyrimidine bases
+    # Define more flexible patterns
+    # Broad nucleobase pattern for common bases and their derivatives
+    purine_patterns = [
+        Chem.MolFromSmarts('n1cnc2ncnc12'),  # Common purine
+        Chem.MolFromSmarts('c1ncnc2[nH]cnc12'),  # Modified purine
+    ]
+    pyrimidine_patterns = [
+        Chem.MolFromSmarts('n1c([nH])ccnc1'),  # Common pyrimidine
+        Chem.MolFromSmarts('n1cncn[nH]1'),    # Modified pyrimidine
+    ]
 
-    nucleobase_found = mol.HasSubstructMatch(purine_patt) or mol.HasSubstructMatch(pyrimidine_patt)
+    nucleobase_found = any(mol.HasSubstructMatch(pat) for pat in purine_patterns + pyrimidine_patterns)
     if not nucleobase_found:
-        return False, "No nucleobase detected (common purine or pyrimidine)"
+        return False, "No nucleobase detected (general purine or pyrimidine)"
 
-    # Look for ribose/deoxyribose-like structures, including flexibility for hydroxyl variations
-    sugar_pattern = Chem.MolFromSmarts('C1O[C@@H](CO)[C@@H](O)[C@H]1O')  # Ribofuranose
-    deoxy_sugar_pattern = Chem.MolFromSmarts('C1[C@H](O)[C@@H](O)[C@@H](O)C[O]1')  # Allow minor variations
+    # Check for sugar moiety, more flexible and allowing for common modifications
+    sugar_patterns = [
+        Chem.MolFromSmarts('C1OCC(O)C1O'),  # Ribose/deoxyribose core without strict stereochemistry
+        Chem.MolFromSmarts('OCC1OC(CO)C(O)C1'),  # Other sugar forms
+    ]
 
-    if not (mol.HasSubstructMatch(sugar_pattern) or mol.HasSubstructMatch(deoxy_sugar_pattern)):
-        return False, "No ribose or deoxyribose sugar found or mismatched structure"
+    sugar_found = any(mol.HasSubstructMatch(pat) for pat in sugar_patterns)
+    if not sugar_found:
+        return False, "No appropriate sugar detected (ribose variants)"
 
-    # Check for phosphate groups including possible variations
-    phosphate_patt = Chem.MolFromSmarts('P(=O)(O)O')  # Allow attachment to other oxygens or sugars
-    if not mol.HasSubstructMatch(phosphate_patt):
+    # Look for phosphate groups (allow different attachments)
+    phosphate_patterns = [
+        Chem.MolFromSmarts('P(=O)(O)(O)'),  # Mono-phosphate
+        Chem.MolFromSmarts('OP(=O)(O)OP(=O)(O)O'),  # Di-phosphate
+        Chem.MolFromSmarts('OP(=O)(O)OP(=O)(O)OP(=O)(O)O'),  # Tri-phosphate
+    ]
+
+    phosphate_found = any(mol.HasSubstructMatch(pat) for pat in phosphate_patterns)
+    if not phosphate_found:
         return False, "No phosphate group(s) detected"
 
     return True, "Molecule matches nucleoside phosphate structure due to presence of nucleobase, sugar, and phosphate"
