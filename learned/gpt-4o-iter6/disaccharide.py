@@ -2,7 +2,6 @@
 Classifies: CHEBI:36233 disaccharide
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_disaccharide(smiles: str):
     """
@@ -21,13 +20,11 @@ def is_disaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for 5- and 6-membered sugar rings (with additional common substitutions to broaden match)
+    # SMARTS patterns for 5- and 6-membered sugar rings (furanose and pyranose)
     sugar_patterns = [
-        Chem.MolFromSmarts("[C@@H]1([O])O[C@H]1"),    # Generic pattern for 5-membered ring (typically furanoses)
-        Chem.MolFromSmarts("[C@@H]1([O])O[C@@H]1"),  # Alternative stereo for furanoses
-        Chem.MolFromSmarts("[C@@H]1([OH])O[C@H]1"),  # Additional stereo for substituted variations
-        Chem.MolFromSmarts("[C@@H]1([O])C([OH])O1"), # Generic pattern for 6-membered ring (typically pyranoses)
-        Chem.MolFromSmarts("[C@H]1([O])C([OH])O[C@@H]1")  # Another common configuration for pyranoses
+        Chem.MolFromSmarts("O1[C@@H](CO)[C@H](O)[C@@H](O)[C@H]1"),  # 5-Membered ring
+        Chem.MolFromSmarts("O1[C@H](O)[C@H](O[C@@H](O)C)[C@@H](O)C1"),  # 6-Membered ring (example)
+        Chem.MolFromSmarts("O1[C@H](O[C@@H](O)[C@H](O)[C@@]1)C"),  # Generic 6-membered, reverse roles
     ]
 
     # Detect sugar rings
@@ -39,13 +36,21 @@ def is_disaccharide(smiles: str):
     if sugar_ring_count < 2:
         return False, f"Expected 2 sugar rings, found {sugar_ring_count}"
 
-    # Generic glycosidic linkage pattern to check for connectivity between sugar rings
-    # Broadening the linkages by considering any oxygen-bound carbon polar bonds bridging rings
-    glycosidic_pattern = Chem.MolFromSmarts("[C]O[C]")  # A less specific form, still emphasizing connection through oxygen
-    glyco_matches = mol.GetSubstructMatches(glycosidic_pattern)
+    # Patterns for glycosidic linkage (anomeric carbon connected through oxygen)
+    glycosidic_patterns = [
+        Chem.MolFromSmarts("[C@H]1(O[C@H]2[*:1])[*:2]1C2"),
+        Chem.MolFromSmarts("[C@H]1(O[C@@H]2[*:1])[*:2]1C2"),
+        Chem.MolFromSmarts("[C@@H]1(O[C@H]2[*:1])[*:2]1C2"),
+        Chem.MolFromSmarts("[C@@H]1(O[C@@H]2[*:1])[*:2]1C2"),
+    ]
 
     # Check for at least one valid glycosidic linkage
-    if len(glyco_matches) < 1:
+    glyco_bond_count = 0
+    for pattern in glycosidic_patterns:
+        matches = mol.GetSubstructMatches(pattern)
+        glyco_bond_count += len(matches)
+
+    if glyco_bond_count < 1:
         return False, "No appropriate glycosidic link found to connect sugars"
 
     return True, "Contains two sugar rings joined by a glycosidic bond"
