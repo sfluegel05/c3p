@@ -22,16 +22,12 @@ def is_anilide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Anilide pattern: phenyl group directly bonded to amide nitrogen
-    # We will use a pattern that allows for general anilide structure
-    # Phenyl ring (c1ccccc1) connected to amide nitrogen (NC(=O))
-    # This pattern is broad to capture variations, focuses on the critical aspect of the anilide structure.
+    # Improved SMARTS pattern for anilides: Ensures that a phenyl is directly connected to an amide nitrogen
+    # The pattern checks for a phenyl group connected to the N of an amide group which is a common representation of anilide
+    anilide_pattern = Chem.MolFromSmarts("[cH]1[cH][cH][cH][cH][cH]1-N-C(=O)")
     
-    anilide_pattern = Chem.MolFromSmarts("c1ccccc1NC(=O)")
-    
-    # Check for anilide pattern with flexibility in C part of NC(=O)
     match = mol.HasSubstructMatch(anilide_pattern)
-    
+
     if not match:
         return False, "No anilide pattern found (phenyl group directly bonded to amide nitrogen)"
 
