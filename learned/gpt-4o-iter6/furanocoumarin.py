@@ -15,30 +15,22 @@ def is_furanocoumarin(smiles: str):
         bool: True if molecule is a furanocoumarin, False otherwise
         str: Reason for classification
     """
-    # Parse SMILES
+    # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define substructure patterns for furan and coumarin
-    furan_pattern = Chem.MolFromSmarts('c1ccoc1')  # A simple furan ring
-    coumarin_pattern = Chem.MolFromSmarts('O=c1cc2ccccc2oc1')  # A common coumarin structure
+    # Define a furanocoumarin substructure pattern 
+    # This pattern attempts to identify key structural elements potentially shared by examples
+    # Fused 5-membered furan ring to a 6-membered lactone ring
+    furanocoumarin_pattern = Chem.MolFromSmarts('C1OC=2C=CC(=O)OC2=C1')
 
-    # Check for the presence of a furan ring
-    furan_matches = mol.GetSubstructMatches(furan_pattern)
-    if not furan_matches:
-        return False, "No furan-like ring found"
+    # Check for the presence of the furanocoumarin fundamental fused ring system
+    matches = mol.GetSubstructMatches(furanocoumarin_pattern)
+    if not matches:
+        return False, "No furanocoumarin core structure found"
 
-    # Check for the presence of a coumarin structure
-    coumarin_matches = mol.GetSubstructMatches(coumarin_pattern)
-    if not coumarin_matches:
-        return False, "No coumarin-like structure found"
+    return True, "Contains furanocoumarin core fused ring structure"
 
-    # Verify fusion by checking atom connectivity between matched furan and coumarin substructures
-    for furan_match in furan_matches:
-        for coumarin_match in coumarin_matches:
-            # Check if there is a direct atom connection between end atoms of furan and coumarin rings
-            if any(mol.GetBondBetweenAtoms(furan_atom, coumarin_atom) for furan_atom in furan_match for coumarin_atom in coumarin_match):
-                return True, "Furan ring and coumarin structure are fused"
-
-    return False, "Furan and coumarin structures not properly fused"
+# This function checks specifically for the fused structure indicative of a furanocoumarin. 
+# Depending on SMILES complexity encountered in specific instances, further refinement of SMARTS patterns and chemical logic may be required.
