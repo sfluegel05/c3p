@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_biflavonoid(smiles: str):
     """
     Determines if a molecule is a biflavonoid based on its SMILES string.
-    A biflavonoid is defined as a flavonoid oligomer obtained by the oxidative coupling 
+    A biflavonoid is a flavonoid oligomer obtained by the oxidative coupling 
     of at least two units of aryl-substituted benzopyran rings or its substituted derivatives.
 
     Args:
@@ -21,24 +21,30 @@ def is_biflavonoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Flavonoid unit pattern (expanded for common substituted structures)
-    flavonoid_unit_pattern = Chem.MolFromSmarts("c1c(O)cc2oc3ccc(O)cc3cc2o1") # adding specific hydroxyl patterns
-    flavonoid_matches = mol.GetSubstructMatches(flavonoid_unit_pattern)
-
-    if len(flavonoid_matches) < 2:
+    # Expand pattern for flavonoid units - cover variations
+    flavonoid_unit_patterns = [
+        Chem.MolFromSmarts("c1cc(O)c2oc3ccccc3c(c2c1)O"), # typical flavone core
+        Chem.MolFromSmarts("c1cc(O)c2c(c1)oc1ccccc1c2O"), # variational flavone structure
+        Chem.MolFromSmarts("c1cc(=O)c2c(c1)c(c(c(c2O)O)O)O") # adapt for polyhydroxylated flavonoids
+    ]
+    match_flag = False
+    flavonoid_matches_count = sum(bool(mol.HasSubstructMatch(pat)) for pat in flavonoid_unit_patterns)
+    if flavonoid_matches_count < 2:
         return False, "Less than two flavonoid units found"
     
-    # Improved linkage patterns including heteroatoms and extended aromatic linkages
+    # Improved linkage pattern to capture multiple variations
     linkage_patterns = [
-        Chem.MolFromSmarts("c-O-c"),  # connection via oxygen
-        Chem.MolFromSmarts("c(=O)-c"),  # linkage through carboxyl group
-        Chem.MolFromSmarts("c-c"),  # direct carbon linkage, aromatic
-        Chem.MolFromSmarts("c1c(O)cc2c(c1)c(c(c(c2O)O)O)O") # extended aromatic linkage pattern
+        Chem.MolFromSmarts("c-C-c"),  # generic C-C linkage
+        Chem.MolFromSmarts("c-c-c"),  # possible aromatic linkage
+        Chem.MolFromSmarts("c-O-c"),  # oxygen bridged
+        Chem.MolFromSmarts("c(=O)-c"),  # involving carbonyl linkage
     ]
     
-    # Check for biflavonoid linking with more diverse patterns
     for linkage_pattern in linkage_patterns:
         if mol.HasSubstructMatch(linkage_pattern):
-            return True, "Contains flavonoid units linked by identified biflavonoid patterns"
+            match_flag = True
+            break
 
+    if match_flag:
+        return True, "Contains flavonoid units linked by various biflavonoid patterns"
     return False, "Failed to identify expected biflavonoid linkage between flavonoid units"
