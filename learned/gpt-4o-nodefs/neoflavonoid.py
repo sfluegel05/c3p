@@ -20,16 +20,18 @@ def is_neoflavonoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a coumarin-like pattern (primary structure for many neoflavonoids)
-    coumarin_pattern = Chem.MolFromSmarts('O=C1OC2=CC=CC=C2C1=O')
-    if not mol.HasSubstructMatch(coumarin_pattern):
-        return False, "No coumarin-like backbone found"
+    # Define a phenylcoumarin pattern (backbone for many neoflavonoids)
+    phenylcoumarin_pattern = Chem.MolFromSmarts('O=C1OC2=C([C]=C(C=2)C3=CC=CC=C3)C1')
+    if not mol.HasSubstructMatch(phenylcoumarin_pattern):
+        return False, "No phenylcoumarin backbone found"
 
-    # Look for phenyl group (aromatic ring) which is a common substitution on coumarins
-    phenyl_pattern = Chem.MolFromSmarts('c1ccccc1')
-    if not mol.HasSubstructMatch(phenyl_pattern):
-        return False, "No phenyl group substitution found"
+    # Check for the variety of functional groups prevalent in neoflavonoids
+    if not (mol.HasSubstructMatch(Chem.MolFromSmarts('O')) or  # Presence of hydroxyl groups
+            mol.HasSubstructMatch(Chem.MolFromSmarts('OC')) or # Methoxy groups
+            mol.HasSubstructMatch(Chem.MolFromSmarts('COC'))): # More complex ethers
+        return False, "Lacks characteristic functional groups of neoflavonoids"
+    
+    # Further checks might include confirmations for additional specific substitutions
+    # like additional oxygen groups, branching alkenyl chains etc.
 
-    return True, "Contains coumarin-like structure with phenyl substitution"
-
-# Examples: The provided examples can be tested to verify the functionality.
+    return True, "Contains phenylcoumarin backbone with characteristic functional groups of neoflavonoids"
