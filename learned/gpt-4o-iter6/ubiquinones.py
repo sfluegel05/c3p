@@ -21,15 +21,20 @@ def is_ubiquinones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for a benzoquinone core with methoxy groups
-    benzoquinone_core_with_methoxy_pattern = Chem.MolFromSmarts("O=C1C=C(C(=O)C=C1)OC")
-    if not mol.HasSubstructMatch(benzoquinone_core_with_methoxy_pattern):
-        return False, "No benzoquinone core with methoxy groups found"
+    # Check for a generalized benzoquinone core
+    benzoquinone_core_pattern = Chem.MolFromSmarts("O=C1C=CC(=O)C=C1")
+    if not mol.HasSubstructMatch(benzoquinone_core_pattern):
+        return False, "No benzoquinone core moiety found"
+        
+    # Check for presence of at least one methoxy group (O-C group)
+    methoxy_pattern = Chem.MolFromSmarts("CO")
+    if not mol.HasSubstructMatch(methoxy_pattern):
+        return False, "No methoxy group found"
 
-    # Check for polyisoprenoid side chain
-    # Here we allow up to 10 isoprenoid units to accommodate variability
-    polyisoprenoid_pattern = Chem.MolFromSmarts("C=C(C)CCC=C(C)CCC(=C(C)CCC=C(C)CC)*")
+    # Check for presence of a polyisoprenoid side chain
+    # Flexible enough to match a single isoprene unit minimum
+    polyisoprenoid_pattern = Chem.MolFromSmarts("C=C(C)CCC=C")
     if not mol.HasSubstructMatch(polyisoprenoid_pattern):
         return False, "No polyisoprenoid side chain found"
     
-    return True, "Contains the specific characteristics of a ubiquinone: benzoquinone core with methoxy groups and a polyisoprenoid side chain"
+    return True, "Matches the characteristics of a ubiquinone: contains a generalized benzoquinone core, methoxy group, and a polyisoprenoid side chain"
