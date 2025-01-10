@@ -41,14 +41,27 @@ def is_monoradylglycerol(smiles: str):
 
     # Count the number of substituents attached to the glycerol backbone
     substituent_count = 0
-    for atom in backbone_atoms:
+    substituent_atom = None
+    for atom_idx in backbone_atoms:
+        atom = mol.GetAtomWithIdx(atom_idx)
         for neighbor in atom.GetNeighbors():
             if neighbor.GetIdx() not in backbone_atoms:
                 substituent_count += 1
+                substituent_atom = neighbor
 
     # Check if there is exactly one substituent
     if substituent_count != 1:
         return False, f"Found {substituent_count} substituents, need exactly 1"
+
+    # Verify the substituent is an acyl, alkyl, or alk-1-enyl group
+    if substituent_atom is not None:
+        # Check for acyl group (ester or amide)
+        acyl_pattern = Chem.MolFromSmarts("[CX3](=[OX1])")
+        # Check for alkyl or alk-1-enyl group (carbon chain)
+        alkyl_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+        
+        if not (mol.HasSubstructMatch(acyl_pattern) or mol.HasSubstructMatch(alkyl_pattern)):
+            return False, "Substituent is not an acyl, alkyl, or alk-1-enyl group"
 
     # Check molecular weight - monoradylglycerols typically >100 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
