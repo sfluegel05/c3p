@@ -20,41 +20,51 @@ def is_lipopeptide(smiles: str):
         str: Reason for classification
     """
 
-    # Parse the SMILES string
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Identify peptide bonds (amide bonds connecting amino acids)
-    peptide_bond_pattern = Chem.MolFromSmarts("N[C](=O)C")  # N-C(=O)-C
+
+    # Identify peptide bonds (N-C(=O)-C)
+    peptide_bond_pattern = Chem.MolFromSmarts("N[C](=O)[C,N]")
     peptide_bonds = mol.GetSubstructMatches(peptide_bond_pattern)
     if len(peptide_bonds) < 2:
         return False, "Not enough peptide bonds found (need at least 2)"
-    
-    # Identify aliphatic carbons (including in rings and chains)
-    aliphatic_carbons = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
-    if not aliphatic_carbons:
-        return False, "No aliphatic carbons found"
-    
-    # Check if any aliphatic carbon is connected to the peptide
+
+    # Identify long aliphatic chains (lipid moiety)
+    # Define lipid as a chain of at least 8 consecutive non-ring carbons
+    aliphatic_chain_pattern = Chem.MolFromSmarts("[C;!R][C;!R]{7,}")
+    chains = mol.GetSubstructMatches(aliphatic_chain_pattern)
+    if len(chains) == 0:
+        return False, "No long aliphatic chain (lipid moiety) found (need at least 8 carbons)"
+
+    # Get indices of peptide atoms
     peptide_atoms = set()
     for match in peptide_bonds:
         peptide_atoms.update(match)
-    
+
+    # Check if any lipid chain is connected to the peptide
     connected = False
-    for carbon_atom in aliphatic_carbons:
+    for chain in chains:
+        chain_atoms = set(chain)
         for peptide_atom in peptide_atoms:
-            if carbon_atom != peptide_atom:
-                path = Chem.rdmolops.GetShortestPath(mol, carbon_atom, peptide_atom)
-                if path and len(path) > 0:
-                    connected = True
-                    break
+            for lipid_atom in chain_atoms:
+                # Check if there is a path between peptide atom and lipid atom
+                try:
+                    path = Chem.rdmolops.GetShortestPath(mol, peptide_atom, lipid_atom)
+                    if path:
+                        connected = True
+                        break
+                except RuntimeError:
+                    continue
+            if connected:
+                break
         if connected:
             break
-    
+
     if not connected:
-        return False, "No lipid moiety connected to peptide found"
-    
+        return False, "Lipid moiety not connected to peptide"
+
     return True, "Contains peptide bonds and attached lipid moiety"
 
 __metadata__ = {
