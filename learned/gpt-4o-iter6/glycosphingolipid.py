@@ -9,10 +9,10 @@ def is_glycosphingolipid(smiles: str):
     Determines if a molecule is a glycosphingolipid based on its SMILES string.
     A glycosphingolipid features a sphingoid or ceramide backbone with a carbohydrate
     residue attached via a glycosidic linkage.
-
+    
     Args:
         smiles (str): SMILES string of the molecule
-
+        
     Returns:
         bool: True if the molecule is a glycosphingolipid, False otherwise
         str: Reason for classification
@@ -23,17 +23,17 @@ def is_glycosphingolipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Broadened pattern for ceramide: long chain base, typically with an amide linkage & an OH group
-    # Simplified pattern to be more inclusive
-    ceramide_pattern = Chem.MolFromSmarts("C(=O)N[C@@H]CO")
+    # Broadened ceramide backbone pattern: long chain with amide linkage and OH groups
+    ceramide_pattern = Chem.MolFromSmarts("C(=O)N[C@@H]CO[C@H](O)")
     if not mol.HasSubstructMatch(ceramide_pattern):
-        return False, "No ceramide backbone detected"
+        return False, "No ceramide or sphingoid backbone detected"
 
-    # Patterns to detect common sugar moieties
-    # Adjusted SMARTS to include broader configurations of cyclic acetal groups
+    # Patterns to detect more generalized sugar moieties
+    # Include broader SMARTS representing a wide range of common saccharides
     sugar_patterns = [
-        Chem.MolFromSmarts("[C@H]1(O[C@@H]([C@H](O)[C@@H](CO)O)C(O)C1)"),  # Example glucose
-        Chem.MolFromSmarts("[C@@H]1(O[C@H]([C@@H](O)CO)C(O)C(O1)O)")  # Example galactose
+        Chem.MolFromSmarts("[C@H]1(O[C@H](CO)O[C@@H]([C@H]1O)O)"), # Glucose example
+        Chem.MolFromSmarts("[C@H]1(O[C@H](O)[C@@H](CO)O[C@H]1O)"), # Galactose example
+        Chem.MolFromSmarts("[C@H]1(O[C@H](O)[C@@H](O)[C@H](O)C1)"), # Generic sugar
     ]
 
     # Check for any sugar pattern match
@@ -41,10 +41,9 @@ def is_glycosphingolipid(smiles: str):
     if not sugar_found:
         return False, "No carbohydrate moiety detected"
 
-    # Glycosidic linkages - bonds typically occur via oxygen atoms
-    # Pattern checks for alcohol or ether linkages indicative of glycosidic bonds
-    glycosidic_linkage_pattern = Chem.MolFromSmarts("O[C@H](C)CO")  # Simplified pattern
+    # Identify a glycosidic linkage, indicative of an ether connection with sugars
+    glycosidic_linkage_pattern = Chem.MolFromSmarts("[O][C@H]([C@H])O")  # More generic
     if not mol.HasSubstructMatch(glycosidic_linkage_pattern):
-        return False, "Glycosidic linkage to O-1 not identified"
+        return False, "No glycosidic linkage identified"
 
-    return True, "Contains a sphingoid or ceramide backbone with a carbohydrate moiety attached via glycosidic linkage"
+    return True, "Contains a sphingoid or ceramide backbone with a carbohydrate moiety attached via a glycosidic linkage"
