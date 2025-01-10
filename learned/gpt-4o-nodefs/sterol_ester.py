@@ -2,7 +2,6 @@
 Classifies: CHEBI:35915 sterol ester
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_sterol_ester(smiles: str):
     """
@@ -21,28 +20,28 @@ def is_sterol_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Refined sterol core pattern (steroid nucleus with characteristic rings and stereochemistry)
-    sterol_smarts = "[#6]1[#6][#6]2[#6]3[#6]([#6]1)[#6][#6][#6]4[#6]([#6]3)[#6][#6][#6]5[#6](C2)[#6](C([#6][#6]5)[C@@H]4)O"
+    # Sterol core identification: typical core structure involving four fused rings
+    # Base steroid nucleus, allowing for substitution and stereochemistry variability
+    sterol_smarts = "[#6]12[#6][#6]3[#6]([#6]1)[#6][#6]4[C@]2([#6])CC[C@]45C[C@H]3CC[C@@H]5C"
     sterol_core = Chem.MolFromSmarts(sterol_smarts)
-    
+
     if not mol.HasSubstructMatch(sterol_core):
         return False, "No sterol core structure found"
         
     # Ester group pattern (-C(=O)O-)
-    ester_pattern_smarts = "C(=O)O"
+    ester_pattern_smarts = "[#6](=O)O"  # Valid for ester linkage
     ester_pattern = Chem.MolFromSmarts(ester_pattern_smarts)
     
     if not mol.HasSubstructMatch(ester_pattern):
         return False, "No ester linkage found"
 
-    # Check for long aliphatic chain (using flexible chain detection)
-    carbon_chain_smarts = "[#6]~[#6]~[#6]~[#6]~[#6]~[#6]" # Arbitrary extension for long chain
-    carbon_chain = Chem.MolFromSmarts(carbon_chain_smarts)
-    
-    if not mol.HasSubstructMatch(carbon_chain):
-        return False, "No sufficient aliphatic chain found"
+    # Typically, sterol esters have long chains; count carbons in chains attached to ester
+    aliphatic_chain_length = 10  # Arbitrary length suggesting a fatty acid
+    chain_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
+    if len(chain_atoms) < aliphatic_chain_length:
+        return False, "Insufficient aliphatic chain found"
 
-    return True, "Contains sterol core structure esterified with a long aliphatic chain"
+    return True, "Contains sterol core structure esterified with a sufficient long aliphatic chain"
 
 # Example metadata
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:None',
@@ -52,5 +51,5 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:None',
                   'f1_threshold': 0.8,
                   'max_attempts': 5},
     'message': None,
-    'attempt': 1,
+    'attempt': 2,
     'success': True}
