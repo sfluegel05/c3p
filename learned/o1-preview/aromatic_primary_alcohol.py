@@ -13,7 +13,7 @@ def is_aromatic_primary_alcohol(smiles: str):
     Determines if a molecule is an aromatic primary alcohol based on its SMILES string.
 
     An aromatic primary alcohol is defined as any primary alcohol in which the alcoholic hydroxy group 
-    is attached to a carbon which is itself bonded to an aromatic carbon atom in a ring.
+    is attached to a carbon which is itself bonded to an aromatic ring.
 
     Args:
         smiles (str): SMILES string of the molecule.
@@ -22,36 +22,35 @@ def is_aromatic_primary_alcohol(smiles: str):
         bool: True if the molecule is an aromatic primary alcohol, False otherwise.
         str: Reason for the classification.
     """
-    # Parse the SMILES string into a molecule object
+    # Parse SMILES string into a molecule object
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Identify primary alcohol carbons (sp3 carbon with two hydrogens bonded to OH group)
-    primary_alcohol_pattern = Chem.MolFromSmarts('[C;H2;X4][OX2H]')
+    # Define SMARTS pattern for primary alcohol carbon (CH2 bonded to OH)
+    primary_alcohol_pattern = Chem.MolFromSmarts("[C;H2;X4][OH]")
     matches = mol.GetSubstructMatches(primary_alcohol_pattern)
 
     if not matches:
         return False, "No primary alcohol groups found"
 
-    # Iterate over all primary alcohol carbons
+    # Iterate over all primary alcohol groups found
     for match in matches:
-        carbon_idx = match[0]  # Index of carbon atom bearing OH
-        oxygen_idx = match[1]  # Index of oxygen atom
-
+        carbon_idx = match[0]  # Index of the carbon atom
         carbon_atom = mol.GetAtomWithIdx(carbon_idx)
-
-        # Check neighbors excluding the oxygen atom
+        
+        # Check if the carbon atom is connected to an aromatic ring
+        is_connected_to_aromatic = False
         for neighbor in carbon_atom.GetNeighbors():
-            if neighbor.GetIdx() == oxygen_idx:
-                continue  # Skip the oxygen atom
+            if neighbor.GetIsAromatic():
+                is_connected_to_aromatic = True
+                break  # No need to check further if one aromatic neighbor is found
+        
+        if is_connected_to_aromatic:
+            return True, "Molecule contains an aromatic primary alcohol group"
 
-            # Check if neighbor is an aromatic carbon atom in a ring
-            if neighbor.GetAtomicNum() == 6 and neighbor.GetIsAromatic() and neighbor.IsInRing():
-                return True, "Molecule contains an aromatic primary alcohol group"
-
-    # No matching groups found
-    return False, "No aromatic primary alcohol groups connected to aromatic carbon atom found"
+    # If no primary alcohol carbons are connected to an aromatic ring
+    return False, "No aromatic primary alcohol groups connected to aromatic ring found"
 
 __metadata__ = {
     'chemical_class': {
