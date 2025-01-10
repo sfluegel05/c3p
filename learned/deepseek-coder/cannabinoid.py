@@ -13,6 +13,7 @@ def is_cannabinoid(smiles: str):
     Cannabinoids are characterized by either:
     1. A benzene ring with oxygen-containing functional groups and long hydrocarbon chains
     2. A fatty acid/ethanolamide structure with long hydrocarbon chains
+    3. Specific cannabinoid structural motifs
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -29,16 +30,17 @@ def is_cannabinoid(smiles: str):
 
     # Check molecular weight - cannabinoids typically have higher molecular weights
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 200:
+    if mol_wt < 250:
         return False, "Molecular weight too low for a cannabinoid"
 
     # Define patterns for cannabinoid features
     benzene_pattern = Chem.MolFromSmarts("c1ccccc1")
     oxygen_pattern = Chem.MolFromSmarts("[OX2]")
-    long_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    long_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
     ethanolamide_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[CX4]")
     fatty_acid_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2][CX4]")
     cannabinoid_pattern = Chem.MolFromSmarts("c1cc(O)c2[C@@H]3C=C(CC[C@H]3C(C)(C)Oc2c1)")
+    indole_pattern = Chem.MolFromSmarts("c1c[nH]c2ccccc12")  # For indole-based cannabinoids
 
     # Check for classic cannabinoid structure (benzene + oxygen + long chain)
     has_benzene = mol.HasSubstructMatch(benzene_pattern)
@@ -51,10 +53,13 @@ def is_cannabinoid(smiles: str):
 
     # Check for specific cannabinoid pattern
     has_cannabinoid_pattern = mol.HasSubstructMatch(cannabinoid_pattern)
+    has_indole_pattern = mol.HasSubstructMatch(indole_pattern)
 
     # Classification logic
     if has_cannabinoid_pattern:
         return True, "Contains specific cannabinoid structural motif"
+    elif has_indole_pattern and has_long_chain:
+        return True, "Contains indole structure with long hydrocarbon chain"
     elif (has_benzene and has_oxygen and has_long_chain):
         return True, "Contains a benzene ring with oxygen-containing functional groups and long hydrocarbon chains"
     elif (has_ethanolamide or has_fatty_acid) and has_long_chain:
