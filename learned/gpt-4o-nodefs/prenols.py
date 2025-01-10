@@ -2,12 +2,11 @@
 Classifies: CHEBI:26244 prenols
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_prenols(smiles: str):
     """
     Determines if a molecule is a prenol based on its SMILES string.
-    Prenols generally have a terminal alcohol and consist of multiple connected isoprene units.
+    Prenols generally consist of multiple isoprene units and contain an alcohol group.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,18 +21,15 @@ def is_prenols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for a terminal alcohol group '-OH' at the end of the carbon chain
-    # Ensure it does not match anywhere else arbitrarily
-    terminal_oh_pattern = Chem.MolFromSmarts("[CX4,!R]-[OX2H]")
-    terminal_oh_matches = mol.GetSubstructMatches(terminal_oh_pattern)
-    if len(terminal_oh_matches) == 0:
-        return False, "Missing terminal alcohol group"
+    # Check for presence of alcohol group (-OH)
+    alcohol_pattern = Chem.MolFromSmarts('[OX2H]')
+    if not mol.HasSubstructMatch(alcohol_pattern):
+        return False, "Missing alcohol group"
 
-    # Look for sequences of isoprene units: characterized by multiple C(=C-C-C=C) patterns
-    # Use recursive SMARTS pattern to match sequences
-    isoprene_pattern = Chem.MolFromSmarts("(C(=C)C-C(=C)C)")
-    isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
-    if len(isoprene_matches) < 1:
-        return False, "No significant isoprene unit sequences detected"
-    
-    return True, "Contains terminal alcohol group and isoprene units, typical of prenols"
+    # Check for isoprene units. Isoprene units in prenols are often arranged with repeated C(=C)-C-C=C motifs
+    isoprene_pattern = Chem.MolFromSmarts('C(=C)-C-C=C')
+    isoprene_count = len(mol.GetSubstructMatches(isoprene_pattern))
+    if isoprene_count < 1:
+        return False, f"Insufficient isoprene-like units (found {isoprene_count})"
+
+    return True, "Contains alcohol group and isoprene units, typical of prenols"
