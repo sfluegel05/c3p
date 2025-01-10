@@ -6,8 +6,7 @@ from rdkit import Chem
 def is_pterocarpans(smiles: str):
     """
     Determines if a molecule is a pterocarpan based on its SMILES string.
-    Pterocarpans are characterized by a 6a,11a-dihydro-6H-[1]benzofuro[3,2-c]chromene skeleton
-    with additional potential substitutions.
+    A pterocarpan is characterized by a 6a,11a-dihydro-6H-[1]benzofuro[3,2-c]chromene skeleton.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,25 +21,15 @@ def is_pterocarpans(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define the core structure of pterocarpans
-    # Adjust the SMARTS pattern to accommodate the 6a,11a-dihydro-6H-[1]benzofuro[3,2-c]chromene structure
-    pterocarpan_pattern = Chem.MolFromSmarts("c1cc2oc3c(ccc4c3Cc3ccc(O)cc3O4)c(c1)CC2")
-    if pterocarpan_pattern is None:
-        return None, "Error in defining SMARTS pattern"
+    # Define the substructure pattern for the core of pterocarpans
+    # SMARTS pattern for the 6a,11a-dihydro-6H-[1]benzofuro[3,2-c]chromene core
+    pterocarpan_pattern = Chem.MolFromSmarts("O1[C@@]2([C@](C3=C1C=CC=4OCOC4C3)([H])[H])") 
 
     # Check if the core structure is present
     if not mol.HasSubstructMatch(pterocarpan_pattern):
         return False, "No pterocarpan core found"
-
-    # Additional checks for common substituents like hydroxyl and methoxy groups
-    # These checks aren't mandatory for the core but can enhance identification
-    hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
-    methoxy_pattern = Chem.MolFromSmarts("CO")
     
-    has_hydroxyl = mol.HasSubstructMatch(hydroxyl_pattern)
-    has_methoxy = mol.HasSubstructMatch(methoxy_pattern)
-
-    if has_hydroxyl or has_methoxy:
-        return True, f"Contains pterocarpan core with {'hydroxyl and methoxy groups' if (has_hydroxyl and has_methoxy) else 'hydroxyl group' if has_hydroxyl else 'methoxy group'}"
-
+    # Further checks can be added here for additional modifications common in pterocarpans,
+    # such as specific hydroxylation patterns or attached isoflavonoid-like structures.
+    
     return True, "Contains pterocarpan core structure"
