@@ -2,6 +2,7 @@
 Classifies: CHEBI:28963 amino sugar
 """
 from rdkit import Chem
+from rdkit.Chem import rdqueries
 
 def is_amino_sugar(smiles: str):
     """
@@ -16,20 +17,20 @@ def is_amino_sugar(smiles: str):
         bool: True if molecule is an amino sugar, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES string to RDKit molecule object
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern to find sugar backbone (typically an aldose like glucose)
-    sugar_pattern = Chem.MolFromSmarts("[C@H]1(O)[C@H](O)[C@H](O)[C@H](O)[C@H](O)[C@H]1O")
+    # Define a simple sugar pattern (a flexible version, considering typical hexoses)
+    sugar_pattern = Chem.MolFromSmarts("C[C@@H]([OH])[C@@H]([OH])C(=O)[C@H]([OH])[C@H](O)[C@@H]1[OH]")
     if not mol.HasSubstructMatch(sugar_pattern):
-        return False, "No hexose or typical sugar structure found"
-    
-    # SMARTS pattern to find amino substitution (O replaced by [NX3,NX4] i.e., NH, NHR, NR2)
-    amino_substitution_pattern = Chem.MolFromSmarts("[C@H]1([NX3,NX4])[C@H](O)[C@H](O)[C@H](O)[C@H](O)[C@H]1O")
-    if mol.HasSubstructMatch(amino_substitution_pattern):
-        return True, "Contains sugar backbone with one or more OH replaced by amino groups"
+        return False, "No typical sugar backbone found"
+        
+    # Define a pattern for amino substitution, with allowance for some variation
+    amino_pattern = Chem.MolFromSmarts("[NX3,NX4][$([C])[$(C(O));!O]]")  # NH-[C] where an OH might be replaced
+    if mol.HasSubstructMatch(amino_pattern):
+        return True, "Contains sugar backbone with hydroxyl groups replaced by amino groups"
 
     return False, "Sugar backbone found but no amino substitution detected"
