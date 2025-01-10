@@ -2,7 +2,6 @@
 Classifies: CHEBI:27325 xanthophyll
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_xanthophyll(smiles: str):
     """
@@ -22,26 +21,32 @@ def is_xanthophyll(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Identify if there is a polyene chain (long conjugated chain)
-    polyene_pattern = Chem.MolFromSmarts("C=C[C]=C") # Slightly broader pattern
+    # Improved identification of polyene chain for carotenoid backbone
+    polyene_pattern = Chem.MolFromSmarts("C=C(-C=C)*C=C")  # More complex and specific polyene pattern
     if not mol.HasSubstructMatch(polyene_pattern):
-        return False, "No polyene chain found, not a carotenoid backbone"
+        return False, "No suitable polyene chain found, not a carotenoid backbone"
 
-    # Look for oxygenated functionalities
+    # Look for oxygen atom presence
     has_oxygen = any(atom.GetAtomicNum() == 8 for atom in mol.GetAtoms())
     if not has_oxygen:
         return False, "No oxygen atoms found, not a xanthophyll"
 
-    # Check for specific oxygen functionalities
+    # Check for diverse oxygen functionalities relevant to xanthophylls
     oxo_patterns = [
-        Chem.MolFromSmarts("[CX3]=[OX1]"),  # Carbonyl group
-        Chem.MolFromSmarts("[OX2H]"),       # Hydroxyl group
-        Chem.MolFromSmarts("[OX2]([CX3]=[OX1])"),  # Epoxide groups
-        Chem.MolFromSmarts("[O][CX3]([O])=O")      # Additional functional forms
+        Chem.MolFromSmarts("[CX3]=[OX1]"),               # Carbonyl
+        Chem.MolFromSmarts("[OX2H]"),                    # Hydroxyl
+        Chem.MolFromSmarts("[OX2][CX3](=[OX1])[CX4]"),   # Ester-like
+        Chem.MolFromSmarts("[OX2][CX3][CX3H1]")          # Epoxide or similar
     ]
 
-    has_oxo_functionality = any(mol.HasSubstructMatch(pattern) for pattern in oxo_patterns)
-    if not has_oxo_functionality:
-        return False, "No oxygen functionalities like hydroxyl, carbonyl or epoxide groups found"
+    has_oxo_functionality = False
+    for pattern in oxo_patterns:
+        if mol.HasSubstructMatch(pattern):
+            has_oxo_functionality = True
+            break
 
-    return True, "Molecule has a carotenoid backbone and oxygen functionalities, classifying it as xanthophyll"
+    if not has_oxo_functionality:
+        return False, "Lacks key oxygen functionalities like hydroxyl, carbonyl, or other oxygens"
+
+    # All criteria matched, classify as xanthophyll
+    return True, "Molecule has a carotenoid backbone and distinctive oxygen functionalities, hence xanthophyll"
