@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_N_sulfonylurea(smiles: str):
     """
     Determines if a molecule is an N-sulfonylurea based on its SMILES string.
-    An N-sulfonylurea contains a urea group where one nitrogen is substituted 
-    with a sulfonyl group (-S(=O)(=O)-).
+    A true N-sulfonylurea contains a urea group with one nitrogen atom replaced
+    by a sulfonyl group.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -25,27 +25,22 @@ def is_N_sulfonylurea(smiles: str):
     # Define SMARTS patterns
     # Urea group: N-C(=O)-N
     urea_pattern = Chem.MolFromSmarts("NC(=O)N")
-    # N-sulfonyl: N-S(=O)(=O)
-    nsulfonyl_pattern = Chem.MolFromSmarts("N[SX4](=O)(=O)")
+    # N-sulfonyl pattern (NSO2): [N;X3][SX4](=O)(=O) (only attached nitrogen)
+    nsulfonyl_pattern = Chem.MolFromSmarts("[NX3;!$(NC=O)][SX4](=O)(=O)")
 
     # Find matches of the urea pattern
     urea_matches = mol.GetSubstructMatches(urea_pattern)
     if not urea_matches:
         return False, "No urea group found"
-    
-    # Find matches of the sulfonyl pattern
-    nsulfonyl_matches = mol.GetSubstructMatches(nsulfonyl_pattern)
-    if not nsulfonyl_matches:
-        return False, "No N-sulfonyl group found"
 
-    # We need to verify that the sulfonyl is attached to one of the urea nitrogen atoms
+    # Find all matches of the correct N-sulfonyl pattern
+    nsulfonyl_matches = mol.GetSubstructMatches(nsulfonyl_pattern)
+    nsulfonyl_n_index = [match[0] for match in nsulfonyl_matches]
+
+    # Check if any urea nitrogen is part of the correct N-sulfonyl group
     for urea_match in urea_matches:
-        # The nitrogen atoms are at indices 0 and 2 of urea_match
-        urea_nitrogens = [urea_match[0], urea_match[2]]
-        for n_idx in urea_nitrogens:
-            nitrogen = mol.GetAtomWithIdx(n_idx)
-            for neighbor in nitrogen.GetNeighbors():
-                if neighbor.GetIdx() in [match[1] for match in nsulfonyl_matches]:
-                    return True, "Contains N-sulfonylurea moiety"
+        # Nitrogen atoms are at indices 0 and 2 of urea_match
+        if urea_match[0] in nsulfonyl_n_index or urea_match[2] in nsulfonyl_n_index:
+            return True, "Contains N-sulfonylurea moiety"
     
     return False, "No N-sulfonyl substitution on urea nitrogen"
