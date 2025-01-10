@@ -2,7 +2,6 @@
 Classifies: CHEBI:16389 ubiquinones
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_ubiquinones(smiles: str):
     """
@@ -22,15 +21,23 @@ def is_ubiquinones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for benzoquinone core with 2,3-dimethoxy and 5-methyl groups
-    benzoquinone_pattern = Chem.MolFromSmarts("COC1=C(C)C(=O)C=CC1=O")
+    # Improved SMARTS for 2,3-dimethoxy-5-methylbenzoquinone core
+    benzoquinone_pattern = Chem.MolFromSmarts("COc1cc(=O)c(C)c(=O)c(OC)c1")
     if not mol.HasSubstructMatch(benzoquinone_pattern):
         return False, "No 2,3-dimethoxy-5-methylbenzoquinone core found"
     
-    # Check for long polyprenoid chain at position 6 (using multiple isoprene units)
-    polyprenoid_pattern = Chem.MolFromSmarts("C=C(C)CC")
-    polyprenoid_matches = mol.GetSubstructMatches(polyprenoid_pattern)
-    if len(polyprenoid_matches) < 1:
+    # Find potential polyprenoid side chains with isoprene-like patterns
+    long_chain_found = False
+    # Check for multiple occurrences of C=C groups followed by multiple C's, characteristic of isoprene units
+    for atom in mol.GetAtoms():
+        if atom.GetSymbol() == 'C' and atom.GetDegree() == 3:
+            neighbors = atom.GetNeighbors()
+            if sum(1 for n in neighbors if n.GetSymbol() == 'C' and n.GetDegree() == 3) > 2:
+                # Likely part of a polyprenoid-like structure
+                long_chain_found = True
+                break
+    
+    if not long_chain_found:
         return False, "No polyprenoid side chain found"
 
     return True, "Contains ubiquinone core with polyprenoid side chain"
