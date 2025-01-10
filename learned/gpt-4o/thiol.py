@@ -6,7 +6,8 @@ from rdkit import Chem
 def is_thiol(smiles: str):
     """
     Determines if a molecule is a thiol based on its SMILES string.
-    A thiol is an organosulfur compound in which a thiol group (-SH) is attached to a carbon atom.
+    A thiol is an organosulfur compound in which a thiol group (-SH) is attached to a carbon atom
+    of an aliphatic or aromatic moiety.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -19,12 +20,17 @@ def is_thiol(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return None, "Invalid SMILES string"
     
-    # Define thiol group pattern: Thiol group (-SH) attached to carbon [C]-[S]
-    thiol_pattern = Chem.MolFromSmarts("[C]-[SH]")
+    # Correct the pattern to detect thiol groups in both aliphatic and aromatic moieties
+    # Thiol attached to non-aromatic carbon
+    aliphatic_thiol_pattern = Chem.MolFromSmarts("[CX4,CX3,CX2]-[SH]")
     
-    if mol.HasSubstructMatch(thiol_pattern):
+    # Thiol which could be part of an aromatic ring
+    aromatic_thiol_pattern = Chem.MolFromSmarts("[c]-[SH]")
+    
+    # Check if either pattern is a substructure within the molecule
+    if mol.HasSubstructMatch(aliphatic_thiol_pattern) or mol.HasSubstructMatch(aromatic_thiol_pattern):
         return True, "Contains a thiol group (-SH) attached to a carbon atom"
     
     return False, "No thiol group attached to carbon found"
