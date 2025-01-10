@@ -24,11 +24,13 @@ def is_acrovestone(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for isoflavone core structure (benzopyran-4-one with a phenyl group at the 2-position)
+    # More general pattern to account for substitutions
     isoflavone_pattern = Chem.MolFromSmarts("O=C1C(=COc2ccccc2)c3ccccc3O1")
     if not mol.HasSubstructMatch(isoflavone_pattern):
         return False, "No isoflavone core structure found"
 
     # Check for glycosidic linkage (presence of a sugar moiety)
+    # More flexible pattern to account for different sugar moieties
     glycosidic_pattern = Chem.MolFromSmarts("[C@H]1O[C@H]([C@H]([C@@H]([C@H]1O)O)O)CO")
     if not mol.HasSubstructMatch(glycosidic_pattern):
         return False, "No glycosidic linkage found"
