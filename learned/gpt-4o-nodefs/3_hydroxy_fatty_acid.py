@@ -2,13 +2,12 @@
 Classifies: CHEBI:59845 3-hydroxy fatty acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdqueries
 
 def is_3_hydroxy_fatty_acid(smiles: str):
     """
     Determines if a molecule is a 3-hydroxy fatty acid based on its SMILES string.
     A 3-hydroxy fatty acid has a hydroxyl group on the 3rd carbon from
-    the carboxyl carbon in its long aliphatic chain.
+    the carboxyl carbon in its aliphatic chain.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -28,17 +27,13 @@ def is_3_hydroxy_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
 
-    # Define 3-hydroxy pattern: Accommodate chain length and branch possibilities
-    # (Carboxylic Acid connection)-C-C-C(O)-...
-    three_hydroxy_fatty_acid_pattern = Chem.MolFromSmarts("C(=O)OCCCO")
-    
-    if mol.HasSubstructMatch(three_hydroxy_fatty_acid_pattern):
-        return True, "Molecule matches pattern for 3-hydroxy fatty acid"
+    # General 3-hydroxy pattern accommodating stereochemistry and branches
+    # (Carboxylic connection)-C-C-[C@H](O) or branching C
+    three_hydroxy_pattern = Chem.MolFromSmarts("C(=O)O[C;R0][C;R0][C@H](O)")
 
-    # Additional Check for stereochemistry if simple pattern fails
-    three_hydroxy_fatty_acid_stereo_pattern = Chem.MolFromSmarts("C(=O)O[C@H](O)CC")
-    if mol.HasSubstructMatch(three_hydroxy_fatty_acid_stereo_pattern):
-        return True, "Molecule matches chiral pattern for 3-hydroxy fatty acid"
+    # Check matches for both simple and complex patterns
+    if mol.HasSubstructMatch(three_hydroxy_pattern):
+        return True, "Molecule matches 3-hydroxy fatty acid pattern"
 
     return False, "No 3-hydroxy group next to carboxyl on third carbon"
 
