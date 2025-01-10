@@ -22,22 +22,21 @@ def is_3_sn_phosphatidyl_L_serine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS patterns to detect the required features
-    # Glycerol backbone stereo configuration (more generalized pattern)
-    glycerol_pattern = Chem.MolFromSmarts("[C@H](OC)CO")
+    # General glycerol backbone pattern, omitting specific stereo requirements
+    glycerol_pattern = Chem.MolFromSmarts("OCCO")
     if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "Missing or incorrect glycerol backbone stereochemistry"
-    
-    # Phosphate-serine connection allowing variation in charge and stereochemistry
-    phosphate_serine_pattern = Chem.MolFromSmarts("COP(O)(=O)OC[C@H](N)C(=O)O")
+        return False, "Missing glycerol backbone"
+
+    # Check for more generalized phosphate-serine linkage allowing flexibility
+    phosphate_serine_pattern = Chem.MolFromSmarts("O[P](=O)(O)OCC(N)C(=O)O")
     if not mol.HasSubstructMatch(phosphate_serine_pattern):
-        phosphate_serine_neg_charge_pattern = Chem.MolFromSmarts("COP(=O)([O-])OC[C@H](N)C(=O)O")
-        if not mol.HasSubstructMatch(phosphate_serine_neg_charge_pattern):
+        phosphate_serine_alt_pattern = Chem.MolFromSmarts("O[P](=O)([O-])OCC(N)C(=O)O")
+        if not mol.HasSubstructMatch(phosphate_serine_alt_pattern):
             return False, "No phosphate-serine link found"
     
-    # Look for ester linkages indicating fatty acid chains with flexibility in chain lengths
-    fatty_acid_ester_pattern = Chem.MolFromSmarts("C(=O)O[C@H]")
-    ester_matches = mol.GetSubstructMatches(fatty_acid_ester_pattern)
+    # More general ester pattern allowing for flexibility in chain length and stereochemistry
+    ester_pattern = Chem.MolFromSmarts("C(=O)O")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) < 2:
         return False, f"Found {len(ester_matches)} ester linkages, need at least 2"
     
