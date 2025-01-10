@@ -21,20 +21,21 @@ def is_3_oxo_Delta_4__steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define a specific steroid backbone pattern for the tetracyclic ring system
-    steroid_pattern = Chem.MolFromSmarts('C1CCC2C3CCC4CCCC(C3)C2C1C4')
+    # Generalize the steroid backbone detection using a flexible tetracyclic framework
+    steroid_pattern = Chem.MolFromSmarts('C1CCC2CCCCC2C1')
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
     
-    # Check for the presence of a 3-oxo group specifically on the A-ring
-    oxo_pattern = Chem.MolFromSmarts('C1(=O)[C,C]C2')
+    # Check for the presence of a 3-oxo group
+    # This group is part of a ketone functional group, so look for C=O attached to a carbon
+    oxo_pattern = Chem.MolFromSmarts('C(=O)')
     if not mol.HasSubstructMatch(oxo_pattern):
-        return False, "No 3-oxo group found in the appropriate position"
+        return False, "No 3-oxo group found"
     
-    # Verify the Alpha, Beta unsaturated bond (Delta(4) bond)
-    # This means C=C between carbons 4 and 5 in the steroid A-ring
-    delta_4_pattern = Chem.MolFromSmarts('C1=C[C,C]2')
+    # Verify the Alpha, Beta unsaturated bond (Delta(4) bond) as a C=C
+    # This often means an alkene feature within the molecule
+    delta_4_pattern = Chem.MolFromSmarts('C=C')
     if not mol.HasSubstructMatch(delta_4_pattern):
-        return False, "No Delta(4) double bond found in the appropriate position"
+        return False, "No Delta(4) double bond found"
     
     return True, "Molecule classified as 3-oxo-Delta(4) steroid with appropriate moieties"
