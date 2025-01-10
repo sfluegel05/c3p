@@ -18,13 +18,12 @@ def is_2_enoyl_CoA(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
+    # Parse SMILES with stereochemistry
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for CoA backbone components
-    
+    # Check for CoA backbone pattern
     # Look for adenine nucleobase
     adenine_pattern = Chem.MolFromSmarts("n1cnc2c(N)ncnc12")
     if not mol.HasSubstructMatch(adenine_pattern):
@@ -41,29 +40,18 @@ def is_2_enoyl_CoA(smiles: str):
         return False, "Missing pantetheine part"
 
     # Look for characteristic alpha-beta unsaturation (position 2-3)
-    # Pattern for trans (E) configuration
-    trans_pattern = Chem.MolFromSmarts("[C,H]-[CX3]=/[CX3]-[CX3](=[OX1])[SX2]")
-    
-    # Pattern for cis (Z) configuration
-    cis_pattern = Chem.MolFromSmarts("[C,H]-[CX3]=\[CX3]-[CX3](=[OX1])[SX2]")
-    
-    # Pattern for cases where stereochemistry is not specified
-    unspec_pattern = Chem.MolFromSmarts("[C,H]-[CX3]=[CX3]-[CX3](=[OX1])[SX2]")
-    
-    # Pattern for branched 2-enoyl-CoAs
-    branched_pattern = Chem.MolFromSmarts("[C,H][CX3]([C,H])=[CX3]-[CX3](=[OX1])[SX2]")
-    
-    if not any(mol.HasSubstructMatch(pat) for pat in 
-              [trans_pattern, cis_pattern, unspec_pattern, branched_pattern]):
+    # Pattern matches both cis and trans configurations
+    alpha_beta_pattern = Chem.MolFromSmarts("[C,H]-[CX3]=[CX3]-C(=O)S")
+    if not mol.HasSubstructMatch(alpha_beta_pattern):
         return False, "No double bond between positions 2 and 3 relative to thioester"
 
     # Check for phosphate groups (CoA has 3 phosphates)
-    phosphate_pattern = Chem.MolFromSmarts("[$(P(=O)([O,OH])[O,OH])]")
+    phosphate_pattern = Chem.MolFromSmarts("P(=O)([O,OH])[O,OH]")
     phosphate_matches = len(mol.GetSubstructMatches(phosphate_pattern))
     if phosphate_matches < 3:
         return False, f"Found only {phosphate_matches} phosphate groups, need at least 3"
 
-    # Check for ribose sugar with correct stereochemistry
+    # Check for ribose sugar
     ribose_pattern = Chem.MolFromSmarts("OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12")
     if not mol.HasSubstructMatch(ribose_pattern):
         return False, "Missing or incorrect ribose sugar moiety"
