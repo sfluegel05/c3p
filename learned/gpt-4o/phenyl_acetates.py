@@ -7,7 +7,7 @@ def is_phenyl_acetates(smiles: str):
     """
     Determines if a molecule is a phenyl acetate based on its SMILES string.
     A phenyl acetate is characterized by having an acetate ester linkage 
-    directly attached to a phenol group or phenyl group.
+    attached to a phenol or phenyl group.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,18 +22,28 @@ def is_phenyl_acetates(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Identify acetate ester group (-O-C(=O)CH3) or more flexible
-    # Include optional esther bonds connecting benzene derivatives
-    acetate_ester_pattern = Chem.MolFromSmarts("C(=O)[OX2H1,R]")
-    if not mol.HasSubstructMatch(acetate_ester_pattern):
+    # Identify aromatic phenyl ring pattern, tolerance for substitution
+    phenyl_pattern = Chem.MolFromSmarts("c1ccccc1")  # Basic phenyl ring
+    phenyl_matches = mol.GetSubstructMatches(phenyl_pattern)
+    
+    if not phenyl_matches:
+        return False, "No phenyl group found"
+
+    # Identify acetate ester group (-O-C(=O)-C)
+    acetate_ester_pattern = Chem.MolFromSmarts("OC(=O)C")
+    acetate_matches = mol.GetSubstructMatches(acetate_ester_pattern)
+    
+    if not acetate_matches:
         return False, "No acetate ester linkage found"
 
-    # Identify phenyl/phenol group with ester (-O-C(=O))
-    phenyl_esters_pattern = Chem.MolFromSmarts("c1ccc(cc1)OC(=O)")
-    phenol_pattern = Chem.MolFromSmarts("Oc1ccccc1OC(=O)")
+    # Verify that an acetate ester is attached directly to the phenyl group
+    for phenyl_match in phenyl_matches:
+        for idx in phenyl_match:  # each atom in the phenyl group
+            atom = mol.GetAtomWithIdx(idx)
+            # Check neighboring atoms to see if any match the start of the acetate
+            for neighbor in atom.GetNeighbors():
+                neighbor_idx = neighbor.GetIdx()
+                if any(neighbor_idx in acetate_match for acetate_match in acetate_matches):
+                    return True, "Contains acetate ester linkage attached to a phenyl group"
     
-    # Check for either pattern indicating direct attachment
-    if mol.HasSubstructMatch(phenyl_esters_pattern) or mol.HasSubstructMatch(phenol_pattern):
-        return True, "Contains acetate ester linkage directly attached to a phenyl or phenol group"
-
-    return False, "Ester linkage not appropriately attached to a phenol/phenyl group"
+    return False, "Ester linkage not attached to phenyl group"
