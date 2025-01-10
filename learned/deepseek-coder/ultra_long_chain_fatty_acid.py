@@ -36,15 +36,15 @@ def is_ultra_long_chain_fatty_acid(smiles: str):
             # Traverse the chain starting from this atom
             chain_length = 1
             visited = set()
-            stack = [(atom, chain_length)]
+            stack = [(atom, chain_length, None)]  # (current_atom, current_length, previous_atom)
             while stack:
-                current_atom, current_length = stack.pop()
+                current_atom, current_length, previous_atom = stack.pop()
                 visited.add(current_atom.GetIdx())
                 if current_length > longest_chain_length:
                     longest_chain_length = current_length
                 for neighbor in current_atom.GetNeighbors():
-                    if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:
-                        stack.append((neighbor, current_length + 1))
+                    if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited and neighbor != previous_atom:
+                        stack.append((neighbor, current_length + 1, current_atom))
 
     # Check if the longest chain is greater than C27
     if longest_chain_length > 27:
