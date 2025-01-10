@@ -29,7 +29,7 @@ def is_3_hydroxy_fatty_acyl_CoA_4__(smiles: str):
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No CoA moiety found"
 
-    # Check for 3-hydroxy fatty acid chain (more flexible pattern)
+    # Check for 3-hydroxy fatty acid chain (more specific pattern)
     # Pattern: at least 4 carbons with a hydroxyl group at position 3
     hydroxy_fatty_acid_pattern = Chem.MolFromSmarts("[CX4][CX4][CX4]([OH])[CX4]C(=O)")
     if not mol.HasSubstructMatch(hydroxy_fatty_acid_pattern):
@@ -45,12 +45,12 @@ def is_3_hydroxy_fatty_acyl_CoA_4__(smiles: str):
 
     # Check molecular weight - more lenient range
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 500:  # Lowered threshold to accommodate shorter chains
+    if mol_wt < 400:  # Lowered threshold to accommodate shorter chains
         return False, f"Molecular weight too low ({mol_wt:.1f} Da) for 3-hydroxy fatty acyl-CoA"
 
     # Count carbons in fatty acid chain - more lenient
     fatty_acid_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if fatty_acid_carbons < 10:  # Lowered minimum carbon count
+    if fatty_acid_carbons < 6:  # Lowered minimum carbon count
         return False, f"Too few carbons ({fatty_acid_carbons}) for 3-hydroxy fatty acyl-CoA"
 
     # Additional check for ester bond between fatty acid and CoA
