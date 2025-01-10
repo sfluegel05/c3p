@@ -27,19 +27,16 @@ def is_N_hydroxy_alpha_amino_acid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for carboxylic acid group (C(=O)O)
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[O]")
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
 
-    # Pattern for N-hydroxy substitution
-    # Check N(O) and N(O)(O) on alpha carbon next to carboxylic group
-    n_hydroxy_alpha_amino_pattern = Chem.MolFromSmarts("NC(O)=O")
-    n_dihydroxy_alpha_amino_pattern = Chem.MolFromSmarts("N(O)C(O)=O")
-    n_dihydroxy_alpha_amino_pattern_2 = Chem.MolFromSmarts("N(O)(O)C(O)=O")
+    # Look for N-hydroxy group specifically on an alpha carbon attached nitrogen
+    n_hydroxy_alpha_amino_pattern = Chem.MolFromSmarts("[C;H1,H2](N(O))[C](=O)O")
+    n_hydroxy_dihydroxy_alpha_amino_pattern = Chem.MolFromSmarts("[C;H1,H2](N(O)O)[C](=O)O")
     
-    if (mol.HasSubstructMatch(n_hydroxy_alpha_amino_pattern) or 
-        mol.HasSubstructMatch(n_dihydroxy_alpha_amino_pattern) or 
-        mol.HasSubstructMatch(n_dihydroxy_alpha_amino_pattern_2)):
+    if mol.HasSubstructMatch(n_hydroxy_alpha_amino_pattern) or \
+       mol.HasSubstructMatch(n_hydroxy_dihydroxy_alpha_amino_pattern):
         return True, "Contains N-hydroxy substitution on alpha-amino group and carboxylic acid characteristic of alpha-amino acids"
 
     return False, "Does not meet the criteria for N-hydroxy-alpha-amino-acid"
