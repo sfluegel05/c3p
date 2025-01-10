@@ -5,13 +5,12 @@ Classifies: CHEBI:73754 thiosugar
 Classifies: thiosugar
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_thiosugar(smiles: str):
     """
     Determines if a molecule is a thiosugar based on its SMILES string.
-    A thiosugar contains a carbohydrate backbone with one or more oxygens
-    or hydroxy groups replaced by sulfur or -SR groups.
+    A thiosugar has a carbohydrate backbone with one or more oxygens or hydroxy
+    groups replaced by sulfur or -SR groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -25,17 +24,20 @@ def is_thiosugar(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+    
+    # Look for a common carbohydrate ring pattern
+    # Simplified match for sugar-like patterns (5- or 6-membered rings with hydroxyl groups)
+    carbohydrate_ring_pattern_5 = Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@@H]1")
+    carbohydrate_ring_pattern_6 = Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](O)[C@@H]1")
+    
+    if not (mol.HasSubstructMatch(carbohydrate_ring_pattern_5) or mol.HasSubstructMatch(carbohydrate_ring_pattern_6)):
+        return False, "No carbohydrate-like ring structure found"
+    
+    # Check for sulfur substitutions
+    sulfur_pattern = Chem.MolFromSmarts("[SH,X2]")
+    sulfur_match = mol.HasSubstructMatch(sulfur_pattern)
+    
+    if sulfur_match:
+        return True, "Sulfur found as substitution in carbohydrate-like structure"
 
-    # Look for carbohydrate pattern: 5 or 6 membered oxygen-containing ring
-    carbohydrate_pattern = Chem.MolFromSmarts('[C@H1]1([C@@H1]([C1@H]O)O)O')
-    if not mol.HasSubstructMatch(carbohydrate_pattern):
-        return False, "No carbohydrate-like structure found"
-        
-    # Look for sulfur substitution patterns in place of oxygen
-    sulfur_pattern_1 = Chem.MolFromSmarts('[C@H1]1([C@@H1]([C1@H]S)O)O')  # Sulfur in ring
-    sulfur_pattern_2 = Chem.MolFromSmarts('SC')  # Simple -SR substitution pattern
-
-    if mol.HasSubstructMatch(sulfur_pattern_1) or mol.HasSubstructMatch(sulfur_pattern_2):
-        return True, "Sulfur substitution found in carbohydrate-like structure"
-
-    return False, "No sulfur substitution in expected carbohydrate structure locations"
+    return False, "No sulfur substitution found in expected carbohydrate structure locations"
