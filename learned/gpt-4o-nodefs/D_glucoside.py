@@ -6,8 +6,7 @@ from rdkit import Chem
 def is_D_glucoside(smiles: str):
     """
     Determines if a molecule is a D-glucoside based on its SMILES string.
-    A D-glucoside contains a D-glucopyranosyl unit, which can be either 
-    alpha or beta, identified by specific stereochemistry.
+    A D-glucoside contains a D-glucopyranosyl unit, featuring specific stereochemistry.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,16 +21,11 @@ def is_D_glucoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a SMARTS pattern for both alpha and beta D-glucopyranosides
-    # Matching the 6-membered pyranose ring with appropriate stereochemistry
-    # Capturing hydroxyl groups and flexible attachment site
-    glucoside_pattern = Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@H](O)[C@H]1O")
+    # Refined SMARTS pattern for D-glucopyranoside capturing both alpha and beta forms
+    # and considering point of attachments as well as stereochemistry variations
+    glucopyranosyl_pattern = Chem.MolFromSmarts("O[C@H]1[C@H](O[C@H](CO)O)[C@@H](O)[C@H](O)[C@H](O)1")
 
-    if mol.HasSubstructMatch(glucoside_pattern):
+    if mol.HasSubstructMatch(glucopyranosyl_pattern):
         return True, "Contains D-glucopyranosyl unit indicative of D-glucoside"
     
     return False, "D-glucopyranosyl unit not found"
-
-# Example test case (not run as part of the function definition)
-example_smiles = "CC(=O)N[C@@H](CO)[C@@H](OC1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1NC(C)=O)[C@@H](O)[C@H](O)CO"
-print(is_D_glucoside(example_smiles))
