@@ -26,24 +26,36 @@ def is_fatty_amide(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for amide group (-CONH- or -CONR-)
-    amide_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[NX3H0]")
+    # More inclusive pattern that matches both primary and secondary amides
+    amide_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[NX3H0,H1]")
     if not mol.HasSubstructMatch(amide_pattern):
         return False, "No amide group found"
 
-    # Check for a long hydrocarbon chain (more than 6 carbons)
-    # We look for a chain of at least 6 carbons connected to the amide group
-    long_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
-    if not mol.HasSubstructMatch(long_chain_pattern):
-        return False, "No long hydrocarbon chain found"
+    # Check for a long hydrocarbon chain (at least 6 carbons total)
+    # Count all carbons except those in the amide group
+    c_count = sum(1 for atom in mol.GetAtoms() 
+                 if atom.GetAtomicNum() == 6 and 
+                 not atom.GetIdx() in [a.GetIdx() for a in mol.GetSubstructMatch(amide_pattern)])
+    
+    if c_count < 6:
+        return False, f"Not enough carbons ({c_count}) for a fatty chain"
 
-    # Count the number of carbons in the molecule
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 10:
-        return False, "Too few carbons to be a fatty amide"
-
-    # Check molecular weight - fatty amides typically have a higher molecular weight
+    # Check molecular weight - fatty amides typically >150 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 200:
+    if mol_wt < 150:
         return False, "Molecular weight too low for a fatty amide"
+
+    # Check for typical fatty acid characteristics:
+    # At least 6 carbons in a chain (not necessarily consecutive)
+    # Can include double/triple bonds and branches
+    chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    if not mol.HasSubstructMatch(chain_pattern):
+        return False, "No suitable hydrocarbon chain found"
+
+    # Additional check: at least 50% of carbons should be in chains
+    # (excluding amide group carbons)
+    total_c = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count/total_c < 0.5:
+        return False, "Too many carbons in non-chain positions"
 
     return True, "Contains an amide group with a long hydrocarbon chain"
