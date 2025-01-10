@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_sterol(smiles: str):
     """
     Determines if a molecule is a sterol based on its SMILES string.
-    A sterol is defined as a 3-hydroxy steroid closely related to cholestan-3-ol.
+    A sterol is defined as a 3-hydroxy steroid whose skeleton is closely related to cholestan-3-ol.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,14 +21,17 @@ def is_sterol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Steroid backbone SMARTS pattern: four-ring steroid core 
-    steroid_pattern = Chem.MolFromSmarts("C1CCC2C3CCC4CCCC(C4)C3C2C1")
+    # More general steroid pattern with flexibility in rings structure
+    steroid_pattern = Chem.MolFromSmarts("[CH3]1CC2(C)C3CCC4[CH2][CH2]C(C)(C)C3CCC4C2C(C)O1")
     if not mol.HasSubstructMatch(steroid_pattern):
-        return False, "No steroid backbone found"
+        return False, "No steroid-like backbone found"
 
-    # Check for hydroxyl group at the 3-position (3-hydroxy group)
-    steroid_3_oh_pattern = Chem.MolFromSmarts("C1(CCC2C3CCC4CCCC(C4)C3C2C1)O")
-    if not mol.HasSubstructMatch(steroid_3_oh_pattern):
-        return False, "No 3-hydroxy group found in the steroid backbone"
+    # Check for a hydroxyl group connected to any of the rings, typically at C3
+    hydroxyl_pattern = Chem.MolFromSmarts("C(O)C")
+    if not mol.HasSubstructMatch(hydroxyl_pattern):
+        return False, "No hydroxyl group found potentially at the 3-position"
 
-    return True, "Contains steroid backbone with 3-hydroxy group"
+    # Additional verification to enhance accuracy could be considered here
+    # such as verifying location or orientation of the hydroxyl if necessary
+
+    return True, "Contains steroid-like backbone with a hydroxyl group"
