@@ -2,16 +2,15 @@
 Classifies: CHEBI:26660 sesterterpenoid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_sesterterpenoid(smiles: str):
     """
     Determines if a molecule is a sesterterpenoid based on its SMILES string.
     Sesterterpenoids are derived from sesterterpenes and can have a modified C25 skeleton.
-    
+
     Args:
         smiles (str): SMILES string of the molecule
-    
+
     Returns:
         bool: True if molecule is a sesterterpenoid, False otherwise
         str: Reason for classification
@@ -22,29 +21,24 @@ def is_sesterterpenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Count carbon atoms
+    # Count carbon atoms, consider modified C25 skeletons
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 20 or c_count > 35:  # Adjusted range to account for variations
-        return False, f"Carbon count ({c_count}) not within typical range for sesterterpenoid"
+    if c_count < 25 or c_count > 43:
+        return False, f"Carbon count ({c_count}) not typical or too large for a sesterterpenoid"
 
-    # Expanded set of complex cyclic patterns typical in sesterterpenoids
-    complex_cyclic_patterns = [
-        Chem.MolFromSmarts("C1CCC2CCC(C1)C2"),  # Simple bicyclic system
-        Chem.MolFromSmarts("C1CCCC2CCCC3(C1)C2CCC3"),  # Tricyclic system
-        Chem.MolFromSmarts("C1CCC2CC3CC(C2C1)CC3"),  # Larger tricyclic system
-        Chem.MolFromSmarts("C1C[C@H]2CC[C@@H]3C[C@H](C1)C2(C)CC3"),  # ABC-ring terpenoid scaffold
+    # Define broader patterns for isoprenoid-like structures, considering modifications
+    # Typical sesterterpenoid may include complex ring systems
+    isoprene_patterns = [
+        Chem.MolFromSmarts("C=C(C)CC"),  # Basic isoprene unit
+        Chem.MolFromSmarts("C=CC(C)C"),  # Variation of isoprene
+        Chem.MolFromSmarts("CC(C)=C"),   # Further variation
+        # Additional cyclic patterns could be checked here
     ]
-
-    # Check for presence of any complex cyclic structures typical in sesterterpenoids
-    if not any(mol.HasSubstructMatch(pattern) for pattern in complex_cyclic_patterns):
-        return False, "No key cyclic structures typical of sesterterpenoids found"
     
-    # Calculate and validate additional characteristics like molecular weight potentially
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 350 or mol_wt > 700:  # Adjusted weight range based on typical sesterterpenoids
-        return False, "Molecular weight not within typical range for sesterterpenoids"
-
-    # Extra check for typical functional groups, if possible, can be added.
+    # Check if important cyclic structures indicative of sesterterpenoids are present
+    cyclic_pattern = Chem.MolFromSmarts("C1CCC(CC1)C")  # Example cyclic pattern
+    if not any(mol.HasSubstructMatch(pattern) for pattern in isoprene_patterns) and not mol.HasSubstructMatch(cyclic_pattern):
+        return False, "No isoprene-like or key cyclic structures typical of sesterterpenoids found"
 
     # If structure fits broad criteria
-    return True, "Contains key characteristics of sesterterpenoids"
+    return True, "Likely a sesterterpenoid based on adjusted carbon count and structural features"
