@@ -22,20 +22,23 @@ def is_B_vitamin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Improved SMARTS patterns for key B vitamins
+    # Define SMARTS patterns for key B vitamins
+    # Ensure patterns are reviewed for structural accuracy
     patterns = {
-        "B1": Chem.MolFromSmarts("C[C@H]1CN(C2=CN=C(C)N=C2N)C=C1"),  # Thiamine, emphasize structure with the thiazole ring and aminopyrimidine
-        "B2": Chem.MolFromSmarts("NC1=NC2=C(NC=N2)C3=C(C(O)=CN=C13)"),  # Riboflavin, capture the isoalloxazine ring
-        "B3": Chem.MolFromSmarts("C1=NC=CC=C1C(=O)O"),  # Nicotinic acid, capture the pyridine ring
-        "B5": Chem.MolFromSmarts("CC(C)(CO)[C@@H](O)C(=O)NCCC(=O)O"),  # Pantothenic acid
-        "B6": Chem.MolFromSmarts("CC1=NC=C(CN)C(O)=C1"),  # Pyridoxine, improved capture of the pyridine ring with hydroxyl
-        "B7": Chem.MolFromSmarts("NC1CS[C@H]2N1C=O"),  # Biotin, more detailed to include urea and tetrahydrothiophene
-        "B9": Chem.MolFromSmarts("Nc1nc2ccc(O)c(=O)n2[nH]1"),  # Folic acid, focus on the pteridine and p-aminobenzoic acid portions
-        "B12": Chem.MolFromSmarts("CNC([Co])C1=NC=CC(=N1)C"),  # Cobalamin, focus on large corrin with cobalt 
+        "B1": Chem.MolFromSmarts("CN1C=NC(SC1=CC2=CC=C[NH2+]2)=[NH2+]"),  # Thiamine: Include thiazole and pyrimidine rings
+        "B2": Chem.MolFromSmarts("O=C(N=C1N=C(NC(=O)C2=C1N(C=NC2=O)C=CC3=CNC(C=3)=C)[O-])[O-]"),  # Riboflavin: Isoalloxazine rings
+        "B3": Chem.MolFromSmarts("c1cc(cnc1)C(=O)O"),  # Nicotinic acid (Niacin): Simplified pyridine structure
+        "B5": Chem.MolFromSmarts("CC(C)(CO)C(C(=O)NCCC(=O)O)O"),        # Pantothenic acid
+        "B6": Chem.MolFromSmarts("CC1=NC=C(C(C1=O)CO)O"),               # Pyridoxine structure
+        "B7": Chem.MolFromSmarts("O=C1N[C@@H]2SCC[C@H]2N1"),             # Biotin: Tetrahydrothieno-structure
+        "B9": Chem.MolFromSmarts("Nc1nc2c(cc(C(O)=O)c(=O)n2)n1"),       # Folic acid: Pteridine-based
+        "B12": Chem.MolFromSmarts("CNC([Co])C1=NC=A[C@H](A)[N]C1"),      # Cobalamin structure part (focus on large corrin)
     }
 
-    # Check for substructures
+    # Check for substructure matches
     for vitamin, pattern in patterns.items():
+        if pattern is None:
+            return None, "Pattern generation failed."
         if mol.HasSubstructMatch(pattern):
             return True, f"Matches pattern of vitamin {vitamin}"
     
