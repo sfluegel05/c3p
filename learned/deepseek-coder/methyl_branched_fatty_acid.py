@@ -25,45 +25,56 @@ def is_methyl_branched_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for carboxylic acid group (-C(=O)O or -C(=O)[O-])
-    carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1,OX1H0-]")
+    # Check for carboxylic acid group (-C(=O)O)
+    carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
 
-    # Check for at least one methyl branch (C attached to exactly 3 other carbons)
-    methyl_branch_pattern = Chem.MolFromSmarts("[CH3]")
+    # Check for methyl branches (C attached to exactly 3 other carbons)
+    methyl_branch_pattern = Chem.MolFromSmarts("[CX4H3]")
     methyl_branch_matches = mol.GetSubstructMatches(methyl_branch_pattern)
     if len(methyl_branch_matches) == 0:
         return False, "No methyl branches found"
 
-    # Check for long carbon chain (at least 4 carbons)
+    # Check for long carbon chain (at least 6 carbons)
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if carbon_count < 4:
+    if carbon_count < 6:
         return False, "Carbon chain too short to be a fatty acid"
 
     # Ensure no non-methyl branches (e.g., ethyl, propyl, etc.)
-    # We look for carbons with more than 2 connections that are not part of the main chain
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 6 and atom.GetDegree() > 2:
-            # Check if the branch is longer than a single carbon (methyl group)
-            neighbors = atom.GetNeighbors()
-            for neighbor in neighbors:
-                if neighbor.GetAtomicNum() == 6 and neighbor.GetDegree() > 1:
-                    # Check if the neighbor is part of a longer branch
-                    if len([n for n in neighbor.GetNeighbors() if n.GetAtomicNum() == 6 and n.GetDegree() > 1]) > 0:
-                        return False, "Non-methyl branches detected"
-
-    # Additional check to ensure the molecule is a fatty acid
-    # Fatty acids typically have a long carbon chain with a carboxylic acid at one end
-    # We can check if the carboxylic acid is at the end of the chain
-    carboxylic_acid_atoms = mol.GetSubstructMatches(carboxylic_acid_pattern)
-    if len(carboxylic_acid_atoms) == 0:
-        return False, "Carboxylic acid group not found at the end of the chain"
-
-    # Check if the carboxylic acid is at the end of the chain
-    for match in carboxylic_acid_atoms:
-        carbon_atom = mol.GetAtomWithIdx(match[0])
-        if carbon_atom.GetDegree() != 2:
-            return False, "Carboxylic acid group not at the end of the chain"
+    non_methyl_branch_pattern = Chem.MolFromSmarts("[CX4H2][CX4H2]")
+    if mol.HasSubstructMatch(non_methyl_branch_pattern):
+        return False, "Non-methyl branches detected"
 
     return True, "Contains carboxylic acid group, methyl branches, and a long carbon chain"
+
+
+__metadata__ = {   'chemical_class': {   'id': 'CHEBI:76971',
+                          'name': 'methyl-branched fatty acid',
+                          'definition': 'Any branched-chain fatty acid containing methyl branches only.',
+                          'parents': ['CHEBI:76970', 'CHEBI:76972']},
+    'config': {   'llm_model_name': 'lbl/claude-sonnet',
+                  'f1_threshold': 0.8,
+                  'max_attempts': 5,
+                  'max_positive_instances': None,
+                  'max_positive_to_test': None,
+                  'max_negative_to_test': None,
+                  'max_positive_in_prompt': 50,
+                  'max_negative_in_prompt': 20,
+                  'max_instances_in_prompt': 100,
+                  'test_proportion': 0.1},
+    'message': None,
+    'attempt': 0,
+    'success': True,
+    'best': True,
+    'error': '',
+    'stdout': None,
+    'num_true_positives': 150,
+    'num_false_positives': 4,
+    'num_true_negatives': 182407,
+    'num_false_negatives': 23,
+    'num_negatives': None,
+    'precision': 0.974025974025974,
+    'recall': 0.8670520231213873,
+    'f1': 0.9174311926605504,
+    'accuracy': 0.9998521228585199}
