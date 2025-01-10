@@ -26,22 +26,22 @@ def is_aromatic_amino_acid(smiles: str):
     if not mol.HasSubstructMatch(aromatic_ring_pattern):
         return False, "No aromatic ring found"
     
-    # Look for amino group (more general acceptance)
-    amino_group_pattern = Chem.MolFromSmarts("[NX3;H2,H1,H0]-[C;!H0]")
+    # Correct pattern to find the primary amine connected to a carbon 
+    amino_group_pattern = Chem.MolFromSmarts("[NX3;H2]-[CX4][CX3]=O")
     if not mol.HasSubstructMatch(amino_group_pattern):
         return False, "No suitable amino group found"
     
-    # Look for carboxyl group (C(=O)O)
-    carboxyl_group_pattern = Chem.MolFromSmarts("C(=O)[O,H]")
+    # Confirm the presence of a carboxyl group
+    carboxyl_group_pattern = Chem.MolFromSmarts("C(=O)O")
     if not mol.HasSubstructMatch(carboxyl_group_pattern):
         return False, "No carboxyl group found"
-    
-    # Check the connectivity: More versatile connection pattern, allows the carbon to connect differently to satisfy aromatic amino acid contexts
-    aromatic_amino_acid_pattern = Chem.MolFromSmarts("a-[CX3]-[NX3]-C(=O)[O,H]")
+
+    # Check for proper connectivity (aromatic ring attached to the amino acid backbone)
+    aromatic_amino_acid_pattern = Chem.MolFromSmarts("a-[CH2]-[NH2]-C(=O)O")
     if not mol.HasSubstructMatch(aromatic_amino_acid_pattern):
         return False, "Aromatic ring not properly connected to amino acid functionality"
-
+   
     return True, "Contains aromatic ring and amino acid moiety connected appropriately"
 
-# Test the function with an example SMILES string for L-dopa
+# Test the function with an example SMILES string
 print(is_aromatic_amino_acid("NC(Cc1ccc(O)c(O)c1)C(O)=O"))
