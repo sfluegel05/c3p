@@ -2,7 +2,6 @@
 Classifies: CHEBI:35342 17alpha-hydroxy steroid
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_17alpha_hydroxy_steroid(smiles: str):
     """
@@ -22,20 +21,22 @@ def is_17alpha_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS pattern for steroid backbone (cyclopentanoperhydrophenanthrene core)
-    steroid_pattern = Chem.MolFromSmarts('C1CCC2C3CCC4C(C3C2C1)CC4')
+    # Improved SMARTS pattern for steroid backbone, accounting for stereochemistry
+    # Note: "[#6]" denotes a carbon atom to cover cases where stereochemistry may cause issues
+    steroid_pattern = Chem.MolFromSmarts('C1CC[C@]2(C)C(C)([C@@H]([C@@H]2CC1)[C@H](O))C')
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
     
-    # Define SMARTS pattern for the 17alpha-hydroxy group
-    hydroxyl_pattern = Chem.MolFromSmarts('[C@H](O)[C&R3,R4]')
+    # Improved SMARTS pattern for the 17alpha-hydroxy group
+    # Often involves "[C@]1(O)[C@H](C)"
+    hydroxyl_pattern = Chem.MolFromSmarts('[C@H](O)[C@H]1')
     if not mol.HasSubstructMatch(hydroxyl_pattern):
         return False, "No 17alpha-hydroxyl group found"
     
-    # Additional logic can be added here to check stereochemistry more accurately if needed
-
+    # Additional checks or patterns can be added to ensure stereochemistry is captured correctly
+    
     return True, "Contains steroid backbone with 17alpha-hydroxyl group"
 
-# Example usage
+# Example usage with a known 17alpha-hydroxy steroid
 smiles_example = '[H][C@@]12CCC3=CC(=O)CC[C@]3(C)[C@@]1([H])[C@@H](O)C[C@@]1(C)[C@@]2([H])CC[C@]1(O)C(=O)CO'
 print(is_17alpha_hydroxy_steroid(smiles_example))
