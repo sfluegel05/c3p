@@ -21,15 +21,11 @@ def is_isoflavones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the isoflavone core SMARTS pattern with variable substitutions
-    # The pattern represents the chromen-4-one core with an aryl group at position 3
-    isoflavone_smarts = """
-    [#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1
-    -c2cc(=O)oc3cccc(-c4cccc[#6]4)c23
-    """
+    # Define the isoflavone core SMARTS pattern
+    # This pattern represents the chromen-4-one core with an aryl group at position 3
+    isoflavone_smarts = "[O]=C1C=Cc2ccccc2Oc1[a]"
 
-    # Remove whitespace and newlines from SMARTS pattern
-    isoflavone_smarts = isoflavone_smarts.replace('\n', '').replace(' ', '')
+    # Convert the SMARTS pattern to a Mol object
     isoflavone_pattern = Chem.MolFromSmarts(isoflavone_smarts)
     if isoflavone_pattern is None:
         return False, "Error in isoflavone core SMARTS pattern"
