@@ -24,59 +24,34 @@ def is_nucleoside_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns for nucleobases (adenine, guanine, cytosine, thymine, uracil)
-    adenine_pattern = Chem.MolFromSmarts('n1c[nH]c2c1ncnc2N')  # Adenine
-    guanine_pattern = Chem.MolFromSmarts('O=C1NC(N)=NC2=NC=NC12')  # Guanine
-    cytosine_pattern = Chem.MolFromSmarts('O=C1NC=CC(N)=N1')  # Cytosine
-    thymine_pattern = Chem.MolFromSmarts('CC1=CN(C)C(=O)NC1=O')  # Thymine
-    uracil_pattern  = Chem.MolFromSmarts('O=C1NC=CC(=O)N1')  # Uracil
+    # Define general SMARTS patterns for nucleobases
+    # Purine base (adenine, guanine)
+    purine_pattern = Chem.MolFromSmarts('c1nc[nH]c2c1ncn2')  # General purine ring
+    # Pyrimidine base (cytosine, thymine, uracil)
+    pyrimidine_pattern = Chem.MolFromSmarts('c1c[nH]c(=O)[nH]c1')  # General pyrimidine ring
 
-    nucleobase_patterns = [adenine_pattern, guanine_pattern, cytosine_pattern, thymine_pattern, uracil_pattern]
-
-    # Check for nucleobase
-    nucleobase_found = False
-    for pattern in nucleobase_patterns:
-        if mol.HasSubstructMatch(pattern):
-            nucleobase_found = True
-            break
-    if not nucleobase_found:
+    # Check for nucleobase (purine or pyrimidine)
+    if not mol.HasSubstructMatch(purine_pattern) and not mol.HasSubstructMatch(pyrimidine_pattern):
         return False, "No nucleobase found"
 
-    # Define SMARTS patterns for ribose and deoxyribose sugars
-    ribose_pattern = Chem.MolFromSmarts('[C@H]1(O)[C@H](O)[C@@H](O)[C@H](O)[C@@H]1O')  # Ribose
-    deoxyribose_pattern = Chem.MolFromSmarts('[C@H]1(O)[C@H](O)[C@@H](O)[C@H](O)[C@H]1')  # Deoxyribose (missing one OH)
+    # Define SMARTS pattern for ribose or deoxyribose sugar
+    sugar_pattern = Chem.MolFromSmarts('[C@@H]1O[C@H]([C@@H](O)[C@H](O)[C@H]1O)')  # Ribose ring
+    deoxy_sugar_pattern = Chem.MolFromSmarts('[C@@H]1O[C@H]([C@@H](O)[C@H](O)[C@H]1)')  # Deoxyribose ring
 
     # Check for sugar moiety
-    sugar_found = False
-    if mol.HasSubstructMatch(ribose_pattern) or mol.HasSubstructMatch(deoxyribose_pattern):
-        sugar_found = True
-    if not sugar_found:
+    if not mol.HasSubstructMatch(sugar_pattern) and not mol.HasSubstructMatch(deoxy_sugar_pattern):
         return False, "No sugar moiety found"
 
-    # Check for nucleoside linkage (nucleobase attached to sugar via glycosidic bond)
-    nucleoside_pattern = Chem.MolFromSmarts('n[cH1][C@H]1O[C@H](O)[C@@H](O)[C@H](O)[C@@H]1O')
-    if not mol.HasSubstructMatch(nucleoside_pattern):
+    # Define SMARTS pattern for nucleoside linkage (nucleobase attached to sugar)
+    nucleoside_linkage_pattern = Chem.MolFromSmarts('[nH]1[c,n]%a[c,n]%a[c,n]%a[nH]%a1-[CH]1O[CH][CH][CH][O]1')  # Nucleobase connected to ribose
+    if not mol.HasSubstructMatch(nucleoside_linkage_pattern):
         return False, "No nucleoside linkage found"
 
-    # Define SMARTS pattern for phosphate group
-    phosphate_pattern = Chem.MolFromSmarts('OP(=O)(O)[O]')
+    # Define SMARTS pattern for phosphate group attached to sugar
+    phosphate_pattern = Chem.MolFromSmarts('OP(=O)(O)[O]-[CH2]-')  # Phosphate group
     phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
     if len(phosphate_matches) == 0:
-        return False, "No phosphate group found"
-
-    # Check if phosphate is attached to sugar hydroxy group
-    phosphate_attached = False
-    for match in phosphate_matches:
-        phosphate_oxygen = mol.GetAtomWithIdx(match[2])  # The oxygen atom connected to the sugar
-        for bond in phosphate_oxygen.GetBonds():
-            neighbor = bond.GetOtherAtom(phosphate_oxygen)
-            if neighbor.GetAtomicNum() == 6:  # Carbon atom in sugar
-                phosphate_attached = True
-                break
-        if phosphate_attached:
-            break
-    if not phosphate_attached:
-        return False, "Phosphate group not attached to sugar"
+        return False, "No phosphate group attached to sugar"
 
     return True, "Contains nucleoside with phosphate(s) attached to sugar"
 
@@ -95,7 +70,7 @@ __metadata__ = {   'chemical_class': {   'id': None,
                   'max_instances_in_prompt': 100,
                   'test_proportion': 0.1},
     'message': None,
-    'attempt': 0,
+    'attempt': 1,
     'success': True,
     'best': True,
     'error': '',
