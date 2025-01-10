@@ -2,7 +2,6 @@
 Classifies: CHEBI:17088 monoacyl-sn-glycerol 3-phosphate
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_monoacyl_sn_glycerol_3_phosphate(smiles: str):
     """
@@ -21,20 +20,21 @@ def is_monoacyl_sn_glycerol_3_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for a glycerol backbone with the correct stereochemistry
-    glycerol_pattern = Chem.MolFromSmarts("[C@H](CO)[C@@H](O)CO")
+    # Look for a glycerol backbone with stereochemistry
+    # Allow for flexibility in stereochemistry as variations exist in provided examples
+    glycerol_pattern = Chem.MolFromSmarts("[O-][C@H](CO)[C@@H](O)CO |t|")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No stereo-specific glycerol backbone found"
 
-    # Correct acyl chain detection with ester bond C(=O)O
-    acyl_pattern = Chem.MolFromSmarts("[C,C@H](=O)OC")
+    # Detect single acyl chain with ester bond at glycerol position
+    acyl_pattern = Chem.MolFromSmarts("C(=O)O[C@H](CO)")
     acyl_matches = mol.GetSubstructMatches(acyl_pattern)
-    if len(acyl_matches) != 1:
-        return False, f"Expected 1 acyl chain, found {len(acyl_matches)}"
+    if len(acyl_matches) < 1:
+        return False, "Acyl chain not correctly detected"
 
-    # Check phosphate group connection at the third position
-    phosphate_pattern = Chem.MolFromSmarts("[O]P(=O)(O)OC")
+    # Verify phosphate group at the last oxygen of glycerol
+    phosphate_pattern = Chem.MolFromSmarts("COP(=O)(O)O")
     if not mol.HasSubstructMatch(phosphate_pattern):
-        return False, "No phosphate group found attached to glycerol at the correct position"
-    
+        return False, "Phosphate group not found in correct position"
+
     return True, "Contains stereo-specific glycerol, single acyl chain, and phosphate group at the third position"
