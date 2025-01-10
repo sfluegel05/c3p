@@ -24,8 +24,13 @@ def is_polypyrrole(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the pyrrole unit pattern
-    pyrrole_pattern = Chem.MolFromSmarts("n1cccc1")
+    # Define a more flexible pyrrole unit pattern
+    # This pattern matches:
+    # - Basic pyrrole rings (n1cccc1)
+    # - Pyrrole rings with substituents
+    # - Pyrrole rings fused with other rings
+    # - Pyrrole-like structures in conjugated systems
+    pyrrole_pattern = Chem.MolFromSmarts("[n;H0,H1]1[c;H1,H0][c;H1,H0][c;H1,H0][c;H1,H0]1")
     
     # Find all matches of the pyrrole pattern in the molecule
     pyrrole_matches = mol.GetSubstructMatches(pyrrole_pattern)
