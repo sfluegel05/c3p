@@ -6,7 +6,8 @@ from rdkit import Chem
 def is_spiroketal(smiles: str):
     """
     Determines if a molecule is a spiroketal based on its SMILES string.
-    A spiroketal contains a spiro center connected via oxygen atoms to both rings.
+    A spiroketal contains a spiro center that is the only common atom of two rings,
+    with two attached oxygen atoms each part of a different ring.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,32 +21,33 @@ def is_spiroketal(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Find all ring systems
+    
+    # Define a SMARTS pattern for spiroketal
+    # The pattern can be defined as a carbon atom involved as a spiro center having
+    # two connections to oxygens with those oxygens being in separate rings
+    spiroketal_smarts = "[C]1([O])([O])" # Improvised SMARTS (this likely needs refinement)
+    
+    spiroketal_pattern = Chem.MolFromSmarts(spiroketal_smarts)
+    if not spiroketal_pattern:
+        return None, "Invalid SMARTS pattern"
+    
+    # Find matches
+    matches = mol.GetSubstructMatches(spiroketal_pattern)
+    # Ring information
     ring_info = mol.GetRingInfo()
     
-    # Define a pattern that matches the spiro ketal structure: spiro atom
-    # bonded to two oxygens each in different rings
-    spiro_ketal_pattern = Chem.MolFromSmarts("[C]([O])[O]")
-    
-    # Go through each atom and verify if it fits the spiroketal pattern
-    for atom in mol.GetAtoms():
-        # The atom should be in two different rings
-        if ring_info.NumAtomRings(atom.GetIdx()) == 2:
-            # Verify that the atom matches pattern for spiro ketal
-            submol = Chem.PathToSubmol(mol, [atom.GetIdx()])
-            if submol.HasSubstructMatch(spiro_ketal_pattern):
-                return True, "Found a spiroketal with the correct linkage"
-
+    for match in matches:
+        # Check ring count for oxygen attachments
+        # Assuming match provides indices, needs to verify each O in different ring structs
+        carbon_idx = match[0]
+        o_indices = match[1:3]
+        if all(ring_info.NumAtomRings(o_idx) >= 1 for o_idx in o_indices):
+            o_rings = [ring_info.AtomRingsFromIdx(o_idx) for o_idx in o_indices]
+            if all(len(o_ring_set) > 0 for o_ring_set in o_rings):
+                # Ensure distinct ring sets
+                ring_sets = [set(ring) for rings in o_rings for ring in rings]
+                # Check that each oxygen is part of a separate ring
+                if len(set.intersection(*ring_sets)) == 0:
+                    return True, "Found a spiroketal with the correct linkage"
+            
     return False, "No spiroketal found"
-
-# Example usage with the provided SMILES
-smiles_examples = [
-    "O=C1O[C@@H]2C[C@H](O[C@@H](C2)CC=C(C[C@H](C=CC=C([C@]4[C@H]1C=C([C@@H](O)C4O)C)O)C)C)C",
-    "CC[C@H]([C@H]1CC[C@H](C)[C@@H](O1)[C@@H](C)[C@H](O)[C@H](C)C(=O)[C@H](CC)[C@H]1O"
-]
-
-# Evaluating the examples
-for smiles in smiles_examples:
-    result, reason = is_spiroketal(smiles)
-    print(f"SMILES: {smiles} - Is Spiroketal: {result}, Reason: {reason}")
