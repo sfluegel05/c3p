@@ -21,17 +21,22 @@ def is_proanthocyanidin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Proanthocyanidins usually have multiple aromatic rings and hydroxyl groups
-    # Look for flavan skeleton with hydroxy groups, typically C6-C3-C6 unit
-    flavan_pattern = Chem.MolFromSmarts("c1cc(O)ccc1[C@H]2Oc3cc(O)cc(O)c3[C@@H]2")
-    flavan_matches = mol.GetSubstructMatches(flavan_pattern)
-    if len(flavan_matches) < 2:
+    # Generalized pattern for hydroxyflavan units (C6-C3-C6 with hydroxy groups)
+    hydroxyflavan_pattern = Chem.MolFromSmarts("c1cc(O)c(cc1)[C@@H]2Oc3cc(O)c(O)cc3C2")
+    hydroxyflavan_matches = mol.GetSubstructMatches(hydroxyflavan_pattern)
+    if len(hydroxyflavan_matches) < 2:
         return False, "Less than two hydroxyflavan units found"
 
-    # Check for plausible interflavan linkages, such as 4->8 linkages
-    linkage_pattern = Chem.MolFromSmarts("[c,C]1[c,C][c,C]([C@H]2O[c,C][c,C][c,C][c,C]2)[c,C][c,C]1")
-    linkage_matches = mol.GetSubstructMatches(linkage_pattern)
-    if len(linkage_matches) < 1:
-        return False, "No interflavan linkages found"
+    # Patterns for common proanthocyanidin linkages
+    # 4->8 linkage
+    linkage_4_8_pattern = Chem.MolFromSmarts("[C@H]1(Oc2c(cccc2)[c,C]3[c,C][c,C][c,C][c,C]3)Oc4cc(O)ccc14")
+    linkage_4_8_matches = mol.GetSubstructMatches(linkage_4_8_pattern)
+    
+    # 4->6 linkage 
+    linkage_4_6_pattern = Chem.MolFromSmarts("[C@H]1(Oc2c(cc(O)c(O)c2)[c,C]3[c,C][c,C][c,C][c,C]3)Oc4cc(O)ccc14")
+    linkage_4_6_matches = mol.GetSubstructMatches(linkage_4_6_pattern)
+    
+    if len(linkage_4_8_matches) + len(linkage_4_6_matches) < 1:
+        return False, "No appropriate interflavan linkages found"
 
     return True, "Contains multiple hydroxyflavan units with appropriate linkages"
