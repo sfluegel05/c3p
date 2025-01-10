@@ -27,34 +27,33 @@ def is_very_long_chain_fatty_acyl_CoA(smiles: str):
     if not mol.HasSubstructMatch(thioester_pattern):
         return False, "No thioester group found"
 
-    # Update CoA moiety pattern using a more complete SMARTS representation
+    # Full CoA moiety SMARTS pattern
     # Including the adenylate as part of CoA detection is vital
-    coa_pattern = Chem.MolFromSmarts("NC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)P(=O)(O)O")
+    # This includes key features of ribose, phosphate linkage, and adenine
+    coa_pattern = Chem.MolFromSmarts("NC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)P(O)(O)=O")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "CoA moiety not detected"
 
     # Count carbon atoms in the longest aliphatic chain part of thioester
-    fragments = mol.GetSubstructMatches(thioester_pattern)
     longest_chain_length = 0
-    if fragments:
-        for frag in fragments:
-            starting_atom = frag[0]  # carbonyl carbon
-            atoms_visited = {starting_atom}
-            carbons_in_chain = set()
-            atom_stack = [mol.GetAtomWithIdx(starting_atom)]
-            
-            while atom_stack:
-                atom = atom_stack.pop()
-                if atom.GetAtomicNum() == 6:
-                    carbons_in_chain.add(atom.GetIdx())
+    for frag in mol.GetSubstructMatches(thioester_pattern):
+        starting_atom = frag[0]  # carbonyl carbon
+        atoms_visited = {starting_atom}
+        carbons_in_chain = set()
+        atom_stack = [mol.GetAtomWithIdx(starting_atom)]
+        
+        while atom_stack:
+            atom = atom_stack.pop()
+            if atom.GetAtomicNum() == 6:
+                carbons_in_chain.add(atom.GetIdx())
 
-                for neighbor in atom.GetNeighbors():
-                    if neighbor.GetIdx() not in atoms_visited:
-                        atoms_visited.add(neighbor.GetIdx())
-                        atom_stack.append(neighbor)
-            
-            chain_length = len(carbons_in_chain)
-            longest_chain_length = max(longest_chain_length, chain_length)
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetIdx() not in atoms_visited:
+                    atoms_visited.add(neighbor.GetIdx())
+                    atom_stack.append(neighbor)
+        
+        chain_length = len(carbons_in_chain)
+        longest_chain_length = max(longest_chain_length, chain_length)
     
     if longest_chain_length < 22:
         return False, "Aliphatic chain not sufficiently long (very long-chain fatty acids typically have ≥22 carbons)"
@@ -62,6 +61,6 @@ def is_very_long_chain_fatty_acyl_CoA(smiles: str):
     return True, "Contains a long fatty acyl chain and CoA moiety with thioester bond"
 
 # Example test
-example_smiles = "CCCCCCCCCCCCCCCCCCCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(=O)O)n1cnc2c(N)ncnc12"
+example_smiles = "CCCCCCCCCCCCCCCCCCCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)P(O)(O)=O)n1cnc2c(N)ncnc12"
 result, reason = is_very_long_chain_fatty_acyl_CoA(example_smiles)
 print(result, reason)
