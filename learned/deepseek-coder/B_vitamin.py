@@ -34,7 +34,10 @@ def is_B_vitamin(smiles: str):
         "[n]1ccnc1",   # Pyrazole
         "[n]1cc[nH]c1", # Pyrrole
         "[n]1c[nH]cc1", # Pyrimidine (alternative)
-        "[n]1c[nH]cn1"  # Imidazole (alternative)
+        "[n]1c[nH]cn1", # Imidazole (alternative)
+        "[n]1cc[nH]c1", # Pyridine (alternative)
+        "[n]1cc[nH]cc1", # Pyrimidine (alternative)
+        "[n]1cc[nH]cn1"  # Imidazole (alternative)
     ]
     has_heterocycle = any(mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)) for pattern in heterocycle_patterns)
     if not has_heterocycle:
@@ -60,55 +63,17 @@ def is_B_vitamin(smiles: str):
 
     # Check for water solubility (B vitamins are water-soluble)
     logP = rdMolDescriptors.CalcCrippenDescriptors(mol)[0]
-    if logP > 0.5:  # More stringent threshold for water solubility
+    if logP > 1.5:  # Relaxed threshold for water solubility
         return False, "Molecule is likely not water-soluble"
 
-    # Check molecular weight (B vitamins typically have MW < 1000 Da)
+    # Check molecular weight (B vitamins typically have MW < 1500 Da)
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt > 800:  # More stringent threshold for molecular weight
+    if mol_wt > 1500:  # Relaxed threshold for molecular weight
         return False, "Molecular weight too high for a B vitamin"
 
-    # Additional check for specific B vitamin structures
-    b_vitamin_patterns = [
-        "Cc1ncc(CO)c(C(O)=O)c1O",  # 4-pyridoxic acid
-        "OC(=O)c1cccnc1",           # Nicotinic acid
-        "OC(=O)C(NC(=O)C1=CC=C(N(CC2=NC=3C(NC2=O)=NC(=NC3N)N)C)C=C1)CCC(O)=O",  # 7-Hydroxymethotrexate
-        "[O-]C(=O)c1cccnc1",        # Nicotinate
-        "OC(=O)[C@@H](NC(=O)C1=CC=C(N(CC=2N=C3C(=NC2)N=C(N=C3N)N)C)C=C1)CCC(O)=O.O"  # Methotrexate hydrate
-    ]
-    has_b_vitamin_structure = any(mol.HasSubstructMatch(Chem.MolFromSmiles(pattern)) for pattern in b_vitamin_patterns)
-    if not has_b_vitamin_structure:
-        return False, "No specific B vitamin structure found"
+    # Count polar atoms (B vitamins typically have many polar atoms)
+    polar_atom_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() in [7, 8])
+    if polar_atom_count < 3:
+        return False, "Too few polar atoms for a B vitamin"
 
-    return True, "Contains nitrogen-containing heterocycle and functional groups common in B vitamins, and is water-soluble"
-
-
-__metadata__ = {   'chemical_class': {   'id': 'CHEBI:33284',
-                          'name': 'B vitamin',
-                          'definition': 'Any member of the group of eight water-soluble vitamins originally thought to be a single compound (vitamin B) that play important roles in cell metabolism. The group comprises of vitamin B1, B2, B3, B5, B6, B7, B9, and B12 (Around 20 other compounds were once thought to be B vitamins but are no longer classified as such).',
-                          'parents': ['CHEBI:33280', 'CHEBI:33281']},
-    'config': {   'llm_model_name': 'lbl/claude-sonnet',
-                  'f1_threshold': 0.8,
-                  'max_attempts': 5,
-                  'max_positive_instances': None,
-                  'max_positive_to_test': None,
-                  'max_negative_to_test': None,
-                  'max_positive_in_prompt': 50,
-                  'max_negative_in_prompt': 20,
-                  'max_instances_in_prompt': 100,
-                  'test_proportion': 0.1},
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 150,
-    'num_false_positives': 4,
-    'num_true_negatives': 182407,
-    'num_false_negatives': 23,
-    'num_negatives': None,
-    'precision': 0.974025974025974,
-    'recall': 0.8670520231213873,
-    'f1': 0.9174311926605504,
-    'accuracy': 0.9998521228585199}
+    return True, "Contains nitrogen-containing heterocycle, functional groups common in B vitamins, and is water-soluble"
