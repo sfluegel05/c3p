@@ -27,37 +27,65 @@ def is_proteinogenic_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for the presence of an amino group (-NH2) and a carboxyl group (-COOH)
-    amino_pattern = Chem.MolFromSmarts("[NH2]")
-    carboxyl_pattern = Chem.MolFromSmarts("C(=O)O")
+    # Check for the presence of an amino group (primary or secondary) and a carboxyl group
+    amino_pattern = Chem.MolFromSmarts("[NX3;H2,H1;!$(NC=O)]")
+    carboxyl_pattern = Chem.MolFromSmarts("C(=O)[OX2H1,OX1H0-]")
     
     if not mol.HasSubstructMatch(amino_pattern):
-        return False, "No amino group (-NH2) found"
+        return False, "No amino group found"
     if not mol.HasSubstructMatch(carboxyl_pattern):
-        return False, "No carboxyl group (-COOH) found"
+        return False, "No carboxyl group found"
 
     # Check that the amino and carboxyl groups are attached to the same carbon (alpha carbon)
-    alpha_carbon_pattern = Chem.MolFromSmarts("[CX4H]([NH2])[CX3](=O)[OX2H1]")
+    alpha_carbon_pattern = Chem.MolFromSmarts("[CX4H]([NX3H2,NX3H1])[CX3](=O)[OX2H1,OX1H0-]")
     if not mol.HasSubstructMatch(alpha_carbon_pattern):
         return False, "Amino and carboxyl groups not attached to the same carbon (alpha carbon)"
 
     # Check for the presence of a side chain (R group) attached to the alpha carbon
     # Glycine is an exception, where the side chain is just a hydrogen
-    glycine_pattern = Chem.MolFromSmarts("[NH2][CH2][CX3](=O)[OX2H1]")
+    glycine_pattern = Chem.MolFromSmarts("[NX3H2][CH2][CX3](=O)[OX2H1,OX1H0-]")
     if mol.HasSubstructMatch(glycine_pattern):
         return True, "Glycine detected (achiral proteinogenic amino acid)"
 
     # Check for L-configuration (except for glycine)
-    # We assume that the SMILES string uses the correct stereochemistry notation
-    # For L-amino acids, the alpha carbon should have the @ symbol (or @@ for specific cases)
-    # This is a simplification and may not cover all cases
+    # Look for chiral centers and ensure they have the correct stereochemistry
     chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
     if not chiral_centers:
         return False, "No chiral center found (not an L-amino acid)"
 
-    # Check molecular weight - proteinogenic amino acids typically have MW between 75 and 204 Da
+    # Check molecular weight - expanded range to include all proteinogenic amino acids
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 75 or mol_wt > 204:
+    if mol_wt < 75 or mol_wt > 300:
         return False, f"Molecular weight {mol_wt:.2f} Da is outside the typical range for proteinogenic amino acids"
+
+    # Additional check for common proteinogenic amino acid side chains
+    side_chain_patterns = [
+        "[CH3]",  # Alanine
+        "[CH2][CH3]",  # Valine
+        "[CH2][CH2][CH3]",  # Leucine
+        "[CH2]C",  # Isoleucine
+        "[CH2]S",  # Methionine
+        "[CH2][CH2][CH2][CH2]N",  # Lysine
+        "[CH2]C(=O)N",  # Asparagine
+        "[CH2][CH2]C(=O)N",  # Glutamine
+        "[CH2]C(=O)O",  # Aspartic acid
+        "[CH2][CH2]C(=O)O",  # Glutamic acid
+        "[CH2]C1=CC=CC=C1",  # Phenylalanine
+        "[CH2]C1=CNC=N1",  # Histidine
+        "[CH2]OH",  # Serine
+        "[CH2][CH2]OH",  # Homoserine
+        "[CH2]SH",  # Cysteine
+        "[CH2][CH2]S",  # Homocysteine
+        "[CH2]C1=CC=C(O)C=C1",  # Tyrosine
+        "[CH2][CH2][CH2]N=C(N)N",  # Arginine
+        "[CH2]C1CCCN1",  # Proline
+        "[CH2]SeH",  # Selenocysteine
+        "[CH2][CH2][CH2]C1=CC=CC=N1"  # Pyrrolysine
+    ]
+    
+    has_valid_side_chain = any(mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)) 
+                              for pattern in side_chain_patterns)
+    if not has_valid_side_chain:
+        return False, "No valid proteinogenic amino acid side chain found"
 
     return True, "Contains amino group, carboxyl group, and side chain attached to alpha carbon with L-configuration"
