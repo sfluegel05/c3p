@@ -16,6 +16,7 @@ def is_alkane(smiles: str):
         bool: True if the molecule is an alkane, False otherwise
         str: Reason for classification
     """
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
@@ -39,8 +40,11 @@ def is_alkane(smiles: str):
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     hydrogen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 1)
 
-    # Check if the formula matches CnH2n+2
-    if hydrogen_count != 2 * carbon_count + 2:
-        return False, f"Formula C{carbon_count}H{hydrogen_count} does not match CnH2n+2"
+    # Calculate expected hydrogen count based on alkanes' CnH2n+2 rule
+    expected_hydrogen_count = 2 * carbon_count + 2
+
+    if hydrogen_count != expected_hydrogen_count:
+        # Debug potential miscounting with a reasoned explanation
+        return False, f"Formula C{carbon_count}H{hydrogen_count} does not match CnH2n+2 (expected H{expected_hydrogen_count})"
     
     return True, "Molecule matches the definition of an alkane"
