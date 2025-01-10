@@ -10,69 +10,6 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 from rdkit.Chem import Descriptors
-from collections import Counter
-
-def analyze_ionic_complex(components):
-    """Helper function to analyze ionic complexes"""
-    mols = []
-    total_charge = 0
-    has_counterions = False
-    
-    for comp in components:
-        mol = Chem.MolFromSmiles(comp)
-        if mol is None:
-            continue
-        charge = Chem.GetFormalCharge(mol)
-        total_charge += charge
-        if abs(charge) > 0:
-            has_counterions = True
-        mols.append({
-            'mol': mol,
-            'charge': charge,
-            'mw': Descriptors.ExactMolWt(mol)
-        })
-    
-    # Check for charge balance and presence of counterions
-    return has_counterions and abs(total_charge) <= 1
-
-def has_polymer_characteristics(mol):
-    """Helper function to detect polymer-specific characteristics"""
-    # Check molecular weight
-    mw = Descriptors.ExactMolWt(mol)
-    if mw < 400:  # Too small to be a polymer unit
-        return False
-        
-    # Count rotatable bonds (flexibility characteristic of polymers)
-    rot_bonds = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if rot_bonds < 8:  # Too rigid for typical polymer
-        return False
-        
-    # Check for branching
-    branching = rdMolDescriptors.CalcNumBranches(mol)
-    if branching < 2:  # Linear small molecules
-        return False
-        
-    return True
-
-def has_repeating_units(mol, min_repeats=4):
-    """Helper function to detect meaningful repeating structural units"""
-    # Polymer-specific repeat unit patterns
-    polymer_patterns = [
-        # Prenyl/isoprene units (with spacing)
-        ('CC(C)=CCC[R]CC(C)=C', 'prenyl'),
-        # Common polymer backbones
-        ('CCCCCCC', 'alkyl chain'),
-        ('COC(=O)CCCC', 'polyester'),
-        ('CN(C)C(=O)CCC', 'polyamide'),
-        ('CSC(C)CC', 'polysulfide'),
-        ('CC(O)C(O)CC', 'polyol'),
-    ]
-    
-    for pattern, unit_type in polymer_patterns:
-        pattern_mol = Chem.MolFromSmarts(pattern)
-        if pattern_mol and len(mol.GetSubstructMatches(pattern_mol)) >= min_repeats:
-            return True, unit_type
-    return False, None
 
 def is_polymer(smiles: str):
     """
@@ -85,38 +22,60 @@ def is_polymer(smiles: str):
         bool: True if molecule is a polymer, False otherwise
         str: Reason for classification
     """
+    
     # Parse SMILES
-    components = smiles.split('.')
-    if not components:
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
         return False, "Invalid SMILES string"
+
+    # Check if molecule contains multiple components (separated by dots)
+    components = smiles.count('.')
     
-    # Check for ionic polymers/complexes
-    if len(components) > 1 and analyze_ionic_complex(components):
-        return True, "Ionic polymer/complex with balanced charges"
+    # Calculate molecular descriptors
+    mol_wt = Descriptors.ExactMolWt(mol)
+    num_atoms = mol.GetNumAtoms()
+    num_rings = rdMolDescriptors.CalcNumRings(mol)
+    num_rotatable_bonds = rdMolDescriptors.CalcNumRotatableBonds(mol)
     
-    # Analyze each component
-    for comp in components:
-        mol = Chem.MolFromSmiles(comp)
-        if mol is None:
-            continue
-            
-        # Check for polymer characteristics
-        if has_polymer_characteristics(mol):
-            # Look for repeating units
-            has_repeats, unit_type = has_repeating_units(mol)
-            if has_repeats:
-                return True, f"Contains characteristic polymer structure with {unit_type} repeating units"
-                
-        # Special case: Check for large prenyl/terpene polymers
-        isoprene_pattern = Chem.MolFromSmarts('CC(C)=CCC')
-        if isoprene_pattern and len(mol.GetSubstructMatches(isoprene_pattern)) >= 5:
-            return True, "Natural polymer with multiple isoprene units"
-            
-    # Check for multi-component systems
-    if len(components) >= 3:
-        # Look for repeating components
-        comp_counter = Counter(components)
-        if any(count >= 2 for count in comp_counter.values()):
-            return True, "Multi-component polymer system with repeating units"
-            
+    # Look for repeating units using common patterns
+    repeating_carbon_chain = Chem.MolFromSmarts("[CH2][CH2][CH2][CH2]")
+    repeating_matches = len(mol.GetSubstructMatches(repeating_carbon_chain))
+    
+    # Check for presence of metal ions
+    metal_pattern = Chem.MolFromSmarts("[Li,Na,K,Rb,Cs,Be,Mg,Ca,Sr,Ba,Sc,Ti,V,Cr,Mn,Fe,Co,Ni,Cu,Zn,Al,Ga,In,Sn,Pb,Bi]")
+    has_metals = mol.HasSubstructMatch(metal_pattern) if metal_pattern else False
+    
+    # Define criteria for polymer classification
+    is_large = mol_wt > 500
+    has_many_atoms = num_atoms > 30
+    has_long_chains = num_rotatable_bonds > 10
+    has_repeating_units = repeating_matches >= 2
+    has_multiple_components = components >= 1
+    has_multiple_rings = num_rings >= 2
+
+    # Classification logic
+    if is_large and (has_repeating_units or has_long_chains):
+        return True, "Contains repeating units or long chains with high molecular weight"
+        
+    if has_multiple_components and has_many_atoms:
+        return True, "Multiple component mixture with large molecular size"
+        
+    if has_metals and has_multiple_components:
+        return True, "Metal-containing polymer complex"
+        
+    if has_repeating_units and has_multiple_rings and has_long_chains:
+        return True, "Complex structure with repeating units and multiple rings"
+        
+    if mol_wt > 1000 and (has_long_chains or has_multiple_rings):
+        return True, "Very large molecule with complex structure"
+        
+    if components >= 2 and has_many_atoms and (has_multiple_rings or has_long_chains):
+        return True, "Multi-component mixture with complex molecular structure"
+
+    # Count carbon chain length
+    carbon_chain = Chem.MolFromSmarts("C~C~C~C~C~C")
+    if carbon_chain and len(mol.GetSubstructMatches(carbon_chain)) > 2:
+        return True, "Contains multiple long carbon chains"
+
+    # If none of the above criteria are met, it's probably not a polymer
     return False, "Does not meet polymer characteristics"
