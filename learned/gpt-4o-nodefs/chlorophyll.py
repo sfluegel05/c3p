@@ -24,20 +24,20 @@ def is_chlorophyll(smiles: str):
     if not mg_atom:
         return False, "No magnesium atom found"
 
-    # Recognize characteristics of a porphyrin ring with magnesium
-    porphyrin_pattern = Chem.MolFromSmarts("[n]1[c][n]2[c][n]3[c][n]4[c][N+]1([Mg--])[n]5[c][n]6[c][n]7[c][N+]3([Mg--])[n]42")
-    if not mol.HasSubstructMatch(porphyrin_pattern):
-        return False, "No porphyrin-like structure found"
+    # Check for chlorin-like structure (porphyrin with reduced bonds in one ring)
+    chlorin_pattern = Chem.MolFromSmarts("n1c(c2nc(nc2c3cc1[nH+]3)C)c4[nH]c5c(n4)[nH+]5")
+    if not mol.HasSubstructMatch(chlorin_pattern):
+        return False, "No chlorin-like structure found"
 
-    # Check for long hydrocarbon chains typically associated with chlorophyll molecules
-    hydrocarbon_chain_pattern = Chem.MolFromSmarts("CCCCCCCCCCCC")
+    # Check for long hydrocarbon chains or common hydrocarbon fragments in chlorophyll
+    hydrocarbon_chain_pattern = Chem.MolFromSmarts("CCCCCCC")
     if not mol.HasSubstructMatch(hydrocarbon_chain_pattern):
-        return False, "Long hydrocarbon chains characteristic of chlorophyll not found"
+        return False, "No suitable long hydrocarbon chains found"
     
-    # Check for ester groups that are typically found in chlorophyll
+    # Check for presence of ester groups
     ester_pattern = Chem.MolFromSmarts("COC(=O)")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) < 1:
         return False, "No ester groups found, common in chlorophyll"
 
-    return True, "Matches chlorophyll characteristics: porphyrin-like ring with magnesium, hydrocarbon chains, and ester groups"
+    return True, "Matches chlorophyll characteristics: chlorin-like structure with magnesium, hydrocarbon chains, and ester groups"
