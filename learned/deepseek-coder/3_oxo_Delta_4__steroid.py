@@ -26,8 +26,8 @@ def is_3_oxo_Delta_4__steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for steroid backbone (typically 17 carbons in a fused ring system)
-    steroid_pattern = Chem.MolFromSmarts("[C@H]1[C@@H]2[C@H]3[C@H]4[C@H]5[C@H]6[C@H]7[C@H]8[C@H]9[C@H]%10[C@H]%11[C@H]%12[C@H]%13[C@H]%14[C@H]%15[C@H]%16[C@H]%17")
+    # Check for steroid backbone (fused ring system with at least 17 carbons)
+    steroid_pattern = Chem.MolFromSmarts("[C]1[C]2[C]3[C]4[C]5[C]6[C]7[C]8[C]9[C]%10[C]%11[C]%12[C]%13[C]%14[C]%15[C]%16[C]%17")
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
 
