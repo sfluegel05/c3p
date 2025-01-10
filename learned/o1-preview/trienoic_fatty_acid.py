@@ -5,7 +5,6 @@ Classifies: CHEBI:73155 trienoic fatty acid
 Classifies: trienoic fatty acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_trienoic_fatty_acid(smiles: str):
     """
@@ -25,34 +24,33 @@ def is_trienoic_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check that molecule contains only C, H, and O atoms
+    # Check that molecule contains only C, H, O atoms
     allowed_atoms = {1, 6, 8}  # H, C, O
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() not in allowed_atoms:
             return False, f"Molecule contains disallowed atom {atom.GetSymbol()}"
     
-    # Check for exactly one carboxylic acid group (C(=O)O[H])
-    carboxylic_acid = Chem.MolFromSmarts("C(=O)[O;H1]")
+    # Check for at least one carboxylic acid group (C(=O)O[H])
+    carboxylic_acid = Chem.MolFromSmarts("C(=O)O[H]")
     matches = mol.GetSubstructMatches(carboxylic_acid)
-    if len(matches) != 1:
-        return False, f"Found {len(matches)} carboxylic acid groups, expected exactly 1"
+    if len(matches) == 0:
+        return False, "No carboxylic acid group found"
     
     # Count total number of carbons
     num_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if num_carbons < 12:
         return False, f"Molecule contains {num_carbons} carbons, expected at least 12"
     
-    # Count number of aliphatic double bonds
-    num_double_bonds = rdMolDescriptors.CalcNumAliphaticDoubleBonds(mol)
-    # Count number of aliphatic rings
-    num_rings = rdMolDescriptors.CalcNumAliphaticRings(mol)
+    # Count number of non-aromatic double bonds
+    num_double_bonds = 0
+    for bond in mol.GetBonds():
+        if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE and not bond.IsAromatic():
+            num_double_bonds += 1
     
-    total_unsaturation = num_double_bonds + num_rings
+    if num_double_bonds < 3:
+        return False, f"Molecule contains {num_double_bonds} non-aromatic double bonds, expected at least 3"
     
-    if total_unsaturation < 3:
-        return False, f"Contains {num_double_bonds} aliphatic double bonds and {num_rings} aliphatic rings, total unsaturation {total_unsaturation}, expected at least 3"
-    
-    return True, "Molecule is a trienoic fatty acid: contains exactly one carboxylic acid group, at least 12 carbons, only C, H, O atoms, and total unsaturation (double bonds + rings) of at least 3"
+    return True, "Molecule is a trienoic fatty acid: contains a carboxylic acid group, at least 12 carbons, only C, H, O atoms, and at least 3 non-aromatic double bonds"
 
 __metadata__ = {
     'chemical_class': {
