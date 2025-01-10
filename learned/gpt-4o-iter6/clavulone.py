@@ -6,11 +6,8 @@ from rdkit import Chem
 def is_clavulone(smiles: str):
     """
     Determines if a molecule is a clavulone based on its SMILES string.
-    A clavulone is a class of esterified prostanoids obtained from marine corals.
+    A clavulone is derived from marine corals and is classified as an esterified prostanoid.
     
-    It's characterized by complex cyclic structures, multiple ester groups, conjugated diene
-    arrangements, and may contain halogens. Commonly contains at least one cyclopentenone moiety.
-
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -22,30 +19,31 @@ def is_clavulone(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Detect sufficient ester groups
-    ester_pattern = Chem.MolFromSmarts("C(=O)O")
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) < 2:
-        return False, "Insufficient ester groups found"
     
-    # Search for typical cyclic frameworks, such as a cyclopentenone group
-    cyclopentenone_pattern = Chem.MolFromSmarts("C1([OH])=CCCC1=O")
-    if not mol.HasSubstructMatch(cyclopentenone_pattern):
-        return False, "No cyclopentenone or similar cycle found"
-
-    # Look for potential conjugated systems that include dienes
-    diene_pattern = Chem.MolFromSmarts("C=CC=CC=C")
-    has_diene = mol.HasSubstructMatch(diene_pattern)
-    if not has_diene:
-        return False, "No suitable conjugated diene system found"
-
-    # Check for halogen atoms as typical but non-mandatory descriptors
+    # Look for any ester group pattern
+    ester_pattern = Chem.MolFromSmarts("C(=O)O")
+    if not mol.HasSubstructMatch(ester_pattern):
+        return False, "No ester group found"
+    
+    # Look for broader conjugated diene pattern
+    conjugated_diene_pattern = Chem.MolFromSmarts("C=C-C=C") 
+    if not mol.HasSubstructMatch(conjugated_diene_pattern):
+        return False, "No conjugated diene found"
+    
+    # Check for presence of halogen (optional)
     halogen_pattern = Chem.MolFromSmarts("[Cl,Br,I]")
     has_halogen = mol.HasSubstructMatch(halogen_pattern)
+    
+    # Check long carbon chains
+    long_chain_pattern = Chem.MolFromSmarts("CCCCCC=CCCC")
+    if not mol.HasSubstructMatch(long_chain_pattern):
+        return False, "No long carbon chain found"
 
-    # Classify with reasoning based on the presence of halogens
     if has_halogen:
-        return True, "Matches clavulone structure with halogens"
+        return True, "Matches clavulone structure with halogen"
     else:
-        return True, "Matches clavulone structure potentially without halogens"
+        return True, "Matches clavulone structure without halogen"
+
+# Example call
+# result, reason = is_clavulone("ClC=1C(=O)[C@@]([C@@](O)(C/C=C\\CCCCC)C1)([C@@H](OC(=O)C)[C@H](OC(=O)C)[C@@H](OC(=O)C)CCCC(OC)=O)[H]")
+# print(result, reason)
