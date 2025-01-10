@@ -21,21 +21,33 @@ def is_steroid_saponin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Flexible steroid backbone pattern including stereochemistry
-    steroid_pattern = Chem.MolFromSmarts("C1CC2=CC3C=C[C@H](CC3)C2(C)CC4C1(C)CCC4")
-    if not mol.HasSubstructMatch(steroid_pattern):
+    # Modified steroid backbone pattern; more versatile to account for known variations
+    steroid_patterns = [
+        Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2CC4=CC(=O)CC=C4C3"),
+        Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2C=C4C=CC(=O)CC4C3"),  # Provide different steroid skeletons
+        # Add more versatile steroid patterns if necessary
+    ]
+    if not any(mol.HasSubstructMatch(p) for p in steroid_patterns):
         return False, "No steroid backbone found"
         
     # Enhanced glycosidic linkage pattern allowing for variable sugar attachments
-    glycosidic_pattern = Chem.MolFromSmarts("[C,O]-[O]-[C,O]")
-    glycosidic_matches = mol.GetSubstructMatches(glycosidic_pattern)
-    if len(glycosidic_matches) == 0:
+    # This pattern takes into account the complexity and variability of glycosidic linkages
+    glycosidic_linkage = Chem.MolFromSmarts("[C,O]-[O]-[C]")
+    if not mol.HasSubstructMatch(glycosidic_linkage):
         return False, "No glycosidic linkage found"
         
-    # Broader sugar moiety recognition, allowing for common sugar patterns
-    sugar_pattern = Chem.MolFromSmarts("C(O)C(O)C(O)C")
-    sugar_matches = mol.GetSubstructMatches(sugar_pattern)
-    if len(sugar_matches) == 0:
+    # Improved pattern for sugar moieties; aims to capture general sugar-like structures
+    sugar_patterns = [
+        Chem.MolFromSmarts("C(O)C(O)C(O)C"),  # Simple pattern for sugars
+        Chem.MolFromSmarts("C(C(CO)O)O"),      # Patterns for common sugar variants
+        # Additional sugar patterns could be defined here
+    ]
+    if not any(mol.HasSubstructMatch(p) for p in sugar_patterns):
         return False, "No sugar moiety found"
+
+    # Additional checks for molecular weight and ring system
+    mol_weight = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_weight < 400:  # Steroid saponins typically have higher molecular weights
+        return False, "Molecular weight too low for steroid saponin"
 
     return True, "Contains steroid backbone with glycosidic linkage to sugar moieties"
