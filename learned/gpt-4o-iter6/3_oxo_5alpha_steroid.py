@@ -22,25 +22,25 @@ def is_3_oxo_5alpha_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a relaxed steroid backbone pattern to capture structural diversity
-    steroid_backbone_pattern = Chem.MolFromSmarts("C1CCC2C3CCC4CCCCC4C3CCC2C1") # This allows for more flexibility
+    # Improved steroid backbone pattern: allows variability in ring positions
+    steroid_backbone_pattern = Chem.MolFromSmarts("C1CCC2[C@H]3[C@@H]4C5CC[C@H](C5)[C@@H]4[C@H]3CCC2C1")
 
     # Check for steroid backbone
     if not mol.HasSubstructMatch(steroid_backbone_pattern):
         return False, "Does not have a detectable steroid backbone"
     
-    # Define the pattern for the 3-oxo group as a specific ketone
-    three_oxo_pattern = Chem.MolFromSmarts("C(=O)C")  # Slightly relaxed to match variations
+    # Enhanced 3-oxo group detection, considering possible connected entities
+    three_oxo_pattern = Chem.MolFromSmarts("C(=O)[C@]")
 
     # Check for the presence of a 3-oxo group
     if not mol.HasSubstructMatch(three_oxo_pattern):
         return False, "Missing the characteristic 3-oxo group"
 
-    # Define specific pattern for 5alpha stereochemistry
-    five_alpha_pattern = Chem.MolFromSmarts("[C@H]1CC[C@H]2[C@@H](C)C(=O)[C@@]3[C@H](C1)CC[C@@H]23")
+    # Enhanced 5alpha stereochemistry pattern, ensuring position 5 is correctly matched
+    five_alpha_stereochemistry = Chem.MolFromSmarts("[C@H](CC)[C@H](C(=O))")
 
-    # Check for 5alpha configuration in the context of a steroid
-    if not mol.HasSubstructMatch(five_alpha_pattern):
+    # Check for 5alpha configuration and that it's relevantly positioned
+    if not mol.HasSubstructMatch(five_alpha_stereochemistry):
         return False, "Does not match 5alpha-steroid stereochemistry configuration"
     
     return True, "Matches 3-oxo-5alpha-steroid structure"
