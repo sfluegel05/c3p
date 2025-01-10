@@ -2,6 +2,7 @@
 Classifies: CHEBI:4986 fatty acid methyl ester
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_fatty_acid_methyl_ester(smiles: str):
     """
@@ -21,23 +22,23 @@ def is_fatty_acid_methyl_ester(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for ester group pattern with methanol
-    ester_methyl_pattern = Chem.MolFromSmarts("C(=O)OC")
+    ester_methyl_pattern = Chem.MolFromSmarts("OC(=O)C")
     if not mol.HasSubstructMatch(ester_methyl_pattern):
         return False, "Ester group with methanol (methyl ester) missing"
-    
-    # Check for long carbon chains
-    # A simple way is to count the number of carbon atoms
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
 
-    # Typically, fatty acids have at least 6 carbons in their chain, often many more
-    # We include a generic rule that 8 or more is indicative of a fatty acid chain
-    if c_count < 8:
-        return False, "Too few carbon atoms for a fatty acid"
+    # Count carbon chains; assume fatty acids will have reasonably long carbon chains
+    max_long_carbon_chain_length = 0
+    for chain in mol.GetSubstructMatches(Chem.MolFromSmarts("[C]!@[C].[C]!@[C]!@[C]!@[C]!@[C]!@[C]")):
+        chain_length = len(chain)
+        if chain_length > max_long_carbon_chain_length:
+            max_long_carbon_chain_length = chain_length
 
-    # Verify only one ester group is present
+    if max_long_carbon_chain_length < 8:  # strict checks for minimal carbon length for a fatty acid
+        return False, "Too few carbon atoms for a fatty acid chain"
+
+    # Ensure exactly one ester linkage derived from methanol is present
     ester_matches = mol.GetSubstructMatches(ester_methyl_pattern)
     if len(ester_matches) != 1:
-        return False, f"Found {len(ester_matches)} ester groups, need exactly 1"
+        return False, f"Found {len(ester_matches)} methyl ester groups, need exactly 1"
 
     return True, "Structure matches fatty acid methyl ester requirements"
