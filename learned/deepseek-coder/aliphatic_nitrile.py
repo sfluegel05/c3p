@@ -45,8 +45,8 @@ def is_aliphatic_nitrile(smiles: str):
             return False, "Nitrile group is not attached to a carbon atom"
 
     # Check if the molecule is aliphatic (no aromatic rings)
-    aromatic_rings = Chem.GetAromaticRings(mol)
-    if len(aromatic_rings) > 0:
+    aromatic_atoms = [atom for atom in mol.GetAtoms() if atom.GetIsAromatic()]
+    if len(aromatic_atoms) > 0:
         return False, "Molecule contains aromatic rings"
 
     return True, "Contains a nitrile group attached to an aliphatic carbon chain"
