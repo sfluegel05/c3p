@@ -21,21 +21,27 @@ def is_cyclohexenones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Expanded SMARTS to account for variations in cyclohexenone structures
-    # 1. It caters for any carbon at different positions and double bonds distribution
-    # 2. Allows substituents and is flexible on position of the ketone
-    # 3. *C indicates any atom can be attached to either of the carbons
-    cyclohexenone_pattern = Chem.MolFromSmarts("C1=CC(=O)[C,C][C,C][C,C]1")
+    # Revised SMARTS pattern to match cyclohexenone structure
+    # - Ensure six-membered ring
+    # - Contains exactly one double bond and one ketone group
+    # - Allows for substituents placement
+    # - Specific position for the carbonyl group
+    cyclohexenone_pattern = Chem.MolFromSmarts("[C,R2]=[C,R2][C,R2][C,R2]C(=O)[C,R2]")
     
     # Check for the cyclohexenone pattern
     if not mol.HasSubstructMatch(cyclohexenone_pattern):
         return False, "No cyclohexenone structure found"
     
-    # Check the number of carbon atoms in the ring to ensure it remains six-membered
+    # Verify a single six-membered ring with a double bond
     ring_info = mol.GetRingInfo()
     for ring in ring_info.AtomRings():
-        ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
-        if len(ring) == 6 and any(atom.GetHybridization() == Chem.HybridizationType.SP2 for atom in ring_atoms):
-            return True, "Cyclohexenone structure identified with appropriate ring and ketone"
+        if len(ring) == 6:
+            atoms_in_ring = [mol.GetAtomWithIdx(i) for i in ring]
+            # Ensure there's one double bond in the ring
+            db_count = sum([1 for a in atoms_in_ring if any(nb.GetBondType() == Chem.BondType.DOUBLE for nb in a.GetNeighbors())])
+            # Ensure exactly one ketone in the ring
+            ketone_count = sum([1 for a in atoms_in_ring if a.GetAtomicNum() == 6 and any(neigh.GetAtomicNum() == 8 for neigh in a.GetNeighbors())])
+            if db_count == 1 and ketone_count == 1:
+                return True, "Cyclohexenone structure identified with appropriate ring and ketone"
     
     return False, "No six-membered alicyclic ketone with one double bond found in the ring"
