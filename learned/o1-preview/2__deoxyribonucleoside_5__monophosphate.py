@@ -25,28 +25,29 @@ def is_2__deoxyribonucleoside_5__monophosphate(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define SMARTS patterns
-    # Deoxyribose sugar pattern (missing OH at 2' position)
-    deoxyribose_smarts = '[C@@H]1O[C@H](CO)[C@@H](O)[C@H]1O'  # Ribose sugar
+    # 2'-deoxyribose sugar with correct stereochemistry
+    deoxyribose_smarts = """
+    [C@H]1([O])O[C@@H](C[C@@H]1O)CO
+    """
     deoxyribose_pattern = Chem.MolFromSmarts(deoxyribose_smarts)
     if deoxyribose_pattern is None:
         return False, "Error in deoxyribose SMARTS pattern"
 
-    # Modify the ribose pattern to remove 2'-OH group for deoxyribose
-    deoxyribose_no_2oh_smarts = '[C@@H]1O[C@H](CO)[C@@H](O)[C@H]1'  # Remove 2'-OH
-    deoxyribose_pattern = Chem.MolFromSmarts(deoxyribose_no_2oh_smarts)
-    if deoxyribose_pattern is None:
-        return False, "Error in deoxyribose SMARTS pattern"
-
     # Phosphate group attached to 5' carbon
-    phosphate_pattern = Chem.MolFromSmarts('COP(=O)(O)O')
+    phosphate_smarts = """
+    [C@@H]([O])COP(=O)(O)[O]
+    """
+    phosphate_pattern = Chem.MolFromSmarts(phosphate_smarts)
     if phosphate_pattern is None:
         return False, "Error in phosphate SMARTS pattern"
 
-    # Nucleobase attached to sugar
-    # General pattern for nucleobase-sugar linkage (N-glycosidic bond)
-    nucleobase_pattern = Chem.MolFromSmarts('[$(n1cnc2c1ncnc2),$(c1ccn(c1)n)]')  # Purine or pyrimidine base
-    if nucleobase_pattern is None:
-        return False, "Error in nucleobase SMARTS pattern"
+    # Nucleobases patterns (adenine, guanine, cytosine, thymine)
+    adenine_smarts = 'n1(c)ncnc1'
+    guanine_smarts = 'n1(c(=O))ncnc1'
+    cytosine_smarts = 'n1c(=O)ccn(c1)N'
+    thymine_smarts = 'n1c(=O)cc(c1)C'
+    nucleobase_smarts_list = [adenine_smarts, guanine_smarts, cytosine_smarts, thymine_smarts]
+    nucleobase_patterns = [Chem.MolFromSmarts(s) for s in nucleobase_smarts_list]
 
     # Check for deoxyribose sugar
     if not mol.HasSubstructMatch(deoxyribose_pattern):
@@ -56,9 +57,25 @@ def is_2__deoxyribonucleoside_5__monophosphate(smiles: str):
     if not mol.HasSubstructMatch(phosphate_pattern):
         return False, "No phosphate group at 5' position found"
 
-    # Check for nucleobase attached to sugar
-    if not mol.HasSubstructMatch(nucleobase_pattern):
+    # Check for nucleobase attached to sugar via N-glycosidic bond
+    nucleobase_found = False
+    for base_pattern in nucleobase_patterns:
+        if mol.HasSubstructMatch(base_pattern):
+            nucleobase_found = True
+            break
+    if not nucleobase_found:
         return False, "No nucleobase attached to the sugar"
+
+    # Combine checks to ensure correct connectivity
+    # Full pattern combining sugar, base, and phosphate
+    full_pattern_smarts = """
+    [$([C@H]1(O)[O][C@@H](C[C@@H]1O)CO)]  # Deoxyribose sugar
+    [$([n,c])[c,n]]                        # Nucleobase attached to sugar
+    COP(=O)(O)[O]                          # Phosphate group at 5' carbon
+    """
+    full_pattern = Chem.MolFromSmarts(full_pattern_smarts)
+    if full_pattern and mol.HasSubstructMatch(full_pattern):
+        return True, "Molecule is a 2'-deoxyribonucleoside 5'-monophosphate"
 
     return True, "Molecule is a 2'-deoxyribonucleoside 5'-monophosphate"
 
@@ -77,17 +94,8 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:63517',
                   'max_instances_in_prompt': 100,
                   'test_proportion': 0.1},
     'message': None,
-    'attempt': 0,
+    'attempt': 1,
     'success': True,
     'best': True,
     'error': '',
-    'stdout': None,
-    'num_true_positives': 150,
-    'num_false_positives': 4,
-    'num_true_negatives': 182407,
-    'num_false_negatives': 23,
-    'num_negatives': None,
-    'precision': 0.974025974025974,
-    'recall': 0.8670520231213873,
-    'f1': 0.9174311926605504,
-    'accuracy': 0.9998521228585199}
+    'stdout': None}
