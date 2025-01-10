@@ -25,29 +25,28 @@ def is_polymer(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for repeating units or large molecular weight
+    # Check for large molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 500:
+    if mol_wt < 300:
         return False, "Molecular weight too low for a polymer"
 
     # Count the number of rotatable bonds to assess chain flexibility
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 10:
+    if n_rotatable < 5:
         return False, "Too few rotatable bonds for a polymer"
 
-    # Check for repeating patterns or large number of atoms
+    # Check for a minimum number of atoms
     num_atoms = mol.GetNumAtoms()
-    if num_atoms < 50:
+    if num_atoms < 30:
         return False, "Too few atoms for a polymer"
 
-    # Look for repeating units or patterns in the molecule
-    # This is a heuristic approach and may not catch all polymers
-    # but can identify some common patterns
+    # Look for specific repeating patterns common in polymers
     repeating_patterns = [
-        Chem.MolFromSmarts("[*]~[*]~[*]~[*]"),  # Generic repeating pattern
         Chem.MolFromSmarts("[CX4]~[CX4]~[CX4]"),  # Carbon chain
         Chem.MolFromSmarts("[OX2]~[CX4]~[OX2]"),  # Ether linkage
         Chem.MolFromSmarts("[CX3](=[OX1])~[OX2]~[CX4]"),  # Ester linkage
+        Chem.MolFromSmarts("[NX3]~[CX4]~[NX3]"),  # Amide linkage
+        Chem.MolFromSmarts("[CX4]~[CX4]~[CX4]~[CX4]"),  # Longer carbon chain
     ]
     
     repeating_matches = 0
@@ -60,7 +59,7 @@ def is_polymer(smiles: str):
 
     # Check for branching or complex structure
     n_rings = rdMolDescriptors.CalcNumRings(mol)
-    if n_rings < 1:
+    if n_rings < 1 and n_rotatable < 10:
         return False, "No rings or branching found"
 
     # If all checks pass, classify as polymer
