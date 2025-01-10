@@ -26,26 +26,21 @@ def is_flavonols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the flavonol pattern: a flavone backbone with a hydroxyl group at position 3
-    flavonol_pattern = Chem.MolFromSmarts("[O;H1]c1c(=O)c2c(O)cc(O)cc2oc1")
-    if not mol.HasSubstructMatch(flavonol_pattern):
-        return False, "No flavonol backbone with hydroxyl at position 3 found"
-
-    # Check for the presence of the chromen-4-one ring (flavone backbone)
-    chromen_pattern = Chem.MolFromSmarts("O=C1C=CC(=O)C2=C1C=CC=C2")
+    # Define the chromen-4-one ring (flavone backbone) pattern
+    chromen_pattern = Chem.MolFromSmarts("O=C1C(=O)C2=C(O1)C=C(*)C=C2")
     if not mol.HasSubstructMatch(chromen_pattern):
         return False, "No chromen-4-one ring (flavone backbone) found"
+
+    # Check for the presence of the hydroxyl group at position 3
+    position_3_hydroxyl_pattern = Chem.MolFromSmarts("[O;H1]c1c(=O)c2c(O)cc(*)cc2oc1")
+    if not mol.HasSubstructMatch(position_3_hydroxyl_pattern):
+        return False, "No hydroxyl group at position 3 of the heterocyclic ring"
 
     # Check for at least one hydroxyl group on the benzene rings
     hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
     hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
     if len(hydroxyl_matches) < 2:
         return False, "Not enough hydroxyl groups on the benzene rings"
-
-    # Check for the presence of the hydroxyl group at position 3
-    position_3_hydroxyl_pattern = Chem.MolFromSmarts("[O;H1]c1c(=O)c2c(O)cc(O)cc2oc1")
-    if not mol.HasSubstructMatch(position_3_hydroxyl_pattern):
-        return False, "No hydroxyl group at position 3 of the heterocyclic ring"
 
     return True, "Contains a flavone backbone with a hydroxyl group at position 3 and additional hydroxyl groups on the benzene rings"
 
