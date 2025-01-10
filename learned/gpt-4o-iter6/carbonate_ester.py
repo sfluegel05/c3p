@@ -22,8 +22,9 @@ def is_carbonate_ester(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define the SMARTS pattern for a carbonate ester: R-O-C(=O)-O-R'
-    carbonate_ester_pattern = Chem.MolFromSmarts("[$([#6;!H0]),$([#1])]OC(=O)O[$([#6;!H0]),$([#1])]")
-    
+    # This pattern ensures that C=O is bonded to two O atoms, each bonded to carbon atoms
+    carbonate_ester_pattern = Chem.MolFromSmarts("[$([#6])]OC(=O)O[$([#6])]")
+
     # Check if the molecule matches the carbonate ester pattern
     if mol.HasSubstructMatch(carbonate_ester_pattern):
         return True, "Contains carbonate ester functional group"
