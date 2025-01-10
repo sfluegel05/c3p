@@ -5,6 +5,7 @@ Classifies: CHEBI:59644 oxo fatty acid
 Classifies: CHEBI:52214 oxo fatty acid
 """
 from rdkit import Chem
+from rdkit.Chem import rdchem
 
 def is_oxo_fatty_acid(smiles: str):
     """
@@ -37,7 +38,7 @@ def is_oxo_fatty_acid(smiles: str):
         carboxylic_acid_atoms.update(match)
 
     # Check for aldehyde groups (excluding carboxylic acid)
-    aldehyde_pattern = Chem.MolFromSmarts("[CX3H](=O)[#6]")
+    aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)[#6]")
     aldehyde_matches = []
     for match in mol.GetSubstructMatches(aldehyde_pattern):
         # Ensure the aldehyde is not part of the carboxylic acid
@@ -45,12 +46,20 @@ def is_oxo_fatty_acid(smiles: str):
             aldehyde_matches.append(match)
 
     # Check for ketone groups (excluding carboxylic acid)
-    ketone_pattern = Chem.MolFromSmarts("[#6][CX3](=O)[#6]")
+    # Ketone carbonyl carbon attached to two carbons, excluding carboxylic acids, esters, amides
+    ketone_pattern = Chem.MolFromSmarts("[#6][C](=O)[#6]")
     ketone_matches = []
     for match in mol.GetSubstructMatches(ketone_pattern):
-        # Ensure the ketone is not part of the carboxylic acid
-        if not any(atom_idx in carboxylic_acid_atoms for atom_idx in match):
-            ketone_matches.append(match)
+        atom_indices = set(match)
+        # Ensure the ketone is not part of the carboxylic acid or other excluded groups
+        if not atom_indices & carboxylic_acid_atoms:
+            carbonyl_c = mol.GetAtomWithIdx(match[1])
+            is_not_in_ring = not carbonyl_c.IsInRing()
+            # Exclude esters, amides, acids by checking neighbors
+            neighbors = carbonyl_c.GetNeighbors()
+            has_only_carbon_neighbors = all(neigh.GetAtomicNum() == 6 for neigh in neighbors if neigh.GetIdx() != match[2] and neigh.GetIdx() != match[0])
+            if is_not_in_ring and has_only_carbon_neighbors:
+                ketone_matches.append(match)
 
     # If no aldehyde or ketone groups are found, it's not an oxo fatty acid
     if not aldehyde_matches and not ketone_matches:
@@ -60,6 +69,15 @@ def is_oxo_fatty_acid(smiles: str):
     num_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if num_carbons < 4:
         return False, f"Too few carbon atoms ({num_carbons}) for a fatty acid"
+
+    # Ensure molecule is mostly linear (fatty acids are typically linear chains)
+    is_linear = True
+    for atom in mol.GetAtoms():
+        if atom.GetDegree() > 3:
+            is_linear = False
+            break
+    if not is_linear:
+        return False, "Molecule is not linear enough to be a fatty acid"
 
     # If all checks pass, it's an oxo fatty acid
     return True, "Contains carboxylic acid and aldehyde/ketone groups with sufficient carbon chain"
@@ -84,7 +102,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 1,
+    'attempt': 2,
     'success': True,
     'best': True,
     'error': '',
