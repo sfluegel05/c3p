@@ -34,26 +34,22 @@ def is_phenyl_acetates(smiles: str):
     if not mol.HasSubstructMatch(phenyl_pattern):
         return False, "No phenyl group found"
 
-    # Check if the acetate ester is directly attached to the phenyl ring
-    # We look for a pattern where the oxygen of the acetate ester is directly attached to a carbon in the phenyl ring
+    # Define the phenyl acetate pattern: acetate ester attached to a phenyl ring
     phenyl_acetate_pattern = Chem.MolFromSmarts("c1ccccc1[OX2][CX3](=[OX1])[CX4H3]")
-    if not mol.HasSubstructMatch(phenyl_acetate_pattern):
-        # Check if the acetate ester is attached to a substituted phenyl ring
-        substituted_phenyl_acetate_pattern = Chem.MolFromSmarts("c1c([*])cccc1[OX2][CX3](=[OX1])[CX4H3]")
-        if not mol.HasSubstructMatch(substituted_phenyl_acetate_pattern):
-            return False, "Acetate ester group not attached to phenyl ring"
+    # Define the substituted phenyl acetate pattern: acetate ester attached to a substituted phenyl ring
+    substituted_phenyl_acetate_pattern = Chem.MolFromSmarts("c1c([*])cccc1[OX2][CX3](=[OX1])[CX4H3]")
 
-    # Ensure that the acetate ester is not part of a larger ester or complex structure
-    # We check that the acetate ester is not attached to another ester or complex group
-    complex_ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])[CX4H3].[OX2][CX3](=[OX1])[CX4H3]")
-    if mol.HasSubstructMatch(complex_ester_pattern):
-        # Check if the complex ester is part of a larger structure
-        # If the molecule has more than one acetate ester, it should still be considered a phenyl acetate if at least one is directly attached to a phenyl ring
-        # So we need to ensure that at least one acetate ester is directly attached to a phenyl ring
-        # We will count the number of acetate esters directly attached to phenyl rings
+    # Check if the acetate ester is directly attached to the phenyl ring or a substituted phenyl ring
+    if not mol.HasSubstructMatch(phenyl_acetate_pattern) and not mol.HasSubstructMatch(substituted_phenyl_acetate_pattern):
+        return False, "Acetate ester group not attached to phenyl ring"
+
+    # If the molecule has more than one acetate ester, ensure at least one is attached to a phenyl ring
+    acetate_matches = mol.GetSubstructMatches(acetate_pattern)
+    if len(acetate_matches) > 1:
+        # Count the number of acetate esters attached to phenyl rings
         phenyl_acetate_matches = mol.GetSubstructMatches(phenyl_acetate_pattern)
         substituted_phenyl_acetate_matches = mol.GetSubstructMatches(substituted_phenyl_acetate_pattern)
         if len(phenyl_acetate_matches) + len(substituted_phenyl_acetate_matches) == 0:
-            return False, "Acetate ester is part of a larger ester or complex structure"
+            return False, "Multiple acetate esters found, but none attached to phenyl ring"
 
     return True, "Contains a phenyl group with an acetate ester group attached"
