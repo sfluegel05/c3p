@@ -25,50 +25,56 @@ def is_spiroketal(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Look for spiro carbon pattern: carbon with two oxygens and two carbons
-    # The SMARTS pattern looks for:
-    # - A carbon atom [#6] that is
-    # - Connected to exactly 4 atoms [X4]
-    # - Connected to exactly 2 oxygens <;!@[#8]>{2} (non-aromatic bonds)
-    # - Connected to exactly 2 carbons <;!@[#6]>{2} (non-aromatic bonds)
-    spiro_pattern = Chem.MolFromSmarts('[#6X4](<;!@[#8]>2)(<;!@[#6]>2)')
-    if not mol.HasSubstructMatch(spiro_pattern):
-        return False, "No carbon atom with correct connectivity pattern found"
 
-    # Find all spiro carbons
-    spiro_matches = mol.GetSubstructMatches(spiro_pattern)
+    # First pass: look for spiro carbon connected to two oxygens
+    # [#6D4] - carbon with 4 bonds
+    # (@[#8D2R]) - oxygen in ring with 2 bonds
+    # {2} - exactly two occurrences
+    spiro_pattern = Chem.MolFromSmarts('[#6D4](@[#8D2R]){2}')
     
+    if spiro_pattern is None:
+        return False, "Invalid SMARTS pattern"
+    
+    spiro_matches = mol.GetSubstructMatches(spiro_pattern)
+    if not spiro_matches:
+        return False, "No carbon atom with two ring oxygens found"
+
     # For each potential spiro carbon
     for match in spiro_matches:
-        spiro_carbon = mol.GetAtomWithIdx(match[0])
+        spiro_carbon_idx = match[0]
+        spiro_carbon = mol.GetAtomWithIdx(spiro_carbon_idx)
         
-        # Get all neighboring atoms
-        neighbors = spiro_carbon.GetNeighbors()
-        oxygen_neighbors = [n for n in neighbors if n.GetAtomicNum() == 8]
-        carbon_neighbors = [n for n in neighbors if n.GetAtomicNum() == 6]
-        
-        if len(oxygen_neighbors) != 2 or len(carbon_neighbors) != 2:
+        # Get ring information
+        ring_info = mol.GetRingInfo()
+        if not ring_info.NumAtomRings(spiro_carbon_idx):
             continue
             
-        # Check if the oxygens are part of rings
-        ring_info = mol.GetRingInfo()
+        # Get all rings containing the spiro carbon
+        rings = ring_info.AtomRings()
+        rings_with_spiro = []
         
-        # For each oxygen, follow through its neighbors to find rings
-        rings_through_o = []
-        for o in oxygen_neighbors:
-            for n in o.GetNeighbors():
-                if n.GetIdx() != spiro_carbon.GetIdx():
-                    rings = ring_info.AtomRings()
-                    for ring in rings:
-                        if o.GetIdx() in ring and n.GetIdx() in ring:
-                            rings_through_o.append(set(ring))
+        for ring in rings:
+            if spiro_carbon_idx in ring:
+                rings_with_spiro.append(set(ring))
         
-        # Need exactly two different rings through the oxygens
-        if len(rings_through_o) == 2 and rings_through_o[0] != rings_through_o[1]:
-            # Check if the rings share only the spiro carbon
-            common_atoms = rings_through_o[0].intersection(rings_through_o[1])
-            if len(common_atoms) == 1 and spiro_carbon.GetIdx() in common_atoms:
-                return True, "Contains spiroketal structure with two rings sharing only one carbon atom bonded to two oxygens"
+        # Need at least two rings containing the spiro carbon
+        if len(rings_with_spiro) < 2:
+            continue
+            
+        # Check pairs of rings
+        for i in range(len(rings_with_spiro)):
+            for j in range(i+1, len(rings_with_spiro)):
+                ring1 = rings_with_spiro[i]
+                ring2 = rings_with_spiro[j]
+                
+                # The rings should share exactly one atom (the spiro carbon)
+                intersection = ring1.intersection(ring2)
+                if len(intersection) == 1 and spiro_carbon_idx in intersection:
+                    # Verify both rings contain an oxygen
+                    ring1_has_o = any(mol.GetAtomWithIdx(idx).GetAtomicNum() == 8 for idx in ring1)
+                    ring2_has_o = any(mol.GetAtomWithIdx(idx).GetAtomicNum() == 8 for idx in ring2)
+                    
+                    if ring1_has_o and ring2_has_o:
+                        return True, "Contains spiroketal structure with two rings sharing only one carbon atom bonded to two oxygens"
     
     return False, "No valid spiroketal structure found"
