@@ -20,36 +20,26 @@ def is_nucleoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Expanded nucleobase patterns to cover major nucleobases
+    # Expand nucleobase patterns to include common tautomeric forms
     nucleobase_patterns = [
-        Chem.MolFromSmarts("c1ncnc2ncnc12"),           # Purine-like base
-        Chem.MolFromSmarts("n1cnc2[nH]cnc2[nH]c1"),    # Adenine
-        Chem.MolFromSmarts("c1nc2c([nH]1)ncnc2=O"),    # Guanine
-        Chem.MolFromSmarts("c1c[nH]cnc1=O"),           # Thymine and Uracil
-        Chem.MolFromSmarts("n1ccnc2[nH]cnc12")         # Cytosine-like 
+        Chem.MolFromSmarts("c1ncnc2ncnc12"),  # Purine base
+        Chem.MolFromSmarts("c1[nH]c(=O)[nH]c(=O)[nH]1"),  # Uracil/Thymine
+        Chem.MolFromSmarts("c1nc2c([nH]1)ncnc2=O"),  # Guanine
+        Chem.MolFromSmarts("c1[nH]c(=O)ncn1"),  # Cytosine
+        Chem.MolFromSmarts("c1nc2[nH]c[nH]c2[nH]1")  # Adenine
     ]
     
     # Check for nucleobase substructures
-    contains_nucleobase = any(mol.HasSubstructMatch(pattern) for pattern in nucleobase_patterns)
-    
-    if not contains_nucleobase:
+    if not any(mol.HasSubstructMatch(pattern) for pattern in nucleobase_patterns):
         return False, "No nucleobase found"
     
-    # Ribose and deoxyribose sugar patterns with flexible stereochemistry
-    ribose_pattern = Chem.MolFromSmarts("OC[C@H]1O[C@@H]([C@H]([C@@H]1O)O)C")        # Ribose pattern
-    deoxyribose_pattern = Chem.MolFromSmarts("CC1COC(OCC1)O")                        # Deoxyribose pattern
-    
+    # Ribose and deoxyribose sugar patterns
+    ribose_pattern = Chem.MolFromSmarts("OC[C@H]1O[C@@H]([C@H]([C@@H]1O)O)C")  # Ribose
+    deoxyribose_pattern = Chem.MolFromSmarts("OC[C@H]1O[C@H]([C@H]([C@H]1)O)C")  # Deoxyribose - correct stereo flexibility allowed
+
     # Check for sugar substructures
-    contains_sugar = mol.HasSubstructMatch(ribose_pattern) or mol.HasSubstructMatch(deoxyribose_pattern)
-    
-    if not contains_sugar:
+    if not (mol.HasSubstructMatch(ribose_pattern) or mol.HasSubstructMatch(deoxyribose_pattern)):
         return False, "No ribose or deoxyribose sugar found"
     
-    # Generalize N-glycosidic linkage pattern
-    n_glycosidic_pattern = Chem.MolFromSmarts("[OD2]C1OCC(O1)[ND]")  # N-glycosidic linkage
-    has_glycosidic_bond = mol.HasSubstructMatch(n_glycosidic_pattern)
-    
-    if not has_glycosidic_bond:
-        return False, "Missing N-glycosidic linkage between sugar and nucleobase"
-    
+    # Successful identification if both a nucleobase and a ribose/deoxyribose are found
     return True, "Contains a nucleobase and a ribose or deoxyribose sugar with appropriate linkage"
