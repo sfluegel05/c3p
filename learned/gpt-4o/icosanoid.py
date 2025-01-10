@@ -2,7 +2,7 @@
 Classifies: CHEBI:23899 icosanoid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import AllChem, rdMolDescriptors
 
 def is_icosanoid(smiles: str):
     """
@@ -22,10 +22,10 @@ def is_icosanoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for long-chain carbon backbone typical of EFAs
+    # Look for carbon backbone typical of EFAs, extended range
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 18 or c_count > 22:
-        return False, f"Expected 18-22 carbons, found {c_count}"
+    if c_count < 18 or c_count > 24:
+        return False, f"Expected 18-24 carbons, found {c_count}"
     
     # Look for oxidation patterns: hydroxyls, ketones, epoxide, lactone groups
     has_oxidation = False
@@ -59,9 +59,15 @@ def is_icosanoid(smiles: str):
     if double_bond_matches < 2:
         return False, f"Expected at least 2 double bonds, found {double_bond_matches}"
     
-    # Check for other common features, such as fused or aromatic rings if any
-    if rdMolDescriptors.CalcNumAromaticRings(mol) > 0:
-        return True, "Contains aromaticity, possibly derived from cycle opens in cs"
+    # Check for other important structural motifs, such as:
+    # - Cyclic structures or specific ring types present in analogues
+    # - Core structures that define sub-classes
+
+    num_rings = Chem.rdMolDescriptors.CalcNumRings(mol)
+    if (num_rings > 0):
+        additional_pattern = Chem.MolFromSmarts('[R]')
+        if mol.HasSubstructMatch(additional_pattern):
+            return True, "Additional structural patterns matched"
 
     # If all patterns match
-    return True, "Contains a C18-22 backbone with oxidation and multiple unsaturations, characteristic of icosanoids"
+    return True, "Contains an icosanoid-like C18-24 backbone with oxidation and multiple unsaturations"
