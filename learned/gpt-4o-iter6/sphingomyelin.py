@@ -20,18 +20,18 @@ def is_sphingomyelin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define the sphingoid base pattern with necessary stereochemistry and hydroxyl positions
-    sphingoid_base_pattern = Chem.MolFromSmarts("C[C@@H](O)C[C@H](O)")
+    # General pattern for sphingoid base (hydroxylated long chain with possible amine)
+    sphingoid_base_pattern = Chem.MolFromSmarts("[CX3,CX4][CX2,CX3,CX4](O)[CX2,CX3,CX4][CX2,CX3](N)")
     if not mol.HasSubstructMatch(sphingoid_base_pattern):
-        return False, "Missing critical hydroxylated sphingoid base features"
-    
-    # Define the amide linkage pattern specific to a sphingolipid (-C(O)N)
-    amide_pattern = Chem.MolFromSmarts("C(=O)N")
+        return False, "Missing or incomplete critical sphingoid base features"
+
+    # Pattern for amide linkage, expanded to capture context as necessary
+    amide_pattern = Chem.MolFromSmarts("[CX3](=O)[NX3]")
     if not mol.HasSubstructMatch(amide_pattern):
         return False, "Missing characteristic amide linkage with fatty acid"
     
-    # Define phosphorylcholine group pattern (-COP(=O)(OCC[N+](C)(C)C)-)
-    phosphorylcholine_pattern = Chem.MolFromSmarts("COP([O-])(=O)OCC[N+](C)(C)C")
+    # Phosphorylcholine group pattern, allowing more structural flexibility 
+    phosphorylcholine_pattern = Chem.MolFromSmarts("C[O,P]([O-])(=O)OCC[N+](C)(C)C")
     if not mol.HasSubstructMatch(phosphorylcholine_pattern):
         return False, "Missing or incorrectly structured phosphorylcholine group"
     
