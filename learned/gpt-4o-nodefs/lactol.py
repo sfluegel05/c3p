@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_lactol(smiles: str):
     """
     Determines if a molecule is a lactol based on its SMILES string.
-    A lactol is characterized as a cyclic hemiacetal, where an -OH group
-    and an ether oxygen are bonded to the same carbon within a ring.
+    A lactol is characterized as a cyclic hemiacetal, which involves a -OH group
+    and an ether oxygen bonded to the same carbon within a ring.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,12 +22,15 @@ def is_lactol(smiles: str):
     if mol is None:
         return None, "Invalid SMILES string"
 
-    # Define the lactol pattern - cyclic hemiacetal [C;R]([OH])[O;R]
-    lactol_pattern = Chem.MolFromSmarts('[C;R]([OH])[O;R]')
+    # Define the lactol pattern - cyclic hemiacetal pattern with better specificity
+    # Pattern: Carbon in a ring bonded to an hydroxyl group and an ether oxygen
+    lactol_pattern = Chem.MolFromSmarts('[C&R]([O&R][C&R])([OH&R])') 
+    
     if mol.HasSubstructMatch(lactol_pattern):
-        return True, "Contains cyclic hemiacetal structure"
+        return True, "Contains cyclic hemiacetal (lactol) structure"
     else:
-        return False, "Does not contain cyclic hemiacetal structure"
+        return False, "Does not contain cyclic hemiacetal (lactol) structure"
 
 # Example usage:
-# is_lactol("O1C2=C(C(C[C@@]1...=C2)O)O")
+# result, reason = is_lactol("O1C2=C(C(C[C@@]1(C3=CC=...=C2)O)O")
+# print(result, reason)
