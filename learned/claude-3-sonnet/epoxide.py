@@ -25,43 +25,37 @@ def is_epoxide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for epoxide pattern: 3-membered ring with oxygen
-    # [O;R1:1]1[C;R1:2][C;R1:3]1
-    # O;R1 means oxygen must be in exactly one ring
-    # C;R1 means carbon must be in exactly one ring
-    epoxide_pattern = Chem.MolFromSmarts("[O;R1:1]1[#6;R1:2][#6;R1:3]1")
+    # Multiple SMARTS patterns to catch different epoxide representations
+    patterns = [
+        # Basic 3-membered ring with oxygen
+        "[O;R]1[C;R][C;R]1",
+        # Alternative representation
+        "C1OC1",
+        # Catch spiro cases
+        "[O;R]12[C]1[C]2"
+    ]
     
-    if not mol.HasSubstructMatch(epoxide_pattern):
-        return False, "No epoxide group found (3-membered ring with oxygen)"
+    for pattern in patterns:
+        epoxide_pattern = Chem.MolFromSmarts(pattern)
+        if mol.HasSubstructMatch(epoxide_pattern):
+            matches = mol.GetSubstructMatches(epoxide_pattern)
+            
+            for match in matches:
+                # Get the atoms in the potential epoxide
+                atoms = [mol.GetAtomWithIdx(idx) for idx in match]
+                
+                # Verify it's a 3-membered ring
+                ring_info = mol.GetRingInfo()
+                
+                # Check if these atoms form a 3-membered ring
+                for ring in ring_info.AtomRings():
+                    if all(atom.GetIdx() in ring for atom in atoms) and len(ring) == 3:
+                        # Verify one atom is oxygen and others are carbons
+                        atom_types = [atom.GetAtomicNum() for atom in atoms]
+                        if 8 in atom_types:  # 8 is atomic number for oxygen
+                            return True, "Contains epoxide group (3-membered ring with oxygen)"
     
-    # Get all matches
-    matches = mol.GetSubstructMatches(epoxide_pattern)
-    
-    # Verify ring properties for each match
-    for match in matches:
-        o_idx, c1_idx, c2_idx = match
-        
-        # Get atoms
-        o_atom = mol.GetAtomWithIdx(o_idx)
-        c1_atom = mol.GetAtomWithIdx(c1_idx)
-        c2_atom = mol.GetAtomWithIdx(c2_idx)
-        
-        # Check that oxygen is connected to exactly two atoms
-        if len(o_atom.GetNeighbors()) != 2:
-            continue
-            
-        # Check that both carbons are connected to oxygen
-        c1_neighbors = set(n.GetIdx() for n in c1_atom.GetNeighbors())
-        c2_neighbors = set(n.GetIdx() for n in c2_atom.GetNeighbors())
-        
-        if o_idx not in c1_neighbors or o_idx not in c2_neighbors:
-            continue
-            
-        # Verify it's a 3-membered ring by checking connectivity
-        if c1_idx in c2_neighbors and o_idx in c1_neighbors and o_idx in c2_neighbors:
-            return True, "Contains epoxide group (3-membered ring with oxygen)"
-            
-    return False, "No valid epoxide group found"
+    return False, "No epoxide group found (3-membered ring with oxygen)"
 
 __metadata__ = {
     'chemical_class': {
