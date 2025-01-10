@@ -21,13 +21,13 @@ def is_nucleoside(smiles: str):
     if mol is None:
         return (None, "Invalid SMILES string")
 
-    # Define SMARTS patterns for nucleobases
-    adenine_pattern = Chem.MolFromSmarts('c1ncnc2n(cnc12)')
-    guanine_pattern = Chem.MolFromSmarts('c1nc2c(nc[nH]c2n1)')
-    uracil_pattern = Chem.MolFromSmarts('c1cc(=O)[nH]c(=O)n1')
-    thymine_pattern = Chem.MolFromSmarts('c1c[nH]c(=O)n1C')
-    cytosine_pattern = Chem.MolFromSmarts('c1c[nH]c(=O)nc1')
-    
+    # Define SMARTS patterns for nucleobases with flexibility for substitutions
+    adenine_pattern = Chem.MolFromSmarts('*ncnc*n(cn*)*')
+    guanine_pattern = Chem.MolFromSmarts('*nc*n(c*n*)n*')
+    uracil_pattern = Chem.MolFromSmarts('*[*]cc(=O)n(*=O)[*]')
+    thymine_pattern = Chem.MolFromSmarts('c1c[nH]c(=O)n(C)[*]')
+    cytosine_pattern = Chem.MolFromSmarts('*[*]c(=O)nc[nH]*[*)')
+
     nucleobases_patterns = [adenine_pattern, guanine_pattern,
                             uracil_pattern, thymine_pattern, cytosine_pattern]
     
@@ -36,10 +36,10 @@ def is_nucleoside(smiles: str):
     if not has_nucleobase:
         return False, "No common nucleobase found"
 
-    # Define SMARTS pattern for a ribose or deoxyribose sugar
-    ribose_pattern = Chem.MolFromSmarts('O[C@H]1[C@H](O)[C@@H](O)[C@H](CO)O1')  # Ribofuranose
-    deoxyribose_pattern = Chem.MolFromSmarts('O[C@H]1[C@H](O)[C@@H](CO)C[C@H]1O')  # Deoxyribofuranose
-    
+    # Define less restrictive SMARTS pattern for a ribose or deoxyribose sugar
+    ribose_pattern = Chem.MolFromSmarts('*O[C@H]1[*@H]([*])[C@H]([*])[C@H](CO)O1')  # Allowing variations
+    deoxyribose_pattern = Chem.MolFromSmarts('*O[C@H]1[*@H][C@H](CO)[C@H][*]1O')  # Allowing variations
+
     sugars_patterns = [ribose_pattern, deoxyribose_pattern]
     
     # Check for sugar presence
