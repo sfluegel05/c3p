@@ -22,17 +22,18 @@ def is_alditol(smiles: str):
         return False, "Invalid SMILES string"
     
     # Check for acyclic structure: no rings present
-    if mol.GetRingInfo().IsInitialized() and mol.GetRingInfo().NumRings() > 0:
+    ring_info = mol.GetRingInfo()
+    if ring_info.NumRings() > 0:
         return False, "Molecule contains cyclic structure"
-    
+
     # Check for polyol structure: multiple C-OH groups
-    hydroxyl_pattern = Chem.MolFromSmarts("[C;H2,H3][OH]")
+    hydroxyl_pattern = Chem.MolFromSmarts("[CX4;H2,H3][OH]")
     hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    if len(hydroxyl_matches) < 2:
+    if len(hydroxyl_matches) < 3:  # At least CH(OH) in the n, CH2OH at both ends
         return False, "Not enough C-OH groups to be a polyol"
-    
-    # Check for terminal OH groups (CH2OH ends)
-    terminal_oh_pattern = Chem.MolFromSmarts("[CX3](O)(H)H")
+
+    # Check for terminal CH2OH groups specifically
+    terminal_oh_pattern = Chem.MolFromSmarts("[CH2]O")  # Simplifying the definition
     terminal_oh_matches = mol.GetSubstructMatches(terminal_oh_pattern)
     if len(terminal_oh_matches) < 2:
         return False, "Does not have terminal CH2OH groups"
@@ -41,7 +42,7 @@ def is_alditol(smiles: str):
     carbonyl_pattern = Chem.MolFromSmarts("[C]=[O]")
     if mol.HasSubstructMatch(carbonyl_pattern):
         return False, "Contains carbonyl (C=O) group, not an alditol"
-    
+
     return True, "Molecule matches structure of an alditol"
 
 __metadata__ = {
