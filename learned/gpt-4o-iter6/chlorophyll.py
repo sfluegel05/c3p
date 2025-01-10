@@ -15,7 +15,7 @@ def is_chlorophyll(smiles: str):
         bool: True if molecule is a chlorophyll, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
@@ -26,16 +26,14 @@ def is_chlorophyll(smiles: str):
     if len(mg_atoms) != 1:
         return False, "Magnesium not found or more than one magnesium atom present"
 
-    # Improved pattern for the porphyrin core with magnesium coordination
-    # This pattern accounts for a typical porphyrin ring around a central magnesium
-    porphyrin_core_improved = Chem.MolFromSmarts('n1ccc2c(ncn([Mg])c2c1)c1ccc3[nH]c(nc3c1)[Mg]')
-    if not mol.HasSubstructMatch(porphyrin_core_improved):
-        return False, "Porphyrin core with magnesium coordination not found"
+    # Porphyrin core with magnesium coordination and fifth ring
+    portmangrin_core = Chem.MolFromSmarts('n1ccccc2c1c3nc4cc[nH+]c4c(-[Mg])c3c2')
+    if not mol.HasSubstructMatch(portmangrin_core):
+        return False, "Porphyrin core with magnesium coordination and fifth ring not found"
 
-    # Check for the presence of a long aliphatic chain, allowing more variability
-    # Here we simply look for a long carbon chain which is characteristic, but not overly specific
-    long_chain_smarts = Chem.MolFromSmarts('CCCCCCC')  # Looks for a stretch of at least 7 contiguous C atoms
+    # Check for a variability in aliphatic chain, typically represented by long hydrocarbon chains
+    long_chain_smarts = Chem.MolFromSmarts('C{5,}')  # Flexibility: Look for any sequence of at least 5 contiguous carbon atoms
     if not mol.HasSubstructMatch(long_chain_smarts):
         return False, "Long aliphatic chain characteristic of chlorophyll missing"
 
-    return True, "Contains magnesium porphyrin core with a fifth ring and a long aliphatic chain"
+    return True, "Contains magnesium porphyrin core with a fifth ring and a characteristic long aliphatic chain"
