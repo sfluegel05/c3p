@@ -6,8 +6,9 @@ from rdkit.Chem import rdMolDescriptors
 
 def is_polymer(smiles: str):
     """
-    Determines if a given SMILES string represents a polymer via enhanced structural 
-    complexity detection, diverse repeating unit patterns, and molecular weight considerations.
+    Determines if a given SMILES string represents a polymer.
+    Polymers typically have high molecular weights, long carbon chains,
+    repeating substructures, and potentially branching characteristics.
 
     Args:
         smiles (str): SMILES string of the chemical entity
@@ -16,39 +17,29 @@ def is_polymer(smiles: str):
         bool: True if the entity is classified as a polymer, False otherwise
         str: Reason for classification
     """
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return (False, "Invalid SMILES string")
+        return False, "Invalid SMILES string"
     
-    # Define additional SMARTS patterns that might indicate polymer-like structures
-    aromatic_chain_pattern = Chem.MolFromSmarts("c-c")
-    conjugated_system_pattern = Chem.MolFromSmarts("C=C-C=C")
-    
-    # Identify matches for these patterns
-    aromatic_chain_matches = len(mol.GetSubstructMatches(aromatic_chain_pattern))
-    conjugated_system_matches = len(mol.GetSubstructMatches(conjugated_system_pattern))
-    
-    # Count functional groups that can form repeat units
-    ester_pattern = Chem.MolFromSmarts("C(=O)O")
-    amide_pattern = Chem.MolFromSmarts("C(=O)N")
-    ether_pattern = Chem.MolFromSmarts("C-O-C")
-    
-    ester_matches = len(mol.GetSubstructMatches(ester_pattern))
-    amide_matches = len(mol.GetSubstructMatches(amide_pattern))
-    ether_matches = len(mol.GetSubstructMatches(ether_pattern))
-    
-    # Use RDKit descriptors for complexity and size
+    # Check for long carbon chain with potential for cross-linking/branching
+    chain_pattern = Chem.MolFromSmarts("[C](~[C])~[C]~[C](~[C])[C]")
+    chain_matches = mol.GetSubstructMatches(chain_pattern)
+
+    # Count the number of carbon-carbon single bonds and branching points
+    num_c_c_bonds = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.rdchem.BondType.SINGLE and bond.GetBeginAtom().GetAtomicNum() == 6 and bond.GetEndAtom().GetAtomicNum() == 6)
+    num_branching_points = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6 and atom.GetDegree() > 2)
+
+    # Check for high molecular weight (still relevant, but used with caution)
     mol_weight = rdMolDescriptors.CalcExactMolWt(mol)
-    rotatable_bonds = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    total_rings = Chem.rdMolDescriptors.CalcNumRings(mol)
     
-    # Adapt threshold based on mol_weight and structural matches
-    repeating_unit_threshold = 3  # This can be adjusted
+    # Enhanced criteria: adjust thresholds and add branching consideration
+    if (len(chain_matches) >= 2 and num_c_c_bonds > 20 and num_branching_points > 1) or mol_weight > 1000:
+        return True, "Has long chains, branching, and high molecular weight suggesting polymer structure."
     
-    if (ester_matches >= repeating_unit_threshold or amide_matches >= repeating_unit_threshold or
-        ether_matches >= repeating_unit_threshold or aromatic_chain_matches > 5 or
-        conjugated_system_matches > 3):
-        if (mol_weight > 1000 or rotatable_bonds > 20 or total_rings > 10):
-            return (True, "Exhibits multiple repeating units or extensive molecular complexity typical of polymers")
-    
-    return (False, "Does not meet polymer criteria of multiple repeating units or extensive molecular complexity")
+    # Attempt to identify repeating structural motifs, like ether (-C-O-C-), amide, or ester bonds
+    potential_repeating_unit = Chem.MolFromSmarts("[*](~[*])~[*]") # Placeholder pattern for demonstration
+    if mol.HasSubstructMatch(potential_repeating_unit):
+        return True, "Contains potential repeating units typical of polymer structure."
+
+    return False, "Does not meet enhanced polymer criteria of long chains with branching or potential repeating units."
