@@ -39,13 +39,15 @@ def is_tripeptide(smiles: str):
     if len(alpha_carbon_matches) != 3:
         return False, f"Found {len(alpha_carbon_matches)} amino acid residues, need exactly 3"
 
-    # Check for linear chain of three residues
-    # Look for pattern: N-term - [AA] - [AA] - [AA] - C-term
+    # Check for linear or cyclic chain of three residues
+    # Look for pattern: N-term - [AA] - [AA] - [AA] - C-term or cyclic structure
     tripeptide_pattern = Chem.MolFromSmarts("[NX3H0-2][CX4H]([R])[CX3](=O)[NX3H0][CX4H]([R])[CX3](=O)[NX3H0][CX4H]([R])[CX3](=O)[OX2H0-1]")
-    if not mol.HasSubstructMatch(tripeptide_pattern):
-        return False, "Does not have a linear chain of three amino acid residues"
+    cyclic_tripeptide_pattern = Chem.MolFromSmarts("[NX3H0][CX4H]([R])[CX3](=O)[NX3H0][CX4H]([R])[CX3](=O)[NX3H0][CX4H]([R])[CX3](=O)[NX3H0]")
+    
+    if not (mol.HasSubstructMatch(tripeptide_pattern) or mol.HasSubstructMatch(cyclic_tripeptide_pattern)):
+        return False, "Does not have a linear or cyclic chain of three amino acid residues"
 
-    return True, "Contains three amino acid residues connected by peptide bonds in a linear chain"
+    return True, "Contains three amino acid residues connected by peptide bonds in a linear or cyclic chain"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:48030',
