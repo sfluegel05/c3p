@@ -10,6 +10,45 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 from rdkit.Chem import Descriptors
+from collections import Counter
+
+def has_regular_repeating_units(mol, min_repeats=3):
+    """Helper function to detect regular repeating structural units"""
+    # Common polymer repeat unit patterns
+    repeat_patterns = [
+        # Prenyl/isoprene units
+        ('CC(C)=CCC', 'isoprene'),
+        # Common polymer linkages
+        ('COC', 'ether'),
+        ('CC(=O)O', 'ester'),
+        ('CN(C)C(=O)', 'amide'),
+        ('CSC', 'thioether'),
+        ('CNC(=O)', 'peptide'),
+        # Sugar units
+        ('C1C(O)C(O)C(O)C(O)C1', 'sugar'),
+    ]
+    
+    for pattern, unit_type in repeat_patterns:
+        matches = len(mol.GetSubstructMatches(Chem.MolFromSmarts(pattern)))
+        if matches >= min_repeats:
+            return True, unit_type
+    return False, None
+
+def analyze_components(components):
+    """Helper function to analyze molecular components"""
+    mols = []
+    for comp in components:
+        mol = Chem.MolFromSmiles(comp)
+        if mol is None:
+            continue
+        mols.append({
+            'mol': mol,
+            'mw': Descriptors.ExactMolWt(mol),
+            'charge': Chem.GetFormalCharge(mol),
+            'atoms': mol.GetNumAtoms(),
+            'rings': rdMolDescriptors.CalcNumRings(mol)
+        })
+    return mols
 
 def is_polymer(smiles: str):
     """
@@ -22,88 +61,53 @@ def is_polymer(smiles: str):
         bool: True if molecule is a polymer, False otherwise
         str: Reason for classification
     """
-    
-    # Parse SMILES and check for multiple components
+    # Parse SMILES
     components = smiles.split('.')
-    if len(components) == 1:
-        mol = Chem.MolFromSmiles(smiles)
-        if mol is None:
-            return False, "Invalid SMILES string"
-        mols = [mol]
-    else:
-        mols = [Chem.MolFromSmiles(c) for c in components]
-        if any(m is None for m in mols):
-            return False, "Invalid SMILES string"
-
-    # Analyze molecular properties of components
-    component_props = []
-    total_mw = 0
-    for mol in mols:
-        props = {
-            'mw': Descriptors.ExactMolWt(mol),
-            'atoms': mol.GetNumAtoms(),
-            'rings': rdMolDescriptors.CalcNumRings(mol),
-            'rot_bonds': rdMolDescriptors.CalcNumRotatableBonds(mol),
-            'charge': Chem.GetFormalCharge(mol)
-        }
-        component_props.append(props)
-        total_mw += props['mw']
-
-    # Check for polymer characteristics
-    num_components = len(mols)
+    if not components:
+        return False, "Invalid SMILES string"
+        
+    # Analyze components
+    comp_data = analyze_components(components)
+    if not comp_data:
+        return False, "Invalid SMILES string"
     
-    # Look for common polymer patterns
-    polymer_patterns = [
-        ('[*]-[*]-[*]-[*]-[*]-[*]', 'linear chain'),
-        ('C(=O)O', 'carboxylic acid'),
-        ('C(=O)N', 'amide'),
-        ('COC', 'ether linkage'),
-        ('CC(C)(C)C', 'branched alkyl')
-    ]
+    # Check for prenyl polymers (special case)
+    for comp in comp_data:
+        mol = comp['mol']
+        isoprene_pattern = Chem.MolFromSmarts('CC(C)=CCC')
+        if isoprene_pattern and len(mol.GetSubstructMatches(isoprene_pattern)) >= 4:
+            return True, "Contains multiple prenyl/isoprene repeat units"
     
-    pattern_counts = {}
-    for pattern, name in polymer_patterns:
-        patt = Chem.MolFromSmarts(pattern)
-        if patt:
-            pattern_counts[name] = sum(len(mol.GetSubstructMatches(patt)) for mol in mols)
-
-    # Classification logic
+    # Check for regular repeating units in each component
+    for comp in comp_data:
+        has_repeats, unit_type = has_regular_repeating_units(comp['mol'])
+        if has_repeats:
+            return True, f"Contains regular repeating {unit_type} units"
+    
+    # Analyze component mixture characteristics
+    num_components = len(comp_data)
     if num_components >= 2:
-        # Check for salt forms and charged species
-        charges = [p['charge'] for p in component_props]
-        if any(c != 0 for c in charges):
-            large_components = sum(1 for p in component_props if p['mw'] > 300)
-            if large_components >= 1:
-                return True, "Multi-component ionic polymer system"
+        # Check for charged species (salt forms)
+        charges = [c['charge'] for c in comp_data]
+        identical_components = len(set(components)) < len(components)
         
-        # Check for repeating structural motifs
-        if any(count >= 3 for count in pattern_counts.values()):
-            return True, "Contains repeating polymer subunits"
-        
-        # Check for size diversity in components
-        mw_std = sum((p['mw'] - total_mw/num_components)**2 for p in component_props)**0.5
-        if mw_std > 100 and num_components >= 3:
-            return True, "Mixture of diverse macromolecular components"
-
-    # Single component analysis
-    for mol, props in zip(mols, component_props):
-        # Check for very large molecules with repeating units
-        if props['mw'] > 800 and props['rot_bonds'] > 15:
-            # Look for repeating units
-            for patt_name, count in pattern_counts.items():
-                if count >= 4:
-                    return True, f"Large molecule with repeating {patt_name} units"
-        
-        # Check for branched structures
-        branch_points = len(mol.GetSubstructMatches(Chem.MolFromSmarts('[*]([*])([*])[*]')))
-        if branch_points >= 3 and props['mw'] > 500:
-            return True, "Highly branched macromolecular structure"
-
-    # Special cases for known polymer types
-    if any('mer' in comp.lower() for comp in smiles.split('.')):
-        return True, "Contains explicit polymer notation"
-        
-    if num_components >= 3 and all(p['mw'] > 200 for p in component_props):
-        return True, "Complex mixture of large molecules"
-
+        if any(c != 0 for c in charges) and identical_components:
+            return True, "Ionic polymer with repeating components"
+            
+        # Check for identical large components
+        large_comps = [c for c in comp_data if c['mw'] > 400]
+        if len(large_comps) >= 2 and identical_components:
+            return True, "Contains multiple identical large components"
+    
+    # Check for very large molecules with internal repetition
+    for comp in comp_data:
+        mol = comp['mol']
+        if comp['mw'] > 1000:
+            # Look for internal symmetry and repetition
+            fragments = Chem.GetMolFrags(mol, asMols=True)
+            if len(fragments) > 1:
+                fragment_smiles = [Chem.MolToSmiles(f) for f in fragments]
+                if len(set(fragment_smiles)) < len(fragment_smiles):
+                    return True, "Large molecule with internal repeating units"
+    
     return False, "Does not meet polymer characteristics"
