@@ -28,53 +28,42 @@ def is_dodecanoate_ester(smiles: str):
     if not mol.HasSubstructMatch(ester_pattern):
         return False, "No ester group found"
     
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    # Pattern for a 12-carbon saturated chain attached to an ester
+    # The pattern ensures we find exactly 12 carbons in a row
+    laurate_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])[CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH3]")
     
-    def count_carbon_chain(start_atom, visited=None):
-        """Helper function to count continuous carbon chain length from a starting atom"""
-        if visited is None:
-            visited = set()
+    if mol.HasSubstructMatch(laurate_pattern):
+        # For each match, verify it's a proper laurate ester
+        matches = mol.GetSubstructMatches(laurate_pattern)
+        for match in matches:
+            # Get the carbons in the chain
+            chain_carbons = match[2:]  # Skip O and C(=O)
             
-        queue = deque([(start_atom, 1)])  # (atom, chain_length)
-        max_length = 1
-        visited.add(start_atom.GetIdx())
-        
-        while queue:
-            current_atom, length = queue.popleft()
-            max_length = max(max_length, length)
-            
-            for neighbor in current_atom.GetNeighbors():
-                if (neighbor.GetAtomicNum() == 6 and  # is carbon
-                    neighbor.GetIdx() not in visited and
-                    sum(1 for bond in neighbor.GetBonds() if bond.GetBondType() != Chem.BondType.SINGLE) == 0):  # saturated
-                    visited.add(neighbor.GetIdx())
-                    queue.append((neighbor, length + 1))
-                    
-        return max_length
-
-    for match in ester_matches:
-        carbonyl_carbon = mol.GetAtomWithIdx(match[1])  # Get the C(=O) carbon
-        
-        # Check each carbon attached to the carbonyl carbon
-        for neighbor in carbonyl_carbon.GetNeighbors():
-            if neighbor.GetAtomicNum() == 6:  # is carbon
-                # Count the length of the carbon chain
-                chain_length = count_carbon_chain(neighbor)
+            # Verify these carbons form a linear chain
+            is_linear = True
+            for i, c_idx in enumerate(chain_carbons):
+                atom = mol.GetAtomWithIdx(c_idx)
+                # Check correct number of connections
+                if i == 0:  # First carbon
+                    if len([n for n in atom.GetNeighbors() if n.GetIdx() not in match]) > 0:
+                        is_linear = False
+                        break
+                elif i == len(chain_carbons) - 1:  # Last carbon (methyl)
+                    if atom.GetDegree() != 1:
+                        is_linear = False
+                        break
+                else:  # Middle carbons
+                    if len([n for n in atom.GetNeighbors() if n.GetIdx() not in chain_carbons]) > 0:
+                        is_linear = False
+                        break
                 
-                if chain_length >= 12:
-                    # Verify it's a saturated chain by checking for any double bonds
-                    atoms_to_check = {atom.GetIdx() for atom in mol.GetAtoms() 
-                                   if atom.GetAtomicNum() == 6}  # all carbons
-                    has_double_bond = False
-                    
-                    for bond in mol.GetBonds():
-                        if (bond.GetBondType() == Chem.BondType.DOUBLE and
-                            bond.GetBeginAtomIdx() in atoms_to_check and
-                            bond.GetEndAtomIdx() in atoms_to_check):
-                            has_double_bond = True
-                            break
-                    
-                    if not has_double_bond:
-                        return True, "Contains dodecanoate (laurate) ester group with saturated C12 chain"
+                # Verify no double bonds in the chain
+                for bond in atom.GetBonds():
+                    if bond.GetBondType() != Chem.BondType.SINGLE:
+                        is_linear = False
+                        break
+            
+            if is_linear:
+                return True, "Contains dodecanoate (laurate) ester group with linear saturated C12 chain"
     
     return False, "No dodecanoate ester group with appropriate chain length found"
