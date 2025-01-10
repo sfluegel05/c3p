@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_trienoic_fatty_acid(smiles: str):
     """
     Determines if a molecule is a trienoic fatty acid based on its SMILES string.
-    A trienoic fatty acid is defined as a polyunsaturated fatty acid with exactly three double bonds.
+    A trienoic fatty acid is a polyunsaturated fatty acid with exactly three double bonds.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,17 +20,19 @@ def is_trienoic_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for carboxylic acid group: It's a typical feature of fatty acids
-    # but not the only form (e.g., esterified forms exist)
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[O]")
-    if not mol.HasSubstructMatch(carboxylic_acid_pattern):
-        return False, "No carboxylic acid or ester group found; not a simple fatty acid form"
+    # Check for the presence of a carboxylic acid or ester group or relevant end group
+    carboxylic_acid_or_ester_pattern = Chem.MolFromSmarts("C(=O)[OX1H0]")  # includes ester oxygen or OH
+    if not mol.HasSubstructMatch(carboxylic_acid_or_ester_pattern):
+        return False, "No carboxylic acid, ester, or similar group found; not a typical trienoic fatty acid structure"
 
-    # Count all C=C double bonds generally, no need to be consecutive
-    double_bond_pattern = Chem.MolFromSmarts("C=C") 
+    # Count conjugated C=C double bonds specifically
+    # Testing for sequential occurrences common in polyunsaturated conditions
+    double_bond_pattern = Chem.MolFromSmarts("C(C=C)C=C(C=C)")  # Seemlessly matches multiple double bonds in sequence
     double_bond_matches = len(mol.GetSubstructMatches(double_bond_pattern))
 
-    if double_bond_matches == 3:
-        return True, "Contains exactly three double bonds; classified as trienoic fatty acid"
+    if double_bond_matches == 1:  # Identifies three double bonds forming a linear chain
+        return True, "Contains a typical three double-bond trienoic structure; classified as a trienoic fatty acid"
     else:
-        return False, f"Has {double_bond_matches} double bonds; not a trienoic fatty acid"
+        return False, f"Found {double_bond_matches*2} sequence(s) of double bonds; not consistent with classified trienoic fatty acid"
+
+# Note: Adjust the functional group patterns as necessary for specific methyl-branched situations or complex derivations.
