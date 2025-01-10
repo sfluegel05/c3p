@@ -27,8 +27,9 @@ def is_bioconjugate(smiles: str):
     nucleoside_pattern = Chem.MolFromSmarts("n1cnc2c1ncnc2N")  # Purine nucleobase
     cofactor_pattern = Chem.MolFromSmarts("P(=O)(O)OCCN")      # CoA-like segment
     thioester_pattern = Chem.MolFromSmarts("C(=O)S")           # Thioester linkage
-    glycosidic_pattern = Chem.MolFromSmarts("[OX2H][CX4]([OX2H])[CX4]") # Simplified sugar linkage
-    sulfur_linkage_pattern = Chem.MolFromSmarts("S")           # Sulfur atoms, often conjugated
+    glycosidic_pattern = Chem.MolFromSmarts("[OX2H][CX4]([OX2H])[OX2H]") # Sugar linkage
+    sulfur_linkage_pattern = Chem.MolFromSmarts("S[CX4]")      # Sulfur with relevant functionality
+    disulfide_pattern = Chem.MolFromSmarts("SS")               # Disulfide bond
 
     # Check for presence of biological motifs
     peptide_matches = mol.GetSubstructMatches(peptide_pattern)
@@ -37,8 +38,9 @@ def is_bioconjugate(smiles: str):
     thioester_matches = mol.GetSubstructMatches(thioester_pattern)
     glycosidic_matches = mol.GetSubstructMatches(glycosidic_pattern)
     sulfur_linkage_matches = mol.GetSubstructMatches(sulfur_linkage_pattern)
+    disulfide_matches = mol.GetSubstructMatches(disulfide_pattern)
 
-    # Assume presence of distinct motifs and check for at least two, including sulfur linkages
+    # Assume presence of distinct motifs and check for at least two, with emphasis on linking capabilities
     distinct_biomotifs = 0
     if peptide_matches:
         distinct_biomotifs += 1
@@ -50,15 +52,18 @@ def is_bioconjugate(smiles: str):
         distinct_biomotifs += 1
     if glycosidic_matches:
         distinct_biomotifs += 1
-    if sulfur_linkage_matches and distinct_biomotifs > 0:
-        distinct_biomotifs += 1
+    if sulfur_linkage_matches or disulfide_matches:
+        distinct_biomotifs += 1  # Ensure role of sulfur in linking is counted
 
     if distinct_biomotifs < 2:
         return False, "Less than two distinct biological motifs found"
 
     # Consider molecular size as an indirect measure of complexity/fusion
     mol_weight = AllChem.CalcExactMolWt(mol)
-    if mol_weight < 400:  # Adjusted threshold
-        return False, "Molecular weight too low for likely bioconjugate"
+    if mol_weight < 300:  # Lowered threshold to accommodate smaller bioconjugates
+        if distinct_biomotifs >= 2:
+            return True, "Contains multiple distinct biological motifs, even with lower molecular weight"
+        else:
+            return False, "Molecular weight too low for likely bioconjugate"
 
     return True, "Contains multiple distinct biological motifs and linkage features, indicative of a bioconjugate"
