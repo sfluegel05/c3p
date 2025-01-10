@@ -2,7 +2,6 @@
 Classifies: CHEBI:72588 semisynthetic derivative
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_semisynthetic_derivative(smiles: str):
     """
@@ -23,17 +22,24 @@ def is_semisynthetic_derivative(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Example natural product motifs such as steroid backbone, polyketide chains, etc.
+    # Expanded set of natural product motifs
     natural_product_patterns = [
         Chem.MolFromSmarts("C1CCC[C@]2(C1)CCC[C@H]3[C@H]2CC=C4C3=C(C=CC(=C4O)O)O"),  # Simplified steroid motif
-        Chem.MolFromSmarts("C1=CC=CC=C1"),  # Aromatic ring (e.g., from polyketides)
+        Chem.MolFromSmarts("C=C[C@H](C)[C@H](O)[C@@H](C)C=C"),  # Terpene-like structure
+        Chem.MolFromSmarts("CN1C=NC2=C1C(=O)N(C(=O)N2)C"),  # Nucleoside base-like motif
+        Chem.MolFromSmarts("C1=CC=CC=C1"),  # Simple aromatic ring
+        Chem.MolFromSmarts("[#6]1=[#8][#6][#6][#6][#6]=[#6][#6]1"),  # Polyene/polyketide
     ]
     
-    # Example of synthetic modifications like halogens, acylations, etc.
+    # Expanded set of synthetic modifications
     synthetic_modifications_patterns = [
-        Chem.MolFromSmarts("F"),  # Example: Fluorine, a common synthetically added group
-        Chem.MolFromSmarts("Cl"), # Example: Chlorine, another common synthetic modification
-        Chem.MolFromSmarts("C(=O)O"),  # ester function
+        Chem.MolFromSmarts("F"),  # Fluorine
+        Chem.MolFromSmarts("Cl"), # Chlorine
+        Chem.MolFromSmarts("C(=O)O"),  # Ester function
+        Chem.MolFromSmarts("N(C)(C)"), # Alkylated amine
+        Chem.MolFromSmarts("C#N"),  # Nitrile group
+        Chem.MolFromSmarts("S(=O)(=O)"),  # Sulfonyl group
+        Chem.MolFromSmarts("[C&R2]-[C&!R]"),  # Non-ring alkyl chain
     ]
 
     # Check for natural product motifs
