@@ -23,8 +23,8 @@ def is_decanoate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define ester group pattern: carbonyl carbon single bonded to oxygen
-    ester_pattern = Chem.MolFromSmarts('[$(C(=O)[O;!$([O-])])]')  # Matches ester functional group
+    # Define ester group pattern with atom mapping
+    ester_pattern = Chem.MolFromSmarts('[C:1](=O)[O:2][#6]')  # Ester group where :1 is carbonyl carbon, :2 is ester oxygen
 
     # Find ester groups
     ester_matches = mol.GetSubstructMatches(ester_pattern)
@@ -33,43 +33,42 @@ def is_decanoate_ester(smiles: str):
 
     # For each ester group, check for decanoyl chain
     for match in ester_matches:
+        if len(match) < 2:
+            continue  # Skip if match does not have expected length
+
         carbonyl_c_idx = match[0]  # Carbonyl carbon atom index
         ester_o_idx = match[1]     # Ester oxygen atom index
 
-        # Initialize variables
+        # Traverse the acyl chain starting from carbonyl carbon, excluding ester oxygen
         visited = set()
         chain_length = 1  # Start counting from carbonyl carbon
         branching = False
         is_linear = True
 
-        # Traverse the acyl chain starting from carbonyl carbon
-        def traverse_acyl_chain(atom_idx):
+        def traverse_acyl_chain(atom_idx, prev_atom_idx):
             nonlocal chain_length, branching, is_linear
             visited.add(atom_idx)
             atom = mol.GetAtomWithIdx(atom_idx)
 
-            # Only consider carbon atoms
-            if atom.GetAtomicNum() != 6:
-                return
+            neighbors = [nbr for nbr in atom.GetNeighbors() if nbr.GetIdx() != prev_atom_idx and nbr.GetIdx() != ester_o_idx]
 
-            neighbors = [nbr for nbr in atom.GetNeighbors() if nbr.GetIdx() != ester_o_idx and nbr.GetIdx() not in visited]
+            # Exclude non-carbon atoms
+            neighbors = [nbr for nbr in neighbors if nbr.GetAtomicNum() == 6]
 
-            # Check for branching
-            num_carbon_neighbors = sum(1 for nbr in neighbors if nbr.GetAtomicNum() == 6)
-            if num_carbon_neighbors > 1:
+            if len(neighbors) > 1:
                 branching = True
                 is_linear = False
                 return  # Stop traversal if branching occurs
 
             for neighbor in neighbors:
-                if neighbor.GetAtomicNum() == 6:
+                if neighbor.GetIdx() not in visited:
                     chain_length += 1
-                    traverse_acyl_chain(neighbor.GetIdx())
+                    traverse_acyl_chain(neighbor.GetIdx(), atom_idx)
 
-        traverse_acyl_chain(carbonyl_c_idx)
+        traverse_acyl_chain(carbonyl_c_idx, ester_o_idx)
 
-        # Check if chain is linear and has exactly 10 carbons
-        if not branching and chain_length == 10:
+        # Check if chain is linear and has exactly 10 carbons (including carbonyl carbon)
+        if is_linear and chain_length == 10:
             return True, "Contains decanoate ester group"
 
     return False, "No decanoate ester group found"
