@@ -6,7 +6,8 @@ from rdkit import Chem
 def is_phospho_sugar(smiles: str):
     """
     Determines if a molecule is a phospho sugar based on its SMILES string.
-    A phospho sugar contains a polyhydroxy backbone typical of monosaccharides with at least one phosphate group esterified.
+    A phospho sugar contains a structure with a sugar-like hydroxy pattern
+    and one or more phosphate groups esterified.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,16 +22,19 @@ def is_phospho_sugar(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a broad pattern for polyhydroxy structures typical of monosaccharides
-    polyol_pattern = Chem.MolFromSmarts("[C,O]([C,O])([O][H])[C,O]([C,O])([O][H])")
+    # Redefining a pattern for sugar-like hydroxy structures
+    # This accounts for both furanose and pyranose ring sugars
+    sugar_ring_pattern = Chem.MolFromSmarts("C1OC(CO)C(O)C1O")  # Typical hexose as an example
+    # Linear sugar parts (e.g., glyceraldehyde phosphate)
+    sugar_linear_pattern = Chem.MolFromSmarts("OCC(O)CO")
 
-    # Define patterns for phosphate groups (both mono- and diesterified forms)
-    phosphate_pattern = Chem.MolFromSmarts("[O][P](=O)([O,H])([O,H])")
+    # Refine patterns for phosphate groups (covering monophosphate, diphosphate, etc.)
+    phosphate_pattern = Chem.MolFromSmarts("OP(=O)([O])[O]")  # Phosphate group
 
-    # Check for presence of polyhydroxy structure
-    has_polyhydroxy = mol.HasSubstructMatch(polyol_pattern)
-    if not has_polyhydroxy:
-        return False, "No polyhydroxy structure typical of monosaccharides found"
+    # Check for presence of sugar structure
+    has_sugar_structure = mol.HasSubstructMatch(sugar_ring_pattern) or mol.HasSubstructMatch(sugar_linear_pattern)
+    if not has_sugar_structure:
+        return False, "No sugar-like structure found"
 
     # Check for presence of phosphate group
     has_phosphate = mol.HasSubstructMatch(phosphate_pattern)
@@ -38,7 +42,7 @@ def is_phospho_sugar(smiles: str):
         return False, "No phosphate group esterified found"
 
     # If both structures are present, it's a phospho sugar
-    return True, "Contains a polyhydroxy backbone with phosphate esterification"
+    return True, "Contains a sugar-like structure with phosphate esterification"
 
 # Example metadata for the classification
 __metadata__ = {
