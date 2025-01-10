@@ -26,49 +26,24 @@ def is_decanoate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for the ester group attached to a 10-carbon chain
-    ester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2][CX4H2][CX4H2][CX4H2][CX4H2][CX4H2][CX4H2][CX4H2][CX4H2][CX4H2][CX4H3]")
-    if not mol.HasSubstructMatch(ester_pattern):
-        return False, "No decanoate ester group found"
+    # Look for the ester group (-O-C(=O)-)
+    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    if not ester_matches:
+        return False, "No ester group found"
 
-    # Check if the ester is attached to a 10-carbon chain
-    decanoate_pattern = Chem.MolFromSmarts("[CX4H2][CX4H2][CX4H2][CX4H2][CX4H2][CX4H2][CX4H2][CX4H2][CX4H2][CX4H3]")
-    if not mol.HasSubstructMatch(decanoate_pattern):
-        return False, "No 10-carbon chain found"
+    # Check if any ester group is attached to a 10-carbon chain
+    decanoate_pattern = Chem.MolFromSmarts("[CX4H2,CX3H1,CX2H0][CX4H2,CX3H1,CX2H0][CX4H2,CX3H1,CX2H0][CX4H2,CX3H1,CX2H0][CX4H2,CX3H1,CX2H0][CX4H2,CX3H1,CX2H0][CX4H2,CX3H1,CX2H0][CX4H2,CX3H1,CX2H0][CX4H2,CX3H1,CX2H0][CX4H3,CX3H2,CX2H1]")
+    for match in ester_matches:
+        # Get the atom connected to the ester oxygen
+        ester_oxygen = match[0]
+        ester_carbon = match[1]
+        # Get the atom connected to the ester carbon (should be part of the 10-carbon chain)
+        ester_carbon_neighbors = mol.GetAtomWithIdx(ester_carbon).GetNeighbors()
+        for neighbor in ester_carbon_neighbors:
+            if neighbor.GetIdx() != ester_oxygen:
+                # Check if this neighbor is part of a 10-carbon chain
+                if mol.HasSubstructMatch(decanoate_pattern):
+                    return True, "Contains a decanoate ester group (10-carbon chain with ester linkage)"
 
-    return True, "Contains a decanoate ester group (10-carbon chain with ester linkage)"
-
-
-__metadata__ = {   'chemical_class': {   'id': 'CHEBI:75840',
-                          'name': 'decanoate ester',
-                          'definition': 'A fatty acid ester resulting from the '
-                                        'formal condensation of the carboxy '
-                                        'group of decanoic acid (capric acid) '
-                                        'with the hydroxy group of an alcohol '
-                                        'or phenol.',
-                          'parents': ['CHEBI:47778', 'CHEBI:76579']},
-    'config': {   'llm_model_name': 'lbl/claude-sonnet',
-                  'f1_threshold': 0.8,
-                  'max_attempts': 5,
-                  'max_positive_instances': None,
-                  'max_positive_to_test': None,
-                  'max_negative_to_test': None,
-                  'max_positive_in_prompt': 50,
-                  'max_negative_in_prompt': 20,
-                  'max_instances_in_prompt': 100,
-                  'test_proportion': 0.1},
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 150,
-    'num_false_positives': 4,
-    'num_true_negatives': 182407,
-    'num_false_negatives': 23,
-    'num_negatives': None,
-    'precision': 0.974025974025974,
-    'recall': 0.8670520231213873,
-    'f1': 0.9174311926605504,
-    'accuracy': 0.9998521228585199}
+    return False, "No decanoate ester group found (10-carbon chain with ester linkage)"
