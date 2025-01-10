@@ -28,7 +28,7 @@ def is_cardiac_glycoside(smiles: str):
 
     # Check for steroid nucleus (cyclopentanoperhydrophenanthrene ring system)
     # More general pattern to match different configurations
-    steroid_pattern = Chem.MolFromSmarts("[C]12[C][C][C]3[C]([C]1[C][C][C]2[C])[C]4[C][C][C]([C]4(C)[C]3)")
+    steroid_pattern = Chem.MolFromSmarts("[C]12[C][C][C]3[C]([C]1[C][C][C]2)[C]4[C][C][C]([C]4[C]3)")
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid nucleus found"
 
