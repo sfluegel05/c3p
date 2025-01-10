@@ -1,44 +1,51 @@
 """
 Classifies: CHEBI:39362 mononitrophenol
 """
+import itertools
 from rdkit import Chem
 
 def is_mononitrophenol(smiles: str):
     """
     Determines if a molecule is a mononitrophenol based on its SMILES string.
-    A mononitrophenol must have at least one hydroxyl group and one nitro group attached to an aromatic system.
+    A mononitrophenol must have at least one hydroxyl group and one nitro group attached to the same aromatic system.
 
     Args:
-        smiles (str): SMILES string of the molecule
+        smiles (str): SMILES string of the molecule.
 
     Returns:
-        bool: True if the molecule is a mononitrophenol, False otherwise
-        str: Reason for classification
+        bool: True if the molecule is a mononitrophenol, False otherwise.
+        str: Reason for classification.
     """
-
-    # Parse the SMILES string to a molecule
+    
     mol = Chem.MolFromSmiles(smiles)
     if not mol:
         return False, "Invalid SMILES string"
-
+    
     # Check for phenolic hydroxyl in an aromatic ring
-    hydroxyl_pattern = Chem.MolFromSmarts("[$([OH])][c]")  # This pattern ensures the hydroxyl is connected to an aromatic carbon but more loosely
+    hydroxyl_pattern = Chem.MolFromSmarts("c1cc(ccc1)O")  # This ensures hydroxyl is part of an aromatic system
     if not mol.HasSubstructMatch(hydroxyl_pattern):
         return False, "No phenolic hydroxyl group found on aromatic system"
-
-    # Check for a nitro group
-    nitro_group_pattern = Chem.MolFromSmarts("[NX3](=O)[O-]")  # Standard nitro group pattern
-    if not mol.HasSubstructMatch(nitro_group_pattern):
-        return False, "No nitro group found, need at least one nitro group"
-
-    # Ensure that hydroxyl and nitro groups are on the same benzene-type aromatic ring
-    atom_indices = [atom.GetIdx() for atom in mol.GetAtoms()]
-    hydroxyl_atoms = mol.GetSubstructMatches(hydroxyl_pattern)
-    nitro_atoms = mol.GetSubstructMatches(nitro_group_pattern)
     
-    for hydroxyl in hydroxyl_atoms:
-        for nitro in nitro_atoms:
-            if any(Chem.FindAtomEnvironmentOfRadiusN(mol, 2, hydroxyl[0], nitro[0])):
-                return True, "Phenolic hydroxyl and nitro group on same aromatic system found"
-
+    # Find nitro group pattern
+    nitro_group_pattern = Chem.MolFromSmarts("[NX3](=O)[O-]")  # Nitro group pattern
+    nitro_matches = mol.GetSubstructMatches(nitro_group_pattern)
+    if not nitro_matches:
+        return False, "No nitro group found, need at least one nitro group"
+    
+    # Analyze if nitro and hydroxyl groups are on the same aromatic ring
+    hydroxyl_atoms = mol.GetSubstructMatches(hydroxyl_pattern)
+    if not hydroxyl_atoms:
+        return False, "No phenolic hydroxyl group found on aromatic system"
+    
+    # Get ring information
+    ri = mol.GetRingInfo()
+    for match in itertools.product(hydroxyl_atoms, nitro_matches):
+        hydroxyl_idx = match[0][0]
+        nitro_idx = match[1][0]
+        
+        # Check if both are in the same ring
+        for ring in ri.AtomRings():
+            if hydroxyl_idx in ring and nitro_idx in ring:
+                return True, "Phenolic hydroxyl and nitro group on the same aromatic system found"
+    
     return False, "Phenolic hydroxyl and nitro group not on the same benzene ring"
