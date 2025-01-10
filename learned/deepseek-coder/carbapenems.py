@@ -12,7 +12,7 @@ def is_carbapenems(smiles: str):
     """
     Determines if a molecule is a carbapenem based on its SMILES string.
     A carbapenem is a beta-lactam antibiotic with a carbapenem skeleton, which is a bicyclic structure
-    containing a beta-lactam ring fused to a five-membered ring, and is substituted at positions 3, 4, and 6.
+    containing a beta-lactam ring fused to a five-membered ring.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -27,33 +27,42 @@ def is_carbapenems(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the core carbapenem skeleton pattern
-    carbapenem_pattern = Chem.MolFromSmarts("[C@@H]12[C@@H](C)C(=O)N1C=C[C@@H]2C")
+    # Define a more general carbapenem skeleton pattern
+    # This pattern matches the bicyclic structure with a beta-lactam ring
+    carbapenem_pattern = Chem.MolFromSmarts("[C@H]12[C@H](C)C(=O)N1C=C[C@H]2C")
     if not mol.HasSubstructMatch(carbapenem_pattern):
-        return False, "No carbapenem skeleton found"
+        # Try alternative stereochemistry
+        carbapenem_pattern = Chem.MolFromSmarts("[C@@H]12[C@@H](C)C(=O)N1C=C[C@@H]2C")
+        if not mol.HasSubstructMatch(carbapenem_pattern):
+            return False, "No carbapenem skeleton found"
 
-    # Check for common substituents at positions 3, 4, and 6
-    # Position 3: Typically has a sulfur-containing group (e.g., thioether)
-    sulfur_pattern = Chem.MolFromSmarts("[SX2]")
-    sulfur_matches = mol.GetSubstructMatches(sulfur_pattern)
-    if len(sulfur_matches) == 0:
-        return False, "No sulfur-containing substituent at position 3"
-
-    # Position 4: Typically has a hydroxyl group or similar
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    if len(hydroxyl_matches) == 0:
-        return False, "No hydroxyl group at position 4"
-
-    # Position 6: Typically has a carboxyl group
-    carboxyl_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
-    carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
-    if len(carboxyl_matches) == 0:
-        return False, "No carboxyl group at position 6"
-
-    # Additional checks for beta-lactam ring
-    beta_lactam_pattern = Chem.MolFromSmarts("[C@@H]1[C@@H](C)C(=O)N1")
+    # Check for beta-lactam ring (more general pattern)
+    beta_lactam_pattern = Chem.MolFromSmarts("[C@H]1[C@H](C)C(=O)N1")
     if not mol.HasSubstructMatch(beta_lactam_pattern):
-        return False, "No beta-lactam ring found"
+        # Try alternative stereochemistry
+        beta_lactam_pattern = Chem.MolFromSmarts("[C@@H]1[C@@H](C)C(=O)N1")
+        if not mol.HasSubstructMatch(beta_lactam_pattern):
+            return False, "No beta-lactam ring found"
 
-    return True, "Contains carbapenem skeleton with typical substituents at positions 3, 4, and 6"
+    # Check for common features (not strict positions)
+    # At least one of these should be present:
+    # - Sulfur-containing group
+    # - Carboxyl group
+    # - Hydroxyl group
+    sulfur_pattern = Chem.MolFromSmarts("[SX2]")
+    carboxyl_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
+    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
+    
+    has_sulfur = mol.HasSubstructMatch(sulfur_pattern)
+    has_carboxyl = mol.HasSubstructMatch(carboxyl_pattern)
+    has_hydroxyl = mol.HasSubstructMatch(hydroxyl_pattern)
+    
+    if not (has_sulfur or has_carboxyl or has_hydroxyl):
+        return False, "Missing common carbapenem features (sulfur, carboxyl, or hydroxyl groups)"
+
+    # Check molecular weight range (typical for carbapenems)
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 200 or mol_wt > 600:
+        return False, "Molecular weight out of typical carbapenem range"
+
+    return True, "Contains carbapenem skeleton with common features"
