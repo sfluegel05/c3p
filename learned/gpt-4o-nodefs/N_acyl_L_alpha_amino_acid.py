@@ -21,16 +21,21 @@ def is_N_acyl_L_alpha_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define the SMARTS pattern for an N-acyl-L-alpha-amino acid
-    # Pattern: Acyl group (O=C-) bonded to Nitrogen (N) bonded to chiral alpha carbon [C@H]
-    pattern = Chem.MolFromSmarts("N([C@H])C(=O)")
+    # Define a more robust SMARTS pattern for detecting N-acyl-donation on an amino acid structure
+    # Allow for detection of acyl attachments both directly to the alpha nitrogens
+    pattern_main = Chem.MolFromSmarts("C(=O)[N;X3][C@H]([C;R0])[C;R0](=O)[O;X1,O-]")
     
-    # Check if the molecule matches the N-acyl-L-alpha-amino acid pattern
-    if mol.HasSubstructMatch(pattern):
-        return True, "Matches N-acyl-L-alpha-amino acid structure"
-    else:
-        return False, "Does not match N-acyl-L-alpha-amino acid structure"
+    # Also consider variations that appear in the side-chains of amino acids like lysine
+    pattern_side_chain = Chem.MolFromSmarts("C(=O)[N;X3][a,c][C;H1,H2]")
+    
+    if mol.HasSubstructMatch(pattern_main):
+        return True, "Matches N-acyl-L-alpha-amino acid structure (main chain)"
+    
+    if mol.HasSubstructMatch(pattern_side_chain):
+        return True, "Matches N-acyl-L-alpha-amino acid structure (side chain)"
+
+    return False, "Does not match N-acyl-L-alpha-amino acid structure"
 
 # Example usage:
-smiles_example = "C[C@H](NC(=O)Cc1c[nH]c2ccccc12)C(O)=O"  # Example SMILES
-print(is_N_acyl_L_alpha_amino_acid(smiles_example))
+test_smiles = "CC(=O)NCCCC[C@H](N)C(O)=O"  # Example SMILES for N(6)-acetyl-L-lysine
+print(is_N_acyl_L_alpha_amino_acid(test_smiles))
