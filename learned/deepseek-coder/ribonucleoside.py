@@ -44,6 +44,10 @@ def is_ribonucleoside(smiles: str):
         Chem.MolFromSmarts("[nH]1c(=O)[nH]c2c1nc[nH]2[#6]"),  # Guanine derivatives
         Chem.MolFromSmarts("[nH]1ccc(N)nc1=O[#6]"),  # Cytosine derivatives
         Chem.MolFromSmarts("[nH]1ccc(=O)[nH]c1=O[#6]"),  # Uracil derivatives
+        Chem.MolFromSmarts("[nH]1cnc2c1nc[nH]2[#7]"),  # Adenine derivatives with nitrogen
+        Chem.MolFromSmarts("[nH]1c(=O)[nH]c2c1nc[nH]2[#7]"),  # Guanine derivatives with nitrogen
+        Chem.MolFromSmarts("[nH]1ccc(N)nc1=O[#7]"),  # Cytosine derivatives with nitrogen
+        Chem.MolFromSmarts("[nH]1ccc(=O)[nH]c1=O[#7]"),  # Uracil derivatives with nitrogen
     ]
 
     # Check if any nucleobase pattern matches
