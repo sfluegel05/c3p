@@ -7,7 +7,7 @@ def is_lactol(smiles: str):
     """
     Determines if a molecule is a lactol based on its SMILES string.
     A lactol is a cyclic hemiacetal formed by intramolecular addition of a hydroxy group
-    to an aldehydic or ketonic carbonyl group.
+    to an aldehydic or ketonic carbonyl group (1-oxacycloalkan-2-ol or an unsaturated analogue).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,11 +22,12 @@ def is_lactol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more accurate SMARTS pattern for lactol structure
-    # Lactol: cyclic structure with an ether linkage (O in a cycle) and a hydroxyl group near
-    lactol_pattern = Chem.MolFromSmarts("C1OC(O1)")
-
+    # Define a comprehensive SMARTS pattern for lactol structure
+    # This pattern attempts to capture the hemiacetal structure with oxygen in a ring (1-oxacycle),
+    # connected to a hydroxyl group and a carbon which was originally carbonyl (C=O)
+    lactol_pattern = Chem.MolFromSmarts('C1CO[C@@H]([OH1])[C@,C](=O)O1')
+    
     if mol.HasSubstructMatch(lactol_pattern):
-        return True, "Contains a lactol structural pattern (cyclic ether with hydroxyl group)"
+        return True, "Contains a lactol structural pattern (cyclic ether with hydroxyl group and adjacent carbonyl-derived center)"
 
     return False, "No lactol pattern found (cyclic hemiacetal)"
