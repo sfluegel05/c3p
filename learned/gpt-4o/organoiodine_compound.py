@@ -15,26 +15,21 @@ def is_organoiodine_compound(smiles: str):
         bool: True if molecule is an organoiodine compound, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for carbon-iodine bond
-    ci_bond_found = False
+    # Iterate through bonds to find a carbon-iodine bond
     for bond in mol.GetBonds():
         # Get the beginning and ending atoms of the bond
         begin_atom = bond.GetBeginAtom()
         end_atom = bond.GetEndAtom()
-        
-        # Correctly validate the iodine bonds
+
+        # Check for a carbon-iodine bond (atomic numbers: 6 for carbon, 53 for iodine)
         if (begin_atom.GetAtomicNum() == 6 and end_atom.GetAtomicNum() == 53) or \
            (begin_atom.GetAtomicNum() == 53 and end_atom.GetAtomicNum() == 6):
-            ci_bond_found = True
-            break
+            return True, "Contains at least one carbon-iodine bond"
     
-    if ci_bond_found:
-        return True, "Contains at least one carbon-iodine bond"
-    else:
-        return False, "No carbon-iodine bond found"
+    return False, "No carbon-iodine bond found"
