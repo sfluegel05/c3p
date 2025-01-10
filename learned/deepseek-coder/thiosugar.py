@@ -38,38 +38,18 @@ def is_thiosugar(smiles: str):
     if not sulfur_atoms:
         return False, "No sulfur atoms found"
 
-    # Check if sulfur is attached to any part of the molecule, not just the sugar backbone
-    sulfur_attached = False
-    for sulfur in sulfur_atoms:
-        neighbors = sulfur.GetNeighbors()
-        for neighbor in neighbors:
-            if neighbor.GetAtomicNum() == 6:  # Carbon atom
-                sulfur_attached = True
-                break
-        if sulfur_attached:
-            break
-
-    if not sulfur_attached:
-        return False, "Sulfur not attached to the molecule"
-
-    # Check for the presence of a ring structure (carbohydrate-like)
+    # Check if sulfur is part of the sugar-like structure
+    sulfur_in_sugar = False
     ring_info = mol.GetRingInfo()
-    if not ring_info.AtomRings():
-        return False, "No ring structure found"
-
-    # Check if sulfur is replacing an oxygen or hydroxyl group in the sugar-like structure
-    sulfur_replacement = False
     for sulfur in sulfur_atoms:
-        for neighbor in sulfur.GetNeighbors():
-            if neighbor.GetAtomicNum() == 6:  # Carbon atom
-                # Check if the carbon is part of a sugar-like structure
-                if any(match for match in sugar_matches if neighbor.GetIdx() in match):
-                    sulfur_replacement = True
-                    break
-        if sulfur_replacement:
+        for ring in ring_info.AtomRings():
+            if sulfur.GetIdx() in ring:
+                sulfur_in_sugar = True
+                break
+        if sulfur_in_sugar:
             break
 
-    if not sulfur_replacement:
-        return False, "Sulfur is not replacing an oxygen or hydroxyl group in the sugar-like structure"
+    if not sulfur_in_sugar:
+        return False, "Sulfur is not part of the sugar-like structure"
 
-    return True, "Contains a sugar-like structure with sulfur replacing an oxygen or hydroxyl group"
+    return True, "Contains a sugar-like structure with sulfur atoms"
