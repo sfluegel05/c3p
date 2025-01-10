@@ -6,10 +6,8 @@ from rdkit import Chem
 def is_3_oxo_Delta_4__steroid(smiles: str):
     """
     Determines if a molecule is a 3-oxo-Delta(4) steroid based on its SMILES string.
-
     Args:
         smiles (str): SMILES string of the molecule
-
     Returns:
         bool: True if molecule matches the class, False otherwise
         str: Reason for classification
@@ -20,18 +18,20 @@ def is_3_oxo_Delta_4__steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for the steroid backbone (ABCD rings)
-    steroid_pattern = Chem.MolFromSmarts("C1CCC2CCCC3C4CCC(=O)CC4CCC23")
+    # Steroid backbone: Four fused rings with specific connectivity, but allowing flexibility in stereochemistry.
+    # Approximate a generic ABCD steroid core without overly specific stereo
+    steroid_pattern = Chem.MolFromSmarts("C1CCC2C3CCC4CCCC3C4CCC12")
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
     
-    # Look for the 3-oxo group (C=O directly attached to a ring carbon)
-    oxo_pattern = Chem.MolFromSmarts("C(=O)[C&R]")
-    if not mol.HasSubstructMatch(oxo_pattern):
+    # Look for the 3-oxo group: C=O attached to a ring carbon, allowing flexibility in exact placement within ring
+    oxo_pattern = Chem.MolFromSmarts("[R]=O")
+    oxo_matches = [match for match in mol.GetSubstructMatches(oxo_pattern) if any(mol.GetAtomWithIdx(idx).GetDegree() == 3 for idx in match)]
+    if not oxo_matches:
         return False, "Missing 3-oxo group"
     
-    # Look for the Delta(4) double bond (C=C between C4 and C5)
-    delta4_pattern = Chem.MolFromSmarts("C=CC=O")
+    # Look for the Delta(4) double bond: C=C expected between carbons 4 and 5, allowing for variations due to substitutions
+    delta4_pattern = Chem.MolFromSmarts("C=C")
     if not mol.HasSubstructMatch(delta4_pattern):
         return False, "Missing Delta(4) double bond"
 
