@@ -20,24 +20,23 @@ def is_2_acyl_1_alkyl_sn_glycero_3_phosphocholine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Correct stereochemistry of sn-glycerol backbone
-    # This pattern assumes variable ether linkages with stereocenter
-    glycerol_pattern = Chem.MolFromSmarts("O[C@H](COP([O-])(=O)OCC[N+](C)(C)C)CO")
+    # Check for the core sn-glycerol backbone with invariant stereochemistry
+    glycerol_pattern = Chem.MolFromSmarts("[C@@H](O*)COP([O-])(=O)OCC[N+](C)(C)C")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No SN-glycerol backbone with correct stereochemistry and phosphocholine group found"
    
-    # Alkyl chain at sn-1 - commonly via ether bond, check for ether link but allow variations
-    alkyl_chain_pattern = Chem.MolFromSmarts("CO[CH2][CX4,H]")
-    if not mol.HasSubstructMatch(alkyl_chain_pattern):
+    # Ensure there is a single ether-linked alkyl group at the sn-1 position
+    alkyl_ether_pattern = Chem.MolFromSmarts("CO[CH2]")
+    if not mol.HasSubstructMatch(alkyl_ether_pattern):
         return False, "No alkyl ether chain at sn-1 position detected"
     
-    # Acyl chain at sn-2 - typically an ester linkage
-    acyl_chain_pattern = Chem.MolFromSmarts("C(O[CX4])(=O)~[CX4,CH]")
-    if not mol.HasSubstructMatch(acyl_chain_pattern):
+    # Ensure there is a singular ester-linked acyl group at sn-2 position
+    acyl_ester_pattern = Chem.MolFromSmarts("C(OC)[CX3](=O)")
+    if not mol.HasSubstructMatch(acyl_ester_pattern):
         return False, "No acyl chain at sn-2 position with ester linkage"
     
-    # Check for existence of quaternary ammonium ion pattern in phosphocholine
-    phosphocholine_pattern = Chem.MolFromSmarts("P([O-])(=O)OCC[N+](C)(C)C")
+    # Check for phosphocholine group with quaternary nitrogen
+    phosphocholine_pattern = Chem.MolFromSmarts("P([O-])(=O)(OCC[N+](C)(C)C)")
     if not mol.HasSubstructMatch(phosphocholine_pattern):
         return False, "No phosphocholine group with quaternary nitrogen found"
     
