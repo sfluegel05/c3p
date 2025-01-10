@@ -27,17 +27,17 @@ def is_polymer(smiles: str):
 
     # Check for large molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 500:
+    if mol_wt < 300:  # Lowered threshold
         return False, "Molecular weight too low for a polymer"
 
     # Count the number of rotatable bonds to assess chain flexibility
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 10:
+    if n_rotatable < 5:  # Lowered threshold
         return False, "Too few rotatable bonds for a polymer"
 
     # Check for a minimum number of atoms
     num_atoms = mol.GetNumAtoms()
-    if num_atoms < 50:
+    if num_atoms < 30:  # Lowered threshold
         return False, "Too few atoms for a polymer"
 
     # Look for specific repeating patterns common in polymers
@@ -48,15 +48,34 @@ def is_polymer(smiles: str):
         Chem.MolFromSmarts("[NX3]~[CX4]~[NX3]"),  # Amide linkage
         Chem.MolFromSmarts("[CX4]~[CX4]~[CX4]~[CX4]~[CX4]"),  # Longer carbon chain
         Chem.MolFromSmarts("[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]"),  # Even longer carbon chain
+        Chem.MolFromSmarts("[*]~[*]~[*]~[*]~[*]~[*]~[*]~[*]"),  # General repeating pattern
     ]
     
+    # Check for repeating units
     repeating_matches = 0
     for pattern in repeating_patterns:
-        if mol.HasSubstructMatch(pattern):
+        matches = mol.GetSubstructMatches(pattern)
+        if len(matches) >= 3:  # Require at least 3 repeating units
             repeating_matches += 1
 
-    if repeating_matches < 2:
+    if repeating_matches < 1:
         return False, "No repeating patterns found"
 
+    # Check for polymer end groups
+    end_group_patterns = [
+        Chem.MolFromSmarts("[H]"),  # Hydrogen end groups
+        Chem.MolFromSmarts("[OH]"),  # Hydroxyl end groups
+        Chem.MolFromSmarts("[NH2]"),  # Amino end groups
+        Chem.MolFromSmarts("[CX3](=O)[OH]"),  # Carboxylic acid end groups
+    ]
+    
+    end_group_matches = 0
+    for pattern in end_group_patterns:
+        if mol.HasSubstructMatch(pattern):
+            end_group_matches += 1
+
+    if end_group_matches < 1:
+        return False, "No polymer end groups detected"
+
     # If all checks pass, classify as polymer
-    return True, "Contains repeating units, high molecular weight, and complex structure indicative of a polymer"
+    return True, "Contains repeating units, end groups, and structural complexity indicative of a polymer"
