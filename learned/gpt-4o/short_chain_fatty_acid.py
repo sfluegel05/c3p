@@ -22,35 +22,34 @@ def is_short_chain_fatty_acid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for single carboxyl group presence
-    carboxyl_pattern = Chem.MolFromSmarts("C(=O)[OH]")
+    carboxyl_pattern = Chem.MolFromSmarts("C(=O)[O]")
     carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
     if len(carboxyl_matches) != 1:
         return False, "Requires exactly one carboxyl group"
-
-    # Count carbons and ensure no extra elements beyond C, H, and O
-    c_count = 0
-    extra_elements = False
-    for atom in mol.GetAtoms():
-        atomic_num = atom.GetAtomicNum()
-        if atomic_num == 6:  # Carbon
-            c_count += 1
-        elif atomic_num not in [1, 8]:  # Only Hydrogen and Oxygen are fine
-            extra_elements = True
-
-    if extra_elements:
-        return False, "Presence of non-hydrocarbon substituents disqualifies compound"
-
-    # Check that the chain length is less than C6
-    if c_count >= 6:
-        return False, f"Chain length is C{c_count}, should be less than C6"
-
-    # Ensure the structure consists of a single chain (not rings, parallel structures)
-    if not mol.GetRingInfo().NumRings() == 0:
+    
+    # Ensure chain is open (no rings)
+    if mol.GetRingInfo().NumRings() != 0:
         return False, "Rings present, should be an open chain"
+    
+    # Count non-hydrocarbon elements (other than C, H, O)
+    num_others = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() not in {1, 6, 8})
+    if num_others > 0:
+        return False, "Presence of non-hydrocarbon substituents disqualifies compound"        
+
+    # Count carbon atoms to ensure fewer than 6
+    num_carbon = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    
+    # Consider every feature (branch) an 'effective' increase in chain length
+    degree_increase = sum((atom.GetDegree() - 1) for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    
+    # Calculate effective chain length
+    effective_carbon_count = num_carbon + degree_increase
+    if effective_carbon_count >= 6:
+        return False, f"Effective chain length is C{effective_carbon_count}, should be less than C6"
 
     return True, "Valid short-chain fatty acid"
 
 # Example usage
-smiles_example = "CCCC(C)C(O)=O"  # 2-methylvaleric acid
+smiles_example = "CCCC(O)=O"  # Butyric acid
 result, reason = is_short_chain_fatty_acid(smiles_example)
 print(result, reason)
