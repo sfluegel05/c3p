@@ -12,8 +12,8 @@ def is_N_acetyl_amino_acid(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if the molecule is an N-acetyl-amino acid, False otherwise.
-        str: Reason for classification.
+        bool: True if molecule is an N-acetyl-amino acid, False otherwise
+        str: Reason for classification
     """
 
     # Parse SMILES
@@ -21,16 +21,48 @@ def is_N_acetyl_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the SMARTS pattern for N-acetyl-amino acid
-    # Pattern breakdown:
-    # [CH3] - methyl group of acetyl
-    # [C](=O) - carbonyl carbon of acetyl group
-    # [N] - nitrogen atom
-    # [C] - alpha carbon
-    # [C](=O)[O,H1,H0] - carboxyl group (handles carboxylic acid or carboxylate forms)
-    pattern = Chem.MolFromSmarts('[CH3][C](=O)[N][C][C](=O)[O,H1,H0]')
+    # Define SMARTS patterns
+    # Pattern for acetylated nitrogen connected to alpha carbon
+    acetylated_nitrogen_pattern = Chem.MolFromSmarts('N(C(=O)C)-[C]')
+    # Pattern for carboxyl group connected to alpha carbon
+    carboxyl_group_pattern = Chem.MolFromSmarts('[C](=O)[O-,OH]')
 
-    if mol.HasSubstructMatch(pattern):
-        return True, "Molecule matches N-acetyl-amino acid pattern"
-    else:
-        return False, "Molecule does not match N-acetyl-amino acid pattern"
+    # Find all matches for acetylated nitrogen connected to alpha carbon
+    matches = mol.GetSubstructMatches(acetylated_nitrogen_pattern)
+
+    if not matches:
+        return False, "No acetylated amino group found"
+
+    for match in matches:
+        nitrogen_idx = match[0]
+        alpha_carbon_idx = match[2]
+        alpha_carbon = mol.GetAtomWithIdx(alpha_carbon_idx)
+
+        # Check if alpha carbon is connected to a carboxyl group
+        has_carboxyl = False
+        for neighbor in alpha_carbon.GetNeighbors():
+            if neighbor.GetIdx() != nitrogen_idx:
+                if neighbor.GetAtomicNum() == 6:
+                    # Check if neighbor is carbonyl carbon
+                    for bond in neighbor.GetBonds():
+                        other_atom = bond.GetOtherAtom(neighbor)
+                        if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE and other_atom.GetAtomicNum() == 8:
+                            # Found C=O
+                            # Now check for attachment to O or [O-]
+                            for oxy_neighbor in neighbor.GetNeighbors():
+                                if oxy_neighbor.GetAtomicNum() == 8 and oxy_neighbor.GetIdx() != other_atom.GetIdx():
+                                    has_carboxyl = True
+                                    break
+                        if has_carboxyl:
+                            break
+                elif neighbor.GetAtomicNum() == 8:
+                    # Check if it's a carboxylate oxygen directly connected
+                    has_carboxyl = True
+                    break
+            if has_carboxyl:
+                break
+        
+        if has_carboxyl:
+            return True, "Molecule matches N-acetyl-amino acid pattern"
+    
+    return False, "Molecule does not match N-acetyl-amino acid pattern"
