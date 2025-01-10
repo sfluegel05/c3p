@@ -21,13 +21,18 @@ def is_organochlorine_compound(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for C-Cl bond pattern
-    organochlorine_pattern = Chem.MolFromSmarts("[CX4,CX3,CX2,CX1]-[Cl]")
+    # Look for C-Cl bond pattern, including aromatic and charged cases
+    organochlorine_patterns = [
+        Chem.MolFromSmarts("[CX4,CX3,CX2,CX1]-Cl"),  # Aliphatic C-Cl bond
+        Chem.MolFromSmarts("[c]-Cl")  # Aromatic C-Cl bond
+    ]
     
-    if mol.HasSubstructMatch(organochlorine_pattern):
-        return True, "Contains at least one carbon-chlorine bond"
-    else:
-        return False, "No carbon-chlorine bond found"
+    # Check if any of the patterns match
+    for pattern in organochlorine_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return True, "Contains at least one carbon-chlorine bond"
+    
+    return False, "No carbon-chlorine bond found"
 
 # Example usage
 example_smiles = [
@@ -35,6 +40,7 @@ example_smiles = [
     "CCOC(=O)[C@@]1(C)OC(=O)N(C1=O)c1cc(Cl)cc(Cl)c1",
     "CCC(C)n1ncn(-c2ccc(cc2)N2CCN(CC2)c2ccc(OC[C@H]3CO[C@@](Cn4cncn4)(O3)c3ccc(Cl)cc3Cl)cc2)c1=O",
     "Slc1cccc(CC)c1Cl",  # This is not a SMILES but proves detection with an explicit Cl bond
+    "C1=CC(=C(C(=C1Cl)C(O)=O)Cl)Cl"  # Test case that was previously missed
 ]
 
 for smiles in example_smiles:
