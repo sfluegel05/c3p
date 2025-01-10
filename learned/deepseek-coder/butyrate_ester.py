@@ -46,7 +46,17 @@ def is_butyrate_ester(smiles: str):
         if oxygen_atom.GetDegree() != 2:
             return False, "Butyrate group not part of an ester linkage"
 
-    return True, "Contains butyrate group (CCCC(=O)O-) as part of an ester"
+    # Ensure that the butyrate group is directly connected to the ester oxygen
+    for ester_match in ester_matches:
+        ester_oxygen_idx = ester_match[1]
+        ester_oxygen_atom = mol.GetAtomWithIdx(ester_oxygen_idx)
+        for neighbor in ester_oxygen_atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 6:  # Carbon atom
+                # Check if this carbon is part of the butyrate group
+                if any(neighbor.GetIdx() in match for match in butyrate_matches):
+                    return True, "Contains butyrate group (CCCC(=O)O-) as part of an ester"
+
+    return False, "Butyrate group not part of an ester linkage"
 
 
 __metadata__ = {
