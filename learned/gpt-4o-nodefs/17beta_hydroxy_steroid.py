@@ -2,7 +2,6 @@
 Classifies: CHEBI:35343 17beta-hydroxy steroid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_17beta_hydroxy_steroid(smiles: str):
     """
@@ -22,27 +21,16 @@ def is_17beta_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define a more general SMARTS pattern for the steroid scaffold (4-ring system)
-    steroid_skeleton_pattern = Chem.MolFromSmarts("[R2]1[R2][R3]2[R3][R2][R2]3[R2][R3][R3][R2][R2]4[R3][R2][R2][R2][R2]4[C@R]3[R2]2[R3]1")
+    # Define a more accurate SMARTS pattern for the steroid scaffold (three 6-membered and one 5-membered rings fused)
+    steroid_skeleton_pattern = Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2CCC4(C3CCC4)C")
     if not mol.HasSubstructMatch(steroid_skeleton_pattern):
         return False, "No steroid skeleton found"
     
     # Define a SMARTS pattern for hydroxyl group at 17-beta position
-    # Assuming a broader context of steroid structure, flexible pattern for 17-beta hydroxyl
-    hydroxyl_17beta_pattern = Chem.MolFromSmarts("[C@H]1CC[C@]2([C@@H]([R2][R1])CC[C@@]2([H])C)[C@H](O)C=1")
+    # 17 position would generally be flexible as for its placement relative to ring A.
+    # [C@] and [C@H] indicate stereochemistry and hydrogen
+    hydroxyl_17beta_pattern = Chem.MolFromSmarts("C[C@]12CC[C@H](C)[C@@H](O)[C@]1(CC=C2)C")
     if not mol.HasSubstructMatch(hydroxyl_17beta_pattern):
         return False, "No hydroxyl group at 17-beta position found"
     
     return True, "Molecule matches 17beta-hydroxy steroid structure"
-
-# Added updated metadata to reflect the flexible recognition mechanisms
-__metadata__ = {   
-    'chemical_class': {   
-        'name': '17beta-hydroxy steroid',
-        'definition': 'Steroids with 17-beta hydroxyl group',
-    },
-    'message': None,
-    'success': True,
-    'f1_threshold': 0.8,
-    'max_attempts': 5,
-}
