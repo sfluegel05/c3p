@@ -2,6 +2,7 @@
 Classifies: CHEBI:10615 omega-hydroxy fatty acid
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_omega_hydroxy_fatty_acid(smiles: str):
     """
@@ -21,30 +22,28 @@ def is_omega_hydroxy_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Match omega-terminal hydroxy group
-    omega_hydroxy_pattern = Chem.MolFromSmarts("[CH2]CO")
-    omega_hydroxy_matches = mol.GetSubstructMatches(omega_hydroxy_pattern)
-    if not omega_hydroxy_matches:
+    # Match omega-terminal hydroxy group pattern
+    omega_hydroxy_smarts = "[OX2H][CX4]"  # Hydroxyl group should be terminal, possibly at ω-position
+    omega_hydroxy = Chem.MolFromSmarts(omega_hydroxy_smarts)
+    if not mol.HasSubstructMatch(omega_hydroxy):
         return False, "No omega-terminal hydroxy group found"
 
     # Match carboxylic acid group
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[OH]")
-    carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
-    if not carboxylic_acid_matches:
+    carboxylic_acid_smarts = "C(=O)[OH]"
+    carboxylic_acid = Chem.MolFromSmarts(carboxylic_acid_smarts)
+    if not mol.HasSubstructMatch(carboxylic_acid):
         return False, "No carboxylic acid group found"
 
-    # Ensure the hydroxy is truly at the omega position in the longest chain
-    for match in omega_hydroxy_matches:
-        oxy_atom = mol.GetAtomWithIdx(match[1])
-        is_omega = all(nb.GetIdx() == match[0] or nb.GetAtomicNum() != 6 for nb in oxy_atom.GetNeighbors())
-        if is_omega:
-            break
-    else:
-        return False, "Hydroxy group is not at the omega position"
+    # Check that hydroxyl group is terminal in the longest chain
+    length, terminal_index = max((len(Chem.rdmolops.GetShortestPath(mol, match[0], match[1])), match[0])
+                                 for match in mol.GetSubstructMatches(carboxylic_acid))
+    omega_ends = [at.GetIdx() for at in mol.GetAtoms() if at.GetSmarts() == '[OH]']
+    if terminal_index not in omega_ends:
+        return False, "Hydroxy group is not terminal in the longest carbon chain"
 
-    # Chain length criteria, allow shorter as examples suggest
-    carbon_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
-    if len(carbon_atoms) < 6:
-        return False, f"Carbon chain too short, found {len(carbon_atoms)} carbons"
+    # Chain length criteria is set shorter based on examples
+    num_carbs = rdMolDescriptors.CalcNumAliphaticCarbocycles(mol)
+    if num_carbs < 3:  # Change from 6 to 3 to accommodate validated shorter chains
+        return False, f"Carbon chain too short, found {num_carbs} carbons"
 
-    return True, "Contains omega-terminal hydroxy and carboxylic acid groups with sufficient chain length"
+    return True, "Contains omega-terminal hydroxy and carboxylic acid groups with appropriate chain length"
