@@ -26,7 +26,7 @@ def is_6_aminopurines(smiles: str):
 
     # Define the adenine substructure pattern
     # This pattern matches the adenine ring system with a 6-amino group
-    adenine_pattern = Chem.MolFromSmarts("n1c2ncnc2nc1N")
+    adenine_pattern = Chem.MolFromSmarts("n1c2ncnc2c(N)n1")
     
     # Check if the molecule contains the adenine substructure
     if mol.HasSubstructMatch(adenine_pattern):
