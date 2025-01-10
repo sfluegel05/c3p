@@ -31,18 +31,42 @@ def is_sesterterpenoid(smiles: str):
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if c_count < 20:
         return False, f"Too few carbons ({c_count}) for a sesterterpenoid (minimum 20)"
-        
-    # Check for rings (sesterterpenoids typically have multiple rings)
-    ring_count = rdMolDescriptors.CalcNumRings(mol)
-    if ring_count < 2:
-        return False, f"Too few rings ({ring_count}) for a sesterterpenoid"
+    if c_count > 45:  # Allow for some modifications but exclude large molecules
+        return False, f"Too many carbons ({c_count}) for a sesterterpenoid"
 
-    # Look for methyl groups (characteristic of terpenoids)
-    # More comprehensive pattern that includes different types of methyl groups
+    # Calculate molecular weight
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt > 1000:  # Exclude large glycosides and complex molecules
+        return False, f"Molecular weight ({mol_wt:.1f}) too high for a sesterterpenoid"
+    
+    # Check for characteristic sesterterpenoid patterns
+    sesterterpenoid_patterns = [
+        # Ophiobolin-like core
+        Chem.MolFromSmarts("C1CC2CCC3C(C2)CCC3C1"),
+        # Common 5-8 membered ring patterns
+        Chem.MolFromSmarts("C1CCCC2CCCC12"),
+        Chem.MolFromSmarts("C1CCC2CCCC2C1"),
+        # Linear sesterterpenoid chain pattern
+        Chem.MolFromSmarts("CCC(C)CCCC(C)CCCC(C)CCCC(C)C"),
+        # Characteristic branching patterns
+        Chem.MolFromSmarts("C=C(C)CCC=C(C)CCC=C(C)C")
+    ]
+    
+    pattern_matches = sum(1 for pattern in sesterterpenoid_patterns 
+                         if pattern is not None and mol.HasSubstructMatch(pattern))
+    
+    if pattern_matches == 0:
+        return False, "No characteristic sesterterpenoid patterns found"
+
+    # Look for steroid core to exclude steroids
+    steroid_pattern = Chem.MolFromSmarts("C1CC2CCC3C(C2)CCC4CCCC34C1")
+    if steroid_pattern and mol.HasSubstructMatch(steroid_pattern):
+        return False, "Appears to be a steroid rather than sesterterpenoid"
+
+    # Check for methyl groups in characteristic positions
     methyl_patterns = [
         Chem.MolFromSmarts("[CH3]-[CH2,CH1,CH0]"), # Terminal methyl
         Chem.MolFromSmarts("[CH3]-C=C"),  # Methyl attached to double bond
-        Chem.MolFromSmarts("[CH3]-C(-[*])(-[*])") # Branched methyl
     ]
     
     total_methyl_count = sum(len(mol.GetSubstructMatches(pattern)) 
@@ -51,46 +75,27 @@ def is_sesterterpenoid(smiles: str):
     if total_methyl_count < 2:
         return False, "Too few methyl groups for a sesterterpenoid"
 
-    # Check for polycyclic structures common in terpenoids
-    polycyclic_patterns = [
-        Chem.MolFromSmarts("C1CCC2CCCCC2C1"), # Decalin
-        Chem.MolFromSmarts("C1CC2CCC1CC2"),   # Bicyclo[3.3.0]octane
-        Chem.MolFromSmarts("C1CCC2CC2CC1"),   # Bicyclo[4.2.0]octane
-    ]
-    
-    has_polycyclic = any(mol.HasSubstructMatch(pattern) 
-                        for pattern in polycyclic_patterns if pattern is not None)
-    
-    if not has_polycyclic and ring_count < 3:
-        return False, "Missing characteristic terpenoid ring structures"
-
-    # Check for unsaturation (double bonds are common in terpenoids)
+    # Check for unsaturation (double bonds or carbonyls)
     double_bond_pattern = Chem.MolFromSmarts("C=C")
-    double_bond_count = len(mol.GetSubstructMatches(double_bond_pattern))
-    
-    # Also check for carbonyl groups
     carbonyl_pattern = Chem.MolFromSmarts("C(=O)")
-    carbonyl_count = len(mol.GetSubstructMatches(carbonyl_pattern))
     
-    if double_bond_count + carbonyl_count == 0:
+    unsaturation_count = (len(mol.GetSubstructMatches(double_bond_pattern)) +
+                         len(mol.GetSubstructMatches(carbonyl_pattern)))
+    
+    if unsaturation_count == 0:
         return False, "No unsaturation found (requires double bonds or carbonyls)"
 
-    # Check for branching (terpenoids are typically branched)
-    branching_patterns = [
-        Chem.MolFromSmarts("[CH1,CH0](-[*])(-[*])(-[*])"), # Tertiary/quaternary carbon
-        Chem.MolFromSmarts("C=C(C)C")  # Branched alkene
-    ]
+    # Count rings but allow for linear sesterterpenoids
+    ring_count = rdMolDescriptors.CalcNumRings(mol)
+    if ring_count == 0 and c_count < 25:
+        return False, "Linear molecule with too few carbons for sesterterpenoid"
     
-    total_branch_points = sum(len(mol.GetSubstructMatches(pattern)) 
-                            for pattern in branching_patterns if pattern is not None)
-    
-    if total_branch_points < 2:
-        return False, "Insufficient branching for a sesterterpenoid"
+    # Check for characteristic branching
+    branch_pattern = Chem.MolFromSmarts("[CH1,CH0](-[*])(-[*])(-[*])")
+    if branch_pattern:
+        branch_count = len(mol.GetSubstructMatches(branch_pattern))
+        if branch_count < 2 and ring_count < 2:
+            return False, "Insufficient branching for a sesterterpenoid"
 
-    # Calculate molecular properties
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 300:
-        return False, f"Molecular weight ({mol_wt:.1f}) too low for a sesterterpenoid"
-
-    return True, "Matches sesterterpenoid characteristics: polycyclic structure, " \
-                "methyl groups, appropriate branching and unsaturation"
+    return True, "Matches sesterterpenoid characteristics with appropriate carbon count, " \
+                "structural features, and branching patterns"
