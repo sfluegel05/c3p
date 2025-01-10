@@ -26,7 +26,7 @@ def is_methyl_branched_fatty_acid(smiles: str):
         return False, "Invalid SMILES string"
     
     # Check for carboxylic acid group
-    carboxylic_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H1]")
+    carboxylic_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H,OX2-]")
     if not mol.HasSubstructMatch(carboxylic_pattern):
         return False, "No carboxylic acid group found"
     
@@ -39,57 +39,62 @@ def is_methyl_branched_fatty_acid(smiles: str):
     if any(atom.GetIsAromatic() for atom in mol.GetAtoms()):
         return False, "Contains aromatic rings"
 
-    # Find the carbon attached to COOH group
-    acid_carbon_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H1]")
-    matches = mol.GetSubstructMatches(acid_carbon_pattern)
-    if not matches:
-        return False, "Cannot identify acid carbon"
-    
-    # Analyze branching patterns
-    branch_patterns = {
-        "ethyl": "[CH2][CH2][CH2,CH3]",  # Ethyl or longer branches
-        "propyl": "[CH2][CH2][CH2][CH2,CH3]",  # Propyl or longer branches
-        "methyl": "[CH3][CX4]",  # Methyl branches
-        "isopropyl": "[CH3][CH]([CH3])",  # Isopropyl groups
-    }
-    
-    # Count different types of branches
-    branch_counts = {}
-    for name, pattern in branch_patterns.items():
-        pat = Chem.MolFromSmarts(pattern)
-        matches = len(mol.GetSubstructMatches(pat))
-        branch_counts[name] = matches
-
-    # Check for non-methyl branches
-    if branch_counts["ethyl"] > 1 or branch_counts["propyl"] > 0 or branch_counts["isopropyl"] > 0:
-        return False, "Contains non-methyl branches"
-    
-    # Must have at least one methyl branch
-    if branch_counts["methyl"] == 0:
-        return False, "No methyl branches found"
-    
-    # Count carbons in longest chain
-    longest_chain = rdMolDescriptors.CalcMolFormula(mol).count('C')
-    if longest_chain < 4:
-        return False, "Carbon chain too short"
-    if longest_chain > 30:
-        return False, "Carbon chain too long for typical fatty acid"
-
-    # Check heteroatom content
+    # Count carbons and check for valid atoms
     atom_counts = {}
     for atom in mol.GetAtoms():
         symbol = atom.GetSymbol()
         atom_counts[symbol] = atom_counts.get(symbol, 0) + 1
-    
-    # Allow only C, H, O (and limited N)
+        
     if any(symbol not in ['C', 'H', 'O', 'N'] for symbol in atom_counts.keys()):
         return False, "Contains unexpected heteroatoms"
-    
-    # Check nitrogen content
-    if atom_counts.get('N', 0) > 1:
-        return False, "Too many nitrogen atoms"
 
-    # Check for specific structural features that would disqualify
+    # Identify branching patterns
+    # First, find all carbons that have more than 2 carbon neighbors
+    branched_carbons = []
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6:  # Carbon atom
+            carbon_neighbors = [n for n in atom.GetNeighbors() if n.GetAtomicNum() == 6]
+            if len(carbon_neighbors) > 2:
+                branched_carbons.append(atom.GetIdx())
+
+    # Check each branch to ensure it's a methyl group
+    for branch_point in branched_carbons:
+        atom = mol.GetAtomWithIdx(branch_point)
+        for neighbor in atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 6:  # Carbon neighbor
+                # Count carbons in this branch
+                visited = set([atom.GetIdx()])
+                branch_carbons = []
+                stack = [(neighbor, [neighbor.GetIdx()])]
+                
+                while stack:
+                    current, path = stack.pop()
+                    if current.GetIdx() not in visited:
+                        visited.add(current.GetIdx())
+                        branch_carbons.append(current.GetIdx())
+                        
+                        # Don't follow path through the branch point
+                        for next_atom in current.GetNeighbors():
+                            if next_atom.GetIdx() not in visited and next_atom.GetIdx() != branch_point:
+                                stack.append((next_atom, path + [next_atom.GetIdx()]))
+                
+                # If branch has more than 1 carbon and isn't part of main chain
+                if len(branch_carbons) > 1 and not any(idx in branch_carbons for idx in mol.GetSubstructMatches(carboxylic_pattern)[0]):
+                    return False, "Contains non-methyl branches"
+
+    # Verify presence of at least one methyl branch
+    methyl_pattern = Chem.MolFromSmarts("[CH3][CX4,CR4]")  # Methyl attached to sp3 or sp2 carbon
+    if not mol.HasSubstructMatch(methyl_pattern):
+        return False, "No methyl branches found"
+
+    # Find main chain length (approximate using molecular formula)
+    c_count = atom_counts.get('C', 0)
+    if c_count < 4:
+        return False, "Carbon chain too short"
+    if c_count > 30:
+        return False, "Carbon chain too long for typical fatty acid"
+
+    # Check for disqualifying features
     disqualifying_patterns = [
         "[N+]",  # Quaternary nitrogen
         "[S,P,B,Si]",  # Other heteroatoms
