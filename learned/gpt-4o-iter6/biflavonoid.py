@@ -2,11 +2,12 @@
 Classifies: CHEBI:50128 biflavonoid
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_biflavonoid(smiles: str):
     """
     Determines if a molecule is a biflavonoid based on its SMILES string.
-    A biflavonoid is a flavonoid oligomer obtained by the oxidative coupling 
+    A biflavonoid is defined as a flavonoid oligomer obtained by the oxidative coupling 
     of at least two units of aryl-substituted benzopyran rings or its substituted derivatives.
 
     Args:
@@ -16,35 +17,47 @@ def is_biflavonoid(smiles: str):
         bool: True if molecule is a biflavonoid, False otherwise
         str: Reason for classification
     """
-    # Parse SMILES string
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Expand pattern for flavonoid units - cover variations
-    flavonoid_unit_patterns = [
-        Chem.MolFromSmarts("c1cc(O)c2oc3ccccc3c(c2c1)O"), # typical flavone core
-        Chem.MolFromSmarts("c1cc(O)c2c(c1)oc1ccccc1c2O"), # variational flavone structure
-        Chem.MolFromSmarts("c1cc(=O)c2c(c1)c(c(c(c2O)O)O)O") # adapt for polyhydroxylated flavonoids
-    ]
-    match_flag = False
-    flavonoid_matches_count = sum(bool(mol.HasSubstructMatch(pat)) for pat in flavonoid_unit_patterns)
-    if flavonoid_matches_count < 2:
-        return False, "Less than two flavonoid units found"
-    
-    # Improved linkage pattern to capture multiple variations
-    linkage_patterns = [
-        Chem.MolFromSmarts("c-C-c"),  # generic C-C linkage
-        Chem.MolFromSmarts("c-c-c"),  # possible aromatic linkage
-        Chem.MolFromSmarts("c-O-c"),  # oxygen bridged
-        Chem.MolFromSmarts("c(=O)-c"),  # involving carbonyl linkage
-    ]
-    
-    for linkage_pattern in linkage_patterns:
-        if mol.HasSubstructMatch(linkage_pattern):
-            match_flag = True
-            break
+    # Identify two benzopyran-like structures within the molecule
+    benzopyran_pattern = Chem.MolFromSmarts("c1ccccc1C2=CC=CC=C2O") # Basic benzopyran pattern
+    flavonoid_units = mol.GetSubstructMatches(benzopyran_pattern)
+    if len(flavonoid_units) < 2:
+        return False, "Less than two flavonoid units identified"
 
-    if match_flag:
-        return True, "Contains flavonoid units linked by various biflavonoid patterns"
-    return False, "Failed to identify expected biflavonoid linkage between flavonoid units"
+    # Check for a single atom or bond linkage between flavonoid units
+    # Check for any common atoms or bonds linking flavonoid units
+    graph = Chem.GetShortestPathMatrix(mol)
+    linking_bonds = 0
+    for i in range(len(flavonoid_units)):
+        for j in range(i+1, len(flavonoid_units)):
+            if graph[flavonoid_units[i][0]][flavonoid_units[j][0]] == 1:
+                linking_bonds += 1
+    
+    if linking_bonds < 1:
+        return False, "No single atom or bond link found between flavonoid units"
+
+    return True, "Contains at least two flavonoid units linked by a single bond"
+
+__metadata__ = {   
+    'chemical_class': {   
+        'id': 'CHEBI:biflavonoid',
+        'name': 'biflavonoid',
+        'definition': 'A flavonoid oligomer that is obtained by the oxidative coupling of at least two units of aryl-substituted benzopyran rings or its substituted derivatives, resulting in the two ring systems being joined together by a single atom or bond.',
+        'parents': ['CHEBI:'],
+    },
+    'config': {   
+        'llm_model_name': 'lbl/claude-sonnet',
+        'f1_threshold': 0.8,
+        'max_attempts': 5,
+    },
+    'message': None,
+    'attempt': 0,
+    'success': True,
+    'best': True,
+    'error': '',
+    'stdout': None,
+}
