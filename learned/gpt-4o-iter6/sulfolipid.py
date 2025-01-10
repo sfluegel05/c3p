@@ -15,43 +15,43 @@ def is_sulfolipid(smiles: str):
         bool: True if molecule is a sulfolipid, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define the SMARTS pattern for a sulfonic acid group with appropriate carbon linkage
-    sulfonic_acid_smart = Chem.MolFromSmarts("S(=O)(=O)[O,N][CX4]")
+    # Define the SMARTS pattern for a sulfonic acid group potentially bound to a carbon forming part of a lipid chain
+    sulfonic_acid_smart = Chem.MolFromSmarts("S([CX4,CX3H])([O,N])([O])")
     sulfonic_acid_matches = mol.GetSubstructMatches(sulfonic_acid_smart)
     
     if not sulfonic_acid_matches:
-        return False, "No sulfonic acid group with a C linkage found"
+        return False, "No appropriate sulfonic acid group found"
     
     for match in sulfonic_acid_matches:
         sulfur_idx = match[0]
-        carbon_link_idx = match[-1]
+        carbon_link_idx = match[1]
         
         sulfur_atom = mol.GetAtomWithIdx(sulfur_idx)
         carbon_link_atom = mol.GetAtomWithIdx(carbon_link_idx)
 
-        # Verify the carbon in question is part of a longer lipid-like chain
+        # Verify the carbon connection is part of a lipid-like structure
         visited = set()
         carbons_to_explore = [carbon_link_atom]
         carbon_chain_length = 0
 
-        # Traverse the carbon chain
+        # Traverse the carbon chain starting from the carbon bound to sulfur
         while carbons_to_explore:
             current_carbon = carbons_to_explore.pop()
             if current_carbon.GetIdx() not in visited:
                 visited.add(current_carbon.GetIdx())
                 carbon_chain_length += 1
-                for further_neighbor in current_carbon.GetNeighbors():
-                    if further_neighbor.GetAtomicNum() == 6 and further_neighbor.GetIdx() not in visited and further_neighbor.GetDegree() > 1:
-                        carbons_to_explore.append(further_neighbor)
+                for neighbor in current_carbon.GetNeighbors():
+                    if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:
+                        carbons_to_explore.append(neighbor)
         
-        # Consider chains of minimum length representing a lipid
-        if carbon_chain_length >= 10:
-            return True, "Contains a sulfonic acid group bonded to a carbon that forms part of a lipid-like chain"
+        # Define minimum carbon chain length for identifying a lipid
+        if carbon_chain_length >= 12:  # Adjusted threshold based on typical lipid structures
+            return True, "Contains a sulfonic acid group bonded to a carbon that forms part of a lipid-like structure"
     
     return False, "No appropriate sulfonic acid group found forming a lipid-like structure"
