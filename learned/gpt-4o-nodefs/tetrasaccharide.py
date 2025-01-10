@@ -21,31 +21,24 @@ def is_tetrasaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns for common saccharide units and linkages
-    glucose_pattern = Chem.MolFromSmarts("[C@H]1([O])[C@H](O)[C@@H](O)[C@H](O)[C@H](O1)")
-    mannoside_pattern = Chem.MolFromSmarts("[C@H]1([C@H](O)[C@H](O)[C@@H](O)[C@H](CO)[O]1)")
-    galactose_pattern = Chem.MolFromSmarts("[C@H]1([O])[C@@H](O)[C@H](O)[C@H](O)[C@H](O1)")
-    
-    # Common glycosidic linkage pattern: an ether oxygen bridging two saccharides
-    glycosidic_linkage_pattern = Chem.MolFromSmarts("[OH]1[C@](O)([CH])C(O)O1")
+    # Define general sugar ring pattern
+    cyclic_sugar_pattern = Chem.MolFromSmarts("OC1CO[C@H]([C@H](O)[C@@H](O)[C@H]1O)")  # generic sugar ring
+    # Define glycosidic bond pattern
+    glycosidic_linkage_pattern = Chem.MolFromSmarts("-O-")
 
     # Initialize counts
     saccharide_count = 0
     linkage_count = 0
 
-    # Check for saccharide units
-    if mol.HasSubstructMatch(glucose_pattern):
-        saccharide_count += len(mol.GetSubstructMatches(glucose_pattern))
-    if mol.HasSubstructMatch(mannoside_pattern):
-        saccharide_count += len(mol.GetSubstructMatches(mannoside_pattern))
-    if mol.HasSubstructMatch(galactose_pattern):
-        saccharide_count += len(mol.GetSubstructMatches(galactose_pattern))
+    # Check for saccharide units using a generic sugar pattern
+    saccharide_matches = mol.GetSubstructMatches(cyclic_sugar_pattern)
+    saccharide_count = len(saccharide_matches)
+    
+    # Check for glycosidic linkages, more generic linkage pattern
+    linkage_matches = mol.GetSubstructMatches(glycosidic_linkage_pattern)
+    linkage_count = len(linkage_matches)
 
-    # Check for glycosidic linkages
-    if mol.HasSubstructMatch(glycosidic_linkage_pattern):
-        linkage_count = len(mol.GetSubstructMatches(glycosidic_linkage_pattern))
-
-    # Assess if it's a tetrasaccharide
+    # Assess if it's a tetrasaccharide (assuming linear unbranched)
     if saccharide_count >= 4 and linkage_count >= 3:
         return True, "Molecule is a tetrasaccharide with appropriate saccharide units and glycosidic linkages"
 
