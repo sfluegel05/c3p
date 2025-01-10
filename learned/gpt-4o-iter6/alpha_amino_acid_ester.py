@@ -6,7 +6,8 @@ from rdkit import Chem
 def is_alpha_amino_acid_ester(smiles: str):
     """
     Determines if a molecule is an alpha-amino acid ester based on its SMILES string.
-    An alpha-amino acid ester is formed by the formal condensation of an alpha-amino acid with an alcohol.
+    An alpha-amino acid ester is defined as having an alpha-carbon connected to an amino group
+    and a carboxyl group esterified with an alcohol.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -16,22 +17,22 @@ def is_alpha_amino_acid_ester(smiles: str):
         str: Reason for classification
     """
 
-    # Parse the SMILES string into a molecular structure
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the SMARTS pattern for an alpha-amino acid ester
-    # [C](=O)O[C] for ester linkage, with an amino group `[NH2,NH]` on the alpha-carbon
-    alpha_amino_ester_pattern = "[C;H1,H2,H3]([CH1,CH2]([NH2,NH])[C](=O)O[C])"
+    # Pattern: Alpha carbon connected to amino and esterified carboxyl group
+    # SMARTS: [NX3;H2,H1,H0][CX4][C](=O)O[!H] (captures ester linkage with an alcohol)
+    amino_group = "[NX3;H2,H1,H0]"  # Amino group, allowing for substitutions
+    alpha_carbon = "[CX4]"           # Tetrahedral alpha-carbon
+    ester_linkage = "[C](=O)O[!H]"   # Ester linkage indicating esterified carboxyl group
+    alpha_amino_acid_ester_pattern = Chem.MolFromSmarts(amino_group + alpha_carbon + ester_linkage)
+    
+    if not alpha_amino_acid_ester_pattern:
+        return None, None  # Error in pattern creation
 
-    # Convert the pattern to a molecule
-    pattern_mol = Chem.MolFromSmarts(alpha_amino_ester_pattern)
-    if pattern_mol is None:
-        return None, None  # There was an error creating the pattern
-
-    # Check if the molecule matches the alpha-amino acid ester pattern
-    if mol.HasSubstructMatch(pattern_mol):
+    if mol.HasSubstructMatch(alpha_amino_acid_ester_pattern):
         return True, "Contains an alpha-amino acid backbone with ester linkage"
-
+    
     return False, "Does not match the alpha-amino acid ester pattern"
