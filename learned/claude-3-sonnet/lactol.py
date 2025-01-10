@@ -26,64 +26,67 @@ def is_lactol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for basic cyclic hemiacetal pattern in 5 or 6-membered rings
-    # [O;R{5-6}] means oxygen in 5 or 6-membered ring
-    # [C;R{5-6}] means carbon in 5 or 6-membered ring
-    # [OH1] means hydroxyl group
-    lactol_pattern = Chem.MolFromSmarts("[O;R{5-6}][C;R{5-6}][OH1]")
-    
-    # Alternative pattern for lactol where both oxygens are in ring
-    lactol_pattern2 = Chem.MolFromSmarts("[O;R{5-6}][C;R{5-6}][O;R{5-6}]")
-    
-    # Pattern for lactol in equilibrium with open chain form
-    # (captures cases where the carbonyl is more prominent)
-    lactol_pattern3 = Chem.MolFromSmarts("[O;R{5-6}][C;R{5-6}](=O)")
-    
-    # Pattern to exclude glycosides (sugar-like structures with OR at anomeric carbon)
-    glycoside_pattern = Chem.MolFromSmarts("[OR0][C;R]1[C;R][C;R][C;R][C;R][C;R]1")
-    
-    matches = mol.GetSubstructMatches(lactol_pattern)
-    matches2 = mol.GetSubstructMatches(lactol_pattern2)
-    matches3 = mol.GetSubstructMatches(lactol_pattern3)
-    glycoside_matches = mol.GetSubstructMatches(glycoside_pattern)
-    
-    if not (matches or matches2 or matches3):
+    # Basic cyclic hemiacetal patterns
+    patterns = [
+        # Ring oxygen connected to carbon with OH or OR
+        "[O;R][C;R]([OH1,OR])",
+        
+        # Ring oxygen connected to carbon with OH, more specific
+        "[O;R][C;R]([OH1])",
+        
+        # Hemiacetal in equilibrium with ketone/aldehyde form
+        "[O;R][C;R](=O)",
+        
+        # Common natural product lactol pattern
+        "[O;R][C;R]([OH1,OR])[C,H]",
+        
+        # Bridged lactol pattern
+        "[O;R][C;R]([OH1,OR])[C;R]",
+        
+        # Fused ring lactol pattern
+        "[O;R][C;R]([OH1,OR])[C;R0]"
+    ]
+
+    # Convert patterns to RDKit SMARTS objects
+    smarts_patterns = [Chem.MolFromSmarts(p) for p in patterns]
+
+    # Check for matches
+    matches = []
+    for pattern in smarts_patterns:
+        if pattern is not None:  # Ensure valid SMARTS pattern
+            matches.extend(mol.GetSubstructMatches(pattern))
+
+    if not matches:
         return False, "No lactol structure found"
 
     # Get ring information
     ring_info = mol.GetRingInfo()
     
-    # Check for valid lactol structure
+    # Verify that matched structures are part of rings
     valid_lactol = False
-    for match in matches + matches2 + matches3:
-        # Check if atoms are in same ring
-        o_atom, c_atom = match[0], match[1]
+    for match in matches:
+        # Check first two atoms (O and C) are in same ring
+        rings_with_o = set(i for i, ring in enumerate(ring_info.AtomRings()) 
+                          if match[0] in ring)
+        rings_with_c = set(i for i, ring in enumerate(ring_info.AtomRings()) 
+                          if match[1] in ring)
         
-        # Get rings containing these atoms
-        rings_with_o = set(ring_info.AtomRings()[i] 
-                          for i, ring in enumerate(ring_info.AtomRings()) 
-                          if o_atom in ring)
-        rings_with_c = set(ring_info.AtomRings()[i] 
-                          for i, ring in enumerate(ring_info.AtomRings()) 
-                          if c_atom in ring)
-        
-        # Find common rings
-        common_rings = rings_with_o.intersection(rings_with_c)
-        
-        # Check ring size (should be 5 or 6)
-        for ring in common_rings:
-            if len(ring) in [5, 6]:
-                valid_lactol = True
-                break
-                
-        if valid_lactol:
+        if rings_with_o.intersection(rings_with_c):
+            valid_lactol = True
             break
 
     if not valid_lactol:
-        return False, "No valid lactol ring structure found"
+        return False, "Matched atoms not in same ring"
 
-    # Exclude molecules that appear to be primarily glycosides
-    if len(glycoside_matches) > 0 and len(matches + matches2 + matches3) == 1:
+    # Additional checks for specific cases
+    # Pattern to identify simple glycosides
+    glycoside = Chem.MolFromSmarts("[OR0][C;R]1[O;R][C;R][C;R][C;R][C;R]1")
+    
+    # If molecule only matches glycoside pattern and has typical sugar structure,
+    # it's probably a glycoside rather than a lactol
+    if (mol.HasSubstructMatch(glycoside) and 
+        len(matches) == 1 and 
+        any(a.GetSymbol() == 'O' for a in mol.GetAtoms()) > 5):
         return False, "Structure appears to be a glycoside rather than a lactol"
 
-    return True, "Contains cyclic hemiacetal structure (lactol)"
+    return True, "Contains cyclic hemiacetal structure characteristic of lactols"
