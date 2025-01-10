@@ -23,10 +23,10 @@ def is_beta_D_glucosiduronic_acid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define the beta-D-glucuronic acid moiety SMARTS pattern
+    # Corrected stereochemistry at the anomeric carbon (C1) from [C@@H] to [C@H]
     # The anomeric carbon (C1) connected via O-glycosidic bond to any group ([!H])
-    # Stereochemistry is specified using @@ and @ symbols
     # The carboxylic acid group at C6 can be protonated or deprotonated ([O-,OH])
-    glucuronic_acid_smarts = '[C@@H]1([O][!H])[C@H](O)[C@@H](O)[C@H](O)[C@@H](O1)C(=O)[O-,OH]'
+    glucuronic_acid_smarts = '[C@H]1([O][!H])[C@H](O)[C@@H](O)[C@H](O)[C@@H](O1)C(=O)[O-,OH]'
     
     # Create the glucuronic acid pattern molecule
     glucuronic_acid_pattern = Chem.MolFromSmarts(glucuronic_acid_smarts)
