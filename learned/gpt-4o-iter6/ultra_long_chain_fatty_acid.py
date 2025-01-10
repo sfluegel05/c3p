@@ -16,14 +16,14 @@ def is_ultra_long_chain_fatty_acid(smiles: str):
         str: Reason for classification
     """
     
-    def dfs_longest_chain(atom_idx, depth, visited):
+    def dfs_longest_chain(atom_idx, visited):
         """Helper function using DFS to find the longest carbon chain."""
         visited.add(atom_idx)
-        max_depth = depth
         atom = mol.GetAtomWithIdx(atom_idx)
+        max_depth = 0
         for neighbor in atom.GetNeighbors():
             if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:
-                max_depth = max(max_depth, dfs_longest_chain(neighbor.GetIdx(), depth + 1, visited))
+                max_depth = max(max_depth, 1 + dfs_longest_chain(neighbor.GetIdx(), visited))
         visited.remove(atom_idx)
         return max_depth
     
@@ -34,19 +34,14 @@ def is_ultra_long_chain_fatty_acid(smiles: str):
 
     # Ensure the molecule has a carboxylic acid group
     carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
-    matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
-    
-    if not matches:
+    if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
-    
-    # Assuming the carbon of the C(=O) group is the starting point
-    carboxyl_carbon_idx = matches[0][0]
-    
-    # Perform DFS to find the longest carbon chain
+
+    # Perform DFS from all carbon atoms to ensure the longest chain is detected
     longest_chain = 0
-    for neighbor in mol.GetAtomWithIdx(carboxyl_carbon_idx).GetNeighbors():
-        if neighbor.GetAtomicNum() == 6:
-            longest_chain = max(longest_chain, dfs_longest_chain(neighbor.GetIdx(), 1, set()))
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6:  # Carbon atom
+            longest_chain = max(longest_chain, 1 + dfs_longest_chain(atom.GetIdx(), set()))
 
     # Criteria for classification as an ultra-long-chain fatty acid
     if longest_chain > 27:
