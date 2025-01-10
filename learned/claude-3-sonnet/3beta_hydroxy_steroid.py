@@ -24,20 +24,16 @@ def is_3beta_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Basic steroid core patterns - more flexible to catch different variations
-    steroid_patterns = [
-        # Basic steroid core (cyclopentanoperhydrophenanthrene)
-        "[CH2,CH]1[CH2,CH][CH2,CH][C]2([CH2,CH]1)[CH2,CH][CH2,CH][C]1([CH2,CH]2)[CH2,CH][CH2,CH][CH2,CH]2[CH2,CH][CH2,CH][CH2,CH][C]12",
-        # Alternative pattern allowing for double bonds
-        "[#6]1[#6][#6][#6]2[#6][#6][#6]3[#6][#6][#6]4[#6][#6][#6][#6][#6]4[#6]3[#6]2[#6]1",
-        # Pattern for 5α-steroids
-        "[CH2,CH]1[CH2,CH][CH2,CH][C@@H]2[CH2,CH][CH2,CH][C@@H]3[CH2,CH][CH2,CH][CH2,CH]4[CH2,CH][CH2,CH][CH2,CH][C@]4(C)[C@H]3[CH2,CH]2[CH2,CH]1",
-        # Pattern for 5β-steroids
-        "[CH2,CH]1[CH2,CH][CH2,CH][C@H]2[CH2,CH][CH2,CH][C@@H]3[CH2,CH][CH2,CH][CH2,CH]4[CH2,CH][CH2,CH][CH2,CH][C@]4(C)[C@H]3[CH2,CH]2[CH2,CH]1"
+    # More flexible steroid core patterns that allow for variations
+    steroid_core_patterns = [
+        # Basic steroid core with flexible bond types and atom types
+        "[#6]~1~[#6]~[#6]~[#6]~2~[#6]~[#6]~[#6]~3~[#6]~[#6]~[#6]~4~[#6]~[#6]~[#6]~[#6]~[#6]~4~[#6]~3~[#6]~2~[#6]~1",
+        # Alternative pattern for different steroid variations
+        "[#6]1~[#6]~[#6]~[#6]2~[#6]~[#6]~[#6]3~[#6]~[#6]~[#6]4~[#6]~[#6]~[#6]~[#6]~[#6]4~[#6]3~[#6]2~[#6]1"
     ]
 
     has_steroid_core = False
-    for pattern in steroid_patterns:
+    for pattern in steroid_core_patterns:
         if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
             has_steroid_core = True
             break
@@ -45,14 +41,16 @@ def is_3beta_hydroxy_steroid(smiles: str):
     if not has_steroid_core:
         return False, "No steroid core structure found"
 
-    # 3β-hydroxy group patterns with explicit stereochemistry
+    # More comprehensive 3β-hydroxy patterns
     beta_hydroxy_patterns = [
-        # Explicit 3β-OH pattern with correct stereochemistry
-        '[C@@H]1([OH1])[CH2][CH2][C@@]2',  # For 5α-steroids
-        '[C@@H]1([OH1])[CH2][CH2][C@]2',   # For 5β-steroids
-        # Alternative representation
-        '[H][C@@]1([OH1])CC[C@@]2',        # For 5α-steroids
-        '[H][C@@]1([OH1])CC[C@]2'          # For 5β-steroids
+        # General 3β-OH pattern with stereochemistry
+        '[C@@H;$(C[C@]1[C@@H]2)|$(C[C@@]1[C@H]2)]([OH1])',
+        # Alternative pattern for different numbering
+        '[C@H;$(C[C@@]1[C@H]2)|$(C[C@]1[C@@H]2)]([OH1])',
+        # Pattern allowing for different representations
+        '[CH1;R]([OH1])[CH2][CH2][C;R]',
+        # Pattern for cyclic systems with beta-OH
+        '[C@@;R]([OH1])([#6;R])[#6;R]'
     ]
 
     has_3beta_hydroxy = False
@@ -65,8 +63,9 @@ def is_3beta_hydroxy_steroid(smiles: str):
         return False, "No 3beta-hydroxy group found"
 
     # Structural validation
-    # Count rings
     ri = mol.GetRingInfo()
+    
+    # Check for 4 rings minimum (tetracyclic system)
     if ri.NumRings() < 4:
         return False, "Insufficient number of rings for steroid structure"
 
@@ -75,12 +74,21 @@ def is_3beta_hydroxy_steroid(smiles: str):
     if carbon_count < 17:
         return False, "Too few carbons for steroid structure"
 
-    # Additional check for fused ring system
-    fused_ring_pattern = Chem.MolFromSmarts("[R2][R2][R2][R2]")
-    if not mol.HasSubstructMatch(fused_ring_pattern):
+    # Check for fused ring system
+    fused_rings = False
+    for ring in ri.AtomRings():
+        for other_ring in ri.AtomRings():
+            if ring != other_ring:
+                if len(set(ring).intersection(set(other_ring))) >= 2:
+                    fused_rings = True
+                    break
+        if fused_rings:
+            break
+
+    if not fused_rings:
         return False, "Missing proper fused ring system"
 
-    # Check for proper connectivity of rings
+    # Additional check for proper connectivity
     ring_atoms = set()
     for ring in ri.AtomRings():
         ring_atoms.update(ring)
