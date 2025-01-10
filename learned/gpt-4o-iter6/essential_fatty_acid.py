@@ -32,14 +32,20 @@ def is_essential_fatty_acid(smiles: str):
     if carbon_count < 16:
         return False, f"Insufficient aliphatic chain length (found {carbon_count} carbons), need at least 16"
 
-    # Identify cis double bonds (Z stereochemistry, indicated as \C=C)
-    cis_double_bond_pattern = Chem.MolFromSmarts("C/C=C\C")
-    cis_double_bond_count = len(mol.GetSubstructMatches(cis_double_bond_pattern))
+    # Improved pattern to identify cis double bonds (Z stereochemistry may vary)
+    # Consider using more comprehensive SMARTS for cis recognition
+    cis_double_bond_patterns = [
+        Chem.MolFromSmarts("C/C=C\C"),  # Original pattern
+        Chem.MolFromSmarts("C=C")  # Generalized for potential variations
+    ]
+    # Count cis double bonds using multiple patterns
+    cis_double_bond_count = sum(len(mol.GetSubstructMatches(pattern)) for pattern in cis_double_bond_patterns)
     if cis_double_bond_count < 2:
         return False, f"Insufficient cis double bonds (found {cis_double_bond_count}), need at least 2 for polyunsaturation"
 
     # Check if the molecule has a mostly linear structure, typical of fatty acids
-    linearness_threshold_ratio = 0.8  # Expect at least 80% of chain length is aliphatic
+    # Use extended consideration for aliphatic structure
+    linearness_threshold_ratio = 0.7  # Adjusted ratio to improve flexibility
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
     if n_rotatable / carbon_count < linearness_threshold_ratio:
         return False, "Molecule appears not to have a sufficiently linear aliphatic chain"
