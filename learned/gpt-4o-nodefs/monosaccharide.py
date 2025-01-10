@@ -20,21 +20,28 @@ def is_monosaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # At this complexity, let's assume a simple check based on common aspects of monosaccharides
-    # Look for multiple hydroxyl groups
+    # Check for multiple hydroxyl groups
     hydroxyl_count = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'O' and any(bond.GetBondType() == Chem.rdchem.BondType.SINGLE for bond in atom.GetBonds()))
     if hydroxyl_count < 2:
         return False, f"Insufficient hydroxyl groups, found {hydroxyl_count}"
 
-    # Check for ring structure
-    ring_info = mol.GetRingInfo()
-    if not ring_info.IsInitialized() or ring_info.NumRings() == 0:
-        return False, "No ring structure detected"
+    # Use SMARTS to check for typical monosaccharide ring structures
+    furanose_pattern = Chem.MolFromSmarts('C1OC(O)C(O)C1')
+    pyranose_pattern = Chem.MolFromSmarts('C1OC(O)C(O)C(O)C1')
+    
+    if not mol.HasSubstructMatch(furanose_pattern) and not mol.HasSubstructMatch(pyranose_pattern):
+        return False, "No ring structure detected (furanose or pyranose)"
 
-    # Check for an aldehyde (C=O with terminal H) or ketone group (C=O in the middle)
-    has_carbonyl = any(atom.GetSymbol() == 'C' and any(neighbor.GetSymbol() == 'O' and neighbor.GetImplicitValence() == 1 for neighbor in atom.GetNeighbors()) 
-                       for atom in mol.GetAtoms())
-    if not has_carbonyl:
+    # Check for carbonyl group (aldehyde C=O at end, ketone C=O internal)
+    aldehyde_pattern = Chem.MolFromSmarts('C(=O)[H]')
+    ketone_pattern = Chem.MolFromSmarts('C(=O)[C]')
+    
+    if not (mol.HasSubstructMatch(aldehyde_pattern) or mol.HasSubstructMatch(ketone_pattern)):
         return False, "No carbonyl group detected (aldehyde or ketone)"
 
-    return True, "Contains multiple hydroxyl groups, a ring structure, and a carbonyl group characteristic of monosaccharides"
+    # (Optional) Check for stereocenters indicating chirality
+    chiral_centers = len(Chem.FindMolChiralCenters(mol, includeUnassigned=True))
+    if chiral_centers < 1:
+        return False, "No chiral centers detected, unlikely to be a monosaccharide"
+
+    return True, "Contains hydroxyl groups, a ring structure, a carbonyl group, and chiral centers typical of monosaccharides"
