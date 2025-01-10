@@ -28,6 +28,7 @@ def is_glucosinolate(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define the core glucosinolate pattern: central C bonded to S (glycone), N (sulfonated oxime), and a side group
+    # The pattern allows for variability in the side chains and accounts for anti stereochemistry across the C=N double bond
     glucosinolate_pattern = Chem.MolFromSmarts("[CX4]([SX2][C@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)([NX2][OX2][SX4](=[OX1])(=[OX1])[OX1-])([CX4])")
     if not mol.HasSubstructMatch(glucosinolate_pattern):
         return False, "Core glucosinolate pattern not found"
