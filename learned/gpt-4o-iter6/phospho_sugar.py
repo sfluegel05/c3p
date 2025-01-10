@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_phospho_sugar(smiles: str):
     """
     Determines if a molecule is a phospho sugar based on its SMILES string.
-    A phospho sugar contains a sugar-like structure with one or more phosphate groups esterified.
+    A phospho sugar contains any sugar-like structure with one or more phosphate groups esterified.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,34 +21,30 @@ def is_phospho_sugar(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Patterns for common sugar-like structures
-    cyclic_sugar_patterns = [
-        "C1OC[C@H](O1)C(O)",  # furanose
-        "C1O[C@H](O)C[C@H]1O",  # pyranose
+    # Patterns for sugar-like structures
+    sugar_patterns = [
+        Chem.MolFromSmarts("[C@H](O)[C@H](O)[C@@H]"),  # General sugar motifs
+        Chem.MolFromSmarts("OC[C@H](O)C(O)"),  # Specific for furanose and pyranose
+        Chem.MolFromSmarts("[C@H]1O[C@@H](O)[C@@H](O)[C@H]1"),  # Ring sugars
+        Chem.MolFromSmarts("CO[C@H](O)C")  # Linear sugar motifs
     ]
 
-    linear_sugar_patterns = [
-        "CO[C@H](O)C=O"  # glyceraldehyde-like
-    ]
-
+    # Patterns for mono-, di-, and triphosphate groups
     phosphate_patterns = [
-        "O=P(O)(O)O"  # monophosphate
+        Chem.MolFromSmarts("O=P(O)(O)O"),         # Monophosphate
+        Chem.MolFromSmarts("O=P([O-])(=O)OP([O-])(=O)O"), # Diphosphate
+        Chem.MolFromSmarts("O=P([O-])(=O)OP([O-])(=O)OP([O-])(=O)O")  # Triphosphate
     ]
 
-    # Check for presence of sugar and phosphate structures
-    has_sugar = any(mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)) for pattern in cyclic_sugar_patterns + linear_sugar_patterns)
-    has_phosphate = any(mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)) for pattern in phosphate_patterns)
+    # Check for the presence of sugar and phosphate structures
+    has_sugar = any(mol.HasSubstructMatch(pattern) for pattern in sugar_patterns)
+    has_phosphate = any(mol.HasSubstructMatch(pattern) for pattern in phosphate_patterns)
 
     if not has_sugar:
         return False, "No recognizable sugar structure found"
-    
+
     if not has_phosphate:
         return False, "No esterified phosphate group found"
-
-    # Confirm sugar-phosphate linkage
-    sugar_phosphate_linkage = Chem.MolFromSmarts("CO[P](=O)(O)O")
-    if not mol.HasSubstructMatch(sugar_phosphate_linkage):
-        return False, "No sugar-phosphate linkage found"
 
     return True, "Contains a sugar structure with phosphate esterification"
 
