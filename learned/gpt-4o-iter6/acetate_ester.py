@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_acetate_ester(smiles: str):
     """
     Determines if a molecule is an acetate ester based on its SMILES string.
-    An acetate ester contains the esterified acetic acid moiety (CH3COO-).
+    An acetate ester specifically contains the esterified acetic acid moiety (CH3COO-).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -15,28 +15,19 @@ def is_acetate_ester(smiles: str):
         bool: True if the molecule is an acetate ester, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define acetate ester pattern (C(=O)OC)
-    acetate_pattern = Chem.MolFromSmarts("C(=O)OC")
-    
-    # Check if molecule contains the acetate ester pattern
+    # Define a refined acetate ester pattern: methyl group as part of the ester
+    acetate_pattern = Chem.MolFromSmarts("[CH3]C(=O)O[!$([#6](=O)O)]")
+
+    # Check if molecule contains the refined acetate ester pattern
     if mol.HasSubstructMatch(acetate_pattern):
         return True, "Contains acetic acid ester group (CH3COO-)"
-    else:
-        return False, "Does not contain the acetic acid ester group (CH3COO-)"
 
-# Test examples
-smiles_examples = [
-    "CC(=O)OC(C(C)C)C(C)C",  # Isopropyl acetate
-    "CCCCCCOC(C)=O",          # Hexyl acetate
-    "CC1=CC=CC=C1"            # Acetophenone (not an acetate ester)
-]
+    return False, "Does not contain the acetic acid ester group (CH3COO-)"
 
-for smiles in smiles_examples:
-    result, reason = is_acetate_ester(smiles)
-    print(f"SMILES: {smiles}, Is Acetate Ester: {result}, Reason: {reason}")
+# Testing examples will proceed similarly with multiple SMILES inputs
