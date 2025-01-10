@@ -18,27 +18,27 @@ def is_inositol_phosphoceramide(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return (False, "Invalid SMILES string")
 
-    # Check for inositol phosphate core
-    inositol_phosphate_pattern = Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@H]1OP(=O)(O)O")
+    # Check for inositol-phosphate moiety
+    inositol_phosphate_pattern = Chem.MolFromSmarts("OC1C(O)C(O)C(O)C(O)C1OP(=O)(O)O")
     if not mol.HasSubstructMatch(inositol_phosphate_pattern):
-        return False, "No inositol phosphate core found"
+        return (False, "No inositol-phosphate moiety found")
 
-    # Check for ceramide structure (amide bond with variable long-chain base)
-    # More generalized ceramide pattern: N-[C@H](COP(O)(=O)O)[C@@H](O)C
-    ceramide_pattern = Chem.MolFromSmarts("N[C@@H](CO[P](=O)(O)O)[C@@H](O)C")
+    # Check for ceramide structure (amide linkage with potential long-chain sphingoid)
+    ceramide_pattern = Chem.MolFromSmarts("C(=O)N[C@@H](COP(=O)(O)O)C(O)C")
     if not mol.HasSubstructMatch(ceramide_pattern):
-        return False, "No ceramide structure detected"
+        return (False, "No ceramide structure detected")
     
-    # Validate presence of potential long hydrophobic chains typical of ceramides
-    long_chain_pattern = Chem.MolFromSmarts("C(~C)(~C)(~C)")
-    if not mol.HasSubstructMatch(long_chain_pattern):
-        return False, "Missing long hydrophobic chain typical of ceramide"
+    # Validate presence of potential long hydrophobic chains
+    long_chain_pattern = Chem.MolFromSmarts("C(CC(C)C)C")
+    if mol.GetNumAtoms(mol.GetSubstructMatch(long_chain_pattern)[0]) < 20:
+        return (False, "Missing or shortened long hydrophobic chain typical of ceramide")
 
-    # Detect presence of additional sugar moieties like mannose
-    additional_sugars = Chem.MolFromSmarts("OC1O[C@H](CO)[C@@H](O)[C@H](O)[C@@H]1O")
-    if mol.HasSubstructMatch(additional_sugars):
-        return True, "Contains inositol, ceramide, and additional sugar components"
+    # Detect presence of additional sugar moieties like mannose if present
+    mannose_pattern = Chem.MolFromSmarts("OC1OC(CO)C(O)C(O)C1O")
+    if mol.HasSubstructMatch(mannose_pattern):
+        return (True, "Contains inositol, ceramide, and mannose sugar components")
 
-    return True, "Basic inositol phosphoceramide detected with inositol and ceramide"
+    # Confirm basic structure without additional components
+    return (True, "Basic inositol phosphoceramide detected with inositol and ceramide")
