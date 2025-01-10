@@ -21,13 +21,13 @@ def is_D_glucoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for the D-glucose moiety with both alpha and beta forms
-    d_glucose_pattern_beta = Chem.MolFromSmarts("O[C@@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H]1CO")
-    d_glucose_pattern_alpha = Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H]1CO")
-    glycosidic_oxygen = Chem.MolFromSmarts("CO[C@@H]1O")
+    # Define SMARTS pattern for the beta-D-glucose moiety
+    d_glucose_pattern = Chem.MolFromSmarts("OC[C@H]1O[C@H](O)[C@@H](O)[C@H](O)[C@H]1O")
+    # Look for glycosidic linkage, typically an ether-like linkage from the anomeric carbon
+    glycosidic_oxygen_pattern = Chem.MolFromSmarts("CO[C@@H]1O[C@H]")  # Adjust pattern for better coverage
 
-    # Check for D-glucose moiety with possible glycosidic linkage
-    if (mol.HasSubstructMatch(d_glucose_pattern_beta) or mol.HasSubstructMatch(d_glucose_pattern_alpha)) and mol.HasSubstructMatch(glycosidic_oxygen):
+    # Check for D-glucose moiety with potential glycosidic linkage
+    if mol.HasSubstructMatch(d_glucose_pattern) and mol.HasSubstructMatch(glycosidic_oxygen_pattern):
         return True, "Contains D-glucopyranosyl moiety with potential glycosidic linkage"
 
     return False, "Does not contain the D-glucopyranosyl moiety with required stereochemistry or linkage"
