@@ -24,7 +24,8 @@ def is_branched_chain_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for CoA moiety
+    # Check for CoA moiety components
+    
     # Look for adenine pattern
     adenine_pattern = Chem.MolFromSmarts("c1nc2c(n1)c(N)ncn2")
     if not mol.HasSubstructMatch(adenine_pattern):
@@ -32,35 +33,58 @@ def is_branched_chain_fatty_acyl_CoA(smiles: str):
     
     # Look for thioester linkage (-C(=O)S-)
     thioester_pattern = Chem.MolFromSmarts("[CX3](=O)[SX2]")
-    if not mol.HasSubstructMatches(thioester_pattern):
+    if not mol.HasSubstructMatch(thioester_pattern):
         return False, "No thioester linkage found"
         
     # Look for phosphate groups characteristic of CoA
     phosphate_pattern = Chem.MolFromSmarts("[OX2]P(=O)([OX2])[OX2]")
-    if len(mol.GetSubstructMatches(phosphate_pattern)) < 2:
+    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
+    if len(phosphate_matches) < 2:
         return False, "Missing characteristic CoA phosphate groups"
 
-    # Check for branched chain:
-    # Look for carbons with more than 2 carbon neighbors (branch points)
-    branch_pattern = Chem.MolFromSmarts("[CH1,CH0](-[#6])(-[#6])(-[#6])")
-    if not mol.HasSubstructMatch(branch_pattern):
-        return False, "No branching found in carbon chain"
+    # Check for various types of branching patterns
+    
+    # Standard methyl branch
+    methyl_branch = Chem.MolFromSmarts("[CH3][CH1](-[#6])-[#6]")
+    
+    # Isopropyl group (as in leucine derivatives)
+    isopropyl = Chem.MolFromSmarts("[CH3][CH]([CH3])[CH2]")
+    
+    # Secondary methyl branch (as in iso-compounds)
+    iso_branch = Chem.MolFromSmarts("[CH3][CH](-[#6])-[#6]")
+    
+    # Tertiary carbon branch
+    tert_branch = Chem.MolFromSmarts("[#6][C](-[#6])(-[#6])-[#6]")
+    
+    # Multiple methyl groups on same carbon
+    geminal_dimethyl = Chem.MolFromSmarts("[CH3][C]([CH3])(-[#6])-[#6]")
+    
+    if not any(mol.HasSubstructMatch(pattern) for pattern in 
+              [methyl_branch, isopropyl, iso_branch, tert_branch, geminal_dimethyl]):
+        return False, "No branching patterns found in carbon chain"
 
-    # Look for methyl branches specifically
-    methyl_branch_pattern = Chem.MolFromSmarts("[CH3][CH1]")
-    if not mol.HasSubstructMatch(methyl_branch_pattern):
-        iso_pattern = Chem.MolFromSmarts("[CH3][CH]([CH3])[CH2]")
-        if not mol.HasSubstructMatch(iso_pattern):
-            return False, "No methyl branches or isopropyl groups found"
+    # Verify chain length - need at least 4 carbons in main chain
+    # (excluding CoA part) connected to the thioester
+    chain_pattern = Chem.MolFromSmarts("[#6]~[#6]~[#6]~[#6]~[CX3](=O)[SX2]")
+    if not mol.HasSubstructMatch(chain_pattern):
+        return False, "Carbon chain too short for branched-chain fatty acid"
 
-    # Check for minimum chain length (typically these are fatty acids)
-    carbon_chain = Chem.MolFromSmarts("[#6]~[#6]~[#6]~[#6]")
-    if not mol.HasSubstructMatch(carbon_chain):
-        return False, "Carbon chain too short"
-
-    # Count carbons to verify it's a fatty acid derivative
+    # Count carbons to ensure reasonable size
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 15:  # CoA itself contributes many carbons
+    if c_count < 23:  # CoA itself contributes about 23 carbons
         return False, "Total carbon count too low for branched-chain fatty acyl-CoA"
 
-    return True, "Contains CoA moiety, thioester linkage, and branched fatty acid chain"
+    # Optional: Check for common modifications
+    hydroxy_pattern = Chem.MolFromSmarts("[#6][CH1]([OH1])[#6]")
+    oxo_pattern = Chem.MolFromSmarts("[#6]C(=O)[#6]")
+    
+    modifications = []
+    if mol.HasSubstructMatch(hydroxy_pattern):
+        modifications.append("hydroxy-modified")
+    if mol.HasSubstructMatch(oxo_pattern):
+        modifications.append("oxo-modified")
+        
+    base_reason = "Contains CoA moiety, thioester linkage, and branched fatty acid chain"
+    if modifications:
+        return True, f"{base_reason} ({', '.join(modifications)})"
+    return True, base_reason
