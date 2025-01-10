@@ -21,28 +21,36 @@ def is_bioconjugate(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
+    
     # SMARTS patterns for biological motifs or moieties
     peptide_pattern = Chem.MolFromSmarts("N[C@@H](C)C(=O)O")   # General peptide bond
     nucleoside_pattern = Chem.MolFromSmarts("n1cnc2c1ncnc2N")  # Purine nucleobase
     cofactor_pattern = Chem.MolFromSmarts("P(=O)(O)OCCN")      # CoA-like segment
+    thioester_pattern = Chem.MolFromSmarts("C(=O)S")           # Thioester linkage
+    glycosidic_pattern = Chem.MolFromSmarts("[OX2H][CX4]([OX2H])[CX4]") # Simplified sugar linkage
 
     # Check for presence of biological motifs
     peptide_matches = mol.GetSubstructMatches(peptide_pattern)
     nucleoside_matches = mol.GetSubstructMatches(nucleoside_pattern)
     cofactor_matches = mol.GetSubstructMatches(cofactor_pattern)
+    thioester_matches = mol.GetSubstructMatches(thioester_pattern)
+    glycosidic_matches = mol.GetSubstructMatches(glycosidic_pattern)
 
-    # Assume we need at least two matches of any type to suggest bioconjugation
-    total_biomotif_matches = len(peptide_matches) + len(nucleoside_matches) + len(cofactor_matches)
-    if total_biomotif_matches < 2:
+    # Assume presence of multiple distinct motifs suggests bioconjugation
+    distinct_biomotifs = 0
+    if peptide_matches:
+        distinct_biomotifs += 1
+    if nucleoside_matches:
+        distinct_biomotifs += 1
+    if cofactor_matches:
+        distinct_biomotifs += 1
+    if thioester_matches:
+        distinct_biomotifs += 1
+    if glycosidic_matches:
+        distinct_biomotifs += 1
+
+    if distinct_biomotifs < 2:
         return False, "Less than two distinct biological motifs found"
-
-    # Check for common link groups like esters and amides
-    ester_amide_pattern = Chem.MolFromSmarts("C(=O)O")  # Simplified ester/amide linkage
-    ester_amide_matches = mol.HasSubstructMatch(ester_amide_pattern)
-    
-    if not ester_amide_matches:
-        return False, "No common ester/amide linkages found"
 
     # Consider molecular size as an indirect measure of complexity/fusion of entities
     mol_weight = AllChem.CalcExactMolWt(mol)
