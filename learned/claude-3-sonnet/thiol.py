@@ -17,7 +17,7 @@ def is_thiol(smiles: str):
 
     Returns:
         bool: True if molecule is a thiol, False otherwise
-        str: Reason for classification
+        str: str: Reason for classification
     """
     
     # Parse SMILES
@@ -28,8 +28,7 @@ def is_thiol(smiles: str):
     # Look for -SH groups connected to carbon
     # [#6] is carbon
     # [SX2H1] is -SH group (sulfur with 2 connections, one being H)
-    # !$(C(=O)S) excludes thioacids
-    thiol_pattern = Chem.MolFromSmarts("[#6;!$(C(=O)S)][SX2H1]")
+    thiol_pattern = Chem.MolFromSmarts("[#6][SX2H1]")
     
     # Find all matches
     matches = mol.GetSubstructMatches(thiol_pattern)
@@ -40,6 +39,21 @@ def is_thiol(smiles: str):
     # Get atom indices of all sulfur atoms that are part of thiol groups
     thiol_s_atoms = set(match[1] for match in matches)
     
+    # Check for peptide patterns
+    peptide_pattern = Chem.MolFromSmarts("[NX3H1,NX3H2][CX4H1][CX3](=[OX1])[NX3H1,NX3H2]")
+    if mol.HasSubstructMatch(peptide_pattern):
+        # Check if it's a small molecule (less than 3 peptide bonds)
+        peptide_matches = len(mol.GetSubstructMatches(peptide_pattern))
+        if peptide_matches >= 2:
+            return False, "Appears to be a peptide containing cysteine rather than a simple thiol"
+    
+    # Check for specific amino acid pattern (cysteine in peptides)
+    cysteine_pattern = Chem.MolFromSmarts("[NX3H2][CX4H1](CS)[CX3](=[OX1])[OH,O-]")
+    if mol.HasSubstructMatch(cysteine_pattern):
+        # Only allow if it's a simple amino acid (not part of a larger peptide)
+        if mol.GetNumAtoms() > 10:  # Arbitrary cutoff for "simple" amino acid
+            return False, "Appears to be a peptide containing cysteine rather than a simple thiol"
+    
     # Check for disulfides - exclude if the thiol sulfur is part of a disulfide
     disulfide_pattern = Chem.MolFromSmarts("[SX2][SX2]")
     if mol.HasSubstructMatch(disulfide_pattern):
@@ -47,23 +61,6 @@ def is_thiol(smiles: str):
         disulfide_s_atoms = set(atom for match in disulfide_matches for atom in match)
         if thiol_s_atoms & disulfide_s_atoms:
             return False, "Contains disulfide bonds rather than free thiol"
-    
-    # Check for thioesters
-    thioester_pattern = Chem.MolFromSmarts("[#6][SX2]C(=O)[#6]")
-    if mol.HasSubstructMatch(thioester_pattern):
-        thioester_matches = mol.GetSubstructMatches(thioester_pattern)
-        thioester_s_atoms = set(match[1] for match in thioester_matches)
-        if thiol_s_atoms & thioester_s_atoms:
-            return False, "Contains thioester rather than free thiol"
-    
-    # Check for sulfides/thioethers where the sulfur is not a thiol
-    thioether_pattern = Chem.MolFromSmarts("[#6][SX2][#6]")
-    if mol.HasSubstructMatch(thioether_pattern):
-        thioether_matches = mol.GetSubstructMatches(thioether_pattern)
-        thioether_s_atoms = set(match[1] for match in thioether_matches)
-        # Only exclude if all sulfur atoms are part of thioethers
-        if thiol_s_atoms.issubset(thioether_s_atoms):
-            return False, "Contains only sulfides/thioethers, no free thiol"
     
     # Count valid thiol groups
     num_thiols = len(matches)
