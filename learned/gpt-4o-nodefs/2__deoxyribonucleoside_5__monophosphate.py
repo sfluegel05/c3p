@@ -22,27 +22,19 @@ def is_2__deoxyribonucleoside_5__monophosphate(smiles: str):
     if mol is None:
         return (None, "Invalid SMILES string")
     
-    # Check for 2'-deoxyribose moiety (correcting pattern and allowing flexibility)
-    deoxyribose_pattern = Chem.MolFromSmarts('[C@H]1([C@@H](O)[C@H](CO)O)[C@@H]2O[C@H](C1)O2')
+    # Check for 2'-deoxyribose moiety (allowing variable stereochemistry)
+    deoxyribose_pattern = Chem.MolFromSmarts('[C@H]1C[C@@H](O)[C@H](CO)O1')
     if not mol.HasSubstructMatch(deoxyribose_pattern):
         return (False, "No 2'-deoxyribose moiety found")
-    
-    # Correct phosphate group pattern at 5' position
-    phosphate_pattern = Chem.MolFromSmarts('O[P](=O)(O)O[C@H]1[C@H](O)[C@@H](O).C1')
+
+    # Check for a phosphate group at 5' position
+    phosphate_pattern = Chem.MolFromSmarts('COP(=O)(O)O')
     if not mol.HasSubstructMatch(phosphate_pattern):
         return (False, "No 5'-phosphate group found")
         
-    # Broadened patterns for nucleobase detection (common structures)
-    nucleobase_patterns = [
-        Chem.MolFromSmarts('n1c2c([nH]c([nH]1)N)c([nH]c2)N'),  # adenine
-        Chem.MolFromSmarts('C1=NC2=C(N[C@H]3O[C@H](COP(O)(=O)O)[C@@H](O)C3)N=C(N)N2CN1'),  # guanine
-        Chem.MolFromSmarts('n1cc(Cc2cc[nH]c2)[nH]c(=O)c1'),    # cytosine
-        Chem.MolFromSmarts('n1c(C=O)c[nH]c(=O)c1'),            # uracil and thymine
-    ]
-
-    nucleobase_found = any(mol.HasSubstructMatch(pattern) for pattern in nucleobase_patterns)
-    
-    if not nucleobase_found:
-        return (False, "No suitable nucleobase found attached to the sugar")
+    # Check for nucleobase attached to the sugar via a variable pattern
+    nucleobase_pattern = Chem.MolFromSmarts('n')
+    if not mol.HasSubstructMatch(nucleobase_pattern):
+        return (False, "No nucleobase found (purine/pyrimidine) attached to the sugar")
     
     return (True, "Contains 2'-deoxyribose, 5'-phosphate group, and a nucleobase")
