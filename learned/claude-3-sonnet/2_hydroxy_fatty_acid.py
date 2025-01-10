@@ -27,41 +27,44 @@ def is_2_hydroxy_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for carboxylic acid group
-    carboxylic_pattern = Chem.MolFromSmarts("C(=O)[OH]")
-    if not mol.HasSubstructMatch(carboxylic_pattern):
-        return False, "No carboxylic acid group found"
+    # Look for 2-hydroxy carboxylic acid pattern
+    # [CH,CH2,CH3] ensures we're matching an aliphatic carbon with 1-3 hydrogens
+    # The pattern matches C(=O)(O)-C(O)- where the second C is the alpha position
+    pattern = Chem.MolFromSmarts("[CH,CH2,CH3](O)C(=O)O")
+    if not mol.HasSubstructMatch(pattern):
+        return False, "No 2-hydroxy carboxylic acid group found"
 
-    # Look for 2-hydroxy pattern - more general pattern that matches alpha-hydroxy acids
-    # [C,c] matches any carbon (aliphatic or aromatic)
-    # [OH1,OH0] matches both protonated and deprotonated hydroxy groups
-    # The pattern looks for C(=O)O-C(-[OH])-C sequence
-    hydroxy_acid_pattern = Chem.MolFromSmarts("[C,c](=O)[OH1,OH0]-[C,c](-[OH1,OH0])")
-    if not mol.HasSubstructMatch(hydroxy_acid_pattern):
-        return False, "No hydroxy group at 2-position"
-
-    # Count carbons to ensure it's a fatty acid (at least 4 carbons)
+    # Count carbons - fatty acids typically have 4+ carbons
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if c_count < 4:
         return False, "Carbon chain too short to be a fatty acid"
-
-    # Count oxygens - should have at least 3 (COOH + OH)
+    
+    # Count oxygens - should have exactly 3 (COOH + OH)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count < 3:
-        return False, "Insufficient oxygen atoms"
+    if o_count != 3:
+        return False, "Must have exactly 3 oxygen atoms (COOH + OH)"
 
-    # Check for primarily hydrocarbon nature
+    # Check for primarily hydrocarbon nature (C,H,O only)
     non_cho_atoms = sum(1 for atom in mol.GetAtoms() 
                        if atom.GetAtomicNum() not in [1,6,8])
     if non_cho_atoms > 0:
-        return False, "Contains unexpected atoms"
+        return False, "Contains atoms other than C,H,O"
 
-    # Additional check to ensure the hydroxy group is actually at position 2
-    # This uses a more specific pattern that ensures the OH is on the carbon
-    # adjacent to the carboxylic acid
-    alpha_hydroxy_pattern = Chem.MolFromSmarts("[CH1,CH2](-[OH1])(-[C,c](=O)[OH1,OH0])")
-    if not mol.HasSubstructMatch(alpha_hydroxy_pattern):
-        return False, "Hydroxy group not at alpha position"
+    # Check for single carboxylic acid group
+    carboxyl_pattern = Chem.MolFromSmarts("C(=O)O")
+    if len(mol.GetSubstructMatches(carboxyl_pattern)) != 1:
+        return False, "Must have exactly one carboxylic acid group"
 
-    # Success - found all required patterns
-    return True, "Contains carboxylic acid with hydroxy group at 2-position and appropriate carbon chain"
+    # Check for single hydroxy group (excluding the COOH)
+    hydroxy_pattern = Chem.MolFromSmarts("[OH1]")
+    if len(mol.GetSubstructMatches(hydroxy_pattern)) != 1:
+        return False, "Must have exactly one hydroxy group (excluding COOH)"
+
+    # Check for linear carbon chain nature
+    # Count branching points (carbons with more than 2 non-H connections)
+    num_branches = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[C^3,C^4]")))
+    if num_branches > 2:  # Allow some branching for methylated fatty acids
+        return False, "Too many branch points for a fatty acid"
+
+    # Success - molecule matches all criteria for 2-hydroxy fatty acid
+    return True, "Matches 2-hydroxy fatty acid pattern with appropriate chain length"
