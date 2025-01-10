@@ -6,11 +6,12 @@ from rdkit import Chem
 def is_octanoate_ester(smiles: str):
     """
     Determines if a molecule is an octanoate ester based on its SMILES string.
-    An octanoate ester contains an ester linkage with an octanoic acid part (8-carbon chain).
-    
+    An octanoate ester contains an ester linkage where the alcohol moiety
+    has formed an ester with octanoic acid, characterized by an 8-carbon aliphatic chain.
+
     Args:
         smiles (str): SMILES string of the molecule
-    
+
     Returns:
         bool: True if molecule is an octanoate ester, False otherwise
         str: Reason for classification
@@ -21,20 +22,20 @@ def is_octanoate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define ester bond pattern including variable chain on either side
+    # Define an ester linkage pattern
     ester_pattern = Chem.MolFromSmarts("C(=O)O")
     
     # Check for basic ester bond
     if not mol.HasSubstructMatch(ester_pattern):
         return False, "No ester bond found"
-
-    # Ensure there is an 8-carbon chain linked to the ester group
-    # The pattern assumes linear CH2 groups in the chain (R-C(=O)O-R')
-    octanoate_chain_pattern = Chem.MolFromSmarts("CCCCCCCC(=O)O")
+  
+    # Define an octanoate chain pattern via a dentistive count of the carbon chain on ester
+    # Using a pattern of 8 contiguous carbon atoms as necessary for octanoate
+    octanoate_chain_pattern = Chem.MolFromSmarts("CCCCCCCC(=O)O[*]")
     
-    # Check for octanoate specifically attached to an oxygen
-    if not mol.HasSubstructMatch(octanoate_chain_pattern):
-        return False, "No octanoate chain found associated with ester bond"
+    # Check if there's a match to the octanoate chain
+    if mol.HasSubstructMatch(octanoate_chain_pattern):
+        return True, "Molecule contains an octanoate ester group"
 
-    # If all checks pass, it is an octanoate ester
-    return True, "Molecule contains an octanoate ester group"
+    # If no match found for specific octanoate ester composition  
+    return False, "No octanoate ester group with 8-carbon chain found"
