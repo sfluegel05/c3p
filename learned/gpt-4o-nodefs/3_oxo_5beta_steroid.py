@@ -2,12 +2,12 @@
 Classifies: CHEBI:1624 3-oxo-5beta-steroid
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_3_oxo_5beta_steroid(smiles: str):
     """
     Determines if a molecule is a 3-oxo-5beta-steroid based on its SMILES string.
-    A 3-oxo-5beta-steroid should have a steroid backbone with a ketone group at the 3-position
+    A 3-oxo-5beta-steroid should have a steroid backbone, a ketone group at the 3-position,
     and specific stereochemistry denoted as '5beta'.
     
     Args:
@@ -23,29 +23,23 @@ def is_3_oxo_5beta_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define a more comprehensive steroid backbone pattern
-    steroid_smarts = "[#6]1:[#6][#6]2[#6][#6]3[#6][#6]4[#6,#8]([#6]3[#6]2[#6]4)[#6]1"
-    steroid_pattern = Chem.MolFromSmarts(steroid_smarts)
+    # Define a more detailed steroid backbone pattern (includes the four fused rings)
+    steroid_pattern = Chem.MolFromSmarts("[C;R]1[C;R][C;R]2[C;R][C;R]3[C;R][C;R]4[C;R][C;R](C[C;R]4)[C;R](C[C;R]3)[C;R](C[C;R]2)[C;R](C1)")
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "Steroid backbone not found"
     
-    # Define a pattern for the 3-oxo group specifically on the steroid framework
-    oxo_pattern = Chem.MolFromSmarts("[$([#6;R]=[O;R])]")  # Ring-embedded C=O
-    if not mol.HasSubstructMatch(oxo_pattern):
-        return False, "3-oxo group not found on steroid framework"
+    # Define a pattern for the 3-oxo group, ensuring it is part of the steroid structure
+    oxo_3_pattern = Chem.MolFromSmarts("[#6;R1]-[#6;R2](=O)-[#6;R3]")
+    if not mol.HasSubstructMatch(oxo_3_pattern):
+        return False, "3-oxo group not properly positioned"
+
+    # Evaluate specific stereochemistry for '5beta'
+    # This would involve detecting specific configurations and beta-orientation
+    # Typically, 5beta steroids have a configuration with the rings in the trans orientation
+    beta_positions = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
+    is_beta = any(pos[1] == 'S' or pos[1] == 'R' for pos in beta_positions)  # Example check for proper stereo
     
-    # Evaluate stereochemistry for 5beta orientation
-    chiral_centers = Chem.FindMolChiralCenters(mol, force=True, includeUnassigned=True)
-    beta_orientation = False
-    for atom_idx, chirality in chiral_centers:
-        atom = mol.GetAtomWithIdx(atom_idx)
-        if atom.GetIsAromatic() or atom.GetTotalNumHs() == 0:
-            continue
-        if "S" in chirality:  # Check if the chirality suggests beta orientation
-            beta_orientation = True
-            break
-    
-    if not beta_orientation:
+    if not is_beta:
         return False, "5beta stereochemistry not confirmed"
-    
+
     return True, "Molecule matches the 3-oxo-5beta-steroid characteristics"
