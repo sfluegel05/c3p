@@ -22,16 +22,16 @@ def is_nucleotide(smiles: str):
         return False, "Invalid SMILES string"
     
     # Define patterns for nucleotide detection
-    # General pattern for phosphate group, considering various ionization and esterification
-    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)O")  # Simplified for this example, should be expanded
+    # Comprehensive pattern for phosphate group (potential for multiple links and esterification)
+    phosphate_pattern = Chem.MolFromSmarts("P(O)(=O)(O)")
 
-    # Pattern for ribose or deoxyribose sugar backbone
-    sugar_ribose_pattern = Chem.MolFromSmarts("C1(CO)OC(O)C1O")  # Opted for ribose sugar
-    sugar_deoxyribose_pattern = Chem.MolFromSmarts("C1(CO)OC(C1)O")  # Opted for deoxyribose sugar
+    # Patterns for ribose or deoxyribose sugar backbone (considering stereochemistry)
+    sugar_ribose_pattern = Chem.MolFromSmarts("[C@H]1([C@H](O)[C@@H](O)[C@H](O1)CO)")
+    sugar_deoxyribose_pattern = Chem.MolFromSmarts("[C@H]1([C@H](O)[C@@H](O)[C@H](C1)CO)")
 
-    # Pattern for a nitrogenous base (detect purine as an example)
-    purine_base_pattern = Chem.MolFromSmarts("n1cnc2c1ncnc2")
-    pyrimidine_base_pattern = Chem.MolFromSmarts("c1cc[nH]c1")  # Simplified pyrimidine
+    # Patterns for nitrogenous bases (including variations)
+    purine_base_pattern = Chem.MolFromSmarts("n1cnc2ncnc2c1")
+    pyrimidine_base_pattern = Chem.MolFromSmarts("n1ccnc1")
 
     # Check for presence of phosphate group
     phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
@@ -43,7 +43,7 @@ def is_nucleotide(smiles: str):
     if not sugar_matches:
         return False, "No sugar backbone found"
     
-    # Check for presence of nitrogenous base (purines or pyrimidines)
+    # Check for presence of a nitrogenous base (purines or pyrimidines)
     base_matches = mol.GetSubstructMatches(purine_base_pattern) or mol.GetSubstructMatches(pyrimidine_base_pattern)
     if not base_matches:
         return False, "No recognizable nitrogenous base found"
