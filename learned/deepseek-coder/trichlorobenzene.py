@@ -30,25 +30,18 @@ def is_trichlorobenzene(smiles: str):
     
     if not benzene_matches:
         return False, "No benzene ring found"
-    
-    # Ensure there is only one benzene ring
-    if len(benzene_matches) != 1:
-        return False, "Multiple benzene rings found, need exactly one"
 
-    # Get the benzene ring atoms
-    benzene_atoms = benzene_matches[0]
+    # Check each benzene ring for exactly three chlorine substituents
+    for benzene_atoms in benzene_matches:
+        chlorine_count = 0
+        for atom in mol.GetAtoms():
+            if atom.GetAtomicNum() == 17:  # Chlorine has atomic number 17
+                # Check if the chlorine is attached to a benzene ring atom
+                for neighbor in atom.GetNeighbors():
+                    if neighbor.GetIdx() in benzene_atoms:
+                        chlorine_count += 1
+                        break
+        if chlorine_count == 3:
+            return True, "Contains a benzene ring with exactly three chlorine substituents"
 
-    # Count the number of chlorine atoms attached to the benzene ring
-    chlorine_count = 0
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 17:  # Chlorine has atomic number 17
-            # Check if the chlorine is attached to a benzene ring atom
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetIdx() in benzene_atoms:
-                    chlorine_count += 1
-                    break
-
-    if chlorine_count == 3:
-        return True, "Contains a benzene ring with exactly three chlorine substituents"
-    else:
-        return False, f"Found {chlorine_count} chlorine substituents on benzene ring, need exactly 3"
+    return False, "No benzene ring with exactly three chlorine substituents found"
