@@ -13,7 +13,7 @@ def is_xanthophyll(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a xanthophyll, False otherwise
+        bool: True if the molecule is a xanthophyll, False otherwise
         str: Reason for classification
     """
     # Parse SMILES
@@ -21,20 +21,21 @@ def is_xanthophyll(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # General pattern for long conjugated chains (flexible pattern)
-    conjugated_pattern = Chem.MolFromSmarts("C=C(-C)*C=C")  # Extended pattern for conjugated systems
-    if not mol.HasSubstructMatch(conjugated_pattern):
-        return False, "No long conjugated carbon chain typical of xanthophylls found"
-
+    # Improved pattern for long conjugated systems (flexible and extended)
+    conjugated_pattern = Chem.MolFromSmarts("C=C(-C=C)*-C=C")  # Modify to better capture long conjugated chains
+    conjugated_matches = mol.GetSubstructMatches(conjugated_pattern)
+    if len(conjugated_matches) < 3:
+        return False, "No long conjugated carbon chain typical of xanthophylls found or chain too short"
+    
     # Check for presence of various oxygen functionalities
     # Hydroxyl groups (-OH)
     hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
     # Carbonyl groups (=O)
     carbonyl_pattern = Chem.MolFromSmarts("[CX3]=[OX1]")
-    # Cyclic ethers, epoxides, or other oxygen-containing rings
-    epoxide_generic_pattern = Chem.MolFromSmarts("C1OC=C1")
+    # Epoxides or cyclic ethers - more specific to capture rings
+    epoxide_generic_pattern = Chem.MolFromSmarts("C1OC[C@@H]1")
     
-    # Check for multiple oxygen functionalities
+    # Check for at least one of multiple oxygen functionalities
     oxygen_functionalities = any([
         mol.HasSubstructMatch(hydroxyl_pattern),
         mol.HasSubstructMatch(carbonyl_pattern),
@@ -44,9 +45,9 @@ def is_xanthophyll(smiles: str):
     if not oxygen_functionalities:
         return False, "No required oxygen functionalities found, necessary for xanthophylls"
 
-    # Check molecular weight appropriate for large, complex xanthophyll structures
+    # Update molecular weight check to allow for variability in xanthophyll structures
     mol_weight = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_weight < 500:
+    if mol_weight < 400:  # Lower threshold to account for structure variability
         return False, f"Molecular weight {mol_weight} is lower than expected for typical xanthophyll"
 
     return True, "Contains long conjugated carbon chain and appropriate oxygen functionalities typical of xanthophylls"
