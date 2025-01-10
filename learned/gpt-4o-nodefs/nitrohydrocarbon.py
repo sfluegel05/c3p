@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_nitrohydrocarbon(smiles: str):
     """
     Determines if a molecule is a nitrohydrocarbon based on its SMILES string.
-    A nitrohydrocarbon contains nitro groups (-NO2) attached to a primarily hydrocarbon framework.
+    A nitrohydrocarbon contains nitro groups (-NO2) attached to a hydrocarbon framework.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,31 +21,25 @@ def is_nitrohydrocarbon(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the nitro group pattern
+    # Define nitro group pattern
     nitro_pattern = Chem.MolFromSmarts("[N+](=O)[O-]")
     nitro_matches = mol.GetSubstructMatches(nitro_pattern)
 
     if len(nitro_matches) == 0:
         return False, "No nitro groups found"
 
-    # Count carbon and other critical atoms
+    # Check carbon framework, ensuring majority are carbon atoms, common in hydrocarbons
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
     total_atom_count = mol.GetNumAtoms()
 
-    # Allow isotope variations but keep focus on regular atoms
-    isotope_count = sum(1 for atom in mol.GetAtoms() if atom.GetIsotope() != 0)
-
-    # Calculate adjusted values removing isotopes
-    effective_carbon_ratio = (c_count / (total_atom_count - isotope_count))
-
-    if effective_carbon_ratio < 0.45:
+    if c_count / total_atom_count < 0.4:
         return False, "Insufficient carbon atoms in framework"
 
-    # Ensure no excessive functional groups besides nitro (Focus mainly on hydrocarbon character)
-    non_hydrocarbon_counts = total_atom_count - c_count - n_count - o_count - isotope_count
-    if non_hydrocarbon_counts > 2:
-        return False, "Contains heteroatoms or functional groups not typical in a hydrocarbon framework"
+    # Verify avoidance of extensive non-carbon ring/chain frameworks
+    max_non_carbon = 0.2 * total_atom_count
+    non_c_h_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() not in [1, 6, 7, 8])
+    
+    if non_c_h_count > max_non_carbon:
+        return False, "Predominant non-carbon framework detected"
 
-    return True, "Contains nitro groups attached to a primarily hydrocarbon framework"
+    return True, "Contains nitro groups attached to a hydrocarbon framework"
