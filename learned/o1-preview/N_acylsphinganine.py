@@ -5,11 +5,12 @@ Classifies: CHEBI:31488 N-acylsphinganine
 Classifies: CHEBI:52634 N-acylsphinganine
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_N_acylsphinganine(smiles: str):
     """
     Determines if a molecule is an N-acylsphinganine based on its SMILES string.
-    An N-acylsphinganine is a ceramide consisting of sphinganine where one of the amino hydrogens is substituted by a fatty acyl group.
+    An N-acylsphinganine is a ceramide consisting of sphinganine in which one of the amino hydrogens is substituted by a fatty acyl group.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -24,94 +25,69 @@ def is_N_acylsphinganine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define amide bond pattern (N-C(=O)-C)
-    amide_pattern = Chem.MolFromSmarts('N-C(=O)-C')
-    amide_matches = mol.GetSubstructMatches(amide_pattern)
-    if not amide_matches:
-        return False, "No amide bond (N-acyl group) found"
+    # Define sphinganine backbone pattern
+    # Sphinganine backbone: C1-C2(NH)-C3(OH)-[long chain]-C(OH)
+    sphinganine_pattern = Chem.MolFromSmarts("""
+        [C;H2][C@H](N)[C@@H](O)[C;H2][C;H2][C;H2][C;H2][C;H2][C;H2][C;H2][C;H2][C;H2][C;H2][C;H2][C;H2][C;H2][C;H2][C](O)
+    """)
 
-    # Assume the nitrogen in the amide is the sphinganine nitrogen
-    # Check for sphinganine backbone connected to this nitrogen
-    for match in amide_matches:
-        amide_nitrogen_idx = match[0]
-        amide_nitrogen = mol.GetAtomWithIdx(amide_nitrogen_idx)
+    if not mol.HasSubstructMatch(sphinganine_pattern):
+        return False, "No sphinganine backbone found"
 
-        # Get the alpha carbon (connected to the nitrogen but not the carbonyl carbon)
-        neighbors = [nbr for nbr in amide_nitrogen.GetNeighbors() if nbr.GetIdx() != match[1]]
-        if not neighbors:
-            continue
-        alpha_carbon = neighbors[0]
+    # Define N-acyl group pattern (amide linkage with fatty acyl chain)
+    # Amide bond: [N]-C(=O)-[C;H2][C;H2][C;H2]... (long chain)
+    acylamide_pattern = Chem.MolFromSmarts("""
+        [NX3][C](=O)[C;H2][C;H2][C;H2][C;H2][C;H2]
+    """)
 
-        # Check if alpha carbon has a hydroxyl group
-        has_alpha_hydroxyl = False
-        for nbr in alpha_carbon.GetNeighbors():
-            if nbr.GetAtomicNum() == 8:  # Oxygen
-                has_alpha_hydroxyl = True
-                break
-        if not has_alpha_hydroxyl:
-            continue
+    if not mol.HasSubstructMatch(acylamide_pattern):
+        return False, "No N-acyl group (amide bond with fatty acyl chain) found"
 
-        # Get beta carbon (next carbon in the chain)
-        beta_carbons = [nbr for nbr in alpha_carbon.GetNeighbors() if nbr.GetIdx() != amide_nitrogen.GetIdx()]
-        if not beta_carbons:
-            continue
-        beta_carbon = beta_carbons[0]
+    # Ensure that the nitrogen in the sphinganine backbone is the one acylated
+    sphinganine_matches = mol.GetSubstructMatches(sphinganine_pattern)
+    acylamide_matches = mol.GetSubstructMatches(acylamide_pattern)
 
-        # Get gamma carbon
-        gamma_carbons = [nbr for nbr in beta_carbon.GetNeighbors() if nbr.GetIdx() != alpha_carbon.GetIdx()]
-        if not gamma_carbons:
-            continue
-        gamma_carbon = gamma_carbons[0]
+    sphinganine_nitrogens = set()
+    for match in sphinganine_matches:
+        sphinganine_nitrogen_idx = match[2]  # The nitrogen atom in sphinganine pattern
+        sphinganine_nitrogens.add(sphinganine_nitrogen_idx)
 
-        # Check if gamma carbon has a hydroxyl group
-        has_gamma_hydroxyl = False
-        for nbr in gamma_carbon.GetNeighbors():
-            if nbr.GetAtomicNum() == 8:  # Oxygen
-                has_gamma_hydroxyl = True
-                break
-        if not has_gamma_hydroxyl:
-            continue
+    acylated_nitrogens = set()
+    for match in acylamide_matches:
+        acyl_nitrogen_idx = match[0]  # The nitrogen atom in acylamide pattern
+        acylated_nitrogens.add(acyl_nitrogen_idx)
 
-        # Check for long aliphatic chain from gamma carbon
-        chain_length = 0
-        visited = set()
-        to_visit = [gamma_carbon]
-        while to_visit:
-            current_atom = to_visit.pop()
-            if current_atom.GetIdx() in visited:
-                continue
-            visited.add(current_atom.GetIdx())
-            if current_atom.GetAtomicNum() == 6 and current_atom.GetDegree() <= 4:
-                chain_length += 1
-                for nbr in current_atom.GetNeighbors():
-                    if nbr.GetIdx() not in visited and nbr.GetAtomicNum() == 6:
-                        to_visit.append(nbr)
+    # Check if the sphinganine nitrogen is acylated
+    common_nitrogens = sphinganine_nitrogens & acylated_nitrogens
+    if not common_nitrogens:
+        return False, "The sphinganine nitrogen is not acylated"
 
-        if chain_length < 12:
-            continue  # Chain is too short to be sphinganine
-
-        # Check acyl chain length (from carbonyl carbon)
+    # Optional: Check that the acyl chain is sufficiently long (e.g., at least 12 carbons)
+    acyl_chain_lengths = []
+    for match in acylamide_matches:
         carbonyl_carbon = mol.GetAtomWithIdx(match[1])
+        acyl_chain_atom = mol.GetAtomWithIdx(match[2])
+
+        # Traverse the acyl chain
         acyl_chain_length = 0
         visited = set()
-        to_visit = [nbr for nbr in carbonyl_carbon.GetNeighbors() if nbr.GetIdx() != amide_nitrogen_idx]
-        while to_visit:
-            current_atom = to_visit.pop()
-            if current_atom.GetIdx() in visited:
+        stack = [acyl_chain_atom]
+        while stack:
+            atom = stack.pop()
+            if atom.GetIdx() in visited:
                 continue
-            visited.add(current_atom.GetIdx())
-            if current_atom.GetAtomicNum() == 6 and current_atom.GetDegree() <= 4:
+            visited.add(atom.GetIdx())
+            if atom.GetAtomicNum() == 6:  # Carbon
                 acyl_chain_length += 1
-                for nbr in current_atom.GetNeighbors():
-                    if nbr.GetIdx() not in visited and nbr.GetAtomicNum() == 6:
-                        to_visit.append(nbr)
+                for neighbor in atom.GetNeighbors():
+                    if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:
+                        stack.append(neighbor)
+        acyl_chain_lengths.append(acyl_chain_length)
 
-        if acyl_chain_length < 12:
-            continue  # Acyl chain is too short
+    if not any(length >= 12 for length in acyl_chain_lengths):
+        return False, "Acyl chain is too short to be a fatty acyl group"
 
-        return True, "Contains sphinganine backbone with N-acyl group forming an amide bond"
-
-    return False, "No sphinganine backbone with N-acyl group found"
+    return True, "Contains sphinganine backbone with N-acyl group forming an amide bond"
 
 __metadata__ = {
     'chemical_class': {
