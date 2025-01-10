@@ -25,8 +25,8 @@ def is_epoxy_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for carboxylic acid group (-C(=O)O)
-    carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
+    # Look for carboxylic acid group (-C(=O)O or -C(=O)[O-])
+    carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H0,O-]")
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
 
@@ -57,20 +57,25 @@ def is_epoxy_fatty_acid(smiles: str):
     if not connected_to_rest:
         return False, "Epoxide ring not connected to the main carbon chain"
 
-    # Check for a long carbon chain (at least 8 carbons)
+    # Check for a long carbon chain (at least 6 carbons)
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if carbon_count < 8:
+    if carbon_count < 6:
         return False, "Carbon chain too short to be a fatty acid"
 
-    # Check molecular weight (epoxy fatty acids typically >200 Da)
+    # Check molecular weight (epoxy fatty acids typically >250 Da)
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 200:
+    if mol_wt < 250:
         return False, "Molecular weight too low for epoxy fatty acid"
 
     # Check for a typical fatty acid structure (long aliphatic chain)
     # by counting the number of rotatable bonds
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 4:
+    if n_rotatable < 3:
         return False, "Not enough rotatable bonds for a typical fatty acid"
+
+    # Additional check for a long aliphatic chain
+    long_chain_pattern = Chem.MolFromSmarts("[CX4][CX4][CX4][CX4]")
+    if not mol.HasSubstructMatch(long_chain_pattern):
+        return False, "No long aliphatic chain found"
 
     return True, "Contains a fatty acid chain with an epoxide ring"
