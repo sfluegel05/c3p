@@ -31,42 +31,66 @@ def is_pyrroline(smiles: str):
     try:
         Chem.Kekulize(mol_kekulized, clearAromaticFlags=True)
     except:
-        pass  # If kekulization fails, we'll still try with the original molecule
+        mol_kekulized = None  # If kekulization fails, set to None
     
-    # Multiple SMARTS patterns to catch different forms of pyrroline
+    # Basic pyrroline patterns
     patterns = [
-        # Basic pyrroline patterns with double bond in different positions
-        "[NX3R5]1[#6][#6]=[#6][#6]1",  # Double bond at 3-4 position
-        "[NX3R5]1[#6]=[#6][#6][#6]1",  # Double bond at 2-3 position
-        "[#6]1[#6][NX3R5][#6]=[#6]1",  # Double bond at 4-5 position
+        # 2,3-dihydro-1H-pyrrole (3,4-double bond)
+        "[NX3R5]1[CH2][CH2][CH]=[CH]1",
+        # 2,5-dihydro-1H-pyrrole (3,4-double bond)
+        "[NX3R5]1[CH2][CH]=[CH][CH2]1",
+        # 4,5-dihydro-1H-pyrrole (2,3-double bond)
+        "[NX3R5]1[CH]=[CH][CH2][CH2]1",
         
-        # Patterns for keto forms
-        "[NX3R5]1[#6][#6](=[O,S])[#6][#6]1",
-        "[NX3R5]1[#6](=[O,S])[#6][#6][#6]1",
+        # More general patterns
+        "[NX3R5]1[CR4,CR3][CR4,CR3][CR4,CR3][CR4,CR3]1",  # Any saturated/unsaturated combo
+        "[nX3R5]1[cR5,CR4,CR3][cR5,CR4,CR3][cR5,CR4,CR3][cR5,CR4,CR3]1",  # Aromatic version
         
-        # Pattern for charged forms
-        "[N+X4R5]1[#6][#6][#6][#6]1",
+        # Patterns with carbonyls
+        "[NX3R5]1[CR4,CR3][C](=[O,S])[CR4,CR3][CR4,CR3]1",
+        "[NX3R5]1[C](=[O,S])[CR4,CR3][CR4,CR3][CR4,CR3]1",
         
-        # Pattern for imine forms
-        "[NX2R5]=[#6R5][#6R5][#6R5][#6R5]1"
+        # Imine forms
+        "[NX2R5]1=[CR4,CR3][CR4,CR3][CR4,CR3][CR4,CR3]1",
+        
+        # Charged forms
+        "[N+X4R5]1[CR4,CR3][CR4,CR3][CR4,CR3][CR4,CR3]1"
     ]
 
+    valid_patterns = []
     for pattern in patterns:
         patt = Chem.MolFromSmarts(pattern)
-        if mol.HasSubstructMatch(patt) or (mol_kekulized and mol_kekulized.HasSubstructMatch(patt)):
-            # Additional validation to ensure it's not fully aromatic
+        if patt is not None:
+            valid_patterns.append(patt)
+    
+    if not valid_patterns:
+        return None, "Failed to create valid SMARTS patterns"
+
+    for patt in valid_patterns:
+        if mol.HasSubstructMatch(patt):
+            # Additional validation
             rings = mol.GetRingInfo().AtomRings()
             for ring in rings:
                 if len(ring) == 5:  # Check 5-membered rings
                     ring_atoms = [mol.GetAtomWithIdx(i) for i in ring]
                     n_count = sum(1 for atom in ring_atoms if atom.GetAtomicNum() == 7)
                     if n_count == 1:  # One nitrogen
-                        # Check if ring is not fully aromatic
-                        aromatic_atoms = sum(1 for atom in ring_atoms if atom.GetIsAromatic())
-                        if aromatic_atoms != 5:  # Not fully aromatic
+                        # Count double bonds and aromatic bonds in ring
+                        double_bonds = 0
+                        aromatic_bonds = 0
+                        for i in range(len(ring)):
+                            atom1_idx = ring[i]
+                            atom2_idx = ring[(i + 1) % 5]
+                            bond = mol.GetBondBetweenAtoms(atom1_idx, atom2_idx)
+                            if bond.GetBondTypeAsDouble() == 2:
+                                double_bonds += 1
+                            if bond.GetIsAromatic():
+                                aromatic_bonds += 1
+                        
+                        # Check conditions for pyrroline
+                        if aromatic_bonds == 5:  # Aromatic ring is not pyrroline
+                            continue
+                        if double_bonds == 1 or (double_bonds == 0 and any(a.GetFormalCharge() > 0 for a in ring_atoms)):
                             return True, "Contains pyrroline ring (5-membered ring with N and appropriate unsaturation)"
             
-            # If we found pattern but ring was aromatic
-            continue
-    
     return False, "No pyrroline ring found"
