@@ -22,29 +22,24 @@ def is_carotenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Count carbon atoms (allowing some variation for derivatives)
+    # Adjust carbon atom count range to account for derivatives
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 35 or c_count > 50:
+    if c_count < 30 or c_count > 60:
         return False, f"Number of carbon atoms is {c_count}, not within expected range for carotenoids"
 
-    # Check for presence of conjugated double bonds
+    # Improved check for conjugated double-bond system
     conjugated_double_bond_pattern = Chem.MolFromSmarts("C=C")
     conjugated_double_bond_matches = mol.GetSubstructMatches(conjugated_double_bond_pattern)
-    if len(conjugated_double_bond_matches) < 8:
+    if len(conjugated_double_bond_matches) < 10:
         return False, f"Fewer conjugated double bonds found ({len(conjugated_double_bond_matches)}), suggestive of non-carotenoid structure"
 
-    # Exclude strict requirement for rings to capture linear structures
-    ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() < 1 and len(conjugated_double_bond_matches) < 10:
-        return False, "No sufficient cyclic or linear conjugated structures found, which are common in carotenoids"
-
-    # Exclude retinoid-like structures more comprehensively
-    # This pattern is just an example; modify based on expert input
-    retinoid_pattern = Chem.MolFromSmarts("CC=C")
-    if mol.HasSubstructMatch(retinoid_pattern) and c_count < 35:
+    # Exclude retinoid structures by recognizing common motifs
+    # Example pattern area for expansion (refinement needed experimentally)
+    retinoid_pattern_full = Chem.MolFromSmarts("CC=C(CC=C)CC=C")
+    if mol.HasSubstructMatch(retinoid_pattern_full) and c_count < 35:
         return False, "Structure matches common retinoid pattern or too few carbons, excluded from carotenoids"
 
-    # Check for presence of functional groups (for xanthophylls)
+    # Functional groups presence check (e.g., oxygens)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     if o_count > 0:
         return True, "Classified as a xanthophyll carotenoid due to the presence of oxygen functionality"
