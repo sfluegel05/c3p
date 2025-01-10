@@ -20,31 +20,27 @@ def is_prenylquinone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Expanded range of quinone core patterns
+    # Broad range of quinone core patterns
     quinone_patterns = [
         Chem.MolFromSmarts("O=C1C=CC(=O)C=C1"),  # Para-benzoquinone
         Chem.MolFromSmarts("O=C1C=CC=CC(=O)C1"),  # Naphthoquinone
         Chem.MolFromSmarts("O=C1C=CC=C2C=CC=CC2C1=O"),  # Anthraquinone
         Chem.MolFromSmarts("O=C1C=CC2=CC=CC=C2C1=O"),  # Anthraquinone alternative
         Chem.MolFromSmarts("O=Cc1ccccc1=O"),  # Simplified quinone structure
-        Chem.MolFromSmarts("O=Cc1ccc2C(=O)cccc2c1"),  # Expanded quinone structure
     ]
 
-    # Check for expanded quinone core
     if not any(mol.HasSubstructMatch(pat) for pat in quinone_patterns):
         return False, "No suitable quinone core structure found"
     
-    # Enhanced prenyl-like patterns
+    # Expanded prenyl-like pattern to cover more variations
     prenyl_patterns = [
         Chem.MolFromSmarts("C=C(C)C"),  # Isoprene unit
-        Chem.MolFromSmarts("CC=C"),  # Basis for prenyl groups
-        Chem.MolFromSmarts("C=C([CH2X4,CX4])C"),  # Flexible prenyl unit
+        Chem.MolFromSmarts("CC=C"),  # Likely prenyl variations
+        Chem.MolFromSmarts("C=C([CH2X4,CX4])C"),  # More flexible prenyl unit with variations
         Chem.MolFromSmarts("C=C(C)CO"),  # Hydroxylated prenyl unit
         Chem.MolFromSmarts("C=C(C)OC"),  # Methoxylated prenyl unit
-        Chem.MolFromSmarts("C=C(C)CC"),  # Saturated prenyl variant
     ]
     
-    # Check for prenyl-like side chains
     if not any(mol.HasSubstructMatch(pat) for pat in prenyl_patterns):
         return False, "No prenyl-like side chains found"
 
