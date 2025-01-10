@@ -18,28 +18,22 @@ def is_proteinogenic_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for standard amino acid backbone (N-C-C(=O)-O)
-    backbone_pattern = Chem.MolFromSmarts("N[C@?H](C(=O)O)")
+    # Look for standard amino acid backbone (N-C-C(=O)-O) with chirality
+    backbone_pattern = Chem.MolFromSmarts("N[C@H](C(=O)O)")
 
-    # Check if the mol has the standard amino acid backbone
+    # Check if the mol has the standard amino acid backbone with chirality
     if not mol.HasSubstructMatch(backbone_pattern):
         # Glycine exception, which is achiral
         glycine_pattern = Chem.MolFromSmarts("NCC(=O)O")
         if mol.HasSubstructMatch(glycine_pattern):
-            return True, "Matches glycine structure, an exception to chirality"
-        return False, "No standard amino acid backbone structure found"
+            return True, "SMILES matches glycine structure, an exception to chirality"
+        return False, "No standard amino acid backbone with chirality found"
 
-    # Check for chirality (except glycine, which is non-chiral)
-    chirality_found = False
-    for atom in mol.GetAtoms():
-        if atom.GetChiralTag() != Chem.CHI_UNSPECIFIED:
-            chirality_found = True
-            break
+    # Check for chirality
+    if not any(atom.GetChiralTag() != Chem.CHI_UNSPECIFIED for atom in mol.GetAtoms()):
+        return False, "Chirality not found in molecule except for glycine"
 
-    if not chirality_found:
-        return False, "No chirality found except for glycine"
-
-    return True, "Contains valid backbone and chirality; matches a proteinogenic amino acid"
+    return True, "Valid backbone and chirality detected; matches a proteinogenic amino acid"
 
 # Example test case
 smiles_example = "N[C@@H](CC(N)=O)C(O)=O"  # L-asparagine
