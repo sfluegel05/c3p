@@ -8,7 +8,7 @@ def is_phosphatidylglycerol(smiles: str):
     """
     Determines if a molecule is a phosphatidylglycerol based on its SMILES string.
     
-    A phosphatidylglycerol is defined as having a glycerol backbone esterified by fatty acids,
+    A phosphatidylglycerol contains a glycerol backbone esterified by fatty acids,
     with a phosphate group attached to one of the primary hydroxy groups, and another glycerol
     moiety linked via phosphate ester linkage.
     
@@ -25,28 +25,21 @@ def is_phosphatidylglycerol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # SMARTS pattern for identifying a phosphatidylglycerol
-    # [O-]P(=O)(OCCO[C@@H](O)CO)OC[C@H](COC=O)OC(=O)C
-    glycerol_pattern = Chem.MolFromSmarts("[C@@H](O)CO")
-    phosphatidylglycerol_pattern = Chem.MolFromSmarts("O=P(O)(OCCO{}OC={})O{}C{}".format(glycerol_pattern, "C(=O)", "C@", "=O"))
+    # SMARTS patterns for key features in phosphatidylglycerol
+    # Glycerol part that should be esterified twice
+    glycerol_pattern = Chem.MolFromSmarts("C(CO)CO")
+    if not mol.HasSubstructMatch(glycerol_pattern):
+        return False, "Missing glycerol backbone"
+
+    # Phosphate group with glycerol linkage
+    phosphoglycerol_pattern = Chem.MolFromSmarts("O=P(O)(OC[C@H](O)CO)OC")
+    if not mol.HasSubstructMatch(phosphoglycerol_pattern):
+        return False, "Missing phosphoglycerol linkage"
     
-    if not mol.HasSubstructMatch(phosphatidylglycerol_pattern):
-        return False, "Missing phosphatidylglycerol core structure"
-    
-    # Verify the presence of a phosphate group (O=P(OH)O)
-    phosphate_pattern = Chem.MolFromSmarts("[O-]P(=O)(O)")
-    if not mol.HasSubstructMatch(phosphate_pattern):
-        return False, "Missing phosphate group"
-    
-    # Verify two esterifiable fatty acid chains are present
+    # Ester linkage pattern for fatty acid chains
     ester_pattern = Chem.MolFromSmarts("C(=O)OC")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) < 2:
         return False, f"Found {len(ester_matches)} ester groups, need at least 2"
     
-    # Check for glycerol attachment via phosphate
-    glycerol_attachment = Chem.MolFromSmarts("OCC(O)CO")
-    if not mol.HasSubstructMatch(glycerol_attachment):
-        return False, "Missing glycerol attachment via phosphate"
-    
-    return True, "Contains a phosphatidylglycerol structure with fatty acid esterified glycerol backbone and phosphate group"
+    return True, "Contains phosphatidylglycerol structure with appropriate fatty acid linkages"
