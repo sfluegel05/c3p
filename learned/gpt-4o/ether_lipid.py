@@ -2,12 +2,11 @@
 Classifies: CHEBI:64611 ether lipid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_ether_lipid(smiles: str):
     """
     Determines if a molecule is an ether lipid based on its SMILES string.
-    An ether lipid has one or more carbon atoms on the glycerol backbone linked
+    An ether lipid has one or more carbon atoms on the glycerol or similar backbone linked
     to an alkyl chain via an ether linkage.
 
     Args:
@@ -23,26 +22,28 @@ def is_ether_lipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for a glycerol backbone pattern - 3 carbons in a row
-    glycerol_pattern = Chem.MolFromSmarts("[CH2][CH][CH2]")
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone found"
+    # Improved glycerol-like backbone pattern including stereochemistry
+    glycerol_like_pattern = Chem.MolFromSmarts("[C@@H]([OH1])-[C@H]([OH1])-O")
+    if not mol.HasSubstructMatch(glycerol_like_pattern):
+        return False, "No suitable glycerol-like backbone found"
 
-    # Look for ether linkage patterns - C-O-C
+    # Look for ether linkage pattern - R-O-R
     ether_pattern = Chem.MolFromSmarts("C-O-C")
-    if not mol.HasSubstructMatch(ether_pattern):
+    ether_matches = mol.GetSubstructMatches(ether_pattern)
+    if not ether_matches:
         return False, "No ether linkage found"
 
-    # Ensure the presence of ether linkages over ester
+    # Checking for phosphate group is optional, pay attention to its presence
+    phospho_pattern = Chem.MolFromSmarts("P(=O)([O-])([O-])")
+    if mol.HasSubstructMatch(phospho_pattern):
+        phosphate_presence = " and phosphate group identified"
+    else:
+        phosphate_presence = ""
+
+    # If there are more ether than ester linkages, it's likely an ether lipid
     ester_pattern = Chem.MolFromSmarts("C(=O)O")
-    ether_matches = mol.GetSubstructMatches(ether_pattern)
     ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ether_matches) <= len(ester_matches):
-        return False, "Not enough ether linkages compared to ester linkages"
-
-    # Optional: Check for typical lipid components like phosphocholine
-    phospho_pattern = Chem.MolFromSmarts("P(=O)([O-])(O)")
-    if not mol.HasSubstructMatch(phospho_pattern):
-        return False, "Missing phosphate group, possibly not a lipid"
-
-    return True, "Ether lipid identified by ether linkages on glycerol backbone and presence of phosphate group."
+    if len(ether_matches) > len(ester_matches):
+        return True, f"Ether lipid identified by ether linkages on glycerol-like backbone{phosphate_presence}"
+    else:
+        return False, "Ether-to-ester linkage ratio not sufficient for ether lipid classification"
