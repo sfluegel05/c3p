@@ -2,7 +2,6 @@
 Classifies: CHEBI:46761 dipeptide
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_dipeptide(smiles: str):
     """
@@ -22,22 +21,31 @@ def is_dipeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Pattern for peptide bond (N-C(=O)-)
-    peptide_bond_pattern = Chem.MolFromSmarts("N-C(=O)-")
+    # Pattern for peptide bond
+    peptide_bond_pattern = Chem.MolFromSmarts("N[C;D3](=O)")  # Assuming a peptide bond has an amide N attached to a carbonyl carbon
     peptide_bond_matches = mol.GetSubstructMatches(peptide_bond_pattern)
     
-    # Check if only one peptide bond is present
+    # Check if exactly one peptide bond is present
     if len(peptide_bond_matches) != 1:
-        return False, f"Expected one peptide bond, found {len(peptide_bond_matches)}"
+        return False, f"Expected exactly one peptide bond, found {len(peptide_bond_matches)}"
     
-    # Pattern for amino acid residue, roughly N[C][C](=O) (simplified backbone check)
-    amino_acid_pattern = Chem.MolFromSmarts("N[C][C](=O)")
+    # Pattern for an amino acid residue (N and C(=O) with an alpha carbon)
+    amino_acid_pattern = Chem.MolFromSmarts("N[C;D3][C;D3](=O)") 
     amino_acid_matches = mol.GetSubstructMatches(amino_acid_pattern)
     
     # Check for two amino acid residues
     if len(amino_acid_matches) != 2:
         return False, f"Expected two amino acid residues, found {len(amino_acid_matches)}"
-    
+
+    # Check connectivity of identified patterns
+    atoms_match = set()
+    for match in peptide_bond_matches + amino_acid_matches:
+        atoms_match.update(match)
+
+    # Ensure we aren't counting randomized matches; check for expected dipeptide connectivity
+    if len(atoms_match) > len(peptide_bond_matches[0]) + 2 * len(amino_acid_matches[0]) - 1:
+        return False, "Patterns found do not form a connected dipeptide with correct linkage"
+
     return True, "Contains two amino acid residues connected by one peptide bond"
 
 # Test examples
