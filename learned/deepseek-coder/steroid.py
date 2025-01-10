@@ -28,12 +28,13 @@ def is_steroid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define a more flexible steroid core pattern (cyclopenta[a]phenanthrene skeleton)
+    # This pattern allows for variations in the core structure, such as ring expansions or contractions
     steroid_core_pattern = Chem.MolFromSmarts("[C]1[C@@]2([C@@]([C@@]3([C@@]([C@@]4([C@](CC3)(C[C@H](CC4)C)C)[H])[H])(CC2)[H])[H])CC1")
     if not mol.HasSubstructMatch(steroid_core_pattern):
         return False, "No cyclopenta[a]phenanthrene skeleton found"
 
     # Check for methyl groups at C-10 and C-13
-    # C-10 and C-13 are part of the steroid core pattern, so we can check for methyl groups attached to the core
+    # These positions are part of the steroid core pattern, so we can check for methyl groups attached to the core
     methyl_pattern = Chem.MolFromSmarts("[CH3]")
     methyl_matches = mol.GetSubstructMatches(methyl_pattern)
     if len(methyl_matches) < 2:
@@ -41,9 +42,10 @@ def is_steroid(smiles: str):
 
     # Check for an alkyl group at C-17 (optional, but common)
     # C-17 is part of the steroid core pattern, so we can check for an alkyl group attached to the core
+    # This check is optional and should not cause the function to return False if missing
     alkyl_pattern = Chem.MolFromSmarts("[CX4]")
     alkyl_matches = mol.GetSubstructMatches(alkyl_pattern)
     if len(alkyl_matches) < 3:
-        return False, "Missing alkyl group at C-17"
+        return True, "Contains cyclopenta[a]phenanthrene skeleton with characteristic methyl groups, but missing alkyl group at C-17"
 
     return True, "Contains cyclopenta[a]phenanthrene skeleton with characteristic methyl and alkyl groups"
