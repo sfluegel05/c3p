@@ -24,9 +24,11 @@ def is_pyrroline(smiles: str):
 
     # SMARTS patterns for pyrroline: five-membered ring with 1 nitrogen and varying saturation
     pyrroline_patterns = [
-        Chem.MolFromSmarts("C1CC=CN1"),  # 2,3-dihydro-1H-pyrrole
-        Chem.MolFromSmarts("C1C=CCN1"),  # 1,2-dihydro-1H-pyrrole
-        Chem.MolFromSmarts("C1CN=CC1"),  # 2,5-dihydro-1H-pyrrole
+        Chem.MolFromSmarts("[NH]1CCC=C1"),  # 1H-pyrrolines, considering basic saturation
+        Chem.MolFromSmarts("[NH]1C=CCC1"),  # Another possible hydrogenation variant
+        Chem.MolFromSmarts("[NH]1CC=CC1"),  # 2,5-dihydro-1H-pyrrole structure
+        Chem.MolFromSmarts("[nH]1CCC=C1"),  # Higher unsaturation with aromatic N
+        Chem.MolFromSmarts("[nH]1C=CC=C1"), # Additional variant
     ]
 
     # Validate each SMARTS compilation
@@ -41,12 +43,11 @@ def is_pyrroline(smiles: str):
     
     return False, "Does not contain the pyrroline structural motif"
 
-# Testing the function with given examples
+# Example testing with edge cases
 test_smiles = [
-    "C1CC=CN1",  # Positive case
-    "OC(=O)[C@@H]1CCC=N1",  # Positive case
-    "C1CC2=C(CC1)C(N(C2=O)C3=C(C=C(C(=C3)OC(C)C#C)Cl)F)=O",  # Potentially positive case
-    "CCc1c(C)c2c([C@@H](C)C[C@@]2(C)O)c(C)c1C1=C\\C(C(=O)N1)=C1\\C=C(NC1=O)c1c(C)c2[C@H](C)C[C@](C)(O)c2c(C)c1CC"  # Potentially negative or complex
+    "C1CC=CN1",  # Core pyrroline structure
+    "OC(=O)[C@@H]1CCC=N1",  # Modified pyrroline structure
+    "CCc1c(C)c2c([C@@H](C)C[C@@]2(C)O)c(C)c1C1=C\\C(C(=O)N1)=C1\\C=C(NC1=O)c1c(C)c2[C@H](C)C[C@](C)(O)c2c(C)c1CC"  # Complicated structure
 ]
 
 results = [is_pyrroline(smiles) for smiles in test_smiles]
