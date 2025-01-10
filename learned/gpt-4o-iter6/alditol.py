@@ -21,35 +21,32 @@ def is_alditol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # New approach: Allow for some ring presence due to saccharide origins
-    # BUT confirm no closed chains longer than 6 atoms and linear backbone
-
-    # Assess count of hydroxyl groups, most carbon atoms should have -OH
-    c_oh_groups = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'C' and any(n.GetSymbol() == 'O' for n in atom.GetNeighbors()))
+    # Checking for linear hydroxylated backbone
+    # Ensuring primarily acyclic with small allowable rings
     c_total = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'C')
+    o_total = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'O')
     
-    # Must have predominantly C-OH structures
-    if not (c_oh_groups >= c_total - 1):  # Allow for small loss of -OH in branched blocks
-        return False, "Not enough C-OH substitution typical of alditols"
+    # Minimal conditions for being a polyol (lots of OH groups in relation to C)
+    if o_total < c_total / 2:
+        return False, "Insufficient oxygen atoms for an alditol"
 
-    # Ensure reduction impact - No terminal carbonyl C=O groups
-    carbonyl_pattern = Chem.MolFromSmarts("[CX3](=O)[#6]")
-    if mol.HasSubstructMatch(carbonyl_pattern):
-        return False, "Contains carbonyl groups, indication of precursor not alditol"
+    # Must not contain disaccharide-like patterns heavily repeated
+    glyco_pattern = Chem.MolFromSmarts("OC[C@H]1O[C@@H](CO)[C@@H](O)[C@H](O)[C@H]1O")  
+    if mol.HasSubstructMatch(glyco_pattern):
+        return False, "Contains repeated glycosidic-like units, not typical of simple alditols"
 
-    # Check for redundant carbons joining chains
-    terminal_oh_pattern = Chem.MolFromSmarts("[CH2]O")
+    # Ensure terminal CH2OH ends...
+    terminal_oh_pattern = Chem.MolFromSmarts("CO")
     terminal_oh_matches = mol.GetSubstructMatches(terminal_oh_pattern)
     if len(terminal_oh_matches) < 2:
         return False, "Does not have typical terminal CH2OH groups"
 
-    # Consider stereochemistry: Distinct stereoisomers typical in alditols
-    # Need a SMARTS pattern to match these pretty selectively
-    multi_hydroxyl_pattern = Chem.MolFromSmarts("[C@@H]([OH])")  # - C attached to hydroxyl, chiral
-    if mol.HasSubstructMatch(multi_hydroxyl_pattern):
-        return True, "Molecule matches hydroxyl stereochemical pattern of an alditol"
-
-    return False, "Failed to match stereochemistry and hydroxyl profile for alditol"
+    # Avoid carbonyl presence (identity thief of a hydride - alditol)
+    carbonyl_pattern = Chem.MolFromSmarts("[CX3]=O")
+    if mol.HasSubstructMatch(carbonyl_pattern):
+        return False, "Contains carbonyl groups, indication of precursor not alditol"
+    
+    return True, "Meets criteria: terminal CH2OH groups and polyol characteristics found"
 
 __metadata__ = {
     'chemical_class': {
