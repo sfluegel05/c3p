@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_glycolipid(smiles: str):
     """
     Determines if a molecule is a glycolipid based on its SMILES string.
-    A glycolipid has a sugar moiety linked to a lipid component.
+    A glycolipid generally contains one or more sugar moieties linked to a lipid component.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,19 +21,20 @@ def is_glycolipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more accurate pattern for sugar moieties - pyranose (6-member) or furanose (5-member) rings
+    # Define broader patterns for sugar moieties
     sugar_patterns = [
-        Chem.MolFromSmarts("C1(CO)OC(O)C(O)C1O"),  # glucose pyranose form
-        Chem.MolFromSmarts("C1OCC(O)C(O)C1O"),    # furanose potential base
+        Chem.MolFromSmarts("C1(CO)OC(O)C(O)C1O"),  # Gluco-pyranose form
+        Chem.MolFromSmarts("C1OC(O)C(O)C(O)C1"),  # Another common sugar form
+        Chem.MolFromSmarts("C1OC(CO)C(O)C1O"),    # Furanose form
+        Chem.MolFromSmarts("C1OC(O)C(O)CC1"),     # Simple five-membered ring
     ]
 
     # Check for any sugar moiety
-    sugar_found = any(mol.HasSubstructMatch(pattern) for pattern in sugar_patterns)
-    if not sugar_found:
+    if not any(mol.HasSubstructMatch(pattern) for pattern in sugar_patterns):
         return False, "No sugar moiety found"
 
-    # Check for long carbon chains representing lipids; ensure more than just a simple 'CCCC' pattern
-    lipid_pattern = Chem.MolFromSmarts("C(CCCCCCCCCCCCCCCCCCCCC)")
+    # Define generalized lipid pattern (a series of carbon atoms with some optional unsaturation)
+    lipid_pattern = Chem.MolFromSmarts("[C,R0][C,R0][C,R0][C,R0][C,R0][C,R0][C]")  # Basic long aliphatic chain
 
     if not mol.HasSubstructMatch(lipid_pattern):
         return False, "No long carbon chain (lipid) found"
