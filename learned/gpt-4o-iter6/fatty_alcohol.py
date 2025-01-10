@@ -2,7 +2,6 @@
 Classifies: CHEBI:24026 fatty alcohol
 """
 from rdkit import Chem
-from rdkit.Chem import rdmolops
 
 def is_fatty_alcohol(smiles: str):
     """
@@ -21,36 +20,30 @@ def is_fatty_alcohol(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Count total carbon atoms in the molecule
-    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
 
-    # Special condition: Exclude aromatic systems
+    # Check for aromaticity: Fatty alcohols must be purely aliphatic
     if any(atom.GetIsAromatic() for atom in mol.GetAtoms()):
         return False, "Aromatic system present, not a simple fatty alcohol"
-      
-    # Check for at least one hydroxyl (-OH) group directly attached to a carbon
-    hydroxyl_pattern = Chem.MolFromSmarts("[CX4][OX2H]")  # Hydroxyl group pattern for aliphatic carbons
-    if not mol.HasSubstructMatch(hydroxyl_pattern):
-        return False, "No aliphatic hydroxyl group found on a carbon chain"
 
-    # Ensure no other functional groups skew the classification, e.g., multiple carbonyls, etc.
-    # Simple heuristic: Single non-repeating hydroxyl, few branching or other heteroatom chains
+    # Count total carbon atoms in the molecule
+    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     
-    # Analyze the hydroxyl groups
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    if len(hydroxyl_matches) > 2:
-        return False, "More than two hydroxyl groups, potentially not a simple fatty alcohol"
-
-    # Reject complex structures incorrectly identified (e.g., present in multiple distinct chains or alternative functional groups)
-    n_heavy_atoms_exceeding_carbon = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() not in (6, 8))  # Allow O (for hydroxyl)
-    if n_heavy_atoms_exceeding_carbon > 3:
-        return False, "Presence of non-alcohol functionality suggesting alternative classification"
-    
-    # Check carbon count range
     if carbon_count < 3:
         return False, f"Too few carbon atoms ({carbon_count}), need at least 3"
-    if carbon_count > 27 and len(hydroxyl_matches) > 1:
-        return False, f"Long chain with multiple hydroxyls suggests structure may not be simple fatty alcohol"
+        
+    # Check for hydroxyl (-OH) groups and ensure they're attached to carbon
+    oh_pattern = Chem.MolFromSmarts("[CX4][OX2H]")
+    if not mol.HasSubstructMatch(oh_pattern):
+        return False, "No aliphatic hydroxyl group found on a carbon chain"
 
-    return True, "Contains a carbon chain with the correct hydroxyl group(s), characteristic of fatty alcohols"
+    # Check that there aren't complicated branching structures: Allow chains but not excessive heteroatom involvement
+    non_hydroxy_heavy_atoms = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() not in (6, 8) or (atom.GetAtomicNum() == 8 and atom.GetTotalNumHs() == 0))
+    if non_hydroxy_heavy_atoms > 2:
+        return False, f"Structure too complex due to presence of {non_hydroxy_heavy_atoms} heteroatoms excluding alcohol functionality"
+
+    # Avoid functionality suggesting alternative classification (e.g., esters, carbonyls unless isolated)
+    undesirable_functionality = Chem.MolFromSmarts("[C](=O)")
+    if mol.HasSubstructMatch(undesirable_functionality):
+        return False, "Contains carbonyl groups suggesting alternative functionality"
+
+    return True, "Contains carbon chain with hydroxyl group(s), consistent with fatty alcohols"
