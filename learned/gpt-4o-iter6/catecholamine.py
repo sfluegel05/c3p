@@ -2,7 +2,6 @@
 Classifies: CHEBI:33567 catecholamine
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_catecholamine(smiles: str):
     """
@@ -22,20 +21,31 @@ def is_catecholamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns for catechol and aminoethyl
-    catechol_pattern = Chem.MolFromSmarts("c1cc(O)cc(O)c1")  # benzene ring with two adjacent hydroxyl groups
-    aminoethyl_pattern = Chem.MolFromSmarts("CCN")  # represents the aminoethyl side chain (may include variants like CNC etc.)
+    # Extended SMARTS pattern for catechol structure (benzene-1,2-diol)
+    catechol_pattern = Chem.MolFromSmarts("c1(c(O)cc(O)c)c1")
+    
+    # Extended SMARTS pattern for aminoethyl-like structures with potential variability
+    # Allows for various aminoethyl variants including substituents
+    aminoethyl_pattern = Chem.MolFromSmarts("[NX3][C,c][C,c]")
 
     # Check for presence of catechol group
     if not mol.HasSubstructMatch(catechol_pattern):
         return False, "No catechol (benzene-1,2-diol) structure found"
 
-    # Check for presence of aminoethyl side chain
+    # Check for presence of aminoethyl structural motif
     if not mol.HasSubstructMatch(aminoethyl_pattern):
-        return False, "No aminoethyl side chain found"
+        return False, "No aminoethyl-like side chain found"
 
-    return True, "Contains catechol group with aminoethyl side chain"
+    # Ensuring correct spatial and logical combination of patterns
+    catechol_matches = mol.GetSubstructMatches(catechol_pattern)
+    aminoethyl_matches = mol.GetSubstructMatches(aminoethyl_pattern)
+
+    # Verify combinations
+    if not catechol_matches or not aminoethyl_matches:
+        return False, "Required structural motifs do not connect correctly"
+
+    return True, "Contains catechol group with aminoethyl-like side chain"
 
 # Example usage
 smiles_example = "CNC[C@H](O)c1ccc(O)c(O)c1"
-is_catecholamine(smiles_example)
+print(is_catecholamine(smiles_example))
