@@ -21,23 +21,23 @@ def is_ribonucleoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Pattern for ribose-like sugar
-    ribose_pattern = Chem.MolFromSmarts("C1OC(CO)[C@@H](O)[C@H]1O")
-    
+    # Pattern for ribose sugar with correct stereochemistry
+    ribose_pattern = Chem.MolFromSmarts("C1OC[C@@H]([C@@H](O)[C@H]1O)CO")
+
     if not mol.HasSubstructMatch(ribose_pattern):
         return False, "No ribose sugar moiety found"
 
-    # Patterns for nucleobases
+    # Patterns for nucleobases (more refined)
     purine_pattern = Chem.MolFromSmarts("n1cnc2c(ncnc12)")
-    pyrimidine_pattern = Chem.MolFromSmarts("c1ccncn1")
+    pyrimidine_pattern = Chem.MolFromSmarts("n1c[nH]c(=O)c1")
 
     # Check for nucleobase
     if not (mol.HasSubstructMatch(purine_pattern) or mol.HasSubstructMatch(pyrimidine_pattern)):
         return False, "No purine or pyrimidine nucleobase found"
 
-    # Verify glycosidic bond, i.e., checks linkage between sugar and base
-    linkage_pattern = Chem.MolFromSmarts("c1[nH]c2c(ncnc12)[C@H]3O")
-    if not mol.HasSubstructMatch(linkage_pattern):
+    # Verify glycosidic bond exists
+    glycosidic_linkage_pattern = Chem.MolFromSmarts("c1[nH]c2c(ncnc12)[C@H]3O") 
+    if not mol.HasSubstructMatch(glycosidic_linkage_pattern):
         return False, "No proper glycosidic linkage between base and sugar"
 
     return True, "Contains ribose sugar with glycosidic linkage to a purine or pyrimidine base"
