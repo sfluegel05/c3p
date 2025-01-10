@@ -24,16 +24,17 @@ def is_secondary_amine(smiles: str):
     if mol is None:
         return None, "Invalid SMILES string"
 
-    # Updated SMARTS pattern for more general secondary amine
-    # Nitrogen with two carbon connections (could be any hybridization) and one hydrogen
-    secondary_amine_smarts = Chem.MolFromSmarts("[NX3;H1][C,c][C,c]") 
+    # Optimized SMARTS pattern to capture typical secondary amines
+    # Nitrogen bonded to exactly two carbon atoms and one hydrogen
+    secondary_amine_smarts = Chem.MolFromSmarts("[NX3;!$(*=O);!$(*N=[N,O,S])][C,c][C,c]") 
 
     # Check for matches in the molecule
     if mol.HasSubstructMatch(secondary_amine_smarts):
-        # Further filtering: check that the nitrogen is not part of an amide, etc.
+        # Further filtering to check that the nitrogen is not part of restricted groups
         amide_smarts = Chem.MolFromSmarts("[NX3][CX3](=[OX1])")
-        if mol.HasSubstructMatch(amide_smarts):
-            return False, "Nitrogen is part of an amide group"
+        nitroso_smarts = Chem.MolFromSmarts("[NX3][N]=[OX1]")
+        if mol.HasSubstructMatch(amide_smarts) or mol.HasSubstructMatch(nitroso_smarts):
+            return False, "Nitrogen is part of an amide or nitroso group"
 
         return True, "Contains secondary amine pattern (nitrogen with two hydrocarbyl groups and one hydrogen)"
 
