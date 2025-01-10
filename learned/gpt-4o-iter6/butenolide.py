@@ -15,16 +15,15 @@ def is_butenolide(smiles: str):
         bool: True if molecule is a butenolide, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Extend the SMARTS pattern to allow substitutions on the 2-furanone core
-    # This pattern matches a furanone, allowing substituents at all positions (R groups)
-    # Pattern allows the central lactone and basic furan ring with R substituents
-    furanone_pattern = Chem.MolFromSmarts("O=C1OC=CC1[R0,R1,R2,R3,R4]")
+    # Define a SMARTS pattern for a 2-furanone core allowing for substitutions
+    # The pattern captures the core structure of a gamma-lactone 2-furanone
+    furanone_pattern = Chem.MolFromSmarts("C1=CO[C@@H](=O)C1")
     
     # Match furanone skeleton with substitutions
     if mol.HasSubstructMatch(furanone_pattern):
