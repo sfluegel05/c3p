@@ -22,7 +22,8 @@ def is_isothiocyanate(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for the standalone isothiocyanate pattern (R-N=C=S)
-    isothiocyanate_pattern = Chem.MolFromSmarts("[#6][NX2]=C=S")  # R-N=C=S where R is a carbon-bonded group
+    # We use a more generic pattern adjusted to accommodate more linkage varieties
+    isothiocyanate_pattern = Chem.MolFromSmarts("[$([NX2]=C=S)]")  # Generic pattern for N=C=S
     if mol.HasSubstructMatch(isothiocyanate_pattern):
         return True, "Contains isothiocyanate group (R-N=C=S)"
 
