@@ -2,7 +2,6 @@
 Classifies: CHEBI:36835 3alpha-hydroxy steroid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_3alpha_hydroxy_steroid(smiles: str):
     """
@@ -23,14 +22,14 @@ def is_3alpha_hydroxy_steroid(smiles: str):
         return False, "Invalid SMILES string"
     
     # Define the steroid backbone pattern
-    steroid_pattern = Chem.MolFromSmarts("[#6]1[#6][#6][#6]2[#6][#6][#6]3[#6]=[#6][#6][#6]4[#6][#6]=[#6][#6]([#6]1)[#6]2[#6]3[#6][#6][#6]4") # Simplified steroids
+    steroid_pattern = Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2CCC4C3(CCC4)C")
     
     # Check for steroid backbone presence
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
     
     # Define the 3alpha-hydroxy pattern
-    hydroxy_3alpha_pattern = Chem.MolFromSmarts("[#6][#6]([#6])([#6])(O)[#6](C)CC") # Simplified SMARTS for 3α-hydroxy
+    hydroxy_3alpha_pattern = Chem.MolFromSmarts("[C@@H]1(O)[C@@H](C)C2CCC3C4CCC(C3)C4(C)CC2C1")
     
     # Check for 3alpha-hydroxy group
     if not mol.HasSubstructMatch(hydroxy_3alpha_pattern):
