@@ -12,7 +12,7 @@ def is_tetrapeptide(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a tetrapeptide, False otherwise
+        bool: True if the molecule is a tetrapeptide, False otherwise
         str: Reason for classification
     """
     
@@ -21,24 +21,21 @@ def is_tetrapeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Search for the generic amide bond pattern and count them
-    amide_pattern = Chem.MolFromSmarts("N-[C;$(C(=O))]-[!#1]")
-    amide_matches = mol.GetSubstructMatches(amide_pattern)
-    if len(amide_matches) != 3:
-        return False, f"Contains {len(amide_matches)} peptide bonds, expected 3"
+    # Define a pattern for N-C=O (amide bond) that indicates peptide linkages
+    peptide_pattern = Chem.MolFromSmarts("N[C;$(C(=O)[N])]C")  # sample pattern for dipeptide linkage
     
-    # Determine the number of amino acid residues (look for repeating CN backbone units)
-    residue_count = 0
-    for match in amide_matches:
-        carbon_idx, nitrogen_idx = match[1], match[0]
-        carbon = mol.GetAtomWithIdx(carbon_idx)
-        nitrogen = mol.GetAtomWithIdx(nitrogen_idx)
-        
-        # Verify if these match the typical amino acid backbone (considering variable side chains)
-        if carbon.GetDegree() >= 3 and nitrogen.GetDegree() >= 2:
-            residue_count += 1
-    
-    if residue_count != 4:
-        return False, f"Peptide linkages found, but amino acid count is {residue_count}, expected 4"
+    # Match the peptide patterns (three linkages for a tetrapeptide)
+    peptide_matches = mol.GetSubstructMatches(peptide_pattern)
+    if len(peptide_matches) != 3:
+        return False, f"Contains {len(peptide_matches)} peptide bonds, expected 3"
 
+    # Define a pattern for amino acids (N-C-C(alpha) backbone)
+    # N-linking through peptide bond and C in amino acids for backbones
+    amino_acid_pattern = Chem.MolFromSmarts("[NX3][CX4][CX3](=O)")
+    
+    # Count amino acid residues by detecting the backbone units
+    amino_acid_matches = mol.GetSubstructMatches(amino_acid_pattern)
+    if len(amino_acid_matches) < 4:
+        return False, f"Detected {len(amino_acid_matches)} amino acid residues, expected 4"
+    
     return True, "Contains four amino-acid residues connected by peptide linkages"
