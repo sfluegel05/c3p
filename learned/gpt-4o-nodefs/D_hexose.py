@@ -20,32 +20,32 @@ def is_D_hexose(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Hexose-related SMARTS patterns (considering stereochemistry)
-    hexose_patterns = [
-        Chem.MolFromSmarts("O[C@@H]1[C@H](O)[C@H](O)[C@@H](O)[C@H](O)C1"),  # Pyranose form with D-config
-        Chem.MolFromSmarts("O1[C@H]([C@H](O)[C@@H](O)[C@H]1O)[C@H](O)CO"),  # Furanose form with D-config
-        Chem.MolFromSmarts("[H]C(=O)[C@H](O)[C@H](O)[C@H](O)[C@@H](O)CO")   # Open-chain aldehydo form with D-config
+        
+    # Check for hexose structure: D-hexoses contain six carbons often including a aldehyde (aldehydo form) or
+    # form either pyranose or furanose rings. Here, we'll try to capture cyclic structures with oxygen.
+    # We use wildcard "C~" to allow some flexibility for cyclic structures (capital O for oxygen):
+    hexose_ring_patterns = [
+        Chem.MolFromSmarts("OC[C@H]1O[C@H](O)[C@H](O)[C@H](O)[C@H]1O"),  # a general pattern for D-pyranose forms
+        Chem.MolFromSmarts("O1[C@H]([C@H](O)[C@H](O)[C@H](O)[C@H](O)1)CO"),  # D-furanose
     ]
     
-    # Attempt to match the SMARTS patterns for D-hexose identification
-    if not any(mol.HasSubstructMatch(pattern) for pattern in hexose_patterns):
-        return False, "Does not match hexose structures (considering pyranose/furanose and D-configuration)"
-    
-    # Ensure stereochemistry corresponds to D-sugars at the correct chiral centers
+    # Attempt to find matches for these patterns
+    is_hexose = any(mol.HasSubstructMatch(pattern) for pattern in hexose_ring_patterns)
+    if not is_hexose:
+        return False, "Does not match hexose ring structure"
+
+    # Check for the presence of D-stereoisomerism:
+    # count `@` symbols, generally D-hexoses have specific stereochemistry
     chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
-    d_sugar_configuration = all(center[1] in ['R', 'S'] for center in chiral_centers)
-    if not d_sugar_configuration:
-        return False, "Incorrect stereochemistry for D-hexose"
+    if len(chiral_centers) < 4:
+        return False, "Insufficient chiral centers for a D-hexose"
     
-    # Verify exactly six carbons
+    if sum(smiles.count('@') for _ in chiral_centers) < 2:
+        return False, f"Expected more stereochemical information on {len(chiral_centers)} centers"
+
+    # Verify that there are exactly six carbons
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if c_count != 6:
-        return False, "Incorrect number of carbons for a hexose"
-
-    # Verify expected number of oxygens (usually 5 for closed monosaccharides)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count != 5 and o_count != 6:
-        return False, "Unusual number of oxygens for a hexose"
+        return False, "Not six carbons present"
 
     return True, "Valid D-hexose conformer and stereochemistry detected"
