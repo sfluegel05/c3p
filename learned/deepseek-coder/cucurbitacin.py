@@ -50,7 +50,7 @@ def is_cucurbitacin(smiles: str):
 
     # Check for cucurbitane skeleton pattern (specific ring arrangement)
     # This pattern captures the core structure of cucurbitane with specific connectivity
-    cucurbitane_pattern = Chem.MolFromSmarts("[C]1[C][C][C]2[C]3[C][C][C]4[C]5[C][C][C]1[C]2[C]3[C]4[C]5")
+    cucurbitane_pattern = Chem.MolFromSmarts("[C]1[C@@H]2[C@@H]3[C@@H]4[C@@H]5[C@@H]1[C@@H]2[C@@H]3[C@@H]4[C@@H]5")
     if not mol.HasSubstructMatch(cucurbitane_pattern):
         return False, "No cucurbitane skeleton found"
 
