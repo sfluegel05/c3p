@@ -26,7 +26,7 @@ def is_N_sulfonylurea(smiles: str):
 
     # Define SMARTS pattern for N-sulfonylurea
     # N-sulfonylurea: O=C(N)N-S(=O)(=O)R
-    n_sulfonylurea_pattern = Chem.MolFromSmarts('NC(=O)N[S](=O)(=O)[#6]')
+    n_sulfonylurea_pattern = Chem.MolFromSmarts('[H][N][C](=O)[N][S](=O)(=O)[!#1]')
     if n_sulfonylurea_pattern is None:
         return False, "Invalid SMARTS pattern"
 
