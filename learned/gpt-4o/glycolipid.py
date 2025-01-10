@@ -6,9 +6,8 @@ from rdkit import Chem
 def is_glycolipid(smiles: str):
     """
     Determines if a molecule is a glycolipid based on its SMILES string.
-    A glycolipid is a type of lipid that includes a carbohydrate group and usually consists 
-    of a 1,2-di-O-acylglycerol unit linked at the oxygen 3 by a glycosidic linkage to a carbohydrate.
-    
+    A glycolipid typically consists of a lipid moiety and a carbohydrate moiety.
+
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -22,14 +21,19 @@ def is_glycolipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define glycerol with acyl chains pattern
-    glycerol_acyl_pattern = Chem.MolFromSmarts("C(CO*)O[*]C(C=O)O")  # Simplified SMARTS for diacylglycerol
-    if not mol.HasSubstructMatch(glycerol_acyl_pattern):
-        return False, "No diacylglycerol structure found"
-        
-    # Look for carbohydrate (sugar) moiety, common patterns for monosaccharides
-    sugar_patterns = ["O[C@H]1[C@H](O)[C@@H](O)[C@H](CO)O[C@H]1O",  # Glucose-like pattern
-                      "O[C@H]1[C@H](O)[C@H](O)[C@@H](CO)O[C@@H]1"]  # Galactose-like pattern
+    # Check for the presence of long lipid-like carbon chains
+    lipid_pattern = Chem.MolFromSmarts("C(=O)CCCCC")  # Simple pattern to find long chains (lipid tail indicator)
+    if not mol.HasSubstructMatch(lipid_pattern):
+        return False, "No lipid-like structure found"
+
+    # Look for carbohydrate (sugar) moieties, extend the search with common monosaccharide substructures
+    sugar_patterns = [
+        "O[C@H]1[C@H](O)[C@@H](O)[C@H](CO)O[C@H]1O",  # Glucose-like pattern
+        "O[C@H]1[C@H](O)[C@H](O)[C@@H](CO)O[C@@H]1",  # Galactose-like pattern
+        "O[C@H](CO)[C@H]1O[C@@H](O)[C@@H](O)[C@H](O)[C@H]1O",  # Another sugar pattern variant
+        "O[C@@H]1(CO)O[C@H](O[C@H]1O)C"  # Simplified furanose/pyranose ring patterns
+    ]
+
     sugar_found = False
     for pattern in sugar_patterns:
         if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
@@ -39,4 +43,4 @@ def is_glycolipid(smiles: str):
     if not sugar_found:
         return False, "No carbohydrate moiety found"
 
-    return True, "Contains a 1,2-di-O-acylglycerol unit linked to a carbohydrate"
+    return True, "Contains both lipid and carbohydrate moieties consistent with glycolipids"
