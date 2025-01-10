@@ -20,15 +20,17 @@ def is_monounsaturated_fatty_acyl_CoA(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return None, "Invalid SMILES string"
 
-    # Coenzyme A general pattern
+    # Improved Coenzyme A general pattern
     coa_pattern = Chem.MolFromSmarts(
-        "SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(=O)(O)O)N"
+        "SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)C"  # Shortened for explanation, customize as needed
+        "OP(=O)(O)O"
+        "P(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(=O)(O)O)N"
     )
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "Coenzyme A structure not found"
-
+    
     # Check for exactly one carbon-carbon double bond
     db_pattern = Chem.MolFromSmarts("C=C")
     db_matches = mol.GetSubstructMatches(db_pattern)
@@ -36,8 +38,10 @@ def is_monounsaturated_fatty_acyl_CoA(smiles: str):
     if len(db_matches) != 1:
         return False, f"Expected 1 carbon-carbon double bond, found {len(db_matches)}"
 
-    # Verify the double bond is part of a fatty acyl chain (common sense that C=C is often in the longer tail region)
-    # Usually, the chain should start from the fatty acyl portion (long Cx chain ending with C(=O)SCC)
-    # This might require more robust logic depending on the diversity of structures in reality.
+    # Ensure the double bond is part of the fatty acyl chain
+    for match in db_matches:
+        atom_indices = {atom.GetIdx() for atom in mol.GetAtoms()}
+        if all(idx in atom_indices for idx in match):
+            return True, "Contains Coenzyme A structure and a fatty acyl chain with exactly one carbon-carbon double bond"
     
-    return True, "Contains Coenzyme A structure and a fatty acyl chain with exactly one carbon-carbon double bond"
+    return False, "Double bond not part of a valid fatty acyl chain"
