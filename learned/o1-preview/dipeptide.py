@@ -5,13 +5,12 @@ Classifies: CHEBI:46761 dipeptide
 Classifies: dipeptide
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import rdchem
 
 def is_dipeptide(smiles: str):
     """
     Determines if a molecule is a dipeptide based on its SMILES string.
-    A dipeptide is any molecule that contains two amino-acid residues connected by a peptide linkage.
+    A dipeptide is any molecule that contains two amino-acid residues connected by peptide linkages.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -25,50 +24,46 @@ def is_dipeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define peptide bond pattern (amide bond between C=O and N-H)
-    peptide_bond_pattern = Chem.MolFromSmarts("[CX3](=O)[NX3][CX4]")
+    # Define peptide bond pattern (amide bond between C=O and N)
+    peptide_bond_pattern = Chem.MolFromSmarts("[$(NC(=O))]")
     if peptide_bond_pattern is None:
         return False, "Failed to create peptide bond SMARTS pattern"
 
     # Find all peptide bonds
     peptide_bonds = mol.GetSubstructMatches(peptide_bond_pattern)
-    n_peptide_bonds = len(peptide_bonds)
 
-    # Check for exactly one peptide bond
-    if n_peptide_bonds != 1:
-        return False, f"Found {n_peptide_bonds} peptide bonds, expected exactly 1 for a dipeptide"
+    # Build a graph of peptide bonds to identify connected amino acid residues
+    residues = set()
+    for match in peptide_bonds:
+        n_idx = match[0]
+        c_idx = match[1]
+        # Add the atoms connected to the nitrogen and carbon to the residues set
+        n_atom = mol.GetAtomWithIdx(n_idx)
+        c_atom = mol.GetAtomWithIdx(c_idx)
+        residues.add(n_atom.GetIdx())
+        residues.add(c_atom.GetIdx())
 
-    # Get the bond indices of the peptide bond(s)
-    peptide_bond_indices = []
-    for match in mol.GetSubstructMatches(peptide_bond_pattern, uniquify=True):
-        # Get the indices of the carbonyl carbon and the amide nitrogen
-        c_idx = match[0]
-        n_idx = match[1]
-        # Find the bond between these atoms
-        bond = mol.GetBondBetweenAtoms(c_idx, n_idx)
-        if bond is not None:
-            peptide_bond_indices.append(bond.GetIdx())
+    # Count the number of residues by identifying alpha carbons (C-alpha)
+    alpha_carbons = []
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6 and atom.GetDegree() >= 3:
+            has_nitrogen = False
+            has_carbonyl = False
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 7:
+                    has_nitrogen = True
+                elif neighbor.GetAtomicNum() == 6:
+                    for bond in neighbor.GetBonds():
+                        if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                            if bond.GetOtherAtom(neighbor).GetAtomicNum() == 8:
+                                has_carbonyl = True
+                if has_nitrogen and has_carbonyl:
+                    alpha_carbons.append(atom)
+                    break
 
-    if len(peptide_bond_indices) != 1:
-        return False, "Could not uniquely identify the peptide bond"
+    n_residues = len(alpha_carbons)
 
-    # Fragment the molecule at the peptide bond(s)
-    fragmented_mol = Chem.FragmentOnBonds(mol, peptide_bond_indices, addDummies=True)
-    fragments = Chem.GetMolFrags(fragmented_mol, asMols=True)
+    if n_residues != 2:
+        return False, f"Found {n_residues} amino acid residues, expected 2 for a dipeptide"
 
-    n_fragments = len(fragments)
-
-    # Check for exactly two fragments (amino acid residues)
-    if n_fragments != 2:
-        return False, f"Found {n_fragments} fragments after breaking peptide bond, expected 2"
-
-    # Optional: Validate that each fragment resembles an amino acid residue
-    amino_acid_residue_pattern = Chem.MolFromSmarts("[NX3,NX4+][CX4][CX3](=O)")
-    if amino_acid_residue_pattern is None:
-        return False, "Failed to create amino acid residue SMARTS pattern"
-
-    for idx, frag in enumerate(fragments):
-        if not frag.HasSubstructMatch(amino_acid_residue_pattern):
-            return False, f"Fragment {idx+1} does not resemble an amino acid residue"
-
-    return True, "Molecule is a dipeptide composed of two amino acid residues connected by a peptide bond"
+    return True, "Molecule is a dipeptide composed of two amino acid residues connected by peptide linkage"
