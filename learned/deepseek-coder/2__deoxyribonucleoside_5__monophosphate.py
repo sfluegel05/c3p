@@ -26,29 +26,25 @@ def is_2__deoxyribonucleoside_5__monophosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for the presence of a phosphate group (P=O or P-O, including deprotonated forms)
-    phosphate_pattern = Chem.MolFromSmarts("[PX4](=O)([OX2,-])([OX2,-])")
+    # Check for the presence of a phosphate group (P=O or P-O)
+    phosphate_pattern = Chem.MolFromSmarts("[PX4](=O)([OX2])([OX2])")
     phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
     if len(phosphate_matches) == 0:
         return False, "No phosphate group found"
 
     # Check for the presence of a 2'-deoxyribose sugar (C1C(C(COP(=O)(O)O)O)O)
-    deoxyribose_pattern = Chem.MolFromSmarts("C1C(C(COP(=O)([OX2,-])[OX2,-])O)O1")
+    deoxyribose_pattern = Chem.MolFromSmarts("[C@H]1[C@H](O)[C@@H](COP(=O)(O)O)O1")
     deoxyribose_matches = mol.GetSubstructMatches(deoxyribose_pattern)
     if len(deoxyribose_matches) == 0:
         return False, "No 2'-deoxyribose sugar found"
 
-    # Check for the presence of a nucleobase (adenine, guanine, cytosine, thymine, or uracil, including modifications)
+    # Check for the presence of a nucleobase (adenine, guanine, cytosine, thymine, or uracil)
     nucleobase_patterns = [
         Chem.MolFromSmarts("Nc1ncnc2n(cnc12)"),  # Adenine
         Chem.MolFromSmarts("Nc1nc2c(n1)[nH]c(=O)n2"),  # Guanine
-        Chem.MolFromSmarts("Nc1ccnc(=O)n1"),  # Cytosine
-        Chem.MolFromSmarts("Cc1cnc(=O)[nH]c1=O"),  # Thymine
-        Chem.MolFromSmarts("O=C1NC(=O)C=CN1"),  # Uracil
-        Chem.MolFromSmarts("Nc1nc2c(n1)[nH]c(=O)n2"),  # Modified Guanine
-        Chem.MolFromSmarts("Nc1ccnc(=O)n1"),  # Modified Cytosine
-        Chem.MolFromSmarts("Cc1cnc(=O)[nH]c1=O"),  # Modified Thymine
-        Chem.MolFromSmarts("O=C1NC(=O)C=CN1")  # Modified Uracil
+        Chem.MolFromSmarts("Nc1ccn([C@@H]2O[C@H](COP(=O)(O)O)[C@H](C2)O)c(=O)n1"),  # Cytosine
+        Chem.MolFromSmarts("Cc1cn([C@@H]2O[C@H](COP(=O)(O)O)[C@H](C2)O)c(=O)[nH]c1=O"),  # Thymine
+        Chem.MolFromSmarts("O=C1NC(=O)C=C([C@@H]2O[C@H](COP(=O)(O)O)[C@H](C2)O)N1")  # Uracil
     ]
     nucleobase_found = any(mol.HasSubstructMatch(pattern) for pattern in nucleobase_patterns)
     if not nucleobase_found:
