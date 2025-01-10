@@ -22,22 +22,21 @@ def is_nitrohydrocarbon(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS pattern for generic nitro group (positive nitrogen bound to two oxygens)
+    # Define SMARTS pattern for nitro group
     nitro_pattern = Chem.MolFromSmarts("[N+](=O)[O-]")
     
-    # Search for nitro groups attached to any carbon atom
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 6:  # Carbon atom
-            neighbors = atom.GetNeighbors()
-            for neighbor in neighbors:
-                if neighbor.GetSmarts() == "[N+](=O)[O-]":
-                    return True, "Contains nitro group(s) attached to hydrocarbon"
+    # Search for nitro groups
+    nitro_matches = mol.GetSubstructMatches(nitro_pattern)
+    if not nitro_matches:
+        return False, "No nitro groups found"
 
     # Ensure the molecule is predominantly a hydrocarbon
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    hydrogen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 1)
-    
-    if carbon_count > 0 and hydrogen_count > 0:
-        return False, "No nitro groups attached to carbon found but is a hydrocarbon"
-    
-    return False, "Molecule is not primarily a hydrocarbon"
+    non_carbon_non_nitro_count = sum(1 for atom in mol.GetAtoms() 
+                                     if atom.GetAtomicNum() != 6 and atom.GetAtomicNum() != 7 and atom.GetAtomicNum() != 8)
+
+    # There should be more carbons than other non-nitro/non-oxy atoms
+    if carbon_count <= non_carbon_non_nitro_count:
+        return False, "Molecule is not predominantly a hydrocarbon"
+
+    return True, "Contains nitro group(s) attached to hydrocarbon backbone"
