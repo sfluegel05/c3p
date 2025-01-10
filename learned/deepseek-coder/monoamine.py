@@ -50,7 +50,7 @@ def is_monoamine(smiles: str):
     ring_info = mol.GetRingInfo()
     for bond in mol.GetBonds():
         if bond.GetBeginAtom().GetSymbol() == 'C' and bond.GetEndAtom().GetSymbol() == 'C':
-            if ring_info.IsBondInRing(bond.GetIdx()):
+            if ring_info.IsBondInRingOfSize(bond.GetIdx(), 3):  # Check if the bond is part of a ring
                 return False, "Two-carbon chain is part of a ring system"
 
     return True, "Contains aromatic ring connected to amino group via two-carbon chain"
