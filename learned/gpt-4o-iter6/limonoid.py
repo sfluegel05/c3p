@@ -16,29 +16,29 @@ def is_limonoid(smiles: str):
         bool: True if molecule is a limonoid, False otherwise
         str: Reason for classification
     """
-    
+
     # Attempt to parse the SMILES string into a molecular structure
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Check for sufficient oxygenation, considering known examples have high oxygen counts
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count < 10:  # Limonoids show significant oxygen content, refine as needed
-        return False, "Insufficient oxygen content typical of limonoids"
     
-    # Define SMARTS pattern for the furan ring as a common feature
+    # Check for the presence of at least one furan ring
     furan_pattern = Chem.MolFromSmarts("c1ccoc1")
-    if furan_pattern is not None and not mol.HasSubstructMatch(furan_pattern):
+    if not mol.HasSubstructMatch(furan_pattern):
         return False, "No furan ring identified, atypical for limonoid"
-    
-    # Hypothetical SMARTS pattern for a limonoid core structure
-    # Needs refinement based on structural diversity of actual limonoids
-    limonoid_core_pattern = Chem.MolFromSmarts("C1=CCC2(O)C3=C(O)C(C)C4C(=O)CCC5=CC6C7C1C3=C4C(=O)C(O)C5(C7C6=O)=O")
-    if limonoid_core_pattern is not None and not mol.HasSubstructMatch(limonoid_core_pattern):
-        return False, "Lacks prototypical limonoid steroid-like core structure"
 
-    # Consider molecular weight based on highly oxygenated limonoid nature
+    # Check for a generic steroid-like core
+    steroid_pattern = Chem.MolFromSmarts("C1CCC2CCC3C4CCCC5C3C2C1C=C4CCC5")
+    if not mol.HasSubstructMatch(steroid_pattern):
+        return False, "Lacks steroid-like core structure"
+
+    # The significant presence of ether groups can help indicate high oxygenation
+    ether_pattern = Chem.MolFromSmarts("[OX2]C")
+    ether_count = len(mol.GetSubstructMatches(ether_pattern))
+    if ether_count < 3:
+        return False, "Insufficient ether linkages typical of limonoids"
+
+    # Consider molecular weight range
     mol_wt = Descriptors.MolWt(mol)
     if mol_wt < 450 or mol_wt > 1200:
         return False, "Molecular weight falls outside typical limonoid range"
