@@ -1,43 +1,56 @@
 """
 Classifies: CHEBI:87658 decanoate ester
 """
-Looking at the outcomes, the main issue is that the program has too many false positives - it's identifying many compounds as decanoate esters that aren't actually decanoate esters. The key problems appear to be:
+"""
+Classifies: decanoate ester
+Definition: A fatty acid ester resulting from the formal condensation of the carboxy group 
+of decanoic acid (capric acid) with the hydroxy group of an alcohol or phenol.
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
 
-1. The SMARTS pattern for the decanoyl chain (`[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]`) is too flexible with the `~` bonds, allowing for double bonds and rings within the chain.
-
-2. The chain validation logic isn't strict enough - it allows for branched chains and substitutions that shouldn't be part of a decanoate ester.
-
-3. We need to ensure the chain is specifically 10 carbons long, not longer.
-
-Here's how we can improve:
-
-1. Use more specific SMARTS patterns:
-   - Use `-` instead of `~` to specify single bonds
-   - Add explicit hydrogens where needed
-   - Specify saturated carbons (CX4) for most of the chain
-
-2. Add stricter chain validation:
-   - Count exact number of carbons
-   - Ensure linear chain structure
-   - Verify no branching except at the end
-
-3. Add additional checks:
-   - Verify the carbon chain is saturated (except for the carbonyl carbon)
-   - Check that the ester oxygen is not part of a larger group like phosphate
-
-Here's the reasoning for a new implementation:
-1. First check for basic ester group
-2. Find all potential decanoyl chains
-3. For each chain:
-   - Verify it's exactly 10 carbons
-   - Verify it's linear (no branches except at ends)
-   - Verify it's saturated (all single bonds)
-   - Verify proper connectivity to ester group
-4. Additional validation to exclude false positives:
-   - Check bond types
-   - Verify chain length
-   - Ensure proper connectivity
-
-This should help reduce false positives while maintaining true positives.
-
-Would you like me to implement this improved version?
+def is_decanoate_ester(smiles: str):
+    """
+    Determines if a molecule is a decanoate ester based on its SMILES string.
+    
+    Args:
+        smiles (str): SMILES string of the molecule
+        
+    Returns:
+        bool: True if molecule is a decanoate ester, False otherwise
+        str: Reason for classification
+    """
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Look for ester group pattern (-O-C(=O)-)
+    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    if not ester_matches:
+        return False, "No ester group found"
+    
+    # Pattern for decanoyl group (10-carbon chain with carbonyl)
+    # Note: The pattern looks for C(=O)-CCCCCCCCC
+    decanoyl_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4]")
+    decanoyl_matches = mol.GetSubstructMatches(decanoyl_pattern)
+    
+    if not decanoyl_matches:
+        return False, "No decanoyl group found"
+    
+    # Check if any decanoyl group is part of an ester
+    found_decanoate_ester = False
+    for ester_match in ester_matches:
+        for decanoyl_match in decanoyl_matches:
+            # Check if the carbonyl carbon of the ester matches the carbonyl carbon of the decanoyl
+            if ester_match[1] == decanoyl_match[0]:
+                found_decanoate_ester = True
+                break
+        if found_decanoate_ester:
+            break
+            
+    if not found_decanoate_ester:
+        return False, "Decanoyl group not connected via ester linkage"
+    
+    return True, "Contains decanoyl group connected via ester linkage"
