@@ -21,15 +21,19 @@ def is_glycolipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a basic pattern for sugar moiety - usually pyranose (6-member) or furanose (5-member) rings
-    sugar_pattern = Chem.MolFromSmarts("C1(O[CH](CO)[C@@H](O)[C@H](O)[C@H]1O) | C1(O[CH](CO)[C@@H](O)[C@H](O)[C@H](O)[C@@H]1O)")
+    # Define a more accurate pattern for sugar moieties - pyranose (6-member) or furanose (5-member) rings
+    sugar_patterns = [
+        Chem.MolFromSmarts("C1(CO)OC(O)C(O)C1O"),  # glucose pyranose form
+        Chem.MolFromSmarts("C1OCC(O)C(O)C1O"),    # furanose potential base
+    ]
 
-    # Check for sugar moiety
-    if not mol.HasSubstructMatch(sugar_pattern):
+    # Check for any sugar moiety
+    sugar_found = any(mol.HasSubstructMatch(pattern) for pattern in sugar_patterns)
+    if not sugar_found:
         return False, "No sugar moiety found"
 
-    # Check for long carbon chains representing lipids
-    lipid_pattern = Chem.MolFromSmarts("CCCCCCCCCCC")  # Simple pattern for a long carbon chain
+    # Check for long carbon chains representing lipids; ensure more than just a simple 'CCCC' pattern
+    lipid_pattern = Chem.MolFromSmarts("C(CCCCCCCCCCCCCCCCCCCCC)")
 
     if not mol.HasSubstructMatch(lipid_pattern):
         return False, "No long carbon chain (lipid) found"
