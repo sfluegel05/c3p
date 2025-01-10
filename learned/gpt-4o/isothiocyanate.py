@@ -22,20 +22,18 @@ def is_isothiocyanate(smiles: str):
         return False, "Invalid SMILES string"
     
     # Look for isothiocyanate group pattern N=C=S, making it more specific to common bonds
-    # Considering context or constraints around connections for specificity
-    isothiocyanate_pattern = Chem.MolFromSmarts("[NX2]=[CX2]=[SX1]")  # basic pattern for N=C=S
+    isothiocyanate_pattern = Chem.MolFromSmarts("N=C=S")
+    
+    # Find matches for the isothiocyanate group in the molecule
+    matches = mol.GetSubstructMatches(isothiocyanate_pattern)
 
-    # A more strict pattern to ensure N=C=S is terminal or more isolated could be introduced
-    # Additional constraints could be added here
-    if mol.HasSubstructMatch(isothiocyanate_pattern):
-        NCS_matches = mol.GetSubstructMatch(isothiocyanate_pattern)
-
-        # Verify that the match is reasonable (e.g., hanging or certain connectivity)
-        for match in NCS_matches:
-            cx, nx, sx = match
-            if mol.GetAtomWithIdx(sx).GetDegree() == 1:
+    if matches:
+        # Iterate over matches and confirm the pattern
+        for match in matches:
+            nx, cx, sx = match
+            if mol.GetAtomWithIdx(sx).GetDegree() == 1:  # Ensures sulfur is terminal
                 return True, "Contains terminal isothiocyanate group (N=C=S)"
         
-        return False, "Isothiocyanate pattern present but not terminal or unique in structure"
+        return False, "Isothiocyanate group not terminal"
     else:
         return False, "No isothiocyanate group (N=C=S) found"
