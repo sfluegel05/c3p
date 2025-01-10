@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_leukotriene(smiles: str):
     """
     Determines if a compound is a leukotriene based on its SMILES string.
-    A leukotriene is characterized by a C20 polyunsaturated fatty acid backbone with
+    A leukotriene is defined by a C20 polyunsaturated fatty acid backbone with
     four double bonds, three of which are conjugated.
 
     Args:
@@ -22,28 +22,27 @@ def is_leukotriene(smiles: str):
     if mol is None:
         return (False, "Invalid SMILES string")
     
-    # Use a SMARTS pattern to find at least three conjugated double bonds in a row
-    conjugated_pattern = Chem.MolFromSmarts('C=CC=CC=C')
-    conjugated_matches = mol.GetSubstructMatches(conjugated_pattern)
-    
-    if not conjugated_matches:
-        return (False, "No pattern of three consecutive conjugated double bonds found.")
-    
-    # Count total double bonds, ensure there are at least four
+    # Count the carbon atoms allowing for slight variation (18 to 22)
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if not (18 <= c_count <= 22):
+        return (False, f"Number of carbon atoms ({c_count}) outside permitted range (18-22) for leukotrienes.")
+
+    # Find all double bonds
     double_bonds = [bond for bond in mol.GetBonds() if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE]
+    
+    # Ensure there are at least four double bonds
     if len(double_bonds) < 4:
         return (False, f"Insufficient double bonds ({len(double_bonds)}) found; at least 4 required.")
     
-    # Evaluate stereochemistry to ensure specific 3D characteristics (often relevant for leukotrienes)
-    stereochemistry_patterns = [
-        Chem.MolFromSmarts('[C@H](C=C)', useChirality=True),
-        Chem.MolFromSmarts('[C@@H](C=C)', useChirality=True)
-    ]
-    for pattern in stereochemistry_patterns:
-        if mol.HasSubstructMatch(pattern):
-            return (True, "Structure matches a leukotriene with a C20 polyunsaturated fatty acid backbone and conjugated double bonds.")
+    # Check for at least one set of three consecutive conjugated double bonds
+    conjugated_pattern = Chem.MolFromSmarts('C=C-C=C-C=C')
+    conjugated_matches = mol.GetSubstructMatches(conjugated_pattern)
     
-    return (True, "Structure matches a leukotriene, but requires further stereochemical verification.")
+    if len(conjugated_matches) < 1:
+        return (False, "No set of three consecutive conjugated double bonds found.")
+    
+    # If all checks pass, the compound can be considered a leukotriene
+    return (True, "Structure matches a leukotriene with a C20 polyunsaturated fatty acid backbone and conjugated double bonds.")
 
 # Example usage:
 # result, reason = is_leukotriene('O[C@H](C/C=C\\CCCCC)/C=C/C=C/C=C/C(=O)CCCC(O)=O')
