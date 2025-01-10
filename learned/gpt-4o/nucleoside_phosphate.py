@@ -27,32 +27,33 @@ def is_nucleoside_phosphate(smiles: str):
     # Broad nucleobase pattern for common bases and their derivatives
     purine_patterns = [
         Chem.MolFromSmarts('n1cnc2ncnc12'),  # Common purine
-        Chem.MolFromSmarts('c1ncnc2[nH]cnc12'),  # Modified purine
+        Chem.MolFromSmarts('c1ncnc2ncnc12'),  # Uncommon purine base
+        Chem.MolFromSmarts('n1c[nH]cnc1'),  # Inosine-type base
     ]
     pyrimidine_patterns = [
-        Chem.MolFromSmarts('n1c([nH])ccnc1'),  # Common pyrimidine
-        Chem.MolFromSmarts('n1cncn[nH]1'),    # Modified pyrimidine
+        Chem.MolFromSmarts('n1cc[nH]cn1'),  # Pyrimidine (simpler pattern)
+        Chem.MolFromSmarts('n1c[nH]cnc1'),  # Modified pyrimidine
     ]
 
     nucleobase_found = any(mol.HasSubstructMatch(pat) for pat in purine_patterns + pyrimidine_patterns)
     if not nucleobase_found:
         return False, "No nucleobase detected (general purine or pyrimidine)"
 
-    # Check for sugar moiety, more flexible and allowing for common modifications
+    # Check for sugar moiety ensuring flexibility
     sugar_patterns = [
-        Chem.MolFromSmarts('C1OCC(O)C1O'),  # Ribose/deoxyribose core without strict stereochemistry
-        Chem.MolFromSmarts('OCC1OC(CO)C(O)C1'),  # Other sugar forms
+        Chem.MolFromSmarts('C1OC(O)C(O)C1O'),  # Flexible ribose/deoxyribose core
+        Chem.MolFromSmarts('C1(O)COC(O)COC1'),  # Alcoholic sugar representation
     ]
 
     sugar_found = any(mol.HasSubstructMatch(pat) for pat in sugar_patterns)
     if not sugar_found:
         return False, "No appropriate sugar detected (ribose variants)"
 
-    # Look for phosphate groups (allow different attachments)
+    # Look for phosphate groups
     phosphate_patterns = [
         Chem.MolFromSmarts('P(=O)(O)(O)'),  # Mono-phosphate
         Chem.MolFromSmarts('OP(=O)(O)OP(=O)(O)O'),  # Di-phosphate
-        Chem.MolFromSmarts('OP(=O)(O)OP(=O)(O)OP(=O)(O)O'),  # Tri-phosphate
+        Chem.MolFromSmarts('O[P](=O)(O)OP(=O)(O)OP(=O)(O)O'),  # Tri-phosphate
     ]
 
     phosphate_found = any(mol.HasSubstructMatch(pat) for pat in phosphate_patterns)
