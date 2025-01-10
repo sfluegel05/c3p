@@ -3,6 +3,7 @@ Classifies: CHEBI:19573 2-enoyl-CoA
 """
 from rdkit import Chem
 
+
 def is_2_enoyl_CoA(smiles: str):
     """
     Determines if a molecule is a 2-enoyl-CoA based on its SMILES string.
@@ -20,19 +21,21 @@ def is_2_enoyl_CoA(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define the specific enoyl-CoA pattern for the double bond at positions 2-3
-    enoyl_pattern = Chem.MolFromSmarts("C(=C)C(=O)SCC(N)C(=O)NC(C(=O)O)CCC(=O)NC")  # Capturing a generic enoyl thioester pattern
     
-    # Define the CoA moiety pattern using components
-    coa_pattern = Chem.MolFromSmarts("COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H](CO[P](=O)(O)O)[C@@H](O)[C@H]1N2C=NC3=C2N=CN=C3N")  # Focusing on the sugar and phosphate backbone with adenine
+    # Define the pattern for Coenzyme A with a 2-enoyl feature
+    # Thioester linkage with a double bond on the next fatty acyl chain (C=C-C(=O) or similar)
     
-    # Check for the specific enoyl double bond pattern
+    # Extremely simplified pattern for 2-enoyl thioester linkage
+    enoyl_pattern = Chem.MolFromSmarts("C(=O)SC=CC")
+    
+    # Check if molecule contains the 2-enoyl feature structure
     if not mol.HasSubstructMatch(enoyl_pattern):
-        return False, "No 2-enoyl pattern detected (missing double bond between positions 2 and 3 or thioester linkage)"
+        return False, "No 2-enoyl pattern found"
+        
+    # Ensure CoA structure is present
+    # This is checking for a more general context of CoA structure
+    coA_pattern = Chem.MolFromSmarts("COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H](O[C@H]([C@@H]1OP(O)(O)=O)n2cnc3c(N)ncnc23)")
+    if not mol.HasSubstructMatch(coA_pattern):
+        return False, "No Coenzyme A backbone detected"
     
-    # Ensure the Coenzyme A (CoA) structure is present
-    if not mol.HasSubstructMatch(coa_pattern):
-        return False, "No Coenzyme A structure detected"
-
-    return True, "Molecule matches the 2-enoyl-CoA definition"
+    return True, "Contains 2-enoyl feature with Coenzyme A structure"
