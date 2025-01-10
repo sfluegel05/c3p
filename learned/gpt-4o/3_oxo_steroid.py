@@ -21,19 +21,15 @@ def is_3_oxo_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Verify steroid backbone with 4-ring system
-    ring_info = mol.GetRingInfo()
-    if len(ring_info.AtomRings()) < 4:
-        return False, "Not enough rings for a steroid backbone"
-
-    # Check for steroid backbone pattern
-    steroid_backbone_pattern = Chem.MolFromSmarts("C1[C@H]2CCC3=CC(=O)CC4=C[C@H]2CC[C@]3(C)[C@@H]4CC1")
+    # Define a general SMARTS pattern for steroid backbone (rings: B-C-D)
+    steroid_backbone_pattern = Chem.MolFromSmarts("[#6]1[#6][#6]2[#6][#6]3[#6][#6][#6]4[#6][#6][#6]1[#6]2[#6][#6]3")
     if not mol.HasSubstructMatch(steroid_backbone_pattern):
         return False, "No steroid backbone found"
 
-    # Check for oxo (C=O) group at the third position
-    oxo_group_pattern = Chem.MolFromSmarts("C3(=O)")
-    if not mol.HasSubstructMatch(oxo_group_pattern):
+    # Identify the correct 3-position for the oxo group in the steroid structure
+    # Use a pattern that identifies a C=O group at possible positions
+    oxo_group_pattern = Chem.MolFromSmarts("[#6;r3](=O)")
+    if not any(mol.GetSubstructMatches(oxo_group_pattern)):
         return False, "No 3-oxo group found"
 
     return True, "Molecule is a 3-oxo steroid"
