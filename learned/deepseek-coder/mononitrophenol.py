@@ -26,13 +26,10 @@ def is_mononitrophenol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for phenol pattern (benzene ring with exactly one hydroxyl group)
+    # Look for phenol pattern (benzene ring with at least one hydroxyl group)
     phenol_pattern = Chem.MolFromSmarts("[c]1[c][c][c][c][c]1[OH]")
-    phenol_matches = mol.GetSubstructMatches(phenol_pattern)
-    
-    # Ensure there is exactly one hydroxyl group on the benzene ring
-    if len(phenol_matches) != 1:
-        return False, f"Found {len(phenol_matches)} hydroxyl groups on benzene ring, need exactly 1"
+    if not mol.HasSubstructMatch(phenol_pattern):
+        return False, "No phenol group found"
 
     # Look for nitro groups (-NO2)
     nitro_pattern = Chem.MolFromSmarts("[N+](=O)[O-]")
