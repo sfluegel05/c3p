@@ -28,60 +28,76 @@ def is_prostaglandin(smiles: str):
 
     # Count carbons - should be approximately 20 (allow variation for derivatives)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 15 or c_count > 30:
+    if c_count < 15 or c_count > 35:
         return False, f"Carbon count ({c_count}) outside typical range for prostaglandins"
 
-    # Basic prostaglandin core with cyclopentane ring
-    core_pattern = Chem.MolFromSmarts("[CH2,CH]1[CH2,CH][CH2,CH][CH2,CH][CH2,CH]1")
-    if core_pattern is None:
-        return None, "Error in core SMARTS pattern"
-    if not mol.HasSubstructMatch(core_pattern):
-        return False, "No cyclopentane ring found"
+    # More flexible cyclopentane core pattern that includes various oxidation states
+    # and possible peroxide bridges (as in PGH series)
+    core_patterns = [
+        "[#6]1~[#6]~[#6]~[#6]~[#6]1",  # Basic 5-membered ring
+        "[#6]1~[#6]~[#6](~[#8,#6])~[#6]~[#6]1",  # With substituents
+        "[#6]1~[#6]2~[#6]~[#8]~[#8]~[#6]2~[#6]~[#6]~[#6]1"  # Peroxide bridge pattern
+    ]
+    
+    ring_found = False
+    for pattern in core_patterns:
+        core_pat = Chem.MolFromSmarts(pattern)
+        if core_pat and mol.HasSubstructMatch(core_pat):
+            ring_found = True
+            break
+    
+    if not ring_found:
+        return False, "Missing characteristic cyclopentane ring structure"
 
-    # Look for characteristic chains with double bonds
-    chain_pattern = Chem.MolFromSmarts("CC=CC")  # Alkenyl chain
-    if chain_pattern is None:
-        return None, "Error in chain SMARTS pattern"
+    # Check for characteristic chains with double bonds
+    # More flexible pattern that captures both cis and trans configurations
+    chain_pattern = Chem.MolFromSmarts("[#6]~[#6]=[#6]~[#6]")
     if not mol.HasSubstructMatch(chain_pattern):
         return False, "Missing characteristic alkenyl chains"
 
-    # Check for carboxylic acid or derivatives
-    acid_pattern = Chem.MolFromSmarts("[$([CX3](=[OX1])[OX2H]),$([CX3](=[OX1])[OX2][CH2,CH3]),$([CX3](=[OX1])[NX3])]")
-    if acid_pattern is None:
-        return None, "Error in acid SMARTS pattern"
-    if not mol.HasSubstructMatch(acid_pattern):
-        return False, "No carboxylic acid or derivative found"
+    # Check for carboxylic acid or derivatives (including esters and amides)
+    acid_patterns = [
+        "[CX3](=[OX1])[OX2H]",  # Carboxylic acid
+        "[CX3](=[OX1])[OX2][#6]",  # Ester
+        "[CX3](=[OX1])[NX3]",  # Amide
+        "[CX3](=[OX1])[O-]"  # Carboxylate
+    ]
+    
+    acid_found = False
+    for pattern in acid_patterns:
+        acid_pat = Chem.MolFromSmarts(pattern)
+        if acid_pat and mol.HasSubstructMatch(acid_pat):
+            acid_found = True
+            break
+            
+    if not acid_found:
+        return False, "Missing carboxylic acid or derivative group"
 
-    # Count oxygen atoms (typically 3-8 in prostaglandins and derivatives)
+    # Count oxygen atoms (allow wider range for derivatives)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count < 3 or o_count > 8:
-        return False, f"Unusual number of oxygen atoms ({o_count}) for prostaglandin"
+    if o_count < 2:
+        return False, f"Insufficient oxygen atoms ({o_count}) for prostaglandin"
 
-    # Look for oxygen substituents on or near the ring (hydroxyl, ketone)
-    oxygen_pattern = Chem.MolFromSmarts("[$([CH2,CH]1[CH2,CH][CH2,CH]([OH1,=O])[CH2,CH][CH2,CH]1),$([CH2,CH]1[CH2,CH]([OH1,=O])[CH2,CH][CH2,CH][CH2,CH]1)]")
-    if oxygen_pattern is None:
-        return None, "Error in oxygen SMARTS pattern"
-    if not mol.HasSubstructMatch(oxygen_pattern):
+    # Look for oxygen substituents (more flexible pattern)
+    oxygen_patterns = [
+        "[#6]~[#8H1]",  # Hydroxyl
+        "[#6]=[#8]",    # Ketone
+        "[#8]~[#8]"     # Peroxide
+    ]
+    
+    oxygen_found = False
+    for pattern in oxygen_patterns:
+        o_pat = Chem.MolFromSmarts(pattern)
+        if o_pat and mol.HasSubstructMatch(o_pat):
+            oxygen_found = True
+            break
+            
+    if not oxygen_found:
         return False, "Missing characteristic oxygen substituents"
 
-    # Check molecular weight - should be in reasonable range for prostaglandins
+    # Check molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 250 or mol_wt > 500:
+    if mol_wt < 250 or mol_wt > 600:  # Widened range for derivatives
         return False, f"Molecular weight ({mol_wt:.1f}) outside typical range"
 
-    # Check for branching pattern characteristic of prostaglandins
-    branch_pattern = Chem.MolFromSmarts("[CH2,CH]1([CH2,CH][CH2,CH][CH2,CH][CH2,CH]1)CC")
-    if branch_pattern is None:
-        return None, "Error in branch SMARTS pattern"
-    if not mol.HasSubstructMatch(branch_pattern):
-        return False, "Missing characteristic branching pattern"
-
-    # Additional check for hydroxyl groups (very common in prostaglandins)
-    hydroxyl_pattern = Chem.MolFromSmarts("[OH1]")
-    if hydroxyl_pattern is None:
-        return None, "Error in hydroxyl SMARTS pattern"
-    hydroxyl_count = len(mol.GetSubstructMatches(hydroxyl_pattern))
-    if hydroxyl_count < 1:
-        return False, "Insufficient hydroxyl groups"
-
-    return True, "Matches prostaglandin structural features: cyclopentane ring, oxygen substituents, characteristic chains and functional groups"
+    return True, "Matches prostaglandin structural features: cyclopentane ring, oxygen substituents, characteristic chains"
