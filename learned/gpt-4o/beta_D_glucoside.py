@@ -2,30 +2,35 @@
 Classifies: CHEBI:22798 beta-D-glucoside
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors, AllChem
 
 def is_beta_D_glucoside(smiles: str):
     """
     Determines if a molecule is a beta-D-glucoside based on its SMILES string.
-    A beta-D-glucoside is characterized by a beta-configuration at the anomeric carbon of a D-glucose unit.
+    A beta-D-glucoside features a D-glucose unit with the anomeric carbon in the beta configuration.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if the molecule contains a beta-D-glucoside, False otherwise
+        bool: True if molecule is a beta-D-glucoside, False otherwise
         str: Reason for classification
     """
     
-    # Parse the SMILES string into an RDKit Mol object
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # SMARTS pattern to match the beta-D-glucopyranoside structure. 
-    beta_D_glucopyranoside_pattern = Chem.MolFromSmarts("O[C@@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](CO)[C@@H]1O")
-
-    # Check if the molecule has at least one beta-D-glucoside unit.
-    if not mol.HasSubstructMatch(beta_D_glucopyranoside_pattern):
+    
+    # SMARTS pattern for beta-D-glucopyranose
+    beta_D_glucose_pattern = Chem.MolFromSmarts("O[C@@H]1[C@@H]([C@H]([C@@H]([C@H]([C@H]1O)CO)O)O)O")
+    
+    if not mol.HasSubstructMatch(beta_D_glucose_pattern):
         return False, "No beta-D-glucose unit with the correct configuration found"
-
-    return True, "Contains beta-D-glucoside with proper beta-configuration at the anomeric center"
+    
+    # Check for glycosidic bond (O-linked to another part of the molecule)
+    # Assuming the sugar oxygen connects to an anomeric carbon
+    if not mol.HasSubstructMatch(Chem.MolFromSmarts("O[C@H]1[C@H](O)C[C@@H](O)C[C@@H]1O")):
+        return False, "No glycosidic bond found connecting the beta-D-glucose"
+    
+    return True, "Contains beta-D-glucose with a glycosidic linkage"
