@@ -23,54 +23,61 @@ def is_catechin(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Basic flavan-3-ol core structure (2-phenyl-3,4-dihydro-2H-chromene-3-ol)
-    # Note: The SMARTS pattern matches the core structure with potential substitutions
-    flavan_3_ol_pattern = Chem.MolFromSmarts(
-        "[OX2H0,OX2H1]-1-[#6]-2-[#6]-[#6]-[#6](=[#6]-[#6](=[#6]-2)-[OX2H0,OX2H1])-[#6]-1-[#6]-1=[#6]-[#6]=[#6]-[#6]=[#6]-1"
-    )
-    
-    if not mol.HasSubstructMatch(flavan_3_ol_pattern):
-        return False, "No flavan-3-ol core structure found"
-    
-    # Check for hydroxyl group at C3 position (characteristic of flavan-3-ols)
-    c3_oh_pattern = Chem.MolFromSmarts("[OX2H]-[CH1X4]-1-[#6]-2-[#6]~[#6]~[#6]~[#6]~[#6]-2-O-[CH1X4]-1-[#6]")
+
+    # Basic chroman (benzopyran) core - more flexible pattern
+    chroman_pattern = Chem.MolFromSmarts("O1CCc2ccccc2C1")
+    if not mol.HasSubstructMatch(chroman_pattern):
+        return False, "No benzopyran core structure found"
+
+    # Check for the basic flavan core (more flexible pattern)
+    # This matches both catechin and epicatechin configurations
+    flavan_pattern = Chem.MolFromSmarts("O1[CH1][CH1]c2ccccc2[CH1]1c1ccccc1")
+    if not mol.HasSubstructMatch(flavan_pattern):
+        return False, "No flavan core structure found"
+
+    # Check for hydroxyl at C3 position (more flexible pattern)
+    # Matches both axial and equatorial OH
+    c3_oh_pattern = Chem.MolFromSmarts("O1[CH1][CH1](O)c2ccccc2[CH1]1")
     if not mol.HasSubstructMatch(c3_oh_pattern):
         return False, "Missing hydroxyl group at C3 position"
-    
-    # Count hydroxyl groups - catechins typically have multiple OH groups
-    oh_pattern = Chem.MolFromSmarts("[OX2H]")
+
+    # Count hydroxyl groups
+    oh_pattern = Chem.MolFromSmarts("[OH1]")
     oh_matches = len(mol.GetSubstructMatches(oh_pattern))
-    if oh_matches < 3:
+    if oh_matches < 2:  # Most catechins have at least 2 OH groups
         return False, f"Too few hydroxyl groups ({oh_matches}) for a catechin"
-    
-    # Look for common substitution patterns
-    
-    # Check for gallate ester (common in many catechins)
-    gallate_pattern = Chem.MolFromSmarts("[OX2]-C(=O)-c1c(O)c(O)c(O)cc1")
-    has_gallate = mol.HasSubstructMatch(gallate_pattern)
-    
-    # Check for typical A-ring hydroxylation pattern (5,7-dihydroxy)
-    a_ring_pattern = Chem.MolFromSmarts("O-1-c2c(O)cc(O)cc2CC[CH1]-1")
-    has_typical_a_ring = mol.HasSubstructMatch(a_ring_pattern)
-    
-    # Check for B-ring catechol pattern (3',4'-dihydroxy)
-    b_ring_pattern = Chem.MolFromSmarts("c1c(O)c(O)ccc1")
-    has_typical_b_ring = mol.HasSubstructMatch(b_ring_pattern)
-    
-    # Additional characteristics
+
+    # Look for common substitution patterns, but don't require them
     features = []
-    if has_gallate:
-        features.append("gallate ester")
-    if has_typical_a_ring:
+
+    # Check for common A-ring substitution (5,7-dihydroxy pattern)
+    a_ring_pattern = Chem.MolFromSmarts("O1[CH1][CH1]c2c(O)cc(O)cc2[CH1]1")
+    if mol.HasSubstructMatch(a_ring_pattern):
         features.append("5,7-dihydroxy pattern")
-    if has_typical_b_ring:
-        features.append("3',4'-dihydroxy pattern")
+
+    # Check for B-ring patterns (various possible hydroxylation patterns)
+    catechol_pattern = Chem.MolFromSmarts("c1c(O)c(O)ccc1")
+    pyrogallol_pattern = Chem.MolFromSmarts("c1c(O)c(O)c(O)cc1")
     
-    # Verify molecular weight is in reasonable range for catechins (290-1000 Da)
+    if mol.HasSubstructMatch(pyrogallol_pattern):
+        features.append("3',4',5'-trihydroxy (gallocatechin-type)")
+    elif mol.HasSubstructMatch(catechol_pattern):
+        features.append("3',4'-dihydroxy (catechin-type)")
+
+    # Check for ester derivatives (gallate, coumarate, etc.)
+    ester_pattern = Chem.MolFromSmarts("OC(=O)")
+    if mol.HasSubstructMatch(ester_pattern):
+        features.append("ester derivative")
+
+    # Molecular weight check - more permissive range
     mol_wt = Chem.Descriptors.ExactMolWt(mol)
-    if mol_wt < 250 or mol_wt > 1000:
+    if mol_wt < 200 or mol_wt > 1200:
         return False, f"Molecular weight ({mol_wt:.1f}) outside typical range for catechins"
-    
+
+    # Ring count check - catechins should have at least 2 rings
+    ring_count = Chem.rdMolDescriptors.CalcNumRings(mol)
+    if ring_count < 2:
+        return False, "Insufficient ring count for a catechin structure"
+
     feature_str = ", ".join(features) if features else "basic"
-    return True, f"Contains flavan-3-ol core with {oh_matches} hydroxyl groups. Type: {feature_str} catechin"
+    return True, f"Contains flavan-3-ol core with {oh_matches} hydroxyl groups. Features: {feature_str}"
