@@ -2,6 +2,7 @@
 Classifies: CHEBI:26666 short-chain fatty acid
 """
 from rdkit import Chem
+from rdkit.Chem import rdmolops
 
 def is_short_chain_fatty_acid(smiles: str):
     """
@@ -26,12 +27,33 @@ def is_short_chain_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
 
-    # Count the number of carbon atoms
-    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    # Find the carboxylic acid group to trace the carbon chain
+    matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
+    if not matches:
+        return False, "No carboxylic acid group found"
     
-    # Check if carbon chain length is less than 6
-    if carbon_count >= 6:
-        return False, f"Carbon chain too long, found {carbon_count} carbons"
+    # Find connected components in the molecule to enforce acyclic, aliphatic structure
+    ri = rdmolops.GetDistanceMatrix(mol)
+    max_chain_length = 0
+    for match in matches:
+        carboxylic_c_index = match[0]  # Carbon attached to the carboxyl group
+        visited = set()
+        to_visit = [(carboxylic_c_index, 0)]
+        
+        # Perform breadth-first search to find the length of the longest acyclic chain 
+        while to_visit:
+            atom_idx, chain_length = to_visit.pop(0)
+            if chain_length > max_chain_length:
+                max_chain_length = chain_length
+            visited.add(atom_idx)
+            for neighbor in mol.GetAtomWithIdx(atom_idx).GetNeighbors():
+                if neighbor.GetIdx() not in visited:
+                    if not neighbor.IsInRing() and neighbor.AtomicNum() == 6:  # Only trace acyclic carbon atoms
+                        to_visit.append((neighbor.GetIdx(), chain_length + 1))
+
+    # Check if the longest continuous carbon chain attached to the carboxyl carbon is less than 6
+    if max_chain_length > 5:
+        return False, f"Carbon chain too long, found {max_chain_length+1} carbons"
 
     # Check for non-hydrocarbon substituents (atoms other than C, H, O)
     for atom in mol.GetAtoms():
