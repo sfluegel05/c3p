@@ -31,8 +31,8 @@ def is_phosphatidylethanolamine(smiles: str):
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
         
-    # Look for phosphate group attached to glycerol
-    phosphate_pattern = Chem.MolFromSmarts("[OX2]P(=O)([OX2])[OX2]")
+    # Look for phosphate group attached to glycerol (more flexible pattern to account for different protonation states)
+    phosphate_pattern = Chem.MolFromSmarts("[OX2,OX1-]P(=O)([OX2,OX1-])[OX2,OX1-]")
     phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
     if len(phosphate_matches) == 0:
         return False, "No phosphate group found"
