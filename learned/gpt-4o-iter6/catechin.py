@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_catechin(smiles: str):
     """
     Determines if a molecule is a catechin based on its SMILES string.
-    Catechins have a flavan-3-ol backbone characterized by a chroman system and additional hydroxyl groups.
+    Catechins are characterized by a flavan-3-ol backbone, with a chroman core and hydroxyl groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,11 +21,14 @@ def is_catechin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Adjusted SMARTS pattern for flavan-3-ol backbone: Chroman core motif
-    # Flavan-3-ols have a core that looks like a dihydroxychromane (adjusted pattern here)
-    flavan_3_ol_pattern = Chem.MolFromSmarts("c1cc2c(O)c(O)cc2Oc1[C@H]3CO[C@@H]4C3")
+    # Correct SMARTS pattern for flavan-3-ol backbone: Chroman core and possible substitutions
+    flavan_3_ol_pattern = Chem.MolFromSmarts("c1cc2c(O)cc(O)c2Oc1[C@H]3COC([C@@H]3)O")
+    
+    if flavan_3_ol_pattern is None:
+         return (None, "SMARTS pattern could not be interpreted")
+    
     if not mol.HasSubstructMatch(flavan_3_ol_pattern):
-        return False, "No flavan-3-ol backbone found"
+        return False, "No flavan-3-ol (catechin) backbone found"
 
     # Check for hydroxyl groups
     hydroxy_pattern = Chem.MolFromSmarts("[OX2H]")
@@ -39,4 +42,4 @@ def is_catechin(smiles: str):
     if len(chiral_centers) < 2:
         return False, "Not enough chiral centers found"
 
-    return True, "Contains flavan-3-ol backbone with sufficient hydroxyl groups"
+    return True, "Contains flavan-3-ol (catechin) backbone with sufficient hydroxyl groups"
