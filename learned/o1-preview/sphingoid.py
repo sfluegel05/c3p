@@ -5,6 +5,7 @@ Classifies: CHEBI:35785 sphingoid
 Classifies: sphingoid
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_sphingoid(smiles: str):
     """
@@ -25,73 +26,44 @@ def is_sphingoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Find the longest aliphatic carbon chain (sphingoid backbone)
-    def get_longest_chain(mol):
-        chains = []
-        for atom in mol.GetAtoms():
-            if atom.GetAtomicNum() == 6 and not atom.IsInRing():
-                visited = set()
-                stack = [(atom, [atom])]
-                while stack:
-                    current_atom, path = stack.pop()
-                    visited.add(current_atom.GetIdx())
-                    neighbors = [nbr for nbr in current_atom.GetNeighbors()
-                                 if nbr.GetAtomicNum() == 6 and not nbr.IsInRing() and nbr.GetIdx() not in visited]
-                    if neighbors:
-                        for nbr in neighbors:
-                            stack.append((nbr, path + [nbr]))
-                    else:
-                        chains.append(path)
-        if not chains:
-            return []
-        # Return the longest chain (list of atoms)
-        longest_chain = max(chains, key=lambda x: len(x))
-        return longest_chain
+    # Calculate the length of the longest aliphatic carbon chain
+    c_chains = []
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6 and not atom.IsInRing():
+            dfs_stack = [(atom, 0)]
+            visited = set()
+            while dfs_stack:
+                current_atom, length = dfs_stack.pop()
+                visited.add(current_atom.GetIdx())
+                length += 1
+                neighbors = [nbr for nbr in current_atom.GetNeighbors() if nbr.GetAtomicNum() == 6 and not nbr.IsInRing() and nbr.GetIdx() not in visited]
+                if neighbors:
+                    for nbr in neighbors:
+                        dfs_stack.append((nbr, length))
+                else:
+                    c_chains.append(length)
+    if not c_chains or max(c_chains) < 12:
+        return False, f"Aliphatic chain too short ({max(c_chains) if c_chains else 0} carbons)"
 
-    backbone = get_longest_chain(mol)
-    if len(backbone) < 12:
-        return False, f"Aliphatic chain too short ({len(backbone)} carbons)"
+    # Check for nitrogen attached to carbon (amines and amides)
+    nitrogen_patterns = [
+        Chem.MolFromSmarts("[CX4][NX3;$([H2]),$([H1])$([H1+]),$([H0][#6])$([H0][#1])$([H0][H0])$([H0][#1][#1])]"),  # primary amine, protonated amine
+        Chem.MolFromSmarts("[CX3](=O)[NX3]")  # amide
+    ]
+    has_nitrogen = any(mol.HasSubstructMatch(pat) for pat in nitrogen_patterns)
+    if not has_nitrogen:
+        return False, "No amino or amide group attached to carbon found"
 
-    # Map positions: C1, C2, C3,...
-    # C1 is the first carbon in the chain
-    c1 = backbone[0]
-    c2 = backbone[1] if len(backbone) > 1 else None
-    c3 = backbone[2] if len(backbone) > 2 else None
+    # Check for hydroxyl groups attached to carbons
+    hydroxyl_pattern = Chem.MolFromSmarts("[CX4][OX2H]")
+    if not mol.HasSubstructMatch(hydroxyl_pattern):
+        return False, "No hydroxyl groups attached to carbon found"
 
-    # Check for hydroxyl group on C1
-    has_oh_c1 = False
-    for neighbor in c1.GetNeighbors():
-        if neighbor.GetAtomicNum() == 8:
-            has_oh_c1 = True
-            break
-
-    # Check for amino group on C2 (including protonated forms)
-    has_n_c2 = False
-    if c2:
-        for neighbor in c2.GetNeighbors():
-            if neighbor.GetAtomicNum() == 7:
-                has_n_c2 = True
-                break
-
-    # Check for hydroxyl group on C3
-    has_oh_c3 = False
-    if c3:
-        for neighbor in c3.GetNeighbors():
-            if neighbor.GetAtomicNum() == 8:
-                has_oh_c3 = True
-                break
-
-    if not has_n_c2:
-        return False, "No amino group attached to C2 of the backbone"
-
-    if not (has_oh_c1 or has_oh_c3):
-        return False, "No hydroxyl groups attached to C1 or C3 of the backbone"
-
-    # Allow for unsaturation and additional hydroxyl groups (derivatives)
-    # Check that the molecule is not a peptide or contains other functional groups that exclude it from being a sphingoid
+    # Exclude peptides - check for peptide bonds (amide bonds between carbonyl and nitrogen)
     peptide_bond_pattern = Chem.MolFromSmarts("C(=O)N")
-    if mol.HasSubstructMatch(peptide_bond_pattern):
-        return False, "Contains peptide bonds, not a sphingoid"
+    peptide_bonds = mol.GetSubstructMatches(peptide_bond_pattern)
+    if len(peptide_bonds) > 2:
+        return False, f"Too many peptide bonds ({len(peptide_bonds)} found), possible peptide"
 
     # If all checks pass, classify as sphingoid
     return True, "Molecule matches sphingoid structural features"
