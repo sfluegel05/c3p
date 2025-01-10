@@ -27,13 +27,13 @@ def is_spiroketal(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for potential spiro carbons
-    # [#6X4] is sp3 carbon
-    # [#8X2;R] is ring oxygen with 2 connections
-    # Pattern looks for sp3 carbon with two single-bonded ring oxygens
-    spiro_pattern = Chem.MolFromSmarts('[#6X4](-[#8X2;R])-[#8X2;R]')
+    # [#6] is carbon
+    # [#8] is oxygen
+    # Pattern looks for carbon with two ring oxygens attached
+    spiro_pattern = Chem.MolFromSmarts('[#6]([#8;R])[#8;R]')
     
     if not mol.HasSubstructMatch(spiro_pattern):
-        return False, "No sp3 carbon atom with two ring oxygens found"
+        return False, "No carbon atom with two ring oxygens found"
     
     matches = mol.GetSubstructMatches(spiro_pattern)
     
@@ -47,7 +47,7 @@ def is_spiroketal(smiles: str):
         ring_info = mol.GetRingInfo()
         rings = ring_info.AtomRings()
         
-        # Find smallest rings containing each oxygen
+        # Find rings containing each oxygen
         rings_o1 = []
         rings_o2 = []
         
@@ -56,31 +56,20 @@ def is_spiroketal(smiles: str):
                 rings_o1.append(set(ring))
             if o2_idx in ring:
                 rings_o2.append(set(ring))
-                
-        # If either oxygen isn't in any ring, skip
-        if not rings_o1 or not rings_o2:
-            continue
-            
-        # Get smallest rings for each oxygen
-        smallest_ring_o1 = min(rings_o1, key=len)
-        smallest_ring_o2 = min(rings_o2, key=len)
         
-        # Check if rings are different and share only the spiro carbon
-        intersection = smallest_ring_o1.intersection(smallest_ring_o2)
-        if len(intersection) == 1 and spiro_carbon_idx in intersection:
-            # Verify both rings are of reasonable size (3-8 members is typical)
-            if 3 <= len(smallest_ring_o1) <= 8 and 3 <= len(smallest_ring_o2) <= 8:
-                # Verify the spiro carbon is truly tetrahedral
-                spiro_carbon = mol.GetAtomWithIdx(spiro_carbon_idx)
-                if spiro_carbon.GetHybridization() == Chem.HybridizationType.SP3:
-                    # Verify oxygens are in different rings
-                    if (o1_idx in smallest_ring_o1 and o2_idx in smallest_ring_o2) or \
-                       (o1_idx in smallest_ring_o2 and o2_idx in smallest_ring_o1):
-                        # Verify bonds to oxygens are single bonds
-                        bond1 = mol.GetBondBetweenAtoms(spiro_carbon_idx, o1_idx)
-                        bond2 = mol.GetBondBetweenAtoms(spiro_carbon_idx, o2_idx)
-                        if bond1.GetBondType() == Chem.BondType.SINGLE and \
-                           bond2.GetBondType() == Chem.BondType.SINGLE:
-                            return True, "Contains spiroketal structure: two rings sharing only one carbon atom bonded to two ring oxygens"
+        # Check each combination of rings
+        for ring1 in rings_o1:
+            for ring2 in rings_o2:
+                # The rings should share exactly one atom (the spiro carbon)
+                intersection = ring1.intersection(ring2)
+                if len(intersection) == 1 and spiro_carbon_idx in intersection:
+                    # Verify the carbon is sp3 (4 bonds)
+                    spiro_carbon = mol.GetAtomWithIdx(spiro_carbon_idx)
+                    if spiro_carbon.GetDegree() == 4:
+                        # Verify both rings are different
+                        if ring1 != ring2:
+                            # Additional check: both oxygens should be in different rings
+                            if (o1_idx in ring1 and o2_idx in ring2) or (o1_idx in ring2 and o2_idx in ring1):
+                                return True, "Contains spiroketal structure: two rings sharing only one carbon atom bonded to two ring oxygens"
     
     return False, "No valid spiroketal structure found"
