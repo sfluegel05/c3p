@@ -57,20 +57,20 @@ def is_epoxy_fatty_acid(smiles: str):
     if not connected_to_rest:
         return False, "Epoxide ring not connected to the main carbon chain"
 
-    # Check for a long carbon chain (at least 10 carbons)
+    # Check for a long carbon chain (at least 8 carbons)
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if carbon_count < 10:
+    if carbon_count < 8:
         return False, "Carbon chain too short to be a fatty acid"
 
-    # Check molecular weight (epoxy fatty acids typically >300 Da)
+    # Check molecular weight (epoxy fatty acids typically >200 Da)
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 300:
+    if mol_wt < 200:
         return False, "Molecular weight too low for epoxy fatty acid"
 
     # Check for a typical fatty acid structure (long aliphatic chain)
     # by counting the number of rotatable bonds
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 5:
+    if n_rotatable < 4:
         return False, "Not enough rotatable bonds for a typical fatty acid"
 
     return True, "Contains a fatty acid chain with an epoxide ring"
