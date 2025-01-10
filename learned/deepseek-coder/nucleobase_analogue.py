@@ -27,41 +27,32 @@ def is_nucleobase_analogue(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define more flexible SMARTS patterns for nucleobase cores
-    purine_like = Chem.MolFromSmarts("[n]1[c,n][c,n][c,n][c,n][c,n]1")  # Purine-like 6+5 ring system
-    pyrimidine_like = Chem.MolFromSmarts("[n]1[c,n][c,n][c,n]1")  # Pyrimidine-like 6-ring system
-    imidazole_like = Chem.MolFromSmarts("[n]1[c,n][c,n]1")  # Imidazole-like 5-ring system
+    # Define more specific SMARTS patterns for nucleobase cores
+    purine_core = Chem.MolFromSmarts("[n]1[c,n][c,n][c,n][c,n][c,n]1")  # Purine core
+    pyrimidine_core = Chem.MolFromSmarts("[n]1[c,n][c,n][c,n]1")  # Pyrimidine core
+    imidazole_core = Chem.MolFromSmarts("[n]1[c,n][c,n]1")  # Imidazole core
 
     # Check if the molecule has a nucleobase-like core structure
-    has_core = (mol.HasSubstructMatch(purine_like) or 
-                mol.HasSubstructMatch(pyrimidine_like) or
-                mol.HasSubstructMatch(imidazole_like))
+    has_core = (mol.HasSubstructMatch(purine_core) or 
+                mol.HasSubstructMatch(pyrimidine_core) or
+                mol.HasSubstructMatch(imidazole_core))
     
     if not has_core:
         return False, "No nucleobase-like core structure found"
 
-    # Check for common nucleobase features
-    # Nitrogen atoms in the core (at least 2)
-    nitrogen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
-    if nitrogen_count < 2:
-        return False, "Insufficient nitrogen atoms for nucleobase analogue"
+    # Check for common nucleobase functional groups
+    amide_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[NX3H2,H1]")  # Amide group
+    lactam_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[NX3H1]1[CX4][CX4][CX4]1")  # Lactam group
+    carbonyl_pattern = Chem.MolFromSmarts("[CX3]=[OX1]")  # Carbonyl group
+    amine_pattern = Chem.MolFromSmarts("[NX3;H2,H1]")  # Amine group
 
-    # Check for common functional groups in nucleobases
-    amine_pattern = Chem.MolFromSmarts("[NX3;H2,H1]")
-    carbonyl_pattern = Chem.MolFromSmarts("[CX3]=[OX1]")
-    imine_pattern = Chem.MolFromSmarts("[NX2]=[CX3]")
-    
-    has_functional_groups = (mol.HasSubstructMatch(amine_pattern) or
+    has_functional_groups = (mol.HasSubstructMatch(amide_pattern) or
+                            mol.HasSubstructMatch(lactam_pattern) or
                             mol.HasSubstructMatch(carbonyl_pattern) or
-                            mol.HasSubstructMatch(imine_pattern))
+                            mol.HasSubstructMatch(amine_pattern))
     
     if not has_functional_groups:
         return False, "No characteristic nucleobase functional groups found"
-
-    # Check molecular weight (nucleobase analogues are typically small molecules)
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt > 500:
-        return False, "Molecular weight too high for nucleobase analogue"
 
     # Check for common modifications in nucleobase analogues
     modification_patterns = [
@@ -74,6 +65,11 @@ def is_nucleobase_analogue(smiles: str):
     
     has_modifications = any(mol.HasSubstructMatch(patt) for patt in modification_patterns)
     
+    # Check molecular weight (nucleobase analogues are typically small to medium molecules)
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt > 600:  # Adjusted threshold
+        return False, "Molecular weight too high for nucleobase analogue"
+
     # If it has the core structure and either functional groups or modifications, it's likely an analogue
     if has_core and (has_functional_groups or has_modifications):
         return True, "Resembles a nucleobase analogue with modifications"
