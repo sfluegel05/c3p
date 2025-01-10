@@ -21,13 +21,12 @@ def is_hemiaminal(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define enhanced hemiaminal pattern to match more configurations
-    # This pattern captures carbons attached to a nitrogen and oxygen, regardless of hybridization
+    # Define an enhanced SMARTS pattern to capture more potential hemiaminal configurations
+    # Focus on flexible hybridization and multiple equivalent representations
     hemiaminal_patterns = [
-        Chem.MolFromSmarts("[C;X4,X3,X2](O)(N)"),
-        # Consider patterns where carbon is adjacent to nitrogen and has oxygen,
-        # allowing for structural diversity in hemiaminals
-        Chem.MolFromSmarts("[C;X4,X3,X2](N)([OH])"),
+        Chem.MolFromSmarts("[CX4](O)(N)"),  # Typical carbon with single bonds
+        Chem.MolFromSmarts("[CX3](O)(N)"),  # Allow sp2 hybridized carbon
+        Chem.MolFromSmarts("[C](O)(N)(*)"), # Handle attachments to additional groups
     ]
 
     # Check for matches with any defined pattern
