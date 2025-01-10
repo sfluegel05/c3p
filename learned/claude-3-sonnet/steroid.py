@@ -11,7 +11,6 @@ from rdkit.Chem import rdMolDescriptors
 def is_steroid(smiles: str):
     """
     Determines if a molecule is a steroid based on its SMILES string.
-    Looks for the characteristic cyclopenta[a]phenanthrene skeleton and its variations.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -24,93 +23,67 @@ def is_steroid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # More flexible SMARTS patterns for steroid core
-    core_patterns = [
-        # Basic steroid core (saturated)
-        "[C,c]1~[C,c]~[C,c]2~[C,c]~[C,c]~[C,c]3~[C,c]~[C,c]~[C,c]~[C,c]~1~[C,c]~[C,c]~[C,c]2~[C,c]3",
-        # Variant allowing for ring modifications
-        "[C,c]1~[C,c]~[C,c]2~[C,c]~[C,c]~[C,c]3~[C,c]~[C,c]~[C,c]~[C,c]~1~[C,c]~[C,c]2~[C,c]3",
-        # More flexible pattern for modified steroids
-        "[C,c]1~2~[C,c]~[C,c]~[C,c]~[C,c]~[C,c]~[C,c]~3~[C,c]~[C,c]~[C,c]~[C,c]~1~[C,c]~2~[C,c]3",
-        # Pattern for heavily modified cores
-        "[C,c]1~2~[C,c]~[C,c]~[C,c]~[C,c]~[C,c]~[C,c]~3~[C,c]~[C,c]~[C,c]~1~[C,c]~2~[C,c]3"
+    
+    # Basic steroid skeleton patterns (multiple SMARTS to account for different oxidation states)
+    steroid_patterns = [
+        # Basic steroid skeleton with saturated rings
+        "[#6]12[#6][#6][#6]3[#6][#6][#6]4[#6][#6][#6][#6]([#6]1)[#6][#6][#6]2[#6]34",
+        # Steroid skeleton with possible double bonds
+        "[#6]12[#6][#6][#6]3[#6][#6][#6]4[#6]=,:[#6][#6]=,:[#6]([#6]1)[#6][#6][#6]2[#6]34",
     ]
-
-    # Check for steroid core
-    found_core = False
-    for pattern in core_patterns:
-        pattern_mol = Chem.MolFromSmarts(pattern)
-        if pattern_mol is not None and mol.HasSubstructMatch(pattern_mol):
-            found_core = True
+    
+    found_skeleton = False
+    for pattern in steroid_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            found_skeleton = True
             break
-
-    if not found_core:
-        return False, "No steroid-like ring system found"
+            
+    if not found_skeleton:
+        return False, "No steroid skeleton found"
 
     # Count rings
     ring_info = mol.GetRingInfo()
-    n_rings = ring_info.NumRings()
-    if n_rings < 4:
-        return False, "Insufficient number of rings"
+    if ring_info.NumRings() < 4:
+        return False, "Insufficient number of rings for steroid structure"
 
-    # Count carbons (steroids typically have 17+ carbons)
+    # Check carbon count (steroids typically have 17+ carbons)
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if carbon_count < 17:
         return False, "Too few carbons for steroid structure"
 
-    # Look for characteristic features
-    features = []
-    
-    # Common substitution patterns
-    patterns = {
-        "angular_methyl": "[CH3][C](@[#6])(@[#6])[#6]",  # Angular methyl groups
-        "hydroxyl": "[OH1]",  # Hydroxyl groups
-        "ketone": "[#6]C(=O)[#6]",  # Ketone groups
-        "ester": "[#6]C(=O)O[#6]",  # Ester groups
-        "double_bond": "[#6]=[#6]",  # Double bonds
-        "carboxyl": "[#6]C(=O)[OH1]",  # Carboxylic acid
-        "alkyl_side": "[CH2,CH1][CH2,CH1][CH2,CH1,CH3]"  # Side chain
+    # Check for typical molecular weight range of steroids (240-650 Da)
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if not (240 <= mol_wt <= 650):
+        return False, f"Molecular weight {mol_wt:.1f} outside typical steroid range"
+
+    # Check for typical steroid characteristics
+    # Angular methyl groups pattern (at C-10 and C-13)
+    methyl_pattern = Chem.MolFromSmarts("[CH3]C12[CH2,CH][CH2,CH][#6]3[#6][#6][#6]4[#6][#6][#6][#6]([#6]1)[#6][#6][#6]2[#6]34")
+    if not mol.HasSubstructMatch(methyl_pattern):
+        # Some steroids might have lost methyl groups, so this is not a strict requirement
+        pass
+
+    # Look for typical steroid functional groups
+    functional_groups = {
+        "hydroxyl": "[OH]",
+        "ketone": "C(=O)C",
+        "ester": "C(=O)O[#6]",
+        "carboxylic acid": "C(=O)O[H]",
     }
-
-    for name, smarts in patterns.items():
-        pattern_mol = Chem.MolFromSmarts(smarts)
-        if pattern_mol is not None and mol.HasSubstructMatch(pattern_mol):
-            if name == "angular_methyl":
-                features.append("angular methyl groups")
-            elif name == "hydroxyl":
-                features.append("hydroxyl groups")
-            elif name == "ketone":
-                features.append("ketone groups")
-            elif name == "ester":
-                features.append("ester groups")
-            elif name == "double_bond":
-                features.append("unsaturation")
-            elif name == "carboxyl":
-                features.append("carboxylic acid")
-            elif name == "alkyl_side":
-                features.append("alkyl substitution")
-
-    # Additional checks
-    n_arom_rings = rdMolDescriptors.CalcNumAromaticRings(mol)
-    if n_arom_rings > 1:
-        return False, "Too many aromatic rings for typical steroid"
-
-    # Calculate fraction of sp3 carbons (steroids are typically highly saturated)
-    n_sp3 = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[CH4,CH3,CH2,CH1]")))
-    if carbon_count > 0:
-        sp3_fraction = n_sp3 / carbon_count
-        if sp3_fraction < 0.3:  # Allow some unsaturation but not too much
-            return False, "Too unsaturated for typical steroid structure"
+    
+    found_groups = []
+    for group_name, smarts in functional_groups.items():
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(smarts)):
+            found_groups.append(group_name)
 
     # Final classification
-    reason = "Contains steroid ring system"
-    if features:
-        reason += f" with {', '.join(features)}"
-    if n_rings > 4:
-        reason += f" and {n_rings} rings"
-
-    return True, reason
+    if found_skeleton:
+        reason = "Contains steroid skeleton"
+        if found_groups:
+            reason += f" with {', '.join(found_groups)} groups"
+        return True, reason
+    
+    return False, "Structure does not match steroid characteristics"
 
 __metadata__ = {
     'chemical_class': {
