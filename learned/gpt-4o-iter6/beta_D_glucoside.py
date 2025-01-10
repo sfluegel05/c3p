@@ -7,8 +7,9 @@ def is_beta_D_glucoside(smiles: str):
     """
     Determines if a molecule is a beta-D-glucoside based on its SMILES string.
     A beta-D-glucoside is characterized by a D-glucose backbone with a linkage
-    in the beta configuration at the anomeric carbon.
-    
+    in the beta configuration at the anomeric carbon. It often appears as
+    a standalone unit or in a complex structure.
+
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -22,20 +23,25 @@ def is_beta_D_glucoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define beta-D-glucoside pattern, considering anomeric C and stereochemistry
+    # Define beta-D-glucoside pattern with broader matching
     try:
-        # Primary pattern for beta-D-glucopyranoside fragment (furanoside not considered here)
-        # The beta linkage semantics generally imply "Up" relative stereochemistry for C1-O
         beta_D_glucoside_pattern = Chem.MolFromSmarts(
-            "[C@H]1([C@@H](O)[C@H](O)[C@@H](CO)[C@H](O1)O)O"
+            "O[C@H]1[C@@H](O)[C@H](O)[C@@H](O)[C@H](O)[C@@H]1"
         )
-        
-        if beta_D_glucoside_pattern is None:
+        alternative_pattern = Chem.MolFromSmarts(
+            "[C@H](O[C@H]1O[C@H](C)[C@@H](O)[C@@H](O)[C@H]1O)"
+        )  # Example for a possible alternative pattern
+
+        if beta_D_glucoside_pattern is None or alternative_pattern is None:
             return (None, "SMARTS pattern compilation failed")
 
-        # Check for the pattern and ensure beta configuration
+        # First check for primary pattern
         if mol.HasSubstructMatch(beta_D_glucoside_pattern):
             return True, "Contains beta-D-glucoside substructure with correct stereochemistry"
+
+        # Try an alternative pattern for nested configurations
+        if mol.HasSubstructMatch(alternative_pattern):
+            return True, "Contains an alternative beta-D-glucoside substructure"
 
     except Exception as e:
         return None, f"Error in SMARTS pattern matching: {e}"
