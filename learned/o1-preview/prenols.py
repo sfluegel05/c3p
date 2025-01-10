@@ -5,7 +5,6 @@ Classifies: CHEBI:26244 prenols
 Classifies: prenols
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_prenols(smiles: str):
     """
@@ -26,12 +25,7 @@ def is_prenols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for hydroxyl group (-OH)
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
-    if not mol.HasSubstructMatch(hydroxyl_pattern):
-        return False, "No hydroxyl group (-OH) found"
-    
-    # Check for no rings (acyclic molecule)
+    # Check for acyclic structure
     if mol.GetRingInfo().NumRings() > 0:
         return False, "Molecule contains rings"
     
@@ -40,32 +34,30 @@ def is_prenols(smiles: str):
         if atom.GetAtomicNum() not in (1, 6, 8):
             return False, f"Contains atom other than C, H, or O: {atom.GetSymbol()}"
     
-    # Count number of carbons
-    num_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    
-    # Check that the number of carbons is at least 5 and a multiple of 5
-    if num_carbons < 5:
-        return False, f"Too few carbon atoms ({num_carbons}) to be a prenol"
-    if num_carbons % 5 != 0:
-        return False, f"Number of carbons ({num_carbons}) is not a multiple of 5"
-
-    # Check for conjugated double bonds consistent with isoprene units
-    num_double_bonds = 0
+    # Check that all bonds to oxygen are single bonds (exclude carbonyls)
     for bond in mol.GetBonds():
         if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-            num_double_bonds += 1
-    min_expected_double_bonds = num_carbons // 5
-    if num_double_bonds < min_expected_double_bonds:
-        return False, f"Insufficient number of double bonds ({num_double_bonds}) for isoprene units"
-
-    # Check if structure matches repeating isoprene units
-    # Define SMARTS pattern for isoprene unit connected head-to-tail
-    isoprene_pattern = Chem.MolFromSmarts("C(=C(C)C)C")
-    isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
-    if len(isoprene_matches) < 1:
-        return False, "No isoprene units found"
+            begin_atom = bond.GetBeginAtom()
+            end_atom = bond.GetEndAtom()
+            if begin_atom.GetAtomicNum() == 8 or end_atom.GetAtomicNum() == 8:
+                return False, "Contains carbonyl group (C=O)"
     
-    return True, "Molecule is an acyclic alcohol with carbon skeleton composed of isoprene units"
+    # Check for hydroxyl group (-OH)
+    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
+    if not mol.HasSubstructMatch(hydroxyl_pattern):
+        return False, "No hydroxyl group (-OH) found"
+    
+    # Check for primary alcohol group (-CH2OH)
+    primary_alcohol_pattern = Chem.MolFromSmarts("[CX4H2][OX2H]")
+    if not mol.HasSubstructMatch(primary_alcohol_pattern):
+        return False, "No primary alcohol group (-CH2OH) found"
+    
+    # Check that molecule is acyclic hydrocarbon chain with hydroxyl group(s)
+    # and does not contain other common functional groups (aldehydes, ketones, carboxylic acids)
+    # We have already excluded molecules with C=O groups above
+    
+    # All conditions satisfied
+    return True, "Molecule is an acyclic alcohol consistent with prenol structure"
 
 __metadata__ = {   
     'chemical_class': {   
