@@ -37,20 +37,17 @@ def is_alpha_amino_acid_zwitterion(smiles: str):
     if not mol.HasSubstructMatch(alpha_carbon_pattern):
         return False, "No alpha-carbon with both [NH3+] and [O-] groups found"
 
-    # Check for additional atoms or groups attached to the alpha-carbon (R group)
+    # Check that the alpha-carbon has at least 3 bonds (including H)
     alpha_carbon_matches = mol.GetSubstructMatches(alpha_carbon_pattern)
     for match in alpha_carbon_matches:
         alpha_carbon_idx = match[0]  # Index of the alpha-carbon
         alpha_carbon_atom = mol.GetAtomWithIdx(alpha_carbon_idx)
-        if alpha_carbon_atom.GetDegree() != 4:  # Alpha-carbon should have 4 bonds (including H)
-            return False, "Alpha-carbon does not have 4 bonds (including H)"
+        if alpha_carbon_atom.GetDegree() < 3:  # Alpha-carbon should have at least 3 bonds
+            return False, "Alpha-carbon has too few bonds"
 
-    # Check molecular weight (alpha-amino acids are typically small molecules)
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt > 500:  # Arbitrary upper limit for alpha-amino acids
-        return False, "Molecular weight too high for alpha-amino acid"
+    # Remove molecular weight restriction as it's not a defining characteristic
 
-    return True, "Contains [NH3+]-C-C(=O)[O-] pattern with alpha-carbon and zwitterionic form"
+    return True, "Contains [NH3+]-C-C(=O)[O-] pattern with alpha-carbon in zwitterionic form"
 
 
 __metadata__ = {
