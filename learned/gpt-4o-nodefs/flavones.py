@@ -15,23 +15,23 @@ def is_flavones(smiles: str):
         bool: True if the molecule is a flavone, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse the SMILES string into a RDKit molecule
     mol = Chem.MolFromSmiles(smiles)
     
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the flavone core using a more flexible SMARTS pattern
-    # This accommodates modifications and typical substitution positions
-    flavone_core_pattern = Chem.MolFromSmarts('O=C1C=CC(=CO1)c2ccccc2')  # Main core with possible phenyl substitutions
-        
+    # Define a flexible flavone core pattern
+    flavone_core_pattern = Chem.MolFromSmarts('c1cc2oc(=O)cc(c2c1)-c1ccccc1')  # flexible flavone core
+    
     # Check if the molecule contains the flexible flavone core structure
     if not mol.HasSubstructMatch(flavone_core_pattern):
-        return False, "No flavone core structure found (even with variability)"
+        return False, "No flavone core structure found"
 
-    return True, "Contains flavone core structure (with 2-phenylchromen-4-one)"
+    return True, "Contains flavone core structure (2-phenylchromen-4-one)"
 
-# We can test it with some known flavone SMILES strings
-# result, reason = is_flavones("COc1ccc(cc1)-c1cc(=O)c2c(O)cc(O)cc2o1")
+# The function can now be tested with known flavone and non-flavone SMILES strings.
+# Example usage with flavone SMILES:
+# result, reason = is_flavones("COc1cc(ccc1)-c1cc(=O)c2c(O)c(O)cc(O)c2o1")
 # print(result, reason)
