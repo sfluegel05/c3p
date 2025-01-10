@@ -2,6 +2,7 @@
 Classifies: CHEBI:132155 hydroxynaphthoquinone
 """
 from rdkit import Chem
+from rdkit.Chem import Descriptors
 
 def is_hydroxynaphthoquinone(smiles: str):
     """
@@ -21,24 +22,22 @@ def is_hydroxynaphthoquinone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define the SMARTS pattern for naphthoquinone core with flexible positions of carbonyls
-    naphthoquinone_patterns = [
-        Chem.MolFromSmarts("O=C1C=CC2=CC=CC=C2C1=O"),  # Basic pattern, starting from keto groups
-        Chem.MolFromSmarts("C1=CC2=CC(C=CC2C=C1)=O"),  # Adjusted to allow aroma
-        Chem.MolFromSmarts("C1=C(O)C=CC2=CC=CC=C2C1=O"), # Tautomer considerations
-    ]
-    
-    # Check if naphthoquinone core is present
-    core_match_found = any(mol.HasSubstructMatch(pattern) for pattern in naphthoquinone_patterns)
-    if not core_match_found:
-        return False, "No recognized naphthoquinone core found"
-
-    # Define the SMARTS pattern for hydroxyl groups
+    # Define SMARTS patterns for naphthoquinone core and hydroxyl group
+    naphthoquinone_pattern = Chem.MolFromSmarts("C1=CC=CC2=C1C(=O)C=CC2=O")
     hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
+    
+    # Check for naphthoquinone core
+    if not mol.HasSubstructMatch(naphthoquinone_pattern):
+        return False, "No naphthoquinone core found"
     
     # Check for at least one hydroxyl group
     hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
     if len(hydroxyl_matches) == 0:
         return False, "No hydroxyl group found"
-
+    
     return True, "Contains naphthoquinone core with at least one hydroxyl group"
+
+# Example usage:
+smiles_example = "OC1=CC(=O)c2ccccc2C1=O"  # Lawsone
+result, reason = is_hydroxynaphthoquinone(smiles_example)
+print(f"Is hydroxynaphthoquinone: {result}, Reason: {reason}")
