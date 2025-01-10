@@ -26,50 +26,53 @@ def is_polyamine(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check if molecule is organic (contains carbon)
-    has_carbon = False
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 6:  # Carbon
-            has_carbon = True
-            break
-    if not has_carbon:
+    if not any(atom.GetAtomicNum() == 6 for atom in mol.GetAtoms()):
         return False, "Not an organic compound"
 
+    # Define patterns for different types of nitrogen groups
+    patterns = {
+        # Valid amine patterns
+        'primary_amine': '[NX3H2][CX4]',  # Aliphatic primary amine
+        'secondary_amine': '[NX3H1]([CX4])[CX4]',  # Aliphatic secondary amine
+        'tertiary_amine': '[NX3H0]([CX4])([CX4])[CX4]',  # Aliphatic tertiary amine
+        'aromatic_amine': '[NX3H2]c',  # Aromatic primary amine
+        'protonated_amine': '[NX4+]',  # Protonated amine
+        
+        # Patterns to exclude
+        'amide': '[NX3][CX3](=[OX1])',  # Amide
+        'nitro': '[$([NX3](=O)=O),$([NX3+](=O)[O-])]',  # Nitro
+        'aromatic_N': '[nX2,nX3]',  # Aromatic nitrogen in ring
+        'guanidine': '[NX3][CX3](=[NX2])[NX3]',  # Guanidine group
+        'imine': '[NX2]=[CX3]',  # Imine
+    }
+
+    # Convert patterns to RDKit molecules
+    patterns = {name: Chem.MolFromSmarts(pattern) for name, pattern in patterns.items()}
+
     # Count different types of amino groups
-    
-    # Primary amines (-NH2)
-    primary_amine_pattern = Chem.MolFromSmarts("[NX3H2]")
-    primary_amines = len(mol.GetSubstructMatches(primary_amine_pattern))
-    
-    # Secondary amines (-NH-)
-    secondary_amine_pattern = Chem.MolFromSmarts("[NX3H1]")
-    secondary_amines = len(mol.GetSubstructMatches(secondary_amine_pattern))
-    
-    # Tertiary amines (-N<)
-    tertiary_amine_pattern = Chem.MolFromSmarts("[NX3H0]")
-    tertiary_amines = len(mol.GetSubstructMatches(tertiary_amine_pattern))
-    
-    # Protonated amines (NH3+, NH2+)
-    protonated_amine_pattern = Chem.MolFromSmarts("[NX4+]")
-    protonated_amines = len(mol.GetSubstructMatches(protonated_amine_pattern))
+    counts = {}
+    for name, pattern in patterns.items():
+        counts[name] = len(mol.GetSubstructMatches(pattern))
 
-    # Count total amine groups
-    total_amines = primary_amines + secondary_amines + tertiary_amines + protonated_amines
+    # Calculate total valid amine groups
+    total_amines = (
+        counts['primary_amine'] +
+        counts['secondary_amine'] +
+        counts['tertiary_amine'] +
+        counts['aromatic_amine'] +
+        counts['protonated_amine']
+    )
 
-    # Exclude certain nitrogen-containing groups that shouldn't count
-    
-    # Nitro groups
-    nitro_pattern = Chem.MolFromSmarts("[$([NX3](=O)=O),$([NX3+](=O)[O-])]")
-    nitro_groups = len(mol.GetSubstructMatches(nitro_pattern))
-    
-    # Amide groups
-    amide_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])")
-    amide_groups = len(mol.GetSubstructMatches(amide_pattern))
-    
-    # Subtract these from total amine count
-    true_amine_count = total_amines - nitro_groups - amide_groups
+    # Special handling for molecules with both amides and amines
+    if total_amines >= 2:
+        return True, (f"Contains {total_amines} amino groups "
+                     f"(Primary: {counts['primary_amine'] + counts['aromatic_amine']}, "
+                     f"Secondary: {counts['secondary_amine']}, "
+                     f"Tertiary: {counts['tertiary_amine']}, "
+                     f"Protonated: {counts['protonated_amine']})")
 
-    if true_amine_count < 2:
-        return False, f"Contains only {true_amine_count} amino groups, minimum 2 required"
+    # If we have an amide and at least one other amine group, count it
+    elif total_amines == 1 and counts['amide'] >= 1:
+        return True, (f"Contains 2 amino groups (including 1 amide nitrogen)")
 
-    # Success case
-    return True, f"Contains {true_amine_count} amino groups (Primary: {primary_amines}, Secondary: {secondary_amines}, Tertiary: {tertiary_amines}, Protonated: {protonated_amines})"
+    return False, f"Contains only {total_amines} amino groups, minimum 2 required"
