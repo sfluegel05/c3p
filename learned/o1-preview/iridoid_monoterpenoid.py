@@ -2,15 +2,13 @@
 Classifies: CHEBI:50563 iridoid monoterpenoid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_iridoid_monoterpenoid(smiles: str):
     """
     Determines if a molecule is an iridoid monoterpenoid based on its SMILES string.
 
-    Iridoids usually consist of a cyclopentane ring fused to a six-membered oxygen heterocycle
-    with specific stereochemistry. Secoiridoids are formed by cleavage of a bond in the cyclopentane ring
-    but retain the six-membered oxygen heterocycle and characteristic functional groups.
+    Iridoids usually consist of a cyclopentane ring fused to a six-membered oxygen heterocycle.
+    Secoiridoids are formed by cleavage of a bond in the cyclopentane ring.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -25,39 +23,34 @@ def is_iridoid_monoterpenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns for iridoids and secoiridoids
-    # Core iridoid skeleton: cyclopentane fused to a dihydropyran ring (oxygen-containing six-membered ring)
-    iridoid_pattern = Chem.MolFromSmarts("""
-        [C@H]1[C@H]([#6])[CH2][C@H]2O[C@@H](C=C1)[C@@H]2
-        |
-        -*:1-:
-        """)
-    # Secoiridoid pattern: opened cyclopentane ring with preserved pyran ring and characteristic substituents
-    secoiridoid_pattern = Chem.MolFromSmarts("""
-        [C@H]1[C@H](C=C[O])[C@@H]2O[C@@H](C=C1)[C@@H]2
-        |
-        -*:1-:
-        """)
+    # Get ring information
+    ri = mol.GetRingInfo()
+    atom_rings = ri.AtomRings()
 
-    # Extended patterns to account for variations
-    iridoid_pattern_alt = Chem.MolFromSmarts("""
-        [C@H]1[C@@H]2O[C@H](C=C1)[C@H]([C@H](C2)*)*
-        |
-        -*:1-:
-        """)
+    if not atom_rings:
+        return False, "No rings detected in molecule"
 
-    # Check for iridoid structure
-    if mol.HasSubstructMatch(iridoid_pattern) or mol.HasSubstructMatch(iridoid_pattern_alt):
-        return True, "Molecule matches iridoid monoterpenoid core structure"
+    # Find all five-membered rings
+    five_membered_rings = [set(ring) for ring in atom_rings if len(ring) == 5]
+    # Find all six-membered rings containing oxygen
+    six_membered_oxygen_rings = []
+    for ring in atom_rings:
+        if len(ring) == 6:
+            ring_set = set(ring)
+            ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
+            atom_symbols = [atom.GetSymbol() for atom in ring_atoms]
+            if 'O' in atom_symbols:
+                six_membered_oxygen_rings.append(ring_set)
 
-    # Check for secoiridoid structure
-    if mol.HasSubstructMatch(secoiridoid_pattern):
-        return True, "Molecule matches secoiridoid monoterpenoid structure"
+    # Check for fused rings (shared atoms between five- and six-membered rings)
+    for five_ring in five_membered_rings:
+        for six_ring in six_membered_oxygen_rings:
+            shared_atoms = five_ring & six_ring
+            if len(shared_atoms) >= 2:
+                return True, "Molecule contains cyclopentane ring fused to six-membered oxygen heterocycle"
 
-    # Additional filtering to reduce false positives
-    # Check the molecular formula to ensure it's a monoterpenoid (C10 backbone)
-    formula = rdMolDescriptors.CalcMolFormula(mol)
-    if 'C10' not in formula:
-        return False, "Molecule does not have a monoterpenoid carbon skeleton"
+    # Check for secoiridoid: presence of six-membered oxygen-containing ring
+    if six_membered_oxygen_rings:
+        return True, "Molecule contains six-membered oxygen heterocycle (possible secoiridoid)"
 
     return False, "Molecule does not match iridoid monoterpenoid structural features"
