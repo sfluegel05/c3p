@@ -8,9 +8,7 @@ from rdkit import Chem
 
 def is_limonoid(smiles: str):
     """
-    Determines if a molecule is a limonoid based on its SMILES string by checking
-    for common structural motifs seen in limonoids like highly oxygenated
-    triterpene derivatives with diverse ring systems and often with a furan ring.
+    Determines if a molecule is a limonoid based on its SMILES string.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -25,26 +23,23 @@ def is_limonoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Flexible ring skeleton pattern (allow more variation in rings)
-    flexible_core_pattern = Chem.MolFromSmarts("C1CCC2CCCC(C=C3)CC3(O)OC2C1")  # Example abstraction
+    # Common limonoid pattern: Triterpene backbone with multiple oxygenated groups and a furan ring
+    # Note: This is a simplified representation and may not be exhaustive
+    triterpene_pattern = Chem.MolFromSmarts("C1(C)[C@]234[C@H](C[C@@]1(C)CC3=CC(=O)C4)C2")
+    furan_pattern = Chem.MolFromSmarts("c1coc[cH]c1")
+    oxygen_pattern = Chem.MolFromSmarts("[OX2,OX1=]")
+
+    # Check for triterpene backbone
+    if not mol.HasSubstructMatch(triterpene_pattern):
+        return False, "No triterpene backbone found"
     
-    # Check for patterns such as furan rings which might be common but not mandatory
-    furan_pattern = Chem.MolFromSmarts("c1ccoc1")
+    # Check for presence of a furan ring
+    if not mol.HasSubstructMatch(furan_pattern):
+        return False, "No furan ring found"
 
-    # Verify presence of flexible limonoid core
-    if not mol.HasSubstructMatch(flexible_core_pattern):
-        return False, "No flexible limonoid core structure found"
-
-    # Check for presence of a furan ring (optional but common)
-    if mol.HasSubstructMatch(furan_pattern):
-        furan_presence = " with furan ring"
-    else:
-        furan_presence = ", furan ring not detected"
-
-    # Count multiple oxygens: limonoids are typically highly oxygenated
-    oxygen_pattern = Chem.MolFromSmarts("[O]")
+    # Check for multiple oxygenated groups
     oxy_matches = mol.GetSubstructMatches(oxygen_pattern)
-    if len(oxy_matches) < 5:
-        return False, f"Found {len(oxy_matches)} oxygenated groups, expecting more than 5"
+    if len(oxy_matches) < 3:
+        return False, f"Found {len(oxy_matches)} oxygenated groups, need at least 3"
 
-    return True, f"Contains limonoid core structure{furan_presence} and high oxygenation"
+    return True, "Contains limonoid-specific structural features including a triterpene core, furan ring, and multiple oxygens"
