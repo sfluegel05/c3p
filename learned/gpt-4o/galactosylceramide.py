@@ -22,8 +22,8 @@ def is_galactosylceramide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Recognize galactose moiety pattern (generalized to match more cases)
-    galactose_pattern = Chem.MolFromSmarts("OC[C@H]1OC(O)C(O)C(O)C1")  # Less specific to capture more variants
+    # Recognize galactose moiety pattern, including sulfated versions
+    galactose_pattern = Chem.MolFromSmarts("OC[C@@H]1O[C@H](CO)[C@H](O)[C@@H](O)[C@H]1O")
     if not mol.HasSubstructMatch(galactose_pattern):
         return False, "No galactose residue found"
 
@@ -32,19 +32,14 @@ def is_galactosylceramide(smiles: str):
     if not mol.HasSubstructMatch(amide_pattern):
         return False, "No amide linkage found"
     
-    # Detect a long-chain backbone: generalized sphingosine detection
-    sphingosine_pattern = Chem.MolFromSmarts("[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-N-[C@H](O)-C=C")  # Looking for a typical backbone
+    # Detect a sphingosine-like backbone: flexible long-chain pattern
+    sphingosine_pattern = Chem.MolFromSmarts("[#6]~[CH2]~[CH2]~[CH2]~[CH]~[N]~[CH](O)~[#6]")  
     if not mol.HasSubstructMatch(sphingosine_pattern):
         return False, "Sphingosine-like backbone not detected"
-
-    # Ensuring absence of phosphate groups (filter them out)
+    
+    # Exclude components typically non-galactosylceramide except sulfonate
     phosphate_pattern = Chem.MolFromSmarts("OP(=O)(O)O")
     if mol.HasSubstructMatch(phosphate_pattern):
         return False, "Contains phosphate group, not a galactosylceramide"
-    
-    # Exclude non-standard linkages and ensure sulfonate handling if necessary
-    sulfonate_pattern = Chem.MolFromSmarts("S(=O)(=O)O")
-    if mol.HasSubstructMatch(sulfonate_pattern):
-        return False, "Contains unexpected sulfonate group"
 
     return True, "Contains galactose, amide linkage, and sphingosine backbone"
