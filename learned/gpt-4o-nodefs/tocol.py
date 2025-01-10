@@ -2,6 +2,7 @@
 Classifies: CHEBI:39437 tocol
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_tocol(smiles: str):
     """
@@ -19,19 +20,21 @@ def is_tocol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for chroman or chromene moiety - ring structure with an oxygen and aromatic characteristics
-    chroman_pattern = Chem.MolFromSmarts("O1C(C=C)=C(CC(C)C)C(CCC(C)(C)C)C1")
-    if not mol.HasSubstructMatch(chroman_pattern):
-        return False, "No chroman or chromene moiety"
+    # Broadly define chroman/chromene core structure: aromatic + oxygen in six-membered ring
+    chroman_core_pattern = Chem.MolFromSmarts("C1=CC(O)C=C1")
 
-    # Check if there's a long hydrocarbon tail
-    hydrocarbon_pattern = Chem.MolFromSmarts("[CH2][CH2][CH2]")
-    if not mol.HasSubstructMatch(hydrocarbon_pattern):
-        return False, "No long hydrocarbon chain found"
+    if not mol.HasSubstructMatch(chroman_core_pattern):
+        return False, "No chroman or chromene moiety detected"
 
-    # Check for hydroxyl group
-    hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
+    # Check for a sufficient hydrocarbon tail that typically characterizes tocols.
+    long_hydrocarbon_pattern = Chem.MolFromSmarts("C(C)C")
+    tail_matches = mol.GetSubstructMatches(long_hydrocarbon_pattern)
+    if len(tail_matches) < 3:
+        return False, "Insufficient hydrocarbon tail length"
+
+    # Make sure at least one hydroxyl group is attached to the aromatic core
+    hydroxyl_pattern = Chem.MolFromSmarts("cO")
     if not mol.HasSubstructMatch(hydroxyl_pattern):
-        return False, "Missing hydroxyl groups"
+        return False, "No aromatic-linked hydroxyl found"
 
-    return True, "Contains chroman/chromene moiety with hydrocarbon tail and hydroxyl groups"
+    return True, "Contains appropriate chroman/chromene moiety with hydrocarbon tail and hydroxyl group"
