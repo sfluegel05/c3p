@@ -6,7 +6,8 @@ from rdkit import Chem
 def is_iridoid_monoterpenoid(smiles: str):
     """
     Determines if a molecule is an iridoid monoterpenoid based on its SMILES string.
-    An iridoid monoterpenoid contains a cyclopentane ring fused to a six-membered oxygen heterocycle.
+    An iridoid monoterpenoid usually consists of a cyclopentane ring fused to a six-membered oxygen heterocycle.
+    Secoiridoids arise from cleavage of bonds in the cyclopentane ring but typically preserve the bicyclic structure.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,11 +22,11 @@ def is_iridoid_monoterpenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS patterns for iridoid and secoiridoid structures
-    iridoid_pattern = Chem.MolFromSmarts("C1C=CC2OC2C1")  # Generic pattern for cyclopentane and six-membered ether ring
-    secoiridoid_pattern = Chem.MolFromSmarts("C1CC(C=O)C2OC2C1")  # Pattern for secoiridoids with typical ring openings
+    # Define more extensive SMARTS patterns for iridoid and secoiridoid structures
+    iridoid_pattern = Chem.MolFromSmarts("C1C=CC2OC2[C@H]1")  # Cyclopentane fused to tetrahydropyran, allows stereo
+    secoiridoid_pattern = Chem.MolFromSmarts("C1(CC=O)C2OC2[C@H]1")  # Allows typical secoiridoid structure
 
-    # Check for iridoid and secoiridoid structures
+    # Check specifically for iridoid and secoiridoid substructures
     is_iridoid = mol.HasSubstructMatch(iridoid_pattern)
     is_secoiridoid = mol.HasSubstructMatch(secoiridoid_pattern)
     
