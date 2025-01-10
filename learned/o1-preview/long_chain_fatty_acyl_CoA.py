@@ -5,11 +5,13 @@ Classifies: CHEBI:33184 long-chain fatty acyl-CoA
 Classifies: CHEBI:57395 long-chain fatty acyl-CoA
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_long_chain_fatty_acyl_CoA(smiles: str):
     """
     Determines if a molecule is a long-chain fatty acyl-CoA based on its SMILES string.
-    A long-chain fatty acyl-CoA results from the formal condensation of the thiol group of coenzyme A with
+    A long-chain fatty acyl-CoA results from the condensation of the thiol group of coenzyme A with
     the carboxy group of any long-chain (C13 to C22) fatty acid.
 
     Args:
@@ -25,84 +27,55 @@ def is_long_chain_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the thioester linkage pattern S-C(=O)-C
-    thioester_smarts = "[#16]-C(=O)-[C]"
-    thioester_pattern = Chem.MolFromSmarts(thioester_smarts)
-    if thioester_pattern is None:
-        return False, "Failed to construct thioester pattern"
+    # Define the Coenzyme A (CoA) pattern
+    coa_smarts = """
+    C[C@@H](O)[C@@H](COP(O)(=O)OCC1OC(O)[C@H](OP(O)(O)=O)[C@@H](O)[C@H]1O)n1cnc2c(N)ncnc12
+    """
+    coa_pattern = Chem.MolFromSmarts(coa_smarts)
+    if coa_pattern is None:
+        return False, "Failed to construct CoA pattern"
 
-    # Define adenine pattern (part of CoA)
-    adenine_smarts = "n1cnc2c1ncnc2N"
-    adenine_pattern = Chem.MolFromSmarts(adenine_smarts)
-    if adenine_pattern is None:
-        return False, "Failed to construct adenine pattern"
+    # Check for CoA substructure
+    if not mol.HasSubstructMatch(coa_pattern):
+        return False, "Coenzyme A moiety not found"
 
-    # Check if adenine moiety is present (indicates CoA)
-    if not mol.HasSubstructMatch(adenine_pattern):
-        return False, "Adenine moiety not found (CoA moiety missing)"
+    # Define thioester linkage pattern (S-C(=O)-)
+    thioester_pattern = Chem.MolFromSmarts("SC(=O)C")
+    if not mol.HasSubstructMatch(thioester_pattern):
+        return False, "Thioester linkage not found"
 
-    # Find thioester linkage(s)
+    # Find the fatty acyl chain attached via thioester linkage
     thioester_matches = mol.GetSubstructMatches(thioester_pattern)
     if not thioester_matches:
         return False, "Thioester linkage not found"
 
-    # For each thioester linkage
+    # Identify the fatty acyl chain
     for match in thioester_matches:
         sulfur_idx = match[0]
+        # Traverse the chain from the carbonyl carbon
         carbonyl_c_idx = match[1]
-        alpha_c_idx = match[2]
+        fatty_acyl_chain = Chem.FragmentOnBonds(mol, [carbonyl_c_idx], addDummies=True)
+        # Extract the fatty acyl fragment
+        fragments = Chem.GetMolFrags(fatty_acyl_chain, asMols=True, sanitizeFrags=False)
+        for frag in fragments:
+            atom_nums = [atom.GetAtomicNum() for atom in frag.GetAtoms()]
+            if 6 in atom_nums and 1 in atom_nums:  # Contains carbon and hydrogen
+                # Count number of carbons excluding the carbonyl carbon
+                c_count = sum(1 for atom in frag.GetAtoms() if atom.GetAtomicNum() == 6)
+                c_count -= 1  # Exclude the carbonyl carbon
+                if 13 <= c_count <= 22:
+                    return True, f"Contains long-chain fatty acyl group with {c_count} carbons"
+                else:
+                    return False, f"Fatty acyl chain length is {c_count} carbons, not in range 13-22"
 
-        # Get CoA atom indices by traversing from sulfur (excluding carbonyl carbon)
-        CoA_atom_indices = set()
-        visited_coa = set()
-        def traverse_CoA(atom_idx):
-            if atom_idx in visited_coa:
-                return
-            visited_coa.add(atom_idx)
-            atom = mol.GetAtomWithIdx(atom_idx)
-            for neighbor in atom.GetNeighbors():
-                neighbor_idx = neighbor.GetIdx()
-                if neighbor_idx != carbonyl_c_idx and neighbor_idx not in visited_coa:
-                    traverse_CoA(neighbor_idx)
-        traverse_CoA(sulfur_idx)
-        CoA_atom_indices = visited_coa
-
-        # Traverse the fatty acyl chain starting from alpha carbon
-        visited_acyl = set()
-        carbon_count = 0
-        def traverse_acyl_chain(atom_idx):
-            nonlocal carbon_count
-            if atom_idx in visited_acyl or atom_idx in CoA_atom_indices:
-                return
-            visited_acyl.add(atom_idx)
-            atom = mol.GetAtomWithIdx(atom_idx)
-            # Count only carbon atoms
-            if atom.GetAtomicNum() == 6:
-                carbon_count += 1
-            for neighbor in atom.GetNeighbors():
-                neighbor_idx = neighbor.GetIdx()
-                if neighbor_idx == carbonyl_c_idx:
-                    continue
-                if neighbor_idx not in visited_acyl and neighbor_idx not in CoA_atom_indices:
-                    traverse_acyl_chain(neighbor_idx)
-        traverse_acyl_chain(alpha_c_idx)
-
-        # Check if carbon count is within 13 to 22
-        if 13 <= carbon_count <= 22:
-            return True, f"Contains long-chain fatty acyl group with {carbon_count} carbons"
-        else:
-            continue  # Try next thioester linkage if any
-
-    # If no suitable acyl chain found
-    return False, "No long-chain fatty acyl chain of length 13-22 carbons found"
-
+    return False, "Failed to identify long-chain fatty acyl chain"
 
 __metadata__ = {
     'chemical_class': {
         'id': 'CHEBI:57395',
         'name': 'long-chain fatty acyl-CoA',
         'definition': 'A fatty acyl-CoA that results from the formal condensation of the thiol group of coenzyme A with the carboxy group of any long-chain (C13 to C22) fatty acid.',
-        'parents': ['CHEBI:37554']
+        'parents': ['CHEBI:37554', 'CHEBI:64479']
     },
     'config': {
         'llm_model_name': 'lbl/claude-sonnet',
@@ -121,5 +94,14 @@ __metadata__ = {
     'success': True,
     'best': True,
     'error': '',
-    'stdout': None
+    'stdout': None,
+    'num_true_positives': 150,
+    'num_false_positives': 4,
+    'num_true_negatives': 182407,
+    'num_false_negatives': 23,
+    'num_negatives': None,
+    'precision': 0.974025974025974,
+    'recall': 0.8670520231213873,
+    'f1': 0.9174311926605504,
+    'accuracy': 0.9998521228585199
 }
