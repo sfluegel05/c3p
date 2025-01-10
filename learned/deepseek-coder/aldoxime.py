@@ -29,13 +29,7 @@ def is_aldoxime(smiles: str):
     if not mol.HasSubstructMatch(aldoxime_pattern):
         return False, "No aldoxime group (R-CH=NOH) found"
 
-    # Check if the carbon in the aldoxime group is part of an aldehyde
-    # An aldehyde carbon is connected to a hydrogen and another carbon or heteroatom
-    aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)")
-    if not mol.HasSubstructMatch(aldehyde_pattern):
-        return False, "No aldehyde group (R-CHO) found"
-
-    return True, "Contains the aldoxime group (R-CH=NOH) derived from an aldehyde"
+    return True, "Contains the aldoxime group (R-CH=NOH)"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:36586',
