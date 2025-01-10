@@ -26,7 +26,7 @@ def is_iridoid_monoterpenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more specific SMARTS pattern for the fused cyclopentane and six-membered oxygen heterocycle
+    # Define a more flexible SMARTS pattern for the fused cyclopentane and six-membered oxygen heterocycle
     iridoid_pattern = Chem.MolFromSmarts("[C]1[C][C][C][C]1@[C]2[C][C][C][C][O]2")
     if not mol.HasSubstructMatch(iridoid_pattern):
         return False, "No cyclopentane ring fused to a six-membered oxygen heterocycle found"
