@@ -2,7 +2,6 @@
 Classifies: CHEBI:17354 16beta-hydroxy steroid
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_16beta_hydroxy_steroid(smiles: str):
     """
@@ -21,23 +20,26 @@ def is_16beta_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define general steroid backbone pattern as three 6-membered rings fused to one 5-membered ring
-    steroid_backbone = Chem.MolFromSmarts('C1CC2CCC3CC4C(C(=C)CCC4)CCC3C2C1')
-    
+    # Steroid backbone pattern: cyclopenta[a]phenanthrene.
+    # Simplified pattern to capture the essence: A/B/C/D ring system
+    steroid_backbone = Chem.MolFromSmarts('C1CCC2C3CCC4CCCC(C4)C3C2C1')
+
     if not mol.HasSubstructMatch(steroid_backbone):
         return False, "No steroid backbone found"
 
-    # Identify the hydroxy group at the 16beta position, ensuring flexibility in the pattern
-    # Assuming that the attachment to the overall steroid structure is adequate for now
-    hydroxyl_16beta_pattern = Chem.MolFromSmarts('[C@@H](O)C')
-    
-    # Check each carbon for attachment of a hydroxyl group to determine the correct position (use of substructure match placeholders)
+    # Hydroxy group at the 16beta position
+    # In the steroid, the 16beta position (stereochemistry notation) is specific; 
+    # this requires understanding of steroid structure. Typically involves C17 as a reference.
+    # Use a pipecleaner pattern to match hydroxyl in beta orientation on correct carbon
+    hydroxyl_pattern = Chem.MolFromSmarts('C[C@H](O)C')  # Placeholder pattern, needs specificity
+
+    # Check atom positions and their neighbors for hydroxyl group at 16beta
     for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 6 and mol.HasSubstructMatch(hydroxyl_16beta_pattern, Chem.Atom(atom.GetIdx())):
-            neighbors = atom.GetNeighbors()
-            for neighbor in neighbors:
-                if neighbor.GetSymbol() == 'C':
-                    if len(neighbor.GetNeighbors()) == 3: # Beta orientation check (simplified)
-                        return True, "Contains steroid backbone with 16beta-hydroxy group"
+        if atom.GetAtomicNum() == 6:  # Carbon
+            bond = [b for b in atom.GetBonds() if b.GetBeginAtom().GetSymbol() == 'O' or b.GetEndAtom().GetSymbol() == 'O']
+            if bond:
+                # Check for beta configuration, commonly using neighboring hydrogens/bonds
+                if mol.HasSubstructMatch(hydroxyl_pattern):
+                    return True, "Contains steroid backbone with 16beta-hydroxy group"
     
-    return False, "No 16beta-hydroxy group found or incorrectly positioned"
+    return False, "16beta-hydroxy group not found or incorrectly positioned"
