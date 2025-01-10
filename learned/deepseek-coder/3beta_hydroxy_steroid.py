@@ -26,7 +26,7 @@ def is_3beta_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the steroid core pattern (four fused rings)
+    # Define a more general steroid core pattern (four fused rings)
     steroid_core_pattern = Chem.MolFromSmarts("[C@H]12CC[C@H]3[C@@H](CC[C@H]4[C@@H](CC[C@H]34)C)[C@@]1(CC2)C")
     if not mol.HasSubstructMatch(steroid_core_pattern):
         return False, "No steroid core structure found"
