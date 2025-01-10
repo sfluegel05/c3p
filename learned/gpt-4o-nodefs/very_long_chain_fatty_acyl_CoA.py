@@ -27,20 +27,34 @@ def is_very_long_chain_fatty_acyl_CoA(smiles: str):
     if not mol.HasSubstructMatch(thioester_pattern):
         return False, "No thioester group found"
 
-    # Identify the CoA moiety using a more complete SMARTS pattern, including adenylate moiety
-    coa_pattern = Chem.MolFromSmarts("[P](=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)N1C=NC2=C1N=CN=C2N")
+    # Update CoA moiety pattern using a more complete SMARTS representation
+    # Including the adenylate as part of CoA detection is vital
+    coa_pattern = Chem.MolFromSmarts("NC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)P(=O)(O)O")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "CoA moiety not detected"
 
-    # Count carbon atoms in the longest aliphatic chain prior to the thioester linkage
-    # Assume the aliphatic chain ends at the carbonyl carbon in thioester
+    # Count carbon atoms in the longest aliphatic chain part of thioester
     fragments = mol.GetSubstructMatches(thioester_pattern)
     longest_chain_length = 0
     if fragments:
         for frag in fragments:
-            carbon_chain = Chem.RWMol(mol).GetFragmentAtoms(frag[0])
-            carbon_count = sum(1 for atom in carbon_chain if atom.GetAtomicNum() == 6)
-            longest_chain_length = max(longest_chain_length, carbon_count)
+            starting_atom = frag[0]  # carbonyl carbon
+            atoms_visited = {starting_atom}
+            carbons_in_chain = set()
+            atom_stack = [mol.GetAtomWithIdx(starting_atom)]
+            
+            while atom_stack:
+                atom = atom_stack.pop()
+                if atom.GetAtomicNum() == 6:
+                    carbons_in_chain.add(atom.GetIdx())
+
+                for neighbor in atom.GetNeighbors():
+                    if neighbor.GetIdx() not in atoms_visited:
+                        atoms_visited.add(neighbor.GetIdx())
+                        atom_stack.append(neighbor)
+            
+            chain_length = len(carbons_in_chain)
+            longest_chain_length = max(longest_chain_length, chain_length)
     
     if longest_chain_length < 22:
         return False, "Aliphatic chain not sufficiently long (very long-chain fatty acids typically have ≥22 carbons)"
