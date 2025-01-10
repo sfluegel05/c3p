@@ -10,6 +10,10 @@ from rdkit.Chem import AllChem
 def is_phosphatidylinositol(smiles: str):
     """
     Determines if a molecule is a phosphatidylinositol based on its SMILES string.
+    A phosphatidylinositol has:
+    - An inositol ring (cyclohexane with 6 OH groups)
+    - Connected via phosphate to a glycerol backbone
+    - Two fatty acid chains attached to the glycerol
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,18 +27,20 @@ def is_phosphatidylinositol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for inositol ring pattern (cyclohexane with 6 OH groups)
-    inositol_pattern = Chem.MolFromSmarts("[C@H]1[CH]([OH])[CH]([OH])[CH]([OH])[CH]([OH])[CH]([OH])O1")
+    # Look for inositol ring pattern - more flexible pattern to match different representations
+    # Cyclohexane ring with 6 OH groups in any stereochemistry
+    inositol_pattern = Chem.MolFromSmarts("[C@@,C@,CH1,CH2]1[C@@,C@,CH1,CH2]([OH1,OH0])[C@@,C@,CH1,CH2]([OH1,OH0])[C@@,C@,CH1,CH2]([OH1,OH0])[C@@,C@,CH1,CH2]([OH1,OH0])[C@@,C@,CH1,CH2]([OH1,OH0])O1")
     if not mol.HasSubstructMatch(inositol_pattern):
         return False, "No inositol ring found"
     
     # Look for phosphate group connected to inositol
-    phosphate_pattern = Chem.MolFromSmarts("OP(=O)(O)OC")
+    # More general pattern that captures different representations
+    phosphate_pattern = Chem.MolFromSmarts("O[P](=O)(O)OC")
     if not mol.HasSubstructMatch(phosphate_pattern):
         return False, "No phosphate group found"
     
-    # Look for glycerol backbone
-    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
+    # Look for glycerol backbone - more flexible pattern
+    glycerol_pattern = Chem.MolFromSmarts("[CH2X4,CH2][CH1X4,CH1][CH2X4,CH2]")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
     
@@ -44,12 +50,19 @@ def is_phosphatidylinositol(smiles: str):
     if len(ester_matches) < 2:
         return False, f"Found only {len(ester_matches)} ester groups, need at least 2"
     
-    # Check for long carbon chains (fatty acids)
-    carbon_chain_pattern = Chem.MolFromSmarts("[CH2][CH2][CH2][CH2]")
-    chain_matches = mol.GetSubstructMatches(carbon_chain_pattern)
+    # Check for fatty acid chains - more comprehensive pattern
+    # Matches both saturated and unsaturated chains
+    fatty_acid_pattern = Chem.MolFromSmarts("([CH2][CH2][CH2][CH2])|([CH2][CH][CH][CH2])")
+    chain_matches = mol.GetSubstructMatches(fatty_acid_pattern)
     if len(chain_matches) < 2:
         return False, "Missing long carbon chains (fatty acids)"
-        
+    
+    # Verify phosphate-inositol-glycerol connectivity
+    # More flexible pattern that captures different representations
+    connectivity_pattern = Chem.MolFromSmarts("O1[C@@,C@,CH1,CH2]([C@@,C@,CH1,CH2]([OH1,OH0])[C@@,C@,CH1,CH2]([OH1,OH0])[C@@,C@,CH1,CH2]([OH1,OH0])[C@@,C@,CH1,CH2]([OH1,OH0])[C@@,C@,CH1,CH2]1[OH1,OH0])OP(=O)(O)OC")
+    if not mol.HasSubstructMatch(connectivity_pattern):
+        return False, "Phosphate not correctly connected to inositol and glycerol"
+    
     # Count key atoms to verify overall composition
     phosphorus_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
     if phosphorus_count != 1:
@@ -58,10 +71,5 @@ def is_phosphatidylinositol(smiles: str):
     oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     if oxygen_count < 12:  # minimum expected: 6 OH on inositol + 3 phosphate + 2 ester + 1 glycerol
         return False, f"Too few oxygen atoms for phosphatidylinositol (found {oxygen_count}, need at least 12)"
-    
-    # Verify connection between phosphate and inositol
-    inositol_p_pattern = Chem.MolFromSmarts("O1[CH]([CH]([OH])[CH]([OH])[CH]([OH])[CH]([OH])[CH]1[OH])OP(=O)(O)OC")
-    if not mol.HasSubstructMatch(inositol_p_pattern):
-        return False, "Phosphate not correctly connected to inositol"
     
     return True, "Contains inositol ring connected via phosphate to glycerol backbone with two fatty acid chains"
