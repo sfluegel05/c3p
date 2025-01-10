@@ -20,14 +20,20 @@ def is_1_O_acylglycerophosphoethanolamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for generic O-acyl ester group at the 1-position of glycerol fragment, assuming no specific stereochemistry
-    o_acyl_pattern = Chem.MolFromSmarts("[C](OC(=O))[C](O)CO")
+    # Improved pattern checking for 1-O-acylglycerol moiety with stereochemistry
+    o_acyl_pattern = Chem.MolFromSmarts("[C@@H](COC(=O)[C])[O][C@H](O)CO")
     if not mol.HasSubstructMatch(o_acyl_pattern):
-        return False, "No acyl ester at the 1-position of glycerol fragment"
+        return False, "No O-acyl ester correctly positioned at the 1-position with necessary stereochemistry"
 
-    # Check for phosphoethanolamine group (using a simplified, more generic pattern P(=O)(O)OCCN)
-    phosphoethanolamine_pattern = Chem.MolFromSmarts("P(=O)(O)OCCN")
+    # Improved pattern for phosphoethanolamine group, targeting precise connectivity and format
+    phosphoethanolamine_pattern = Chem.MolFromSmarts("P(=O)([O-])OC[C@H](N)C")
     if not mol.HasSubstructMatch(phosphoethanolamine_pattern):
-        return False, "No phosphoethanolamine group attached"
+        return False, "No correctly oriented phosphoethanolamine group present"
 
+    # Check for appropriate number of glycerol ester linkages and phosphate presence
+    ester_linkages_pattern = Chem.MolFromSmarts("COC(=O)C")
+    phosphate_count = sum(1 for _ in mol.GetSubstructMatches(ester_linkages_pattern))
+    if phosphate_count < 1:
+        return False, f"Insufficient glycerophosphoester linkages, found {phosphate_count}"
+    
     return True, "Contains glycerophosphoethanolamine structure with O-acyl substituent at the 1-position"
