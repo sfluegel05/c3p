@@ -23,17 +23,19 @@ def is_3_oxo_fatty_acyl_CoA_4__(smiles: str):
         return False, "Invalid SMILES string"
 
     # 3-oxo-fatty acyl pattern
-    oxo_fatty_acyl_pattern = Chem.MolFromSmarts("[CX3](=O)[CX4][CX3](=O)")
+    # Improved pattern to account for connectivity with CoA
+    oxo_fatty_acyl_pattern = Chem.MolFromSmarts("[CX3](=O)[CX4][CX3](=O)SCC")
     if not mol.HasSubstructMatch(oxo_fatty_acyl_pattern):
-        return False, "No 3-oxo-fatty acyl group found"
+        return False, "No connected 3-oxo-fatty acyl group found"
 
-    # Improved CoA moiety pattern reflecting stereochemistry and more accurate structure
-    coa_pattern = Chem.MolFromSmarts("C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP([O-])([O-])=O.OP([O-])([O-])=O")
+    # Enhanced CoA moiety pattern reflecting stereochemistry and more accurate structure
+    # The pattern includes the CoA core with attached phosphates and stereocenters
+    coa_pattern = Chem.MolFromSmarts("SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP([O-])([O-])=O.OP([O-])([O-])=O")
     if not mol.HasSubstructMatch(coa_pattern):
-        return False, "CoA moiety with stereochemistry not found"
+        return False, "CoA moiety with necessary stereochemistry not found"
 
-    # Check for at least 3 phosphate groups being deprotonated
-    deprotonated_phosphate_pattern = Chem.MolFromSmarts("OP([O-])([O-])=O")
+    # Check for presence of 3 deprotonated phosphate groups
+    deprotonated_phosphate_pattern = Chem.MolFromSmarts("P(O-)(O-)=O")
     phosphate_matches = mol.GetSubstructMatches(deprotonated_phosphate_pattern)
     if len(phosphate_matches) < 3:
         return False, "Insufficient deprotonated phosphate groups found"
