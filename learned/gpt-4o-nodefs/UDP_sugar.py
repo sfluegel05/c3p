@@ -20,26 +20,26 @@ def is_UDP_sugar(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Expanded SMARTS patterns
-    # Uridine includes both pyrimidine and ribose moiety
-    uridine_complete_pattern = Chem.MolFromSmarts("O[C@H]1[C@@H](COP(O)(=O)O)O[C@H](n2ccc(=O)[nH]c2=O)[C@H]1O")
+    # SMARTS patterns for components of UDP-sugar
+    # Uracil pattern
+    uracil_pattern = Chem.MolFromSmarts("n1ccc2[nH]c(=O)n(C)c2=O1")
     
-    # UDP linkage pattern (uridine + diphosphate)
-    udp_linkage_pattern = Chem.MolFromSmarts("O[C@H]1[C@@H](COP([O-])(=O)OP(O)(=O)[O-])O[C@H](n2ccc(=O)[nH]c2=O)[C@H]1O")
+    # Ribose with diphosphate linkage
+    diphosphate_ribose_pattern = Chem.MolFromSmarts("O[C@H]1[C@@H](OP(O)(=O)OP(O)(=O)O)C(O)C(O)C1O")
 
-    # Sugar moiety pattern can be defined using generic sugar scaffold
-    sugar_pattern = Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@H](O)[C@H](O[C@@H]1*)")  # Flexible to cover sugars
+    # Sugar moiety connected through glycosidic bond
+    sugar_glycosidic_pattern = Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H]1O")
+
+    # Check for uracil presence
+    if not mol.HasSubstructMatch(uracil_pattern):
+        return False, "No uracil moiety found"
+
+    # Check for diphosphate linkage with ribose
+    if not mol.HasSubstructMatch(diphosphate_ribose_pattern):
+        return False, "No diphosphate ribose linkage found"
+
+    # Check for sugar moiety linked via glycosidic bond
+    if not mol.HasSubstructMatch(sugar_glycosidic_pattern):
+        return False, "No sugar moiety linked via glycosidic bond"
     
-    # Check for complete uridine pattern
-    if not mol.HasSubstructMatch(uridine_complete_pattern):
-        return False, "No complete uridine moiety"
-
-    # Check for specific UDP linkage pattern
-    if not mol.HasSubstructMatch(udp_linkage_pattern):
-        return False, "No UDP linkage found"
-
-    # Check for sugar component overlap with UDP linkage
-    if not mol.HasSubstructMatch(sugar_pattern):
-        return False, "No recognizable sugar moiety linking to UDP"
-    
-    return True, "Contains specific uridine and diphosphate linkage typical of UDP-sugars with distinctive sugar moiety"
+    return True, "Contains uracil, diphosphate ribose linkage, and sugar moiety characteristic of UDP-sugars"
