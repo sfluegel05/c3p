@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_fatty_alcohol(smiles: str):
     """
     Determines if a molecule is a fatty alcohol based on its SMILES string.
-    A fatty alcohol is an aliphatic alcohol with a carbon chain of 3 to >27 atoms, which may be saturated/unsaturated and branched/unbranched.
+    A fatty alcohol is an aliphatic alcohol with a carbon chain of 3 to >27 atoms, which may be saturated/unsaturated, and branched or unbranched.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -29,22 +29,22 @@ def is_fatty_alcohol(smiles: str):
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if carbon_count < 3:
         return False, f"Too few carbon atoms ({carbon_count}), need at least 3"
-        
-    # Check for sp3 hybridized carbon bound to hydroxyl groups (O-H)
-    oh_pattern = Chem.MolFromSmarts("[CX4;!$(C=[O,N])][OH1]")
+
+    # Check for sp3 hybridized carbon bound to hydroxyl groups (O-H) or primary aliphatic alcohols   
+    oh_pattern = Chem.MolFromSmarts("[CX4;!$(C=[O,N])][OX2H]")  # Allow multiple hydroxyls for diols
     if not mol.HasSubstructMatch(oh_pattern):
         return False, "No aliphatic hydroxyl group found on a carbon chain"
 
-    # Allow complex aliphatic alcohols to some extent including diols, as long as they meet the length
-    # Check if the total number of heteroatoms (non-C, non-H) is reasonable
-    heteroatom_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() not in [6, 1, 8])  # Allowing oxygen
-    if heteroatom_count > 1:  # Beyond expected oxygen
-        return False, f"Too many heteroatoms for a fatty alcohol, count: {heteroatom_count}"
+    # Allow multiple aliphatic oxygens, reject non-carbons in excess
+    non_carbon_hetero_pattern = Chem.MolFromSmarts("[!C;!H]")
+    heteroatoms_outside_oxygen = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() not in [6, 1, 8]]
+    if len(heteroatoms_outside_oxygen) > 0:
+        return False, f"Unexpected heteroatoms present, functionality beyond simple hydroxyl groups"
 
-    # Avoid presence of undesirable functional groups that indicate esters or non-isolated carbonyls
-    # Allow ketones only if they are not adjacent to the alcohol
-    carbonyl_pattern = Chem.MolFromSmarts("[CX3]=O.[OH1]")
-    if mol.HasSubstructMatch(carbonyl_pattern):
-        return False, "Contains non-isolated carbonyl suggesting alternative functionality"
+    # Allow ketones/aldehydes if not bonded to hydroxyl bearing carbons; Reliable matches with wider interpretation
+    if not any(atom.GetSymbol() == 'O' and atom.GetDegree() > 1 for atom in mol.GetAtoms()):
+        carbonyl_near_oh_pattern = Chem.MolFromSmarts("[CX3]=O.[OH1]")
+        if mol.HasSubstructMatch(carbonyl_near_oh_pattern):
+            return False, "Contains complex carbonyl groups suggesting non-primary alcohol"
 
     return True, "Contains carbon chain with hydroxyl group(s), consistent with fatty alcohols"
