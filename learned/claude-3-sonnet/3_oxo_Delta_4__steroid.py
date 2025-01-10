@@ -25,46 +25,34 @@ def is_3_oxo_Delta_4__steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Basic steroid core pattern - four fused rings (A,B,C,D)
-    # More flexible pattern that focuses on the connectivity of the rings
-    steroid_core = Chem.MolFromSmarts(
-        "[#6]~1~2~[#6]~[#6]~[#6]~3~[#6]~[#6]~[#6]~4~[#6]~[#6]~[#6]~[#6]~[#6]~4~[#6]~[#6]~3~[#6]~[#6]~2~[#6]~[#6]~[#6]~1"
-    )
-    
+    # Check for steroid core (four fused rings)
+    steroid_core = Chem.MolFromSmarts("[#6]1~[#6]~[#6]~[#6]2~[#6]~[#6]~[#6]~3~[#6]~[#6]~[#6]~4~[#6]~[#6]~[#6]~[#6]~[#6]~4~[#6]~[#6]3~[#6]~[#6]2~[#6]~1")
     if not mol.HasSubstructMatch(steroid_core):
         return False, "No steroid core structure found"
 
-    # Pattern for 3-oxo group and Delta-4 double bond in ring A
-    # This pattern specifically looks for:
-    # - Ketone (C=O) at position 3
-    # - Double bond between carbons 4 and 5
-    # - Proper connectivity to the B ring
-    oxo_delta4_pattern = Chem.MolFromSmarts(
-        "[#6]~1~[#6]~C(=O)~C=C~[#6]~2~[#6]~[#6]~[#6]~1~[#6]~2"
-    )
+    # Check for 3-oxo group and Delta-4 double bond pattern
+    # This SMARTS pattern looks for:
+    # - A ketone (C=O) at position 3
+    # - A double bond between carbons 4 and 5
+    # - The correct connectivity in the A-ring of the steroid
+    oxo_delta4_pattern = Chem.MolFromSmarts("[#6]1~[#6]~[#6](=O)~[#6]=[#6]~[#6]~1")
     
     if not mol.HasSubstructMatch(oxo_delta4_pattern):
-        return False, "No 3-oxo-Delta(4) pattern found in ring A"
+        return False, "No 3-oxo-Delta(4) pattern found"
 
-    # Additional check for conjugation between ketone and double bond
-    conjugated_pattern = Chem.MolFromSmarts("C(=O)C=C")
+    # Additional check to ensure the ketone and double bond are conjugated
+    conjugated_pattern = Chem.MolFromSmarts("[#6]-[#6](=O)-[#6]=[#6]")
     if not mol.HasSubstructMatch(conjugated_pattern):
-        return False, "Ketone not conjugated with double bond"
+        return False, "Ketone and double bond not conjugated"
 
-    # Validate basic steroid characteristics
-    # Count carbons (steroids typically have 19-35 carbons)
+    # Count carbons to ensure reasonable size for a steroid
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if not (19 <= carbon_count <= 40):  # Increased upper limit to accommodate larger derivatives
-        return False, f"Invalid carbon count ({carbon_count}) for steroid structure"
+    if carbon_count < 19:  # Most steroids have at least 19 carbons
+        return False, "Too few carbons for a steroid structure"
 
-    # Count rings (steroids must have at least 4 rings)
+    # Check ring count (steroids typically have 4 rings)
     ring_info = mol.GetRingInfo()
     if ring_info.NumRings() < 4:
         return False, "Insufficient number of rings for steroid structure"
-
-    # Check that the molecule is not too small or too large
-    mol_weight = Chem.Descriptors.ExactMolWt(mol)
-    if not (250 <= mol_weight <= 1000):  # Typical range for steroids and their derivatives
-        return False, f"Molecular weight {mol_weight} outside typical steroid range"
 
     return True, "Contains steroid core with 3-oxo group conjugated to Delta-4 double bond"
