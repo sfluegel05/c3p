@@ -39,8 +39,8 @@ def is_dihydroagarofuran_sesquiterpenoid(smiles: str):
     # Check for oxygen-containing functional groups (esters, hydroxyls)
     ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) < 3:
-        return False, f"Expected at least 3 ester groups, found {len(ester_matches)}"
+    if len(ester_matches) < 1:
+        return False, f"Expected at least 1 ester group, found {len(ester_matches)}"
 
     # Check for the presence of a fused tricyclic system
     ring_info = mol.GetRingInfo()
