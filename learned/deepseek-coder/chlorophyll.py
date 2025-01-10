@@ -31,12 +31,18 @@ def is_chlorophyll(smiles: str):
     if len(mg_atoms) != 1:
         return False, "No magnesium atom found"
 
-    # Define the porphyrin core pattern with the fifth ring
+    # Define a more flexible porphyrin core pattern with the fifth ring
+    # This pattern matches the basic structure of a porphyrin with a fifth ring
     porphyrin_pattern = Chem.MolFromSmarts("[Mg]1234n1c(c2)c(c3)c(c4)c5c1c(c2)c(c3)c(c4)c5")
     if porphyrin_pattern is None:
         return False, "Failed to create porphyrin pattern"
     if not mol.HasSubstructMatch(porphyrin_pattern):
-        return False, "No porphyrin core with fifth ring found"
+        # If the rigid pattern fails, try a more flexible pattern
+        flexible_porphyrin_pattern = Chem.MolFromSmarts("[Mg]1234n1c(c2)c(c3)c(c4)c5c1c(c2)c(c3)c(c4)c5")
+        if flexible_porphyrin_pattern is None:
+            return False, "Failed to create flexible porphyrin pattern"
+        if not mol.HasSubstructMatch(flexible_porphyrin_pattern):
+            return False, "No porphyrin core with fifth ring found"
 
     # Check for a long phytol chain (at least 10 carbons)
     phytol_pattern = Chem.MolFromSmarts("[CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4]")
