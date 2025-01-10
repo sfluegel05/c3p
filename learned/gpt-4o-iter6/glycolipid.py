@@ -20,27 +20,21 @@ def is_glycolipid(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return (None, "Invalid SMILES string")
 
-    # Look for the glycerol backbone pattern
-    glycerol_pattern = Chem.MolFromSmarts("OCC(O)C")
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone with hydroxyl groups found"
+    # Improved pattern for glycerol backbone with diacyl groups
+    glycerol_diacyl_pattern = Chem.MolFromSmarts("C(COC(=O)[C@@H](O)COC(=O)*)O")
+    if not mol.HasSubstructMatch(glycerol_diacyl_pattern):
+        return False, "No 1,2-di-O-acylglycerol structure found"
 
-    # Improved ester group pattern to capture various ester linkages
-    ester_pattern = Chem.MolFromSmarts("C(=O)O")
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) < 2:
-        return False, f"Found {len(ester_matches)} ester groups, need at least 2 for diacyl configuration"
+    # Improved pattern for glycosidic linkage to a carbohydrate moiety
+    glycosidic_linkage_pattern = Chem.MolFromSmarts("OC[C@@H]1O[C@H](C[C@@H](O)O)C[C@@H]1O")
+    if not mol.HasSubstructMatch(glycosidic_linkage_pattern):
+        return False, "No glycosidic linkage with carbohydrate moiety detected"
 
-    # Enhanced pattern for glycosidic linkages
-    glycosidic_pattern = Chem.MolFromSmarts("O[*]")
-    if not mol.HasSubstructMatch(glycosidic_pattern):
-        return False, "No glycosidic linkage to carbohydrate detected"
-
-    # Broaden pattern for sugar moiety 
-    sugar_pattern = Chem.MolFromSmarts("C1OC([CH2,CH,CH]O)C(O)C(O)C1 | C1O[C@H]([C@H](O)[C@H](O)[C@H]1O) | C1OC([CH2,CH,CH]O)C1")
+    # Enhanced pattern for recognizing sugar moiety
+    sugar_pattern = Chem.MolFromSmarts("C1OC(O)C(O)C(O)C1")
     if not mol.HasSubstructMatch(sugar_pattern):
         return False, "No recognizable sugar moiety found"
     
-    return True, "The structure matches the criteria for a glycolipid with glycerol backbone, ester linkages, and glycosidic bonds to sugars"
+    return True, "The structure matches the criteria for a glycolipid with 1,2-di-O-acylglycerol structure and glycosidic linkage to sugar moiety"
