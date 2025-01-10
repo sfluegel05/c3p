@@ -20,26 +20,26 @@ def is_tetrapeptide(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Look for peptide bond pattern (C(=O)-N)
-    peptide_bond_pattern = Chem.MolFromSmarts("C(=O)N")
+
+    # Define SMARTS pattern for peptide bonds, considering possible variations
+    peptide_bond_pattern = Chem.MolFromSmarts("[NX3][CX3](=O)")
     peptide_bond_matches = mol.GetSubstructMatches(peptide_bond_pattern)
     
-    if len(peptide_bond_matches) != 3:
+    if len(peptide_bond_matches) < 3:
         return False, f"Found {len(peptide_bond_matches)} peptide bonds, need exactly 3 for tetrapeptide"
 
-    # Each peptide bond connects two amino-acids, total should be four amino-acids
-    num_amino_acids = 4
+    # Define SMARTS pattern for typical amino acid residues
+    # This includes patterns for amino and carboxyl groups connected by alpha carbon
+    # Cannot rely entirely on SMARTS here due to the variability of peptide side chains
+    amide_linked = Chem.MolFromSmarts("[NX3][CX3](=O)[C;R0]")
 
-    # Check for count of amine and carboxylic acid groups which indicates amino acids
-    amine_pattern = Chem.MolFromSmarts("[NX3][CX4][CX3](=O)")
-    amine_matches = mol.GetSubstructMatches(amine_pattern)
+    # Check for typical alpha carbon, amide/link patterns should be >= 4 chunks matching typical amino acid sections
+    aa_residue_count = 0
+    for residue in mol.GetSubstructMatches(amide_linked):
+        aa_residue_count += 1
+    
+    # Validate that there are four amino acid residues
+    if aa_residue_count != 4:
+        return False, f"Detected {aa_residue_count} amino acid residues, need exactly 4"
 
-    carboxy_pattern = Chem.MolFromSmarts("C(=O)[OX2H1]")
-    carboxy_matches = mol.GetSubstructMatches(carboxy_pattern)
-    
-    # Validate number of amino acids based on amine and carboxylate groups
-    if len(amine_matches) != num_amino_acids or len(carboxy_matches) != num_amino_acids:
-        return False, "Incorrect number of amine or carboxyl groups for tetrapeptide structure"
-    
     return True, "Contains four amino-acid residues connected by three peptide bonds, valid tetrapeptide structure"
