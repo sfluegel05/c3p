@@ -2,6 +2,7 @@
 Classifies: CHEBI:17135 long-chain fatty alcohol
 """
 from rdkit import Chem
+from rdkit.Chem import rdmolops
 
 def is_long_chain_fatty_alcohol(smiles: str):
     """
@@ -21,21 +22,25 @@ def is_long_chain_fatty_alcohol(smiles: str):
         return False, "Invalid SMILES string"
     
     # Check for hydroxyl group (-OH) presence
-    oh_group = Chem.MolFromSmarts("[CX4][OX2H]")
+    oh_group = Chem.MolFromSmarts("[OX2H]")
     if not mol.HasSubstructMatch(oh_group):
         return False, "No hydroxyl group found"
     
-    # Identify the longest chain of carbon atoms
-    carbon_chains = []
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() != 6:
-            continue
-        bonds = [b for b in atom.GetBonds() if b.GetOtherAtom(atom).GetAtomicNum() == 6]
-        chain_length = len(bonds) + 1
-        carbon_chains.append(chain_length)
+    # Function to find the longest chain of carbon atoms
+    def longest_carbon_chain(mol):
+        max_length = 0
+        for atom in mol.GetAtoms():
+            if atom.GetAtomicNum() == 6:  # Only consider carbon atoms
+                lengths = []
+                rdmolops.GetBondsInOrder(atom, molecule=mol, atomfun=lambda x: x.GetAtomicNum() == 6, lengthfun=len, results=lengths)
+                if lengths:
+                    max_length = max(lengths + [max_length])
+        return max_length
+    
+    # Get the longest carbon chain in the molecule
+    max_chain_length = longest_carbon_chain(mol)
     
     # Check if any chain meets the C13 to C22 requirement
-    max_chain_length = max(carbon_chains) if carbon_chains else 0
     if 13 <= max_chain_length <= 22:
         return True, f"Contains a carbon chain of length {max_chain_length} and a hydroxyl group"
     else:
