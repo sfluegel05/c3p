@@ -27,16 +27,19 @@ def is_sterol(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for the steroid nucleus (four fused rings)
+    # A more general pattern to match the steroid nucleus
     steroid_nucleus_pattern = Chem.MolFromSmarts("[C@]12[C@]3([C@]4([C@](CC1)(CC[C@@H]4[C@@H]3CC2)[H])[H])[H]")
     if not mol.HasSubstructMatch(steroid_nucleus_pattern):
         return False, "No steroid nucleus found"
 
     # Check for a hydroxyl group at the 3-position
+    # A more general pattern to match the hydroxyl group
     hydroxyl_pattern = Chem.MolFromSmarts("[C@]12[C@]3([C@]4([C@](CC1)(CC[C@@H]4[C@@H]3CC2)[H])[H])[H].[OH]")
     if not mol.HasSubstructMatch(hydroxyl_pattern):
         return False, "No hydroxyl group at the 3-position"
 
     # Check for a side chain at the 17-position
+    # A more general pattern to match the side chain
     side_chain_pattern = Chem.MolFromSmarts("[C@]12[C@]3([C@]4([C@](CC1)(CC[C@@H]4[C@@H]3CC2)[H])[H])[H].[C@H](C)CCCC(C)C")
     if not mol.HasSubstructMatch(side_chain_pattern):
         return False, "No side chain at the 17-position"
