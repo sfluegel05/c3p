@@ -21,14 +21,14 @@ def is_dihydroagarofuran_sesquiterpenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Refined SMARTS pattern for a more flexible dihydroagarofuran skeleton
-    # Focus on capturing variations in functional groups and stereochemistry while retaining the core structure
-    dihydroagarofuran_pattern = Chem.MolFromSmarts("[C@H]1O[C@@H](C[C@H]2[C@H](O)C)[C@@H]2[C@H](O)C(=O)O[C@H]1C")
+    # Bicyclic core structure of dihydroagarofuran
+    # Adjusted pattern to be more flexible with stereochemistry and functional groups
+    dihydroagarofuran_pattern = Chem.MolFromSmarts("C1OC2C(C)C(C)C(O)C(C)O1.CC2")
     
     if dihydroagarofuran_pattern is None or not mol.HasSubstructMatch(dihydroagarofuran_pattern):
         return False, "No dihydroagarofuran skeleton found"
 
-   # Check for sesquiterpenoid characteristics
+    # Check for sesquiterpenoid characteristics
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if c_count < 15:  # Sesquiterpenoids typically have around 15 carbons
         return False, f"Too few carbons for a sesquiterpenoid, found {c_count} carbon atoms"
