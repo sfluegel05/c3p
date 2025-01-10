@@ -6,6 +6,7 @@ Classifies: CHEBI:37600 phospho sugar
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_phospho_sugar(smiles: str):
     """
@@ -25,12 +26,21 @@ def is_phospho_sugar(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for phosphate group connected to carbon
+    # Check molecular weight bounds (150-500 Da for phospho sugars)
+    mol_weight = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_weight < 150:
+        return False, "Molecule too small to be a phospho sugar"
+    if mol_weight > 500:
+        return False, "Molecule too large to be a simple phospho sugar"
+
+    # Check for excessive complexity
+    ring_count = rdMolDescriptors.CalcNumRings(mol)
+    if ring_count > 2:
+        return False, "Too many rings for a simple phospho sugar"
+
+    # Look for phosphate group
     phosphate_patterns = [
-        "[CX4]-[OX2]-[P](=[O])([O,OH])([O,OH])",  # Standard phosphate ester
-        "[CX4]-[OX2]-P(=O)([O-])([O-])",  # Ionized form
-        "[CX4]-[OX2]-P([O-])([O-])=O",    # Alternative ionized form
-        "[CX4]-[OX2]-P([OH])(=O)[OH]"     # Fully protonated form
+        "[OX2][P](=[O])([O,OH])[O,OH]",  # Any phosphate group
     ]
     
     has_phosphate = False
@@ -40,22 +50,20 @@ def is_phospho_sugar(smiles: str):
             break
             
     if not has_phosphate:
-        return False, "No phosphate ester found"
+        return False, "No phosphate group found"
 
-    # Sugar patterns
+    # Sugar patterns (more flexible now)
     sugar_patterns = [
-        # Furanose (5-membered ring)
-        "[CH2X4,CH1X4]-1-[CH1X4](-[OX2])-[CH1X4](-[OX2])-[CH1X4](-[OX2])-[OX2]-1",
-        # Pyranose (6-membered ring)
-        "[CH2X4,CH1X4]-1-[CH1X4](-[OX2])-[CH1X4](-[OX2])-[CH1X4](-[OX2])-[CH1X4](-[OX2])-[OX2]-1",
-        # Ribose specific pattern
-        "[CH2X4]-[CH1X4](-[OX2])-[CH1X4](-[OX2])-[CH1X4](-[OX2])-[OX2]",
-        # Ketose pattern (fructose-like)
-        "[CH2X4](-[OX2])-[CX4](-[OX2])-[CH1X4](-[OX2])-[CH1X4](-[OX2])",
-        # Open chain aldose
-        "[CH1X4](=O)-[CH1X4](-[OX2])-[CH1X4](-[OX2])-[CH1X4](-[OX2])",
-        # Deoxyribose pattern
-        "[CH2X4]-[CH1X4]-[CH1X4](-[OX2])-[CH1X4](-[OX2])-[OX2]"
+        # Pyranose (6-membered ring) with optional deoxy
+        "[CH2,O][CH1]1[CH1][CH1][CH1][CH1]O1",
+        # Furanose (5-membered ring) with optional deoxy
+        "[CH2,O][CH1]1[CH1][CH1][CH1]O1",
+        # Open chain aldose/ketose
+        "[CH2][CH1](-[O,H])[CH1](-[O,H])[CH1](-[O,H])[CH1]=O",
+        "[CH2](-[O,H])[C](-[O,H])[CH1](-[O,H])[CH1](-[O,H])[CH2][O,H]",
+        # Deoxy sugar patterns
+        "[CH2]1[CH2][CH1]([OH])[CH1]([OH])O1",
+        "[CH2]1[CH1]([OH])[CH1]([OH])[CH2]O1"
     ]
 
     has_sugar = False
@@ -67,16 +75,24 @@ def is_phospho_sugar(smiles: str):
     if not has_sugar:
         return False, "No sugar moiety found"
 
-    # Count hydroxyl/phosphoryl attachment points
-    hydroxyl_pattern = Chem.MolFromSmarts("[CX4]-[OX2]")
-    hydroxyl_count = len(mol.GetSubstructMatches(hydroxyl_pattern))
+    # Exclude nucleotides and nucleosides
+    nucleobase_patterns = [
+        "c1ncnc2[nH]cnc12",  # Purine
+        "c1c[nH]c(=O)[nH]c1=O",  # Pyrimidine
+    ]
     
-    if hydroxyl_count < 3:  # Need at least 3 oxygens attached to carbons
-        return False, "Insufficient oxygen attachments for a sugar"
+    for pattern in nucleobase_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            return False, "Molecule appears to be a nucleotide/nucleoside"
 
-    # Verify the structure has appropriate molecular weight
-    mol_weight = sum([atom.GetMass() for atom in mol.GetAtoms()])
-    if mol_weight < 150:  # Minimum weight for a phosphorylated sugar
-        return False, "Molecule too small to be a phospho sugar"
+    # Verify phosphate is connected to sugar
+    sugar_phosphate_pattern = Chem.MolFromSmarts("[CH2,CH1]-[OX2]-[P](=[O])([O,OH])[O,OH]")
+    if not mol.HasSubstructMatch(sugar_phosphate_pattern):
+        return False, "Phosphate not directly connected to sugar carbon"
+
+    # Count carbons to ensure it's a monosaccharide
+    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if carbon_count > 8:
+        return False, "Too many carbons for a simple phospho sugar"
 
     return True, "Contains monosaccharide with phosphate ester"
