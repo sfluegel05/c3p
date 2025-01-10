@@ -26,34 +26,38 @@ def is_very_long_chain_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(carboxylic_acid):
         return False, "No carboxylic acid group found"
 
+    # Correct chain length detection by depth-first search for longest path
+    def get_longest_chain_length(mol, start_atom_idx, visited):
+        max_length = 0
+        stack = [(start_atom_idx, 0)]
+        while stack:
+            current_idx, length = stack.pop()
+            if current_idx not in visited:
+                visited.add(current_idx)
+                current_atom = mol.GetAtomWithIdx(current_idx)
+                if current_atom.GetSymbol() == 'C':
+                    length += 1
+                for neighbor in current_atom.GetNeighbors():
+                    if neighbor.GetIdx() not in visited:
+                        stack.append((neighbor.GetIdx(), length))
+                max_length = max(max_length, length)
+        return max_length
+
     # Find the longest carbon chain
-    atoms = mol.GetAtoms()
-    carbon_count = [0] * len(atoms)
-    
-    for atom in atoms:
+    max_carbon_chain_length = 0
+    for atom in mol.GetAtoms():
         if atom.GetSymbol() == 'C':
-            # Perform breadth-first search to determine the longest chain from each carbon
-            queue = [(atom.GetIdx(), 0)]
             visited = set()
-            while queue:
-                current_idx, count = queue.pop(0)
-                if current_idx not in visited:
-                    visited.add(current_idx)
-                    current_atom = mol.GetAtomWithIdx(current_idx)
-                    if current_atom.GetSymbol() == 'C':
-                        count += 1
-                    carbon_count[current_idx] = max(carbon_count[current_idx], count)
-                    for neighbor in current_atom.GetNeighbors():
-                        if neighbor.GetIdx() not in visited:
-                            queue.append((neighbor.GetIdx(), count))
-    
-    max_carbon_chain_length = max(carbon_count)
-    
-    # Classification based on chain length
+            max_carbon_chain_length = max(max_carbon_chain_length, get_longest_chain_length(mol, atom.GetIdx(), visited))
+
+    # Classification based on chain length with better boundary handling
     if max_carbon_chain_length > 27:
         return True, f"Ultra-long-chain fatty acid with chain length {max_carbon_chain_length}"
     elif max_carbon_chain_length > 22:
         return True, f"Very long-chain fatty acid with chain length {max_carbon_chain_length}"
+    elif max_carbon_chain_length == 22:
+        # Additional checks can be added for borderline cases, e.g., functional groups
+        return True, "Borderline very long-chain fatty acid with exactly 22 carbons, check additional characteristics"
     else:
         return False, f"Chain length too short, only {max_carbon_chain_length} carbons"
 
