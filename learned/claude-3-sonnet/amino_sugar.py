@@ -27,29 +27,35 @@ def is_amino_sugar(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for cyclic sugar pattern
-    sugar_pattern = Chem.MolFromSmarts("[C]1[C][C]([OH0,NH0])[C]([OH0,NH0])[C]([OH0,NH0])[C]1")
-    if not mol.HasSubstructMatch(sugar_pattern):
+    # Look for pyranose (6-membered) or furanose (5-membered) sugar ring patterns
+    # More flexible pattern that matches sugar-like rings with various substituents
+    pyranose_pattern = Chem.MolFromSmarts("[C]1[C][C]([O,N;!H0,$(NC=O)])[C]([O,N;!H0,$(NC=O)])[C]([O,N;!H0,$(NC=O)])[C]1[O,N;!H0,$(NC=O)]")
+    furanose_pattern = Chem.MolFromSmarts("[C]1[C]([O,N;!H0,$(NC=O)])[C]([O,N;!H0,$(NC=O)])[C]([O,N;!H0,$(NC=O)])[C]1[O,N;!H0,$(NC=O)]")
+    
+    has_sugar_ring = mol.HasSubstructMatch(pyranose_pattern) or mol.HasSubstructMatch(furanose_pattern)
+    if not has_sugar_ring:
         return False, "No sugar ring structure found"
 
-    # Look for amino groups (both -NH2 and -NHR)
-    amine_pattern = Chem.MolFromSmarts("[NX3;H2,H1;!$(NC=O)]")
-    amide_pattern = Chem.MolFromSmarts("[NX3;H1;$(NC=O)]")
+    # Look for amino groups, including N-acetyl groups which are common in amino sugars
+    amine_pattern = Chem.MolFromSmarts("[NX3;H2,H1;!$(NC=O)]")  # Primary/secondary amines
+    n_acetyl_pattern = Chem.MolFromSmarts("[NX3;H1;$(NC(=O)C)]")  # N-acetyl groups
+    amide_pattern = Chem.MolFromSmarts("[NX3;H1;$(NC=O)]")  # Other amides
     
     has_amine = mol.HasSubstructMatch(amine_pattern)
+    has_n_acetyl = mol.HasSubstructMatch(n_acetyl_pattern)
     has_amide = mol.HasSubstructMatch(amide_pattern)
     
-    if not (has_amine or has_amide):
+    if not (has_amine or has_n_acetyl or has_amide):
         return False, "No amino or substituted amino groups found"
 
-    # Count hydroxyl groups to confirm sugar nature
+    # Count hydroxyl groups
     hydroxyl_pattern = Chem.MolFromSmarts("[OH1]")
     hydroxyl_matches = len(mol.GetSubstructMatches(hydroxyl_pattern))
     
     if hydroxyl_matches < 2:
         return False, "Too few hydroxyl groups for a sugar"
 
-    # Verify cyclic nature and size
+    # Verify cyclic nature
     ring_info = mol.GetRingInfo()
     if not ring_info.NumRings():
         return False, "No rings found"
@@ -59,27 +65,18 @@ def is_amino_sugar(smiles: str):
     if not any(size in [5,6] for size in ring_sizes):
         return False, "No suitable sugar ring size found"
 
-    # Additional check for carbons and oxygens typical in sugars
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    # Count carbons and oxygens in ring systems
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6 and atom.IsInRing())
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.IsInRing())
     
     if c_count < 5:
-        return False, "Too few carbons for a sugar structure"
-    if o_count < 4:
-        return False, "Too few oxygens for a sugar structure"
+        return False, "Too few carbons in ring system"
+    if o_count < 1:
+        return False, "Too few oxygens in ring system"
 
-    # Check for connectivity pattern typical in sugars
-    # (each carbon should typically have at least one O or N)
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 6:  # Carbon atom
-            neighbors = [neighbor.GetAtomicNum() for neighbor in atom.GetNeighbors()]
-            if 8 not in neighbors and 7 not in neighbors:
-                connected_to_o_or_n = False
-                for neighbor in atom.GetNeighbors():
-                    if neighbor.GetAtomicNum() in [8, 7]:
-                        connected_to_o_or_n = True
-                        break
-                if not connected_to_o_or_n:
-                    continue  # Allow some carbons without O/N connections
+    # Check for characteristic sugar carbon with attached oxygen/nitrogen
+    sugar_carbon_pattern = Chem.MolFromSmarts("[C;R]([O,N])")
+    if not mol.HasSubstructMatch(sugar_carbon_pattern):
+        return False, "Missing characteristic sugar carbon-heteroatom bond"
 
     return True, "Contains sugar ring structure with amino group(s) replacing hydroxyl position(s)"
