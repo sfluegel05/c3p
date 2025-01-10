@@ -27,72 +27,92 @@ def is_saccharolipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for sugar rings with more flexible patterns
-    # Includes pyranose, furanose, and modified sugars
+    # More comprehensive sugar patterns
     sugar_patterns = [
-        # Basic pyranose/furanose ring
+        # Basic pyranose ring
         Chem.MolFromSmarts("[CR0,CR1]1[CR0,CR1][CR0,CR1][CR0,CR1][CR0,CR1][OR0,OR1]1"),
-        # Amino sugar pattern (like in lipid A)
-        Chem.MolFromSmarts("[CR0,CR1]1[CR0,CR1]([NH1,NH2])[CR0,CR1][CR0,CR1][CR0,CR1][OR0,OR1]1"),
-        # KDO-like pattern
-        Chem.MolFromSmarts("[CR0,CR1]1[CR0,CR1](C(=O))[CR0,CR1][CR0,CR1][CR0,CR1][OR0,OR1]1")
+        # Furanose ring
+        Chem.MolFromSmarts("[CR0,CR1]1[CR0,CR1][CR0,CR1][CR0,CR1][OR0,OR1]1"),
+        # KDO-like pattern (3-deoxy sugar)
+        Chem.MolFromSmarts("[CR0,CR1]1[CR0,CR1](C(=O))[CR0,CR1][CR0,CR1][CR0,CR1][OR0,OR1]1"),
+        # Amino sugar
+        Chem.MolFromSmarts("[CR0,CR1]1[CR0,CR1]([NX3])[CR0,CR1][CR0,CR1][CR0,CR1][OR0,OR1]1"),
+        # Modified sugar with phosphate
+        Chem.MolFromSmarts("[CR0,CR1]1[CR0,CR1][CR0,CR1][CR0,CR1][CR0,CR1]([OR0,OR1]1)[OX2]P(=O)([OX2H,OX1-])[OX2H,OX1-]"),
+        # Sugar with sulfate
+        Chem.MolFromSmarts("[CR0,CR1]1[CR0,CR1][CR0,CR1][CR0,CR1][CR0,CR1]([OR0,OR1]1)[OX2]S(=O)(=O)[OX2H,OX1-]")
     ]
     
-    has_sugar = False
+    sugar_matches = []
     for pattern in sugar_patterns:
-        if pattern is not None and mol.HasSubstructMatch(pattern):
-            has_sugar = True
-            break
-            
-    if not has_sugar:
+        if pattern is not None:
+            matches = mol.GetSubstructMatches(pattern)
+            sugar_matches.extend(matches)
+    
+    if not sugar_matches:
         return False, "No sugar moieties found"
 
-    # Look for fatty acid chains (more flexible pattern)
-    fatty_acid_pattern = Chem.MolFromSmarts("[CH2][CH2][CH2][CH2][CH2]")
-    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
-    if not fatty_acid_matches:
-        return False, "No fatty acid chains found"
-
-    # Look for connections between sugars and fatty acids
-    # Various types of linkages
-    linkage_patterns = [
-        # Ester linkage to sugar
-        Chem.MolFromSmarts("[CR0,CR1]1[CR0,CR1][CR0,CR1][CR0,CR1][CR0,CR1][OR0,OR1]1-[CH2,CH1,CH0]-O-C(=O)-[CH2]"),
-        # Amide linkage (as in lipid A)
-        Chem.MolFromSmarts("[CR0,CR1]1[CR0,CR1]-[NH]-C(=O)-[CH2][CH2][CR0,CR1][CR0,CR1][OR0,OR1]1"),
-        # Direct attachment
-        Chem.MolFromSmarts("[CR0,CR1]1[CR0,CR1][CR0,CR1][CR0,CR1][CR0,CR1][OR0,OR1]1-[CH2]-[CH2][CH2][CH2]")
+    # Detect fatty acid chains and modifications
+    lipid_patterns = [
+        # Long alkyl chain
+        Chem.MolFromSmarts("[CH2][CH2][CH2][CH2][CH2][CH2]"),
+        # Fatty acid
+        Chem.MolFromSmarts("[CX3](=O)[OX2H,OX1-,OX2][CH2][CH2][CH2][CH2]"),
+        # Acyl chain with hydroxyl
+        Chem.MolFromSmarts("[CH2][CH2][CH2][CH]([OH])[CH2][CH2]"),
+        # Branched fatty acid
+        Chem.MolFromSmarts("[CH2][CH2][CH2][CH]([CH3])[CH2][CH2]")
     ]
     
-    has_lipid_sugar_connection = False
-    for pattern in linkage_patterns:
-        if pattern is not None and mol.HasSubstructMatch(pattern):
-            has_lipid_sugar_connection = True
-            break
+    lipid_matches = []
+    for pattern in lipid_patterns:
+        if pattern is not None:
+            matches = mol.GetSubstructMatches(pattern)
+            lipid_matches.extend(matches)
             
-    if not has_lipid_sugar_connection:
-        return False, "No connection between sugar and lipid moieties found"
+    if not lipid_matches:
+        return False, "No fatty acid chains found"
 
-    # Additional characteristic features
-    phosphate_pattern = Chem.MolFromSmarts("[P](=O)([O-,OH])([O-,OH])")
-    sulfate_pattern = Chem.MolFromSmarts("OS(=O)(=O)[O-,OH]")
-    has_phosphate = mol.HasSubstructMatch(phosphate_pattern) if phosphate_pattern else False
-    has_sulfate = mol.HasSubstructMatch(sulfate_pattern) if sulfate_pattern else False
+    # Look for sugar-lipid connections
+    connection_patterns = [
+        # Ester linkage
+        Chem.MolFromSmarts("[CR0,CR1]1[CR0,CR1][CR0,CR1][CR0,CR1][CR0,CR1]([OR0,OR1]1)[OX2]C(=O)[CH2,CH1]"),
+        # Amide linkage
+        Chem.MolFromSmarts("[CR0,CR1]1[CR0,CR1][NX3]C(=O)[CH2][CR0,CR1][CR0,CR1][OR0,OR1]1"),
+        # Phosphodiester linkage
+        Chem.MolFromSmarts("[CR0,CR1]1[CR0,CR1][CR0,CR1][CR0,CR1][CR0,CR1]([OR0,OR1]1)[OX2]P(=O)([OX2])[OX2][CH2]"),
+        # Direct attachment
+        Chem.MolFromSmarts("[CR0,CR1]1[CR0,CR1][CR0,CR1][CR0,CR1][CR0,CR1]([OR0,OR1]1)[OX2,NX3][CH2][CH2]")
+    ]
 
-    # Count key elements for size check
+    # Check molecule size and composition
     num_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     num_oxygens = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    mol_weight = rdMolDescriptors.CalcExactMolWt(mol)
     
-    if num_carbons < 12 or num_oxygens < 4:
+    if num_carbons < 12 or num_oxygens < 4 or mol_weight < 300:
         return False, "Molecule too small to be a saccharolipid"
 
-    # Build classification reason
-    reason = "Contains sugar moiety with "
-    if has_phosphate:
-        reason += "phosphate groups, "
-    if has_sulfate:
-        reason += "sulfate groups, "
-    reason += f"fatty acid chains ({len(fatty_acid_matches)} found), "
-    reason += "and direct sugar-lipid connections"
+    # Check for characteristic features
+    has_connection = False
+    for pattern in connection_patterns:
+        if pattern is not None and mol.HasSubstructMatch(pattern):
+            has_connection = True
+            break
+            
+    if not has_connection:
+        # For complex structures, check if there are both sugars and lipids in close proximity
+        if len(sugar_matches) >= 1 and len(lipid_matches) >= 1:
+            has_connection = True
 
+    if not has_connection:
+        return False, "No clear connection between sugar and lipid moieties"
+
+    # Build classification reason
+    reason = f"Contains {len(sugar_matches)} sugar rings and {len(lipid_matches)} fatty acid chains"
+    if mol.HasSubstructMatch(Chem.MolFromSmarts("P(=O)([O-,OH])([O-,OH])")):
+        reason += ", with phosphate groups"
+    if mol.HasSubstructMatch(Chem.MolFromSmarts("S(=O)(=O)[O-,OH]")):
+        reason += ", with sulfate groups"
+    
     return True, reason
