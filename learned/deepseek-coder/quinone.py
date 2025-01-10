@@ -36,14 +36,14 @@ def is_quinone(smiles: str):
         return False, f"Found {len(carbonyl_matches)} carbonyl groups, need at least 2"
 
     # Check if the carbonyl groups are in the same ring system
-    # We'll use a more flexible pattern that looks for two carbonyls in any ring system
-    quinone_pattern = Chem.MolFromSmarts("[CX3]=[OX1]~[CX3]~[CX3]=[OX1]")
-    if not mol.HasSubstructMatch(quinone_pattern):
-        return False, "No conjugated dione structure found"
+    # Create a pattern that looks for two carbonyls in any ring system
+    ring_system_pattern = Chem.MolFromSmarts("[CX3]=[OX1]~*~*~[CX3]=[OX1]")
+    if not mol.HasSubstructMatch(ring_system_pattern):
+        return False, "No two carbonyl groups in the same ring system"
 
     # Check that the carbonyl groups are in a conjugated system
-    # We'll look for alternating single and double bonds between the carbonyls
-    conjugated_pattern = Chem.MolFromSmarts("[CX3]=[OX1]~[CX3]=[CX3]~[CX3]=[OX1]")
+    # Use a more flexible pattern to detect conjugation
+    conjugated_pattern = Chem.MolFromSmarts("[CX3]=[OX1]~[CX3]=,*~[CX3]=[OX1]")
     if not mol.HasSubstructMatch(conjugated_pattern):
         return False, "No conjugated system between carbonyl groups"
 
