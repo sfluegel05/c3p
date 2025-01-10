@@ -2,7 +2,6 @@
 Classifies: CHEBI:82744 aliphatic aldoxime
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_aliphatic_aldoxime(smiles: str):
     """
@@ -25,16 +24,31 @@ def is_aliphatic_aldoxime(smiles: str):
 
     # Look for the oxime group pattern "-C=NO"
     oxime_pattern = Chem.MolFromSmarts("[CX3]=[NX2][OH]")
-    if not mol.HasSubstructMatch(oxime_pattern):
+    oxime_matches = mol.GetSubstructMatches(oxime_pattern)
+    if not oxime_matches:
         return False, "No oxime group found"
 
-    # Ensure the carbon in C=NO is part of a non-aromatic chain, i.e., aliphatic
-    for match in mol.GetSubstructMatches(oxime_pattern):
-        carbon_atom = match[0]
-        
-        # Check if the carbon is part of an aliphatic chain
-        atom = mol.GetAtomWithIdx(carbon_atom)
-        if atom.GetIsAromatic():
-            return False, "Carbon in C=NO is part of an aromatic ring"
+    # Confirm the presence of an aliphatic chain
+    aliphatic_chain_pattern = Chem.MolFromSmarts("[CX4H3,CX4H2!R]~[CX4H2,CX4H,!R]~[CX4H2,CX3H,!R]")
+    aliphatic_matches = mol.GetSubstructMatches(aliphatic_chain_pattern)
+    
+    if not aliphatic_matches:
+        return False, "No aliphatic chain found"
 
-    return True, "Contains an aliphatic oxime group"
+    for match in oxime_matches:
+        carbon_atom = match[0]
+        # Check if the carbon is part of an aliphatic (non-aromatic) environment
+        atom = mol.GetAtomWithIdx(carbon_atom)
+        if atom.GetIsAromatic() or atom.IsInRing():
+            return False, "Oxime carbon is part of an aromatic ring or cyclic structure"
+
+        # Check all atoms in the substructure for non-aromatic character
+        aliphatic = True
+        for atom_idx in match:
+            if mol.GetAtomWithIdx(atom_idx).GetIsAromatic() or mol.GetAtomWithIdx(atom_idx).IsInRing():
+                aliphatic = False
+                break
+        if aliphatic:
+            return True, "Contains an aliphatic aldoxime group"
+
+    return False, "Oxime group is not part of a purely aliphatic chain"
