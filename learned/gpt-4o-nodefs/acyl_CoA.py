@@ -15,23 +15,20 @@ def is_acyl_CoA(smiles: str) -> (bool, str):
         bool: True if the molecule is classified as acyl-CoA, False otherwise.
         str: Reason for the classification.
     """
-
+    
     # Parse the SMILES string to a molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Updated SMARTS pattern to identify key acyl-CoA components
-    # Focus on the CoA structure: adenine, ribose, phosphate, and pantetheine parts
-    coa_pattern = Chem.MolFromSmarts(
-        "NC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H](COP(=O)(O)O)[C@H](O)[C@@H]1OP(=O)(O)O[C@@H]1N=C(N)N=C2C=CN(C2=N1)C"
-    )
+    # SMARTS pattern to identify CoA portion
+    coa_pattern = Chem.MolFromSmarts("C(=O)NCCSC(=O)C[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12")
     if not mol.HasSubstructMatch(coa_pattern):
-        return False, "CoA moiety not identified"
+        return False, "Missing CoA moiety"
 
-    # Update thioester pattern to confirm acyl linkage with flexibility in structures
-    thioester_pattern = Chem.MolFromSmarts("C(=O)SCCNC(=O)")
+    # Pattern to identify thioester bond, a key feature of acyl-CoA
+    thioester_pattern = Chem.MolFromSmarts("C(=O)SCCN")
     if not mol.HasSubstructMatch(thioester_pattern):
-        return False, "Thioester bond with CoA moiety not identified"
+        return False, "No thioester bond with CoA moiety"
 
-    return True, "Contains CoA moiety and thioester bond, characteristic of acyl-CoA"
+    return True, "Contains CoA moiety with a thioester bond, characteristic of acyl-CoA"
