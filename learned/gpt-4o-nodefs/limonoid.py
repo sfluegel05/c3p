@@ -23,23 +23,26 @@ def is_limonoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Common limonoid pattern: Triterpene backbone with multiple oxygenated groups and a furan ring
-    # Note: This is a simplified representation and may not be exhaustive
-    triterpene_pattern = Chem.MolFromSmarts("C1(C)[C@]234[C@H](C[C@@]1(C)CC3=CC(=O)C4)C2")
-    furan_pattern = Chem.MolFromSmarts("c1coc[cH]c1")
-    oxygen_pattern = Chem.MolFromSmarts("[OX2,OX1=]")
-
-    # Check for triterpene backbone
-    if not mol.HasSubstructMatch(triterpene_pattern):
-        return False, "No triterpene backbone found"
+    # Revise triterpene backbone pattern: Using a generic steroid-like core pattern,
+    # since limonoids are derived from tetracyclic triterpenes
+    triterpene_pattern = Chem.MolFromSmarts("C1CCC2C3CCC4(C)C(=O)CCC4(C)C3CCC2C1")
     
-    # Check for presence of a furan ring
+    # Common furan pattern
+    furan_pattern = Chem.MolFromSmarts("c1ccoc1")
+
+    # Check for broader triterpene-like backbone
+    if not mol.HasSubstructMatch(triterpene_pattern):
+        return False, "No triterpene or steroid-like backbone found"
+    
+    # Check for the presence of a furan ring
     if not mol.HasSubstructMatch(furan_pattern):
         return False, "No furan ring found"
 
-    # Check for multiple oxygenated groups
+    # Count oxygenation: Look for carbonyls, hydroxyls, esters, etc.
+    # Allow a slightly flexible range expecting more than 5 oxygen-related functionalities for limonoids
+    oxygen_pattern = Chem.MolFromSmarts("[OX2H,OX1=]")
     oxy_matches = mol.GetSubstructMatches(oxygen_pattern)
-    if len(oxy_matches) < 3:
-        return False, f"Found {len(oxy_matches)} oxygenated groups, need at least 3"
+    if len(oxy_matches) < 5:
+        return False, f"Found {len(oxy_matches)} oxygenated groups, need more than 5"
 
-    return True, "Contains limonoid-specific structural features including a triterpene core, furan ring, and multiple oxygens"
+    return True, "Contains limonoid-specific structural features including a triterpene/steroid core, furan ring, and multiple oxygens"
