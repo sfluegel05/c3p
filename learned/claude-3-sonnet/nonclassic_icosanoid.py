@@ -37,28 +37,20 @@ def is_nonclassic_icosanoid(smiles: str):
     if c_count != 20:
         return False, f"Must have exactly 20 carbons, found {c_count}"
 
-    # Count oxygens (should have at least 2 - one from COOH plus at least one more)
+    # Count oxygens (should have at least 3 - one from COOH plus at least two more)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count < 2:
-        return False, "Insufficient oxygen atoms for oxygenated fatty acid"
+    if o_count < 3:
+        return False, "Insufficient oxygen atoms for nonclassic icosanoid"
 
-    # Check for double bonds (should have multiple)
+    # Check for double bonds
     double_bond_pattern = Chem.MolFromSmarts("C=C")
-    double_bond_matches = len(mol.GetSubstructMatches(double_bond_pattern))
-    if double_bond_matches < 1:
-        return False, "No carbon-carbon double bonds found"
-
-    # Look for patterns that would indicate classic icosanoids
+    conjugated_double_bond_pattern = Chem.MolFromSmarts("C=CC=C")
     
-    # Prostaglandin pattern (5-membered ring with two side chains)
-    prostaglandin_pattern = Chem.MolFromSmarts("[CH2][CH2][CH]1[CH2][CH2][CH]([CH2][CH2][CH2]C(=O)[OH])[CH]1")
-    if mol.HasSubstructMatch(prostaglandin_pattern):
-        return False, "Contains prostaglandin core structure"
-
-    # Thromboxane pattern (6-membered ring with oxygen)
-    thromboxane_pattern = Chem.MolFromSmarts("C1OCCCC1")
-    if mol.HasSubstructMatch(thromboxane_pattern):
-        return False, "Contains thromboxane-like ring structure"
+    double_bond_matches = len(mol.GetSubstructMatches(double_bond_pattern))
+    conjugated_matches = len(mol.GetSubstructMatches(conjugated_double_bond_pattern))
+    
+    if double_bond_matches < 2:
+        return False, "Insufficient double bonds"
     
     # Look for common oxygen-containing functional groups
     hydroxy_pattern = Chem.MolFromSmarts("[OH1]")
@@ -70,13 +62,28 @@ def is_nonclassic_icosanoid(smiles: str):
     if hydroxy_count == 0 and epoxy_count == 0:
         return False, "No hydroxyl or epoxy groups found"
 
-    # Calculate degree of unsaturation
-    double_bonds = rdMolDescriptors.CalcNumDoubleBonds(mol)
-    rings = rdMolDescriptors.CalcNumRings(mol)
-    total_unsaturation = double_bonds + rings
-    
-    if total_unsaturation < 2:
-        return False, "Insufficient unsaturation for nonclassic icosanoid"
+    # Look for patterns that would indicate classic icosanoids
+    prostaglandin_pattern = Chem.MolFromSmarts("[CH2][CH2][CH]1[CH2][CH2][CH]([CH2][CH2][CH2]C(=O)[OH])[CH]1")
+    if mol.HasSubstructMatch(prostaglandin_pattern):
+        return False, "Contains prostaglandin core structure"
+
+    # Check for long carbon chain
+    carbon_chain = Chem.MolFromSmarts("CCCCCC")
+    if not mol.HasSubstructMatch(carbon_chain):
+        return False, "No long carbon chain found"
+
+    # Calculate molecular weight (should be around 300-400)
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 250 or mol_wt > 450:
+        return False, "Molecular weight outside expected range"
 
     # If all checks pass, it's likely a nonclassic icosanoid
-    return True, f"C20 oxygenated fatty acid with {hydroxy_count} hydroxyl groups, {epoxy_count} epoxy groups, and {double_bond_matches} double bonds"
+    features = []
+    if conjugated_matches > 0:
+        features.append(f"{conjugated_matches} conjugated double bond systems")
+    if hydroxy_count > 0:
+        features.append(f"{hydroxy_count} hydroxyl groups")
+    if epoxy_count > 0:
+        features.append(f"{epoxy_count} epoxy groups")
+    
+    return True, f"C20 oxygenated fatty acid with {', '.join(features)}"
