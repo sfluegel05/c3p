@@ -36,7 +36,11 @@ def is_nucleoside(smiles: str):
         Chem.MolFromSmarts("[nH]1c(=O)nc2c1c(N)cc[nH]2"),  # Modified Cytosine
         Chem.MolFromSmarts("[nH]1c(=O)nc2c1c(F)cc[nH]2"),  # Modified Uracil
         Chem.MolFromSmarts("[nH]1c(=O)nc2c1c(Br)cc[nH]2"),  # Modified Uracil
-        Chem.MolFromSmarts("[nH]1c(=O)nc2c1c(Cl)cc[nH]2")  # Modified Uracil
+        Chem.MolFromSmarts("[nH]1c(=O)nc2c1c(Cl)cc[nH]2"),  # Modified Uracil
+        Chem.MolFromSmarts("[nH]1c(=O)nc2c1c(CO)cc[nH]2"),  # Modified Uracil
+        Chem.MolFromSmarts("[nH]1c(=O)nc2c1c(OC)cc[nH]2"),  # Modified Uracil
+        Chem.MolFromSmarts("[nH]1c(=O)nc2c1c(SC)cc[nH]2"),  # Modified Uracil
+        Chem.MolFromSmarts("[nH]1c(=O)nc2c1c(NC)cc[nH]2")   # Modified Uracil
     ]
 
     # Check for presence of a nucleobase
