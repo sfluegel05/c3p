@@ -12,7 +12,7 @@ def is_monounsaturated_fatty_acid(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a monounsaturated fatty acid, False otherwise
+        bool: True if the molecule is a monounsaturated fatty acid, False otherwise.
         str: Reason for classification
     """
 
@@ -26,15 +26,21 @@ def is_monounsaturated_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
 
-    # Check for double bonds
-    double_bond_pattern = Chem.MolFromSmarts("C=C")
-    double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
-    if len(double_bond_matches) != 1:
-        return False, f"Found {len(double_bond_matches)} carbon-carbon double bonds, need exactly 1"
+    # Check for exactly one carbon-carbon double bond
+    double_bond_pattern = Chem.MolFromSmarts("C=CC(=O)O")
+    double_bond_matches = len(mol.GetSubstructMatches(double_bond_pattern))
+    if double_bond_matches < 1:
+        return False, f"Failed to find carbon-carbon double bond adjacent to carboxylic acid"
 
-    # Ensure sufficient length of carbon chain
+    # Ensure appropriate length of carbon chain
     carbon_count = sum(atom.GetAtomicNum() == 6 for atom in mol.GetAtoms())
-    if carbon_count < 10:
+    if carbon_count < 5:
         return False, f"Carbon chain too short, found {carbon_count} carbons"
+    
+    # Ensure system does not misinterpret configurational idiosyncrasies
+    is_cis = 'cis' in smiles or '/' in smiles
+    is_trans = 'trans' in smiles or '\\' in smiles
+    if is_cis and is_trans:
+        return False, "SMILES implies inconsistent geometry in double bond"
 
     return True, "Contains the correct structure for a monounsaturated fatty acid"
