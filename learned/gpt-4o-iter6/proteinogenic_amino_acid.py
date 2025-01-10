@@ -6,8 +6,10 @@ from rdkit import Chem
 def is_proteinogenic_amino_acid(smiles: str):
     """
     Determines if a molecule is a proteinogenic amino acid based on its SMILES string.
+
     Args:
         smiles (str): SMILES string of the molecule
+
     Returns:
         bool, str: True and reason if molecule is a proteinogenic amino acid, otherwise False and reason
     """
@@ -15,20 +17,23 @@ def is_proteinogenic_amino_acid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Define patterns for amino acid backbones
-    chiral_amino_acid_pattern = Chem.MolFromSmarts("[N;!H2][C@;R][C;!H0](=O)[O;!H0]")
-    achiral_glycine_pattern = Chem.MolFromSmarts("NCC(=O)O")
-    
-    # Check for standard chiral amino acids
-    if mol.HasSubstructMatch(chiral_amino_acid_pattern):
-        return True, "Standard chiral amino acid detected"
-    
-    # Check for glycine, which is achiral
-    if mol.HasSubstructMatch(achiral_glycine_pattern):
-        return True, "Glycine detected"
 
-    return False, "No matching pattern for proteinogenic amino acids"
+    # Look for standard amino acid backbone (N-C-C(=O)-O) with chirality
+    backbone_pattern = Chem.MolFromSmarts("N[C@H](C(=O)O)")
+
+    # Check if the mol has the standard amino acid backbone with chirality
+    if not mol.HasSubstructMatch(backbone_pattern):
+        # Glycine exception, which is achiral
+        glycine_pattern = Chem.MolFromSmarts("NCC(=O)O")
+        if mol.HasSubstructMatch(glycine_pattern):
+            return True, "SMILES matches glycine structure, an exception to chirality"
+        return False, "No standard amino acid backbone with chirality found"
+
+    # Check for chirality
+    if not any(atom.GetChiralTag() != Chem.CHI_UNSPECIFIED for atom in mol.GetAtoms()):
+        return False, "Chirality not found in molecule except for glycine"
+
+    return True, "Valid backbone and chirality detected; matches a proteinogenic amino acid"
 
 # Example test case
 smiles_example = "N[C@@H](CC(N)=O)C(O)=O"  # L-asparagine
