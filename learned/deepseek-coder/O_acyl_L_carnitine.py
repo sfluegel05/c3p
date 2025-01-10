@@ -56,38 +56,12 @@ def is_O_acyl_L_carnitine(smiles: str):
     # Ensure the chiral center is in the L-configuration
     # The chiral center should be the carbon attached to the nitrogen and the carboxylate group
     for center in chiral_centers:
-        if center[1] != 'R':  # L-configuration corresponds to 'R' in RDKit
+        if center[1] != 'S':  # L-configuration corresponds to 'S' in RDKit for carnitine derivatives
             return False, "Chiral center not in L-configuration"
 
+    # Additional check to reduce false positives: ensure the molecule has a reasonable molecular weight
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 150 or mol_wt > 1000:
+        return False, "Molecular weight out of range for O-acyl-L-carnitine"
+
     return True, "Contains L-carnitine backbone with O-acyl group, quaternary ammonium, and carboxylate group"
-
-
-__metadata__ = {   'chemical_class': {   'id': 'CHEBI:73048',
-                          'name': 'O-acyl-L-carnitine',
-                          'definition': 'An O-acylcarnitine in which the carnitine component has L-configuration.',
-                          'parents': ['CHEBI:73047', 'CHEBI:73046']},
-    'config': {   'llm_model_name': 'lbl/claude-sonnet',
-                  'f1_threshold': 0.8,
-                  'max_attempts': 5,
-                  'max_positive_instances': None,
-                  'max_positive_to_test': None,
-                  'max_negative_to_test': None,
-                  'max_positive_in_prompt': 50,
-                  'max_negative_in_prompt': 20,
-                  'max_instances_in_prompt': 100,
-                  'test_proportion': 0.1},
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 150,
-    'num_false_positives': 4,
-    'num_true_negatives': 182407,
-    'num_false_negatives': 23,
-    'num_negatives': None,
-    'precision': 0.974025974025974,
-    'recall': 0.8670520231213873,
-    'f1': 0.9174311926605504,
-    'accuracy': 0.9998521228585199}
