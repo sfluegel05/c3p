@@ -19,19 +19,24 @@ def is_branched_chain_fatty_acid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return None, None
-    
+
+    # Define SMARTS patterns
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[OH]")  # Terminal carboxylic acid
+    branch_pattern = Chem.MolFromSmarts("[CH3,CH2,CH](C)C")  # Simple branched chain pattern for non-ring carbon
+
     # Check for terminal carboxylic acid group (COOH)
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
-        return False, "No carboxylic acid group found"
+        return False, "No terminal carboxylic acid group found"
     
-    # Attempt to identify branched hydrocarbon chain
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 6 and not atom.IsInRing(): # Only consider non-ring carbons for branching
-            carbon_neighbors = sum(1 for neighbor in atom.GetNeighbors() if neighbor.GetAtomicNum() == 6)
-            # More than 2 carbon neighbors indicates potential branching
-            if carbon_neighbors > 2:
-                return True, "Contains a branched carbon chain with a terminal carboxylic acid group"
-    
-    # If no branching found, double check if could be due to stereochemistry or known complex structures (options beyond basic checks)
-    return False, "No suitable branching pattern found in the straight chain structure leading to a carboxylic group"
+    # Check for branching patterns in hydrocarbon chains
+    if mol.HasSubstructMatch(branch_pattern):
+        return True, "Contains a branched carbon chain with a terminal carboxylic acid group"
+
+    # Consider more complex branching
+    complex_branch_pattern = Chem.MolFromSmarts("[C;!R;!D1;!D2]([C;!R;D2,3])([C;!R;D2,3])")  # More complex branching pattern
+
+    if mol.HasSubstructMatch(complex_branch_pattern):
+        return True, "Contains a complex branched carbon chain with a terminal carboxylic acid group"
+
+    # If no branching found, double check if could be due to known complex structures
+    return False, "No suitable branching pattern found in the structure leading to a carboxylic group"
