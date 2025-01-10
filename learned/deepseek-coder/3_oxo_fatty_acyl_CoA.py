@@ -38,20 +38,20 @@ def is_3_oxo_fatty_acyl_CoA(smiles: str):
     if len(oxo_fatty_acid_matches) == 0:
         return False, "No 3-oxo-fatty acid chain found"
 
-    # Check if the 3-oxo-fatty acid is esterified with the CoA thiol group
-    ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2][CX4]")
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) == 0:
-        return False, "No ester bond between CoA and 3-oxo-fatty acid"
+    # Check if the 3-oxo-fatty acid is thioesterified with the CoA thiol group
+    thioester_pattern = Chem.MolFromSmarts("[CX3](=O)[SX2][CX4]")
+    thioester_matches = mol.GetSubstructMatches(thioester_pattern)
+    if len(thioester_matches) == 0:
+        return False, "No thioester bond between CoA and 3-oxo-fatty acid"
 
     # Count the number of carbons in the fatty acid chain
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 10:
+    if c_count < 6:
         return False, "Fatty acid chain too short"
 
-    # Check molecular weight - 3-oxo-fatty acyl-CoA typically >700 Da
+    # Check molecular weight - 3-oxo-fatty acyl-CoA typically >500 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 700:
+    if mol_wt < 500:
         return False, "Molecular weight too low for 3-oxo-fatty acyl-CoA"
 
-    return True, "Contains CoA moiety esterified with a 3-oxo-fatty acid chain"
+    return True, "Contains CoA moiety thioesterified with a 3-oxo-fatty acid chain"
