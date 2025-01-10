@@ -21,20 +21,24 @@ def is_hydroxynaphthoquinone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Expanded SMARTS pattern for naphthoquinone with flexibility
-    naphthoquinone_patterns = [
-        Chem.MolFromSmarts('O=C1C=CC(=O)c2ccccc12'),  # core naphthoquinone
-        Chem.MolFromSmarts('O=C1CC(=O)c2cccc(O)c12'), # alternative patterns
-        Chem.MolFromSmarts('c1cc(C(=O)c2ccccc2C1=O)O'), # presence with hydroxyl
-    ]
-
-    # Check if any pattern matches
-    if not any(mol.HasSubstructMatch(pattern) for pattern in naphthoquinone_patterns if pattern):
-        return False, "No valid naphthoquinone core found"
-
-    # Verify presence of hydroxy group
+    # Define SMARTS patterns - more flexible pattern for naphthoquinone
+    naphthoquinone_pattern = Chem.MolFromSmarts('c1ccc2c(c1)C(=O)C=CC2=O')
     hydroxy_pattern = Chem.MolFromSmarts('[OH]')
-    if mol.HasSubstructMatch(hydroxy_pattern):
-        return True, "Contains naphthoquinone core with hydroxy group substitution"
 
-    return False, "Naphthoquinone core present but no hydroxy substitution found"
+    # Check for naphthoquinone structure
+    if not mol.HasSubstructMatch(naphthoquinone_pattern):
+        return False, "No naphthoquinone core found"
+
+    # Check for at least one hydroxy group attached to the aromatic system
+    naphtho_matches = mol.GetSubstructMatches(naphthoquinone_pattern)
+    for naphtho_match in naphtho_matches:
+        naphtho_atoms = set(naphtho_match)
+        for atom in naphtho_match:
+            atom_obj = mol.GetAtomWithIdx(atom)
+            if atom_obj.GetSymbol() == 'C':  # Look for C atoms to attach OH
+                neighbors = atom_obj.GetNeighbors()
+                for neighbor in neighbors:
+                    if neighbor.GetSymbol() == 'O' and neighbor.GetIdx() not in naphtho_atoms:
+                        return True, "Contains naphthoquinone core with hydroxy group substitution"
+
+    return False, "Hydroxy group not attached correctly to naphthoquinone"
