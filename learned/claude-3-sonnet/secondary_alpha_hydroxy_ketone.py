@@ -26,46 +26,59 @@ def is_secondary_alpha_hydroxy_ketone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Multiple SMARTS patterns to catch different arrangements
+    # Core patterns for alpha-hydroxy ketone
     patterns = [
-        # Basic alpha-hydroxy ketone pattern
-        "[OX2H1,OX2-]-[CX4;H1](-[#6])-[CX3](=[OX1])",
-        # Alternative pattern with different connectivity
-        "[CX3](=[OX1])-[CX4;H1](-[OX2H1,OX2-])-[#6]",
-        # Pattern for cyclic variants
-        "[OX2H1,OX2-]-[CX4;H1](-[#6]@[#6])-[CX3](=[OX1])",
-        # Pattern catching ring-based alpha-hydroxy ketones
-        "[CX3]1(=[OX1])-[CX4;H1](-[OX2H1,OX2-])-[#6]-[#6]-[#6]-1"
+        # Basic pattern: OH-CH(R)-C(=O)-R
+        "[OX2H1]-[CX4;H1](-[#6,#7,#8,#16])-[CX3](=[OX1])-[#6]",
+        
+        # Reversed pattern: R-C(=O)-CH(OH)-R
+        "[#6]-[CX3](=[OX1])-[CX4;H1](-[OX2H1])-[#6,#7,#8,#16]",
+        
+        # Cyclic pattern where ketone is in ring
+        "[OX2H1]-[CX4;H1](-[#6,#7,#8,#16])-[CX3]1(=[OX1])-[#6,#7,#8,#16]@[#6,#7,#8,#16]@[#6,#7,#8,#16]-1",
+        
+        # Pattern where OH is deprotonated
+        "[OX2-]-[CX4;H1](-[#6,#7,#8,#16])-[CX3](=[OX1])-[#6]",
+        
+        # Pattern for ring junction cases
+        "[OX2H1]-[CX4;H1](-[#6,#7,#8,#16]@[#6,#7,#8,#16])-[CX3](=[OX1])-[@#6,#7,#8,#16]"
     ]
 
     for pattern in patterns:
         pat = Chem.MolFromSmarts(pattern)
+        if not pat:
+            continue
+            
         if mol.HasSubstructMatch(pat):
             matches = mol.GetSubstructMatches(pat)
             for match in matches:
                 # Get the matched atoms
                 hydroxy_o = mol.GetAtomWithIdx(match[0])
                 alpha_c = mol.GetAtomWithIdx(match[1])
-                carbonyl_c = mol.GetAtomWithIdx(match[3])
-
-                # Verify basic requirements
-                if alpha_c.GetTotalValence() != 4:  # Must be sp3
+                carbonyl_c = mol.GetAtomWithIdx(match[2])
+                
+                # Basic validation of alpha carbon
+                if alpha_c.GetTotalNumHs() != 1:
                     continue
                     
                 # Count non-H neighbors of alpha carbon
                 non_h_neighbors = sum(1 for neighbor in alpha_c.GetNeighbors() 
                                    if neighbor.GetAtomicNum() != 1)
-                if non_h_neighbors != 3:  # Must have exactly 3 non-H neighbors
+                if non_h_neighbors < 3:  # Must have at least 3 non-H neighbors
                     continue
 
-                # Verify carbonyl is really a ketone (not aldehyde, acid, etc)
-                carbonyl_neighbors = [atom for atom in carbonyl_c.GetNeighbors() 
-                                   if atom.GetAtomicNum() != 8]
-                if len(carbonyl_neighbors) != 1:
-                    continue
-
-                # Check if alpha carbon has one H (implicitly or explicitly)
-                if alpha_c.GetTotalNumHs() != 1:
+                # Verify carbonyl is ketone-like (not carboxylic acid, ester, etc)
+                carbonyl_neighbors = carbonyl_c.GetNeighbors()
+                has_valid_ketone = False
+                for neighbor in carbonyl_neighbors:
+                    if neighbor.GetAtomicNum() == 6:  # Carbon
+                        non_o_neighbors = sum(1 for n in neighbor.GetNeighbors() 
+                                           if n.GetAtomicNum() != 8)
+                        if non_o_neighbors >= 1:
+                            has_valid_ketone = True
+                            break
+                
+                if not has_valid_ketone:
                     continue
 
                 return True, "Contains secondary alpha-hydroxy ketone group"
