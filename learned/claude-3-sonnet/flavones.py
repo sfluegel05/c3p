@@ -23,34 +23,42 @@ def is_flavones(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+
+    # Basic flavone core structure broken into parts
+    # Chromone core (benzopyran-4-one)
+    chromone_pattern = Chem.MolFromSmarts("O=C1CC(=O)c2ccccc2O1")
+    if chromone_pattern is None:
+        return None, "Invalid SMARTS pattern for chromone"
     
-    # Basic flavone core structure (2-phenylchromen-4-one)
-    # Using a more flexible SMARTS pattern that accounts for aromaticity
-    # and allows for substitutions
-    flavone_core = Chem.MolFromSmarts("c1c2c(oc(-c3ccccc3)cc2=O)cc1")
+    # Alternative more flexible chromone pattern
+    alt_chromone = Chem.MolFromSmarts("O=C1C=COc2ccccc12")
+    if alt_chromone is None:
+        return None, "Invalid SMARTS pattern for alternative chromone"
+        
+    # Complete flavone core with phenyl at position 2
+    flavone_core = Chem.MolFromSmarts("O=C1CC(c2ccccc2)Oc2ccccc12")
+    if flavone_core is None:
+        return None, "Invalid SMARTS pattern for flavone core"
+
+    # Check for core structure matches
+    has_core = False
+    if mol.HasSubstructMatch(flavone_core):
+        has_core = True
+    elif mol.HasSubstructMatch(chromone_pattern) or mol.HasSubstructMatch(alt_chromone):
+        # Check for attached phenyl group if we found chromone
+        phenyl_pattern = Chem.MolFromSmarts("c1ccccc1")
+        if phenyl_pattern is not None and mol.HasSubstructMatch(phenyl_pattern):
+            has_core = True
     
-    if not mol.HasSubstructMatch(flavone_core):
-        # Try alternative SMARTS pattern that's even more flexible
-        alt_flavone_core = Chem.MolFromSmarts("c1c2c(oc(-[c;r6][c,n][c,n][c,n][c,n][c,n]3)cc2=O)cc1")
-        if not mol.HasSubstructMatch(alt_flavone_core):
-            return False, "Missing flavone core structure (2-phenylchromen-4-one skeleton)"
-    
-    # Verify the presence of key structural features
-    
-    # Check for the chromone (benzopyran-4-one) system
-    chromone = Chem.MolFromSmarts("c1c2c(occ2=O)cc1")
-    if not mol.HasSubstructMatch(chromone):
-        return False, "Missing chromone (benzopyran-4-one) system"
-    
-    # Count rings to ensure we have at least two aromatic rings
+    if not has_core:
+        return False, "Missing flavone core structure (2-phenylchromen-4-one skeleton)"
+
+    # Verify basic requirements
     ring_info = mol.GetRingInfo()
-    aromatic_rings = sum(1 for ring in ring_info.AtomRings() 
-                        if any(mol.GetAtomWithIdx(i).GetIsAromatic() for i in ring))
-    if aromatic_rings < 2:
-        return False, "Must contain at least two aromatic rings"
-    
-    # Check for minimum number of carbons and oxygens
-    # Basic flavone should have at least 15 carbons and 2 oxygens
+    if len(ring_info.AtomRings()) < 2:
+        return False, "Must contain at least two rings"
+
+    # Count carbons and oxygens
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     
@@ -58,32 +66,26 @@ def is_flavones(smiles: str):
         return False, f"Too few carbons ({c_count}) for flavone structure"
     if o_count < 2:
         return False, f"Too few oxygens ({o_count}) for flavone structure"
-    
-    # Look for common substitution patterns
+
+    # Look for common substitutions
     substitutions = []
     
-    # Hydroxy groups
-    hydroxy_pattern = Chem.MolFromSmarts("cO")
-    if mol.HasSubstructMatch(hydroxy_pattern):
-        substitutions.append("hydroxy")
+    # Common substitution patterns
+    patterns = {
+        "hydroxy": "cO[H]",
+        "methoxy": "cOC",
+        "glycoside": "[OH1,OH0][CH1]([OH1,OH0])[CH1]([OH1,OH0])[CH1,CH2]O",
+        "prenyl": "CC(C)=CC"
+    }
     
-    # Methoxy groups
-    methoxy_pattern = Chem.MolFromSmarts("cOC")
-    if mol.HasSubstructMatch(methoxy_pattern):
-        substitutions.append("methoxy")
-    
-    # Glycoside patterns
-    glycoside_pattern = Chem.MolFromSmarts("[OH1,OH0][CH1][OH1,OH0][CH1][OH1,OH0][CH1,CH2]O")
-    if mol.HasSubstructMatch(glycoside_pattern):
-        substitutions.append("glycoside")
-    
-    # Prenyl groups
-    prenyl_pattern = Chem.MolFromSmarts("CC(C)=CC")
-    if mol.HasSubstructMatch(prenyl_pattern):
-        substitutions.append("prenyl")
-        
-    substitution_str = ""
+    for name, pattern in patterns.items():
+        pat = Chem.MolFromSmarts(pattern)
+        if pat is not None and mol.HasSubstructMatch(pat):
+            substitutions.append(name)
+
+    # Build response message
+    msg = "Contains flavone core structure (2-phenylchromen-4-one)"
     if substitutions:
-        substitution_str = f" with {', '.join(substitutions)} substitutions"
+        msg += f" with {', '.join(substitutions)} substitutions"
     
-    return True, f"Contains flavone core structure (2-phenylchromen-4-one){substitution_str}"
+    return True, msg
