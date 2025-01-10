@@ -21,31 +21,22 @@ def is_macrolide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Ensure the molecule has initialized ring information properly
+    # Ensure the ring information is initialized
     ring_info = mol.GetRingInfo()
-    if not ring_info:
-        return False, "Molecule ring information could not be extracted"
-
-    # Define a potentially more flexible SMARTS pattern for macrolactone
-    # We need a cyclic ester structure; allowing for possible variations in attached atoms
-    lactone_pattern = Chem.MolFromSmarts("C1OC(=O)[C@@H]1")  # Extending this pattern can be necessary
-
-    # Ensure ring info is correctly initialized
-    if not ring_info.NumAtomRings():
+    if not ring_info or not ring_info.AtomRings():
         return False, "No rings identified in the molecule"
 
-    # Iterate over all rings
+    # Define a SMARTS pattern that represents a basic form of a macrocyclic lactone
+    lactone_pattern = Chem.MolFromSmarts('C1OC(=O)C1')
+
+    # Iterate over all atom rings
     for ring_atoms in ring_info.AtomRings():
-        if len(ring_atoms) >= 12:  # Check if ring size is 12 or more
-            try:
-                submol = Chem.PathToSubmol(mol, ring_atoms)
-                if submol.HasSubstructMatch(lactone_pattern):  # Looking for lactone pattern
-                    return True, "Contains a macrocyclic lactone with 12 or more members"
-            except Exception as e:
-                return False, f"Error in substructure matching: {str(e)}"
+        # Check if the ring has 12 or more members
+        if len(ring_atoms) >= 12:
+            # Create a sub-molecule for the ring to examine for the lactone
+            submol = Chem.PathToSubmol(mol, ring_atoms)
+            # Check if this sub-molecule contains a lactone pattern
+            if submol.HasSubstructMatch(lactone_pattern):
+                return True, "Contains a macrocyclic lactone with 12 or more members"
     
     return False, "Does not contain a macrocyclic lactone with 12 or more members"
-
-# Example usage (uncomment to test):
-# result, reason = is_macrolide("O=C1O[C@H](C(=O)NC[C@@H](O)C[C@@H](O)[C@@H](O)CCC(=CC=C[C@H](CCCC(CCCC[C@H](C[C@H]1C)C)=O)CC)COC)CCC")
-# print(result, reason)
