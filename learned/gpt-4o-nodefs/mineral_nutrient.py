@@ -22,12 +22,17 @@ def is_mineral_nutrient(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Expanded list of metal ions typically found in mineral nutrients
+    # List of metal ions typically found in mineral nutrients
     metal_ions = {'Li', 'Na', 'K', 'Mg', 'Ca', 'Fe', 'Cu', 'Zn', 'Ba', 'La', 'Cs', 'Al', 'Mn', 'Co', 'Ni'}
 
-    # Define specific anionic groups typically found in mineral nutrients, increase specificity
+    # Correct SMARTS patterns for common anions
     common_anions_patterns = [
-        "[O-]", "[SO4]", "[PO4]", "[NO3]", "[CO3]", "[Cl]", "[F]", "[Br]", "[I]", "[S([O-])(=O)=O]", "[C([O-])=O]"
+        "[OX2-]",                 # Simplified example for an oxide ion
+        "OS(=O)(=O)[O-]",         # Sulfate ion
+        "O[P](=O)([O-])[O-]",     # Phosphate ion
+        "[N+](=O)[O-]",           # Nitrate ion
+        "[C](=O)([O-])[O-]",      # Carbonate ion
+        "[Cl-]", "[F-]", "[Br-]", "[I-]" # Halides
     ]
 
     # Check for presence of metal ions
@@ -39,7 +44,7 @@ def is_mineral_nutrient(smiles: str):
     any_match = False
     for anion_smarts in common_anions_patterns:
         anion_mol = Chem.MolFromSmarts(anion_smarts)
-        if mol.HasSubstructMatch(anion_mol):
+        if anion_mol is not None and mol.HasSubstructMatch(anion_mol):
             any_match = True
             break
 
