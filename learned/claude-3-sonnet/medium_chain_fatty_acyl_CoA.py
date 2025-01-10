@@ -26,14 +26,17 @@ def is_medium_chain_fatty_acyl_CoA(smiles: str):
         return False, "Invalid SMILES string"
     
     # Check for CoA moiety patterns
-    # More flexible adenine pattern
-    adenine_pattern = Chem.MolFromSmarts("[nX2r5]1c([nX3H2,NX3H])nc2c(ncnc12)")
+    # More flexible adenine pattern matching both forms seen in examples
+    adenine_pattern = Chem.MolFromSmarts("[n,N]1[c,C][n,N][c,C]2[c,C]([N,n])[n,N][c,C][n,N][c,C]12")
     
-    # Multiple phosphate groups
+    # Phosphate groups pattern
     phosphate_pattern = Chem.MolFromSmarts("OP(O)(=O)O")
     
-    # More flexible pantetheine pattern - breaking it into parts
-    thiol_pattern = Chem.MolFromSmarts("CCNC(=O)CCNC(=O)[CH]([OH])C(C)(C)COP")
+    # Pantetheine pattern with thiol
+    pantetheine_pattern = Chem.MolFromSmarts("CCNC(=O)CCNC(=O)C(O)C(C)(C)COP")
+    
+    # Thioester linkage pattern
+    thioester_pattern = Chem.MolFromSmarts("[CX3](=O)[SX2]")
     
     # Check for key structural elements
     if not mol.HasSubstructMatch(adenine_pattern):
@@ -43,11 +46,9 @@ def is_medium_chain_fatty_acyl_CoA(smiles: str):
     if phosphate_matches < 2:
         return False, f"Insufficient phosphate groups (found {phosphate_matches}, need at least 2)"
     
-    if not mol.HasSubstructMatch(thiol_pattern):
+    if not mol.HasSubstructMatch(pantetheine_pattern):
         return False, "Missing pantetheine moiety"
     
-    # Check for thioester linkage (R-C(=O)-S-)
-    thioester_pattern = Chem.MolFromSmarts("[CX3](=O)[SX2]")
     if not mol.HasSubstructMatch(thioester_pattern):
         return False, "No thioester linkage found"
     
@@ -60,7 +61,7 @@ def is_medium_chain_fatty_acyl_CoA(smiles: str):
     carbonyl_idx = thioester_matches[0][0]
     
     # Count carbons in the chain using BFS
-    def count_chain_atoms(mol, start_idx):
+    def count_chain_carbons(mol, start_idx):
         visited = set()
         chain_carbons = set()
         queue = [start_idx]
@@ -74,19 +75,18 @@ def is_medium_chain_fatty_acyl_CoA(smiles: str):
             current_atom = mol.GetAtomWithIdx(current_idx)
             
             # Count carbons (excluding the carbonyl carbon)
-            if current_atom.GetAtomicNum() == 6 and current_idx != carbonyl_idx:
+            if current_atom.GetAtomicNum() == 6 and current_idx != start_idx:
                 chain_carbons.add(current_idx)
                 
-            # Add neighbors to queue
+            # Add neighbors to queue if they're not sulfur and not oxygen
             for neighbor in current_atom.GetNeighbors():
-                neighbor_idx = neighbor.GetIdx()
-                # Don't traverse through the thioester sulfur
-                if neighbor.GetAtomicNum() != 16:  # not sulfur
-                    queue.append(neighbor_idx)
+                if (neighbor.GetAtomicNum() not in [8, 16]  # not oxygen or sulfur
+                    and neighbor.GetIdx() not in visited):
+                    queue.append(neighbor.GetIdx())
         
         return len(chain_carbons)
     
-    chain_length = count_chain_atoms(mol, carbonyl_idx)
+    chain_length = count_chain_carbons(mol, carbonyl_idx)
     
     # Check chain length (6-12 carbons for medium chain)
     if chain_length < 6:
