@@ -32,8 +32,8 @@ def is_wax_ester(smiles: str):
         return False, f"Found {len(ester_matches)} ester groups, need exactly 1"
 
     # Check for long hydrocarbon chains (at least 8 carbons in each chain)
-    # We look for a pattern of at least 8 consecutive carbons
-    long_chain_pattern = Chem.MolFromSmarts("[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]")
+    # We look for a pattern of at least 8 consecutive carbons, allowing for double bonds
+    long_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
     long_chain_matches = mol.GetSubstructMatches(long_chain_pattern)
     if len(long_chain_matches) < 2:
         return False, f"Found {len(long_chain_matches)} long chains, need at least 2"
@@ -56,6 +56,13 @@ def is_wax_ester(smiles: str):
         return False, "Too few carbons for wax ester"
     if o_count != 2:
         return False, "Must have exactly 2 oxygens (1 ester group)"
+
+    # Exclude molecules with additional functional groups or structures
+    # Exclude cholesteryl esters, retinyl esters, etc.
+    if mol.HasSubstructMatch(Chem.MolFromSmarts("[C@H]1CC[C@@H]2[C@@]1(CC[C@H]3[C@H]2CC=C4[C@@]3(CC[C@@H](C4)OC(=O))C)C")):
+        return False, "Excluded cholesteryl ester"
+    if mol.HasSubstructMatch(Chem.MolFromSmarts("C1=C(C(=O)C=C(C1=O)C)C")):
+        return False, "Excluded retinyl ester"
 
     return True, "Contains one ester group with two long hydrocarbon chains"
 
