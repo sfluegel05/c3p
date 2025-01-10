@@ -27,11 +27,12 @@ def is_bile_acid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for steroid core (four fused rings: three 6-membered and one 5-membered)
-    steroid_pattern = Chem.MolFromSmarts("[C@H]1[C@H]2[C@H]3[C@H]4CC[C@H]4[C@H]3CC[C@H]2CC1")
+    # More general pattern to match the steroid core without specific stereochemistry
+    steroid_pattern = Chem.MolFromSmarts("[C]1[C]2[C]3[C]4CC[C]4[C]3CC[C]2CC1")
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid core found"
 
-    # Check for carboxylic acid group at C-24
+    # Check for carboxylic acid group (typically at C-24)
     carboxyl_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
     carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
     if len(carboxyl_matches) == 0:
