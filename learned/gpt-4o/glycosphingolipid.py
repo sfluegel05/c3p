@@ -2,7 +2,6 @@
 Classifies: CHEBI:24402 glycosphingolipid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_glycosphingolipid(smiles: str):
     """
@@ -23,18 +22,21 @@ def is_glycosphingolipid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define SMARTS patterns for glycosphingolipid components
-    sphingoid_pattern = Chem.MolFromSmarts("[NX3][CX4,CX3]([CX4,CX3])=O")
-    glycosidic_linkage_pattern = Chem.MolFromSmarts("O[C@H]1[C@@H]([C@@H](O)[C@H](O)[C@H]1O)")
-    
-    # Check for sphingoid part (a sphingoid backbone is often a primary amine with long aliphatic chain)
-    if not mol.HasSubstructMatch(sphingoid_pattern):
+    sphingoid_pattern = r"NC\(=O\)[C@@H]([C@@H](O)[C@H](O)CO)C"
+    # This pattern expects an amide linkage with an alcohol group on the adjacent carbon
+
+    glycosidic_linkage_pattern = r"O[C@H]([C@H](O)[C@H](O))C"
+    # This pattern ensure the presence of a sugar linked via an O-glycosidic bond
+
+    # Check for sphingoid part (a sphingoid backbone is often a primary amine with a long aliphatic chain)
+    if not mol.HasSubstructMatch(Chem.MolFromSmarts(sphingoid_pattern)):
         return False, "No sphingoid or ceramide backbone identified"
 
     # Check for glycosidic linkage to a sugar moiety
-    if not mol.HasSubstructMatch(glycosidic_linkage_pattern):
+    if not mol.HasSubstructMatch(Chem.MolFromSmarts(glycosidic_linkage_pattern)):
         return False, "No glycosidic linkage to a sugar moiety (needed at O-1 position of the sphingoid)"
 
-    return True, "Molecule contains a sphingoid backbone with a glycosidic linkage at the O-1 position"
+    return True, "Molecule contains a sphingoid backbone with a glycosidic linkage at the O-1 position to a sugar moiety"
 
 # Example
 example_smiles = "CCCCCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](O)[C@@H](O)[C@H](O)[C@H]1OC1O[C@H](COP(O)(=O)O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@@H]1O)[C@H](O)CCCCCCCCCCCCCCC"
