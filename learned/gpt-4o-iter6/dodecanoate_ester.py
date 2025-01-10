@@ -21,20 +21,12 @@ def is_dodecanoate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the lauroyl ester pattern (C12 chain with carbonyl and oxygen)
-    # Including SMILES checks to see if a dodecanoic ester (-C(=O)O-) is present
-    lauroyl_chain_pattern = Chem.MolFromSmarts("CCCCCCCCCCCC")  # C12 chain
-    ester_linkage_pattern = Chem.MolFromSmarts("C(=O)O")
+    # Define the full lauroyl ester pattern using SMARTS
+    # - Look for a 12-carbon chain that ends with a carbonyl oxygen linkage (-COO)
+    lauroyl_ester_pattern = Chem.MolFromSmarts("CCCCCCCCCCCC(=O)O")
 
-    # Check for the lauroyl chain and the ester linkage pattern
-    if mol.HasSubstructMatch(lauroyl_chain_pattern) and mol.HasSubstructMatch(ester_linkage_pattern):
-        # Double-check: Ensure ester linkage connects the C12 chain (context check)
-        chains = mol.GetSubstructMatches(lauroyl_chain_pattern)
-        esters = mol.GetSubstructMatches(ester_linkage_pattern)
-        for chain in chains:
-            for ester in esters:
-                # Check if the ester oxygen is connected to the C12 chain.
-                if mol.GetAtomWithIdx(ester[2]).GetIdx() == chain[-1]:  # Assert ester oxygen connectivity to C12 terminus
-                    return True, "Contains characteristic lauroyl ester group indicative of dodecanoate ester"
-                    
+    # Check for the presence of the lauroyl ester pattern
+    if mol.HasSubstructMatch(lauroyl_ester_pattern):
+        return True, "Contains characteristic lauroyl ester group indicative of dodecanoate ester"
+    
     return False, "Does not contain characteristic lauroyl ester group"
