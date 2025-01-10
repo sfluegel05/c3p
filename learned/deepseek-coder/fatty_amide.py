@@ -25,8 +25,8 @@ def is_fatty_amide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for amide group (-CONH-)
-    amide_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[NX3H]")
+    # Look for amide group (-CONH- or -CONR-)
+    amide_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[NX3H0]")
     if not mol.HasSubstructMatch(amide_pattern):
         return False, "No amide group found"
 
@@ -38,12 +38,12 @@ def is_fatty_amide(smiles: str):
 
     # Count the number of carbons in the molecule
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 7:
+    if c_count < 10:
         return False, "Too few carbons to be a fatty amide"
 
     # Check molecular weight - fatty amides typically have a higher molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 100:
+    if mol_wt < 200:
         return False, "Molecular weight too low for a fatty amide"
 
     return True, "Contains an amide group with a long hydrocarbon chain"
