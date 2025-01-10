@@ -2,11 +2,11 @@
 Classifies: CHEBI:76578 diradylglycerol
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_diradylglycerol(smiles: str):
     """
     Determines if a molecule is a diradylglycerol based on its SMILES string.
-    A diradylglycerol has a glycerol backbone with exactly two substituent groups (acyl, alkyl, or alk-1-enyl).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,32 +21,25 @@ def is_diradylglycerol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define improved glycerol backbone pattern to account for stereochemistry
-    glycerol_pattern = Chem.MolFromSmarts("[CH2][CH](O)[CH2]O")
-    glycerol_matches = mol.GetSubstructMatches(glycerol_pattern)
-    if not glycerol_matches:
-        return False, "Glycerol backbone pattern not matched"
-
-    # Identify acyl groups (R-C(=O)-O-)
-    acyl_pattern = Chem.MolFromSmarts("C(=O)O[CH2]")
-    acyl_matches = mol.GetSubstructMatches(acyl_pattern)
-
-    # Identify alkyl groups (R-O-)
-    alkyl_pattern = Chem.MolFromSmarts("[CH2]O")
-    alkyl_matches = mol.GetSubstructMatches(alkyl_pattern)
-
-    # Identify alk-1-enyl groups
-    alk1enyl_pattern = Chem.MolFromSmarts("C=C[CH2]O")
-    alk1enyl_matches = mol.GetSubstructMatches(alk1enyl_pattern)
-
-    # Combine the indices from matches ensuring unique attachment checking
-    substituents_count = len(set(
-        [match[2] for match in acyl_matches] + 
-        [match[0] for match in alkyl_matches] +
-        [match[0] for match in alk1enyl_matches]
-    ))
+    # Define patterns to search for diradylglycerol criteria
+    # Glycerol backbone: A pattern with three carbons and attached oxygens could indicate a glycerol
+    glycerol_pattern = Chem.MolFromSmarts("[C;X4H1]([O;X2])([C;X4H1])([C;X4H1])")
+    if not mol.HasSubstructMatch(glycerol_pattern):
+        return False, "No glycerol backbone found"
     
-    if substituents_count != 2:
-        return False, f"Expected exactly 2 substituent groups, found {substituents_count}"
-
-    return True, "Valid diradylglycerol with two substituents connected via acyl, alkyl, or alk-1-enyl bonds"
+    # Ester linkage pattern: O=C-O
+    ester_pattern = Chem.MolFromSmarts("O=C-O")
+    ether_pattern = Chem.MolFromSmarts("C-O-C")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    ether_matches = mol.GetSubstructMatches(ether_pattern)
+    
+    # Ensure at least two substituent linkages (either ester or ether)
+    if len(ester_matches) + len(ether_matches) < 2:
+        return False, f"Expected at least 2 substituent groups, found {len(ester_matches) + len(ether_matches)}"
+    
+    # Count rotatable bonds in the substituent chains to ensure they are long enough
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 5:
+        return False, "Substituent chains too short to be considered valid diradylglycerol moieties"
+    
+    return True, "Contains glycerol backbone with two substituent groups attached via ester or ether bonds"
