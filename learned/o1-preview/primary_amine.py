@@ -22,54 +22,32 @@ def is_primary_amine(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Add explicit hydrogens to the molecule
+    
+    # Add explicit hydrogens to accurately count hydrogen atoms
     mol = Chem.AddHs(mol)
-
-    # Define primary amine pattern: nitrogen with two hydrogens and single bond to carbon
-    primary_amine_pattern = Chem.MolFromSmarts("[NX3;H2][CX4]")
-
-    # Define amide pattern: nitrogen connected to a carbonyl carbon
-    amide_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])")
-
-    # Define nitro group pattern
-    nitro_pattern = Chem.MolFromSmarts("[NX3](=O)[O-]")
-
-    # Find amide nitrogens
-    amide_matches = mol.GetSubstructMatches(amide_pattern)
-    amide_nitrogens = set()
-    for match in amide_matches:
-        nitrogen_idx = match[0]
-        amide_nitrogens.add(nitrogen_idx)
-
-    # Find nitro nitrogens
-    nitro_matches = mol.GetSubstructMatches(nitro_pattern)
-    nitro_nitrogens = set()
-    for match in nitro_matches:
-        nitrogen_idx = match[0]
-        nitro_nitrogens.add(nitrogen_idx)
-
+    
+    # Define primary amine pattern:
+    # Nitrogen with valence 3, degree 1 (bonded to one carbon), two hydrogens,
+    # excluding amides, imines, nitriles, nitro groups, and other nitrogen-containing functional groups
+    primary_amine_smarts = "[NX3;H2;!$(N-[C,S]=[O,S,N]);!$(N#[C,N]);!$(N=*)]"
+    primary_amine_pattern = Chem.MolFromSmarts(primary_amine_smarts)
+    
     # Search for primary amine groups
-    primary_amines = mol.GetSubstructMatches(primary_amine_pattern)
-    if not primary_amines:
+    matches = mol.GetSubstructMatches(primary_amine_pattern)
+    if not matches:
         return False, "No primary amine group found"
-
-    # Check each primary amine to ensure it's not part of an amide or nitro group
-    for match in primary_amines:
+    
+    for match in matches:
         nitrogen_idx = match[0]
-        if nitrogen_idx in amide_nitrogens:
-            continue  # Skip amide nitrogen
-        if nitrogen_idx in nitro_nitrogens:
-            continue  # Skip nitro nitrogen
-
-        # Ensure nitrogen is not in a ring (exclude heterocyclic amines)
         nitrogen_atom = mol.GetAtomWithIdx(nitrogen_idx)
-        if nitrogen_atom.IsInRing():
-            continue
-
-        # If all checks passed, it's a primary amine
+        
+        # Exclude nitrogens bonded to heteroatoms other than hydrogen or carbon
+        bonded_atoms = [atom.GetAtomicNum() for atom in nitrogen_atom.GetNeighbors()]
+        if any(atom_num not in [1, 6] for atom_num in bonded_atoms):
+            continue  # Skip if bonded to atoms other than H or C
+        
         return True, "Contains primary amine group (NH2 attached to hydrocarbyl group)"
-
+    
     return False, "No valid primary amine group found"
 
 __metadata__ = {
