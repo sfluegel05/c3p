@@ -5,6 +5,7 @@ Classifies: CHEBI:16389 ubiquinones
 Classifies: ubiquinones
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_ubiquinones(smiles: str):
     """
@@ -25,62 +26,79 @@ def is_ubiquinones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the core SMILES for 2,3-dimethoxy-5-methylbenzoquinone
-    core_smiles = 'COC1=C(C=C(C(=O)C1=O)C)OC'
-    core_mol = Chem.MolFromSmiles(core_smiles)
-    if core_mol is None:
-        return False, "Unable to create core molecule"
+    # Define the ubiquinone core SMARTS pattern
+    # Core quinone ring with methoxy groups at positions 2 and 3, methyl at 5, and side chain at 6
+    core_smarts = """
+    [#6]1=,:[#6]([OCH3])=,:[#6](=,:[#6]([OCH3])=,:[#6](=,:[#6]1=O)[CH3])[CH3]
+    """
 
-    # Check for the core pattern in the molecule
-    matches = mol.GetSubstructMatches(core_mol)
+    core_pattern = Chem.MolFromSmarts(core_smarts)
+    if core_pattern is None:
+        return False, "Unable to create core pattern"
+
+    # Find matches for the core pattern
+    matches = mol.GetSubstructMatches(core_pattern)
     if not matches:
-        return False, "Core 2,3-dimethoxy-5-methylbenzoquinone not found"
+        return False, "Core ubiquinone structure not found"
 
-    # For each match, find if there is a side chain attached to the core at position 6
+    # Check for polyprenoid side chain at position 6
+    # Define the attachment atom (position 6) in the core pattern
+    attachment_atom_idx = 5  # Index of the atom in core_pattern where side chain attaches
+
     for match in matches:
-        matched_atom_ids = set(match)
-        # Iterate over the atoms in the core and look for attachments
-        for core_atom_idx, mol_atom_idx in enumerate(match):
-            mol_atom = mol.GetAtomWithIdx(mol_atom_idx)
-            # Check for atoms connected to the core atom that are not in the core
-            for bond in mol_atom.GetBonds():
-                neighbor = bond.GetOtherAtom(mol_atom)
-                if neighbor.GetIdx() not in matched_atom_ids:
-                    # Found an external attachment, could be the side chain
-                    side_chain_atoms = set()
-                    atoms_to_check = [neighbor]
-                    while atoms_to_check:
-                        current_atom = atoms_to_check.pop()
-                        if current_atom.GetIdx() in side_chain_atoms:
-                            continue
-                        side_chain_atoms.add(current_atom.GetIdx())
-                        for bond2 in current_atom.GetBonds():
-                            next_atom = bond2.GetOtherAtom(current_atom)
-                            if next_atom.GetIdx() not in side_chain_atoms and next_atom.GetIdx() not in matched_atom_ids:
-                                atoms_to_check.append(next_atom)
-                    # Analyze the side chain
-                    if len(side_chain_atoms) == 0:
-                        continue  # Empty side chain
-                    side_chain_mol = Chem.PathToSubmol(mol, list(side_chain_atoms))
-                    if side_chain_mol is None:
-                        continue  # Unable to isolate side chain
-                    # Check if the side chain is a polyprenoid
-                    num_carbons = sum(1 for atom in side_chain_mol.GetAtoms() if atom.GetAtomicNum() == 6)
-                    if num_carbons < 5:
-                        continue  # Side chain too short
-                    num_double_bonds = sum(1 for bond in side_chain_mol.GetBonds() if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE)
-                    if num_double_bonds < 1:
-                        continue  # Side chain lacks double bonds
-                    # Check for isoprene units
-                    isoprene_unit = Chem.MolFromSmarts("C=C(C)C")
-                    isoprene_matches = side_chain_mol.GetSubstructMatches(isoprene_unit)
-                    if len(isoprene_matches) < 1:
-                        continue  # Side chain does not contain isoprene units
-                    # If all checks passed, return True
-                    return True, "Contains 2,3-dimethoxy-5-methylbenzoquinone core with polyprenoid side chain at position 6"
+        # Get the atom in the molecule where the side chain should be attached
+        side_chain_atom_idx = match[attachment_atom_idx]
+        side_chain_atom = mol.GetAtomWithIdx(side_chain_atom_idx)
 
-    # If no matches with side chain found, return False
-    return False, "Core found but no suitable side chain attached at position 6"
+        # Get neighbors not part of the core
+        core_atom_indices = set(match)
+        side_chain_atoms = []
+
+        for neighbor in side_chain_atom.GetNeighbors():
+            neighbor_idx = neighbor.GetIdx()
+            if neighbor_idx not in core_atom_indices:
+                # Perform BFS to get the side chain atoms
+                side_chain_frag = Chem.GetMolFrags(Chem.PathToSubmol(mol, [side_chain_atom_idx, neighbor_idx]), asMols=True)
+                if side_chain_frag:
+                    side_chain_mol = side_chain_frag[0]
+                    # Check if the side chain is a polyprenoid
+                    is_polyprenoid, reason = check_polyprenoid_side_chain(side_chain_mol)
+                    if is_polyprenoid:
+                        return True, "Contains ubiquinone core with polyprenoid side chain at position 6"
+                    else:
+                        continue
+
+    return False, "Core ubiquinone structure found but no suitable polyprenoid side chain at position 6"
+
+def check_polyprenoid_side_chain(side_chain_mol):
+    """
+    Checks if the side chain is a polyprenoid (contains isoprene units).
+
+    Args:
+        side_chain_mol (Mol): RDKit molecule of the side chain
+
+    Returns:
+        bool: True if side chain is polyprenoid, False otherwise
+        str: Reason for classification
+    """
+
+    # Count the number of carbons
+    num_carbons = sum(1 for atom in side_chain_mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if num_carbons < 5:
+        return False, "Side chain too short to be polyprenoid"
+
+    # Define isoprene unit SMARTS pattern
+    isoprene_smarts = "C(=C)C-C=C"
+    isoprene_pattern = Chem.MolFromSmarts(isoprene_smarts)
+    if isoprene_pattern is None:
+        return False, "Unable to create isoprene pattern"
+
+    # Check for isoprene units
+    isoprene_matches = side_chain_mol.GetSubstructMatches(isoprene_pattern)
+    if not isoprene_matches:
+        return False, "Side chain does not contain isoprene units"
+
+    return True, "Side chain is polyprenoid"
 
 __metadata__ = {   
     'chemical_class': {   
