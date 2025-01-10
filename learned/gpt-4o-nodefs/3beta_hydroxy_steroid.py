@@ -19,9 +19,9 @@ def is_3beta_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for a steroid backbone with a 3beta-hydroxyl group
-    # This is an attempt to capture the cyclopentanoperhydrophenanthrene structure with variability in stereochemistry and hydroxyl position at position 3.
-    steroid_pattern = Chem.MolFromSmarts("[C3;R][C3;R][C3;R][C3;R][C;R]1[C;R][C;R](C)[C;R]([C;R]2[C;R]1[C;R](O)[C;R](=O)[C;R](C2)[C;R])")
+    # Define a more appropriate SMARTS pattern for a steroid backbone 
+    # with a flexible but definitive hydroxyl group on the third carbon in a beta orientation
+    steroid_pattern = Chem.MolFromSmarts("C1CCC2C3CC[C@H](C4=CC(=O)CC[C@]24C)C3C1O")
 
     if mol.HasSubstructMatch(steroid_pattern):
         return True, "Matches 3beta-hydroxy steroid pattern"
