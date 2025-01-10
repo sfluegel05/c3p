@@ -7,7 +7,7 @@ def is_aliphatic_nitrile(smiles: str):
     """
     Determines if a molecule is an aliphatic nitrile based on its SMILES string.
     An aliphatic nitrile contains a nitrile (-C#N) group bonded to a carbon
-    that is part of an aliphatic (non-aromatic, may be cyclic) structure.
+    that is part of an aliphatic (non-aromatic, non-aromatic rings included) structure.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,7 +22,7 @@ def is_aliphatic_nitrile(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define nitrile pattern
+    # Define nitrile pattern: carbon triple-bonded to nitrogen
     nitrile_pattern = Chem.MolFromSmarts("[CX2]#[NX1]")
     nitrile_matches = mol.GetSubstructMatches(nitrile_pattern)
 
@@ -31,19 +31,21 @@ def is_aliphatic_nitrile(smiles: str):
     
     # Check if nitrile group is bonded to an aliphatic carbon
     for match in nitrile_matches:
-        carbon_idx = match[0]
-        carbon_atom = mol.GetAtomWithIdx(carbon_idx)
+        # The carbon in the nitrile triple bond is indexed at 0
+        c_nitrile_idx = match[0]
+        c_nitrile_atom = mol.GetAtomWithIdx(c_nitrile_idx)
         
-        # Ensure the carbon atom is not aromatic
-        if not carbon_atom.GetIsAromatic():
-            # Look at the carbon atom's neighbors
-            neighbors = carbon_atom.GetNeighbors()
-            for neighbor in neighbors:
-                # Check that the neighbor is a carbon and not aromatic
-                if neighbor.GetAtomicNum() == 6 and not neighbor.GetIsAromatic():
-                    # Check for appropriate hybridization in neighbors to confirm aliphatic structure
-                    if (neighbor.GetHybridization() == Chem.rdchem.HybridizationType.SP3 or 
-                        neighbor.GetHybridization() == Chem.rdchem.HybridizationType.SP2):
-                        return True, "Nitrile group attached to non-aromatic aliphatic carbon"
-
-    return False, "Nitrile group not appropriately part of an aliphatic chain"
+        # Check neighbors of the nitrile carbon
+        neighbors = c_nitrile_atom.GetNeighbors()
+        for neighbor in neighbors:
+            # Ensure the neighbor is a carbon
+            if neighbor.GetAtomicNum() == 6:
+                # Ensure this neighbor carbon is not aromatic
+                if not neighbor.GetIsAromatic():
+                    # Check if the bonding structure resembles an aliphatic chain
+                    if all(not atom.GetIsAromatic() for atom in neighbor.GetNeighbors()):
+                        return True, "Nitrile group attached to an aliphatic carbon"
+                    else:
+                        return False, "Neighbor carbons part of aromatic structure"
+    
+    return False, "Nitrile group not adequately part of an aliphatic chain"
