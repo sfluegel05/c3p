@@ -2,13 +2,12 @@
 Classifies: CHEBI:26660 sesterterpenoid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_sesterterpenoid(smiles: str):
     """
     Determines if a molecule is a sesterterpenoid based on its SMILES string.
-    Sesterterpenoids are terpenoids with about 25 carbon atoms, complex ring structures,
-    and various functional groups.
+    Sesterterpenoids are characterized by 25 carbon atoms, complex ring structures,
+    and functional groups like alcohols, ketones, and olefins.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,33 +20,32 @@ def is_sesterterpenoid(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return None, "Invalid SMILES string"
     
-    # Count carbon atoms
+    # Carbon count typical for sesterterpenoids is around 25
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    # Use a more precise carbon count range typical for sesterterpenoids
-    if not (22 <= c_count <= 28):
-        return False, f"Does not have typical carbon count for sesterterpenoids, found {c_count} carbons"
+    if not (24 <= c_count <= 26):
+        return False, f"Carbon count {c_count} not typical for sesterterpenoids"
     
-    # Ensure the molecule contains multiple ring structures
+    # Ensure the molecule contains at least 3 rings
     num_rings = mol.GetRingInfo().NumRings()
     if num_rings < 3:
         return False, f"Not enough ring structures; found {num_rings} rings"
     
-    # More sophisticated terpenoid pattern including stereochemistry
-    # Use a hypothetical SMARTS pattern more specific to terpenoids
-    # Sesterterpenoids often have complex, interconnected rings
-    terpenoid_patterns = [
-        Chem.MolFromSmarts("[C&R]-[C&R]-[C&R](=O)-[C&R]-[C&R]"),  # Example pattern involving ketone and carbon atoms
-        Chem.MolFromSmarts("C1CCC(CC1)C")  # Possible complex ring pattern
+    # Check for sesterterpenoid-specific patterns
+    sesterterpenoid_smarts = [
+        Chem.MolFromSmarts("C1CCC2C(C1)CC(C)(C)C2"), # example of a common motif
+        Chem.MolFromSmarts("C=CC=C(C)C=C"), # double bonds in carbon chains
+        Chem.MolFromSmarts("[C&R](O)[C&R]"), # alcohol groups on rings
     ]
-    if not any(mol.HasSubstructMatch(pattern) for pattern in terpenoid_patterns):
-        return False, "No terpenoid-like ring structures found"
     
-    # Check for oxygen or other heteroatoms
+    if not any(mol.HasSubstructMatch(pattern) for pattern in sesterterpenoid_smarts):
+        return False, "No characteristic sesterterpenoid patterns found"
+    
+    # Check for presence of heteroatoms like oxygen, which are typical in sesterterpenoids
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count < 1:
-        return False, "No oxygen atoms found, typically present in sesterterpenoids"
-    
-    # Given these checks, the molecule is hypothesized to be a sesterterpenoid
-    return True, "Carbon count, ring structures, and features suggest a sesterterpenoid"
+    if o_count < 2:
+        return False, "Insufficient presence of oxygen atoms, common in sesterterpenoids"
+
+    # Given these checks, the molecule might be a sesterterpenoid
+    return True, "Carbon, ring structures, and features suggest it's a sesterterpenoid"
