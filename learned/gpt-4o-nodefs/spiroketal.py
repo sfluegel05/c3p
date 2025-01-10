@@ -20,14 +20,14 @@ def is_spiroketal(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Detect a spiro junction: two rings sharing one atom
-    spiro_pattern = Chem.MolFromSmarts("[*]@[*]")
+    
+    # Improved detection of a spiro junction (an atom that is part of two rings)
+    spiro_pattern = Chem.MolFromSmarts("[R]@[R]")  # Atoms that are part of two ring closures
     if not mol.HasSubstructMatch(spiro_pattern):
         return False, "No spiro junction found"
 
-    # Detect cyclic ketal: O-C-O in a ring context
-    ketal_pattern = Chem.MolFromSmarts("[O][C]([O])([O])")
+    # Improved detection of cyclic ketal (RCOCR')
+    ketal_pattern = Chem.MolFromSmarts("O[C;R]O")  # Looking for C-O-C linkages within ring context
     if not mol.HasSubstructMatch(ketal_pattern):
         return False, "No cyclic ketal found"
     
