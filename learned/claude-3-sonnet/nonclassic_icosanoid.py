@@ -37,54 +37,53 @@ def is_nonclassic_icosanoid(smiles: str):
     if c_count != 20:
         return False, f"Must have exactly 20 carbons, found {c_count}"
 
-    # Check for classic icosanoid patterns (prostaglandins, thromboxanes)
-    cyclopentane = Chem.MolFromSmarts("C1CCCC1")
-    if mol.HasSubstructMatch(cyclopentane):
-        return False, "Contains cyclopentane ring (characteristic of classic icosanoids)"
+    # Count oxygens (should have at least 3 - one from COOH plus at least two more)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if o_count < 3:
+        return False, "Insufficient oxygen atoms for nonclassic icosanoid"
 
-    # Count oxygenated functional groups
-    hydroxy_pattern = Chem.MolFromSmarts("[OX2H1]")  # hydroxyl group
-    epoxy_pattern = Chem.MolFromSmarts("[OX2r3]")    # epoxy oxygen
+    # Check for double bonds
+    double_bond_pattern = Chem.MolFromSmarts("C=C")
+    conjugated_double_bond_pattern = Chem.MolFromSmarts("C=CC=C")
     
-    hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
-    epoxy_matches = mol.GetSubstructMatches(epoxy_pattern)
+    double_bond_matches = len(mol.GetSubstructMatches(double_bond_pattern))
+    conjugated_matches = len(mol.GetSubstructMatches(conjugated_double_bond_pattern))
     
-    hydroxy_count = len(hydroxy_matches) - 1  # Subtract 1 for carboxylic acid OH
-    epoxy_count = len(epoxy_matches)
+    if double_bond_matches < 2:
+        return False, "Insufficient double bonds"
+    
+    # Look for common oxygen-containing functional groups
+    hydroxy_pattern = Chem.MolFromSmarts("[OH1]")
+    epoxy_pattern = Chem.MolFromSmarts("C1OC1")
+    
+    hydroxy_count = len(mol.GetSubstructMatches(hydroxy_pattern))
+    epoxy_count = len(mol.GetSubstructMatches(epoxy_pattern))
     
     if hydroxy_count == 0 and epoxy_count == 0:
         return False, "No hydroxyl or epoxy groups found"
 
-    # Check for double bonds
-    double_bond_pattern = Chem.MolFromSmarts("C=C")
-    double_bond_count = len(mol.GetSubstructMatches(double_bond_pattern))
-    
-    if double_bond_count == 0:
-        return False, "No double bonds found"
+    # Look for patterns that would indicate classic icosanoids
+    prostaglandin_pattern = Chem.MolFromSmarts("[CH2][CH2][CH]1[CH2][CH2][CH]([CH2][CH2][CH2]C(=O)[OH])[CH]1")
+    if mol.HasSubstructMatch(prostaglandin_pattern):
+        return False, "Contains prostaglandin core structure"
 
-    # Check for conjugated double bonds
-    conjugated_pattern = Chem.MolFromSmarts("C=CC=C")
-    conjugated_count = len(mol.GetSubstructMatches(conjugated_pattern))
+    # Check for long carbon chain
+    carbon_chain = Chem.MolFromSmarts("CCCCCC")
+    if not mol.HasSubstructMatch(carbon_chain):
+        return False, "No long carbon chain found"
 
-    # Count total oxygens (should have multiple for oxygenation)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count < 3:
-        return False, "Insufficient oxygen atoms for oxygenated fatty acid"
+    # Calculate molecular weight (should be around 300-400)
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 250 or mol_wt > 450:
+        return False, "Molecular weight outside expected range"
 
-    # Build feature description
+    # If all checks pass, it's likely a nonclassic icosanoid
     features = []
+    if conjugated_matches > 0:
+        features.append(f"{conjugated_matches} conjugated double bond systems")
     if hydroxy_count > 0:
         features.append(f"{hydroxy_count} hydroxyl groups")
     if epoxy_count > 0:
         features.append(f"{epoxy_count} epoxy groups")
-    if conjugated_count > 0:
-        features.append(f"conjugated double bond system")
-    else:
-        features.append(f"{double_bond_count} double bonds")
-
-    # Validate molecular weight (should be around 300-400 Da)
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 250 or mol_wt > 500:
-        return False, f"Molecular weight {mol_wt:.1f} outside expected range"
-
-    return True, "Nonclassic icosanoid: " + ", ".join(features)
+    
+    return True, f"C20 oxygenated fatty acid with {', '.join(features)}"
