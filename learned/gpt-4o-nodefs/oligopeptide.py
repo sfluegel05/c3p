@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_oligopeptide(smiles: str):
     """
     Determines if a molecule is an oligopeptide based on its SMILES string.
-    An oligopeptide is characterized by multiple peptide bonds linking amino acids.
+    An oligopeptide can contain peptides with few amino acid residues, starting from dipeptides.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,9 +26,9 @@ def is_oligopeptide(smiles: str):
 
     # Find all instances of peptide bond patterns (-CONH-)
     peptide_bond_matches = mol.GetSubstructMatches(peptide_bond_pattern)
-    
-    # For it to be considered an oligopeptide, there must be more than one peptide bond
-    if len(peptide_bond_matches) > 2:
+
+    # Adjust criterion: consider starting with 2 peptide bonds as an oligopeptide
+    if len(peptide_bond_matches) >= 2:
         return True, f"Contains {len(peptide_bond_matches)} peptide bonds, classified as oligopeptide"
     
     return False, f"Contains {len(peptide_bond_matches)} peptide bonds, not enough for oligopeptide classification"
