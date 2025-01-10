@@ -25,32 +25,48 @@ def is_indole_alkaloid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Expanded SMARTS patterns for different types of indole cores and variations
+    # Core indole patterns and their variations commonly found in alkaloids
     indole_patterns = [
+        # Basic indole cores
         'c12ccccc1[nH]cc2',           # Basic indole
         'c12ccccc1[nX3]cc2',          # N-substituted indole
-        'c12ccccc1nc(C)c2',           # Alternative indole pattern
-        'c12ccccc1[nX3]c(C)c2',       # N-substituted with C-substitution
-        'c12ccccc1[nX3]C=C2',         # Modified indole double bond
-        'c12ccccc1[nX3]CC2',          # Reduced indole
-        'c12ccccc1[nX3][C,c]2',       # Bridged indole
-        'c12ccccc1n([*])cc2',         # Any N-substituted indole
-        'c12ccccc1n([*])c([*])c2',    # Heavily substituted indole
-        'C1=CC2=C(C=C1)N=C([*])C2',   # Modified indole with imine
-        'C1=CC2=C(C=C1)NC=C2',        # Basic indole alternative
-        'C1=CC2=C(C=C1)N([*])C=C2',   # N-substituted alternative
-        'c12ccccc1[nX3]([*])c([*])c2', # Complex N-substituted indole
-        'c12ccccc1[nX3]([*])C([*])C2', # Reduced complex indole
-        'C1=CC=C2C(=C1)C=3CCN4C2=C3C4', # Bridged indole system
-        'C1=CC=C2C(=C1)N([*])C3=C2[*]', # Fused indole system
-        'C1=CC2=C(C=C1)N([*])C([*])=C2', # Modified indole core
-        'C1=CC2=C(C=C1)N=C([*])C2([*])', # Rearranged indole
-        'C1=CC=C2C(=C1)N([*])=C([*])C2', # Alternative rearranged indole
-        'C1=CC=C2C(=C1)N([*])C([*])=N2', # Modified nitrogen position
-        'c12ccccc1[nX3]c([*])n2',      # N-fused indole
-        'C1=CC2=C(C=C1)N([*])C(=O)C2', # Oxo-modified indole
-        'C1=CC2=C(C=C1)N=C3N2CC3',     # Complex bridged indole
-        'C1=CC=C2C(=C1)N([*])C([*])([*])C2' # Highly substituted indole
+        'c12ccccc1nc([*])c2',         # Alternative indole
+        
+        # Complex fused systems
+        'c12ccccc1n([*])c([*])([*])c2',  # Highly substituted
+        'C1=CC2=C(C=C1)N([*])C([*])([*])C2([*])', # Spiro/bridged
+        'C1=CC2=C(C=C1)N([*])C3([*])C2([*])C3',   # Bridged systems
+        
+        # Ergot-type cores
+        'C1=CC2=C(C=C1)N([*])C3=C2C([*])=C([*])C3',
+        'C1=CC2=C(C=C1)N([*])C3=C2CCN3',
+        
+        # Iboga-type cores
+        'C1=CC2=C(C=C1)N([*])C3C2([*])CCN3',
+        'C1=CC2=C(C=C1)N([*])C3=C2C([*])CN3',
+        
+        # Modified cores common in alkaloids
+        'C1=CC=C2C(=C1)N=C([*])C2([*])',
+        'C1=CC=C2C(=C1)N([*])=C([*])C2([*])',
+        'C1=CC=C2C(=C1)N([*])C(=O)C2([*])',
+        
+        # Quaternary nitrogen variations
+        'c12ccccc1[n+]([*])cc2',
+        'C1=CC2=C(C=C1)N+=C([*])C2([*])',
+        
+        # Reduced forms
+        'C1=CC2=C(C=C1)N([*])CC2([*])',
+        'C1=CC2=C(C=C1)N([*])C([*])C2([*])',
+        
+        # Yohimbine-type cores
+        'C1=CC2=C(C=C1)N([*])C3([*])C2([*])N([*])C3',
+        'C1=CC2=C(C=C1)N([*])C3([*])C2([*])CC3',
+        
+        # Additional complex systems
+        'C1=CC2=C(C=C1)N3C([*])C2([*])C3([*])',
+        'C1=CC2=C(C=C1)N([*])C3=C2N([*])C3',
+        'C1=CC2=C(C=C1)N([*])C3=C2C(=O)N3',
+        'C1=CC2=C(C=C1)N([*])C(=N([*]))C2'
     ]
     
     has_indole = False
@@ -66,33 +82,40 @@ def is_indole_alkaloid(smiles: str):
     if not has_indole:
         return False, "No indole core structure found"
 
-    # Check for nitrogen content (alkaloid requirement)
+    # Check for nitrogen content
     n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
     if n_count == 0:
         return False, "No nitrogen atoms found - not an alkaloid"
     
-    # Structural checks typical for indole alkaloids
-    ring_count = rdMolDescriptors.CalcNumRings(mol)
+    # Structural requirements
+    ring_info = mol.GetRingInfo()
+    ring_count = ring_info.NumRings()
+    
     if ring_count < 2:
         return False, "Too few rings for an indole alkaloid"
-    
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 100:
-        return False, "Molecular weight too low for an indole alkaloid"
     
     # Carbon count check
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if c_count < 8:
         return False, "Too few carbons for an indole alkaloid"
     
-    # Check for complex ring systems typical of indole alkaloids
-    ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() >= 2:
-        # Look for nitrogen atoms in rings
-        n_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7]
-        for n_atom in n_atoms:
-            if n_atom.IsInRing():
-                return True, "Contains indole core and has characteristics of an alkaloid"
+    # Check for fused ring systems
+    ring_systems = []
+    bonds = mol.GetBonds()
+    for bond in bonds:
+        if bond.IsInRing():
+            ring_atoms = set()
+            for atom in (bond.GetBeginAtom(), bond.GetEndAtom()):
+                if atom.IsInRing():
+                    ring_atoms.add(atom.GetIdx())
+            if len(ring_atoms) > 0:
+                ring_systems.append(ring_atoms)
+    
+    # Look for nitrogen atoms in rings and complex ring systems
+    n_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7]
+    for n_atom in n_atoms:
+        if n_atom.IsInRing():
+            return True, "Contains indole core and has characteristics of an alkaloid"
     
     return False, "Structure lacks typical indole alkaloid characteristics"
 
