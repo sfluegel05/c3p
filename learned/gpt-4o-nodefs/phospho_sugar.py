@@ -2,13 +2,12 @@
 Classifies: CHEBI:33447 phospho sugar
 """
 from rdkit import Chem
-from rdkit.Chem import rdqueries
 
 def is_phospho_sugar(smiles: str):
     """
     Determines if a molecule is a phospho sugar based on its SMILES string.
-    A phospho sugar contains a sugar moiety (often as a furanose or pyranose)
-    with one or more attached phosphate groups.
+    A phospho sugar contains a sugar moiety (often a pyranose or furanose ring or open structure)
+    with one or more phosphate groups attached.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,10 +22,20 @@ def is_phospho_sugar(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more flexible phosphate group pattern with substructure query
+    # Flexible wildcard patterns for phosphate groups, accommodating different states and linkages
     phosphate_patterns = [
-        Chem.MolFromSmarts("[OX2]P(=O)([OX1])[OX1]"),  # General phosphate
-        Chem.MolFromSmarts("[OX2]P(=O)([OX1])[OX1-]"),  # Deprotonated version
+        Chem.MolFromSmarts("[OP](=O)(O)O"),     # General protonated phosphate
+        Chem.MolFromSmarts("[OP](=O)(O)[O-]"), # General deprotonated phosphate
+        Chem.MolFromSmarts("[OP](=O)(O)C"),    # Phosphate ester linkage
+        Chem.MolFromSmarts("[OP](=O)(O)S")     # Phosphorothioate
+    ]
+
+    # Revised and more comprehensive sugar ring and carbohydrates patterns
+    sugar_patterns = [
+        Chem.MolFromSmarts("C1OC(O)C(O)C(O)C1"),               # Pyranose form
+        Chem.MolFromSmarts("C1OC(O)C(O)C1"),                    # Furanose form
+        Chem.MolFromSmarts("O[C@@H]1[C@@H](O)[C@H](O)C(O)C1"),  # Ribose/Aldose
+        Chem.MolFromSmarts("[C@H](O)[C@@H](O)C(O)(O)C=O"),     # Open chain sugars (like glucose, fructose)
     ]
 
     # Check for at least one phosphate group pattern match
@@ -34,18 +43,10 @@ def is_phospho_sugar(smiles: str):
     if not has_phosphate:
         return False, "No phosphate group found"
 
-    # Define sugar ring patterns (furanose or pyranose or any carbohydrate ring)
-    sugar_ring_patterns = [
-        Chem.MolFromSmarts("C1OC(CO)C(O)C1"),  # Pyranose
-        Chem.MolFromSmarts("C1OC(C)C1"),       # Furanose
-        Chem.MolFromSmarts("C1OC(O)C(O)C(O)C1"),  # Open sugar structures
-        Chem.MolFromSmarts("O=C[C@H](O)[C@@H](O)C=O"),  # Linear carbohydrate fragments
-    ]
-
-    # Checking for the presence of any sugar-related structure
-    has_sugar_structure = any(mol.HasSubstructMatch(pat) for pat in sugar_ring_patterns)
+    # Revised broader checking for presence of any sugar-related structure
+    has_sugar_structure = any(mol.HasSubstructMatch(pat) for pat in sugar_patterns)
     if not has_sugar_structure:
-        return False, "No sugar ring structure detected"
+        return False, "No sugar structure detected"
 
     # If both sugar and phosphate are present, classify as phospho sugar
     return True, "Contains a phosphate group attached to a sugar moiety"
