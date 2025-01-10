@@ -26,16 +26,16 @@ def is_medium_chain_fatty_acyl_CoA_4__(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
         
-    # Check for CoA phosphate groups - using more flexible pattern
-    phosphate_pattern = Chem.MolFromSmarts("[PX4](=[OX1])([OX2H,OX1-])[OX2H,OX1-]")
-    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
-    if len(phosphate_matches) < 3:
-        return False, f"Found {len(phosphate_matches)} phosphate groups, need at least 3"
-        
     # Count negative charges
     explicit_charge = sum(atom.GetFormalCharge() for atom in mol.GetAtoms())
     if explicit_charge != -4:
         return False, f"Total charge is {explicit_charge}, need -4"
+        
+    # Check for phosphate groups - using revised pattern
+    phosphate_pattern = Chem.MolFromSmarts("[P]([O-])(=[O])([O,O-])[O,O-]")
+    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
+    if len(phosphate_matches) < 3:
+        return False, f"Found {len(phosphate_matches)} phosphate groups, need at least 3"
         
     # Check for adenine
     adenine_pattern = Chem.MolFromSmarts("c1nc(c2c(n1)ncn2)N")
@@ -52,20 +52,41 @@ def is_medium_chain_fatty_acyl_CoA_4__(smiles: str):
     if not mol.HasSubstructMatch(pantetheine_pattern):
         return False, "Missing pantetheine arm"
 
-    # Count carbons in fatty acid chain
-    # CoA has 23 carbons, so subtract to get fatty acid chain length
-    total_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    fatty_acid_carbons = total_carbons - 23
-    
-    # Medium-chain fatty acids have 6-12 carbons
-    if fatty_acid_carbons < 6:
-        return False, f"Fatty acid chain too short ({fatty_acid_carbons} carbons, need 6-12)"
-    if fatty_acid_carbons > 12:
-        return False, f"Fatty acid chain too long ({fatty_acid_carbons} carbons, need 6-12)"
-
     # Check for ribose sugar
     ribose_pattern = Chem.MolFromSmarts("OC1C(O)C(O)C(O1)CN")
     if not mol.HasSubstructMatch(ribose_pattern):
         return False, "Missing ribose sugar moiety"
+
+    # Count carbons in fatty acid chain
+    # First find the thioester carbon and trace the connected chain
+    thioester_matches = mol.GetSubstructMatches(thioester_pattern)
+    if thioester_matches:
+        thioester_carbon = mol.GetAtomWithIdx(thioester_matches[0][0])
+        # Get neighboring carbon that's not part of CoA
+        for neighbor in thioester_carbon.GetNeighbors():
+            if neighbor.GetAtomicNum() == 6 and not mol.HasSubstructMatch(Chem.MolFromSmarts("NCCC(=O)NCCS"), useChirality=True, rootedAtAtom=neighbor.GetIdx()):
+                fatty_acid_start = neighbor
+                break
+        
+        # Count carbons in fatty acid chain using BFS
+        visited = set()
+        queue = [fatty_acid_start]
+        fatty_acid_carbons = 0
+        while queue:
+            atom = queue.pop(0)
+            if atom.GetIdx() not in visited:
+                visited.add(atom.GetIdx())
+                if atom.GetAtomicNum() == 6:  # Carbon
+                    fatty_acid_carbons += 1
+                for neighbor in atom.GetNeighbors():
+                    if neighbor.GetIdx() not in visited and neighbor.GetAtomicNum() == 6:
+                        queue.append(neighbor)
+        
+        if fatty_acid_carbons < 6:
+            return False, f"Fatty acid chain too short ({fatty_acid_carbons} carbons, need 6-12)"
+        if fatty_acid_carbons > 12:
+            return False, f"Fatty acid chain too long ({fatty_acid_carbons} carbons, need 6-12)"
+    else:
+        return False, "Could not identify fatty acid chain"
 
     return True, f"Medium-chain fatty acyl-CoA(4-) with {fatty_acid_carbons} carbons in fatty acid chain"
