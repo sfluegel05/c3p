@@ -21,32 +21,26 @@ def is_epoxy_fatty_acid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
+
     # Look for epoxide ring pattern, which is a three-membered ring with an oxygen
-    # Ensure it forms a ring using a more precise SMARTS
-    epoxide_ring_pattern = Chem.MolFromSmarts("C1OC1")
+    epoxide_ring_pattern = Chem.MolFromSmarts("[C;R]1[O;R][C;R]1")
     if not mol.HasSubstructMatch(epoxide_ring_pattern):
         return False, "No epoxide ring found"
 
     # Check for a long carbon chain characteristic of fatty acids
-    # Include unsaturations and allow some branching
+    # More flexible definition that allows for unsaturations, branching, and rings (to some extent)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    h_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 1)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    
-    if c_count < 12 or h_count < (c_count * 2 - 2):  # Allowing for unsaturations typical in fatty acids
-        return False, "Too few carbons or incorrect C:H ratio for a fatty acid"
+    if c_count < 12:
+        return False, "Too few carbons for a fatty acid"
 
-    # Find carboxylic acid group typically at/near chain end
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[OH]")
+    # Improved definition of the carboxylic functional group
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
 
-    # Ring systems count - should avoid complex molecules with multiple distinct rings
+    # Ring systems count - allow for epoxide and minimal additional rings
     ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() > 2:
+    if ring_info.NumRings() > 3:  # Allow up to 3 rings considering ring support around the epoxide
         return False, "Too many rings for a typical epoxy fatty acid"
 
-    # Run more checks if needed depending on misclassifications here noted in debugs
-    
     return True, "Contains an epoxide ring and typical characteristics of an epoxy fatty acid (long carbon chain and carboxylic acid group)"
