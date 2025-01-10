@@ -26,32 +26,14 @@ def is_indole_alkaloid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define indole SMARTS pattern (matches indole and N-substituted indoles)
-    indole_smarts = 'c1c[nH,n]c2cccc2c1'
+    indole_smarts = 'c1nccc2ccccc12'  # Indole core structure, including N-substituted indoles
     indole = Chem.MolFromSmarts(indole_smarts)
 
     # Check if molecule has indole substructure
-    if not mol.HasSubstructMatch(indole):
-        return False, "No indole skeleton found"
-
-    # Get nitrogen atoms in indole substructure(s)
-    indole_matches = mol.GetSubstructMatches(indole)
-    indole_nitrogen_indices = set()
-    for match in indole_matches:
-        for idx in match:
-            atom = mol.GetAtomWithIdx(idx)
-            if atom.GetAtomicNum() == 7:
-                indole_nitrogen_indices.add(idx)
-
-    # Get all nitrogen atoms in the molecule
-    nitrogen_indices = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7]
-    total_nitrogens = len(nitrogen_indices)
-    indole_nitrogens = len(indole_nitrogen_indices)
-    additional_nitrogens = total_nitrogens - indole_nitrogens
-
-    if additional_nitrogens >= 1:
-        return True, "Contains indole skeleton and additional nitrogen atoms"
+    if mol.HasSubstructMatch(indole):
+        return True, "Contains indole skeleton"
     else:
-        return False, "Contains indole skeleton but no additional nitrogen atoms"
+        return False, "No indole skeleton found"
 
 __metadata__ = {'chemical_class': { 'id': '',  # CHEBI ID can be added if known
                              'name': 'indole alkaloid',
