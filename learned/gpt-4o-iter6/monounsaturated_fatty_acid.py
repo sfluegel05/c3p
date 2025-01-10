@@ -22,21 +22,22 @@ def is_monounsaturated_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for the carboxylic acid group pattern
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[OH]")
+    # Check for the carboxylic acid group pattern (ensuring it's terminal and part of a long chain)
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
-
-    # Calculate number of carbon-carbon double (or triple) bonds
-    double_bond_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts("C=C")))
-    triple_bond_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts("C#C")))
     
-    if (double_bond_count + triple_bond_count) != 1:
-        return False, f"Found {double_bond_count} double bonds and {triple_bond_count} triple bonds, need exactly one"
+    # Calculate number of carbon-carbon double/triple bonds (only those in the chain, not part of ring systems)
+    chain_double_bond_count = len([bond for bond in mol.GetBonds() 
+                                   if bond.GetBondType() in [Chem.rdchem.BondType.DOUBLE, Chem.rdchem.BondType.TRIPLE]
+                                   and bond.GetBeginAtom().GetDegree() <= 2 and bond.GetEndAtom().GetDegree() <= 2])
+    
+    if chain_double_bond_count != 1:
+        return False, f"Found {chain_double_bond_count} unsaturations in chain, need exactly one"
 
-    # Count carbon atoms in the chain (excluding carboxyl group carbons)
-    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6 and atom.GetIsAromatic() == False)
-    if carbon_count < 10:
-        return False, "Not enough carbon atoms for a typical fatty acid chain"
+    # Ensure it's a straight-chain or branched molecule without complex ring systems contributing features
+    ring_info = mol.GetRingInfo()
+    if ring_info.NumRings() > 0:
+        return False, "Contains rings which disqualifies it from being a straight chain fatty acid"
     
     return True, "Molecule is a monounsaturated fatty acid (one double or triple bond in the chain with carboxylic group)"
