@@ -5,7 +5,6 @@ Classifies: CHEBI:10283 2-hydroxy fatty acid
 Classifies: CHEBI:17855 2-hydroxy fatty acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_2_hydroxy_fatty_acid(smiles: str):
     """
@@ -25,21 +24,26 @@ def is_2_hydroxy_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS patterns
+    # Define a pattern for carboxylic acid group
     carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
-    hydroxy_alpha_generic_pattern = Chem.MolFromSmarts("CC(O)C(=O)O")  # generic pattern to match more flexible structures
-
+    
     # Check for carboxylic acid group
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
     
-    # Check for 2-hydroxy group in alpha position generically
-    if not mol.HasSubstructMatch(hydroxy_alpha_generic_pattern):
+    # Define a pattern for 2-hydroxy group (alpha position to carboxylic acid)
+    # [O;H1] is a single hydroxy group, attach to carbon that is alpha to carboxylic acid group
+    hydroxy_alpha_pattern = Chem.MolFromSmarts("C([O;H1])C(=O)O")
+
+    # Check for 2-hydroxy group in alpha position
+    if not mol.HasSubstructMatch(hydroxy_alpha_pattern):
         return False, "No 2-hydroxy group found in the alpha position"
     
-    # Count carbons to ensure appropriate assessment of fatty acid chain, leniently adjusting threshold
-    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if carbon_count < 6:  # Optionally set a lower bound threshold based on the false-negative analysis
-        return False, f"Insufficient carbon chain length for a fatty acid, found {carbon_count} carbons"
+    # Verification of fatty acid-like long chain is more complex
+    # We will simply check if the chain contains at least 6 carbons
+    carbon_count = sum(atom.GetAtomicNum() == 6 for atom in mol.GetAtoms())
+    
+    if carbon_count < 6:
+        return False, "Insufficient carbon chain length for fatty acid"
 
-    return True, "Confirmed: Contains 2-hydroxy group in the alpha position of a fatty acid chain"
+    return True, "Contains 2-hydroxy group in the alpha position of a fatty acid chain"
