@@ -27,21 +27,23 @@ def is_triterpenoid_saponin(smiles: str):
     
     # Count carbons to check if it's a triterpenoid (should have ~30 carbons in core)
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if carbon_count < 25:
+    if carbon_count < 20:  # Lowered threshold
         return False, f"Too few carbons ({carbon_count}) for a triterpenoid core"
     
-    # Define common triterpenoid core patterns
+    # Define common triterpenoid core patterns with more flexible matching
     triterpenoid_patterns = [
-        # Oleanane type core (pentacyclic)
-        "[C]1[C][C]2[C]3[C]([C]4[C]([C]5[C]([C][C]4)[C]([C][C]5)[C])[C][C]3)[C][C]2[C][C]1",
-        # Ursane type core
-        "[C]1[C][C]2[C]3[C]([C]4[C]([C]5[C]([C][C]4)[C]([C][C]5)[C])[C][C]3)[C][C]2[C][C]1",
-        # Dammarane type core (tetracyclic)
-        "[C]1[C][C]2[C]3[C]([C]4[C]([C][C]3)[C]([C][C]4)[C])[C][C]2[C][C]1",
-        # Cycloartane type core
-        "[C]1[C][C]2[C]3[C]([C]4[C]([C]5[C]([C][C]4)[C]([C][C]5))[C][C]3)[C][C]2[C][C]1",
-        # More general fused ring pattern for triterpenoids
-        "[C]1[C][C]2[C]3[C]([C]4[C]([C][C]3)[C]([C][C]4))[C][C]2[C][C]1"
+        # Basic pentacyclic pattern (more flexible)
+        "*~1~*~*~2~*~3~*~*~4~*~5~*~*~4~*~*~5~*~*~3~*~*~2~*~*~1",
+        # Tetracyclic pattern
+        "*~1~*~*~2~*~3~*~*~4~*~*~3~*~*~4~*~*~2~*~*~1",
+        # Oleanane/Ursane core (more flexible)
+        "*~1~*~*~2~*~3~*(*~*~4~*~5~*~*~4~*)~*~*~3~*~*~2~*~*~1",
+        # Modified core with lactone
+        "*~1~*~*~2~*~3~*~*~4~*~5~*~*~4~*~*~5~*~*~3~*~*~2~O~*~1",
+        # Dammarane type
+        "*~1~*~*~2~*~3~*~*~4~*~*~3~*~*~4~*~*~2~*~*~1",
+        # More general fused ring system
+        "*~1~*~*~2~*~3~*~*~4~*~*~3~*~*~4~*~*~2~*~*~1"
     ]
     
     has_triterpenoid = False
@@ -54,14 +56,16 @@ def is_triterpenoid_saponin(smiles: str):
     if not has_triterpenoid:
         return False, "No characteristic triterpenoid ring system found"
     
-    # Look for sugar patterns with specific stereochemistry
+    # Look for sugar patterns (more flexible)
     sugar_patterns = [
-        # Pyranose sugar with hydroxyl groups
-        "O[C@H]1[C@@H](O)[C@H](O)[C@@H](O)[C@H](O)O1",
-        # More general pyranose pattern
-        "O1[C][C]([O,C])[C]([O,C])[C]([O,C])[C]1[O,C]",
-        # Furanose sugar pattern
-        "O1[C][C]([O,C])[C]([O,C])[C]1[O,C]"
+        # General pyranose pattern
+        "O1[C;R1][C;R1][C;R1][C;R1][C;R1]1",
+        # Furanose pattern
+        "O1[C;R1][C;R1][C;R1][C;R1]1",
+        # More flexible sugar pattern
+        "O1[C;R1][C;R1]([O,C])[C;R1]([O,C])[C;R1]1",
+        # Pattern for modified sugars
+        "O1[C;R1][C;R1]([O,C])[C;R1]([O,C])[C;R1]([O,C])O1"
     ]
     
     has_sugar = False
@@ -74,12 +78,14 @@ def is_triterpenoid_saponin(smiles: str):
     if not has_sugar:
         return False, "No sugar moiety found"
     
-    # Look for glycosidic linkage
+    # Look for glycosidic linkage (more flexible patterns)
     glycosidic_patterns = [
-        # O-glycosidic bond
-        "[C;R0]-[O;R0]-[C;R1]1[O;R1][C;R1][C;R1][C;R1][C;R1]1",
-        # More general glycosidic bond pattern
-        "[C;R]-[O;R0]-[C;R1]"
+        # General glycosidic linkage
+        "[C;R0,R1]-[O;R0]-[C;R1]",
+        # Specific O-glycosidic bond
+        "[C;R0,R1]-[O;R0]-[C;R1]1[O;R1][C;R1][C;R1][C;R1][C;R1]1",
+        # Acetal linkage
+        "[C;R1]1[O;R1][C;R1][C;R1][C;R1][C;R1]1[O;R0][C;R0,R1]"
     ]
     
     has_glycosidic = False
@@ -96,8 +102,9 @@ def is_triterpenoid_saponin(smiles: str):
     functional_groups = {
         "hydroxyl": "[OH]",
         "carboxyl": "[C;!R](=O)[OH]",
-        "ketone": "[C;!R](=O)[C;!R]",
-        "methyl": "[CH3]"
+        "ketone": "[C;!R,R](=O)[C;!R,R]",
+        "methyl": "[CH3]",
+        "ether": "[C;!R,R]-[O;R0]-[C;!R,R]"
     }
     
     # Count functional groups
@@ -115,11 +122,14 @@ def is_triterpenoid_saponin(smiles: str):
     
     # Calculate molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 600:  # Increased threshold for triterpenoid saponins
+    if mol_wt < 500:  # Lowered threshold
         return False, f"Molecular weight ({mol_wt:.1f}) too low for triterpenoid saponin"
     
     # Verify minimum requirements for functional groups
-    if group_counts.get("hydroxyl", 0) < 3:
+    if group_counts.get("hydroxyl", 0) < 2:
         return False, "Too few hydroxyl groups for a saponin"
     
+    if group_counts.get("methyl", 0) < 3:
+        return False, "Too few methyl groups for a triterpenoid"
+        
     return True, "Contains triterpenoid core with glycosidic linkages and characteristic structural features"
