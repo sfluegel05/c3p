@@ -65,7 +65,9 @@ def is_long_chain_fatty_acyl_CoA(smiles: str):
                 continue
             visited.add(atom.GetIdx())
             if atom.GetAtomicNum() == 6:
-                fatty_acid_chain.append(atom.GetIdx())
+                # Exclude carbons that are part of the CoA moiety
+                if atom.GetIdx() not in coa_match:
+                    fatty_acid_chain.append(atom.GetIdx())
                 # Continue traversing through carbon neighbors
                 for neighbor in atom.GetNeighbors():
                     if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:
@@ -73,12 +75,12 @@ def is_long_chain_fatty_acyl_CoA(smiles: str):
 
     # Count unique carbons in the fatty acid chain
     unique_carbons = set(fatty_acid_chain)
-    if len(unique_carbons) < 13 or len(unique_carbons) > 22:
-        return False, f"Fatty acid chain length {len(unique_carbons)} is not within the range of 13 to 22 carbons"
+    if len(unique_carbons) < 13 or len(unique_carbons) > 24:  # Adjusted range to 13-24
+        return False, f"Fatty acid chain length {len(unique_carbons)} is not within the range of 13 to 24 carbons"
 
     # Check molecular weight - long-chain fatty acyl-CoA typically >700 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 700:
         return False, "Molecular weight too low for long-chain fatty acyl-CoA"
 
-    return True, "Contains CoA moiety with a long-chain fatty acid (C13 to C22) attached via a thioester bond"
+    return True, "Contains CoA moiety with a long-chain fatty acid (C13 to C24) attached via a thioester bond"
