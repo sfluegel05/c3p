@@ -27,37 +27,53 @@ def is_secondary_ammonium_ion(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Find all nitrogen atoms
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 7:  # Nitrogen
-            # Check formal charge
-            if atom.GetFormalCharge() != 1:
-                continue
-                
-            # Count attached hydrogens
-            n_hydrogens = atom.GetTotalNumHs()
+    # SMARTS pattern for secondary ammonium ion
+    # [NH2+] with exactly two single bonds to carbon or other non-H atoms
+    sec_ammonium_pattern = Chem.MolFromSmarts('[NX3H2+;!a;!$(N=*);!$(N#*);!$([N][O,N])]([#6,#14,#15,#16])[#6,#14,#15,#16]')
+    
+    # Patterns to exclude
+    exclude_patterns = [
+        Chem.MolFromSmarts('[nH+]'), # Aromatic N+
+        Chem.MolFromSmarts('[NH+]=*'), # Iminium ions
+        Chem.MolFromSmarts('[NH+]#*'), # N+ triple bonds
+        Chem.MolFromSmarts('[NH+]([O,N])*'), # N+ bound to O or N
+    ]
+
+    # Check if molecule matches the secondary ammonium pattern
+    if not mol.HasSubstructMatch(sec_ammonium_pattern):
+        return False, "No secondary ammonium ion found"
+        
+    # Check for excluding patterns
+    for pattern in exclude_patterns:
+        if pattern is not None and mol.HasSubstructMatch(pattern):
+            return False, "Contains excluded nitrogen cation pattern"
+
+    # Additional validation of each matching nitrogen
+    matches = mol.GetSubstructMatches(sec_ammonium_pattern)
+    for match in matches:
+        n_idx = match[0]
+        n_atom = mol.GetAtomWithIdx(n_idx)
+        
+        # Must have +1 charge
+        if n_atom.GetFormalCharge() != 1:
+            continue
             
-            # Get all neighbors
-            neighbors = atom.GetNeighbors()
+        # Must not be aromatic
+        if n_atom.GetIsAromatic():
+            continue
             
-            # Count organic neighbors (carbon and other non-H atoms)
-            organic_neighbors = []
-            for neighbor in neighbors:
-                if neighbor.GetAtomicNum() == 6:  # Carbon
-                    organic_neighbors.append(neighbor)
-                elif neighbor.GetAtomicNum() not in [1, 7, 8]:  # Not H, N, O
-                    organic_neighbors.append(neighbor)
+        # Count non-hydrogen neighbors
+        non_h_neighbors = [neighbor for neighbor in n_atom.GetNeighbors() 
+                         if neighbor.GetAtomicNum() != 1]
+        
+        # Must have exactly 2 non-hydrogen neighbors
+        if len(non_h_neighbors) != 2:
+            continue
             
-            # Secondary ammonium should have:
-            # - Exactly 1 hydrogen
-            # - Exactly 2 organic groups attached
-            # - Formal charge of +1
-            if n_hydrogens == 1 and len(organic_neighbors) == 2:
-                # Verify the organic groups are not leaving groups (like OH)
-                if all(len(list(n.GetNeighbors())) >= 2 for n in organic_neighbors):
-                    return True, "Contains NHR2+ group (secondary ammonium ion)"
-            
-    return False, "No secondary ammonium ion found"
+        # All checks passed
+        return True, "Contains secondary ammonium ion (NHR2+)"
+        
+    return False, "No valid secondary ammonium ion found"
 
 __metadata__ = {
     'chemical_class': {
