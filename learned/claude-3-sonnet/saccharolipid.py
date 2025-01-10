@@ -27,52 +27,72 @@ def is_saccharolipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for sugar rings (pyranose/furanose) with specific hydroxylation pattern
-    sugar_pattern = Chem.MolFromSmarts("[CR1]1[CR1]([OH1,OR])[CR1]([OH1,OR])[CR1]([OH1,OR])[CR1][OR1]1")
-    sugar_matches = mol.GetSubstructMatches(sugar_pattern)
-    if not sugar_matches:
-        return False, "No appropriately hydroxylated sugar rings found"
+    # Look for sugar rings with more flexible patterns
+    # Includes pyranose, furanose, and modified sugars
+    sugar_patterns = [
+        # Basic pyranose/furanose ring
+        Chem.MolFromSmarts("[CR0,CR1]1[CR0,CR1][CR0,CR1][CR0,CR1][CR0,CR1][OR0,OR1]1"),
+        # Amino sugar pattern (like in lipid A)
+        Chem.MolFromSmarts("[CR0,CR1]1[CR0,CR1]([NH1,NH2])[CR0,CR1][CR0,CR1][CR0,CR1][OR0,OR1]1"),
+        # KDO-like pattern
+        Chem.MolFromSmarts("[CR0,CR1]1[CR0,CR1](C(=O))[CR0,CR1][CR0,CR1][CR0,CR1][OR0,OR1]1")
+    ]
+    
+    has_sugar = False
+    for pattern in sugar_patterns:
+        if pattern is not None and mol.HasSubstructMatch(pattern):
+            has_sugar = True
+            break
+            
+    if not has_sugar:
+        return False, "No sugar moieties found"
 
-    # Look for fatty acid chains
-    fatty_acid_pattern = Chem.MolFromSmarts("[CH2][CH2][CH2][CH2][CH2][CH2]")
+    # Look for fatty acid chains (more flexible pattern)
+    fatty_acid_pattern = Chem.MolFromSmarts("[CH2][CH2][CH2][CH2][CH2]")
     fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
-    
-    # Look for acylation (fatty acid attachment to sugar)
-    acyl_sugar_pattern = Chem.MolFromSmarts("[CR1]1[CR1][CR1][CR1][CR1][OR1]1-[CH2]-O-C(=O)-[CH2][CH2][CH2]")
-    direct_acylation = mol.HasSubstructMatch(acyl_sugar_pattern)
-    
-    if not (fatty_acid_matches and direct_acylation):
-        return False, "No direct fatty acid attachment to sugar found"
+    if not fatty_acid_matches:
+        return False, "No fatty acid chains found"
 
-    # Count hydroxyl groups on sugar rings
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H1]")
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
+    # Look for connections between sugars and fatty acids
+    # Various types of linkages
+    linkage_patterns = [
+        # Ester linkage to sugar
+        Chem.MolFromSmarts("[CR0,CR1]1[CR0,CR1][CR0,CR1][CR0,CR1][CR0,CR1][OR0,OR1]1-[CH2,CH1,CH0]-O-C(=O)-[CH2]"),
+        # Amide linkage (as in lipid A)
+        Chem.MolFromSmarts("[CR0,CR1]1[CR0,CR1]-[NH]-C(=O)-[CH2][CH2][CR0,CR1][CR0,CR1][OR0,OR1]1"),
+        # Direct attachment
+        Chem.MolFromSmarts("[CR0,CR1]1[CR0,CR1][CR0,CR1][CR0,CR1][CR0,CR1][OR0,OR1]1-[CH2]-[CH2][CH2][CH2]")
+    ]
     
-    # Look for characteristic linkages
-    ester_pattern = Chem.MolFromSmarts("[#6]-C(=O)-O-[#6]")
-    has_ester = mol.HasSubstructMatch(ester_pattern)
-    
-    if not has_ester:
-        return False, "No ester linkages found"
-        
-    # Optional: Check for phosphate groups (common in many saccharolipids)
+    has_lipid_sugar_connection = False
+    for pattern in linkage_patterns:
+        if pattern is not None and mol.HasSubstructMatch(pattern):
+            has_lipid_sugar_connection = True
+            break
+            
+    if not has_lipid_sugar_connection:
+        return False, "No connection between sugar and lipid moieties found"
+
+    # Additional characteristic features
     phosphate_pattern = Chem.MolFromSmarts("[P](=O)([O-,OH])([O-,OH])")
-    has_phosphate = mol.HasSubstructMatch(phosphate_pattern)
-    
-    # Count key elements
+    sulfate_pattern = Chem.MolFromSmarts("OS(=O)(=O)[O-,OH]")
+    has_phosphate = mol.HasSubstructMatch(phosphate_pattern) if phosphate_pattern else False
+    has_sulfate = mol.HasSubstructMatch(sulfate_pattern) if sulfate_pattern else False
+
+    # Count key elements for size check
     num_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     num_oxygens = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     
-    if num_oxygens < 4:
-        return False, "Insufficient oxygen atoms for saccharolipid"
+    if num_carbons < 12 or num_oxygens < 4:
+        return False, "Molecule too small to be a saccharolipid"
 
-    # Check for characteristic saccharolipid features
-    if len(sugar_matches) >= 1 and len(fatty_acid_matches) >= 1 and direct_acylation:
-        reason = f"Contains {len(sugar_matches)} sugar ring(s) with direct fatty acid attachment, "
-        reason += f"{len(hydroxyl_matches)} hydroxyl groups, "
-        if has_phosphate:
-            reason += "phosphate groups, "
-        reason += "and appropriate ester linkages"
-        return True, reason
-        
-    return False, "Does not meet structural requirements for saccharolipid classification"
+    # Build classification reason
+    reason = "Contains sugar moiety with "
+    if has_phosphate:
+        reason += "phosphate groups, "
+    if has_sulfate:
+        reason += "sulfate groups, "
+    reason += f"fatty acid chains ({len(fatty_acid_matches)} found), "
+    reason += "and direct sugar-lipid connections"
+
+    return True, reason
