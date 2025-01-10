@@ -27,13 +27,18 @@ def is_lipopeptide(smiles: str):
 
     # Identify peptide bonds (N-C(=O)-C)
     peptide_bond_pattern = Chem.MolFromSmarts("N[C](=O)[C,N]")
+    if peptide_bond_pattern is None:
+        return False, "Invalid peptide bond SMARTS pattern"
     peptide_bonds = mol.GetSubstructMatches(peptide_bond_pattern)
     if len(peptide_bonds) < 2:
         return False, "Not enough peptide bonds found (need at least 2)"
 
     # Identify long aliphatic chains (lipid moiety)
     # Define lipid as a chain of at least 8 consecutive non-ring carbons
-    aliphatic_chain_pattern = Chem.MolFromSmarts("[C;!R][C;!R]{7,}")
+    aliphatic_chain_pattern = Chem.MolFromSmarts("([C;!R]){8,}")
+    if aliphatic_chain_pattern is None:
+        return False, "Invalid aliphatic chain SMARTS pattern"
+
     chains = mol.GetSubstructMatches(aliphatic_chain_pattern)
     if len(chains) == 0:
         return False, "No long aliphatic chain (lipid moiety) found (need at least 8 carbons)"
@@ -50,13 +55,10 @@ def is_lipopeptide(smiles: str):
         for peptide_atom in peptide_atoms:
             for lipid_atom in chain_atoms:
                 # Check if there is a path between peptide atom and lipid atom
-                try:
-                    path = Chem.rdmolops.GetShortestPath(mol, peptide_atom, lipid_atom)
-                    if path:
-                        connected = True
-                        break
-                except RuntimeError:
-                    continue
+                path = Chem.rdmolops.GetShortestPath(mol, peptide_atom, lipid_atom)
+                if path:
+                    connected = True
+                    break
             if connected:
                 break
         if connected:
