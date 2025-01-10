@@ -25,19 +25,28 @@ def is_indole_alkaloid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define indole SMARTS pattern (matches indole and N-substituted indoles)
-    indole_smarts = 'c1nccc2ccccc12'  # Indole core structure, including N-substituted indoles
-    indole = Chem.MolFromSmarts(indole_smarts)
+    # Define SMARTS patterns for indole ring
+    # Indole with protonated nitrogen
+    indole_nh_smarts = 'c1c[nH]c2ccccc12'
+    # Indole with substituted nitrogen
+    indole_n_smarts = 'c1cnc2ccccc12'
 
-    # Check if molecule has indole substructure
-    if mol.HasSubstructMatch(indole):
+    # Create RDKit molecule objects for SMARTS patterns
+    indole_nh = Chem.MolFromSmarts(indole_nh_smarts)
+    indole_n = Chem.MolFromSmarts(indole_n_smarts)
+
+    # Check if molecule contains indole substructure
+    if mol.HasSubstructMatch(indole_nh) or mol.HasSubstructMatch(indole_n):
         return True, "Contains indole skeleton"
     else:
         return False, "No indole skeleton found"
 
-__metadata__ = {'chemical_class': { 'id': '',  # CHEBI ID can be added if known
-                             'name': 'indole alkaloid',
-                             'definition': 'An alkaloid containing an indole skeleton.',
-                             'parents': []},
+__metadata__ = {
+    'chemical_class': {
+        'id': '',  # CHEBI ID can be added if known
+        'name': 'indole alkaloid',
+        'definition': 'An alkaloid containing an indole skeleton.',
+        'parents': []
+    },
     # Additional metadata can be added here if needed
 }
