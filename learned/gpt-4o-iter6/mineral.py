@@ -6,11 +6,8 @@ from rdkit import Chem
 def is_mineral(smiles: str):
     """
     Determines if a molecule is likely a mineral based on its SMILES string.
-    A mineral is generally characterized by specific cation-anion structures usually involving metal elements.
-    
     Args:
         smiles (str): SMILES string of the molecule
-    
     Returns:
         bool: True if molecule is classified as a mineral, False otherwise
         str: Reason for classification
@@ -20,50 +17,32 @@ def is_mineral(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define a broader range of metal and metalloid elements found in minerals
-    known_metals = {
-        'Li', 'Be', 'Na', 'Mg', 'Al', 'K', 'Ca', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn',
-        'Rb', 'Sr', 'Y', 'Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 'Pd', 'Ag', 'Cd', 'Cs', 'Ba', 'La', 'Ce',
-        'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu', 'Hf', 'Ta',
-        'W', 'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg', 'Tl', 'Pb', 'Bi', 'Th', 'Pa', 'U'
-    }
+    # Define relevant metals and non-metals frequently found in minerals
+    elements = {'Na', 'K', 'Ca', 'Mg', 'Fe', 'Cu', 'Ba', 'Cs', 'La', 'Al', 'Si', 'Sb', 'Ni', 'Zn', 'P', 'Cl', 'F', 'O', 'S'}
+    element_count = sum(atom.GetSymbol() in elements for atom in mol.GetAtoms())
+
+    # If at least one major mineral element is found, proceed with checks
+    if element_count < 1:
+        return False, "No typical mineral components detected"
     
-    # Check if any metal is in the compound
-    metal_count = sum(atom.GetSymbol() in known_metals for atom in mol.GetAtoms())
-    if metal_count == 0:
-        return False, "No significant metal element typical of minerals detected"
-    
-    # Define complex mineral anion patterns
+    # Define anion patterns common in minerals
     anion_patterns = [
-        Chem.MolFromSmarts('[O-]'),  # Oxide
-        Chem.MolFromSmarts('P(=O)([O-])[O-]'),  # Phosphate
-        Chem.MolFromSmarts('S(=O)([O-])[O-]'),  # Sulfate
-        Chem.MolFromSmarts('[C](=O)([O-])'),  # Carbonate
-        Chem.MolFromSmarts('[F-]'),  # Fluoride
-        Chem.MolFromSmarts('[Cl-]'),  # Chloride
-        Chem.MolFromSmarts('B([O-])[O-]'),  # Borate
-        Chem.MolFromSmarts('Si(=[O-])(O[Si]([O-])=O)[O-]')  # Silicate
+        Chem.MolFromSmarts('[O-]'),  # Oxide pattern
+        Chem.MolFromSmarts('P(=O)([O-])[O-]'),  # Phosphate pattern
+        Chem.MolFromSmarts('S(=O)([O-])[O-]'),  # Sulfate pattern
+        Chem.MolFromSmarts('[C](=O)([O-])'),  # Carbonate pattern
+        Chem.MolFromSmarts('[F-]'),  # Fluoride pattern
+        Chem.MolFromSmarts('[Cl-]')  # Chloride pattern
     ]
     
     for pattern in anion_patterns:
-        if mol.HasSubstructMatch(pattern):
-            return True, "Contains characteristic anions and metal elements typical of minerals"
+        if mol.HasSubstructMatch(pattern) and element_count >= 1:
+            return True, "Contains characteristic anions and elements typical of minerals"
     
-    # Specific patterns for unique mineral identifications
-    specifics = [
-        Chem.MolFromSmarts('[Fe++].[S-][S-]'),  # Pyrite
-        Chem.MolFromSmarts('[S--].[Fe+3].[As-]'),  # Arsenopyrite
-        Chem.MolFromSmarts('[Ni]=S=[Ni]=S=[Ni]'),  # Heazlewoodite
-        Chem.MolFromSmarts('Cl[O-].[Ca+2].Cl[O-]'),  # Calcium hypochlorite
-        Chem.MolFromSmarts('O=[Si]([O-])O[Si](=O)[O-].[Al+3].[Al+3]')  # Kaolinite
-    ]
-    
-    for specific in specifics:
-        if mol.HasSubstructMatch(specific):
-            return True, "Contains crystalline structure typical of some minerals"
-    
-    # Check for common hydrate structures based on logic
-    if metal_count > 0:
-        return True, "Metal elements suggest potential mineral classification"
+    # Water molecule pattern for hydrates
+    water_pattern = Chem.MolFromSmarts('O')
+    water_matches = len(mol.GetSubstructMatches(water_pattern))
+    if water_matches >= 3:
+        return True, "Contains multiple water molecules characteristic of hydrated minerals"
     
     return False, "Does not meet typical mineral structure criteria"
