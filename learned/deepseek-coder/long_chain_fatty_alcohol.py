@@ -31,64 +31,54 @@ def is_long_chain_fatty_alcohol(smiles: str):
     if not hydroxyl_matches:
         return False, "No hydroxyl group found"
 
-    # Function to calculate the longest carbon chain including double/triple bonds
-    def get_longest_carbon_chain(mol):
-        chains = []
-        for atom in mol.GetAtoms():
-            if atom.GetAtomicNum() == 6:  # Carbon atom
-                visited = set()
-                stack = [(atom, 1)]  # (atom, chain_length)
-                while stack:
-                    current_atom, length = stack.pop()
-                    visited.add(current_atom.GetIdx())
-                    chains.append(length)
-                    for neighbor in current_atom.GetNeighbors():
-                        # Count any carbon connected by single, double, or triple bond
-                        if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:
-                            stack.append((neighbor, length + 1))
-        return max(chains) if chains else 0
+    # Find the longest carbon chain excluding functional groups
+    def get_main_chain_length(mol):
+        # Remove functional groups to focus on the carbon backbone
+        simplified_mol = Chem.RWMol(mol)
+        for atom in simplified_mol.GetAtoms():
+            if atom.GetAtomicNum() != 6:  # Remove non-carbon atoms
+                simplified_mol.RemoveAtom(atom.GetIdx())
+        # Find the longest path in the simplified molecule
+        return rdMolDescriptors.CalcLongestChain(simplified_mol)
 
-    # Calculate the longest carbon chain
-    longest_chain = get_longest_carbon_chain(mol)
-    if longest_chain < 13 or longest_chain > 22:
-        return False, f"Chain length is {longest_chain}, must be between 13 and 22"
+    main_chain_length = get_main_chain_length(mol)
+    if main_chain_length < 13 or main_chain_length > 22:
+        return False, f"Main chain length is {main_chain_length}, must be between 13 and 22"
 
-    # Check if any hydroxyl group is attached to a carbon chain of length 13-22
-    hydroxyl_attached_to_valid_chain = False
+    # Check if any hydroxyl is attached to the main chain
+    hydroxyl_on_main_chain = False
     for match in hydroxyl_matches:
         hydroxyl_atom = mol.GetAtomWithIdx(match[0])
         for neighbor in hydroxyl_atom.GetNeighbors():
-            if neighbor.GetAtomicNum() == 6:  # Carbon atom
-                # Check the chain length starting from this carbon
-                visited = set()
-                stack = [(neighbor, 1)]
-                while stack:
-                    current_atom, length = stack.pop()
-                    visited.add(current_atom.GetIdx())
-                    if length >= 13 and length <= 22:
-                        hydroxyl_attached_to_valid_chain = True
-                        break
-                    for next_neighbor in current_atom.GetNeighbors():
-                        if next_neighbor.GetAtomicNum() == 6 and next_neighbor.GetIdx() not in visited:
-                            stack.append((next_neighbor, length + 1))
-                if hydroxyl_attached_to_valid_chain:
+            if neighbor.GetAtomicNum() == 6:
+                # Check if this carbon is part of the main chain
+                if neighbor.GetDegree() >= 2:  # Main chain carbons typically have 2+ connections
+                    hydroxyl_on_main_chain = True
                     break
-        if hydroxyl_attached_to_valid_chain:
+        if hydroxyl_on_main_chain:
             break
 
-    if not hydroxyl_attached_to_valid_chain:
-        return False, "No hydroxyl group attached to a valid carbon chain"
+    if not hydroxyl_on_main_chain:
+        return False, "No hydroxyl group attached to the main carbon chain"
 
-    # Check for disallowed functional groups that would disqualify it as a fatty alcohol
+    # Allow some functional groups while still considering it a fatty alcohol
+    allowed_patterns = [
+        Chem.MolFromSmarts("[CX3]=[CX3]"),  # Double bonds
+        Chem.MolFromSmarts("[CX2]#[CX2]"),  # Triple bonds
+        Chem.MolFromSmarts("[OX2H]"),       # Hydroxyl groups
+    ]
+
+    # Check for truly disqualifying functional groups
     disallowed_patterns = [
         Chem.MolFromSmarts("[CX3](=O)[OX2H1]"),  # Carboxylic acid
         Chem.MolFromSmarts("[CX3](=O)[OX2H0]"),  # Ester
         Chem.MolFromSmarts("[NX3]"),             # Amines
         Chem.MolFromSmarts("[SX2]"),             # Sulfides
+        Chem.MolFromSmarts("[CX3](=O)[NX3]"),    # Amides
     ]
-    
+
     for pattern in disallowed_patterns:
         if mol.HasSubstructMatch(pattern):
             return False, "Contains disallowed functional groups"
 
-    return True, f"Contains a hydroxyl group attached to a carbon chain of length {longest_chain}"
+    return True, f"Contains a hydroxyl group attached to a carbon chain of length {main_chain_length}"
