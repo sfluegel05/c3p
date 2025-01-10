@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_bioconjugate(smiles: str):
     """
     Determines if a molecule is a bioconjugate based on its SMILES string.
-    A bioconjugate typically includes peptide-like structures connected via
-    sulfur, nitrogen, phosphorus linkages or other complex bio-relevant motifs.
+    Bioconjugates are characterized by the presence of peptide-like structures covalently bonded
+    to other chemical entities.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -17,33 +17,22 @@ def is_bioconjugate(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES string to a molecule object
+    # Parse SMILES string to molecule object
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # SMARTS pattern to identify peptide-like structures
-    peptide_like_patterns = [
-        Chem.MolFromSmarts("N[C@H](C)C(=O)N"),  # Common peptide bond
-        Chem.MolFromSmarts("N[C@H](C(=O))"),   # Peptide with specific stereo
-        Chem.MolFromSmarts("C(=O)N[C@H]")      # Reverse peptide bond
-    ]
-    
-    # SMARTS patterns for specific conjugation points found in bioconjugates
-    conjugation_point_patterns = [
-        Chem.MolFromSmarts("CSC"),  # Simple sulfur linkages
-        Chem.MolFromSmarts("CSN"),  # Sulfur-nitrogen
-        Chem.MolFromSmarts("SSC"),  # Disulfide linkage
-        Chem.MolFromSmarts("COPO"), # Phosphorylated
-        Chem.MolFromSmarts("C-P-O"),# Phosphate linkages
-    ]
-    
-    # Check for peptide-like structures
-    has_peptide = any(mol.HasSubstructMatch(pattern) for pattern in peptide_like_patterns)
-    if has_peptide:
-        # Check for conjugation points indicative of bioconjugates
-        for pattern in conjugation_point_patterns:
-            if mol.HasSubstructMatch(pattern):
-                return True, "Contains peptide-like structure with relevant conjugation point"
 
+    # Common patterns for amino acids such as Cysteine or Glutathione
+    amino_acid_pattern = Chem.MolFromSmarts("N[C@@H](C(=O)O)C")
+
+    # Check for amino acid-like structures 
+    if mol.HasSubstructMatch(amino_acid_pattern):
+        # Check for significant number of sulfur (S) or nitrogen (N) atoms that could indicate conjugation points
+        s_count = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'S')
+        n_count = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'N')
+        
+        # Set a threshold for counting sulfur and nitrogen atoms to infer potential conjugation
+        if s_count >= 2 or n_count >= 3:
+            return True, "Contains amino acid-like structure with potential conjugation points"
+    
     return False, "Does not match known bioconjugate structural features"
