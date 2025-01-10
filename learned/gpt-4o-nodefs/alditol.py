@@ -2,16 +2,15 @@
 Classifies: CHEBI:17522 alditol
 """
 from rdkit import Chem
-from rdkit.Chem import rdchem
 
 def is_alditol(smiles: str):
     """
     Determines if a molecule is an alditol based on its SMILES string.
     An alditol is a sugar alcohol with multiple hydroxyl groups and no carbonyl groups.
-    
+
     Args:
         smiles (str): SMILES string of the molecule
-        
+
     Returns:
         bool: True if molecule is an alditol, False otherwise
         str: Reason for classification
@@ -27,11 +26,11 @@ def is_alditol(smiles: str):
     if mol.HasSubstructMatch(carbonyl_pattern):
         return False, "Contains carbonyl group(s), not an alditol"
 
-    # Count hydroxyl groups (O connected to C and also to H) which should be plentiful in alditols
-    hydroxyl_pattern = Chem.MolFromSmarts("[C][O][H]")
+    # Count hydroxyl groups (O connected to any C and also to H) which should be plentiful in alditols
+    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
     hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    if len(hydroxyl_matches) < 1:
-        return False, "Not enough hydroxyl groups to be an alditol"
+    if len(hydroxyl_matches) < 3:
+        return False, f"Found {len(hydroxyl_matches)} hydroxyl groups, need at least 3 to be an alditol"
 
     # Ensure the molecule primarily consists of hydroxyl and carbon atoms (typical structure of alditols)
     for atom in mol.GetAtoms():
