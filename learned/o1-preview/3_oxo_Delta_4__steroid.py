@@ -5,7 +5,6 @@ Classifies: CHEBI:47909 3-oxo-Delta(4) steroid
 Classifies: 3-oxo-Delta(4) steroid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_3_oxo_Delta_4__steroid(smiles: str):
     """
@@ -27,23 +26,23 @@ def is_3_oxo_Delta_4__steroid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define steroid backbone pattern (cyclopentanoperhydrophenanthrene nucleus)
-    steroid_pattern = Chem.MolFromSmarts("""
-        [#6]1[#6][#6]2[#6]([#6]1)[#6][#6]3[#6]([#6]2)[#6][#6]4[#6]([#6]3)[#6][#6][#6]4
-    """)
+    steroid_pattern = Chem.MolFromSmarts('C1CCC2C(C1)CCC3C2CCC4C3CCCC4')
+    if steroid_pattern is None:
+        return False, "Error in steroid backbone SMARTS pattern"
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
 
     # Define pattern for ketone at position 3 in ring A
-    ketone_pattern = Chem.MolFromSmarts("""
-        [#6]1=CC(=O)[#6][#6][#6]1
-    """)
+    ketone_pattern = Chem.MolFromSmarts('C1=CC(=O)CC[C@H]1*')
+    if ketone_pattern is None:
+        return False, "Error in ketone SMARTS pattern"
     if not mol.HasSubstructMatch(ketone_pattern):
         return False, "No ketone group at position 3 in ring A found"
 
     # Define pattern for double bond between carbons 4 and 5 in ring A
-    double_bond_pattern = Chem.MolFromSmarts("""
-        [#6]1=CC(=O)[#6]=C[#6][#6]1
-    """)
+    double_bond_pattern = Chem.MolFromSmarts('C1=CC(=O)C=CC1')
+    if double_bond_pattern is None:
+        return False, "Error in double bond SMARTS pattern"
     if not mol.HasSubstructMatch(double_bond_pattern):
         return False, "No double bond between carbons 4 and 5 in ring A found"
 
