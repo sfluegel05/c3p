@@ -35,16 +35,13 @@ def is_leukotriene(smiles: str):
     if double_bonds != 4:
         return False, f"Expected 4 double bonds, found {double_bonds}"
 
-    # Check for conjugated system (at least 3 conjugated double bonds)
-    conjugated_system = False
+    # Check for at least 3 conjugated double bonds
+    conjugated_double_bonds = 0
     for bond in mol.GetBonds():
-        if bond.GetBondType() == Chem.BondType.DOUBLE:
-            # Check if the double bond is part of a conjugated system
-            if bond.GetBeginAtom().GetIsConjugated() and bond.GetEndAtom().GetIsConjugated():
-                conjugated_system = True
-                break
-    if not conjugated_system:
-        return False, "No conjugated system found"
+        if bond.GetBondType() == Chem.BondType.DOUBLE and bond.GetIsConjugated():
+            conjugated_double_bonds += 1
+    if conjugated_double_bonds < 3:
+        return False, f"Expected at least 3 conjugated double bonds, found {conjugated_double_bonds}"
 
     # Check for carboxylic acid group (-COOH)
     carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
