@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_wax_ester(smiles: str):
     """
     Determines if a molecule is a wax ester based on its SMILES string.
-    Wax esters are compounds with long-chain fatty acids and fatty alcohols 
-    connected through ester linkages.
+    Wax esters consist of long-chain fatty acids and fatty alcohols 
+    connected through ester linkages, typically featuring one significant ester linkage.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,23 +22,30 @@ def is_wax_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for ester group pattern (C(=O)O)
+    # Check for the presence of ester linkage (C(=O)O)
     ester_pattern = Chem.MolFromSmarts("[C](=[O])[O]")
     if not mol.HasSubstructMatch(ester_pattern):
         return False, "No ester linkage found"
 
-    # Check for long carbon chain
-    chain_length = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if chain_length < 20:  # Arbitrarily chosen based on examples
-        return False, f"Carbon chain too short, found {chain_length} carbons"
+    # Estimate the number of ester linkages
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    if len(ester_matches) != 1:
+        return False, f"Found {len(ester_matches)} ester linkages, exactly one main ester linkage expected"
 
-    # Check if molecule has unsaturated bonds (optional)
+    # Check for two long carbon chains on both sides of the ester group
+    def count_carbon_chains(side_mol):
+        return sum(1 for atom in side_mol.GetAtoms() if atom.GetAtomicNum() == 6)
+
+    carbon_count = count_carbon_chains(mol)
+    if carbon_count < 20:
+        return False, "Overall carbon chain count too short"
+
+    # Check if molecule has any unsaturated bonds and mark as a feature
     unsaturated_pattern = Chem.MolFromSmarts("[C]=[C]")
     unsaturated_matches = mol.GetSubstructMatches(unsaturated_pattern)
-    if not unsaturated_matches:
-        return False, "No unsaturated bonds found (not mandatory for wax esters but common in examples)"
+    unsaturated_info = "has unsaturated bonds" if unsaturated_matches else "all bonds saturated (common, not mandatory)"
 
-    return True, "Contains ester linkage and long carbon chains"
+    return True, f"Contains ester linkage with balanced long carbon chains; {unsaturated_info}"
 
-# Example usage
-print(is_wax_ester("O(CCCCCCCC/C=C\\CCCCCCCC)C(=O)CCCCCCC/C=C\\CCCCCC")) # Palmitoleyl linoleate
+# Example Usage
+print(is_wax_ester("O(CCCCCCCC/C=C\\CCCCCCCC)C(=O)CCCCCCC/C=C\\CCCCCC")) # Example SMILES from the task
