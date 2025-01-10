@@ -39,24 +39,18 @@ def is_tetrasaccharide(smiles: str):
     if len(monosaccharide_matches) < 4:
         return False, f"Found {len(monosaccharide_matches)} monosaccharide units, need at least 4 for a tetrasaccharide"
 
-    # Check for the presence of multiple hydroxyl groups (OH)
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    if len(hydroxyl_matches) < 6:
-        return False, f"Found {len(hydroxyl_matches)} hydroxyl groups, need at least 6 for a tetrasaccharide"
-
-    # Check molecular weight - tetrasaccharides typically have a molecular weight > 600 Da
+    # Check molecular weight - tetrasaccharides typically have a molecular weight > 500 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 600:
+    if mol_wt < 500:
         return False, "Molecular weight too low for a tetrasaccharide"
 
     # Count carbons and oxygens
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     
-    if c_count < 24:
+    if c_count < 20:
         return False, "Too few carbons for a tetrasaccharide"
-    if o_count < 12:
+    if o_count < 8:
         return False, "Too few oxygens for a tetrasaccharide"
 
     return True, "Contains four monosaccharide units linked by glycosidic bonds"
