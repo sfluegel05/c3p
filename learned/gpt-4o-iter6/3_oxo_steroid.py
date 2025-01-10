@@ -2,6 +2,7 @@
 Classifies: CHEBI:47788 3-oxo steroid
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_3_oxo_steroid(smiles: str):
     """
@@ -16,20 +17,19 @@ def is_3_oxo_steroid(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
+    # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more flexible steroid backbone pattern using four fused rings
-    steroid_pattern = Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2CCC4C3CCC4")
+    # Look for the steroid backbone structure (4-ring system typical of steroids)
+    steroid_pattern = Chem.MolFromSmarts("C1CCC2C(C1)CCC3C(=O)CCC4=C3C2CCC4")
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
     
-    # Define a pattern for detecting an oxo group at position 3
-    # The C=O group should be adjacent to the first ring in a typical steroid
-    oxy_pattern = Chem.MolFromSmarts("C1=O")
-    if not mol.HasSubstructMatch(oxy_pattern):
+    # Find and verify the presence of an oxo group (=O) at position 3
+    oxo_pattern = Chem.MolFromSmarts("C1=CC(=O)[C@@H]2CC[C@H]3C=C4C(=O)CCC4CCC3=C12")
+    if not mol.HasSubstructMatch(oxo_pattern):
         return False, "No 3-oxo group found on steroid skeleton"
 
     return True, "3-oxo group found at position 3 on steroid skeleton"
