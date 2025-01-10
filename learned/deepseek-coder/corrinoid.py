@@ -25,7 +25,7 @@ def is_corrinoid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define a more specific corrin macrocycle pattern
-    corrin_pattern = Chem.MolFromSmarts("[C]1~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]1")
+    corrin_pattern = Chem.MolFromSmarts("[Co]1234N5C6=C(C)C7=[N+]1C(=CC8=[N+]2C(=C(C)C9=[N+]3[C@@](C)([C@@]5([H])[C@H](CC(N)=O)[C@@]6(C)CCC(=O)NC[C@@H](C)OP([O-])(=O)O[C@H]3[C@@H](O)[C@H](O[C@@H]3CO)n3c[n+]4c4cc(C)c(C)cc34)[C@@](C)(CC(N)=O)[C@@H]9CCC(N)=O)[C@@](C)(CC(N)=O)[C@@H]8CCC(N)=O)C(C)(C)[C@@H]7CCC(N)=O")
     if not mol.HasSubstructMatch(corrin_pattern):
         return False, "No corrin macrocycle found"
 
