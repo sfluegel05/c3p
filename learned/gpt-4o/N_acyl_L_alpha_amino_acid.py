@@ -22,17 +22,19 @@ def is_N_acyl_L_alpha_amino_acid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for L-alpha-amino acid backbone
-    l_alpha_amino_acid_pattern = Chem.MolFromSmarts("[C@@H](N)([C,c])[C](=O)O")
+    # Pattern captures a C-alpha center bound to an amine and a carboxyl group, with a specific stereochemistry
+    l_alpha_amino_acid_pattern = Chem.MolFromSmarts("[C@H](N)(*)C(=O)O")
     if not mol.HasSubstructMatch(l_alpha_amino_acid_pattern):
-        return False, "No L-alpha-amino acid backbone found"
+        return False, "No L-alpha-amino acid backbone with correct stereochemistry found"
 
     # Check for N-acyl group
-    n_acyl_pattern = Chem.MolFromSmarts("N[C]=O")
+    # Flexible acyl pattern with nitrogen carrying the substituent
+    n_acyl_pattern = Chem.MolFromSmarts("N[C](=O)C")
     if not mol.HasSubstructMatch(n_acyl_pattern):
         return False, "No N-acyl group found attached to nitrogen"
 
     # If all patterns matched
-    return True, "Contains an L-alpha-amino acid backbone with an N-acyl substituent"
+    return True, "Contains a valid L-alpha-amino acid backbone with an N-acyl substituent"
 
 __metadata__ = {
     'chemical_class': {
