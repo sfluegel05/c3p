@@ -26,29 +26,46 @@ def is_octanoate_ester(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for ester group pattern
-    ester_pattern = Chem.MolFromSmarts("[#6][CX3](=[OX1])[OX2][#6]")
+    ester_pattern = Chem.MolFromSmarts("[CX4][CX3](=[OX1])[OX2][#6]")
     if not mol.HasSubstructMatch(ester_pattern):
         return False, "No ester group found"
     
-    # Pattern for octanoate group: linear 7-carbon chain attached to ester carbonyl
-    # Note: The SMARTS below looks for:
-    # - An ester group (-C(=O)O-)
-    # - Connected to exactly 6 more carbons in a linear chain
-    # - The last carbon must have 3 hydrogens (CH3)
-    octanoate_pattern = Chem.MolFromSmarts("[CH3][CH2][CH2][CH2][CH2][CH2][CH2]C(=O)[OX2]")
+    # More specific pattern for octanoate group:
+    # - Exactly 8 carbons in chain (7 + carbonyl carbon)
+    # - No branching allowed on the chain
+    # - Must end in ester group
+    octanoate_pattern = Chem.MolFromSmarts("[CH3X4][CH2X4][CH2X4][CH2X4][CH2X4][CH2X4][CH2X4][CX3](=[OX1])[OX2]")
     
     if not mol.HasSubstructMatch(octanoate_pattern):
-        return False, "No octanoate (8-carbon) chain found attached to ester group"
+        return False, "No linear octanoate chain found"
     
-    # Count matches to ensure we have at least one octanoate ester
     matches = mol.GetSubstructMatches(octanoate_pattern)
     
-    # Get the atoms involved in each match to verify the chain length
     for match in matches:
-        # The pattern above ensures we have the right structure
-        return True, "Contains octanoate ester group (8-carbon chain with terminal ester)"
+        # Check that none of the carbons in the chain are part of a ring
+        is_in_ring = False
+        for atom_idx in match[:-2]:  # Exclude the ester oxygen and carbonyl oxygen
+            if mol.GetAtomWithIdx(atom_idx).IsInRing():
+                is_in_ring = True
+                break
         
-    return False, "No valid octanoate ester found"
+        if is_in_ring:
+            continue
+            
+        # Check that the carbons in the chain don't have additional connections
+        has_extra_connections = False
+        for atom_idx in match[:-2]:  # Exclude the ester group
+            atom = mol.GetAtomWithIdx(atom_idx)
+            if atom.GetDegree() > 2 and atom_idx != 0:  # First carbon (CH3) can only have 1 connection
+                has_extra_connections = True
+                break
+                
+        if has_extra_connections:
+            continue
+            
+        return True, "Contains octanoate ester group (linear 8-carbon chain with terminal ester)"
+    
+    return False, "No valid octanoate ester group found"
 
 def test_examples():
     """Test function with some known examples"""
@@ -58,6 +75,7 @@ def test_examples():
         ("CCCCCCC(=O)OCC", False),  # ethyl heptanoate (too short)
         ("CCCCCCCCC(=O)OCC", False),# ethyl nonanoate (too long)
         ("CCCCCCCCOC", False),      # octyl ether (not an ester)
+        ("O(CCCCCCCC)C(=O)CCCCCCC", False),  # octyl octanoate (wrong orientation)
     ]
     
     for smiles, expected in test_cases:
