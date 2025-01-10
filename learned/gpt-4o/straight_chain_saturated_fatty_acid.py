@@ -2,7 +2,6 @@
 Classifies: CHEBI:39418 straight-chain saturated fatty acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdqueries
 
 def is_straight_chain_saturated_fatty_acid(smiles: str):
     """
@@ -23,31 +22,35 @@ def is_straight_chain_saturated_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for terminal carboxylic acid group (-C(=O)O at end)
-    # The presence at the terminal position in a linear setup
-    carboxylic_acid_terminal_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]") # A more specific pattern
-    if not mol.HasSubstructMatch(carboxylic_acid_terminal_pattern):
-        return False, "No terminal carboxylic acid group found"
+    # Define the terminal carboxylic acid group
+    carboxylic_acid_terminal_pattern = Chem.MolFromSmarts("C(=O)O")  # A potential improvement by being clear
+
+    # Check if exactly one carboxylic acid group is present and is terminal
+    terminal_cidx = None
+    idxs = mol.GetSubstructMatches(carboxylic_acid_terminal_pattern)
+    if len(idxs) == 1:
+        # Get the terminal carbon (attached to the carboxyl group)
+        terminal_cidx = idxs[0][0]  # Presume terminal group should be the last to close linearity
+    else:
+        return False, f"Expected 1 terminal carboxylic acid group, found: {len(idxs)}"
     
-    # Check for unsaturation (double/triple bonds) or branches
-    unsaturations = Chem.MolFromSmarts("[CX3]=[CX3]")  # unsaturated bonds in the chain
-    if mol.HasSubstructMatch(unsaturations):
-        return False, "Contains unsaturated (double/triple) bonds"
-
-    # Check for branches - all carbon atoms must be in a single line (acyclic unbranched carbon chain)
-    # We iterate and check carbon neighbors
-    found_carboxyl_end = False
+    # Check to ensure no branches or unsaturated bonds
     for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 6: # Carbon
-            # If carbon is connected to more than 2 other carbons, it indicates branching
+        if atom.GetAtomicNum() == 6:  # Carbon
+            # Saturation check: must not have double/triple bonds
+            for bond in atom.GetBonds():
+                if bond.GetBondType().name not in ["SINGLE"]:
+                    return False, "Contains unsaturated (non-single) bonds"
+            # Branching check: Carbon should only link to two neighbors aside for head/tail carbons
             carbon_neighbors = sum(1 for neighbor in atom.GetNeighbors() if neighbor.GetAtomicNum() == 6)
-            if carbon_neighbors > 2:
+            if atom.GetIdx() != terminal_cidx and carbon_neighbors > 2:
                 return False, "Contains branched carbon chain"
-        if atom.GetSymbol() in ["O"] and len(atom.GetNeighbors()) == 1 and atom.GetTotalNumHs() == 1:
-            # looking for carboxyl (OH) end connected to only one other atom implies terminal position
-            found_carboxyl_end = True
 
-    if not found_carboxyl_end:
-        return False, "Missing terminal carboxylic acid group"
+    # Verify no inappropriate functional groups
+    # Ensure only extra functional group allowed is OH when adjacent to the final CH
+    allowable_oxygen_subgroup = Chem.MolFromSmarts("[CH]O")  # OH group directly linked to terminal
+    if not all(atom.GetSymbol() == "C" or mol.HasSubstructMatch(allowable_oxygen_subgroup) for atom in mol.GetAtoms()):
+        return False, "Contains disallowed functional groups, beyond terminal COOH or possible OH"
 
+    # Count additional properties if necessary; e.g., carbon count confirming expected length
     return True, "Contains a linear, saturated carbon chain with a terminal carboxylic acid group"
