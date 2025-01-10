@@ -15,42 +15,45 @@ def is_polycyclic_arene(smiles: str):
         bool: True if molecule is a polycyclic arene, False otherwise
         str: Reason for classification
     """
-    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
+
     # Acquire ring information
     ri = mol.GetRingInfo()
     
-    # Extract all rings from the molecule, check if aromatic and of decent size
+    # Extract all rings from the molecule, verify aromaticity and sizes
     rings = ri.AtomRings()
-    aromatic_rings = [ring for ring in rings if all(mol.GetAtomWithIdx(atom).GetIsAromatic() for atom in ring)]
+    aromatic_rings = [ring for ring in rings if Chem.rdMolDescriptors.CalcNumAromaticRings(mol, ring) == len(ring)]
     
     # Check if there are at least two aromatic rings
     if len(aromatic_rings) < 2:
         return False, "Less than two aromatic rings found"
     
-    # Check for fused rings - aromatic rings sharing at least one bond or more
+    # Check for fused aromatic rings based on shared bonds
     is_fused = False
+    fused_rings = []  # store indices of fused rings
     for i, ring1 in enumerate(aromatic_rings):
-        for ring2 in aromatic_rings[i+1:]:
-            # Check for shared atoms indicating fusion
-            if set(ring1).intersection(set(ring2)):
+        for j, ring2 in enumerate(aromatic_rings[i+1:], i+1):
+            # Check for shared bonds (edges) not just atoms (nodes)
+            if ri.NumBondCrossroads(ring1, ring2) >= 1:
                 is_fused = True
-                break
+                fused_rings.append((ring1, ring2))
         if is_fused:
             break
     
     if not is_fused:
         return False, "Aromatic rings are not fused"
-
-    # Additional check: look for characteristic SMARTS patterns for polycyclic arenes
-    # Example SMARTS for a simple polycyclic arene pattern
-    polycyclic_smarts = Chem.MolFromSmarts("c1ccccc1c2ccccc2")  # A generic fused bicyclic aromatic ring
-    if mol.HasSubstructMatch(polycyclic_smarts):
-        return True, "Contains polycyclic arene SMARTS pattern"
+    
+    # Additional checks or comprehensive SMARTS patterns could refine the detection here
+    # Example: we can define more generalized polycyclic arene patterns
+    polycyclic_smarts_patterns = ["c1ccc2cccc3c(=O)ccc4ccccc24c13"]  # examples of polycyclic patterns
+    
+    for smarts in polycyclic_smarts_patterns:
+        pattern = Chem.MolFromSmarts(smarts)
+        if mol.HasSubstructMatch(pattern):
+            return True, "Matches known polycyclic arene pattern"
 
     # If none of the aromatic rings are detected with fusion or patterns
     return True, "Contains multiple fused aromatic rings characteristic of polycyclic arenes"
