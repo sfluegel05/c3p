@@ -2,6 +2,7 @@
 Classifies: CHEBI:46633 carbapenems
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_carbapenems(smiles: str):
     """
@@ -15,29 +16,18 @@ def is_carbapenems(smiles: str):
         str: Explanation of the reasoning for the classification.
     """
     
-    # Define the core carbapenem pattern:
-    # Bicyclic system with the beta-lactam ring
-    core_pattern = Chem.MolFromSmarts("C1C(C)C2C1N(C2=O)C(=O)C")  # Captures [3.2.0] with beta-lactam
-
-    # Additional patterns capturing variations in substitution that retain carbapenem identity
-    additional_patterns = [
-        Chem.MolFromSmarts("C(=O)O"),  # Carboxylic acid group
-        Chem.MolFromSmarts("[S]"),  # Presence of a sulfur atom, often in thioether form
-    ]
+    # Define the SMARTS pattern for the core carbapenem structure:
+    # It's a simplified assumption of a bicyclic structure with sulfur and beta-lactam
+    carbapenem_pattern = Chem.MolFromSmarts("C1CNC2=C1SC(=O)N2")
+    # Alternatively, if looking for specific positions and combinations, patterns may be adjusted
 
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return None, "Invalid SMILES string"
+        return False, "Invalid SMILES string"
     
-    # Check for the core carbapenem structure
-    if not mol.HasSubstructMatch(core_pattern):
+    # Check for the carbapenem pattern in the molecule
+    if mol.HasSubstructMatch(carbapenem_pattern):
+        return True, "Matches the carbapenem core structure"
+    else:
         return False, "Does not match the carbapenem core structure"
-
-    # Check for characteristic functional groups or atoms
-    for pattern in additional_patterns:
-        if not mol.HasSubstructMatch(pattern):
-            return False, "Missing common functional group"
-
-    # If the characteristic features are present, classify as carbapenem
-    return True, "Contains characteristic carbapenem core and functional groups"
