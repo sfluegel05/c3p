@@ -6,8 +6,7 @@ from rdkit import Chem
 def is_sterol(smiles: str):
     """
     Determines if a molecule is a sterol based on its SMILES string.
-    A sterol typically has a fused four-ring structure (cyclopentanoperhydrophenanthrene),
-    usually with a hydroxyl group at position 3 and a variable aliphatic side chain.
+    A sterol typically has a fused four-ring structure (cyclopentanoperhydrophenanthrene) with a hydroxyl group on the C3 position.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,11 +20,11 @@ def is_sterol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a core sterol structure using a more inclusive SMARTS pattern
-    sterol_pattern = Chem.MolFromSmarts("C1CCC2C3CCC4(C)C(C3C2C1)CC[C@H](O)C4")  # more representative sterol pattern
+    # Define the core sterol structure using a SMARTS pattern
+    sterol_pattern = Chem.MolFromSmarts("C1(C(C2CCC3C(C(C(C4=CC=C(C(C34)C2)C1)C)O)O)C)CCCC(C)C")
 
     # Check if the molecule contains the sterol pattern
     if mol.HasSubstructMatch(sterol_pattern):
-        return True, "Contains the characteristic sterol structure with four rings and a hydroxyl group"
+        return True, "Contains the characteristic four-ring structure of a sterol"
 
     return False, "Does not contain the characteristic sterol structure"
