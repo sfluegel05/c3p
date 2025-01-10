@@ -20,23 +20,20 @@ def is_1_acyl_sn_glycero_3_phosphoserine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Pattern matching for glycerophosphoserine backbone 
-    glycerophosphoserine_pattern = Chem.MolFromSmarts("[C@H](CO[P](=O)(O)OC[C@H](N)C(=O)O)O")    
+    # Pattern for glycerophosphoserine backbone
+    glycerophosphoserine_pattern = Chem.MolFromSmarts("[C@H](CO[P](=O)(O)OC[C@H](N)C(=O)O)O")
     if not mol.HasSubstructMatch(glycerophosphoserine_pattern):
         return False, "No glycerophosphoserine backbone found"
 
-    # Pattern matching for acyl group at 1-hydroxy position
-    acyl_group_pattern = Chem.MolFromSmarts("C(=O)C")
-    acyl_matches = mol.GetSubstructMatches(acyl_group_pattern)
-    
-    # Verify that there is an acyl group connected at the correct position
-    glycerol_with_acyl_pattern = Chem.MolFromSmarts("OCC(=O)C")
-    if not mol.HasSubstructMatch(glycerol_with_acyl_pattern):
-        return False, "Acyl group not found at 1-hydroxy position"
-    
+    # Pattern for acyl group at the 1-hydroxy position
+    # Ensure the acyl is connected to the oxygen atom at the primary hydroxy position
+    acyl_1_hydroxy_pattern = Chem.MolFromSmarts("O[C@@H](COP(O)(=O)O)C(=O)C")
+    if not mol.HasSubstructMatch(acyl_1_hydroxy_pattern):
+        return False, "Acyl group not correctly found at 1-hydroxy position"
+
     return True, "Contains 1-acyl-sn-glycero-3-phosphoserine structure"
 
-# Example usage, replace with actual SMILES strings
+# Example usage with SMILES strings
 smiles_example = "CCCCCCCCCCCCCCCCC(=O)OC[C@@H](O)COP(O)(=O)OC[C@H](N)C(O)=O"
 result, reason = is_1_acyl_sn_glycero_3_phosphoserine(smiles_example)
 print(result, reason)
