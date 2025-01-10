@@ -30,6 +30,18 @@ def is_tertiary_amine_oxide(smiles: str):
     
     # Check if the molecule matches the N-oxide pattern
     if mol.HasSubstructMatch(n_oxide_pattern):
+        # Additional check to ensure the nitrogen is not part of a more complex structure
+        # such as a nitro group or other nitrogen-oxygen functional groups
+        nitro_pattern = Chem.MolFromSmarts("[N+](=O)([O-])")
+        if mol.HasSubstructMatch(nitro_pattern):
+            return False, "Contains a nitro group, not a tertiary amine oxide"
+        
+        # Check if the nitrogen is part of a ring system
+        for match in mol.GetSubstructMatches(n_oxide_pattern):
+            nitrogen_atom = mol.GetAtomWithIdx(match[0])
+            if nitrogen_atom.IsInRing():
+                return False, "Nitrogen is part of a ring system, not a typical tertiary amine oxide"
+        
         return True, "Contains a nitrogen atom bonded to three organic groups and an oxygen atom (N-oxide)"
     else:
         return False, "Does not contain a nitrogen atom bonded to three organic groups and an oxygen atom (N-oxide)"
