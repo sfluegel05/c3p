@@ -39,52 +39,77 @@ def is_gas_molecular_entity(smiles: str):
         if symbol in noble_gases:
             return True, f"Noble gas ({symbol})"
         if symbol == 'C':
-            return True, "Carbon atom"
-            
-    # Check molecular weight - most gases are light
-    if mol_wt > 150:  # Most common gases are below this weight
-        # Special case for perfluorinated compounds which can be gases at higher weights
-        num_F = len(mol.GetSubstructMatches(Chem.MolFromSmarts('[F]')))
-        if num_F < 6:  # Allow higher weight only for heavily fluorinated compounds
-            return False, f"Molecular weight too high ({mol_wt:.1f} Da)"
-    
-    # Most gases have relatively few heavy atoms
-    if num_heavy_atoms > 8 and 'F' not in smiles:
-        return False, f"Too many heavy atoms ({num_heavy_atoms})"
-        
-    # Common gas patterns
-    gas_patterns = {
-        'diatomic': '[!C!H]~[!C!H]',  # For N2, O2, F2, Cl2, etc.
-        'carbon_oxide': '[C]=[O,N]',  # For CO, CO2
-        'small_alkane': '[CX4]~[CX4]',  # For CH4, C2H6, etc.
-        'small_alkene': '[CX3]=[CX3]',  # For C2H4, etc.
-        'small_alkyne': '[CX2]#[CX2]',  # For C2H2, etc.
-        'hydrogen_halide': '[F,Cl,Br,I][H]',  # For HF, HCl, HBr, HI
-        'ammonia': '[NX3]([H])([H])[H]',  # NH3
-        'ozone': '[O-][O+]=O'  # O3
-    }
-    
-    for name, pattern in gas_patterns.items():
-        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
-            return True, f"Matches {name} pattern"
-            
-    # Check for small hydrocarbons (up to C4)
-    if all(atom.GetSymbol() in ('C', 'H') for atom in mol.GetAtoms()):
-        if num_heavy_atoms <= 4:
-            return True, f"Small hydrocarbon with {num_heavy_atoms} carbons"
-            
-    # Check for simple molecules with few non-H atoms
-    if num_heavy_atoms <= 3:
-        return True, f"Simple molecule with {num_heavy_atoms} heavy atoms"
-        
-    # If we haven't returned True by now, it's probably not a gas
-    return False, "Does not match known gas patterns and is too complex"
+            return True, "Atomic carbon"
 
-__metadata__ = {
-    'chemical_class': {
-        'id': 'CHEBI:33262',
-        'name': 'gas molecular entity',
-        'definition': 'Any main group molecular entity that is gaseous at standard temperature and pressure (STP; 0degreeC and 100 kPa).',
-        'parents': []
+    # Most gases have very low molecular weight
+    if mol_wt > 100:  # Lowered from 150
+        # Special case for perfluorinated compounds
+        num_F = len(mol.GetSubstructMatches(Chem.MolFromSmarts('[F]')))
+        if num_F < 8:  # More strict fluorine requirement
+            return False, f"Molecular weight too high ({mol_wt:.1f} Da)"
+
+    # Exclude common functional groups that make molecules non-gaseous at STP
+    non_gas_patterns = [
+        '[OH]C(=O)[!$(*[OH,NH2])]',  # Carboxylic acids
+        '[OH]C([!$(C=O)])',  # Alcohols (except formaldehyde)
+        '[NH2][!$(C=O)][!$(C=O)]',  # Primary amines (except simple ones)
+        '[#6]~[#6]~[#6]~[#6]~[#6]',  # Long carbon chains
+        '[#6]1[#6][#6][#6][#6]1',  # Cyclopentane and larger rings
+    ]
+    
+    for pattern in non_gas_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            return False, "Contains functional groups typical of non-gases"
+
+    # Known gas patterns with specific constraints
+    gas_patterns = {
+        'diatomic': [
+            '[H][H]',  # H2
+            '[N]#[N]',  # N2
+            '[O][O]',  # O2
+            'FF',      # F2
+            'ClCl',    # Cl2
+            'II',      # I2
+        ],
+        'carbon_oxide': [
+            'O=C=O',   # CO2
+            '[C-]#[O+]',  # CO
+        ],
+        'small_alkane': [
+            '[CH4]',     # Methane
+            '[CH3][CH3]',  # Ethane
+            '[CH3][CH2][CH3]',  # Propane
+            '[CH3][CH2][CH2][CH3]',  # Butane
+        ],
+        'small_alkene': [
+            'C=C',  # Ethene
+            'CC=C',  # Propene
+            'C/C=C/C',  # But-2-ene
+        ],
+        'small_alkyne': [
+            'C#C',  # Ethyne
+            'CC#C',  # Propyne
+        ],
+        'simple_molecules': [
+            '[NH3]',  # Ammonia
+            'C1CO1',  # Oxirane
+            '[O-][O+]=O',  # Ozone
+        ],
+        'hydrogen_halides': [
+            'F[H]',  # HF
+            'Cl[H]',  # HCl
+            'Br[H]',  # HBr
+            'I[H]',   # HI
+        ]
     }
-}
+
+    for category, patterns in gas_patterns.items():
+        for pattern in patterns:
+            pattern_mol = Chem.MolFromSmarts(pattern)
+            if pattern_mol and mol.HasSubstructMatch(pattern_mol):
+                # Additional check for size
+                if num_heavy_atoms <= 5:
+                    return True, f"Known gas: matches {category} pattern"
+
+    # If we haven't returned True by now, it's probably not a gas
+    return False, "Does not match known gas patterns or has characteristics of non-gases"
