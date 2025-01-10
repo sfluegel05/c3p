@@ -6,14 +6,14 @@ from rdkit import Chem
 def is_sterol(smiles: str):
     """
     Determines if a molecule is a sterol based on its SMILES string.
-    A sterol is a 3-hydroxy steroid with a sterane skeleton closely related to cholestan-3-ol, 
-    possibly with additional carbons in side chains.
-    
+    A sterol is a 3-hydroxy steroid with a structure related to cholestan-3-ol.
+
     Args:
         smiles (str): SMILES string of the molecule
-        
+
     Returns:
-        tuple: (bool, str) indicating whether the molecule is a sterol and the reason for classification.
+        bool: True if molecule is a sterol, False otherwise
+        str: Reason for classification
     """
     
     # Parse the SMILES
@@ -21,21 +21,21 @@ def is_sterol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Updated SMARTS pattern for sterane skeleton (4-ring system with flexibility for side chains).
-    sterane_pattern = Chem.MolFromSmarts('C1CC2CC3CCC4C(C)C(O)CCC4(C)C3C2C1')
-    if not mol.HasSubstructMatch(sterane_pattern):
-        return False, "No sterane skeleton found"
+    # SMARTS pattern for steroid backbone (the rings ABCD)
+    steroid_pattern = Chem.MolFromSmarts('[#6]1[#6][#6][#6]2[#6][#6]3[#6][#6][#6]4[#6][#6][#6][#6]4[#6]3[#6][#6][#6]21')
+    if not mol.HasSubstructMatch(steroid_pattern):
+        return False, "No steroid backbone found"
+    
+    # SMARTS pattern for hydroxyl group on the A-ring
+    hydroxyl_pattern = Chem.MolFromSmarts('[#6][#6]([O])')  # Assumes hydroxyl group is attached to a carbon
+    if not mol.HasSubstructMatch(hydroxyl_pattern):
+        return False, "No 3-hydroxy group found"
 
-    # Check for hydroxyl group at an appropriate position
-    # Pattern to identify a hydroxyl group connected to a tertiary carbon in the sterane core
-    hydroxy_pattern = Chem.MolFromSmarts('[C;R0]([C;R2])[O]')
-    if not mol.HasSubstructMatch(hydroxy_pattern):
-        return False, "No suitable 3-hydroxy group found in cholesterol-like backbone"
+    # Check for potential side chains (not strict here, but checking continuity of side chain)
+    side_chain = any(atom.GetDegree() > 3 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if not side_chain:
+        return False, "No suitable side chain found"
 
-    # Ensure potential side chains or functional groups
-    # Flexibility for pattern that includes branching
-    isopropyl_pattern = Chem.MolFromSmarts('CC(C)C')
-    if mol.HasSubstructMatch(isopropyl_pattern) or Chem.MolFromSmarts('[CH3]') is not None:
-        return True, "Contains sterane skeleton with 3-hydroxy group and side chains"
+    return True, "Structure closely related to a sterol"
 
-    return False, "Does not match the sterol structural requirements even with hydroxyl group"
+# Examples given can be tested with this function to check the classification
