@@ -37,17 +37,7 @@ def is_B_vitamin(smiles: str):
         "[n]1c[nH]cn1", # Imidazole (alternative)
         "[n]1cc[nH]c1", # Pyridine (alternative)
         "[n]1cc[nH]cc1", # Pyrimidine (alternative)
-        "[n]1cc[nH]cn1", # Imidazole (alternative)
-        "[n]1c2ccccc2cc1", # Quinoxaline
-        "[n]1c2ccccc2nc1", # Quinoline
-        "[n]1c2ccccc2cn1", # Isoquinoline
-        "[n]1c2ccccc2n1", # Indole
-        "[n]1c2ccccc2c1", # Benzimidazole
-        "[n]1c2ccccc2c1", # Purine
-        "[n]1c2ccccc2c1", # Pteridine
-        "[n]1c2ccccc2c1", # Flavin
-        "[n]1c2ccccc2c1", # Thiazole
-        "[n]1c2ccccc2c1"  # Isoalloxazine
+        "[n]1cc[nH]cn1"  # Imidazole (alternative)
     ]
     has_heterocycle = any(mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)) for pattern in heterocycle_patterns)
     if not has_heterocycle:
@@ -65,16 +55,7 @@ def is_B_vitamin(smiles: str):
         "[NX3H2]",           # Primary amine
         "[NX3H1]",           # Secondary amine
         "[NX3H0]",           # Tertiary amine
-        "[CX3](=O)[OX2H0-]", # Ester
-        "[CX3](=O)[NX3H1]",  # Amide
-        "[CX3](=O)[NX3H0]",  # Amide
-        "[CX3](=O)[NX3H2]",  # Amide
-        "[CX3](=O)[NX3H0]",  # Amide
-        "[CX3](=O)[NX3H1]",  # Amide
-        "[CX3](=O)[NX3H2]",  # Amide
-        "[CX3](=O)[NX3H0]",  # Amide
-        "[CX3](=O)[NX3H1]",  # Amide
-        "[CX3](=O)[NX3H2]"   # Amide
+        "[CX3](=O)[OX2H0-]"  # Ester
     ]
     has_functional_group = any(mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)) for pattern in functional_group_patterns)
     if not has_functional_group:
@@ -82,7 +63,7 @@ def is_B_vitamin(smiles: str):
 
     # Check for water solubility (B vitamins are water-soluble)
     logP = rdMolDescriptors.CalcCrippenDescriptors(mol)[0]
-    if logP > 1.0:  # More strict threshold for water solubility
+    if logP > 1.5:  # Relaxed threshold for water solubility
         return False, "Molecule is likely not water-soluble"
 
     # Check molecular weight (B vitamins typically have MW < 1500 Da)
@@ -92,7 +73,7 @@ def is_B_vitamin(smiles: str):
 
     # Count polar atoms (B vitamins typically have many polar atoms)
     polar_atom_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() in [7, 8])
-    if polar_atom_count < 4:
+    if polar_atom_count < 3:
         return False, "Too few polar atoms for a B vitamin"
 
     return True, "Contains nitrogen-containing heterocycle, functional groups common in B vitamins, and is water-soluble"
