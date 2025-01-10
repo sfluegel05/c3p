@@ -5,6 +5,7 @@ Classifies: CHEBI:167164 mineral nutrient
 Classifies: CHEBI:27027 mineral nutrient
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_mineral_nutrient(smiles: str):
     """
@@ -37,7 +38,7 @@ def is_mineral_nutrient(smiles: str):
     allowed_anions = {
         # Inorganic
         'O', 'P', 'S', 'N', 'Cl', 'F', 'Si', 'I', 'Br',
-        # Organic (simple carboxylates)
+        # Organic (only carboxylates and carbonates)
         'C'
     }
     
@@ -49,19 +50,34 @@ def is_mineral_nutrient(smiles: str):
     # Check for organic components
     carbon_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
     if len(carbon_atoms) > 0:
-        # Allow carbon in carboxylates (COO-), carbonates (CO3), and simple organic anions
+        # Only allow carbon in specific patterns (carbonates, carboxylates)
         allowed_carbon_patterns = [
             Chem.MolFromSmarts("[CX3](=[OX1])([OX2])"),  # Carbonates, carboxylates
-            Chem.MolFromSmarts("[CX3]([OX2])"),          # Alcohols, ethers
-            Chem.MolFromSmarts("[CX4]")                  # Simple alkyl groups
+            Chem.MolFromSmarts("[CX3](=[OX1])([OX1])")   # Carbon dioxide-like
         ]
         
         # Check if all carbon atoms are in allowed patterns
-        for pattern in allowed_carbon_patterns:
-            if mol.HasSubstructMatch(pattern):
-                break
-        else:
-            return False, "Contains carbon atoms not in allowed patterns"
+        for carbon in carbon_atoms:
+            for pattern in allowed_carbon_patterns:
+                if mol.GetAtomWithIdx(carbon.GetIdx()).HasSubstructMatch(pattern):
+                    break
+            else:
+                return False, "Contains carbon atoms not in allowed patterns"
+
+    # Additional checks for complex organic structures
+    # Reject molecules with too many rotatable bonds or rings
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable > 2:
+        return False, "Too many rotatable bonds for mineral nutrient"
+    
+    n_rings = rdMolDescriptors.CalcNumRings(mol)
+    if n_rings > 1:
+        return False, "Too many rings for mineral nutrient"
+
+    # Check molecular weight - mineral nutrients are typically small molecules
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt > 500:
+        return False, "Molecular weight too high for mineral nutrient"
 
     # Check for ionic character (not strictly required for all cases)
     has_cation = any(atom.GetFormalCharge() > 0 for atom in mol.GetAtoms())
