@@ -13,7 +13,7 @@ def is_macromolecule(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a macromolecule, False otherwise
+        bool: True if the molecule is a macromolecule, False otherwise
         str: Reason for classification
     """
     
@@ -24,24 +24,24 @@ def is_macromolecule(smiles: str):
     
     # Calculate molecular weight
     mol_wt = Descriptors.MolWt(mol)
-    # Adjusting the threshold to consider larger macromolecules
-    if mol_wt < 2000:  # Increasing the threshold for molecular weight
+    # Setting a lower threshold for molecular weight
+    if mol_wt < 1000:  # Reduced threshold to catch lighter macromolecules
         return False, f"Molecular weight too low for macromolecule: {mol_wt} Da"
     
     # Check for repeating units with more complex patterns
-    # Using more representative structures for biological macromolecules like peptides or sugars
+    # Using representative structures for biological macromolecules like peptides or sugars
     repeat_patterns = [
         Chem.MolFromSmarts("C(=O)N"),  # Peptide bond
-        Chem.MolFromSmarts("C(=O)OC"),  # Ester linkage often found in polysaccharides
-        Chem.MolFromSmarts("CCO[C@H](O)[C@H](O)"),  # Example of sugar pattern
+        Chem.MolFromSmarts("C(=O)O"),  # Ester linkage
+        Chem.MolFromSmarts("C1(O)C(O)C(O)C(O)C1"),  # Simple sugar ring, like glucose
     ]
     
     for idx, pattern in enumerate(repeat_patterns):
         matches = mol.GetSubstructMatches(pattern)
-        if len(matches) > 10:  # Requiring more than 10 matches to indicate repetition
+        if len(matches) >= 5:  # Requiring at least 5 matches to indicate repetition
             return True, f"Contains repeating units: Found {len(matches)} of pattern {idx}"
     
     return False, "No repeated units detected"
 
-# Example usage:
-print(is_macromolecule("CC(=O)NCC(=O)NCC(=O)NCC(=O)NCC(=O)N"))
+# Example usage
+print(is_macromolecule("CC(=O)NCC(=O)NCC(=O)NCC(=O)O"))  # Example input
