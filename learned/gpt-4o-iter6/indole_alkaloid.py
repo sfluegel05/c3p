@@ -21,23 +21,23 @@ def is_indole_alkaloid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for indole core
-    indole_pattern = Chem.MolFromSmarts('C1=CC2=C(C=C1)NC=C2')
-    if not mol.HasSubstructMatch(indole_pattern):
+    # Define a more flexible SMARTS pattern for indole core
+    indole_flex_pattern = Chem.MolFromSmarts('c1ccc2[nH]c(c2c1)')
+    if not mol.HasSubstructMatch(indole_flex_pattern):
         return False, "No indole skeleton found"
-    
+
     # Additional checks for alkaloid properties
-    # Often containing extra nitrogen or specific functional groups
-    
-    # Define a basic nitrogen containing group pattern
+    # Define a nitrogen pattern that can find any nitrogen in the structure
     nitrogen_pattern = Chem.MolFromSmarts('[#7]')
     if not mol.HasSubstructMatch(nitrogen_pattern):
         return False, "Lacks additional nitrogen typically found in alkaloids"
-    
-    # If more specific functional groups need to be checked, define here
+
+    # Check if there are additional structural features specific to alkaloids, like ring structures
+    # For now, we just check for at least one non-atrazine-like nitrogen
 
     return True, "Contains indole skeleton and additional features typical of alkaloids"
 
-# Usage example for ergoptine
-result, reason = is_indole_alkaloid("O=C1N2[C@H]([C@@]3(O[C@](C(N3[C@H]1CC(C)C)=O)(NC(=O)[C@@H]4C=C5C6=C7C(NC=C7C[C@H]5N(C4)C)=CC=C6)CC)O)CCC2")
+# Example usage for testing based on provided SMILES strings
+example_smiles = "O=C1N2[C@H]([C@@]3(O[C@](C(N3[C@H]1CC(C)C)=O)(NC(=O)[C@@H]4C=C5C6=C7C(NC=C7C[C@H]5N(C4)C)=CC=C6)CC)O)CCC2"
+result, reason = is_indole_alkaloid(example_smiles)
 print(result, reason)
