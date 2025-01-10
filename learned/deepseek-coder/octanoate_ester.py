@@ -38,6 +38,7 @@ def is_octanoate_ester(smiles: str):
         ester_atom = mol.GetAtomWithIdx(match[0])  # Carbon in C=O
         if ester_atom.GetTotalDegree() != 3:  # Ensure it's part of an ester
             return False, "Not a valid ester group"
+        
         # Check the chain length
         chain_length = 0
         neighbor = ester_atom.GetNeighbors()[0]  # First neighbor is the chain
@@ -45,7 +46,12 @@ def is_octanoate_ester(smiles: str):
             chain_length += 1
             if chain_length > 7:  # 7 carbons + 1 in C=O = 8 carbons total
                 break
-            neighbor = neighbor.GetNeighbors()[0]  # Move to next carbon
+            # Move to next carbon, ensuring it's part of a linear chain
+            next_neighbors = [n for n in neighbor.GetNeighbors() if n.GetIdx() != ester_atom.GetIdx()]
+            if len(next_neighbors) != 1:
+                return False, "Chain is branched or not linear"
+            neighbor = next_neighbors[0]
+        
         if chain_length != 7:  # 7 carbons + 1 in C=O = 8 carbons total
             return False, "Chain length not consistent with octanoic acid"
 
