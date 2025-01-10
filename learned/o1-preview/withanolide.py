@@ -7,7 +7,6 @@ Classifies: withanolide
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
-from rdkit.Chem import Fragments
 
 def is_withanolide(smiles: str):
     """
@@ -28,51 +27,40 @@ def is_withanolide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check if molecule has a steroid nucleus using RDKit fragment function
-    if Fragments.fr_steroid(mol) == 0:
-        return False, "No steroid nucleus found"
+    # Define steroid nucleus SMARTS pattern (tetracyclic steroid backbone)
+    steroid_pattern = Chem.MolFromSmarts('C1CCC2C(C1)CCC3C2CCC4C3(CCCC4)C')
+    if steroid_pattern is None:
+        return False, "Invalid steroid SMARTS pattern"
     
-    # Define general lactone pattern (any cyclic ester)
-    lactone_pattern = Chem.MolFromSmarts("*1CCOC(=O)C1")  # 5-membered lactone
-    lactone_pattern6 = Chem.MolFromSmarts("*1CCCCOC(=O)C1")  # 7-membered lactone
-    ester_in_ring = False
-    ri = mol.GetRingInfo()
-    for ring_atoms in ri.AtomRings():
-        ring = Chem.PathToSubmol(mol, ring_atoms)
-        # Check if ring contains an ester group
-        if ring.HasSubstructMatch(Chem.MolFromSmarts("C(=O)O[C;R]")):
-            ester_in_ring = True
-            break
-    if not ester_in_ring:
+    # Check for steroid nucleus
+    if not mol.HasSubstructMatch(steroid_pattern):
+        return False, "No steroid nucleus found"
+        
+    # Define lactone ring SMARTS pattern (cyclic ester)
+    lactone_pattern = Chem.MolFromSmarts('C1OC(=O)[C;R]1')  # 5-membered lactone
+    if lactone_pattern is None:
+        return False, "Invalid lactone SMARTS pattern"
+    
+    # Find lactone rings
+    lactone_matches = mol.GetSubstructMatches(lactone_pattern)
+    if not lactone_matches:
         return False, "No lactone ring found"
     
-    # Check connection between steroid nucleus and lactone ring
     # Get the steroid nucleus atoms
-    steroid_pattern = Chem.MolFromSmarts('C1CCC2C(C1)CCC3C2CCC4C3(CCCC4)C')  # Steroid nucleus
     steroid_match = mol.GetSubstructMatch(steroid_pattern)
-    if not steroid_match:
-        return False, "No steroid nucleus found"
     steroid_atoms = set(steroid_match)
     
-    # Find ester bonds in rings
-    ester_bond = Chem.MolFromSmarts('C(=O)O[C;R]')
-    ester_bonds = mol.GetSubstructMatches(ester_bond)
-    lactone_in_side_chain = False
-    for bond_match in ester_bonds:
-        bond_atoms = set(bond_match)
-        # Check if ester bond is in a ring
-        atom1 = mol.GetAtomWithIdx(bond_match[0])
-        atom2 = mol.GetAtomWithIdx(bond_match[1])
-        if ri.IsAtomInRingOfSize(atom1.GetIdx(), 5) or ri.IsAtomInRingOfSize(atom1.GetIdx(), 6) or \
-           ri.IsAtomInRingOfSize(atom1.GetIdx(), 7):
-            # Check if ester is connected to steroid nucleus via side chain
-            if not bond_atoms.issubset(steroid_atoms):
-                lactone_in_side_chain = True
-                break
-    if not lactone_in_side_chain:
-        return False, "Lactone ring is not in the side chain"
+    # Check if any lactone ring is in the side chain (not part of steroid nucleus)
+    side_chain_lactone = False
+    for lactone_ring in lactone_matches:
+        lactone_atoms = set(lactone_ring)
+        if not lactone_atoms.issubset(steroid_atoms):
+            side_chain_lactone = True
+            break
+    if not side_chain_lactone:
+        return False, "Lactone ring is not in side chain"
     
-    # Optional: check carbon count, allow some flexibility
+    # Optional: check approximate carbon count (allowing some flexibility)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if c_count < 26:
         return False, f"Too few carbons for a withanolide (found {c_count} carbons)"
