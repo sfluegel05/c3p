@@ -22,9 +22,10 @@ def is_azole(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for azole ring: five-membered ring with at least one nitrogen and may include O or S
-    azole_pattern = Chem.MolFromSmarts("[n]-1[c,o,s,n]-[c,o,s,n]-[c,o,s,n]-[c,o,s,n]-1")
-    
+    # SMARTS pattern for azole ring: five-membered aromatic ring with at least one nitrogen atom
+    # Additional non-carbon atoms allowed are O or S
+    azole_pattern = Chem.MolFromSmarts("n1[c,o,s,n;R]c[c,o,s,n;R]c1")
+
     # Check if the molecule has a substructure match with the azole pattern
     if mol.HasSubstructMatch(azole_pattern):
         return True, "Contains a five-membered heteroarene ring with nitrogen"
