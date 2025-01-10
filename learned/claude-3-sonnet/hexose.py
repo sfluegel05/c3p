@@ -6,7 +6,7 @@ Classifies: CHEBI:24895 hexose
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem.AllChem import ReactionFromSmarts
 
 def is_hexose(smiles: str):
     """
@@ -27,54 +27,61 @@ def is_hexose(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Count carbons
-    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if carbon_count != 6:
-        return False, f"Must have exactly 6 carbons, found {carbon_count}"
+    # Define hexose core patterns
+    # Pyranose patterns (both alpha and beta)
+    pyranose_patterns = [
+        "[C]-1-[C]-[C]-[C]-[C](-[O]-1)(-[OH])-[CH2][OH]",  # Basic pyranose
+        "[C]-1-[C]-[C]-[C]-[C](-[O]-1)-[CH2][OH]",         # Alternative form
+        "[C]-1-[C]-[C]-[C]-[C](-[O]-1)-[CH2]-[O]"          # Modified form
+    ]
+    
+    # Furanose patterns
+    furanose_patterns = [
+        "[C]-1-[C]-[C]-[C](-[O]-1)-[C](-[OH])-[CH2][OH]",  # Basic furanose
+        "[C]-1-[C]-[C]-[C](-[O]-1)-[C]-[CH2][OH]",         # Alternative form
+        "[C]-1-[C]-[C]-[C](-[O]-1)-[C]-[CH2]-[O]"          # Modified form
+    ]
+    
+    # Open chain patterns (aldehexoses and ketohexoses)
+    open_chain_patterns = [
+        "[CH](=O)-[C]-[C]-[C]-[C]-[CH2][OH]",              # Aldehexose
+        "[C](=O)-[C]-[C]-[C]-[C]-[CH2][OH]",               # Ketohexose
+        "[CH](=O)-[C]-[C]-[C]-[C]-[CH2]-[O]"               # Modified form
+    ]
 
-    # Count oxygens (hexoses typically have 6 oxygens in cyclic form, 5 in linear form)
-    oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if oxygen_count < 5 or oxygen_count > 6:
-        return False, f"Expected 5-6 oxygens, found {oxygen_count}"
+    # Check for hexose core structure
+    found_core = False
+    for pattern in pyranose_patterns + furanose_patterns + open_chain_patterns:
+        patt = Chem.MolFromSmarts(pattern)
+        if mol.HasSubstructMatch(patt):
+            found_core = True
+            break
+    
+    if not found_core:
+        return False, "No hexose core structure found"
 
-    # Check for hydroxyl groups (at least 4 needed)
+    # Count carbons in the core structure (should be 6)
+    core_carbons = len(mol.GetSubstructMatch(patt))
+    if core_carbons < 6:
+        return False, f"Core structure contains fewer than 6 carbons ({core_carbons})"
+
+    # Check for characteristic hydroxyl pattern
     hydroxyl_pattern = Chem.MolFromSmarts("[OX2H1]")
     if mol.HasSubstructMatch(hydroxyl_pattern):
         hydroxyl_count = len(mol.GetSubstructMatches(hydroxyl_pattern))
-        if hydroxyl_count < 4:
-            return False, f"Too few hydroxyl groups ({hydroxyl_count}), minimum 4 required"
-    else:
-        return False, "No hydroxyl groups found"
-
-    # Check for common sugar ring patterns (furanose or pyranose)
-    furanose_pattern = Chem.MolFromSmarts("[C]1[C][C][C](O1)")
-    pyranose_pattern = Chem.MolFromSmarts("[C]1[C][C][C][C](O1)")
+        if hydroxyl_count < 2:  # Allow for modified hexoses
+            return False, f"Too few hydroxyl groups ({hydroxyl_count})"
     
-    # Check for aldehyde or ketone group
-    aldehyde_pattern = Chem.MolFromSmarts("[CH1](=O)")
-    ketone_pattern = Chem.MolFromSmarts("[CX3](=O)")
-    
-    has_ring = mol.HasSubstructMatch(furanose_pattern) or mol.HasSubstructMatch(pyranose_pattern)
-    has_carbonyl = mol.HasSubstructMatch(aldehyde_pattern) or mol.HasSubstructMatch(ketone_pattern)
-    
-    if not (has_ring or has_carbonyl):
-        return False, "No sugar ring or carbonyl group found"
-
-    # Check it's not a polysaccharide by looking for glycosidic bonds
+    # Check it's not a disaccharide or larger
     glycosidic_pattern = Chem.MolFromSmarts("[OX2]([CH1][OX2])[CH1]")
     if mol.HasSubstructMatch(glycosidic_pattern):
-        glycosidic_count = len(mol.GetSubstructMatches(glycosidic_pattern))
-        if glycosidic_count > 1:
+        glycosidic_matches = mol.GetSubstructMatches(glycosidic_pattern)
+        if len(glycosidic_matches) > 1:
             return False, "Appears to be a polysaccharide"
 
-    # Additional check for ester groups (would indicate a modified sugar)
-    ester_pattern = Chem.MolFromSmarts("[#6][CX3](=O)[OX2][#6]")
-    if mol.HasSubstructMatch(ester_pattern):
-        return False, "Contains ester group(s) - modified sugar"
+    # Additional check for characteristic carbon chain
+    chain_pattern = Chem.MolFromSmarts("[C]-[C]-[C]-[C]-[C]-[C]")
+    if not mol.HasSubstructMatch(chain_pattern):
+        return False, "Missing characteristic six-carbon chain"
 
-    # Calculate ring count
-    ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() > 1:
-        return False, "Contains multiple rings"
-
-    return True, "Matches hexose pattern with correct number of carbons and hydroxyls"
+    return True, "Contains hexose core structure with appropriate substitution pattern"
