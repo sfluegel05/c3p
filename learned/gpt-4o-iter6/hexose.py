@@ -27,20 +27,21 @@ def is_hexose(smiles: str):
     c_count = len(mol.GetSubstructMatches(carbon_pattern))
     if c_count != 6:
         return False, f"Incorrect number of carbons for hexose: found {c_count}, expected exactly 6"
-    
-    # Aldohexose pattern: check for aldehyde group (R-CHO)
-    aldohexose_pattern = Chem.MolFromSmarts("[CX3H1](=O)[C]")
+
+    # Aldohexose pattern: check for aldehyde group at position 1
+    aldohexose_pattern = Chem.MolFromSmarts("[#6X3H1](=O)[#6]")
     if mol.HasSubstructMatch(aldohexose_pattern):
         return True, "Contains aldehyde group indicating aldohexose"
     
-    # Ketohexose pattern: check for ketone group (R-CO-R)
-    ketohexose_pattern = Chem.MolFromSmarts("[CX3](=O)[CX4]")
+    # Ketohexose pattern: check for ketone group at position 2
+    ketohexose_pattern = Chem.MolFromSmarts("[#6][#6X3](=O)[#6]")
     if mol.HasSubstructMatch(ketohexose_pattern):
         return True, "Contains ketone group indicating ketohexose"
 
-    # Cyclic furanose (5-membered) and pyranose (6-membered) patterns
-    pyranose_pattern = Chem.MolFromSmarts("C1OC(CO)C(O)C(O)C1")
-    furanose_pattern = Chem.MolFromSmarts("C1OC(O)C(O)C1")
+    # Cyclic pyranose (6-membered) pattern with stereochemistry
+    pyranose_pattern = Chem.MolFromSmarts("C1[C@H](O)[C@@H](O)C(O)[C@H](O)O1")
+    # Cyclic furanose (5-membered) pattern with stereochemistry
+    furanose_pattern = Chem.MolFromSmarts("C1[C@H](O)[C@@H](O)C(O)O1")
     
     if mol.HasSubstructMatch(pyranose_pattern) or mol.HasSubstructMatch(furanose_pattern):
         return True, "Contains cyclic form indicating hexose"
