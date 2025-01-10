@@ -25,17 +25,21 @@ def is_ribonucleoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the D-ribose sugar pattern with correct stereochemistry
-    ribose_pattern = Chem.MolFromSmarts("[C@@H]1O[C@H](CO)[C@@H](O)[C@H]1O")
+    # Define the D-ribose sugar pattern with optional stereochemistry
+    ribose_pattern = Chem.MolFromSmarts("[C@H]1O[C@H](CO)[C@H](O)[C@H]1O")
     if not mol.HasSubstructMatch(ribose_pattern):
         return False, "No D-ribose sugar component found"
 
-    # Define common nucleobase patterns (adenine, guanine, cytosine, uracil, and their derivatives)
+    # Define common nucleobase patterns (including modified bases)
     nucleobase_patterns = [
         Chem.MolFromSmarts("[nH]1cnc2c1nc[nH]2"),  # Adenine
         Chem.MolFromSmarts("[nH]1c(=O)[nH]c2c1nc[nH]2"),  # Guanine
         Chem.MolFromSmarts("[nH]1ccc(N)nc1=O"),  # Cytosine
         Chem.MolFromSmarts("[nH]1ccc(=O)[nH]c1=O"),  # Uracil
+        Chem.MolFromSmarts("[nH]1cnc2c1nc[nH]2[*]"),  # Modified Adenine
+        Chem.MolFromSmarts("[nH]1c(=O)[nH]c2c1nc[nH]2[*]"),  # Modified Guanine
+        Chem.MolFromSmarts("[nH]1ccc(N)nc1=O[*]"),  # Modified Cytosine
+        Chem.MolFromSmarts("[nH]1ccc(=O)[nH]c1=O[*]"),  # Modified Uracil
     ]
 
     # Check if any nucleobase pattern matches
@@ -45,7 +49,7 @@ def is_ribonucleoside(smiles: str):
 
     # Ensure the nucleobase is attached to the ribose sugar
     # The attachment point is typically the 1' position of the ribose
-    attachment_pattern = Chem.MolFromSmarts("[C@@H]1O[C@H](CO)[C@@H](O)[C@H]1O[*]")
+    attachment_pattern = Chem.MolFromSmarts("[C@H]1O[C@H](CO)[C@H](O)[C@H]1O[*]")
     if not mol.HasSubstructMatch(attachment_pattern):
         return False, "Nucleobase not attached to the ribose sugar"
 
