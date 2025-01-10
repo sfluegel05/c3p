@@ -29,26 +29,23 @@ def is_tripeptide(smiles: str):
     # Look for peptide bonds (amide linkages)
     peptide_bond_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[NX3][CX4]")
     peptide_bond_matches = mol.GetSubstructMatches(peptide_bond_pattern)
-    if len(peptide_bond_matches) != 2:
-        return False, f"Found {len(peptide_bond_matches)} peptide bonds, need exactly 2"
-
-    # Check for N-terminal (NH2 or H)
-    n_terminal_pattern = Chem.MolFromSmarts("[NX3;H2,H1]")
-    if not mol.HasSubstructMatch(n_terminal_pattern):
-        return False, "No N-terminal group found"
-
-    # Check for C-terminal (COOH or O)
-    c_terminal_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H1]")
-    if not mol.HasSubstructMatch(c_terminal_pattern):
-        return False, "No C-terminal group found"
+    if len(peptide_bond_matches) < 2:
+        return False, f"Found {len(peptide_bond_matches)} peptide bonds, need at least 2"
 
     # Count amino acid residues (alpha carbons with NH and CO groups)
-    alpha_carbon_pattern = Chem.MolFromSmarts("[CX4H]([NX3H1,CX3](=O))[CX4H1]")
+    # More flexible pattern to account for different side chains
+    alpha_carbon_pattern = Chem.MolFromSmarts("[CX4H]([NX3H0-2])[CX3](=O)")
     alpha_carbon_matches = mol.GetSubstructMatches(alpha_carbon_pattern)
     if len(alpha_carbon_matches) != 3:
         return False, f"Found {len(alpha_carbon_matches)} amino acid residues, need exactly 3"
 
-    return True, "Contains three amino acid residues connected by two peptide bonds"
+    # Check for linear chain of three residues
+    # Look for pattern: N-term - [AA] - [AA] - [AA] - C-term
+    tripeptide_pattern = Chem.MolFromSmarts("[NX3H0-2][CX4H]([R])[CX3](=O)[NX3H0][CX4H]([R])[CX3](=O)[NX3H0][CX4H]([R])[CX3](=O)[OX2H0-1]")
+    if not mol.HasSubstructMatch(tripeptide_pattern):
+        return False, "Does not have a linear chain of three amino acid residues"
+
+    return True, "Contains three amino acid residues connected by peptide bonds in a linear chain"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:48030',
