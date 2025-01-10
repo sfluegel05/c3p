@@ -26,12 +26,9 @@ def is_chalcones(smiles: str):
 
     # Define the core chalcone pattern: Ar-CH=CH-C(=O)-Ar
     # This pattern allows for substitutions and heteroatoms on the aromatic rings
-    chalcone_pattern = Chem.MolFromSmarts("[c;H0,H1]1[c;H0,H1][c;H0,H1][c;H0,H1][c;H0,H1]1-[CH]=[CH]-[C](=O)-[c;H0,H1]2[c;H0,H1][c;H0,H1][c;H0,H1][c;H0,H1]2")
+    chalcone_pattern = Chem.MolFromSmarts("[*]1[*][*][*][*]1-[CH]=[CH]-[C](=O)-[*]2[*][*][*][*]2")
     if not mol.HasSubstructMatch(chalcone_pattern):
-        # Try a more flexible pattern that allows for heteroatoms and substitutions
-        chalcone_pattern = Chem.MolFromSmarts("[*;H0,H1]1[*;H0,H1][*;H0,H1][*;H0,H1][*;H0,H1]1-[CH]=[CH]-[C](=O)-[*;H0,H1]2[*;H0,H1][*;H0,H1][*;H0,H1][*;H0,H1]2")
-        if not mol.HasSubstructMatch(chalcone_pattern):
-            return False, "Core chalcone structure (Ar-CH=CH-C(=O)-Ar) not found"
+        return False, "Core chalcone structure (Ar-CH=CH-C(=O)-Ar) not found"
 
     # Ensure that the aromatic rings are properly connected to the propenone structure
     matches = mol.GetSubstructMatches(chalcone_pattern)
