@@ -6,40 +6,44 @@ from rdkit import Chem
 def is_mononitrophenol(smiles: str):
     """
     Determines if a molecule is a mononitrophenol based on its SMILES string.
-    A mononitrophenol is a phenolic compound with an aromatic ring carrying a single nitro group.
+    A mononitrophenol is defined as a nitrophenol where the phenol carries a
+    single nitro substituent at an unspecified position.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if the molecule is a mononitrophenol, False otherwise
-        tuple: Reason for classification or error
+        bool: True if molecule is a mononitrophenol, False otherwise
+        tuple: Reason for classification or potential compound details
     """
     
-    # Parse the SMILES string
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return None, "Invalid SMILES string"
+        return False, "Invalid SMILES string"
     
-    # SMARTS pattern to detect a phenol ring (aromatic ring with OH group)
-    phenol_pattern = Chem.MolFromSmarts("c1ccc(O)cc1")
+    # Define phenol pattern (benzene ring with -OH group)
+    phenol_pattern = Chem.MolFromSmarts("c1ccccc1O")
+    # Define nitro group pattern
+    nitro_pattern = Chem.MolFromSmarts("[$(a-[N+](=O)[O-])]")
     
-    # SMARTS pattern for a nitro group attached to an aromatic carbon
-    nitro_pattern = Chem.MolFromSmarts("c[N+](=O)[O-]")
+    # Check if phenol structure is present
+    phenol_matches = mol.GetSubstructMatches(phenol_pattern)
+    if len(phenol_matches) == 0:
+        return False, "No phenol group found"
     
-    # Check if the molecule contains a phenol pattern
-    if not mol.HasSubstructMatch(phenol_pattern):
-        return False, "No phenolic structure found"
-    
-    # Find all nitro groups
+    # Check for nitro group
     nitro_matches = mol.GetSubstructMatches(nitro_pattern)
-    if len(nitro_matches) == 0:
-        return False, "No nitro group found"
+    if len(nitro_matches) != 1:
+        return False, f"Found {len(nitro_matches)} nitro groups, need exactly 1"
     
-    # Verify only one nitro group and directly linked to a phenol ring
-    for match in nitro_matches:
-        connected_aromatic = any([atom.GetSymbol() == 'O' and atom.IsInRing() for atom in mol.GetBondBetweenAtoms(match[0], match[1]).GetAtoms()])
-        if connected_aromatic:
-            return True, "Valid mononitrophenol with appropriately attached nitro group"
+    # Verify nitro is directly bonded to the aromatic carbon of phenol
+    for match in phenol_matches:
+        benzene_atoms = set(match[:-1])  # exclude the OH
+        for bond in mol.GetBonds():
+            begin_idx = bond.GetBeginAtomIdx()
+            end_idx = bond.GetEndAtomIdx()
+            if ({begin_idx, end_idx} & benzene_atoms) and (begin_idx in nitro_matches[0] or end_idx in nitro_matches[0]):
+                return True, "Molecule is a mononitrophenol with a nitro group attached to the phenol ring"
     
-    return False, "The molecule has improper nitro linkage or multiple nitro groups"
+    return False, "Nitro group is not attached to the aromatic ring of phenol"
