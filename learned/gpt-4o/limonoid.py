@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_limonoid(smiles: str):
     """
     Determines if a molecule is a limonoid based on its SMILES string.
-    A limonoid is a highly oxygenated triterpenoid containing a trimethyl-17-furanylsteroid skeleton.
+    A limonoid is a highly oxygenated triterpenoid containing a trimethyl and flexible 17-furanyl or its derivatives.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,32 +21,28 @@ def is_limonoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for triterpenoid skeleton: 30 carbons
+    # Check for general triterpenoid skeleton (around 30 carbons, allowance due to variations)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count != 30:
-        return False, f"Incorrect number of carbon atoms for a triterpenoid: {c_count}"
-
-    # Check for presence of furanyl group
-    furanyl_pattern = Chem.MolFromSmarts("c1ccoc1")
-    if not mol.HasSubstructMatch(furanyl_pattern):
-        return False, "No furanyl group found"
+    if c_count < 27 or c_count > 35:  # Provide allowance for derivatizations
+        return False, f"Number of carbon atoms {c_count} not expected for a triterpenoid"
 
     # Check for high oxygen content (limonoids are highly oxygenated)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count < 5:
-        return False, f"Oxygen count too low for limonoid: {o_count}"
+    if o_count < 4:
+        return False, f"Low oxygen count for highly oxygenated limonoid: {o_count}"
 
-    # Additional check for characteristic functionalities
-    # Check for lactone group
+    # Flexibly consider characteristic oxygen functional groups
+    ketone_pattern = Chem.MolFromSmarts("C=O")
     lactone_pattern = Chem.MolFromSmarts("C(=O)O")
-    lactone_matches = mol.GetSubstructMatches(lactone_pattern)
-    if not lactone_matches:
-        return False, "No lactone group found"
-
-    # Check for presence of methyl groups which are common in trimethyl structure
-    methyl_group_pattern = Chem.MolFromSmarts("C(C)(C)C")
-    methyl_matches = [match for match in mol.GetSubstructMatches(methyl_group_pattern) if len(match) == 4]
-    if len(methyl_matches) < 3:
-        return False, f"Insufficient methyl groups for trimethyl structure: {len(methyl_matches)} groups"
+    alcohol_pattern = Chem.MolFromSmarts("[OX2H]")  # Hydroxyl groups
+    if not (mol.HasSubstructMatch(ketone_pattern) or 
+            mol.HasSubstructMatch(lactone_pattern) or
+            mol.HasSubstructMatch(alcohol_pattern)):
+        return False, "Lack of characteristic oxygenated functionalities (ketone, lactone, alcohol)"
+    
+    # Optionally check for generic trimethyl or equivalent functional groups
+    trimethyl_pattern = Chem.MolFromSmarts("C(C)(C)C")
+    if not mol.HasSubstructMatch(trimethyl_pattern):
+        return False, "Lack of characteristic trimethyl or equivalent groups for limonoid structure"
 
     return True, "SMILES string corresponds to a limonoid structure"
