@@ -25,88 +25,67 @@ def is_phenyl_acetates(smiles: str):
         return False, "Invalid SMILES string"
 
     # Pattern for phenyl acetate:
-    # More specific pattern requiring phenolic oxygen
-    phenyl_acetate_pattern = Chem.MolFromSmarts("c1([OH0]-[CX3](=[OX1])[CH3])ccccc1")
+    # More specific pattern requiring phenolic oxygen and acetate group
+    phenyl_acetate_pattern = Chem.MolFromSmarts("[cR1]1[cR1][cR1][cR1][cR1][cR1]1-[OX2][CX3](=[OX1])[CH3]")
     
-    # Expanded negative patterns
+    # Negative patterns - structures that should not be considered phenyl acetates
     negative_patterns = [
-        # Fused ring systems
+        # Complex ring systems
+        Chem.MolFromSmarts("[R2]"), # Any atom in 2 or more rings
+        # Specific exclusions
         Chem.MolFromSmarts("O=C1Oc2ccccc2C1"),  # coumarin
         Chem.MolFromSmarts("C1=NCc2ccccc12"),    # indole
         Chem.MolFromSmarts("O=C1C=Cc2ccccc2O1"), # benzofuranone
         Chem.MolFromSmarts("O=C1C=COc2ccccc21"), # benzopyranone
-        Chem.MolFromSmarts("c12ccccc1cccc2"),    # naphthalene
-        Chem.MolFromSmarts("c12ccccc1occc2"),    # benzofuran
-        Chem.MolFromSmarts("c12ccccc1Occc2"),    # benzodioxin
+        # Exclude certain functional groups that indicate more complex structures
+        Chem.MolFromSmarts("[N+](=O)[O-]"),      # nitro group
+        Chem.MolFromSmarts("[#7R]"),             # nitrogen in ring
+        Chem.MolFromSmarts("[OR2]"),             # oxygen in multiple rings
     ]
 
-    # Check for matches
+    # First check negative patterns
+    for pattern in negative_patterns:
+        if pattern is not None and mol.HasSubstructMatch(pattern):
+            return False, "Contains excluded structural features"
+
+    # Check for phenyl acetate pattern
     matches = mol.GetSubstructMatches(phenyl_acetate_pattern)
     if not matches:
         return False, "No phenyl acetate group found"
 
-    # Check for negative patterns
-    for pattern in negative_patterns:
-        if pattern is not None and mol.HasSubstructMatch(pattern):
-            return False, "Contains excluded ring system"
-
-    # For each match, verify it's a proper phenyl acetate
-    valid_matches = []
+    # Additional validation for each match
     for match in matches:
-        # Get the oxygen atom
-        oxygen_idx = match[1]
-        oxygen = mol.GetAtomWithIdx(oxygen_idx)
+        # Get the phenyl ring atoms
+        ring_atoms = match[:6]
         
-        # Get the aromatic carbon it's attached to
-        aromatic_carbon = None
-        for neighbor in oxygen.GetNeighbors():
-            if neighbor.GetIsAromatic():
-                aromatic_carbon = neighbor
-                break
-                
-        if aromatic_carbon is None:
-            continue
-
-        # Verify the aromatic carbon is part of an isolated benzene ring
+        # Verify ring is a single benzene ring (not part of larger system)
         ring_info = mol.GetRingInfo()
-        ring_atoms = None
-        for ring in ring_info.AtomRings():
-            if aromatic_carbon.GetIdx() in ring:
-                ring_atoms = ring
-                break
-                
-        if ring_atoms is None or len(ring_atoms) != 6:
-            continue
-
-        # Verify ring is isolated (not part of fused system)
-        is_isolated = True
+        ring_count = 0
         for atom_idx in ring_atoms:
             atom = mol.GetAtomWithIdx(atom_idx)
-            # Check if any atom in ring is part of another ring
-            other_rings = [r for r in ring_info.AtomRings() if atom_idx in r and r != ring_atoms]
-            if other_rings:
-                is_isolated = False
-                break
-                
-        if not is_isolated:
+            # Count rings this atom is part of
+            ring_count += sum(1 for ring in ring_info.AtomRings() if atom_idx in ring)
+            
+        # Each atom should be in exactly one ring
+        if ring_count != 6:
             continue
 
-        # Verify phenolic nature - oxygen should be attached to only aromatic carbon and acetyl
-        if len(oxygen.GetNeighbors()) != 2:
+        # Verify acetate group
+        oxygen_idx = match[6]
+        carbonyl_idx = match[7]
+        methyl_idx = match[9]
+        
+        oxygen = mol.GetAtomWithIdx(oxygen_idx)
+        carbonyl = mol.GetAtomWithIdx(carbonyl_idx)
+        methyl = mol.GetAtomWithIdx(methyl_idx)
+        
+        # Verify proper connectivity
+        if (len(oxygen.GetNeighbors()) != 2 or
+            len(carbonyl.GetNeighbors()) != 3 or
+            len(methyl.GetNeighbors()) != 1):
             continue
             
-        acetyl_carbon = None
-        for neighbor in oxygen.GetNeighbors():
-            if neighbor.GetSymbol() == 'C' and not neighbor.GetIsAromatic():
-                acetyl_carbon = neighbor
-                break
-                
-        if acetyl_carbon is None or len(acetyl_carbon.GetNeighbors()) != 3:
-            continue
+        # If we get here, we have a valid match
+        return True, "Contains phenyl ring with acetate group properly attached to phenolic oxygen"
 
-        valid_matches.append(match)
-
-    if not valid_matches:
-        return False, "No valid phenyl acetate group found"
-
-    return True, "Contains phenyl ring with acetate group properly attached to phenolic oxygen"
+    return False, "No valid phenyl acetate group found"
