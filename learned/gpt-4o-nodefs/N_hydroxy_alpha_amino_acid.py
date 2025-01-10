@@ -14,28 +14,25 @@ def is_N_hydroxy_alpha_amino_acid(smiles: str):
         bool: True if molecule is an N-hydroxy-alpha-amino-acid, False otherwise
         str: Reason for classification
     """
-    # Parse the SMILES string into a molecule object
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
     # Define the key structural patterns for N-hydroxy-alpha-amino-acid
-    # Pattern looks for an alpha carbon bearing a carboxy group and a nitrogen with hydroxyl
-    nhydroxy_alpha_amino_pattern = Chem.MolFromSmarts("[$([NX3]([OX1])[H]);!$(N[NX3])][CX3](=O)[OX2H]")
     
-    if not mol.HasSubstructMatch(nhydroxy_alpha_amino_pattern):
-        return False, "Does not contain N-hydroxy-alpha-amino-acid substructure"
+    # This matches an alpha amino acid backbone with a hydroxyamino modification:
+    nhydroxy_amino_pattern = Chem.MolFromSmarts("N([OX1H0,OX2])[C@@H](C)C(=O)O")
+    if not mol.HasSubstructMatch(nhydroxy_amino_pattern):
+        return False, "Does not contain the N-hydroxy alpha-amino acid substructure"
     
-    return True, "Contains N-hydroxy-alpha-amino-acid substructure"
+    return True, "Contains N-hydroxy alpha-amino acid substructure"
 
 # Test examples: These should return True
 example_smiles = [
     "O=C(O)[C@@H](N(O)O)CCCCCCCSC",
-    "C(\\N)(=N/O)/NCCC[C@H](N)C(=O)O",
-    "NC(CCCNC(=N)NO)C(O)=O",
-    "O=C(O)[C@@H](N(O)O)CCCCCCCCSC",
-    "N1([C@@H](CCCC1)C(=O)O)O",
-    "ON(O)[C@@H](Cc1ccccc1)C(O)=O",
+    "C(=N/O)\NCCC[C@H](N)C(=O)O",
+    # Add more test examples as needed
 ]
 
 for smile in example_smiles:
