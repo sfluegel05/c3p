@@ -9,24 +9,24 @@ from rdkit import Chem
 def is_semisynthetic_derivative(smiles: str):
     """
     Determines if a molecule is classified as a semisynthetic derivative based on its SMILES string.
-    Since semisynthetic derivatives are defined by their synthesis, rather than structure alone,
+    Since semisynthetic derivatives are defined by their synthesis origin, rather than structure alone,
     this classification cannot be reliably determined from SMILES alone.
     
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: None, classification cannot be determined from SMILES
+        bool: None, classification as semisynthetic derivative cannot be determined from SMILES
         str: Reason for classification
     """
     
-    # Parse SMILES
+    # Parse SMILES to check for validity
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return None, "Invalid SMILES string"
 
-    # A proper determination requires information about the molecule's origin and synthesis,
-    # which is not encoded in the SMILES. Thus, return a default response.
+    # Since SMILES does not contain information about the synthesis history of a compound,
+    # it is impossible to determine if it is a semisynthetic derivative from SMILES alone.
     return None, "Classification as semisynthetic derivative cannot be determined from SMILES alone"
 
 # Example usage
