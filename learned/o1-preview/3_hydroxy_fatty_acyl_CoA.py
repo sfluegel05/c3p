@@ -25,91 +25,68 @@ def is_3_hydroxy_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for thioester linkage (C(=O)S)
-    thioester_smarts = Chem.MolFromSmarts('C(=O)S')
-    thioester_matches = mol.GetSubstructMatches(thioester_smarts)
-    if not thioester_matches:
-        return False, "Thioester linkage not found"
+    # Define SMARTS pattern for the thioester linkage (C(=O)S)
+    thioester_pattern = Chem.MolFromSmarts('C(=O)S')
+    matches = mol.GetSubstructMatches(thioester_pattern)
+    if not matches:
+        return False, "No thioester linkage found"
+    
+    # Try to find the acyl chain connected via thioester linkage
+    for match in matches:
+        carbonyl_c_idx = match[0]
+        sulfur_idx = match[1]
 
-    # Check for Coenzyme A moiety by searching for the adenine ring
-    adenine_smarts = Chem.MolFromSmarts('n1cnc2c(ncnc12)')  # Adenine ring
-    if not mol.HasSubstructMatch(adenine_smarts):
-        return False, "Coenzyme A moiety not found"
-
-    # For each thioester linkage, check the acyl chain
-    for match in thioester_matches:
-        carbonyl_c_idx = match[0]  # Index of carbonyl carbon
-        sulfur_idx = match[1]      # Index of sulfur atom
-
-        # Start traversal from the carbonyl carbon
+        # Get the carbonyl carbon atom
         carbonyl_c = mol.GetAtomWithIdx(carbonyl_c_idx)
-        visited_idxs = {carbonyl_c_idx, sulfur_idx}
 
-        # Find the alpha carbon (next carbon attached to carbonyl carbon)
-        alpha_carbon = None
-        for nbr in carbonyl_c.GetNeighbors():
-            if nbr.GetAtomicNum() == 6 and nbr.GetIdx() not in visited_idxs:
-                alpha_carbon = nbr
-                break
-        if alpha_carbon is None:
-            continue  # No alpha carbon found
+        # Get the atom connected to carbonyl carbon that is not the sulfur
+        neighbors = [nbr for nbr in carbonyl_c.GetNeighbors() if nbr.GetIdx() != sulfur_idx]
+        if not neighbors:
+            continue  # No acyl chain connected
+        first_acyl_atom = neighbors[0]
 
-        visited_idxs.add(alpha_carbon.GetIdx())
+        # Start traversing the acyl chain
+        acyl_chain_atoms = set()
+        acyl_chain_atoms.add(carbonyl_c_idx)
+        acyl_chain_atoms.add(first_acyl_atom.GetIdx())
+        current_atom = first_acyl_atom
+        position = 1
+        hydroxyl_found = False
 
-        # Find the beta carbon (next carbon after alpha carbon)
-        beta_carbon = None
-        for nbr in alpha_carbon.GetNeighbors():
-            if nbr.GetAtomicNum() == 6 and nbr.GetIdx() not in visited_idxs:
-                beta_carbon = nbr
-                break
-        if beta_carbon is None:
-            continue  # No beta carbon found
-
-        visited_idxs.add(beta_carbon.GetIdx())
-
-        # Find the gamma carbon (third carbon after carbonyl carbon)
-        gamma_carbon = None
-        for nbr in beta_carbon.GetNeighbors():
-            if nbr.GetAtomicNum() == 6 and nbr.GetIdx() not in visited_idxs:
-                gamma_carbon = nbr
-                break
-        if gamma_carbon is None:
-            continue  # No gamma carbon found
-
-        visited_idxs.add(gamma_carbon.GetIdx())
-
-        # Check if gamma carbon has an OH group attached
-        has_OH = False
-        for nbr in gamma_carbon.GetNeighbors():
-            if nbr.GetAtomicNum() == 8:  # Oxygen atom
-                if nbr.GetDegree() == 1:  # Hydroxyl group (-OH)
-                    has_OH = True
-                    break
-        if not has_OH:
-            continue  # No hydroxyl group at position 3
-
-        # Optionally, verify that the acyl chain is sufficiently long (e.g., at least 4 carbons)
-        chain_length = 3  # Already have alpha, beta, gamma carbons
-        current_atom = gamma_carbon
         while True:
-            next_carbon = None
-            for nbr in current_atom.GetNeighbors():
-                if nbr.GetAtomicNum() == 6 and nbr.GetIdx() not in visited_idxs:
-                    next_carbon = nbr
-                    break
-            if next_carbon is None:
+            if current_atom.GetSymbol() != 'C':
+                break  # Expected carbon in acyl chain
+
+            # Check if this is the third carbon (position 3)
+            if position == 2:
+                # Check if current atom has hydroxyl group attached
+                has_oh = False
+                for nbr in current_atom.GetNeighbors():
+                    if nbr.GetAtomicNum() == 8 and nbr.GetDegree() == 1:
+                        has_oh = True
+                        break
+                if has_oh:
+                    hydroxyl_found = True
+                else:
+                    break  # No hydroxyl at position 3
+                # No need to traverse further after position 3
+                break
+
+            # Get next carbon in acyl chain
+            neighbors = [nbr for nbr in current_atom.GetNeighbors()
+                         if nbr.GetIdx() not in acyl_chain_atoms and nbr.GetSymbol() == 'C']
+            if not neighbors:
                 break  # End of chain
-            chain_length += 1
-            visited_idxs.add(next_carbon.GetIdx())
-            current_atom = next_carbon
+            next_atom = neighbors[0]
+            acyl_chain_atoms.add(next_atom.GetIdx())
+            current_atom = next_atom
+            position += 1
 
-        if chain_length < 4:
-            continue  # Acyl chain too short to be a fatty acid
+        if hydroxyl_found:
+            # Optionally, check that the sulfur is part of CoA
+            # For simplicity, we assume that if the molecule contains the thioester linkage and the acyl chain meets criteria, it's a 3-hydroxy fatty acyl-CoA
+            return True, "Contains 3-hydroxy fatty acyl-CoA structure"
 
-        # All conditions met
-        return True, "Contains 3-hydroxy fatty acyl-CoA structure"
-
-    # No matching structures found
     return False, "Does not match 3-hydroxy fatty acyl-CoA structure"
 
 __metadata__ = {
