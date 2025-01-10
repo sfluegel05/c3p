@@ -31,9 +31,9 @@ def is_nonclassic_icosanoid(smiles: str):
     if not (18 <= c_count <= 22):
         return False, f"Not a C20-like molecule (found {c_count} carbons)"
 
-    # Check for oxygenation (at least 2 oxygen atoms)
+    # Check for oxygenation (at least 1 oxygen atom)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count < 2:
+    if o_count < 1:
         return False, f"Not enough oxygen atoms (found {o_count})"
 
     # Check for polyunsaturated pattern (at least 2 double bonds)
@@ -41,18 +41,18 @@ def is_nonclassic_icosanoid(smiles: str):
     if double_bonds < 2:
         return False, f"Not enough double bonds (found {double_bonds})"
 
-    # Check for specific functional groups in the right context
-    hydroxyl_pattern = Chem.MolFromSmarts("[C][OH]")
+    # Check for functional groups (hydroxyl, epoxy, carboxyl, peroxide)
+    hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
     epoxy_pattern = Chem.MolFromSmarts("[C;H1,H2][O][C;H1,H2]")
     carboxyl_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
-    ketone_pattern = Chem.MolFromSmarts("[CX3](=O)[C]")
+    peroxide_pattern = Chem.MolFromSmarts("[OX2][OX2]")
 
     has_hydroxyl = mol.HasSubstructMatch(hydroxyl_pattern)
     has_epoxy = mol.HasSubstructMatch(epoxy_pattern)
     has_carboxyl = mol.HasSubstructMatch(carboxyl_pattern)
-    has_ketone = mol.HasSubstructMatch(ketone_pattern)
+    has_peroxide = mol.HasSubstructMatch(peroxide_pattern)
 
-    if not (has_hydroxyl or has_epoxy or has_carboxyl or has_ketone):
+    if not (has_hydroxyl or has_epoxy or has_carboxyl or has_peroxide):
         return False, "Missing characteristic functional groups"
 
     # Exclude classic icosanoids
@@ -66,9 +66,9 @@ def is_nonclassic_icosanoid(smiles: str):
     if mol.HasSubstructMatch(prostanoid_pattern):
         return False, "Contains a cyclopentane ring with side chains (possible prostanoid)"
 
-    # Check molecular weight (narrower range)
+    # Check molecular weight (wider range)
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 300 or mol_wt > 400:
+    if mol_wt < 250 or mol_wt > 450:
         return False, f"Molecular weight {mol_wt:.2f} is outside the expected range for nonclassic icosanoids"
 
     return True, "C20-like molecule with oxygenation, double bonds, and functional groups, excluding classic icosanoids"
