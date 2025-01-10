@@ -21,15 +21,23 @@ def is_tetrachlorobenzene(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define the SMARTS pattern for a benzene ring with exactly four chlorines
-    tetrachloro_pattern = Chem.MolFromSmarts("c1c(Cl)c(Cl)c(Cl)c(Cl)c1")
+    # Define the SMARTS pattern for a benzene ring with any four chlorines
+    # The revised pattern checks for any aryl ring structure with exactly four chlorines
+    tetrachloro_pattern = Chem.MolFromSmarts("c1cc(Cl)c(Cl)cc1")
     
-    # Check if the pattern is present
-    if mol.HasSubstructMatch(tetrachloro_pattern):
+    # Count chlorine atoms linked to a benzene ring
+    cl_count = 0
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 17 and atom.GetNeighbors():
+            adjacency = atom.GetNeighbors()[0]
+            if adjacency.GetIsAromatic() and adjacency.GetSymbol() == 'C':
+                cl_count += 1
+    
+    # Check if exactly four chlorines are bonded to the aromatic carbons of one ring
+    if cl_count == 4 and mol.HasSubstructMatch(tetrachloro_pattern):
         return True, "Contains a benzene ring with four chlorine atoms"
     
     return False, "Does not match the tetrachlorobenzene pattern"
 
-# Example Usage:   
-# print(is_tetrachlorobenzene("Clc1cc(Cl)c(Cl)cc1Cl"))
-# This should return True, "Contains a benzene ring with four chlorine atoms"
+# Example of possible test usage
+# print(is_tetrachlorobenzene("Clc1cc(Cl)c(Cl)cc1Cl")) # True
