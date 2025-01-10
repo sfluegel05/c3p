@@ -21,31 +21,24 @@ def is_nucleoside_5__phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a general SMARTS pattern for ribose or deoxyribose
-    sugar_pattern = Chem.MolFromSmarts("C1OC([C@@H](O)C(O)C1)COP(O)(=O)[O]")  # Can match both ribose and deoxyribose
-    
-    # Define SMARTS patterns for canonical nucleobases
-    adenine_pattern = Chem.MolFromSmarts("n1cnc2c1ncnc2N")
-    guanine_pattern = Chem.MolFromSmarts("n1cnc2c1ncnc2O")
-    cytosine_pattern = Chem.MolFromSmarts("n1cnc2c1ncnc2N")
-    thymine_pattern = Chem.MolFromSmarts("C1=CN(C=O)C(=O)NC1=O")
-    uracil_pattern = Chem.MolFromSmarts("C1=CN(C=O)C(=O)NC1=O")
+    # Flexible patterns for ribose or deoxyribose sugars with phosphate
+    sugar_phosphate_pattern = Chem.MolFromSmarts("C1C(O[C@H]2CO[C@@H](C2)O)C(COP(O)(=O)[O])O1")
+
+    # Flexible SMARTS patterns for canonical nucleobases
+    adenine_pattern = Chem.MolFromSmarts("n1cnc2ncnc2n1")
+    guanine_pattern = Chem.MolFromSmarts("n1c2c(ncnc2n(c1))O")
+    cytosine_pattern = Chem.MolFromSmarts("n1c2c(ncnc2n(c1))N")
+    thymine_pattern = Chem.MolFromSmarts("C1=CN(C=O)C(=O)N(C1)=O")
+    uracil_pattern = Chem.MolFromSmarts("C1=CN(C=O)C(=O)NC1")
 
     nucleobase_patterns = [adenine_pattern, guanine_pattern, cytosine_pattern, thymine_pattern, uracil_pattern]
 
-    # Define a SMARTS pattern for a phosphate group at the 5' position
-    phosphate_pattern = Chem.MolFromSmarts("COP(=O)(O)O")
-    
-    # Check for the presence of ribose or deoxyribose
-    if not mol.HasSubstructMatch(sugar_pattern):
-        return False, "No ribose or deoxyribose sugar found"
+    # Check for the presence of a ribose or deoxyribose sugar with phosphate
+    if not mol.HasSubstructMatch(sugar_phosphate_pattern):
+        return False, "No 5'-phosphate sugar found"
 
     # Check for the presence of any nucleobase
     if not any(mol.HasSubstructMatch(base) for base in nucleobase_patterns):
         return False, "No nucleobase found"
-
-    # Check for the presence of a phosphate group at the 5' position
-    if not mol.HasSubstructMatch(phosphate_pattern):
-        return False, "No phosphate group found at the 5' position"
 
     return True, "Contains sugar, nucleobase, and phosphate group at the 5' position"
