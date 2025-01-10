@@ -38,20 +38,23 @@ def is_thiosugar(smiles: str):
     if not sulfur_atoms:
         return False, "No sulfur atoms found"
 
-    # Check if sulfur is attached to the sugar backbone
+    # Check if sulfur is attached to any part of the molecule, not just the sugar backbone
     sulfur_attached = False
     for sulfur in sulfur_atoms:
         neighbors = sulfur.GetNeighbors()
         for neighbor in neighbors:
             if neighbor.GetAtomicNum() == 6:  # Carbon atom
-                # Check if the carbon is part of the sugar backbone
-                if any(neighbor.GetIdx() in match for match in sugar_matches):
-                    sulfur_attached = True
-                    break
+                sulfur_attached = True
+                break
         if sulfur_attached:
             break
 
     if not sulfur_attached:
-        return False, "Sulfur not attached to the sugar backbone"
+        return False, "Sulfur not attached to the molecule"
+
+    # Check for the presence of a ring structure (carbohydrate-like)
+    ring_info = mol.GetRingInfo()
+    if not ring_info.AtomRings():
+        return False, "No ring structure found"
 
     return True, "Contains a sugar-like structure with sulfur attached"
