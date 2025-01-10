@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_aromatic_amino_acid(smiles: str):
     """
     Determines if a molecule is an aromatic amino acid based on its SMILES string.
-    An aromatic amino acid contains an aromatic ring connected to an amino and carboxyl group.
+    An aromatic amino acid has both an aromatic ring and an amino acid structure (amino and carboxylate group).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,22 +26,23 @@ def is_aromatic_amino_acid(smiles: str):
     if not mol.HasSubstructMatch(aromatic_ring_pattern):
         return False, "No aromatic ring found"
     
-    # Correct pattern to find the primary amine connected to a carbon 
-    amino_group_pattern = Chem.MolFromSmarts("[NX3;H2]-[CX4][CX3]=O")
-    if not mol.HasSubstructMatch(amino_group_pattern):
-        return False, "No suitable amino group found"
+    # Look for amino acid structure (amino group NH2 and carboxylate C(=O)O)
+    amino_group_pattern = Chem.MolFromSmarts("[NX3][CX4]")
+    carboxylate_group_pattern = Chem.MolFromSmarts("[CX3](=O)[O]")
     
-    # Confirm the presence of a carboxyl group
-    carboxyl_group_pattern = Chem.MolFromSmarts("C(=O)O")
-    if not mol.HasSubstructMatch(carboxyl_group_pattern):
-        return False, "No carboxyl group found"
+    if not mol.HasSubstructMatch(amino_group_pattern):
+        return False, "No amino group found"
+        
+    if not mol.HasSubstructMatch(carboxylate_group_pattern):
+        return False, "No carboxylic acid group found"
 
-    # Check for proper connectivity (aromatic ring attached to the amino acid backbone)
-    aromatic_amino_acid_pattern = Chem.MolFromSmarts("a-[CH2]-[NH2]-C(=O)O")
+    # Check connectivity between aromatic ring and amino acid moiety
+    # Aromatic ring connected to a carbon which is bonded to amino and carboxylate groups
+    aromatic_amino_acid_pattern = Chem.MolFromSmarts("a-[CX4](N)[CX3](=O)O")
     if not mol.HasSubstructMatch(aromatic_amino_acid_pattern):
-        return False, "Aromatic ring not properly connected to amino acid functionality"
-   
+        return False, "Aromatic ring not connected to amino acid moiety"
+
     return True, "Contains aromatic ring and amino acid moiety connected appropriately"
 
-# Test the function with an example SMILES string
-print(is_aromatic_amino_acid("NC(Cc1ccc(O)c(O)c1)C(O)=O"))
+# Test the function with a sample SMILES string
+print(is_aromatic_amino_acid("NC(Cc1ccc(O)c(O)c1)C(O)=O"))  # Example for L-dopa
