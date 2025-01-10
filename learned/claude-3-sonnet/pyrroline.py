@@ -26,35 +26,47 @@ def is_pyrroline(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Convert to Kekulized form to properly handle aromatic bonds
-    Chem.Kekulize(mol, clearAromaticFlags=True)
+    # Make a copy for Kekulization
+    mol_kekulized = Chem.Mol(mol)
+    try:
+        Chem.Kekulize(mol_kekulized, clearAromaticFlags=True)
+    except:
+        pass  # If kekulization fails, we'll still try with the original molecule
     
-    # SMARTS pattern for pyrroline core:
-    # [N] - nitrogen in 5-membered ring
-    # [CH2,CH] - sp3 carbons (can be substituted)
-    # = indicates double bond
-    # Size 5 ring with exactly one double bond
-    pyrroline_pattern = Chem.MolFromSmarts("[NX3R5]1[CH2X4,CHX4][CH2X4,CHX4][CH1X3]=[CH1X3]1")
-    pattern2 = Chem.MolFromSmarts("[NX3R5]1[CH1X3]=[CH1X3][CH2X4,CHX4][CH2X4,CHX4]1")
-    
-    if mol.HasSubstructMatch(pyrroline_pattern) or mol.HasSubstructMatch(pattern2):
-        # Additional validation to exclude aromatic rings
-        rings = mol.GetRingInfo().AtomRings()
-        for ring in rings:
-            if len(ring) == 5:  # Check 5-membered rings
-                ring_atoms = [mol.GetAtomWithIdx(i) for i in ring]
-                n_count = sum(1 for atom in ring_atoms if atom.GetAtomicNum() == 7)
-                if n_count == 1:  # One nitrogen
-                    # Count double bonds in ring
-                    double_bonds = 0
-                    for i in range(len(ring)):
-                        bond = mol.GetBondBetweenAtoms(ring[i], ring[(i+1)%5])
-                        if bond.GetBondType() == Chem.BondType.DOUBLE:
-                            double_bonds += 1
-                    if double_bonds == 1:  # Exactly one double bond
-                        return True, "Contains pyrroline ring (5-membered ring with N and one double bond)"
+    # Multiple SMARTS patterns to catch different forms of pyrroline
+    patterns = [
+        # Basic pyrroline patterns with double bond in different positions
+        "[NX3R5]1[#6][#6]=[#6][#6]1",  # Double bond at 3-4 position
+        "[NX3R5]1[#6]=[#6][#6][#6]1",  # Double bond at 2-3 position
+        "[#6]1[#6][NX3R5][#6]=[#6]1",  # Double bond at 4-5 position
         
-        # If we get here, we found the pattern but additional validation failed
-        return False, "Found similar pattern but validation failed (might be aromatic or have wrong number of double bonds)"
+        # Patterns for keto forms
+        "[NX3R5]1[#6][#6](=[O,S])[#6][#6]1",
+        "[NX3R5]1[#6](=[O,S])[#6][#6][#6]1",
+        
+        # Pattern for charged forms
+        "[N+X4R5]1[#6][#6][#6][#6]1",
+        
+        # Pattern for imine forms
+        "[NX2R5]=[#6R5][#6R5][#6R5][#6R5]1"
+    ]
+
+    for pattern in patterns:
+        patt = Chem.MolFromSmarts(pattern)
+        if mol.HasSubstructMatch(patt) or (mol_kekulized and mol_kekulized.HasSubstructMatch(patt)):
+            # Additional validation to ensure it's not fully aromatic
+            rings = mol.GetRingInfo().AtomRings()
+            for ring in rings:
+                if len(ring) == 5:  # Check 5-membered rings
+                    ring_atoms = [mol.GetAtomWithIdx(i) for i in ring]
+                    n_count = sum(1 for atom in ring_atoms if atom.GetAtomicNum() == 7)
+                    if n_count == 1:  # One nitrogen
+                        # Check if ring is not fully aromatic
+                        aromatic_atoms = sum(1 for atom in ring_atoms if atom.GetIsAromatic())
+                        if aromatic_atoms != 5:  # Not fully aromatic
+                            return True, "Contains pyrroline ring (5-membered ring with N and appropriate unsaturation)"
+            
+            # If we found pattern but ring was aromatic
+            continue
     
     return False, "No pyrroline ring found"
