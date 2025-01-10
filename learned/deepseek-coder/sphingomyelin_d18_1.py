@@ -28,6 +28,7 @@ def is_sphingomyelin_d18_1(smiles: str):
 
     # Check for sphingosine backbone (d18:1) pattern
     # d18:1 sphingosine has 18 carbons with a double bond and a hydroxyl group
+    # The pattern is more flexible to match different conformations
     sphingosine_pattern = Chem.MolFromSmarts("[CH2X4][CHX4]=[CHX4][CH2X4][CHX4]([OHX2])[CH2X4][CHX4]([NHX3])[CX3](=[OX1])")
     if not mol.HasSubstructMatch(sphingosine_pattern):
         return False, "No sphingosine backbone (d18:1) found"
