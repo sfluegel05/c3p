@@ -20,9 +20,9 @@ def is_medium_chain_fatty_acyl_CoA_4__(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for Coenzyme A pattern (nucleotide and phosphates)
-    coa_pattern = Chem.MolFromSmarts("O=C1NC(=O)CNC1CSCCNC(=O)CCNC(=O)C")
-    if not mol.HasSubstructMatch(coa_pattern):
+    # Check for comprehensive Coenzyme A pattern (includes more of the structure)
+    coa_comprehensive_pattern = Chem.MolFromSmarts("C(=O)NCCSC[CH2]NC(=O)[CH2]NC(=O)[C@@H](O)C(C)(C)OP([O-])(=O)OP([O-])(=O)OC[C@@H]1O[C@H]([C@H]1O)COS")
+    if not mol.HasSubstructMatch(coa_comprehensive_pattern):
         return False, "Coenzyme A moiety not found"
     
     # Check for thioester linkage (C(=O)S)
@@ -30,9 +30,9 @@ def is_medium_chain_fatty_acyl_CoA_4__(smiles: str):
     if not mol.HasSubstructMatch(thioester_pattern):
         return False, "No thioester linkage found"
     
-    # Check for medium acyl chain (6-12 carbons excluding carbonyl)
-    c_chain_pattern = Chem.MolFromSmarts("CCCCCCCCCCC")  # 10 carbon atoms
-    c_chain_matches = mol.GetSubstructMatches(c_chain_pattern)
+    # Use a recursive SMARTS or dynamic range for medium acyl chain (6-12)
+    medium_acyl_chain_pattern = Chem.MolFromSmarts("[CH2]~[CH2]~[CH2]~[CH2]~[CH2]", 6, 12)
+    c_chain_matches = mol.GetSubstructMatches(medium_acyl_chain_pattern)
     if len(c_chain_matches) < 1:
         return False, "No medium-chain fatty acyl chain found"
 
