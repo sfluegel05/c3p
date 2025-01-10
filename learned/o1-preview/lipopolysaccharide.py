@@ -11,8 +11,8 @@ from rdkit.Chem import rdMolDescriptors
 def is_lipopolysaccharide(smiles: str):
     """
     Determines if a molecule is a lipopolysaccharide based on its SMILES string.
-    A lipopolysaccharide consists of saccharide units (including specific sugars like heptose and Kdo)
-    attached to long-chain fatty acids via ester or amide linkages.
+    A lipopolysaccharide consists of a lipid A moiety (a disaccharide of glucosamine with attached fatty acids),
+    core oligosaccharide containing heptose and Kdo sugars, and O-antigen polysaccharide chains.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -28,47 +28,51 @@ def is_lipopolysaccharide(smiles: str):
         return False, "Invalid SMILES string"
 
     # Sanitize molecule
-    Chem.SanitizeMol(mol)
+    try:
+        Chem.SanitizeMol(mol)
+    except:
+        return False, "Molecule could not be sanitized"
 
-    # Detect sugar rings (rings with oxygen heteroatoms)
-    ring_info = mol.GetRingInfo()
-    atom_rings = ring_info.AtomRings()
-    sugar_rings = []
-    for ring in atom_rings:
-        ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
-        ring_size = len(ring)
-        # Check if ring size is 5 to 7 (common for sugars)
-        if ring_size >= 5 and ring_size <= 7:
-            o_count = sum(1 for atom in ring_atoms if atom.GetAtomicNum() == 8)
-            c_count = sum(1 for atom in ring_atoms if atom.GetAtomicNum() == 6)
-            # Sugars have one oxygen in the ring and the rest carbons
-            if o_count == 1 and c_count == ring_size - 1:
-                sugar_rings.append(ring)
+    # Define patterns
 
-    if len(sugar_rings) == 0:
-        return False, "No sugar rings found"
+    # Glucosamine unit (aminosugar)
+    glucosamine_pattern = Chem.MolFromSmarts("NC[C@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@@H]1O")
+    # Disaccharide of glucosamine (Lipid A backbone)
+    lipid_a_pattern = Chem.MolFromSmarts("NC[C@H]1O[C@H](CO)[C@@H](O)[C@H](O[C@H]2[C@@H](O)[C@@H](O)[C@H](O)[C@H](CO)O2)[C@@H]1O")
+    # Fatty acid chain attached via amide linkage to glucosamine
+    fatty_acid_amide_pattern = Chem.MolFromSmarts("NC(=O)CCCCC")
+    # Kdo (3-deoxy-D-manno-oct-2-ulosonic acid)
+    kdo_pattern = Chem.MolFromSmarts("O=C[C@H]1O[C@H](O)[C@H](O)[C@@H](O)[C@@H](COC=O)O1")
+    # Heptose unit (7-membered sugar ring)
+    heptose_pattern = Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@H](O)[C@H](CO)O1")
 
-    # Detect long aliphatic chains (length ≥ 12 carbons)
-    # Looking for chains of at least 12 carbons
-    fatty_acid_pattern = Chem.MolFromSmarts("[C;D2;H2][C;D2;H2][C;D2;H2][C;D2;H2][C;D2;H2][C;D2;H2][C;D2;H2][C;D2;H2][C;D2;H2][C;D2;H2][C;D2;H2][C;D2;H2]")
-    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
-    if len(fatty_acid_matches) == 0:
-        return False, "No long aliphatic chains found"
+    # Check for Lipid A backbone (disaccharide of glucosamine)
+    if not mol.HasSubstructMatch(lipid_a_pattern):
+        return False, "Lipid A backbone not found"
 
-    # Detect ester or amide linkages
-    ester_pattern = Chem.MolFromSmarts("[$([CX3](=O)[OX2H1]),$([CX3](=O)[OX1-])]")
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    amide_pattern = Chem.MolFromSmarts("[CX3](=O)[NX3][CX4]")
-    amide_matches = mol.GetSubstructMatches(amide_pattern)
-    if len(ester_matches) == 0 and len(amide_matches) == 0:
-        return False, "No ester or amide linkages found"
+    # Check for at least four fatty acid chains attached via amide or ester linkages
+    fatty_acid_ester_pattern = Chem.MolFromSmarts("C(=O)O[C;H2]")
+    fatty_acid_amide_pattern = Chem.MolFromSmarts("C(=O)N[C;H2]")
+    fatty_acid_chains = mol.GetSubstructMatches(fatty_acid_ester_pattern) + mol.GetSubstructMatches(fatty_acid_amide_pattern)
+    if len(fatty_acid_chains) < 4:
+        return False, f"Found {len(fatty_acid_chains)} fatty acid chains, need at least 4"
 
-    # Check for molecular weight
+    # Check for Kdo units
+    kdo_matches = mol.GetSubstructMatches(kdo_pattern)
+    if len(kdo_matches) == 0:
+        return False, "No Kdo units found"
+
+    # Check for at least two heptose units
+    heptose_matches = mol.GetSubstructMatches(heptose_pattern)
+    if len(heptose_matches) < 2:
+        return False, f"Found {len(heptose_matches)} heptose units, need at least 2"
+
+    # Optional: Check for high molecular weight
     mol_weight = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_weight < 1000:
-        return False, "Molecular weight too low for lipopolysaccharide"
+        return False, f"Molecular weight ({mol_weight:.2f} Da) too low for lipopolysaccharide"
 
-    return True, "Contains sugar rings linked to long-chain fatty acids via ester or amide bonds"
+    return True, "Contains Lipid A backbone with attached fatty acids, Kdo, and heptose units"
 
 __metadata__ = {
     'chemical_class': {
