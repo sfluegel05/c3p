@@ -21,14 +21,16 @@ def is_3__hydroxyflavanones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the general flavanone structure with SMILES or SMARTS
-    # Basic flavanone pattern (benzopyranone core plus attached phenyl)
-    flavanone_pattern = Chem.MolFromSmarts("O=C1[C@@H]([C@H](O)C2=CC=CC=C2)CC3=CC=CC=C3O1")
+    # Define the general flavanone core structure
+    # Ar-C(=O)C1C(O)C=CC1 with a specific ring structure.
+    flavanone_pattern = Chem.MolFromSmarts("O=C1CC2=CC=CC(O)=C2C1C3=CC=CC(O)=C3")
+    # Capable of identifying different derivations and stereochemistry forms
     if not mol.HasSubstructMatch(flavanone_pattern):
         return False, "Flavanone core structure not found"
 
     # Check for hydroxy substitution at the 3' position of the phenyl group
-    hydroxy_3_prime_pattern = Chem.MolFromSmarts("c1cc(O)ccc1")
+    # Correcting substitution pattern: hydroxy at the meta position relative to C-connection
+    hydroxy_3_prime_pattern = Chem.MolFromSmarts("c1(c(O)ccc1)cc(O)c(O)c1")
     if not mol.HasSubstructMatch(hydroxy_3_prime_pattern):
         return False, "No hydroxy group at 3' position of phenyl ring"
 
