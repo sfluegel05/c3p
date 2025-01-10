@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_phospho_sugar(smiles: str):
     """
     Determines if a molecule is a phospho sugar based on its SMILES string.
-    A phospho sugar contains a sugar moiety (often a pyranose or furanose ring or open structure)
+    A phospho sugar contains a sugar moiety (often a pyranose or furanose ring or open chain)
     with one or more phosphate groups attached.
 
     Args:
@@ -22,28 +22,28 @@ def is_phospho_sugar(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Flexible wildcard patterns for phosphate groups, accommodating different states and linkages
+    # Expand patterns to include more cases and states of phosphate groups
     phosphate_patterns = [
-        Chem.MolFromSmarts("[OP](=O)(O)O"),     # General protonated phosphate
-        Chem.MolFromSmarts("[OP](=O)(O)[O-]"), # General deprotonated phosphate
-        Chem.MolFromSmarts("[OP](=O)(O)C"),    # Phosphate ester linkage
-        Chem.MolFromSmarts("[OP](=O)(O)S")     # Phosphorothioate
+        Chem.MolFromSmarts("P(=O)(O)O"),      # General phosphate
+        Chem.MolFromSmarts("P(=O)(O)[O-]"),   # Deprotonated phosphate
+        Chem.MolFromSmarts("OP(=O)(O)O"),     # Phosphate ester
+        Chem.MolFromSmarts("OP(=O)([O-])O")   # Phosphate in anionic form
     ]
 
-    # Revised and more comprehensive sugar ring and carbohydrates patterns
+    # Expand sugar detection to cover open chain and various configurations
     sugar_patterns = [
-        Chem.MolFromSmarts("C1OC(O)C(O)C(O)C1"),               # Pyranose form
-        Chem.MolFromSmarts("C1OC(O)C(O)C1"),                    # Furanose form
-        Chem.MolFromSmarts("O[C@@H]1[C@@H](O)[C@H](O)C(O)C1"),  # Ribose/Aldose
-        Chem.MolFromSmarts("[C@H](O)[C@@H](O)C(O)(O)C=O"),     # Open chain sugars (like glucose, fructose)
+        Chem.MolFromSmarts("OC[C@H]1O[C@H](O)[C@@H](O)[C@H](O)[C@H]1O"),  # Pyranose alpha
+        Chem.MolFromSmiles("C1=COC(O)C(O)C1O"),                          # Furanose
+        Chem.MolFromSmiles("OC[C@H](O)[C@H](O)[C@H](O)C=O"),              # Aldose open chain
+        Chem.MolFromSmarts("C(C(C(C=O)O)O)O")                            # Generic open form
     ]
 
-    # Check for at least one phosphate group pattern match
+    # Checking for at least one phosphate group pattern match
     has_phosphate = any(mol.HasSubstructMatch(pat) for pat in phosphate_patterns)
     if not has_phosphate:
         return False, "No phosphate group found"
 
-    # Revised broader checking for presence of any sugar-related structure
+    # Checking for presence of sugar-related structure
     has_sugar_structure = any(mol.HasSubstructMatch(pat) for pat in sugar_patterns)
     if not has_sugar_structure:
         return False, "No sugar structure detected"
