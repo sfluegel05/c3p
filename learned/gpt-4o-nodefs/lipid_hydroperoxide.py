@@ -15,29 +15,30 @@ def is_lipid_hydroperoxide(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
+    # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for the hydroperoxide group (-O-O-H)
+    # Check for the presence of a hydroperoxide group (-O-O-H)
     hydroperoxide_pattern = Chem.MolFromSmarts("O[OH]")
     if not mol.HasSubstructMatch(hydroperoxide_pattern):
         return False, "No hydroperoxide group found"
     
-    # Look for the carboxylic acid group (-C(=O)OH)
+    # Check for the presence of the carboxylic acid group (-C(=O)OH)
     carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
     
-    # Count the total number of carbon atoms to check for lipid-like size (≥16 carbons)
+    # Count carbon atoms to assess if the molecule is of a lipid-like size (≥14 carbons for revisiting)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 16:
+    if c_count < 14:  # Adjusted to accommodate slightly shorter lipids
         return False, "Carbon chain is too short for a lipid-like structure"
     
-    # Check for polyunsaturation (presence of any double bond)
+    # Check for multiple double bonds to ensure polyunsaturation
     double_bond_pattern = Chem.MolFromSmarts("C=C")
-    if not mol.HasSubstructMatch(double_bond_pattern):
-        return False, "No double bonds found for polyunsaturation"
+    double_bonds = len(mol.GetSubstructMatches(double_bond_pattern))
+    if double_bonds < 2:  # More specific criterion for polyunsaturation
+        return False, f"Insufficient double bonds for polyunsaturation, found {double_bonds}"
         
     return True, "Molecule matches structure of a lipid hydroperoxide"
