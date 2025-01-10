@@ -25,38 +25,32 @@ def is_2_oxo_monocarboxylic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for exactly one carboxylic acid group (-C(=O)OH)
+    # Find all carboxylic acid groups (-C(=O)OH)
     carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[O;H1]")
     carboxy_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
-    if len(carboxy_matches) != 1:
-        return False, f"Found {len(carboxy_matches)} carboxylic acid groups, need exactly 1"
+    if len(carboxy_matches) == 0:
+        return False, "No carboxylic acid group found"
 
-    # Get the carboxyl carbon atom index
-    carboxyl_c_idx = carboxy_matches[0][0]
-    carboxyl_c_atom = mol.GetAtomWithIdx(carboxyl_c_idx)
-
-    # Find alpha carbon (carbon neighbor of carboxyl carbon)
-    alpha_c_atoms = [atom for atom in carboxyl_c_atom.GetNeighbors() if atom.GetAtomicNum() == 6]
-    if len(alpha_c_atoms) == 0:
-        return False, "No alpha carbon connected to carboxyl carbon"
-
-    # Check if alpha carbon has a ketone group (=O)
-    ketone_found = False
-    for alpha_c_atom in alpha_c_atoms:
-        # Check for double bond to oxygen on alpha carbon
-        for bond in alpha_c_atom.GetBonds():
-            if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-                other_atom = bond.GetOtherAtom(alpha_c_atom)
-                if other_atom.GetAtomicNum() == 8:  # Oxygen atom
-                    ketone_found = True
-                    break
-        if ketone_found:
-            break
-
-    if not ketone_found:
-        return False, "No ketone group at alpha carbon"
-
-    return True, "Contains monocarboxylic acid group with ketone at alpha carbon (2-oxo)"
+    # For each carboxylic acid group, check for ketone at alpha carbon
+    for match in carboxy_matches:
+        carboxyl_c_idx = match[0]  # Index of carboxyl carbon
+        carboxyl_c_atom = mol.GetAtomWithIdx(carboxyl_c_idx)
+        # Find alpha carbons (neighboring carbons to carboxyl carbon)
+        alpha_c_atoms = [atom for atom in carboxyl_c_atom.GetNeighbors() if atom.GetAtomicNum() == 6]
+        for alpha_c_atom in alpha_c_atoms:
+            alpha_c_idx = alpha_c_atom.GetIdx()
+            # Check if alpha carbon has a ketone group
+            has_ketone = False
+            for bond in alpha_c_atom.GetBonds():
+                if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                    other_atom = bond.GetOtherAtom(alpha_c_atom)
+                    if other_atom.GetAtomicNum() == 8:  # Oxygen atom
+                        has_ketone = True
+                        break
+            if has_ketone:
+                return True, "Contains monocarboxylic acid group with ketone at alpha carbon (2-oxo)"
+    # If no such arrangement is found
+    return False, "No ketone group at alpha carbon adjacent to carboxylic acid group"
 
 __metadata__ = {
     'chemical_class': {
@@ -77,7 +71,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 0,
+    'attempt': 1,
     'success': True,
     'best': True,
     'error': '',
