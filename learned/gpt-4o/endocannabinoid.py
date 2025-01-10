@@ -19,32 +19,29 @@ def is_endocannabinoid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Long unsaturated carbon chain pattern
-    # This pattern looks for long carbon chains with multiple unsaturations
-    long_chain_pattern = Chem.MolFromSmarts("C=C-@C=C-@C=C(@C=C-@C=C)CCCC")
-    if not mol.HasSubstructMatch(long_chain_pattern):
-        return False, "Does not have long unsaturated carbon chains"
-
-    # Ethanoloamine group pattern -NCCO
-    ethanolamine_pattern = Chem.MolFromSmarts("NCCO")
-    if not mol.HasSubstructMatch(ethanolamine_pattern):
-        return False, "No ethanolamine group found"
     
-    # Glycerol backbone pattern
+    # General long unsaturated carbon chain with some flexibility in double bond locations
+    chain_pattern = Chem.MolFromSmarts("CCCCCCCCC(=C)C(=C)C(=C)CC")
+    if not mol.HasSubstructMatch(chain_pattern):
+        return False, "Does not have recognizable long chain with multiple unsaturations"
+    
+    # Incorporate either an ethanolamine or glycerol-like structure
+    ethanolamine_pattern = Chem.MolFromSmarts("NCCO")
     glycerol_pattern = Chem.MolFromSmarts("C(O)C(O)CO")
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol or similar backbone found"
-
-    # Ester or amide linkage pattern
+    if not (mol.HasSubstructMatch(ethanolamine_pattern) or mol.HasSubstructMatch(glycerol_pattern)):
+        return False, "No characteristic endocannabinoid backbone found"
+    
+    # Look for either ester or amide linkage
     ester_pattern = Chem.MolFromSmarts("C(=O)O")
     amide_pattern = Chem.MolFromSmarts("C(=O)N")
     if not (mol.HasSubstructMatch(ester_pattern) or mol.HasSubstructMatch(amide_pattern)):
         return False, "No ester or amide linkage found"
     
-    # Optional: check for hydroxyl or epoxy groups (not strictly necessary for all endocannabinoids)
-    hydroxyl_epoxy_pattern = Chem.MolFromSmarts("[OH,O]")
+    # Check for additional features like hydroxyl or epoxy as optional
+    hydroxyl_epoxy_pattern = Chem.MolFromSmarts("[OH] | [O]")
     if mol.HasSubstructMatch(hydroxyl_epoxy_pattern):
-        return True, "Contains endocannabinoid-like features and hydroxyl/epoxy group"
-
+        return True, "Contains endocannabinoid-like features with hydroxyl/epoxy group"
+    
     return True, "Contains endocannabinoid-like features"
+
+# Test cases should include the SMILES strings provided above to verify the function works correctly.
