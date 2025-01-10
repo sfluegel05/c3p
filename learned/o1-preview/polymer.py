@@ -5,13 +5,13 @@ Classifies: CHEBI:60027 polymer
 Classifies: polymer
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors, Descriptors
-from collections import defaultdict
+from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import rdFMCS
 
 def is_polymer(smiles: str):
     """
     Determines if a molecule is a polymer based on its SMILES string.
-    A polymer is a macromolecule composed of repeating units.
+    A polymer is a macromolecule composed of repeating units connected in a chain.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,32 +20,51 @@ def is_polymer(smiles: str):
         bool: True if molecule is a polymer, False otherwise
         str: Reason for classification
     """
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check molecular weight - polymers typically have high molecular weight
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 1000:
-        return False, f"Molecular weight too low ({mol_wt:.2f} Da) to be a polymer"
+    # Remove counter ions and small fragments
+    mol = Chem.GetMolFrags(mol, asMols=True, sanitizeFrags=True)
+    if len(mol) == 0:
+        return False, "No valid molecular fragments found"
+    elif len(mol) > 1:
+        # Choose the largest fragment
+        mol = max(mol, key=lambda m: m.GetNumAtoms())
+    else:
+        mol = mol[0]
 
-    # Generate fingerprints to identify repeating units
-    # We'll use Morgan fingerprints with radius 2
-    fp = rdMolDescriptors.GetMorganFingerprint(mol, 2)
-    counts = defaultdict(int)
-    # Count occurrences of each bit (substructure)
-    for bit_id, count in fp.GetNonzeroElements().items():
-        counts[bit_id] += count
+    # Analyze the molecule for repeating units
+    # Break single bonds to try to find repeating units
+    bonds = mol.GetBonds()
+    repeating_unit = None
+    max_repeat_count = 0
 
-    # Identify bits that occur multiple times, indicating repeating units
-    repeating_units = [bit_id for bit_id, count in counts.items() if count > 2]
-    if not repeating_units:
-        return False, "No repeating units detected in the molecule"
+    for bond in bonds:
+        # Clone the molecule
+        mol_clone = Chem.RWMol(mol)
+        idx = bond.GetIdx()
+        # Remove the bond
+        mol_clone.RemoveBond(bond.GetBeginAtomIdx(), bond.GetEndAtomIdx())
+        # Get the fragments
+        frags = Chem.GetMolFrags(mol_clone, asMols=True)
+        if len(frags) < 2:
+            continue
+        # Try to find identical fragments
+        frag_smiles = [Chem.MolToSmiles(frag) for frag in frags]
+        frag_counts = {}
+        for fs in frag_smiles:
+            frag_counts[fs] = frag_counts.get(fs, 0) + 1
+        # Identify the most common fragment
+        common_frag = max(frag_counts, key=frag_counts.get)
+        count = frag_counts[common_frag]
+        if count > max_repeat_count:
+            max_repeat_count = count
+            repeating_unit = common_frag
 
-    # Analyze the degree of polymerization based on repeating units
-    total_repeats = sum([counts[bit_id] for bit_id in repeating_units])
-    if total_repeats < 10:
-        return False, "Not enough repeating units to be considered a polymer"
+    if repeating_unit and max_repeat_count >= 5:
+        return True, f"Molecule has a repeating unit ({repeating_unit}) occurring {max_repeat_count} times, indicative of a polymer"
 
-    return True, "Molecule is a macromolecule with repeating units, indicative of a polymer"
+    return False, "No sufficient repeating units detected in the molecule"
