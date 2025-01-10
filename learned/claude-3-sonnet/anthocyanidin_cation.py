@@ -31,19 +31,15 @@ def is_anthocyanidin_cation(smiles: str):
         return False, "Must have a total charge of +1"
 
     # Look for the basic flavylium cation core:
-    # A benzopyrylium ring system (O+ containing heterocycle) connected to a phenyl ring
-    flavylium_core = Chem.MolFromSmarts('[O+]1=Cc2c(-c3ccc[c,n]c3)cc(O)cc2C=C1')
+    # [o+] containing heterocycle fused to an aromatic ring and connected to another aromatic ring
+    flavylium_core = Chem.MolFromSmarts('[o+]1c(-[c])c([cH,cO,cC])c([cH,cO,cC])c2c([cH,cO,cC])c([cH,cO,cC])c([cH,cO,cC])cc12')
     if not mol.HasSubstructMatch(flavylium_core):
-        # Try alternative pattern that might catch other variants
-        alt_flavylium = Chem.MolFromSmarts('[O+]1=Cc2c(-[c,n]3[c,n]c[c,n][c,n][c,n]3)cc(O)cc2C=C1')
-        if not mol.HasSubstructMatch(alt_flavylium):
-            return False, "No flavylium cation core structure found"
+        return False, "No flavylium cation core structure found"
 
-    # Must have oxygen atoms (typically hydroxyls) on the rings
-    # Look for hydroxyls on both the A and C rings
-    hydroxyl_pattern = Chem.MolFromSmarts('c1c(O)cc(O)cc1')
+    # Must have at least two hydroxyl groups on the main ring system
+    hydroxyl_pattern = Chem.MolFromSmarts('(c(O)cc(O))||(c(O)c(O))')
     if not mol.HasSubstructMatch(hydroxyl_pattern):
-        return False, "Missing characteristic hydroxyl pattern on rings"
+        return False, "Missing characteristic hydroxyl pattern"
 
     # Count oxygen atoms (excluding the charged oxygen)
     oxygen_count = sum(1 for atom in mol.GetAtoms() 
@@ -51,11 +47,17 @@ def is_anthocyanidin_cation(smiles: str):
     if oxygen_count < 2:
         return False, "Insufficient oxygen substituents"
 
+    # Check for phenyl ring attachment
+    phenyl_pattern = Chem.MolFromSmarts('c1ccccc1')
+    if not mol.HasSubstructMatch(phenyl_pattern):
+        return False, "Missing phenyl ring substituent"
+
     # Common substituent patterns in anthocyanidins
     substituents = {
+        'hydroxyl': Chem.MolFromSmarts('cO[H]'),
         'methoxy': Chem.MolFromSmarts('cOC'),
-        'glycoside': Chem.MolFromSmarts('OC1OCC(O)C(O)C1O'),
-        'acyl': Chem.MolFromSmarts('C(=O)C'),
+        'glycoside': Chem.MolFromSmarts('OC1OC(CO)C(O)C(O)C1O'),
+        'acyl': Chem.MolFromSmarts('C(=O)'),
     }
     
     found_substituents = []
@@ -64,10 +66,10 @@ def is_anthocyanidin_cation(smiles: str):
             found_substituents.append(name)
 
     # Build classification message
-    base_message = "Contains flavylium cation core with hydroxyl groups"
+    base_message = "Contains flavylium cation core"
     if found_substituents:
         substituents_str = ", ".join(found_substituents)
-        message = f"{base_message} and {substituents_str} substituents"
+        message = f"{base_message} with {substituents_str} substituents"
     else:
         message = base_message
 
