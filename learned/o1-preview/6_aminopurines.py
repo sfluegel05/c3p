@@ -24,11 +24,11 @@ def is_6_aminopurines(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the adenine substructure (6-aminopurine)
-    adenine_smiles = 'Nc1ncnc2ncnc12'
-    adenine_mol = Chem.MolFromSmiles(adenine_smiles)
+    # Define the adenine substructure (6-aminopurine) using SMARTS pattern
+    adenine_smarts = 'Nc1ncnc2ncnc12'  # Corrected SMARTS pattern for adenine
+    adenine_mol = Chem.MolFromSmarts(adenine_smarts)
     if adenine_mol is None:
-        return None, "Error in defining adenine substructure"
+        return False, "Error in defining adenine substructure"
 
     # Check if the molecule contains the adenine substructure
     if mol.HasSubstructMatch(adenine_mol):
