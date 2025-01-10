@@ -21,23 +21,15 @@ def is_tertiary_amine_oxide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define more comprehensive patterns for tertiary amine oxides
-    patterns = [
-        Chem.MolFromSmarts("[N+](C)(C)(C)[O-]"), # Basic tertiary amine oxide
-        Chem.MolFromSmarts("[N+](C)(C)(C)O"), # Allow O without formal charge
-        Chem.MolFromSmarts("[N+]([R][C])(C)[O-]"), # Ring-substituted
-        Chem.MolFromSmarts("[N+](C)[C](C)[O-]"), # Close proximity of O
-        Chem.MolFromSmarts("[N+](C)([O-])[R]"), # Alternative ring positions
-        Chem.MolFromSmarts("[R][N+]([R])([R])[O-]"), # Extensive ring systems
-        Chem.MolFromSmarts("[N+](C)(C)[O-]C"), # Variant of configurations
-        Chem.MolFromSmarts("[C][N+]([C])([C])[O-]R") # More general contexts
-    ]
+    # Define a pattern for tertiary amine oxide
+    pattern = Chem.MolFromSmarts("[N+](C)(C)(C)[O-]")
+    if pattern is None:
+        return None, "Failed to create SMARTS pattern"
 
-    # Check for any of the patterns in the molecule
-    for pattern in patterns:
-        if mol.HasSubstructMatch(pattern):
-            return True, "Contains a variant of the tertiary amine oxide structure (N+ → O-)"
-
+    # Check for the pattern in the molecule
+    if mol.HasSubstructMatch(pattern):
+        return True, "Contains the tertiary amine oxide structure (N+ → O-)"
+    
     return False, "No tertiary amine oxide structure found"
 
 # Test the function with an example
