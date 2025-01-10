@@ -2,7 +2,6 @@
 Classifies: CHEBI:17354 16beta-hydroxy steroid
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_16beta_hydroxy_steroid(smiles: str):
     """
@@ -23,18 +22,16 @@ def is_16beta_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # General pattern for most common steroid backbone
-    steroid_pattern = Chem.MolFromSmarts(
-        "[#6]1:3(-[C@@H]2CC[C@H]4CC[C@@]3([H])[C@H]4C2)([#6]-[#6]-[#6]-1)-[#6]-[#6]-[#6]")
-
+    # Refined pattern for a general steroid backbone (6-6-6-5 ring system)
+    steroid_pattern = Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2CCC4C3CCC4")
+    
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
 
-    # Pattern to match 16beta-hydroxy group
-    # Note: Typically, you identify position-specific groups relative to a 'core' identifier on the steroid framework
-    beta_hydroxy_16_pattern = Chem.MolFromSmarts(
-        "[C@H](O)[CH2]C1CC[C@]2(C)CCC3C[CH2]CC[C@]32C1")
-
+    # Pattern to match 16beta-hydroxy group at position 16
+    # This pattern tries to focus on the appropriate ring and relative position
+    beta_hydroxy_16_pattern = Chem.MolFromSmarts("C[C@@H](O)C1CC[C@]2(C)C[...]CC[C@]21")
+    
     if not mol.HasSubstructMatch(beta_hydroxy_16_pattern):
         return False, "No 16beta-hydroxy group found"
     
