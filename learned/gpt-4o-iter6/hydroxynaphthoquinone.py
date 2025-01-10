@@ -21,24 +21,32 @@ def is_hydroxynaphthoquinone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns - more flexible pattern for naphthoquinone
-    naphthoquinone_pattern = Chem.MolFromSmarts('c1ccc2c(c1)C(=O)C=CC2=O')
+    # Refined SMARTS pattern for naphthoquinone
+    naphthoquinone_patterns = [
+        Chem.MolFromSmarts('c1ccccc2C(=O)C=CC2=O'), # Base pattern for naphthoquinone
+        Chem.MolFromSmarts('C1=CC=C2C(=O)C=CC2=O')  # Alternate structure
+    ]
     hydroxy_pattern = Chem.MolFromSmarts('[OH]')
 
     # Check for naphthoquinone structure
-    if not mol.HasSubstructMatch(naphthoquinone_pattern):
+    for pattern in naphthoquinone_patterns:
+        if mol.HasSubstructMatch(pattern):
+            naphtho_matches = mol.GetSubstructMatches(pattern)
+            break
+    else:
         return False, "No naphthoquinone core found"
 
-    # Check for at least one hydroxy group attached to the aromatic system
-    naphtho_matches = mol.GetSubstructMatches(naphthoquinone_pattern)
+    # Check for hydroxy group in relation to the naphthoquinone
     for naphtho_match in naphtho_matches:
         naphtho_atoms = set(naphtho_match)
-        for atom in naphtho_match:
-            atom_obj = mol.GetAtomWithIdx(atom)
+        for atom_idx in naphtho_match:
+            atom_obj = mol.GetAtomWithIdx(atom_idx)
             if atom_obj.GetSymbol() == 'C':  # Look for C atoms to attach OH
                 neighbors = atom_obj.GetNeighbors()
                 for neighbor in neighbors:
-                    if neighbor.GetSymbol() == 'O' and neighbor.GetIdx() not in naphtho_atoms:
-                        return True, "Contains naphthoquinone core with hydroxy group substitution"
+                    if neighbor.GetSymbol() == 'O':
+                        for o_neighbor in neighbor.GetNeighbors():
+                            if o_neighbor.GetIdx() not in naphtho_atoms:
+                                return True, "Contains naphthoquinone core with hydroxy group substitution"
 
-    return False, "Hydroxy group not attached correctly to naphthoquinone"
+    return False, "No correctly attached hydroxy group found"
