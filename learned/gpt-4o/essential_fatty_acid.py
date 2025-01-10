@@ -23,7 +23,8 @@ def is_essential_fatty_acid(smiles: str):
     
     # Look for a terminal carboxylic acid
     carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
-    if not mol.HasSubstructMatch(carboxylic_acid_pattern):
+    carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
+    if len(carboxylic_acid_matches) < 1:
         return False, "No terminal carboxylic acid found"
     
     # Calculate carbon count to ensure it's a reasonable length for an essential fatty acid
@@ -32,18 +33,25 @@ def is_essential_fatty_acid(smiles: str):
         return False, f"Carbon chain is too short: only {carbon_count} carbon atoms"
     
     # Attempt to find multiple cis-configured double bonds for polyunsaturation
-    # This pattern attempts to capture cis patterns along the chain
     cis_double_bond_pattern = Chem.MolFromSmarts("C/C=C\\C")
     double_bond_count = len(mol.GetSubstructMatches(cis_double_bond_pattern))
     
-    # We consider a significant number of double bonds for the class
-    if double_bond_count < 3:
+    # Relax the condition: A minimum of 3 cis double bonds might be too strict
+    if double_bond_count < 2:
         return False, f"Insufficient cis double bonds: only {double_bond_count} found"
     
-    # Example: a fatty acid typically will not have complex ring structures or heteroatoms beyond -COOH
-    # Create pattern to recognize exclusions due to complex structures, if needed
-    complex_structure_pattern = Chem.MolFromSmarts("[R]")  # Generic, can refine
-    if mol.HasSubstructMatch(complex_structure_pattern):
-        return False, "Complex structure not typical of essential fatty acids"
+    # Exclude complex structures, esters, and functional groups not typical of free fatty acids
+    # Prevent classification of conjugated or complex branched/cyclic derivatives
+    ester_pattern = Chem.MolFromSmarts("C(=O)OC")
+    if mol.HasSubstructMatch(ester_pattern):
+        return False, "Ester groups are not typical of free essential fatty acids"
+    
+    ring_count = mol.GetRingInfo().NumRings()
+    if ring_count > 0:
+        return False, "Rings not typical of essential fatty acids"
+    
+    heteroatom_exceptions = any(atom.GetAtomicNum() != 6 and atom.GetAtomicNum() != 1 and atom.GetAtomicNum() != 8 for atom in mol.GetAtoms())
+    if heteroatom_exceptions:
+        return False, "Presence of heteroatoms not common in essential fatty acids"
     
     return True, "Matches essential fatty acid pattern with polyunsaturation and a terminal carboxylic acid"
