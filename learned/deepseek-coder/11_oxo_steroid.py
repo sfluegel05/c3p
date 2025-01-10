@@ -26,23 +26,15 @@ def is_11_oxo_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the steroid backbone pattern (four fused rings)
-    steroid_backbone = Chem.MolFromSmarts("[*]1~[*]~[*]~[*]~[*]~[*]1.[*]1~[*]~[*]~[*]~[*]~[*]1.[*]1~[*]~[*]~[*]~[*]~[*]1.[*]1~[*]~[*]~[*]~[*]1")
+    # Define a more specific steroid backbone pattern (four fused rings)
+    steroid_backbone = Chem.MolFromSmarts("[C@]12[C@H]3[C@H]([C@H]4[C@H]([C@H]1CC2)CC3)CC4")
     if not mol.HasSubstructMatch(steroid_backbone):
         return False, "No steroid backbone found"
 
     # Define the oxo group at position 11
-    oxo_at_11_pattern = Chem.MolFromSmarts("[C]=O")
-    oxo_matches = mol.GetSubstructMatches(oxo_at_11_pattern)
-    
-    # Check if any of the oxo groups are at position 11
-    for match in oxo_matches:
-        atom_idx = match[0]
-        atom = mol.GetAtomWithIdx(atom_idx)
-        # Position 11 is typically the 11th carbon in the steroid backbone
-        # This is a simplified check; a more precise method would involve mapping the steroid numbering
-        if atom.GetAtomicNum() == 6 and atom.GetDegree() == 3:  # Carbon with three bonds (including the double bond to oxygen)
-            return True, "Contains steroid backbone with oxo group at position 11"
+    oxo_at_11_pattern = Chem.MolFromSmarts("[C@@H]1[C@H]2[C@H]([C@H]3[C@H]([C@H]1CC2)CC3)C(=O)")
+    if mol.HasSubstructMatch(oxo_at_11_pattern):
+        return True, "Contains steroid backbone with oxo group at position 11"
 
     return False, "No oxo group found at position 11"
 
