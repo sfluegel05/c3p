@@ -1,15 +1,13 @@
 """
 Classifies: CHEBI:63534 monoamine
 """
-"""
-Classifies: monoamine
-"""
 from rdkit import Chem
 
 def is_monoamine(smiles: str):
     """
     Determines if a molecule is a monoamine based on its SMILES string.
-    A monoamine typically has an amino group linked to an aromatic ring by a two-carbon bridge.
+    A monoamine typically has an amino group linked to an aromatic system
+    by a two-carbon chain.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -24,14 +22,16 @@ def is_monoamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for aromatic ring pattern
-    aromatic_ring_pattern = Chem.MolFromSmarts("c1ccccc1")  # benzene as a simple example
-    if not mol.HasSubstructMatch(aromatic_ring_pattern):
-        return False, "No aromatic ring found"
+    # Look for a general aromatic pattern
+    aromatic_pattern = Chem.MolFromSmarts("[a]") # any aromatic atom
+    if not mol.HasSubstructMatch(aromatic_pattern):
+        return False, "No aromatic system found"
     
-    # Look for two-carbon alkyl chain connected to an amino group
-    amine_pattern = Chem.MolFromSmarts("NCC")  # simple primary or secondary amine pattern
-    if not mol.HasSubstructMatch(amine_pattern):
-        return False, "No two-carbon chain linked to an amino group found"
+    # Look for a generalized amine pattern linked through a two-carbon chain
+    # [NX3;H2,H1,H0] matches any nitrogen (primary, secondary, tertiary amines)
+    # connected via a two-carbon chain to the aromatic system
+    amine_chain_pattern = Chem.MolFromSmarts("[NX3;H2,H1,H0]CC[a]")
+    if not mol.HasSubstructMatch(amine_chain_pattern):
+        return False, "No amine linked by a two-carbon chain to an aromatic system found"
 
-    return True, "Contains an aromatic ring and an amino group linked via a two-carbon chain"
+    return True, "Contains an aromatic system with an amino group linked via a two-carbon chain"
