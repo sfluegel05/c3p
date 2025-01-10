@@ -5,7 +5,6 @@ Classifies: CHEBI:73702 wax
 Classifies: wax
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_wax(smiles: str):
     """
@@ -26,58 +25,57 @@ def is_wax(smiles: str):
         return False, "Invalid SMILES string"
 
     # Find ester functional groups
-    ester_pattern = Chem.MolFromSmarts("C(=O)O")
+    ester_pattern = Chem.MolFromSmarts("[C:1](=O)[O:2][C]")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if not ester_matches:
         return False, "No ester functional group found"
 
     # For each ester group, check the length of the carbon chains on both sides
     for match in ester_matches:
-        # Get the carbonyl carbon atom index
-        c_atom_idx = match[0]
-        # Get the oxygen atom index of the ester bond
-        o_atom_idx = match[2]
-        
-        # Get the acyl chain (fatty acid side)
-        acyl_chain_length = get_chain_length(mol, c_atom_idx, exclude_atom_idx=o_atom_idx)
-        # Get the alkoxy chain (fatty alcohol side)
-        alkoxy_chain_length = get_chain_length(mol, o_atom_idx, exclude_atom_idx=c_atom_idx)
-        
-        # Check if both chains are long (e.g., at least 14 carbons)
+        c_atom_idx = match[0]  # Carbonyl carbon atom index
+        o_atom_idx = match[1]  # Single-bonded oxygen atom index
+
+        # Break the bond between carbonyl carbon and single-bonded oxygen
+        bond = mol.GetBondBetweenAtoms(c_atom_idx, o_atom_idx)
+        if bond is None:
+            continue  # Bond not found, skip to next match
+        bond_idx = bond.GetIdx()
+
+        # Break the bond to create fragments
+        mol_frag = Chem.FragmentOnBonds(mol, [bond_idx], addDummies=True)
+        fragments = Chem.GetMolFrags(mol_frag, asMols=True, sanitizeFrags=True)
+
+        if len(fragments) != 2:
+            continue  # Should result in exactly two fragments, else skip
+
+        # Initialize chain lengths
+        acyl_chain_length = 0
+        alkoxy_chain_length = 0
+
+        # For each fragment, count the number of carbon atoms
+        for frag in fragments:
+            carbon_atoms = [atom for atom in frag.GetAtoms() if atom.GetAtomicNum() == 6]
+            c_count = len(carbon_atoms)
+            # Determine if fragment is acyl or alkoxy based on attachment to dummy atom
+            # Dummy atom (atomic number 0) replaces the bond we broke
+            dummy_neighbors = [atom for atom in frag.GetAtoms() if atom.GetAtomicNum() == 0]
+            if len(dummy_neighbors) != 1:
+                continue  # Fragment should have one dummy atom
+            dummy_atom = dummy_neighbors[0]
+            connected_atoms = dummy_atom.GetNeighbors()
+            if connected_atoms:
+                neighbor = connected_atoms[0]
+                if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() in [c_atom_idx, o_atom_idx]:
+                    # This fragment contains the original carbonyl carbon
+                    acyl_chain_length = c_count
+                else:
+                    alkoxy_chain_length = c_count
+
+        # Check if both chains are long enough (14 carbons or more)
         if acyl_chain_length >= 14 and alkoxy_chain_length >= 14:
             return True, f"Ester with acyl chain length {acyl_chain_length} and alkoxy chain length {alkoxy_chain_length}"
-    
+
     return False, "Ester present, but chains are not long enough for wax"
-
-def get_chain_length(mol, start_atom_idx, exclude_atom_idx):
-    """
-    Calculates the length of the carbon chain starting from the given atom index,
-    excluding the direction towards the exclude_atom_idx.
-
-    Args:
-        mol (Chem.Mol): RDKit molecule object
-        start_atom_idx (int): Atom index to start the chain from
-        exclude_atom_idx (int): Atom index to exclude from traversal (e.g., the ester bond)
-
-    Returns:
-        int: Number of carbons in the chain
-    """
-    visited = set()
-    chain_length = 0
-    stack = [(start_atom_idx, None)]
-    while stack:
-        current_atom_idx, previous_atom_idx = stack.pop()
-        if current_atom_idx in visited or current_atom_idx == exclude_atom_idx:
-            continue
-        visited.add(current_atom_idx)
-        atom = mol.GetAtomWithIdx(current_atom_idx)
-        if atom.GetAtomicNum() == 6:  # Carbon atom
-            chain_length += 1
-            for neighbor in atom.GetNeighbors():
-                neighbor_idx = neighbor.GetIdx()
-                if neighbor_idx != previous_atom_idx:
-                    stack.append((neighbor_idx, current_atom_idx))
-    return chain_length
 
 __metadata__ = {
     'chemical_class': {
