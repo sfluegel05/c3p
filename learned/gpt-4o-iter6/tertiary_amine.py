@@ -21,8 +21,8 @@ def is_tertiary_amine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for tertiary amine pattern: nitrogen with three carbon attachments
-    tertiary_amine_pattern = Chem.MolFromSmarts("[NX3]([C])[C][C]")
+    # Correct pattern for tertiary amine: nitrogen with three hydrocarbyl groups
+    tertiary_amine_pattern = Chem.MolFromSmarts("[NX3]([C])([C])([C])")
     if mol.HasSubstructMatch(tertiary_amine_pattern):
         return True, "Contains a nitrogen atom bonded to three carbon groups, indicating a tertiary amine"
 
