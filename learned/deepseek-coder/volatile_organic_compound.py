@@ -34,25 +34,24 @@ def is_volatile_organic_compound(smiles: str):
     mol_wt = Descriptors.MolWt(mol)
 
     # Check for molecular weight as a proxy for boiling point
-    # Adjusted threshold to be more lenient
-    if mol_wt > 400:  # Adjusted threshold based on typical VOC molecular weights
+    if mol_wt > 250:  # Adjusted threshold based on typical VOC molecular weights
         return False, f"Molecular weight ({mol_wt:.2f}) too high for VOC"
 
     # Check for heavy atoms (non-hydrogen atoms)
     heavy_atom_count = mol.GetNumHeavyAtoms()
-    if heavy_atom_count > 30:  # Adjusted threshold for VOCs
+    if heavy_atom_count > 20:  # Adjusted threshold for VOCs
         return False, f"Too many heavy atoms ({heavy_atom_count}) for VOC"
 
-    # Check for functional groups that might increase boiling point
-    # (e.g., multiple hydroxyl groups, long carbon chains)
-    hydroxyl_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[OX2H]")))
-    if hydroxyl_count > 3:  # Relaxed restriction
-        return False, f"Too many hydroxyl groups ({hydroxyl_count}) for VOC"
-
-    # Check for long carbon chains
-    long_chain_pattern = Chem.MolFromSmarts("[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]")
+    # Check for long carbon chains (more than 12 carbons in a row)
+    long_chain_pattern = Chem.MolFromSmarts("[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]")
     if mol.HasSubstructMatch(long_chain_pattern):
         return False, "Long carbon chain detected, likely not a VOC"
+
+    # Check for functional groups that might increase boiling point
+    # (e.g., multiple hydroxyl groups)
+    hydroxyl_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[OX2H]")))
+    if hydroxyl_count > 2:  # Relaxed restriction
+        return False, f"Too many hydroxyl groups ({hydroxyl_count}) for VOC"
 
     # If all checks pass, classify as VOC
     return True, f"Molecular weight ({mol_wt:.2f}) and structure consistent with VOC criteria"
