@@ -23,19 +23,18 @@ def is_16beta_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Generalized pattern for steroid backbone
-    steroid_patterns = [
-        Chem.MolFromSmarts("C1CCCC2C1CCC3C2CCC4C3(C)CC[C@@H]4C"),
-        Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2CCC4C3CC[C@H]4C"),
-        Chem.MolFromSmarts("C1CCCC2(C1)CCC3C2CCCC4C3CCC5=C4CCC=C5")
-    ]
-    
-    # Ensure at least one steroid pattern matches
-    if not any(mol.HasSubstructMatch(pattern) for pattern in steroid_patterns):
+    # General pattern for most common steroid backbone
+    steroid_pattern = Chem.MolFromSmarts(
+        "[#6]1:3(-[C@@H]2CC[C@H]4CC[C@@]3([H])[C@H]4C2)([#6]-[#6]-[#6]-1)-[#6]-[#6]-[#6]")
+
+    if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
-    
-    # Check for the 16beta-hydroxy group pattern
-    beta_hydroxy_16_pattern = Chem.MolFromSmarts("[C@@H](O)[C@H]([CH2])[CH2][C@H]1CC[C@]2(C)[C@@H]([C@](O)([CH2])[CH2][C@@H]3[CH2][CH2][CH2][CH2]3)[C@@]1([CH3])[CH2][CH2]2")
+
+    # Pattern to match 16beta-hydroxy group
+    # Note: Typically, you identify position-specific groups relative to a 'core' identifier on the steroid framework
+    beta_hydroxy_16_pattern = Chem.MolFromSmarts(
+        "[C@H](O)[CH2]C1CC[C@]2(C)CCC3C[CH2]CC[C@]32C1")
+
     if not mol.HasSubstructMatch(beta_hydroxy_16_pattern):
         return False, "No 16beta-hydroxy group found"
     
