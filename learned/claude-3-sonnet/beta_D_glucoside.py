@@ -10,10 +10,6 @@ from rdkit.Chem import AllChem
 def is_beta_D_glucoside(smiles: str):
     """
     Determines if a molecule contains a beta-D-glucoside moiety.
-    Beta-D-glucoside has specific stereochemistry:
-    - Beta configuration at anomeric carbon (C1)
-    - D-configuration for the sugar
-    - Pyranose form (6-membered ring)
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,62 +22,47 @@ def is_beta_D_glucoside(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Core pattern for beta-D-glucopyranoside
-    # Using multiple SMARTS patterns to catch different representations
-    glucose_patterns = [
-        # Pattern 1: Basic beta-D-glucose core with any substituents
-        "[OX2,OH0][C@@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](CO)O1",
-        # Pattern 2: More flexible pattern allowing substituted oxygens
-        "[OX2,OH0][C@@H]1[C@H]([OH0,OH1])[C@@H]([OH0,OH1])[C@H]([OH0,OH1])[C@@H](CO)O1",
-        # Pattern 3: Alternative representation
-        "O[C@@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](CO)O1"
-    ]
+        
+    # SMARTS pattern for beta-D-glucose core
+    # [OH1,O][C@H]1O[C@H](O)[C@@H](O)[C@H](O)[C@@H]1CO
+    # Note: The pattern looks for the beta-D-glucose with correct stereochemistry
+    glucose_pattern = Chem.MolFromSmarts('[OX2,OH1][C@H]1O[C@H](O)[C@@H](O)[C@H](O)[C@@H]1CO')
     
-    found_match = False
-    for pattern in glucose_patterns:
-        patt = Chem.MolFromSmarts(pattern)
-        if patt is not None and mol.HasSubstructMatch(patt, useChirality=True):
-            found_match = True
-            break
+    # Alternative pattern that's more flexible with substituents
+    glucose_pattern_2 = Chem.MolFromSmarts('[OX2][C@H]1O[C@H]([!H])[C@@H]([OX2])[C@H]([OX2])[C@@H]1CO')
     
-    if not found_match:
+    if not (mol.HasSubstructMatch(glucose_pattern) or mol.HasSubstructMatch(glucose_pattern_2)):
         return False, "No beta-D-glucose moiety found with correct stereochemistry"
-
-    # Essential validation checks:
     
-    # 1. Verify pyranose ring
-    pyranose = Chem.MolFromSmarts("O1CCCCC1")
-    if not mol.HasSubstructMatch(pyranose):
+    # Check for glycosidic bond at C1 (anomeric carbon)
+    # This is implicit in the match, but we can add additional checks
+    
+    # Count pyranose rings (6-membered rings containing oxygen)
+    ring_pattern = Chem.MolFromSmarts('O1CCCCC1')
+    if not mol.HasSubstructMatch(ring_pattern):
         return False, "No pyranose ring found"
+    
+    # Additional validation: Check for presence of multiple OH groups
+    oh_pattern = Chem.MolFromSmarts('O[H]')
+    oh_matches = len(mol.GetSubstructMatches(oh_pattern))
+    if oh_matches < 3:  # Beta-D-glucose should have multiple OH groups
+        return False, "Insufficient hydroxyl groups for beta-D-glucose"
+    
+    return True, "Contains beta-D-glucose moiety with correct stereochemistry and glycosidic bond"
 
-    # 2. Check for beta configuration at anomeric carbon
-    # Multiple patterns to catch different representations
-    beta_patterns = [
-        "[O][C@@H]1O[C@H]",  # Common pattern
-        "[O][C@@H]1O[C@@H]", # Alternative pattern
-        "O[C@@H]1O[C@H]"     # Another representation
+def test_examples():
+    """Test function with some example molecules"""
+    examples = [
+        "O1[C@@H]([C@H]([C@@H]([C@H]([C@@H]1OC=2C=CC(=CC2)[N+]([O-])=O)O)O)O)CO",  # 4-nitrophenyl beta-D-glucoside
+        "OC[C@H]1O[C@@H](Oc2cc3ccc(=O)oc3cc2O)[C@H](O)[C@@H](O)[C@@H]1O",  # esculin
+        "CC(=O)O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](CO)O1"  # Not a beta-D-glucoside
     ]
     
-    beta_found = False
-    for pattern in beta_patterns:
-        beta_config = Chem.MolFromSmarts(pattern)
-        if beta_config is not None and mol.HasSubstructMatch(beta_config, useChirality=True):
-            beta_found = True
-            break
-            
-    if not beta_found:
-        return False, "Anomeric carbon does not have beta configuration"
+    for smi in examples:
+        result, reason = is_beta_D_glucoside(smi)
+        print(f"SMILES: {smi}")
+        print(f"Is beta-D-glucoside: {result}")
+        print(f"Reason: {reason}\n")
 
-    # 3. Basic check for presence of required functional groups
-    required_groups = [
-        "CO",      # Primary alcohol
-        "O1CCCCC1" # Pyranose ring
-    ]
-    
-    for group in required_groups:
-        pattern = Chem.MolFromSmarts(group)
-        if pattern is None or not mol.HasSubstructMatch(pattern):
-            return False, f"Missing required group: {group}"
-
-    return True, "Contains beta-D-glucose moiety with correct stereochemistry and beta glycosidic bond"
+if __name__ == "__main__":
+    test_examples()
