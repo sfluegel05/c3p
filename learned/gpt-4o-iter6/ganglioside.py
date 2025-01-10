@@ -20,18 +20,18 @@ def is_ganglioside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # General pattern for ceramide and sphingosine backbone
-    broad_ceramide_pattern = Chem.MolFromSmarts("NC(=O)C[C@H](O)C[C@@H](O)CCCCCCCCCCCCCC")
+    # General pattern for ceramide backbone, including variability in chain length
+    ceramide_pattern = Chem.MolFromSmarts("NC(=O)C[C@H](O)C[C@@H](O)C(C)C")
     
-    # Sialic acid substructure pattern
-    broad_sialic_acid_pattern = Chem.MolFromSmarts("C(=O)C[C@H](O)[C@@H](O)C(O)CO")
+    # General pattern for sialic acid, allowing for variability
+    sialic_acid_pattern = Chem.MolFromSmarts("C(=O)[C@@H](O)C(O)CC(O)C")
     
-    # Check for ceramide backbone
-    if not mol.HasSubstructMatch(broad_ceramide_pattern):
+    # Check whether there exists a ceramide backbone
+    if not mol.HasSubstructMatch(ceramide_pattern):
         return False, "No ceramide backbone found"
     
-    # Check for presence of sialic acid residue
-    sialic_acid_residues = mol.GetSubstructMatches(broad_sialic_acid_pattern)
+    # Check for presence of sialic acids
+    sialic_acid_residues = mol.GetSubstructMatches(sialic_acid_pattern)
     if len(sialic_acid_residues) < 1:
         return False, "No sialic acid residues found"
     
