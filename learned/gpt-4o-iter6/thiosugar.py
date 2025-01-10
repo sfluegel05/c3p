@@ -24,27 +24,35 @@ def is_thiosugar(smiles: str):
     
     # Detect the presence of a sugar moiety
     sugar_patterns = [
-        Chem.MolFromSmarts("[C@@H]1O[C@H]([C@H](O)[C@@H](O)[C@H]1O)"), # pyranose
-        Chem.MolFromSmarts("[C@@H]1O[C@H]([C@H](O)[C@H]1O)"),          # furanose
+        Chem.MolFromSmarts("[C@H]1O[C@H]([C@H](O)[C@H](O)[C@H]1O)"),  # pyranose
+        Chem.MolFromSmarts("[C@H]1O[C@H]([C@H](O)[C@H]1O)"),          # furanose
+        Chem.MolFromSmarts("[C@H]1O[C@H](O)[C@H](O)[C@H](O)[C@H]1"),  # alternative pyranose
     ]
     
     has_sugar = any(mol.HasSubstructMatch(pattern) for pattern in sugar_patterns)
     if not has_sugar:
         return False, "No sugar backbone found"
     
-    # Look for sulfur replacements (S or -SR)
+    # Look for sulfur replacements (S or -SR) specifically replacing oxygen
     sulfur_patterns = [
-        Chem.MolFromSmarts("[C-S]"),  # Any carbon-sulfur bond
-        Chem.MolFromSmarts("[O-S]"),  # Oxygen replaced by sulfur
-        Chem.MolFromSmarts("[S;D1]")  # Terminal sulfur
+        Chem.MolFromSmarts("[C-S]"),  # Any carbon-sulfur bond, replaces hydroxyl
+        Chem.MolFromSmarts("[O-S]"),  # Direct replacement of oxygen by sulfur
+        Chem.MolFromSmarts("[S;D1]")  # Terminal sulfur suggesting replacement
     ]
     
-    has_sulfur = any(mol.HasSubstructMatch(pattern) for pattern in sulfur_patterns)
-    if not has_sulfur:
-        return False, "No sulfur replacement detected"
+    # Check that sulfur is correctly attached to sugar carbons
+    correct_sulfur_attach = False
+    for pattern in sulfur_patterns:
+        matching_atoms = mol.GetSubstructMatches(pattern)
+        for match in matching_atoms:
+            # Verify sulfur attachment to sp3 carbon adjacent to sugar oxygens
+            sulfur_atom = mol.GetAtomWithIdx(match[1])  # Getting the sulfur atom in [O-S]
+            for neighbor in sulfur_atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 6 and neighbor.GetDegree() >= 3:  # carbon directly linked
+                    correct_sulfur_attach = True
+                    break
+
+    if not correct_sulfur_attach:
+        return False, "No valid sulfur replacement detected"
     
     return True, "Contains carbohydrate structure with sulfur substitution(s)"
-
-# Example of how to use the function
-# smiles_example = "CC(C)S[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O"  # isopropyl beta-D-thiogalactopyranoside
-# print(is_thiosugar(smiles_example))
