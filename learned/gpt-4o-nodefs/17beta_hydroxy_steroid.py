@@ -22,20 +22,20 @@ def is_17beta_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS pattern for steroid skeleton (cyclopenta[a]phenanthrene)
-    steroid_skeleton_pattern = Chem.MolFromSmarts("C1CC2CCC3C4C=CC(=O)CC4CC3C2(C)C1")
+    # Define a more general SMARTS pattern for the steroid scaffold (4-ring system)
+    steroid_skeleton_pattern = Chem.MolFromSmarts("[R2]1[R2][R3]2[R3][R2][R2]3[R2][R3][R3][R2][R2]4[R3][R2][R2][R2][R2]4[C@R]3[R2]2[R3]1")
     if not mol.HasSubstructMatch(steroid_skeleton_pattern):
         return False, "No steroid skeleton found"
     
-    # Define SMARTS pattern for hydroxyl group at 17-beta position
-    # This pattern assumes the steroid skeleton has been identified in its correct orientation
-    hydroxyl_17beta_pattern = Chem.MolFromSmarts("[C@H]1...O")  # Simplified representation
+    # Define a SMARTS pattern for hydroxyl group at 17-beta position
+    # Assuming a broader context of steroid structure, flexible pattern for 17-beta hydroxyl
+    hydroxyl_17beta_pattern = Chem.MolFromSmarts("[C@H]1CC[C@]2([C@@H]([R2][R1])CC[C@@]2([H])C)[C@H](O)C=1")
     if not mol.HasSubstructMatch(hydroxyl_17beta_pattern):
         return False, "No hydroxyl group at 17-beta position found"
     
     return True, "Molecule matches 17beta-hydroxy steroid structure"
 
-# Added metadata based on the chemical class and recognition mechanism
+# Added updated metadata to reflect the flexible recognition mechanisms
 __metadata__ = {   
     'chemical_class': {   
         'name': '17beta-hydroxy steroid',
