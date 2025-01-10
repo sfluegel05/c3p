@@ -25,58 +25,43 @@ def is_bioconjugate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Initialize a set to store detected biological substructures
-    bio_substructures = set()
+    # Define SMARTS patterns for common biological molecules
+    patterns = {
+        'amino acid': Chem.MolFromSmarts('N[C@@H](C)C(=O)O'),
+        'peptide': Chem.MolFromSmarts('N[C@@H](C)C(=O)N[C@@H](C)C(=O)'),
+        'nucleotide': Chem.MolFromSmarts('n1cnc2c1ncnc2'),
+        'sugar': Chem.MolFromSmarts('C1(C(C(C(O1)O)O)O)O'),
+        'fatty acid': Chem.MolFromSmarts('C(=O)OCCCCCCCC'),
+        'glutathione': Chem.MolFromSmarts('NCC(=O)N[C@@H](CS)C(=O)NCC(=O)O'),
+        'coenzyme A': Chem.MolFromSmarts('NC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H](n2cnc3c(N)ncnc23)[C@@H](O)[C@H]1O'),
+        'lipid': Chem.MolFromSmarts('C(=O)O[C@@H]('),
+        'polyketide': Chem.MolFromSmarts('C(=O)C(C(=O))'),
+    }
 
-    # Define SMARTS patterns for common biological substructures
+    # Initialize a list to store detected biological molecules
+    bio_molecules = []
 
-    # Peptide bond (amide bond between amino acids)
-    peptide_bond = Chem.MolFromSmarts("N[C;!$(C=O)]C(=O)")  # N-C-C(=O)
-    if mol.HasSubstructMatch(peptide_bond):
-        bio_substructures.add("peptide bond")
+    # Search for patterns
+    for name, pattern in patterns.items():
+        if pattern is None:
+            continue
+        if mol.HasSubstructMatch(pattern):
+            bio_molecules.append(name)
 
-    # Sugar ring (five or six-membered ring with oxygen and multiple hydroxyl groups)
-    sugar_ring = Chem.MolFromSmarts("C1OC([H])C([H])OC1")  # Simplified pattern for furanose ring
-    if mol.HasSubstructMatch(sugar_ring):
-        bio_substructures.add("sugar ring")
+    # Remove duplicates
+    bio_molecules = list(set(bio_molecules))
 
-    # Nucleotide base (purine or pyrimidine ring systems)
-    purine = Chem.MolFromSmarts("c1ncnc2ncnc12")  # Purine ring
-    pyrimidine = Chem.MolFromSmarts("c1ncnc1")     # Pyrimidine ring
-    if mol.HasSubstructMatch(purine) or mol.HasSubstructMatch(pyrimidine):
-        bio_substructures.add("nucleotide base")
+    # Count the number of different biological molecules found
+    num_bio_molecules = len(bio_molecules)
 
-    # Phosphate group (common in nucleotides)
-    phosphate_group = Chem.MolFromSmarts("P(=O)(O)O")  # Phosphate group
-    if mol.HasSubstructMatch(phosphate_group):
-        bio_substructures.add("phosphate group")
-
-    # Long fatty acid chain (long aliphatic chain with terminal carboxylic acid)
-    fatty_acid = Chem.MolFromSmarts("C(=O)OCCCCCCCCCC")  # 10+ carbon atoms
-    if mol.HasSubstructMatch(fatty_acid):
-        bio_substructures.add("fatty acid chain")
-
-    # Glutathione substructure (tripeptide of glutamate, cysteine, and glycine)
-    glutathione = Chem.MolFromSmarts("NCC(=O)N[C@@H](CS)C(=O)NCC(=O)O")  # Simplified glutathione pattern
-    if mol.HasSubstructMatch(glutathione):
-        bio_substructures.add("glutathione")
-
-    # Coenzyme A substructure (contains ADP, pantetheine, and cysteamine)
-    coa = Chem.MolFromSmarts("NC(=O)CCC(=O)NCCSC")  # Simplified CoA pattern
-    if mol.HasSubstructMatch(coa):
-        bio_substructures.add("coenzyme A")
-
-    # Count the number of different biological substructures found
-    num_bio_substructures = len(bio_substructures)
-
-    # If at least two different biological substructures are found, classify as bioconjugate
-    if num_bio_substructures >= 2:
-        reason = f"Contains multiple biological substructures: {', '.join(bio_substructures)}"
+    # Check if at least two different biological molecules are present
+    if num_bio_molecules >= 2:
+        reason = f"Contains at least two biological molecules covalently linked: {', '.join(bio_molecules)}"
         return True, reason
     else:
-        return False, "Does not contain at least two different biological substructures"
+        return False, "Does not contain at least two distinct biological molecules covalently linked"
 
 # Example usage:
-# smiles = "C(CCCC)[C@@H]([C@@H](\C=C\[C@H](C/C=C\C/C=C\CCCC(O)=O)O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)O"
+# smiles = "C(CCCC)[C@@H]([C@@H](\\C=C\\[C@H](C/C=C\\C/C=C\\CCCC(O)=O)O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)O"
 # result = is_bioconjugate(smiles)
 # print(result)
