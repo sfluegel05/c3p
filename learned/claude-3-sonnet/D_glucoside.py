@@ -25,45 +25,54 @@ def is_D_glucoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS patterns for D-glucose in pyranose form (both alpha and beta)
-    # The pattern matches a 6-membered ring with 4 OH groups and 1 CH2OH group
-    # The stereochemistry is specified to match D-glucose specifically
-    alpha_glucose = Chem.MolFromSmarts('[C@@H]1([OH])O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O')
-    beta_glucose = Chem.MolFromSmarts('[C@@H]1([OH])O[C@@H](CO)[C@@H](O)[C@H](O)[C@H]1O')
+    # SMARTS patterns for D-glucose core (pyranose form)
+    # Matches the core structure with correct stereochemistry, allowing for substitutions
+    glucose_core = """[C@@H]1([OR0])[C@H]([OR0])[C@@H]([OR0])[C@H]([OR0])[C@H]([C@H]1[OR0])CO[R0]"""
+    glucose_pattern = Chem.MolFromSmarts(glucose_core)
     
-    # Look for glycosidic linkage patterns
-    o_glycoside = Chem.MolFromSmarts('[C@@H]1([OR2])O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O')  # O-glycoside
-    n_glycoside = Chem.MolFromSmarts('[C@@H]1([NR2])O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O')  # N-glycoside
-    s_glycoside = Chem.MolFromSmarts('[C@@H]1([SR2])O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O')  # S-glycoside
-    c_glycoside = Chem.MolFromSmarts('[C@@H]1([CR2])O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O')  # C-glycoside
-
-    # Check if molecule contains D-glucose
-    has_alpha = mol.HasSubstructMatch(alpha_glucose) if alpha_glucose else False
-    has_beta = mol.HasSubstructMatch(beta_glucose) if beta_glucose else False
-    
-    if not (has_alpha or has_beta):
+    if not glucose_pattern or not mol.HasSubstructMatch(glucose_pattern):
         return False, "No D-glucose moiety found"
 
-    # Check for glycosidic linkages
-    has_o_glycoside = mol.HasSubstructMatch(o_glycoside) if o_glycoside else False
-    has_n_glycoside = mol.HasSubstructMatch(n_glycoside) if n_glycoside else False
-    has_s_glycoside = mol.HasSubstructMatch(s_glycoside) if s_glycoside else False
-    has_c_glycoside = mol.HasSubstructMatch(c_glycoside) if c_glycoside else False
-
-    if not (has_o_glycoside or has_n_glycoside or has_s_glycoside or has_c_glycoside):
-        return False, "No glycosidic linkage found"
-
-    # Determine the type of glycoside
-    glycoside_types = []
-    if has_o_glycoside:
-        glycoside_types.append("O-glycoside")
-    if has_n_glycoside:
-        glycoside_types.append("N-glycoside")
-    if has_s_glycoside:
-        glycoside_types.append("S-glycoside")
-    if has_c_glycoside:
-        glycoside_types.append("C-glycoside")
-
-    anomeric_form = "alpha" if has_alpha else "beta"
+    # Find all glucose matches
+    glucose_matches = mol.GetSubstructMatches(glucose_pattern)
     
-    return True, f"Contains {anomeric_form}-D-glucose in {', '.join(glycoside_types)} form"
+    # Check each glucose match for glycosidic linkage
+    for match in glucose_matches:
+        anomeric_carbon = match[0]  # First atom in the pattern is the anomeric carbon
+        anomeric_oxygen = None
+        
+        # Get the oxygen attached to anomeric carbon
+        for bond in mol.GetAtomWithIdx(anomeric_carbon).GetBonds():
+            other_atom = bond.GetOtherAtom(mol.GetAtomWithIdx(anomeric_carbon))
+            if other_atom.GetAtomicNum() == 8:  # Oxygen
+                anomeric_oxygen = other_atom
+                break
+                
+        if anomeric_oxygen is None:
+            continue
+            
+        # Check if oxygen is connected to something other than the glucose ring
+        for bond in anomeric_oxygen.GetBonds():
+            other_atom = bond.GetOtherAtom(anomeric_oxygen)
+            if other_atom.GetIdx() not in match:
+                # This is a glycosidic bond
+                # Determine alpha/beta configuration
+                chiral_tag = mol.GetAtomWithIdx(anomeric_carbon).GetChiralTag()
+                if chiral_tag == Chem.ChiralType.CHI_TETRAHEDRAL_CCW:
+                    anomeric_config = "beta"
+                else:
+                    anomeric_config = "alpha"
+                    
+                # Determine what type of molecule it's connected to
+                if other_atom.GetAtomicNum() == 6:  # Carbon
+                    glycoside_type = "O-glycoside to carbon"
+                elif other_atom.GetAtomicNum() == 7:  # Nitrogen
+                    glycoside_type = "N-glycoside"
+                elif other_atom.GetAtomicNum() == 16:  # Sulfur
+                    glycoside_type = "S-glycoside"
+                else:
+                    glycoside_type = "O-glycoside"
+                
+                return True, f"Contains {anomeric_config}-D-glucose in {glycoside_type} form"
+
+    return False, "No glycosidic linkage found"
