@@ -22,12 +22,14 @@ def is_dodecanoate_ester(smiles: str):
         return False, "Invalid SMILES string"
     
     # Define advanced lauroyl ester pattern using SMARTS
-    # This specifies a 12-carbon chain to an ester, accommodating linear or branched structures
-    # Include possible variations for esters connected to glycerol backbones or other groups
+    # This captures the diversity in ester linkages and stereochemistry
     lauroyl_patterns = [
-        Chem.MolFromSmarts("C(=O)OCCCCCCCCCCCC"),  # simple lauroyl group
-        Chem.MolFromSmarts("C(=O)OC[C@H](O)CCCCCCCCCCC"),  # stereo-specific pattern 
-        Chem.MolFromSmarts("C(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C")  # pattern with other components
+        Chem.MolFromSmarts("C(=O)OCCCCCCCCCCC"),  # General lauric acid chain to ester
+        Chem.MolFromSmarts("C(=O)OC[C@H](O)CCCCCCCCCCC"),  # Stereo-specific pattern
+        Chem.MolFromSmarts("C(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C"),  # Lactone-like ester
+        Chem.MolFromSmarts("C(=O)OCCOC(=O)CCCCCCCCCCC"),  # Glycerol esterified lauroyl
+        Chem.MolFromSmarts("C(=O)OCCCCCCCCCCC[P](=O)([O-])[O-]"),  # Phosphoesters or similar
+        Chem.MolFromSmarts("CCCCCCCCCCCC(=O)O")  # Additional lauroyl functional groups
     ]
 
     # Iterate over patterns and check for matches
