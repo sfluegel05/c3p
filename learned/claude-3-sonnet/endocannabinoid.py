@@ -12,7 +12,6 @@ def is_endocannabinoid(smiles: str):
     """
     Determines if a molecule is an endocannabinoid based on its SMILES string.
     Endocannabinoids are signaling lipids that activate cannabinoid receptors.
-    Key classes include N-acylethanolamines and 2-acylglycerols.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -27,82 +26,65 @@ def is_endocannabinoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Key structural patterns
-    ethanolamine = Chem.MolFromSmarts("[NX3][CH2][CH2][OH]")
-    glycerol_2_position = Chem.MolFromSmarts("[CH2X4][CHX4]([OH,OR])[CH2X4]")
-    
-    # Fatty acid chain patterns - more specific
-    long_chain = Chem.MolFromSmarts("[CH2,CH3][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2]")
-    arachidonoyl = Chem.MolFromSmarts("CC=CC=CC=CC=CCC")  # Simplified pattern for multiple double bonds
-    
-    # Linkage patterns
-    amide = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[#6]")
-    ester = Chem.MolFromSmarts("[OX2][CX3](=[OX1])[#6]")
-    
-    # Negative patterns - exclude these
-    phosphate = Chem.MolFromSmarts("[$(P(=[O,S])([O,S])[O,S])]")
-    multiple_esters = Chem.MolFromSmarts("([CX3](=[OX1])[OX2][#6])[CX3](=[OX1])[OX2][#6]")
-    
-    # Basic checks
-    if mol.HasSubstructMatch(phosphate):
-        return False, "Contains phosphate group (not characteristic of endocannabinoids)"
-    
-    if len(mol.GetSubstructMatches(ester)) > 2:
-        return False, "Too many ester groups for endocannabinoid"
-    
-    # Count rings - endocannabinoids typically have 0-1 rings (epoxy possible)
-    ring_count = rdMolDescriptors.CalcNumRings(mol)
-    if ring_count > 1:
-        return False, "Too many rings for endocannabinoid"
-        
+    # Look for key structural features
+    # Ethanolamine group (-NCCO)
+    ethanolamine_pattern = Chem.MolFromSmarts("[NX3][CH2][CH2][OH]")
+    # Glycerol backbone
+    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
+    # Ester linkage
+    ester_pattern = Chem.MolFromSmarts("[#6][CX3](=[OX1])[OX2][#6]")
+    # Amide linkage
+    amide_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[#6]")
+    # Double bonds
+    double_bond_pattern = Chem.MolFromSmarts("[#6]=[#6]")
+    # Epoxy group
+    epoxy_pattern = Chem.MolFromSmarts("[#6][OX2][#6]")
+
+    has_ethanolamine = mol.HasSubstructMatch(ethanolamine_pattern)
+    has_glycerol = mol.HasSubstructMatch(glycerol_pattern)
+    has_ester = mol.HasSubstructMatch(ester_pattern)
+    has_amide = mol.HasSubstructMatch(amide_pattern)
+    double_bonds = len(mol.GetSubstructMatches(double_bond_pattern))
+    has_epoxy = mol.HasSubstructMatch(epoxy_pattern)
+
     # Count carbons and oxygens
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 15 or c_count > 30:
-        return False, "Carbon count outside typical range for endocannabinoids"
-
-    # Check for characteristic structural features
-    has_ethanolamine = mol.HasSubstructMatch(ethanolamine)
-    has_glycerol = mol.HasSubstructMatch(glycerol_2_position)
-    has_long_chain = mol.HasSubstructMatch(long_chain)
-    has_arachidonoyl = mol.HasSubstructMatch(arachidonoyl)
     
-    # Count double bonds
-    double_bond_pattern = Chem.MolFromSmarts("[#6]=[#6]")
-    double_bonds = len(mol.GetSubstructMatches(double_bond_pattern))
+    # Basic requirements
+    if not (has_ethanolamine or has_glycerol):
+        return False, "Missing required ethanolamine or glycerol group"
     
-    features = []
+    if not (has_ester or has_amide):
+        return False, "Missing required ester or amide linkage"
     
-    # N-acylethanolamine type
-    if has_ethanolamine:
-        if not mol.HasSubstructMatch(amide):
-            return False, "Ethanolamine present but missing required amide linkage"
-        features.append("N-acylethanolamine")
+    # Must have sufficient carbon chain length
+    if c_count < 15:
+        return False, "Carbon chain too short for endocannabinoid"
         
-    # 2-acylglycerol type
-    elif has_glycerol:
-        if not mol.HasSubstructMatch(ester):
-            return False, "Glycerol present but missing required ester linkage"
-        features.append("2-acylglycerol")
-    else:
-        return False, "Missing required ethanolamine or glycerol backbone"
-    
-    # Check fatty acid characteristics
-    if not has_long_chain:
-        return False, "Missing required long fatty acid chain"
-    
-    if has_arachidonoyl:
-        features.append("arachidonoyl chain")
-    
-    if double_bonds > 0:
-        features.append(f"{double_bonds} double bond{'s' if double_bonds > 1 else ''}")
-    
-    # Must have appropriate chain characteristics
-    if not (has_arachidonoyl or (has_long_chain and double_bonds >= 1)):
-        return False, "Fatty acid chain lacks characteristic unsaturation"
-        
-    # Additional structural requirements
+    # Calculate molecular properties
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 250 or mol_wt > 500:
+    
+    # Most endocannabinoids are lipids with MW between 300-400 Da
+    if mol_wt < 250 or mol_wt > 800:
         return False, "Molecular weight outside typical range for endocannabinoids"
-        
-    return True, f"Endocannabinoid: {', '.join(features)}"
+
+    # Classify based on structural features
+    features = []
+    if has_ethanolamine:
+        features.append("ethanolamine")
+    if has_glycerol:
+        features.append("glycerol")
+    if has_ester:
+        features.append("ester")
+    if has_amide:
+        features.append("amide")
+    if double_bonds >= 1:
+        features.append(f"{double_bonds} double bonds")
+    if has_epoxy:
+        features.append("epoxy group")
+    
+    # Return classification
+    if len(features) >= 2:  # Must have at least 2 characteristic features
+        return True, f"Endocannabinoid containing: {', '.join(features)}"
+    else:
+        return False, "Insufficient characteristic features for endocannabinoid classification"
