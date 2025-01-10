@@ -27,62 +27,68 @@ def is_bioconjugate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Initialize counters for biological components
+    # Initialize components list and biological modification flags
     components = []
-
-    # Check for peptide/amino acid components (count as one component)
+    has_biological_modification = False
+    
+    # Check for peptide/amino acid backbone
     amino_acid_pattern = Chem.MolFromSmarts("[NX3,NX4+][CX4H]([*])[CX3](=[OX1])[O,N]")
     if mol.HasSubstructMatch(amino_acid_pattern):
-        amino_acid_matches = len(mol.GetSubstructMatches(amino_acid_pattern))
-        if amino_acid_matches >= 1:
-            components.append(f"peptide/amino acid chain ({amino_acid_matches} residues)")
+        aa_matches = len(mol.GetSubstructMatches(amino_acid_pattern))
+        if aa_matches >= 1:
+            components.append(f"peptide/amino acid chain ({aa_matches} residues)")
 
-    # Check for nucleotide components
-    nucleotide_pattern = Chem.MolFromSmarts("n1cnc2c(N)ncnc12")  # Adenine base
+    # Check for nucleotide core (excluding CoA)
+    nucleotide_pattern = Chem.MolFromSmarts("n1cnc2c(N)ncnc12")
     if mol.HasSubstructMatch(nucleotide_pattern):
-        components.append("nucleotide")
+        # Only count if not part of CoA
+        coa_pattern = Chem.MolFromSmarts("SCCNC(=O)CCNC(=O)[CH]([OH])C(C)(C)COP([OH])(=O)OP([OH])(=O)OCC1OC(n2cnc3c(N)ncnc32)C(O)C1OP([OH])([OH])=O")
+        if not mol.HasSubstructMatch(coa_pattern):
+            components.append("nucleotide")
 
-    # Check for sugar components (excluding those part of nucleotides)
-    sugar_pattern = Chem.MolFromSmarts("[OH1][CX4H]1[OX2][CX4H]([CX4H]([OH1])[CX4H]([OH1])[CX4H]1[OH1])")
-    if mol.HasSubstructMatch(sugar_pattern):
-        components.append("sugar")
+    # Check for significant biological modifications
+    mod_patterns = {
+        "indole": ("c1ccc2[nH]ccc2c1", "indole modification"),
+        "IAN": ("C(#N)Cc1c[nH]c2ccccc12", "IAN group"),
+        "DOPA": ("c1cc(O)c(O)cc1CC", "DOPA modification"),
+        "selenium": ("[Se]", "selenium modification"),
+        "thiol_conjugate": ("SC[CH]([NH2])C(=O)", "thiol conjugate")
+    }
+    
+    for pattern, (smarts, desc) in mod_patterns.items():
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(smarts)):
+            has_biological_modification = True
+            components.append(desc)
 
-    # Check for fatty acid components
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]C(=O)[OH]")
+    # Check for lipid/fatty acid conjugation
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]C(=O)[OH,O-,N]")
     if mol.HasSubstructMatch(fatty_acid_pattern):
-        components.append("fatty acid")
+        # Verify chain length to avoid small modifications
+        if rdMolDescriptors.CalcNumRotatableBonds(mol) > 8:
+            components.append("fatty acid")
 
-    # Check for modified amino acids (like DOPA)
-    dopa_pattern = Chem.MolFromSmarts("[NX3,NX4+][CX4H](Cc1ccc(O)c(O)c1)[CX3](=[OX1])[O,N]")
-    if mol.HasSubstructMatch(dopa_pattern):
-        components.append("modified amino acid (DOPA)")
-
-    # Check for IAN groups
-    ian_pattern = Chem.MolFromSmarts("C(#N)Cc1c[nH]c2ccccc12")
-    if mol.HasSubstructMatch(ian_pattern):
-        components.append("IAN group")
-
-    # Check for CoA
-    coa_pattern = Chem.MolFromSmarts("SCCNC(=O)CCNC(=O)[CH]([OH])C(C)(C)COP([OH])(=O)OP([OH])(=O)OCC1OC(n2cnc3c(N)ncnc32)C(O)C1OP([OH])([OH])=O")
-    if mol.HasSubstructMatch(coa_pattern):
-        components.append("Coenzyme A")
-
-    # Check for glutathione core (count as one component if not part of larger peptide)
+    # Special handling for glutathione conjugates
     gsh_pattern = Chem.MolFromSmarts("[NX3,NX4+][CX4H](CCC(=O)[NX3,NX4+][CX4H](CS)[CX3](=O)[NX3,NX4+][CX4H])[CX3](=O)[O-,OH]")
-    if mol.HasSubstructMatch(gsh_pattern) and len(components) == 0:
-        components.append("glutathione")
+    if mol.HasSubstructMatch(gsh_pattern):
+        # Look for conjugation to the cysteine thiol
+        if mol.HasSubstructMatch(Chem.MolFromSmarts("SCC[CH]([NH2])C(=O)")):
+            has_biological_modification = True
 
-    # Check for other significant modifications
-    if mol.HasSubstructMatch(Chem.MolFromSmarts("SC(=N)N")): # Thiourea
-        components.append("thiourea modification")
-    if mol.HasSubstructMatch(Chem.MolFromSmarts("S(=O)(=O)O")): # Sulfonic acid
-        components.append("sulfonic acid modification")
-
-    # Final decision
-    unique_components = len(set(components))
-    if unique_components >= 2:
-        return True, "Bioconjugate containing: " + "; ".join(set(components))
-    elif unique_components == 1:
-        return False, "Only one component found: " + components[0]
+    # Final decision logic
+    unique_components = set(components)
+    
+    # Case 1: Multiple distinct biological components
+    if len(unique_components) >= 2:
+        return True, "Bioconjugate containing: " + "; ".join(unique_components)
+    
+    # Case 2: One component with significant biological modification
+    elif len(unique_components) == 1 and has_biological_modification:
+        return True, f"Bioconjugate containing: {list(unique_components)[0]} with biological modification"
+    
+    # Case 3: Single component without significant modification
+    elif len(unique_components) == 1:
+        return False, f"Only one component found: {list(unique_components)[0]}"
+    
+    # Case 4: No biological components
     else:
         return False, "No biological components identified"
