@@ -26,17 +26,15 @@ def is_neoflavonoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the 1-benzopyran (chromene) core structure
+    # Define a more flexible 1-benzopyran (chromene) core structure
     benzopyran_pattern = Chem.MolFromSmarts("[O]1[C]2=[C][C]=[C][C]=[C]2[C]1")
     if not mol.HasSubstructMatch(benzopyran_pattern):
         return False, "No 1-benzopyran (chromene) core found"
 
-    # Define the aryl substituent at position 4
-    aryl_pattern = Chem.MolFromSmarts("[C]1=[C][C]=[C][C]=[C]1")
-    
+    # Define the aryl substituent pattern
+    aryl_pattern = Chem.MolFromSmarts("[c]1[c][c][c][c][c]1")
+
     # Check if the aryl group is attached to the 4th position of the benzopyran core
-    # The 4th position in the benzopyran core is the carbon atom adjacent to the oxygen in the pyran ring
-    # We need to find a match where the aryl group is connected to this carbon
     matches = mol.GetSubstructMatches(benzopyran_pattern)
     for match in matches:
         # The 4th position in the benzopyran core is the 3rd atom in the match (0-based index)
