@@ -13,7 +13,7 @@ def is_fatty_acyl_CoA(smiles: str):
     Determines if a molecule is a fatty acyl-CoA based on its SMILES string.
     A fatty acyl-CoA is an acyl-CoA resulting from the condensation of the thiol group 
     of coenzyme A with the carboxy group of a fatty acid.
-    
+        
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -27,11 +27,9 @@ def is_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define Coenzyme A substructure pattern
-    # The pattern includes adenine, ribose, diphosphate, pantetheine moiety
-    coa_smarts = """
-    O=P(O)(O)OP(O)(O)OC[C@H]1O[C@H]([C@@H](O)[C@H]1O)n2cnc3c(ncnc32)N
-    """
+    # Define Coenzyme A substructure pattern (simplified)
+    # Focused on key functional groups: adenine ring, ribose sugar, diphosphate, and pantetheine unit
+    coa_smarts = 'NC(=O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H](n2cnc3c(N)ncnc32)[C@@H](O)[C@H]1O'
 
     coa_pattern = Chem.MolFromSmarts(coa_smarts)
     if coa_pattern is None:
@@ -41,43 +39,47 @@ def is_fatty_acyl_CoA(smiles: str):
         return False, "No Coenzyme A moiety found"
 
     # Define thioester linkage pattern
-    thioester_pattern = Chem.MolFromSmarts("C(=O)SCCNC(=O)")
+    thioester_pattern = Chem.MolFromSmarts('C(=O)SCCNC(=O)')
+    if thioester_pattern is None:
+        return False, "Error in thioester SMARTS pattern"
+
     if not mol.HasSubstructMatch(thioester_pattern):
         return False, "No thioester linkage to CoA found"
 
-    # Now identify the acyl chain attached via the thioester
-    # Find the carbonyl carbon of the thioester
+    # Identify the acyl chain attached via the thioester
     thioester_matches = mol.GetSubstructMatches(thioester_pattern)
     if not thioester_matches:
         return False, "No thioester linkage found"
 
-    # Get the acyl chain starting from the carbonyl carbon
+    # Get the carbonyl carbon of the thioester linkage
     # Assume first match
     match = thioester_matches[0]
     carbonyl_c_idx = match[0]  # Index of the carbonyl carbon
 
-    # Traverse the acyl chain
-    visited = set()
+    # Traverse the acyl chain starting from the carbonyl carbon
+    visited = set(match)  # Start with atoms in the thioester_pattern to avoid revisiting
     def traverse_acyl_chain(atom_idx):
+        chain_atoms = []
         atom = mol.GetAtomWithIdx(atom_idx)
         if atom.GetIdx() in visited:
-            return 0
+            return chain_atoms
         visited.add(atom.GetIdx())
         if atom.GetAtomicNum() != 6:
-            return 0  # Only count carbon atoms
-        length = 1
+            return chain_atoms  # Only consider carbon atoms
+        chain_atoms.append(atom_idx)
         for neighbor in atom.GetNeighbors():
             neighbor_idx = neighbor.GetIdx()
+            if neighbor_idx in visited:
+                continue
             bond = mol.GetBondBetweenAtoms(atom_idx, neighbor_idx)
-            if bond.GetBondType() not in [Chem.BondType.SINGLE, Chem.BondType.DOUBLE]:
-                continue  # Ignore non-single/double bonds
-            if neighbor_idx in match:
-                continue  # Avoid going back to known parts of the thioester
-            length += traverse_acyl_chain(neighbor_idx)
-        return length
+            if bond.GetBondType() in [Chem.BondType.SINGLE, Chem.BondType.DOUBLE]:
+                chain_atoms.extend(traverse_acyl_chain(neighbor_idx))
+        return chain_atoms
 
-    acyl_length = traverse_acyl_chain(carbonyl_c_idx) - 1  # Subtract 1 to exclude carbonyl carbon
-    if acyl_length < 4:
-        return False, f"Acyl chain length is {acyl_length}, too short for fatty acid"
+    acyl_chain_atoms = traverse_acyl_chain(carbonyl_c_idx)
+    # Exclude the carbonyl carbon to get the length of the hydrocarbon chain
+    acyl_chain_length = len(acyl_chain_atoms) - 1
+    if acyl_chain_length < 4:
+        return False, f"Acyl chain length is {acyl_chain_length}, too short for fatty acid"
 
-    return True, f"Contains fatty acyl-CoA with acyl chain length {acyl_length}"
+    return True, f"Contains fatty acyl-CoA with acyl chain length {acyl_chain_length}"
