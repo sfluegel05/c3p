@@ -21,23 +21,23 @@ def is_germacranolide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Expanded germacranolide patterns for variation in skeleton and functional groups
+    # Improved germacranolide patterns for variation in skeleton and functional groups
 
-    # Pattern 1: Basic germacrane skeleton with lactone
-    germacranolide_pattern1 = Chem.MolFromSmarts("C1CC2CCC(C1)C(C)CC2OC(=O)")
+    # Pattern 1: Germacrane skeleton with a lactone and a 10-membered ring core
+    germacranolide_pattern1 = Chem.MolFromSmarts("C1CCC2C(CCC2C1)C3=CC=CC(O3)=O")
 
-    # Pattern 2: Alternate skeleton configurations (larger macrocyclic structures)
-    germacranolide_pattern2 = Chem.MolFromSmarts("O=C1OC2C=CC=CCC[C@@H]2CCC1")
+    # Pattern 2: Germacrane core with ester linkage and macrocyclic lactone
+    germacranolide_pattern2 = Chem.MolFromSmarts("C1C=C2CCC=C3C(C=CC3(C)O2)C1=O")
 
-    # Pattern 3: Potential for ester substitutions and exocyclic double bonds
-    germacranolide_pattern3 = Chem.MolFromSmarts("C1[C@H]2CC(C1)C=CC[C@H](C2)C(=O)O")
+    # Pattern 3: Exocyclic double bonds, ester groups, and various substitutions
+    germacranolide_pattern3 = Chem.MolFromSmarts("C1=CC=C2C=CC3C(C=CC3(C)O2)C1=O")
     
     # Check against multiple patterns
     if mol.HasSubstructMatch(germacranolide_pattern1):
-        return True, "Contains germacranolide-like structure with basic germacrane skeleton and lactone"
+        return True, "Contains germacranolide-like structure with lactone and 10-membered ring"
     if mol.HasSubstructMatch(germacranolide_pattern2):
-        return True, "Contains germacranolide-like structure with alternate germacranolide skeleton"
+        return True, "Contains germacranolide-like structure with ester linkage"
     if mol.HasSubstructMatch(germacranolide_pattern3):
-        return True, "Contains germacranolide-like structure with ester substitutions"
+        return True, "Contains germacranolide-like structure with exocyclic double bonds and substitutions"
 
     return False, "No identifiable germacranolide-like structure using current patterns"
