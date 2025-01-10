@@ -28,19 +28,19 @@ def is_polyprenol_phosphate(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for phosphate group pattern (P with at least one O and one O-)
-    phosphate_pattern = Chem.MolFromSmarts("[PX4]([OX2])([OX2])([OX2])([OX1-])")
+    phosphate_pattern = Chem.MolFromSmarts("[PX4]([OX2])([OX2])([OX2])([OX1-]?)")
     if not mol.HasSubstructMatch(phosphate_pattern):
         return False, "No phosphate group found"
 
     # Look for polyprenol chain (alternating double bonds in a long chain)
-    polyprenol_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    polyprenol_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
     polyprenol_matches = mol.GetSubstructMatches(polyprenol_pattern)
     if len(polyprenol_matches) < 1:
         return False, "No polyprenol chain found"
 
     # Check if the phosphate is attached to the terminal allylic hydroxy group
     # This is a complex pattern, so we'll look for a phosphate attached to a carbon with a double bond
-    phosphate_attachment_pattern = Chem.MolFromSmarts("[PX4]([OX2])([OX2])([OX2])([OX1-])[CX3]=[CX4]")
+    phosphate_attachment_pattern = Chem.MolFromSmarts("[PX4]([OX2])([OX2])([OX2])([OX1-]?)[CX3]=[CX4]")
     if not mol.HasSubstructMatch(phosphate_attachment_pattern):
         return False, "Phosphate not attached to terminal allylic carbon"
 
