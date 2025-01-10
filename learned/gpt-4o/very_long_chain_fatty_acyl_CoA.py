@@ -22,15 +22,26 @@ def is_very_long_chain_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for coenzyme A substructure (simplified as certain patterns involving phosphates)
-    coa_pattern = Chem.MolFromSmarts("COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H](O)[C@H](O)[C@@H]1OP(O)(O)=O")
+    # Check for coenzyme A substructure
+    # This SMARTS pattern might need adjustment based on the examples provided
+    coa_pattern = Chem.MolFromSmarts("C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)C")
     if not mol.HasSubstructMatch(coa_pattern):
-        return False, "No coenzyme A backbone found"
+        return False, "No Coenzyme A backbone found"
 
-    # Find the longest carbon chain
-    carbon_chain = max((len(list(filter(lambda x: x.GetAtomicNum() == 6, Chem.GetMolFrags(mol, asMols=True)[i].GetAtoms()))) for i in range(len(Chem.GetMolFrags(mol, asMols=True)))), default=0)
+    # Identify the longest carbon chain
+    # Collect all carbon atoms and determine the longest path based on position
+    atom_count_map = {}
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6:  # Carbon atom
+            neighbors = [x.GetIdx() for x in atom.GetNeighbors() if x.GetAtomicNum() == 6]
+            atom_count_map[atom.GetIdx()] = len(neighbors)
 
-    if carbon_chain <= 22:
-        return False, f"Carbon chain length is {carbon_chain}, not greater than C22"
+    # Calculate longest path
+    if atom_count_map:
+        longest_chain_length = max(atom_count_map.values())
+        if longest_chain_length <= 22:
+            return False, f"Longest carbon chain length is {longest_chain_length}, not greater than C22"
+    else:
+        return False, "No carbon chain found"
 
-    return True, f"Contains coenzyme A and a fatty acyl chain length of {carbon_chain} which is greater than C22"
+    return True, f"Contains CoA backbone and fatty acyl chain length is {longest_chain_length}, which is greater than C22"
