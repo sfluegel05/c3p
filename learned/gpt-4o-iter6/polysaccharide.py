@@ -21,19 +21,27 @@ def is_polysaccharide(smiles):
     if not mol:
         return False, "Invalid SMILES string"
 
-    # Define patterns for monosaccharide units and glycosidic linkages
-    monosaccharide_pattern = Chem.MolFromSmarts("[C@@H]([C@H]([C@H](O)C=O)O)[C@@H]")  # Basic monosaccharide structure
-    glycosidic_link_pattern = Chem.MolFromSmarts("O[C@H]")  # Simplified glycosidic bond
+    # Define a general pattern for cyclic monosaccharide units (e.g., hexose)
+    cyclic_mono_pattern = Chem.MolFromSmarts("C1OC(CO)C(O)C1O")  # Simplified pyranose form
+    acetamido_pattern = Chem.MolFromSmarts("N(C(*=O)C)C")  # Acetamido group indicating sugar derivatives like GlcNAc
     
-    # Count monosaccharide units
-    mono_count = len(mol.GetSubstructMatches(monosaccharide_pattern))
-    if mono_count < 10:
-        return False, f"Contains {mono_count} monosaccharides, less than required 10 for polysaccharide"
+    # Count cyclic monosaccharide units
+    cycle_mono_count = len(mol.GetSubstructMatches(cyclic_mono_pattern))
+    acetamido_count = len(mol.GetSubstructMatches(acetamido_pattern))
 
-    # Count glycosidic bonds
+    # Consider both counts towards a theoretical mono count
+    mono_count = cycle_mono_count + acetamido_count
+
+    if mono_count < 10:
+        return False, f"Contains {mono_count} probable monosaccharide rings/units, less than required 10 for polysaccharide"
+
+    # Glycosidic linkage pattern (C-O-C bond excluding terminal connections)
+    glycosidic_link_pattern = Chem.MolFromSmarts("[!#1]O[#6&R]([!#1])")  # Ether-like O-C linkage
+
+    # Count glycosidic linkages
     glyco_count = len(mol.GetSubstructMatches(glycosidic_link_pattern))
     if glyco_count < mono_count - 1:
-        return False, f"Insufficient glycosidic linkages ({glyco_count}) for {mono_count} monosaccharides"
+        return False, f"Insufficient glycosidic linkages ({glyco_count}) for {mono_count} monosaccharide rings/units"
 
     # Final classification
     return True, "Contains sufficient monosaccharide moieties linked glycosidically to classify as a polysaccharide"
