@@ -21,21 +21,31 @@ def is_D_hexose(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
         
-    # Check for hexose structure (six carbons with appropriate hydroxyl groups)
-    # D-hexoses have at least one aldehyde group or form a hemiacetal/pyranose
-    hexose_pattern = Chem.MolFromSmarts("C(C(C(C(C(C=O|O1)))O)O)O")
-    if not mol.HasSubstructMatch(hexose_pattern):
-        return False, "Does not match hexose pattern"
+    # Check for hexose structure: D-hexoses contain six carbons often including a aldehyde (aldehydo form) or
+    # form either pyranose or furanose rings. Here, we'll try to capture cyclic structures with oxygen.
+    # We use wildcard "C~" to allow some flexibility for cyclic structures (capital O for oxygen):
+    hexose_ring_patterns = [
+        Chem.MolFromSmarts("OC[C@H]1O[C@H](O)[C@H](O)[C@H](O)[C@H]1O"),  # a general pattern for D-pyranose forms
+        Chem.MolFromSmarts("O1[C@H]([C@H](O)[C@H](O)[C@H](O)[C@H](O)1)CO"),  # D-furanose
+    ]
     
-    # Check for the presence of chirality at four chiral centers typical for D-hexoses
+    # Attempt to find matches for these patterns
+    is_hexose = any(mol.HasSubstructMatch(pattern) for pattern in hexose_ring_patterns)
+    if not is_hexose:
+        return False, "Does not match hexose ring structure"
+
+    # Check for the presence of D-stereoisomerism:
+    # count `@` symbols, generally D-hexoses have specific stereochemistry
     chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
     if len(chiral_centers) < 4:
-        return False, f"Expected at least four chiral centers, found {len(chiral_centers)}"
+        return False, "Insufficient chiral centers for a D-hexose"
     
-    # Further checks for stereochemistry (e.g., at specific carbons for exact D configuration)
-    # This is a simplified version, a more accurate match would require specific D-hexose stereochemistry
-    # Check for at least two `@` stereochemical markers
-    if smiles.count('@') < 2:
-        return False, "Not enough stereochemical markers for D-hexose"
+    if sum(smiles.count('@') for _ in chiral_centers) < 2:
+        return False, f"Expected more stereochemical information on {len(chiral_centers)} centers"
 
-    return True, "Contains D-hexose pattern with sufficient stereochemical detail"
+    # Verify that there are exactly six carbons
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count != 6:
+        return False, "Not six carbons present"
+
+    return True, "Valid D-hexose conformer and stereochemistry detected"
