@@ -25,9 +25,10 @@ def is_lipid_hydroperoxide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for hydroperoxy group (-OOH) attached to a carbon
-    hydroperoxy_pattern = Chem.MolFromSmarts("[CX4][OX2][OX1]")
-    if not mol.HasSubstructMatch(hydroperoxy_pattern):
+    # Check for hydroperoxy group (-OOH) attached to any carbon
+    hydroperoxy_pattern = Chem.MolFromSmarts("[CX3,CX4][OX2][OX1]")
+    hydroperoxy_matches = mol.GetSubstructMatches(hydroperoxy_pattern)
+    if not hydroperoxy_matches:
         return False, "No hydroperoxy group found"
 
     # Check for lipid characteristics (long carbon chain and carboxylic acid/ester)
