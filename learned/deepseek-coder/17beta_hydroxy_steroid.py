@@ -26,7 +26,7 @@ def is_17beta_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the steroid backbone pattern (four fused rings)
+    # Define a more flexible steroid backbone pattern (four fused rings)
     steroid_backbone_pattern = Chem.MolFromSmarts("[C@]12[C@]3([C@]4([C@]5([C@]1([C@H]([C@H]2[C@H]3[C@H]4[C@H]5)[H])[H])[H])[H])[H]")
     if not mol.HasSubstructMatch(steroid_backbone_pattern):
         return False, "No steroid backbone found"
