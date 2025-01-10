@@ -22,29 +22,19 @@ def is_macrolide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Get ring information
+    # Get the molecular rings information
     ring_info = mol.GetRingInfo()
     atom_rings = ring_info.AtomRings()
 
-    # Identify candidate macrolide rings
+    # SMARTS pattern for an ester within a ring. 
+    # C=O where C and O are part of the same ring
+    ester_pattern = Chem.MolFromSmarts('C(=O)O')
+
     for ring in atom_rings:
-        # Check if ring size is in typical macrolide range
-        if 12 <= len(ring) <= 16:
-            # Check for an ester linkage within the ring
-            found_ester = False
-            for bond in ring:
-                atom1 = mol.GetAtomWithIdx(bond)
-                for neighbor in atom1.GetNeighbors():
-                    # Identify the ester pattern: "C(=O)O"
-                    if neighbor.GetAtomicNum() == 8:  # Oxygen
-                        carbon_atom = neighbor.GetNeighbors()[0]
-                        if carbon_atom.GetAtomicNum() == 6:  # Check carbon
-                            if carbon_atom.GetTotalNumHs() == 0 and any(nb.GetAtomicNum() == 8 for nb in carbon_atom.GetNeighbors() if nb.GetIdx() != atom1.GetIdx()):
-                                found_ester = True
-                                break
-                if found_ester:
-                    break
-            if found_ester:
+        if 12 <= len(ring) <= 16:  # Check typical macrolide ring sizes
+            # Create a sub-molecule of just this ring to match patterns within it
+            submol = Chem.PathToSubmol(mol, ring)
+            if submol.HasSubstructMatch(ester_pattern):
                 return True, "Contains macrocyclic lactone ring with an ester linkage"
 
     return False, "No characteristic macrolide macrocyclic lactone ring found"
