@@ -23,56 +23,81 @@ def is_limonoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for furan ring
-    furan_pattern = Chem.MolFromSmarts('c1ccoc1')
-    if not mol.HasSubstructMatch(furan_pattern):
-        return False, "No furan ring found"
-
-    # Count carbons and oxygens - limonoids are highly oxygenated
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    
-    if c_count < 20:
-        return False, "Too few carbons for a limonoid"
-    if o_count < 4:
-        return False, "Not enough oxygen atoms - limonoids are highly oxygenated"
-
-    # Check molecular weight - should be substantial as these are complex molecules
+    # Check for basic molecular properties
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 350:
-        return False, "Molecular weight too low for a limonoid"
+    if mol_wt < 350 or mol_wt > 800:
+        return False, "Molecular weight outside typical limonoid range (350-800)"
 
-    # Count rings - limonoids have multiple rings
+    # Count rings - limonoids have multiple fused rings
     ring_info = mol.GetRingInfo()
     ring_count = ring_info.NumRings()
-    if ring_count < 4:
-        return False, "Too few rings for a limonoid structure"
+    if ring_count < 4 or ring_count > 8:
+        return False, "Number of rings outside typical limonoid range (4-8)"
 
-    # Check for oxygen-containing functional groups
-    ester_pattern = Chem.MolFromSmarts('[#6]-C(=O)-O-[#6]')
-    ketone_pattern = Chem.MolFromSmarts('[#6]-C(=O)-[#6]')
-    alcohol_pattern = Chem.MolFromSmarts('[#6]-[OH]')
+    # Look for furan or modified furan-like structures
+    furan_patterns = [
+        'c1ccoc1',  # classical furan
+        'C1=COC=C1',  # furan alternative representation
+        'O1C=CC=C1',  # another furan representation
+        'C1=COC(=O)C1',  # furanone (oxidized furan)
+        'O1C=CC(=O)C1'   # isofuranone
+    ]
     
-    functional_groups = 0
-    if mol.HasSubstructMatch(ester_pattern):
-        functional_groups += len(mol.GetSubstructMatches(ester_pattern))
-    if mol.HasSubstructMatch(ketone_pattern):
-        functional_groups += len(mol.GetSubstructMatches(ketone_pattern))
-    if mol.HasSubstructMatch(alcohol_pattern):
-        functional_groups += len(mol.GetSubstructMatches(alcohol_pattern))
-        
-    if functional_groups < 2:
-        return False, "Insufficient oxygen-containing functional groups"
+    has_furan = False
+    for pattern in furan_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            has_furan = True
+            break
+    
+    if not has_furan:
+        return False, "No furan or furan-derived ring found"
 
-    # Calculate number of sp3 carbons - limonoids have many
-    sp3_c = len(mol.GetSubstructMatches(Chem.MolFromSmarts('[CX4]')))
-    if sp3_c < 10:
-        return False, "Too few sp3 carbons for a limonoid skeleton"
+    # Check for characteristic limonoid core structure
+    # Look for connected 6-membered rings with specific substitution patterns
+    core_patterns = [
+        # Basic steroid-like tetracyclic core with methyl groups
+        '[C;R]1[C;R][C;R][C;R]2[C;R]([C;R]1)(C)[C;R]1[C;R][C;R][C;R]3[C;R](C)[C;R][C;R][C;R]3[C;R]12C',
+        # Alternative core pattern with oxygen bridges
+        '[C;R]1[C;R][C;R]2O[C;R]3[C;R](O)[C;R][C;R][C;R]3[C;R]2[C;R]1',
+        # Pattern for ring D with furan attachment point
+        '[C;R]1[C;R][C;R]2[C;R][C;R][C;R](c3ccoc3)[C;R]2[C;R]1'
+    ]
+    
+    has_core = False
+    for pattern in core_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            has_core = True
+            break
+    
+    if not has_core:
+        return False, "Missing characteristic limonoid core structure"
 
-    # Count number of methyl groups - limonoids typically have several
-    methyl_pattern = Chem.MolFromSmarts('[CH3]')
+    # Check for oxygenation pattern
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if o_count < 4:
+        return False, "Insufficient oxygenation for a limonoid"
+
+    # Look for characteristic functional groups
+    functional_groups = [
+        ('[C;R]-C(=O)-O-[C;R]', 'ester bridge'),
+        ('[C;R]-C(=O)-[C;R]', 'ketone'),
+        ('[C;R]-[OH]', 'hydroxyl'),
+        ('C(C)(C)([OH])', 'tertiary alcohol'),
+        ('O1[C;R][C;R]1', 'epoxide')
+    ]
+    
+    found_groups = []
+    for pattern, group_type in functional_groups:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            found_groups.append(group_type)
+    
+    if len(found_groups) < 2:
+        return False, "Insufficient characteristic functional groups"
+
+    # Count methyl groups in specific positions
+    methyl_pattern = Chem.MolFromSmarts('[C;R]-[CH3]')
     methyl_count = len(mol.GetSubstructMatches(methyl_pattern))
-    if methyl_count < 2:
-        return False, "Too few methyl groups"
+    if methyl_count < 3:
+        return False, "Insufficient methyl groups for characteristic limonoid substitution"
 
-    return True, "Matches limonoid characteristics: contains furan ring, highly oxygenated, complex polycyclic structure with appropriate molecular weight and functional groups"
+    return True, f"Matches limonoid characteristics: contains {' and '.join(found_groups)}, appropriate ring system, and furan moiety"
