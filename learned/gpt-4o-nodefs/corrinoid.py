@@ -30,11 +30,9 @@ def is_corrinoid(smiles: str):
     if not cobalt_atom:
         return False, "Cobalt atom not found"
     
-    # Define a more complex SMARTS pattern for detecting corrin-like macrocyclic structure
-    # Focus on connected ring systems with multiple heteroatoms coordinated around a central cobalt
-    corrin_pattern = Chem.MolFromSmarts("""
-    [Co]1:[#7]:[#6]:[#6,=#7]-[#6](-[#7]1):[#6]=[#6]-[#6](=[#7])-[#6](-[#6](-[#7]):[Co]1:[#7]:[#6]:[#6,=#7]-[#6](-[#7]1):[#6]=[#6]-[#6]-S(=O)(=O)[O-])
-    """)
+    # Simplified SMARTS pattern for detecting a corrin-like macroring structure
+    # Here, using a more generic pattern targeting the coordination of cobalt with nitrogen atoms in a complex
+    corrin_pattern = Chem.MolFromSmarts("[Co]1:[#7]~[#6]~[#6]~[#6~[#7]~1]")
     
     # Check if the molecule contains this pattern
     if not mol.HasSubstructMatch(corrin_pattern):
