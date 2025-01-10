@@ -2,6 +2,7 @@
 Classifies: CHEBI:80291 aliphatic nitrile
 """
 from rdkit import Chem
+from rdkit.Chem import rdchem
 
 def is_aliphatic_nitrile(smiles: str):
     """
@@ -19,7 +20,7 @@ def is_aliphatic_nitrile(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
+
     # Look for nitrile group (C#N)
     nitrile_pattern = Chem.MolFromSmarts("[C]#[N]")
     nitrile_matches = mol.GetSubstructMatches(nitrile_pattern)
@@ -28,25 +29,30 @@ def is_aliphatic_nitrile(smiles: str):
         return False, "No nitrile group found"
 
     for match in nitrile_matches:
-        cn_atom, n_atom = match # cn_atom is the carbon in C#N
+        cn_atom, n_atom = match  # cn_atom is the carbon in C#N
         carbon_atom = mol.GetAtomWithIdx(cn_atom)
-
-        # Check if the nitrile carbon is only connected to other non-aromatic, non-sp2 carbon atoms
+        
+        # Initialize a flag for aliphatic nature
         is_aliphatic = True
+
+        # Check neighbors of the nitrile carbon for aromaticity/sp2 hybridization
         for neighbor in carbon_atom.GetNeighbors():
             if neighbor.GetIdx() == n_atom:  # Skip the nitrogen atom in the nitrile
                 continue
-            if neighbor.GetIsAromatic() or neighbor.GetHybridization() == Chem.HybridizationType.SP2:
+            if neighbor.GetIsAromatic() or neighbor.GetHybridization() != Chem.HybridizationType.SP3:
                 is_aliphatic = False
                 break
-            if neighbor.GetHybridization() == Chem.HybridizationType.SP:
-                # Check if the neighboring SP hybridized atom has only aliphatic connections
-                for sub_neighbor in neighbor.GetNeighbors():
-                    if sub_neighbor.GetIdx() != cn_atom and (
-                        sub_neighbor.GetIsAromatic() or sub_neighbor.GetHybridization() == Chem.HybridizationType.SP2):
-                        is_aliphatic = False
-                        break
-        
+
+        # Check further bonds for potentially non-aliphatic characteristics
+        for neighbor in carbon_atom.GetNeighbors():
+            if neighbor.GetIdx() == n_atom or not is_aliphatic:
+                continue
+            if any(next_neighbor.GetIsAromatic() or next_neighbor.GetHybridization() != Chem.HybridizationType.SP3
+                    for next_neighbor in neighbor.GetNeighbors() if next_neighbor.GetIdx() != cn_atom):
+                is_aliphatic = False
+                break
+
+        # Return result based on aliphatic check
         if is_aliphatic:
             return True, "Nitrile group is part of an aliphatic chain"
 
