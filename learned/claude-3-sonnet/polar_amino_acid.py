@@ -23,63 +23,69 @@ def is_polar_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check molecular weight - amino acids should be relatively small
+    # Check molecular weight - amino acids should be within specific range
     mol_weight = Descriptors.ExactMolWt(mol)
-    if mol_weight > 250:  # Most amino acids are under 200 Da
-        return False, "Molecule too large to be a single amino acid"
+    if mol_weight < 75 or mol_weight > 205:  # Adjusted range for standard amino acids
+        return False, "Molecular weight outside typical amino acid range"
 
-    # Check for basic amino acid structure (NH2-CH-COOH)
-    amino_acid_pattern = Chem.MolFromSmarts("[NX3,NX4+][CX4][CX3](=[OX1])[OX2H,OX1-]")
-    if not mol.HasSubstructMatch(amino_acid_pattern):
+    # More specific amino acid backbone pattern including zwitterionic forms
+    backbone_patterns = [
+        "[NX3,NX4+][CX4][CX3](=[OX1])[OX2H,OX1-]",  # Standard form
+        "[NH3+][CX4][CX3](=[OX1])[O-]"  # Zwitterionic form
+    ]
+    
+    backbone_found = False
+    for pattern in backbone_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            backbone_found = True
+            break
+            
+    if not backbone_found:
         return False, "No amino acid backbone found"
 
-    # Check number of amino groups and carboxyl groups
-    amino_pattern = Chem.MolFromSmarts("[NX3,NX4+][CX4][CX3](=[OX1])[OX2H,OX1-]")
-    carboxyl_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H,OX1-]")
-    
-    amino_count = len(mol.GetSubstructMatches(amino_pattern))
-    carboxyl_count = len(mol.GetSubstructMatches(carboxyl_pattern))
-    
-    if amino_count > 1 or carboxyl_count > 2:  # Allow up to 2 carboxyls for asp/glu
-        return False, "Multiple amino acid residues detected - likely a peptide"
+    # Check for peptide bonds to exclude peptides
+    peptide_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[CX4][NX3]")
+    if mol.HasSubstructMatch(peptide_pattern):
+        return False, "Molecule appears to be a peptide"
 
-    # Initialize patterns for polar groups in side chains
-    patterns = {
-        "hydroxyl": "[OX2H]",  # -OH (serine, threonine, tyrosine)
-        "amide": "[NX3H2][CX3](=[OX1])",  # -CONH2 (asparagine, glutamine)
-        "carboxyl": "[CX3](=[OX1])[OX2H,OX1-]",  # -COOH (aspartic acid, glutamic acid)
-        "basic_N": "[NX3;H2,H1;!$(NC=O)]",  # Basic N (lysine, arginine)
-        "guanidino": "[NX3][CX3](=[NX2])[NX3]",  # Guanidino group (arginine)
-        "imidazole": "c1c[nH]cn1",  # Imidazole ring (histidine)
-        "thiol": "[SX2H]",  # -SH (cysteine)
-        "indole": "c1ccc2c(c1)[nH]cc2",  # Indole ring (tryptophan)
-        "phenol": "c1cc(O)ccc1"  # Phenol group (tyrosine)
+    # Get backbone atoms
+    backbone_match = mol.GetSubstructMatch(Chem.MolFromSmarts("[NX3,NX4+][CX4][CX3](=[OX1])[OX2H,OX1-]"))
+    if not backbone_match:
+        return False, "Cannot identify backbone atoms"
+    
+    backbone_atoms = set(backbone_match)
+
+    # Patterns for polar side chain groups
+    polar_patterns = {
+        "hydroxyl": ("[OX2H]", lambda m: not any(idx in backbone_atoms for idx in m)),  # Ser, Thr
+        "amide": ("[NX3H2][CX3](=[OX1])", lambda m: True),  # Asn, Gln
+        "carboxyl": ("[CX3](=[OX1])[OX2H,OX1-]", lambda m: not all(idx in backbone_atoms for idx in m)),  # Asp, Glu
+        "basic_N": ("[NX3;H2,H1;!$(NC=O)]", lambda m: not any(idx in backbone_atoms for idx in m)),  # Lys
+        "guanidino": ("[NX3][CX3](=[NX2])[NX3]", lambda m: True),  # Arg
+        "imidazole": ("c1c[nH]cn1", lambda m: True),  # His
+        "thiol": ("[SX2H]", lambda m: True),  # Cys
+        "phenol": ("c1cc(O)ccc1", lambda m: True)  # Tyr
     }
 
-    # Get backbone atoms to exclude them from side chain search
-    backbone_matches = mol.GetSubstructMatches(amino_acid_pattern)
-    if not backbone_matches:
-        return False, "No amino acid backbone found"
-    
-    backbone_atoms = set(backbone_matches[0])
-    
-    # Check each polar pattern
+    # Check for polar groups in side chain
     found_polar_groups = []
-    for group_name, pattern in patterns.items():
+    for group_name, (pattern, validator) in polar_patterns.items():
         pattern_mol = Chem.MolFromSmarts(pattern)
         matches = mol.GetSubstructMatches(pattern_mol)
         
-        # Only count matches that aren't part of the backbone
-        side_chain_matches = [match for match in matches if not all(atom_idx in backbone_atoms for atom_idx in match)]
+        # Validate matches using the custom validator function
+        valid_matches = [m for m in matches if validator(m)]
         
-        if side_chain_matches:
+        if valid_matches:
             found_polar_groups.append(group_name)
 
     if not found_polar_groups:
-        # Special case for tryptophan - check for indole NH
-        if mol.HasSubstructMatch(Chem.MolFromSmarts("c1ccc2c(c1)[nH]cc2")):
-            return True, "Polar amino acid with indole NH group capable of hydrogen bonding"
         return False, "No polar side chain groups found"
+
+    # Count total atoms to ensure we're not dealing with modified amino acids
+    atom_count = mol.GetNumAtoms()
+    if atom_count > 25:  # Most amino acids have fewer atoms
+        return False, "Too many atoms for a standard amino acid"
 
     # Construct reason string
     polar_groups_str = ", ".join(found_polar_groups)
