@@ -6,7 +6,6 @@ Classifies: proteinogenic amino acids
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem.rdMolDescriptors import CalcMolFormula, CalcExactMolWt
 
 def is_proteinogenic_amino_acid(smiles: str):
     """
@@ -24,106 +23,80 @@ def is_proteinogenic_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check molecular weight - amino acids should be relatively small
-    mol_wt = CalcExactMolWt(mol)
-    if mol_wt > 250:  # Pyrrolysine (heaviest) is ~255
-        return False, "Molecular weight too large for single amino acid"
-
-    # Create a version of molecule with all isotopes replaced with standard atoms
-    std_smiles = Chem.MolToSmiles(mol, kekuleSmiles=True)
-    std_smiles = std_smiles.replace("[2H]", "H").replace("[13C]", "C").replace("[15N]", "N")
-    mol_no_isotope = Chem.MolFromSmiles(std_smiles)
-    if mol_no_isotope is None:
-        return False, "Invalid structure after isotope normalization"
-
-    # Check for peptide bonds - should not be present
+    # Check for peptide bonds
     peptide_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[CX4][NX3][CX3](=[OX1])")
-    if mol_no_isotope.HasSubstructMatch(peptide_pattern):
-        return False, "Contains peptide bonds - not a single amino acid"
+    if mol.HasSubstructMatch(peptide_pattern):
+        return False, "Contains peptide bonds"
 
-    # Basic amino acid patterns
-    basic_aa_pattern = Chem.MolFromSmarts("[NX3H2][CX4][CX3](=[OX1])[OX2H1]")
-    proline_pattern = Chem.MolFromSmarts("[NX3H1][CX4][CX3](=[OX1])[OX2H1]")
+    # Check for N-modifications (except for proline)
+    n_modification_pattern = Chem.MolFromSmarts("[CX4][NX3]([!H])[CX3](=O)[OX2H]")
+    if mol.HasSubstructMatch(n_modification_pattern):
+        return False, "Contains N-modifications"
+
+    # Special case for glycine (achiral)
+    glycine_pattern = Chem.MolFromSmarts("[NX3H2][CH2][CX3](=[OX1])[OX2H]")
+    if mol.HasSubstructMatch(glycine_pattern):
+        # Check if it's a simple glycine (allowing isotopes)
+        atom_symbols = set(a.GetSymbol() for a in mol.GetAtoms())
+        if atom_symbols.issubset({'C', 'H', 'N', 'O'}):
+            return True, "Matches glycine structure"
+
+    # Check for basic L-amino acid structure with correct chirality
+    l_aa_pattern = Chem.MolFromSmarts("[NX3H2][C@H][CX3](=[OX1])[OX2H]")
+    l_pro_pattern = Chem.MolFromSmarts("[NX3H0]1[C@H](C(=O)[OH])[CH2][CH2][CH2]1")
     
-    is_basic_aa = mol_no_isotope.HasSubstructMatch(basic_aa_pattern)
-    is_proline = mol_no_isotope.HasSubstructMatch(proline_pattern)
+    is_l_aa = mol.HasSubstructMatch(l_aa_pattern)
+    is_proline = mol.HasSubstructMatch(l_pro_pattern)
     
-    if not (is_basic_aa or is_proline):
-        return False, "Missing basic amino acid structure"
+    if not (is_l_aa or is_proline):
+        return False, "Does not match L-amino acid structure"
 
-    # Special handling for glycine and isotope variants
-    formula = CalcMolFormula(mol_no_isotope)
-    is_glycine = False
-    if len(mol_no_isotope.GetAtoms()) <= 10:  # Glycine is small
-        glycine_pattern = Chem.MolFromSmarts("[NX3H2]CC(=O)O")
-        if mol_no_isotope.HasSubstructMatch(glycine_pattern):
-            is_glycine = True
-
-    if not is_glycine:
-        # Improved chirality checking
-        chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
-        if not chiral_centers:
-            return False, "Missing required chirality"
-        
-        # Check alpha carbon chirality
-        alpha_carbon_idx = None
-        for atom in mol.GetAtoms():
-            if atom.GetSymbol() == 'C':
-                neighbors = [n.GetSymbol() for n in atom.GetNeighbors()]
-                if 'N' in neighbors and 'C' in neighbors:  # Alpha carbon
-                    alpha_carbon_idx = atom.GetIdx()
-                    break
-                    
-        if alpha_carbon_idx is None:
-            return False, "Cannot identify alpha carbon"
-            
-        # For L-amino acids, the alpha carbon should have S configuration
-        # (except for cysteine and a few others that can have R configuration)
-        found_correct_config = False
-        for center in chiral_centers:
-            if center[0] == alpha_carbon_idx:
-                if center[1] in ['S', 'R']:  # Accept both configurations due to CIP rule variations
-                    found_correct_config = True
-                break
-                
-        if not found_correct_config:
-            return False, "Incorrect or missing configuration at alpha carbon"
-
-    # List of allowed side chains (simplified patterns)
+    # Define allowed side chains with stereochemistry where relevant
     side_chains = {
-        'glycine': '[CH2]',
-        'alanine': '[CH3]',
-        'valine': '[CH](C)C',
-        'leucine': '[CH2]C(C)C',
-        'isoleucine': '[CH](CC)C',
-        'proline': '[CH2][CH2][CH2]N',
-        'methionine': '[CH2][CH2]SC',
-        'phenylalanine': '[CH2]c1ccccc1',
-        'tryptophan': '[CH2]c1c[nH]c2ccccc12',
-        'serine': '[CH2]O',
-        'threonine': '[CH](O)C',
-        'cysteine': '[CH2]S',
-        'tyrosine': '[CH2]c1ccc(O)cc1',
-        'asparagine': '[CH2]C(N)=O',
-        'glutamine': '[CH2][CH2]C(N)=O',
-        'aspartic acid': '[CH2]C(O)=O',
-        'glutamic acid': '[CH2][CH2]C(O)=O',
-        'lysine': '[CH2][CH2][CH2][CH2]N',
-        'arginine': '[CH2][CH2][CH2]NC(N)=N',
-        'histidine': '[CH2]c1c[nH]cn1',
-        'selenocysteine': '[CH2][SeH]',
-        'pyrrolysine': '[CH2][CH2][CH2][CH2]NC(=O)[CH]1[CH][CH]N=C1C'
+        'alanine': '[C@H](C)(N)C(=O)O',
+        'valine': '[C@H]([CH](C)C)(N)C(=O)O',
+        'leucine': '[C@H](CC(C)C)(N)C(=O)O',
+        'isoleucine': '[C@H]([C@H](CC)C)(N)C(=O)O',
+        'proline': 'C1CC[C@@H](N1)C(=O)O',
+        'methionine': '[C@H](CCSC)(N)C(=O)O',
+        'phenylalanine': '[C@H](Cc1ccccc1)(N)C(=O)O',
+        'serine': '[C@H](CO)(N)C(=O)O',
+        'threonine': '[C@H]([C@H](C)O)(N)C(=O)O',
+        'cysteine': '[C@H](CS)(N)C(=O)O',
+        'tyrosine': '[C@H](Cc1ccc(O)cc1)(N)C(=O)O',
+        'asparagine': '[C@H](CC(=O)N)(N)C(=O)O',
+        'glutamine': '[C@H](CCC(=O)N)(N)C(=O)O',
+        'aspartic acid': '[C@H](CC(=O)O)(N)C(=O)O',
+        'glutamic acid': '[C@H](CCC(=O)O)(N)C(=O)O',
+        'lysine': '[C@H](CCCCN)(N)C(=O)O',
+        'arginine': '[C@H](CCCNC(=N)N)(N)C(=O)O',
+        'histidine': '[C@H](Cc1c[nH]cn1)(N)C(=O)O',
+        'selenocysteine': '[C@H](C[SeH])(N)C(=O)O',
+        'pyrrolysine': '[C@H](CCCCNC(=O)[C@H]1CC=NC1C)(N)C(=O)O'
     }
 
-    # Check if molecule matches any proteinogenic amino acid pattern
-    matched_any = False
+    # Check if molecule matches any proteinogenic amino acid core structure
+    matched = False
     for aa, pattern in side_chains.items():
-        aa_pattern = Chem.MolFromSmarts(pattern)
-        if aa_pattern and mol_no_isotope.HasSubstructMatch(aa_pattern):
-            matched_any = True
+        # Convert pattern to mol with explicit H to match isotope-labeled compounds
+        pattern_mol = Chem.MolFromSmarts(pattern)
+        if pattern_mol and mol.HasSubstructMatch(pattern_mol):
+            matched = True
             break
 
-    if not (matched_any or is_glycine):
+    if not matched and not mol.HasSubstructMatch(glycine_pattern):
         return False, "Side chain doesn't match any proteinogenic amino acid"
+
+    # Additional check for unwanted groups
+    unwanted_groups = [
+        "[NX3]([CX4])[CX3](=O)",  # peptide bond
+        "[CX3](=O)[OX2][CX4]",    # ester
+        "[CX4][SX4](=O)(=O)",     # sulfone
+        "[B,Si,P,I,At]"           # non-standard atoms
+    ]
+    
+    for pattern in unwanted_groups:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            return False, "Contains non-proteinogenic modifications"
 
     return True, "Matches proteinogenic amino acid structure"
