@@ -32,97 +32,59 @@ def is_gas_molecular_entity(smiles: str):
     num_atoms = mol.GetNumAtoms()
     num_heavy_atoms = rdMolDescriptors.CalcNumHeavyAtoms(mol)
     
-    # Molecular weight cutoff (most gases are < 100 g/mol)
-    if mol_wt > 100 and smiles not in {'C(C(C(F)(F)F)(F)F)(C(F)(F)F)(F)F'}:  # Special case for perfluorobutane
-        return False, "Molecular weight too high for a gas"
-
-    # Check for single atoms first (noble gases, etc.)
-    if num_heavy_atoms == 1:
-        atom = mol.GetAtomWithIdx(0)
-        symbol = atom.GetSymbol()
-        
-        # Noble gases (any isotope)
-        if symbol in {'He', 'Ne', 'Ar', 'Kr', 'Xe', 'Rn'}:
+    # Check for noble gases (He, Ne, Ar, Kr, Xe, Rn)
+    noble_gases = {'He', 'Ne', 'Ar', 'Kr', 'Xe', 'Rn'}
+    if num_atoms == 1:
+        symbol = mol.GetAtomWithIdx(0).GetSymbol()
+        if symbol in noble_gases:
             return True, f"Noble gas ({symbol})"
-            
-        # Single carbon atom
         if symbol == 'C':
-            return True, "Atomic carbon"
+            return True, "Carbon atom"
             
-        return False, "Single atom but not a known gaseous element"
-
-    # Known diatomic gases
-    diatomic_patterns = {
-        '[H][H]': 'Hydrogen',
-        'FF': 'Fluorine',
-        'ClCl': 'Chlorine',
-        '[O][O]': 'Oxygen',
-        'N#N': 'Nitrogen',
-        'I[H]': 'Hydrogen iodide',
-        'Br[H]': 'Hydrogen bromide',
-        'Cl[H]': 'Hydrogen chloride',
-        'F[H]': 'Hydrogen fluoride'
+    # Check molecular weight - most gases are light
+    if mol_wt > 150:  # Most common gases are below this weight
+        # Special case for perfluorinated compounds which can be gases at higher weights
+        num_F = len(mol.GetSubstructMatches(Chem.MolFromSmarts('[F]')))
+        if num_F < 6:  # Allow higher weight only for heavily fluorinated compounds
+            return False, f"Molecular weight too high ({mol_wt:.1f} Da)"
+    
+    # Most gases have relatively few heavy atoms
+    if num_heavy_atoms > 8 and 'F' not in smiles:
+        return False, f"Too many heavy atoms ({num_heavy_atoms})"
+        
+    # Common gas patterns
+    gas_patterns = {
+        'diatomic': '[!C!H]~[!C!H]',  # For N2, O2, F2, Cl2, etc.
+        'carbon_oxide': '[C]=[O,N]',  # For CO, CO2
+        'small_alkane': '[CX4]~[CX4]',  # For CH4, C2H6, etc.
+        'small_alkene': '[CX3]=[CX3]',  # For C2H4, etc.
+        'small_alkyne': '[CX2]#[CX2]',  # For C2H2, etc.
+        'hydrogen_halide': '[F,Cl,Br,I][H]',  # For HF, HCl, HBr, HI
+        'ammonia': '[NX3]([H])([H])[H]',  # NH3
+        'ozone': '[O-][O+]=O'  # O3
     }
     
-    for pattern, name in diatomic_patterns.items():
-        if Chem.MolFromSmarts(pattern) is not None and mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
-            if num_heavy_atoms <= 2:
-                return True, f"Diatomic gas: {name}"
-
-    # Common small molecule gases
-    common_gases = {
-        'O=C=O': 'Carbon dioxide',
-        '[C-]#[O+]': 'Carbon monoxide',
-        '[O-][O+]=O': 'Ozone',
-        '[H]N([H])[H]': 'Ammonia',
-        'C1CO1': 'Oxirane'
-    }
-    
-    for pattern, name in common_gases.items():
+    for name, pattern in gas_patterns.items():
         if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
-            return True, f"Common gas: {name}"
-
-    # Count carbon atoms
-    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    
-    # Simple alkanes (C1-C4)
-    if carbon_count <= 4:
-        # Check if it's a simple alkane (only C and H)
-        only_C_and_H = all(atom.GetAtomicNum() in {1, 6} for atom in mol.GetAtoms())
-        no_double_or_triple_bonds = not (mol.HasSubstructMatch(Chem.MolFromSmarts('C=C')) or 
-                                       mol.HasSubstructMatch(Chem.MolFromSmarts('C#C')))
-        if only_C_and_H and no_double_or_triple_bonds:
-            return True, f"Simple alkane (C{carbon_count})"
+            return True, f"Matches {name} pattern"
             
-        # Simple alkenes (C2-C4, no other functional groups)
-        if mol.HasSubstructMatch(Chem.MolFromSmarts('C=C')):
-            # Check for absence of other functional groups
-            if only_C_and_H:
-                return True, f"Simple alkene (C{carbon_count})"
-                
-        # Simple alkynes (C2-C3, no other functional groups)
-        if carbon_count <= 3 and mol.HasSubstructMatch(Chem.MolFromSmarts('C#C')):
-            if only_C_and_H:
-                return True, f"Simple alkyne (C{carbon_count})"
+    # Check for small hydrocarbons (up to C4)
+    if all(atom.GetSymbol() in ('C', 'H') for atom in mol.GetAtoms()):
+        if num_heavy_atoms <= 4:
+            return True, f"Small hydrocarbon with {num_heavy_atoms} carbons"
+            
+    # Check for simple molecules with few non-H atoms
+    if num_heavy_atoms <= 3:
+        return True, f"Simple molecule with {num_heavy_atoms} heavy atoms"
+        
+    # If we haven't returned True by now, it's probably not a gas
+    return False, "Does not match known gas patterns and is too complex"
 
-    # Exclude if contains typical non-gas features
-    non_gas_patterns = [
-        '[OH]',  # Hydroxyl groups
-        '[NH2]',  # Primary amines (except ammonia)
-        '[#6]~[#6]~[#6]~[#6]~[#6]',  # Long carbon chains
-        '[#6]1[#6][#6][#6][#6]1',  # 5-membered rings
-        '[#6](=O)[OH]',  # Carboxylic acids
-        '[#6](=O)[O-]',  # Carboxylates
-        '[NH3+]',  # Ammonium groups
-        '[#15,#16]',  # P, S (except in specific known gases)
-        '[#6]=[#7]',  # C=N bonds
-        '[#6]=[#8]',  # C=O bonds
-        '[#6]S',  # C-S bonds
-        '[#7]1[#6][#6]1',  # Aziridine rings
-    ]
-    
-    for pattern in non_gas_patterns:
-        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
-            return False, "Contains functional groups typical of non-gases"
-
-    return False, "Does not match known gas patterns"
+__metadata__ = {
+    'chemical_class': {
+        'id': 'CHEBI:33262',
+        'name': 'gas molecular entity',
+        'definition': 'Any main group molecular entity that is gaseous at standard temperature and pressure (STP; 0degreeC and 100 kPa).',
+        'parents': []
+    }
+}
