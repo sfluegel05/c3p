@@ -21,25 +21,24 @@ def is_polychlorobiphenyl(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Look for biphenyl core structure - two phenyl rings directly connected
+    
+    # Match biphenyl core structure pattern
     biphenyl_pattern = Chem.MolFromSmarts("c1ccccc1-c2ccccc2")
-    if not mol.HasSubstructMatch(biphenyl_pattern):
+    biphenyl_match = mol.GetSubstructMatch(biphenyl_pattern)
+    if not biphenyl_match:
         return False, "No biphenyl core structure found"
 
-    # Count the number of chlorine atoms attached to the entire molecule
-    chlorine_count = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == "Cl")
+    # Count chlorine atoms directly attached to the biphenyl core carbons
+    chlorine_count = 0
+    for atom in mol.GetAtoms():
+        if atom.GetSymbol() == "Cl":
+            for bonded_atom in atom.GetNeighbors():
+                if bonded_atom.GetIdx() in biphenyl_match and bonded_atom.GetSymbol() == "C":
+                    chlorine_count += 1
+                    break
 
     # Ensure biphenyl rings are substituted with chlorine between 2 to 10 times
     if chlorine_count < 2 or chlorine_count > 10:
-        return False, f"Found {chlorine_count} chlorine atoms, should be between 2 and 10"
-
-    # Now, verifying that these cholorines are attached to the biphenyl rings
-    for atom in mol.GetAtoms():
-        if atom.GetSymbol() == "Cl":
-            # Ensure that this chlorine atom is directly attached to a carbon
-            connected_to_biphenyl = any(neighbor.GetSymbol() == "C" for neighbor in atom.GetNeighbors())
-            if not connected_to_biphenyl:
-                return False, "Chlorine atoms must be attached to biphenyl rings"
+        return False, f"Found {chlorine_count} chlorine atoms on biphenyl rings, should be between 2 and 10"
 
     return True, f"Contains biphenyl structure with {chlorine_count} chlorine atoms attached"
