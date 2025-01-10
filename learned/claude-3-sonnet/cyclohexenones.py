@@ -22,45 +22,74 @@ def is_cyclohexenones(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # SMARTS pattern for 6-membered ring with a ketone
-    # The * allows for any atom type in the ring (typically C but could be O,N etc)
-    # The ketone oxygen must be double bonded to a ring atom
-    pattern = Chem.MolFromSmarts("*1~*~*~*~*~*(=O)1")
-    
-    matches = mol.GetSubstructMatches(pattern)
-    if not matches:
-        return False, "No 6-membered ring with ketone found"
-        
-    for match in matches:
-        ring_atoms = set(match[:-1])  # Exclude the oxygen atom
-        
-        # Check if ring is aromatic
-        is_aromatic = False
-        for atom_idx in ring_atoms:
-            if mol.GetAtomWithIdx(atom_idx).GetIsAromatic():
-                is_aromatic = True
-                break
-        if is_aromatic:
+
+    # SMARTS patterns for cyclohexenone
+    # Pattern looks for:
+    # - 6-membered ring
+    # - One ketone (C=O)
+    # - One C=C double bond
+    # - All other bonds single
+    # Multiple patterns to catch different arrangements
+    patterns = [
+        # Pattern 1: C=C-C-C-C-C(=O)
+        "[#6]1=[#6]-[#6]-[#6]-[#6]-[#6](=O)1",
+        # Pattern 2: C-C=C-C-C-C(=O)
+        "[#6]1-[#6]=[#6]-[#6]-[#6]-[#6](=O)1",
+        # Pattern 3: C-C-C=C-C-C(=O)
+        "[#6]1-[#6]-[#6]=[#6]-[#6]-[#6](=O)1",
+    ]
+
+    for pattern in patterns:
+        patt = Chem.MolFromSmarts(pattern)
+        if patt is None:
             continue
             
-        # Count double bonds in ring (excluding the ketone)
-        double_bond_count = 0
-        ketone_carbon = None
-        for bond in mol.GetBonds():
-            start_idx = bond.GetBeginAtomIdx()
-            end_idx = bond.GetEndAtomIdx()
+        matches = mol.GetSubstructMatches(patt)
+        for match in matches:
+            ring_atoms = set(match)
             
-            # Skip bonds not in ring
-            if start_idx not in ring_atoms or end_idx not in ring_atoms:
+            # Check if any atom in the match is aromatic
+            is_aromatic = False
+            for atom_idx in ring_atoms:
+                if mol.GetAtomWithIdx(atom_idx).GetIsAromatic():
+                    is_aromatic = True
+                    break
+                    
+            if is_aromatic:
                 continue
                 
-            # Count double bonds
-            if bond.GetBondType() == Chem.BondType.DOUBLE:
-                double_bond_count += 1
+            # Verify ring atoms are all carbon (except oxygen of ketone)
+            all_carbon = True
+            for atom_idx in ring_atoms:
+                atom = mol.GetAtomWithIdx(atom_idx)
+                if atom.GetAtomicNum() != 6 and atom.GetAtomicNum() != 8:  # Allow C and O only
+                    all_carbon = False
+                    break
+                    
+            if not all_carbon:
+                continue
                 
-        # Should have exactly 2 double bonds total (one ketone + one C=C)
-        if double_bond_count == 2:
-            return True, "Contains cyclohexenone ring (6-membered ring with one ketone and one double bond)"
-            
+            # Count double bonds in ring to verify pattern
+            double_bonds = 0
+            ketone_bonds = 0
+            for bond in mol.GetBonds():
+                if bond.GetBondType() != Chem.BondType.DOUBLE:
+                    continue
+                    
+                start_idx = bond.GetBeginAtomIdx()
+                end_idx = bond.GetEndAtomIdx()
+                
+                # Check if bond involves ring atoms
+                if start_idx in ring_atoms or end_idx in ring_atoms:
+                    # Check if it's a ketone bond
+                    if (mol.GetAtomWithIdx(start_idx).GetAtomicNum() == 8 or 
+                        mol.GetAtomWithIdx(end_idx).GetAtomicNum() == 8):
+                        ketone_bonds += 1
+                    else:
+                        double_bonds += 1
+                        
+            # Verify we have exactly one C=C double bond and one C=O bond
+            if double_bonds == 1 and ketone_bonds == 1:
+                return True, "Contains cyclohexenone ring (6-membered ring with one ketone and one double bond)"
+                
     return False, "No valid cyclohexenone pattern found"
