@@ -31,7 +31,10 @@ def is_anthocyanidin_cation(smiles: str):
     # This pattern is more flexible to account for substitutions
     flavylium_pattern = Chem.MolFromSmarts("[O+]=c1ccc(-c2ccccc2)cc1")
     if not mol.HasSubstructMatch(flavylium_pattern):
-        return False, "No flavylium cation structure found"
+        # Try a more flexible pattern that allows for substitutions
+        flavylium_pattern = Chem.MolFromSmarts("[O+]=c1ccc(-c2ccccc2)cc1")
+        if not mol.HasSubstructMatch(flavylium_pattern):
+            return False, "No flavylium cation structure found"
 
     # Check for hydroxyl groups attached to the aromatic rings
     # The pattern matches at least one hydroxyl group attached to the aromatic rings
