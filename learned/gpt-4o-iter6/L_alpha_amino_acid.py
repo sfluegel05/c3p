@@ -2,7 +2,7 @@
 Classifies: CHEBI:15705 L-alpha-amino acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import AllChem
 
 def is_L_alpha_amino_acid(smiles: str):
     """
@@ -21,26 +21,27 @@ def is_L_alpha_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Identify all chiral centers
-    chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
+    # Identify chiral centers
+    chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True, useLegacyImplementation=False)
     
-    # Attempt to find alpha-carbon with L-configuration
+    # Define SMARTS pattern for an L-alpha-amino acid backbone (N[C@@H](C)C(O)=O)
+    aa_smarts = '[C@H](N)C(=O)O'
+    aa_pattern = Chem.MolFromSmarts(aa_smarts)
+    
+    if not mol.HasSubstructMatch(aa_pattern):
+        return False, "No L-alpha-amino acid backbone pattern found"
+    
+    # Check if there's at least one 'S' configuration chiral center (common for L-amino acids)
     for center, chirality in chiral_centers:
-        atom = mol.GetAtomWithIdx(center)
-        if atom.GetAtomicNum() == 6:  # Carbon
-            # Make sure we have an NH group and a carboxylic acid (COOH)
-            n_neighbor = False
-            c_group = False
-            for nbr in atom.GetNeighbors():
-                if nbr.GetAtomicNum() == 7 and nbr.GetTotalNumHs() > 0:
-                    n_neighbor = True
-                if nbr.GetAtomicNum() == 8:
-                    o_neighbors = [atom.GetAtomicNum() for atom in nbr.GetNeighbors()]
-                    if o_neighbors.count(8) == 1:  # Connected to another oxygen
-                        c_group = True
-            
-            # Check if chiral center has 'S' configuration (commonly corresponds to L-configuration)
-            if n_neighbor and c_group and chirality == 'S':
-                return True, "Chiral center with L-configuration, amino and carboxyl groups identified"
+        if chirality in ['S', '(S)']:
+            atom = mol.GetAtomWithIdx(center)
+            if atom.GetSymbol() == 'C':
+                # Verify the core structure and known neighbours
+                n_neighbors = [nbr.GetSymbol() for nbr in atom.GetNeighbors()]
+                o_count = n_neighbors.count('O')
+                n_count = n_neighbors.count('N')
+                
+                if n_count == 1 and o_count >= 1:
+                    return True, "Chiral center with L-configuration identified, amino and carboxyl groups confirmed."
     
-    return False, "No chiral center suitable for L-alpha-amino acid found"
+    return False, "No suitable chiral configuration or functional groups for L-alpha-amino acid found."
