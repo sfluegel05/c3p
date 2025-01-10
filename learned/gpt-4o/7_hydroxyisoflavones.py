@@ -21,10 +21,10 @@ def is_7_hydroxyisoflavones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define the isoflavone core pattern with a hydroxy group at position 7
-    # The 3-phenylchromen-4-one structure with hydroxyl at 7-position
-    seven_hydroxyisoflavone_pattern = Chem.MolFromSmarts("Oc1ccc2c(c1)occ(-c1cc(O)c(O)c1)c2=O")
-    
+    # Define the isoflavone pattern, focusing on the core structure with a hydroxy group at position 7
+    # The pattern should capture the base structure of 7-hydroxyisoflavones
+    seven_hydroxyisoflavone_pattern = Chem.MolFromSmarts("c1cc2occ(c2c(=O)c3ccc(O)cc13)")
+
     # Check if the molecule has the 7-hydroxyisoflavone pattern
     if mol.HasSubstructMatch(seven_hydroxyisoflavone_pattern):
         return True, "Contains the 7-hydroxyisoflavone core structure"
