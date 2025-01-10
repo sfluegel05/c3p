@@ -21,8 +21,9 @@ def is_steroid_saponin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Use a SMARTS pattern to identify the steroid backbone
-    steroid_pattern = Chem.MolFromSmarts("C1CCC2C3C(C1)CCC4C3CC(O)CC4C2")
+    # Generalized SMARTS pattern for steroid backbone
+    # Four fused rings: three six-membered followed by a five-membered ring
+    steroid_pattern = Chem.MolFromSmarts("C1CCC2C3CC4=CC=CC=4C3CC2C1")
     if steroid_pattern is None:
         return None, None  # Safety check if pattern creation failed
     
@@ -30,15 +31,15 @@ def is_steroid_saponin(smiles: str):
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
     
-    # Use a SMARTS pattern to identify sugar moieties (e.g., glucopyranose ring)
-    sugar_pattern = Chem.MolFromSmarts("C1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C")
-    sugar_matches = mol.GetSubstructMatches(sugar_pattern)
+    # Check for at least one hydroxyl group on the steroid backbone
+    hydroxy_on_steroid_pattern = Chem.MolFromSmarts("C[OH]")  # Simplified
+    if not mol.HasSubstructMatch(hydroxy_on_steroid_pattern):
+        return False, "Steroid backbone lacks hydroxyl groups"
+    
+    # Generalize pattern for sugar moieties (ring structures with oxygen)
+    sugar_ring_pattern = Chem.MolFromSmarts("C1OC(O)C(O)C(O)C1")
+    sugar_matches = mol.GetSubstructMatches(sugar_ring_pattern)
     if len(sugar_matches) == 0:
         return False, "No sugar moieties attached"
-    
-    # Generalize pattern for additional hydroxyl groups
-    hydroxy_pattern = Chem.MolFromSmarts("O[C;X2]")
-    if not mol.HasSubstructMatch(hydroxy_pattern):
-        return False, "Hydroxysteroid backbone lacks additional hydroxyl groups"
     
     return True, "Contains a hydroxysteroid backbone with attached sugar moieties consistent with a steroid saponin"
