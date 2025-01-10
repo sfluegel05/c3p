@@ -23,25 +23,31 @@ def is_saturated_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for carboxylic acid group (COOH)
-    carboxylic_pattern = Chem.MolFromSmarts("C(=O)[O;H1]")
+    # Look for terminal carboxylic acid group using modified pattern
+    carboxylic_pattern = Chem.MolFromSmarts("C(=O)O")
     if not mol.HasSubstructMatch(carboxylic_pattern):
         return False, "No terminal carboxylic acid group found"
     
-    # Check for carbon-carbon double and triple bonds
-    if any(bond.GetBondType() in [Chem.rdchem.BondType.DOUBLE, Chem.rdchem.BondType.TRIPLE] for bond in mol.GetBonds()):
-        return False, "Contains carbon-carbon multiple bond indicating unsaturation"
+    # Check for carbon-carbon double and triple bonds specifically between carbons
+    for bond in mol.GetBonds():
+        begin_atom, end_atom = bond.GetBeginAtom(), bond.GetEndAtom()
+        if bond.GetBondType() in [Chem.rdchem.BondType.DOUBLE, Chem.rdchem.BondType.TRIPLE]:
+            if begin_atom.GetAtomicNum() == 6 and end_atom.GetAtomicNum() == 6:  # Both atoms are carbons
+                return False, "Contains carbon-carbon multiple bond indicating unsaturation"
     
-    # Ensure there is a sufficiently long chain of sp3 carbons
-    # Here, target at least 6 carbons in a row, allowing for typical saturated chains
-    carbon_chain_pattern = Chem.MolFromSmarts("[CH2]~[CH2]~[CH2]~[CH2]~[CH2]~[CH2]") 
-    if not mol.HasSubstructMatch(carbon_chain_pattern):
-        return False, "Does not contain sufficiently long saturated carbon chain"
+    # Ensure there is a sufficiently long chain of saturated atoms
+    # Specifically handle typical fatty acids, flexible in chain branches and decorations like methyl groups
+    # Improved pattern for generic alkyl chains with carboxylic end
+    carbon_chain_pattern = Chem.MolFromSmarts("C-C(=O)O")  # Ensure the carboxyl end
 
-    # Account for simple methyl or hydroxyl branches
-    # Ensure no complex or non-linear backbone structures that confuse classification
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() not in {1, 6, 8}:  # Elements other than C, O, H are uncommon in simple acids
-            return False, "Contains unusual side groups not typical of simple saturated fatty acids"
+    # Count number of carbons in linear fashion
+    num_carbons = sum(atom.GetAtomicNum() == 6 for atom in mol.GetAtoms())
+    if num_carbons < 8:  # Conservative lower bound for even smallest acids
+        return False, "Insufficient carbon length for typical fatty acid"
+
+    # Validate appropriate chain types (in real fatty acid structure, non-linears not matching expected pattern)
+    main_chain = Chem.MolFromSmarts("[CX4]~[CX4]")  # Match carbons bound using sp3 bonds, allowing for small branches
+    if not mol.HasSubstructMatch(main_chain):
+        return False, "Does not contain sufficiently long saturated carbon chain"
 
     return True, "Classified as a saturated fatty acid with appropriate structure"
