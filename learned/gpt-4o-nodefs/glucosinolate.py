@@ -6,8 +6,7 @@ from rdkit import Chem
 def is_glucosinolate(smiles: str):
     """
     Determines if a molecule is a glucosinolate based on its SMILES string.
-    A glucosinolate contains a glucose-derived moiety, a sulfur linkage, 
-    and an N-sulfooxyimino group.
+    Glucosinolates contain a glucose moiety, a sulfur-linked aglycone, and an N-sulfooxyimino group.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,25 +21,22 @@ def is_glucosinolate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define relaxed SMARTS patterns based on commonality in examples
-    # More flexible glucose scaffold pattern
-    glucose_pattern = Chem.MolFromSmarts("C[C@H]1O[C@H](O)[C@@H](O)[C@H](O)[C@@H](O1)CO")
+    # Define SMARTS patterns for glucosinolate components
+    glucose_pattern = Chem.MolFromSmarts("C1[C@H]([C@H]([C@H]([C@@H](C1O)O)O)O)O")
+    thioglucose_pattern = Chem.MolFromSmarts("SC1[C@H]([C@H]([C@H]([C@@H](C1O)O)O)O)CO")
+    sulfooxyimino_group_pattern = Chem.MolFromSmarts("N=OS(O)(=O)=O")
 
-    # Sulfur linkage typically to a glucose moiety
-    sulfur_linkage_pattern = Chem.MolFromSmarts("[SX2]-[C@H]1O[C@@H](O)C(O)C(O)C1")
-
-    # Complete N-sulfooxyimino group pattern
-    sulfooxyimino_pattern = Chem.MolFromSmarts("N=OS(=O)(=O)[O-]")
-
-    # Check for essential glucosinolate components
+    # Check for glucose moiety
     if not mol.HasSubstructMatch(glucose_pattern):
-        return False, "No recognizable part-glucose scaffold found"
-    
-    if not mol.HasSubstructMatch(sulfur_linkage_pattern):
-        return False, "No identifiable sulfur linkage found"
+        return False, "No glucose moiety found"
 
-    if not mol.HasSubstructMatch(sulfooxyimino_pattern):
-        return False, "Missing N-sulfooxyimino functional group"
+    # Check for thioglucose linkage
+    if not mol.HasSubstructMatch(thioglucose_pattern):
+        return False, "Thioglucose linkage not found"
+
+    # Check for N-sulfooxyimino group
+    if not mol.HasSubstructMatch(sulfooxyimino_group_pattern):
+        return False, "N-sulfooxyimino group not found"
 
     # If all key components are present, classify as glucosinolate
-    return True, "Contains part-glucose scaffold, sulfur linkage, and N-sulfooxyimino group consistent with glucosinolate"
+    return True, "Contains glucose moiety, thioglucose linkage, and N-sulfooxyimino group consistent with glucosinolates"
