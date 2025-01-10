@@ -2,7 +2,6 @@
 Classifies: CHEBI:57347 3-oxo-fatty acyl-CoA(4-)
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_3_oxo_fatty_acyl_CoA_4__(smiles: str):
     """
@@ -23,25 +22,20 @@ def is_3_oxo_fatty_acyl_CoA_4__(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # New pattern: Check for a 3-oxo-fatty acyl pattern (O=C-C(=O))
-    oxo_fatty_acyl_pattern = Chem.MolFromSmarts("C(=O)[CH2]C(=O)C")
+    # Refined 3-oxo-fatty acyl pattern, focusing on long chains.
+    oxo_fatty_acyl_pattern = Chem.MolFromSmarts("C(=O)CC(=O)C")
     if not mol.HasSubstructMatch(oxo_fatty_acyl_pattern):
         return False, "No 3-oxo-fatty acyl group found"
 
-    # Improved CoA moiety pattern
-    coa_pattern = Chem.MolFromSmarts("C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP([O-])(=O)")
+    # Improved CoA moiety pattern with attention to stereochemistry.
+    coa_pattern = Chem.MolFromSmarts("C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OCC1OC(C(O)C1O)n2cnc3c(N)ncnc32")
     if not mol.HasSubstructMatch(coa_pattern):
-        return False, "CoA moiety not found"
+        return False, "CoA moiety with stereochemistry not found"
 
-    # Full structure check including phosphates
-    extended_coa_pattern = Chem.MolFromSmarts("[C@@H](O)C(C)(C)COP([O-])(=O)OP([O-])(=O)OC[C@@H]1O[C@@H]([C@H](O)[C@H]1OP([O-])([O-])=O)n2cnc3c(N)ncnc32")
-    if not mol.HasSubstructMatch(extended_coa_pattern):
-        return False, "Extended CoA parts with chirality not found"
-
-    # Count deprotonated phosphates
+    # Ensure there are exactly 4 deprotonated phosphate groups.
     phosphate_pattern = Chem.MolFromSmarts("OP([O-])(=O)[O-]")
     phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
-    if len(phosphate_matches) < 2:
+    if len(phosphate_matches) < 3:
         return False, "Insufficient deprotonated phosphate groups found"
 
     return True, "Contains 3-oxo-fatty acyl chain with CoA moiety including deprotonated phosphates"
