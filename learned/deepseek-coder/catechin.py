@@ -26,8 +26,8 @@ def is_catechin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more flexible flavan-3-ol core structure pattern
-    flavan_3_ol_pattern = Chem.MolFromSmarts("[C@H]1[C@H](O)[C@@H](Oc2ccccc12)c1ccc(O)c(O)c1")
+    # Define the flavan-3-ol core structure pattern
+    flavan_3_ol_pattern = Chem.MolFromSmarts("[C@H]1[C@H](O)[C@@H](Oc2cc(O)ccc12)c1ccc(O)c(O)c1")
     if not mol.HasSubstructMatch(flavan_3_ol_pattern):
         return False, "No flavan-3-ol core structure found"
 
@@ -38,12 +38,12 @@ def is_catechin(smiles: str):
     if len(hydroxyl_matches) < 3:
         return False, f"Found {len(hydroxyl_matches)} hydroxyl groups, need at least 3"
 
-    # Check for the presence of a benzopyran ring with possible substitutions
+    # Check for the presence of a benzopyran ring
     benzopyran_pattern = Chem.MolFromSmarts("O1C2=C(C=CC=C2)C=C1")
     if not mol.HasSubstructMatch(benzopyran_pattern):
         return False, "No benzopyran ring found"
 
-    # Check for the presence of a benzene ring with possible substitutions
+    # Check for the presence of a benzene ring
     benzene_pattern = Chem.MolFromSmarts("c1ccccc1")
     if not mol.HasSubstructMatch(benzene_pattern):
         return False, "No benzene ring found"
