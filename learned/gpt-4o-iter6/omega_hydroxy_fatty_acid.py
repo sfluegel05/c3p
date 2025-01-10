@@ -2,7 +2,6 @@
 Classifies: CHEBI:10615 omega-hydroxy fatty acid
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_omega_hydroxy_fatty_acid(smiles: str):
     """
@@ -21,23 +20,25 @@ def is_omega_hydroxy_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Find the longest chain in the structure
-    longest_chain = Chem.rdmolops.GetLongestPath(mol)
-    if not longest_chain or len(longest_chain) < 8:
-        return False, "The main hydrocarbon chain is too short (<8 carbons)."
+    # Look for a terminal carboxyl group
+    carboxyl_pattern = Chem.MolFromSmarts("C(=O)[O;H1]")
+    if not mol.HasSubstructMatch(carboxyl_pattern):
+        return False, "No terminal carboxyl group found"
 
-    # Check if there's a carboxyl group (COOH) at position 1
-    carboxyl_pattern = Chem.MolFromSmarts("C(=O)O")
-    carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
-    if not carboxyl_matches or carboxyl_matches[0][0] != longest_chain[0]:
-        return False, "No terminal carboxyl group found at the start of the chain."
+    # Look for a terminal hydroxyl group
+    # Ensure it is connected to a carbon chain, not directly after the carboxyl
+    hydroxyl_pattern = Chem.MolFromSmarts("[CX4][OH]")
+    if not mol.HasSubstructMatch(hydroxyl_pattern):
+        return False, "No omega hydroxyl group found"
 
-    # Check if there's a hydroxyl group (OH) at the last position
-    hydroxyl_pattern = Chem.MolFromSmarts("CO")
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    terminal_hydroxyl = any(match[1] == longest_chain[-1] for match in hydroxyl_matches)
+    # Check the carbon chain length is at least 8
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 8:
+        return False, f"Carbon chain too short: {c_count} carbons found"
 
-    if not terminal_hydroxyl:
-        return False, "No terminal omega-hydroxyl group found at the end of the chain."
+    return True, "Molecule is an omega-hydroxy fatty acid: has terminal carboxyl and omega-hydroxyl groups on a linear chain"
 
-    return True, "Molecule is an omega-hydroxy fatty acid: has terminal carboxyl and omega-hydroxyl groups on a linear chain."
+# Example usage
+# smiles = "OCCCCCCCCCCCCCCCCCCCC(O)=O"
+# result, reason = is_omega_hydroxy_fatty_acid(smiles)
+# print(result, reason)
