@@ -25,17 +25,26 @@ def is_diterpenoid(smiles: str):
     # Count the number of carbon atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     
-    # Check for approximate C20 skeleton
-    if not (18 <= c_count <= 22):  # Allow for minor modifications
-        return False, f"Carbon count ({c_count}) not typical for diterpenoid"
+    # Diterpenoids typically have a backbone ranging around 20 carbons, but may vary due to rearrangements
+    if c_count < 15 or c_count > 25:  # Allow more flexibility than a strict C20
+        return False, f"Uncommon carbon count ({c_count}) for diterpenoids"
 
-    # Check for terpenoid pattern (e.g., C5H8 isoprene units)
-    isoprene_pattern = Chem.MolFromSmarts("[C]1([CH2])[CH2][CH][CH2]1")
-    has_isoprene_units = mol.HasSubstructMatch(isoprene_pattern)
+    # Terpenoid characteristics: made from isoprene (C5) units, but can be rearranged
+    # Terpenoids often have C=C bonds, epoxide groups, and can form complex fused rings
 
-    if not has_isoprene_units:
-        return False, "No isoprene-like units typical in terpenoids found"
+    # Check for presence of at least one cycle (ring structure)
+    ring_info = mol.GetRingInfo()
+    if not ring_info or ring_info.NumRings() < 1:
+        return False, "Diterpenoids typically have at least one ring structure"
     
-    # Other pattern checks can be added here to further confirm
+    # Check for presence of double bonds (C=C), common in terpenoid structures
+    double_bond_count = sum(1 for bond in mol.GetBonds() if bond.GetBondTypeAsDouble() == 2)
+    if double_bond_count < 2:
+        return False, "Few double bonds; uncommon for diterpenoids"
 
-    return True, "Molecule matches diterpenoid characteristics with C20-like skeleton derived from diterpene"
+    # Check for functional groups like alcohols, ketones, or ethers typical in diterpenoids
+    has_oxygen = any(atom.GetAtomicNum() == 8 for atom in mol.GetAtoms())
+    if not has_oxygen:
+        return False, "Lack of typical functional groups like alcohols or ethers"
+
+    return True, "Molecule matches diterpenoid characteristics with flexible carbon count and typical structural features"
