@@ -21,27 +21,29 @@ def is_2__deoxyribonucleoside_5__monophosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for deoxyribose sugar pattern (remove hydroxyl group at 2' position)
-    # Adjusted pattern to be more flexible in atom valence and stereochemistry
-    deoxyribose_pattern = Chem.MolFromSmarts("C1OC(CO)C(O)C1")
+    # Check for deoxyribose sugar pattern
+    # Using stereo-aware SMARTS to ensure we only detect deoxy forms with correct stereochemistry
+    deoxyribose_pattern = Chem.MolFromSmarts("[C@H]1([C@H]([C@H]([C@@H](O1)CO)O)O)O")
     if not mol.HasSubstructMatch(deoxyribose_pattern):
         return False, "No 2'-deoxyribose structure found"
 
     # Check for phosphate group pattern at 5' position
-    # Broadened pattern to match potential variations in bonding
-    phosphate_pattern = Chem.MolFromSmarts("COP(=O)(O)[O-]")
-    if not mol.HasSubstructMatch(phosphate_pattern):
-        phosphate_pattern = Chem.MolFromSmarts("COP(=O)(O)O")
-        if not mol.HasSubstructMatch(phosphate_pattern):
-            return False, "No 5'-phosphate group found"
+    # Broadened pattern to match potential variations
+    phosphate_patterns = [
+        Chem.MolFromSmarts("COP(=O)(O)[O-]"),
+        Chem.MolFromSmarts("COP(=O)(O)O")
+    ]
+    if not any(mol.HasSubstructMatch(pattern) for pattern in phosphate_patterns):
+        return False, "No 5'-phosphate group found"
 
     # Check for typical nucleobases pattern - more permutations
     base_patterns = [
-        Chem.MolFromSmarts("n1cnc2c1ncnc2"),  # adenine base
-        Chem.MolFromSmarts("n1c(O)nc2c1ncnc2"),  # guanine base
-        Chem.MolFromSmarts("n1cc(nc1)C=O"),  # cytosine base
-        Chem.MolFromSmarts("c1ccn(c1)C=O"),  # thymine base
-        Chem.MolFromSmarts("n1[CH]cc(=O)[nh]c1=O")  # uracil base
+        Chem.MolFromSmarts("n1cnc2ncnc2c1"),  # adenine
+        Chem.MolFromSmarts("n1cnc2c1ncnc2O"),  # guanine
+        Chem.MolFromSmarts("n1c(O)nc2c1ncnc2"),  # guanine variation
+        Chem.MolFromSmarts("n1cc(nc1)C=O"),  # cytosine
+        Chem.MolFromSmarts("c1ccn(c1)C=O"),  # thymine
+        Chem.MolFromSmarts("n1[CH]cc(=O)[nh]c1=O")  # uracil
     ]
     if not any(mol.HasSubstructMatch(base) for base in base_patterns):
         return False, "No typical nucleobase structure found"
