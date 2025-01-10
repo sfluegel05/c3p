@@ -6,10 +6,10 @@ from rdkit import Chem
 def is_very_long_chain_fatty_acyl_CoA(smiles: str):
     """
     Classifies a molecule as a very long-chain fatty acyl-CoA based on its SMILES string.
-    
+
     Args:
         smiles (str): SMILES string of the molecule.
-    
+
     Returns:
         bool: True if molecule is a very long-chain fatty acyl-CoA, False otherwise.
         str: Reason for classification.
@@ -18,23 +18,21 @@ def is_very_long_chain_fatty_acyl_CoA(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Substructure pattern for Coenzyme A (CoA) part, using a more general pattern
-    # Simplified pattern to reduce matching issues
-    coa_pattern = Chem.MolFromSmarts("SCCNC(=O)CCNC(=O)C(O)C(C)(C)COP(O)(=O)OP(O)(=O)OC1COC1OP(O)(O)=O")
+
+    # Substructure pattern for Coenzyme A (CoA) part, using a comprehensive pattern
+    coa_pattern = Chem.MolFromSmarts("SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)O[C@H]1[C@H](O)[C@H](O)C(CO1)OP(O)(O)=O")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No CoA structure found"
     
-    # Substructure pattern for the thioester linkage
-    carbonyl_pattern = Chem.MolFromSmarts("C(=O)SC")
-    carbonyl_match = mol.GetSubstructMatch(carbonyl_pattern)
+    # Substructure pattern for the thioester linkage: carbonyl group connected to a sulfur atom
+    carbonyl_pattern = Chem.MolFromSmarts("C(=O)S")
+    carbonyl_match = mol.GetSubstructMatches(carbonyl_pattern)
     if not carbonyl_match:
         return False, "No carbonyl linked to CoA structure found"
-    
-    # Starting from carbonyl carbon, find the longest consecutive chain of carbon atoms
-    carbonyl_carbon = carbonyl_match[0]  # carbon of the carbonyl group
-    visited = set()
+
+    # Track longest consecutive chain of carbon atoms from each carbonyl carbon
     max_chain_length = 0
+    visited = set()
 
     # Define depth-first search function to track acyl chain
     def find_chain_length(atom_idx, length):
@@ -48,10 +46,13 @@ def is_very_long_chain_fatty_acyl_CoA(smiles: str):
             if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:  # Check for carbon atoms
                 find_chain_length(neighbor.GetIdx(), length + 1)
 
-    # Go through the neighbors of the carbonyl carbon
-    for neighbor in mol.GetAtomWithIdx(carbonyl_carbon).GetNeighbors():
-        if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:  # Start DFS from carbon atom
-            find_chain_length(neighbor.GetIdx(), 1)
+    # Loop over all carbonyl matches to explore different potential chains
+    for match in carbonyl_match:
+        carbonyl_carbon_idx = match[0]
+        visited.clear()  # Clear visited sets for each new carbonyl group
+        for neighbor in mol.GetAtomWithIdx(carbonyl_carbon_idx).GetNeighbors():
+            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:  # Start DFS from carbon atom
+                find_chain_length(neighbor.GetIdx(), 1)
 
     # Check if the longest carbon chain exceeds C22
     if max_chain_length <= 22:
