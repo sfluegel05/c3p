@@ -47,10 +47,20 @@ def is_macrolide(smiles: str):
     if not ester_in_ring:
         return False, "Ester group not part of a ring"
 
-    # Check for polyketide-like structure (alternating carbonyl and hydroxyl groups)
-    polyketide_pattern = Chem.MolFromSmarts("[#6][CX3](=O)[#6][OX2H]")
-    if not mol.HasSubstructMatch(polyketide_pattern):
-        return False, "No polyketide-like structure found"
+    # More flexible polyketide-like structure check
+    # Look for multiple carbonyl and hydroxyl groups
+    carbonyl_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6 and 
+                        any(bond.GetBondType() == Chem.rdchem.BondType.DOUBLE and 
+                            bond.GetOtherAtom(atom).GetAtomicNum() == 8 
+                            for bond in atom.GetBonds()))
+    
+    hydroxyl_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and 
+                        any(bond.GetBondType() == Chem.rdchem.BondType.SINGLE and 
+                            bond.GetOtherAtom(atom).GetAtomicNum() == 1 
+                            for bond in atom.GetBonds()))
+    
+    if carbonyl_count < 2 or hydroxyl_count < 2:
+        return False, "Insufficient carbonyl/hydroxyl groups for polyketide structure"
 
     # Additional checks for typical macrolide features
     # Count oxygen atoms (macrolides typically have multiple oxygens)
@@ -62,5 +72,10 @@ def is_macrolide(smiles: str):
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 300:
         return False, "Molecular weight too low for macrolide"
+
+    # Check for typical macrolide carbon count
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 20:
+        return False, "Too few carbons for typical macrolide"
 
     return True, "Contains macrocyclic lactone ring with 12+ members and polyketide-derived structure"
