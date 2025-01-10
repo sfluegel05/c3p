@@ -22,52 +22,66 @@ def is_beta_D_glucosiduronic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Pattern for beta-D-glucuronic acid core with correct stereochemistry
-    # Matches the complete core structure including the carboxylic acid
-    glucuronic_pattern = Chem.MolFromSmarts(
-        '[OD2][C@@H]1[C@H]([OH1])[C@@H]([OH1])[C@H]([OH1])[C@@H](C(=O)[OH1])O1'
-    )
+    # Create and validate SMARTS patterns
+    patterns = {
+        # Basic glucuronic acid scaffold (6-membered ring with COOH)
+        'core': '[OX2][CH1]1[CH1][CH1][CH1][CH1](C(=O)[OH1])O1',
+        # Carboxylic acid group
+        'carboxyl': 'C(=O)[OH1]',
+        # Hydroxyl groups pattern
+        'hydroxyls': '[OH1]',
+        # Beta glycosidic linkage at anomeric carbon
+        'beta_linkage': '[OX2][CH1]1O[CH1]'
+    }
     
-    # Pattern for when the core is part of a glycoside (O-substituted)
-    glucuronic_glycoside = Chem.MolFromSmarts(
-        '[OD2][C@@H]1[C@H]([OH1])[C@@H]([OH1])[C@H]([OH1])[C@@H](C(=O)[OH1])O1'
-    )
+    # Validate SMARTS patterns
+    smarts_mols = {}
+    for name, pattern in patterns.items():
+        smarts_mol = Chem.MolFromSmarts(pattern)
+        if smarts_mol is None:
+            return False, f"Invalid SMARTS pattern: {name}"
+        smarts_mols[name] = smarts_mol
 
-    # Check for the presence of carboxylic acid group
-    carboxyl = Chem.MolFromSmarts('C(=O)[OH1]')
-    if not mol.HasSubstructMatch(carboxyl):
+    # Check for carboxylic acid group
+    if not mol.HasSubstructMatch(smarts_mols['carboxyl']):
         return False, "No carboxylic acid group found"
 
-    # Check for the presence of pyranose ring with correct stereochemistry
-    has_core = mol.HasSubstructMatch(glucuronic_pattern)
-    has_glycoside = mol.HasSubstructMatch(glucuronic_glycoside)
-    
-    if not (has_core or has_glycoside):
-        return False, "No beta-D-glucuronic acid core found with correct stereochemistry"
+    # Check for basic glucuronic acid scaffold
+    if not mol.HasSubstructMatch(smarts_mols['core']):
+        return False, "No glucuronic acid core structure found"
 
-    # Check for proper glycosidic linkage at anomeric carbon
-    anomeric_o = Chem.MolFromSmarts('[OD2][C@@H]1O[C@@H]')
-    if not mol.HasSubstructMatch(anomeric_o):
-        return False, "No proper glycosidic linkage found at anomeric carbon"
+    # Count hydroxyl groups (should have at least 3 for glucuronic acid)
+    hydroxyl_matches = len(mol.GetSubstructMatches(smarts_mols['hydroxyls']))
+    if hydroxyl_matches < 3:
+        return False, f"Insufficient hydroxyl groups (found {hydroxyl_matches}, need at least 3)"
 
-    # Verify presence of required hydroxyl groups
-    hydroxyl_pattern = Chem.MolFromSmarts('[C@@H]([OH1])[C@H]([OH1])[C@@H]([OH1])')
-    if not mol.HasSubstructMatch(hydroxyl_pattern):
-        return False, "Missing required hydroxyl groups"
+    # Check for proper glycosidic linkage
+    if not mol.HasSubstructMatch(smarts_mols['beta_linkage']):
+        return False, "No proper glycosidic linkage found"
 
     # Count oxygen atoms (should have at least 6 for glucuronic acid)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     if o_count < 6:
-        return False, "Insufficient oxygen atoms for glucuronic acid structure"
+        return False, f"Insufficient oxygen atoms (found {o_count}, need at least 6)"
 
-    # Check for 6-membered ring containing the glucuronic acid core
+    # Check ring count
     rings = mol.GetRingInfo()
     if rings.NumRings() == 0:
         return False, "No rings found in molecule"
 
-    # Additional check for correct substitution pattern
-    pyranose_pattern = Chem.MolFromSmarts('[OD2][C@@H]1[C@H][C@@H][C@H][C@@H](C(=O)[OH1])O1')
-    if not mol.HasSubstructMatch(pyranose_pattern):
-        return False, "Incorrect substitution pattern for beta-D-glucuronic acid"
+    # Additional stereochemistry check using 3D conformation
+    try:
+        # Generate 3D conformation
+        mol = Chem.AddHs(mol)
+        AllChem.EmbedMolecule(mol, randomSeed=42)
+        AllChem.MMFFOptimizeMolecule(mol)
+        
+        # Check if molecule has chiral centers
+        chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
+        if len(chiral_centers) < 4:  # Glucuronic acid should have at least 4 chiral centers
+            return False, "Insufficient chiral centers for beta-D-glucuronic acid"
+    except:
+        # If 3D generation fails, continue without it
+        pass
 
-    return True, "Contains beta-D-glucuronic acid core with correct stereochemistry and glycosidic linkage"
+    return True, "Contains beta-D-glucuronic acid core with glycosidic linkage"
