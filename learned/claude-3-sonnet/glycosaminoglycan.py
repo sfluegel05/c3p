@@ -23,65 +23,80 @@ def is_glycosaminoglycan(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-        
-    # Count atoms and check molecular weight
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 500:  # GAGs are typically large molecules
-        return False, "Molecular weight too low for glycosaminoglycan"
 
     # Count key atoms
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
     
-    if o_count < 5:  # Need multiple oxygen atoms for sugar rings
-        return False, "Too few oxygen atoms for polysaccharide structure"
+    if o_count < 3:  # Relaxed oxygen requirement
+        return False, "Too few oxygen atoms for aminomonosaccharide structure"
     
-    if n_count == 0:  # Need nitrogen for amino sugars
+    if n_count == 0:  # Still need nitrogen for amino groups
         return False, "No nitrogen atoms found - required for aminosugar"
 
-    # Look for pyranose/furanose ring patterns (sugar rings)
-    sugar_pattern = Chem.MolFromSmarts("[CR1]1[CR1][CR1][CR1][CR1]O1")  # pyranose ring
-    sugar_matches = len(mol.GetSubstructMatches(sugar_pattern))
+    # Look for various sugar-like ring patterns
+    patterns = [
+        "[CR1]1[CR1][CR1][CR1][CR1]O1",  # pyranose
+        "[CR1]1[CR1][CR1][CR1]O1",       # furanose
+        "[CR0,CR1]1[CR0,CR1][CR0,CR1][CR0,CR1][CR0,CR1]O1",  # modified pyranose
+        "[CR0,CR1]1[CR0,CR1][CR0,CR1][CR0,CR1]O1"            # modified furanose
+    ]
     
-    if sugar_matches == 0:
-        return False, "No sugar rings detected"
-        
-    # Look for amino sugar pattern (-NH-CH-)
-    amino_sugar = Chem.MolFromSmarts("[NX3H][CH1,CH2][OH1,OR]")
-    amino_sugar_matches = len(mol.GetSubstructMatches(amino_sugar))
-    
-    if amino_sugar_matches == 0:
-        return False, "No amino sugar residues detected"
+    total_sugar_matches = 0
+    for pattern in patterns:
+        sugar_pattern = Chem.MolFromSmarts(pattern)
+        if sugar_pattern:
+            matches = len(mol.GetSubstructMatches(sugar_pattern))
+            total_sugar_matches += matches
 
-    # Look for glycosidic linkages (-O- between sugars)
-    glycosidic = Chem.MolFromSmarts("[CR1]O[CR1]")
-    glycosidic_matches = len(mol.GetSubstructMatches(glycosidic))
+    # Look for amino groups in various contexts
+    amino_patterns = [
+        "[NX3H,NX3H2][CH1,CH2][OH1,OR]",  # classic amino sugar
+        "[NX3H,NX3H2][CR0,CR1][OR0,OR1]",  # modified amino sugar
+        "[NX3H,NX3H2]C(=O)",               # N-acetyl group
+        "[NX3]C[CR1]1O[CR1][CR1][CR1][CR1]1"  # N-substituted sugar
+    ]
     
-    if glycosidic_matches < 1:
-        return False, "No glycosidic linkages found"
+    total_amino_matches = 0
+    for pattern in amino_patterns:
+        amino_pattern = Chem.MolFromSmarts(pattern)
+        if amino_pattern:
+            matches = len(mol.GetSubstructMatches(amino_pattern))
+            total_amino_matches += matches
 
-    # Optional: Check for common modifications
+    # Look for characteristic modifications
     sulfate = Chem.MolFromSmarts("OS(=O)(=O)[OH1,O-]")
     carboxyl = Chem.MolFromSmarts("C(=O)[OH1,O-]")
-    has_sulfate = mol.HasSubstructMatch(sulfate)
-    has_carboxyl = mol.HasSubstructMatch(carboxyl)
+    acetyl = Chem.MolFromSmarts("NC(=O)C")
+    
+    has_sulfate = mol.HasSubstructMatch(sulfate) if sulfate else False
+    has_carboxyl = mol.HasSubstructMatch(carboxyl) if carboxyl else False
+    has_acetyl = mol.HasSubstructMatch(acetyl) if acetyl else False
 
-    # Construct reason string
+    # Build features list
     features = []
-    features.append(f"Contains {sugar_matches} sugar rings")
-    features.append(f"{amino_sugar_matches} amino sugar residues")
-    features.append(f"{glycosidic_matches} glycosidic linkages")
+    if total_sugar_matches > 0:
+        features.append(f"Contains {total_sugar_matches} sugar-like rings")
+    if total_amino_matches > 0:
+        features.append(f"{total_amino_matches} amino groups")
     if has_sulfate:
         features.append("sulfate groups")
     if has_carboxyl:
         features.append("carboxyl groups")
-    
-    reason = "Classified as glycosaminoglycan: " + ", ".join(features)
+    if has_acetyl:
+        features.append("acetyl groups")
 
-    # Final classification
-    # Must have multiple sugar rings, amino sugars, and glycosidic linkages
-    is_gag = (sugar_matches >= 1 and 
-              amino_sugar_matches >= 1 and 
-              glycosidic_matches >= 1)
+    # Classification criteria
+    is_gag = (
+        (total_sugar_matches > 0 or (o_count >= 4 and n_count >= 1)) and  # Either has sugar rings or enough O/N atoms
+        total_amino_matches > 0 and                                        # Must have amino groups
+        (has_sulfate or has_carboxyl or has_acetyl)                       # Must have at least one characteristic modification
+    )
+
+    if not features:
+        return False, "No characteristic glycosaminoglycan features found"
+    
+    reason = ("Classified as glycosaminoglycan: " + ", ".join(features)) if is_gag else \
+             ("Not classified as glycosaminoglycan: " + ", ".join(features))
 
     return is_gag, reason
