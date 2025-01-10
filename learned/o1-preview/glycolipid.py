@@ -23,38 +23,84 @@ def is_glycolipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for monosaccharide (simplified pattern matching a ring with oxygen and hydroxyls)
-    monosaccharide_smarts = "[C;R]1([O;R])[C;R][C;R][C;R][C;R][O;R]1"
-    monosaccharide = Chem.MolFromSmarts(monosaccharide_smarts)
+    # Flag to check if molecule contains a sugar moiety
+    found_sugar = False
 
-    # Define SMARTS pattern for glycerol backbone with acyl groups at positions 1 and 2
-    glycerol_diacyl_smarts = "OCC(OC(=O)[#6])[C;!R]OC(=O)[#6]"
-    glycerol_diacyl = Chem.MolFromSmarts(glycerol_diacyl_smarts)
+    # Detect sugar rings (5 or 6-membered rings with oxygen, carbons having hydroxyl groups)
+    rings = mol.GetRingInfo().AtomRings()
+    for ring in rings:
+        ring_size = len(ring)
+        if ring_size == 5 or ring_size == 6:
+            oxygens_in_ring = sum(1 for idx in ring if mol.GetAtomWithIdx(idx).GetAtomicNum() == 8)
+            # Consider rings with 1 oxygen in ring
+            if oxygens_in_ring == 1:
+                carbons_with_oh = 0
+                for idx in ring:
+                    atom = mol.GetAtomWithIdx(idx)
+                    if atom.GetAtomicNum() == 6:  # Carbon atom
+                        # Check if carbon is sp3 hybridized
+                        if atom.GetHybridization() != Chem.rdchem.HybridizationType.SP3:
+                            break
+                        # Check for attached hydroxyl group
+                        hydroxyl = False
+                        for nbr in atom.GetNeighbors():
+                            if nbr.GetAtomicNum() == 8 and mol.GetBondBetweenAtoms(atom.GetIdx(), nbr.GetIdx()).GetBondType() == Chem.rdchem.BondType.SINGLE:
+                                hydroxyl = True
+                        if hydroxyl:
+                            carbons_with_oh +=1
+                        else:
+                            break
+                else:
+                    # All carbons in ring have hydroxyl groups
+                    found_sugar = True
+                    break  # Found a sugar ring
 
-    # Define SMARTS pattern for glycosidic linkage at position 3 of glycerol
-    glycosidic_linkage_smarts = "OCC(O[C;R])[C;!R]"
-    glycosidic_linkage = Chem.MolFromSmarts(glycosidic_linkage_smarts)
-
-    # Define SMARTS pattern for acylated sugar (bacterial glycolipids)
-    acylated_sugar_smarts = "[C;R]([O;R])[O;R]C(=O)[#6]"
-    acylated_sugar = Chem.MolFromSmarts(acylated_sugar_smarts)
-
-    # Check for monosaccharide unit
-    if mol.HasSubstructMatch(monosaccharide):
-        # Check for glycerol backbone with diacyl groups
-        if mol.HasSubstructMatch(glycerol_diacyl):
-            # Check for glycosidic linkage between glycerol and sugar
-            if mol.HasSubstructMatch(glycosidic_linkage):
-                return True, "Contains 1,2-di-O-acylglycerol linked to carbohydrate via glycosidic bond"
-            else:
-                return False, "No glycosidic linkage between glycerol and carbohydrate found"
-        else:
-            # Check for acylated sugar (bacterial glycolipid)
-            if mol.HasSubstructMatch(acylated_sugar):
-                return True, "Contains acylated sugar moiety (bacterial glycolipid without glycerol)"
-            else:
-                return False, "No glycerol diacyl backbone or acylated sugar found"
-    else:
+    if not found_sugar:
         return False, "No carbohydrate moiety detected"
 
-    return False, "Does not match glycolipid structural criteria"
+    # Check for long aliphatic chains (lipid moiety)
+    lipid_found = False
+    num_carbons_in_chains = []
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6 and atom.GetDegree() == 1:
+            chain_length = 1
+            visited = set()
+            stack = [(atom, 0)]
+            while stack:
+                current_atom, depth = stack.pop()
+                if current_atom.GetIdx() in visited:
+                    continue
+                visited.add(current_atom.GetIdx())
+                if current_atom.GetAtomicNum() == 6:
+                    chain_length += 1
+                for neighbor in current_atom.GetNeighbors():
+                    if neighbor.GetAtomicNum() in [6, 1]:  # Carbon or hydrogen
+                        stack.append((neighbor, depth + 1))
+            if chain_length >= 8:
+                lipid_found = True
+                break
+
+    if not lipid_found:
+        return False, "No lipid moiety detected"
+
+    # Check for glycosidic linkage between sugar and lipid
+    # Look for C-O-C linkage between sugar ring and lipid chain
+    glycosidic_linkage_found = False
+    for bond in mol.GetBonds():
+        atom1 = bond.GetBeginAtom()
+        atom2 = bond.GetEndAtom()
+        if bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
+            if atom1.GetAtomicNum() == 8 and atom2.GetAtomicNum() == 6 or atom1.GetAtomicNum() == 6 and atom2.GetAtomicNum() == 8:
+                # Check if one atom is in sugar ring and the other is outside
+                idx1 = atom1.GetIdx()
+                idx2 = atom2.GetIdx()
+                in_sugar_ring1 = any(idx1 in ring for ring in rings)
+                in_sugar_ring2 = any(idx2 in ring for ring in rings)
+                if in_sugar_ring1 != in_sugar_ring2:
+                    glycosidic_linkage_found = True
+                    break
+
+    if not glycosidic_linkage_found:
+        return False, "No glycosidic linkage between sugar and lipid moiety found"
+
+    return True, "Contains carbohydrate moiety linked to lipid via glycosidic bond"
