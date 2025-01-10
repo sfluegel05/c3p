@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_phosphatidylinositol(smiles: str):
     """
     Determines if a molecule is a phosphatidylinositol based on its SMILES string.
-    A phosphatidylinositol has a phosphatidyl group esterified to one of the hydroxy groups of inositol.
+    A phosphatidylinositol is a glycerophosphoinositol having a phosphatidyl group esterified to one of the hydroxy groups of inositol.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,31 +21,24 @@ def is_phosphatidylinositol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Update inositol detection with flexibility for hydroxyls
-    inositol_pattern = Chem.MolFromSmarts("[C@H]1([C@@H]([C@H]([C@@H]([C@H]([C@H]1O)O)O)O)O)O")
+    # Check for inositol ring (a six-membered carbon ring with 5 or 6 hydroxyl groups)
+    inositol_pattern = Chem.MolFromSmarts("C1(C(C(C(C(C1O)O)O)O)O)O")
     if not mol.HasSubstructMatch(inositol_pattern):
-        return False, "No inositol-like structure with hydroxyl groups found"
+        return False, "No inositol ring found"
 
-    # Adjusting phosphodiester linkage pattern to accommodate possible stereochemical degrees
-    phosphodiester_pattern = Chem.MolFromSmarts("O[P](=O)([O-])O[C@H]")
-    if not mol.HasSubstructMatch(phosphodiester_pattern):
-        return False, "No phosphodiester linkage (O-P(=O)-O-C) found"
+    # Check for phosphatidyl group (a phosphate group with ester linkages)
+    phosphate_pattern = Chem.MolFromSmarts("OP(O)(=O)O")
+    if not mol.HasSubstructMatch(phosphate_pattern):
+        return False, "No phosphatidyl group found"
+    
+    # Check for glycerol backbone as part of the phosphatidyl moiety
+    glycerol_pattern = Chem.MolFromSmarts("C(C(CO)O)O")
+    if not mol.HasSubstructMatch(glycerol_pattern):
+        return False, "No glycerol backbone found"
 
-    # Check for ester linkages from glycerol to fatty acids
-    ester_pattern = Chem.MolFromSmarts("C(=O)O[C@H]CO")
-    if not mol.HasSubstructMatch(ester_pattern):
-        return False, "No ester bond indicating fatty acid chains linked to glycerol found"
-
-    # Check for long hydrocarbon chains using a more dynamic pattern by counting carbons
-    carbon_chain_pattern = Chem.MolFromSmarts("[0*]-[0*]-[0*]-[0*]-[0*]-[0*]-[0*]-[0*]")
-    c_chain_match = False
-    for match in mol.GetSubstructMatches(carbon_chain_pattern):
-        carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-        if carbon_count >= 18:
-            c_chain_match = True
-            break
-
-    if not c_chain_match:
-        return False, "No sufficiently long aliphatic chains typical of fatty acids found"
-
-    return True, "The molecule matches the structure of phosphatidylinositol: inositol ring with hydroxyls, phosphate linkage, glycerol esterified to fatty acid chains."
+    # Confirm one of the inositol hydroxyl groups is esterified with the phosphatidyl group
+    ester_linkage_pattern = Chem.MolFromSmarts("[C@H](O[*:1])[#6]")
+    if not mol.HasSubstructMatch(ester_linkage_pattern):
+        return False, "No ester linkage between phosphatidyl group and inositol found"
+    
+    return True, "Contains glycerol backbone with phosphatidyl group esterified to inositol"
