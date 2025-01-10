@@ -20,17 +20,13 @@ def is_guaiacols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the guaiacol SMARTS pattern
-    # This pattern looks for a benzene ring with OH and OCH3 groups in ortho positions
-    # or additional groups that might add complexity without affecting the ortho formation
-    guaiacol_pattern_ortho = Chem.MolFromSmarts("Oc1c(OC)cccc1")
-    guaiacol_pattern_meta = Chem.MolFromSmarts("Oc1cc(OC)ccc1")
-    
+    # Define the guaiacol SMARTS pattern strictly for ortho substitution
+    # Oc1c(OC)ccccc1 indicates the ortho position for the OCH3 relative to OH on the benzene ring.
+    ortho_guaiacol_pattern = Chem.MolFromSmarts("Oc1cc(OC)ccc1")
+
     # Check for the guaiacol pattern
-    if mol.HasSubstructMatch(guaiacol_pattern_ortho):
+    if mol.HasSubstructMatch(ortho_guaiacol_pattern):
         return True, "Molecule contains a phenol group with an ortho methoxy substituent"
-    if mol.HasSubstructMatch(guaiacol_pattern_meta):
-        return True, "Molecule contains a phenol group with a nearby methoxy substituent and potential flexibility in aromatic system"
 
     return False, "Molecule does not match the guaiacol structure with phenol and ortho methoxy"
 
