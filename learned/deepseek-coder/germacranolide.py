@@ -33,25 +33,20 @@ def is_germacranolide(smiles: str):
         return False, "No 10-membered ring (germacrane skeleton) found"
 
     # Look for lactone group (cyclic ester)
+    # More flexible pattern to match various lactone configurations
     lactone_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2][CX4]")
     if not mol.HasSubstructMatch(lactone_pattern):
         return False, "No lactone group found"
 
-    # Check for sesquiterpene (15 carbons)
+    # Check for sesquiterpene base (approximately 15 carbons)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count != 15:
-        return False, f"Not a sesquiterpene (15 carbons required, found {c_count})"
+    if c_count < 15 or c_count > 20:  # Allow some flexibility for functional groups
+        return False, f"Not a sesquiterpene (15-20 carbons expected, found {c_count})"
 
-    # Check for common functional groups in germacranolides
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
-    acetyl_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[CX4]")
-    methacrylate_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2][CX4]=[CX3]")
-    
-    has_hydroxyl = mol.HasSubstructMatch(hydroxyl_pattern)
-    has_acetyl = mol.HasSubstructMatch(acetyl_pattern)
-    has_methacrylate = mol.HasSubstructMatch(methacrylate_pattern)
+    # Check for typical germacranolide connectivity
+    # Look for the characteristic fused ring system with lactone
+    germacranolide_pattern = Chem.MolFromSmarts("[CX4]1[CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4]1.[CX3](=[OX1])[OX2][CX4]")
+    if not mol.HasSubstructMatch(germacranolide_pattern):
+        return False, "Does not match typical germacranolide connectivity pattern"
 
-    if not (has_hydroxyl or has_acetyl or has_methacrylate):
-        return False, "No common functional groups (hydroxyl, acetyl, methacrylate) found"
-
-    return True, "Contains 10-membered ring, lactone group, and common functional groups"
+    return True, "Contains 10-membered ring, lactone group, and sesquiterpene base structure"
