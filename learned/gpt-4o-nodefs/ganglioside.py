@@ -22,20 +22,22 @@ def is_ganglioside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Generalized pattern for ceramide backbone
-    ceramide_pattern = Chem.MolFromSmarts("C(=O)N[C@H](CO)C([O])[C@H][C@@H]")  # Core amide and part of sphingosine structure
+    # Refined pattern for ceramide backbone with sphingosine structure
+    ceramide_pattern = Chem.MolFromSmarts("C(=O)NC(CO)C\C=C\CCCCC")
     if not mol.HasSubstructMatch(ceramide_pattern):
         return False, "No valid ceramide backbone found"
 
-    # Generalized pattern for sialic acid residues
-    sialic_acid_pattern = Chem.MolFromSmarts("C[C@H](C(=O)[O-])O[C@H]")  # Basic sialic acid recognition with carboxylate
+    # Enhanced pattern for sialic acid residues substructure
+    sialic_acid_pattern = Chem.MolFromSmarts("C[C@H](O)C(=O)OC")  # Accommodates variations in sialic acids
     if not mol.HasSubstructMatch(sialic_acid_pattern):
         return False, "No valid sialic acid residue found"
 
-    # Checking for a minimum number of sugar residues (assuming glycan includes glucose/galactose)
-    glycan_pattern = Chem.MolFromSmarts("C1OC(O)C(O)C(O)C1")  # Pattern for common glucose/galactose units
-    glycan_matches = mol.GetSubstructMatches(glycan_pattern)
-    if len(glycan_matches) < 3:
+    # Sufficient variety and linkage of sugar residues (flexible glycans)
+    sugar_pattern_1 = Chem.MolFromSmarts("COC[C@H]1O[C@H](COP(O)(=O)O)[C@H](O)[C@@H]1O")
+    sugar_pattern_2 = Chem.MolFromSmarts("C1OC(O)C(O)C(O)C1")  # Generic pyranose form
+    sugar_matches_1 = mol.GetSubstructMatches(sugar_pattern_1)
+    sugar_matches_2 = mol.GetSubstructMatches(sugar_pattern_2)
+    if len(sugar_matches_1) + len(sugar_matches_2) < 3:
         return False, "Missing necessary glycan residues"
-        
+
     return True, "Contains ceramide backbone with sialic acid and necessary glycan residues"
