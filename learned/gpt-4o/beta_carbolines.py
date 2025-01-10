@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_beta_carbolines(smiles: str):
     """
     Determines if a molecule is a beta-carboline based on its SMILES string.
-    A beta-carboline contains a pyridoindole core structure and can include 
-    their hydrogenated derivatives.
+    Beta-carbolines have a pyridoindole core and can have hydrogenated derivatives or 
+    various substitutions.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,15 +22,24 @@ def is_beta_carbolines(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define a more comprehensive beta-carboline pattern, allowing for 
-    # unsaturation and substitutions on the pyridoindole core.
-    beta_carboline_pattern = Chem.MolFromSmarts('n1c2ccccc2c3[nH]ccc13')  # General pyridoindole pattern
+    # Refined SMARTS patterns for beta-carboline core structure
+    # Including possible hydrogenation and core variations
+    beta_carboline_patterns = [
+        'n1c2ccccc2c3[nH]c1c3',  # Fully aromatic core
+        'Cn1c2ccccc2c3nccc3c1',  # Methylated indole nitrogen
+        'n1c2ccccc2c3ccc[nH]c13',  # Another variation in hydrogenation
+        'n1c2ccccc2c3[nH]ccc13',  # Original pattern
+        '[nH]1c2ccccc2c3cccnc13',  # Another possible pattern with heterocycles
+    ]
 
-    # Check for the beta-carboline pattern
-    if not mol.HasSubstructMatch(beta_carboline_pattern):
-        return False, "No beta-carboline structure found"
-    
-    return True, "Contains a beta-carboline structure"
+    # Check for any beta-carboline pattern match
+    for pattern in beta_carboline_patterns:
+        matcher = Chem.MolFromSmarts(pattern)
+        if mol.HasSubstructMatch(matcher):
+            return True, f"Contains a beta-carboline structure matching the pattern: {pattern}"
+
+    # If no pattern matches
+    return False, "No beta-carboline structure found matching the refined patterns"
 
 # Example usage with one of the provided beta-carboline SMILES
 smiles_example = "CCCNC(=O)N1CC2(C1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)S(=O)(=O)C"
