@@ -2,6 +2,7 @@
 Classifies: CHEBI:26666 short-chain fatty acid
 """
 from rdkit import Chem
+from rdkit.Chem.Descriptors import MolWt
 
 def is_short_chain_fatty_acid(smiles: str):
     """
@@ -26,13 +27,14 @@ def is_short_chain_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
 
-    # Check for aromatic rings (non-aliphatic structure)
-    if mol.GetRingInfo().NumAromaticRings() > 0:
-        return False, "Contains aromatic rings, not aliphatic"
+    # Check for aromatic rings using a workaround method by checking bond orders
+    for bond in mol.GetBonds():
+        if bond.GetIsAromatic():
+            return False, "Contains aromatic rings, not aliphatic"
 
-    # Check for only allowed atoms (C, H, O)
+    # Ensure molecule only contains C, H, O atoms
     for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() not in [1, 6, 8]:  # Hydrogen, Carbon, Oxygen only
+        if atom.GetAtomicNum() not in [1, 6, 8]:  # Hydrogen, Carbon, Oxygen
             return False, "Contains non-hydrocarbon substituents"
 
     # Verify the longest carbon chain connected to carboxylic acid
@@ -47,14 +49,18 @@ def is_short_chain_fatty_acid(smiles: str):
             max_chain_length = max(max_chain_length, chain_length)
             visited.add(atom_idx)
             for neighbor in mol.GetAtomWithIdx(atom_idx).GetNeighbors():
-                if neighbor.GetIdx() not in visited and not neighbor.IsInRing():
-                    # Track only carbon atoms
+                if neighbor.GetIdx() not in visited:  # Avoid cycles, prevents revisiting
+                    # Track only carbon atoms for chain length
                     if neighbor.GetAtomicNum() == 6:
                         to_visit.append((neighbor.GetIdx(), chain_length + 1))
 
         # Maximum permissible carbon chain length is less than 6 (excluding the carboxyl carbon itself)
         if max_chain_length >= 5:
             return False, f"Carbon chain too long, found {max_chain_length} carbons"
+
+    # Check the molecular weight to ensure it stays within expected range (optional sanity check)
+    if MolWt(mol) > 150:
+        return False, "Molecular weight too high for a short-chain fatty acid"
 
     return True, "Valid short-chain fatty acid with appropriate carbon chain length"
 
