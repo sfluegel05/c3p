@@ -24,9 +24,15 @@ def is_organobromine_compound(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # SMARTS pattern for carbon-bromine bond
-    cb_bond_pattern = Chem.MolFromSmarts("[C]-[Br]")
-    if mol.HasSubstructMatch(cb_bond_pattern):
-        return True, "Contains at least one carbon-bromine bond"
+    # Enhanced SMARTS patterns for carbon-bromine bonds
+    # "[C]-[Br]" for aliphatic carbon-bromine bonds
+    # "[c]-[Br]" for aromatic carbon-bromine bonds
+    smarts_patterns = ["[C]-[Br]", "[c]-[Br]"]
+    
+    # Check each pattern for a match
+    for pattern in smarts_patterns:
+        cb_bond_pattern = Chem.MolFromSmarts(pattern)
+        if mol.HasSubstructMatch(cb_bond_pattern):
+            return True, f"Contains at least one carbon-bromine bond matching pattern: {pattern}"
     
     return False, "No carbon-bromine bond found"
