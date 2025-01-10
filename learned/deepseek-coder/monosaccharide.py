@@ -33,10 +33,16 @@ def is_monosaccharide(smiles: str):
         return False, "Less than three carbon atoms, not a monosaccharide"
 
     # Check for potential carbonyl group (aldehyde or ketone)
-    # Including both explicit and potential (hydrated) forms
-    carbonyl_pattern = Chem.MolFromSmarts("[CX3]=[OX1]")
-    potential_carbonyl = Chem.MolFromSmarts("[CX4]([OH])[OH]")  # Hydrated carbonyl
-    if not (mol.HasSubstructMatch(carbonyl_pattern) or mol.HasSubstructMatch(potential_carbonyl)):
+    # Including explicit, hydrated, and ring forms
+    carbonyl_patterns = [
+        Chem.MolFromSmarts("[CX3]=[OX1]"),  # Explicit carbonyl
+        Chem.MolFromSmarts("[CX4]([OH])[OH]"),  # Hydrated carbonyl
+        Chem.MolFromSmarts("[CX4]1[CX4][CX4][CX4][CX4][CX4]1=O"),  # Ring form with carbonyl
+        Chem.MolFromSmarts("[CX4]1[CX4][CX4][CX4][CX4]1O")  # Ring form with potential carbonyl
+    ]
+    
+    has_carbonyl = any(mol.HasSubstructMatch(pattern) for pattern in carbonyl_patterns)
+    if not has_carbonyl:
         return False, "No carbonyl group (aldehyde or ketone) found"
 
     # Check for hydroxyl groups (at least one required)
@@ -44,8 +50,7 @@ def is_monosaccharide(smiles: str):
     if hydroxyl_count < 1:
         return False, "Insufficient hydroxyl groups for a monosaccharide"
 
-    # Check for glycosidic bonds (more reliable pattern)
-    # Looking for O-C-O-C pattern where both oxygens are connected to carbons
+    # Check for glycosidic bonds (more flexible pattern)
     glycosidic_pattern = Chem.MolFromSmarts("[OX2;H0][CX4][CX4][OX2;H0]")
     if mol.HasSubstructMatch(glycosidic_pattern):
         return False, "Glycosidic bond detected, likely part of an oligo/polysaccharide"
