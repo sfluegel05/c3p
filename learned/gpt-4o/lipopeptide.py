@@ -2,7 +2,6 @@
 Classifies: CHEBI:46895 lipopeptide
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_lipopeptide(smiles: str):
     """
@@ -25,25 +24,25 @@ def is_lipopeptide(smiles: str):
     if not mol.HasSubstructMatch(peptide_bond_pattern):
         return False, "No peptide bonds found"
 
-    # Enhanced lipid moieties detection
-    # Extended to consider long chains, branching, and cyclic hydrocarbons
+    # Define SMARTS for common lipid structures, focusing on long aliphatic chains
     lipid_patterns = [
-        Chem.MolFromSmarts("[CH2,CH3]{8,}"),  # Simple long carbon chains with 8+ atoms
-        Chem.MolFromSmarts("C1CCCCCCCCCC1"),  # Simple cyclic structures
-        Chem.MolFromSmarts("C~C(~C)~C"),         # Branching patterns
+        Chem.MolFromSmarts("CCCCCCCC"),  # At least an 8-carbon chain
+        Chem.MolFromSmarts("CCCCCCCCC(C)"),  # Long chain with branching
+        Chem.MolFromSmarts("CC(C)C(C)C")  # Branched chain structure
     ]
 
+    # Detect any lipid-like pattern
     lipid_like_found = any(mol.HasSubstructMatch(pattern) for pattern in lipid_patterns)
     if not lipid_like_found:
         return False, "No lipid-like structures found"
 
-    # Check for cyclic peptides
-    num_rings = mol.GetRingInfo().NumRings()
-    if num_rings > 0:
-        return True, "Contains cyclic structures, peptide bonds, and lipid moieties"
+    # Check for peptide-lipid conjugation
+    # Check if a lipid structure is connected to a peptide bond
+    # This can be complex, and an accurate SMARTS pattern might need refinement
+    # Here, we assume detection of both lipid and peptide is enough for current criteria
 
     return True, "Contains peptide bonds and lipid-like moieties"
 
 # Example usage:
-# smiles_string = "CCCCC(=O)NCC(=O)NCCC(=O)OC1=C(NC2=C1C=CC=C2)O"
+# smiles_string = "CCCCCCCCCC(=O)NCC(=O)NCCCCCC"
 # is_lipopeptide(smiles_string)
