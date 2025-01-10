@@ -7,7 +7,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_prenols(smiles: str):
     """
     Determines if a molecule is a prenol based on its SMILES string.
-    Prenols generally have a terminal alcohol and consist of isoprene units.
+    Prenols generally have a terminal alcohol and consist of multiple connected isoprene units.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,26 +22,18 @@ def is_prenols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for terminal alcohol group '-OH'
-    alcohol_pattern = Chem.MolFromSmarts("[CX4][OX2H]")
-    if not mol.HasSubstructMatch(alcohol_pattern):
+    # Look for a terminal alcohol group '-OH' at the end of the carbon chain
+    # Ensure it does not match anywhere else arbitrarily
+    terminal_oh_pattern = Chem.MolFromSmarts("[CX4,!R]-[OX2H]")
+    terminal_oh_matches = mol.GetSubstructMatches(terminal_oh_pattern)
+    if len(terminal_oh_matches) == 0:
         return False, "Missing terminal alcohol group"
 
-    # Look for isoprene units: 5-carbon chain with alternating single and double bonds
-    isoprene_pattern = Chem.MolFromSmarts("C(=C-C-C=C)")
+    # Look for sequences of isoprene units: characterized by multiple C(=C-C-C=C) patterns
+    # Use recursive SMARTS pattern to match sequences
+    isoprene_pattern = Chem.MolFromSmarts("(C(=C)C-C(=C)C)")
     isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
-    if len(isoprene_matches) == 0:
-        return False, "No isoprene units detected"
-
-    # Calculate molecular weight - longer prenols should have significant molecular weight
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 150:
-        return False, "Molecular weight too low for a typical prenol"
-
-    # Count any conjugated systems - prenols have long conjugated carbon chains
-    conjugated_system_pattern = Chem.MolFromSmarts("C=C(-*)")
-    conjugated_system_matches = mol.GetSubstructMatches(conjugated_system_pattern)
-    if len(conjugated_system_matches) < 3:
-        return False, "Does not have enough conjugated systems characteristic of prenols"
+    if len(isoprene_matches) < 1:
+        return False, "No significant isoprene unit sequences detected"
     
     return True, "Contains terminal alcohol group and isoprene units, typical of prenols"
