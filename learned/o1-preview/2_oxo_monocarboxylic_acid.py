@@ -10,7 +10,7 @@ from rdkit import Chem
 def is_2_oxo_monocarboxylic_acid(smiles: str):
     """
     Determines if a molecule is a 2-oxo monocarboxylic acid based on its SMILES string.
-    A 2-oxo monocarboxylic acid is a monocarboxylic acid with a ketone group at the 2-position (alpha carbon).
+    A 2-oxo monocarboxylic acid is a monocarboxylic acid with a ketone or aldehyde group at the 2-position (alpha carbon).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -28,29 +28,34 @@ def is_2_oxo_monocarboxylic_acid(smiles: str):
     # Find all carboxylic acid groups (-C(=O)OH)
     carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[O;H1]")
     carboxy_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
-    if len(carboxy_matches) == 0:
-        return False, "No carboxylic acid group found"
 
-    # For each carboxylic acid group, check for ketone at alpha carbon
-    for match in carboxy_matches:
-        carboxyl_c_idx = match[0]  # Index of carboxyl carbon
-        carboxyl_c_atom = mol.GetAtomWithIdx(carboxyl_c_idx)
-        # Find alpha carbons (neighboring carbons to carboxyl carbon)
-        alpha_c_atoms = [atom for atom in carboxyl_c_atom.GetNeighbors() if atom.GetAtomicNum() == 6]
-        for alpha_c_atom in alpha_c_atoms:
-            alpha_c_idx = alpha_c_atom.GetIdx()
-            # Check if alpha carbon has a ketone group
-            has_ketone = False
-            for bond in alpha_c_atom.GetBonds():
-                if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-                    other_atom = bond.GetOtherAtom(alpha_c_atom)
-                    if other_atom.GetAtomicNum() == 8:  # Oxygen atom
-                        has_ketone = True
-                        break
-            if has_ketone:
-                return True, "Contains monocarboxylic acid group with ketone at alpha carbon (2-oxo)"
-    # If no such arrangement is found
-    return False, "No ketone group at alpha carbon adjacent to carboxylic acid group"
+    # Check that there is exactly one carboxylic acid group
+    if len(carboxy_matches) != 1:
+        return False, f"Contains {len(carboxy_matches)} carboxylic acid groups, requires exactly one"
+
+    # Get the carboxyl carbon atom
+    carboxyl_c_idx = carboxy_matches[0][0]
+    carboxyl_c_atom = mol.GetAtomWithIdx(carboxyl_c_idx)
+
+    # Find alpha carbons (neighboring carbons to carboxyl carbon)
+    alpha_c_atoms = [atom for atom in carboxyl_c_atom.GetNeighbors() if atom.GetAtomicNum() == 6]
+    if not alpha_c_atoms:
+        return False, "No alpha carbon adjacent to carboxylic acid group"
+
+    # For each alpha carbon, check for oxo group (ketone or aldehyde)
+    for alpha_c_atom in alpha_c_atoms:
+        has_oxo = False
+        for bond in alpha_c_atom.GetBonds():
+            if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                other_atom = bond.GetOtherAtom(alpha_c_atom)
+                if other_atom.GetAtomicNum() == 8:  # Oxygen atom
+                    has_oxo = True
+                    break
+        if has_oxo:
+            return True, "Contains monocarboxylic acid group with oxo group at alpha carbon (2-oxo)"
+
+    # If no alpha carbon has an oxo group
+    return False, "No oxo group at alpha carbon adjacent to carboxylic acid group"
 
 __metadata__ = {
     'chemical_class': {
@@ -71,7 +76,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 1,
+    'attempt': 2,
     'success': True,
     'best': True,
     'error': '',
