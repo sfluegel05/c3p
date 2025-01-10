@@ -26,7 +26,7 @@ def is_dipeptide(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define patterns for peptide bond and amino acid residues
-    peptide_bond_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[NX3H0,NX3H1]")
+    peptide_bond_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[NX3H0,NX3H1,NX3H2]")
     amino_acid_pattern = Chem.MolFromSmarts("[NX3H2,NX3H1,NX3H0][CX4H][CX3](=[OX1])[OX2H1,OX1H0-]")
     
     # Find peptide bonds and amino acid residues
@@ -55,11 +55,6 @@ def is_dipeptide(smiles: str):
     
     if connected_residues < 2:
         return False, "Peptide bond does not connect two amino acid residues"
-    
-    # Check molecular weight - dipeptides typically have a molecular weight between 150-1500 Da
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 150 or mol_wt > 1500:
-        return False, f"Molecular weight {mol_wt:.2f} Da is outside the typical range for a dipeptide"
     
     return True, "Contains two amino acid residues connected by a peptide bond"
 
