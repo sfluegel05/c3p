@@ -33,43 +33,50 @@ def is_octadecadienoic_acid(smiles: str):
 
     # Traverse the carbon chain starting from the carboxylic carbon
     visited = set()
-    stack = [(carboxylic_carbon_idx, -1, None)]  # (current_atom_idx, parent_atom_idx, bond)
+    stack = [(carboxylic_carbon_idx, -1)]  # (current_atom_idx, parent_atom_idx)
 
-    carbon_count = 0
-    double_bond_count = 0
+    chain_atom_indices = []
     branching = False
 
     while stack:
-        current_idx, parent_idx, bond = stack.pop()
+        current_idx, parent_idx = stack.pop()
         if current_idx in visited:
             continue
         visited.add(current_idx)
         atom = mol.GetAtomWithIdx(current_idx)
         if atom.GetAtomicNum() != 6:
-            continue  # Only consider carbon atoms
-        carbon_count += 1
+            continue  # Only consider carbon atoms for the main chain
+        chain_atom_indices.append(current_idx)
 
-        neighbors = [nbr for nbr in atom.GetNeighbors() if nbr.GetIdx() != parent_idx]
-        heavy_neighbors = [nbr for nbr in neighbors if nbr.GetAtomicNum() > 1]
+        # Get neighboring carbon atoms excluding the parent atom
+        neighbors = [nbr for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() == 6 and nbr.GetIdx() != parent_idx]
+        num_carbon_neighbors = len(neighbors)
 
-        if len(heavy_neighbors) > 1:
-            branching = True
+        if num_carbon_neighbors > 1:
+            branching = True  # More than one carbon neighbor (excluding parent) indicates branching
 
         for nbr in neighbors:
             nbr_idx = nbr.GetIdx()
-            bond = mol.GetBondBetweenAtoms(current_idx, nbr_idx)
-            stack.append((nbr_idx, current_idx, bond))
-
-            # Count double bonds between carbons
-            if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-                if nbr.GetAtomicNum() == 6:
-                    double_bond_count += 1
+            stack.append((nbr_idx, current_idx))
 
     if branching:
         return False, "Branching detected in the carbon chain"
 
+    carbon_count = len(chain_atom_indices)
     if carbon_count != 18:
         return False, f"Main carbon chain has {carbon_count} carbons, expected 18"
+
+    # Count C=C double bonds between carbons in the main chain
+    double_bond_count = 0
+    bond_indices = set()
+    for i in range(len(chain_atom_indices) - 1):
+        atom_idx1 = chain_atom_indices[i]
+        atom_idx2 = chain_atom_indices[i + 1]
+        bond = mol.GetBondBetweenAtoms(atom_idx1, atom_idx2)
+        if bond is not None:
+            bond_indices.add(bond.GetIdx())
+            if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                double_bond_count += 1
 
     if double_bond_count != 2:
         return False, f"Found {double_bond_count} C=C double bonds in the main chain, expected 2"
@@ -96,7 +103,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 1,
+    'attempt': 2,
     'success': True,
     'best': True,
     'error': '',
