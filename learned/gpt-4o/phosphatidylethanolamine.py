@@ -23,26 +23,26 @@ def is_phosphatidylethanolamine(smiles: str):
     if mol is None:
         return None, "Invalid SMILES string"
 
-    # Look for glycerol backbone pattern: [O-]C(CO)COP
-    glycerol_pattern = Chem.MolFromSmarts("O[CH2][CH](O[CX3](=O))[CX3](=O)") 
+    # Look for glycerol backbone pattern with generic chiral carbon connectivity
+    glycerol_pattern = Chem.MolFromSmarts("[C@H](COP(O)OCCN)(OC([CX3](=O))[CX3](=O))") 
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
     
-    # Check presence of phosphate group connected: P(=O)
-    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)")
+    # Check presence of phosphate group connected: O=P(O)(O)
+    phosphate_pattern = Chem.MolFromSmarts("O=P(O)(O)")
     if not mol.HasSubstructMatch(phosphate_pattern):
         return False, "No phosphate group identified"
     
-    # Look for ethanolamine group -OCCN
+    # Look for ethanolamine group
     ethanolamine_pattern = Chem.MolFromSmarts("OCCN")
     if not mol.HasSubstructMatch(ethanolamine_pattern):
         return False, "No ethanolamine group found"
 
-    # Ensure long carbon chains (fatty acids) are present, look for C(=O)C pattern
-    fatty_acid_pattern = Chem.MolFromSmarts("C(=O)C")
-    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
-    if len(fatty_acid_matches) < 2:
-        return False, f"Expected 2 fatty acid chains, found {len(fatty_acid_matches)}"
+    # Ensure two ester linkages
+    ester_pattern = Chem.MolFromSmarts("C(=O)OC")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    if len(ester_matches) < 2:
+        return False, f"Expected 2 ester linkages, found {len(ester_matches)}"
 
     return True, "Molecule classified as phosphatidylethanolamine"
 
