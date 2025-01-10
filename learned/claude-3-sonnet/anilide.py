@@ -26,18 +26,16 @@ def is_anilide(smiles: str):
         return False, "Invalid SMILES string"
         
     # Look for N-phenyl amide pattern
-    # Match both secondary and tertiary amides where N is connected to phenyl
-    # [c] - aromatic carbon
-    # [NX3] - nitrogen with 3 connections (includes both NH and N-substituted)
+    # [c] - aromatic carbon (part of phenyl ring)
+    # [NX3] - nitrogen with 3 connections
     # [CX3](=[OX1]) - amide carbon with double bonded oxygen
-    # Exclude cases where amide C is bonded to N or O (to avoid urea/carbamate)
-    anilide_pattern = Chem.MolFromSmarts('[c][NX3]([#1,#6])[CX3](=[OX1])[!N;!O]')
+    anilide_pattern = Chem.MolFromSmarts('[c][NX3][CX3](=[OX1])')
     
     matches = mol.GetSubstructMatches(anilide_pattern)
     if not matches:
         return False, "No N-phenyl amide group found"
         
-    # For each match, verify the aromatic ring is a proper phenyl
+    # For each match, verify the aromatic ring is a proper phenyl or substituted phenyl
     for match in matches:
         arom_c = match[0]  # First atom in match is the aromatic carbon
         ring = Chem.GetSymmSSSR(mol)
@@ -47,17 +45,23 @@ def is_anilide(smiles: str):
             if arom_c in r:
                 # Get all atoms in the ring
                 ring_atoms = set(r)
-                # Count carbons and check ring size
                 ring_size = len(ring_atoms)
-                carbon_count = sum(1 for atom_idx in ring_atoms 
-                                 if mol.GetAtomWithIdx(atom_idx).GetAtomicNum() == 6)
                 
-                # Verify it's a 6-membered aromatic ring with all carbons
-                if ring_size == 6 and carbon_count == 6:
-                    # Check if all atoms in ring are aromatic
-                    all_aromatic = all(mol.GetAtomWithIdx(atom_idx).GetIsAromatic() 
-                                     for atom_idx in ring_atoms)
-                    if all_aromatic:
+                # Count aromatic atoms
+                aromatic_count = sum(1 for atom_idx in ring_atoms 
+                                   if mol.GetAtomWithIdx(atom_idx).GetIsAromatic())
+                
+                # Verify it's a 6-membered aromatic ring
+                if ring_size == 6 and aromatic_count == 6:
+                    # Verify ring atoms are C or substituted C
+                    is_phenyl = True
+                    for atom_idx in ring_atoms:
+                        atom = mol.GetAtomWithIdx(atom_idx)
+                        if atom.GetAtomicNum() != 6:  # not carbon
+                            is_phenyl = False
+                            break
+                    
+                    if is_phenyl:
                         return True, "Contains N-phenyl amide group"
                         
     return False, "No proper phenyl ring attached to amide nitrogen"
