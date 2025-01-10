@@ -24,49 +24,63 @@ def is_aralkylamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for primary, secondary or tertiary amine
-    amine_pattern = Chem.MolFromSmarts("[NX3;H2,H1,H0;!$(NC=O);!$(N=*);!$(N#*)]")
-    if not mol.HasSubstructMatch(amine_pattern):
+    # Create SMARTS patterns
+    patterns = {
+        "amine": "[NX3;H2,H1,H0;!$(NC=O);!$(N=*);!$(N#*)]",  # Primary, secondary or tertiary amine
+        "aromatic": "a1[a]:[a][a]:[a]1",  # Any 5 or 6-membered aromatic ring
+        "aralkyl": "a[CX4][CX4,NX3;!$(NC=O)]",  # Aromatic-alkyl-N/C connection
+        "amide": "[NX3][CX3](=[OX1])",  # Amide group
+        "aniline": "c[NX3]"  # Direct aromatic amine
+    }
+    
+    # Convert patterns to RDKit molecules
+    compiled_patterns = {}
+    for name, pattern in patterns.items():
+        compiled_pattern = Chem.MolFromSmarts(pattern)
+        if compiled_pattern is None:
+            return False, f"Invalid SMARTS pattern for {name}"
+        compiled_patterns[name] = compiled_pattern
+
+    # Check for presence of amine
+    if not mol.HasSubstructMatch(compiled_patterns["amine"]):
         return False, "No amine group found"
     
-    # Look for aromatic rings
-    aromatic_patterns = [
-        Chem.MolFromSmarts("a1aaaaa1"), # 6-membered aromatic
-        Chem.MolFromSmarts("a1aaaa1"),  # 5-membered aromatic
-    ]
-    
-    has_aromatic = False
-    for pattern in aromatic_patterns:
-        if mol.HasSubstructMatch(pattern):
-            has_aromatic = True
-            break
-            
-    if not has_aromatic:
+    # Check for presence of aromatic ring
+    if not mol.HasSubstructMatch(compiled_patterns["aromatic"]):
         return False, "No aromatic ring found"
     
-    # Look for alkyl linker between amine and aromatic ring
-    # Pattern matches: aromatic ring - sp3 carbon(s) - amine
-    aralkyl_pattern = Chem.MolFromSmarts("a-[CX4]+-[NX3;H2,H1,H0]")
+    # Get all amine nitrogens
+    amine_matches = mol.GetSubstructMatches(compiled_patterns["amine"])
+    if not amine_matches:
+        return False, "No valid amine groups found"
     
-    if not mol.HasSubstructMatch(aralkyl_pattern):
-        return False, "No alkyl linker between aromatic ring and amine"
+    # Check for amides and exclude them
+    amide_matches = mol.GetSubstructMatches(compiled_patterns["amide"])
+    amide_nitrogens = set(match[0] for match in amide_matches)
+    
+    # Check for anilines and exclude them
+    aniline_matches = mol.GetSubstructMatches(compiled_patterns["aniline"])
+    aniline_nitrogens = set(match[1] for match in aniline_matches)
+    
+    # Get valid amine nitrogens (not part of amides or anilines)
+    valid_amine_nitrogens = set(match[0] for match in amine_matches) - amide_nitrogens - aniline_nitrogens
+    
+    if not valid_amine_nitrogens:
+        return False, "Contains only amides or anilines, no valid alkylamines"
+    
+    # Check for aralkyl pattern
+    aralkyl_matches = mol.GetSubstructMatches(compiled_patterns["aralkyl"])
+    if not aralkyl_matches:
+        return False, "No alkyl linker between aromatic ring and amine/carbon"
         
-    # Additional checks to exclude false positives
-    
-    # Exclude amides
-    amide_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])")
-    if mol.HasSubstructMatch(amide_pattern):
-        matches = mol.GetSubstructMatches(amine_pattern)
-        amide_matches = mol.GetSubstructMatches(amide_pattern)
-        if all(match[0] in [am[0] for am in amide_matches] for match in matches):
-            return False, "Contains only amide groups, no amine"
-    
-    # Exclude aromatic amines (anilines)
-    aniline_pattern = Chem.MolFromSmarts("c-[NX3]")
-    if mol.HasSubstructMatch(aniline_pattern):
-        matches = mol.GetSubstructMatches(amine_pattern)
-        aniline_matches = mol.GetSubstructMatches(aniline_pattern)
-        if all(match[0] in [an[1] for an in aniline_matches] for match in matches):
-            return False, "Contains only aromatic amine (aniline), not aralkylamine"
-    
+    # Verify that at least one aralkyl pattern connects to a valid amine
+    valid_connection = False
+    for match in aralkyl_matches:
+        if match[-1] in valid_amine_nitrogens:
+            valid_connection = True
+            break
+            
+    if not valid_connection:
+        return False, "No valid connection between aromatic ring and amine via alkyl linker"
+        
     return True, "Contains amine group connected to aromatic ring via alkyl linker"
