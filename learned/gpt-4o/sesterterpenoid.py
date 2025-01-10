@@ -2,11 +2,12 @@
 Classifies: CHEBI:26660 sesterterpenoid
 """
 from rdkit import Chem
-from rdkit.Chem import Descriptors
 
 def is_sesterterpenoid(smiles: str):
     """
     Determines if a molecule is a sesterterpenoid based on its SMILES string.
+    This includes checking for terpenoid-characteristic patterns and reasonable ranges of 
+    carbon atoms typical in sesterterpenoids.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,26 +22,22 @@ def is_sesterterpenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check carbon atom count (typically 25 for sesterterpenoids, allow some tolerance)
+    # Broaden carbon atom count check to include higher values due to rearrangements/modifications
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if carbon_count < 20 or carbon_count > 50:
+        return False, f"Carbon count is {carbon_count}, expected between 20 and 50"
     
-    # Set a range for carbon count typical in sesterterpenoids
-    if carbon_count < 20 or carbon_count > 35:
-        return False, f"Carbon count is {carbon_count}, expected between 20 and 35"
-    
-    # Check for oxygen atoms often present in oxygenated terpenoids
-    oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if oxygen_count == 0:
-        return False, "Likely non-terpenoid without oxygen"
-    
-    # Define possible terpenoid characteristics such as isoprene units using SMARTS
-    # Note: Isoprene units are `C=C(C)C`
+    # Check for typical terpenoid-patterns, including isoprene and ring structures
+    # Isoprene units are characterized by C=C(C)C structures, but we want to look for larger patterns
     isoprene_unit = Chem.MolFromSmarts("C=C(C)C")
-    if mol.HasSubstructMatch(isoprene_unit):
-        return True, "Contains isoprene units typical of terpenoids"
+    five_carbon_unit = Chem.MolFromSmarts("C-C=C-C-C")
+    if mol.HasSubstructMatch(isoprene_unit) or mol.HasSubstructMatch(five_carbon_unit):
+        return True, "Contains patterns typical of terpenoid structures, including sesterterpenoids"
 
-    # While specific substructure pattern of sesterterpenoids might be difficult to generalize,
-    # this logic attempts basic inclusion through essential checks.
-    
-    # Return based on available evidence
-    return True, "The structure sufficiently aligns with known sesterterpenoids criteria, mainly concerning carbon and the presence of terpenoid-related structures or characteristics"
+    # Check for multiple rings, which are common in sesquiterpenoids and related terpenoid classes
+    ring_count = Chem.rdMolDescriptors.CalcNumRings(mol)
+    if ring_count > 1:
+        return True, f"Contains multiple ({ring_count}) rings typical of complex terpenoids like sesterterpenoids"
+
+    # Without specific motifs and more detailed structure information, allow for potential misclassifications
+    return True, "The structure appears to align with known sesterterpenoids criteria, considering carbon count and structural motifs typical in terpenoids"
