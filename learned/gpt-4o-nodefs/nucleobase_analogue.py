@@ -2,7 +2,6 @@
 Classifies: CHEBI:67142 nucleobase analogue
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_nucleobase_analogue(smiles: str):
     """
@@ -15,29 +14,28 @@ def is_nucleobase_analogue(smiles: str):
         bool: True if molecule is a nucleobase analogue, False otherwise
         str: Reason for classification
     """
+    # Parse the SMILES string into an RDKit molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define more comprehensive nucleobase analogue patterns
+    # Define updated patterns for nucleobase analogues
     nucleobase_analogue_patterns = [
-        "c1[nH]c[nH]c[nH]n1",  # Common pyrimidine modifications
-        "n1ccnc2[nH]c[nH]c12",  # Common purine modifications
-        "c1nc(=O)[nH]cc1",  # Cytosine derivatives
-        "c1nc[nH]c(=O)n1",  # Uracil derivatives
-        "n1cc[nH]c2[nH]cnc12",  # Imidazole ring extensions
-        "n1cnc2[nH]cnc12"  # Modified purine base
+        "c1ncnc2[nH]ncnc12",  # Adenine/purine core
+        "c1nc[nH]c(=O)n1",  # Uracil/pyrimidine core
+        "c1c[nH]c[nH]c1=O",  # Base structure of uracil and variants
+        "c1nc(=O)[nH]cc1",  # Cytosine and its derivatives
+        "n1c[nH]cnc1",  # Imidazole-containing ring systems
+        "c1cn(cn1)[nH]c=O",  # Modifications on purine system
+        "c1[nH]c(=O)nc2[nH]cnc12",  # Extended purine modifications
+        "n1cnc2c1ncnc2O",  # Hydroxyl modifications on purines
+        "c1c[nH]ncn1",  # Adapts to modifications around the imidazole and pyrimidine rings
     ]
 
+    # Check for substructure matches amongst defined patterns
     for pattern in nucleobase_analogue_patterns:
         substruct = Chem.MolFromSmarts(pattern)
         if mol.HasSubstructMatch(substruct):
             return True, f"Structure matches nucleobase analogue pattern: {pattern}"
     
-    # Check for specific functional groups or chemical features
-    rotatable_bonds = AllChem.CalcNumRotatableBonds(mol)
-    heavy_atoms = Chem.rdMolDescriptors.CalcNumHeavyAtoms(mol)
-    if 2 <= rotatable_bonds <= 5 and 10 <= heavy_atoms <= 30:
-        return False, "Does not match specific structural patterns of nucleobase analogues, but typical physical properties align"
-
     return False, "Does not match patterns or typical features of nucleobase analogues"
