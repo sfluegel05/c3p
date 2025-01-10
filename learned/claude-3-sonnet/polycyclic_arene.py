@@ -10,7 +10,7 @@ from rdkit.Chem import AllChem
 def is_polycyclic_arene(smiles: str):
     """
     Determines if a molecule is a polycyclic arene based on its SMILES string.
-    A polycyclic arene is a compound with multiple fused aromatic rings.
+    A polycyclic arene is a polycyclic aromatic hydrocarbon (PAH).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -34,51 +34,88 @@ def is_polycyclic_arene(smiles: str):
     if not any(atom.GetIsAromatic() for atom in mol.GetAtoms()):
         return False, "No aromatic rings found"
     
-    # Get the aromatic rings
+    # Get all aromatic rings (both 5 and 6 membered)
     aromatic_rings = []
     for ring in ri.AtomRings():
-        # Check if ring is 6-membered and all atoms are aromatic
-        if len(ring) == 6 and all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring):
+        if all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring):
             aromatic_rings.append(ring)
     
     if len(aromatic_rings) < 2:
-        return False, "Must contain at least 2 aromatic 6-membered rings"
+        return False, "Must contain at least 2 aromatic rings"
     
-    # Check if rings are properly fused (share exactly 2 adjacent atoms)
+    # Count heteroatoms and check if they're acceptable for a PAH
+    heteroatom_count = 0
+    for atom in mol.GetAtoms():
+        atomic_num = atom.GetAtomicNum()
+        if atomic_num not in {1, 6}:  # Only H and C allowed in core structure
+            # Allow some substituents (OH, NO2, etc) but count them
+            if atomic_num not in {7, 8, 9, 17}:  # N, O, F, Cl allowed as substituents
+                return False, "Contains disallowed elements"
+            heteroatom_count += 1
+    
+    # Check carbon proportion - should be primarily hydrocarbon
+    total_heavy_atoms = mol.GetNumHeavyAtoms()
+    carbon_atoms = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    
+    if carbon_atoms / total_heavy_atoms < 0.75:
+        return False, "Too few carbon atoms for a polycyclic arene"
+    
+    if heteroatom_count / total_heavy_atoms > 0.2:
+        return False, "Too many heteroatoms for a polycyclic arene"
+    
+    # Check ring connectivity
     ring_sets = [set(ring) for ring in aromatic_rings]
-    proper_fusion = False
     
+    def are_rings_connected(ring1, ring2):
+        """Check if two rings share atoms or are connected by a bond"""
+        shared_atoms = ring1.intersection(ring2)
+        if len(shared_atoms) >= 1:
+            return True
+        # Check for single bond connections between rings
+        for atom1 in ring1:
+            for atom2 in ring2:
+                if mol.GetBondBetweenAtoms(atom1, atom2) is not None:
+                    return True
+        return False
+    
+    # Build connectivity graph
+    n_rings = len(ring_sets)
+    connected = [[False] * n_rings for _ in range(n_rings)]
+    for i in range(n_rings):
+        for j in range(i+1, n_rings):
+            if are_rings_connected(ring_sets[i], ring_sets[j]):
+                connected[i][j] = connected[j][i] = True
+    
+    # Check if rings form a connected system using DFS
+    visited = [False] * n_rings
+    def dfs(v):
+        visited[v] = True
+        for u in range(n_rings):
+            if connected[v][u] and not visited[u]:
+                dfs(u)
+    
+    dfs(0)
+    if not all(visited):
+        return False, "Aromatic rings must form a connected system"
+    
+    # Check if at least one pair of rings is fused
+    has_fused_rings = False
     for i in range(len(ring_sets)):
         for j in range(i+1, len(ring_sets)):
             shared_atoms = ring_sets[i].intersection(ring_sets[j])
-            if len(shared_atoms) == 2:
-                # Check if shared atoms are bonded
+            if len(shared_atoms) >= 2:
+                # Verify shared atoms are adjacent
                 shared_list = list(shared_atoms)
                 if mol.GetBondBetweenAtoms(shared_list[0], shared_list[1]) is not None:
-                    proper_fusion = True
+                    has_fused_rings = True
                     break
-        if proper_fusion:
+        if has_fused_rings:
             break
-            
-    if not proper_fusion:
-        return False, "Aromatic rings must be properly fused (share an edge)"
     
-    # Count carbon proportion - be more lenient to allow for substituents
-    total_atoms = mol.GetNumAtoms()
-    carbon_atoms = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if not has_fused_rings:
+        # Check if it's a multi-ring system connected by single bonds
+        aromatic_atoms = sum(1 for atom in mol.GetAtoms() if atom.GetIsAromatic())
+        if aromatic_atoms / total_heavy_atoms < 0.8:
+            return False, "Non-fused aromatic system must be primarily composed of aromatic rings"
     
-    if carbon_atoms / total_atoms < 0.6:  # Reduced from 0.7
-        return False, "Too few carbon atoms for a polycyclic arene"
-    
-    # Check if the core structure is primarily aromatic rings
-    aromatic_atoms = sum(1 for atom in mol.GetAtoms() if atom.GetIsAromatic())
-    if aromatic_atoms / total_atoms < 0.5:  # Reduced from 0.6
-        return False, "Core structure is not primarily aromatic"
-    
-    # Additional check for allowed substituents
-    allowed_elements = {1, 6, 7, 8, 9, 17}  # H, C, N, O, F, Cl
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() not in allowed_elements:
-            return False, "Contains disallowed elements"
-            
-    return True, "Contains multiple fused aromatic rings with primarily carbon atoms"
+    return True, "Contains multiple aromatic rings forming a polycyclic system"
