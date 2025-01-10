@@ -21,18 +21,20 @@ def is_D_glucoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # D-glucose substructure (common cyclic form with oxygens and hydroxyls)
-    # D-glucose has a six-membered ring and hydroxyl group pattern
-    d_glucose_pattern = Chem.MolFromSmarts('C1([C@@H]2[C@@H]([C@H](C([C@H](O1)O)O)O)O2)O') # Simplified representation
+    # D-glucose: a pyranose ring with specific hydroxyl stereochemistry
+    d_glucose_pattern1 = Chem.MolFromSmarts('OC[C@H]1O[C@@H]([C@H]([C@@H](O)[C@@H]1O)O)CO')  # Beta-D-glucose
+    d_glucose_pattern2 = Chem.MolFromSmarts('OC[C@@H]1O[C@H]([C@@H]([C@H](O)[C@H]1O)O)CO')  # Alpha-D-glucose
 
-    # Check for D-glucose substructure
-    if not mol.HasSubstructMatch(d_glucose_pattern):
+    # Check for D-glucose moiety
+    if not (mol.HasSubstructMatch(d_glucose_pattern1) or mol.HasSubstructMatch(d_glucose_pattern2)):
         return False, "D-glucose moiety not found"
 
-    # Glycosidic linkage pattern (oxygen connected to glucose ring and another moiety)
-    glycosidic_linkage_pattern = Chem.MolFromSmarts('[O][C@H]1[C@@H]([C@H]([C@@H](O[C@@H]2O[C@H](O)[C@H](O)[C@@H](O)C2)O)O)O1')
+    # Check for glycosidic bonds
+    # Looking for any glycosidic linkage through the anomeric carbon (O-C1-O)
+    glycosidic_bond_pattern1 = Chem.MolFromSmarts('[C@H]1(O)[C@@H]([C@H](O)O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O)OC(O)[C@H]1O')
+    glycosidic_bond_pattern2 = Chem.MolFromSmarts('[C@@H]1(O)[C@H]([C@@H](O)O[C@H]2O[C@@H](CO)[C@@H](O)[C@H](O)[C@H]2O)OC(O)[C@@H]1O')
 
-    if mol.HasSubstructMatch(glycosidic_linkage_pattern):
+    if mol.HasSubstructMatch(glycosidic_bond_pattern1) or mol.HasSubstructMatch(glycosidic_bond_pattern2):
         return True, "Contains D-glucose moiety with glycosidic linkage"
 
     return False, "Glycosidic linkage not found to D-glucose moiety"
