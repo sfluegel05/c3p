@@ -10,6 +10,7 @@ def is_diol(smiles: str):
     """
     Determines if a molecule is a diol based on its SMILES string.
     A diol is a compound that contains two hydroxy groups, generally assumed to be, but not necessarily, alcoholic.
+    Aliphatic diols are also called glycols.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,39 +24,15 @@ def is_diol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Initialize count of valid hydroxyl groups
-    hydroxyl_count = 0
-
-    # Iterate over atoms to find hydroxyl groups
-    for atom in mol.GetAtoms():
-        # Check if atom is oxygen
-        if atom.GetAtomicNum() == 8:
-            # Check if oxygen is connected to hydrogen
-            has_hydrogen = False
-            has_carbon = False
-            carbonyl_bond = False
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetAtomicNum() == 1:
-                    has_hydrogen = True
-                elif neighbor.GetAtomicNum() == 6:
-                    has_carbon = True
-                    carbon = neighbor
-            # If oxygen is bonded to hydrogen and carbon
-            if has_hydrogen and has_carbon:
-                # Check if carbon is part of a carbonyl group (C=O)
-                for bond in carbon.GetBonds():
-                    bonded_atom = bond.GetOtherAtom(carbon)
-                    if bonded_atom.GetAtomicNum() == 8 and bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-                        carbonyl_bond = True
-                        break
-                if not carbonyl_bond:
-                    hydroxyl_count += 1
+    # Define SMARTS pattern for hydroxyl groups (OH)
+    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
+    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
+    hydroxyl_count = len(hydroxyl_matches)
 
     if hydroxyl_count >= 2:
-        return True, f"Molecule contains at least two hydroxyl groups attached to non-carbonyl carbons"
+        return True, f"Molecule contains at least two hydroxyl groups"
     else:
-        return False, f"Molecule contains {hydroxyl_count} valid hydroxyl groups, diols must have at least two"
-
+        return False, f"Molecule contains {hydroxyl_count} hydroxyl group(s), diols must have at least two"
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:23824',
                               'name': 'diol',
@@ -75,7 +52,7 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:23824',
                       'max_instances_in_prompt': 100,
                       'test_proportion': 0.1},
         'message': None,
-        'attempt': 1,
+        'attempt': 2,
         'success': True,
         'best': True,
         'error': '',
