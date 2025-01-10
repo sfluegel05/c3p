@@ -12,7 +12,7 @@ def is_cyclohexenones(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a cyclohexenone, False otherwise
+        bool: True if the molecule is a cyclohexenone, False otherwise
         str: Reason for classification
     """
     
@@ -21,11 +21,21 @@ def is_cyclohexenones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define a SMARTS pattern for a six-membered ring with one double bond and a ketone group
-    cyclohexenone_pattern = Chem.MolFromSmarts("C1=CC(=O)CCC1")
+    # Expanded SMARTS to account for variations in cyclohexenone structures
+    # 1. It caters for any carbon at different positions and double bonds distribution
+    # 2. Allows substituents and is flexible on position of the ketone
+    # 3. *C indicates any atom can be attached to either of the carbons
+    cyclohexenone_pattern = Chem.MolFromSmarts("C1=CC(=O)[C,C][C,C][C,C]1")
     
     # Check for the cyclohexenone pattern
     if not mol.HasSubstructMatch(cyclohexenone_pattern):
         return False, "No cyclohexenone structure found"
     
-    return True, "Cyclohexenone structure identified with appropriate ring and ketone"
+    # Check the number of carbon atoms in the ring to ensure it remains six-membered
+    ring_info = mol.GetRingInfo()
+    for ring in ring_info.AtomRings():
+        ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
+        if len(ring) == 6 and any(atom.GetHybridization() == Chem.HybridizationType.SP2 for atom in ring_atoms):
+            return True, "Cyclohexenone structure identified with appropriate ring and ketone"
+    
+    return False, "No six-membered alicyclic ketone with one double bond found in the ring"
