@@ -21,19 +21,15 @@ def is_3beta_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Improved steroid tetracyclic backbone pattern
-    # Accounting for variability in unsaturation, stereochemistry
-    steroid_pattern = Chem.MolFromSmarts('C1CCC2C(C1)CCC3C2CCC4(C3=CC=CC4)')  # Flexible circular and linear cases
+    # Revised steroid pattern for four ring structure, allowing for varying unsaturations
+    steroid_pattern = Chem.MolFromSmarts('C1CCC2C(C1)CCC3C2CCC4C3=CC=CC4')  # Improved representation
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
 
-    # Look for 3beta-hydroxy group - ensure beta configuration (using chiral specific pattern)
-    # Utilizing more flexible chiral specifications for hydroxyl at C3
-    hydroxy_beta_pattern = Chem.MolFromSmarts('C[C@@H](O)[C]')  # Beta hydroxyl group needed
+    # Revised 3beta-hydroxy group pattern with emphasis on specific stereochemistry
+    # Ensure pattern covers the beta orientation on carbon 3 of the steroid ring
+    hydroxy_beta_pattern = Chem.MolFromSmarts('[C@@H]1(C)O[*:2]')  # Beta hydroxyl at C3
     if not mol.HasSubstructMatch(hydroxy_beta_pattern):
         return False, "3beta-hydroxy group not properly oriented or absent"
-    
-    return True, "Molecule correctly classified as a 3beta-hydroxy steroid"
 
-# This code aims to more accurately match inherent structural diversity present within these steroids while 
-# focusing on precise detection of functional groups and configurational isomerism.
+    return True, "Molecule correctly classified as a 3beta-hydroxy steroid"
