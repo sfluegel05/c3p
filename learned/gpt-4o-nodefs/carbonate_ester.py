@@ -6,14 +6,13 @@ from rdkit import Chem
 def is_carbonate_ester(smiles: str):
     """
     Determines if a molecule is a carbonate ester based on its SMILES string.
-    A carbonate ester typically involves an R-O-C(=O)-O-R' functionality, where R and R' 
-    can be any generic organic groups, potentially within rings or complex systems.
+    A carbonate ester has the basic structure R-O-C(=O)-O-R', where R and R' are organic groups.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a carbonate ester, False otherwise
+        bool: True if the molecule is a carbonate ester, False otherwise
         str: Reason for classification
     """
     
@@ -22,14 +21,20 @@ def is_carbonate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # General carbonate ester pattern accounting for varied structure: incorporating ester (-O-C(=O)-O-)
-    # The pattern might be generalized to allow for different attachment points and flexible linkage.
-    carbonate_ester_pattern = Chem.MolFromSmarts("C(=O)(O*)O*")
-
-    if mol.HasSubstructMatch(carbonate_ester_pattern):
-        return True, "Contains carbonate ester group (R-O-(C=O)-O-R')"
-    else:
-        return False, "No carbonate ester group found"
+    # Enhanced pattern for carbonate ester: captures both linear and cyclic carbonates
+    # with potential variations in organic groups or integration into larger rings.
+    carbonate_patterns = [
+        Chem.MolFromSmarts("C(=O)(O*)O*"),  # Basic carbonate ester pattern
+        Chem.MolFromSmarts("O=C(O)O"),      # Linear carbonate ester pattern
+        Chem.MolFromSmarts("O=C1OC(=O)O1")  # Cyclic carbonate pattern
+    ]
+    
+    # Check if any pattern matches
+    for pattern in carbonate_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return True, "Contains carbonate ester group (R-O-(C=O)-O-R')"
+    
+    return False, "No carbonate ester group found"
 
 # Test cases with example SMILES, to validate improvement
 examples = [
@@ -41,6 +46,7 @@ examples = [
     "O=C1O[C@H]2C(=C(CO)[C@@H]([C@@H]([C@H]2O1)O)O)/C=C/CCCCC" # Phomoxin
 ]
 
+# Validate the new approach
 for smiles in examples:
     result, reason = is_carbonate_ester(smiles)
     print(f"SMILES: {smiles} -> Is Carbonate Ester: {result}, Reason: {reason}")
