@@ -31,22 +31,27 @@ def is_gas_molecular_entity(smiles: str):
             return True, f"Single atom gas: {atom_symbol}"
         else:
             return False, f"Single atom not typically a gas at STP: {atom_symbol}"
-    
-    # Check for common known small gas molecules
-    small_gas_molecules = {
-        'O=C=O', '[H]N([H])[H]', 'CC', 'CCC', 'C=C', 'CCCC', '[H]C([H])([H])[H]', '[O][O]', '[H][H]',
-        'Cl[H]', 'CC(C)=C', 'CCC=C', '[O-][O+]=O', '[H][H]', 'CH4', 'N2', 'Cl2', 'HCl', 'I[H]',
-        '[C-]#[O+]', 'O=O', 'F2', 'H2O', '[He]', '[Ne]', '[Ar]', 'C#C', 'C#N'
-    }
-    
-    if smiles in small_gas_molecules:
-        return True, "Recognized as a known small gas molecule at STP"
 
-    # Calculate exact molecular weight and check molecule complexity
+    # Known small molecules that are gases at STP
+    known_small_gases = [
+        'O=C=O', 'N#N', '[H]N([H])[H]', 'CC', 'CCC', 'C=C', 'CCCC', '[H]C([H])([H])[H]',
+        '[O][O]', '[H][H]', 'Cl[H]', 'I[H]', 'CC(C)=C', 'CCC=C', '[O-][O+]=O', 
+        'C#C', 'O=O', 'F2', 'ClCl', '[C-]#[O+]'
+    ]
+    
+    if smiles in known_small_gases:
+        return True, "Recognized as a known small gas molecule at STP"
+    
+    # Calculate physicochemical properties
     molecular_weight = rdMolDescriptors.CalcExactMolWt(mol)
     ring_info = mol.GetRingInfo()
-    
-    # Check simple linear or small cyclic compounds with weight <= 60 Da
+
+    # Check for molecule charge
+    total_charge = sum(atom.GetFormalCharge() for atom in mol.GetAtoms())
+    if total_charge != 0:
+        return False, "Molecule has net charge, unlikely to be a gas at STP"
+
+    # Analyze simplicity: simple, non-complex structures with low molecular weight tend to be gases
     if molecular_weight <= 60 and not ring_info.NumRings() > 1:
         return True, "Molecular weight and simplicity suggest it is likely a gas at STP"
     
