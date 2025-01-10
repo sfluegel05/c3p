@@ -26,29 +26,19 @@ def is_endocannabinoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # More specific ethanolamide pattern (-NCCO with no branching)
+    # More flexible ethanolamide pattern
     ethanolamide_pattern = Chem.MolFromSmarts("[NX3H][CX4H2][CX4H2][OX2H]")
     has_ethanolamide = mol.HasSubstructMatch(ethanolamide_pattern)
 
-    # Glycerol backbone with at least two oxygens
+    # Glycerol or similar backbone
     glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
     has_glycerol = mol.HasSubstructMatch(glycerol_pattern)
-    if has_glycerol:
-        # Count oxygens attached to glycerol
-        glycerol_matches = mol.GetSubstructMatches(glycerol_pattern)
-        oxygen_count = 0
-        for match in glycerol_matches:
-            for atom_idx in match:
-                atom = mol.GetAtomWithIdx(atom_idx)
-                if atom.GetAtomicNum() == 8:
-                    oxygen_count += 1
-        if oxygen_count < 2:
-            has_glycerol = False
-
-    # Check for ether linkage between hydrocarbon chain and functional group
+    
+    # Ether linkage pattern
     ether_pattern = Chem.MolFromSmarts("[CX4][OX2][CX4]")
     has_ether = mol.HasSubstructMatch(ether_pattern)
 
+    # Check for at least one of the key functional groups
     if not (has_ethanolamide or has_glycerol or has_ether):
         return False, "No ethanolamide, glycerol, or ether group found"
 
@@ -57,7 +47,7 @@ def is_endocannabinoid(smiles: str):
     if not mol.HasSubstructMatch(carbon_chain_pattern):
         return False, "No long hydrocarbon chain found"
 
-    # Check for ester or amide linkage between chain and functional group
+    # Check for ester, amide, or ether linkage between chain and functional group
     ester_pattern = Chem.MolFromSmarts("[CX4][OX2][CX3](=[OX1])")
     amide_pattern = Chem.MolFromSmarts("[CX4][NX3][CX3](=[OX1])")
     if not (mol.HasSubstructMatch(ester_pattern) or mol.HasSubstructMatch(amide_pattern) or has_ether):
@@ -77,9 +67,10 @@ def is_endocannabinoid(smiles: str):
     if o_count < 2:
         return False, "Too few oxygens for endocannabinoid"
 
-    # Additional check: at least one double bond in the hydrocarbon chain
-    double_bond_pattern = Chem.MolFromSmarts("[CX3]=[CX3]")
-    if not mol.HasSubstructMatch(double_bond_pattern):
-        return False, "No double bonds in hydrocarbon chain"
+    # Remove double bond requirement to include saturated endocannabinoids
+    # Additional check: at least one functional group oxygen
+    oxygen_pattern = Chem.MolFromSmarts("[OX2]")
+    if not mol.HasSubstructMatch(oxygen_pattern):
+        return False, "No functional group oxygen found"
 
     return True, "Contains long hydrocarbon chain connected to ethanolamide, glycerol, or similar group via ester, amide, or ether bond"
