@@ -24,37 +24,51 @@ def is_11beta_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for basic steroid core (4 fused rings)
-    steroid_core = Chem.MolFromSmarts("[#6]~1~[#6]~[#6]~[#6]~2~[#6]~[#6]~[#6]~[#6]~3~[#6]~[#6]~[#6]~[#6]~4~[#6]~[#6]~[#6]~[#6]~4~[#6]~3~[#6]~2~1")
+    # More flexible steroid core pattern that allows for variations
+    # Matches the basic 6-6-6-5 ring system with any bonds
+    steroid_core = Chem.MolFromSmarts("C1C(C)C2CCC3C4CCC(C4)C3C2C1")
     if not mol.HasSubstructMatch(steroid_core):
         return False, "No steroid core structure found"
 
-    # Check for 11-beta hydroxy group
-    # The SMARTS pattern looks for:
-    # - The specific carbon at position 11 in the steroid skeleton
-    # - An OH group in beta configuration (specified by '@H')
-    # Note: The exact stereochemistry is critical here
-    hydroxy_11beta = Chem.MolFromSmarts("[C]~1~[C]~[C]~[C]~2~[C]~[C]~[C]~[C]~3~[C]~[C@@H](O)~[C]~[C]~4~[C]~[C]~[C]~[C]~4~[C]~3~[C]~2~1")
+    # Pattern for 11β-hydroxy group
+    # Uses relative positions in the steroid skeleton and explicit stereochemistry
+    # The [C@@H] ensures beta configuration of the OH group
+    hydroxy_11beta = Chem.MolFromSmarts("[#6]~1~[#6]~[#6]~[#6]~2~[#6]~[#6]~[#6]~[#6]~3~[#6]~[C@@H](O)~[#6]~[#6]~[#6]~3~[#6]~2~1")
     
     if not mol.HasSubstructMatch(hydroxy_11beta):
         return False, "No 11-beta hydroxy group found"
+
+    # Additional validation checks
     
-    # Additional check for common substituents often found in 11beta-hydroxy steroids
-    # Look for common functional groups like ketones, other hydroxyls, etc.
-    ketone_pattern = Chem.MolFromSmarts("C(=O)")
-    other_hydroxy = Chem.MolFromSmarts("[CH]O")
-    
-    if not (mol.HasSubstructMatch(ketone_pattern) or mol.HasSubstructMatch(other_hydroxy)):
-        return False, "Missing typical steroid substituents"
-        
-    # Count carbons to ensure reasonable size for a steroid
-    carbon_count = len([atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6])
-    if carbon_count < 19 or carbon_count > 30:  # Most steroids have 19-30 carbons
-        return False, f"Carbon count ({carbon_count}) outside typical steroid range"
-    
-    # Check for reasonable number of rings
+    # Count rings
     ring_info = mol.GetRingInfo()
     if ring_info.NumRings() < 4:
         return False, "Too few rings for steroid structure"
-        
+
+    # Count carbons and oxygens
+    num_carbons = len([atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6])
+    num_oxygens = len([atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8])
+    
+    if num_carbons < 19 or num_carbons > 30:
+        return False, f"Carbon count ({num_carbons}) outside typical steroid range (19-30)"
+    
+    if num_oxygens < 2:
+        return False, "Too few oxygen atoms for 11-beta-hydroxy steroid"
+
+    # Look for common steroid features
+    # Most 11β-hydroxy steroids have additional oxygen-containing groups
+    ketone = Chem.MolFromSmarts("C(=O)")
+    has_ketone = mol.HasSubstructMatch(ketone)
+    
+    other_hydroxy = Chem.MolFromSmarts("CO")
+    num_hydroxy = len(mol.GetSubstructMatches(other_hydroxy))
+    
+    if num_hydroxy < 2 and not has_ketone:
+        return False, "Missing typical steroid oxygenated substituents"
+
+    # Check for reasonable molecular weight range for steroids
+    mol_weight = Chem.Descriptors.ExactMolWt(mol)
+    if mol_weight < 250 or mol_weight > 600:
+        return False, f"Molecular weight {mol_weight:.1f} outside typical range for steroids"
+
     return True, "Contains steroid core with 11-beta hydroxy group and appropriate substituents"
