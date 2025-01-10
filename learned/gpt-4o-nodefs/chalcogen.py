@@ -29,11 +29,8 @@ def is_chalcogen(smiles: str):
     if mol.GetNumAtoms() == 1:
         atom = mol.GetAtomWithIdx(0)
         symbol = atom.GetSymbol()
-        
         if symbol in chalcogen_elements:
             isotope = atom.GetIsotope()
-            return True, f"Chemical entity is a chalcogen: {symbol} isotope {isotope if isotope else 'natural'}"
-        else:
-            return False, "Atom is not a chalcogen element"
+            return True, f"Chemical entity is a chalcogen: {symbol} isotope {isotope}"
 
-    return False, "Chemical entity is not a standalone chalcogen atom"
+    return False, "Chemical entity is not a chalcogen"
