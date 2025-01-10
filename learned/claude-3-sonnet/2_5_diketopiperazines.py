@@ -24,9 +24,11 @@ def is_2_5_diketopiperazines(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Basic 2,5-diketopiperazine pattern with explicit hydrogens removed
-    # Matches the core six-membered ring with two nitrogens and two ketone groups
-    dkp_pattern = Chem.MolFromSmarts("[NR2]-[CR2](=O)-[CR2]-[NR2]-[CR2](=O)-[CR2]")
+    # 2,5-diketopiperazine pattern:
+    # - Six-membered ring
+    # - Two nitrogens at positions 1 and 4
+    # - Two carbonyls at positions 2 and 5
+    dkp_pattern = Chem.MolFromSmarts('[NX3R2]1[CX3R2](=O)[CX4R2][NX3R2][CX3R2](=O)[CX4R2]1')
     
     if dkp_pattern is None:
         return None, "Error in SMARTS pattern"
@@ -34,35 +36,38 @@ def is_2_5_diketopiperazines(smiles: str):
     if not mol.HasSubstructMatch(dkp_pattern):
         return False, "No 2,5-diketopiperazine core structure found"
     
-    # Count the number of matches to ensure we have the right pattern
+    # Get all matches of the pattern
     matches = mol.GetSubstructMatches(dkp_pattern)
     if len(matches) < 1:
         return False, "No complete 2,5-diketopiperazine ring system found"
-        
-    # Verify the presence of two ketone groups connected to nitrogens
-    ketone_pattern = Chem.MolFromSmarts("[NR2]-[CR2](=[OX1])")
-    if ketone_pattern is None:
-        return None, "Error in ketone SMARTS pattern"
-        
-    ketone_matches = len(mol.GetSubstructMatches(ketone_pattern))
-    if ketone_matches < 2:
-        return False, f"Found only {ketone_matches} ketone groups, need exactly 2"
 
-    # Additional check for the ring system
-    ring_info = mol.GetRingInfo()
-    if not any(size == 6 for size in ring_info.RingSizes()):
-        return False, "No six-membered ring found"
-
-    # Verify that the nitrogens are part of the same ring
-    ring_atoms = mol.GetSubstructMatch(dkp_pattern)
-    if not ring_atoms:
-        return False, "Ring atoms not properly connected"
+    # For each match, verify the structural requirements
+    for match in matches:
+        # Get the atoms in the match
+        ring_atoms = list(match)
         
-    # Get the ring bond count for each nitrogen to ensure they're in the ring
-    for atom_idx in ring_atoms:
-        atom = mol.GetAtomWithIdx(atom_idx)
-        if atom.GetAtomicNum() == 7:  # Nitrogen
-            if not atom.IsInRing():
-                return False, "Nitrogen atoms must be part of the ring"
-
-    return True, "Contains piperazine-2,5-dione core structure with proper ketone groups"
+        # Check that all atoms are in the same ring
+        ring_size = 0
+        for ring in mol.GetRingInfo().AtomRings():
+            if all(idx in ring for idx in ring_atoms):
+                ring_size = len(ring)
+                break
+                
+        if ring_size != 6:
+            continue  # Not a valid 6-membered ring
+            
+        # Count the number of carbonyls
+        carbonyl_pattern = Chem.MolFromSmarts('[NX3R2][CX3R2](=[OX1])')
+        carbonyl_matches = len(mol.GetSubstructMatches(carbonyl_pattern))
+        if carbonyl_matches < 2:
+            continue  # Not enough carbonyls
+            
+        # Verify nitrogen atoms are properly placed
+        n_atoms = [mol.GetAtomWithIdx(idx) for idx in ring_atoms if mol.GetAtomWithIdx(idx).GetAtomicNum() == 7]
+        if len(n_atoms) != 2:
+            continue  # Wrong number of nitrogens
+            
+        # All checks passed for this match
+        return True, "Contains piperazine-2,5-dione core structure with proper ketone groups"
+    
+    return False, "No valid 2,5-diketopiperazine structure found"
