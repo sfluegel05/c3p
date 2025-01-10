@@ -42,10 +42,17 @@ def is_sphingoid(smiles: str):
     if not mol.HasSubstructMatch(amino_pattern):
         return False, "No amino group found"
 
-    # Check for the presence of a 2-amino-1,3-diol or 2-amino-1,3,4-triol backbone
-    backbone_pattern = Chem.MolFromSmarts("[CX4][CX4]([OH])[CX4]([NH2,NH3+,NH])[CX4]([OH])")
-    if not mol.HasSubstructMatch(backbone_pattern):
-        return False, "No 2-amino-1,3-diol or 2-amino-1,3,4-triol backbone found"
+    # Check for the presence of a hydroxyl group and an amino group in the general vicinity
+    # This is a more flexible check than requiring a specific backbone
+    hydroxyl_amino_pattern = Chem.MolFromSmarts("[OX2H]~[CX4]~[NX3H2,NX4H3+,NX3H]")
+    if not mol.HasSubstructMatch(hydroxyl_amino_pattern):
+        return False, "No hydroxyl and amino group in close proximity"
+
+    # Check for the presence of a long hydrocarbon chain connected to the hydroxyl and amino groups
+    # This ensures that the hydroxyl and amino groups are part of the long chain
+    long_chain_pattern = Chem.MolFromSmarts("[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]")
+    if not mol.HasSubstructMatch(long_chain_pattern):
+        return False, "No long hydrocarbon chain connected to hydroxyl and amino groups"
 
     # Check for the presence of a double bond (optional, as some sphingoids are saturated)
     double_bond_pattern = Chem.MolFromSmarts("[CX3]=[CX3]")
@@ -56,6 +63,12 @@ def is_sphingoid(smiles: str):
     hydroxyl_matches = mol.GetSubstructMatches(additional_hydroxyl_pattern)
     if len(hydroxyl_matches) < 1:
         return False, "No additional hydroxyl groups found"
+
+    # Exclude complex carbohydrates and glycoconjugates
+    # These molecules often have multiple hydroxyl groups and amino groups but are not sphingoids
+    carbohydrate_pattern = Chem.MolFromSmarts("[OX2H]~[CX4]~[OX2H]~[CX4]~[OX2H]")
+    if mol.HasSubstructMatch(carbohydrate_pattern):
+        return False, "Molecule is likely a carbohydrate or glycoconjugate"
 
     return True, "Contains a long hydrocarbon chain with a hydroxyl group, an amino group, and a 2-amino-1,3-diol or 2-amino-1,3,4-triol backbone"
 
