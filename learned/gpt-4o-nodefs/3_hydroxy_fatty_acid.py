@@ -8,7 +8,7 @@ def is_3_hydroxy_fatty_acid(smiles: str):
     Determines if a molecule is a 3-hydroxy fatty acid based on its SMILES string.
     A 3-hydroxy fatty acid has a hydroxyl group on the 3rd carbon from
     the carboxyl carbon in its aliphatic chain.
-
+    
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -24,20 +24,22 @@ def is_3_hydroxy_fatty_acid(smiles: str):
 
     # Pattern for a carboxylic acid group
     carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
-    if not mol.HasSubstructMatch(carboxylic_acid_pattern):
+    carboxy_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
+    if not carboxy_matches:
         return False, "No carboxylic acid group found"
 
-    # General 3-hydroxy pattern accommodating stereochemistry and branches
-    # (Carboxylic connection)-C-C-[C@H](O) or branching C
-    three_hydroxy_pattern = Chem.MolFromSmarts("C(=O)O[C;R0][C;R0][C@H](O)")
+    # Iterate over possible carboxylic acid positions
+    for match in carboxy_matches:
+        carboxylic_carbon_idx = match[0]  # Get the carboxylic carbon
 
-    # Check matches for both simple and complex patterns
-    if mol.HasSubstructMatch(three_hydroxy_pattern):
-        return True, "Molecule matches 3-hydroxy fatty acid pattern"
+        # Check for 3-hydroxy group at the third carbon from the carboxyl
+        three_hydroxy_pattern = Chem.MolFromSmarts("C(=O)O[*][*]C(O)")
+        if mol.HasSubstructMatch(three_hydroxy_pattern):
+            return True, "Molecule matches 3-hydroxy fatty acid pattern"
 
     return False, "No 3-hydroxy group next to carboxyl on third carbon"
 
 # Example use
-example_smiles = "CCCCCCCCCC[C@@H](O)CC(O)=O"  # Example SMILES
+example_smiles = "CCCCCCCCCCC[C@@H](O)CC(O)=O"  # Example SMILES
 result, reason = is_3_hydroxy_fatty_acid(example_smiles)
 print(result, reason)
