@@ -5,7 +5,6 @@ Classifies: CHEBI:27283 very long-chain fatty acid
 Classifies: CHEBI:27388 very long-chain fatty acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdchem
 
 def is_very_long_chain_fatty_acid(smiles: str):
     """
@@ -20,13 +19,15 @@ def is_very_long_chain_fatty_acid(smiles: str):
         bool: True if molecule is a very long-chain fatty acid, False otherwise
         str: Reason for classification
     """
+    from collections import deque
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for carboxylic acid group (-COOH)
-    carboxylic_acid = Chem.MolFromSmarts('[CX3](=O)[OX1H]')
+    # Look for carboxylic acid group (-COOH or -COO-)
+    carboxylic_acid = Chem.MolFromSmarts('[CX3](=O)[O;H1,-1]')
     matches = mol.GetSubstructMatches(carboxylic_acid)
     if len(matches) == 0:
         return False, "No carboxylic acid group found"
@@ -37,24 +38,30 @@ def is_very_long_chain_fatty_acid(smiles: str):
     carboxyl_carbon_idx = matches[0][0]
     carboxyl_carbon = mol.GetAtomWithIdx(carboxyl_carbon_idx)
 
-    # Traverse the longest carbon chain starting from the carboxyl carbon
-    visited = set()
+    # Initialize variables for BFS traversal
     max_chain_length = 0
+    visited = set()
 
-    def dfs(atom, length):
-        nonlocal max_chain_length
-        visited.add(atom.GetIdx())
-        is_terminal = True
-        for neighbor in atom.GetNeighbors():
-            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:
-                is_terminal = False
-                dfs(neighbor, length + 1)
-        if is_terminal:
-            if length > max_chain_length:
-                max_chain_length = length
+    # Function to perform BFS and find the longest carbon chain
+    def bfs(start_atom_idx):
+        visited = set()
+        queue = deque()
+        queue.append((start_atom_idx, 1))
+        local_max = 1
+        while queue:
+            current_idx, length = queue.popleft()
+            visited.add(current_idx)
+            atom = mol.GetAtomWithIdx(current_idx)
+            for neighbor in atom.GetNeighbors():
+                neighbor_idx = neighbor.GetIdx()
+                if neighbor_idx not in visited and neighbor.GetAtomicNum() == 6:
+                    queue.append((neighbor_idx, length + 1))
+                    if length + 1 > local_max:
+                        local_max = length + 1
+        return local_max
 
-    # Start DFS traversal from the carboxyl carbon
-    dfs(carboxyl_carbon, 1)  # Start length at 1 to include carboxyl carbon
+    # Start BFS traversal from the carboxyl carbon
+    max_chain_length = bfs(carboxyl_carbon_idx)
 
     # Check if chain length exceeds 22 carbons
     if max_chain_length > 22:
@@ -80,7 +87,7 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:27388',
                   'max_instances_in_prompt': 100,
                   'test_proportion': 0.1},
     'message': None,
-    'attempt': 0,
+    'attempt': 1,
     'success': True,
     'best': True,
     'error': '',
