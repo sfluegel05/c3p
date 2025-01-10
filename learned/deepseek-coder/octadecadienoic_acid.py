@@ -35,10 +35,16 @@ def is_octadecadienoic_acid(smiles: str):
     if c_count != 18:
         return False, f"Expected 18 carbon atoms, found {c_count}"
 
-    # Count the number of double bonds
-    double_bond_count = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.BondType.DOUBLE)
+    # Count the number of C=C double bonds (excluding carbonyls)
+    double_bond_count = 0
+    for bond in mol.GetBonds():
+        if bond.GetBondType() == Chem.BondType.DOUBLE:
+            # Check if the double bond is between two carbons (C=C)
+            if bond.GetBeginAtom().GetAtomicNum() == 6 and bond.GetEndAtom().GetAtomicNum() == 6:
+                double_bond_count += 1
+
     if double_bond_count != 2:
-        return False, f"Expected 2 double bonds, found {double_bond_count}"
+        return False, f"Expected 2 C=C double bonds, found {double_bond_count}"
 
     # Check if the molecule is a straight-chain fatty acid
     # This is a heuristic check: we expect the molecule to have a long carbon chain
@@ -48,4 +54,4 @@ def is_octadecadienoic_acid(smiles: str):
             if atom.GetDegree() > 2 and not (atom.GetDegree() == 1 and atom.GetTotalNumHs() == 3):  # End of chain
                 return False, "Molecule is not a straight-chain fatty acid"
 
-    return True, "Straight-chain C18 fatty acid with 2 double bonds and a carboxylic acid group"
+    return True, "Straight-chain C18 fatty acid with 2 C=C double bonds and a carboxylic acid group"
