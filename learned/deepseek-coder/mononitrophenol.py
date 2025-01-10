@@ -1,0 +1,46 @@
+"""
+Classifies: CHEBI:39362 mononitrophenol
+"""
+"""
+Classifies: CHEBI:50747 mononitrophenol
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
+
+def is_mononitrophenol(smiles: str):
+    """
+    Determines if a molecule is a mononitrophenol based on its SMILES string.
+    A mononitrophenol is a phenol carrying a single nitro substituent at an unspecified position.
+
+    Args:
+        smiles (str): SMILES string of the molecule
+
+    Returns:
+        bool: True if molecule is a mononitrophenol, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+
+    # Look for phenol pattern (benzene ring with at least one hydroxyl group)
+    phenol_pattern = Chem.MolFromSmarts("[c]1[c][c][c][c][c]1[OH]")
+    if not mol.HasSubstructMatch(phenol_pattern):
+        return False, "No phenol group found"
+
+    # Look for nitro groups (-NO2)
+    nitro_pattern = Chem.MolFromSmarts("[N+](=O)[O-]")
+    nitro_matches = mol.GetSubstructMatches(nitro_pattern)
+    if len(nitro_matches) != 1:
+        return False, f"Found {len(nitro_matches)} nitro groups, need exactly 1"
+
+    # Ensure the nitro group is attached to the benzene ring
+    nitro_atom = nitro_matches[0][0]
+    benzene_atoms = [atom.GetIdx() for atom in mol.GetAtoms() if atom.IsInRing() and atom.GetAtomicNum() == 6]
+    if nitro_atom not in benzene_atoms:
+        return False, "Nitro group is not attached to the benzene ring"
+
+    return True, "Contains a phenol group with exactly one nitro substituent on the benzene ring"
