@@ -3,12 +3,13 @@ Classifies: CHEBI:23849 diterpenoid
 """
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem.Scaffolds import MurckoScaffold
 
 def is_diterpenoid(smiles: str):
     """
     Determines if a molecule is a diterpenoid based on its SMILES string.
     A diterpenoid is any terpenoid derived from a diterpene (C20 skeleton),
-    which may be rearranged or modified by removal of skeletal atoms.
+    which may be rearranged or modified by the removal of one or more skeletal atoms.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,37 +24,30 @@ def is_diterpenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for presence of carbon atoms
+    # Check for presence of carbon atoms (should be at least 15)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 18 or c_count > 22:
-        return False, f"Number of carbons ({c_count}) not typical for diterpenoids (18-22)"
+    if c_count < 15:
+        return False, f"Number of carbons ({c_count}) too low for diterpenoid"
 
-    # Check for isoprene units (C5 units)
-    # Isoprene unit SMARTS pattern: C=C-C-C=C
-    isoprene_pattern = Chem.MolFromSmarts("C(=C)C[C@]C(=C)")
-    matches = mol.GetSubstructMatches(isoprene_pattern)
-    if len(matches) < 2:
-        # Try a looser pattern matching for isoprene units
-        isoprene_pattern_loose = Chem.MolFromSmarts("C=C-C-C")
-        matches_loose = mol.GetSubstructMatches(isoprene_pattern_loose)
-        if len(matches_loose) < 4:
-            return False, "Insufficient isoprene units found"
-
-    # Check for ring systems (common in diterpenoids)
-    ring_info = mol.GetRingInfo()
-    num_rings = ring_info.NumRings()
-    if num_rings < 1:
-        return False, "No ring structures found, diterpenoids usually contain rings"
-
-    # Calculate molecular weight
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 250 or mol_wt > 450:
-        return False, f"Molecular weight ({mol_wt:.2f} Da) not in typical diterpenoid range (250-450 Da)"
-
-    # Check for oxygen atoms (terpenoids are terpenes with oxygen-containing functional groups)
+    # Check for oxygen atoms (terpenoids typically contain oxygen)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     if o_count < 1:
         return False, "No oxygen atoms found, terpenoids typically contain oxygen"
+
+    # Get Murcko scaffold to analyze core structure
+    scaffold = MurckoScaffold.GetScaffoldForMol(mol)
+    if scaffold is None or scaffold.GetNumAtoms() == 0:
+        return False, "Could not extract molecular scaffold"
+
+    # Count carbons in scaffold
+    scaffold_c_count = sum(1 for atom in scaffold.GetAtoms() if atom.GetAtomicNum() == 6)
+    if scaffold_c_count < 10:
+        return False, f"Scaffold has too few carbons ({scaffold_c_count}) for diterpenoid core"
+
+    # Calculate molecular weight
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 250:
+        return False, f"Molecular weight ({mol_wt:.2f} Da) too low for diterpenoid"
 
     # If all checks pass, classify as diterpenoid
     return True, "Molecule matches characteristics of a diterpenoid"
