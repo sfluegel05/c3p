@@ -25,16 +25,14 @@ def is_biflavonoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the flavonoid pattern (benzopyran ring system with aryl substitution)
-    flavonoid_pattern = Chem.MolFromSmarts("[c;H1]1[c;H1][c;H1][c;H1][c;H1][c;H1]1-[O;H1][C;H1]2[C;H1]=[C;H1][C;H1]=[C;H1][C;H1]=2")
+    # Define a more flexible flavonoid pattern (benzopyran ring system with possible substitutions)
+    flavonoid_pattern = Chem.MolFromSmarts("[c]1[c][c][c][c][c]1-[O][C]2[C]=[C][C]=[C][C]=2")
     flavonoid_matches = mol.GetSubstructMatches(flavonoid_pattern)
     
     if len(flavonoid_matches) < 2:
         return False, f"Found {len(flavonoid_matches)} flavonoid units, need at least 2"
 
     # Check if the flavonoid units are connected by a single bond or atom
-    # We can look for a bond between two flavonoid units
-    # This is a simplified approach and may not cover all cases
     connected = False
     for i in range(len(flavonoid_matches)):
         for j in range(i+1, len(flavonoid_matches)):
