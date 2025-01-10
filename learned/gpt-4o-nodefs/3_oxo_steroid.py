@@ -6,36 +6,33 @@ from rdkit import Chem
 def is_3_oxo_steroid(smiles: str):
     """
     Determines if a molecule is a 3-oxo steroid based on its SMILES string.
-    A 3-oxo steroid consists of a steroid backbone characterized by four fused rings
-    and a ketone group at position 3 on the A-ring.
+    A 3-oxo steroid has a specific steroid backbone with a ketone group at position 3.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if the molecule is a 3-oxo steroid, False otherwise
+        bool: True if molecule is a 3-oxo steroid, False otherwise
         str: Reason for classification
     """
     
-    # Parse SMILES string
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Revise steroid backbone SMARTS - account for four fused rings without specifying stereochemistry detailedly
-    steroid_backbone_pattern = Chem.MolFromSmarts("C1CCC2CCC3C4CCCC(C4)C3C2C1")    
-    
-    # Check for steroid backbone presence
+    # SMARTS pattern for the steroid backbone - four fused rings
+    steroid_backbone_pattern = Chem.MolFromSmarts("C1CCC2C3CCC4CCCC(C4C3)C2(C1)")
+
+    # Check for steroid backbone
     if not mol.HasSubstructMatch(steroid_backbone_pattern):
         return False, "No steroid backbone found"
 
-    # Improved SMARTS pattern for a 3-oxo group on the A ring of the steroid
-    oxo_group_pattern = Chem.MolFromSmarts("C1(=O)CC2C3CCCC3CC12")  # Ketone at ring joining
+    # SMARTS pattern for a 3-oxo group in the steroid backbone
+    oxo_group_pattern = Chem.MolFromSmarts("CC(=O)C")
     
-    # Ensure a 3-oxo group exists in an appropriate location (A-ring)
+    # Check for 3-oxo group
     if not mol.HasSubstructMatch(oxo_group_pattern):
         return False, "No 3-oxo group found at position 3"
     
     return True, "Contains steroid backbone with 3-oxo group"
-
-# Note: Adjustments have been made to better reflect 3-oxo-ketone position within the A-ring and improve steroid backbone recognition.
