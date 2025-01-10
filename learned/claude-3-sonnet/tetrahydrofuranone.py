@@ -11,8 +11,7 @@ from rdkit.Chem import AllChem
 def is_tetrahydrofuranone(smiles: str):
     """
     Determines if a molecule is a tetrahydrofuranone based on its SMILES string.
-    A tetrahydrofuranone contains a tetrahydrofuran ring with a ketone group directly
-    attached to the ring.
+    A tetrahydrofuranone contains a tetrahydrofuran ring with a ketone group.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -27,45 +26,34 @@ def is_tetrahydrofuranone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Core patterns for tetrahydrofuranones
-    patterns = [
-        # Basic tetrahydrofuranone with ketone in ring
-        "[O;R1]1[C;R1]([C;R1,c;R1])[C;R1,c;R1][C;R1,c;R1][C;R1]1(=O)",
-        
-        # Anhydride-type patterns (two ketones)
-        "[O;R1]1[C;R1](=O)[C;R1,c;R1][C;R1,c;R1][C;R1]1(=O)",
-        
-        # Lactone patterns
-        "[O;R1]1[C;R1](=O)[C;R1,c;R1][C;R1,c;R1][C;R1,c;R1]1",
-        "[O;R1]1[C;R1,c;R1][C;R1](=O)[C;R1,c;R1][C;R1,c;R1]1",
-        "[O;R1]1[C;R1,c;R1][C;R1,c;R1][C;R1](=O)[C;R1,c;R1]1",
-        "[O;R1]1[C;R1,c;R1][C;R1,c;R1][C;R1,c;R1][C;R1]1(=O)"
-    ]
+    # Look for 5-membered ring containing oxygen (tetrahydrofuran/oxolane)
+    # [O,o] means oxygen in or not in ring
+    # ~1~1 means connected in a ring of size 5
+    thf_pattern = Chem.MolFromSmarts("[O,o]~1~[#6]~[#6]~[#6]~[#6]~1")
+    if not mol.HasSubstructMatch(thf_pattern):
+        return False, "No tetrahydrofuran ring found"
 
-    # Check each pattern
-    for pattern in patterns:
-        pattern_mol = Chem.MolFromSmarts(pattern)
-        if pattern_mol is None:
-            continue
-        
-        matches = mol.GetSubstructMatches(pattern_mol)
-        if matches:
-            # Verify that we have a proper 5-membered ring with oxygen
-            for match in matches:
-                ring_atoms = set(match)
-                ring_info = mol.GetRingInfo()
-                
-                # Check if these atoms form a 5-membered ring
-                for ring in ring_info.AtomRings():
-                    ring = set(ring)
-                    if len(ring & ring_atoms) == 5:
-                        # Verify presence of ketone group
-                        for atom_idx in ring:
-                            atom = mol.GetAtomWithIdx(atom_idx)
-                            for bond in atom.GetBonds():
-                                if bond.GetBondType() == Chem.BondType.DOUBLE:
-                                    other_atom = bond.GetOtherAtom(atom)
-                                    if other_atom.GetAtomicNum() == 8:  # Oxygen
-                                        return True, "Contains tetrahydrofuran ring with ketone group"
+    # Look for ketone group (C=O) 
+    ketone_pattern = Chem.MolFromSmarts("[CX3](=[OX1])")
+    if not mol.HasSubstructMatch(ketone_pattern):
+        return False, "No ketone group found"
+    
+    # Two main types of tetrahydrofuranones:
+    
+    # 1. Lactone pattern (ketone is part of the ring)
+    lactone_pattern = Chem.MolFromSmarts("O1CC[CH2,CH1,C]C(=O)1")
+    
+    # 2. Tetrahydrofuran with ketone substituent
+    # This pattern looks for a tetrahydrofuran ring where one carbon has a C=O substituent
+    thf_ketone_pattern = Chem.MolFromSmarts("[O;R1]1[CH2,CH1,C][CH2,CH1,C][CH2,CH1,C]([CH2,CH1,C]1)C(=O)")
+    
+    if not (mol.HasSubstructMatch(lactone_pattern) or mol.HasSubstructMatch(thf_ketone_pattern)):
+        return False, "No ketone group attached to tetrahydrofuran ring"
 
-    return False, "No tetrahydrofuranone core structure found"
+    # Additional check to ensure no aromatic rings in the core structure
+    # (tetrahydrofuran should be saturated)
+    aromatic_thf = Chem.MolFromSmarts("[o]1cccc1")
+    if mol.HasSubstructMatch(aromatic_thf):
+        return False, "Core ring structure must be saturated (tetrahydro-)"
+
+    return True, "Contains tetrahydrofuran ring with ketone group"
