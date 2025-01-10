@@ -32,9 +32,7 @@ def is_1_acyl_sn_glycero_3_phosphoserine(smiles: str):
         return False, "No sn-glycero-3-phosphoserine core found"
 
     # Check for acyl group at the 1-position
-    # The acyl group is attached to the oxygen at the 1-position of the glycerol backbone
-    # Relaxed pattern to match any acyl chain
-    acyl_pattern = Chem.MolFromSmarts("[CX3](=O)O[C@@H](CO)COP(O)(=O)OC[C@H](N)C(O)=O")
+    acyl_pattern = Chem.MolFromSmarts("[CX4][CX4](=O)OC[C@@H](O)COP(O)(=O)OC[C@H](N)C(O)=O")
     if not mol.HasSubstructMatch(acyl_pattern):
         return False, "No acyl group found at the 1-position"
 
@@ -55,7 +53,6 @@ def is_1_acyl_sn_glycero_3_phosphoserine(smiles: str):
         return False, f"Incorrect stereochemistry at the 2-position (got {cip_code}, expected S)"
 
     # Check for a reasonable acyl chain length (at least 10 carbons)
-    # Count the number of carbons in the acyl chain
     acyl_chain = mol.GetSubstructMatch(acyl_pattern)
     if len(acyl_chain) < 10:
         return False, "Acyl chain too short"
