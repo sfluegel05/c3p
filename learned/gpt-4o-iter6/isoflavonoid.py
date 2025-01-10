@@ -10,7 +10,7 @@ from rdkit import Chem
 def is_isoflavonoid(smiles: str):
     """
     Determines if a molecule is an isoflavonoid based on its SMILES string.
-    An isoflavonoid is a 1-benzopyran with an aryl substituent at position 3.
+    An isoflavonoid is a 1-benzopyran with an aryl substituent at the 3-position.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -25,23 +25,33 @@ def is_isoflavonoid(smiles: str):
     if mol is None:
         return (None, "Invalid SMILES string")
 
-    # Define SMARTS patterns for isoflavonoid cores and substitutions
+    # Expand isoflavonoid definition: 1-benzopyran core with diverse aryl group
     isoflavonoid_patterns = [
-        Chem.MolFromSmarts("c1cc2oc(c3ccccc3)cc2cc1"),          # Basic isoflavonoid core structure
-        Chem.MolFromSmarts("c1cc2oc(c3ccc(cc3)O)cc2cc1"),       # Hydroxy substitution on aryl group
-        Chem.MolFromSmarts("c1cc2oc(c3ccc(cc3)OC)cc2cc1"),      # Methoxy substitution on aryl group
-        Chem.MolFromSmarts("[O;H1]c1ccc2c(c1)cc(c3ccccc3)o2"),  # Free phenolic hydroxyl in 3-position
-        Chem.MolFromSmarts("C1COc2cc(ccc2O)C=1"),               # Isoflavan structure
+        Chem.MolFromSmarts("Oc1ccc2ccccc2c1-c3ccccc3"),         # Typical isoflavonoid
+        Chem.MolFromSmarts("O=c1cc2ccccc2oc1-c3ccccc3"),        # Variant with additional ketone
+        Chem.MolFromSmarts("Oc1ccc2ccccc2c1-c3cc(O)ccc3"),      # With hydroxyl groups
+        Chem.MolFromSmarts("Oc1ccc2cc(O)cccc2c1-c3ccc(OC)cc3")  # With methoxy groups
     ]
 
-    glycosides_pattern = Chem.MolFromSmarts("O[C@H]1[C@@H]([C@H]([C@@H]([C@H](O1)CO)O)O)O")
-    
-    # Check for isoflavonoid basic and substituted structures
     for pattern in isoflavonoid_patterns:
         if mol.HasSubstructMatch(pattern):
-            if mol.HasSubstructMatch(glycosides_pattern):
-                return True, "Contains isoflavonoid core with glycoside attachments"
-            return True, "Matches isoflavonoid core structure"
+            return True, "Matches isoflavonoid substructure with possible functional variations"
+    
+    # Check possible higher complexity with glucose or other sugar attachments
+    sugar_pattern = Chem.MolFromSmarts("O[C@H]1[C@@H]([C@@H]([C@H]([C@@H]([C@H]1O)O)O)O)CO")
+    if mol.HasSubstructMatch(sugar_pattern):
+        return True, "Contains potential isoflavonoid structure with sugar attachments"
+
+    # Check for common substituents in isoflavonoids
+    common_substituents = [
+        Chem.MolFromSmarts("CO"),  # Methoxy group
+        Chem.MolFromSmarts("C=C"), # Carbon double bonds
+        Chem.MolFromSmarts("CC(=O)O") # Acetate or ester linkages
+    ]
+
+    for substituent in common_substituents:
+        if mol.HasSubstructMatch(substituent):
+            return True, "Contains functional group common in isoflavonoids"
 
     return False, "Does not contain the necessary isoflavonoid structure or functional groups"
 
