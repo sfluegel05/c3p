@@ -21,26 +21,23 @@ def is_3_oxo_5beta_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for the presence of a 3-oxo group (carbonyl group at position 3 in a steroid)
-    # `[C](=O)[C]([C](C)[C]C)` indicates flexible approach around the carbonyl spare for configurations.
-    oxo_pattern = Chem.MolFromSmarts("C(=O)[C]([C])[C]C")
+    # Define more precise SMARTS for the 3-oxo group within a steroid backbone
+    oxo_pattern = Chem.MolFromSmarts("C1(C(=O))[C]([C]2)[C]([C]CCC3)[C](C4)[C]([C]([C](=C4)CC3)C2)=C1")
     if not mol.HasSubstructMatch(oxo_pattern):
-        return False, "No 3-oxo group found in the expected position"
+        return False, "No 3-oxo group found in the expected steroid structure"
 
-    # Check for steroid core with beta-configuration:
-    # A more loose pattern for steroid rings that includes mapping chiral centers
-    steroid_core_pattern = Chem.MolFromSmarts("C1CC=C2C3OC4CCCCC4C3CCC2C1")
+    # General pattern for steroid backbones (adapt for generality)
+    steroid_core_pattern = Chem.MolFromSmarts("C1(CCC2C3(C4CCCCC4)CCC3CCC2C1)")
     if not mol.HasSubstructMatch(steroid_core_pattern):
-        return False, "Steroid core with 5beta configuration not found"
+        return False, "Steroid core not found"
 
-    # Even though SMILES incorporates stereochemistry, we're verifying stereocenters explicitly
-    # Check for the correct stereochemistry using a set of stereocenter-based approaches
+    # Check 5beta stereochemistry
+    # Get stereocenter indices and evaluate CIP configuration at these indices
+    chiral_centers = Chem.FindMolChiralCenters(mol, force=True, includeUnassigned=True)
+    stereochemically_correct = any(code == 'S' and mol.GetAtomWithIdx(idx).GetAtomicNum() == 6
+                                   for idx, code in chiral_centers if idx == 5)
     
-    # Check stereochemistry on the position where 5-beta is expected:
-    chiral_positions = [atom.GetIdx() for atom in mol.GetAtoms() if atom.HasProp('_CIPCode')]
+    if not stereochemically_correct:
+        return False, "5beta stereochemistry not resolved"
 
-    # Assuming the relevant stereocenter indexes for "5-beta" positions; in reality, should be derived:
-    if len(chiral_positions) < 2 or mol.GetAtomWithIdx(chiral_positions[1]).GetProp('_CIPCode') != 'S':
-        return False, "5beta stereochemistry not correctly resolved"
-
-    return True, "Successfully identified as a 3-oxo-5beta-steroid with the appropriate structure and configuration"
+    return True, "Molecule is identified as a 3-oxo-5beta-steroid with appropriate stereochemistry"
