@@ -48,25 +48,27 @@ def is_macrolide(smiles: str):
         return False, "Ester group not part of a ring"
 
     # More flexible polyketide-like structure check
-    # Look for multiple carbonyl and hydroxyl groups
+    # Look for multiple oxygen-containing functional groups
+    oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if oxygen_count < 3:
+        return False, "Too few oxygen atoms for macrolide"
+
+    # Check for typical macrolide features
+    # Count carbonyl groups (C=O)
     carbonyl_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6 and 
                         any(bond.GetBondType() == Chem.rdchem.BondType.DOUBLE and 
                             bond.GetOtherAtom(atom).GetAtomicNum() == 8 
                             for bond in atom.GetBonds()))
     
+    # Count hydroxyl groups (OH)
     hydroxyl_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and 
                         any(bond.GetBondType() == Chem.rdchem.BondType.SINGLE and 
                             bond.GetOtherAtom(atom).GetAtomicNum() == 1 
                             for bond in atom.GetBonds()))
     
-    if carbonyl_count < 2 or hydroxyl_count < 2:
-        return False, "Insufficient carbonyl/hydroxyl groups for polyketide structure"
-
-    # Additional checks for typical macrolide features
-    # Count oxygen atoms (macrolides typically have multiple oxygens)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count < 3:
-        return False, "Too few oxygen atoms for macrolide"
+    # Relaxed requirement for polyketide-like structure
+    if carbonyl_count + hydroxyl_count < 2:
+        return False, "Insufficient oxygen-containing functional groups for macrolide"
 
     # Check molecular weight (macrolides are typically >300 Da)
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
@@ -78,4 +80,4 @@ def is_macrolide(smiles: str):
     if c_count < 20:
         return False, "Too few carbons for typical macrolide"
 
-    return True, "Contains macrocyclic lactone ring with 12+ members and polyketide-derived structure"
+    return True, "Contains macrocyclic lactone ring with 12+ members and oxygen-rich structure"
