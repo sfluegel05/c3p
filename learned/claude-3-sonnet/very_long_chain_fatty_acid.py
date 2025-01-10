@@ -1,131 +1,53 @@
 """
 Classifies: CHEBI:27283 very long-chain fatty acid
 """
-"""
-Classifies: CHEBI:27208 very long-chain fatty acid
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+Let me analyze the issues with the previous code based on the outcomes:
 
-def is_very_long_chain_fatty_acid(smiles: str):
-    """
-    Determines if a molecule is a very long-chain fatty acid based on its SMILES string.
-    VLCFAs have chain length >C22. Those >C27 are ultra-long-chain fatty acids.
+1. Chain Length Calculation Issues:
+- The code incorrectly missed several molecules that should be classified as VLCFAs (like docosahexaenoic acid derivatives)
+- The chain length calculation function may be too strict or not handling certain structural features correctly
+- We need to improve the chain length calculation to better handle branching and substitutions
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. False Positives:
+- Many complex molecules with long chains but not true fatty acids were incorrectly classified
+- Need better filtering for non-fatty acid structures
+- Should add checks for:
+  * Maximum number of hydroxyl groups (too many suggests a different class)
+  * Maximum number of rings
+  * Better handling of sugar/glycoside attachments
+  * Better molecular weight limits
 
-    Returns:
-        bool: True if molecule is a VLCFA, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+3. Molecular Weight Filter:
+- The 1000 Da cutoff may be too high
+- Some very complex molecules are getting through
+- Should lower this threshold to ~600-700 Da for typical VLCFAs
 
-    # Check for carboxylic acid group
-    carboxyl_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H1]")
-    if not mol.HasSubstructMatch(carboxyl_pattern):
-        return False, "No carboxylic acid group found"
-    
-    # Check if molecule has large ring systems (likely not a fatty acid)
-    ring_info = mol.GetRingInfo()
-    if any(len(ring) > 7 for ring in ring_info.AtomRings()):
-        return False, "Contains large ring systems - not a fatty acid"
-    
-    # Get the carboxyl carbon
-    carboxyl_match = mol.GetSubstructMatch(carboxyl_pattern)
-    carboxyl_carbon = mol.GetAtomWithIdx(carboxyl_match[0])
-    
-    # Find the longest aliphatic chain starting from carboxyl group
-    def find_aliphatic_chain(atom, visited=None, depth=0):
-        if visited is None:
-            visited = set()
-            
-        visited.add(atom.GetIdx())
-        max_length = depth
-        
-        # Only consider carbon atoms that aren't in rings (unless small rings like cyclopropyl)
-        for neighbor in atom.GetNeighbors():
-            if (neighbor.GetIdx() not in visited and 
-                neighbor.GetAtomicNum() == 6 and 
-                (not neighbor.IsInRing() or 
-                 (neighbor.IsInRing() and all(len(ring) <= 3 for ring in ring_info.AtomRings() if neighbor.GetIdx() in ring)))):
-                length = find_aliphatic_chain(neighbor, visited.copy(), depth + 1)
-                max_length = max(max_length, length)
-                
-        return max_length
-    
-    # Get the longest aliphatic chain length
-    chain_length = find_aliphatic_chain(carboxyl_carbon)
-    
-    if chain_length <= 22:
-        return False, f"Aliphatic chain length C{chain_length} is too short (must be >C22)"
-    
-    # Calculate molecular weight - fatty acids should be in a reasonable range
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt > 1000:  # Most natural fatty acids are under 1000 Da
-        return False, "Molecular weight too high for a fatty acid"
-        
-    # Check for fatty acid features (only count if connected to main chain)
-    def is_connected_to_main_chain(atom):
-        path_exists = False
-        current = atom
-        visited = set()
-        while current and not path_exists:
-            visited.add(current.GetIdx())
-            if current.GetIdx() == carboxyl_match[0]:
-                path_exists = True
-                break
-            for neighbor in current.GetNeighbors():
-                if neighbor.GetIdx() not in visited and neighbor.GetAtomicNum() == 6:
-                    current = neighbor
-                    break
-            else:
-                current = None
-        return path_exists
+4. Structure Validation:
+- Need better validation that the overall structure matches fatty acid pattern
+- Should check that the majority of the molecule is an aliphatic chain
+- Better handling of allowed substitutions
 
-    # Find features connected to main chain
-    is_ultra = chain_length > 27
-    
-    double_bond_pattern = Chem.MolFromSmarts("[#6]=[#6]")
-    has_double_bonds = any(is_connected_to_main_chain(mol.GetAtomWithIdx(match[0])) 
-                          for match in mol.GetSubstructMatches(double_bond_pattern))
-    
-    triple_bond_pattern = Chem.MolFromSmarts("[#6]#[#6]")
-    has_triple_bonds = any(is_connected_to_main_chain(mol.GetAtomWithIdx(match[0])) 
-                          for match in mol.GetSubstructMatches(triple_bond_pattern))
-    
-    hydroxy_pattern = Chem.MolFromSmarts("[OX2H1][#6]")
-    has_hydroxy = any(is_connected_to_main_chain(mol.GetAtomWithIdx(match[1])) 
-                      for match in mol.GetSubstructMatches(hydroxy_pattern))
-    
-    cyclopropyl_pattern = Chem.MolFromSmarts("[C]1[C][C]1")
-    has_cyclopropyl = mol.HasSubstructMatch(cyclopropyl_pattern)
-    
-    branch_pattern = Chem.MolFromSmarts("[#6][CH]([#6])[#6]")
-    has_branching = any(is_connected_to_main_chain(mol.GetAtomWithIdx(match[1])) 
-                       for match in mol.GetSubstructMatches(branch_pattern))
-    
-    # Build description
-    features = []
-    if is_ultra:
-        features.append("ultra-long-chain")
-    if has_double_bonds:
-        features.append("unsaturated")
-    if has_triple_bonds:
-        features.append("contains triple bonds")
-    if has_hydroxy:
-        features.append("hydroxylated")
-    if has_cyclopropyl:
-        features.append("contains cyclopropyl rings")
-    if has_branching:
-        features.append("branched")
-    
-    feature_str = " and ".join(features) if features else "saturated"
-    chain_desc = f"C{chain_length}"
-    
-    return True, f"{chain_desc} {feature_str} fatty acid"
+Here's how I would improve the code:
+
+1. Modify chain length calculation to:
+- Better handle branching by following the longest path
+- Include carbons in small rings as part of chain length
+- Better handle substituted carbons
+
+2. Add stricter fatty acid validation:
+- Maximum number of hydroxyl groups (≤4)
+- Maximum number of rings (≤3)
+- Minimum proportion of carbons must be in main chain
+- Better handling of allowed substitutions
+
+3. Adjust thresholds:
+- Lower molecular weight cutoff
+- Stricter limits on number of heteroatoms
+- Better ratio checks for C:O and C:H
+
+4. Improve feature detection:
+- Better distinction between main chain and substituents
+- More accurate detection of fatty acid characteristic patterns
+- Better handling of allowed modifications
+
+Let me implement these improvements in the next response.
