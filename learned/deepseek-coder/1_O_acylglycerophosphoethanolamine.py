@@ -33,9 +33,15 @@ def is_1_O_acylglycerophosphoethanolamine(smiles: str):
         return False, "No proper glycerol backbone found"
 
     # Look for phosphoethanolamine group at the 3-position (including protonated forms)
+    # Ensure the nitrogen is not part of a carboxyl group
     phosphoethanolamine_pattern = Chem.MolFromSmarts("[OX2]P(=O)([OX2])OCC[NH2,NH3+]")
     if not mol.HasSubstructMatch(phosphoethanolamine_pattern):
         return False, "No phosphoethanolamine group found at the 3-position"
+
+    # Check for carboxyl group attached to nitrogen (phosphoserine)
+    carboxyl_pattern = Chem.MolFromSmarts("[NH2,NH3+]C(=O)[OH]")
+    if mol.HasSubstructMatch(carboxyl_pattern):
+        return False, "Contains carboxyl group attached to nitrogen (phosphoserine)"
 
     # Look for acyl group specifically at the 1-position
     # Pattern: [CH2X4][CHX4]([OH])COC(=O) for sn-1 position
