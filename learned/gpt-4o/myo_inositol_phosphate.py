@@ -20,21 +20,21 @@ def is_myo_inositol_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define a more flexible SMARTS pattern for a cyclohexane ring in inositols
-    myo_inositol_pattern = Chem.MolFromSmarts("C1([OH])C([OH])C([OH])C([OH])C([OH])C1[OH]")
+    # Correct SMARTS pattern for myo-inositol recognizing its stereochemistry and structure
+    myo_inositol_pattern = Chem.MolFromSmarts("[C@H]1(O)C(O)C([OH])C([OH])C([OH])C1([OH])")
     
-    # Check for the myo-inositol backbone
+    # Check for the myo-inositol backbone and its specific stereochemistry
     if not mol.HasSubstructMatch(myo_inositol_pattern):
-        return False, "No myo-inositol backbone found"
+        return False, "No myo-inositol backbone with correct stereochemistry found"
     
-    # Check for the presence of any phosphate groups attached to the inositol
-    phosphate_pattern = Chem.MolFromSmarts("[$(O[P](=O)(O)O)]") # Matches phosphate groups
+    # Check for the presence of phosphate groups linked to inositol
+    phosphate_pattern = Chem.MolFromSmarts("[O,P](=O)(O)O") # Matches phosphate or phosphoric anions
     if not mol.HasSubstructMatch(phosphate_pattern):
         return False, "No phosphate groups found"
-    
-    # Get a count of phosphate groups attached to the myo-inositol backbone
+        
+    # Validate attachment of phosphate groups to the backbone
     phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
     if len(phosphate_matches) == 0:
         return False, "No phosphate groups attached to inositol backbone"
-
+    
     return True, "Contains myo-inositol backbone with one or more phosphate groups"
