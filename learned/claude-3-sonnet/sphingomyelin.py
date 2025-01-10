@@ -23,51 +23,71 @@ def is_sphingomyelin(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Check for phosphocholine group (-OP(=O)([O-])OCC[N+](C)(C)C)
-    phosphocholine = Chem.MolFromSmarts('[OP](=O)([O-])OCC[N+](C)(C)C')
-    if not mol.HasSubstructMatch(phosphocholine):
+
+    # Check for phosphocholine group with more flexible pattern
+    # Allow for different representations of the phosphocholine group
+    phosphocholine_patterns = [
+        '[OX2]P(=O)([OX2-])OCC[NX4+](C)(C)C',
+        '[OX2]P([OX2-])(=O)OCC[NX4+](C)(C)C'
+    ]
+    has_phosphocholine = False
+    for pattern in phosphocholine_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            has_phosphocholine = True
+            break
+    if not has_phosphocholine:
         return False, "Missing phosphocholine group"
 
     # Check for amide linkage (-NC(=O)-)
-    amide = Chem.MolFromSmarts('[NX3][CX3](=[OX1])')
+    amide = Chem.MolFromSmarts('[NX3][CX3](=[OX1])[#6]')
     if not mol.HasSubstructMatch(amide):
         return False, "Missing amide linkage"
-    
-    # Check for hydroxyl group (characteristic of sphingoid base)
-    hydroxyl = Chem.MolFromSmarts('[OH1]')
-    if not mol.HasSubstructMatch(hydroxyl):
-        return False, "Missing hydroxyl group"
 
-    # Count carbons - sphingomyelins typically have long carbon chains
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 20:
-        return False, "Too few carbons for sphingomyelin"
+    # Check for sphingoid base characteristics
+    # Look for either sphingosine (with double bond) or sphinganine (without double bond) backbone
+    sphingoid_patterns = [
+        # Pattern for sphingosine-type backbone (with double bond)
+        '[OX2H][CX4][CX4]([NX3])[CX4]O[PX4]',
+        # Pattern for sphinganine-type backbone (saturated)
+        '[OX2H][CX4][CX4]([NX3])[CX4]O[PX4]',
+    ]
+    has_sphingoid = False
+    for pattern in sphingoid_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            has_sphingoid = True
+            break
+    if not has_sphingoid:
+        return False, "Missing sphingoid base structure"
 
-    # Check molecular weight - sphingomyelins typically >600 Da
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 600:
-        return False, "Molecular weight too low for sphingomyelin"
-
-    # Count rotatable bonds to verify long chains
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 15:
-        return False, "Too few rotatable bonds for sphingomyelin"
-
-    # Check for presence of required atoms
-    required_atoms = {'C': 20, 'N': 2, 'O': 4, 'P': 1}
+    # Count key atoms to verify composition
     atom_counts = {}
     for atom in mol.GetAtoms():
         symbol = atom.GetSymbol()
         atom_counts[symbol] = atom_counts.get(symbol, 0) + 1
-    
-    for element, min_count in required_atoms.items():
-        if atom_counts.get(element, 0) < min_count:
-            return False, f"Insufficient {element} atoms"
 
-    # Look for sphingoid base pattern (long carbon chain with OH and NH)
-    sphingoid_base = Chem.MolFromSmarts('[CH2,CH3]-[CH2]~[CH2]~[CH2]~[CH,CH2]-[CH](-[OH])-[CH](-[NH]-[C])-[CH2]')
-    if not mol.HasSubstructMatch(sphingoid_base):
-        return False, "Missing sphingoid base pattern"
+    # Verify minimum requirements for sphingomyelin
+    if atom_counts.get('C', 0) < 20:
+        return False, "Insufficient carbon atoms for sphingomyelin"
+    if atom_counts.get('N', 0) != 2:
+        return False, "Must have exactly 2 nitrogen atoms"
+    if atom_counts.get('P', 0) != 1:
+        return False, "Must have exactly 1 phosphorus atom"
+    if atom_counts.get('O', 0) < 4:
+        return False, "Insufficient oxygen atoms"
+
+    # Check for long carbon chains (characteristic of sphingomyelin)
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 10:
+        return False, "Insufficient chain length for sphingomyelin"
+
+    # Calculate molecular weight
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 500:  # Lowered from 600 to be more inclusive
+        return False, "Molecular weight too low for sphingomyelin"
+
+    # Additional check for hydroxyl group
+    hydroxyl = Chem.MolFromSmarts('[OX2H]')
+    if not mol.HasSubstructMatch(hydroxyl):
+        return False, "Missing required hydroxyl group"
 
     return True, "Contains sphingoid base with amide-linked fatty acid and phosphocholine group"
