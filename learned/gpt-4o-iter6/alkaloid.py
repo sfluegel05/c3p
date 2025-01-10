@@ -6,6 +6,8 @@ from rdkit import Chem
 def is_alkaloid(smiles: str):
     """
     Determines if a molecule is an alkaloid based on its SMILES string.
+    An alkaloid is characterized by having a basic nitrogen atom within a heterocyclic ring,
+    and typically does not resemble a peptide or related compound.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -24,8 +26,7 @@ def is_alkaloid(smiles: str):
     if not has_nitrogen:
         return False, "Molecule does not contain nitrogen"
 
-    # Check for heterocyclic structure
-    # A basic check is to see if there is a ring that contains nitrogen
+    # Check for heterocyclic nitrogen
     ring_info = mol.GetRingInfo()
     has_nitrogen_in_ring = False
     for ring in ring_info.AtomRings():
@@ -36,15 +37,15 @@ def is_alkaloid(smiles: str):
     if not has_nitrogen_in_ring:
         return False, "Nitrogen is not part of a heterocyclic structure"
 
-    # Check basic nature
-    # This is tricky to identify directly from SMILES without additional computational methods.
-    # Here, we assume if it has nitrogen in heterocyclic format, it might be basic.
-    
-    # Exclude amino acids, peptides, etc. (complex to do with SMILES alone)
-    # We take a conservative approach and assume certain features might indicate these exclusions.
-    for atom in mol.GetAtoms():
-        atomic_num = atom.GetAtomicNum()
-        if atomic_num == 8:  # Oxygen-heavy might indicate non-alkaloid features
-            return False, "Appears more like a peptide or related compound"
+    # Avoid classifying peptide-like structures
+    # Look for amide groups typically found in peptides
+    amide_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[#6]")
+    if mol.HasSubstructMatch(amide_pattern):
+        return False, "Appears more like a peptide or related compound"
+
+    # Avoid small non-alkaloid amines
+    non_alkaloid_amine_pattern = Chem.MolFromSmarts("[NX3][CX4]")
+    if mol.HasSubstructMatch(non_alkaloid_amine_pattern) and not has_nitrogen_in_ring:
+        return False, "Nitrogen possibly part of a simple amine rather than heterocycle"
 
     return True, "Contains nitrogen in a heterocyclic structure typical of alkaloids"
