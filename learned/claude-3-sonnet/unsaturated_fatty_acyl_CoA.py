@@ -24,36 +24,74 @@ def is_unsaturated_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for CoA pattern
-    # More general adenine pattern that accounts for different tautomers
-    adenine_pattern = Chem.MolFromSmarts("c1nc(N)nc2ncnc12")
-    if not mol.HasSubstructMatch(adenine_pattern):
-        # Try alternative adenine pattern
-        adenine_pattern2 = Chem.MolFromSmarts("c1nc(N)nc2[nH]cnc12")
-        if not mol.HasSubstructMatch(adenine_pattern2):
-            return False, "No adenine moiety found"
+    # Check for adenine using multiple possible patterns
+    adenine_patterns = [
+        "c1ncnc2[nH]cnc12",  # Basic adenine core
+        "c1ncnc2ncnc12",     # Alternative representation
+        "c1nc(N)nc2[nH]cnc12",  # With amino group
+        "c1nc(N)nc2ncnc12",     # Another amino form
+        "[nH]1cnc2c(ncnc2n1)",  # Different tautomer
+        "n1cnc2c(N)ncnc12"      # Yet another form
+    ]
+    
+    found_adenine = False
+    for pattern in adenine_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            found_adenine = True
+            break
+    
+    if not found_adenine:
+        return False, "No adenine moiety found"
 
-    # Look for ribose-phosphate portion of CoA
-    ribose_phosphate = Chem.MolFromSmarts("OCC1OC(n2cnc3c(N)ncnc32)C(O)C1OP(O)(O)=O")
-    if not mol.HasSubstructMatch(ribose_phosphate):
-        # Try alternative pattern focusing on key phosphate connections
-        phosphate_pattern = Chem.MolFromSmarts("COP(O)(=O)OP(O)(=O)O")
-        if not mol.HasSubstructMatch(phosphate_pattern):
-            return False, "Missing characteristic phosphate groups of CoA"
+    # Look for phosphate groups characteristic of CoA
+    phosphate_patterns = [
+        "OP(O)(=O)OP(O)(=O)O",
+        "P(O)(O)(=O)OP(O)(O)=O"
+    ]
+    
+    found_phosphates = False
+    for pattern in phosphate_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            found_phosphates = True
+            break
+            
+    if not found_phosphates:
+        return False, "Missing characteristic phosphate groups of CoA"
     
     # Check for pantetheine arm with thioester
-    pantetheine_pattern = Chem.MolFromSmarts("NCCC(=O)NCCS")
-    if not mol.HasSubstructMatch(pantetheine_pattern):
+    pantetheine_patterns = [
+        "NCCC(=O)NCCS",
+        "SCCNC(=O)CCNC"
+    ]
+    
+    found_pantetheine = False
+    for pattern in pantetheine_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            found_pantetheine = True
+            break
+            
+    if not found_pantetheine:
         return False, "Missing characteristic pantetheine arm of CoA"
 
-    # Check for thioester linkage (C(=O)S)
-    thioester_pattern = Chem.MolFromSmarts("C(=O)S")
-    if not mol.HasSubstructMatch(thioester_pattern):
+    # Check for thioester linkage
+    thioester_patterns = [
+        "C(=O)S",
+        "SC(=O)"
+    ]
+    
+    found_thioester = False
+    for pattern in thioester_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            found_thioester = True
+            break
+            
+    if not found_thioester:
         return False, "No thioester linkage found"
 
     # Count number of double bonds in the fatty acid portion
     # Look for C=C bonds that are not part of the adenine ring
-    double_bonds = mol.GetSubstructMatches(Chem.MolFromSmarts("C=C"))
+    double_bond_pattern = Chem.MolFromSmarts("C=C")
+    double_bonds = mol.GetSubstructMatches(double_bond_pattern)
     
     # Get aromatic atoms
     aromatic_atoms = {atom.GetIdx() for atom in mol.GetAromaticAtoms()}
@@ -68,8 +106,18 @@ def is_unsaturated_fatty_acyl_CoA(smiles: str):
         return False, "No carbon-carbon double bonds found in fatty acid portion"
 
     # Check for reasonable chain length (at least 4 carbons in fatty acid portion)
-    carbon_chain = Chem.MolFromSmarts("CCCC")
-    if not mol.HasSubstructMatch(carbon_chain):
+    carbon_chain_patterns = [
+        "CCCC",
+        "C~C~C~C"  # More flexible pattern allowing any bonds between carbons
+    ]
+    
+    found_chain = False
+    for pattern in carbon_chain_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            found_chain = True
+            break
+            
+    if not found_chain:
         return False, "Fatty acid portion too short"
 
     # Success case - molecule has all required features
