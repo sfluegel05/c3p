@@ -29,12 +29,19 @@ def is_flavonoids(smiles: str):
     # Look for the C6-C3-C6 skeleton pattern
     # This pattern matches two aromatic rings connected by a three-carbon chain, allowing for variations
     skeleton_pattern = Chem.MolFromSmarts("[c]1[c][c][c][c][c]1-[CX4]-[CX4]-[CX4]-[c]2[c][c][c][c][c]2")
-    if not mol.HasSubstructMatch(skeleton_pattern):
-        # Try alternative patterns for variations in the C6-C3-C6 skeleton
-        skeleton_pattern_alt1 = Chem.MolFromSmarts("[c]1[c][c][c][c][c]1-[CX4]-[CX4]-[c]2[c][c][c][c][c]2")
-        skeleton_pattern_alt2 = Chem.MolFromSmarts("[c]1[c][c][c][c][c]1-[CX4]-[c]2[c][c][c][c][c]2")
-        if not (mol.HasSubstructMatch(skeleton_pattern_alt1) or mol.HasSubstructMatch(skeleton_pattern_alt2)):
-            return False, "No C6-C3-C6 skeleton found"
+    skeleton_pattern_alt1 = Chem.MolFromSmarts("[c]1[c][c][c][c][c]1-[CX4]-[CX4]-[c]2[c][c][c][c][c]2")
+    skeleton_pattern_alt2 = Chem.MolFromSmarts("[c]1[c][c][c][c][c]1-[CX4]-[c]2[c][c][c][c][c]2")
+    skeleton_pattern_alt3 = Chem.MolFromSmarts("[c]1[c][c][c][c][c]1-[CX4]-[CX4]-[CX4]-[c]2[c][c][c][c][c]2")
+    skeleton_pattern_alt4 = Chem.MolFromSmarts("[c]1[c][c][c][c][c]1-[CX4]-[CX4]-[c]2[c][c][c][c][c]2")
+    skeleton_pattern_alt5 = Chem.MolFromSmarts("[c]1[c][c][c][c][c]1-[CX4]-[c]2[c][c][c][c][c]2")
+
+    if not (mol.HasSubstructMatch(skeleton_pattern) or 
+            mol.HasSubstructMatch(skeleton_pattern_alt1) or 
+            mol.HasSubstructMatch(skeleton_pattern_alt2) or 
+            mol.HasSubstructMatch(skeleton_pattern_alt3) or 
+            mol.HasSubstructMatch(skeleton_pattern_alt4) or 
+            mol.HasSubstructMatch(skeleton_pattern_alt5)):
+        return False, "No C6-C3-C6 skeleton found"
 
     # Count aromatic rings to ensure there are at least two
     aromatic_rings = rdMolDescriptors.CalcNumAromaticRings(mol)
