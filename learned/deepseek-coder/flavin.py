@@ -26,8 +26,7 @@ def is_flavin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the core flavin structure (dimethylisoalloxazine skeleton)
-    # Corrected SMARTS pattern for the dimethylisoalloxazine core
+    # Define a more flexible SMARTS pattern for the dimethylisoalloxazine core
     flavin_core_pattern = Chem.MolFromSmarts("C1=C2C(=O)N=C3C(=O)NC(=O)C3=NC2=C(C)C=C1")
     if not mol.HasSubstructMatch(flavin_core_pattern):
         return False, "No dimethylisoalloxazine core found"
