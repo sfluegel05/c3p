@@ -22,19 +22,19 @@ def is_polar_amino_acid(smiles: str):
         if mol is None:
             return False, "Invalid SMILES string"
 
-        # Identify amino acid backbone: Look for NH2-C-C(=O)-O
-        backbone_pattern = Chem.MolFromSmarts("[NX3H2][CX4][CX3](=O)[OX1H,OX2]")
+        # Identify broadened amino acid backbone: Look for NH2-C-CO or similar motifs
+        backbone_pattern = Chem.MolFromSmarts("[NX3H2,NH,NH2,NH3+][CX4,CX3][CX3](=O)[OX1H,OX2,OX1-,O-]")
         if not mol.HasSubstructMatch(backbone_pattern):
             return False, "No amino acid backbone found"
 
         # Identify polar side chains capable of forming hydrogen bonds
         polar_patterns = [
-            Chem.MolFromSmarts("[OX2H]"),  # hydroxyl group
-            Chem.MolFromSmarts("[CX3](=O)[NX3]"),  # amide group
-            Chem.MolFromSmarts("[CX3](=O)[OX2H]"),  # carboxyl group in R group
-            Chem.MolFromSmarts("[NX3][CX3](=O)"),  # basic nitrogen, e.g., arginine
-            Chem.MolFromSmarts("[nX2]"),  # heterocyclic nitrogen, e.g., in histidine
-            Chem.MolFromSmarts("[SX2H]")  # thiol group, e.g., in cysteine
+            Chem.MolFromSmarts("[OX2H]"),  # Hydroxyl group
+            Chem.MolFromSmarts("[$([CX3](=O)[NX3]),$([NX3]=C)]"),  # Amide or basic nitrogen group
+            Chem.MolFromSmarts("[CX3](=O)[OX2H,-O]"),  # Carboxylic acid or carboxylate
+            Chem.MolFromSmarts("[nX2]"),  # Heterocyclic nitrogens, e.g., in histidine
+            Chem.MolFromSmarts("[SX2H]"),  # Thiol group, e.g., in cysteine
+            Chem.MolFromSmarts("[NX3][CX3]=[O,N]"),  # Non-terminal amide groups
         ]
 
         for pattern in polar_patterns:
