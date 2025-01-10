@@ -8,7 +8,7 @@ def is_3_sn_phosphatidyl_L_serine(smiles: str):
     Determines if a molecule is a 3-sn-phosphatidyl-L-serine based on its SMILES string.
     This compound contains a glycerol backbone with attached fatty acids and a phosphate group
     connected to L-serine.
-
+    
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -23,18 +23,20 @@ def is_3_sn_phosphatidyl_L_serine(smiles: str):
         return False, "Invalid SMILES string"
     
     # Define SMARTS patterns to detect the required features
-    # Glycerol backbone pattern
-    glycerol_pattern = Chem.MolFromSmarts("OCC(O)CO")  # Simple glycerol core
+    # Glycerol backbone stereo configuration (more generalized pattern)
+    glycerol_pattern = Chem.MolFromSmarts("[C@H](OC)CO")
     if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "Missing glycerol backbone"
+        return False, "Missing or incorrect glycerol backbone stereochemistry"
     
-    # Phosphate-serine connection
-    phosphate_serine_pattern = Chem.MolFromSmarts("COP([O-])(=O)OC[C@H](N)C(=O)O")  # Connection to L-serine
+    # Phosphate-serine connection allowing variation in charge and stereochemistry
+    phosphate_serine_pattern = Chem.MolFromSmarts("COP(O)(=O)OC[C@H](N)C(=O)O")
     if not mol.HasSubstructMatch(phosphate_serine_pattern):
-        return False, "No phosphate-serine link found"
+        phosphate_serine_neg_charge_pattern = Chem.MolFromSmarts("COP(=O)([O-])OC[C@H](N)C(=O)O")
+        if not mol.HasSubstructMatch(phosphate_serine_neg_charge_pattern):
+            return False, "No phosphate-serine link found"
     
-    # Look for ester linkages indicating fatty acid chains
-    fatty_acid_ester_pattern = Chem.MolFromSmarts("C(=O)OCC")  # Simplified ester linkage
+    # Look for ester linkages indicating fatty acid chains with flexibility in chain lengths
+    fatty_acid_ester_pattern = Chem.MolFromSmarts("C(=O)O[C@H]")
     ester_matches = mol.GetSubstructMatches(fatty_acid_ester_pattern)
     if len(ester_matches) < 2:
         return False, f"Found {len(ester_matches)} ester linkages, need at least 2"
