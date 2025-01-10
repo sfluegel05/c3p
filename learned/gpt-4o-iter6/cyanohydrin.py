@@ -2,7 +2,6 @@
 Classifies: CHEBI:23437 cyanohydrin
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_cyanohydrin(smiles: str):
     """
@@ -23,8 +22,9 @@ def is_cyanohydrin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the cyanohydrin pattern: a carbon with a hydroxyl group and nitrile
-    cyanohydrin_pattern = Chem.MolFromSmarts("[#6]-[#8H1]-[#6]#[#7]")
+    # Define the corrected cyanohydrin pattern
+    # A carbon with a hydroxyl group (OH) and an adjacent nitrile group (C#N)
+    cyanohydrin_pattern = Chem.MolFromSmarts("[#6]([#8H1])[#6]#[#7]")
 
     if mol.HasSubstructMatch(cyanohydrin_pattern):
         return True, "Contains a hydroxyl group adjacent to a nitrile group"
