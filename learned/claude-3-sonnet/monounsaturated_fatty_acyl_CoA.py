@@ -20,59 +20,75 @@ def is_monounsaturated_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for CoA moiety components
-    # Look for adenine pattern
+    # Neutralize charges for consistent handling
+    uncharger = Chem.AllChem.UnchargeModel()
+    uncharged_mol = uncharger.uncharge(mol)
+
+    # Check for complete CoA structure
+    # Look for adenine nucleotide
     adenine_pattern = Chem.MolFromSmarts("c1nc(N)c2ncnc2n1")
-    if not mol.HasSubstructMatch(adenine_pattern):
+    if not uncharged_mol.HasSubstructMatch(adenine_pattern):
         return False, "No CoA moiety found (missing adenine)"
     
-    # Look for phosphate groups (need at least 3 for CoA)
-    phosphate_pattern = Chem.MolFromSmarts("OP(=O)(O)O")
-    phosphate_matches = len(mol.GetSubstructMatches(phosphate_pattern))
-    if phosphate_matches < 3:
-        return False, f"Insufficient phosphate groups for CoA (found {phosphate_matches}, need ≥3)"
+    # Look for ribose-phosphate backbone
+    ribose_phosphate = Chem.MolFromSmarts("[CH2]OP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(=O)(O)O)n1cnc2c(N)ncnc12")
+    if not uncharged_mol.HasSubstructMatch(ribose_phosphate):
+        return False, "Missing or incorrect ribose-phosphate backbone"
 
-    # Look for thioester linkage (more flexible pattern)
-    thioester_pattern = Chem.MolFromSmarts("[S;X2][C;X3](=[O;X1])")
-    if not mol.HasSubstructMatch(thioester_pattern):
-        return False, "No thioester linkage found"
+    # Look for pantetheine arm with correct structure
+    pantetheine = Chem.MolFromSmarts("CC(C)(COP(=O)(O))[C@@H](O)C(=O)NCCC(=O)NCCSC(=O)")
+    if not uncharged_mol.HasSubstructMatch(pantetheine):
+        return False, "Missing or incorrect pantetheine arm"
 
-    # Look for amide bonds characteristic of pantetheine
-    amide_pattern = Chem.MolFromSmarts("[NX3][C;X3](=[O;X1])[CX4]")
-    amide_matches = len(mol.GetSubstructMatches(amide_pattern))
-    if amide_matches < 2:
-        return False, f"Missing pantetheine amide bonds (found {amide_matches}, need ≥2)"
+    # Look for thioester linkage specifically connected to a carbon chain
+    thioester_pattern = Chem.MolFromSmarts("[S;X2][C;X3](=[O;X1])[C;X4]")
+    thioester_matches = uncharged_mol.GetSubstructMatches(thioester_pattern)
+    if not thioester_matches:
+        return False, "No thioester linkage found or incorrect connectivity"
 
-    # Count non-aromatic double bonds
-    double_bond_pattern = Chem.MolFromSmarts("[CX3]=[CX3]")
-    double_bonds = mol.GetSubstructMatches(double_bond_pattern)
+    # Count non-aromatic, non-conjugated double bonds in the fatty acid portion
+    double_bond_pattern = Chem.MolFromSmarts("[CX4,CX3][CX3]=[CX3][CX4,CX3]")
+    double_bonds = uncharged_mol.GetSubstructMatches(double_bond_pattern)
     
-    # Filter out aromatic bonds
-    non_aromatic_double_bonds = []
+    # Filter out double bonds in rings or conjugated systems
+    valid_double_bonds = []
     for bond in double_bonds:
-        atom1, atom2 = mol.GetAtomWithIdx(bond[0]), mol.GetAtomWithIdx(bond[1])
-        if not (atom1.IsInRing() and atom2.IsInRing() and atom1.GetIsAromatic() and atom2.GetIsAromatic()):
-            non_aromatic_double_bonds.append(bond)
+        atoms = [uncharged_mol.GetAtomWithIdx(i) for i in bond]
+        # Check if any atom is in a ring
+        if any(atom.IsInRing() for atom in atoms):
+            continue
+        # Check for conjugation
+        if any(atom.GetIsConjugated() for atom in atoms):
+            continue
+        valid_double_bonds.append(bond)
+
+    if len(valid_double_bonds) != 1:
+        return False, f"Found {len(valid_double_bonds)} valid C=C double bonds, need exactly 1"
+
+    # Verify fatty acid chain length and connectivity
+    thioester_sulfur = uncharged_mol.GetAtomWithIdx(thioester_matches[0][0])
+    carbon_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    carbon_chains = uncharged_mol.GetSubstructMatches(carbon_chain_pattern)
     
-    if len(non_aromatic_double_bonds) != 1:
-        return False, f"Found {len(non_aromatic_double_bonds)} C=C double bonds, need exactly 1"
+    # Check if there's a continuous carbon chain from thioester to double bond
+    valid_chain = False
+    for chain in carbon_chains:
+        if any(idx in chain for db_bond in valid_double_bonds for idx in db_bond):
+            path_to_thioester = False
+            for atom_idx in chain:
+                if len(Chem.FindAllPathsOfLengthN(uncharged_mol, 3, thioester_sulfur.GetIdx(), atom_idx)) > 0:
+                    path_to_thioester = True
+                    break
+            if path_to_thioester:
+                valid_chain = True
+                break
 
-    # Verify the presence of a fatty acid chain
-    # Get carbon chain length
-    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if carbon_count < 20:  # CoA itself has about 23 carbons, so fatty acyl-CoA should have more
-        return False, f"Carbon count ({carbon_count}) too low for fatty acyl-CoA"
+    if not valid_chain:
+        return False, "No valid fatty acid chain containing the double bond"
 
-    # Verify the double bond is in the fatty acyl portion
-    thioester_matches = mol.GetSubstructMatches(thioester_pattern)
-    if thioester_matches:
-        sulfur_idx = thioester_matches[0][0]
-        for db_atoms in non_aromatic_double_bonds:
-            # Check if we can find a path from the sulfur to both double bond carbons
-            # that doesn't go through the CoA part
-            paths_exist = any(len(Chem.FindAllPathsOfLengthN(mol, 2, sulfur_idx, db_atom)) > 0 
-                            for db_atom in db_atoms)
-            if not paths_exist:
-                return False, "Double bond not in fatty acyl chain"
+    # Additional check for minimum chain length from thioester
+    chain_length = max(len(path) for path in Chem.FindAllPathsOfLengthN(uncharged_mol, 8, thioester_sulfur.GetIdx(), -1))
+    if chain_length < 6:
+        return False, "Fatty acid chain too short"
 
     return True, "Contains CoA moiety and single double bond in fatty acyl chain"
