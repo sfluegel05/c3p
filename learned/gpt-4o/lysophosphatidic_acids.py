@@ -21,19 +21,21 @@ def is_lysophosphatidic_acids(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for glycerol backbone pattern
-    glycerol_pattern = Chem.MolFromSmarts("OCC(O)CO")
+    # Look for flexible glycerol backbone pattern to account for stereochemistry
+    glycerol_pattern = Chem.MolFromSmarts("OC[C@H](O)CO")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
     
-    # Look for phosphate group
-    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)O")
+    # Look for phosphate group with possible stereochemistry
+    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)[O-]")
     if not mol.HasSubstructMatch(phosphate_pattern):
-        return False, "No phosphate group found"
+        phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)O")
+        if not mol.HasSubstructMatch(phosphate_pattern):
+            return False, "No phosphate group found"
     
-    # Look for monoacyl group (-O-C(=O)-R)
-    monoacyl_pattern = Chem.MolFromSmarts("OCOC(=O)")
-    acyl_matches = mol.GetSubstructMatches(monoacyl_pattern)
+    # Look for monoacyl group (-O-C(=O)-R) using a more flexible pattern
+    acyl_pattern = Chem.MolFromSmarts("C(=O)OC")
+    acyl_matches = mol.GetSubstructMatches(acyl_pattern)
     if len(acyl_matches) != 1:
         return False, f"Found {len(acyl_matches)} acyl groups, need exactly 1"
 
