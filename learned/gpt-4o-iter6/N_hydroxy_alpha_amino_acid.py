@@ -23,21 +23,14 @@ def is_N_hydroxy_alpha_amino_acid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define a SMARTS pattern for an alpha amino acid backbone
-    # This is more generic, allowing any substitution and focusing on the carboxy and amino group pattern
-    amino_acid_pattern = Chem.MolFromSmarts("C(C(=O)O)[NH2,NH,N]")
+    # This includes checking for C alpha position with a carboxylic acid and potential substitutions at the nitrogen
+    amino_acid_pattern = Chem.MolFromSmarts("N[C@@H](C)C(=O)O")
     if not mol.HasSubstructMatch(amino_acid_pattern):
         return False, "No alpha amino acid backbone found"
 
-    # Detect if there is an N-Hydroxy group attached to any nitrogen in the substructure
-    has_n_hydroxy = False
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 7:  # Check for nitrogen atoms
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetAtomicNum() == 8 and neighbor.GetDegree() == 1:  # Check for an attached oxygen
-                    has_n_hydroxy = True
-                    break
-    
-    if not has_n_hydroxy:
+    # Define SMARTS for N-hydroxy pattern, ensuring -N(OH) linkage
+    n_hydroxy_pattern = Chem.MolFromSmarts("[N;!R](O)")
+    if not mol.HasSubstructMatch(n_hydroxy_pattern):
         return False, "No N-hydroxy modification found"
 
     return True, "Contains amino acid backbone with N-hydroxy modification"
