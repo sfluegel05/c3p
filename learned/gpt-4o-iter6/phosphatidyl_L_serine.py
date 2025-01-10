@@ -11,29 +11,35 @@ def is_phosphatidyl_L_serine(smiles: str):
         smiles (str): SMILES string of the molecule
     
     Returns:
-        bool: True if the molecule is a phosphatidyl-L-serine, False otherwise
+        bool: True if molecule is a phosphatidyl-L-serine, False otherwise
         str: Reason for classification
     """
     
-    # Convert the SMILES string to an RDKit molecule object.
     mol = Chem.MolFromSmiles(smiles)
-
-    # Return false with a reason if the molecule object cannot be created.
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns for the glycerol backbone linked to serine and the phosphatidyl group.
-    serine_phosphate_pattern = Chem.MolFromSmarts("OC[C@H](N)C(=O)O")
-    phosphatidyl_linkage_pattern = Chem.MolFromSmarts("O[P](=O)(O)[O][C@H]")
+    # Phosphate group pattern: P=O with two oxygens, one being part of a glycerol-like structure
+    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)(O)")
+    if not mol.HasSubstructMatch(phosphate_pattern):
+        return False, "No phosphate group found"
+        
+    # Serine esterified pattern - amino acid backbone (serine) pattern
+    serine_pattern = Chem.MolFromSmarts("C[C@H](N)C(=O)O")
+    if not mol.HasSubstructMatch(serine_pattern):
+        return False, "No serine group esterified to the phosphate"
 
-    # Check for phosphatidyl group attachment and serine configuration
-    if not (mol.HasSubstructMatch(serine_phosphate_pattern) and mol.HasSubstructMatch(phosphatidyl_linkage_pattern)):
-        return False, "No phosphatidyl-L-serine structure found"
+    # Check for glycerol backbone
+    glycerol_pattern = Chem.MolFromSmarts("OCC(O)C")
+    if not mol.HasSubstructMatch(glycerol_pattern):
+        return False, "No glycerol backbone pattern found"
 
-    # Ensure at least two ester-linked fatty acid chains are present based on the core structure
-    fatty_acid_linkage = Chem.MolFromSmarts("C(=O)OC")
-    fatty_acid_chains = mol.GetSubstructMatches(fatty_acid_linkage)
-    if len(fatty_acid_chains) < 2:
-        return False, f"Requires 2 ester-linked fatty acid chains, found {len(fatty_acid_chains)}"
+    # Check for two ester groups connected to the glycerol
+    ester_pattern = Chem.MolFromSmarts("C(=O)O")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    if len(ester_matches) < 2:
+        return False, f"Insufficient ester groups; found {len(ester_matches)}, need at least 2"
 
     return True, "Molecule meets the criteria for phosphatidyl-L-serine"
+
+# Examples can be tested using this function with the SMILES strings provided.
