@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_mineral_nutrient(smiles: str):
     """
     Determines if a compound is a mineral nutrient based on its SMILES string.
-    Focuses on essential inorganic nutrients with simple structures.
+    Extends the range of essential inorganic nutrients with a broader set of elements.
     
     Args:
         smiles (str): SMILES string of the compound
@@ -21,8 +21,8 @@ def is_mineral_nutrient(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define essential metallic elements typically found in nutrients
-    essential_metallic_elements = {'Ca', 'Mg', 'K', 'Na', 'Fe', 'Zn'}
+    # Define broader range of essential metallic elements typically found in nutrients
+    essential_metallic_elements = {'Ca', 'Mg', 'K', 'Na', 'Fe', 'Zn', 'Ba', 'La', 'Cs', 'Al', 'Sb', 'Pd'}
     # Define essential non-metallic elements associated with nutrients
     nutrient_anions = {'P', 'S', 'Cl', 'F', 'O', 'N'}  # Common in simple inorganic salts
 
@@ -36,12 +36,9 @@ def is_mineral_nutrient(smiles: str):
     if not anion_found:
         return False, "No relevant mineral nutrient anions found"
 
-    # Ensure the structure is relatively simple (e.g., not too many rings)
-    if mol.GetRingInfo().NumRings() > 0:
-        return False, "Complex organic structures detected"
-
-    # Determine the simplicity of structure (controlled number of elements)
-    if mol.GetNumAtoms() > 25:
-        return False, "Structure too complex to be a typical nutrient"
+    # Allow more complex structures since some valid nutrients might include them
+    # for magnesium distearate or other larger salts/hydrates
+    if mol.GetNumAtoms() > 50:
+        return False, "Structure unnecessarily complex to be a typical nutrient"
 
     return True, "Structure consistent with mineral nutrients containing essential elements and simple inorganic anions"
