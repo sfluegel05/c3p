@@ -6,7 +6,7 @@ Classifies: Long-chain fatty acids (C13-C22)
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem.GraphDescriptors import LongestPath
+from rdkit.Chem import rdMolDescriptors
 
 def is_long_chain_fatty_acid(smiles: str):
     """
@@ -31,48 +31,50 @@ def is_long_chain_fatty_acid(smiles: str):
     
     # Get all carboxylic acid carbons
     carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
-    if len(carboxyl_matches) > 1:
-        return False, "Multiple carboxylic acid groups found"
     
-    # Find the carboxylic acid carbon
-    carboxyl_carbon = carboxyl_matches[0][0]
+    # Allow for multiple COOH groups but at least one must be terminal
+    terminal_cooh = False
+    for match in carboxyl_matches:
+        carboxyl_carbon = mol.GetAtomWithIdx(match[0])
+        if len([n for n in carboxyl_carbon.GetNeighbors() if n.GetAtomicNum() == 6]) == 1:
+            terminal_cooh = True
+            break
     
-    def count_carbon_chain(mol, start_atom, visited=None):
-        """Helper function to count longest carbon chain from starting atom"""
-        if visited is None:
-            visited = set()
-            
-        visited.add(start_atom)
-        max_length = 0
-        
-        for neighbor in start_atom.GetNeighbors():
-            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:  # Carbon atoms only
-                length = count_carbon_chain(mol, neighbor, visited.copy())
-                max_length = max(max_length, length)
-                
-        return max_length + 1
-    
-    # Count carbons in longest chain containing carboxylic group
-    start_atom = mol.GetAtomWithIdx(carboxyl_carbon)
-    chain_length = count_carbon_chain(mol, start_atom)
-    
-    # Check chain length (13-22 carbons)
-    if chain_length < 13:
-        return False, f"Carbon chain too short ({chain_length} carbons, need 13-22)"
-    if chain_length > 22:
-        return False, f"Carbon chain too long ({chain_length} carbons, need 13-22)"
-        
-    # Additional checks for reasonable molecular composition
-    # Count total carbons and oxygens
+    if not terminal_cooh:
+        return False, "No terminal carboxylic acid group found"
+
+    # Count total carbons
     num_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if num_carbons < 13:
+        return False, f"Too few carbons ({num_carbons}) for long-chain fatty acid"
+    if num_carbons > 30:  # Allow some extra carbons for modifications
+        return False, f"Too many carbons ({num_carbons}) for long-chain fatty acid"
+    
+    # Look for long aliphatic chain pattern
+    # Match carbons connected by single, double, or triple bonds
+    chain_pattern = Chem.MolFromSmarts('C(~C~C~C~C~C~C~C~C~C~C~C~C)')
+    if not mol.HasSubstructMatch(chain_pattern):
+        return False, "No continuous carbon chain of sufficient length"
+    
+    # Count oxygens (fatty acids typically don't have too many oxygens unless modified)
     num_oxygens = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if num_oxygens > 8:  # Allow for some modifications (hydroxy, epoxy, etc.)
+        return False, f"Too many oxygen atoms ({num_oxygens}) for typical fatty acid"
     
-    # Most fatty acids shouldn't have more than 4 oxygens unless they're heavily modified
-    if num_oxygens > 6:
-        return False, "Too many oxygen atoms for typical fatty acid"
+    # Check for reasonable molecular weight
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 200 or mol_wt > 500:  # Typical range for C13-C22 fatty acids with modifications
+        return False, f"Molecular weight ({mol_wt:.1f}) outside typical range for long-chain fatty acids"
     
-    # The main chain should constitute the majority of carbons
-    if num_carbons > chain_length * 2:
-        return False, "Too many carbons outside main chain"
+    # Additional check for reasonable H/C ratio (allowing for some unsaturation)
+    num_hydrogens = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 1)
+    hc_ratio = num_hydrogens / num_carbons
+    if not (1.0 <= hc_ratio <= 2.1):  # Allow for unsaturated and slightly modified structures
+        return False, f"Unusual hydrogen/carbon ratio ({hc_ratio:.1f})"
+    
+    # Count rings - fatty acids typically have 0-1 rings
+    num_rings = rdMolDescriptors.CalcNumRings(mol)
+    if num_rings > 2:
+        return False, f"Too many rings ({num_rings}) for typical fatty acid"
         
-    return True, f"Long-chain fatty acid with {chain_length} carbons in main chain"
+    return True, f"Long-chain fatty acid with {num_carbons} carbons"
