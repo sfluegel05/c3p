@@ -2,6 +2,7 @@
 Classifies: CHEBI:35915 sterol ester
 """
 from rdkit import Chem
+from rdkit.Chem import rdChemReactions
 
 def is_sterol_ester(smiles: str):
     """
@@ -19,22 +20,22 @@ def is_sterol_ester(smiles: str):
     
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
-    if not mol:
+    if mol is None:
         return False, "Invalid SMILES string"
 
-    # Sterol substructure pattern (modified for any typical sterol backbone)
-    # using a more general cyclopentanoperhydrophenanthrene pattern
-    sterol_pattern = Chem.MolFromSmarts("C1CCC2C3CC(C4CCC(C4)C3)C2C1")  # General sterol-like backbone
+    # Define a more flexible sterol backbone pattern
+    # Sterol: Cyclopentanophenanthrene with oxygens on the ring
+    sterol_pattern = Chem.MolFromSmarts("C1CCC2(C(C1)CC3C(C2)CC4C(CC(CC4)C3)O)C")
     if not mol.HasSubstructMatch(sterol_pattern):
         return False, "No sterol backbone found"
 
-    # Ester functional group pattern, general for esters
-    # O-C(=O)- linkage indicative of ester bonds
-    ester_pattern = Chem.MolFromSmarts("C(=O)O")
-    if not mol.HasSubstructMatch(ester_pattern):
-        return False, "No ester linkage found"
+    # Ester linkage pattern specifically with linkage to a sterol -OH group
+    # General ester: O=C-O, but linked to a C-OH in the sterol
+    ester_linker_pattern = Chem.MolFromSmarts("[C;R][CX4H](O[C;R])C(=O)O")
+    if not mol.HasSubstructMatch(ester_linker_pattern):
+        return False, "No appropriate ester linkage found"
 
-    return True, "Contains sterol backbone with ester linkage"
+    return True, "Contains sterol backbone with appropriate ester linkage"
 
 # Test the function with an example
 example_smiles = "C1[C@@]2([C@]3(CC[C@]4([C@]([C@@]3(CC=C2C[C@H](C1)OC(=O)CCCCCCCCC/C=C\\C/C=C\\C/C=C\\CC)[H])(CC[C@@]4([C@H](C)CCCC(C)C)[H])[H])C)[H])C"
