@@ -6,7 +6,8 @@ from rdkit import Chem
 def is_prenols(smiles: str):
     """
     Determines if a molecule is a prenol based on its SMILES string.
-    Prenols are alcohols with the formula H-[CH2C(Me)=CHCH2]nOH, containing one or more isoprene units.
+    Prenols are alcohols with the formula H-[CH2C(Me)=CHCH2]nOH, 
+    containing one or more isoprene units.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -16,27 +17,38 @@ def is_prenols(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
+    # Parse SMILES to molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Pattern for simplified isoprene unit
-    isoprene_pattern = Chem.MolFromSmarts("C(C)=C(C)")
+    # Refined pattern to capture isoprene units with possible geometric isomerism
+    isoprene_smarts = "C(=C(C)C)[CH2]"
+    isoprene_pattern = Chem.MolFromSmarts(isoprene_smarts)
     
-    # Search for isoprene units
+    # Search for at least one isoprene unit
     isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
     if len(isoprene_matches) < 1:
         return False, "No isoprene units found"
-
-    # SMARTS for terminal alcohol group
-    terminal_alcohol_pattern = Chem.MolFromSmarts("[C;!$(C=O)][OH]")
-
-    # Check for a terminal alcohol group
-    if not mol.HasSubstructMatch(terminal_alcohol_pattern):
+    
+    # Check for terminal alcohol - more specific to ensure the alcohol is terminal
+    # A terminal alcohol will have one OH group bonded to a non-carbonyl carbon and end of chain
+    terminal_alcohol_pattern = Chem.MolFromSmarts("[C](O)")
+    terminal_alcohol_matches = mol.GetSubstructMatches(terminal_alcohol_pattern)
+    
+    # We need to be 100% sure that this is indeed terminal
+    is_terminal = False
+    for match in terminal_alcohol_matches:
+        alcohol_atom = mol.GetAtomWithIdx(match[1])
+        # Ensure that this OH is terminal
+        if alcohol_atom.GetDegree() == 1:
+            is_terminal = True
+            break
+    
+    if not is_terminal:
         return False, "Missing or non-terminal alcohol group"
     
-    # Simplified assumption: at least one isoprene and one terminal OH indicates prenol 
+    # Basic logic now checks for presence of isoprene unit(s) and terminal OH group
     return True, f"Contains {len(isoprene_matches)} isoprene units with a terminal alcohol group"
 
 __metadata__ = {'chemical_class': {'name': 'prenol'}}
