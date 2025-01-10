@@ -27,15 +27,15 @@ def is_prenylquinone(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for quinone core (1,4-benzoquinone or 1,4-naphthoquinone)
-    quinone_pattern = Chem.MolFromSmarts("[#6]1([#6]=[#8])[#6]=[#6][#6](=[#8])[#6]=[#6]1 |(1:2,3:4,5:6)|")
-    if not mol.HasSubstructMatch(quinone_pattern):
-        quinone_pattern = Chem.MolFromSmarts("[#6]1([#6]=[#8])[#6]=[#6][#6](=[#8])[#6]=[#6][#6]=[#6]1 |(1:2,3:4,5:6,7:8)|")
-        if not mol.HasSubstructMatch(quinone_pattern):
-            return False, "No quinone core found"
+    benzoquinone_pattern = Chem.MolFromSmarts("O=C1C=CC(=O)C=C1")
+    naphthoquinone_pattern = Chem.MolFromSmarts("O=C1C=CC(=O)C=C2C=CC=CC2=C1")
+    
+    if not mol.HasSubstructMatch(benzoquinone_pattern) and not mol.HasSubstructMatch(naphthoquinone_pattern):
+        return False, "No quinone core found"
 
     # Look for polyprenyl side-chain (long isoprenoid chain)
     # Pattern for isoprene units: C=C(C)C or C=C(C)CC
-    isoprene_pattern = Chem.MolFromSmarts("[#6]=[#6](-[#6])-[#6]")
+    isoprene_pattern = Chem.MolFromSmarts("[C;H2]=C(-[C;H3])-[C;H2]")
     isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
     if len(isoprene_matches) < 2:
         return False, f"Found {len(isoprene_matches)} isoprene units, need at least 2"
