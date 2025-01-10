@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_dicarboxylic_acid(smiles: str):
     """
     Determines if a molecule is a dicarboxylic acid based on its SMILES string.
-    A dicarboxylic acid is any carboxylic acid containing exactly two carboxyl groups.
+    A dicarboxylic acid is any carboxylic acid containing exactly two free carboxyl groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,26 +21,21 @@ def is_dicarboxylic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Carboxylic acid pattern (distinct free carboxyl groups only)
-    carboxyl_pattern = Chem.MolFromSmarts("C(=O)O")
-    carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
+    # Define a pattern for free carboxyl groups (COOH)
+    carboxyl_pattern_free = Chem.MolFromSmarts("C(=O)[OH]")
+    free_carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern_free)
+    
+    # Count number of free carboxyl groups
+    num_free_carboxyls = len(free_carboxyl_matches)
 
-    # Ensure the carboxyl groups are not part of esters or amides 
-    # by checking connection(s) specifically at the 'O' of the carboxyl group
-    carboxyl_free_pattern = Chem.MolFromSmarts("C(=O)[O;H1]")
-    free_matches = mol.GetSubstructMatches(carboxyl_free_pattern)
-    
-    # Count the distinct carboxylic acid groups that aren't bound in esters/amides
-    num_true_carboxyls = len(free_matches)
-    
-    # Expect exactly 2 individual free carboxyl groups, not part of esters or amides
-    if num_true_carboxyls == 2:
-        return True, "Contains exactly 2 free carboxyl groups, indicating it is a dicarboxylic acid"
-    elif num_true_carboxyls > 2:
-        return False, f"Found {num_true_carboxyls} carboxyl groups; more than 2, cannot be a dicarboxylic acid"
+    # Dicarboxylic acids should have exactly two free carboxyl groups
+    if num_free_carboxyls == 2:
+        return True, f"Contains exactly 2 free carboxyl groups, indicating it is a dicarboxylic acid"
+    elif num_free_carboxyls > 2:
+        return False, f"Found {num_free_carboxyls} free carboxyl groups; more than 2, cannot be a dicarboxylic acid"
     else:
-        return False, f"Found {num_true_carboxyls} carboxyl groups; need exactly 2"
+        return False, f"Found {num_free_carboxyls} free carboxyl groups; need exactly 2"
 
-# Note: While the code aims to be comprehensive, real-case implementation should include 
-# comprehensive molecular error handling, broader testing, and further feature specifics as 
-# often these entities are part of larger molecular architectures, not single forms.
+# Note: This implementation assumes the interest in identifying free carboxyl groups
+# avoiding esters or amides. Additional accuracy can require structural context or 
+# experimental validation in complex systems.
