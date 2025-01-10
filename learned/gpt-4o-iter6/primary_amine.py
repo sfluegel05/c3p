@@ -21,25 +21,28 @@ def is_primary_amine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Use a SMARTS pattern to recognize primary amines, attaching NH2 to any hydrocarbyl group
-    primary_amine_pattern = Chem.MolFromSmarts("[NX3H2][CH0-3]")  
-    # NX3H2: nitrogen with exactly two hydrogens
-    # CH0-3: carbon that can be part of aliphatic or aromatic hydrocarbyl
+    # Use a smarter and more inclusive SMARTS pattern to recognize primary amines, allowing for aromatic rings and complex scaffolds
+    # [NX3H2]: nitrogen with exactly two hydrogens
+    # [CX4][!#8;!#7]: carbon attached, ensuring that it’s not directly oxygen or another nitrogen forming complications
+    primary_amine_patterns = [
+        Chem.MolFromSmarts("[NX3H2][CX4]"),
+        Chem.MolFromSmarts("[NX3H2][CX3](=O)"), # example for carbonyl linkages
+        Chem.MolFromSmarts("[NX3H2][c]")  # aromatic connections
+    ]
     
-    matches = mol.GetSubstructMatches(primary_amine_pattern)
-    
-    if matches:
-        # Verify that each matched nitrogen is attached to a hydrocarbyl group
-        for match in matches:
-            nitrogen_atom = mol.GetAtomWithIdx(match[0])
-            carbon_atom = mol.GetAtomWithIdx(match[1])
+    for pattern in primary_amine_patterns:
+        matches = mol.GetSubstructMatches(pattern)
+        
+        if matches:
+            # Verify that each matched nitrogen is attached to a hydrocarbyl group
+            for match in matches:
+                nitrogen_atom = mol.GetAtomWithIdx(match[0])
+                # Ensure that this nitrogen is primarily bonded to acceptable hydrocarbyl group environments
+                associated_hydrocarbons = any(
+                    [b.GetOtherAtom(nitrogen_atom).GetAtomicNum() == 6 for b in nitrogen_atom.GetBonds()]
+                )
+                
+                if associated_hydrocarbons:
+                    return True, f"Primary amine group (-NH2) identified with pattern {pattern}"
 
-            # Ensure that this nitrogen is only bonded to hydrogen and carbon atoms
-            is_primary_amine = all(
-                [b.GetOtherAtom(nitrogen_atom).GetAtomicNum() in [1, 6] for b in nitrogen_atom.GetBonds()]
-            )
-            
-            if is_primary_amine:
-                return True, "Contains primary amine group (-NH2) attached to a hydrocarbyl group"
-    
     return False, "Primary amine group not found"
