@@ -2,7 +2,6 @@
 Classifies: CHEBI:18154 polysaccharide
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_polysaccharide(smiles: str):
     """
@@ -22,25 +21,24 @@ def is_polysaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for glycosidic linkage pattern
-    glycosidic_pattern = Chem.MolFromSmarts("O[C@@H]")
+    # SMARTS pattern for a generic glycosidic linkage (e.g., -O-C-)
+    glycosidic_pattern = Chem.MolFromSmarts("O-C")
     if not mol.HasSubstructMatch(glycosidic_pattern):
         return False, "No glycosidic linkage found"
     
-    # Look for repeated cyclic monosaccharide units
-    cyclic_monosaccharide_pattern = Chem.MolFromSmarts("C1([C@H](O)C([C@H](O)[C@H](O)[C@@H]1O)O)")
-    repeat_units = mol.GetSubstructMatches(cyclic_monosaccharide_pattern)
+    # Look for multiple sugar ring units (more flexible pattern)
+    cyclic_sugar_pattern = Chem.MolFromSmarts("C1OC(O)C(O)C(O)C1")  # Simplified monosaccharide pattern
+    repeat_units = mol.GetSubstructMatches(cyclic_sugar_pattern)
     if len(repeat_units) < 2:
-        return False, "Too few repeating units for polysaccharide"
+        return False, "Too few repeating monosaccharide units for polysaccharide"
     
-    # Check number of hydroxyl groups
-    num_oh = sum(atom.GetSymbol() == 'O' and len(atom.GetNeighbors()) == 1 for atom in mol.GetAtoms())
-    if num_oh < 5:
-        return False, "Too few hydroxyl groups"
-
-    # Check molecular weight - polysaccharides are often large
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 500:
-        return False, "Molecular weight too low for polysaccharide"
+    # Ensure the structure is large enough to be polysaccharide
+    if len(mol.GetAtoms()) < 50:  # Arbitrarily chosen, can be adjusted
+        return False, "Molecule too small for polysaccharide"
+    
+    # Polysaccharides should have extensive oxygen atoms due to many OH and glycosidic bonds
+    num_oxygens = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if num_oxygens < 10:  # Arbitrarily chosen, can be adjusted based on known structures
+        return False, "Too few oxygen atoms suggest an incomplete or incorrect polysaccharide"
 
     return True, "Contains multiple repeated monosaccharide units linked by glycosidic bonds"
