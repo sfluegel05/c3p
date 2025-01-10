@@ -15,28 +15,32 @@ def is_alkanesulfonate_oxoanion(smiles: str):
         bool: True if molecule is an alkanesulfonate oxoanion, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
     # Define sulfonate group pattern
-    sulfonate_pattern = Chem.MolFromSmarts("S([O-])(=O)=O")
+    sulfonate_pattern = Chem.MolFromSmarts("[S](=[O])(=[O])[O-]")
     if not mol.HasSubstructMatch(sulfonate_pattern):
-        return False, "Missing sulfonate group S([O-])(=O)=O"
+        return False, "Missing sulfonate group S(=O)(=O)[O-]"
 
     # Check for aliphatic carbon connection
-    aliphatic_carbon_pattern = Chem.MolFromSmarts("[CX4]")
-    for match in mol.GetSubstructMatches(sulfonate_pattern):
-        sulfur_atom_idx = match[0]  # Index of Sulfur atom in the match
-        sulfur_atom = mol.GetAtomWithIdx(sulfur_atom_idx)
+    aliphatic_connected = False
+    for bond in mol.GetBonds():
+        atom1 = bond.GetBeginAtom()
+        atom2 = bond.GetEndAtom()
 
-        # Iterate over neighbors of the sulfur atom
-        for neighbor in sulfur_atom.GetNeighbors():
-            if neighbor.GetSymbol() == 'C' and mol.GetAtomWithIdx(neighbor.GetIdx()).GetIsAromatic() is False:
-                # Check if the neighbor carbon atom is an aliphatic one
-                if mol.HasSubstructMatch(aliphatic_carbon_pattern, atoms=[neighbor.GetIdx()]):
-                    return True, "Sulfonate group attached to an aliphatic structure"
+        # Check if either atom is sulfur from sulfonate
+        if (atom1.GetSymbol() == 'S' and atom2.GetSymbol() == 'C' and not atom2.GetIsAromatic()) or \
+           (atom2.GetSymbol() == 'S' and atom1.GetSymbol() == 'C' and not atom1.GetIsAromatic()):
+            # Ensure the carbon is connected to a sulfonate sulfur
+            if mol.GetAtomWithIdx(atom1.GetIdx()).GetSymbol() == 'S' or mol.GetAtomWithIdx(atom2.GetIdx()).GetSymbol() == 'S':
+                aliphatic_connected = True
+                break
+    
+    if aliphatic_connected:
+        return True, "Sulfonate group attached to an aliphatic structure"
     
     return False, "Sulfonate group not connected to an aliphatic structure"
