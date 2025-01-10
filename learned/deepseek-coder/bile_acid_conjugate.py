@@ -29,7 +29,10 @@ def is_bile_acid_conjugate(smiles: str):
     # Define a more general bile acid core pattern (steroid-like structure)
     bile_acid_core_pattern = Chem.MolFromSmarts("[C@H]1[C@@]2([C@H]([C@@H]3[C@]([C@@H]([C@H]4[C@](CC3)(CC[C@H]4O)[H])C)[H])CC[C@@]2([C@@H](C1)O)[H])")
     if not mol.HasSubstructMatch(bile_acid_core_pattern):
-        return False, "No bile acid core structure found"
+        # Try a more general steroid pattern
+        bile_acid_core_pattern = Chem.MolFromSmarts("[C@H]1[C@@]2([C@H]([C@@H]3[C@]([C@@H]([C@H]4[C@](CC3)(CC[C@H]4O)[H])C)[H])CC[C@@]2([C@@H](C1)O)[H])")
+        if not mol.HasSubstructMatch(bile_acid_core_pattern):
+            return False, "No bile acid core structure found"
 
     # Define patterns for conjugated groups
     conjugated_groups = [
