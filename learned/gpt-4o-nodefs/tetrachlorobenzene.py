@@ -19,12 +19,12 @@ def is_tetrachlorobenzene(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+
+    # Define a more generalized SMARTS pattern for a benzene ring with at least four attached chlorine atoms
+    generalized_pattern = Chem.MolFromSmarts("c1c(Cl)c(Cl)c(Cl)c(Cl)c1")
     
-    # Define SMARTS pattern for a benzene ring with four attached chlorine atoms
-    tetrachloro_benzene_pattern = Chem.MolFromSmarts("c1cc(Cl)cc(Cl)c1(Cl)Cl")
-    
-    # Check if the molecule contains a tetrachlorobenzene pattern
-    if mol.HasSubstructMatch(tetrachloro_benzene_pattern):
-        return True, "Contains tetrachlorobenzene core structure"
-    
-    return False, "Does not contain tetrachlorobenzene core structure"
+    # Check if the molecule contains any general tetrachlorobenzene or derivatives
+    if mol.HasSubstructMatch(generalized_pattern):
+        return True, "Contains tetrachlorobenzene core structure or derivative"
+
+    return False, "Does not contain tetrachlorobenzene core structure or derivative"
