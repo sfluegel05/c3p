@@ -26,13 +26,25 @@ def is_D_hexose(smiles: str):
     if num_carbons != 6:
         return False, "Not a hexose, incorrect number of carbon atoms"
     
-    # Define common SMARTS patterns for D-hexoses in cyclic forms considering stereochemistry
-    d_hexose_pyranose_pattern = Chem.MolFromSmarts('OC[C@H]1O[C@H](O)[C@H](O)[C@@H](O)[C@@H]1O')  # D-pyranose form
-    d_hexose_furanose_pattern = Chem.MolFromSmarts('O1[C@@H]([C@H](O)[C@@H](O)C1O)[C@H](O)CO')  # D-furanose form
-    d_hexose_open_chain_pattern = Chem.MolFromSmarts('[H]C(=O)[C@H](O)[C@@H](O)[C@H](O)[C@H](O)CO')  # Open-chain
+    # Extended SMARTS patterns for D-hexoses considering various forms and derivatives
+    d_hexose_pyranose_patterns = [
+        Chem.MolFromSmarts('OC[C@H]1O[C@H](O)[C@H](O)[C@@H](O)[C@@H]1O'),  # Common D-pyranoses
+        Chem.MolFromSmarts('O1[C@H]([C@H](O)[C@H](O)[C@@H]1O)[C@H](O)CO'), # Alpha or beta pyranoses
+    ]
+    
+    d_hexose_furanose_patterns = [
+        Chem.MolFromSmarts('O1[C@H]([C@@H](O)[C@H](O)C1O)[C@H](O)CO'),  # D-furanoses
+        Chem.MolFromSmarts('O1[C@@H]([C@H](O)[C@@H](O)C1O)[C@H](O)CO')  # Inclusion for variants
+    ]
+    
+    d_hexose_open_chain_patterns = [
+        Chem.MolFromSmarts('[H]C(=O)[C@H](O)[C@@H](O)[C@H](O)[C@H](O)CO'),  # Open-chain D-hexoses
+        Chem.MolFromSmarts('[C@H](=O)[C@H](O)[C@H](O)[C@H](O)[C@H](O)CO')    # Check for typical stereochemistry
+    ]
 
     # Check for D-hexose structure matches
-    if mol.HasSubstructMatch(d_hexose_pyranose_pattern) or mol.HasSubstructMatch(d_hexose_furanose_pattern) or mol.HasSubstructMatch(d_hexose_open_chain_pattern):
-        return True, "Molecule identified as D-hexose with stereochemistry at carbon-5"
-    
+    for pattern in d_hexose_pyranose_patterns + d_hexose_furanose_patterns + d_hexose_open_chain_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return True, "Molecule identified as D-hexose with stereochemistry at carbon-5"
+
     return False, "No D-hexose structure found or incorrect stereochemistry"
