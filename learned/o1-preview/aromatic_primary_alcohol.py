@@ -27,39 +27,28 @@ def is_aromatic_primary_alcohol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern to find all carbons attached to an OH group
-    alcohol_pattern = Chem.MolFromSmarts("[C][OH]")
-    matches = mol.GetSubstructMatches(alcohol_pattern)
+    # Identify primary alcohol carbons (sp3 carbon with two hydrogens bonded to OH)
+    primary_alcohol_pattern = Chem.MolFromSmarts('[CX4H2][OX2H]')
+    matches = mol.GetSubstructMatches(primary_alcohol_pattern)
 
     if not matches:
-        return False, "No alcohol groups found"
+        return False, "No primary alcohol groups found"
 
-    # Iterate over all alcohol carbons
+    # Iterate over all primary alcohol carbons
     for match in matches:
         carbon_idx = match[0]  # Index of carbon atom bearing OH
         oxygen_idx = match[1]  # Index of oxygen atom
 
         carbon_atom = mol.GetAtomWithIdx(carbon_idx)
 
-        # Check if the carbon atom is primary (connected to only one other carbon)
-        num_carbon_neighbors = 0
-        for neighbor in carbon_atom.GetNeighbors():
-            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() != carbon_idx:
-                num_carbon_neighbors += 1
-        if num_carbon_neighbors != 1:
-            continue  # Not a primary alcohol
-
         # Check if the carbon atom is directly connected to an aromatic ring
-        is_connected_to_aromatic = False
+        is_connected_to_aromatic_ring = False
         for neighbor in carbon_atom.GetNeighbors():
-            if neighbor.GetIsAromatic():
-                is_connected_to_aromatic = True
+            if neighbor.IsInRing() and neighbor.GetIsAromatic():
+                is_connected_to_aromatic_ring = True
                 break
-        if not is_connected_to_aromatic:
-            continue  # Not connected to aromatic ring
-
-        # Passed all checks
-        return True, "Molecule contains an aromatic primary alcohol group"
+        if is_connected_to_aromatic_ring:
+            return True, "Molecule contains an aromatic primary alcohol group"
 
     # No matching groups found
     return False, "No aromatic primary alcohol groups connected to aromatic ring found"
