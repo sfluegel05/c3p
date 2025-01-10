@@ -25,14 +25,22 @@ def is_trans_2_enoyl_CoA(smiles: str):
     if not mol.HasSubstructMatch(coA_pattern):
         return False, "Coenzyme A moiety is missing or incorrect"
     
-    # Check for trans-2-enoyl moiety pattern, specifically looking for the trans double bond 
-    trans_2_enoyl_pattern = Chem.MolFromSmarts("C/C=C\\C(=O)")
-    if trans_2_enoyl_pattern is None or not mol.HasSubstructMatch(trans_2_enoyl_pattern):
+    # Enhanced trans-2-enoyl moiety pattern
+    # Includes flexibility for different chain lengths and possible minor branches: C(/C=C\)[CX3](=O)
+    trans_2_enoyl_patterns = [
+        Chem.MolFromSmarts("C/C=C\\C(=O)"),  # Basic form
+        Chem.MolFromSmarts("C(=C)C(=O)"),   # Potential variants
+        Chem.MolFromSmarts("C(/C=C\\)[CX3](=O)")  # Flexibility for stereochemistry
+    ]
+    
+    trans_enoyl_found = any(mol.HasSubstructMatch(pattern) for pattern in trans_2_enoyl_patterns)
+    
+    if not trans_enoyl_found:
         return False, "No trans-2-enoyl moiety found"
 
-    # Thioester linkage needs to be verified, i.e., an S-C(=O)-pattern
+    # Verify thioester linkage
     thioester_pattern = Chem.MolFromSmarts("SC(=O)C")
-    if thioester_pattern is None or not mol.HasSubstructMatch(thioester_pattern):
+    if not mol.HasSubstructMatch(thioester_pattern):
         return False, "No thioester linkage found"
-
+    
     return True, "Detected Coenzyme A moiety with trans-2-enoyl moiety and appropriate thioester linkage"
