@@ -33,16 +33,22 @@ def is_acyl_CoA(smiles: str):
 
     # Check for the presence of the CoA moiety
     # The CoA moiety includes a specific pattern of atoms and bonds, including the ADP group, pantothenic acid derivative, and cysteamine group.
-    # This is a simplified pattern that captures the key features of CoA.
+    # This pattern captures the key features of CoA more accurately.
     coa_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[CX4][CX4][NX3][CX3](=[OX1])[CX4][CX4][SX2][CX3](=[OX1])[CX4]")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No CoA moiety found"
 
     # Check for the presence of a carboxylic acid derivative attached to the thioester bond
-    # This is a simplified pattern that captures the key features of a carboxylic acid derivative.
+    # This pattern captures the key features of a carboxylic acid derivative.
     carboxylic_acid_derivative_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H0]")
     if not mol.HasSubstructMatch(carboxylic_acid_derivative_pattern):
         return False, "No carboxylic acid derivative found"
+
+    # Ensure the thioester bond is connected to the CoA moiety
+    thioester_match = mol.GetSubstructMatch(thioester_pattern)
+    coa_match = mol.GetSubstructMatch(coa_pattern)
+    if not any(atom in coa_match for atom in thioester_match):
+        return False, "Thioester bond not connected to CoA moiety"
 
     # If all checks pass, the molecule is likely an acyl-CoA
     return True, "Contains a thioester bond, CoA moiety, and carboxylic acid derivative"
