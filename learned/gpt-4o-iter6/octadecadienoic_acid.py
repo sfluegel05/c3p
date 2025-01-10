@@ -21,10 +21,11 @@ def is_octadecadienoic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check total carbon count allowing exact for C18 fatty acids
-    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if carbon_count != 18:
-        return False, f"Expected 18 carbons, found {carbon_count}"
+    # Verify chain contains core of octadecadienoic structure
+    # Look for a long linear carbon chain with two double bonds
+    carbon_chain_pattern = Chem.MolFromSmarts("C(=C)C(=C)CCCCCCCCCCCCCC")
+    if not mol.HasSubstructMatch(carbon_chain_pattern):
+        return False, "No octadecadienoic core structure found"
 
     # Check for exactly two C=C double bonds
     double_bond_count = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.BondType.DOUBLE and
@@ -33,13 +34,11 @@ def is_octadecadienoic_acid(smiles: str):
         return False, f"Expected 2 double bonds (C=C), found {double_bond_count}"
 
     # Pattern for terminal carboxylic acid group (COOH or COO-)
-    terminal_carboxylic_acid_patterns = [
-        Chem.MolFromSmarts("C(=O)O"),    # -COOH
-        Chem.MolFromSmarts("C(=O)[O-]"), # -COO-
-        Chem.MolFromSmarts("[CX3](=O)[OX1H0-1]")  # Additional for broader terminal detection
+    carboxylic_group_patterns = [
+        Chem.MolFromSmarts("C(=O)[OX1H1]"),    # -COOH
+        Chem.MolFromSmarts("C(=O)[O-]"),       # -COO-
     ]
-
-    if not any(mol.HasSubstructMatch(pattern) for pattern in terminal_carboxylic_acid_patterns):
+    if not any(mol.HasSubstructMatch(pattern) for pattern in carboxylic_group_patterns):
         return False, "No valid terminal carboxylic acid group found"
 
     return True, "Molecule is a C18 polyunsaturated fatty acid with two C=C double bonds and a terminal carboxylic acid group"
