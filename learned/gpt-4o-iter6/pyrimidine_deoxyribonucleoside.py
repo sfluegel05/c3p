@@ -21,20 +21,22 @@ def is_pyrimidine_deoxyribonucleoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Flexible pattern for deoxyribose sugar
-    deoxyribose_pattern = Chem.MolFromSmarts("C1[C@H](O)[C@@H](CO)O[C@H]1[*]")
+    # Generalized pattern for deoxyribose sugar
+    deoxyribose_pattern = Chem.MolFromSmarts("[C@H]1([C@H](O[C@H]1CO)O)")
 
-    # Pyrimidine base pattern recognizing substitutions (using nitrogen and carbon arrangements)
+    # General patterns for pyrimidine bases, allowing common modifications
     pyrimidine_base_patterns = [
-        Chem.MolFromSmarts("c1ncnc2c1ncnc2"),  # Unsubstituted pyrimidine
-        Chem.MolFromSmarts("c1nc[nH]c2c1ncnc2"),  # Substituted uracil/thymine/cytosine
+        Chem.MolFromSmarts("c1ccncn1"),  # Pyrimidine ring core
+        Chem.MolFromSmarts("c1cncnc1O"),  # Base pattern for uracil derivatives
+        Chem.MolFromSmarts("c1[nH]cnc1=O"),  # Base pattern for thymine derivatives
+        Chem.MolFromSmarts("c1ncc[nH]1")  # Base pattern for cytosine derivatives
     ]
     
     # Check for deoxyribose sugar match
     if not mol.HasSubstructMatch(deoxyribose_pattern):
         return False, "No deoxyribose sugar found"
     
-    # Check for pyrimidine base match
+    # Check for any pyrimidine base match
     if not any(mol.HasSubstructMatch(pattern) for pattern in pyrimidine_base_patterns):
         return False, "No pyrimidine base found"
 
