@@ -15,17 +15,18 @@ def is_carbamate_ester(smiles: str):
         bool: True if molecule is a carbamate ester, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for carbamate ester
-    # This specifically looks for the -O-C(=O)-N- group where the nitrogen is not part of a ring
-    carbamate_pattern = Chem.MolFromSmarts("[#8]-[#6](=O)-[#7;!R]")
+    # Define SMARTS pattern for carbamate ester: Includes nitrogen both in and out of rings
+    # This checks for the -O-C(=O)-N- group and allows variation in surrounding structure
+    carbamate_pattern = Chem.MolFromSmarts("[O]-C(=O)-[N]")
 
     if mol.HasSubstructMatch(carbamate_pattern):
         return True, "Contains carbamate ester functional group"
 
+    # No matching pattern found
     return False, "No carbamate ester functional group found"
