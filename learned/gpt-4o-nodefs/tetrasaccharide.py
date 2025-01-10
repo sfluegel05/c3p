@@ -21,31 +21,18 @@ def is_tetrasaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define general sugar ring pattern
-    cyclic_sugar_pattern = Chem.MolFromSmarts("OC1CO[C@H]([C@H](O)[C@@H](O)[C@H]1O)")  # generic sugar ring
-    # Define glycosidic bond pattern
-    glycosidic_linkage_pattern = Chem.MolFromSmarts("-O-")
+    # Identify saccharide units - presence of multiple cyclic ethers with stereochemistry and hydroxyl groups
+    saccharide_pattern = Chem.MolFromSmarts("[C@H]1([O,R])[C@H]([O,R])[C@H]([O,R])C([O,R])[C@H]1O")
+    saccharide_matches = mol.GetSubstructMatches(saccharide_pattern)
 
-    # Initialize counts
-    saccharide_count = 0
-    linkage_count = 0
+    if len(saccharide_matches) < 4:
+        return False, f"Less than 4 monosaccharide units found, found {len(saccharide_matches)}"
 
-    # Check for saccharide units using a generic sugar pattern
-    saccharide_matches = mol.GetSubstructMatches(cyclic_sugar_pattern)
-    saccharide_count = len(saccharide_matches)
-    
-    # Check for glycosidic linkages, more generic linkage pattern
-    linkage_matches = mol.GetSubstructMatches(glycosidic_linkage_pattern)
-    linkage_count = len(linkage_matches)
+    # Verify glycosidic linkages - Oxygen bridges between rings
+    linkage_pattern = Chem.MolFromSmarts("O[C@H]1[C@H]([O,R])[C@H]([O,R])C([O,R])[C@H]1O")
+    linkage_matches = mol.GetSubstructMatches(linkage_pattern)
 
-    # Assess if it's a tetrasaccharide (assuming linear unbranched)
-    if saccharide_count >= 4 and linkage_count >= 3:
-        return True, "Molecule is a tetrasaccharide with appropriate saccharide units and glycosidic linkages"
+    if len(linkage_matches) < 3:
+        return False, f"Insufficient glycosidic linkages, found {len(linkage_matches)}"
 
-    # Provide reason for failure if not a tetrasaccharide
-    if saccharide_count < 4:
-        return False, f"Less than 4 monosaccharide units found, found {saccharide_count}"
-    if linkage_count < 3:
-        return False, f"Insufficient glycosidic linkages, found {linkage_count}"
-
-    return False, "Unclassified - unexpected structure"
+    return True, "Molecule is a tetrasaccharide with appropriate saccharide units and glycosidic linkages"
