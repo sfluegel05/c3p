@@ -34,56 +34,58 @@ def is_1_acyl_sn_glycero_3_phosphoethanolamine(smiles: str):
     if not required_elements.issubset(mol_elements):
         return False, f"Missing required elements. Found {mol_elements}, need {required_elements}"
 
-    # Pattern for complete 1-acyl-sn-glycero-3-phosphoethanolamine structure
-    # [CH2X4] - first carbon with acyl
-    # [C@H] - stereocenter with OH
-    # [CH2X4] - third carbon with phosphate
-    # Includes specific connectivity and phosphoethanolamine group
-    core_pattern = """
-        [CH2X4;!$(C-[CH2]-[O,N,S])][C@H]([OX2H1])[CH2X4]OP(=[O])(O)OCCN
-    """
-    
-    if not mol.HasSubstructMatch(Chem.MolFromSmarts(core_pattern)):
-        return False, "Does not match core 1-acyl-sn-glycero-3-phosphoethanolamine structure"
+    # Basic glycerol backbone pattern
+    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CH1X4][CH2X4]")
+    if not mol.HasSubstructMatch(glycerol_pattern):
+        return False, "No glycerol backbone found"
 
-    # Check specifically for acyl group at position 1
-    acyl_pattern = """
-        [CH2X4;!$(C-[CH2]-[O,N,S])]OC(=O)[#6]
-    """
-    if not mol.HasSubstructMatch(Chem.MolFromSmarts(acyl_pattern)):
-        return False, "No acyl group at position 1"
+    # Check for ester group at position 1
+    ester_pattern = Chem.MolFromSmarts("[CH2X4]OC(=O)[#6]")
+    if not mol.HasSubstructMatch(ester_pattern):
+        return False, "No ester group at position 1"
 
-    # Check for absence of acylation at position 2
-    wrong_acyl_pattern = """
-        [C@H](OC(=O)[#6])[CH2X4]
-    """
-    if mol.HasSubstructMatch(Chem.MolFromSmarts(wrong_acyl_pattern)):
-        return False, "Has acyl group at position 2"
+    # Check for hydroxyl at position 2
+    hydroxyl_pattern = Chem.MolFromSmarts("[CH1X4][OX2H1]")
+    if not mol.HasSubstructMatch(hydroxyl_pattern):
+        return False, "No free hydroxyl group at position 2"
 
-    # Check for absence of ether linkages
-    ether_pattern = """
-        [CH2X4]O[CH2][#6]
-    """
-    if mol.HasSubstructMatch(Chem.MolFromSmarts(ether_pattern)):
-        return False, "Contains ether linkage"
-
-    # Verify phosphoethanolamine group specifically
+    # Check for phosphoethanolamine group - try both neutral and charged forms
     pe_patterns = [
-        "OP(=O)(O)OCCN",  # Neutral form
-        "OP(=O)([O-])OCC[NH3+]",  # Zwitterionic form
+        Chem.MolFromSmarts("COP(=O)(O)OCCN"),  # Neutral form
+        Chem.MolFromSmarts("COP(=O)([O-])OCC[NH3+]"),  # Zwitterionic form
     ]
+    
     found_pe = False
     for pattern in pe_patterns:
-        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+        if pattern is not None and mol.HasSubstructMatch(pattern):
             found_pe = True
             break
-    
+            
     if not found_pe:
-        return False, "No valid phosphoethanolamine group found"
+        return False, "No phosphoethanolamine group found"
 
-    # Count carbons to ensure reasonable chain length
+    # Verify no acylation at position 2
+    wrong_acyl = Chem.MolFromSmarts("[CH1X4](OC(=O))[CH2X4]")
+    if wrong_acyl is not None and mol.HasSubstructMatch(wrong_acyl):
+        return False, "Has acyl group at position 2"
+
+    # Check for reasonable chain length
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 7:  # Minimum for shortest possible acyl chain
+    if c_count < 7:
         return False, f"Carbon count too low ({c_count}), need at least 7"
+
+    # Check for expected number of phosphorus atoms
+    p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
+    if p_count != 1:
+        return False, f"Expected exactly 1 phosphorus atom, found {p_count}"
+
+    # Verify basic connectivity
+    # Should have: CH2-CH-CH2 backbone with:
+    # - O-acyl at position 1
+    # - OH at position 2
+    # - O-P at position 3
+    basic_connectivity = Chem.MolFromSmarts("[CH2X4]OC(=O)[#6][CH1X4]([OX2H1])[CH2X4]OP")
+    if not mol.HasSubstructMatch(basic_connectivity):
+        return False, "Core structural connectivity not found"
 
     return True, "Valid 1-acyl-sn-glycero-3-phosphoethanolamine structure found"
