@@ -5,7 +5,6 @@ Classifies: CHEBI:65111 3-substituted propionyl-CoA(4-)
 Classifies: 3-substituted propionyl-CoA(4-)
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_3_substituted_propionyl_CoA_4__(smiles: str):
     """
@@ -26,16 +25,16 @@ def is_3_substituted_propionyl_CoA_4__(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the general CoA backbone SMARTS pattern
+    # Define the general CoA backbone SMARTS pattern, updated for substitution on the third carbon
     coa_pattern = Chem.MolFromSmarts("C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No CoA backbone found"
 
-    # Define the 3-substituted propionyl pattern (R-C(=O)-S-C-C)
-    # Assuming the substitution occurs on the first carbon of the chain
-    propionyl_substituted_pattern = Chem.MolFromSmarts("C(=O)SCC[R]")
+    # Define the 3-substituted propionyl pattern specifically on the third carbon
+    # Check for a generic R group connected to the third carbon atom
+    propionyl_substituted_pattern = Chem.MolFromSmarts("C(=O)SCC([#6,#7,#8,#9])")
     if not mol.HasSubstructMatch(propionyl_substituted_pattern):
-        return False, "No 3-substituted propionyl group found"
+        return False, "No 3-substituted propionyl group found on the third position"
 
     # If both patterns match, assume it is a 3-substituted propionyl-CoA(4-)
-    return True, "Contains CoA backbone with a 3-substituted propionyl group"
+    return True, "Contains CoA backbone with a 3-substituted propionyl group on the third carbon"
