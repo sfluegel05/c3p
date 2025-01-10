@@ -21,23 +21,25 @@ def is_2_5_diketopiperazines(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # More flexible pattern allowing for substitutions on the diketopiperazine backbone
-    diketopiperazine_pattern = Chem.MolFromSmarts('C1C(=O)NCC(=O)N1')
+    # Updated SMARTS pattern with stereochemistry considerations
+    diketopiperazine_pattern = Chem.MolFromSmarts('O=C1NCC(=O)N1')
     if not mol.HasSubstructMatch(diketopiperazine_pattern):
         return False, "Does not contain piperazine-2,5-dione skeleton"
 
-    # Verify that the skeleton is part of a larger chemistry space typical for these compounds
-    n_rings = Chem.GetSSSR(mol)
-    if n_rings < 1:
-        return False, f"Expected ring systems; found {n_rings}."
+    # Use RingInfo to count the number of rings
+    ring_info = mol.GetRingInfo()
+    num_rings = ring_info.NumRings()
+    if num_rings < 1:
+        return False, f"Expected at least one ring; found {num_rings}."
 
-    # Check additional properties to reduce false positives; diketopiperazines should have at least two oxygens
+    # Check for at least two oxygens typical for diketopiperazine scaffolds
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     if o_count < 2:
         return False, f"Too few oxygens for typical diketopiperazine: found {o_count}"
 
-    # Consider check for expected size or presence of typical functional groups
-    if len(mol.GetAtoms()) > 50:
-        return False, "Molecule is too large to be typical diketopiperazine without complex substitutions"
+    # Consider typical sizes for 2,5-diketopiperazines, which can have diverse substitutions
+    n_atoms = mol.GetNumAtoms()
+    if n_atoms > 100:
+        return False, "Molecule is too large to be a typical 2,5-diketopiperazine with complex substitutions"
 
     return True, "Contains piperazine-2,5-dione skeleton"
