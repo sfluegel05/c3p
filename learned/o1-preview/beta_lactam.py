@@ -24,16 +24,14 @@ def is_beta_lactam(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define beta-lactam SMARTS pattern
-    beta_lactam_smarts = '[NX3;H1;R][C;R](=O)[C;R][C;R]'  # Pattern for four-membered lactam ring
-
-    beta_lactam_pattern = Chem.MolFromSmarts(beta_lactam_smarts)
+    # Define beta-lactam substructure using SMILES of azetidin-2-one
+    beta_lactam_smiles = 'C1CNC1=O'
+    beta_lactam_pattern = Chem.MolFromSmiles(beta_lactam_smiles)
     if beta_lactam_pattern is None:
-        return None, "Invalid SMARTS pattern for beta-lactam"
+        return None, "Invalid beta-lactam pattern"
 
     # Search for beta-lactam ring
-    matches = mol.GetSubstructMatches(beta_lactam_pattern)
-    if matches:
+    if mol.HasSubstructMatch(beta_lactam_pattern):
         return True, "Contains beta-lactam ring (four-membered lactam)"
     else:
         return False, "Does not contain beta-lactam ring"
