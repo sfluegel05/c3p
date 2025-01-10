@@ -22,51 +22,75 @@ def is_mineral(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES with allowCXSMILES to handle disconnected components
-    mol = Chem.MolFromSmiles(smiles, sanitize=False, allowCXSMILES=True)
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Common mineral-forming metals (including alkali, alkaline earth, transition metals, etc.)
-    metal_atomic_nums = set(range(3, 32)) | {37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50,
-                                            55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68,
-                                            69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82,
-                                            83, 88, 89, 90, 91, 92}
-
     # Check for the presence of metal ions (common in minerals)
-    metal_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() in metal_atomic_nums]
+    metal_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() in [3, 11, 12, 13, 19, 20, 26, 29, 30, 38, 56, 82]]
     if not metal_atoms:
         return False, "No metal ions found, which are common in minerals"
 
-    # Check for common mineral patterns with more flexible matching
-    patterns = {
-        "sulfate": "[O-]S(=O)(=O)[O-]",
-        "carbonate": "[O-]C(=O)[O-]",
-        "phosphate": "[O-]P(=O)([O-])[O-]",
-        "silicate": "[O-][Si]([O-])([O-])[O-]",
-        "oxide": "[O-2]",
-        "sulfide": "[S-2]",
-        "halide": "[F,Cl,Br,I]-",
-        "hydroxide": "[OH-]",
-        "nitrate": "[O-][N+]([O-])=O",
-        "water": "O"
-    }
-
-    # Check for common mineral patterns
-    for name, pattern in patterns.items():
-        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
-            return True, f"Contains {name} group, common in minerals"
-
-    # Check for simple inorganic salts
-    if len(mol.GetAtoms()) <= 5 and all(atom.GetAtomicNum() in metal_atomic_nums or 
-                                      atom.GetAtomicNum() in {6, 7, 8, 9, 15, 16, 17, 35, 53} for atom in mol.GetAtoms()):
-        return True, "Simple inorganic salt, common in minerals"
-
-    # Check for presence of both cations and anions
-    cations = [atom for atom in mol.GetAtoms() if atom.GetFormalCharge() > 0]
+    # Check for the presence of anions (common in minerals)
     anions = [atom for atom in mol.GetAtoms() if atom.GetFormalCharge() < 0]
-    if cations and anions:
-        return True, "Contains both cations and anions, typical of mineral salts"
+    if not anions:
+        return False, "No anions found, which are common in minerals"
 
-    # If none of the above patterns match, return False
-    return False, "Does not match common mineral patterns"
+    # Check for common mineral patterns (e.g., sulfates, carbonates, phosphates)
+    sulfate_pattern = Chem.MolFromSmarts("[O-]S(=O)(=O)[O-]")
+    carbonate_pattern = Chem.MolFromSmarts("[O-]C(=O)[O-]")
+    phosphate_pattern = Chem.MolFromSmarts("[O-]P(=O)([O-])[O-]")
+    
+    if mol.HasSubstructMatch(sulfate_pattern):
+        return True, "Contains sulfate group, common in minerals"
+    if mol.HasSubstructMatch(carbonate_pattern):
+        return True, "Contains carbonate group, common in minerals"
+    if mol.HasSubstructMatch(phosphate_pattern):
+        return True, "Contains phosphate group, common in minerals"
+
+    # Check for simple salts (e.g., NaCl, KCl)
+    if len(mol.GetAtoms()) <= 3:
+        return True, "Simple salt, common in minerals"
+
+    # Check for hydrates (common in minerals)
+    hydrate_pattern = Chem.MolFromSmarts("[OH2]")
+    if mol.HasSubstructMatch(hydrate_pattern):
+        return True, "Contains water of hydration, common in minerals"
+
+    # Check for complex inorganic structures (e.g., silicates)
+    silicate_pattern = Chem.MolFromSmarts("[O-][Si]([O-])([O-])[O-]")
+    if mol.HasSubstructMatch(silicate_pattern):
+        return True, "Contains silicate group, common in minerals"
+
+    # If none of the above patterns match, return None
+    return None, "Does not match common mineral patterns"
+
+__metadata__ = {   'chemical_class': {   'id': 'CHEBI:46662',
+                          'name': 'mineral',
+                          'definition': 'In general, a mineral is a chemical substance that is normally crystalline formed and has been formed as a result of geological processes. The term also includes metamict substances (naturally occurring, formerly crystalline substances whose crystallinity has been destroyed by ionising radiation) and can include naturally occurring amorphous substances that have never been crystalline ('mineraloids') such as georgite and calciouranoite as well as substances formed by the action of geological processes on bigenic compounds ('biogenic minerals').'},
+    'config': {   'llm_model_name': 'lbl/claude-sonnet',
+                  'f1_threshold': 0.8,
+                  'max_attempts': 5,
+                  'max_positive_instances': None,
+                  'max_positive_to_test': None,
+                  'max_negative_to_test': None,
+                  'max_positive_in_prompt': 50,
+                  'max_negative_in_prompt': 20,
+                  'max_instances_in_prompt': 100,
+                  'test_proportion': 0.1},
+    'message': None,
+    'attempt': 0,
+    'success': True,
+    'best': True,
+    'error': '',
+    'stdout': None,
+    'num_true_positives': 150,
+    'num_false_positives': 4,
+    'num_true_negatives': 182407,
+    'num_false_negatives': 23,
+    'num_negatives': None,
+    'precision': 0.974025974025974,
+    'recall': 0.8670520231213873,
+    'f1': 0.9174311926605504,
+    'accuracy': 0.9998521228585199}
