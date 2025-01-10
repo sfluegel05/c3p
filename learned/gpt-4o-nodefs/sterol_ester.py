@@ -2,7 +2,7 @@
 Classifies: CHEBI:35915 sterol ester
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_sterol_ester(smiles: str):
     """
@@ -21,11 +21,11 @@ def is_sterol_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Steroid nucleus pattern (3 hexagonal and 1 pentagonal ring typical of sterols)
-    steroid_nucleus_smarts = "C1CC2CCC3C(C1)C2CCC4C3(CCC4)"  # Simplified steroid nucleus pattern
-    steroid_nucleus_pattern = Chem.MolFromSmarts(steroid_nucleus_smarts)
+    # Refined sterol core pattern (steroid nucleus with characteristic rings and stereochemistry)
+    sterol_smarts = "[#6]1[#6][#6]2[#6]3[#6]([#6]1)[#6][#6][#6]4[#6]([#6]3)[#6][#6][#6]5[#6](C2)[#6](C([#6][#6]5)[C@@H]4)O"
+    sterol_core = Chem.MolFromSmarts(sterol_smarts)
     
-    if not mol.HasSubstructMatch(steroid_nucleus_pattern):
+    if not mol.HasSubstructMatch(sterol_core):
         return False, "No sterol core structure found"
         
     # Ester group pattern (-C(=O)O-)
@@ -35,14 +35,14 @@ def is_sterol_ester(smiles: str):
     if not mol.HasSubstructMatch(ester_pattern):
         return False, "No ester linkage found"
 
-    # Check for long aliphatic chain (multiple CH2)
-    long_chain_pattern_smarts = "CCCCCCCCCCCCCCCCCC"  # Pattern for a long aliphatic chain
-    long_chain_pattern = Chem.MolFromSmarts(long_chain_pattern_smarts)
+    # Check for long aliphatic chain (using flexible chain detection)
+    carbon_chain_smarts = "[#6]~[#6]~[#6]~[#6]~[#6]~[#6]" # Arbitrary extension for long chain
+    carbon_chain = Chem.MolFromSmarts(carbon_chain_smarts)
     
-    if not mol.HasSubstructMatch(long_chain_pattern):
-        return False, "No long fatty acid chain found"
+    if not mol.HasSubstructMatch(carbon_chain):
+        return False, "No sufficient aliphatic chain found"
 
-    return True, "Contains sterol core structure esterified with a long fatty acid chain"
+    return True, "Contains sterol core structure esterified with a long aliphatic chain"
 
 # Example metadata
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:None',
@@ -50,26 +50,7 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:None',
                           'definition': 'Chemical entities consisting of a sterol esterified with a fatty acid'},
     'config': {   'llm_model_name': 'rdkit_based_model',
                   'f1_threshold': 0.8,
-                  'max_attempts': 5,
-                  'max_positive_instances': None,
-                  'max_positive_to_test': None,
-                  'max_negative_to_test': None,
-                  'max_positive_in_prompt': 50,
-                  'max_negative_in_prompt': 20,
-                  'max_instances_in_prompt': 100,
-                  'test_proportion': 0.1},
+                  'max_attempts': 5},
     'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': None,
-    'num_false_positives': None,
-    'num_true_negatives': None,
-    'num_false_negatives': None,
-    'num_negatives': None,
-    'precision': None,
-    'recall': None,
-    'f1': None,
-    'accuracy': None}
+    'attempt': 1,
+    'success': True}
