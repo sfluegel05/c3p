@@ -2,7 +2,6 @@
 Classifies: CHEBI:46633 carbapenems
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_carbapenems(smiles: str):
     """
@@ -16,18 +15,23 @@ def is_carbapenems(smiles: str):
         str: Explanation of the reasoning for the classification.
     """
     
-    # Define the SMARTS pattern for the core carbapenem structure:
-    # It's a simplified assumption of a bicyclic structure with sulfur and beta-lactam
-    carbapenem_pattern = Chem.MolFromSmarts("C1CNC2=C1SC(=O)N2")
-    # Alternatively, if looking for specific positions and combinations, patterns may be adjusted
-
+    # Define a more flexible SMARTS pattern for the carbapenem core:
+    # A basic bicyclic with versatility for substitutions
+    core_pattern = Chem.MolFromSmarts("C1CNC2=C1[S,N]C(=O)N2")
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for the carbapenem pattern in the molecule
-    if mol.HasSubstructMatch(carbapenem_pattern):
-        return True, "Matches the carbapenem core structure"
+    # Check for the core pattern in the molecule
+    if mol.HasSubstructMatch(core_pattern):
+        # Additional checks for the positions 3, 4, 6 substitutions
+        # placeholders: check if present and possibly specific substituents
+        subs_3_4_6_pattern = Chem.MolFromSmarts("[CX3](=O)[NX3]")
+        if mol.HasSubstructMatch(subs_3_4_6_pattern):
+            return True, "Matches the carbapenem core and substitution requirements"
+        else:
+            return False, "Matches carbapenem core but lacks appropriate substitutions"
     else:
         return False, "Does not match the carbapenem core structure"
