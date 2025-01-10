@@ -22,28 +22,29 @@ def is_ether_lipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Improved glycerol-like backbone pattern including stereochemistry
-    glycerol_like_pattern = Chem.MolFromSmarts("[C@@H]([OH1])-[C@H]([OH1])-O")
+    # Revised glycerol-like backbone pattern without stereochemistry
+    glycerol_like_pattern = Chem.MolFromSmarts("[CX4][CX4][OX2H1]")
     if not mol.HasSubstructMatch(glycerol_like_pattern):
         return False, "No suitable glycerol-like backbone found"
-
-    # Look for ether linkage pattern - R-O-R
-    ether_pattern = Chem.MolFromSmarts("C-O-C")
+    
+    # Look for ether linkage pattern - more generalized
+    ether_pattern = Chem.MolFromSmarts("[CX4]O[CX4]")
     ether_matches = mol.GetSubstructMatches(ether_pattern)
     if not ether_matches:
         return False, "No ether linkage found"
 
-    # Checking for phosphate group is optional, pay attention to its presence
-    phospho_pattern = Chem.MolFromSmarts("P(=O)([O-])([O-])")
+    # Simplified phosphate group detection (not a requirement for all ether lipids)
+    phospho_pattern = Chem.MolFromSmarts("[PX4](=O)(O)(O)")
     if mol.HasSubstructMatch(phospho_pattern):
         phosphate_presence = " and phosphate group identified"
     else:
         phosphate_presence = ""
 
-    # If there are more ether than ester linkages, it's likely an ether lipid
+    # Count ester groups to balance classification more broadly
     ester_pattern = Chem.MolFromSmarts("C(=O)O")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ether_matches) > len(ester_matches):
-        return True, f"Ether lipid identified by ether linkages on glycerol-like backbone{phosphate_presence}"
+
+    if len(ether_matches) >= 1 and len(ether_matches) > len(ester_matches):
+        return True, f"Ether lipid identified by ether linkages{phosphate_presence}"
     else:
-        return False, "Ether-to-ester linkage ratio not sufficient for ether lipid classification"
+        return False, "Ether linkage presence insufficient for ether lipid classification"
