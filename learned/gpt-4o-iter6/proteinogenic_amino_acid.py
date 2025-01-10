@@ -6,10 +6,8 @@ from rdkit import Chem
 def is_proteinogenic_amino_acid(smiles: str):
     """
     Determines if a molecule is a proteinogenic amino acid based on its SMILES string.
-
     Args:
         smiles (str): SMILES string of the molecule
-
     Returns:
         bool, str: True and reason if molecule is a proteinogenic amino acid, otherwise False and reason
     """
@@ -18,26 +16,20 @@ def is_proteinogenic_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Standard amino acid core patterns
-    amino_acid_pattern = Chem.MolFromSmarts("[N+0;!H2][C@&H1;X4]([C;X3](=[O;X1])[O;X2])[!#1]")
-    glycine_pattern = Chem.MolFromSmarts("[N+0]CC(=O)[O;X2]")
+    # Specific pattern for amino acids (capturing standard structure including isotopically labeled versions)
+    standard_amino_acid_pattern = Chem.MolFromSmarts("[N;!H2][C@@,C@&!H0][C;!H0](=O)[O;!H0]")
+    strict_glycine_pattern = Chem.MolFromSmarts("NCC(=O)O")
 
-    # Check if the mol has the amino acid backbone (allows isotopic labels/deuteration)
-    if not mol.HasSubstructMatch(amino_acid_pattern):
-        if mol.HasSubstructMatch(glycine_pattern):
-            return True, "SMILES matches glycine structure, an exception to chirality"
-        return False, "No standard amino acid backbone with valid chirality found"
-
-    # Further chirality and derivative check
-    chiral_atoms = [atom for atom in mol.GetAtoms() if atom.GetChiralTag() != Chem.CHI_UNSPECIFIED]
-    if not chiral_atoms:
-        return False, "Lacking required chirality or has unresolved chirality"
-
-    # Ensure single amino acid and check for lone peptide bonds or extended structures
-    if mol.GetNumBonds() > 10:  # Arbitrary threshold for complexity beyond single amino acid
-        return False, "Molecule too complex; likely a peptide or larger compound"
-
-    return True, "Valid backbone and chirality detected; matches a proteinogenic amino acid"
+    # Check for basic structure match, considering cases for glycine
+    if mol.HasSubstructMatch(standard_amino_acid_pattern):
+        # Further evaluate complexity of the molecule
+        if any(atom.GetSymbol() == 'C' for atom in mol.GetAtoms() if mol.GetBondsBetweenAtoms(atom.GetIdx(), atom.GetIdx())):
+            return False, "Contains potentially extended carbon backbone beyond amino acid core"
+        return True, "Valid amino acid backbone and chirality detected"
+    elif mol.HasSubstructMatch(strict_glycine_pattern):
+        return True, "SMILES matches glycine structure, the exception for non-chirality"
+    
+    return False, "Does not conform to established proteinogenic amino acid structure"
 
 # Example test case
 smiles_example = "N[C@@H](CC(N)=O)C(O)=O"  # L-asparagine
