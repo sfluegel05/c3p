@@ -2,6 +2,7 @@
 Classifies: CHEBI:26666 short-chain fatty acid
 """
 from rdkit import Chem
+from rdkit.Chem import rdmolops
 
 def is_short_chain_fatty_acid(smiles: str):
     """
@@ -23,8 +24,7 @@ def is_short_chain_fatty_acid(smiles: str):
 
     # Check for single carboxyl group presence
     carboxyl_pattern = Chem.MolFromSmarts("C(=O)[O]")
-    carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
-    if len(carboxyl_matches) != 1:
+    if not mol.HasSubstructMatch(carboxyl_pattern):
         return False, "Requires exactly one carboxyl group"
     
     # Ensure chain is open (no rings)
@@ -34,20 +34,17 @@ def is_short_chain_fatty_acid(smiles: str):
     # Count non-hydrocarbon elements (other than C, H, O)
     num_others = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() not in {1, 6, 8})
     if num_others > 0:
-        return False, "Presence of non-hydrocarbon substituents disqualifies compound"        
+        return False, "Presence of non-hydrocarbon substituents disqualifies compound"
 
-    # Count carbon atoms to ensure fewer than 6
-    num_carbon = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    
-    # Consider every feature (branch) an 'effective' increase in chain length
-    degree_increase = sum((atom.GetDegree() - 1) for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    
-    # Calculate effective chain length
-    effective_carbon_count = num_carbon + degree_increase
-    if effective_carbon_count >= 6:
-        return False, f"Effective chain length is C{effective_carbon_count}, should be less than C6"
+    # Compute the longest carbon chain
+    carbon_atom_indices = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
+    carbon_paths = [rdmolops.GetShortestPath(mol, carbon_atom_indices[0], carbon_atom_indices[-1])]
+    longest_chain_length = max(len(path) for path in carbon_paths)
 
-    return True, "Valid short-chain fatty acid"
+    if longest_chain_length <= 6:
+        return True, "Valid short-chain fatty acid"
+    else:
+        return False, f"Carbon chain length is {longest_chain_length}, should be less than C6"
 
 # Example usage
 smiles_example = "CCCC(O)=O"  # Butyric acid
