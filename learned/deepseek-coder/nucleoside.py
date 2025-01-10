@@ -25,14 +25,18 @@ def is_nucleoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define nucleobase patterns (adenine, guanine, thymine, cytosine, uracil, xanthine)
+    # Define nucleobase patterns (adenine, guanine, thymine, cytosine, uracil, xanthine, and their modifications)
     nucleobase_patterns = [
         Chem.MolFromSmarts("[nH]1cnc2c1nc[nH]2"),  # Adenine
         Chem.MolFromSmarts("[nH]1c(=O)[nH]c2c1ncn2"),  # Guanine
         Chem.MolFromSmarts("[nH]1c(=O)nc2c1cc[nH]2"),  # Cytosine
         Chem.MolFromSmarts("[nH]1c(=O)nc2c1ccc[nH]2"),  # Uracil
         Chem.MolFromSmarts("[nH]1c(=O)nc2c1c(C)cc[nH]2"),  # Thymine
-        Chem.MolFromSmarts("[nH]1c(=O)nc2c1c(O)cc[nH]2")  # Xanthine
+        Chem.MolFromSmarts("[nH]1c(=O)nc2c1c(O)cc[nH]2"),  # Xanthine
+        Chem.MolFromSmarts("[nH]1c(=O)nc2c1c(N)cc[nH]2"),  # Modified Cytosine
+        Chem.MolFromSmarts("[nH]1c(=O)nc2c1c(F)cc[nH]2"),  # Modified Uracil
+        Chem.MolFromSmarts("[nH]1c(=O)nc2c1c(Br)cc[nH]2"),  # Modified Uracil
+        Chem.MolFromSmarts("[nH]1c(=O)nc2c1c(Cl)cc[nH]2")  # Modified Uracil
     ]
 
     # Check for presence of a nucleobase
@@ -40,17 +44,22 @@ def is_nucleoside(smiles: str):
     if not has_nucleobase:
         return False, "No nucleobase found"
 
-    # Define sugar patterns (ribose or deoxyribose)
+    # Define sugar patterns (ribose or deoxyribose, including modifications)
     ribose_pattern = Chem.MolFromSmarts("[C@H]1O[C@H](CO)[C@H](O)[C@H]1O")  # Ribose
     deoxyribose_pattern = Chem.MolFromSmarts("[C@H]1O[C@H](CO)[C@H](O)[C@H]1")  # Deoxyribose
+    modified_ribose_pattern = Chem.MolFromSmarts("[C@H]1O[C@H](CO)[C@H](O)[C@H]1[O,N,S]")  # Modified Ribose
+    modified_deoxyribose_pattern = Chem.MolFromSmarts("[C@H]1O[C@H](CO)[C@H](O)[C@H]1[O,N,S]")  # Modified Deoxyribose
 
     # Check for presence of a sugar moiety
-    has_sugar = mol.HasSubstructMatch(ribose_pattern) or mol.HasSubstructMatch(deoxyribose_pattern)
+    has_sugar = (mol.HasSubstructMatch(ribose_pattern) or 
+                 mol.HasSubstructMatch(deoxyribose_pattern) or 
+                 mol.HasSubstructMatch(modified_ribose_pattern) or 
+                 mol.HasSubstructMatch(modified_deoxyribose_pattern))
     if not has_sugar:
         return False, "No sugar moiety (ribose or deoxyribose) found"
 
     # Check for N-glycosidic bond between nucleobase and sugar
-    glycosidic_bond_pattern = Chem.MolFromSmarts("[NX3][C@H]1O[C@H](CO)[C@H](O)[C@H]1O")  # N-glycosidic bond
+    glycosidic_bond_pattern = Chem.MolFromSmarts("[NX3][C@H]1O[C@H](CO)[C@H](O)[C@H]1[O,N,S]")  # N-glycosidic bond
     if not mol.HasSubstructMatch(glycosidic_bond_pattern):
         return False, "No N-glycosidic bond found between nucleobase and sugar"
 
