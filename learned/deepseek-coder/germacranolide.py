@@ -32,10 +32,10 @@ def is_germacranolide(smiles: str):
     if 10 not in ring_sizes:
         return False, "No 10-membered ring (germacrane skeleton) found"
 
-    # Look for lactone group (cyclic ester) in a more specific configuration
-    lactone_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2][CX4]1[CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4]1")
+    # Look for lactone group (cyclic ester) in a more flexible configuration
+    lactone_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2][CX4]")
     if not mol.HasSubstructMatch(lactone_pattern):
-        return False, "No lactone group in typical germacranolide configuration found"
+        return False, "No lactone group found"
 
     # Check for sesquiterpene base (approximately 15 carbons)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
