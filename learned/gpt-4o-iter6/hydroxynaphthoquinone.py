@@ -21,11 +21,11 @@ def is_hydroxynaphthoquinone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS patterns
-    naphthoquinone_pattern = Chem.MolFromSmarts('c1cc2ccccc2c(=O)c(=O)c1')
+    # Define SMARTS patterns - improved pattern for naphthoquinone framework
+    naphthoquinone_pattern = Chem.MolFromSmarts('[#6]1[#6][#6]=[#6][#6][#6]2[#6](=O)[#6](=O)[#6][#6]12')
     hydroxy_pattern = Chem.MolFromSmarts('[OH]')
     
-    # Check for naphthoquinone structure
+    # Check for naphthoquinone structure (in various orientations)
     if not mol.HasSubstructMatch(naphthoquinone_pattern):
         return False, "No naphthoquinone core found"
     
@@ -33,12 +33,20 @@ def is_hydroxynaphthoquinone(smiles: str):
     if not mol.HasSubstructMatch(hydroxy_pattern):
         return False, "No hydroxy group found"
     
-    # Verify hydroxyl group is attached to naphthoquinone
-    # Requires hydroxy group directly connected to naphthoquinone aromatic carbons
+    # Ensure hydroxy group is part of naphthoquinone ring system
     for match in mol.GetSubstructMatches(naphthoquinone_pattern):
-        atoms = set(match)
+        naphthoquinone_atoms = set(match)
         hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
-        if any(h[0] in atoms for h in hydroxy_matches):
+        
+        # Check if any hydroxy is connected directly to the aromatic carbons in the naphthoquinone
+        connected = False
+        for h in hydroxy_matches:
+            hydroxy_bonded_atoms = [bonded_atom.GetIdx() for bonded_atom in mol.GetAtomWithIdx(h[0]).GetNeighbors()]
+            if any(atom_idx in naphthoquinone_atoms for atom_idx in hydroxy_bonded_atoms):
+                connected = True
+                break
+        
+        if connected:
             return True, "Contains naphthoquinone core with hydroxy group substitution"
     
-    return False, "Hydroxy group not attached to naphthoquinone"
+    return False, "Hydroxy group not attached correctly to naphthoquinone"
