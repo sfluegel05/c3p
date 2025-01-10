@@ -23,55 +23,66 @@ def is_quinone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for cyclic ketone pattern (C(=O) in ring)
-    ketone_pattern = Chem.MolFromSmarts("[C,c;R]([#6,#1;A])=O")
+    # Look for cyclic ketone patterns
+    # This pattern matches both para and ortho quinones
+    para_quinone = Chem.MolFromSmarts("[#6;R]=O.[#6;R]=O")
+    ortho_quinone = Chem.MolFromSmarts("[#6;R](=O)-[#6;R]-[#6;R](=O)")
+    
+    has_para = mol.HasSubstructMatch(para_quinone)
+    has_ortho = mol.HasSubstructMatch(ortho_quinone)
+    
+    if not (has_para or has_ortho):
+        return False, "Must contain cyclic ketone groups in quinone arrangement"
+
+    # Count ring systems containing ketones
+    ketone_pattern = Chem.MolFromSmarts("[#6;R]=O")
     ketone_matches = mol.GetSubstructMatches(ketone_pattern)
     
     if len(ketone_matches) < 2:
-        return False, "Must have at least 2 cyclic ketone groups"
+        return False, "Must have at least two ketone groups"
     
-    # Check if ketones are in the same ring system
+    # Check if ketones are in conjugated system
     ring_info = mol.GetRingInfo()
+    ring_systems = ring_info.AtomRings()
     
-    # Get ring atoms for each ketone
-    ketone_ring_atoms = []
-    for match in ketone_matches:
-        ketone_carbon = match[0]
-        rings_for_ketone = ring_info.AtomRings()
-        for ring in rings_for_ketone:
-            if ketone_carbon in ring:
-                ketone_ring_atoms.append(set(ring))
+    # Get the atoms between ketones
+    connecting_atoms = []
+    for ring in ring_systems:
+        ketones_in_ring = []
+        for ketone in ketone_matches:
+            if ketone[0] in ring:
+                ketones_in_ring.append(ketone[0])
+        if len(ketones_in_ring) >= 2:
+            connecting_atoms.extend(ring)
+    
+    if not connecting_atoms:
+        return False, "Ketone groups must be in same ring system"
+    
+    # Check for conjugation or aromaticity in connecting atoms
+    has_conjugation = False
+    for atom_idx in connecting_atoms:
+        atom = mol.GetAtomWithIdx(atom_idx)
+        if atom.GetIsAromatic():
+            has_conjugation = True
+            break
+        for bond in atom.GetBonds():
+            if bond.GetIsConjugated():
+                has_conjugation = True
                 break
-                
-    if not ketone_ring_atoms:
-        return False, "Ketone groups must be part of ring system"
     
-    # Check if at least 2 ketones share a ring system
-    connected_ketones = False
-    for i in range(len(ketone_ring_atoms)):
-        for j in range(i+1, len(ketone_ring_atoms)):
-            if ketone_ring_atoms[i].intersection(ketone_ring_atoms[j]):
-                connected_ketones = True
-                break
+    if not has_conjugation:
+        return False, "Must have conjugated system between ketones"
     
-    if not connected_ketones:
-        return False, "Ketone groups must be in connected ring system"
+    # Additional check for polycyclic systems
+    polycyclic = len(ring_systems) > 1
     
-    # Check for conjugation between ketones
-    conjugated_pattern = Chem.MolFromSmarts("[C,c;R]([#6,#1;A])=O.[C,c;R]([#6,#1;A])=O")
-    if not mol.HasSubstructMatch(conjugated_pattern):
-        return False, "Ketone groups must be conjugated"
+    # Construct reason string
+    if has_para:
+        structure_type = "para"
+    else:
+        structure_type = "ortho"
     
-    # Look for aromatic or conjugated system
-    aromatic_atoms = [atom.GetIsAromatic() for atom in mol.GetAtoms()]
-    conjugated_bonds = [bond.GetIsConjugated() for bond in mol.GetBonds()]
+    system_type = "polycyclic" if polycyclic else "monocyclic"
+    reason = f"Contains {structure_type}-quinone structure in {system_type} conjugated system"
     
-    if not (any(aromatic_atoms) or any(conjugated_bonds)):
-        return False, "Must have aromatic or conjugated system"
-        
-    # Additional check for quinone pattern - alternating single/double bonds
-    quinone_pattern = Chem.MolFromSmarts("[C,c;R]([#6,#1;A])=O-[C,c;R]=,:[C,c;R]-[C,c;R]([#6,#1;A])=O")
-    if not mol.HasSubstructMatch(quinone_pattern):
-        return False, "Must have characteristic quinone pattern"
-
-    return True, "Contains cyclic dione structure with conjugation characteristic of quinones"
+    return True, reason
