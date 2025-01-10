@@ -20,15 +20,16 @@ def is_metal_atom(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for single atom without charge
-    if mol.GetNumAtoms() != 1 or any(char in smiles for char in "+-]):
-        return False, "Molecule does not consist of a single neutral atom"
+    # Check for single atom (possibly isotopic)
+    if mol.GetNumAtoms() != 1:
+        return False, "Molecule does not consist of a single atom"
 
     # Get the single atom
     atom = mol.GetAtomWithIdx(0)
     atomic_num = atom.GetAtomicNum()
+    isotope = atom.GetIsotope()  # Retrieve isotope information
 
-    # Revised list of metal atomic numbers based on a more comprehensive periodic table inclusion
+    # List of metal atomic numbers based on a comprehensive periodic table inclusion
     metal_atomic_numbers = {
         3, 4, 11, 12, 13, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
         37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 55, 56, 57, 58,
@@ -37,8 +38,9 @@ def is_metal_atom(smiles: str):
         97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111,
         112, 113, 114, 115, 116, 117
     }
-
+    
+    # Check if atomic number is classified as a metal
     if atomic_num in metal_atomic_numbers:
-        return True, f"Atom with atomic number {atomic_num} is a metal atom"
+        return True, f"Atom with atomic number {atomic_num}{(' with isotope ' + str(isotope)) if isotope else ''} is a metal atom"
     else:
-        return False, f"Atom with atomic number {atomic_num} is not a metal atom"
+        return False, f"Atom with atomic number {atomic_num}{(' with isotope ' + str(isotope)) if isotope else ''} is not a metal atom"
