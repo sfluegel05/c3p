@@ -19,9 +19,9 @@ def is_beta_D_glucosiduronic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for beta-D-glucuronic acid moiety
-    # 6-membered ring with OH groups and one COOH
-    glucuronic_acid_smarts = "[C@H]1(O[C@H](CO)[C@@H]([C@H](O)[C@H]1O)C(=O)O)"
+    # Corrected SMARTS pattern for beta-D-glucuronic acid moiety
+    # We need to capture the beta linkage and correct stereochemistry
+    glucuronic_acid_smarts = "C[C@H]1(O[C@@H]([C@@H](C[C@@H]1O)O)O)C(=O)O"
     glucuronic_acid_pattern = Chem.MolFromSmarts(glucuronic_acid_smarts)
 
     if mol.HasSubstructMatch(glucuronic_acid_pattern):
@@ -29,6 +29,6 @@ def is_beta_D_glucosiduronic_acid(smiles: str):
     else:
         return False, "No beta-D-glucuronic acid moiety found"
 
-# Test with examples
+# Test with an example
 example_smiles = "O[C@@H]1[C@@H](O)[C@@H](O[C@@H]([C@H]1O)C(O)=O)OC=2C=CC(=CC2)[N+]([O-])=O"
 print(is_beta_D_glucosiduronic_acid(example_smiles))
