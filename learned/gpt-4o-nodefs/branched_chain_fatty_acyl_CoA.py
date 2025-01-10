@@ -2,7 +2,6 @@
 Classifies: CHEBI:61912 branched-chain fatty acyl-CoA
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_branched_chain_fatty_acyl_CoA(smiles: str):
     """
@@ -21,19 +20,20 @@ def is_branched_chain_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Enhanced CoA substructure pattern
-    coa_pattern = Chem.MolFromSmarts('C(=O)SCCNC(=O)CCNC(=O)[C@H](O)[C@@H](COP(O)(=O)OP(O)(=O)O)C')
+    # Broadened CoA substructure pattern to include more specific phosphate and base features
+    coa_pattern = Chem.MolFromSmarts('NC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC')
 
     # Check for the presence of CoA substructure
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "Lacks CoA substructure"
 
-    # Enhanced branched chain pattern (multiple possible branching patterns)
+    # Expanded branching patterns to capture various methyl groupings
     branch_patterns = [
         Chem.MolFromSmarts('CC(C)C'),       # Simple methyl branching
-        Chem.MolFromSmarts('C(C)C(C)C'),    # Multi branched
-        Chem.MolFromSmarts('[C@H](C)(C)'),  # Chiral branching
-        Chem.MolFromSmarts('C=C(C)C')       # Brancing with double bond
+        Chem.MolFromSmarts('C(C)(C)C'),     # Double methyl branching
+        Chem.MolFromSmarts('CCC(C)C'),      # Additional chiral branching
+        Chem.MolFromSmarts('C=C(C)C'),      # Brancing with double bond
+        Chem.MolFromSmarts('CC(O)C')        # Hydroxyl attached to branch point
     ]
     
     # Check for any branched patterns
@@ -41,10 +41,5 @@ def is_branched_chain_fatty_acyl_CoA(smiles: str):
     if not branched_match:
         return False, "No branched chain detected"
 
-    # Confirm required functional groups or structural features
-    # Check for possible hydroxylation or other characteristic groups
-    hydroxyl_pattern = Chem.MolFromSmarts('[CX4](O)')  # Hydroxylation
-    if not mol.HasSubstructMatch(hydroxyl_pattern):
-        return False, "Potential missing hydroxyl group for characteristic feature"
-
+    # It might or might not have hydroxylation, broaden functional group checks
     return True, "Molecule contains CoA moiety and branched-chain structure"
