@@ -26,8 +26,11 @@ def is_organoiodine_compound(smiles: str):
         atom1 = bond.GetBeginAtom()
         atom2 = bond.GetEndAtom()
         
-        # Check if one atom is carbon (atomic number 6) and the other is iodine (atomic number 53)
-        if (atom1.GetAtomicNum() == 6 and atom2.GetAtomicNum() == 53) or (atom1.GetAtomicNum() == 53 and atom2.GetAtomicNum() == 6):
+        # Check for C-I bond explicitly
+        is_c_i_bond = (atom1.GetAtomicNum() == 6 and atom2.GetAtomicNum() == 53) or \
+                      (atom1.GetAtomicNum() == 53 and atom2.GetAtomicNum() == 6)
+                      
+        if is_c_i_bond:
             return True, "Contains a carbon-iodine bond"
 
     return False, "No carbon-iodine bond found"
