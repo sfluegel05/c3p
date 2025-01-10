@@ -27,7 +27,7 @@ def is_1_2_4_triazines(smiles: str):
     # Define a more flexible 1,2,4-triazine core pattern
     # This pattern matches a six-membered ring with nitrogens at positions 1, 2, and 4
     # and allows for any type of bond and any substituents on the ring
-    triazine_pattern = Chem.MolFromSmarts("[nX2]1[cX2][nX2][nX2][cX2][cX2]1")
+    triazine_pattern = Chem.MolFromSmarts("[n]1[c][n][n][c][c]1")
     if not mol.HasSubstructMatch(triazine_pattern):
         return False, "No 1,2,4-triazine core found"
 
