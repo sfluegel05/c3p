@@ -26,43 +26,52 @@ def is_enone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for enone group
-    # [C;!$(C=O)]: carbon not part of a carbonyl
-    # [C;!$(C=O)]: another carbon not part of a carbonyl
-    # =O: oxygen double bonded to carbon
-    # [#6;!H0]: carbon with at least one hydrogen
-    enone_pattern = Chem.MolFromSmarts("[C;!$(C=O)]=[C;!$(C=O)]-C(=O)[#6;!H0]")
-    
-    # Alternative pattern for cyclic enones and other variations
-    enone_pattern2 = Chem.MolFromSmarts("[C;!$(C=O)]=[C;!$(C=O)]-C(=O)-[#6]")
-    
-    # Check for matches
-    matches = mol.GetSubstructMatches(enone_pattern)
-    matches2 = mol.GetSubstructMatches(enone_pattern2)
-    
-    all_matches = set(matches + matches2)
-    
-    if not all_matches:
-        return False, "No enone group found"
-    
-    # Verify conjugation by checking bond types
-    for match in all_matches:
-        # Get the relevant atoms
-        c1, c2, c3, _ = match
-        
-        # Check bond types
-        bond1 = mol.GetBondBetweenAtoms(c1, c2)
-        bond2 = mol.GetBondBetweenAtoms(c2, c3)
-        
-        # Verify double bond between C1-C2 and single bond between C2-C3
-        if (bond1.GetBondType() == Chem.BondType.DOUBLE and 
-            bond2.GetBondType() == Chem.BondType.SINGLE):
+    # Define SMARTS patterns for enone groups
+    # Pattern 1: Linear enone pattern
+    # [C;!$(C=O)] = carbon not part of a carbonyl
+    # [CD1,CD2,CD3,CD4] = carbon with 1-4 connections (covers both chain and ring)
+    patterns = [
+        # Basic enone pattern
+        "[C;!$(C=O)]=[C;!$(C=O)]-C(=[OD1])-[#6]",
+        # Cyclic enone pattern
+        "[C;R]=[C;R]-C(=[OD1])-[#6]",
+        # Alternative pattern for complex rings
+        "[C;!$(C=O)]=[C]-C(=O)-[#6;!$([#6][OD1])]"
+    ]
+
+    for pattern in patterns:
+        substructure = Chem.MolFromSmarts(pattern)
+        if substructure is None:
+            continue
             
-            # Get the carbonyl carbon
-            carbonyl_carbon = mol.GetAtomWithIdx(c3)
-            
-            # Verify it's a ketone (not an aldehyde)
-            if carbonyl_carbon.GetTotalNumHs() == 0:
-                return True, "Contains alpha,beta-unsaturated ketone (enone) group"
-    
-    return False, "Structure has correct atoms but incorrect conjugation pattern"
+        matches = mol.GetSubstructMatches(substructure)
+        
+        if matches:
+            for match in matches:
+                # Verify conjugation and ketone nature
+                try:
+                    # Get the relevant atoms
+                    c_beta = mol.GetAtomWithIdx(match[0])  # Beta carbon
+                    c_alpha = mol.GetAtomWithIdx(match[1]) # Alpha carbon
+                    c_carbonyl = mol.GetAtomWithIdx(match[2]) # Carbonyl carbon
+                    c_substituent = mol.GetAtomWithIdx(match[3]) # R group on carbonyl
+                    
+                    # Check bond types
+                    double_bond = mol.GetBondBetweenAtoms(match[0], match[1])
+                    single_bond = mol.GetBondBetweenAtoms(match[1], match[2])
+                    
+                    # Verify conjugation pattern
+                    if (double_bond.GetBondType() == Chem.BondType.DOUBLE and 
+                        single_bond.GetBondType() == Chem.BondType.SINGLE):
+                        
+                        # Verify it's a ketone (not an aldehyde)
+                        if c_carbonyl.GetTotalNumHs() == 0:
+                            # Additional check for carbonyl oxygen
+                            for neighbor in c_carbonyl.GetNeighbors():
+                                if neighbor.GetAtomicNum() == 8 and neighbor.GetTotalNumHs() == 0:
+                                    return True, "Contains alpha,beta-unsaturated ketone (enone) group"
+                
+                except (IndexError, AttributeError):
+                    continue
+
+    return False, "No enone group found or incorrect conjugation pattern"
