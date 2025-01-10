@@ -28,72 +28,27 @@ def is_xanthophyll(smiles: str):
     # Check for presence of oxygen atoms
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     if o_count == 0:
-        return False, "No oxygen atoms found; not an oxygenated carotenoid"
+        return False, "No oxygen atoms found; not an oxygenated carotene"
 
-    # Build a graph of conjugated atoms connected via conjugated bonds
-    conj_atom_graph = {}  # atom_idx -> set of neighbor atom_idx
-    for atom in mol.GetAtoms():
-        if atom.GetIsConjugated():
-            idx = atom.GetIdx()
-            conj_atom_graph[idx] = set()
-
-    # Build adjacency list for conjugated atoms
+    # Check for a long conjugated chain (number of conjugated double bonds)
+    # Approximate by counting the number of conjugated double bonds between carbons
+    num_conj_double_bonds = 0
     for bond in mol.GetBonds():
-        if bond.GetIsConjugated():
+        if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE and bond.GetIsConjugated():
             begin_atom = bond.GetBeginAtom()
             end_atom = bond.GetEndAtom()
-            if begin_atom.GetIsConjugated() and end_atom.GetIsConjugated():
-                idx1 = begin_atom.GetIdx()
-                idx2 = end_atom.GetIdx()
-                conj_atom_graph[idx1].add(idx2)
-                conj_atom_graph[idx2].add(idx1)
+            if begin_atom.GetAtomicNum() == 6 and end_atom.GetAtomicNum() == 6:
+                num_conj_double_bonds += 1
 
-    # Find the largest conjugated system using connected components
-    visited = set()
-    max_conj_system_size = 0
+    if num_conj_double_bonds < 9:
+        return False, f"Insufficient conjugated double bonds ({num_conj_double_bonds}); not a carotenoid"
 
-    for atom_idx in conj_atom_graph:
-        if atom_idx not in visited:
-            # Perform DFS to find all connected conjugated atoms
-            stack = [atom_idx]
-            current_component_size = 0
-            while stack:
-                current_atom = stack.pop()
-                if current_atom not in visited:
-                    visited.add(current_atom)
-                    current_component_size += 1
-                    neighbors = conj_atom_graph[current_atom]
-                    stack.extend(neighbors - visited)
-            max_conj_system_size = max(max_conj_system_size, current_component_size)
-
-    # Check if the largest conjugated system is long enough to be a carotenoid
-    if max_conj_system_size < 18:
-        return False, f"Insufficient conjugated system size ({max_conj_system_size}); not a carotenoid"
-
-    # Check that the molecule has sufficient carbon atoms
+    # Check that the molecule has sufficient carbon atoms (approximate carotenoid size)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 35:
+    if c_count < 30:
         return False, f"Too few carbon atoms ({c_count}); not a carotenoid"
 
-    # Check for functional groups typical of xanthophylls
-    has_oxygenated_functional_group = False
-    # Hydroxyl group
-    if mol.HasSubstructMatch(Chem.MolFromSmarts("[OX2H]")):
-        has_oxygenated_functional_group = True
-    # Carbonyl group
-    if mol.HasSubstructMatch(Chem.MolFromSmarts("C=O")):
-        has_oxygenated_functional_group = True
-    # Epoxide ring
-    if mol.HasSubstructMatch(Chem.MolFromSmarts("[C]1-[O]-[C]1")):
-        has_oxygenated_functional_group = True
-    # Ether group
-    if mol.HasSubstructMatch(Chem.MolFromSmarts("C-O-C")):
-        has_oxygenated_functional_group = True
-
-    if not has_oxygenated_functional_group:
-        return False, "No typical xanthophyll functional groups found"
-
-    # Check molecular weight
+    # Check molecular weight - carotenoids typically >500 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 500:
         return False, f"Molecular weight too low ({mol_wt:.2f} Da); not a carotenoid"
