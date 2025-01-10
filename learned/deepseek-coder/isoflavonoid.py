@@ -26,13 +26,13 @@ def is_isoflavonoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the 1-benzopyran core pattern
-    benzopyran_pattern = Chem.MolFromSmarts("[O]1[C]2=[C][C]=[C][C]=[C]2[C]=[C]1")
+    # Define a more flexible 1-benzopyran core pattern
+    benzopyran_pattern = Chem.MolFromSmarts("O1C=C2C=CC=CC2=C1")
     if not mol.HasSubstructMatch(benzopyran_pattern):
         return False, "No 1-benzopyran core found"
 
     # Define the aryl substituent at position 3 pattern
-    aryl_substituent_pattern = Chem.MolFromSmarts("[O]1[C]2=[C][C]=[C][C]=[C]2[C](=[C]1)-[c]")
+    aryl_substituent_pattern = Chem.MolFromSmarts("O1C=C2C=CC=CC2=C1-c")
     if not mol.HasSubstructMatch(aryl_substituent_pattern):
         return False, "No aryl substituent at position 3 found"
 
