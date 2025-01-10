@@ -21,32 +21,33 @@ def is_catechols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define catechol SMARTS pattern to detect o-diphenol groups on aromatic rings
-    catechol_pattern = Chem.MolFromSmarts("c1c(O)ccc(O)c1")  # Captures ortho-dihydroxy on aromatic
+    # Define a more extensive catechol SMARTS pattern to detect o-diphenol groups, accounting for substitutions
+    catechol_pattern = Chem.MolFromSmarts("c1c(O)[cH]c(O)[cH]c1")  # Adjacent OH groups on an aromatic ring
     
     # Check for catechol substructure
     if mol.HasSubstructMatch(catechol_pattern):
         return True, "Contains a catechol moiety (o-diphenol component)"
     
-    # If the specific pattern fails, try a flexible approach on adjacency
-    aromatic_atom_indices = [atom.GetIdx() for atom in mol.GetAromaticAtoms()]
-    hydroxyl_indices = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetSymbol() == 'O' and mol.GetAtomWithIdx(atom.GetIdx()).GetNeighbors()[0].GetIsAromatic()]
+    # Additional SMARTS pattern to catch some common variants
+    # Include some flexible OH placement or slight substituents
+    alt_patterns = [
+        Chem.MolFromSmarts("c1c(O)cc(O)c1"),  # Allows other small substituents between
+        Chem.MolFromSmarts("c1cc(O)c(O)c1"),  # Placement variants
+    ]
 
-    # Check adjacency of hydroxyl groups on aromatic systems
-    for i, oxygen1 in enumerate(hydroxyl_indices):
-        for oxygen2 in hydroxyl_indices[i+1:]:
-            if mol.GetBondBetweenAtoms(oxygen1, oxygen2):
-                return True, "Contains ortho-hydroxyl groups on an aromatic ring"
+    for pattern in alt_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return True, "Contains a catechol moiety (pattern variant detected)"
     
     return False, "No catechol moiety found"
 
 # Test with different SMILES strings
-test_smiles = [
-    "O[C@H]([C@H](OC(=O)\\C=C\\c1ccc(O)c(O)c1)C(O)=O)C(O)=O",
-    "Oc1cc(O)cc(O)c1",
-    "C=1(C=CC(=C(C1)O)O)/C=C/C(OCC)=O"
-]
+test_smiles = {
+    "O[C@H]([C@H](OC(=O)\\C=C\\c1ccc(O)c(O)c1)C(O)=O)C(O)=O": "(2S,3R)-trans-caftaric acid",
+    "Oc1cc(O)cc(O)c1": "Simple catechol",
+    "C=1(C=CC(=C(C1)O)O)/C=C/C(OCC)=O": "Ethyl trans-caffeate"
+}
 
-for smiles in test_smiles:
+for smiles, name in test_smiles.items():
     result, reason = is_catechols(smiles)
-    print(f"SMILES: {smiles} -> Is Catechol: {result}, Reason: {reason}")
+    print(f"SMILES: {smiles} ({name}) -> Is Catechol: {result}, Reason: {reason}")
