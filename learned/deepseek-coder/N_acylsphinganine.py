@@ -29,7 +29,10 @@ def is_N_acylsphinganine(smiles: str):
     # Define a more flexible sphinganine backbone pattern: [amino group]-[carbon with OH]-[long alkyl chain]
     sphinganine_pattern = Chem.MolFromSmarts("[NX3][C@@H]([OH])[C@@H]([CH2])[CH2]~[CH2]~[CH2]~[CH2]~[CH2]")
     if not mol.HasSubstructMatch(sphinganine_pattern):
-        return False, "No sphinganine backbone found"
+        # Try a more flexible pattern that accounts for variations in the structure
+        sphinganine_pattern = Chem.MolFromSmarts("[NX3][C@@H]([OH])[C@@H]([CH2])[CH2]~[CH2]~[CH2]")
+        if not mol.HasSubstructMatch(sphinganine_pattern):
+            return False, "No sphinganine backbone found"
 
     # Look for the amide bond (fatty acyl group attached to the amino group)
     amide_pattern = Chem.MolFromSmarts("[NX3][C](=O)")
