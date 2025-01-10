@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_endocannabinoid(smiles: str):
     """
     Determines if a molecule is an endocannabinoid based on its SMILES string.
-    Endocannabinoids often have long polyunsaturated alkyl chains with functionalities 
-    like ethanolamide or glycerol derivatives, excluding phosphate and large hydrophilic groupings.
+    Endocannabinoids often have long polyunsaturated or hydroxyl chain with 
+    functionalities like ethanolamide or glycerol derivatives.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,30 +22,31 @@ def is_endocannabinoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define a pattern for polyunsaturated alkyl chains (non-conjugated double bonds)
-    unsaturated_chain_pattern = Chem.MolFromSmarts("CCCC=CCCC=CCCC")
-    if not mol.HasSubstructMatch(unsaturated_chain_pattern):
+    # Define a more inclusive pattern for long polyunsaturated chains
+    polyunsaturated_chain_pattern = Chem.MolFromSmarts("CCCC=CCCC=CCCC=CCCC")
+    if not mol.HasSubstructMatch(polyunsaturated_chain_pattern):
         return False, "No long polyunsaturated alkyl chain found"
 
-    # Pattern for ethanolamide group
-    ethanolamide_pattern = Chem.MolFromSmarts("N(CCO)C(=O)")
-    # Pattern for glycerol derivative (common in endocannabinoids)
-    glycerol_pattern = Chem.MolFromSmarts("OCC(O)CO")
+    # Patterns for ethanolamide and glycerol-derived groups
+    ethanolamide_pattern = Chem.MolFromSmarts("NCC=O")
+    glycerol_ether_pattern = Chem.MolFromSmarts("OCC(O)CO")
 
-    # Check for recognizable functional groups
-    if not (mol.HasSubstructMatch(ethanolamide_pattern) or 
-            mol.HasSubstructMatch(glycerol_pattern)):
-        return False, "No recognizable group (ethanolamide or glycerol derivative) found"
+    # Check if at least one of these endocannabinoid functional groups is present
+    functional_group_present = (
+        mol.HasSubstructMatch(ethanolamide_pattern) or 
+        mol.HasSubstructMatch(glycerol_ether_pattern)
+    )
+    if not functional_group_present:
+        return False, "No recognizable endocannabinoid functional group found"
 
-    # Exclude compounds with phosphate groups
+    # Filter out molecules with phosphate groups, relevant for misclassified entries
     phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)(O)O")
     if mol.HasSubstructMatch(phosphate_pattern):
-        return False, "Contains phosphate group, likely not an endocannabinoid"
+        return False, "Contains phosphate group, not typical for endocannabinoids"
 
-    # Ensure a reasonable number of carbon atoms for typical endocannabinoids
+    # Carbon count check for complexity ensuring it is at least 15 carbons, typical in endocannabinoids
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if c_count < 15:
-        return False, "Too few carbons for typical endocannabinoid"
+        return False, "Too few carbons for a typical endocannabinoid"
 
-    # If holds all checks, likely endocannabinoid
-    return True, "Matches endocannabinoid characteristics with polyunsaturated alkyl chain and functional group"
+    return True, "Matches characteristic endocannabinoid features with polyunsaturated chain and functional group"
