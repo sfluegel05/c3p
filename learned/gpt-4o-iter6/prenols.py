@@ -6,8 +6,7 @@ from rdkit import Chem
 def is_prenols(smiles: str):
     """
     Determines if a molecule is a prenol based on its SMILES string.
-    Prenols are alcohols with the formula H-[CH2C(Me)=CHCH2]nOH, 
-    containing one or more isoprene units.
+    Prenols are alcohols with the formula H-[CH2C(Me)=CHCH2]nOH, containing one or more isoprene units.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -17,38 +16,30 @@ def is_prenols(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES to molecule
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Refined pattern to capture isoprene units with possible geometric isomerism
-    isoprene_smarts = "C(=C(C)C)[CH2]"
-    isoprene_pattern = Chem.MolFromSmarts(isoprene_smarts)
+    # Define isoprene unit pattern
+    isoprene_pattern = Chem.MolFromSmarts("C(C)=C-C-C")
+    if not mol.HasSubstructMatch(isoprene_pattern):
+        return False, "No isoprene unit found"
     
-    # Search for at least one isoprene unit
+    # Define alcohol group pattern
+    alcohol_pattern = Chem.MolFromSmarts("CO")
+    if not mol.HasSubstructMatch(alcohol_pattern):
+        return False, "No alcohol group (OH) found"
+    
+    # Verify linkage of isoprene units
+    # This step could be enhanced to count and ensure the correct sequential linkage.
     isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
-    if len(isoprene_matches) < 1:
-        return False, "No isoprene units found"
-    
-    # Check for terminal alcohol - more specific to ensure the alcohol is terminal
-    # A terminal alcohol will have one OH group bonded to a non-carbonyl carbon and end of chain
-    terminal_alcohol_pattern = Chem.MolFromSmarts("[C](O)")
-    terminal_alcohol_matches = mol.GetSubstructMatches(terminal_alcohol_pattern)
-    
-    # We need to be 100% sure that this is indeed terminal
-    is_terminal = False
-    for match in terminal_alcohol_matches:
-        alcohol_atom = mol.GetAtomWithIdx(match[1])
-        # Ensure that this OH is terminal
-        if alcohol_atom.GetDegree() == 1:
-            is_terminal = True
-            break
-    
-    if not is_terminal:
-        return False, "Missing or non-terminal alcohol group"
-    
-    # Basic logic now checks for presence of isoprene unit(s) and terminal OH group
-    return True, f"Contains {len(isoprene_matches)} isoprene units with a terminal alcohol group"
+    alcohol_matches = mol.GetSubstructMatches(alcohol_pattern)
 
-__metadata__ = {'chemical_class': {'name': 'prenol'}}
+    # Check if there's a continuous chain ending with an alcohol
+    if len(isoprene_matches) < 1 or len(alcohol_matches) == 0:
+        return False, "Insufficient isoprene units or no terminal alcohol group"
+
+    return True, "Contains isoprene units with a terminal alcohol group"
+
+__metadata__ = { 'chemical_class': { 'name': 'prenol' }}
