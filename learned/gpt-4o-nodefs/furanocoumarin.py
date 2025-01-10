@@ -6,8 +6,7 @@ from rdkit import Chem
 def is_furanocoumarin(smiles: str):
     """
     Determines if a molecule is a furanocoumarin based on its SMILES string.
-    Furanocoumarins are a class of organic chemical compounds that consist of 
-    a furan ring fused with a coumarin.
+    Furanocoumarins typically include a furochromone moiety.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,17 +20,10 @@ def is_furanocoumarin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Refined Furanocoumarin core patterns
-    core_patterns = [
-        Chem.MolFromSmarts("O=c1cc2oc3ccccc3cc2oc1"),  # Recognizing common benzofuran-2-one structure
-        Chem.MolFromSmarts("O=c1oc2ccccc2cc1=O")        # Coumarin-like structure fused to additional ring
-    ]
+    # Furanocoumarin core pattern: furo[2,3-h]chromen or furo[3,2-g]chromen
+    furanocoumarin_pattern = Chem.MolFromSmarts('O=c1cc2oc3ccccc3c2c(=O)[cH]c1')  # basic pattern for furanocoumarin
 
-    # Check each pattern
-    for pattern in core_patterns:
-        if pattern is None:
-            continue  # Skip invalid patterns
-        if mol.HasSubstructMatch(pattern):
-            return True, "Contains a core structure typical of furanocoumarins"
+    if mol.HasSubstructMatch(furanocoumarin_pattern):
+        return True, "Contains a core furochromone moiety typical of furanocoumarins"
     
     return False, "Does not contain key furanocoumarin structures"
