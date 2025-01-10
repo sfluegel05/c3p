@@ -11,7 +11,6 @@ from rdkit.Chem import rdMolDescriptors
 def is_biflavonoid(smiles: str):
     """
     Determines if a molecule is a biflavonoid based on its SMILES string.
-    A biflavonoid consists of two flavonoid units joined by a single bond or atom.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -24,78 +23,48 @@ def is_biflavonoid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
+    
     # Basic flavonoid core patterns
-    patterns = {
-        # Chromone core (more specific than benzopyran)
-        'chromone': Chem.MolFromSmarts('O=C1CC(c2ccccc2)Oc2ccccc21'),
-        
-        # Flavan core
-        'flavan': Chem.MolFromSmarts('C1CC(c2ccccc2)Oc2ccccc21'),
-        
-        # Common biflavonoid linkage patterns
-        'c8_c8': Chem.MolFromSmarts('c1c(c2)c(O)cc(O)c1-c1c(c3)c(O)cc(O)c1'),
-        'c3_c8': Chem.MolFromSmarts('c1c(c2)c(O)cc(O)c1-c1c(O)cc(O)c2c1'),
-        'c6_c8': Chem.MolFromSmarts('c1c(c2)c(O)cc(-c3c(O)cc(O)c4c3)c1'),
-        
-        # Hydroxyl and methoxy groups
-        'hydroxyl': Chem.MolFromSmarts('cO'),
-        'methoxy': Chem.MolFromSmarts('cOC'),
-        
-        # Common oxygen bridge
-        'o_bridge': Chem.MolFromSmarts('c1cccc(Oc2ccccc2)c1')
-    }
-
-    # Count rings
-    ring_info = mol.GetRingInfo()
-    aromatic_ring_count = sum(1 for ring in ring_info.AtomRings() 
-                             if all(mol.GetAtomWithIdx(i).GetIsAromatic() for i in ring))
+    flavone_pattern = Chem.MolFromSmarts("[#6]1=[#6][#6](=[O])[#6]2=[#6][#6]=[#6][#6]=[#6]2[O][#6]1")  # C-C=C(=O)-C1=CC=CC=C1-O-C
+    flavan_pattern = Chem.MolFromSmarts("[#6]1[#6][#6][#6]2=[#6][#6]=[#6][#6]=[#6]2[O][#6]1")  # Basic flavan core
     
-    if aromatic_ring_count < 4:
-        return False, f"Too few aromatic rings ({aromatic_ring_count}, need ≥4)"
-
-    # Molecular weight check
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 450 or mol_wt > 900:
-        return False, f"Molecular weight {mol_wt:.1f} outside typical biflavonoid range (450-900)"
-
-    # Count key atoms
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    # Count flavonoid cores
+    flavone_matches = len(mol.GetSubstructMatches(flavone_pattern))
+    flavan_matches = len(mol.GetSubstructMatches(flavan_pattern))
+    total_cores = flavone_matches + flavan_matches
+    
+    if total_cores < 2:
+        return False, f"Found only {total_cores} flavonoid cores, need at least 2"
+    
+    # Check for characteristic oxygen atoms (typically from hydroxyl/methoxy groups)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if o_count < 6:  # Minimum oxygens expected in a biflavonoid
+        return False, f"Too few oxygen atoms ({o_count}) for a biflavonoid"
     
-    if c_count < 25:
-        return False, f"Too few carbons ({c_count}, need ≥25)"
-    if o_count < 6:
-        return False, f"Too few oxygens ({o_count}, need ≥6)"
-
-    # Check for presence of hydroxyl/methoxy groups
-    hydroxyl_count = len(mol.GetSubstructMatches(patterns['hydroxyl']))
-    methoxy_count = len(mol.GetSubstructMatches(patterns['methoxy']))
-    if hydroxyl_count + methoxy_count < 4:
-        return False, f"Too few OH/OMe groups ({hydroxyl_count + methoxy_count}, need ≥4)"
-
-    # Look for flavonoid cores
-    chromone_matches = len(mol.GetSubstructMatches(patterns['chromone']))
-    flavan_matches = len(mol.GetSubstructMatches(patterns['flavan']))
+    # Check for aromatic rings (should have multiple)
+    aromatic_rings = 0
+    for ring in mol.GetRingInfo().AtomRings():
+        if all(mol.GetAtomWithIdx(i).GetIsAromatic() for i in ring):
+            aromatic_rings += 1
     
-    # Check for common biflavonoid linkages
-    c8_c8_links = len(mol.GetSubstructMatches(patterns['c8_c8']))
-    c3_c8_links = len(mol.GetSubstructMatches(patterns['c3_c8']))
-    c6_c8_links = len(mol.GetSubstructMatches(patterns['c6_c8']))
-    o_bridges = len(mol.GetSubstructMatches(patterns['o_bridge']))
+    if aromatic_rings < 4:  # Biflavonoids typically have at least 4 aromatic rings
+        return False, f"Too few aromatic rings ({aromatic_rings}) for a biflavonoid"
     
-    total_cores = chromone_matches + flavan_matches
-    if total_cores < 1:
-        return False, "No flavonoid cores found"
+    # Check molecular weight (biflavonoids are typically large molecules)
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 450:  # Typical biflavonoids are >450 Da
+        return False, "Molecular weight too low for biflavonoid"
         
-    total_linkages = c8_c8_links + c3_c8_links + c6_c8_links + o_bridges
-    if total_linkages == 0:
-        return False, "No characteristic biflavonoid linkage found"
-
-    # Additional structural checks
-    ring_count = rdMolDescriptors.CalcNumRings(mol)
-    if ring_count < 6:
-        return False, f"Too few rings ({ring_count}, need ≥6)"
-
+    # Check for hydroxyl groups (most biflavonoids have multiple OH groups)
+    oh_pattern = Chem.MolFromSmarts("[OH]")
+    oh_count = len(mol.GetSubstructMatches(oh_pattern))
+    if oh_count < 2:
+        return False, f"Too few hydroxyl groups ({oh_count}) for a biflavonoid"
+    
+    # Check carbon count (biflavonoids typically have 30-40 carbons)
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 25 or c_count > 45:
+        return False, f"Carbon count ({c_count}) outside typical range for biflavonoids"
+    
     # If all checks pass, it's likely a biflavonoid
-    return True, f"Contains flavonoid cores with characteristic biflavonoid linkage(s) and {hydroxyl_count} OH groups"
+    return True, f"Contains {total_cores} flavonoid cores with appropriate substitution pattern"
