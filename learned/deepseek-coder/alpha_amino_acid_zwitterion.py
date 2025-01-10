@@ -12,7 +12,7 @@ def is_alpha_amino_acid_zwitterion(smiles: str):
     """
     Determines if a molecule is an alpha-amino-acid zwitterion based on its SMILES string.
     An alpha-amino-acid zwitterion has a protonated amino group ([NH3+]) and a deprotonated carboxyl group ([O-])
-    attached to the same alpha-carbon.
+    attached to the same alpha-carbon, which is typically chiral.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -28,60 +28,39 @@ def is_alpha_amino_acid_zwitterion(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for the zwitterion pattern: [NH3+] attached to a carbon, which is also attached to [O-]
-    zwitterion_pattern = Chem.MolFromSmarts("[NH3+][CX4][CX3](=[OX1])[OX1-]")
+    # This pattern is more flexible to account for cyclic structures and different protonation states
+    zwitterion_pattern = Chem.MolFromSmarts("[NH3+,NH2+,NH+][CX4H0,CX3H1][CX3](=[OX1])[OX1-]")
     if not mol.HasSubstructMatch(zwitterion_pattern):
-        return False, "No zwitterion pattern found ([NH3+]-C-C(=O)[O-])"
+        return False, "No zwitterion pattern found"
 
     # Verify that the central carbon (alpha-carbon) is attached to both [NH3+] and [O-]
-    alpha_carbon_pattern = Chem.MolFromSmarts("[CX4]([NH3+])([CX3](=[OX1])[OX1-])")
+    # This pattern accounts for both linear and cyclic amino acids
+    alpha_carbon_pattern = Chem.MolFromSmarts("[CX4H0,CX3H1]([NH3+,NH2+,NH+])([CX3](=[OX1])[OX1-])")
     if not mol.HasSubstructMatch(alpha_carbon_pattern):
-        return False, "No alpha-carbon with both [NH3+] and [O-] groups found"
+        return False, "No alpha-carbon with both amino and carboxyl groups found"
 
-    # Check that the alpha-carbon has at least 3 bonds (including H)
+    # Check that the alpha-carbon has exactly 4 bonds (including H)
     alpha_carbon_matches = mol.GetSubstructMatches(alpha_carbon_pattern)
     for match in alpha_carbon_matches:
         alpha_carbon_idx = match[0]  # Index of the alpha-carbon
         alpha_carbon_atom = mol.GetAtomWithIdx(alpha_carbon_idx)
-        if alpha_carbon_atom.GetDegree() < 3:  # Alpha-carbon should have at least 3 bonds
-            return False, "Alpha-carbon has too few bonds"
+        
+        # Alpha-carbon should have exactly 4 bonds (including H)
+        if alpha_carbon_atom.GetTotalDegree() != 4:
+            return False, "Alpha-carbon has incorrect number of bonds"
 
-    # Remove molecular weight restriction as it's not a defining characteristic
+        # Check that the alpha-carbon is chiral (common in amino acids)
+        if not alpha_carbon_atom.HasProp('_ChiralityPossible'):
+            return False, "Alpha-carbon is not chiral"
 
-    return True, "Contains [NH3+]-C-C(=O)[O-] pattern with alpha-carbon in zwitterionic form"
+    # Additional check to exclude non-amino acid structures
+    # Amino acids typically have only one carboxyl group and one amino group
+    carboxyl_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[CX3](=[OX1])[OX1-]")))
+    amino_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[NH3+,NH2+,NH+]")))
+    
+    if carboxyl_count != 1:
+        return False, "Molecule has more than one carboxyl group"
+    if amino_count != 1:
+        return False, "Molecule has more than one amino group"
 
-
-__metadata__ = {
-    'chemical_class': {
-        'id': 'CHEBI:57925',
-        'name': 'alpha-amino-acid zwitterion',
-        'definition': 'An amino acid-zwitterion obtained by transfer of a proton from the carboxy to the amino group of any alpha-amino acid; major species at pH 7.3.',
-        'parents': ['CHEBI:33704', 'CHEBI:57924']
-    },
-    'config': {
-        'llm_model_name': 'lbl/claude-sonnet',
-        'f1_threshold': 0.8,
-        'max_attempts': 5,
-        'max_positive_instances': None,
-        'max_positive_to_test': None,
-        'max_negative_to_test': None,
-        'max_positive_in_prompt': 50,
-        'max_negative_in_prompt': 20,
-        'max_instances_in_prompt': 100,
-        'test_proportion': 0.1
-    },
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 150,
-    'num_false_positives': 4,
-    'num_true_negatives': 182407,
-    'num_false_negatives': 23,
-    'num_negatives': None,
-    'precision': 0.974025974025974,
-    'recall': 0.8670520231213873,
-    'f1': 0.9174311926605504,
-    'accuracy': 0.9998521228585199
-}
+    return True, "Contains alpha-carbon with both amino and carboxyl groups in zwitterionic form"
