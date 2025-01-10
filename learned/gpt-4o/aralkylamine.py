@@ -2,7 +2,6 @@
 Classifies: CHEBI:18000 aralkylamine
 """
 from rdkit import Chem
-from rdkit.Chem import rdpatterns
 
 def is_aralkylamine(smiles: str):
     """
@@ -22,22 +21,19 @@ def is_aralkylamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for amine pattern (nitrogen not in carbonyls and bonded to alkyl)
-    amine_pattern = Chem.MolFromSmarts("[NX3;H2,H1;!$(NC=O)]")  # Primary, secondary amine
+    # Look for primary or secondary amine pattern (N not part of carbonyl)
+    amine_pattern = Chem.MolFromSmarts("[NX3;H2,H1;!$(NC=O)]")
     if not mol.HasSubstructMatch(amine_pattern):
         return False, "No amine group found"
     
-    # Look for aromatic ring
-    aromatic_pattern = Chem.MolFromSmarts("a")  # Any aromatic atom
+    # Look for aromatic group pattern
+    aromatic_pattern = Chem.MolFromSmarts("a")
     if not mol.HasSubstructMatch(aromatic_pattern):
         return False, "No aromatic group found"
-    
-    # Verify connection through a non-aromatic alkyl chain
-    alkyl_amino_pattern = Chem.MolFromSmarts("[CX4][NX3;H2,H1;!$(NC=O)]")
-    # Look for linkage: Aromatic -> Aliphatic C -> N (Amine)
-    combined_pattern = Chem.MolFromSmarts("*a-[CX4]-[NX3;H2,H1]") 
-    
-    if not mol.HasSubstructMatch(combined_pattern):
-        return False, "No alkyl chain linking amine and aromatic group"
+
+    # Look for the linkage pattern: Aromatic -> Aliphatic Carbon -> Amine
+    linkage_pattern = Chem.MolFromSmarts("a-[CX4]-[NX3;H2,H1;!$(NC=O)]")
+    if not mol.HasSubstructMatch(linkage_pattern):
+        return False, "No linkage between aromatic group and amine via an alkyl chain found"
 
     return True, "Contains an amine group linked to an aromatic group by an alkyl chain"
