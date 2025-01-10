@@ -23,47 +23,30 @@ def is_semisynthetic_derivative(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for specific synthetic modifications
-    acetylation_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2][CX4]")  # Acetylation
-    halogenation_pattern = Chem.MolFromSmarts("[Cl,Br,I][CX4]")          # Halogenation
-    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")             # Ester group
-    amide_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])")             # Amide group
-    ether_pattern = Chem.MolFromSmarts("[OX2][CX4]")                     # Ether group
-    sulfonamide_pattern = Chem.MolFromSmarts("[SX4](=[OX1])(=[OX1])[NX3]") # Sulfonamide
-    nitro_pattern = Chem.MolFromSmarts("[NX3](=[OX1])=[OX1]")            # Nitro group
+    # Check for common synthetic modifications
+    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")  # Ester group
+    amide_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])")  # Amide group
+    ether_pattern = Chem.MolFromSmarts("[OX2][CX4]")          # Ether group
+    alkyl_halide_pattern = Chem.MolFromSmarts("[Cl,Br,I][CX4]")  # Alkyl halide group
 
-    # Count the number of specific synthetic modifications
+    # Count the number of synthetic modifications
     synthetic_modifications = 0
-    if mol.HasSubstructMatch(acetylation_pattern):
-        synthetic_modifications += 1
-    if mol.HasSubstructMatch(halogenation_pattern):
-        synthetic_modifications += 1
     if mol.HasSubstructMatch(ester_pattern):
         synthetic_modifications += 1
     if mol.HasSubstructMatch(amide_pattern):
         synthetic_modifications += 1
     if mol.HasSubstructMatch(ether_pattern):
         synthetic_modifications += 1
-    if mol.HasSubstructMatch(sulfonamide_pattern):
-        synthetic_modifications += 1
-    if mol.HasSubstructMatch(nitro_pattern):
+    if mol.HasSubstructMatch(alkyl_halide_pattern):
         synthetic_modifications += 1
 
-    # Check molecular weight - natural products are typically larger, but some derivatives can be smaller
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 200:
-        return False, "Molecular weight too low for a natural product derivative"
+    # If there are multiple synthetic modifications, it is likely a semisynthetic derivative
+    if synthetic_modifications >= 2:
+        return True, "Contains multiple synthetic modifications (e.g., esters, amides, ethers, alkyl halides)"
 
-    # Check for complex structure (e.g., multiple rings, chiral centers)
-    n_rings = rdMolDescriptors.CalcNumRings(mol)
-    n_chiral_centers = len(Chem.FindMolChiralCenters(mol, includeUnassigned=True))
+    # If there is at least one synthetic modification, it might be a semisynthetic derivative
+    if synthetic_modifications == 1:
+        return True, "Contains at least one synthetic modification (e.g., ester, amide, ether, alkyl halide)"
 
-    # Check for natural product-like complexity
-    is_complex = n_rings >= 2 and n_chiral_centers >= 1
-
-    # If there are specific synthetic modifications and a complex structure, it is likely a semisynthetic derivative
-    if synthetic_modifications >= 1 and is_complex:
-        return True, "Contains specific synthetic modifications and a complex structure"
-
-    # If no specific synthetic modifications are found, it is less likely to be a semisynthetic derivative
-    return False, "No significant synthetic modifications or complex structure found"
+    # If no synthetic modifications are found, it is less likely to be a semisynthetic derivative
+    return False, "No significant synthetic modifications found"
