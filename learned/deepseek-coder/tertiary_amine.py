@@ -28,24 +28,11 @@ def is_tertiary_amine(smiles: str):
     # Define SMARTS pattern for tertiary amines
     # This matches nitrogen with exactly 3 single bonds to carbon atoms
     # and accounts for both neutral and charged nitrogen
-    tertiary_amine_pattern = Chem.MolFromSmarts("[N;X3;+0:1]([C;!$(C=O)])[C;!$(C=O)][C;!$(C=O)] | [N+;X4:1]([C;!$(C=O)])([C;!$(C=O)])[C;!$(C=O)]")
+    tertiary_amine_pattern = Chem.MolFromSmarts("[NX3;+0]([C])([C])[C] | [NX4;+1]([C])([C])[C]")
     
     # Check if the molecule matches the pattern
     if mol.HasSubstructMatch(tertiary_amine_pattern):
         return True, "Contains a nitrogen atom bonded to three carbon atoms (tertiary amine)"
-    
-    # Check for aromatic nitrogen with three carbon bonds
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 7:  # Nitrogen atom
-            # Get all carbon neighbors
-            carbon_neighbors = [neighbor for neighbor in atom.GetNeighbors() 
-                              if neighbor.GetAtomicNum() == 6 and 
-                              not neighbor.GetIsAromatic() and 
-                              not any(bond.GetBondType() == Chem.BondType.DOUBLE 
-                                    for bond in mol.GetBondBetweenAtoms(atom.GetIdx(), neighbor.GetIdx()))]
-            
-            # Check if nitrogen has exactly 3 carbon neighbors
-            if len(carbon_neighbors) == 3:
-                return True, "Contains a nitrogen atom bonded to three carbon atoms (tertiary amine)"
 
+    # If no match, return False
     return False, "No nitrogen atom bonded to three carbon atoms found"
