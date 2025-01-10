@@ -41,9 +41,4 @@ def is_phytosterols(smiles: str):
     if not mol.HasSubstructMatch(side_chain_pattern):
         return False, "No side chain found at the 17-position"
 
-    # Check molecular weight (phytosterols typically have a higher molecular weight than cholesterol)
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 350:
-        return False, "Molecular weight too low for a typical phytosterol"
-
     return True, "Contains a steroid nucleus with a hydroxyl group at the 3-position and a side chain at the 17-position"
