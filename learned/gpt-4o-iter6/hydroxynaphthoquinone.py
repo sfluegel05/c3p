@@ -21,32 +21,22 @@ def is_hydroxynaphthoquinone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Refined SMARTS pattern for naphthoquinone
-    naphthoquinone_patterns = [
-        Chem.MolFromSmarts('c1ccccc2C(=O)C=CC2=O'), # Base pattern for naphthoquinone
-        Chem.MolFromSmarts('C1=CC=C2C(=O)C=CC2=O')  # Alternate structure
-    ]
-    hydroxy_pattern = Chem.MolFromSmarts('[OH]')
+    # SMARTS pattern for naphthoquinone: aromatic naphthalene with two ketones
+    naphthoquinone_pattern = Chem.MolFromSmarts('O=C1C=Cc2ccccc2C1=O')
+    if naphthoquinone_pattern is None:
+        return False, "Invalid naphthoquinone SMARTS pattern"
 
-    # Check for naphthoquinone structure
-    for pattern in naphthoquinone_patterns:
-        if mol.HasSubstructMatch(pattern):
-            naphtho_matches = mol.GetSubstructMatches(pattern)
-            break
-    else:
+    # SMARTS pattern for a hydroxy group
+    hydroxy_pattern = Chem.MolFromSmarts('[OH]')
+    if hydroxy_pattern is None:
+        return False, "Invalid hydroxy SMARTS pattern"
+
+    # Check for naphthoquinone core structure
+    if not mol.HasSubstructMatch(naphthoquinone_pattern):
         return False, "No naphthoquinone core found"
 
-    # Check for hydroxy group in relation to the naphthoquinone
-    for naphtho_match in naphtho_matches:
-        naphtho_atoms = set(naphtho_match)
-        for atom_idx in naphtho_match:
-            atom_obj = mol.GetAtomWithIdx(atom_idx)
-            if atom_obj.GetSymbol() == 'C':  # Look for C atoms to attach OH
-                neighbors = atom_obj.GetNeighbors()
-                for neighbor in neighbors:
-                    if neighbor.GetSymbol() == 'O':
-                        for o_neighbor in neighbor.GetNeighbors():
-                            if o_neighbor.GetIdx() not in naphtho_atoms:
-                                return True, "Contains naphthoquinone core with hydroxy group substitution"
+    # Check for hydroxy group presence
+    if mol.HasSubstructMatch(hydroxy_pattern):
+        return True, "Contains naphthoquinone core with hydroxy group substitution"
 
-    return False, "No correctly attached hydroxy group found"
+    return False, "Naphthoquinone core present but no hydroxy substitution found"
