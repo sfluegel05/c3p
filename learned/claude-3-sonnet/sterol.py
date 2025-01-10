@@ -6,6 +6,7 @@ Classifies: CHEBI:15889 sterol
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem.AllChem import GetMorganFingerprintAsBitVect
 from rdkit.Chem import rdMolDescriptors
 
 def is_sterol(smiles: str):
@@ -26,66 +27,51 @@ def is_sterol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # More flexible steroid core pattern that allows for different bond types and modifications
-    # This pattern describes the basic 6-6-6-5 tetracyclic system with any type of bonds
-    steroid_core = Chem.MolFromSmarts(
-        "[#6]~1~[#6]~[#6]~[#6]~2~[#6]~[#6]~[#6]~[#6]~3~[#6]~[#6]~[#6]~4~[#6]~[#6]~[#6]~[#6]~[#6]~4~[#6]~[#6]~3~[#6]~[#6]~2~[#6]~1"
-    )
-    
-    # Alternative core pattern that's more flexible with ring fusion points
-    alt_core = Chem.MolFromSmarts(
-        "[#6]~1~[#6]~[#6]~[#6]~2~[#6]~[#6]~[#6]~3~[#6]~[#6]~[#6]~4~[#6]~[#6]~[#6]~[#6]~[#6]~4~[#6]~[#6]~3~[#6]~[#6]~2~[#6]~1"
-    )
-
-    if not (mol.HasSubstructMatch(steroid_core) or mol.HasSubstructMatch(alt_core)):
+    # Check for basic steroid ring system (four fused rings)
+    steroid_core = Chem.MolFromSmarts("[#6]1~[#6]~[#6]~[#6]2~[#6]~[#6]~[#6]~[#6]3~[#6]~[#6]~[#6]4~[#6]~[#6]~[#6]~[#6]~[#6]4~[#6]~[#6]3~[#6]~[#6]2~[#6]~1")
+    if not mol.HasSubstructMatch(steroid_core):
         return False, "No steroid ring system found"
 
-    # Check for any hydroxyl group
-    hydroxyl = Chem.MolFromSmarts("[OX2H1]")
-    if not mol.HasSubstructMatches(hydroxyl):
+    # Check for hydroxyl group
+    hydroxyl = Chem.MolFromSmarts("[OH]")
+    if not mol.HasSubstructMatch(hydroxyl):
         return False, "No hydroxyl group found"
-
-    # Count carbons (sterols typically have 27-30 carbons but can vary)
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 20:
-        return False, "Too few carbons for a sterol"
-    if c_count > 40:  # Increased upper limit to account for more complex sterols
-        return False, "Too many carbons for a sterol"
-
-    # Check for angular methyl groups (characteristic of steroids)
-    # More flexible pattern that captures different orientations
-    angular_methyl = Chem.MolFromSmarts("[CH3][C]([#6])([#6])[#6]")
-    methyl_matches = len(mol.GetSubstructMatches(angular_methyl))
-    if methyl_matches < 1:
-        return False, "Insufficient angular methyl groups"
-
-    # Calculate molecular weight
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 250 or mol_wt > 800:  # Widened range further to catch more variants
-        return False, f"Molecular weight {mol_wt:.1f} outside typical sterol range"
-
-    # Count rings (sterols should have at least 4 rings)
+    
+    # Count rings
     ring_info = mol.GetRingInfo()
     if ring_info.NumRings() < 4:
         return False, "Insufficient number of rings"
 
-    # More flexible check for hydroxyl group position
-    # This pattern looks for a hydroxyl connected to any carbon in the ring system
-    ring_hydroxyl = Chem.MolFromSmarts("([#6]~1~[#6]~[#6]~[#6]~[#6]~[#6]~1)[#6][OH]")
-    alt_ring_hydroxyl = Chem.MolFromSmarts("([#6]~1~[#6]~[#6]~[#6]~[#6]~[#6]~1)~[#6]~[OH]")
-    
-    if not (mol.HasSubstructMatch(ring_hydroxyl) or mol.HasSubstructMatch(alt_ring_hydroxyl)):
-        return False, "No hydroxyl group in characteristic position"
+    # Check carbon count (sterols typically have 27-30 carbons)
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 20:
+        return False, "Too few carbons for a sterol"
+    if c_count > 35:
+        return False, "Too many carbons for a sterol"
 
-    # Count oxygens (allowing for more variation)
+    # Check for characteristic methyl groups at C-10 and C-13
+    angular_methyls = Chem.MolFromSmarts("[CH3]~[C]([#6])([#6])[#6]")
+    if len(mol.GetSubstructMatches(angular_methyls)) < 1:
+        return False, "Missing characteristic methyl groups"
+
+    # Calculate molecular weight (typical sterol MW range)
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 350 or mol_wt > 600:
+        return False, f"Molecular weight {mol_wt:.1f} outside typical sterol range"
+
+    # Check for aliphatic side chain
+    side_chain = Chem.MolFromSmarts("[CH2,CH3,CH]~[CH2,CH3,CH]~[CH2,CH3,CH]")
+    if not mol.HasSubstructMatch(side_chain):
+        return False, "No characteristic side chain found"
+
+    # Count oxygen atoms (sterols typically have 1-3 oxygens)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count < 1 or o_count > 12:  # Increased upper limit to account for more oxidized sterols
+    if o_count < 1 or o_count > 6:
         return False, f"Number of oxygen atoms ({o_count}) outside typical range for sterols"
 
-    # Check for reasonable degree of unsaturation
-    double_bonds = Chem.MolFromSmarts("C=C")
-    n_double_bonds = len(mol.GetSubstructMatches(double_bonds))
-    if n_double_bonds > 8:  # Sterols typically don't have too many double bonds
-        return False, "Too many double bonds for a sterol"
+    # Specific check for 3-hydroxy position
+    hydroxy_3_pos = Chem.MolFromSmarts("[#6]1~[#6]~[#6]([OH])~[#6]~[#6]~[#6]~1")
+    if not mol.HasSubstructMatch(hydroxy_3_pos):
+        return False, "No hydroxyl group in characteristic 3-position"
 
-    return True, "Contains steroid ring system with hydroxyl group and characteristic sterol features"
+    return True, "Contains steroid ring system with 3-hydroxy group and characteristic sterol features"
