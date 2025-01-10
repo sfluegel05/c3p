@@ -2,6 +2,7 @@
 Classifies: CHEBI:67197 endocannabinoid
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_endocannabinoid(smiles: str):
     """
@@ -19,29 +20,30 @@ def is_endocannabinoid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Adjust criteria for long carbon chain identifying both straight and kinked structures
-    polyunsaturated_chain_pattern = Chem.MolFromSmarts("C=CCCC=CCCC=CCC")
-    long_chain_match = mol.HasSubstructMatch(polyunsaturated_chain_pattern)
 
+    # Look for any long polyunsaturated chains with flexibility on length
+    unsaturated_chain_pattern = Chem.MolFromSmarts("C=CCCC=CCCC=C")  # Partial structure
+    long_chain_match = mol.HasSubstructMatch(unsaturated_chain_pattern)
+    
     if not long_chain_match:
         return False, "No polyunsaturated long carbon chain typical of endocannabinoids found."
     
-    # Check for specific key functional groups like ethanolamine, distinct patterns
-    ethanolamine_pattern = Chem.MolFromSmarts("NCCO")
-    amide_pattern = Chem.MolFromSmarts("NC=O")
-    glycerol_pattern = Chem.MolFromSmarts("OCC(O)CO")
+    # Check for key functional groups more comprehensively
+    ethanolamine_pattern = Chem.MolFromSmarts("[NX3][CH2][CH2][OX2H]")
+    amide_pattern = Chem.MolFromSmarts("N[C]=O")
+    glycerol_pattern = Chem.MolFromSmarts("[OX2H][CX4]([OX2H])[CX4][OX2H]")
     has_key_group = mol.HasSubstructMatch(ethanolamine_pattern) or \
                     mol.HasSubstructMatch(amide_pattern) or \
                     mol.HasSubstructMatch(glycerol_pattern)
 
     if not has_key_group:
-        return False, "No identified endocannabinoid functional group (ethanolamine, amide, glycerol) found."
+        return False, "No identified endocannabinoid functional group found (ethanolamine, amide, glycerol)."
 
-    # Check for typical linkages
+    # Verify typical linkages more specifically
     ether_pattern = Chem.MolFromSmarts("COC")
-    ester_pattern = Chem.MolFromSmarts("C(=O)O")
-    amide_linkage_pattern = Chem.MolFromSmarts("C(=O)N")
+    ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2]")
+    amide_linkage_pattern = Chem.MolFromSmarts("[CX3](=O)[NX3]")
+    
     has_linkages = mol.HasSubstructMatch(ether_pattern) or \
                    mol.HasSubstructMatch(ester_pattern) or \
                    mol.HasSubstructMatch(amide_linkage_pattern)
