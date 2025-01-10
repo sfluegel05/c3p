@@ -27,79 +27,98 @@ def is_tetraterpenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Count carbons
+    # Count carbons - expanded range to include glycosylated derivatives
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    
-    # Count methyl groups
+    if c_count < 25 or c_count > 75:
+        return False, f"Carbon count ({c_count}) outside typical range for tetraterpenoids (25-75)"
+
+    # Count methyl groups - tetraterpenoids typically have multiple
     methyl_pattern = Chem.MolFromSmarts("[CH3]")
     methyl_count = len(mol.GetSubstructMatches(methyl_pattern))
-    
-    # Count double bonds
-    double_bond_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts("C=C")))
-    
-    # Count rings
-    ring_count = rdMolDescriptors.CalcNumRings(mol)
-    
-    # Count oxygens
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if methyl_count < 4:
+        return False, f"Too few methyl groups ({methyl_count}) for tetraterpenoid"
 
-    # Check for characteristic carotenoid backbone patterns
-    carotenoid_patterns = [
-        "C=CC=CC=CC=CC=C",  # Long conjugated chain
-        "C=CC=CC=CC=CC=CC=C",  # Extended conjugation
-        "C(C)(C)C=CC=CC=C",  # Typical carotenoid fragment
-        "C1C(C)=CCCC1(C)C",  # Cyclic end group
-        "CC(C)=CCCC(C)=CC=C" # Acyclic end with methyls
+    # Check for characteristic conjugated polyene patterns
+    polyene_patterns = [
+        "C=CC=CC=CC=C",  # Long conjugated chain
+        "C=CC=CC=CC=CC=C",  # Extended conjugation
+        "C(C)(C)=CC=C"  # Typical end group
     ]
     
-    backbone_matches = 0
-    for pattern in carotenoid_patterns:
+    found_polyene = False
+    for pattern in polyene_patterns:
         if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
-            backbone_matches += 1
+            found_polyene = True
+            break
+    
+    if not found_polyene:
+        return False, "Missing characteristic polyene system"
 
-    # Check for nitrogen (rare in tetraterpenoids)
-    if sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7) > 0:
-        return False, "Contains nitrogen, unusual for tetraterpenoid"
+    # Count double bonds - tetraterpenoids typically have many
+    double_bond_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts("C=C")))
+    if double_bond_count < 8:
+        return False, f"Too few double bonds ({double_bond_count}) for tetraterpenoid"
 
-    # Base molecule checks (for non-modified tetraterpenoids)
-    if 38 <= c_count <= 42 and methyl_count >= 8 and double_bond_count >= 9 and backbone_matches >= 2:
-        return True, f"Matches typical tetraterpenoid pattern with {c_count} carbons, {methyl_count} methyl groups, {double_bond_count} double bonds"
+    # Check molecular weight - adjusted range for glycosylated forms
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 300 or mol_wt > 1200:
+        return False, f"Molecular weight ({mol_wt}) outside typical range for tetraterpenoids"
 
-    # Modified tetraterpenoid checks
-    is_modified = False
-    reason = ""
+    # Count rings
+    ring_count = rdMolDescriptors.CalcNumRings(mol)
+    if ring_count > 6:
+        return False, f"Too many rings ({ring_count}) for typical tetraterpenoid"
+    
+    # Count nitrogens - tetraterpenoids rarely contain nitrogen
+    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
+    if n_count > 0:
+        return False, f"Contains nitrogen, unusual for tetraterpenoid"
+    
+    # Count oxygens - increased limit for glycosylated forms
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if o_count > 15:
+        return False, f"Too many oxygens ({o_count}) for typical tetraterpenoid"
 
-    # Check for apo-carotenoids (shortened derivatives)
-    if 20 <= c_count < 38 and methyl_count >= 4 and double_bond_count >= 5 and backbone_matches >= 1:
-        if mol.HasSubstructMatch(Chem.MolFromSmarts("[CH]=O")) or \
-           mol.HasSubstructMatch(Chem.MolFromSmarts("C(=O)O[H]")):
-            is_modified = True
-            reason = "Appears to be an apo-carotenoid (shortened tetraterpenoid)"
+    # Check for branching - more flexible pattern
+    branching_patterns = [
+        "[*]([*])([*])[*]",  # General branching
+        "C([C,O])([C,O])[C,O]",  # Carbon branching
+        "C(=C)([C,O])[C,O]"  # Branching at double bonds
+    ]
+    
+    found_branching = False
+    for pattern in branching_patterns:
+        if len(mol.GetSubstructMatches(Chem.MolFromSmarts(pattern))) > 0:
+            found_branching = True
+            break
+            
+    if not found_branching:
+        return False, "Insufficient characteristic branching"
 
-    # Check for glycosylated derivatives
-    elif 42 < c_count <= 55 and o_count >= 5 and backbone_matches >= 2:
-        if mol.HasSubstructMatch(Chem.MolFromSmarts("OC1C(O)C(O)C(O)C(O)C1")):  # Sugar pattern
-            is_modified = True
-            reason = "Appears to be a glycosylated tetraterpenoid"
+    # Calculate degree of unsaturation
+    du = rdMolDescriptors.CalcNumRotatableBonds(mol) + ring_count + double_bond_count
+    if du < 8:
+        return False, f"Insufficient degree of unsaturation ({du}) for tetraterpenoid"
 
-    # Check for prephytoene-type compounds
-    elif 38 <= c_count <= 42 and methyl_count >= 8 and \
-         mol.HasSubstructMatch(Chem.MolFromSmarts("COP(=O)(O)OP(=O)(O)O")):
-        is_modified = True
-        reason = "Appears to be a prephytoene-type tetraterpenoid"
+    # Look for characteristic end groups
+    end_groups = [
+        "CC(C)=C",  # Typical isoprene end
+        "C1C(C)=CCCC1(C)C",  # Cyclic end group
+        "CC(=O)C",  # Keto end group
+        "CC(O)=C"  # Hydroxy end group
+    ]
+    
+    found_end_group = False
+    for pattern in end_groups:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            found_end_group = True
+            break
+            
+    if not found_end_group:
+        return False, "Missing characteristic end groups"
 
-    # Check for other modified forms with characteristic features
-    elif 20 <= c_count <= 55 and methyl_count >= 4 and backbone_matches >= 1:
-        if double_bond_count >= 5 and (
-            mol.HasSubstructMatch(Chem.MolFromSmarts("C(=O)C")) or  # Keto group
-            mol.HasSubstructMatch(Chem.MolFromSmarts("C(O)C")) or   # Hydroxy group
-            mol.HasSubstructMatch(Chem.MolFromSmarts("C1OC1")) or   # Epoxide
-            mol.HasSubstructMatch(Chem.MolFromSmarts("C#C"))        # Triple bond
-        ):
-            is_modified = True
-            reason = "Appears to be a modified tetraterpenoid with characteristic functional groups"
+    ring_info = f" and {ring_count} rings" if ring_count > 0 else ""
+    oxygen_info = f" Contains {o_count} oxygen atoms." if o_count > 0 else ""
 
-    if is_modified:
-        return True, f"{reason} ({c_count} carbons, {methyl_count} methyl groups, {double_bond_count} double bonds)"
-
-    return False, f"Does not match tetraterpenoid patterns (C:{c_count}, Me:{methyl_count}, DB:{double_bond_count})"
+    return True, (f"Matches tetraterpenoid pattern with {c_count} carbons, "
+                 f"{methyl_count} methyl groups, {double_bond_count} double bonds{ring_info}.{oxygen_info}")
