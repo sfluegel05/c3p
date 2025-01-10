@@ -33,34 +33,10 @@ def is_cyclic_fatty_acid(smiles: str):
     if not ring_info.NumRings():
         return False, "No ring structure found"
 
-    # Check if the ring is part of the main carbon chain
-    # Get the atoms in the carboxylic acid/ester group
-    acid_atoms = [match[0] for match in mol.GetSubstructMatches(carboxylic_acid_pattern)]
-    ester_atoms = [match[0] for match in mol.GetSubstructMatches(ester_pattern)]
-    functional_group_atoms = set(acid_atoms + ester_atoms)
-
-    # Check if any ring atom is connected to the functional group or part of the main chain
-    ring_atoms = set()
-    for ring in ring_info.AtomRings():
-        ring_atoms.update(ring)
-
-    # Check if any ring atom is connected to the functional group
-    connected = False
-    for atom in ring_atoms:
-        for neighbor in mol.GetAtomWithIdx(atom).GetNeighbors():
-            if neighbor.GetIdx() in functional_group_atoms:
-                connected = True
-                break
-        if connected:
-            break
-
-    if not connected:
-        return False, "Ring is not part of the main carbon chain"
-
-    # Check for long carbon chain (at least 8 carbons)
+    # Check for long carbon chain (at least 10 carbons)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 8:
+    if c_count < 10:
         return False, "Not enough carbons to be a fatty acid"
 
     # If all conditions are met, it is a cyclic fatty acid
-    return True, "Contains a carboxylic acid or ester group, a long carbon chain, and a ring structure in the main chain"
+    return True, "Contains a carboxylic acid or ester group, a long carbon chain, and a ring structure"
