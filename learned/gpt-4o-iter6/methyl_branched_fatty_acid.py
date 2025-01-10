@@ -15,32 +15,25 @@ def is_methyl_branched_fatty_acid(smiles: str):
         bool: True if molecule is a methyl-branched fatty acid, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
-    if not mol:
+    if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for carboxylic acid group using a specific SMARTS pattern
-    carboxylic_pattern = Chem.MolFromSmarts("C(=O)[O;H1]")
-    if not mol.HasSubstructMatch(carboxylic_pattern):
-        return False, "No carboxylic acid group found"
-
-    # Check for presence of methyl branches
+    # Check for the carboxylic acid group (must be terminal, C(=O)O must not have further connections)
+    terminal_carboxylic_pattern = Chem.MolFromSmarts("C(=O)[O;H1]")
+    if not mol.HasSubstructMatch(terminal_carboxylic_pattern):
+        return False, "No terminal carboxylic acid group found"
+    
+    # Look for non-methyl branching
     for atom in mol.GetAtoms():
-        if atom.GetSymbol() == 'C':
-            # Neighboring carbons
-            neighbor_carbons = [nbr for nbr in atom.GetNeighbors() if nbr.GetSymbol() == 'C']
-            
-            # Look for carbon atoms that should act as branch points
-            branch_neighbors = [nbr for nbr in neighbor_carbons if len(nbr.GetNeighbors()) > 1]
+        # If a carbon atom has more than one non-hydrogen neighbor, it could be a branching point
+        if atom.GetSymbol() == 'C' and atom.GetDegree() > 3:
+            # Count how many of the neighbors are methyl-type carbons (CH3)
+            methyl_branches = sum(1 for neighbor in atom.GetNeighbors() if neighbor.GetSymbol() == 'C' and neighbor.GetDegree() == 1)
+            # If there is a branch that is not a methyl group, return False
+            if atom.GetDegree() - methyl_branches > 2:
+                return False, "Non-methyl branches detected"
 
-            # More than two neighbors at a single carbon indicates a potential branch
-            if len(neighbor_carbons) > 2:
-                # Ensure that all branch neighbors are methyl groups
-                for branch_neighbor in branch_neighbors:
-                    # Methyl group should have 1 carbon and 3 hydrogens
-                    if sum(1 for x in branch_neighbor.GetNeighbors() if x.GetSymbol() in ['C', 'H']) != 4:
-                        return False, "Non-methyl branching detected"
-
-    return True, "Contains carboxylic acid group and only methyl branches"
+    return True, "Contains only methyl branches with a terminal carboxylic acid group"
