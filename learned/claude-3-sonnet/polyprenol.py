@@ -11,7 +11,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_polyprenol(smiles: str):
     """
     Determines if a molecule is a polyprenol based on its SMILES string.
-    Polyprenols are compounds with multiple isoprene units and a terminal hydroxyl group.
+    Polyprenols have the general formula H-[CH2C(Me)=CHCH2]nOH where n>1.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -31,52 +31,53 @@ def is_polyprenol(smiles: str):
     if not mol.HasSubstructMatch(primary_alcohol):
         return False, "No terminal primary alcohol group found"
 
-    # Look for isoprene units with different possible configurations
-    # Pattern matches both cis and trans configurations
-    isoprene_pattern1 = Chem.MolFromSmarts("[CH2,CH3]-[C]=[C]-[C]")
-    isoprene_pattern2 = Chem.MolFromSmarts("[CH2,CH3]-[C](-[CH3])=[C]-[CH2]")
-    
-    isoprene_matches1 = len(mol.GetSubstructMatches(isoprene_pattern1))
-    isoprene_matches2 = len(mol.GetSubstructMatches(isoprene_pattern2))
-    total_isoprene_matches = max(isoprene_matches1, isoprene_matches2)
-    
-    if total_isoprene_matches < 2:  # Need at least 2 isoprene units
-        return False, "Less than 2 isoprene units found"
+    # Count total oxygens - polyprenols typically have just one OH group
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if o_count > 10:  # Allow some additional O atoms for modified polyprenols
+        return False, f"Too many oxygens ({o_count}) for a polyprenol"
 
-    # Count carbons and check if consistent with polyprenol structure
+    # Look for the characteristic repeating isoprene unit pattern
+    # This pattern matches the basic isoprene unit structure: -CH2-C(CH3)=CH-CH2-
+    isoprene_pattern = Chem.MolFromSmarts("[CH2][C]([CH3])=[CH][CH2]")
+    isoprene_matches = len(mol.GetSubstructMatches(isoprene_pattern))
+    
+    # Alternative pattern to catch some variations
+    alt_pattern = Chem.MolFromSmarts("[CH2,CH3][C]([CH3])=[CH][CH2]")
+    alt_matches = len(mol.GetSubstructMatches(alt_pattern))
+    
+    total_isoprene_units = max(isoprene_matches, alt_matches)
+    
+    if total_isoprene_units < 1:
+        return False, "No isoprene units found"
+
+    # Count carbons - should be 5n+1 where n is number of isoprene units
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 10:  # Minimum 2 isoprene units (C10)
-        return False, f"Too few carbons ({c_count}) for a polyprenol"
-    
-    # Count methyls (branching points characteristic of isoprene units)
-    methyl_pattern = Chem.MolFromSmarts("[CH3]-[C]")
-    methyl_matches = len(mol.GetSubstructMatches(methyl_pattern))
-    expected_methyls = total_isoprene_matches  # One methyl per isoprene unit
-    if methyl_matches < expected_methyls - 1:  # Allow some flexibility
-        return False, "Not enough methyl branches for polyprenol structure"
+    expected_c_min = total_isoprene_units * 5  # Minimum expected carbons
+    if c_count < expected_c_min:
+        return False, f"Too few carbons ({c_count}) for claimed number of isoprene units"
 
-    # Count double bonds
+    # Check for double bonds
     double_bond_pattern = Chem.MolFromSmarts("C=C")
-    double_bond_matches = len(mol.GetSubstructMatches(double_bond_pattern))
-    if double_bond_matches < total_isoprene_matches - 1:  # One double bond per isoprene unit (except possibly terminal)
-        return False, "Not enough double bonds for polyprenol structure"
+    double_bonds = len(mol.GetSubstructMatches(double_bond_pattern))
+    if double_bonds < total_isoprene_units:
+        return False, "Insufficient number of double bonds for polyprenol structure"
 
-    # Check for rings - polyprenols should be mostly linear
+    # Verify linear chain structure - polyprenols should be mostly linear
     num_rings = rdMolDescriptors.CalcNumRings(mol)
-    if num_rings > 1:  # Allow 1 ring as some examples might have a single ring
+    if num_rings > 1:  # Allow at most one ring as some natural polyprenols might have modifications
         return False, f"Too many rings ({num_rings}) for a polyprenol"
 
-    # Check for continuous carbon chain using rotatable bonds
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < (total_isoprene_matches * 2 - 2):  # Expect ~2 rotatable bonds per isoprene unit
-        return False, "Carbon chain not long enough for claimed number of isoprene units"
+    # Check for branching pattern characteristic of polyprenols
+    methyl_branch_pattern = Chem.MolFromSmarts("[CH3][C]=[C]")
+    methyl_branches = len(mol.GetSubstructMatches(methyl_branch_pattern))
+    if methyl_branches < total_isoprene_units - 1:  # Allow some flexibility
+        return False, "Insufficient methyl branching pattern for polyprenol"
 
-    # Check oxygen count - should only have 1 oxygen (the terminal OH)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count < 1:
-        return False, "No oxygen found"
-    if o_count > 5:  # Allow a few extra oxygens for modified polyprenols
-        return False, "Too many oxygens for a typical polyprenol"
+    # Check for continuous carbon chain
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    min_rotatable = total_isoprene_units * 2 - 1  # Expect at least 2 rotatable bonds per unit
+    if n_rotatable < min_rotatable:
+        return False, "Carbon chain not long enough for polyprenol structure"
 
     # Success case - molecule meets all criteria
-    return True, f"Contains approximately {total_isoprene_matches} isoprene units with terminal OH group"
+    return True, f"Contains {total_isoprene_units} isoprene units in polyprenol arrangement"
