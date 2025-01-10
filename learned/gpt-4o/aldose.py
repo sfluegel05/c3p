@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_aldose(smiles: str):
     """
     Determines if a molecule is an aldose based on its SMILES string.
-    An aldose is a sugar containing an aldehyde group and several hydroxyl groups.
+    An aldose is a sugar containing an aldehydic parent group and its potential cyclic forms.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,23 +21,39 @@ def is_aldose(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for aldehyde presence: R-CHO (R-single atom group in sugar contexts)
+    # Check for aldehyde group or potential cyclic form
     aldehyde_pattern = Chem.MolFromSmarts("[CX3H]=O")
-    if not mol.HasSubstructMatch(aldehyde_pattern):
-        return False, "No aldehyde group found"
+    if mol.HasSubstructMatch(aldehyde_pattern):
+        found_aldehyde = True
+        reason = "Found free aldehyde group"
+    else:
+        found_aldehyde = False
+        reason = "No free aldehyde group found,"
 
-    # Check for multiple hydroxyl groups: -OH
+    # Check cyclic hemiacetal forms: look for furanose or pyranose structures
+    # These are represented by 5- and 6- atom rings respectively, often involving oxygen
+    ring_info = mol.GetRingInfo()
+    ring_size_furanose = 5
+    ring_size_pyranose = 6
+    
+    furanose_ring = any(len(ring) == ring_size_furanose and Chem.MolFromSmiles('O') in [mol.GetAtomWithIdx(idx) for idx in ring] for ring in ring_info.AtomRings())
+    pyranose_ring = any(len(ring) == ring_size_pyranose and Chem.MolFromSmiles('O') in [mol.GetAtomWithIdx(idx) for idx in ring] for ring in ring_info.AtomRings())
+    
+    if furanose_ring or pyranose_ring:
+        found_cyclic = True
+        reason += " and potential furanose or pyranose ring structure found."
+    else:
+        found_cyclic = False
+        reason += " no furanose or pyranose ring structure detected."
+
+    # Check for multiple hydroxyl groups appropriately
     hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
     hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    if len(hydroxyl_matches) < 2:
-        return False, "Not enough hydroxyl groups for an aldose"
+    min_hydroxyl_groups = 2 if found_aldehyde else 3
+    if len(hydroxyl_matches) < min_hydroxyl_groups:
+        return False, "Insufficient hydroxyl groups: requires at least " + str(min_hydroxyl_groups)
 
-    # Check for cyclic hemiacetal formation: ring systems like furanose or pyranose
-    # The example SMILES can help inform this needed pattern
+    if found_aldehyde or found_cyclic:
+        return True, reason
 
-    # Hemiacetal generically is [C@]1O[C@@H](O) other hydroxylated carbon chains ...
-    ring_found = any(len(ring) == 5 or len(ring) == 6 for ring in mol.GetRingInfo().AtomRings())
-    if not ring_found:
-        return False, "No suitable cyclic hemiacetal structure found"
-
-    return True, "Contains aldehyde and multiple hydroxyl groups, with possible cyclic hemiacetal structure"
+    return False, "Did not match criteria for aldose structure."
