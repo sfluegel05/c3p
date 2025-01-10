@@ -5,7 +5,7 @@ from rdkit import Chem
 
 def is_phenylpropanoid(smiles: str):
     """
-    Determines if a molecule is a phenylpropanoid based on its SMILES string.
+    Determines if a molecule is likely a phenylpropanoid based on its SMILES string.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -24,22 +24,29 @@ def is_phenylpropanoid(smiles: str):
     if not mol.HasSubstructMatch(phenyl_group):
         return False, "No phenyl group (benzene ring) found"
 
-    # Look for a 3-carbon chain attached to phenyl group
-    propanoid_chain = Chem.MolFromSmarts('c1c[c,C][C!H0][C!H0]c1')
-    if not mol.HasSubstructMatch(propanoid_chain):
-        return False, "No appropriate 3-carbon chain connected to phenyl group found"
+    # Check for various propanoid derivatives (common SMILES patterns observed in phenylpropanoids)
+    phenylpropanoid_like_patterns = [
+        Chem.MolFromSmarts('c1ccc(cc1)C(=O)O'),  # Cinnamic acid derivatives
+        Chem.MolFromSmarts('c1ccc(cc1)C(O)C=O'), # Coniferyl aldehyde
+        Chem.MolFromSmarts('c1ccc(cc1)C(O)C[OH]'), # Alcohols derived from coniferyl alcohol
+        Chem.MolFromSmarts('c1ccc(cc1)COC=O'),  # Coumarins
+        Chem.MolFromSmarts('c1ccc(cc1)C=C[CH2]'),  # Ferulic acid
+    ]
 
-    # Check for common functional groups such as hydroxyl, carbonyl
+    found_phenylpropanoid_like_pattern = any(mol.HasSubstructMatch(pattern) for pattern in phenylpropanoid_like_patterns)
+    if not found_phenylpropanoid_like_pattern:
+        return False, "No recognizable phenylpropanoid-like pattern found"
+
+    # Check for common functional groups such as hydroxyls, methoxy, carbonyl, etc.
     functional_groups = [
         Chem.MolFromSmarts('[OH]'),   # Hydroxyl
-        Chem.MolFromSmarts('[CX3]=[OX1]'),  # Carbonyl in ketones/aldehydes
-        Chem.MolFromSmarts('[CX3](=O)[OX2H1]'),  # Carboxyl group
-        Chem.MolFromSmarts('[OX2][CX4]'),  # Ether linkages
-        Chem.MolFromSmarts('[CX4][OH]'),   # Alcohols
-        Chem.MolFromSmarts('[OX2][CX3]=[CX3]') # Propenoic acid esters
+        Chem.MolFromSmarts('COC'),    # Methoxy
+        Chem.MolFromSmarts('[CX3]=[O]'),  # Carbonyl in ketones/aldehydes
+        Chem.MolFromSmarts('C(=O)O'),  # Ester linkages
+        Chem.MolFromSmarts('CO'),     # Ether linkages
     ]
 
     if not any(mol.HasSubstructMatch(fg) for fg in functional_groups):
         return False, "No characteristic functional groups found"
 
-    return True, "Contains phenyl group, 3-carbon chain, and functional groups typical of phenylpropanoids"
+    return True, "Contains phenyl group and derivative patterns frequently found in phenylpropanoids"
