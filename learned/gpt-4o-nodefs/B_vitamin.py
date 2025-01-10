@@ -25,16 +25,16 @@ def is_B_vitamin(smiles: str):
         'Thiamine (B1)': Chem.MolFromSmarts('Cc1nc(N)ncc1C'),
         'Riboflavin (B2)': Chem.MolFromSmarts('C1=CC2=NC(=O)N(C=C2N1)C[C@H](O)[C@H](O)CO'),
         'Niacin (B3)': Chem.MolFromSmarts('n1cccc1C(=O)O'),
-        'Pantothenic acid (B5)': Chem.MolFromSmarts('CC(C)(CO)[C@@H](O)C(=O)NCCC(=O)O'),
+        'Pantothenic acid (B5)': Chem.MolFromSmarts('CC(C)(CO)[C@@H](O)C(=O)NCCC(O)=O'),
         'Pyridoxine (B6)': Chem.MolFromSmarts('CC1=NC(C)=C(O1)CO'),
-        'Biotin (B7)': Chem.MolFromSmarts('C1C2C(CSC1)NC(=O)NC2'),
-        'Folate (B9)': Chem.MolFromSmarts('Nc1nc2nccc(NC3=CC=CC=C3)c2c(=O)[nH]1'),
-        'Cobalamin (B12)': Chem.MolFromSmarts('C1C=CC2CC1N1C(C=CC3=[N+]4C(C(CC(N)=O)=C(C3=[N+]6C(CCC(N)=O)=C(C)C4=[N+]5C(CC(N)=O)C(C)C(=C(C)C5=[N+]16)))[N+]72)C1CC(N)=O')
+        'Biotin (B7)': Chem.MolFromSmarts('C1C2CS[C@@H](CCCCC(O)=O)[C@@H]2NC(=O)N1'),
+        'Folate (B9)': Chem.MolFromSmarts('Nc1nc2n(ccc2c(=O)[nH]1)NCC3=CC=CC=C3'),
+        'Cobalamin (B12)': Chem.MolFromSmarts('Oc1nc2c(c(=O)[nH]1)CNC2C')
     }
     
     # Check for matches
     for vitamin_name, pattern in patterns.items():
-        if mol.HasSubstructMatch(pattern):
+        if pattern is not None and mol.HasSubstructMatch(pattern):
             return True, f'Matches {vitamin_name}'
     
     return False, "No B vitamin pattern matched"
