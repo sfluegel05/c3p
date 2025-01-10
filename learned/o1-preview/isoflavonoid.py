@@ -10,6 +10,7 @@ def is_isoflavonoid(smiles: str):
     """
     Determines if a molecule is an isoflavonoid based on its SMILES string.
     An isoflavonoid is defined as any 1-benzopyran with an aryl substituent at position 3.
+    This corresponds to a chromen-4-one core with an aryl group at position 3.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -24,43 +25,46 @@ def is_isoflavonoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define the chromen-4-one core (benzopyran-4-one)
-    chromen4one_smarts = 'O=C1C=CC=CC2=CC=CC=C12'  # Chromen-4-one core
-    chromen4one = Chem.MolFromSmarts(chromen4one_smarts)
-    if chromen4one is None:
+    # Correct SMARTS pattern for chromen-4-one core with atom mapping
+    chromen4one_smarts = """
+        [cH]1-[cH]-[c]2-[o]-[c](=[O])-[cH]-[c]2-[cH]-[cH]1
+        """
+    chromen4one_mol = Chem.MolFromSmarts(chromen4one_smarts)
+    if chromen4one_mol is None:
         return False, "Invalid SMARTS pattern for chromen-4-one core"
     
     # Find substructure matches of the chromen-4-one core
-    matches = mol.GetSubstructMatches(chromen4one)
+    matches = mol.GetSubstructMatches(chromen4one_mol)
     if not matches:
         return False, "No chromen-4-one core found"
     
     # For each match, check for an aryl substituent at position 3
     for match in matches:
-        # Atoms in chromen-4-one core
-        core_atoms = set(match)
+        # Atom indices of the matched core in the molecule
+        core_atom_indices = list(match)
         
-        # Map of atom indices in chromen4one_smarts to indices in the molecule
-        atom_map = {i: idx for i, idx in enumerate(match)}
+        # Create a map from pattern atom indices to molecule atom indices
+        # This depends on the order of atoms in the SMARTS pattern
+        # The position of atom indices in the SMARTS pattern corresponds to the atom indices in the match
+        # We need to identify position 3 in the core
+        # Based on the SMARTS pattern, position 3 corresponds to the 6th atom (index 5)
+        pos3_atom_idx = match[5]  # 0-based indexing
         
-        # Atom at position 3 in chromen-4-one core (index 4 in chromen4one_smarts)
-        pos3_idx_core = 4  # Indexing starts from 0 in SMARTS pattern
-        pos3_atom_idx = atom_map.get(pos3_idx_core, None)
-        if pos3_atom_idx is None:
-            continue  # Cannot find position 3 atom, skip to next match
+        # Get the atom at position 3 in the molecule
         pos3_atom = mol.GetAtomWithIdx(pos3_atom_idx)
         
         # Check neighbors of position 3 atom
         neighbors = pos3_atom.GetNeighbors()
         for nbr in neighbors:
             nbr_idx = nbr.GetIdx()
-            if nbr_idx not in core_atoms:
-                # Check if neighbor atom is part of an aromatic ring not in core
+            if nbr_idx not in core_atom_indices:
+                # Check if neighbor atom is part of an aromatic ring not in the core
                 # Use GetRingInfo()
                 rings = mol.GetRingInfo().AtomRings()
                 is_aromatic_ring = False
                 for ring in rings:
-                    if nbr_idx in ring and not core_atoms.intersection(ring):
+                    if nbr_idx in ring and not set(ring).issubset(core_atom_indices):
+                        # Check if all atoms in the ring are aromatic
                         if all(mol.GetAtomWithIdx(i).GetIsAromatic() for i in ring):
                             is_aromatic_ring = True
                             break
