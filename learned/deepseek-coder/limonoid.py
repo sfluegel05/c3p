@@ -26,5 +26,34 @@ def is_limonoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for the presence of a furan ring attached to a steroid skeleton
-    furan_steroid_pattern = Chem.MolFromSmarts("[C;H1,H2]1[C;H1,H2][C;H1,H2][C;H1,H2][O;H1]1.[C;H1,H2]2[C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][C;
+    # Check for furan ring (c1ccoc1)
+    furan_pattern = Chem.MolFromSmarts("c1ccoc1")
+    if not mol.HasSubstructMatch(furan_pattern):
+        return False, "No furan ring found"
+
+    # Check oxygen count (limonoids are highly oxygenated)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if o_count < 5:
+        return False, f"Too few oxygens ({o_count}), limonoids are highly oxygenated"
+
+    # Check carbon count (triterpenoids have ~30 carbons)
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 25 or c_count > 35:
+        return False, f"Carbon count ({c_count}) not in triterpenoid range"
+
+    # Check for 4,4,8-trimethyl pattern
+    trimethyl_pattern = Chem.MolFromSmarts("[C;H3][C;H3][C;H3]")
+    if not mol.HasSubstructMatch(trimethyl_pattern):
+        return False, "No 4,4,8-trimethyl pattern found"
+
+    # Check for steroid-like structure (4 fused rings)
+    ring_info = mol.GetRingInfo()
+    if len(ring_info.AtomRings()) < 4:
+        return False, "Not enough rings for steroid-like structure"
+
+    # Check molecular weight (should be >400 for limonoids)
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 400:
+        return False, f"Molecular weight too low ({mol_wt:.1f}) for limonoid"
+
+    return True, "Contains furan ring, high oxygen content, triterpenoid structure, and 4,4,8-trimethyl pattern"
