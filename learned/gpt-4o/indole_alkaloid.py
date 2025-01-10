@@ -21,22 +21,19 @@ def is_indole_alkaloid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for an indole skeleton, accounting for substitutions and typical connectivity
-    indole_pattern = Chem.MolFromSmarts("c1cc2cc[nH]c2c1")
+    # Indole pattern - flexible to allow for substitutions that might not disrupt basic indole skeleton
+    indole_pattern = Chem.MolFromSmarts("c1[nH]c2ccccc2c1")  # A simpler but broader indole skeleton pattern
     if not mol.HasSubstructMatch(indole_pattern):
-        indole_derivative_pattern = Chem.MolFromSmarts("c1cc2c(c1)[nH]c([nH2])c2")  # Example of a more flexible pattern
-        if not mol.HasSubstructMatch(indole_derivative_pattern):
-            return False, "No indole skeleton found"
+        return False, "No indole skeleton found"
 
-    # Check for additional nitrogen atoms that confer alkaloid properties
-    # Count all nitrogen atoms, including non-protonated tertiary amines which are common in alkaloids
+    # Count all nitrogen atoms for the alkaloid classification
     nitrogen_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7]
     nitrogen_count = len(nitrogen_atoms)
-    if nitrogen_count < 2:
+    if nitrogen_count < 2:  # Indole has 1 nitrogen, thus need at least 1 more for alkaloid
         return False, "Not enough nitrogen atoms to be an alkaloid"
 
-    # Check for basic nitrogen groups typical in alkaloids
-    basic_nitrogen_count = sum(1 for atom in nitrogen_atoms if atom.GetFormalCharge() == 0)
+    # Check for basic nitrogen groups typical in alkaloids; we assume a structure with at least one more basic nitrogen
+    basic_nitrogen_count = sum(1 for atom in nitrogen_atoms if atom.GetFormalCharge() == 0 and atom.GetHybridization() not in [Chem.rdchem.HybridizationType.SP2, Chem.rdchem.HybridizationType.SP])
     if basic_nitrogen_count < 1:
         return False, "No basic nitrogen atom found, atypical for an alkaloid"
 
