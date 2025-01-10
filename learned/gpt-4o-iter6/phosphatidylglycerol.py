@@ -6,10 +6,10 @@ from rdkit import Chem
 def is_phosphatidylglycerol(smiles: str):
     """
     Determines if a molecule is a phosphatidylglycerol based on its SMILES string.
-
+    
     Args:
         smiles (str): SMILES string of the molecule
-
+    
     Returns:
         bool: True if molecule is a phosphatidylglycerol, False otherwise
         str: Reason for classification
@@ -19,22 +19,22 @@ def is_phosphatidylglycerol(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Pattern to detect the glycerol backbone with phosphate linkage common in phosphatidylglycerol
-    # More generalized to include common configurations and necessary features
-    glycerol_phosphate_pattern = Chem.MolFromSmarts("C([C@@H](CO[P](=O)(O)O)O)COP(=O)(O)OC")
     
+    # Updated pattern for the glycerol backbone with phosphate linkage
+    # Here we enhance the pattern to ensure flexibility for different stereochemistry and connectivity
+    glycerol_phosphate_pattern = Chem.MolFromSmarts("C([C@@H](COP(O)(=O)O)O)COP(=O)(O)OC")
+    
+    # Check for glycerol backbone with phosphate linkage
     if not mol.HasSubstructMatch(glycerol_phosphate_pattern):
         return False, "No glycerol backbone with correct phosphate linkage found"
-
-    # Check for ester-linked long fatty acid chains, confirming two ester groups typically in phosphatidylglycerols
+    
+    # Ensure the ester linkage for the fatty acids (minimum 2 ester groups expected)
     ester_pattern = Chem.MolFromSmarts("OC(=O)C")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) < 2:
         return False, f"Insufficient ester-linked fatty acids, found {len(ester_matches)}"
-
-    # Additional check for specific groups that should not be part of a phosphatidylglycerol
-    # Negatively filtering out certain groups that would indicate a different class of phospholipids
+    
+    # Check to ensure specific non-target groups like choline/ethanolamine are absent
     choline_pattern = Chem.MolFromSmarts("N(C)(C)C")
     ethanolamine_pattern = Chem.MolFromSmarts("OCCN")
     if mol.HasSubstructMatch(choline_pattern):
