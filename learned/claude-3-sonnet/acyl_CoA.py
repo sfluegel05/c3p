@@ -26,9 +26,10 @@ def is_acyl_CoA(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for adenine base (part of CoA)
+    # More specific pattern including connection point
     adenine_pattern = Chem.MolFromSmarts("c1nc(N)c2ncnc2n1")
     if not mol.HasSubstructMatch(adenine_pattern):
-        return False, "No adenine moiety found (required for CoA)"
+        return False, "No adenine moiety found"
 
     # Check for phosphate groups (CoA has 3 phosphates)
     phosphate_pattern = Chem.MolFromSmarts("OP(=O)(O)O")
@@ -47,15 +48,24 @@ def is_acyl_CoA(smiles: str):
     if not mol.HasSubstructMatch(pantetheine_pattern):
         return False, "No pantetheine moiety found"
 
-    # Check for ribose sugar (part of CoA)
-    ribose_pattern = Chem.MolFromSmarts("OC1C(O)C(O)C(O)C1")
+    # Check for ribose sugar with correct connectivity
+    # More flexible pattern that matches CoA ribose including connections
+    ribose_pattern = Chem.MolFromSmarts("[OX2H0,OX2H1][C@H]1[C@H]([OX2H0,OX2H1])[C@H]([OX2H0,OX2H1])[C@H]([OX2H0,OX2H1])[C@H]1[OX2H0,OX2H1]")
     if not mol.HasSubstructMatch(ribose_pattern):
-        return False, "No ribose sugar found"
+        # Try alternative ribose pattern without stereochemistry
+        alt_ribose_pattern = Chem.MolFromSmarts("OC1C(O)C(O)C(O)C1O")
+        if not mol.HasSubstructMatch(alt_ribose_pattern):
+            return False, "No ribose sugar found"
 
-    # Additional check for characteristic geminal dimethyl group in CoA
+    # Check for characteristic geminal dimethyl group in CoA
     geminal_dimethyl = Chem.MolFromSmarts("CC(C)(COP)")
     if not mol.HasSubstructMatch(geminal_dimethyl):
         return False, "Missing characteristic geminal dimethyl group"
 
-    # If all structural elements are present, it's likely an acyl-CoA
-    return True, "Contains CoA moiety with thioester linkage to acyl group"
+    # Additional check for complete CoA connectivity
+    coa_backbone = Chem.MolFromSmarts("NCCC(=O)NCCS~CC(C)(C)COP(=O)(O)OP(=O)(O)OC")
+    if not mol.HasSubstructMatch(coa_backbone):
+        return False, "Missing complete CoA backbone connectivity"
+
+    # If all structural elements are present, it's an acyl-CoA
+    return True, "Contains complete CoA moiety with thioester linkage to acyl group"
