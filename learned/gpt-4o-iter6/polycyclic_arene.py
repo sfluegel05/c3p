@@ -2,12 +2,12 @@
 Classifies: CHEBI:33848 polycyclic arene
 """
 from rdkit import Chem
-from rdkit.Chem import Descriptors, rdMolDescriptors
+from rdkit.Chem import rdMolDescriptors
 
 def is_polycyclic_arene(smiles: str):
     """
     Determines if a molecule is a polycyclic arene based on its SMILES string.
-    A polycyclic arene (polycyclic aromatic hydrocarbon) consists of multiple aromatic rings fused together.
+    A polycyclic arene consists of multiple condensed aromatic rings.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,30 +21,25 @@ def is_polycyclic_arene(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Count the number of aromatic rings
-    ri = mol.GetRingInfo()
-    aromatic_ring_count = sum(1 for ring in ri.BondRings() if all(mol.GetBondWithIdx(bond_idx).GetIsAromatic() for bond_idx in ring))
     
-    # Check for at least two aromatic rings fused together
-    aromatic_fusion = len([set(ring) for ring in ri.BondRings() if all(mol.GetBondWithIdx(bond_idx).GetIsAromatic() for bond_idx in ring)]) >= 2
+    # Detect aromatic rings using SMARTS for benzene-like rings
+    benzene_pattern = Chem.MolFromSmarts('c1ccccc1')
+    aromatic_benzenes = mol.GetSubstructMatches(benzene_pattern)
+    
+    # Check if there are at least two aromatic benzene rings
+    if len(aromatic_benzenes) < 2:
+        return False, f"Found {len(aromatic_benzenes)} aromatic benzene rings, need at least 2"
+    
+    # Check rings are fused
+    ring_info = mol.GetRingInfo()
+    fused_rings = ring_info.NumFusedRings()
+    if fused_rings < 2:
+        return False, f"Only {fused_rings} fused rings found, need at least 2"
 
-    if aromatic_ring_count < 2 or not aromatic_fusion:
-        return False, "Not enough aromatic rings or insufficient fusion to classify as polycyclic arene"
-
-    # Check for non-carbon, non-hydrogen atoms in aromatic rings
-    for ring in ri.BondRings():
-        if all(mol.GetBondWithIdx(bond_idx).GetIsAromatic() for bond_idx in ring): # Check if whole ring is aromatic
-            for atom_idx in ring:
-                atom = mol.GetAtomWithIdx(atom_idx)
-                if atom.GetAtomicNum() not in [6, 1]:  # Carbon or Hydrogen
-                    return False, f"Contains non-carbon, non-hydrogen atoms in aromatic rings: {atom.GetSymbol()}"
-
-    # Ensure planar structure with conjugated pi systems (Hückel's rule)
-    num_aromatic_atoms = sum(1 for atom in mol.GetAtoms() if atom.GetIsAromatic())
-    pi_electron_count = Descriptors.NumAromaticHeterocycles(mol) + 2 * num_aromatic_atoms  # pi electrons from aromatic carbons and heterocycles
-    if not pi_electron_count % 4 + 2:
-        return False, "Does not follow Hückel's rule (planarity and conjugation check failed)"
+    # Ensure no heteroatoms in rings (only carbon/hydrogen allowed for simple PAHs)
+    for ring in ring_info.AtomRings():
+        if any(mol.GetAtomWithIdx(idx).GetAtomicNum() not in [6, 1] for idx in ring):
+            return False, "Contains non-carbon, non-hydrogen atoms in aromatic rings"
 
     return True, "Molecule is a polycyclic arene with multiple aromatic rings fused together"
 
