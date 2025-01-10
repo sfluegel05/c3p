@@ -11,7 +11,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_aldose(smiles: str):
     """
     Determines if a molecule is an aldose based on its SMILES string.
-    Aldoses are polyhydroxy aldehydes or their cyclic hemiacetal forms.
+    Aldoses are polyhydroxy aldehydes H[CH(OH)]nC(=O)H (n >= 2) or their cyclic hemiacetal forms.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,10 +26,11 @@ def is_aldose(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Basic size checks
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt > 250:  # Most simple aldoses are under 250 Da
-        return False, "Molecule too large for simple aldose"
+    # Check for presence of unwanted atoms
+    for atom in mol.GetAtoms():
+        atomic_num = atom.GetAtomicNum()
+        if atomic_num not in [1, 6, 8]:  # Only H, C, O allowed
+            return False, f"Contains non-sugar atoms (not H, C, or O)"
 
     # Count carbons and oxygens
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
@@ -37,19 +38,35 @@ def is_aldose(smiles: str):
     
     if c_count < 3:
         return False, "Too few carbons for an aldose"
-    if c_count > 8:  # Most aldoses are C3-C7
-        return False, "Too many carbons for simple aldose"
     if o_count < 3:
         return False, "Too few oxygens for an aldose"
 
-    # Check for aromatic rings (aldoses shouldn't have these)
+    # Check for aromatic rings
     if rdMolDescriptors.CalcNumAromaticRings(mol) > 0:
         return False, "Contains aromatic rings"
+
+    # Check for carboxylic acids (exclude uronic acids)
+    carboxyl_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
+    if mol.HasSubstructMatch(carboxyl_pattern):
+        return False, "Contains carboxylic acid group"
+
+    # Check for modified sugars
+    ether_pattern = Chem.MolFromSmarts("[OX2]([CX4])[CX4]")  # Non-ring ethers
+    ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2][CX4]")
+    if mol.HasSubstructMatch(ester_pattern):
+        return False, "Contains ester group"
+    
+    # Only allow cyclic ethers (hemiacetals)
+    ether_matches = mol.GetSubstructMatches(ether_pattern)
+    for match in ether_matches:
+        atoms = [mol.GetAtomWithIdx(i) for i in match]
+        if not all(atom.IsInRing() for atom in atoms):
+            return False, "Contains non-cyclic ether (modified sugar)"
 
     # Pattern for aldehyde group
     aldehyde_pattern = Chem.MolFromSmarts("[CH1](=O)")
     
-    # More flexible hemiacetal pattern
+    # Pattern for hemiacetal
     hemiacetal_pattern = Chem.MolFromSmarts("[O;R]-[CH1](-[O])-[C,O]")
     
     # Pattern for hydroxyl groups
@@ -62,16 +79,16 @@ def is_aldose(smiles: str):
 
     # Check ring count
     rings = mol.GetRingInfo()
-    if rings.NumRings() > 1:  # Simple aldoses have 0 or 1 ring
-        return False, "Too many rings for simple aldose"
+    if rings.NumRings() > 1:
+        return False, "Too many rings for aldose"
     
     # If cyclic, check ring size
     if rings.NumRings() == 1:
         ring_sizes = [len(r) for r in rings.AtomRings()]
         if not any(size in [5,6] for size in ring_sizes):
-            return False, "Ring size not typical for aldose sugars"
+            return False, "Ring size not typical for aldose"
 
-    # Check for either aldehyde (open form) or hemiacetal (cyclic form)
+    # Check for either aldehyde or hemiacetal
     has_aldehyde = mol.HasSubstructMatch(aldehyde_pattern)
     has_hemiacetal = mol.HasSubstructMatch(hemiacetal_pattern)
     
@@ -83,9 +100,9 @@ def is_aldose(smiles: str):
     if not mol.HasSubstructMatch(polyhydroxy_chain):
         return False, "No suitable carbon chain found"
 
-    # More lenient ratio check for deoxy sugars
+    # Check hydroxyl ratio
     ratio_oh_to_c = hydroxyl_matches / c_count
-    if ratio_oh_to_c < 0.3:  # Lowered from 0.4 to catch deoxy sugars
+    if ratio_oh_to_c < 0.3:
         return False, "Too few hydroxyls relative to carbons"
 
     if has_aldehyde:
