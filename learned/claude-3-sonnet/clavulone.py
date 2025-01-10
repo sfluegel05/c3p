@@ -24,48 +24,78 @@ def is_clavulone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Core patterns characteristic of clavulones
-    # More specific cyclopentenone core patterns with proper substitution
-    core_pattern1 = Chem.MolFromSmarts("[Cl,Br,I,O][C]1[C](=O)[C]=[C][C]1([O,C])[C]") # Halogenated/oxygenated core
-    core_pattern2 = Chem.MolFromSmarts("[C]1=C[C]([O,C])[C](=O)[C]1=C") # Conjugated core
+    # Core cyclopentenone patterns
+    # More flexible patterns to catch different substitution variants
+    core_patterns = [
+        # Basic cyclopentenone core with various substitutions
+        Chem.MolFromSmarts("[#6]1[#6](=[O])[#6]=[#6][#6]1"),
+        # Halogenated variant
+        Chem.MolFromSmarts("[Cl,Br,I][#6]1[#6](=[O])[#6][#6][#6]1"),
+        # Conjugated variant
+        Chem.MolFromSmarts("[#6]1[#6](=[O])[#6](=[#6])[#6][#6]1")
+    ]
     
-    # Characteristic side chain patterns
-    chain_pattern1 = Chem.MolFromSmarts("CC=CCC") # Alkenyl chain
-    chain_pattern2 = Chem.MolFromSmarts("C=CC=C[CH]CC(=O)O[CH3]") # Conjugated ester chain
+    # Check for at least one core pattern
+    core_found = False
+    for pattern in core_patterns:
+        if pattern is not None and mol.HasSubstructMatch(pattern):
+            core_found = True
+            break
     
-    # Acetoxy and ester groups
-    acetoxy = Chem.MolFromSmarts("OC(=O)C")
-    ester = Chem.MolFromSmarts("C(=O)OC")
+    if not core_found:
+        return False, "Missing cyclopentenone core structure"
+
+    # Side chain patterns
+    side_chain_patterns = [
+        # Unsaturated aliphatic chain
+        Chem.MolFromSmarts("C/C=C/CC"),
+        # Ester-containing chain
+        Chem.MolFromSmarts("CC(=O)OC"),
+        # Conjugated unsaturated chain
+        Chem.MolFromSmarts("C=CC=C"),
+        # Acetoxy group
+        Chem.MolFromSmarts("OC(=O)C")
+    ]
     
-    # Check for characteristic core structure
-    if not (mol.HasSubstructMatch(core_pattern1) or mol.HasSubstructMatch(core_pattern2)):
-        return False, "Missing characteristic clavulone core structure"
+    # Count matching side chain features
+    side_chain_count = 0
+    for pattern in side_chain_patterns:
+        if pattern is not None and mol.HasSubstructMatch(pattern):
+            side_chain_count += 1
     
-    # Must have at least one characteristic side chain
-    if not (mol.HasSubstructMatch(chain_pattern1) or mol.HasSubstructMatch(chain_pattern2)):
-        return False, "Missing characteristic side chain"
-    
-    # Must have oxygen-containing groups
-    acetoxy_count = len(mol.GetSubstructMatches(acetoxy))
-    ester_count = len(mol.GetSubstructMatches(ester))
-    if acetoxy_count + ester_count < 1:
-        return False, "Missing required oxygen-containing groups"
-    
-    # Check for presence of halogens or oxygen substituents
-    hal_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() in [9,17,35,53])
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    
-    if hal_count == 0 and o_count < 3:
-        return False, "Insufficient characteristic substituents"
-    
-    # Count carbons to ensure molecule is in right size range
+    if side_chain_count < 2:
+        return False, "Insufficient characteristic side chain features"
+
+    # Count key atoms and features
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if not (15 <= c_count <= 30):
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    hal_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() in [9,17,35,53])
+    ring_count = len(Chem.GetSymmSSSR(mol))
+    
+    # Basic requirements
+    if not (15 <= c_count <= 35):
         return False, "Carbon count outside typical range for clavulones"
     
-    # Additional check for ring count to avoid complex polycyclic compounds
-    ring_count = len(Chem.GetSymmSSSR(mol))
-    if ring_count > 2:
-        return False, "Too many rings for clavulone structure"
+    if o_count < 2:
+        return False, "Insufficient oxygen content"
+        
+    if ring_count != 1:
+        return False, "Must contain exactly one ring"
+        
+    # Check for required functional groups
+    ester_pattern = Chem.MolFromSmarts("C(=O)O[#6]")
+    if ester_pattern is not None:
+        ester_count = len(mol.GetSubstructMatches(ester_pattern))
+        if ester_count < 1:
+            return False, "Missing required ester group"
 
-    return True, "Contains characteristic clavulone structural features"
+    # Additional check for conjugated system
+    conjugated_pattern = Chem.MolFromSmarts("C=CC=C")
+    if conjugated_pattern is not None and not mol.HasSubstructMatch(conjugated_pattern):
+        return False, "Missing conjugated system"
+
+    # Must have either halogen or multiple oxygen-containing groups
+    if hal_count == 0 and o_count < 4:
+        return False, "Insufficient characteristic substituents"
+
+    return True, "Contains characteristic clavulone structural features including cyclopentenone core and required substitution patterns"
