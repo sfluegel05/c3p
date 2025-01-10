@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_cholesteryl_ester(smiles: str):
     """
     Determines if a molecule is a cholesteryl ester based on its SMILES string.
-    A cholesteryl ester is defined by the condensation of the carboxy group of any carboxylic acid
-    with the 3-hydroxy group of cholesterol.
+    A cholesteryl ester is defined by the ester linkage of any carboxylic acid with
+    the 3-hydroxy group of cholesterol.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -16,37 +16,30 @@ def is_cholesteryl_ester(smiles: str):
         bool: True if molecule is a cholesteryl ester, False otherwise
         str: Reason for classification
     """
-    
-    # Parse SMILES
+
+    # Parse SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return (False, "Invalid SMILES string")
 
-    # Define a cholesterol backbone pattern with potential understandable stereochemistry
-    # Capturing basic sterol structure with essential rings and alkyl side chain
-    # Included stereochemistry flexibility by removing specific chiral specs from the smart pattern.
-    cholesterol_pattern = Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2CCC4(C3=CC=C4)C")
-    sterol_matches = mol.GetSubstructMatches(cholesterol_pattern)
-    if not sterol_matches:
-        return False, "No cholesterol backbone found"
-    
-    # Check there is an ester group attached (-OC(=O)-)
+    # More refined cholesterol pattern to recognize key structural features
+    cholesterol_pattern = Chem.MolFromSmarts("CC(C)CCC[C@H](C)[C@H]1CC[C@H]2[C@@H](C3=CC=CC=C3)[C@@H]3CC[C@]4([C@H]3CC=C4C2)C1")
+    if not mol.HasSubstructMatch(cholesterol_pattern):
+        return (False, "No cholesterol framework identified")
+
+    # Check for an ester group (-OC(=O)-)
     ester_pattern = Chem.MolFromSmarts("OC(=O)C")
     if not mol.HasSubstructMatch(ester_pattern):
-        return False, "No ester linkage found"
+        return (False, "No ester linkage found")
 
-    # Check connection: ester linkage attached to cholesterol core (position 3 OH)
-    # Find correct connection to ensure ester is linked to the steroid nucleus
-    for match in sterol_matches:
-        # Check if ester connects to cholesterol hydroxyl position
-        connection_pattern = Chem.MolFromSmarts("C1(O[C]=O)CCC2C(C1)CCC3C2CCC4(C3=CC=C4)C")
-        if mol.HasSubstructMatch(connection_pattern):
-            return True, "Contains cholesterol backbone with ester linkage, indicating a cholesteryl ester"
-    
-    # If nothing matches return false
-    return False, "Ester linkage not appropriately connected to the cholesterol skeleton"
+    # Verify that the ester is connected to the C3 position of the cholesterol framework
+    c3_ester_connection_pattern = Chem.MolFromSmarts("C[C@H](OC(=O))C1CC1")
+    if not mol.HasSubstructMatch(c3_ester_connection_pattern):
+        return (False, "Ester linkage not correctly connected to C3 hydroxyl of cholesterol")
+
+    return (True, "SMILES indicates a cholesteryl ester structure")
 
 # Example test
-smiles_example = "CC(C)CCC[C@@H](C)[C@H]1CC[C@H]2[C@@H]3CC=C4C[C@H](CC[C@]4(C)[C@H]3CC[C@]12C)OC(=O)CCCCCCC\C=C/C\C=C/CCCCC"
+smiles_example = "C[H][C@@]1(CC[C@@]2([H])[C@]3([H])CC=C4C[C@H](CC[C@]4(C)[C@@]3([H])CC[C@]12C)OC(=O)CCCCCCC\C=C/C\C=C/CCCCC)"
 result = is_cholesteryl_ester(smiles_example)
 print(result)
