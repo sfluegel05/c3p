@@ -37,11 +37,6 @@ def is_flavanones(smiles: str):
     if not mol.HasSubstructMatch(aryl_pattern):
         return False, "No aryl group at position 2"
 
-    # Verify the 3,4-dihydro structure (no double bond between C3 and C4)
-    dihydro_pattern = Chem.MolFromSmarts("[C@H]1CC(=O)c2c([*])c([*])c([*])c([*])c2O1")
-    if not mol.HasSubstructMatch(dihydro_pattern):
-        return False, "No 3,4-dihydro structure found"
-
     # Count oxygen atoms (should be at least 2: one in the ring, one in the ketone)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     if o_count < 2:
