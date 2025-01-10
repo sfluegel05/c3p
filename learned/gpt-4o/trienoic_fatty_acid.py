@@ -20,16 +20,17 @@ def is_trienoic_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for carboxylic acid group: [CX3](=O)[OX1H]
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[OH]")
+    # Check for carboxylic acid group: It's a typical feature of fatty acids
+    # but not the only form (e.g., esterified forms exist)
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[O]")
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
-        return False, "No carboxylic acid group found; not a fatty acid"
+        return False, "No carboxylic acid or ester group found; not a simple fatty acid form"
 
-    # Count carbon double bonds (C=C) ensuring they're part of a likely fatty acid structure
-    double_bond_pattern = Chem.MolFromSmarts("C=CC=C")  # Ensure spacing denotes chain-like structure
+    # Count all C=C double bonds generally, no need to be consecutive
+    double_bond_pattern = Chem.MolFromSmarts("C=C") 
     double_bond_matches = len(mol.GetSubstructMatches(double_bond_pattern))
 
-    if double_bond_matches >= 3:
-        return True, "Contains three or more suitably aligned double bonds; classified as trienoic fatty acid"
+    if double_bond_matches == 3:
+        return True, "Contains exactly three double bonds; classified as trienoic fatty acid"
     else:
-        return False, f"Has {double_bond_matches} properly aligned double bonds; not a trienoic fatty acid"
+        return False, f"Has {double_bond_matches} double bonds; not a trienoic fatty acid"
