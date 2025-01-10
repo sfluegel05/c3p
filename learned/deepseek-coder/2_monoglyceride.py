@@ -34,24 +34,29 @@ def is_2_monoglyceride(smiles: str):
     # Look for ester group at position 2 (-O-C(=O)-)
     ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) != 1:
-        return False, f"Found {len(ester_matches)} ester groups, need exactly 1"
+    if len(ester_matches) < 1:
+        return False, "No ester group found"
 
     # Check if the ester group is attached to the middle carbon of the glycerol backbone
-    ester_carbon = ester_matches[0][1]  # Carbon in the ester group
     glycerol_carbons = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6 and atom.GetDegree() >= 2]
-    if ester_carbon not in glycerol_carbons:
+    ester_attached_to_glycerol = False
+    for match in ester_matches:
+        ester_carbon = match[1]  # Carbon in the ester group
+        if ester_carbon in glycerol_carbons:
+            ester_attached_to_glycerol = True
+            break
+    if not ester_attached_to_glycerol:
         return False, "Ester group not attached to glycerol backbone"
 
     # Check for fatty acid chain (long carbon chain attached to ester)
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]") 
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]") 
     fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
     if len(fatty_acid_matches) < 1:
         return False, "Missing fatty acid chain"
 
     # Count rotatable bonds to verify long chains
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 5:
+    if n_rotatable < 4:
         return False, "Chain too short to be a fatty acid"
 
     # Check molecular weight - 2-monoglycerides typically >200 Da
