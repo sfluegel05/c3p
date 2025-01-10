@@ -22,31 +22,27 @@ def is_spiroketal(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Refining the SMARTS pattern for spiroketal
-    # SMARTS for spiroketal requires a carbon spiro center with two oxygens, each in a different ring
-    spiroketal_smarts = "[C]([O][R])[O][R]"  # Improved SMARTS, see if a single carbon joins two ether oxygens of different rings
+    # Define SMARTS pattern for spiroketal
+    # This SMARTS looks for a carbon spiro center with two oxygen atoms each in different rings
+    spiroketal_smarts = "[C]([O])([O])"
     spiroketal_pattern = Chem.MolFromSmarts(spiroketal_smarts)
     if not spiroketal_pattern:
         return None, "Invalid SMARTS pattern"
-    
+
     # Find matches
     matches = mol.GetSubstructMatches(spiroketal_pattern)
     ring_info = mol.GetRingInfo()
     
     for match in matches:
         # The first match index is the spiro carbon, followed by two oxygens
-        carbon_idx = match[0]
-        oxygen_indices = match[1:3]
+        carbon_idx, o1_idx, o2_idx = match
         
-        # Check that each oxygen is part of a distinct ring structure
-        o_ring_assignments = [ring_info.AtomRingsFromIdx(o_idx) for o_idx in oxygen_indices]
+        # Get rings each oxygen is part of
+        oxygen_rings_1 = set(ring for ring in ring_info.AtomRings() if o1_idx in ring)
+        oxygen_rings_2 = set(ring for ring in ring_info.AtomRings() if o2_idx in ring)
         
-        # Ensure oxygens are in different rings
-        if all(len(oxygen_rings) > 0 for oxygen_rings in o_ring_assignments):
-            first_ring_set, second_ring_set = [set(ring) for rings in o_ring_assignments for ring in rings]
-            
-            # Confirm they are in separate ring systems
-            if len(set.intersection(first_ring_set, second_ring_set)) == 0:
-                return True, "Found a spiroketal with distinct ring linkages via a spiro center"
-            
+        # Check that each oxygen is in a different ring
+        if oxygen_rings_1 and oxygen_rings_2 and oxygen_rings_1 != oxygen_rings_2:
+            return True, "Found a spiroketal with a carbon connecting two distinct ring oxygens"
+    
     return False, "No spiroketal structure found"
