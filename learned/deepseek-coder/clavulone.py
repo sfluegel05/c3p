@@ -31,27 +31,27 @@ def is_clavulone(smiles: str):
     if not mol.HasSubstructMatch(cyclopentane_ketone_pattern):
         return False, "No cyclopentane ring with ketone group found"
 
-    # Check for hydroxyl group (OH) attached to the cyclopentane ring
-    hydroxyl_pattern = Chem.MolFromSmarts("[C][C]([OH])[C]")
+    # Check for at least one hydroxyl group (OH) anywhere in the molecule
+    hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
     if not mol.HasSubstructMatch(hydroxyl_pattern):
-        return False, "No hydroxyl group attached to cyclopentane ring found"
+        return False, "No hydroxyl group found"
 
-    # Check for ester groups (acetates or similar)
-    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
+    # Check for ester groups (acetates or similar) with specific patterns
+    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])[CX4]")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) < 1:
         return False, "No ester groups found"
 
-    # Check for long hydrocarbon chains with double bonds (C=C)
-    hydrocarbon_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    # Check for long hydrocarbon chains with double bonds (C=C) specific to clavulones
+    hydrocarbon_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
     hydrocarbon_chain_matches = mol.GetSubstructMatches(hydrocarbon_chain_pattern)
     if len(hydrocarbon_chain_matches) < 1:
         return False, "No long hydrocarbon chains with double bonds found"
 
-    # Check for halogens (Cl, Br, I) if present
-    halogen_pattern = Chem.MolFromSmarts("[Cl,Br,I]")
-    halogen_matches = mol.GetSubstructMatches(halogen_pattern)
-    if len(halogen_matches) > 0:
-        return True, "Contains cyclopentane ring with ketone, hydroxyl, ester groups, and halogen"
-    else:
-        return True, "Contains cyclopentane ring with ketone, hydroxyl, and ester groups"
+    # Check for the presence of at least one double bond in the hydrocarbon chain
+    double_bond_pattern = Chem.MolFromSmarts("[CX3]=[CX3]")
+    double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
+    if len(double_bond_matches) < 1:
+        return False, "No double bonds found in hydrocarbon chains"
+
+    return True, "Contains cyclopentane ring with ketone, hydroxyl, ester groups, and long hydrocarbon chains with double bonds"
