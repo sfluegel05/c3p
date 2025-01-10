@@ -22,14 +22,24 @@ def is_tetrahydrofuranone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Correct pattern for tetrahydrofuran (oxolane) ring [O]1CCCC1
+    # Correct pattern for a tetrahydrofuran (oxolane) ring - [O]1CCCC1
     oxolane_pattern = Chem.MolFromSmarts("O1CCCC1")
     if not mol.HasSubstructMatch(oxolane_pattern):
         return False, "No oxolane (tetrahydrofuran) ring found"
     
-    # Search for oxo group (C=O) positionally relaxed from ring but connected;
-    oxo_relaxed = Chem.MolFromSmarts("[$(OC=O),$(OCC=O),$(CCC=O),$(CCCC=O)]")
-    if not mol.HasSubstructMatch(oxo_relaxed):
-        return False, "No oxo-substituent found on the tetrahydrofuran ring"
-
+    # Search for oxo group (C=O) attached directly to the oxolane ring
+    # Modification: Looking at carbonyls bonded to any carbon on the ring
+    # more predictively captures the expected structures
+    oxo_attached_to_ring = Chem.MolFromSmarts("O1CCCC1C=O")
+    if not mol.HasSubstructMatch(oxo_attached_to_ring):
+        # As a fallback, expand the view to check for nearby
+        nearby_oxo_pattern = Chem.MolFromSmarts("C=O")
+        attached_atoms = mol.GetSubstructMatch(oxolane_pattern)
+        for atom_id in attached_atoms:
+            atom = mol.GetAtomWithIdx(atom_id)
+            for neighbor in atom.GetNeighbors():
+                if neighbor.HasQueryMatch(nearby_oxo_pattern):
+                    return True, "Contains oxolane (tetrahydrofuran) ring with nearby oxo-substituent"
+        return False, "No oxo-substituent found on the tetrahydrofuran ring appropriately connected"
+    
     return True, "Contains oxolane (tetrahydrofuran) ring with an oxo-substituent"
