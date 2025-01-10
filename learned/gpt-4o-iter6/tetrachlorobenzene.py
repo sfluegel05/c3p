@@ -2,6 +2,7 @@
 Classifies: CHEBI:26888 tetrachlorobenzene
 """
 from rdkit import Chem
+from rdkit.Chem import rdqueries
 
 def is_tetrachlorobenzene(smiles: str):
     """
@@ -20,11 +21,14 @@ def is_tetrachlorobenzene(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define tetrachlorobenzene SMARTS pattern: benzene with 4 chlorines
-    tetrachlorobenzene_pattern = Chem.MolFromSmarts("c1(c(Cl)c(Cl)c(Cl)c(Cl)c1)")
+    # Substructure query for benzene with four chlorines
+    benzene_query = Chem.MolFromSmarts("c1ccccc1")  # Benzene ring
+    chloro_query = rdqueries.AtomNumEqualsQueryAtom(17)  # Cl = 17
 
-    # Search for the pattern in the molecule
-    if mol.HasSubstructMatch(tetrachlorobenzene_pattern):
-        return True, "Benzene ring with exactly four chloro groups found"
+    # Identify benzene structures with exactly four chlorines
+    for substructure in mol.GetSubstructMatches(benzene_query):
+        chlorine_count = sum(1 for atom_idx in substructure if mol.GetAtomWithIdx(atom_idx).GetAtomicNum() == 17)
+        if chlorine_count == 4:
+            return True, "Benzene ring with exactly four chloro groups found"
 
     return False, "No benzene ring with exactly four chloro groups found"
