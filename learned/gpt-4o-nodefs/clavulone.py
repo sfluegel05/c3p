@@ -2,6 +2,7 @@
 Classifies: CHEBI:36092 clavulone
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_clavulone(smiles: str):
     """
@@ -11,30 +12,37 @@ def is_clavulone(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if the molecule is a clavulone, False otherwise
+        bool: True if molecule is a clavulone, False otherwise
         str: Reason for classification
     """
-
+     
     # Parse SMILES into RDKit molecule object
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Common clavulone substructure: complex polyunsaturated lactone with ester groups
-    clavulone_pattern = Chem.MolFromSmarts("C1(C(C(=O)C=C1)=CC)=C")
-    if not mol.HasSubstructMatch(clavulone_pattern):
-        return False, f"Missing characteristic polyunsaturated lactone structure"
+    # Check for aliphatic chain pattern
+    aliphatic_chain = Chem.MolFromSmarts("C/C=C\\CCCCC")
+    if not mol.HasSubstructMatch(aliphatic_chain):
+        return False, "Missing long aliphatic chain"
 
-    # Adjust code to prioritize structures found in the clavulones provided
-    # Verify presence of ester groups connected to cyclic moieties and unsaturated backbones
-    ester_cyclic_pattern = Chem.MolFromSmarts("C(=O)O[C@H]1C[CH]C(=O)C(=C1)C")
-    if not mol.HasSubstructMatch(ester_cyclic_pattern):
-        return False, f"No cyclic connected esters matching clavulone structure"
+    # Check for presence of halogens
+    halogen = Chem.MolFromSmarts("[Cl,Br,I]")
+    if mol.HasSubstructMatch(halogen):
+        halogen_present = True
+    else:
+        halogen_present = False
 
-    # Check for at least one chiral center
-    chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
-    if len(chiral_centers) < 1:
-        return False, "Lacking required chiral center"
+    # Check for ester groups
+    ester_pattern = Chem.MolFromSmarts("OC(=O)C")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    if len(ester_matches) < 1:
+        return False, "Missing ester group"
 
-    # Classify based on the structural features
-    return True, "Matches clavulone structure with polyunsaturated lactone core and ester groups"
+    # All characteristic patterns found
+    if halogen_present:
+        return True, "Contains long aliphatic chain, ester group, and halogen"
+    else:
+        return True, "Contains long aliphatic chain and ester group"
+
+    return None, None
