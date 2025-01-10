@@ -23,34 +23,34 @@ def is_lipopolysaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more complex potential polysaccharide pattern (broader sugar units)
-    trisaccharide_pattern = Chem.MolFromSmarts("O[C@H]([C@@H](O)CO)[C@H](O[C@H]1O[C@H](O)[C@@H]([C@H]1O)CO)C(O)C[C@H](O)C=O")
+    # Pattern for complex trisaccharide unit (two heptose units and octulosonic acid)
+    trisaccharide_pattern = Chem.MolFromSmarts("[C@H]1([C@H](O)[C@H](O[C@H]2O[C@H](O)[C@@H]([C@H]2O)CO)O[C@@H]([C@@H]1O)CO)[C@H](O)[C@@H](O)C(=O)CO") # Example pattern; refine as needed
     if not mol.HasSubstructMatch(trisaccharide_pattern):
-        return False, "No complex trisaccharide-like unit found"
+        return False, "No specific trisaccharide unit found"
 
-    # Extended fatty acid pattern - enhanced to accommodate varying chain lengths and modifications
-    lipid_chain_pattern = Chem.MolFromSmarts("C(=O)O[C@H]([CH2]10)[CH2]([CH2]1)[CH2]([CH2]1)[CH2]([CH2]1)[CH2]([CH2]1)[CH2]([CH2]1)C(=O)O")
-    if not mol.HasSubstructMatch(lipid_chain_pattern):
-        return False, "No adequate long fatty acid chain detected"
+    # Pattern for fatty acid chains (here using 3-hydroxytetradecanoic acid as an example)
+    fatty_acid_pattern = Chem.MolFromSmarts("CCCCCCCCCCCCCCCC(=O)O") # Example pattern; adjust for hydroxyl groups
+    if not mol.HasSubstructMatch(fatty_acid_pattern):
+        return False, "No long fatty acid chains detected"
 
-    # Increased complexity check for polysaccharide richness
-    side_chain_pattern = Chem.MolFromSmarts("O[C@H]([C@H](O)C(O)C)[C@H](O)CO")
-    if not mol.HasSubstructMatch(side_chain_pattern):
+    # Pattern for polysaccharide side chains
+    oligosaccharide_pattern = Chem.MolFromSmarts("C(CO)O[C@H]([C@H](O)CO)O") # Example pattern; extend to cover various oligosaccharides
+    if not mol.HasSubstructMatch(oligosaccharide_pattern):
         return False, "No sufficient oligosaccharide side chains detected"
-    
-    # Evaluate overall molecular complexity
+
+    # Count the number of rings as an indicator of structural complexity
     n_rings = rdMolDescriptors.CalcNumRings(mol)
     if n_rings < 5:
         return False, "Insufficient complex ring systems indicative of lipopolysaccharide structure"
 
-    # Probe for presence of sugars/aromatic systems to hint polysaccharide involvement
+    # Ensure the molecule has enough rotatable bonds suggesting polysaccharide structuring
     n_rotatable_bonds = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable_bonds < 8:
+    if n_rotatable_bonds < 10:
         return False, "Insufficient complexity in rotatable bonds"
 
-    # Ensure the presence of numerous oxygen atoms indicating polysaccharide presence
+    # Check for an abundance of oxygen atoms indicating polysaccharide presence
     oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if oxygen_count < 12:
-        return False, "Lack of oxygen atoms, not typical of a polysaccharide-rich lipopolysaccharide"
+    if oxygen_count < 15:
+        return False, "Insufficient oxygen atoms, not characteristic of a polysaccharide-rich lipopolysaccharide"
 
-    return True, "Contains key structural features of lipopolysaccharides: complex polysaccharide units, side chains, and fatty acid chains"
+    return True, "Contains key structural features of lipopolysaccharides: complex polysaccharide units, oligosaccharide side chains, and fatty acid chains"
