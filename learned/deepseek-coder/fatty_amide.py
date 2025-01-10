@@ -26,16 +26,18 @@ def is_fatty_amide(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for amide group (-CONH- or -CONR-)
-    # More inclusive pattern that matches both primary and secondary amides
     amide_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[NX3H0,H1]")
-    if not mol.HasSubstructMatch(amide_pattern):
+    amide_match = mol.GetSubstructMatch(amide_pattern)
+    if not amide_match:
         return False, "No amide group found"
 
-    # Check for a long hydrocarbon chain (at least 6 carbons total)
-    # Count all carbons except those in the amide group
+    # Get indices of atoms in the amide group
+    amide_atom_indices = set(amide_match)
+
+    # Count carbons not in the amide group
     c_count = sum(1 for atom in mol.GetAtoms() 
                  if atom.GetAtomicNum() == 6 and 
-                 not atom.GetIdx() in [a.GetIdx() for a in mol.GetSubstructMatch(amide_pattern)])
+                 atom.GetIdx() not in amide_atom_indices)
     
     if c_count < 6:
         return False, f"Not enough carbons ({c_count}) for a fatty chain"
@@ -45,9 +47,8 @@ def is_fatty_amide(smiles: str):
     if mol_wt < 150:
         return False, "Molecular weight too low for a fatty amide"
 
-    # Check for typical fatty acid characteristics:
-    # At least 6 carbons in a chain (not necessarily consecutive)
-    # Can include double/triple bonds and branches
+    # Check for a continuous hydrocarbon chain of at least 6 carbons
+    # This pattern allows for branches and unsaturations
     chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
     if not mol.HasSubstructMatch(chain_pattern):
         return False, "No suitable hydrocarbon chain found"
@@ -58,4 +59,16 @@ def is_fatty_amide(smiles: str):
     if c_count/total_c < 0.5:
         return False, "Too many carbons in non-chain positions"
 
-    return True, "Contains an amide group with a long hydrocarbon chain"
+    # Check that the amide group is connected to the hydrocarbon chain
+    # Get the carbon in the amide group
+    amide_carbon = [atom for atom in amide_match if atom.GetAtomicNum() == 6 and atom.GetDegree() == 3][0]
+    
+    # Check if the amide carbon is connected to at least one carbon chain
+    has_chain = any(neighbor.GetAtomicNum() == 6 and 
+                   neighbor.GetIdx() not in amide_atom_indices 
+                   for neighbor in amide_carbon.GetNeighbors())
+    
+    if not has_chain:
+        return False, "Amide group not connected to a hydrocarbon chain"
+
+    return True, "Contains an amide group connected to a long hydrocarbon chain"
