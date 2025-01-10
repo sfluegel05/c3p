@@ -27,7 +27,7 @@ def is_catechols(smiles: str):
     # Define a more flexible catechol substructure pattern
     # This pattern matches any benzene ring with two hydroxyl groups on adjacent carbons
     # and allows for any substitution on the ring
-    catechol_pattern = Chem.MolFromSmarts("[c;H0]1:[c;H0]([OH]):[c;H0]:[c;H0]:[c;H0]:[c;H0]:1[OH]")
+    catechol_pattern = Chem.MolFromSmarts("[c]1([OH])[c][c][c][c][c]1[OH]")
     
     # Check if the molecule contains the catechol pattern
     if mol.HasSubstructMatch(catechol_pattern):
