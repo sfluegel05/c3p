@@ -2,7 +2,6 @@
 Classifies: CHEBI:33838 nucleoside
 """
 from rdkit import Chem
-from rdkit.Chem import rdqueries
 
 def is_nucleoside(smiles: str):
     """
@@ -21,26 +20,43 @@ def is_nucleoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Nucleobase patterns (adenine, guanine, cytosine, uracil, thymine)
-    nucleobase_pattern = Chem.MolFromSmarts("n1cnc2c1ncnc2") # purine base pattern (e.g., adenine, guanine)
-    pyrimidine_pattern = Chem.MolFromSmarts("c1c[nH]c(=O)n(c1=O)") # pyrimidine base pattern (e.g., cytosine, uracil, thymine)
+    # Extended nucleobase patterns
+    purine_patterns = [
+        Chem.MolFromSmarts("ncnc2ncnc2"), # Basic purine scaffold
+        Chem.MolFromSmarts("ncnc2ncn[nH]2"), # Including tautomers and modifications
+        Chem.MolFromSmarts("n1[nH]cnc2ncnc12") # Ring closure variations
+    ]
     
-    has_purine_like = mol.HasSubstructMatch(nucleobase_pattern)
-    has_pyrimidine_like = mol.HasSubstructMatch(pyrimidine_pattern)
+    pyrimidine_patterns = [
+        Chem.MolFromSmarts("c1cnc[nH]c1=O"), # Basic pyrimidine scaffold
+        Chem.MolFromSmarts("c1c[nH]cnc1=O"), # Including tautomers and modifications
+        Chem.MolFromSmarts("c1c[nH]c(=O)n(c1=O)") # Oxy groups variations
+    ]
     
-    if not has_purine_like and not has_pyrimidine_like:
+    # Check for purine or pyrimidine nucleobase-like substructures
+    has_nucleobase = any(mol.HasSubstructMatch(pattern) for pattern in purine_patterns + pyrimidine_patterns)
+    
+    if not has_nucleobase:
         return False, "No nucleobase found"
     
-    # Sugar pattern (ribose or deoxyribose)
-    sugar_pattern = Chem.MolFromSmarts("OC[C@H]1O[C@H](O)[C@@H](CO)C1")
-    deoxyribose_pattern = Chem.MolFromSmarts("OC[C@H]1O[C@H](O)[C@@H](C)C1") # for deoxyribose
+    # Sugar pattern development
+    ribose_pattern = Chem.MolFromSmarts("OC[C@H]1O[C@H](O)[C@@H](CO)C1") # ribose with stereochemistry
+    deoxyribose_pattern = Chem.MolFromSmarts("OC[C@H]1O[C@H](O)[C@@H](C)C1") # deoxyribose
     
-    has_sugar = mol.HasSubstructMatch(sugar_pattern) or mol.HasSubstructMatch(deoxyribose_pattern)
+    # Check for ribose or deoxyribose-like substructures
+    has_sugar = mol.HasSubstructMatch(ribose_pattern) or mol.HasSubstructMatch(deoxyribose_pattern)
     
     if not has_sugar:
         return False, "No ribose or deoxyribose sugar found"
     
-    return True, "Contains both a nucleobase and a ribose or deoxyribose sugar"
+    # Verify connectivity between bases and sugars: looking for N-glycosidic bond
+    # Well-connected sugar and nucleobase is the final verification
+    n_glycosidic_bond = Chem.MolFromSmarts("OC1C(O)C(O)COC1n") # Check for bond to nitrogen on nucleobase
+    has_glycosidic_bond = mol.HasSubstructMatch(n_glycosidic_bond)
+    
+    if not has_glycosidic_bond:
+        return False, "Missing N-glycosidic linkage between sugar and nucleobase"
+    
+    return True, "Contains a nucleobase and a ribose or deoxyribose sugar with appropriate linkage"
 
-# Example SMILES testing:
-# print(is_nucleoside("O=C1N(C=CC(N1)=O)C2OC(CO)C(C2O)O"))  # Expected True, Spongouridin
+# Example SMILES testing, should test against a list of known nucleoside SMILES for validation
