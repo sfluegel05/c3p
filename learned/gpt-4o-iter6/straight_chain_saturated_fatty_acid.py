@@ -18,32 +18,39 @@ def is_straight_chain_saturated_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Identify carboxylic acid substructure
+    # Identify the carboxylic acid substructure
     carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[O]")
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No terminal carboxylic acid group found"
 
-    # To measure the longest straight chain
-    def longest_straight_chain(atom_idx, seen):
+    # To measure and verify the longest continuous carbon chain
+    def is_linear_and_saturated(atom_idx, seen):
         """
-        Recursively finds the longest straight chain from a starting atom index.
+        Verifies the longest continuous chain ensuring linear (no branch) and saturated (all single bonds).
         """
         atom = mol.GetAtomWithIdx(atom_idx)
         if atom.GetAtomicNum() != 6 or atom_idx in seen:
             return 0
         seen.add(atom_idx)
         chain_length = 1
+        carbon_neighbors = 0
         for neighbor in atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 6:
+                carbon_neighbors += 1
+                if atom.GetBondBetweenAtoms(atom_idx, neighbor.GetIdx()).GetBondType() != Chem.rdchem.BondType.SINGLE:
+                    return 0  # Unsaturated bond detected
+            if carbon_neighbors > 2:
+                return 0  # Branching detected
             if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in seen:
-                chain_length = max(chain_length, 1 + longest_straight_chain(neighbor.GetIdx(), seen))
+                chain_length += is_linear_and_saturated(neighbor.GetIdx(), seen)
         return chain_length
-    
-    # Consider all carbon atoms and their maximum connections
+
+    # Start traversal from carboxylic acid group and visit each connected carbon atom
     max_chain_length = 0
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() == 6:  # Only consider carbon atoms
             seen = set()
-            chain_length = longest_straight_chain(atom.GetIdx(), seen)
+            chain_length = is_linear_and_saturated(atom.GetIdx(), seen)
             max_chain_length = max(max_chain_length, chain_length)
     
     # Check the chain length validity 
