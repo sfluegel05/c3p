@@ -28,8 +28,8 @@ def is_hemiaminal(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define hemiaminal SMARTS pattern
-    # Carbon connected to both OH and NHx group
-    hemiaminal_pattern = Chem.MolFromSmarts("[CX4;!$(C([O])[N])]([OH])[NX3;!$(N=*)]")
+    # Carbon connected to OH group and nitrogen (single bonds)
+    hemiaminal_pattern = Chem.MolFromSmarts("[C;!$(C=O);!$(C=N);!$(C#N)]([O;H1])([N;!$(N=*);!$(N#*)])")
 
     if hemiaminal_pattern is None:
         return False, "Invalid SMARTS pattern for hemiaminal"
@@ -60,7 +60,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 0,
+    'attempt': 1,
     'success': True,
     'best': True,
     'error': '',
