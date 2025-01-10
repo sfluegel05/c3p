@@ -26,10 +26,11 @@ def is_polychlorinated_dibenzodioxines_and_related_compounds(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define core structures for dibenzodioxin, dibenzofuran, and biphenyl
-    dibenzodioxin_pattern = Chem.MolFromSmarts("O1c2ccccc2c3ccccc3O1")
-    dibenzofuran_pattern = Chem.MolFromSmarts("O1c2ccccc2c3ccccc31")
-    biphenyl_pattern = Chem.MolFromSmarts("c1ccccc1-c2ccccc2")
+    # Define more general core structures for dibenzodioxin, dibenzofuran, and biphenyl
+    # These patterns allow for halogen substitutions on the core structures
+    dibenzodioxin_pattern = Chem.MolFromSmarts("[O;H0]c1c([*;!H0])c([*;!H0])c([*;!H0])c([*;!H0])c1Oc1c([*;!H0])c([*;!H0])c([*;!H0])c([*;!H0])c1")
+    dibenzofuran_pattern = Chem.MolFromSmarts("[O;H0]c1c([*;!H0])c([*;!H0])c([*;!H0])c([*;!H0])c1c1c([*;!H0])c([*;!H0])c([*;!H0])c([*;!H0])c1")
+    biphenyl_pattern = Chem.MolFromSmarts("c1c([*;!H0])c([*;!H0])c([*;!H0])c([*;!H0])c1-c1c([*;!H0])c([*;!H0])c([*;!H0])c([*;!H0])c1")
 
     # Check if the molecule contains any of the core structures
     has_dibenzodioxin = mol.HasSubstructMatch(dibenzodioxin_pattern)
@@ -39,7 +40,7 @@ def is_polychlorinated_dibenzodioxines_and_related_compounds(smiles: str):
     if not (has_dibenzodioxin or has_dibenzofuran or has_biphenyl):
         return False, "No dibenzodioxin, dibenzofuran, or biphenyl core structure found"
 
-    # Count the number of halogen atoms (Cl or Br)
+    # Count the number of halogen atoms (Cl or Br) on the entire molecule
     halogen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() in [17, 35])
     if halogen_count < 2:
         return False, f"Found {halogen_count} halogen atoms, need at least 2"
