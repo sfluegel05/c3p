@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_furanocoumarin(smiles: str):
     """
     Determines if a molecule is a furanocoumarin based on its SMILES string.
-    A furanocoumarin is defined as a furan ring fused with a coumarin structure.
+    A furanocoumarin consists of a furan ring fused with a coumarin, allowing for different fusion patterns.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -19,18 +19,17 @@ def is_furanocoumarin(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+    
+    # Define SMARTS patterns for different types of furanocoumarin structures
+    psoralen_pattern = Chem.MolFromSmarts('c1cc2oc(=O)ccc2oc1')  # Linear furanocoumarins
+    angelicin_pattern = Chem.MolFromSmarts('c1cc2oc(=O)c3c1ccco3c2')  # Angular furanocoumarins
 
-    # Define a furanocoumarin substructure pattern 
-    # This pattern attempts to identify key structural elements potentially shared by examples
-    # Fused 5-membered furan ring to a 6-membered lactone ring
-    furanocoumarin_pattern = Chem.MolFromSmarts('C1OC=2C=CC(=O)OC2=C1')
+    # Check for the presence of any recognized furanocoumarin core structure
+    if mol.HasSubstructMatch(psoralen_pattern):
+        return True, "Contains furanocoumarin core (linear furanocoumarin)"
+    if mol.HasSubstructMatch(angelicin_pattern):
+        return True, "Contains furanocoumarin core (angular furanocoumarin)"
+    
+    return False, "No furanocoumarin core structure found"
 
-    # Check for the presence of the furanocoumarin fundamental fused ring system
-    matches = mol.GetSubstructMatches(furanocoumarin_pattern)
-    if not matches:
-        return False, "No furanocoumarin core structure found"
-
-    return True, "Contains furanocoumarin core fused ring structure"
-
-# This function checks specifically for the fused structure indicative of a furanocoumarin. 
-# Depending on SMILES complexity encountered in specific instances, further refinement of SMARTS patterns and chemical logic may be required.
+# This function now accounts for both major furanocoumarin core types, improving its ability to classify various isomers and derivatives.
