@@ -5,6 +5,7 @@ Classifies: CHEBI:10283 2-hydroxy fatty acid
 Classifies: CHEBI:17855 2-hydroxy fatty acid
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_2_hydroxy_fatty_acid(smiles: str):
     """
@@ -24,26 +25,26 @@ def is_2_hydroxy_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define a pattern for carboxylic acid group
+    # Define patterns for carboxylic acid and 2-hydroxy group in the alpha position
     carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
-    
+    hydroxy_alpha_pattern = Chem.MolFromSmarts("[C@H1,[C@@H1]]([O;H1])C(=O)O")  # including chiral center consideration
+
     # Check for carboxylic acid group
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
     
-    # Define a pattern for 2-hydroxy group (alpha position to carboxylic acid)
-    # [O;H1] is a single hydroxy group, attach to carbon that is alpha to carboxylic acid group
-    hydroxy_alpha_pattern = Chem.MolFromSmarts("C([O;H1])C(=O)O")
-
     # Check for 2-hydroxy group in alpha position
     if not mol.HasSubstructMatch(hydroxy_alpha_pattern):
         return False, "No 2-hydroxy group found in the alpha position"
     
-    # Verification of fatty acid-like long chain is more complex
-    # We will simply check if the chain contains at least 6 carbons
-    carbon_count = sum(atom.GetAtomicNum() == 6 for atom in mol.GetAtoms())
+    # Ensure a long carbon chain (minimum length typical for fatty acids)
+    alpah_carbon = Chem.MolFromSmarts("CCC(=O)O")
+    if not mol.HasSubstructMatch(alpah_carbon):
+        return False, "Insufficient length or wrong configuration in what should be alpha-chain for a fatty acid"
     
-    if carbon_count < 6:
-        return False, "Insufficient carbon chain length for fatty acid"
+    # Count number of carbons beyond the mentioned minimum of fatty acids
+    n_fatty_chain_carbons = rdMolDescriptors.CalcNumAliphaticCarbocycles(mol)
+    if n_fatty_chain_carbons < 12:
+        return False, "Insufficient carbon chain length for a fatty acid"
 
     return True, "Contains 2-hydroxy group in the alpha position of a fatty acid chain"
