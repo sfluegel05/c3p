@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_disaccharide(smiles: str):
     """
     Determines if a molecule is a disaccharide based on its SMILES string.
-    A disaccharide consists of two sugar rings connected via a glycosidic bond.
+    A disaccharide consists of two sugar rings connected via a proper glycosidic bond.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,26 +20,34 @@ def is_disaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define improved patterns for sugar rings and glycosidic bond
-    pyranose_pattern = Chem.MolFromSmarts("C1OC([H,O])C([H,O])C([H,O])C([H,O])O1") # 6-membered ring
-    furanose_pattern = Chem.MolFromSmarts("C1OC([H,O])C([H,O])C([H,O])O1") # 5-membered ring
-    glycosidic_bond_pattern = Chem.MolFromSmarts("[OX2H]C([OX2H])[!#6]") # Simplified glycosidic bond
-    
-    # Get all the pyranose and furanose ring matches
+    # Define patterns for pyranose and furanose rings
+    pyranose_pattern = Chem.MolFromSmarts("C1OC([CH2])[CH2]OC(C1)O")  # 6-membered pyranose pattern
+    furanose_pattern = Chem.MolFromSmarts("C1OC([CH2])[CH2]OC(1)O")   # 5-membered furanose pattern
+
+    # Define pattern for glycosidic bond (O connecting two carbon rings)
+    glycosidic_bond_pattern = Chem.MolFromSmarts("O[C&!R][C&!R]")     
+
+    # Get all pyranose and furanose matches
     pyranose_matches = mol.GetSubstructMatches(pyranose_pattern)
     furanose_matches = mol.GetSubstructMatches(furanose_pattern)
 
-    # Calculate the total number of sugar rings
+    # Calculate total number of sugar rings
     num_sugar_rings = len(pyranose_matches) + len(furanose_matches)
-    
+
     # Check for the presence of at least two sugar rings
     if num_sugar_rings < 2:
         return False, f"Expected at least 2 sugar rings, found {num_sugar_rings}"
 
     # Check for glycosidic bonds
-    glycosidic_match = mol.HasSubstructMatch(glycosidic_bond_pattern)
-
-    if not glycosidic_match:
+    glycosidic_match_count = len(mol.GetSubstructMatches(glycosidic_bond_pattern))
+    if glycosidic_match_count == 0:
         return False, "No glycosidic bond found"
 
-    return True, "Contains two sugar rings connected by a glycosidic bond"
+    # Ensure sugar rings are connected via glycosidic bond(s)
+    atom_pairs = [(match[0], match[1]) for match in mol.GetSubstructMatches(glycosidic_bond_pattern)]
+    for (a1, a2) in atom_pairs:
+        for (r1, r2) in pyranose_matches + furanose_matches:
+            if a1 in (r1, r2) or a2 in (r1, r2):
+                return True, "Contains two sugar rings connected by a glycosidic bond"
+            
+    return False, "Sugar rings are not properly connected by glycosidic bonds"
