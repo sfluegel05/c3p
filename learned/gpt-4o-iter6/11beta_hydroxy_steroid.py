@@ -21,15 +21,16 @@ def is_11beta_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more comprehensive steroid backbone pattern
-    # A basic A/B/C/D ring fusion structure (assume [6-6-6-5] with flexibility)
-    steroid_backbone_pattern = Chem.MolFromSmarts("C1CC2CCC3C[C@@H](O)CCC3C2C1")
+    # Define a more generalized steroid backbone pattern
+    # Pattern attempts to capture the [6-6-6-5] steroid nucleus with some flexibility
+    steroid_backbone_pattern = Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2CCC4C3CCCC4")
     if not mol.HasSubstructMatch(steroid_backbone_pattern):
         return False, "Steroid backbone not found"
 
-    # Check for a specific 11beta-hydroxy configuration (assuming it to be more flexible)
-    # Use SMARTS pattern that specifies the exact configuration
-    hydroxy_11beta_pattern = Chem.MolFromSmarts("[C@H](O)[C@@H]1CCC2=C1CCC3C2CCC4C3CCC(C4)C")
+    # Check for 11beta-hydroxy group
+    # Assumes the presence of an -OH group in a beta configuration at a possible 11 position
+    # The configuration is defined via stereochemistry descriptors post attachment
+    hydroxy_11beta_pattern = Chem.MolFromSmarts("[C@@H]1(O)CCC2C1CCC3C2CCC=C3")
     if not mol.HasSubstructMatch(hydroxy_11beta_pattern):
         return False, "No 11beta-hydroxy group with correct configuration found"
 
