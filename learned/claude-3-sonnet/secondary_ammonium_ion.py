@@ -3,6 +3,8 @@ Classifies: CHEBI:137419 secondary ammonium ion
 """
 """
 Classifies: secondary ammonium ion
+Definition: An organic cation obtained by protonation of any secondary amino compound; 
+           major species at pH 7.3.
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
@@ -10,7 +12,7 @@ from rdkit.Chem import AllChem
 def is_secondary_ammonium_ion(smiles: str):
     """
     Determines if a molecule contains a secondary ammonium ion based on its SMILES string.
-    A secondary ammonium ion has an NH2+ group with exactly two carbons attached.
+    A secondary ammonium ion has an NHR2+ group where R represents organic groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,9 +28,6 @@ def is_secondary_ammonium_ion(smiles: str):
         return False, "Invalid SMILES string"
 
     # Find all nitrogen atoms
-    potential_ammonium = False
-    reason = "No secondary ammonium ion found"
-    
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() == 7:  # Nitrogen
             # Check formal charge
@@ -38,30 +37,27 @@ def is_secondary_ammonium_ion(smiles: str):
             # Count attached hydrogens
             n_hydrogens = atom.GetTotalNumHs()
             
-            # Count attached carbons
-            carbon_neighbors = sum(1 for neighbor in atom.GetNeighbors() 
-                                if neighbor.GetAtomicNum() == 6)
+            # Get all neighbors
+            neighbors = atom.GetNeighbors()
+            
+            # Count organic neighbors (carbon and other non-H atoms)
+            organic_neighbors = []
+            for neighbor in neighbors:
+                if neighbor.GetAtomicNum() == 6:  # Carbon
+                    organic_neighbors.append(neighbor)
+                elif neighbor.GetAtomicNum() not in [1, 7, 8]:  # Not H, N, O
+                    organic_neighbors.append(neighbor)
             
             # Secondary ammonium should have:
-            # - Exactly 2 hydrogens (NH2+)
-            # - Exactly 2 carbon neighbors
+            # - Exactly 1 hydrogen
+            # - Exactly 2 organic groups attached
             # - Formal charge of +1
-            if n_hydrogens == 2 and carbon_neighbors == 2:
-                return True, "Contains NH2+ group with exactly two carbons attached"
+            if n_hydrogens == 1 and len(organic_neighbors) == 2:
+                # Verify the organic groups are not leaving groups (like OH)
+                if all(len(list(n.GetNeighbors())) >= 2 for n in organic_neighbors):
+                    return True, "Contains NHR2+ group (secondary ammonium ion)"
             
-            # Help identify why classification failed
-            if n_hydrogens > 2:
-                reason = "Primary ammonium ion (NH3+)"
-            elif n_hydrogens == 1 and carbon_neighbors == 3:
-                reason = "Tertiary ammonium ion (NHR3+)"
-            elif n_hydrogens == 0 and carbon_neighbors == 4:
-                reason = "Quaternary ammonium ion (NR4+)"
-            elif carbon_neighbors < 2:
-                reason = f"Only {carbon_neighbors} carbon(s) attached to NH2+ group"
-            elif n_hydrogens < 2:
-                reason = f"Only {n_hydrogens} hydrogen(s) on charged nitrogen"
-                
-    return False, reason
+    return False, "No secondary ammonium ion found"
 
 __metadata__ = {
     'chemical_class': {
