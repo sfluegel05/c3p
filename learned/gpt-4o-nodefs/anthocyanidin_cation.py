@@ -23,10 +23,12 @@ def is_anthocyanidin_cation(smiles: str):
         return False, "Invalid SMILES string"
 
     # Revised SMARTS pattern for flavylium core of anthocyanidins
+    # Includes a positively charged oxygen part of a 2-phenylchromenylium system
     flavylium_pattern = Chem.MolFromSmarts(
-        "[O+]1c2c(cc(O)cc2)c2ccccc2c2cc3c(cc(O)cc3[o+]c12)-c1ccccc1"
+        "[O+]1c2cc(O)cc(O)c2[o+]c2c(cccc2)c2ccccc12"
     )
     
+    # Check for presence of flavylium cation core structure
     if mol.HasSubstructMatch(flavylium_pattern):
         return True, "Contains flavylium cation structure characteristic of anthocyanidin cations"
     else:
