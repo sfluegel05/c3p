@@ -20,16 +20,21 @@ def is_decanoate_ester(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+
+    # Check for the presence of a specific decanoate structure using broader pattern recognition 
+    # This pattern should account for the ester linkage rO-C(=O)-CCCCCCCCCC which represents the decanoate framework
+    # and accommodate permutations and ester group positions in larger structures
     
-    # Check for various forms of decanoate ester patterns
+    # ether and carboxylate variations
     decanoate_patterns = [
-        Chem.MolFromSmarts("CCCCCCCCCC(=O)O"),
-        Chem.MolFromSmarts("C(=O)OCCCCCCCCCC"),
-        Chem.MolFromSmarts("[R]O[C](=O)CCCCCCCCCC")
+        Chem.MolFromSmarts("CCCCCCCCCCCC(=O)O"),  # standard decanoate ester backbone
+        Chem.MolFromSmarts("C(=O)OCCCCCCCCCC"),   # reversed ester representation
+        Chem.MolFromSmarts("CCCCCCCCCC(=O)O[R]")  # ester linkage as part of larger structures
     ]
-    
+
+    # Attempt to match any of the known patterns
     for pattern in decanoate_patterns:
         if mol.HasSubstructMatch(pattern):
             return True, "Contains valid decanoate ester structure"
-    
+
     return False, "No decanoate ester pattern found"
