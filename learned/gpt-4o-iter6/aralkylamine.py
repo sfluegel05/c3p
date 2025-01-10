@@ -27,10 +27,10 @@ def is_aralkylamine(smiles: str):
     if not mol.HasSubstructMatch(amine_pattern):
         return False, "No amine group found"
     
-    # Updated pattern: Aromatic group must be connected through non-ring atoms to an amine group
-    # This accounts for aromatic carbon attachment to alkyl, then to amine
-    aralkylamine_pattern = Chem.MolFromSmarts("[#6][c]~[*][CH2][NX3+0,NX4+;H2,H1,H0;!$([NX3+0][C]=O)]")
+    # Updated pattern for aralkylamines:
+    # Aromatic group connected to an alkyl chain which connects to the amine group.
+    aralkylamine_pattern = Chem.MolFromSmarts("[a][*][CX4][CH2][NX3+0,NX4+;H2,H1,H0;!$([NX3][C]=O)]")
     if not mol.HasSubstructMatch(aralkylamine_pattern):
         return False, "No aralkylamine feature found"
-
+    
     return True, "Contains alkylamine group with aromatic substitution"
