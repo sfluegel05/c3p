@@ -38,11 +38,13 @@ def is_2_acyl_1_alkyl_sn_glycero_3_phosphocholine(smiles: str):
         return False, "No sn-glycero backbone with phosphocholine at 3-position found"
 
     # Check for the presence of an alkyl group at the 1-position
+    # The pattern now allows for any length of alkyl chain
     alkyl_pattern = Chem.MolFromSmarts("[CX4][OX2][C@H](COP([O-])(=O)OCC[N+](C)(C)C)OC(=O)")
     if not mol.HasSubstructMatch(alkyl_pattern):
         return False, "No alkyl group at 1-position found"
 
     # Check for the presence of an acyl group at the 2-position
+    # The pattern now allows for any length of acyl chain
     acyl_pattern = Chem.MolFromSmarts("[CX4][OX2][C@H](COP([O-])(=O)OCC[N+](C)(C)C)OC(=O)[CX4]")
     if not mol.HasSubstructMatch(acyl_pattern):
         return False, "No acyl group at 2-position found"
