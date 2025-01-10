@@ -21,24 +21,25 @@ def is_1_monoglyceride(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for glycerol backbone (2 primary alcohols and 1 secondary alcohol)
-    glycerol_backbone = Chem.MolFromSmarts("C(O)C(O)CO")
+    # Check for glycerol backbone (we recognize primary alcohols and 1 secondary alcohol)
+    glycerol_backbone = Chem.MolFromSmarts("C(CO)CO")
     if not mol.HasSubstructMatch(glycerol_backbone):
         return False, "No glycerol backbone found"
 
-    # Check for ester group at primary position (-O-C(=O)-)
-    ester_primary_position = Chem.MolFromSmarts("[CH2]OC(=O)[*]")
-    if not mol.HasSubstructMatch(ester_primary_position):
-        return False, "No ester linkage at primary position found"
+    # Elicit an expanded check for ester linkage that may allow for common stereochemical variations
+    ester_primary_position = Chem.MolFromSmarts("C(O)C(=O)[*]")
+    ester_matches = mol.GetSubstructMatches(ester_primary_position)
+    if len(ester_matches) != 1:
+        return False, f"Found {len(ester_matches)} ester groups, need exactly 1 at the primary position"
 
-    # Confirm that there is only one ester
-    ester_group_check = mol.GetSubstructMatches(Chem.MolFromSmarts("COC(=O)[*]"))
-    if len(ester_group_check) != 1:
-        return False, f"Found {len(ester_group_check)} ester groups, need exactly 1"
+    # Chiral check - relaxed to count stereocenters but not demand specific stereo SMILES unless specifically sn-stereo is indicated 
+    chiral_center_check = any(atom.GetChiralTag() for atom in mol.GetAtoms())
+    if not chiral_center_check:
+        return True, "Contains glycerol backbone with one acyl linkage but no stereochemistry is detected uniquely (assuming achiral or racemic mix)"
 
-    # Consider chiral center criteria (i.e., sn-glycerol)
-    chiral_sn_glycerol = Chem.MolFromSmarts("[C@@H]([O])[C@H](O)")
-    if not mol.HasSubstructMatch(chiral_sn_glycerol):
-        return False, "Specific stereochemistry for sn-glycerol not found"
-
-    return True, "Contains glycerol backbone with a single acyl group esterified at a primary position"
+    # Validated based on stereo if required by the context (optional, as some could be achiral)
+    sn_glycerol = Chem.MolFromSmarts("[C@H](O)C(O)[CH2]")
+    if any(mol.HasSubstructMatch(sn_glycerol)):
+        return True, "Contains sn-glycerol backbone with a single acyl group esterified at a primary position"
+    
+    return False, "Failed to precisely conform to a recognized 1-monoglyceride structure"
