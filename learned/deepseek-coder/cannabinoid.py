@@ -29,15 +29,16 @@ def is_cannabinoid(smiles: str):
 
     # Check molecular weight - cannabinoids typically have higher molecular weights
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 250:
+    if mol_wt < 200:
         return False, "Molecular weight too low for a cannabinoid"
 
     # Define patterns for cannabinoid features
     benzene_pattern = Chem.MolFromSmarts("c1ccccc1")
     oxygen_pattern = Chem.MolFromSmarts("[OX2]")
     long_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
-    ethanolamide_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])CCO")
+    ethanolamide_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[CX4]")
     fatty_acid_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2][CX4]")
+    cannabinoid_pattern = Chem.MolFromSmarts("c1cc(O)c2[C@@H]3C=C(CC[C@H]3C(C)(C)Oc2c1)")
 
     # Check for classic cannabinoid structure (benzene + oxygen + long chain)
     has_benzene = mol.HasSubstructMatch(benzene_pattern)
@@ -48,8 +49,13 @@ def is_cannabinoid(smiles: str):
     has_ethanolamide = mol.HasSubstructMatch(ethanolamide_pattern)
     has_fatty_acid = mol.HasSubstructMatch(fatty_acid_pattern)
 
+    # Check for specific cannabinoid pattern
+    has_cannabinoid_pattern = mol.HasSubstructMatch(cannabinoid_pattern)
+
     # Classification logic
-    if (has_benzene and has_oxygen and has_long_chain):
+    if has_cannabinoid_pattern:
+        return True, "Contains specific cannabinoid structural motif"
+    elif (has_benzene and has_oxygen and has_long_chain):
         return True, "Contains a benzene ring with oxygen-containing functional groups and long hydrocarbon chains"
     elif (has_ethanolamide or has_fatty_acid) and has_long_chain:
         return True, "Contains ethanolamide/fatty acid structure with long hydrocarbon chain"
