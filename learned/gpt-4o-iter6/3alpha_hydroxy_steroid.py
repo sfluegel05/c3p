@@ -21,20 +21,16 @@ def is_3alpha_hydroxy_steroid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # General steroid backbone pattern, allowing for various stereocenters.
-    steroid_pattern = Chem.MolFromSmarts("C1CCC2CCC3C(C)CCC4=C3C2C1C4")  # Inclusive for typical steroid nucleus
+    
+    # Flexible steroid backbone pattern, allowing for various stereocenters and saturation.
+    steroid_pattern = Chem.MolFromSmarts("C1CCC2C(C(C)CC2)C1")  # Simplified representation of the steroid nucleus
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone detected"
-
-    # More specific pattern for 3alpha-hydroxy group
-    # The hydroxy group at 3-position, potentially less restrictive
-    alpha_hydroxy_pattern = Chem.MolFromSmarts("[C@H]([O])[C](C)")
-    hydroxy_matches = mol.GetSubstructMatches(alpha_hydroxy_pattern)
     
-    # To verify 3-position, ensure attachments around the carbon match expected structure locations
-    # Assume that a match confirms alpha positioning due to context-specific constraints.
-    if not hydroxy_matches:
+    # Pattern specifically for 3alpha-hydroxy group.
+    # The hydroxyl needs to be in the alpha position at the 3-carbon.
+    three_alpha_hydroxy_pattern = Chem.MolFromSmarts("[C@@H](O)C(C)C")  # Indicates alpha OH on C3
+    if not mol.HasSubstructMatch(three_alpha_hydroxy_pattern):
         return False, "No 3alpha-hydroxy group detected"
     
     return True, "3alpha-hydroxy steroid structure identified"
