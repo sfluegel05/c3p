@@ -21,26 +21,24 @@ def is_pyrimidine_deoxyribonucleoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for a pyrimidine base - uracil, thymine, and cytosine separately identified
-    cytosine_pattern = Chem.MolFromSmarts("N1C=CC(=NC1=O)N")
-    uracil_pattern = Chem.MolFromSmarts("O=C1NC=CC(=O)N1")
-    thymine_pattern = Chem.MolFromSmarts("O=C1NC=CC(=O)C1")
+    # BROAD SMARTS pattern for pyrimidine base (covers uracil, thymine, cytosine features)
+    pyrimidine_base_pattern = Chem.MolFromSmarts("c1cncnc1")  # Broad pattern for pyrimidine cores
 
-    if not mol.HasSubstructMatch(cytosine_pattern) and not mol.HasSubstructMatch(uracil_pattern) and not mol.HasSubstructMatch(thymine_pattern):
-        return False, "No pyrimidine base (uracil, thymine, or cytosine) found"
+    if not mol.HasSubstructMatch(pyrimidine_base_pattern):
+        return False, "No broad pyrimidine core found (covers uracil, thymine, or cytosine)"
 
-    # SMARTS pattern for deoxyribose sugar (5-membered ring with appropriate stereochemistry)
-    deoxyribose_pattern = Chem.MolFromSmarts("O[C@H]1C[C@H](O)[C@@H](CO)O1")
+    # SMARTS pattern for a generalized deoxyribose sugar (5-membered ring with potential C or N linkage options)
+    deoxyribose_pattern = Chem.MolFromSmarts("C[C@H]1O[C@@H]([C@@H](CO1)O)O")  # Generalized sugar pattern
+    
     if not mol.HasSubstructMatch(deoxyribose_pattern):
         return False, "No correct deoxyribose (sugar) detected"
 
-    # Check for the connection between the pyrimidine base and the deoxyribose sugar.
-    # Ensure that one nitrogen atom in the pyrimidine base is connected to the sugar.
-    pyrimidine_deoxyribose_linkage = Chem.MolFromSmarts("n1cn[c|n]c1[C@H]2O[C@H]([C@H](CO)O)[C@@H]2O")
+    # Check for the connection of base to a sugar (oxygen or nitrogen connects to sugar)
+    pyrimidine_deoxyribose_linkage = Chem.MolFromSmarts("cN1CN(C=O)O1")  # Broad connection validation
     if not mol.HasSubstructMatch(pyrimidine_deoxyribose_linkage):
         return False, "Pyrimidine base is not correctly attached to deoxyribose sugar"
 
-    return True, "Contains pyrimidine base properly attached to deoxyribose sugar"
+    return True, "Contains pyrimidine core properly attached to deoxyribose sugar"
 
 # Test with examples
 test_smiles = [
