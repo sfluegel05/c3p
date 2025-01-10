@@ -18,37 +18,42 @@ def is_2_enoyl_CoA(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
+    # Parse SMILES with stereochemistry
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
     # Check for CoA backbone pattern
-    # Look for adenine + ribose phosphate + pantetheine parts
-    coa_pattern = Chem.MolFromSmarts("[nX2r6:1]1[cX3r6:2][nX2r6:3][cX3r6:4][cX3r6:5][nX2r6:6]1")
-    if not mol.HasSubstructMatch(coa_pattern):
+    # Look for adenine nucleobase
+    adenine_pattern = Chem.MolFromSmarts("n1cnc2c(N)ncnc12")
+    if not mol.HasSubstructMatch(adenine_pattern):
         return False, "No CoA moiety found (missing adenine)"
     
     # Look for thioester group (-C(=O)S-)
     thioester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[SX2]")
-    if not mol.HasSubstructMatches(thioester_pattern):
+    if not mol.HasSubstructMatch(thioester_pattern):
         return False, "No thioester group found"
 
-    # Look for double bond in position 2-3 relative to the thioester
-    # Pattern: -C(=O)S-CH2-CH2-NH-C(=O)-CH2-CH2-NH-C(=O)- (pantetheine part)
-    enoyl_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[SX2][CH2][CH2]")
-    if not mol.HasSubstructMatch(enoyl_pattern):
+    # Look for pantetheine part
+    pantetheine_pattern = Chem.MolFromSmarts("SCCNC(=O)CCNC(=O)")
+    if not mol.HasSubstructMatch(pantetheine_pattern):
         return False, "Missing pantetheine part"
 
-    # Look for the characteristic C=C-C(=O)S pattern of 2-enoyl-CoA
-    alpha_beta_pattern = Chem.MolFromSmarts("[CX4,H;!$(C=O)]-[CX3]=[CX3]-C(=O)[SX2]")
+    # Look for characteristic alpha-beta unsaturation (position 2-3)
+    # Pattern matches both cis and trans configurations
+    alpha_beta_pattern = Chem.MolFromSmarts("[C,H]-[CX3]=[CX3]-C(=O)S")
     if not mol.HasSubstructMatch(alpha_beta_pattern):
         return False, "No double bond between positions 2 and 3 relative to thioester"
 
-    # Additional check for phosphate groups
-    phosphate_pattern = Chem.MolFromSmarts("[OX2]P(=[OX1])[OX2H,OX1-]")
+    # Check for phosphate groups (CoA has 3 phosphates)
+    phosphate_pattern = Chem.MolFromSmarts("P(=O)([O,OH])[O,OH]")
     phosphate_matches = len(mol.GetSubstructMatches(phosphate_pattern))
     if phosphate_matches < 3:
-        return False, "Missing phosphate groups characteristic of CoA"
+        return False, f"Found only {phosphate_matches} phosphate groups, need at least 3"
+
+    # Check for ribose sugar
+    ribose_pattern = Chem.MolFromSmarts("OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12")
+    if not mol.HasSubstructMatch(ribose_pattern):
+        return False, "Missing or incorrect ribose sugar moiety"
 
     return True, "Contains CoA moiety and unsaturated fatty acyl group with double bond between positions 2 and 3"
