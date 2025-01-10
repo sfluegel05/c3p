@@ -25,50 +25,46 @@ def is_ribonucleoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for ribose with correct stereochemistry
-    # Beta-D-ribofuranose pattern allowing for modifications
-    ribose_pattern = Chem.MolFromSmarts("[CH2X4][C@H]1O[C@H]([*])[C@H]([OH1,OH0])[C@@H]1[OH1,OH0]")
+    # Look for ribose pattern (furan ring with multiple OH groups)
+    # [#6] represents carbon, [#8] represents oxygen
+    # The @ symbols ensure correct stereochemistry for D-ribose
+    ribose_pattern = Chem.MolFromSmarts("[#6]1-[#8]-[#6]-[#6]-[#6]1")
     if not mol.HasSubstructMatch(ribose_pattern):
-        return False, "No beta-D-ribose sugar found"
+        return False, "No ribose sugar found"
 
-    # Basic nucleobase patterns (more permissive)
-    base_patterns = [
-        # Core patterns
-        "[n]1[c]([*,#1,N])[n,c][c,n][c,n]1",  # Basic azine ring
-        "[n]1[c]([*,#1,N])[c]([*,#1,N])[c,n][c,n]1", # Substituted azine
-        "[n]1[c][n,c][c]([*,#1,N])[c,n]1",  # Another azine variant
-        
-        # Pyrimidines and variants
-        "[nX3]1[c]([*,#1,=O,=S,N])[n,c][c,n][c,n]1",  # Generic pyrimidine
-        "[nX3]1[c]([*,#1,=O,=S,N])[n][c]([*,#1,=O,=S,N])[c,n]1", # Modified pyrimidine
-        
-        # Purines and variants
-        "[c,n]1[n][c]2[c]([n,c]1)[n,c][c,n][n,c]2",  # Basic purine
-        "[c,n]1[n][c]2[c]([n,c]1)[n,c]([*,#1,N])[c,n][n,c]2", # Modified purine
-        
-        # Additional patterns for modified bases
-        "[n]1[c]([C,N,O,S])[n,c][c,n][c,n]1",  # Substituted base
-        "[n]1[c]2[n][c]([*,#1,N])[n,c][c]2[n,c]1", # Fused system
-    ]
+    # Check for hydroxyl groups on ribose (typically 3)
+    hydroxyl_pattern = Chem.MolFromSmarts("[#8H1]")
+    hydroxyl_matches = len(mol.GetSubstructMatches(hydroxyl_pattern))
+    if hydroxyl_matches < 2:  # Allow for some modification of OH groups
+        return False, f"Insufficient hydroxyl groups ({hydroxyl_matches})"
 
-    has_base = False
-    for pattern in base_patterns:
-        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
-            has_base = True
-            break
-            
-    if not has_base:
-        return False, "No recognized nucleobase found"
+    # Look for nucleobase patterns
+    # Pyrimidine pattern (6-membered ring with nitrogens)
+    pyrimidine_pattern = Chem.MolFromSmarts("c1[n]c[n]c1")
+    # Purine pattern (fused 5,6 ring system with nitrogens)
+    purine_pattern = Chem.MolFromSmarts("c1[n]c2[n]c[n]c2[n]1")
+    
+    has_pyrimidine = mol.HasSubstructMatch(pyrimidine_pattern)
+    has_purine = mol.HasSubstructMatch(purine_pattern)
+    
+    if not (has_pyrimidine or has_purine):
+        return False, "No nucleobase (pyrimidine or purine) found"
 
-    # Check for N-glycosidic bond (more permissive)
-    n_glycosidic_pattern = Chem.MolFromSmarts("[#7][C@H]1O[C@H]([CH2][OH1,OH0])[C@H]([OH1,OH0])[C@@H]1[OH1,OH0]")
+    # Check for N-glycosidic bond connecting nucleobase to ribose
+    # This is a nitrogen connected to the anomeric carbon of ribose
+    n_glycosidic_pattern = Chem.MolFromSmarts("[#7]-[#6]1-[#8]-[#6]-[#6]-[#6]1")
     if not mol.HasSubstructMatch(n_glycosidic_pattern):
-        return False, "No proper N-glycosidic bond found"
+        return False, "No N-glycosidic bond found"
 
-    # Ring count check
+    # Additional check for reasonable molecular size
+    if mol.GetNumAtoms() < 15:  # Minimum size for a basic nucleoside
+        return False, "Molecule too small to be a ribonucleoside"
+    
+    # Check if the molecule has a reasonable number of rings
     ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() < 2:
+    if ring_info.NumRings() < 2:  # Should have at least ribose + base
         return False, "Insufficient ring count"
 
-    # Success case
-    return True, "Contains beta-D-ribose sugar connected to nucleobase via N-glycosidic bond"
+    # Success case - molecule appears to be a ribonucleoside
+    base_type = "purine" if has_purine else "pyrimidine"
+    return True, f"Contains ribose sugar connected to {base_type} base via N-glycosidic bond"
