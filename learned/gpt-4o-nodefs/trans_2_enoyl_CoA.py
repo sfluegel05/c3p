@@ -15,35 +15,45 @@ def is_trans_2_enoyl_CoA(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
+    # Parse SMILES to RDKit Mol object
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for trans double bond - more generic pattern targeting common trans enoyl structure
-    trans_double_bond_patterns = [
-        Chem.MolFromSmarts("C/C=C/C"),
-        Chem.MolFromSmarts("C\\C=C\\C")
-    ]
+    # Define SMARTS patterns for trans double bond and CoA components
+    try:
+        trans_double_bond_patterns = [
+            Chem.MolFromSmarts("C/C=C\\C"),  # Trans-double bonds
+            Chem.MolFromSmarts("C\\C=C/C")
+        ]
+        
+        coa_substructures = [
+            Chem.MolFromSmarts("C(=O)SCCNC(=O)"),  # CoA linkage part
+            Chem.MolFromSmarts("C(=O)[C@H](O)C(C)(C)COP(O)(O)=O"),  # Phosphopantetheine
+            Chem.MolFromSmarts("OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1")  # Ribose sugar and phosphate
+        ]
+        
+        # Validate substructure patterns
+        for pattern in trans_double_bond_patterns + coa_substructures:
+            if pattern is None:
+                raise ValueError("Invalid SMARTS pattern initialization")
     
-    if not any(mol.HasSubstructMatch(pattern) for pattern in trans_double_bond_patterns):
-        return False, "No trans double bond found"
+        # Match trans double bond
+        if not any(mol.HasSubstructMatch(pattern) for pattern in trans_double_bond_patterns):
+            return False, "No trans double bond found"
+        
+        # Match CoA components
+        if not all(mol.HasSubstructMatch(substructure) for substructure in coa_substructures):
+            return False, "Necessary CoA substructures missing"
     
-    # Look for key parts of the CoA structure - divided into smaller components
-    coa_substructures = [
-        Chem.MolFromSmarts("C(=O)SCCNC(=O)"),  # Part of the CoA linkage
-        Chem.MolFromSmarts("C(=O)[C@H](O)C(C)(C)COP(O)(O)=O"),  # Phosphopantetheine
-        Chem.MolFromSmarts("OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1")  # Ribose sugar and phosphate
-    ]
+        return True, "Contains trans double bond and key CoA moieties"
 
-    if not all(mol.HasSubstructMatch(substructure) for substructure in coa_substructures):
-        return False, "Necessary CoA substructures missing"
-    
-    return True, "Contains trans double bond and key CoA moieties"
+    except Exception as e:
+        return False, f"Error during matching: {str(e)}"
 
-# Test examples
+# Test examples with logging of results
 smiles_list = [
-    "CCCCCCCCCCCCCCCCCCCC\\C=C\\C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12",
+    "CCCCCCCCCCCCCCCCCCCC\\C=C\\C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(=O)=O)n1cnc2c(N)ncnc12",
     "COc1cc(\\C=C\\C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2OP(O)(O)=O)n2cnc3c(N)ncnc23)cc(OC)c1O",
 ]
 results = [is_trans_2_enoyl_CoA(smiles) for smiles in smiles_list]
