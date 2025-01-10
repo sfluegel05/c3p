@@ -28,12 +28,14 @@ def is_polar_amino_acid(smiles: str):
     
     # SMARTS patterns for hydrogen-bonding functional groups in side chains
     polar_side_chain_patterns = [
-        Chem.MolFromSmarts("NC(=O)[#6]"),   # Amide side chain - Aspartagine or Glutamine
-        Chem.MolFromSmarts("[OH][CH2]"),    # Alcohol side chain - Serine or Threonine
-        Chem.MolFromSmarts("[nH]"),         # Indole or imidazole group - Tryptophan or Histidine
-        Chem.MolFromSmarts("C[NH2+]"),      # Ammonium group - Lysine
-        Chem.MolFromSmarts("[NX3H2][CX3]=N[CX3]=N"),  # Guanidinium - Arginine
-        Chem.MolFromSmarts("[SH]"),         # Thiol group - Cysteine
+        Chem.MolFromSmarts("NC(=O)[#6]"),      # Amide side chain - Asparagine or Glutamine
+        Chem.MolFromSmarts("[OH][CH2,C]"),     # Alcohol side chain - Serine or Threonine
+        Chem.MolFromSmarts("[nH]"),            # Indole or imidazole group - Tryptophan or Histidine
+        Chem.MolFromSmarts("[NX3H2]"),         # Ammonium primary amine - Lysine
+        Chem.MolFromSmarts("NC(N)=N"),         # Guanidinium - Arginine
+        Chem.MolFromSmarts("[SH]"),            # Thiol group - Cysteine
+        Chem.MolFromSmarts("ccc(O)"),          # Phenol group - Tyrosine
+        Chem.MolFromSmarts("C(=O)[OX1H]")      # Carboxyl group - Glutamic acid, Aspartic acid
     ]
 
     # Check for polar side chain patterns
