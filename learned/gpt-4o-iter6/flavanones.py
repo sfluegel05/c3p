@@ -25,7 +25,7 @@ def is_flavanones(smiles: str):
     flavanone_pattern = Chem.MolFromSmarts("c1ccccc1C2CC(=O)c3ccccc3O2")
     # Core feature: aromatic benzene ring, carbonyl on chromanone, 2nd aryl group attached on chromanone
     
-    if not mol.HasSubstructMatch(flayanone_pattern):
+    if not mol.HasSubstructMatch(flavanone_pattern):
         return False, "No flavanone core skeleton found"
     
     # Additional checks for variability in substituents can be done if needed
