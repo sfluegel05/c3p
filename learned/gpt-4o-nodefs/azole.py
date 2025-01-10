@@ -20,14 +20,16 @@ def is_azole(smiles: str):
         str: Reason for classification
     """
 
-    # Define SMARTS patterns for different types of azoles
+    # Revised SMARTS patterns for different types of azoles
     azole_patterns = {
         "pyrazole": "[nH]1nccc1",
         "imidazole": "n1c[nH]cc1",
-        "oxazole": "c1cno1",
+        "oxazole": "o1cncc1",
         "thiazole": "c1cscn1",
-        "1,2,3-triazole": "n1nncc1",
-        "1,2,4-triazole": "n1ncnc1"
+        "1,2,3-triazole": "n1ncnn1",
+        "1,2,4-triazole": "n1ncnc1",
+        "isoxazole": "o1ncc[c,n]1",
+        "benzotriazole": "c1ncn[nH]c2ccccc12"
     }
 
     # Parse SMILES string into molecule
