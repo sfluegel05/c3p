@@ -21,12 +21,10 @@ def is_furanocoumarin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Expanded Furanocoumarin core patterns
+    # Refined Furanocoumarin core patterns
     core_patterns = [
-        Chem.MolFromSmarts("O=C1C=CC2=C(O1)C=CC3=CC=CO3C2"),         # Furo[2,3-h]coumarin
-        Chem.MolFromSmarts("O=C1C=CC2=C(O1)C=CC3=C(O2)C=CC=C3"),      # Combined furan and coumarin
-        Chem.MolFromSmarts("O=C1C=CC2=C(O1)C=CC3=C(O2)C=CC=CO3"),     # Furo[3,2-g]chromen
-        Chem.MolFromSmarts("O=C1OC2=CC=3C=C(O)C(=CC3=C2)C=C1")        # Additional coumarin variations
+        Chem.MolFromSmarts("O=c1cc2oc3ccccc3cc2oc1"),  # Recognizing common benzofuran-2-one structure
+        Chem.MolFromSmarts("O=c1oc2ccccc2cc1=O")        # Coumarin-like structure fused to additional ring
     ]
 
     # Check each pattern
