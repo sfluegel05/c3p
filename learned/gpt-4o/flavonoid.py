@@ -7,8 +7,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_flavonoid(smiles: str):
     """
     Determines if a molecule is a flavonoid based on its SMILES string.
-    
-    A flavonoid is any member of the 'superclass' flavonoids whose skeleton 
+    A flavonoid is any member of 'superclass' flavonoids whose skeleton 
     is based on 1-benzopyran with an aryl substituent at position 2.
 
     Args:
@@ -24,10 +23,8 @@ def is_flavonoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define the flavonoid pattern: benzopyran with aryl group at position 2
-    flavonoid_smarts = "[cH]-1[cH][cH][cH][cH][cH]-2[O][cR3][cH][cH]2[#6]-1-[$([cR3]),$([a])]"
-
-    # Convert SMARTS to a molecule
+    # More generic SMARTS pattern for flavonoid core: 1-benzopyran with aryl at position 2
+    flavonoid_smarts = "[O;R1][c;R1]1[c;R1][c;R1][c;R1][c;R1][c;R1]1[a]"
     flavonoid_pattern = Chem.MolFromSmarts(flavonoid_smarts)
     
     # Check for flavonoid structure
@@ -37,6 +34,6 @@ def is_flavonoid(smiles: str):
     return True, "Molecule contains the 1-benzopyran structure with aryl group typical of flavonoids"
 
 # Example usage
-smiles_example = "C1=CC=C2C(=C1)C=CC(=O)C2Oc3ccccc3"  # Example flavonoid structure
+smiles_example = "O1C=CC2C=CC(OC2=O)C1=CC=CC(=C)O"  # Example flavonoid structure
 result, reason = is_flavonoid(smiles_example)
 print(result, reason)
