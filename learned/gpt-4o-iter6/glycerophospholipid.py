@@ -2,13 +2,12 @@
 Classifies: CHEBI:37739 glycerophospholipid
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_glycerophospholipid(smiles: str):
     """
     Determines if a molecule is a glycerophospholipid based on its SMILES string.
-    A glycerophospholipid is any glycerolipid having a phosphate group ester-linked to a terminal carbon of the glycerol backbone.
+    A glycerophospholipid is a glycerolipid with a phosphate group ester-linked to a terminal carbon of the glycerol backbone.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,29 +22,25 @@ def is_glycerophospholipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define glycerol pattern (C-C-C with oxygens attached)
-    glycerol_pattern = Chem.MolFromSmarts("C(CO)CO")
+    # Define a broader glycerol backbone pattern
+    glycerol_pattern = Chem.MolFromSmarts("[#6]-[#6]-[#6]([#8])([#8])-")  # Glycerol backbone with possible modifications
     if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone found"
+        return False, "No glycerol backbone found or pattern mismatch"
 
-    # Detect phosphate group attached to glycerol
-    phosphate_group_pattern = Chem.MolFromSmarts("P(=O)(O)O")
-    phosphate_matches = mol.GetSubstructMatches(phosphate_group_pattern)
-    if not phosphate_matches:
-        return False, "Missing phosphate group"
+    # Define phosphate group pattern
+    phosphate_pattern = Chem.MolFromSmarts("[P](=O)([O-])[O]")  # Phosphate group can have varying charges
+    if not mol.HasSubstructMatch(phosphate_pattern):
+        return False, "No phosphate group ester-linked to glycerol backbone"
 
-    # Check for ester-linked fatty acid chains
-    ester_pattern = Chem.MolFromSmarts("C(=O)O[C;H2]-")
+    # Define ester-linked fatty acid pattern
+    ester_pattern = Chem.MolFromSmarts("C(=O)O[#6]")  # Ester group indicating fatty acid connection
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) < 2:
-        return False, f"Found {len(ester_matches)} ester groups, need at least 2 for fatty acid chains"
-
-    # Check molecular weight to ensure it's in the typical range for glycerophospholipids
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 500:
-        return False, "Molecular weight too low for glycerophospholipid"
+        return False, f"Found {len(ester_matches)} ester linkages, need at least 2 for fatty acid chains"
     
-    if mol_wt > 1000:
-        return False, "Molecular weight too high for typical glycerophospholipid"
-
-    return True, "Valid glycerophospholipid structure: glycerol backbone with attached phosphate and fatty acid chains"
+    # Check molecular weight for added validation
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if not (500 <= mol_wt <= 1000):
+        return False, "Molecular weight outside typical glycerophospholipid range"
+    
+    return True, "Valid glycerophospholipid structure with glycerol backbone, phosphate group, and fatty acid chains"
