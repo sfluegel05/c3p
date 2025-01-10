@@ -22,18 +22,27 @@ def is_N_acylsphinganine(smiles: str):
     if not mol:
         return False, "Invalid SMILES string"
 
-    # Look for sphinganine backbone pattern
-    sphinganine_pattern = Chem.MolFromSmarts("[C@@H](O)[C@H](CO)N")
+    # Look for the sphinganine backbone pattern (including specific stereochemistry)
+    sphinganine_pattern = Chem.MolFromSmarts("[C@H](O)[C@@H](CO)N")
+    if sphinganine_pattern is None:
+        return False, "Failed to build sphinganine pattern"
+        
     if not mol.HasSubstructMatch(sphinganine_pattern):
         return False, "No sphinganine backbone found"
 
-    # Look for amide bond pattern (-NC(=O)-)
+    # Look for N-acyl amide bond pattern (-NC(=O)-)
     amide_pattern = Chem.MolFromSmarts("NC(=O)")
+    if amide_pattern is None:
+        return False, "Failed to build amide pattern"
+        
     if not mol.HasSubstructMatch(amide_pattern):
         return False, "No amide bond (N-acyl group) found"
 
-    # Check for a long aliphatic carbon chain
-    fatty_acid_chain_pattern = Chem.MolFromSmarts("C{8,}")  # Chain with 8 or more carbons
+    # Check for a long aliphatic carbon chain (8 or more carbons) attached to the amide
+    fatty_acid_chain_pattern = Chem.MolFromSmarts("C{8,}")
+    if fatty_acid_chain_pattern is None:
+        return False, "Failed to build fatty acid chain pattern"
+        
     if not mol.HasSubstructMatch(fatty_acid_chain_pattern):
         return False, "No long aliphatic carbon chain found"
 
