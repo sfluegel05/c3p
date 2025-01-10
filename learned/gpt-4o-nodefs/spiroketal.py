@@ -5,11 +5,11 @@ from rdkit import Chem
 
 def is_spiroketal(smiles: str):
     """
-    Determines if a given SMILES string represents a spiroketal.
+    Determines if the given SMILES string represents a spiroketal.
     
     A spiroketal is characterized by:
-    - A spiro junction
-    - At least one cyclic ketal group
+    - A spiro junction connecting at least two rings.
+    - A cyclic ketal group as part of the compound.
     
     Args:
         smiles (str): The SMILES string of the molecule.
@@ -18,27 +18,16 @@ def is_spiroketal(smiles: str):
         bool: True if the molecule is a spiroketal, False otherwise.
         str: Explanation of the classification.
     """
-    # Parse the SMILES string into an RDKit molecule
+    # Parse the SMILES string into a molecule
     mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
+    if not mol:
         return False, "Invalid SMILES string"
     
-    # Define the SMARTS pattern for a spiro junction: two rings sharing a common atom
-    spiro_pattern = Chem.MolFromSmarts('[R]@[R]')
-    if not mol.HasSubstructMatch(spiro_pattern):
-        return False, "No spiro junction found"
+    # Define complex spiroketal detection logic using SMARTS
+    # This pattern accounts for spiro connection and ketal presence in a single molecule scope
+    spiroketal_pattern = '[$([C]@/1([C])([O])[C][C][O]1),$([C]@[C]1[C][O][C][C]1)]'
     
-    # Define the SMARTS pattern for a ketal group: C-O-C-O-C
-    ketal_pattern = Chem.MolFromSmarts('[C]([O])[C]([O])[C]')
-    if not mol.HasSubstructMatch(ketal_pattern):
-        return False, "No ketal group found"
+    if not mol.HasSubstructMatch(Chem.MolFromSmarts(spiroketal_pattern)):
+        return False, "No spiroketal features found in the molecule"
     
-    # Verify the presence of cyclic (part of a ring) structure in ketal
-    ring_info = mol.GetRingInfo()
-    ring_bonds = ring_info.BondRings()
-    ketal_matches = mol.GetSubstructMatches(ketal_pattern)
-    
-    if not any(set(m) <= set(bond) for bond in ring_bonds for m in ketal_matches):
-        return False, "No cyclic ketal group found"
-    
-    return True, "Contains a spiro junction and a cyclic ketal group"
+    return True, "Contains a spiro junction with a cyclic ketal group"
