@@ -7,32 +7,32 @@ Definition: A fatty alcohol with a chain length ranging from C13 to C22
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem.GraphDescriptors import CalcNumRings
 
-def count_chain_carbons(mol, start_idx, visited=None):
+def find_longest_chain(mol, start_idx, exclude_atoms=None):
     """
-    Recursively count connected carbons starting from a given atom
+    Find the longest carbon chain from a starting atom using DFS
     """
-    if visited is None:
-        visited = set()
+    if exclude_atoms is None:
+        exclude_atoms = set()
     
-    if start_idx in visited:
-        return 0
-    
-    visited.add(start_idx)
-    atom = mol.GetAtomWithIdx(start_idx)
-    
-    if atom.GetAtomicNum() != 6:  # Not carbon
-        return 0
+    def dfs(current_idx, path):
+        nonlocal longest_path
         
-    count = 1  # Count current carbon
-    
-    # Recursively explore neighbors
-    for neighbor in atom.GetNeighbors():
-        if neighbor.GetIdx() not in visited:
-            count += count_chain_carbons(mol, neighbor.GetIdx(), visited)
+        if len(path) > len(longest_path):
+            longest_path = path[:]
             
-    return count
+        atom = mol.GetAtomWithIdx(current_idx)
+        for neighbor in atom.GetNeighbors():
+            n_idx = neighbor.GetIdx()
+            if (n_idx not in path and 
+                n_idx not in exclude_atoms and 
+                neighbor.GetAtomicNum() == 6):  # Carbon atoms only
+                dfs(n_idx, path + [n_idx])
+    
+    longest_path = []
+    dfs(start_idx, [start_idx])
+    return len(longest_path)
 
 def is_long_chain_fatty_alcohol(smiles: str):
     """
@@ -49,59 +49,52 @@ def is_long_chain_fatty_alcohol(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+
+    # Exclude carboxylic acids
+    carboxyl_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
+    if mol.HasSubstructMatch(carboxyl_pattern):
+        return False, "Contains carboxylic acid group"
     
-    # Look for hydroxyl groups
-    hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
-    if not mol.HasSubstructMatch(hydroxyl_pattern):
-        return False, "No hydroxyl group found"
+    # Find primary and secondary alcohols
+    primary_alcohol = Chem.MolFromSmarts("[CH2][OH]")
+    secondary_alcohol = Chem.MolFromSmarts("[CH1][OH]")
     
-    # Get hydroxyl carbons (carbons attached to OH)
-    hydroxyl_carbon_pattern = Chem.MolFromSmarts("[C][OH]")
-    hydroxyl_carbons = mol.GetSubstructMatches(hydroxyl_carbon_pattern)
+    primary_matches = mol.GetSubstructMatches(primary_alcohol)
+    secondary_matches = mol.GetSubstructMatches(secondary_alcohol)
     
-    if not hydroxyl_carbons:
-        return False, "No carbon-hydroxyl bonds found"
+    if not (primary_matches or secondary_matches):
+        return False, "No primary or secondary alcohol group found"
     
-    # Count total carbons
-    total_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    # Count rings - fatty alcohols should be mainly aliphatic
+    if CalcNumRings(mol) > 1:
+        return False, "Too many rings for a fatty alcohol"
     
-    if total_carbons < 13:
-        return False, f"Too few total carbons (C{total_carbons}, need C13-C22)"
-    if total_carbons > 22:
-        # Allow slightly more carbons to account for branching
-        if total_carbons > 25:
-            return False, f"Too many carbons (C{total_carbons}, need C13-C22)"
+    # Get all OH-attached carbons
+    all_alcohol_matches = list(primary_matches) + list(secondary_matches)
     
-    # Check for longest carbon chain from each hydroxyl carbon
+    # Find longest carbon chain from each OH-attached carbon
     max_chain_length = 0
-    for match in hydroxyl_carbons:
-        chain_length = count_chain_carbons(mol, match[0])
+    for match in all_alcohol_matches:
+        c_idx = match[0]  # Carbon attached to OH
+        chain_length = find_longest_chain(mol, c_idx)
         max_chain_length = max(max_chain_length, chain_length)
     
     if max_chain_length < 13:
-        return False, f"Longest carbon chain too short (C{max_chain_length}, need C13-C22)"
+        return False, f"Carbon chain too short (C{max_chain_length}, need C13-C22)"
     if max_chain_length > 22:
-        return False, f"Longest carbon chain too long (C{max_chain_length}, need C13-C22)"
+        return False, f"Carbon chain too long (C{max_chain_length}, need C13-C22)"
     
-    # Check for excessive rings
-    ring_count = rdMolDescriptors.CalcNumRings(mol)
-    if ring_count > 2:  # Allow up to 2 rings
-        return False, f"Too many rings ({ring_count}) for a fatty alcohol"
+    # Check for excessive heteroatoms
+    n_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[#7]")))
+    s_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[#16]")))
+    p_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[#15]")))
     
-    # Check proportion of C and H atoms
-    h_count = sum(atom.GetTotalNumHs() for atom in mol.GetAtoms())
-    total_atoms = mol.GetNumAtoms() + h_count
-    ch_count = total_carbons + h_count
-    
-    if ch_count / total_atoms < 0.7:  # Allow more heteroatoms
-        return False, "Not primarily a hydrocarbon structure"
-    
-    # Count other heteroatoms (excluding O from OH groups)
-    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
-    s_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 16)
-    p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
-    
-    if n_count + s_count + p_count > 2:
+    if n_count + s_count + p_count > 1:
         return False, "Too many heteroatoms for a fatty alcohol"
     
-    return True, f"Contains hydroxyl group with appropriate carbon chain length (C{max_chain_length})"
+    # Count carbons and hydrogens to ensure mainly hydrocarbon nature
+    c_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[#6]")))
+    if c_count < 13:
+        return False, f"Insufficient carbons (C{c_count}, need C13-C22)"
+        
+    return True, f"Contains alcohol group with appropriate carbon chain length (C{max_chain_length})"
