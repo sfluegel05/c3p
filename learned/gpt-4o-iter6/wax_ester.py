@@ -38,8 +38,8 @@ def is_wax_ester(smiles: str):
         side2_chain_length = _get_chain_length(mol, ester_oxygen)
         
         # Updated requirement for chain length
-        # One side must be at least 12 carbons (fatty acid), other at least 14 (fatty alcohol)
-        if (side1_chain_length >= 12 and side2_chain_length >= 14) or (side1_chain_length >= 14 and side2_chain_length >= 12):
+        # Either side must have a chain length of at least 10 carbons
+        if side1_chain_length >= 10 or side2_chain_length >= 10:
             return True, "Molecule contains a fatty acid ester linkage with adequate carbon chain length"
     
     return False, "Carbon chains are too short to be considered fatty acid/alcohol"
