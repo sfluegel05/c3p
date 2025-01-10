@@ -6,12 +6,13 @@ from rdkit import Chem
 def is_phytosterols(smiles: str):
     """
     Determines if a molecule is a phytosterol based on its SMILES string.
-    Phytosterols are sterols similar to cholesterol with variations mainly 
-    in carbon side chains and sometimes presence of a double bond.
-
+    Phytosterols are sterols found in plants, that have a similar core structure 
+    to cholesterol, with variability in carbon side chains and the presence or 
+    absence of double bonds.
+    
     Args:
         smiles (str): SMILES string of the molecule
-
+    
     Returns:
         bool: True if the molecule is a phytosterol, False otherwise
         str: Reason for classification
@@ -21,27 +22,33 @@ def is_phytosterols(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Sterol core: cyclopentanoperhydrophenanthrene nucleus with possible stereochemistry
-    sterol_pattern = Chem.MolFromSmarts('[C@@H]1CC[C@H]2[C@H](C1)[C@@H]3CC[C@@]4(C)[C@@H](CC[C@]4(C)[C@@]3(C)[C@@H]2C)O')
-    if not mol.HasSubstructMatch(sterol_pattern):
+    
+    # Flexible sterol core pattern: a simple cyclopentanoperhydrophenanthrene nucleus
+    sterol_core_pattern = Chem.MolFromSmarts('C1CCC2C(C1)CC3C4CCC(C(C4)CC3)C2')
+    if not mol.HasSubstructMatch(sterol_core_pattern):
         return False, "No sterol core found"
-
-    # Check for presence of hydroxyl group, characteristic in sterols
-    hydroxyl_group = Chem.MolFromSmarts('[CX4][OX2H]')
-    if not mol.HasSubstructMatch(hydroxyl_group):
-        return False, "No hydroxyl group found"
-
-    # Check for side chain variability
-    side_chain_double_bond = Chem.MolFromSmarts('CCC=C')
-    if mol.HasSubstructMatch(side_chain_double_bond):
-        return True, "Contains sterol core with double bond(s) in side chain"
-
-    # Check general carbon count
+    
+    # Check for hydroxyl group (optional for variants)
+    hydroxyl_group = Chem.MolFromSmarts('[OX2H]')
+    has_hydroxyl_group = mol.HasSubstructMatch(hydroxyl_group)
+    
+    # Check for variability in side chain - presence of a double bond
+    side_chain_double_bond = Chem.MolFromSmarts('C=C')
+    has_double_bond = mol.HasSubstructMatch(side_chain_double_bond)
+    
+    # Check overall carbon count
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 27 or c_count > 35:
+    if not (c_count >= 27 and c_count <= 35):
         return False, f"Carbon count ({c_count}) not in typical phytosterol range"
-
+    
+    # Justify the classification
+    if has_hydroxyl_group and has_double_bond:
+        return True, "Contains sterol core, hydroxyl group, and side chain variability with double bond"
+    elif has_hydroxyl_group:
+        return True, "Contains sterol core with hydroxyl group"
+    elif has_double_bond:
+        return True, "Contains sterol core with side chain variability (double bond)"
+    
     return True, "Contains sterol core with typical side chain features"
 
 # Example usage (for testing):
