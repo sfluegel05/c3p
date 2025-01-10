@@ -11,7 +11,7 @@ def is_phenylpropanoid(smiles: str):
     """
     Determines if a molecule is a phenylpropanoid based on its SMILES string.
     A phenylpropanoid is any organic aromatic compound with a structure based on a phenylpropane skeleton.
-    This includes compounds like flavonoids, coumarins, lignins, and others with a C6-C3 backbone.
+    This includes compounds like flavonoids, coumarins, lignins, stilbenes, and others with a C6-C3 backbone.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -28,14 +28,15 @@ def is_phenylpropanoid(smiles: str):
 
     # Define generalized SMARTS patterns for phenylpropanoid structures
     patterns = {
-        'phenylpropane_core': Chem.MolFromSmarts('c1ccccc1-C-C-C'),  # Phenyl ring linked to 3-carbon chain
-        'phenylpropene_core': Chem.MolFromSmarts('c1ccccc1-C=C-C'),  # Phenyl ring linked to propenyl chain
-        'cinnamic_acid': Chem.MolFromSmarts('c1ccccc1-C=C-C(=O)[O,N]'),  # Cinnamic acid scaffold
+        'phenylpropane_core': Chem.MolFromSmarts('c1ccccc1CCC'),  # Phenyl ring linked to 3-carbon chain
+        'phenylpropene_core': Chem.MolFromSmarts('c1ccccc1C=CC'),  # Phenyl ring linked to propenyl chain
+        'phenylpropyne_core': Chem.MolFromSmarts('c1ccccc1C#CC'),  # Phenyl ring linked to propynyl chain
+        'cinnamic_acid': Chem.MolFromSmarts('c1ccccc1C=CC(=O)O'),  # Cinnamic acid scaffold
         'coumarin_core': Chem.MolFromSmarts('O=C1C=CC2=CC=CC=C2O1'),  # Coumarin core
-        'flavonoid_core': Chem.MolFromSmarts('c1cc(-c2coc3c(=O)cc(-c4ccccc4)cc3c2=O)ccc1'),  # Flavonoid skeleton
-        'chalcone_core': Chem.MolFromSmarts('c1ccccc1-C=C-C(=O)-c2ccccc2'),  # Chalcone scaffold
-        'lignin_precursor': Chem.MolFromSmarts('c1ccccc1-C-C-O'),  # Phenylpropanoid alcohols
-        'stilbene_core': Chem.MolFromSmarts('c1ccccc1-C=C-c2ccccc2'),  # Stilbene scaffold
+        'flavonoid_core': Chem.MolFromSmarts('c1cc(c(cc1)-c1coc2c1ccc(=O)c(=O)c2)O'),  # Flavonoid skeleton
+        'isoflavonoid_core': Chem.MolFromSmarts('c1cc(c(cc1)O)-c1coc2c1ccc(=O)c(=O)c2'),  # Isoflavonoid skeleton
+        'stilbene_core': Chem.MolFromSmarts('c1ccccc1C=Cc2ccccc2'),  # Stilbene scaffold
+        'lignan_core': Chem.MolFromSmarts('c1cc(c(cc1)O)C[C@H](C2=CC=C(C=C2)O)O'),  # Lignan structure
     }
 
     # Check for matches to any of the patterns
@@ -43,13 +44,22 @@ def is_phenylpropanoid(smiles: str):
         if mol.HasSubstructMatch(pattern):
             return True, f"Contains {name.replace('_', ' ')} substructure"
 
-    # Check for phenylpropanoid ethers and esters
-    phenylpropanoid_ether = Chem.MolFromSmarts('c1ccccc1-C-C-O')
-    phenylpropanoid_ester = Chem.MolFromSmarts('c1ccccc1-C-C-C(=O)O')
-    if mol.HasSubstructMatch(phenylpropanoid_ether):
-        return True, "Contains phenylpropanoid ether substructure"
-    if mol.HasSubstructMatch(phenylpropanoid_ester):
-        return True, "Contains phenylpropanoid ester substructure"
+    # Check for C6-C3 backbone (phenyl attached to 3-carbons)
+    phenyl = Chem.MolFromSmarts('c1ccccc1')
+    if mol.HasSubstructMatch(phenyl):
+        # Find phenyl ring atoms
+        phenyl_match = mol.GetSubstructMatch(phenyl)
+        phenyl_atoms = set(phenyl_match)
+
+        # Search for connected 3-carbon chain
+        for atom_idx in phenyl_atoms:
+            atom = mol.GetAtomWithIdx(atom_idx)
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetIdx() not in phenyl_atoms:
+                    # Check if neighbor is connected to a 3-carbon chain
+                    chain = Chem.PathToSubmol(mol, [atom_idx, neighbor.GetIdx()])
+                    if chain.GetNumHeavyAtoms() >= 3:
+                        return True, "Contains phenylpropane skeleton"
 
     return False, "Does not contain phenylpropanoid substructure"
 
@@ -70,7 +80,7 @@ __metadata__ = {
         'max_instances_in_prompt': 100,
         'test_proportion': 0.1},
     'message': None,
-    'attempt': 0,
+    'attempt': 1,
     'success': True,
     'best': True,
     'error': '',
