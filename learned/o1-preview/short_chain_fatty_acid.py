@@ -25,6 +25,11 @@ def is_short_chain_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
+    # Check that molecule contains only C, H, and O atoms
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() not in (1, 6, 8):
+            return False, f"Contains heteroatom {atom.GetSymbol()}, not permitted"
+
     # Check for carboxylic acid group (monocarboxylic acid)
     carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[OH]")
     carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
@@ -32,48 +37,40 @@ def is_short_chain_fatty_acid(smiles: str):
         return False, f"Found {len(carboxylic_acid_matches)} carboxylic acid groups, need exactly 1"
 
     # Check for rings (should be acyclic)
-    ring_info = mol.GetRingInfo()
-    if ring_info and ring_info.NumRings() > 0:
+    if mol.GetRingInfo().NumRings() > 0:
         return False, "Contains rings, should be acyclic"
 
     # Check for aromaticity (should be aliphatic)
-    has_aromatic_atoms = any(atom.GetIsAromatic() for atom in mol.GetAtoms())
-    if has_aromatic_atoms:
+    if mol.GetNumAromaticAtoms() > 0:
         return False, "Contains aromatic atoms, should be aliphatic"
 
-    # Check that molecule contains only C, H, and O atoms
-    for atom in mol.GetAtoms():
-        if atom.GetSymbol() not in ('C', 'H', 'O'):
-            return False, f"Contains heteroatom {atom.GetSymbol()}, not permitted"
+    # Get the carboxyl carbon index
+    carboxyl_carbon_idx = carboxylic_acid_matches[0][0]
+    carboxyl_carbon = mol.GetAtomWithIdx(carboxyl_carbon_idx)
 
-    # Remove the carboxylic acid group to analyze the carbon chain
-    mol_no_acid = Chem.RWMol(mol)
-    acid_match = carboxylic_acid_matches[0]
-    # Remove the hydroxyl oxygen
-    mol_no_acid.RemoveAtom(acid_match[2])
-    # Remove the carbonyl oxygen
-    mol_no_acid.RemoveAtom(acid_match[1])
-    # Remove the carbonyl carbon (disconnecting the carboxylic acid group)
-    mol_no_acid.RemoveAtom(acid_match[0])
+    # Find the alpha carbon(s) (carbon(s) connected to the carboxyl carbon)
+    alpha_carbons = [
+        neighbor.GetIdx()
+        for neighbor in carboxyl_carbon.GetNeighbors()
+        if neighbor.GetAtomicNum() == 6
+    ]
+    if not alpha_carbons:
+        # If no alpha carbon, the molecule is formic acid, which is a short-chain fatty acid
+        chain_length = 0
+    else:
+        # Traverse the molecule to find the longest carbon chain starting from any alpha carbon
+        chain_lengths = []
+        for alpha_c_idx in alpha_carbons:
+            chain_length = get_longest_carbon_chain_length(mol, alpha_c_idx, {carboxyl_carbon_idx})
+            chain_lengths.append(chain_length)
+        chain_length = max(chain_lengths)
 
-    # Get the largest carbon chain length
-    atom_indices = [atom.GetIdx() for atom in mol_no_acid.GetAtoms() if atom.GetAtomicNum() == 6]
-    if not atom_indices:
-        return False, "No carbon chain found after removing carboxylic acid group"
+    if chain_length >= 5:
+        return False, f"Chain length is {chain_length}, must be less than 5 carbons (excluding carboxyl carbon)"
 
-    # Find the longest path consisting of carbon atoms
-    max_chain_length = 0
-    for atom_idx in atom_indices:
-        length = get_longest_chain_length(mol_no_acid, atom_idx, visited=set())
-        if length > max_chain_length:
-            max_chain_length = length
+    return True, "Is an aliphatic monocarboxylic acid with chain length less than C6 and only C, H, O atoms"
 
-    if max_chain_length >= 6:
-        return False, f"Longest carbon chain length is {max_chain_length}, must be less than 6"
-
-    return True, "Is an aliphatic monocarboxylic acid with less than 6 carbons in the longest chain and only C, H, O atoms"
-
-def get_longest_chain_length(mol, atom_idx, visited):
+def get_longest_carbon_chain_length(mol, atom_idx, visited):
     """
     Recursively finds the longest carbon chain starting from a given atom.
 
@@ -90,11 +87,12 @@ def get_longest_chain_length(mol, atom_idx, visited):
     if atom.GetAtomicNum() != 6:
         return 0
 
-    lengths = [1]  # Include current atom
+    max_length = 1  # Include current atom
     for neighbor in atom.GetNeighbors():
         nbr_idx = neighbor.GetIdx()
         if nbr_idx not in visited and neighbor.GetAtomicNum() == 6:
-            length = 1 + get_longest_chain_length(mol, nbr_idx, visited.copy())
-            lengths.append(length)
+            length = 1 + get_longest_carbon_chain_length(mol, nbr_idx, visited.copy())
+            if length > max_length:
+                max_length = length
 
-    return max(lengths)
+    return max_length
