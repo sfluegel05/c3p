@@ -36,16 +36,17 @@ def is_saccharolipid(smiles: str):
     if len(sugar_matches) < 1:
         return False, "No sugar rings found (carbohydrate-like feature missing)"
 
-    # Check for glycosidic bonds (C-O-C between sugar rings)
-    glycosidic_pattern = Chem.MolFromSmarts("[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](O)O1.[C@H]2[C@H](O)[C@H](O)[C@H](O)[C@H](O)O2")
+    # Check for glycosidic bonds (C-O-C between sugar and any other part)
+    glycosidic_pattern = Chem.MolFromSmarts("[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](O)O1.[OX2][CX4]")
     glycosidic_matches = mol.GetSubstructMatches(glycosidic_pattern)
     if len(glycosidic_matches) < 1:
         return False, "No glycosidic bonds found (carbohydrate-like feature missing)"
 
-    # Check molecular weight - saccharolipids are typically large molecules
-    mol_wt = Descriptors.ExactMolWt(mol)
-    if mol_wt < 500:
-        return False, "Molecular weight too low for saccharolipid"
+    # Check for long aliphatic chains (lipid-like feature)
+    aliphatic_pattern = Chem.MolFromSmarts("[CX4][CX4][CX4][CX4][CX4]")
+    aliphatic_matches = mol.GetSubstructMatches(aliphatic_pattern)
+    if len(aliphatic_matches) < 1:
+        return False, "No long aliphatic chains found (lipid-like feature missing)"
 
     # Count carbons and oxygens
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
