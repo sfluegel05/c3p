@@ -16,28 +16,26 @@ def is_3_oxo_fatty_acyl_CoA_4__(smiles: str):
         bool: True if molecule matches the class, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 3-oxo-fatty acyl pattern
-    # Improved pattern to account for connectivity with CoA
-    oxo_fatty_acyl_pattern = Chem.MolFromSmarts("[CX3](=O)[CX4][CX3](=O)SCC")
+    # Check for 3-oxo-fatty acyl pattern C(=O)C(=O)C
+    oxo_fatty_acyl_pattern = Chem.MolFromSmarts("C(=O)CC(=O)")
     if not mol.HasSubstructMatch(oxo_fatty_acyl_pattern):
-        return False, "No connected 3-oxo-fatty acyl group found"
+        return False, "No 3-oxo-fatty acyl group found"
 
-    # Enhanced CoA moiety pattern reflecting stereochemistry and more accurate structure
-    # The pattern includes the CoA core with attached phosphates and stereocenters
-    coa_pattern = Chem.MolFromSmarts("SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP([O-])([O-])=O.OP([O-])([O-])=O")
+    # Check for Coenzyme A (CoA) moiety specific pattern
+    coa_pattern = Chem.MolFromSmarts("SCCNC(=O)CCNC(=O)[C@H](O)COP(=O)([O-])OP(=O)([O-])OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12")
     if not mol.HasSubstructMatch(coa_pattern):
-        return False, "CoA moiety with necessary stereochemistry not found"
+        return False, "CoA moiety not found"
 
-    # Check for presence of 3 deprotonated phosphate groups
-    deprotonated_phosphate_pattern = Chem.MolFromSmarts("P(O-)(O-)=O")
-    phosphate_matches = mol.GetSubstructMatches(deprotonated_phosphate_pattern)
-    if len(phosphate_matches) < 3:
-        return False, "Insufficient deprotonated phosphate groups found"
+    # Ensure presence of at least 1 phosphate with correct deprotonation
+    phosphate_pattern = Chem.MolFromSmarts("P(=O)([O-])[O-]")
+    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
+    if len(phosphate_matches) < 1:
+        return False, "No correctly deprotonated phosphate groups found"
 
-    return True, "Contains 3-oxo-fatty acyl chain with CoA moiety including deprotonated phosphates"
+    return True, "Contains 3-oxo-fatty acyl chain with CoA moiety and deprotonated phosphates"
