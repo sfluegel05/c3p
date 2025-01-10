@@ -27,7 +27,7 @@ def is_pyrimidine_deoxyribonucleoside(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for pyrimidine base pattern (N1C=CC(=NC1=O))
-    pyrimidine_pattern = Chem.MolFromSmarts("[nH]1[c,n][c,n][c,n][c,n]1")
+    pyrimidine_pattern = Chem.MolFromSmarts("[nH]1[c,n][c,n][c,n][c,n]1(=O)")
     if not mol.HasSubstructMatch(pyrimidine_pattern):
         return False, "No pyrimidine base found"
 
@@ -37,13 +37,8 @@ def is_pyrimidine_deoxyribonucleoside(smiles: str):
         return False, "No deoxyribose sugar found"
 
     # Check for glycosidic bond between pyrimidine base and deoxyribose sugar
-    glycosidic_bond_pattern = Chem.MolFromSmarts("[nH]1[c,n][c,n][c,n][c,n]1.[C@H]1[C@H](O)[C@H](O)[C@@H](CO)O1")
+    glycosidic_bond_pattern = Chem.MolFromSmarts("[nH]1[c,n][c,n][c,n][c,n]1(=O).[C@H]1[C@H](O)[C@H](O)[C@@H](CO)O1")
     if not mol.HasSubstructMatch(glycosidic_bond_pattern):
         return False, "No glycosidic bond found between pyrimidine base and deoxyribose sugar"
-
-    # Count the number of oxygen atoms to ensure it's a deoxyribonucleoside (should have 4 oxygens)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count != 4:
-        return False, f"Expected 4 oxygens, found {o_count}"
 
     return True, "Contains pyrimidine base attached to deoxyribose sugar via glycosidic bond"
