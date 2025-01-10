@@ -7,13 +7,14 @@ Classifies: Peptide Antibiotic
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
 from rdkit.Chem import Descriptors
-from rdkit.Chem import rdMolOps
+# Import necessary RDKit function for cycle detection
+from rdkit.Chem import rdmolops
 
 def is_peptide_antibiotic(smiles: str):
     """
     Determines if a molecule is a peptide antibiotic based on its SMILES string.
-    A peptide antibiotic typically contains multiple amide groups, possibly cyclic structures,
-    and may contain unusual amino acids or heterocyclic groups.
+    A peptide antibiotic typically contains multiple amide bonds, cyclic structures,
+    and possibly additional features like hydroxyl groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -35,7 +36,7 @@ def is_peptide_antibiotic(smiles: str):
         return False, "Insufficient amide (peptide) bonds"
 
     # Check for cyclic structures - ensure there's at least one ring
-    num_rings = rdMolOps.GetSSSR(mol)
+    num_rings = rdmolops.GetSSSR(mol)
     if num_rings < 1:
         return False, "No cyclic structures detected"
 
