@@ -43,24 +43,14 @@ def is_arenecarbaldehyde(smiles: str):
     if not aromatic_ring_matches:
         return False, "No aromatic ring found in the molecule"
 
-    # Exclude molecules where the aldehyde is part of a larger functional group
+    # Relax the restrictions on additional functional groups
+    # Only exclude molecules where the additional functional groups interfere with the aldehyde-aromatic bond
+    # For example, exclude molecules where the aldehyde is part of a larger functional group (e.g., carboxylic acid)
     carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
-    ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2][#6]")
-    amide_pattern = Chem.MolFromSmarts("[CX3](=O)[NX3]")
-    
     if mol.HasSubstructMatch(carboxylic_acid_pattern):
+        # Check if the carboxylic acid is part of the aldehyde group
         for match in mol.GetSubstructMatches(carboxylic_acid_pattern):
             if match[0] in [m[0] for m in aldehyde_matches]:
                 return False, "Aldehyde group is part of a carboxylic acid"
-    
-    if mol.HasSubstructMatch(ester_pattern):
-        for match in mol.GetSubstructMatches(ester_pattern):
-            if match[0] in [m[0] for m in aldehyde_matches]:
-                return False, "Aldehyde group is part of an ester"
-    
-    if mol.HasSubstructMatch(amide_pattern):
-        for match in mol.GetSubstructMatches(amide_pattern):
-            if match[0] in [m[0] for m in aldehyde_matches]:
-                return False, "Aldehyde group is part of an amide"
 
     return True, "Contains an aldehyde group directly attached to an aromatic atom"
