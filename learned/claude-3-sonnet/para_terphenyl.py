@@ -32,36 +32,26 @@ def is_para_terphenyl(smiles: str):
     if len(benzene_matches) < 3:
         return False, "Less than 3 benzene rings found"
     
-    # Check for para-terphenyl core structure
-    # Central benzene with two phenyl groups in para positions
-    # Note: The central ring can have substituents, so we use wildcards [*] for non-hydrogen atoms
-    para_terphenyl_pattern = Chem.MolFromSmarts("[$(c1c([*])c([*])c(c([*])c1[*])c2ccccc2)]-c3ccccc3")
+    # Look for para-terphenyl core structure
+    # This pattern looks for a central benzene ring with two carbons in para positions
+    # that are connected to other aromatic rings
+    para_terphenyl_pattern = Chem.MolFromSmarts("c1([#6]c2ccccc2)cc([#6]c3ccccc3)ccc1")
     
     if not mol.HasSubstructMatch(para_terphenyl_pattern):
-        return False, "No para-terphenyl core structure found"
+        # Try alternative pattern that allows for more substitution
+        alt_pattern = Chem.MolFromSmarts("c1(-[#6]2:[#6]:[#6]:[#6]:[#6]:[#6]:2)c([*])c([*])c(-[#6]3:[#6]:[#6]:[#6]:[#6]:[#6]:3)c([*])c1([*])")
+        if not mol.HasSubstructMatch(alt_pattern):
+            return False, "No para-terphenyl core structure found"
     
-    # Additional check to ensure the phenyl groups are actually in para positions
-    # by looking at the distance between the attachment points
-    matches = mol.GetSubstructMatches(para_terphenyl_pattern)
-    for match in matches:
-        # Get the atoms of the central ring
-        central_ring_atoms = set(match[:6])  # First 6 atoms should be the central ring
+    # Additional validation - check ring count and connectivity
+    ring_info = mol.GetRingInfo()
+    if ring_info.NumRings() < 3:
+        return False, "Insufficient number of rings"
         
-        # Find the carbons where the outer phenyl groups are attached
-        attachment_points = []
-        for atom_idx in match:
-            atom = mol.GetAtomWithIdx(atom_idx)
-            # If this atom is in the central ring and connected to a phenyl group
-            if atom_idx in central_ring_atoms:
-                for neighbor in atom.GetNeighbors():
-                    if neighbor.GetIdx() not in central_ring_atoms and neighbor.GetIsAromatic():
-                        attachment_points.append(atom_idx)
-        
-        # If we found exactly 2 attachment points and they are para to each other
-        if len(attachment_points) == 2:
-            # In a benzene ring, para positions are separated by 3 bonds
-            path_length = len(Chem.GetShortestPath(mol, attachment_points[0], attachment_points[1])) - 1
-            if path_length == 3:
-                return True, "Contains para-terphenyl core structure with appropriate substitution pattern"
-    
-    return False, "Phenyl groups not in para positions"
+    # Count number of aromatic rings
+    aromatic_rings = len([ring for ring in ring_info.AtomRings() 
+                         if all(mol.GetAtomWithIdx(i).GetIsAromatic() for i in ring)])
+    if aromatic_rings < 3:
+        return False, "Insufficient number of aromatic rings"
+
+    return True, "Contains para-terphenyl core structure with appropriate substitution pattern"
