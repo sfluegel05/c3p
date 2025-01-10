@@ -21,27 +21,27 @@ def is_polysaccharide(smiles):
         return False, "Invalid SMILES string"
 
     # Define a more comprehensive pattern for monosaccharide units
-    # Modified to potentially fit more common variations e.g. glucose unit
-    cyclic_mono_pattern = Chem.MolFromSmarts("[C&R]1([O])[C&R]([C&R]([CO])[C&R]([O])[C&R]1O)")  # Pyranose-like structure
-    acetamido_pattern = Chem.MolFromSmarts("NC(=O)C")  # Acetamido group common in GlcNAc
+    # Revised patterns considering aldohexoses and ketohexoses general structures
+    hexose_pattern = Chem.MolFromSmarts("C1(O)[C&H=O&X4][C&H&X2][C&H&X2][C&H&X2][C&H&X2]O1") 
+    derivative_pattern = Chem.MolFromSmarts("NC(=O)C")  
 
-    # Iterate over potential substructures and count
-    cycle_mono_count = len(mol.GetSubstructMatches(cyclic_mono_pattern))
-    acetamido_count = len(mol.GetSubstructMatches(acetamido_pattern))
+    # Count hexose units, but incorporate variability detection (typical polysaccharide chain residues)
+    hexose_count = len(mol.GetSubstructMatches(hexose_pattern))
+    derivative_count = len(mol.GetSubstructMatches(derivative_pattern))
 
-    # Consider both counts towards a theoretical mono count
-    mono_count = cycle_mono_count + acetamido_count
+    # Assess total identifiable sugar-like units
+    total_count = hexose_count + derivative_count
 
-    if mono_count < 10:
-        return False, f"Contains {mono_count} probable monosaccharide rings/units, less than required 10 for polysaccharide"
+    if total_count < 10:
+        return False, f"Detected {total_count} monosaccharide-like residues, which is below the polysaccharide threshold."
 
     # Define pattern for glycosidic linkages
-    glycosidic_link_pattern = Chem.MolFromSmarts("[C&R]O[C&R]")  # Ether-like linkage focusing on C-O-C
+    glyco_linkage_pattern = Chem.MolFromSmarts("[C&H]O[C&H]")  # Simplified ether linkage
+    glyco_link_count = len(mol.GetSubstructMatches(glyco_linkage_pattern))
+    
+    # Verify there are adequate bonds to form a polysaccharide chain
+    if glyco_link_count < total_count - 1:
+        return False, f"Insufficient glycosidic linkages ({glyco_link_count}) compared to expected ({total_count - 1})"
 
-    # Count glycosidic linkages
-    glyco_count = len(mol.GetSubstructMatches(glycosidic_link_pattern))
-    if glyco_count < mono_count - 1:
-        return False, f"Insufficient glycosidic linkages ({glyco_count}) for {mono_count} monosaccharide rings/units"
-
-    # Final classification
-    return True, "Contains sufficient monosaccharide moieties linked glycosidically to classify as a polysaccharide"
+    # Passed all checks
+    return True, "Sufficient monosaccharide units and linkages to qualify as a polysaccharide"
