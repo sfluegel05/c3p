@@ -26,26 +26,25 @@ def is_D_hexose(smiles: str):
     if num_carbons != 6:
         return False, "Not a hexose, incorrect number of carbon atoms"
     
-    # SMARTS patterns for D-pyranoses with stereochemistry at position 5
-    d_pyranose_patterns = [
-        Chem.MolFromSmarts('C1O[C@H]([C@@H](O)[C@H](O)[C@H](O[C@H]1)O)'),  # Simplified generic D-pyranose pattern
+    # Extended SMARTS patterns for D-hexoses considering various forms and derivatives
+    d_hexose_pyranose_patterns = [
+        Chem.MolFromSmarts('OC[C@H]1O[C@H](O)[C@H](O)[C@@H](O)[C@@H]1O'),  # Common D-pyranoses
+        Chem.MolFromSmarts('O1[C@H]([C@H](O)[C@H](O)[C@@H]1O)[C@H](O)CO'), # Alpha or beta pyranoses
     ]
     
-    # SMARTS patterns for D-furanoses with stereochemistry at position 5
-    d_furanose_patterns = [
-        Chem.MolFromSmarts('C1O[C@@H]([C@@H](O)[C@H](O)[C@@H](O1)CO)'),  # Generic D-furanose pattern
+    d_hexose_furanose_patterns = [
+        Chem.MolFromSmarts('O1[C@H]([C@@H](O)[C@H](O)C1O)[C@H](O)CO'),  # D-furanoses
+        Chem.MolFromSmarts('O1[C@@H]([C@H](O)[C@@H](O)C1O)[C@H](O)CO')  # Inclusion for variants
     ]
     
-    # SMARTS for open-chain D-hexoses with stereochemistry at position 5
-    open_chain_pattern = Chem.MolFromSmarts('C(=O)[C@H](O)[C@H](O)[C@@H](O)[C@H](O)CO')
+    d_hexose_open_chain_patterns = [
+        Chem.MolFromSmarts('[H]C(=O)[C@H](O)[C@@H](O)[C@H](O)[C@H](O)CO'),  # Open-chain D-hexoses
+        Chem.MolFromSmarts('[C@H](=O)[C@H](O)[C@H](O)[C@H](O)[C@H](O)CO')    # Check for typical stereochemistry
+    ]
 
-    # Check for matches to any D-hexose conformation
-    for pattern in d_pyranose_patterns + d_furanose_patterns + [open_chain_pattern]:
+    # Check for D-hexose structure matches
+    for pattern in d_hexose_pyranose_patterns + d_hexose_furanose_patterns + d_hexose_open_chain_patterns:
         if mol.HasSubstructMatch(pattern):
             return True, "Molecule identified as D-hexose with stereochemistry at carbon-5"
 
-    # Additional check for phosphates or other derivative groups that may confuse classification
-    if mol.HasSubstructMatch(Chem.MolFromSmarts('OP(O)(O)=O')):  # Phosphate group
-        return False, "Molecule has phosphate group, likely a derivative not a standard hexose"
-
-    return False, "No valid D-hexose structure found, or incorrect stereochemistry"
+    return False, "No D-hexose structure found or incorrect stereochemistry"
