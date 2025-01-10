@@ -7,16 +7,30 @@ Classifies: tertiary amine N-oxide
 from rdkit import Chem
 from rdkit.Chem import AllChem
 
-def is_organic_group(mol, atom):
-    """Helper function to check if an atom is part of an organic group"""
-    # Consider atom organic if it's carbon or part of common organic substituents
-    if atom.GetAtomicNum() == 6:  # Carbon
+def is_organic_group(mol, atom, visited=None):
+    """
+    Helper function to check if an atom is part of a valid organic group
+    Uses recursive checking to validate the whole connected group
+    """
+    if visited is None:
+        visited = set()
+    
+    # Prevent infinite recursion
+    if atom.GetIdx() in visited:
         return True
-    if atom.GetAtomicNum() == 7:  # Nitrogen in organic group
-        return True
-    if atom.GetAtomicNum() == 8 and atom.GetTotalNumHs() == 0:  # Oxygen in ether/ester
-        return True
-    return False
+    visited.add(atom.GetIdx())
+    
+    # Basic organic atoms
+    if atom.GetAtomicNum() not in [6, 7, 8, 16]:  # C, N, O, S
+        return False
+        
+    # Check neighbors recursively
+    for neighbor in atom.GetNeighbors():
+        if neighbor.GetIdx() not in visited:
+            if not is_organic_group(mol, neighbor, visited):
+                return False
+                
+    return True
 
 def is_tertiary_amine_oxide(smiles: str):
     """
@@ -37,11 +51,11 @@ def is_tertiary_amine_oxide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for N+-O- pattern
-    # Match any N+ connected to O- where N has 4 bonds total
-    n_oxide_pattern = Chem.MolFromSmarts("[NX4+]-[O-]")
+    # Look for N+-O- pattern where N is not in a ring with O
+    # and has exactly 4 bonds (3 to C + 1 to O)
+    n_oxide_pattern = Chem.MolFromSmarts("[NX4+;!R]-[O-]")
     if not mol.HasSubstructMatch(n_oxide_pattern):
-        return False, "No N-oxide group found"
+        return False, "No acyclic N-oxide group found"
     
     # Get matches for N-oxide groups
     n_oxide_matches = mol.GetSubstructMatches(n_oxide_pattern)
@@ -57,27 +71,30 @@ def is_tertiary_amine_oxide(smiles: str):
             continue
             
         # Count non-oxide neighbors of nitrogen
-        neighbors = []
+        organic_neighbors = []
         for neighbor in n_atom.GetNeighbors():
             if neighbor.GetIdx() != o_idx:
-                neighbors.append(neighbor)
+                # Check if neighbor is start of a valid organic group
+                if is_organic_group(mol, neighbor):
+                    organic_neighbors.append(neighbor)
         
-        # Must have exactly 3 non-oxide neighbors
-        if len(neighbors) != 3:
-            continue
-            
-        # Check that all neighbors are part of organic groups
-        organic_count = sum(1 for neighbor in neighbors if is_organic_group(mol, neighbor))
-        if organic_count != 3:
+        # Must have exactly 3 organic neighbors
+        if len(organic_neighbors) != 3:
             continue
             
         # Check that nitrogen has no hydrogens
         if n_atom.GetTotalNumHs() != 0:
             continue
             
-        # Exclude N-oxides that are part of very small rings (likely not stable)
-        ring_size_pattern = Chem.MolFromSmarts("[NX4+]1-[O-]-[*]1")
-        if mol.HasSubstructMatch(ring_size_pattern):
+        # Check that nitrogen is not part of a ring with the oxide oxygen
+        ring_info = mol.GetRingInfo()
+        if ring_info.AreAtomsBonded(n_idx, o_idx):
+            continue
+            
+        # Check that the N-oxide is not part of a more complex functional group
+        # like N-oxide heterocycles or N-oxide derivatives
+        complex_pattern = Chem.MolFromSmarts("[NX4+](-[O-])-[!C]")
+        if mol.HasSubstructMatch(complex_pattern):
             continue
             
         # All checks passed
