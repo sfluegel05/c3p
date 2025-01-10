@@ -39,13 +39,6 @@ def is_2_hydroxydicarboxylic_acid(smiles: str):
         return False, "No hydroxyl group found on the alpha carbon"
 
     # Ensure the hydroxyl group is on the alpha carbon of one of the carboxylic acid groups
-    # This pattern ensures that the hydroxyl group is on the alpha carbon of one of the carboxylic acid groups
-    specific_pattern = Chem.MolFromSmarts("[CX4][CX3](=[OX1])[OX2H1].[CX4][CX3](=[OX1])[OX2H1]")
-    specific_matches = mol.GetSubstructMatches(specific_pattern)
-    if len(specific_matches) == 0:
-        return False, "Hydroxyl group not found on the alpha carbon of a carboxylic acid group"
-
-    # Additional check to ensure the hydroxyl group is on the alpha carbon of one of the carboxylic acid groups
     # by checking the connectivity of the atoms
     for match in alpha_hydroxyl_matches:
         alpha_carbon = match[0]
