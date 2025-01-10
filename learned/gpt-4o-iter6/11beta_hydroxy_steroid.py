@@ -2,11 +2,12 @@
 Classifies: CHEBI:35346 11beta-hydroxy steroid
 """
 from rdkit import Chem
+from rdkit.Chem import rdqueries
 
 def is_11beta_hydroxy_steroid(smiles: str):
     """
     Determines if a molecule is an 11beta-hydroxy steroid based on its SMILES string.
-    
+
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -20,16 +21,22 @@ def is_11beta_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Basic steroid skeleton pattern (not including stereochemistry details)
-    steroid_backbone_pattern = Chem.MolFromSmarts("C1CC2CCC3C4CCC(C4)C3CCC2C1")
+    # Enhanced steroid backbone check using a more flexible pattern
+    steroid_backbone_pattern = Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2CCC4C3CCC(C4)C")
     if not mol.HasSubstructMatch(steroid_backbone_pattern):
         return False, "Basic steroid backbone not found"
 
-    # 11beta-hydroxy pattern, considering potential stereochemistry
-    # We could assume flexibility in chirality to broaden our pattern
-    # Use of "~" to indicate either [C@] or [C]
-    hydroxy_11beta_pattern = Chem.MolFromSmarts("C[C@@H](O)C")
-    if not mol.HasSubstructMatch(hydroxy_11beta_pattern):
-        return False, "No 11beta-hydroxy group found at expected position"
+    # Identify 11th carbon in steroid backbone to check for beta-OH
+    core_match = mol.GetSubstructMatch(steroid_backbone_pattern)
+    if not core_match:
+        return False, "Core steroid scaffold not matching"
+    
+    # Check around 11th carbon for -OH group with beta specific configuration
+    # The index of the 11th carbon might vary based on match; here using:
+    hydroxy_11beta = Chem.MolFromSmarts("C[C@@H](O)")
+    has_hydroxy = mol.HasSubstructMatch(hydroxy_11beta)
+    
+    if not has_hydroxy:
+        return False, "No 11beta-hydroxy group with correct configuration found"
 
     return True, "Contains steroid backbone with an 11beta-hydroxy group of the expected configuration"
