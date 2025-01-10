@@ -15,22 +15,19 @@ def is_17beta_hydroxy_steroid(smiles: str):
         bool: True if molecule is a 17beta-hydroxy steroid, False otherwise
         str: Reason for classification
     """
-    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Flexible steroid backbone pattern
-    steroid_patterns = [
-        Chem.MolFromSmarts('[#6]1[#6][#6][#6]2[#6][#6][#6]3[#6][#6][#6][#6]4[#6][#6][#6][#6]4[#6]3[#6]2[#6]1'),  # Simplified steroid backbone
-    ]
-    if not any(mol.HasSubstructMatch(pattern) for pattern in steroid_patterns):
+    # Look for steroid backbone using a generic steroid SMARTS pattern
+    steroid_pattern = Chem.MolFromSmarts('C1C[C@H]2CC[C@@H]3C=CC(=O)CC[C@]3(C)C[C@@H]2[C@H]1C')
+    if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
-
-    # Pattern to identify 17beta-hydroxy group
-    hydroxy_17beta_pattern = Chem.MolFromSmarts('[C@@H]1([C@@](O)(C2)C3CC[C@@H]2C4CC[C@@H](C4)C3)[#6]C([#6])[#6]1')
-    if not mol.HasSubstructMatch(hydroxy_17beta_pattern):
-        return False, "No 17beta-hydroxy group in beta-configuration found"
     
-    return True, "Contains 17beta-hydroxy group with steroid backbone configuration"
+    # Look for 17beta-hydroxy group
+    hydroxy_17beta_pattern = Chem.MolFromSmarts('[C@@H]1(O)[C@H](C)CCC[C@@H]2CCC[C@]12C')
+    if not mol.HasSubstructMatch(hydroxy_17beta_pattern):
+        return False, "No 17beta-hydroxy group pattern found"
+
+    return True, "Contains 17beta-hydroxy group with correct steroid backbone configuration"
