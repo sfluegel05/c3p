@@ -21,15 +21,15 @@ def is_7_hydroxyisoflavones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Core scaffold for isoflavones: C2-C3 linkage with a benzopyran ring leading to a phenyl
-    isoflavone_core_pattern = Chem.MolFromSmarts("O=C1C=Cc2ccccc2Oc2c1cccc2")
+    # More general pattern for isoflavone core (aromatic benzopyran ring with carbonyl group)
+    isoflavone_core_pattern = Chem.MolFromSmarts("O=C1C=Cc2ccc(O)cc2Oc2c1cccc2")
     
     if not mol.HasSubstructMatch(isoflavone_core_pattern):
         return False, "No isoflavone core structure found"
     
-    # SMARTS pattern to detect hydroxy group position - flexible for the A-ring
-    hydroxy_7_position_pattern = Chem.MolFromSmarts("Oc1ccc2cc(o)cc2c1")
-    
+    # Pattern to detect hydroxy group specifically at the 7-position (achieved via the context of isoflavone core)
+    hydroxy_7_position_pattern = Chem.MolFromSmarts("Oc1ccc2cc(O)cc2c1")
+
     if not mol.HasSubstructMatch(hydroxy_7_position_pattern):
         return False, "No hydroxy group at the 7-position found"
     
