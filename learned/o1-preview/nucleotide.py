@@ -5,7 +5,6 @@ Classifies: CHEBI:36976 nucleotide
 Classifies: CHEBI:33504 nucleotide
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_nucleotide(smiles: str):
     """
@@ -24,45 +23,70 @@ def is_nucleotide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define substructures for nucleobases
-    purine_pattern = Chem.MolFromSmarts('n1cnc2c1ncnc2')
-    pyrimidine_pattern = Chem.MolFromSmarts('c1c[nH]c(=O)[nH]c1') # uracil
-    cytosine_pattern = Chem.MolFromSmarts('c1cc(nc(N)n1)=O')
-    thymine_pattern = Chem.MolFromSmarts('c1c(N)cc(=O)[nH]c1=O')
-    hypoxanthine_pattern = Chem.MolFromSmarts('n1c2ncnc2c(=O)[nH]c1')
-    xanthine_pattern = Chem.MolFromSmarts('n1c2ncnc2c(=O)[nH]c(=O)c1')
-
-    # Combine nucleobase patterns
-    nucleobase_patterns = [purine_pattern, pyrimidine_pattern, cytosine_pattern,
-                           thymine_pattern, hypoxanthine_pattern, xanthine_pattern]
-
-    has_nucleobase = any(mol.HasSubstructMatch(pat) for pat in nucleobase_patterns)
-    if not has_nucleobase:
-        return False, "No nucleobase found"
-
-    # Define pattern for sugar (allowing for ribose and deoxyribose)
-    sugar_pattern = Chem.MolFromSmarts('O[C@H]1[C@@H](O)[C@H](O)[C@@H](CO)O1')  # Ribose
-    deoxy_sugar_pattern = Chem.MolFromSmarts('O[C@H]1[C@@H](O)[C@H](CO)[C@@H](CO)O1')  # Deoxyribose
-    modified_sugar_pattern = Chem.MolFromSmarts('O[C@H]1[C@@H](O)[C@H](O)[C@@H](CO*)O1')  # Allows modifications
-
-    # Check for sugar
-    has_sugar = mol.HasSubstructMatch(sugar_pattern) or mol.HasSubstructMatch(deoxy_sugar_pattern) or mol.HasSubstructMatch(modified_sugar_pattern)
-    if not has_sugar:
-        return False, "No pentose sugar found"
-
-    # Check for nucleoside linkage (nucleobase-sugar bond)
-    nucleoside_bond_pattern = Chem.MolFromSmarts('[$([nH]),$(n),$(N)]1[c,n]n[c,n][c,n][c,n]1[C@H]2O[C@H]([C@@H](O)[C@H](O)[C@@H]2O)')  # N-glycosidic bond
-    has_nucleoside_linkage = mol.HasSubstructMatch(nucleoside_bond_pattern)
-    if not has_nucleoside_linkage:
-        return False, "No nucleoside linkage found"
-
-    # Check for phosphate group attached to the sugar's 3' or 5' hydroxyl group
-    phosphate_pattern = Chem.MolFromSmarts('O[P](=O)(O)[O][C@H]')  # Phosphate ester linkage
+    # Check for phosphate group
+    phosphate_pattern = Chem.MolFromSmarts('P(=O)(O)(O)O')
     has_phosphate = mol.HasSubstructMatch(phosphate_pattern)
     if not has_phosphate:
-        return False, "No phosphate group attached to the sugar's 3' or 5' hydroxyl group"
+        return False, "No phosphate group found"
 
-    return True, "Molecule is a nucleotide with nucleobase, sugar, and phosphate group"
+    # Check for sugar (five-membered ring with oxygen)
+    sugar_pattern = Chem.MolFromSmarts('C1OC[C@H](O)[C@@H]1O')  # Ribose
+    has_sugar = mol.HasSubstructMatch(sugar_pattern)
+    if not has_sugar:
+        # Try a more general sugar pattern allowing for modifications
+        sugar_pattern = Chem.MolFromSmarts('C1OC([C@H])([C@@H])O1')  # Generalized furanose ring
+        has_sugar = mol.HasSubstructMatch(sugar_pattern)
+        if not has_sugar:
+            return False, "No pentose sugar found"
+
+    # Check for nucleobase (aromatic ring with at least two nitrogen atoms)
+    nucleobase_found = False
+    for ring in mol.GetRingInfo().AtomRings():
+        ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
+        if all(atom.GetIsAromatic() for atom in ring_atoms):
+            num_nitrogens = sum(1 for atom in ring_atoms if atom.GetAtomicNum() == 7)
+            if num_nitrogens >= 2:
+                nucleobase_found = True
+                break
+    if not nucleobase_found:
+        return False, "No nucleobase found"
+
+    # Check for connection between nucleobase and sugar (N-glycosidic bond)
+    has_nucleoside_linkage = False
+    for bond in mol.GetBonds():
+        begin_atom = bond.GetBeginAtom()
+        end_atom = bond.GetEndAtom()
+        # Look for bond between nitrogen (from nucleobase) and carbon (from sugar)
+        if (begin_atom.GetAtomicNum() == 7 and end_atom.GetAtomicNum() == 6) or \
+           (begin_atom.GetAtomicNum() == 6 and end_atom.GetAtomicNum() == 7):
+            # Check if one atom is in an aromatic ring (nucleobase) and the other in sugar ring
+            begin_in_base = begin_atom.GetIsAromatic()
+            end_in_base = end_atom.GetIsAromatic()
+            begin_in_sugar = mol.GetRingInfo().IsAtomInRingOfSize(begin_atom.GetIdx(), 5)
+            end_in_sugar = mol.GetRingInfo().IsAtomInRingOfSize(end_atom.GetIdx(), 5)
+            if (begin_in_base and end_in_sugar) or (begin_in_sugar and end_in_base):
+                has_nucleoside_linkage = True
+                break
+    if not has_nucleoside_linkage:
+        return False, "No nucleoside linkage between nucleobase and sugar"
+
+    # Check for connection between sugar and phosphate
+    has_phosphate_linkage = False
+    phosphate_atoms = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15]
+    sugar_atoms = []
+    for match in mol.GetSubstructMatches(sugar_pattern):
+        sugar_atoms.extend(match)
+    for bond in mol.GetBonds():
+        begin_idx = bond.GetBeginAtomIdx()
+        end_idx = bond.GetEndAtomIdx()
+        if (begin_idx in phosphate_atoms and end_idx in sugar_atoms) or \
+           (begin_idx in sugar_atoms and end_idx in phosphate_atoms):
+            has_phosphate_linkage = True
+            break
+    if not has_phosphate_linkage:
+        return False, "No phosphate group attached to sugar"
+
+    return True, "Molecule is a nucleotide with nucleobase, pentose sugar, and phosphate group"
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:33504',
                               'name': 'nucleotide',
@@ -79,7 +103,7 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:33504',
                   'max_instances_in_prompt': 100,
                   'test_proportion': 0.1},
     'message': None,
-    'attempt': 1,
+    'attempt': 2,
     'success': True,
     'best': True,
     'error': '',
