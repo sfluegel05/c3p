@@ -21,17 +21,15 @@ def is_sterol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # More general steroid pattern with flexibility in rings structure
-    steroid_pattern = Chem.MolFromSmarts("[CH3]1CC2(C)C3CCC4[CH2][CH2]C(C)(C)C3CCC4C2C(C)O1")
+    # Define a more flexible SMARTS pattern for steroid-like backbone: 4-ring core typical in steroids
+    # This pattern captures the three 6-membered rings and one 5-membered ring common in steroids
+    steroid_pattern = Chem.MolFromSmiles("C1CC2CCC3C4CCCC(C4)C3CCC2C1")
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid-like backbone found"
 
-    # Check for a hydroxyl group connected to any of the rings, typically at C3
-    hydroxyl_pattern = Chem.MolFromSmarts("C(O)C")
+    # Look for a hydroxyl group [-OH] which is characteristic for sterols
+    hydroxyl_pattern = Chem.MolFromSmarts("[CX4][OX2H]")
     if not mol.HasSubstructMatch(hydroxyl_pattern):
-        return False, "No hydroxyl group found potentially at the 3-position"
+        return False, "No hydroxyl group found"
 
-    # Additional verification to enhance accuracy could be considered here
-    # such as verifying location or orientation of the hydroxyl if necessary
-
-    return True, "Contains steroid-like backbone with a hydroxyl group"
+    return True, "Contains steroid-like backbone with a hydroxyl group, consistent with sterol definition"
