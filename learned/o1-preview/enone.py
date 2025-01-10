@@ -25,11 +25,16 @@ def is_enone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # SMARTS pattern for alpha,beta-unsaturated ketone (enone)
-    # This pattern matches a C=C double bond connected to a C=O group, where the carbonyl carbon has no hydrogens attached
-    enone_pattern = Chem.MolFromSmarts('C=CC(=O)[C;H0]')
+    # Define SMARTS patterns for enones in both orientations
+    enone_patterns = [
+        Chem.MolFromSmarts('[C;H0](=O)-[C]=[C]'),  # O=C-C=C
+        Chem.MolFromSmarts('[C]=[C]-[C;H0](=O)')   # C=C-C=O
+    ]
     
-    if mol.HasSubstructMatch(enone_pattern):
-        return True, "Contains alpha,beta-unsaturated ketone (enone) group with R(4) ≠ H"
-    else:
-        return False, "No alpha,beta-unsaturated ketone (enone) group found"
+    # Check if the molecule matches any enone pattern
+    for pattern in enone_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return True, "Contains alpha,beta-unsaturated ketone (enone) group with R(4) ≠ H"
+    
+    # No enone patterns matched
+    return False, "No alpha,beta-unsaturated ketone (enone) group found"
