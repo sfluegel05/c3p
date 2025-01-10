@@ -22,9 +22,10 @@ def is_secondary_alpha_hydroxy_ketone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for a secondary alpha-hydroxy ketone pattern, C with OH and adjacent C=O, C must be secondary
-    # C=O group [C]=[O] adjacent to a [C][OH] where C has one H and one organic (R) group, no other specifics needed
-    pattern = Chem.MolFromSmarts("[#6;R1;$([CD3](=O)[C,O]);$([CD3]([OX2H])([C][H]))]")
+    # Look for a secondary alpha-hydroxy ketone pattern,
+    # specifically, a secondary carbon linked with an OH group and adjacent to a C=O group
+    # SMARTS pattern corrections for capturing a secondary alpha-hydroxy ketone structure
+    pattern = Chem.MolFromSmarts("[#6;R1;$([CH1]([C,c])[OX2H])[C](=O)]")
     
     # Check for match of the pattern
     if mol.HasSubstructMatch(pattern):
