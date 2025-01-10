@@ -20,9 +20,10 @@ def is_porphyrins(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define a SMARTS pattern for porphyrin-like structures
-    # General porphyrin has four pyrrole-like units connected by methine bridges
-    porphyrin_pattern = Chem.MolFromSmarts("[n]1c2cc[nH]c2ccc3c4cc[nH]c4ccc5c6cc[nH]c6ccc1c35")
+    # Define a SMARTS pattern for core porphyrin structure
+    # A broader pattern is used to account for variations across real examples
+    # This pattern is intended to match typical porphyrin macrocycles with or without metals
+    porphyrin_pattern = Chem.MolFromSmarts('[n&H]1ccc(c2nc(c3ccc([n&H]c4ccc([n&H]c1c34)c2)=C)=C)')
 
     # Check if the molecule matches the porphyrin core pattern
     if mol.HasSubstructMatch(porphyrin_pattern):
