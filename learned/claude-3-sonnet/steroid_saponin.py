@@ -25,68 +25,79 @@ def is_steroid_saponin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # More flexible steroid core patterns including common variations
+    # Basic steroid ring patterns - breaking down into smaller substructures
     steroid_patterns = [
-        # Basic steroid core with flexible bonds
-        "[#6]~1~[#6]~[#6]~[#6]~2~[#6]~[#6]~[#6]~3~[#6]~[#6]~[#6]~4~[#6]~[#6]~[#6]~[#6]~[#6]~4~[#6]~[#6]~3~[#6]~[#6]~2~[#6]~1",
-        # Spirostan core common in steroid saponins
-        "[#6]~1~[#6]~[#6]~[#6]~2~[#6]~[#6]~[#6]~3~[#6]~[#6]~[#6]~4~[#6]~[#6]~[#6]~[#6]~[#6]~4~[#6]~[#6]~3~[#6]~[#6]~2~[#6]~1~[#6]~5~[#8]~[#6]~[#6]~[#6]~5",
-        # Cholestane-like core
-        "[#6]~1~[#6]~[#6]~[#6]~2~[#6]~[#6]~[#6]~3~[#6]~[#6]~[#6]~4~[#6]~[#6]~[#6]~[#6]~[#6]~4~[#6]~[#6]~3~[#6]~[#6]~2~[#6]~1~[#6]~[#6]~[#6]~[#6]~[#6]"
+        # Basic ABCD ring system with flexibility in bond types
+        "[#6]1[#6][#6]2[#6][#6][#6]3[#6][#6][#6]4[#6][#6][#6][#6][#6]4[#6][#6]3[#6][#6]2[#6]1",
+        # Alternative pattern allowing for unsaturation
+        "[#6]1[#6][#6]2[#6]=,:[#6][#6]3[#6]=,:[#6][#6]4[#6][#6][#6][#6][#6]4[#6][#6]3[#6][#6]2[#6]1",
+        # Pattern for 5α-spirostan type
+        "[#6]1[#6][#6]2[#6][#6][#6]3[#6][#6][#6]4[#6][#6][#6][#6][#6]4[#6][#6]3[#6][#6]2[#6]1[#6]5[#8][#6][#6][#6]5",
+        # Pattern focusing on B/C/D rings
+        "[#6]~1~[#6]~[#6]~2~[#6]~[#6]~[#6]~3~[#6]~[#6]~[#6]~[#6]~[#6]~3~[#6]~[#6]~2~[#6]~1"
     ]
     
     has_steroid_core = False
     for pattern in steroid_patterns:
-        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+        pat = Chem.MolFromSmarts(pattern)
+        if pat and mol.HasSubstructMatch(pat):
             has_steroid_core = True
             break
             
     if not has_steroid_core:
         return False, "No steroid core structure found"
 
-    # Sugar patterns including various glycosidic linkages
+    # Sugar and glycosidic linkage patterns
     sugar_patterns = [
-        # Pyranose ring with hydroxyl groups
-        "[#6;R6]-1-[#6;R6]-[#6;R6]-[#6;R6]-[#6;R6]-[#8;R6]-1",
-        # Glycosidic linkage
-        "[#6]-[OX2]-[#6;R](-[OX2H1,OX2R])-[#6;R](-[OX2H1,OX2R])",
-        # Alternative sugar pattern
-        "[#6;R6]1[#8]C([#6;R6])([#6;R6])[#6;R6][#6;R6][#6;R6]1"
+        # Pyranose ring
+        "O1[C][C][C][C][C]1",
+        # O-glycosidic bond
+        "[#6]-[#8]-[#6;R]1[#8][#6][#6][#6][#6][#6]1",
+        # Alternative sugar pattern with hydroxyls
+        "[#6;R]1[#8][#6]([#6][#6][#6][#6]1)([#8])",
+        # Specific glycosidic linkage to steroid
+        "[#6;R][#8][#6;R]1[#8][#6][#6][#6][#6][#6]1"
     ]
     
-    has_sugar = False
+    sugar_count = 0
     for pattern in sugar_patterns:
-        if mol.HasSubstructMatches(Chem.MolFromSmarts(pattern)):
-            has_sugar = True
-            break
+        pat = Chem.MolFromSmarts(pattern)
+        if pat:
+            matches = len(mol.GetSubstructMatches(pat))
+            sugar_count += matches
             
-    if not has_sugar:
-        return False, "No sugar moiety found"
+    if sugar_count == 0:
+        return False, "No sugar moieties found"
 
-    # Count hydroxyl groups (including those in sugars)
+    # Check for hydroxyl groups
     oh_pattern = Chem.MolFromSmarts("[OX2H1]")
     oh_matches = len(mol.GetSubstructMatches(oh_pattern))
-    if oh_matches < 3:
-        return False, "Insufficient hydroxyl groups"
+    
+    # Check for glycosidic oxygens
+    glycosidic_o = Chem.MolFromSmarts("[#6;R]-[#8]-[#6;!R]")
+    glycosidic_matches = len(mol.GetSubstructMatches(glycosidic_o)) if glycosidic_o else 0
+    
+    total_o_features = oh_matches + glycosidic_matches
+    if total_o_features < 3:
+        return False, "Insufficient hydroxyl/glycosidic groups"
 
-    # Count oxygens (saponins typically have many oxygens)
+    # Count total oxygens
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count < 8:
+    if o_count < 6:
         return False, "Too few oxygen atoms for a saponin"
 
-    # Check molecular weight (steroid saponins are typically large molecules)
+    # Molecular weight check
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 500:
+    if mol_wt < 400:  # Lowered threshold to catch smaller steroid saponins
         return False, "Molecular weight too low for steroid saponin"
 
-    # Count rings
+    # Ring count
     ring_count = rdMolDescriptors.CalcNumRings(mol)
-    if ring_count < 5:  # Steroid core (4) + at least one sugar ring
+    if ring_count < 5:
         return False, "Too few rings for steroid saponin"
 
-    # Count carbons
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 27:  # Steroid core (~21) + sugar (~6)
-        return False, "Too few carbons for steroid saponin"
-
-    return True, "Contains steroid core with glycosidic linkages and multiple hydroxyl groups"
+    # Additional check for characteristic steroid saponin features
+    if sugar_count >= 1 and has_steroid_core and total_o_features >= 3:
+        return True, "Contains steroid core with glycosidic linkages and multiple hydroxyl groups"
+    
+    return False, "Missing key steroid saponin features"
