@@ -22,20 +22,21 @@ def is_16beta_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Correct pattern for a general steroid backbone using 6-6-6-5 ring system
-    steroid_pattern = Chem.MolFromSmarts("C1CCC2C3CCC4C(C3)CCC4C2C1")
-
+    # Pattern for steroid backbone, flexible to slight structural deviations
+    steroid_pattern = Chem.MolFromSmarts("[#6]1-[#6R2]-[#6R2]-[#6R2]-2-[#6R2]-[#6R2]-[#6R2]3-[#6R2]-[#6R2]-[#6R2]-[#6R2]-[#6R2]4-[#6R2]-[#6R2]-[#6R2]-[#6R2]-2-[#6R2]-1-3-4") 
     if not mol.HasSubstructMatch(steroid_pattern):
-        return False, "No steroid backbone found"
+        return False, "No recognizable steroid backbone found"
 
-    # Pattern to match the hydroxyl group at position 16 with beta configuration.
-    # Assuming that the pattern attaches correctly considering stereochemistry,
-    beta_hydroxy_16_pattern = Chem.MolFromSmarts("C[C@@H](O)C(C)C1CC[C@]2(C)CC[C@H](C2)O")
-
-    if not mol.HasSubstructMatch(beta_hydroxy_16_pattern):
+    # Simplified pattern that looks for the presence of an alcohol group on position 16, beta-configuration
+    # Simplifying to check for a connected alcohol group (OH) to a carbon with at least one methyl group
+    # Requires flexible positioning based on backbone assumptions
+    position_16_beta_hydroxy = Chem.MolFromSmarts("[#6][C@H](O)[#6]([#6])C1CC(C)(C)C")
+    if not mol.HasSubstructMatch(position_16_beta_hydroxy):
         return False, "No 16beta-hydroxy group found"
     
-    return True, "Contains a steroid backbone with 16beta-hydroxy group"
+    return True, "Contains a steroid backbone with a 16beta-hydroxy group"
 
-# Example usage
-print(is_16beta_hydroxy_steroid("C[C@]12CC[C@H]3[C@@H](CCC4=CC(=O)CC[C@]34C)[C@@H]1C[C@H](O)[C@@H]2O"))
+# Example test-case (a valid 16beta-hydroxy steroid example)
+example_smiles = "C1=C2C(CC[C@]3([C@@]4(C[C@@H]([C@@H]([C@]4(CC[C@@]32[H])C)O)O)[H])[H])=CC(=C1)O"  # Assuming valid steroids as SMILES
+result, reason = is_16beta_hydroxy_steroid(example_smiles)
+print(f"Classification: {result}, Reason: {reason}")
