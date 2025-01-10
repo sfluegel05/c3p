@@ -6,12 +6,12 @@ from rdkit import Chem
 def is_monounsaturated_fatty_acyl_CoA(smiles: str):
     """
     Determines if a molecule is a monounsaturated fatty acyl-CoA based on its SMILES string.
-
+    
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a monounsaturated fatty acyl-CoA, False otherwise
+        bool: True if the molecule is a monounsaturated fatty acyl-CoA, False otherwise
         str: Reason for classification
     """
     mol = Chem.MolFromSmiles(smiles)
@@ -23,17 +23,17 @@ def is_monounsaturated_fatty_acyl_CoA(smiles: str):
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "CoA structure not found"
 
-    # Check for exactly one double bond in the fatty acid chain
+    # Check for exactly one double bond in an aliphatic chain
     double_bond_pattern = Chem.MolFromSmarts('C=C')
     double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
     if len(double_bond_matches) != 1:
         return False, f"Found {len(double_bond_matches)} double bonds, need exactly 1 for monounsaturation"
 
-    # Check for general aliphatic character of long-chain fatty acid
-    # This is a hard problem, a simple check for length is a proxy
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 10:  # typically expect longer chains
-        return False, "Not enough carbons for a fatty acid chain characteristic"
+    # Check for a long aliphatic chain, excluding CoA component
+    # SMARTS pattern for a long aliphatic chain with a specific double bond
+    long_chain_pattern = Chem.MolFromSmarts('[C;!$(C=O);!$(C=[#7,#8])]~[C;!$(C=O);!$(C=[#7,#8])]{7,}')
+    if not mol.HasSubstructMatch(long_chain_pattern):
+        return False, "Monounsaturated long-chain aliphatic not found"
 
     return True, "Monounsaturated fatty acyl-CoA compound identified"
 
