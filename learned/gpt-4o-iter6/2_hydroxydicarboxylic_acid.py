@@ -7,13 +7,13 @@ def is_2_hydroxydicarboxylic_acid(smiles: str):
     """
     Determines if a molecule is a 2-hydroxydicarboxylic acid based on its SMILES string.
     A 2-hydroxydicarboxylic acid must have two carboxylic acid groups and a hydroxy group
-    on the alpha carbon to one of the carboxylic acids.
+    on the alpha carbon to at least one of the carboxylic acids.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a 2-hydroxydicarboxylic acid, False otherwise
+        bool: True if the molecule is a 2-hydroxydicarboxylic acid, False otherwise
         str: Reason for classification
     """
     
@@ -22,15 +22,18 @@ def is_2_hydroxydicarboxylic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for the two carboxylic acid groups
+    # Pattern for carboxylic acid (-C(=O)O)
     carboxy_pattern = Chem.MolFromSmarts("C(=O)O")
     carboxy_matches = mol.GetSubstructMatches(carboxy_pattern)
-    if len(carboxy_matches) < 2:
-        return False, "Less than two carboxylic acid groups found"
+    
+    # Ensure we have exactly two carboxylic acid groups
+    if len(carboxy_matches) != 2:
+        return False, f"Expected 2 carboxylic acid groups but found {len(carboxy_matches)}"
 
-    # Look for the hydroxy group on the alpha carbon
-    hydroxyl_alpha_carboxy_pattern = Chem.MolFromSmarts("C(O)C(=O)O")
-    alpha_oh_matches = mol.GetSubstructMatches(hydroxyl_alpha_carboxy_pattern)
+    # Pattern for the hydroxy group on an alpha carbon to a carboxylic acid
+    alpha_hydroxy_pattern = Chem.MolFromSmarts("[CH](O)[CH2]C(=O)O")
+    alpha_oh_matches = mol.GetSubstructMatches(alpha_hydroxy_pattern)
+    
     if not alpha_oh_matches:
         return False, "No hydroxy group found on the alpha carbon to a carboxylic acid group"
     
