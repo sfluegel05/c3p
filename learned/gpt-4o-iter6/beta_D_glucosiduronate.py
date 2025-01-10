@@ -18,21 +18,26 @@ def is_beta_D_glucosiduronate(smiles: str):
         bool: True if molecule is a beta-D-glucosiduronate, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
     # SMARTS pattern for beta-D-glucuronic acid moiety in deprotonated form
-    glucuronate_pattern = Chem.MolFromSmarts('[C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)[O-]')
+    # Adjusted to match the primary sugar pattern with C6 deprotonated
+    glucuronate_pattern = Chem.MolFromSmarts('O[C@@H]1[C@H](O)[C@H](O)[C@@H](O[C@H]1[C@@H]=O)C(=O)[O-]')
     if not mol.HasSubstructMatch(glucuronate_pattern):
         return False, "No beta-D-glucuronic acid moiety found"
 
-    # Check attachment type (e.g., it is often via an ether linkage)
-    # This could be broadened based on additional requirements or examples
-    ether_linkage_pattern = Chem.MolFromSmarts('O[C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)[O-]')
-    if not mol.HasSubstructMatch(ether_linkage_pattern):
-        return False, "Beta-D-glucuronic acid moiety not properly attached"
+    # Broadened pattern acceptance for linkage - consider various linkages
+    possible_linkages = [
+        'O[C@]',  # Ether
+        # These can be expanded if other types of linkages are identified as characteristic
+    ]
+    for linkage in possible_linkages:
+        linkage_pattern = Chem.MolFromSmarts(linkage)
+        if mol.HasSubstructMatch(linkage_pattern):
+            return True, "Contains deprotonated beta-D-glucuronic acid moiety in correct orientation"
 
-    return True, "Contains deprotonated beta-D-glucuronic acid moiety in correct orientation"
+    return False, "Beta-D-glucuronic acid moiety not properly attached"
