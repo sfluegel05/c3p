@@ -22,18 +22,18 @@ def is_lactol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for ring systems
+    # Get the ring information to ensure presence of 5 or 6 member rings
     ring_info = mol.GetRingInfo()
-    if not ring_info.IsAtomInRingOfSize(0, 5) and not ring_info.IsAtomInRingOfSize(0, 6):
-        return False, "No suitable ring structure found - lactols must be 5 or 6 member cyclic"
+    rings = [set(indices) for indices in ring_info.AtomRings() if len(indices) in [5, 6]]
+    if not rings:
+        return False, "No suitable 5 or 6 membered ring structure found"
 
     # Define a SMARTS pattern for lactol structure
-    # This pattern detects a cyclic ether linked to a hydroxyl group
-    # within 5 or 6 membered rings which are typical for lactols.
-    lactol_pattern = Chem.MolFromSmarts("O[C]1[OH][C,O][c,C]1")
+    # Oxygen inside a ring connected to an alcohol and a secondary carbon
+    lactol_pattern = Chem.MolFromSmarts("OC1(O)[C@H1]")
 
-    # Check if the molecule matches the lactol pattern
-    if not mol.HasSubstructMatch(lactol_pattern):
+    # Check if the molecule matches the lactol pattern in an appropriate ring
+    if not any(mol.HasSubstructMatch(lactol_pattern, atoms=ring) for ring in rings):
         return False, "No lactol pattern found (cyclic hemiacetal)"
 
     return True, "Contains a lactol structural pattern (cyclic hemiacetal with adjacent hydroxyl) in the molecule"
