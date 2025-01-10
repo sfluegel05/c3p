@@ -26,13 +26,20 @@ def is_oxo_fatty_acid(smiles: str):
         return False, "No carboxylic acid group found"
     
     # Look for additional ketone group (not part of carboxylic acid)
-    ketone_pattern = Chem.MolFromSmarts("C(=O)[C,c]")
+    ketone_pattern = Chem.MolFromSmarts("[CX3](=O)[C;!$(C(=O)O)]")
     if not mol.HasSubstructMatch(ketone_pattern):
         return False, "No additional ketone group found"
 
-    # Check for sufficiently long carbon chain (optional - can adjust length requirement)
-    carbon_chain_pattern = Chem.MolFromSmarts("[CX4]-[CX4]-[CX4]-[CX4]-[CX4]-[CX4]")  # 6 linear carbons as an example
+    # Check for a bigger carbon skeleton; allow for more carbons, rings, and unsaturations
+    # This pattern now allows for any arrangement of carbons while ensuring a long chain backbone
+    carbon_chain_pattern = Chem.MolFromSmarts("C-C-C-C-C-C-C")  # flexible pattern allowing more configurations
     if not mol.HasSubstructMatch(carbon_chain_pattern):
-        return False, "No sufficient carbon chain detected"
-    
-    return True, "Contains carboxylic acid and additional ketone group typical of oxo fatty acids"
+        return False, "Insufficient carbon backbone"
+
+    # Optionally verify unsaturations or cyclic components in more complex molecules
+    if Chem.MolFromSmarts("C=C") and mol.HasSubstructMatch(carboxylic_acid_pattern):
+        unsaturation_pattern = Chem.MolFromSmarts("C=C")
+        if not mol.HasSubstructMatch(unsaturation_pattern):
+            return False, "Lacks unsaturation often present in oxo fatty acids"
+     
+    return True, "Contains carboxylic acid and additional ketone group with sufficient carbon backbone"
