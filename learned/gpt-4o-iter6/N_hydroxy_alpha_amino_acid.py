@@ -16,37 +16,27 @@ def is_N_hydroxy_alpha_amino_acid(smiles: str):
         bool: True if the molecule is a N-hydroxy-alpha-amino-acid, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return None, "Invalid SMILES string"
-
-    # Alpha amino acid backbone with variance
-    amino_acid_pattern = Chem.MolFromSmarts("[NX3;H2,H1;!$(NC=O)]-[C;A][C](=O)[O,O-]")  # Flexible primary or secondary nitrogen next to alpha-carbon
-    if not mol.HasSubstructMatch(amino_acid_pattern):
+    
+    # SMARTS pattern improved for alpha amino acid backbone:
+    alpha_amino_acid_pattern = Chem.MolFromSmarts("[NX3;!$(N-C=O)]-[C;!H0]-[CX3](=[OX1])-[OX2H1,OX1-]")
+    if not mol.HasSubstructMatch(alpha_amino_acid_pattern):
         return False, "No alpha amino acid backbone found"
-
-    # Search for at least one hydroxy substitution on the nitrogen
-    n_hydroxy_variants = "[N;H1]O"  # Single variant
-    bidentate_hydroxy = "[NX3](O)O"  # Bidentate variant
+    
+    # Search for at least one hydroxy substitution on the N
+    n_hydroxy_pattern = Chem.MolFromSmarts("[NX3;!$(NC=O)]O")
+    n_di_hydroxy_pattern = Chem.MolFromSmarts("[NX3](O)O")
     
     n_hydroxy_patterns = [
-        Chem.MolFromSmarts(n_hydroxy_variants),
-        Chem.MolFromSmarts(bidentate_hydroxy)
+        n_hydroxy_pattern,
+        n_di_hydroxy_pattern
     ]
 
     if not any(mol.HasSubstructMatch(pattern) for pattern in n_hydroxy_patterns):
         return False, "No N-hydroxy modification found"
-    
-    return True, "Contains amino acid backbone with N-hydroxy modification"
 
-__metadata__ = {  
-    'chemical_class': {   
-        'name': 'N-hydroxy-alpha-amino-acid',
-        'definition': 'Any amino acid in which at least one hydrogen attached to the amino group is replaced by a hydroxy group.',
-    },
-    'message': None,
-    'attempt': 2,
-    'success': False,
-}
+    return True, "Contains amino acid backbone with N-hydroxy modification"
