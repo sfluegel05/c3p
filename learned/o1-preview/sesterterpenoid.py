@@ -13,8 +13,7 @@ def is_sesterterpenoid(smiles: str):
     
     A sesterterpenoid is a terpenoid derived from a sesterterpene, which typically has 25 carbons
     built from five isoprene units (C5 units). The molecule may be rearranged or modified by 
-    the removal of one or more skeletal atoms (generally methyl groups). Sesterterpenoids
-    typically contain only carbon, hydrogen, and oxygen atoms.
+    the removal of one or more skeletal atoms (generally methyl groups).
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -29,29 +28,34 @@ def is_sesterterpenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for elements other than C, H, O
-    allowed_atomic_nums = {1, 6, 8}  # H, C, O
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() not in allowed_atomic_nums:
-            return False, f"Molecule contains heteroatom: {atom.GetSymbol()}"
-    
-    # Count number of carbons and hydrogens
+    # Count number of carbons
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    h_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 1)
     
-    # For sesterterpenoids, expect around 25 carbons, accept a small range due to modifications
-    if c_count < 23 or c_count > 27:
-        return False, f"Carbon count is {c_count}, which is not typical for a sesterterpenoid (expected 25±2 carbons)"
+    # For sesterterpenoids, expect around 25 carbons, but accept a wider range due to modifications
+    if c_count < 20 or c_count > 55:
+        return False, f"Carbon count is {c_count}, which is not typical for a sesterterpenoid (expected ~25 carbons)"
     
-    # Estimate number of isoprene units
-    isoprene_units = c_count / 5
-    if not 4.5 <= isoprene_units <= 5.5:
-        return False, f"Carbon count {c_count} does not correspond to 5 isoprene units"
+    # Check for presence of multiple double bonds (indicative of isoprene units)
+    double_bond_count = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE)
+    if double_bond_count < 2:
+        return False, f"Found {double_bond_count} double bonds; sesterterpenoids typically have multiple double bonds due to isoprene units"
     
-    # Check for highly unsaturated structure (typical of terpenoids)
-    unsaturation = rdMolDescriptors.CalcNumDoubleBonds(mol) + rdMolDescriptors.CalcNumAromaticRings(mol)
-    if unsaturation < 2:
-        return False, f"Low unsaturation ({unsaturation}); sesterterpenoids typically have multiple double bonds or rings"
+    # Check for presence of ring structures
+    ring_info = mol.GetRingInfo()
+    num_rings = ring_info.NumRings()
+    if num_rings < 1:
+        return False, "No ring structures found; sesterterpenoids often contain rings"
+    
+    # Check for methyl groups attached to carbons (common in terpenoids)
+    methyl_count = 0
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6 and atom.GetDegree() == 1:
+            # Methyl group carbon
+            neighbors = atom.GetNeighbors()
+            if neighbors and neighbors[0].GetAtomicNum() == 6:
+                methyl_count += 1
+    if methyl_count < 1:
+        return False, "No methyl groups found attached to carbons; sesterterpenoids often contain methyl groups"
     
     return True, "Molecule meets criteria for a sesterterpenoid"
 
