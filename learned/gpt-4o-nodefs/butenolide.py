@@ -6,7 +6,8 @@ from rdkit import Chem
 def is_butenolide(smiles: str):
     """
     Determines if a molecule is a butenolide based on its SMILES string.
-    A butenolide consists of a 5-membered lactone ring, or furanone structure, with a ketone group.
+    A butenolide consists of a 5-membered lactone ring (furanone structure), often with a ketone group or 
+    related functional group.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,13 +23,17 @@ def is_butenolide(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define SMARTS pattern for butenolide structure
-    butenolide_pattern = Chem.MolFromSmarts("O=C1C=CC(=O)O1")
+    # More flexible pattern to catch variations in the butenolide structure
+    butenolide_pattern_1 = Chem.MolFromSmarts("C1=COC(=O)C1")  # Basic furanone pattern
+    butenolide_pattern_2 = Chem.MolFromSmarts("C1=CC(=O)OC1")  # Variation on furanone positioning
+
+    # Check if molecule matches any of the butenolide substructures
+    if mol.HasSubstructMatch(butenolide_pattern_1):
+        return True, "Contains a basic furanone (butenolide) structure"
+    elif mol.HasSubstructMatch(butenolide_pattern_2):
+        return True, "Contains a variation of furanone (butenolide) structure"
     
-    # Check if molecule has a butenolide substructure
-    if mol.HasSubstructMatch(butenolide_pattern):
-        return True, "Contains a butenolide (furanone) structure"
-    
-    return False, "Does not contain a butenolide structure"
+    return False, "Does not contain a recognized butenolide structure"
 
 # Test the function with examples
 examples = [
