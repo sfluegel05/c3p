@@ -2,6 +2,7 @@
 Classifies: CHEBI:25627 octadecadienoic acid
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_octadecadienoic_acid(smiles: str):
     """
@@ -21,19 +22,18 @@ def is_octadecadienoic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Verify chain contains core of octadecadienoic structure
-    # Look for a long linear carbon chain with two double bonds
-    carbon_chain_pattern = Chem.MolFromSmarts("C(=C)C(=C)CCCCCCCCCCCCCC")
-    if not mol.HasSubstructMatch(carbon_chain_pattern):
-        return False, "No octadecadienoic core structure found"
+    # Verify the presence of 18 carbon atoms
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count != 18:
+        return False, f"Expected 18 carbon atoms, found {c_count}"
 
-    # Check for exactly two C=C double bonds
+    # Check for exactly two C=C double bonds in the structure
     double_bond_count = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.BondType.DOUBLE and
                             bond.GetBeginAtom().GetAtomicNum() == 6 and bond.GetEndAtom().GetAtomicNum() == 6)
     if double_bond_count != 2:
         return False, f"Expected 2 double bonds (C=C), found {double_bond_count}"
 
-    # Pattern for terminal carboxylic acid group (COOH or COO-)
+    # Check for terminal carboxylic acid group or its anionic form
     carboxylic_group_patterns = [
         Chem.MolFromSmarts("C(=O)[OX1H1]"),    # -COOH
         Chem.MolFromSmarts("C(=O)[O-]"),       # -COO-
