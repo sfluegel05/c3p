@@ -26,8 +26,8 @@ def is_3_sn_phosphatidyl_L_serine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the core structure pattern with stereochemistry
-    core_pattern = Chem.MolFromSmarts("[*]C([*])(COP(=O)(O)OC[C@H](N)C(=O)O)[*]")
+    # Define the core structure pattern with correct stereochemistry
+    core_pattern = Chem.MolFromSmarts("[*]C([*])(COP(=O)(O)OC[C@@H](N)C(=O)O)[*]")
     if not mol.HasSubstructMatch(core_pattern):
         return False, "No core structure with correct stereochemistry found"
 
@@ -37,10 +37,10 @@ def is_3_sn_phosphatidyl_L_serine(smiles: str):
     if len(ester_matches) < 2:
         return False, f"Found {len(ester_matches)} ester groups, need at least 2"
 
-    # Verify the serine moiety
-    serine_pattern = Chem.MolFromSmarts("[NX3][CH]([CX3](=[OX1])[OX2H])")
+    # Verify the serine moiety with correct stereochemistry
+    serine_pattern = Chem.MolFromSmarts("[NX3][C@@H]([CX3](=[OX1])[OX2H])")
     if not mol.HasSubstructMatch(serine_pattern):
-        return False, "No serine moiety found"
+        return False, "No serine moiety with correct stereochemistry found"
 
     # Check for fatty acid chains (at least 8 carbons each)
     fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
