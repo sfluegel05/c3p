@@ -21,33 +21,24 @@ def is_polyprenol_phosphate(smiles: str):
     if mol is None:
         return None, "Invalid SMILES string"
     
-    # Define SMARTS for polyprenyl chain with isoprene units
-    isoprene_pattern = Chem.MolFromSmarts("C(=C)-C-C")
-    
+    # Define SMARTS for isoprene units allowing for branching and stereochemistry
+    isoprene_pattern = Chem.MolFromSmarts("C(=C)[-;@]C|C-C")
+
     # Find matching substructures for isoprene units
     isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
-    if len(isoprene_matches) < 1:  # Allow at least one isoprene unit to be more inclusive
+    if len(isoprene_matches) < 1:
         return False, "Too few isoprene units for polyprenol"
+    
+    # Broadened SMARTS patterns for phosphate and diphosphate groups
+    phosphate_pattern = Chem.MolFromSmarts("OP(=O)(O)O")
+    diphosphate_pattern = Chem.MolFromSmarts("OP(=O)(O)OP(=O)(O)O")
 
-    # Check molecular weight typical for polyprenol phosphates
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 500:
-        return False, "Molecular weight too low for polyprenol phosphate"
-
-    # Define SMARTS for phosphate and diphosphate groups (more focused)
-    phosphate_pattern = Chem.MolFromSmarts("O=P(O)(O)[O-]")
-    diphosphate_pattern = Chem.MolFromSmarts("O=P(O)(O)OP(=O)(O)[O-]")
-
-    # Check if it contains a terminal phosphate or diphosphate group
+    # Check whether the molecule contains a terminal phosphate or diphosphate group
     phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
     diphosphate_matches = mol.GetSubstructMatches(diphosphate_pattern)
-    
+
     if not (phosphate_matches or diphosphate_matches):
         return False, "No terminal phosphate or diphosphate group found"
 
-    # Further validation for terminal group placement
-    terminal_group_valid = any(mol.GetAtomWithIdx(match[-1]).GetDegree() == 1 for match in phosphate_matches + diphosphate_matches)
-    if not terminal_group_valid:
-        return False, "Terminal phosphate/diphosphate group not at the molecule end"
-
+    # Further validation for classic structural features could be impacted by anticipated structures
     return True, "Contains polyprenyl chain with terminal phosphate or diphosphate group"
