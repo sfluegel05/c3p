@@ -12,34 +12,33 @@ def is_phosphatidic_acid(smiles: str):
 
     Args:
         smiles (str): SMILES string of the molecule
-    
+
     Returns:
         bool: True if molecule is a phosphatidic acid, False otherwise
         str: Reason for classification
     """
-    
+
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Glycerol backbone with hydroxyl groups
-    glycerol_pattern = Chem.MolFromSmarts("OC[C@@H](O)CO")
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "Missing glycerol backbone with hydroxyls"
-
-    # Phosphate group linking pattern: P(=O)(O)O
-    phosphate_pattern = Chem.MolFromSmarts("P(=O)([O-])[O]")
-    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
-    if len(phosphate_matches) != 1:
+    # Phosphate group detection: P(=O)(O)(O) with potential external ester linkage
+    phosphate_pattern = Chem.MolFromSmarts("OP(=O)(O)O")
+    if not mol.HasSubstructMatch(phosphate_pattern):
         return False, "Phosphate group incorrectly configured"
 
-    # Check for two ester linkages: C(=O)O attached to glycerol
-    ester_pattern = Chem.MolFromSmarts("[C][O][C](=O)")
+    # Ester group linked to glycerol: [C]-(C=O)-O with [C] in the scaffold of glycerol
+    ester_pattern = Chem.MolFromSmarts("C(=O)O[C@@H]1COC1")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) < 2:
-        return False, f"Found {len(ester_matches)} ester linkages, need exactly 2 for fatty acids"
+    if len(ester_matches) != 1:
+        return False, f"Found {len(ester_matches)} ester linkages with glycerol, need exactly 2"
 
-    # Verify no additional linkages to the phosphate that would indicate another group
+    # Check glycerol backbone (checked in context of esters)
+    glycerol_pattern = Chem.MolFromSmarts("[C@@H](CO)OC1C=O") # Simplified part of glycerol to ensure checking esterification context
+    if not mol.HasSubstructMatch(glycerol_pattern):
+        return False, "Missing glycerol backbone in expected configuration"
+
+    # Verify correct attachment of phosphoric acid to glycerol (ensure linkage)
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() == 15: # Phosphorus
             num_oxygen_bonds = sum(1 for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() == 8) # Count oxygen bonds
