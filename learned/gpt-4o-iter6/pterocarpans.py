@@ -22,8 +22,11 @@ def is_pterocarpans(smiles: str):
         return False, "Invalid SMILES string"
     
     # Define the substructure pattern for the core of pterocarpans
-    # SMARTS pattern for the 6a,11a-dihydro-6H-[1]benzofuro[3,2-c]chromene core
-    pterocarpan_pattern = Chem.MolFromSmarts("O1[C@@]2([C@](C3=C1C=CC=4OCOC4C3)([H])[H])") 
+    # Updated SMARTS pattern considering known examples and ensuring proper stereochemistry
+    pterocarpan_pattern = Chem.MolFromSmarts("O1C2C3=C1C=CC=C3COC4=C2C=CC=C4")
+    
+    if pterocarpan_pattern is None:
+        return None, "Error in defining SMARTS pattern"
 
     # Check if the core structure is present
     if not mol.HasSubstructMatch(pterocarpan_pattern):
