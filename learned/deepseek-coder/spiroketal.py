@@ -26,7 +26,7 @@ def is_spiroketal(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more flexible spiroketal pattern: a carbon atom bonded to two oxygen atoms, each in a separate ring
+    # Define the spiroketal pattern: a carbon atom bonded to two oxygen atoms, each in a separate ring
     spiroketal_pattern = Chem.MolFromSmarts("[CX4]([OX2][*;r])[OX2][*;r]")
     
     # Search for the pattern in the molecule
@@ -58,12 +58,7 @@ def is_spiroketal(smiles: str):
         # Check if the ketal carbon is the only common atom between the two rings
         common_atoms = set(ring1).intersection(set(ring2))
         if len(common_atoms) == 1 and ketal_carbon_idx in common_atoms:
-            # Ensure that the ketal carbon is part of both rings
-            if ketal_carbon_idx in ring1 and ketal_carbon_idx in ring2:
-                # Additional check to ensure the rings are not fused in a way that violates the spiroketal definition
-                # For example, the rings should not share more than one atom
-                if len(common_atoms) == 1:
-                    return True, "Contains a spiroketal structure with a ketal carbon as the only common atom between two rings"
+            return True, "Contains a spiroketal structure with a ketal carbon as the only common atom between two rings"
     
     return False, "No spiroketal structure found with a ketal carbon as the only common atom between two rings"
 
