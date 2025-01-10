@@ -25,16 +25,23 @@ def is_isoflavonoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for the isoflavonoid pattern (benzopyran with aryl at position 3)
-    # Isoflavonoids are 1-benzopyran derivatives with an aryl group at the 3 position.
-    
-    # Isoflavonoid SMARTS pattern
-    isoflavonoid_pattern = Chem.MolFromSmarts("c1cc2oc(cc3ccc[nH]3)c3ccccc3c2c1")  # Adjust to better capture isoflavonoid structure
-    
+    # Isoflavonoid pattern: 1-benzopyran structure with an aryl group at position 3
+    isoflavonoid_pattern = Chem.MolFromSmarts("c1cc2ccc(c1)OCC2=c3cccc(c3)[#6]")
+
     if mol.HasSubstructMatch(isoflavonoid_pattern):
         return True, "Contains a 1-benzopyran core with an aryl group at position 3"
-    else:
-        return False, "Does not contain the necessary isoflavonoid structure"
+    
+    # Check for additional features specific to isoflavonoids
+    # Common functional groups like O-methylations, hydroxylations, etc.
+    o_methoxy_pattern = Chem.MolFromSmarts("COc")
+    if mol.HasSubstructMatch(o_methoxy_pattern):
+        return True, "Contains isoflavonoid structure with methoxy group"
+
+    hydroxyl_pattern = Chem.MolFromSmarts("O[cH]")
+    if mol.HasSubstructMatch(hydroxyl_pattern):
+        return True, "Contains isoflavonoid structure with hydroxyl group"
+
+    return False, "Does not contain the necessary isoflavonoid structure or functional groups"
 
 # Example validation
 examples = [
