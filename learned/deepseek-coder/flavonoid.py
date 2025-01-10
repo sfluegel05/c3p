@@ -25,8 +25,7 @@ def is_flavonoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more flexible flavonoid core pattern: 1-benzopyran with an aryl substituent at position 2
-    # The pattern allows for variations in the core structure and substituents
+    # Define the flavonoid core pattern: 1-benzopyran with an aryl substituent at position 2
     flavonoid_core_pattern = Chem.MolFromSmarts("[c]1[c][c][c][c][c]1-[c]2[c][c][c][c][c]2-[O]-[C]3=[C][C]=[C][C]=3")
     
     # Check if the molecule contains the flavonoid core pattern
