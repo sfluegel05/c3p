@@ -53,14 +53,11 @@ def is_polychlorobiphenyl(smiles: str):
         return False, f"Found {chlorine_count} chlorine atoms attached to biphenyl rings, need between 2 and 10"
 
     # Additional check: ensure biphenyl is the main structure
-    # Count non-biphenyl atoms
-    non_biphenyl_atoms = 0
-    for atom in mol.GetAtoms():
-        if atom.GetIdx() not in biphenyl_atoms:
-            non_biphenyl_atoms += 1
-
-    # If more than 2 non-biphenyl atoms, likely not a simple polychlorobiphenyl
-    if non_biphenyl_atoms > 2:
-        return False, "Molecule has too many atoms outside biphenyl core"
+    # Calculate the ratio of biphenyl atoms to total atoms
+    biphenyl_ratio = len(biphenyl_atoms) / mol.GetNumAtoms()
+    
+    # If less than 50% of the molecule is the biphenyl core, likely not a simple polychlorobiphenyl
+    if biphenyl_ratio < 0.5:
+        return False, "Biphenyl core is not the main structure"
 
     return True, f"Contains biphenyl structure with {chlorine_count} chlorine atoms attached to rings"
