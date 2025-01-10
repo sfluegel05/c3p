@@ -2,7 +2,7 @@
 Classifies: CHEBI:65323 monoterpenoid indole alkaloid
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem, rdMolDescriptors
+from rdkit.Chem import rdMolDescriptors
 
 def is_monoterpenoid_indole_alkaloid(smiles: str):
     """
@@ -22,37 +22,31 @@ def is_monoterpenoid_indole_alkaloid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Expanded indole-like structures covering diversity found in the class
+    # Enhanced indole-like structures - adding hybrid and fused options
     indole_patterns = [
         Chem.MolFromSmarts("c1ccc2c(c1)[nH]c3ccccc23"),  # Standard indole
         Chem.MolFromSmarts("C1=CC2=C3C=CC=CC3=NC2=C1"),  # Fused indoles
-        Chem.MolFromSmarts("C1=NC2=CC=CC=C2C1C3=CC=CC=C3"),  # Indole and analogs
         Chem.MolFromSmarts("c1cc2cnc(c2cc1)N"),  # Indolinamine
-        Chem.MolFromSmarts("c1cc2[nH]cnc2c1"),  # Pyrroloindoles
-        # More sophisticated and specific indole-like patterns can be included here.
+        Chem.MolFromSmarts("c1cc2[nH]cnc2c1"),  # Pyrroloindole
+        Chem.MolFromSmarts("n1c2ccc3c(c[nH]c3c2cc1)"),  # Complex indole patterns
     ]
     if not any(mol.HasSubstructMatch(pat) for pat in indole_patterns):
         return False, "No recognizable indole-like structure"
 
-    # Check for the presence of multiple nitrogen atoms, since alkaloids often feature such.
+    # Count nitrogen atoms with relaxation for tertiary amine or amide groups
     n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
     if n_count < 2:
-        return False, "Insufficient nitrogen atoms for typical alkaloid complexity"
+        return False, "Insufficient nitrogen atoms for alkaloid complexity"
 
-    # Total ring count and aromatic complexity - expecting rich chemistry in these compounds
+    # Simplified ring criteria to accommodate commonality in this class
     num_rings = rdMolDescriptors.CalcNumRings(mol)
-    num_aromatic_rings = rdMolDescriptors.CalcNumAromaticRings(mol)
-    if num_rings < 3 or num_aromatic_rings < 2:
-        return False, f"Not enough total or aromatic rings: {num_rings} total, {num_aromatic_rings} aromatic"
+    if num_rings < 4:
+        return False, f"Not enough ring structures: found {num_rings}"
 
-    # Recognize isoprene unit derivatives typical in monoterpenoids
-    isoprene_pattern = Chem.MolFromSmarts("C=C(C)C")
-    if not mol.HasSubstructMatch(isoprene_pattern):
-        return False, "Missing diisoprenoid units typical of monoterpenoids"
+    # Check for the presence of common methoxy or ester groups (common in alkaloids)
+    methoxy_pattern = Chem.MolFromSmarts("COC")  # Methoxy groups specifically
+    ester_pattern = Chem.MolFromSmarts("C(=O)O")  # Useful ester moiety
+    if not (mol.HasSubstructMatch(methoxy_pattern) or mol.HasSubstructMatch(ester_pattern)):
+        return False, "Missing methoxy or ester groups"
 
-    # Expanded recognition of functional groups relevant to the class, e.g., methoxy groups
-    methoxy_pattern = Chem.MolFromSmarts("C-OC")  # General methoxy group
-    if not mol.HasSubstructMatch(methoxy_pattern):
-        return False, "Missing methoxy groups characteristic to these structures"
-
-    return True, "Contains indole core, sufficient nitrogen, terpenoid features and methoxy groups"
+    return True, "Contains indole core with necessary nitrogen and complex ring features typical of monoterpenoid indole alkaloids"
