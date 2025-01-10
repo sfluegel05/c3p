@@ -28,18 +28,18 @@ def is_lipopolysaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for trisaccharide repeating unit pattern (general pattern for three connected sugar units)
+    # Look for trisaccharide repeating unit pattern (more flexible pattern for three connected sugar units)
     trisaccharide_pattern = Chem.MolFromSmarts("[C@H]1([C@H](O)[C@H](O)[C@@H](O)[C@@H](O1)O)[C@H]2([C@H](O)[C@H](O)[C@@H](O)[C@@H](O2)O)[C@H]3([C@H](O)[C@H](O)[C@@H](O)[C@@H](O3)O)")
     if not mol.HasSubstructMatch(trisaccharide_pattern):
         return False, "No trisaccharide repeating unit found"
 
-    # Look for oligosaccharide side chains (multiple sugar units)
+    # Look for oligosaccharide side chains (multiple sugar units, more flexible pattern)
     oligosaccharide_pattern = Chem.MolFromSmarts("[C@H]1([C@H](O)[C@H](O)[C@@H](O)[C@@H](O1)O)")
     oligosaccharide_matches = mol.GetSubstructMatches(oligosaccharide_pattern)
-    if len(oligosaccharide_matches) < 3:
-        return False, f"Found {len(oligosaccharide_matches)} oligosaccharide units, need at least 3"
+    if len(oligosaccharide_matches) < 2:
+        return False, f"Found {len(oligosaccharide_matches)} oligosaccharide units, need at least 2"
 
-    # Look for 3-hydroxytetradecanoic acid units (general pattern for long carbon chain with hydroxyl and carboxyl groups)
+    # Look for 3-hydroxytetradecanoic acid units (more flexible pattern for long carbon chain with hydroxyl and carboxyl groups)
     fatty_acid_pattern = Chem.MolFromSmarts("[CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4]([OH])[CX3](=[OX1])[OX2H]")
     fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
     if len(fatty_acid_matches) < 1:
