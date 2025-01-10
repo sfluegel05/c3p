@@ -23,7 +23,7 @@ def is_polysaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more general pattern for a monosaccharide unit
+    # Define a more accurate pattern for a monosaccharide unit
     monosaccharide_pattern = Chem.MolFromSmarts("[C;H1][C;H1][C;H1][C;H1][C;H1][O;H1]")
     
     # Find all matches of the monosaccharide pattern
@@ -44,7 +44,7 @@ def is_polysaccharide(smiles: str):
     # and molecular weight is high
     if (num_monosaccharides > 10 and 
         len(glycosidic_bond_matches) > 0 and 
-        mol_wt > 1000):
+        mol_wt > 5000):
         return True, f"Contains {num_monosaccharides} monosaccharide units with glycosidic bonds and high molecular weight ({mol_wt:.1f} Da)"
     else:
         return False, f"Contains {num_monosaccharides} monosaccharide units, which is not more than 10, or lacks glycosidic bonds, or has low molecular weight ({mol_wt:.1f} Da)"
