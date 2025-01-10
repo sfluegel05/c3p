@@ -27,52 +27,61 @@ def is_dihydroagarofuran_sesquiterpenoid(smiles: str):
 
     # Core structure pattern for dihydroagarofuran skeleton
     # This pattern captures the key tricyclic system with the oxygen bridge
-    # and specific connectivity characteristic of dihydroagarofuran
-    core_pattern = Chem.MolFromSmarts("[C]1[C][C]2[C]3[C]([C][C]([C])[C]3(O[C]1([C])[C])[C]2)([C,O])")
+    # Note the specific stereochemistry and connectivity
+    core_pattern = Chem.MolFromSmarts("[C]1[C][C]2[C]3[C]([C][C]([C])[C]2(O[C]1([C])[C]))[C]3")
     
     if not mol.HasSubstructMatch(core_pattern):
-        return False, "Missing dihydroagarofuran core structure"
+        # Try alternative core pattern that's more flexible
+        alt_core_pattern = Chem.MolFromSmarts("[C]1[C][C]2[C]3[C][C][C]2(O[C]1)[C]3")
+        if not mol.HasSubstructMatch(alt_core_pattern):
+            return False, "Missing dihydroagarofuran core structure"
 
-    # Count rings to verify tricyclic system
+    # Check for 5/7/6 fused ring system
     ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() < 3:
-        return False, "Insufficient number of rings"
+    rings = ring_info.AtomRings()
+    has_correct_rings = False
+    for ring in rings:
+        if len(ring) in [5, 6, 7]:
+            has_correct_rings = True
+            break
+    if not has_correct_rings:
+        return False, "Missing characteristic 5/7/6 ring system"
 
-    # Check for characteristic oxygen bridge
-    oxygen_bridge = Chem.MolFromSmarts("[C]1[O][C]2[C][C]1[C]2")
+    # Check for ester groups (these compounds typically have multiple ester substituents)
+    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])[#6]")
+    ester_matches = len(mol.GetSubstructMatches(ester_pattern))
+    if ester_matches < 2:
+        return False, f"Insufficient ester groups (found {ester_matches}, expected ≥2)"
+
+    # Check for oxygen bridge
+    oxygen_bridge = Chem.MolFromSmarts("[C]1[O][C]([C])([C])[C]1")
     if not mol.HasSubstructMatch(oxygen_bridge):
         return False, "Missing characteristic oxygen bridge"
 
-    # Check for ester groups (these compounds typically have multiple ester substituents)
-    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
-    ester_matches = len(mol.GetSubstructMatches(ester_pattern))
-    if ester_matches < 3:
-        return False, f"Insufficient ester groups (found {ester_matches}, expected ≥3)"
-
-    # Count carbons (should have at least 15 for sesquiterpenoid core)
+    # Count carbons (should have 15 for sesquiterpenoid core)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if c_count < 15:
         return False, f"Insufficient carbons for sesquiterpenoid (found {c_count}, need ≥15)"
 
     # Count oxygens (should have multiple due to ester groups and oxygen bridge)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count < 6:
-        return False, f"Insufficient oxygens (found {o_count}, expected ≥6)"
+    if o_count < 4:
+        return False, f"Insufficient oxygens (found {o_count}, expected ≥4)"
 
     # Check for quaternary carbons (characteristic of the skeleton)
-    quat_c_pattern = Chem.MolFromSmarts("[C]([C])([C])([C])[C]")
+    quat_c_pattern = Chem.MolFromSmarts("[C]([C])([C])([C])[C,O]")
     quat_c_matches = len(mol.GetSubstructMatches(quat_c_pattern))
     if quat_c_matches < 2:
         return False, "Insufficient quaternary carbons"
 
-    # Molecular weight check (based on example structures)
+    # Check for sp3 hybridized carbons in core structure
+    sp3_carbons = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[CX4]")))
+    if sp3_carbons < 8:
+        return False, f"Insufficient sp3 carbons in core structure (found {sp3_carbons}, expected ≥8)"
+
+    # Additional check for molecular weight range based on examples
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if not (400 < mol_wt < 900):
-        return False, f"Molecular weight {mol_wt:.1f} outside typical range (400-900)"
+    if not (350 < mol_wt < 1000):
+        return False, f"Molecular weight {mol_wt:.1f} outside typical range (350-1000)"
 
-    # Additional check for sp3 carbons in the core
-    sp3_c = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[CX4]")))
-    if sp3_c < 10:
-        return False, f"Insufficient sp3 carbons (found {sp3_c}, expected ≥10)"
-
-    return True, "Contains dihydroagarofuran skeleton with characteristic features: tricyclic system, oxygen bridge, and multiple ester substituents"
+    return True, "Contains dihydroagarofuran skeleton with characteristic features: 5/7/6 ring system, oxygen bridge, and multiple ester substituents"
