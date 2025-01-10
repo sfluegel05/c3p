@@ -21,18 +21,11 @@ def is_cyclohexenones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define a SMARTS pattern for a six-membered ring with one double bond
-    cyclohexene_pattern = Chem.MolFromSmarts("C1=CCCCC1")
+    # Define a SMARTS pattern for a six-membered ring with one double bond and a ketone group
+    cyclohexenone_pattern = Chem.MolFromSmarts("C1=CC(=O)CCC1")
     
-    # Check for the six-membered ring with one double bond
-    if not mol.HasSubstructMatch(cyclohexene_pattern):
-        return False, "No six-membered cyclohexene ring found"
+    # Check for the cyclohexenone pattern
+    if not mol.HasSubstructMatch(cyclohexenone_pattern):
+        return False, "No cyclohexenone structure found"
     
-    # Define a SMARTS pattern for a ketone group within a ring
-    ketone_in_ring_pattern = Chem.MolFromSmarts("C1(=O)[#6]1")
-    
-    # Check for a ketone group in the ring
-    if not mol.HasSubstructMatch(ketone_in_ring_pattern):
-        return False, "No ketone group in the cyclohexene ring found"
-    
-    return True, "Cyclohexenone structure identified with a cyclohexene ring containing a ketone group"
+    return True, "Cyclohexenone structure identified with appropriate ring and ketone"
