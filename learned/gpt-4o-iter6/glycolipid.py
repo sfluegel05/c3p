@@ -22,18 +22,18 @@ def is_glycolipid(smiles: str):
     if mol is None:
         return (None, "Invalid SMILES string")
 
-    # Improved pattern for glycerol backbone with diacyl groups
-    glycerol_diacyl_pattern = Chem.MolFromSmarts("C(COC(=O)[C@@H](O)COC(=O)*)O")
+    # Generic glycerol backbone with acyl groups pattern
+    glycerol_diacyl_pattern = Chem.MolFromSmarts("C(COC(=O)[CX4][O])OC(=O)[CX4]")
     if not mol.HasSubstructMatch(glycerol_diacyl_pattern):
         return False, "No 1,2-di-O-acylglycerol structure found"
 
-    # Improved pattern for glycosidic linkage to a carbohydrate moiety
-    glycosidic_linkage_pattern = Chem.MolFromSmarts("OC[C@@H]1O[C@H](C[C@@H](O)O)C[C@@H]1O")
+    # Generic glycosidic linkage to a carbohydrate moiety
+    glycosidic_linkage_pattern = Chem.MolFromSmarts("OC[C@]([AX4])(O[C@]1([AX4])O[C@H]([AX4])C([AX4])O1)")
     if not mol.HasSubstructMatch(glycosidic_linkage_pattern):
         return False, "No glycosidic linkage with carbohydrate moiety detected"
 
-    # Enhanced pattern for recognizing sugar moiety
-    sugar_pattern = Chem.MolFromSmarts("C1OC(O)C(O)C(O)C1")
+    # Enhanced pattern for recognizing a sugar moiety (broad coverage)
+    sugar_pattern = Chem.MolFromSmarts("C1OC(C[OX2H])C[OX2H]C1[OX2H]")
     if not mol.HasSubstructMatch(sugar_pattern):
         return False, "No recognizable sugar moiety found"
     
