@@ -30,37 +30,32 @@ def is_sesterterpenoid(smiles: str):
     
     # Count number of carbons
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 22 or c_count > 28:
+    
+    # For sesterterpenoids, expect around 25 carbons, but accept a wider range due to modifications
+    if c_count < 20 or c_count > 55:
         return False, f"Carbon count is {c_count}, which is not typical for a sesterterpenoid (expected ~25 carbons)"
     
-    # Check for the presence of rings (common in terpenoids)
+    # Check for presence of multiple double bonds (indicative of isoprene units)
+    double_bond_count = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE)
+    if double_bond_count < 2:
+        return False, f"Found {double_bond_count} double bonds; sesterterpenoids typically have multiple double bonds due to isoprene units"
+    
+    # Check for presence of ring structures
     ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() < 1:
-        return False, "No ring structures found, unlikely to be a terpenoid"
+    num_rings = ring_info.NumRings()
+    if num_rings < 1:
+        return False, "No ring structures found; sesterterpenoids often contain rings"
     
-    # Check for oxygen atoms (common in terpenoids)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count < 1:
-        return False, "No oxygen atoms found, terpenoids often contain oxygen"
-    
-    # Check for common functional groups in terpenoids
-    # Hydroxyl group
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
-    if not mol.HasSubstructMatch(hydroxyl_pattern):
-        return False, "No hydroxyl groups found, which are common in terpenoids"
-    
-    # Carbonyl group
-    carbonyl_pattern = Chem.MolFromSmarts("C=O")
-    if not mol.HasSubstructMatch(carbonyl_pattern):
-        return False, "No carbonyl groups found, which are common in terpenoids"
-    
-    # Calculate molecular weight
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 300 or mol_wt > 600:
-        return False, f"Molecular weight is {mol_wt:.2f}, which is not typical for a sesterterpenoid"
-    
-    # Check for terpenoid-like skeleton using fingerprint similarity (optional)
-    # This can be implemented if more advanced methods are allowed
+    # Check for methyl groups attached to carbons (common in terpenoids)
+    methyl_count = 0
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6 and atom.GetDegree() == 1:
+            # Methyl group carbon
+            neighbors = atom.GetNeighbors()
+            if neighbors and neighbors[0].GetAtomicNum() == 6:
+                methyl_count += 1
+    if methyl_count < 1:
+        return False, "No methyl groups found attached to carbons; sesterterpenoids often contain methyl groups"
     
     return True, "Molecule meets criteria for a sesterterpenoid"
 
