@@ -26,13 +26,13 @@ def is_11_oxo_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more specific steroid backbone pattern (four fused rings)
-    steroid_backbone = Chem.MolFromSmarts("[C@]12[C@H]3[C@H]([C@H]4[C@H]([C@H]1CC2)CC3)CC4")
+    # Define a more general steroid backbone pattern (four fused rings)
+    steroid_backbone = Chem.MolFromSmarts("[C]12[C][C]3[C]([C]4[C]([C]1CC2)CC3)CC4")
     if not mol.HasSubstructMatch(steroid_backbone):
         return False, "No steroid backbone found"
 
     # Define the oxo group at position 11
-    oxo_at_11_pattern = Chem.MolFromSmarts("[C@@H]1[C@H]2[C@H]([C@H]3[C@H]([C@H]1CC2)CC3)C(=O)")
+    oxo_at_11_pattern = Chem.MolFromSmarts("[C]1[C]2[C]([C]3[C]([C]1CC2)CC3)C(=O)")
     if mol.HasSubstructMatch(oxo_at_11_pattern):
         return True, "Contains steroid backbone with oxo group at position 11"
 
