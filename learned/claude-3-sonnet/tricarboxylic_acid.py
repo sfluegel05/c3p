@@ -31,43 +31,64 @@ def is_tricarboxylic_acid(smiles: str):
     except:
         return False, "Molecule failed sanitization"
 
-    # Look for carboxylic acid groups (-C(=O)OH)
-    # More specific SMARTS pattern that excludes esters and other similar groups
-    carboxyl_pattern = Chem.MolFromSmarts('[CX3](=[OX1])[OX2H,OX2-]')
-    if not mol.HasSubstructMatch(carboxyl_pattern):
+    # More specific SMARTS patterns for carboxylic acids
+    # Includes both protonated and deprotonated forms
+    carboxyl_patterns = [
+        '[CX3](=[OX1])[OX2H]',  # Standard COOH
+        '[CX3](=[OX1])[OX2-]',  # Deprotonated form
+        '[CX3](=[OX1])[OX2]([H])',  # Explicit H form
+    ]
+    
+    total_carboxyl_count = 0
+    for pattern in carboxyl_patterns:
+        pat = Chem.MolFromSmarts(pattern)
+        matches = mol.GetSubstructMatches(pat)
+        total_carboxyl_count += len(matches)
+    
+    if total_carboxyl_count == 0:
         return False, "No carboxylic acid groups found"
     
-    # Count carboxylic acid groups
-    carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
-    num_carboxyl = len(carboxyl_matches)
-    
-    if num_carboxyl != 3:
-        return False, f"Found {num_carboxyl} carboxylic acid groups, need exactly 3"
+    if total_carboxyl_count != 3:
+        return False, f"Found {total_carboxyl_count} carboxylic acid groups, need exactly 3"
 
-    # Check for esters (to exclude them)
-    ester_pattern = Chem.MolFromSmarts('[CX3](=[OX1])[OX2][#6]')
+    # Check for potentially interfering groups
+    ester_pattern = Chem.MolFromSmarts('[CX3](=[OX1])[OX2][CX4]')  # More specific ester pattern
     ester_matches = len(mol.GetSubstructMatches(ester_pattern))
-    if ester_matches > 0:
-        return False, "Contains ester groups"
-
-    # Check for acid anhydrides (to exclude them)
+    
+    # Refined anhydride pattern
     anhydride_pattern = Chem.MolFromSmarts('[CX3](=[OX1])[OX2][CX3](=[OX1])')
     anhydride_matches = len(mol.GetSubstructMatches(anhydride_pattern))
+    
+    # Check for acid chlorides
+    acid_chloride_pattern = Chem.MolFromSmarts('[CX3](=[OX1])[Cl]')
+    acid_chloride_matches = len(mol.GetSubstructMatches(acid_chloride_pattern))
+    
+    # More specific peptide pattern
+    peptide_pattern = Chem.MolFromSmarts('[NX3][CX3](=[OX1])[#6]')
+    peptide_matches = len(mol.GetSubstructMatches(peptide_pattern))
+
+    # Calculate total oxygen atoms in carboxylic acid groups
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    
+    # Various rejection conditions
+    if ester_matches > 0 and ester_matches + total_carboxyl_count > 3:
+        return False, "Contains ester groups that interfere with carboxylic acid count"
+    
     if anhydride_matches > 0:
         return False, "Contains acid anhydride groups"
-
-    # Verify oxygen count
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count < 6:  # Each COOH has 2 oxygens, so minimum 6 oxygens needed
+        
+    if acid_chloride_matches > 0:
+        return False, "Contains acid chloride groups"
+    
+    if o_count < 6:
         return False, "Insufficient oxygen atoms for three carboxylic acids"
 
-    # Additional check for peptide-like bonds to reduce false positives
-    peptide_pattern = Chem.MolFromSmarts('[NX3,NX4][CX3](=[OX1])[#6]')
-    peptide_matches = len(mol.GetSubstructMatches(peptide_pattern))
+    # Only reject peptide-containing structures if they would lead to miscounting
     if peptide_matches > 0:
-        # Only reject if the peptide bonds would interfere with our carboxyl count
-        potential_interfering_groups = peptide_matches + ester_matches
-        if potential_interfering_groups + num_carboxyl > 3:
-            return False, "Contains peptide bonds that may be incorrectly counted"
+        # Count carbonyls to ensure we're not double-counting
+        carbonyl_pattern = Chem.MolFromSmarts('[CX3]=[OX1]')
+        carbonyl_count = len(mol.GetSubstructMatches(carbonyl_pattern))
+        if carbonyl_count > total_carboxyl_count + peptide_matches:
+            return False, "Contains peptide bonds that interfere with carboxylic acid count"
 
     return True, "Contains exactly three carboxylic acid groups"
