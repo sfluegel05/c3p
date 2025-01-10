@@ -21,34 +21,29 @@ def is_alditol(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
+    
     # Ensure no cyclic structures
     if rdMolDescriptors.CalcNumRings(mol) > 0:
         return False, "Contains cyclic structures, alditol must be acyclic"
     
-    # Count the carbon and oxygen atoms
+    # Predominant carbon and oxygen atoms
     c_total = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'C')
     o_total = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'O')
     
-    # Minimal condition for being a polyol: multiple oxygen (OH) per carbon
-    if o_total < c_total / 2:
+    # Must have hydroxyl group for each central carbon
+    if o_total < (c_total - 2): # excluding the two CH2OH termini
         return False, "Insufficient oxygen atoms for an alditol"
 
-    # Enhanced check for terminal CH2OH groups
-    terminal_ch2oh_pattern = Chem.MolFromSmarts("[CH2][OH]")
+    # Enhanced check for terminal CH2OH groups (smarter pattern for ends)
+    terminal_ch2oh_pattern = Chem.MolFromSmarts("[C;H2][O;X2H]")
     if len(mol.GetSubstructMatches(terminal_ch2oh_pattern)) < 2:
         return False, "Does not have typical terminal CH2OH groups"
 
-    # Exclude carbonyl presence to confirm alditol nature
-    carbonyl_pattern = Chem.MolFromSmarts("[CX3]=O")
-    if mol.HasSubstructMatch(carbonyl_pattern):
-        return False, "Contains carbonyl groups, indication of precursor not alditol"
+    # Disallow other heteroatoms or complex structures that mimic polyols
+    for atom in mol.GetAtoms():
+        if atom.GetSymbol() not in ['C', 'O', 'H']:
+            return False, f"Contains non CHO atoms, found: {atom.GetSymbol()}"
 
-    # Additional check: avoid extensive glycosidic linkages with complex polyol
-    glyco_pattern = Chem.MolFromSmarts("OC[C@H]1O[C@@H](CO)[C@@H](O)[C@@H](O)[C@H]1O")
-    if mol.HasSubstructMatch(glyco_pattern):
-        return False, "Contains repeated glycosidic-like units, not typical of simple alditols"
-    
     return True, "Meets criteria: acyclic, terminal CH2OH groups and polyol characteristics found"
 
 __metadata__ = {
