@@ -24,25 +24,22 @@ def is_phenylpropanoid(smiles: str):
     if not mol.HasSubstructMatch(phenyl_group):
         return False, "No phenyl group (benzene ring) found"
 
-    # Look for structure typical of phenylpropanoids, like 3-carbon chain
-    # connected to phenyl group with possible modifications
-    three_carbon_chain_connected = Chem.MolFromSmarts('c-[C!H0]-[C!H0]-[C!H0]')
-    if not mol.HasSubstructMatch(three_carbon_chain_connected):
-        return False, "No 3-carbon chain connected to phenyl group found"
+    # Look for a 3-carbon chain attached to phenyl group
+    propanoid_chain = Chem.MolFromSmarts('c1c[c,C][C!H0][C!H0]c1')
+    if not mol.HasSubstructMatch(propanoid_chain):
+        return False, "No appropriate 3-carbon chain connected to phenyl group found"
 
-    # Count the number of oxygens or typical functional groups (e.g., hydroxyl, carbonyl)
-    relevant_oxygen_substructures = [
+    # Check for common functional groups such as hydroxyl, carbonyl
+    functional_groups = [
         Chem.MolFromSmarts('[OH]'),   # Hydroxyl
         Chem.MolFromSmarts('[CX3]=[OX1]'),  # Carbonyl in ketones/aldehydes
         Chem.MolFromSmarts('[CX3](=O)[OX2H1]'),  # Carboxyl group
-        Chem.MolFromSmarts('[OX2][CX4]')  # Ether linkages
+        Chem.MolFromSmarts('[OX2][CX4]'),  # Ether linkages
+        Chem.MolFromSmarts('[CX4][OH]'),   # Alcohols
+        Chem.MolFromSmarts('[OX2][CX3]=[CX3]') # Propenoic acid esters
     ]
 
-    oxygen_functions = sum(
-        mol.HasSubstructMatch(functional_group) for functional_group in relevant_oxygen_substructures
-    )
-    
-    if oxygen_functions == 0:
-        return False, "No typical functional groups found"
+    if not any(mol.HasSubstructMatch(fg) for fg in functional_groups):
+        return False, "No characteristic functional groups found"
 
     return True, "Contains phenyl group, 3-carbon chain, and functional groups typical of phenylpropanoids"
