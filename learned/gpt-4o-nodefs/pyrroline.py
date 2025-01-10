@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_pyrroline(smiles: str):
     """
     Determines if a molecule is a pyrroline based on its SMILES string.
-    Pyrroline is characterized by a five-membered ring containing a nitrogen atom and at least one C=C double bond.
+    A pyrroline is characterized by a five-membered ring containing a nitrogen atom and at least one C=C double bond.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,15 +21,16 @@ def is_pyrroline(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define pyrroline SMARTS pattern: five-membered ring with one nitrogen and at least one double bond
-    pyrroline_pattern = Chem.MolFromSmarts("C1=C[NH1]CC1 |C|")
+    # Define a general pyrroline SMARTS pattern: a non-aromatic five-membered ring with a nitrogen and at least one double bond
+    pyrroline_patterns = [
+        Chem.MolFromSmarts("C1=NC=CC1"),  # 2-pyrroline
+        Chem.MolFromSmarts("C1=CC=NC1"),  # 1-pyrroline
+        Chem.MolFromSmarts("C1=CCC=N1")   # 3-pyrroline
+    ]
     
-    # Check if the molecule contains the pyrroline substructure
-    if mol.HasSubstructMatch(pyrroline_pattern):
-        return True, "Contains a pyrroline structure: five-membered ring with a nitrogen and a double bond"
-    else:
-        return False, "Lacks pyrroline structure: specific five-membered ring criteria not satisfied"
-
-# Example usage:
-# smiles_str = "OC(=O)C1=NCCC1"
-# is_pyrroline(smiles_str)
+    # Check if the molecule contains any pyrroline substructure
+    for pattern in pyrroline_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return True, "Contains a pyrroline structure: five-membered ring with a nitrogen and a double bond"
+    
+    return False, "Lacks pyrroline structure: specific five-membered ring criteria not satisfied"
