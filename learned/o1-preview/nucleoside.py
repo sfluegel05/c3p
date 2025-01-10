@@ -10,7 +10,7 @@ from rdkit.Chem import AllChem
 def is_nucleoside(smiles: str):
     """
     Determines if a molecule is a nucleoside based on its SMILES string.
-    A nucleoside is composed of a nucleobase attached to a ribose or deoxyribose sugar via an N-glycosidic bond.
+    A nucleoside consists of a nucleobase attached to a ribose or deoxyribose sugar via an N-glycosidic bond.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -25,72 +25,88 @@ def is_nucleoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns for nucleobases
-    nucleobase_smarts = {
-        'adenine': 'n1cnc2c1ncnc2',
-        'guanine': 'n1c(nc2c1ncnc2O)N',
-        'cytosine': 'N1C=CC(=O)NC1=O',
-        'thymine': 'C1=CN(C(=O)NC1=O)C',
-        'uracil': 'O=C1NC(=O)C=C1',
-        'xanthine': 'O=C1NC(=O)c2[nH]cnc12',
-    }
+    # Define SMARTS patterns for nucleobases (more general)
+    nucleobase_smarts = [
+        # Purines (adenine, guanine, xanthine, hypoxanthine)
+        '[nH]1c2[nH]cnc2nc1',           # Adenine-like
+        'n1(cnc2c1ncn2)[NH2]',          # Guanine-like
+        'O=C1NC(=O)c2[nH]cnc12',        # Xanthine-like
+        'O=C1NC=NC2=C1N=CN2',           # Hypoxanthine-like
+        # Pyrimidines (cytosine, thymine, uracil)
+        'C1=NC(=O)NC(=O)C1',            # Uracil-like
+        'C1=NC(=O)NC(=O)C1C',           # Thymine-like
+        'C1=C(N)NC=NC1=O',              # Cytosine-like
+    ]
 
-    nucleobase_patterns = {name: Chem.MolFromSmarts(smarts) for name, smarts in nucleobase_smarts.items()}
+    nucleobase_patterns = [Chem.MolFromSmarts(smarts) for smarts in nucleobase_smarts]
 
-    # Define SMARTS patterns for ribose and deoxyribose sugars
-    ribose_smarts = '[C@H]1(O)[C@H](O)[C@@H](O)[C@H](O)[C@@H]1O'  # Ribose
-    deoxyribose_smarts = '[C@H]1(O)[C@H](O)[C@@H](O)[C@H](O)[C@@H]1O'  # Deoxyribose (adjusted to allow for deoxy positions)
+    # Define SMARTS patterns for ribose and deoxyribose sugars (more general)
+    ribose_smarts = '[C@H]1([O])[C@@H]([O])[C@H]([O])[C@@H](CO)[O1]'  # Ribose ring
+    deoxyribose_smarts = '[C@H]1([O])[C@@H]([O])[C@H](CO)[C@@H](CO)[O1]'  # Deoxyribose ring
 
     ribose_pattern = Chem.MolFromSmarts(ribose_smarts)
     deoxyribose_pattern = Chem.MolFromSmarts(deoxyribose_smarts)
 
-    # Check if nucleobase is present
+    # Check for nucleobase presence
     has_nucleobase = False
-    for name, pattern in nucleobase_patterns.items():
+    for pattern in nucleobase_patterns:
         if mol.HasSubstructMatch(pattern):
             has_nucleobase = True
-            base_name = name
             break
     if not has_nucleobase:
         return False, "No nucleobase found"
 
-    # Check if sugar moiety is present
+    # Check for sugar moiety presence
     has_ribose = mol.HasSubstructMatch(ribose_pattern)
     has_deoxyribose = mol.HasSubstructMatch(deoxyribose_pattern)
-
     if not (has_ribose or has_deoxyribose):
         return False, "No ribose or deoxyribose sugar moiety found"
 
-    # Identify the sugar pattern used
-    sugar_pattern = ribose_pattern if has_ribose else deoxyribose_pattern
+    # Check for N-glycosidic bond between sugar and nucleobase
+    # Find nitrogen atoms in nucleobase
+    nucleobase_nitrogens = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7 and any(
+        mol.HasSubstructMatch(Chem.MolFromSmarts(f"[#{atom.GetAtomicNum()}]"), useChirality=False))]
 
-    # Find the anomeric carbon in the sugar (carbon connected to two oxygen atoms)
-    sugar_match = mol.GetSubstructMatch(sugar_pattern)
-    if not sugar_match:
+    # Find anomeric carbon in sugar (the carbon connected to the nucleobase)
+    if has_ribose:
+        sugar_pattern = ribose_pattern
+    else:
+        sugar_pattern = deoxyribose_pattern
+
+    sugar_matches = mol.GetSubstructMatches(sugar_pattern)
+    if not sugar_matches:
         return False, "Sugar moiety not properly matched"
 
-    sugar_atoms = [mol.GetAtomWithIdx(idx) for idx in sugar_match]
-    anomeric_carbons = [atom for atom in sugar_atoms if atom.GetAtomicNum() == 6 and
-                        sum(1 for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() == 8) == 2]
+    # Assume first match is the sugar
+    sugar_atoms = sugar_matches[0]
+    sugar_atom_set = set(sugar_atoms)
+
+    # Find the anomeric carbon (CA) in the sugar ring
+    anomeric_carbons = [idx for idx in sugar_atoms if mol.GetAtomWithIdx(idx).GetDegree() == 3]
+    if not anomeric_carbons:
+        # Fallback: Find carbon in sugar connected to oxygen outside the ring
+        for idx in sugar_atoms:
+            atom = mol.GetAtomWithIdx(idx)
+            if atom.GetAtomicNum() == 6:
+                for nbr in atom.GetNeighbors():
+                    if nbr.GetAtomicNum() == 8 and nbr.GetIdx() not in sugar_atom_set:
+                        anomeric_carbons.append(idx)
+                        break
     if not anomeric_carbons:
         return False, "Anomeric carbon not found in sugar"
 
-    anomeric_carbon = anomeric_carbons[0]
-
-    # Find nitrogen atoms in the nucleobase that could be linked to the sugar
-    nucleobase_match = mol.GetSubstructMatch(nucleobase_patterns[base_name])
-    nucleobase_atoms = [mol.GetAtomWithIdx(idx) for idx in nucleobase_match]
-    nitrogen_atoms = [atom for atom in nucleobase_atoms if atom.GetAtomicNum() == 7]
-
-    # Check for N-glycosidic bond between anomeric carbon and nucleobase nitrogen
+    # Check for bond between anomeric carbon and nucleobase nitrogen
     glycosidic_bond_found = False
-    for bond in anomeric_carbon.GetBonds():
-        neighbor = bond.GetOtherAtom(anomeric_carbon)
-        if neighbor in nitrogen_atoms:
-            glycosidic_bond_found = True
+    for ac_idx in anomeric_carbons:
+        anomeric_carbon = mol.GetAtomWithIdx(ac_idx)
+        for nbr in anomeric_carbon.GetNeighbors():
+            if nbr.GetIdx() in nucleobase_nitrogens:
+                glycosidic_bond_found = True
+                break
+        if glycosidic_bond_found:
             break
 
     if not glycosidic_bond_found:
         return False, "No N-glycosidic bond connecting nucleobase and sugar found"
 
-    return True, f"Contains {base_name} nucleobase attached to {'ribose' if has_ribose else 'deoxyribose'} sugar via N-glycosidic bond"
+    return True, "Molecule is a nucleoside with nucleobase attached to sugar via N-glycosidic bond"
