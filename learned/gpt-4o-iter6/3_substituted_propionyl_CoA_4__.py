@@ -21,20 +21,19 @@ def is_3_substituted_propionyl_CoA_4__(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string, cannot parse"
 
-    # 1. Check for coenzyme A (CoA) backbone structure
-    # This includes pantetheine connected via its phosphate groups
-    coA_pattern = Chem.MolFromSmarts("C(C)(C)COP(=O)([O-])OP(=O)([O-])[O]c1ncnc2ncnc12")
+    # 1. Check for coenzyme A (CoA) elements, more generally defined.
+    # This includes pantetheine connected via phosphate and adenine elements
+    coA_pattern = Chem.MolFromSmarts("C(C)(C)COP(=O)([O-])O[P](=O)([O-])O[C@@H]1O[C@H]([C@@H](O)[C@H]1OP(=O)([O-])[O-])n2cnc3c(N)ncnc23")
     if not mol.HasSubstructMatch(coA_pattern):
-        return False, "Missing coenzyme A structure"
+        return False, "Missing or incomplete coenzyme A structure"
 
-    # 2. Check for 3-substituted propionyl chain
-    # The 3-position should have the branching or substitution
-    # This is a simplified assumption
-    propionyl_pattern = Chem.MolFromSmarts("SC(=O)CCC")
+    # 2. Check for a 3-substituted propionyl chain
+    # Match SC(=O)CCC* using a wildcard for the substitution at the third position
+    propionyl_pattern = Chem.MolFromSmarts("SC(=O)CC[CX4]")
     if not mol.HasSubstructMatch(propionyl_pattern):
-        return False, "Missing 3-substituted propionyl chain"
+        return False, "Missing or incorrectly structured 3-substituted propionyl chain"
 
-    # 3. Check for correct negative charges
+    # 3. Revalidate correct negative charges
     # Verify the number of deprotonated phosphate oxygens
     neg_charge_matches = mol.GetSubstructMatches(Chem.MolFromSmarts("[O-]"))
     if len(neg_charge_matches) < 4:
