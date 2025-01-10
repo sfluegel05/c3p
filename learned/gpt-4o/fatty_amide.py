@@ -20,44 +20,27 @@ def is_fatty_amide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define the amide group pattern
+    # Define the amide group pattern: should have connectivity typical of fatty amides
     amide_pattern = Chem.MolFromSmarts("C(=O)N")
     if not mol.HasSubstructMatch(amide_pattern):
         return False, "No amide group found"
 
-    # Identify all carbon chains - flexible to account for both straight and branched
-    carbon_chains = []
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 6:  # Carbon atom
-            chain_length = _dfs_longest_chain(atom, set())
-            if chain_length > 0:
-                carbon_chains.append(chain_length)
-
-    # Check for at least one long carbon chain typical of fatty acids
-    if not any(chain >= 12 for chain in carbon_chains):
+    # Check for contiguous long carbon chain typical of fatty acids
+    long_chain_len = 12 # Consider chain length typical of a fatty acid
+    carbon_chain_pattern = Chem.MolFromSmarts(f"[C]{{{long_chain_len},}}") # Dummy pattern
+  
+    # Perform substructure search for long carbon chains, allow flexible matching
+    matches = mol.GetSubstructMatches(carbon_chain_pattern)
+    if not matches:
         return False, "No sufficiently long carbon chain detected"
-    
-    return True, "Contains an amide group and a long carbon chain characteristic of fatty amides"
 
-def _dfs_longest_chain(atom, visited):
-    """
-    Depth-First Search to find the longest chain of connected carbon atoms.
+    # Now ensure that at least one chain is part of an amide motif
+    for match in matches:
+        for atom_idx in match:
+            atom = mol.GetAtomWithIdx(atom_idx)
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 7: # Nitrogen atom neighboring in amide bond
+                    if mol.HasSubstructMatch(amide_pattern):
+                        return True, "Contains an amide group and a long carbon chain characteristic of fatty amides"
 
-    Args:
-        atom (rdkit.Chem.rdchem.Atom): The starting atom for the DFS
-        visited (set): The set of visited atoms to avoid cycles
-
-    Returns:
-        int: Length of the longest chain found starting from the given atom
-    """
-    if atom.GetIdx() in visited:
-        return 0
-    visited.add(atom.GetIdx())
-    
-    chain_length = 1  # Count the current atom
-    for neighbor in atom.GetNeighbors():
-        if neighbor.GetAtomicNum() == 6:  # Check only carbon neighbors for the chain
-            chain_length = max(chain_length, 1 + _dfs_longest_chain(neighbor, visited))
-    
-    visited.remove(atom.GetIdx())
-    return chain_length
+    return False, "Amide group not correctly linked to a long carbon chain"
