@@ -13,7 +13,7 @@ def is_dodecanoate_ester(smiles: str):
 
     Returns:
         bool: True if molecule is a dodecanoate ester, False otherwise
-        str: Reason for classification or error message
+        str: Reason for classification
     """
     
     # Parse SMILES
@@ -21,14 +21,10 @@ def is_dodecanoate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for detecting an ester linkage: C(=O)O
-    ester_pattern = Chem.MolFromSmarts("C(=O)O")
-    if not mol.HasSubstructMatch(ester_pattern):
-        return False, "No ester linkage found"
+    # Define SMARTS pattern for dodecanoate (lauric acid) ester: O=C(OCCCCCCCCCCC) - 12 C chain
+    dodecanoate_pattern = Chem.MolFromSmarts("O=C(OCCCCCCCCCCC)")
 
-    # SMARTS pattern for detecting a 12-carbon chain
-    lauric_acid_pattern = Chem.MolFromSmarts("C(=O)OCCCCCCCCCCCC")
-    if not mol.HasSubstructMatch(lauric_acid_pattern):
-        return False, "No continuous 12-carbon chain (lauric acid) found as part of the ester"
-    
+    if not mol.HasSubstructMatch(dodecanoate_pattern):
+        return False, "No dodecanoate ester group found"
+
     return True, "Contains a dodecanoate ester group"
