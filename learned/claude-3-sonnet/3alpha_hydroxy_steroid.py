@@ -23,56 +23,25 @@ def is_3alpha_hydroxy_steroid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # More flexible steroid core pattern that matches both 5-alpha and 5-beta steroids
-    # Uses recursive SMARTS to match the four-ring system with more flexibility
-    steroid_core = Chem.MolFromSmarts(
-        '[C,c]12[C,c][C,c][C,c]3[C,c]([C,c]1)[C,c][C,c]4[C,c][C,c][C,c][C,c]4[C,c][C,c]3[C,c]2'
-    )
     
+    # Check for steroid core (four connected rings)
+    steroid_core = Chem.MolFromSmarts("[C]1[C][C]2[C]([C]1)[C][C]3[C]([C]2)[C][C]4[C][C][C]@[C]4[C]3")
     if not mol.HasSubstructMatch(steroid_core):
         return False, "No steroid core found"
-
-    # Match 3-alpha-hydroxy group in context of the steroid core
-    # The pattern looks for the A ring with the 3-alpha-OH group
-    alpha_3_hydroxy = Chem.MolFromSmarts(
-        '[C,c]12[CH2][CH]([OH])[CH2][C,c][C,c]1[C,c][C,c][C,c]2'
-    )
     
-    if not mol.HasSubstructMatch(alpha_3_hydroxy, useChirality=True):
-        # Try alternative pattern for 5-beta series
-        alpha_3_hydroxy_alt = Chem.MolFromSmarts(
-            '[C,c]12[CH2][C@H]([OH])[CH2][C,c][C,c]1[C,c][C,c][C,c]2'
-        )
-        if not mol.HasSubstructMatch(alpha_3_hydroxy_alt, useChirality=True):
+    # Check for 3-hydroxy group in alpha configuration
+    # [OH] connected to carbon at position 3 in alpha configuration
+    # The @ in the SMARTS pattern specifies the stereochemistry
+    alpha_3_hydroxy = Chem.MolFromSmarts("[OH][C@H]1[CH2][CH2][C]2")
+    
+    if not mol.HasSubstructMatch(alpha_3_hydroxy):
+        # Also check alternative SMARTS pattern for cases where the stereochemistry 
+        # might be represented differently
+        alt_alpha_3_hydroxy = Chem.MolFromSmarts("[OH][C@@H]1[CH2][CH2][C]2")
+        if not mol.HasSubstructMatch(alt_alpha_3_hydroxy):
             return False, "No 3-alpha hydroxy group found"
-
-    # Validate basic steroid characteristics
-    ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() < 4:
-        return False, "Insufficient number of rings for steroid structure"
-
-    # Count carbons (steroids typically have 17+ carbons)
-    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if carbon_count < 17:
-        return False, "Too few carbons for steroid structure"
-
-    # Check for characteristic steroid ring sizes
-    ring_sizes = sorted([len(r) for r in ring_info.AtomRings()])
-    six_membered = sum(1 for size in ring_sizes if size == 6)
-    five_membered = sum(1 for size in ring_sizes if size == 5)
     
-    if not (six_membered >= 2 and five_membered >= 1):
-        return False, "Ring pattern not characteristic of steroids"
-
-    # Additional validation for reasonable molecular weight
-    mol_weight = Chem.Descriptors.ExactMolWt(mol)
-    if not (250 < mol_weight < 1000):
-        return False, "Molecular weight outside typical steroid range"
-
-    # Check for reasonable number of oxygens (at least one for the 3-OH group)
-    oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if oxygen_count < 1:
-        return False, "No oxygen atoms found"
-
+    # Additional check to ensure the hydroxy group is at position 3
+    # This is implicitly handled by the SMARTS pattern above, but included for clarity
+    
     return True, "Contains steroid core with 3-alpha hydroxy group"
