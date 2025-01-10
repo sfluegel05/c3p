@@ -22,13 +22,12 @@ def is_furanocoumarin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Expanded SMARTS pattern for a furanocoumarin backbone
-    # Covering a broader range of furan and coumarin linkages
+    # Define SMARTS pattern for a furanocoumarin backbone
+    # Patterns should capture the various potential fusion types of furo and coumarin
     furanocoumarin_patterns = [
-        Chem.MolFromSmarts("c1oc2ccc3c(c2oc1)C=CC(=O)c3"), # General fused furo[3,2-g]chromene
-        Chem.MolFromSmarts("c1cc2ccoc2c3c1ccco3"),         # Furo[2,3-b]chromene structure
-        Chem.MolFromSmarts("c1occ2c(c1)ccc3ccoc23"),       # Psoralen-like and other isomeric structures
-        Chem.MolFromSmarts("c1oc2cc3c(cc2o1)c(=O)cco3")    # Additional fusion pattern
+        Chem.MolFromSmarts("c1oc2ccccc2oc1C=O"), # Basic furo[2,3-b]coumarin structure
+        Chem.MolFromSmarts("c1oc2cccc(c2cc1C=O)"), # Basic furo[3,2-g]coumarin structure
+        Chem.MolFromSmarts("c1oc2ccc(o2)c(c1)C=O")  # Basic psoralen-like structure
     ]
     
     # Ensure all patterns are valid
