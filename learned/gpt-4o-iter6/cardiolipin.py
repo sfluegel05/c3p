@@ -22,19 +22,19 @@ def is_cardiolipin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS for cardiolipin structure: central glycerol with two phosphate groups and ester linkages
+    # SMARTS for cardiolipin structure: glycerol with two phosphates each linked to additional glycerols
     cardiolipin_pattern = Chem.MolFromSmarts(
-        "[C@@H]1([O][P](=O)([O])[O][C@@H]2[C@H](O[P](=O)([O])[O2])[C@H](CO)O2)[C@H](CO[CX3](=O)[O][CX4H1,2])O1"
+        "[C@@H]([O][P](=O)([O])[O][C@@H](C[O][CX3](=O)[O][C])[O][P](=O)([O])[O][C@@H](C[O][CX3](=O)[O][C])[O])[C@H](O)[C@H](CO)O"  
     )
 
     # Check for cardiolipin core structure
     if not mol.HasSubstructMatch(cardiolipin_pattern):
         return False, "Cardiolipin core structure not found"
 
-    # Check for four ester-linked fatty acid chains (long alkyl chains connected to ester linkage)
+    # Check for four ester-linked fatty acid chains
     ester_pattern = Chem.MolFromSmarts("[CX3](=O)[O][C]")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) < 4:
-        return False, f"Found {len(ester_matches)} ester linkages, need 4 for cardiolipin"
+    if len(ester_matches) != 4:
+        return False, f"Found {len(ester_matches)} ester linkages, need exactly 4 for cardiolipin"
 
     return True, "Molecule matches cardiolipin structure"
