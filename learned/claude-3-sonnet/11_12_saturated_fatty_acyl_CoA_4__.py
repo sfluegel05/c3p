@@ -22,48 +22,57 @@ def is_11_12_saturated_fatty_acyl_CoA_4__(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for CoA pattern
-    coa_pattern = Chem.MolFromSmarts('NC(=O)CCNC(=O)[CH]OC(C)(C)COP([O-])(=O)OP([O-])(=O)OCC1OC([CH](O)[CH]1OP([O-])([O-])=O)n1cnc2c(N)ncnc12')
-    if not mol.HasSubstructMatch(coa_pattern):
-        return False, "No CoA group found"
+    # Check for key CoA structural elements
+    # Adenine base with ribose
+    adenine_pattern = Chem.MolFromSmarts('n1cnc2c(N)ncnc12')
+    # Phosphates with negative charges
+    phosphate_pattern = Chem.MolFromSmarts('[O-]P([O-])(=O)O')
+    # Pantetheine part with thioester
+    pantetheine_pattern = Chem.MolFromSmarts('NC(=O)CCNC(=O)CCSC(=O)')
 
-    # Check for thioester linkage (-C(=O)-S-)
-    thioester_pattern = Chem.MolFromSmarts('C(=O)S')
-    if not mol.HasSubstructMatch(thioester_pattern):
-        return False, "No thioester linkage found"
+    if not mol.HasSubstructMatch(adenine_pattern):
+        return False, "No adenine base found"
+    if len(mol.GetSubstructMatches(phosphate_pattern)) < 3:
+        return False, "Missing required phosphate groups"
+    if not mol.HasSubstructMatch(pantetheine_pattern):
+        return False, "No pantetheine-thioester linkage found"
 
     # Find the thioester carbon and trace the fatty acid chain
+    thioester_pattern = Chem.MolFromSmarts('SC(=O)C')
     thioester_matches = mol.GetSubstructMatches(thioester_pattern)
     if not thioester_matches:
         return False, "Could not locate thioester group"
-        
-    # Get the carbon atom index of the thioester C(=O)
-    thioester_carbon = thioester_matches[0][0]
+
+    # Get the carbon atoms in the fatty acid chain
+    start_carbon = thioester_matches[0][2]  # Carbon attached to C=O
     
-    # Build path from thioester carbon
-    fatty_chain = []
+    # Trace the main carbon chain
+    chain = []
+    current = start_carbon
     visited = set()
-    current = thioester_carbon
     
-    # Trace carbons in the fatty acid chain
     while True:
         visited.add(current)
-        neighbors = [n for n in mol.GetAtomWithIdx(current).GetNeighbors() 
-                    if n.GetAtomicNum() == 6 and n.GetIdx() not in visited]
-        if not neighbors:
-            break
-        # Follow the longest carbon chain
-        current = neighbors[0].GetIdx()
-        fatty_chain.append(current)
+        chain.append(current)
         
-        # Check bond between positions 11 and 12 if we have enough carbons
-        if len(fatty_chain) >= 12:
-            bond_11_12 = mol.GetBondBetweenAtoms(fatty_chain[10], fatty_chain[11])
+        # Get carbon neighbors not yet visited
+        c_neighbors = [n.GetIdx() for n in mol.GetAtomWithIdx(current).GetNeighbors() 
+                      if n.GetAtomicNum() == 6 and n.GetIdx() not in visited]
+        
+        if not c_neighbors:
+            break
+            
+        # Follow the first carbon neighbor
+        current = c_neighbors[0]
+        
+        # Check bond between positions 11 and 12 when we reach them
+        if len(chain) == 11 and c_neighbors:
+            bond_11_12 = mol.GetBondBetweenAtoms(chain[10], c_neighbors[0])
             if bond_11_12.GetBondType() != Chem.BondType.SINGLE:
                 return False, "Bond between carbons 11 and 12 is unsaturated"
     
-    # Make sure chain is long enough
-    if len(fatty_chain) < 12:
+    # Verify chain length
+    if len(chain) < 12:
         return False, "Fatty acid chain too short (less than 12 carbons)"
-        
+
     return True, "11,12 bond is saturated in fatty acyl-CoA chain"
