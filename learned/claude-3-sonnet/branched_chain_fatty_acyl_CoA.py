@@ -25,15 +25,13 @@ def is_branched_chain_fatty_acyl_CoA(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for CoA moiety components
-    
-    # Look for adenine pattern
     adenine_pattern = Chem.MolFromSmarts("c1nc2c(n1)c(N)ncn2")
     if not mol.HasSubstructMatch(adenine_pattern):
         return False, "No CoA moiety found (missing adenine)"
     
     # Look for thioester linkage (-C(=O)S-)
     thioester_pattern = Chem.MolFromSmarts("[CX3](=O)[SX2]")
-    if not mol.HasSubstructMatch(thioester_pattern):
+    if not mol.HasSubstructMatches(thioester_pattern):
         return False, "No thioester linkage found"
         
     # Look for phosphate groups characteristic of CoA
@@ -42,49 +40,55 @@ def is_branched_chain_fatty_acyl_CoA(smiles: str):
     if len(phosphate_matches) < 2:
         return False, "Missing characteristic CoA phosphate groups"
 
-    # Check for various types of branching patterns
-    
-    # Standard methyl branch
-    methyl_branch = Chem.MolFromSmarts("[CH3][CH1](-[#6])-[#6]")
-    
-    # Isopropyl group (as in leucine derivatives)
-    isopropyl = Chem.MolFromSmarts("[CH3][CH]([CH3])[CH2]")
-    
-    # Secondary methyl branch (as in iso-compounds)
-    iso_branch = Chem.MolFromSmarts("[CH3][CH](-[#6])-[#6]")
-    
-    # Tertiary carbon branch
-    tert_branch = Chem.MolFromSmarts("[#6][C](-[#6])(-[#6])-[#6]")
-    
-    # Multiple methyl groups on same carbon
-    geminal_dimethyl = Chem.MolFromSmarts("[CH3][C]([CH3])(-[#6])-[#6]")
-    
-    if not any(mol.HasSubstructMatch(pattern) for pattern in 
-              [methyl_branch, isopropyl, iso_branch, tert_branch, geminal_dimethyl]):
-        return False, "No branching patterns found in carbon chain"
+    # Check for cyclic structures in the fatty acid part
+    ring_info = mol.GetRingInfo()
+    if ring_info.NumRings() > 1:  # Allow 1 ring for adenine
+        return False, "Contains additional ring structures - not a simple branched chain"
 
-    # Verify chain length - need at least 4 carbons in main chain
-    # (excluding CoA part) connected to the thioester
-    chain_pattern = Chem.MolFromSmarts("[#6]~[#6]~[#6]~[#6]~[CX3](=O)[SX2]")
-    if not mol.HasSubstructMatch(chain_pattern):
-        return False, "Carbon chain too short for branched-chain fatty acid"
+    # Define specific branching patterns for branched-chain fatty acids
+    branching_patterns = [
+        # Isopropyl terminus (as in leucine derivatives)
+        Chem.MolFromSmarts("[CH3][CH]([CH3])[CH2][CH2]C(=O)[S]"),
+        
+        # Isobutyryl (from valine)
+        Chem.MolFromSmarts("[CH3][CH]([CH3])C(=O)[S]"),
+        
+        # 2-methylbutyryl (from isoleucine)
+        Chem.MolFromSmarts("[CH3][CH2][CH]([CH3])C(=O)[S]"),
+        
+        # Other methyl branches along chain
+        Chem.MolFromSmarts("[CH3][CH]([CH2][CH2])C(=O)[S]"),
+        
+        # Longer iso-branches
+        Chem.MolFromSmarts("[CH3][CH]([CH2][CH2][CH2])C(=O)[S]"),
+        
+        # Multiple methyl branches
+        Chem.MolFromSmarts("[CH3][CH]([CH2][CH2])[CH]([CH3])")
+    ]
 
-    # Count carbons to ensure reasonable size
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 23:  # CoA itself contributes about 23 carbons
-        return False, "Total carbon count too low for branched-chain fatty acyl-CoA"
+    found_branching = False
+    for pattern in branching_patterns:
+        if mol.HasSubstructMatch(pattern):
+            found_branching = True
+            break
+            
+    if not found_branching:
+        return False, "No characteristic branched-chain fatty acid pattern found"
 
-    # Optional: Check for common modifications
-    hydroxy_pattern = Chem.MolFromSmarts("[#6][CH1]([OH1])[#6]")
-    oxo_pattern = Chem.MolFromSmarts("[#6]C(=O)[#6]")
-    
+    # Optional: Check for common modifications that don't affect classification
     modifications = []
+    
+    # Check for hydroxy groups
+    hydroxy_pattern = Chem.MolFromSmarts("[CH1]([OH1])")
     if mol.HasSubstructMatch(hydroxy_pattern):
         modifications.append("hydroxy-modified")
+        
+    # Check for additional oxo groups (besides thioester)
+    oxo_pattern = Chem.MolFromSmarts("[CH2]C(=O)[CH2]")
     if mol.HasSubstructMatch(oxo_pattern):
         modifications.append("oxo-modified")
-        
-    base_reason = "Contains CoA moiety, thioester linkage, and branched fatty acid chain"
+
+    base_reason = "Contains CoA moiety, thioester linkage, and characteristic branched-chain fatty acid pattern"
     if modifications:
         return True, f"{base_reason} ({', '.join(modifications)})"
     return True, base_reason
