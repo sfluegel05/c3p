@@ -7,8 +7,8 @@ def is_3_hydroxy_fatty_acid(smiles: str):
     """
     Determines if a molecule is a 3-hydroxy fatty acid based on its SMILES string.
     A 3-hydroxy fatty acid has a hydroxyl group on the 3rd carbon from
-    the carboxyl carbon in its aliphatic chain.
-    
+    the carboxyl carbon in its long aliphatic chain.
+
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -22,24 +22,20 @@ def is_3_hydroxy_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Pattern for a carboxylic acid group
+    # Pattern for a carboxylic acid connected to a carbon chain: C(=O)O
     carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
-    carboxy_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
-    if not carboxy_matches:
+    if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
 
-    # Iterate over possible carboxylic acid positions
-    for match in carboxy_matches:
-        carboxylic_carbon_idx = match[0]  # Get the carboxylic carbon
+    # Pattern to identify 3-hydroxy group in fatty acids
+    # The pattern is represented as CC(CO)..C(=O)O where the third carbon has an OH
+    three_hydroxy_fatty_acid_pattern = Chem.MolFromSmarts("CC(O)C(=O)O")
+    if not mol.HasSubstructMatch(three_hydroxy_fatty_acid_pattern):
+        return False, "No 3-hydroxy group next to carboxyl on third carbon"
 
-        # Check for 3-hydroxy group at the third carbon from the carboxyl
-        three_hydroxy_pattern = Chem.MolFromSmarts("C(=O)O[*][*]C(O)")
-        if mol.HasSubstructMatch(three_hydroxy_pattern):
-            return True, "Molecule matches 3-hydroxy fatty acid pattern"
-
-    return False, "No 3-hydroxy group next to carboxyl on third carbon"
+    return True, "Molecule matches pattern for 3-hydroxy fatty acid"
 
 # Example use
-example_smiles = "CCCCCCCCCCC[C@@H](O)CC(O)=O"  # Example SMILES
+example_smiles = "CCCCCCCCCC[C@@H](O)CC(O)=O"  # Example SMILES
 result, reason = is_3_hydroxy_fatty_acid(example_smiles)
 print(result, reason)
