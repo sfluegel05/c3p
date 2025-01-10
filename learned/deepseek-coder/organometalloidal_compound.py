@@ -37,8 +37,8 @@ def is_organometalloidal_compound(smiles: str):
     for atom in metalloid_atoms:
         for neighbor in atom.GetNeighbors():
             if neighbor.GetAtomicNum() == 6:  # Carbon atom
-                # Ensure the carbon is part of an organyl group (i.e., not part of a functional group like COOH)
-                if neighbor.GetDegree() > 1:  # Carbon should be bonded to at least one other carbon or hydrogen
+                # Ensure the carbon is part of an organyl group (i.e., bonded to at least one hydrogen or another carbon)
+                if any(nbr.GetAtomicNum() == 1 or nbr.GetAtomicNum() == 6 for nbr in neighbor.GetNeighbors()):
                     return True, "Contains at least one carbon-metalloid bond in an organyl group"
 
     return False, "No carbon-metalloid bonds found in an organyl group"
