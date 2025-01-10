@@ -21,42 +21,34 @@ def is_ultra_long_chain_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Find the carboxylic acid carbon (COOH group)
+    # Identify carboxylic acid group or similar termini
     carboxyl_pattern = Chem.MolFromSmarts("C(=O)O")
     matches = mol.GetSubstructMatches(carboxyl_pattern)
     if not matches:
         return False, "No carboxyl group found"
-
-    carboxyl_carbon = matches[0][0]
-
-    # Function to calculate the length of carbon chain starting from a given atom
-    def get_chain_length_from(start_atom_idx, visited):
-        to_visit = [start_atom_idx]
-        length = 0
         
-        while to_visit:
-            atom_idx = to_visit.pop()
+    max_chain_length = 0
+    
+    # Use Breadth-First Search to measure chain lengths from each carbon
+    for match in matches:
+        carboxyl_carbon = match[0]
+        visited = set()
+        queue = [(carboxyl_carbon, 0)]
+        
+        while queue:
+            atom_idx, chain_length = queue.pop(0)
             if atom_idx in visited:
                 continue
             visited.add(atom_idx)
             
             atom = mol.GetAtomWithIdx(atom_idx)
             if atom.GetSymbol() == 'C':
-                length += 1
+                chain_length += 1
                 for neighbor in atom.GetNeighbors():
                     neighbor_idx = neighbor.GetIdx()
                     if neighbor_idx not in visited and neighbor.GetSymbol() == 'C':
-                        to_visit.append(neighbor_idx)
-        
-        return length
-    
-    # Explore all chains starting from each carbon attached to the carboxyl group
-    max_chain_length = 0
-    visited = set()
-    carboxyl_neighbors = mol.GetAtomWithIdx(carboxyl_carbon).GetNeighbors()
-    for neighbor in carboxyl_neighbors:
-        if neighbor.GetSymbol() == 'C':
-            chain_length = get_chain_length_from(neighbor.GetIdx(), visited.copy())
+                        queue.append((neighbor_idx, chain_length))
+            
             max_chain_length = max(max_chain_length, chain_length)
     
     if max_chain_length > 27:
