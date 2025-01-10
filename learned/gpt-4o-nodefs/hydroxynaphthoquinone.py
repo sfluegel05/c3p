@@ -21,10 +21,9 @@ def is_hydroxynaphthoquinone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define a more flexible SMARTS pattern for naphthoquinone core
-    # We relax some restrictions on carbon bonding to account for variants
-    naphthoquinone_pattern = Chem.MolFromSmarts("C1=CC=CC2=C1C(=O)C=CO2 |C:8|")
-    hydroxyl_pattern = Chem.MolFromSmarts("[OH]")  # Allow hydroxyl groups
+    # Define the SMARTS pattern for naphthoquinone core (two keto groups on a naphthalene system)
+    naphthoquinone_pattern = Chem.MolFromSmarts("O=C1C=CC2=CC=CC=C2C1=O")  # Templated structure
+    hydroxyl_pattern = Chem.MolFromSmarts("[OH]")  # Hydroxyl groups
 
     # Check for naphthoquinone core
     if not mol.HasSubstructMatch(naphthoquinone_pattern):
