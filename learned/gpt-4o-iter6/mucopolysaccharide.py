@@ -16,35 +16,35 @@ def is_mucopolysaccharide(smiles: str):
         bool: True if molecule is a mucopolysaccharide, False otherwise
         str: Reason for classification
     """
-    # Parse SMILES
+    # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return None, "Invalid SMILES string"
 
-    # SMARTS pattern for uronic acid: Carboxylate connected to carbohydrate
-    uronic_acid_pattern = Chem.MolFromSmarts("[O-]C(=O)C1COC(O)C(O)C1")  # Simplified sugar with carboxylate
+    # Redefine SMARTS pattern for uronic acid: carboxyl connected to carbohydrate
+    uronic_acid_pattern = Chem.MolFromSmarts("C(=O)[O-]")
 
-    # SMARTS pattern for glycosamine: Sugar with amine
-    glycosamine_pattern = Chem.MolFromSmarts("C(C([OH])C[OH])[NX3]")
+    # Redefine SMARTS pattern for glycosamine: presence of nitrogen in a sugar ring
+    glycosamine_pattern = Chem.MolFromSmarts("[C,CX4]-[NX3][CX4]")
 
-    # Check for sulfate ester group
-    sulfate_pattern = Chem.MolFromSmarts("OS(=O)(=O)O[CX4]")
-    
+    # Redefine pattern for sulfuric acid ester: usually involves OS(=O)(=O) linkages to carbon
+    sulfate_pattern = Chem.MolFromSmarts("OS(=O)(=O)[O,C]")
+
     # Check for presence of patterns
     uronic_acid_matches = mol.GetSubstructMatches(uronic_acid_pattern)
     glycosamine_matches = mol.GetSubstructMatches(glycosamine_pattern)
+    sulfate_matches = mol.GetSubstructMatches(sulfate_pattern)
 
-    # Check sequence alternation (Signature for mucopolysaccharides)
-    if not uronic_acid_matches or not glycosamine_matches:
-        return False, "No uronic acid or glycosamine units found"
-    
-    # Check for sufficient connectivity and possible alternation
-    for ua in uronic_acid_matches:
-        for ga in glycosamine_matches:
-            if mol.GetBondBetweenAtoms(ua[0], ga[0]):
-                if mol.HasSubstructMatch(sulfate_pattern):
-                    return True, "Contains alternating uronic acids and glycosamines with sulfuric acid esterification"
-                else:
-                    return False, "Alternating structure found but lacks sulfate esterification"
+    # If both uronic acid and glycosamine units are present
+    if uronic_acid_matches and glycosamine_matches:
+        # Check if there's adequate connectivity between these key units
+        for ua in uronic_acid_matches:
+            for ga in glycosamine_matches:
+                # Find connectivity between matches
+                if any(mol.GetBondBetweenAtoms(ua_atom, ga_atom) for ua_atom in ua for ga_atom in ga):
+                    if sulfate_matches:  
+                        return True, "Contains uronic acids and glycosamines with potential sulfate esterification"
+                    else:
+                        return True, "Contains uronic acids and glycosamines but no sulfuric acid esterification"
 
-    return False, "Failed to identify a characteristic alternating pattern of uronic acids and glycosamines"
+    return False, "No characteristic pattern of uronic acids and glycosamines found or insufficient connectivity"
