@@ -2,7 +2,6 @@
 Classifies: CHEBI:83813 proteinogenic amino acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdqueries
 
 def is_proteinogenic_amino_acid(smiles: str):
     """
@@ -21,12 +20,12 @@ def is_proteinogenic_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
         
-    # Define a pattern for an alpha-amino acid - broader to include derivatives or modifications
-    aa_pattern = Chem.MolFromSmarts("[C@@H](N)([CX4,CX3])C(=O)O")  # Pattern matching chiral alpha amino acids
-    glycine_pattern = Chem.MolFromSmarts("NCC(=O)O")                # Pattern matching glycine backbone
-    cys_pattern = Chem.MolFromSmarts("SC[C@@H](N)C(=O)O")           # Specific pattern for L-cysteine
+    # Define a pattern for an alpha-amino acid with allowance for some isotopic labels
+    aa_pattern = Chem.MolFromSmarts("[C@@H](N)([CX4,CX3])C(=O)O")
+    glycine_pattern = Chem.MolFromSmarts("N[CH2][C](=O)O")  # Generalized glycine pattern
+    cys_pattern = Chem.MolFromSmarts("SC[C@H](N)C(=O)O")     # Specific pattern for L-cysteine
 
-    # Match against the patterns
+    # Check for amino-acid-like basic structure
     has_aa_pattern = mol.HasSubstructMatch(aa_pattern)
     is_glycine = mol.HasSubstructMatch(glycine_pattern)
     is_cysteine = mol.HasSubstructMatch(cys_pattern)
@@ -34,14 +33,23 @@ def is_proteinogenic_amino_acid(smiles: str):
     if not (has_aa_pattern or is_glycine or is_cysteine):
         return False, "No proteinogenic amino acid pattern found"
 
-    # Check chiral centers correctly for non-glycine amino acids
+    # Additional length check for chains to avoid peptides or longer derivatives mistakenly classified
+    # Acceptable if C count matches common proteinogenic amino acids (generally not exceeding side chain limits for STANDALONE entities)
+    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if carbon_count > 12:  # Reasonable up to pyrollsine and other larger side chains
+        return False, "Too many carbons indicating potential peptide or complex structure"
+
+    # Check chirality, recognizing isotopic chiral configurations when present
     chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
+    correct_chirality = False
+    has_correct_chirality = False
     for idx, center in chiral_centers:
         atom = mol.GetAtomWithIdx(idx)
         if atom.GetSymbol() == 'C':
-            # Consider L-amino acids must be the S configuration except for cysteine (R)
-            # Check correctly set flags or isotopic labels
-            if (center == 'S' or is_cysteine and center == 'R') or is_glycine:
-                return True, "Pattern matches proteinogenic amino acid"
-
+            if (center == 'S' and not is_cysteine) or (is_cysteine and center == 'R') or is_glycine:
+                has_correct_chirality = True
+    
+    if has_correct_chirality or is_glycine:
+        return True, "Pattern matches proteinogenic amino acid"
+    
     return False, "Non-L configuration found for chiral center or unknown modifications"
