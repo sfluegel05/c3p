@@ -21,14 +21,24 @@ def is_1_monoglyceride(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern definitively targeting 1-monoglyceride structure:
-    # Glycerol backbone with an ester linkage at the primary position (position 1)
-    # Primary defined by `[C@H]` for stereochemistry if defined, -O-C(=O)
-    pattern1 = Chem.MolFromSmarts('[C@@H](CO)C(=O)O')  # Enhanced specificity for chiral center
-    pattern2 = Chem.MolFromSmarts('[C@H](CO)C(=O)O')   # Another possibility based on chiral variations
-    pattern3 = Chem.MolFromSmarts('[C](CO)C(=O)O')     # General form without stereochemistry
-    
-    if mol.HasSubstructMatch(pattern1) or mol.HasSubstructMatch(pattern2) or mol.HasSubstructMatch(pattern3):
-        return True, "Contains a glycerol backbone with acyl linkage at position 1"
+    # Pattern for extracting the 1-monoglyceride features:
+    # - Primary carbon ester linkage [C@](O)COC(=O)
+    # - Secondary alcohol remains [C@@](O)COH
+    # - Exact chain length or variations
 
-    return False, "Does not have a glycerol backbone with acyl linkage at position 1"
+    # Look for 1-monoglyceride specific structural patterns
+    monoglyceride_pattern = Chem.MolFromSmarts('O[C@@H](CO)COC(=O)C')  # Active ester and secondary alcohol pattern
+    if not mol.HasSubstructMatch(monoglyceride_pattern):
+        return False, "No 1-monoglyceride backbone detected"
+
+    # Validity check on the specific esterified position:
+    ester_pattern = Chem.MolFromSmarts('OC([C@H](CO)C(=O)O)')
+    if not mol.HasSubstructMatch(ester_pattern):
+        return False, "Acyl linkage not located at position 1"
+
+    # Check for additional branches if any so that primary criteria are met
+    branches = mol.GetSubstructMatches(ester_pattern)
+    if len(branches) != 1:
+        return False, f"Found {len(branches)} branches of esterification, expected exactly 1 at the primary position"
+
+    return True, "Verified 1-monoglyceride with acyl linkage at position 1"
