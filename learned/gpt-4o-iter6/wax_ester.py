@@ -27,28 +27,33 @@ def is_wax_ester(smiles: str):
     if not mol.HasSubstructMatch(ester_pattern):
         return False, "No ester linkage found"
     
-    # Find ester group and consider the carbon chains extending from it
+    # Find ester group and analyze the carbon chains extending from it
     matches = mol.GetSubstructMatches(ester_pattern)
 
-    # Check for both sides of the ester for sufficient chain length
     for match in matches:
         carbonyl_carbon = match[0]
         ester_oxygen = match[2]
         
         side1_chain_length = _get_chain_length(mol, carbonyl_carbon)
         side2_chain_length = _get_chain_length(mol, ester_oxygen)
+        
+        # Consider a total minimum chain length threshold
+        total_chain_length = side1_chain_length + side2_chain_length
 
-        if side1_chain_length >= 12 and side2_chain_length >= 12:
-            return True, "Molecule contains a fatty acid ester linkage with sufficient carbon chain length"
+        # Relax the minimum requirement for individual chains, while emphasizing total
+        if total_chain_length >= 20 and side1_chain_length >= 8 and side2_chain_length >= 8:
+            return True, "Molecule contains a fatty acid ester linkage with adequate carbon chain length"
     
     return False, "Carbon chains are too short to be considered fatty acid/alcohol"
 
-def _get_chain_length(mol, start_atom_index, max_chain_length=0):
+def _get_chain_length(mol, start_atom_index):
     """
     Recursively finds the length of a carbon chain starting from a given atom.
     Only considers carbon atoms in a linear sequence.
     """
     visited = set()
+    max_chain_length = 0
+
     def _traverse_chain(atom_index):
         nonlocal max_chain_length
         if atom_index in visited:
