@@ -22,9 +22,10 @@ def is_enone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Improved SMARTS pattern to match enone structure
-    # Target pattern: carbonyl (C=O) adjacent to alkene (C=C), preventing R4 being hydrogen
-    enone_pattern = Chem.MolFromSmarts("C=CC(=O)[C;X4,!#1]")
+    # Refined SMARTS pattern to match an enone structure
+    # This pattern aims to identify carbonyl (C=O) adjacent to an alkene (C=C) with carbon, preventing R4 as hydrogen
+    # `[C;!H0]` ensures the carbon is not terminally connected to a hydrogen
+    enone_pattern = Chem.MolFromSmarts("C=CC(=O)[C;!H0]")
 
     # Check if the molecule has the enone substructure
     if mol.HasSubstructMatch(enone_pattern):
