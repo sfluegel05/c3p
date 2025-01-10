@@ -26,16 +26,23 @@ def is_beta_D_galactoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the beta-D-galactoside pattern
+    # Define a more flexible beta-D-galactoside pattern
     # The pattern matches a galactose ring with the beta-configuration at the anomeric center (C1)
     # and ensures that the anomeric carbon is part of a glycosidic bond (connected to another group via an oxygen atom).
-    beta_D_galactoside_pattern = Chem.MolFromSmarts("[C@@H]1([C@@H]([C@H]([C@H]([C@H](O1)CO)O)O)O)[OX2]")
+    beta_D_galactoside_pattern = Chem.MolFromSmarts("[C@H]1([C@H]([C@H]([C@H]([C@H](O1)CO)O)O)O)[OX2]")
 
     # Check if the molecule contains the beta-D-galactoside pattern
     if mol.HasSubstructMatch(beta_D_galactoside_pattern):
-        return True, "Contains a galactose ring in the beta-configuration with a glycosidic bond at the anomeric carbon"
+        # Further verify that the anomeric carbon is connected to another group via an oxygen atom
+        matches = mol.GetSubstructMatches(beta_D_galactoside_pattern)
+        for match in matches:
+            anomeric_carbon = match[0]
+            for neighbor in mol.GetAtomWithIdx(anomeric_carbon).GetNeighbors():
+                if neighbor.GetAtomicNum() == 8:  # Oxygen atom
+                    return True, "Contains a galactose ring in the beta-configuration with a glycosidic bond at the anomeric carbon"
+        return False, "No glycosidic bond found at the anomeric carbon"
     else:
-        return False, "No galactose ring in the beta-configuration with a glycosidic bond found"
+        return False, "No galactose ring in the beta-configuration found"
 
 # Example usage:
 # smiles = "CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O"  # Methyl beta-D-galactoside
