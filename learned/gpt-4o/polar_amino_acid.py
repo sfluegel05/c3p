@@ -21,29 +21,33 @@ def is_polar_amino_acid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Check for alpha-amino acid structure
-    amino_acid_pattern = Chem.MolFromSmarts("[N][C@@H,C@H](C(O)=O)")
-    if not mol.HasSubstructMatch(amino_acid_pattern):
+    
+    # Check for basic alpha-amino acid backbone
+    alpha_amino_acid_pattern = Chem.MolFromSmarts("[N;!R][C@H,C@@H](C(O)=O)")
+    if not mol.HasSubstructMatch(alpha_amino_acid_pattern):
         return False, "Not an alpha-amino acid"
-
+    
     # SMARTS patterns for hydrogen-bonding functional groups in side chains
+    # Eliminate patterns that are generally found on the alpha backbone
     polar_side_chain_patterns = [
-        Chem.MolFromSmarts("[CX3](=O)[NX3]"),  # Amide group - Asparagine, Glutamine
-        Chem.MolFromSmarts("[OX2H]"),          # Hydroxyl group - Serine, Threonine, Tyrosine 
-        Chem.MolFromSmarts("[NX3][CX3](=[OX1])"),  # Guanidinium group - Arginine
-        Chem.MolFromSmarts("[CX3](=[OX1])[OX2H1]"),# Carboxyl group - Aspartic acid, Glutamic acid
-        Chem.MolFromSmarts("[#16]"),           # Thiol group - Cysteine
+        Chem.MolFromSmarts("[$([NX3][CX3](=O)[#6])!H0]"),  # Amide side chain - Asparagine, Glutamine
+        Chem.MolFromSmarts("[$([OH][^C](C)[O])!H0]"),       # Alcohol side group - Serine, Threonine, Tyrosine
+        Chem.MolFromSmarts("[$([NX3H2][CX3]=N[CX3]=N)!H0]"),# Guanidinium - Arginine
+        Chem.MolFromSmarts("[$([CX3](=O)[OX2H1]!C){}]"),    # Unusual carboxylate - ignore if in backbone
+        Chem.MolFromSmarts("[$([S][#6])!H0]"),              # Thiol group - Cysteine
     ]
 
-    # Check for polar side chain patterns
+    non_backbone_oxygen = Chem.MolFromSmarts("[CX3](=O)[OX2H1]!([$([C][OH]=O),$([C]CC[N]!N)])") # Exclude backbone
+
+    # Check for polar side chain patterns specifically
     for pattern in polar_side_chain_patterns:
         if mol.HasSubstructMatch(pattern):
-            return True, "Polar side chain functional group found"
+            if mol.HasSubstructMatch(non_backbone_oxygen):
+                return True, "Polar side chain functional group found"
     
     return False, "No polar side chain functional groups found"
 
-# Test the function with example polar amino acids
+# Sample Test
 example_smiles = [
     "N[C@H](CS)C(O)=O",  # D-cysteine
     "NC(Cc1c[nH]c2ccccc12)C(O)=O",  # tryptophan
