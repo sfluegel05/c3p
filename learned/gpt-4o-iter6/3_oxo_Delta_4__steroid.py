@@ -2,7 +2,6 @@
 Classifies: CHEBI:47909 3-oxo-Delta(4) steroid
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_3_oxo_Delta_4__steroid(smiles: str):
     """
@@ -22,19 +21,20 @@ def is_3_oxo_Delta_4__steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define generalized steroid backbone pattern
-    steroid_pattern = Chem.MolFromSmarts('[#6]1[#6][#6][#6]2[#6]([#6]1)[#6][#6][#6]3[#6]2[#6][#6][#6]4[#6]3[#6][#6][#6]4')
+    # Define a specific steroid backbone pattern for the tetracyclic ring system
+    steroid_pattern = Chem.MolFromSmarts('C1CCC2C3CCC4CCCC(C3)C2C1C4')
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
     
-    # Verify the presence of the 3-oxo (C=O) group
-    oxo_match = mol.GetSubstructMatches(Chem.MolFromSmarts('C=O'))
-    if not oxo_match:
-        return False, "No 3-oxo group found"
+    # Check for the presence of a 3-oxo group specifically on the A-ring
+    oxo_pattern = Chem.MolFromSmarts('C1(=O)[C,C]C2')
+    if not mol.HasSubstructMatch(oxo_pattern):
+        return False, "No 3-oxo group found in the appropriate position"
     
-    # Verify the α,β unsaturated bond (Delta(4) bond)
-    double_bond_pattern = Chem.MolFromSmarts('[#6]=[#6]')
-    if not mol.HasSubstructMatch(double_bond_pattern):
-        return False, "No Delta(4) double bond found"
+    # Verify the Alpha, Beta unsaturated bond (Delta(4) bond)
+    # This means C=C between carbons 4 and 5 in the steroid A-ring
+    delta_4_pattern = Chem.MolFromSmarts('C1=C[C,C]2')
+    if not mol.HasSubstructMatch(delta_4_pattern):
+        return False, "No Delta(4) double bond found in the appropriate position"
     
     return True, "Molecule classified as 3-oxo-Delta(4) steroid with appropriate moieties"
