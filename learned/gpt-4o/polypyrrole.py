@@ -24,12 +24,12 @@ def is_polypyrrole(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define pyrrole pattern
-    pyrrole_pattern = Chem.MolFromSmarts("n1cccc1")
+    # Define a more broad pattern for pyrrole or pyrrole-like rings, considering aromaticity and ring structure.
+    pyrrole_pattern = Chem.MolFromSmarts("c1cn[c,n]c1")  # This pattern captures pyrrole and similar heteroaromatic rings
     pyrrole_matches = mol.GetSubstructMatches(pyrrole_pattern)
     
     # Count number of pyrrole substructures
-    num_pyrrole_units = len(pyrrole_matches)
+    num_pyrrole_units = len(set(pyrrole_matches))  # Use set to avoid counting overlapping matches in fused systems
     
     if num_pyrrole_units < 2:
         return False, f"Contains only {num_pyrrole_units} pyrrole units, need 2 or more for polypyrrole"
