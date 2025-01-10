@@ -9,10 +9,10 @@ def is_hexose(smiles: str):
     A hexose is a six-carbon monosaccharide which in its linear form
     contains an aldehyde group at position 1 (aldohexose) or a ketone group at position 2 (ketohexose),
     or in its cyclic form matches pyranose or furanose structures.
-
+    
     Args:
         smiles (str): SMILES string of the molecule
-
+    
     Returns:
         bool: True if molecule is a hexose, False otherwise
         str: Reason for classification
@@ -28,13 +28,13 @@ def is_hexose(smiles: str):
     if c_count != 6:
         return False, f"Expected 6 carbon atoms, found {c_count}"
 
-    # Define more accurate linear SMARTS patterns for aldehyde at position 1 and ketone at position 2
-    aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)[CH2][CH]([OH])[CH]([OH])[CH]([OH])[CH2][OH]")  # Aldohexose
-    ketone_pattern = Chem.MolFromSmarts("[CH2][CX3](=O)[CH]([OH])[CH]([OH])[CH2][CH2][OH]")  # Ketohexose
+    # Define broader SMARTS patterns for aldohexose and ketohexose
+    aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)[CH2][CX4][CX4][CX4][CH2][OH]")  # General aldose pattern
+    ketone_pattern = Chem.MolFromSmarts("[CH2][CX3](=O)[CH][CX4][CH2][CH2][OH]")  # General ketose pattern
 
-    # Define patterns for pyranose and furanose rings
-    pyranose_pattern = Chem.MolFromSmarts("C1[C@H]([O])[C@@H]([OH])[C@H]([OH])[C@@H]([OH])O1")  # Pyranose
-    furanose_pattern = Chem.MolFromSmarts("C1[C@H]([O])[C@@H]([OH])[C@H]([OH])O1")  # Furanose
+    # Define more flexible cyclic pyranose and furanose patterns
+    pyranose_pattern = Chem.MolFromSmarts("C1OC(O)C(O)C(O)C1")  # Broader pyranose pattern
+    furanose_pattern = Chem.MolFromSmarts("C1OC(O)C(O)C1")  # Broader furanose pattern
 
     # Check for linear aldohexose or ketohexose
     is_aldohexose = mol.HasSubstructMatch(aldehyde_pattern)
@@ -45,9 +45,9 @@ def is_hexose(smiles: str):
     is_furanose = mol.HasSubstructMatch(furanose_pattern)
 
     if is_aldohexose:
-        return True, "Contains aldohexose group"
+        return True, "Contains aldohexose structure"
     elif is_ketohexose:
-        return True, "Contains ketohexose group"
+        return True, "Contains ketohexose structure"
     elif is_pyranose or is_furanose:
         return True, "Contains cyclic hexose structure"
     else:
