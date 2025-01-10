@@ -1,83 +1,82 @@
 """
 Classifies: CHEBI:46874 alpha-amino acid ester
 """
-"""
-Classifies: alpha-amino acid ester
-"""
-
 from rdkit import Chem
 
 def is_alpha_amino_acid_ester(smiles: str):
     """
     Determines if a molecule is an alpha-amino acid ester based on its SMILES string.
-    An alpha-amino acid ester is the amino acid ester derivative obtained by the formal
-    condensation of an alpha-amino acid with an alcohol.
+    An alpha-amino acid ester is an amino acid derivative obtained by esterification
+    of the carboxyl group of an alpha-amino acid.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
         bool: True if molecule is an alpha-amino acid ester, False otherwise
-        str: Reason for classification or misclassification
+        str: Reason for classification
     """
-
+    # Parse SMILES to molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns
-    amine_pattern = Chem.MolFromSmarts("[NX3;H1,H2]")  # Primary or secondary amine
-    ester_pattern = Chem.MolFromSmarts("C(=O)O[CX4]")  # Ester group
-    alpha_carbon_pattern = Chem.MolFromSmarts("[CX4H]")  # Tetrahedral carbon with at least one hydrogen
+    # Define SMARTS pattern for alpha-amino acid ester
+    # Pattern explanation:
+    # [C@@H](N)(*)C(=O)O[*] - alpha carbon with amino group and esterified carboxyl group
+    # - The alpha carbon can have any substituent (*)
+    # - The amino group can be primary, secondary, or part of a ring
+    # - The carboxyl group is esterified (C(=O)O[*])
 
-    # Find all amine nitrogens
-    amine_atoms = mol.GetSubstructMatches(amine_pattern)
-    if not amine_atoms:
-        return False, "No primary or secondary amine found"
+    # Pattern for alpha-amino acid ester
+    alpha_amino_acid_ester_smarts = """
+    [$([CH]-[N]),$([C@@H]-[N]),$([C@H]-[N]),$([C]-[N])]
+    [C]
+    (=[O])
+    O
+    [#6]
+    """
 
-    # Find all ester carbons
-    ester_atoms = mol.GetSubstructMatches(ester_pattern)
-    if not ester_atoms:
-        return False, "No ester group found"
+    # Remove whitespace and newlines from SMARTS pattern
+    alpha_amino_acid_ester_smarts = ''.join(alpha_amino_acid_ester_smarts.split())
 
-    # Find all alpha carbons
-    alpha_carbons = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetSymbol() == 'C' 
-                     and atom.GetHybridization() == Chem.HybridizationType.SP3 
-                     and atom.GetTotalNumHs() >= 1]
+    pattern = Chem.MolFromSmarts(alpha_amino_acid_ester_smarts)
+    if pattern is None:
+        return False, "Invalid SMARTS pattern"
 
-    # Check for alpha-amino acid ester connectivity
-    for alpha_c_idx in alpha_carbons:
-        alpha_c = mol.GetAtomWithIdx(alpha_c_idx)
-
-        # Check if alpha carbon is connected to an amine nitrogen
-        connected_to_amine = False
-        for neighbor in alpha_c.GetNeighbors():
-            if neighbor.GetIdx() in [idx for (idx,) in amine_atoms]:
-                connected_to_amine = True
-                break
-        if not connected_to_amine:
-            continue
-
-        # Check if alpha carbon is connected to a carbonyl carbon of an ester group
-        connected_to_ester = False
-        for neighbor in alpha_c.GetNeighbors():
-            if neighbor.GetSymbol() == 'C':
-                # Check if this carbon is part of an ester group
-                for ester_carbon_idx, in ester_atoms:
-                    if neighbor.GetIdx() == ester_carbon_idx:
-                        connected_to_ester = True
-                        break
-            if connected_to_ester:
-                break
-        if connected_to_ester:
-            return True, "Contains alpha-amino acid ester moiety"
-
-    return False, "Does not contain alpha-amino acid ester moiety"
-
+    # Search for the alpha-amino acid ester pattern in the molecule
+    if mol.HasSubstructMatch(pattern):
+        return True, "Contains alpha-amino acid ester moiety"
+    else:
+        return False, "Does not contain alpha-amino acid ester moiety"
 
 __metadata__ = {
     'chemical_class': {
+        'id': None,
         'name': 'alpha-amino acid ester',
         'definition': 'The amino acid ester derivative obtained the formal condensation of an alpha-amino acid with an alcohol.',
+        'parents': None
     },
+    'config': {
+        'llm_model_name': 'YourModelName',
+        'f1_threshold': None,
+        'max_attempts': None,
+        'max_positive_instances': None,
+        'max_positive_to_test': None,
+        'max_negative_to_test': None,
+        'max_positive_in_prompt': None,
+        'max_negative_in_prompt': None,
+        'max_instances_in_prompt': None,
+        'test_proportion': None
+    },
+    'message': None,
+    'attempt': 1,
+    'success': True,
+    'best': True,
+    'error': '',
+    'stdout': None,
+    'precision': None,
+    'recall': None,
+    'f1': None,
+    'accuracy': None
 }
