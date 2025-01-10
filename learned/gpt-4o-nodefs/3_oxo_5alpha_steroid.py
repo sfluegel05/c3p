@@ -2,7 +2,6 @@
 Classifies: CHEBI:13601 3-oxo-5alpha-steroid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_3_oxo_5alpha_steroid(smiles: str):
     """
@@ -20,16 +19,16 @@ def is_3_oxo_5alpha_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define the SMARTS pattern for 3-oxo-5alpha-steroid.
-    # This pattern includes a steroid backbone with a 3-oxo group.
-    steroid_pattern = Chem.MolFromSmarts("C1CCC2C3C(=O)CC4C(C3=CC2C1)CCC4")    
-    if mol.HasSubstructMatch(steroid_pattern):
-        # Check if the molecule has the steroid backbone pattern
-        if mol.HasSubstructMatch(steroid_pattern):
-            return True, "Matches the core 3-oxo-5alpha-steroid pattern"
-        else:
-            return False, "Does not match the steroid backbone pattern"
+    # Define the SMARTS pattern for 3-oxo and 5alpha configuration in steroids.
+    # 3-Oxo group pattern: C=O at the third carbon position
+    # 5alpha configuration with specific cyclopentaphenanthrene core of steroids
+    # This pattern captures the carbonyl group at position 3 and required stereochemistry at position 5 
+    # considering some flexibility with 5alpha
+    oxo_5alpha_pattern = Chem.MolFromSmarts("C1[C@@H]2CC[C@@H]3[C@@H](C(=O))CC[C@@]3(CC[C@@]2([C@@H](C1)C)C1)C1")
+    
+    if mol.HasSubstructMatch(oxo_5alpha_pattern):
+        return True, "Matches the 3-oxo-5alpha-steroid pattern"
     else:
-        return False, "Does not contain 3-oxo group at required position"
+        return False, "Does not contain 3-oxo group in a 5alpha-steroid framework"
 
     return None, None
