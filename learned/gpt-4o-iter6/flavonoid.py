@@ -2,7 +2,6 @@
 Classifies: CHEBI:47916 flavonoid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_flavonoid(smiles: str):
     """
@@ -22,19 +21,21 @@ def is_flavonoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for 1-benzopyran ring system (simplified chromene core) with an aryl at position 2
-    chromene_pattern = Chem.MolFromSmarts("C1=CC=C2C(=C1)OC=C2")  # Basic 1-benzopyran
-    if not mol.HasSubstructMatch(chromene_pattern):
-        return False, "No 1-benzopyran core found"
+    # Adjusted pattern to include variations for 1-benzopyran (flavonoid core)
+    benzopyran_pattern = Chem.MolFromSmarts("c1c2ccccc2oc1")
+    if not mol.HasSubstructMatch(benzopyran_pattern):
+        return False, "No flavonoid core (1-benzopyran structure) found"
 
-    # Look for aryl substitution at position 2
-    aryl_pattern = Chem.MolFromSmarts("c1ccc(cc1)-C2=CC=CO2")  # Aryl at position 2 of chromene
-    if not mol.HasSubstructMatch(aryl_pattern):
-        return False, "No aryl group at correct position"
+    # Alternative approach to find the 1-benzopyran core without specific aryl substitution matching
+    # Allow for any aryl substitution as long as 1-benzopyran core is intact
+    # Here, we are assuming any group attached to position 2 of benzopyran is acceptable as a substitution
+    aryl_substituted_pattern = Chem.MolFromSmarts("C1=COc2ccccc2C1-*")  # Using * to represent any possible substitution
+    if not mol.HasSubstructMatch(aryl_substituted_pattern):
+        return False, "Aryl substitution not found at position 2"
 
-    # Count hydroxyl groups
-    hydroxyl_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetTotalNumHs() == 1)
-    if hydroxyl_count < 1:
-        return False, "Insufficient hydroxyl groups for a typical flavonoid structure"
+    # Hydroxyl groups are commonly found but not mandatory
+    # hydroxyl_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetTotalNumHs() == 1)
+    # if hydroxyl_count < 1:
+    #     return False, "Insufficient hydroxyl groups for a typical flavonoid structure"
 
-    return True, "Contains flavonoid core with aryl substitution at position 2"
+    return True, "Identified flavonoid structure with 1-benzopyran core and aryl substitution"
