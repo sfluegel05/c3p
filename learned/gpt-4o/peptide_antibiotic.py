@@ -27,19 +27,19 @@ def is_peptide_antibiotic(smiles: str):
     if not mol.HasSubstructMatch(amide_pattern):
         return False, "No peptide bonds detected"
 
-    # Check for macrocyclic rings or larger structures
-    # Assess ring sizes commonly seen in macrocyclic peptide antibiotics
+    # Check for macrocyclic rings
     ring_info = mol.GetRingInfo()
-    large_ring_detected = any(ring_info.NumAtomRingsSize(r_size) > 0 for r_size in range(12, 30))  # Looking for ring sizes between 12-30
-    if not large_ring_detected:
-        return False, "No macrocyclic structure or typical peptide ring sizes detected"
+    atom_rings = ring_info.AtomRings()
+    macrocyclic_detected = any(len(ring) >= 12 for ring in atom_rings)
+    if not macrocyclic_detected:
+        return False, "No macrocyclic structures detected"
 
-    # Peptides, particularly cyclic ones, may still have a considerable number of chiral centers
-    # Refine the threshold based on additional data/knowledge or still check for their presence
+    # Check for chiral centers
     chiral_centers = rdMolDescriptors.CalcNumAtomStereoCenters(mol)
-    # Optional: use a threshold if deemed necessary after further verification against known data
+    if chiral_centers == 0:
+        return False, "No chiral centers detected, which are common in peptide antibiotics"
 
-    return True, "Contains peptide bonds and structural features typical of peptide antibiotics"
+    return True, "Contains peptide bonds, macrocyclic rings, and chiral centers"
 
 # Example usage:
 # result, reason = is_peptide_antibiotic("CC(C)C[C@@H](N)C(=O)N[C@@H]1C(C)OC(=O)C(C)N(C)C1=O")
