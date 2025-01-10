@@ -2,7 +2,7 @@
 Classifies: CHEBI:83813 proteinogenic amino acid
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
+from rdkit.Chem import AllChem, rdMolAlign, rdMolDescriptors
 
 def is_proteinogenic_amino_acid(smiles: str):
     """
@@ -20,64 +20,65 @@ def is_proteinogenic_amino_acid(smiles: str):
         bool: True if molecule is a proteinogenic amino acid, False otherwise
         str: Reason for classification
     """
-    # Parse SMILES
+    # Parse input SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Normalize isotopes and convert deuterium to hydrogen
-    for atom in mol.GetAtoms():
-        if atom.GetIsotope() != 0:
-            atom.SetIsotope(0)
-        if atom.GetAtomicNum() == 1 and atom.GetMass() > 1.0079:
-            # Convert deuterium ([2H]) to hydrogen
-            atom.SetAtomicNum(1)
-            atom.SetIsotope(0)
-            atom.SetFormalCharge(0)
-
+    # Preserve isotopes and deuterium atoms
     # Remove explicit hydrogens to simplify matching
     mol = Chem.RemoveHs(mol)
 
     # Assign stereochemistry
+    Chem.AssignAtomChiralTagsFromStructure(mol)
     Chem.AssignStereochemistry(mol, force=True, cleanIt=True)
 
-    # Define the alpha-amino acid backbone SMARTS pattern
-    # Matches alpha carbon connected to:
-    # - Amino group [N;H2]
-    # - Carboxyl group C(=O)O
-    # - Side chain [*]
-    alpha_amino_acid_pattern = Chem.MolFromSmarts('[N;H2][C@H](*)C(=O)O')
+    # Generate canonical SMILES for input molecule
+    input_canonical_smiles = Chem.MolToSmiles(mol, isomericSmiles=True)
 
-    # Check for presence of the alpha-amino acid backbone with L-configuration
-    matches = mol.GetSubstructMatches(alpha_amino_acid_pattern)
-    if matches:
-        # Verify that alpha carbon has the correct stereochemistry
-        for match in matches:
-            alpha_c_idx = match[1]
-            alpha_c = mol.GetAtomWithIdx(alpha_c_idx)
-            if alpha_c.HasProp('_CIPCode'):
-                cip_code = alpha_c.GetProp('_CIPCode')
-                # For most amino acids, L-configuration corresponds to 'S' configuration
-                # For cysteine and selenocysteine, L corresponds to 'R' due to sulfur/selenium priority
-                neighbor_atomic_nums = [nbr.GetAtomicNum() for nbr in alpha_c.GetNeighbors()]
-                if 16 in neighbor_atomic_nums or 34 in neighbor_atomic_nums:
-                    # Contains sulfur (S, atomic number 16) or selenium (Se, atomic number 34)
-                    if cip_code == 'R':
-                        return True, "Molecule is L-cysteine or L-selenocysteine"
-                else:
-                    if cip_code == 'S':
-                        return True, "Molecule is a proteinogenic amino acid with L-configuration"
-    else:
-        # Check for glycine (achiral)
-        glycine_pattern = Chem.MolFromSmarts('NCC(=O)O')
-        if mol.HasSubstructMatch(glycine_pattern):
-            return True, "Molecule is glycine (achiral proteinogenic amino acid)"
-        # Check for N-formylmethionine and pyrrolysine explicitly
-        n_formylmethionine = Chem.MolFromSmiles('O=CNCC[C@H](N)C(=O)O')
-        pyrrolysine = Chem.MolFromSmiles('O=C(O)[C@@H](N)CCCCNC(=O)C1=CC=CN1')
-        if mol.HasSubstructMatch(n_formylmethionine):
-            return True, "Molecule is N-formylmethionine"
-        if mol.HasSubstructMatch(pyrrolysine):
-            return True, "Molecule is pyrrolysine"
+    # Define canonical SMILES for all 23 proteinogenic amino acids
+    amino_acids = {
+        'Glycine': 'NCC(=O)O',
+        'Alanine': 'N[C@@H](C)C(=O)O',
+        'Valine': 'N[C@@H](C(C)C)C(=O)O',
+        'Leucine': 'N[C@@H](CC(C)C)C(=O)O',
+        'Isoleucine': 'N[C@@H](C(C)CC)C(=O)O',
+        'Proline': 'N1CCCC1C(=O)O',
+        'Phenylalanine': 'N[C@@H](CC1=CC=CC=C1)C(=O)O',
+        'Tyrosine': 'N[C@@H](CC1=CC=C(O)C=C1)C(=O)O',
+        'Tryptophan': 'N[C@@H](CC1=CNC2=CC=CC=C12)C(=O)O',
+        'Serine': 'N[C@@H](CO)C(=O)O',
+        'Threonine': 'N[C@@H](C(O)C)C(=O)O',
+        'Cysteine': 'N[C@@H](CS)C(=O)O',
+        'Methionine': 'N[C@@H](CCSC)C(=O)O',
+        'Asparagine': 'N[C@@H](CC(=O)N)C(=O)O',
+        'Glutamine': 'N[C@@H](CCC(=O)N)C(=O)O',
+        'Lysine': 'N[C@@H](CCCCN)C(=O)O',
+        'Arginine': 'N[C@@H](CCCNC(N)=N)C(=O)O',
+        'Histidine': 'N[C@@H](CC1=CN=CN1)C(=O)O',
+        'Aspartic Acid': 'N[C@@H](CC(=O)O)C(=O)O',
+        'Glutamic Acid': 'N[C@@H](CCC(=O)O)C(=O)O',
+        'Selenocysteine': 'N[C@@H](C[SeH])C(=O)O',
+        'Pyrrolysine': 'N[C@@H](CCCCNC(=O)C1=CC=CN1)C(=O)O',
+        'N-Formylmethionine': 'O=CN[C@@H](CCSC)C(=O)O',
+    }
+
+    # Convert the amino acid SMILES to RDKit molecules and prepare for matching
+    amino_acid_mols = {}
+    for name, aa_smiles in amino_acids.items():
+        aa_mol = Chem.MolFromSmiles(aa_smiles)
+        if aa_mol is not None:
+            Chem.AssignAtomChiralTagsFromStructure(aa_mol)
+            Chem.AssignStereochemistry(aa_mol, force=True, cleanIt=True)
+            amino_acid_mols[name] = aa_mol
+
+    # Compare input molecule to each amino acid
+    for name, aa_mol in amino_acid_mols.items():
+        # Create molecule copies to prevent modification
+        mol_copy = Chem.Mol(mol)
+        aa_mol_copy = Chem.Mol(aa_mol)
+        # Use RDKit's isomorphic matching with chirality consideration
+        if mol_copy.HasSubstructMatch(aa_mol_copy, useChirality=True):
+            return True, f"Molecule matches {name}"
 
     return False, "Molecule is not a proteinogenic amino acid with L-configuration"
