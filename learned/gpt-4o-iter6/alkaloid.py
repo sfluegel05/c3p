@@ -40,12 +40,13 @@ def is_alkaloid(smiles: str):
     # Avoid classifying peptide-like structures
     # Look for amide groups typically found in peptides
     amide_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[#6]")
-    if mol.HasSubstructMatch(amide_pattern):
-        return False, "Appears more like a peptide or related compound"
+    amide_matches = mol.GetSubstructMatches(amide_pattern)
+    if len(amide_matches) > 2:
+        return False, "Appears more like a peptide or related compound due to multiple amide groups"
 
-    # Avoid small non-alkaloid amines
-    non_alkaloid_amine_pattern = Chem.MolFromSmarts("[NX3][CX4]")
-    if mol.HasSubstructMatch(non_alkaloid_amine_pattern) and not has_nitrogen_in_ring:
-        return False, "Nitrogen possibly part of a simple amine rather than heterocycle"
+    # Small structural cuts off that are not alkaloids
+    small_nitrogen_heterocycle_pattern = Chem.MolFromSmarts("n")
+    if not mol.HasSubstructMatch(small_nitrogen_heterocycle_pattern):
+        return False, "Small nitrogen heterocycle structure more typical of simple amines"
 
     return True, "Contains nitrogen in a heterocyclic structure typical of alkaloids"
