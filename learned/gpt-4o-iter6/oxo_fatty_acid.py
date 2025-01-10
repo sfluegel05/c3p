@@ -30,26 +30,22 @@ def is_oxo_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(carboxylic_pattern):
         return False, "No carboxylic acid group found"
     
-    # Look for ketone or aldehyde groups (not part of ethers, esters, amides, etc.)
-    aldehyde_ketone_pattern = Chem.MolFromSmarts("[CX3](=O)[#6]")
+    # Look for aldehyde or ketone groups (distinct from amide, ester)
+    aldehyde_ketone_pattern = Chem.MolFromSmarts("[CX3](=O)[#6;!R]")
     aldehyde_ketone_matches = mol.GetSubstructMatches(aldehyde_ketone_pattern)
-    
-    # Exclude those already part of the carboxylic acid group
+
+    # Exclude carboxylic group matches
     carboxylic_matches = mol.GetSubstructMatches(carboxylic_pattern)
     carboxylic_atoms = {idx for match in carboxylic_matches for idx in match}
     effective_carbonyls = [match for match in aldehyde_ketone_matches if not set(match).intersection(carboxylic_atoms)]
 
-    # Check that there's at least one ketone or aldehyde group distinct from carboxyls
+    # Check for at least one ketone or aldehyde group distinct from carboxyls
     if not effective_carbonyls:
         return False, "No distinct ketone or aldehyde group found"
-    
-    # Further validate typical fatty acid structure
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    
-    if c_count < 6:
-        return False, "Not enough carbons for a fatty acid"
-    if o_count < 2:
-        return False, "Not enough oxygens for carboxyl and oxo functionality"
 
+    # Allow oxo fatty acids of varying lengths
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 5:
+        return False, "Not enough carbons for a fatty acid"
+    
     return True, "Contains carboxylic acid group and additional oxo group(s) (aldehydic/ketonic)"
