@@ -21,23 +21,24 @@ def is_N_acetyl_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for Acetyl pattern "CC(=O)N" with more flexibility for nitrogen connection
-    acetyl_amino_pattern = Chem.MolFromSmarts("CC(=O)N")
+    # Look for acetyl group attached to nitrogen
+    acetyl_amino_pattern = Chem.MolFromSmarts("CC(=O)N[*]")
     if not mol.HasSubstructMatch(acetyl_amino_pattern):
         return False, "No acetyl group directly bonded to the nitrogen of an amino group"
     
-    # General pattern for amino acids "N-C-C(=O)O"
-    # This pattern checks for a generic amino acid backbone
-    amino_acid_backbone_pattern = Chem.MolFromSmarts("N[*]C(*)C(=O)O")
+    # General pattern for amino acids
+    # This includes flexibility in backbone connections
+    amino_acid_backbone_pattern = Chem.MolFromSmarts("N[C;!R]C(=O)O")
     if not mol.HasSubstructMatch(amino_acid_backbone_pattern):
         return False, "No amino acid moiety found"
     
-    # Verify direct connection for N-acetyl linkage
+    # Ensure acetyl and amino acid patterns are part of the same structure
     acetyl_matches = mol.GetSubstructMatches(acetyl_amino_pattern)
     backbone_matches = mol.GetSubstructMatches(amino_acid_backbone_pattern)
     for acetyl in acetyl_matches:
         for backbone in backbone_matches:
-            if acetyl[2] == backbone[0]:  # Checking acetyl nitrogen with backbone nitrogen
+            # Check if the acetyl nitrogen is the same as the amino acid nitrogen
+            if acetyl[2] == backbone[0]:
                 return True, "Contains acetyl group directly connected to an amino acid moiety"
     
     return False, "Acetyl group not directly connected to the correct amino acid moiety"
