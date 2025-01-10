@@ -7,7 +7,7 @@ def is_monosaccharide(smiles: str):
     """
     Determines if a molecule is a monosaccharide based on its SMILES string.
     Monosaccharides are polyhydroxy aldehydes or ketones with three or more carbon atoms,
-    plus they may appear as cyclic hemiacetals or hemiketals.
+    and may appear as cyclic hemiacetals or hemiketals.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -35,17 +35,19 @@ def is_monosaccharide(smiles: str):
     if len(hydroxyl_matches) < 3:
         return False, "Less than 3 hydroxyl groups"
 
-    # Detect cyclic structures and presence of carbonyl
-    furanose_pattern = Chem.MolFromSmarts("O1[C@@H]([*])[C@@H]([*])O[C@H]1")
-    pyranose_pattern = Chem.MolFromSmarts("O1[C@H]([*])[C@H]([*])O[C@@H]([*])O1")
+    # Broaden the definition of cyclic and cyclic-like (hemiacetal/hemiketal) structures
+    furanose_pattern = Chem.MolFromSmarts("O1[C@H]([*])[C@H]([*])O[C@@H]1")
+    pyranose_pattern = Chem.MolFromSmarts("O1[C@@H]([*])[C@@H]([*])O[C@H](O[*])1")
     carbonyl_pattern = Chem.MolFromSmarts("[CX3]=[OX1]")
 
-    if not any(mol.HasSubstructMatch(p) for p in [furanose_pattern, pyranose_pattern, carbonyl_pattern]):
+    if not (mol.HasSubstructMatch(furanose_pattern) or
+            mol.HasSubstructMatch(pyranose_pattern) or
+            mol.HasSubstructMatch(carbonyl_pattern)):
         return False, "No indicative cyclic structure or carbonyl found for monosaccharide"
 
-    # Ensure no glycosidic connections
-    anomeric_carbon_pattern = Chem.MolFromSmarts("[C@@H]1O[C@H](OC=*1)[*]")
-    if mol.HasSubstructMatch(anomeric_carbon_pattern):
+    # Validate absence of glycosidic connections
+    glycosidic_bond_pattern = Chem.MolFromSmarts("[C@H]1O[C@H](O[*])[*]")
+    if mol.HasSubstructMatch(glycosidic_bond_pattern):
         return False, "Contains glycosidic connections"
 
     return True, "Matches structure of a monosaccharide with polyhydroxyl groups and cyclic or linear carbonyl group"
