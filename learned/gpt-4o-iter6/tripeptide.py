@@ -21,20 +21,10 @@ def is_tripeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for amide bond pattern (-N-C(=O)-)
-    amide_pattern = Chem.MolFromSmarts("N-C(=O)")
-    amide_matches = mol.GetSubstructMatches(amide_pattern)
-    if len(amide_matches) != 2:
-        return False, f"Found {len(amide_matches)} amide bonds, need exactly 2"
-
-    # Count carboxylic acids and primary amines to verify amino acid residues
-    acid_pattern = Chem.MolFromSmarts("C(=O)O")
-    acid_matches = len(mol.GetSubstructMatches(acid_pattern))
+    # Create amide bond pattern: N-C(=O)-C-N
+    peptide_backbone_pattern = Chem.MolFromSmarts("N[*]-C(=O)-N[*]-C(=O)-N[*]")
+    if mol.HasSubstructMatch(peptide_backbone_pattern):
+        return True, "Contains three amino-acid residues connected by peptide linkages"
     
-    amine_pattern = Chem.MolFromSmarts("N")
-    amine_matches = len(mol.GetSubstructMatches(amine_pattern))
-
-    if acid_matches < 3 or amine_matches < 3:
-        return False, f"Need at least 3 carboxylic acids and amines for 3 residues, got {acid_matches} acids and {amine_matches} amines"
-    
-    return True, "Contains three amino-acid residues connected by peptide linkages"
+    # If no matches found, it is invalid
+    return False, "Does not match peptide backbone structure"
