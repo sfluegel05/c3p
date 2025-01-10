@@ -23,24 +23,15 @@ def is_UDP_sugar(smiles: str):
         return False, "Invalid SMILES string"
 
     # SMARTS pattern for Uridine (nucleoside part of UDP)
-    uridine_pattern = Chem.MolFromSmarts("n1ccc(=O)[nH]c1=O")
+    uridine_pattern = Chem.MolFromSmarts("n1c(nc(=O)cc1=O)[*]O[*]O[*]C[*]O[*]")  # Allow variability in linkage
     if not mol.HasSubstructMatch(uridine_pattern):
         return False, "No uridine found"
-
-    # SMARTS pattern for diphosphate link (account for potential charge states)
-    diphosphate_pattern = Chem.MolFromSmarts("OP(OP(O)(=O)[O-])(=O)OC")
-    if not mol.HasSubstructMatch(diphosphate_pattern):
-        # Attempt alternative patterns in case of mismatches (neutral states or otherwise)
-        diphosphate_pattern_alt = Chem.MolFromSmarts("OP(O)(=O)OP(O)(=O)OC")
-        if not mol.HasSubstructMatch(diphosphate_pattern_alt):
-            return False, "No diphosphate linkage found"
-
-    # Comprehensive pattern for recognizing UDP-bound sugars
-    sugar_moiety_pattern = Chem.MolFromSmarts("OC[C@H]([O-])C([O-])")  # Simplified sugar match, extensible
-    diphosphate_and_sugar_pattern = Chem.MolFromSmarts("OP(OP(O)(=O)[O-])(=O)OC[C@@H]1O[C@H]([C@@H]([C@H]1O))")
-
-    # Ensure there's a suitable sugar moiety linked correctly
-    if not mol.HasSubstructMatch(diphosphate_and_sugar_pattern):
+    
+    # Comprehensive SMARTS for the diphosphate and sugar backbone
+    # This pattern aims to account for potential charge and connectivity variations
+    diphosphate_link_sugar_pattern = Chem.MolFromSmarts("OP(=O)(O)OP(=O)(O)OC[C@H]1O[C@@H](C([C@H](O1)*)*)*")
+    
+    if not mol.HasSubstructMatch(diphosphate_link_sugar_pattern):
         return False, "No suitable sugar moiety attached via diphosphate linkage"
     
     return True, "Contains UDP group with a suitable sugar moiety attached via diphosphate linkage"
