@@ -2,7 +2,7 @@
 Classifies: CHEBI:83820 non-proteinogenic amino acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import AllChem
 
 def is_non_proteinogenic_amino_acid(smiles: str):
     """
@@ -21,37 +21,37 @@ def is_non_proteinogenic_amino_acid(smiles: str):
     if mol is None:
         return None, "Invalid SMILES string"
 
-    # Check for the basic amino acid backbone structure: an alpha-amino acid chain
-    amino_acid_pattern = Chem.MolFromSmarts("[NX3][CX4]([CX4H3,CH2])[CX3](=O)[OX1H1]")
+    # Check for the basic amino acid backbone structure with flexibility for non-standard additions
+    amino_acid_pattern = Chem.MolFromSmarts("N[C@@H](C)C(=O)O")
     if not mol.HasSubstructMatch(amino_acid_pattern):
-        return False, "Lacks typical amino acid backbone elements"
+        return False, "Lacks basic amino acid backbone"
 
-    # Define expanded uncommon patterns for non-proteinogenic features
-    uncommon_patterns = [
-        Chem.MolFromSmarts("[CX4]([F,Cl,Br,I])"),         # Halogenated side chains
-        Chem.MolFromSmarts("[CX4]#N"),                   # Nitrile group
-        Chem.MolFromSmarts("[Se]"),                      # Selenium
-        Chem.MolFromSmarts("[CX3](=[OX1])[NX3]"),        # Amide or imide linkages
-        Chem.MolFromSmarts("[CX3](=O)[CX3](=O)"),        # Keto-acid group
-        Chem.MolFromSmarts("C=O[C@H]1CNC1"),             # Proline-like rings with additional oxygen
-        Chem.MolFromSmarts("[OX2CR]([OX1H1])[#6]"),      # Beta-hydroxy acids
-        Chem.MolFromSmarts("[CX3]=[N+][O-]"),             # Nitro group
-        Chem.MolFromSmarts("[S,C]C[S,C]"),                # Thioether linkages often found in modified methionine
-        # Expand as needed to capture other distinctive features
-    ]
+    # Uncommon patterns for non-proteinogenic features
+    uncommon_patterns = {
+        "halogenated_side_chain": Chem.MolFromSmarts("[CX4][F,Cl,Br,I]"),
+        "nitrile_group": Chem.MolFromSmarts("[CX2]#N"),
+        "selenium": Chem.MolFromSmarts("[Se]"),
+        "amide_or_imide": Chem.MolFromSmarts("[CX3](=O)[NX3]"),
+        "keto_acid": Chem.MolFromSmarts("C(=O)C(=O)"),
+        "proline_like_ring": Chem.MolFromSmarts("C1N[C@H](C1)C(=O)O"),
+        "beta_hydroxy_acid": Chem.MolFromSmarts("O[C@H](C)C(=O)[OX2H]"),
+        "nitro_group": Chem.MolFromSmarts("[CX3]=[N+][O-]"),
+        "thioether_linkage": Chem.MolFromSmarts("[SX2]C[SX2]")
+    }
 
-    for pattern in uncommon_patterns:
+    # Check if any of the uncommon patterns match
+    for name, pattern in uncommon_patterns.items():
         if mol.HasSubstructMatch(pattern):
-            return True, "Contains unusual modification or uncommon side chain indicative of non-proteinogenic amino acids"
+            return True, f"Contains uncommon feature: {name}"
 
-    # Check for non-standard amino acid configurations, like D-enantiomers
+    # Stereochemistry Check
     chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
-    d_stereochemistry = False
+    unusual_stereochemistry = False
     for center, stereochemistry in chiral_centers:
-        if stereochemistry in ('S', 'R') and mol.GetAtomWithIdx(center).GetAtomicNum() == 6:  # Check for chiral centers in carbon atoms
-            d_stereochemistry = True
+        if stereochemistry in ('S', 'R') and mol.GetAtomWithIdx(center).GetAtomicNum() == 6:
+            unusual_stereochemistry = True
 
-    if d_stereochemistry:
-        return True, "Contains chiral centers with unusual stereochemistry"
+    if unusual_stereochemistry:
+        return True, "Unusual stereochemistry identified (potential D-enantiomer or non-standard configs)"
 
-    return False, "Does not display uncommon characteristics of non-proteinogenic amino acids"
+    return False, "No specific non-proteinogenic features detected"
