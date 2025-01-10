@@ -21,10 +21,15 @@ def is_tertiary_amine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # SMARTS pattern for tertiary amine: Nitrogen with 3 carbons not being part of carbonyl (C=O) or cyano groups (C#N)
-    tertiary_amine_pattern = Chem.MolFromSmarts("[$([NX3](C)(C)C)]!@[$(C=O)]!@[#7]")
-
+    # Simplified SMARTS pattern for tertiary amine: Nitrogen bonded to three carbon atoms
+    # We ensure we are not excluding carbonyl or cyano group unnecessarily here, focusing on the N and its direct C connections.
+    tertiary_amine_pattern = Chem.MolFromSmarts("[NX3](C)(C)C")
+    
     if mol.HasSubstructMatch(tertiary_amine_pattern):
         return True, "Nitrogen bonded to three carbon atoms found indicating a tertiary amine"
 
-    return False, "No nitrogen bonded to three carbon atoms found or specific configurations excluded"
+    return False, "No nitrogen bonded to three carbon atoms found"
+
+# Example asserts to test the function
+assert is_tertiary_amine("CC(C)N(CC[C@H](c1ccccc1)c1cc(C)ccc1O)C(C)C")[0] == True  # tolterodine example
+assert is_tertiary_amine("CCN(CC)CCOC(=O)C1(CCCCC1)C1CCCCC1")[0] == True  # dicyclomine example
