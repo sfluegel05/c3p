@@ -21,23 +21,25 @@ def is_2_acyl_1_alkyl_sn_glycero_3_phosphocholine(smiles: str):
         return False, "Invalid SMILES string"
     
     # Check for the core sn-glycerol backbone with invariant stereochemistry
-    glycerol_pattern = Chem.MolFromSmarts("[C@@H](O*)COP([O-])(=O)OCC[N+](C)(C)C")
+    glycerol_pattern = Chem.MolFromSmarts("[C@@H](O*)(COP([O-])(=O)OCC[N+](C)(C)C)")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No SN-glycerol backbone with correct stereochemistry and phosphocholine group found"
    
-    # Ensure there is a single ether-linked alkyl group at the sn-1 position
-    alkyl_ether_pattern = Chem.MolFromSmarts("CO[CH2]")
+    # Look for a long ether-linked alkyl chain from sn-1
+    alkyl_ether_pattern = Chem.MolFromSmarts("COCCCCCCCCCCCCCCCC*")
     if not mol.HasSubstructMatch(alkyl_ether_pattern):
-        return False, "No alkyl ether chain at sn-1 position detected"
+        return False, "No long alkyl ether chain detected at sn-1 position"
     
-    # Ensure there is a singular ester-linked acyl group at sn-2 position
-    acyl_ester_pattern = Chem.MolFromSmarts("C(OC)[CX3](=O)")
+    # Check for ester-linked acyl chain at sn-2 with long chain attached
+    acyl_ester_pattern = Chem.MolFromSmarts("OC([CX3](=O)CCCCCCCCCCCCC)*")
     if not mol.HasSubstructMatch(acyl_ester_pattern):
         return False, "No acyl chain at sn-2 position with ester linkage"
     
-    # Check for phosphocholine group with quaternary nitrogen
+    # Confirm phosphocholine group with quaternary nitrogen
     phosphocholine_pattern = Chem.MolFromSmarts("P([O-])(=O)(OCC[N+](C)(C)C)")
     if not mol.HasSubstructMatch(phosphocholine_pattern):
         return False, "No phosphocholine group with quaternary nitrogen found"
     
     return True, "Contains sn-glycerol backbone with alkyl at sn-1, acyl at sn-2, and phosphocholine group"
+
+# Test by passing examples of SMILES strings to the function
