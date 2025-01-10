@@ -21,20 +21,24 @@ def is_sphingoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for the characteristic amino alcohol moiety in sphingoids
-    amino_alcohol_pattern = Chem.MolFromSmarts("[#6]-[#6]-[#6](N)-[#6](O)-[#6]")  # Simple pattern for amino alcohol
+    # Look for characteristic amino alcohol moiety in sphingoids
+    amino_alcohol_pattern = Chem.MolFromSmarts("C[C@H](N)CO")  # More specific pattern for amino alcohol
     if not mol.HasSubstructMatch(amino_alcohol_pattern):
         return False, "No characteristic amino alcohol moiety found"
     
-    # Check for long hydrocarbon chain, possibly branched
-    chain_pattern = Chem.MolFromSmarts("CCCCCCCCCCC")  # Long hydrocarbon chain as an example
+    # Check for a long hydrocarbon chain
+    chain_pattern = Chem.MolFromSmarts("C" * 10)  # Minimum length of 10 carbon atoms
     if not mol.HasSubstructMatch(chain_pattern):
-        return False, "No long hydrocarbon chains found"
+        return False, "No long hydrocarbon chain found"
 
-    # Optional check for backbone stereochemistry typically seen in sphingoids
-    stereo_centers = [atom.GetChiralTag() for atom in mol.GetAtoms()]
-    has_stereo = Chem.CHI_TetrahedralIsomer.Any in stereo_centers
-    if not has_stereo:
+    # Capture potential unsaturation (double bonds) in the hydrocarbon chain
+    double_bond_pattern = Chem.MolFromSmarts("C=C")
+    if not mol.HasSubstructMatch(double_bond_pattern):
+        return False, "No unsaturation found, but this is optional"
+
+    # Check for stereochemistry in the hydrocarbon portion
+    stereo_present = any(atom.HasProp('_CIPCode') for atom in mol.GetAtoms())  # Identifies stereocenters
+    if not stereo_present:
         return False, "No stereochemistry typical of sphingoids found"
-    
+
     return True, "SMILES corresponds to a recognized sphingoid structure"
