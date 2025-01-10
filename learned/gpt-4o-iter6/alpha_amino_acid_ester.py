@@ -22,17 +22,18 @@ def is_alpha_amino_acid_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Pattern: Alpha carbon connected to amino and esterified carboxyl group
-    # SMARTS: [NX3;H2,H1,H0][CX4][C](=O)O[!H] (captures ester linkage with an alcohol)
-    amino_group = "[NX3;H2,H1,H0]"  # Amino group, allowing for substitutions
-    alpha_carbon = "[CX4]"           # Tetrahedral alpha-carbon
-    ester_linkage = "[C](=O)O[!H]"   # Ester linkage indicating esterified carboxyl group
-    alpha_amino_acid_ester_pattern = Chem.MolFromSmarts(amino_group + alpha_carbon + ester_linkage)
+    # Pattern: Extended alpha amino acid ester structure
+    # Including any bond after ester to capture esterified alcohol rather than focusing only on terminal O
+    alpha_amino_pattern = "[NX3][C@,C](Cc1~c*~c*1|[R1])"  # Alpha carbon binds an amino group maybe with stereocenter
+    ester_linkage_pattern = "[C](=O)O[C,H]"  # Capturing ester linkage with any bound after O
     
-    if not alpha_amino_acid_ester_pattern:
+    # Combined pattern
+    complete_pattern = Chem.MolFromSmarts(alpha_amino_pattern + ester_linkage_pattern)
+
+    if complete_pattern is None:
         return None, None  # Error in pattern creation
 
-    if mol.HasSubstructMatch(alpha_amino_acid_ester_pattern):
+    if mol.HasSubstructMatch(complete_pattern):
         return True, "Contains an alpha-amino acid backbone with ester linkage"
     
     return False, "Does not match the alpha-amino acid ester pattern"
