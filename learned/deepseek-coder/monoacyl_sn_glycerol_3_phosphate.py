@@ -36,7 +36,11 @@ def is_monoacyl_sn_glycerol_3_phosphate(smiles: str):
     phosphate_pattern = Chem.MolFromSmarts("[CH2X4][OX2][PX4](=[OX1])([OX2H0-1])[OX2H0-1]")
     phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
     if not phosphate_matches:
-        return False, "No phosphate group found at the 3rd position"
+        # Try alternative phosphate pattern
+        phosphate_pattern = Chem.MolFromSmarts("[CH2X4][OX2][PX4](=[OX1])([OX2H0-1])[OX2H0-1]")
+        phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
+        if not phosphate_matches:
+            return False, "No phosphate group found at the 3rd position"
 
     # Check for a single ester group (acyl group attached via ester bond)
     ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
