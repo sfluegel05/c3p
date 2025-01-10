@@ -2,61 +2,58 @@
 Classifies: CHEBI:25627 octadecadienoic acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdqueries
 
 def is_octadecadienoic_acid(smiles: str):
     """
     Determines if a molecule is an octadecadienoic acid based on its SMILES string.
     An octadecadienoic acid is a straight-chain fatty acid with exactly 18 carbons, two C=C double bonds,
-    and a carboxylic group at one end.
-
+    and a carboxylic acid group at one end.
+    
     Args:
         smiles (str): SMILES string of the molecule.
 
     Returns:
-        bool: True if molecule is an octadecadienoic acid, False otherwise.
-        str: Reason for classification.
+        bool, str: True and reason if molecule is an octadecadienoic acid, False and reason otherwise.
     """
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Perform DFS or BFS to check if there's a straight chain of 18 carbons
-    def find_longest_carbon_chain(atom):
-        visited = [False] * mol.GetNumAtoms()
-        max_depth = [0]
-
-        def dfs(current, depth):
-            visited[current.GetIdx()] = True
-            if current.GetAtomicNum() == 6:  # Carbon atom
-                max_depth[0] = max(max_depth[0], depth)
-                for neighbor in current.GetNeighbors():
-                    if not visited[neighbor.GetIdx()]:
-                        dfs(neighbor, depth + 1)
-
-        dfs(atom, 0)
-        return max_depth[0]
-
-    # Start BFS or DFS from each carbon atom
-    max_c_chain = max(find_longest_carbon_chain(atom) for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if max_c_chain < 17:  # Because we're counting bonds, 18 carbons means 17 bonds
-        return False, f"Has chain length {max_c_chain+1}, expected 18-carbon chain"
-    
-    # Count double bonds (consider them only within the main chain detected if possible)
-    double_bond_pattern = Chem.MolFromSmarts("[C]=[C]")
-    double_bonds = mol.GetSubstructMatches(double_bond_pattern)
-    if len(double_bonds) != 2:
-        return False, f"Found {len(double_bonds)} C=C double bonds, expected 2"
-
-    # Check for carboxylic acid group
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
-    if not mol.HasSubstructMatch(carboxylic_acid_pattern):
+    # Use SMILES parsing to create a set of carbon chain to test for octadecadienoic acid
+    # Find all chains as paths starting from a carboxylic acid group for proper context
+    carboxyl_pattern = Chem.MolFromSmarts("C(=O)O")
+    if not mol.HasSubstructMatch(carboxyl_pattern):
         return False, "Missing carboxylic acid group"
 
-    # If all checks pass, it's an octadecadienoic acid
-    return True, "Contains an 18-carbon chain with 2 C=C double bonds and a carboxylic acid group"
+    carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
+    for match in carboxyl_matches:
+        curr_atom = mol.GetAtomWithIdx(match[0])
+
+        # Traverse a carbon chain starting from carboxylic carbon, ensuring 18 C and positional double bonds
+        def dfs_find_carbon_chain(atom, depth, visited, max_depth, double_bond_count):
+            visited[atom.GetIdx()] = True
+            if atom.GetAtomicNum() == 6:
+                if depth > max_depth[0]:
+                    max_depth[0] = depth
+                for bond in atom.GetBonds():
+                    if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                        double_bond_count += 1
+                    next_atom = bond.GetOtherAtom(atom)
+                    if not visited[next_atom.GetIdx()]:
+                        dfs_find_carbon_chain(next_atom, depth + 1, visited, max_depth, double_bond_count)
+            return double_bond_count
+        
+        visited = [False] * mol.GetNumAtoms()
+        max_chain_length = [0]
+        double_bond_count = dfs_find_carbon_chain(curr_atom, 0, visited, max_chain_length, 0)
+
+        if max_chain_length[0] >= 17 and double_bond_count == 2:
+            return True, "Contains an 18-carbon chain with 2 C=C double bonds and a carboxylic acid group"
+
+    return False, "Does not meet structure requirements for an octadecadienoic acid"
 
 # Sample usage
-smiles = "CCCCCC\C=C\C=C/CCCCCCCC(O)=O"
-print(is_octadecadienoic_acid(smiles))
+smiles_test = "CCCCCC\\C=C\\C=C/CCCCCCCC(O)=O"
+result, reason = is_octadecadienoic_acid(smiles_test)
+print(f"Result: {result}, Reason: {reason}")
