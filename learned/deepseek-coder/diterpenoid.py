@@ -38,8 +38,13 @@ def is_diterpenoid(smiles: str):
         return False, "No rings found, unlikely to be a diterpenoid"
 
     # Check for typical functional groups in diterpenoids (e.g., alcohols, ketones, esters, ethers)
-    functional_groups = ["[OH]", "[C=O]", "[O]", "[C(=O)O]", "[O][C]", "[C](=O)[C]"]
-    has_functional_group = any(mol.HasSubstructMatch(Chem.MolFromSmarts(group)) for group in functional_groups)
+    functional_groups = ["[OH]", "[C]=O", "[O]", "[C](=O)[O]", "[O][C]", "[C](=O)[C]"]
+    has_functional_group = False
+    for group in functional_groups:
+        pattern = Chem.MolFromSmarts(group)
+        if pattern is not None and mol.HasSubstructMatch(pattern):
+            has_functional_group = True
+            break
     if not has_functional_group:
         return False, "No typical diterpenoid functional groups found"
 
@@ -52,5 +57,10 @@ def is_diterpenoid(smiles: str):
     n_branches = sum(1 for atom in mol.GetAtoms() if len(atom.GetNeighbors()) > 2)
     if n_branches < 2:
         return False, "Insufficient branching for a diterpenoid structure"
+
+    # Check for a terpenoid backbone (e.g., isoprene units)
+    isoprene_pattern = Chem.MolFromSmarts("CC(=C)C")
+    if isoprene_pattern is not None and mol.HasSubstructMatch(isoprene_pattern):
+        return True, "Contains a modified C20 skeleton with typical diterpenoid features (rings, functional groups, branching, isoprene units)"
 
     return True, "Contains a modified C20 skeleton with typical diterpenoid features (rings, functional groups, branching)"
