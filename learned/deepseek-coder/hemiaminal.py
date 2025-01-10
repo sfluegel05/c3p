@@ -25,10 +25,18 @@ def is_hemiaminal(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define the hemiaminal pattern: a carbon atom bonded to exactly one amino group and one hydroxy group
+    # Exclude cases where the carbon is part of an amide, ester, or other stable functional groups
     hemiaminal_pattern = Chem.MolFromSmarts("[C;H0;X4]([N;H1,H2])([O;H1])")
     
     # Check if the molecule contains the hemiaminal pattern
     if mol.HasSubstructMatch(hemiaminal_pattern):
-        return True, "Contains a carbon atom bonded to both an amino group and a hydroxy group"
+        # Further check to ensure the carbon is not part of an amide or ester
+        amide_pattern = Chem.MolFromSmarts("[C;H0;X4]([N;H1,H2])([O;H1])([C;H0;X3]=O)")
+        ester_pattern = Chem.MolFromSmarts("[C;H0;X4]([O;H1])([C;H0;X3]=O)")
+        
+        if not mol.HasSubstructMatch(amide_pattern) and not mol.HasSubstructMatch(ester_pattern):
+            return True, "Contains a carbon atom bonded to both an amino group and a hydroxy group"
+        else:
+            return False, "Carbon atom is part of a more stable functional group (e.g., amide, ester)"
     else:
         return False, "No carbon atom found with both an amino group and a hydroxy group attached"
