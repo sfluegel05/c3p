@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_tetradecanoate_ester(smiles: str):
     """
     Determines if a molecule is a tetradecanoate ester based on its SMILES string.
-    A tetradecanoate ester is an ester formed from tetradecanoic acid.
+    A tetradecanoate ester is an ester formed from tetradecanoic acid (14-carbon chain).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,16 +21,22 @@ def is_tetradecanoate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a SMARTS pattern for a tetradecanoate ester
-    # Looking for general ester pattern with 14-carbon chain
-    tetradecanoate_pattern = Chem.MolFromSmarts("CCCCCCCCCCCCC(=O)OC")  # 14-carbon chain including ester formation
-    
+    # Define an enhanced SMARTS pattern for a tetradecanoate ester
+    # Looking for ester group with a 14-carbon chain specifically
+    tetradecanoate_pattern = Chem.MolFromSmarts("CCCCCCCCCCCC(CC)=O")  # Sequence for 14-carbons ending in carboxylic acid esters
+   
     if mol.HasSubstructMatch(tetradecanoate_pattern):
-        # Get matches
+        # Get matches and ensure they conform to expected carbon count
         matches = mol.GetSubstructMatches(tetradecanoate_pattern)
         for match in matches:
-            c_count = sum(1 for atom_idx in match if mol.GetAtomWithIdx(atom_idx).GetAtomicNum() == 6)
-            if c_count == 14:  # Validating the exact carbon count expected
+            # The ends of the matched SMARTS should indicate attachment to ester oxygen
+            c_count = 0
+            for atom_idx in match:
+                atom = mol.GetAtomWithIdx(atom_idx)
+                if atom.GetAtomicNum() == 6:
+                    c_count += 1
+
+            if c_count == 14:  # Ensuring the exact carbon count matching myristic acid
                 return True, "Valid tetradecanoate ester group found"
-        
-    return False, "No valid tetradecanoate ester group found or incorrect carbon count"
+    
+    return False, "No valid tetradecanoate ester group found or incorrect carbon chain"
