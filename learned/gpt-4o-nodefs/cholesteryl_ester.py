@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_cholesteryl_ester(smiles: str):
     """
     Determines if a molecule is a cholesteryl ester based on its SMILES string.
-    Cholesteryl esters have a cholesterol base (a specific tetracyclic ring structure) with a fatty acid ester linkage.
+    Cholesteryl esters have a cholesterol base (fused ring structure) with a fatty acid ester linkage.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,19 +21,18 @@ def is_cholesteryl_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # More detailed SMARTS pattern for the entire tetracyclic steroid backbone of cholesterol
-    steroid_pattern = Chem.MolFromSmarts("C1[C@@H]2CC[C@H]3[C@@H](C2)CC=C4C[C@@H](OC(=O))[C@@]3(CC[C@]4(C[C@@H]5[C@@H](CC[C@]6(CCC=C7[C@H]6CCC(=C[C@]7(C[C@@H]5C)C)C)C)C)C)C")
+    # Create SMARTS pattern for the steroid structure
+    cholesterol_pattern = Chem.MolFromSmarts("[#6]1[#6]2[#6]3[#6]4[C@H]([#6]C=CC4C3CC(C2C1)OC(=O)C)CCCCC")
 
-    # Check if the molecule has the characteristic cholesterol steroid backbone
-    if not mol.HasSubstructMatch(steroid_pattern):
-        return False, "No cholesterol steroid backbone fully recognized"
+    # Check if the molecule has a cholesteryl backbone
+    if not mol.HasSubstructMatch(cholesterol_pattern):
+        return False, "No cholesteryl backbone found"
 
-    # Check for the presence of a ester linkage connected to the 3-beta OH group
-    ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H0][C@@H]1CCC2C1C=CC3C2(C)CCC4=C3C=CC5[C@]4(C)CC[C@@H]5C")
+    # Create SMARTS pattern for ester linkage (R-COO-R)
+    ester_pattern = Chem.MolFromSmarts("C(=O)O")
+    
+    # Check for presence of ester linkage in the compound
     if not mol.HasSubstructMatch(ester_pattern):
-        return False, "No ester linkage entity found at the cholesterol's 3-beta position"
+        return False, "No ester linkage found"
 
-    # Confirm that the ester linkage is part of a cholesteryl ester by verifying its connection
-    # Assume connections are valid if both patterns are present for cholesteryl esters
-
-    return True, "Contains characteristic cholesterol steroid backbone and ester linkage at correct position"
+    return True, "Contains cholesteryl backbone with ester linkage"
