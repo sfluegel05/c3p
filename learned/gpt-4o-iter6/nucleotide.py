@@ -9,11 +9,11 @@ def is_nucleotide(smiles: str):
     Determines if a molecule is a nucleotide based on its SMILES string.
     
     Args:
-        smiles (str): SMILES string of the molecule
+        smiles (str): SMILES string of the molecule.
     
     Returns:
-        bool: True if molecule is a nucleotide, False otherwise
-        str: Reason for classification
+        bool: True if the molecule is a nucleotide, False otherwise.
+        str: Reason for classification.
     """
     
     # Parse SMILES
@@ -21,25 +21,31 @@ def is_nucleotide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for phosphate group: O=P(O)(O)O
-    phosphate_pattern = Chem.MolFromSmarts("[OX2,PX4](=O)[OX1][OX1]")
-    if not mol.HasSubstructMatch(phosphate_pattern):
+    # Identify at least one phosphate group, considering variations (mono, di, tri, cyclic)
+    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)O")
+    phosphate_matches = len(mol.GetSubstructMatches(phosphate_pattern))
+    if phosphate_matches < 1:
         return False, "No phosphate group found"
     
-    # Identify sugar ring with nucleoside connection
-    # Assuming ribose & deoxyribose as part of nucleotides: [CH2X4][Ox2][CX4](Nuc)...
-    ribose_pattern = Chem.MolFromSmarts("[C@H1]([C@H1]([C@H1]([C@H1]([OX2])[OX2])[CX4])[C@H1](O)O)O")
+    # Check for the presence of a ribose or deoxyribose sugar ring
+    ribose_pattern = Chem.MolFromSmarts("C[C@H](O)[C@H](O)[C@H](CO)O")
+    deoxyribose_pattern = Chem.MolFromSmarts("C[C@H](O)[C@H](O)[C@H](CO)")
+
+    if not mol.HasSubstructMatch(ribose_pattern) and not mol.HasSubstructMatch(deoxyribose_pattern):
+        return False, "No compatible sugar ring (ribose or deoxyribose) found"
+
+    # Check for nitrogenous bases or any common nucleotide bases
+    base_patterns = [
+        Chem.MolFromSmarts("n1cnc2c1ncnc2"),
+        Chem.MolFromSmarts("n1cnc2c1ncnc2N"),  # Adenine
+        Chem.MolFromSmarts("Nc1ncnc2ncnn12"),  # Guanine
+        Chem.MolFromSmarts("Nc1ncnc2ncnc2n1"),  # Hypoxanthine (for example)
+        Chem.MolFromSmarts("c1c[nH]c(=O)[nH]c1=O"),  # Uracil
+        Chem.MolFromSmarts("C=1N=C(NC=N1)N"),  # Cytosine
+    ]
     
-    if not mol.HasSubstructMatch(ribose_pattern):
-        # If ribose is not found, check for deoxyribose (missing one OH)
-        deoxyribose_pattern = Chem.MolFromSmarts("[C@H1]([C@H1]([C@H1]([C@H1]([OX2])[CX4])[OX2])[C@H1](O)O)O")
-        if not mol.HasSubstructMatch(deoxyribose_pattern):
-            return False, "No nucleoside sugar ring found"
-    
-    # Check for the connection of phosphate to 3' or 5' carbon atom
-    connection_pattern_3_5 = Chem.MolFromSmarts("[C@H1]([CX4][OX2][PX4](=O)([OX1])[OX1])[OX2]")
-    
-    if not mol.HasSubstructMatch(connection_pattern_3_5):
-        return False, "No proper phosphate connection to 3' or 5' carbon"
-    
-    return True, "Contains nucleoside with phosphate attached to 3' or 5' carbon"
+    base_match_found = any(mol.HasSubstructMatch(base_pattern) for base_pattern in base_patterns)
+    if not base_match_found:
+        return False, "No nitrogenous base found in the structure"
+
+    return True, "Contains nucleoside with phosphate, sugar, and base attached appropriately"
