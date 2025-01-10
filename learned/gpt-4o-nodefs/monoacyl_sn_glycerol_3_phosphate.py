@@ -21,20 +21,20 @@ def is_monoacyl_sn_glycerol_3_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Identify glycerol structure (C3 chain with OH groups similar to C[OH]C[OH]C[OH])
-    glycerol_pattern = Chem.MolFromSmarts("C(CO)CO")
+    # Look for a glycerol backbone with the correct stereochemistry
+    glycerol_pattern = Chem.MolFromSmarts("[C@H](CO)[C@@H](O)CO")
     if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone found"
+        return False, "No stereo-specific glycerol backbone found"
 
-    # Identify the presence of a single acyl chain (long carbon chain with ester linkage to glycerol)
-    acyl_pattern = Chem.MolFromSmarts("C(=O)OCC")  # Simplified ester linkage pattern
+    # Correct acyl chain detection with ester bond C(=O)O
+    acyl_pattern = Chem.MolFromSmarts("[C,C@H](=O)OC")
     acyl_matches = mol.GetSubstructMatches(acyl_pattern)
     if len(acyl_matches) != 1:
         return False, f"Expected 1 acyl chain, found {len(acyl_matches)}"
-    
-    # Ensure a phosphate group is present at the third position
-    phosphate_pattern = Chem.MolFromSmarts("COP(=O)(O)O")  # Simplified phosphate group attached to glycerol
-    if not mol.HasSubstructMatch(phosphate_pattern):
-        return False, "No phosphate group found attached to glycerol"
 
-    return True, "Contains glycerol, single acyl chain, and phosphate group at the third position"
+    # Check phosphate group connection at the third position
+    phosphate_pattern = Chem.MolFromSmarts("[O]P(=O)(O)OC")
+    if not mol.HasSubstructMatch(phosphate_pattern):
+        return False, "No phosphate group found attached to glycerol at the correct position"
+    
+    return True, "Contains stereo-specific glycerol, single acyl chain, and phosphate group at the third position"
