@@ -21,20 +21,10 @@ def is_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns for amino group and carboxyl group
-    # We expect these to be attached to the same carbon atom
-    amino_group = Chem.MolFromSmarts("[NX3;H2,H1,H0;!$(NC=O)][$([C;H2,H1;!$(C=O)])]")
-    carboxyl_group = Chem.MolFromSmarts("[$(C(=O)[O;H1,-1,-])]")
+    # Define SMARTS patterns for amino group and carboxyl group attached to the α-carbon
+    alpha_amino_acid_pattern = Chem.MolFromSmarts("[C;!$(C=O)](N)([*])[C](=O)O")
 
-    # Check if amino and carboxyl groups are attached to the same carbon atom
-    matches_a = mol.GetSubstructMatches(amino_group)
-    matches_c = mol.GetSubstructMatches(carboxyl_group)
-    
-    # Look for common carbon indices in both matches (represents α-carbon)
-    alpha_carbons = set(m[1] for m in matches_a).intersection(set(m[0] for m in matches_c))
+    if mol.HasSubstructMatch(alpha_amino_acid_pattern):
+        return True, "Identified as an amino acid with amino and carboxyl groups attached to the α-carbon"
 
-    if not alpha_carbons:
-        return False, "Amino and carboxyl groups are not attached to the same α-carbon"
-
-    # If the structure passes all tests, consider it an amino acid
-    return True, "Identified as an amino acid with appropriate functional groups"
+    return False, "Amino and carboxyl groups are not attached to the same α-carbon"
