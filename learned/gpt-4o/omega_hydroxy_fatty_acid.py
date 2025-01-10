@@ -2,7 +2,7 @@
 Classifies: CHEBI:10615 omega-hydroxy fatty acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdChemReactions
+from rdkit.Chem import rdMolDescriptors
 
 def is_omega_hydroxy_fatty_acid(smiles: str):
     """
@@ -21,25 +21,20 @@ def is_omega_hydroxy_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Pattern for carboxylic acid
+    # Identify the longest carbon chain
+    lwc = Chem.rdmolops.GetLongestPath(mol)
+    chain_length = len(lwc)
+    if chain_length < 6:
+        return False, f"Carbon chain too short has only {chain_length} atoms"
+
+    # Check if the first atom in this chain is part of a carboxyl group
     carboxyl_pattern = Chem.MolFromSmarts("C(=O)O")
     carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
-    if not carboxyl_matches:
-        return False, "No carboxyl group present"
-    
-    # Pattern for terminal hydroxyl (omega position)
-    hydroxyl_pattern = Chem.MolFromSmarts("O")
-    hydroxyl_matches = [match for match in mol.GetSubstructMatches(hydroxyl_pattern) if len(match) == 1 and mol.GetAtomWithIdx(match[0]).GetDegree() == 1]
-    if not hydroxyl_matches:
-        return False, "No terminal hydroxyl group found at omega position"
-    
-    # Count carbon chain length
-    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if carbon_count < 6:
-        return False, f"Carbon chain too short has only {carbon_count} carbons"
+    if not carboxyl_matches or lwc[0] not in next(zip(*carboxyl_matches)):
+        return False, "No carboxyl group at position 1 of the main chain"
 
-    # Verify distinct ends: one carboxyl end and one omega -OH end
-    if len(carboxyl_matches) != 1 or len(hydroxyl_matches) != 1:
-        return False, "Should contain one carboxyl group and one omega-hydroxyl group"
-    
-    return True, "Contains carboxyl group and omega-hydroxyl group as per omega-hydroxy fatty acid definition."
+    # Check if the last atom in this chain is part of a terminal hydroxyl group
+    if mol.GetAtomWithIdx(lwc[-1]).GetAtomicNum() != 8:
+        return False, "No omega-hydroxyl group at end of the main chain"
+
+    return True, "Contains carboxyl group at position 1 and omega-hydroxyl group at end of the main chain as per omega-hydroxy fatty acid definition."
