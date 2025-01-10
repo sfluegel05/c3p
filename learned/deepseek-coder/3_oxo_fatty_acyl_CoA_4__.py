@@ -25,7 +25,6 @@ def is_3_oxo_fatty_acyl_CoA_4__(smiles: str):
 
     # Check for the presence of a CoA moiety
     # CoA moiety includes a pantetheine group, a phosphate group, and an adenosine group
-    # Using a more general pattern to capture variations
     coa_pattern = Chem.MolFromSmarts("[O-]P([O-])(=O)OP([O-])(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP([O-])([O-])=O)n1cnc2c(N)ncnc12")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No CoA moiety found"
@@ -37,10 +36,10 @@ def is_3_oxo_fatty_acyl_CoA_4__(smiles: str):
         return False, "No 3-oxo-fatty acid chain found"
 
     # Check for the 4- charge (deprotonated phosphate and diphosphate groups)
-    # The CoA moiety should have 4 negative charges, but we relax this to at least 4 negative charges
+    # The CoA moiety should have 4 negative charges
     charge = sum(atom.GetFormalCharge() for atom in mol.GetAtoms())
-    if charge > -4:
-        return False, f"Expected at least 4 negative charges, found {charge}"
+    if charge != -4:
+        return False, f"Expected 4 negative charges, found {charge}"
 
     # Check for the presence of a long carbon chain (fatty acid)
     # The chain should have at least 8 carbons
@@ -48,4 +47,4 @@ def is_3_oxo_fatty_acyl_CoA_4__(smiles: str):
     if carbon_count < 8:
         return False, "Carbon chain too short to be a fatty acid"
 
-    return True, "Contains 3-oxo-fatty acid chain, CoA moiety, and at least 4 negative charges"
+    return True, "Contains 3-oxo-fatty acid chain, CoA moiety, and 4 negative charges"
