@@ -21,12 +21,11 @@ def is_chalcones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more flexible SMARTS pattern for chalcones
-    # Look for two aromatic rings connected by an α,β-unsaturated carbonyl group
-    # Allow flexibility with substituents on aromatic rings and enone group.
-    aromatic_ring_pattern = "[$(c1ccc([#6,#0])c1),$(c1cccc([#6,#0])c1)]"
-    enone_pattern = "C(=O)C=C"  # Carbon alpha-beta unsaturation in the carbonyl group
-    chalcone_smarts = f"{aromatic_ring_pattern}{enone_pattern}{aromatic_ring_pattern}"
+    # Define flexible SMARTS pattern for chalcones
+    # Allows various substituent patterns on aromatic rings, connects to an α,β-unsaturated carbonyl
+    aromatic_ring_smarts = "[$(c1ccccc1),$(c1ccccn1)]"  # Allowing heterocycles too
+    enone_pattern = "[CX3](=O)[CX3]=[CX3]"  # General unsat linkage, α, β-unsat
+    chalcone_smarts = f"{aromatic_ring_smarts}{enone_pattern}{aromatic_ring_smarts}"
     
     # Convert SMARTS string to pattern object
     chalcone_pattern = Chem.MolFromSmarts(chalcone_smarts)
