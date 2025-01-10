@@ -16,25 +16,33 @@ def is_lipopeptide(smiles: str):
         bool: True if molecule is a lipopeptide, False otherwise
         str: Reason for classification
     """
-    # Parse SMILES string to RDKit molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return None, "Invalid SMILES string"
 
     # Define SMARTS pattern for a peptide bond (-CO-NH-)
     peptide_bond_pattern = Chem.MolFromSmarts("[C](=O)[N]")
-    
     if not mol.HasSubstructMatch(peptide_bond_pattern):
         return False, "No peptide bonds found"
 
-    # Check for lipid moieties: long hydrocarbon chains
-    # Simple pattern to match long sequences of carbon atoms
-    long_chain_pattern = Chem.MolFromSmarts("[CH2,CH3]~[CH2,CH3]~[CH2,CH3]~[CH2,CH3]~[CH2,CH3]~[CH2,CH3]~[CH2,CH3]~[CH2,CH3]")
-    
-    if not mol.HasSubstructMatch(long_chain_pattern):
-        return False, "No long hydrocarbon chains found"
+    # Enhanced lipid moieties detection
+    # Extended to consider long chains, branching, and cyclic hydrocarbons
+    lipid_patterns = [
+        Chem.MolFromSmarts("[CH2,CH3]{8,}"),  # Simple long carbon chains with 8+ atoms
+        Chem.MolFromSmarts("C1CCCCCCCCCC1"),  # Simple cyclic structures
+        Chem.MolFromSmarts("C~C(~C)~C"),         # Branching patterns
+    ]
 
-    return True, "Contains both peptide bonds and long hydrocarbon chains indicative of lipids"
+    lipid_like_found = any(mol.HasSubstructMatch(pattern) for pattern in lipid_patterns)
+    if not lipid_like_found:
+        return False, "No lipid-like structures found"
+
+    # Check for cyclic peptides
+    num_rings = mol.GetRingInfo().NumRings()
+    if num_rings > 0:
+        return True, "Contains cyclic structures, peptide bonds, and lipid moieties"
+
+    return True, "Contains peptide bonds and lipid-like moieties"
 
 # Example usage:
 # smiles_string = "CCCCC(=O)NCC(=O)NCCC(=O)OC1=C(NC2=C1C=CC=C2)O"
