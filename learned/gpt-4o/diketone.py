@@ -12,29 +12,26 @@ def is_diketone(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a diketone, False otherwise
+        bool: True if the molecule is a diketone, False otherwise
         str: Reason for classification
     """
     
-    # Parse the SMILES string
+    # Parse the SMILES string into a molecule object
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+    
+    # Define a refined SMARTS pattern for ketone functionality: carbonyl groups
+    # Ensure precise matching by anchoring carbonyl to specific supported contexts
+    ketone_pattern = Chem.MolFromSmarts("C(=O)[#6]")  # C=O directly attached to another carbon
 
-    # Define the SMARTS pattern for a ketone functionality.
-    # Ensure end atoms to prevent overlap bias in detection
-    ketone_pattern = Chem.MolFromSmarts("[CX3](=O)[CX3]")
+    # Finding non-overlapping substructure matches in the molecule
+    ketone_matches = mol.GetSubstructMatches(ketone_pattern, uniquify=True)
 
-    # Find all matches of ketone functionalities, ensuring proper atom constraints
-    ketone_matches = mol.GetSubstructMatches(ketone_pattern)
+    # Extract unique center carbon atoms to avoid overlapping biases
+    unique_ketone_centers = set(match[0] for match in ketone_matches)
 
-    # Improving the accuracy of ketone count by ensuring non-overlapping detection
-    # Filtering the matches if there are any overlaps that might lead to double-counting
-    unique_ketone_centers = set()
-    for match in ketone_matches:
-        unique_ketone_centers.add(match[1])  # Considering center of ketone (carbon)
-
-    # Count the unique ketone functionalities by considering the core atom involved
+    # Count unique ketone functionalities by core atom presence
     num_ketones = len(unique_ketone_centers)
 
     if num_ketones == 2:
