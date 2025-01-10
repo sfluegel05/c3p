@@ -5,14 +5,14 @@ Classifies: CHEBI:25448 myo-inositol phosphate
 Classifies: CHEBI:12348 myo-inositol phosphate
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_myo_inositol_phosphate(smiles: str):
     """
     Determines if a molecule is a myo-inositol phosphate based on its SMILES string.
-    A myo-inositol phosphate is a molecule consisting of a cyclohexane ring in the myo-configuration,
-    with hydroxyl and phosphate groups attached to the ring carbons.
-
+    A myo-inositol phosphate is an inositol phosphate in which the inositol component has myo-configuration.
+    This involves a cyclohexane ring with six hydroxyl or phosphate groups attached.
+    Due to challenges in matching stereochemistry, this implementation focuses on structural features.
+    
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -24,75 +24,48 @@ def is_myo_inositol_phosphate(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Find cyclohexane rings (6-membered carbon rings)
-    ring_info = mol.GetRingInfo()
-    atom_rings = ring_info.AtomRings()
-    cyclohexane_ring = None
-    for ring in atom_rings:
+
+    # Find cyclohexane rings
+    rings = mol.GetRingInfo().AtomRings()
+    cyclohexane_rings = []
+    for ring in rings:
         if len(ring) == 6:
             atoms_in_ring = [mol.GetAtomWithIdx(idx) for idx in ring]
             if all(atom.GetAtomicNum() == 6 for atom in atoms_in_ring):
-                cyclohexane_ring = ring
-                break
-    if cyclohexane_ring is None:
-        return False, "No cyclohexane ring of size 6 found"
+                cyclohexane_rings.append(ring)
 
-    ring_atoms = cyclohexane_ring
+    if not cyclohexane_rings:
+        return False, "No cyclohexane ring found"
 
-    # Prepare SMARTS patterns
-    hydroxyl_smarts = Chem.MolFromSmarts('[CX4;H1][OX2H]')  # Carbon with single bond to hydroxyl
-    phosphate_smarts = Chem.MolFromSmarts('[CX4;H1][O][P](=O)([O])[O]')  # Carbon with single bond to phosphate group
-
-    # Initialize flags
-    phosphate_found = False
-
-    # Check substituents on ring carbons
-    for idx in ring_atoms:
-        atom = mol.GetAtomWithIdx(idx)
-        non_ring_neighbors = [nbr for nbr in atom.GetNeighbors() if nbr.GetIdx() not in ring_atoms]
-        if not non_ring_neighbors:
-            return False, "Ring carbon has no substituents"
-
-        substituent_types = []
-        has_valid_substituent = False
-        for nbr in non_ring_neighbors:
-            bond = mol.GetBondBetweenAtoms(atom.GetIdx(), nbr.GetIdx())
-            # Create a fragment for matching
-            atom_idxs = [atom.GetIdx(), nbr.GetIdx()]
-            # Include atoms up to two bonds away for matching phosphate groups
-            for nbr2 in nbr.GetNeighbors():
-                if nbr2.GetIdx() != atom.GetIdx():
-                    atom_idxs.append(nbr2.GetIdx())
-                    for nbr3 in nbr2.GetNeighbors():
-                        if nbr3.GetIdx() not in atom_idxs:
-                            atom_idxs.append(nbr3.GetIdx())
-            frag = Chem.PathToSubmol(mol, atom_idxs)
-            if frag.HasSubstructMatch(hydroxyl_smarts):
-                substituent_types.append('hydroxyl')
-                has_valid_substituent = True
-            elif frag.HasSubstructMatch(phosphate_smarts):
-                substituent_types.append('phosphate')
-                phosphate_found = True
-                has_valid_substituent = True
+    # For each cyclohexane ring, check for substitution
+    for ring in cyclohexane_rings:
+        phosphate_found = False
+        all_oxygen_substituents = True
+        for idx in ring:
+            atom = mol.GetAtomWithIdx(idx)
+            # Get neighbors that are not in the ring
+            neighbors = [nbr for nbr in atom.GetNeighbors() if nbr.GetIdx() not in ring]
+            if not neighbors:
+                all_oxygen_substituents = False
+                break  # Unsubstituted carbon atom in ring
             else:
-                continue  # Could be hydrogen or other small atom
+                oxygen_neighbors = [nbr for nbr in neighbors if nbr.GetAtomicNum() == 8]
+                if not oxygen_neighbors:
+                    all_oxygen_substituents = False
+                    break  # Substituent is not oxygen
 
-        if not has_valid_substituent:
-            return False, "Ring carbon has substituents other than hydroxyl or phosphate groups"
-
-    if not phosphate_found:
-        return False, "No phosphate group found in molecule"
-
-    # Check for extra atoms (allow for counterions like sodium)
-    mol_formula = Chem.rdMolDescriptors.CalcMolFormula(mol)
-    allowed_elements = {'C', 'H', 'O', 'P'}
-    if not all(elem in allowed_elements for elem in mol_formula if elem.isalpha()):
-        return False, "Molecule contains elements other than C, H, O, P"
-
-    return True, "Molecule matches myo-inositol phosphate structure"
-
-# Metadata
+                for oxy in oxygen_neighbors:
+                    # Check if oxygen is connected to a phosphorus atom
+                    oxy_neighbors = oxy.GetNeighbors()
+                    for oxy_nbr in oxy_neighbors:
+                        if oxy_nbr.GetAtomicNum() == 15:
+                            phosphate_found = True
+                            break  # Phosphate group found
+        if all_oxygen_substituents and phosphate_found:
+            return True, "Molecule contains cyclohexane ring with oxygen substituents and at least one phosphate group"
+    
+    return False, "Molecule does not match myo-inositol phosphate structure"
+    
 __metadata__ = {
     'chemical_class': {
         'id': 'CHEBI:12348',
@@ -111,5 +84,20 @@ __metadata__ = {
         'max_negative_in_prompt': 20,
         'max_instances_in_prompt': 100,
         'test_proportion': 0.1
-    }
+    },
+    'message': None,
+    'attempt': 1,
+    'success': True,
+    'best': True,
+    'error': '',
+    'stdout': None,
+    'num_true_positives': None,
+    'num_false_positives': None,
+    'num_true_negatives': None,
+    'num_false_negatives': None,
+    'num_negatives': None,
+    'precision': None,
+    'recall': None,
+    'f1': None,
+    'accuracy': None
 }
