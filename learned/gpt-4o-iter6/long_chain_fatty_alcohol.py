@@ -26,17 +26,16 @@ def is_long_chain_fatty_alcohol(smiles: str):
         return False, "No hydroxyl group found"
     
     # Function to find the longest chain of carbon atoms using depth-first search
-    def longest_carbon_chain(atom, visited):
+    def longest_carbon_chain(atom, visited, chain_length=0):
         atom_id = atom.GetIdx()
         visited.add(atom_id)
-        max_length = 0
+        max_length = chain_length
         
-        # iterate over neighbors
+        # Iterate over neighbors
         for bond in atom.GetBonds():
             neighbor = bond.GetOtherAtom(atom)
-            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:
-                chain_length = 1 + longest_carbon_chain(neighbor, visited)
-                max_length = max(max_length, chain_length)
+            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:  # Only consider carbon atoms
+                max_length = max(max_length, longest_carbon_chain(neighbor, visited, chain_length + 1))
         
         visited.remove(atom_id)
         return max_length
@@ -47,7 +46,7 @@ def is_long_chain_fatty_alcohol(smiles: str):
         if atom.GetAtomicNum() == 6:  # Check only carbon atoms
             visited = set()
             max_chain_length = max(max_chain_length, longest_carbon_chain(atom, visited))
-
+    
     # Verify if the longest carbon chain meets the C13 to C22 requirement
     if 13 <= max_chain_length <= 22:
         return True, f"Contains a carbon chain of length {max_chain_length} and a hydroxyl group"
