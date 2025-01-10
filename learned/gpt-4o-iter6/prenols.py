@@ -21,31 +21,22 @@ def is_prenols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Pattern for isoprene unit with optional methyl branching
-    isoprene_pattern = Chem.MolFromSmarts("[CH2]-C(=C)-C[CH3]")
+    # Pattern for isoprene unit
+    isoprene_pattern = Chem.MolFromSmarts("C(C)=C(CCC)=C")
     
     # Search for isoprene units
-    isoprene_blocks = mol.GetSubstructMatches(isoprene_pattern)
-    if len(isoprene_blocks) < 1:
+    isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
+    if len(isoprene_matches) < 1:
         return False, "No or insufficient isoprene units found"
     
-    # Check for precisely one alcohol group
-    alcohol_pattern = Chem.MolFromSmarts("[OH]")
-    alcohol_matches = mol.GetSubstructMatches(alcohol_pattern)
-    if len(alcohol_matches) != 1:
-        return False, "There must be exactly one alcohol group"
+    # SMARTS for terminal alcohol group
+    terminal_alcohol_pattern = Chem.MolFromSmarts("[C;!$(C=O)][OH]")
     
-    # Validate the position of OH to be at the terminus of the molecule
-    terminal_oxygen = [a.GetIdx() for a in mol.GetAtomsWithQuery(Chem.MolFromSmarts("[OX2H]")) if a.GetDegree() == 1]
-    if not terminal_oxygen:
-        return False, "Alcohol group must be terminal"
-
-    # Ensure alcohol group is part of the main structure, not isolated
-    for atom_idx in terminal_oxygen:
-        neighboring_atoms = [n.GetAtomicNum() for n in mol.GetAtomWithIdx(atom_idx).GetNeighbors()]
-        if 6 in neighboring_atoms:  # Carbon is present
-            return True, "Contains isoprene units with a terminal alcohol group"
+    # Check for a terminal alcohol group
+    if not mol.HasSubstructMatch(terminal_alcohol_pattern):
+        return False, "Missing or non-terminal alcohol group"
     
-    return False, "Can't confirm isoprene-alcohol linkage"
+    # Assuming isoprene and OH presence means prenol
+    return True, "Contains isoprene units with terminal alcohol group"
 
 __metadata__ = {'chemical_class': {'name': 'prenol'}}
