@@ -16,31 +16,30 @@ def is_neoflavonoid(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
+    # Parse SMILES 
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define benzopyran ring system SMARTS and 4-aryl substitution
-    benzopyran_pattern = Chem.MolFromSmarts("c1ccccc1O2CC=C2")  # Simplified 1-benzopyran
-    aryl_at_pos_4_pattern = Chem.MolFromSmarts("c1ccccc1")  # Aryl group
+    # Define enhanced benzopyran pattern and position-4 aryl attachment
+    benzopyran_pattern = Chem.MolFromSmarts("c1ccc2occc2c1")  # Refined for benzopyran
+    aryl_pattern = Chem.MolFromSmarts("c1ccc[cH]c1")  # Matching phenyl/aryl groups
 
-    # Check for benzopyran backbone structure
-    if not mol.HasSubstructMatch(benzopyran_pattern):
+    # Find the benzopyran in the molecule
+    benzopyran_matches = mol.GetSubstructMatches(benzopyran_pattern)
+    if not benzopyran_matches:
         return False, "No 1-benzopyran structure found"
 
-    # Find the position of the benzopyran in the molecule
-    benzopyran_matches = mol.GetSubstructMatch(benzopyran_pattern)
-    
-    if not benzopyran_matches:
-        return False, "1-benzopyran structure not properly matched in the molecule"
-
-    # Assume fourth atom in benzopyran_matches is the position of interest
-    pos_4_atom_idx = benzopyran_matches[3] # 4th position based on 1-benzopyran
-    
-    # Check if an aryl group is attached here
-    for neighbor in mol.GetAtomWithIdx(pos_4_atom_idx).GetNeighbors():
-        if mol.HasSubstructMatch(aryl_at_pos_4_pattern, atoms=[neighbor.GetIdx()]):
-            return True, "Aryl substituent found at position 4"
+    # Check each benzopyran structure for an aryl group at position 4
+    for match in benzopyran_matches:
+        # Assume the fourth atom in the match is indeed position 4 (considering connectivity)
+        pos_4_atom_idx = match[3]
+        atom = mol.GetAtomWithIdx(pos_4_atom_idx)
+        
+        # Checking if any neighbor of pos_4_atom_idx is an aryl group
+        for neighbor in atom.GetNeighbors():
+            # Check for aryl group attachment
+            if mol.HasSubstructMatch(aryl_pattern, atoms=[neighbor.GetIdx()]):
+                return True, "Aryl substituent found at position 4"
     
     return False, "No aryl substitution at position 4 in the 1-benzopyran"
