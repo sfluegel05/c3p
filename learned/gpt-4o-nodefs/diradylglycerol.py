@@ -2,12 +2,11 @@
 Classifies: CHEBI:76578 diradylglycerol
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_diradylglycerol(smiles: str):
     """
     Determines if a molecule is a diradylglycerol based on its SMILES string.
-    A diradylglycerol is a glycerol backbone with two fatty acid chains attached via ester bonds or ethers.
+    A diradylglycerol is a glycerol backbone with two fatty acid chains attached as esters or ethers.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,15 +21,19 @@ def is_diradylglycerol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define a glycerol backbone pattern: Carbon chain COC or COCCO 
-    glycerol_pattern = Chem.MolFromSmarts("C(CO)CO")
+    # Define glycerol backbone pattern C(CO)CO
+    glycerol_pattern = Chem.MolFromSmarts("[C@@H](CO)CO | [C@H](CO)CO")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
     
-    # Identify two ester or ether groups
-    ester_or_ether_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H0] | [OX2H0]")
-    ester_ether_matches = mol.GetSubstructMatches(ester_or_ether_pattern)
-    if len(ester_ether_matches) < 2:
-        return False, f"Found {len(ester_ether_matches)} ester or ether groups, need at least 2"
+    # Identify ester groups: R-C(=O)-O-R' or ether: R-O-R'
+    ester_pattern = Chem.MolFromSmarts("C(=O)O")
+    ether_pattern = Chem.MolFromSmarts("COC")
     
-    return True, "Contains a glycerol backbone with two fatty acid chains attached via ester bonds or ethers"
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    ether_matches = mol.GetSubstructMatches(ether_pattern)
+    
+    if len(ester_matches) + len(ether_matches) < 2:
+        return False, f"Found {len(ester_matches)} esters and {len(ether_matches)} ethers, need at least two in any combination"
+    
+    return True, "Contains a glycerol backbone with two ester or ether linkages"
