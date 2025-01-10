@@ -7,7 +7,7 @@ def is_long_chain_fatty_alcohol(smiles: str):
     """
     Determines if a molecule is a long-chain fatty alcohol based on its SMILES string.
     Long-chain fatty alcohols contain a long hydrocarbon chain (typically 14 or more carbons)
-    with an alcohol (-OH) group.
+    with an alcohol (-OH) group at the end or within the chain.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,20 +21,18 @@ def is_long_chain_fatty_alcohol(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Look for alcohol group (O connected directly to a carbon that is not part of carboxylic acid)
-    alcohol_pattern = Chem.MolFromSmarts('[CX4][OX2H]')
-    if not mol.HasSubstructMatch(alcohol_pattern):
-        return False, "No alcohol group found"
-    
-    # Check for long hydrocarbon chain of at least 14 carbons
-    carbon_chain_pattern = Chem.MolFromSmarts("[C;R0](=O=[O+])([C;R0](*[OX2H]));!*[!#6]")
-    carbon_chain_matches = mol.GetSubstructMatches(carbon_chain_pattern)
 
-    # Check if there is any chain with at least 14 carbon atoms
-    long_chain_found = any(len(match) >= 14 for match in carbon_chain_matches)
-    
-    if not long_chain_found:
+    # Check for alcohol group (oxygen connected to a saturated carbon)
+    alcohol_pattern = Chem.MolFromSmarts('[CX4H2,CX4H3][OX2H]')
+    if not mol.HasSubstructMatch(alcohol_pattern):
+        return False, "No proper alcohol group found"
+
+    # Check for long carbon chain of at least 14 carbons
+    carbon_chain_pattern = Chem.MolFromSmarts('[CR0][CR0][CR0][CR0][CR0][CR0][CR0][CR0][CR0][CR0][CR0][CR0][CR0]')
+    if not mol.HasSubstructMatch(carbon_chain_pattern):
         return False, "No long hydrocarbon chain found"
-    
+
     return True, "Contains long hydrocarbon chain with an alcohol group"
+
+# Test the function with a sample SMILES string from the list:
+print(is_long_chain_fatty_alcohol('CCCCCCCCCC/C=C/CCCCCCCCCCCCO'))  # Example: (13Z)-docosen-1-ol
