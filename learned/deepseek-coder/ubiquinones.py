@@ -27,21 +27,15 @@ def is_ubiquinones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more flexible core structure pattern for 2,3-dimethoxy-5-methylbenzoquinone
-    core_pattern = Chem.MolFromSmarts("[C]1=C([O])C(=O)C(=C([O])C1=O)C")
+    # Define a more accurate core structure pattern for 2,3-dimethoxy-5-methylbenzoquinone
+    core_pattern = Chem.MolFromSmarts("[C]1=C([O][CH3])C(=O)C(=C([O][CH3])C1=O)[CH3]")
     if not mol.HasSubstructMatch(core_pattern):
-        return False, "Core benzoquinone structure not found"
-
-    # Check for the presence of methoxy groups (OCH3) on the core structure
-    methoxy_pattern = Chem.MolFromSmarts("[O][CH3]")
-    methoxy_matches = mol.GetSubstructMatches(methoxy_pattern)
-    if len(methoxy_matches) < 2:
-        return False, "Insufficient methoxy groups on the core structure"
+        return False, "Core 2,3-dimethoxy-5-methylbenzoquinone structure not found"
 
     # Check for the presence of a side chain at position 6
     # The side chain is typically a polyprenoid chain, which can vary in length
     # We look for a carbon chain attached to the core structure
-    side_chain_pattern = Chem.MolFromSmarts("[C]1=C([O])C(=O)C(=C([O])C1=O)C[!H]")
+    side_chain_pattern = Chem.MolFromSmarts("[C]1=C([O][CH3])C(=O)C(=C([O][CH3])C1=O)[CH3][!H]")
     if not mol.HasSubstructMatch(side_chain_pattern):
         return False, "No side chain found at position 6"
 
@@ -64,4 +58,4 @@ def is_ubiquinones(smiles: str):
     if o_count < 4:
         return False, "Too few oxygens for ubiquinone"
 
-    return True, "Contains core benzoquinone structure with methoxy groups and a polyprenoid side chain at position 6"
+    return True, "Contains core 2,3-dimethoxy-5-methylbenzoquinone structure with a polyprenoid side chain at position 6"
