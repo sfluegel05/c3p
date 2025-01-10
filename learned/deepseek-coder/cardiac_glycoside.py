@@ -28,13 +28,13 @@ def is_cardiac_glycoside(smiles: str):
 
     # Check for steroid nucleus (cyclopentanoperhydrophenanthrene ring system)
     # More general pattern to match different configurations
-    steroid_pattern = Chem.MolFromSmarts("[C]12[C][C][C]3[C]([C]1[C][C][C]2[C])[C]4[C][C][C]([C]4(C)[C]3)O")
+    steroid_pattern = Chem.MolFromSmarts("[C]12[C][C][C]3[C]([C]1[C][C][C]2[C])[C]4[C][C][C]([C]4(C)[C]3)")
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid nucleus found"
 
     # Check for lactone ring (butenolide or pentenolide)
-    # More specific pattern for lactone rings
-    lactone_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2][CX4][CX4]=[CX3]")
+    # More general pattern for lactone rings
+    lactone_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2][CX4]")
     if not mol.HasSubstructMatch(lactone_pattern):
         return False, "No lactone ring found"
 
