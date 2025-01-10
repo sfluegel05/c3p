@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_aromatic_amino_acid(smiles: str):
     """
     Determines if a molecule is an aromatic amino acid based on its SMILES string.
-    An aromatic amino acid has both an aromatic ring and an amino acid structure (amino and carboxylate group).
+    An aromatic amino acid has both an aromatic ring and an amino acid structure (amino and carboxyl group).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,22 +22,22 @@ def is_aromatic_amino_acid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for an aromatic ring
-    aromatic_ring_pattern = Chem.MolFromSmarts("a")
+    aromatic_ring_pattern = Chem.MolFromSmarts("[a]")
     if not mol.HasSubstructMatch(aromatic_ring_pattern):
         return False, "No aromatic ring found"
     
-    # Look for amino acid structure (amino group NH2 and carboxylate C(=O)O)
-    amino_group_pattern = Chem.MolFromSmarts("[NX3][CX4]")
-    carboxylate_group_pattern = Chem.MolFromSmarts("C(=O)[O]")
-    
+    # Look for amino group (-NH2 connected to a carbon)
+    amino_group_pattern = Chem.MolFromSmarts("[NX3][$([CX4]),$([CX3]=[CX3])]")
     if not mol.HasSubstructMatch(amino_group_pattern):
         return False, "No amino group found"
-        
-    if not mol.HasSubstructMatch(carboxylate_group_pattern):
-        return False, "No carboxylic acid group found"
     
-    # Check for connectivity: aromatic ring, alpha carbon, amino group, and carboxylate group
-    aromatic_amino_acid_pattern = Chem.MolFromSmarts("a-[C](N)-C(=O)[O]")
+    # Look for carboxyl group (C(=O)O)
+    carboxyl_group_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
+    if not mol.HasSubstructMatch(carboxyl_group_pattern):
+        return False, "No carboxyl group found"
+    
+    # Full pattern for an aromatic amino acid structure
+    aromatic_amino_acid_pattern = Chem.MolFromSmarts("a-[CX4](N)-C(=O)[O]")
     if not mol.HasSubstructMatch(aromatic_amino_acid_pattern):
         return False, "Aromatic ring not properly connected to amino acid functionality"
 
