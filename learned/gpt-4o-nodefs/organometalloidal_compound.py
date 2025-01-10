@@ -6,11 +6,11 @@ from rdkit import Chem
 def is_organometalloidal_compound(smiles: str):
     """
     Determines if a molecule is an organometalloidal compound based on its SMILES string.
-    Focuses on identifying arsenic in organic contexts.
+    The classification focuses on arsenic within organic structural contexts.
     
     Args:
         smiles (str): SMILES string of the molecule
-    
+
     Returns:
         bool: True if molecule is an organometalloidal compound, False otherwise
         str: Reason for classification
@@ -26,14 +26,15 @@ def is_organometalloidal_compound(smiles: str):
     if not has_arsenic:
         return False, "No arsenic atom found"
     
-    # Define more specific SMARTS patterns for organometalloidal contexts
+    # Define SMARTS patterns that commonly represent organometalloidal arsenic compounds
     organometalloidal_patterns = [
-        "[As](C)(O)=O", # Organometalloidal arsenic with organic carbon linkage
-        "[As](c)(O)=O", # Arsenic bonded to aromatic carbon and oxygen
-        "[As](C)(C)(C)", # Tri-substituted arsenic with carbons
-        "[As](C)(C)", # Arsenic primarily bonded to carbon chains
-        "[c][As](C)", # Aromatic group bonded with arsenic and carbon
-        "c1cc[cH]c[As]", # Benzene-like rings with arsenic substitution
+        "[As](O)(O)=O",    # Arsenic with double-bonded oxygen and hydroxyl groups (as in arsenates)
+        "[As](C)(C)(O)",   # Arsenic bonded to carbons and oxygen
+        "[As]([O-])([O-])", # Arsenic with multiple oxygen anions
+        "[c][As](C)",      # Arsenic bonded to an aromatic carbon and alkyl carbon
+        "[As]1C=CC=C[CH]1", # Common structural context (arsolane ring)
+        "[As]=O",          # Includes oxidized arsenic context
+        "c1c([As])ccc(c1)[As]",  # Arsenic within conjugated systems
     ]
     
     # Check for any structural pattern indicative of organometalloidal compounds
@@ -42,6 +43,3 @@ def is_organometalloidal_compound(smiles: str):
             return True, f"Pattern '{pattern}' matched, classified as organometalloidal"
     
     return False, "Presence of arsenic but not in organometalloidal context"
-
-# Example usage for testing:
-# print(is_organometalloidal_compound("C[As](O)(O)=O"))  # Should return True
