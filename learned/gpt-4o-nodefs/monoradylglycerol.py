@@ -22,8 +22,8 @@ def is_monoradylglycerol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for a glycerol backbone with ester group
-    glycerol_ester_pattern = Chem.MolFromSmarts("OCC(O)COC(=O)")
+    # SMARTS pattern for glycerol backbone with a single ester group
+    glycerol_ester_pattern = Chem.MolFromSmarts("OCC(O)CO[C](=O)")
 
     if not mol.HasSubstructMatch(glycerol_ester_pattern):
         return False, "No glycerol backbone with esterification found"
@@ -34,15 +34,18 @@ def is_monoradylglycerol(smiles: str):
     if len(ester_matches) != 1:
         return False, f"Found {len(ester_matches)} ester linkages, need exactly 1"
 
-    # Match the hydrocarbon chain pattern
-    hydrocarbon_chain_pattern = Chem.MolFromSmarts("C[C,C]C")
+    # Ensure there is a sufficiently long hydrocarbon chain attached
+    # Assuming a minimum chain length of 4 carbons for fatty acids
+    hydrocarbon_chain_pattern = Chem.MolFromSmarts("CCCC")
     hydrocarbon_matches = mol.GetSubstructMatches(hydrocarbon_chain_pattern)
     if len(hydrocarbon_matches) < 1:
-        return False, "Missing hydrocarbon chain"
+        return False, "Missing or too short hydrocarbon chain"
 
-    # Validate the expected glycerol backbone structure
-    glycerol_pattern = Chem.MolFromSmarts("OCC(O)CO")
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "Glycerol backbone is not connected properly"
+    # Check for any other specific stereochemistry or functional groups
+    sn_glycerol_pattern = Chem.MolFromSmarts("[C@H](CO[C](=O)")  # Example for sn-glycerol
+    if mol.HasSubstructMatch(sn_glycerol_pattern):
+        stereo_info = "sn-glycerol configuration detected"
+    else:
+        stereo_info = "Standard glycerol detected"
 
-    return True, "Contains a glycerol backbone with one esterified hydroxyl group and a hydrocarbon chain"
+    return True, f"Contains a glycerol backbone with one esterified hydroxyl group and a hydrocarbon chain. {stereo_info}"
