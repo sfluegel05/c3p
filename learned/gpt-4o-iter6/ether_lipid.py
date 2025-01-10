@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_ether_lipid(smiles: str):
     """
     Determines if a molecule is an ether lipid based on its SMILES string.
-    An ether lipid has a glycerol-like backbone with one or more carbon atoms bonded to alkyl chains via ether linkage.
-    
+    An ether lipid has one or more carbon atoms in glycerol bonded to an alkyl chain via ether linkage.
+
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -15,36 +15,37 @@ def is_ether_lipid(smiles: str):
         bool: True if molecule is an ether lipid, False otherwise
         str: Reason for classification
     """
-    # Parse SMILES into RDKit molecule
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for a three-carbon glycerol-like backbone with possible ether linkages
-    backbone_pattern = Chem.MolFromSmarts("O[C@H](C)CO")
+    # Updated glycerol backbone pattern to include stereochemistry and complex variations
+    glycerol_pattern = Chem.MolFromSmarts("[O][C@H][CH2][O]")  # Example pattern for stereo and oxygen groups
+    if not mol.HasSubstructMatch(glycerol_pattern):
+        return False, "No glycerol backbone found"
     
-    # Check for modified backbone forms with varied substitution (e.g., any stereo centers etc.)
-    alternative_backbone_pattern = Chem.MolFromSmarts("O[C]C(OC)CO")
-    
-    if not (mol.HasSubstructMatch(backbone_pattern) or mol.HasSubstructMatch(alternative_backbone_pattern)):
-        return False, "No suitable glycerol backbone found (considering ether variations)"
-
-    # Improved ether linkage pattern specific to R-O-R' with aliphatic chains
-    ether_pattern = Chem.MolFromSmarts("[OX2]([CX4])[CX4]")
+    # Look for ether linkage (C-O-[!C])
+    ether_pattern = Chem.MolFromSmarts("[CX4][OX2H0][!#1]")  # ether linkage with non-hydrogen atom
     ether_matches = mol.GetSubstructMatches(ether_pattern)
-    
     if not ether_matches:
-        return False, "No ether linkages detected within expected context"
-        
-    # Check if there is any phosphate group attached (commonly found, not mandatory)
-    phosphate_pattern = Chem.MolFromSmarts("[OP](=[O])(O)O")
-    has_phosphate = mol.HasSubstructMatch(phosphate_pattern)
+        return False, "No ether linkages found"
 
-    if has_phosphate:
-        return True, "Contains ether linkage with glycerol-like backbone and phosphate group"
-    else:
-        return True, "Contains ether linkage with glycerol-like backbone, but no phosphate group found"
+    # Count ether vs ester groups (O=C-O)
+    ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H0]")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
 
-# Testing the function with a sample SMILES string
+    # Ensuring more or equivalent ethers to esters for classification
+    if not (len(ether_matches) > len(ester_matches)):
+        return False, "Not enough ether linkages compared to ester linkages"
+
+    # Look for phosphate groups (P(=O)(O)O)
+    phosphate_pattern = Chem.MolFromSmarts("[PX4](=O)(O)O")
+    if mol.HasSubstructMatch(phosphate_pattern):
+        return True, "Contains ether linkage with glycerol backbone and phosphate group"
+
+    return True, "Contains ether linkage with glycerol backbone, but no phosphate group found"
+
+# You can test the function with examples:
 # result, reason = is_ether_lipid("CCCCCCCCCCCOC[C@H](COP([O-])(=O)OCC[N+](C)(C)C)OC(C)=O")
-# print(result, reason)
+# print(result, reason)  # Expected output: True, "Contains ether linkage with glycerol backbone and phosphate group"
