@@ -2,7 +2,6 @@
 Classifies: CHEBI:28966 chlorophyll
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_chlorophyll(smiles: str):
     """
@@ -27,15 +26,16 @@ def is_chlorophyll(smiles: str):
     if len(mg_atoms) != 1:
         return False, "Magnesium not found or more than one magnesium atom present"
 
-    # Check for porphyrin core with magnesium coordination
-    # Generalized search for heterocyclic rings with N and Mg link
-    porphyrin_core_general = Chem.MolFromSmarts('n1cccc1n2ccc([Mg])c3ncc4ccc(n)c4c23')
-    if not mol.HasSubstructMatch(porphyrin_core_general):
+    # Improved pattern for the porphyrin core with magnesium coordination
+    # This pattern accounts for a typical porphyrin ring around a central magnesium
+    porphyrin_core_improved = Chem.MolFromSmarts('n1ccc2c(ncn([Mg])c2c1)c1ccc3[nH]c(nc3c1)[Mg]')
+    if not mol.HasSubstructMatch(porphyrin_core_improved):
         return False, "Porphyrin core with magnesium coordination not found"
 
-    # Check for long linear or branched aliphatic chain (e.g., phytol)
-    aliphatic_chain_smarts = Chem.MolFromSmarts('CCC(CC)(CCCC)(CCCC)C')
-    if not mol.HasSubstructMatch(aliphatic_chain_smarts):
+    # Check for the presence of a long aliphatic chain, allowing more variability
+    # Here we simply look for a long carbon chain which is characteristic, but not overly specific
+    long_chain_smarts = Chem.MolFromSmarts('CCCCCCC')  # Looks for a stretch of at least 7 contiguous C atoms
+    if not mol.HasSubstructMatch(long_chain_smarts):
         return False, "Long aliphatic chain characteristic of chlorophyll missing"
 
     return True, "Contains magnesium porphyrin core with a fifth ring and a long aliphatic chain"
