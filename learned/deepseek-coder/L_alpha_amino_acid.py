@@ -26,15 +26,35 @@ def is_L_alpha_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # More flexible carboxyl group pattern (-COO or -COOH)
-    carboxyl_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H0,O-]")
-    carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
+    # More robust carboxyl group pattern (including zwitterionic forms)
+    carboxyl_patterns = [
+        Chem.MolFromSmarts("[CX3](=O)[OX1H0-,OX2H1]"),  # Normal carboxyl
+        Chem.MolFromSmarts("[CX3](=O)[O-]"),           # Zwitterionic form
+        Chem.MolFromSmarts("[CX3](=O)O")               # Protonated form
+    ]
+    
+    carboxyl_matches = []
+    for pattern in carboxyl_patterns:
+        matches = mol.GetSubstructMatches(pattern)
+        if matches:
+            carboxyl_matches.extend(matches)
+    
     if not carboxyl_matches:
         return False, "No carboxyl group found"
 
-    # More flexible amino group pattern (NH2, NH, or N with any substituents)
-    amino_pattern = Chem.MolFromSmarts("[NX3;H2,H1,H0]")
-    amino_matches = mol.GetSubstructMatches(amino_pattern)
+    # More robust amino group pattern (including zwitterionic forms)
+    amino_patterns = [
+        Chem.MolFromSmarts("[NX3;H2,H1,H0]"),          # Normal amino
+        Chem.MolFromSmarts("[NH3+]"),                  # Zwitterionic form
+        Chem.MolFromSmarts("[NX3H2]")                  # Protonated form
+    ]
+    
+    amino_matches = []
+    for pattern in amino_patterns:
+        matches = mol.GetSubstructMatches(pattern)
+        if matches:
+            amino_matches.extend(matches)
+    
     if not amino_matches:
         return False, "No amino group found"
 
@@ -47,6 +67,7 @@ def is_L_alpha_amino_acid(smiles: str):
             if neighbor.GetSymbol() == 'C':
                 alpha_candidates.add(neighbor.GetIdx())
 
+    alpha_carbon = None
     for amino_match in amino_matches:
         amino_nitrogen = amino_match[0]
         amino_neighbors = mol.GetAtomWithIdx(amino_nitrogen).GetNeighbors()
@@ -54,10 +75,10 @@ def is_L_alpha_amino_acid(smiles: str):
             if neighbor.GetSymbol() == 'C' and neighbor.GetIdx() in alpha_candidates:
                 alpha_carbon = neighbor.GetIdx()
                 break
-        else:
-            continue
-        break
-    else:
+        if alpha_carbon is not None:
+            break
+
+    if alpha_carbon is None:
         return False, "No alpha-carbon found connecting amino and carboxyl groups"
 
     # Check chirality at alpha-carbon
