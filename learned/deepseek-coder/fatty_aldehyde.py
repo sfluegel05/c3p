@@ -31,12 +31,6 @@ def is_fatty_aldehyde(smiles: str):
     if not aldehyde_matches:
         return False, "No aldehyde group found"
 
-    # Ensure the aldehyde group is at the end of the carbon chain
-    aldehyde_carbon = aldehyde_matches[0][0]
-    aldehyde_atom = mol.GetAtomWithIdx(aldehyde_carbon)
-    if aldehyde_atom.GetDegree() != 1:
-        return False, "Aldehyde group not at the end of the carbon chain"
-
     # Count the number of carbon atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if c_count < 6:
