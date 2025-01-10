@@ -5,7 +5,6 @@ Classifies: CHEBI:1722 3beta-hydroxy-Delta(5)-steroid
 Classifies: 3beta-hydroxy-Delta(5)-steroid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_3beta_hydroxy_Delta_5__steroid(smiles: str):
     """
@@ -25,23 +24,19 @@ def is_3beta_hydroxy_Delta_5__steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Pattern for steroid backbone (Four-ring structure, typically 6-6-6-5 membered rings)
-    steroid_pattern = Chem.MolFromSmarts("C1CCC2C3C=CC4CCCC(C4C3CCC2C1)C")
+    # Generic steroid backbone pattern (four interconnected rings)
+    steroid_pattern = Chem.MolFromSmarts("C1CCC2CCCCC2C1.C1CCC(C2CCCCC2)C1")
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
     
-    # 3beta-hydroxyl group pattern
-    hydroxyl_pattern = Chem.MolFromSmarts("C[C@@H](O)")
-    if not mol.HasSubstructMatch(hydroxyl_pattern):
+    # 3beta-hydroxyl group pattern (OH attached to a carbon in the ring)
+    beta_hydroxyl_pattern = Chem.MolFromSmarts("C[C@H](O)[C@](C1CCCCC1)C")
+    if not mol.HasSubstructMatch(beta_hydroxyl_pattern):
         return False, "No 3beta-hydroxyl group found"
     
-    # Delta-5 double bond pattern (double bond at C5=C6)
-    delta5_double_bond_pattern = Chem.MolFromSmarts("C=CC")
-    double_bond_matches = mol.GetSubstructMatches(delta5_double_bond_pattern)
-    if not double_bond_matches:
+    # Delta-5 double bond pattern (specific to 5,6 position in the steroid)
+    delta5_double_bond_pattern = Chem.MolFromSmarts("C1=CC(C2CCCCC2)C2CCCCC2C1")
+    if not mol.HasSubstructMatch(delta5_double_bond_pattern):
         return False, "No Delta-5 double bond found"
-    
-    # Additional validation could include verifying specific stereochemistry and bond location
-    # Implement these checks if needed for more precise classification
     
     return True, "Contains steroid backbone, 3beta-hydroxyl group, and Delta-5 double bond"
