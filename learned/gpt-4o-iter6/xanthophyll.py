@@ -24,21 +24,22 @@ def is_xanthophyll(smiles: str):
     
     # Check for long conjugated chain pattern
     # Long chains have alternating single and double bonds
-    chain_pattern = Chem.MolFromSmarts("C=C" + ("C=C" * 10))  # At least 20 carbons with conjugating double bonds
+    chain_pattern = Chem.MolFromSmarts("C=C" + "([#6]=[#6])" * 8)  # Looser pattern for flexibility
     if not mol.HasSubstructMatch(chain_pattern):
         return False, "No long conjugated chain pattern typical for carotenoids"
 
-    # Check for presence of oxygen atoms
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count < 1:
+    # Check for presence of oxygen atoms (oxygenation)
+    o_pattern = Chem.MolFromSmarts("[OX2H1,OX1,C=O]")  # Detects -OH, =O, and ethers
+    if not mol.HasSubstructMatch(o_pattern):
         return False, "Carotene derivative must be oxygenated"
 
-    # Check for the presence of cyclic ring structures typically found in many xanthophylls
-    ring_count = rdMolDescriptors.CalcNumRings(mol)
-    if ring_count < 1:
+    # Check for cyclic structures typically found in many xanthophylls
+    ring_matches = [ring for ring in mol.GetRingInfo().AtomRings() if all(mol.GetAtomWithIdx(idx).GetAtomicNum() == 6 for idx in ring)]
+    if len(ring_matches) < 1:
         return False, "Carotenoid backbone typically includes cyclic rings"
 
     return True, "Contains features of an oxygenated carotenoid (xanthophyll)"
 
 # Example usage:
-# is_xanthophyll("C\C(\C=C\C=C(/C)\C=C\C1=C(C)C[C@@H](O)CC1(C)C)=C/C=C/C=C(\C)/C=C/C=C(\C)/C=C/C1=C(C)C(=O)CCC1(C)C")
+# result, reason = is_xanthophyll("C\C(\C=C\C=C(/C)\C=C\C1=C(C)C[C@@H](O)CC1(C)C)=C/C=C/C=C(\C)/C=C/C=C(\C)/C=C/C1=C(C)C(=O)CCC1(C)C")
+# print(result, reason)
