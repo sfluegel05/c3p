@@ -5,8 +5,8 @@ from rdkit import Chem
 
 def is_branched_chain_fatty_acyl_CoA(smiles: str):
     """
-    Determines if a molecule is a branched-chain fatty acyl-CoA based on its SMILES string.
-    A branched-chain fatty acyl-CoA has a branched-chain fatty acid attached to Coenzyme A via a thioester bond.
+    Determines if a molecule belongs to the class of branched-chain fatty acyl-CoAs based on its SMILES string.
+    A branched-chain fatty acyl-CoA has any branched-chain fatty acid attached to Coenzyme A via a thioester bond.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -15,26 +15,26 @@ def is_branched_chain_fatty_acyl_CoA(smiles: str):
         bool: True if the molecule fits the class, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Refined Coenzyme A SMARTS pattern
-    # Includes the thioester linkage, pantetheine phosphate, and adenine nucleotide portions as distinguished in CoA
+    
+    # Define and detect Coenzyme A pattern using SMARTS
     coa_smarts = (
-        "C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O"
-        "[C@H]([C@H](O)[C@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12"
+        "C(=O)SCCNC(=O)CCNC(=O)C[C@H](O)C(C)COP(O)(=O)OP(O)(=O)OCC1OC"
+        "(n2cnc3c(ncnc23)N)[C@H]1O"
     )
     coa_pattern = Chem.MolFromSmarts(coa_smarts)
-    
+
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No Coenzyme A moiety found"
-
-    # Pattern for branched fatty acids (at least one tertiary carbon)
-    # A carbon with three non-hydrogen connected atoms (e.g., -C(CH3)3)
-    branched_pattern = Chem.MolFromSmarts("[CX4](C)(C)C")
+    
+    # Define pattern for branched chains in fatty acids
+    # A carbon atom connected to three other carbons
+    branched_smarts = "[CX4](C)(C)C"  # Detects _branched_ carbon patterns: tertiary or quaternary carbons
+    branched_pattern = Chem.MolFromSmarts(branched_smarts)
     
     if not mol.HasSubstructMatch(branched_pattern):
         return False, "No branched-chain in the fatty acid"
