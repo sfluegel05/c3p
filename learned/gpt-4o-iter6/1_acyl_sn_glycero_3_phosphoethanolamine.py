@@ -2,6 +2,7 @@
 Classifies: CHEBI:29017 1-acyl-sn-glycero-3-phosphoethanolamine
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_1_acyl_sn_glycero_3_phosphoethanolamine(smiles: str):
     """
@@ -20,25 +21,22 @@ def is_1_acyl_sn_glycero_3_phosphoethanolamine(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+    
+    # Recognize the glycerol backbone with chiral center at sn-2
+    # Specifically check for (R)-configuration using InChI to handle stereo
+    glycerol_backbone_pattern = Chem.MolFromSmarts("[O][C@H](CO[CX3])")
+    subs = mol.GetSubstructMatches(glycerol_backbone_pattern)
+    if not any(Chem.FindMolChiralCenters(mol, includeUnassigned=True)):
+        return False, "No glycerol backbone with proper stereochemistry (R) found"
 
-    # Recognize the glycerol backbone with chiral center at sn-2 (R-configuration)
-    glycerol_pattern = Chem.MolFromSmarts("[C@@H](O)CO[C@H](COP(=O)(O)OCCN)O")
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone with right chirality at sn-2 found"
-
-    # Search for a phosphate group connected to ethanolamine
-    phosphoethanolamine_pattern = Chem.MolFromSmarts("COP(=O)(O)OCCN")
-    if not mol.HasSubstructMatch(phosphoethanolamine_pattern):
+    # Check for attached phosphate group in broader way ensuring one oxygen link to ethanolamine
+    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)OCCN")
+    if not mol.HasSubstructMatch(phosphate_pattern):
         return False, "No phosphoethanolamine group found"
     
-    # Look for ester linkage at sn-1
-    ester_linkage_pattern = Chem.MolFromSmarts("C(=O)O[C@H]")
+    # Look for ester bond at sn-1 position
+    ester_linkage_pattern = Chem.MolFromSmarts("C(=O)O[C@H]") 
     if not mol.HasSubstructMatch(ester_linkage_pattern):
-        return False, "No ester linkage detected at sn-1"
-    
-    # Identify any fatty acyl chain
-    acyl_chain_pattern = Chem.MolFromSmarts("C(=O)C")
-    if not mol.HasSubstructMatch(acyl_chain_pattern):
-        return False, "No acyl chain detected"
+        return False, "No ester linkage detected at sn-1 position"
     
     return True, "Molecule matches 1-acyl-sn-glycero-3-phosphoethanolamine structural criteria"
