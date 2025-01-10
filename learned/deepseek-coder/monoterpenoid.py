@@ -28,30 +28,25 @@ def is_monoterpenoid(smiles: str):
     # Count the number of carbon atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     
-    # Monoterpenoids typically have 10 carbons, but modifications may reduce this
-    if c_count < 8 or c_count > 12:
+    # Monoterpenoids typically have 10 carbons, but modifications may expand this range
+    if c_count < 8 or c_count > 20:
         return False, f"Carbon count ({c_count}) is outside the expected range for a monoterpenoid"
 
-    # Check for isoprene-like patterns (C5 units)
+    # Check for isoprene-like patterns (C5 units) or modified forms
     isoprene_pattern = Chem.MolFromSmarts("[CH3]-[CH2]-[CH]=[CH2]")
-    if not mol.HasSubstructMatch(isoprene_pattern):
-        return False, "No isoprene-like pattern found"
+    modified_isoprene_pattern = Chem.MolFromSmarts("[CH3]-[CH2]-[CH]=[CH]")
+    if not (mol.HasSubstructMatch(isoprene_pattern) or mol.HasSubstructMatch(modified_isoprene_pattern)):
+        return False, "No isoprene-like pattern or modified form found"
 
-    # Check for cyclic or acyclic structures typical of monoterpenoids
-    ring_info = mol.GetRingInfo()
-    num_rings = ring_info.NumRings()
-    if num_rings > 2:
-        return False, f"Too many rings ({num_rings}) for a monoterpenoid"
-
-    # Check for functional groups common in monoterpenoids (e.g., alcohols, ketones, esters)
-    functional_groups = ["[OH]", "[C=O]", "[O][C=O]"]
+    # Check for functional groups common in monoterpenoids (e.g., alcohols, ketones, esters, ethers)
+    functional_groups = ["[OH]", "[C=O]", "[O][C=O]", "[O][C]", "[C]=[C]"]
     has_functional_group = any(mol.HasSubstructMatch(Chem.MolFromSmarts(fg)) for fg in functional_groups)
     if not has_functional_group:
         return False, "No typical monoterpenoid functional groups found"
 
-    # Check molecular weight (monoterpenoids typically have MW between 130 and 200)
+    # Check molecular weight (monoterpenoids typically have MW between 130 and 300)
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 130 or mol_wt > 200:
+    if mol_wt < 130 or mol_wt > 300:
         return False, f"Molecular weight ({mol_wt:.2f}) is outside the expected range for a monoterpenoid"
 
     return True, "Contains a C10 skeleton or modified form with typical monoterpenoid features"
