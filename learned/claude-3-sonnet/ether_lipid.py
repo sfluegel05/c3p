@@ -27,82 +27,93 @@ def is_ether_lipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for glycerol backbone connected to proper substituents
+    # Look for glycerol backbone patterns
     glycerol_patterns = [
         # Basic glycerol backbone
         Chem.MolFromSmarts("[OX2,OH1]-[CH2X4]-[CHX4]-[CH2X4]-[OX2,OH1]"),
         # Phospholipid glycerol backbone
         Chem.MolFromSmarts("[OX2]P(=O)([OX2])[OX2]-[CH2X4]-[CHX4]-[CH2X4]-[OX2]"),
         # More flexible glycerol pattern
-        Chem.MolFromSmarts("[OX2,OH1]-[CH2X4]-[CH1,2X4]-[CH2X4]-[OX2,OH1]")
+        Chem.MolFromSmarts("[OX2,OH1]-[CH2X4]-[CH1,2X4]-[CH2X4]-[OX2,OH1]"),
+        # Archaeal lipid glycerol pattern
+        Chem.MolFromSmarts("[OX2]-[CH2X4]-[CHX4]-[CH2X4]-[OX2]"),
+        # Phosphatidylcholine pattern
+        Chem.MolFromSmarts("[CH3][N+]([CH3])([CH3])CCO[P](=[O])([O-])OC[CH2][CH]([CH2]O)")
     ]
     
-    has_glycerol = any(mol.HasSubstructMatch(pattern) for pattern in glycerol_patterns)
+    has_glycerol = False
+    for pattern in glycerol_patterns:
+        if pattern is not None and mol.HasSubstructMatch(pattern):
+            has_glycerol = True
+            break
+            
     if not has_glycerol:
         return False, "No glycerol backbone found"
 
-    # Look for ether linkages specifically connected to glycerol backbone
+    # Define ether patterns
     ether_patterns = [
-        # Saturated ether on glycerol
-        Chem.MolFromSmarts("[CH2X4,CHX4]-[OX2]-[CH2X4,CHX3]-[!O;!N;!S]"),
+        # Basic ether pattern
+        Chem.MolFromSmarts("[CH2X4]-[OX2]-[CH2X4,CHX4]"),
         # Vinyl ether (plasmalogen)
-        Chem.MolFromSmarts("[CH2X4,CHX4]-[OX2]-[CH1X3]=[CHX3]"),
-        # General ether pattern excluding esters
-        Chem.MolFromSmarts("[CH2X4,CHX4]-[OX2]-[CX4,CX3;!$(C=O)]")
+        Chem.MolFromSmarts("[CH2X4]-[OX2]-[CH]=[CH]"),
+        # Archaeal ether pattern
+        Chem.MolFromSmarts("[CH2X4]-[OX2]-[CH2X4]-[CH2X4]"),
+        # Branched ether pattern
+        Chem.MolFromSmarts("[CH2X4]-[OX2]-[CH]([CH3])[CH2X4]")
     ]
-    
-    # Count ether linkages that are part of the glycerol moiety
-    glycerol_ether_count = 0
+
+    # Count ether linkages
+    ether_count = 0
     for pattern in ether_patterns:
-        matches = mol.GetSubstructMatches(pattern)
-        for match in matches:
-            # Check if the ether is connected to the glycerol backbone
-            if any(mol.GetAtomWithIdx(match[0]).IsInRing() for match in matches):
-                continue
-            glycerol_ether_count += 1
+        if pattern is not None:
+            matches = mol.GetSubstructMatches(pattern)
+            for match in matches:
+                # Check if the ether is connected to glycerol backbone
+                atom = mol.GetAtomWithIdx(match[0])
+                if not atom.IsInRing():  # Exclude cyclic ethers
+                    ether_count += 1
 
-    if glycerol_ether_count == 0:
-        return False, "No ether linkages found connected to glycerol backbone"
+    if ether_count == 0:
+        return False, "No ether linkages found"
 
-    # Look for alkyl chains (more flexible length requirement)
+    # Check for alkyl chains
     chain_patterns = [
-        # Minimum 4-carbon chain
-        Chem.MolFromSmarts("[CX4,CX3]-[CX4,CX3]-[CX4,CX3]-[CX4,CX3]"),
-        # Unsaturated chain
-        Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+        # Minimum 2-carbon chain
+        Chem.MolFromSmarts("[CX4,CX3]-[CX4,CX3]"),
+        # Branched chain
+        Chem.MolFromSmarts("[CX4,CX3](-[CX4,CX3])-[CX4,CX3]")
     ]
     
-    has_chain = any(mol.HasSubstructMatch(pattern) for pattern in chain_patterns)
-    if not has_chain:
-        return False, "No suitable alkyl chains found"
+    has_chain = False
+    for pattern in chain_patterns:
+        if pattern is not None and mol.HasSubstructMatch(pattern):
+            has_chain = True
+            break
 
-    # Basic size and composition checks
+    if not has_chain:
+        return False, "No alkyl chains found"
+
+    # Basic composition checks
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     
-    if c_count < 8:  # Relaxed carbon requirement
+    if c_count < 5:  # Minimum carbon requirement
         return False, "Too few carbons for ether lipid"
-    if o_count < 3:
+    if o_count < 2:  # Minimum oxygen requirement
         return False, "Too few oxygens for ether lipid"
 
-    # Check for specific structural features
+    # Structural feature detection
     has_phosphate = mol.HasSubstructMatch(Chem.MolFromSmarts("[PX4](=O)([O-,OH])([O-,OH])"))
     has_ester = mol.HasSubstructMatch(Chem.MolFromSmarts("[CX4]-[OX2]-[CX3](=[OX1])[CX4]"))
-    has_plasmalogen = mol.HasSubstructMatch(Chem.MolFromSmarts("[CH2X4]-[OX2]-[CH1X3]=[CHX3]"))
     
-    # Exclude molecules with too many rings
-    ring_count = rdMolDescriptors.CalcNumRings(mol)
-    if ring_count > 2:
-        return False, "Too many rings for ether lipid"
-
-    # Build detailed reason string
+    # Build classification reason
     features = []
     if has_phosphate:
         features.append("phosphate group")
     if has_ester:
         features.append("ester linkage")
-    if has_plasmalogen:
-        features.append("vinyl ether (plasmalogen)")
+    if mol.HasSubstructMatch(Chem.MolFromSmarts("[CH2X4]-[OX2]-[CH]=[CH]")):
+        features.append("vinyl ether")
     
     feature_str = ", ".join(features)
     if feature_str:
