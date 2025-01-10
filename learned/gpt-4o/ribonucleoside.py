@@ -21,16 +21,18 @@ def is_ribonucleoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a pattern for D-ribose, allowing basic chemical modifications, like hydroxy or methyl groups
-    ribose_pattern = Chem.MolFromSmarts("O[C@H]1[C@@H](O)[C@H](O)[C@H](CO)1")
+    # Define an expanded pattern for D-ribose, allowing modifications like methoxy
+    ribose_pattern = Chem.MolFromSmarts("O[c@H]1[c@H](O)[c@@H](C)[c@@H](O)[C@H](O)1")  # More flexible ribose pattern
     if not mol.HasSubstructMatch(ribose_pattern):
         return False, "No ribose sugar component found"
 
-    # Define broader patterns for nucleobases
+    # Define broader patterns for nucleobases in ribonucleosides
     extended_nucleobase_patterns = [
-        Chem.MolFromSmarts("n1cnc2n(cnc12)"),  # Purine
-        Chem.MolFromSmarts("c1cnc[nH]c1"),     # Pyrimidine
-        Chem.MolFromSmarts("c1c[nH]c(=O)n(c1)"), # Modified pyrimidine
+        Chem.MolFromSmarts("n1cnc2n(cnc12)"),  # Purine base pattern
+        Chem.MolFromSmarts("c1cnc[nH]c1"),     # Pyrimidine base pattern
+        Chem.MolFromSmarts("c1c[nH]c(=O)n(c1)"),  # Modified pyrimidine pattern
+        Chem.MolFromSmarts("n1cnc2c(ncnc2)n1"), # Include potential alternate purine patterns
+        Chem.MolFromSmarts("n1cncc1N"),        # Generalized pattern to include possible modifications
     ]
 
     # Check for nucleobase attachment
