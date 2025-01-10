@@ -11,7 +11,8 @@ def is_nucleobase_analogue(smiles: str):
     """
     Determines if a molecule is a nucleobase analogue based on its SMILES string.
     A nucleobase analogue is a molecule that can substitute for a normal nucleobase in nucleic acids.
-    They typically contain pyrimidine-like or purine-like ring systems.
+    They typically have a core structure similar to canonical nucleobases (adenine, guanine, cytosine, thymine, uracil)
+    with possible modifications, but without attached sugar or phosphate groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,71 +21,48 @@ def is_nucleobase_analogue(smiles: str):
         bool: True if molecule is a nucleobase analogue, False otherwise
         str: Reason for classification
     """
+    from rdkit.Chem import AllChem
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    has_pyrimidine_ring = False
-    has_purine_ring = False
 
-    # Get the ring information
-    ri = mol.GetRingInfo()
-    atom_rings = ri.AtomRings()
+    # Define SMARTS patterns for canonical nucleobases
+    nucleobase_patterns = {
+        'adenine': Chem.MolFromSmarts('c1nc2[nH]cnc-2nc1'),
+        'guanine': Chem.MolFromSmarts('c1[nH]c2c(n1)nc(=O)[nH]c2'),
+        'cytosine': Chem.MolFromSmarts('Nc1nc[nH]cc1=O'),
+        'thymine': Chem.MolFromSmarts('O=C1NC(=O)C=C[NH]1'),
+        'uracil': Chem.MolFromSmarts('O=C1NC(=O)C=CC1=O')
+    }
 
-    for ring in atom_rings:
-        ring_size = len(ring)
-        ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
+    # Define SMARTS patterns for sugar (ribose/deoxyribose)
+    sugar_pattern = Chem.MolFromSmarts('C1OC([H])C([H])C1O')  # Simplified sugar pattern
 
-        # Check if the ring is aromatic
-        if all(atom.GetIsAromatic() for atom in ring_atoms):
-            # For pyrimidine-like rings
-            if ring_size == 6:
-                nitrogen_count = sum(1 for atom in ring_atoms if atom.GetAtomicNum() == 7)
-                if nitrogen_count >= 2:
-                    has_pyrimidine_ring = True
-            # For purine-like rings (fused rings)
-            elif ring_size == 5 or ring_size == 6:
-                # Check for fused rings
-                bonds = [mol.GetBondBetweenAtoms(ring[i], ring[(i+1)%ring_size]) for i in range(ring_size)]
-                bond_rings = [ri.NumBondRings(bond.GetIdx()) for bond in bonds]
-                if max(bond_rings) > 1:
-                    # Ring is part of a fused system
-                    fused_atoms = set(ring)
-                    for other_ring in atom_rings:
-                        if other_ring != ring and len(set(other_ring).intersection(fused_atoms)) > 0:
-                            # Found a fused ring system
-                            combined_ring = set(ring).union(other_ring)
-                            combined_ring_atoms = [mol.GetAtomWithIdx(idx) for idx in combined_ring]
-                            nitrogen_count = sum(1 for atom in combined_ring_atoms if atom.GetAtomicNum() == 7)
-                            if len(combined_ring) >= 9 and nitrogen_count >= 4:
-                                has_purine_ring = True
-                                break
-    if has_purine_ring:
-        return True, "Contains purine-like fused ring system"
-    elif has_pyrimidine_ring:
-        return True, "Contains pyrimidine-like ring system"
-    else:
-        return False, "Does not contain purine or pyrimidine-like ring systems"
-        
+    # Define SMARTS pattern for phosphate group
+    phosphate_pattern = Chem.MolFromSmarts('P(=O)(O)O')
 
-__metadata__ = {   'chemical_class': {   'id': None,
-                              'name': 'nucleobase analogue',
-                              'definition': 'A molecule that can substitute for a normal nucleobase in nucleic acids.',
-                              'parents': []},
-        'config': {   'llm_model_name': 'lbl/claude-sonnet',
-                      'f1_threshold': 0.8,
-                      'max_attempts': 5,
-                      'max_positive_instances': None,
-                      'max_positive_to_test': None,
-                      'max_negative_to_test': None,
-                      'max_positive_in_prompt': 50,
-                      'max_negative_in_prompt': 20,
-                      'max_instances_in_prompt': 100,
-                      'test_proportion': 0.1},
-        'message': None,
-        'attempt': 0,
-        'success': True,
-        'best': True,
-        'error': '',
-        'stdout': None}
+    # Check for sugar or phosphate groups
+    has_sugar = mol.HasSubstructMatch(sugar_pattern)
+    has_phosphate = mol.HasSubstructMatch(phosphate_pattern)
+    if has_sugar:
+        return False, "Contains sugar group; likely a nucleoside or nucleotide"
+    if has_phosphate:
+        return False, "Contains phosphate group; likely a nucleotide"
+
+    # Check for nucleobase core structures
+    for name, pattern in nucleobase_patterns.items():
+        if mol.HasSubstructMatch(pattern):
+            return True, f"Contains nucleobase core structure similar to {name}"
+
+    # Check for modified nucleobase analogues using generic patterns
+    pyrimidine_pattern = Chem.MolFromSmarts('c1cc[nH]c(=O)[nH]1')  # Generic pyrimidine core
+    purine_pattern = Chem.MolFromSmarts('c1nc2c(n1)[nH]c(nc2)[N]')  # Generic purine core
+
+    if mol.HasSubstructMatch(pyrimidine_pattern):
+        return True, "Contains modified pyrimidine-like nucleobase core"
+    if mol.HasSubstructMatch(purine_pattern):
+        return True, "Contains modified purine-like nucleobase core"
+
+    return False, "Does not contain nucleobase core structure"
