@@ -5,7 +5,6 @@ Classifies: CHEBI:87657 octanoate ester
 Classifies: CHEBI:75548 octanoate ester
 """
 from rdkit import Chem
-from rdkit.Chem import Descriptors
 
 def is_octanoate_ester(smiles: str):
     """
@@ -44,13 +43,10 @@ def is_octanoate_ester(smiles: str):
         neighbor = ester_atom.GetNeighbors()[0]  # First neighbor is the chain
         while neighbor.GetAtomicNum() == 6:  # Carbon
             chain_length += 1
+            if chain_length > 7:  # 7 carbons + 1 in C=O = 8 carbons total
+                break
             neighbor = neighbor.GetNeighbors()[0]  # Move to next carbon
         if chain_length != 7:  # 7 carbons + 1 in C=O = 8 carbons total
             return False, "Chain length not consistent with octanoic acid"
-
-    # Check molecular weight to filter out larger molecules
-    mol_wt = Descriptors.ExactMolWt(mol)
-    if mol_wt > 500:  # Octanoate esters are typically smaller
-        return False, "Molecular weight too high for octanoate ester"
 
     return True, "Contains octanoate ester group (CCCCCCCC(=O)OR)"
