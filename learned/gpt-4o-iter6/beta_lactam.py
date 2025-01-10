@@ -22,12 +22,13 @@ def is_beta_lactam(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define an improved SMARTS pattern for a four-membered beta-lactam ring:
-    # It identifies the specific 4-membered ring with C=O and N.
-    beta_lactam_pattern = Chem.MolFromSmarts("C1(=O)NCC1")  # Basic beta-lactam ring structure
-
-    # Allow for any substitutions on the carbon atoms but must be four-membered
+    # Define a SMARTS pattern for a four-membered beta-lactam ring
+    # Allow for substitutions but recognize the crucial parts: C=O and N in a 4-membered ring
+    beta_lactam_pattern = Chem.MolFromSmarts("C1=O-[NH]-C-C1")  # A loose pattern for a beta-lactam ring
+    
+    # Check for the presence of a beta-lactam structure
     if mol.HasSubstructMatch(beta_lactam_pattern):
         return True, "Contains a four-membered beta-lactam ring"
     
+    # If pattern match fails
     return False, "Does not contain a four-membered beta-lactam ring"
