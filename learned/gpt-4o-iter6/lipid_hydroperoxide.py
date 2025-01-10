@@ -22,26 +22,26 @@ def is_lipid_hydroperoxide(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for hydroperoxy groups (-OOH)
-    hydroperoxy_pattern = Chem.MolFromSmarts("[O][O]")
+    hydroperoxy_pattern = Chem.MolFromSmarts("[O][O][H]")
     hydroperoxy_matches = mol.GetSubstructMatches(hydroperoxy_pattern)
     if not hydroperoxy_matches:
         return False, "No hydroperoxy group found"
     
-    # Check for lipid structure - typically long carbon chains, possibly with double bonds
-    # We can check for long contiguous carbon chains
-    carbon_chain_pattern = Chem.MolFromSmarts("[C]-[C]-[C]-[C]-[C]")  # Example pattern for a chain
+    # Improve lipid detection by refining carbon chain pattern and checking for common lipid features
+    # Check for long carbon chains including possible double bonds and branching
+    carbon_chain_pattern = Chem.MolFromSmarts("[C](=[C])[C]")  # Assumes presence of bonds typical of lipids
     carbon_chain_matches = mol.GetSubstructMatches(carbon_chain_pattern)
-    if not carbon_chain_matches:
-        return False, "No extended carbon chain typical of lipids found"
-    
-    # Additional checks for the presence of potential lipid endings like carboxylic acid groups
+    if carbon_chain_matches:
+        # Checking for long carbon chain with bonds resembling lipid characteristics
+        carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+        double_bond_count = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE)
+        
+        if carbon_count >= 10 and double_bond_count >= 2:
+            return True, "Contains hydroperoxy group(s) within a lipid structure"
+        
+    # Checking for the presence of end groups like carboxylic acid that are common in lipids
     carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[O]")
     if mol.HasSubstructMatch(carboxylic_acid_pattern):
         return True, "Contains hydroperoxy group(s) within a lipid structure"
-
-    # If significant length of carbon chains is observed, it's considered a lipid
-    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if carbon_count >= 10:
-        return True, "Contains hydroperoxy group(s) with significant carbon chains typical of lipids"
-
+    
     return False, "Does not fit lipid hydroperoxide profile"
