@@ -6,7 +6,6 @@ Classifies: aromatic amino acids
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem.rdDecomposition import IsAromatic
 
 def is_aromatic_amino_acid(smiles: str):
     """
@@ -27,43 +26,35 @@ def is_aromatic_amino_acid(smiles: str):
 
     # Check for aromatic ring
     has_aromatic = False
-    for ring in mol.GetRingInfo().AtomRings():
-        if any(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring):
+    for atom in mol.GetAtoms():
+        if atom.GetIsAromatic():
             has_aromatic = True
             break
             
     if not has_aromatic:
         return False, "No aromatic ring found"
 
-    # Look for carboxylic acid group (-COOH)
-    carboxyl_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H1]")
-    if not mol.HasSubstructMatch(carboxyl_pattern):
-        return False, "No carboxylic acid group found"
+    # Look for amino acid pattern
+    # This SMARTS pattern looks for:
+    # - A carbon with a carboxylic acid (-C(=O)OH)
+    # - Connected to a nitrogen (can be NH2, NHR, or NR2)
+    amino_acid_pattern = Chem.MolFromSmarts("[NX3][CX4]C(=O)[OH]")
+    if not mol.HasSubstructMatch(amino_acid_pattern):
+        return False, "No amino acid group found"
 
-    # Look for amino group (-NH2) or substituted amino (-NHR, -NR2)
-    # We'll check for both primary amines and substituted amines
-    primary_amine_pattern = Chem.MolFromSmarts("[NX3H2]")
-    secondary_amine_pattern = Chem.MolFromSmarts("[NX3H1]")
-    tertiary_amine_pattern = Chem.MolFromSmarts("[NX3H0]")
-    
-    has_amine = (mol.HasSubstructMatch(primary_amine_pattern) or 
-                 mol.HasSubstructMatch(secondary_amine_pattern) or
-                 mol.HasSubstructMatch(tertiary_amine_pattern))
-    
-    if not has_amine:
-        return False, "No amino group found"
+    # Additional check for aromatic ring connected to amino acid portion
+    # We'll look at the distance between aromatic atoms and the amino acid carbon
+    amino_acid_matches = mol.GetSubstructMatches(amino_acid_pattern)
+    if not amino_acid_matches:
+        return False, "Could not locate amino acid group atoms"
+        
+    for match in amino_acid_matches:
+        amino_c = match[1]  # The carbon connected to both NH2 and COOH
+        for atom in mol.GetAtoms():
+            if atom.GetIsAromatic():
+                # Check if aromatic ring is within reasonable distance of amino acid group
+                path_length = len(Chem.GetShortestPath(mol, atom.GetIdx(), amino_c))
+                if path_length <= 4:  # Within 3 bonds typically
+                    return True, "Contains aromatic ring connected to amino acid group"
 
-    # Additional check to ensure the molecule has the basic characteristics
-    # Count carbons, nitrogens and oxygens
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    
-    if c_count < 3:
-        return False, "Too few carbons for an aromatic amino acid"
-    if n_count < 1:
-        return False, "Must contain at least one nitrogen"
-    if o_count < 2:
-        return False, "Must contain at least two oxygens (carboxylic acid)"
-
-    return True, "Contains both aromatic ring and amino acid functionality"
+    return False, "Aromatic ring not properly connected to amino acid group"
