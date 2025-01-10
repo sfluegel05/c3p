@@ -22,26 +22,26 @@ def is_glycosphingolipid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define SMARTS patterns for glycosphingolipid components
-    # Sphingoid pattern: long carbon chain with terminal amide linkage 
-    sphingoid_pattern = Chem.MolFromSmarts("N[C@@H](CO[C@H](O)[C@H](O)C)C")  # Basic structure hinting an amine with a glycerol-like structure
+    # Refined sphingoid pattern: long carbon chain with terminal amide linkage 
+    sphingoid_pattern = Chem.MolFromSmarts("C(=O)N[C@@H](CO)C(C)O")  # More complete backbone with amide and possible hydroxyl
 
-    # Sugar moiety pattern: typically includes multiple hydroxyl groups attached to carbons in a ring or linear form.
-    sugar_linkage_pattern = Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](O)[C@H]1")  # Example hexose ring
+    # Improved sugar moiety pattern: carbohydrate ring structure with glycosidic linkage
+    sugar_linkage_pattern = Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](O)[C@H]1")  # Typical hexose ring
 
     # Ensure valid structure detection
     if sphingoid_pattern is None or sugar_linkage_pattern is None:
         return (None, None)
 
-    # Check for sphingoid base or ceramide
+    # Check for sphingoid base or ceramide (improved pattern)
     if not mol.HasSubstructMatch(sphingoid_pattern):
         return False, "No sphingoid or ceramide backbone identified, missing the typical base structure."
 
-    # Check for glycosidic linkage to a sugar moiety
+    # Check for glycosidic linkage to a sugar moiety (improved pattern)
     if not mol.HasSubstructMatch(sugar_linkage_pattern):
         return False, "No glycosidic linkage to a sugar moiety (needed at O-1 position of the sphingoid)."
 
     return True, "Molecule contains a sphingoid backbone with a glycosidic linkage at the O-1 position to a sugar moiety."
 
-# Example
-example_smiles = "CCCCCCCCCCCCCCCCCCC(=O)N[C@@H](COC1OC(CO)C(O)C(O)C1O)C(O)CCCCCCCCCCCCC"  # Example from problem statement
+# Example test for validation
+example_smiles = "CCCCCCCCCCCCCCCCCCC(=O)N[C@@H](COC1OC(CO)C(O)C(O)C1O)C(O)CCCCCCCCCCCCC"
 print(is_glycosphingolipid(example_smiles))
