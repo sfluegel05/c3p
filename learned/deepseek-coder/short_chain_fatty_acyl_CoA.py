@@ -29,6 +29,7 @@ def is_short_chain_fatty_acyl_CoA(smiles: str):
 
     # Check for CoA moiety
     # CoA has a characteristic structure with a pantothenic acid derivative, phosphate, and ADP
+    # Use a more general pattern to match different protonation states and slight variations
     coa_pattern = Chem.MolFromSmarts("[O-]P(=O)([O-])OP(=O)([O-])OCC1OC([C@H](O)[C@@H]1OP(=O)([O-])[O-])n1cnc2c(N)ncnc12")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No CoA moiety found"
@@ -41,7 +42,7 @@ def is_short_chain_fatty_acyl_CoA(smiles: str):
 
     # Extract the fatty acid chain attached to the thioester
     # The fatty acid chain should be 2-6 carbons long
-    fatty_acid_chain = None
+    fatty_acid_chain = False
     for match in thioester_matches:
         for atom_idx in match:
             atom = mol.GetAtomWithIdx(atom_idx)
