@@ -12,7 +12,7 @@ def is_xanthophyll(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a xanthophyll, False otherwise
+        bool: True if the molecule is a xanthophyll, False otherwise
         str: Reason for classification
     """
     
@@ -21,24 +21,20 @@ def is_xanthophyll(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # General pattern representing alternation of double and single bonds (conjugation common in carotenoids)
-    conjugation_pattern = Chem.MolFromSmarts("C=C(-,=C)*=C")
-    if conjugation_pattern and not mol.HasSubstructMatch(conjugation_pattern):
-        return False, "No proper alternating double-bonds pattern typically found in carotenoids"
+    # General pattern of polyene chain characteristic in carotenoids
+    polyene_pattern = Chem.MolFromSmarts("[#6]=[#6](-[#6]=[#6])*,=,=[#6]")
+    if polyene_pattern and not mol.HasSubstructMatch(polyene_pattern):
+        return False, "Basic polyene chain character of carotenoids not found"
     
-    # Check for the presence of oxygen atoms in various functional groups
-    oxygen_pattern = Chem.MolFromSmarts("[OX1,OX2,OX3]")
-    if oxygen_pattern and not mol.HasSubstructMatch(oxygen_pattern):
-        return False, "Carotenoid derivative must be oxygenated (No oxygen detected)"
+    # Check for the presence of any oxygen atom
+    oxygen_presence = any(atom.GetAtomicNum() == 8 for atom in mol.GetAtoms())
+    if not oxygen_presence:
+        return False, "No oxygen detected; required for xanthophyll"
+
+    # Check for potentially missed oxygen functionalities
+    possible_oxy_func_groups = ["[OX2H]", "[CX3]=[OX1]", "[CX3][OX2R]"]
+    for pattern in possible_oxy_func_groups:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            return True, "Contains features of an oxygenated carotenoid (xanthophyll)"
     
-    # Check for possible multiple types of oxygen functionalization present
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")  # Detect -OH groups
-    carbonyl_pattern = Chem.MolFromSmarts("[CX3]=[OX1]")  # Detect =O groups
-    ether_pattern = Chem.MolFromSmarts("[CX3][OX2R]")  # Detect -O- groups
-
-    if not (mol.HasSubstructMatch(hydroxyl_pattern) or mol.HasSubstructMatch(carbonyl_pattern) or mol.HasSubstructMatch(ether_pattern)):
-        return False, "At least one oxygen functional group required (such as hydroxyl, carbonyl, or ether not found)"
-
-    # Additional pattern checks and logic improvements as needed
-
-    return True, "Contains features of an oxygenated carotenoid (xanthophyll)"
+    return False, "Lacks sufficient features to be classified as a xanthophyll"
