@@ -21,20 +21,18 @@ def is_beta_carbolines(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define enhanced SMARTS pattern for beta-carboline core
-    # capturing more structural variations found in example structures
+    # Define enhanced SMARTS patterns for beta-carboline core 
+    # to accommodate different levels of saturation and substitutions
     beta_carboline_patterns = [
-        Chem.MolFromSmarts("n1c2c(cccc2)c3c1nccc3"),  # Basic beta-carboline core
-        Chem.MolFromSmarts("n1c2c(cccc2)c3c1nc[nH]c3"),  # Various nitrogen placements
-        Chem.MolFromSmarts("n1c2c(ccncc2)c3c1nccc3"),  # More nitrogen substitutions
-        Chem.MolFromSmarts("n1c2c(cccnc2)c3c1nc[nH]c3"),  # Dihydro variants
-        Chem.MolFromSmarts("C1Cc2c(C1)nc3c(n2)cccc3"),  # Partial hydrogenation
-        Chem.MolFromSmarts("c1c[nH]c2c1ncc3c2cccn3"),  # Indole-like structures
+        Chem.MolFromSmarts("n1c2c(c[nH]c2)c3c1cccc3"),  # Essential beta-carboline core
+        Chem.MolFromSmarts("n1c2cccc3c2c(cn1)c[nH]3"),  # Alternative arrangement
+        Chem.MolFromSmarts("n1c2ccccc2c3c1c[nH]cn3"),  # More complex core with saturation
+        Chem.MolFromSmarts("n1c2cc[nH]c2c3c1cccn3"),   # Including partially hydrogenated structures
     ]
 
     # Check for matching any of the expanded beta-carboline patterns
     for pattern in beta_carboline_patterns:
         if mol.HasSubstructMatch(pattern):
             return True, "Contains beta-carboline core structure"
-
+    
     return False, "Does not contain beta-carboline core structure"
