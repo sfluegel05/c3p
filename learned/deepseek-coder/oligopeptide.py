@@ -26,7 +26,7 @@ def is_oligopeptide(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for peptide bonds (amide bonds, -C(=O)-N-)
-    peptide_bond_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[NX3H0]")
+    peptide_bond_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[NX3]")
     peptide_bond_matches = mol.GetSubstructMatches(peptide_bond_pattern)
     if len(peptide_bond_matches) == 0:
         return False, "No peptide bonds found"
