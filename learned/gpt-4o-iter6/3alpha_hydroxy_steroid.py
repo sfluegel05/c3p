@@ -20,39 +20,16 @@ def is_3alpha_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for detecting a steroid backbone
-    steroid_pattern = Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2CCC4C3(CCCC4)C")
+    # SMARTS pattern for detecting a general steroid backbone (tetracyclic core)
+    steroid_pattern = Chem.MolFromSmarts("C1CC[C@H]2[C@H]1CC[C@H]3[C@@H]2CCC4=C3C[C@@H](O)CC4")
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone detected"
 
-    # SMARTS pattern for detecting alpha 3-hydroxy group (stereochemistry aware)
-    alpha_hydroxy_pattern = Chem.MolFromSmarts("[C@@H]([OH])C")
+    # SMARTS pattern for detecting 3alpha-hydroxy group specifically
+    alpha_hydroxy_pattern = Chem.MolFromSmarts("[C@H](O)[C@@H]1CCC[C@H]2[C@H]1CCC3=C2CC[C@H](O)C3")
     if not mol.HasSubstructMatch(alpha_hydroxy_pattern):
         return False, "No 3alpha-hydroxy group detected"
     
-    # Position 3 verification
-    matches = mol.GetSubstructMatches(alpha_hydroxy_pattern)
-    three_alpha_hydroxyl = False
-    for match in matches:
-        # Check if the hydroxy group is at the 3-position of the steroid
-        for atom_idx in match:
-            if mol.GetAtomWithIdx(atom_idx).GetAtomicNum() == 8:  # Oxygen atom
-                carbon_idx = mol.GetAtomWithIdx(atom_idx).GetNeighbors()[0].GetIdx()
-                if mol.GetAtomWithIdx(carbon_idx).GetSymbol() == 'C':
-                    neighbors = mol.GetAtomWithIdx(carbon_idx).GetNeighbors()
-                    if any(n.GetSymbol() == 'C' and n.GetIdx() != atom_idx for n in neighbors):
-                        for n in neighbors:
-                            if n.GetSymbol() == 'C':
-                                two_bond_away = set(atom.GetIdx() for atom in n.GetNeighbors() if atom.GetSymbol() == 'C')
-                                steroid_carbon_idxs = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetSymbol() == 'C']
-                                if len(set(steroid_carbon_idxs).intersection(two_bond_away)) >= 8:
-                                    # Assuming this means we're around position 3 in a steroid core
-                                    three_alpha_hydroxyl = True
-                                    break
-
-    if not three_alpha_hydroxyl:
-        return False, "Identified alpha hydroxy group is not at the 3-position"
-
     return True, "3alpha-hydroxy steroid structure identified"
 
 # Example usage
