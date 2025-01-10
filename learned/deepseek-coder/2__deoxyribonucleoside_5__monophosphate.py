@@ -26,14 +26,14 @@ def is_2__deoxyribonucleoside_5__monophosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for the presence of a phosphate group (P=O or P-O)
-    phosphate_pattern = Chem.MolFromSmarts("[PX4](=O)([OX2])([OX2])")
+    # Check for the presence of a phosphate group (P=O or P-O, including deprotonated forms)
+    phosphate_pattern = Chem.MolFromSmarts("[PX4](=O)([OX2,-])([OX2,-])")
     phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
     if len(phosphate_matches) == 0:
         return False, "No phosphate group found"
 
     # Check for the presence of a 2'-deoxyribose sugar (C1C(C(COP(=O)(O)O)O)O)
-    deoxyribose_pattern = Chem.MolFromSmarts("[C@H]1[C@H](O)[C@@H](O)[C@@H](COP(=O)(O)O)O1")
+    deoxyribose_pattern = Chem.MolFromSmarts("[C@H]1[C@H](O)[C@@H](O)[C@@H](COP(=O)([OX2,-])[OX2,-])O1")
     deoxyribose_matches = mol.GetSubstructMatches(deoxyribose_pattern)
     if len(deoxyribose_matches) == 0:
         return False, "No 2'-deoxyribose sugar found"
