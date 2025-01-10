@@ -9,7 +9,7 @@ from rdkit import Chem
 def is_mineral_nutrient(smiles: str):
     """
     Determines if a molecule is a mineral nutrient based on its SMILES string.
-    A mineral nutrient is a mineral that is an inorganic nutrient essential for the human body.
+    A mineral nutrient is an inorganic nutrient essential for the human body.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -19,9 +19,8 @@ def is_mineral_nutrient(smiles: str):
         str: Reason for classification
     """
 
-    # Essential mineral elements required by the human body
+    # Essential mineral elements required by the human body (atomic numbers)
     essential_minerals = {
-        9,   # F - Fluorine
         11,  # Na - Sodium
         12,  # Mg - Magnesium
         13,  # Al - Aluminum
@@ -33,17 +32,23 @@ def is_mineral_nutrient(smiles: str):
         26,  # Fe - Iron
         29,  # Cu - Copper
         30,  # Zn - Zinc
-        51,  # Sb - Antimony
         53,  # I - Iodine
-        55,  # Cs - Cesium
+        55,  # Cs - Caesium
         56,  # Ba - Barium
         57,  # La - Lanthanum
+        82,  # Pb - Lead
+        24,  # Cr - Chromium
     }
 
     # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
+    mol = Chem.MolFromSmiles(smiles, sanitize=False)
     if mol is None:
         return False, "Invalid SMILES string"
+
+    try:
+        Chem.SanitizeMol(mol)
+    except Chem.rdchem.KekulizeException:
+        return False, "Failed to sanitize molecule"
 
     # Get set of atomic numbers present in the molecule
     atomic_nums = {atom.GetAtomicNum() for atom in mol.GetAtoms()}
@@ -53,32 +58,26 @@ def is_mineral_nutrient(smiles: str):
     if not minerals_in_mol:
         return False, "Does not contain essential mineral elements required by the human body"
 
+    # Check for covalent bonds between essential minerals and carbon
+    for bond in mol.GetBonds():
+        a1 = bond.GetBeginAtom()
+        a2 = bond.GetEndAtom()
+        # If essential mineral is covalently bonded to carbon, exclude
+        if (a1.GetAtomicNum() in essential_minerals and a2.GetAtomicNum() == 6) or \
+           (a2.GetAtomicNum() in essential_minerals and a1.GetAtomicNum() == 6):
+            return False, "Contains covalent bonds between essential minerals and carbon"
+
     # Count number of carbon atoms
     num_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
 
-    # If number of carbon atoms is high, likely an organic molecule
-    if num_carbons > 6:
-        return False, f"Contains too many carbon atoms ({num_carbons}), likely an organic molecule"
+    # Allow small organic counterions (e.g., acetates)
+    if num_carbons > 20:
+        return False, f"Contains too many carbon atoms ({num_carbons}), likely not a mineral nutrient"
 
-    # Check for aromatic rings, characteristic of organic molecules
-    if mol.GetAromaticAtomCount() > 0:
+    # Check for aromatic atoms (characteristic of organic molecules)
+    aromatic_atoms = sum(1 for atom in mol.GetAtoms() if atom.GetIsAromatic())
+    if aromatic_atoms > 0:
         return False, "Contains aromatic rings, likely an organic molecule"
-
-    # Check for presence of functional groups characteristic of organic molecules
-    # Define SMARTS patterns for common organic functional groups
-    organic_functional_groups = [
-        '[#6][#7]',  # Carbon attached to nitrogen
-        '[#6][#8]',  # Carbon attached to oxygen
-        '[#6]=[#6]', # Carbon-carbon double bond
-        '[#6]#[#6]', # Carbon-carbon triple bond
-        '[#6]=[O]',  # Carbonyl group
-        '[#6]-[#6]-[#6]',  # Carbon chains of length 3 or more
-    ]
-
-    for pattern in organic_functional_groups:
-        patt = Chem.MolFromSmarts(pattern)
-        if mol.HasSubstructMatch(patt):
-            return False, "Contains functional groups characteristic of organic molecules"
 
     # Passed all checks
     return True, "Molecule is an inorganic compound containing essential mineral nutrients"
