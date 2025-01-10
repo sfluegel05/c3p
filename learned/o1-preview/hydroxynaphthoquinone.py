@@ -24,56 +24,45 @@ def is_hydroxynaphthoquinone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the naphthoquinone SMARTS pattern (1,4-naphthoquinone core)
-    naphthoquinone_smarts = 'O=C1C=CC=CC2=CC=CC(=O)C12'
-    naphthoquinone_mol = Chem.MolFromSmarts(naphthoquinone_smarts)
+    # Define SMARTS patterns for naphthoquinone cores (1,4- and 1,2-naphthoquinone)
+    naphthoquinone_smarts_list = [
+        'C12=C(C=CC=C1)C(=O)C=CC2=O',   # 1,4-naphthoquinone core
+        'C1=CC=C2C(=O)C=CC(=O)C2=C1'    # 1,2-naphthoquinone core
+    ]
+    naphthoquinone_mols = [Chem.MolFromSmarts(smarts) for smarts in naphthoquinone_smarts_list]
 
-    # Find substructure matches of the naphthoquinone moiety
-    matches = mol.GetSubstructMatches(naphthoquinone_mol)
-    if not matches:
+    # Check for presence of naphthoquinone moiety
+    has_naphthoquinone = False
+    for naphthoquinone in naphthoquinone_mols:
+        if mol.HasSubstructMatch(naphthoquinone):
+            has_naphthoquinone = True
+            naphthoquinone_matches = mol.GetSubstructMatches(naphthoquinone)
+            break
+
+    if not has_naphthoquinone:
         return False, "No naphthoquinone moiety found"
 
-    # For each match, check for hydroxy substitutions on the naphthoquinone ring
-    for match in matches:
-        # Get the atoms involved in the naphthoquinone moiety
+    # Check for hydroxy substitution on the naphthoquinone ring
+    for match in naphthoquinone_matches:
         naphthoquinone_atoms = set(match)
-
-        # Identify ketone carbons (carbons double-bonded to oxygen)
-        ketone_carbons = []
-        for idx in match:
-            atom = mol.GetAtomWithIdx(idx)
-            if atom.GetAtomicNum() == 6:  # carbon atom
-                for bond in atom.GetBonds():
-                    neighbor = bond.GetOtherAtom(atom)
-                    if neighbor.GetAtomicNum() == 8 and bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-                        ketone_carbons.append(idx)
-                        break
-
-        # Identify ring carbons excluding ketone carbons
-        ring_carbons = [idx for idx in match if idx not in ketone_carbons and
-                        mol.GetAtomWithIdx(idx).GetAtomicNum() == 6 and
-                        mol.GetAtomWithIdx(idx).IsInRing()]
-
-        # Check for hydroxy groups attached to ring carbons
         has_hydroxy = False
-        for idx in ring_carbons:
+
+        for idx in naphthoquinone_atoms:
             atom = mol.GetAtomWithIdx(idx)
-            for neighbor in atom.GetNeighbors():
-                # Look for oxygen atom with degree 1 (hydroxy group)
-                if neighbor.GetAtomicNum() == 8 and neighbor.GetDegree() == 1:
-                    # Check if oxygen is connected to hydrogen
-                    if neighbor.GetTotalNumHs() > 0:
+            if atom.GetAtomicNum() == 6 and atom.IsInRing():
+                for neighbor in atom.GetNeighbors():
+                    # Look for hydroxy group attached to ring carbon
+                    if neighbor.GetAtomicNum() == 8 and neighbor.GetDegree() == 1:
                         has_hydroxy = True
                         break
-            if has_hydroxy:
-                break
+                if has_hydroxy:
+                    break
 
         if has_hydroxy:
             return True, "Contains naphthoquinone moiety substituted with at least one hydroxy group"
 
     return False, "No hydroxy substitution on naphthoquinone moiety found"
-
-
+           
 __metadata__ = {
     'chemical_class': {
         'id': 'CHEBI:51793',
@@ -94,7 +83,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 0,
+    'attempt': 1,
     'success': True,
     'best': True,
     'error': '',
