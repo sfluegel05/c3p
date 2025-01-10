@@ -11,7 +11,7 @@ def is_endocannabinoid(smiles: str):
     """
     Determines if a molecule is an endocannabinoid based on its SMILES string.
     Endocannabinoids are characterized by long hydrocarbon chains connected to
-    ethanolamide or glycerol groups via ester or amide bonds.
+    ethanolamide, glycerol, or similar groups via ester, amide, or ether bonds.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -34,23 +34,27 @@ def is_endocannabinoid(smiles: str):
     glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
     has_glycerol = mol.HasSubstructMatch(glycerol_pattern)
 
-    if not (has_ethanolamide or has_glycerol):
-        return False, "No ethanolamide or glycerol group found"
+    # Check for ether linkage (C-O-C)
+    ether_pattern = Chem.MolFromSmarts("[CX4][OX2][CX4]")
+    has_ether = mol.HasSubstructMatch(ether_pattern)
+
+    if not (has_ethanolamide or has_glycerol or has_ether):
+        return False, "No ethanolamide, glycerol, or ether group found"
 
     # Check for long hydrocarbon chain (at least 10 carbons)
     carbon_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
     if not mol.HasSubstructMatch(carbon_chain_pattern):
         return False, "No long hydrocarbon chain found"
 
-    # Check for ester or amide linkage
+    # Check for ester, amide, or ether linkage
     ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
     amide_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])")
-    if not (mol.HasSubstructMatch(ester_pattern) or mol.HasSubstructMatch(amide_pattern)):
-        return False, "No ester or amide linkage found"
+    if not (mol.HasSubstructMatch(ester_pattern) or mol.HasSubstructMatch(amide_pattern) or has_ether):
+        return False, "No ester, amide, or ether linkage found"
 
-    # Check molecular weight (typically >250 Da)
+    # Check molecular weight (typically >300 Da)
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 250:
+    if mol_wt < 300:
         return False, "Molecular weight too low for endocannabinoid"
 
     # Count carbons and oxygens
@@ -62,4 +66,4 @@ def is_endocannabinoid(smiles: str):
     if o_count < 2:
         return False, "Too few oxygens for endocannabinoid"
 
-    return True, "Contains long hydrocarbon chain connected to ethanolamide or glycerol group via ester or amide bond"
+    return True, "Contains long hydrocarbon chain connected to ethanolamide, glycerol, or similar group via ester, amide, or ether bond"
