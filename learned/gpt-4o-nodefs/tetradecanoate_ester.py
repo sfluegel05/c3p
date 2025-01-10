@@ -2,6 +2,7 @@
 Classifies: CHEBI:87691 tetradecanoate ester
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_tetradecanoate_ester(smiles: str):
     """
@@ -21,17 +22,14 @@ def is_tetradecanoate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Attempt a broader pattern for tetradecanoate substructure
-    # Pattern for C14 chain followed by ester linkage 
-    # Allow for some flexibility in surrounding context
-    tetradecanoate_patterns = [
-        Chem.MolFromSmarts("CCCCCCCCCCCCCC(=O)OC"),
-        Chem.MolFromSmarts("CCCCCCCCCCCCCC(=O)O"),
-        Chem.MolFromSmarts("CCCCCCCCCCC(CCCCCO)C(=O)O"),  # Allow variance
-    ]
+    # Pattern for a tetradecanoate ester (14C chain ending with ester linkage)
+    # This pattern allows for ester linkages with various functional moieties
+    tetradecanoate_pattern = Chem.MolFromSmarts("CCCCCCCCCCCCCC(=O)[O;!H0]")
+    
+    if mol.HasSubstructMatch(tetradecanoate_pattern):
+        return True, "Contains tetradecanoate moiety"
 
-    for pattern in tetradecanoate_patterns:
-        if mol.HasSubstructMatch(pattern):
-            return True, "Contains tetradecanoate moiety"
+    # Additional properties checks (e.g. molecular weight considerations or number of carbon atoms)
+    # can be added here if needed for differentiation or validation.
 
     return False, "Does not contain tetradecanoate moiety"
