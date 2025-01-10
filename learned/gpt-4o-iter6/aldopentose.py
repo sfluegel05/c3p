@@ -23,19 +23,19 @@ def is_aldopentose(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check if there are exactly 5 carbon atoms (pentose sugar)
+    # Check for exactly 5 carbon atoms (pentose sugar)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if c_count != 5:
         return False, f"Expected 5 carbon atoms, found {c_count}"
 
     # SMARTS pattern for aldehyde group (linear form)
-    aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)[CX4;R0]")  # Aldehyde group
+    aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)[CH2]")  # Linear terminal aldehyde
     if mol.HasSubstructMatch(aldehyde_pattern):
         return True, "Contains aldehyde group, indicating a linear form of aldopentose"
 
-    # SMARTS for cyclic forms: Furanose (5-membered) and Pyranose (6-membered) rings
-    furanose_pattern = Chem.MolFromSmarts("[C,O]1[C,O][C,O][C,O][C,O]1")
-    pyranose_pattern = Chem.MolFromSmarts("[C,O]1[C,O][C,O][C,O][C,O][C,O]1")
+    # Look for cyclic furanose (5-membered) or pyranose (6-membered) rings
+    furanose_pattern = Chem.MolFromSmarts("[O][C][C][C][O]")
+    pyranose_pattern = Chem.MolFromSmarts("[O][C][C][C][C][O]")
     
     if mol.HasSubstructMatch(furanose_pattern):
         return True, "Contains cyclic furanose structure"
@@ -43,4 +43,5 @@ def is_aldopentose(smiles: str):
     if mol.HasSubstructMatch(pyranose_pattern):
         return True, "Contains cyclic pyranose structure"
 
+    # If no criteria match, it's not an aldopentose
     return False, "Does not match aldopentose structure requirements"
