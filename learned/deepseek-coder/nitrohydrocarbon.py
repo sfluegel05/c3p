@@ -36,21 +36,16 @@ def is_nitrohydrocarbon(smiles: str):
     if not nitro_matches:
         return False, "No nitro group found"
 
-    # Ensure that all oxygen atoms are part of nitro groups
-    oxygen_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8]
-    nitro_oxygen_atoms = set()
-    for match in nitro_matches:
-        nitro_oxygen_atoms.add(match[1])  # Index of oxygen in the nitro group pattern
-        nitro_oxygen_atoms.add(match[2])  # Index of the other oxygen in the nitro group pattern
+    # Ensure the molecule is primarily a hydrocarbon (composed of carbon and hydrogen)
+    # Allow other functional groups as long as the backbone is hydrocarbon
+    # Count the number of carbon atoms
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count == 0:
+        return False, "No carbon atoms found"
 
-    if len(oxygen_atoms) != len(nitro_oxygen_atoms):
-        return False, "Contains oxygen atoms not part of nitro groups"
-
-    # Ensure that all nitrogen atoms are part of nitro groups
-    nitrogen_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7]
-    nitro_nitrogen_atoms = set(match[0] for match in nitro_matches)  # Index of nitrogen in the nitro group pattern
-
-    if len(nitrogen_atoms) != len(nitro_nitrogen_atoms):
-        return False, "Contains nitrogen atoms not part of nitro groups"
+    # Ensure that the molecule is not purely a nitro compound (e.g., tetranitromethane)
+    # by checking that the number of carbon atoms is greater than the number of nitro groups
+    if c_count <= len(nitro_matches):
+        return False, "Molecule is not primarily a hydrocarbon"
 
     return True, "Hydrocarbon with at least one nitro group"
