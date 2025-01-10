@@ -21,22 +21,25 @@ def is_aromatic_primary_alcohol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Pattern for an aromatic carbon directly bonded to a hydroxyl group
-    primary_alcohol_pattern = Chem.MolFromSmarts("[OHX2][CX4]")  
-    aromatic_carbon_pattern = Chem.MolFromSmarts("[#6r][OH]")  # aromatic carbon bonded to hydroxyl group
+    # SMARTS pattern for a primary alcohol (-OH connected to a non-aromatic carbon)
+    # which is directly bonded to an aromatic ring atom
+    pattern = Chem.MolFromSmarts("[CX4H2][OH]")
 
-    # Check if the molecule matches primary alcohol pattern
-    if not mol.HasSubstructMatch(primary_alcohol_pattern):
-        return False, "No primary alcohol (C-OH) group detected"
+    # Check for the presence of the primary alcohol pattern
+    if not mol.HasSubstructMatch(pattern):
+        return False, "No primary alcohol group detected"
 
-    # Check if the molecule contains an aromatic ring
-    if not Chem.GetSSSR(Chem.MolFromSmarts("a") & mol):
-        return False, "No aromatic ring detected"
-    
-    # Check for primary alcohol group being attached to an aromatic carbon
-    if not mol.HasSubstructMatch(aromatic_carbon_pattern):
-        return False, "Alcohol group not attached to aromatic carbon"
+    # SMARTS pattern to represent any aromatic atom
+    aromatic_pattern = Chem.MolFromSmarts("[a]")
 
-    return True, "Contains hydroxy group attached to a carbon bonded to an aromatic ring"
+    # Check if any carbon bonded to -OH is also bonded to an aromatic atom
+    substruct_matches = mol.GetSubstructMatches(pattern)
+    for match in substruct_matches:
+        carbon_atom = mol.GetAtomWithIdx(match[0])
+        for neighbor in carbon_atom.GetNeighbors():
+            if neighbor.HasSubstructMatch(aromatic_pattern):
+                return True, "Contains hydroxy group attached to an aromatic ring"
+        
+    return False, "Alcohol group not attached to an aromatic carbon"
 
 # The function can now be used to classify SMILES strings for aromatic primary alcohols.
