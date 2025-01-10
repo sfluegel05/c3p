@@ -12,6 +12,7 @@ def is_carotenoid(smiles: str):
     Determines if a molecule is a carotenoid based on its SMILES string.
     A carotenoid is a tetraterpenoid (C40), derived from psi,psi-carotene by various modifications
     such as hydrogenation, dehydrogenation, cyclization, oxidation, or combinations thereof.
+    Retinoids are excluded.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,36 +27,35 @@ def is_carotenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
+    # Exclude retinoids by checking for retinoid substructure
+    retinoid_pattern = Chem.MolFromSmarts("CC(=O)C1=CC=CC=C1")
+    if mol.HasSubstructMatch(retinoid_pattern):
+        return False, "Molecule is a retinoid, which is excluded"
+
     # Count number of carbon atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 35 or c_count > 45:
-        return False, f"Molecule has {c_count} carbon atoms, expected around 40 for carotenoids"
+    if c_count < 30:
+        return False, f"Molecule has {c_count} carbon atoms, expected at least 30 for carotenoids"
 
-    # Check for conjugated double bonds (polyene chain)
-    # Count the number of conjugated double bonds
-    num_conj_double_bonds = 0
-    for bond in mol.GetBonds():
-        if bond.GetBondType() == Chem.BondType.DOUBLE and bond.GetIsConjugated():
-            num_conj_double_bonds += 1
+    # Detect long conjugated polyene chain (at least 10 alternating single and double bonds)
+    pattern = Chem.MolFromSmarts("C(=C-C)*=C")
+    matches = mol.GetSubstructMatches(pattern)
+    if len(matches) < 10:
+        return False, f"Found {len(matches)} conjugated double bonds, expected at least 10"
 
-    if num_conj_double_bonds < 7:
-        return False, f"Only {num_conj_double_bonds} conjugated double bonds found, expected at least 7"
+    # Check for beta-ionone ring or similar cyclic end groups
+    beta_ionone_pattern = Chem.MolFromSmarts("C1(C=CC=CC=1)C")
+    if not mol.HasSubstructMatch(beta_ionone_pattern):
+        return False, "No beta-ionone ring found"
 
-    # Check for isoprene units
-    # Isoprene unit SMARTS pattern: C[C]=C[C]C
-    isoprene_pattern = Chem.MolFromSmarts("C(C)=C(C)C")
-    isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
-    if len(isoprene_matches) < 6:
-        return False, f"Found {len(isoprene_matches)} isoprene units, expected at least 6"
+    # Allow for various functional groups (hydroxyl, keto, epoxide)
+    # Do not exclude molecules lacking these groups
 
-    # Check for rings (cyclization)
-    ring_info = mol.GetRingInfo()
-    num_rings = ring_info.NumRings()
-    if num_rings > 6:
-        return False, f"Molecule has {num_rings} rings, which is more than typically found in carotenoids"
-
-    # Optional: Check for common functional groups (hydroxyl, keto, epoxide)
-    # But carotenoids can lack these groups, so we don't exclude molecules without them
+    # Check that molecule is derived from psi,psi-carotene skeleton
+    # Using a simplified pattern for psi,psi-carotene
+    psi_psi_carotene_pattern = Chem.MolFromSmarts("C(=C/C=C/C=C/C=C/C=C/C=C/C=C/C=C/C=C/C=C/C=C/C=C/C=C/C=C/CC)CC")
+    if not mol.HasSubstructMatch(psi_psi_carotene_pattern):
+        return False, "Molecule does not match psi,psi-carotene backbone"
 
     return True, "Molecule matches criteria for a carotenoid"
 
@@ -75,7 +75,7 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:23044',
                   'max_instances_in_prompt': 100,
                   'test_proportion': 0.1},
     'message': None,
-    'attempt': 0,
+    'attempt': 1,
     'success': True,
     'best': True,
     'error': '',
