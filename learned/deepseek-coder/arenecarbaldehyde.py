@@ -43,44 +43,14 @@ def is_arenecarbaldehyde(smiles: str):
     if not aromatic_ring_matches:
         return False, "No aromatic ring found in the molecule"
 
-    # Ensure the molecule is primarily an aromatic aldehyde
-    # by checking that the aldehyde is the only significant functional group
-    # (excluding simple substituents like -OH, -OCH3, etc.)
-    # This is a heuristic and may need refinement
-    significant_functional_groups = ["[CX3](=O)[OX2H1]", "[NX3]", "[SX2]", "[PX3]"]
-    for pattern in significant_functional_groups:
-        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
-            return False, f"Contains additional significant functional group: {pattern}"
+    # Relax the restrictions on additional functional groups
+    # Only exclude molecules where the additional functional groups interfere with the aldehyde-aromatic bond
+    # For example, exclude molecules where the aldehyde is part of a larger functional group (e.g., carboxylic acid)
+    carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
+    if mol.HasSubstructMatch(carboxylic_acid_pattern):
+        # Check if the carboxylic acid is part of the aldehyde group
+        for match in mol.GetSubstructMatches(carboxylic_acid_pattern):
+            if match[0] in [m[0] for m in aldehyde_matches]:
+                return False, "Aldehyde group is part of a carboxylic acid"
 
     return True, "Contains an aldehyde group directly attached to an aromatic atom"
-
-
-__metadata__ = {   'chemical_class': {   'id': 'CHEBI:22680',
-                          'name': 'arenecarbaldehyde',
-                          'definition': 'Any aldehyde in which the carbonyl group is attached to an aromatic moiety.',
-                          'parents': ['CHEBI:17478', 'CHEBI:22680']},
-    'config': {   'llm_model_name': 'lbl/claude-sonnet',
-                  'f1_threshold': 0.8,
-                  'max_attempts': 5,
-                  'max_positive_instances': None,
-                  'max_positive_to_test': None,
-                  'max_negative_to_test': None,
-                  'max_positive_in_prompt': 50,
-                  'max_negative_in_prompt': 20,
-                  'max_instances_in_prompt': 100,
-                  'test_proportion': 0.1},
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 150,
-    'num_false_positives': 4,
-    'num_true_negatives': 182407,
-    'num_false_negatives': 23,
-    'num_negatives': None,
-    'precision': 0.974025974025974,
-    'recall': 0.8670520231213873,
-    'f1': 0.9174311926605504,
-    'accuracy': 0.9998521228585199}
