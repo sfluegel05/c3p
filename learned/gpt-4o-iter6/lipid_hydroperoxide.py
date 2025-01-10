@@ -16,29 +16,19 @@ def is_lipid_hydroperoxide(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES to RDKit molecule
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Improved SMARTS for hydroperoxy groups, the [O][O][H] part may help
-    hydroperoxy_pattern = Chem.MolFromSmarts("OO")
+    # Look for hydroperoxy groups (-OO[H])
+    hydroperoxy_pattern = Chem.MolFromSmarts("[CX4,CX3,CX2][OX2][OX2H]")
     if not mol.HasSubstructMatch(hydroperoxy_pattern):
         return False, "No hydroperoxy group found"
 
-    # Detecting presence of long carbon chain regardless of exact carbon count
-    carbon_chain_pattern = Chem.MolFromSmarts("CCCCCCCC")
-    if not mol.HasSubstructMatch(carbon_chain_pattern):
-        return False, "No long hydrocarbon chain detected"
+    # Assume lipid if it contains a long hydrocarbon chain
+    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if carbon_count < 12:
+        return False, f"Carbon chain too short for typical lipids: found {carbon_count} carbons"
 
-    # Check for unsaturations which are typical in lipids
-    unsaturation_pattern = Chem.MolFromSmarts("C=C")
-    if mol.HasSubstructMatch(unsaturation_pattern):
-        return True, "Contains hydroperoxy group(s) within unsaturated lipid-like chain"
-
-    # Include ester groups detection as potential lipid characteristic
-    ester_pattern = Chem.MolFromSmarts("C(=O)O")
-    if mol.HasSubstructMatch(ester_pattern):
-        return True, "Contains hydroperoxy group(s) within ester lipid-like structure"
-
-    return False, "Missing typical structural features of a lipid despite presence of hydroperoxy group"
+    return True, "Contains hydroperoxy group(s) within a lipid structure"
