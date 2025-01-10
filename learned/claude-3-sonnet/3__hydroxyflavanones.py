@@ -24,35 +24,29 @@ def is_3__hydroxyflavanones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Basic flavanone core pattern - more flexible to allow substitutions
-    # [#6~2] means any carbon in a ring of size 2 or more
-    # This pattern matches the essential C-O-C-C(=O)-C framework
-    flavanone_core = Chem.MolFromSmarts("""
-        [OX2]1[CH2][CH1]([#6;R1])[CX3](=[OX1])[#6;R1]2[#6;R1]=,:[#6;R1]=,:[#6;R1]=,:[#6;R1]=,:[#6;R1]12
-    """)
-    if not mol.HasSubstructMatch(flavanone_core):
-        return False, "Missing flavanone core structure"
-
-    # Pattern for 3'-hydroxyl group on the phenyl ring
-    # The pattern looks for:
-    # 1. The flavanone core with the 2-position carbon as the attachment point
-    # 2. A phenyl ring attached at position 2
-    # 3. A hydroxyl group at the meta position (3') relative to the attachment point
-    hydroxyflavanone_pattern = Chem.MolFromSmarts("""
-        [OX2]1[CH2][CH1]([#6;R1]2=CC(O)=CC=C2)[CX3](=[OX1])[#6;R1]3[#6;R1]=,:[#6;R1]=,:[#6;R1]=,:[#6;R1]=,:[#6;R1]13
+    # Basic flavanone core structure with 3'-OH
+    # [OH1] ensures we match a hydroxy group
+    # The position numbering ensures we match the 3' position specifically
+    flavanone_3_oh_pattern = Chem.MolFromSmarts("""
+        [OH1]c1cc([C,c]2CC(=O)c3ccccc3O2)ccc1
     """)
     
-    if not mol.HasSubstructMatch(hydroxyflavanone_pattern):
-        # Try alternative pattern that's more flexible with substitutions
-        alt_pattern = Chem.MolFromSmarts("""
-            [OX2]1[CH2][CH1]([#6;R1]2[#6;R1]=,:[#6;R1](O)[#6;R1]=,:[#6;R1]=,:[#6;R1]2)[CX3](=[OX1])[#6;R1]3[#6;R1]=,:[#6;R1]=,:[#6;R1]=,:[#6;R1]=,:[#6;R1]13
-        """)
-        if not mol.HasSubstructMatch(alt_pattern):
-            return False, "Missing 3'-hydroxy group on phenyl ring"
+    # Alternative pattern for when the OH is written in reverse order
+    flavanone_3_oh_pattern_alt = Chem.MolFromSmarts("""
+        c1cc([C,c]2CC(=O)c3ccccc3O2)ccc1[OH1]
+    """)
 
-    # Verify it's a flavanone (not a flavone) by checking for sp3 carbon at position 2
-    sp3_check = Chem.MolFromSmarts("[OX2]1[CH2][CH1][CX3](=[OX1])")
-    if not mol.HasSubstructMatch(sp3_check):
-        return False, "Not a flavanone (missing sp3 carbon at position 2)"
+    # Check for matches
+    if mol.HasSubstructMatch(flavanone_3_oh_pattern) or mol.HasSubstructMatch(flavanone_3_oh_pattern_alt):
+        # Verify basic flavanone structure (2 rings with ketone)
+        flavanone_core = Chem.MolFromSmarts("O=C1CC(c2ccccc2)Oc2ccccc21")
+        if not mol.HasSubstructMatch(flavanone_core):
+            return False, "Has 3'-OH but missing flavanone core structure"
+        
+        return True, "Contains flavanone core with 3'-hydroxy substituent"
 
-    return True, "Contains flavanone core with 3'-hydroxy substituent"
+    # Check if it has flavanone core but missing 3'-OH
+    if mol.HasSubstructMatch(flavanone_core):
+        return False, "Has flavanone core but missing 3'-hydroxy substituent"
+    
+    return False, "Does not contain flavanone core structure"
