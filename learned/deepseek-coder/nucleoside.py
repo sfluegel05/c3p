@@ -40,7 +40,8 @@ def is_nucleoside(smiles: str):
         Chem.MolFromSmarts("[nH]1c(=O)nc2c1c(CO)cc[nH]2"),  # Modified Uracil
         Chem.MolFromSmarts("[nH]1c(=O)nc2c1c(OC)cc[nH]2"),  # Modified Uracil
         Chem.MolFromSmarts("[nH]1c(=O)nc2c1c(SC)cc[nH]2"),  # Modified Uracil
-        Chem.MolFromSmarts("[nH]1c(=O)nc2c1c(NC)cc[nH]2")   # Modified Uracil
+        Chem.MolFromSmarts("[nH]1c(=O)nc2c1c(NC)cc[nH]2"),  # Modified Uracil
+        Chem.MolFromSmarts("[nH]1c(=O)nc2c1c([*])cc[nH]2")  # General pattern for modified nucleobases
     ]
 
     # Check for presence of a nucleobase
@@ -51,19 +52,17 @@ def is_nucleoside(smiles: str):
     # Define sugar patterns (ribose or deoxyribose, including modifications)
     ribose_pattern = Chem.MolFromSmarts("[C@H]1O[C@H](CO)[C@H](O)[C@H]1O")  # Ribose
     deoxyribose_pattern = Chem.MolFromSmarts("[C@H]1O[C@H](CO)[C@H](O)[C@H]1")  # Deoxyribose
-    modified_ribose_pattern = Chem.MolFromSmarts("[C@H]1O[C@H](CO)[C@H](O)[C@H]1[O,N,S]")  # Modified Ribose
-    modified_deoxyribose_pattern = Chem.MolFromSmarts("[C@H]1O[C@H](CO)[C@H](O)[C@H]1[O,N,S]")  # Modified Deoxyribose
+    modified_sugar_pattern = Chem.MolFromSmarts("[C@H]1O[C@H](CO)[C@H](O)[C@H]1[*]")  # Modified Sugar
 
     # Check for presence of a sugar moiety
     has_sugar = (mol.HasSubstructMatch(ribose_pattern) or 
                  mol.HasSubstructMatch(deoxyribose_pattern) or 
-                 mol.HasSubstructMatch(modified_ribose_pattern) or 
-                 mol.HasSubstructMatch(modified_deoxyribose_pattern))
+                 mol.HasSubstructMatch(modified_sugar_pattern))
     if not has_sugar:
         return False, "No sugar moiety (ribose or deoxyribose) found"
 
     # Check for N-glycosidic bond between nucleobase and sugar
-    glycosidic_bond_pattern = Chem.MolFromSmarts("[NX3][C@H]1O[C@H](CO)[C@H](O)[C@H]1[O,N,S]")  # N-glycosidic bond
+    glycosidic_bond_pattern = Chem.MolFromSmarts("[NX3][C@H]1O[C@H](CO)[C@H](O)[C@H]1[*]")  # N-glycosidic bond
     if not mol.HasSubstructMatch(glycosidic_bond_pattern):
         return False, "No N-glycosidic bond found between nucleobase and sugar"
 
