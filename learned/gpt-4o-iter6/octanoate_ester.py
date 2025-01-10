@@ -17,19 +17,21 @@ def is_octanoate_ester(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return (False, "Invalid SMILES string")
+        return False, "Invalid SMILES string"
     
-    # SMARTS patterns for octanoyl ester - allowing branching: could be flexible
+    # Updated SMARTS patterns for octanoyl ester
+    # Matching exact 8-carbon chain variations with more general branching inclusion
     octanoate_patterns = [
-        Chem.MolFromSmarts("C(=O)OCCCCCCCC"),  # Linear chain
-        Chem.MolFromSmarts("C(=O)OCCCCCC(C)C"),  # Branching at end
-        Chem.MolFromSmarts("C(=O)O[CH2]CCCCC[CH2]C"),  # Ditto, chain can vary
-        Chem.MolFromSmarts("C(=O)OCC(C)CCCC"),  # Midchain branch
+        Chem.MolFromSmarts("C(=O)O[C][C][C][C][C][C][C][C]"),  # Exact generic 8-carbon chain
     ]
     
     for pattern in octanoate_patterns:
         matches = mol.GetSubstructMatches(pattern)
         if matches:
-            return True, f"Contains octanoyl ester moiety at positions: {matches}"
+            for match in matches:
+                # Ensure the matched substructure is correctly 8-c chained and checks:
+                carbons = [atom for atom in match if mol.GetAtomWithIdx(atom).GetAtomicNum() == 6]
+                if len(carbons) == 8:
+                    return True, f"Contains octanoyl ester moiety at positions: {matches}"
     
     return False, "No valid octanoate ester linkage with an 8-carbon chain found"
