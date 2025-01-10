@@ -21,13 +21,13 @@ def is_2_enoyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Refined pattern for the 2-enoyl thioester linkage with double bond between C2 and C3
-    enoyl_pattern = Chem.MolFromSmarts("C(=O)SC=CC") # Needs refinement to ensure matching accurate structure
+    # Updated pattern for the 2-enoyl group where double bond between the C2 and C3 positions is checked
+    enoyl_pattern = Chem.MolFromSmarts("C(=O)SC=C[CH2,C]")  # More flexible match ensuring a double bond C2=C3
     
-    # Comprehensive pattern for CoA, based on characteristic phosphopantetheine structure
-    coA_pattern = Chem.MolFromSmarts("COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H](O[C@H]([C@@H]1OP(O)(O)=O)n2cnc3c(N)ncnc23)")
-    
-    # Check for enoyl-pattern
+    # Comprehensive pattern for CoA based on characteristic phosphopantetheine structure
+    coA_pattern = Chem.MolFromSmarts("COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O[C@@H]1OP(=O)(O)O)O)n2cnc3c(N)ncnc23")
+
+    # Check for 2-enoyl pattern
     if not mol.HasSubstructMatch(enoyl_pattern):
         return False, "No 2-enoyl pattern (enoyl thioester linkage with correct positioning) found"
         
