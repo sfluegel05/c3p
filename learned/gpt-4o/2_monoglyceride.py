@@ -2,12 +2,13 @@
 Classifies: CHEBI:17389 2-monoglyceride
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_2_monoglyceride(smiles: str):
     """
     Determines if a molecule is a 2-monoglyceride based on its SMILES string.
-    A 2-monoglyceride has a glycerol backbone with an acyl substituent at the 2-position (middle carbon).
-    
+    A 2-monoglyceride has a glycerol backbone with an acyl substituent at the 2-position.
+
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -21,23 +22,15 @@ def is_2_monoglyceride(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Add explicit hydrogens to improve substructure matching
-    mol = Chem.AddHs(mol)
+    # Look for glycerol backbone pattern with C2 being connected to an ester
+    # The glycerol pattern can be identified as C(CO)CO, and we need to verify that the ester is attached to the middle carbon
+    glycerol_pattern = Chem.MolFromSmarts("OC(CO)CO")
+    if not mol.HasSubstructMatch(glycerol_pattern):
+        return False, "No glycerol backbone in the expected form"
 
-    # Define the SMARTS pattern for a 2-monoglyceride
-    # Looking for the structure HO-CH2-CH(O-C(=O)-R)-CH2OH
-    glycerol_pattern = Chem.MolFromSmarts("OCC(O[C:1](=O)[C:2])CO")
-    if glycerol_pattern is None:
-        return False, "Error in constructing SMARTS pattern"
-
-    # Check for the presence of acyl substituent at 2-position
-    matches = mol.GetSubstructMatches(glycerol_pattern)
-    if not matches:
+    # Look specifically for an acyl chain at the second position via ester linkage (O=C-O)
+    ester_pattern = Chem.MolFromSmarts("C(OC(=O)[*])CO")
+    if not mol.HasSubstructMatch(ester_pattern):
         return False, "No acyl substituent at the 2-position via ester linkage"
-
-    # Confirm there are no additional functional groups like nitrogen, phosphorus, or sulfur
-    complex_substituents = Chem.MolFromSmarts("[#7,#15,#16]")
-    if mol.HasSubstructMatch(complex_substituents):
-        return False, "Contains complex substituents that are not characteristic of a 2-monoglyceride"
 
     return True, "Contains glycerol backbone with an acyl substituent at the 2-position (ester linkage)"
