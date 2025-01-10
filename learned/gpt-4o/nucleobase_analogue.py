@@ -12,7 +12,7 @@ def is_nucleobase_analogue(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a nucleobase analogue, False otherwise
+        bool: True if the molecule is a nucleobase analogue, False otherwise
         str: Reason for classification
     """
     
@@ -21,24 +21,27 @@ def is_nucleobase_analogue(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS for purine and pyrimidine-like structures
-    purine_smarts = Chem.MolFromSmarts("c1ncnc2[nH]cnc12")
-    pyrimidine_smarts = Chem.MolFromSmarts("c1cncnc1")
+    # Define improved SMARTS for purine and pyrimidine-like structures
+    purine_smarts = Chem.MolFromSmarts("c1ncnc2[nH]ncnc12")
+    pyrimidine_smarts = Chem.MolFromSmarts("c1[nH]cncnc1")
     
-    # Check for heterocyclic aromatic rings with nitrogen atoms
-    if not mol.HasSubstructMatch(pyrimidine_smarts) and not mol.HasSubstructMatch(purine_smarts):
-        return False, "No purine or pyrimidine-like structure found"
+    # Check for nitrogen-containing heterocyclic rings characteristic of nucleobases
+    if purine_smarts and mol.HasSubstructMatch(purine_smarts):
+        return True, "Matches purine-like structure"
+    elif pyrimidine_smarts and mol.HasSubstructMatch(pyrimidine_smarts):
+        return True, "Matches pyrimidine-like structure"
     
-    # Check for typical functional groups in nucleobase analogues
+    # If the central ring did not match, check for other characteristic ring structures
+    # Check for presence of basic functional groups
     functional_groups = [
-        Chem.MolFromSmarts("C=O"),  # Keto group
-        Chem.MolFromSmarts("NH2"),  # Amino group
-        Chem.MolFromSmarts("OH")    # Hydroxy group
+        Chem.MolFromSmarts("[CX3]=[OX1]"),  # Keto/Carbonyl group
+        Chem.MolFromSmarts("[NX3;H2]"),     # Amino group
+        Chem.MolFromSmarts("[OX2H]")        # Hydroxy group
     ]
     
-    # Search for presence of at least one additional functional group
-    modifications = sum(mol.HasSubstructMatch(fg) for fg in functional_groups)
-    if modifications == 0:
-        return False, "No significant modifications found compared to normal nucleobases"
+    # Look for at least one nucleobase-typical functional group
+    if any(mol.HasSubstructMatch(fg) for fg in functional_groups):
+        return True, "Contains significant nucleobase-related functional groups"
     
-    return True, "Contains heterocyclic aromatic ring with nitrogen and additional functional groups typical of nucleobase analogues"
+    # None matched
+    return False, "No nucleobase analogue characteristics found"
