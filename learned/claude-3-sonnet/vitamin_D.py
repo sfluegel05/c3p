@@ -21,59 +21,83 @@ def is_vitamin_D(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Characteristic triene system pattern
-    triene_pattern = Chem.MolFromSmarts("C=CC=CC=C")
-    if not mol.HasSubstructMatch(triene_pattern):
-        return False, "Missing characteristic triene system"
+    # Initialize scoring system
+    score = 0
+    features = []
 
-    # Look for hydroxyl groups
+    # Characteristic vitamin D triene patterns (more specific)
+    triene_patterns = [
+        Chem.MolFromSmarts("C=CC=CC=C"),  # Basic triene
+        Chem.MolFromSmarts("[CH2][CH2]C=CC=CC=C"),  # With specific context
+        Chem.MolFromSmarts("C1CCC(=CC=CC=C)CC1")  # Ring-connected triene
+    ]
+    
+    triene_found = any(mol.HasSubstructMatch(pattern) for pattern in triene_patterns)
+    if triene_found:
+        score += 2
+        features.append("triene system")
+
+    # Seco-steroid skeleton patterns
+    seco_patterns = [
+        Chem.MolFromSmarts("C1CC[C@H]2[C@@H]1CC[C@H]2C"),  # CD ring system
+        Chem.MolFromSmarts("C1CC(=C)CC1"),  # A-ring pattern
+        Chem.MolFromSmarts("C1CCC2(C)C1CCC2")  # Modified CD rings
+    ]
+    
+    seco_matches = sum(1 for pattern in seco_patterns if mol.HasSubstructMatch(pattern))
+    if seco_matches >= 1:
+        score += seco_matches
+        features.append("seco-steroid skeleton")
+
+    # Hydroxyl groups
     hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
     hydroxyl_matches = len(mol.GetSubstructMatches(hydroxyl_pattern))
-    if hydroxyl_matches < 1:
-        return False, "No hydroxyl groups found"
+    if hydroxyl_matches >= 1:
+        score += min(hydroxyl_matches, 3)  # Cap at 3
+        features.append(f"{hydroxyl_matches} hydroxyl groups")
 
-    # Check molecular weight
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 350 or mol_wt > 650:
-        return False, f"Molecular weight {mol_wt:.1f} outside typical range for vitamin D"
-
-    # Count carbons
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 20:  # Most vitamin D compounds have at least 20 carbons
-        return False, "Carbon skeleton too small for vitamin D"
-
-    # Ring count - vitamin D compounds typically have 3-4 rings
-    ring_count = rdMolDescriptors.CalcNumRings(mol)
-    if ring_count < 2 or ring_count > 5:
-        return False, f"Ring count {ring_count} unusual for vitamin D structure"
-
-    # Check for characteristic cyclohexene A-ring pattern
-    a_ring_pattern = Chem.MolFromSmarts("C1CCC(=C)CC1")
+    # Side chain patterns
+    side_chain_patterns = [
+        Chem.MolFromSmarts("CCCC(C)C"),  # Standard
+        Chem.MolFromSmarts("CCCC(O)(C)C"),  # 25-hydroxy
+        Chem.MolFromSmarts("CCC(O)C(C)C")  # Modified
+    ]
     
-    # Side chain pattern (more flexible to account for variations)
-    side_chain_pattern = Chem.MolFromSmarts("CCCC(C)C")
+    if any(mol.HasSubstructMatch(pattern) for pattern in side_chain_patterns):
+        score += 1
+        features.append("characteristic side chain")
 
-    # Score features
-    features = 0
-    if mol.HasSubstructMatch(a_ring_pattern):
-        features += 1
-    if mol.HasSubstructMatch(side_chain_pattern):
-        features += 1
-    if hydroxyl_matches >= 2:  # Common to have multiple hydroxyls
-        features += 1
-    if c_count >= 27:  # Full-length vitamin D typically has 27 carbons
-        features += 1
+    # Basic structural requirements
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if 20 <= c_count <= 35:
+        score += 1
+        features.append(f"{c_count} carbons")
 
-    # Check degree of unsaturation
-    double_bonds = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if double_bonds >= 3:
-        features += 1
+    ring_count = rdMolDescriptors.CalcNumRings(mol)
+    if 2 <= ring_count <= 4:
+        score += 1
+        features.append(f"{ring_count} rings")
 
-    # Require at least 3 characteristic features
-    if features < 3:
-        return False, "Insufficient vitamin D structural features"
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if 340 <= mol_wt <= 700:  # Expanded range
+        score += 1
+        features.append(f"MW {mol_wt:.1f}")
 
-    # If all checks pass
-    reason = (f"Contains vitamin D characteristics: triene system, {hydroxyl_matches} hydroxyl groups, "
-             f"{ring_count} rings, {c_count} carbons, and appropriate structural elements")
-    return True, reason
+    # Require minimum score for classification
+    if score < 6:
+        return False, f"Insufficient vitamin D characteristics (score {score})"
+
+    # Check for common non-vitamin D structures
+    non_vit_d_patterns = [
+        Chem.MolFromSmarts("C1=CC=CC=C1C1=CC=CC=C1"),  # Biphenyl
+        Chem.MolFromSmarts("C1=CC=C2C(=O)C=CC2=C1"),   # Naphthoquinone
+        Chem.MolFromSmarts("C=CC=CC=CC=CC=CC=CC=C")    # Extended polyene
+    ]
+    
+    if any(mol.HasSubstructMatch(pattern) for pattern in non_vit_d_patterns):
+        score -= 2
+
+    if score < 6:
+        return False, "Structure more characteristic of non-vitamin D compound"
+
+    return True, "Contains vitamin D characteristics: " + ", ".join(features)
