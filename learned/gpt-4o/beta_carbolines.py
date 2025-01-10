@@ -16,22 +16,22 @@ def is_beta_carbolines(smiles: str):
         bool: True if molecule is a beta-carboline, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define the beta-carboline core pattern (pyridoindole structure)
-    # Example SMARTS string may vary, it requires fine-tuning
-    beta_carboline_pattern = Chem.MolFromSmarts('C1=NC2=CC=CC=C2C3=C1C=CC=C3')
     
+    # Define a more flexible beta-carboline pattern
+    # The pattern should match a pyridoindole core, with allowance for partial unsaturation
+    beta_carboline_pattern = Chem.MolFromSmarts('n1c2ccc(cc2c3c1cccc3)')  # More flexible pyridoindole
+
     # Check for the beta-carboline pattern
     if not mol.HasSubstructMatch(beta_carboline_pattern):
         return False, "No beta-carboline structure found"
 
-    return True, "Contains beta-carboline structure"
+    return True, "Contains a beta-carboline structure"
 
-# Example usage:
-smiles_example = "CC1=NC2=CC=CC=C2C3=C1C=CC=C3"  # Example beta-carboline SMILES
+# Example usage with one of the provided example SMILES
+smiles_example = "CCCNC(=O)N1CC2(C1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)S(=O)(=O)C"
 print(is_beta_carbolines(smiles_example))
