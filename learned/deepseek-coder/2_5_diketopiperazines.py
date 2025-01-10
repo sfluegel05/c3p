@@ -28,7 +28,7 @@ def is_2_5_diketopiperazines(smiles: str):
     # Define the piperazine-2,5-dione skeleton pattern
     # The pattern matches a six-membered ring with two nitrogen atoms at positions 1 and 4,
     # and two carbonyl groups at positions 2 and 5.
-    piperazine_dione_pattern = Chem.MolFromSmarts("O=C1NCC(=O)NC1")
+    piperazine_dione_pattern = Chem.MolFromSmarts("[O]=[C]1-[N]-[C]-[C](=[O])-[N]-[C]1")
     
     # Check if the molecule contains the piperazine-2,5-dione skeleton
     if not mol.HasSubstructMatch(piperazine_dione_pattern):
@@ -55,11 +55,20 @@ def is_2_5_diketopiperazines(smiles: str):
             # Check if the ring contains two nitrogen atoms
             nitrogen_count = sum(1 for atom_idx in ring if mol.GetAtomWithIdx(atom_idx).GetAtomicNum() == 7)
             if nitrogen_count == 2:
-                piperazine_ring_found = True
-                break
+                # Check if the ring has two carbonyl groups at positions 2 and 5
+                carbonyl_count = 0
+                for atom_idx in ring:
+                    atom = mol.GetAtomWithIdx(atom_idx)
+                    if atom.GetAtomicNum() == 6:  # Carbon
+                        for neighbor in atom.GetNeighbors():
+                            if neighbor.GetAtomicNum() == 8 and neighbor.GetBond(atom).GetBondType() == Chem.BondType.DOUBLE:
+                                carbonyl_count += 1
+                if carbonyl_count == 2:
+                    piperazine_ring_found = True
+                    break
     
     if not piperazine_ring_found:
-        return False, "No piperazine ring found"
+        return False, "No piperazine ring with two carbonyl groups found"
 
     return True, "Contains a piperazine-2,5-dione skeleton"
 
