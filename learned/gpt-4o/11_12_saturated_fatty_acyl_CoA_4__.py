@@ -20,29 +20,27 @@ def is_11_12_saturated_fatty_acyl_CoA_4__(smiles):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define simplified CoA pattern based on known core scaffold
-    coa_core_smarts = "SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OCC1OC(CO)C(O)C1O"
+    # Define a corrected and comprehensive CoA SMARTS pattern
+    coa_core_smarts = "SCCNC(=O)CCNC(=O)[C@H](O)C(C)COP(=O)(O)OP(=O)(O)OCC1OC(CO)C(O)C1O"
     coa_pattern = Chem.MolFromSmarts(coa_core_smarts)
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "Coenzyme A group not found"
 
-    # Define general pattern for long carbon chains
-    # Searching concretely for saturated bonds between 11th and 12th carbon
-    acyl_chain_pattern = Chem.MolFromSmarts('CCCC[CH2][CH2]CCCCCCCCCCCCCC(=O)')
-    chain_matches = mol.GetSubstructMatches(acyl_chain_pattern)
-    
-    # Check saturation state specifically between 11th and 12th carbon
+    # Define a general pattern for carbon acyl chains to detect the 11th to 12th saturation
+    # This pattern should ensure a single bond between the 11th and 12th carbon
+    general_chain_pattern = Chem.MolFromSmarts('CCCCCCCCCCCCCCCCCC')
+    chain_matches = mol.GetSubstructMatches(general_chain_pattern)
+
     if not chain_matches:
-        return False, "No valid fatty acyl chain with appropriate saturation found"
+        return False, "No valid long carbon chain found"
+
     for match in chain_matches:
-        # Extract indices of interest (11th and 12th)
-        if len(match) < 12:
-            continue
-        # Verify saturation specifically between match[10] and match[11]
-        bond = mol.GetBondBetweenAtoms(match[10], match[11])
-        if bond and bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
-            return True, "Contains CoA group with a saturated bond from 11-12 in fatty acyl chain"
+        # Check 11th to 12th C-C bond for saturation
+        if len(match) >= 12:
+            bond = mol.GetBondBetweenAtoms(match[10], match[11])
+            if bond and bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
+                return True, "Contains valid long carbon chain with 11-12 bond saturation within fatty acyl part"
 
-    return False, "11-12 carbon bond is not saturated or chain length inadequate"
+    return False, "No saturated bond between 11th and 12th carbon atoms found in carbon chain"
 
-# The program remakes patterns to improve likelihood of correct recognition and detail tracing is done systematically
+__metadata__ = { 'chemical_class': { 'id': 'CHEBI:xxxx', 'name': '11,12-saturated fatty acyl-CoA(4-)', 'definition': 'Any fatty acyl-CoA(4-) in which the 11-12 bond of the fatty acyl group is saturated' } }
