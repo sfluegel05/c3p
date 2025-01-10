@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_monounsaturated_fatty_acid(smiles: str):
     """
     Determines if a molecule is a monounsaturated fatty acid (MUFA) based on its SMILES string.
-    MUFAs have one double or triple bond in the long carbon chain and a carboxyl group.
+    MUFAs have exactly one double or triple bond in the long carbon chain and a carboxyl group.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,7 +21,7 @@ def is_monounsaturated_fatty_acid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for a carboxyl group (acetic acid functional group)
-    carboxyl_pattern = Chem.MolFromSmarts("C(=O)O")
+    carboxyl_pattern = Chem.MolFromSmarts("C(=O)[O;H1,-]")
     if not mol.HasSubstructMatch(carboxyl_pattern):
         return False, "No carboxyl group found"
 
@@ -36,9 +36,16 @@ def is_monounsaturated_fatty_acid(smiles: str):
     if total_unsaturations != 1:
         return False, f"Incorrect number of unsaturations: {total_unsaturations}, need exactly one"
 
-    # Check for a sufficient length of hydrocarbon chain - assume minimum chain length of 8 for MUFAs
-    carbon_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
-    if len(carbon_atoms) < 8:
-        return False, f"Insufficient carbon chain length: {len(carbon_atoms)} atoms, minimum is 8"
+    # Ensure the molecule is mostly linear with only one unsaturation
+    # Determine the longest continuous carbon chain with one unsaturation
+    # This is simplified and doesn't guarantee catching all structural cases.
+    carbon_chain_lengths = []
+    for match in double_bonds + triple_bonds:
+        sub_mol = Chem.FragmentOnBonds(mol, [bond.GetIdx() for bond in mol.GetBonds()])
+        carbon_atoms = [atom for atom in sub_mol.GetAtoms() if atom.GetAtomicNum() == 6]
+        carbon_chain_lengths.append(len(carbon_atoms))
 
-    return True, "Single unsaturation in a long hydrocarbon chain with a carboxyl group present"
+    if not carbon_chain_lengths or max(carbon_chain_lengths) < 6:
+        return False, f"Insufficient carbon chain length after unsaturation splitting."
+
+    return True, "Single unsaturation in a mostly linear hydrocarbon chain with a carboxyl group present"
