@@ -20,28 +20,40 @@ def is_glycerophosphoinositol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for phospho-myo-inositol group:  Cyclohexane with five hydroxyls (1D-myo-inositol pattern)
-    inositol_pattern = Chem.MolFromSmarts("C1(C(C(C(C(C1O)O)O)O)O)O")
-    if not mol.HasSubstructMatch(inositol_pattern):
-        return False, "No inositol ring structure found"
+    # Check for common inositol ring variations
+    inositol_patterns = [
+        Chem.MolFromSmarts("C1([C@H]([C@@H]([C@@H]([C@H]([C@H]1O)O)O)O)O)O"),  # inositol with varied stereochemistry
+        Chem.MolFromSmarts("C1(C(C(C(C(C1O)O)O)O)O)O")  # common inositol pattern
+    ]
+    if not any(mol.HasSubstructMatch(pattern) for pattern in inositol_patterns):
+        return False, "No matching inositol ring structure found"
 
-    # Check for phosphate group attached to the inositol
-    phosphate_pattern = Chem.MolFromSmarts("OP(=O)(O)O")
-    if not mol.HasSubstructMatch(phosphate_pattern):
+    # Check for phosphate group attached in a phosphatidyl form
+    phosphate_patterns = [
+        Chem.MolFromSmarts("O[P@](=O)(O)O"),  # specific configuration phosphate
+        Chem.MolFromSmarts("OP(=O)(O)O")  # general phosphate group
+    ]
+    if not any(mol.HasSubstructMatch(pattern) for pattern in phosphate_patterns):
         return False, "No phosphate group found"
 
-    # Check for glycerol backbone (C-C-C with at least one oxygen bonded)
-    glycerol_pattern = Chem.MolFromSmarts("[C@H](CO)CO")
-    if not mol.HasSubstructMatch(glycerol_pattern):
+    # Check for glycerol linkage indicative of lipid backbones
+    glycerol_patterns = [
+        Chem.MolFromSmarts("[C@H](CO)CO"),  # basic glycerol structure
+        Chem.MolFromSmarts("C(O)C(O)CO")  # varied configuration
+    ]
+    if not any(mol.HasSubstructMatch(pattern) for pattern in glycerol_patterns):
         return False, "No glycerol backbone found"
 
-    # Glycerophosphoinositols have long aliphatic chains often represented as carbon chains
-    carbon_chain_pattern = Chem.MolFromSmarts("CCCCCCCCCCCCCCCC")
-    chain_matches = mol.GetSubstructMatches(carbon_chain_pattern)
-    if len(chain_matches) < 1:
-        return False, "No adequate hydrophobic fatty acid chains detected"
+    # Identify presence of hydrophobic fatty chains
+    chain_patterns = [
+        Chem.MolFromSmarts("C[C@H](C)CC"), # looking for generic aliphatic chains
+        Chem.MolFromSmarts("CCCCCCCC")  # presence of a carbon chain
+    ]
+    chain_matches = sum(mol.HasSubstructMatch(pattern) for pattern in chain_patterns)
+    if chain_matches < 1:
+        return False, "Inadequate hydrophobic fatty acid chains detected"
 
-    return True, "Contains essential glycerophosphoinositol structures with inositol ring, phosphate group, and attached fatty acid chains"
+    return True, "Contains essential glycerophosphoinositol structures with inositol ring, phosphate group, and probable fatty acid chains"
 
 # Example usage:
 # result, message = is_glycerophosphoinositol("P(O[C@H]1C(O)C(O)C(O)[C@@H](O)C1O)(OC[C@H](OC(=O)CCCCCCCCC/C=C\C/C=C\C/C=C\CCCCC)COC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)(O)=O")
