@@ -31,18 +31,23 @@ def is_beta_D_glucosiduronate(smiles: str):
     if not mol.HasSubstructMatch(carboxylate):
         return False, "No carboxylate group found"
 
-    # Check for beta-D-glucuronate core with glycosidic linkage
-    # [*] represents connection to rest of molecule
-    # Specific stereochemistry pattern for beta-D-glucuronate:
-    # - Beta configuration at anomeric carbon (C1)
-    # - Hydroxyls at C2,C3,C4 with specific orientation
-    # - Carboxylate at C5
-    beta_glucosiduronate = Chem.MolFromSmarts(
-        "[#6,#8,#7,#16;!$(*C(=O)[O-])][OX2][C@H]1[C@@H](O)[C@H](O)[C@@H](O)[C@@H](C(=O)[O-])O1"
-    )
+    # Basic pyranose ring with carboxylate and any glycosidic linkage
+    # Note: [#6,#8,#7,#16] represents C,O,N,S atoms that could be part of the rest of molecule
+    basic_structure = Chem.MolFromSmarts("""
+        [#6,#8,#7,#16]O[CH]1[CH]([OH])[CH]([OH])[CH]([OH])[CH](C(=O)[O-])O1
+    """)
     
-    if not mol.HasSubstructMatch(beta_glucosiduronate):
-        return False, "No beta-D-glucosiduronate group found with correct stereochemistry and linkage"
+    if not mol.HasSubstructMatch(basic_structure):
+        return False, "No glucuronate core structure found"
+
+    # Check stereochemistry at key carbons
+    # Beta configuration at anomeric carbon (C1)
+    beta_config = Chem.MolFromSmarts("""
+        [#6,#8,#7,#16]O[C@H]1O[C@H](C(=O)[O-])[C@@H]([OH])[C@H]([OH])[C@@H]1[OH]
+    """)
+    
+    if not mol.HasSubstructMatch(beta_config):
+        return False, "Incorrect stereochemistry - must be beta configuration"
 
     # Count atoms to ensure it's not just a simple sugar acid
     atom_count = mol.GetNumAtoms()
@@ -50,19 +55,20 @@ def is_beta_D_glucosiduronate(smiles: str):
         return False, "Molecule too small - appears to be standalone sugar acid"
 
     # Additional check for proper glycosidic linkage
-    # The oxygen should be connected to another carbon/oxygen/nitrogen/sulfur
-    glycosidic_link = Chem.MolFromSmarts("[#6,#8,#7,#16;!$(*C(=O)[O-])][OX2][C@H]1O[C@H][CH][CH]1")
-    if not mol.HasSubstructMatch(glycosidic_link):
+    # Look for oxygen connected to the anomeric carbon and another heavy atom
+    glycosidic = Chem.MolFromSmarts("""
+        [#6,#8,#7,#16;!$(*C(=O)[O-])]O[C@H]1O[C@H](C(=O)[O-])
+    """)
+    
+    if not mol.HasSubstructMatch(glycosidic):
         return False, "No proper glycosidic linkage found"
 
-    # Verify pyranose ring form
-    pyranose = Chem.MolFromSmarts("O1[CH][CH][CH][CH][CH]1")
-    if not mol.HasSubstructMatch(pyranose):
-        return False, "Not in pyranose form"
-
-    # Check for exactly 3 hydroxyls on carbons 2,3,4
-    hydroxyls = Chem.MolFromSmarts("[CH]1([O][!C])[CH]([O][!C])[CH]([O][!C])[CH][CH](C(=O)[O-])O1")
+    # Verify hydroxyl groups at C2, C3, C4 positions
+    hydroxyls = Chem.MolFromSmarts("""
+        [OH][CH]-[CH]([OH])-[CH]([OH])-[CH]-[CH](C(=O)[O-])O
+    """)
+    
     if not mol.HasSubstructMatch(hydroxyls):
-        return False, "Incorrect hydroxyl pattern"
+        return False, "Missing required hydroxyl groups"
 
     return True, "Contains beta-D-glucosiduronate group with correct stereochemistry and glycosidic linkage"
