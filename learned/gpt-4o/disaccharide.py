@@ -23,26 +23,36 @@ def is_disaccharide(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define a SMARTS pattern for a generic monosaccharide unit (pyranose/furanose)
-    monoscaccharide_pattern = Chem.MolFromSmarts('[C@H]1([O,C])[C@@H]([O,C])[C@@H]([O,C])[C@@H]([O,C])[C@@H]([O,C])O1')
+    mono_pattern = Chem.MolFromSmarts('[C@H]1(O)[C@@H](O)[C@@H](O)[C@@H](O)[C@H](O)O1|[C@H]1(O)[C@@H](O)[C@@H](O)[C@H]O1')
     
     # Identify monosaccharide units in the molecule
-    mono_matches = mol.GetSubstructMatches(monoscaccharide_pattern)
+    mono_matches = mol.GetSubstructMatches(mono_pattern)
     if len(mono_matches) < 2:
         return False, "Less than two monosaccharide units found"
 
-    # Define a SMARTS pattern for the glycosidic bond (C-O-C linkage between two sugars)
-    glycosidic_bond_pattern = Chem.MolFromSmarts('C-O-C')
+    # Define a SMARTS pattern for the glycosidic bond (C-O-C linkage between two sugars using recursive SMARTS)
+    glycosidic_bond_pattern = Chem.MolFromSmarts('[C@H]O[C@H]')
     
     # Identify glycosidic bonds in the molecule
     glyco_matches = mol.GetSubstructMatches(glycosidic_bond_pattern)
     if len(glyco_matches) < 1:
         return False, "No glycosidic bonds found between sugar units"
 
+    # Check if each glycosidic bond connects two different monosaccharides from the matches
+    mono_indices = set()
+    for match in mono_matches:
+        mono_indices.update(match)
+    
+    linked_monosaccharides = 0
+    for bond_match in glyco_matches:
+        if bond_match[0] in mono_indices and bond_match[2] in mono_indices:
+            linked_monosaccharides += 1
+
     # Verify exactly two sugar units with appropriate linkage
-    if len(mono_matches) == 2 and len(glyco_matches) >= 1:
+    if len(mono_matches) == 2 and linked_monosaccharides >= 1:
         return True, "Contains two monosaccharide units joined by a glycosidic bond"
     else:
-        return False, "Incorrect number of monosaccharide units or linkages"
+        return False, "Incorrect number of monosaccharide units or insufficient linkages"
 
 # Test examples
 examples = [
