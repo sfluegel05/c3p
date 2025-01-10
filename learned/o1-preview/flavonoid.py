@@ -6,13 +6,11 @@ Classifies: flavonoid
 """
 
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_flavonoid(smiles: str):
     """
     Determines if a molecule is a flavonoid based on its SMILES string.
-
-    A flavonoid is defined as any member of the superclass flavonoids whose skeleton is based on 1-benzopyran with an aryl substituent at position 2.
+    A flavonoid is defined as any member of the 'superclass' flavonoids whose skeleton is based on 1-benzopyran with an aryl substituent at position 2.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -27,8 +25,8 @@ def is_flavonoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the flavonoid core pattern (1-benzopyran fused ring with aryl at position 2)
-    flavonoid_smarts = "c1cc2c(cc1)c(O)cc2-c3cccccc3"  # Simplified pattern for flavonoid core
+    # Define the flavonoid core SMARTS pattern (1-benzopyran fused ring with aryl at position 2)
+    flavonoid_smarts = "c1cc2ccc(Oc2c1)-c3cccc[cH]3"  # Flavonoid core with aryl substituent at position 2
     flavonoid_pattern = Chem.MolFromSmarts(flavonoid_smarts)
     if flavonoid_pattern is None:
         return None, "Invalid SMARTS pattern"
@@ -57,7 +55,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 0,
+    'attempt': 1,
     'success': True,
     'best': True,
     'error': '',
