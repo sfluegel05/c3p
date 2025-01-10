@@ -32,10 +32,32 @@ def is_organoiodine_compound(smiles: str):
     if not iodine_atoms:
         return False, "No iodine atoms found"
 
-    # Check if any iodine is bonded to carbon
+    # Check for valid carbon-iodine covalent bonds
     for iodine in iodine_atoms:
-        for neighbor in iodine.GetNeighbors():
-            if neighbor.GetAtomicNum() == 6:  # Carbon atomic number
-                return True, "Contains at least one carbon-iodine bond"
+        # Skip if iodine has formal charge
+        if iodine.GetFormalCharge() != 0:
+            continue
+            
+        for bond in iodine.GetBonds():
+            # Get the atom at the other end of the bond
+            other_atom = bond.GetOtherAtom(iodine)
+            
+            # Check if it's a carbon atom
+            if other_atom.GetAtomicNum() != 6:
+                continue
+                
+            # Check if carbon has reasonable valence and no charge
+            if other_atom.GetFormalCharge() != 0:
+                continue
+                
+            # Verify it's a single covalent bond
+            if bond.GetBondType() != Chem.BondType.SINGLE:
+                continue
+                
+            # Additional checks for reasonable geometry
+            if other_atom.GetDegree() > 4:
+                continue
+                
+            return True, "Contains at least one carbon-iodine covalent bond"
     
-    return False, "No carbon-iodine bonds found"
+    return False, "No valid carbon-iodine covalent bonds found"
