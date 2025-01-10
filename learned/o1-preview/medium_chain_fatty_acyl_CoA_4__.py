@@ -27,34 +27,42 @@ def is_medium_chain_fatty_acyl_CoA_4__(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define Coenzyme A SMARTS pattern
-    # This pattern represents the ADP and pantetheine portion of CoA
-    # Using a simplified pattern to match the key features of CoA
-    coa_smarts = Chem.MolFromSmarts("""
-    [#8]-[#6]-[#1]-[#8]-[#3+](-[#8-])(-[#8-])-[#8]-[#6]-1-[#8]-[#6]-[#6]-[#8]-[#1]-1
-    -[#7]-1-[#6]-[#7]-[#6]-2-[#7]-[#6]-[#7]-[#6]-2-[#7]-1
-    """)
+    # Look for adenine moiety
+    adenine_pattern = Chem.MolFromSmarts("n1cnc2c1ncnc2N")
+    if not mol.HasSubstructMatch(adenine_pattern):
+        return False, "Adenine moiety not found"
 
-    if coa_smarts is None:
-        return False, "Invalid CoA SMARTS pattern"
+    # Look for at least two phosphate groups
+    phosphate_pattern = Chem.MolFromSmarts("P(=O)([O-])[O-]")
+    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
+    if len(phosphate_matches) < 2:
+        return False, f"Found {len(phosphate_matches)} phosphate groups, need at least 2"
 
-    if not mol.HasSubstructMatch(coa_smarts):
-        return False, "Coenzyme A moiety not found"
-
-    # Find the thioester bond (C(=O)-S-C)
-    thioester_pattern = Chem.MolFromSmarts("C(=O)S[C;!H0]")
+    # Look for thioester bond (C(=O)S)
+    thioester_pattern = Chem.MolFromSmarts("C(=O)S")
     thioester_matches = mol.GetSubstructMatches(thioester_pattern)
     if not thioester_matches:
         return False, "Thioester bond not found"
 
-    # Assume the first match is the acyl chain
+    # Get the acyl chain length
     acyl_carbon_idx = thioester_matches[0][0]
     sulfur_idx = thioester_matches[0][2]
 
-    # Traverse the acyl chain to count carbons
+    # Get the acyl chain starting atom (atom connected to carbonyl carbon excluding O and S)
+    carbonyl_carbon = mol.GetAtomWithIdx(acyl_carbon_idx)
+    acyl_chain_atom = None
+    for neighbor in carbonyl_carbon.GetNeighbors():
+        idx = neighbor.GetIdx()
+        if idx != sulfur_idx and neighbor.GetAtomicNum() != 8:
+            acyl_chain_atom = neighbor
+            break
+    if acyl_chain_atom is None:
+        return False, "Could not find acyl chain attached to carbonyl carbon"
+
+    # Traverse the acyl chain and count carbons
     visited = set()
-    carbons_in_chain = 0
-    stack = [mol.GetAtomWithIdx(acyl_carbon_idx)]
+    stack = [acyl_chain_atom]
+    acyl_chain_length = 0
 
     while stack:
         atom = stack.pop()
@@ -63,60 +71,20 @@ def is_medium_chain_fatty_acyl_CoA_4__(smiles: str):
             continue
         visited.add(idx)
         if atom.GetAtomicNum() == 6:
-            carbons_in_chain += 1
+            acyl_chain_length += 1
             for neighbor in atom.GetNeighbors():
-                neighbor_idx = neighbor.GetIdx()
-                # Do not go back to sulfur atom
-                if neighbor_idx == sulfur_idx:
-                    continue
-                stack.append(neighbor)
+                n_idx = neighbor.GetIdx()
+                if neighbor.GetAtomicNum() == 6 and n_idx not in visited and n_idx != acyl_carbon_idx:
+                    stack.append(neighbor)
 
-    # Subtract one to exclude the carbonyl carbon
-    acyl_chain_length = carbons_in_chain - 1
     if acyl_chain_length < 6 or acyl_chain_length > 12:
         return False, f"Acyl chain length is {acyl_chain_length}, not in the range 6-12 for medium-chain fatty acids"
 
     # Check for deprotonated phosphate groups (4- charge)
-    # Count the number of phosphate oxygens with negative charges
+    # Count the number of negatively charged oxygens
     negative_oxygen_count = sum(1 for atom in mol.GetAtoms()
                                 if atom.GetAtomicNum() == 8 and atom.GetFormalCharge() == -1)
     if negative_oxygen_count < 4:
         return False, f"Found {negative_oxygen_count} negatively charged oxygens, expected at least 4 for deprotonated phosphates"
 
     return True, "Molecule is a medium-chain fatty acyl-CoA(4-) with appropriate acyl chain length and charge"
-
-__metadata__ = {
-    'chemical_class': {
-        'id': None,
-        'name': 'medium-chain fatty acyl-CoA(4-)',
-        'definition': 'An acyl-CoA oxoanion that results from deprotonation of the phosphate and diphosphate groups of any medium-chain fatty acyl-CoA; major species at pH 7.3.',
-        'parents': []
-    },
-    'config': {
-        'llm_model_name': 'lbl/claude-sonnet',
-        'f1_threshold': 0.8,
-        'max_attempts': 5,
-        'max_positive_instances': None,
-        'max_positive_to_test': None,
-        'max_negative_to_test': None,
-        'max_positive_in_prompt': 50,
-        'max_negative_in_prompt': 20,
-        'max_instances_in_prompt': 100,
-        'test_proportion': 0.1
-    },
-    'message': None,
-    'attempt': 1,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': None,
-    'num_false_positives': None,
-    'num_true_negatives': None,
-    'num_false_negatives': None,
-    'num_negatives': None,
-    'precision': None,
-    'recall': None,
-    'f1': None,
-    'accuracy': None
-}
