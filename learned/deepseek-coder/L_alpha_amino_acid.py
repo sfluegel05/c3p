@@ -26,34 +26,46 @@ def is_L_alpha_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for carboxyl group (-COOH) attached to the alpha-carbon
-    carboxyl_pattern = Chem.MolFromSmarts("[CX4H]([CX3](=[OX1])[OX2H1])")
-    if not mol.HasSubstructMatch(carboxyl_pattern):
-        return False, "No carboxyl group attached to alpha-carbon"
+    # More flexible carboxyl group pattern (-COO or -COOH)
+    carboxyl_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H0,O-]")
+    carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
+    if not carboxyl_matches:
+        return False, "No carboxyl group found"
 
-    # Check for amino group (-NH2) attached to the alpha-carbon
-    amino_pattern = Chem.MolFromSmarts("[CX4H]([NX3H2])")
-    if not mol.HasSubstructMatch(amino_pattern):
-        return False, "No amino group attached to alpha-carbon"
+    # More flexible amino group pattern (NH2, NH, or N with any substituents)
+    amino_pattern = Chem.MolFromSmarts("[NX3;H2,H1,H0]")
+    amino_matches = mol.GetSubstructMatches(amino_pattern)
+    if not amino_matches:
+        return False, "No amino group found"
 
-    # Check for L-configuration at the alpha-carbon
+    # Find potential alpha-carbons (carbons connected to both amino and carboxyl groups)
+    alpha_candidates = set()
+    for carboxyl_match in carboxyl_matches:
+        carboxyl_carbon = carboxyl_match[0]
+        carboxyl_neighbors = mol.GetAtomWithIdx(carboxyl_carbon).GetNeighbors()
+        for neighbor in carboxyl_neighbors:
+            if neighbor.GetSymbol() == 'C':
+                alpha_candidates.add(neighbor.GetIdx())
+
+    for amino_match in amino_matches:
+        amino_nitrogen = amino_match[0]
+        amino_neighbors = mol.GetAtomWithIdx(amino_nitrogen).GetNeighbors()
+        for neighbor in amino_neighbors:
+            if neighbor.GetSymbol() == 'C' and neighbor.GetIdx() in alpha_candidates:
+                alpha_carbon = neighbor.GetIdx()
+                break
+        else:
+            continue
+        break
+    else:
+        return False, "No alpha-carbon found connecting amino and carboxyl groups"
+
+    # Check chirality at alpha-carbon
     chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
     if not chiral_centers:
-        return False, "No chiral center found"
-    
-    # Verify that the alpha-carbon has the L-configuration
-    alpha_carbon = None
-    for atom in mol.GetAtoms():
-        if atom.GetSymbol() == 'C' and atom.GetDegree() == 4:  # Potential alpha-carbon
-            neighbors = [n.GetSymbol() for n in atom.GetNeighbors()]
-            if 'N' in neighbors and 'C' in neighbors:  # Amino and carboxyl groups
-                alpha_carbon = atom.GetIdx()
-                break
-    
-    if alpha_carbon is None:
-        return False, "No alpha-carbon found"
-    
-    # Check if the alpha-carbon is chiral and has L-configuration
+        return False, "No chiral centers found"
+
+    # Verify L-configuration at alpha-carbon
     for center, config in chiral_centers:
         if center == alpha_carbon:
             if config == 'R':  # L-configuration corresponds to S in RDKit
