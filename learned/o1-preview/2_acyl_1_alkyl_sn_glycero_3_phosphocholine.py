@@ -5,12 +5,13 @@ Classifies: CHEBI:36702 2-acyl-1-alkyl-sn-glycero-3-phosphocholine
 Classifies: CHEBI:63866 2-acyl-1-alkyl-sn-glycero-3-phosphocholine
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_2_acyl_1_alkyl_sn_glycero_3_phosphocholine(smiles: str):
     """
     Determines if a molecule is a 2-acyl-1-alkyl-sn-glycero-3-phosphocholine based on its SMILES string.
     This class has:
-    - A glycerol backbone with sn (stereospecific numbering) configuration at position 2.
+    - A glycerol backbone.
     - An ether-linked alkyl chain at position 1.
     - An ester-linked acyl chain at position 2.
     - A phosphocholine group at position 3.
@@ -28,99 +29,128 @@ def is_2_acyl_1_alkyl_sn_glycero_3_phosphocholine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns for the required substructures with atom mapping
+    # Kekulize the molecule to ensure valence consistency
+    try:
+        Chem.Kekulize(mol)
+    except:
+        pass
 
-    # Glycerol backbone with sn stereochemistry at position 2
-    # Atoms are labeled with mapping numbers for positions
-    glycerol_sn_pattern = Chem.MolFromSmarts("[C:1][C@H:2](O)[C:3]")
-    if not mol.HasSubstructMatch(glycerol_sn_pattern):
-        return False, "No glycerol backbone with sn stereochemistry found"
+    # Define SMARTS patterns for the required substructures
+
+    # Glycerol backbone without stereochemistry specification
+    glycerol_pattern = Chem.MolFromSmarts("OCC(O)CO")
+    if not mol.HasSubstructMatch(glycerol_pattern):
+        return False, "No glycerol backbone found"
 
     # Ether-linked alkyl chain at position 1
-    # Position 1 carbon connected to oxygen and alkyl chain
-    ether_alkyl_pattern = Chem.MolFromSmarts("[C:1]-[O]-[C;!$(C=O)]")
-    if not mol.HasSubstructMatch(ether_alkyl_pattern):
+    # An ether linkage (C-O-C) where one of the carbons is part of the glycerol backbone
+    ether_pattern = Chem.MolFromSmarts("COCC(O)CO")
+    if not mol.HasSubstructMatch(ether_pattern):
         return False, "No ether-linked alkyl chain at position 1 found"
 
     # Ester-linked acyl chain at position 2
-    # Position 2 oxygen connected to carbonyl carbon
-    ester_acyl_pattern = Chem.MolFromSmarts("[C@H:2]-[O]-[C:4](=O)-[C]")
-    if not mol.HasSubstructMatch(ester_acyl_pattern):
+    # An ester linkage (O-C=O) where the oxygen is connected to the glycerol backbone
+    ester_pattern = Chem.MolFromSmarts("OC(=O)C")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    ester_connected = False
+    for match in ester_matches:
+        ester_oxygen_idx = match[0]
+        glycerol_oxygen = mol.GetAtomWithIdx(ester_oxygen_idx)
+        for bond in glycerol_oxygen.GetBonds():
+            neighbor = bond.GetOtherAtom(glycerol_oxygen)
+            # Check if the oxygen is connected to a carbon of the glycerol backbone
+            if neighbor.GetAtomicNum() == 6:
+                paths = Chem.rdmolops.GetShortestPath(mol, neighbor.GetIdx(), ester_oxygen_idx)
+                if len(paths) <= 3:
+                    ester_connected = True
+                    break
+        if ester_connected:
+            break
+    if not ester_connected:
         return False, "No ester-linked acyl chain at position 2 found"
 
     # Phosphocholine group at position 3
-    phosphocholine_pattern = Chem.MolFromSmarts("[C:3]-O-P(=O)([O-])-OCC[N+](C)(C)C")
+    # Phosphate group with a choline moiety
+    phosphocholine_pattern = Chem.MolFromSmarts("COP(=O)(OCC[N+](C)(C)C)[O-]")
     if not mol.HasSubstructMatch(phosphocholine_pattern):
         return False, "No phosphocholine group at position 3 found"
 
-    # Ensure that the patterns are matched at the correct positions
-    # Get the matches for glycerol backbone
-    backbone_matches = mol.GetSubstructMatches(glycerol_sn_pattern)
-    for match in backbone_matches:
-        c1_idx = match[0]
-        c2_idx = match[1]
-        c3_idx = match[2]
+    # Additional checks to ensure correct connectivity
+    # Find glycerol backbone carbons
+    glycerol_matches = mol.GetSubstructMatches(glycerol_pattern)
+    for match in glycerol_matches:
+        # Indices of the glycerol carbons and oxygens
+        o1_idx = match[0]
+        c1_idx = match[1]
+        o2_idx = match[2]
+        c2_idx = match[3]
+        o3_idx = match[4]
 
-        # Check that ether-linked alkyl chain is connected to position 1 carbon
+        # Check for ether linkage at position 1 (connected to c1)
         c1_atom = mol.GetAtomWithIdx(c1_idx)
-        ether_alkyl_match = False
+        ether_found = False
         for bond in c1_atom.GetBonds():
             nbr = bond.GetOtherAtom(c1_atom)
-            if nbr.GetAtomicNum() == 8:  # Oxygen
-                # Check if oxygen is connected to an alkyl group
+            if nbr.GetAtomicNum() == 8 and nbr.GetIdx() != o1_idx:
+                # Oxygen connected to an alkyl chain
                 for obond in nbr.GetBonds():
                     onbr = obond.GetOtherAtom(nbr)
                     if onbr.GetAtomicNum() == 6 and onbr.GetIdx() != c1_idx:
-                        ether_alkyl_match = True
+                        ether_found = True
                         break
-            if ether_alkyl_match:
+            if ether_found:
                 break
-        if not ether_alkyl_match:
-            continue  # Try next backbone match
+        if not ether_found:
+            continue  # Try next glycerol match
 
-        # Check that ester-linked acyl chain is connected to position 2 oxygen
-        c2_atom = mol.GetAtomWithIdx(c2_idx)
-        ester_acyl_match = False
-        for bond in c2_atom.GetBonds():
-            nbr = bond.GetOtherAtom(c2_atom)
-            if nbr.GetAtomicNum() == 8 and nbr.GetIdx() != c3_idx:  # Oxygen not connected to position 3 carbon
-                # Oxygen connected to carbonyl carbon
-                for obond in nbr.GetBonds():
-                    onbr = obond.GetOtherAtom(nbr)
-                    if onbr.GetAtomicNum() == 6 and obond.GetBondTypeAsDouble() == 1.0:
-                        # Check if carbon is carbonyl carbon
-                        has_double_bonded_oxygen = False
-                        for cbond in onbr.GetBonds():
-                            cnbr = cbond.GetOtherAtom(onbr)
-                            if cnbr.GetAtomicNum() == 8 and cbond.GetBondTypeAsDouble() == 2.0:
-                                has_double_bonded_oxygen = True
-                                break
-                        if has_double_bonded_oxygen:
-                            ester_acyl_match = True
-                            break
-            if ester_acyl_match:
-                break
-        if not ester_acyl_match:
-            continue  # Try next backbone match
-
-        # Check that phosphocholine group is connected to position 3 carbon
-        c3_atom = mol.GetAtomWithIdx(c3_idx)
-        phosphocholine_match = False
-        for bond in c3_atom.GetBonds():
-            nbr = bond.GetOtherAtom(c3_atom)
-            if nbr.GetAtomicNum() == 8:  # Oxygen
-                # Oxygen connected to phosphate
-                for obond in nbr.GetBonds():
-                    onbr = obond.GetOtherAtom(nbr)
-                    if onbr.GetAtomicNum() == 15:  # Phosphorus
-                        phosphocholine_match = True
+        # Check for ester linkage at position 2 (connected to o2)
+        o2_atom = mol.GetAtomWithIdx(o2_idx)
+        ester_found = False
+        for bond in o2_atom.GetBonds():
+            nbr = bond.GetOtherAtom(o2_atom)
+            if nbr.GetAtomicNum() == 6:
+                # Carbon connected to carbonyl oxygen
+                carbonyl_found = False
+                for cbond in nbr.GetBonds():
+                    cnbr = cbond.GetOtherAtom(nbr)
+                    if cnbr.GetAtomicNum() == 8 and cbond.GetBondTypeAsDouble() == 2.0:
+                        carbonyl_found = True
                         break
-            if phosphocholine_match:
-                break
-        if not phosphocholine_match:
-            continue  # Try next backbone match
+                if carbonyl_found:
+                    ester_found = True
+                    break
+        if not ester_found:
+            continue  # Try next glycerol match
 
-        # All checks passed
+        # Check for phosphocholine group at position 3 (connected to o3)
+        o3_atom = mol.GetAtomWithIdx(o3_idx)
+        phosphate_found = False
+        for bond in o3_atom.GetBonds():
+            nbr = bond.GetOtherAtom(o3_atom)
+            if nbr.GetAtomicNum() == 15:  # Phosphorus
+                # Check for choline moiety
+                for pbond in nbr.GetBonds():
+                    pnbr = pbond.GetOtherAtom(nbr)
+                    if pnbr.GetAtomicNum() == 8 and pbond.GetBondTypeAsDouble() == 1.0:
+                        # Oxygen connected to choline
+                        for obond in pnbr.GetBonds():
+                            onbr = obond.GetOtherAtom(pnbr)
+                            if onbr.GetAtomicNum() == 6:
+                                # Carbon chain leading to nitrogen
+                                path = Chem.rdmolops.GetShortestPath(mol, onbr.GetIdx(), o3_idx)
+                                atoms_in_path = [mol.GetAtomWithIdx(idx) for idx in path]
+                                nitrogen_found = any(atom.GetAtomicNum() == 7 and atom.GetFormalCharge() == 1 for atom in atoms_in_path)
+                                if nitrogen_found:
+                                    phosphate_found = True
+                                    break
+                    if phosphate_found:
+                        break
+            if phosphate_found:
+                break
+        if not phosphate_found:
+            continue  # Try next glycerol match
+
+        # All substructures found with correct connectivity
         return True, "Molecule matches all required substructures for 2-acyl-1-alkyl-sn-glycero-3-phosphocholine"
 
     return False, "Molecule does not match all required substructures"
