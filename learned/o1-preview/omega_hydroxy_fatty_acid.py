@@ -6,7 +6,6 @@ Classifies: omega-hydroxy fatty acid
 """
 
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_omega_hydroxy_fatty_acid(smiles: str):
     """
@@ -27,74 +26,75 @@ def is_omega_hydroxy_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Identify carboxyl group [C(=O)O]
-    carboxyl_pattern = Chem.MolFromSmarts("[CX3](=O)[OX1H]")
+    # Identify carboxyl group [C(=O)[O-,OH]]
+    carboxyl_pattern = Chem.MolFromSmarts("[CX3](=O)[OX1H0-,OX2H1]")
     carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
     if not carboxyl_matches:
         return False, "No carboxyl group found"
 
-    # Identify hydroxyl groups [O-H]
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
+    # Identify hydroxyl group [O-H or O-]
+    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H,OX1-]")
     hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
     if not hydroxyl_matches:
         return False, "No hydroxyl group found"
 
-    # Get the indices of the carboxyl carbon(s) and hydroxyl oxygen(s)
-    carboxyl_c_indices = [match[0] for match in carboxyl_matches]
-    hydroxyl_o_indices = [match[0] for match in hydroxyl_matches]
+    # Loop over all carboxyl and hydroxyl groups to find a matching pair
+    for carb_match in carboxyl_matches:
+        carboxyl_c_idx = carb_match[0]  # Carbon of carboxyl group
+        carboxyl_c_atom = mol.GetAtomWithIdx(carboxyl_c_idx)
 
-    # Check if carboxyl group is at terminal position
-    is_terminal_carboxyl = False
-    for c_idx in carboxyl_c_indices:
-        atom = mol.GetAtomWithIdx(c_idx)
-        # Carboxyl carbon should be connected to one heavy atom (excluding O)
-        neighbors = [a for a in atom.GetNeighbors() if a.GetAtomicNum() > 1 and a.GetAtomicNum() != 8]
-        if len(neighbors) == 1:
-            carboxyl_c_idx = c_idx
-            is_terminal_carboxyl = True
-            break
-    if not is_terminal_carboxyl:
-        return False, "Carboxyl group is not at terminal position"
+        # Check if carboxyl carbon is connected to a carbon chain
+        chain_start_atoms = [nbr for nbr in carboxyl_c_atom.GetNeighbors() if nbr.GetAtomicNum() == 6 and nbr.GetIdx() != carboxyl_c_idx]
+        if not chain_start_atoms:
+            continue  # Carboxyl group is not connected to a carbon chain
+        chain_start_idx = chain_start_atoms[0].GetIdx()
 
-    # Check if hydroxyl group is at terminal position
-    is_terminal_hydroxyl = False
-    for o_idx in hydroxyl_o_indices:
-        oxygen = mol.GetAtomWithIdx(o_idx)
-        # Hydroxyl oxygen should be connected to one heavy atom (the carbon)
-        if len(oxygen.GetNeighbors()) != 1:
-            continue
-        carbon = oxygen.GetNeighbors()[0]
-        if carbon.GetAtomicNum() == 6:
-            # Check if carbon is terminal (connected to only one heavy atom)
-            heavy_atom_neighbors = [a for a in carbon.GetNeighbors() if a.GetAtomicNum() > 1]
-            if len(heavy_atom_neighbors) == 1:
-                hydroxyl_o_idx = o_idx
-                hydroxyl_c_idx = carbon.GetIdx()
-                is_terminal_hydroxyl = True
-                break
-    if not is_terminal_hydroxyl:
-        return False, "Hydroxyl group is not at terminal position"
+        for hydro_match in hydroxyl_matches:
+            hydroxyl_o_idx = hydro_match[0]
+            hydroxyl_o_atom = mol.GetAtomWithIdx(hydroxyl_o_idx)
 
-    # Find the shortest path between carboxyl carbon and hydroxyl carbon
-    path = Chem.rdmolops.GetShortestPath(mol, carboxyl_c_idx, hydroxyl_c_idx)
-    if not path or len(path) == 0:
-        return False, "No path between carboxyl and hydroxyl groups"
+            # Identify the carbon attached to the hydroxyl group
+            hydroxyl_c_atoms = [nbr for nbr in hydroxyl_o_atom.GetNeighbors() if nbr.GetAtomicNum() == 6]
+            if not hydroxyl_c_atoms:
+                continue  # Hydroxyl group is not attached to a carbon
+            hydroxyl_c_atom = hydroxyl_c_atoms[0]
+            hydroxyl_c_idx = hydroxyl_c_atom.GetIdx()
 
-    # Check that the path is mostly carbons (allowing for oxygens)
-    for idx in path:
-        atom = mol.GetAtomWithIdx(idx)
-        if atom.GetAtomicNum() not in [6, 8]:  # Allow carbon and oxygen
-            return False, "Path contains atoms other than carbon and oxygen"
+            # Ensure the hydroxyl carbon is terminal (connected to only one heavy atom besides the oxygen)
+            hydroxyl_c_neighbors = [nbr for nbr in hydroxyl_c_atom.GetNeighbors() if nbr.GetAtomicNum() > 1 and nbr.GetIdx() != hydroxyl_o_idx]
+            if len(hydroxyl_c_neighbors) > 1:
+                continue  # Hydroxyl carbon is not terminal
 
-    # Check that internal carbons are not branched
-    for idx in path[1:-1]:  # Exclude terminal carbons
-        atom = mol.GetAtomWithIdx(idx)
-        if atom.GetAtomicNum() == 6:
-            heavy_atom_neighbors = [a for a in atom.GetNeighbors() if a.GetAtomicNum() > 1]
-            if len(heavy_atom_neighbors) > 2:
-                return False, "Chain is branched between carboxyl and hydroxyl groups"
+            # Find the path between the carboxyl chain start and the hydroxyl carbon
+            path = Chem.rdmolops.GetShortestPath(mol, chain_start_idx, hydroxyl_c_idx)
+            if not path:
+                continue  # No path found
 
-    return True, "Molecule is an omega-hydroxy fatty acid"
+            # Check that the path is linear and unbranched
+            branched = False
+            for idx in path:
+                atom = mol.GetAtomWithIdx(idx)
+                if atom.GetAtomicNum() != 6:
+                    branched = True  # Non-carbon atom in chain
+                    break
+                num_heavy_neighbors = sum(1 for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() > 1)
+                if (idx == chain_start_idx or idx == hydroxyl_c_idx) and num_heavy_neighbors > 2:
+                    branched = True  # Terminal carbons should not be branched
+                    break
+                elif idx != chain_start_idx and idx != hydroxyl_c_idx and num_heavy_neighbors > 2:
+                    branched = True  # Internal carbons should have max 2 heavy neighbors
+                    break
+            if branched:
+                continue  # Not a linear chain
+
+            # Check for rings in the path
+            if mol.GetRingInfo().IsAtomInRingOfSize(idx, 3) or mol.GetRingInfo().IsAtomInRingOfSize(idx, 4):
+                continue  # Ring structures are not allowed
+
+            # All checks passed; molecule is an omega-hydroxy fatty acid
+            return True, "Molecule is an omega-hydroxy fatty acid"
+
+    return False, "Molecule does not match criteria for an omega-hydroxy fatty acid"
 
 __metadata__ = {
     'chemical_class': {
