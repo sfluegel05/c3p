@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_cholesteryl_ester(smiles: str):
     """
     Determines if a molecule is a cholesteryl ester based on its SMILES string.
-    Cholesteryl esters have a cholesterol base (fused ring structure) with a fatty acid ester linkage.
+    Cholesteryl esters have a cholesterol base (a specific tetracyclic ring structure) with a fatty acid ester linkage.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,19 +21,19 @@ def is_cholesteryl_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # General SMARTS pattern for the tetracyclic steroid backbone of cholesterol
-    steroid_pattern = Chem.MolFromSmarts("C1CCC2C3C(C1)C4CCC3C2C4")
+    # More detailed SMARTS pattern for the entire tetracyclic steroid backbone of cholesterol
+    steroid_pattern = Chem.MolFromSmarts("C1[C@@H]2CC[C@H]3[C@@H](C2)CC=C4C[C@@H](OC(=O))[C@@]3(CC[C@]4(C[C@@H]5[C@@H](CC[C@]6(CCC=C7[C@H]6CCC(=C[C@]7(C[C@@H]5C)C)C)C)C)C)C")
 
-    # Check if the molecule has at least part of the steroid backbone
+    # Check if the molecule has the characteristic cholesterol steroid backbone
     if not mol.HasSubstructMatch(steroid_pattern):
-        return False, "No steroid backbone characteristic of cholesterol found"
-    
-    # Check for the presence of an ester linkage (-C(=O)-O-)
-    ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H0]")
-    if not mol.HasSubstructMatch(ester_pattern):
-        return False, "No ester linkage entity found attached to steroid backbone"
-    
-    # Ensure the ester group is connected to the steroid backbone identified
-    # For simplicity, we'll assume that if both patterns are present, connections are valid within typical cholesteryl esters
+        return False, "No cholesterol steroid backbone fully recognized"
 
-    return True, "Contains characteristic steroid backbone and ester linkage"
+    # Check for the presence of a ester linkage connected to the 3-beta OH group
+    ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H0][C@@H]1CCC2C1C=CC3C2(C)CCC4=C3C=CC5[C@]4(C)CC[C@@H]5C")
+    if not mol.HasSubstructMatch(ester_pattern):
+        return False, "No ester linkage entity found at the cholesterol's 3-beta position"
+
+    # Confirm that the ester linkage is part of a cholesteryl ester by verifying its connection
+    # Assume connections are valid if both patterns are present for cholesteryl esters
+
+    return True, "Contains characteristic cholesterol steroid backbone and ester linkage at correct position"
