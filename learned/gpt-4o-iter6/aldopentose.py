@@ -8,8 +8,7 @@ def is_aldopentose(smiles: str):
     Determines if a molecule is an aldopentose based on its SMILES string.
 
     An aldopentose is a pentose (5-carbon sugar) with a potential aldehyde
-    group at one end when in linear form. Often exists in cyclic form (furanose 
-    or pyranose) within the context of hemiacetal structures.
+    group at one end. Commonly exists in linear or cyclic furanose/pyranose forms.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -28,17 +27,20 @@ def is_aldopentose(smiles: str):
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if c_count != 5:
         return False, f"Expected 5 carbon atoms, found {c_count}"
-    
-    # Look for cyclic furanose or pyranose forms using more specific SMARTS patterns
-    furanose_pattern = Chem.MolFromSmarts("[C@H1](O)[C@H1](O)[C@H1](O)O1")
-    pyranose_pattern = Chem.MolFromSmarts("[C@H1](O)[C@H1](O)[C@H1](O)[C@H1](O)O1")
-    
-    if mol.HasSubstructMatch(furanose_pattern) or mol.HasSubstructMatch(pyranose_pattern):
-        return True, "Contains cyclic furanose or pyranose structure typical for aldopentoses"
 
-    # Check for linear form 'aldehydo-' sugars
-    linear_aldehyde_pattern = Chem.MolFromSmarts("[#6][CH1](=O)[C@H1](O)[C@H1](O)[C@H1](O)[C@H1](O)")
-    if mol.HasSubstructMatch(linear_aldehyde_pattern):
-        return True, "Contains linear form with aldehyde group"
+    # SMARTS pattern for aldehyde group (linear form)
+    aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)[CX4;R0]")  # Aldehyde group
+    if mol.HasSubstructMatch(aldehyde_pattern):
+        return True, "Contains aldehyde group, indicating a linear form of aldopentose"
+
+    # SMARTS for cyclic forms: Furanose (5-membered) and Pyranose (6-membered) rings
+    furanose_pattern = Chem.MolFromSmarts("[C,O]1[C,O][C,O][C,O][C,O]1")
+    pyranose_pattern = Chem.MolFromSmarts("[C,O]1[C,O][C,O][C,O][C,O][C,O]1")
+    
+    if mol.HasSubstructMatch(furanose_pattern):
+        return True, "Contains cyclic furanose structure"
+
+    if mol.HasSubstructMatch(pyranose_pattern):
+        return True, "Contains cyclic pyranose structure"
 
     return False, "Does not match aldopentose structure requirements"
