@@ -2,7 +2,6 @@
 Classifies: CHEBI:32876 tertiary amine
 """
 from rdkit import Chem
-from rdkit.Chem import rdchem
 
 def is_tertiary_amine(smiles: str):
     """
@@ -23,13 +22,16 @@ def is_tertiary_amine(smiles: str):
     if mol is None:
         return None, "Invalid SMILES string"
     
-    # SMARTS pattern for tertiary amine - N bonded to three carbon atoms
-    tertiary_amine_pattern = Chem.MolFromSmarts("[NX3]([C])[C][C]")
-    
-    # Check if the molecule matches the tertiary amine pattern
-    if mol.HasSubstructMatch(tertiary_amine_pattern):
-        return True, "Molecule contains a tertiary amine (N bonded to 3 carbon atoms)"
-    else:
-        return False, "No tertiary amine found (N not bonded to 3 carbon atoms)"
+    # Iterate through each atom in the molecule
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 7:  # Check if the atom is nitrogen
+            # List carbon atom neighbors
+            carbon_neighbors = [neighbor for neighbor in atom.GetNeighbors() if neighbor.GetAtomicNum() == 6]
+            
+            # Check if the nitrogen has exactly three carbon neighbors
+            if len(carbon_neighbors) == 3:
+                # Ensure nitrogen has no other types of bonded atoms
+                if all(neighbor.GetAtomicNum() == 6 for neighbor in atom.GetNeighbors()):
+                    return True, "Molecule contains a tertiary amine (N bonded to 3 carbon atoms)"
 
-    return None, "Function execution did not reach expected returns"
+    return False, "No tertiary amine found (N not bonded to 3 carbon atoms)"
