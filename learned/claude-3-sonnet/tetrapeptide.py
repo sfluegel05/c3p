@@ -7,6 +7,7 @@ A molecule containing exactly four amino acid residues connected by peptide link
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_tetrapeptide(smiles: str):
     """
@@ -22,58 +23,59 @@ def is_tetrapeptide(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+
+    # Calculate basic properties
+    mol_weight = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_weight > 1000:  # Most tetrapeptides are under 1000 Da
+        return False, "Molecular weight too high for typical tetrapeptide"
     
-    # Look for peptide bonds (-C(=O)-NH-)
-    peptide_pattern = Chem.MolFromSmarts("[NX3,NX4;H1,H2][CX4][CX3](=[OX1])[NX3,NX4;H1,H2]")
+    # Pattern for amino acid residues (including proline)
+    aa_pattern = Chem.MolFromSmarts("[NX3,NX4;H0,H1,H2][CX4][CX3](=[OX1])[NX3,OX2H,OX1-,N]")
+    aa_matches = mol.GetSubstructMatches(aa_pattern)
+    
+    # Pattern for peptide bonds (including proline)
+    peptide_pattern = Chem.MolFromSmarts("[$([NX3H1,NX4H2]),$([NX3](C)(C))][CX4][CX3](=[OX1])[NX3H1,NX4H2]")
     peptide_matches = mol.GetSubstructMatches(peptide_pattern)
     
-    # For tetrapeptide, we expect 3 peptide bonds (connecting 4 amino acids)
-    if len(peptide_matches) < 3:
-        return False, f"Found only {len(peptide_matches)} peptide bonds, need 3 for tetrapeptide"
+    # Pattern for N-terminus (including modified)
+    n_term_pattern = Chem.MolFromSmarts("[$([NX3H2,NX4H3+]),$([NX3H1](C))][CX4][CX3](=O)")
+    n_term = len(mol.GetSubstructMatches(n_term_pattern))
+    
+    # Pattern for C-terminus (including modified)
+    c_term_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[$([OX2H]),$([OX1-]),$([NX3H2])]")
+    c_term = len(mol.GetSubstructMatches(c_term_pattern))
+    
+    # Count amino acid residues
+    aa_count = len(aa_matches)
+    if aa_count != 4:
+        return False, f"Found {aa_count} amino acid residues, need exactly 4"
+    
+    # Count peptide bonds
+    peptide_count = len(peptide_matches)
+    if peptide_count < 3:
+        return False, f"Found {peptide_count} peptide bonds, need at least 3"
+    
+    # Check for cyclic structure
+    ring_info = mol.GetRingInfo()
+    ring_size = max([len(r) for r in ring_info.AtomRings()], default=0)
+    
+    # Exclude molecules with large rings (except for proline rings)
+    if ring_size > 12:  # Proline ring is 5-membered
+        return False, "Ring size too large for tetrapeptide"
         
-    # Look for alpha carbons with attached NH group
-    alpha_carbon_pattern = Chem.MolFromSmarts("[NX3,NX4;H1,H2][CX4][CX3](=O)")
-    alpha_carbons = mol.GetSubstructMatches(alpha_carbon_pattern)
+    # Check for appropriate terminal groups (unless cyclic)
+    if ring_size < 12:  # Linear peptide
+        if n_term == 0 and c_term == 0:
+            return False, "Missing both N-terminus and C-terminus"
     
-    # We expect 4 alpha carbons for a tetrapeptide
-    if len(alpha_carbons) < 4:
-        return False, f"Found only {len(alpha_carbons)} alpha carbons, need 4 for tetrapeptide"
-    
-    # Look for N-terminus (primary or secondary amine)
-    n_terminus_pattern = Chem.MolFromSmarts("[NX3H2,NX4H3+][CX4][CX3](=O)")
-    n_terminus = mol.GetSubstructMatches(n_terminus_pattern)
-    
-    # Look for C-terminus (carboxyl or similar group)
-    c_terminus_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H,OX1-,N]")
-    c_terminus = mol.GetSubstructMatches(c_terminus_pattern)
-    
-    # Check for minimum required terminal groups
-    if not (n_terminus or c_terminus):
-        return False, "Missing both N-terminus and C-terminus"
+    # Count backbone atoms to ensure proper chain length
+    backbone_pattern = Chem.MolFromSmarts("[NX3,NX4][CX4][CX3]=O")
+    backbone_atoms = len(mol.GetSubstructMatches(backbone_pattern))
+    if backbone_atoms < 4:
+        return False, "Insufficient backbone length for tetrapeptide"
         
-    # Count nitrogens that are part of peptide bonds or terminal groups
-    peptide_n_pattern = Chem.MolFromSmarts("[NX3,NX4;H1,H2][CX4][CX3]=O")
-    peptide_nitrogens = len(mol.GetSubstructMatches(peptide_n_pattern))
-    
-    # For a tetrapeptide, we expect 4 nitrogens involved in peptide bonds/terminals
-    if peptide_nitrogens < 4:
-        return False, f"Found only {peptide_nitrogens} peptide nitrogens, need 4 for tetrapeptide"
-    
-    # Count carbonyls that are part of peptide bonds or terminal groups
-    carbonyl_pattern = Chem.MolFromSmarts("[CX3](=O)[NX3,OX2H,OX1-]")
-    carbonyls = len(mol.GetSubstructMatches(carbonyl_pattern))
-    
-    # For a tetrapeptide, we expect 4 carbonyls (3 peptide bonds + C-terminus)
-    if carbonyls < 4:
-        return False, f"Found only {carbonyls} peptide carbonyls, need 4 for tetrapeptide"
-    
-    # Additional check for cyclic peptides
-    cycle_pattern = Chem.MolFromSmarts("[NX3,NX4;H1,H2][CX4][CX3](=[OX1])[NX3,NX4;H1,H2]")
-    cycle_matches = mol.GetSubstructMatches(cycle_pattern)
-    is_cyclic = len(cycle_matches) >= 4  # If we find 4 or more peptide bonds, it might be cyclic
-    
     # Final classification
-    if is_cyclic:
+    if ring_size >= 12:
         return True, "Cyclic tetrapeptide with 4 amino acid residues connected by peptide bonds"
     else:
         return True, "Linear tetrapeptide with 4 amino acid residues connected by peptide bonds"
