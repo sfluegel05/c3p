@@ -5,13 +5,13 @@ Classifies: CHEBI:17962 CDP-diacylglycerol
 Classifies: CDP-diacylglycerol
 """
 from rdkit import Chem
-from rdkit.Chem import Draw
+from rdkit.Chem import AllChem
 
 def is_CDP_diacylglycerol(smiles: str):
     """
     Determines if a molecule is a CDP-diacylglycerol based on its SMILES string.
     A CDP-diacylglycerol is a glycerol backbone with two fatty acid chains attached via ester bonds
-    at positions 1 and 2, and a CDP (cytidine diphosphate) group attached via a phosphodiester bond
+    at positions 1 and 2, and a cytidine diphosphate group attached via a phosphodiester bond
     at position 3.
 
     Args:
@@ -27,57 +27,58 @@ def is_CDP_diacylglycerol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns
+    # Define SMARTS patterns without stereochemistry
 
-    # Glycerol backbone (with or without stereochemistry)
-    glycerol_pattern = Chem.MolFromSmarts("[C@@H](CO)(CO)")  # Glycerol backbone
+    # Glycerol backbone: three carbons with two hydroxyl groups
+    glycerol_pattern = Chem.MolFromSmarts("OCC(O)CO")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
 
-    # Ester linkage (fatty acid chains attached via ester bonds)
-    ester_pattern = Chem.MolFromSmarts("C(=O)O[C@H]")  # Ester linkage to chiral carbon
+    # Ester linkage pattern: ester group
+    ester_pattern = Chem.MolFromSmarts("C(=O)O[C;!$(C=O)]")  # Ester linkage
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) < 2:
         return False, f"Found {len(ester_matches)} ester linkages, need at least 2"
 
-    # Phosphodiester linkage to CDP group
-    # Phosphate group pattern
-    phosphate_pattern = Chem.MolFromSmarts("OP(=O)(O)OP(=O)(O)O")
-    if not mol.HasSubstructMatch(phosphate_pattern):
-        return False, "No phosphodiester linkage found"
+    # Phosphodiester linkage pattern: phosphate group connected to glycerol
+    phospho_glycerol_pattern = Chem.MolFromSmarts("O[P](=O)(O)OCCO")  # Phosphodiester linked to glycerol
+    if not mol.HasSubstructMatch(phospho_glycerol_pattern):
+        return False, "No phosphodiester linkage to glycerol found"
 
-    # Cytidine moiety pattern (includes ribose sugar and cytosine base)
-    cytidine_pattern = Chem.MolFromSmarts("N1C=CC(=NC1=O)N[C@H]2O[C@@H](COP(=O)(O)OP(=O)(O)O)[C@@H](O)[C@H]2O")
+    # Cytidine moiety pattern: cytosine base connected to ribose sugar
+    cytidine_pattern = Chem.MolFromSmarts("n1cccnc1O[C@H]2[C@@H](O)[C@H](O)[C@@H](CO[P](=O)(O)O[P](=O)(O)O)O2")
     if not mol.HasSubstructMatch(cytidine_pattern):
         return False, "No cytidine moiety found"
 
-    # Check connectivity between glycerol backbone and phosphate group
-    # Find the glycerol carbon connected to the phosphate
-    glycerol_matches = mol.GetSubstructMatches(glycerol_pattern)
-    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
-    connected = False
-    for g_match in glycerol_matches:
-        glycerol_atom_indices = g_match
-        for p_match in phosphate_matches:
-            phosphate_atom_indices = p_match
-            # Check bonds between glycerol oxygen and phosphate phosphorus
-            for idx in glycerol_atom_indices:
-                atom = mol.GetAtomWithIdx(idx)
-                if atom.GetSymbol() == "O":
-                    for nbr in atom.GetNeighbors():
-                        if nbr.GetIdx() in phosphate_atom_indices and nbr.GetSymbol() == "P":
-                            connected = True
-                            break
-    if not connected:
-        return False, "Phosphate group not connected to glycerol backbone"
+    # Check that the phosphate groups are connected
+    phosphate_pattern = Chem.MolFromSmarts("OP(=O)(O)OP(=O)(O)O")
+    if not mol.HasSubstructMatch(phosphate_pattern):
+        return False, "Phosphate groups not properly connected"
 
-    # Check connectivity between phosphate group and cytidine moiety
+    # Ensure connectivity between glycerol backbone and ester groups
+    glycerol_matches = mol.GetSubstructMatches(glycerol_pattern)
+    ester_atoms = set()
+    for match in ester_matches:
+        # The oxygen atom in the ester linkage connected to glycerol
+        ester_oxygen_idx = match[2]
+        ester_oxygen = mol.GetAtomWithIdx(ester_oxygen_idx)
+        for neighbor in ester_oxygen.GetNeighbors():
+            if neighbor.GetIdx() in sum(glycerol_matches, ()):
+                ester_atoms.add(ester_oxygen_idx)
+    if len(ester_atoms) < 2:
+        return False, "Ester groups not properly attached to glycerol backbone"
+
+    # Ensure connectivity between glycerol backbone and phosphodiester group
+    phospho_matches = mol.GetSubstructMatches(phospho_glycerol_pattern)
+    if not phospho_matches:
+        return False, "Phosphodiester group not properly attached to glycerol"
+
+    # Ensure connectivity between phosphodiester group and cytidine moiety
     cytidine_matches = mol.GetSubstructMatches(cytidine_pattern)
     if not cytidine_matches:
-        return False, "Cytidine moiety not properly attached"
+        return False, "Cytidine moiety not properly attached to phosphodiester group"
 
     return True, "Molecule is a CDP-diacylglycerol"
-
 
 __metadata__ = {
     'chemical_class': {
