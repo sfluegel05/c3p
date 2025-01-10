@@ -32,39 +32,27 @@ def is_tannin(smiles: str):
     # Count phenolic hydroxyl groups (-OH attached to aromatic rings)
     phenolic_oh_pattern = Chem.MolFromSmarts("[OH][c]")
     phenolic_oh_matches = mol.GetSubstructMatches(phenolic_oh_pattern)
-    if len(phenolic_oh_matches) < 1:
-        return False, f"Found {len(phenolic_oh_matches)} phenolic hydroxyl groups, need at least 1"
+    if len(phenolic_oh_matches) < 2:
+        return False, f"Found {len(phenolic_oh_matches)} phenolic hydroxyl groups, need at least 2"
 
-    # Check for galloyl groups (3,4,5-trihydroxybenzoyl)
-    galloyl_pattern = Chem.MolFromSmarts("c1(O)c(O)c(O)c(C(=O))c1")
-    galloyl_matches = mol.GetSubstructMatches(galloyl_pattern)
-    if len(galloyl_matches) > 0:
-        return True, "Contains galloyl groups, indicating a tannin structure"
-
-    # Check for glycosidic linkages
-    glycosidic_pattern = Chem.MolFromSmarts("[C,c][O][C@H]1[C@@H](O)[C@@H](O)[C@H](O)[C@H](O1)")
-    glycosidic_matches = mol.GetSubstructMatches(glycosidic_pattern)
-    if len(glycosidic_matches) > 0:
-        return True, "Contains glycosidic linkages, indicating a tannin structure"
-
-    # Check for ester bonds
-    ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H0]")
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) > 0:
-        return True, "Contains ester bonds, indicating a tannin structure"
+    # Check for polyphenolic structure (multiple aromatic rings with hydroxyl groups)
+    polyphenolic_pattern = Chem.MolFromSmarts("[c][OH].[c][OH]")
+    polyphenolic_matches = mol.GetSubstructMatches(polyphenolic_pattern)
+    if len(polyphenolic_matches) < 1:
+        return False, "No polyphenolic structure found"
 
     # Check molecular weight - tannins are typically large molecules
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 500:
+    if mol_wt < 200:
         return False, "Molecular weight too low for tannin"
 
     # Count carbons and oxygens
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     
-    if c_count < 20:
+    if c_count < 10:
         return False, "Too few carbons for tannin"
-    if o_count < 6:
+    if o_count < 4:
         return False, "Too few oxygens for tannin"
 
     return True, "Contains multiple phenolic hydroxyl groups on aromatic rings, indicating a polyphenolic structure typical of tannins"
