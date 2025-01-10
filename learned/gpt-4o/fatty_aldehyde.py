@@ -30,15 +30,19 @@ def is_fatty_aldehyde(smiles: str):
     if not mol.HasSubstructMatch(aldehyde_pattern):
         return False, "No terminal aldehyde group found"
     
-    # Look for a considerably long carbon chain - at least 7 carbon atoms in a row
-    long_chain_pattern = Chem.MolFromSmarts("[CH2]~[CH2]~[CH2]~[CH2]~[CH2]~[CH2]~[CH3]")
+    # Look for a sufficiently long carbon chain with flexibility for double/triple bonds and branching
+    long_chain_pattern = Chem.MolFromSmarts("CCCCCCC")
     if not mol.HasSubstructMatch(long_chain_pattern):
-        return False, "Does not have a sufficient long carbon chain"
+        # If strict chain pattern is not found, check for unsaturated or branched alternatives
+        unsaturated_chain_pattern = Chem.MolFromSmarts("[C,c]~[C,c]~[C,c]~[C,c]~[C,c]~[C,c]~[C,c]")
+        if not mol.HasSubstructMatch(unsaturated_chain_pattern):
+            return False, "Does not have a sufficient long carbon chain"
 
     # Count total number of carbon atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     
-    if c_count < 10:
+    # Adjust carbon count threshold considering smaller examples and flexibility
+    if c_count < 6:
         return False, f"Too few carbons for a typical fatty aldehyde (found {c_count})"
 
     return True, "Contains terminal aldehyde group with a suitable long carbon chain"
