@@ -31,5 +31,13 @@ def is_beta_lactam(smiles: str):
     # Check if the pattern matches
     if mol.HasSubstructMatch(beta_lactam_pattern):
         return True, "Contains a four-membered ring with an amide bond (beta-lactam ring)"
-    else:
-        return False, "No four-membered ring with an amide bond found"
+    
+    # Define an alternative pattern for bicyclic systems where the beta-lactam ring is fused to another ring
+    beta_lactam_bicyclic_pattern = Chem.MolFromSmarts("[N;R1]1[C;R1][C;R1][C;R1]1=O.[C;R1]2[C;R1][C;R1][C;R1]2")
+    
+    # Check if the alternative pattern matches
+    if mol.HasSubstructMatch(beta_lactam_bicyclic_pattern):
+        return True, "Contains a four-membered ring with an amide bond (beta-lactam ring) in a bicyclic system"
+    
+    # If no pattern matches, return False
+    return False, "No four-membered ring with an amide bond found"
