@@ -7,7 +7,7 @@ def is_thiol(smiles: str):
     """
     Determines if a molecule is a thiol based on its SMILES string.
     A thiol is defined as having a thiol group (-SH) attached to a carbon atom
-    in aliphatic or aromatic moiety.
+    in either an aliphatic or aromatic moiety.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,10 +20,11 @@ def is_thiol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS pattern for thiol group (-SH) directly attached to carbon
-    thiol_pattern = Chem.MolFromSmarts("[CH2,CH,CH3,cH]-[S;H1]")  # Considering sp3 hybridized carbons
-    
-    # Check for the presence of thiol group strictly following the new pattern
+    # Define a broader SMARTS pattern for thiol group (-SH)
+    # The pattern considers any carbon (C, c) bound to sulfur (S) with hydrogen (H) attached to sulfur
+    thiol_pattern = Chem.MolFromSmarts("[#6]-[SH]")
+
+    # Check for the presence of thiol group
     if mol.HasSubstructMatch(thiol_pattern):
         return True, "Contains thiol group (-SH) attached to carbon"
     
