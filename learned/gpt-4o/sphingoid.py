@@ -21,23 +21,24 @@ def is_sphingoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for characteristic amino alcohol moiety in sphingoids
-    amino_alcohol_pattern = Chem.MolFromSmarts("C[C@H](N)CO")  # More specific pattern for amino alcohol
+    # Look for characteristic 2-amino-1,3-diol moiety in sphingoids
+    amino_alcohol_pattern = Chem.MolFromSmarts("N[C@H](C)CO")
     if not mol.HasSubstructMatch(amino_alcohol_pattern):
-        return False, "No characteristic amino alcohol moiety found"
-    
-    # Check for a long hydrocarbon chain
-    chain_pattern = Chem.MolFromSmarts("C" * 10)  # Minimum length of 10 carbon atoms
+        return False, "No characteristic 2-amino-1,3-diol moiety found"
+
+    # Check for minimal long hydrocarbon chain pattern
+    chain_pattern = Chem.MolFromSmarts("CCCCCCCC")  # Minimum length of 8 carbon atoms
     if not mol.HasSubstructMatch(chain_pattern):
-        return False, "No long hydrocarbon chain found"
+        return False, "No sufficiently long hydrocarbon chain found"
 
-    # Capture potential unsaturation (double bonds) in the hydrocarbon chain
+    # Handle unsaturation as optional with accompanying hydroxyl group requirement
     double_bond_pattern = Chem.MolFromSmarts("C=C")
-    if not mol.HasSubstructMatch(double_bond_pattern):
-        return False, "No unsaturation found, but this is optional"
+    hydroxyl_present = any(atom.GetAtomicNum() == 8 for atom in mol.GetAtoms())
+    if not mol.HasSubstructMatch(double_bond_pattern) and not hydroxyl_present:
+        return False, "Lacks either unsaturation or a hydroxyl group, at least one is needed"
 
-    # Check for stereochemistry in the hydrocarbon portion
-    stereo_present = any(atom.HasProp('_CIPCode') for atom in mol.GetAtoms())  # Identifies stereocenters
+    # Verify for presence of stereocenters which are common in sphingoids
+    stereo_present = any(atom.HasProp('_CIPCode') for atom in mol.GetAtoms())
     if not stereo_present:
         return False, "No stereochemistry typical of sphingoids found"
 
