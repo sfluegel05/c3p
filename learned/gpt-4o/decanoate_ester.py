@@ -2,6 +2,7 @@
 Classifies: CHEBI:87658 decanoate ester
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_decanoate_ester(smiles: str):
     """
@@ -21,12 +22,14 @@ def is_decanoate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Pattern for decanoate ester: Ensure exactly 10 carbons in chain with ester linkage
-    # Account for ester groups as well as potential branching/double bonds
-    decanoate_backbone_pattern = Chem.MolFromSmarts("[#6]1-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6](=O)-[#8]") # Flexible for potential modifications in chain
-    
-    # Check decanoate backbone exists
-    if mol.HasSubstructMatch(decanoate_backbone_pattern):
-        return True, "Contains decanoate ester structure: recognized as decanoate ester"
-    
-    return False, "No decanoate ester structure found"
+    # Look for the decanoic acid part: a C10 chain with a terminal carboxylate
+    decanoic_acid_pattern = Chem.MolFromSmarts("CCCCCCCCCC(=O)O")
+    if not mol.HasSubstructMatch(decanoic_acid_pattern):
+        return False, "No decanoic acid moiety found"
+
+    # Look for the ester linkage: C(=O)O
+    ester_linkage_pattern = Chem.MolFromSmarts("C(=O)O")
+    if not mol.HasSubstructMatch(ester_linkage_pattern):
+        return False, "No ester linkage found"
+
+    return True, "Contains decanoic acid moiety with ester linkage"
