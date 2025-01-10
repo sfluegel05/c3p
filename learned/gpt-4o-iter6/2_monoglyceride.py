@@ -21,10 +21,7 @@ def is_2_monoglyceride(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for 2-monoglyceride pattern:
-    # The substructure is described as:
-    # C1 is the first carbon with a hydroxyl group, C2 is the second carbon with 
-    # the ester linkage, and C3 is the third carbon with another hydroxyl group
+    # Look for 2-monoglyceride pattern with ester at the second carbon
     glycerol_2_mono_pattern = Chem.MolFromSmarts("C(CO)C(OC(=O))CO")
     
     # Validate that the ester is specifically linked to the second carbon
@@ -32,13 +29,18 @@ def is_2_monoglyceride(smiles: str):
     if not matches:
         return False, "No specific 2-monoglyceride pattern found with esterification at C2"
 
+    # Check the matches for the correct configuration
     for match in matches:
-        c2_index = match[1]  # Index of C2 in the matches
-        c1, c2, c3 = mol.GetAtomWithIdx(c2_index).GetNeighbors()
-        # Confirm C1 and C3 are the carbon atoms with hydroxyl groups, not oxygens
-        if (c1.GetSymbol() == 'C' and c3.GetSymbol() == 'C' and 
-            any(n.GetSymbol() == 'O' for n in c1.GetNeighbors()) and 
-            any(n.GetSymbol() == 'O' for n in c3.GetNeighbors())):
+        c1_index, c2_index, ester_oxygen_index, c3_index = match
+        
+        # Ensure C1 and C3 have the hydroxyl group ([CX2H] corresponds to a carbon with one hydrogen and -OH)
+        c1_oh_check = mol.GetAtomWithIdx(c1_index).GetDegree() == 3  # Non-terminal carbon, typically connected to -OH 
+        c3_oh_check = mol.GetAtomWithIdx(c3_index).GetDegree() == 3  # Same for C3
+
+        # Ester oxygen should be bonded to C2
+        ester_oxygen_bonded_to_c2 = any(bond.GetEndAtomIdx() == c2_index for bond in mol.GetAtomWithIdx(ester_oxygen_index).GetBonds())
+
+        if c1_oh_check and c3_oh_check and ester_oxygen_bonded_to_c2:
             return True, "Contains 2-monoglyceride structure with acyl group esterified at the second position"
-    
+
     return False, "The structure does not match the specific pattern of a 2-monoglyceride"
