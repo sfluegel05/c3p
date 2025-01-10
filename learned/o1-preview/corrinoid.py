@@ -6,7 +6,6 @@ Classifies: CHEBI:33913 corrinoid
 """
 
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_corrinoid(smiles: str):
     """
@@ -28,25 +27,32 @@ def is_corrinoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Simplified corrin nucleus SMARTS pattern
-    # The corrin nucleus is a macrocycle with four pyrrole rings connected via three methine bridges (=C-)
-    # and one direct carbon-carbon bond between two pyrrole alpha positions.
+    # Check if molecule contains cobalt
+    has_cobalt = any(atom.GetAtomicNum() == 27 for atom in mol.GetAtoms())
+    if not has_cobalt:
+        return False, "Molecule does not contain cobalt"
 
-    # Due to the complexity, we create a simplified representation of the corrin ring system.
-    corrin_smarts = """
-    C1=C[C@H]2C=C[C@@H]3C=C[C@H]4C=CC[C@@H]1N2[Co]N3C4
-    """
+    # Find macrocycles (rings of size >= 13)
+    ring_info = mol.GetRingInfo()
+    atom_rings = ring_info.AtomRings()
+    macrocycles = [ring for ring in atom_rings if len(ring) >= 13]
 
-    # Convert SMARTS to mol
-    corrin_pattern = Chem.MolFromSmarts(corrin_smarts)
-    if corrin_pattern is None:
-        return False, "Error in SMARTS pattern for corrin nucleus"
+    if not macrocycles:
+        return False, "No macrocycles of size >= 13 found"
 
-    # Check for substructure match
-    if mol.HasSubstructMatch(corrin_pattern):
-        return True, "Molecule contains the corrin nucleus"
-    else:
-        return False, "Molecule does not contain the corrin nucleus"
+    for ring in macrocycles:
+        atoms_in_ring = [mol.GetAtomWithIdx(idx) for idx in ring]
+        atomic_nums = [atom.GetAtomicNum() for atom in atoms_in_ring]
+
+        # Count number of nitrogen and cobalt atoms in the ring
+        num_N = atomic_nums.count(7)
+        num_Co = atomic_nums.count(27)
+
+        # Check if ring contains at least 4 nitrogen atoms and 1 cobalt atom
+        if num_N >= 4 and num_Co >= 1:
+            return True, "Molecule contains macrocycle with cobalt and nitrogen atoms characteristic of corrin nucleus"
+
+    return False, "Molecule does not contain corrin nucleus"
 
 __metadata__ = {
     'chemical_class': {
@@ -59,7 +65,7 @@ __metadata__ = {
         # Configuration parameters can be included here if necessary
     },
     'message': None,
-    'attempt': 0,
+    'attempt': 1,
     'success': True,
     'best': True,
     'error': '',
