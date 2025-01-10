@@ -36,8 +36,9 @@ def is_non_proteinogenic_amino_acid(smiles: str):
     if not mol.HasSubstructMatch(carboxyl_pattern):
         return False, "No carboxyl group found"
 
-    # Check if the molecule is one of the standard 20 proteinogenic amino acids
+    # More comprehensive list of proteinogenic amino acids
     proteinogenic_amino_acids = [
+        # Standard 20 amino acids
         "C[C@@H](C(=O)O)N",  # Alanine
         "N[C@@H](CC(=O)O)C(=O)O",  # Aspartic acid
         "N[C@@H](CCCNC(=N)N)C(=O)O",  # Arginine
@@ -54,33 +55,51 @@ def is_non_proteinogenic_amino_acid(smiles: str):
         "N[C@@H](CC1=CC=C(O)C=C1)C(=O)O",  # Tyrosine
         "N[C@@H](C)C(=O)O",  # Glycine
         "N[C@@H](CC(C)(C)C)C(=O)O",  # Valine
-        "N[C@@H](CC1=CC=CC=C1)C(=O)O",  # Phenylalanine (redundant)
-        "N[C@@H](CC1=CNC=N1)C(=O)O",  # Histidine (redundant)
-        "N[C@@H](CC(=O)O)C(=O)O",  # Aspartic acid (redundant)
-        "N[C@@H](CCCNC(=O)N)C(=O)O",  # Glutamine (redundant)
+        "N[C@@H](CC(O)C)C(=O)O",  # Threonine
+        "N[C@@H](CC1=CC=C(O)C=C1)C(=O)O",  # Tyrosine (alternative)
+        "N[C@@H](CC1=CNC=N1)C(=O)O",  # Histidine (alternative)
+        "N[C@@H](CO)C(=O)O",  # Serine
+        "N[C@@H](CC(=O)O)C(=O)O",  # Aspartic acid (alternative)
+        "N[C@@H](CCCNC(=O)N)C(=O)O",  # Glutamine (alternative)
+        "N[C@@H](CC1=CC=CC=C1)C(=O)O",  # Phenylalanine (alternative)
+        "N[C@@H](CC1=CNC2=CC=CC=C12)C(=O)O",  # Tryptophan (alternative)
     ]
 
+    # Check against proteinogenic patterns using more precise matching
     for paa_smiles in proteinogenic_amino_acids:
         paa_mol = Chem.MolFromSmiles(paa_smiles)
         if mol.HasSubstructMatch(paa_mol):
-            return False, "Molecule is a standard proteinogenic amino acid"
+            # Additional check: if the match is exact, it's proteinogenic
+            if Chem.MolToSmiles(mol) == Chem.MolToSmiles(paa_mol):
+                return False, "Molecule is a standard proteinogenic amino acid"
+            # If it's a substructure match but not exact, it might be a modified version
+            # so we continue checking
 
-    # Additional checks for non-proteinogenic features
-    # Non-proteinogenic amino acids often have additional functional groups or modifications
-    # For example, hydroxyl groups, phosphates, or unusual side chains
-    # Here we check for the presence of any non-standard functional groups
+    # More specific patterns for non-proteinogenic features
     non_standard_patterns = [
         "[OH]",  # Hydroxyl group
-        "[P]",  # Phosphorus (e.g., phosphotyrosine)
-        "[S]",  # Sulfur (e.g., cysteine derivatives)
+        "[P](=O)(O)(O)",  # Phosphate group
+        "[S](=O)(=O)",  # Sulfoxide/sulfone
         "[N+](=O)[O-]",  # Nitro group
         "[C]=[C]",  # Double bonds in side chains
         "[C]#[C]",  # Triple bonds in side chains
         "[C]=O",  # Ketones
         "[C](=O)O",  # Carboxylates
         "[C](=O)N",  # Amides
+        "[C](=O)S",  # Thioesters
+        "[N](=O)",  # Nitroso
+        "[C](=O)[C]",  # Ketones in side chains
+        "[C](=O)[N]",  # Amides in side chains
+        "[C](=O)[O]",  # Esters
+        "[C](=O)[S]",  # Thioesters
+        "[C](=O)[C](=O)",  # Dicarbonyls
+        "[C](=O)[C](=O)[C]",  # Tricarbonyls
+        "[C](=O)[C](=O)[C](=O)",  # Tetracarbonyls
+        "[C](=O)[C](=O)[C](=O)[C]",  # Pentacarbonyls
+        "[C](=O)[C](=O)[C](=O)[C](=O)",  # Hexacarbonyls
     ]
 
+    # Check for non-standard features
     for pattern in non_standard_patterns:
         patt_mol = Chem.MolFromSmarts(pattern)
         if mol.HasSubstructMatch(patt_mol):
