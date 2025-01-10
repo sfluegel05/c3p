@@ -7,7 +7,7 @@ def is_aliphatic_aldoxime(smiles: str):
     """
     Determines if a molecule is an aliphatic aldoxime based on its SMILES string.
     An aliphatic aldoxime contains an aliphatic chain and an aldehyde group
-    converted to an oxime (R-C=NOH).
+    converted to an oxime (R-C=NOH), without presence in aromatic systems or rings.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -28,27 +28,22 @@ def is_aliphatic_aldoxime(smiles: str):
     if not oxime_matches:
         return False, "No oxime group found"
 
-    # Confirm the presence of an aliphatic chain
-    aliphatic_chain_pattern = Chem.MolFromSmarts("[CX4H3,CX4H2!R]~[CX4H2,CX4H,!R]~[CX4H2,CX3H,!R]")
-    aliphatic_matches = mol.GetSubstructMatches(aliphatic_chain_pattern)
-    
-    if not aliphatic_matches:
-        return False, "No aliphatic chain found"
-
+    # Ensure oxime is part of an aliphatic environment
     for match in oxime_matches:
-        carbon_atom = match[0]
-        # Check if the carbon is part of an aliphatic (non-aromatic) environment
-        atom = mol.GetAtomWithIdx(carbon_atom)
-        if atom.GetIsAromatic() or atom.IsInRing():
-            return False, "Oxime carbon is part of an aromatic ring or cyclic structure"
+        carbon_atom = mol.GetAtomWithIdx(match[0])
+        
+        # Ensure the oxime carbon is sp3 hybridized and not in a ring
+        if carbon_atom.GetHybridization() != Chem.rdchem.HybridizationType.SP3 or carbon_atom.IsInRing():
+            return False, "Oxime group is part of an aromatic ring or highly conjugated system"
 
-        # Check all atoms in the substructure for non-aromatic character
-        aliphatic = True
-        for atom_idx in match:
-            if mol.GetAtomWithIdx(atom_idx).GetIsAromatic() or mol.GetAtomWithIdx(atom_idx).IsInRing():
-                aliphatic = False
+        # Check neighboring atoms to ensure they are part of an aliphatic chain
+        is_aliphatic = True
+        for neighbor in carbon_atom.GetNeighbors():
+            if neighbor.GetIsAromatic() or neighbor.IsInRing():
+                is_aliphatic = False
                 break
-        if aliphatic:
+        
+        if is_aliphatic:
             return True, "Contains an aliphatic aldoxime group"
 
     return False, "Oxime group is not part of a purely aliphatic chain"
