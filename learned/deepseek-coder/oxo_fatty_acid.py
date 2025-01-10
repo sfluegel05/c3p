@@ -26,7 +26,7 @@ def is_oxo_fatty_acid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for carboxylic acid group (-C(=O)OH or -C(=O)[O-])
-    carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H1]")
+    carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H1,O-]")
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
 
@@ -46,5 +46,14 @@ def is_oxo_fatty_acid(smiles: str):
     hydrophobic_matches = mol.GetSubstructMatches(hydrophobic_pattern)
     if len(hydrophobic_matches) < 2:  # At least two consecutive hydrophobic segments
         return False, "Insufficient hydrophobic tail for a fatty acid"
+
+    # Exclude peptides and complex carbohydrates
+    peptide_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[NX3]")
+    if mol.HasSubstructMatch(peptide_pattern):
+        return False, "Peptide structure detected, not a fatty acid"
+
+    carbohydrate_pattern = Chem.MolFromSmarts("[OX2][CX4][CX4][OX2]")
+    if mol.HasSubstructMatch(carbohydrate_pattern):
+        return False, "Carbohydrate structure detected, not a fatty acid"
 
     return True, "Contains a carboxylic acid group and at least one additional oxo group with a long carbon chain"
