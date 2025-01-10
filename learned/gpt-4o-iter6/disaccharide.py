@@ -20,28 +20,26 @@ def is_disaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Identify carbohydrate rings (common 6-membered sugar rings)
-    sugar_ring_pattern_6 = Chem.MolFromSmarts("C1[C@H]([C@H]([C@H]([C@H](O1)O)O)O)O")
-    sugar_ring_pattern_5 = Chem.MolFromSmarts("C1[C@H]([C@H]([C@H](O1)O)O)O")
-    
-    # Find matches for sugar rings
-    sugar_ring_matches_6 = mol.GetSubstructMatches(sugar_ring_pattern_6)
-    sugar_ring_matches_5 = mol.GetSubstructMatches(sugar_ring_pattern_5)
-    
-    # Total sugar rings should be two
-    total_sugar_rings = len(sugar_ring_matches_6) + len(sugar_ring_matches_5)
-    if total_sugar_rings < 2:
-        return False, f"Expected 2 sugar rings, found {total_sugar_rings}"
+    # Extended patterns for ring sugars (5- and 6-membered rings with variations)
+    sugar_patterns = [
+        Chem.MolFromSmarts("C1OC[C@H](O)[C@@H](O)[C@H]1O"),  # Example: D-glucose pyranose
+        Chem.MolFromSmarts("C1[C@H](O)[C@@H](O)[C@H](O)[C@H](O)O1"),  # Example: open and closed sugar rings
+        Chem.MolFromSmarts("C1OC(CO)C(O)C1O"),  # Example: D-fructose furanose
+    ]
+    # Identify potential sugar rings in the molecule
+    sugar_ring_count = 0
+    for pattern in sugar_patterns:
+        matches = mol.GetSubstructMatches(pattern)
+        sugar_ring_count += len(matches)
 
-    # Identify glycosidic linkages (C-O-C bridge between two sugars)
-    glycosidic_pattern = Chem.MolFromSmarts("C-O-C")
+    if sugar_ring_count < 2:
+        return False, f"Expected 2 sugar rings, found {sugar_ring_count}"
+
+    # Glycosidic linkage pattern (ensure connectivity between sugars)
+    glycosidic_pattern = Chem.MolFromSmarts("[C@H:1]O[C@H:2]")  # Specific linkage pattern with stereochemistry
     glyco_matches = mol.GetSubstructMatches(glycosidic_pattern)
-    
-    # Verify at least one glycosidic linkage
-    if len(glyco_matches) < 1:
-        return False, "No glycosidic linkage found to connect sugars"
 
-    if total_sugar_rings == 2 and len(glyco_matches) >= 1:
-        return True, "Contains two sugar rings joined by a glycosidic bond"
-    
-    return False, "Failed to confirm disaccharide structure"
+    if len(glyco_matches) < 1:
+        return False, "No appropriate glycosidic link found to connect sugars"
+
+    return True, "Contains two sugar rings joined by a glycosidic bond"
