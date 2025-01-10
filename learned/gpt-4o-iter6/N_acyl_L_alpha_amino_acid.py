@@ -20,20 +20,24 @@ def is_N_acyl_L_alpha_amino_acid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return (False, "Invalid SMILES string")
-
-    # Refined pattern for L-alpha-amino acid backbone: [N@H](C)[C@H](C(=O)O) to ensure stereospecificity
-    # This assumes that L configuration involves specific chiral notations; adjust if necessary to generalize or restrict further
-    amino_acid_pattern = Chem.MolFromSmarts("[N][C@H](C)C(=O)O")
+    
+    # General pattern for L-alpha-amino acid backbone
+    amino_acid_pattern = Chem.MolFromSmarts('[NX3][C@H]([*])[C](=O)O')  # Chiral carbon attached to nitrogen and carboxyl group
     if not mol.HasSubstructMatch(amino_acid_pattern):
         return (False, "No L-alpha-amino acid backbone found")
 
-    # Refined pattern for N-acyl group connected to a chiral center: [NX3][CX3](=O) to signify proper connectivity
-    n_acyl_pattern = Chem.MolFromSmarts("[N][C](=O]")
+    # Pattern for N-acyl group connected to the alpha nitrogen atom
+    n_acyl_pattern = Chem.MolFromSmarts('[NX3][C](=O)[*]')  # N-acyl connected to nitrogen atom
     if not mol.HasSubstructMatch(n_acyl_pattern):
         return (False, "No N-acyl group found")
 
     # Additionally, ensure the N-acyl group is directly attached to the amino acid nitrogen
-    # Excluding large side chains or non-specific attachments that match in peptides
-    # This approach prevents matching peptide chains or non-related structures
+    matches = mol.GetSubstructMatches(amino_acid_pattern)
+    for match in matches:
+        # Confirm the acyl group is connected to the same nitrogen
+        nitrogen_idx = next(idx for idx in match if mol.GetAtomWithIdx(idx).GetSymbol() == 'N')
+        n_acyl_matches = [m for m in mol.GetSubstructMatches(n_acyl_pattern) if nitrogen_idx in m]
+        if n_acyl_matches:
+            return (True, "Contains L-alpha-amino acid backbone with an N-acyl substituent")
 
-    return (True, "Contains L-alpha-amino acid backbone with an N-acyl substituent")
+    return (False, "N-acyl group not correctly attached to L-alpha-amino acid nitrogen")
