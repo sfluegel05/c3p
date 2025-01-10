@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_dipeptide(smiles: str):
     """
     Determines if a molecule is a dipeptide based on its SMILES string.
-    A dipeptide contains two amino-acid residues connected by a single peptide linkage (amide bond).
+    A dipeptide contains two amino-acid residues connected by peptide linkages.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,25 +20,18 @@ def is_dipeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Identify the peptide bond pattern - carbonyl (C=O) connected to nitrogen (N)
-    peptide_bond_pattern = Chem.MolFromSmarts("C(=O)N")
-    peptide_matches = mol.GetSubstructMatches(peptide_bond_pattern)
+    # Search for amide bonds (N-C(=O))
+    amide_pattern = Chem.MolFromSmarts("N-C(=O)")
+    amide_matches = mol.GetSubstructMatches(amide_pattern)
     
-    # Check for exactly one central peptide (amide) bond
-    if len(peptide_matches) != 1:
-        return False, f"Found {len(peptide_matches)} peptide bonds, need exactly 1 for a dipeptide"
+    if len(amide_matches) != 2:
+        return False, f"Found {len(amide_matches)} amide bonds, need exactly 2 for a dipeptide"
 
-    # Check for amino acid residues: presence of at least one primary amine and one carboxyl group
-    # These can be modified in the dipeptide head/tail, so allow varying degrees
-    amine_pattern = Chem.MolFromSmarts("[NX3][CX3H2,CX4H3,CX3H1]=,=,,”)
-    carboxyl_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
-    amine_matches = len(mol.GetSubstructMatches(amine_pattern))
-    carboxyl_matches = len(mol.GetSubstructMatches(carboxyl_pattern))
+    # Look for amino acid residues (N-C-C(=O))
+    amino_acid_pattern = Chem.MolFromSmarts("N-C-C(=O)")
+    amino_acid_matches = mol.GetSubstructMatches(amino_acid_pattern)
+    
+    if len(amino_acid_matches) != 2:
+        return False, f"Found {len(amino_acid_matches)} amino acid residues, need exactly 2"
 
-    # If appropriate functional groups exist to form two amino acids after accounting for bond formation
-    if amine_matches < 1 or carboxyl_matches < 1:
-        return False, f"Found {amine_matches} amine and {carboxyl_matches} carboxyl groups, insufficient for two amino acids"
-
-    return True, "Contains two amino-acid residues connected by a single peptide linkage"
-
-# This function is meant to classify dipeptides based on the structural requirements.
+    return True, "Contains two amino-acid residues with peptide linkages"
