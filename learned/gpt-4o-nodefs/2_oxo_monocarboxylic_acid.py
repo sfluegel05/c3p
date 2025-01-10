@@ -7,8 +7,8 @@ def is_2_oxo_monocarboxylic_acid(smiles: str):
     """
     Determines if a molecule is a 2-oxo monocarboxylic acid based on its SMILES string.
     
-    A 2-oxo monocarboxylic acid should typically have a carbon (second carbon) doubly bonded to an oxygen 
-    (ketone group) and connected to a carboxylic acid group (COOH).
+    A 2-oxo monocarboxylic acid typically has a carbon (second carbon) with a ketone group (=O)
+    and a nearby carboxylic acid group (COOH).
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,24 +21,29 @@ def is_2_oxo_monocarboxylic_acid(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return (None, "Invalid SMILES string")
     
-    # Refined pattern for the 2-oxo group (RCOC(=O) as the principal component of the chain)
-    oxo_pattern = Chem.MolFromSmarts("[#6][#6](=O)[#6]")  
-    if not mol.HasSubstructMatch(oxo_pattern):
-        return False, "Missing 2-oxo group (ketone group at correct position)"
-        
-    # Refined pattern for carboxylic acid group (C(=O)O)
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
-    if not mol.HasSubstructMatch(carboxylic_acid_pattern):
-        return False, "Missing carboxylic acid group"
+    # Pattern for the 2-oxo group (C-C(=O)-R)
+    oxo_keto_pattern = Chem.MolFromSmarts("[#6][#6](=O)[#6]")
+    # Pattern for the carboxylic acid group (C(=O)O)
+    carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
 
-    # Additional check: ensure structural integrity of 2-oxo monocarboxylic framework
-    for match in mol.GetSubstructMatches(oxo_pattern):
-        oxo_carbon_idx = match[1]  # selects second carbon in the pattern
-        for nbr in mol.GetAtomWithIdx(oxo_carbon_idx).GetNeighbors():
-            if nbr.GetSymbol() == "C":  # ensure ketone carbon links to another carbon
-                if any(neigh.GetSymbol() == "O" and neigh.GetNeighbors()[0].GetSymbol() == "C" for neigh in nbr.GetNeighbors()):
-                    return True, "Contains 2-oxo group and carboxylic acid group"
+    oxo_matches = mol.GetSubstructMatches(oxo_keto_pattern)
+    carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
+
+    if not oxo_matches:
+        return False, "No 2-oxo group (ketone) detected"
     
-    return False, "Could not match typical 2-oxo monocarboxylic acid framework"
+    if not carboxylic_acid_matches:
+        return False, "No carboxylic acid group detected"
+    
+    # Ensure structural integrity: proximity (two carbon atoms directly linked between groups)
+    for oxo_match in oxo_matches:
+        oxo_carbon_index = oxo_match[1]  # Second carbon with the keto =O group
+        for carboxylic_match in carboxylic_acid_matches:
+            carboxylic_index = carboxylic_match[0]  # Carbon involved in -COOH
+            # Check if the oxo carbon index and carboxylic carbon index are part of the same carbon chain
+            if mol.GetBondBetweenAtoms(oxo_carbon_index, carboxylic_index):
+                return True, "Valid 2-oxo monocarboxylic acid structure found"
+    
+    return False, "Could not confirm 2-oxo monocarboxylic acid pattern in structure"
