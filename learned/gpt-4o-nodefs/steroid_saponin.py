@@ -21,19 +21,19 @@ def is_steroid_saponin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for a steroid backbone pattern (tetracyclic core)
-    steroid_pattern = Chem.MolFromSmarts("C1CC2CCC3C(C2C1)CCC4C3(CCCC4)C")
+    # Flexible steroid backbone pattern including stereochemistry
+    steroid_pattern = Chem.MolFromSmarts("C1CC2=CC3C=C[C@H](CC3)C2(C)CC4C1(C)CCC4")
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
         
-    # Look for glycosidic linkage patterns (C-O-C linkage indicative of sugars)
-    glycosidic_pattern = Chem.MolFromSmarts("[C,O]-O-[C]")
+    # Enhanced glycosidic linkage pattern allowing for variable sugar attachments
+    glycosidic_pattern = Chem.MolFromSmarts("[C,O]-[O]-[C,O]")
     glycosidic_matches = mol.GetSubstructMatches(glycosidic_pattern)
     if len(glycosidic_matches) == 0:
         return False, "No glycosidic linkage found"
         
-    # Check for typical sugar moiety (e.g., glucose, based on OH groups and specific patterns)
-    sugar_pattern = Chem.MolFromSmarts("C(O)C(O)C(CO)O")
+    # Broader sugar moiety recognition, allowing for common sugar patterns
+    sugar_pattern = Chem.MolFromSmarts("C(O)C(O)C(O)C")
     sugar_matches = mol.GetSubstructMatches(sugar_pattern)
     if len(sugar_matches) == 0:
         return False, "No sugar moiety found"
