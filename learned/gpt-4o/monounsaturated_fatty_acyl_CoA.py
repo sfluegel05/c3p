@@ -22,27 +22,22 @@ def is_monounsaturated_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for extended Coenzyme A structure with charge considerations
+    # Coenzyme A general pattern
     coa_pattern = Chem.MolFromSmarts(
-        "[NX3][CX3](=O)[CNH][CX3](=O)[C@H](O)[C](C)(C)[COP](=O)([O])O[PX4](=O)O[CX2H][C@H]1O[C@H]([C@H](O)[C@@H]1OP([O-])([O-])=O)n1cnc2c(nc[nH]c12)"
+        "SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(=O)(O)O)N"
     )
     if not mol.HasSubstructMatch(coa_pattern):
-        return False, "Coenzyme A structure not found or incorrect charge state"
+        return False, "Coenzyme A structure not found"
 
-    # Check for exactly one carbon-carbon double bond in the acyl chain
+    # Check for exactly one carbon-carbon double bond
     db_pattern = Chem.MolFromSmarts("C=C")
     db_matches = mol.GetSubstructMatches(db_pattern)
+
+    if len(db_matches) != 1:
+        return False, f"Expected 1 carbon-carbon double bond, found {len(db_matches)}"
+
+    # Verify the double bond is part of a fatty acyl chain (common sense that C=C is often in the longer tail region)
+    # Usually, the chain should start from the fatty acyl portion (long Cx chain ending with C(=O)SCC)
+    # This might require more robust logic depending on the diversity of structures in reality.
     
-    # Count double bonds that are part of fatty acyl chain, ensuring they are not within the CoA structure
-    fatty_acyl_db_counter = 0
-    for match in db_matches:
-        if any(mol.GetAtomWithIdx(atom_idx).GetAtomicNum() == 6 for atom_idx in match):
-            # Ensure the double bond is not within the commonly known structure of CoA (using index heuristics)
-            if all(mol.GetAtomWithIdx(atom_idx).GetIdx() < 40 for atom_idx in match):
-                fatty_acyl_db_counter += 1
-
-    # Verify there is exactly one double bond in the acyl chain
-    if fatty_acyl_db_counter != 1:
-        return False, f"Expected 1 carbon-carbon double bond, found {fatty_acyl_db_counter}"
-
     return True, "Contains Coenzyme A structure and a fatty acyl chain with exactly one carbon-carbon double bond"
