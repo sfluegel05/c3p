@@ -2,8 +2,7 @@
 Classifies: CHEBI:36835 3alpha-hydroxy steroid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
-from rdkit.Chem.Scaffolds import MurckoScaffold
+from rdkit.Chem import rdqueries
 
 def is_3alpha_hydroxy_steroid(smiles: str):
     """
@@ -17,48 +16,43 @@ def is_3alpha_hydroxy_steroid(smiles: str):
         bool: True if molecule is a 3alpha-hydroxy steroid, False otherwise
         str: Reason for classification
     """
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Get Murcko scaffold of the molecule
-    scaffold = MurckoScaffold.GetScaffoldForMol(mol)
-    if scaffold is None:
-        return False, "Could not get scaffold of molecule"
-
-    # Define steroid scaffold SMARTS pattern (tetracyclic core with fused rings)
-    steroid_smarts = '[R][R][R][R]'  # Molecule with at least 4 rings
+    # Define steroid nucleus SMARTS pattern (cyclopentanoperhydrophenanthrene)
+    steroid_smarts = """
+    [#6]1([#6])[#6][#6]2[#6]([#6]1)[#6][#6]3[#6]([#6]2)[#6][#6]4[#6]([#6]3)[#6][#6][#6][#6]4
+    """
     steroid_pattern = Chem.MolFromSmarts(steroid_smarts)
-
-    # Check if scaffold matches steroid pattern
-    if not scaffold.HasSubstructMatch(steroid_pattern):
+    if not mol.HasSubstructMatch(steroid_pattern):
         return False, "Steroid nucleus not found"
 
-    # Identify hydroxyl groups attached to ring carbons
-    hydroxyl_smarts = '[C@H](O)[C]'
-    hydroxyl_pattern = Chem.MolFromSmarts(hydroxyl_smarts)
-    matches = mol.GetSubstructMatches(hydroxyl_pattern, useChirality=True)
+    # Define 3alpha-hydroxy group pattern on steroid nucleus
+    # The numbering corresponds to the steroid backbone
+    # We need to identify the 3-position carbon with alpha-oriented hydroxyl group
+    # Since RDKit does not inherently provide atom numbering, we map the pattern
+    # to the molecule and check the stereochemistry
 
-    if not matches:
-        return False, "No chiral hydroxyl group found"
+    # SMARTS pattern for 3alpha-hydroxy steroid
+    alpha_hydroxyl_smarts = """
+    [#6]1([#6])[#6]([C@H](O))[#6]2[#6]([#6]1)[#6][#6]3[#6]([#6]2)[#6][#6]4[#6]([#6]3)[#6][#6][#6][#6]4
+    """
+    alpha_hydroxyl_pattern = Chem.MolFromSmarts(alpha_hydroxyl_smarts)
+    matches = mol.GetSubstructMatches(alpha_hydroxyl_pattern, useChirality=True)
 
-    # Check if any hydroxyl group is in the alpha orientation
-    for match in matches:
-        carbon_idx = match[0]
-        oxygen_idx = match[1]
-        carbon_atom = mol.GetAtomWithIdx(carbon_idx)
-        chiral_tag = carbon_atom.GetChiralTag()
-
-        # Check if attached carbon is part of a ring (steroid ring system)
-        if not carbon_atom.IsInRing():
-            continue
-
-        # In RDKit, chiral tag 'CHI_TETRAHEDRAL_CCW' corresponds to '@' (alpha)
-        # 'CHI_TETRAHEDRAL_CW' corresponds to '@@' (beta)
-        if chiral_tag == Chem.ChiralType.CHI_TETRAHEDRAL_CCW:
-            return True, "3alpha-hydroxy group found with correct stereochemistry"
+    if matches:
+        return True, "Contains 3alpha-hydroxy group with correct stereochemistry"
+    else:
+        # Check if hydroxyl group is present at position 3 but with incorrect stereochemistry
+        beta_hydroxyl_smarts = """
+        [#6]1([#6])[#6]([C@@H](O))[#6]2[#6]([#6]1)[#6][#6]3[#6]([#6]2)[#6][#6]4[#6]([#6]3)[#6][#6][#6][#6]4
+        """
+        beta_hydroxyl_pattern = Chem.MolFromSmarts(beta_hydroxyl_smarts)
+        beta_matches = mol.GetSubstructMatches(beta_hydroxyl_pattern, useChirality=True)
+        if beta_matches:
+            return False, "Hydroxyl group at position 3 has beta orientation (not alpha)"
         else:
-            return False, "Hydroxyl group has incorrect stereochemistry (not alpha)"
-
-    return False, "No 3alpha-hydroxy group found"
+            return False, "No 3alpha-hydroxy group found"
