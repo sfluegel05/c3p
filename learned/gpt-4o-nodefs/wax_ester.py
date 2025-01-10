@@ -2,12 +2,13 @@
 Classifies: CHEBI:10036 wax ester
 """
 from rdkit import Chem
+from rdkit.Chem import rdqueries
 
 def is_wax_ester(smiles: str):
     """
     Determines if a molecule is a wax ester based on its SMILES string.
     Wax esters consist of long-chain fatty acids and fatty alcohols 
-    connected through ester linkages, typically featuring one significant ester linkage.
+    connected through ester linkages, typically featuring a significant ester linkage.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,30 +23,51 @@ def is_wax_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for the presence of ester linkage (C(=O)O)
-    ester_pattern = Chem.MolFromSmarts("[C](=[O])[O]")
-    if not mol.HasSubstructMatch(ester_pattern):
+    # Check for ester linkage pattern
+    ester_pattern = Chem.MolFromSmarts("C(=O)O")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    
+    # If no ester groups are found, it cannot be a wax ester
+    if not ester_matches:
         return False, "No ester linkage found"
 
-    # Estimate the number of ester linkages
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) != 1:
-        return False, f"Found {len(ester_matches)} ester linkages, exactly one main ester linkage expected"
+    # Analyze each ester linkage
+    for match in ester_matches:
+        c_atom, o1_atom, o2_atom = match
 
-    # Check for two long carbon chains on both sides of the ester group
-    def count_carbon_chains(side_mol):
-        return sum(1 for atom in side_mol.GetAtoms() if atom.GetAtomicNum() == 6)
+        # Look at the carbon chains attached to both sides of the ester linkage
+        carbon_chain_length_1 = 1  # Including the ester carbon
+        carbon_chain_length_2 = 1  # Including the ester oxygen for the second chain
 
-    carbon_count = count_carbon_chains(mol)
-    if carbon_count < 20:
-        return False, "Overall carbon chain count too short"
+        visited = {c_atom, o1_atom, o2_atom}
 
-    # Check if molecule has any unsaturated bonds and mark as a feature
-    unsaturated_pattern = Chem.MolFromSmarts("[C]=[C]")
-    unsaturated_matches = mol.GetSubstructMatches(unsaturated_pattern)
-    unsaturated_info = "has unsaturated bonds" if unsaturated_matches else "all bonds saturated (common, not mandatory)"
+        # Explore carbon chain 1 (from ester carbon)
+        for bond in mol.GetAtomWithIdx(c_atom).GetBonds():
+            if bond.GetOtherAtomIdx(c_atom) not in visited:
+                carbon_chain_length_1 += expand_chain_length(mol, bond.GetOtherAtomIdx(c_atom), visited)
 
-    return True, f"Contains ester linkage with balanced long carbon chains; {unsaturated_info}"
+        # Explore carbon chain 2 (from ester oxygen, traverse the atom attached to oxygen)
+        for bond in mol.GetAtomWithIdx(o2_atom).GetBonds():
+            if bond.GetOtherAtomIdx(o2_atom) not in visited:
+                carbon_chain_length_2 += expand_chain_length(mol, bond.GetOtherAtomIdx(o2_atom), visited)
 
-# Example Usage
-print(is_wax_ester("O(CCCCCCCC/C=C\\CCCCCCCC)C(=O)CCCCCCC/C=C\\CCCCCC")) # Example SMILES from the task
+        # A potential wax ester needs substantial chains on both sides of the ester group
+        if carbon_chain_length_1 >= 10 and carbon_chain_length_2 >= 10:
+            return True, "Contains ester linkage with sufficient long carbon chains"
+
+    return False, "Ester linkages found, but chains are not sufficiently long"
+
+def expand_chain_length(mol, atom_idx, visited):
+    """Recursive function to calculate the chain length from a starting atom."""
+    length = 0
+    if mol.GetAtomWithIdx(atom_idx).GetAtomicNum() == 6:  # Only count carbons
+        length += 1
+
+    visited.add(atom_idx)
+
+    for bond in mol.GetAtomWithIdx(atom_idx).GetBonds():
+        next_atom = bond.GetOtherAtomIdx(atom_idx)
+        if next_atom not in visited:
+            length += expand_chain_length(mol, next_atom, visited)
+
+    return length
