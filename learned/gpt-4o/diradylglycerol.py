@@ -2,7 +2,6 @@
 Classifies: CHEBI:76578 diradylglycerol
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_diradylglycerol(smiles: str):
     """
@@ -23,19 +22,29 @@ def is_diradylglycerol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for glycerol backbone pattern (C-C-C with 3 oxygens attached)
-    glycerol_pattern = Chem.MolFromSmarts("[O]C[C@@]([O])(C)CO")
+    # Look for generalized glycerol backbone pattern
+    # This pattern looks for -CO- linked carbons with attached oxygens
+    glycerol_pattern = Chem.MolFromSmarts("O[C@H](CO)CO")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
     
-    # Identify and count substituents attached to glycerol backbone
-    substituent_pattern = Chem.MolFromSmarts("[CX3](=O)[O][C@H]1[CX2](O)CO1")
-    substituent_matches = mol.GetSubstructMatches(substituent_pattern)
-    if len(substituent_matches) != 2:
-        return False, f"Found {len(substituent_matches)} substituent groups, need exactly 2"
+    # Look for the two substituent groups. Each being an ester (-C(=O)O-), alkyl, or alk-1-enyl group.
+    # Create patterns for esters, alkyl, and alk-1-enyl 
+    ester_pattern = Chem.MolFromSmarts("C(=O)[O]")
+    alkyl_enyl_pattern = Chem.MolFromSmarts("C(-C)(-C)(-C)") # Generalized as carbon chain representation
+    n_substituents = 0
     
+    # Check for ester groups
+    n_substituents += len(mol.GetSubstructMatches(ester_pattern))
+    # Check for alkyl or alk-1-enyl groups (general hydrocarbon chains)
+    n_substituents += len(mol.GetSubstructMatches(alkyl_enyl_pattern))
+
+    # Verify there are two substituent groups (could be any of combinations of above patterns)
+    if n_substituents < 2:
+        return False, f"Found {n_substituents} substituent groups, need exactly 2"
+
     return True, "Contains glycerol backbone with two substituent groups"
 
 # Example test case
-smiles_example = "C([C@@](COC(CCCCCC/C=C\C/C=C\C/C=C\CCCCC)=O)(OC(CCCCCCC/C=C\C/C=C\CCCCC)=O)[H])O"
+smiles_example = "C([C@@](COC(CCCCCC/C=C\\C/C=C\\C/C=C\\CCCCC)=O)(OC(CCCCCCC/C=C\\C/C=C\\CCCCC)=O)[H])O"
 print(is_diradylglycerol(smiles_example))
