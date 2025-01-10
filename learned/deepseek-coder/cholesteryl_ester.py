@@ -26,14 +26,14 @@ def is_cholesteryl_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more flexible cholesterol backbone pattern
-    # This pattern matches the core structure of cholesterol, allowing for different stereochemistry and hydrogen atoms
-    cholesterol_pattern = Chem.MolFromSmarts("[C@@H]1CC[C@@H]2[C@@]1(CC[C@H]3[C@H]2CC=C4[C@@H]3CC[C@@H]4[C@@H](C)CCCC(C)C)")
+    # Define the cholesterol backbone pattern
+    # The pattern matches the core structure of cholesterol, including the 3-hydroxy group
+    cholesterol_pattern = Chem.MolFromSmarts("[C@H]1CC[C@@H]2[C@@]1(CC[C@H]3[C@H]2CC=C4[C@@H]3CC[C@@H]4[C@@H](C)CCCC(C)C)")
     if not mol.HasSubstructMatch(cholesterol_pattern):
         return False, "No cholesterol backbone found"
 
     # Look for ester group (-O-C(=O)-) attached to the 3-hydroxy group of cholesterol
-    ester_pattern = Chem.MolFromSmarts("[CX4][OX2][CX3](=[OX1])")
+    ester_pattern = Chem.MolFromSmarts("[CX4][C@H]([OX2])[CX4][CX3](=[OX1])")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) == 0:
         return False, "No ester group found attached to the cholesterol backbone"
@@ -64,3 +64,37 @@ def is_cholesteryl_ester(smiles: str):
         return False, "Must have at least 2 oxygens (ester group)"
 
     return True, "Contains cholesterol backbone with an ester-linked fatty acid chain"
+
+
+__metadata__ = {   'chemical_class': {   'id': 'CHEBI:36235',
+                          'name': 'cholesteryl ester',
+                          'definition': 'A sterol ester obtained by formal '
+                                        'condensation of the carboxy group of '
+                                        'any carboxylic acid with the '
+                                        '3-hydroxy group of cholesterol.',
+                          'parents': ['CHEBI:47778', 'CHEBI:76579']},
+    'config': {   'llm_model_name': 'lbl/claude-sonnet',
+                  'f1_threshold': 0.8,
+                  'max_attempts': 5,
+                  'max_positive_instances': None,
+                  'max_positive_to_test': None,
+                  'max_negative_to_test': None,
+                  'max_positive_in_prompt': 50,
+                  'max_negative_in_prompt': 20,
+                  'max_instances_in_prompt': 100,
+                  'test_proportion': 0.1},
+    'message': None,
+    'attempt': 0,
+    'success': True,
+    'best': True,
+    'error': '',
+    'stdout': None,
+    'num_true_positives': 150,
+    'num_false_positives': 4,
+    'num_true_negatives': 182407,
+    'num_false_negatives': 23,
+    'num_negatives': None,
+    'precision': 0.974025974025974,
+    'recall': 0.8670520231213873,
+    'f1': 0.9174311926605504,
+    'accuracy': 0.9998521228585199}
