@@ -2,7 +2,6 @@
 Classifies: CHEBI:17135 long-chain fatty alcohol
 """
 from rdkit import Chem
-from rdkit.Chem import rdmolops
 
 def is_long_chain_fatty_alcohol(smiles: str):
     """
@@ -26,22 +25,34 @@ def is_long_chain_fatty_alcohol(smiles: str):
     if not mol.HasSubstructMatch(oh_group):
         return False, "No hydroxyl group found"
     
-    # Function to find the longest chain of carbon atoms
-    def longest_carbon_chain(mol):
+    # Function to find the longest chain of carbon atoms using depth-first search
+    def longest_carbon_chain(atom, visited):
+        atom_id = atom.GetIdx()
+        visited.add(atom_id)
         max_length = 0
-        for atom in mol.GetAtoms():
-            if atom.GetAtomicNum() == 6:  # Only consider carbon atoms
-                lengths = []
-                rdmolops.GetBondsInOrder(atom, molecule=mol, atomfun=lambda x: x.GetAtomicNum() == 6, lengthfun=len, results=lengths)
-                if lengths:
-                    max_length = max(lengths + [max_length])
+        
+        # iterate over neighbors
+        for bond in atom.GetBonds():
+            neighbor = bond.GetOtherAtom(atom)
+            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:
+                chain_length = 1 + longest_carbon_chain(neighbor, visited)
+                max_length = max(max_length, chain_length)
+        
+        visited.remove(atom_id)
         return max_length
     
-    # Get the longest carbon chain in the molecule
-    max_chain_length = longest_carbon_chain(mol)
-    
-    # Check if any chain meets the C13 to C22 requirement
+    # Find the maximum carbon chain length
+    max_chain_length = 0
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6:  # Check only carbon atoms
+            visited = set()
+            max_chain_length = max(max_chain_length, longest_carbon_chain(atom, visited))
+
+    # Verify if the longest carbon chain meets the C13 to C22 requirement
     if 13 <= max_chain_length <= 22:
         return True, f"Contains a carbon chain of length {max_chain_length} and a hydroxyl group"
     else:
         return False, f"Carbon chain length of {max_chain_length}, required between 13 and 22"
+
+# Test the function with an example
+print(is_long_chain_fatty_alcohol("CCCCCCCCCCCCCCCO"))  # Expected: True, reason: appropriate chain length and hydroxyl group
