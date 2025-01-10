@@ -21,15 +21,13 @@ def is_furanocoumarin(smiles: str):
         return False, "Invalid SMILES string"
     
     # Define SMARTS patterns for different types of furanocoumarin structures
-    psoralen_pattern = Chem.MolFromSmarts('c1cc2oc(=O)ccc2oc1')  # Linear furanocoumarins
-    angelicin_pattern = Chem.MolFromSmarts('c1cc2oc(=O)c3c1ccco3c2')  # Angular furanocoumarins
-
-    # Check for the presence of any recognized furanocoumarin core structure
-    if mol.HasSubstructMatch(psoralen_pattern):
-        return True, "Contains furanocoumarin core (linear furanocoumarin)"
-    if mol.HasSubstructMatch(angelicin_pattern):
-        return True, "Contains furanocoumarin core (angular furanocoumarin)"
+    linear_furanocoumarin_pattern = Chem.MolFromSmarts('c1co2c(=O)ccc2cc1')  # Generic pattern for linear furanocoumarins
+    angular_furanocoumarin_pattern = Chem.MolFromSmarts('c1cc2coc(=O)c2cc1')  # Generic pattern for angular furanocoumarins
     
-    return False, "No furanocoumarin core structure found"
+    # Check for the presence of any recognized furanocoumarin core structure
+    if mol.HasSubstructMatch(linear_furanocoumarin_pattern):
+        return True, "Contains furanocoumarin core (linear pattern)"
+    if mol.HasSubstructMatch(angular_furanocoumarin_pattern):
+        return True, "Contains furanocoumarin core (angular pattern)"
 
-# This function now accounts for both major furanocoumarin core types, improving its ability to classify various isomers and derivatives.
+    return False, "No furanocoumarin core structure found"
