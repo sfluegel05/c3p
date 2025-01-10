@@ -2,11 +2,12 @@
 Classifies: CHEBI:61051 lipid hydroperoxide
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_lipid_hydroperoxide(smiles: str):
     """
     Determines if a molecule is a lipid hydroperoxide based on its SMILES string.
-
+    
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -15,30 +16,29 @@ def is_lipid_hydroperoxide(smiles: str):
         str: Reason for classification
     """
     
-    # Parse the SMILES string
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for the presence of a hydroperoxide group (-O-O-H)
-    hydroperoxide_pattern = Chem.MolFromSmarts("O[OH]")
+    # Check for hydroperoxide group (-OOH)
+    hydroperoxide_pattern = Chem.MolFromSmarts("[OH,OX2]-[OX1H0,R0]")
     if not mol.HasSubstructMatch(hydroperoxide_pattern):
         return False, "No hydroperoxide group found"
     
-    # Check for the presence of the carboxylic acid group (-C(=O)OH)
+    # Check for a carboxylic acid group (-COOH)
     carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
     
-    # Count carbon atoms to assess if the molecule is of a lipid-like size (≥14 carbons for revisiting)
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 14:  # Adjusted to accommodate slightly shorter lipids
-        return False, "Carbon chain is too short for a lipid-like structure"
+    # Check for long carbon chains (at least 12 carbons)
+    carbon_chain_length = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if carbon_chain_length < 12:
+        return False, f"Carbon chain is too short, found {carbon_chain_length} carbons"
     
-    # Check for multiple double bonds to ensure polyunsaturation
-    double_bond_pattern = Chem.MolFromSmarts("C=C")
-    double_bonds = len(mol.GetSubstructMatches(double_bond_pattern))
-    if double_bonds < 2:  # More specific criterion for polyunsaturation
-        return False, f"Insufficient double bonds for polyunsaturation, found {double_bonds}"
-        
+    # Check for multiple double bonds (polyunsaturation)
+    double_bonds = len([bond for bond in mol.GetBonds() if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE])
+    if double_bonds < 2:
+        return False, f"Insufficient double bonds, found {double_bonds}"
+    
     return True, "Molecule matches structure of a lipid hydroperoxide"
