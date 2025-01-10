@@ -41,17 +41,17 @@ def is_oxo_fatty_acid(smiles: str):
     if not has_aldehyde and not has_ketone:
         return False, "No aldehydic or ketonic group found"
     
-    # Ensuring the molecule is predominantly a linear chain (characteristic of fatty acids)
-    num_carbon_chains = 0
-    chain_pattern = Chem.MolFromSmarts("CCCC")
-    if mol.HasSubstructMatch(chain_pattern):
-        num_carbon_chains = len(mol.GetSubstructMatches(chain_pattern))
+    # Linear chain pattern of aliphatic backbone: greater than 4 carbon chain
+    long_chain_pattern = Chem.MolFromSmarts("[CH2]~[CH2]~[CH2]~[CH2]")
+    if not mol.HasSubstructMatch(long_chain_pattern):
+        return False, "No sufficiently long carbon chain typical of fatty acids found"
+    
+    # Verify types of bonded atoms around the carbonyl groups
+    # Ensuring at least one terminal carbonyl group indicative of long chain
+    terminal_ketone_pattern = Chem.MolFromSmarts("[CH2]!@C(=O)[CH2]")
+    if not mol.HasSubstructMatch(terminal_ketone_pattern):
+        return False, "No terminal ketone group along carbon chain"
 
-    # Check total number of carbon atoms
-    num_carbons = sum(atom.GetAtomicNum() == 6 for atom in mol.GetAtoms())
-
-    # Typical fatty acids have a linear backbone, count should be reasonable
-    if num_carbon_chains < 2 or num_carbons < 5:
-        return False, "Molecule does not match typical oxo fatty acid structure"
-
+    # This condition will also help to eliminate some macromolecules or polysaccharides incorrectly classified
+    
     return True, "Contains both carboxylic acid group and aldehydic or ketonic group, characteristic of an oxo fatty acid"
