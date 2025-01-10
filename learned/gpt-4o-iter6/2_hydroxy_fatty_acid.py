@@ -20,10 +20,9 @@ def is_2_hydroxy_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define pattern for a 2-hydroxy fatty acid with potential stereo-centers
-    # [C@@H]- alcohol for indicating R or S stereocenter; |!@ (no stereochemistry) accounts for linear connectivity
-    # [-][O]C(O)=O for the carboxylic acid pattern
-    pattern = Chem.MolFromSmarts("[CX4,CX3](O)[CX3](=O)O")
+    # Define pattern for a 2-hydroxy fatty acid
+    # CCO is the base structure where we expect hydroxy group on second carbon, and carboxylic group following it
+    pattern = Chem.MolFromSmarts("CC(O)C(=O)O")
 
     if mol.HasSubstructMatch(pattern):
         return True, "Contains 2-hydroxy group with carboxylic acid at the 2-position"
