@@ -2,7 +2,6 @@
 Classifies: CHEBI:50126 tetrasaccharide
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_tetrasaccharide(smiles: str):
     """
@@ -22,19 +21,22 @@ def is_tetrasaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns for common monosaccharide units
-    common_sugar_patterns = [
-        Chem.MolFromSmarts("C1(O)CO[C@@H](O)[C@H](O)C1"),  # For example, D-glucose
-        # Add more specific patterns here for other sugars if needed
+    # Define SMARTS patterns for common monosaccharide rings
+    monosaccharide_patterns = [
+        Chem.MolFromSmarts("[C@@H]1(CO)O[C@H](O)[C@@H](O)[C@H](O)[C@H]1O"),  # D-Glucose-like
+        Chem.MolFromSmarts("[C@@H]1(CO)O[C@H](O)[C@@H](O)[C@@H](O)[C@H]1O"),  # D-Galactose-like
+        Chem.MolFromSmarts("[C@@H]1(CO)OC[C@H](O)[C@H](O)[C@H]1O"),  # D-Mannose-like
+        Chem.MolFromSmarts("[C@@H]1(CO)OC[C@@H](O)[C@@H](O)[C@H](O)[C@H]1O"),  # L-fucose-like
+        # Additional patterns for other saccharides can be added here
     ]
     
     # Look for rings matching saccharide substructures
-    sugar_matches = sum(mol.HasSubstructMatch(pattern) for pattern in common_sugar_patterns)
-    if sugar_matches < 4:
+    sugar_matches = sum(len(mol.GetSubstructMatches(pattern)) for pattern in monosaccharide_patterns)
+    if sugar_matches != 4:
         return False, f"Only found {sugar_matches} saccharide units, need exactly 4 for a tetrasaccharide"
 
-    # Count the ether linkages as glycosidic bonds
-    ether_pattern = Chem.MolFromSmarts("C-O-C")
+    # Count ether linkages as glycosidic bonds
+    ether_pattern = Chem.MolFromSmarts("[C;H0]([O;H0][C;H0])")
     ether_matches = mol.GetSubstructMatches(ether_pattern)
     if len(ether_matches) < 3:
         return False, "Insufficient glycosidic linkages for a tetrasaccharide"
@@ -42,7 +44,7 @@ def is_tetrasaccharide(smiles: str):
     # Check for hydroxyl groups
     hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
     hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    if len(hydroxyl_matches) < 8:
+    if len(hydroxyl_matches) < 16:
         return False, "Insufficient hydroxyl groups for a tetrasaccharide"
     
     return True, "Structure matches a tetrasaccharide with four monosaccharide units linked by glycosidic bonds"
