@@ -2,7 +2,6 @@
 Classifies: CHEBI:47908 alkanethiol
 """
 from rdkit import Chem
-from rdkit.Chem import rdqueries
 
 def is_alkanethiol(smiles: str):
     """
@@ -22,22 +21,13 @@ def is_alkanethiol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the SMARTS pattern for thiol group connected to sp3 carbon
-    thiol_pattern = Chem.MolFromSmarts("[CX4][SX2H1]")
-    if not mol.HasSubstructMatch(thiol_pattern):
-        return False, "No alkanethiol with thiol group (-SH) attached to an alkyl group found"
+    # Define the SMARTS pattern for a thiol group: sulfur connected to carbon and with one hydrogen
+    thiol_pattern = Chem.MolFromSmarts("[SX2H1][#6]")  # sulfur with single hydrogen bound to carbon
     
-    # Filter out remaining by ensuring sulfur's only single bonds are to hydrogen and carbon
-    sulfur_with_hydrogen = [
-        atom for atom in mol.GetAtoms() 
-        if atom.GetAtomicNum() == 16 and 
-           atom.GetTotalNumHs() == 1 and 
-           sum(1 for bond in atom.GetBonds() if bond.GetBondTypeAsDouble() == 1) == 2
-    ]
-    if not sulfur_with_hydrogen:
-        return False, "Sulfur is not specifically bonded in sulfanyl (-SH) fashion"
-
-    return True, "Contains alkanethiol pattern with -SH group specifically bound to an alkyl group"
+    if not mol.HasSubstructMatch(thiol_pattern):
+        return False, "No alkanethiol with thiol group (-SH) attached to a carbon group found"
+    
+    return True, "Contains alkanethiol pattern with -SH group specifically bound to a carbon group"
 
 # Example usage
 print(is_alkanethiol("SCC(CC)C"))  # Example SMILES for 2-Methyl-1-butanethiol
