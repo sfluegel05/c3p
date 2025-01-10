@@ -16,23 +16,19 @@ def is_glycosaminoglycan(smiles: str):
         str: Reason for classification
     """
     
-    # Parse the SMILES
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define more specific sugar and aminosugar patterns for glycosaminoglycans
-    # Glycosaminoglycans usually consist of repeating disaccharide units containing amino sugars
-    # Example of disaccharide repeat unit could be ([C@@H]1[C@@H](C(O)C(O)[C@H](O)[C@H](CO)O1)N)
-
-    # Pattern for an aminosugar (e.g., N-acetylglucosamine)
-    aminosugar_pattern = Chem.MolFromSmarts("[C@@H]([C@H](O)[C@H](O)[C@H](CO)O)N")
-    if not mol.HasSubstructMatch(aminosugar_pattern):
+    # Define a more generalized pattern for aminosugar (contains nitrogen in cyclic form)
+    # Recognize aminosugar as any cyclic structure having nitrogen bonded to a carbon in the ring
+    amino_cyclic_pattern = Chem.MolFromSmarts("C1[NH2,NH,N]C(O)C(O)C1")  # Generic pattern for aminocyclic structures
+    if not mol.HasSubstructMatch(amino_cyclic_pattern):
         return False, "No aminomonosaccharide residues found"
 
-    # Check for multiple occurrence implying a polysaccharide
-    # Assuming at least 3 repeats to classify as substantial
-    aminomonosaccharide_matches = mol.GetSubstructMatches(aminosugar_pattern)
+    # Extending length consideration to qualify as substantial polysaccharide
+    aminomonosaccharide_matches = mol.GetSubstructMatches(amino_cyclic_pattern)
     if len(aminomonosaccharide_matches) < 3:
         return False, "Does not meet the threshold for aminomonosaccharide residues"
 
