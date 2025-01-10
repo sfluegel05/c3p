@@ -21,49 +21,45 @@ def is_corrinoid(smiles: str) -> tuple[bool, str]:
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for basic macrocyclic framework with 4 nitrogens
-    # [#7] represents nitrogen, allowing for different oxidation states
-    macrocycle = Chem.MolFromSmarts('[#7]~[#6]~[#6]~[#6]~[#7]~[#6]~[#6]~[#6]~[#7]~[#6]~[#6]~[#6]~[#7]')
-    if not mol.HasSubstructMatch(macrocycle):
-        return False, "Missing required nitrogen macrocycle"
+    # Look for corrin nucleus - a more specific pattern for the core structure
+    # This pattern describes the four nitrogen atoms in their characteristic arrangement
+    # with connecting carbons, allowing for different oxidation states and substituents
+    corrin_core = Chem.MolFromSmarts('[#7]~[#6]~[#6]~[#6]~[#7]~[#6]~[#6]~[#6]~[#7]~[#6]~[#6]~[#6]~[#7]~[#6]~[#6]')
+    if not mol.HasSubstructMatch(corrin_core):
+        return False, "Missing corrin nucleus structure"
 
-    # Look for four pyrrole-like rings (allowing for reduced forms)
-    # This pattern matches both reduced and partially reduced pyrroles
-    pyrrole = Chem.MolFromSmarts('[#7]1[#6][#6][#6][#6]1')
-    matches = mol.GetSubstructMatches(pyrrole)
+    # Look for the four modified pyrrole rings with more flexible matching
+    # This pattern allows for reduced and substituted forms
+    pyrrole_pattern = Chem.MolFromSmarts('[#7]([#6]~[#6])~[#6]~[#6]')
+    matches = mol.GetSubstructMatches(pyrrole_pattern)
     if len(matches) < 4:
-        return False, "Does not contain four pyrrole-like rings"
+        return False, "Missing required pyrrole-like rings"
 
-    # Look for three double bond connections between rings
-    # Using (~) allows for resonance forms
-    double_bond_pattern = Chem.MolFromSmarts('[#6]=[#6]')
-    double_bonds = len(mol.GetSubstructMatches(double_bond_pattern))
-    if double_bonds < 3:
-        return False, "Missing required double bond connections"
-
-    # Look for direct C-C bond between alpha positions
-    # This pattern looks for carbons next to nitrogens that are connected
-    alpha_link = Chem.MolFromSmarts('[#7][#6]-[#6][#7]')
-    if not mol.HasSubstructMatch(alpha_link):
-        return False, "Missing direct C-C bond between alpha positions"
-
-    # Check ring connectivity
-    ring_info = mol.GetRingInfo()
-    if not ring_info.NumRings() >= 4:
-        return False, "Insufficient ring count"
-
-    # Additional check for overall size and composition
-    num_atoms = mol.GetNumAtoms()
-    if num_atoms < 20:  # Corrinoids are large molecules
-        return False, "Molecule too small for corrinoid structure"
-
-    # Count nitrogens to ensure we have the core structure
+    # Check for presence of cobalt (common in corrinoids but not required)
+    has_cobalt = any(atom.GetAtomicNum() == 27 for atom in mol.GetAtoms())
+    
+    # Count nitrogens in the core structure
     n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
     if n_count < 4:
-        return False, "Insufficient nitrogen atoms"
+        return False, "Insufficient nitrogen atoms for corrin structure"
 
-    # Success case
-    reason = ("Contains four pyrrole-like rings in a macrocycle, "
-             "joined by three =C- groups and one direct C-C bond")
-    
+    # Check molecular size - corrinoids are large molecules
+    num_atoms = mol.GetNumAtoms()
+    if num_atoms < 20:
+        return False, "Molecule too small for corrinoid structure"
+
+    # Look for characteristic carbon-carbon connections
+    # This includes both double bonds and single bonds between rings
+    ring_connections = Chem.MolFromSmarts('[#7]~[#6](~[#6])~[#6]~[#7]')
+    if not mol.HasSubstructMatch(ring_connections):
+        return False, "Missing required ring connections"
+
+    # Success message varies depending on cobalt presence
+    if has_cobalt:
+        reason = ("Contains corrin nucleus with four modified pyrrole rings "
+                 "and cobalt coordination center")
+    else:
+        reason = ("Contains corrin nucleus with four modified pyrrole rings "
+                 "in characteristic arrangement")
+
     return True, reason
