@@ -38,13 +38,13 @@ def is_oxo_fatty_acid(smiles: str):
 
     # Check for a long carbon chain (typical of fatty acids)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 8:  # Minimum number of carbons for a fatty acid
-        return False, f"Only {c_count} carbons, need at least 8 for a fatty acid"
+    if c_count < 6:  # Minimum number of carbons for a fatty acid
+        return False, f"Only {c_count} carbons, need at least 6 for a fatty acid"
 
     # Check for a hydrophobic tail (long carbon chain without polar groups)
     hydrophobic_pattern = Chem.MolFromSmarts("[CX4][CX4][CX4][CX4]")
     hydrophobic_matches = mol.GetSubstructMatches(hydrophobic_pattern)
-    if len(hydrophobic_matches) < 2:  # At least two consecutive hydrophobic segments
+    if len(hydrophobic_matches) < 1:  # At least one hydrophobic segment
         return False, "Insufficient hydrophobic tail for a fatty acid"
 
     # Exclude peptides and complex carbohydrates
@@ -55,5 +55,10 @@ def is_oxo_fatty_acid(smiles: str):
     carbohydrate_pattern = Chem.MolFromSmarts("[OX2][CX4][CX4][OX2]")
     if mol.HasSubstructMatch(carbohydrate_pattern):
         return False, "Carbohydrate structure detected, not a fatty acid"
+
+    # Exclude molecules with multiple carboxylic acid groups (e.g., peptides)
+    carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
+    if len(carboxylic_acid_matches) > 1:
+        return False, "Multiple carboxylic acid groups detected, likely not a fatty acid"
 
     return True, "Contains a carboxylic acid group and at least one additional oxo group with a long carbon chain"
