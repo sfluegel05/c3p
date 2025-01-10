@@ -7,7 +7,7 @@ def is_furanocoumarin(smiles: str):
     """
     Determines if a molecule is a furanocoumarin based on its SMILES string.
     A furanocoumarin is defined as a furochromene that consists of a furan ring 
-    fused with a coumarin. 
+    fused with a coumarin.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,11 +23,16 @@ def is_furanocoumarin(smiles: str):
         return False, "Invalid SMILES string"
     
     # Define SMARTS pattern for a furanocoumarin backbone
-    # Start with capturing typical furan rings fused to coumarin in several potential configurations
+    # Patterns should capture the various potential fusion types of furo and coumarin
     furanocoumarin_patterns = [
-        Chem.MolFromSmarts("c1c2occc2c(c2oc(=O)cc)cc1"),  # Pattern for psoralen-like structure
-        Chem.MolFromSmarts("c1oc2ccc(o2)c(c1)c(=O)c"),    # Pattern for a basic furochromene
+        Chem.MolFromSmarts("c1oc2ccccc2oc1C=O"), # Basic furo[2,3-b]coumarin structure
+        Chem.MolFromSmarts("c1oc2cccc(c2cc1C=O)"), # Basic furo[3,2-g]coumarin structure
+        Chem.MolFromSmarts("c1oc2ccc(o2)c(c1)C=O")  # Basic psoralen-like structure
     ]
+    
+    # Ensure all patterns are valid
+    if any(pattern is None for pattern in furanocoumarin_patterns):
+        return None, None  # If any pattern is None, there's a problem with its definition
     
     # Check for presence of any furanocoumarin patterns
     for pattern in furanocoumarin_patterns:
