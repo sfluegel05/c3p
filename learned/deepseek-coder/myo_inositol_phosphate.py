@@ -26,37 +26,46 @@ def is_myo_inositol_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for 6-membered ring (inositol core)
-    ring_info = mol.GetRingInfo()
-    if not any(len(ring) == 6 for ring in ring_info.AtomRings()):
-        return False, "No 6-membered ring found"
-
-    # Check for myo-inositol backbone pattern (6 carbons with hydroxyl/phosphate groups)
-    # More flexible pattern that doesn't enforce specific stereochemistry
-    myo_inositol_pattern = Chem.MolFromSmarts("[C]1([C]([OH,OP])([C]([OH,OP])([C]([OH,OP])([C]([OH,OP])([C]1[OH,OP])))))")
+    # Check for the myo-inositol backbone pattern (6-membered ring with hydroxyl or phosphate groups)
+    myo_inositol_pattern = Chem.MolFromSmarts("[C@H]1([C@@H]([OH,OP])([C@H]([OH,OP])([C@@H]([OH,OP])([C@H]([OH,OP])([C@@H]1[OH,OP])))))")
     if not mol.HasSubstructMatch(myo_inositol_pattern):
-        return False, "No myo-inositol backbone pattern found"
+        return False, "No myo-inositol backbone found"
 
-    # Look for phosphate groups (more comprehensive pattern)
+    # Look for at least one phosphate group (-OP(O)(O)=O or -OP(O)(O)-)
     phosphate_pattern = Chem.MolFromSmarts("[OX2][PX4](=[OX1])([OX2H,OX2-])[OX2H,OX2-]")
     phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
     if len(phosphate_matches) < 1:
         return False, "No phosphate groups found"
 
-    # Check molecular formula (should have C6H(6-12)O(6-12)P(1-6))
-    formula = rdMolDescriptors.CalcMolFormula(mol)
-    c_count = formula.count('C')
-    h_count = formula.count('H')
-    o_count = formula.count('O')
-    p_count = formula.count('P')
-    
-    if c_count != 6:
-        return False, f"Wrong number of carbons: {c_count}"
-    if h_count < 6 or h_count > 12:
-        return False, f"Wrong number of hydrogens: {h_count}"
-    if o_count < 6 or o_count > 12:
-        return False, f"Wrong number of oxygens: {o_count}"
-    if p_count < 1 or p_count > 6:
-        return False, f"Wrong number of phosphates: {p_count}"
-
     return True, "Contains myo-inositol backbone with at least one phosphate group"
+
+
+__metadata__ = {   'chemical_class': {   'id': 'CHEBI:28875',
+                          'name': 'myo-inositol phosphate',
+                          'definition': 'An inositol phosphate in which the inositol component has myo-configuration.',
+                          'parents': ['CHEBI:28874', 'CHEBI:24838']},
+    'config': {   'llm_model_name': 'lbl/claude-sonnet',
+                  'f1_threshold': 0.8,
+                  'max_attempts': 5,
+                  'max_positive_instances': None,
+                  'max_positive_to_test': None,
+                  'max_negative_to_test': None,
+                  'max_positive_in_prompt': 50,
+                  'max_negative_in_prompt': 20,
+                  'max_instances_in_prompt': 100,
+                  'test_proportion': 0.1},
+    'message': None,
+    'attempt': 0,
+    'success': True,
+    'best': True,
+    'error': '',
+    'stdout': None,
+    'num_true_positives': 150,
+    'num_false_positives': 4,
+    'num_true_negatives': 182407,
+    'num_false_negatives': 23,
+    'num_negatives': None,
+    'precision': 0.974025974025974,
+    'recall': 0.8670520231213873,
+    'f1': 0.9174311926605504,
+    'accuracy': 0.9998521228585199}
