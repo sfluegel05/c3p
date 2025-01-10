@@ -2,12 +2,13 @@
 Classifies: CHEBI:133004 bisbenzylisoquinoline alkaloid
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_bisbenzylisoquinoline_alkaloid(smiles: str):
     """
     Determines if a molecule is a bisbenzylisoquinoline alkaloid based on its SMILES string.
-    Bisbenzylisoquinoline alkaloids are characterized by two benzylisoquinoline units 
-    linked by ether bonds with complex aromatic ring systems.
+    Bisbenzylisoquinoline alkaloids are characterized by complex polycyclic structures with multiple
+    benzylisoquinoline-like units linked often via ether bonds.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,20 +23,19 @@ def is_bisbenzylisoquinoline_alkaloid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS for benzylisoquinoline unit
-    benzylisoquinoline_pattern = Chem.MolFromSmarts("c1ccc2Nc3c(ccc(O)c3)Cc2c1")
+    # Define a general benzylisoquinoline-like pattern (aromatic rings with N heterocycle)
+    benzylisoquinoline_pattern = Chem.MolFromSmarts("Nc1c(cc(OC)c(OC)c1)CC2")
     
-    # Define SMARTS for ether bridge (between aromatic rings)
-    ether_bridge_pattern = Chem.MolFromSmarts("c1cc(OC)cc1")
-    
-    # Check for two benzylisoquinoline patterns
+    # Check for benzylisoquinoline-like patterns at least twice
     benzylisoquinoline_matches = mol.GetSubstructMatches(benzylisoquinoline_pattern)
     if len(benzylisoquinoline_matches) < 2:
-        return False, f"Found {len(benzylisoquinoline_matches)} benzylisoquinoline units, need at least 2"
-    
-    # Check for ether bridges (requires two such bridges)
-    ether_matches = mol.GetSubstructMatches(ether_bridge_pattern)
-    if len(ether_matches) < 2:
-        return False, f"Found {len(ether_matches)} ether bridges, need at least 2"
-    
+        return False, f"Found {len(benzylisoquinoline_matches)} benzylisoquinoline-like units, need at least 2"
+
+    # Define smarter ether bond linkers connectivity, not requiring fixed bridge counts
+    # Just ensure presence between rings
+    ether_pattern = Chem.MolFromSmarts("cOc") 
+    ether_matches = mol.GetSubstructMatches(ether_pattern)
+    if len(ether_matches) < 1:
+        return False, f"Found {len(ether_matches)} ether bridges, need at least 1"
+
     return True, "Contains characteristic bisbenzylisoquinoline alkaloid structure"
