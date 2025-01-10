@@ -7,7 +7,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_sulfolipid(smiles: str):
     """
     Determines if a molecule is a sulfolipid based on its SMILES string.
-    A sulfolipid is a compound containing a sulfonic acid residue joined by a sulfur-oxygen bond (sulfate ester) to a lipid.
+    A sulfolipid is a compound containing a sulfonic acid residue joined by a carbon-sulfur bond to a lipid.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,16 +22,20 @@ def is_sulfolipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for sulfate ester group connected via oxygen-sulfur-oxygen-carbon bonds
-    # SMARTS pattern for O-S(=O)(=O)-O-C
-    sulfate_ester_pattern = Chem.MolFromSmarts("O[S](=O)(=O)O[C]")
-    if not mol.HasSubstructMatch(sulfate_ester_pattern):
-        return False, "No sulfate ester group connected to carbon found"
+    # Look for sulfonic acid group connected via carbon-sulfur bond
+    # Sulfonic acid group: S(=O)(=O)-OH attached to carbon via S-C bond
+    # SMARTS pattern matching both protonated (OH) and deprotonated (O-) forms
+    sulfonic_acid_pattern = Chem.MolFromSmarts("[#6][S](=O)(=O)[O;H1,-]")
 
-    # Check for long hydrocarbon chains to assess lipid characteristic
-    # Look for aliphatic chains of at least 12 carbons (could be adjusted as needed)
-    alkyl_chain_pattern = Chem.MolFromSmarts("C" + "C" * 11)  # Chain of 12 carbons
+    if not mol.HasSubstructMatch(sulfonic_acid_pattern):
+        return False, "No sulfonic acid group connected via carbon-sulfur bond found"
+
+    # Check for long hydrocarbon chain to assess lipid characteristic
+    # Look for aliphatic chain of at least 12 continuous carbons
+    # This pattern matches a chain of 12 or more non-ring sp3 carbons
+    alkyl_chain_pattern = Chem.MolFromSmarts("[C;D3,D4;H2,H3][C;D2,D3;H2,H3]{10,}[C;D3,D4;H3]")  # Chain of at least 12 carbons
+
     if not mol.HasSubstructMatch(alkyl_chain_pattern):
-        return False, "No long hydrocarbon chain found"
+        return False, "No long hydrocarbon chain of at least 12 carbons found"
 
-    return True, "Contains sulfate ester group connected via oxygen-sulfur bond and lipid characteristics"
+    return True, "Contains sulfonic acid group connected via carbon-sulfur bond and lipid characteristics"
