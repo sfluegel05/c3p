@@ -25,52 +25,63 @@ def is_flavonoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Basic size and composition check
-    num_atoms = mol.GetNumAtoms()
-    if num_atoms < 15:
-        return False, "Molecule too small to be a flavonoid"
-
-    # Core patterns for different flavonoid classes
+    # Core patterns for different flavonoid classes - simplified and more general
     core_patterns = [
-        # Basic flavone/flavonol core (more flexible)
-        "[#6]1=C([#6])Oc2c([#6,#1])c([#6,#1,#8])c([#6,#1,#8])c([#6,#1,#8])c2[#6]1=O",
+        # Basic benzopyran core (most general)
+        "O1c2ccccc2CC1",
         
-        # Flavanone core
-        "[#6]1[#6]Oc2c([#6,#1])c([#6,#1,#8])c([#6,#1,#8])c([#6,#1,#8])c2[#6]1=O",
+        # Flavone/flavonol core (more general)
+        "O1c2ccccc2C(=O)C1",
         
         # Isoflavone core
-        "O=C1C(=C)Oc2c([#6,#1])c([#6,#1,#8])c([#6,#1,#8])c([#6,#1,#8])c21",
+        "O1c2ccccc2C(=O)C=C1",
         
-        # Anthocyanidin core (includes charged species)
-        "[#6]1=[#6+]([#6])Oc2c([#6,#1])c([#6,#1,#8])c([#6,#1,#8])c([#6,#1,#8])c21",
+        # Flavanone core
+        "O1CCc2ccccc2C1=O",
         
-        # More general chromane/chromene core
-        "[#6]1[#6]Oc2c([#6,#1])c([#6,#1,#8])c([#6,#1,#8])c([#6,#1,#8])c21",
+        # Anthocyanidin core (includes charged form)
+        "O1c2ccccc2C=[O+]C1",
         
-        # Flavan core
-        "[#6]1[#6][#6]Oc2c([#6,#1])c([#6,#1,#8])c([#6,#1,#8])c([#6,#1,#8])c21"
+        # Chalcone-type pattern
+        "O=CC(=O)c1ccccc1O",
+        
+        # More specific but common patterns
+        "O1c2c(O)cc(O)cc2OC(c2ccccc2)C1=O",
+        "O1c2c(O)cc(O)cc2OC(c2ccccc2)C1",
     ]
 
     has_core = False
+    matched_pattern = None
     for pattern in core_patterns:
-        pat = Chem.MolFromSmarts(pattern)
+        pat = Chem.MolFromSmiles(pattern)
         if pat is not None and mol.HasSubstructMatch(pat):
             has_core = True
+            matched_pattern = pattern
             break
+
+    if not has_core:
+        # Try more general SMARTS patterns if SMILES patterns fail
+        smarts_patterns = [
+            # Very general benzopyran core
+            "O1[#6]~2~[#6]~[#6]~[#6]~[#6]~[#6]2[#6][#6]1",
+            # General chromone core
+            "O1[#6]~2~[#6]~[#6]~[#6]~[#6]~[#6]2[#6](=O)[#6]1",
+        ]
+        for pattern in smarts_patterns:
+            pat = Chem.MolFromSmarts(pattern)
+            if pat is not None and mol.HasSubstructMatch(pat):
+                has_core = True
+                matched_pattern = pattern
+                break
 
     if not has_core:
         return False, "No flavonoid core structure found"
 
-    # Check for aromatic/phenyl substituent
+    # Check for aromatic/phenyl substituent - more general patterns
     aryl_patterns = [
-        # General aryl group patterns
-        "c1ccccc1",
-        "c1cc(O)ccc1",
-        "c1cc(O)cc(O)c1",
-        
-        # More specific patterns for common substitution
-        "c1c(O)c(O)ccc1",
-        "c1c(OC)c(O)ccc1"
+        "c1ccccc1",  # Basic phenyl
+        "c1cccc([#8,#7,#6])c1",  # Substituted phenyl
+        "c1cc([#8,#7])cc([#8,#7])c1",  # Di-substituted phenyl
     ]
 
     has_aryl = False
@@ -80,39 +91,31 @@ def is_flavonoid(smiles: str):
             has_aryl = True
             break
 
-    if not has_aryl:
-        return False, "Missing required aryl substituent"
-
-    # Check for typical flavonoid characteristics
+    # Characteristic flavonoid features
     characteristic_patterns = [
-        # Hydroxyl groups
-        "[OX2H1]",
-        # Methoxy groups
-        "[OX2][CH3]",
-        # Sugar linkages (more flexible)
-        "[OX2][CH]([OH])[CH]([OH])[CH]",
-        # Carbonyl groups
-        "[CX3](=[OX1])",
-        # Glycosidic linkages
-        "[OX2]([CH]1[OH0,OH1])[CH]([OH0,OH1])[CH]([OH0,OH1])[CH]([OH0,OH1])[CH]([OH0,OH1])[CH]1"
+        "[OX2H1]",  # Hydroxyl
+        "[OX2][CH3]",  # Methoxy
+        "C(=O)",  # Carbonyl
+        "O[CH]1O[CH][CH][CH][CH][CH]1",  # Sugar ring
+        "O[CH]1O[CH][CH][CH][CH]1",  # Furanose sugar
     ]
 
     characteristic_count = 0
     for pattern in characteristic_patterns:
         pat = Chem.MolFromSmarts(pattern)
         if pat is not None:
-            characteristic_count += len(mol.GetSubstructMatches(pat))
-
-    if characteristic_count < 2:
-        return False, "Insufficient number of characteristic flavonoid substituents"
+            matches = len(mol.GetSubstructMatches(pat))
+            characteristic_count += matches
 
     # Ring count check
     ring_info = mol.GetRingInfo()
     if ring_info.NumRings() < 2:
         return False, "Insufficient number of rings"
 
-    # Additional check for fused ring systems
-    if mol.GetNumBonds() < 20:  # Most flavonoids have at least this many bonds
-        return False, "Structure too simple for a flavonoid"
-
-    return True, "Contains flavonoid core structure with appropriate substituents"
+    # Classification logic
+    if has_aryl and characteristic_count >= 1:
+        return True, "Contains flavonoid core structure with appropriate substituents"
+    elif has_core and characteristic_count >= 2:
+        return True, "Contains flavonoid core with characteristic substitution pattern"
+    else:
+        return False, "Missing required structural features for flavonoid classification"
