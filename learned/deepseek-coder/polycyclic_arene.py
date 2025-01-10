@@ -10,7 +10,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_polycyclic_arene(smiles: str):
     """
     Determines if a molecule is a polycyclic arene based on its SMILES string.
-    A polycyclic arene is a polycyclic aromatic hydrocarbon consisting only of carbon atoms.
+    A polycyclic arene is a polycyclic aromatic hydrocarbon, which may have substituents.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -25,11 +25,6 @@ def is_polycyclic_arene(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check if all atoms are carbon (polycyclic arenes are pure hydrocarbons)
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() != 6:
-            return False, "Contains non-carbon atoms"
-
     # Get all rings
     ring_info = mol.GetRingInfo()
     rings = ring_info.AtomRings()
@@ -38,24 +33,35 @@ def is_polycyclic_arene(smiles: str):
     if len(rings) < 2:
         return False, "Not enough rings to be polycyclic"
 
-    # Check if rings are fused and aromatic
+    # Check if the molecule has a polycyclic aromatic core
+    # Create a copy of the molecule and remove all non-carbon atoms
+    core_mol = Chem.RWMol(mol)
+    for atom in core_mol.GetAtoms():
+        if atom.GetAtomicNum() != 6:
+            core_mol.RemoveAtom(atom.GetIdx())
+    
+    # Check if the core has at least 2 aromatic rings
+    core_ring_info = core_mol.GetRingInfo()
+    core_rings = core_ring_info.AtomRings()
+    
     aromatic_rings = 0
-    for ring in rings:
-        # Check if all atoms in the ring are aromatic
-        if all(mol.GetAtomWithIdx(atom).GetIsAromatic() for atom in ring):
+    for ring in core_rings:
+        if all(core_mol.GetAtomWithIdx(atom).GetIsAromatic() for atom in ring):
             aromatic_rings += 1
-            # Check if this ring shares at least 2 atoms with another ring
-            shared_atoms = 0
-            for other_ring in rings:
-                if ring != other_ring:
-                    shared_atoms = len(set(ring).intersection(other_ring))
-                    if shared_atoms >= 2:
-                        break
-            else:
-                return False, "Rings are not properly fused"
-
-    # Need at least 2 aromatic rings
+    
     if aromatic_rings < 2:
-        return False, f"Only {aromatic_rings} aromatic ring(s) found, need at least 2"
+        return False, "Core structure does not have enough aromatic rings"
 
-    return True, "Contains multiple fused aromatic rings consisting only of carbon atoms"
+    # Check if the core is polycyclic (at least 2 rings share atoms)
+    shared_atoms = 0
+    for i in range(len(core_rings)):
+        for j in range(i + 1, len(core_rings)):
+            shared_atoms = len(set(core_rings[i]).intersection(core_rings[j]))
+            if shared_atoms > 0:
+                break
+        if shared_atoms > 0:
+            break
+    else:
+        return False, "Core rings are not fused"
+
+    return True, "Contains a polycyclic aromatic hydrocarbon core"
