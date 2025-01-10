@@ -26,39 +26,30 @@ def is_sphingoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the sphingoid backbone pattern:
-    # Long aliphatic chain with amino group at C2, hydroxyls at C1 and C3
-    sphingoid_pattern = Chem.MolFromSmarts("""
-    [#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-
-    [C@H](O)[C@H](N)[C@H](O)CO
-    """)
-    if sphingoid_pattern is None:
-        return False, "Invalid SMARTS pattern"
+    # Check for a long aliphatic chain (at least 12 carbons)
+    c_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6 and not atom.IsInRing()]
+    if len(c_atoms) < 12:
+        return False, f"Aliphatic chain too short ({len(c_atoms)} carbons)"
 
-    # Check if molecule matches the sphingoid pattern
-    if not mol.HasSubstructMatch(sphingoid_pattern):
-        return False, "Molecule does not match sphingoid backbone pattern"
-
-    # Alternatively, check for components individually
-    # 1. Long aliphatic chain (at least 12 carbons)
-    aliphatic_carbons = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6 and atom.GetDegree() == 2]
-    if len(aliphatic_carbons) < 12:
-        return False, f"Aliphatic chain too short ({len(aliphatic_carbons)} carbons)"
-
-    # 2. Amino group at C2 position
-    amino_pattern = Chem.MolFromSmarts("[C;!R][C;!R](N)")
+    # Check for amino group attached to carbon
+    amino_pattern = Chem.MolFromSmarts("[CX4][NX3;H2]")
     if not mol.HasSubstructMatch(amino_pattern):
-        return False, "No amino group at C2 position found"
+        return False, "No primary amino group attached to carbon found"
 
-    # 3. Hydroxyl groups at C1 and C3 positions
-    hydroxyl_pattern = Chem.MolFromSmarts("[C;!R](O)")
+    # Check for hydroxyl groups attached to carbons
+    hydroxyl_pattern = Chem.MolFromSmarts("[CX4][OX2H]")
     hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    if len(hydroxyl_matches) < 2:
-        return False, "Less than two hydroxyl groups found"
+    if len(hydroxyl_matches) < 1:
+        return False, "No hydroxyl groups attached to carbon found"
 
-    # 4. Check for unsaturations (double bonds) and additional hydroxy groups
-    # Unsaturation is allowed, so no need to enforce saturation
-    # Additional hydroxyl groups are allowed
+    # Check for amino alcohol sequence (C-OH-C-N)
+    amino_alcohol_pattern = Chem.MolFromSmarts("[C;!R][C;!R](O)[C;!R](N)")
+    if not mol.HasSubstructMatch(amino_alcohol_pattern):
+        return False, "No amino alcohol sequence (C-OH-C-N) found"
+
+    # Allow for unsaturations and additional hydroxyl groups
+    # Do not enforce saturation of the aliphatic chain
+    # Additional hydroxyl groups are acceptable
 
     # If all checks pass, classify as sphingoid
     return True, "Molecule matches sphingoid structural features"
