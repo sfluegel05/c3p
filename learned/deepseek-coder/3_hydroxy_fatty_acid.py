@@ -60,4 +60,9 @@ def is_3_hydroxy_fatty_acid(smiles: str):
     if c_count < 10:
         return False, "Carbon chain too short for a fatty acid"
 
-    return True, "Contains a carboxylic acid group and a hydroxyl group at the 3-position with a long carbon chain"
+    # Check for aliphatic chain (no rings)
+    ring_info = mol.GetRingInfo()
+    if ring_info.NumRings() > 0:
+        return False, "Molecule contains rings, not a typical fatty acid"
+
+    return True, "Contains a carboxylic acid group and a hydroxyl group at the 3-position with a long aliphatic carbon chain"
