@@ -20,17 +20,17 @@ def is_3_oxo_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a comprehensive pattern for the CoA moiety
-    coa_core_pattern = Chem.MolFromSmarts("[C@@H]1N(C=NC2=C1N=CN=C2N)C3C(C(C(O3)(COP(=O)(O)OCC[N+](C)(C)C))O)OP(=O)(O)O")
+    # Broad pattern for the CoA moiety, considering key groups
+    coa_core_pattern = Chem.MolFromSmarts("COP(=O)(O)OC[C@H]1O[C@H](COP(=O)(O)O)[C@@H](O)[C@H]1O")  # Simplified
     if not mol.HasSubstructMatch(coa_core_pattern):
         return False, "No core CoA moiety found"
-
-    # Define a pattern for the 3-oxo group with flexibility
+    
+    # Pattern for the 3-oxo-fatty acid group
     oxo_fatty_acid_pattern = Chem.MolFromSmarts("C(=O)CC(=O)")
     if not mol.HasSubstructMatch(oxo_fatty_acid_pattern):
         return False, "No 3-oxo-fatty acid group found"
-    
-    # Look for the thioester linkage
+
+    # Look for the thioester linkage 'C(=O)S'
     thioester_pattern = Chem.MolFromSmarts("C(=O)S")
     if not mol.HasSubstructMatch(thioester_pattern):
         return False, "No thioester linkage found"
@@ -39,12 +39,12 @@ def is_3_oxo_fatty_acyl_CoA(smiles: str):
 
 __metadata__ = {
     'chemical_class': {
-        'id': 'CHEBI:xxxx',  # Replace with the correct CHEBI ID for 3-oxo-fatty acyl-CoA
+        'id': 'CHEBI:25020',  # Hypothetical ID for 3-oxo-fatty acyl-CoA
         'name': '3-oxo-fatty acyl-CoA',
         'definition': 'An oxo fatty acyl-CoA that results from the formal condensation of the thiol group of coenzyme A with the carboxy group of any 3-oxo-fatty acid.'
     },
     'config': {
-        # Configuration details for model testing, thresholds etc.
+        # Additional configuration information
     },
     'message': None,
     'success': True,
