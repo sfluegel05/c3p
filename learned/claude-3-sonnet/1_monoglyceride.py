@@ -27,44 +27,44 @@ def is_1_monoglyceride(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # More specific pattern for 1-monoglyceride:
-    # [CH2] with ester at position 1
-    # connected to [CH] with OH
-    # connected to [CH2] with OH
-    # The pattern ensures correct connectivity and substitution
-    mono_1_pattern = Chem.MolFromSmarts("""
-        [CH2X4]-[OX2]-[CX3](=[OX1])-[*] # Position 1 with ester
-        .[CH2X4]-[OX2H1] # Position 3 with OH
-        .[CHX4]-[OX2H1] # Position 2 with OH
-        """)
+    # Define pattern for 1-monoglyceride:
+    # [#6]-C(=O)-O-CH2-CH(OH)-CH2OH
+    # This pattern captures the essential features:
+    # - Ester group at position 1
+    # - Hydroxyl groups at positions 2 and 3
+    # - Carbon chain attached to the carbonyl
+    pattern = Chem.MolFromSmarts("[#6]-C(=O)-O-[CH2X4]-[CH1X4](-[OX2H1])-[CH2X4]-[OX2H1]")
     
-    if not mol.HasSubstructMatch(mono_1_pattern):
+    if pattern is None:
+        return False, "Invalid SMARTS pattern"
+        
+    if not mol.HasSubstructMatch(pattern):
         return False, "Does not match 1-monoglyceride pattern"
-
-    # Verify it's a single glycerol backbone by checking connectivity
-    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
-    glycerol_matches = mol.GetSubstructMatches(glycerol_pattern)
-    if len(glycerol_matches) != 1:
-        return False, "Must have exactly one glycerol backbone"
 
     # Count ester groups (-O-C(=O)-)
     ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
+    if ester_pattern is None:
+        return False, "Invalid ester SMARTS pattern"
+    
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) != 1:
         return False, f"Found {len(ester_matches)} ester groups, need exactly 1"
 
-    # Verify the ester is connected to a carbon chain (not just a small group)
-    acyl_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[CX4,CX3]")
-    if not mol.HasSubstructMatch(acyl_pattern):
-        return False, "Ester must be connected to a carbon chain"
+    # Count hydroxyl groups
+    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H1]")
+    if hydroxyl_pattern is None:
+        return False, "Invalid hydroxyl SMARTS pattern"
+    
+    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
+    if len(hydroxyl_matches) != 2:
+        return False, f"Found {len(hydroxyl_matches)} hydroxyl groups, need exactly 2"
 
-    # Additional check to ensure the glycerol backbone is properly connected
-    backbone_pattern = Chem.MolFromSmarts("""
-        [CH2X4]-[OX2]-[CX3](=[OX1]) # Position 1
-        -[CHX4]-[OX2H1] # Position 2
-        -[CH2X4]-[OX2H1] # Position 3
-        """)
-    if not mol.HasSubstructMatch(backbone_pattern):
-        return False, "Glycerol backbone not properly connected"
+    # Verify carbon chain length (should be at least 2 carbons in acyl group)
+    acyl_pattern = Chem.MolFromSmarts("[CX3](=[OX1])-[#6]-[#6]")
+    if acyl_pattern is None:
+        return False, "Invalid acyl SMARTS pattern"
+        
+    if not mol.HasSubstructMatch(acyl_pattern):
+        return False, "Acyl chain too short"
 
     return True, "Contains glycerol backbone with one ester bond at position 1 and two free hydroxyl groups"
