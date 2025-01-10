@@ -20,7 +20,7 @@ def is_trans_2_enoyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns for trans double bond and CoA components
+    # Attempt to define SMARTS patterns for trans double bond and CoA components
     try:
         trans_double_bond_patterns = [
             Chem.MolFromSmarts("C/C=C\\C"),  # Trans-double bonds
@@ -28,9 +28,9 @@ def is_trans_2_enoyl_CoA(smiles: str):
         ]
         
         coa_substructures = [
-            Chem.MolFromSmarts("C(=O)SCCNC(=O)"),  # CoA linkage part
-            Chem.MolFromSmarts("C(=O)[C@H](O)C(C)(C)COP(O)(O)=O"),  # Phosphopantetheine
-            Chem.MolFromSmarts("OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1")  # Ribose sugar and phosphate
+            Chem.MolFromSmarts("C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)C"),  # Key CoA linkage and structure
+            Chem.MolFromSmarts("COP(O)(=O)OP(O)(=O)O"),  # Phosphate groups
+            Chem.MolFromSmarts("OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12")  # Ribose and nucleotide
         ]
         
         # Validate substructure patterns
@@ -56,6 +56,7 @@ smiles_list = [
     "CCCCCCCCCCCCCCCCCCCC\\C=C\\C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(=O)=O)n1cnc2c(N)ncnc12",
     "COc1cc(\\C=C\\C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2OP(O)(O)=O)n2cnc3c(N)ncnc23)cc(OC)c1O",
 ]
+
 results = [is_trans_2_enoyl_CoA(smiles) for smiles in smiles_list]
 for smiles, (is_match, reason) in zip(smiles_list, results):
     print(f"SMILES: {smiles} is trans-2-enoyl-CoA: {is_match}, Reason: {reason}")
