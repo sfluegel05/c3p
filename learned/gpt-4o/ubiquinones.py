@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_ubiquinones(smiles: str):
     """
     Determines if a molecule is a ubiquinone based on its SMILES string.
-    A ubiquinone has a 2,3-dimethoxy-5-methylbenzoquinone core with a polyprenoid side chain at position 6.
+    A ubiquinone typically has a 2,3-dimethoxybenzoquinone core with a polyprenoid side chain at position 6.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -15,29 +15,26 @@ def is_ubiquinones(smiles: str):
         bool: True if molecule is a ubiquinone, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Improved SMARTS for 2,3-dimethoxy-5-methylbenzoquinone core
-    benzoquinone_pattern = Chem.MolFromSmarts("COc1cc(=O)c(C)c(=O)c(OC)c1")
+    # Look for the 2,3-dimethoxybenzoquinone core (allows minor variations)
+    benzoquinone_pattern = Chem.MolFromSmarts("COc1c(C)cc(=O)[#6H1]=,:[#6H1]c1=O")  # Flexible SMARTS
     if not mol.HasSubstructMatch(benzoquinone_pattern):
-        return False, "No 2,3-dimethoxy-5-methylbenzoquinone core found"
-    
-    # Find potential polyprenoid side chains with isoprene-like patterns
-    long_chain_found = False
-    # Check for multiple occurrences of C=C groups followed by multiple C's, characteristic of isoprene units
-    for atom in mol.GetAtoms():
-        if atom.GetSymbol() == 'C' and atom.GetDegree() == 3:
-            neighbors = atom.GetNeighbors()
-            if sum(1 for n in neighbors if n.GetSymbol() == 'C' and n.GetDegree() == 3) > 2:
-                # Likely part of a polyprenoid-like structure
-                long_chain_found = True
-                break
-    
-    if not long_chain_found:
-        return False, "No polyprenoid side chain found"
+        return False, "No 2,3-dimethoxybenzoquinone core found"
 
-    return True, "Contains ubiquinone core with polyprenoid side chain"
+    # Look for the polyprenoid side chain (identify by repeating isoprene units)
+    isoprene_unit = Chem.MolFromSmarts("CC(C)=C")  # Typical isoprene pattern
+    matches = mol.GetSubstructMatches(isoprene_unit)
+    if not matches or len(matches) < 2:  # Typically expect multiple repeats
+        return False, "No sufficient polyprenoid side chain found"
+
+    # Check for redox-active quinoid group
+    quinoid_pattern = Chem.MolFromSmarts("C1(=O)C=CC(=O)C=C1")  # Checking for quinoid pattern
+    if not mol.HasSubstructMatch(quinoid_pattern):
+        return False, "No redox-active quinoid group detected"
+
+    return True, "Contains ubiquinone core with adequate polyprenoid side chain and quinoid group"
