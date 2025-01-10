@@ -26,7 +26,7 @@ def is_glycosaminoglycan(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # More comprehensive patterns for polysaccharide detection
+    # More flexible patterns for polysaccharide detection
     # Look for multiple sugar units connected by glycosidic bonds
     glycosidic_pattern = Chem.MolFromSmarts("[OX2;H0][CX4][CX4][OX2;H0]")  # O-C-C-O
     sugar_ring_pattern = Chem.MolFromSmarts("[CX4][CX4][OX2]")  # C-C-O in ring
@@ -34,7 +34,7 @@ def is_glycosaminoglycan(smiles: str):
     glycosidic_matches = mol.GetSubstructMatches(glycosidic_pattern)
     sugar_ring_matches = mol.GetSubstructMatches(sugar_ring_pattern)
     
-    if len(glycosidic_matches) < 2 or len(sugar_ring_matches) < 2:
+    if len(glycosidic_matches) < 1 or len(sugar_ring_matches) < 1:
         return False, "Insufficient glycosidic bonds or sugar rings for a polysaccharide"
 
     # More comprehensive amino sugar detection
@@ -50,12 +50,12 @@ def is_glycosaminoglycan(smiles: str):
     for pattern in amino_sugar_patterns:
         amino_sugar_count += len(mol.GetSubstructMatches(pattern))
     
-    if amino_sugar_count < 2:  # Require at least 2 amino sugar residues
+    if amino_sugar_count < 1:  # Require at least 1 amino sugar residue
         return False, "Insufficient amino sugar residues for a glycosaminoglycan"
 
     # Check molecular weight - glycosaminoglycans are typically large molecules
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 500:  # Increased threshold
+    if mol_wt < 300:  # Lowered threshold
         return False, "Molecular weight too low for a glycosaminoglycan"
 
     # Count carbons, oxygens, and nitrogens
@@ -63,16 +63,11 @@ def is_glycosaminoglycan(smiles: str):
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
     
-    if c_count < 20:  # Increased minimum
+    if c_count < 10:  # Lowered minimum
         return False, "Too few carbons for a glycosaminoglycan"
-    if o_count < 8:  # Increased minimum
+    if o_count < 5:  # Lowered minimum
         return False, "Too few oxygens for a glycosaminoglycan"
-    if n_count < 2:  # Increased minimum
+    if n_count < 1:  # Lowered minimum
         return False, "Too few nitrogens for a glycosaminoglycan"
-
-    # Additional check for uronic acid (common in GAGs)
-    uronic_acid_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[CX4][OX2H1]")  # -C(=O)-C-OH
-    if not mol.HasSubstructMatch(uronic_acid_pattern):
-        return False, "No uronic acid detected (common in glycosaminoglycans)"
 
     return True, "Contains polysaccharide structure with significant amino sugar residues"
