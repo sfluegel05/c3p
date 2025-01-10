@@ -10,7 +10,7 @@ from rdkit.Chem import AllChem
 def is_N_acylglycine(smiles: str):
     """
     Determines if a molecule is an N-acylglycine based on its SMILES string.
-    An N-acylglycine is an N-acyl-amino acid where the amino acid is glycine.
+    An N-acylglycine is an N-acyl-amino acid where the amino acid specified is glycine.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -25,8 +25,12 @@ def is_N_acylglycine(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define SMARTS pattern for N-acylglycine
-    # Pattern: Acyl group attached to nitrogen which is connected to CH2-COOH (glycine residue)
-    n_acylglycine_pattern = Chem.MolFromSmarts("C(=O)NCC(=O)O")
+    # Pattern:
+    # Acyl group (C=O) attached to nitrogen (N) with degree 2 and one hydrogen
+    # Nitrogen connected to CH2 group
+    # CH2 connected to carboxylic acid or carboxylate group (C(=O)[O-] or C(=O)O)
+    n_acylglycine_pattern = Chem.MolFromSmarts("C(=O)[N;D2;H1][CH2][C](=O)[O;H1,-]")
+
     if n_acylglycine_pattern is None:
         return False, "Invalid SMARTS pattern for N-acylglycine"
 
@@ -57,16 +61,11 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 0,
+    'attempt': 1,
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': None,
-    'num_false_positives': None,
-    'num_true_negatives': None,
-    'num_false_negatives': None,
-    'num_negatives': None,
     'precision': None,
     'recall': None,
     'f1': None,
