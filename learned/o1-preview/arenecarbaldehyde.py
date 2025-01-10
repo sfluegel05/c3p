@@ -9,7 +9,7 @@ from rdkit import Chem
 def is_arenecarbaldehyde(smiles: str):
     """
     Determines if a molecule is an arenecarbaldehyde based on its SMILES string.
-    An arenecarbaldehyde is any aldehyde in which the carbonyl group (CHO) is attached directly to an aromatic moiety.
+    An arenecarbaldehyde is any aldehyde in which the carbonyl group is attached to an aromatic moiety.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -24,16 +24,15 @@ def is_arenecarbaldehyde(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define aldehyde group attached directly to aromatic ring, with aldehyde carbon not in a ring
-    # Pattern matches an aromatic atom [a] bonded to a carbon [C] with one hydrogen [H1],
-    # not in a ring [!R], double-bonded to oxygen [(=O)]
-    pattern = Chem.MolFromSmarts("[a][C;H1;!R](=O)")
+    # Define aldehyde group attached to aromatic ring
+    arenecarbaldehyde_pattern = Chem.MolFromSmarts("[a][CX3H1](=O)")
 
-    # Check for aldehyde group attached directly to aromatic ring
-    if not mol.HasSubstructMatch(pattern):
-        return False, "No aldehyde group attached directly to aromatic ring found"
+    # Check for aldehyde group attached to aromatic ring
+    if not mol.HasSubstructMatch(arenecarbaldehyde_pattern):
+        return False, "No aldehyde group attached to aromatic ring found"
 
-    return True, "Contains aldehyde group attached directly to aromatic moiety"
+    return True, "Contains aldehyde group attached to aromatic moiety"
+
 
 __metadata__ = {   
     'chemical_class': {   
@@ -55,9 +54,18 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 1,
-    'success': None,
-    'best': None,
+    'attempt': 0,
+    'success': True,
+    'best': True,
     'error': '',
-    'stdout': None
+    'stdout': None,
+    'num_true_positives': 150,
+    'num_false_positives': 4,
+    'num_true_negatives': 182407,
+    'num_false_negatives': 23,
+    'num_negatives': None,
+    'precision': 0.974025974025974,
+    'recall': 0.8670520231213873,
+    'f1': 0.9174311926605504,
+    'accuracy': 0.9998521228585199
 }
