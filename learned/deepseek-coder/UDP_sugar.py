@@ -27,17 +27,14 @@ def is_UDP_sugar(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for the uracil ring pattern (pyrimidine base)
-    uracil_pattern = Chem.MolFromSmarts("[nH0,nH1]1ccc(=O)[nH0,nH1]c1=O")
+    uracil_pattern = Chem.MolFromSmarts("[nH]1ccc(=O)[nH]c1=O")
     if not mol.HasSubstructMatch(uracil_pattern):
         return False, "No uracil ring found"
 
-    # Look for the ribose sugar attached to uracil - more general pattern
-    ribose_pattern = Chem.MolFromSmarts("[nH0,nH1]1ccc(=O)[nH0,nH1]c1=O[C@H]1[C@H](O)[C@H](O)[C@H](O)CO1")
+    # Look for the ribose sugar attached to uracil
+    ribose_pattern = Chem.MolFromSmarts("[nH]1ccc(=O)[nH]c1=O[C@H]1[C@H](O)[C@H](O)[C@H](O)CO1")
     if not mol.HasSubstructMatch(ribose_pattern):
-        # Relax the pattern to allow for variations in the ribose structure
-        ribose_pattern = Chem.MolFromSmarts("[nH0,nH1]1ccc(=O)[nH0,nH1]c1=O[C@H]1[C@H](O)[C@H](O)[C@H](O)C1")
-        if not mol.HasSubstructMatch(ribose_pattern):
-            return False, "No ribose sugar attached to uracil found"
+        return False, "No ribose sugar attached to uracil found"
 
     # Look for the diphosphate group (two phosphate groups in sequence)
     diphosphate_pattern = Chem.MolFromSmarts("[OX2]P(=O)([OX2])OP(=O)([OX2])[OX2]")
@@ -53,6 +50,7 @@ def is_UDP_sugar(smiles: str):
         return False, "No sugar moiety found"
 
     # Check if the diphosphate is linked to the sugar
+    # This is a bit tricky, but we can check if the diphosphate is connected to the sugar ring
     diphosphate_atoms = set()
     for match in diphosphate_matches:
         diphosphate_atoms.update(match)
