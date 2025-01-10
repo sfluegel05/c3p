@@ -21,14 +21,16 @@ def is_O_acyl_L_carnitine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for the carnitine backbone pattern with stereo-chemistry
+    # Look for the carnitine backbone pattern with stereochemistry
     carnitine_backbone_pattern = Chem.MolFromSmarts("[C@H](C[N+](C)(C)C)CC([O-])=O")
     if not mol.HasSubstructMatch(carnitine_backbone_pattern):
         return False, "No carnitine backbone found"
         
     # Look for ester linkage directly connected to an acyl group
-    ester_to_acyl_pattern = Chem.MolFromSmarts("O[C@H](CC([O-])=O)C(=O)[C!H0]")  # C!H0 ensures the acyl group attaches to carbonyl carbon
-    if not mol.HasSubstructMatch(ester_to_acyl_pattern):
+    # Allow for variety in acyl chains (e.g. include flexible atom counts or types)
+    ester_to_acyl_pattern = Chem.MolFromSmarts("O[C@H](CC([O-])=O)OC(=O)C")  # C after ester linkage to capture acyl part
+    acyl_variability_pattern = Chem.MolFromSmarts("O=C([CX4,CX3X2])O")  # Broader pattern for ester bond
+    if not mol.HasSubstructMatch(ester_to_acyl_pattern) or not mol.HasSubstructMatch(acyl_variability_pattern):
         return False, "No correct ester linkage found connecting to an acyl group"
 
     return True, "Contains L-carnitine backbone with ester linkage to an acyl group"
