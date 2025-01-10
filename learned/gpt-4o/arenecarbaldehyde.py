@@ -2,7 +2,6 @@
 Classifies: CHEBI:33855 arenecarbaldehyde
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_arenecarbaldehyde(smiles: str):
     """
@@ -21,28 +20,22 @@ def is_arenecarbaldehyde(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Detect aromaticity in the molecule
+    # Ensure aromaticity is set
     Chem.SanitizeMol(mol, Chem.SanitizeFlags.SANITIZE_SETAROMATICITY)
     
-    # Check for aldehyde group pattern (-C(=O)H)
+    # Check for aldehyde group pattern (C=O)
     aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)[#6]")
     aldehyde_matches = mol.GetSubstructMatches(aldehyde_pattern)
     if not aldehyde_matches:
         return False, "No aldehyde group found"
     
     # Check for aromatic moiety directly attached to the aldehyde carbon
-    aromatic_pattern = Chem.MolFromSmarts("a")
+    aromatic_ring_pattern = Chem.MolFromSmarts("[#6]a1aaaaa1")
     
     for match in aldehyde_matches:
         aldehyde_carbon_idx = match[0]
-        aromatic_neighbors = [neighbor.GetIdx() for neighbor in mol.GetAtomWithIdx(aldehyde_carbon_idx).GetNeighbors() if neighbor.GetIsAromatic()]
-        
-        if aromatic_neighbors:
-            for aromatic_atom_idx in aromatic_neighbors:
-                atom = mol.GetAtomWithIdx(aromatic_atom_idx)
-                if atom.GetDegree() > 1:  # More complex connectivity suggests being part of an aromatic system
-                    # Check if part of an aromatic ring or part of conjugation
-                    if mol.HasSubstructMatch(aromatic_pattern):
-                        return True, "Contains aldehyde group directly attached to an aromatic moiety"
+        for neighbor in mol.GetAtomWithIdx(aldehyde_carbon_idx).GetNeighbors():
+            if neighbor.GetIsAromatic() and mol.HasSubstructMatch(aromatic_ring_pattern):
+                return True, "Contains aldehyde group directly attached to an aromatic moiety"
     
     return False, "Aldehyde group not properly attached to aromatic moiety"
