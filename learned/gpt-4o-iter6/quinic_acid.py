@@ -23,14 +23,14 @@ def is_quinic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more generalized SMARTS pattern for cyclohexane with three or four oxy-groups and a carboxylic acid
-    quinic_acid_pattern = Chem.MolFromSmarts("C1C(O)C(O)C(O)C(C(=O)O)C1")
+    # Define a more generalized SMARTS pattern for cyclohexane with hydroxyl and carboxylic acid groups
+    quinic_acid_pattern = Chem.MolFromSmarts("[C@H]1(O)[C@@H](O)C(O)C(O)[C@@H](O)C1C(=O)O")
     if not mol.HasSubstructMatch(quinic_acid_pattern):
         return False, "Missing quinic acid backbone structure"
 
     # Look for modification patterns like caffeoyl or feruloyl
     caffeoyl_pattern = Chem.MolFromSmarts("c1ccc(O)c(O)c1/C=C/C(=O)O")
-    feruloyl_pattern = Chem.MolFromSmarts("c1cc(O)cc(OC)c1/C=C/C(=O)O")
+    feruloyl_pattern = Chem.MolFromSmarts("c1cc(O)c(OC)cc1/C=C/C(=O)O")
 
     caffeoyl_matches = mol.GetSubstructMatches(caffeoyl_pattern)
     feruloyl_matches = mol.GetSubstructMatches(feruloyl_pattern)
@@ -41,9 +41,9 @@ def is_quinic_acid(smiles: str):
         return True, "Quinic acid derivative with feruloyl group(s)"
 
     # Check for other common ester linkages using general patterns
-    ester_pattern = Chem.MolFromSmarts("C(=O)O[C@H]1C(C(O)C(=O))C(O)C[C@H]1O")
+    ester_pattern = Chem.MolFromSmarts("C(=O)O[C@H]1C([C@@H](O)C(=O))C(O)C[C@H]1O")
     if mol.HasSubstructMatch(ester_pattern):
-        return True, "Quinic acid derivative with some esterified oxy groups"
+        return True, "Quinic acid derivative with esterified oxy groups"
 
     # If nothing additional is matched, assume it's a form of base quinic acid
     return True, "Quinic acid with no recognized additional groups"
