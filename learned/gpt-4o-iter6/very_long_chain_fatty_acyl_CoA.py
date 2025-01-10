@@ -25,23 +25,37 @@ def is_very_long_chain_fatty_acyl_CoA(smiles: str):
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No CoA structure found"
 
-    # Find the longest carbon chain
-    carbon_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
-    longest_chain_length = 0
-    for atom in carbon_atoms:
-        # Using a breadth-first search to find the longest path from each carbon atom
-        queue = [(atom, 0)]
-        visited = set([atom.GetIdx()])
-        while queue:
-            current_atom, length = queue.pop(0)
-            if length > longest_chain_length:
-                longest_chain_length = length
-            
-            for neighbor in current_atom.GetNeighbors():
-                if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:
-                    queue.append((neighbor, length + 1))
-                    visited.add(neighbor.GetIdx())
+    # Substructure pattern for the carbonyl group linking the CoA and fatty acyl chain
+    carbonyl_pattern = Chem.MolFromSmarts("C(=O)SC")
+    carbonyl_match = mol.GetSubstructMatch(carbonyl_pattern)
+
+    if not carbonyl_match:
+        return False, "No carbonyl linked to CoA structure found"
+
+    # Starting from carbonyl carbon, find longest consecutive chain of carbon atoms
+    carbonyl_carbon = carbonyl_match[0]
+    coo_sulfur = carbonyl_match[2]
     
+    visited = set()
+    longest_chain_length = 0
+
+    def dfs(atom, length):
+        nonlocal longest_chain_length
+        visited.add(atom.GetIdx())
+        
+        # Update longest chain length
+        if length > longest_chain_length:
+            longest_chain_length = length
+
+        for neighbor in atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited and neighbor.GetIdx() != coo_sulfur:
+                dfs(neighbor, length + 1)
+
+    # Begin DFS from carbonyl carbon (while ensuring we don't count the sulfur/CoA link)
+    for atom in mol.GetAtomWithIdx(carbonyl_carbon).GetNeighbors():
+        if atom.GetAtomicNum() == 6 and atom.GetIdx() != coo_sulfur:
+            dfs(atom, 1)
+
     if longest_chain_length <= 22:
         return False, f"Longest carbon chain is {longest_chain_length}, must be greater than 22"
 
