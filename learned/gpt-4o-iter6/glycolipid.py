@@ -20,26 +20,25 @@ def is_glycolipid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return (None, "Invalid SMILES string")
-    
-    # Enhance lipid backbone patterns
+
+    # Look for a lipid backbone pattern, generalized to include sphingo-like lipids
     lipid_backbone_patterns = [
-        Chem.MolFromSmarts("C(COC(=O)[CX4])"),  # General glycerolipid ester linkage
-        Chem.MolFromSmarts("N[C@@H](C)[CX4]"),  # Amide linkage typical in sphingolipids
-        Chem.MolFromSmarts("[CH2]CCCCCCCCCCCCCCC"),  # Long alkane chain (common in lipids)
+        Chem.MolFromSmarts("C(COC(=O)[CX4])"),  # General ester linkage (e.g., glycerolipid)
+        Chem.MolFromSmarts("N[C@@H](C)[CX4]"),  # Amide linkage (e.g., typical in sphingolipids)
     ]
     
     if not any(mol.HasSubstructMatch(pat) for pat in lipid_backbone_patterns):
         return False, "No recognizable lipid backbone structure found"
 
-    # Improve glycosidic linkage pattern
-    glycosidic_linkage_pattern = Chem.MolFromSmarts("[OX2]C([OX2])[OX2]C")  # Typical glycosidic bond pattern
+    # Look for glycosidic linkage pattern
+    glycosidic_linkage_pattern = Chem.MolFromSmarts("C-O-C")
     if not mol.HasSubstructMatch(glycosidic_linkage_pattern):
         return False, "No glycosidic linkage detected"
 
-    # Comprehensive sugar moiety patterns
+    # Recognize a broad pattern for sugar moieties
     sugar_patterns = [
-        Chem.MolFromSmarts("C1OC([OX2])[CX4]([OX2])[C@H]([CX4]1)"),  # common pyranose forms
-        Chem.MolFromSmarts("C1OC(O)[CH](O)[C@@H]1[C@H]"),  # beta or alpha anomeric
+        Chem.MolFromSmarts("C1OC(O)C(O)C(O)C1"),  # Simple monosaccharide unit
+        Chem.MolFromSmarts("C1OC(C(O)C(O1))"),  # 1,2 linked sugar ring
     ]
 
     if not any(mol.HasSubstructMatch(pat) for pat in sugar_patterns):
