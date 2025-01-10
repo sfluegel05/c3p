@@ -21,12 +21,13 @@ def is_lactol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more general SMARTS pattern for lactol
-    lactol_pattern = Chem.MolFromSmarts("[C;R][O;R][C;R]([O])[OH]")  # Cyclic ether with hydroxyl group
+    # Define an improved SMARTS pattern for lactol
+    lactol_pattern = Chem.MolFromSmarts("[C;R]([OH])[O;R][C;R]")  # Cyclic structure with hydroxyl and ether linkage
+
     if not mol.HasSubstructMatch(lactol_pattern):
         return False, "No cyclic hemiacetal (lactol) pattern found"
 
     return True, "Contains cyclic hemiacetal (lactol) structure"
 
-# This function takes a SMILES string as input and returns True with a reason if it matches 
+# This function takes a SMILES string as input and returns True with a reason if it matches
 # the lactol structure, or False if it does not.
