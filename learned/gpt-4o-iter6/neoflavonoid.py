@@ -21,25 +21,28 @@ def is_neoflavonoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define enhanced benzopyran pattern and position-4 aryl attachment
-    benzopyran_pattern = Chem.MolFromSmarts("c1ccc2occc2c1")  # Refined for benzopyran
-    aryl_pattern = Chem.MolFromSmarts("c1ccc[cH]c1")  # Matching phenyl/aryl groups
-
-    # Find the benzopyran in the molecule
+    # Define benzopyran pattern with specified position for aryl attachment at position 4
+    # Benzopyran with a generic attachment site at position 4 (not specific, just used for matching)
+    benzopyran_pattern = Chem.MolFromSmarts("c1cc2ccocc2c1")
+    
+    # Define an aryl group pattern
+    aryl_pattern = Chem.MolFromSmarts("c1cccc(c1)")
+    
+    # Attempt to match the 1-benzopyran backbone
     benzopyran_matches = mol.GetSubstructMatches(benzopyran_pattern)
+    
     if not benzopyran_matches:
         return False, "No 1-benzopyran structure found"
 
-    # Check each benzopyran structure for an aryl group at position 4
+    # Verify position 4 aryl attachment by checking neighbors of atom at position 4
+    # In SMARTS indices, assume atom order in pattern as [_, _, _, aryl_position, ...]
     for match in benzopyran_matches:
-        # Assume the fourth atom in the match is indeed position 4 (considering connectivity)
-        pos_4_atom_idx = match[3]
+        pos_4_atom_idx = match[4]  # 4th position in benzopyran pattern
         atom = mol.GetAtomWithIdx(pos_4_atom_idx)
         
-        # Checking if any neighbor of pos_4_atom_idx is an aryl group
+        # Check if any neighbor of 4-position atom forms an aryl group
         for neighbor in atom.GetNeighbors():
-            # Check for aryl group attachment
-            if mol.HasSubstructMatch(aryl_pattern, atoms=[neighbor.GetIdx()]):
+            if mol.HasSubstructMatch(aryl_pattern, [neighbor.GetIdx()]):
                 return True, "Aryl substituent found at position 4"
     
     return False, "No aryl substitution at position 4 in the 1-benzopyran"
