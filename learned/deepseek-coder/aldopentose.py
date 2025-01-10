@@ -30,21 +30,29 @@ def is_aldopentose(smiles: str):
     if c_count != 5:
         return False, f"Expected exactly 5 carbons, found {c_count}"
 
-    # Check for explicit aldehyde group
-    aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)")
-    aldehyde_matches = mol.GetSubstructMatches(aldehyde_pattern)
-    if not aldehyde_matches:
-        return False, "No explicit aldehyde group found"
+    # Check for potential aldehyde group (explicit or in hemiacetal form)
+    # Explicit aldehyde pattern
+    explicit_aldehyde = Chem.MolFromSmarts("[CX3H1](=O)")
+    # Hemiacetal pattern (carbon attached to two oxygens, one single and one double bond)
+    hemiacetal_pattern = Chem.MolFromSmarts("[CX4]([OX2])([OX2])")
+    
+    if not (mol.HasSubstructMatch(explicit_aldehyde) or mol.HasSubstructMatch(hemiacetal_pattern)):
+        return False, "No potential aldehyde group found (explicit or in hemiacetal form)"
 
-    # Check for exactly 4 hydroxyl groups attached to the carbon backbone
-    hydroxyl_pattern = Chem.MolFromSmarts("[C][OX2H]")
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    if len(hydroxyl_matches) != 4:
-        return False, f"Expected exactly 4 hydroxyl groups attached to the carbon backbone, found {len(hydroxyl_matches)}"
+    # Check for 4 oxygen atoms (including those in hemiacetal/hemiketal forms)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if o_count != 5:
+        return False, f"Expected exactly 5 oxygens, found {o_count}"
 
-    # Check molecular weight (should be around 150 g/mol for aldopentoses)
+    # Check molecular weight (expanded range to accommodate different forms)
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 140 or mol_wt > 160:
+    if mol_wt < 130 or mol_wt > 170:
         return False, f"Molecular weight {mol_wt:.2f} is outside expected range for aldopentoses"
 
-    return True, "Contains exactly 5 carbons, an explicit aldehyde group, and exactly 4 hydroxyl groups attached to the carbon backbone"
+    # Check for at least 4 hydroxyl groups (including those in hemiacetal/hemiketal forms)
+    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
+    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
+    if len(hydroxyl_matches) < 4:
+        return False, f"Expected at least 4 hydroxyl groups, found {len(hydroxyl_matches)}"
+
+    return True, "Contains exactly 5 carbons, a potential aldehyde group, and appropriate oxygen/hydroxyl groups"
