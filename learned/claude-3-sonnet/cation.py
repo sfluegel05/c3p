@@ -28,7 +28,6 @@ def is_cation(smiles: str):
 
     # Calculate formal charges on each atom
     positive_charges = 0
-    negative_charges = 0
     positive_atoms = []
     
     for atom in mol.GetAtoms():
@@ -36,20 +35,41 @@ def is_cation(smiles: str):
         if formal_charge > 0:
             positive_charges += formal_charge
             positive_atoms.append(f"{atom.GetSymbol()}{atom.GetIdx()+1}")
-        elif formal_charge < 0:
-            negative_charges += abs(formal_charge)
     
-    # Calculate net charge
-    net_charge = positive_charges - negative_charges
+    # Look for specific cationic patterns
+    cationic_patterns = [
+        Chem.MolFromSmarts('[N+]'), # Any positively charged nitrogen
+        Chem.MolFromSmarts('[n+]'), # Any positively charged aromatic nitrogen
+        Chem.MolFromSmarts('[P+]'), # Phosphonium
+        Chem.MolFromSmarts('[S+]'), # Sulfonium
+        Chem.MolFromSmarts('[O+]'), # Oxonium
+        Chem.MolFromSmarts('[#7+]'), # Any positively charged nitrogen (alternative notation)
+        Chem.MolFromSmarts('[NH4+]'), # Ammonium
+        Chem.MolFromSmarts('[NH3+]'), # Primary ammonium
+        Chem.MolFromSmarts('[NH2+]'), # Secondary ammonium
+        Chem.MolFromSmarts('[NH+]'),  # Tertiary ammonium
+        Chem.MolFromSmarts('[N+](C)(C)(C)'), # Quaternary ammonium
+        Chem.MolFromSmarts('[Li+,Na+,K+,Rb+,Cs+,Fr+]'), # Alkali metals
+        Chem.MolFromSmarts('[Be+2,Mg+2,Ca+2,Sr+2,Ba+2,Ra+2]'), # Alkaline earth metals
+        Chem.MolFromSmarts('[#+1,#+2,#+3,#+4]') # Any atom with positive charge
+    ]
     
-    # If no charges present
+    # If no explicit positive charges found, check for matches to cationic patterns
     if positive_charges == 0:
-        return False, "No positive charges found"
+        for pattern in cationic_patterns:
+            if pattern is not None and mol.HasSubstructMatch(pattern):
+                matches = mol.GetSubstructMatches(pattern)
+                for match in matches:
+                    atom_idx = match[0]
+                    atom = mol.GetAtomWithIdx(atom_idx)
+                    positive_atoms.append(f"{atom.GetSymbol()}{atom_idx+1}")
+                positive_charges += len(matches)
+                
+    # If still no positive charges found
+    if positive_charges == 0:
+        return False, "No positive charges or cationic groups found"
     
-    # If net charge is not positive
-    if net_charge <= 0:
-        return False, f"Net charge ({net_charge}) is not positive"
-        
-    # Success case
+    # Success case - report all positive charges found
     charge_locations = ", ".join(positive_atoms)
-    return True, f"Found net positive charge ({net_charge}+) with positive charges on: {charge_locations}"
+    charge_str = f"{positive_charges}+" if positive_charges > 1 else "1+"
+    return True, f"Found {charge_str} charge with cationic centers on: {charge_locations}"
