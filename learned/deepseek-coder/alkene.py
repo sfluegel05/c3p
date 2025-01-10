@@ -25,6 +25,9 @@ def is_alkene(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
+    # Add hydrogens to the molecule
+    mol = Chem.AddHs(mol)
+
     # Check if the molecule is acyclic
     if not rdMolDescriptors.CalcNumRings(mol) == 0:
         return False, "Molecule contains rings"
