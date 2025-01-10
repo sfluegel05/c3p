@@ -21,15 +21,21 @@ def is_aliphatic_aldoxime(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Identify aliphatic aldoxime group (C=N-OH) linked to aliphatic carbon
-    # Ensure the context is aliphatic by excluding any aromatic atoms
-    aldoxime_pattern = Chem.MolFromSmarts('[C;!r][CX3]=N[OH]')
+    # Identify aldoxime group pattern (C=N-OH)
+    aldoxime_pattern = Chem.MolFromSmarts('[CX3]=N[OH]')
     if not mol.HasSubstructMatch(aldoxime_pattern):
-        return False, "No aliphatic aldoxime group found"
+        return False, "No aldoxime group found"
     
-    # Verify absence of aromatic bonds directly involving the oxime group
-    if mol.HasSubstructMatch(Chem.MolFromSmarts('[c][CX3](=N[OH])')):
-        return False, "Aromatic context detected around oxime, not strictly aliphatic"
+    # Verify the aldehyde precursor is aliphatic
+    # Aldehyde pattern before forming aldoxime would've been [CX3]=O
+    # Search for aliphatic carbons nearby the oxime group using broader exclusion of aromatic atoms
+    aliphatic_pattern = Chem.MolFromSmarts('[C;!r&!$(*=[#6;X3])]=N[OH]')
+    if not mol.HasSubstructMatch(aliphatic_pattern):
+        return False, "No aliphatic aldehyde source found for aldoxime"
+    
+    # Check for any aromatic atoms elsewhere to exclude aromatic systems throughout
+    if mol.HasSubstructMatch(Chem.MolFromSmarts('a')):
+        return False, "Aromatic structures detected elsewhere in the molecule"
 
     return True, "Contains aliphatic structure with aldoxime group"
 
