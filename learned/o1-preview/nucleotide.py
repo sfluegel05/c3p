@@ -24,37 +24,43 @@ def is_nucleotide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns for nucleobases
-    purine_pattern = Chem.MolFromSmarts('c1ncnc2nccc12')  # Purine ring
-    pyrimidine_pattern = Chem.MolFromSmarts('c1cncnc1')    # Pyrimidine ring
+    # Define substructures for nucleobases
+    purine_pattern = Chem.MolFromSmarts('n1cnc2c1ncnc2')
+    pyrimidine_pattern = Chem.MolFromSmarts('c1c[nH]c(=O)[nH]c1') # uracil
+    cytosine_pattern = Chem.MolFromSmarts('c1cc(nc(N)n1)=O')
+    thymine_pattern = Chem.MolFromSmarts('c1c(N)cc(=O)[nH]c1=O')
+    hypoxanthine_pattern = Chem.MolFromSmarts('n1c2ncnc2c(=O)[nH]c1')
+    xanthine_pattern = Chem.MolFromSmarts('n1c2ncnc2c(=O)[nH]c(=O)c1')
 
-    # Check for nucleobase
-    has_purine = mol.HasSubstructMatch(purine_pattern)
-    has_pyrimidine = mol.HasSubstructMatch(pyrimidine_pattern)
-    if not (has_purine or has_pyrimidine):
+    # Combine nucleobase patterns
+    nucleobase_patterns = [purine_pattern, pyrimidine_pattern, cytosine_pattern,
+                           thymine_pattern, hypoxanthine_pattern, xanthine_pattern]
+
+    has_nucleobase = any(mol.HasSubstructMatch(pat) for pat in nucleobase_patterns)
+    if not has_nucleobase:
         return False, "No nucleobase found"
 
-    # Define SMARTS pattern for pentose sugar (ribose or deoxyribose)
-    sugar_pattern = Chem.MolFromSmarts('[C@H]1([O])[C@@H]([O])[C@H]([O])[C@@H](CO)O1')  # Furanose ring
-    has_sugar = mol.HasSubstructMatch(sugar_pattern)
+    # Define pattern for sugar (allowing for ribose and deoxyribose)
+    sugar_pattern = Chem.MolFromSmarts('O[C@H]1[C@@H](O)[C@H](O)[C@@H](CO)O1')  # Ribose
+    deoxy_sugar_pattern = Chem.MolFromSmarts('O[C@H]1[C@@H](O)[C@H](CO)[C@@H](CO)O1')  # Deoxyribose
+    modified_sugar_pattern = Chem.MolFromSmarts('O[C@H]1[C@@H](O)[C@H](O)[C@@H](CO*)O1')  # Allows modifications
+
+    # Check for sugar
+    has_sugar = mol.HasSubstructMatch(sugar_pattern) or mol.HasSubstructMatch(deoxy_sugar_pattern) or mol.HasSubstructMatch(modified_sugar_pattern)
     if not has_sugar:
         return False, "No pentose sugar found"
 
-    # Define SMARTS pattern for nucleoside (nucleobase-sugar linkage)
-    nucleoside_pattern = Chem.MolFromSmarts('[nH]1[c,nH][c,n][c,n][c,n][c,n]1[C@H]2O[C@@H]([O])[C@H]([O])[C@@H](CO)O2')
-    has_nucleoside = mol.HasSubstructMatch(nucleoside_pattern)
-    if not has_nucleoside:
+    # Check for nucleoside linkage (nucleobase-sugar bond)
+    nucleoside_bond_pattern = Chem.MolFromSmarts('[$([nH]),$(n),$(N)]1[c,n]n[c,n][c,n][c,n]1[C@H]2O[C@H]([C@@H](O)[C@H](O)[C@@H]2O)')  # N-glycosidic bond
+    has_nucleoside_linkage = mol.HasSubstructMatch(nucleoside_bond_pattern)
+    if not has_nucleoside_linkage:
         return False, "No nucleoside linkage found"
 
-    # Define SMARTS pattern for phosphate group linked to 3' or 5' hydroxyl group
-    phosphate_pattern = Chem.MolFromSmarts('O[P](=O)(O)[O]C[C@H]1O[C@@H]([O])[C@H]([O])[C@@H](O1)CO')  # Phosphate ester
+    # Check for phosphate group attached to the sugar's 3' or 5' hydroxyl group
+    phosphate_pattern = Chem.MolFromSmarts('O[P](=O)(O)[O][C@H]')  # Phosphate ester linkage
     has_phosphate = mol.HasSubstructMatch(phosphate_pattern)
     if not has_phosphate:
-        # Check for phosphate at 3' position
-        phosphate_3prime_pattern = Chem.MolFromSmarts('O[P](=O)(O)[O][C@H]1O[C@H](CO)[C@@H]([O])[C@H]([O])C1')
-        has_phosphate_3prime = mol.HasSubstructMatch(phosphate_3prime_pattern)
-        if not has_phosphate_3prime:
-            return False, "No phosphate group attached to the sugar's 3' or 5' hydroxyl group"
+        return False, "No phosphate group attached to the sugar's 3' or 5' hydroxyl group"
 
     return True, "Molecule is a nucleotide with nucleobase, sugar, and phosphate group"
 
@@ -73,7 +79,7 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:33504',
                   'max_instances_in_prompt': 100,
                   'test_proportion': 0.1},
     'message': None,
-    'attempt': 0,
+    'attempt': 1,
     'success': True,
     'best': True,
     'error': '',
