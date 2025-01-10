@@ -20,14 +20,15 @@ def is_flavonoids(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Expanded and more generic SMARTS patterns for flavonoids
+    # Expanded SMARTS patterns for flavonoids covering more diverse structures
     flavonoid_smarts = [
-        "c1cc(O)c2c(c1)oc3c(c2=O)cc(O)c(c3)O",  # General flavonoid structure
+        "c1c(O)cc(O)c2c1oc3c(c2=O)ccc(=O)c3",  # General flavonoid backbone
+        "c1cc(O)c2c(c1)oc3c(c2=O)cc(O)c(c3)O",  # Flavonol backbone
         "c1cc2c(oc=c(O)c2=O)c3ccc(O)cc13",  # Isoflavonoid structure
-        "c1c(O)cc2c(c1)C(=O)c3c(cccc3)oc2",  # Neoflavonoid structure
-        "c1c(O)cc(O)cc1-c2ccc(=O)oc2",  # Chalcone structure
-        "[OH]c1c(O)cc(C(=O)CC2=CC=CC=C2)ccc1",  # Flavonone structure
-        "c1cc2c(c(c1)O)oc(=O)c3c2c(ccc3)O",  # Flavanol structure
+        "c1(C=O)cc(O)cc1-c2ccoc2",  # Chalcone structure
+        "c1c(O)cc(O)c2c1oc(c(c2=O)C)C",  # Flavanone structure
+        "[OH]c1c(O)cc(C(=O)C=C2C=CC=CC=2)ccc1",  # General structure with phenylpropane
+        "c1cc2c(c(c1O)O)oc(=O)c3c2c(ccc3)O",  # Flavone structure
         "[O][C@H]1COC(c2cc(O)cc(O)c2)c3cc(O)cc(O)c13"  # Glycosylated flavonoid
     ]
 
