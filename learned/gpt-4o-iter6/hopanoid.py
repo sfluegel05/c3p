@@ -20,17 +20,26 @@ def is_hopanoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Enhanced hopanoid patterns capturing more comprehensive diversity
+    # Define comprehensive hopanoid SMARTS patterns
     hopanoid_patterns = [
-        Chem.MolFromSmarts('[C@@]12CC[C@H]3[C@@]([C@H]4CC[C@@]5([C@@H](CC[C@]45)C)C[C@@]3(C)CC2)C1'),
-        Chem.MolFromSmarts('[C@]12CCC[C@@]3([C@@H](CC4([C@@H]([C@H](CC34)C)C)C[C@@]2C)C1)C'),
-        # Include patterns with common functional groups or modifications
-        Chem.MolFromSmarts('[C@@]12CC[C@H]3[C@]4([C@@H](C[C@H](O)[C@@]45)C)CCC[C@]35(C)CC2)C1'),
+        '[C@@H]1C[C@@H]2[C@@]3(CC[C@@H]4[C@]5(C[C@@H](CC5)C[C@@H]4C[C@]3(C)CC2)C)C1',
+        '[C@H]1[C@@H]2CC[C@@]3(C)[C@]([C@@H]4C[C@@H](CC4)C[C@@H]3C)[C@H]2CC1',
+        '[C@@H]1CC[C@@]2([C@H]([C@@H]3C[C@@H](CC3)[C@@]2(C)CC1)C)C',
+        # More hopanoid patterns can be added here
     ]
 
-    # Check if any of the patterns match
-    for pattern in hopanoid_patterns:
-        if mol.HasSubstructMatch(pattern):
-            return True, "Contains hopanoid hopane skeleton based on pentacyclic triterpenoid structure"
+    # Convert SMARTS to RDKit Mol objects
+    try:
+        hopanoid_mols = [Chem.MolFromSmarts(pattern) for pattern in hopanoid_patterns]
+    except Exception as e:
+        return None, f"Error in SMARTS pattern conversion: {e}"
+    
+    if any(hopanoid_mol is None for hopanoid_mol in hopanoid_mols):
+        return False, "Invalid SMARTS pattern detected, unable to match"
 
-    return False, "Hopanoid hopane skeleton not found"
+    # Check for matches with any of the defined patterns
+    for pattern in hopanoid_mols:
+        if pattern and mol.HasSubstructMatch(pattern):
+            return True, "Contains hopanoid skeleton with appropriate stereochemistry and pentacyclic structure"
+
+    return False, "Hopanoid structure not detected"
