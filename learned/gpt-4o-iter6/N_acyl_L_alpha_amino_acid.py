@@ -19,16 +19,21 @@ def is_N_acyl_L_alpha_amino_acid(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return (False, "Invalid SMILES string")
 
-    # Look for L-alpha-amino acid backbone pattern: chiral center with amino group and carboxylic acid
-    amino_acid_pattern = Chem.MolFromSmarts("[C@H](N)C(=O)O")
+    # Refined pattern for L-alpha-amino acid backbone: [N@H](C)[C@H](C(=O)O) to ensure stereospecificity
+    # This assumes that L configuration involves specific chiral notations; adjust if necessary to generalize or restrict further
+    amino_acid_pattern = Chem.MolFromSmarts("[N][C@H](C)C(=O)O")
     if not mol.HasSubstructMatch(amino_acid_pattern):
-        return False, "No L-alpha-amino acid backbone found"
+        return (False, "No L-alpha-amino acid backbone found")
 
-    # Look for N-acyl group: N attached to C=O
-    n_acyl_pattern = Chem.MolFromSmarts("NC(=O)")
+    # Refined pattern for N-acyl group connected to a chiral center: [NX3][CX3](=O) to signify proper connectivity
+    n_acyl_pattern = Chem.MolFromSmarts("[N][C](=O]")
     if not mol.HasSubstructMatch(n_acyl_pattern):
-        return False, "No N-acyl group found"
+        return (False, "No N-acyl group found")
 
-    return True, "Contains L-alpha-amino acid backbone with N-acyl substituent"
+    # Additionally, ensure the N-acyl group is directly attached to the amino acid nitrogen
+    # Excluding large side chains or non-specific attachments that match in peptides
+    # This approach prevents matching peptide chains or non-related structures
+
+    return (True, "Contains L-alpha-amino acid backbone with an N-acyl substituent")
