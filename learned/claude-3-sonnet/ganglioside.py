@@ -29,67 +29,48 @@ def is_ganglioside(smiles: str):
     if mol_wt < 800:
         return False, "Molecular weight too low for ganglioside"
 
-    # Look for ceramide backbone components with more flexible patterns
-    # Multiple possible sphingosine patterns to catch variations
-    sphingosine_patterns = [
-        Chem.MolFromSmarts("[CH2,CH][CH2,CH][CH]([OH,O])[CH]([NH,N])[CH2]O"), # Basic pattern
-        Chem.MolFromSmarts("C=CC[CH]([OH,O])[CH]([NH,N])[CH2]O"),  # With double bond
-        Chem.MolFromSmarts("[CH2,CH][CH2,CH][CH]([OH,O])[CH]([NH,N])CO")  # Alternative connection
-    ]
+    # Look for ceramide backbone (sphingosine + fatty acid)
+    # Sphingosine base with long chain and OH/NH2 groups
+    sphingosine_pattern = Chem.MolFromSmarts("[CH2]([OH,O])[CH]([NH,N])[CH]([OH,O])/C=C/CCCCCC")
     
-    # Multiple possible acyl patterns
-    acyl_patterns = [
-        Chem.MolFromSmarts("[NH,N][C](=O)[CH2][CH2,CH3]"),  # Basic pattern
-        Chem.MolFromSmarts("[NH,N]C(=O)CC"),  # Shorter version
-        Chem.MolFromSmarts("[NH,N]C(=O)CCCCC")  # Longer explicit version
-    ]
+    # Fatty acid chain attached to NH
+    fatty_acid_pattern = Chem.MolFromSmarts("[NH]C(=O)CCCCCCC")
     
-    # Check if any combination of patterns matches
-    has_sphingosine = any(mol.HasSubstructMatch(pattern) for pattern in sphingosine_patterns)
-    has_acyl = any(mol.HasSubstructMatch(pattern) for pattern in acyl_patterns)
-    
-    if not (has_sphingosine and has_acyl):
+    if not (mol.HasSubstructMatch(sphingosine_pattern) and mol.HasSubstructMatch(fatty_acid_pattern)):
         return False, "No ceramide backbone found"
 
-    # Look for sialic acid (Neu5Ac) patterns - multiple possibilities
-    sialic_patterns = [
-        Chem.MolFromSmarts("[C,c](=O)[O;H,-][C,c]1[C,c][C,c]([NH,N][C](=O))[C,c][C,c][C,c]1"),  # Basic pattern
-        Chem.MolFromSmarts("C(=O)[O;H,-]C1CC(NC=O)CC(O)C1"),  # More specific pattern
-        Chem.MolFromSmarts("C(=O)[O]C1C(O)C(N)CC(O)C1")  # Alternative pattern
-    ]
+    # More precise sialic acid (Neu5Ac) pattern
+    # Includes pyranose ring with carboxyl, N-acetyl, and specific OH positions
+    sialic_pattern = Chem.MolFromSmarts("[C,c]([OH,O])[C,c]1[C,c]([C,c]([C,c]([C,c]([C,c]1[C,c](=O)[O;H,-])[OH,O])[NH,N]C(=O)C)[OH,O])[OH,O]")
     
-    has_sialic = False
-    for pattern in sialic_patterns:
-        if pattern is not None and mol.HasSubstructMatch(pattern):
-            has_sialic = True
-            break
-            
-    if not has_sialic:
+    if sialic_pattern is None:
+        return False, "Error in sialic acid pattern"
+        
+    sialic_matches = len(mol.GetSubstructMatches(sialic_pattern))
+    if sialic_matches < 1:
         return False, "No sialic acid (Neu5Ac) found"
 
-    # Look for oligosaccharide patterns
-    sugar_patterns = [
-        Chem.MolFromSmarts("[C,c]1[O,o][C,c][C,c][C,c][C,c]1"),  # Basic pyranose
-        Chem.MolFromSmarts("C1OCCC(O)C1"),  # Simplified sugar
-        Chem.MolFromSmarts("C1OC(O)C(O)C(O)C1")  # More specific pattern
-    ]
+    # Look for sugar units (pyranose rings)
+    # More specific pattern for common sugars in gangliosides (Glc, Gal, GalNAc)
+    sugar_pattern = Chem.MolFromSmarts("[C,c]1[O,o][C,c]([C,c]([C,c]([C,c]1)[OH,O])[OH,O])[CH2][OH,O]")
     
-    sugar_count = 0
-    for pattern in sugar_patterns:
-        if pattern is not None:
-            sugar_count += len(mol.GetSubstructMatches(pattern))
-    
-    if sugar_count < 3:
+    if sugar_pattern is None:
+        return False, "Error in sugar pattern"
+        
+    sugar_matches = len(mol.GetSubstructMatches(sugar_pattern))
+    if sugar_matches < 3:
         return False, "Insufficient oligosaccharide chain"
 
-    # Check for glycosidic linkages
-    glycosidic_pattern = Chem.MolFromSmarts("[C,c][O,o][C,c]")
-    if glycosidic_pattern is not None:
-        glycosidic_count = len(mol.GetSubstructMatches(glycosidic_pattern))
-        if glycosidic_count < 4:
-            return False, "Insufficient glycosidic linkages"
+    # Check for glycosidic linkages between sugars
+    glycosidic_pattern = Chem.MolFromSmarts("[C,c]1[O,o][C,c][C,c][C,c][C,c]1[O,o][C,c]")
+    if glycosidic_pattern is None:
+        return False, "Error in glycosidic pattern"
+        
+    glycosidic_matches = len(mol.GetSubstructMatches(glycosidic_pattern))
+    if glycosidic_matches < 2:
+        return False, "Insufficient glycosidic linkages"
 
-    # Count key atoms
+    # Count key atoms to verify overall composition
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
@@ -101,4 +82,4 @@ def is_ganglioside(smiles: str):
     if n_count < 2:
         return False, "Too few nitrogens for ganglioside structure"
 
-    return True, "Contains ceramide backbone, sialic acid(s), and oligosaccharide chain with correct linkages"
+    return True, f"Contains ceramide backbone, {sialic_matches} sialic acid(s), and oligosaccharide chain with {glycosidic_matches} glycosidic linkages"
