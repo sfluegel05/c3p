@@ -21,9 +21,20 @@ def is_tertiary_amine_oxide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define tertiary amine oxide pattern [Nitrogen with three organic groups, one O-]
-    pattern = Chem.MolFromSmarts("[NX4+](~[O-])(~[C])(~[C])[C]")
-    if mol.HasSubstructMatch(pattern):
+    # Look for nitrogens with three organic groups and one oxygen with negative charge
+    n_atom_id = -1
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 7:  # Nitrogen
+            neighbors = atom.GetNeighbors()
+            if len(neighbors) == 4:  # Expecting three organic groups + oxygen with bond
+                oxygen_count = sum(1 for n in neighbors if n.GetAtomicNum() == 8 and n.GetFormalCharge() == -1)
+                if oxygen_count == 1:
+                    c_count = sum(1 for n in neighbors if n.GetAtomicNum() in [6] and n.GetFormalCharge() == 0)
+                    if c_count == 3:  # Three organic groups
+                        n_atom_id = atom.GetIdx()
+                        break
+
+    if n_atom_id != -1:
         return True, "Contains tertiary amine oxide structure with correct arrangement"
         
     return False, "Does not contain the correct tertiary amine oxide structure"
