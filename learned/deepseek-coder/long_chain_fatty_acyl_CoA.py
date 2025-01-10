@@ -28,20 +28,33 @@ def is_long_chain_fatty_acyl_CoA(smiles: str):
 
     # Look for CoA moiety pattern
     coa_pattern = Chem.MolFromSmarts("[NX3][CX4][CX4][SX2][CX3](=[OX1])")
-    if not mol.HasSubstructMatch(coa_pattern):
+    coa_matches = mol.GetSubstructMatches(coa_pattern)
+    if not coa_matches:
         return False, "No CoA moiety found"
 
-    # Look for thioester bond (S-C=O)
+    # Look for thioester bond (S-C=O) and ensure it is part of the CoA moiety
     thioester_pattern = Chem.MolFromSmarts("[SX2][CX3](=[OX1])")
     thioester_matches = mol.GetSubstructMatches(thioester_pattern)
-    if len(thioester_matches) == 0:
+    if not thioester_matches:
         return False, "No thioester bond found"
+
+    # Ensure the thioester bond is part of the CoA moiety
+    thioester_in_coa = False
+    for thioester_match in thioester_matches:
+        for coa_match in coa_matches:
+            if thioester_match[0] in coa_match and thioester_match[1] in coa_match:
+                thioester_in_coa = True
+                break
+        if thioester_in_coa:
+            break
+    if not thioester_in_coa:
+        return False, "Thioester bond not part of CoA moiety"
 
     # Find the carbon chain attached to the thioester bond
     fatty_acid_chain = []
-    for match in thioester_matches:
-        sulfur_idx = match[0]
-        carbon_idx = match[1]
+    for thioester_match in thioester_matches:
+        sulfur_idx = thioester_match[0]
+        carbon_idx = thioester_match[1]
         # Traverse the carbon chain starting from the thioester carbon
         current_atom = mol.GetAtomWithIdx(carbon_idx)
         visited = set()
