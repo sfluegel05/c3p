@@ -22,19 +22,15 @@ def is_2_oxo_monocarboxylic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for a carboxylic acid group
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
-    if not mol.HasSubstructMatch(carboxylic_acid_pattern):
-        return False, "No carboxylic acid group found"
+    # Look for a pattern matching a monocarboxylic acid with an adjacent 2-oxo group
+    pattern = Chem.MolFromSmarts("C(=O)[CX4,CX3][CX3](=O)[OX2H1]")
     
-    # Check for 2-oxo group on a carbon adjacent to the carboxyl carbon
-    # Pattern: carboxylic acid (C(=O)O) adjacent to a carbon with a double bonded oxygen (oxo group)
-    oxo_adjacent_pattern = Chem.MolFromSmarts("C(=O)C(=O)")
-    if mol.HasSubstructMatch(oxo_adjacent_pattern):
+    # Check if the pattern matches the molecule
+    if mol.HasSubstructMatch(pattern):
         return True, "Contains carboxylic acid group with adjacent 2-oxo substituent"
     else:
         return False, "No proximate 2-oxo group to carboxylic acid group found"
-        
+
 # Example Testing
 example_smiles = [
     "OC(=O)C(=O)CC1=CNC2=CC=C(O)C=C12",  # 3-(5-hydroxyindol-3-yl)pyruvic acid
