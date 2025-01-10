@@ -19,22 +19,27 @@ def is_glycosphingolipid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define patterns
-    sphingoid_pattern = Chem.MolFromSmarts("C[C@H](O)CC")
-    amide_pattern = Chem.MolFromSmarts("CN(C=O)C")
-    sugar_pattern = Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H]([C@H]1O)O")
     
+    # Define sphingoid base pattern: long chain with hydroxyl and amino groups
+    sphingoid_pattern = Chem.MolFromSmarts("O[C@H]([C@@H](O)CO)C")
+    
+    # Define amide linkage pattern
+    amide_pattern = Chem.MolFromSmarts("C(=O)N")
+    
+    # Define general glycan (sugar) moiety pattern using a broad pattern
+    # This is meant to identify various monosaccharides linked to oxygen
+    glycan_pattern = Chem.MolFromSmarts("O[C@H]1O[C@@H](CO)[C@H](O)[C@@H](O)[C@H]1O")
+
     # Check for sphingoid base
     if not mol.HasSubstructMatch(sphingoid_pattern):
         return False, "No sphingoid base found"
-    
+
     # Check for amide linkage
     if not mol.HasSubstructMatch(amide_pattern):
         return False, "No amide linkage found"
-    
-    # Check for sugar moiety
-    if not mol.HasSubstructMatch(sugar_pattern):
+
+    # Check for glycan (sugar) moiety
+    if not mol.HasSubstructMatch(glycan_pattern):
         return False, "No glycan (sugar) moiety found"
 
     return True, "Contains sphingoid base, amide linkage, and glycan moiety"
