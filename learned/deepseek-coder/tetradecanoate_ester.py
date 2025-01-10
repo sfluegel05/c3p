@@ -24,8 +24,8 @@ def is_tetradecanoate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the tetradecanoate ester pattern: 14-carbon chain with ester linkage
-    tetradecanoate_pattern = Chem.MolFromSmarts("CCCCCCCCCCCCC(=O)O")
+    # Define a more flexible tetradecanoate ester pattern: 14-carbon chain with ester linkage
+    tetradecanoate_pattern = Chem.MolFromSmarts("[CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4](=[OX1])[OX2]")
     
     # Check if the pattern is present in the molecule
     if not mol.HasSubstructMatch(tetradecanoate_pattern):
@@ -38,14 +38,14 @@ def is_tetradecanoate_ester(smiles: str):
         return False, "No ester groups found"
 
     # Check for the presence of a 14-carbon chain
-    carbon_chain_pattern = Chem.MolFromSmarts("CCCCCCCCCCCCC")
+    carbon_chain_pattern = Chem.MolFromSmarts("[CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4]")
     carbon_chain_matches = mol.GetSubstructMatches(carbon_chain_pattern)
     if len(carbon_chain_matches) < 1:
         return False, "No 14-carbon chain found"
 
     # Check molecular weight to ensure it's reasonable for a tetradecanoate ester
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 200:  # Tetradecanoate esters typically have MW > 200
+    if mol_wt < 250:  # Tetradecanoate esters typically have MW > 250
         return False, "Molecular weight too low for tetradecanoate ester"
 
     # Count carbons and oxygens
