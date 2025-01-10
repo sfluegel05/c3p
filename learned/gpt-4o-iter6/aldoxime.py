@@ -22,12 +22,18 @@ def is_aldoxime(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define aldoxime pattern
-    # Correct pattern to ensure C=N-OH, capturing E/Z isomers
-    aldoxime_pattern = Chem.MolFromSmarts("[#6][CX3](=[N][OX1H])")
+    # Define more elaborate aldoxime patterns
+    # The part N=O in oxime can be either to left or right
+    aldoxime_patterns = [
+        Chem.MolFromSmarts("[#6][CX3](=[N][OX1H])"), # Primary pattern matching RCH=NOH
+        Chem.MolFromSmarts("[#6][C](=[N]/O)"), # E isomer
+        Chem.MolFromSmarts("[#6][C](=[N]\\O)"), # Z isomer
+    ]
 
-    if mol.HasSubstructMatch(aldoxime_pattern):
-        return True, "Contains aldoxime functional group"
+    # Match against any of the patterns
+    for pattern in aldoxime_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return True, "Contains aldoxime functional group"
     
     return False, "No aldoxime functional group found"
 
