@@ -24,17 +24,9 @@ def is_organobromine_compound(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for presence of bromine
-    contains_bromine = any(atom.GetAtomicNum() == 35 for atom in mol.GetAtoms())
-    
-    if not contains_bromine:
-        return False, "No bromine atom found"
-    
-    # Enhanced querying for carbon-bromine bonds
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 35:  # Look for Br
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetAtomicNum() == 6:  # Check if it's bonded to a carbon
-                    return True, "Contains a carbon-bromine bond"
+    # Use SMARTS to directly query for carbon-bromine bonds
+    smarts_cb = Chem.MolFromSmarts("[C]-[Br]")
+    if mol.HasSubstructMatch(smarts_cb):
+        return True, "Contains a carbon-bromine bond"
     
     return False, "No carbon-bromine bond found"
