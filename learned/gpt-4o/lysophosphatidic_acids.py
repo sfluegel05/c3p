@@ -2,6 +2,7 @@
 Classifies: CHEBI:32957 lysophosphatidic acids
 """
 from rdkit import Chem
+from rdkit.Chem import Descriptors
 
 def is_lysophosphatidic_acids(smiles: str):
     """
@@ -22,28 +23,31 @@ def is_lysophosphatidic_acids(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for glycerol backbone - allowing flexible stereochemistry
-    # This encompasses several possible configurations to catch stereoisomers
+    # Look for glycerol backbone - it should include an ether group linking to a central carbon
     glycerol_pattern = Chem.MolFromSmarts("OCC(O)CO")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
 
-    # Check for the phosphate group; phosphoric acid monoester
-    phosphate_patterns = [
-        Chem.MolFromSmarts("OP(=O)(O)O"),  # Regular phosphate
-    ]
-    if not any(mol.HasSubstructMatch(p) for p in phosphate_patterns):
+    # Check for the phosphate group; phosphoric acid ester
+    phosphate_pattern = Chem.MolFromSmarts("OP(O)(O)=O")
+    if not mol.HasSubstructMatch(phosphate_pattern):
         return False, "No phosphate group found"
 
-    # Look for monoacyl group (-O-C(=O)R) - checking for esters
-    monoacyl_pattern = Chem.MolFromSmarts("C(=O)O")
-    acyl_matches = mol.GetSubstructMatches(monoacyl_pattern)
+    # Look for monoacyl group (-O-C(=O)-R) - only one such attachment should be present
+    acyl_pattern = Chem.MolFromSmarts("C(=O)O")
+    acyl_matches = mol.GetSubstructMatches(acyl_pattern)
     if len(acyl_matches) != 1:
         return False, f"Found {len(acyl_matches)} acyl groups, need exactly 1"
 
-    # Ensure no head groups like choline are present
+    # Ensure no additional head groups like choline are present
     choline_pattern = Chem.MolFromSmarts("OCC[N+](C)(C)C")
-    if mol.HasSubstructMatch(choline_pattern):
-        return False, "Choline head group found, not a lysophosphatidic acid"
+    inositol_pattern = Chem.MolFromSmarts("C1(O)C(O)C(O)C(O)C(O)C(O)1")
+    if mol.HasSubstructMatch(choline_pattern) or mol.HasSubstructMatch(inositol_pattern):
+        return False, "Found head group(s) such as choline or inositol, not a lysophosphatidic acid"
+
+    # Additional checkpoint: Verify there are no extra phospholipid features
+    num_phosphoryl_groups = Descriptors.CalcNumRotatableBonds(mol)
+    if num_phosphoryl_groups > 1:
+        return False, "Complex phospholipid structure detected, excessive rotatable bonds"
 
     return True, "Contains glycerol backbone, one acyl group, and a phosphate group without additional head groups"
