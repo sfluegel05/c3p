@@ -18,20 +18,15 @@ def is_1_phosphatidyl_1D_myo_inositol(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Define glycerol backbone with ester linkages (R1COO - glycerol - OOR2)
-    glycerol_ester_pattern = Chem.MolFromSmarts("[C@H](COP(=O)(O)[O:2])[O:3]C(=O)[C:4]")
-    if not mol.HasSubstructMatch(glycerol_ester_pattern):
-        return False, "No glycerol backbone with ester linkages"
 
-    # Define the phosphate linkage pattern connecting to the inositol ring
-    phosphate_linkage_pattern = Chem.MolFromSmarts("COP(=O)(O)O[C@H]1[C@@H](O)[C@H](O)[C@@H](O)[C@H](O)[C@H]1O") 
-    if not mol.HasSubstructMatch(phosphate_linkage_pattern):
-        return False, "No inositol phosphate linkage found"
+    # Define glycerol backbone with two ester linkages and a phospho group
+    glycerol_phospho_pattern = Chem.MolFromSmarts("O[C@@H]1COC2(=O)COP(=O)(O)O2")
+    if not mol.HasSubstructMatch(glycerol_phospho_pattern):
+        return False, "No glycerol backbone with phosphatidyl linkages found"
 
-    # Check for myo-inositol (cyclohexane with specific hydroxyl groups configuration)
-    inositol_pattern = Chem.MolFromSmarts("O[C@H]1[C@@H](O)[C@H](O)[C@@H](O)[C@H](O)[C@H]1")
-    if not mol.HasSubstructMatch(inositol_pattern):
+    # Define the myo-inositol ring structure with specific stereochemistry
+    myo_inositol_pattern = Chem.MolFromSmarts("O[C@@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@H]1O")
+    if not mol.HasSubstructMatch(myo_inositol_pattern):
         return False, "No myo-inositol ring found with correct hydroxyl configurations"
 
     return True, "Successfully matches 1-phosphatidyl-1D-myo-inositol structural features"
