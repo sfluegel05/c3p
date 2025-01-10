@@ -24,47 +24,47 @@ def is_3beta_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Multiple SMARTS patterns for steroid core to catch different variations
+    # Basic steroid core patterns - more flexible to catch different variations
     steroid_patterns = [
-        # Basic steroid core (more flexible version)
-        "[#6]~1~[#6]~[#6]~[#6]~2~[#6]~[#6]~[#6]~[#6]~3~[#6]~[#6]~[#6]~[#6]~4~[#6]~[#6]~[#6]~[#6]~[#6]~4~[#6]~3~[#6]~2~[#6]~1",
-        # Alternative pattern with more flexible ring fusion
-        "[#6]~1~[#6]~[#6]~[#6]~2~[#6]~[#6]~[#6]~3~[#6]~[#6]~[#6]~4~[#6]~[#6]~[#6]~[#6]~[#6]~4~[#6]~3~[#6]~2~[#6]~1",
-        # Pattern allowing for double bonds
-        "[#6]1[#6][#6][#6]2[#6][#6][#6]3[#6][#6][#6]4[#6][#6][#6][#6][#6]4[#6]3[#6]2[#6]1"
+        # Basic steroid core (cyclopentanoperhydrophenanthrene)
+        "[CH2,CH]1[CH2,CH][CH2,CH][C]2([CH2,CH]1)[CH2,CH][CH2,CH][C]1([CH2,CH]2)[CH2,CH][CH2,CH][CH2,CH]2[CH2,CH][CH2,CH][CH2,CH][C]12",
+        # Alternative pattern allowing for double bonds
+        "[#6]1[#6][#6][#6]2[#6][#6][#6]3[#6][#6][#6]4[#6][#6][#6][#6][#6]4[#6]3[#6]2[#6]1",
+        # Pattern for 5α-steroids
+        "[CH2,CH]1[CH2,CH][CH2,CH][C@@H]2[CH2,CH][CH2,CH][C@@H]3[CH2,CH][CH2,CH][CH2,CH]4[CH2,CH][CH2,CH][CH2,CH][C@]4(C)[C@H]3[CH2,CH]2[CH2,CH]1",
+        # Pattern for 5β-steroids
+        "[CH2,CH]1[CH2,CH][CH2,CH][C@H]2[CH2,CH][CH2,CH][C@@H]3[CH2,CH][CH2,CH][CH2,CH]4[CH2,CH][CH2,CH][CH2,CH][C@]4(C)[C@H]3[CH2,CH]2[CH2,CH]1"
     ]
-    
+
     has_steroid_core = False
     for pattern in steroid_patterns:
         if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
             has_steroid_core = True
             break
-            
+
     if not has_steroid_core:
         return False, "No steroid core structure found"
 
-    # Multiple patterns for 3beta-hydroxy group
+    # 3β-hydroxy group patterns with explicit stereochemistry
     beta_hydroxy_patterns = [
-        # Standard 3beta-OH pattern
-        '[H][C@@]1[C@@H](O)CC[C@]2',
-        # Alternative pattern with different representation
-        '[C@@H](O)CC[C@@]1',
-        # More general pattern for 3beta-OH
-        '[C@@H]1(O)[CH2][CH2]C',
-        # Pattern for cyclic systems with 3beta-OH
-        '[C@@H](O)[CH2][CH2][C@@]'
+        # Explicit 3β-OH pattern with correct stereochemistry
+        '[C@@H]1([OH1])[CH2][CH2][C@@]2',  # For 5α-steroids
+        '[C@@H]1([OH1])[CH2][CH2][C@]2',   # For 5β-steroids
+        # Alternative representation
+        '[H][C@@]1([OH1])CC[C@@]2',        # For 5α-steroids
+        '[H][C@@]1([OH1])CC[C@]2'          # For 5β-steroids
     ]
-    
-    has_beta_hydroxy = False
+
+    has_3beta_hydroxy = False
     for pattern in beta_hydroxy_patterns:
         if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
-            has_beta_hydroxy = True
+            has_3beta_hydroxy = True
             break
-            
-    if not has_beta_hydroxy:
+
+    if not has_3beta_hydroxy:
         return False, "No 3beta-hydroxy group found"
 
-    # Basic structural checks
+    # Structural validation
     # Count rings
     ri = mol.GetRingInfo()
     if ri.NumRings() < 4:
@@ -75,14 +75,16 @@ def is_3beta_hydroxy_steroid(smiles: str):
     if carbon_count < 17:
         return False, "Too few carbons for steroid structure"
 
-    # Count oxygens (should have at least one for the hydroxy group)
-    oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if oxygen_count < 1:
-        return False, "No oxygen atoms found"
+    # Additional check for fused ring system
+    fused_ring_pattern = Chem.MolFromSmarts("[R2][R2][R2][R2]")
+    if not mol.HasSubstructMatch(fused_ring_pattern):
+        return False, "Missing proper fused ring system"
 
-    # Additional check for sp3 carbons (steroids should have many)
-    sp3_carbons = len(mol.GetSubstructMatches(Chem.MolFromSmarts('[C^3]')))
-    if sp3_carbons < 10:
-        return False, "Too few sp3 carbons for steroid structure"
+    # Check for proper connectivity of rings
+    ring_atoms = set()
+    for ring in ri.AtomRings():
+        ring_atoms.update(ring)
+    if len(ring_atoms) < 16:  # Minimum atoms in steroid core
+        return False, "Insufficient ring system"
 
     return True, "Contains steroid core with 3beta-hydroxy group"
