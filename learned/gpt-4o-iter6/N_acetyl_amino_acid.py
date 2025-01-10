@@ -21,28 +21,26 @@ def is_N_acetyl_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for acetyl group directly attached to nitrogen in form: CC(=O)N where N is part of backbone
-    acetyl_amino_pattern = Chem.MolFromSmarts("CC(=O)N")
-    acetyl_matches = mol.GetSubstructMatches(acetyl_amino_pattern)
-    
+    # Look for acetyl group attached to nitrogen in form: CC(=O)N
+    acetyl_pattern = Chem.MolFromSmarts("CC(=O)N")
+    acetyl_matches = mol.GetSubstructMatches(acetyl_pattern)
     if not acetyl_matches:
         return False, "No acetyl group directly bonded to nitrogen found"
-    
-    # General pattern for an amino acid backbone allowing for chiral centers: N([*])C(C)([!R])C(=O)O
-    amino_acid_backbone_pattern = Chem.MolFromSmarts("[NX3;H2,H1;!$(NC=O)][C;!R]C(=O)O")
-    backbone_matches = mol.GetSubstructMatches(amino_acid_backbone_pattern)
-    
-    if not backbone_matches:
+
+    # General pattern for an amino acid: N[C;!R][CX4]C(=O)O (allow flexibility in R-group)
+    amino_acid_pattern = Chem.MolFromSmarts("[NX3][CX4][CX4,CX3][CX3](=O)[OX1-,OX2H1]")
+    amino_acid_matches = mol.GetSubstructMatches(amino_acid_pattern)
+    if not amino_acid_matches:
         return False, "No amino acid moiety found"
     
     # Ensure acetyl and amino acid patterns are part of the same structure
     for acetyl in acetyl_matches:
-        acetyl_nitrogen = acetyl[2]  # Nitro from acetyl group
-        for backbone in backbone_matches:
-            backbone_nitrogen = backbone[0]  # Nitro from amino acid
+        acetyl_nitrogen = acetyl[2]  # Nitrogen from acetyl group
+        for amino_acid in amino_acid_matches:
+            amino_acid_nitrogen = amino_acid[0]  
             
             # Check if the acetyl nitrogen is the same as the amino acid nitrogen
-            if acetyl_nitrogen == backbone_nitrogen:
+            if acetyl_nitrogen == amino_acid_nitrogen:
                 return True, "Contains acetyl group directly connected to an amino acid moiety"
     
     return False, "Acetyl group not directly connected to the correct amino acid moiety"
