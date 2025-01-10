@@ -22,30 +22,29 @@ def is_prostaglandin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a cyclopentane pattern with an alkyl chain and typical prostaglandin functional groups
-  # These include hydroxyl (-OH), ketone (=O), and carboxylic acid (-COOH)
-    prostaglandin_pattern = Chem.MolFromSmarts(
-        "[C@H]1[C@@H]([C@H](O)[C@@H]([C@H]1O)C=C)CCC(=O)C"  # Cyclopentane with chains
-    )
-    if prostaglandin_pattern is None:  # SMARTS parsing failed
-        return False, "Pattern parsing failed"
+    # Look for prostaglandin core cyclopentane structure with appropriate functionality
+    cyclopentane_pattern = Chem.MolFromSmarts("C1CCCC1")
+    if not mol.HasSubstructMatch(cyclopentane_pattern):
+        return False, "No cyclopentane ring found"
 
-    if not mol.HasSubstructMatch(prostaglandin_pattern):
-        return False, "Structure does not match typical prostaglandin cyclopentane pattern"
-
-    # Count key oxygens for groups - prostaglandins generally have multiple hydrophilic groups
+    # Count oxygens and key functional groups - separate patterns might be needed for these
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count < 3:  # Heuristic: Prostaglandins tend to have at least 3 oxygens
+    if o_count < 4:  # Prostglandins generally have multiple oxygens
         return False, "Too few oxygen atoms for typical prostaglandin"
 
-    # Check overall carbon count, prostaglandins usually have around 20 carbons
+    # Check carboxylic acid group presence: -COOH
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[OH]")
+    if not mol.HasSubstructMatch(carboxylic_acid_pattern):
+        return False, "Missing carboxylic acid group"
+
+    # Check for stereochemistry, as prostaglandins are known for this
+    chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
+    if len(chiral_centers) < 2:
+        return False, "Insufficient chirality; prostaglandins typically have chiral centers"
+
+    # Check the chain length to ensure it's around 20 carbons
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 15 or c_count > 25:
+    if c_count < 18 or c_count > 22:
         return False, f"Number of carbons is {c_count}, expected around 20 for prostaglandins"
 
-    # Check for significant stereochemistry - many prostaglandins are chiral
-    chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
-    if len(chiral_centers) < 1:
-        return False, "Chirality missing; prostaglandins are chiral molecules"
-
-    return True, "Structure contains features typical of prostaglandins: cyclopentane ring, multiple oxygens, specific stereochemistry"
+    return True, "Structure contains key features of prostaglandins: cyclopentane ring, carboxyl group, and stereochemistry"
