@@ -25,18 +25,23 @@ def is_porphyrins(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Improved Porphyrin SMARTS pattern
-    # Pattern description: Four pyrrole rings (c1[nH]cc1) with methine bridges (-C=) connecting them,
-    # typically forming a central cavity which might contain a metal ion.
-    porphyrin_pattern = Chem.MolFromSmarts("n1c(ccc1)-c2c(cnc3[nH]c(cc23)C)-c4[nH]ccc5cnc(cc5-c6ncccc6)c4")
+    # Define a more flexible SMARTS pattern for porphyrins
+    # Pattern description: Four pyrrole rings connected through methine groups, possibly forming a macrocycle
+    porphyrin_ring_pattern = Chem.MolFromSmarts("n1c(ccc1)-c2c(-c3[nH]ccc3)-c(-c4[nH]ccc4)n5cccc5")
     
-    # Check for porphyrin macrocycle structure
-    if not mol.HasSubstructMatch(porphyrin_pattern):
+    # Check for the porphyrin macrocycle structure
+    if not mol.HasSubstructMatch(porphyrin_ring_pattern):
         return False, "Structure does not match porphyrin macrocycle"
 
-    # Check for potential metal coordination, allowing for common metals found in porphyrins
-    metal_atoms = [atom for atom in mol.GetAtoms() if atom.GetSymbol() in ['Fe', 'Mg', 'Zn', 'Co', 'Ni', 'Cu', 'Mn']]
-    if len(metal_atoms) == 0:
-        return False, "No metal ion commonly associated with porphyrins found"
+    # Optional: Check presence of metal ions often found in porphyrins
+    metal_cations = ["Fe", "Mg", "Zn", "Co", "Ni", "Cu", "Mn"]
+    metal_atoms = [atom for atom in mol.GetAtoms() if atom.GetSymbol() in metal_cations]
+    
+    if len(metal_atoms) > 0:
+        return True, "Contains porphyrin macrocycle with metal coordination"
+    else:
+        # Return True if the porphyrin structure is detected, even if no metal is present
+        return True, "Contains porphyrin macrocycle without metal"
 
-    return True, "Contains porphyrin macrocycle with potential metal coordination"
+# Example usage:
+# is_porphyrins("CC(S)C1=C(C)C2=Cc3c(C(C)S)c(C)c4C=C5C(C)=C(CCC(O)=O)C6=[N+]5[Fe--]5(n34)n3c(=CC1=[N+]25)c(C)c(CCC(O)=O)c3=C6")
