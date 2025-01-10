@@ -2,15 +2,11 @@
 Classifies: CHEBI:143004 ultra-long-chain fatty acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdqueries
 
 def is_ultra_long_chain_fatty_acid(smiles: str):
     """
     Determines if a molecule is an ultra-long-chain fatty acid based on its SMILES string.
     An ultra-long-chain fatty acid is a very long-chain fatty acid with a chain length greater than C27.
-    Ultra-long-chain fatty acids are monocarboxylic acids with a linear hydrocarbon chain of more than
-    27 carbons, possibly including unsaturation and hydroxyl groups, but without significant branching
-    or cyclic structures.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -25,79 +21,48 @@ def is_ultra_long_chain_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for rings
-    if mol.GetRingInfo().NumRings() > 0:
-        return False, "Molecule contains ring structures"
-
     # Look for carboxylic acid group (-C(=O)OH)
     carboxylic_acid_pattern = Chem.MolFromSmarts('C(=O)[O;H1]')
     carboxy_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
     if not carboxy_matches:
         return False, "No carboxylic acid functional group found"
 
-    # Check for exactly one carboxylic acid group
-    if len(carboxy_matches) != 1:
-        return False, f"Found {len(carboxy_matches)} carboxylic acid groups, expected exactly 1"
+    # Get the carboxylic acid carbon atom index
+    carboxy_c_idx = carboxy_matches[0][0]
 
-    # Get the carbon atom of the carboxylic acid group
-    carboxylic_carbon_idx = carboxy_matches[0][0]
-    carboxylic_carbon = mol.GetAtomWithIdx(carboxylic_carbon_idx)
-
-    # Traverse the longest linear unbranched chain from the carboxylic carbon
+    # Initialize variables for DFS
     visited = set()
-    max_chain_length = traverse_chain(carboxylic_carbon, visited)
+    max_chain_length = [0]  # Use list for mutable integer in nested function
 
-    if max_chain_length > 27:
-        return True, f"Contains linear hydrocarbon chain of {max_chain_length} carbons"
-    else:
-        return False, f"Linear hydrocarbon chain is {max_chain_length} carbons, which is not greater than 27"
+    def dfs(atom_idx, current_length):
+        atom = mol.GetAtomWithIdx(atom_idx)
+        if atom.GetAtomicNum() != 6:
+            return
+        visited.add(atom_idx)
+        # Increment the chain length
+        current_length += 1
+        # Update max chain length
+        if current_length > max_chain_length[0]:
+            max_chain_length[0] = current_length
+        for neighbor in atom.GetNeighbors():
+            neighbor_idx = neighbor.GetIdx()
+            bond = mol.GetBondBetweenAtoms(atom_idx, neighbor_idx)
+            # Only traverse single or double bonds (to include unsaturations)
+            if bond.GetBondType() in (Chem.rdchem.BondType.SINGLE, Chem.rdchem.BondType.DOUBLE):
+                # Avoid cycles
+                if neighbor_idx not in visited:
+                    dfs(neighbor_idx, current_length)
+        visited.remove(atom_idx)
 
-def traverse_chain(atom, visited):
-    """
-    Recursively traverses the longest linear unbranched carbon chain starting from the given atom.
+    # Start DFS from the carboxylic acid carbon atom
+    dfs(carboxy_c_idx, 0)
 
-    Args:
-        atom (rdkit.Chem.Atom): The starting atom.
-        visited (set): Set of visited atom indices.
+    # The chain length includes the carboxylic acid carbon
+    chain_length = max_chain_length[0]
+    if chain_length > 27:
+        return True, f"Longest carbon chain is {chain_length} carbons"
 
-    Returns:
-        int: Length of the longest linear chain from the starting atom.
-    """
-    if atom.GetAtomicNum() != 6:
-        return 0  # Only consider carbon atoms
-
-    idx = atom.GetIdx()
-    if idx in visited:
-        return 0
-    visited.add(idx)
-
-    # Exclude atoms that are not hydrogen, carbon, oxygen (for hydroxyl groups), or nitrogen (for unsaturation)
-    allowed_atomic_nums = {1, 6, 7, 8}
-
-    neighbor_lengths = []
-    for neighbor in atom.GetNeighbors():
-        neighbor_idx = neighbor.GetIdx()
-        if neighbor_idx in visited:
-            continue
-        if neighbor.GetAtomicNum() not in allowed_atomic_nums:
-            return 0  # Disallow if other atoms are attached (e.g., branching)
-        if neighbor.GetAtomicNum() == 6:
-            bond = mol.GetBondBetweenAtoms(idx, neighbor_idx)
-            if bond.GetBondType() not in [Chem.rdchem.BondType.SINGLE, Chem.rdchem.BondType.DOUBLE]:
-                return 0  # Disallow triple bonds or unusual bond types
-            length = traverse_chain(neighbor, visited.copy()) + 1  # Include current carbon
-            neighbor_lengths.append(length)
-        elif neighbor.GetAtomicNum() in [8, 7]:
-            # Allow hydroxyl (-OH) or unsaturation (C=N) as substituents
-            continue
-        else:
-            # Disallow other heteroatoms
-            return 0
-
-    if neighbor_lengths:
-        return max(neighbor_lengths)
-    else:
-        return 1  # End of chain
+    return False, f"Longest carbon chain is {chain_length} carbons, which is not greater than 27"
 
 __metadata__ = {
     'chemical_class': {
