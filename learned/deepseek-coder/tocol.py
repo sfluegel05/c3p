@@ -27,9 +27,7 @@ def is_tocol(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for chroman-6-ol skeleton pattern
-    # The pattern should match the chroman-6-ol skeleton with a hydroxyl group at position 6
-    # This pattern is more flexible to account for different substituents and stereochemistry
-    chromanol_pattern = Chem.MolFromSmarts("[O]1[C@@H]([C])([C])([C])[C]2=C1C(=C([C])C(=C2)O)")
+    chromanol_pattern = Chem.MolFromSmarts("[O]1[C@@]([C])([C])([C])[C]2=C1C(=C([C])C(=C2)O)")
     if not mol.HasSubstructMatch(chromanol_pattern):
         return False, "No chroman-6-ol skeleton found"
 
@@ -43,7 +41,7 @@ def is_tocol(smiles: str):
 
     # Check if the chain is connected to the chroman-6-ol skeleton at position 2
     # We will use a more specific pattern to ensure the chain is attached at the correct position
-    tocol_pattern = Chem.MolFromSmarts("[O]1[C@@H]([C])([C])([C])[C]2=C1C(=C([C])C(=C2)O)[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]")
+    tocol_pattern = Chem.MolFromSmarts("[O]1[C@@]([C])([C])([C])[C]2=C1C(=C([C])C(=C2)O)[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]")
     if not mol.HasSubstructMatch(tocol_pattern):
         return False, "Hydrocarbon chain not connected at position 2 of the chroman-6-ol skeleton"
 
