@@ -11,6 +11,7 @@ def is_secondary_amine(smiles: str):
     """
     Determines if a molecule is a secondary amine based on its SMILES string.
     A secondary amine is derived from ammonia where two hydrogen atoms are replaced by hydrocarbyl groups.
+    Excludes amide nitrogens and other non-amine nitrogen functionalities.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -28,9 +29,9 @@ def is_secondary_amine(smiles: str):
     # Add explicit hydrogens to accurately count hydrogen atoms
     mol = Chem.AddHs(mol)
 
-    # Define SMARTS pattern for secondary amine
-    # Secondary amine nitrogen: N with valence 3, one hydrogen, connected to two non-hydrogen atoms
-    secondary_amine_pattern = Chem.MolFromSmarts("[N;X3;H1]([!H])[!H]")
+    # Define improved SMARTS pattern for secondary amine
+    # Nitrogen with one hydrogen, degree 3, not bonded to carbonyl carbon, oxygen, nitrogen, or sulfur
+    secondary_amine_pattern = Chem.MolFromSmarts("[N;H1;D3;!$(N-C(=O));!$(N-[O,N,S])]")
 
     # Search for secondary amine substructure
     if mol.HasSubstructMatch(secondary_amine_pattern):
@@ -53,7 +54,7 @@ __metadata__ = {'chemical_class': {'id': None,
                            'max_instances_in_prompt': 100,
                            'test_proportion': 0.1},
                 'message': None,
-                'attempt': 2,
+                'attempt': 3,
                 'success': True,
                 'best': True,
                 'error': '',
