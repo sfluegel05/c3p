@@ -7,7 +7,7 @@ def is_chalcogen(smiles: str):
     """
     Determines if a chemical entity is a chalcogen based on its SMILES string.
     Chalcogens include standalone atoms of oxygen (O), sulfur (S), selenium (Se), tellurium (Te), and polonium (Po),
-    as well as their isotopes.
+    as well as their isotopes. Avoids multi-atom species, charged, or radical states.
 
     Args:
         smiles (str): SMILES string of the chemical entity
@@ -29,8 +29,13 @@ def is_chalcogen(smiles: str):
     if mol.GetNumAtoms() == 1:
         atom = mol.GetAtomWithIdx(0)
         symbol = atom.GetSymbol()
-        if symbol in chalcogen_elements:
+        charge = atom.GetFormalCharge()
+        num_radicals = atom.GetNumRadicalElectrons()
+        
+        if symbol in chalcogen_elements and charge == 0 and num_radicals == 0:
             isotope = atom.GetIsotope()
             return True, f"Chemical entity is a chalcogen: {symbol} isotope {isotope}"
+        else:
+            return False, "Chalcogen atom is part of a complex, radical, or ion"
 
-    return False, "Chemical entity is not a chalcogen"
+    return False, "Chemical entity is not a standalone chalcogen atom"
