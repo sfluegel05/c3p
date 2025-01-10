@@ -22,26 +22,31 @@ def is_triterpenoid_saponin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Enhanced pattern for typical triterpenoid scaffolds
-    # Representative cyclic patterns: pentacyclic (e.g., oleanane, ursane) and tetracyclic (steroidal)
-    pentacyclic_pattern = Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2CCC4(C3)CCC5C4(CC5)C")  # Generalized pentacyclic pattern
-    tetracyclic_pattern = Chem.MolFromSmarts("C1CC2C3CC4C(C3)C2CC1C4C")  # Generalized steroidal
-
-    # Check for triterpenoid backbone
-    if not (mol.HasSubstructMatch(pentacyclic_pattern) or mol.HasSubstructMatch(tetracyclic_pattern)):
-        return False, "No identifiable triterpenoid backbone found"
-
-    # Glycosidic pattern check for glucopyranoside or more complex sugars
-    glycosidic_patterns = [
-        Chem.MolFromSmarts("O[C@H]1[C@@H](O)[C@@H](O)[C@H](O)[C@H](O1)"),  # Glucopyranoside
-        Chem.MolFromSmarts("O[C@H]1[C@@H](CO)[C@H](O)[C@H](O)[C@H](O1)"),  # Different linkage
+    # Triterpenoid backbone patterns (pentacyclic, dammarane, lupane, etc.)
+    triterpenoid_patterns = [
+        Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2CCC4(C3)CCC5C4(CC5)C"),   # Generalized pentacyclic
+        Chem.MolFromSmarts("C1CCC2CC3CCC4C(C)(C)C5CCC(C12)C45"),      # Oleanane
+        Chem.MolFromSmarts("C1CCC2CCCC3C2C4OC(C5)(CC3)CCC45"),        # Ursane
+        Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2=CC=C4C3=CC=C5[C@H](C4)C5")  # Dammarane
     ]
 
+    # Ensure at least one triterpenoid backbone is present
+    backbone_present = any(mol.HasSubstructMatch(pattern) for pattern in triterpenoid_patterns)
+    if not backbone_present:
+        return False, "No identifiable triterpenoid backbone found"
+
+    # Glycosidic patterns to detect possible sugar moieties
+    glycosidic_patterns = [
+        Chem.MolFromSmarts("O[C@H]1[C@@H](O)[C@@H](O)[C@H](O)[C@H](O1)"),        # Glucopyranoside
+        Chem.MolFromSmarts("O[C@H]1[C@@H](CO)[C@H](O)[C@H](O)[C@H](O1)"),       # Different linkage
+        Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O1)")        # Alternative stereochemistry
+    ]
+
+    # Check for presence and count of glycosidic linkages
     glycosidic_present = any(mol.HasSubstructMatch(pattern) for pattern in glycosidic_patterns)
     if not glycosidic_present:
         return False, "No glycosidic linkages detected in the structure"
 
-    # Count detected sugar moieties to ensure glycosidic presence
     sugar_count = sum(len(mol.GetSubstructMatches(pattern)) for pattern in glycosidic_patterns)
     if sugar_count < 1:
         return False, "Not enough sugar moieties detected"
