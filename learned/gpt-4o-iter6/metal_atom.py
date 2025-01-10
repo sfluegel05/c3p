@@ -32,7 +32,6 @@ def is_metal_atom(smiles: str):
     atom = mol.GetAtomWithIdx(0)
     atomic_num = atom.GetAtomicNum()
     symbol = atom.GetSymbol()
-    formal_charge = atom.GetFormalCharge()
 
     # List of atomic numbers for metal elements based on metallic properties
     metal_atomic_nums = [
@@ -44,13 +43,10 @@ def is_metal_atom(smiles: str):
         105, 106, 107, 108, 109, 110, 111, 112
     ]
 
-    # Check if the atomic number corresponds to a metal and charge is neutral
-    if atomic_num in metal_atomic_nums and formal_charge == 0:
+    # Check if the atomic number corresponds to a metal
+    if atomic_num in metal_atomic_nums:
         return True, f"The atom is a metal with symbol '{symbol}' and atomic number {atomic_num}"
 
-    if formal_charge != 0:
-        return False, f"The atom with symbol '{symbol}' and atomic number {atomic_num} is charged and not considered a neutral metal atom"
-    
     return False, f"The atom with symbol '{symbol}' and atomic number {atomic_num} is not a metal"
 
 # Example usage:
