@@ -5,16 +5,15 @@ Classifies: CHEBI:3098 bile acid
 Classifies: bile acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdDepictor
-from rdkit.Chem.rdchem import ChiralType
+from rdkit.Chem import AllChem
 
 def is_bile_acid(smiles: str):
     """
     Determines if a molecule is a bile acid based on its SMILES string.
     Bile acids are hydroxy-5beta-cholanic acids occurring in bile.
-    This function checks for the presence of a steroid nucleus with
-    specific ring sizes and fusion, hydroxyl groups at specific positions,
-    and a carboxylic acid side chain.
+    This function checks for the presence of the steroid nucleus with
+    correct stereochemistry (5β-configuration), hydroxyl groups, and
+    a side chain ending with a carboxylic acid or its derivatives.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -29,54 +28,47 @@ def is_bile_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Ensure molecule has 4 rings
-    ring_info = mol.GetRingInfo()
-    ring_counts = ring_info.NumRings()
-    if ring_counts < 4:
-        return False, f"Molecule has {ring_counts} rings, expected at least 4 for steroid nucleus"
+    # Define SMARTS pattern for steroid nucleus with 5β-configuration
+    steroid_smarts = """
+    [C@H]1CC[C@H]2[C@@H]1CC[C@H]3[C@@H]2CC[C@@]4(CC[C@@H](O)C4)C3
+    """
+    steroid_pattern = Chem.MolFromSmarts(steroid_smarts)
+    if steroid_pattern is None:
+        return False, "Error parsing steroid SMARTS pattern"
 
-    # Get ring systems and check ring sizes
-    rings = ring_info.AtomRings()
-    ring_sizes = [len(ring) for ring in rings]
-    ring_sizes.sort()
-    # Steroid nucleus has three 6-membered rings and one 5-membered ring
-    if ring_sizes[:4] != [5, 6, 6, 6]:
-        return False, f"Ring sizes are {ring_sizes[:4]}, expected [5, 6, 6, 6]"
+    # Check for steroid nucleus with correct stereochemistry
+    if not mol.HasSubstructMatch(steroid_pattern):
+        return False, "Steroid nucleus with 5β-configuration not found"
 
-    # Check for fused ring system
-    fused = Chem.GetSymmSSSR(mol)
-    if len(fused) < 4:
-        return False, "Rings are not fused into a steroid nucleus"
-
-    # Check for carboxylic acid group (-C(=O)OH)
+    # Check for carboxylic acid or derivatives in side chain
+    # Carboxylic acid pattern
     carboxylic_acid_pattern = Chem.MolFromSmarts('C(=O)[O;H]')
-    if not mol.HasSubstructMatch(carboxylic_acid_pattern):
-        return False, "Carboxylic acid group not found"
+    # Ester pattern
+    ester_pattern = Chem.MolFromSmarts('C(=O)O[C]')
+    # Amide pattern (including glycine and taurine conjugates)
+    amide_pattern = Chem.MolFromSmarts('C(=O)N')
+    # Sulfonate pattern (for taurine conjugates)
+    sulfonate_pattern = Chem.MolFromSmarts('S(=O)(=O)[O-,O][C,N]')
 
-    # Check for hydroxyl groups (-OH)
-    hydroxyl_pattern = Chem.MolFromSmarts('[OX2H]')
+    side_chain_match = False
+    for pattern in [carboxylic_acid_pattern, ester_pattern, amide_pattern, sulfonate_pattern]:
+        if mol.HasSubstructMatch(pattern):
+            side_chain_match = True
+            break
+
+    if not side_chain_match:
+        return False, "No carboxylic acid or derivative found in side chain"
+
+    # Check for at least one hydroxyl group (-OH)
+    hydroxyl_pattern = Chem.MolFromSmarts('[CX4][CX3](O)[CH]')
+    hydroxyl_pattern2 = Chem.MolFromSmarts('[#6][#6][OX2H]')
     hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    if len(hydroxyl_matches) == 0:
+    hydroxyl_matches2 = mol.GetSubstructMatches(hydroxyl_pattern2)
+    total_hydroxyls = len(hydroxyl_matches) + len(hydroxyl_matches2)
+    if total_hydroxyls == 0:
         return False, "No hydroxyl groups found"
 
-    # Optional: Check for specific stereochemistry at position 5 (5β-configuration)
-    # Get atom at position 5 (assuming numbering starting from ring A)
-    try:
-        # Generate 3D coordinates for stereochemistry
-        rdDepictor.Compute2DCoords(mol)
-        Chem.AssignStereochemistry(mol, force=True, cleanIt=True)
-        atom5 = mol.GetAtomWithIdx(4)  # Zero-based indexing
-        if atom5.GetChiralTag() != ChiralType.CHI_TETRAHEDRAL_CCW:
-            return False, "5β-configuration not found"
-    except:
-        return False, "Error checking stereochemistry at position 5"
-
-    # Additional check: Verify presence of hydroxyl groups at specific positions
-    # This requires mapping atom indices to positions, which can be complex
-    # For simplicity, we'll skip this detailed check
-
-    return True, "Molecule contains steroid nucleus with correct ring fusion, carboxylic acid, hydroxyl groups, and 5β-configuration"
-
+    return True, "Molecule matches bile acid structure with correct stereochemistry and side chain"
 
 __metadata__ = {
     'chemical_class': {
