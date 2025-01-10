@@ -27,6 +27,7 @@ def is_neoflavonoid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define a more flexible 1-benzopyran (chromene) core structure
+    # The pattern matches a 6-membered ring with an oxygen and a double bond
     benzopyran_pattern = Chem.MolFromSmarts("[O]1[C]2=[C][C]=[C][C]=[C]2[C]1")
     if not mol.HasSubstructMatch(benzopyran_pattern):
         return False, "No 1-benzopyran (chromene) core found"
