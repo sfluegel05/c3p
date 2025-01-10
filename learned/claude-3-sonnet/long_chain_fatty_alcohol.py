@@ -9,6 +9,31 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
+def count_chain_carbons(mol, start_idx, visited=None):
+    """
+    Recursively count connected carbons starting from a given atom
+    """
+    if visited is None:
+        visited = set()
+    
+    if start_idx in visited:
+        return 0
+    
+    visited.add(start_idx)
+    atom = mol.GetAtomWithIdx(start_idx)
+    
+    if atom.GetAtomicNum() != 6:  # Not carbon
+        return 0
+        
+    count = 1  # Count current carbon
+    
+    # Recursively explore neighbors
+    for neighbor in atom.GetNeighbors():
+        if neighbor.GetIdx() not in visited:
+            count += count_chain_carbons(mol, neighbor.GetIdx(), visited)
+            
+    return count
+
 def is_long_chain_fatty_alcohol(smiles: str):
     """
     Determines if a molecule is a long-chain fatty alcohol based on its SMILES string.
@@ -25,53 +50,58 @@ def is_long_chain_fatty_alcohol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for at least one hydroxyl group
+    # Look for hydroxyl groups
     hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
     if not mol.HasSubstructMatch(hydroxyl_pattern):
         return False, "No hydroxyl group found"
     
-    # Count carbons
-    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if carbon_count < 13:
-        return False, f"Carbon chain too short (C{carbon_count}, need C13-C22)"
-    if carbon_count > 22:
-        return False, f"Carbon chain too long (C{carbon_count}, need C13-C22)"
-        
-    # Check if molecule is primarily a hydrocarbon chain
-    # Count proportion of carbons and hydrogens vs other atoms
-    total_atoms = mol.GetNumAtoms()
-    h_count = sum(atom.GetTotalNumHs() for atom in mol.GetAtoms())
-    ch_proportion = (carbon_count + h_count) / (total_atoms + h_count)
+    # Get hydroxyl carbons (carbons attached to OH)
+    hydroxyl_carbon_pattern = Chem.MolFromSmarts("[C][OH]")
+    hydroxyl_carbons = mol.GetSubstructMatches(hydroxyl_carbon_pattern)
     
-    if ch_proportion < 0.75:  # At least 75% should be C and H
+    if not hydroxyl_carbons:
+        return False, "No carbon-hydroxyl bonds found"
+    
+    # Count total carbons
+    total_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    
+    if total_carbons < 13:
+        return False, f"Too few total carbons (C{total_carbons}, need C13-C22)"
+    if total_carbons > 22:
+        # Allow slightly more carbons to account for branching
+        if total_carbons > 25:
+            return False, f"Too many carbons (C{total_carbons}, need C13-C22)"
+    
+    # Check for longest carbon chain from each hydroxyl carbon
+    max_chain_length = 0
+    for match in hydroxyl_carbons:
+        chain_length = count_chain_carbons(mol, match[0])
+        max_chain_length = max(max_chain_length, chain_length)
+    
+    if max_chain_length < 13:
+        return False, f"Longest carbon chain too short (C{max_chain_length}, need C13-C22)"
+    if max_chain_length > 22:
+        return False, f"Longest carbon chain too long (C{max_chain_length}, need C13-C22)"
+    
+    # Check for excessive rings
+    ring_count = rdMolDescriptors.CalcNumRings(mol)
+    if ring_count > 2:  # Allow up to 2 rings
+        return False, f"Too many rings ({ring_count}) for a fatty alcohol"
+    
+    # Check proportion of C and H atoms
+    h_count = sum(atom.GetTotalNumHs() for atom in mol.GetAtoms())
+    total_atoms = mol.GetNumAtoms() + h_count
+    ch_count = total_carbons + h_count
+    
+    if ch_count / total_atoms < 0.7:  # Allow more heteroatoms
         return False, "Not primarily a hydrocarbon structure"
     
-    # Check for excessive rings - fatty alcohols typically have 0-1 rings
-    ring_count = rdMolDescriptors.CalcNumRings(mol)
-    if ring_count > 1:
-        return False, f"Too many rings ({ring_count}) for a fatty alcohol"
-        
-    # Check for longest carbon chain
-    # Convert to alkane by replacing all bonds with single bonds
-    mol_alkane = Chem.RWMol(mol)
-    for bond in mol_alkane.GetBonds():
-        bond.SetBondType(Chem.BondType.SINGLE)
+    # Count other heteroatoms (excluding O from OH groups)
+    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
+    s_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 16)
+    p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
     
-    # Find longest carbon chain
-    longest_chain = 0
-    for atom in mol_alkane.GetAtoms():
-        if atom.GetAtomicNum() == 6:  # Carbon atom
-            paths = Chem.FindAllPathsOfLengthN(mol_alkane, 20, useBonds=False, useHs=False)
-            for path in paths:
-                chain_length = sum(1 for idx in path if mol_alkane.GetAtomWithIdx(idx).GetAtomicNum() == 6)
-                longest_chain = max(longest_chain, chain_length)
+    if n_count + s_count + p_count > 2:
+        return False, "Too many heteroatoms for a fatty alcohol"
     
-    if longest_chain < 13:
-        return False, f"Longest continuous carbon chain too short (C{longest_chain}, need C13-C22)"
-        
-    # Additional check for aromatic character
-    aromatic_atoms = sum(1 for atom in mol.GetAtoms() if atom.GetIsAromatic())
-    if aromatic_atoms > 6:  # Allow one benzene ring
-        return False, "Too many aromatic atoms for a fatty alcohol"
-    
-    return True, f"Contains hydroxyl group with appropriate carbon chain length (C{carbon_count})"
+    return True, f"Contains hydroxyl group with appropriate carbon chain length (C{max_chain_length})"
