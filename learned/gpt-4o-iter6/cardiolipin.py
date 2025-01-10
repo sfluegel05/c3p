@@ -21,24 +21,19 @@ def is_cardiolipin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS for glycerol backbone: C-C-C with hydroxyl groups
-    glycerol_pattern = Chem.MolFromSmarts("C(CO)CO")
+    # SMARTS for identifying the glycerol backbone linked to phosphates
+    glycerol_with_phosphate_pattern = Chem.MolFromSmarts("O[C@H](COP(=O)(O)O)[C@@H](O)CO")
 
-    # SMARTS for phosphatidic acid moiety: phosphate group linked to glycerol
-    phosphatidic_acid_pattern = Chem.MolFromSmarts("COP(O)(O)=O")
-    
-    # Search for the presence of a glycerol backbone
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone found"
-    
-    # Search for at least two phosphatidic acid moieties
+    # SMARTS for phosphatidic acid moiety: a phosphate-linked glycerol with ester linkages
+    phosphatidic_acid_pattern = Chem.MolFromSmarts("C(=O)O[C@H](COP(O)(=O)O)")
+
+    # Match glycerol backbone connected to phosphates
+    if not mol.HasSubstructMatch(glycerol_with_phosphate_pattern):
+        return False, "Glycerol backbone with phosphate not found"
+
+    # Ensure there are two phosphatidic acid linkages
     phos_matches = mol.GetSubstructMatches(phosphatidic_acid_pattern)
     if len(phos_matches) < 2:
         return False, f"Found {len(phos_matches)} phosphatidic acid moieties, need at least 2"
-
-    # Further checks to evaluate two sets of glycerols linked through phosphate groups (cardiolipin structure)
-    # Assuming enough ester linkages are present based on simplification
-    if Chem.MolFromSmarts("COP(=O)(OCCP(OC)=O)OC").HasSubstructMatch(mol):
-        return False, "Cardiolipin-like structure not found"
 
     return True, "Molecule matches cardiolipin structure"
