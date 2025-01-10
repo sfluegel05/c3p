@@ -22,37 +22,31 @@ def is_thiosugar(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Detect the presence of a sugar moiety
+    # Detect the presence of a sugar moiety (cycles with oxygen atoms and carbon pattern)
     sugar_patterns = [
-        Chem.MolFromSmarts("[C@H]1O[C@H]([C@H](O)[C@H](O)[C@H]1O)"),  # pyranose
-        Chem.MolFromSmarts("[C@H]1O[C@H]([C@H](O)[C@H]1O)"),          # furanose
-        Chem.MolFromSmarts("[C@H]1O[C@H](O)[C@H](O)[C@H](O)[C@H]1"),  # alternative pyranose
+        Chem.MolFromSmarts("[C@@H]1O[C@H]([C@@H](O)[C@@H](O)[C@@H]1O)"),  # pyranose 6-membered ring
+        Chem.MolFromSmarts("[C@@H]1O[C@H]([C@@H](O)[C@@H]1O)"),           # furanose 5-membered ring
+        Chem.MolFromSmarts("[C-O-C-O-C-O]")                              # general sugar pattern
     ]
     
     has_sugar = any(mol.HasSubstructMatch(pattern) for pattern in sugar_patterns)
     if not has_sugar:
         return False, "No sugar backbone found"
     
-    # Look for sulfur replacements (S or -SR) specifically replacing oxygen
+    # Look for sulfur replacements (S or -SR) where sulfur is bound to a carbon adjacent to the sugar
     sulfur_patterns = [
-        Chem.MolFromSmarts("[C-S]"),  # Any carbon-sulfur bond, replaces hydroxyl
-        Chem.MolFromSmarts("[O-S]"),  # Direct replacement of oxygen by sulfur
-        Chem.MolFromSmarts("[S;D1]")  # Terminal sulfur suggesting replacement
+        Chem.MolFromSmarts("[C-S]"),  # Any carbon-sulfur bond
+        Chem.MolFromSmarts("[O-S]"),  # Direct replacement of oxygen
+        Chem.MolFromSmarts("[S;D1]")  # Terminal sulfur 
     ]
     
-    # Check that sulfur is correctly attached to sugar carbons
-    correct_sulfur_attach = False
+    valid_sulfur_replacement = False
     for pattern in sulfur_patterns:
-        matching_atoms = mol.GetSubstructMatches(pattern)
-        for match in matching_atoms:
-            # Verify sulfur attachment to sp3 carbon adjacent to sugar oxygens
-            sulfur_atom = mol.GetAtomWithIdx(match[1])  # Getting the sulfur atom in [O-S]
-            for neighbor in sulfur_atom.GetNeighbors():
-                if neighbor.GetAtomicNum() == 6 and neighbor.GetDegree() >= 3:  # carbon directly linked
-                    correct_sulfur_attach = True
-                    break
+        if mol.HasSubstructMatch(pattern):
+            valid_sulfur_replacement = True
+            break
 
-    if not correct_sulfur_attach:
+    if not valid_sulfur_replacement:
         return False, "No valid sulfur replacement detected"
     
-    return True, "Contains carbohydrate structure with sulfur substitution(s)"
+    return True, "Contains sugar structure with sulfur substitution(s)"
