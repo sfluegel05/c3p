@@ -10,7 +10,7 @@ def is_germacranolide(smiles: str):
     
     Args:
         smiles (str): SMILES string of the molecule
-
+        
     Returns:
         bool: True if the molecule is a germacranolide, False otherwise
         str: Reason for classification
@@ -21,14 +21,17 @@ def is_germacranolide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Refined SMARTS pattern for a germacranolide (fused bicyclic + lactone)
-    # This pattern captures:
-    # - A bicyclic decalin-like core: Two fused six-membered rings
-    # - A five-membered lactone ring fused or attached to the core
-    germacranolide_pattern = Chem.MolFromSmarts("C1=CCC2C(C=CC2O1)CC(=O)O")
+    # Refined pattern: a decalin-like motif, a lactone ring, and flexible connections
+    # We can try to match:
+    # - A flexible terpene-like skeleton: Possible variants of bicyclic and lactone-containing motifs
+    # For simplicity, an initial SMARTS including a germacrane with potential lactones:
+    germacranolide_pattern1 = Chem.MolFromSmarts("C1CC2CCC(C1)C(C)CC2OC(=O)[C;R2]")  # A basic example germacrane-lactone
     
-    # Check for germacranolide structure
-    if not mol.HasSubstructMatch(germacranolide_pattern):
-        return False, "No germacranolide-like structure found"
+    # You might need multiple patterns due to variations in structure
+    # Consider also additional lactone-containing patterns
     
-    return True, "Contains a bicyclic germacrane skeleton with an embedded lactone group"
+    # Check for germacrane-like skeleton and lactone group
+    if mol.HasSubstructMatch(germacranolide_pattern1):
+        return True, "Contains germacranolide-like structure with terpene skeleton and lactone group"
+    
+    return False, "No identifiable germacranolide-like structure using current patterns"
