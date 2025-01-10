@@ -19,24 +19,19 @@ def is_N_acylsphinganine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for refined sphinganine backbone with chirality and specific configuration
-    sphinganine_backbone = Chem.MolFromSmarts("[C@@H](O)[C@H](CO)[C@@H](CCCCCCCCCCCC)")
-
+    # Redefine sphinganine backbone pattern with broader matching
+    sphinganine_backbone = Chem.MolFromSmarts("[C@@H](O)[C@H](CO)NC(=O)")
     if not mol.HasSubstructMatch(sphinganine_backbone):
-        return False, "No refined sphinganine backbone found"
+        return False, "No sphinganine backbone found"
 
-    # Check for amide linkage with long aliphatic chain
-    acyl_chain_pattern = Chem.MolFromSmarts("[NX3][CX3](=O)CCCCCCCCCC")
-    
+    # Redefine acyl linkage pattern to allow longer aliphatic chains
+    acyl_chain_pattern = Chem.MolFromSmarts("[NX3][CX3](=O)[C,CX4]*")  # Allow flexible carbon counts
     if not mol.HasSubstructMatch(acyl_chain_pattern):
-        return False, "No N-acyl linkage with adequate chain found"
+        return False, "No N-acyl linkage found"
 
-    # Optional: Check for possible headgroup moiety if needed for specificity
-    # Headgroup pattern example, may include specific sugars or other moieties
-    # headgroup_pattern = Chem.MolFromSmarts("[C@H](O)CO")
+    # Check for optional headgroup, if present (sugar moieties or similar)
+    possible_headgroup = Chem.MolFromSmarts("O[C@H]1[C@@H](O)[C@@H](O)C[C@H]1O")  # Simplified sugar example
+    if mol.HasSubstructMatch(possible_headgroup):
+        return True, "Contains sphinganine backbone with N-acyl linkage and possible sugar headgroup"
 
-    # if not mol.HasSubstructMatch(headgroup_pattern):
-    #     return False, "No expected headgroup moiety found"
-
-    # If matches all characteristics of an N-acylsphinganine
-    return True, "Contains refined features consistent with N-acylsphinganine"
+    return True, "Contains sphinganine backbone with N-acyl linkage"
