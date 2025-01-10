@@ -25,59 +25,29 @@ def is_alkanethiol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Add explicit hydrogens to the molecule
-    mol_with_H = Chem.AddHs(mol)
-
-    # Flag to indicate whether an alkanethiol group is found
-    has_alkanethiol = False
-
-    # Iterate over atoms to find sulfur atoms
-    for atom in mol_with_H.GetAtoms():
-        if atom.GetAtomicNum() == 16:  # Sulfur atom
-            neighbors = atom.GetNeighbors()
-            if len(neighbors) != 2:
-                continue  # Sulfur must have exactly 2 neighbors (H and C)
-            num_hydrogens = 0
-            num_carbons = 0
-            for neighbor in neighbors:
-                if neighbor.GetAtomicNum() == 1:
-                    num_hydrogens += 1
-                elif neighbor.GetAtomicNum() == 6:
-                    num_carbons += 1
-            if num_hydrogens == 1 and num_carbons == 1:
-                has_alkanethiol = True
-                break
-
-    if has_alkanethiol:
-        return True, "Contains an -SH group attached to an alkyl group"
-    else:
+    # Define alkanethiol SMARTS pattern: sulfur bonded to hydrogen and sp3 carbon
+    alkanethiol_pattern = Chem.MolFromSmarts("[#16H1][CX4H,CH2,CH]")
+    if not mol.HasSubstructMatch(alkanethiol_pattern):
         return False, "No -SH group attached to an alkyl group found"
 
+    # Define amide bond SMARTS pattern: N-C(=O)
+    amide_pattern = Chem.MolFromSmarts("N-C(=O)")
+    if mol.HasSubstructMatch(amide_pattern):
+        return False, "Contains amide bond, not an alkanethiol"
 
-__metadata__ = {
-    'chemical_class': {
-        'id': 'CHEBI:29255',
-        'name': 'alkanethiol',
-        'definition': 'An alkanethiol is a compound in which a sulfanyl group (-SH) is attached to an alkyl group.',
-        'parents': ['CHEBI:24578']
-    },
-    'config': {
-        'llm_model_name': 'lbl/claude-sonnet',
-        'f1_threshold': 0.8,
-        'max_attempts': 5,
-        'max_positive_instances': None,
-        'max_positive_to_test': None,
-        'max_negative_to_test': None,
-        'max_positive_in_prompt': 50,
-        'max_negative_in_prompt': 20,
-        'max_instances_in_prompt': 100,
-        'test_proportion': 0.1
-    },
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    # Metrics would be filled in after evaluation
-}
+    # Optional: Exclude other functional groups
+    # For example, exclude carboxylic acids, esters, nitriles, etc.
+    excluded_patterns = [
+        Chem.MolFromSmarts("C(=O)[OH]"),  # carboxylic acid
+        Chem.MolFromSmarts("C(=O)O"),     # ester
+        Chem.MolFromSmarts("C#N"),        # nitrile
+        Chem.MolFromSmarts("S(=O)(=O)"),  # sulfonyl
+        Chem.MolFromSmarts("N[CX3]=[CX3]"),  # imine
+        Chem.MolFromSmarts("P"),          # phosphorous-containing groups
+        Chem.MolFromSmarts("[!#6;!#1]"),  # any atom that is not carbon or hydrogen
+    ]
+    for pattern in excluded_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return False, "Contains excluded functional groups"
+
+    return True, "Contains an -SH group attached to an alkyl group"
