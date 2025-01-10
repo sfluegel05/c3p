@@ -27,6 +27,9 @@ def is_isoflavones(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define the core isoflavone pattern: 3-aryl-1-benzopyran-4-one
+    # The pattern captures the essential features of the isoflavone structure:
+    # - A benzopyran-4-one core (C1=CC(=O)C2=C(O1)C=CC=C2)
+    # - An aryl group attached at the 3-position of the benzopyran-4-one core
     isoflavone_pattern = Chem.MolFromSmarts("[c:1]1[c:2][c:3][c:4][c:5][c:6]1-[c:7]2[c:8][c:9][c:10][c:11][c:12]2-[O:13]-[C:14]=[O:15]")
     
     # Check if the molecule matches the isoflavone pattern
