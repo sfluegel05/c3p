@@ -27,8 +27,7 @@ def is_quinic_acid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for the core cyclohexane ring with multiple hydroxyl groups and a carboxylic acid group
-    # This pattern is more specific and enforces the correct connectivity and stereochemistry
-    quinic_acid_pattern = Chem.MolFromSmarts("[C@H]1([C@H](O)[C@H](O)[C@H](O)[C@@H](C1)C(=O)O)")
+    quinic_acid_pattern = Chem.MolFromSmarts("[C@H]1([C@H](O)[C@@H](O)[C@H](O)[C@@H](C1)C(=O)O)")
     if not mol.HasSubstructMatch(quinic_acid_pattern):
         return False, "No quinic acid core structure found"
 
