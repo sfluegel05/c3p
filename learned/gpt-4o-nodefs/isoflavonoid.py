@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_isoflavonoid(smiles: str):
     """
     Determines if a molecule is an isoflavonoid based on its SMILES string.
-    Isoflavonoids contain a core flavonoid structure with various substitutions.
+    Isoflavonoids are characterized by a chromen-4-one structure with a phenyl group at the C2 position.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,14 +21,15 @@ def is_isoflavonoid(smiles: str):
     if mol is None:
         return None, "Invalid SMILES string"
 
-    # Isoflavonoids are characterized by a chromenone derivative structure
-    # Isoflavonoid patterns based on literature and known structures
+    # Updated pattern for isoflavonoid core structure with variability
     isoflavonoid_patterns = [
-        Chem.MolFromSmarts("O=C1C=CC2=CC=C(O)C=C2OC1"),  # Basic isoflavonoid chromenone structure
-        Chem.MolFromSmarts("O=C1C=CC2=CC=CC=C2O1"),      # Allow more diversity in core structure
-        Chem.MolFromSmarts("C1=CC=C(C2=O)C=CC2=CO1"),      # 3-phenylchromen-4-one basic form
+        Chem.MolFromSmarts("O=C1C=CC2=C(O)C=CC=C2O1"),  # More generalized chromenone structure
+        Chem.MolFromSmarts("C1=CC(=O)C2=C(C1)C=CC(O)=C2"), # Basic 3-phenylchromen-4-one form
+        Chem.MolFromSmarts("c1coc2c1c(=O)cc(O)c2"), # Common isoflavonoid features
+        Chem.MolFromSmarts("Oc1ccc2C=CC(=O)C=C2c1"),   # Variations with phenolic hydroxyl groups
     ]
 
+    # Allow for variations by checking several patterns
     for pattern in isoflavonoid_patterns:
         if mol.HasSubstructMatch(pattern):
             return True, "Contains a core isoflavonoid structure characteristic of isoflavonoids"
