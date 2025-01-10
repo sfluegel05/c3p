@@ -26,7 +26,7 @@ def is_2_enoyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for CoA moiety (more flexible pattern)
+    # Check for CoA moiety
     coa_pattern = Chem.MolFromSmarts("SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No CoA moiety found"
@@ -48,8 +48,14 @@ def is_2_enoyl_CoA(smiles: str):
         thioester_atom = thioester_match[1]  # The sulfur atom in the thioester bond
         for double_bond_match in double_bond_matches:
             atom1, atom2 = double_bond_match[0], double_bond_match[1]
+            # Get the atoms connected to the sulfur atom in the thioester bond
+            sulfur_neighbors = mol.GetAtomWithIdx(thioester_atom).GetNeighbors()
+            if len(sulfur_neighbors) == 0:
+                continue
+            acyl_carbon = sulfur_neighbors[0].GetIdx()  # The carbon atom in the acyl chain connected to the sulfur
             # Check if the double bond is between positions 2 and 3 relative to the thioester bond
-            if mol.GetBondBetweenAtoms(atom1, thioester_atom) or mol.GetBondBetweenAtoms(atom2, thioester_atom):
+            if (mol.GetBondBetweenAtoms(atom1, acyl_carbon) and mol.GetBondBetweenAtoms(atom2, atom1)) or \
+               (mol.GetBondBetweenAtoms(atom2, acyl_carbon) and mol.GetBondBetweenAtoms(atom1, atom2)):
                 return True, "Contains CoA moiety with a double bond between positions 2 and 3 in the acyl chain attached via a thioester bond"
 
     return False, "No double bond between positions 2 and 3 in the acyl chain"
