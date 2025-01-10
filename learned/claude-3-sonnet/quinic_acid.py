@@ -10,7 +10,7 @@ from rdkit.Chem import AllChem
 def is_quinic_acid(smiles: str):
     """
     Determines if a molecule is quinic acid or a quinic acid derivative based on its SMILES string.
-    Quinic acid is a cyclitol carboxylic acid with a specific substitution pattern on its cyclohexane core.
+    Quinic acid is a cyclitol carboxylic acid with a cyclohexane core containing multiple hydroxyl groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -24,64 +24,60 @@ def is_quinic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Basic cyclohexane ring with one carboxyl group
-    core_pattern = Chem.MolFromSmarts("[C]1[C][C][C][C][C]1")
-    if core_pattern is None:
-        return False, "Invalid SMARTS pattern for core"
-    if not mol.HasSubstructMatch(core_pattern):
-        return False, "No cyclohexane core found"
+    # Look for basic cyclohexane core
+    cyclohexane = Chem.MolFromSmarts("[C]1[C][C][C][C][C]1")
+    if not mol.HasSubstructMatch(cyclohexane):
+        return False, "No cyclohexane ring found"
 
-    # Check for carboxylic acid or ester group
-    carboxyl_pattern = Chem.MolFromSmarts("[$([C](=[O])[OH]),$([C](=[O])[O][C])]")
-    if carboxyl_pattern is None:
-        return False, "Invalid SMARTS pattern for carboxyl"
-    if not mol.HasSubstructMatch(carboxyl_pattern):
-        return False, "No carboxylic acid or ester group found"
+    # Find cyclohexane rings
+    ring_matches = mol.GetSubstructMatches(cyclohexane)
+    
+    found_valid_core = False
+    for ring_match in ring_matches:
+        ring_atoms = set(ring_match)
+        
+        # Check for carboxylic acid or ester attached to ring
+        carboxyl_pattern = Chem.MolFromSmarts("[$([CX3](=[OX1])[OX2H1]),$([CX3](=[OX1])[OX2][C])]")
+        if not mol.HasSubstructMatch(carboxyl_pattern):
+            continue
+            
+        # Count oxygens attached to ring carbons
+        oxygen_count = 0
+        for ring_atom_idx in ring_atoms:
+            atom = mol.GetAtomWithIdx(ring_atom_idx)
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 8:  # Oxygen
+                    oxygen_count += 1
+        
+        # Quinic acid should have at least 4 oxygens attached to ring
+        # (including the carboxyl group)
+        if oxygen_count >= 4:
+            found_valid_core = True
+            break
+    
+    if not found_valid_core:
+        return False, "No cyclohexane ring with sufficient oxygen substitution found"
 
-    # Count basic features
+    # Additional checks for overall composition
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     
     if carbon_count < 7:  # minimum carbons in quinic acid
         return False, "Too few carbons for quinic acid structure"
+    
     if oxygen_count < 5:  # minimum oxygens in quinic acid
         return False, "Too few oxygens for quinic acid structure"
 
-    # Look for hydroxyl or ester groups
-    hydroxyl_pattern = Chem.MolFromSmarts("[$([OH]),$([O][C](=[O])[#6])]")
-    if hydroxyl_pattern is None:
-        return False, "Invalid SMARTS pattern for hydroxyl"
+    # Look for ester groups (for derivatives)
+    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
+    ester_count = len(mol.GetSubstructMatches(ester_pattern))
     
-    # Get the core atoms
-    core_matches = mol.GetSubstructMatches(core_pattern)
-    if not core_matches:
-        return False, "No valid cyclohexane core found"
+    # Check for hydroxyl groups
+    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H1]")
+    hydroxyl_count = len(mol.GetSubstructMatches(hydroxyl_pattern))
     
-    core_atoms = set(core_matches[0])
-    
-    # Count oxygen substituents connected to core
-    oxygen_substituents = 0
-    for atom_idx in core_atoms:
-        atom = mol.GetAtomWithIdx(atom_idx)
-        for neighbor in atom.GetNeighbors():
-            if neighbor.GetAtomicNum() == 8:
-                oxygen_substituents += 1
+    # Must have either free hydroxyls or ester groups
+    if hydroxyl_count + ester_count < 3:
+        return False, "Insufficient hydroxyl/ester groups"
 
-    if oxygen_substituents < 4:  # Need at least 4 oxygen substituents
-        return False, "Insufficient oxygen substituents on core"
-
-    # Check for characteristic quinic acid substitution pattern
-    # At least one carboxyl and multiple hydroxyls/esters on the ring
-    quinic_pattern = Chem.MolFromSmarts("[C]1([C](=[O])[O,H])[C]([O,H])[C]([O,H])[C]([O,H])[C]([O,H])[C]1([O,H])")
-    if quinic_pattern is None:
-        return False, "Invalid SMARTS pattern for quinic acid"
-    if not mol.HasSubstructMatch(quinic_pattern):
-        return False, "Does not match quinic acid substitution pattern"
-
-    # Additional check for connected groups
-    for atom in mol.GetAtoms():
-        # Exclude molecules with phosphate, sulfate, or other non-typical groups
-        if atom.GetAtomicNum() not in [1, 6, 8]:  # Only H, C, O allowed
-            return False, "Contains non-typical atoms for quinic acid"
-
-    return True, "Contains quinic acid core with characteristic substitution pattern"
+    return True, "Contains cyclohexane core with carboxylic acid and multiple hydroxyl/ester groups characteristic of quinic acid"
