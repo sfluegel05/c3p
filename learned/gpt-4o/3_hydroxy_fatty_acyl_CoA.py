@@ -21,15 +21,18 @@ def is_3_hydroxy_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS pattern for Coenzyme A end
+    # Define a SMARTS pattern for the Coenzyme A portion
     coa_pattern = Chem.MolFromSmarts("C(=O)SCCNC(=O)CCNC(=O)")
 
-    # Define SMARTS pattern for 3-hydroxy chain end, allowing some flexibility
-    # considering possibly long hydrophobic fatty acid tails
-    hydroxy_pattern = Chem.MolFromSmarts("C[CH](O)C(=O)")
+    # Define SMARTS pattern for the 3-hydroxy group in the fatty acid chain
+    # We explicitly check for the 3-position considering '[C@@H]' for stereochemistry.
+    hydroxy_pattern = Chem.MolFromSmarts("[CH][CH](O)[CH2]C(=O)")
 
     # Check for both 3-hydroxy group and CoA structure
-    if mol.HasSubstructMatch(coa_pattern) and mol.HasSubstructMatch(hydroxy_pattern):
+    has_coa = mol.HasSubstructMatch(coa_pattern)
+    has_hydroxy = mol.HasSubstructMatch(hydroxy_pattern)
+
+    if has_coa and has_hydroxy:
         return True, "Contains the 3-hydroxy fatty acyl-CoA structure"
 
     return False, "Does not match the 3-hydroxy fatty acyl-CoA pattern"
