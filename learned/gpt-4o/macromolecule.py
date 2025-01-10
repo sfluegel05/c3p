@@ -24,20 +24,22 @@ def is_macromolecule(smiles: str):
     
     # Calculate molecular weight
     mol_wt = Descriptors.MolWt(mol)
-    if mol_wt < 1000:  # Arbitrarily choosing 1000 Da as a lower limit for macromolecules
+    # Adjusting the threshold to consider larger macromolecules
+    if mol_wt < 2000:  # Increasing the threshold for molecular weight
         return False, f"Molecular weight too low for macromolecule: {mol_wt} Da"
     
-    # Check for repeating units - this might be complex and is a heuristic
-    # Looking for repeating ethylene or peptide-like substructures as an example
+    # Check for repeating units with more complex patterns
+    # Using more representative structures for biological macromolecules like peptides or sugars
     repeat_patterns = [
-        Chem.MolFromSmarts("C=C"),  # Ethylene
         Chem.MolFromSmarts("C(=O)N"),  # Peptide bond
+        Chem.MolFromSmarts("C(=O)OC"),  # Ester linkage often found in polysaccharides
+        Chem.MolFromSmarts("CCO[C@H](O)[C@H](O)"),  # Example of sugar pattern
     ]
     
-    for pattern in repeat_patterns:
+    for idx, pattern in enumerate(repeat_patterns):
         matches = mol.GetSubstructMatches(pattern)
-        if len(matches) > 5:  # Arbitrarily considering more than 5 matches as indicating repetition
-            return True, f"Contains repeating units: Found {len(matches)} of pattern {pattern}"
+        if len(matches) > 10:  # Requiring more than 10 matches to indicate repetition
+            return True, f"Contains repeating units: Found {len(matches)} of pattern {idx}"
     
     return False, "No repeated units detected"
 
