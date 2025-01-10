@@ -27,19 +27,19 @@ def is_3_oxo_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more flexible CoA moiety pattern
-    coa_pattern = Chem.MolFromSmarts("[SX2]CCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OCC1OC(O)C(O)C1OP(=O)(O)O")
+    # Define the CoA moiety pattern
+    coa_pattern = Chem.MolFromSmarts("SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No CoA moiety found"
 
-    # Define a more flexible 3-oxo-fatty acid pattern
-    oxo_fatty_acid_pattern = Chem.MolFromSmarts("CC(=O)CC(=O)[SX2]")
+    # Define the 3-oxo-fatty acid pattern (ketone at the 3rd position)
+    oxo_fatty_acid_pattern = Chem.MolFromSmarts("CC(=O)CC(=O)S")
     oxo_fatty_acid_matches = mol.GetSubstructMatches(oxo_fatty_acid_pattern)
     if len(oxo_fatty_acid_matches) == 0:
         return False, "No 3-oxo-fatty acid chain found"
 
     # Check if the 3-oxo-fatty acid is thioesterified with the CoA thiol group
-    thioester_pattern = Chem.MolFromSmarts("CC(=O)CC(=O)[SX2]CCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OCC1OC(O)C(O)C1OP(=O)(O)O")
+    thioester_pattern = Chem.MolFromSmarts("[CX3](=O)[SX2][CX4]")
     thioester_matches = mol.GetSubstructMatches(thioester_pattern)
     if len(thioester_matches) == 0:
         return False, "No thioester bond between CoA and 3-oxo-fatty acid"
