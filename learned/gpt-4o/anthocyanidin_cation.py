@@ -21,16 +21,16 @@ def is_anthocyanidin_cation(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for the flavylium cation core structure which includes the [o+] and pyran ring
-    # This is a more general pattern for aromatic chromenylium structure with [o+] core
-    flavylium_pattern = Chem.MolFromSmarts('c1c[o+]c2cc(O)c(O)cc2c(O)c1') # Tentative SMARTS for flavylium
+    # Check for the flavylium cation core structure which includes the [o+] charge and chromenylium structure
+    # Using a broader SMARTS pattern to capture various flavylium configurations with appropriate oxygen charge
+    flavylium_pattern = Chem.MolFromSmarts('c1cc2[o+]ccc2cc1') # A more generic representation
     if not mol.HasSubstructMatch(flavylium_pattern):
         return False, "No flavylium cation core structure found"
     
-    # Identify the presence of multiple hydroxyl (OH) or methoxy (OMe) groups on the flavonoid rings
-    hydroxyl_methoxy_pattern = Chem.MolFromSmarts('[cH]-[OH,OMe]')
+    # Identify and count the presence of hydroxyl (OH) or methoxy (OMe) groups
+    hydroxyl_methoxy_pattern = Chem.MolFromSmarts('[OH,OMe]')
     hydroxyl_methoxy_count = len(mol.GetSubstructMatches(hydroxyl_methoxy_pattern))
-    if hydroxyl_methoxy_count < 3:  # Assume 3 such groups for more specificity in anthocyanidins
+    if hydroxyl_methoxy_count < 3:  # Expecting at least 3 such groups for anthocyanidin characterization
         return False, f"Found {hydroxyl_methoxy_count} hydroxyl/methoxy groups, require at least 3"
 
     return True, "Contains characteristic flavylium cation core structure with sufficient hydroxyl/methoxy groups"
