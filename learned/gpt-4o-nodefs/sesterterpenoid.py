@@ -25,20 +25,25 @@ def is_sesterterpenoid(smiles: str):
     
     # Count carbon atoms to check if it has around 25 carbons
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if not (20 <= c_count <= 30):
-        return False, "Does not have 25 carbon atoms typical for sesterterpenoids"
+    # Allow a flexible range to cover edge cases, e.g., 18-32
+    if not (18 <= c_count <= 32):
+        return False, "Does not have a typical carbon count for sesterterpenoids"
     
-    # Search for specific functional groups or ring structures, if possible
-    # (This is a placeholder step. Specific substructures would need additional SMILES patterns.)
-    # Example: Check for at least one ring structure
-    if not mol.GetRingInfo().NumRings() > 0:
-        return False, "No ring structure found, typically sesterterpenoids have complex rings"
+    # Ensure the molecule contains multiple ring structures
+    num_rings = mol.GetRingInfo().NumRings()
+    if num_rings < 3:
+        return False, "Not enough ring structures; typically sesterterpenoids have multiple rings"
     
-    # Check for typical terpenoid-like features (isoprene units, common functional groups)
-    # Note: This requires complex SMARTS patterns which are skipped for simplicity.
+    # Hypothetical SMARTS pattern to find common terpenoid-like structures
+    # This is a placeholder and should be replaced with actual SMARTS based on known structures
+    terpenoid_pattern = Chem.MolFromSmarts("C1CCCC1") # Simplistic example
+    if not mol.HasSubstructMatch(terpenoid_pattern):
+        return False, "No common terpenoid structure found"
+   
+    # Check for typical features (e.g., oxygen presence in rings, stereochemistry)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if o_count < 1:
+        return False, "No oxygen atoms found, typically present in sesterterpenoids"
     
-    # Generally, if the carbon count is close and has ring structures, posit it as a sesterterpenoid
-    return True, "Carbon count and ring presence suggest a sesterterpenoid"
-
-# Example usage:
-# print(is_sesterterpenoid("O=C1C=C(C)[C@@H]...")) # Replace `...` with a complete SMILES from the example list
+    # If carbon count, ring structures and additional checks pass, posit it as a sesterterpenoid
+    return True, "Carbon count, ring structures, and features suggest a sesterterpenoid"
