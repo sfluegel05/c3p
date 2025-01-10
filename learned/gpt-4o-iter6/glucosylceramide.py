@@ -22,24 +22,23 @@ def is_glucosylceramide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Redefine SMARTS patterns with accurate stereochemistry for β-D-glucose moiety
-    glucose_pattern = Chem.MolFromSmarts('[C@@H]1O[C@H]([C@@H](O)[C@H](O)[C@H]([C@H]1O)O)CO')
-
+    # Define SMARTS pattern for β-D-glucose moiety with proper stereochemistry
+    glucose_pattern = Chem.MolFromSmarts('OC[C@H]1O[C@@H](CO)[C@H](O)[C@@H](O)[C@H]1O')
+    
     # Check for the glucosyl moiety
     if not mol.HasSubstructMatch(glucose_pattern):
         return False, "No β-D-glucose moiety found attached to the primary hydroxyl"
 
-    # Flexible sphingosine backbone pattern capturing typical arrangements
-    sphingosine_patterns = [
-        'N[C@H](CO)C(O)[C@H](O)CCCCCCCCCC', # Typical structure
-        'NC[CH2]C(O)[C@H]([CH2]C=C)C' # Possible variations in connection
-    ]
-
-    if not any(mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)) for pattern in sphingosine_patterns):
+    # Refined sphingosine backbone pattern that captures typical arrangements
+    sphingosine_pattern = Chem.MolFromSmarts('N[C@@H](CO[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@H](O)1)C')
+    
+    # Ensure that the substructure for a sphingosine-like backbone is present
+    if not mol.HasSubstructMatch(sphingosine_pattern):
         return False, "No compatible sphingosine backbone pattern found"
 
-    # Amide bond detection for fatty acyl chain
+    # Amide bond detection for linking the fatty acyl chain (simple representation)
     fatty_acyl_amide_pattern = Chem.MolFromSmarts('C(=O)N')
+    
     if not mol.HasSubstructMatch(fatty_acyl_amide_pattern):
         return False, "Amide linkage to fatty acyl chain not found"
     
