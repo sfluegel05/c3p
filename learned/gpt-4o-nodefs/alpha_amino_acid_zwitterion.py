@@ -20,12 +20,18 @@ def is_alpha_amino_acid_zwitterion(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Correct pattern for detecting an alpha-amino acid zwitterion
-    # An alpha carbon (C) connected to an ammonium group ([NH3+])
-    # and a carboxylate group ([C(=O)[O-]])
-    zwitterion_pattern = Chem.MolFromSmarts("[C@@H]([NH3+])[C](=O)[O-]")
-    
-    if not mol.HasSubstructMatch(zwitterion_pattern):
-        return False, "No zwitterionic alpha carbon with NH3+ and COO- found"
+    # Zwitterion pattern for alpha-amino acids:
+    # Positive nitrogen attached to one alpha carbon, the same carbon attached to a carboxylate
+    # Pattern for a positively charged nitrogen attached to an alpha carbon
+    pos_nitrogen_pattern = Chem.MolFromSmarts("[NH1+,NH2+,NH3+]")  # Consideration for different positive nitrogen
 
-    return True, "Contains alpha carbon with NH3+ and COO-, indicating alpha-amino-acid zwitterion"
+    # Pattern for carboxylate attached to the alpha carbon
+    carboxylate_pattern = Chem.MolFromSmarts("[C](=O)[O-]")
+
+    pos_nitrogen_matches = mol.HasSubstructMatch(pos_nitrogen_pattern)
+    carboxylate_matches = mol.HasSubstructMatch(carboxylate_pattern)
+
+    if pos_nitrogen_matches and carboxylate_matches:
+        return True, "Contains alpha carbon with NH3+ and COO-, indicating alpha-amino-acid zwitterion"
+    else:
+        return False, "No zwitterionic alpha carbon with NH3+ and COO- found"
