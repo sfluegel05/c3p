@@ -25,26 +25,18 @@ def is_fatty_aldehyde(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for the presence of an aldehyde group (-CHO)
+    # Check for the presence of an aldehyde group (C=O with at least one hydrogen)
     aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)[#1]")
     if not mol.HasSubstructMatch(aldehyde_pattern):
-        return False, "No aldehyde group found"
+        # Try a more general pattern for aldehydes
+        aldehyde_pattern = Chem.MolFromSmarts("[CX3](=O)[#1]")
+        if not mol.HasSubstructMatch(aldehyde_pattern):
+            return False, "No aldehyde group found"
 
     # Count the number of carbon atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if c_count < 6:
         return False, "Carbon chain too short to be a fatty aldehyde"
-
-    # Check for carboxylic acid groups (disqualifies as aldehyde)
-    carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
-    if mol.HasSubstructMatch(carboxylic_acid_pattern):
-        return False, "Carboxylic acid group present, not an aldehyde"
-
-    # Check for other disqualifying functional groups (e.g., esters, alcohols)
-    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
-    alcohol_pattern = Chem.MolFromSmarts("[OX2H]")
-    if mol.HasSubstructMatch(ester_pattern) or mol.HasSubstructMatch(alcohol_pattern):
-        return False, "Ester or alcohol group present, not a pure aldehyde"
 
     # Check for long carbon chain (fatty aldehyde characteristic)
     # A fatty aldehyde typically has a carbon chain length of 6 or more
