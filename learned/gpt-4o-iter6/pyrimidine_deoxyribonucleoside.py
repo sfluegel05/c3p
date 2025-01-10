@@ -21,15 +21,14 @@ def is_pyrimidine_deoxyribonucleoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Generalized pattern for deoxyribose sugar
-    deoxyribose_pattern = Chem.MolFromSmarts("[C@H]1([C@H](O[C@H]1CO)O)")
+    # More specific pattern for deoxyribose sugar, allowing stereochemistry variations
+    deoxyribose_pattern = Chem.MolFromSmarts("O[C@H]1[C@@H](O)C[C@@H](CO)O1")
 
-    # General patterns for pyrimidine bases, allowing common modifications
+    # Revised patterns for pyrimidine bases, allowing variations and common modifications
     pyrimidine_base_patterns = [
-        Chem.MolFromSmarts("c1ccncn1"),  # Pyrimidine ring core
-        Chem.MolFromSmarts("c1cncnc1O"),  # Base pattern for uracil derivatives
-        Chem.MolFromSmarts("c1[nH]cnc1=O"),  # Base pattern for thymine derivatives
-        Chem.MolFromSmarts("c1ncc[nH]1")  # Base pattern for cytosine derivatives
+        Chem.MolFromSmarts("c1ncnc[nH]1"),  # Generic pyrimidine ring including cytosine, thymine, uracil core
+        Chem.MolFromSmarts("c1[nH]cnc1"),   # Allow hydroxyl/methylamide modified pyrimidines
+        Chem.MolFromSmarts("n1c(=O)[nH]c(=O)c1") # Thymine and uracil derivatives
     ]
     
     # Check for deoxyribose sugar match
