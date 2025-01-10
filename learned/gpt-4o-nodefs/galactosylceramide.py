@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_galactosylceramide(smiles: str):
     """
     Determines if a molecule is a galactosylceramide based on its SMILES string.
-    Galactosylceramides usually have a beta-D-galactosyl moiety attached to a ceramide backbone,
+    Galactosylceramides have a beta-D-galactosyl moiety attached to a ceramide backbone,
     which includes amide linkages and long fatty acid chains.
 
     Args:
@@ -23,9 +23,12 @@ def is_galactosylceramide(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define SMARTS patterns for galactosylceramide
-    galactose_pattern = Chem.MolFromSmarts("O[C@@H]1[C@H](O)[C@@H](O)[C@@H](O)[C@H](CO)C1O")  # Beta-D-galactosyl pattern
-    amide_pattern = Chem.MolFromSmarts("NC(=O)[C@@H]")  # Improved amide linkage to specify chiral center
-    long_chain_pattern = Chem.MolFromSmarts("CCCCCCCCCC")  # Representation of long chains; can be expanded further
+    # Refined beta-D-galactosyl pattern considering possible variations
+    galactose_pattern = Chem.MolFromSmarts("O[C@H]1[C@@H](O)[C@@H](O)[C@H](CO)C(O)C1")
+    # Amide linkage: accounts for typical ceramide amide structure with carbonyl group
+    amide_pattern = Chem.MolFromSmarts("NC(=O)C")
+    # Expanded hydrocarbon chain representation using a range
+    long_chain_pattern = Chem.MolFromSmarts("C{8,}")
 
     # Match galactose
     if not mol.HasSubstructMatch(galactose_pattern):
