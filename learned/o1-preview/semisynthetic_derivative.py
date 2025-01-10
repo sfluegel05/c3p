@@ -8,6 +8,7 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import Descriptors
 from rdkit.Chem.Scaffolds import MurckoScaffold
+from rdkit.Chem.rdFMCS import FindMCS
 
 def is_semisynthetic_derivative(smiles: str):
     """
@@ -32,46 +33,56 @@ def is_semisynthetic_derivative(smiles: str):
     if scaffold.GetNumAtoms() == 0:
         return False, "Unable to generate scaffold"
 
-    # Define functional groups considered as synthetic modifications
-    synthetic_groups = [
-        Chem.MolFromSmarts('[#6][F,Cl,Br,I]'),  # Halogenated carbons
-        Chem.MolFromSmarts('c[F,Cl,Br,I]'),     # Halogenated aromatics
-        Chem.MolFromSmarts('N(=O)[O-]'),        # Nitro group
-        Chem.MolFromSmarts('C#C'),              # Alkyne
-        Chem.MolFromSmarts('N=[N+]=[N-]'),      # Azide
-        Chem.MolFromSmarts('C(=O)O[C,N]'),      # Esters and carbamates
-        Chem.MolFromSmarts('C(=O)N[C,N]'),      # Amides
-        Chem.MolFromSmarts('CNS(=O)(=O)'),      # Sulfonamides
-        Chem.MolFromSmarts('P(=O)(O)O'),        # Phosphate esters
-        Chem.MolFromSmarts('C(=O)O[C@H]'),      # Esterification at chiral centers
-        Chem.MolFromSmarts('[C;!R]=[C;!R]'),    # Unconjugated double bonds
-    ]
+    # Find the Maximum Common Substructure (MCS) between the molecule and its scaffold
+    mcs = FindMCS([mol, scaffold], matchValences=True, ringMatchesRingOnly=True)
+    if mcs.numAtoms == 0:
+        return False, "No common substructure found"
 
-    # Check for synthetic modifications
-    has_synthetic_modification = False
-    modifications = []
+    # Calculate the proportion of the molecule that is modified
+    mol_atoms = mol.GetNumHeavyAtoms()
+    scaffold_atoms = scaffold.GetNumHeavyAtoms()
+    mcs_atoms = mcs.numAtoms
+    modified_atoms = mol_atoms - mcs_atoms
 
-    for group in synthetic_groups:
-        if mol.HasSubstructMatch(group):
-            has_synthetic_modification = True
-            smarts = Chem.MolToSmarts(group)
-            modifications.append(smarts)
+    # If a significant portion of the molecule is modified, consider synthetic modification
+    if modified_atoms >= 5 and (modified_atoms / mol_atoms) >= 0.1:
+        # Define functional groups commonly introduced synthetically
+        synthetic_groups = [
+            Chem.MolFromSmarts('[#6][F,Cl,Br,I]'),    # Halogenated carbons
+            Chem.MolFromSmarts('c[F,Cl,Br,I]'),       # Halogenated aromatics
+            Chem.MolFromSmarts('[#6][C#N]'),          # Nitriles
+            Chem.MolFromSmarts('N(=O)[O-]'),          # Nitro group
+            Chem.MolFromSmarts('S(=O)(=O)[O-]'),      # Sulfonic acids
+            Chem.MolFromSmarts('C(=O)O[C,N]'),        # Esters and carbamates
+            Chem.MolFromSmarts('C(=O)N[C,N]'),        # Amides
+            Chem.MolFromSmarts('C(=O)O[C@H]'),        # Esters at chiral centers
+            Chem.MolFromSmarts('[C;!R]=[C;!R]'),      # Unconjugated double bonds
+            Chem.MolFromSmarts('O[C@@H1][#6]'),       # Ether linkages
+            Chem.MolFromSmarts('C#C'),                # Alkynes
+            Chem.MolFromSmarts('C=O'),                # Carbonyl groups
+            Chem.MolFromSmarts('C[O,N,S]C'),          # Alkylation (ethers, amines)
+            Chem.MolFromSmarts('C=C-C=O'),            # Enones
+            Chem.MolFromSmarts('[#16R]'),             # Sulfur-containing rings
+        ]
 
-    # Compare scaffold to molecule
-    if mol.GetNumAtoms() == scaffold.GetNumAtoms():
-        return False, "Molecule appears to be a natural product without modifications"
+        # Check for synthetic modifications
+        has_synthetic_modification = False
+        modifications = []
 
-    # Check for significant difference between scaffold and molecule
-    diff = mol.GetNumAtoms() - scaffold.GetNumAtoms()
-    if diff < 5 and not has_synthetic_modification:
-        return False, "No significant synthetic modifications detected"
+        for group in synthetic_groups:
+            if mol.HasSubstructMatch(group):
+                has_synthetic_modification = True
+                smarts = Chem.MolToSmarts(group)
+                modifications.append(smarts)
 
-    # If synthetic modifications are present and scaffold is smaller than molecule, classify as semisynthetic
-    if has_synthetic_modification:
-        reason = f"Contains natural product scaffold with synthetic modifications: {', '.join(modifications)}"
-        return True, reason
+        if has_synthetic_modification:
+            reason = f"Contains synthetic modifications: {', '.join(modifications)}"
+            return True, reason
+        else:
+            return False, "No synthetic functional groups detected"
+
     else:
-        return False, "No synthetic modifications detected"
+        return False, "No significant synthetic modifications detected"
 
 __metadata__ = {
     'chemical_class': {
