@@ -6,8 +6,7 @@ from rdkit import Chem
 def is_tetrahydrofuranone(smiles: str):
     """
     Determines if a molecule is a tetrahydrofuranone based on its SMILES string.
-    A tetrahydrofuranone is an oxolane having an oxo- substituent at any position
-    on the tetrahydrofuran ring.
+    A tetrahydrofuranone is an oxolane with an oxo- substituent.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -16,23 +15,29 @@ def is_tetrahydrofuranone(smiles: str):
         bool: True if molecule is a tetrahydrofuranone, False otherwise
         str: Reason for classification
     """
-
-    # Parse the SMILES
+    
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for a 5-membered lactone ring (tetrahydrofuranone)
-    # Modified to capture variations in oxo- substituent location
-    lactone_patterns = [
-        Chem.MolFromSmarts("O=C1COC[C@H]1"),  # Common oxo-location
-        Chem.MolFromSmarts("O=C1COC(C)C1"),   # Dimethyl substitution example
-        Chem.MolFromSmarts("O=C1COCC1"),      # Simple tetrahydrofuranone variant
-    ]
+    # Identifying a five-membered ring with one oxygen atom (oxolane)
+    oxolane_pattern = Chem.MolFromSmarts("C1COCC1")  # 5-membered ring with O and 4 carbons
+    if not mol.HasSubstructMatch(oxolane_pattern):
+        return False, "No oxolane ring found"
 
-    # Check for various tetrahydrofuranone structures
-    for pattern in lactone_patterns:
-        if mol.HasSubstructMatch(pattern):
-            return True, "Tetrahydrofuranone structure confirmed"
-    
-    return False, "No valid tetrahydrofuranone structure found"
+    # Identifying the presence of a carbonyl group on the oxolane
+    carbonyl_pattern = Chem.MolFromSmarts("C=O")
+    carbonyl_matches = mol.GetSubstructMatches(carbonyl_pattern)
+    if not carbonyl_matches:
+        return False, "No carbonyl group found on the ring"
+
+    # Verify the carbonyl is attached to the ring
+    for match in carbonyl_matches:
+        # Check if any of the carbonyl carbon is part of the oxolane ring
+        carbon = mol.GetAtomWithIdx(match[0])
+        for neighbor in carbon.GetNeighbors():
+            if neighbor.IsInRing() and neighbor.GetAtomicNum() == 8:  # Check if neighbor is oxygen in a ring
+                return True, "Tetrahydrofuranone structure confirmed"
+
+    return False, "Carbonyl group not part of an oxolane ring"
