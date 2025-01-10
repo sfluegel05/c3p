@@ -22,20 +22,16 @@ def is_phosphatidylethanolamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for glycerol backbone pattern with carbon atoms marked
-    glycerol_pattern = Chem.MolFromSmarts("O[C@H]([O])CO")
+    # Glycerol backbone with correct stereochemistry (chiral center at C2)
+    glycerol_pattern = Chem.MolFromSmarts("[C@H](CO[P](=O)(O)OCCN)OC(=O)C")
     if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone found with correct stereochemistry"
-        
-    # Look for phosphate group (-P(=O)(O)-)
-    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)")
-    if not mol.HasSubstructMatch(phosphate_pattern):
-        return False, "Phosphate group not found"
-    
-    # Look for ethanolamine group (-OCCN)
-    ethanolamine_pattern = Chem.MolFromSmarts("OCCN")
-    if not mol.HasSubstructMatch(ethanolamine_pattern):
-        return False, "Ethanolamine group not found"
+        return False, "No glycerol backbone with correct stereochemistry"
+
+    # Look for a second ester linkage on the other carbon of glycerol
+    second_ester_pattern = Chem.MolFromSmarts("OC(=O)C")
+    ester_matches = mol.GetSubstructMatches(second_ester_pattern)
+    if len(ester_matches) < 2:
+        return False, "Missing second ester linkage, found less than 2"
 
     return True, "Structure matches phosphatidylethanolamine class"
 
