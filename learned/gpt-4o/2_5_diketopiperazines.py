@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_2_5_diketopiperazines(smiles: str):
     """
     Determines if a molecule is a 2,5-diketopiperazine based on its SMILES string.
-    A 2,5-diketopiperazine has a piperazine-2,5-dione skeleton, which is a six-membered ring containing
-    two nitrogen atoms and two carbonyl groups. Substitutions and stereochemistry are common.
+    A 2,5-diketopiperazine contains a six-membered ring with two nitrogens and 
+    two carbonyl groups at the 2 and 5 positions with various substitutions possible.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,25 +21,21 @@ def is_2_5_diketopiperazines(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Updated SMARTS pattern with stereochemistry considerations
-    diketopiperazine_pattern = Chem.MolFromSmarts('O=C1NCC(=O)N1')
+    # Create SMARTS pattern for 2,5-diketopiperazine
+    # The pattern ensures a six-membered ring with two adjacent carbonyl groups connected to two nitrogens
+    diketopiperazine_pattern = Chem.MolFromSmarts('C1C(N)C(=O)NC(=O)C1')  # Explicit 6-membered ring
+
+    # Check ring substructure match
     if not mol.HasSubstructMatch(diketopiperazine_pattern):
-        return False, "Does not contain piperazine-2,5-dione skeleton"
+        return False, "Does not contain 2,5-diketopiperazine skeleton"
 
-    # Use RingInfo to count the number of rings
+    # Additional checks: Ensure matching ring size and connectivity
     ring_info = mol.GetRingInfo()
-    num_rings = ring_info.NumRings()
-    if num_rings < 1:
-        return False, f"Expected at least one ring; found {num_rings}."
-
-    # Check for at least two oxygens typical for diketopiperazine scaffolds
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count < 2:
-        return False, f"Too few oxygens for typical diketopiperazine: found {o_count}"
-
-    # Consider typical sizes for 2,5-diketopiperazines, which can have diverse substitutions
-    n_atoms = mol.GetNumAtoms()
-    if n_atoms > 100:
-        return False, "Molecule is too large to be a typical 2,5-diketopiperazine with complex substitutions"
-
-    return True, "Contains piperazine-2,5-dione skeleton"
+    for ring in ring_info.AtomRings():
+        if len(ring) == 6:
+            atom_types = [mol.GetAtomWithIdx(idx).GetSymbol() for idx in ring]
+            # Should include two nitrogens and at least two oxygens for diketopiperazine
+            if atom_types.count('N') == 2 and atom_types.count('O') >= 2:
+                return True, "Contains valid 2,5-diketopiperazine skeleton"
+    
+    return False, "Ring does not match 2,5-diketopiperazine configuration"
