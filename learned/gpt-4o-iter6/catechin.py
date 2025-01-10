@@ -2,7 +2,6 @@
 Classifies: CHEBI:23053 catechin
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_catechin(smiles: str):
     """
@@ -22,29 +21,31 @@ def is_catechin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Improved SMARTS pattern for flavan-3-ol backbone (C6-C3-C6 with a hydroxyl on C3)
-    flavan_3_ol_pattern = Chem.MolFromSmarts("C1C(C2=C(O)C=CC(O)=C2)O[C@H]([C@@H]1)c3ccc(O)cc3")
+    # Refined SMARTS pattern for flavan-3-ol backbone: C6-C3-C6 pattern with hydroxyl on ring C 
+    flavan_3_ol_pattern = Chem.MolFromSmarts("c1cc2OC(C(O)CC2c1)c3ccc(O)cc3")
     if not mol.HasSubstructMatch(flavan_3_ol_pattern):
         return False, "No flavan-3-ol backbone found"
     
-    # Counting hydroxyl and other typical substituents (flexible substitution pattern)
+    # Check additional substituents
     hydroxy_pattern = Chem.MolFromSmarts("[OX2H]")
     methoxy_pattern = Chem.MolFromSmarts("CO")
     ester_pattern = Chem.MolFromSmarts("O=C(O)")
-    
+
     hydroxyl_matches = mol.GetSubstructMatches(hydroxy_pattern)
     methoxy_matches = mol.GetSubstructMatches(methoxy_pattern)
     ester_matches = mol.GetSubstructMatches(ester_pattern)
 
     num_oxygen_containing_subs = len(hydroxyl_matches) + len(methoxy_matches) + len(ester_matches)
     
-    if num_oxygen_containing_subs < 2:
+    if num_oxygen_containing_subs < 3:
         return False, f"Insufficient oxygen-containing groups, found {num_oxygen_containing_subs}"
 
-    # Verify stereochemistry if there are chiral centers
+    # Check stereochemistry: Catechins should have certain chiral centers
+    expected_chiral_centers = [(2, 'R'), (3, 'S')]
     chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
-    if len(chiral_centers) > 0 and len(chiral_centers) < 2:
-        return False, f"Insufficient chiral centers, found {len(chiral_centers)}"
 
-    # Assume various substitutions while maintaining flavan-3-ol identity
-    return True, "Contains flavan-3-ol backbone with sufficient oxygen-containing groups and stereochemistry"
+    valid_chirality = all((center in chiral_centers) for center in expected_chiral_centers)
+    if not valid_chirality:
+        return False, "Chiral centers do not match expected catechin configuration"
+
+    return True, "Contains flavan-3-ol backbone with sufficient oxygen-containing groups and correct stereochemistry"
