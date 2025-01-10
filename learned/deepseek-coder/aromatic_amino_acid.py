@@ -25,9 +25,9 @@ def is_aromatic_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for amino acid pattern: at least one amino group (NH2 or NH) and one carboxyl group (COOH)
-    amino_pattern = Chem.MolFromSmarts("[NH2,NH]")
-    carboxyl_pattern = Chem.MolFromSmarts("C(=O)[OH]")
+    # Check for amino acid pattern: at least one amino group (NH2, NH, or N) and one carboxyl group (COOH or COOR)
+    amino_pattern = Chem.MolFromSmarts("[NH2,NH,N]")
+    carboxyl_pattern = Chem.MolFromSmarts("C(=O)[OH,OR]")
     
     if not mol.HasSubstructMatch(amino_pattern):
         return False, "No amino group found"
@@ -39,16 +39,18 @@ def is_aromatic_amino_acid(smiles: str):
     if not aromatic_rings:
         return False, "No aromatic ring found"
 
-    # Ensure the aromatic ring is part of the molecule (not just a fragment)
-    # and is connected to the amino acid backbone
+    # Ensure the aromatic ring is part of the amino acid backbone
     for ring in aromatic_rings:
         for atom_idx in ring:
             atom = mol.GetAtomWithIdx(atom_idx)
             for neighbor in atom.GetNeighbors():
                 if neighbor.GetSymbol() == "C" and neighbor.GetDegree() > 1:
-                    return True, "Contains amino acid functional groups and an aromatic ring"
+                    # Check if the aromatic ring is connected to the amino acid backbone
+                    for neighbor_neighbor in neighbor.GetNeighbors():
+                        if neighbor_neighbor.GetSymbol() == "C" and neighbor_neighbor.GetDegree() > 1:
+                            return True, "Contains amino acid functional groups and an aromatic ring integrated into the backbone"
 
-    return False, "Aromatic ring not connected to amino acid backbone"
+    return False, "Aromatic ring not integrated into amino acid backbone"
 
 
 __metadata__ = {
