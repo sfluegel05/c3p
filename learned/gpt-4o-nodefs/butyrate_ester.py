@@ -6,8 +6,7 @@ from rdkit import Chem
 def is_butyrate_ester(smiles: str):
     """
     Determines if a molecule is a butyrate ester based on its SMILES string.
-    A butyrate ester contains a butyric acid moiety attached via an ester linkage,
-    allowing for reasonable structural isomers or branching.
+    A butyrate ester contains a butyric acid moiety (4-carbon chain) attached via an ester linkage.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -17,25 +16,22 @@ def is_butyrate_ester(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
+    # Parse the SMILES string to a molecule object
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for ester group (C(=O)O) anywhere in the structure
-    ester_pattern = Chem.MolFromSmarts("C(=O)O")
-    if not mol.HasSubstructMatch(ester_pattern):
-        return False, "No ester functional group found"
+    # Define the butyrate ester pattern: R'C(=O)O-R, with specific pattern for butyrate (4-carbon chain)
+    butyrate_ester_pattern = Chem.MolFromSmarts("C(=O)OCC[CH2]C")
+    
+    # Check for both main and branched variations of the butyrate plus ester linkage
+    standard_matches = mol.GetSubstructMatches(butyrate_ester_pattern)
+    
+    # Also check for common branched or isomer variations of butyrate esters
+    branched_butyrate_pattern = Chem.MolFromSmarts("C(=O)O[C](C)CC")
+    branched_matches = mol.GetSubstructMatches(branched_butyrate_pattern)
 
-    # Check for flexible butyrate group (4C in series, possibly branched)
-    butyrate_group_pattern = Chem.MolFromSmarts("C-C-C-C(=O)O")  
-    matches = mol.GetSubstructMatches(butyrate_group_pattern)
+    if standard_matches or branched_matches:
+        return True, "Contains butyrate ester functional group with valid structure"
 
-    if not matches:
-        # Check for branched or equivalent forms
-        alternative_butyrate_pattern = Chem.MolFromSmarts("[R]-C(=O)O")
-        matches = mol.GetSubstructMatches(alternative_butyrate_pattern)
-        if not matches:
-            return False, "No butyrate ester group found, even in variations"
-
-    return True, "Contains butyrate ester functional group with valid structure"
+    return False, "No valid butyrate ester group found"
