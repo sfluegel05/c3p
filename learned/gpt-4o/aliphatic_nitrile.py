@@ -22,17 +22,30 @@ def is_aliphatic_nitrile(smiles: str):
 
     # Look for nitrile group (C#N)
     nitrile_pattern = Chem.MolFromSmarts("[C]#[N]")
-    if not mol.HasSubstructMatch(nitrile_pattern):
+    nitrile_matches = mol.GetSubstructMatches(nitrile_pattern)
+
+    if len(nitrile_matches) == 0:
         return False, "No nitrile group found"
 
-    # Check if nitrile group's carbon is sp3 hybridized or part of an aliphatic chain
-    for match in mol.GetSubstructMatches(nitrile_pattern):
+    # Check each nitrile group's carbon connectivity to aliphatic chains
+    for match in nitrile_matches:
         cn_atom, n_atom = match # cn_atom is the carbon in C#N
         carbon_atom = mol.GetAtomWithIdx(cn_atom)
-
-        # Verify that the carbon is NOT directly bound to an sp2 or aromatic atom
+        
+        # Check if this carbon is part of an aliphatic chain
+        is_aliphatic = True
         for neighbor in carbon_atom.GetNeighbors():
-            if neighbor.GetHybridization() == Chem.HybridizationType.SP2 or neighbor.GetIsAromatic():
-                return False, "Nitrile group is attached to a non-aliphatic group"
+            if neighbor.GetIsAromatic() or neighbor.GetHybridization() == Chem.HybridizationType.SP2:
+                is_aliphatic = False
+                break
+            if neighbor.GetDegree() > 1:  # Allow branching as long as it's aliphatic
+                for sub_neighbor in neighbor.GetNeighbors():
+                    if sub_neighbor.GetIdx() != cn_atom:
+                        if sub_neighbor.GetIsAromatic() or sub_neighbor.GetHybridization() == Chem.HybridizationType.SP2:
+                            is_aliphatic = False
+                            break
 
-    return True, "Nitrile group is part of an aliphatic chain"
+        if is_aliphatic:
+            return True, "Nitrile group is part of an aliphatic chain"
+
+    return False, "Nitrile group is attached to a non-aliphatic group"
