@@ -22,28 +22,43 @@ def is_clavulone(smiles: str):
     
     # Look for any ester group pattern
     ester_pattern = Chem.MolFromSmarts("C(=O)O")
-    if not mol.HasSubstructMatch(ester_pattern):
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    if not ester_matches:
         return False, "No ester group found"
     
-    # Look for broader conjugated diene pattern
-    conjugated_diene_pattern = Chem.MolFromSmarts("C=C-C=C") 
-    if not mol.HasSubstructMatch(conjugated_diene_pattern):
-        return False, "No conjugated diene found"
+    # Check for presence of cyclic esterified structures typical for prostanoids
+    cyclic_esters_pattern = Chem.MolFromSmarts("C1=CC=CCC=C1C(=O)OC")
+    if not mol.HasSubstructMatch(cyclic_esters_pattern):
+        return False, "No cyclic ester pattern found"
     
-    # Check for presence of halogen (optional)
+    # Look for more flexible conjugated diene arrangements
+    diene_patterns = [
+        Chem.MolFromSmarts("C=C-C=C"),
+        Chem.MolFromSmarts("C=C-C-C=C"),
+        Chem.MolFromSmarts("C=C-C(=C)")
+    ]
+    has_diene = any(mol.HasSubstructMatch(dp) for dp in diene_patterns)
+    if not has_diene:
+        return False, "No suitable conjugated diene arrangement found"
+    
+    # Check long carbon chains with branching (common in marine-derived entities)
+    chain_patterns = [
+        Chem.MolFromSmarts("CCCCCC=CCCC"),  # Basic pattern
+        Chem.MolFromSmarts("C-C-C-C=C-C-C"),  # Adjusted for branches
+    ]
+    has_long_chain = any(mol.HasSubstructMatch(cp) for cp in chain_patterns)
+    if not has_long_chain:
+        return False, "No appropriately patterned long carbon chain found"
+    
+    # Check for halogens indicating clavulones with halogen variance
     halogen_pattern = Chem.MolFromSmarts("[Cl,Br,I]")
     has_halogen = mol.HasSubstructMatch(halogen_pattern)
     
-    # Check long carbon chains
-    long_chain_pattern = Chem.MolFromSmarts("CCCCCC=CCCC")
-    if not mol.HasSubstructMatch(long_chain_pattern):
-        return False, "No long carbon chain found"
-
     if has_halogen:
         return True, "Matches clavulone structure with halogen"
     else:
         return True, "Matches clavulone structure without halogen"
 
-# Example call
-# result, reason = is_clavulone("ClC=1C(=O)[C@@]([C@@](O)(C/C=C\\CCCCC)C1)([C@@H](OC(=O)C)[C@H](OC(=O)C)[C@@H](OC(=O)C)CCCC(OC)=O)[H]")
+# Example debug print for iodine-containing clavulone structure
+# result, reason = is_clavulone("IC1=C[C@](O)(C/C=C\\CCCCC)/C(/C1=O)=C\\C=C/CCCC(OC)=O")
 # print(result, reason)
