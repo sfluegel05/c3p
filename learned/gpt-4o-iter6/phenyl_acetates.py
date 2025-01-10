@@ -21,14 +21,19 @@ def is_phenyl_acetates(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define pattern for acetoxy group connecting to an aromatic ring
-    acetoxy_aromatic_pattern = Chem.MolFromSmarts("cCOC(=O)C")
+    # Define pattern for acetoxy group connected to an aromatic ring (phenyl group)
+    acetoxy_aromatic_pattern = Chem.MolFromSmarts("c1ccccc1OC(=O)C")
     if mol.HasSubstructMatch(acetoxy_aromatic_pattern):
         return True, "Molecule is a phenyl acetate with the acetate ester linked to an aromatic carbon"
 
-    # As an additional coverage for the acetate bound on catechol/phenol derivatives
-    acetoxy_phenol_pattern = Chem.MolFromSmarts("OcCOC(=O)C")
+    # Define pattern for acetoxy bound to phenol derivatives
+    acetoxy_phenol_pattern = Chem.MolFromSmarts("Oc1ccccc1OC(=O)C")
     if mol.HasSubstructMatch(acetoxy_phenol_pattern):
         return True, "Molecule features phenolic oxygen linked to phenyl acetate"
+
+    # Define a more general aromatic ester linkage pattern
+    generic_aromatic_acetate_pattern = Chem.MolFromSmarts("c[OH]cOC(=O)C")
+    if mol.HasSubstructMatch(generic_aromatic_acetate_pattern):
+        return True, "Molecule matches generic pattern for aromatic acetate linkage"
 
     return False, "Molecule does not exhibit key phenyl acetate structural traits"
