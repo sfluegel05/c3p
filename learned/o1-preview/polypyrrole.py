@@ -10,6 +10,7 @@ def is_polypyrrole(smiles: str):
     """
     Determines if a molecule is a polypyrrole based on its SMILES string.
     A polypyrrole is defined as a compound composed of two or more pyrrole units.
+    Pyrrole units are five-membered rings containing exactly one nitrogen atom.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -35,19 +36,12 @@ def is_polypyrrole(smiles: str):
         if len(ring_atoms) != 5:
             continue
 
-        # Check if all atoms in the ring are aromatic and count nitrogen atoms
+        # Count nitrogen atoms in the ring
         num_nitrogen = 0
-        aromatic = True
         for idx in ring_atoms:
             atom = mol.GetAtomWithIdx(idx)
-            if not atom.GetIsAromatic():
-                aromatic = False
-                break
             if atom.GetAtomicNum() == 7:
                 num_nitrogen += 1
-
-        if not aromatic:
-            continue
 
         # If ring has exactly one nitrogen, count it as a pyrrole unit
         if num_nitrogen == 1:
