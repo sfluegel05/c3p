@@ -16,19 +16,20 @@ def is_polyamine(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
+    # Parse SMILES to RDKit molecule object
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # SMARTS pattern to match amino groups: primary (-NH2), secondary (-NHR), and tertiary (-NR2) amines
-    # This pattern detects nitrogen bound to at least one hydrogen
-    amino_pattern = Chem.MolFromSmarts("[NX3;H2,H1,H0;!$(NC=O)]")
-    
-    # Find all amino groups in the molecule
+    # Refined SMARTS pattern to match amino groups
+    # Includes primary (NH2), secondary (NHR), tertiary (NR2) amines,
+    # and quaternary ammonium groups
+    amino_pattern = Chem.MolFromSmarts("[NX3,NX4+;!$(NC=O),!$(N~N)]")
+
+    # Find all matches for amino groups in the molecule
     amino_matches = mol.GetSubstructMatches(amino_pattern)
     
-    # Check for 2 or more amino groups
+    # Check if there are 2 or more amino groups
     num_amino_groups = len(amino_matches)
     if num_amino_groups >= 2:
         return True, f"Contains {num_amino_groups} amino groups"
