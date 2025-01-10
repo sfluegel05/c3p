@@ -22,23 +22,34 @@ def is_volatile_organic_compound(smiles: str):
         return False, "Invalid SMILES string"
     
     # Calculate molecular weight
-    mol_wt = Descriptors.ExactMolWt(mol)  # More accurate calculation
+    mol_wt = Descriptors.ExactMolWt(mol)
     
-    # New criteria for volatile organic compounds
-    # Allow higher molecular weight for long chains and specific functional groups
-    if mol_wt > 500:
-        return False, "Molecular weight exceeds typical range for volatility"
+    # Check molecular weight for VOC typical range
+    if mol_wt > 300:
+        return False, "Molecular weight exceeds typical range for volatile organic compounds"
 
-    # Check presence of aromatic rings
+    # Check for specific volatile functional groups
     aromatic_count = sum(1 for atom in mol.GetAromaticAtoms())
-    
-    # Check for specific volatile functional groups: alcohols, alkenes, aldehydes
     alcohol_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[CX3](O)")))
     alkene_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[CX3]=[CX3]")))
-    aldehyde_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[CX3H](=O)" )))
+    aldehyde_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[CX3H](=O)")))
+    ketone_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[CX3](=O)[#6]")))
+    halogen_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[#6][F,Cl,Br,I]")))
+    ether_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[CX3]O[CX3]")))
     
-    # Simple rules to consider more volatility-related structures 
-    if (alcohol_count > 0 or alkene_count > 0 or aldehyde_count > 0 or aromatic_count > 0) or mol_wt <= 300:
+    # Additional criteria for volatility
+    unsaturation_degree = alkene_count + aromatic_count
+    
+    # Enhanced logic for classifying VOCs
+    if (
+        alcohol_count > 0 or 
+        aldehyde_count > 0 or 
+        ketone_count > 0 or
+        ether_count > 0 or
+        halogen_count > 0 or
+        unsaturation_degree > 0 or 
+        (mol_wt <= 200 and unsaturation_degree > 0)
+    ):
         return True, "Likely a volatile organic compound based on molecular structure and composition"
     else:
         return False, "Does not match enhanced characteristics of a volatile organic compound"
