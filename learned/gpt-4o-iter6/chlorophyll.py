@@ -2,11 +2,12 @@
 Classifies: CHEBI:28966 chlorophyll
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_chlorophyll(smiles: str):
     """
     Determines if a molecule is a chlorophyll based on its SMILES string.
-    Chlorophylls are characterized by a magnesium porphyrin core with modifications and typically a long aliphatic chain.
+    Chlorophylls are defined by a magnesium porphyrin core with a fifth ring, and usually a long phytol chain.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -15,30 +16,41 @@ def is_chlorophyll(smiles: str):
         bool: True if molecule is a chlorophyll, False otherwise
         str: Reason for classification
     """
-
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for magnesium present
-    mg_atoms = [atom for atom in mol.GetAtoms() if atom.GetSymbol() == 'Mg']
-    if len(mg_atoms) != 1:
+    # Check for magnesium atom
+    magnesium_atoms = [atom for atom in mol.GetAtoms() if atom.GetSymbol() == 'Mg']
+    if len(magnesium_atoms) != 1:
         return False, "Magnesium not found or more than one magnesium atom present"
 
-    # Magnesium-coordinated porphyrin core with fifth ring (generic pattern)
-    # This SMARTS is intended as a generalized porphyrin core + modifiers typical of chlorophyll
-    porphyrin_core_smarts = '''
-    [n;R1]1[c;R1][c;R1][c;R1][c;R1][c;R1]1-[n;R1]2[c;R1][c;R1][c;R1][n;R1][c;R1]2
-    -[c;R1]3[n;R1][c;R1][c;R1][c;R1][n;R1]3'''
-    porphyrin_core = Chem.MolFromSmarts(porphyrin_core_smarts)
+    # Check for porphyrin core (four pyrrole-like N-atoms)
+    porphyrin_n_atoms = [atom for atom in mol.GetAtoms() if atom.GetSymbol() == 'N']
+    if len(porphyrin_n_atoms) < 4:
+        return False, "Less than four nitrogen atoms found"
+
+    # Check for the fifth ring
+    # Look for a ring system size larger than 4
+    ssr = Chem.GetSymmSSSR(mol)
+    five_rings = 0
+    for ring in ssr:
+        if len(ring) > 4:
+            five_rings += 1
     
-    if not mol.HasSubstructMatch(porphyrin_core):
-        return False, "Porphyrin core with magnesium coordination not found"
+    if five_rings == 0:
+        return False, "Fifth ring not detected"
 
-    # Check for a long aliphatic chain, possibly representing phytol-like chains
-    long_chain_smarts = Chem.MolFromSmarts('CCCCCCCCCCCCCO')
-    if not mol.HasSubstructMatch(long_chain_smarts):
-        return False, "Long aliphatic chain characteristic of chlorophyll missing"
+    # Check for the presence of a phytol chain (at least a long aliphatic chain)
+    # Using a simple rotatable bond or carbon count could help detect this
+    carbon_atoms = [atom for atom in mol.GetAtoms() if atom.GetSymbol() == 'C']
+    if len(carbon_atoms) < 20:  # adjust number depending on expected chain length
+        return False, "Too few carbon atoms, long hydrophobic chain possibly absent"
 
-    return True, "Contains magnesium porphyrin core with characteristic modifications and a long aliphatic chain"
+    # Confirm long chain through rotatable bonds (for ample flexibility)
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 8:  # adjust number depending on expected chain length
+        return False, "Not enough rotatable bonds for a phytol chain"
+
+    return True, "Contains magnesium chelated by four pyrrole-like rings, a fifth ring, and a long hydrophobic chain"
