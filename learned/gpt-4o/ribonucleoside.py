@@ -21,24 +21,25 @@ def is_ribonucleoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Identify the ribose sugar pattern
-    ribose_pattern = Chem.MolFromSmarts("C1[C@@H](O)[C@@H](O)[C@H](CO)O1")
+    # Identify a more flexible ribose sugar pattern allowing minor modifications
+    ribose_pattern = Chem.MolFromSmarts("C1[C@H](O)[C@H](CO)[C@@H](O)O1")
     if not mol.HasSubstructMatch(ribose_pattern):
         return False, "No ribose sugar component found"
-    
-    # Identify a common nucleobase attached (for simplicity, we use a generic pattern)
-    nucleobase_pattern = Chem.MolFromSmarts("n1cnc2c1[nH]c(=O)[nH]c2=O")
-    purine_base_pattern = Chem.MolFromSmarts("c1ncnc2n1cnc2")
-    pyrimidine_base_pattern = Chem.MolFromSmarts("c1[nH]c(=O)nc(=O)[nH]c1")
 
-    has_nucleobase = mol.HasSubstructMatch(nucleobase_pattern) or \
-                     mol.HasSubstructMatch(purine_base_pattern) or \
-                     mol.HasSubstructMatch(pyrimidine_base_pattern)
+    # Patterns for extended nucleobase matching, accounting for common modifications
+    extended_nucleobase_patterns = [
+        Chem.MolFromSmarts("n1cnc2n1cnc2"),  # Purines 
+        Chem.MolFromSmarts("c1[nH]c(=O)nc(=O)[nH]c1"),  # Pyrimidines 
+        Chem.MolFromSmarts("n1cnc2c1[nH]c(=O)[nH]c2=O"),  # Alternative purine/pyrimidine structures
+        Chem.MolFromSmarts("c1c[nH]n[cH]1")  # Allow for modifications
+    ]
 
-    if not has_nucleobase:
-        return False, "No nucleobase found attached to the ribose"
+    # Check for any of the nucleobase patterns
+    for pattern in extended_nucleobase_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return True, "Contains D-ribose sugar with an attached nucleobase"
 
-    return True, "Contains D-ribose sugar with an attached nucleobase"
+    return False, "No nucleobase found attached to the ribose"
 
 # Example usage
 # smiles = "CN(C)c1ncnc2n(cnc12)[C@@H]1O[C@H](CO)[C@@H](N)[C@H]1O"  # Example ribonucleoside SMILES
