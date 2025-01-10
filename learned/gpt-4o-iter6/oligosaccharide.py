@@ -2,7 +2,7 @@
 Classifies: CHEBI:50699 oligosaccharide
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import AllChem
 
 def is_oligosaccharide(smiles: str):
     """
@@ -13,7 +13,7 @@ def is_oligosaccharide(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is an oligosaccharide, False otherwise
+        bool: True if the molecule is an oligosaccharide, False otherwise
         str: Reason for classification
     """
     # Parse the SMILES string into a molecule object
@@ -22,19 +22,27 @@ def is_oligosaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS patterns to search for hexose (6-membered sugar rings) units
-    hexose_pattern = Chem.MolFromSmarts("[C@H]1(O)C(O)C(O)C(O)C(O)C1")
+    # Define SMARTS patterns for various sugar units (hexoses and pentoses with varying stereochemistry)
+    sugar_patterns = [
+        Chem.MolFromSmarts("[C@H]1(O)C(O)C(O)C(O)C(O)C1"),  # Just one example hexose pattern
+        Chem.MolFromSmarts("[C@@H]1(O)C(O)C(O)C(O)C(O)C1"),  # Stereoisomer of the hexose
+        Chem.MolFromSmarts("[C@H]1(O)C(O)C(O)C(O)C1"),  # Example pentose pattern
+        Chem.MolFromSmarts("[C@@H]1(O)C(O)C(O)C(O)C1")   # Another pentose pattern
+        # More patterns can be added as needed
+    ]
     
-    # Search for at least two hexose units indicating oligosaccharide (can be adjusted for specificity)
-    hexose_matches = mol.GetSubstructMatches(hexose_pattern)
+    # Scan the molecule for matching sugar substructures
+    sugar_matches = 0
+    for pattern in sugar_patterns:
+        sugar_matches += len(mol.GetSubstructMatches(pattern))
     
-    if len(hexose_matches) < 2:
-        return False, f"Found {len(hexose_matches)} sugar units, need at least 2 for oligosaccharide"
-
-    # Define glycosidic linkage pattern (O-link between sugars)
-    glycosidic_linkage_pattern = Chem.MolFromSmarts("C-O-C")
+    if sugar_matches < 2:
+        return False, f"Found {sugar_matches} sugar units, need at least 2 for oligosaccharide"
     
-    # Search for glycosidic linkages in the molecule
+    # Define more specific glycosidic linkage pattern (anomeric carbon to hydroxyl)
+    glycosidic_linkage_pattern = Chem.MolFromSmarts("[C@H]1(OCCC1)-O-*-C")
+    
+    # Search for glycosidic linkages
     glycosidic_matches = mol.GetSubstructMatches(glycosidic_linkage_pattern)
     
     if len(glycosidic_matches) < 1:
