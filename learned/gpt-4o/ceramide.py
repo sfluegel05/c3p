@@ -7,9 +7,9 @@ from rdkit.Chem import rdMolDescriptors
 def is_ceramide(smiles: str):
     """
     Determines if a molecule is a ceramide based on its SMILES string.
-
-    A ceramide consists of a sphingoid base (long unsaturated aliphatic chain with amino alcohol)
-    and an amide-linked fatty acid, typically with a chain length from 14 to 26 carbons.
+    Ceramides are characterized by a sphingoid base with an amide-linked fatty acid.
+    The sphingoid base typically has an amino alcohol, and the fatty acids tend to range
+    from 14 to 26 carbons.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -17,33 +17,34 @@ def is_ceramide(smiles: str):
     Returns:
         bool: True if molecule is a ceramide, False otherwise
         str: Reason for classification
-    """   
+    """
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for sphingoid base-like structure: long-chain aliphatic amino alcohol
-    sphingoid_pattern = Chem.MolFromSmarts("[C,C][C][C][C][C][C][C][C][C][C][C][C][C][C][C][C][C][C][NH][C](O)")
+    # Revised pattern: Long-chain base (aliphatic chain, aminodiol)
+    sphingoid_pattern = Chem.MolFromSmarts("C[C@@H](O)[C@@H](O)CO[C@H]([NH,C](C(=O)))")
     if not mol.HasSubstructMatch(sphingoid_pattern):
         return False, "No sphingoid base found"
-    
-    # Look for amide bond - linked fatty acid
+
+    # Look for amide linkage - linked fatty acid
     amide_pattern = Chem.MolFromSmarts("C(=O)N")
     if not mol.HasSubstructMatch(amide_pattern):
         return False, "No amide bond found"
 
-    # Count carbon atoms in fatty acid chain - typically 14 to 26
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 14 or c_count > 26:
-        return False, f"Fatty acid chain length {c_count} not in range (14-26)"
+    # Assess chain length - count carbon atoms in associated groups
+    carbon_sn1 = rdMolDescriptors.CalcNumAliphaticCarbocycles(mol)
+    total_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    
+    if total_carbons < 18:  # Minimal total carbons to account for backbone plus fatty acid chain
+        return False, f"Too few carbon atoms, found {total_carbons}"
 
-    return True, "Contains sphingoid base and amide-linked fatty acid"
+    return True, "Contains sphingoid base with amide-linked fatty acid"
 
-# Test the function with given examples
+# Test the function
 examples = [
     "CCCCCCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO)[C@H](O)CCCCCCCCCCCCCCC",  # N-hexacosanoylsphinganine
-    "O1C(C(O)C(O)C(O)C1OCC(NC(=O)C(O)CCCCCCCCCCCC)C(O)/C=C\\CC/C=C\\CCCCCCCCC)CO",  # AS 1-1
     # Add more example SMILES strings to test
 ]
 
