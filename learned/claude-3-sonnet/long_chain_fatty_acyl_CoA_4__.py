@@ -21,7 +21,7 @@ def is_long_chain_fatty_acyl_CoA_4__(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for CoA core structure - adenine base
+    # Check for CoA core structure
     adenine_pattern = Chem.MolFromSmarts("n1cnc2c(N)ncnc12")
     if not mol.HasSubstructMatch(adenine_pattern):
         return False, "Missing adenine moiety of CoA"
@@ -31,67 +31,49 @@ def is_long_chain_fatty_acyl_CoA_4__(smiles: str):
     if not mol.HasSubstructMatch(thioester_pattern):
         return False, "Missing thioester linkage"
     
-    # Check for phosphate groups - more flexible pattern
-    phosphate_patterns = [
-        Chem.MolFromSmarts("[OP]([O-])([O-])=O"),
-        Chem.MolFromSmarts("[OP](=O)([O-])[O-]"),
-        Chem.MolFromSmarts("[P](=O)([O-])([O-])O"),
-    ]
+    # Check for 4 negative charges (phosphate groups)
+    negative_charge_pattern = Chem.MolFromSmarts("[O-]")
+    charge_matches = len(mol.GetSubstructMatches(negative_charge_pattern))
+    if charge_matches < 4:
+        return False, f"Found only {charge_matches} negative charges, need at least 4"
     
-    has_phosphates = False
-    for pattern in phosphate_patterns:
-        if mol.HasSubstructMatch(pattern):
-            has_phosphates = True
-            break
-            
-    if not has_phosphates:
+    # Check for phosphate groups
+    phosphate_pattern = Chem.MolFromSmarts("P(=O)([O-])[O-]")
+    if not mol.HasSubstructMatch(phosphate_pattern):
         return False, "Missing phosphate groups"
     
-    # Check for CoA structure - pantetheine portion
+    # Calculate carbon chain length in fatty acid portion
+    # First, get the total carbon count
+    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    
+    # CoA itself contains 21 carbons, so subtract to get fatty acid chain length
+    fatty_acid_carbons = carbon_count - 21
+    if fatty_acid_carbons < 12:
+        return False, f"Fatty acid chain too short ({fatty_acid_carbons} carbons)"
+    
+    # Look for long carbon chain
+    carbon_chain_pattern = Chem.MolFromSmarts("CCCCCCCCCCCC")
+    if not mol.HasSubstructMatch(carbon_chain_pattern):
+        return False, "No long carbon chain found"
+    
+    # Additional checks for expected CoA features
     pantetheine_pattern = Chem.MolFromSmarts("NCCC(=O)NCCS")
     if not mol.HasSubstructMatch(pantetheine_pattern):
         return False, "Missing pantetheine portion of CoA"
-        
-    # Calculate molecular properties
-    n_carbons = len([a for a in mol.GetAtoms() if a.GetAtomicNum() == 6])
-    n_double_bonds = rdMolDescriptors.CalcNumDoubleBonds(mol)
     
-    # Check for fatty acid chain
-    fatty_chain_pattern = Chem.MolFromSmarts("CCCCCCC")  # At least 7 carbons in chain
-    if not mol.HasSubstructMatch(fatty_chain_pattern):
-        return False, "Missing long fatty acid chain"
+    ribose_pattern = Chem.MolFromSmarts("OC1C(O)C(O)C(O)C1")
+    if not mol.HasSubstructMatch(ribose_pattern):
+        return False, "Missing ribose portion of CoA"
     
-    # Identify features
+    # If we get here, it's likely a long-chain fatty acyl-CoA(4-)
     features = []
-    
-    # Check for unsaturation
     if mol.HasSubstructMatch(Chem.MolFromSmarts("C=C")):
         features.append("unsaturated")
-        
-    # Check for hydroxyl groups
-    if mol.HasSubstructMatch(Chem.MolFromSmarts("[CH2,CH]-[OH]")):
+    if mol.HasSubstructMatch(Chem.MolFromSmarts("CO")):
         features.append("hydroxylated")
-        
-    # Check for keto groups
     if mol.HasSubstructMatch(Chem.MolFromSmarts("CC(=O)C")):
         features.append("keto")
         
-    # Check for epoxy groups
-    if mol.HasSubstructMatch(Chem.MolFromSmarts("C1OC1")):
-        features.append("epoxy")
-    
     feature_str = " and ".join(features) if features else "saturated"
     
-    # Lower carbon threshold - CoA has ~23 carbons, long chain fatty acids typically >10
-    if n_carbons < 30:  # Lowered from 35
-        return False, f"Carbon count ({n_carbons}) too low for long-chain fatty acyl-CoA"
-    
-    # More flexible charge check - look for total negative charge
-    total_charge = sum(atom.GetFormalCharge() for atom in mol.GetAtoms())
-    if total_charge > -3:  # Allow some flexibility in charge representation
-        return False, f"Total negative charge ({total_charge}) insufficient for CoA(4-)"
-    
-    # Calculate approximate fatty acid chain length
-    chain_length = n_carbons - 23  # Subtract CoA carbons
-    
-    return True, f"Long-chain ({chain_length} carbons) {feature_str} fatty acyl-CoA(4-) with {n_double_bonds} double bonds"
+    return True, f"Long-chain ({fatty_acid_carbons} carbons) {feature_str} fatty acyl-CoA(4-) with thioester linkage"
