@@ -5,14 +5,12 @@ Classifies: CHEBI:46662 mineral
 Classifies: CHEBI:46662 mineral
 """
 from rdkit import Chem
-from rdkit.Chem import rdchem
 
 def is_mineral(smiles: str):
     """
     Determines if a molecule is a mineral based on its SMILES string.
-    A mineral is a naturally occurring inorganic substance formed through geological processes.
-    This function checks for the absence of carbon-hydrogen bonds and common organic functional groups,
-    and the presence of metal ions combined with inorganic anions.
+    A mineral is a naturally occurring chemical substance formed through geological processes,
+    typically inorganic, and has a characteristic chemical composition.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -27,70 +25,62 @@ def is_mineral(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Exclude molecules with aromatic rings (typical of organic compounds)
-    if mol.GetAromaticAtomCount() > 0:
-        return False, "Contains aromatic rings typical of organic molecules"
+    # List of elements commonly found in minerals
+    mineral_elements = {'H', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Na', 'Mg', 'Al',
+                        'Si', 'P', 'S', 'Cl', 'K', 'Ca', 'Sc', 'Ti', 'V', 'Cr', 'Mn',
+                        'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga', 'Ge', 'As', 'Se', 'Br',
+                        'Rb', 'Sr', 'Y', 'Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 'Pd',
+                        'Ag', 'Cd', 'In', 'Sn', 'Sb', 'Te', 'I', 'Cs', 'Ba', 'La',
+                        'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho',
+                        'Er', 'Tm', 'Yb', 'Lu', 'Hf', 'Ta', 'W', 'Re', 'Os', 'Ir',
+                        'Pt', 'Au', 'Hg', 'Tl', 'Pb', 'Bi', 'Po', 'Th', 'U'}
 
-    # Exclude molecules with carbon-hydrogen bonds (indicative of organic compounds)
+    # Get set of elements in the molecule
+    atom_symbols = set(atom.GetSymbol() for atom in mol.GetAtoms())
+    for element in atom_symbols:
+        if element not in mineral_elements:
+            return False, f"Element '{element}' not commonly found in minerals"
+
+    # Exclude molecules with direct metal-carbon bonds (organometallics)
+    metals_atomic_nums = [3, 4, 11, 12, 13, 19, 20, 21, 22, 23, 24,
+                          25, 26, 27, 28, 29, 30, 31, 37, 38, 39,
+                          40, 41, 42, 43, 44, 45, 46, 47, 48, 49,
+                          55, 56, 57, 58, 59, 60, 61, 62, 63, 64,
+                          65, 66, 67, 68, 69, 70, 71, 72, 73, 74,
+                          75, 76, 77, 78, 79, 80, 81, 82, 83, 84,
+                          90, 92]  # Atomic numbers of metals
     for bond in mol.GetBonds():
-        atom1 = bond.GetBeginAtom()
-        atom2 = bond.GetEndAtom()
-        if (atom1.GetAtomicNum() == 6 and atom2.GetAtomicNum() == 1) or \
-           (atom1.GetAtomicNum() == 1 and atom2.GetAtomicNum() == 6):
-            return False, "Contains carbon-hydrogen bonds typical of organic molecules"
+        begin_atom = bond.GetBeginAtom()
+        end_atom = bond.GetEndAtom()
+        if ((begin_atom.GetAtomicNum() in metals_atomic_nums and end_atom.GetAtomicNum() == 6) or
+            (end_atom.GetAtomicNum() in metals_atomic_nums and begin_atom.GetAtomicNum() == 6)):
+            return False, "Contains metal-carbon bond typical of organometallic compounds"
 
-    # Exclude molecules with typical organic functional groups
+    # Exclude molecules with aromatic rings
+    aromatic_ring = Chem.MolFromSmarts("a1aaaaa1")
+    if mol.HasSubstructMatch(aromatic_ring):
+        return False, "Contains aromatic ring typical of organic molecules"
+
+    # Exclude molecules with long carbon chains (more than 4 contiguous carbons)
+    long_carbon_chain = Chem.MolFromSmarts("[CH2]([CH2])[CH2][CH2]")
+    if mol.HasSubstructMatch(long_carbon_chain):
+        return False, "Contains long carbon chain typical of organic molecules"
+
+    # Exclude molecules with functional groups typical of complex organic molecules
     organic_functional_groups = [
-        Chem.MolFromSmarts("[CX3]=[OX1]"),                 # Carbonyl group
-        Chem.MolFromSmarts("[CX3]=[CX3]"),                 # Alkene
-        Chem.MolFromSmarts("[CX2]#[CX1]"),                 # Alkyne
-        Chem.MolFromSmarts("[#6][OX2H]"),                  # Alcohol
-        Chem.MolFromSmarts("[#6][NX3;H2,H1;!$([N][O])]"),  # Amine
-        Chem.MolFromSmarts("[#6][#16][#6]"),               # Thioether
-        Chem.MolFromSmarts("[CX3](=O)[OX2H1]"),            # Carboxylic acid
-        Chem.MolFromSmarts("c"),                           # Aromatic carbons
+        Chem.MolFromSmarts("[#6]=[#6]"),              # Alkenes
+        Chem.MolFromSmarts("[#6]#[#6]"),              # Alkynes
+        Chem.MolFromSmarts("[#6][OX2H]"),             # Alcohols
+        Chem.MolFromSmarts("[#6][NX3;H2,H1;!$([N][O])]"),  # Amines (primary and secondary)
+        Chem.MolFromSmarts("[#6]C(=O)[#6]"),          # Ketones
+        Chem.MolFromSmarts("[#6]C(=O)O[#6]"),         # Esters
+        Chem.MolFromSmarts("[#6][#16][#6]"),          # Thioethers
+        Chem.MolFromSmarts("c"),                      # Any aromatic carbon atom
     ]
+
     for fg in organic_functional_groups:
         if mol.HasSubstructMatch(fg):
             return False, "Contains functional groups typical of organic molecules"
-
-    # Identify metals in the molecule
-    metals = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() in rdchem.PeriodicTable.GetElementSymbolList()
-              and atom.GetAtomicNum() != 6 and atom.GetAtomicNum() != 1]
-    if not metals:
-        return False, "No metal atoms found in the molecule"
-
-    # Check for inorganic anions
-    inorganic_anions = [
-        Chem.MolFromSmarts("[O-2]"),            # Oxide
-        Chem.MolFromSmarts("[S-2]"),            # Sulfide
-        Chem.MolFromSmarts("[N-3]"),            # Nitride
-        Chem.MolFromSmarts("[F-]"),             # Fluoride
-        Chem.MolFromSmarts("[Cl-]"),            # Chloride
-        Chem.MolFromSmarts("[Br-]"),            # Bromide
-        Chem.MolFromSmarts("[I-]"),             # Iodide
-        Chem.MolFromSmarts("[OH-]"),            # Hydroxide
-        Chem.MolFromSmarts("O=[SX4](=O)[O-]"),  # Sulfate
-        Chem.MolFromSmarts("O=[NX3](=O)[O-]"),  # Nitrate
-        Chem.MolFromSmarts("[CO3]"),            # Carbonate
-        Chem.MolFromSmarts("P(=O)([O-])([O-])[O-]"),  # Phosphate
-        Chem.MolFromSmarts("[Si]([O-])([O-])[O-]"),   # Silicate
-    ]
-    anion_found = False
-    for anion in inorganic_anions:
-        if mol.HasSubstructMatch(anion):
-            anion_found = True
-            break
-    if not anion_found:
-        return False, "No inorganic anions found in the molecule"
-
-    # Exclude organometallics (metal-carbon bonds)
-    for bond in mol.GetBonds():
-        atom1 = bond.GetBeginAtom()
-        atom2 = bond.GetEndAtom()
-        if (atom1.GetAtomicNum() in range(21, 31) + range(39, 49) + range(72, 81) and atom2.GetAtomicNum() == 6) or \
-           (atom2.GetAtomicNum() in range(21, 31) + range(39, 49) + range(72, 81) and atom1.GetAtomicNum() == 6):
-            return False, "Contains metal-carbon bond typical of organometallic compounds"
 
     return True, "Molecule meets criteria for mineral classification"
 
@@ -98,7 +88,7 @@ __metadata__ = {
     'chemical_class': {
         'id': 'CHEBI:46662',
         'name': 'mineral',
-        'definition': 'In general, a mineral is a chemical substance that is normally crystalline formed and has been formed as a result of geological processes. The term also includes metamict substances (naturally occurring, formerly crystalline substances whose crystallinity has been destroyed by ionising radiation) and can include naturally occurring amorphous substances that have never been crystalline (\'mineraloids\') such as georgite and calciouranoite as well as substances formed by the action of geological processes on biogenic compounds (\'biogenic minerals\').',
+        'definition': 'In general, a mineral is a chemical substance that is normally crystalline formed and has been formed as a result of geological processes. The term also includes metamict substances (naturally occurring, formerly crystalline substances whose crystallinity has been destroyed by ionising radiation) and can include naturally occurring amorphous substances that have never been crystalline (\'mineraloids\') such as georgite and calciouranoite as well as substances formed by the action of geological processes on bigenic compounds (\'biogenic minerals\').',
         'parents': ['CHEBI:24437']
     },
     'config': {
@@ -114,7 +104,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 3,
+    'attempt': 2,
     'success': True,
     'best': True,
     'error': '',
