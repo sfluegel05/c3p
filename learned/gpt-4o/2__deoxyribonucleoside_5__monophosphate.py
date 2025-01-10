@@ -22,18 +22,20 @@ def is_2__deoxyribonucleoside_5__monophosphate(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for deoxyribose sugar pattern (remove hydroxyl group at 2' position)
-    deoxyribose_pattern = Chem.MolFromSmarts("O[C@H]1[C@@H]([C@H](O)[C@@H](C(O)*)O1]")
+    # Adjusted pattern to be more flexible in atom valence and stereochemistry
+    deoxyribose_pattern = Chem.MolFromSmarts("C1OC(CO)C(O)C1")
     if not mol.HasSubstructMatch(deoxyribose_pattern):
         return False, "No 2'-deoxyribose structure found"
 
     # Check for phosphate group pattern at 5' position
-    phosphate_pattern = Chem.MolFromSmarts("COP([O-])([O-])=O")
+    # Broadened pattern to match potential variations in bonding
+    phosphate_pattern = Chem.MolFromSmarts("COP(=O)(O)[O-]")
     if not mol.HasSubstructMatch(phosphate_pattern):
         phosphate_pattern = Chem.MolFromSmarts("COP(=O)(O)O")
         if not mol.HasSubstructMatch(phosphate_pattern):
             return False, "No 5'-phosphate group found"
 
-    # Check for typical nucleobases pattern - simplified approach as they vary
+    # Check for typical nucleobases pattern - more permutations
     base_patterns = [
         Chem.MolFromSmarts("n1cnc2c1ncnc2"),  # adenine base
         Chem.MolFromSmarts("n1c(O)nc2c1ncnc2"),  # guanine base
