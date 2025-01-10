@@ -26,7 +26,7 @@ def is_prostaglandin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for the presence of a cyclopentane ring
+    # Check for the presence of a cyclopentane ring with at least one substituent
     cyclopentane_pattern = Chem.MolFromSmarts("[C]1[C][C][C][C]1")
     if not mol.HasSubstructMatch(cyclopentane_pattern):
         return False, "No cyclopentane ring found"
@@ -46,45 +46,19 @@ def is_prostaglandin(smiles: str):
     if not mol.HasSubstructMatch(double_bond_pattern):
         return False, "No double bond found"
 
-    # Check molecular weight - prostaglandins typically have a molecular weight around 350-600 Da
+    # Check molecular weight - prostaglandins typically have a molecular weight around 300-600 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 300 or mol_wt > 600:
+    if mol_wt < 250 or mol_wt > 650:
         return False, f"Molecular weight {mol_wt:.2f} is outside the typical range for prostaglandins"
 
     # Count carbons - prostaglandins typically have 20 carbons, but allow some flexibility
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 16 or c_count > 24:
+    if c_count < 15 or c_count > 25:
         return False, f"Number of carbons {c_count} is outside the typical range for prostaglandins"
 
+    # Check for the presence of a specific prostaglandin-like structure
+    prostaglandin_pattern = Chem.MolFromSmarts("[C]1[C][C][C][C]1.[CX3](=O)[OX2H0].[OX2H].[CX3]=[CX3]")
+    if not mol.HasSubstructMatch(prostaglandin_pattern):
+        return False, "No prostaglandin-like structure found"
+
     return True, "Contains cyclopentane ring, carboxyl group, hydroxyl group, and double bond, with appropriate molecular weight and carbon count"
-
-
-__metadata__ = {   'chemical_class': {   'id': 'CHEBI:26347',
-                          'name': 'prostaglandin',
-                          'definition': 'Naturally occurring compounds derived from the parent C20 acid, prostanoic acid.',
-                          'parents': ['CHEBI:26347', 'CHEBI:26347']},
-    'config': {   'llm_model_name': 'lbl/claude-sonnet',
-                  'f1_threshold': 0.8,
-                  'max_attempts': 5,
-                  'max_positive_instances': None,
-                  'max_positive_to_test': None,
-                  'max_negative_to_test': None,
-                  'max_positive_in_prompt': 50,
-                  'max_negative_in_prompt': 20,
-                  'max_instances_in_prompt': 100,
-                  'test_proportion': 0.1},
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 150,
-    'num_false_positives': 4,
-    'num_true_negatives': 182407,
-    'num_false_negatives': 23,
-    'num_negatives': None,
-    'precision': 0.974025974025974,
-    'recall': 0.8670520231213873,
-    'f1': 0.9174311926605504,
-    'accuracy': 0.9998521228585199}
