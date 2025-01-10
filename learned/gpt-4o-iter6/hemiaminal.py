@@ -21,12 +21,12 @@ def is_hemiaminal(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define an enhanced SMARTS pattern to capture more potential hemiaminal configurations
-    # Focus on flexible hybridization and multiple equivalent representations
+    # Enhanced SMARTS patterns for hemiaminal detection
     hemiaminal_patterns = [
-        Chem.MolFromSmarts("[CX4](O)(N)"),  # Typical carbon with single bonds
-        Chem.MolFromSmarts("[CX3](O)(N)"),  # Allow sp2 hybridized carbon
-        Chem.MolFromSmarts("[C](O)(N)(*)"), # Handle attachments to additional groups
+        Chem.MolFromSmarts("[CX4;R0](O)(N)"),  # Accommodating both open-chain and ring hemiaminals
+        Chem.MolFromSmarts("[CX3;R0](O)(N)"),  # Permit sp2 carbon within non-ring systems
+        Chem.MolFromSmarts("[R][CX4](O)(N)"),  # Cyclic with an aliphatic carbon
+        Chem.MolFromSmarts("[R][CX3](O)(N)"),  # Cyclic with a planar carbon
     ]
 
     # Check for matches with any defined pattern
