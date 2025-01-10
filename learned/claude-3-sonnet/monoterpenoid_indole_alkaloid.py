@@ -26,14 +26,15 @@ def is_monoterpenoid_indole_alkaloid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check molecular weight (typically between 250-800 Da for MIAs)
+    # Check molecular weight (expanded range for MIAs)
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 250 or mol_wt > 800:
+    if mol_wt < 250 or mol_wt > 900:
         return False, f"Molecular weight {mol_wt:.1f} outside typical MIA range"
 
     # Count basic statistics
     n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     ring_count = rdMolDescriptors.CalcNumRings(mol)
 
     # Basic requirements
@@ -41,7 +42,7 @@ def is_monoterpenoid_indole_alkaloid(smiles: str):
         return False, "No nitrogen atoms found - required for alkaloid"
     if c_count < 16:
         return False, f"Too few carbons ({c_count}) for MIA structure"
-    if ring_count < 3:
+    if ring_count < 4:
         return False, f"Too few rings ({ring_count}) for MIA structure"
 
     # Look for indole or modified indole cores using multiple patterns
@@ -65,10 +66,10 @@ def is_monoterpenoid_indole_alkaloid(smiles: str):
 
     # Check for nitrogen-containing rings (essential for MIA skeleton)
     n_ring_pattern = Chem.MolFromSmarts("[N;R]")
-    if not mol.HasSubstructMatch(n_ring_pattern):
-        return False, "No nitrogen-containing rings found"
+    if len(mol.GetSubstructMatches(n_ring_pattern)) < 2:
+        return False, "Insufficient nitrogen-containing rings"
 
-    # Look for typical structural features
+    # Look for typical MIA structural features
     features = []
     
     # Check for ester groups (common in MIAs)
@@ -84,21 +85,42 @@ def is_monoterpenoid_indole_alkaloid(smiles: str):
     if sp2_carbons > 0:
         features.append(f"{sp2_carbons} sp2 carbons")
 
-    # Calculate complexity score based on multiple factors
+    # Look for specific MIA structural patterns
+    mia_patterns = [
+        "[C]1[C]2[N][C]([C]1)[C]([C]2)",  # Common MIA ring fusion pattern
+        "[C]1[C]2[N][C]([C]1)[C]([C]2)[O,N]", # Oxygenated/N-containing variant
+        "[C]1[C]2[N][C]([C]1)[C]([C]2)C(=O)", # Carbonyl-containing variant
+    ]
+    
+    mia_pattern_matches = 0
+    for pattern in mia_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            mia_pattern_matches += 1
+
+    # Calculate revised complexity score
     complexity_contributors = [
         ring_count * 2,      # Rings
         n_count * 3,         # Nitrogens
         sp2_carbons,         # sp2 carbons
-        len(features) * 2    # Typical features
+        len(features) * 2,   # Typical features
+        mia_pattern_matches * 4  # Specific MIA patterns
     ]
     complexity_score = sum(complexity_contributors)
     
-    if complexity_score < 12:
+    if complexity_score < 15:
         return False, f"Complexity score ({complexity_score}) too low for typical MIA"
 
-    # Check for fused ring systems (common in MIAs)
-    if rdMolDescriptors.CalcNumSpiroAtoms(mol) + rdMolDescriptors.CalcNumBridgeheadAtoms(mol) == 0:
-        return False, "Missing typical fused/spiro ring systems"
+    # Additional structural requirements
+    if ring_count > 12 and mia_pattern_matches == 0:
+        return False, "Complex structure lacks typical MIA ring patterns"
+        
+    if n_count > 5 and mia_pattern_matches == 0:
+        return False, "High nitrogen count but lacks typical MIA patterns"
+
+    # Check C/N ratio (typically between 8-20 for MIAs)
+    cn_ratio = c_count / n_count
+    if cn_ratio < 8 or cn_ratio > 20:
+        return False, f"C/N ratio ({cn_ratio:.1f}) outside typical MIA range"
 
     feature_str = ", ".join(features) if features else "typical structural features"
     return True, f"Contains indole core, complex ring system ({ring_count} rings), and {feature_str}"
