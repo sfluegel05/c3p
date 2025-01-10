@@ -20,36 +20,65 @@ def is_sterol_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Sterol core identification: typical core structure involving four fused rings
-    # Base steroid nucleus, allowing for substitution and stereochemistry variability
-    sterol_smarts = "[#6]12[#6][#6]3[#6]([#6]1)[#6][#6]4[C@]2([#6])CC[C@]45C[C@H]3CC[C@@H]5C"
+    # Refined Sterol core identification: a core structure invoking common sterol patterns.
+    # Sterols have a tetracyclic skeleton with hydrocarbon chains and a hydroxyl group typically on C3.
+    sterol_smarts = "C1CCC2C3C(CC(C4C3(CCC2C1)C)C)CC4" # General sterol scaffold
     sterol_core = Chem.MolFromSmarts(sterol_smarts)
 
     if not mol.HasSubstructMatch(sterol_core):
         return False, "No sterol core structure found"
-        
+
     # Ester group pattern (-C(=O)O-)
-    ester_pattern_smarts = "[#6](=O)O"  # Valid for ester linkage
+    ester_pattern_smarts = "C(=O)O" # Generic ester linkage
     ester_pattern = Chem.MolFromSmarts(ester_pattern_smarts)
     
     if not mol.HasSubstructMatch(ester_pattern):
         return False, "No ester linkage found"
 
-    # Typically, sterol esters have long chains; count carbons in chains attached to ester
-    aliphatic_chain_length = 10  # Arbitrary length suggesting a fatty acid
-    chain_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
-    if len(chain_atoms) < aliphatic_chain_length:
-        return False, "Insufficient aliphatic chain found"
+    # Count carbons in ester-linked aliphatic chain to ensure fatty acid presence
+    for match in mol.GetSubstructMatches(ester_pattern):
+        ester_atom_idx = match[1]  # The oxygen in the ester linkage
+        
+        # Follow the carbon chain from here:
+        carbon_chain_length = 0
+        atom = mol.GetAtomWithIdx(ester_atom_idx)
+        
+        for neighbor in atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 6:  # Carbon neighbor
+                carbon_count = recursive_carbon_count(neighbor, {atom.GetIdx()})
+                if carbon_count >= 10:  # Typical minimum length for fatty acids
+                    return True, "Contains sterol core structure esterified with a sufficiently long aliphatic chain"
 
-    return True, "Contains sterol core structure esterified with a sufficient long aliphatic chain"
+    return False, "No sufficiently long aliphatic chain found"
+
+def recursive_carbon_count(atom, visited):
+    """
+    Helper function to recursively count the number of carbons in a chain.
+    """
+    count = 0
+    
+    # Traverse through neighbors
+    for neighbor in atom.GetNeighbors():
+        if neighbor.GetIdx() not in visited:
+            visited.add(neighbor.GetIdx())
+            if neighbor.GetAtomicNum() == 6:  # Carbon
+                count += 1 + recursive_carbon_count(neighbor, visited)
+    
+    return count
 
 # Example metadata
-__metadata__ = {   'chemical_class': {   'id': 'CHEBI:None',
-                          'name': 'sterol ester',
-                          'definition': 'Chemical entities consisting of a sterol esterified with a fatty acid'},
-    'config': {   'llm_model_name': 'rdkit_based_model',
-                  'f1_threshold': 0.8,
-                  'max_attempts': 5},
+__metadata__ = {
+    'chemical_class': {
+        'id': 'CHEBI:None',
+        'name': 'sterol ester',
+        'definition': 'Chemical entities consisting of a sterol esterified with a fatty acid'
+    },
+    'config': {
+        'llm_model_name': 'rdkit_based_model',
+        'f1_threshold': 0.8,
+        'max_attempts': 5
+    },
     'message': None,
-    'attempt': 2,
-    'success': True}
+    'attempt': 3,
+    'success': True
+}
