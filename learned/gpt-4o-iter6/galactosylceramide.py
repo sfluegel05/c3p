@@ -2,7 +2,6 @@
 Classifies: CHEBI:36498 galactosylceramide
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_galactosylceramide(smiles: str):
     """
@@ -22,26 +21,25 @@ def is_galactosylceramide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for sphingosine backbone pattern - broadening search to cover variations
-    sphingosine_pattern = Chem.MolFromSmarts("[C@@H](O)[C@H](NC(=O))")
+    # Look for sphingosine-like backbone pattern
+    sphingosine_pattern = Chem.MolFromSmarts("C(=C[CH:3])[CH:2](O)[CH:1](NC=O)")
     if not mol.HasSubstructMatch(sphingosine_pattern):
-        return False, "No sphingosine backbone found"
+        return False, "No sphingosine-like backbone found"
     
     # Look for amide linkage
     amide_pattern = Chem.MolFromSmarts("C(=O)N")
     if not mol.HasSubstructMatch(amide_pattern):
         return False, "No amide linkage found"
     
-    # Look for beta-D-galactose head group
-    galactose_pattern_beta = Chem.MolFromSmarts("OC[C@@H]1O[C@H](COS(=O)(=O)O)[C@H](O)[C@@H](O)[C@H]1O")
-    galactose_pattern_alpha = Chem.MolFromSmarts("OC[C@H]1O[C@@H](COS(=O)(=O)O)[C@@H](O)[C@@H](O)[C@H]1O")
-    if not mol.HasSubstructMatch(galactose_pattern_beta) and not mol.HasSubstructMatch(galactose_pattern_alpha):
+    # Look for beta-D-galactose head group (considering variability)
+    galactose_pattern = Chem.MolFromSmarts("COC1OC(CO)C(O)C(O)C1O")
+    if not mol.HasSubstructMatch(galactose_pattern):
         return False, "No galactose head group found"
     
     # If all the substructures are found, classify as a galactosylceramide
-    return True, "Contains sphingosine backbone with amide linkage and galactose head group"
+    return True, "Contains sphingosine-like backbone with amide linkage and galactose head group"
 
-# Example Usage
+# Test the function with a SMILES example
 smiles_example = 'C(=C/CCCCCCCCCCCCC)\\[C@@H](O)[C@@H](NC(=O)CCCCCCC/C=C\\CCCCCCCC)COC1[C@@H]([C@H]([C@H]([C@H](O1)CO)O)O)O'
 result, reason = is_galactosylceramide(smiles_example)
 print(f"Classification: {result}, Reason: {reason}")
