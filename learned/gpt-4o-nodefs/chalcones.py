@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_chalcones(smiles: str):
     """
     Determines if a molecule is a chalcone based on its SMILES string.
-    A chalcone typically has two aromatic rings connected by a three-carbon α,β-unsaturated carbonyl group.
+    A chalcone has two aromatic rings connected by a three-carbon α,β-unsaturated carbonyl group (C=O-C=C).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,15 +21,9 @@ def is_chalcones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define flexible SMARTS pattern for chalcones
-    # Allows various substituent patterns on aromatic rings, connects to an α,β-unsaturated carbonyl
-    aromatic_ring_smarts = "[$(c1ccccc1),$(c1ccccn1)]"  # Allowing heterocycles too
-    enone_pattern = "[CX3](=O)[CX3]=[CX3]"  # General unsat linkage, α, β-unsat
-    chalcone_smarts = f"{aromatic_ring_smarts}{enone_pattern}{aromatic_ring_smarts}"
-    
-    # Convert SMARTS string to pattern object
-    chalcone_pattern = Chem.MolFromSmarts(chalcone_smarts)
-    
+    # Define the SMARTS pattern for chalcones
+    chalcone_pattern = Chem.MolFromSmarts("c1ccccc1C(=O)C=Cc2ccccc2")
+
     # Check for chalcone pattern in the molecule
     if mol.HasSubstructMatch(chalcone_pattern):
         return True, "Contains chalcone structure: two aromatic rings connected by α,β-unsaturated carbonyl"
