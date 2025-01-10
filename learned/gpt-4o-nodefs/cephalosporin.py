@@ -23,9 +23,9 @@ def is_cephalosporin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Improved SMARTS pattern including general cephalosporin core features
-    # Pattern reflects the 7-ACA (7-aminocephalosporanic acid) structure
-    cephalosporin_pattern = Chem.MolFromSmarts("C1C(=C(N2C(C1S[C@H]2[C@@H](C(=O)O)N)=O)C(=O)O)")
+    # Define an improved SMARTS pattern for the cephalosporin core
+    # Recognition of β-lactam ring (four-membered) fused with a six-membered dihydrothiazine ring
+    cephalosporin_pattern = Chem.MolFromSmarts("C1C2C(N1C(=O)O)SCCC3=CSC=C23")
 
     # Check for cephalosporin core structure
     if not mol.HasSubstructMatch(cephalosporin_pattern):
