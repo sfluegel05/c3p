@@ -29,6 +29,7 @@ def is_primary_amine(smiles: str):
     
     # Check if the molecule matches the primary amine pattern
     if mol.HasSubstructMatch(primary_amine_pattern):
+        # Ensure that the nitrogen is not part of a secondary or tertiary amine
         for match in mol.GetSubstructMatches(primary_amine_pattern):
             nitrogen_atom = mol.GetAtomWithIdx(match[0])
             # Check that the nitrogen has exactly 2 hydrogens and 1 carbon neighbor
@@ -43,13 +44,5 @@ def is_primary_amine(smiles: str):
             nitrogen_atom = mol.GetAtomWithIdx(match[0])
             if nitrogen_atom.GetTotalNumHs() == 2:
                 return True, "Contains a primary amine group (-NH2 attached to an aromatic carbon)"
-    
-    # Check for primary amines in more complex structures (e.g., cyclic or branched)
-    complex_primary_amine_pattern = Chem.MolFromSmarts("[NH2][CX4;!$(C=O)]")
-    if mol.HasSubstructMatch(complex_primary_amine_pattern):
-        for match in mol.GetSubstructMatches(complex_primary_amine_pattern):
-            nitrogen_atom = mol.GetAtomWithIdx(match[0])
-            if nitrogen_atom.GetTotalNumHs() == 2:
-                return True, "Contains a primary amine group (-NH2 attached to a carbon in a complex structure)"
     
     return False, "No primary amine group (-NH2 attached to a carbon) found"
