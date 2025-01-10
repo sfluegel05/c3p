@@ -59,13 +59,4 @@ def is_1_2_diacyl_sn_glycero_3_phosphocholine(smiles: str):
     if mol_wt < 500:
         return False, "Molecular weight too low for 1,2-diacyl-sn-glycero-3-phosphocholine"
 
-    # Count carbons and oxygens
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    
-    if c_count < 20:
-        return False, "Too few carbons for 1,2-diacyl-sn-glycero-3-phosphocholine"
-    if o_count != 7:
-        return False, "Must have exactly 7 oxygens (2 ester groups + 1 phosphate group)"
-
     return True, "Contains glycerol backbone with 2 fatty acid chains and a phosphocholine group"
