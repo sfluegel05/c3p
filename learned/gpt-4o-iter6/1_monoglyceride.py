@@ -20,26 +20,15 @@ def is_1_monoglyceride(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+
+    # SMARTS pattern definitively targeting 1-monoglyceride structure:
+    # Glycerol backbone with an ester linkage at the primary position (position 1)
+    # Primary defined by `[C@H]` for stereochemistry if defined, -O-C(=O)
+    pattern1 = Chem.MolFromSmarts('[C@@H](CO)C(=O)O')  # Enhanced specificity for chiral center
+    pattern2 = Chem.MolFromSmarts('[C@H](CO)C(=O)O')   # Another possibility based on chiral variations
+    pattern3 = Chem.MolFromSmarts('[C](CO)C(=O)O')     # General form without stereochemistry
     
-    # Improved SMARTS pattern: Acyl group attached at C1 with intact secondary alcohols
-    # We identify C1-O-CO-[C] structure and ensure it's exclusive to this position
-    # with a secondary alcohol configuration remaining nearby
+    if mol.HasSubstructMatch(pattern1) or mol.HasSubstructMatch(pattern2) or mol.HasSubstructMatch(pattern3):
+        return True, "Contains a glycerol backbone with acyl linkage at position 1"
 
-    # Pattern for ester at first carbon including stereochemistry/sn-glycerol form:
-    monoglyceride_pattern = Chem.MolFromSmarts('OCC(OC=O)[C@@H](O)CO')  # Matching glycerol ester at primary position
-
-    # Check for presence of the specific pattern
-    if not mol.HasSubstructMatch(monoglyceride_pattern):
-        return False, "1-monoglyceride structural pattern not matched"
-
-    # Verify esterification is at the primary position of glycerol's backbone
-    ester_pattern = Chem.MolFromSmarts('O=C[O][CH2][CH](O)CO')
-    if not mol.HasSubstructMatch(ester_pattern):
-        return False, "Acyl linkage not specifically at position 1"
-    
-    # Additional: Ensure there's no other ester linkage taking away features
-    branch_matches = mol.GetSubstructMatches(monoglyceride_pattern)
-    if len(branch_matches) > 1:
-        return False, f"Multiple esterification detected, expected only one at the primary position"
-
-    return True, "Verified 1-monoglyceride with correct acyl linkage at the position 1"
+    return False, "Does not have a glycerol backbone with acyl linkage at position 1"
