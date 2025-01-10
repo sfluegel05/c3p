@@ -21,21 +21,21 @@ def is_nucleobase_analogue(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Expanded SMARTS patterns for purine-like and pyrimidine-like structures
+    # Define SMARTS patterns for purine-like structures with modifications
     purine_like_smarts = [
-        Chem.MolFromSmarts("c1ncnc2[nH]cnn12"),  # Basic purine extended with variations
-        Chem.MolFromSmarts("c1nc[nH]c2c(ncnc12)"),  # Substituted purine ring
+        Chem.MolFromSmarts("c1ncnc2[nH]cnc12"),      # Basic purine
+        Chem.MolFromSmarts("c1nc[nH]c2c(ncnc12)"),  # Altered purine derivatives
     ]
     
+    # Define SMARTS patterns for pyrimidine-like structures with modifications
     pyrimidine_like_smarts = [
-        Chem.MolFromSmarts("c1[nH]cncnc1"),       # Basic pyrimidine with variations
-        Chem.MolFromSmarts("c1c[nH]cnc[nH]c1"),   # Alterations with additional rings
-        Chem.MolFromSmarts("c1ncc(=O)[nH]n1"),    # Typical keto and imidazole derivatives
-        Chem.MolFromSmarts("c1nc[nH]cnc1"),       # Expanded pyrimidine scaffold
-        Chem.MolFromSmarts("c1[nH]cc(=O)[nH]c1"), # Variants with keto positions
+        Chem.MolFromSmarts("c1[nH]cncnc1"),           # Basic pyrimidine
+        Chem.MolFromSmarts("c1c[nH]cnc[nH]c1"),       # Variants with additional rings
+        Chem.MolFromSmarts("c1ncc(=O)[nH]n1"),        # Typical keto and imidazole groups
+        Chem.MolFromSmarts("c1nc[nH]cnc1"),           # Wider pyrimidine scaffolding
     ]
     
-    # Check for purine-like or pyrimidine-like structures
+    # Check for purine-like or pyrimidine-like ring structures
     for pattern in purine_like_smarts:
         if mol.HasSubstructMatch(pattern):
             return True, "Matches purine-like structure"
@@ -46,32 +46,16 @@ def is_nucleobase_analogue(smiles: str):
     
     # Check for functional groups characteristic of nucleobase analogues
     functional_groups = [
-        Chem.MolFromSmarts("[CX3]=[OX1]"),    # Keto/Carbonyl group
-        Chem.MolFromSmarts("[NX3;H2]"),       # Amino group
-        Chem.MolFromSmarts("[OX2H]"),         # Hydroxy group
-        Chem.MolFromSmarts("[#16]"),          # Incorporation of sulfur (thio)
-        Chem.MolFromSmarts("[Cl,Br,I,F]"),    # Halogens
+        Chem.MolFromSmarts("[CX3]=[OX1]"),  # Keto/Carbonyl group
+        Chem.MolFromSmarts("[NX3;H2]"),     # Amino group
+        Chem.MolFromSmarts("[OX2H]"),       # Hydroxy group
+        Chem.MolFromSmarts("[Cl,Br,I]")     # Halogen group, common in analogues
     ]
     
-    # Consider complexity: require at least one functional group and a basic ring
+    # Consider presence of nucleobase-typical functional groups
     if any(mol.HasSubstructMatch(fg) for fg in functional_groups):
-        if mol.GetNumAtoms() > 6:  # Filter small molecules
-            if metadata_for_atom_rings(mol):
-                return True, "Contains significant nucleobase-related functional groups and structure"
+        if mol.GetNumAtoms() > 6:  # A reasonable count to filter out very small molecules
+            return True, "Contains significant nucleobase-related functional groups"
     
     # None matched
     return False, "No nucleobase analogue characteristics found"
-
-def metadata_for_atom_rings(mol):
-    """
-    Check molecule for metadata indicative of nucleobases.
-    For example, 3-atom cons mostly Nitrogen and Carbon.
-    """
-    ring_info = mol.GetRingInfo()
-    for atom_counts in ring_info.AtomRings():
-        if len(atom_counts) <= 6:
-            # Check number of Nitrogens in small rings
-            n_count = sum(1 for i in atom_counts if mol.GetAtomWithIdx(i).GetAtomicNum() == 7)
-            if n_count >= 2:  # Purines and related structures often have 2+
-                return True
-    return False
