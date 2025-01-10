@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_glycosaminoglycan(smiles: str):
     """
     Determines if a molecule is a glycosaminoglycan based on its SMILES string.
-    Glycosaminoglycans are polysaccharides with a significant proportion of aminomonosaccharide residues.
+    A glycosaminoglycan is a polysaccharide containing a substantial proportion of aminomonosaccharide residues.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -15,36 +15,21 @@ def is_glycosaminoglycan(smiles: str):
         bool: True if molecule is a glycosaminoglycan, False otherwise
         str: Reason for classification
     """
-
-    # Parse the SMILES
+    
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define patterns for aminomonosaccharides
-    aminomonosaccharide_patterns = [
-        Chem.MolFromSmarts("[C@H]([NH2])[C@H]([OH])[C@H]([OH])[C@H]([OH])O"),  # General aminosugar
-        Chem.MolFromSmarts("C([NH][C=O])([OH])C([OH])C([OH])O"),  # Acetylated amino sugar
-        Chem.MolFromSmarts("[C@H]([NH2])C([OH])([OH])C([OH])C([OH]")  # Another variant
-    ]
+    # Define a SMARTS pattern for aminomonosaccharides
+    aminomonosaccharide_pattern = Chem.MolFromSmarts("[$([NX3;H2,H1;!$(NC=O)])]-[*]-[*]-[*]-[*]")  # N attached to a basic carbohydrate substructure
 
-    # Verify patterns creation, avoid patterns that return None
-    for pattern in aminomonosaccharide_patterns:
-        if pattern is None:
-            return (None, "Failed to create a valid SMARTS pattern for an aminomonosaccharide")
+    # Find all matches for the aminomonosaccharide substructure
+    matches = mol.GetSubstructMatches(aminomonosaccharide_pattern)
+    num_aminomonosaccharide = len(matches)
 
-    # Count matching substructures for aminomonosaccharides
-    total_aminomonosaccharide_matches = 0
-    for pattern in aminomonosaccharide_patterns:
-        matches = mol.GetSubstructMatches(pattern)
-        total_aminomonosaccharide_matches += len(matches)
-
-    # Estimate number of sugar units from oxygen atoms (heuristic)
-    oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    sugar_units_estimation = max(1, oxygen_count // 3)  # Rough estimate of sugars
-
-    # Determine if a significant portion are aminomonosaccharides
-    if total_aminomonosaccharide_matches / sugar_units_estimation >= 0.25:
-        return True, f"Glycosaminoglycan identified. Aminomonosaccharide count: {total_aminomonosaccharide_matches}"
-
-    return False, "Insufficient proportion of aminomonosaccharide residues found"
+    # Use a basic heuristic to determine if the proportion is substantial
+    if num_aminomonosaccharide > 0:
+        return True, f"Contains aminomonosaccharide residues, count: {num_aminomonosaccharide}"
+    
+    return False, "No substantial proportion of aminomonosaccharide residues found"
