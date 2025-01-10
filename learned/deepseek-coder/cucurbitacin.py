@@ -61,4 +61,10 @@ def is_cucurbitacin(smiles: str):
     if len(side_chain_matches) < 1:
         return False, "No typical cucurbitacin side chains found"
 
-    return True, "Contains tetracyclic triterpenoid structure with cucurbitane skeleton, key functional groups, and typical side chains"
+    # Check for glycosides (common in many cucurbitacins)
+    glycoside_pattern = Chem.MolFromSmarts("[C][OX2][C]")
+    glycoside_matches = mol.GetSubstructMatches(glycoside_pattern)
+    if len(glycoside_matches) < 1:
+        return False, "No glycoside groups found"
+
+    return True, "Contains tetracyclic triterpenoid structure with cucurbitane skeleton, key functional groups, typical side chains, and glycosides"
