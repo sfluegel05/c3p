@@ -2,54 +2,51 @@
 Classifies: CHEBI:16412 lipopolysaccharide
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_lipopolysaccharide(smiles: str):
     """
     Determines if a molecule is a lipopolysaccharide based on its SMILES string.
-    The identification is based on generic features common in lipopolysaccharides like
-    lipid chains linked to polysaccharide components and potential phosphate groups.
-    This is, however, a rudimentary test due to the complexity and diversity of LPS structures.
+    Attempts to recognize common features in lipopolysaccharides such as lipid A substructures,
+    oligosaccharide components, and the potential presence of phosphates.
+
+    Note: Due to structural complexity and diversity, this is a probable, not definitive, classification.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule shows potential LPS features, False otherwise
+        bool: True if the molecule can be a lipopolysaccharide, False otherwise
         str: Reason for classification
     """
 
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return (False, "Invalid SMILES string")
 
-    # Enhanced lipid chain detection - includes ester and amide linkages
-    lipid_pattern1 = Chem.MolFromSmarts("C(=O)O[C;R0][C;R0][C;R0][C;R0]")  # Ester-linked lipids
-    lipid_pattern2 = Chem.MolFromSmarts("C(=O)N[C;R0][C;R0][C;R0][C;R0]")  # Amide-linked lipids
-    lipid_matches1 = mol.HasSubstructMatch(lipid_pattern1)
-    lipid_matches2 = mol.HasSubstructMatch(lipid_pattern2)
-
-    if not (lipid_matches1 or lipid_matches2):
-        return False, "No characteristic lipid chain motifs detected"
-
-    # Enhanced saccharide pattern - looking for rings with multiple OH groups
-    saccharide_pattern = Chem.MolFromSmarts("C1O[C@@H]([O])C(O)C(O)C1")  # Generic polyhydroxylated ring
-    saccharide_matches = mol.GetSubstructMatches(saccharide_pattern)
-
-    if len(saccharide_matches) < 1:
-        return False, "No polysaccharide-like structures detected"
-
-    # Check for phosphate groups often present in LPS
-    phosphate_pattern = Chem.MolFromSmarts("[O-]P(=O)(O)O")
-    phosphate_matches = mol.HasSubstructMatch(phosphate_pattern)
+    # Attempt to identify diverse types of fatty acid chains
+    # More generic pattern allowing diverse linkages
+    lipid_patterns = [
+        Chem.MolFromSmarts("C(=O)OC[C;R0][C;R0]"),  # Ester-linked fatty acids
+        Chem.MolFromSmarts("C(=O)N[C;R0][C;R0]")   # Amide-linked fatty acids
+        # Further patterns could be added here
+    ]
     
-    if not phosphate_matches:
-        return False, "No phosphate groups identified, which are common in LPS"
+    if not any(mol.HasSubstructMatch(pattern) for pattern in lipid_patterns):
+        return (False, "No lipid chain motifs detected")
 
-    # Check molecular size - though do not strictly enforce to avoid false negatives
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 600:
-        return False, "Molecular weight is too low for typical LPS"
+    # Enhanced recognition of saccharide units, include more complex variations
+    saccharide_pattern = Chem.MolFromSmarts("[C@@H]1(O)[C@@H](O)[C@@H](O)[C@H](O)[C@@H](O1)CO")  # Mono-/oligosaccharide pattern
+    if not mol.HasSubstructMatch(saccharide_pattern):
+        return (False, "No polysaccharide-like structures detected")
 
-    return True, "Contains features indicating potential LPS: lipid chains, polysaccharides, and phosphate groups"
+    # Detect phosphate motifs but less strictly, allowing for various representations
+    phosphate_pattern = Chem.MolFromSmarts("[O-]P(=O)(O)O")  # Common phosphate representation
+    if not mol.HasSubstructMatch(phosphate_pattern):
+        return (False, "No phosphate groups identified; common but not universal in LPS")
+
+    mol_weight = Chem.rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_weight < 600:
+        return (False, "Molecular weight too low to likely be an LPS")
+
+    return (True, "Contains structures consistent with lipopolysaccharides: lipids, polysaccharides, and potential phosphates")
