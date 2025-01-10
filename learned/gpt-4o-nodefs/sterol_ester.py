@@ -2,6 +2,7 @@
 Classifies: CHEBI:35915 sterol ester
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_sterol_ester(smiles: str):
     """
@@ -20,65 +21,55 @@ def is_sterol_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Refined Sterol core identification: a core structure invoking common sterol patterns.
-    # Sterols have a tetracyclic skeleton with hydrocarbon chains and a hydroxyl group typically on C3.
-    sterol_smarts = "C1CCC2C3C(CC(C4C3(CCC2C1)C)C)CC4" # General sterol scaffold
-    sterol_core = Chem.MolFromSmarts(sterol_smarts)
-
-    if not mol.HasSubstructMatch(sterol_core):
+    # Steroid nucleus pattern (3 hexagonal and 1 pentagonal ring typical of sterols)
+    steroid_nucleus_smarts = "C1CC2CCC3C(C1)C2CCC4C3(CCC4)"  # Simplified steroid nucleus pattern
+    steroid_nucleus_pattern = Chem.MolFromSmarts(steroid_nucleus_smarts)
+    
+    if not mol.HasSubstructMatch(steroid_nucleus_pattern):
         return False, "No sterol core structure found"
-
+        
     # Ester group pattern (-C(=O)O-)
-    ester_pattern_smarts = "C(=O)O" # Generic ester linkage
+    ester_pattern_smarts = "C(=O)O"
     ester_pattern = Chem.MolFromSmarts(ester_pattern_smarts)
     
     if not mol.HasSubstructMatch(ester_pattern):
         return False, "No ester linkage found"
 
-    # Count carbons in ester-linked aliphatic chain to ensure fatty acid presence
-    for match in mol.GetSubstructMatches(ester_pattern):
-        ester_atom_idx = match[1]  # The oxygen in the ester linkage
-        
-        # Follow the carbon chain from here:
-        carbon_chain_length = 0
-        atom = mol.GetAtomWithIdx(ester_atom_idx)
-        
-        for neighbor in atom.GetNeighbors():
-            if neighbor.GetAtomicNum() == 6:  # Carbon neighbor
-                carbon_count = recursive_carbon_count(neighbor, {atom.GetIdx()})
-                if carbon_count >= 10:  # Typical minimum length for fatty acids
-                    return True, "Contains sterol core structure esterified with a sufficiently long aliphatic chain"
-
-    return False, "No sufficiently long aliphatic chain found"
-
-def recursive_carbon_count(atom, visited):
-    """
-    Helper function to recursively count the number of carbons in a chain.
-    """
-    count = 0
+    # Check for long aliphatic chain (multiple CH2)
+    long_chain_pattern_smarts = "CCCCCCCCCCCCCCCCCC"  # Pattern for a long aliphatic chain
+    long_chain_pattern = Chem.MolFromSmarts(long_chain_pattern_smarts)
     
-    # Traverse through neighbors
-    for neighbor in atom.GetNeighbors():
-        if neighbor.GetIdx() not in visited:
-            visited.add(neighbor.GetIdx())
-            if neighbor.GetAtomicNum() == 6:  # Carbon
-                count += 1 + recursive_carbon_count(neighbor, visited)
-    
-    return count
+    if not mol.HasSubstructMatch(long_chain_pattern):
+        return False, "No long fatty acid chain found"
+
+    return True, "Contains sterol core structure esterified with a long fatty acid chain"
 
 # Example metadata
-__metadata__ = {
-    'chemical_class': {
-        'id': 'CHEBI:None',
-        'name': 'sterol ester',
-        'definition': 'Chemical entities consisting of a sterol esterified with a fatty acid'
-    },
-    'config': {
-        'llm_model_name': 'rdkit_based_model',
-        'f1_threshold': 0.8,
-        'max_attempts': 5
-    },
+__metadata__ = {   'chemical_class': {   'id': 'CHEBI:None',
+                          'name': 'sterol ester',
+                          'definition': 'Chemical entities consisting of a sterol esterified with a fatty acid'},
+    'config': {   'llm_model_name': 'rdkit_based_model',
+                  'f1_threshold': 0.8,
+                  'max_attempts': 5,
+                  'max_positive_instances': None,
+                  'max_positive_to_test': None,
+                  'max_negative_to_test': None,
+                  'max_positive_in_prompt': 50,
+                  'max_negative_in_prompt': 20,
+                  'max_instances_in_prompt': 100,
+                  'test_proportion': 0.1},
     'message': None,
-    'attempt': 3,
-    'success': True
-}
+    'attempt': 0,
+    'success': True,
+    'best': True,
+    'error': '',
+    'stdout': None,
+    'num_true_positives': None,
+    'num_false_positives': None,
+    'num_true_negatives': None,
+    'num_false_negatives': None,
+    'num_negatives': None,
+    'precision': None,
+    'recall': None,
+    'f1': None,
+    'accuracy': None}
