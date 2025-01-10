@@ -2,12 +2,11 @@
 Classifies: CHEBI:25029 leukotriene
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_leukotriene(smiles: str):
     """
     Determines if a molecule is a leukotriene based on its SMILES string.
-    A leukotriene should have the characteristic polyunsaturated C20 fatty acid backbone
+    Leukotrienes have a characteristic polyunsaturated C20 fatty acid backbone
     with four double bonds, including three conjugated.
 
     Args:
@@ -23,23 +22,29 @@ def is_leukotriene(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Count the number of carbon atoms
+    # Count carbon atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    
-    # Ensure there is at least the characteristic 20 carbon backbone
     if c_count < 20:
-        return False, f"Too few carbon atoms: {c_count} (expected 20 or more with functional groups)"
-    
-    # Identify double bonds
-    db_count = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.BondType.DOUBLE)
-    
-    # Ensure at least four double bonds
-    if db_count < 4:
-        return False, f"Too few double bonds: {db_count} (expected 4 or more)"
-    
-    # Check for conjugated double bonds using SMARTS pattern for conjugation
-    conjugated_pattern = Chem.MolFromSmarts('C=C-C=C-C=C')
-    if not mol.HasSubstructMatch(conjugated_pattern):
-        return False, "Does not contain at least three conjugated double bonds"
+        return False, f"Contains {c_count} carbon atoms, expected at least 20"
 
-    return True, "Contains at least C20 backbone with characteristic conjugated double bond pattern"
+    # Identify double bonds and conjugation
+    db_count = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.BondType.DOUBLE)
+    if db_count < 4:
+        return False, f"Contains {db_count} double bonds, expected at least 4"
+
+    # Check for conjugated double bonds
+    # Pattern for three conjugated double bonds (with potential variations)
+    conjugated_pattern = Chem.MolFromSmarts('C=CC=CC=C')
+    if not mol.HasSubstructMatch(conjugated_pattern):
+        # Consider alternative patterns such as presence of cycles in conjugation
+        conjugated_cycle_pattern = Chem.MolFromSmarts('C=C(-C=C)-C=C')
+        if not mol.HasSubstructMatch(conjugated_cycle_pattern):
+            return False, "Does not contain at least three conjugated double bonds"
+
+    # Check for additional known functional groups or patterns
+    # Example: Terminal carboxylic acid group often present in leukotrienes
+    carboxylic_pattern = Chem.MolFromSmarts('C(=O)[O-]') 
+    if not mol.HasSubstructMatch(carboxylic_pattern):
+        return False, "Lacks typical terminal carboxylic group found in leukotrienes"
+
+    return True, "Contains characteristic C20 backbone with conjugated double bond pattern and known functional groups"
