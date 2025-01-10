@@ -22,25 +22,29 @@ def is_triterpenoid_saponin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Refined pattern for triterpenoid backbone: more specific ring patterns often found in triterpenoids
-    triterpenoid_pattern = Chem.MolFromSmarts("[C;R]1[C;R][C;R][C;R]2[C;R][C;R][C;R]3[C;R][C;R][C;R]4[C;R][C;R][C;R]5[C;R][C;R][C;R]6[C;R][C;R][C;R]")
-    if not mol.HasSubstructMatch(triterpenoid_pattern):
-        return False, "No identifiable triterpenoid patterns found"
+    # Improved pattern for typical triterpenoid scaffolds
+    triterpenoid_patterns = [
+        Chem.MolFromSmarts("[C;R]12[C;R][C;R][C;R]3[C;R][C;R][C;R]4[C;R][C;R][C;R]5[C;R][C;R][C;D2][C;D3]12"),  # Representative sterane skeleton
+    ]
 
-    # Check for glycosidic linkages, expanded for more common sugar linkages
+    triterpenoid_found = any(mol.HasSubstructMatch(pattern) for pattern in triterpenoid_patterns)
+    if not triterpenoid_found:
+        return False, "No identifiable triterpenoid backbone found"
+
+    # Check for common glycosidic bonds - focus on sugar moieties
     glycosidic_patterns = [
-        Chem.MolFromSmarts("O[C@@H]1[C@H](O)[C@H](O)[C@H](O)[C@H]1O"),  # Glucopyranoside
-        Chem.MolFromSmarts("O[C@H]1[C@@H](O)[C@@H](O)[C@H](O)[C@@H]1O"), # Alternate stereochemistry
-        Chem.MolFromSmarts("O[C@H]1[C@@H](CO)[C@H](O)[C@H](O)[C@H]1O"),  # Common linkages for sugars
+        Chem.MolFromSmarts("O[C@H]1[C@@H](O)[C@@H](O)[C@H](O)[C@H](O1)"),  # Glucopyranoside
+        Chem.MolFromSmarts("O[C@H]1[C@@H](O)[C@H](O)[C@H](O)[C@@H](O1)"), # Different stereochemistry
+        Chem.MolFromSmarts("O[C@H]1[C@@H](CO)[C@H](O)[C@H](O)[C@H](O1)")
     ]
 
     glycosidic_present = any(mol.HasSubstructMatch(pattern) for pattern in glycosidic_patterns)
     if not glycosidic_present:
         return False, "No glycosidic linkages detected in structure"
 
-    # Ensure presence of sugar moieties by validating against sugar motifs
-    num_sugar_matches = sum(len(mol.GetSubstructMatches(pattern)) for pattern in glycosidic_patterns)
-    if num_sugar_matches < 1:
-        return False, "Insufficient number of sugar moieties detected"
+    # Count detected sugar moieties to ensure enough glycosidic presence
+    sugar_count = sum(len(mol.GetSubstructMatches(pattern)) for pattern in glycosidic_patterns)
+    if sugar_count < 1:
+        return False, "Not enough sugar moieties detected"
 
     return True, "Contains triterpenoid backbone with sufficient glycosidic linkages and sugar moieties"
