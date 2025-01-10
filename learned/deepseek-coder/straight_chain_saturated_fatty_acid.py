@@ -31,7 +31,8 @@ def is_straight_chain_saturated_fatty_acid(smiles: str):
         return False, "No carboxylic acid group found"
 
     # Check for unsaturation (double/triple bonds)
-    if rdMolDescriptors.CalcNumUnsaturatedBonds(mol) > 0:
+    # Using rdMolDescriptors.CalcNumAliphaticRings to check for unsaturation
+    if rdMolDescriptors.CalcNumAliphaticRings(mol) > 0:
         return False, "Molecule contains double or triple bonds (unsaturated)"
 
     # Check for branching (number of non-terminal carbons with >2 connections)
