@@ -2,13 +2,12 @@
 Classifies: CHEBI:17334 penicillin
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_penicillin(smiles: str):
     """
     Determines if a molecule is a penicillin based on its SMILES string.
-    A penicillin refers to the presence of a 4-thia-1-azabicyclo[3.2.0]heptane
-    core with specific substituents: two methyl groups at position 2,
-    a carboxylate at position 3, and a carboxamido group at position 6.
+    A penicillin is defined as a substituted penam with specific structural features.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,24 +22,28 @@ def is_penicillin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for more precise stereochemistry in the core structure
-    penicillin_core_pattern = Chem.MolFromSmarts("[C@@H]1([S][C@@H]2C[N@]1C(=O)[C@H]2C(=O)O)C")
-    if not mol.HasSubstructMatch(penicillin_core_pattern):
-        return False, "Core penicillin structure not found"
-
-    # Check for two methyl substituents attached to the penam core (position 2)
-    methyl_pattern = Chem.MolFromSmarts("[C@@](C)(C)C1([S][C@@H]2C[N@]1C(=O)[C@H]2C(=O)O)")
-    if not mol.HasSubstructMatch(methyl_pattern):
-        return False, "Methyl groups at position 2 are missing"
-
-    # Check for carboxylate group presence - flexible matching to accommodate ionization states
-    carboxylate_pattern = Chem.MolFromSmarts("C(=O)[O]")
-    if not mol.HasSubstructMatch(carboxylate_pattern):
-        return False, "Required carboxylate group not found at position 3"
-
-    # Check for a carboxamido group in a reasonable proximity - flexible approach
+    # The basic penicillin scaffold: 4-thia-1-azabicyclo[3.2.0]heptane.
+    # With two methyl groups at position 2, a carboxylate at position 3, and a carboxamido at position 6.
+    penicillin_scaffold_pattern = Chem.MolFromSmarts("[C@@H]1([C@@H]2N([C@H]1C(=O)O)C(=O)S2(C)C)")
+    if not mol.HasSubstructMatch(penicillin_scaffold_pattern):
+        return False, "Penicillin scaffold not found"
+    
+    # Ensure methylation at position 2
+    methylation_pattern = Chem.MolFromSmarts("S1[C@@]2([C@H]1C)C")
+    methylation_matches = mol.GetSubstructMatches(methylation_pattern)
+    if len(methylation_matches) == 0:
+        return False, "Required methyl groups at position 2 not found"
+    
+    # Carboxylate group must be present on position 3
+    carboxylate_pattern = Chem.MolFromSmarts("C(=O)O")
+    carboxylate_matches = mol.GetSubstructMatches(carboxylate_pattern)
+    if len(carboxylate_matches) == 0:
+        return False, "Carboxylate group not found at required position"
+    
+    # Carboxamido group must be present on position 6
     carboxamido_pattern = Chem.MolFromSmarts("NC(=O)")
-    if not mol.HasSubstructMatch(carboxamido_pattern):
-        return False, "Required carboxamido group not found at position 6"
+    carboxamido_matches = mol.GetSubstructMatches(carboxamido_pattern)
+    if len(carboxamido_matches) == 0:
+        return False, "Carboxamido group not found at required position"
 
-    return True, "Matches penicillin structure requirements"
+    return True, "SMILES string represents a penicillin"
