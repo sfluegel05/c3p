@@ -6,13 +6,13 @@ from rdkit import Chem
 def is_mononitrophenol(smiles: str):
     """
     Determines if a molecule is a mononitrophenol based on its SMILES string.
-    A mononitrophenol is a phenol carrying a single nitro substituent.
+    A mononitrophenol is a phenol carrying a single nitro substituent attached to the phenol ring.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a mononitrophenol, False otherwise
+        bool: True if the molecule is a mononitrophenol, False otherwise
         str: Reason for classification
     """
     
@@ -21,16 +21,18 @@ def is_mononitrophenol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for phenol group pattern
-    phenol_pattern = Chem.MolFromSmarts("c1ccc(cc1)O")
+    # Flexible phenol group pattern to account for potential substituents
+    phenol_pattern = Chem.MolFromSmarts("c1ccc([#6,O,N;R0,R1,R2,R3;!$([OH])]c1)O")
     phenol_matches = mol.GetSubstructMatches(phenol_pattern)
-    if len(phenol_matches) != 1:
-        return False, "Phenol group not found or multiple phenol groups present"
-        
-    # Look for nitro group pattern
-    nitro_pattern = Chem.MolFromSmarts("[N+]([O-])=O")
-    nitro_matches = mol.GetSubstructMatches(nitro_pattern)
-    if len(nitro_matches) != 1:
-        return False, f"Found {len(nitro_matches)} nitro groups, need exactly 1"
+    if len(phenol_matches) < 1:
+        return False, "No phenol group found"
 
-    return True, "Contains single phenol group with a single nitro group attached"
+    # Find nitro groups attached to aromatic carbon
+    nitro_pattern = Chem.MolFromSmarts("[$(c[N+](=O)[O-])]")
+    nitro_matches = [match for match in mol.GetSubstructMatches(nitro_pattern)]
+    
+    # Check if any nitro group is directly attached to the detected phenol group(s)
+    if not any(any(mol.GetAtomWithIdx(n[0]).GetIdx() in set(sum(phenol_matches, ())) for n in match) for match in nitro_matches):
+        return False, f"No nitro group directly attached to phenol group"
+
+    return True, "Contains phenol group with a nitro group directly attached"
