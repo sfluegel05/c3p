@@ -27,45 +27,51 @@ def is_tertiary_amine(smiles: str):
 
     # Exclude patterns - functional groups that aren't tertiary amines
     exclude_patterns = [
-        Chem.MolFromSmarts('[N]=[*]'),  # Imine, etc
-        Chem.MolFromSmarts('[N]#[*]'),  # Nitrile, etc
-        Chem.MolFromSmarts('[NX3](=[O,S])[*]'),  # N-oxides
-        Chem.MolFromSmarts('[N+](=[O])[O-]'),  # Nitro
+        Chem.MolFromSmarts('[NX3](=[OX1])[#6]'),  # N-oxide
+        Chem.MolFromSmarts('[NX3](=[SX1])[#6]'),  # N-thiooxide
         Chem.MolFromSmarts('[NX3][CX3](=[OX1])[#6]'),  # Amide
         Chem.MolFromSmarts('[NX3][CX3](=[SX1])[#6]'),  # Thioamide
         Chem.MolFromSmarts('[NX3][SX4](=[OX1])(=[OX1])[#6]'),  # Sulfonamide
         Chem.MolFromSmarts('[n]'),  # Aromatic nitrogen
         Chem.MolFromSmarts('[N+]'),  # Quaternary nitrogen
+        Chem.MolFromSmarts('[N-]'),  # Negatively charged nitrogen
+        Chem.MolFromSmarts('[NX3]=[NX2]'),  # Diazo
+        Chem.MolFromSmarts('[NX3]=[CX3]'),  # Imine
+        Chem.MolFromSmarts('[NX3]#[CX2]'),  # Nitrile
+        Chem.MolFromSmarts('[N]1[C](=O)[C]1'),  # Aziridine
+        Chem.MolFromSmarts('[N]1[C](=O)[CH2][C]1'),  # β-lactam
+        Chem.MolFromSmarts('[N+](=[O])[O-]'),  # Nitro
     ]
 
-    # Pattern for tertiary amine: N connected to exactly 3 carbons
-    tertiary_amine_pattern = Chem.MolFromSmarts('[NX3]([CX4,CH2,CH3,CH])[CX4,CH2,CH3,CH][CX4,CH2,CH3,CH]')
-    
-    # First check for matches to exclude patterns
+    # Mark atoms to exclude
     for pattern in exclude_patterns:
-        if mol.HasSubstructMatch(pattern):
+        if pattern is not None and mol.HasSubstructMatch(pattern):
             matches = mol.GetSubstructMatches(pattern)
             for match in matches:
-                # Get the nitrogen atom from the match
                 n_idx = match[0]  # Assuming nitrogen is first atom in SMARTS
-                # Mark this nitrogen as excluded
                 mol.GetAtomWithIdx(n_idx).SetProp('excluded', 'true')
 
-    # Now look for tertiary amine pattern
-    if mol.HasSubstructMatch(tertiary_amine_pattern):
-        matches = mol.GetSubstructMatches(tertiary_amine_pattern)
-        for match in matches:
-            n_atom = mol.GetAtomWithIdx(match[0])
-            # Skip if this nitrogen was marked as excluded
-            if not n_atom.HasProp('excluded'):
-                # Check hybridization
-                if n_atom.GetHybridization() == Chem.rdchem.HybridizationType.SP3:
-                    # Count total bonds to verify it's a tertiary amine
-                    if len(n_atom.GetBonds()) == 3:
-                        # Count carbon neighbors
-                        carbon_neighbors = sum(1 for neighbor in n_atom.GetNeighbors() 
-                                            if neighbor.GetAtomicNum() == 6)
-                        if carbon_neighbors == 3:
-                            return True, "Contains nitrogen atom bonded to exactly three carbon atoms"
+    # Find all nitrogen atoms
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 7:  # Nitrogen
+            # Skip if marked as excluded
+            if atom.HasProp('excluded'):
+                continue
+                
+            # Skip if formal charge != 0
+            if atom.GetFormalCharge() != 0:
+                continue
+
+            # Count carbon neighbors
+            carbon_neighbors = 0
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 6:  # Carbon
+                    carbon_neighbors += 1
+
+            # Check if it's a tertiary amine
+            if carbon_neighbors == 3:
+                # Verify total number of bonds is 3
+                if len(atom.GetBonds()) == 3:
+                    return True, "Contains a nitrogen atom bonded to exactly three carbons"
 
     return False, "No tertiary amine group found"
