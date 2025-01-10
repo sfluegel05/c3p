@@ -5,8 +5,6 @@ Classifies: CHEBI:23086 chalcones
 Classifies: CHEBI:23003 chalcone
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_chalcones(smiles: str):
     """
@@ -27,31 +25,19 @@ def is_chalcones(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define the core chalcone pattern: Ar-CH=CH-C(=O)-Ar
-    chalcone_pattern = Chem.MolFromSmarts("[c]1[c][c][c][c][c]1-[CH]=[CH]-[C](=O)-[c]2[c][c][c][c][c]2")
+    # This pattern allows for substitutions on the aromatic rings
+    chalcone_pattern = Chem.MolFromSmarts("[c;H0,H1]1[c;H0,H1][c;H0,H1][c;H0,H1][c;H0,H1]1-[CH]=[CH]-[C](=O)-[c;H0,H1]2[c;H0,H1][c;H0,H1][c;H0,H1][c;H0,H1]2")
     if not mol.HasSubstructMatch(chalcone_pattern):
         return False, "Core chalcone structure (Ar-CH=CH-C(=O)-Ar) not found"
 
-    # Check for the presence of the propenone (CH=CH(=O)) structure
-    propenone_pattern = Chem.MolFromSmarts("[CH]=[CH]-[C](=O)")
-    if not mol.HasSubstructMatch(propenone_pattern):
-        return False, "Propenone (CH=CH(=O)) structure not found"
+    # Ensure that the aromatic rings are properly connected to the propenone structure
+    matches = mol.GetSubstructMatches(chalcone_pattern)
+    for match in matches:
+        # Get the atoms in the match
+        atoms = [mol.GetAtomWithIdx(idx) for idx in match]
+        # Check that the aromatic rings are connected to the propenone structure
+        if (atoms[0].GetSymbol() == 'C' and atoms[5].GetSymbol() == 'C' and
+            atoms[0].GetDegree() == 2 and atoms[5].GetDegree() == 2):
+            return True, "Contains core chalcone structure (Ar-CH=CH-C(=O)-Ar) with possible substitutions"
 
-    # Check for two aromatic rings attached to the propenone structure
-    aromatic_rings = Chem.MolFromSmarts("[c]1[c][c][c][c][c]1")
-    aromatic_matches = mol.GetSubstructMatches(aromatic_rings)
-    if len(aromatic_matches) < 2:
-        return False, "Less than two aromatic rings found"
-
-    # Check that the aromatic rings are connected to the propenone structure
-    connected_aromatics = 0
-    for match in aromatic_matches:
-        for atom_idx in match:
-            atom = mol.GetAtomWithIdx(atom_idx)
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetSymbol() == 'C' and any(bond.GetBondType() == Chem.rdchem.BondType.DOUBLE for bond in neighbor.GetBonds()):
-                    connected_aromatics += 1
-                    break
-    if connected_aromatics < 2:
-        return False, "Aromatic rings not properly connected to the propenone structure"
-
-    return True, "Contains core chalcone structure (Ar-CH=CH-C(=O)-Ar) with possible substitutions"
+    return False, "Aromatic rings not properly connected to the propenone structure"
