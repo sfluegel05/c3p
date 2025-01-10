@@ -6,6 +6,7 @@ Classifies: chalcones
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import Descriptors
 
 def is_chalcones(smiles: str):
     """
@@ -24,22 +25,47 @@ def is_chalcones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Basic chalcone pattern: Ar-CH=CH-C(=O)-Ar
-    # Looking for:
-    # - Two aromatic rings
-    # - Connected by a propenone bridge (-CH=CH-C(=O)-)
-    chalcone_pattern = Chem.MolFromSmarts("[a;r6]!@[CH]=[CH]!@C(=O)!@[a;r6]")
+    # Basic chalcone patterns with more flexible matching
+    # Core pattern including variations in aromatic systems
+    chalcone_patterns = [
+        # Classic chalcone pattern
+        Chem.MolFromSmarts("[$(a:a)]!@[CH]=[CH]!@C(=O)!@[$(a:a)]"),
+        # Dihydrochalcone pattern
+        Chem.MolFromSmarts("[$(a:a)]!@[CH2][CH2]!@C(=O)!@[$(a:a)]"),
+        # Pattern for fused ring systems
+        Chem.MolFromSmarts("[$(a:a:a)]!@[CH]=[CH]!@C(=O)!@[$(a:a)]"),
+        # Pattern allowing for substituted double bond
+        Chem.MolFromSmarts("[$(a:a)]!@[C]=[C]!@C(=O)!@[$(a:a)]")
+    ]
     
-    # Alternative pattern for dihydrochalcones (reduced double bond)
-    dihydrochalcone_pattern = Chem.MolFromSmarts("[a;r6]!@[CH2][CH2]!@C(=O)!@[a;r6]")
-    
-    matches = mol.GetSubstructMatches(chalcone_pattern)
-    dihydro_matches = mol.GetSubstructMatches(dihydrochalcone_pattern)
-    
-    if not (matches or dihydro_matches):
-        return False, "No chalcone or dihydrochalcone core structure found"
+    found_pattern = False
+    for pattern in chalcone_patterns:
+        if pattern is not None and mol.HasSubstructMatch(pattern):
+            found_pattern = True
+            break
+            
+    if not found_pattern:
+        return False, "No chalcone core structure found"
 
-    # Count number of aromatic rings
+    # Check for common substitution patterns
+    substitution_patterns = {
+        "hydroxy": Chem.MolFromSmarts("cO"),
+        "methoxy": Chem.MolFromSmarts("cOC"),
+        "prenyl": Chem.MolFromSmarts("CC(C)=CC"),
+        "methylenedioxy": Chem.MolFromSmarts("OCO"),
+    }
+    
+    # Count substitutions
+    substitutions = []
+    for name, pattern in substitution_patterns.items():
+        if pattern is not None and mol.HasSubstructMatch(pattern):
+            substitutions.append(name)
+    
+    # Count key features
+    ketone_pattern = Chem.MolFromSmarts("C(=O)")
+    ketone_count = len(mol.GetSubstructMatches(ketone_pattern)) if ketone_pattern else 0
+    
+    # Count aromatic rings
     ring_info = mol.GetRingInfo()
     aromatic_rings = sum(1 for ring in ring_info.AtomRings() 
                         if all(mol.GetAtomWithIdx(i).GetIsAromatic() for i in ring))
@@ -47,39 +73,27 @@ def is_chalcones(smiles: str):
     if aromatic_rings < 2:
         return False, "Insufficient number of aromatic rings"
 
-    # Additional checks for common chalcone features
-    # Check for common substituents (OH, OMe, etc.)
-    substituents = {
-        "hydroxy": Chem.MolFromSmarts("[OH]"),
-        "methoxy": Chem.MolFromSmarts("[OH0][CH3]"),
-    }
-    
-    has_substituents = any(
-        len(mol.GetSubstructMatches(pattern)) > 0 
-        for pattern in substituents.values()
-    )
-
-    # Determine if it's a regular chalcone or dihydrochalcone
-    if matches:
-        chalcone_type = "chalcone"
-    else:
-        chalcone_type = "dihydrochalcone"
-
-    # Build detailed classification reason
-    substituent_desc = " with common substituents" if has_substituents else ""
-    reason = f"Contains {chalcone_type} core structure (1,3-diphenylpropenone){substituent_desc}"
-    
-    # Additional validation to reduce false positives
-    # Check molecular weight (most chalcones are between 200-600 Da)
-    mol_wt = Chem.Descriptors.ExactMolWt(mol)
-    if mol_wt < 200 or mol_wt > 800:
+    # Check molecular properties
+    mol_wt = Descriptors.ExactMolWt(mol)
+    if mol_wt < 200 or mol_wt > 900:  # Adjusted range based on examples
         return False, "Molecular weight outside typical range for chalcones"
 
-    # Check carbon to oxygen ratio (typically between 3:1 and 10:1)
+    # Count carbons and oxygens
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     
-    if o_count == 0 or c_count/o_count > 10 or c_count/o_count < 3:
-        return False, "Carbon to oxygen ratio outside typical range for chalcones"
+    if o_count == 0:
+        return False, "No oxygen atoms found"
+    
+    if c_count < 15:  # Minimum carbons for basic chalcone structure
+        return False, "Too few carbons for chalcone structure"
+
+    # Build classification reason
+    substitution_desc = ""
+    if substitutions:
+        substitution_desc = f" with {', '.join(substitutions)} groups"
+    
+    chalcone_type = "dihydrochalcone" if mol.HasSubstructMatch(chalcone_patterns[1]) else "chalcone"
+    reason = f"Contains {chalcone_type} core structure{substitution_desc}"
 
     return True, reason
