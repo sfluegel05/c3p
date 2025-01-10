@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_primary_amine(smiles: str):
     """
     Determines if a molecule is a primary amine based on its SMILES string.
-    A primary amine contains a nitrogen atom that is bonded to exactly one carbon 
-    and two hydrogen atoms (RNH2).
+    A primary amine contains a nitrogen atom bonded to exactly one carbon group R and
+    two hydrogen atoms, fitting the formula: RNH2.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -16,24 +16,16 @@ def is_primary_amine(smiles: str):
         bool: True if molecule is a primary amine, False otherwise
         str: Reason for classification
     """
-    
-    # Parse SMILES
+    # Parse SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Iterate through atoms to find potential primary amine groups
-    for atom in mol.GetAtoms():
-        # Look for nitrogen atoms
-        if atom.GetAtomicNum() == 7:
-            # Primary amine Nitrogen should have exactly three neighbors
-            neighbors = atom.GetNeighbors()
-            if len(neighbors) == 3:
-                # Count carbon and hydrogen neighbors
-                carbon_count = sum(1 for nbr in neighbors if nbr.GetAtomicNum() == 6)
-                hydrogen_count = sum(1 for nbr in neighbors if nbr.GetAtomicNum() == 1)
-                # A primary amine should have one carbon and two hydrogens bonded to nitrogen
-                if carbon_count == 1 and hydrogen_count == 2:
-                    return True, "Contains a primary amine group (one carbon and two hydrogens bonded to nitrogen)"
-    
+    # Define SMARTS pattern for primary amine, considering implicit hydrogens
+    primary_amine_pattern = Chem.MolFromSmarts("[NX3;H2;!$(NC=O)]")
+
+    # Check if structure matches the primary amine SMARTS pattern
+    if mol.HasSubstructMatch(primary_amine_pattern):
+        return True, "Contains a primary amine group (RNH2 structure identified)"
+
     return False, "No primary amine group found"
