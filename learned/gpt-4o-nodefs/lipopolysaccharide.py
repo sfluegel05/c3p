@@ -2,51 +2,45 @@
 Classifies: CHEBI:16412 lipopolysaccharide
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_lipopolysaccharide(smiles: str):
     """
     Determines if a molecule is a lipopolysaccharide based on its SMILES string.
-    Attempts to recognize common features in lipopolysaccharides such as lipid A substructures,
-    oligosaccharide components, and the potential presence of phosphates.
-
-    Note: Due to structural complexity and diversity, this is a probable, not definitive, classification.
+    The identification is based on generic features common in lipopolysaccharides like
+    long lipid chains and polysaccharide components. This is, however, a rudimentary
+    test due to the complexity and diversity of LPS structures.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if the molecule can be a lipopolysaccharide, False otherwise
+        bool: True if molecule shows rudimentary LPS features, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return (False, "Invalid SMILES string")
+        return False, "Invalid SMILES string"
 
-    # Attempt to identify diverse types of fatty acid chains
-    # More generic pattern allowing diverse linkages
-    lipid_patterns = [
-        Chem.MolFromSmarts("C(=O)OC[C;R0][C;R0]"),  # Ester-linked fatty acids
-        Chem.MolFromSmarts("C(=O)N[C;R0][C;R0]")   # Amide-linked fatty acids
-        # Further patterns could be added here
-    ]
+    # Check for long carbon chains (indicating lipid presence)
+    carbon_chain_pattern = Chem.MolFromSmarts("[C;R0][C;R0][C;R0][C;R0][C;R0][C;R0]")
+    long_chain_matches = mol.HasSubstructMatch(carbon_chain_pattern)
     
-    if not any(mol.HasSubstructMatch(pattern) for pattern in lipid_patterns):
-        return (False, "No lipid chain motifs detected")
+    if not long_chain_matches:
+        return False, "No long carbon chains indicative of lipid present"
+    
+    # Check for saccharide units (looking for rings with multiple OH groups)
+    saccharide_pattern = Chem.MolFromSmarts("C1O[C@H](CO)[C@@H](O)[C@@H](O)[C@@H]1O")
+    saccharide_matches = mol.GetSubstructMatches(saccharide_pattern)
+    
+    if len(saccharide_matches) < 1:
+        return False, "No polysaccharide-like structures detected"
+    
+    # Check molecular size - LPS structures are generally large
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 1000:
+        return False, "Molecular weight is too low for typical LPS"
 
-    # Enhanced recognition of saccharide units, include more complex variations
-    saccharide_pattern = Chem.MolFromSmarts("[C@@H]1(O)[C@@H](O)[C@@H](O)[C@H](O)[C@@H](O1)CO")  # Mono-/oligosaccharide pattern
-    if not mol.HasSubstructMatch(saccharide_pattern):
-        return (False, "No polysaccharide-like structures detected")
-
-    # Detect phosphate motifs but less strictly, allowing for various representations
-    phosphate_pattern = Chem.MolFromSmarts("[O-]P(=O)(O)O")  # Common phosphate representation
-    if not mol.HasSubstructMatch(phosphate_pattern):
-        return (False, "No phosphate groups identified; common but not universal in LPS")
-
-    mol_weight = Chem.rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_weight < 600:
-        return (False, "Molecular weight too low to likely be an LPS")
-
-    return (True, "Contains structures consistent with lipopolysaccharides: lipids, polysaccharides, and potential phosphates")
+    return True, "Contains long lipid chains and polysaccharide-like structures indicating potential LPS"
