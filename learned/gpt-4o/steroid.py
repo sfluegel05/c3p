@@ -22,25 +22,24 @@ def is_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define steroid SMARTS: 3 hexane rings and 1 pentane ring (start with a core structure)
-    steroid_pattern = Chem.MolFromSmarts("C1CC2CCC3C4CCC(C4)C3C2C1")
+    # Refined steroid pattern: a more generalized cyclopenta[a]phenanthrene skeleton
+    steroid_pattern = Chem.MolFromSmarts("C1C2C3C4C5=C(C3C2)C2CC(C1)CCC2CCC4")  # more flexible for steroids
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "Does not contain cyclopenta[a]phenanthrene skeleton"
     
-    # Check for at least some stereo centers. Steroids typically have quite a few
+    # Check for some stereo centers, but not too strictly
     chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
     if len(chiral_centers) < 2:
         return False, "Not enough stereochemistry typically found in steroids"
-    
-    # Check for common functional groups attached to steroids (e.g., hydroxyl, keto)
+
+    # Broaden check for functional groups typical in steroids
     functional_group_patterns = [
         Chem.MolFromSmarts("[OX2H]"),  # hydroxyl groups
         Chem.MolFromSmarts("[CX3](=O)"),  # keto groups
+        Chem.MolFromSmarts("[C;R0]=O"),  # potential ester bond
     ]
     for pattern in functional_group_patterns:
         if mol.HasSubstructMatch(pattern):
-            break
-    else:
-        return False, "Missing typical functional groups found in steroids (e.g. hydroxyl, keto)"
+            return True, "Contains features typical of a steroid: cyclopenta[a]phenanthrene skeleton with appropriate stereochemistry and functional groups"
 
-    return True, "Contains features typical of a steroid: cyclopenta[a]phenanthrene skeleton with appropriate stereochemistry and functional groups"
+    return False, "Missing typical functional groups found in steroids (e.g., hydroxyl, keto, ester)"
