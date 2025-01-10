@@ -2,17 +2,18 @@
 Classifies: CHEBI:23053 catechin
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_catechin(smiles: str):
     """
     Determines if a molecule is a catechin based on its SMILES string.
-    Catechins are characterized by a flavan-3-ol backbone, with a chroman core and hydroxyl groups.
+    Catechins are characterized by a flavan-3-ol backbone and substituted hydroxyl groups.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if the molecule is a catechin, False otherwise
+        bool: True if molecule is a catechin, False otherwise
         str: Reason for classification
     """
 
@@ -21,25 +22,20 @@ def is_catechin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Correct SMARTS pattern for flavan-3-ol backbone: Chroman core and possible substitutions
-    flavan_3_ol_pattern = Chem.MolFromSmarts("c1cc2c(O)cc(O)c2Oc1[C@H]3COC([C@@H]3)O")
-    
-    if flavan_3_ol_pattern is None:
-         return (None, "SMARTS pattern could not be interpreted")
-    
+    # Catechin is a hydroxyflavan: Check for flavan-3-ol structure
+    flavan_3_ol_pattern = Chem.MolFromSmarts("C1[C@@H](OC2=CC=C(O)C=C2)C(=O)CC3=CC(O)=CC(O)=C13")
     if not mol.HasSubstructMatch(flavan_3_ol_pattern):
-        return False, "No flavan-3-ol (catechin) backbone found"
-
-    # Check for hydroxyl groups
-    hydroxy_pattern = Chem.MolFromSmarts("[OX2H]")
+        return False, "No flavan-3-ol backbone found"
+    
+    # Check for hydroxyl substitutions
+    hydroxy_pattern = Chem.MolFromSmarts("c(O)c")
     hydroxyl_matches = mol.GetSubstructMatches(hydroxy_pattern)
-    
-    if len(hydroxyl_matches) < 3:
+    if len(hydroxyl_matches) < 2:
         return False, f"Insufficient hydroxyl groups, found {len(hydroxyl_matches)}"
-    
-    # Check stereochemistry: Look for common chiral centers assuming 2 chiral centers in flavan-3-ol
-    chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=False)
-    if len(chiral_centers) < 2:
-        return False, "Not enough chiral centers found"
 
-    return True, "Contains flavan-3-ol (catechin) backbone with sufficient hydroxyl groups"
+    # Verify stereochemistry
+    chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
+    if len(chiral_centers) < 2:
+        return False, f"Insufficient chiral centers, found {len(chiral_centers)}"
+
+    return True, "Contains flavan-3-ol backbone with appropriate hydroxyl groups and stereochemistry"
