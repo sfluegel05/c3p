@@ -5,7 +5,6 @@ Classifies: CHEBI:24402 glycosphingolipid
 Classifies: glycosphingolipid
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_glycosphingolipid(smiles: str):
     """
@@ -26,13 +25,14 @@ def is_glycosphingolipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for sphingoid base (long-chain amino diol)
-    # Sphingoid base: HO-C-C(N)-C(OH)-[CH2]n-CH3, where n >=9
-    sphingoid_smarts = "[O;H1][C;H1]-[C;H1]([N])[C;H]([O;H1])[C;H2][C;H2][C;H2][C;H2][C;H2][C;H2][C;H2][C;H3]"
+    # Define a general SMARTS pattern for the sphingoid base
+    # Sphingoid base: long-chain amino alcohol with hydroxyl at C1 and amino at C2
+    sphingoid_smarts = "[#8][CH][CH](N)[CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH3]"
     sphingoid_pattern = Chem.MolFromSmarts(sphingoid_smarts)
-    
-    # Define SMARTS pattern for ceramide (sphingoid base with amide-linked fatty acid)
-    ceramide_smarts = "[C;H1](=O)-[N]-[C;H1]-[C;H1]([O;H1])[C;H]([O;H1])[C;!R][C;!R][C;!R][C;!R][C;!R][C;!R][C;!R][C;!R][C;H3]"
+
+    # Define a general SMARTS pattern for the ceramide backbone
+    # Ceramide: N-acylated sphingoid base
+    ceramide_smarts = "[#8][CH][CH](NC(=O)[#6])[CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH3]"
     ceramide_pattern = Chem.MolFromSmarts(ceramide_smarts)
 
     # Check for sphingoid base or ceramide backbone
@@ -42,25 +42,25 @@ def is_glycosphingolipid(smiles: str):
     if not (has_sphingoid or has_ceramide):
         return False, "No sphingoid base or ceramide backbone found"
 
-    # Define SMARTS pattern for glycosidic linkage to O-1 of sphingoid
-    # Looking for an oxygen atom connected to a sugar ring (pyranose or furanose) and to C1 of sphingoid base
-    # Oxygen atom connected to anomeric carbon of sugar [C;R] and to sphingoid O-1 [C;H1]
-    glycosidic_smarts = "[C;R]-[O]-[C;H1]"
-    glycosidic_pattern = Chem.MolFromSmarts(glycosidic_smarts)
-
-    has_glycosidic_linkage = mol.HasSubstructMatch(glycosidic_pattern)
-
-    if not has_glycosidic_linkage:
-        return False, "No carbohydrate residue attached via glycosidic linkage to O-1"
-
-    # Optionally, check for sugar ring more specifically
-    # Define SMARTS pattern for pyranose ring
-    sugar_ring_smarts = "C1[C,O][C,O][C,O][C,O][C,O]O1"
+    # Define SMARTS pattern for a sugar moiety (pyranose ring)
+    sugar_ring_smarts = "O[C@H]1[C@H][C@H][C@H][C@H]O1"
     sugar_ring_pattern = Chem.MolFromSmarts(sugar_ring_smarts)
 
+    # Check for sugar ring
     has_sugar_ring = mol.HasSubstructMatch(sugar_ring_pattern)
 
     if not has_sugar_ring:
         return False, "No sugar ring detected"
+
+    # Define SMARTS pattern for glycosidic linkage to O-1 of sphingoid
+    # Looking for oxygen connecting sphingoid C1 and sugar anomeric carbon
+    glycosidic_smarts = "[#8]-[CH]-1~[O]-[#6]-[#6]-[#6]-[#6]-[#8]-1"
+    glycosidic_pattern = Chem.MolFromSmarts(glycosidic_smarts)
+
+    # Check for glycosidic linkage
+    has_glycosidic_linkage = mol.HasSubstructMatch(glycosidic_pattern)
+
+    if not has_glycosidic_linkage:
+        return False, "No carbohydrate residue attached via glycosidic linkage to O-1"
 
     return True, "Contains sphingoid or ceramide backbone with sugar moiety attached via glycosidic linkage to O-1"
