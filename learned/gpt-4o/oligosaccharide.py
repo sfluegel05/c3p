@@ -22,17 +22,19 @@ def is_oligosaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define general monosaccharide (pyranose or furanose) SMARTS pattern
-    sugar_pattern = Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H]1O | O[C@H]1[C@@H](O)[C@H](O)[C@H]1")
-    
-    # Match monosaccharide units
-    sugar_matches = mol.GetSubstructMatches(sugar_pattern)
-    total_units = len(sugar_matches)
+    # Define more inclusive pyranose and furanose SMARTS patterns for sugars
+    pyranose_pattern = Chem.MolFromSmarts("O[C@@H]1[C@H]([C@H]([C@@H]([C@H]([C@H]1O)O)O)O)")
+    furanose_pattern = Chem.MolFromSmarts("O1[C@@H]([C@@H](O)[C@H](O)[C@H]1O)")
+
+    # Match monosaccharide units (pyranose and/or furanose)
+    pyranose_matches = mol.GetSubstructMatches(pyranose_pattern)
+    furanose_matches = mol.GetSubstructMatches(furanose_pattern)
+    total_units = len(pyranose_matches) + len(furanose_matches)
 
     if total_units < 2:
         return False, f"Insufficient monosaccharide units, found {total_units}"
 
-    # Define glycosidic linkage pattern (broader for ether linkages and some variants)
+    # Define glycosidic linkage pattern (ether linkage between rings)
     glycosidic_pattern = Chem.MolFromSmarts("[C;!R]-O-[C;!R]")
     glycosidic_matches = mol.GetSubstructMatches(glycosidic_pattern)
 
