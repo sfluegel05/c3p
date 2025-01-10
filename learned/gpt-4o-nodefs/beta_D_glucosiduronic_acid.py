@@ -2,6 +2,7 @@
 Classifies: CHEBI:15341 beta-D-glucosiduronic acid
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_beta_D_glucosiduronic_acid(smiles: str):
     """
@@ -19,11 +20,12 @@ def is_beta_D_glucosiduronic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Corrected SMARTS pattern for beta-D-glucuronic acid moiety
-    # We need to capture the beta linkage and correct stereochemistry
-    glucuronic_acid_smarts = "C[C@H]1(O[C@@H]([C@@H](C[C@@H]1O)O)O)C(=O)O"
+    # Improved SMARTS pattern for beta-D-glucuronic acid moiety
+    # Including the glucose backbone with specific beta link configuration 
+    # account for carboxylic acid at C6 position
+    glucuronic_acid_smarts = "[C@H]1([C@@H]([C@H]([C@@H]([C@H]([C@@H]1O)O)O)O)O)C(=O)O"
     glucuronic_acid_pattern = Chem.MolFromSmarts(glucuronic_acid_smarts)
-
+    
     if mol.HasSubstructMatch(glucuronic_acid_pattern):
         return True, "Contains beta-D-glucuronic acid moiety"
     else:
