@@ -35,31 +35,31 @@ def is_gas_molecular_entity(smiles: str):
     # Calculate molecular weight
     mol_wt = Descriptors.MolWt(mol)
 
-    # Heuristic: Molecules with molecular weight < 100 g/mol are more likely to be gases at STP
-    if mol_wt > 100:
+    # Heuristic: Molecules with molecular weight < 200 g/mol are more likely to be gases at STP
+    if mol_wt > 200:
         return False, f"Molecular weight {mol_wt:.2f} g/mol is too high for a gas at STP"
 
-    # Check for common gas molecules (e.g., noble gases, diatomic molecules, small hydrocarbons)
-    # Noble gases: He, Ne, Ar, Kr, Xe, Rn
-    noble_gases = {"[He]", "[Ne]", "[Ar]", "[Kr]", "[Xe]", "[Rn]"}
+    # Check for noble gases (including isotopes)
+    noble_gases = {"[He]", "[Ne]", "[Ar]", "[Kr]", "[Xe]", "[Rn]",
+                  "[4He]", "[3He]", "[6He]", "[219Rn]", "[220Rn]", "[222Rn]"}
     if smiles in noble_gases:
         return True, "Noble gas"
 
-    # Diatomic molecules: H2, N2, O2, F2, Cl2
-    diatomic_molecules = {"[H][H]", "N#N", "[O][O]", "FF", "ClCl"}
+    # Check for diatomic molecules (including isotopes)
+    diatomic_molecules = {"[H][H]", "[1H][1H]", "[3H][3H]", "N#N", "[O][O]", "FF", "ClCl", "[C-]#[O+]"}
     if smiles in diatomic_molecules:
         return True, "Diatomic molecule"
 
-    # Small hydrocarbons: methane, ethane, ethene, ethyne, propane, propene, etc.
+    # Check for small hydrocarbons and common gases
+    # Include molecules with up to 8 carbons and molecular weight < 200 g/mol
     hydrocarbon_pattern = Chem.MolFromSmarts("[C,c]")
     if mol.HasSubstructMatch(hydrocarbon_pattern):
-        # Check if the number of carbons is small (<= 4)
         c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-        if c_count <= 4:
+        if c_count <= 8 and mol_wt < 200:
             return True, "Small hydrocarbon"
 
-    # Other common gases: CO2, CO, NH3, etc.
-    common_gases = {"O=C=O", "[C-]#[O+]", "[H]N([H])[H]"}
+    # Other common gases
+    common_gases = {"O=C=O", "[H]N([H])[H]", "O", "N", "C", "I[H]", "Cl[H]"}
     if smiles in common_gases:
         return True, "Common gas molecule"
 
