@@ -2,7 +2,6 @@
 Classifies: CHEBI:16749 1-phosphatidyl-1D-myo-inositol
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_1_phosphatidyl_1D_myo_inositol(smiles: str):
     """
@@ -16,24 +15,23 @@ def is_1_phosphatidyl_1D_myo_inositol(smiles: str):
         bool: True if molecule is a 1-phosphatidyl-1D-myo-inositol, False otherwise
         str: Reason for classification
     """
-    
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define a general inositol pattern capturing potential stereochemistry variations
-    inositol_pattern = Chem.MolFromSmarts("OC[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@H]1O")
+    # Correctly map 1D-myo-inositol based on stereochemistry
+    inositol_pattern = Chem.MolFromSmarts("[C@H]1(O)[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@H]1O")
     if not mol.HasSubstructMatch(inositol_pattern):
         return False, "No 1D-myo-inositol moiety found"
 
-    # Define a pattern for detecting phosphate ester linkage to inositol
-    phosphate_linkage_pattern = Chem.MolFromSmarts("O[P](=O)(O)OC[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@H]1O")
+    # Phosphate group attached at position 1 of inositol
+    phosphate_linkage_pattern = Chem.MolFromSmarts("O[P](=O)(O)O[C@H]1")
     if not mol.HasSubstructMatch(phosphate_linkage_pattern):
-        return False, "No phosphate ester linkage to inositol at position 1"
-    
-    # Define pattern for glycerol backbone in a phosphatidyl linkage
-    glycerol_pattern = Chem.MolFromSmarts("O[C@@H]COC(=O)C")
+        return False, "No phosphate ester linkage at position 1 of inositol"
+
+    # Detect glycerol backbone linked to the phosphate (phosphatidyl group)
+    glycerol_pattern = Chem.MolFromSmarts("OC[C@H]COC(=O)C")  # Minimal glycerol scaffold in phosphatidyl linkage
     if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone found"
+        return False, "No glycerol backbone for phosphatidyl linkage"
 
     return True, "Contains 1-phosphatidyl-1D-myo-inositol moiety"
