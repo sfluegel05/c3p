@@ -6,6 +6,7 @@ Classifies: non-proteinogenic amino acid
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_non_proteinogenic_amino_acid(smiles: str):
     """
@@ -23,63 +24,97 @@ def is_non_proteinogenic_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Standard proteinogenic amino acids SMILES (simplified forms)
+    # Standard proteinogenic amino acids in their neutral form
     proteinogenic = {
-        'G': 'NCC(=O)O',  # Glycine
-        'A': 'CC(N)C(=O)O',  # Alanine
-        'R': 'NC(=N)NCCCC(N)C(=O)O',  # Arginine
-        'N': 'NC(=O)CC(N)C(=O)O',  # Asparagine
-        'D': 'OC(=O)CC(N)C(=O)O',  # Aspartic acid
-        'C': 'SCC(N)C(=O)O',  # Cysteine
-        'Q': 'NC(=O)CCC(N)C(=O)O',  # Glutamine
-        'E': 'OC(=O)CCC(N)C(=O)O',  # Glutamic acid
-        'H': 'NC(Cc1[nH]cnc1)C(=O)O',  # Histidine
-        'I': 'CC(C)C(C)C(N)C(=O)O',  # Isoleucine
-        'L': 'CC(C)CC(N)C(=O)O',  # Leucine
-        'K': 'NCCCC(N)C(=O)O',  # Lysine
-        'M': 'CSCC(N)C(=O)O',  # Methionine
-        'F': 'NC(Cc1ccccc1)C(=O)O',  # Phenylalanine
-        'P': 'OC(=O)C1CCCN1',  # Proline
-        'S': 'OCC(N)C(=O)O',  # Serine
-        'T': 'CC(O)C(N)C(=O)O',  # Threonine
-        'W': 'NC(Cc1c[nH]c2ccccc12)C(=O)O',  # Tryptophan
-        'Y': 'NC(Cc1ccc(O)cc1)C(=O)O',  # Tyrosine
-        'V': 'CC(C)C(N)C(=O)O'  # Valine
+        'ALA': 'N[CH](C)C(=O)O',  # Alanine
+        'ARG': 'N[CH](CCCNC(=N)N)C(=O)O',  # Arginine
+        'ASN': 'N[CH](CC(=O)N)C(=O)O',  # Asparagine
+        'ASP': 'N[CH](CC(=O)O)C(=O)O',  # Aspartic acid
+        'CYS': 'N[CH](CS)C(=O)O',  # Cysteine
+        'GLN': 'N[CH](CCC(=O)N)C(=O)O',  # Glutamine
+        'GLU': 'N[CH](CCC(=O)O)C(=O)O',  # Glutamic acid
+        'GLY': 'NCC(=O)O',  # Glycine
+        'HIS': 'N[CH](CC1=CN=CN1)C(=O)O',  # Histidine
+        'ILE': 'N[CH]([CH](CC)C)C(=O)O',  # Isoleucine
+        'LEU': 'N[CH](CC(C)C)C(=O)O',  # Leucine
+        'LYS': 'N[CH](CCCCN)C(=O)O',  # Lysine
+        'MET': 'N[CH](CCSC)C(=O)O',  # Methionine
+        'PHE': 'N[CH](Cc1ccccc1)C(=O)O',  # Phenylalanine
+        'PRO': 'N1[CH](CCC1)C(=O)O',  # Proline
+        'SER': 'N[CH](CO)C(=O)O',  # Serine
+        'THR': 'N[CH]([CH](O)C)C(=O)O',  # Threonine
+        'TRP': 'N[CH](CC1=CNC2=C1C=CC=C2)C(=O)O',  # Tryptophan
+        'TYR': 'N[CH](Cc1ccc(O)cc1)C(=O)O',  # Tyrosine
+        'VAL': 'N[CH](C(C)C)C(=O)O'  # Valine
     }
+
+    # Check for basic amino acid structure (more flexible patterns)
+    patterns = [
+        '[NX3,NX4;!$(NC=O)][CX4][CX3](=[OX1])[OX2H,OX1-,OX2]',  # Standard pattern
+        '[NX3,NX4;!$(NC=O)][CX4][CX3](=[OX1])[OX2R]',  # Ester form
+        '[NX3,NX4]([H])[CX4][CX3](=[OX1])[OX2H,OX1-]'  # Explicit H
+    ]
     
-    # Check for basic amino acid structure
-    amino_acid_pattern = Chem.MolFromSmarts('[NX3,NX4;!$(NC=O)][CX4][CX3](=[OX1])[OX2H,OX1-]')
-    if not mol.HasSubstructMatch(amino_acid_pattern):
-        return False, "Missing basic amino acid structure (NH2-CH-COOH)"
-    
-    # Convert input to canonical SMILES for comparison
+    has_amino_acid_core = False
+    for pattern in patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            has_amino_acid_core = True
+            break
+            
+    if not has_amino_acid_core:
+        return False, "Missing basic amino acid structure"
+
+    # Convert input to canonical SMILES
     canonical_smiles = Chem.MolToSmiles(mol, isomericSmiles=True)
     
-    # Check if it's one of the standard amino acids
+    # Check if it's a standard amino acid (allowing for different protonation states)
     for aa_smiles in proteinogenic.values():
         prot_mol = Chem.MolFromSmiles(aa_smiles)
         if prot_mol is None:
             continue
-        # Convert to canonical form without stereochemistry for base structure comparison
+        # Compare without stereochemistry and hydrogen counts
         prot_canonical = Chem.MolToSmiles(prot_mol, isomericSmiles=False)
         mol_canonical = Chem.MolToSmiles(mol, isomericSmiles=False)
         if prot_canonical == mol_canonical:
             return False, "This is a standard proteinogenic amino acid"
     
-    # Additional checks for common non-proteinogenic features
-    
-    # Count number of atoms (exclude very small molecules)
-    if mol.GetNumAtoms() < 4:
+    # Additional checks
+    num_atoms = mol.GetNumAtoms()
+    if num_atoms < 4:
         return False, "Molecule too small to be an amino acid"
     
-    # Verify presence of carbon backbone
-    carbon_count = len([atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6])
-    if carbon_count < 2:
-        return False, "Insufficient carbon atoms for amino acid structure"
+    # Count carbons and nitrogens
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
     
-    # Check for reasonable molecular weight (most amino acids are between 75-500 Da)
-    mol_wt = Chem.Descriptors.ExactMolWt(mol)
-    if mol_wt < 75 or mol_wt > 1000:
-        return False, f"Molecular weight {mol_wt:.1f} outside typical range for amino acids"
-
-    return True, "Non-proteinogenic amino acid structure identified"
+    if c_count < 2:
+        return False, "Insufficient carbon atoms for amino acid structure"
+    if n_count < 1:
+        return False, "Must contain at least one nitrogen"
+    
+    # Check molecular weight
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 75:
+        return False, f"Molecular weight {mol_wt:.1f} too small for amino acid"
+    if mol_wt > 2000:
+        return False, f"Molecular weight {mol_wt:.1f} too large for typical amino acid"
+    
+    # Look for common modifications that indicate non-proteinogenic status
+    modifications = [
+        ('Phosphorylation', '[PX4](=[OX1])([$([OX2H]),$([OX1-]),$([OX2]P)])([$([OX2H]),$([OX1-]),$([OX2]P)])[$([OX2H]),$([OX1-]),$([OX2]P)]'),
+        ('Methylation', '[NX3,NX4;!$(NC=O)](C)(C)'),
+        ('Halogenation', '[F,Cl,Br,I]'),
+        ('Hydroxylation', '[OX2H]'),
+        ('Unusual cyclization', '[R3,R4,R5,R6,R7,R8]')
+    ]
+    
+    found_modifications = []
+    for mod_name, mod_smarts in modifications:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(mod_smarts)):
+            found_modifications.append(mod_name)
+    
+    reason = "Non-proteinogenic amino acid identified"
+    if found_modifications:
+        reason += f" with modifications: {', '.join(found_modifications)}"
+    
+    return True, reason
