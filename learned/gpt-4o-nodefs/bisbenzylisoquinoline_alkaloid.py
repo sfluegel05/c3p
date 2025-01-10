@@ -2,13 +2,13 @@
 Classifies: CHEBI:133004 bisbenzylisoquinoline alkaloid
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_bisbenzylisoquinoline_alkaloid(smiles: str):
     """
     Determines if a molecule is a bisbenzylisoquinoline alkaloid based on its SMILES string.
-    Bisbenzylisoquinoline alkaloids are characterized by complex polycyclic structures with multiple
-    benzylisoquinoline-like units linked often via ether bonds.
+    Bisbenzylisoquinoline alkaloids are characterized by two benzylisoquinoline units linked by 
+    ether bonds, featuring complex ring systems and methoxy groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -18,24 +18,28 @@ def is_bisbenzylisoquinoline_alkaloid(smiles: str):
         str: Reason for classification
     """
     
-    # Parse the SMILES string
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define a general benzylisoquinoline-like pattern (aromatic rings with N heterocycle)
-    benzylisoquinoline_pattern = Chem.MolFromSmarts("Nc1c(cc(OC)c(OC)c1)CC2")
+    # Define substructure patterns for bisbenzylisoquinoline alkaloids
+    ether_linkage_pattern = Chem.MolFromSmarts("CCOc1ccccc1")  # Simple ether linkage and aromatic ring
+    methoxy_pattern = Chem.MolFromSmarts("CO")  # Methoxy group
+    isoquinoline_pattern = Chem.MolFromSmarts("c1ccc2ncccc2c1")  # Isoquinoline
     
-    # Check for benzylisoquinoline-like patterns at least twice
-    benzylisoquinoline_matches = mol.GetSubstructMatches(benzylisoquinoline_pattern)
-    if len(benzylisoquinoline_matches) < 2:
-        return False, f"Found {len(benzylisoquinoline_matches)} benzylisoquinoline-like units, need at least 2"
+    # Checking for ether linkages
+    if not mol.HasSubstructMatch(ether_linkage_pattern):
+        return False, "No appropriate ether linkages found"
+    
+    # Checking for methoxy groups
+    methoxy_matches = mol.GetSubstructMatches(methoxy_pattern)
+    if len(methoxy_matches) < 2:
+        return False, f"Found {len(methoxy_matches)} methoxy groups, need at least 2"
+    
+    # Checking for isoquinoline units
+    isoquinoline_matches = mol.GetSubstructMatches(isoquinoline_pattern)
+    if len(isoquinoline_matches) < 2:
+        return False, f"Found {len(isoquinoline_matches)} isoquinoline units, need at least 2"
 
-    # Define smarter ether bond linkers connectivity, not requiring fixed bridge counts
-    # Just ensure presence between rings
-    ether_pattern = Chem.MolFromSmarts("cOc") 
-    ether_matches = mol.GetSubstructMatches(ether_pattern)
-    if len(ether_matches) < 1:
-        return False, f"Found {len(ether_matches)} ether bridges, need at least 1"
-
-    return True, "Contains characteristic bisbenzylisoquinoline alkaloid structure"
+    return True, "Contains characteristic features of bisbenzylisoquinoline alkaloids"
