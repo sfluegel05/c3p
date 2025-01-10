@@ -16,32 +16,30 @@ def is_glycosaminoglycan(smiles: str):
         str: Reason for classification
     """
 
-    # Parse SMILES
+    # Parse the SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define patterns for possible aminomonosaccharides, including variants
+    # Define patterns for aminomonosaccharides with broader generalization
     aminomonosaccharide_patterns = [
-        Chem.MolFromSmarts("[C@H]1([NH2])[C@@H]([OH])[C@@H]([OH])[C@H]([OH])[C@H]([OH])[O@H]1"),  # Glucosamine type
-        Chem.MolFromSmarts("[C@H]1([NH2])[C@@H]([OH])[C@H]([OH])[C@@H]([OH])[C@H]([OH])[O@H]1"),  # Galactosamine type
-        Chem.MolFromSmarts("[C@H]1([NH][C@H](C=O)*)[C@@H]([OH])[C@@H]([OH])[C@H]([OH])[C@H]([OH])[O@H]1"),  # N-acetylglucosamine type
-        Chem.MolFromSmarts("[C@@H]1([C@H](O)[C@H](O)[C@@H](N)[C@@H]1O)"),  # General aminomonosaccharide
+        # More generic aminosugar patterns captured
+        Chem.MolFromSmarts("[C@H]([NH2])C([OH])C([OH])C([OH])C([OH])O"),  # General
+        Chem.MolFromSmarts("[C@H]([NH][C@H](C=O)])C([OH])C([OH])C([OH])O")  # Acetylated
     ]
-    
+
     total_aminomonosaccharide_matches = 0
     for pattern in aminomonosaccharide_patterns:
         matches = mol.GetSubstructMatches(pattern)
         total_aminomonosaccharide_matches += len(matches)
 
-    # Calculate a better estimation for sugar units
+    # Estimate number of sugar units from oxygen atoms
     oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    sugar_units_estimation = max(1, oxygen_count // 3)  # Rough estimate of sugars
 
-    # Glycosaminoglycans are largely composed of sugars, let's assume ~3 oxygens per sugar for better specificity
-    sugar_units_estimation = max(1, oxygen_count // 3)
-
-    # Set threshold for classification, assuming at least 30% units should be amino sugars
-    if total_aminomonosaccharide_matches / sugar_units_estimation > 0.3:
+    # Modify the threshold to determine glycosaminoglycans
+    # Assuming a significant portion >= 25% of the sugar units should be aminomonosaccharide
+    if total_aminomonosaccharide_matches / sugar_units_estimation >= 0.25:
         return True, f"Glycosaminoglycan identified. Aminomonosaccharide count: {total_aminomonosaccharide_matches}"
 
     return False, "Insufficient proportion of aminomonosaccharide residues found"
