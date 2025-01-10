@@ -26,19 +26,20 @@ def is_aralkylamine(smiles: str):
 
     # Create SMARTS patterns
     patterns = {
-        # Any aromatic ring (including heterocycles)
-        "aromatic": "[a;r5,r6]1[a;r5,r6][a;r5,r6][a;r5,r6][a;r5,r6]1",
+        # Aromatic systems (including heterocycles)
+        "aromatic": "[a]1[a][a][a][a]1,[a]1[a][a][a][a][a]1",
         
-        # Amine connected to aliphatic carbon (not amide, not imine, not aniline)
-        "alkylamine": "[NX3;H2,H1,H0;!$(NC=O);!$(N=*);!$(N#*);!$(Na);!$(N[a])]",
+        # Basic amine patterns
+        "primary_amine": "[NX3H2][CX4]",
+        "secondary_amine": "[NX3H1;!$(NC=O);!$(N=*);!$(N[a])][CX4]",
+        "tertiary_amine": "[NX3H0;!$(NC=O);!$(N=*);!$(N[a])][CX4]",
         
-        # Aromatic-alkyl-amine connection pattern (flexible chain length)
-        "aralkyl": "[a;r5,r6]~[C;!$(C=O);!$(C=N);!$(C#N)]~[*]~[NX3;!$(NC=O);!$(N=*);!$(N#*);!$(Na)]",
+        # Connection patterns
+        "aralkyl": "[a]~[CX4]~[CX4;!$(C(=O));!$(C(=N))]~[NX3;!$(NC=O);!$(N=*);!$(N[a])]",
         
-        # Patterns to exclude
-        "amide": "[NX3][CX3](=[OX1])",
-        "imine": "[NX2]=[CX3]",
-        "aniline": "[a][NX3]",
+        # Exclusion patterns
+        "peptide": "[NX3][CX3](=[OX1])[CX4][NX3]",
+        "amino_acid": "[NX3H2][CX4H1]([*])[CX3](=[OX1])[OX2H1]",
         "guanidine": "[NX3][CX3](=[NX2])[NX3]"
     }
     
@@ -50,37 +51,33 @@ def is_aralkylamine(smiles: str):
             return False, f"Invalid SMARTS pattern for {name}"
         compiled_patterns[name] = compiled_pattern
 
-    # Check for presence of aromatic ring
+    # Check for aromatic system
     if not mol.HasSubstructMatch(compiled_patterns["aromatic"]):
-        return False, "No aromatic ring found"
+        return False, "No aromatic system found"
 
-    # Check for presence of alkylamine
-    if not mol.HasSubstructMatch(compiled_patterns["alkylamine"]):
-        return False, "No alkylamine group found"
+    # Check for excluded structures
+    if mol.HasSubstructMatch(compiled_patterns["peptide"]) or \
+       mol.HasSubstructMatch(compiled_patterns["amino_acid"]) or \
+       mol.HasSubstructMatch(compiled_patterns["guanidine"]):
+        return False, "Contains excluded group (peptide, amino acid, or guanidine)"
 
-    # Get all nitrogen atoms
-    nitrogens = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7]
+    # Check for presence of amine group
+    has_amine = False
+    for amine_type in ["primary_amine", "secondary_amine", "tertiary_amine"]:
+        if mol.HasSubstructMatch(compiled_patterns[amine_type]):
+            has_amine = True
+            break
     
-    # Exclude nitrogens that are part of excluded patterns
-    excluded_nitrogens = set()
-    for pattern_name in ["amide", "imine", "aniline", "guanidine"]:
-        matches = mol.GetSubstructMatches(compiled_patterns[pattern_name])
-        for match in matches:
-            excluded_nitrogens.update([idx for idx in match if mol.GetAtomWithIdx(idx).GetAtomicNum() == 7])
-    
-    valid_nitrogens = set(nitrogens) - excluded_nitrogens
-    if not valid_nitrogens:
-        return False, "No valid alkylamine groups found"
+    if not has_amine:
+        return False, "No suitable amine group found"
 
     # Check for aralkyl connection
-    aralkyl_matches = mol.GetSubstructMatches(compiled_patterns["aralkyl"])
-    if not aralkyl_matches:
-        return False, "No connection between aromatic ring and amine via alkyl linker"
+    matches = mol.GetSubstructMatches(compiled_patterns["aralkyl"])
+    if not matches:
+        return False, "No proper connection between aromatic ring and amine"
 
-    # Verify that at least one aralkyl pattern connects to a valid amine
-    for match in aralkyl_matches:
-        amine_idx = match[-1]
-        if amine_idx in valid_nitrogens:
-            return True, "Contains amine group connected to aromatic ring via alkyl linker"
+    # Additional check for molecular properties
+    if mol.GetNumAtoms() > 100:  # Avoid very large molecules
+        return False, "Molecule too complex"
 
-    return False, "No valid aralkylamine structure found"
+    return True, "Contains amine group connected to aromatic ring via alkyl linker"
