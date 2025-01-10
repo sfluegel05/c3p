@@ -6,8 +6,7 @@ from rdkit import Chem
 def is_carboxamidine(smiles: str):
     """
     Determines if a molecule is a carboxamidine based on its SMILES string.
-    Carboxamidine has the structure RC(=NR)NR2, denoting the -C(=NR)NR2 group,
-    where R can be hydrogen or other substituents, such as alkyl or aryl groups.
+    Carboxamidine has the structure RC(=NR)NR2, where R can be a hydrogen or other substituents.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,10 +21,11 @@ def is_carboxamidine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more general carboxamidine pattern
-    carboxamidine_pattern = Chem.MolFromSmarts("C(=N)(N)N")
+    # Define a generic carboxamidine pattern, allowing for variability in R groups
+    carboxamidine_pattern = Chem.MolFromSmarts("C(=N)(N[*])[*]")
     
+    # Ensure the molecule has a substructure match with the carboxamidine pattern
     if mol.HasSubstructMatch(carboxamidine_pattern):
-        return True, "Contains a carboxamidine-like structure: C(=N)(N)N"
+        return True, "Contains a carboxamidine structure: RC(=NR)NR2"
     else:
-        return False, "Does not contain a carboxamidine-like structure"
+        return False, "Does not contain a carboxamidine structure"
