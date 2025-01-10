@@ -2,7 +2,6 @@
 Classifies: CHEBI:20156 3-oxo-Delta(1) steroid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_3_oxo_Delta_1_steroid(smiles: str):
     """
@@ -15,15 +14,16 @@ def is_3_oxo_Delta_1_steroid(smiles: str):
         bool: True if molecule is a 3-oxo-Delta(1) steroid, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
     # Define a broad steroid backbone pattern with a 3-keto group and Delta(1) double bond
-    steroid_pattern = Chem.MolFromSmarts("C1=CC2CCC3C(=O)CC[C@@]3(C)C2CC1")
-    
+    # The carbonyl group (C=O) at the third position and a double bond between the first and second carbon.
+    steroid_pattern = Chem.MolFromSmarts("C1=CC2CC[C@H]3C(=O)CC[C@@]3(C)C2CC1")
+
     # Check for the steroid pattern in the molecule
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "3-oxo-Delta(1) steroid structure not found"
