@@ -2,7 +2,6 @@
 Classifies: CHEBI:76578 diradylglycerol
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_diradylglycerol(smiles: str):
     """
@@ -16,36 +15,40 @@ def is_diradylglycerol(smiles: str):
         bool: True if molecule is a diradylglycerol, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Improved glycerol backbone check, allowing for stereo
-    glycerol_pattern = Chem.MolFromSmarts("C[C@H](O)CO")  # Recognize one of the chiral carbons in glycerol
+    # Look for a generalized glycerol backbone pattern
+    glycerol_pattern = Chem.MolFromSmarts("C(CO)CO")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "Glycerol backbone pattern not matched"
 
-    # Recognize ester link (acyl group: R-C=O-), ether link (alkyl: R-O-), or alk-1-enyl pattern
-    ester_pattern = Chem.MolFromSmarts("[CX3](=O)[O][CH2]")
-    ether_pattern = Chem.MolFromSmarts("[OX2][CX4]")
-    alk1enyl_pattern = Chem.MolFromSmarts("[CX3](=[CH2])[CH](O)[CH2]")
+    # Identify acyl groups (R-C(=O)-O-)
+    acyl_pattern = Chem.MolFromSmarts("C(=O)O")
+    acyl_matches = mol.GetSubstructMatches(acyl_pattern)
 
-    # Finding substituents by these patterns
-    # Limit to substituents that connect via ester or ether bonds
-    acyl_matches = mol.GetSubstructMatches(ester_pattern)
-    alkyl_matches = mol.GetSubstructMatches(ether_pattern)
+    # Identify alkyl groups (R-O-) that aren't part of acyl groups
+    alkyl_pattern = Chem.MolFromSmarts("CO")
+    alkyl_matches = mol.GetSubstructMatches(alkyl_pattern)
+
+    # Ensure that ether link is not double-counted by excluding acyl's matched terminal carbon
+    unique_alkyl_positions = set(m[0] for m in alkyl_matches) - set(m[0] for m in acyl_matches)
+
+    # Identify alk-1-enyl groups
+    alk1enyl_pattern = Chem.MolFromSmarts("C=C-O")
     alk1enyl_matches = mol.GetSubstructMatches(alk1enyl_pattern)
 
+    # Count substituents before applying stereochemistry considerations
     total_unique_substituents = (
         len(set([match[0] for match in acyl_matches])) +
-        len(set([match[0] for match in alkyl_matches])) +
+        len(unique_alkyl_positions) +
         len(set([match[0] for match in alk1enyl_matches]))
     )
 
-    # Ensure there are exactly two substituents
     if total_unique_substituents != 2:
         return False, f"Expected exactly 2 substituent groups, found {total_unique_substituents}"
 
-    return True, "Valid diradylglycerol with two substituents connected via ester, ether, or alk-1-enyl bonds"
+    return True, "Valid diradylglycerol with two substituents connected via acyl, alkyl, or alk-1-enyl bonds"
