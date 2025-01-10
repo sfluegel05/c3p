@@ -21,37 +21,37 @@ def is_aldose(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for aldehyde group or potential cyclic form
-    aldehyde_pattern = Chem.MolFromSmarts("[CX3H]=O")
+    # Check if it's an open chain form with an aldehyde group.
+    aldehyde_pattern = Chem.MolFromSmarts("[CX3H](O)=O")
     if mol.HasSubstructMatch(aldehyde_pattern):
         found_aldehyde = True
-        reason = "Found free aldehyde group"
+        reason = "Contains an aldehyde group."
     else:
         found_aldehyde = False
-        reason = "No free aldehyde group found,"
+        reason = "No free aldehyde group found."
 
-    # Check cyclic hemiacetal forms: look for furanose or pyranose structures
-    # These are represented by 5- and 6- atom rings respectively, often involving oxygen
+    # Check for cyclic forms: furanoses (5-membered rings) and pyranoses (6-membered rings) with oxygen
     ring_info = mol.GetRingInfo()
-    ring_size_furanose = 5
-    ring_size_pyranose = 6
-    
-    furanose_ring = any(len(ring) == ring_size_furanose and Chem.MolFromSmiles('O') in [mol.GetAtomWithIdx(idx) for idx in ring] for ring in ring_info.AtomRings())
-    pyranose_ring = any(len(ring) == ring_size_pyranose and Chem.MolFromSmiles('O') in [mol.GetAtomWithIdx(idx) for idx in ring] for ring in ring_info.AtomRings())
-    
-    if furanose_ring or pyranose_ring:
+    furanose_ring = any(len(ring) == 5 and any(mol.GetAtomWithIdx(idx).GetSymbol() == 'O' for idx in ring) for ring in ring_info.AtomRings())
+    pyranose_ring = any(len(ring) == 6 and any(mol.GetAtomWithIdx(idx).GetSymbol() == 'O' for idx in ring) for ring in ring_info.AtomRings())
+
+    if furanose_ring:
         found_cyclic = True
-        reason += " and potential furanose or pyranose ring structure found."
+        reason += " Contains a furanose (5-membered) ring."
+    elif pyranose_ring:
+        found_cyclic = True
+        reason += " Contains a pyranose (6-membered) ring."
     else:
         found_cyclic = False
-        reason += " no furanose or pyranose ring structure detected."
+        reason += " No furanose or pyranose ring detected."
 
-    # Check for multiple hydroxyl groups appropriately
+    # Check for multiple hydroxyl groups
     hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
     hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
     min_hydroxyl_groups = 2 if found_aldehyde else 3
+
     if len(hydroxyl_matches) < min_hydroxyl_groups:
-        return False, "Insufficient hydroxyl groups: requires at least " + str(min_hydroxyl_groups)
+        return False, f"Insufficient hydroxyl groups: found {len(hydroxyl_matches)}, but requires at least {min_hydroxyl_groups}."
 
     if found_aldehyde or found_cyclic:
         return True, reason
