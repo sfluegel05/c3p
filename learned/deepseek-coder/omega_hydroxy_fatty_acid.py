@@ -40,12 +40,17 @@ def is_omega_hydroxy_fatty_acid(smiles: str):
     if not chain_matches:
         return False, "No long carbon chain found"
 
+    # Check chain length - at least 6 carbons for a fatty acid
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 6:
+        return False, "Chain too short to be a fatty acid"
+
     # Find the terminal carbon of the longest chain
     terminal_carbon = None
     for match in chain_matches:
         for atom_idx in match:
             atom = mol.GetAtomWithIdx(atom_idx)
-            if atom.GetDegree() == 1 or (atom.GetDegree() == 2 and atom.GetAtomicNum() == 6):  # Terminal carbon can have degree 1 or 2 (if part of a double bond)
+            if atom.GetDegree() == 1:  # Terminal carbon
                 terminal_carbon = atom_idx
                 break
         if terminal_carbon is not None:
@@ -58,16 +63,21 @@ def is_omega_hydroxy_fatty_acid(smiles: str):
     terminal_atom = mol.GetAtomWithIdx(terminal_carbon)
     has_hydroxyl = False
     for neighbor in terminal_atom.GetNeighbors():
-        if neighbor.GetAtomicNum() == 8 and neighbor.GetTotalNumHs() == 1:  # Oxygen with one hydrogen (OH)
-            has_hydroxyl = True
-            break
+        if neighbor.GetAtomicNum() == 8:  # Oxygen
+            # Check if it's an OH group (either explicit or implicit hydrogen)
+            if neighbor.GetTotalNumHs() >= 1 or neighbor.GetFormalCharge() == 0:
+                has_hydroxyl = True
+                break
 
     if not has_hydroxyl:
         return False, "No hydroxyl group found at the terminal position"
 
-    # Ensure no branching in the chain
+    # Ensure no branching in the chain (except for double bonds)
     for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 6 and atom.GetDegree() > 2:  # Carbon with more than 2 non-hydrogen connections (branching)
-            return False, "Branched chain detected"
+        if atom.GetAtomicNum() == 6 and atom.GetDegree() > 2:
+            # Check if the extra connections are double bonds
+            double_bond_count = sum(1 for bond in atom.GetBonds() if bond.GetBondType() == Chem.BondType.DOUBLE)
+            if atom.GetDegree() - double_bond_count > 2:
+                return False, "Branched chain detected"
 
     return True, "Contains a carboxyl group at position 1 and a hydroxyl group at the terminal position of a straight-chain fatty acid"
