@@ -28,7 +28,8 @@ def is_organobromine_compound(smiles: str):
     for bond in mol.GetBonds():
         atom1 = bond.GetBeginAtom()
         atom2 = bond.GetEndAtom()
-        if (atom1.GetAtomicNum() == 6 and atom2.GetAtomicNum() == 35) or (atom1.GetAtomicNum() == 35 and atom2.GetAtomicNum() == 6):
+        atomic_nums = sorted([atom1.GetAtomicNum(), atom2.GetAtomicNum()])
+        if atomic_nums == [6, 35]:  # 6 is atomic number for carbon, 35 for bromine
             return True, "Contains at least one carbon-bromine bond"
 
     return False, "No carbon-bromine bond found"
