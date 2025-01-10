@@ -21,38 +21,32 @@ def is_monoradylglycerol(smiles: str):
     if mol is None:
         return None, "Invalid SMILES string"
 
-    # Redefine glycerol backbone more flexibly (OCC(O)CO)
+    # Define glycerol backbone more flexibly (allowing for substitution on each hydroxyl group)
     glycerol_pattern = Chem.MolFromSmarts("OCC(O)CO")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
     
     # Check for one substituent group - acyl (C=O), alkyl (C), or alk-1-enyl (C=C)
-    # More flexible low-key search. Use adjusted smarts for broader match.
-    acyl_pattern = Chem.MolFromSmarts("COC(=O)C")
-    alkyl_pattern = Chem.MolFromSmarts("COC")
-    alkenyl_pattern = Chem.MolFromSmarts("COC=C")
-    
+    # Ensure patterns specifically capture correct substituent connectivity
+    acyl_pattern = Chem.MolFromSmarts("C(=O)O[C]")
+    alkyl_pattern = Chem.MolFromSmarts("COC[C]")
+    alkenyl_pattern = Chem.MolFromSmarts("COC=C[C]")
+
+    # Count matches for each type of substituent, accounting that there should only be one substituent in total
     acyl_matches = len(mol.GetSubstructMatches(acyl_pattern))
     alkyl_matches = len(mol.GetSubstructMatches(alkyl_pattern))
     alkenyl_matches = len(mol.GetSubstructMatches(alkenyl_pattern))
     
-    # Counting these in an exclusive way could be dependent on found SMILES patterns
-    total_matches = acyl_matches + alkyl_matches + alkenyl_matches
-    
-    if total_matches != 1:
-        return False, f"Expected 1 substituent group, found {total_matches} of acyl, alkyl, or alk-1-enyl"
+    # Total substituent matches should be one
+    if (acyl_matches + alkyl_matches + alkenyl_matches) != 1:
+        return False, f"Expected 1 substituent group, found {acyl_matches + alkyl_matches + alkenyl_matches}"
 
-    # Confirm the substituent is in a reasonable chain length for typical lipid (usually > 10 carbons)
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 10:
+    # Ensure valid lipid chain length, total carbon.
+    # Here summed to ensure that a single chain gets counted as such
+    glycerol_carbon_pattern = Chem.MolFromSmarts("OCC(O)CO[$([CH])]")
+    c_chain_matches = mol.GetSubstructMatches(glycerol_carbon_pattern)
+    
+    if len(c_chain_matches) and sum([len(match) for match in c_chain_matches]) < 13:  # typical lipid length
         return False, "Chain too short for typical lipid substituent"
     
     return True, "Contains glycerol backbone with one acyl, alkyl, or alk-1-enyl substituent"
-
-__metadata__ = {   'chemical_class': {   'id': 'CHEBI:17855',
-                          'name': 'monoradylglycerol',
-                          'definition': 'Any lipid that is glycerol bearing a single acyl, alkyl or alk-1-enyl substituent at an unspecified position.'},
-    'message': None,
-    'success': True,
-    'best': True,
-    'error': ''}
