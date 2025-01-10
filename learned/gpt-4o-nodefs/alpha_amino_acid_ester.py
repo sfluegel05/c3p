@@ -7,8 +7,9 @@ def is_alpha_amino_acid_ester(smiles: str):
     """
     Determines if a molecule is an alpha-amino acid ester based on its SMILES string.
 
-    An alpha-amino acid ester has: 
-    - An alpha-carbon connected to an amino group and an esterified carboxylic acid group.
+    An alpha-amino acid ester typically has:
+    - An alpha-carbon connecting to an amino group.
+    - A carboxyl group (-COO-) esterified.
 
     Args:
         smiles (str): SMILES string of the molecule.
@@ -23,24 +24,17 @@ def is_alpha_amino_acid_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns for alpha-amino acid ester components
-    # Allow flexibility in recognizing amine types (primary, secondary, tertiary)
-    amino_acid_ester_pattern = Chem.MolFromSmarts('[CX4H1]([NX3])-[CX3](=O)-[OX2][CX4]')
-    if not mol.HasSubstructMatch(amino_acid_ester_pattern):
+    # SMARTS pattern: capture alpha-amino acid ester structures
+    # Allow both linear and cyclic structures
+    # Pattern: alpha-carbon [CH3 or CH] connected to amino [N] and esterified carboxyl [C(=O)O]
+    alpha_amino_ester_pattern1 = Chem.MolFromSmarts('[CH1,CH2]([NX3])-[CX3](=O)-[OX2][CX4,CX3]')
+    alpha_amino_ester_pattern2 = Chem.MolFromSmarts('[CX4]([NX3])[CX3](=O)-[O][C]')
+    alpha_amino_ester_pattern3 = Chem.MolFromSmarts('C(=O)[OX2][CX4,CX3][NX3]')
+
+    if mol.HasSubstructMatch(alpha_amino_ester_pattern1) or mol.HasSubstructMatch(alpha_amino_ester_pattern2) or mol.HasSubstructMatch(alpha_amino_ester_pattern3):
+        return True, "Molecule contains an alpha-amino acid ester structure"
+    else:
         return False, "No alpha-amino acid ester pattern found"
-
-    # Check for presence of an ester linkage [-C(=O)-O-]
-    ester_pattern = Chem.MolFromSmarts('C(=O)O')
-    if not mol.HasSubstructMatch(ester_pattern):
-        return False, "No ester group found"
-
-    # Check for presence of a nitrogen atom attached to the alpha-carbon
-    # Ensure nitrogen is part of an amine (but can be primary, secondary, or tertiary)
-    amino_group_pattern = Chem.MolFromSmarts('[NX3]')
-    if not mol.HasSubstructMatch(amino_group_pattern):
-        return False, "No amino group found"
-
-    return True, "Molecule contains an alpha-amino acid ester structure"
 
 # Example usage
 example_smiles = "COC(=O)CN"
