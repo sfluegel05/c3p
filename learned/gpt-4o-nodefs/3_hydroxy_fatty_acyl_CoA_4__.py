@@ -19,22 +19,22 @@ def is_3_hydroxy_fatty_acyl_CoA_4_(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-        
-    # Pattern to match hydroxyl group on fatty acyl chain at various positions with flexibility in stereochemistry and length
-    hydroxyl_pattern = Chem.MolFromSmarts('[C@@H](O)CC(=O)SC*')  # Allow wildcard for variations in chain
+    
+    # Pattern for identifying 3-hydroxy group in fatty acyl chain
+    hydroxyl_pattern = Chem.MolFromSmarts('[CX4,CX3][C@@H](O)C(=O)SC')
     
     # Check for presence of the hydroxyl group at the 3rd position
     if not mol.HasSubstructMatch(hydroxyl_pattern):
         return False, "No 3-hydroxy fatty acyl chain found"
-    
-    # Comprehensive pattern for CoA moiety with flexibility for phosphate groups
-    coa_pattern = Chem.MolFromSmarts('NC(=O)CNC(=O)C(COP([O-])(=O)O*)O[C@@H]1[C@H](O)C(COP([O-])([O-])=O)O[C@@H]2O[C@H](C(O)[C@@H](O)[C@H]2OP(*)*n2cnc3c(N)ncnc32)[C@H]1O')
+
+    # Pattern for Coenzyme A structure with the nucleotide section and phosphate groups
+    coa_pattern = Chem.MolFromSmarts('NC(=O)CCNC(=O)O[C@@H]1[C@H](O)[C@@H]([C@@H]1OP(=O)([O-])O)O[C@@H]1[C@H](O)[C@H](COP(=O)([O-])O)O1')
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "CoA moiety not fully matched"
     
-    # Verify the carbon chain length to classify it as fatty acyl
+    # Verify the carbon chain length for the fatty acyl component
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 10:  # Further relax the lower limit while ensuring it can capture longer hydrocarbon sequences
+    if c_count < 10:
         return False, "Carbon chain too short for fatty acyl"
-    
+
     return True, "Matches 3-hydroxy fatty acyl-CoA(4-) structure"
