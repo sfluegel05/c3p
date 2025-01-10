@@ -20,14 +20,16 @@ def is_2_5_diketopiperazines(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define the SMARTS pattern for a 2,5-diketopiperazine
-    # This pattern is more flexible and accounts for typical diketo structures
-    diketopiperazine_pattern = Chem.MolFromSmarts("O=C1NCC(=O)N1")
+    # Define more comprehensive SMARTS patterns to match 2,5-diketopiperazine variability
+    # Pattern accounts for possible substitutions and flexibility around the cyclic core
+    diketopiperazine_patterns = [
+        Chem.MolFromSmarts("N1C(=O)CNC(=O)C1"), # Simple diketopiperazine
+        Chem.MolFromSmarts("N1C(=O)[C@H,R][NR][C@H,R]C(=O)1"), # Include stereochemistry
+        Chem.MolFromSmarts("O=C1N[C@H,R]C(=O)N[C@H,R]1"), # Flexible connections
+    ]
     
-    if mol.HasSubstructMatch(diketopiperazine_pattern):
-        # Further checks can be added here if necessary to refine classification
-        return True, "Contains 2,5-diketopiperazine motif"
-    
-    # Additional exclusions if necessary (e.g., to exclude barbiturate-like structures)
+    for pattern in diketopiperazine_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return True, "Contains 2,5-diketopiperazine motif"
     
     return False, "Does not contain 2,5-diketopiperazine motif"
