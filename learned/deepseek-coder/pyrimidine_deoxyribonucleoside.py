@@ -26,19 +26,28 @@ def is_pyrimidine_deoxyribonucleoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for pyrimidine base pattern (N1C=CC(=NC1=O))
+    # Check for pyrimidine base pattern (more general pattern)
     pyrimidine_pattern = Chem.MolFromSmarts("[nH]1[c,n][c,n][c,n][c,n]1(=O)")
     if not mol.HasSubstructMatch(pyrimidine_pattern):
-        return False, "No pyrimidine base found"
+        # Try alternative pyrimidine patterns
+        pyrimidine_pattern_alt = Chem.MolFromSmarts("[nH]1[c,n][c,n][c,n][c,n]1")
+        if not mol.HasSubstructMatch(pyrimidine_pattern_alt):
+            return False, "No pyrimidine base found"
 
-    # Check for deoxyribose sugar pattern (C1C(O)C(O)C(O1)CO)
+    # Check for deoxyribose sugar pattern (more general pattern)
     deoxyribose_pattern = Chem.MolFromSmarts("[C@H]1[C@H](O)[C@H](O)[C@@H](CO)O1")
     if not mol.HasSubstructMatch(deoxyribose_pattern):
-        return False, "No deoxyribose sugar found"
+        # Try alternative deoxyribose patterns
+        deoxyribose_pattern_alt = Chem.MolFromSmarts("[C@H]1[C@H](O)[C@H](O)[C@@H](CO)O1")
+        if not mol.HasSubstructMatch(deoxyribose_pattern_alt):
+            return False, "No deoxyribose sugar found"
 
     # Check for glycosidic bond between pyrimidine base and deoxyribose sugar
     glycosidic_bond_pattern = Chem.MolFromSmarts("[nH]1[c,n][c,n][c,n][c,n]1(=O).[C@H]1[C@H](O)[C@H](O)[C@@H](CO)O1")
     if not mol.HasSubstructMatch(glycosidic_bond_pattern):
-        return False, "No glycosidic bond found between pyrimidine base and deoxyribose sugar"
+        # Try alternative glycosidic bond patterns
+        glycosidic_bond_pattern_alt = Chem.MolFromSmarts("[nH]1[c,n][c,n][c,n][c,n]1.[C@H]1[C@H](O)[C@H](O)[C@@H](CO)O1")
+        if not mol.HasSubstructMatch(glycosidic_bond_pattern_alt):
+            return False, "No glycosidic bond found between pyrimidine base and deoxyribose sugar"
 
     return True, "Contains pyrimidine base attached to deoxyribose sugar via glycosidic bond"
