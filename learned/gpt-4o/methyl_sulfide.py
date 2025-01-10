@@ -20,14 +20,15 @@ def is_methyl_sulfide(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Define the methyl sulfide pattern (sulfur bonded to a methyl group)
-    methyl_sulfide_pattern = Chem.MolFromSmarts("[CH3][S]")
-    
+
+    # Define the methyl-sulfur bonding pattern, with sulfur bonded to at least one methyl group
+    methyl_sulfide_pattern = Chem.MolFromSmarts("[S]([CH3])")
+
+    # Check if the molecule matches the revised pattern
     if mol.HasSubstructMatch(methyl_sulfide_pattern):
-        return True, "Contains a sulfur atom bonded to a methyl group"
+        return True, "Contains a methyl group directly bonded to a sulfur atom"
     
-    return False, "Does not contain a sulfur atom bonded to a methyl group"
+    return False, "Does not contain a methyl group directly bonded to a sulfur atom"
 
 # Example usage:
 # smiles = "CCSC"  # Example SMILES for ethyl methyl sulfide
