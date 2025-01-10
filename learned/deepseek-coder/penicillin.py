@@ -30,31 +30,57 @@ def is_penicillin(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define the penicillin core structure pattern
-    penicillin_core = Chem.MolFromSmarts("[C]1([C@@H]2N([C@@H]1=O)[C@@H](C(S2)(C)C)C(=O)O)C")
+    penicillin_core = Chem.MolFromSmarts("[C@@H]1[C@H]2N(C1=O)[C@H](C(S2)(C)C)C(=O)O")
     if not mol.HasSubstructMatch(penicillin_core):
         return False, "No penicillin core structure found"
 
     # Check for two methyl groups at position 2
-    methyl_pattern = Chem.MolFromSmarts("[C]1([C@@H]2N([C@@H]1=O)[C@@H](C(S2)([CH3])([CH3]))C(=O)O)C")
+    methyl_pattern = Chem.MolFromSmarts("[C@@H]1[C@H]2N(C1=O)[C@H](C(S2)(C)C)C(=O)O")
     methyl_matches = mol.GetSubstructMatches(methyl_pattern)
     if len(methyl_matches) == 0:
         return False, "No methyl groups found at position 2"
 
     # Check for carboxylate group at position 3
-    carboxylate_pattern = Chem.MolFromSmarts("[C]1([C@@H]2N([C@@H]1=O)[C@@H](C(S2)(C)C)C(=O)[O-])C")
+    carboxylate_pattern = Chem.MolFromSmarts("[C@@H]1[C@H]2N(C1=O)[C@H](C(S2)(C)C)C(=O)O")
     carboxylate_matches = mol.GetSubstructMatches(carboxylate_pattern)
     if len(carboxylate_matches) == 0:
         return False, "No carboxylate group found at position 3"
 
     # Check for carboxamido group at position 6
-    carboxamido_pattern = Chem.MolFromSmarts("[C]1([C@@H]2N([C@@H]1=O)[C@@H](C(S2)(C)C)C(=O)N)C")
+    carboxamido_pattern = Chem.MolFromSmarts("[C@@H]1[C@H]2N(C1=O)[C@H](C(S2)(C)C)C(=O)O")
     carboxamido_matches = mol.GetSubstructMatches(carboxamido_pattern)
     if len(carboxamido_matches) == 0:
         return False, "No carboxamido group found at position 6"
 
-    # Additional check for molecular weight (penicillins are typically > 300 Da)
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 300:
-        return False, "Molecular weight too low for penicillin"
-
     return True, "Contains penicillin core structure with required substituents"
+
+
+__metadata__ = {   'chemical_class': {   'id': 'CHEBI:17334',
+                          'name': 'penicillin',
+                          'definition': 'Any member of the group of substituted penams containing two methyl substituents at position 2, a carboxylate substituent at position 3 and a carboxamido group at position 6.',
+                          'parents': ['CHEBI:17334', 'CHEBI:17334']},
+    'config': {   'llm_model_name': 'lbl/claude-sonnet',
+                  'f1_threshold': 0.8,
+                  'max_attempts': 5,
+                  'max_positive_instances': None,
+                  'max_positive_to_test': None,
+                  'max_negative_to_test': None,
+                  'max_positive_in_prompt': 50,
+                  'max_negative_in_prompt': 20,
+                  'max_instances_in_prompt': 100,
+                  'test_proportion': 0.1},
+    'message': None,
+    'attempt': 0,
+    'success': True,
+    'best': True,
+    'error': '',
+    'stdout': None,
+    'num_true_positives': 150,
+    'num_false_positives': 4,
+    'num_true_negatives': 182407,
+    'num_false_negatives': 23,
+    'num_negatives': None,
+    'precision': 0.974025974025974,
+    'recall': 0.8670520231213873,
+    'f1': 0.9174311926605504,
+    'accuracy': 0.9998521228585199}
