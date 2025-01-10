@@ -16,32 +16,37 @@ def is_bioconjugate(smiles: str):
         bool: True if molecule is a bioconjugate, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES string to a molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Check for presence of amino acid-like structures (common in peptides)
-    amino_acid_pattern = Chem.MolFromSmarts("C([C@@H](N)C(=O)O)")
-    amino_acid_matches = mol.GetSubstructMatches(amino_acid_pattern)
-    
-    if len(amino_acid_matches) < 2:
-        return False, "Less than two amino acid-like structures found"
-    
-    # Check for certain linking groups commonly found in bioconjugates, e.g., disulfide bonds, thioethers
-    disulfide_pattern = Chem.MolFromSmarts("SS")
-    thioether_pattern = Chem.MolFromSmarts("CSC")
-    
-    disulfide_matches = mol.HasSubstructMatch(disulfide_pattern)
-    thioether_matches = mol.HasSubstructMatch(thioether_pattern)
-    
-    if not disulfide_matches and not thioether_matches:
-        return False, "No common linking groups found (disulfide or thioether)"
 
-    # Count rotatable bonds to verify the potential linkages and flexibility
-    n_rotatable = AllChem.CalcNumRotatableBonds(mol)
-    if n_rotatable < 5:
-        return False, "Not enough rotatable bonds to suggest linked bioconjugate"
+    # SMARTS patterns for biological motifs or moieties
+    peptide_pattern = Chem.MolFromSmarts("N[C@@H](C)C(=O)O")   # General peptide bond
+    nucleoside_pattern = Chem.MolFromSmarts("n1cnc2c1ncnc2N")  # Purine nucleobase
+    cofactor_pattern = Chem.MolFromSmarts("P(=O)(O)OCCN")      # CoA-like segment
 
-    return True, "Contains multiple linked amino acid-like structures, indicative of a bioconjugate"
+    # Check for presence of biological motifs
+    peptide_matches = mol.GetSubstructMatches(peptide_pattern)
+    nucleoside_matches = mol.GetSubstructMatches(nucleoside_pattern)
+    cofactor_matches = mol.GetSubstructMatches(cofactor_pattern)
+
+    # Assume we need at least two matches of any type to suggest bioconjugation
+    total_biomotif_matches = len(peptide_matches) + len(nucleoside_matches) + len(cofactor_matches)
+    if total_biomotif_matches < 2:
+        return False, "Less than two distinct biological motifs found"
+
+    # Check for common link groups like esters and amides
+    ester_amide_pattern = Chem.MolFromSmarts("C(=O)O")  # Simplified ester/amide linkage
+    ester_amide_matches = mol.HasSubstructMatch(ester_amide_pattern)
+    
+    if not ester_amide_matches:
+        return False, "No common ester/amide linkages found"
+
+    # Consider molecular size as an indirect measure of complexity/fusion of entities
+    mol_weight = AllChem.CalcExactMolWt(mol)
+    if mol_weight < 500:
+        return False, "Molecular weight too low for likely bioconjugate"
+
+    return True, "Contains multiple distinct biological motifs and linkage features, indicative of a bioconjugate"
