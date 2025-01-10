@@ -21,23 +21,21 @@ def is_lysophosphatidic_acids(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Identify a more general glycerol-phosphate linkage pattern
-    # Variations include different stereochemistry
-    glycerol_phosphate_patterns = [
-        Chem.MolFromSmarts("OCC(O)COP(=O)(O)O"),  # without stereochemistry
-        Chem.MolFromSmarts("O[C@H](CO)COP(=O)(O)O"),  # specific stereochemistry
-        Chem.MolFromSmarts("O[C@@H](CO)COP(=O)(O)O")   # specific opposite stereochemistry
-    ]
+    # Identify a more general glycerol-phosphate linkage pattern without strict stereochemistry
+    glycerol_phosphate_pattern = Chem.MolFromSmarts("OCC(O)COP(=O)(O)O")
     
-    if not any(mol.HasSubstructMatch(pattern) for pattern in glycerol_phosphate_patterns):
+    if not mol.HasSubstructMatch(glycerol_phosphate_pattern):
         return False, "No glycerol-phosphate linkage found"
         
-    # Use a broad pattern to check for exactly one acyl chain
-    # Allow for chain variation and different carbon lengths
-    acyl_chain_pattern = Chem.MolFromSmarts("C(=O)[CX4,CX3]")  # Simple ester linkage 
+    # Use a more specific pattern refined for a single acyl chain
+    acyl_chain_pattern = Chem.MolFromSmarts("C(=O)OC")
     acyl_matches = mol.GetSubstructMatches(acyl_chain_pattern)
+    
+    # Accounting for ester linkages, ensure exactly one acyl group is present
     if len(acyl_matches) != 1:
         return False, f"Found {len(acyl_matches)} acyl chains, need exactly 1"
+
+    # Further checks can be implemented here for specificity
 
     # If all conditions are met, it is classified as a lysophosphatidic acid
     return True, "Matches all structural features of a lysophosphatidic acid"
