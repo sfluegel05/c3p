@@ -23,18 +23,20 @@ def is_mucopolysaccharide(smiles: str):
         return False, "Invalid SMILES string"
 
     # Refined search: Uronic acid substructure
-    uronic_acid_pattern = Chem.MolFromSmarts("[C](=O)[O][C]")  # Carboxylate ether group on a sugar residue
+    uronic_acid_pattern = Chem.MolFromSmarts("[C](=O)[O][C@,C@@H]1([O,H])[C@,C@@H]([O,H])[C@,C@@H]([O,H])[C@@H]([N]([C=O]))1")  # Pattern considering sugar ring structure
     if not mol.HasSubstructMatch(uronic_acid_pattern):
         return False, "No uronic acid units found"
 
     # Refined search: Glycosamine substructure
-    glycosamine_pattern = Chem.MolFromSmarts("[C]([O,H])[C]([O,H])[N]")  # Amine on a sugar residue
+    glycosamine_pattern = Chem.MolFromSmarts("[C@,C@@H]1([O,H])[C@,C@@H]([O,H])[C@,C@@H]([O,H])[C@,C@@H]([N]([C=O]))1")  # Adjust sugar-like ring with amine
     if not mol.HasSubstructMatch(glycosamine_pattern):
         return False, "No glycosamine units found"
     
-    # Sulfate ester group presence
+    # Sulfate ester group presence is optional; check for it
     sulfate_ester_pattern = Chem.MolFromSmarts("[O][S](=O)(=O)[O]")  # Basic sulfate ester pattern
     if not mol.HasSubstructMatch(sulfate_ester_pattern):
-        return False, "Sulfate ester groups expected but not found"
+        message = "Contains uronic acids and glycosamines, could be a mucopolysaccharide, but lacks observed sulfate ester groups"
+    else:
+        message = "Contains uronic acids and glycosamines with optional sulfate ester groups, indicating mucopolysaccharide"
 
-    return True, "Contains uronic acids and glycosamines with esterified sulfate groups, indicating mucopolysaccharide"
+    return True, message
