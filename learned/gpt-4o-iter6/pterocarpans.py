@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_pterocarpans(smiles: str):
     """
     Determines if a molecule is a pterocarpan based on its SMILES string.
-    Pterocarpans are characterized by a benzofurochromene skeleton with
-    additional potential substructures.
+    Pterocarpans are characterized by a 6a,11a-dihydro-6H-[1]benzofuro[3,2-c]chromene skeleton
+    with additional potential substitutions.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,10 +23,8 @@ def is_pterocarpans(smiles: str):
         return False, "Invalid SMILES string"
     
     # Define the core structure of pterocarpans
-    # Below SMARTS pattern is a generic representation of the benzofurochromene skeleton
-    # Considering the 6a,11a-dihydro-6H-[1]benzofuro[3,2-c]chromene core and variants
-    # Example SMARTS pattern for this structure
-    pterocarpan_pattern = Chem.MolFromSmarts("c1cc2oc3cccc4occc(c1)c2c34")
+    # Adjust the SMARTS pattern to accommodate the 6a,11a-dihydro-6H-[1]benzofuro[3,2-c]chromene structure
+    pterocarpan_pattern = Chem.MolFromSmarts("c1cc2oc3c(ccc4c3Cc3ccc(O)cc3O4)c(c1)CC2")
     if pterocarpan_pattern is None:
         return None, "Error in defining SMARTS pattern"
 
@@ -34,11 +32,15 @@ def is_pterocarpans(smiles: str):
     if not mol.HasSubstructMatch(pterocarpan_pattern):
         return False, "No pterocarpan core found"
 
-    # Additional functional group checks, such as hydroxyl, methoxy, etc.
+    # Additional checks for common substituents like hydroxyl and methoxy groups
+    # These checks aren't mandatory for the core but can enhance identification
     hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
     methoxy_pattern = Chem.MolFromSmarts("CO")
     
-    if mol.HasSubstructMatch(hydroxyl_pattern) and mol.HasSubstructMatch(methoxy_pattern):
-        return True, "Contains pterocarpan core with common functional groups"
-    
+    has_hydroxyl = mol.HasSubstructMatch(hydroxyl_pattern)
+    has_methoxy = mol.HasSubstructMatch(methoxy_pattern)
+
+    if has_hydroxyl or has_methoxy:
+        return True, f"Contains pterocarpan core with {'hydroxyl and methoxy groups' if (has_hydroxyl and has_methoxy) else 'hydroxyl group' if has_hydroxyl else 'methoxy group'}"
+
     return True, "Contains pterocarpan core structure"
