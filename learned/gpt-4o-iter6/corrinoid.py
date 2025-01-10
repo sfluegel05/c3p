@@ -21,13 +21,14 @@ def is_corrinoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # SMARTS for corrin nucleus: four pyrrole-like rings linked by three =C- bridges and one direct C-C bond
-    # This is an approximation to capture the essence of a corrin structure.
-    # Individual pyrrole rings: C1=NC=CC=C1
-    # Connecting pyrrole-like units: [C,c]=[N,n][C,c]=[C,c][C,c]=[N,n][C,c]=[C,c][C,c]=[N,n][C,c]=[C,c][C,c]=[N,n][C,c]=[C,c]
+    # An improved SMARTS for corrin nucleus: four pyrrole-like rings linked by three methine (=C-) bridges and one C-C bond
+    # The =C- bridges are important, ensuring the correct conjugation and macrocycle formation.
+    corrin_pattern = Chem.MolFromSmarts("""
+        [cH][c][n][c][n][c]1[c][n][c][n][c]([c][n][c][C]2)
+        [cH][c]1[c][n][c][n][c][c]2=[C][C]2[C][C][C]=C1
+    """)
 
-    # Corrin-like core pattern (approximation using common connectivity pattern):
-    corrin_pattern = Chem.MolFromSmarts('[C,c]1=[N,n][C,c]=[C,c][C,c]=[N,n]2[C,c]=[N,n]3[C,c]=[C,c][C,c]4=[N,n]1C2=[C,c]3[C,c]=[N,n]4')
+    # The above SMARTS is an intricate approximation aiming to represent the unique asymmetric nature of the corrin macrocycle.
 
     if mol.HasSubstructMatch(corrin_pattern):
         return True, "Contains a corrin-like nucleus pattern"
