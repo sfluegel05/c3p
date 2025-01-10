@@ -20,25 +20,26 @@ def is_fatty_acid_methyl_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for ester group with a methyl: generic [CH3O][C](=O)
-    methyl_ester_pattern = Chem.MolFromSmarts("COC(=O)")
+    # Look for ester group with a methyl: generic [CH3O][C](=O) verifying connectivity to methanol
+    methyl_ester_pattern = Chem.MolFromSmarts("COC(=O)C")
     if not mol.HasSubstructMatch(methyl_ester_pattern):
-        return False, "No methyl ester group found"
+        return False, "No methyl ester linkage found"
     
-    # Look for long carbon chains with some flexibility for double bonds or interruptions
-    carbon_chain_pattern = Chem.MolFromSmarts("C(CCC)CC")
+    # Look for a flexible long carbon chain, accounting for more varied structures
+    # We use a more generic pattern allowing multiple carbon attachments with potential double bonds
+    carbon_chain_pattern = Chem.MolFromSmarts("CCCCCCC")
     if not mol.HasSubstructMatch(carbon_chain_pattern):
         return False, "No long carbon chain found characteristic of fatty acids"
     
-    # Ensure that we only have one ester group pattern
-    ester_group_pattern = Chem.MolFromSmarts("C(=O)O")
-    ester_matches = mol.GetSubstructMatches(ester_group_pattern)
+    # Ensure no multiple ester group patterns, must have exactly one methyl ester
+    ester_group_glob_pattern = Chem.MolFromSmarts("C(=O)O")
+    ester_matches = mol.GetSubstructMatches(ester_group_glob_pattern)
     if len(ester_matches) != 1:
-        return False, f"Multiple ester groups found, indicating it might not be a simple FAME (found {len(ester_matches)})"
+        return False, f"Multiple or no ester groups found (detected {len(ester_matches)} groups)"
     
-    # Re-check for a moderate number of carbon atoms, ensuring it's more than ester-related
+    # Check the carbon count, ensuring we meet the typical fatty acid methyl ester length
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 7:
-        return False, f"Too few carbons for a fatty acid methyl ester (found {c_count})"
-
-    return True, "Contains methyl ester group and a suitable carbon chain for a FAME"
+    if c_count < 10:  # Adjusting for larger typical fatty acid chains
+        return False, f"Carbon count too low for fatty acid methyl ester (detected {c_count})"
+    
+    return True, "Contains a distinct methyl ester group and a valid carbon chain for a FAME"
