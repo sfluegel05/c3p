@@ -28,41 +28,46 @@ def is_penicillin(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for penam core structure (beta-lactam fused to thiazolidine ring)
-    # [S]-[CH]-[N]-C(=O)-[CH]-[CH]-[N] forms the core scaffold
-    penam_core = Chem.MolFromSmarts('[S]1[CH]2[N]C(=O)[CH][CH]2[N]1')
+    # More permissive pattern that matches the basic scaffold
+    penam_core = Chem.MolFromSmarts('[#16]1[#6]2[#7][#6](=[#8])[#6][#6]2[#7]1')
     if not mol.HasSubstructMatch(penam_core):
         return False, "No penam core structure found"
 
     # Check for two methyl groups at position 2
-    two_methyls = Chem.MolFromSmarts('[CH3][C]([CH3])(S1)[C]')
+    # More flexible pattern that matches any two methyl groups on the same carbon
+    two_methyls = Chem.MolFromSmarts('[CH3][C]([CH3])([#16])[#6]')
     if not mol.HasSubstructMatch(two_methyls):
         return False, "Missing two methyl groups at position 2"
 
     # Check for carboxylate group at position 3
-    carboxylate = Chem.MolFromSmarts('[C](S1)([CH]N)C(=O)[OH,O-]')
+    # More permissive pattern that matches different forms of carboxylate
+    carboxylate = Chem.MolFromSmarts('[#6]([#16])([#6][#7])[#6](=[#8])[#8,#8-]')
     if not mol.HasSubstructMatch(carboxylate):
         return False, "Missing carboxylate group at position 3"
 
     # Check for carboxamido group at position 6
-    carboxamido = Chem.MolFromSmarts('[CH](NC(=O)*)C(=O)N')
+    # More flexible pattern that matches different types of amide substituents
+    carboxamido = Chem.MolFromSmarts('[#6][#7][#6](=[#8])[#6]1[#7][#6](=[#8])')
     if not mol.HasSubstructMatch(carboxamido):
         return False, "Missing carboxamido group at position 6"
 
-    # Additional check for correct stereochemistry
-    # We look for the characteristic trans junction between the beta-lactam and thiazolidine rings
-    stereochem_pattern = Chem.MolFromSmarts('[S][C@H]1[N]C(=O)[C@@H]')
-    if not mol.HasSubstructMatch(stereochem_pattern):
-        return False, "Incorrect stereochemistry at ring junction"
-
-    # Verify basic penicillin formula by counting key atoms
-    # Should have exactly one sulfur atom
+    # Basic structural checks
+    # Count key atoms to verify overall composition
     s_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 16)
     if s_count != 1:
         return False, f"Incorrect number of sulfur atoms (found {s_count}, expected 1)"
 
-    # Should have at least 2 nitrogen atoms (one in beta-lactam, one in carboxamido)
     n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
     if n_count < 2:
         return False, f"Too few nitrogen atoms (found {n_count}, expected at least 2)"
 
-    return True, "Contains penam core with correct substituents and stereochemistry"
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if o_count < 3:  # At least 3 oxygens (carboxylate + amide)
+        return False, f"Too few oxygen atoms (found {o_count}, expected at least 3)"
+
+    # Additional check for bicyclic system size
+    ring_info = mol.GetRingInfo()
+    if ring_info.NumRings() < 2:
+        return False, "Missing required bicyclic system"
+
+    return True, "Contains penam core with correct substituents"
