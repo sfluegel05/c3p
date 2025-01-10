@@ -28,42 +28,35 @@ def is_butyrate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define ester pattern with labeled atoms for acyl carbon (atom 1) and ester oxygen (atom 2)
-    ester_pattern = Chem.MolFromSmarts('[C:1](=O)[O:2][C]')
+    # Define butyryl group pattern (butyric acid minus the OH)
+    butyryl_pattern = Chem.MolFromSmarts("CCCC(=O)")
 
-    # Find ester matches
+    # Define ester bond pattern
+    ester_pattern = Chem.MolFromSmarts("C(=O)[O,N,S]")
+
+    # Find ester bonds in the molecule
     ester_matches = mol.GetSubstructMatches(ester_pattern)
+
     if not ester_matches:
         return False, "No ester groups found"
 
-    # Define butyryl group (butanoic acid minus the OH)
-    butyryl_smiles = 'CCCC(=O)'
-    butyryl_mol = Chem.MolFromSmiles(butyryl_smiles)
-
-    # For each ester, extract the acyl fragment and check if it matches butyryl
+    # For each ester group, check if the acyl part is butyryl group
     for match in ester_matches:
-        acyl_carbon_idx = match[0]  # Atom index of the acyl carbon (C=O)
-        ester_oxygen_idx = match[1]  # Atom index of the ester oxygen
+        carbonyl_c = match[0]  # Carbonyl carbon
+        heteroatom = match[2]  # Oxygen, nitrogen, or sulfur
 
-        # Create a copy of the molecule to modify
-        mol_copy = Chem.RWMol(mol)
+        # Get the acyl fragment (butyryl group)
+        acyl_indices = Chem.FindAtomEnvironmentOfRadiusN(mol, 3, carbonyl_c, useHs=True)
+        acyl_atoms = set()
+        for bond_idx in acyl_indices:
+            bond = mol.GetBondWithIdx(bond_idx)
+            acyl_atoms.add(bond.GetBeginAtomIdx())
+            acyl_atoms.add(bond.GetEndAtomIdx())
 
-        # Remove the bond between acyl carbon and ester oxygen to isolate acyl part
-        mol_copy.RemoveBond(acyl_carbon_idx, ester_oxygen_idx)
+        acyl_frag = Chem.PathToSubmol(mol, acyl_indices)
 
-        # Get the fragments resulting from bond cleavage
-        frags = Chem.GetMolFrags(mol_copy.GetMol(), asMols=True, sanitizeFrags=True)
-
-        # Find the fragment containing the acyl carbon
-        for frag in frags:
-            atom_indices = [atom.GetAtomMapNum() for atom in frag.GetAtoms()]
-            # Set atom map numbers to match indices
-            for atom in frag.GetAtoms():
-                atom.SetAtomMapNum(atom.GetIdx())
-            if any(atom.GetAtomicNum() == 6 and atom.GetIdx() == acyl_carbon_idx for atom in frag.GetAtoms()):
-                # Found the acyl fragment
-                # Compare to butyryl group using substructure match
-                if frag.HasSubstructMatch(butyryl_mol):
-                    return True, "Contains butyrate ester group"
+        # Check if the acyl fragment matches the butyryl pattern
+        if acyl_frag.HasSubstructMatch(butyryl_pattern):
+            return True, "Contains butyrate ester group"
 
     return False, "Does not contain butyrate ester group"
