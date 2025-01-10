@@ -2,7 +2,6 @@
 Classifies: CHEBI:61905 short-chain fatty acyl-CoA
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_short_chain_fatty_acyl_CoA(smiles: str):
     """
@@ -13,31 +12,48 @@ def is_short_chain_fatty_acyl_CoA(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a short-chain fatty acyl-CoA, False otherwise
+        bool: True if the molecule is a short-chain fatty acyl-CoA, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for CoA-like structure (pattern for coenzyme A moiety)
-    coa_pattern = Chem.MolFromSmarts("C(=O)NCCSC")
+    # Define complex CoA moiety pattern to capture major functional groups
+    coa_pattern = Chem.MolFromSmarts("NC(=O)CCNC(=O)CCN(C)C(=O)CCSC(=O)C")
     if not mol.HasSubstructMatch(coa_pattern):
-        return False, "No Coenzyme A moiety found"
+        return False, "No complete Coenzyme A moiety found"
     
-    # Look for thioester group (C(=O)S)
-    thioester_pattern = Chem.MolFromSmarts("C(=O)S")
-    if not mol.HasSubstructMatch(thioester_pattern):
-        return False, "No thioester linkage found"
+    # Look for thioester group pattern, C(=O)S with a fatty acyl chain of length 2 to 5 carbons
+    # We assume the shortest chain is a methyl group: CC(=O)SC(...)
+    thioester_pattern = Chem.MolFromSmarts("C(=O)SC")
+    thioester_matches = mol.GetSubstructMatches(thioester_pattern)
 
-    # Count carbons attached to thioester carbon (short-chain 2 to 5 carbons)
-    for match in mol.GetSubstructMatches(thioester_pattern):
-        thioester_carbon_idx = match[0]
-        neighbors = [n.GetIdx() for n in mol.GetAtomWithIdx(thioester_carbon_idx).GetNeighbors() if n.GetAtomicNum() == 6]
-        c_count = len(neighbors)
-        if 2 <= c_count <= 5:
-            return True, "Contains CoA moiety and short-chain fatty acyl group"
+    for match in thioester_matches:
+        thioester_carbon = match[0]  # Gets the index of the ester carbon
+        # Traverse neighbors to find a valid carbon chain length as per short-chain criteria
+        carbon_chain_length = 0
+        visited = set()
+        queue = [thioester_carbon]
+        
+        while queue:
+            atom_idx = queue.pop(0)
+            if atom_idx in visited:
+                continue
+            visited.add(atom_idx)
+            atom = mol.GetAtomWithIdx(atom_idx)
+            if atom.GetAtomicNum() == 6:  # Carbon atom
+                carbon_chain_length += 1
+                if carbon_chain_length > 5:  # Check if the chain is still short
+                    break
+                for neighbor in atom.GetNeighbors():
+                    neighbor_idx = neighbor.GetIdx()
+                    if neighbor_idx not in visited:
+                        queue.append(neighbor_idx)
+        
+        if 2 <= carbon_chain_length <= 5:
+            return True, "Contains CoA moiety and short-chain fatty acyl thioester linkage"
 
-    return False, "Does not satisfy short-chain fatty acyl criteria or invalid linkages"
+    return False, "Does not satisfy short-chain fatty acyl criteria, or invalid linkages"
