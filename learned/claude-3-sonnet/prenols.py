@@ -30,19 +30,26 @@ def is_prenols(smiles: str):
     if not mol.HasSubstructMatch(terminal_oh_pattern):
         return False, "No terminal primary alcohol found"
     
+    # Count rings - prenols should be mostly linear
+    ring_count = rdMolDescriptors.CalcNumRings(mol)
+    if ring_count > 1:
+        return False, f"Too many rings ({ring_count}) for a typical prenol"
+    
     # Count carbons
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if c_count < 5:
         return False, "Too few carbons for a prenol"
     
-    # Look for isoprene units with various patterns to catch different configurations
+    # Look for isoprene units with various patterns
     isoprene_patterns = [
-        # Regular isoprene unit
-        Chem.MolFromSmarts("C=C-C(C)-C"),
+        # Regular isoprene unit with head-to-tail connection
+        Chem.MolFromSmarts("CC(=C)CC"),
+        # Trans isoprene unit
+        Chem.MolFromSmarts("C/C=C(/C)CC"),
+        # Cis isoprene unit
+        Chem.MolFromSmarts("C\C=C(\C)CC"),
         # Saturated isoprene unit
-        Chem.MolFromSmarts("CC-C(C)-C"),
-        # Alternative isoprene connection
-        Chem.MolFromSmarts("C-C(C)=C-C")
+        Chem.MolFromSmarts("CC(C)CCC"),
     ]
     
     total_isoprene_matches = 0
@@ -53,6 +60,10 @@ def is_prenols(smiles: str):
     
     if total_isoprene_matches == 0:
         return False, "No isoprene units found"
+        
+    # Check for proper carbon count multiple of 5 (allowing some deviation)
+    if c_count % 5 > 2:
+        return False, f"Carbon count {c_count} not consistent with isoprene units"
     
     # Look for double bonds
     double_bond_pattern = Chem.MolFromSmarts("C=C")
@@ -60,19 +71,6 @@ def is_prenols(smiles: str):
         double_bonds = len(mol.GetSubstructMatches(double_bond_pattern))
     else:
         double_bonds = 0
-        
-    # Check for branching methyl groups characteristic of prenols
-    methyl_branch_pattern = Chem.MolFromSmarts("C-C(C)-[C,c]")
-    if not mol.HasSubstructMatch(methyl_branch_pattern):
-        return False, "Missing characteristic methyl branches"
-    
-    # Additional check for phosphate groups (some prenols can be phosphorylated)
-    phosphate_patterns = [
-        Chem.MolFromSmarts("[P](=[O])([O-])([O-])=O"),  # Diphosphate
-        Chem.MolFromSmarts("[P](=[O])([O-])[O]"),       # Phosphate
-    ]
-    has_phosphate = any(pattern is not None and mol.HasSubstructMatch(pattern) 
-                       for pattern in phosphate_patterns)
     
     # Calculate molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
@@ -80,6 +78,20 @@ def is_prenols(smiles: str):
     # Check for reasonable molecular weight range for prenols
     if mol_wt < 70:  # Smallest prenol (C5H10O) would be about 86
         return False, "Molecular weight too low for prenol"
+        
+    # Check for excessive heteroatoms
+    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
+    s_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 16)
+    if n_count > 1 or s_count > 0:
+        return False, "Too many heteroatoms for a prenol"
+        
+    # Additional check for phosphate groups (some prenols can be phosphorylated)
+    phosphate_patterns = [
+        Chem.MolFromSmarts("[P](=[O])([O-])([O-])=O"),  # Diphosphate
+        Chem.MolFromSmarts("[P](=[O])([O-])[O]"),       # Phosphate
+    ]
+    has_phosphate = any(pattern is not None and mol.HasSubstructMatch(pattern) 
+                       for pattern in phosphate_patterns)
     
     # Construct detailed reason
     reason_parts = []
