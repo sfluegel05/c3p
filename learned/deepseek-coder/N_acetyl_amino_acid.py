@@ -31,14 +31,19 @@ def is_N_acetyl_amino_acid(smiles: str):
     if not mol.HasSubstructMatch(acetyl_pattern):
         return False, "No acetyl group found"
 
-    # Look for the amino acid backbone (NH-CHR-COOH or N-CHR-COOH)
-    amino_acid_pattern = Chem.MolFromSmarts("[NX3;H2,H1,H0][CX4][CX3](=[OX1])[OX2H,OX1H0-]")
-    if not mol.HasSubstructMatch(amino_acid_pattern):
-        return False, "No amino acid backbone found"
+    # Look for a carboxyl group (COOH) which is part of the amino acid structure
+    carboxyl_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H,OX1H0-]")
+    if not mol.HasSubstructMatch(carboxyl_pattern):
+        return False, "No carboxyl group found"
 
-    # Check if the acetyl group is attached to the nitrogen of the amino acid backbone
-    acetyl_nitrogen_pattern = Chem.MolFromSmarts("[CH3][CX3](=[OX1])[NX3;H2,H1,H0][CX4][CX3](=[OX1])[OX2H,OX1H0-]")
+    # Look for a nitrogen that is part of the amino acid structure
+    nitrogen_pattern = Chem.MolFromSmarts("[NX3;H2,H1,H0][CX4]")
+    if not mol.HasSubstructMatch(nitrogen_pattern):
+        return False, "No nitrogen found in amino acid structure"
+
+    # Check if the acetyl group is attached to a nitrogen that is part of the amino acid structure
+    acetyl_nitrogen_pattern = Chem.MolFromSmarts("[CH3][CX3](=[OX1])[NX3;H2,H1,H0][CX4]")
     if not mol.HasSubstructMatch(acetyl_nitrogen_pattern):
-        return False, "Acetyl group not attached to the nitrogen of the amino acid backbone"
+        return False, "Acetyl group not attached to a nitrogen in the amino acid structure"
 
-    return True, "Contains an acetyl group attached to the nitrogen of an amino acid backbone"
+    return True, "Contains an acetyl group attached to a nitrogen in an amino acid structure"
