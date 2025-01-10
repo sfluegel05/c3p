@@ -25,10 +25,12 @@ def is_secondary_amine(smiles: str):
     # Define the secondary amine SMARTS pattern
     # [NX3] specifies a 3-connected (secondary amine) nitrogen
     # [C] specifies any carbon atom
-    secondary_amine_pattern = Chem.MolFromSmarts("[NX3;H1;R0][C][C]")
+    # Adjust pattern to detect nitrogen bonded to exactly two carbons and one other atom (possibly H)
+
+    secondary_amine_pattern = Chem.MolFromSmarts("[NX3;R0]([C])[C]")
 
     # Patterns for interfering groups (exclude these)
-    nitroso_pattern = Chem.MolFromSmarts("[NX2]=O")
+    nitroso_pattern = Chem.MolFromSmarts("[#7][#16](=[OX1])=[OX1]")
     amide_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[#6]")
     urea_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[NX3]")
     sulfonamide_pattern = Chem.MolFromSmarts("[NX3][#16](=[OX1])=[OX1]")
@@ -39,6 +41,6 @@ def is_secondary_amine(smiles: str):
         if any(mol.HasSubstructMatch(pattern) for pattern in [nitroso_pattern, amide_pattern, urea_pattern, sulfonamide_pattern]):
             return False, "Contains interfering groups (e.g., nitroso, urea, amide, sulfonamide), not a secondary amine"
         
-        return True, "Contains a nitrogen atom bonded to two carbon atoms and one hydrogen atom, characteristic of a secondary amine"
+        return True, "Contains a nitrogen atom bonded to two carbon atoms, characteristic of a secondary amine"
     
     return False, "Does not satisfy the structural requirements for a secondary amine"
