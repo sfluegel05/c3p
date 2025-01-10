@@ -32,8 +32,8 @@ def is_alpha_amino_acid_ester(smiles: str):
     if len(ester_matches) == 0:
         return False, "No ester group found"
 
-    # Look for the alpha-amino acid pattern (NH2-CH-COOH)
-    amino_acid_pattern = Chem.MolFromSmarts("[NX3;H2][CX4H][CX3](=[OX1])[OX2H1]")
+    # Look for the alpha-amino acid pattern (NH2-CH-COOH or NH2-CH-COOR)
+    amino_acid_pattern = Chem.MolFromSmarts("[NX3;H2][CX4H][CX3](=[OX1])[OX2][CX4]")
     amino_acid_matches = mol.GetSubstructMatches(amino_acid_pattern)
     if len(amino_acid_matches) == 0:
         return False, "No alpha-amino acid moiety found"
