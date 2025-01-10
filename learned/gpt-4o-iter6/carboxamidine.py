@@ -21,8 +21,8 @@ def is_carboxamidine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a generic carboxamidine pattern, allowing for variability in R groups
-    carboxamidine_pattern = Chem.MolFromSmarts("C(=N)(N[*])[*]")
+    # Define a more specific carboxamidine pattern that accurately captures the RC(=NR)NR2 structure
+    carboxamidine_pattern = Chem.MolFromSmarts("[C;!R]=[N]([R])[N]([R])[R]")
     
     # Ensure the molecule has a substructure match with the carboxamidine pattern
     if mol.HasSubstructMatch(carboxamidine_pattern):
