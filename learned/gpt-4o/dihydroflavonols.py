@@ -20,13 +20,16 @@ def is_dihydroflavonols(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define refined SMARTS pattern for dihydroflavonol
-    # This pattern captures the chromanone-like core with hydroxyl group at C3
-    dihydroflavonol_pattern = Chem.MolFromSmarts("O[C@H]1[C@@H](O)C(=O)Cc2c1cccc2")
-
-    # Check if the molecule has a match
-    if mol.HasSubstructMatch(dihydroflavonol_pattern):
+    
+    # Define a generalized SMARTS pattern for dihydroflavonol
+    # This encompasses the chromanone core with a hydroxyl group at C3
+    dihydroflavonol_pattern = Chem.MolFromSmarts("C1C(O)OC2=CC=CC=C2C1=O")
+    
+    # Ensure a hydroxyl (O) is connected to the C3 carbon 
+    hydroxyl_at_C3_pattern = Chem.MolFromSmarts("O[C@H]1[C@@H](O)[C@H]C(=O)Cc2ccccc12")
+    
+    # Check if the molecule matches either pattern
+    if mol.HasSubstructMatch(dihydroflavonol_pattern) or mol.HasSubstructMatch(hydroxyl_at_C3_pattern):
         return True, "Contains dihydroflavonol structure"
 
     return False, "Does not fit dihydroflavonol pattern adequately"
