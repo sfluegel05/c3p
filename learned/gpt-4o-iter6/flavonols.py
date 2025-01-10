@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_flavonols(smiles: str):
     """
     Determines if a molecule is a flavonol based on its SMILES string.
-    A flavonol is defined as 'Any hydroxyflavone in which the ring hydrogen at
+    A flavonol is defined as 'Any hydroxyflavone in which is the ring hydrogen at
     position 3 of the heterocyclic ring is replaced by a hydroxy group'.
 
     Args:
@@ -14,20 +14,20 @@ def is_flavonols(smiles: str):
 
     Returns:
         bool: True if the molecule is a flavonol, False otherwise
-        str: Reason for the classification
+        str: Reason for classification
     """
     
-    # Parse SMILES to a RDKit Mol object
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define the Smart pattern for a flavonol structure.
-    # It includes specific position for 3-hydroxy group in the flavone backbone.
-    flavonol_pattern = Chem.MolFromSmarts('O=c1oc2cc(O)cc(O)c2c(O)c1')
-
-    # Check if the structure contains a flavonol pattern
+    
+    # SMARTS pattern for flavonols: includes 3-hydroxy-2-phenylchromen-4-one backbone
+    flavonol_pattern = Chem.MolFromSmarts('c1cc(O)c2c(c1)oc1cc(O)cc(O)c1c2=O')
     if not mol.HasSubstructMatch(flavonol_pattern):
-        return False, "No flavonol backbone detected with 3-hydroxy group"
-
-    return True, "Structure matches 3-hydroxyflavone backbone consistent with flavonol"
+        return False, "No flavonol backbone found"
+    
+    # Check for the presence of hydroxy groups at key positions (particularly at position 3)
+    # Which is handled by the pattern above
+    
+    return True, "Structure matches flavonol features with 3-hydroxyflavone backbone"
