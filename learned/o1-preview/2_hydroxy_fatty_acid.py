@@ -28,8 +28,8 @@ def is_2_hydroxy_fatty_acid(smiles: str):
         if atom.GetAtomicNum() not in [1, 6, 8]:
             return False, "Molecule contains atoms other than C, H, and O"
 
-    # Check for exactly one carboxylic acid group (-C(=O)OH)
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[OH]")
+    # Find carboxylic acid group (-C(=O)O)
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
     carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
     if len(carboxylic_acid_matches) != 1:
         return False, "Molecule does not have exactly one carboxylic acid group"
@@ -39,14 +39,10 @@ def is_2_hydroxy_fatty_acid(smiles: str):
     if mol.GetRingInfo().NumRings() > 0:
         return False, "Molecule contains ring structures, atypical for fatty acids"
 
-    # Check for exactly one hydroxy group (-OH)
-    hydroxy_pattern = Chem.MolFromSmarts("[OX2H]")
-    hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
-    if len(hydroxy_matches) != 1:
-        return False, "Molecule does not have exactly one hydroxy group"
-
-    # Check that the hydroxy group is on the alpha carbon adjacent to carboxyl carbon
+    # Identify the carboxyl carbon atom
     carboxyl_c_atom = mol.GetAtomWithIdx(carboxyl_c_index)
+
+    # Identify the alpha carbon (adjacent to carboxyl carbon)
     alpha_c_atom = None
     for neighbor in carboxyl_c_atom.GetNeighbors():
         if neighbor.GetAtomicNum() == 6:  # Carbon atom
@@ -56,18 +52,38 @@ def is_2_hydroxy_fatty_acid(smiles: str):
         return False, "No alpha carbon found adjacent to carboxyl carbon"
     alpha_c_index = alpha_c_atom.GetIdx()
 
-    # Check that the hydroxy group is attached to the alpha carbon
+    # Check that the alpha carbon is attached to a hydroxy group (-OH)
     hydroxy_on_alpha = False
     for neighbor in alpha_c_atom.GetNeighbors():
         if neighbor.GetAtomicNum() == 8 and neighbor.GetDegree() == 1:
-            # Oxygen atom with single bond (hydroxy group)
-            hydroxy_on_alpha = True
-            break
+            if neighbor.GetTotalNumHs() == 1:
+                # Oxygen atom with single bond and one hydrogen (hydroxy group)
+                hydroxy_on_alpha = True
+                break
     if not hydroxy_on_alpha:
         return False, "Hydroxy group is not on the alpha carbon"
 
-    # Ensure no other functional groups (only C, H, O)
-    # We've already checked atom types and the number of hydroxy groups
+    # Ensure the alpha carbon does not have a keto group (=O)
+    keto_on_alpha = False
+    for neighbor in alpha_c_atom.GetNeighbors():
+        if neighbor.GetAtomicNum() == 8:
+            bond = mol.GetBondBetweenAtoms(alpha_c_index, neighbor.GetIdx())
+            if bond.GetBondType() == Chem.BondType.DOUBLE:
+                keto_on_alpha = True
+                break
+    if keto_on_alpha:
+        return False, "Alpha carbon has a keto group, not a hydroxy group"
+
+    # Check that there are no other hydroxy groups in the molecule (excluding carboxylic acid's OH)
+    # Get oxygen atoms in the carboxylic acid group
+    carboxylic_oxygen_indices = carboxylic_acid_matches[0][1:]
+    hydroxy_oxygen_indices = []
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 8 and atom.GetIdx() not in carboxylic_oxygen_indices:
+            if atom.GetDegree() == 1 and atom.GetTotalNumHs() == 1:
+                hydroxy_oxygen_indices.append(atom.GetIdx())
+    if len(hydroxy_oxygen_indices) != 1:
+        return False, "Molecule does not have exactly one hydroxy group outside of carboxylic acid"
 
     # Optionally, check molecule is a fatty acid (e.g., chain length)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
