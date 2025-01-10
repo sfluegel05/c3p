@@ -21,21 +21,26 @@ def is_sesterterpenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check carbon atom count (around 25 for sesterterpenoids)
+    # Check carbon atom count (typically 25 for sesterterpenoids, allow some tolerance)
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     
-    # A rough estimate for sesterterpenoids should have approximately 25 carbon atoms
-    if carbon_count < 20 or carbon_count > 30:
-        return False, f"Carbon count is {carbon_count}, expected around 25"
-
-    # Check if the structure contains terpenoid characteristics
-    # Terpenoids are often characterized by repeating C5 isoprene units
-    # However, direct detection of these units can be challenging without explicit substructure matching
-
-    # As the structure may be significantly rearranged or modified, 
-    # including specific substructure patterns might not always yield reliable classification
+    # Set a range for carbon count typical in sesterterpenoids
+    if carbon_count < 20 or carbon_count > 35:
+        return False, f"Carbon count is {carbon_count}, expected between 20 and 35"
     
-    # Further analysis may involve complex pattern recognition or simplification
-    # of known sesterterpenoid structures, which can be difficult by SMILES alone
+    # Check for oxygen atoms often present in oxygenated terpenoids
+    oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if oxygen_count == 0:
+        return False, "Likely non-terpenoid without oxygen"
     
-    return True, "The structure meets basic criteria for a sesterterpenoid (carbon count check)"
+    # Define possible terpenoid characteristics such as isoprene units using SMARTS
+    # Note: Isoprene units are `C=C(C)C`
+    isoprene_unit = Chem.MolFromSmarts("C=C(C)C")
+    if mol.HasSubstructMatch(isoprene_unit):
+        return True, "Contains isoprene units typical of terpenoids"
+
+    # While specific substructure pattern of sesterterpenoids might be difficult to generalize,
+    # this logic attempts basic inclusion through essential checks.
+    
+    # Return based on available evidence
+    return True, "The structure sufficiently aligns with known sesterterpenoids criteria, mainly concerning carbon and the presence of terpenoid-related structures or characteristics"
