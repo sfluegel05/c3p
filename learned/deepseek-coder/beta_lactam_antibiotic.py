@@ -27,8 +27,8 @@ def is_beta_lactam_antibiotic(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the beta-lactam ring pattern (four-membered cyclic amide)
-    beta_lactam_pattern = Chem.MolFromSmarts("C1(=O)NCC1")
+    # Define a more comprehensive beta-lactam ring pattern (four-membered cyclic amide)
+    beta_lactam_pattern = Chem.MolFromSmarts("[C,c]1(=O)[N,n][C,c][C,c]1")
     if not mol.HasSubstructMatch(beta_lactam_pattern):
         return False, "No beta-lactam ring found"
 
@@ -41,16 +41,19 @@ def is_beta_lactam_antibiotic(smiles: str):
     if o_count < 1:
         return False, "No oxygen atoms found, unlikely to be an antibiotic"
 
+    # Check molecular weight (beta-lactam antibiotics typically have MW > 300 Da)
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 300:
+        return False, "Molecular weight too low for a beta-lactam antibiotic"
+
     # Check for common antibiotic functional groups (e.g., amide, carboxyl, etc.)
     amide_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[NX3H2]")
     carboxyl_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H1]")
+    ester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2][CX4]")
     
-    if not mol.HasSubstructMatch(amide_pattern) and not mol.HasSubstructMatch(carboxyl_pattern):
-        return False, "No amide or carboxyl groups found, unlikely to be an antibiotic"
-
-    # Check molecular weight (beta-lactam antibiotics typically have MW > 200 Da)
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 200:
-        return False, "Molecular weight too low for a beta-lactam antibiotic"
+    if not (mol.HasSubstructMatch(amide_pattern) or 
+            mol.HasSubstructMatch(carboxyl_pattern) or 
+            mol.HasSubstructMatch(ester_pattern)):
+        return False, "No amide, carboxyl, or ester groups found, unlikely to be an antibiotic"
 
     return True, "Contains a beta-lactam ring and exhibits antibiotic-like properties"
