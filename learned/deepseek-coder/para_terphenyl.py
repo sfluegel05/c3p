@@ -26,7 +26,7 @@ def is_para_terphenyl(smiles: str):
 
     # Define a more flexible pattern for 1,4-diphenylbenzene skeleton
     # This pattern allows for substitutions on the phenyl rings and the central benzene ring
-    para_terphenyl_pattern = Chem.MolFromSmarts("c1ccc(-c2ccccc2)cc1-c3ccccc3")
+    para_terphenyl_pattern = Chem.MolFromSmarts("[c;H1]1[c;H1][c;H1][c;H1](-[c;H1]2[c;H1][c;H1][c;H1][c;H1][c;H1]2)[c;H1][c;H1]1-[c;H1]3[c;H1][c;H1][c;H1][c;H1][c;H1]3")
     
     # Check if the molecule matches the pattern
     if mol.HasSubstructMatch(para_terphenyl_pattern):
