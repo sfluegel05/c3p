@@ -10,7 +10,7 @@ def is_tetradecanoate_ester(smiles: str):
     """
     Determines if a molecule is a tetradecanoate ester based on its SMILES string.
     A tetradecanoate ester is an ester formed from tetradecanoic acid (myristic acid) and an alcohol.
-    The acyl chain must be linear, saturated, and contain exactly 14 carbons (including the carbonyl carbon).
+    The acyl chain must contain exactly 14 carbons (including the carbonyl carbon).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -25,7 +25,7 @@ def is_tetradecanoate_ester(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define ester SMARTS pattern
-    ester_pattern = Chem.MolFromSmarts('[C;X3](=O)[O;X2][C]')
+    ester_pattern = Chem.MolFromSmarts("[C](=O)[O][#6]")  # Ester group with carbonyl carbon connected to oxygen and carbon
     if ester_pattern is None:
         return False, "Failed to create ester SMARTS pattern"
 
@@ -34,35 +34,36 @@ def is_tetradecanoate_ester(smiles: str):
     if not ester_matches:
         return False, "No ester groups found"
 
-    # For each ester group, check if acyl chain is tetradecanoyl (14 carbons, linear, saturated)
+    # For each ester group, check if acyl chain is tetradecanoyl (14 carbons)
     for match in ester_matches:
         carbonyl_c_idx = match[0]  # Index of carbonyl carbon
         ester_o_idx = match[2]     # Index of ester oxygen
-        acyl_chain_length = 1  # Start with carbonyl carbon
 
-        # Traverse acyl chain starting from carbonyl carbon
+        # Initialize variables for traversal
         visited = set()
-        stack = [(carbonyl_c_idx, None)]  # (atom_idx, previous_atom_idx)
-
+        chain_length = 0
         is_linear = True
         is_saturated = True
 
-        while stack:
-            atom_idx, prev_atom_idx = stack.pop()
-            if atom_idx in visited:
-                continue
-            visited.add(atom_idx)
+        # Traverse acyl chain starting from carbonyl carbon (excluding ester oxygen side)
+        def traverse_acyl_chain(atom_idx, prev_atom_idx):
+            nonlocal chain_length, is_linear, is_saturated
+
             atom = mol.GetAtomWithIdx(atom_idx)
+            if atom_idx in visited:
+                return
+            visited.add(atom_idx)
 
             if atom.GetAtomicNum() != 6:
-                # Non-carbon atom in acyl chain
-                continue
+                return  # Non-carbon atom
+
+            # Increment chain length
+            chain_length += 1
 
             # Check for branching (more than two carbon neighbors, excluding previous atom)
             neighbor_carbons = [nbr for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() == 6 and nbr.GetIdx() != prev_atom_idx]
             if len(neighbor_carbons) > 1:
                 is_linear = False
-                break
 
             # Check for unsaturation (non-single bonds)
             for bond in atom.GetBonds():
@@ -70,27 +71,20 @@ def is_tetradecanoate_ester(smiles: str):
                     continue  # Skip bond to previous atom
                 if bond.GetBondTypeAsDouble() != 1.0:
                     is_saturated = False
-                    break
-            if not is_saturated:
-                break
 
-            # Increment chain length (exclude carbonyl carbon after first iteration)
-            if atom_idx != carbonyl_c_idx:
-                acyl_chain_length += 1
-
-            # Add neighbor carbon (excluding ester oxygen and previous atom) to stack
+            # Continue traversal to neighbor carbons (excluding previous atom and ester oxygen)
             for neighbor in atom.GetNeighbors():
                 neighbor_idx = neighbor.GetIdx()
                 if neighbor_idx == prev_atom_idx or neighbor_idx == ester_o_idx:
                     continue
                 if neighbor.GetAtomicNum() == 6:
-                    stack.append((neighbor_idx, atom_idx))
+                    traverse_acyl_chain(neighbor_idx, atom_idx)
 
-        if not is_linear:
-            continue  # Skip this ester group if chain is branched
-        if not is_saturated:
-            continue  # Skip this ester group if chain is unsaturated
-        if acyl_chain_length == 14:
+        # Start traversal from carbonyl carbon
+        traverse_acyl_chain(carbonyl_c_idx, ester_o_idx)
+
+        # Check if acyl chain has exactly 14 carbons
+        if chain_length == 14 and is_linear and is_saturated:
             return True, "Contains tetradecanoate ester group"
 
     return False, "Does not contain tetradecanoate ester group"
@@ -115,7 +109,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 1,
+    'attempt': 2,
     'success': True,
     'best': True,
     'error': '',
