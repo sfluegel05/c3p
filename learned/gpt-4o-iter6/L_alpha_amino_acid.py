@@ -22,18 +22,18 @@ def is_L_alpha_amino_acid(smiles: str):
         return False, "Invalid SMILES string"
     
     # Identify chiral centers
-    chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True, useLegacyImplementation=False)
+    chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=False, useLegacyImplementation=False)
     
-    # Define SMARTS pattern for an L-alpha-amino acid backbone (N[C@@H](C)C(O)=O)
-    aa_smarts = '[C@H](N)C(=O)O'
-    aa_pattern = Chem.MolFromSmarts(aa_smarts)
+    # Define a broad SMARTS pattern for an alpha-amino acid
+    alpha_aa_smarts = '[CX4H1,CX4H2][C@H](N)C(=O)[O,H]'
+    alpha_aa_pattern = Chem.MolFromSmarts(alpha_aa_smarts)
     
-    if not mol.HasSubstructMatch(aa_pattern):
+    if not mol.HasSubstructMatch(alpha_aa_pattern):
         return False, "No L-alpha-amino acid backbone pattern found"
     
-    # Check if there's at least one 'S' configuration chiral center (common for L-amino acids)
+    # Check if there's at least one 'S' configuration at the chiral center for L-amino acids
     for center, chirality in chiral_centers:
-        if chirality in ['S', '(S)']:
+        if chirality == 'S':
             atom = mol.GetAtomWithIdx(center)
             if atom.GetSymbol() == 'C':
                 # Verify the core structure and known neighbours
