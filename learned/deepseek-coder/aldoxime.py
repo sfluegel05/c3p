@@ -44,15 +44,4 @@ def is_aldoxime(smiles: str):
         if not has_alkyl_or_aryl:
             return False, "R group in R-CH=NOH is not an alkyl or aryl group"
 
-    # Additional check to avoid false positives: ensure no other complex functional groups are present
-    # For example, avoid molecules with multiple R-CH=NOH groups or other complex structures
-    if len(mol.GetSubstructMatches(aldoxime_pattern)) > 1:
-        return False, "Multiple R-CH=NOH groups found, not a simple aldoxime"
-
-    # Check for tautomers: ensure that the molecule is not in a different tautomeric form
-    # For example, ensure that the nitrogen is not double-bonded to a carbon in a different context
-    nitrogen_pattern = Chem.MolFromSmarts("[NX2]=[CX3]")
-    if mol.HasSubstructMatch(nitrogen_pattern):
-        return False, "Molecule contains a tautomeric form that is not an aldoxime"
-
     return True, "Contains the aldoxime group (R-CH=NOH) with an appropriate R group"
