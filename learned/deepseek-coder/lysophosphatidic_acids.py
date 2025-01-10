@@ -51,7 +51,7 @@ def is_lysophosphatidic_acids(smiles: str):
 
     # Count rotatable bonds to verify long chain
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 10:
+    if n_rotatable < 5:
         return False, "Chain too short to be a fatty acid"
 
     # Check molecular weight - LPAs typically >400 Da
