@@ -24,78 +24,74 @@ def is_tocol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Basic chromanol core pattern - more flexible than before
-    # Matches the basic 6-hydroxychroman skeleton with possible methyl substitutions
-    chromanol_core = """
-        [#6]1-[#6]-[#6]-c2c(C1)c([OH0,OH1,O&$(OC(=O))])c([#6,H])c([#6,H])c2
+    # Basic chromanol/chroman core pattern
+    # More permissive pattern that matches the core structure with various substitutions
+    chromanol_pattern = """
+        [#8]1-[#6](-[#6])(-[#6])-[#6]-[#6]-c2c1cc([#8])cc2
     """
     
-    core_pattern = Chem.MolFromSmarts(chromanol_core.strip())
-    if not mol.HasSubstructMatch(core_pattern):
-        return False, "No chromanol core structure found"
+    if not mol.HasSubstructMatch(Chem.MolFromSmarts(chromanol_pattern.strip())):
+        return False, "No chroman-6-ol core structure found"
 
-    # Check for oxygen heterocycle in the correct position
-    chroman_oxygen = """
-        [#8]1-[#6](-[#6,#1])(-[#6,#1])-[#6]-[#6]-c2c1c([#6,H])c([OH0,OH1,O&$(OC(=O))])c([#6,H])c2
-    """
-    oxygen_pattern = Chem.MolFromSmarts(chroman_oxygen.strip())
-    if not mol.HasSubstructMatch(oxygen_pattern):
-        return False, "Incorrect oxygen position in chromanol core"
-
-    # Check for proper substitution at position 2
-    # More flexible pattern that allows for various chain types
-    position2_pattern = """
-        [#8]1-[#6](-[#6][#6,#1])-[#6]-[#6]-c2c1c([#6,H])c([OH0,OH1,O&$(OC(=O))])c([#6,H])c2
-    """
-    if not mol.HasSubstructMatch(Chem.MolFromSmarts(position2_pattern.strip())):
-        return False, "Incorrect substitution at position 2"
-
-    # Check for isoprenoid chain - both saturated and unsaturated versions
-    # More flexible patterns that capture various modifications
-    isoprenoid_patterns = [
-        # Saturated chain
-        "[#6]-[#6](-[#6])-[#6]-[#6]-[#6](-[#6])-[#6]-[#6]-[#6](-[#6])-[#6]-[#6]",
-        # Unsaturated chain
-        "[#6]-[#6](-[#6])=[#6]-[#6]-[#6](-[#6])=[#6]-[#6]-[#6](-[#6])=[#6]",
-        # Modified chain (e.g., with terminal COOH)
-        "[#6]-[#6](-[#6])-[#6]-[#6]-[#6](-[#6])-[#6]-[#6]-[#6](-[#6])-[#6]-[#6](-[O,C])",
+    # Check for hydroxyl or modified hydroxyl (like esters) at position 6
+    hydroxyl_patterns = [
+        "[#8]1-[#6]-[#6]-[#6]-[#6]-c2c1cc([OH1])cc2",  # Free hydroxyl
+        "[#8]1-[#6]-[#6]-[#6]-[#6]-c2c1cc([#8]-[#6])cc2"  # Modified hydroxyl
     ]
+    
+    hydroxyl_found = False
+    for pattern in hydroxyl_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            hydroxyl_found = True
+            break
+            
+    if not hydroxyl_found:
+        return False, "Missing required hydroxyl group at position 6"
 
+    # Check for the isoprenoid chain at position 2
+    # More flexible patterns to catch both saturated and unsaturated chains
+    chain_patterns = [
+        # Saturated chain pattern
+        "[#8]1-[#6](-[#6][#6][#6][#6])-[#6]-[#6]-c2c1cccc2",
+        # Unsaturated chain pattern
+        "[#8]1-[#6](-[#6][#6]=[#6][#6])-[#6]-[#6]-c2c1cccc2"
+    ]
+    
     chain_found = False
-    for pattern in isoprenoid_patterns:
+    for pattern in chain_patterns:
         if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
             chain_found = True
             break
-
+            
     if not chain_found:
-        return False, "Missing required isoprenoid chain"
+        return False, "Missing required chain at position 2"
 
-    # Check for common modifications that are allowed
+    # Verify molecule size and composition
+    num_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    num_oxygens = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    
+    if num_carbons < 16:
+        return False, "Insufficient carbons for tocol structure"
+    
+    if num_oxygens < 2:
+        return False, "Insufficient oxygens for tocol structure"
+
+    # Check for common modifications
     modifications = []
     
     # Check for ester modifications
-    ester_pattern = Chem.MolFromSmarts("[OH0,OH1,O&$(OC(=O))]")
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    if mol.HasSubstructMatch(Chem.MolFromSmarts("O=C-O")):
+        modifications.append("ester")
     
-    if len(ester_matches) > 1:
-        modifications.append("ester derivative")
-
     # Check for carboxylic acid modifications
-    acid_pattern = Chem.MolFromSmarts("C(=O)[OH]")
-    if mol.HasSubstructMatch(acid_pattern):
+    if mol.HasSubstructMatch(Chem.MolFromSmarts("C(=O)O")):
         modifications.append("carboxylic acid")
-
-    # Basic requirements check
-    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     
-    if carbon_count < 16:
-        return False, "Insufficient carbon count for tocol structure"
-    
-    if oxygen_count < 2:
-        return False, "Insufficient oxygen count for tocol structure"
+    # Check for unsaturated bonds in chain
+    if mol.HasSubstructMatch(Chem.MolFromSmarts("C=C")):
+        modifications.append("unsaturated chain")
 
-    base_message = "Valid tocol structure with chromanol core and appropriate chain"
+    base_message = "Valid tocol structure with chroman-6-ol core and appropriate chain"
     if modifications:
         return True, f"{base_message} ({', '.join(modifications)})"
     
