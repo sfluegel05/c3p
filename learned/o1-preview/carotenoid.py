@@ -28,37 +28,25 @@ def is_carotenoid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Exclude retinoids by checking for retinoid substructure
-    retinoid_pattern = Chem.MolFromSmarts("CC(=O)C1=CC=CC=C1")
+    # Retinoids typically have a beta-ionone ring connected to a polyene chain ending with an aldehyde or acid
+    retinoid_pattern = Chem.MolFromSmarts("C1=CC=CC=C1CC=CC(=O)[O,N]")
     if mol.HasSubstructMatch(retinoid_pattern):
         return False, "Molecule is a retinoid, which is excluded"
 
     # Count number of carbon atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 30:
-        return False, f"Molecule has {c_count} carbon atoms, expected at least 30 for carotenoids"
+    if c_count < 35 or c_count > 41:
+        return False, f"Molecule has {c_count} carbon atoms, expected between 35 and 41 for carotenoids"
 
-    # Detect long conjugated polyene chain (at least 10 alternating single and double bonds)
-    pattern = Chem.MolFromSmarts("C(=C-C)*=C")
-    matches = mol.GetSubstructMatches(pattern)
-    if len(matches) < 10:
-        return False, f"Found {len(matches)} conjugated double bonds, expected at least 10"
+    # Detect long conjugated polyene chain (at least 7 conjugated double bonds)
+    # Use a recursive SMARTS pattern to match conjugated double bonds
+    polyene_pattern = Chem.MolFromSmarts("[!$([#6]=,#[#6])]~[#6]=[#6]~[#6]=[#6]~[#6]=[#6]~[#6]=[#6]~[#6]=[#6]~[#6]=[#6]~[#6]")
+    matches = mol.GetSubstructMatches(polyene_pattern)
+    if not matches:
+        return False, "No long conjugated polyene chain found (at least 7 conjugated double bonds required)"
 
-    # Check for beta-ionone ring or similar cyclic end groups
-    beta_ionone_pattern = Chem.MolFromSmarts("C1(C=CC=CC=1)C")
-    if not mol.HasSubstructMatch(beta_ionone_pattern):
-        return False, "No beta-ionone ring found"
-
-    # Allow for various functional groups (hydroxyl, keto, epoxide)
-    # Do not exclude molecules lacking these groups
-
-    # Check that molecule is derived from psi,psi-carotene skeleton
-    # Using a simplified pattern for psi,psi-carotene
-    psi_psi_carotene_pattern = Chem.MolFromSmarts("C(=C/C=C/C=C/C=C/C=C/C=C/C=C/C=C/C=C/C=C/C=C/C=C/C=C/C=C/CC)CC")
-    if not mol.HasSubstructMatch(psi_psi_carotene_pattern):
-        return False, "Molecule does not match psi,psi-carotene backbone"
-
+    # Consider the molecule a carotenoid
     return True, "Molecule matches criteria for a carotenoid"
-
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:23044',
                           'name': 'carotenoid',
@@ -75,17 +63,8 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:23044',
                   'max_instances_in_prompt': 100,
                   'test_proportion': 0.1},
     'message': None,
-    'attempt': 1,
+    'attempt': 2,
     'success': True,
     'best': True,
     'error': '',
-    'stdout': None,
-    'num_true_positives': None,
-    'num_false_positives': None,
-    'num_true_negatives': None,
-    'num_false_negatives': None,
-    'num_negatives': None,
-    'precision': None,
-    'recall': None,
-    'f1': None,
-    'accuracy': None }
+    'stdout': None }
