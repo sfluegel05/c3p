@@ -22,10 +22,10 @@ def is_primary_amine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for primary amine group: nitrogen with one carbon (hydrocarbyl group) and two hydrogens
-    # This pattern considers that the nitrogen must be bonded to exactly two hydrogens and at least one carbon (directly or through another atom in the chain)
-    primary_amine_pattern = Chem.MolFromSmarts("[NX3;H2][CX4, $(*=*)]")  # nitrogen with two hydrogens and a carbon atom
-    if mol.HasSubstructMatch(primary_amine_pattern):
+    # Look for primary amine group: nitrogen with two hydrogens and bonded to at least one carbon
+    # SMARTS: [NH2][C], nitrogen atom bonded to exactly two hydrogens and bonded to a carbon
+    primary_amine_pattern = Chem.MolFromSmarts("[NH2][CH2,CH,CH0,CX3,CX4]")
+    if primary_amine_pattern is not None and mol.HasSubstructMatch(primary_amine_pattern):
         return True, "Primary amine group detected"
     else:
         return False, "No primary amine group found"
