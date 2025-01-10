@@ -16,9 +16,9 @@ def is_aldopentose(smiles: str):
 
     Returns:
         bool: True if the molecule is an aldopentose, False otherwise.
-        str: Reason for classification
+        str: Reason for classification.
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
@@ -29,16 +29,16 @@ def is_aldopentose(smiles: str):
     if c_count != 5:
         return False, f"Expected 5 carbon atoms, found {c_count}"
     
-    # Look for cyclic furanose (5 ring) or pyranose (6 ring) structures typical for sugars
-    furanose_pattern = Chem.MolFromSmarts("C1OC(O)C(O)C1")  # 5-member furanose
-    pyranose_pattern = Chem.MolFromSmarts("C1OC(O)C(O)C(O)C1")  # 6-member pyranose
+    # Look for cyclic furanose or pyranose forms using more specific SMARTS patterns
+    furanose_pattern = Chem.MolFromSmarts("[C@H1](O)[C@H1](O)[C@H1](O)O1")
+    pyranose_pattern = Chem.MolFromSmarts("[C@H1](O)[C@H1](O)[C@H1](O)[C@H1](O)O1")
     
     if mol.HasSubstructMatch(furanose_pattern) or mol.HasSubstructMatch(pyranose_pattern):
         return True, "Contains cyclic furanose or pyranose structure typical for aldopentoses"
-    
-    # Check for the presence of an aldehyde group (R-CHO) with adjacent hydroxyl
-    aldehyde_pattern = Chem.MolFromSmarts("[#6][CX3H1](=O)[OH]")  # Aldehyde with next carbon hydroxyl
-    if mol.HasSubstructMatch(aldehyde_pattern):
-        return True, "Contains an appropriate 5-carbon chain with an aldehyde group at one end and hydroxyl groups"
+
+    # Check for linear form 'aldehydo-' sugars
+    linear_aldehyde_pattern = Chem.MolFromSmarts("[#6][CH1](=O)[C@H1](O)[C@H1](O)[C@H1](O)[C@H1](O)")
+    if mol.HasSubstructMatch(linear_aldehyde_pattern):
+        return True, "Contains linear form with aldehyde group"
 
     return False, "Does not match aldopentose structure requirements"
