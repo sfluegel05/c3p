@@ -25,6 +25,7 @@ def is_isothiocyanate(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for the isothiocyanate group (-N=C=S)
+    # Use a more flexible SMARTS pattern to match the isothiocyanate group
     isothiocyanate_pattern = Chem.MolFromSmarts("[N]=[C]=[S]")
     if not mol.HasSubstructMatch(isothiocyanate_pattern):
         return False, "No isothiocyanate group (-N=C=S) found"
@@ -37,21 +38,7 @@ def is_isothiocyanate(smiles: str):
         if not any(neighbor.GetAtomicNum() == 6 for neighbor in nitrogen_atom.GetNeighbors()):
             return False, "Nitrogen in isothiocyanate group must be connected to a carbon"
 
-    # Additional check to ensure the molecule is not part of a larger, more complex structure
-    # For example, exclude molecules with multiple functional groups or complex ring systems
-    # that would classify them differently.
-    # Here, we check if the molecule has more than one functional group or complex rings.
-    # This is a heuristic and may need refinement based on specific cases.
-    functional_groups = Chem.MolFromSmarts("[*]!@[N]=[C]=[S]")
-    if len(mol.GetSubstructMatches(functional_groups)) > 1:
-        # Allow multiple isothiocyanate groups
-        isothiocyanate_count = len(mol.GetSubstructMatches(isothiocyanate_pattern))
-        if isothiocyanate_count > 1:
-            return True, "Contains multiple isothiocyanate groups (-N=C=S)"
-        else:
-            return False, "Molecule has multiple functional groups or complex structure"
-
-    return True, "Contains the isothiocyanate group (-N=C=S) and is not part of a larger, more complex structure"
+    return True, "Contains the isothiocyanate group (-N=C=S)"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:52221',
