@@ -26,14 +26,14 @@ def is_flavin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more flexible SMARTS pattern for the dimethylisoalloxazine core
-    flavin_core_pattern = Chem.MolFromSmarts("C1=C2C(=O)N=C3C(=O)NC(=O)C3=NC2=C(C)C=C1")
+    # Define the core flavin structure (dimethylisoalloxazine skeleton)
+    flavin_core_pattern = Chem.MolFromSmarts("[C]1=C(C)C=C2N(C(=O)NC(=O)C2=N1)C")
     if not mol.HasSubstructMatch(flavin_core_pattern):
         return False, "No dimethylisoalloxazine core found"
 
     # Check for the presence of a substituent at the 10 position (N10)
     # The nitrogen at position 10 should be connected to at least one non-hydrogen atom
-    n10_pattern = Chem.MolFromSmarts("[N]1([C]2=C(C)C=C3C(=O)NC(=O)C3=NC2=C1)")
+    n10_pattern = Chem.MolFromSmarts("[N]1([C]2=C(C)C=C3N(C(=O)NC(=O)C3=N2)C)")
     n10_matches = mol.GetSubstructMatches(n10_pattern)
     if not n10_matches:
         return False, "No nitrogen at position 10 found"
