@@ -16,17 +16,17 @@ def is_gamma_lactone(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
+    # Parse the SMILES into a molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Enhanced SMARTS pattern for gamma-lactone (five-membered lactone ring)
-    # This pattern allows for flexible substituents on the lactone ring
-    gamma_lactone_pattern = Chem.MolFromSmarts("[#6]-1-[O;$(C=O)]-C(=O)-[C;R]1")
+    
+    # Define the SMARTS pattern for a gamma-lactone, which is a five-membered ring
+    # with a lactone group (cyclic ester), specifically: [O]-C-C-C-C(=O)
+    gamma_lactone_pattern = Chem.MolFromSmarts("C1COC(=O)C1")
     
     # Check for gamma-lactone pattern
     if mol.HasSubstructMatch(gamma_lactone_pattern):
-        return True, "Contains a five-membered lactone ring"
-
-    return False, "Does not contain a five-membered lactone ring"
+        return True, "Contains a five-membered gamma-lactone ring"
+    
+    return False, "Does not contain a five-membered gamma-lactone ring"
