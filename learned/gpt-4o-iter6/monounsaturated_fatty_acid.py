@@ -22,22 +22,23 @@ def is_monounsaturated_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for the terminal carboxylic acid group pattern
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[O;H1]")
+    # Define carboxylic acid pattern to confirm presence outside just ring closures
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
-        return False, "No terminal carboxylic acid group found"
+        return False, "No carboxylic acid group found"
 
-    # Calculate number of chain double/triple bonds
-    # Single bonds only should exist between carbon atoms in chain, not part of any ring system
-    num_unsaturations = 0
-    for bond in mol.GetBonds():
-        if bond.GetBondType() in [Chem.rdchem.BondType.DOUBLE, Chem.rdchem.BondType.TRIPLE]:
-            start_atom = bond.GetBeginAtom()
-            end_atom = bond.GetEndAtom()
-            # Ensure neither atom is part of a ring structure
-            if not start_atom.IsInRing() and not end_atom.IsInRing():
-                num_unsaturations += 1
+    # Define patterns for chain double and triple bonds
+    double_bond_pattern = Chem.MolFromSmarts("[#6]=[#6]")  # Represents C=C
+    triple_bond_pattern = Chem.MolFromSmarts("[#6]#[#6]")  # Represents C#C
 
+    # Determine non-ring double and triple bonds
+    num_double_bonds = len([bond for bond in mol.GetBonds() if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE and not (bond.IsInRing())])
+    num_triple_bonds = len([bond for bond in mol.GetBonds() if bond.GetBondType() == Chem.rdchem.BondType.TRIPLE and not (bond.IsInRing())])
+    
+    # Count total unsaturations in chains
+    num_unsaturations = num_double_bonds + num_triple_bonds
+
+    # A MUFA should present exactly one instance of unsaturation in chain
     if num_unsaturations != 1:
         return False, f"Found {num_unsaturations} unsaturations in chain, need exactly one"
     
