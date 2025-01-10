@@ -6,7 +6,6 @@ from rdkit import Chem
 def is_N_acylsphinganine(smiles: str):
     """
     Determines if a molecule is an N-acylsphinganine based on its SMILES string.
-    N-acylsphinganines have a sphinganine backbone with an amide linkage to a fatty acyl chain.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,20 +19,24 @@ def is_N_acylsphinganine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for sphinganine backbone [C@H](O) and [C@@H] configuration
-    sphinganine_backbone = Chem.MolFromSmarts("[C@@H](O)[C@H](CO)")
+    # Check for refined sphinganine backbone with chirality and specific configuration
+    sphinganine_backbone = Chem.MolFromSmarts("[C@@H](O)[C@H](CO)[C@@H](CCCCCCCCCCCC)")
+
     if not mol.HasSubstructMatch(sphinganine_backbone):
-        return False, "No sphinganine backbone found"
+        return False, "No refined sphinganine backbone found"
 
-    # Check for amide linkage -C(=O)N-
-    amide_linkage = Chem.MolFromSmarts("[CX3](=O)[NX3]")
-    if not mol.HasSubstructMatch(amide_linkage):
-        return False, "No amide linkage found"
+    # Check for amide linkage with long aliphatic chain
+    acyl_chain_pattern = Chem.MolFromSmarts("[NX3][CX3](=O)CCCCCCCCCC")
+    
+    if not mol.HasSubstructMatch(acyl_chain_pattern):
+        return False, "No N-acyl linkage with adequate chain found"
 
-    # Check for long carbon chains (>10 carbons)
-    carbon_chain = Chem.MolFromSmarts("[C;X4]~[C;X4]~[C;X4]~[C;X4]")
-    if not mol.HasSubstructMatch(carbon_chain):
-        return False, "No sufficient long carbon chain found"
+    # Optional: Check for possible headgroup moiety if needed for specificity
+    # Headgroup pattern example, may include specific sugars or other moieties
+    # headgroup_pattern = Chem.MolFromSmarts("[C@H](O)CO")
 
-    # If all checks passed, classify as N-acylsphinganine
-    return True, "Contains features consistent with N-acylsphinganine"
+    # if not mol.HasSubstructMatch(headgroup_pattern):
+    #     return False, "No expected headgroup moiety found"
+
+    # If matches all characteristics of an N-acylsphinganine
+    return True, "Contains refined features consistent with N-acylsphinganine"
