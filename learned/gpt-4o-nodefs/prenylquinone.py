@@ -2,7 +2,6 @@
 Classifies: CHEBI:26255 prenylquinone
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_prenylquinone(smiles: str):
     """
@@ -21,21 +20,25 @@ def is_prenylquinone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Broaden quinone core pattern to include different types of quinones
+    # Broad range of quinone core patterns
     quinone_patterns = [
         Chem.MolFromSmarts("O=C1C=CC(=O)C=C1"),  # Para-benzoquinone
         Chem.MolFromSmarts("O=C1C=CC=CC(=O)C1"),  # Naphthoquinone
-        Chem.MolFromSmarts("O=C1C=CC2=CC=CC=C2C1=O")  # Anthraquinone
+        Chem.MolFromSmarts("O=C1C=CC=C2C=CC=CC2C1=O"),  # Anthraquinone
+        Chem.MolFromSmarts("O=C1C=CC2=CC=CC=C2C1=O"),  # Anthraquinone alternative
+        Chem.MolFromSmarts("O=Cc1ccccc1=O"),  # Simplified quinone structure
     ]
 
     if not any(mol.HasSubstructMatch(pat) for pat in quinone_patterns):
         return False, "No suitable quinone core structure found"
     
-    # Enhanced prenyl pattern to allow for variations and longer chains
+    # Expanded prenyl-like pattern to cover more variations
     prenyl_patterns = [
         Chem.MolFromSmarts("C=C(C)C"),  # Isoprene unit
-        Chem.MolFromSmarts("C=C(C)C=C"),  # Longer chain possibility
-        Chem.MolFromSmarts("C=C([CH2X4,CX4])C")  # Variations on prenyl units
+        Chem.MolFromSmarts("CC=C"),  # Likely prenyl variations
+        Chem.MolFromSmarts("C=C([CH2X4,CX4])C"),  # More flexible prenyl unit with variations
+        Chem.MolFromSmarts("C=C(C)CO"),  # Hydroxylated prenyl unit
+        Chem.MolFromSmarts("C=C(C)OC"),  # Methoxylated prenyl unit
     ]
     
     if not any(mol.HasSubstructMatch(pat) for pat in prenyl_patterns):
