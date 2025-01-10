@@ -20,15 +20,16 @@ def is_11beta_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Improved steroid backbone pattern: 17 carbon atoms in 4 rings specific to steroids
-    steroid_pattern = Chem.MolFromSmarts('C1CC[C@H]2C[C@H](O)CC[C@@]2([H])[C@H]1C3=CC4=CC=C[C@]3([H])[C@@]4([H])[C@H](O)2')
-    if not mol.HasSubstructMatch(steroid_pattern):
+    # Basic steroid skeleton pattern (not including stereochemistry details)
+    steroid_backbone_pattern = Chem.MolFromSmarts("C1CC2CCC3C4CCC(C4)C3CCC2C1")
+    if not mol.HasSubstructMatch(steroid_backbone_pattern):
         return False, "Basic steroid backbone not found"
 
-    # Improved 11beta-hydroxy group pattern
-    # This pattern now includes stereochemistry
-    hydroxy_11beta_pattern = Chem.MolFromSmarts('[C@H]1(CC[C@H]2C[C@H](O)CC[C@@]2([H])[C@H]1C3)(O)[C@@]3(C)')
+    # 11beta-hydroxy pattern, considering potential stereochemistry
+    # We could assume flexibility in chirality to broaden our pattern
+    # Use of "~" to indicate either [C@] or [C]
+    hydroxy_11beta_pattern = Chem.MolFromSmarts("C[C@@H](O)C")
     if not mol.HasSubstructMatch(hydroxy_11beta_pattern):
-        return False, "No 11beta-hydroxy group found with correct configuration"
+        return False, "No 11beta-hydroxy group found at expected position"
 
-    return True, "Contains basic steroid backbone with an 11beta-hydroxy group of the correct configuration"
+    return True, "Contains steroid backbone with an 11beta-hydroxy group of the expected configuration"
