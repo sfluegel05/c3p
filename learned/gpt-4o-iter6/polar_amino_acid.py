@@ -21,14 +21,25 @@ def is_polar_amino_acid(smiles: str):
         if mol is None:
             return False, "Invalid SMILES string"
         
-        # Identify amino acid backbone (more flexible to allow variations)
-        backbone_pattern = Chem.MolFromSmarts("[NX3][CH1]([C;R0])[C](=O)O")  # N-C-(C)-C(=O)-O pattern without wrapping, R0 means non-ring
-        if not mol.HasSubstructMatch(backbone_pattern):
+        # Broadened amino acid backbone pattern
+        backbone_patterns = [
+            Chem.MolFromSmarts("N[C@@H]([C;R0&!R])[C](=O)O"), # Typical amino acids
+            Chem.MolFromSmarts("N[C@H]([C;R0&!R])[C](=O)O")  # Include D-amino stereochemistry as well
+        ]
+        
+        # Check for amino acid backbone
+        if not any(mol.HasSubstructMatch(pattern) for pattern in backbone_patterns):
             return False, "No amino acid backbone found"
 
-        # Identify polar side chain groups
+        # Expanded polar side chain groups
         polar_patterns = [
-            Chem.MolFromSmarts("[$([NX3][CX3](=O)[OX1]),$([CX3](=O)[OH]),$([OH]),$([NX3H]),$([nX2]) ,$([N+]),$([SX2H])]")  # Extended patterns
+            Chem.MolFromSmarts("[NX3H2]"),  # Primary Amine
+            Chem.MolFromSmarts("[OX2H]"),   # Hydroxyl
+            Chem.MolFromSmarts("C(=O)[NX3]"), # Amide
+            Chem.MolFromSmarts("C(=O)[OH]"), # Carboxylate
+            Chem.MolFromSmarts("[nX2]"),    # Pyrrole-type Nitrogen
+            Chem.MolFromSmarts("C=[NX3+]"), # Iminium Nitrogen
+            Chem.MolFromSmarts("[SX2H]")    # Thiol
         ]
 
         # Check for any polar pattern match
