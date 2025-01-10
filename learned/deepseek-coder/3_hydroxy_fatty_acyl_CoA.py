@@ -31,10 +31,13 @@ def is_3_hydroxy_fatty_acyl_CoA(smiles: str):
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No CoA moiety found"
 
-    # Look for 3-hydroxy fatty acid chain (long carbon chain with hydroxyl at third position)
+    # Look for 3-hydroxy fatty acid chain (hydroxyl at third position from carboxyl group)
     hydroxy_fatty_acid_pattern = Chem.MolFromSmarts("[CX4][CX4][CX4]([OH])[CX4][CX4][CX4](=O)S")
     if not mol.HasSubstructMatch(hydroxy_fatty_acid_pattern):
-        return False, "No 3-hydroxy fatty acid chain found"
+        # Try a more flexible pattern to account for double bonds and branching
+        flexible_pattern = Chem.MolFromSmarts("[CX4][CX4][CX4]([OH])[CX4][CX4][CX4](=O)S")
+        if not mol.HasSubstructMatch(flexible_pattern):
+            return False, "No 3-hydroxy fatty acid chain found"
 
     # Check for ester bond between CoA and fatty acid
     ester_bond_pattern = Chem.MolFromSmarts("[CX4][CX4][CX4]([OH])[CX4][CX4][CX4](=O)S")
