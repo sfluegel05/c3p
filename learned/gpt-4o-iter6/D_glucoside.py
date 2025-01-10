@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_D_glucoside(smiles: str):
     """
     Determines if a molecule is a D-glucoside based on its SMILES string.
-    A D-glucoside is defined by having a D-glucose moiety with a glycosidic linkage to another molecule.
-
+    A D-glucoside has a D-glucose moiety with a glycosidic linkage to another molecule.
+    
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -21,12 +21,13 @@ def is_D_glucoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define D-glucopyranosyl pattern with correct stereochemistry
-    # SMARTS pattern for D-glucose with beta configuration
-    # Ring is a 6-membered sugar ring, typically O[C@@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H]1CO
-    d_glucose_pattern = Chem.MolFromSmarts("O[C@@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H]1CO")
-    
-    if mol.HasSubstructMatch(d_glucose_pattern):
+    # Define SMARTS pattern for the D-glucose moiety with both alpha and beta forms
+    d_glucose_pattern_beta = Chem.MolFromSmarts("O[C@@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H]1CO")
+    d_glucose_pattern_alpha = Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H]1CO")
+    glycosidic_oxygen = Chem.MolFromSmarts("CO[C@@H]1O")
+
+    # Check for D-glucose moiety with possible glycosidic linkage
+    if (mol.HasSubstructMatch(d_glucose_pattern_beta) or mol.HasSubstructMatch(d_glucose_pattern_alpha)) and mol.HasSubstructMatch(glycosidic_oxygen):
         return True, "Contains D-glucopyranosyl moiety with potential glycosidic linkage"
 
-    return False, "Does not contain the D-glucopyranosyl moiety with required stereochemistry"
+    return False, "Does not contain the D-glucopyranosyl moiety with required stereochemistry or linkage"
