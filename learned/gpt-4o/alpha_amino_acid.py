@@ -2,7 +2,6 @@
 Classifies: CHEBI:33704 alpha-amino acid
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_alpha_amino_acid(smiles: str):
     """
@@ -22,14 +21,20 @@ def is_alpha_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for main features of an alpha amino acid
-    # [NX3;H2,H1;!$(NC=O)] - Looks for an amine group not already part of an amide linkage
-    # [CX4H1,O] - Ensures alpha carbon is sp3 hybridized and linked appropriately (can be complex pattern)
-    # [CX3](=O)[OX2H1] - Looks for a carboxylic acid group
-    alpha_amino_acid_pattern = Chem.MolFromSmarts("[NX3;H2,H1;!$(NC=O)]C[C;X4][CX3](=O)[OX2H1]")
+    # Improved SMARTS pattern for alpha-amino acids:
+    # [N;H2] - Primary amine
+    # [C@] - Ensures alpha carbon is chiral center (if specified)
+    # [CX4] - Ensures alpha carbon is aliphatic (sp3)
+    # [CX3](=O)[OX2H1] - Carboxylic acid group
+    alpha_amino_acid_patterns = [
+        "[N;H2]C[C;X4][C;X3](=O)[OX2H1]",                    # Basic structure
+        "[N;H2][C@@H;!R][CX3](=O)[OX2H1]",                   # Chiral at alpha carbon
+        "N[C@H](C(=O)O)C",                                   # Simple version with explicit structure
+    ]
 
-    # Check if the molecule matches the alpha amino acid pattern
-    if mol.HasSubstructMatch(alpha_amino_acid_pattern):
-        return True, "Molecule has the structure of an alpha-amino acid"
+    for pattern in alpha_amino_acid_patterns:
+        amino_acid_pattern = Chem.MolFromSmarts(pattern)
+        if mol.HasSubstructMatch(amino_acid_pattern):
+            return True, "Molecule matches the structure of an alpha-amino acid"
 
-    return False, "Molecule does not match the pattern of an alpha-amino acid"
+    return False, "Molecule does not match the structure of an alpha-amino acid"
