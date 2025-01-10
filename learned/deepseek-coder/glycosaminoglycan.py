@@ -34,7 +34,7 @@ def is_glycosaminoglycan(smiles: str):
     glycosidic_matches = mol.GetSubstructMatches(glycosidic_pattern)
     sugar_ring_matches = mol.GetSubstructMatches(sugar_ring_pattern)
     
-    if len(glycosidic_matches) < 3 or len(sugar_ring_matches) < 3:
+    if len(glycosidic_matches) < 2 or len(sugar_ring_matches) < 2:
         return False, "Insufficient glycosidic bonds or sugar rings for a polysaccharide"
 
     # Check for amino sugars (aminomonosaccharides)
@@ -45,12 +45,12 @@ def is_glycosaminoglycan(smiles: str):
     amino_sugar_matches = mol.GetSubstructMatches(amino_sugar_pattern)
     n_acetyl_matches = mol.GetSubstructMatches(n_acetyl_pattern)
     
-    if len(amino_sugar_matches) + len(n_acetyl_matches) < 2:
+    if len(amino_sugar_matches) + len(n_acetyl_matches) < 1:
         return False, "Insufficient amino sugar residues for a glycosaminoglycan"
 
     # Check molecular weight - glycosaminoglycans are typically large molecules
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 500:
+    if mol_wt < 300:
         return False, "Molecular weight too low for a glycosaminoglycan"
 
     # Count carbons, oxygens, and nitrogens
@@ -58,11 +58,11 @@ def is_glycosaminoglycan(smiles: str):
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
     
-    if c_count < 20:
+    if c_count < 10:
         return False, "Too few carbons for a glycosaminoglycan"
-    if o_count < 10:
+    if o_count < 5:
         return False, "Too few oxygens for a glycosaminoglycan"
-    if n_count < 2:
+    if n_count < 1:
         return False, "Too few nitrogens for a glycosaminoglycan"
 
     return True, "Contains polysaccharide structure with significant amino sugar residues"
