@@ -60,9 +60,10 @@ def is_2_5_diketopiperazines(smiles: str):
                 for atom_idx in ring:
                     atom = mol.GetAtomWithIdx(atom_idx)
                     if atom.GetAtomicNum() == 6:  # Carbon
-                        for neighbor in atom.GetNeighbors():
-                            if neighbor.GetAtomicNum() == 8 and neighbor.GetBond(atom).GetBondType() == Chem.BondType.DOUBLE:
-                                carbonyl_count += 1
+                        for bond in mol.GetBonds():
+                            if bond.GetBeginAtomIdx() == atom.GetIdx() or bond.GetEndAtomIdx() == atom.GetIdx():
+                                if bond.GetBondType() == Chem.BondType.DOUBLE and (bond.GetBeginAtom().GetAtomicNum() == 8 or bond.GetEndAtom().GetAtomicNum() == 8):
+                                    carbonyl_count += 1
                 if carbonyl_count == 2:
                     piperazine_ring_found = True
                     break
@@ -71,35 +72,3 @@ def is_2_5_diketopiperazines(smiles: str):
         return False, "No piperazine ring with two carbonyl groups found"
 
     return True, "Contains a piperazine-2,5-dione skeleton"
-
-
-__metadata__ = {   'chemical_class': {   'id': 'CHEBI:47778',
-                          'name': '2,5-diketopiperazine',
-                          'definition': 'Any piperazinone that has a '
-                                        'piperazine-2,5-dione skeleton.',
-                          'parents': ['CHEBI:47778', 'CHEBI:76579']},
-    'config': {   'llm_model_name': 'lbl/claude-sonnet',
-                  'f1_threshold': 0.8,
-                  'max_attempts': 5,
-                  'max_positive_instances': None,
-                  'max_positive_to_test': None,
-                  'max_negative_to_test': None,
-                  'max_positive_in_prompt': 50,
-                  'max_negative_in_prompt': 20,
-                  'max_instances_in_prompt': 100,
-                  'test_proportion': 0.1},
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 150,
-    'num_false_positives': 4,
-    'num_true_negatives': 182407,
-    'num_false_negatives': 23,
-    'num_negatives': None,
-    'precision': 0.974025974025974,
-    'recall': 0.8670520231213873,
-    'f1': 0.9174311926605504,
-    'accuracy': 0.9998521228585199}
