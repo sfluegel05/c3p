@@ -3,6 +3,7 @@ Classifies: CHEBI:28892 ganglioside
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_ganglioside(smiles: str):
     """
@@ -22,23 +23,23 @@ def is_ganglioside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define ceramide backbone pattern (long hydrophobic alkyl chain)
-    ceramide_pattern = Chem.MolFromSmarts("CCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO)[C@H](O)\C=C\CCCCCCCCCCC")
+    # Redefine ceramide backbone pattern (sphingosine with amide linkage)
+    ceramide_pattern = Chem.MolFromSmarts("NC(C=O)[C@@H](O)C(C)CCCCCCCCCCCCC")
+    
+    # Define sialic acid pattern (extended to capture variations)
+    sialic_acid_pattern = Chem.MolFromSmarts("O[C@H]([C@@H](O)C=O)C(O)[C@H](CO)N[C@@H](C)C(=O)")
 
-    # Define sialic acid pattern (e.g., N-acetylneuraminic acid)
-    sialic_acid_pattern = Chem.MolFromSmarts("O[C@@H](C=O)C(O)[C@H](CO)[C@H](O)[C@H](NC(C)=O)CO")
-
-    # Check for ceramide backbone 
+    # Check for ceramide backbone
     if not mol.HasSubstructMatch(ceramide_pattern):
         return False, "No ceramide backbone found"
 
-    # Check for sialic acid(s)
-    if not mol.HasSubstructMatch(sialic_acid_pattern):
-        return False, "No sialic acid residue found"
+    # Check for one or more sialic acid residues
+    if len(mol.GetSubstructMatches(sialic_acid_pattern)) < 1:
+        return False, "No sialic acid residues found"
 
-    # Check for glycosidic bonds (general sugar linkage)
-    glycosidic_pattern = Chem.MolFromSmarts("O[C@H]1[C@H](O[C@H](CO)[C@@H](C1O)O)")
+    # Improved detection of glycosidic bonds (even in branched sugars)
+    glycosidic_pattern = Chem.MolFromSmarts("O[C@H]1[C@H](O[C@H](O)[C@@H]([C@H]1O)O)O")
     if not mol.HasSubstructMatch(glycosidic_pattern):
         return False, "No glycosidic linkages found"
 
-    return True, "Molecule is a ganglioside with ceramide backbone and sialic acid linked via glycosidic bonds"
+    return True, "Molecule is a ganglioside with ceramide backbone, sialic acid, and oligosaccharide structure"
