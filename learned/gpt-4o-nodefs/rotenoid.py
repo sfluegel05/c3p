@@ -6,7 +6,8 @@ from rdkit import Chem
 def is_rotenoid(smiles: str):
     """
     Determines if a molecule is a rotenoid based on its SMILES string.
-    Rotenoids have distinctive polycyclic systems, often isoflavonoid-like, with specific oxygenation patterns including methoxy groups.
+    Rotenoids have distinctive polycyclic systems, often isoflavonoid-like, 
+    with specific oxygenation patterns including methoxy groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,27 +22,26 @@ def is_rotenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define updated SMARTS patterns for rotenoid substructures
-    # Isoflavonoid-like or chromene-like backbone with oxygenation
-    chromene_pattern = Chem.MolFromSmarts("c1ccc2occc2c1")
+    # Define more specific SMARTS patterns for rotenoid substructures
+    # Rotenoid backbone with oxygenation patterns
+    specific_rotenoid_pattern = Chem.MolFromSmarts("c1(c2c3c(ccc4c3c(ccc4c2cc1)O)O)C(=O)O")  
     methoxy_pattern = Chem.MolFromSmarts("CO")
-    broad_cyclic_structure_pattern = Chem.MolFromSmarts("c1ccc2c(c1)c(=O)c1occc1c2")
 
-    # Check for isoflavonoid or chromene-like structures
-    if not mol.HasSubstructMatch(chromene_pattern) and not mol.HasSubstructMatch(broad_cyclic_structure_pattern):
-        return False, "Neither chromene-like nor broader isoflavone-like backbone found"
+    # Check for the specific rotenoid backbone structure
+    if not mol.HasSubstructMatch(specific_rotenoid_pattern):
+        return False, "Specific rotenoid backbone structure not found"
 
-    # Check for methoxy substituents - typically at least one should be present
+    # Check for methoxy substituents - typically at least two should be present in characteristic positions
     methoxy_matches = mol.GetSubstructMatches(methoxy_pattern)
-    if len(methoxy_matches) < 1:
-        return False, "No methoxy groups found"
+    if len(methoxy_matches) < 2:
+        return False, f"Insufficient methoxy groups: found {len(methoxy_matches)}"
 
-    # Other potential feature: multiple rings which are part of the backbone
+    # Check for sufficient cyclic structures (at least three rings)
     ring_info = mol.GetRingInfo()
-    if not ring_info.NumRings() >= 3:
+    if ring_info.NumRings() < 3:
         return False, "Insufficient number of rings for typical rotenoid structure"
     
-    return True, "Contains necessary rotenoid structural elements including chromene or isoflavonoid-like backbone with methoxy group(s)"
+    return True, "Contains specific rotenoid structural elements with multiple methoxy groups"
 
 # Example interaction:
 # result, reason = is_rotenoid("SMILES HERE")
