@@ -7,7 +7,8 @@ from rdkit.Chem import Descriptors
 def is_polymer(smiles: str):
     """
     Determines if a molecule is a polymer based on its SMILES string.
-    A polymer is characterized by repetitive structural units, often with high molecular weight.
+    A polymer is characterized by repetitive structural units, potentially high molecular weight, and 
+    can have specific types of linkages.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,25 +23,27 @@ def is_polymer(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check molecular weight - polymers typically have a high molecular weight
+    # Consider excluding entities with very low molecular weight first
     mol_wt = Descriptors.ExactMolWt(mol)
-    if mol_wt < 500:
+    if mol_wt < 200:  # Adjusted threshold to capture more polymers
         return False, "Molecular weight too low for a typical polymer"
+    
+    # Look for various repeating unit patterns
+    repeating_unit_patterns = [
+        Chem.MolFromSmarts("C=C"),  # Common repeating unit in vinyl-based polymers
+        Chem.MolFromSmarts("C-C-C-C-C"),  # Example of a simple long carbon chain
+        Chem.MolFromSmarts("O-C(=O)C"),  # Ester linkage, common in polyesters
+        Chem.MolFromSmarts("C-O-C")  # Ether linkages, such as in polyethylene glycol
+    ]
+    
+    found_repeating_unit = False
+    for pattern in repeating_unit_patterns:
+        repeating_matches = mol.GetSubstructMatches(pattern)
+        if len(repeating_matches) >= 3:
+            found_repeating_unit = True
+            break
 
-    # Look for repetitive patterns
-    # Example: Repeating alkene units which are common in synthetic polymers
-    repeating_unit_pattern = Chem.MolFromSmarts("C=C")
-    repeating_matches = mol.GetSubstructMatches(repeating_unit_pattern)
-    if len(repeating_matches) >= 3:
-        return True, f"Contains {len(repeating_matches)} repeating units of an alkene"
+    if found_repeating_unit:
+        return True, "Contains repeating units indicative of polymer structure"
 
-    # Check for long carbon chains as an example of a polymer backbone
-    carbon_chain_pattern = Chem.MolFromSmarts("C~C~C~C~C~C")  # Arbitrary chain length example
-    if mol.HasSubstructMatch(carbon_chain_pattern):
-        return True, "Contains long carbon chain, indicative of polymer backbone"
-
-    # Optionally, count specific functional groups common in polymers
-    # This is a simplified example; real polymer detection might require more sophisticated methods
-
-    # If no indicative patterns are found, conclude it is not a polymer
     return False, "Does not match typical polymer characteristics"
