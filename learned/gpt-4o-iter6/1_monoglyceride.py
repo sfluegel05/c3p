@@ -21,10 +21,11 @@ def is_1_monoglyceride(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for the glycerol backbone with ester linkage specifically at position 1
-    # Improved SMARTS patterns take into account chirality and correct linkage
-    glycerol_pattern = Chem.MolFromSmarts('[C@@H](CO)(OC(=O)[C])O')  # Matches glycerol with ester linkage at position 1
-
+    # SMARTS pattern to match the core structure of 1-monoglyceride:
+    # The molecule should include a glycerol backbone with an ester linkage at the 1-position
+    # This pattern targets an ester group attached to a glycerol, correcting for cheirolectivity
+    glycerol_pattern = Chem.MolFromSmarts('C(OCC(=O)[C])CO')  # Less specific, more general pattern
+    
     if mol.HasSubstructMatch(glycerol_pattern):
         return True, "Contains a glycerol backbone with acyl linkage at position 1"
 
