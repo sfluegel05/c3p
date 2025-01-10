@@ -21,9 +21,9 @@ def is_rotenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # SMARTS pattern for tetrahydrochromeno[3,4-b]chromene skeleton
-    # It's needed to match the internal structure of rotenoid
-    rotenoid_pattern = Chem.MolFromSmarts("C1[C@H]2C=C3OC4=C(OCO4)C=C(C3=O)C(=C2OC5=CC(OC)=C(OC)C5)C1")
+    # Revised SMARTS pattern for tetrahydrochromeno[3,4-b]chromene skeleton
+    # A more general pattern for rotenoid structure
+    rotenoid_pattern = Chem.MolFromSmarts("C1OC(C2=CC3=C(C2O1)C=CC=C3)=O")
     
     # Check if the molecule has the rotenoid pattern
     if mol.HasSubstructMatch(rotenoid_pattern):
