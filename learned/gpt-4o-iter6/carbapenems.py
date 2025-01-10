@@ -15,23 +15,18 @@ def is_carbapenems(smiles: str):
         str: Explanation of the reasoning for the classification.
     """
     
-    # Define a more flexible SMARTS pattern for the carbapenem core:
-    # A basic bicyclic with versatility for substitutions
-    core_pattern = Chem.MolFromSmarts("C1CNC2=C1[S,N]C(=O)N2")
-    
+    # Define a more precise SMARTS pattern for the carbapenem core:
+    # This pattern involves a [3.2.0] bicyclic system with a 4-membered beta-lactam ring
+    core_pattern = Chem.MolFromSmarts("[CX4]1=[NX3][C@@H]2C[C@H]1C(=O)N2")  # Adjusted pattern
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for the core pattern in the molecule
+    # Check for the core carbapenem pattern in the molecule
     if mol.HasSubstructMatch(core_pattern):
-        # Additional checks for the positions 3, 4, 6 substitutions
-        # placeholders: check if present and possibly specific substituents
-        subs_3_4_6_pattern = Chem.MolFromSmarts("[CX3](=O)[NX3]")
-        if mol.HasSubstructMatch(subs_3_4_6_pattern):
-            return True, "Matches the carbapenem core and substitution requirements"
-        else:
-            return False, "Matches carbapenem core but lacks appropriate substitutions"
+        # Additional checks could be included to verify specific substitutions or functionalities if required
+        return True, "Matches the carbapenem core structure"
     else:
         return False, "Does not match the carbapenem core structure"
