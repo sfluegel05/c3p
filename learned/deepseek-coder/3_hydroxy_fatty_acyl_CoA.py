@@ -32,12 +32,10 @@ def is_3_hydroxy_fatty_acyl_CoA(smiles: str):
         return False, "No CoA moiety found"
 
     # Look for 3-hydroxy fatty acid chain (hydroxyl at third position from carboxyl group)
+    # Flexible pattern to account for double bonds and branching
     hydroxy_fatty_acid_pattern = Chem.MolFromSmarts("[CX4][CX4][CX4]([OH])[CX4][CX4][CX4](=O)S")
     if not mol.HasSubstructMatch(hydroxy_fatty_acid_pattern):
-        # Try a more flexible pattern to account for double bonds and branching
-        flexible_pattern = Chem.MolFromSmarts("[CX4][CX4][CX4]([OH])[CX4][CX4][CX4](=O)S")
-        if not mol.HasSubstructMatch(flexible_pattern):
-            return False, "No 3-hydroxy fatty acid chain found"
+        return False, "No 3-hydroxy fatty acid chain found"
 
     # Check for ester bond between CoA and fatty acid
     ester_bond_pattern = Chem.MolFromSmarts("[CX4][CX4][CX4]([OH])[CX4][CX4][CX4](=O)S")
@@ -54,4 +52,15 @@ def is_3_hydroxy_fatty_acyl_CoA(smiles: str):
     if o_count < 4:
         return False, "Insufficient oxygen atoms for 3-hydroxy fatty acyl-CoA"
 
-    return True, "Contains CoA moiety with 3-hydroxy fatty acid chain attached via ester bond"
+    # Validate the position of the hydroxyl group relative to the carboxyl group
+    # The hydroxyl group should be at the third position from the carboxyl group
+    matches = mol.GetSubstructMatches(hydroxy_fatty_acid_pattern)
+    for match in matches:
+        # Get the indices of the matched atoms
+        hydroxyl_index = match[2]  # Index of the hydroxyl group
+        carboxyl_index = match[5]  # Index of the carboxyl carbon
+        # Check if the hydroxyl group is at the third position from the carboxyl group
+        if mol.GetBondBetweenAtoms(hydroxyl_index, carboxyl_index) is not None:
+            return True, "Contains CoA moiety with 3-hydroxy fatty acid chain attached via ester bond"
+
+    return False, "Hydroxyl group not at the third position from the carboxyl group"
