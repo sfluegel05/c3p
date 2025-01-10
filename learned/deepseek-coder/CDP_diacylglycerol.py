@@ -27,17 +27,17 @@ def is_CDP_diacylglycerol(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for cytidine diphosphate (CDP) group
-    cdp_pattern = Chem.MolFromSmarts("[NX3]C1=CC(=O)[NX3]C(=N1)[CX4][CX4][OX2][PX4](=[OX1])([OX2][PX4](=[OX1])[OX1])[OX1]")
-    if cdp_pattern is None or not mol.HasSubstructMatch(cdp_pattern):
+    cdp_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[NX3]C1=CC(=O)[NX3]C(=N1)[CX3]1[CX4][CX4][CX4][CX4][OX2][PX4](=[OX1])([OX2][PX4](=[OX1])([OX2][CX4][CX4][CX4][CX4][CX4][OX2][CX4]([CX4])[CX4][OX2][CX4](=[OX1])[CX4])[OX1])[OX1]")
+    if not mol.HasSubstructMatch(cdp_pattern):
         return False, "No cytidine diphosphate (CDP) group found"
 
-    # Check for glycerol backbone with two acyl groups
-    glycerol_pattern = Chem.MolFromSmarts("[CX4][CX4]([OX2][CX4](=[OX1])[CX4])[CX4]([OX2][CX4](=[OX1])[CX4])[CX4][OX2][PX4](=[OX1])([OX2][PX4](=[OX1])[OX1])[OX1]")
-    if glycerol_pattern is None or not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone with two acyl groups found"
+    # Check for glycerol backbone
+    glycerol_pattern = Chem.MolFromSmarts("[CX4][CX4]([OX2][CX4](=[OX1])[CX4])[CX4]([OX2][CX4](=[OX1])[CX4])[CX4][OX2][PX4](=[OX1])([OX2][PX4](=[OX1])([OX2][CX4][CX4][CX4][CX4][CX4][OX2][CX4]([CX4])[CX4][OX2][CX4](=[OX1])[CX4])[OX1])[OX1]")
+    if not mol.HasSubstructMatch(glycerol_pattern):
+        return False, "No glycerol backbone found"
 
     # Check for two acyl groups (ester bonds)
-    ester_pattern = Chem.MolFromSmarts("[CX4][OX2][CX4](=[OX1])[CX4]")
+    ester_pattern = Chem.MolFromSmarts("[CX4][CX4]([OX2][CX4](=[OX1])[CX4])[CX4]([OX2][CX4](=[OX1])[CX4])[CX4][OX2][PX4](=[OX1])([OX2][PX4](=[OX1])([OX2][CX4][CX4][CX4][CX4][CX4][OX2][CX4]([CX4])[CX4][OX2][CX4](=[OX1])[CX4])[OX1])[OX1]")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) < 2:
         return False, f"Found {len(ester_matches)} acyl groups, need at least 2"
