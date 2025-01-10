@@ -2,7 +2,6 @@
 Classifies: CHEBI:26333 prostaglandin
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_prostaglandin(smiles: str):
     """
@@ -22,29 +21,34 @@ def is_prostaglandin(smiles: str):
     if mol is None:
         return (False, "Invalid SMILES string")
 
-    # Define SMARTS pattern for cyclopentane or cyclopentene ring
-    cyclopentane_pattern = Chem.MolFromSmarts("[CX4]1[CX4][CX4][CX4][CX4]1")
-    cyclopentene_pattern = Chem.MolFromSmarts("[C,c]1([C,c])[C,c][C,c][C,c]1")
-
-    # Determine if the molecule has a cyclopentane or cyclopentene ring
+    # Improved SMARTS patterns for cyclopentane and cyclopentene with specific stereo configurations
+    cyclopentane_pattern = Chem.MolFromSmarts("[C@H]1[C@H]([C@H]([C@H]([C@H]1)*)*)*")
+    cyclopentene_pattern = Chem.MolFromSmarts("[C@H]1[C@H]([C@H]([C@H]([C@@H]1*)*)*)*")
+    
+    # Detection of cyclopentane/cyclopentene with stereo configurations
     has_cyclo_ring = mol.HasSubstructMatch(cyclopentane_pattern) or mol.HasSubstructMatch(cyclopentene_pattern)
     if not has_cyclo_ring:
-        return (False, "No cyclopentane or cyclopentene ring found")
+        return (False, "No matching cyclopentane or cyclopentene ring structure found")
 
-    # Look for carboxylic acid or ester functional group
-    carboxylic_acid_or_ester_pattern = Chem.MolFromSmarts("C(=O)[O]")
-    if not mol.HasSubstructMatch(carboxylic_acid_or_ester_pattern):
+    # Refined pattern for carboxylic acid and ester groups
+    carboxyl_group_pattern = Chem.MolFromSmarts("C(=O)O")
+    ester_group_pattern = Chem.MolFromSmarts("C(=O)OC")
+    
+    if not (mol.HasSubstructMatch(carboxyl_group_pattern) or mol.HasSubstructMatch(ester_group_pattern)):
         return (False, "No carboxylic acid or ester group found")
 
-    # Ensure presence of hydroxyl group (-OH) or ether linkage
-    hydroxyl_or_ether_pattern = Chem.MolFromSmarts("[OX2H][CX4]")  # Matches C-O-H or C-O-C
-    if not mol.HasSubstructMatch(hydroxyl_or_ether_pattern):
+    # Look for hydroxyl groups with specified stereo-configuration, typical for prostaglandins
+    hydroxyl_group_pattern = Chem.MolFromSmarts("[C@H](O)[C@H]") 
+    ether_group_pattern = Chem.MolFromSmarts("C-O-C")
+    
+    has_hydroxyl_or_ether = mol.HasSubstructMatch(hydroxyl_group_pattern) or mol.HasSubstructMatch(ether_group_pattern)
+    if not has_hydroxyl_or_ether:
         return (False, "No hydroxyl or ether group found")
 
-    # Verify carbon count
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 15 or c_count > 30:  # Allow more flexibility, prostaglandins have around 20 carbons
-        return (False, f"Unexpected carbon count: {c_count} (expected ~20)")
+    # Check for a suitable chain length typical for prostaglandins
+    c_count = sum(atom.GetAtomicNum() == 6 for atom in mol.GetAtoms())
+    if not (15 <= c_count <= 30):
+        return (False, f"Unexpected carbon count: {c_count} (expected between 15 and 30)")
 
-    # The minimum required features are present, classify as prostaglandin
-    return (True, "Contains key features of a prostaglandin: essential ring structure, carboxylic/ester group, and hydroxyl/ether groups")
+    # If all checks pass, classify it as a prostaglandin
+    return (True, "Contains key features of a prostaglandin: characteristic ring structure, carboxyl/ester groups, and hydroxyl groups")
