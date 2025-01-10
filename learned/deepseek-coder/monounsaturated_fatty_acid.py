@@ -47,45 +47,23 @@ def is_monounsaturated_fatty_acid(smiles: str):
     if total_unsaturations != 1:
         return False, f"Found {total_unsaturations} unsaturations in the carbon chain, need exactly 1"
 
-    # Check that the rest of the chain is singly bonded
-    # We can verify this by ensuring that the number of rotatable bonds is consistent with a long carbon chain
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 5:  # Minimum number of rotatable bonds for a fatty acid
-        return False, "Chain too short to be a fatty acid"
+    # Ensure the unsaturation is in the carbon chain, not in a ring
+    for bond in mol.GetBonds():
+        if bond.GetBondType() in [Chem.BondType.DOUBLE, Chem.BondType.TRIPLE]:
+            if bond.GetBeginAtom().IsInRing() or bond.GetEndAtom().IsInRing():
+                return False, "Unsaturation is in a ring, not in the carbon chain"
 
-    # Check molecular weight - fatty acids typically >100 Da
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 100:
-        return False, "Molecular weight too low for a fatty acid"
+    # Check that the molecule is a simple chain (no rings, no branching beyond the carboxylic acid)
+    if mol.GetRingInfo().NumRings() > 0:
+        return False, "Molecule contains rings, not a simple fatty acid chain"
+
+    # Check that the molecule is a simple chain (no branching beyond the carboxylic acid)
+    # Count the number of carbons with more than 2 connections
+    branching_carbons = 0
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6 and atom.GetDegree() > 2:
+            branching_carbons += 1
+    if branching_carbons > 1:  # Allow one branching point for the carboxylic acid
+        return False, "Molecule is too branched to be a simple fatty acid"
 
     return True, "Contains a carboxylic acid group and exactly one double or triple bond in the carbon chain"
-
-
-__metadata__ = {   'chemical_class': {   'id': 'CHEBI:32395',
-                          'name': 'monounsaturated fatty acid',
-                          'definition': 'Any fatty acid with one double or triple bond in the fatty acid chain and singly bonded carbon atoms in the rest of the chain. MUFAs have positive effects on the cardiovascular system, and in diabetes treatment.'},
-    'config': {   'llm_model_name': 'lbl/claude-sonnet',
-                  'f1_threshold': 0.8,
-                  'max_attempts': 5,
-                  'max_positive_instances': None,
-                  'max_positive_to_test': None,
-                  'max_negative_to_test': None,
-                  'max_positive_in_prompt': 50,
-                  'max_negative_in_prompt': 20,
-                  'max_instances_in_prompt': 100,
-                  'test_proportion': 0.1},
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 150,
-    'num_false_positives': 4,
-    'num_true_negatives': 182407,
-    'num_false_negatives': 23,
-    'num_negatives': None,
-    'precision': 0.974025974025974,
-    'recall': 0.8670520231213873,
-    'f1': 0.9174311926605504,
-    'accuracy': 0.9998521228585199}
