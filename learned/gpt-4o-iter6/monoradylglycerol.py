@@ -21,30 +21,24 @@ def is_monoradylglycerol(smiles: str):
     if mol is None:
         return None, "Invalid SMILES string"
 
-    # Check for glycerol backbone ([*]COC(CO)O[*] without specifying what attaches to each -OH)
+    # Check for glycerol backbone
+    # [O][C][C][O] and [O][C][C][O] are interchangeable to allow flexibility in attachment points.
     glycerol_pattern = Chem.MolFromSmarts("OCC(O)CO")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
 
-    # Count total substituents on glycerol backbone that are not part of the core
-    acyl_pattern = Chem.MolFromSmarts("C(=O)O")
-    alkyl_pattern = Chem.MolFromSmarts("COC")
-    alkenyl_pattern = Chem.MolFromSmarts("COC=C")
+    # Look for substituents (acyloxy, alkoxy, alkenyl) attached to glycerol
+    substituent_patterns = [
+        Chem.MolFromSmarts("C(=O)OCC"),  # Acyl group attached to an ether
+        Chem.MolFromSmarts("C=C-OCC"),  # Alkenyl group via ether
+        Chem.MolFromSmarts("COCC")      # Additional ethers or alkyl-type ranges
+    ]
 
-    # A single substituent of any type (more flexible, focusing on connections)
-    substituents = [mol.GetSubstructMatches(acyl_pattern),
-                    mol.GetSubstructMatches(alkyl_pattern),
-                    mol.GetSubstructMatches(alkenyl_pattern)]
-    
-    total_substituents = sum(len(matches) for matches in substituents)
+    # Count non-glycerol chain attachments
+    substituent_count = sum(mol.HasSubstructMatch(pattern) for pattern in substituent_patterns)
 
-    if total_substituents != 1:
-        return False, f"Expected 1 substituent group, found {total_substituents}" 
-    
-    # Ensuring only one substituent is long enough to count as a separate 'radyl' group
-    substituent_length_threshold = 8  # Approximate length to count as a lipid chain
-    valid_substituent = any(len(matches) >= substituent_length_threshold for matches in substituents)
-    if not valid_substituent:
-        return False, f"No valid lipid chain substituent found"
+    # Exactly one large substituent characterizes monoradylglycerol
+    if substituent_count != 1:
+        return False, f"Expected 1 substituent group, found {substituent_count}"
 
     return True, "Contains glycerol backbone with one acyl, alkyl, or alk-1-enyl substituent"
