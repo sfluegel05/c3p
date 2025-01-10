@@ -2,7 +2,6 @@
 Classifies: CHEBI:36976 nucleotide
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_nucleotide(smiles: str):
     """
@@ -23,28 +22,30 @@ def is_nucleotide(smiles: str):
         return False, "Invalid SMILES string"
     
     # Define patterns for nucleotide detection
-    # Comprehensive pattern for phosphate group (consider multiple esterifications)
-    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)(O)"),
-    esterified_phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)O")
+    # Comprehensive pattern for phosphate group (potential for multiple links and esterification)
+    phosphate_pattern = Chem.MolFromSmarts("P(O)(=O)(O)")
 
-    # Patterns for ribose or deoxyribose sugar backbone
-    sugar_ribose_pattern = Chem.MolFromSmarts("C1(O)C(O)C(O)C(O1)")
-    sugar_deoxyribose_pattern = Chem.MolFromSmarts("C1(O)C(O)C(CO)O1")
+    # Patterns for ribose or deoxyribose sugar backbone (considering stereochemistry)
+    sugar_ribose_pattern = Chem.MolFromSmarts("[C@H]1([C@H](O)[C@@H](O)[C@H](O1)CO)")
+    sugar_deoxyribose_pattern = Chem.MolFromSmarts("[C@H]1([C@H](O)[C@@H](O)[C@H](C1)CO)")
 
-    # Patterns for nitrogenous bases (including variations in purines and pyrimidines)
-    base_purine_pattern = Chem.MolFromSmarts("n1cnc2ncnc2c1")
-    base_pyrimidine_pattern = Chem.MolFromSmarts("n1cc(C=O)cn1")
+    # Patterns for nitrogenous bases (including variations)
+    purine_base_pattern = Chem.MolFromSmarts("n1cnc2ncnc2c1")
+    pyrimidine_base_pattern = Chem.MolFromSmarts("n1ccnc1")
 
     # Check for presence of phosphate group
-    if not (mol.HasSubstructMatch(phosphate_pattern) or mol.HasSubstructMatch(esterified_phosphate_pattern)):
+    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
+    if not phosphate_matches:
         return False, "No phosphate group found"
-
-    # Check for presence of sugar backbone (consider both ribose and deoxyribose)
-    if not (mol.HasSubstructMatch(sugar_ribose_pattern) or mol.HasSubstructMatch(sugar_deoxyribose_pattern)):
+    
+    # Check for presence of sugar backbone (ribose or deoxyribose)
+    sugar_matches = mol.GetSubstructMatches(sugar_ribose_pattern) or mol.GetSubstructMatches(sugar_deoxyribose_pattern)
+    if not sugar_matches:
         return False, "No sugar backbone found"
     
-    # Check for presence of a nitrogenous base
-    if not (mol.HasSubstructMatch(base_purine_pattern) or mol.HasSubstructMatch(base_pyrimidine_pattern)):
+    # Check for presence of a nitrogenous base (purines or pyrimidines)
+    base_matches = mol.GetSubstructMatches(purine_base_pattern) or mol.GetSubstructMatches(pyrimidine_base_pattern)
+    if not base_matches:
         return False, "No recognizable nitrogenous base found"
 
     return True, "Contains a sugar backbone, nitrogenous base, and phosphate group"
