@@ -2,13 +2,13 @@
 Classifies: CHEBI:25413 monounsaturated fatty acid
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_monounsaturated_fatty_acid(smiles: str):
     """
     Determines if a molecule is a monounsaturated fatty acid (MUFA) based on its SMILES string.
-    MUFAs have one double or triple bond in the fatty acid chain and  
-    a carboxylic acid group.
-    
+    MUFAs have one double or triple bond in the fatty acid chain and a carboxylic acid group.
+
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -22,22 +22,23 @@ def is_monounsaturated_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for the carboxylic acid group pattern (ensuring it's terminal and part of a long chain)
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
+    # Check for the terminal carboxylic acid group pattern
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[O;H1]")
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
-        return False, "No carboxylic acid group found"
-    
-    # Calculate number of carbon-carbon double/triple bonds (only those in the chain, not part of ring systems)
-    chain_double_bond_count = len([bond for bond in mol.GetBonds() 
-                                   if bond.GetBondType() in [Chem.rdchem.BondType.DOUBLE, Chem.rdchem.BondType.TRIPLE]
-                                   and bond.GetBeginAtom().GetDegree() <= 2 and bond.GetEndAtom().GetDegree() <= 2])
-    
-    if chain_double_bond_count != 1:
-        return False, f"Found {chain_double_bond_count} unsaturations in chain, need exactly one"
+        return False, "No terminal carboxylic acid group found"
 
-    # Ensure it's a straight-chain or branched molecule without complex ring systems contributing features
-    ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() > 0:
-        return False, "Contains rings which disqualifies it from being a straight chain fatty acid"
+    # Calculate number of chain double/triple bonds
+    # Single bonds only should exist between carbon atoms in chain, not part of any ring system
+    num_unsaturations = 0
+    for bond in mol.GetBonds():
+        if bond.GetBondType() in [Chem.rdchem.BondType.DOUBLE, Chem.rdchem.BondType.TRIPLE]:
+            start_atom = bond.GetBeginAtom()
+            end_atom = bond.GetEndAtom()
+            # Ensure neither atom is part of a ring structure
+            if not start_atom.IsInRing() and not end_atom.IsInRing():
+                num_unsaturations += 1
+
+    if num_unsaturations != 1:
+        return False, f"Found {num_unsaturations} unsaturations in chain, need exactly one"
     
     return True, "Molecule is a monounsaturated fatty acid (one double or triple bond in the chain with carboxylic group)"
