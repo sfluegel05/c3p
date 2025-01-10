@@ -5,7 +5,6 @@ Classifies: CHEBI:27283 very long-chain fatty acid
 Classifies: CHEBI:27283 very long-chain fatty acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_very_long_chain_fatty_acid(smiles: str):
     """
@@ -30,28 +29,21 @@ def is_very_long_chain_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
 
-    # Find the longest carbon chain starting from the carboxylic acid
-    def find_longest_carbon_chain(mol):
-        longest_chain = 0
-        for atom in mol.GetAtoms():
-            if atom.GetAtomicNum() == 6:  # Carbon atom
-                # Check if this carbon is part of a carboxylic acid group
-                if any(neighbor.GetAtomicNum() == 8 and neighbor.GetTotalNumHs() == 1 for neighbor in atom.GetNeighbors()):
-                    visited = set()
-                    stack = [(atom, 1)]  # (atom, current_chain_length)
-                    while stack:
-                        current_atom, chain_length = stack.pop()
-                        visited.add(current_atom.GetIdx())
-                        if chain_length > longest_chain:
-                            longest_chain = chain_length
-                        for neighbor in current_atom.GetNeighbors():
-                            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:
-                                # Only follow the chain if it's not part of a ring or branch
-                                if not neighbor.IsInRing() and neighbor.GetDegree() <= 2:
-                                    stack.append((neighbor, chain_length + 1))
-        return longest_chain
-
-    longest_chain_length = find_longest_carbon_chain(mol)
+    # Find the longest carbon chain
+    longest_chain_length = 0
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6:  # Carbon atom
+            # Perform a depth-first search to find the longest chain starting from this atom
+            visited = set()
+            stack = [(atom, 1)]
+            while stack:
+                current_atom, current_length = stack.pop()
+                visited.add(current_atom.GetIdx())
+                if current_length > longest_chain_length:
+                    longest_chain_length = current_length
+                for neighbor in current_atom.GetNeighbors():
+                    if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:
+                        stack.append((neighbor, current_length + 1))
 
     # Check if the longest chain length is greater than 22
     if longest_chain_length > 22:
