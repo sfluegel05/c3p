@@ -24,27 +24,23 @@ def is_quinic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # A more flexible SMARTS pattern for quinic acid, allowing variable stereochemistry
-    # Basic structure: cyclohexane with at least 3 hydroxyl and one carboxylic acid
-    quinic_acid_pattern = Chem.MolFromSmarts("C1([C@@H](O)[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)C1)C(=O)O")
+    # More flexible core pattern for quinic acid
+    # Basic cyclohexane with optional stereochemistry, at least 3 OH and 1 COOH
+    core_pattern = Chem.MolFromSmarts("C1C(C(O)C(C(C1[OH])))[OH]C(=O)O")
     
     # Check for quinic acid core
-    if not mol.HasSubstructMatch(quinic_acid_pattern):
+    if not mol.HasSubstructMatch(core_pattern):
         return False, "Missing quinic acid backbone structure"
     
-    # Additional patterns for ester-linked or acyl-linked modifications
-    acyl_pattern = Chem.MolFromSmarts("C(=O)O[C@@H]1[C@@H](O)[C@H](O)[C@@H](O)[C@H](C1)O")
-    if mol.HasSubstructMatch(acyl_pattern):
-        return True, "Quinic acid derivative with acyl-linked group(s)"
+    # Pattern for caffeoyl or other ester-linked modifications
+    ester_pattern = Chem.MolFromSmarts("C(=O)O[C@@H]1C[C@H](O)C(O)C[C@H]1O")
+    if mol.HasSubstructMatch(ester_pattern):
+        return True, "Quinic acid derivative with ester linkages detected"
     
-    # Check for any degree of esterification beyond simple esters
-    ester_match = Chem.MolFromSmarts("C(=O)O")
-    if mol.HasSubstructMatch(ester_match):
-        return True, "Quinic acid with esterification"
+    # Handling additional structural complexity
+    additional_complexity_pattern = Chem.MolFromSmarts("C(=O)O")
+    if mol.HasSubstructMatch(additional_complexity_pattern):
+        return True, "Quinic acid with complex modifications including acetylation"
 
-    # Simple check if any non-hydrogen atom is linked to the possible quinic acid core
-    non_h_main_chain = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[!H]C1[C@@H](O)[C@@H](O)[C@@H](O)[C@@H](O)C1C(=O)O")))
-    if non_h_main_chain > 0:
-        return True, "Quinic acid core with additional non-hydrogen elements"
-    
-    return True, "Base quinic acid present"
+    # If structure does not match any complex patterns but matches core
+    return True, "Base quinic acid or simple derivative identified"
