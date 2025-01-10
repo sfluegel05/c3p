@@ -21,25 +21,16 @@ def is_polyamine(smiles: str):
     if mol is None:
         return None, "Invalid SMILES string"
     
-    # SMARTS patterns for primary and secondary amines, and charged amines
-    primary_amine_pattern = Chem.MolFromSmarts("[NX3;H2,H1;!$(NC=O)]")  # captures primary amines not bound to carbonyl
-    secondary_amine_pattern = Chem.MolFromSmarts("[NX3H][!,$([#6]=O)]")  # captures NH attached to two C (not amidic)
-    tertiary_amine_pattern = Chem.MolFromSmarts("[NX3]([C])[C]")  # captures three Cs attached
-    charged_amine_pattern = Chem.MolFromSmarts("[NX4+]")
+    # SMARTS pattern for any nitrogen atom to capture polyamines
+    nitrogen_pattern = Chem.MolFromSmarts("[NX3,NX4+]")
     
-    # Identifying all amino group matches
-    primary_amine_matches = mol.GetSubstructMatches(primary_amine_pattern)
-    secondary_amine_matches = mol.GetSubstructMatches(secondary_amine_pattern)
-    tertiary_amine_matches = mol.GetSubstructMatches(tertiary_amine_pattern)
-    charged_amine_matches = mol.GetSubstructMatches(charged_amine_pattern)
+    # Identifying all nitrogen matches
+    nitrogen_matches = mol.GetSubstructMatches(nitrogen_pattern)
     
-    # Aggregate total number of amine groups found
-    num_amino_groups = (len(primary_amine_matches) + 
-                        len(secondary_amine_matches) + 
-                        len(tertiary_amine_matches) +
-                        len(charged_amine_matches))
+    # Count number of nitrogen atoms
+    num_nitrogen_atoms = len(nitrogen_matches)
     
-    if num_amino_groups >= 2:
-        return True, f"Molecule contains {num_amino_groups} amino groups, indicating a polyamine"
+    if num_nitrogen_atoms >= 2:
+        return True, f"Molecule contains {num_nitrogen_atoms} nitrogen atoms, indicating potential polyamine structure."
     else:
-        return False, f"Molecule contains {num_amino_groups} amino group(s), fewer than required for a polyamine"
+        return False, f"Molecule contains {num_nitrogen_atoms} nitrogen atom(s), fewer than required for a polyamine."
