@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_dihydroagarofuran_sesquiterpenoid(smiles: str):
     """
     Determines if a molecule is a dihydroagarofuran sesquiterpenoid based on its SMILES string.
-    Dihydroagarofuran sesquiterpenoids are sesquiterpenoids with a dihydroagarofuran skeleton.
+    Dihydroagarofuran sesquiterpenoids are sesquiterpenoids with a specific bicyclic skeleton.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,9 +21,8 @@ def is_dihydroagarofuran_sesquiterpenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for dihydroagarofuran skeleton
-    # Replace with the actual SMARTS pattern for dihydroagarofuran
-    dihydroagarofuran_pattern = Chem.MolFromSmarts("C1[C@]23COC(=O)C[C@H]2C4[C@@H]1CO[C@H]34")  # Example pattern
+    # Updated SMARTS pattern for dihydroagarofuran skeleton (hypothetical example)
+    dihydroagarofuran_pattern = Chem.MolFromSmarts("[C@]12(CO[C@H]3OC(=O)[C@@H]([C@H]1[C@H]4OC[C@H]2O4)[C@@H]3C(C)=O)") 
     
     if dihydroagarofuran_pattern is None or not mol.HasSubstructMatch(dihydroagarofuran_pattern):
         return False, "No dihydroagarofuran skeleton found"
@@ -33,9 +32,12 @@ def is_dihydroagarofuran_sesquiterpenoid(smiles: str):
     if c_count < 15:
         return False, f"Too few carbons for a sesquiterpenoid, found {c_count} carbon atoms"
 
-    # The exact check might vary depending on specifics, add additional characteristics if known.
+    # Check for presence of typical functional groups (e.g., ester or ketone groups)
+    ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1,C]")  # esters and acids
+    if not mol.HasSubstructMatch(ester_pattern):
+        return False, "No ester or acid groups found, which are common in this class"
 
-    return True, "Contains dihydroagarofuran skeleton and has sesquiterpenoid characteristics"
+    return True, "Contains dihydroagarofuran skeleton and sesquiterpenoid characteristics"
 
 # Example testing
 # Expected result based on known classification of the input
