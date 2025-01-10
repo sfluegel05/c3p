@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_alpha_amino_acid_ester(smiles: str):
     """
     Determines if a molecule is an alpha-amino acid ester based on its SMILES string.
-    An alpha-amino acid ester should have an alpha-carbon (with both an amino and a carboxyl group)
-    and a carboxyl group that is esterified.
+    An alpha-amino acid ester is defined as having an alpha-carbon connected to an amino group
+    and a carboxyl group esterified with an alcohol.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,11 +22,17 @@ def is_alpha_amino_acid_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Relaxed pattern for alpha-amino acid to allow for more structures
-    # Example: find NR-C(R)(R)-C(=O)O where N is connected to central C and there's an ester
-    alpha_amino_acid_ester_pattern = Chem.MolFromSmarts("[NX3][CX4](R)[C](=O)O[!H]")
+    # Pattern: Alpha carbon connected to amino and esterified carboxyl group
+    # SMARTS: [NX3;H2,H1,H0][CX4][C](=O)O[!H] (captures ester linkage with an alcohol)
+    amino_group = "[NX3;H2,H1,H0]"  # Amino group, allowing for substitutions
+    alpha_carbon = "[CX4]"           # Tetrahedral alpha-carbon
+    ester_linkage = "[C](=O)O[!H]"   # Ester linkage indicating esterified carboxyl group
+    alpha_amino_acid_ester_pattern = Chem.MolFromSmarts(amino_group + alpha_carbon + ester_linkage)
     
+    if not alpha_amino_acid_ester_pattern:
+        return None, None  # Error in pattern creation
+
     if mol.HasSubstructMatch(alpha_amino_acid_ester_pattern):
-        return True, "Contains likely alpha-amino acid backbone with ester linkage"
+        return True, "Contains an alpha-amino acid backbone with ester linkage"
     
-    return False, "Does not match common alpha-amino acid ester pattern"
+    return False, "Does not match the alpha-amino acid ester pattern"
