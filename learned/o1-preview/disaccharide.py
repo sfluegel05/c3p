@@ -24,55 +24,71 @@ def is_disaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Identify sugar rings using SMARTS patterns for pyranose and furanose
-    pyranose_smarts = '[C;R]1[C;R][C;R][C;R][C;R][O;R]1'  # 6-membered sugar ring
-    furanose_smarts = '[C;R]1[C;R][C;R][C;R][O;R]1'        # 5-membered sugar ring
+    # Get ring information
+    ring_info = mol.GetRingInfo()
+    ring_atoms = ring_info.AtomRings()
+    sugar_rings = []
+    sugar_ring_indices = []  # Keep track of ring indices
 
-    pyranose = Chem.MolFromSmarts(pyranose_smarts)
-    furanose = Chem.MolFromSmarts(furanose_smarts)
-
-    pyranose_matches = mol.GetSubstructMatches(pyranose)
-    furanose_matches = mol.GetSubstructMatches(furanose)
-
-    sugar_ring_atoms = []
-    for match in pyranose_matches:
-        sugar_ring_atoms.append(set(match))
-    for match in furanose_matches:
-        sugar_ring_atoms.append(set(match))
+    # Identify sugar rings
+    for idx, ring in enumerate(ring_atoms):
+        # Consider rings of size 5 or 6
+        if len(ring) == 5 or len(ring) == 6:
+            is_sugar_ring = True
+            for atom_idx in ring:
+                atom = mol.GetAtomWithIdx(atom_idx)
+                # Check if atom is carbon or oxygen
+                if atom.GetAtomicNum() != 6 and atom.GetAtomicNum() != 8:
+                    is_sugar_ring = False
+                    break
+                # Check that bonds are single
+                for bond in atom.GetBonds():
+                    if bond.GetBondTypeAsDouble() != 1.0:
+                        is_sugar_ring = False
+                        break
+                if not is_sugar_ring:
+                    break
+            if is_sugar_ring:
+                sugar_rings.append(set(ring))
+                sugar_ring_indices.append(idx)
 
     # Ensure there are exactly two sugar rings
-    if len(sugar_ring_atoms) != 2:
-        return False, f"Found {len(sugar_ring_atoms)} monosaccharide rings, need exactly 2"
+    if len(sugar_rings) != 2:
+        return False, f"Found {len(sugar_rings)} sugar rings, need exactly 2"
 
-    # Identify glycosidic bonds
-    # A glycosidic bond is an exocyclic oxygen atom connecting two ring carbons
-    glycosidic_bond_smarts = '[C;R][O;!R][C;R]'  # Non-ring oxygen between ring carbons
-    glycosidic_bond = Chem.MolFromSmarts(glycosidic_bond_smarts)
-    glycosidic_bond_matches = mol.GetSubstructMatches(glycosidic_bond)
+    # Create atom index to sugar ring index mapping
+    atom_to_ring = {}
+    for ring_idx, ring in enumerate(sugar_rings):
+        for atom_idx in ring:
+            atom_to_ring[atom_idx] = ring_idx
 
-    # Filter glycosidic bonds that connect the two sugar rings
+    # Identify glycosidic bonds between sugar rings
     glycosidic_bonds = []
-    for match in glycosidic_bond_matches:
-        c1_idx, o_idx, c2_idx = match
-        # Check if the two carbons are in different sugar rings
-        ring1 = None
-        ring2 = None
-        for ring in sugar_ring_atoms:
-            if c1_idx in ring:
-                ring1 = ring
-            if c2_idx in ring:
-                ring2 = ring
-        if ring1 is not None and ring2 is not None and ring1 != ring2:
-            glycosidic_bonds.append((c1_idx, o_idx, c2_idx))
+    for atom in mol.GetAtoms():
+        # Non-ring oxygen atom of degree 2 (connected to two atoms)
+        if atom.GetAtomicNum() == 8 and not atom.IsInRing() and atom.GetDegree() == 2:
+            neighbors = atom.GetNeighbors()
+            if len(neighbors) != 2:
+                continue
+            # Get ring indices of neighboring atoms
+            neighbor_rings = []
+            for neighbor in neighbors:
+                neighbor_idx = neighbor.GetIdx()
+                ring_idx = atom_to_ring.get(neighbor_idx, None)
+                neighbor_rings.append(ring_idx)
+            # Check if connected to atoms from two different sugar rings
+            if neighbor_rings[0] is not None and neighbor_rings[1] is not None:
+                if neighbor_rings[0] != neighbor_rings[1]:
+                    glycosidic_bonds.append((atom.GetIdx(), neighbors[0].GetIdx(), neighbors[1].GetIdx()))
 
     # Ensure there is exactly one glycosidic bond connecting the two sugar rings
     if len(glycosidic_bonds) != 1:
         return False, f"Found {len(glycosidic_bonds)} glycosidic bonds connecting sugar rings, need exactly 1"
 
-    # Check that there are no additional rings (to exclude oligosaccharides)
-    total_rings = mol.GetRingInfo().NumRings()
-    if total_rings > 2:
-        return False, f"Found {total_rings} rings in total, indicates more than two sugar units"
+    # Check for additional sugar rings (to exclude oligosaccharides)
+    total_rings = len(sugar_rings)
+    if total_rings != 2:
+        return False, f"Found {total_rings} sugar rings, indicates more than two sugar units"
 
     return True, "Contains two monosaccharide units connected by a glycosidic bond"
 
@@ -91,7 +107,7 @@ __metadata__ = {   'chemical_class': {   'id': None,
                   'max_instances_in_prompt': 100,
                   'test_proportion': 0.1},
     'message': None,
-    'attempt': 2,
+    'attempt': 3,
     'success': None,
     'best': None,
     'error': '',
