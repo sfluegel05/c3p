@@ -6,13 +6,13 @@ from rdkit import Chem
 def is_germacranolide(smiles: str):
     """
     Determines if a molecule is a germacranolide based on its SMILES string.
-    A germacranolide is a sesquiterpene lactone based on the germacrane skeleton.
+    A germacranolide is a sesquiterpene lactone based on a germacrane skeleton.
     
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a germacranolide, False otherwise
+        bool: True if the molecule is a germacranolide, False otherwise
         str: Reason for classification
     """
     
@@ -21,16 +21,14 @@ def is_germacranolide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS patterns for germacrane and lactone structures
-    germacrane_pattern = Chem.MolFromSmarts("C1=CC=C(C=C1)C2CCCCC2")  # Simplified pattern for a decalin structure
-    lactone_pattern = Chem.MolFromSmarts("C1OC(=O)C=C1")  # Simple lactone 5-membered ring
+    # Refined SMARTS pattern for a germacranolide (fused bicyclic + lactone)
+    # This pattern captures:
+    # - A bicyclic decalin-like core: Two fused six-membered rings
+    # - A five-membered lactone ring fused or attached to the core
+    germacranolide_pattern = Chem.MolFromSmarts("C1=CCC2C(C=CC2O1)CC(=O)O")
     
-    # Check for germacrane-like structure
-    if not mol.HasSubstructMatch(germacrane_pattern):
-        return False, "No germacrane-like structure found"
-        
-    # Check for lactone group
-    if not mol.HasSubstructMatch(lactone_pattern):
-        return False, "No lactone group found"
+    # Check for germacranolide structure
+    if not mol.HasSubstructMatch(germacranolide_pattern):
+        return False, "No germacranolide-like structure found"
     
-    return True, "Contains a germacrane-like skeleton with an embedded lactone group"
+    return True, "Contains a bicyclic germacrane skeleton with an embedded lactone group"
