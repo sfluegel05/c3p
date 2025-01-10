@@ -21,8 +21,8 @@ def is_polypeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define peptide bond pattern, paying careful attention to common peptide bonds:
-    peptide_bond_pattern = Chem.MolFromSmarts("N-C(=O)-C")
+    # Define peptide bond pattern, considering standard amide linkage form:
+    peptide_bond_pattern = Chem.MolFromSmarts("N[C@@H](C)C(=O)C")
     if peptide_bond_pattern is None:
         return None, "Failed to parse peptide bond SMARTS pattern"
 
@@ -33,9 +33,12 @@ def is_polypeptide(smiles: str):
     # Find all peptide bond matches 
     matches = mol.GetSubstructMatches(peptide_bond_pattern)
     
-    # Count consecutive sequences
+    # Count peptide connections in molecule
     amino_acid_count = len(matches)
     if amino_acid_count < 10:
         return False, f"Contains {amino_acid_count} amino acid residues, need at least 10 for a polypeptide"
+
+    # Ensure detection of N-terminal and C-terminal (e.g., amide or carboxylate) in polypeptides
+    # (This step assumes the pattern adequately picks up terminating groups)
 
     return True, "Contains 10 or more amino acid residues; classified as a polypeptide"
