@@ -21,60 +21,60 @@ def is_inositol_phosphoceramide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for charged species
-    if "-" in smiles or "+" in smiles:
-        return False, "Charged species not included in definition"
-
-    # Check for inositol ring (cyclohexane with OH groups, allowing substitution)
-    # More flexible pattern that allows for substitution at O positions
-    inositol_pattern = Chem.MolFromSmarts("[OX2,OH1][C@H]1[C@H]([OX2,OH1])[C@H]([OX2,OH1])[C@H]([OX2,OH1])[C@H]([OX2,OH1])[C@H]1[OX2,OH1]")
+    # Check for inositol ring (cyclohexane with 6 OH groups)
+    # More flexible pattern that matches myo-inositol core
+    inositol_pattern = Chem.MolFromSmarts("[OX2][CH]1[CH]([OX2])[CH]([OX2])[CH]([OX2])[CH]([OX2])[CH]1[OX2]")
     if not mol.HasSubstructMatch(inositol_pattern):
         return False, "No inositol ring found"
 
-    # Check for single phosphodiester bridge (-O-P(=O)(O)-O-)
-    phosphodiester_pattern = Chem.MolFromSmarts("[O]-[P](=O)([O])[O]")
+    # Check for phosphodiester bridge
+    # Pattern matches P(=O)(O)(OR)(OR) where R can be C or H
+    phosphodiester_pattern = Chem.MolFromSmarts("[OX2][P](=[OX1])([OX2])[OX2]")
     phosphate_matches = len(mol.GetSubstructMatches(phosphodiester_pattern))
     if phosphate_matches == 0:
         return False, "No phosphodiester bridge found"
     if phosphate_matches > 1:
         return False, "Multiple phosphate groups found"
 
-    # Check for ceramide core structure
-    # Look for sphingoid base with specific stereochemistry
-    ceramide_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[CX4][CX4]")
+    # Check for ceramide core structure (more flexible pattern)
+    # Matches both regular and hydroxylated ceramides
+    ceramide_pattern = Chem.MolFromSmarts("[NX3H][CX3](=[OX1])[CX4]")
     if not mol.HasSubstructMatch(ceramide_pattern):
         return False, "No ceramide core structure found"
 
-    # Count carbons and oxygens
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    
-    # Should have long carbon chains (ceramide part)
-    if c_count < 20:
-        return False, "Carbon count too low for ceramide chains"
-
-    # Check for minimum oxygen count
-    min_oxygens = 8  # 6 from inositol, 1 amide, 1 phosphate
-    if o_count < min_oxygens:
-        return False, "Not enough oxygen atoms for required functional groups"
-
-    # Verify long alkyl chains characteristic of ceramides
-    alkyl_chain_pattern = Chem.MolFromSmarts("CCCCCCCCC")  # At least 9 carbons in chain
+    # Check for long alkyl chains characteristic of ceramides
+    alkyl_chain_pattern = Chem.MolFromSmarts("CCCCCCCC")  # At least 8 carbons in chain
     alkyl_chains = len(mol.GetSubstructMatches(alkyl_chain_pattern))
     if alkyl_chains < 2:
         return False, "Missing long alkyl chains characteristic of ceramides"
 
-    # Check for mannose residue (optional)
-    mannose_pattern = Chem.MolFromSmarts("O[C@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@@H]1O")
+    # Check for proper connectivity between components
+    # More flexible pattern that captures the essential P-O linkages
+    connectivity_pattern = Chem.MolFromSmarts("[CH1]1([OX2][P](=[OX1])([OX2])[OX2]CC[NH])[CH]([OX2])[CH]([OX2])[CH]([OX2])[CH]([OX2])[CH]1[OX2]")
+    if not mol.HasSubstructMatch(connectivity_pattern):
+        return False, "Missing required connectivity between inositol and ceramide"
+
+    # Count key atoms to verify overall composition
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
+    p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
+
+    # Verify basic composition requirements
+    if c_count < 20:
+        return False, "Carbon count too low for ceramide chains"
+    if o_count < 8:  # 6 from inositol, 1 from amide, minimum 1 from phosphate
+        return False, "Insufficient oxygen atoms"
+    if n_count != 1:
+        return False, "Must contain exactly one nitrogen (ceramide)"
+    if p_count != 1:
+        return False, "Must contain exactly one phosphorus"
+
+    # Check for optional mannose residue
+    mannose_pattern = Chem.MolFromSmarts("O[CH]1O[CH](CO)[CH](O)[CH](O)[CH]1O")
     has_mannose = mol.HasSubstructMatch(mannose_pattern)
 
-    # Ensure proper connectivity
-    # The phosphate should connect inositol to ceramide
-    connectivity_pattern = Chem.MolFromSmarts("[C@H]1[C@H][C@H][C@H][C@H][C@H]1O[P]([O])(=O)OCC[C@H]([NH]C(=O))")
-    if not mol.HasSubstructMatch(connectivity_pattern):
-        return False, "Incorrect connectivity between inositol and ceramide"
-
-    base_description = "Contains inositol ring with correct stereochemistry, single phosphodiester bridge, and ceramide moiety"
+    base_description = "Contains inositol ring with phosphodiester-linked ceramide"
     if has_mannose:
-        return True, f"{base_description} with mannose residue"
+        return True, f"{base_description} and mannose residue"
     return True, base_description
