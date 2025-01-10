@@ -20,22 +20,26 @@ def is_ribonucleoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Ribose sugar pattern adjusted for more flexibility (account for D-ribose with common stereocenters)
-    ribose_pattern = Chem.MolFromSmarts("[C@@H]1([C@H]([C@@H]([C@H](O1)CO)O)O)O")
+    # Adjusted ribose sugar pattern
+    # The pattern is flexible regarding D-ribose aspects, ensuring common stereocenter orientation
+    ribose_patterns = [
+        Chem.MolFromSmarts("[C@H]([C@H]([C@@H]([C@H](O1)CO)O)O)O1"),  # Typical D-ribose
+        Chem.MolFromSmarts("[C@@H]([C@H]([C@@H]([C@H](O1)CO)O)O)O1"), # Alternative stereochemistry
+    ]
     
-    if not mol.HasSubstructMatch(ribose_pattern):
+    ribose_found = any(mol.HasSubstructMatch(ribose_pattern) for ribose_pattern in ribose_patterns)
+    if not ribose_found:
         return False, "No ribose sugar ring found"
 
-    # Nucleobase patterns recognizing common purines and pyrimidines
-    # Here, care is taken to accommodate various substitutions and tautomers
+    # Expanded nucleobase patterns
     nucleobase_patterns = [
         Chem.MolFromSmarts("n1cnc2c1nc[nH]c2"),  # Purine
-        Chem.MolFromSmarts("c1ncnc2[nH]cnc12"),  # Pyrimidine and variations
-        Chem.MolFromSmarts("c1nc[nH]c2[nH]cnc12"),  # Extended purine match
-        Chem.MolFromSmarts("c1c[nH]cnc1"),  # Additional heterocyclic components
+        Chem.MolFromSmarts("c1ncnc2[nH]cnc12"),  # Pyrimidine A
+        Chem.MolFromSmarts("c1nc[nH]c2[nH]cnc12"), # Extended purine
+        Chem.MolFromSmarts("c1c[nH]cnc1"),       # Pyrimidine B
+        Chem.MolFromSmarts("c1[nH]cnc2c1[nH]c[nH]c2=O"), # Additional purine taomner
     ]
 
-    # Check if the molecule has any nucleobase attached to ribose
     nucleobase_found = any(mol.HasSubstructMatch(nb_pattern) for nb_pattern in nucleobase_patterns)
     if not nucleobase_found:
         return False, "No nucleobase found attached to ribose"
