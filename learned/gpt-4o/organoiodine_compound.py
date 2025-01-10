@@ -24,10 +24,11 @@ def is_organoiodine_compound(smiles: str):
     # Check for carbon-iodine bond
     ci_bond_found = False
     for bond in mol.GetBonds():
+        # Get the beginning and ending atoms of the bond
         begin_atom = bond.GetBeginAtom()
         end_atom = bond.GetEndAtom()
         
-        # Check if the bond is between carbon (atomic number 6) and iodine (atomic number 53)
+        # Correctly validate the iodine bonds
         if (begin_atom.GetAtomicNum() == 6 and end_atom.GetAtomicNum() == 53) or \
            (begin_atom.GetAtomicNum() == 53 and end_atom.GetAtomicNum() == 6):
             ci_bond_found = True
