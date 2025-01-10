@@ -12,7 +12,7 @@ def is_alkanesulfonate_oxoanion(smiles: str):
     """
     Determines if a molecule is an alkanesulfonate oxoanion based on its SMILES string.
     An alkanesulfonate oxoanion is characterized by the presence of a sulfonate group (-SO3-) 
-    attached to a carbon chain or other groups.
+    attached to a simple carbon chain or other groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -57,35 +57,32 @@ def is_alkanesulfonate_oxoanion(smiles: str):
     if negative_charge_count < 1:
         return False, "No negative charge found on the sulfonate group"
 
-    return True, "Contains a sulfonate group (-SO3-) attached to a carbon chain or other groups"
+    # Check for the presence of additional functional groups that would disqualify the molecule
+    # Exclude molecules with rings, multiple sulfonate groups, or other complex structures
+    ring_pattern = Chem.MolFromSmarts("[R]")
+    if mol.HasSubstructMatch(ring_pattern):
+        return False, "Molecule contains rings, which are not allowed in simple alkanesulfonates"
 
+    # Check for multiple sulfonate groups
+    sulfonate_matches = mol.GetSubstructMatches(sulfonate_pattern)
+    if len(sulfonate_matches) > 1:
+        return False, "Molecule contains multiple sulfonate groups, which is not allowed in simple alkanesulfonates"
 
-__metadata__ = {   'chemical_class': {   'id': 'CHEBI: alkanesulfonate oxoanion',
-                          'name': 'alkanesulfonate oxoanion',
-                          'definition': 'An alkanesulfonate in which the carbon at position 1 is attached to R, which can represent hydrogens, a carbon chain, or other groups.',
-                          'parents': ['CHEBI:47778', 'CHEBI:76579']},
-    'config': {   'llm_model_name': 'lbl/claude-sonnet',
-                  'f1_threshold': 0.8,
-                  'max_attempts': 5,
-                  'max_positive_instances': None,
-                  'max_positive_to_test': None,
-                  'max_negative_to_test': None,
-                  'max_positive_in_prompt': 50,
-                  'max_negative_in_prompt': 20,
-                  'max_instances_in_prompt': 100,
-                  'test_proportion': 0.1},
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 150,
-    'num_false_positives': 4,
-    'num_true_negatives': 182407,
-    'num_false_negatives': 23,
-    'num_negatives': None,
-    'precision': 0.974025974025974,
-    'recall': 0.8670520231213873,
-    'f1': 0.9174311926605504,
-    'accuracy': 0.9998521228585199}
+    # Check for other functional groups (e.g., amines, alcohols, etc.)
+    other_functional_groups = ["[NX3]", "[OX2H]", "[CX3](=O)", "[NX4+]"]
+    for group in other_functional_groups:
+        pattern = Chem.MolFromSmarts(group)
+        if mol.HasSubstructMatch(pattern):
+            return False, f"Molecule contains additional functional group: {group}"
+
+    # Check molecular weight to ensure it's not too complex
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt > 500:
+        return False, "Molecular weight too high for a simple alkanesulfonate"
+
+    # Check number of rotatable bonds to ensure it's not too complex
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable > 10:
+        return False, "Too many rotatable bonds for a simple alkanesulfonate"
+
+    return True, "Contains a sulfonate group (-SO3-) attached to a simple carbon chain or other groups"
