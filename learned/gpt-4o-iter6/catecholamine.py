@@ -24,30 +24,19 @@ def is_catecholamine(smiles: str):
     # SMARTS pattern for catechol structure (benzene-1,2-diol)
     catechol_pattern = Chem.MolFromSmarts("c1cc(O)c(O)cc1")
     
-    # SMARTS pattern to detect aminoethyl group attached to a benzene core
-    aminoethyl_pattern = Chem.MolFromSmarts("NCC")
+    # SMARTS pattern for aminoethyl group attached to a catechol ring
+    # Here, the amine group connects directly to the benzene's side chain at adjacent carbons forming part of the aminoethyl chain
+    aminoethyl_pattern = Chem.MolFromSmarts("c1(O)c(O)ccc1CCN")
 
-    # Check for presence of catechol structure
+    # Check for presence of the catechol structure
     if not mol.HasSubstructMatch(catechol_pattern):
         return False, "No catechol (benzene-1,2-diol) structure found"
-
-    # Check for the aminoethyl group
+    
+    # Match for aminoethyl attachment to the catechol properly
     if not mol.HasSubstructMatch(aminoethyl_pattern):
-        return False, "No aminoethyl side chain found"
+        return False, "No aminoethyl side chain correctly attached to catechol"
 
-    # Ensure the correct attachment point
-    # Find match indices for catechol and aminoethyl patterns
-    catechol_matches = mol.GetSubstructMatches(catechol_pattern)
-    aminoethyl_matches = mol.GetSubstructMatches(aminoethyl_pattern)
-
-    # Basic logic to ensure aminoethyl is attached to the catechol 
-    # The first carbon of aminoethyl should be one of the carbons in the catechol ring
-    for cat_match in catechol_matches:
-        for amino_match in aminoethyl_matches:
-            if amino_match[1] in cat_match:
-                return True, "Contains catechol structure with aminoethyl side chain correctly attached"
-
-    return False, "Catechol and aminoethyl structures do not connect as required"
+    return True, "Contains catechol structure with aminoethyl side chain correctly attached"
 
 # Example usage
 smiles_example = "CNC[C@H](O)c1ccc(O)c(O)c1"
