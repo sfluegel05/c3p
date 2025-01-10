@@ -11,7 +11,7 @@ def is_anthoxanthin(smiles: str):
     """
     Determines if a molecule is an anthoxanthin based on its SMILES string.
     Anthoxanthins are flavonoid pigments with a flavone or flavonol backbone,
-    typically containing multiple hydroxyl and methoxy groups.
+    typically containing multiple hydroxyl groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -38,11 +38,6 @@ def is_anthoxanthin(smiles: str):
     if hydroxyl_count < 2:
         return False, f"Found {hydroxyl_count} hydroxyl groups, need at least 2"
 
-    # Count methoxy groups (OCH3)
-    methoxy_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetDegree() == 1 and atom.GetTotalNumHs() == 0)
-    if methoxy_count < 1:
-        return False, f"Found {methoxy_count} methoxy groups, need at least 1"
-
     # Check for aromatic rings (should have at least 2 aromatic rings)
     aromatic_rings = rdMolDescriptors.CalcNumAromaticRings(mol)
     if aromatic_rings < 2:
@@ -53,4 +48,4 @@ def is_anthoxanthin(smiles: str):
     if mol_wt < 200:
         return False, "Molecular weight too low for anthoxanthin"
 
-    return True, "Contains flavone/flavonol backbone with multiple hydroxyl and methoxy groups"
+    return True, "Contains flavone/flavonol backbone with multiple hydroxyl groups"
