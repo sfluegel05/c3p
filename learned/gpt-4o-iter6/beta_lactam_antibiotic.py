@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_beta_lactam_antibiotic(smiles: str):
     """
     Determines if a molecule is a beta-lactam antibiotic based on its SMILES string.
-    A beta-lactam antibiotic contains a beta-lactam ring: a 4-membered ring with one nitrogen atom.
-    We consider common antibiotic classes like penicillins, cephalosporins, carbapenems, etc.
+    A beta-lactam antibiotic typically contains a beta-lactam ring: a 4-membered ring with one nitrogen atom.
+    We also consider scaffolds characteristic of known antibiotics, such as penicillins and cephalosporins.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,22 +22,25 @@ def is_beta_lactam_antibiotic(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define broader SMARTS patterns for beta-lactam rings
-    # This accounts for different stereochemistry and larger systems:
+    # Define refined SMARTS patterns for beta-lactam antibiotics
     beta_lactam_patterns = [
-        # Beta-lactam core: 4-membered ring with a nitrogen and carbonyl
-        Chem.MolFromSmarts("C1CNC(=O)1"),
+        # Beta-lactam core: 4-membered ring with a nitrogen and carbonyl, attached to known antibiotic rings
+        Chem.MolFromSmarts("C1CNC(=O)1"),  # General beta-lactam ring
+        Chem.MolFromSmarts("C1[C@@H](N1)C(=O)[C@H]"),  # Including stereochemistry more likely with antibiotics
         
-        # Penicillin-like core: 5-membered thiazolidine fused with beta-lactam ring
-        Chem.MolFromSmarts("C1CNC(=O)1C"),
+        # Penicillin core: thiazolidine fused with beta-lactam
+        Chem.MolFromSmarts("C1([C@H])SC[C@](N1)C(=O)"),  # Thiazolidine ring
         
-        # Cephalosporin-like core: 6-membered dihydrothiazine fused with beta-lactam
-        Chem.MolFromSmarts("C1CNC(=O)1C2CS2"),
+        # Cephalosporin core: dihydrothiazine fused with beta-lactam
+        Chem.MolFromSmarts("C1([C@H])SC2CCN1C2=O")  # Dihydrothiazine ring
+        
+        # Carbapenem core: unsaturated beta-lactam with sulfur
+        Chem.MolFromSmarts("C1C(=C)N(C1=O)C(=O)")
     ]
     
-    # Check if any of the beta-lactam patterns match
+    # Check if any of the beta-lactam patterns match with sufficient context
     for pattern in beta_lactam_patterns:
         if mol.HasSubstructMatch(pattern):
-            return True, "Contains a beta-lactam ring in a common antibiotic scaffold"
+            return True, "Contains a beta-lactam ring in a known antibiotic scaffold"
     
     return False, "No beta-lactam ring found or not in a typical antibiotic context"
