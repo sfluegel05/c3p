@@ -2,46 +2,40 @@
 Classifies: CHEBI:23086 chalcones
 """
 from rdkit import Chem
+from rdkit.Chem import rdqueries
 
 def is_chalcones(smiles: str):
     """
     Determines if a molecule is a chalcone based on its SMILES string.
-    Chalcones are characterized by the presence of an aromatic ketone
-    with an extended conjugated system: Ar-CH=CH-C(=O)-Ar and derivatives.
+    A chalcone contains an aromatic ketone with a -C=C-C(=O)- linker between two aromatic rings.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if the molecule is a chalcone, False otherwise
+        bool: True if molecule is a chalcone, False otherwise
         str: Reason for classification
     """
-
-    # Parse the SMILES string into a molecule object
+    # Parse SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Flexible SMARTS pattern for chalcones considering potential substituents and resonance structures
-    chalcone_pattern_smarts = '[$([a])]C(=O)C=CC[$([a])]'  # Aromatic with a ketone, conjugated diene, and aromatic or heteroaromatic end
-    
-    # Convert SMARTS pattern into a molecule object for matching
-    chalcone_pattern = Chem.MolFromSmarts(chalcone_pattern_smarts)
-    if chalcone_pattern is None:
-        return (None, "Unable to construct chalcone pattern.")
+    # Define chalcone core pattern: aromatic ring -> C=C -> C(=O) -> aromatic ring
+    chalcone_pattern = Chem.MolFromSmarts('c1ccccc1/C=C/C(=O)c2ccccc2')
 
-    # Check if the molecule matches the chalcone SMARTS pattern
     if mol.HasSubstructMatch(chalcone_pattern):
         return True, "Molecule contains the chalcone core structure"
     
     return False, "Molecule does not contain the chalcone core structure"
 
-# Example usage
+
+# Example usage:
 smiles_examples = [
-    "COc1cc(O)c(C(=O)\\C=C\\c2ccccc2)c(OC)c1",  # flavokawain B
-    "OC=1C(C(C)(C)C=C)=C(O)C=CC1C(=O)/C=C/C2=CC=CC=C2",  # 2',4'-Dihydroxy-3'-(1,1-dimethyl-2-propenyl)chalcone
-    "O=C(\\C=C\\c1ccccc1)c1ccccc1",  # trans-chalcone
-    "OC(CC1=CC(CC=C(C)C)=C(O)C=C1)C(=O)C=2C=C(CC=C(C)C)C(O)=CC2O",  # (R)-Kanzonol Y
+    "COc1cc(O)c(C(=O)\C=C\c2ccccc2)c(OC)c1",  # flavokawain B
+    "CC(C)=CCc1cc(O)[C@@H](O)c(C(=O)\C=C\c2ccc(O)cc2)c1O",  # example chalcone
+    "O=C(\C=C\c1ccccc1)c1ccccc1",  # trans-chalcone
+    "CC(C)=CCc1c(O)ccc(C(=O)\C=C\c2ccc(O)cc2)c1O",  # isobavachalcone
 ]
 
 for smiles in smiles_examples:
