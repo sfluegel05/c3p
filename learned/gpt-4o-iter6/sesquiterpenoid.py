@@ -2,8 +2,6 @@
 Classifies: CHEBI:26658 sesquiterpenoid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
-from rdkit.Chem import rdchem
 
 def is_sesquiterpenoid(smiles: str):
     """
@@ -22,27 +20,27 @@ def is_sesquiterpenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # A sesquiterpenoid has 15 carbons, which may have rearrangements or modifications
+    # Adjust the expected carbon count range to accommodate structural rearrangements.
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 15 or c_count > 18:  # Allow range to accommodate rearrangements
+    if c_count < 13 or c_count > 20:  # Wider range to include derivatives
         return False, f"Expected around 15 carbons, got {c_count}"
 
-    # Check for common sesquiterpenoid substructures or features 
-    # (such as a diverse set of cyclic and acyclic arrangements)
-    patterns = [
-        Chem.MolFromSmarts('C1CCC(C)C1'),  # Simple ring structure
-        Chem.MolFromSmarts('C=O'),  # Carbonyl groups
-        Chem.MolFromSmarts('C=C'),  # Double bonds indicating unsaturation
+    # Refined set of structural and functional patterns that may indicate sesquiterpenoids
+    substructures = [
+        Chem.MolFromSmarts('C1CCC(C)C1'),  # Minimal cycloalkane ring
+        Chem.MolFromSmarts('O=C'),  # Carbonyl groups
+        Chem.MolFromSmarts('C=C'),  # Double bonds
         Chem.MolFromSmarts('[OH]'),  # Hydroxy group
-        Chem.MolFromSmarts('O=C(O)'),  # Ester groups
+        Chem.MolFromSmarts('C1=CC=CC=C1'),  # Aromatic ring possible in complex sesquiterpenoids
+        Chem.MolFromSmarts('O=C(O)'),  # Carboxylic acid or ester moiety
+        Chem.MolFromSmarts('C1=C[C@H](C)C[C@@H]1'),  # Complex stereo substructure
     ]
 
-    matches = []
-    for pattern in patterns:
-        if mol.HasSubstructMatch(pattern):
-            matches.append(pattern)
+    # Check for several sesquiterpenoid characteristrics
+    matches = sum(mol.HasSubstructMatch(pattern) for pattern in substructures)
 
-    if len(matches) >= 2:  # Consider it a sesquiterpenoid if it has multiple matching patterns
+    # Empirically decide how many matches define a sesquiterpenoid
+    if matches >= 3:
         return True, "Contains multiple sesquiterpenoid characteristic features"
 
     return False, "Does not exhibit enough sesquiterpenoid characteristic features"
