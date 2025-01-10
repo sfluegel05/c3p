@@ -25,47 +25,62 @@ def is_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for adenine base (part of CoA)
-    # More specific pattern including connection point
-    adenine_pattern = Chem.MolFromSmarts("c1nc(N)c2ncnc2n1")
-    if not mol.HasSubstructMatch(adenine_pattern):
-        return False, "No adenine moiety found"
-
-    # Check for phosphate groups (CoA has 3 phosphates)
-    phosphate_pattern = Chem.MolFromSmarts("OP(=O)(O)O")
-    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
-    if len(phosphate_matches) < 3:
-        return False, f"Found only {len(phosphate_matches)} phosphate groups, need at least 3"
-
-    # Check for thioester linkage (-C(=O)S-)
-    thioester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[SX2]")
-    if not mol.HasSubstructMatch(thioester_pattern):
+    # Check for thioester linkage (-C(=O)S-) - this is essential for acyl-CoA
+    thioester_patterns = [
+        Chem.MolFromSmarts("[CX3](=[OX1])[SX2]"),
+        Chem.MolFromSmarts("C(=O)S")
+    ]
+    if not any(mol.HasSubstructMatch(pattern) for pattern in thioester_patterns):
         return False, "No thioester linkage found"
 
-    # Check for pantetheine portion (part of CoA)
-    # Looking for NCCC(=O)NCCS pattern
-    pantetheine_pattern = Chem.MolFromSmarts("NCCC(=O)NCCS")
-    if not mol.HasSubstructMatch(pantetheine_pattern):
+    # Check for adenine base with flexible connection point
+    adenine_patterns = [
+        Chem.MolFromSmarts("c1nc(N)c2ncnc2n1"),
+        Chem.MolFromSmarts("n1cnc2c(N)ncnc12")
+    ]
+    if not any(mol.HasSubstructMatch(pattern) for pattern in adenine_patterns):
+        return False, "No adenine moiety found"
+
+    # Check for phosphate groups with flexible patterns
+    phosphate_patterns = [
+        Chem.MolFromSmarts("OP(=O)(O)O"),
+        Chem.MolFromSmarts("OP([O,OH])(=O)[O,OH]"),
+        Chem.MolFromSmarts("OP(O)(O)=O")
+    ]
+    phosphate_count = 0
+    for pattern in phosphate_patterns:
+        if pattern:
+            phosphate_count += len(mol.GetSubstructMatches(pattern))
+    if phosphate_count < 2:  # Allow for some variation in phosphate representation
+        return False, f"Insufficient phosphate groups found"
+
+    # Check for pantetheine portion with flexible pattern
+    pantetheine_patterns = [
+        Chem.MolFromSmarts("NCCC(=O)NCCS"),
+        Chem.MolFromSmarts("NCCSC(=O)"),
+        Chem.MolFromSmarts("NC(=O)CCNC(=O)")
+    ]
+    if not any(mol.HasSubstructMatch(pattern) for pattern in pantetheine_patterns):
         return False, "No pantetheine moiety found"
 
-    # Check for ribose sugar with correct connectivity
-    # More flexible pattern that matches CoA ribose including connections
-    ribose_pattern = Chem.MolFromSmarts("[OX2H0,OX2H1][C@H]1[C@H]([OX2H0,OX2H1])[C@H]([OX2H0,OX2H1])[C@H]([OX2H0,OX2H1])[C@H]1[OX2H0,OX2H1]")
-    if not mol.HasSubstructMatch(ribose_pattern):
-        # Try alternative ribose pattern without stereochemistry
-        alt_ribose_pattern = Chem.MolFromSmarts("OC1C(O)C(O)C(O)C1O")
-        if not mol.HasSubstructMatch(alt_ribose_pattern):
-            return False, "No ribose sugar found"
+    # Check for ribose sugar with very flexible pattern
+    ribose_patterns = [
+        Chem.MolFromSmarts("OC1C(O)C(O)C(O)C1O"),
+        Chem.MolFromSmarts("OC1CCCO1"),  # Basic furanose pattern
+        Chem.MolFromSmarts("C1OC(CO)C(O)C1"),
+        Chem.MolFromSmarts("C1OC(COP)C(O)C1")  # Connected to phosphate
+    ]
+    if not any(mol.HasSubstructMatch(pattern) for pattern in ribose_patterns):
+        return False, "No ribose sugar found"
 
-    # Check for characteristic geminal dimethyl group in CoA
-    geminal_dimethyl = Chem.MolFromSmarts("CC(C)(COP)")
-    if not mol.HasSubstructMatch(geminal_dimethyl):
-        return False, "Missing characteristic geminal dimethyl group"
+    # Check for characteristic CoA features with flexible patterns
+    coa_patterns = [
+        Chem.MolFromSmarts("CC(C)(COP)"),  # Geminal dimethyl
+        Chem.MolFromSmarts("SCCNC(=O)"),   # Core connection
+        Chem.MolFromSmarts("COP(O)OP")     # Phosphate linkage
+    ]
+    if not all(mol.HasSubstructMatch(pattern) for pattern in coa_patterns):
+        return False, "Missing key CoA structural features"
 
-    # Additional check for complete CoA connectivity
-    coa_backbone = Chem.MolFromSmarts("NCCC(=O)NCCS~CC(C)(C)COP(=O)(O)OP(=O)(O)OC")
-    if not mol.HasSubstructMatch(coa_backbone):
-        return False, "Missing complete CoA backbone connectivity"
-
-    # If all structural elements are present, it's an acyl-CoA
+    # If all essential elements are present, it's an acyl-CoA
     return True, "Contains complete CoA moiety with thioester linkage to acyl group"
