@@ -25,76 +25,66 @@ def is_beta_lactam_antibiotic(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Remove any salt counterions to analyze just the main molecule
-    fragments = Chem.GetMolFrags(mol, asMols=True, sanitizeFrags=False)
-    if len(fragments) > 1:
-        # Take the largest fragment as the main molecule
-        mol = max(fragments, key=lambda x: x.GetNumAtoms())
-
-    # Essential beta-lactam ring pattern (4-membered ring with N and C=O)
-    beta_lactam_pattern = Chem.MolFromSmarts("[NR1]1[CR2][CR2][CR2]1(=O)")
+    # More general beta-lactam ring pattern
+    # Allows for different ring fusions and substitution patterns
+    beta_lactam_pattern = Chem.MolFromSmarts("[N]1[C]([C][C]1)=O")
     if not mol.HasSubstructMatch(beta_lactam_pattern):
         return False, "No beta-lactam ring found"
 
-    # Common structural patterns in beta-lactam antibiotics
+    # Common structural features of beta-lactam antibiotics
     patterns = {
         # Penicillin-like structure (thiazolidine ring fused to beta-lactam)
-        'penam': Chem.MolFromSmarts("[NR1]1[C@@H]2[C@H]([C]1=O)[SC](C)(C)[CH]2"),
+        'penam': Chem.MolFromSmarts("[N]1[C]2[C][S][C][C]2[C]1=O"),
         
         # Cephalosporin-like structure
-        'cephem': Chem.MolFromSmarts("[NR1]1[C]2[CH][SC]=C2[C]1=O"),
+        'cephem': Chem.MolFromSmarts("[N]1[C]2[C][S][C][C]2[C]1=O"),
         
         # Carbapenem-like structure
-        'carbapenem': Chem.MolFromSmarts("[NR1]1[C]2[CH][CH][C@H]2[C]1=O"),
+        'carbapenem': Chem.MolFromSmarts("[N]1[C]2[C][C][C]2[C]1=O"),
         
-        # Monobactam-like structure
-        'monobactam': Chem.MolFromSmarts("[NR1]1[CH][CH][C]1=O"),
+        # Monobactam-like structure with sulfonic acid
+        'monobactam': Chem.MolFromSmarts("[N]1[C]([C][C]1)=O.[S](=O)(=O)[O]"),
         
         # Oxacephem-like structure
-        'oxacephem': Chem.MolFromSmarts("[NR1]1[C]2[CH][OC][C]2[C]1=O"),
+        'oxacephem': Chem.MolFromSmarts("[N]1[C]2[C][O][C][C]2[C]1=O"),
         
-        # Carboxylic acid or derivative group
-        'carboxyl': Chem.MolFromSmarts("[$([C](=O)[OH]),$([C](=O)[O-]),$([C](=O)O[CH2,CH3])]"),
+        # Carboxylic acid group (can be deprotonated)
+        'carboxyl': Chem.MolFromSmarts("C(=O)[OH,O-]"),
         
-        # Amide side chain
+        # Common amide side chain
         'amide': Chem.MolFromSmarts("NC(=O)")
     }
 
-    # Check for structural features
+    # Check for required structural features
     matches = {name: mol.HasSubstructMatch(pattern) for name, pattern in patterns.items()}
     
-    # Must have carboxylic acid or derivative group
+    # Must have carboxylic acid group
     if not matches['carboxyl']:
-        return False, "No carboxylic acid or derivative group found"
+        return False, "No carboxylic acid group found"
 
     # Must have at least one of the common beta-lactam ring systems
     ring_types = ['penam', 'cephem', 'carbapenem', 'monobactam', 'oxacephem']
-    has_characteristic_ring = any(matches[ring_type] for ring_type in ring_types)
-    
-    # Count rings
-    ring_info = mol.GetRingInfo()
-    num_rings = ring_info.NumRings()
-    
-    # Count atoms
-    num_atoms = mol.GetNumAtoms()
-    
-    # Count nitrogens (excluding charges)
-    n_count = len([atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7])
-    
-    # Special cases for known beta-lactam cores
-    if num_atoms < 7:
-        return False, "Molecule too small to be a beta-lactam antibiotic"
-        
-    if has_characteristic_ring:
-        if num_rings >= 2 and n_count >= 1:
-            return True, "Contains characteristic beta-lactam antibiotic ring system"
-    else:
-        # For non-standard structures, require more evidence
-        if num_rings >= 2 and n_count >= 2 and matches['amide']:
-            return True, "Contains beta-lactam ring with antibiotic-like features"
-            
-    # For simple beta-lactam cores
-    if matches['monobactam'] and matches['carboxyl']:
-        return True, "Contains basic beta-lactam antibiotic structure"
+    if not any(matches[ring_type] for ring_type in ring_types):
+        if not matches['amide']:  # If no typical ring system, at least require amide
+            return False, "Missing characteristic beta-lactam antibiotic structural features"
 
-    return False, "Missing required structural features for beta-lactam antibiotic classification"
+    # Basic molecular properties checks
+    num_atoms = mol.GetNumAtoms()
+    if num_atoms < 10:
+        return False, "Molecule too small to be a beta-lactam antibiotic"
+
+    mol_wt = Chem.Descriptors.ExactMolWt(mol)
+    if mol_wt < 250:
+        return False, "Molecular weight too low for beta-lactam antibiotic"
+
+    # Count nitrogen atoms (beta-lactams typically have multiple nitrogens)
+    n_count = len([atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7])
+    if n_count < 1:
+        return False, "Insufficient nitrogen atoms for beta-lactam antibiotic"
+
+    # Look for characteristic ring fusion patterns
+    ring_info = mol.GetRingInfo()
+    if ring_info.NumRings() < 1:
+        return False, "No rings found"
+
+    return True, "Contains beta-lactam ring and characteristic features of beta-lactam antibiotics"
