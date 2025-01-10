@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_wax(smiles: str):
     """
     Determines if a molecule is a wax based on its SMILES string.
-    A wax is typically an ester formed between long-chain fatty acids and long-chain alcohols.
+    A wax is typically an ester formed from long-chain fatty acids and long-chain alcohols.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -16,19 +16,21 @@ def is_wax(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
+    # Parse SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for ester group (-C(=O)O-)
+    # Look for ester groups (-C(=O)O-)
     ester_pattern = Chem.MolFromSmarts("C(=O)O")
-    if not mol.HasSubstructMatch(ester_pattern):
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    if len(ester_matches) < 1:
         return False, "No ester group found"
+    if len(ester_matches) > 2:
+        return False, f"Too many ester groups, found {len(ester_matches)}"
 
-    # Use a search algorithm to determine the longest continuous carbon chain
+    # Function to determine the longest carbon chain
     def get_longest_chain_length(atom, visited):
-        # Depth-first search to find the longest path
         visited.add(atom.GetIdx())
         chain_lengths = [
             get_longest_chain_length(neighbor, visited.copy()) + 1
@@ -37,21 +39,17 @@ def is_wax(smiles: str):
         ]
         return max(chain_lengths, default=0)
 
-    max_chain_length = 0
+    chain_lengths = []
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() == 6:
             chain_length = get_longest_chain_length(atom, set())
-            if chain_length > max_chain_length:
-                max_chain_length = chain_length
+            chain_lengths.append(chain_length)
 
-    # Wax should have at least two long carbon chains
-    long_chain_threshold = 12  # This could be adjusted as needed
-    if max_chain_length < long_chain_threshold:
-        return False, f"Insufficient long carbon chains, longest found is {max_chain_length}"
+    # Ensure there are at least two long carbon chains
+    long_chain_threshold = 12  # Needs adjustment based on specific requirements for waxes
+    long_chains = [length for length in chain_lengths if length >= long_chain_threshold]
 
-    # Check for exactly one ester linkage
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) != 1:
-        return False, f"Incorrect number of ester groups, found {len(ester_matches)}"
+    if len(long_chains) < 2:
+        return False, "Insufficient long carbon chains; need at least two"
 
-    return True, "Contains long-chain molecules with one ester linkage characteristic of waxes"
+    return True, "Contains long-chain molecules with one or two ester linkages characteristic of waxes"
