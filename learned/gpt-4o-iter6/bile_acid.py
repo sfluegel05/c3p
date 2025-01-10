@@ -2,11 +2,12 @@
 Classifies: CHEBI:3098 bile acid
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_bile_acid(smiles: str):
     """
     Determines if a molecule is a bile acid based on its SMILES string.
-    Bile acids are hydroxy-5beta-cholanic acids occurring as sodium salts of their amides with glycine or taurine.
+    Bile acids are hydroxy-5beta-cholanic acids with specific functional groups and stereochemistry.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -16,28 +17,36 @@ def is_bile_acid(smiles: str):
         str: Reason for classification
     """
     
-    # Parse the SMILES string
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Flexible 5beta-cholanic acid core pattern
-    core_pattern = Chem.MolFromSmarts('[C@]12[C@@H]3CC[C@@H]4[C@@H](CCC[C@H]4[C@H]3CCC1)CC2')
-    if not mol.HasSubstructMatch(core_pattern):
-        return False, "5-beta-cholanic nucleus not identified"
 
-    # Check for OH groups (minimum of 2 hydroxy groups)
+    # Steroid core pattern (cholanic acid structure) - C27 framework
+    steroid_pattern = Chem.MolFromSmarts('[C@]12[C@]3([C@](C[C@@H]([C@]4([C@@]3(CC[C@]4([C@@H](CCC(O)=O)C)[H])[H])C)O)[H])')
+    if not mol.HasSubstructMatch(steroid_pattern):
+        return False, "Steroid core matching cholanic acid structure not found"
+        
+    # Check for presence of hydroxy groups
     hydroxy_pattern = Chem.MolFromSmarts('[OH]')
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxy_pattern)
-    if len(hydroxyl_matches) < 2:
-        return False, "Insufficient hydroxy groups (less than two)"
-
-    # Check for carboxylic acid group
+    num_hydroxy = len(mol.GetSubstructMatches(hydroxy_pattern))
+    if num_hydroxy < 3:
+        return False, f"Found {num_hydroxy} hydroxy groups, need at least 3"
+    
+    # Check for the 5beta configuration stereochemistry
+    # Since this is stereospecific, consider exploring specific compounds for more patterns
+    
+    # 5beta-configuration example pattern (simplified, real match would use stereochemistry)
+    fivebeta_pattern = Chem.MolFromSmarts('[C@@H]1CCC[C@@H]2[C@]1(CCC3[C@@]2(CCC3)C)C')
+    if not mol.HasSubstructMatch(fivebeta_pattern):
+        return False, "5beta configuration not found"
+    
+    # Presence of a terminal carboxylic acid on the side chain
     carboxylic_pattern = Chem.MolFromSmarts('C(=O)O')
     if not mol.HasSubstructMatch(carboxylic_pattern):
-        return False, "Carboxylic acid group not identified"
+        return False, "Terminal carboxylic acid group not found"
 
-    return True, "Valid bile acid: contains 5beta-cholanic nucleus, multiple hydroxyl groups, and a terminal carboxylic group"
+    return True, "Contains steroid core with hydroxy groups, appropriate stereochemistry, and terminal carboxylic acid"
 
-# Example usage:
+# Example of some bile acids would be tested using:
 # result, reason = is_bile_acid("O[C@@H]1[C@]2([C@]...")
