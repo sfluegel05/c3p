@@ -16,21 +16,19 @@ def is_lactol(smiles: str):
         bool: True if molecule is a lactol, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Get the ring information to ensure presence of 5 or 6 member rings
+    # Define a SMARTS pattern for lactol structure
+    # Lactol has a ring-embedded oxygen linked to a hydroxyl group and another oxygen
+    lactol_pattern = Chem.MolFromSmarts("C1OC[OH]1")  # Simplified hypothetical lactol pattern
+
+    # Get the ring information 
     ring_info = mol.GetRingInfo()
     rings = [set(indices) for indices in ring_info.AtomRings() if len(indices) in [5, 6]]
-    if not rings:
-        return False, "No suitable 5 or 6 membered ring structure found"
-
-    # Define a SMARTS pattern for lactol structure
-    # Oxygen inside a ring connected to an alcohol and a secondary carbon
-    lactol_pattern = Chem.MolFromSmarts("OC1(O)[C@H1]")
 
     # Check if the molecule matches the lactol pattern in an appropriate ring
     if not any(mol.HasSubstructMatch(lactol_pattern, atoms=ring) for ring in rings):
