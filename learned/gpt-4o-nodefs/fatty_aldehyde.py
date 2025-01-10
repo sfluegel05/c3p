@@ -7,6 +7,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_fatty_aldehyde(smiles: str):
     """
     Determines if a molecule is a fatty aldehyde based on its SMILES string.
+    Fatty aldehydes typically have long carbon chains and terminal aldehyde groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -15,38 +16,30 @@ def is_fatty_aldehyde(smiles: str):
         bool: True if molecule is a fatty aldehyde, False otherwise
         str: Reason for classification
     """
-    
-    # Try to parse the SMILES string
+    # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for aldehyde group C=O with terminal H
-    aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)[#6]")  # Terminal aldehyde carbon
+    # Look for terminal aldehyde group: formaldehyde structure `C=O` connected to hydrogen
+    aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)[CH3]")
     if not mol.HasSubstructMatch(aldehyde_pattern):
-        return False, "No terminal aldehyde group found"
-    
-    # Count carbons in the molecule
+        # Check an alternate pattern ensuring C=O but being flexible
+        aldehyde_pattern_alt = Chem.MolFromSmarts("[CX3H1](=O)[CH2]")
+        if not mol.HasSubstructMatch(aldehyde_pattern_alt):
+            return False, "No terminal aldehyde group found"
+
+    # Determine the main carbon chain length
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     
-    # Check for presence of at least a moderate carbon chain
-    # Adjust threshold based on general knowledge about fatty aldehyde chain length
-    min_chain_length = 5  # Typical chain length might be longer, adjust empirically
+    # Assume fatty aldehydes to have a minimum chain length, but sometimes higher than 5
+    min_chain_length = 6  # Adjust higher to accommodate typical examples
     
     if carbon_count < min_chain_length:
         return False, f"Carbon chain too short for fatty aldehyde, found {carbon_count} carbons"
     
-    # Check for presence of unsaturation (double bonds)
+    # Unsaturation presence is typical but not a hard rule
     double_bond_pattern = Chem.MolFromSmarts("C=C")
-    if not mol.HasSubstructMatch(double_bond_pattern):
-        return False, "No carbon-carbon double bonds found (not required, but typical)"
+    has_double_bonds = mol.HasSubstructMatch(double_bond_pattern)
     
-    return True, f"Contains terminal aldehyde group and a carbon chain with {carbon_count} carbons"
-
-# Example usage
-smiles_examples = [
-    "O=C(/C=C/C(=O)C=O)C", "O=C/C=C/C=C\CCC", "CCCCCCCC=O", "O=CCC\C=C\CCCC"
-]
-for smiles in smiles_examples:
-    is_fatty, reason = is_fatty_aldehyde(smiles)
-    print(f"SMILES: {smiles}, Is Fatty Aldehyde: {is_fatty}, Reason: {reason}")
+    return True, f"Contains terminal aldehyde group and a carbon chain with {carbon_count} carbons. Unsaturated: {'Yes' if has_double_bonds else 'No'}"
