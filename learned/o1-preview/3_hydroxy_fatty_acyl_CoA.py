@@ -5,8 +5,6 @@ Classifies: CHEBI:20060 3-hydroxy fatty acyl-CoA
 Classifies: CHEBI:134937 3-hydroxy fatty acyl-CoA
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_3_hydroxy_fatty_acyl_CoA(smiles: str):
     """
@@ -27,71 +25,69 @@ def is_3_hydroxy_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for Coenzyme A thioester linkage
-    # The pattern includes the CoA moiety attached via a thioester linkage to an acyl chain
-    coa_thioester_pattern = Chem.MolFromSmarts("S[C](=O)[C]")  # Simplified pattern for thioester
-
-    if not mol.HasSubstructMatch(coa_thioester_pattern):
-        return False, "No CoA thioester linkage found"
-
-    # Define SMARTS pattern for 3-hydroxy acyl chain
-    # This pattern looks for S-C(=O)-C-C-C(O)- chain
-    hydroxy_acyl_pattern = Chem.MolFromSmarts("S[C](=O)[C][C][C](O)")  # 3rd carbon has OH
-
-    if not mol.HasSubstructMatch(hydroxy_acyl_pattern):
-        return False, "No 3-hydroxy fatty acyl chain found"
-
-    # Optionally, we can check that the acyl chain is of sufficient length (e.g., more than 4 carbons)
-    # Count the number of carbons in the acyl chain
-    # Starting from the carbonyl carbon, traverse the chain
-
-    # Find the matches for the thioester linkage
-    matches = mol.GetSubstructMatches(coa_thioester_pattern)
-    found = False
+    # Define SMARTS pattern for the thioester linkage (C(=O)S)
+    thioester_pattern = Chem.MolFromSmarts('C(=O)S')
+    matches = mol.GetSubstructMatches(thioester_pattern)
+    if not matches:
+        return False, "No thioester linkage found"
+    
+    # Try to find the acyl chain connected via thioester linkage
     for match in matches:
-        sulfur_idx = match[0]
-        carbonyl_c_idx = match[1]
-        first_c_idx = match[2]
+        carbonyl_c_idx = match[0]
+        sulfur_idx = match[1]
 
-        # Now, traverse the acyl chain starting from first_c_idx
-        acyl_chain_atoms = [carbonyl_c_idx, first_c_idx]
-        current_atom_idx = first_c_idx
-        chain_length = 1  # Start counting from the first carbon after carbonyl
+        # Get the carbonyl carbon atom
+        carbonyl_c = mol.GetAtomWithIdx(carbonyl_c_idx)
 
-        # We will build a list of atoms in the acyl chain
+        # Get the atom connected to carbonyl carbon that is not the sulfur
+        neighbors = [nbr for nbr in carbonyl_c.GetNeighbors() if nbr.GetIdx() != sulfur_idx]
+        if not neighbors:
+            continue  # No acyl chain connected
+        first_acyl_atom = neighbors[0]
+
+        # Start traversing the acyl chain
+        acyl_chain_atoms = set()
+        acyl_chain_atoms.add(carbonyl_c_idx)
+        acyl_chain_atoms.add(first_acyl_atom.GetIdx())
+        current_atom = first_acyl_atom
+        position = 1
+        hydroxyl_found = False
+
         while True:
-            atom = mol.GetAtomWithIdx(current_atom_idx)
-            neighbors = [nbr.GetIdx() for nbr in atom.GetNeighbors() if nbr.GetIdx() not in acyl_chain_atoms and nbr.GetAtomicNum() == 6]  # Only carbon atoms
-            if len(neighbors) == 0:
-                break  # End of chain
-            elif len(neighbors) > 1:
-                # Branching occurs, but fatty acyl chains are unbranched
-                return False, "Branching found in acyl chain"
-            else:
-                next_atom_idx = neighbors[0]
-                acyl_chain_atoms.append(next_atom_idx)
-                current_atom_idx = next_atom_idx
-                chain_length += 1
+            if current_atom.GetSymbol() != 'C':
+                break  # Expected carbon in acyl chain
 
-                # Check if current atom is the third carbon (C3)
-                if chain_length == 3:
-                    # Check if this carbon has a hydroxyl group
-                    c3_atom = mol.GetAtomWithIdx(current_atom_idx)
-                    has_hydroxy = False
-                    for nbr in c3_atom.GetNeighbors():
-                        if nbr.GetAtomicNum() == 8:  # Oxygen
-                            if nbr.GetDegree() == 1:  # Only connected to one atom
-                                has_hydroxy = True
-                                break
-                    if not has_hydroxy:
-                        return False, "No hydroxyl group at position 3 of acyl chain"
-                    else:
-                        found = True
+            # Check if this is the third carbon (position 3)
+            if position == 2:
+                # Check if current atom has hydroxyl group attached
+                has_oh = False
+                for nbr in current_atom.GetNeighbors():
+                    if nbr.GetAtomicNum() == 8 and nbr.GetDegree() == 1:
+                        has_oh = True
                         break
-        if found:
+                if has_oh:
+                    hydroxyl_found = True
+                else:
+                    break  # No hydroxyl at position 3
+                # No need to traverse further after position 3
+                break
+
+            # Get next carbon in acyl chain
+            neighbors = [nbr for nbr in current_atom.GetNeighbors()
+                         if nbr.GetIdx() not in acyl_chain_atoms and nbr.GetSymbol() == 'C']
+            if not neighbors:
+                break  # End of chain
+            next_atom = neighbors[0]
+            acyl_chain_atoms.add(next_atom.GetIdx())
+            current_atom = next_atom
+            position += 1
+
+        if hydroxyl_found:
+            # Optionally, check that the sulfur is part of CoA
+            # For simplicity, we assume that if the molecule contains the thioester linkage and the acyl chain meets criteria, it's a 3-hydroxy fatty acyl-CoA
             return True, "Contains 3-hydroxy fatty acyl-CoA structure"
 
-    return False, "No 3-hydroxy fatty acyl-CoA structure found"
+    return False, "Does not match 3-hydroxy fatty acyl-CoA structure"
 
 __metadata__ = {
     'chemical_class': {
@@ -111,20 +107,5 @@ __metadata__ = {
         'max_negative_in_prompt': 20,
         'max_instances_in_prompt': 100,
         'test_proportion': 0.1
-    },
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 100,
-    'num_false_positives': 5,
-    'num_true_negatives': 182500,
-    'num_false_negatives': 10,
-    'num_negatives': None,
-    'precision': 0.9523809523809523,
-    'recall': 0.9090909090909091,
-    'f1': 0.9302325581395349,
-    'accuracy': 0.9999172758656234
+    }
 }
