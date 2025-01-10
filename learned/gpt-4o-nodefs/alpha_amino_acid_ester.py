@@ -8,8 +8,8 @@ def is_alpha_amino_acid_ester(smiles: str):
     Determines if a molecule is an alpha-amino acid ester based on its SMILES string.
 
     An alpha-amino acid ester typically has:
-    - An alpha-carbon connecting to an amino group.
-    - A carboxyl group (-COO-) esterified.
+    - An alpha-carbon connected to an amino group.
+    - A carboxyl group (-C(=O)O-) esterified.
 
     Args:
         smiles (str): SMILES string of the molecule.
@@ -25,16 +25,19 @@ def is_alpha_amino_acid_ester(smiles: str):
         return False, "Invalid SMILES string"
 
     # SMARTS pattern: capture alpha-amino acid ester structures
-    # Allow both linear and cyclic structures
-    # Pattern: alpha-carbon [CH3 or CH] connected to amino [N] and esterified carboxyl [C(=O)O]
-    alpha_amino_ester_pattern1 = Chem.MolFromSmarts('[CH1,CH2]([NX3])-[CX3](=O)-[OX2][CX4,CX3]')
-    alpha_amino_ester_pattern2 = Chem.MolFromSmarts('[CX4]([NX3])[CX3](=O)-[O][C]')
-    alpha_amino_ester_pattern3 = Chem.MolFromSmarts('C(=O)[OX2][CX4,CX3][NX3]')
+    # Pattern for alpha-amino acid ester [N]C(C(=O)O)[CX4,CX3]
+    alpha_amino_ester_patterns = [
+        Chem.MolFromSmarts('[NX3][CX4;H0,H1](C(=O)[OX2][C])'),  # Linear form
+        Chem.MolFromSmarts('C(=O)[OX2][CX4][NX3][CX4]'),  # Potentially cyclic including aromatics
+        Chem.MolFromSmarts('[C,N]C([NX3])[CX4,CX3](=O)[O][C]'),  # More generic pattern
+    ]
 
-    if mol.HasSubstructMatch(alpha_amino_ester_pattern1) or mol.HasSubstructMatch(alpha_amino_ester_pattern2) or mol.HasSubstructMatch(alpha_amino_ester_pattern3):
-        return True, "Molecule contains an alpha-amino acid ester structure"
-    else:
-        return False, "No alpha-amino acid ester pattern found"
+    # Check for each pattern
+    for pattern in alpha_amino_ester_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return True, "Molecule contains an alpha-amino acid ester structure"
+    
+    return False, "No alpha-amino acid ester pattern found"
 
 # Example usage
 example_smiles = "COC(=O)CN"
