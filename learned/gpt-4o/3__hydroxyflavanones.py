@@ -2,6 +2,7 @@
 Classifies: CHEBI:48024 3'-hydroxyflavanones
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_3__hydroxyflavanones(smiles: str):
     """
@@ -12,7 +13,7 @@ def is_3__hydroxyflavanones(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if the molecule is a 3'-hydroxyflavanone, False otherwise
+        bool: True if molecule is a 3'-hydroxyflavanone, False otherwise
         str: Reason for classification
     """
     
@@ -21,15 +22,15 @@ def is_3__hydroxyflavanones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the flavanone core pattern (this is a general struct for flavanones)
-    flavanone_pattern = Chem.MolFromSmarts("O=C1C(OC2=CC=CC=C2)C[C@H](O)C1")
+    # Define the flavanone skeleton SMARTS pattern
+    flavanone_pattern = Chem.MolFromSmarts("c1ccccc1C2=CC(=O)CC(O2)c3ccccc3")
     if not mol.HasSubstructMatch(flavanone_pattern):
         return False, "No flavanone skeleton found"
-
-    # Define SMARTS pattern for the hydroxy group at the 3' position of the B-ring
-    three_prime_hydroxy_pattern = Chem.MolFromSmarts("Oc1cc([A])ccc1")
-
-    if not mol.HasSubstructMatch(three_prime_hydroxy_pattern):
-        return False, "No hydroxy group found exactly at position 3' on the B-ring"
-
+    
+    # Define the 3'-hydroxy group SMARTS pattern on phenyl ring
+    hydroxy_3_prime_pattern = Chem.MolFromSmarts("c1cc(O)ccc1")
+    matches = mol.GetSubstructMatches(hydroxy_3_prime_pattern)
+    if not matches:
+        return False, "No hydroxy group found at position 3' on the phenyl ring"
+    
     return True, "Contains flavanone skeleton with a hydroxy group at the 3' position on the phenyl ring"
