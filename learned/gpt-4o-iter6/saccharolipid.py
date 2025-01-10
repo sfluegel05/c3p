@@ -15,21 +15,24 @@ def is_saccharolipid(smiles: str):
         bool: True if molecule is a saccharolipid, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse the SMILES string into an RDKit molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string provided."
-    
-    # Broader carbohydrate pattern to identify various sugar rings
-    carb_patterns = [
-        Chem.MolFromSmarts("[OH]-C1(-[OH])O[C@H](O)[C@@H](O)[C@@H](O)[C@H]1"),        # Common sugar rings
-        Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@@H](O)C[C@H](O)[C@@H]1O")]            # other sugar structures
 
-    # Broad lipid pattern to identify generic long chains with ester or amide groups
+    # Extended carbohydrate patterns including phosphorylated sugars, and ketoses
+    carb_patterns = [
+        Chem.MolFromSmarts("OC1(CO)O[C@H](O)[C@H](O)[C@@H]1O"),                         # Simple sugar rings
+        Chem.MolFromSmarts("OC1OC(CO)C(O)C(O)C1O"),                                   # Alternative sugar structures
+        Chem.MolFromSmarts("O[C@@H]1[C@@H](O)[C@@H](O[C@H](COP(O)(O)=O)[C@@H]1O)O"),  # Phosphate sugar
+    ]
+
+    # Broader lipid pattern: Long hydrocarbon chain with linkage
     lipid_patterns = [
-        Chem.MolFromSmarts("C(=O)[O,N][C@H1]-[C,C@](C)[C,C,H]"),                    # ester or amide groups with chains
-        Chem.MolFromSmarts("C(=O)O")                                               # general ester group
+        Chem.MolFromSmarts("C(=O)OC[C@H1]CCCCCCCCCCCCCCCC"),    # Long chain esters
+        Chem.MolFromSmarts("C(=O)N[C@H1]CCCCCCCCCCCCCCCC"),     # Long chain amides
+        Chem.MolFromSmarts("C[C@H](CCCCCCCCCCCCCCC)C=O"),       # Ketone terminal carbonate
     ]
 
     # Check for presence of a carbohydrate component
@@ -40,6 +43,6 @@ def is_saccharolipid(smiles: str):
     # Check for presence of a lipid component
     lipid_present = any(mol.HasSubstructMatch(lipid_pattern) for lipid_pattern in lipid_patterns)
     if not lipid_present:
-        return False, "No adequate long hydrocarbon chains (lipid component) found."
+        return False, "No suitable long hydrocarbon chain (lipid component) found."
 
     return True, "Contains both carbohydrate and lipid components, indicating a saccharolipid."
