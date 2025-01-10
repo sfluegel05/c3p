@@ -30,9 +30,10 @@ def is_aralkylamine(smiles: str):
     aromatic_pattern = Chem.MolFromSmarts("a")
     if not mol.HasSubstructMatch(aromatic_pattern):
         return False, "No aromatic group found"
-
-    # Look for the linkage pattern: Aromatic -> Aliphatic Carbon -> Amine
-    linkage_pattern = Chem.MolFromSmarts("a-[CX4]-[NX3;H2,H1;!$(NC=O)]")
+    
+    # Look for linkage pattern: Aromatic -> Aliphatic Carbon -> Amine
+    # Create a more flexible linkage pattern to capture a variety of connected aliphatic chains
+    linkage_pattern = Chem.MolFromSmarts("a-[!#1]~[CX4]~[NX3;H2,H1;!$(NC=O)]")
     if not mol.HasSubstructMatch(linkage_pattern):
         return False, "No linkage between aromatic group and amine via an alkyl chain found"
 
