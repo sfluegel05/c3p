@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_alkene(smiles: str):
     """
     Determines if a molecule is an alkene based on its SMILES string.
-    An alkene is defined as an acyclic branched or unbranched hydrocarbon having one C=C double bond,
-    following the general formula CnH2n.
+    An alkene is an acyclic branched or unbranched hydrocarbon with one C=C double bond,
+    following the formula CnH2n.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,9 +22,19 @@ def is_alkene(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
+    # Check if the molecule exclusively contains carbon and hydrogen
+    for atom in mol.GetAtoms():
+        if atom.GetSymbol() not in ['C', 'H']:
+            return False, f"Molecule contains a non-CH element: {atom.GetSymbol()}"
+    
     # Check for cycles; alkenes must be acyclic
-    if mol.GetRingInfo().NumRings() > 0:
-        return False, "Molecule contains rings; alkenes must be acyclic"
+    # But ensure C=C bond is not part of a cycle
+    ring_info = mol.GetRingInfo()
+    if ring_info.NumRings() > 0:
+        for bond in mol.GetBonds():
+            if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                if bond.IsInRing():
+                    return False, "C=C bond is in a ring; alkenes must have acyclic double bonds" 
     
     # Count carbon-carbon double bonds
     double_bond_count = sum(1 for bond in mol.GetBonds() 
