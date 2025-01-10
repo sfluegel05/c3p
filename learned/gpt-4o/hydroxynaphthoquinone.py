@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_hydroxynaphthoquinone(smiles: str):
     """
     Determines if a molecule is a hydroxynaphthoquinone based on its SMILES string.
-    A hydroxynaphthoquinone is defined as any naphthoquinone in which the naphthaoquinone moiety
+    A hydroxynaphthoquinone is defined as any naphthoquinone in which the naphthoquinone moiety
     is substituted by at least one hydroxy group.
 
     Args:
@@ -21,12 +21,13 @@ def is_hydroxynaphthoquinone(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define SMARTS pattern for naphthoquinone core
-    naphthoquinone_pattern = Chem.MolFromSmarts("C1=CC=C2C(=O)C=CC(=O)c2c1")
+    
+    # Define a more comprehensive SMARTS pattern for the naphthoquinone core
+    # This aims to capture the two-ring system of 1,4-naphthoquinone
+    naphthoquinone_pattern = Chem.MolFromSmarts("C1=CC=C2C=C(C(=O)C2=O)C=C1")
     if not mol.HasSubstructMatch(naphthoquinone_pattern):
         return False, "No naphthoquinone core structure found"
-        
+    
     # Define SMARTS pattern for hydroxy group
     hydroxy_pattern = Chem.MolFromSmarts("[OX2H]")
     hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
