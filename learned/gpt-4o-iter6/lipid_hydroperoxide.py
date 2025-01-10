@@ -21,21 +21,24 @@ def is_lipid_hydroperoxide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Modify to detect the presence of hydroperoxy group
-    hydroperoxy_pattern = Chem.MolFromSmarts("[CX4,CX3,CX2]([OH1])OO")
+    # Improved SMARTS for hydroperoxy groups, the [O][O][H] part may help
+    hydroperoxy_pattern = Chem.MolFromSmarts("OO")
     if not mol.HasSubstructMatch(hydroperoxy_pattern):
         return False, "No hydroperoxy group found"
 
-    # Check for typical lipid-like structures: long carbon chains, ester groups, and unsaturations
-    long_chain_pattern = Chem.MolFromSmarts("[C;R0][C;R0][C;R0][C;R0][C;R0][C;R0][C;R0][C;R0]")
-    if not mol.HasSubstructMatch(long_chain_pattern):
-        return False, "No long hydrocarbon chain found"
+    # Detecting presence of long carbon chain regardless of exact carbon count
+    carbon_chain_pattern = Chem.MolFromSmarts("CCCCCCCC")
+    if not mol.HasSubstructMatch(carbon_chain_pattern):
+        return False, "No long hydrocarbon chain detected"
 
-    # Look for ester functional groups typical in lipids
-    ester_pattern = Chem.MolFromSmarts("C(=O)OC")
+    # Check for unsaturations which are typical in lipids
     unsaturation_pattern = Chem.MolFromSmarts("C=C")
-    
-    if mol.HasSubstructMatch(ester_pattern) or mol.HasSubstructMatch(unsaturation_pattern):
-        return True, "Contains hydroperoxy group(s) within a lipid structure with unsaturation or ester group"
+    if mol.HasSubstructMatch(unsaturation_pattern):
+        return True, "Contains hydroperoxy group(s) within unsaturated lipid-like chain"
 
-    return False, "Missing characteristics of a typical lipid structure despite presence of hydroperoxy group"
+    # Include ester groups detection as potential lipid characteristic
+    ester_pattern = Chem.MolFromSmarts("C(=O)O")
+    if mol.HasSubstructMatch(ester_pattern):
+        return True, "Contains hydroperoxy group(s) within ester lipid-like structure"
+
+    return False, "Missing typical structural features of a lipid despite presence of hydroperoxy group"
