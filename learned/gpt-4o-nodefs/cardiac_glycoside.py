@@ -23,29 +23,24 @@ def is_cardiac_glycoside(smiles: str):
 
     # Steroid core recognition (cyclopenta[a]phenanthrene skeleton)
     steroid_patterns = [
-        Chem.MolFromSmarts('[C@@]12[C@@H]3CC[C@H]4[C@H]([C@](C3)(CC[C@@H]4[C@@H]1CC2)O)[C@H](C)C'),
-        Chem.MolFromSmarts('[C@@H]1[C@@H]2C[C@@H]3CC[C@@H]4[C@]3(C2CC[C@@H]4C1)C')
+        Chem.MolFromSmarts("C1CCC2C3CCC4C(C3CC2C1)CCC4"),
+        Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2CCC4C3CCC4")
     ]
     if not any(mol.HasSubstructMatch(pattern) for pattern in steroid_patterns):
         return False, "No steroid core found"
 
-    # Glycoside detection such as O-glycosidic bond
-    glycoside_patterns = [
-        Chem.MolFromSmarts('[CX4H]([OX2][#6])-[#6]-[#8]'),
-        Chem.MolFromSmarts('O[C@H]1[C@H]([C@@H]([C@H]([C@H](CO1)O)O)O)O') # representative of sugar motifs
-    ]
-    if not any(mol.HasSubstructMatch(glycoside_pattern) for glycoside_pattern in glycoside_patterns):
+    # Glycoside detection (O-glycosidic linkage)
+    glycoside_pattern = Chem.MolFromSmarts("C-O[C@@H]1[C@H]([C@H]([C@@H]([C@@H](O1)CO)O)O)O")
+    if not mol.HasSubstructMatch(glycoside_pattern):
         return False, "No glycosidic linkage found"
 
     # Lactone ring detection
     lactone_patterns = [
-        Chem.MolFromSmarts('O=C1CCOC1'),
-        Chem.MolFromSmarts('O=C1CCC=C1')  # Including more variants
+        Chem.MolFromSmarts("O=C1COC=C1"),
+        Chem.MolFromSmarts("O=C1COCC1")
     ]
-    if not any(mol.HasSubstructMatch(lactone_pattern) for lactone_pattern in lactone_patterns) and \
-       not any(mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)) for pattern in [
-           '[C@]4([C@H](O)C(=O)[C@@H](OC)C=O)'])
-        return False, "No lactone or related ester ring found"
+    if not any(mol.HasSubstructMatch(pattern) for pattern in lactone_patterns):
+        return False, "No lactone ring found"
     
     # Hydroxyl groups verification
     hydroxyl_count = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'O' and atom.GetTotalDegree() == 1)
