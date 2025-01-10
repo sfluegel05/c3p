@@ -11,7 +11,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_chlorophyll(smiles: str):
     """
     Determines if a molecule is a chlorophyll based on its SMILES string.
-    A chlorophyll is a magnesium porphyrin with a fifth ring and typically a long phytol chain.
+    A chlorophyll is a magnesium porphyrin with a fifth ring.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -44,18 +44,6 @@ def is_chlorophyll(smiles: str):
         if not mol.HasSubstructMatch(flexible_porphyrin_pattern):
             return False, "No porphyrin core with fifth ring found"
 
-    # Check for a long phytol chain (at least 10 carbons)
-    phytol_pattern = Chem.MolFromSmarts("[CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4]")
-    if phytol_pattern is None:
-        return False, "Failed to create phytol pattern"
-    if not mol.HasSubstructMatch(phytol_pattern):
-        return False, "No long phytol chain found"
-
-    # Check molecular weight - chlorophylls typically >800 Da
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 800:
-        return False, "Molecular weight too low for chlorophyll"
-
     # Check for ester groups (common in chlorophylls)
     ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
     if ester_pattern is None:
@@ -72,4 +60,9 @@ def is_chlorophyll(smiles: str):
     if len(carbonyl_matches) < 1:
         return False, "No carbonyl groups found"
 
-    return True, "Contains magnesium porphyrin core with fifth ring, long phytol chain, and necessary functional groups"
+    # Check molecular weight - chlorophylls typically >800 Da
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 800:
+        return False, "Molecular weight too low for chlorophyll"
+
+    return True, "Contains magnesium porphyrin core with fifth ring and necessary functional groups"
