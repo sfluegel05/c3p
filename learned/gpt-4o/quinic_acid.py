@@ -2,7 +2,6 @@
 Classifies: CHEBI:26493 quinic acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdqueries
 
 def is_quinic_acid(smiles: str):
     """
@@ -22,25 +21,20 @@ def is_quinic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the pattern for a cyclohexane ring with at least 3 hydroxyl groups
-    hydroxylated_cyclohexane_pattern = Chem.MolFromSmarts("[C@H]1[C@H][C@H][C@H][C@H][C@H]1")
-    hydroxyl_groups_pattern = Chem.MolFromSmarts("[C@H]1[C@H]([OH])[C@H]([OH])[C@H]([OH])[C@H][C@H]1")
-    if not mol.HasSubstructMatch(hydroxylated_cyclohexane_pattern):
-        return False, "No cyclohexane ring with correct stereochemistry found"
+    # Define the pattern for a hydroxylated cyclohexane with stereochemistry considerations
+    hydroxy_cyclohexane_pattern = Chem.MolFromSmarts("[C@H]1([C@H](O)[C@H](O)[C@H](O)[C@H]1)C(=O)O")
+    
+    if not mol.HasSubstructMatch(hydroxy_cyclohexane_pattern):
+        return False, "No cyclohexane with correct stereochemistry and hydroxyl groups found"
 
-    # Ensure there are at least 3 hydroxyl groups on the cyclohexane ring
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_groups_pattern)
-    if len(hydroxyl_matches) < 1:
-        return False, "Less than three hydroxyl groups on cyclohexane ring with required stereochemistry"
+    # Look for presence of ester or ether linkages connected to aromatic systems
+    ester_linkage_pattern = Chem.MolFromSmarts("[C](=O)O[C@H]1[C@@H](O)[C@H](O)[C@@H](O)[C@@H]1")
+    if mol.HasSubstructMatch(ester_linkage_pattern):
+        return True, "Quinic acid derivative with ester linkage detected"
 
-    # Look for a carboxylic acid group potentially linked to the cyclohexane
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[OH]")
-    if not mol.HasSubstructMatch(carboxylic_acid_pattern):
-        return False, "No carboxylic acid group found"
+    # Assert cyclohexanecarboxylic acid main backbone
+    cyclohexanecarboxylic_acid_pattern = Chem.MolFromSmarts("[C@H]1([C@H](O)[C@H](O)[C@H](O)[C@H]1)C(=O)[O]C")
+    if mol.HasSubstructMatch(cyclohexanecarboxylic_acid_pattern):
+        return True, "Cyclohexanecarboxylic acid backbone identified"
 
-    # Detect ester linkages specifically for quinic acid derivatives
-    ester_pattern = Chem.MolFromSmarts("c1ccc(O[C@H]2[C@H](O)[C@@H](O)[C@@H]([C@@H]2O)C(=O)O)cc1")
-    if mol.HasSubstructMatch(ester_pattern):
-        return True, "Quinic acid derivative with an aromatic ester linkage found"
-
-    return True, "Quinic acid detected with basic structural features"
+    return False, "Does not meet quinic acid structural criteria"
