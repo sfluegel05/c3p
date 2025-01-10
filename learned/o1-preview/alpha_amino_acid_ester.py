@@ -2,12 +2,12 @@
 Classifies: CHEBI:46874 alpha-amino acid ester
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_alpha_amino_acid_ester(smiles: str):
     """
     Determines if a molecule is an alpha-amino acid ester based on its SMILES string.
-    An alpha-amino acid ester is an amino acid derivative obtained by esterification of the carboxyl group of an alpha-amino acid.
+    An alpha-amino acid ester is an amino acid derivative obtained by esterification
+    of the carboxyl group of an alpha-amino acid.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,18 +23,29 @@ def is_alpha_amino_acid_ester(smiles: str):
 
     # Define SMARTS pattern for alpha-amino acid ester
     # Pattern explanation:
-    # [NX3;H2,H1;!$(NC=O)] - primary or secondary amine (not amide)
-    # [CX4H] - tetrahedral carbon with one hydrogen (alpha carbon)
-    # [C](=O)[O][#6] - esterified carboxyl group
-    alpha_amino_acid_ester_smarts = "[NX3;H2,H1;!$(NC=O)][CX4H]([#6])[C](=O)[O][#6]"
-    pattern = Chem.MolFromSmarts(alpha_amino_acid_ester_smarts)
+    # [C@@H](N)(*)C(=O)O[*] - alpha carbon with amino group and esterified carboxyl group
+    # - The alpha carbon can have any substituent (*)
+    # - The amino group can be primary, secondary, or part of a ring
+    # - The carboxyl group is esterified (C(=O)O[*])
 
+    # Pattern for alpha-amino acid ester
+    alpha_amino_acid_ester_smarts = """
+    [$([CH]-[N]),$([C@@H]-[N]),$([C@H]-[N]),$([C]-[N])]
+    [C]
+    (=[O])
+    O
+    [#6]
+    """
+
+    # Remove whitespace and newlines from SMARTS pattern
+    alpha_amino_acid_ester_smarts = ''.join(alpha_amino_acid_ester_smarts.split())
+
+    pattern = Chem.MolFromSmarts(alpha_amino_acid_ester_smarts)
     if pattern is None:
         return False, "Invalid SMARTS pattern"
 
     # Search for the alpha-amino acid ester pattern in the molecule
-    matches = mol.GetSubstructMatches(pattern)
-    if matches:
+    if mol.HasSubstructMatch(pattern):
         return True, "Contains alpha-amino acid ester moiety"
     else:
         return False, "Does not contain alpha-amino acid ester moiety"
@@ -59,7 +70,7 @@ __metadata__ = {
         'test_proportion': None
     },
     'message': None,
-    'attempt': 0,
+    'attempt': 1,
     'success': True,
     'best': True,
     'error': '',
