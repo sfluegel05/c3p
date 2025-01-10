@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_7_hydroxyisoflavones(smiles: str):
     """
     Determines if a molecule is a 7-hydroxyisoflavone based on its SMILES string.
-    A 7-hydroxyisoflavone possesses the isoflavone skeleton with a hydroxy group specifically at the 7-position.
+    A 7-hydroxyisoflavone possesses a hydroxyisoflavone skeleton with a hydroxy group specifically at the 7-position.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,26 +21,19 @@ def is_7_hydroxyisoflavones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define key features of isoflavones (2-phenyl-benzopyran-4-one structure)
-    phenyl_ring_pattern = Chem.MolFromSmarts("c1ccccc1")  # Phenyl ring
-    benzopyran_pattern = Chem.MolFromSmarts("O=c1cc2ccccc2oc1")  # Core benzopyran-4-one
+    # Define core isoflavone skeleton (benzopyran core with attached phenyl ring and carbonyl)
+    # This pattern needs to be flexible to match various substitutions and ring closures
+    # Key feature: pyran ring with adjacent aromatic and carbonyl group
+    isoflavone_core_pattern = Chem.MolFromSmarts("O=C1C2=COC3=CC=CC=C3C2=CC=C1")
 
-    if not mol.HasSubstructMatch(benzopyran_pattern):
-        return False, "No benzopyran-4-one core found"
+    if not mol.HasSubstructMatch(isoflavone_core_pattern):
+        return False, "No isoflavone core structure found"
 
-    if not mol.HasSubstructMatch(phenyl_ring_pattern):
-        return False, "No attached phenyl ring found"
+    # Flexible pattern that identifies hydroxy group at the 7-position in the simplest A-ring scenario
+    hydroxy_pattern = Chem.MolFromSmarts("O-c1cc2occc2c(=O)c1")  # Hydroxy group at C7 position of A ring
 
-    # Check for hydroxy group presence anywhere (as a soft initial filter)
-    hydroxy_pattern = Chem.MolFromSmarts("O[cR2]")  # Generic hydroxy pattern on an aromatic carbon
-    hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
-    
-    if not hydroxy_matches:
-        return False, "No hydroxy group found"
-
-    # Further, verify if one hydroxy is in the 7-position relative to the benzopyran
-    seven_hydroxy_pattern = Chem.MolFromSmarts("Oc1cc2ccco2c(=O)c1")
-    if not mol.HasSubstructMatch(seven_hydroxy_pattern):
-        return False, "Hydroxy group not found at the 7-position relative to benzopyran"
+    # Check for 7-hydroxy position specifically
+    if not mol.HasSubstructMatch(hydroxy_pattern):
+        return False, "No hydroxy group at the 7-position found"
 
     return True, "Has isoflavone skeleton with hydroxy group at 7-position"
