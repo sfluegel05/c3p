@@ -26,47 +26,55 @@ def is_N_acylphytosphingosine(smiles: str):
 
     # Look for amide group (N-C(=O))
     amide_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[#6]")
-    if not mol.HasSubstructMatches(amide_pattern):
+    if not mol.HasSubstructMatch(amide_pattern):
         return False, "No amide group found"
 
-    # Look for phytosphingosine core with specific stereochemistry
-    # 2S,3S,4R stereochemistry is required for phytosphingosine
-    phyto_core = Chem.MolFromSmarts("[CH2][OX2H1]-[CH]([NX3])-[CH]([OX2H1])-[CH]([OX2H1])-[CH2]")
+    # Look for phytosphingosine core 
+    # [CH2OH]-[CH](NH)-[CH](OH)-[CH](OH)-[CH2]-
+    phyto_core = Chem.MolFromSmarts("[CH2][OX2]-[CH]([NX3])-[CH]([OX2])-[CH]([OX2])-[CH2]")
     if not mol.HasSubstructMatch(phyto_core):
         return False, "No phytosphingosine core structure found"
 
-    # Count primary and secondary hydroxyl groups
+    # Count hydroxyl groups
     primary_oh_pattern = Chem.MolFromSmarts("[CH2][OX2H1]")
     secondary_oh_pattern = Chem.MolFromSmarts("[CH]([#6])[OX2H1]")
     
-    primary_oh_count = len(mol.GetSubstructMatches(primary_oh_pattern))
-    secondary_oh_count = len(mol.GetSubstructMatches(secondary_oh_pattern))
+    if not mol.HasSubstructMatch(primary_oh_pattern):
+        return False, "Missing primary hydroxyl group"
     
-    if primary_oh_count < 1 or secondary_oh_count < 2:
-        return False, f"Incorrect hydroxyl pattern (need 1 primary, 2 secondary OH groups)"
+    secondary_matches = len(mol.GetSubstructMatches(secondary_oh_pattern))
+    if secondary_matches < 2:
+        return False, f"Insufficient secondary hydroxyl groups (found {secondary_matches}, need ≥2)"
 
-    # Check for long carbon chain characteristic of fatty acyl group
-    fatty_chain = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    # Check for fatty acyl chain
+    # Look for at least 6 carbons in a chain attached to the amide
+    fatty_chain = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[CX4][CX4][CX4][CX4][CX4][CX4]")
     if not mol.HasSubstructMatch(fatty_chain):
-        return False, "No fatty acyl chain found"
+        return False, "No suitable fatty acyl chain found"
 
-    # Count carbons in molecule
+    # Count carbons and check molecular mass
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 18:  # Minimum carbons for basic structure
+    if c_count < 18:
         return False, f"Insufficient carbon atoms (found {c_count}, need ≥18)"
 
-    # Check for characteristic N-acyl linkage pattern
-    n_acyl_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[CX4]-[CX4]")
-    if not mol.HasSubstructMatch(n_acyl_pattern):
-        return False, "No N-acyl linkage pattern found"
+    mol_weight = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_weight < 300:  # Minimum weight for basic structure
+        return False, f"Molecular weight too low ({mol_weight:.1f} Da)"
 
-    # Allow for sugar modifications by checking if extra oxygens are present in cyclic form
+    # Check for possible sugar modifications
     sugar_pattern = Chem.MolFromSmarts("[C]1[O][C]([C])[C][C]([O])[C]1")
     has_sugar = mol.HasSubstructMatch(sugar_pattern)
     
-    # Count rotatable bonds
+    # Additional checks for chain length
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
     if n_rotatable < 8 and not has_sugar:
-        return False, "Insufficient chain length"
+        return False, "Chain length too short for N-acylphytosphingosine"
+
+    # Check nitrogen count (should typically have 1, but allow for modifications)
+    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
+    if n_count < 1:
+        return False, "No nitrogen found"
+    if n_count > 3 and not has_sugar:  # Allow more N if sugar modifications present
+        return False, f"Too many nitrogens for basic structure (found {n_count})"
 
     return True, "Contains phytosphingosine backbone with N-acyl group and required hydroxyl groups"
