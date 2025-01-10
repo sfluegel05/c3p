@@ -6,11 +6,11 @@ from rdkit import Chem
 def is_organometalloidal_compound(smiles: str):
     """
     Determines if a molecule is an organometalloidal compound based on its SMILES string.
-    The classification focuses on arsenic within organic structural contexts.
+    An organometalloidal compound involves a metalloid element, we focus on arsenic (As) for this class.
     
     Args:
         smiles (str): SMILES string of the molecule
-
+    
     Returns:
         bool: True if molecule is an organometalloidal compound, False otherwise
         str: Reason for classification
@@ -24,22 +24,18 @@ def is_organometalloidal_compound(smiles: str):
     # Check for presence of Arsenic (As)
     has_arsenic = any(atom.GetAtomicNum() == 33 for atom in mol.GetAtoms())
     if not has_arsenic:
-        return False, "No arsenic atom found"
+        return False, "No arsenic atom found, not an organometalloidal compound"
     
-    # Define SMARTS patterns that commonly represent organometalloidal arsenic compounds
-    organometalloidal_patterns = [
-        "[As](O)(O)=O",    # Arsenic with double-bonded oxygen and hydroxyl groups (as in arsenates)
-        "[As](C)(C)(O)",   # Arsenic bonded to carbons and oxygen
-        "[As]([O-])([O-])", # Arsenic with multiple oxygen anions
-        "[c][As](C)",      # Arsenic bonded to an aromatic carbon and alkyl carbon
-        "[As]1C=CC=C[CH]1", # Common structural context (arsolane ring)
-        "[As]=O",          # Includes oxidized arsenic context
-        "c1c([As])ccc(c1)[As]",  # Arsenic within conjugated systems
-    ]
-    
-    # Check for any structural pattern indicative of organometalloidal compounds
-    for pattern in organometalloidal_patterns:
-        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
-            return True, f"Pattern '{pattern}' matched, classified as organometalloidal"
-    
-    return False, "Presence of arsenic but not in organometalloidal context"
+    # Check for organic framework (at least one carbon is attached to the arsenic)
+    organic_framework = any(
+        atom.GetAtomicNum() == 6 and 
+        any(neighbor.GetAtomicNum() == 33 for neighbor in atom.GetNeighbors())
+        for atom in mol.GetAtoms()
+    )
+    if organic_framework:
+        return True, "Arsenic bonded to an organic structure, classified as organometalloidal"
+    else:
+        return False, "Arsenic not adequately bonded to an organic structure, classify with caution"
+
+# Example Usage:
+# print(is_organometalloidal_compound("C[As](O)(O)=O"))  # Should return True with a valid reason
