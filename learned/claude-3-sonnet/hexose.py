@@ -26,38 +26,41 @@ def is_hexose(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Pyranose patterns (6-membered ring)
-    pyranose_patterns = [
-        # Basic pyranose with various substitutions
-        "[C]-1-[C]-[C]-[C]-[C](-[O]-1)",
-        # Alternative forms with different oxidation states
-        "O1[C][C][C][C][C]1",
-        "O1[C][C][C][C](O)[C]1"
-    ]
-    
-    # Furanose patterns (5-membered ring)
-    furanose_patterns = [
-        # Basic furanose with various substitutions
-        "[C]-1-[C]-[C]-[C](-[O]-1)-[C]",
-        # Alternative forms
-        "O1[C][C][C][C]1[C]",
-        "O1[C][C][C][C](CO)1"
-    ]
-    
-    # Open chain patterns
-    open_chain_patterns = [
-        # Aldehexoses
-        "[CH](=O)[C][C][C][C][C]",
-        # Ketohexoses
-        "[C][C](=O)[C][C][C][C]",
-        # Alternative forms
-        "[CH](=O)[C][C][C][C]CO",
-        "[C][C](=O)[C][C][C]CO"
+    # Core hexose patterns
+    hexose_patterns = [
+        # Pyranose forms
+        "O1[C@H]([CH2]O)[C@H](O)[C@H](O)[C@H](O)[C@H]1O",  # alpha-D-glucopyranose
+        "O1[C@H](O)[C@H](O)[C@H](O)[C@H](O)[C@H]1[CH2]O",  # beta-D-glucopyranose
+        "C1([CH2]O)[C@H](O)[C@H](O)[C@H](O)[C@H](O)O1",    # general pyranose
+        
+        # Furanose forms
+        "O1[C@H]([CH2]O)[C@H](O)[C@H](O)[C@H]1O",  # furanose with CH2OH
+        "C1([CH2]O)O[C@H](O)[C@H](O)[C@H]1O",      # general furanose
+        
+        # Open chain forms
+        "[CH]=O[C@H](O)[C@H](O)[C@H](O)[C@H](O)[CH2]O",  # aldehyde form
+        "[CH2]O[C@H](O)[C@H](O)[C@H](O)C(=O)[CH2]O",     # ketone form
+        
+        # Deoxy variants
+        "O1[C@H]([CH2]O)[C@H](O)[C@H](O)[C@H](O)[C@H]1[CH3]",  # 6-deoxy
+        "O1[C@H]([CH3])[C@H](O)[C@H](O)[C@H](O)[C@H]1O"        # 1-deoxy
     ]
 
-    # Check for any hexose core structure
+    # Exclusion patterns
+    exclusion_patterns = [
+        # Phosphates
+        "[OH]P(=O)([OH])[OH]",
+        "COP(=O)([OH])[OH]",
+        # Complex derivatives
+        "NS(=O)(=O)[OH]",  # Sulfamates
+        "NC(=O)",          # Amides
+        "[NH3+]",          # Amino sugars (when charged)
+        "P(=O)([OH])([OH])[OH]"  # Phosphoric acid
+    ]
+
+    # Check for hexose core structure
     found_core = False
-    for pattern in pyranose_patterns + furanose_patterns + open_chain_patterns:
+    for pattern in hexose_patterns:
         patt = Chem.MolFromSmarts(pattern)
         if patt and mol.HasSubstructMatch(patt):
             found_core = True
@@ -66,50 +69,40 @@ def is_hexose(smiles: str):
     if not found_core:
         return False, "No hexose core structure found"
 
-    # Count carbons (should be around 6, but allow for modifications)
+    # Check for excluding groups
+    for pattern in exclusion_patterns:
+        patt = Chem.MolFromSmarts(pattern)
+        if patt and mol.HasSubstructMatch(patt):
+            return False, "Contains modifications incompatible with simple hexose"
+
+    # Count carbons in main chain
+    carbon_chain_pattern = Chem.MolFromSmarts("[C]-[C]-[C]-[C]-[C]-[C]")
+    if not mol.HasSubstructMatch(carbon_chain_pattern):
+        return False, "Missing required six-carbon chain"
+
+    # Count total carbons (allowing for some substitutions)
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if carbon_count < 6:
         return False, f"Too few carbons for hexose ({carbon_count})"
-    if carbon_count > 12:  # Allow for some substitutions
-        return False, f"Too many carbons for simple hexose ({carbon_count})"
+    if carbon_count > 7:  # Stricter limit on carbons
+        # Check if extra carbons are part of simple methyl substitutions
+        methyl_pattern = Chem.MolFromSmarts("C[C]")
+        methyl_count = len(mol.GetSubstructMatches(methyl_pattern))
+        if carbon_count - methyl_count > 6:
+            return False, "Too many non-methyl carbons"
 
-    # Check for oxygen content
+    # Check for minimum oxygen content (allowing for deoxy sugars)
     oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if oxygen_count < 5:  # Most hexoses have at least 5 oxygens (ring + hydroxyls)
+    if oxygen_count < 4:  # Allow for deoxy sugars
         return False, f"Too few oxygens for hexose ({oxygen_count})"
 
-    # Check for characteristic hydroxyl/carbonyl patterns
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H1]")
-    carbonyl_pattern = Chem.MolFromSmarts("[CX3]=[OX1]")
-    
-    has_hydroxyls = mol.HasSubstructMatch(hydroxyl_pattern)
-    has_carbonyl = mol.HasSubstructMatch(carbonyl_pattern)
-    
-    if not (has_hydroxyls or has_carbonyl):
-        return False, "Missing characteristic hydroxyl/carbonyl groups"
+    # Verify presence of either aldehyde or ketone group
+    aldehyde_pattern = Chem.MolFromSmarts("[CH]=O")
+    ketone_pattern = Chem.MolFromSmarts("C(=O)C")
+    if not (mol.HasSubstructMatch(aldehyde_pattern) or mol.HasSubstructMatch(ketone_pattern)):
+        # Check for hemiacetal/hemiketal forms
+        hemiacetal_pattern = Chem.MolFromSmarts("O[CH]O")
+        if not mol.HasSubstructMatch(hemiacetal_pattern):
+            return False, "Missing required carbonyl or hemiacetal group"
 
-    # Check it's not a disaccharide
-    glycosidic_pattern = Chem.MolFromSmarts("[OX2]([CH1][OX2])[CH1]")
-    if mol.HasSubstructMatch(glycosidic_pattern):
-        matches = len(mol.GetSubstructMatches(glycosidic_pattern))
-        if matches > 1:
-            return False, "Appears to be a polysaccharide"
-
-    # Additional validation for carbon chain connectivity
-    chain_patterns = [
-        "[C]-[C]-[C]-[C]-[C]-[C]",
-        "[C]1[C][C][C][C][C]1",
-        "[C]1[C][C][C][C]1[C]"
-    ]
-    
-    chain_found = False
-    for pattern in chain_patterns:
-        patt = Chem.MolFromSmarts(pattern)
-        if patt and mol.HasSubstructMatch(patt):
-            chain_found = True
-            break
-            
-    if not chain_found:
-        return False, "Missing connected six-carbon chain"
-
-    return True, "Contains hexose structure with appropriate substitution pattern"
+    return True, "Valid hexose structure with appropriate substitution pattern"
