@@ -6,7 +6,8 @@ from rdkit import Chem
 def is_alkene(smiles: str):
     """
     Determines if a molecule is an alkene based on its SMILES string.
-    An alkene classically contains only carbon and hydrogen atoms, and at least one carbon-carbon double bond in an open-chain structure without highly reactive or complex substituents.
+    An alkene contains at least one carbon-carbon double bond in an open-chain structure,
+    accounting for common substituents and functional groups that are permissible.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -15,6 +16,7 @@ def is_alkene(smiles: str):
         bool: True if molecule is an alkene, False otherwise
         str: Reason for classification
     """
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
@@ -22,18 +24,26 @@ def is_alkene(smiles: str):
 
     # Find carbon-carbon double bond pattern (C=C)
     alkene_pattern = Chem.MolFromSmarts("C=C")
-    
     if not mol.HasSubstructMatch(alkene_pattern):
         return False, "No C=C double bond found"
 
-    # Check for presence of heteroatoms or complex functional groups
-    heteroatom_pattern = Chem.MolFromSmarts("[!C&H]")
-    if mol.HasSubstructMatch(heteroatom_pattern):
-        return False, "Contains heteroatom or non-carbon/hydrogen groups"
+    # Identify and count SMARTS matches not to specifically exclude epoxides and allow simple alkene chains
+    complex_subs_pattern = Chem.MolFromSmarts("[#7,#8,#9,#15,#16,#17,#35,#53]") # Heteroatoms: N, O, F, P, S, Cl, Br, I
+    excluded_functionals = mol.HasSubstructMatch(complex_subs_pattern)
 
-    # Verify not a small ring structure
+    # Get ring info
     ring_info = mol.GetRingInfo()
-    if any(len(ring) < 8 for ring in ring_info.AtomRings()):
-        return False, "Contains a ring with fewer than 8 carbons"
+    small_ring = any(len(ring) < 8 for ring in ring_info.AtomRings())
+
+    # Ensure any small ring found is an epoxide, otherwise reject
+    if small_ring:
+        epoxide_pattern = Chem.MolFromSmarts("[C;R2]1[O;R][C;R1]1")
+        is_epoxide = mol.HasSubstructMatch(epoxide_pattern)
+        if not is_epoxide:
+            return False, "Contains a non-epoxide small ring"
+
+    # Exclude due to complex substituents if true
+    if excluded_functionals:
+        return False, "Contains unacceptable heteroatoms or groups"
 
     return True, "Contains at least one C=C double bond in suitable alkene structure"
