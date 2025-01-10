@@ -24,8 +24,8 @@ def is_hemiaminal(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the hemiaminal pattern: a carbon atom bonded to both an amino group and a hydroxy group
-    hemiaminal_pattern = Chem.MolFromSmarts("[C]([N])([O])")
+    # Define the hemiaminal pattern: a carbon atom bonded to exactly one amino group and one hydroxy group
+    hemiaminal_pattern = Chem.MolFromSmarts("[C;H0;X4]([N;H1,H2])([O;H1])")
     
     # Check if the molecule contains the hemiaminal pattern
     if mol.HasSubstructMatch(hemiaminal_pattern):
