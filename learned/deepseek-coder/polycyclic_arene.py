@@ -10,7 +10,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_polycyclic_arene(smiles: str):
     """
     Determines if a molecule is a polycyclic arene based on its SMILES string.
-    A polycyclic arene is a polycyclic aromatic hydrocarbon.
+    A polycyclic arene is a polycyclic aromatic hydrocarbon consisting only of carbon atoms.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -25,31 +25,37 @@ def is_polycyclic_arene(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check if the core structure is a polycyclic arene
-    # First, find the largest aromatic system
-    aromatic_systems = Chem.GetSymmSSSR(mol)
-    largest_aromatic_system = []
-    for ring in aromatic_systems:
-        if all(mol.GetAtomWithIdx(atom).GetIsAromatic() for atom in ring):
-            if len(ring) > len(largest_aromatic_system):
-                largest_aromatic_system = ring
+    # Check if all atoms are carbon (polycyclic arenes are pure hydrocarbons)
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() != 6:
+            return False, "Contains non-carbon atoms"
 
-    if not largest_aromatic_system:
-        return False, "No aromatic system found"
-
-    # Check if the largest aromatic system consists only of carbon atoms
-    for atom_idx in largest_aromatic_system:
-        if mol.GetAtomWithIdx(atom_idx).GetAtomicNum() != 6:
-            return False, "Aromatic system contains non-carbon atoms"
-
-    # Count the number of aromatic rings in the largest aromatic system
-    n_aromatic_rings = rdMolDescriptors.CalcNumAromaticRings(mol)
-    if n_aromatic_rings < 2:
-        return False, f"Only {n_aromatic_rings} aromatic ring(s) found, need at least 2"
-
-    # Check if rings are fused (polycyclic)
+    # Get all rings
     ring_info = mol.GetRingInfo()
-    if len(ring_info.AtomRings()) < 2:
+    rings = ring_info.AtomRings()
+    
+    # Check if there are at least 2 rings
+    if len(rings) < 2:
         return False, "Not enough rings to be polycyclic"
+
+    # Check if rings are fused and aromatic
+    aromatic_rings = 0
+    for ring in rings:
+        # Check if all atoms in the ring are aromatic
+        if all(mol.GetAtomWithIdx(atom).GetIsAromatic() for atom in ring):
+            aromatic_rings += 1
+            # Check if this ring shares at least 2 atoms with another ring
+            shared_atoms = 0
+            for other_ring in rings:
+                if ring != other_ring:
+                    shared_atoms = len(set(ring).intersection(other_ring))
+                    if shared_atoms >= 2:
+                        break
+            else:
+                return False, "Rings are not properly fused"
+
+    # Need at least 2 aromatic rings
+    if aromatic_rings < 2:
+        return False, f"Only {aromatic_rings} aromatic ring(s) found, need at least 2"
 
     return True, "Contains multiple fused aromatic rings consisting only of carbon atoms"
