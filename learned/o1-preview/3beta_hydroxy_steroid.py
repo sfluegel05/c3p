@@ -33,8 +33,13 @@ def is_3beta_hydroxy_steroid(smiles: str):
     # Assign stereochemistry
     Chem.AssignStereochemistry(mol, force=True, cleanIt=True)
 
-    # Define SMARTS pattern for steroid backbone (cyclopenta[a]phenanthrene nucleus)
-    steroid_smarts = '[#6]1CC[C@H]2CC[C@H]3CC[C@@H]4C(C)(C)CCC[C@H]4C3CC2C1'
+    # Define SMARTS pattern for steroid backbone without stereochemistry
+    # Atom indices are mapped to identify position 3
+    steroid_smarts = """
+    [#6;R1]1([#6;R2])[#6;R2][#6;R2]2[#6;R2][#6;R2][#6;R2]3
+    [#6;R2][#6;R2][#6;R2][#6;R2][#6;R2][#6;R2]3
+    [#6;R2][#6;R2][#6;R2]2[#6;R2][#6;R1]1
+    """
 
     steroid_pattern = Chem.MolFromSmarts(steroid_smarts)
     if steroid_pattern is None:
@@ -45,10 +50,14 @@ def is_3beta_hydroxy_steroid(smiles: str):
     if not matches:
         return False, "No steroid backbone found"
 
-    # Look for hydroxyl group at position 3
-    # In this pattern, atom index 17 corresponds to carbon 3
+    # Loop over matches to the steroid backbone
     for match in matches:
-        pos3_idx = match[17]  # Carbon at position 3
+        # Map position 3 carbon (using approximate numbering)
+        # Assuming atom with highest degree in ring A is position 3
+        ring_info = mol.GetRingInfo()
+        atom_degrees = [(idx, mol.GetAtomWithIdx(idx).GetDegree()) for idx in match]
+        sorted_atoms = sorted(atom_degrees, key=lambda x: x[1], reverse=True)
+        pos3_idx = sorted_atoms[0][0]
         pos3_atom = mol.GetAtomWithIdx(pos3_idx)
 
         # Check if there is a hydroxy (-OH) group attached to position 3
@@ -62,14 +71,9 @@ def is_3beta_hydroxy_steroid(smiles: str):
             continue  # No hydroxyl group at position 3
 
         # Check if position 3 is a chiral center
-        if not pos3_atom.HasProp('_ChiralityPossible'):
-            continue  # Position 3 is not chiral
+        if not pos3_atom.HasProp('_CIPCode'):
+            continue  # Chirality not assigned at position 3
 
-        chiral_tag = pos3_atom.GetChiralTag()
-        if chiral_tag == Chem.ChiralType.CHI_UNSPECIFIED:
-            continue  # Chirality not specified
-
-        # Get stereochemistry at carbon 3
         stereo = pos3_atom.GetProp('_CIPCode')
         if stereo == 'R':
             # In steroids, R configuration at position 3 corresponds to beta
