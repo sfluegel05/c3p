@@ -22,20 +22,19 @@ def is_N_acylphytosphingosine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Improved pattern for phytosphingosine backbone with chirality consideration
-    phytosphingosine_pattern = Chem.MolFromSmarts("[C@H](O)[C@H](O)[C@H](N=C(=O))[C@H](CO)O")
+    # Improved pattern for a generic phytosphingosine backbone allowing variability
+    phytosphingosine_pattern = Chem.MolFromSmarts("[C@H](O)[C@H](O)[C@H](N)[CX4]")
     if not mol.HasSubstructMatch(phytosphingosine_pattern):
         return False, "No phytosphingosine backbone found"
     
-    # Check for presence of an amide-bound long chain fatty acyl group
-    # The acyl group should be connected via an amide linkage to ensure specificity
+    # Adjusted pattern for amide linkage with flexibility in chain length
     acyl_amide_pattern = Chem.MolFromSmarts("C(=O)N[C@H]")
     if not mol.HasSubstructMatch(acyl_amide_pattern):
         return False, "No fatty acyl group bound via amide linkage"
 
-    # Ensuring sufficient carbon chain length typical of lipids
+    # Ensuring the molecule large enough typical of lipids
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if carbon_count < 20:
+    if carbon_count < 25:
         return False, "The molecule does not have enough carbon atoms for an N-acylphytosphingosine"
     
     return True, "The structure matches an N-acylphytosphingosine, with a phytosphingosine backbone and fatty acyl group"
