@@ -29,8 +29,8 @@ def is_polysaccharide(smiles: str):
     # Find all matches of the monosaccharide pattern
     monosaccharide_matches = mol.GetSubstructMatches(monosaccharide_pattern)
     
-    # Count the number of distinct monosaccharide units
-    num_monosaccharides = len(set(match[0] for match in monosaccharide_matches))
+    # Count the number of monosaccharide units
+    num_monosaccharides = len(monosaccharide_matches)
     
     # Check for glycosidic bonds
     glycosidic_bond_pattern = Chem.MolFromSmarts("[O;H0][C;H1][C;H1][O;H0]")
@@ -44,7 +44,7 @@ def is_polysaccharide(smiles: str):
     # and molecular weight is high
     if (num_monosaccharides > 10 and 
         len(glycosidic_bond_matches) > 0 and 
-        mol_wt > 5000):
+        mol_wt > 1000):
         return True, f"Contains {num_monosaccharides} monosaccharide units with glycosidic bonds and high molecular weight ({mol_wt:.1f} Da)"
     else:
         return False, f"Contains {num_monosaccharides} monosaccharide units, which is not more than 10, or lacks glycosidic bonds, or has low molecular weight ({mol_wt:.1f} Da)"
