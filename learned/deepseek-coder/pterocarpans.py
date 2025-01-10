@@ -26,8 +26,7 @@ def is_pterocarpans(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define the core pterocarpan skeleton pattern
-    # This pattern captures the fused benzofuro[3,2-c]chromene system
-    pterocarpan_pattern = Chem.MolFromSmarts("[O;R]1[C;R]2[C;R]([C;R]=3[C;R]1=[C;R][C;R]=[C;R]3)[C;R][O;R][C;R]4=[C;R]2[C;R]=[C;R][C;R]=[C;R]4")
+    pterocarpan_pattern = Chem.MolFromSmarts("[O;R]1[C;R]2[C;R]([C;R]=3[C;R]1=[C;R][C;R]([O;R])=[C;R]3)[C;R][O;R][C;R]4=[C;R]2[C;R]=[C;R][C;R]=[C;R]4")
     
     # Check if the molecule matches the pterocarpan skeleton
     if not mol.HasSubstructMatch(pterocarpan_pattern):
