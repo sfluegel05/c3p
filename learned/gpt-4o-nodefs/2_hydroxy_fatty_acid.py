@@ -23,14 +23,16 @@ def is_2_hydroxy_fatty_acid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for the carboxylic acid group pattern as a terminal group
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[O]")
-    if not mol.HasSubstructMatch(carboxylic_acid_pattern):
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
+    carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
+    if not carboxylic_acid_matches:
         return False, "No carboxylic acid group found"
 
-    # Flexible pattern for hydroxyl group on the second carbon (support for branching/double bonds)
-    # The first part `[$(*C(C)O)]` accounts for various chain types (straight/branched with OH)
-    hydroxyl_on_second_carbon_pattern = Chem.MolFromSmarts("[$(*C(C)O)]C(=O)O")
-    if not mol.HasSubstructMatch(hydroxyl_on_second_carbon_pattern):
-        return False, "No hydroxyl group on the second carbon"
+    # Ensure the hydroxyl is on the second carbon from the carboxylic acid
+    # To address branching and other configurations flexibility is added in substructure matching
+    hydroxy_on_second_carbon_pattern = Chem.MolFromSmarts("[C;H1,H2,H3][C;H1,H2](O)C(=O)O")
+    if not mol.HasSubstructMatch(hydroxy_on_second_carbon_pattern):
+        return False, "No hydroxyl group on the second carbon from the carboxylic acid"
 
-    return True, "Contains a carboxylic acid group with a hydroxyl group on the second carbon"
+    # Additional checks for chain length and unsaturation depend on further specifics not covered here
+    return True, "Contains carboxylic acid and hydroxyl group on the second carbon as expected in 2-hydroxy fatty acids"
