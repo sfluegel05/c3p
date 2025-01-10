@@ -2,7 +2,6 @@
 Classifies: CHEBI:55465 7-hydroxyisoflavones
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_7_hydroxyisoflavones(smiles: str):
     """
@@ -21,25 +20,24 @@ def is_7_hydroxyisoflavones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a refined SMARTS pattern for 7-hydroxyisoflavones
-    # capturing the benzopyran core specifically and variations
-    refined_pattern = Chem.MolFromSmarts("Oc1ccc2c(c1)c(=O)cc(o2)-*")  # Example pattern tweak
+    # Define a SMARTS pattern for 7-hydroxyisoflavones
+    # capturing the isoflavone core and ensuring a hydroxyl group at the 7-position
+    refined_pattern = Chem.MolFromSmarts("Oc1ccc2c(c1)occ(-c1ccc(O)cc1)c2=O")
     
     # Check if the molecule has the refined 7-hydroxyisoflavone pattern
     if not mol.HasSubstructMatch(refined_pattern):
         return False, "Does not match refined 7-hydroxyisoflavone core structure"
     
-    # Check for potential ring closure issues or alternative groups around the core
-    # Additional logic can be added to check for variations using further SMARTS or atom checks
+    # Check for any alternative functional groups or additional variability around the isoflavone core
+    # Logic can be enhanced by adding additional checks if specific derivatizations are expected
     
-    # If matched accurately, it is considered a 7-hydroxyisoflavone
     return True, "Matches the refined 7-hydroxyisoflavone core structure"
 
 # Example usage
 smiles_examples = [
-    "Oc1cc(O)c2c(c1)occ(-c1ccc3OCOc3c1)c2=O",
-    "COc1ccc(ccc1O)-c1coc2cc(O)ccc2c1=O",
-    # Add more SMILES strings to test
+    "Oc1cc(O)c2c(c1)occ(-c1ccc3OCOc3c1)c2=O",  # Example 7-hydroxyisoflavone
+    "COc1ccc(ccc1O)-c1coc2cc(O)ccc2c1=O",  # Example
+    # Add more SMILES strings for testing
 ]
 
 for smiles in smiles_examples:
