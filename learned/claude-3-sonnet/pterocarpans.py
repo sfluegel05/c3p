@@ -25,40 +25,51 @@ def is_pterocarpans(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Basic pterocarpan core skeleton - more flexible pattern
-    # Represents the basic connectivity without being too restrictive
+    # Basic pterocarpan core skeleton
+    # More permissive pattern focusing on connectivity
     core_pattern = Chem.MolFromSmarts(
-        '[#6]1~2~[#6]~[#6]~[#6]~[#6]~[#6]~1~[#8]~[#6]~3~[#6]~[#8]~[#6]~4~[#6]~[#6]~[#6]~[#6]~[#6]~4~[#6]~2~3'
+        '[#6]1~2~[#6]~[#6]~[#6]~[#6]~[#6]~1~[#8]~[#6]~3~[#6]~[#8]~[#6]([#6]~2~3])'
     )
     
     if not mol.HasSubstructMatch(core_pattern):
         return False, "Missing basic pterocarpan skeleton"
 
-    # Check for the two sp3 carbons at the junction (6a,11a positions)
-    # Using a more specific pattern for the fusion points
-    junction_pattern = Chem.MolFromSmarts('[#6X4]1-[#8]-[#6]-[#6]-2-[#6]-[#6]-[#6]-[#6]-[#6]-2-[#6X4]-1')
-    if not mol.HasSubstructMatch(junction_pattern):
-        return False, "Missing required sp3 carbons at 6a,11a positions"
+    # Check for the characteristic benzofuran system
+    benzofuran = Chem.MolFromSmarts('c1cccc2c1OCC2')
+    if not mol.HasSubstructMatch(benzofuran):
+        return False, "Missing benzofuran system"
 
-    # Check for the characteristic oxygen bridges
-    # More flexible pattern that allows for various substitutions
-    oxygen_bridges = Chem.MolFromSmarts('[#6]1-[#8]-[#6]-[#6]2-[#8]-[#6]-[#6]-[#6]-1-2')
-    if not mol.HasSubstructMatch(oxygen_bridges):
-        return False, "Missing characteristic oxygen bridge pattern"
+    # Check for the characteristic chromene system
+    chromene = Chem.MolFromSmarts('c1cccc2c1OC-C2')
+    if not mol.HasSubstructMatch(chromene):
+        return False, "Missing chromene system"
 
-    # Exclude molecules with carbonyl groups in the core structure (coumestans)
-    carbonyl_pattern = Chem.MolFromSmarts('[#6]1=[#8]-[#6]2=,:c-[#6]=,:[#6]-[#6]=,:[#6]-2-[#8]-1')
-    if mol.HasSubstructMatch(carbonyl_pattern):
-        return False, "Contains carbonyl group characteristic of coumestans"
+    # Verify the presence of two sp3 carbons at the junction (6a,11a positions)
+    junction = Chem.MolFromSmarts('[CH1X4]1-[CH2X4]-O-c2ccccc2-[CH1X4]1')
+    if not mol.HasSubstructMatch(junction):
+        # Try alternative pattern for substituted junctions
+        junction_alt = Chem.MolFromSmarts('[CX4]1-[CH2X4]-O-c2ccccc2-[CX4]1')
+        if not mol.HasSubstructMatch(junction_alt):
+            return False, "Missing required sp3 carbons at 6a,11a positions"
 
-    # Additional check for proper ring connectivity
+    # Check ring count (should have at least 4 rings)
     ring_info = mol.GetRingInfo()
     if ring_info.NumRings() < 4:
-        return False, "Insufficient number of rings for pterocarpan structure"
+        return False, "Insufficient number of rings"
 
-    # Check for proper aromatic systems
-    aromatic_pattern = Chem.MolFromSmarts('c1cccc2c1-[#6]-[#8]-[#6]-2')
-    if len(mol.GetSubstructMatches(aromatic_pattern)) < 2:
-        return False, "Missing required aromatic systems"
+    # Exclude molecules that are actually coumestans (oxidized pterocarpans)
+    coumestan = Chem.MolFromSmarts('O=C1Oc2ccccc2-c2ccc3ccccc3o12')
+    if mol.HasSubstructMatch(coumestan):
+        return False, "Structure is a coumestan (oxidized pterocarpan)"
+
+    # Additional check for proper fusion pattern
+    fusion = Chem.MolFromSmarts('c1ccc2c(c1)OC[C@H]1[C@H]2Oc2ccccc21')
+    fusion_alt = Chem.MolFromSmarts('c1ccc2c(c1)OC[C@@H]1[C@@H]2Oc2ccccc21')
+    
+    if not (mol.HasSubstructMatch(fusion) or mol.HasSubstructMatch(fusion_alt)):
+        # Try a more general fusion pattern without stereochemistry
+        fusion_general = Chem.MolFromSmarts('c1ccc2c(c1)OCC1C2Oc2ccccc21')
+        if not mol.HasSubstructMatch(fusion_general):
+            return False, "Incorrect ring fusion pattern"
 
     return True, "Contains characteristic pterocarpan skeleton with proper ring fusion and oxygen bridges"
