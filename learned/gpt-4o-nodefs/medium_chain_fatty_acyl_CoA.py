@@ -2,7 +2,6 @@
 Classifies: CHEBI:61907 medium-chain fatty acyl-CoA
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_medium_chain_fatty_acyl_CoA(smiles: str):
     """
@@ -20,32 +19,27 @@ def is_medium_chain_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Improved Coenzyme A moiety pattern
-    # A wide-capturing SMARTS for the CoA moiety
-    coa_pattern = Chem.MolFromSmarts("NC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)([O-])=O")
+    # Coenzyme A moiety pattern
+    coa_pattern = Chem.MolFromSmarts("OP(O)(=O)OCC1OC(COP(O)(=O)O)C1OP(O)(=O)O")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No CoA moiety found"
 
     # Thioester bond pattern
-    thioester_pattern = Chem.MolFromSmarts("C(=O)SCC")
+    thioester_pattern = Chem.MolFromSmarts("C(=O)SCCNC(=O)")
     if not mol.HasSubstructMatch(thioester_pattern):
         return False, "No thioester linkage found"
 
-    # Get Thioester Group and Attached Acyl Chain
-    # Consider all carbon chains attached to the C=O-S group
-    thioester_matches = mol.GetSubstructMatches(thioester_pattern)
-    
-    # Identifying Acyl Chains
-    acyl_chain_lengths = []
-    for match in thioester_matches:
-        atom_idx = match[0]  # Starting from the carbon in C(=O)
-        acyl_chain = Chem.FragmentOnBonds(mol, [atom_idx])
-        acyl_atoms = [atom for atom in acyl_chain.GetAtoms() if atom.GetAtomicNum() == 6]
-        acyl_length = len(acyl_atoms)
-        acyl_chain_lengths.append(acyl_length)
+    # Finding Acyl Chain Length
+    connected_parts = thioester_pattern.GetAtoms()
+    for start_atom in connected_parts:
+        # Consider the connectivity from thioester justification
+        chain_length = 0
+        for neighbor in start_atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 6:  # Carbon atoms
+                chain_length += 1
 
     # Check if there is any medium chain (6-12 carbons) acyl component
-    if any(6 <= length <= 12 for length in acyl_chain_lengths):
-        return True, "Contains a CoA moiety with medium-chain fatty acyl group"
+    if 6 <= chain_length <= 12:
+        return True, "Contains a CoA moiety with a medium-length acyl chain"
 
     return False, "Fatty acyl chain not of medium length"
