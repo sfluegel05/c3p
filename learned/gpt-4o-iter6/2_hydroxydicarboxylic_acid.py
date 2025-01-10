@@ -27,14 +27,14 @@ def is_2_hydroxydicarboxylic_acid(smiles: str):
     carboxy_matches = mol.GetSubstructMatches(carboxy_pattern)
     
     # Ensure we have exactly two carboxylic acid groups
-    if len(carboxy_matches) != 2:
-        return False, f"Expected 2 carboxylic acid groups but found {len(carboxy_matches)}"
+    if len(carboxy_matches) < 2:
+        return False, f"Expected at least 2 carboxylic acid groups but found {len(carboxy_matches)}"
 
-    # Pattern for the hydroxy group on an alpha carbon to a carboxylic acid
-    alpha_hydroxy_pattern = Chem.MolFromSmarts("[CH](O)[CH2]C(=O)O")
+    # Pattern for the alpha-hydroxy: HO-C-C(=O)O, accounting for chirality symbols
+    alpha_hydroxy_pattern = Chem.MolFromSmarts("[C;H0,H1,H2](O)[C;H1,H2](C(=O)O)")
     alpha_oh_matches = mol.GetSubstructMatches(alpha_hydroxy_pattern)
     
     if not alpha_oh_matches:
         return False, "No hydroxy group found on the alpha carbon to a carboxylic acid group"
-    
+
     return True, "Contains two carboxylic acid groups and a hydroxy group on the alpha carbon"
