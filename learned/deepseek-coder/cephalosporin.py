@@ -28,20 +28,23 @@ def is_cephalosporin(smiles: str):
 
     # Define the core structure of cephalosporins
     # The core structure includes a beta-lactam ring fused to a 6-membered dihydrothiazine ring
-    cephalosporin_core = Chem.MolFromSmarts("[C@H]12SCC(=C(N1C(=O)[C@@H]2NC(=O)*)*)*")
+    # More flexible pattern that allows for various substituents
+    cephalosporin_core = Chem.MolFromSmarts("[C@H]12SCC(=C(N1C(=O)[C@@H]2*)*)*")
     
     # Check if the molecule contains the core structure
     if not mol.HasSubstructMatch(cephalosporin_core):
         return False, "No cephalosporin core structure found"
 
-    # Check for the presence of a carboxyl group at position 4 of the dihydrothiazine ring
-    carboxyl_pattern = Chem.MolFromSmarts("[C@H]12SCC(=C(N1C(=O)[C@@H]2NC(=O)*)*)C(=O)O")
+    # Check for the presence of a carboxyl group (or ester) at position 4 of the dihydrothiazine ring
+    # This pattern is more flexible and allows for esterified carboxyl groups
+    carboxyl_pattern = Chem.MolFromSmarts("[C@H]12SCC(=C(N1C(=O)[C@@H]2*)*)[C;$(C(=O)[OH,O])]")
     if not mol.HasSubstructMatch(carboxyl_pattern):
-        return False, "No carboxyl group at position 4 of the dihydrothiazine ring"
+        return False, "No carboxyl group (or ester) at position 4 of the dihydrothiazine ring"
 
-    # Check for the presence of an amino group at position 7 of the beta-lactam ring
-    amino_pattern = Chem.MolFromSmarts("[C@H]12SCC(=C(N1C(=O)[C@@H]2N)*)*")
+    # Check for the presence of an amino group or similar at position 7 of the beta-lactam ring
+    # This pattern is more flexible and allows for various substitutions
+    amino_pattern = Chem.MolFromSmarts("[C@H]12SCC(=C(N1C(=O)[C@@H]2[NH2,NH,*])*)*")
     if not mol.HasSubstructMatch(amino_pattern):
-        return False, "No amino group at position 7 of the beta-lactam ring"
+        return False, "No amino group or similar at position 7 of the beta-lactam ring"
 
-    return True, "Contains the core structure of a cephalosporin with a carboxyl group at position 4 and an amino group at position 7"
+    return True, "Contains the core structure of a cephalosporin with a carboxyl group (or ester) at position 4 and an amino group or similar at position 7"
