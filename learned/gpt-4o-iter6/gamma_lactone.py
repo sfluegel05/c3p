@@ -20,9 +20,9 @@ def is_gamma_lactone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the SMARTS pattern for a gamma-lactone
-    # This pattern specifies a five-membered ring with one ester group (O=C-O) and three carbon atoms
-    gamma_lactone_pattern = Chem.MolFromSmarts("C1C(=O)OC(C1)")
+    # Refine the SMARTS pattern for a gamma-lactone
+    # This pattern specifies a generic five-membered ring with one ester group (O=C-O) and varying carbon atoms
+    gamma_lactone_pattern = Chem.MolFromSmarts("C1OC(=O)[#6][#6][#6]1")
 
     # Check for gamma-lactone pattern
     if mol.HasSubstructMatch(gamma_lactone_pattern):
