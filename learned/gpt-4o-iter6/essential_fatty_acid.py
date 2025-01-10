@@ -29,12 +29,13 @@ def is_essential_fatty_acid(smiles: str):
     # Identify cis double bonds (Z or \), which are critical for polyunsaturation
     cis_double_bond_pattern = Chem.MolFromSmarts("C/C=C/C")
     cis_bond_count = len(mol.GetSubstructMatches(cis_double_bond_pattern))
-    if cis_bond_count < 2:
-        return False, f"Insufficient cis double bonds (found {cis_bond_count}), required polyunsaturation"
+    if cis_bond_count < 4:
+        return False, f"Insufficient cis double bonds (found {cis_bond_count}), need at least 4 for polyunsaturation"
 
-    # Check for sufficiently long aliphatic carbon chain
-    aliphatic_chain_pattern = Chem.MolFromSmarts("CCCCCCCC")
+    # Check for sufficiently long aliphatic carbon chain, involving at least 16 carbons
+    # Allow flexibility in chain construction with any length from 16 to larger
+    aliphatic_chain_pattern = Chem.MolFromSmarts("C" * 16)
     if not mol.HasSubstructMatch(aliphatic_chain_pattern):
-        return False, "Aliphatic chain length insufficient for essential fatty acid"
+        return False, "Aliphatic chain length insufficient for essential fatty acid, requires 16 carbons at minimum"
     
-    return True, "Contains key characteristics of essential fatty acid: carboxylic acid group, multiple cis double bonds, and long aliphatic chain"
+    return True, "Contains key characteristics of essential fatty acid: carboxylic acid group, multiple cis double bonds, and sufficiently long aliphatic chain"
