@@ -2,7 +2,6 @@
 Classifies: CHEBI:65323 monoterpenoid indole alkaloid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_monoterpenoid_indole_alkaloid(smiles: str):
     """
@@ -17,23 +16,22 @@ def is_monoterpenoid_indole_alkaloid(smiles: str):
         bool: True if molecule is a monoterpenoid indole alkaloid, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse the SMILES string into an RDKit molecule object
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the SMARTS pattern for an indole ring
-    indole_pattern = Chem.MolFromSmarts('c1ccc2nc3ccccc3c2c1')
+    # Expanded SMARTS pattern for an indole ring to handle various substructures
+    indole_pattern = Chem.MolFromSmarts('[nH]1c2ccccc2c3ccccc13')
     if not mol.HasSubstructMatch(indole_pattern):
         return False, "No indole ring found"
 
-    # Define a broad pattern for a terpenoid portion via isoprene units (C5 isoprene structure)
-    terpenoid_pattern = Chem.MolFromSmarts('C=C(C)C')
+    # Expanded SMARTS pattern for terpenoid-like features
+    # A general example pattern for the types commonly found in biological terpenes
+    terpenoid_pattern = Chem.MolFromSmarts('C(C)(C)C=C')  # More complex than a simple isoprene
     if not mol.HasSubstructMatch(terpenoid_pattern):
-        return False, "No terpenoid features found (missing isoprene units)"
+        return False, "No terpenoid features found (missing complex isoprene-related structures)"
     
-    # Additional checks involving molecular weight or specific atom counts could be added if needed
-
     # If passes all key structure tests, classify as a monoterpenoid indole alkaloid
-    return True, "Contains both indole ring and terpenoid features (isoprene units)"
+    return True, "Contains both indole ring and terpenoid features."
