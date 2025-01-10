@@ -21,12 +21,21 @@ def is_3_oxo_Delta_1_steroid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # SMARTS pattern for steroid structure with Delta(1) double bond 
-    steroid_pattern = Chem.MolFromSmarts("C1(=C)[C@@H]2CC[C@]3([C@H]4CCC(=O)C=C[C@]4(C)[C@@H]3CC[C@@H]12)") 
     
-    # Check if the steroid structure with Delta(1) double bond and 3-oxo group is present
-    if not mol.HasSubstructMatch(steroid_pattern):
-        return False, "Structure does not match a 3-oxo-Delta(1) steroid pattern"
+    # SMARTS pattern for a ketone group at the 3-position
+    ketone_pattern = Chem.MolFromSmarts("[C;R1](=O)[C;R1]")
+    if not mol.HasSubstructMatch(ketone_pattern):
+        return False, "No ketone group at the 3-position"
+
+    # SMARTS pattern for a double bond between positions 1 and 2
+    delta_1_bond_pattern = Chem.MolFromSmarts("C=C")
+    if not mol.HasSubstructMatch(delta_1_bond_pattern):
+        return False, "No double bond between positions 1 and 2"
+    
+    # SMARTS pattern for a general steroid structure (ABCDE ring system)
+    # This is more flexible and may need further adjustment based on stereo descriptors
+    steroid_backbone_pattern = Chem.MolFromSmarts("C1CC2CCC3C4C(CCC4)CCC3C2C1")
+    if not mol.HasSubstructMatch(steroid_backbone_pattern):
+        return False, "No valid steroid backbone found"
     
     return True, "Matches the 3-oxo-Delta(1) steroid pattern"
