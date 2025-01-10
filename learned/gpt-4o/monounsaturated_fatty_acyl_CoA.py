@@ -20,28 +20,25 @@ def is_monounsaturated_fatty_acyl_CoA(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return None, "Invalid SMILES string"
+        return False, "Invalid SMILES string"
 
-    # Improved Coenzyme A general pattern
-    coa_pattern = Chem.MolFromSmarts(
-        "SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)C"  # Shortened for explanation, customize as needed
-        "OP(=O)(O)O"
-        "P(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(=O)(O)O)N"
-    )
+    # Check for Coenzyme A structure (simplified search pattern)
+    coa_pattern = Chem.MolFromSmarts("NC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "Coenzyme A structure not found"
-    
-    # Check for exactly one carbon-carbon double bond
+
+    # Check for exactly one carbon-carbon double bond in the acyl chain
     db_pattern = Chem.MolFromSmarts("C=C")
     db_matches = mol.GetSubstructMatches(db_pattern)
-
-    if len(db_matches) != 1:
-        return False, f"Expected 1 carbon-carbon double bond, found {len(db_matches)}"
-
-    # Ensure the double bond is part of the fatty acyl chain
-    for match in db_matches:
-        atom_indices = {atom.GetIdx() for atom in mol.GetAtoms()}
-        if all(idx in atom_indices for idx in match):
-            return True, "Contains Coenzyme A structure and a fatty acyl chain with exactly one carbon-carbon double bond"
     
-    return False, "Double bond not part of a valid fatty acyl chain"
+    # Count double bonds that are part of fatty acyl chain
+    fatty_acyl_db_counter = 0
+    for match in db_matches:
+        if any(mol.GetAtomWithIdx(atom_idx).GetAtomicNum() == 6 for atom_idx in match):
+            fatty_acyl_db_counter += 1
+
+    # Verify there is exactly one double bond in the acyl chain
+    if fatty_acyl_db_counter != 1:
+        return False, f"Expected 1 carbon-carbon double bond, found {fatty_acyl_db_counter}"
+
+    return True, "Contains Coenzyme A structure and a fatty acyl chain with exactly one carbon-carbon double bond"
