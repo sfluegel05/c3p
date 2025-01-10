@@ -22,24 +22,25 @@ def is_N_acylsphinganine(smiles: str):
     if not mol:
         return False, "Invalid SMILES string"
 
-    # Look for the sphinganine backbone pattern (loosening stereospecific requirements)
-    sphinganine_pattern = Chem.MolFromSmarts("[C@H]([OH])([CH2])C[C@@H](O)CN")
+    # Look for a broader sphinganine backbone pattern:
+    # adjusted pattern to allow flexible connection and less strict stereo specification
+    sphinganine_pattern = Chem.MolFromSmarts("[C][C](O)[C][C](O)NC")
     if sphinganine_pattern is None:
         return False, "Failed to build sphinganine pattern"
         
     if not mol.HasSubstructMatch(sphinganine_pattern):
-        return False, "No sphinganine backbone with flexible stereochemistry found"
-
-    # Look for N-acyl amide bond pattern (-NC(=O)-)
-    amide_pattern = Chem.MolFromSmarts("NC(=O)")
+        return False, "No sphinganine backbone found"
+    
+    # Look for N-acyl amide bond pattern (-NC(=O)-), modified to recognize broader connections
+    amide_pattern = Chem.MolFromSmarts("N[C](=O)")
     if amide_pattern is None:
         return False, "Failed to build amide pattern"
         
     if not mol.HasSubstructMatch(amide_pattern):
         return False, "No amide bond (N-acyl group) found"
 
-    # Check for a realistic aliphatic tail chain, allowing for 8 or more carbons, including branching
-    fatty_acid_chain_pattern = Chem.MolFromSmarts("C(=O)[CX4H2,#6]{7,}")
+    # Check for a reasonable aliphatic tail chain, only needing long enough chains
+    fatty_acid_chain_pattern = Chem.MolFromSmarts("C(=O)C(C){8,}")  # Require longer chains more generally
     if fatty_acid_chain_pattern is None:
         return False, "Failed to build fatty acid chain pattern"
         
