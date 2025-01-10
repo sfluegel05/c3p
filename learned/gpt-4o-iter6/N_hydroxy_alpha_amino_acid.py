@@ -13,23 +13,22 @@ def is_N_hydroxy_alpha_amino_acid(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a N-hydroxy-alpha-amino-acid, False otherwise
+        bool: True if the molecule is a N-hydroxy-alpha-amino-acid, False otherwise
         str: Reason for classification
     """
 
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return None, "Invalid SMILES string"
 
-    # Define a SMARTS pattern for an alpha amino acid backbone
-    # This includes checking for C alpha position with a carboxylic acid and potential substitutions at the nitrogen
-    amino_acid_pattern = Chem.MolFromSmarts("N[C@@H](C)C(=O)O")
+    # Broaden the pattern for an alpha amino acid backbone to include diverse R groups and stereochemistry.
+    amino_acid_pattern = Chem.MolFromSmarts("N[C@@H](C*)C(=O)O")
     if not mol.HasSubstructMatch(amino_acid_pattern):
         return False, "No alpha amino acid backbone found"
-
-    # Define SMARTS for N-hydroxy pattern, ensuring -N(OH) linkage
-    n_hydroxy_pattern = Chem.MolFromSmarts("[N;!R](O)")
+    
+    # Improved SMARTS for N-hydroxy pattern highlighting variance like bidentate N-hydroxy substitutions
+    n_hydroxy_pattern = Chem.MolFromSmarts("[NX3;!R]([OH])[OH]")
     if not mol.HasSubstructMatch(n_hydroxy_pattern):
         return False, "No N-hydroxy modification found"
 
@@ -41,6 +40,6 @@ __metadata__ = {
         'definition': 'Any amino acid in which at least one hydrogen attached to the amino group is replaced by a hydroxy group.',
     },
     'message': None,
-    'attempt': 0,
-    'success': True,
+    'attempt': 1,
+    'success': False,
 }
