@@ -27,7 +27,7 @@ def is_CDP_diacylglycerol(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for cytidine diphosphate (CDP) group
-    cdp_pattern = Chem.MolFromSmarts("[NX3]C1=CC(=O)[NX3]C(=N1)[CX4][CX4][CX4][CX4][OX2][PX4](=[OX1])([OX2][PX4](=[OX1])[OX1])[OX1]")
+    cdp_pattern = Chem.MolFromSmarts("[NX3]C1=CC(=O)[NX3]C(=N1)[CX4][CX4][OX2][PX4](=[OX1])([OX2][PX4](=[OX1])[OX1])[OX1]")
     if cdp_pattern is None or not mol.HasSubstructMatch(cdp_pattern):
         return False, "No cytidine diphosphate (CDP) group found"
 
