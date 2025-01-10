@@ -7,10 +7,10 @@ def is_secondary_ammonium_ion(smiles: str):
     """
     Determines if a molecule is a secondary ammonium ion based on its SMILES string.
     A secondary ammonium ion is an organic cation obtained by protonation of a secondary amine.
-   
+
     Args:
         smiles (str): SMILES string of the molecule
-        
+
     Returns:
         bool: True if molecule is a secondary ammonium ion, False otherwise
         str: Reason for classification
@@ -21,9 +21,10 @@ def is_secondary_ammonium_ion(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for secondary ammonium ion: positivlely charged nitrogen bonded to two carbon atoms
-    # The pattern searches for an N with a positive charge and exactly two carbon atom attachments
-    pattern = Chem.MolFromSmarts("[NH2+][C][C]")
+    # SMARTS pattern for protonated secondary ammonium ion
+    # This pattern assumes a positively charged nitrogen with two carbon attachments
+    # The carbon attachments can be either aliphatic or aromatic
+    pattern = Chem.MolFromSmarts("[NH2+;R0][C;!$(C=[O,N,P,S])][C;!$(C=[O,N,P,S])]")
 
     # Check if the molecule matches the secondary ammonium ion pattern
     matches = mol.GetSubstructMatches(pattern)
