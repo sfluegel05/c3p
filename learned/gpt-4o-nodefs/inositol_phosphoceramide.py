@@ -20,25 +20,27 @@ def is_inositol_phosphoceramide(smiles: str):
     if mol is None:
         return (False, "Invalid SMILES string")
 
-    # Check for inositol-phosphate moiety
+    # Identify the inositol phosphate moiety (inositol connected to a phosphate group)
     inositol_phosphate_pattern = Chem.MolFromSmarts("OC1C(O)C(O)C(O)C(O)C1OP(=O)(O)O")
     if not mol.HasSubstructMatch(inositol_phosphate_pattern):
         return (False, "No inositol-phosphate moiety found")
 
-    # Check for ceramide structure (amide linkage with potential long-chain sphingoid)
-    ceramide_pattern = Chem.MolFromSmarts("C(=O)N[C@@H](COP(=O)(O)O)C(O)C")
-    if not mol.HasSubstructMatch(ceramide_pattern):
-        return (False, "No ceramide structure detected")
-    
-    # Validate presence of potential long hydrophobic chains
-    long_chain_pattern = Chem.MolFromSmarts("C(CC(C)C)C")
-    if mol.GetNumAtoms(mol.GetSubstructMatch(long_chain_pattern)[0]) < 20:
-        return (False, "Missing or shortened long hydrophobic chain typical of ceramide")
+    # Look for the ceramide structure (amide linkage with long chains, potential sphingoid)
+    ceramide_amide_pattern = Chem.MolFromSmarts("C(=O)N")
+    if not mol.HasSubstructMatch(ceramide_amide_pattern):
+        return (False, "No ceramide amide linkage found")
 
-    # Detect presence of additional sugar moieties like mannose if present
+    # Check for a long chain, typical of ceramides
+    # Here we just approximate a long chain with consecutive carbon atoms
+    long_chain_pattern = Chem.MolFromSmarts("CCCCCCCCCCCCCCCCCCC") # Adjust length as needed
+    matches = mol.GetSubstructMatches(long_chain_pattern)
+    if not matches or len(matches) < 1:
+        return (False, "No long hydrophobic chain detected")
+
+    # Detect additional mannose or sugar moieties
     mannose_pattern = Chem.MolFromSmarts("OC1OC(CO)C(O)C(O)C1O")
     if mol.HasSubstructMatch(mannose_pattern):
         return (True, "Contains inositol, ceramide, and mannose sugar components")
 
-    # Confirm basic structure without additional components
-    return (True, "Basic inositol phosphoceramide detected with inositol and ceramide")
+    # If core structures identified without additional sugars
+    return (True, "Inositol phosphoceramide detected with inositol and ceramide structure")
