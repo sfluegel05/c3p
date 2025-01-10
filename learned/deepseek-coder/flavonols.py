@@ -26,13 +26,13 @@ def is_flavonols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the chromen-4-one ring (flavone backbone) pattern
-    chromen_pattern = Chem.MolFromSmarts("O=C1C(=O)C2=C(O1)C=C(*)C=C2")
+    # Define a more general chromen-4-one ring (flavone backbone) pattern
+    chromen_pattern = Chem.MolFromSmarts("O=C1C(=O)C2=C(O1)C=C([*])C=C2")
     if not mol.HasSubstructMatch(chromen_pattern):
         return False, "No chromen-4-one ring (flavone backbone) found"
 
     # Check for the presence of the hydroxyl group at position 3
-    position_3_hydroxyl_pattern = Chem.MolFromSmarts("[O;H1]c1c(=O)c2c(O)cc(*)cc2oc1")
+    position_3_hydroxyl_pattern = Chem.MolFromSmarts("[O;H1]c1c(=O)c2c(O)cc([*])cc2oc1")
     if not mol.HasSubstructMatch(position_3_hydroxyl_pattern):
         return False, "No hydroxyl group at position 3 of the heterocyclic ring"
 
