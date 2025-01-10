@@ -20,28 +20,30 @@ def is_nucleobase_analogue(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Basic purine and pyrimidine structure patterns
-    purine_pattern = Chem.MolFromSmarts("c1nc2ncnc(n2c1)N")  # Generalized purine core with possible substitution
-    pyrimidine_pattern = Chem.MolFromSmarts("c1ncncc1")      # Pyrimidine structure
+    # Expanded patterns for nucleobase cores
+    nucleobase_core_patterns = [
+        Chem.MolFromSmarts("c1[nH]cnc1"),   # Generic azole (pyrimidine-like)
+        Chem.MolFromSmarts("c1nc[nH]n1"),   # Purine-like
+    ]
 
-    # Check for core nucleobase structures
-    has_purine_structure = mol.HasSubstructMatch(purine_pattern)
-    has_pyrimidine_structure = mol.HasSubstructMatch(pyrimidine_pattern)
-    
-    if has_purine_structure or has_pyrimidine_structure:
-        return True, "Core nucleobase structure detected"
-
-    # Patterns for common modifications found in nucleobase analogues
+    # Functionality-modified nucleobase patterns (e.g., extra rings, halogens, thio substitutions)
     modification_patterns = [
-        Chem.MolFromSmarts("n1cnc2ncnc(n1)c2"),  # Azapurine
-        Chem.MolFromSmarts("O=C1NC=2N(C=3NC=NC31)C(=O)N2"),  # Ethylene bridged
-        Chem.MolFromSmarts("c1c[nH]c(=O)[nH]c1=O"),  # Thio- and halogen modifications
-        Chem.MolFromSmarts("c1ncnc(c1)NC(=O)C"),  # Miscellaneous functional groups
+        Chem.MolFromSmarts("c1c[nH]c(=O)[nH]c1"),   # Uracil/thio variations
+        Chem.MolFromSmarts("n1c(O)nc2[nH]ncc2n1"),   # Modifications like hydroxypurine
+        Chem.MolFromSmarts("c1ncnc(O)c1"),   # Hydroxy pyrimidines
+        Chem.MolFromSmarts("c1nc(=O)[nH]c1"), # Hydroxy, thio, or halo on pyrimidine
     ]
     
-    # Search patterns specific to modifications identified in nucleobase analogues
-    for pattern in modification_patterns:
+    # Look for nucleobase core structures
+    for pattern in nucleobase_core_patterns:
         if mol.HasSubstructMatch(pattern):
-            return True, "Modification consistent with nucleobase analogue detected"
+            return True, "Core nucleobase-like structure detected"
+    
+    # Check for modification patterns on a nucleobase core
+    for base_pattern in nucleobase_core_patterns:
+        for mod_pattern in modification_patterns:
+            if mol.HasSubstructMatch(base_pattern) and mol.HasSubstructMatch(mod_pattern):
+                return True, "Modified nucleobase analogue structure detected"
 
+    # Final fallback if no clear indicator was identified
     return False, "No significant nucleobase analogue characteristics detected"
