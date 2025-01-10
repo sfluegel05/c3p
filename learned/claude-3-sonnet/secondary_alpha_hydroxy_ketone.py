@@ -26,36 +26,22 @@ def is_secondary_alpha_hydroxy_ketone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Exclude patterns (things we don't want to match)
-    exclude_patterns = [
-        # Carboxylic acids
-        "[CX3](=O)[OX2H1]",
-        # Esters
-        "[CX3](=O)[OX2][CX4]",
-        # Hemiacetals/hemiketal patterns (common in sugars)
-        "[OX2H1][CX4]1[OX2][CX4][CX4][CX4][CX4]1",
-        # Alpha-keto acids
-        "[CX3](=O)[CX3](=O)[OX2H1]"
-    ]
-    
-    for pattern in exclude_patterns:
-        pat = Chem.MolFromSmarts(pattern)
-        if pat and mol.HasSubstructMatch(pat):
-            return False, "Contains excluded functional group pattern"
-
     # Core patterns for alpha-hydroxy ketone
     patterns = [
-        # Basic pattern with explicit valence and connectivity
-        "[OX2H1]-[CX4;H1;!$(C(O)(O))]-[CX3](=[OX1])-[#6;!$(C=O)]",
+        # Basic pattern: OH-CH(R)-C(=O)-R
+        "[OX2H1]-[CX4;H1](-[#6,#7,#8,#16])-[CX3](=[OX1])-[#6]",
         
-        # Pattern for cyclic ketones
-        "[OX2H1]-[CX4;H1](-[#6,#7,#8,#16])-[CX3]1(=[OX1])-[#6](-[#6,#7,#8,#16])@[#6,#7,#8,#16]@[#6,#7,#8,#16]-1",
+        # Reversed pattern: R-C(=O)-CH(OH)-R
+        "[#6]-[CX3](=[OX1])-[CX4;H1](-[OX2H1])-[#6,#7,#8,#16]",
         
-        # Pattern for conjugated ketones
-        "[OX2H1]-[CX4;H1](-[#6,#7,#8,#16])-[CX3](=[OX1])-[CX3]=[CX3]",
+        # Cyclic pattern where ketone is in ring
+        "[OX2H1]-[CX4;H1](-[#6,#7,#8,#16])-[CX3]1(=[OX1])-[#6,#7,#8,#16]@[#6,#7,#8,#16]@[#6,#7,#8,#16]-1",
         
-        # Pattern for alpha-hydroxy ketones in complex ring systems
-        "[OX2H1]-[CX4;H1;R](-[#6,#7,#8,#16])-[CX3;R](=[OX1])-[@#6]"
+        # Pattern where OH is deprotonated
+        "[OX2-]-[CX4;H1](-[#6,#7,#8,#16])-[CX3](=[OX1])-[#6]",
+        
+        # Pattern for ring junction cases
+        "[OX2H1]-[CX4;H1](-[#6,#7,#8,#16]@[#6,#7,#8,#16])-[CX3](=[OX1])-[@#6,#7,#8,#16]"
     ]
 
     for pattern in patterns:
@@ -71,32 +57,28 @@ def is_secondary_alpha_hydroxy_ketone(smiles: str):
                 alpha_c = mol.GetAtomWithIdx(match[1])
                 carbonyl_c = mol.GetAtomWithIdx(match[2])
                 
-                # Validate alpha carbon
+                # Basic validation of alpha carbon
                 if alpha_c.GetTotalNumHs() != 1:
                     continue
                     
                 # Count non-H neighbors of alpha carbon
-                non_h_neighbors = [n for n in alpha_c.GetNeighbors() 
-                                 if n.GetAtomicNum() != 1]
-                if len(non_h_neighbors) != 3:  # Must have exactly 3 non-H neighbors
+                non_h_neighbors = sum(1 for neighbor in alpha_c.GetNeighbors() 
+                                   if neighbor.GetAtomicNum() != 1)
+                if non_h_neighbors < 3:  # Must have at least 3 non-H neighbors
                     continue
 
-                # Verify one neighbor is OH, one is C=O, and one is C/heteroatom
-                neighbor_types = set()
-                for n in non_h_neighbors:
-                    if n.GetAtomicNum() == 8 and n.GetTotalNumHs() == 1:  # OH
-                        neighbor_types.add('OH')
-                    elif n.GetAtomicNum() == 6 and any(nb.GetAtomicNum() == 8 and nb.GetIsAromatic() == False 
-                                                      for nb in n.GetNeighbors()):  # C=O
-                        neighbor_types.add('C=O')
-                    else:  # Other group
-                        neighbor_types.add('R')
+                # Verify carbonyl is ketone-like (not carboxylic acid, ester, etc)
+                carbonyl_neighbors = carbonyl_c.GetNeighbors()
+                has_valid_ketone = False
+                for neighbor in carbonyl_neighbors:
+                    if neighbor.GetAtomicNum() == 6:  # Carbon
+                        non_o_neighbors = sum(1 for n in neighbor.GetNeighbors() 
+                                           if n.GetAtomicNum() != 8)
+                        if non_o_neighbors >= 1:
+                            has_valid_ketone = True
+                            break
                 
-                if neighbor_types != {'OH', 'C=O', 'R'}:
-                    continue
-
-                # Additional check for conjugated systems
-                if any(a.GetIsAromatic() for a in [hydroxy_o, alpha_c, carbonyl_c]):
+                if not has_valid_ketone:
                     continue
 
                 return True, "Contains secondary alpha-hydroxy ketone group"
