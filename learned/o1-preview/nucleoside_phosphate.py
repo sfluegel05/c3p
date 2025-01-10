@@ -5,6 +5,7 @@ Classifies: CHEBI:25608 nucleoside phosphate
 Classifies: nucleoside phosphate
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_nucleoside_phosphate(smiles: str):
     """
@@ -26,49 +27,61 @@ def is_nucleoside_phosphate(smiles: str):
     # Suppress warnings
     Chem.SanitizeMol(mol, Chem.SANITIZE_ALL ^ Chem.SANITIZE_SETAROMATICITY)
 
-    # Define nucleobase patterns (more general, avoiding specific protonation)
-    adenine = Chem.MolFromSmarts('n1cnc2ncnc12')  # Adenine
-    guanine = Chem.MolFromSmarts('O=C1NC2=NC=NC(N)=C2N1')  # Guanine
-    cytosine = Chem.MolFromSmarts('NC1=NC=CC(=O)N1')  # Cytosine
-    thymine = Chem.MolFromSmarts('CC1=CN=CN(C1=O)C=O')  # Thymine
-    uracil = Chem.MolFromSmarts('O=C1NC=CC(=O)N1')  # Uracil
+    # Define more general nucleobase patterns
+    # Purine base pattern (adenine, guanine, etc.)
+    purine_pattern = Chem.MolFromSmarts('c1ncnc2ncnn12')
+    # Pyrimidine base pattern (cytosine, thymine, uracil, etc.)
+    pyrimidine_pattern = Chem.MolFromSmarts('c1cncnc1')
+    # Include modified bases by allowing substitutions
+    nucleobase_pattern = Chem.MolFromSmarts('[#6]1~[#7]~[#6]~[#7]~[#6]1')  # General five-membered ring with Ns and Cs
 
-    nucleobases = [adenine, guanine, cytosine, thymine, uracil]
-
-    # Check for nucleobase
+    # Check for nucleobase presence
     has_nucleobase = False
-    for base in nucleobases:
-        if mol.HasSubstructMatch(base):
+    nucleobase_matches = mol.GetSubstructMatches(purine_pattern) + mol.GetSubstructMatches(pyrimidine_pattern)
+    if nucleobase_matches:
+        has_nucleobase = True
+    else:
+        # Try more general nucleobase pattern
+        if mol.HasSubstructMatch(nucleobase_pattern):
             has_nucleobase = True
-            break
     if not has_nucleobase:
         return False, "No nucleobase found"
 
-    # Define sugar pattern (general five-membered ring with oxygen and hydroxyls)
-    sugar_pattern = Chem.MolFromSmarts('C1OC(CO)(CO)C(O)C1')  # Simplified sugar ring
+    # Define sugar pattern (ribose or deoxyribose)
+    sugar_pattern = Chem.MolFromSmarts('C1OC[C@@H](O)[C@@H]1O')
+    # Allow for modified sugars by being less specific
+    sugar_ring_pattern = Chem.MolFromSmarts('C1OC(C)C(O)C1')  # Five-membered ring with oxygen
 
-    # Check for sugar moiety connected to nucleobase
-    nucleoside_pattern = Chem.MolFromSmarts('*n1cnc2c1ncn2C1OC(O)C(O)C(O)C1')  # Nucleobase connected to sugar
-    if not mol.HasSubstructMatch(nucleoside_pattern):
+    # Check for sugar moiety
+    if not mol.HasSubstructMatch(sugar_ring_pattern):
+        return False, "No sugar ring found"
+
+    # Check for nucleoside linkage (nucleobase attached to sugar)
+    # Look for an N-C glycosidic bond between nucleobase and sugar
+    nucleoside_linkage_pattern = Chem.MolFromSmarts('[nX2]-[CH0]')
+    if not mol.HasSubstructMatch(nucleoside_linkage_pattern):
         return False, "No nucleoside linkage (nucleobase attached to sugar) found"
 
     # Define phosphate group pattern
-    phosphate_pattern = Chem.MolFromSmarts('OP(=O)(O)O')  # Phosphate group
+    phosphate_pattern = Chem.MolFromSmarts('P(=O)(O)(O)O')  # Phosphate group
 
     # Check for phosphate group(s) attached to sugar
     phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
     if len(phosphate_matches) == 0:
-        return False, "No phosphate group attached to sugar"
+        return False, "No phosphate group found"
 
     # Ensure phosphate is attached to sugar hydroxyl(s)
     phosphate_bonded_to_sugar = False
-    sugar_atoms = mol.GetSubstructMatch(sugar_pattern)
+    sugar_atoms = mol.GetSubstructMatches(sugar_ring_pattern)
     phosphate_atoms = [match[0] for match in phosphate_matches]
-    for pa in phosphate_atoms:
-        phosphorous = mol.GetAtomWithIdx(pa)
-        for neighbor in phosphorous.GetNeighbors():
-            if neighbor.GetIdx() in sugar_atoms:
-                phosphate_bonded_to_sugar = True
+    for sugar_match in sugar_atoms:
+        for atom_idx in sugar_match:
+            atom = mol.GetAtomWithIdx(atom_idx)
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 15:  # Phosphorus
+                    phosphate_bonded_to_sugar = True
+                    break
+            if phosphate_bonded_to_sugar:
                 break
         if phosphate_bonded_to_sugar:
             break
@@ -92,7 +105,7 @@ __metadata__ = {   'chemical_class': {   'id': None,
                   'max_instances_in_prompt': 100,
                   'test_proportion': 0.1},
     'message': None,
-    'attempt': 2,
+    'attempt': 3,
     'success': True,
     'best': True,
     'error': '',
