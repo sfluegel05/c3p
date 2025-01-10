@@ -20,24 +20,25 @@ def is_dipeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Identify peptide bond patterns: carbonyl connected to nitrogen
-    peptide_bond_pattern = Chem.MolFromSmarts("N[CX3](=O)C")
+    # Identify the peptide bond pattern - carbonyl (C=O) connected to nitrogen (N)
+    peptide_bond_pattern = Chem.MolFromSmarts("C(=O)N")
     peptide_matches = mol.GetSubstructMatches(peptide_bond_pattern)
     
-    # Check for exactly one peptide (amide) bond
+    # Check for exactly one central peptide (amide) bond
     if len(peptide_matches) != 1:
         return False, f"Found {len(peptide_matches)} peptide bonds, need exactly 1 for a dipeptide"
-    
-    # Identify amino acid patterns: presence of amine group and carboxyl group
-    amine_pattern = Chem.MolFromSmarts("[NX3H2,NX3H]")
-    carboxyl_pattern = Chem.MolFromSmarts("C(=O)[OX1H]")
+
+    # Check for amino acid residues: presence of at least one primary amine and one carboxyl group
+    # These can be modified in the dipeptide head/tail, so allow varying degrees
+    amine_pattern = Chem.MolFromSmarts("[NX3][CX3H2,CX4H3,CX3H1]=,=,,”)
+    carboxyl_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
     amine_matches = len(mol.GetSubstructMatches(amine_pattern))
     carboxyl_matches = len(mol.GetSubstructMatches(carboxyl_pattern))
-    
-    # A dipeptide should have two amines and two carboxyl groups
-    if amine_matches != 2 or carboxyl_matches != 2:
-        return False, f"Found {amine_matches} amine and {carboxyl_matches} carboxyl groups, need 2 of each for two amino acids"
-    
+
+    # If appropriate functional groups exist to form two amino acids after accounting for bond formation
+    if amine_matches < 1 or carboxyl_matches < 1:
+        return False, f"Found {amine_matches} amine and {carboxyl_matches} carboxyl groups, insufficient for two amino acids"
+
     return True, "Contains two amino-acid residues connected by a single peptide linkage"
 
 # This function is meant to classify dipeptides based on the structural requirements.
