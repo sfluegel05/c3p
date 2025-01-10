@@ -26,32 +26,53 @@ def is_para_terphenyl(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # First check for presence of at least 3 benzene rings
+    # First check for presence of exactly 3 benzene rings
     benzene_pattern = Chem.MolFromSmarts("c1ccccc1")
     benzene_matches = mol.GetSubstructMatches(benzene_pattern)
     if len(benzene_matches) < 3:
         return False, "Less than 3 benzene rings found"
     
     # Look for para-terphenyl core structure
-    # This pattern looks for a central benzene ring with two carbons in para positions
-    # that are connected to other aromatic rings
-    para_terphenyl_pattern = Chem.MolFromSmarts("c1([#6]c2ccccc2)cc([#6]c3ccccc3)ccc1")
+    # This pattern enforces:
+    # - Central benzene ring
+    # - Two phenyl groups in para positions
+    # - Allows substitutions on any position
+    para_terphenyl_pattern = Chem.MolFromSmarts("[cR1]1[cR1][cR1](-[cR1]2[cR1][cR1][cR1][cR1][cR1]2)[cR1][cR1](-[cR1]3[cR1][cR1][cR1][cR1][cR1]3)[cR1]1")
     
     if not mol.HasSubstructMatch(para_terphenyl_pattern):
-        # Try alternative pattern that allows for more substitution
-        alt_pattern = Chem.MolFromSmarts("c1(-[#6]2:[#6]:[#6]:[#6]:[#6]:[#6]:2)c([*])c([*])c(-[#6]3:[#6]:[#6]:[#6]:[#6]:[#6]:3)c([*])c1([*])")
-        if not mol.HasSubstructMatch(alt_pattern):
-            return False, "No para-terphenyl core structure found"
+        return False, "No para-terphenyl core structure found"
     
-    # Additional validation - check ring count and connectivity
+    # Get all rings
     ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() < 3:
-        return False, "Insufficient number of rings"
-        
-    # Count number of aromatic rings
-    aromatic_rings = len([ring for ring in ring_info.AtomRings() 
-                         if all(mol.GetAtomWithIdx(i).GetIsAromatic() for i in ring)])
-    if aromatic_rings < 3:
-        return False, "Insufficient number of aromatic rings"
+    rings = list(ring_info.AtomRings())
+    
+    # Check that we have exactly 3 six-membered aromatic rings
+    aromatic_rings = [ring for ring in rings 
+                     if len(ring) == 6 and 
+                     all(mol.GetAtomWithIdx(i).GetIsAromatic() for i in ring)]
+    
+    if len(aromatic_rings) != 3:
+        return False, f"Found {len(aromatic_rings)} aromatic 6-membered rings, need exactly 3"
+
+    # Check that rings are not fused (should share no atoms)
+    for i, ring1 in enumerate(aromatic_rings):
+        for ring2 in aromatic_rings[i+1:]:
+            shared_atoms = set(ring1).intersection(set(ring2))
+            if len(shared_atoms) > 0:
+                return False, "Contains fused rings"
+    
+    # Find the central ring (should be connected to both other rings)
+    for ring in aromatic_rings:
+        connections = 0
+        ring_atoms = set(ring)
+        for atom_idx in ring:
+            atom = mol.GetAtomWithIdx(atom_idx)
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetIdx() not in ring_atoms and neighbor.GetIsAromatic():
+                    connections += 1
+        if connections == 2:  # This is the central ring
+            break
+    else:
+        return False, "Could not identify central ring with correct connectivity"
 
     return True, "Contains para-terphenyl core structure with appropriate substitution pattern"
