@@ -25,29 +25,33 @@ def is_3_oxo_5beta_steroid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for basic steroid core (4 fused rings)
-    steroid_core = Chem.MolFromSmarts("[C]1[C][C]2[C][C][C]3[C][C][C]4[C][C][C][C]4[C]3[C][C]2[C]1")
+    # More flexible pattern that matches the cyclopentanoperhydrophenanthrene core
+    steroid_core = Chem.MolFromSmarts("C1C[C@H]2[C@H]3CC[C@H]4CCCC4[C@H]3CC2C1")
     if not mol.HasSubstructMatch(steroid_core):
         return False, "No steroid core structure found"
 
     # Check for ketone at position 3
-    # The pattern looks for a carbonyl (C=O) connected to two carbons in the first ring
-    ketone_pattern = Chem.MolFromSmarts("[CH2][C](=O)[CH2]")
+    # Look for C(=O) in first ring
+    ketone_pattern = Chem.MolFromSmarts("C1CC(=O)CC2")
     if not mol.HasSubstructMatch(ketone_pattern):
         return False, "No ketone group at position 3"
 
     # Check for 5-beta configuration
-    # In 5-beta steroids, the A/B ring junction is trans
-    # We can look for the specific stereochemistry pattern
-    # The pattern checks for the characteristic trans fusion at the A/B ring junction
-    # with the hydrogen at position 5 being up (beta)
-    ab_junction_pattern = Chem.MolFromSmarts("[C]1[CH2][C](=O)[CH2][C@@H]2[CH2]")
-    if not mol.HasSubstructMatch(ab_junction_pattern):
+    # In 5-beta steroids, the A/B ring junction has the hydrogen in alpha position (down)
+    # This creates the characteristic bent shape of 5-beta steroids
+    beta_config_pattern = Chem.MolFromSmarts("[C]1[CH2][C](=O)[CH2][C@@H]2")
+    if not mol.HasSubstructMatch(beta_config_pattern):
         return False, "Not a 5-beta configuration"
 
     # Additional validation: Check carbon count (steroids typically have 19-27 carbons)
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if carbon_count < 19 or carbon_count > 30:
         return False, f"Carbon count ({carbon_count}) outside typical steroid range (19-30)"
+
+    # Check for reasonable molecular weight range for steroids
+    mol_weight = Chem.Descriptors.ExactMolWt(mol)
+    if mol_weight < 250 or mol_weight > 500:
+        return False, f"Molecular weight {mol_weight:.1f} outside typical steroid range (250-500)"
 
     # If we get here, it's a 3-oxo-5beta-steroid
     return True, "Molecule contains steroid core with 3-oxo group and 5-beta configuration"
