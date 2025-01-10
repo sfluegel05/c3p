@@ -25,28 +25,11 @@ def is_N_sulfonylurea(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the urea group pattern
-    urea_pattern = Chem.MolFromSmarts("[NX3][C](=[OX1])[NX3]")
-    
-    # Check if the molecule contains a urea group
-    if not mol.HasSubstructMatch(urea_pattern):
-        return False, "No urea group found"
-
-    # Define the N-sulfonylurea pattern: urea group with one nitrogen directly attached to a sulfonyl group
+    # Define the N-sulfonylurea pattern: urea group with one nitrogen attached to a sulfonyl group
     n_sulfonylurea_pattern = Chem.MolFromSmarts("[NX3][C](=[OX1])[NX3][S](=[OX1])(=[OX1])")
     
     # Check if the molecule matches the N-sulfonylurea pattern
     if mol.HasSubstructMatch(n_sulfonylurea_pattern):
-        return True, "Contains a urea group with one nitrogen directly attached to a sulfonyl group"
-    
-    # Handle cases where the sulfonyl group is connected through an intermediate atom
-    n_sulfonylurea_pattern_extended = Chem.MolFromSmarts("[NX3][C](=[OX1])[NX3]~[S](=[OX1])(=[OX1])")
-    if mol.HasSubstructMatch(n_sulfonylurea_pattern_extended):
-        return True, "Contains a urea group with one nitrogen attached to a sulfonyl group through an intermediate atom"
-    
-    # Additional check for cases where the sulfonyl group is connected to the urea nitrogen through a chain
-    n_sulfonylurea_pattern_chain = Chem.MolFromSmarts("[NX3][C](=[OX1])[NX3]~*~[S](=[OX1])(=[OX1])")
-    if mol.HasSubstructMatch(n_sulfonylurea_pattern_chain):
-        return True, "Contains a urea group with one nitrogen attached to a sulfonyl group through a chain"
-    
-    return False, "No N-sulfonylurea pattern found"
+        return True, "Contains a urea group with one nitrogen attached to a sulfonyl group"
+    else:
+        return False, "No N-sulfonylurea pattern found"
