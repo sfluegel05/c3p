@@ -25,18 +25,21 @@ def is_1_2_4_triazines(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
+    # Kekulize the molecule to standardize aromatic bonds
+    Chem.Kekulize(mol, clearAromaticFlags=True)
+    
     # SMARTS patterns for 1,2,4-triazine core
+    # More specific patterns that explicitly define the 1,2,4-triazine structure
     patterns = [
+        # Basic 1,2,4-triazine pattern
+        "[N]1=[N][C](=[N][C]=[C]1)",
         # Aromatic form
-        "[n]1[n]c[n]cc1",
-        # Non-aromatic forms with different bond arrangements
-        "N1=NC=NC=C1",
-        "N1=NN=CC=C1",
-        "N1N=CN=CC1",
-        # Fused systems and other variants
-        "[n]1[n]c2[n]cc1[n]2",  # For triazolo-triazine
-        "[n]1[n]c([n]cc1)*)*",  # For substituted variants
-        "[N]1=[N][C](=[N][C]=[C]1)*)*"  # For non-aromatic substituted variants
+        "n1nccnc1",
+        # Common tautomeric forms
+        "[NH]1[N]=[C]([N]=[C][C]1)",
+        "[N]1[NH][C](=[N][C]=[C]1)",
+        # Reduced forms
+        "[NH]1[NH][C](=[N][C]=[C]1)",
     ]
 
     for pattern in patterns:
@@ -50,33 +53,58 @@ def is_1_2_4_triazines(smiles: str):
                 # Get the matched atoms
                 ring_atoms = [mol.GetAtomWithIdx(i) for i in match]
                 
-                # Count nitrogens in the matched ring
-                n_count = sum(1 for atom in ring_atoms if atom.GetAtomicNum() == 7)
-                
-                # Verify we have exactly 3 nitrogens
-                if n_count != 3:
+                # Verify ring size
+                if len(ring_atoms) != 6:
                     continue
                 
-                # Get nitrogen positions
+                # Count nitrogens and verify their positions
                 n_positions = []
-                for i, atom in enumerate(ring_atoms[:6]):  # Only consider first 6 atoms for base ring
+                for i, atom in enumerate(ring_atoms):
                     if atom.GetAtomicNum() == 7:  # Nitrogen
                         n_positions.append(i)
                 
-                # Check if the nitrogens form a 1,2,4 pattern
-                # Valid patterns are [0,1,3], [1,2,4], [2,3,5], [3,4,0], [4,5,1], [5,0,2]
-                valid_patterns = [[0,1,3], [1,2,4], [2,3,5], [3,4,0], [4,5,1], [5,0,2]]
-                n_positions = sorted(n_positions)
+                # Must have exactly 3 nitrogens
+                if len(n_positions) != 3:
+                    continue
                 
-                if n_positions in valid_patterns:
-                    # Determine if aromatic
-                    is_aromatic = any(atom.GetIsAromatic() for atom in ring_atoms)
-                    ring_type = "aromatic" if is_aromatic else "non-aromatic"
-                    
-                    # Check if part of a fused system
-                    is_fused = len(mol.GetRingInfo().AtomRings()) > 1
-                    system_type = "fused ring" if is_fused else "single ring"
-                    
-                    return True, f"Contains {ring_type} 1,2,4-triazine ({system_type}) with nitrogens at positions 1, 2, and 4"
+                # Check nitrogen positions
+                # In a 1,2,4-triazine, nitrogens must be at positions 1,2,4 or equivalent
+                n_positions = sorted(n_positions)
+                valid_patterns = [
+                    [0,1,3],  # Standard 1,2,4 pattern
+                    [1,2,4],  # Rotated by 1
+                    [2,3,5],  # Rotated by 2
+                    [3,4,0],  # Rotated by 3
+                    [4,5,1],  # Rotated by 4
+                    [5,0,2]   # Rotated by 5
+                ]
+                
+                if n_positions not in valid_patterns:
+                    continue
+                
+                # Verify ring planarity and conjugation
+                is_planar = True
+                for atom in ring_atoms:
+                    # Check hybridization
+                    if atom.GetHybridization() not in [Chem.HybridizationType.SP2, 
+                                                     Chem.HybridizationType.AROMATIC]:
+                        is_planar = False
+                        break
+                
+                if not is_planar:
+                    continue
+                
+                # Determine if part of a fused system
+                ring_info = mol.GetRingInfo()
+                atom_rings = ring_info.AtomRings()
+                is_fused = False
+                ring_atoms_set = set(match)
+                for ring in atom_rings:
+                    if ring_atoms_set != set(ring) and ring_atoms_set.intersection(set(ring)):
+                        is_fused = True
+                        break
+                
+                ring_type = "fused" if is_fused else "single"
+                return True, f"Contains 1,2,4-triazine {ring_type} ring with correct nitrogen positions"
 
     return False, "No valid 1,2,4-triazine ring found"
