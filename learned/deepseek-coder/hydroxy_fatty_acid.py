@@ -36,19 +36,19 @@ def is_hydroxy_fatty_acid(smiles: str):
     if len(hydroxyl_matches) == 0:
         return False, "No hydroxyl group found"
 
-    # Check for a long carbon chain (at least 6 carbons)
-    carbon_chain_pattern = Chem.MolFromSmarts("[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]")
-    if not mol.HasSubstructMatch(carbon_chain_pattern):
-        return False, "Carbon chain too short to be a fatty acid"
+    # Count total carbons in the molecule
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 6:
+        return False, "Total carbon count too low for a fatty acid"
 
-    # Count rotatable bonds to verify long chains
+    # Count rotatable bonds to verify flexibility (relaxed threshold)
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 4:
-        return False, "Carbon chain too short to be a fatty acid"
+    if n_rotatable < 2:
+        return False, "Carbon chain too rigid to be a fatty acid"
 
     # Check molecular weight - hydroxy fatty acids typically >100 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 100:
         return False, "Molecular weight too low for hydroxy fatty acid"
 
-    return True, "Contains a carboxylic acid group, at least one hydroxyl group, and a long carbon chain"
+    return True, "Contains a carboxylic acid group, at least one hydroxyl group, and a sufficient carbon chain"
