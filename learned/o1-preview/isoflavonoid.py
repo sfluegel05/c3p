@@ -5,7 +5,6 @@ Classifies: CHEBI:50753 isoflavonoid
 Classifies: isoflavonoid
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_isoflavonoid(smiles: str):
     """
@@ -25,52 +24,49 @@ def is_isoflavonoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define the isoflavonoid core (3-phenylchromen-4-one)
-    # The SMARTS pattern includes atom mapping to identify position 3 and the aryl substituent
-    isoflavonoid_smarts = """
-    [O]=C1/C=C(\C=C2/COC=C12)[c:3][cH][cH][cH][cH][cH]
-    """
-    # Clean up the SMARTS pattern
-    isoflavonoid_smarts = isoflavonoid_smarts.replace('\n', '').replace(' ', '')
-    pattern = Chem.MolFromSmarts(isoflavonoid_smarts)
-    if pattern is None:
-        return False, "Invalid SMARTS pattern for isoflavonoid core"
+    # Define the chromen-4-one core (benzopyran-4-one)
+    chromen4one_smarts = 'O=C1C=CC=CC2=CC=CC=C12'  # Chromen-4-one core
+    chromen4one = Chem.MolFromSmarts(chromen4one_smarts)
+    if chromen4one is None:
+        return False, "Invalid SMARTS pattern for chromen-4-one core"
     
-    # Find substructure matches of the isoflavonoid core
-    matches = mol.GetSubstructMatches(pattern)
+    # Find substructure matches of the chromen-4-one core
+    matches = mol.GetSubstructMatches(chromen4one)
     if not matches:
-        return False, "No isoflavonoid core found"
+        return False, "No chromen-4-one core found"
     
-    # Check each match for the aryl substituent at position 3
+    # For each match, check for an aryl substituent at position 3
     for match in matches:
-        # The index of the atom mapped as [c:3] corresponds to the carbon at position 3
-        # Verify that this carbon is connected to an aryl group
-        pos3_idx = match[pattern.GetSubstructMatch(pattern)[2]]  # Position of [c:3]
-        pos3_atom = mol.GetAtomWithIdx(pos3_idx)
-        
-        # Get neighbors of the carbon at position 3 not part of the core
+        # Atoms in chromen-4-one core
         core_atoms = set(match)
-        neighbors = [nbr for nbr in pos3_atom.GetNeighbors() if nbr.GetIdx() not in core_atoms]
         
-        # Check if any neighbor leads to an aryl group
-        aryl_found = False
+        # Map of atom indices in chromen4one_smarts to indices in the molecule
+        atom_map = {i: idx for i, idx in enumerate(match)}
+        
+        # Atom at position 3 in chromen-4-one core (index 4 in chromen4one_smarts)
+        pos3_idx_core = 4  # Indexing starts from 0 in SMARTS pattern
+        pos3_atom_idx = atom_map.get(pos3_idx_core, None)
+        if pos3_atom_idx is None:
+            continue  # Cannot find position 3 atom, skip to next match
+        pos3_atom = mol.GetAtomWithIdx(pos3_atom_idx)
+        
+        # Check neighbors of position 3 atom
+        neighbors = pos3_atom.GetNeighbors()
         for nbr in neighbors:
-            # Use Chem.FindAtomEnvironmentOfRadiusN to find if an aromatic ring is connected
-            env = Chem.FindAtomEnvironmentOfRadiusN(mol, radius=3, atomId=nbr.GetIdx())
-            amap = {}
-            submol = Chem.PathToSubmol(mol, env, atomMap=amap)
-            aro_rings = submol.GetRingInfo().AtomRings()
-            for ring in aro_rings:
-                if all(submol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring):
-                    aryl_found = True
-                    break
-            if aryl_found:
-                break
-        if aryl_found:
-            return True, "Contains isoflavonoid core with aryl substituent at position 3"
-        else:
-            continue  # Check next match if available
-    
+            nbr_idx = nbr.GetIdx()
+            if nbr_idx not in core_atoms:
+                # Check if neighbor atom is part of an aromatic ring not in core
+                # Use GetRingInfo()
+                rings = mol.GetRingInfo().AtomRings()
+                is_aromatic_ring = False
+                for ring in rings:
+                    if nbr_idx in ring and not core_atoms.intersection(ring):
+                        if all(mol.GetAtomWithIdx(i).GetIsAromatic() for i in ring):
+                            is_aromatic_ring = True
+                            break
+                if is_aromatic_ring:
+                    return True, "Contains isoflavonoid core with aryl substituent at position 3"
+        # If no aryl substituent found for this match, continue to next match
     return False, "Isoflavonoid core found, but no aryl substituent at position 3"
 
 # Example usage:
