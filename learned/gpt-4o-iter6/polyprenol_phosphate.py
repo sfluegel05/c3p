@@ -6,47 +6,39 @@ from rdkit import Chem
 def is_polyprenol_phosphate(smiles: str):
     """
     Determines if a molecule is a polyprenol phosphate based on its SMILES string.
-    A polyprenol phosphate consists of a polyisoprene chain with a terminal
-    allylic hydroxy group condensed with a phosphoric acid.
+    A polyprenol phosphate consists of a polyprenol chain linked to a phosphate group.
 
     Args:
-        smiles (str): SMILES string of the molecule.
+        smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if the molecule is a polyprenol phosphate, False otherwise.
-        str: Reason for classification or failure.
+        bool: True if molecule is a polyprenol phosphate, False otherwise
+        str: Reason for classification or failure
     """
     
-    # Parse the SMILES string to a molecule object
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns
-    # Isoprene pattern with possible cis/trans configurations
-    isoprene_pattern = Chem.MolFromSmarts("C(=C)CC")
-    
-    # Polyisoprenoid chain pattern: series of isoprene units
-    polyisoprenoid_pattern = Chem.MolFromSmarts("C(=C)(CC){5,}") # Require at least 5 isoprene units
-    
-    # Phosphate group patterns
-    phosphate_pattern = Chem.MolFromSmarts("OP(=O)(O)[O-]")
-    diphosphate_pattern = Chem.MolFromSmarts("OP(=O)([O-])OP(=O)(O)[O-]")
+    # Pattern for isoprene unit (C=C-C-C=C)
+    isoprene_pattern = Chem.MolFromSmarts("[CX3]=[CX3][CX3][CX3]=[CX3]")
+    if not mol.HasSubstructMatch(isoprene_pattern):
+        return False, "No polyprenol chain found, missing isoprene unit pattern"
 
-    # Check the presence of long polyisoprenoid chain
-    if not mol.HasSubstructMatch(polyisoprenoid_pattern):
-        return False, "No sufficient polyisoprenoid chain detected"
+    # Pattern for phosphoric acid ester, e.g., O-P(=O)(O)-
+    phosphate_pattern = Chem.MolFromSmarts("O-P(=O)(O)-")
+    if not mol.HasSubstructMatch(phosphate_pattern):
+        return False, "No phosphate ester group found"
 
-    # Check phosphate attachment
-    phosphate_matches = mol.HasSubstructMatch(phosphate_pattern)
-    diphosphate_matches = mol.HasSubstructMatch(diphosphate_pattern)
+    # Ensure phosphate is at the end of polyprenol (though positional specific check might be complex)
+    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
+    isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
 
-    if not phosphate_matches and not diphosphate_matches:
-        return False, "No phosphate or diphosphate group found"
+    # Simple positional check: ensure a phosphate group is on any terminal end
+    # Note: This assumes linear topology and might not handle cyclic variations
+    ends = [0, len(mol.GetAtoms()) - 1]
+    for end in ends:
+        if any(end in match for match in phosphate_matches):
+            return True, "Contains polyprenol chain with attached phosphate group"
 
-    # Ensure that phosphate/diphosphate attaches to an allylic carbon
-    allylic_phosphate_pattern = Chem.MolFromSmarts("C[O]P(=O)(O)O")
-    if not mol.HasSubstructMatch(allylic_phosphate_pattern):
-        return False, "Phosphate group not correctly attached to an allylic position"
-
-    return True, "Valid polyprenol phosphate"
+    return False, "Phosphate group does not attach correctly to the polyprenol chain"
