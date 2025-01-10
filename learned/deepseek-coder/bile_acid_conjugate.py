@@ -26,24 +26,42 @@ def is_bile_acid_conjugate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the bile acid core pattern (steroid-like structure with hydroxyl groups)
-    bile_acid_core_pattern = Chem.MolFromSmarts("[C@H]1[C@@]2([C@H]([C@@H]3[C@]([C@@H]([C@H]4[C@](CC3)(C[C@H](O)CC4)[H])C)[H])CC[C@@]2([C@@H](C1)O)[H])")
+    # Define a more general bile acid core pattern (steroid-like structure)
+    bile_acid_core_pattern = Chem.MolFromSmarts("[C@H]1[C@@]2([C@H]([C@@H]3[C@]([C@@H]([C@H]4[C@](CC3)(CC[C@H]4O)[H])C)[H])CC[C@@]2([C@@H](C1)O)[H])")
     if not mol.HasSubstructMatch(bile_acid_core_pattern):
         return False, "No bile acid core structure found"
 
     # Define patterns for conjugated groups
     conjugated_groups = [
-        Chem.MolFromSmarts("[NX3][CX3](=[OX1])"),  # Amino acid (e.g., glycine, taurine)
+        Chem.MolFromSmarts("[NX3][CX3](=[OX1])[CX4H2]"),  # Glycine
+        Chem.MolFromSmarts("[SX4](=[OX1])(=[OX1])[CX4H2][CX4H2][NX3]"),  # Taurine
         Chem.MolFromSmarts("[SX4](=[OX1])(=[OX1])([OX2])"),  # Sulfate
         Chem.MolFromSmarts("[CX3](=[OX1])[OX2][CX6H1]([OX2H1])[CX6H1]([OX2H1])[CX6H1]([OX2H1])[CX6H1]([OX2H1])[CX6H1]([OX2H1])"),  # Glucuronic acid
         Chem.MolFromSmarts("[CX3](=[OX1])[OX2][CX6H1]([OX2H1])[CX6H1]([OX2H1])[CX6H1]([OX2H1])[CX6H1]([OX2H1])[CX6H1]([OX2H1])[CX6H1]([OX2H1])"),  # Glucose
         Chem.MolFromSmarts("[CX3](=[OX1])[NX3][CX3](=[OX1])"),  # Coenzyme A-like structure
     ]
 
-    # Check for presence of conjugated groups
-    has_conjugated_group = any(mol.HasSubstructMatch(pattern) for pattern in conjugated_groups)
+    # Check for presence of conjugated groups attached to the bile acid core
+    has_conjugated_group = False
+    for pattern in conjugated_groups:
+        matches = mol.GetSubstructMatches(pattern)
+        for match in matches:
+            # Check if the conjugated group is attached to the bile acid core
+            for atom_idx in match:
+                atom = mol.GetAtomWithIdx(atom_idx)
+                for neighbor in atom.GetNeighbors():
+                    if neighbor.GetIdx() not in match and mol.HasSubstructMatch(bile_acid_core_pattern, useChirality=True, atomMap={neighbor.GetIdx(): 0}):
+                        has_conjugated_group = True
+                        break
+                if has_conjugated_group:
+                    break
+            if has_conjugated_group:
+                break
+        if has_conjugated_group:
+            break
+
     if not has_conjugated_group:
-        return False, "No conjugated group found"
+        return False, "No conjugated group found attached to bile acid core"
 
     # Check for hydrophilicity or charge
     # Calculate the number of polar atoms (O, N, S) and formal charges
