@@ -20,19 +20,19 @@ def is_phosphatidic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Improved glycerol backbone pattern including flexible chirality configurations
-    glycerol_pattern = Chem.MolFromSmarts("O[C@@H](CO)C(O)CO")  # Considering flexible SRC patterns
+    # Assume a generalized glycerol backbone ignoring chirality due to variations
+    glycerol_pattern = Chem.MolFromSmarts("OCC(O)CO")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone with required connectivity found"
 
-    # Look for exactly 2 ester linkages including the carbonyl group
-    ester_pattern = Chem.MolFromSmarts("C(=O)O[CH]")  # Flexible anchoring to oxygen and carbon
+    # Look for ester linkages: C(=O)OC and allow for variety by detecting any connected carbon
+    ester_pattern = Chem.MolFromSmarts("C(=O)OC")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) != 2:
+    if len(ester_matches) < 2:
         return False, f"Found {len(ester_matches)} ester linkages, need exactly 2"
     
-    # Confirm phosphate group presence with correct oxygen attachments
-    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)O")
+    # Confirm presence of a phosphate group attached to the glycerol backbone
+    phosphate_pattern = Chem.MolFromSmarts("COP(=O)(O)O")
     if not mol.HasSubstructMatch(phosphate_pattern):
         return False, "No phosphate group with necessary attachments found"
     
