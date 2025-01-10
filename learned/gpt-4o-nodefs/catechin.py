@@ -15,20 +15,20 @@ def is_catechin(smiles: str):
         bool: True if molecule is a catechin, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
     # Define generic catechin pattern allowing for core flexibility and substitutions
-    # The general structure is C1(OC2=C(O)C=CC=C2C=C1)C(O)C3=CC(O)=CC(O)=C3
+    # The general catechin structure is given as: 2-phenyl-3,4-dihydro-2H-chromen-3-ol
     catechin_patterns = [
-        Chem.MolFromSmarts("C1(OC2=CC=CC=C2C=C1)C(CO)C3=CC(O)=CC(O)=C3"),      # Base pattern
-        Chem.MolFromSmarts("C1(OC2=C(C=CC=C2)C=C1)C(O)C3=CC(O)=CC(O)=C3"),    # Flexibly accommodating rearrangements
-        Chem.MolFromSmarts("C1(OC2=CC=CC=C2C=C1)C(CO)C3=C(O)C(O)=C(O)C=C3"),  # Including additional hydroxyls
+        Chem.MolFromSmarts("C1(C=C2c3cc(O)ccc3OC2CC1)"),             # Basic catechin structure
+        Chem.MolFromSmarts("C1(O[C@H](cc2ccccc2)[C@@H](O)CO1)")       # Configuration with hydroxyls and flexible stereochemistry
     ]
 
+    # Check each pattern for substructure match
     if not any(mol.HasSubstructMatch(pattern) for pattern in catechin_patterns):
         return False, "Does not match catechin core structure (2-phenyl-3,4-dihydro-2H-chromen-3-ol)"
     
