@@ -33,14 +33,8 @@ def is_3beta_hydroxy_steroid(smiles: str):
     # Assign stereochemistry
     Chem.AssignStereochemistry(mol, force=True, cleanIt=True)
 
-    # Define SMARTS pattern for steroid backbone without stereochemistry
-    # Atom indices are mapped to identify position 3
-    steroid_smarts = """
-    [#6;R1]1([#6;R2])[#6;R2][#6;R2]2[#6;R2][#6;R2][#6;R2]3
-    [#6;R2][#6;R2][#6;R2][#6;R2][#6;R2][#6;R2]3
-    [#6;R2][#6;R2][#6;R2]2[#6;R2][#6;R1]1
-    """
-
+    # Corrected steroid SMARTS pattern with atom mapping at position 3
+    steroid_smarts = "[#6]1([#6][#6][#6]2[#6][#6][#6]3[#6][#6][#6]([#6][#6]3)[#6][#6]2[#6][#6]1)[#6:3]"
     steroid_pattern = Chem.MolFromSmarts(steroid_smarts)
     if steroid_pattern is None:
         return False, "Error in steroid SMARTS pattern"
@@ -52,12 +46,8 @@ def is_3beta_hydroxy_steroid(smiles: str):
 
     # Loop over matches to the steroid backbone
     for match in matches:
-        # Map position 3 carbon (using approximate numbering)
-        # Assuming atom with highest degree in ring A is position 3
-        ring_info = mol.GetRingInfo()
-        atom_degrees = [(idx, mol.GetAtomWithIdx(idx).GetDegree()) for idx in match]
-        sorted_atoms = sorted(atom_degrees, key=lambda x: x[1], reverse=True)
-        pos3_idx = sorted_atoms[0][0]
+        # Get the index of the atom mapped as position 3
+        pos3_idx = match[steroid_pattern.GetSubstructMatch(mol)[-1] - 1]  # Adjust for zero-based indexing
         pos3_atom = mol.GetAtomWithIdx(pos3_idx)
 
         # Check if there is a hydroxy (-OH) group attached to position 3
