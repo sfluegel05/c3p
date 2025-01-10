@@ -7,39 +7,45 @@ from rdkit.Chem import rdMolDescriptors
 def is_3_oxo_5beta_steroid(smiles: str):
     """
     Determines if a molecule is a 3-oxo-5beta-steroid based on its SMILES string.
-    A 3-oxo-5beta-steroid should have a steroid backbone, a ketone group at the 3-position,
+    A 3-oxo-5beta-steroid should have a steroid backbone with a ketone group at the 3-position
     and specific stereochemistry denoted as '5beta'.
-    
+
     Args:
         smiles (str): SMILES string of the molecule
-    
+
     Returns:
         bool: True if the molecule is a 3-oxo-5beta-steroid, False otherwise
         str: Reason for classification
     """
     
-    # Parse SMILES string
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define a more detailed steroid backbone pattern (includes the four fused rings)
-    steroid_pattern = Chem.MolFromSmarts("[C;R]1[C;R][C;R]2[C;R][C;R]3[C;R][C;R]4[C;R][C;R](C[C;R]4)[C;R](C[C;R]3)[C;R](C[C;R]2)[C;R](C1)")
+    # 3-oxo group pattern (ketone at 3-position)
+    oxo_pattern_3 = Chem.MolFromSmarts("C(=O)[C@@H]")  # Assuming this pattern for '3-oxo'
+    if not mol.HasSubstructMatch(oxo_pattern_3):
+        return False, "3-oxo group not found"
+    
+    # Stereochemistry at 5beta: This would be part of a complete pattern for a steroid with 5beta annotation
+    # Complex, assumed 'beta' refers configuration that requires more detailed chiral recognition
+    # Simple check for presence of chiral centers
+    chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
+    
+    # Look for the steroid scaffold pattern (ABCD ring system)
+    steroid_pattern = Chem.MolFromSmarts("C1C2C3C4") # Extremely simplified steroid nucleus
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "Steroid backbone not found"
     
-    # Define a pattern for the 3-oxo group, ensuring it is part of the steroid structure
-    oxo_3_pattern = Chem.MolFromSmarts("[#6;R1]-[#6;R2](=O)-[#6;R3]")
-    if not mol.HasSubstructMatch(oxo_3_pattern):
-        return False, "3-oxo group not properly positioned"
-
-    # Evaluate specific stereochemistry for '5beta'
-    # This would involve detecting specific configurations and beta-orientation
-    # Typically, 5beta steroids have a configuration with the rings in the trans orientation
-    beta_positions = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
-    is_beta = any(pos[1] == 'S' or pos[1] == 'R' for pos in beta_positions)  # Example check for proper stereo
+    # Optional: More detailed chiral pattern matching
+    has_beta_specificity = any('beta' in center for center in chiral_centers)
+    if not has_beta_specificity:
+        return False, f"5beta stereochemistry not found; chiral centers: {chiral_centers}"
     
-    if not is_beta:
-        return False, "5beta stereochemistry not confirmed"
+    # Additional pattern specifics for merged features could be added here as needed
 
-    return True, "Molecule matches the 3-oxo-5beta-steroid characteristics"
+    return True, "3-oxo-5beta-steroid characteristic patterns found"
+
+# The patterns in the code are placeholders. More precise pattern definitions
+# are required to handle actual stereochemical configurations.
