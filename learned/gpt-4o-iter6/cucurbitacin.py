@@ -2,7 +2,7 @@
 Classifies: CHEBI:16219 cucurbitacin
 """
 from rdkit import Chem
-from rdkit.Chem.rdMolDescriptors import CalcNumRings
+from rdkit.Chem import rdMolDescriptors
 
 def is_cucurbitacin(smiles: str):
     """
@@ -22,13 +22,22 @@ def is_cucurbitacin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for at least four rings to meet the tetracyclic criteria 
-    num_rings = CalcNumRings(mol)
+    # Ensure the molecule has at least 4 rings
+    num_rings = rdMolDescriptors.CalcNumRings(mol)
     if num_rings < 4:
         return False, "Contains fewer than 4 rings, does not meet tetracyclic criteria"
     
-    # Check for functional groups: hydroxyl and carbonyl groups
-    hydroxyl_smarts = Chem.MolFromSmarts('[CX4,CX3](O)')
+    # Identity ring systems related to cucurbitacins
+    cucurbitane_backbone_smarts = [
+        Chem.MolFromSmarts('C1[C@H]2CC[C@H]3[C@H]4CC[C@]5([C@]1(CC[C@]23C5)C4)C'),
+        Chem.MolFromSmarts('C1=CCC2C3CC4CCC(C2)C4C3CC1'), # More generalized pattern
+    ]
+    
+    if not any(mol.HasSubstructMatch(backbone) for backbone in cucurbitane_backbone_smarts):
+        return False, "Structure does not match generalized cucurbitane backbone patterns"
+    
+    # Check for common cucurbitacin functional group patterns
+    hydroxyl_smarts = Chem.MolFromSmarts('[CX4][OX2H]')
     carbonyl_smarts = Chem.MolFromSmarts('[CX3]=[OX1]')
     
     if not mol.HasSubstructMatch(hydroxyl_smarts):
@@ -36,11 +45,5 @@ def is_cucurbitacin(smiles: str):
     
     if not mol.HasSubstructMatch(carbonyl_smarts):
         return False, "Missing carbonyl groups in the expected context"
-    
-    # Check for a more generalized cucurbitane-like backbone pattern
-    # Rather than precise SMARTS, we'll accommodate variability in the backbone
-    cucurbitane_smarts = Chem.MolFromSmarts('C1CCC2C3CC4CCCC(C2)C4C3C1')
-    if not mol.HasSubstructMatch(cucurbitane_smarts):
-        return False, "Structure does not match a generalized cucurbitane backbone"
     
     return True, "Identified as a cucurbitacin based on structural and functional group analysis"
