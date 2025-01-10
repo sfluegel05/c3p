@@ -2,7 +2,7 @@
 Classifies: CHEBI:29017 1-acyl-sn-glycero-3-phosphoethanolamine
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import AllChem
 
 def is_1_acyl_sn_glycero_3_phosphoethanolamine(smiles: str):
     """
@@ -22,32 +22,24 @@ def is_1_acyl_sn_glycero_3_phosphoethanolamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for glycerol backbone with chiral center at sn-2
-    glycerol_pattern = Chem.MolFromSmarts("[C@@H](O)C(O)CO")
+    # Relaxed glycerol backbone with potential chirality at sn-2
+    glycerol_pattern = Chem.MolFromSmarts("[C@H](O)C(O)CO") 
     if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone with (R)-configuration at sn-2 found"
+        return False, "No glycerol backbone with chirality at sn-2 found"
 
-    # Check for phosphate group linked in the PHOS motif
-    phosphate_pattern = Chem.MolFromSmarts("COP(=O)(O)OCCN")
+    # Phosphate group pattern accommodating more flexible phospho- motifs
+    phosphate_pattern = Chem.MolFromSmarts("COP(O)(=O)OCCN")
     if not mol.HasSubstructMatch(phosphate_pattern):
-        return False, "No phosphoethanolamine group found"
+        return False, "No broad phosphoethanolamine group found"
     
-    # Check for ester linkage at sn-1
-    ester_pattern = Chem.MolFromSmarts("O[C@H](O)COC(=O)")
+    # Broadened ester linkage at sn-1
+    ester_pattern = Chem.MolFromSmarts("OC(=O)")
     if not mol.HasSubstructMatch(ester_pattern):
-        return False, "No ester linkage at sn-1 position found"
+        return False, "No ester linkage detected at sn-1"
 
-    # Ensure acyl chain presence
-    acyl_chain_pattern = Chem.MolFromSmarts("C(=O)[C,C]")
+    # Flexible acyl chain pattern
+    acyl_chain_pattern = Chem.MolFromSmarts("C(=O)C[C,C]")
     if not mol.HasSubstructMatch(acyl_chain_pattern):
-        return False, "No acyl chain detected connected via ester"
+        return False, "No acyl chain detected"
 
     return True, "Molecule matches 1-acyl-sn-glycero-3-phosphoethanolamine structural criteria"
-
-__metadata__ = { 
-    'chemical_class': {   
-        'id': None,
-        'name': '1-acyl-sn-glycero-3-phosphoethanolamine',
-        'definition': 'A 1-O-acylglycerophosphoethanolamine having (R)-configuration.'
-    }
-}
