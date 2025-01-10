@@ -7,8 +7,8 @@ from rdkit.Chem import rdMolDescriptors
 def is_acrovestone(smiles: str):
     """
     Determines if a molecule is of the acrovestone class.
-    Acrovestone is characterized as a polyphenol, typically isolated from a plant species, with antioxidant activities. 
-    Common structural features include isoflavonoid cores and glycosidic attachments.
+    Acrovestone is characterized as a polyphenolic compound, typically involving isoflavonoid cores 
+    and various glycoside attachments, often with methoxy and hydroxyl substitutions on aromatic rings.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,26 +23,29 @@ def is_acrovestone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 1. Check for polyphenolic structure by searching for aromatics with hydroxyl groups
-    # SMARTS pattern: a set of aromatic rings with hydroxyl groups attached at different positions 
-    polyphenol_pattern = Chem.MolFromSmarts("c1cc(O)c(O)c(O)c1")
-    if not mol.HasSubstructMatch(polyphenol_pattern):
-        return False, "No polyphenolic structure detected"
+    # 1. Check for polyphenolic structure: look for isoflavonoid backbones
+    # Isoflavones: characteristic C3-C2-C1=O structure with substituted aromatic rings
+    isoflavone_pattern = Chem.MolFromSmarts("c1cc(O)c(C(=O)c2coc(c12)c3ccc(OC)c(O)c3)")
+    
+    # Check for any isoflavonoid core
+    if not mol.HasSubstructMatch(isoflavone_pattern):
+        return False, "No isoflavonoid polyphenolic core detected"
 
-    # 2. Check for glycosylation (presence of glycosidic bonds)
-    # A common pattern for a sugar moiety features -O-CO- group attached, indicating a glucoside connection
-    glycoside_pattern = Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@H](O)[C@@H](O)[C@H](O)[C@H]1O")
-    if not mol.HasSubstructMatch(glycoside_pattern):
-        return False, "Glycosylation (such as glucoside) not detected"
+    # 2. Expanded glycosylation patterns: look for various sugar moieties
+    glycoside_patterns = [
+        Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@H](O)[C@@H](O)[C@H](O)[C@H]1O"),  # Glucosides
+        Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@H](O)CO1"),     # Other hexoses
+        Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@H](O)[C@H](O)CO1")              # Pentoses
+    ]
+    
+    # Check for any glycosidic attachments
+    if not any(mol.HasSubstructMatch(pattern) for pattern in glycoside_patterns):
+        return False, "No glycoside moieties detected"
 
-    # Because glycosides are prominent, ensure glycosidic linkage is present
-    # Iterate over glycoside patterns if necessary
-
-    # Further verification could involve counting the number of aromatic rings
+    # 3. Verify presence of adequate number of aromatic rings which could imply an extended polyphenol
     num_aromatic_rings = rdMolDescriptors.CalcNumAromaticRings(mol)
-    if num_aromatic_rings < 2:
+    if num_aromatic_rings < 3:
         return False, "Too few aromatic rings for a polyphenolic structure"
 
-    # Additional attributes specific to the plant origin may need mass spectral analysis
-
+    # All checks passed
     return True, "Molecule is consistent with structural features of acrovestone"
