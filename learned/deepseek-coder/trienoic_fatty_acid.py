@@ -25,8 +25,8 @@ def is_trienoic_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for carboxylic acid group (-COOH)
-    carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
+    # Check for carboxylic acid group (-COOH or carboxylate anion -COO-)
+    carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1,O-]")
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
 
@@ -40,7 +40,9 @@ def is_trienoic_fatty_acid(smiles: str):
             # Exclude carbonyl double bonds (C=O)
             if bond.GetBeginAtom().GetAtomicNum() == 8 or bond.GetEndAtom().GetAtomicNum() == 8:
                 continue
-            double_bond_count += 1
+            # Ensure the double bond is part of the carbon chain
+            if bond.GetBeginAtom().GetAtomicNum() == 6 and bond.GetEndAtom().GetAtomicNum() == 6:
+                double_bond_count += 1
 
     if double_bond_count != 3:
         return False, f"Found {double_bond_count} double bonds in the carbon chain, need exactly 3"
