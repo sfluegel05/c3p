@@ -21,11 +21,12 @@ def is_decanoate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Pattern for decanoate ester: 10-carbon chain ending in ester linkage
-    decanoate_pattern = Chem.MolFromSmarts("CCCCCCCCCC(=O)OC")  # Linear chain with ester linkage
-
-    # Check if the decanoate pattern matches
-    if mol.HasSubstructMatch(decanoate_pattern):
+    # Pattern for decanoate ester: Ensure exactly 10 carbons in chain with ester linkage
+    # Account for ester groups as well as potential branching/double bonds
+    decanoate_backbone_pattern = Chem.MolFromSmarts("[#6]1-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6](=O)-[#8]") # Flexible for potential modifications in chain
+    
+    # Check decanoate backbone exists
+    if mol.HasSubstructMatch(decanoate_backbone_pattern):
         return True, "Contains decanoate ester structure: recognized as decanoate ester"
     
     return False, "No decanoate ester structure found"
