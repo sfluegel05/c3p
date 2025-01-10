@@ -24,26 +24,39 @@ def is_polypyrrole(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more flexible pyrrole unit pattern
-    # This pattern matches:
-    # - Basic pyrrole rings (n1cccc1)
-    # - Pyrrole rings with substituents
-    # - Pyrrole rings fused with other rings
-    # - Pyrrole-like structures in conjugated systems
-    pyrrole_pattern = Chem.MolFromSmarts("[n;H0,H1]1[c;H1,H0][c;H1,H0][c;H1,H0][c;H1,H0]1")
+    # Define multiple patterns to catch different pyrrole configurations
+    patterns = [
+        # Standard pyrrole ring
+        Chem.MolFromSmarts("[n;H0,H1]1[c;H1,H0][c;H1,H0][c;H1,H0][c;H1,H0]1"),
+        # Pyrrole with double bonds
+        Chem.MolFromSmarts("[n;H0,H1]1[c;H1,H0]=[c;H1,H0][c;H1,H0][c;H1,H0]1"),
+        # Pyrrole with substitutions
+        Chem.MolFromSmarts("[n;H0,H1]1[c;H1,H0][c;H1,H0][c;H1,H0][c;H1,H0]1(-*)"),
+        # Fused pyrrole systems
+        Chem.MolFromSmarts("[n;H0,H1]1[c;H1,H0][c;H1,H0][c;H1,H0][c;H1,H0]1~*"),
+        # Conjugated pyrrole-like structures
+        Chem.MolFromSmarts("[n;H0,H1]1[c;H1,H0][c;H1,H0][c;H1,H0][c;H1,H0]1~[c,n]"),
+    ]
     
-    # Find all matches of the pyrrole pattern in the molecule
-    pyrrole_matches = mol.GetSubstructMatches(pyrrole_pattern)
+    # Count all unique pyrrole units using all patterns
+    pyrrole_units = set()
+    for pattern in patterns:
+        matches = mol.GetSubstructMatches(pattern)
+        for match in matches:
+            # Store the atom indices to avoid double counting
+            pyrrole_units.add(tuple(sorted(match)))
     
-    # Check if there are at least two pyrrole units
-    if len(pyrrole_matches) < 2:
-        # Try a more flexible pattern that matches pyrrole-like structures
-        flexible_pyrrole_pattern = Chem.MolFromSmarts("[n;H0,H1]1[c;H1,H0][c;H1,H0][c;H1,H0][c;H1,H0]1")
-        flexible_pyrrole_matches = mol.GetSubstructMatches(flexible_pyrrole_pattern)
-        if len(flexible_pyrrole_matches) < 2:
-            return False, f"Found {len(flexible_pyrrole_matches)} pyrrole units, need at least 2"
-
-    return True, "Contains two or more pyrrole units"
+    # Check if we have at least two distinct pyrrole units
+    if len(pyrrole_units) >= 2:
+        return True, f"Contains {len(pyrrole_units)} pyrrole units"
+    
+    # If not, try to find pyrrole-like structures in conjugated systems
+    conjugated_pattern = Chem.MolFromSmarts("[n;H0,H1]~[c,n]~[c,n]~[c,n]~[c,n]")
+    conjugated_matches = mol.GetSubstructMatches(conjugated_pattern)
+    if len(conjugated_matches) >= 2:
+        return True, "Contains conjugated pyrrole-like structures"
+    
+    return False, f"Found {len(pyrrole_units)} pyrrole units, need at least 2"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:38834',
