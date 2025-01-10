@@ -7,7 +7,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_nucleoside_phosphate(smiles: str):
     """
     Determines if a molecule is a nucleoside phosphate based on its SMILES string.
-    A nucleoside phosphate consists of a nitrogenous base attached to a sugar, with phosphate groups attached to the sugar.
+    Nucleoside phosphates contain a nitrogenous base bonded to a sugar, with one or more phosphate groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,27 +22,35 @@ def is_nucleoside_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS pattern for a phosphate group
-    # Considering both organic phosphates (P(=O)(O)OP) and variations like cyclic, linked forms
+    # Updated SMARTS pattern to detect phosphate groups (including di- and triphosphates)
     phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)O")
-    if not mol.HasSubstructMatch(phosphate_pattern):
-        return False, "No phosphate group found"
+    polyphosphate_pattern = Chem.MolFromSmarts("P(=O)(O)OP(=O)(O)O")
 
-    # Define a more inclusive SMARTS pattern for a sugar (five-membered ring with an oxygen member)
-    sugar_pattern = Chem.MolFromSmarts("C1OC(CO)C1")
-    if not mol.HasSubstructMatch(sugar_pattern):
-        return False, "No ribose or deoxyribose sugar pattern found"
-    
-    # Broaden nitrogenous base patterns to include more diverse structures
-    purine_pattern = Chem.MolFromSmarts("c1ncnc2[nH]cnc12") 
-    pyrimidine_pattern = Chem.MolFromSmarts("c1[nH]cnc1")
-    
-    if not (mol.HasSubstructMatch(purine_pattern) or mol.HasSubstructMatch(pyrimidine_pattern)):
-        return False, "No nitrogenous base (purine or pyrimidine) found"
-    
-    return True, "Molecule contains features of a nucleoside phosphate"
+    if not (mol.HasSubstructMatch(phosphate_pattern) or mol.HasSubstructMatch(polyphosphate_pattern)):
+        return False, "No phosphate group or polyphosphate group found"
 
-# Example usage:
-# test_smiles = "Nc1ccn([C@@H]2O[C@H](CO)[C@@H](OP(O)(O)=O)[C@H]2O)c(=O)n1" # Example SMILES for a known nucleoside phosphate
-# result, reason = is_nucleoside_phosphate(test_smiles)
-# print(result, reason)
+    # Broadening the pattern to identify pentose sugars with possible variations
+    sugar_patterns = [
+        Chem.MolFromSmarts("C1[C@@H](O)[C@H](O)[C@H](O)[C@@H]1O"),  # Ribose or Deoxyribose
+        Chem.MolFromSmarts("[C@H]1(O)[C@@H](O)[C@H](O)[C@@H]([C@H]1O)"),  # Alt form
+    ]
+
+    if not any(mol.HasSubstructMatch(sp) for sp in sugar_patterns):
+        return False, "No recognizable sugar moiety (ribose or similar) found"
+    
+    # Expanded base detection, including potential modified bases
+    base_patterns = [
+        Chem.MolFromSmarts("c1ncnc2ncnc12"),  # Purine structure
+        Chem.MolFromSmarts("c1[nH]cnc2[nH]c[nH]c12"),  # Another form of specific pyrimidine-like pattern
+        Chem.MolFromSmarts("c1cncnc1"),  # Simplified pyridine/pyrimidine
+    ]
+    
+    if not any(mol.HasSubstructMatch(bp) for bp in base_patterns):
+        return False, "No recognizable nitrogenous base found"
+    
+    return True, "Molecule contains features consistent with a nucleoside phosphate"
+
+# Example test case
+test_smiles = "Nc1ccn([C@@H]2O[C@H](CO)[C@@H](OP(O)(O)=O)[C@H]2O)c(=O)n1"
+result, reason = is_nucleoside_phosphate(test_smiles)
+print(result, reason)
