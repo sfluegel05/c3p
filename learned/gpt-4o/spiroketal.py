@@ -1,7 +1,6 @@
 """
 Classifies: CHEBI:72600 spiroketal
 """
-# Import necessary modules from RDKit
 from rdkit import Chem
 
 def is_spiroketal(smiles: str):
@@ -25,11 +24,11 @@ def is_spiroketal(smiles: str):
     atom_rings = mol.GetRingInfo().AtomRings()
 
     for atom in mol.GetAtoms():
-        # Check if the atom is a potential spiro atom (typically carbon)
+        # Check if the atom is a carbon (potential spiro center)
         if atom.GetAtomicNum() != 6:
             continue
         
-        # Find the rings the atom is part of
+        # Collect the rings the atom is part of
         rings = [ring for ring in atom_rings if atom.GetIdx() in ring]
         if len(rings) != 2:
             continue
@@ -39,10 +38,12 @@ def is_spiroketal(smiles: str):
         if len(ring_set) != 1:
             continue
 
-        # Check for ketal structure: should have exactly two oxygen atoms attached
+        # Check for ketal structure: two different ring oxygen atoms bound
         oxygen_neighbors = [nbr for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() == 8 and nbr.IsInRing()]
         if len(oxygen_neighbors) == 2:
-            return True, "Spiroketal structure identified with appropriate ketal formation."
+            # Check that each oxygen belongs to a different ring
+            if any(oxygen.GetIdx() in ring for oxygen in oxygen_neighbors for ring in rings):
+                return True, "Spiroketal structure identified with appropriate ketal formation."
 
     return False, "Spiro centers found but they do not form expected ketal groups or were not part of such a structure."
 
