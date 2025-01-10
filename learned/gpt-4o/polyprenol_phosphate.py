@@ -20,21 +20,20 @@ def is_polyprenol_phosphate(smiles: str):
         return False, "Invalid SMILES string"
 
     # Detect isoprene units; allow for various stereochemistries using more general unsaturation patterns
-    isoprene_pattern = Chem.MolFromSmarts("[C;c]=[C;c][C;H2][C;H,CH3]") # Generalized isoprene unit
+    isoprene_pattern = Chem.MolFromSmarts("C(=C)C=C")  # Simplified and generalized isoprene unit
     isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
     if len(isoprene_matches) < 3:
         return False, f"Found {len(isoprene_matches)} isoprene units, need at least 3 for a polyprenol chain"
 
-    # Detect phosphate group; allow capturing both mono- and diphosphate groups 
-    phosphate_pattern = Chem.MolFromSmarts("[OX2]P(=O)([O-])[O-]")
+    # Detect phosphate group; capture both mono- and diphosphate groups, protonated and deprotonated
+    phosphate_pattern = Chem.MolFromSmarts("OP(=O)(O)O")  # Cover more forms including fully protonated
     phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
     if len(phosphate_matches) < 1:
         return False, "No phosphate or diphosphate group found"
 
-    # Check if polyprenol is linked to phosphate group by O-P
-    # This pattern accounts for the terminal linkage on the polyprenol side to a phosphoric group
-    connection_pattern = Chem.MolFromSmarts("[C;H2][OX2]P(=O)([O-])[O-]")
-    if not mol.HasSubstructMatch(connection_pattern):
+    # Check for the linkage (ester bond) between polyprenol and phosphate group
+    linkage_pattern = Chem.MolFromSmarts("C-O-P(=O)(O)O")  # Check for C-O-P linkage
+    if not mol.HasSubstructMatch(linkage_pattern):
         return False, "Polyprenol chain not appropriately connected to phosphate group"
 
     return True, "Molecule is a polyprenol phosphate"
