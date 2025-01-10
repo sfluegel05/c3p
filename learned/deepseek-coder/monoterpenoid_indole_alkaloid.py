@@ -25,12 +25,14 @@ def is_monoterpenoid_indole_alkaloid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # More flexible indole core pattern that allows substitutions and fused rings
+    # More flexible indole core patterns
     indole_patterns = [
         Chem.MolFromSmarts("[nH]1ccc2c1cccc2"),  # Basic indole
         Chem.MolFromSmarts("[nH]1ccc2c1cc([*])cc2"),  # Substituted indole
         Chem.MolFromSmarts("[nH]1ccc2c1c([*])ccc2"),  # Substituted indole
-        Chem.MolFromSmarts("[nH]1ccc2c1c3ccccc32")  # Fused ring system
+        Chem.MolFromSmarts("[nH]1ccc2c1c3ccccc32"),  # Fused ring system
+        Chem.MolFromSmarts("[nH]1ccc2c1c3cc([*])cc32"),  # Fused and substituted
+        Chem.MolFromSmarts("[nH]1ccc2c1c3c([*])cccc32")  # Fused and substituted
     ]
     
     has_indole = any(mol.HasSubstructMatch(pattern) for pattern in indole_patterns)
@@ -38,9 +40,15 @@ def is_monoterpenoid_indole_alkaloid(smiles: str):
         return False, "No indole core found"
 
     # More sophisticated terpenoid feature detection
-    # Look for at least 8 carbons in a branched or cyclic arrangement
-    terpenoid_pattern = Chem.MolFromSmarts("[C;!$(C=O)]~[C;!$(C=O)]~[C;!$(C=O)]~[C;!$(C=O)]~[C;!$(C=O)]~[C;!$(C=O)]~[C;!$(C=O)]~[C;!$(C=O)]")
-    if not mol.HasSubstructMatch(terpenoid_pattern):
+    # Look for branched or cyclic carbon structures with at least 8 carbons
+    terpenoid_patterns = [
+        Chem.MolFromSmarts("[C;!$(C=O)]~[C;!$(C=O)]~[C;!$(C=O)]~[C;!$(C=O)]~[C;!$(C=O)]~[C;!$(C=O)]~[C;!$(C=O)]~[C;!$(C=O)]"),  # Linear
+        Chem.MolFromSmarts("[C;!$(C=O)]1~[C;!$(C=O)]~[C;!$(C=O)]~[C;!$(C=O)]~[C;!$(C=O)]~[C;!$(C=O)]~[C;!$(C=O)]1"),  # Cyclic
+        Chem.MolFromSmarts("[C;!$(C=O)](~[C;!$(C=O)])(~[C;!$(C=O)])~[C;!$(C=O)]~[C;!$(C=O)]~[C;!$(C=O)]~[C;!$(C=O)]")  # Branched
+    ]
+    
+    has_terpenoid = any(mol.HasSubstructMatch(pattern) for pattern in terpenoid_patterns)
+    if not has_terpenoid:
         return False, "Insufficient terpenoid-like features"
 
     # Check for nitrogen atoms (from tryptophan precursor)
@@ -53,15 +61,22 @@ def is_monoterpenoid_indole_alkaloid(smiles: str):
     if mol_wt < 200 or mol_wt > 1200:
         return False, "Molecular weight out of expected range"
 
+    # Check for ester groups (common in monoterpenoid indole alkaloids)
+    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
+    ester_count = len(mol.GetSubstructMatches(ester_pattern))
+    if ester_count < 1:
+        return False, "No ester groups found"
+
     # Check for connectivity between indole and terpenoid parts
-    # Look for a carbon atom connected to both systems
-    linker_pattern = Chem.MolFromSmarts("[nH]1ccc2c1cccc2~[*]~[C;!$(C=O)]~[C;!$(C=O)]~[C;!$(C=O)]")
-    if not mol.HasSubstructMatch(linker_pattern):
+    # Allow for more flexible connections through various functional groups
+    linker_patterns = [
+        Chem.MolFromSmarts("[nH]1ccc2c1cccc2~[*]~[C;!$(C=O)]"),  # Direct connection
+        Chem.MolFromSmarts("[nH]1ccc2c1cccc2~[*]~[O,N]~[*]~[C;!$(C=O)]"),  # Through O or N
+        Chem.MolFromSmarts("[nH]1ccc2c1cccc2~[*]~[C;!$(C=O)]~[*]~[C;!$(C=O)]")  # Through C chain
+    ]
+    
+    has_linker = any(mol.HasSubstructMatch(pattern) for pattern in linker_patterns)
+    if not has_linker:
         return False, "No clear connection between indole and terpenoid parts"
 
-    # Check for appropriate ring count (typically 2-6 rings)
-    ring_count = len(mol.GetRingInfo().AtomRings())
-    if ring_count < 2 or ring_count > 6:
-        return False, "Ring count out of expected range"
-
-    return True, "Contains indole core with terpenoid-like features and appropriate connectivity"
+    return True, "Contains indole core with terpenoid-like features, ester groups, and appropriate connectivity"
