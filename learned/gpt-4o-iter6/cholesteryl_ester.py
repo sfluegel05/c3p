@@ -22,28 +22,31 @@ def is_cholesteryl_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more general cholesterol core structural pattern
-    # Capture fundamental sterol skeleton with relaxed stereochemical constraints
-    sterol_pattern = Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2CCC4(C3=CC=C4)C")
-    if not mol.HasSubstructMatch(sterol_pattern):
+    # Define a cholesterol backbone pattern with potential understandable stereochemistry
+    # Capturing basic sterol structure with essential rings and alkyl side chain
+    # Included stereochemistry flexibility by removing specific chiral specs from the smart pattern.
+    cholesterol_pattern = Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2CCC4(C3=CC=C4)C")
+    sterol_matches = mol.GetSubstructMatches(cholesterol_pattern)
+    if not sterol_matches:
         return False, "No cholesterol backbone found"
     
-    # Ensure there is an ester linkage present
-    # Looking for carbonyloxy group -OC(=O) characteristic of esters
+    # Check there is an ester group attached (-OC(=O)-)
     ester_pattern = Chem.MolFromSmarts("OC(=O)C")
     if not mol.HasSubstructMatch(ester_pattern):
         return False, "No ester linkage found"
 
-    # Check if the ester is attached involving the sterol core hydroxyl 
-    linkage = Chem.MolFromSmarts("[C@@H]1(CC[C@@H]2C[C@@H](CC=O)CC2[C@@H]1)")
-    for match in mol.GetSubstructMatches(linkage):
-        # Check if any match overlaps cholesterol core, if so valid
-        if any(atom_idx in match for atom_idx in mol.GetSubstructMatch(sterol_pattern)):
+    # Check connection: ester linkage attached to cholesterol core (position 3 OH)
+    # Find correct connection to ensure ester is linked to the steroid nucleus
+    for match in sterol_matches:
+        # Check if ester connects to cholesterol hydroxyl position
+        connection_pattern = Chem.MolFromSmarts("C1(O[C]=O)CCC2C(C1)CCC3C2CCC4(C3=CC=C4)C")
+        if mol.HasSubstructMatch(connection_pattern):
             return True, "Contains cholesterol backbone with ester linkage, indicating a cholesteryl ester"
-
+    
+    # If nothing matches return false
     return False, "Ester linkage not appropriately connected to the cholesterol skeleton"
 
-# Test the function with an example cholesteryl ester SMILES
+# Example test
 smiles_example = "CC(C)CCC[C@@H](C)[C@H]1CC[C@H]2[C@@H]3CC=C4C[C@H](CC[C@]4(C)[C@H]3CC[C@]12C)OC(=O)CCCCCCC\C=C/C\C=C/CCCCC"
 result = is_cholesteryl_ester(smiles_example)
 print(result)
