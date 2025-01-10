@@ -22,20 +22,20 @@ def is_amino_sugar(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define patterns for sugar rings and amino group modifications
-    # Assume pyranose ring common for sugars, with at least one amino or acetamido replacement
-    sugar_pattern = Chem.MolFromSmarts("[C@H]1(O)[C@@H]([O])[C@H](O)[C@@H](O)[C@@H]([O])[C@@H]1")  # General pyranose-like
-    amino_pattern = Chem.MolFromSmarts("[C@H]1(O)[C@@H](N)[C@H](O)[C@@H](O)[C@@H](O)[C@@H]1")  # Pyranose with amino
-    acetamido_pattern = Chem.MolFromSmarts("N[C@H](C)C(=O)")  # Common pattern for N-acetyl group
+    # Define patterns for general sugar rings and amino group modifications
+    pyranose_pattern = Chem.MolFromSmarts("[C@H1]1COC(O)C(O)C(O)C1") 
+    furanose_pattern = Chem.MolFromSmarts("[C@H1]1CCOC(O)C1")
+    amino_replacement_pattern = Chem.MolFromSmarts("[C@H](N)[C@H]")
+    acetamido_replacement_pattern = Chem.MolFromSmarts("[N][C@H]([CH3])C(=O)")
 
-    # Check for sugar moiety
-    has_sugar = mol.HasSubstructMatch(sugar_pattern) or mol.HasSubstructMatch(amino_pattern)
-    if not has_sugar:
-        return False, "No sugar moiety found"
+    # Check for sugar moiety (detecting pyranose or furanose structures)
+    has_sugar_ring = mol.HasSubstructMatch(pyranose_pattern) or mol.HasSubstructMatch(furanose_pattern)
+    if not has_sugar_ring:
+        return False, "No sugar ring structure detected"
 
-    # Check for either amino group or acetylation
-    has_amino_modification = mol.HasSubstructMatch(amino_pattern) or mol.HasSubstructMatch(acetamido_pattern)
+    # Check for either amino group or N-acetylation modification
+    has_amino_modification = mol.HasSubstructMatch(amino_replacement_pattern) or mol.HasSubstructMatch(acetamido_replacement_pattern)
     if not has_amino_modification:
         return False, "No amino or acetamido group modification found"
 
-    return True, "Contains sugar moiety with appropriate amino group modification, indicating an amino sugar"
+    return True, "Contains sugar ring with an appropriate amino modification, consistent with an amino sugar"
