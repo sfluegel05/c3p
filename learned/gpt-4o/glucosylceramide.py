@@ -2,6 +2,7 @@
 Classifies: CHEBI:36500 glucosylceramide
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_glucosylceramide(smiles: str):
     """
@@ -21,22 +22,20 @@ def is_glucosylceramide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Enhanced pattern for beta-D-glucosyl, accounting for different linkages
-    glucose_pattern = Chem.MolFromSmarts("OC[C@H]1O[C@@H]([C@H](O)[C@@H](O)[C@H]1O)CO")
+    # Updated pattern for beta-D-glucosyl unit with flexible stereochemistry
+    glucose_pattern = Chem.MolFromSmarts("O[C@H]([C@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)CO")
     if not mol.HasSubstructMatch(glucose_pattern):
         return False, "No beta-D-glucosyl unit found"
-    
-    # Refined pattern for sphingosine backbone including amide bond
-    sphingosine_pattern = Chem.MolFromSmarts("NC(=O)C[C@@H](O)CO")
+
+    # Refined sphingosine backbone detection
+    sphingosine_pattern = Chem.MolFromSmarts("NC(=O)C[C@@H](O)C=C or NC(=O)C[C@@H](O)CC")
     if not mol.HasSubstructMatch(sphingosine_pattern):
         return False, "No sphingosine structure with amide linkage found"
     
-    # Improved detection for long aliphatic chains
-    long_chain_patterns = [
-        Chem.MolFromSmarts("CCCCCCCCCCCCCCCC"),
-        Chem.MolFromSmarts("C=C")
-    ]
-    if not any(mol.HasSubstructMatch(pattern) for pattern in long_chain_patterns):
-        return False, "No suitable aliphatic chain (indicative of fatty acid) found"
+    # Patterns to identify long aliphatic chains (both saturated and unsaturated)
+    long_chain_saturated = Chem.MolFromSmarts("CCCCCCCCCCCCCCCC")
+    long_chain_unsaturated = Chem.MolFromSmarts("C=C")
+    if not mol.HasSubstructMatch(long_chain_saturated) and not mol.HasSubstructMatch(long_chain_unsaturated):
+        return False, "Suitable aliphatic chain (indicative of fatty acid) not satisfactorily found"
     
     return True, "Contains beta-D-glucosyl unit, sphingosine backbone with amide linkage, and long fatty acid chain"
