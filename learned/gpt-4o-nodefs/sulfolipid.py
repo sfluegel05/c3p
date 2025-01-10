@@ -21,22 +21,22 @@ def is_sulfolipid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for sulfate group pattern
-    sulfate_pattern = Chem.MolFromSmarts("OS(=O)(=O)[O-]")  # Consider negatively charged sulfate structure
+    sulfate_pattern = Chem.MolFromSmarts("OS(=O)(=O)O")  # Consider different possible structures
     if not mol.HasSubstructMatch(sulfate_pattern):
         return False, "No sulfate group found"
 
-    # General sugar-like ring, accounting possible variations in natural sulfolipids
+    # Sugar-like ring patterns accounting possible variations in natural sulfolipids
     sugar_ring_patterns = [
-        Chem.MolFromSmarts("O[C@@H]1[C@@H](O)[C@H](O[C@H]1*)*"),  # generalized sugar like rings
-        Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@@H](O[C@@H]1*)*")   # different stereochemistry
+        Chem.MolFromSmarts("O[C@@H]1[C@@H](O)[C@H](O[C@H](O1)*)"),  # generalized sugar-like ring
+        Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@@H](O[C@H](O1)*)")   # different stereochemistry
     ]
     if not any(mol.HasSubstructMatch(pattern) for pattern in sugar_ring_patterns):
         return False, "No suitable sugar-like ring structure found"
 
-    # Long Chain Fatty Acids: More generic pattern with flexible carbon length
+    # Long Chain Fatty Acids: More generalized pattern capturing potential variations
     long_chain_patterns = [
-        Chem.MolFromSmarts("C[CH2]{10,}C(=O)O"),                  # Flexible chain length
-        Chem.MolFromSmarts("CCCCCCCCCCCCCC(=O)O")  # Minimum length
+        Chem.MolFromSmarts("C[CH2]{10,}C(=O)O"),                  # Generic pattern with flexible chain length
+        Chem.MolFromSmarts("CCCCCCCCCCCCCC(=O)O")                 # Minimum length
     ]
     if not any(mol.HasSubstructMatch(pattern) for pattern in long_chain_patterns):
         return False, "No sufficient long fatty acid chain found"
