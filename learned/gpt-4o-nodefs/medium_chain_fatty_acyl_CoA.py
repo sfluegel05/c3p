@@ -20,7 +20,9 @@ def is_medium_chain_fatty_acyl_CoA(smiles: str):
         return False, "Invalid SMILES string"
 
     # Coenzyme A moiety pattern
-    coa_pattern = "[C@H](C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H](C(C(N)=O)=O)C(N(CCSC)=O)=O)O"
+    coa_pattern = (
+        "[C@H](COP(O)(=O)OP(O)(O)=O)C(O)[C@H]1O[C@H](n2cnc3c(N)ncnc32)[C@H](O)[C@H]1O"
+    )
     coa_mol = Chem.MolFromSmarts(coa_pattern)
     if not mol.HasSubstructMatch(coa_mol):
         return False, "No CoA moiety found"
@@ -31,10 +33,15 @@ def is_medium_chain_fatty_acyl_CoA(smiles: str):
     if not mol.HasSubstructMatch(thioester_mol):
         return False, "No thioester linkage found"
 
-    # Identify the fatty acyl chain length
-    carbon_chain_pattern = Chem.MolFromSmarts("CCCCCCC")
+    # Identify the fatty acyl chain
+    carbon_chain_pattern = Chem.MolFromSmarts("[*]CCCC[*]")  # Broad definition to catch various carbon chain lengths
     carbon_chain_matches = mol.GetSubstructMatches(carbon_chain_pattern)
-    chain_lengths = [sum(1 for atom in match if mol.GetAtomWithIdx(atom).GetAtomicNum() == 6) for match in carbon_chain_matches]
+    
+    # Calculate the length of the carbon chains
+    chain_lengths = [
+        sum(1 for atom in match if mol.GetAtomWithIdx(atom).GetAtomicNum() == 6)
+        for match in carbon_chain_matches
+    ]
     
     # Check if it contains a medium chain (6-12 carbons)
     if any(6 <= length <= 12 for length in chain_lengths):
