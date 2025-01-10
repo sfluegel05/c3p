@@ -2,7 +2,6 @@
 Classifies: CHEBI:23849 diterpenoid
 """
 from rdkit import Chem
-from rdkit.Chem import Descriptors
 from rdkit.Chem import rdMolDescriptors
 
 def is_diterpenoid(smiles: str):
@@ -26,18 +25,18 @@ def is_diterpenoid(smiles: str):
     # Count the number of carbon atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
 
-    # Flexible carbon count check
-    if c_count < 18 or c_count > 35:  # Allowing a broader range
+    # More flexible carbon count check
+    if c_count < 16 or c_count > 40:
         return False, f"Uncommon carbon count ({c_count}) for diterpenoids"
     
-    # Check for presence of multiple cycles (ring structures)
+    # Check for presence of ring structures
     ring_info = mol.GetRingInfo()
-    if not ring_info or ring_info.NumRings() < 2:
-        return False, "Diterpenoids typically have multiple ring structures"
+    if ring_info.NumRings() < 1:
+        return False, "Diterpenoids typically have ring structures"
 
-    # Check for presence of double bonds (C=C)
+    # Check for presence of double bonds (C=C, includes alkene SMARTS)
     double_bond_count = sum(1 for bond in mol.GetBonds() if bond.GetBondTypeAsDouble() == 2)
-    if double_bond_count < 2:
+    if double_bond_count < 1:
         return False, "Few double bonds; uncommon for diterpenoids"
 
     # Look for functional groups using SMARTS patterns typical for diterpenoids
@@ -46,15 +45,16 @@ def is_diterpenoid(smiles: str):
         "carbonyl": Chem.MolFromSmarts("[CX3](=O)"),
         "ether": Chem.MolFromSmarts("[OX2][CX4]"),
         "epoxide": Chem.MolFromSmarts("C1OC1"),
+        "methyl": Chem.MolFromSmarts("[CH3]"),
     }
 
     for name, pattern in patterns.items():
         if mol.HasSubstructMatch(pattern):
             break
     else:
-        return False, "Missing typical functional groups like hydroxyls or epoxides"
+        return False, "Missing typical functional groups like hydroxyls, epoxides, or methyl groups"
 
-    # Check sterochemistry
+    # Check stereochemistry, including unassigned
     chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
     if len(chiral_centers) < 1:
         return False, "Lack of chiral centers; uncommon for diterpenoids"
