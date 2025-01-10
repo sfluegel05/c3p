@@ -2,7 +2,6 @@
 Classifies: CHEBI:26167 polar amino acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_polar_amino_acid(smiles: str):
     """
@@ -22,28 +21,25 @@ def is_polar_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for basic alpha-amino acid backbone
+    # Check for the basic alpha-amino acid backbone
     alpha_amino_acid_pattern = Chem.MolFromSmarts("[N;!R][C@H,C@@H](C(O)=O)")
     if not mol.HasSubstructMatch(alpha_amino_acid_pattern):
         return False, "Not an alpha-amino acid"
     
     # SMARTS patterns for hydrogen-bonding functional groups in side chains
-    # Eliminate patterns that are generally found on the alpha backbone
     polar_side_chain_patterns = [
-        Chem.MolFromSmarts("[$([NX3][CX3](=O)[#6])!H0]"),  # Amide side chain - Asparagine, Glutamine
-        Chem.MolFromSmarts("[$([OH][^C](C)[O])!H0]"),       # Alcohol side group - Serine, Threonine, Tyrosine
-        Chem.MolFromSmarts("[$([NX3H2][CX3]=N[CX3]=N)!H0]"),# Guanidinium - Arginine
-        Chem.MolFromSmarts("[$([CX3](=O)[OX2H1]!C){}]"),    # Unusual carboxylate - ignore if in backbone
-        Chem.MolFromSmarts("[$([S][#6])!H0]"),              # Thiol group - Cysteine
+        Chem.MolFromSmarts("NC(=O)[#6]"),   # Amide side chain - Aspartagine or Glutamine
+        Chem.MolFromSmarts("[OH][CH2]"),    # Alcohol side chain - Serine or Threonine
+        Chem.MolFromSmarts("[nH]"),         # Indole or imidazole group - Tryptophan or Histidine
+        Chem.MolFromSmarts("C[NH2+]"),      # Ammonium group - Lysine
+        Chem.MolFromSmarts("[NX3H2][CX3]=N[CX3]=N"),  # Guanidinium - Arginine
+        Chem.MolFromSmarts("[SH]"),         # Thiol group - Cysteine
     ]
 
-    non_backbone_oxygen = Chem.MolFromSmarts("[CX3](=O)[OX2H1]!([$([C][OH]=O),$([C]CC[N]!N)])") # Exclude backbone
-
-    # Check for polar side chain patterns specifically
+    # Check for polar side chain patterns
     for pattern in polar_side_chain_patterns:
-        if mol.HasSubstructMatch(pattern):
-            if mol.HasSubstructMatch(non_backbone_oxygen):
-                return True, "Polar side chain functional group found"
+        if pattern and mol.HasSubstructMatch(pattern):  # Ensure the pattern is valid
+            return True, "Polar side chain functional group found"
     
     return False, "No polar side chain functional groups found"
 
