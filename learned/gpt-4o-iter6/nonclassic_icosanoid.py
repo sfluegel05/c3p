@@ -17,41 +17,40 @@ def is_nonclassic_icosanoid(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for a continuous carbon chain with approximately 20 carbons
-    c_chain_pattern = Chem.MolFromSmarts("C" * 20)
-    if not mol.HasSubstructMatch(c_chain_pattern):
-        return False, "Does not have a C20 carbon backbone"
-
-    # Check for oxygenation: hydroxyl, epoxy, or carboxyl groups
-    oxygen_groups = ["[OH]", "[C@H]1O[C@H]1", "[O;X2]=C"]
-    oxygen_count = sum(mol.HasSubstructMatch(Chem.MolFromSmarts(pat)) for pat in oxygen_groups)
-    if oxygen_count < 1:
-        return False, f"Insufficient oxygenation features, found {oxygen_count} oxygen groups"
-
-    # Calculate number of carbons
+    # Check the overall carbon count approximately equals 20
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if not (18 <= c_count <= 22):  # Allow a little flexibility around C20
+    if not (18 <= c_count <= 22):
         return False, f"Carbon count out of range: {c_count}"
 
-    # Check for carboxyl group indicating fatty acid
-    carboxylic_pattern = Chem.MolFromSmarts("C(=O)O")
-    has_carboxyl_group = mol.HasSubstructMatch(carboxylic_pattern)
-    if not has_carboxyl_group:
-        return False, "Missing carboxyl group, typical of fatty acids"
+    # Check for oxygenation: multiple types (e.g. hydroxyl, epoxy, carboxyl)
+    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
+    epoxy_pattern = Chem.MolFromSmarts("[C@H]1O[C@H]1")
+    carboxyl_pattern = Chem.MolFromSmarts("C(=O)O")
+    
+    # At least one must match indicating oxygenation
+    has_hydroxyl = mol.HasSubstructMatch(hydroxyl_pattern)
+    has_epoxy = mol.HasSubstructMatch(epoxy_pattern)
+    has_carboxyl = mol.HasSubstructMatch(carboxyl_pattern)
 
-    # Exclude typical leukotriene pattern if identifiable
-    leukotriene_pattern = Chem.MolFromSmarts("CCCCC(C=CC=CC=CC=CC=CC=CC=C)C")
+    if not (has_hydroxyl or has_epoxy or has_carboxyl):
+        return False, "Insufficient oxygenation features"
+
+    # Exclude typical leukotriene and prostanoid structures
+    leukotriene_pattern = Chem.MolFromSmarts("CCCCC(C=CC=CC=CC=CC=CC=C)C")
+    prostanoid_pattern = Chem.MolFromSmarts("CC(C)CCC1C2CCC3C1C(CCC3C2)C(O)=O")
+
     if mol.HasSubstructMatch(leukotriene_pattern):
         return False, "Structure matches that of typical leukotrienes"
 
-    # Exclude prostanoid-like structure
-    prostanoid_pattern = Chem.MolFromSmarts("CC(C)CCC1C2CCC3C1C(CCC3C2)C(O)=O")
     if mol.HasSubstructMatch(prostanoid_pattern):
         return False, "Structure matches that of typical prostanoids"
+    
+    # Check for carboxyl group indicating fatty acid
+    if not has_carboxyl:
+        return False, "Missing carboxyl group, typical of fatty acids"
 
-    return True, "Contains characteristics of nonclassic icosanoids: C20 backbone with oxygenation"
+    return True, "Contains characteristics of nonclassic icosanoids: C20 carbon atoms with oxygenation patterns"
