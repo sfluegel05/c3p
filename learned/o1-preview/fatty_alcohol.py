@@ -5,7 +5,6 @@ Classifies: CHEBI:24026 fatty alcohol
 Classifies: fatty alcohol
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_fatty_alcohol(smiles: str):
     """
@@ -27,46 +26,41 @@ def is_fatty_alcohol(smiles: str):
 
     # Check for presence of hydroxyl group (-OH)
     hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
-    if not mol.HasSubstructMatch(hydroxyl_pattern):
+    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
+    if not hydroxyl_matches:
         return False, "No hydroxyl group (-OH) found"
 
-    # Check that the molecule is aliphatic (no aromatic rings)
-    if mol.GetRingInfo().NumAromaticRings() > 0:
-        return False, "Contains aromatic rings, not aliphatic"
-
-    # Get all carbon atoms
-    carbon_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
-
-    if len(carbon_atoms) < 3:
-        return False, f"Contains only {len(carbon_atoms)} carbon atoms, minimum is 3"
-
-    # Find the longest aliphatic carbon chain
-    # First, sanitize molecule to kekulize any aromatic features
-    Chem.Kekulize(mol, clearAromaticFlags=True)
-    paths = Chem.FindAllPathsOfLengthN(mol, 1, False)  # Initialize paths
-    max_chain_length = 0
-    for bond in mol.GetBonds():
-        # Consider bonds between carbon atoms
-        if bond.GetBeginAtom().GetAtomicNum() == 6 and bond.GetEndAtom().GetAtomicNum() == 6:
-            visited_atoms = set()
-            stack = [(bond.GetBeginAtomIdx(), 1)]
-            while stack:
-                current_atom_idx, length = stack.pop()
-                visited_atoms.add(current_atom_idx)
-                max_chain_length = max(max_chain_length, length)
-                if length > 100:  # To prevent infinite loops in cyclic structures
-                    break
-                atom = mol.GetAtomWithIdx(current_atom_idx)
-                for neighbor in atom.GetNeighbors():
-                    neighbor_idx = neighbor.GetIdx()
-                    if neighbor.GetAtomicNum() == 6 and neighbor_idx not in visited_atoms:
-                        stack.append((neighbor_idx, length + 1))
-
-    if max_chain_length < 3:
-        return False, f"Longest carbon chain is {max_chain_length}, minimum is 3"
-
-    # All conditions met
-    return True, "Molecule is an aliphatic alcohol with at least 3 carbons"
+    # For each hydroxyl group, check for connected carbon chain of at least 3 carbons
+    for match in hydroxyl_matches:
+        o_idx = match[0]  # Index of the oxygen atom
+        o_atom = mol.GetAtomWithIdx(o_idx)
+        
+        # Find the carbon atom attached to the hydroxyl oxygen
+        c_neighbors = [nbr for nbr in o_atom.GetNeighbors() if nbr.GetAtomicNum() == 6]
+        if not c_neighbors:
+            continue  # No carbon neighbor found
+        c_atom = c_neighbors[0]
+        
+        # Perform BFS to count connected carbons (including branches)
+        visited = set()
+        queue = [c_atom]
+        carbon_count = 0
+        while queue:
+            atom = queue.pop(0)
+            idx = atom.GetIdx()
+            if idx in visited:
+                continue
+            visited.add(idx)
+            carbon_count += 1
+            # Traverse to neighboring carbon atoms
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:
+                    queue.append(neighbor)
+        
+        if carbon_count >= 3:
+            return True, f"Molecule has a hydroxyl group connected to a carbon chain of {carbon_count} carbons"
+    
+    return False, "No hydroxyl group connected to a carbon chain of at least 3 carbons found"
 
 __metadata__ = {
     'chemical_class': {
