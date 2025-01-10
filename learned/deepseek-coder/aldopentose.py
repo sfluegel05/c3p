@@ -25,32 +25,26 @@ def is_aldopentose(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for 5 or 6 carbon atoms (allowing for some flexibility)
+    # Check for exactly 5 carbon atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 5 or c_count > 6:
-        return False, f"Expected 5 or 6 carbons, found {c_count}"
+    if c_count != 5:
+        return False, f"Expected exactly 5 carbons, found {c_count}"
 
-    # Check for aldehyde group (either explicit or potential)
+    # Check for explicit aldehyde group
     aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)")
     aldehyde_matches = mol.GetSubstructMatches(aldehyde_pattern)
-    
-    # If no explicit aldehyde, check for potential aldehyde (e.g., in cyclic form)
     if not aldehyde_matches:
-        # Look for a carbon with a single bond to oxygen (potential aldehyde in cyclic form)
-        potential_aldehyde_pattern = Chem.MolFromSmarts("[CX4][OX2]")
-        potential_aldehyde_matches = mol.GetSubstructMatches(potential_aldehyde_pattern)
-        if not potential_aldehyde_matches:
-            return False, "No aldehyde or potential aldehyde group found"
+        return False, "No explicit aldehyde group found"
 
-    # Check for multiple hydroxyl groups (at least 3) attached to the carbon backbone
+    # Check for exactly 4 hydroxyl groups attached to the carbon backbone
     hydroxyl_pattern = Chem.MolFromSmarts("[C][OX2H]")
     hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    if len(hydroxyl_matches) < 3:
-        return False, f"Expected at least 3 hydroxyl groups attached to the carbon backbone, found {len(hydroxyl_matches)}"
+    if len(hydroxyl_matches) != 4:
+        return False, f"Expected exactly 4 hydroxyl groups attached to the carbon backbone, found {len(hydroxyl_matches)}"
 
     # Check molecular weight (should be around 150 g/mol for aldopentoses)
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 100 or mol_wt > 200:
+    if mol_wt < 140 or mol_wt > 160:
         return False, f"Molecular weight {mol_wt:.2f} is outside expected range for aldopentoses"
 
-    return True, "Contains 5 or 6 carbons, a (potential) aldehyde group, and multiple hydroxyl groups attached to the carbon backbone"
+    return True, "Contains exactly 5 carbons, an explicit aldehyde group, and exactly 4 hydroxyl groups attached to the carbon backbone"
