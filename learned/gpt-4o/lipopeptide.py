@@ -17,30 +17,32 @@ def is_lipopeptide(smiles: str):
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return None, "Invalid SMILES string"
 
-    # Define SMARTS pattern for multiple peptide bonds
-    multiple_peptide_bonds_pattern = Chem.MolFromSmarts("([C](=O)[N]){2,}")
+    # Define SMARTS pattern for a peptide bond (-CO-NH-)
+    peptide_bond_pattern = Chem.MolFromSmarts("[C](=O)[N]")
+    if not mol.HasSubstructMatch(peptide_bond_pattern):
+        return False, "No peptide bonds found"
 
-    if not mol.HasSubstructMatch(multiple_peptide_bonds_pattern):
-        return False, "Fewer than two peptide bonds found"
-
-    # Enhanced lipid pattern for longer aliphatic chains (10+ carbon chains)
-    extended_lipid_patterns = [
-        Chem.MolFromSmarts("C{10,}"),  # At least a 10-carbon chain
+    # Define SMARTS for common lipid structures, focusing on long aliphatic chains
+    lipid_patterns = [
+        Chem.MolFromSmarts("CCCCCCCC"),  # At least an 8-carbon chain
+        Chem.MolFromSmarts("CCCCCCCCC(C)"),  # Long chain with branching
+        Chem.MolFromSmarts("CC(C)C(C)C")  # Branched chain structure
     ]
 
     # Detect any lipid-like pattern
-    lipid_like_found = any(mol.HasSubstructMatch(pattern) for pattern in extended_lipid_patterns)
+    lipid_like_found = any(mol.HasSubstructMatch(pattern) for pattern in lipid_patterns)
     if not lipid_like_found:
-        return False, "No extended lipid-like structures found"
+        return False, "No lipid-like structures found"
 
-    # Check if multiple peptide bonds are connected to a lipid structure
-    # It's complex but crucial to confirm connectivity
-    # Ensure that the detection logic allows peptide to lipid connection
+    # Check for peptide-lipid conjugation
+    # Check if a lipid structure is connected to a peptide bond
+    # This can be complex, and an accurate SMARTS pattern might need refinement
+    # Here, we assume detection of both lipid and peptide is enough for current criteria
 
-    return True, "Contains multiple peptide bonds and extended lipid-like moieties"
+    return True, "Contains peptide bonds and lipid-like moieties"
 
 # Example usage:
-# smiles_string = "CCCCCCCCCCCC(=O)NCC(=O)NCCCCCC"
+# smiles_string = "CCCCCCCCCC(=O)NCC(=O)NCCCCCC"
 # is_lipopeptide(smiles_string)
