@@ -23,44 +23,19 @@ def is_spiroketal(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Get ring information
-    ri = mol.GetRingInfo()
-    atom_rings = ri.AtomRings()
+    # Define SMARTS pattern for spiroketal
+    # [C;R2;X4] - spiro carbon atom in two rings with valence 4
+    # Attached to two oxygens in rings
+    spiroketal_smarts = "[C;R2;X4](-[O;R])(-[O;R])(-[*;R])(-[*;R])"
+    spiroketal_pattern = Chem.MolFromSmarts(spiroketal_smarts)
 
-    # Identify spiro atoms (atoms that are shared by exactly two rings)
-    spiro_atoms = []
-    for atom_idx in range(mol.GetNumAtoms()):
-        num_rings = sum([atom_idx in ring for ring in atom_rings])
-        if num_rings == 2:
-            spiro_atoms.append(atom_idx)
-
-    if not spiro_atoms:
-        return False, "No spiro atoms found"
-
-    # Check each spiro atom to see if it is a ketal carbon
-    for spiro_idx in spiro_atoms:
-        atom = mol.GetAtomWithIdx(spiro_idx)
-        if atom.GetAtomicNum() != 6:
-            continue  # Spiro atom is not carbon
-        if atom.GetDegree() != 4:
-            continue  # Spiro carbon does not have four bonds
-
-        # Count number of oxygen and carbon neighbors
-        oxy_neighbors = 0
-        carbon_neighbors = 0
-        for neighbor in atom.GetNeighbors():
-            atomic_num = neighbor.GetAtomicNum()
-            if atomic_num == 8:
-                oxy_neighbors += 1
-            elif atomic_num == 6:
-                carbon_neighbors += 1
-            else:
-                break  # Neighbor is not carbon or oxygen
-        else:
-            if oxy_neighbors == 2 and carbon_neighbors == 2:
-                return True, f"Spiroketal detected at atom index {spiro_idx}"
-
-    return False, "No spiroketal center found"
+    # Find matches in the molecule
+    matches = mol.GetSubstructMatches(spiroketal_pattern)
+    if matches:
+        spiro_idx = matches[0][0]  # Get the index of the spiro carbon atom
+        return True, f"Spiroketal detected at atom index {spiro_idx}"
+    else:
+        return False, "No spiroketal center found"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:35567',
@@ -80,7 +55,7 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:35567',
                   'max_instances_in_prompt': 100,
                   'test_proportion': 0.1},
     'message': None,
-    'attempt': 0,
+    'attempt': 1,
     'success': True,
     'best': True,
     'error': '',
