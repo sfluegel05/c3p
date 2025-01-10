@@ -28,40 +28,39 @@ def is_quinone(smiles: str):
 
     # Get ring information
     ri = mol.GetRingInfo()
-    if not ri.IsInitialized():
-        return False, "No ring structures found in molecule"
-
     atom_rings = ri.AtomRings()
     if not atom_rings:
         return False, "No ring structures found in molecule"
 
+    # Define a SMARTS pattern for ring carbons double-bonded to oxygen (carbonyls)
+    ketone_smarts = Chem.MolFromSmarts('[cR]=O')
+    if ketone_smarts is None:
+        return False, "Invalid SMARTS pattern"
+
+    # Find all carbonyl carbons in the molecule
+    ketone_matches = mol.GetSubstructMatches(ketone_smarts)
+    ketone_carbon_idxs = set(match[0] for match in ketone_matches)  # Get carbon atom indices
+
     # Iterate over each ring in the molecule
     for ring in atom_rings:
         ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
-        conjugated = True
-        ketone_carbons = []
 
         # Check if the ring is fully conjugated
-        for i, atom in enumerate(ring_atoms):
+        conjugated = True
+        for i in range(len(ring)):
             bond = mol.GetBondBetweenAtoms(ring[i], ring[(i+1)%len(ring)])
             if not bond.GetIsConjugated():
                 conjugated = False
                 break
         if not conjugated:
-            continue
+            continue  # Skip rings that are not fully conjugated
 
-        # Count the number of ketone groups (C=O) attached to carbons in the ring
-        for atom in ring_atoms:
-            if atom.GetAtomicNum() == 6:  # Carbon atom
-                for nbr in atom.GetNeighbors():
-                    bond = mol.GetBondBetweenAtoms(atom.GetIdx(), nbr.GetIdx())
-                    if nbr.GetAtomicNum() == 8 and bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-                        ketone_carbons.append(atom.GetIdx())
-                        break
+        # Count the number of carbonyl groups in the ring
+        ketone_count = sum(1 for idx in ring if idx in ketone_carbon_idxs)
 
         # Check if there are at least two ketone groups (even number)
-        if len(ketone_carbons) >= 2 and len(ketone_carbons) % 2 == 0:
-            return True, "Ring with fully conjugated cyclic dione structure found"
+        if ketone_count >= 2 and ketone_count % 2 == 0:
+            return True, f"Ring with fully conjugated cyclic dione structure found with {ketone_count} ketone groups"
 
     return False, "Does not contain a quinone core structure"
 
@@ -75,6 +74,6 @@ __metadata__ = {
         'O=C1C=CC2=CC=CC=C2C1=O',  # Naphthoquinone
         'O=C1C=CC2=C1C=CC(=O)C=C2',  # Anthraquinone
     ],
-    'version': '2.1',
+    'version': '2.2',
     'author': 'Assistant',
 }
