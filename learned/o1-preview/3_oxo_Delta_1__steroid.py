@@ -10,12 +10,14 @@ def is_3_oxo_Delta_1__steroid(smiles: str):
     """
     Determines if a molecule is a 3-oxo-Delta(1) steroid based on its SMILES string.
     A 3-oxo-Delta(1) steroid is any 3-oxo steroid that contains a double bond between positions 1 and 2.
-    Due to limitations in assigning atom positions, this function checks for the steroid backbone,
-    the presence of at least one ketone group in a ring, and at least one double bond in a ring.
-
+    This function checks for:
+      - Steroid backbone (three six-membered rings and one five-membered ring fused together)
+      - Ketone group at position 3
+      - Double bond between positions 1 and 2
+    
     Args:
         smiles (str): SMILES string of the molecule
-
+    
     Returns:
         bool: True if molecule is a 3-oxo-Delta(1) steroid, False otherwise
         str: Reason for classification
@@ -25,34 +27,49 @@ def is_3_oxo_Delta_1__steroid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define steroid backbone pattern (four fused rings)
-    steroid_pattern = Chem.MolFromSmarts('[*]12[*]3[*]4[*]1[*]3[*]2[*]4')
+    
+    # Define steroid backbone pattern with atom mapping
+    steroid_pattern = Chem.MolFromSmarts("""
+    [#6]1([#6])[#6][#6]2[#6]([#6][#6]3[#6](=[#6][#6][#6]4[#6][#6][#6][#6][#6]4)[#6][#6]3)[#6][#6]12
+    """)
+    if steroid_pattern is None:
+        return False, "Invalid steroid SMARTS pattern"
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
-
-    # Check for ketone groups (C=O)
-    ketone_pattern = Chem.MolFromSmarts('C(=O)')
-    ketone_matches = mol.GetSubstructMatches(ketone_pattern)
-    ketone_in_ring = False
-    for match in ketone_matches:
-        carbon_idx = match[0]  # Carbon atom in C=O
-        if mol.GetAtomWithIdx(carbon_idx).IsInRing():
-            ketone_in_ring = True
+    
+    # Identify position 3 carbon and check for ketone group (C=O)
+    ketone_at_3_pattern = Chem.MolFromSmarts("""
+    [#6]1([#6])[#6][#6]2[#6]([#6][#6]3[#6](=[#6][#6][#6]4[#6][#6][#6][#6][#6]4)[#6][#6]3)[#6][#6]12
+    :[#6]:[#6]:[#6]:[#6]:[#6]:[#6]-[#6](=O)-[#6]
+    """)
+    ketone_pattern = Chem.MolFromSmarts("[#6]-C(=O)")
+    # Map the steroid backbone to get the atoms at positions
+    match = mol.GetSubstructMatch(steroid_pattern)
+    if not match:
+        return False, "No steroid backbone found"
+    # Positions 1 and 2 in the match
+    atom1_idx = match[0]
+    atom2_idx = match[1]
+    atom3_idx = match[2]
+    atom3 = mol.GetAtomWithIdx(atom3_idx)
+    # Check if atom at position 3 has a ketone group
+    ketone_found = False
+    for bond in atom3.GetBonds():
+        nbr = bond.GetOtherAtom(atom3)
+        if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE and nbr.GetAtomicNum() == 8:
+            ketone_found = True
             break
-    if not ketone_in_ring:
-        return False, "No ketone group found in ring"
-
-    # Check for double bonds in rings
-    double_bond_in_ring = False
-    for bond in mol.GetBonds():
-        if bond.IsInRing() and bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-            double_bond_in_ring = True
-            break
-    if not double_bond_in_ring:
-        return False, "No double bond found in ring"
-
-    return True, "Contains steroid backbone with ketone and double bond in rings"
+    if not ketone_found:
+        return False, "No ketone group at position 3"
+    
+    # Check for double bond between positions 1 and 2
+    atom1 = mol.GetAtomWithIdx(atom1_idx)
+    atom2 = mol.GetAtomWithIdx(atom2_idx)
+    bond = mol.GetBondBetweenAtoms(atom1_idx, atom2_idx)
+    if bond is None or bond.GetBondType() != Chem.rdchem.BondType.DOUBLE:
+        return False, "No double bond between positions 1 and 2"
+    
+    return True, "Matches 3-oxo-Delta(1) steroid with correct backbone, ketone at position 3, and double bond between positions 1 and 2"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:35164',
@@ -70,7 +87,7 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:35164',
                       'max_instances_in_prompt': 100,
                       'test_proportion': 0.1},
         'message': None,
-        'attempt': 0,
+        'attempt': 1,
         'success': True,
         'best': True,
         'error': '',
