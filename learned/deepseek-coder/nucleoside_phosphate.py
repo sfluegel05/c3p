@@ -26,25 +26,25 @@ def is_nucleoside_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for sugar pattern (more general pattern for ribose, deoxyribose, and other sugars)
-    sugar_pattern = Chem.MolFromSmarts("[C@H]1O[C@H]([C@H](O)[C@@H]1O)")
-    if not mol.HasSubstructMatch(sugar_pattern):
-        return False, "No sugar pattern found"
+    # Look for nucleoside pattern (sugar + nucleobase)
+    nucleoside_pattern = Chem.MolFromSmarts("[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12")
+    if not mol.HasSubstructMatch(nucleoside_pattern):
+        return False, "No nucleoside pattern found (sugar + nucleobase)"
 
-    # Look for nucleobase pattern (more general pattern for purines and pyrimidines)
-    nucleobase_pattern = Chem.MolFromSmarts("[nX3]1[cX3][cX3][cX3][cX3]1 | [nX3]1[cX3][cX3][cX3][cX3]1")
-    if not mol.HasSubstructMatch(nucleobase_pattern):
-        return False, "No nucleobase pattern found"
-
-    # Look for phosphate groups (more general pattern)
-    phosphate_pattern = Chem.MolFromSmarts("[PX4](=O)([OX2])[OX2]")
+    # Look for phosphate groups (P with oxygens)
+    phosphate_pattern = Chem.MolFromSmarts("[PX4](=O)([OX2])([OX2])[OX2]")
     phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
     if len(phosphate_matches) == 0:
         return False, "No phosphate groups found"
+
+    # Check molecular weight - nucleoside phosphates typically >200 Da
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 200:
+        return False, "Molecular weight too low for nucleoside phosphate"
 
     # Count phosphorous atoms
     p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
     if p_count < 1:
         return False, "Must have at least one phosphorous atom"
 
-    return True, "Contains sugar, nucleobase, and at least one phosphate group"
+    return True, "Contains nucleoside pattern with at least one phosphate group"
