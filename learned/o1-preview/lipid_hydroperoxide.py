@@ -36,10 +36,9 @@ def is_lipid_hydroperoxide(smiles: str):
     if num_hydroperoxy == 0:
         return False, "No hydroperoxy (-OOH) groups found"
 
-    # Determine if the molecule is a lipid
-    # Lipids typically have long hydrocarbon chains (aliphatic chains with at least 8 carbons)
-    # Define a SMARTS pattern for a carbon chain of at least 8 carbons
-    long_chain_pattern = Chem.MolFromSmarts("[C]1~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]~1")
+    # Determine if the molecule is a lipid by checking for long hydrocarbon chains
+    # Define a SMARTS pattern for a chain of at least 8 carbons
+    long_chain_pattern = Chem.MolFromSmarts("[CH2]~[CH2]~[CH2]~[CH2]~[CH2]~[CH2]~[CH2]")
     if not mol.HasSubstructMatch(long_chain_pattern):
         return False, "No long hydrocarbon chains found"
 
