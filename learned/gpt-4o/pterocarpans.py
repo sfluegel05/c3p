@@ -21,11 +21,11 @@ def is_pterocarpans(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a SMARTS pattern to represent the pterocarpan skeleton
-    # This pattern focuses on the tricyclic core with the right connectivity for a pterocarpan skeleton
-    pterocarpan_pattern = Chem.MolFromSmarts("C1Oc2ccccc2C3Cc4ccccc4OC13")
+    # Define a refined SMARTS pattern for pterocarpan core
+    # I have added explicit stereochemistry and a more precise definition of fused rings
+    pterocarpan_pattern = Chem.MolFromSmarts("C1Oc2ccccc2[C@H]3CO[C@@H]4Cc5ccccc5O[C@H]34")
 
-    # Check if the molecule has the pterocarpan skeleton
+    # Check if the molecule matches the pterocarpan skeleton
     if mol.HasSubstructMatch(pterocarpan_pattern):
         return True, "Contains 6a,11a-dihydro-6H-[1]benzofuro[3,2-c]chromene skeleton"
     else:
