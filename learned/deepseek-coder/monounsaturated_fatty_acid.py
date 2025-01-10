@@ -66,4 +66,15 @@ def is_monounsaturated_fatty_acid(smiles: str):
     if branching_carbons > 1:  # Allow one branching point for the carboxylic acid
         return False, "Molecule is too branched to be a simple fatty acid"
 
+    # Check for additional functional groups that would disqualify the molecule
+    # Allow hydroxyl groups, but no other functional groups
+    allowed_functional_groups = ["[OH]", "[OX2H1]"]
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 8 and atom.GetDegree() == 1:  # Oxygen with one bond (hydroxyl)
+            continue
+        elif atom.GetAtomicNum() == 6 and atom.GetDegree() <= 2:  # Carbon in the chain
+            continue
+        else:
+            return False, "Molecule contains additional functional groups"
+
     return True, "Contains a carboxylic acid group and exactly one double or triple bond in the carbon chain"
