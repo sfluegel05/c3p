@@ -21,8 +21,9 @@ def is_flavin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Isoalloxazine core SMARTS pattern
-    isoalloxazine_pattern = Chem.MolFromSmarts("c1cc2n(c1)c(=O)n(c3c2nc(=O)[nH]c3=O)")
+    # Generalized Isoalloxazine core SMARTS pattern
+    # The pattern represents the fused ring system in flavins, including potential variations.
+    isoalloxazine_pattern = Chem.MolFromSmarts("c1cc2nc3c(nc(=O)n(c4ccc(cc4)c3=O)c2o1)")
 
     # Check for isoalloxazine pattern in molecule
     if mol.HasSubstructMatch(isoalloxazine_pattern):
