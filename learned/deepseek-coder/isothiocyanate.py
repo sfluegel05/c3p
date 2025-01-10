@@ -25,7 +25,8 @@ def is_isothiocyanate(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for the isothiocyanate group (-N=C=S)
-    isothiocyanate_pattern = Chem.MolFromSmarts("[NX3][CX2]=[SX1]")
+    # Use a more flexible SMARTS pattern to match the isothiocyanate group
+    isothiocyanate_pattern = Chem.MolFromSmarts("[N]=[C]=[S]")
     if not mol.HasSubstructMatch(isothiocyanate_pattern):
         return False, "No isothiocyanate group (-N=C=S) found"
 
@@ -33,7 +34,8 @@ def is_isothiocyanate(smiles: str):
     for match in mol.GetSubstructMatches(isothiocyanate_pattern):
         nitrogen_idx = match[0]
         nitrogen_atom = mol.GetAtomWithIdx(nitrogen_idx)
-        if nitrogen_atom.GetDegree() < 1:
+        # Ensure the nitrogen is connected to at least one carbon atom
+        if not any(neighbor.GetAtomicNum() == 6 for neighbor in nitrogen_atom.GetNeighbors()):
             return False, "Nitrogen in isothiocyanate group must be connected to a carbon"
 
     return True, "Contains the isothiocyanate group (-N=C=S)"
