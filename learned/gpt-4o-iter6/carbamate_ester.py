@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_carbamate_ester(smiles: str):
     """
     Determines if a molecule is a carbamate ester based on its SMILES string.
-    A carbamate ester is characterized by the presence of the carbamate functional group (-O-C(=O)-N- or an aromatic variant).
+    A carbamate ester is characterized by the presence of the carbamate functional group (-O-C(=O)-N-).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,9 +21,10 @@ def is_carbamate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Enhance SMARTS to account for various bonding and aromatic variations
-    carbamate_pattern = Chem.MolFromSmarts("[#8][CX3](=[OX1])[NX3,#7]")
-    
+    # Define SMARTS pattern for carbamate ester
+    # This specifically looks for the -O-C(=O)-N- group where the nitrogen is not part of a ring
+    carbamate_pattern = Chem.MolFromSmarts("[#8]-[#6](=O)-[#7;!R]")
+
     if mol.HasSubstructMatch(carbamate_pattern):
         return True, "Contains carbamate ester functional group"
 
