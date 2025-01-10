@@ -36,15 +36,16 @@ def is_alkane(smiles: str):
     if mol.GetRingInfo().NumRings() > 0:
         return False, "Contains rings, not acyclic"
     
-    # Correctly count carbons and hydrogens
+    # Correctly count carbons
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    hydrogen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 1)
+    
+    # Correctly calculate the total hydrogen count, including implicit hydrogens
+    hydrogen_count = sum(atom.GetTotalNumHs() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
 
     # Calculate expected hydrogen count based on alkanes' CnH2n+2 rule
     expected_hydrogen_count = 2 * carbon_count + 2
 
     if hydrogen_count != expected_hydrogen_count:
-        # Debug potential miscounting with a reasoned explanation
         return False, f"Formula C{carbon_count}H{hydrogen_count} does not match CnH2n+2 (expected H{expected_hydrogen_count})"
     
     return True, "Molecule matches the definition of an alkane"
