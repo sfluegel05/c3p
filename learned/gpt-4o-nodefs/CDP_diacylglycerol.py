@@ -12,7 +12,7 @@ def is_CDP_diacylglycerol(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a CDP-diacylglycerol, False otherwise
+        bool: True if the molecule is a CDP-diacylglycerol, False otherwise
         str: Reason for classification
     """
     
@@ -20,25 +20,25 @@ def is_CDP_diacylglycerol(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Look for glycerol backbone - C(CO)O as a simple motif
-    glycerol_backbone_pattern = Chem.MolFromSmarts("C(CO)O")
+
+    # Refined glycerol backbone pattern (OCC(COC)OC)
+    glycerol_backbone_pattern = Chem.MolFromSmarts("OCC(COC)OC")
     if not mol.HasSubstructMatch(glycerol_backbone_pattern):
         return False, "No glycerol backbone found"
 
-    # Look for at least two ester groups (C(=O)O)
-    ester_pattern = Chem.MolFromSmarts("C(=O)O")
+    # Look for at least two ester groups (C(=O)OC)
+    ester_pattern = Chem.MolFromSmarts("C(=O)OC")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) < 2:
         return False, f"Found {len(ester_matches)} ester groups, need at least 2"
 
-    # Look for cytidine moiety - broader pattern n1c(C)[nH]c1=O
-    cytidine_pattern = Chem.MolFromSmarts("n1cc[nH]c1=O")
+    # Improved cytidine moiety pattern
+    cytidine_pattern = Chem.MolFromSmarts("n1c(=O)[nH]c([nH]1)=O")
     if not mol.HasSubstructMatch(cytidine_pattern):
         return False, "No cytidine moiety found"
     
-    # Look for a diphosphate group
-    diphosphate_pattern = Chem.MolFromSmarts("P(O)P(O)")
+    # Look for a diphosphate group - P(~[OH])([OH])(~[O])~O
+    diphosphate_pattern = Chem.MolFromSmarts("P([OH])([OH])([O])~[O]")
     if not mol.HasSubstructMatch(diphosphate_pattern):
         return False, "No diphosphate group found"
 
