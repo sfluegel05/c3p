@@ -21,18 +21,13 @@ def is_beta_D_galactoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # More flexible galactose moiety pattern to detect the presence of galactose
-    galactose_pattern = Chem.MolFromSmarts('OC[C@H]1O[C@@H](O)[C@@H](O)[C@H](O)[C@H]1O')
+    # Updated and more flexible pattern to detect a beta-D-galactose moiety
+    galactose_pattern = Chem.MolFromSmarts('[C@H]1([O][C@@H]([C@H](O)[C@H]([C@H]1O)O)O)CO')
     
-    # Identify the galactose moiety
-    if not mol.HasSubstructMatch(galactose_pattern):
-        return False, "Galactose moiety not found"
+    # Match the galactose moiety with beta configuration
+    matches = mol.GetSubstructMatches(galactose_pattern)
 
-    # Identify the beta configuration at the anomeric center
-    anomeric_c = Chem.MolFromSmarts('[C@H]1(O[C@H](CO)*)O[C@H](O)[C@@H](O)[C@H]1O')
-    beta_match = mol.HasSubstructMatch(anomeric_c)
-
-    if not beta_match:
-        return False, "Beta configuration at anomeric center not found"
-
+    if not matches:
+        return False, "Beta configuration at anomeric center not found or galactose moiety not identified"
+    
     return True, "Beta-D-galactoside moiety found with proper beta configuration"
