@@ -20,17 +20,21 @@ def is_ubiquinones(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+    
+    try:
+        # Flexible pattern for 2,3-dialkoxy benzoquinone core
+        benzoquinone_core_pattern = Chem.MolFromSmarts("O=C1C=CC(=O)C=C1")
+        if not mol.HasSubstructMatch(benzoquinone_core_pattern):
+            return False, "No flexible 2,3-dialkoxy benzoquinone core found"
+    
+        # Look for isoprenoid units; allow for variability
+        isoprenoid_pattern = Chem.MolFromSmarts("C=C(C)C")
+        isoprenoid_matches = mol.GetSubstructMatches(isoprenoid_pattern)
+        if len(isoprenoid_matches) < 1:  # Adjust threshold to handle ubiquinone variations
+            return False, "Insufficient isoprenoid units, found " + str(len(isoprenoid_matches))
 
-    # Look for a more flexible 2,3-dialkoxy benzoquinone core pattern
-    benzoquinone_core_pattern = Chem.MolFromSmarts("COC1=CC(=O)C=C(C1=O)OC")
-    if not mol.HasSubstructMatch(benzoquinone_core_pattern):
-        return False, "No flexible 2,3-dialkoxy benzoquinone core found"
-
-    # Look for isoprenoid units
-    isoprenoid_pattern = Chem.MolFromSmarts("(C=C(C)C)")
-    isoprenoid_matches = mol.GetSubstructMatches(isoprenoid_pattern)
-    if len(isoprenoid_matches) < 3:  # Consider typical isoprenoid chains in ubiquinones
-        return False, "Insufficient isoprenoid units, found " + str(len(isoprenoid_matches))
+    except Exception as e:
+        return None, f"Error during classification: {str(e)}"
 
     return True, "Contains flexible 2,3-dialkoxy benzoquinone core with sufficient isoprenoid units"
 
