@@ -16,37 +16,35 @@ def is_oligosaccharide(smiles: str):
         str: Reason for classification
     """
     mol = Chem.MolFromSmiles(smiles)
-    
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # SMARTS patterns for different sugar backbones (hexoses and pentoses)
+
+    # SMARTS pattern to match typical sugar rings (e.g., hexose, pentose)
     sugar_patterns = [
-        Chem.MolFromSmarts("[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@H]1O"),  # Example for hexoses
-        Chem.MolFromSmarts("[C@H](O)[C@H](O)[C@@H](O)[C@H]1O"),  # Example for pentoses
-        Chem.MolFromSmarts("[C@@H](O)[C@@H](O)[C@H](O)[C@H]1O")
-        # Additional patterns for other common sugars can be added here
+        Chem.MolFromSmarts("OC[C@H]1O[C@@H](O)[C@H](O)[C@@H](O)[C@H]1"),  # Hexose
+        Chem.MolFromSmarts("OC[C@H]1O[C@H](O)[C@H](O)[C@H]1"),  # Pentose
+        # More patterns per sugar variations (e.g., deoxy sugars) can be added
     ]
-    
-    # Search for sugar substructures
-    sugar_matches = 0
+
+    # Look for sugar substructures
+    sugar_count = 0
     sugar_atoms = set()
     for pattern in sugar_patterns:
         matches = mol.GetSubstructMatches(pattern)
-        sugar_matches += len(matches)
+        sugar_count += len(matches)
         for match in matches:
             sugar_atoms.update(match)
-    
-    if sugar_matches < 2:
-        return False, f"Found {sugar_matches} sugar units, need at least 2 for an oligosaccharide"
-    
-    # Look for glycosidic linkages (O-links between two sugars)
-    linkage_pattern = Chem.MolFromSmarts("C-O-C")
-    
-    # Ensure that there is at least one glycosidic linkage connecting distinct sugar units
-    glycosidic_match = any(mol.HasSubstructMatch(linkage_pattern))
-    
-    if not glycosidic_match:
-        return False, "No glycosidic linkages found, important for oligosaccharide classification"
-    
-    return True, "Contains sufficient monosaccharide units linked by glycosidic bonds"
+
+    if sugar_count < 2:
+        return False, f"Found {sugar_count} sugar units, need at least 2 to be an oligosaccharide"
+
+    # Check for glycosidic linkages
+    linkage_pattern = Chem.MolFromSmarts("[C]-O-[C]")  # Basic C-O-C linkage pattern
+
+    # Ensure linkage connects separate sugar atoms
+    for sugar in sugar_atoms:
+        env = Chem.FindAtomEnvironmentOfRadiusN(mol, 1, sugar)
+        if any(mol.GetBondBetweenAtoms(idx1, idx2).GetSmarts() == "O" for idx1, idx2 in env):
+            return True, "Contains sugar units linked by glycosidic bonds"
+
+    return False, "No glycosidic linkages found among sugar units"
