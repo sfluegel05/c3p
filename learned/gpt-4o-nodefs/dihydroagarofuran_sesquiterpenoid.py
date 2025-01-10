@@ -12,7 +12,7 @@ def is_dihydroagarofuran_sesquiterpenoid(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a dihydroagarofuran sesquiterpenoid, False otherwise
+        bool: True if the molecule is a dihydroagarofuran sesquiterpenoid, False otherwise
         str: Reason for classification
     """
     
@@ -21,17 +21,17 @@ def is_dihydroagarofuran_sesquiterpenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Attempt to define an improved core structure for dihydroagarofuran
-    # This pattern improved only tentatively as research indicates these have complex polycyclic systems
-    dihydroagarofuran_core_pattern = Chem.MolFromSmarts("O[C@@H]1[C@@H](OC)C[C@H]2[C@@H]1COC2")  # Improved hypothetical pattern
+    # Define the core structure pattern for dihydroagarofuran, adjusting for complexity and stereochemistry
+    # Tentative pattern based on analysis and correction from previous version
+    dihydroagarofuran_core_pattern = Chem.MolFromSmarts("OC1[CH]2OC(=O)[C@@]3(C)C[C@H](OC(=O)C)C[C@@H]3C[C@H]12")  
 
     if not mol.HasSubstructMatch(dihydroagarofuran_core_pattern):
         return False, "Core structure of dihydroagarofuran not found"
 
-    # Check for ester groups - these should be more abundant in dihydroagarofuran
+    # Check for multiple ester groups as indicators of high esterification
     ester_pattern = Chem.MolFromSmarts("OC(=O)C")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) < 5:  # Based on the intricacy typical in the provided examples
+    if len(ester_matches) < 5:  # Based on the high degree of esterification typical in the provided examples
         return False, f"Ester groups absent or fewer than expected, found {len(ester_matches)}"
 
     return True, "Molecule matches dihydroagarofuran sesquiterpenoid core structure with esters"
