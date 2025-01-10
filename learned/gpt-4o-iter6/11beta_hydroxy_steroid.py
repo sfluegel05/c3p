@@ -5,12 +5,11 @@ from rdkit import Chem
 
 def is_11beta_hydroxy_steroid(smiles: str):
     """
-    Determines if a molecule is an 11beta-hydroxy steroid based on its SMILES string,
-    requiring a steroid backbone and a stereospecific 11beta-hydroxy group.
+    Determines if a molecule is an 11beta-hydroxy steroid based on its SMILES string.
     
     Args:
         smiles (str): SMILES string of the molecule
-    
+
     Returns:
         bool: True if molecule is an 11beta-hydroxy steroid, False otherwise
         str: Reason for classification
@@ -21,17 +20,17 @@ def is_11beta_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more generalized steroid backbone pattern
-    # Pattern attempts to capture the [6-6-6-5] steroid nucleus with some flexibility
-    steroid_backbone_pattern = Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2CCC4C3CCCC4")
-    if not mol.HasSubstructMatch(steroid_backbone_pattern):
-        return False, "Steroid backbone not found"
+    # Basic steroid backbone pattern: 17 carbon atoms arranged in four fused rings
+    # This example uses a general steroid core scaffold (cyclopenta[a]phenanthrene) as a simple pattern
+    steroid_pattern = Chem.MolFromSmarts('C1CCC2C(C1)CCC3C2CCC4C3CCC4') 
+    if not mol.HasSubstructMatch(steroid_pattern):
+        return False, "Basic steroid backbone not found"
 
-    # Check for 11beta-hydroxy group
-    # Assumes the presence of an -OH group in a beta configuration at a possible 11 position
-    # The configuration is defined via stereochemistry descriptors post attachment
-    hydroxy_11beta_pattern = Chem.MolFromSmarts("[C@@H]1(O)CCC2C1CCC3C2CCC=C3")
+    # Look for the 11beta-hydroxy group: CCOH at position 11 with beta configuration
+    # Simplified SMARTS assuming the general placement
+    # Beta configuration commonly signifies a distinct stereochemistry
+    hydroxy_11beta_pattern = Chem.MolFromSmarts('[C@@H](O)[C@]1CCCCC1')
     if not mol.HasSubstructMatch(hydroxy_11beta_pattern):
-        return False, "No 11beta-hydroxy group with correct configuration found"
+        return False, "No 11beta-hydroxy group found with correct configuration"
 
-    return True, "Contains steroid backbone with an 11beta-hydroxy group of the expected configuration"
+    return True, "Contains basic steroid backbone with an 11beta-hydroxy group of the correct configuration"
