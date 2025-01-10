@@ -33,7 +33,7 @@ def is_1_acyl_sn_glycero_3_phosphoethanolamine(smiles: str):
         return False, "No glycerol backbone with (R)-configuration found"
 
     # Check for single acyl chain at the 1-position
-    acyl_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    acyl_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
     acyl_matches = mol.GetSubstructMatches(acyl_pattern)
     if len(acyl_matches) < 1:
         return False, "No acyl chain found at the 1-position"
@@ -42,6 +42,12 @@ def is_1_acyl_sn_glycero_3_phosphoethanolamine(smiles: str):
     phosphoethanolamine_pattern = Chem.MolFromSmarts("COP(O)(=O)OCCN")
     if not mol.HasSubstructMatch(phosphoethanolamine_pattern):
         return False, "No phosphoethanolamine group found at the 3-position"
+
+    # Check for exactly one ester bond (single acyl chain)
+    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    if len(ester_matches) != 1:
+        return False, f"Found {len(ester_matches)} ester bonds, need exactly 1"
 
     # Check molecular weight - typically >400 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
