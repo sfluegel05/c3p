@@ -6,8 +6,7 @@ from rdkit import Chem
 def is_polypyrrole(smiles: str):
     """
     Determines if a molecule is a polypyrrole based on its SMILES string.
-    Since the definition is ambiguous, this analysis extends to multiple pyrrole rings
-    and potential polymeric structures containing pyrroles.
+    A true polypyrrole is defined as a conjugated polymeric chain of pyrrole units linked via carbon atoms.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,18 +21,18 @@ def is_polypyrrole(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Consider pyrrole and possible linked multiple pyrrole structures
-    pyrrole_pattern = Chem.MolFromSmarts('n1cccc1')
+    # Define a pattern for polymeric pyrrole chain (several pyrroles linked in a linear or branched fashion)
+    polypyrrole_pattern = Chem.MolFromSmarts('n1cccc1-!@[C]-n2cccc2')
     
-    # If multiple pyrroles might be required in sequence, look for linked dimers or more
-    polypyrrole_pattern = Chem.MolFromSmarts('n1cccc1-n2cccc2')
+    # Cyclic structure exclusion to avoid porphyrin-like structures
+    cyclic_pyrrole_exclusion = Chem.MolFromSmarts('[$(c1cc[nH]c[c2ncc3nc[nH]c3[nH]2]c1)]')
     
-    # Check if any pattern relevant to polypyrrole structures matches
-    if mol.HasSubstructMatch(polypyrrole_pattern):
-        return True, "Contains multiple linked pyrrole rings pattern"
+    # Check if any pattern relevant to polypyrrole structures matches and exclude cyclic porphyrins
+    if mol.HasSubstructMatch(polypyrrole_pattern) and not mol.HasSubstructMatch(cyclic_pyrrole_exclusion):
+        return True, "Contains polymeric chain of pyrrole units (linked via carbon atoms)"
 
-    # Fallback on single pyrrole detection if polymeric form not specific
-    if mol.HasSubstructMatch(pyrrole_pattern):
-        return True, "Contains pyrrole ring, but not polymeric"
+    # If pyrrole present but not in polypyrrole form
+    if mol.HasSubstructMatch(Chem.MolFromSmarts('n1cccc1')):
+        return False, "Contains pyrrole ring, but not in form of a polypyrrole chain"
 
-    return False, "No polypyrrole-defining structure found or definition is too vague"
+    return False, "No polypyrrole-defining structure found: lacks polymeric pyrrole chain"
