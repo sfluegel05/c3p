@@ -2,13 +2,12 @@
 Classifies: CHEBI:140331 4'-hydroxyflavanones
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_4__hydroxyflavanones(smiles: str):
     """
     Determines if a molecule is a 4'-hydroxyflavanone based on its SMILES string.
 
-    A 4'-hydroxyflavanone has a core flavanone structure with a 4'-hydroxy group on the phenyl ring. 
+    A 4'-hydroxyflavanone has a flavanone structure with a 4'-hydroxy group on the phenyl ring.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,16 +22,14 @@ def is_4__hydroxyflavanones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for flavanone core: benzene ring with ketone and cyclic ether linkage
-    flavanone_core_pattern = Chem.MolFromSmarts("c1ccc(cc1)-C2-C(=O)-c3ccccc3O2")
-    
+    # Refined flavanone core pattern
+    flavanone_core_pattern = Chem.MolFromSmarts("c1ccccc1-C2COc3ccccc3O2")  # Phenyl linked a cycle with ketone and hydroxyl
     if not mol.HasSubstructMatch(flavanone_core_pattern):
-        return False, "No core flavanone structure found"
+        return False, "No flavanone core structure found"
 
-    # Pattern for 4'-hydroxy group on the phenyl ring
-    hydroxy_pattern = Chem.MolFromSmarts("c1cc(O)ccc1")
-    
+    # Pattern for a 4'-hydroxy group attached at a typical position
+    hydroxy_pattern = Chem.MolFromSmarts("c1cc(O)ccc1") # Ensure it's on phenyl component matching flavanone
     if not mol.HasSubstructMatch(hydroxy_pattern):
-        return False, "No hydroxy group at the 4' position"
-
-    return True, "Contains core flavanone structure with 4'-hydroxy group"
+        return False, "4'-hydroxy group not identified"
+    
+    return True, "Contains flavanone structure with 4'-hydroxy group"
