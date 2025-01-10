@@ -8,6 +8,7 @@ of a fatty acid with methanol.
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_fatty_acid_methyl_ester(smiles: str):
     """
@@ -34,8 +35,6 @@ def is_fatty_acid_methyl_ester(smiles: str):
     
     # Count number of methyl ester groups
     num_methyl_esters = len(methyl_ester_matches)
-    
-    # Special case: Allow dimethyl esters (like dimethyl sebacate)
     if num_methyl_esters > 2:
         return False, f"Too many methyl ester groups ({num_methyl_esters})"
     
@@ -44,34 +43,50 @@ def is_fatty_acid_methyl_ester(smiles: str):
     for match in methyl_ester_matches:
         ester_atoms.update(match)
     
-    # Check for carbon chain attached to ester group
-    carbon_chain = False
-    for match in methyl_ester_matches:
-        carbonyl_carbon = match[0]  # First atom in pattern is carbonyl carbon
-        for neighbor in mol.GetAtomWithIdx(carbonyl_carbon).GetNeighbors():
-            if neighbor.GetIdx() not in ester_atoms and neighbor.GetAtomicNum() == 6:
-                # Found carbon attached to ester that's not part of ester group
-                carbon_chain = True
-                break
+    # Count rings and check their nature
+    ring_info = mol.GetRingInfo()
+    num_rings = ring_info.NumRings()
     
-    if not carbon_chain:
-        return False, "No carbon chain attached to ester group"
+    # Limit total number of rings
+    if num_rings > 3:
+        return False, "Too many ring systems for a fatty acid"
     
-    # Count carbons (excluding methyl ester carbons)
-    non_ester_carbons = 0
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 6 and atom.GetIdx() not in ester_atoms:
-            non_ester_carbons += 1
-            
-    if non_ester_carbons < 2:
+    # Check for aromatic rings
+    num_aromatic_rings = rdMolDescriptors.CalcNumAromaticRings(mol)
+    if num_aromatic_rings > 0:
+        return False, "Fatty acid methyl esters should not contain aromatic rings"
+    
+    # Count carbons and check chain
+    total_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    non_ester_carbons = total_carbons - (2 * num_methyl_esters)  # Subtract carbons from methyl ester groups
+    
+    if non_ester_carbons < 3:
         return False, "Carbon chain too short for fatty acid"
-        
-    # If we have exactly two methyl esters, check if it's a valid diester
+    
+    if non_ester_carbons > 30:
+        return False, "Carbon chain too long for typical fatty acid"
+    
+    # Check for predominantly aliphatic character
+    num_sp3_carbons = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[CX4]")))
+    if num_sp3_carbons < (total_carbons * 0.5):
+        return False, "Not predominantly aliphatic"
+    
+    # Special case for dimethyl esters (like dimethyl sebacate)
     if num_methyl_esters == 2:
-        # Check for linear chain between esters
-        chain_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2][CH3X4].[CX3](=[OX1])[OX2][CH3X4]")
-        if not mol.HasSubstructMatch(chain_pattern):
-            return False, "Invalid diester structure"
+        # Check for reasonable chain length between esters
+        if non_ester_carbons < 6:
+            return False, "Chain too short for dicarboxylic acid"
         return True, "Valid dimethyl ester of dicarboxylic acid"
     
-    return True, "Contains methyl ester group with appropriate carbon chain"
+    # Check for continuous carbon chain
+    longest_chain = rdMolDescriptors.CalcNumBonds(mol)
+    if longest_chain < 5:  # Minimum chain length including the ester group
+        return False, "No proper fatty acid chain"
+    
+    # Count heteroatoms (excluding the ester oxygens)
+    num_N = rdMolDescriptors.CalcNumLipinskiHBA(mol) - (2 * num_methyl_esters)
+    num_S = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[#16]")))
+    if num_N > 1 or num_S > 1:
+        return False, "Too many heteroatoms for a fatty acid"
+    
+    return True, "Contains methyl ester group with appropriate fatty acid chain"
