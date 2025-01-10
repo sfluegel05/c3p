@@ -2,7 +2,6 @@
 Classifies: CHEBI:62499 methyl-branched fatty acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdqueries
 
 def is_methyl_branched_fatty_acid(smiles: str):
     """
@@ -22,28 +21,19 @@ def is_methyl_branched_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for the carboxylic acid group (C(=O)O)
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
-    if not mol.HasSubstructMatch(carboxylic_acid_pattern):
-        return False, "No carboxylic acid group found"
+    # Check for the carboxylic acid group (must be terminal, C(=O)O must not have further connections)
+    terminal_carboxylic_pattern = Chem.MolFromSmarts("C(=O)[O;H1]")
+    if not mol.HasSubstructMatch(terminal_carboxylic_pattern):
+        return False, "No terminal carboxylic acid group found"
     
-    # Look for methyl branches (CH3-)
-    # A methyl group is a carbon with three hydrogens
-    methyl_group_pattern = Chem.MolFromSmarts("[CH3]")
-    methyl_matches = mol.GetSubstructMatches(methyl_group_pattern)
-    if not methyl_matches:
-        return False, "No methyl branches detected"
-
-    # Check if all branches from the main chain are methyl
+    # Look for non-methyl branching
     for atom in mol.GetAtoms():
-        # If atom is carbon and has branches
-        if atom.GetSymbol() == 'C' and atom.GetDegree() > 2:
-            num_methyl_branch = 0
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetSymbol() == 'C' and neighbor.GetDegree() == 1:
-                    num_methyl_branch += 1
-            # If any non-methyl branches detected, return False
-            if (atom.GetDegree() - num_methyl_branch) > 2:
+        # If a carbon atom has more than one non-hydrogen neighbor, it could be a branching point
+        if atom.GetSymbol() == 'C' and atom.GetDegree() > 3:
+            # Count how many of the neighbors are methyl-type carbons (CH3)
+            methyl_branches = sum(1 for neighbor in atom.GetNeighbors() if neighbor.GetSymbol() == 'C' and neighbor.GetDegree() == 1)
+            # If there is a branch that is not a methyl group, return False
+            if atom.GetDegree() - methyl_branches > 2:
                 return False, "Non-methyl branches detected"
 
-    return True, "Contains methyl branches only with a carboxylic acid group"
+    return True, "Contains only methyl branches with a terminal carboxylic acid group"
