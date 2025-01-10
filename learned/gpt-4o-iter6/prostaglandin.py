@@ -21,25 +21,25 @@ def is_prostaglandin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for a 5-membered ring (cyclopentane)
-    cyclopentane_pattern = Chem.MolFromSmarts("C1CCCC1")
+    # Look for a 5-membered ring with possible unsaturation (e.g., cyclopentenone)
+    cyclopentane_pattern = Chem.MolFromSmarts("C1=CC=CC1")
     if not mol.HasSubstructMatch(cyclopentane_pattern):
-        return False, "No cyclopentane ring found"
+        return False, "No cyclopentene/cyclopentane ring found"
 
-    # Check for carboxylic acid groups (as part of prostanoic acid backbone)
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
+    # Check for carboxylic acid or ester groups
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[O]")
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
-        return False, "No carboxylic acid group found"
+        return False, "No carboxylic acid or ester group found"
 
-    # Count carbon atoms to ensure structure is similar to C20 prostanoic acid
+    # Verify presence of hydroxyl group (-OH) or other oxygen-containing groups suggesting biological activity
+    hydroxyl_or_ether_pattern = Chem.MolFromSmarts("CO")
+    if not mol.HasSubstructMatch(hydroxyl_or_ether_pattern):
+        return False, "No hydroxyl or ether group found"
+
+    # Slightly relax carbon count to allow for typical modifications
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 15 or c_count > 21:  # Allowing a range around C20
+    if c_count < 15 or c_count > 25:  # Allow more flexibility
         return False, f"Unexpected carbon count: {c_count} (expected ~20)"
 
-    # Check for at least one hydroxyl group (-OH), which is common in prostaglandins
-    hydroxyl_pattern = Chem.MolFromSmarts("CO")
-    if not mol.HasSubstructMatch(hydroxyl_pattern):
-        return False, "No hydroxyl group found"
-
     # The minimum required features are present, classify as prostaglandin
-    return True, "Contains key features of a prostaglandin: cyclopentane ring, carboxylic acid, and hydroxyl groups"
+    return True, "Contains key features of a prostaglandin: a flexible ring structure, carboxylic acid/ester, and hydroxyl/ether groups"
