@@ -22,16 +22,16 @@ def is_monounsaturated_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the CoA group substructure (including possible variations in representations)
-    coa_pattern = Chem.MolFromSmarts("NC(=O)CC(N)C(=O)SCC")
+    # Define the CoA group substructure - includes larger moiety components
+    coa_pattern = Chem.MolFromSmarts("COP(O)(=O)OP(O)(=O)OC1[C@@H](O)C(C)(C)N2C=NC3=C(N)N=CN=C3N2[C@H]1O[C@@H]2[C@H](O)[C@@H](O)[C@H](O2)OP(O)(O)=O") 
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No CoA group found"
 
     # Define a pattern for carbon-carbon double bonds in aliphatic chains
-    double_bond_pattern = Chem.MolFromSmarts("[C;!R]=[C;!R]")  # Ensure non-aromatic double bonds
+    double_bond_pattern = Chem.MolFromSmarts("[CH2]=[CH]")  # Aliphatic C=C bond
     double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
 
-    # Look for a fatty acyl chain pattern
+    # Research chain connections beyond just esters
     fatty_acid_chain_pattern = Chem.MolFromSmarts("C(=O)SCCNC(=O)C")
     if not mol.HasSubstructMatch(fatty_acid_chain_pattern):
         return False, "No valid fatty acyl chain found"
