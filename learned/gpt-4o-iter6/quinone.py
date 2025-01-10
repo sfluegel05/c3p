@@ -7,10 +7,10 @@ def is_quinone(smiles: str):
     """
     Determines if a molecule is a quinone based on its SMILES string.
     
-    Quinones have a fully conjugated cyclic dione structure, typically derived 
+    Quinones have a fully conjugated cyclic dione structure, often derived 
     from aromatic compounds, where an even number of -CH= groups are 
-    replaced by -C(=O)- groups within an aromatic ring. This includes polycyclic
-    and heterocyclic analogues.
+    replaced by -C(=O)- groups within an aromatic ring. Polycyclic and 
+    heterocyclic analogues are included.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -25,13 +25,14 @@ def is_quinone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Extended SMARTS patterns for quinone structures, including polycyclic variants
-    # Basic benzoquinone-like pattern
+    # Extended SMARTS patterns for quinones, including polycyclic and heterocyclic variants
     quinone_patterns = [
-        Chem.MolFromSmarts("C1=CC(=O)C=C(C=1)=O"),  # Simple 1,4-benzoquinone
-        Chem.MolFromSmarts("C1=CC(=O)C=CC=C1(=O)"), # Extended to allow extra conjugation paths
-        Chem.MolFromSmarts("O=C1C=CC2=CC(O)=CC=C2C1"), # Naphthoquinone-like
-        Chem.MolFromSmarts("O=C1C=CC2=C1C(=O)C=CC=C2")  # Anthraquinone-like
+        Chem.MolFromSmarts("C1=CC(=O)C=CC1=O"),                # Simple 1,4-benzoquinone
+        Chem.MolFromSmarts("C1=CC(=O)C=COC1=O"),              # Heterocyclic analogues
+        Chem.MolFromSmarts("O=C1C=CC(=O)C=C1"),                # Naphthoquinone-like
+        Chem.MolFromSmarts("O=C1C=CC2=C1C=CC(=O)C=C2"),        # Anthraquinone-like
+        Chem.MolFromSmarts("O=C1C=CC2=CC=CC=C2C1=O"),          # Extended polycyclic quinone
+        Chem.MolFromSmarts("C1(=O)C=CC2=CC(=O)C=CC=C12")       # Another polycyclic variation
     ]
     
     # Check for any pattern match
