@@ -20,9 +20,8 @@ def is_N_hydroxy_alpha_amino_acid(smiles: str):
         return False, "Invalid SMILES string"
     
     # Define the key structural patterns for N-hydroxy-alpha-amino-acid
-    # The pattern captures an amino group with an attached hydroxy group (N-O-H)
-    # and an alpha carbon with a carboxyl group (C(=O)O)
-    nhydroxy_alpha_amino_pattern = Chem.MolFromSmarts("[CX4][CX3](N(O))(*)[CX3](=O)[OX1H]")
+    # Pattern looks for an alpha carbon bearing a carboxy group and a nitrogen with hydroxyl
+    nhydroxy_alpha_amino_pattern = Chem.MolFromSmarts("[$([NX3]([OX1])[H]);!$(N[NX3])][CX3](=O)[OX2H]")
     
     if not mol.HasSubstructMatch(nhydroxy_alpha_amino_pattern):
         return False, "Does not contain N-hydroxy-alpha-amino-acid substructure"
