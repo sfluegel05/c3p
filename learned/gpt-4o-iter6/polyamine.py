@@ -21,16 +21,21 @@ def is_polyamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Refined SMARTS pattern to match amino groups
-    # Includes primary (NH2), secondary (NHR), tertiary (NR2) amines,
-    # and quaternary ammonium groups
-    amino_pattern = Chem.MolFromSmarts("[NX3,NX4+;!$(NC=O),!$(N~N)]")
-
-    # Find all matches for amino groups in the molecule
-    amino_matches = mol.GetSubstructMatches(amino_pattern)
+    # SMARTS pattern to match amino groups
+    # Matches primary (NH2), secondary (NHR), tertiary (NR2) amines
+    # Ensure we exclude non-amino nitrogen groups such as nitro groups
+    primary_amino_pattern = Chem.MolFromSmarts("[NX3;H2,H1;!$(NC=O),!$(N~N)]")  # NH2-R or NH-R
+    secondary_tertiary_amino_pattern = Chem.MolFromSmarts("[NX3;H0;!$(NC=O),!$(N~N)]")  # NR2-R (tri/quaternary)
     
+    # Find all matches for amino groups in the molecule
+    primary_amino_matches = mol.GetSubstructMatches(primary_amino_pattern)
+    secondary_tertiary_amino_matches = mol.GetSubstructMatches(secondary_tertiary_amino_pattern)
+    
+    # Combine both matches to find unique amino groups
+    unique_amino_matches = set(primary_amino_matches) | set(secondary_tertiary_amino_matches)
+    num_amino_groups = len(unique_amino_matches)
+
     # Check if there are 2 or more amino groups
-    num_amino_groups = len(amino_matches)
     if num_amino_groups >= 2:
         return True, f"Contains {num_amino_groups} amino groups"
     else:
