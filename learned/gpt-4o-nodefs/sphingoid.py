@@ -31,15 +31,22 @@ def is_sphingoid(smiles: str):
         Chem.MolFromSmarts("[CX3,CX4][CX4][C@H]([NX3])CO"),
         # Double-bond and amino linkage variants
         Chem.MolFromSmarts("C=C[CX4][C@@H](O)[C@@H](N)C"),
+        # Broad spectrum pattern for long aliphatic chains with functional groups
+        Chem.MolFromSmarts("[CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][OX2][C@@H](N)[CX4]"),
     ]
 
     for pattern in patterns:
         if mol.HasSubstructMatch(pattern):
             return True, f"Matches sphingoid structural pattern: {pattern}"
 
-    # Check for extended aliphatic chains (e.g., at least 10 carbons in a row)
-    aliphatic_chain_pattern = Chem.MolFromSmarts("CCCCCCCCCC")
-    if mol.HasSubstructMatch(aliphatic_chain_pattern):
-        return True, "Contains a long aliphatic chain, characteristic of sphingoids"
+    # Check for extended aliphatic chains in combination with functional groups
+    combined_patterns = [
+        Chem.MolFromSmarts("[NX3][C@H]([CX4])[OX2][CX4][CX4][CX4][CX4][CX4][CX4][CX4]"),
+        Chem.MolFromSmarts("[C@@H]C=C[CX4][C@@H](O)[C@@H](N)[CX4]"),
+    ]
 
+    for pattern in combined_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return True, "Contains a combination of long aliphatic chain and functional groups typical for sphingoids."
+    
     return False, "Did not match known sphingoid patterns"
