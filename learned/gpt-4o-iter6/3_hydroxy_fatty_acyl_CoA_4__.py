@@ -2,7 +2,6 @@
 Classifies: CHEBI:65102 3-hydroxy fatty acyl-CoA(4-)
 """
 from rdkit import Chem
-from rdkit.Chem import rdChemReactions
 
 def is_3_hydroxy_fatty_acyl_CoA_4_(smiles: str):
     """
@@ -19,27 +18,28 @@ def is_3_hydroxy_fatty_acyl_CoA_4_(smiles: str):
     if not mol:
         return False, "Invalid SMILES string"
 
-    # Pattern for 3-hydroxy group attached to a chiral center in fatty acyl chain
-    hydroxy_chiral_pattern = Chem.MolFromSmarts("[C@@H](O)")
-    if not mol.HasSubstructMatch(hydroxy_chiral_pattern):
-        return False, "No or incorrect chiral 3-hydroxy group found on fatty acid chain"
-      
-    # Pattern for Coenzyme A moiety with thioester linkage
-    coa_pattern = Chem.MolFromSmarts("C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP([O-])([O-])=O")
+    # Check for a 3-hydroxy group attached to a central carbon, with and without chirality
+    hydroxy_chiral_pattern = Chem.MolFromSmarts("[C@H](O)C")
+    hydroxy_nonchiral_pattern = Chem.MolFromSmarts("COC")
+    
+    if not (mol.HasSubstructMatch(hydroxy_chiral_pattern) or mol.HasSubstructMatch(hydroxy_nonchiral_pattern)):
+        return False, "No 3-hydroxy group found on fatty acid chain"
+    
+    # Coenzyme A moiety pattern with thioester linkage
+    coa_pattern = Chem.MolFromSmarts("C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)([O-])O")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "Coenzyme A moiety with thioester linkage not found"
 
-    # Pattern for deprotonated phosphate groups in CoA
-    phosphate_pattern = Chem.MolFromSmarts("P([O-])([O-])[O]")
-    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
-    if len(phosphate_matches) < 2:
-        return False, "At least two deprotonated phosphate groups not found"
+    # Look for deprotonated phosphate groups
+    phosphate_pattern = Chem.MolFromSmarts("P(=O)([O-])[O-]")
+    phosphate_matches = len(mol.GetSubstructMatches(phosphate_pattern))
+    if phosphate_matches < 2:
+        return False, f"Found {phosphate_matches} deprotonated phosphate groups, need at least 2"
 
-    # Confirm presence of fatty acid chain length (typically 12-36 carbons) and unsaturation handling
-    # These could be adjusted based on the specific examples' chain length and degree of saturation
-    chain_length_pattern = Chem.MolFromSmarts("CCCCCCCCCCCCC")
+    # Fatty acid chain pattern (allowing for some variability in chain length)
+    chain_length_pattern = Chem.MolFromSmarts("CCCCCCCCCCCC")  # Minimum pattern ensuring chain length similarity
     if not mol.HasSubstructMatch(chain_length_pattern):
-        return False, "Appropriate long fatty acyl chain not found"
+        return False, "Insufficient long fatty acyl chain detected"
 
-    # The molecular structure matches the described requirements
+    # If all conditions are met
     return True, "The molecule is a 3-hydroxy fatty acyl-CoA(4-)"
