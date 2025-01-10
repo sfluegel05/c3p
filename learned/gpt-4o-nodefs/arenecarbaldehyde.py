@@ -21,12 +21,19 @@ def is_arenecarbaldehyde(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # SMARTS pattern for an aldehyde group directly attached to an aromatic carbon
-    # The aldehyde carbon [C](=O) should be connected to an aromatic carbon [c]
-    aldehyde_attached_aromatic_pattern = Chem.MolFromSmarts("[c][C](=O)")
-    
+    # SMARTS pattern for aromatic ring (any kind) with aldehyde group directly attached
+    arenecarbaldehyde_pattern = Chem.MolFromSmarts("[c][C](=O)")
+
     # Verify the molecule contains the necessary substructure
-    if mol.HasSubstructMatch(aldehyde_attached_aromatic_pattern):
-        return True, "Contains aromatic ring with an aldehyde group directly attached"
+    if mol.HasSubstructMatch(arenecarbaldehyde_pattern):
+        # Additional verification: Confirm that the entire fragment behaves as desired in aromatic context
+        submatches = mol.GetSubstructMatches(arenecarbaldehyde_pattern)
+        for match in submatches:
+            aldehyde_carbon = match[1]  # Index of the aldehyde carbon based on the SMARTS pattern
+            neighbors = mol.GetAtomWithIdx(aldehyde_carbon).GetNeighbors()
+            for neighbor in neighbors:
+                if neighbor.GetIsAromatic():
+                    return True, "Contains aromatic ring with an aldehyde group directly attached"
+        return False, "Pattern found but not in correct aromatic context"
     else:
         return False, "No arenecarbaldehyde structure found"
