@@ -6,7 +6,8 @@ from rdkit import Chem
 def is_N_acylphytosphingosine(smiles: str):
     """
     Determines if a molecule is an N-acylphytosphingosine based on its SMILES string.
-    N-acylphytosphingosines have a phytosphingosine backbone with an acyl group attached to the nitrogen.
+    An N-acylphytosphingosine typically has a phytosphingosine backbone with an acyl group
+    attached to the nitrogen.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -15,26 +16,29 @@ def is_N_acylphytosphingosine(smiles: str):
         bool: True if molecule is an N-acylphytosphingosine, False otherwise
         str: Reason for classification
     """
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Look for a long hydrocarbon chain (>12 carbons, flexible length)
-    long_chain_pattern = Chem.MolFromSmarts("C{12,}")  # Using a flexible count-based pattern
-    if not mol.HasSubstructMatch(long_chain_pattern):
-        return False, "No sufficiently long hydrocarbon chain found typical for N-acylphytosphingosine"
     
-    # Look for the phytosphingosine backbone (amino alcohol)
-    backbone_pattern = Chem.MolFromSmarts("[C@H](O)[C@H](O)[C@H](CO)N")
+    # Look for the N-acylphytosphingosine backbone pattern:
+    # − Include hydroxylated long chain (typically 18 carbons)
+    # − Carbon chain with secondary amine
+    # − Multiple hydroxyl groups, generally two close to the amine group
+
+    # Define SMARTS pattern for phytosphingosine backbone
+    # General structure: C(CO)O-CH-(CH2)n-CH(NC)-CH2O
+    backbone_pattern = Chem.MolFromSmarts("[C@@H](O)[C@@H](N)[C@@H](O)")  # Looking for amino-alcohol pattern
+    
     if not mol.HasSubstructMatch(backbone_pattern):
         return False, "No phytosphingosine backbone found"
-    
-    # Look for an acyl group bonded to the nitrogen
-    acyl_pattern = Chem.MolFromSmarts("N[C;D2](C(=O)[CX4H])")  # Ensuring connection from nitrogen to a carbonyl carbon
+
+    # Define pattern for an acyl group attached to the nitrogen
+    acyl_pattern = Chem.MolFromSmarts("NC(=O)C")  # Acyl group pattern; nitrogen connected to carbonyl
     if not mol.HasSubstructMatch(acyl_pattern):
         return False, "No acyl group attached to the nitrogen"
-    
+
     return True, "Contains phytosphingosine backbone with N-acyl group"
 
 # Test the function
