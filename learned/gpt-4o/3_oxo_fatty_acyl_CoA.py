@@ -6,14 +6,14 @@ from rdkit import Chem
 def is_3_oxo_fatty_acyl_CoA(smiles: str):
     """
     Determines if a molecule is a 3-oxo-fatty acyl-CoA based on its SMILES string.
-    A 3-oxo-fatty acyl-CoA is a fatty acyl-CoA with an oxo group on the third carbon.
+    A 3-oxo-fatty acyl-CoA is a fatty acyl-CoA structure with an oxo group on the third carbon.
 
     Args:
-        smiles (str): SMILES string of the molecule
+        smiles (str): SMILES string of the molecule.
 
     Returns:
-        bool: True if molecule is a 3-oxo-fatty acyl-CoA, False otherwise
-        str: Reason for classification
+        bool: True if the molecule is a 3-oxo-fatty acyl-CoA, False otherwise.
+        str: Reason for classification.
     """
     
     # Parse SMILES
@@ -21,15 +21,16 @@ def is_3_oxo_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for the CoA pattern with detailed nucleotide and phosphate linkage
-    coa_pattern = Chem.MolFromSmarts("C1(=O)COP(=O)(O)O[C@H]1O[C@H]2O[C@H](COP(=O)(O)O[C@H]3O[C@H]([C@H](O)[C@@H]3OP(=O)(O)O)n4cnc5c(N)ncnc54)C(O)C(O)C2OP(=O)(O)O")
+    # Look for CoA structure, capturing nucleotide and phosphate linkage
+    coa_pattern = Chem.MolFromSmarts("SCCNC(=O)CCNC(=O)C[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H](COP(=O)(O)[C@H]2O[C@H]([C@H](O)[C@H]2O)OP(=O)(O)O)n3cnc4c(N)ncnc43")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No CoA structure found"
 
-    # Look for 3-oxo linkage on the third carbon of a fatty acyl chain
-    oxo_fatty_acyl_pattern = Chem.MolFromSmarts("C(=O)C(=O)SCCNC(=O)")
-    if not mol.HasSubstructMatch(oxo_fatty_acyl_pattern):
-        return False, "No 3-oxo-fatty acyl linkage found at the correct position"
+    # Look for oxo group on the third carbon of the fatty acyl chain
+    oxo_fatty_acyl_pattern = Chem.MolFromSmarts("C[C@H](O)C(C)(C)COP(=O)(O)O")
+    oxo_group = Chem.MolFromSmarts("O=CC(=O)C")
+    if not mol.HasSubstructMatch(oxo_fatty_acyl_pattern) or not mol.HasSubstructMatch(oxo_group):
+        return False, "No 3-oxo group found on the fatty acyl chain"
 
     return True, "Contains CoA structure and 3-oxo group on the fatty acyl chain"
 
