@@ -18,18 +18,25 @@ def is_polypyrrole(smiles: str):
         bool: True if molecule is a polypyrrole, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Comprehensive pattern to capture pyrrole and variants often in large bio-compounds
-    pyrrole_pattern = Chem.MolFromSmarts("c1nccc1")  # Captures aromatic pyrrole effectively
-    pyrrole_matches = mol.GetSubstructMatches(pyrrole_pattern)
     
-    # Use set conversion ensuring distinct pyrrole units are counted
-    num_pyrrole_units = len(set(pyrrole_matches))
+    # Define a broader pyrrole pattern to include variations
+    pyrrole_patterns = [
+        Chem.MolFromSmarts("c1[nH]ccc1"),  # Common pyrrole
+        Chem.MolFromSmarts("n1cccc1"),    # Pyrrole with different bond saturation
+        Chem.MolFromSmarts("[#7]1[#6]=[#6][#6]=[#6]1")  # Capturing possible tautomers/form variants
+    ]
+    
+    # Collect all matches from all patterns
+    pyrrole_matches = set()
+    for pattern in pyrrole_patterns:
+        pyrrole_matches.update(mol.GetSubstructMatches(pattern))
+    
+    num_pyrrole_units = len(pyrrole_matches)
     
     if num_pyrrole_units < 2:
         return False, f"Contains only {num_pyrrole_units} pyrrole units, need 2 or more for polypyrrole"
