@@ -5,8 +5,6 @@ Classifies: CHEBI:35342 17alpha-hydroxy steroid
 Classifies: CHEBI:28817 17alpha-hydroxy steroid
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_17alpha_hydroxy_steroid(smiles: str):
     """
