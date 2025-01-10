@@ -20,8 +20,13 @@ def is_sphingomyelin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define the amide linkage pattern (N-C(=O)-C)
-    amide_pattern = Chem.MolFromSmarts("NC(=O)C")
+    # Define the sphingoid base pattern with necessary stereochemistry and hydroxyl positions
+    sphingoid_base_pattern = Chem.MolFromSmarts("C[C@@H](O)C[C@H](O)")
+    if not mol.HasSubstructMatch(sphingoid_base_pattern):
+        return False, "Missing critical hydroxylated sphingoid base features"
+    
+    # Define the amide linkage pattern specific to a sphingolipid (-C(O)N)
+    amide_pattern = Chem.MolFromSmarts("C(=O)N")
     if not mol.HasSubstructMatch(amide_pattern):
         return False, "Missing characteristic amide linkage with fatty acid"
     
@@ -29,10 +34,5 @@ def is_sphingomyelin(smiles: str):
     phosphorylcholine_pattern = Chem.MolFromSmarts("COP([O-])(=O)OCC[N+](C)(C)C")
     if not mol.HasSubstructMatch(phosphorylcholine_pattern):
         return False, "Missing or incorrectly structured phosphorylcholine group"
-    
-    # Define the sphingoid base pattern including necessary stereochemistry and hydroxyl positions
-    sphingoid_base_pattern = Chem.MolFromSmarts("[C@H](O)C[C@H](O)")
-    if not mol.HasSubstructMatch(sphingoid_base_pattern):
-        return False, "Missing critical hydroxylated sphingoid base features"
     
     return True, "Molecule matches the core structural features of sphingomyelin"
