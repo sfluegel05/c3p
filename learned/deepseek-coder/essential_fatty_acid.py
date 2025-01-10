@@ -12,7 +12,7 @@ def is_essential_fatty_acid(smiles: str):
     """
     Determines if a molecule is an essential fatty acid based on its SMILES string.
     Essential fatty acids are polyunsaturated fatty acids with multiple cis double bonds,
-    a carboxyl group, and a chain length typically between 18 and 24 carbons.
+    a carboxyl group, and a chain length typically between 18 and 36 carbons.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -34,15 +34,15 @@ def is_essential_fatty_acid(smiles: str):
 
     # Check for polyunsaturated fatty acid structure (multiple cis double bonds)
     # Pattern for cis double bonds separated by a methylene group
-    polyunsaturated_pattern = Chem.MolFromSmarts("[CX4][CX4]/[CX4]=[CX4]/[CX4]")
+    polyunsaturated_pattern = Chem.MolFromSmarts("[CX4][CX4]/[CX4]=[CX4]")
     polyunsaturated_matches = mol.GetSubstructMatches(polyunsaturated_pattern)
     if len(polyunsaturated_matches) < 2:
         return False, "Not enough cis double bonds for polyunsaturated fatty acid"
 
     # Check chain length (number of carbons)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 18 or c_count > 24:
-        return False, f"Chain length {c_count} is outside the typical range for essential fatty acids (18-24 carbons)"
+    if c_count < 18 or c_count > 36:
+        return False, f"Chain length {c_count} is outside the typical range for essential fatty acids (18-36 carbons)"
 
     # Check for at least 2 double bonds (polyunsaturated)
     double_bond_count = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.BondType.DOUBLE)
