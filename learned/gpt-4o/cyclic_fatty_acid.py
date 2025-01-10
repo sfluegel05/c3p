@@ -6,13 +6,13 @@ from rdkit import Chem
 def is_cyclic_fatty_acid(smiles: str):
     """
     Determines if a molecule is a cyclic fatty acid based on its SMILES string.
-    A cyclic fatty acid contains a ring of atoms in its structure and retains characteristics of fatty acids.
+    A cyclic fatty acid features at least one ring structure and retains characteristics of fatty acids.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a cyclic fatty acid, False otherwise
+        bool: True if the molecule is a cyclic fatty acid, False otherwise
         str: Reason for classification
     """
     
@@ -27,18 +27,18 @@ def is_cyclic_fatty_acid(smiles: str):
     if num_rings == 0:
         return False, "No ring structure found"
 
-    # Look for carboxylic acid group or similar structures
+    # Look for carboxylic acid or ester group
     carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[OH]")
-    ester_pattern = Chem.MolFromSmarts("C(=O)O")  # to include ester-like patterns
-    if not mol.HasSubstructMatch(carboxylic_acid_pattern) and not mol.HasSubstructMatch(ester_pattern):
+    ester_pattern = Chem.MolFromSmarts("C(=O)O")
+    contains_acid_or_ester = mol.HasSubstructMatch(carboxylic_acid_pattern) or mol.HasSubstructMatch(ester_pattern)
+    if not contains_acid_or_ester:
         return False, "No carboxylic acid or ester group found"
 
-    # Check for hydrocarbon chains, allowing for flexibility in length and interruptions
-    hydrocarbon_chain_pattern = Chem.MolFromSmarts("[CH2]~[CH,CH2]*~[CH2]")
-    if not mol.HasSubstructMatch(hydrocarbon_chain_pattern):
+    # Check for hydrocarbon chains with more flexibility
+    hydrocarbon_pattern1 = Chem.MolFromSmarts("[CH2]~[CH,CH2]*~[CH2]")  # Linear or interrupted chains
+    hydrocarbon_pattern2 = Chem.MolFromSmarts("C~[CH2,CH,OH]")  # Account for common functional groups adjacent
+    has_hydrocarbon_chain = mol.HasSubstructMatch(hydrocarbon_pattern1) or mol.HasSubstructMatch(hydrocarbon_pattern2)
+    if not has_hydrocarbon_chain:
         return False, "No significant hydrocarbon chains found"
-
-    # Consider inclusion of exocyclic functionalities or specific structural features if appropriate
-    # For example, epoxy, hydroxyl, or double bonds adjacent to rings
 
     return True, f"Contains {num_rings} ring structure(s) with fatty acid traits (carboxylic acid or ester group and hydrocarbon chain)"
