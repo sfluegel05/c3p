@@ -5,14 +5,12 @@ Classifies: CHEBI:78608 alpha-amino-acid zwitterion
 Classifies: CHEBI:57925 alpha-amino-acid zwitterion
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_alpha_amino_acid_zwitterion(smiles: str):
     """
     Determines if a molecule is an alpha-amino-acid zwitterion based on its SMILES string.
     An alpha-amino-acid zwitterion has a protonated amino group ([NH3+]) and a deprotonated carboxyl group ([O-])
-    attached to the same alpha-carbon, which is typically chiral.
+    attached to the same alpha-carbon.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -48,19 +46,5 @@ def is_alpha_amino_acid_zwitterion(smiles: str):
         # Alpha-carbon should have exactly 4 bonds (including H)
         if alpha_carbon_atom.GetTotalDegree() != 4:
             return False, "Alpha-carbon has incorrect number of bonds"
-
-        # Check that the alpha-carbon is chiral (common in amino acids)
-        if not alpha_carbon_atom.HasProp('_ChiralityPossible'):
-            return False, "Alpha-carbon is not chiral"
-
-    # Additional check to exclude non-amino acid structures
-    # Amino acids typically have only one carboxyl group and one amino group
-    carboxyl_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[CX3](=[OX1])[OX1-]")))
-    amino_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[NH3+,NH2+,NH+]")))
-    
-    if carboxyl_count != 1:
-        return False, "Molecule has more than one carboxyl group"
-    if amino_count != 1:
-        return False, "Molecule has more than one amino group"
 
     return True, "Contains alpha-carbon with both amino and carboxyl groups in zwitterionic form"
