@@ -21,58 +21,56 @@ def is_tetrasaccharide(smiles: str) -> tuple[bool, str]:
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Basic size check
+    # Basic checks for carbohydrate characteristics
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     
-    if c_count < 20:  # Minimum for 4 sugar units
+    if c_count < 20:  # Typical tetrasaccharide has at least 20 carbons
         return False, "Too few carbons for a tetrasaccharide"
-    if o_count < 10:  # Minimum oxygens for 4 sugar units
+    if o_count < 15:  # Typical tetrasaccharide has at least 15 oxygens
         return False, "Too few oxygens for a tetrasaccharide"
 
-    # Define sugar ring patterns more precisely
-    pyranose = Chem.MolFromSmarts("[C]1[C][C][C]([O,N])[C]O1")  # Allow N for amino sugars
-    furanose = Chem.MolFromSmarts("[C]1[C][C]([O,N])[C]O1")
+    # More flexible pattern for sugar rings (both pyranose and furanose)
+    pyranose_pattern = Chem.MolFromSmarts("[C]1[C][C][C]([O,C])[C]O1")
+    furanose_pattern = Chem.MolFromSmarts("[C]1[C][C]([O,C])[C]O1")
     
-    pyranose_matches = len(mol.GetSubstructMatches(pyranose))
-    furanose_matches = len(mol.GetSubstructMatches(furanose))
+    pyranose_matches = len(mol.GetSubstructMatches(pyranose_pattern))
+    furanose_matches = len(mol.GetSubstructMatches(furanose_pattern))
     total_sugar_rings = pyranose_matches + furanose_matches
     
-    if total_sugar_rings != 4:
-        return False, f"Found {total_sugar_rings} sugar rings, need exactly 4 for tetrasaccharide"
-
-    # Check glycosidic linkages
-    glycosidic = Chem.MolFromSmarts("[C;R]1[O,N][C;R]")  # Ring carbon to oxygen to ring carbon
-    glycosidic_matches = len(mol.GetSubstructMatches(glycosidic))
+    if total_sugar_rings < 4:
+        return False, f"Found only {total_sugar_rings} sugar rings, need at least 4"
     
-    if glycosidic_matches != 3:  # Exactly 3 linkages needed to connect 4 units
-        return False, f"Found {glycosidic_matches} glycosidic bonds, need exactly 3"
-
-    # Verify sugar characteristics
-    # Look for characteristic hydroxyl pattern on sugar rings
-    sugar_hydroxyl = Chem.MolFromSmarts("[C;R]([O;!R])([O,N;R])")
-    hydroxyl_matches = len(mol.GetSubstructMatches(sugar_hydroxyl))
+    # Look for glycosidic bonds between sugar rings
+    # Pattern matches C-O-C where one C is part of a ring
+    glycosidic_pattern = Chem.MolFromSmarts("[C;R][O][C]")
+    glycosidic_matches = len(mol.GetSubstructMatches(glycosidic_pattern))
     
-    if hydroxyl_matches < 8:  # Expect at least 2 hydroxyls per sugar unit
-        return False, "Insufficient hydroxyl groups for tetrasaccharide"
+    if glycosidic_matches < 3:
+        return False, "Too few glycosidic bonds for a tetrasaccharide"
 
-    # Check for anomeric carbons
-    anomeric = Chem.MolFromSmarts("[C;R]1[O,N][C;!R]-[O,N]")
-    anomeric_matches = len(mol.GetSubstructMatches(anomeric))
+    # Count oxygen atoms bonded to carbon (better than counting explicit hydroxyls)
+    c_o_pattern = Chem.MolFromSmarts("[C][O]")
+    c_o_count = len(mol.GetSubstructMatches(c_o_pattern))
     
-    if anomeric_matches < 3:  # Need at least 3 anomeric centers
-        return False, "Too few anomeric carbons"
+    if c_o_count < 15:  # Tetrasaccharides typically have many C-O bonds
+        return False, "Too few C-O bonds for a tetrasaccharide"
 
-    # Verify carbon chain pattern typical of sugars
-    sugar_carbon_chain = Chem.MolFromSmarts("[C;R]-[C;R]-[C;R]([O,N])-[C;R]")
-    chain_matches = len(mol.GetSubstructMatches(sugar_carbon_chain))
-    
-    if chain_matches < 4:  # Need at least one per sugar unit
-        return False, "Missing characteristic sugar carbon patterns"
-
-    # Check for non-sugar aromatic systems
+    # Check for characteristics that would exclude it from being a tetrasaccharide
     aromatic_atoms = sum(1 for atom in mol.GetAtoms() if atom.GetIsAromatic())
-    if aromatic_atoms > 2:  # Allow minimal aromatic modification
-        return False, "Contains too many aromatic atoms for tetrasaccharide"
+    if aromatic_atoms > 2:  # Allow some aromatic atoms for modified sugars
+        return False, "Too many aromatic atoms for a tetrasaccharide"
 
-    return True, "Contains exactly 4 monosaccharide units connected by glycosidic bonds"
+    # Look for typical sugar carbon patterns
+    sugar_carbon_pattern = Chem.MolFromSmarts("[C]([O])([O])[C]([O])")
+    if not mol.HasSubstructMatch(sugar_carbon_pattern):
+        return False, "Missing typical sugar carbon pattern"
+
+    # Additional check for anomeric carbons (carbons with two oxygens attached)
+    anomeric_pattern = Chem.MolFromSmarts("[C;R]([O])([O])")
+    anomeric_matches = len(mol.GetSubstructMatches(anomeric_pattern))
+    
+    if anomeric_matches < 3:  # Should have at least 3 anomeric carbons
+        return False, "Too few anomeric carbons for a tetrasaccharide"
+
+    return True, "Contains 4 monosaccharide units connected by glycosidic bonds"
