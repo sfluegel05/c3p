@@ -12,9 +12,10 @@ def is_lipopolysaccharide(smiles: str):
     """
     Determines if a molecule is a lipopolysaccharide based on its SMILES string.
     Lipopolysaccharides contain:
-    - Trisaccharide repeating unit (two heptose units and octulosonic acid)
-    - Oligosaccharide side chains
-    - 3-hydroxytetradecanoic acid units
+    - Core oligosaccharide structure
+    - Specific sugar units including KDO and heptose
+    - Characteristic fatty acid chains
+    - Phosphate groups in many cases
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -29,66 +30,84 @@ def is_lipopolysaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
+    # Molecular weight filter
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 300:  # LPS components are typically large molecules
+        return False, "Molecular weight too low for LPS"
+
     # Count key atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
     
-    if o_count < 4:  # Need multiple oxygen atoms for glycosidic bonds
-        return False, "Too few oxygen atoms for lipopolysaccharide"
+    if o_count < 6:  # Need multiple oxygen atoms for glycosidic bonds and hydroxyl groups
+        return False, "Too few oxygen atoms for LPS"
     
-    if c_count < 10:  # Need carbon chains for sugar components
-        return False, "Too few carbon atoms for lipopolysaccharide"
+    if c_count < 15:  # Need sufficient carbons for sugar and lipid components
+        return False, "Too few carbon atoms for LPS"
 
-    # Look for sugar ring patterns characteristic of LPS
-    pyranose_pattern = Chem.MolFromSmarts("[CR1][OR1][CR1][CR1][CR1][CR1]")  # 6-membered sugar ring
-    heptose_pattern = Chem.MolFromSmarts("[CR1][OR1][CR1][CR1][CR1][CR1][CR1]")  # 7-membered heptose ring
-    sugar_matches = len(mol.GetSubstructMatches(pyranose_pattern))
-    heptose_matches = len(mol.GetSubstructMatches(heptose_pattern))
-    
-    # Look for keto-deoxy-octulosonic acid (KDO) pattern
-    kdo_pattern = Chem.MolFromSmarts("[CX4][CX3](=O)[CX4][CX4][CX4][CX4][CX4][CX4]")
-    kdo_matches = len(mol.GetSubstructMatches(kdo_pattern))
+    # Look for sugar patterns more specifically
+    pyranose_pattern = Chem.MolFromSmarts("[CR1][OR1][CR1]([OR0])[CR1]([OR0])[CR1]([OR0])[CR1]")
+    furanose_pattern = Chem.MolFromSmarts("[CR1][OR1][CR1]([OR0])[CR1]([OR0])[CR1]")
+    sugar_matches = len(mol.GetSubstructMatches(pyranose_pattern)) + len(mol.GetSubstructMatches(furanose_pattern))
 
-    # Check for minimum sugar components
-    if sugar_matches < 1 and heptose_matches < 1:
-        return False, "No sugar rings found"
+    # Look for glycosidic linkages more specifically
+    glycosidic_pattern = Chem.MolFromSmarts("[CR1][OR1][CR1]")
+    glycosidic_matches = len(mol.GetSubstructMatches(glycosidic_pattern))
 
-    # Look for hydroxyl groups (characteristic of sugars)
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H1]")
-    hydroxyl_matches = len(mol.GetSubstructMatches(hydroxyl_pattern))
-    
-    if hydroxyl_matches < 2:
-        return False, "Too few hydroxyl groups for lipopolysaccharide"
-
-    # Look for 3-hydroxytetradecanoic acid pattern
-    hydroxy_fatty_acid = Chem.MolFromSmarts("[CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4]")
+    # Look for fatty acid chains with hydroxyl groups
+    hydroxy_fatty_acid = Chem.MolFromSmarts("[CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][OX2H1]")
     fatty_acid_matches = len(mol.GetSubstructMatches(hydroxy_fatty_acid))
 
-    # Look for glycosidic bonds
-    glycosidic_pattern = Chem.MolFromSmarts("[CX4][OX2][CX4]")
-    glycosidic_matches = len(mol.GetSubstructMatches(glycosidic_pattern))
-    
-    if glycosidic_matches < 1:
-        return False, "No glycosidic linkages found"
+    # Look for carboxylic acid groups
+    acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
+    acid_matches = len(mol.GetSubstructMatches(acid_pattern))
 
-    # Check for characteristic LPS features
-    lps_features = 0
-    if heptose_matches >= 1:
-        lps_features += 1
-    if kdo_matches >= 1:
-        lps_features += 1
-    if fatty_acid_matches >= 1:
-        lps_features += 1
+    # Calculate score based on structural features
+    score = 0
+    
+    # Sugar content
+    if sugar_matches >= 2:
+        score += 2
+    elif sugar_matches == 1:
+        score += 1
+
+    # Glycosidic linkages
     if glycosidic_matches >= 2:
-        lps_features += 1
-    
-    # Must have at least 2 characteristic features to be classified as LPS
-    if lps_features < 2:
-        return False, "Insufficient characteristic LPS features"
+        score += 2
+    elif glycosidic_matches == 1:
+        score += 1
 
-    # Count rings to verify oligosaccharide structure
+    # Fatty acid components
+    if fatty_acid_matches >= 1:
+        score += 2
+
+    # Acid groups
+    if acid_matches >= 1:
+        score += 1
+
+    # Phosphate groups
+    if p_count >= 1:
+        score += 1
+
+    # Ring count
     ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() < 1:
-        return False, "No rings found"
+    ring_count = ring_info.NumRings()
+    if ring_count >= 3:
+        score += 2
+    elif ring_count >= 1:
+        score += 1
 
-    return True, "Contains characteristic lipopolysaccharide features including sugar units and appropriate linkages"
+    # Hydroxyl groups (characteristic of sugars)
+    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H1]")
+    hydroxyl_matches = len(mol.GetSubstructMatches(hydroxyl_pattern))
+    if hydroxyl_matches >= 4:
+        score += 2
+    elif hydroxyl_matches >= 2:
+        score += 1
+
+    # Final classification
+    if score >= 7:  # Require high confidence for classification
+        return True, "Contains characteristic lipopolysaccharide features including sugar units and appropriate linkages"
+    else:
+        return False, f"Insufficient LPS characteristics (score: {score})"
