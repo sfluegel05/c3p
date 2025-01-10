@@ -6,7 +6,8 @@ from rdkit import Chem
 def is_cardiolipin(smiles: str):
     """
     Determines if a molecule is cardiolipin based on its SMILES string.
-    A cardiolipin consists of two phosphatidic acids linked to a glycerol phosphate backbone.
+    A cardiolipin consists of two phosphatidic acids linked to a glycerol backbone,
+    forming a symmetrical molecule with four ester-linked fatty acid chains.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -15,31 +16,25 @@ def is_cardiolipin(smiles: str):
         bool: True if molecule is a cardiolipin, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse the SMILES string into a molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern to identify the core glycerol phosphate backbone typical of cardiolipins
-    # This should match a central glycerol with phosphate groups
-    glycerol_phosphate_pattern = Chem.MolFromSmarts("O[C@@H](COP(=O)(O)O)C(COC(=O)[C@H](O)COP(=O)(O)O)O")
+    # SMARTS for cardiolipin structure: central glycerol with two phosphate groups and ester linkages
+    cardiolipin_pattern = Chem.MolFromSmarts(
+        "[C@@H]1([O][P](=O)([O])[O][C@@H]2[C@H](O[P](=O)([O])[O2])[C@H](CO)O2)[C@H](CO[CX3](=O)[O][CX4H1,2])O1"
+    )
 
-    # SMARTS for phosphatidic acid moiety: phosphate linked with glycerol and esters
-    phosphatidic_acid_pattern = Chem.MolFromSmarts("O[C@H](COC(=O)[C@H](O)COP(=O)(O)O)C(=O)O")
+    # Check for cardiolipin core structure
+    if not mol.HasSubstructMatch(cardiolipin_pattern):
+        return False, "Cardiolipin core structure not found"
 
-    # Check for glycerol phosphate backbone
-    if not mol.HasSubstructMatch(glycerol_phosphate_pattern):
-        return False, "Core glycerol phosphate backbone not found"
-
-    # Find phosphatidic acid moieties
-    phosphatidic_acid_matches = mol.GetSubstructMatches(phosphatidic_acid_pattern)
-    if len(phosphatidic_acid_matches) < 2:
-        return False, f"Found {len(phosphatidic_acid_matches)} phosphatidic acid moieties, need at least 2"
-
-    # Ensure connectivity of glycerol and phosphatidic acids
-    glycerol_matches = mol.GetSubstructMatches(glycerol_phosphate_pattern)
-    if len(glycerol_matches) != 1:
-        return False, "Glycerol backbone isn't connected correctly with phosphatidic acids"
+    # Check for four ester-linked fatty acid chains (long alkyl chains connected to ester linkage)
+    ester_pattern = Chem.MolFromSmarts("[CX3](=O)[O][C]")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    if len(ester_matches) < 4:
+        return False, f"Found {len(ester_matches)} ester linkages, need 4 for cardiolipin"
 
     return True, "Molecule matches cardiolipin structure"
