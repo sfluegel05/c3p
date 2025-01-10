@@ -21,18 +21,18 @@ def is_monoamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Simplified aromatic ring pattern
-    aromatic_pattern = Chem.MolFromSmarts("a")
-    if not mol.HasSubstructMatch(aromatic_pattern):
-        return False, "No aromatic ring found"
+    # More specific aromatic ring pattern
+    aromatic_ring_pattern = Chem.MolFromSmarts("c1ccccc1")  # Benzene-like aromatic ring
+    if not mol.HasSubstructMatch(aromatic_ring_pattern):
+        return False, "No appropriate aromatic ring found"
     
-    # Primary, secondary, and tertiary amine check
-    amine_pattern = Chem.MolFromSmarts("[NX3;H2,H1,H0]")  # General amine group pattern
+    # Include quaternary amine detection
+    amine_pattern = Chem.MolFromSmarts("[NX3,NX4+]")  # General primary to quaternary amine group pattern
     if not mol.HasSubstructMatch(amine_pattern):
         return False, "No amino group found"
 
-    # Two-carbon chain linking amine to aromatic ring
-    chain_pattern = Chem.MolFromSmarts("a-C-C-[NX3]")  # Arbitrary aromatic -> carbon chain -> amine
+    # Specific two-carbon chain linking amine to aromatic ring
+    chain_pattern = Chem.MolFromSmarts("c-C-C-N")  # Aromatic carbon -> carbon -> amine
     if not mol.HasSubstructMatch(chain_pattern):
         return False, "No two-carbon chain connecting amino to aromatic ring found"
 
