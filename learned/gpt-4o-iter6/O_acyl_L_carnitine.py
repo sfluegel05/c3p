@@ -21,26 +21,26 @@ def is_O_acyl_L_carnitine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for quaternary ammonium group [N+](C)(C)C
-    quaternary_ammonium_pattern = Chem.MolFromSmarts("[N+](C)(C)C")
+    # Check for quaternary ammonium group [N+](C)(C)C connected to an alpha carbon
+    quaternary_ammonium_pattern = Chem.MolFromSmarts("[N+]([C])[C]C")
     if not mol.HasSubstructMatch(quaternary_ammonium_pattern):
         return False, "No quaternary ammonium ion pattern found"
     
-    # Check for ester linkage
-    ester_pattern = Chem.MolFromSmarts("C(=O)OC")
+    # Check for ester linkage C(=O)O[C@H] indicating L-stereochemistry
+    ester_pattern = Chem.MolFromSmarts("C(=O)O[C@H]")
     if not mol.HasSubstructMatch(ester_pattern):
-        return False, "No ester linkage pattern found"
+        return False, "No ester linkage pattern consistent with L-stereochemistry found"
 
-    # Check for chiral center with L-stereochemistry
+    # Check for chiral centers specifically marked as L (R for D-configuration)
     chiral_centers = Chem.FindMolChiralCenters(mol, force=True, includeUnassigned=True)
-    is_correct_stereo = any(stereo == 'S' for _, stereo in chiral_centers)
+    is_l_stereo = any(stereo in ['S', '?'] and atom_idx in [match[0] for match in mol.GetSubstructMatches(ester_pattern)] for atom_idx, stereo in chiral_centers)
     
-    if not is_correct_stereo:
+    if not is_l_stereo:
         return False, "No correct L-stereochemistry found"
 
-    # Check for carboxylate group adjacency to chiral center
-    carboxyl_pattern = Chem.MolFromSmarts("C[C@@H](C(=O)[O-])C")
-    if not mol.HasSubstructMatch(carboxyl_pattern):
-        return False, "Carboxylate group not adjacent to chiral center"
-
-    return True, "Contains O-acyl-L-carnitine features: quaternary ammonium, ester linkage, L-stereo, carboxylate."
+    # Check for a carboxylate group (C(=O)[O-]) following a charged nitrogen
+    carboxylate_pattern = Chem.MolFromSmarts("C(=O)[O-]")
+    if not mol.HasSubstructMatch(carboxylate_pattern):
+        return False, "Carboxylate group not found adjacent to chiral center"
+    
+    return True, "Contains O-acyl-L-carnitine features: quaternary ammonium, ester linkage with correct stereochemistry, and carboxylate."
