@@ -26,54 +26,69 @@ def is_dipeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for peptide bonds (-C(=O)-NH-)
-    peptide_pattern = Chem.MolFromSmarts("[NX3H1][CX3](=[OX1])[CX4]")
+    # More flexible peptide bond pattern
+    peptide_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[CX4]")
     peptide_matches = mol.GetSubstructMatches(peptide_pattern)
     
-    if len(peptide_matches) < 1:
+    if len(peptide_matches) == 0:
         return False, "No peptide bond found"
-    
-    # For cyclic dipeptides, look for diketopiperazine pattern
+        
+    if len(peptide_matches) > 3:
+        return False, "Too many peptide bonds for dipeptide"
+
+    # Check for cyclic dipeptides (diketopiperazines)
     diketopiperazine = Chem.MolFromSmarts("O=C1NC(=O)CN1")
     if mol.HasSubstructMatch(diketopiperazine):
         return True, "Cyclic dipeptide (diketopiperazine) structure found"
     
-    # For linear dipeptides:
-    # Look for terminal amine (-NH2) and carboxyl (-COOH) groups
-    terminal_amine = Chem.MolFromSmarts("[NX3H2,NX4H3+][CX4]")
-    terminal_carboxyl = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H1,OX1-]")
+    # More flexible patterns for terminal groups
+    terminal_amine_patterns = [
+        "[NX3H2,NX4H3+][CX4]",  # Primary amine
+        "[NX3H1,NX4H2+][CX4]",  # Secondary amine
+        "[NX3H0,NX4H1+][CX4]"   # Tertiary amine
+    ]
     
-    amine_matches = mol.GetSubstructMatches(terminal_amine)
-    carboxyl_matches = mol.GetSubstructMatches(terminal_carboxyl)
+    terminal_carboxyl_patterns = [
+        "[CX3](=[OX1])[OX2H1,OX1-]",  # Free acid
+        "[CX3](=[OX1])[OX2]",         # Ester
+        "[CX3](=[OX1])[NX3]"          # Amide
+    ]
     
-    # Count alpha carbons (carbons next to peptide bond nitrogen)
-    alpha_carbon_pattern = Chem.MolFromSmarts("[NX3H1][CX4][CX3](=[OX1])")
+    # Check for any terminal group patterns
+    has_terminal_amine = any(mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)) 
+                           for pattern in terminal_amine_patterns)
+    has_terminal_carboxyl = any(mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)) 
+                              for pattern in terminal_carboxyl_patterns)
+
+    # Alpha carbon pattern (more flexible)
+    alpha_carbon_pattern = Chem.MolFromSmarts("[NX3][CX4][CX3](=[OX1])")
     alpha_carbons = mol.GetSubstructMatches(alpha_carbon_pattern)
     
     # Basic requirements for linear dipeptide
-    if len(peptide_matches) == 1 and len(alpha_carbons) >= 1:
-        if len(amine_matches) >= 1 and len(carboxyl_matches) >= 1:
-            # Check molecular weight - most dipeptides are between 150-400 Da
-            mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-            if mol_wt < 100:
-                return False, "Molecular weight too low for dipeptide"
-            
+    if len(peptide_matches) >= 1 and len(peptide_matches) <= 2:
+        if len(alpha_carbons) >= 1:
             # Count C, N, O atoms
             c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
             n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
             o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
             
-            if c_count < 4:
+            if c_count < 3:
                 return False, "Too few carbons for dipeptide"
-            if n_count < 2:
+            if n_count < 1:
                 return False, "Too few nitrogens for dipeptide"
-            if o_count < 3:
+            if o_count < 2:
                 return False, "Too few oxygens for dipeptide"
-                
-            return True, "Contains peptide bond with terminal amine and carboxyl groups"
             
-    # If more than one peptide bond, likely a larger peptide
-    if len(peptide_matches) > 2:
-        return False, "Too many peptide bonds for dipeptide"
-        
+            # More flexible molecular weight range
+            mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+            if mol_wt < 80:  # Relaxed lower bound
+                return False, "Molecular weight too low for dipeptide"
+                
+            # If we have a peptide bond and reasonable atom counts, likely a dipeptide
+            if has_terminal_amine or has_terminal_carboxyl:
+                return True, "Contains peptide bond with appropriate terminal groups"
+            else:
+                # Still might be a modified dipeptide
+                return True, "Contains peptide bond with modified terminal groups"
+            
     return False, "Does not match dipeptide structure requirements"
