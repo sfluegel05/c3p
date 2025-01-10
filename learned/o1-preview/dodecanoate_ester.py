@@ -5,7 +5,7 @@ Classifies: CHEBI:87659 dodecanoate ester
 Classifies: CHEBI:<id> dodecanoate ester
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import AllChem
 
 def is_dodecanoate_ester(smiles: str):
     """
@@ -24,42 +24,29 @@ def is_dodecanoate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define ester SMARTS pattern with labels
-    ester_pattern = Chem.MolFromSmarts('[#6:1](=O)[O][#6]')  # Ester group: C(=O)O-C
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    # Define lauric acid molecule for comparison
+    lauric_acid = Chem.MolFromSmiles('CCCCCCCCCCC(=O)O')  # Lauric acid SMILES
 
-    if not ester_matches:
-        return False, "No ester groups found"
+    # Define ester hydrolysis reaction to get carboxylic acids
+    rxn = AllChem.ReactionFromSmarts('[C:1](=O)[O][C:2]>>[C:1](=O)[O]')  # Simplified ester hydrolysis
 
-    # For each ester group, check if the acyl chain is dodecanoic acid
-    for match in ester_matches:
-        carbonyl_c_idx = match[0]
-        ester_o_idx = match[2]  # The oxygen index
-        # Trace the acyl chain from the carbonyl carbon
-        acyl_chain_atoms = set()
-        atoms_to_visit = [carbonyl_c_idx]
-        visited_atoms = set()
+    # Run the reaction on the molecule
+    products = rxn.RunReactants((mol,))
 
-        while atoms_to_visit:
-            atom_idx = atoms_to_visit.pop()
-            if atom_idx in visited_atoms:
-                continue
-            visited_atoms.add(atom_idx)
-            atom = mol.GetAtomWithIdx(atom_idx)
-            acyl_chain_atoms.add(atom_idx)
+    # Keep track of whether lauric acid is found
+    found_lauric_acid = False
 
-            for neighbor in atom.GetNeighbors():
-                neighbor_idx = neighbor.GetIdx()
-                # Skip the ester oxygen to stay on acyl chain
-                if neighbor_idx == ester_o_idx:
-                    continue
-                bond = mol.GetBondBetweenAtoms(atom_idx, neighbor_idx)
-                if bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
-                    atoms_to_visit.append(neighbor_idx)
+    # Iterate over reaction products
+    for product_set in products:
+        acid = product_set[0]  # Get the acid fragment
+        # Sanitize the fragment
+        Chem.SanitizeMol(acid, catchErrors=True)
+        # Check if the fragment matches lauric acid
+        if acid.HasSubstructMatch(lauric_acid):
+            found_lauric_acid = True
+            break  # No need to check further
 
-        # Count number of carbons in acyl chain
-        carbon_count = sum(1 for idx in acyl_chain_atoms if mol.GetAtomWithIdx(idx).GetAtomicNum() == 6)
-        if carbon_count == 12:
-            return True, "Contains lauric acid ester group"
-
-    return False, "No lauric acid ester groups found"
+    if found_lauric_acid:
+        return True, "Contains lauric acid ester group"
+    else:
+        return False, "No lauric acid ester groups found"
