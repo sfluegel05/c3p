@@ -28,14 +28,18 @@ def is_octanoate_ester(smiles: str):
     # Check for basic ester bond
     if not mol.HasSubstructMatch(ester_pattern):
         return False, "No ester bond found"
-  
-    # Define an octanoate chain pattern via a dentistive count of the carbon chain on ester
-    # Using a pattern of 8 contiguous carbon atoms as necessary for octanoate
-    octanoate_chain_pattern = Chem.MolFromSmarts("CCCCCCCC(=O)O[*]")
-    
-    # Check if there's a match to the octanoate chain
-    if mol.HasSubstructMatch(octanoate_chain_pattern):
-        return True, "Molecule contains an octanoate ester group"
 
-    # If no match found for specific octanoate ester composition  
+    # Find all substructures that match the ester pattern
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    for match in ester_matches:
+        # Get the carboxylate carbon atom index
+        carboxylate_carbon_idx = match[0]
+        
+        # Check the aliphatic chain starting from the carboxylate carbon
+        carbon_chain = Chem.rdmolops.GetShortestPath(mol, carboxylate_carbon_idx, match[1])
+        
+        # If there are exactly 8 carbon atoms in the aliphatic chain, it's an octanoate
+        if len([atom for atom in carbon_chain if mol.GetAtomWithIdx(atom).GetAtomicNum() == 6]) == 8:
+            return True, "Molecule contains an octanoate ester group"
+
     return False, "No octanoate ester group with 8-carbon chain found"
