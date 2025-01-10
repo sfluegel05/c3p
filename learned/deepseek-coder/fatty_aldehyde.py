@@ -26,12 +26,16 @@ def is_fatty_aldehyde(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for the presence of an aldehyde group (C=O with at least one hydrogen)
-    aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)[#1]")
-    if not mol.HasSubstructMatch(aldehyde_pattern):
-        # Try a more general pattern for aldehydes
-        aldehyde_pattern = Chem.MolFromSmarts("[CX3](=O)[#1]")
-        if not mol.HasSubstructMatch(aldehyde_pattern):
-            return False, "No aldehyde group found"
+    aldehyde_pattern = Chem.MolFromSmarts("[CX3]=[OX1]")
+    aldehyde_matches = mol.GetSubstructMatches(aldehyde_pattern)
+    if not aldehyde_matches:
+        return False, "No aldehyde group found"
+
+    # Ensure the aldehyde group is at the end of the carbon chain
+    aldehyde_carbon = aldehyde_matches[0][0]
+    aldehyde_atom = mol.GetAtomWithIdx(aldehyde_carbon)
+    if aldehyde_atom.GetDegree() != 1:
+        return False, "Aldehyde group not at the end of the carbon chain"
 
     # Count the number of carbon atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
