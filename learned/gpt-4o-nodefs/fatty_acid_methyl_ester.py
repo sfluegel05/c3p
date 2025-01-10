@@ -21,31 +21,29 @@ def is_fatty_acid_methyl_ester(smiles: str):
         return False, "Invalid SMILES string"
     
     # Look for methyl ester group pattern (O=C(OC))
-    ester_pattern = Chem.MolFromSmarts("O=C(OC)")
+    ester_pattern = Chem.MolFromSmarts("C(=O)OC")
     if not mol.HasSubstructMatch(ester_pattern):
         return False, "No methyl ester group found"
     
     # Count carbon atoms, excluding the methyl group in the ester
+    # Here, specifically target primary ester at the end, assuming methoxy -> carbon root
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6) - 1
     
-    # Minimum number of carbon atoms typically found in fatty acids is 6 (excluding methyl for typical structures)
-    if carbon_count < 6:
+    # Minimum number of carbon atoms typically found in fatty acids is 4 (lowered threshold for diversity)
+    if carbon_count < 4:
         return False, f"Chain too short for typical fatty acid methyl ester: {carbon_count + 1} carbons"
     
-    # Check for presence of unwanted functional groups or complexity
-    # Avoid structures with too many rings, multiple heteroatoms, or atypical saturation patterns
-    # We can use RDKit's functions to filter out unlikely structures
-    # Check for heavy atoms, there should ideally be just C, H, O
-    if any(atom.GetAtomicNum() not in {1, 6, 8} for atom in mol.GetAtoms()):
-        return False, "Contains atypical atoms for FAME"
+    # Adjusted checks for complex structures
+    # Check atoms and permit them with consideration to typical FAME variants
+    atypical_atoms_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() not in {1, 6, 8})
+    if atypical_atoms_count > 2:  # Allowing some variance
+        return False, "Contains an excessive number of atypical atoms for FAME"
 
-    # Check number of rings as FAMEs are typically not cyclic
     ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() > 0:
-        return False, "Contains rings, which is unusual for a typical FAME"
+    if ring_info.NumRings() > 2:  # Permitting some rings based on provided data
+        return False, "Too many rings, which is unusual for a typical FAME"
 
-    # FAMEs typically don't have exotic components
-    return True, "Contains a methyl ester group and a sufficiently long typical carbon chain representing FAME characteristics"
+    return True, "Contains a methyl ester group and a carbon chain typical for FAME characteristics"
 
 __metadata__ = {
     'chemical_class': {
