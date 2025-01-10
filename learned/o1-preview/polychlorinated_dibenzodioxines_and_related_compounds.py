@@ -13,7 +13,7 @@ def is_polychlorinated_dibenzodioxines_and_related_compounds(smiles: str):
     or a related compound based on its SMILES string.
 
     The compound must contain one of the core structures (dibenzodioxin, dibenzofuran, or biphenyl)
-    and must be polychlorinated or polybrominated (containing at least 3 halogen atoms).
+    and have at least one chlorine or bromine atom attached directly to the aromatic carbons of the core.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -31,37 +31,45 @@ def is_polychlorinated_dibenzodioxines_and_related_compounds(smiles: str):
     # Define core structures using SMARTS patterns
     biphenyl_pattern = Chem.MolFromSmarts('c1ccccc1-c2ccccc2')  # Biphenyl core
     dibenzodioxin_pattern = Chem.MolFromSmarts('O1c2ccccc2Oc3ccccc13')  # Dibenzodioxin core
-    dibenzofuran_pattern = Chem.MolFromSmarts('c1cc2oc3ccccc3cc2cc1')  # Dibenzofuran core
+    dibenzofuran_pattern = Chem.MolFromSmarts('c1cc2coc3ccccc3cc2cc1')  # Dibenzofuran core
 
     # Check for core structures
-    has_biphenyl = mol.HasSubstructMatch(biphenyl_pattern)
-    has_dibenzodioxin = mol.HasSubstructMatch(dibenzodioxin_pattern)
-    has_dibenzofuran = mol.HasSubstructMatch(dibenzofuran_pattern)
+    core_patterns = []
+    if mol.HasSubstructMatch(biphenyl_pattern):
+        core_patterns.append(('biphenyl', biphenyl_pattern))
+    if mol.HasSubstructMatch(dibenzodioxin_pattern):
+        core_patterns.append(('dibenzodioxin', dibenzodioxin_pattern))
+    if mol.HasSubstructMatch(dibenzofuran_pattern):
+        core_patterns.append(('dibenzofuran', dibenzofuran_pattern))
 
-    if not (has_biphenyl or has_dibenzodioxin or has_dibenzofuran):
+    if not core_patterns:
         return False, "Does not contain dibenzodioxin, dibenzofuran, or biphenyl core structure"
 
-    # Count Cl and Br atoms
-    num_Cl = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'Cl')
-    num_Br = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'Br')
+    # Define halogen atoms
+    halogens = ['Cl', 'Br']
 
-    num_halogen = num_Cl + num_Br
-
-    if num_halogen < 3:
-        return False, f"Contains {num_halogen} halogen atoms; needs at least 3 to be polyhalogenated"
-
-    # Check if halogens are attached to the aromatic rings
-    halogen_on_ring = False
-    for atom in mol.GetAtoms():
-        if atom.GetSymbol() in ['Cl', 'Br']:
-            for neighbor in atom.GetNeighbors():
-                if neighbor.IsInRing() and neighbor.GetIsAromatic():
-                    halogen_on_ring = True
-                    break
-        if halogen_on_ring:
+    # Check for halogens attached to the core structures
+    halogen_on_core = False
+    for core_name, core_pattern in core_patterns:
+        core_matches = mol.GetSubstructMatches(core_pattern)
+        for match in core_matches:
+            core_atom_indices = set(match)
+            for atom_idx in core_atom_indices:
+                atom = mol.GetAtomWithIdx(atom_idx)
+                if atom.GetSymbol() == 'C' and atom.GetIsAromatic():
+                    for neighbor in atom.GetNeighbors():
+                        if neighbor.GetIdx() not in core_atom_indices:
+                            if neighbor.GetSymbol() in halogens:
+                                halogen_on_core = True
+                                break
+                    if halogen_on_core:
+                        break
+            if halogen_on_core:
+                break
+        if halogen_on_core:
             break
 
-    if not halogen_on_ring:
-        return False, "Halogens are not attached to aromatic rings"
+    if not halogen_on_core:
+        return False, "No halogens attached to core structure"
 
-    return True, "Contains polyhalogenated dibenzodioxin, dibenzofuran, or biphenyl core"
+    return True, "Contains polychlorinated/polybrominated dibenzodioxin, dibenzofuran, or biphenyl core"
