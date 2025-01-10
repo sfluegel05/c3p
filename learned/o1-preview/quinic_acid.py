@@ -5,16 +5,18 @@ Classifies: CHEBI:26493 quinic acid
 Classifies: quinic acid
 """
 from rdkit import Chem
+from rdkit.Chem import rdFMCS
 
 def is_quinic_acid(smiles: str):
     """
     Determines if a molecule is quinic acid or its derivative based on its SMILES string.
-    Quinic acid is characterized by a cyclohexane ring with multiple hydroxyl or ester groups,
-    and a carboxylic acid or ester group attached to the ring.
-    
+    Quinic acid is a cyclitol carboxylic acid, characterized by a cyclohexane ring with
+    hydroxyl groups and a carboxylic acid attached to the ring. Derivatives may have
+    esterified hydroxyl groups or modifications on the carboxylic acid group.
+
     Args:
         smiles (str): SMILES string of the molecule
-    
+
     Returns:
         bool: True if molecule is quinic acid or its derivative, False otherwise
         str: Reason for classification
@@ -25,42 +27,28 @@ def is_quinic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Find cyclohexane rings
-    ring_info = mol.GetRingInfo()
-    rings = ring_info.AtomRings()
-    cyclohexane_rings = [ring for ring in rings if len(ring) == 6 and all(mol.GetAtomWithIdx(idx).GetAtomicNum() == 6 for idx in ring)]
-    
-    if not cyclohexane_rings:
-        return False, "No cyclohexane ring found"
+    # Define SMARTS pattern for quinic acid core (cyclohexane ring with hydroxyl groups and carboxylic acid)
+    quinic_acid_smarts = """
+        [C;R1]1            # Carbon atom in a ring (cyclohexane)
+        ([C;R1][C;R1][C;R1][C;R1][C;R1]1)  # Complete the cyclohexane ring
+        (
+            [O,N]          # Attached to an oxygen or nitrogen (for hydroxyl or ester)
+            [C](=O)O       # Carboxylic acid or ester group
+        )
+        (*)
+    """
+    # Clean up the SMARTS pattern
+    quinic_acid_smarts = ''.join(quinic_acid_smarts.split())
 
-    # Check each cyclohexane ring
-    for ring in cyclohexane_rings:
-        oxy_substituents = 0
-        carboxylic_acid_or_ester = False
+    pattern = Chem.MolFromSmarts(quinic_acid_smarts)
+    if pattern is None:
+        return False, "Invalid SMARTS pattern"
 
-        for idx in ring:
-            atom = mol.GetAtomWithIdx(idx)
-            for bond in atom.GetBonds():
-                nbr = bond.GetOtherAtom(atom)
-                if nbr.GetIdx() not in ring:
-                    if nbr.GetAtomicNum() == 8:  # Oxygen
-                        # Check if oxygen is double-bonded (carbonyl) or single-bonded (hydroxyl/ether)
-                        if bond.GetBondType() == Chem.BondType.SINGLE:
-                            oxy_substituents += 1
-                        elif bond.GetBondType() == Chem.BondType.DOUBLE:
-                            # Check for carboxylic acid or ester group
-                            nbr2 = None
-                            for b in nbr.GetBonds():
-                                if b.GetOtherAtom(nbr).GetIdx() != atom.GetIdx():
-                                    nbr2 = b.GetOtherAtom(nbr)
-                                    break
-                            if nbr2 and nbr2.GetAtomicNum() == 8:
-                                carboxylic_acid_or_ester = True
-
-        if oxy_substituents >= 3 and carboxylic_acid_or_ester:
-            return True, "Contains quinic acid core structure"
-
-    return False, "Does not match quinic acid core structure"
+    # Check for quinic acid core structure
+    if mol.HasSubstructMatch(pattern):
+        return True, "Contains quinic acid core structure"
+    else:
+        return False, "Does not match quinic acid core structure"
 
 __metadata__ = {
     'chemical_class': {
