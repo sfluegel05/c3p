@@ -12,7 +12,7 @@ def is_polypeptide(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if the molecule is a polypeptide, False otherwise
+        bool: True if molecule is a polypeptide, False otherwise
         str: Reason for classification
     """
     
@@ -21,35 +21,14 @@ def is_polypeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define peptide bond pattern considering standard amide linkage:
-    peptide_bond_pattern = Chem.MolFromSmarts("C(=O)N[C@@H,C@H]")
-    if peptide_bond_pattern is None:
-        return None, "Failed to parse peptide bond SMARTS pattern"
+    # Define a peptide bond pattern: N-C(=O)C
+    peptide_bond_pattern = Chem.MolFromSmarts("N-C(=O)C")
+    if not mol.HasSubstructMatch(peptide_bond_pattern):
+        return False, "No peptide bonds found"
 
-    # Check for recognizable peptide bonds in the molecule
-    peptide_matches = mol.GetSubstructMatches(peptide_bond_pattern)
-    amino_acid_count = len(peptide_matches)
+    # Find all peptide bond matches
+    matches = mol.GetSubstructMatches(peptide_bond_pattern)
+    if len(matches) < 10:
+        return False, f"Contains {len(matches)} amino acid residues, need at least 10 for a polypeptide"
 
-    # If pattern parsing fails, return None with error message
-    if peptide_matches is None:
-        return None, "Error finding peptide matches"
-
-    # Assume bonds count relates to amino acids, since patterns can repeat
-    if amino_acid_count < 10:
-        return False, f"Contains {amino_acid_count} peptide bonds, need at least 10 for a polypeptide"
-
-    # Define patterns for terminal groups (N and C-terminals)
-    n_terminal_pattern = Chem.MolFromSmarts("[NH2,NH1,NH3][CH,C][=O]")
-    c_terminal_pattern = Chem.MolFromSmarts("C(=O)[OH,O-]")
-
-    # Check for presence of terminal groups
-    if n_terminal_pattern is None or c_terminal_pattern is None:
-        return None, "Failed to parse terminal group SMARTS patterns"
-
-    if not mol.HasSubstructMatch(n_terminal_pattern):
-        return False, "Missing typical N-terminal group"
-
-    if not mol.HasSubstructMatch(c_terminal_pattern):
-        return False, "Missing typical C-terminal group"
-
-    return True, "Contains 10 or more peptide bonds; classified as a polypeptide with recognized terminal groups"
+    return True, "Contains 10 or more amino acid residues; classified as a polypeptide"
