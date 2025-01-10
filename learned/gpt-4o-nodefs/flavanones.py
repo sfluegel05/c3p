@@ -2,7 +2,6 @@
 Classifies: CHEBI:28863 flavanones
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_flavanones(smiles: str):
     """
@@ -22,20 +21,14 @@ def is_flavanones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Pattern for the chroman-4-one core
-    chromanone_pattern = Chem.MolFromSmarts("O=C1CC(OC2=CC=CC=C2)C=3C=CC(O)=CC3C1")
+    # Generalized chroman-4-one core pattern
+    chromanone_pattern = Chem.MolFromSmarts("O=C1CCC2C1C=CC=C2") 
     if not mol.HasSubstructMatch(chromanone_pattern):
         return False, "No chroman-4-one core detected"
     
-    # Check for the presence of a carbonyl group at position 4
-    carbonyl_pattern = Chem.MolFromSmarts("O=CC2C=3C=CC(O)=CC3C2")
-    if not mol.HasSubstructMatch(carbonyl_pattern):
-        return False, "Missing ketone at position 4"
-    
-    # Match a phenyl group at position 2
-    phenyl_group_pattern = Chem.MolFromSmarts("C1=CC=CC=C1")
-    phenyl_matches = mol.GetSubstructMatches(phenyl_group_pattern)
-    if len(phenyl_matches) < 1:
-        return False, "No phenyl group at position 2"
+    # Phenyl group attached to the 2-position of the chroman-4-one
+    phenyl_at_position_2_pattern = Chem.MolFromSmarts("c1ccccc1[C@H]2CC(O)=C2")
+    if not mol.HasSubstructMatch(phenyl_at_position_2_pattern):
+        return False, "No phenyl group at position 2 of the chroman-4-one core"
 
     return True, "Contains chroman-4-one core with a phenyl group at position 2"
