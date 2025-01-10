@@ -2,12 +2,12 @@
 Classifies: CHEBI:28868 fatty acid anion
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_fatty_acid_anion(smiles: str):
     """
     Determines if a molecule is a fatty acid anion based on its SMILES string.
-    A fatty acid anion is characterized by a long hydrocarbon chain and a deprotonated carboxylic acid group (-C([O-])=O).
+    A fatty acid anion is characterized by a deprotonated carboxylic acid group (-C([O-])=O)
+    and a hydrocarbon chain, which may include double bonds or functional groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,16 +22,15 @@ def is_fatty_acid_anion(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for carboxylate group -C([O-])=O
+    # Require a carboxylate group
     carboxylate_pattern = Chem.MolFromSmarts("C(=O)[O-]")
     if not mol.HasSubstructMatch(carboxylate_pattern):
         return False, "No carboxylate group (-C([O-])=O) found"
-    
-    # Check for a sufficiently long carbon chain
-    # Arbitrarily define "long" as having at least 7 carbon atoms apart from the carboxylate
-    chain_pattern = Chem.MolFromSmarts("[CH2][CH2][CH2][CH2][CH2][CH2]C(=O)[O-]")
-    if not mol.HasSubstructMatch(chain_pattern):
-        return False, "Too few carbon atoms for fatty acid chain"
 
-    # If both patterns are found, we classify it as a fatty acid anion
-    return True, "Contains a deprotonated carboxylate group with a long hydrocarbon chain"
+    # Check for a chain with at least 6 continuous carbon atoms (allowing for branching, double bonds, or heteroatoms)
+    # Simplify the pattern to detect long carbon chains, given the variety of structures
+    carbon_chain_pattern = Chem.MolFromSmarts("C~C~C~C~C~C")  # Matches a chain of any carbon connectivity
+    if not mol.HasSubstructMatch(carbon_chain_pattern):
+        return False, "Insufficient carbon chain length for fatty acid anion"
+
+    return True, "Contains a deprotonated carboxylate group with a sufficiently long carbon chain"
