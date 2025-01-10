@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_aromatic_amino_acid(smiles: str):
     """
     Determines if a molecule is an aromatic amino acid based on its SMILES string.
-    An aromatic amino acid is characterized by the presence of an amino group, a carboxylic acid group,
-    and an aromatic ring.
+    An aromatic amino acid is characterized by the presence of an amino group, 
+    a carboxylic acid group, and an aromatic ring.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,8 +22,8 @@ def is_aromatic_amino_acid(smiles: str):
         return False, "Invalid SMILES string"
     
     # Define SMARTS patterns to detect amino and carboxylic acid groups
-    amino_pattern = Chem.MolFromSmarts("[NX3;H2]")  # NH2 group
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[O-]")  # COOH group often ionized
+    amino_pattern = Chem.MolFromSmarts("[NX3;H2,H1,H0+0]")  # NH2 or NH group, including ionized
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[OH1,OH0-1]")  # COOH or COO- group
     aromatic_pattern = Chem.MolFromSmarts("a")  # Any aromatic atom (generic)
     
     # Check for the presence of an amino group
@@ -39,6 +39,7 @@ def is_aromatic_amino_acid(smiles: str):
         return False, "No aromatic ring found"
 
     return True, "Contains amino group, carboxylic acid group, and aromatic ring"
+
 
 # Testing the function with a known aromatic amino acid SMILES
 example_smiles = "NC(Cc1ccccc1)C(O)=O"  # Phenylalanine
