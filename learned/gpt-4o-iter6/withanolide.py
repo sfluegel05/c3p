@@ -6,7 +6,6 @@ from rdkit import Chem
 def is_withanolide(smiles: str):
     """
     Determines if a molecule is a withanolide based on its SMILES string.
-    A withanolide is defined as a C28 steroid lactone with modified side chains forming a lactone ring.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,29 +19,29 @@ def is_withanolide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for steroid core (4 fused rings pattern, allowing modification)
+    # Flexible pattern for steroid core (a four-ring structure, considering stereochemistry)
     steroid_patterns = [
-        # Pattern for generic steroid core structure
-        Chem.MolFromSmarts("C1CC2CCC3C4CCC(C4)C3C2C1"),
-        Chem.MolFromSmarts("C1CCCC2C1C3CCC4C3C2CC4")
+        Chem.MolFromSmarts("[#6]1-[#6]-[#6]-[#6]2-[#6]-[#6]-[#6]-3-[#6]-[#6]-[#6]-[#6]-4-[#6]-[CH2]-[CH]-1-[C](=O)2=3-4"), # More flexible steroid core
+        Chem.MolFromSmarts("[#6]12[#6](#[#6])[#6]-[#6]-3=[#6]-[#6]-[#6]-[#6]-4-[#6]-[CH2]-[C]1-[#6](=O)2-[C]=C3=C4")
     ]
     if not any(mol.HasSubstructMatch(pattern) for pattern in steroid_patterns):
-        return False, "No steroid core structure found"
-
-    # Check for presence of lactone ring
-    lactone_pattern = Chem.MolFromSmarts("O=C1OC=CC1")
+        return False, "No valid steroid core structure found"
+    
+    # Check for presence of a lactone ring
+    lactone_pattern = Chem.MolFromSmarts("[OH0,C](=O)[C&R1][O&R1;!c]")
     if not mol.HasSubstructMatch(lactone_pattern):
         return False, "No lactone ring found"
 
-    # Check for C28 steroid lactone
+    # Check for C28 steroid lactone (with some flexibility)
     carbon_count = sum(atom.GetAtomicNum() == 6 for atom in mol.GetAtoms())
-    if carbon_count != 28:
-        return False, f"Molecule has {carbon_count} carbons, expected 28"
+    if carbon_count < 26 or carbon_count > 30:
+        return False, f"Molecule has {carbon_count} carbons, expected around 28"
 
-    # Additional checks for common withanolide functional groups
-    hydroxyl_pattern = Chem.MolFromSmarts("C(C)([OH])[C]")
-    if not mol.HasSubstructMatch(hydroxyl_pattern):
-        return False, "No common withanolide hydroxyl groups found"
+    # Check for common functional groups that are present in withanolides
+    hydroxyl_pattern = Chem.MolFromSmarts("[CH]([OH])[C&R1]")  # Hydroxyl group
+    methoxy_pattern = Chem.MolFromSmarts("[CH3][OH]")  # Methoxy group
+    if not (mol.HasSubstructMatch(hydroxyl_pattern) or mol.HasSubstructMatch(methoxy_pattern)):
+        return False, "No hydroxyl or methoxy groups typically found in withanolides"
 
     return True, "The molecule contains key features of a withanolide"
 
