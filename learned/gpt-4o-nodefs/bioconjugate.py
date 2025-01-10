@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_bioconjugate(smiles: str):
     """
     Determines if a molecule is a bioconjugate based on its SMILES string.
-    A bioconjugate typically features peptide-like structures bonded
-    to other types of chemical entities, often with sulfur or nitrogen elements involved.
+    A bioconjugate typically features peptide-like structures bonded to other chemical entities,
+    with linkage involving sulfur, nitrogen, or other bioconjugation relevant elements.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,23 +22,23 @@ def is_bioconjugate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # SMARTS pattern to identify a broad range of peptide-like structures
-    # including Cysteine & Glutathione based structures
-    peptide_like_pattern = Chem.MolFromSmarts("N[C@@H](C(=O)O)C")
+    # SMARTS patterns to identify a broad range of peptide-like structures
+    peptide_like_pattern = Chem.MolFromSmarts("N[C@@H](C(=O)O)")
     
-    # SMARTS pattern for sulfur linkage, often seen in conjugation
-    sulfur_conjugate_pattern = Chem.MolFromSmarts("CSC")
+    # SMARTS patterns for various possible sulfur and nitrogen linkages
+    # Beyond simple "CSC", consider "CSN", "SNS", as well as any O-N linkages
+    sulfur_nitrogen_linkage_patterns = [
+        Chem.MolFromSmarts("CSC"), 
+        Chem.MolFromSmarts("CSN"), 
+        Chem.MolFromSmarts("SNS"), 
+        Chem.MolFromSmarts("C-N-C"),
+        Chem.MolFromSmarts("C(=O)-N"),
+    ]
     
-    # Check for peptide-like structures 
+    # Check for peptide-like structures
     if mol.HasSubstructMatch(peptide_like_pattern):
-        # Also look for sulfur linkages indicative of bioconjugation
-        if mol.HasSubstructMatch(sulfur_conjugate_pattern):
-            return True, "Contains peptide-like structure with sulfur-linked conjugation point"
-        else:
-            # Additionally, look for extensive nitrogen containing structures.
-            extended_nitrogen_patterns = Chem.MolFromSmarts("N=CN")
-            if mol.HasSubstructMatch(extended_nitrogen_patterns):
-                return True, "Contains peptide-like structure with extensive nitrogen-based conjugation chemistry"
+        for pattern in sulfur_nitrogen_linkage_patterns:
+            if mol.HasSubstructMatch(pattern):
+                return True, "Contains peptide-like structure with relevant conjugation point"
 
-    # If neither pattern was satisfied
     return False, "Does not match known bioconjugate structural features"
