@@ -22,20 +22,24 @@ def is_thiosugar(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # More flexible pattern for carbohydrate recognition 
-    # Allow for ring or open-chain forms with multiple hydroxyls
-    carbohydrate_pattern = Chem.MolFromSmarts("C(O)(C(=O)O)O")
+    # Broader patterns to match common sugars and linked hydroxyls (e.g., pyranoses, furanoses)
+    sugar_patterns = [
+        Chem.MolFromSmarts("C1OC(O)C(O)C(O)C1O"),  # pyranose
+        Chem.MolFromSmarts("C1OC(O)C(O)C1O"),      # furanose
+        Chem.MolFromSmarts("O=C(O)C(O)C(O)C"),     # open-chain
+    ]
     
-    # Check if there is at least one recognizable carbohydrate motif
-    if not mol.HasSubstructMatch(carbohydrate_pattern):
+    if not any(mol.HasSubstructMatch(pattern) for pattern in sugar_patterns):
         return False, "No recognizable carbohydrate motifs found"
     
-    # Look for sulfur substituents replacing oxygens or hydroxyls
+    # Enhance sulfur substitution detection
     sulfur_substitution_patterns = [
-        Chem.MolFromSmarts("[SX2]"),       # Sulfide
-        Chem.MolFromSmarts("[SX3]=O"),    # Sulfoxide
-        Chem.MolFromSmarts("[SX4](=O)(=O)"), # Sulfone
-        Chem.MolFromSmarts("S-[C]")          # Sulfur linked to carbon indicating an -SR group
+        Chem.MolFromSmarts("[SX2]"),            # Sulfide
+        Chem.MolFromSmarts("[SX3]=O"),          # Sulfoxide
+        Chem.MolFromSmarts("[SX4](=O)(=O)"),    # Sulfone
+        Chem.MolFromSmarts("[SX2]-[C]"),        # Sulfur linked to carbon indicating an -SR group
+        Chem.MolFromSmarts("[SH2]"),            # Thiol
+        Chem.MolFromSmarts("[SX2H]")            # Thiol form (rare in sugars, but cover it)
     ]
     
     for pattern in sulfur_substitution_patterns:
