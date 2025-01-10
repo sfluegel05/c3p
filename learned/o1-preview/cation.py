@@ -18,20 +18,20 @@ def is_cation(smiles: str):
         bool: True if molecule is a cation, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse the SMILES string into an RDKit molecule object
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Calculate the total formal charge of the molecule
-    formal_charge = sum([atom.GetFormalCharge() for atom in mol.GetAtoms()])
-    
-    # Check if the molecule has a net positive charge
-    if formal_charge > 0:
-        return True, f"Molecule has net positive charge of {formal_charge}"
+
+    # Check if any atom has a positive formal charge
+    positive_charged_atoms = [atom for atom in mol.GetAtoms() if atom.GetFormalCharge() > 0]
+
+    if positive_charged_atoms:
+        num_positive_atoms = len(positive_charged_atoms)
+        return True, f"Molecule contains {num_positive_atoms} positively charged atom(s)"
     else:
-        return False, f"Molecule has net charge of {formal_charge}"
+        return False, "Molecule has no positive charges"
 
 __metadata__ = {
     'chemical_class': {
@@ -53,7 +53,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 0,
+    'attempt': 1,
     'success': True,
     'best': True,
     'error': '',
