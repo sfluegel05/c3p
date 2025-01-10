@@ -35,13 +35,13 @@ def is_penicillin(smiles: str):
         return False, "No penicillin core structure found"
 
     # Check for two methyl groups at position 2
-    methyl_pattern = Chem.MolFromSmarts("[C]1([C@@H]2N([C@@H]1=O)[C@@H](C(S2)(C)C)C(=O)O)C")
+    methyl_pattern = Chem.MolFromSmarts("[C]1([C@@H]2N([C@@H]1=O)[C@@H](C(S2)([CH3])([CH3]))C(=O)O)C")
     methyl_matches = mol.GetSubstructMatches(methyl_pattern)
     if len(methyl_matches) == 0:
         return False, "No methyl groups found at position 2"
 
     # Check for carboxylate group at position 3
-    carboxylate_pattern = Chem.MolFromSmarts("[C]1([C@@H]2N([C@@H]1=O)[C@@H](C(S2)(C)C)C(=O)O)C")
+    carboxylate_pattern = Chem.MolFromSmarts("[C]1([C@@H]2N([C@@H]1=O)[C@@H](C(S2)(C)C)C(=O)[O-])C")
     carboxylate_matches = mol.GetSubstructMatches(carboxylate_pattern)
     if len(carboxylate_matches) == 0:
         return False, "No carboxylate group found at position 3"
