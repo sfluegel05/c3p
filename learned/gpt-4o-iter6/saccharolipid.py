@@ -21,18 +21,20 @@ def is_saccharolipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string provided."
 
-    # Extended carbohydrate patterns including phosphorylated sugars, and ketoses
+    # Extended carbohydrate patterns including phosphorylated sugars, sulfonated sugars, and ketoses
     carb_patterns = [
         Chem.MolFromSmarts("OC1(CO)O[C@H](O)[C@H](O)[C@@H]1O"),                         # Simple sugar rings
         Chem.MolFromSmarts("OC1OC(CO)C(O)C(O)C1O"),                                   # Alternative sugar structures
         Chem.MolFromSmarts("O[C@@H]1[C@@H](O)[C@@H](O[C@H](COP(O)(O)=O)[C@@H]1O)O"),  # Phosphate sugar
+        Chem.MolFromSmarts("O[C@@H]1O[C@H](O[C@H]2O[C@H](CO)[C@@H](O[C@H]2O)[C@H]2O[C@@H]([C@@H](O2)CO)O)[C@H]1O"),  # Sulfonated sugar
     ]
 
-    # Broader lipid pattern: Long hydrocarbon chain with linkage
+    # Broader lipid pattern: Long hydrocarbon chain with ester, amide or ketone linkage
     lipid_patterns = [
         Chem.MolFromSmarts("C(=O)OC[C@H1]CCCCCCCCCCCCCCCC"),    # Long chain esters
         Chem.MolFromSmarts("C(=O)N[C@H1]CCCCCCCCCCCCCCCC"),     # Long chain amides
         Chem.MolFromSmarts("C[C@H](CCCCCCCCCCCCCCC)C=O"),       # Ketone terminal carbonate
+        Chem.MolFromSmarts("CCCCCCCCCCCCCC(=O)"),               # General long alkyl chain
     ]
 
     # Check for presence of a carbohydrate component
