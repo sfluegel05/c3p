@@ -27,8 +27,8 @@ def is_dihydroflavonols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the flavanone backbone pattern (2-phenylchromen-4-one)
-    flavanone_pattern = Chem.MolFromSmarts("O=C1C(=O)C=C2C(=C1)OC=C2c3ccccc3")
+    # Define a more flexible flavanone backbone pattern
+    flavanone_pattern = Chem.MolFromSmarts("[O]=C1C(=O)C=C2C(=C1)OC=C2")
     if not mol.HasSubstructMatch(flavanone_pattern):
         return False, "No flavanone backbone found"
 
