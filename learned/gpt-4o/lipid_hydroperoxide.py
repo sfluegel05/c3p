@@ -21,17 +21,15 @@ def is_lipid_hydroperoxide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for hydroperoxy group pattern (-OOH)
-    hydroperoxy_pattern = Chem.MolFromSmarts("[OX2H][OX1]")  # Improved SMARTS to match -OOH correctly
+    # Look for hydroperoxy group pattern (-O-O)
+    hydroperoxy_pattern = Chem.MolFromSmarts("OO")
     if not mol.HasSubstructMatch(hydroperoxy_pattern):
         return False, "No hydroperoxy group (-OOH) found"
 
-    # Ensure hydroperoxy group is connected correctly to a carbon chain (generic lipid structure)
-    for match in mol.GetSubstructMatches(hydroperoxy_pattern):
-        atom_index = match[1]  # Oxygen in -OOH
-        neighbors = mol.GetAtomWithIdx(atom_index).GetNeighbors()
-        # Confirm one of the neighbors is carbon, and part of a long chain
-        if any(neighbor.GetAtomicNum() == 6 for neighbor in neighbors):
-            return True, "Contains hydroperoxy groups attached to a lipid backbone"
+    # Check the attachment of the hydroperoxy group to long hydrocarbon chain
+    # Typically expect a hydrocarbon chain like -[CH2]-[CH]=[CH]- with -OOH attached
+    carbon_chain_pattern = Chem.MolFromSmarts("[CH2,CH]=[CH,CH2]-[CH,CH2]")
+    if not mol.HasSubstructMatch(carbon_chain_pattern):
+        return False, "Hydroperoxy group not attached to a suitable carbon chain indicative of lipids"
 
-    return False, "Hydroperoxy group not attached correctly to carbon backbone"
+    return True, "Contains hydroperoxy groups attached to a lipid backbone"
