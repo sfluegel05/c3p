@@ -1,43 +1,76 @@
 """
 Classifies: CHEBI:134045 polychlorinated dibenzodioxines and related compounds
 """
-Based on the outcomes, here are the key issues and improvements needed:
+"""
+Classifies polychlorinated dibenzodioxins and related compounds
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
 
-1. False Positives Problem:
-- The program is too lenient in classifying molecules as "Complex polychlorinated aromatic compound with oxygen-containing linkages"
-- Many molecules with chlorine/bromine and oxygen are being incorrectly classified, even when they don't fit the core structures
-- We need to be more strict about the core structures and not rely just on presence of halogens and oxygen
+def is_polychlorinated_dibenzodioxines_and_related_compounds(smiles: str):
+    """
+    Determines if a molecule belongs to the class of polychlorinated dibenzodioxins
+    and related compounds based on its SMILES string.
+    
+    Args:
+        smiles (str): SMILES string of the molecule
+        
+    Returns:
+        tuple: (bool, str) - (is_member, reason)
+    """
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+        
+    # Count halogens (Cl, Br)
+    num_cl = len(mol.GetSubstructMatches(Chem.MolFromSmarts('[Cl]')))
+    num_br = len(mol.GetSubstructMatches(Chem.MolFromSmarts('[Br]')))
+    total_halogens = num_cl + num_br
+    
+    if total_halogens < 1:
+        return False, "No halogens found"
 
-2. Core Structure Detection:
-- The SMARTS patterns for dibenzodioxin, dibenzofuran and biphenyl could be improved
-- We should ensure the aromatic rings are properly fused in the core structures
-- Need to verify that halogens are attached to the core structures, not just present somewhere in the molecule
-
-3. Structural Requirements:
-- Should require at least 2 halogens for polychlorinated/brominated compounds
-- Need better handling of mixed halogen compounds
-- Should check that halogens are directly attached to aromatic rings
-
-4. Complex Structures:
-- The "complex structures" clause is too broad and causing many false positives
-- Should remove or significantly restrict this classification option
-
-Here's how we can improve:
-
-1. Use more specific SMARTS patterns that enforce:
-- Proper ring fusion
-- Correct oxygen bridge positions
-- Aromatic carbon attachment points for halogens
-
-2. Add requirements that:
-- At least 2 halogens must be present
-- Halogens must be attached to the core aromatic structure
-- Core structure must be intact (not just fragments)
-
-3. Remove the overly broad "complex structures" classification
-
-4. Add better validation of halogen positions relative to core structures
-
-5. Implement more specific checks for related compounds like formicamycins
-
-Let me implement these improvements in the next code block.
+    # PCDD pattern - dibenzodioxin core
+    pcdd_pattern = Chem.MolFromSmarts('c1ccc2Oc3ccccc3Oc2c1')
+    
+    # PCDF pattern - dibenzofuran core
+    pcdf_pattern = Chem.MolFromSmarts('c1ccc2oc3ccccc3c2c1')
+    
+    # PCB/PBB pattern - biphenyl core
+    pcb_pattern = Chem.MolFromSmarts('c1ccccc1-c1ccccc1')
+    
+    # Formicamycin-like pattern (complex tricyclic system with specific substitution)
+    formicamycin_pattern = Chem.MolFromSmarts('C1CC2=CC=CC=C2C(=O)C1')
+    
+    # Check for core structures
+    is_pcdd = mol.HasSubstructMatch(pcdd_pattern)
+    is_pcdf = mol.HasSubstructMatch(pcdf_pattern)
+    is_pcb = mol.HasSubstructMatch(pcb_pattern)
+    is_formicamycin = mol.HasSubstructMatch(formicamycin_pattern)
+    
+    # Classify based on core structure and halogenation
+    if is_pcdd and total_halogens >= 2:
+        return True, "Polychlorinated dibenzodioxin structure"
+        
+    if is_pcdf and total_halogens >= 2:
+        return True, "Polychlorinated dibenzofuran structure"
+        
+    if is_pcb and total_halogens >= 2:
+        # Check if halogens are attached to the aromatic rings
+        hal_arom_pattern = Chem.MolFromSmarts('[Cl,Br]-c1ccccc1')
+        if mol.HasSubstructMatch(hal_arom_pattern):
+            return True, "Polychlorinated/brominated biphenyl structure"
+            
+    if is_formicamycin and total_halogens >= 1:
+        # Additional checks for formicamycin-like structures
+        if mol.HasSubstructMatch(Chem.MolFromSmarts('[OH]')):
+            return True, "Formicamycin-like structure with halogen substitution"
+            
+    # Check for ambigol-like structures (biaryl ethers with halogens)
+    if mol.HasSubstructMatch(Chem.MolFromSmarts('c1ccccc1Oc1ccccc1')) and total_halogens >= 2:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts('[OH]')):
+            return True, "Ambigol-like halogenated biaryl ether"
+            
+    # If none of the above patterns match
+    return False, "Does not match any recognized core structure pattern"
