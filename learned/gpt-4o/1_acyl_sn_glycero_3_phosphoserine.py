@@ -21,22 +21,17 @@ def is_1_acyl_sn_glycero_3_phosphoserine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define substructure patterns
-    glycerol_pattern = Chem.MolFromSmarts("O[C@H](CO)CO")  # Specific stereo representation
-    phosphoserine_pattern = Chem.MolFromSmarts("COP(=O)(O)OC[C@H](N)C(=O)O")
-    acyl_pattern = Chem.MolFromSmarts("C(=O)OC[C@H]")  # Ensure correct orientation
-    
+    # Define substructure patterns with improved specificity
+    glycerol_pattern = Chem.MolFromSmarts("O[C@H](CO)CO")  # Stereospecific (glycerol backbone)
+    acyl_sn1_pattern = Chem.MolFromSmarts("C(=O)O[C@@H]([O])COP(=O)(O)OC[C@H](N)C(=O)O") # Acyl at sn-1 with phosphoserine
+
     # Check for glycerol pattern
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
-        
-    # Check for phosphoserine group pattern
-    if not mol.HasSubstructMatch(phosphoserine_pattern):
-        return False, "No phosphoserine group found"
 
-    # Check for acyl ester linkage at the 1-position
-    acyl_matches = mol.GetSubstructMatches(acyl_pattern)
-    if len(acyl_matches) == 0:
-        return False, "Missing acyl group at sn-1 position"
+    # Check for acyl group position with phosphoserine
+    acyl_sn1_matches = mol.GetSubstructMatches(acyl_sn1_pattern)
+    if len(acyl_sn1_matches) == 0:
+        return False, "Missing acyl group at sn-1 position, or incorrect positioning relative to phosphoserine"
 
-    return True, "Molecule contains sn-glycero-3-phosphoserine with acyl group at sn-1 position"
+    return True, "Molecule contains 1-acyl-sn-glycero-3-phosphoserine"
