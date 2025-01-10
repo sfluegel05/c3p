@@ -29,11 +29,19 @@ def is_tricarboxylic_acid(smiles: str):
     
     # Count the number of carboxylic acid groups
     n_carboxylic_acids = len(carboxylic_acid_matches)
-    
-    # Check valid separation or distinct placement of carboxylic acids
+
+    # If exactly 3 carboxylic acids are found, verify their distinct context
     if n_carboxylic_acids == 3:
-        # Verify whether these are smartly embedded within a triadic context
-        # Check inter-distances or specific tricarboxylic scaffold settings if necessary
-        return True, "Contains exactly three distinct carboxylic acid groups"
+        distinct_carbons = set()
+        for match in carboxylic_acid_matches:
+            # Each match is a tuple of indices (C=O and -OH)
+            carbon_idx = match[0]
+            distinct_carbons.add(carbon_idx)
+        
+        # Verify that carboxylic acids are attached to distinct carbon atoms
+        if len(distinct_carbons) == 3:
+            return True, "Contains exactly three distinct carboxylic acid groups"
+        else:
+            return False, "Carboxylic acids are not attached to distinct carbon atoms"
     else:
         return False, f"Contains {n_carboxylic_acids} carboxylic acid groups, expected exactly 3"
