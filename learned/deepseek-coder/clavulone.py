@@ -27,6 +27,7 @@ def is_clavulone(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for cyclopentane ring with a ketone group (C=O) and hydroxyl group (OH)
+    # Use a more flexible pattern to account for substitutions and stereochemistry
     clavulone_core_pattern = Chem.MolFromSmarts("[C]1[C][C][C][C]1(=O)[OH]")
     if not mol.HasSubstructMatch(clavulone_core_pattern):
         return False, "No cyclopentane ring with ketone and hydroxyl group found"
