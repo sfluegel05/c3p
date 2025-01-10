@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_para_terphenyl(smiles: str):
     """
     Determines if a molecule belongs to the class of para-terphenyl compounds based on its SMILES string.
-    A para-terphenyl is characterized by a structure consisting of three phenyl rings, potentially with 
-    substitutions, where two outer phenyl groups are connected via a central phenyl group in a linear fashion.
+    A para-terphenyl is characterized by a structure consisting of three phenyl rings, where two outer phenyl 
+    groups are connected via a central phenyl group in a linear fashion (para orientation).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,14 +22,15 @@ def is_para_terphenyl(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define a more flexible SMARTS pattern
-    # This pattern allows for typical para-terphenyl core connectivity with potential substitutions
-    para_terphenyl_pattern = Chem.MolFromSmarts('c1(cccc1)-c2ccccc2-c3ccccc3')
+    # Define an enhanced SMARTS pattern for para-terphenyl
+    # Allow for potential substitutions at the para positions of each phenyl ring
+    para_terphenyl_pattern = Chem.MolFromSmarts('c1(cc([#1,#6,#8,F,Cl,Br,S](c)*)cc1)-c2cc([#1,#6,#8,F,Cl,Br,S])ccc2-c3ccc([#1,#6,#8,F,Cl,Br,S])cc3')
     
     if not mol.HasSubstructMatch(para_terphenyl_pattern):
         return False, "Does not match para-terphenyl core structure"
     
-    # Additional checks or descriptors can be added here to refine classification, 
-    # such as expected functional groups or specific bonds consistent with known derivatives
+    # Check if substitutions adhere to known patterns in derivatives
+    # This part can be extended to check for particular functional groups or combinations
+    # that are characteristic of known para-terphenyl derivatives
 
     return True, "Contains para-terphenyl core structure"
