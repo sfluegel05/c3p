@@ -2,6 +2,7 @@
 Classifies: CHEBI:61778 triterpenoid saponin
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_triterpenoid_saponin(smiles: str):
     """
@@ -21,96 +22,71 @@ def is_triterpenoid_saponin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Get ring information
+    # Remove hydrogens for simplicity
+    mol = Chem.RemoveHs(mol)
+
+    # Check for triterpenoid core (C30 skeleton)
+    num_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if num_carbons < 30:
+        return False, f"Contains only {num_carbons} carbon atoms; fewer than 30 needed for triterpenoid"
+
+    # Identify ring systems
+    ssr = Chem.GetSSSR(mol)
+    if ssr < 4:
+        return False, f"Contains only {ssr} rings; triterpenoids typically have multiple rings"
+    
+    # Find the largest ring system (assumed to be the core)
     ring_info = mol.GetRingInfo()
-    bond_rings = ring_info.BondRings()
-    if len(bond_rings) == 0:
-        return False, "No rings found in the molecule"
+    atom_rings = ring_info.AtomRings()
+    largest_ring_system = max(atom_rings, key=len)
+    core_atoms = set(largest_ring_system)
 
-    # Build ring adjacency graph
-    ring_bond_sets = [set(ring) for ring in bond_rings]
-    num_rings = len(ring_bond_sets)
-    adj_matrix = [[] for _ in range(num_rings)]
+    # Detect sugar moieties
+    # Define SMARTS patterns for sugars (pyranose and furanose rings)
+    sugar_patterns = [
+        '[OX2H][CX4H]',  # Hydroxyl group attached to carbon
+        '[CX4H1][OX2H][CX4]'  # Ether linkage pattern
+    ]
+    sugar_mols = [Chem.MolFromSmarts(pat) for pat in sugar_patterns]
+    if not all(sugar_mols):
+        return False, "Failed to parse sugar SMARTS patterns"
 
-    for i in range(num_rings):
-        for j in range(i+1, num_rings):
-            # If rings share bonds, they are fused
-            if ring_bond_sets[i] & ring_bond_sets[j]:
-                # Add edge between rings i and j
-                adj_matrix[i].append(j)
-                adj_matrix[j].append(i)
+    # Find sugar atoms
+    sugar_atoms = set()
+    for sugar_mol in sugar_mols:
+        matches = mol.GetSubstructMatches(sugar_mol)
+        for match in matches:
+            sugar_atoms.update(match)
 
-    # Find connected components in the ring adjacency graph
-    visited = [False] * num_rings
-    fused_ring_systems = []
+    if not sugar_atoms:
+        return False, "No sugar moieties found"
 
-    def dfs(i, component):
-        visited[i] = True
-        component.append(i)
-        for neighbor in adj_matrix[i]:
-            if not visited[neighbor]:
-                dfs(neighbor, component)
-
-    for i in range(num_rings):
-        if not visited[i]:
-            component = []
-            dfs(i, component)
-            fused_ring_systems.append(component)
-
-    # Check for fused ring system with at least five rings
-    has_pentacyclic_core = False
-    pentacyclic_core_rings = []
-    for system in fused_ring_systems:
-        if len(system) >= 5:
-            has_pentacyclic_core = True
-            pentacyclic_core_rings = system
-            break
-
-    if not has_pentacyclic_core:
-        return False, "No pentacyclic fused ring system found"
-
-    # Look for attached sugar moieties
-    # Define a SMARTS pattern for pyranose (six-membered sugar ring)
-    sugar_smarts = '[#6&R1]-1-[#6&R1]-[#6&R1]-[#6&R1]-[#6&R1]-[#8&R1]-1'
-    sugar_pattern = Chem.MolFromSmarts(sugar_smarts)
-    if sugar_pattern is None:
-        return False, "Failed to parse sugar SMARTS pattern"
-
-    # Find sugar rings
-    sugar_matches = mol.GetSubstructMatches(sugar_pattern)
-    if len(sugar_matches) == 0:
-        return False, "No sugar moiety found attached"
-
-    # Get atoms in pentacyclic core
-    core_atoms = set()
-    for ring_idx in pentacyclic_core_rings:
-        ring_bonds = bond_rings[ring_idx]
-        for bond_idx in ring_bonds:
-            bond = mol.GetBondWithIdx(bond_idx)
-            core_atoms.add(bond.GetBeginAtomIdx())
-            core_atoms.add(bond.GetEndAtomIdx())
-
-    # Check for bonds between core atoms and sugar atoms
+    # Check for glycosidic linkage between core and sugar
     found_linkage = False
-    for match in sugar_matches:
-        sugar_atoms = set(match)
-        # Check if any sugar atom is directly connected to a core atom via an oxygen
-        for sugar_atom_idx in sugar_atoms:
-            sugar_atom = mol.GetAtomWithIdx(sugar_atom_idx)
-            if sugar_atom.GetAtomicNum() != 8:  # We're looking for oxygen atoms
-                continue
-            for neighbor in sugar_atom.GetNeighbors():
-                neighbor_idx = neighbor.GetIdx()
-                if neighbor_idx in core_atoms:
-                    # Found an oxygen linking sugar to core
+    for bond in mol.GetBonds():
+        atom1_idx = bond.GetBeginAtomIdx()
+        atom2_idx = bond.GetEndAtomIdx()
+        atom1 = bond.GetBeginAtom()
+        atom2 = bond.GetEndAtom()
+
+        # Check for C-O-C linkage between core and sugar
+        if bond.GetBondType() == Chem.BondType.SINGLE:
+            if (atom1_idx in core_atoms and atom2_idx in sugar_atoms) or \
+               (atom2_idx in core_atoms and atom1_idx in sugar_atoms):
+                if (atom1.GetAtomicNum() == 6 and atom2.GetAtomicNum() == 8) or \
+                   (atom1.GetAtomicNum() == 8 and atom2.GetAtomicNum() == 6):
                     found_linkage = True
                     break
-            if found_linkage:
-                break
-        if found_linkage:
-            break
 
     if not found_linkage:
         return False, "No glycosidic linkage between core and sugar found"
 
-    return True, "Contains pentacyclic triterpenoid core with attached sugar moieties via glycosidic bonds"
+    # Optional: Check for common functional groups in triterpenoid saponins
+    hydroxyls = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetDegree() == 1]
+    carboxyls = Chem.MolFromSmarts('C(=O)[OH]')
+    carboxyl_matches = mol.GetSubstructMatches(carboxyls)
+
+    if len(hydroxyls) < 1 and len(carboxyl_matches) < 1:
+        return False, "No hydroxyl or carboxyl groups found; unusual for triterpenoid saponins"
+
+    return True, "Molecule is a triterpenoid saponin with triterpenoid core and glycosidically linked sugar moiety"
