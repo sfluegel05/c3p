@@ -6,34 +6,29 @@ from rdkit import Chem
 def is_N_acyl_L_alpha_amino_acid(smiles: str):
     """
     Determines if a molecule is an N-acyl-L-alpha-amino acid based on its SMILES string.
-    An N-acyl-L-alpha-amino acid has an acyl group attached to the nitrogen of an L-alpha-amino acid backbone.
-
+    An N-acyl-L-alpha-amino acid typically has an acyl group connected through the nitrogen
+    to the backbone of an L-alpha-amino acid.
+    
     Args:
         smiles (str): SMILES string of the molecule
-
+    
     Returns:
-        bool: True if molecule is an N-acyl-L-alpha-amino acid, False otherwise
+        bool: True if molecule is N-acyl-L-alpha-amino acid, False otherwise
         str: Reason for classification
     """
     
-    # Create a molecule from the SMILES string
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Define a more robust SMARTS pattern for detecting N-acyl-donation on an amino acid structure
-    # Allow for detection of acyl attachments both directly to the alpha nitrogens
-    pattern_main = Chem.MolFromSmarts("C(=O)[N;X3][C@H]([C;R0])[C;R0](=O)[O;X1,O-]")
-    
-    # Also consider variations that appear in the side-chains of amino acids like lysine
-    pattern_side_chain = Chem.MolFromSmarts("C(=O)[N;X3][a,c][C;H1,H2]")
-    
-    if mol.HasSubstructMatch(pattern_main):
-        return True, "Matches N-acyl-L-alpha-amino acid structure (main chain)"
-    
-    if mol.HasSubstructMatch(pattern_side_chain):
-        return True, "Matches N-acyl-L-alpha-amino acid structure (side chain)"
 
+    # Define SMARTS pattern for N-acyl-L-alpha-amino acid
+    n_acyl_l_alpha_amino_pattern = Chem.MolFromSmarts("C(=O)N[C@@H](C)C(=O)O")
+    
+    # Check if the molecule matches the pattern
+    if mol.HasSubstructMatch(n_acyl_l_alpha_amino_pattern):
+        return True, "Contains N-acyl group attached to L-alpha amino acid backbone"
+    
     return False, "Does not match N-acyl-L-alpha-amino acid structure"
 
 # Example usage:
