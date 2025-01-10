@@ -33,42 +33,26 @@ def is_N_acyl_L_alpha_amino_acid(smiles: str):
 
     # Get the nitrogen atom in the amino acid backbone
     amino_acid_matches = mol.GetSubstructMatches(amino_acid_pattern)
-    if not amino_acid_matches:
-        return False, "No L-alpha-amino acid backbone found"
-    
-    # Get the nitrogen atom of the amino group
-    amino_nitrogen = amino_acid_matches[0][2]
+    amino_acid_nitrogen = amino_acid_matches[0][2]  # Nitrogen atom index in the amino acid pattern
 
-    # Check if the nitrogen has exactly one acyl group attached
-    nitrogen_atom = mol.GetAtomWithIdx(amino_nitrogen)
-    if nitrogen_atom.GetDegree() != 2:  # Should be connected to H and acyl group
-        return False, "Amino nitrogen has incorrect number of substituents"
+    # Check for N-acyl substituent: N-C(=O)
+    acyl_pattern = Chem.MolFromSmarts("NC(=O)")
+    if not mol.HasSubstructMatch(acyl_pattern):
+        return False, "No N-acyl substituent found"
 
-    # Check for N-acyl substituent: must be directly attached to the amino nitrogen
-    acyl_group = None
-    for neighbor in nitrogen_atom.GetNeighbors():
-        if neighbor.GetAtomicNum() == 6:  # Carbon
-            for bond in neighbor.GetBonds():
-                if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE and \
-                   bond.GetBeginAtom().GetAtomicNum() == 8 and \
-                   bond.GetEndAtom().GetAtomicNum() == 6:
-                    acyl_group = neighbor
-                    break
-    
-    if not acyl_group:
-        return False, "No N-acyl substituent found attached to amino nitrogen"
+    # Get all nitrogen atoms in the molecule
+    nitrogen_atoms = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7]
 
-    # Verify the acyl group is not part of a peptide bond
-    # Should only have one connection to the nitrogen and one to another carbon
-    if acyl_group.GetDegree() != 2:
-        return False, "Acyl group is part of a peptide bond"
+    # Check if any nitrogen atom is part of an N-acyl group and is connected to the amino acid structure
+    for nitrogen in nitrogen_atoms:
+        # Check if the nitrogen is part of an N-acyl group
+        for neighbor in mol.GetAtomWithIdx(nitrogen).GetNeighbors():
+            if neighbor.GetAtomicNum() == 6 and any(bond.GetBondType() == Chem.rdchem.BondType.DOUBLE for bond in neighbor.GetBonds()):
+                # Check if the nitrogen is part of the amino acid structure (backbone or side chain)
+                if nitrogen == amino_acid_nitrogen or mol.GetAtomWithIdx(nitrogen).GetDegree() > 1:
+                    return True, "Contains L-alpha-amino acid backbone with N-acyl substituent"
 
-    # Verify stereochemistry at alpha carbon
-    alpha_carbon = amino_acid_matches[0][0]
-    if not mol.GetAtomWithIdx(alpha_carbon).GetChiralTag() == Chem.rdchem.ChiralType.CHI_TETRAHEDRAL_CW:
-        return False, "Incorrect stereochemistry at alpha carbon"
-
-    return True, "Contains L-alpha-amino acid backbone with N-acyl substituent"
+    return False, "N-acyl group is not attached to the amino group of the amino acid"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:58937',
