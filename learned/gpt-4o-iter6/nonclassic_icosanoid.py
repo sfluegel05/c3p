@@ -22,7 +22,7 @@ def is_nonclassic_icosanoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for approximately 20 carbon atoms (e.g., allowing carbon chain modifications)
+    # Check for approximately 20 carbon atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if c_count < 18 or c_count > 22:
         return False, f"Carbon count is {c_count}, typically expected around 20"
@@ -39,13 +39,14 @@ def is_nonclassic_icosanoid(smiles: str):
     has_carboxyl = mol.HasSubstructMatch(carboxyl_pattern)
 
     # Ensure presence of at least two diverse oxygen functional groups
-    if not (has_hydroxyl and has_epoxy) and not (has_carboxyl or has_carbonyl):
+    if sum([has_hydroxyl, has_epoxy, has_carbonyl, has_carboxyl]) < 2:
         return False, "Insufficient oxygenation features for a nonclassic icosanoid"
 
-    # Exclude typical leukotriene and prostanoid structures more carefully
-    supercyle_warning = Chem.MolFromSmiles('C1CCCCC1')
+    # Exclude typical leukotriene and prostanoid structures
     leukotriene_warning = Chem.MolFromSmarts('C=CC=CC=')  # Simplified constraint for linear triene
-    if mol.HasSubstructMatch(supercyle_warning) or mol.HasSubstructMatch(leukotriene_warning):
+    prostanoid_ring = Chem.MolFromSmarts('C1C=CCC=C1')  # Simple prostanoid ring pattern
+
+    if mol.HasSubstructMatch(leukotriene_warning) or mol.HasSubstructMatch(prostanoid_ring):
         return False, "Contains features of typical leukotriene/prostanoid structures"
 
-    return True, "Contains characteristics of nonclassic icosanoids: C20 carbon atoms with oxygenation patterns"
+    return True, "Contains characteristics of nonclassic icosanoids: C20 carbon atoms with diverse oxygenation patterns"
