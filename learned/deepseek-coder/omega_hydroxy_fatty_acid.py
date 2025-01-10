@@ -33,11 +33,10 @@ def is_omega_hydroxy_fatty_acid(smiles: str):
     if not carboxyl_matches:
         return False, "No carboxyl group found"
 
-    # Check for hydroxyl group (-OH) at the terminal position
-    # We need to find the longest carbon chain and ensure the hydroxyl is at the end
-    # First, find the longest carbon chain
-    longest_chain = Chem.MolFromSmarts("[CX4H2][CX4H2]*[CX4H2]")
-    chain_matches = mol.GetSubstructMatches(longest_chain)
+    # Find the longest carbon chain
+    # Use a more flexible pattern to handle double bonds and rings
+    chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    chain_matches = mol.GetSubstructMatches(chain_pattern)
     if not chain_matches:
         return False, "No long carbon chain found"
 
@@ -46,7 +45,7 @@ def is_omega_hydroxy_fatty_acid(smiles: str):
     for match in chain_matches:
         for atom_idx in match:
             atom = mol.GetAtomWithIdx(atom_idx)
-            if atom.GetDegree() == 1:  # Terminal carbon has degree 1
+            if atom.GetDegree() == 1 or (atom.GetDegree() == 2 and atom.GetAtomicNum() == 6):  # Terminal carbon can have degree 1 or 2 (if part of a double bond)
                 terminal_carbon = atom_idx
                 break
         if terminal_carbon is not None:
@@ -57,10 +56,13 @@ def is_omega_hydroxy_fatty_acid(smiles: str):
 
     # Check if the terminal carbon has a hydroxyl group
     terminal_atom = mol.GetAtomWithIdx(terminal_carbon)
+    has_hydroxyl = False
     for neighbor in terminal_atom.GetNeighbors():
         if neighbor.GetAtomicNum() == 8 and neighbor.GetTotalNumHs() == 1:  # Oxygen with one hydrogen (OH)
+            has_hydroxyl = True
             break
-    else:
+
+    if not has_hydroxyl:
         return False, "No hydroxyl group found at the terminal position"
 
     # Check if the molecule is a straight-chain fatty acid (no branching)
@@ -71,7 +73,7 @@ def is_omega_hydroxy_fatty_acid(smiles: str):
 
     # Ensure no branching in the chain
     for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 6 and atom.GetDegree() > 2:  # Carbon with more than 2 connections (branching)
+        if atom.GetAtomicNum() == 6 and atom.GetDegree() > 2:  # Carbon with more than 2 non-hydrogen connections (branching)
             return False, "Branched chain detected"
 
     return True, "Contains a carboxyl group at position 1 and a hydroxyl group at the terminal position of a straight-chain fatty acid"
