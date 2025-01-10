@@ -21,9 +21,9 @@ def is_secondary_ammonium_ion(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for secondary ammonium ion: NH2+ connected to two distinct carbon chains
-    # Here we refine the pattern to ensure the nitrogen is correctly protonated and has two alkyl (carbon) chains, no more, no less
-    pattern = Chem.MolFromSmarts("[+][N;H2;!R](C)(C)")
+    # SMARTS pattern for secondary ammonium ion: positivlely charged nitrogen bonded to two carbon atoms
+    # The pattern searches for an N with a positive charge and exactly two carbon atom attachments
+    pattern = Chem.MolFromSmarts("[NH2+][C][C]")
 
     # Check if the molecule matches the secondary ammonium ion pattern
     matches = mol.GetSubstructMatches(pattern)
@@ -32,5 +32,3 @@ def is_secondary_ammonium_ion(smiles: str):
         return True, "Matches the secondary ammonium ion structure pattern"
     else:
         return False, "Does not match the secondary ammonium ion structure pattern"
-
-# Note: The function focuses on identifying the secondary NH2+ configuration; environmental factors can influence real-world ionization.
