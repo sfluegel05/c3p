@@ -15,17 +15,23 @@ def is_nucleoside_5__phosphate(smiles: str):
         bool: True if molecule is a nucleoside 5'-phosphate, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a SMARTS pattern for ribose or deoxyribose
-    sugar_pattern = Chem.MolFromSmarts("C1[C@H]([C@@H]([C@H](O1)COP(=O)(O)O)[OH])[OH]")
+    # Define a general SMARTS pattern for ribose or deoxyribose
+    sugar_pattern = Chem.MolFromSmarts("C1OC([C@@H](O)C(O)C1)COP(O)(=O)[O]")  # Can match both ribose and deoxyribose
     
-    # Define a SMARTS pattern for nucleobase (simplified examples)
-    nucleobase_pattern = Chem.MolFromSmarts("n1cnc2c1ncn(c2)C=C")  # Adenine example
+    # Define SMARTS patterns for canonical nucleobases
+    adenine_pattern = Chem.MolFromSmarts("n1cnc2c1ncnc2N")
+    guanine_pattern = Chem.MolFromSmarts("n1cnc2c1ncnc2O")
+    cytosine_pattern = Chem.MolFromSmarts("n1cnc2c1ncnc2N")
+    thymine_pattern = Chem.MolFromSmarts("C1=CN(C=O)C(=O)NC1=O")
+    uracil_pattern = Chem.MolFromSmarts("C1=CN(C=O)C(=O)NC1=O")
+
+    nucleobase_patterns = [adenine_pattern, guanine_pattern, cytosine_pattern, thymine_pattern, uracil_pattern]
 
     # Define a SMARTS pattern for a phosphate group at the 5' position
     phosphate_pattern = Chem.MolFromSmarts("COP(=O)(O)O")
@@ -34,8 +40,8 @@ def is_nucleoside_5__phosphate(smiles: str):
     if not mol.HasSubstructMatch(sugar_pattern):
         return False, "No ribose or deoxyribose sugar found"
 
-    # Check for the presence of a nucleobase
-    if not mol.HasSubstructMatch(nucleobase_pattern):
+    # Check for the presence of any nucleobase
+    if not any(mol.HasSubstructMatch(base) for base in nucleobase_patterns):
         return False, "No nucleobase found"
 
     # Check for the presence of a phosphate group at the 5' position
