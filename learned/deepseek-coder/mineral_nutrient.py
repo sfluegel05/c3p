@@ -57,10 +57,11 @@ def is_mineral_nutrient(smiles: str):
         ]
         
         # Check if all carbon atoms are in allowed patterns
-        for atom in carbon_atoms:
-            if not any(mol.GetAtomWithIdx(atom.GetIdx()).HasSubstructMatch(pattern) 
-                      for pattern in allowed_carbon_patterns):
-                return False, "Contains carbon atoms not in allowed patterns"
+        for pattern in allowed_carbon_patterns:
+            if mol.HasSubstructMatch(pattern):
+                break
+        else:
+            return False, "Contains carbon atoms not in allowed patterns"
 
     # Check for ionic character (not strictly required for all cases)
     has_cation = any(atom.GetFormalCharge() > 0 for atom in mol.GetAtoms())
