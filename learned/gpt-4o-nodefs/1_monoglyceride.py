@@ -2,7 +2,6 @@
 Classifies: CHEBI:35759 1-monoglyceride
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_1_monoglyceride(smiles: str):
     """
@@ -26,16 +25,16 @@ def is_1_monoglyceride(smiles: str):
     glycerol_pattern = Chem.MolFromSmarts("OCC(O)CO")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone with two free hydroxyl groups found"
-    
-    # Look for a single ester linkage [C(=O)O] linked to the primary oxygen on glycerol
-    ester_pattern = Chem.MolFromSmarts("C(=O)OC")
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) != 1:
-        return False, f"Found {len(ester_matches)} ester groups, need exactly 1"
-    
-    # Check if the ester linkage is attached to a long carbon chain (at least 3 carbon atoms)
-    fatty_acid_pattern = Chem.MolFromSmarts("C(=O)OCC([CH2])[CH2]")
-    if not mol.HasSubstructMatch(fatty_acid_pattern):
+
+    # Pattern matching for ester linkage at the primary oxygen of glycerol
+    ester_pattern = Chem.MolFromSmarts("C(=O)OCC(O)CO")
+    if not mol.HasSubstructMatch(ester_pattern):
+        return False, "Ester linkage not found at primary oxygen of glycerol"
+
+    # Ensure the ester linkage leads to a long carbon chain (at least 3 carbon atoms)
+    # Start after the ester carbonyl [C(=O)] leading to a long alkyl chain
+    long_chain_pattern = Chem.MolFromSmarts("C(=O)O[C]"+"~[CH2~CH/*]")
+    if not mol.HasSubstructMatch(long_chain_pattern):
         return False, "Ester linkage does not lead to a sufficiently long carbon chain"
 
     return True, "Contains glycerol backbone with a single fatty acid chain esterified at the 1-position"
