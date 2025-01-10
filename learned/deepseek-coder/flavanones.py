@@ -7,7 +7,7 @@ Classifies: CHEBI:72564 flavanone
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
 
-def is_flavanone(smiles: str):
+def is_flavanones(smiles: str):
     """
     Determines if a molecule is a flavanone based on its SMILES string.
     A flavanone has a 3,4-dihydro-2-aryl-2H-1-benzopyran-4-one skeleton.
@@ -25,13 +25,13 @@ def is_flavanone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the core flavanone pattern
-    flavanone_pattern = Chem.MolFromSmarts("[C@@H]1CC(=O)c2ccccc2O1")
+    # Define the core flavanone pattern with flexibility for substituents
+    flavanone_pattern = Chem.MolFromSmarts("[C@H]1CC(=O)c2ccccc2O1")
     if not mol.HasSubstructMatch(flavanone_pattern):
         return False, "No flavanone core structure found"
 
-    # Check for aromatic ring at position 2
-    aryl_pattern = Chem.MolFromSmarts("[C@@H]1CC(=O)c2ccccc2O1-c3ccccc3")
+    # Check for aromatic ring at position 2 with flexibility for substituents
+    aryl_pattern = Chem.MolFromSmarts("[C@H]1CC(=O)c2ccccc2O1-c3ccccc3")
     if not mol.HasSubstructMatch(aryl_pattern):
         return False, "No aryl group at position 2"
 
