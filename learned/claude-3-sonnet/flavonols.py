@@ -25,37 +25,40 @@ def is_flavonols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Basic flavonoid core with 3-OH group and 4-ketone (flavonol backbone)
-    # [#6]1=[#6]-c2c([#6](=[O])[#6]([OH])=[#6]1)c([OH])cc([OH])c2
-    flavonol_pattern = Chem.MolFromSmarts('[#6]1=[#6]-c2c([#6](=[O])[#6]([OH])=[#6]1)c([OH,O-1])cc([OH,O-1])c2')
+    # Basic flavonol core pattern:
+    # - Chromene ring system with ketone at position 4
+    # - Hydroxy group at position 3
+    # - Phenyl substituent at position 2
+    flavonol_pattern = Chem.MolFromSmarts('[$(O=C1c2ccccc2OC(c3ccccc3)=C1O)]')
     
-    # Alternative pattern to catch variations
-    flavonol_pattern2 = Chem.MolFromSmarts('O=C1C(O)=C(Oc2ccccc12)c1ccccc1')
+    # Alternative more general pattern to catch variations
+    flavonol_pattern2 = Chem.MolFromSmarts('[$(Oc1c(=O)c2ccccc2oc1-c1ccccc1)]')
     
     if not (mol.HasSubstructMatch(flavonol_pattern) or mol.HasSubstructMatch(flavonol_pattern2)):
-        return False, "Missing flavonol core structure (3-hydroxyflavone backbone)"
+        return False, "Missing flavonol core structure"
 
-    # Check for ketone at position 4
-    ketone_pattern = Chem.MolFromSmarts('O=C1c2ccccc2OC(c2ccccc2)=C1O')
-    if not mol.HasSubstructMatch(ketone_pattern):
-        return False, "Missing ketone group at position 4"
+    # Verify presence of ketone at position 4 and OH at position 3
+    # This pattern specifically looks for the O=C-C(O) arrangement
+    essential_groups = Chem.MolFromSmarts('[$(O=C1c2ccccc2O[C@H](O)C1)]')
+    if not mol.HasSubstructMatch(essential_groups):
+        return False, "Missing required ketone at position 4 or hydroxy at position 3"
 
-    # Count oxygen atoms (should have at least 4: 3-OH, 4=O, and ring O)
+    # Count basic ring systems (should have at least 2 aromatic rings)
+    ring_info = mol.GetRingInfo()
+    if len(ring_info.AtomRings()) < 2:
+        return False, "Missing required ring systems"
+
+    # Count oxygen atoms (should have at least 3: 3-OH, 4=O, and ring O)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count < 4:
+    if o_count < 3:
         return False, "Insufficient oxygen atoms for flavonol structure"
 
-    # Check for aromatic rings (should have at least 2)
-    aromatic_rings = 0
-    for atom in mol.GetAtoms():
-        if atom.IsInRing() and atom.GetIsAromatic():
-            aromatic_rings += 1
-    if aromatic_rings < 8:  # Each aromatic ring contributes multiple aromatic atoms
-        return False, "Missing required aromatic rings"
+    # Additional check for correct connectivity
+    connectivity_pattern = Chem.MolFromSmarts('[$(c1cc(O)c2c(c1)oc(-c1ccccc1)c(O)c2=O)]')
+    if not mol.HasSubstructMatch(connectivity_pattern):
+        # Try alternative pattern for substituted variants
+        alt_pattern = Chem.MolFromSmarts('[$(c1c(O)c2oc(-c3ccccc3)c(O)c(=O)c2cc1O)]')
+        if not mol.HasSubstructMatch(alt_pattern):
+            return False, "Incorrect connectivity pattern for flavonol"
 
-    # Additional check for 2,3-double bond
-    double_bond_pattern = Chem.MolFromSmarts('C1=COc2ccccc2C1=O')
-    if not mol.HasSubstructMatch(double_bond_pattern):
-        return False, "Missing required double bond between positions 2 and 3"
-
-    return True, "Contains 3-hydroxyflavone backbone with required structural features"
+    return True, "Contains flavonol core structure with 3-hydroxy group and required features"
