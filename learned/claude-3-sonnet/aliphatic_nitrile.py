@@ -25,7 +25,7 @@ def is_aliphatic_nitrile(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for cyano group (C≡N) - more specific pattern that ensures proper connectivity
+    # Look for cyano group (C≡N)
     cyano_pattern = Chem.MolFromSmarts("[CX2]#[NX1]")
     if cyano_pattern is None:
         return False, "Error in SMARTS pattern"
@@ -35,29 +35,48 @@ def is_aliphatic_nitrile(smiles: str):
     if not cyano_matches:
         return False, "No cyano (C≡N) group found"
     
-    # For each cyano group, check if it's attached to an aliphatic carbon
+    # Pattern for conjugated systems (C=C-C≡N or Ar-C≡N or C=N-C≡N)
+    conjugated_pattern = Chem.MolFromSmarts("[$(C=C),$(c),$(C=N)]-[CH2]C#N")
+    conjugated_matches = mol.GetSubstructMatches(conjugated_pattern) if conjugated_pattern else []
+    
+    # For each cyano group, check if it's a proper aliphatic nitrile
     for match in cyano_matches:
         nitrile_c = mol.GetAtomWithIdx(match[0])  # Get the carbon of C≡N
         
         # Get the carbon atom attached to the nitrile carbon
         for neighbor in nitrile_c.GetNeighbors():
             if neighbor.GetAtomicNum() != 7:  # Skip the nitrogen atom of C≡N
-                # Check if this carbon is NOT part of an aromatic system
-                if not neighbor.GetIsAromatic():
-                    # Check if the parent carbon is not in a ring or is in an aliphatic ring
-                    ring_info = mol.GetRingInfo()
-                    if not ring_info.IsAtomInRingOfSize(neighbor.GetIdx(), 6) or not neighbor.GetIsAromatic():
-                        # Additional check to ensure the whole connected system is not aromatic
-                        aromatic_system = False
-                        for next_neighbor in neighbor.GetNeighbors():
-                            if next_neighbor.GetIsAromatic():
-                                aromatic_system = True
-                                break
-                        
-                        if not aromatic_system:
-                            return True, "Contains cyano group (C≡N) attached to aliphatic carbon"
+                # Check multiple conditions that would disqualify an aliphatic nitrile
+                
+                # 1. Carbon should not be aromatic
+                if neighbor.GetIsAromatic():
+                    continue
+                    
+                # 2. Carbon should not be part of a conjugated system
+                if neighbor.GetIsConjugated():
+                    continue
+                    
+                # 3. Carbon should not be sp or sp2 hybridized
+                if neighbor.GetHybridization() != Chem.HybridizationType.SP3:
+                    continue
+                    
+                # 4. Check if the carbon is part of certain functional groups that would make it non-aliphatic
+                non_aliphatic_pattern = Chem.MolFromSmarts("[$(C=O),$(C=N),$(C=C)]-[CH2]C#N")
+                if non_aliphatic_pattern and mol.HasSubstructMatch(non_aliphatic_pattern):
+                    continue
+                
+                # 5. Make sure we're not part of a complex ring system
+                ring_info = mol.GetRingInfo()
+                if ring_info.IsAtomInRingOfSize(neighbor.GetIdx(), 6):
+                    # If in a 6-membered ring, make sure it's not part of a complex/aromatic system
+                    ring_atoms = ring_info.AtomRings()[0]
+                    if any(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring_atoms):
+                        continue
+                
+                # If we passed all checks, this is an aliphatic nitrile
+                return True, "Contains cyano group (C≡N) attached to an aliphatic carbon"
     
-    return False, "No cyano groups attached to aliphatic carbons found"
+    return False, "No aliphatic nitrile groups found"
 
 __metadata__ = {
     'chemical_class': {
