@@ -20,22 +20,18 @@ def is_polar_amino_acid(smiles: str):
         mol = Chem.MolFromSmiles(smiles)
         if mol is None:
             return False, "Invalid SMILES string"
-
-        # Identify amino acid backbone: Look for NH2-C-COO motif
-        backbone_pattern = Chem.MolFromSmarts("[NX3H2,NH,NH3+][CH1](C(=O)O)C")  # N-C-C with a terminal carboxyl group
+        
+        # Identify amino acid backbone (more flexible to allow variations)
+        backbone_pattern = Chem.MolFromSmarts("[NX3][CH1]([C;R0])[C](=O)O")  # N-C-(C)-C(=O)-O pattern without wrapping, R0 means non-ring
         if not mol.HasSubstructMatch(backbone_pattern):
             return False, "No amino acid backbone found"
 
-        # Identify polar side chains capable of forming hydrogen bonds
+        # Identify polar side chain groups
         polar_patterns = [
-            Chem.MolFromSmarts("[CX3](=O)[OX2H1]"),  # Carboxylic acids
-            Chem.MolFromSmarts("[CX3](=O)[NH2]"),   # Amides
-            Chem.MolFromSmarts("[OH1]"),            # Hydroxyl groups
-            Chem.MolFromSmarts("[nX2]"),            # Heterocyclic nitrogens, e.g., in histidine
-            Chem.MolFromSmarts("[N+H](C)(C)"),      # Charged amine for arginine
-            Chem.MolFromSmarts("[SX2H1]"),          # Thiol group, e.g., in cysteine
+            Chem.MolFromSmarts("[$([NX3][CX3](=O)[OX1]),$([CX3](=O)[OH]),$([OH]),$([NX3H]),$([nX2]) ,$([N+]),$([SX2H])]")  # Extended patterns
         ]
 
+        # Check for any polar pattern match
         for pattern in polar_patterns:
             if mol.HasSubstructMatch(pattern):
                 return True, "Contains a polar side chain capable of forming hydrogen bonds"
