@@ -27,23 +27,28 @@ def is_cucurbitacin(smiles: str):
     if num_rings < 4:
         return False, "Contains fewer than 4 rings, does not meet tetracyclic criteria"
     
-    # Identity ring systems related to cucurbitacins
-    cucurbitane_backbone_smarts = [
-        Chem.MolFromSmarts('C1[C@H]2CC[C@H]3[C@H]4CC[C@]5([C@]1(CC[C@]23C5)C4)C'),
-        Chem.MolFromSmarts('C1=CCC2C3CC4CCC(C2)C4C3CC1'), # More generalized pattern
-    ]
+    # Generalized cucurbitane backbone pattern
+    cucurbitane_backbone_smarts = Chem.MolFromSmarts('C1C2CC3(C)C4CCC(C4C5CCC3C5C2C1)C')
     
-    if not any(mol.HasSubstructMatch(backbone) for backbone in cucurbitane_backbone_smarts):
-        return False, "Structure does not match generalized cucurbitane backbone patterns"
+    if not mol.HasSubstructMatch(cucurbitane_backbone_smarts):
+        return False, "Structure does not match generalized cucurbitane backbone pattern"
     
     # Check for common cucurbitacin functional group patterns
-    hydroxyl_smarts = Chem.MolFromSmarts('[CX4][OX2H]')
-    carbonyl_smarts = Chem.MolFromSmarts('[CX3]=[OX1]')
+    hydroxyl_groups = Chem.MolFromSmarts('[CX4][OX2H]')
+    carbonyl_groups = Chem.MolFromSmarts('[CX3]=[OX1]')
     
-    if not mol.HasSubstructMatch(hydroxyl_smarts):
+    if not mol.HasSubstructMatch(hydroxyl_groups):
         return False, "Missing hydroxyl groups in relevant contexts"
     
-    if not mol.HasSubstructMatch(carbonyl_smarts):
-        return False, "Missing carbonyl groups in the expected context"
-    
-    return True, "Identified as a cucurbitacin based on structural and functional group analysis"
+    if mol.HasSubstructMatch(carbonyl_groups):
+        return True, "Identified as a cucurbitacin based on structural and functional group analysis"
+    else:
+        return False, "Missing necessary carbonyl groups"
+
+    # Consider presence of glycosidic moieties which are common
+    glycosidic_moiety_smarts = Chem.MolFromSmarts('O[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O') # As an example
+    if mol.HasSubstructMatch(glycosidic_moiety_smarts):
+        return True, "Contains glycosidic moiety, classified as cucurbitacin"
+
+
+    return True, "Identified as a cucurbitacin based on detected features"
