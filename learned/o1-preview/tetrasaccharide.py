@@ -5,7 +5,6 @@ Classifies: CHEBI:50126 tetrasaccharide
 Classifies: tetrasaccharide
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_tetrasaccharide(smiles: str):
@@ -20,79 +19,65 @@ def is_tetrasaccharide(smiles: str):
         bool: True if molecule is a tetrasaccharide, False otherwise
         str: Reason for classification
     """
-    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns for pyranose and furanose rings (generic monosaccharide units)
-    # These patterns match 5 or 6-membered rings with oxygen and hydroxyl groups
-    pyranose_pattern = Chem.MolFromSmarts('C1[C@@H]([O])[C@H](O)[C@@H](O)[C@H](O)O1')
-    furanose_pattern = Chem.MolFromSmarts('C1[C@H](O)[C@@H](O)[C@H](O)O1')
+    # Identify rings of size 5 or 6 with exactly one oxygen (monosaccharide rings)
+    ring_info = mol.GetRingInfo()
+    ring_atoms = ring_info.AtomRings()
+    mono_rings = []
+    for ring in ring_atoms:
+        if len(ring) == 5 or len(ring) == 6:
+            o_count = sum(1 for idx in ring if mol.GetAtomWithIdx(idx).GetAtomicNum() == 8)
+            if o_count == 1:
+                mono_rings.append(ring)
 
-    # Find monosaccharide units
-    pyranose_matches = mol.GetSubstructMatches(pyranose_pattern)
-    furanose_matches = mol.GetSubstructMatches(furanose_pattern)
-
-    total_monosaccharides = len(pyranose_matches) + len(furanose_matches)
+    total_monosaccharides = len(mono_rings)
 
     if total_monosaccharides != 4:
         return False, f"Found {total_monosaccharides} monosaccharide units, expected 4"
 
-    # Collect atoms involved in monosaccharide units
-    mono_atom_indices = set()
-    for match in pyranose_matches + furanose_matches:
-        mono_atom_indices.update(match)
+    # Map atoms to monosaccharide units
+    atom_to_ring = {}
+    for i, ring in enumerate(mono_rings):
+        for idx in ring:
+            atom_to_ring[idx] = i
 
     # Identify glycosidic linkages
     glycosidic_bonds = []
     for bond in mol.GetBonds():
-        atom1 = bond.GetBeginAtom()
-        atom2 = bond.GetEndAtom()
-        idx1 = atom1.GetIdx()
-        idx2 = atom2.GetIdx()
+        a1 = bond.GetBeginAtom()
+        a2 = bond.GetEndAtom()
+        idx1 = a1.GetIdx()
+        idx2 = a2.GetIdx()
+        ring1 = atom_to_ring.get(idx1)
+        ring2 = atom_to_ring.get(idx2)
+        # Bond between atoms in different rings
+        if ring1 is not None and ring2 is not None and ring1 != ring2:
+            # Check if bond is via an oxygen atom (glycosidic oxygen)
+            if a1.GetAtomicNum() == 8 or a2.GetAtomicNum() == 8:
+                glycosidic_bonds.append((ring1, ring2))
 
-        # Check if bond is between two monosaccharide units via an oxygen atom
-        if idx1 in mono_atom_indices and idx2 in mono_atom_indices:
-            # Exclude bonds within the same monosaccharide unit
-            in_same_unit = False
-            for match in pyranose_matches + furanose_matches:
-                if idx1 in match and idx2 in match:
-                    in_same_unit = True
-                    break
-            if in_same_unit:
-                continue
+    unique_linkages = set()
+    for r1, r2 in glycosidic_bonds:
+        linkage = tuple(sorted((r1, r2)))
+        unique_linkages.add(linkage)
 
-            # Check if bond is an oxygen bridge
-            if (atom1.GetAtomicNum() == 8 and atom2.GetAtomicNum() == 6) or \
-               (atom1.GetAtomicNum() == 6 and atom2.GetAtomicNum() == 8):
-                glycosidic_bonds.append(bond)
+    if len(unique_linkages) != 3:
+        return False, f"Found {len(unique_linkages)} glycosidic linkages, expected 3"
 
-    if len(glycosidic_bonds) != 3:
-        return False, f"Found {len(glycosidic_bonds)} glycosidic linkages, expected 3"
-
-    # Check connectivity between monosaccharide units via glycosidic linkages
-    from collections import defaultdict, deque
-
-    # Build a mapping from atom index to monosaccharide unit
-    atom_to_unit = {}
-    for unit_idx, match in enumerate(pyranose_matches + furanose_matches):
-        for idx in match:
-            atom_to_unit[idx] = unit_idx
+    # Check if the monosaccharide units are connected via glycosidic linkages
+    from collections import deque
 
     # Build connectivity graph
-    graph = defaultdict(set)
-    for bond in glycosidic_bonds:
-        idx1 = bond.GetBeginAtom().GetIdx()
-        idx2 = bond.GetEndAtom().GetIdx()
-        unit1 = atom_to_unit.get(idx1)
-        unit2 = atom_to_unit.get(idx2)
-        if unit1 is not None and unit2 is not None and unit1 != unit2:
-            graph[unit1].add(unit2)
-            graph[unit2].add(unit1)
+    graph = {i: set() for i in range(len(mono_rings))}
+    for r1, r2 in unique_linkages:
+        graph[r1].add(r2)
+        graph[r2].add(r1)
 
-    # Check if the monosaccharide units are connected
+    # Perform BFS to check if all units are connected
     visited = set()
     queue = deque()
     queue.append(0)
@@ -103,7 +88,8 @@ def is_tetrasaccharide(smiles: str):
             if neighbor not in visited:
                 visited.add(neighbor)
                 queue.append(neighbor)
+
     if len(visited) != 4:
-        return False, "Monosaccharide units are not properly connected via glycosidic linkages"
+        return False, "Monosaccharide units are not properly connected"
 
     return True, "Molecule contains 4 monosaccharide units connected via glycosidic linkages"
