@@ -22,14 +22,15 @@ def is_2_hydroxy_fatty_acid(smiles: str):
 
     # Check for carboxylic acid group (C(=O)O)
     carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
-    if not mol.HasSubstructMatch(carboxylic_acid_pattern):
+    carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
+    if not carboxylic_acid_matches:
         return False, "No carboxylic acid group found"
 
-    # Check for hydroxy group at the 2-position
-    # This pattern checks for a carbon with an -OH group (O) attached to a carbon (C) that is on the alpha position to the carboxylic acid
-    alpha_hydroxy_pattern = Chem.MolFromSmarts("O[C][C](=O)O")
+    # Check for alpha/2-hydroxy group
+    # General pattern for alpha-hydroxy positioning: longest carbon chain ending in CO group, 2nd carbon having OH
+    alpha_hydroxy_pattern = Chem.MolFromSmarts("[CX4,cX3][CX4,cX3](O)[CX3](=O)O")
     if not mol.HasSubstructMatch(alpha_hydroxy_pattern):
-        return False, "No 2-hydroxy group found"
+        return False, "No 2-hydroxy group found at the alpha position"
 
     return True, "Contains 2-hydroxy group with carboxylic acid"
 
