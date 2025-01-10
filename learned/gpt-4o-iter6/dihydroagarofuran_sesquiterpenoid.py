@@ -21,8 +21,8 @@ def is_dihydroagarofuran_sesquiterpenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Updated SMARTS pattern for dihydroagarofuran skeleton (hypothetical example)
-    dihydroagarofuran_pattern = Chem.MolFromSmarts("[C@]12(CO[C@H]3OC(=O)[C@@H]([C@H]1[C@H]4OC[C@H]2O4)[C@@H]3C(C)=O)") 
+    # Refined SMARTS pattern for dihydroagarofuran skeleton, capturing bicyclic core 
+    dihydroagarofuran_pattern = Chem.MolFromSmarts("[C@@]12([C@H](OC(=O)[C@@H]3OC1C[C@@H](C3)[C@@H](C2)O)C)C") 
     
     if dihydroagarofuran_pattern is None or not mol.HasSubstructMatch(dihydroagarofuran_pattern):
         return False, "No dihydroagarofuran skeleton found"
@@ -32,13 +32,12 @@ def is_dihydroagarofuran_sesquiterpenoid(smiles: str):
     if c_count < 15:
         return False, f"Too few carbons for a sesquiterpenoid, found {c_count} carbon atoms"
 
-    # Check for presence of typical functional groups (e.g., ester or ketone groups)
-    ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1,C]")  # esters and acids
+    # Check for typical ester or lactone groups, common in this class
+    ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1,C]") 
     if not mol.HasSubstructMatch(ester_pattern):
-        return False, "No ester or acid groups found, which are common in this class"
+        return False, "No ester or lactone groups found, which are common in this class"
 
     return True, "Contains dihydroagarofuran skeleton and sesquiterpenoid characteristics"
 
 # Example testing
-# Expected result based on known classification of the input
 print(is_dihydroagarofuran_sesquiterpenoid("C1(C(O[C@@]2([C@](O)([C@@]34[C@H](OC(C)=O)[C@@H](O)[C@H](C[C@@H](C)[C@@]3(COC1(C)C)C)[C@@H]2OC(=O)c1ccccc1)OC(C)=O)COC(=O)C)OC(=O)C)OC(C)=O"))
