@@ -21,10 +21,10 @@ def is_1_O_acylglycerophosphoethanolamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for glycerol backbone with acyl group at 1-position
-    glycerol_acyl_pattern = Chem.MolFromSmarts("C(CO[P](=O)(O)OCCN)(OC(=O)[R])O") 
+    # Look for glycerol backbone with an acyl group at the 1-position
+    glycerol_acyl_pattern = Chem.MolFromSmarts("[C@H](CO[P]([O-])([O-])OCCN)(OC(=O)[C,C@-][C,C@H]...)O")  
     if not mol.HasSubstructMatch(glycerol_acyl_pattern):
-        return False, "No glycerol-acyl pattern found at 1-position"
+        return False, "No glycerol-acyl pattern found at 1-position with stereochemistry"
 
     # Look for phosphoethanolamine group
     phosphoethanolamine_pattern = Chem.MolFromSmarts("OP(=O)(OCCN)O")
