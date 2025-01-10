@@ -28,15 +28,14 @@ def is_secondary_ammonium_ion(smiles: str):
         return False, "Invalid SMILES string"
 
     # SMARTS pattern for secondary ammonium ion
-    # [NH2+] with exactly two single bonds to carbon or other non-H atoms
-    sec_ammonium_pattern = Chem.MolFromSmarts('[NX3H2+;!a;!$(N=*);!$(N#*);!$([N][O,N])]([#6,#14,#15,#16])[#6,#14,#15,#16]')
+    # [NH+] with exactly two single bonds to carbon-containing groups
+    sec_ammonium_pattern = Chem.MolFromSmarts('[NX3H1+;!$(N=*);!$(N#*);!$([N][O,N,S,P])](-[#6])-[#6]')
     
     # Patterns to exclude
     exclude_patterns = [
         Chem.MolFromSmarts('[nH+]'), # Aromatic N+
         Chem.MolFromSmarts('[NH+]=*'), # Iminium ions
         Chem.MolFromSmarts('[NH+]#*'), # N+ triple bonds
-        Chem.MolFromSmarts('[NH+]([O,N])*'), # N+ bound to O or N
     ]
 
     # Check if molecule matches the secondary ammonium pattern
@@ -68,6 +67,10 @@ def is_secondary_ammonium_ion(smiles: str):
         
         # Must have exactly 2 non-hydrogen neighbors
         if len(non_h_neighbors) != 2:
+            continue
+            
+        # Verify both neighbors are carbon-containing organic groups
+        if not all(neighbor.GetAtomicNum() == 6 for neighbor in non_h_neighbors):
             continue
             
         # All checks passed
