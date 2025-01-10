@@ -25,48 +25,64 @@ def is_3beta_hydroxy_Delta_5__steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more flexible steroid core pattern that matches the tetracyclic system
-    # This pattern allows for variations in ring connections and substitutions
-    steroid_core = Chem.MolFromSmarts("[C,c]1[C,c][C,c][C,c]2[C,c]([C,c]1)[C,c][C,c]3[C,c][C,c][C,c]4[C,c][C,c][C,c]([C,c]4)[C,c]3[C,c]2")
+    # Basic steroid core pattern - four fused rings
+    # More flexible pattern that matches the cyclopentanoperhydrophenanthrene core
+    steroid_core = Chem.MolFromSmarts("C1C2CCC3CCCC4CCCC(C4)C3C2C1")
     
     if not mol.HasSubstructMatch(steroid_core):
         return False, "No steroid core structure found"
 
-    # Check for 3-beta-hydroxyl group
-    # [C@@H] specifies the beta stereochemistry at position 3
-    # The pattern looks for the hydroxyl in the context of the A ring
-    beta_hydroxyl_pattern = Chem.MolFromSmarts("[C,c]1[C,c][C,c][C@@H]([OH1])[C,c][C,c]1")
+    # Look for 3β-hydroxyl group with correct stereochemistry
+    # Multiple patterns to catch different SMILES representations
+    beta_hydroxyl_patterns = [
+        Chem.MolFromSmarts("[C@@H](O)CC"), # Direct pattern
+        Chem.MolFromSmarts("[C@H](CC)O"),  # Alternative representation
+        Chem.MolFromSmarts("C[C@@H](O)C"),  # Another common form
+    ]
     
-    if not mol.HasSubstructMatch(beta_hydroxyl_pattern):
+    has_beta_hydroxyl = any(mol.HasSubstructMatch(pattern) 
+                           for pattern in beta_hydroxyl_patterns 
+                           if pattern is not None)
+    
+    if not has_beta_hydroxyl:
         return False, "No 3-beta-hydroxyl group found"
 
     # Check for double bond between C5-C6
-    # This pattern specifically looks for the double bond in ring B of the steroid
-    delta_5_pattern = Chem.MolFromSmarts("[C,c]1[C,c][C,c]=C[C,c][C,c]1")
+    # Multiple patterns to catch different representations of the Δ5 double bond
+    delta_5_patterns = [
+        Chem.MolFromSmarts("C=CC1CCC"), # Basic pattern
+        Chem.MolFromSmarts("C1CC=CC(C1)"), # Ring-based pattern
+        Chem.MolFromSmarts("C=C1CCCC1"), # Alternative ring pattern
+    ]
     
-    if not mol.HasSubstructMatch(delta_5_pattern):
+    has_delta_5 = any(mol.HasSubstructMatch(pattern) 
+                     for pattern in delta_5_patterns 
+                     if pattern is not None)
+    
+    if not has_delta_5:
         return False, "No double bond between positions 5 and 6"
 
-    # Additional structural checks
+    # Additional validation checks
     
-    # Count rings (steroids should have at least 4)
+    # Count rings (steroids should have 4 or more)
     ring_info = mol.GetRingInfo()
     if ring_info.NumRings() < 4:
         return False, "Insufficient number of rings for steroid structure"
 
     # Count carbons (steroids typically have 17+ carbons)
-    carbon_count = len([atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6])
+    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if carbon_count < 17:
         return False, "Too few carbons for a steroid structure"
 
     # Count oxygens (should have at least one for the hydroxyl group)
-    oxygen_count = len([atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8])
+    oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     if oxygen_count < 1:
         return False, "No oxygen atoms found"
 
     # Verify sp2 carbons (should have at least 2 for the double bond)
-    sp2_carbons = len([atom for atom in mol.GetAtoms() 
-                       if atom.GetAtomicNum() == 6 and atom.GetHybridization() == Chem.HybridizationType.SP2])
+    sp2_carbons = sum(1 for atom in mol.GetAtoms() 
+                     if atom.GetAtomicNum() == 6 
+                     and atom.GetHybridization() == Chem.HybridizationType.SP2)
     if sp2_carbons < 2:
         return False, "No carbon-carbon double bond found"
 
