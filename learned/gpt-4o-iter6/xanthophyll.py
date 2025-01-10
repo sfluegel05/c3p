@@ -22,19 +22,28 @@ def is_xanthophyll(smiles: str):
         return False, "Invalid SMILES string"
     
     # General pattern of polyene chain characteristic in carotenoids
-    polyene_pattern = Chem.MolFromSmarts("[#6]=[#6](-[#6]=[#6])*,=,=[#6]")
-    if polyene_pattern and not mol.HasSubstructMatch(polyene_pattern):
-        return False, "Basic polyene chain character of carotenoids not found"
+    polyene_pattern = Chem.MolFromSmarts("C=C(-C=C)*")  # A more flexible pattern
+    if not mol.HasSubstructMatch(polyene_pattern):
+        return False, "Basic polyene chain characteristic of carotenoids not found"
     
-    # Check for the presence of any oxygen atom
-    oxygen_presence = any(atom.GetAtomicNum() == 8 for atom in mol.GetAtoms())
-    if not oxygen_presence:
-        return False, "No oxygen detected; required for xanthophyll"
+    # Ensure there is a significant polyene backbone
+    num_double_bonds = sum(1 for bond in mol.GetBonds() if bond.GetBondTypeAsDouble() == 2)
+    if num_double_bonds < 5:
+        return False, "Not enough conjugated double bonds for a carotenoid"
 
-    # Check for potentially missed oxygen functionalities
-    possible_oxy_func_groups = ["[OX2H]", "[CX3]=[OX1]", "[CX3][OX2R]"]
-    for pattern in possible_oxy_func_groups:
-        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
-            return True, "Contains features of an oxygenated carotenoid (xanthophyll)"
+    # Check for the presence of oxygen atoms indicating oxidation
+    oxy_func_groups = [
+        "[OX2H]",  # hydroxy group
+        "[C]=O",   # ketone group
+        "[R0, R1; $([O]), $([O-][#6])]", # epoxy and other relevant groups
+    ]
     
-    return False, "Lacks sufficient features to be classified as a xanthophyll"
+    oxygen_presence = any(
+        mol.HasSubstructMatch(Chem.MolFromSmarts(pattern))
+        for pattern in oxy_func_groups
+    )
+    
+    if not oxygen_presence:
+        return False, "No significant oxygen-based functional groups found"
+
+    return True, "Contains features of an oxygenated carotenoid (xanthophyll)"
