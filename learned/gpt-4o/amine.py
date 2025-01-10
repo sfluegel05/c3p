@@ -2,10 +2,14 @@
 Classifies: CHEBI:32952 amine
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_amine(smiles: str):
     """
     Determines if a molecule is an amine based on its SMILES string.
+
+    An amine is defined as 'A compound formally derived from ammonia by replacing
+    one, two or three hydrogen atoms by hydrocarbyl groups.'
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -19,22 +23,23 @@ def is_amine(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+    
+    # Basic amine recognition patterns
+    basic_amine_patterns = [
+        Chem.MolFromSmarts("[NX3;!$(N=*)]"),  # Matches primary/secondary/tertiary amines
+        Chem.MolFromSmarts("[NX4+]")          # Matches quaternary ammonium compounds
+    ]
 
-    # Iterate over atoms in the molecule
-    for atom in mol.GetAtoms():
-        # Check if the atom is Nitrogen
-        if atom.GetAtomicNum() == 7:
-            # Count the number of directly attached carbon atoms (hydrocarbyl groups)
-            num_carbon = sum(1 for neighbor in atom.GetNeighbors() if neighbor.GetAtomicNum() == 6)
-            # Count the number of directly attached hydrogen atoms
-            num_hydrogen = sum(1 for neighbor in atom.GetNeighbors() if neighbor.GetAtomicNum() == 1)
-            
-            # Check if it matches primary, secondary, or tertiary amine
-            if (num_carbon + num_hydrogen) == 3:
-                if num_carbon > 0 and (3 - num_carbon) == num_hydrogen:
-                    return True, f"Identified as an amine with {num_carbon} hydrocarbyl groups and {num_hydrogen} hydrogens attached to nitrogen"
+    for pattern in basic_amine_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return True, "Amine group identified"
 
     return False, "No amine group found"
+
+# Example Usage
+smiles_example = "CCC(C)NC"
+result, reason = is_amine(smiles_example)
+print(f"Result: {result}, Reason: {reason}")
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:32988',
                           'name': 'amine',
