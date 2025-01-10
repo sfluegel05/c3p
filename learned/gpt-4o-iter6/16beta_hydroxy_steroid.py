@@ -16,22 +16,22 @@ def is_16beta_hydroxy_steroid(smiles: str):
         bool: True if molecule is a 16beta-hydroxy steroid, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Refined pattern for a general steroid backbone (6-6-6-5 ring system)
-    steroid_pattern = Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2CCC4C3CCC4")
-    
+
+    # Correct pattern for a general steroid backbone using 6-6-6-5 ring system
+    steroid_pattern = Chem.MolFromSmarts("C1CCC2C3CCC4C(C3)CCC4C2C1")
+
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
 
-    # Pattern to match 16beta-hydroxy group at position 16
-    # This pattern tries to focus on the appropriate ring and relative position
-    beta_hydroxy_16_pattern = Chem.MolFromSmarts("C[C@@H](O)C1CC[C@]2(C)C[...]CC[C@]21")
-    
+    # Pattern to match the hydroxyl group at position 16 with beta configuration.
+    # Assuming that the pattern attaches correctly considering stereochemistry,
+    beta_hydroxy_16_pattern = Chem.MolFromSmarts("C[C@@H](O)C(C)C1CC[C@]2(C)CC[C@H](C2)O")
+
     if not mol.HasSubstructMatch(beta_hydroxy_16_pattern):
         return False, "No 16beta-hydroxy group found"
     
