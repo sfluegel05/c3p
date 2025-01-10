@@ -26,30 +26,44 @@ def is_sphingoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for a long aliphatic chain (at least 12 carbons)
-    c_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6 and not atom.IsInRing()]
-    if len(c_atoms) < 12:
-        return False, f"Aliphatic chain too short ({len(c_atoms)} carbons)"
+    # Calculate the length of the longest aliphatic carbon chain
+    c_chains = []
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6 and not atom.IsInRing():
+            dfs_stack = [(atom, 0)]
+            visited = set()
+            while dfs_stack:
+                current_atom, length = dfs_stack.pop()
+                visited.add(current_atom.GetIdx())
+                length += 1
+                neighbors = [nbr for nbr in current_atom.GetNeighbors() if nbr.GetAtomicNum() == 6 and not nbr.IsInRing() and nbr.GetIdx() not in visited]
+                if neighbors:
+                    for nbr in neighbors:
+                        dfs_stack.append((nbr, length))
+                else:
+                    c_chains.append(length)
+    if not c_chains or max(c_chains) < 12:
+        return False, f"Aliphatic chain too short ({max(c_chains) if c_chains else 0} carbons)"
 
-    # Check for amino group attached to carbon
-    amino_pattern = Chem.MolFromSmarts("[CX4][NX3;H2]")
-    if not mol.HasSubstructMatch(amino_pattern):
-        return False, "No primary amino group attached to carbon found"
+    # Check for nitrogen attached to carbon (amines and amides)
+    nitrogen_patterns = [
+        Chem.MolFromSmarts("[CX4][NX3;$([H2]),$([H1])$([H1+]),$([H0][#6])$([H0][#1])$([H0][H0])$([H0][#1][#1])]"),  # primary amine, protonated amine
+        Chem.MolFromSmarts("[CX3](=O)[NX3]")  # amide
+    ]
+    has_nitrogen = any(mol.HasSubstructMatch(pat) for pat in nitrogen_patterns)
+    if not has_nitrogen:
+        return False, "No amino or amide group attached to carbon found"
 
     # Check for hydroxyl groups attached to carbons
     hydroxyl_pattern = Chem.MolFromSmarts("[CX4][OX2H]")
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    if len(hydroxyl_matches) < 1:
+    if not mol.HasSubstructMatch(hydroxyl_pattern):
         return False, "No hydroxyl groups attached to carbon found"
 
-    # Check for amino alcohol sequence (C-OH-C-N)
-    amino_alcohol_pattern = Chem.MolFromSmarts("[C;!R][C;!R](O)[C;!R](N)")
-    if not mol.HasSubstructMatch(amino_alcohol_pattern):
-        return False, "No amino alcohol sequence (C-OH-C-N) found"
-
-    # Allow for unsaturations and additional hydroxyl groups
-    # Do not enforce saturation of the aliphatic chain
-    # Additional hydroxyl groups are acceptable
+    # Exclude peptides - check for peptide bonds (amide bonds between carbonyl and nitrogen)
+    peptide_bond_pattern = Chem.MolFromSmarts("C(=O)N")
+    peptide_bonds = mol.GetSubstructMatches(peptide_bond_pattern)
+    if len(peptide_bonds) > 2:
+        return False, f"Too many peptide bonds ({len(peptide_bonds)} found), possible peptide"
 
     # If all checks pass, classify as sphingoid
     return True, "Molecule matches sphingoid structural features"
