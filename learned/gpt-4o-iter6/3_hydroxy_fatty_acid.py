@@ -23,12 +23,16 @@ def is_3_hydroxy_fatty_acid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define a more comprehensive 3-hydroxy fatty acid pattern
-    # C(=O)O represents the carboxylic acid.
-    # [C;H2][C;H](O) represents a methine group with a hydroxy group at 3-position.
-    # The long chain is implicit and these patterns should suffice to wrap around it.
-    pattern = Chem.MolFromSmarts("C(=O)O[C;H2][C;H](O)")
+    # This pattern looks for a carboxylic acid followed by two carbons and an OH group
+    pattern = Chem.MolFromSmarts("C(=O)O[C](C)[C@H](O)")
 
+    # Check if the molecule matches the 3-hydroxy fatty acid pattern
     if mol.HasSubstructMatch(pattern):
         return True, "Contains a hydroxy group at the 3-position"
     
+    # Also consider non-chiral variants
+    pattern_non_chiral = Chem.MolFromSmarts("C(=O)OCC(O)")
+    if mol.HasSubstructMatch(pattern_non_chiral):
+        return True, "Contains a hydroxy group at the 3-position (non-chiral)"
+
     return False, "No hydroxy group at the 3-position found"
