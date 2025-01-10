@@ -22,9 +22,9 @@ def is_alpha_amino_acid_zwitterion(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for alpha-amino acid zwitterion
-    # Note: C(=*) refers to carbonyl oxygen and [O-] carboxylate as connected to same alpha carbon
-    zwitterion_pattern = Chem.MolFromSmarts("[C;H1,H2,H3]([NH3+])-[C;H1,H2,H3]-C(=O)[O-]")
+    # Modified SMARTS pattern for alpha-amino acid zwitterion
+    # Ensuring [NH3+] and [O-] from carboxylate are adjacent to a carbon and both on the same chain.
+    zwitterion_pattern = Chem.MolFromSmarts("[NH3+][C@H]([*])[C](=O)[O-]")
 
     # Check if the pattern matches the molecule
     if not mol.HasSubstructMatch(zwitterion_pattern):
@@ -32,11 +32,4 @@ def is_alpha_amino_acid_zwitterion(smiles: str):
     
     return True, "Molecule is an alpha-amino acid zwitterion with alpha carbon bound to [NH3+] and C(=O)[O-]"
 
-# Example usage:
-# smiles_list = [
-#    "[NH3+][C@@H](CCC(=O)NCCc1ccc(O)cc1)C([O-])=O",  # gamma-glutamyltyramine zwitterion
-#    "[NH3+][C@@H](CC[SeH])C([O-])=O",  # L-selenohomocysteine zwitterion
-#    # Add more test cases here as needed
-# ]
-# for sm in smiles_list:
-#    print(f"{sm}: {is_alpha_amino_acid_zwitterion(sm)}")
+# Example usage and testing section can be added as needed for verification
