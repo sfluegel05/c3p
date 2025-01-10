@@ -21,20 +21,22 @@ def is_saturated_fatty_acid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
+    
     # Check for the presence of carboxylic acid group
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[O;H1,H0-]")
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid functional group found"
     
     # Check for any unsaturated bonds (C=C or C#C)
-    unsaturated_pattern = Chem.MolFromSmarts("[C]=[C] | [C]#[C]")
-    if mol.HasSubstructMatch(unsaturated_pattern):
+    unsaturated_double_pattern = Chem.MolFromSmarts("[C]=[C]")
+    unsaturated_triple_pattern = Chem.MolFromSmarts("[C]#[C]")
+    if mol.HasSubstructMatch(unsaturated_double_pattern) or mol.HasSubstructMatch(unsaturated_triple_pattern):
         return False, "Contains carbon-carbon multiple bonds (unsaturated)"
 
-    # Check for presence of cycle which is uncommon in saturated fatty acids
-    if mol.GetRingInfo().NumRings() > 0:
-        return False, "Contains ring structure; typical saturated fatty acids do not"
+    # Acknowledge that ring structures may be present, but are less common
+    ring_info = mol.GetRingInfo()
+    if ring_info.NumRings() > 1:
+        return False, "Contains complex ring structures; simplest saturated fatty acids do not"
 
     # Check for sufficient length of carbon chain to be considered a fatty acid
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
@@ -44,14 +46,13 @@ def is_saturated_fatty_acid(smiles: str):
     # It passed all tests to be considered a saturated fatty acid
     return True, "Contains carboxylic acid group, is linear/branched, and contains no unsaturations"
 
-
-# Test the function with provided examples
+# Test the function with examples
 examples = [
     "CCCCC(O)=O",  # valeric acid
     "CCC(C)CCCCCCCCCCCCCCCCC(O)=O",  # 18-methylicosanoic acid
     "CCCCCCCCCCCCCCCCCCC(O)=O",  # nonadecanoic acid
     "CC(C)CCCCCC(O)=O",  # 7-methyloctanoic acid
-    # Add additional examples if needed
+    "CCCC(CCC)C(O)=O",  # valproic acid
 ]
 
 for example in examples:
