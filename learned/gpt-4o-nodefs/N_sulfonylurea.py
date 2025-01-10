@@ -7,8 +7,8 @@ def is_N_sulfonylurea(smiles: str):
     """
     Determines if a molecule is an N-sulfonylurea based on its SMILES string.
     An N-sulfonylurea contains a sulfonyl group (-SO2-) attached to a nitrogen atom,
-    and a urea moiety (-NH-C(=O)-NH-) in its structure.
-
+    and a urea moiety (-NH-C(=O)-NH-) in its structure, specifically structured.
+    
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -22,14 +22,12 @@ def is_N_sulfonylurea(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Improved pattern to match sulfonyl group attached to nitrogen
-    sulfonyl_nitrogen_pattern = Chem.MolFromSmarts("S(=O)(=O)N")
-    if not mol.HasSubstructMatch(sulfonyl_nitrogen_pattern):
-        return False, "No N-sulfonyl group found"
+    # Pattern for N-sulfonylurea: Ensure N-sulfonyl is attached directly to urea nitrogen
+    # Contains the pattern: [NX3]S(=O)(=O)N[C](=O)N or an adjacent variant
+    # The urea nitrogen is part of the sulfonyl group link
+    n_sulfonylurea_pattern = Chem.MolFromSmarts("N[S](=O)(=O)NC(=O)N")
     
-    # Improved pattern to match broader urea moiety configurations
-    urea_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[NX3]")
-    if not mol.HasSubstructMatch(urea_pattern):
-        return False, "No urea moiety found"
-
-    return True, "Contains both N-sulfonyl group and urea moiety"
+    if mol.HasSubstructMatch(n_sulfonylurea_pattern):
+        return True, "Contains N-sulfonyl group directly bonded to urea moiety"
+    
+    return False, "Missing specific N-sulfonylurea linkage in the structure"
