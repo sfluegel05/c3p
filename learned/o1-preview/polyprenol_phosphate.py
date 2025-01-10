@@ -2,6 +2,7 @@
 Classifies: CHEBI:16460 polyprenol phosphate
 """
 from rdkit import Chem
+from rdkit.Chem import rdchem
 
 def is_polyprenol_phosphate(smiles: str):
     """
@@ -21,58 +22,61 @@ def is_polyprenol_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for phosphate group connected via ester linkage
-    phosphate_pattern = Chem.MolFromSmarts("O[P](=O)(O)O")
-    if not phosphate_pattern:
-        return False, "Invalid phosphate SMARTS pattern"
+    # Define phosphate group pattern (including mono-, di-, tri-phosphates)
+    phosphate_patterns = [
+        Chem.MolFromSmarts("OP(O)(O)=O"),            # Monophosphate
+        Chem.MolFromSmarts("OP(O)(=O)OP(O)(O)=O"),   # Diphosphate
+        Chem.MolFromSmarts("OP(O)(=O)OP(O)(=O)OP(O)(O)=O")  # Triphosphate
+    ]
 
-    # Search for phosphate group
-    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
+    # Search for phosphate groups
+    phosphate_matches = []
+    for pattern in phosphate_patterns:
+        matches = mol.GetSubstructMatches(pattern)
+        phosphate_matches.extend(matches)
+
     if not phosphate_matches:
         return False, "No phosphate group found"
 
-    # Define SMARTS pattern for isoprene unit: C=C-C-C
-    isoprene_pattern = Chem.MolFromSmarts("C(=C)CC")
-    if not isoprene_pattern:
-        return False, "Invalid isoprene SMARTS pattern"
+    # Define a general isoprene unit pattern: C=C-C(-C)
+    isoprene_smarts = "[CH2]=[CH][CH2][CH2]"
+    isoprene_pattern = Chem.MolFromSmarts(isoprene_smarts)
 
-    # Find all isoprene units in the molecule
-    isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
-    num_isoprene_units = len(isoprene_matches)
+    # Function to recursively traverse the molecule from a starting atom
+    def traverse(atom, visited, chain_atoms):
+        visited.add(atom.GetIdx())
+        chain_atoms.append(atom)
+        for bond in atom.GetBonds():
+            neighbor = bond.GetOtherAtom(atom)
+            if neighbor.GetIdx() not in visited:
+                # Continue traversal through carbon, oxygen, or phosphorus atoms
+                if neighbor.GetAtomicNum() in [6, 8, 15]:
+                    traverse(neighbor, visited, chain_atoms)
 
-    if num_isoprene_units < 4:
-        return False, f"Only {num_isoprene_units} isoprene units found; need at least 4 for polyprenol"
-
-    # Check if phosphate group is connected to the polyprenol chain
+    # Trace from each phosphate group
     for phosphate_match in phosphate_matches:
-        phosphate_o_atom_idx = phosphate_match[0]  # Oxygen atom connected to phosphate
-        o_atom = mol.GetAtomWithIdx(phosphate_o_atom_idx)
-        # Check neighbors of this oxygen atom
-        for neighbor in o_atom.GetNeighbors():
-            if neighbor.GetAtomicNum() == 6:
-                # Found carbon connected to the phosphate oxygen
-                # Now traverse the carbon chain
+        phosphate_atoms = [mol.GetAtomWithIdx(idx) for idx in phosphate_match]
+        # Start traversal from the oxygen atom connected to the phosphate group
+        for atom in phosphate_atoms:
+            if atom.GetAtomicNum() == 8:
                 visited = set()
-                to_visit = [neighbor.GetIdx()]
-                chain_atoms = set()
-                while to_visit:
-                    current_idx = to_visit.pop()
-                    if current_idx in visited:
-                        continue
-                    visited.add(current_idx)
-                    current_atom = mol.GetAtomWithIdx(current_idx)
-                    if current_atom.GetAtomicNum() != 6:
-                        continue  # Only consider carbon atoms
-                    chain_atoms.add(current_idx)
-                    for nbr in current_atom.GetNeighbors():
-                        nbr_idx = nbr.GetIdx()
-                        if nbr_idx not in visited and nbr.GetAtomicNum() == 6:
-                            to_visit.append(nbr_idx)
-                # Count the number of isoprene units within this chain
-                isoprene_in_chain = 0
-                for isoprene_match in isoprene_matches:
-                    if all(idx in chain_atoms for idx in isoprene_match):
-                        isoprene_in_chain += 1
-                if isoprene_in_chain >= 4:
-                    return True, f"Molecule is a polyprenol phosphate with {isoprene_in_chain} isoprene units"
-    return False, "Phosphate group not connected to polyprenol chain with sufficient isoprene units"
+                chain_atoms = []
+                traverse(atom, visited, chain_atoms)
+                # Extract carbon chain atoms
+                carbon_chain_atoms = [a for a in chain_atoms if a.GetAtomicNum() == 6]
+                # Check if there is a long carbon chain
+                if len(carbon_chain_atoms) >= 20:
+                    # Check for isoprene units within the chain
+                    submol = Chem.PathToSubmol(mol, [a.GetIdx() for a in carbon_chain_atoms])
+                    isoprene_matches = submol.GetSubstructMatches(isoprene_pattern)
+                    num_isoprene_units = len(isoprene_matches)
+                    if num_isoprene_units >= 4:
+                        return True, f"Molecule is a polyprenol phosphate with {num_isoprene_units} isoprene units"
+                    else:
+                        # Alternative: Estimate isoprene units by counting double bonds
+                        num_double_bonds = sum(1 for bond in submol.GetBonds() if bond.GetBondType() == Chem.BondType.DOUBLE)
+                        if num_double_bonds >= 4:
+                            return True, f"Molecule is a polyprenol phosphate with {num_double_bonds} double bonds (estimated isoprene units)"
+                        else:
+                            continue
+    return False, "No polyprenol chain connected to phosphate group with sufficient isoprene units"
