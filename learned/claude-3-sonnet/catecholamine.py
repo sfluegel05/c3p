@@ -3,7 +3,7 @@ Classifies: CHEBI:33567 catecholamine
 """
 """
 Classifies: catecholamine
-Definition: 4-(2-Aminoethyl)pyrocatechol and derivatives formed by substitution
+Definition: 4-(2-Aminoethyl)pyrocatechol [4-(2-aminoethyl)benzene-1,2-diol] and derivatives formed by substitution
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
@@ -24,71 +24,70 @@ def is_catecholamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Convert to neutral form if possible (handle salt forms)
-    mol = Chem.RemoveHs(mol)  # Remove explicit hydrogens
+    # Handle charges - get largest fragment if salt
+    fragments = Chem.GetMolFrags(mol, asMols=True)
+    if len(fragments) > 1:
+        mol = max(fragments, key=lambda m: m.GetNumAtoms())
     
-    # More flexible catechol patterns allowing different substitutions
-    catechol_patterns = [
-        Chem.MolFromSmarts("c1(O)c(O)cccc1"),  # 1,2-dihydroxy
-        Chem.MolFromSmarts("c1c(O)c(O)ccc1"),   # 2,3-dihydroxy
-        Chem.MolFromSmarts("c1cc(O)c(O)cc1"),   # 3,4-dihydroxy
-        Chem.MolFromSmarts("c1c(O)cc(O)cc1"),   # 2,4-dihydroxy
-        Chem.MolFromSmarts("c1(O)c(O)c(O)ccc1"), # Trihydroxy variants
-        Chem.MolFromSmarts("c1(O)c(O)cc(O)cc1"),
-    ]
+    # Essential structure patterns
     
-    has_catechol = False
-    for pat in catechol_patterns:
-        if pat is not None and mol.HasSubstructMatch(pat):
-            has_catechol = True
-            break
-            
-    if not has_catechol:
-        return False, "No catechol moiety found"
+    # 1,2-dihydroxy benzene (catechol) with para position specified
+    # [#6]:1 represents aromatic carbon
+    # The numbers ensure the hydroxyls are ortho to each other
+    # The last position (4) must have a carbon attached
+    catechol_pattern = Chem.MolFromSmarts("[#6]:1:[#6](-[OH1,O-]):[#6](-[OH1,O-]):[#6]:[#6](-[#6]):[#6]:1")
     
-    # More comprehensive ethylamine patterns
+    # Ethylamine chain patterns - must include connection to ring
     ethylamine_patterns = [
-        # Basic patterns
-        Chem.MolFromSmarts("[cR1]!@CC[NH2,NH1,NH0]"), # Direct ethylamine chain
-        Chem.MolFromSmarts("[cR1]!@CC([*,H])N"),      # Allow substitution at beta carbon
-        Chem.MolFromSmarts("[cR1]!@C([*,H])CN"),      # Allow substitution at alpha carbon
-        # Hydroxylated variants
-        Chem.MolFromSmarts("[cR1]!@CC(O)N"),          # Beta-hydroxyl
-        Chem.MolFromSmarts("[cR1]!@C(O)CN"),          # Alpha-hydroxyl
-        # Various amine substitutions
-        Chem.MolFromSmarts("[cR1]!@CCN([*,H])[*,H]"), # Secondary amine
-        Chem.MolFromSmarts("[cR1]!@CCN([*,H])([*,H])"), # Tertiary amine
+        # Basic ethylamine chain
+        Chem.MolFromSmarts("c1c(-CCN)cc(O)c(O)c1"),
+        # Allow hydroxylation and substitution
+        Chem.MolFromSmarts("c1c(-CC(O)N)cc(O)c(O)c1"),
+        Chem.MolFromSmarts("c1c(-C(O)CN)cc(O)c(O)c1"),
+        # Allow N-substitution
+        Chem.MolFromSmarts("c1c(-CCN([H,C])[H,C])cc(O)c(O)c1"),
+        # Allow alpha-carbon substitution
+        Chem.MolFromSmarts("c1c(-C(C)CN)cc(O)c(O)c1"),
     ]
+    
+    if not mol.HasSubstructMatch(catechol_pattern):
+        return False, "No 1,2-dihydroxybenzene (catechol) moiety found"
     
     has_ethylamine = False
-    for pat in ethylamine_patterns:
-        if pat is not None and mol.HasSubstructMatch(pat):
+    for pattern in ethylamine_patterns:
+        if pattern is not None and mol.HasSubstructMatch(pattern):
             has_ethylamine = True
             break
-            
-    if not has_ethylamine:
-        return False, "No ethylamine chain found"
     
-    # Additional checks to avoid false positives
+    if not has_ethylamine:
+        return False, "No appropriate ethylamine chain found at position 4"
+    
+    # Additional checks
     
     # Check molecule size (catecholamines are relatively small)
-    if mol.GetNumAtoms() > 40:  # Increased from 30 to allow for some larger derivatives
+    if mol.GetNumAtoms() > 50:
         return False, "Molecule too large for a typical catecholamine"
     
-    # Check for maximum one benzene ring with catechol pattern
+    # Count aromatic rings
     aromatic_rings = mol.GetSubstructMatches(Chem.MolFromSmarts("a1aaaaa1"))
-    if len(aromatic_rings) > 2:  # Allow max 2 rings for structures like dobutamine
-        return False, "Too many aromatic rings for a catecholamine"
-        
-    # Check for presence of unlikely ring systems in catecholamines
-    complex_ring_systems = [
-        Chem.MolFromSmarts("C1=CC2=C(C=C1)C1=C(C=CC=C1)N2"), # Complex fused rings
+    if len(aromatic_rings) > 2:  # Allow max 2 rings (e.g., for dobutamine)
+        return False, "Too many aromatic rings"
+    
+    # Check for problematic features that shouldn't be in catecholamines
+    problematic_features = [
+        Chem.MolFromSmarts("C1=NC=CN1"), # Imidazole
         Chem.MolFromSmarts("C1CCCCC1"), # Cyclohexane
-        Chem.MolFromSmarts("C1CCCC1"),  # Cyclopentane
+        Chem.MolFromSmarts("C(=O)N"), # Amide (unless part of larger necessary structure)
+        Chem.MolFromSmarts("C(=O)O[H,C]"), # Ester/Acid (unless part of larger necessary structure)
+        Chem.MolFromSmarts("S"), # Sulfur-containing
+        Chem.MolFromSmarts("P"), # Phosphorus-containing
     ]
     
-    for ring in complex_ring_systems:
-        if ring is not None and mol.HasSubstructMatch(ring):
-            return False, "Contains ring systems not typical for catecholamines"
+    for feature in problematic_features:
+        if feature is not None and mol.HasSubstructMatch(feature):
+            matches = mol.GetSubstructMatches(feature)
+            # Allow if the feature is part of a known catecholamine structure
+            if len(matches) > 1:  # Multiple instances are suspicious
+                return False, "Contains chemical features not typical of catecholamines"
     
-    return True, "Contains catechol moiety with ethylamine chain in appropriate arrangement"
+    return True, "Contains 1,2-dihydroxybenzene with appropriate 4-(2-aminoethyl) substitution"
