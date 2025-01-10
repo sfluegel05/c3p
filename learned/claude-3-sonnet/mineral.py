@@ -25,87 +25,102 @@ def is_mineral(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define common elements in minerals
-    mineral_metals = {
-        11: 'Na', 12: 'Mg', 13: 'Al', 19: 'K', 20: 'Ca', 
-        26: 'Fe', 28: 'Ni', 29: 'Cu', 30: 'Zn', 56: 'Ba',
-        55: 'Cs', 51: 'Sb', 33: 'As', 57: 'La', 46: 'Pd'
-    }
+    # Get all atoms
+    atoms = mol.GetAtoms()
+    if len(atoms) == 0:
+        return False, "No atoms found"
     
-    mineral_nonmetals = {
-        8: 'O', 9: 'F', 15: 'P', 16: 'S', 17: 'Cl',
-        14: 'Si', 5: 'B', 7: 'N'
-    }
+    # Count different types of atoms
+    metal_ions = set()
+    has_metal = False
+    organic_atoms = 0
+    inorganic_atoms = 0
+    charged_atoms = 0
     
-    # Track atom types and properties
-    metal_atoms = []
-    nonmetal_ions = set()
-    c_atoms = []
-    total_charge = 0
-    water_count = 0
+    # Define common metal atoms in minerals
+    metals = {11: 'Na', 12: 'Mg', 13: 'Al', 19: 'K', 20: 'Ca', 24: 'Cr',
+              25: 'Mn', 26: 'Fe', 27: 'Co', 28: 'Ni', 29: 'Cu', 30: 'Zn',
+              38: 'Sr', 47: 'Ag', 48: 'Cd', 56: 'Ba', 57: 'La', 78: 'Pt',
+              79: 'Au', 80: 'Hg', 82: 'Pb', 83: 'Bi', 55: 'Cs', 51: 'Sb',
+              46: 'Pd', 33: 'As', 3: 'Li', 4: 'Be', 37: 'Rb', 81: 'Tl'}
     
-    # Analyze atoms
-    for atom in mol.GetAtoms():
+    # Common anions/inorganic elements
+    inorganic_elements = {8: 'O', 9: 'F', 15: 'P', 16: 'S', 17: 'Cl', 
+                         35: 'Br', 53: 'I', 7: 'N', 5: 'B', 14: 'Si'}
+    
+    # Track heteroatoms and their charges
+    heteroatom_charges = []
+    aromatic_atoms = 0
+    
+    for atom in atoms:
         atomic_num = atom.GetAtomicNum()
         formal_charge = atom.GetFormalCharge()
-        total_charge += formal_charge
         
-        if atomic_num in mineral_metals:
-            metal_atoms.append((atomic_num, formal_charge))
-        elif atomic_num in mineral_nonmetals:
-            nonmetal_ions.add(mineral_nonmetals[atomic_num])
-        elif atomic_num == 6:  # Carbon
-            c_atoms.append(atom)
+        if atom.GetIsAromatic():
+            aromatic_atoms += 1
             
-    if len(metal_atoms) == 0 and not {'As', 'Sb'}.intersection(nonmetal_ions):
-        return False, "No mineral-forming metal elements found"
-
-    # Count waters of hydration
+        # Check for metal ions
+        if atomic_num in metals:
+            has_metal = True
+            metal_ions.add(metals[atomic_num])
+            if formal_charge != 0:
+                charged_atoms += 1
+                heteroatom_charges.append(formal_charge)
+                
+        # Count organic vs inorganic atoms
+        elif atomic_num == 6:  # Carbon
+            if len([n for n in atom.GetNeighbors() if n.GetAtomicNum() == 6]) > 1:
+                organic_atoms += 1
+        elif atomic_num in inorganic_elements:
+            inorganic_atoms += 1
+            if formal_charge != 0:
+                charged_atoms += 1
+                heteroatom_charges.append(formal_charge)
+                
+    # Check for water molecules
     water_pattern = Chem.MolFromSmiles("O")
     water_count = len(mol.GetSubstructMatches(water_pattern))
     
-    # Analyze carbon environment
-    organic_ligands = []
-    inorganic_carbons = 0
+    # Check for complex organic groups
+    ring_info = mol.GetRingInfo()
+    ring_count = ring_info.NumRings()
     
-    for c_atom in c_atoms:
-        # Check if carbon is part of carbonate
-        if (c_atom.GetDegree() == 3 and 
-            sum(1 for n in c_atom.GetNeighbors() if n.GetAtomicNum() == 8) == 3):
-            inorganic_carbons += 1
-            continue
-            
-        # Check if carbon is part of legitimate organic ligand
-        neighbors = c_atom.GetNeighbors()
-        if any(n.GetAtomicNum() == 8 and 
-              any(nn.GetAtomicNum() in mineral_metals.keys() for nn in n.GetNeighbors())
-              for n in neighbors):
-            organic_ligands.append(c_atom)
-            continue
-            
-        return False, "Contains non-mineral organic components"
-
-    # Validate charge balance
-    if abs(total_charge) > 0.1:  # Allow for small floating point errors
-        return False, "Unbalanced charges in structure"
-
-    # Classify based on structural patterns
-    if len(c_atoms) == 0:  # Simple inorganic minerals
-        metal_names = [mineral_metals[num] for num, _ in metal_atoms]
-        return True, f"Inorganic mineral containing {', '.join(set(metal_names))}"
-        
-    if inorganic_carbons > 0:  # Carbonates
-        metal_names = [mineral_metals[num] for num, _ in metal_atoms]
-        return True, f"Carbonate mineral containing {', '.join(set(metal_names))}"
-        
-    if len(organic_ligands) > 0:  # Minerals with organic ligands
-        if all(c.GetDegree() <= 4 for c in organic_ligands):
-            metal_names = [mineral_metals[num] for num, _ in metal_atoms]
-            return True, f"Metal {metal_names[0]} mineral with organic ligands"
-            
-    if water_count > 0:  # Hydrated minerals
-        if len(c_atoms) == 0 or inorganic_carbons > 0:
-            metal_names = [mineral_metals[num] for num, _ in metal_atoms]
-            return True, f"Hydrated mineral containing {', '.join(set(metal_names))}"
+    # Exclusion rules
+    if aromatic_atoms > 0:
+        return False, "Contains aromatic rings - likely organic"
     
+    if ring_count > 2:
+        return False, "Too many rings for a mineral"
+        
+    if organic_atoms > 4 and not any(x in ["Mg", "Ca", "Ba", "Sr"] for x in metal_ions):
+        return False, "Too many C-C bonds for a mineral"
+        
+    # Must have either a metal or metalloid (As, Sb)
+    if not has_metal and not any(x in metal_ions for x in ['As', 'Sb']):
+        return False, "No metal or metalloid atoms found"
+    
+    # Simple metal halides and oxides
+    simple_inorganic_pattern = all(a.GetAtomicNum() in list(metals.keys()) + [9, 17, 35, 53, 8] for a in atoms)
+    if simple_inorganic_pattern:
+        return True, f"Simple inorganic mineral containing {', '.join(metal_ions)}"
+    
+    # Check charge balance for ionic compounds
+    if charged_atoms > 0:
+        if sum(heteroatom_charges) != 0 and water_count == 0:
+            return False, "Unbalanced charges in structure"
+    
+    # Classification logic
+    if water_count > 0:
+        if organic_atoms > 2 and not any(x in ["Mg", "Ca", "Ba", "Sr"] for x in metal_ions):
+            return False, "Hydrated organic compound"
+        return True, f"Hydrated mineral containing {', '.join(metal_ions)}"
+    
+    elif charged_atoms >= 2:
+        if organic_atoms > 2 and not any(x in ["Mg", "Ca", "Ba", "Sr"] for x in metal_ions):
+            return False, "Organic salt"
+        return True, f"Ionic mineral containing {', '.join(metal_ions)}"
+    
+    elif simple_inorganic_pattern:
+        return True, f"Covalent mineral containing {', '.join(metal_ions)}"
+        
     return False, "Structure not consistent with mineral characteristics"
