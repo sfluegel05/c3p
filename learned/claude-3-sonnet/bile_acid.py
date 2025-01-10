@@ -23,15 +23,16 @@ def is_bile_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # More specific steroid core patterns that can match different oxidation states
-    # Pattern includes both saturated and unsaturated versions of the core
+    # More flexible steroid core patterns
     steroid_patterns = [
-        # Basic steroid core with flexible bond types
-        "[#6]1[#6][#6]2[#6][#6][#6]3[#6][#6][#6]4[#6][#6][#6][#6]4[#6][#6]3[#6]2[#6]1",
-        # Core with potential ketone groups
-        "[#6]1[#6][#6]2[#6][#6][#6]3[#6][#6][#6]4[#6][#6][#6](=O)[#6]4[#6][#6]3[#6]2[#6]1",
-        # Core with potential double bonds
-        "[#6]1[#6][#6]2[#6][#6][#6]3[#6]=,:[#6][#6]4[#6][#6][#6][#6]4[#6][#6]3[#6]2[#6]1"
+        # Basic cyclopentanoperhydrophenanthrene core with flexible connectivity
+        "[#6]~1~[#6]~[#6]~2~[#6]~[#6]~[#6]~3~[#6]~[#6]~[#6]~4~[#6]~[#6]~[#6]~[#6]~4~[#6]~[#6]~3~[#6]~2~[#6]~1",
+        # Alternative pattern allowing for ketones and modified rings
+        "[#6]~1~[#6]~[#6]~2~[#6]~[#6]~[#6]~3~[#6]~[#6]~[#6]~4~[#6,#8]~[#6]~[#6]~[#6]~4~[#6]~[#6]~3~[#6]~2~[#6]~1",
+        # Pattern for systems with double bonds
+        "[#6]~1~[#6]~[#6]~2~[#6]~[#6]~[#6]~3~[#6]=,:[#6]~[#6]~4~[#6]~[#6]~[#6]~[#6]~4~[#6]~[#6]~3~[#6]~2~[#6]~1",
+        # More generic pattern for modified systems
+        "[#6]~1~[#6]~[#6]~2~[#6]~[#6]~[#6]~3~[#6,#8]~[#6,#8]~[#6]~4~[#6]~[#6]~[#6]~[#6]~4~[#6]~[#6]~3~[#6]~2~[#6]~1"
     ]
     
     has_core = False
@@ -43,12 +44,12 @@ def is_bile_acid(smiles: str):
     if not has_core:
         return False, "No suitable steroid core found"
 
-    # Check for carboxylic acid group or its conjugates
+    # Expanded carboxylic acid patterns
     acid_patterns = [
-        "[CX3](=O)[OX2H1]",  # carboxylic acid
-        "[CX3](=O)[O-]",  # carboxylate
-        "[CX3](=O)NCC(=O)[OH]",  # glycine conjugate
-        "[CX3](=O)NCCS(=O)(=O)[OH]"  # taurine conjugate
+        "[CX3](=O)[OX2H1,OX1-]",  # acid or carboxylate
+        "[CX3](=O)[NX3][CH2][CX3](=O)[OX2H1,OX1-]",  # glycine conjugate
+        "[CX3](=O)[NX3][CH2][CH2][SX4](=O)(=O)[OX2H1,OX1-]",  # taurine conjugate
+        "[CX3](=O)[OX2][#6]",  # ester (might be prodrug or derivative)
     ]
     
     has_acid = False
@@ -60,48 +61,42 @@ def is_bile_acid(smiles: str):
     if not has_acid:
         return False, "No carboxylic acid group or conjugates found"
 
-    # Common hydroxyl/oxo positions in bile acids
-    hydroxyl_patterns = [
-        "[#6]1[#6][#6]2[#6][#6][#6]3[#6][#6][#6]4[#6][#6][#6][#6]4[#6][#6]3[#6]2[#6]1[OX2H1]",  # 3-OH
-        "[#6]1[#6][#6]2[#6][#6][#6]3[#6][OX2H1][#6]4[#6][#6][#6][#6]4[#6][#6]3[#6]2[#6]1",  # 7-OH
-        "[#6]1[#6][#6]2[#6][#6][#6]3[#6][#6][#6]4[#6][OX2H1][#6][#6]4[#6][#6]3[#6]2[#6]1"   # 12-OH
+    # Expanded hydroxyl/oxo patterns for bile acids
+    functional_group_patterns = [
+        # Common hydroxyl positions (3,7,12)
+        "[#6][#6]([#6])[OX2H1]",  # general hydroxyl
+        "[#6][CX3](=O)[#6]",      # ketone
+        "[#6][#6]([#6])=[O]"      # aldehyde
     ]
     
-    hydroxyl_count = 0
-    for pattern in hydroxyl_patterns:
-        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
-            hydroxyl_count += 1
+    functional_group_count = 0
+    for pattern in functional_group_patterns:
+        matches = len(mol.GetSubstructMatches(Chem.MolFromSmarts(pattern)))
+        functional_group_count += matches
 
-    # Count total hydroxyls and oxo groups
-    total_hydroxyl_pattern = Chem.MolFromSmarts("[OX2H1]")
-    total_oxo_pattern = Chem.MolFromSmarts("[#6]=O")
-    
-    total_hydroxyls = len(mol.GetSubstructMatches(total_hydroxyl_pattern))
-    total_oxo = len(mol.GetSubstructMatches(total_oxo_pattern))
-    
-    if total_hydroxyls + total_oxo < 1:
-        return False, "Insufficient hydroxyl/oxo groups for bile acid"
+    if functional_group_count < 1:
+        return False, "Insufficient functional groups for bile acid"
 
-    # Basic molecular properties
+    # Basic molecular properties check
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if not (20 <= c_count <= 30):
+    if not (20 <= c_count <= 35):  # Expanded range to include conjugates
         return False, f"Carbon count ({c_count}) outside typical range for bile acids"
 
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if not (300 <= mol_wt <= 700):
+    if not (300 <= mol_wt <= 800):  # Expanded range to include conjugates
         return False, f"Molecular weight ({mol_wt}) outside typical range for bile acids"
 
-    # Ring count check
+    # Ring count and connectivity check
     ring_info = mol.GetRingInfo()
     if ring_info.NumRings() < 4:
         return False, "Insufficient number of rings"
 
-    # Side chain check - allow for variations
+    # Side chain patterns - more flexible
     side_chain_patterns = [
-        "[CH2][CH2][CH2]C(=O)[OH]",  # standard
-        "[CH2][CH2]C(=O)[OH]",       # shortened
-        "[CH2][CH2][CH2]C(=O)[O-]",  # ionized
-        "[CH2][CH2][CH2]C(=O)N"      # conjugated
+        "[#6][#6][#6]C(=O)[O,N]",     # standard chain
+        "[#6][#6]C(=O)[O,N]",         # shortened chain
+        "[#6][#6][#6][#6]C(=O)[O,N]", # extended chain
+        "[#6][#6][#6]C(=O)",          # partial match
     ]
     
     has_side_chain = False
