@@ -53,8 +53,8 @@ def is_ultra_long_chain_fatty_acid(smiles: str):
             # Explore neighbors
             for neighbor in current_atom.GetNeighbors():
                 if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:
-                    # Only continue if the neighbor is not part of a ring and not already in the chain
-                    if not neighbor.IsInRing() and neighbor.GetIdx() not in current_chain:
+                    # Continue if the neighbor is not already in the chain
+                    if neighbor.GetIdx() not in current_chain:
                         stack.append((neighbor, current_length + 1, current_chain + [neighbor.GetIdx()]))
 
     # Check if the longest chain is greater than C27
