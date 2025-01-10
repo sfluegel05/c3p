@@ -25,23 +25,17 @@ def is_beta_D_glucoside(smiles: str):
 
     # Define beta-D-glucoside pattern with broader matching
     try:
+        # Primary pattern for beta-D-glucopyranoside
         beta_D_glucoside_pattern = Chem.MolFromSmarts(
-            "O[C@H]1[C@@H](O)[C@H](O)[C@@H](O)[C@H](O)[C@@H]1"
+            "O[C@@H]1[C@H](O)[C@@H](O)[C@@H](O)[C@H]1O"
         )
-        alternative_pattern = Chem.MolFromSmarts(
-            "[C@H](O[C@H]1O[C@H](C)[C@@H](O)[C@@H](O)[C@H]1O)"
-        )  # Example for a possible alternative pattern
-
-        if beta_D_glucoside_pattern is None or alternative_pattern is None:
+        
+        if beta_D_glucoside_pattern is None:
             return (None, "SMARTS pattern compilation failed")
 
-        # First check for primary pattern
+        # Check for primary pattern and ensure beta configuration
         if mol.HasSubstructMatch(beta_D_glucoside_pattern):
             return True, "Contains beta-D-glucoside substructure with correct stereochemistry"
-
-        # Try an alternative pattern for nested configurations
-        if mol.HasSubstructMatch(alternative_pattern):
-            return True, "Contains an alternative beta-D-glucoside substructure"
 
     except Exception as e:
         return None, f"Error in SMARTS pattern matching: {e}"
