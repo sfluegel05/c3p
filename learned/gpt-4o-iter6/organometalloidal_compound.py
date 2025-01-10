@@ -9,8 +9,7 @@ from rdkit import Chem
 def is_organometalloidal_compound(smiles: str):
     """
     Determines if a molecule is an organometalloidal compound based on its SMILES string.
-    An organometalloidal compound has bonds between metalloid atoms (e.g., arsenic) 
-    and carbon atoms of an organyl group.
+    An organometalloidal compound has bonds between metalloid atoms (e.g., arsenic) and carbon atoms.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -24,14 +23,20 @@ def is_organometalloidal_compound(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define metalloid atomic numbers, focusing on arsenic for current examples
-    metalloid_atomic_number = 33  # Atomic number for arsenic
-
-    # Check for the presence of a metalloid atom (arsenic) directly bonded to carbon
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == metalloid_atomic_number:
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetAtomicNum() == 6:  # Check if neighbor is a carbon
-                    return True, "Contains metalloid (arsenic) directly bonded to carbon: an organometalloidal compound"
+    # Find arsenic atoms
+    arsenic_atoms = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 33]
+    if not arsenic_atoms:
+        return False, "No metalloid atoms (e.g., arsenic) found"
     
-    return False, "No suitable metalloid-carbon bonds identified"
+    # Check for bonds between arsenic and carbon
+    for atom_idx in arsenic_atoms:
+        for neighbor in mol.GetAtomWithIdx(atom_idx).GetNeighbors():
+            if neighbor.GetAtomicNum() == 6:  # Carbon
+                return True, "Contains metalloid-carbon bond: an organometalloidal compound"
+    
+    return False, "No metalloid-carbon bonds found"
+
+# Example usage:
+# smiles = "C[As](O)(O)=O"
+# result, reason = is_organometalloidal_compound(smiles)
+# print(result, reason)  # Expected: True, "Contains metalloid-carbon bond: an organometalloidal compound"
