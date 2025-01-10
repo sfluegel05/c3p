@@ -43,29 +43,22 @@ def is_phosphatidylinositol_phosphate(smiles: str):
     if not mol.HasSubstructMatch(glycerol_phosphate_pattern):
         return False, "No phosphate group attached to glycerol"
 
-    # Look for inositol ring (6 carbons with multiple hydroxyls, allowing for substitutions)
-    inositol_pattern = Chem.MolFromSmarts("C1C(O)C(O)C(O)C(O)C(O)C1")
-    inositol_matches = mol.GetSubstructMatches(inositol_pattern)
-    if not inositol_matches:
-        return False, "No inositol ring found"
-
-    # Ensure the inositol ring is connected to the glycerol backbone via a phosphate group
-    inositol_phosphate_pattern = Chem.MolFromSmarts("C1C(O)C(O)C(O)C(O)C(O)C1OP(O)(=O)")
-    if not mol.HasSubstructMatch(inositol_phosphate_pattern):
-        return False, "Inositol ring not connected to glycerol via phosphate"
+    # Look for myo-inositol ring (6 carbons with multiple hydroxyls)
+    inositol_pattern = Chem.MolFromSmarts("[C@H]1([C@H]([C@H]([C@H]([C@H]([C@H]1O)O)O)O)O)")
+    if not mol.HasSubstructMatch(inositol_pattern):
+        return False, "No myo-inositol ring found"
 
     # Look for at least one additional phosphate group on inositol
-    phosphate_pattern = Chem.MolFromSmarts("OP(O)(=O)")
-    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
-    if len(phosphate_matches) < 2:
-        return False, "Need at least two phosphate groups (one on glycerol and one on inositol)"
+    inositol_phosphate_pattern = Chem.MolFromSmarts("[C@H]1([C@H]([C@H]([C@H]([C@H]([C@H]1O)O)O)O)OP(O)(=O)")
+    if not mol.HasSubstructMatch(inositol_phosphate_pattern):
+        return False, "No additional phosphate group on inositol"
 
     # Check molecular weight - PIPs typically >600 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 600:
         return False, "Molecular weight too low for phosphatidylinositol phosphate"
 
-    # Count carbons, oxygens, and phosphates
+    # Count carbons and oxygens
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
@@ -77,4 +70,4 @@ def is_phosphatidylinositol_phosphate(smiles: str):
     if p_count < 2:
         return False, "Too few phosphates for phosphatidylinositol phosphate"
 
-    return True, "Contains glycerol backbone with two fatty acids, phosphate group, and inositol with additional phosphate"
+    return True, "Contains glycerol backbone with two fatty acids, phosphate group, and myo-inositol with additional phosphate"
