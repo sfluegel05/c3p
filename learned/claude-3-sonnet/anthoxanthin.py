@@ -10,7 +10,7 @@ from rdkit.Chem import AllChem
 def is_anthoxanthin(smiles: str):
     """
     Determines if a molecule is an anthoxanthin based on its SMILES string.
-    Anthoxanthins are flavonoid pigments with a characteristic benzopyran-4-one core structure.
+    Anthoxanthins are flavonoid pigments that include flavones and flavonols.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -25,52 +25,68 @@ def is_anthoxanthin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Basic benzopyran-4-one core structure of flavonoids
-    benzopyrone_pattern = Chem.MolFromSmarts("O=C1CC(c2ccccc2)Oc2ccccc21")
-    flavonoid_core = Chem.MolFromSmarts("O=C1CC(c2ccccc2)Oc2ccccc21")
+    # More flexible core patterns for flavonoids
+    # Basic chromone (benzopyran-4-one) core
+    chromone_pattern = Chem.MolFromSmarts("O=C1CCOc2ccccc12")
     
-    # More specific patterns for different types of flavonoids
-    flavone_pattern = Chem.MolFromSmarts("O=C1CC(=C(c2ccccc2))[O]c2ccccc21")
+    # Flavone core (more specific)
+    flavone_pattern = Chem.MolFromSmarts("O=C1CC(c2ccccc2)Oc2ccccc12")
     
-    # Check for presence of core structure
-    if not (mol.HasSubstructMatch(benzopyrone_pattern) or 
-           mol.HasSubstructMatch(flavonoid_core) or
-           mol.HasSubstructMatch(flavone_pattern)):
-        return False, "Missing benzopyran-4-one core structure"
+    # Flavonol core (with 3-OH group)
+    flavonol_pattern = Chem.MolFromSmarts("O=C1C(O)C(c2ccccc2)Oc2ccccc12")
+    
+    # Alternative flavonoid core pattern
+    alt_flavonoid = Chem.MolFromSmarts("O=C1CC(=C)Oc2ccccc12")
+
+    # Check for presence of any core structure
+    has_core = any([
+        mol.HasSubstructMatch(pattern) 
+        for pattern in [chromone_pattern, flavone_pattern, flavonol_pattern, alt_flavonoid]
+        if pattern is not None
+    ])
+    
+    if not has_core:
+        return False, "Missing flavonoid core structure"
 
     # Count oxygen atoms (should have multiple due to OH/OMe groups)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     if o_count < 2:
         return False, "Insufficient oxygen atoms for anthoxanthin"
 
-    # Look for hydroxyl groups (common in anthoxanthins)
+    # Look for hydroxyl groups
     oh_pattern = Chem.MolFromSmarts("[OH]")
     oh_matches = mol.GetSubstructMatches(oh_pattern)
     
-    # Look for methoxy groups (common in anthoxanthins)
-    ome_pattern = Chem.MolFromSmarts("[OH0]C")
+    # Look for methoxy groups
+    ome_pattern = Chem.MolFromSmarts("OC")
     ome_matches = mol.GetSubstructMatches(ome_pattern)
     
+    # Look for glycoside patterns (common in anthoxanthins)
+    glycoside_pattern = Chem.MolFromSmarts("OC1OCC(O)C(O)C1O")
+    has_glycoside = mol.HasSubstructMatch(glycoside_pattern) if glycoside_pattern else False
+    
     total_substituents = len(oh_matches) + len(ome_matches)
-    if total_substituents < 1:
-        return False, "Missing characteristic OH/OMe substituents"
+    if total_substituents < 1 and not has_glycoside:
+        return False, "Missing characteristic OH/OMe/glycoside substituents"
 
-    # Look for aromatic rings (should have at least 2)
-    aromatic_rings = 0
-    for atom in mol.GetAtoms():
-        if atom.GetIsAromatic():
-            aromatic_rings += 1
-    if aromatic_rings < 8:  # Each benzene ring contributes 6 aromatic atoms
+    # Look for aromatic systems
+    aromatic_atoms = sum(1 for atom in mol.GetAtoms() if atom.GetIsAromatic())
+    if aromatic_atoms < 6:  # At least one aromatic ring
         return False, "Insufficient aromatic character"
 
-    # Check for ketone group
-    ketone_pattern = Chem.MolFromSmarts("[#6]-C(=O)-[#6]")
+    # Check for ketone group (part of the chromone system)
+    ketone_pattern = Chem.MolFromSmarts("C(=O)")
     if not mol.HasSubstructMatch(ketone_pattern):
         return False, "Missing ketone group"
 
-    # Additional check for carbon count (flavonoids typically have at least 15 carbons)
+    # Count carbons (flavonoids typically have at least 15 carbons)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 15:
+    if c_count < 12:  # Lowered threshold to catch more variants
         return False, "Insufficient carbon atoms for flavonoid structure"
 
-    return True, "Contains benzopyran-4-one core with appropriate substituents and aromatic character"
+    # Additional check for characteristic double bond
+    double_bond = Chem.MolFromSmarts("C=C")
+    if not mol.HasSubstructMatch(double_bond):
+        return False, "Missing characteristic double bond"
+
+    return True, "Contains flavonoid core structure with appropriate substituents"
