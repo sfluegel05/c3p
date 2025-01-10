@@ -6,7 +6,6 @@ Classifies: essential fatty acid
 Any member of the sub-set of polyunsaturated fatty acid for which there is an absolute dietary requirement.
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_essential_fatty_acid(smiles: str):
     """
@@ -30,39 +29,45 @@ def is_essential_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(carboxylic_acid):
         return False, "No carboxylic acid group found"
 
-    # Get the carbon chain (exclude functional groups)
-    # Assume the longest carbon chain represents the fatty acid chain
-    chains = mol.GetSubstructMatches(Chem.MolFromSmarts("[C;X4;!$(C(-O)(=O))]*"))
-    if not chains:
-        return False, "No carbon chain found"
-    chain_length = max(len(chain) for chain in chains)
+    # Identify the carboxyl carbon(s) to exclude
+    carboxyl_carbons = set()
+    for match in mol.GetSubstructMatches(carboxylic_acid):
+        carboxyl_carbons.add(match[0])  # match[0] is the carbonyl carbon atom
 
-    # Essential fatty acids typically have chain lengths >= 16
-    if chain_length < 16:
-        return False, f"Chain length {chain_length} is too short for essential fatty acid"
+    # Count total number of carbon atoms (excluding carboxyl carbon(s))
+    total_carbons = 0
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6:
+            if atom.GetIdx() not in carboxyl_carbons:
+                total_carbons += 1
 
-    # Count the number of double bonds in the chain
-    db_pattern = Chem.MolFromSmarts("C=C")
-    double_bonds = len(mol.GetSubstructMatches(db_pattern))
+    if total_carbons < 16:
+        return False, f"Chain length {total_carbons} is too short for essential fatty acid (minimum is 16 carbons)"
 
-    # Essential fatty acids are polyunsaturated with multiple double bonds
-    if double_bonds < 2:
-        return False, f"Only {double_bonds} double bond(s) found, not enough for essential fatty acid"
-
-    # Check for cis configuration of double bonds
-    # Cis double bonds have bond stereochemistry of type E or Z
-    cis_bonds = 0
+    # Count number of carbon-carbon double bonds and check stereochemistry
+    double_bonds = 0
+    cis_double_bonds = 0
     for bond in mol.GetBonds():
         if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-            stereo = bond.GetStereo()
-            if stereo == Chem.rdchem.BondStereo.STEREOZ:
-                cis_bonds += 1
+            begin_atom = bond.GetBeginAtom()
+            end_atom = bond.GetEndAtom()
+            if begin_atom.GetAtomicNum() == 6 and end_atom.GetAtomicNum() == 6:
+                double_bonds += 1
+                # Check stereochemistry
+                stereo = bond.GetStereo()
+                if stereo == Chem.rdchem.BondStereo.STEREOZ or stereo == Chem.rdchem.BondStereo.STEREOCIS:
+                    cis_double_bonds += 1
 
-    if cis_bonds < double_bonds:
-        return False, f"Not all double bonds are in cis configuration (found {cis_bonds} cis out of {double_bonds})"
+    if double_bonds < 2:
+        return False, f"Only {double_bonds} double bond(s) found, not enough for essential fatty acid (minimum is 2)"
+
+    # Essential fatty acids typically have cis-configured double bonds
+    # If stereochemistry is unspecified (STEREONONE), we cannot confirm cis configuration
+    if cis_double_bonds < double_bonds:
+        return False, f"Not all double bonds are in cis configuration (found {cis_double_bonds} cis out of {double_bonds})"
 
     # If all checks pass, classify as essential fatty acid
-    return True, "Molecule is a polyunsaturated fatty acid with long chain and multiple cis double bonds"
+    return True, "Molecule is a long-chain polyunsaturated fatty acid with multiple cis double bonds"
 
 __metadata__ = {
     'chemical_class': {
