@@ -25,18 +25,25 @@ def is_methyl_sulfide(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define the methyl sulfide pattern: sulfur bonded to a methyl group
-    methyl_sulfide_pattern = Chem.MolFromSmarts("[SX2][CH3]")  # S bonded to a methyl group
+    # More flexible pattern that allows for different contexts
+    methyl_sulfide_pattern = Chem.MolFromSmarts("[SX2;!R;!a][CX4;H3]")  # S bonded to a methyl group, not in ring, not aromatic
 
     # Check if the molecule contains the methyl sulfide pattern
     matches = mol.GetSubstructMatches(methyl_sulfide_pattern)
     if not matches:
         return False, "No sulfur atom bonded to a methyl group found"
 
-    # Ensure the sulfur is aliphatic (not in a ring or aromatic)
+    # Additional checks to ensure proper classification
     for match in matches:
         sulfur_idx = match[0]  # Index of the sulfur atom in the match
         sulfur_atom = mol.GetAtomWithIdx(sulfur_idx)
+        
+        # Check if sulfur is part of an aliphatic chain
         if not sulfur_atom.IsInRing() and not sulfur_atom.GetIsAromatic():
-            return True, "Contains an aliphatic sulfur atom bonded to at least one methyl group"
+            # Check that the methyl group is directly bonded to sulfur
+            methyl_idx = match[1]
+            methyl_atom = mol.GetAtomWithIdx(methyl_idx)
+            if methyl_atom.GetSymbol() == 'C' and methyl_atom.GetTotalNumHs() == 3:
+                return True, "Contains an aliphatic sulfur atom bonded to at least one methyl group"
 
-    return False, "Sulfur atom is not aliphatic (may be in a ring or aromatic)"
+    return False, "No valid aliphatic methyl sulfide group found"
