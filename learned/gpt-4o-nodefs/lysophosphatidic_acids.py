@@ -2,7 +2,6 @@
 Classifies: CHEBI:32957 lysophosphatidic acids
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_lysophosphatidic_acids(smiles: str):
     """
@@ -17,35 +16,42 @@ def is_lysophosphatidic_acids(smiles: str):
         bool: True if the molecule is a lysophosphatidic acid, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for the presence of a phosphate group
-    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)(O)")
-    if not mol.HasSubstructMatch(phosphate_pattern):
-        return False, "No phosphate group found"
+    # Check for glycerol backbone with a terminal phosphate group
+    glycerol_phosphate_pattern = Chem.MolFromSmarts("[OX2H][CX4H][OX1C][P](=O)(O)O")
+    if not mol.HasSubstructMatch(glycerol_phosphate_pattern):
+        return False, "Glycerol-3-phosphate backbone not found"
 
-    # Check for glycerol backbone with potential stereochemistry variations
-    glycerol_pattern = Chem.MolFromSmarts("OC[C@H](O)CO")
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone found"
-
-    # Look for a single ester linkage (only one fatty acid chain)
-    ester_pattern = Chem.MolFromSmarts("OC(=O)C")
+    # Check specifically for one ester linkage
+    ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2]")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) != 1:
         return False, f"Expected 1 ester linkage, found {len(ester_matches)}"
 
-    # Check for a carbon chain typical of fatty acids
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 8 or c_count > 24:  # Adjusted range to account for variations
-        return False, "Carbon count outside typical range for fatty acids in lysophosphatidic acids"
+    # Ensure only one chain is bonded to glycerol at the ester position
+    # Lysophosphatidic acids will not have an additional fatty acid esterified
+    fatty_acid_length = 0
+    for bond in mol.GetBonds():
+        if bond.GetEndAtom().GetSymbol() == 'C' and bond.GetBeginAtom().GetSymbol() == 'O':
+            start_atom = bond.GetEndAtom()
+            # Spread out to count carbon chain length
+            carbon_seen = set()
+            carbon_queue = [start_atom]
+            while carbon_queue:
+                next_carbon = carbon_queue.pop()
+                if next_carbon.GetIdx() not in carbon_seen:
+                    carbon_seen.add(next_carbon.GetIdx())
+                    carbon_queue.extend(
+                        [n for n in next_carbon.GetNeighbors() if n.GetSymbol() == 'C' and n.GetIdx() not in carbon_seen]
+                    )
+            fatty_acid_length = max(fatty_acid_length, len(carbon_seen))
 
-    # Verify absence of additional glycerol-related esters or chiral centers
-    if mol.HasSubstructMatch(Chem.MolFromSmarts("OC[C@H](OC=O)CO")):
-        return False, "Extra acyl groups found on glycerol backbone"
+    if fatty_acid_length < 8 or fatty_acid_length > 24:
+        return False, "Fatty acid carbon count is out of typical LPA range"
 
-    return True, "Structure consistent with lysophosphatidic acid: phosphate group, glycerol backbone, ester linkage for one fatty acid"
+    return True, "Structure consistent with lysophosphatidic acid: glycerol-3-phosphate backbone with one ester-linked fatty acid"
