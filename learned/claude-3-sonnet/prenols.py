@@ -25,50 +25,67 @@ def is_prenols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for at least one hydroxyl group
-    oh_pattern = Chem.MolFromSmarts("[OH]")
-    if not mol.HasSubstructMatch(oh_pattern):
-        return False, "No hydroxyl group found"
-    
-    # Look for terminal primary alcohol (CH2-OH)
+    # Check for terminal primary alcohol (CH2-OH)
     terminal_oh_pattern = Chem.MolFromSmarts("[CH2][OH]")
     if not mol.HasSubstructMatch(terminal_oh_pattern):
         return False, "No terminal primary alcohol found"
     
-    # Look for isoprene unit pattern (C=C-C(C)-C)
-    # This pattern can match both E and Z configurations
-    isoprene_pattern = Chem.MolFromSmarts("[CH2,CH3]-[C]=[C]-[C](-[CH3])")
-    isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
-    
-    if not isoprene_matches:
-        return False, "No isoprene units found"
-    
-    # Count carbons and check if multiple of 5 (±1 for variations)
+    # Count carbons
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if c_count < 5:
         return False, "Too few carbons for a prenol"
     
-    # Count double bonds (should have at least one for isoprene unit)
-    double_bonds = rdMolDescriptors.CalcNumAliphaticDoubleBonds(mol)
-    if double_bonds == 0:
-        return False, "No double bonds found"
+    # Look for isoprene units with various patterns to catch different configurations
+    isoprene_patterns = [
+        # Regular isoprene unit
+        Chem.MolFromSmarts("C=C-C(C)-C"),
+        # Saturated isoprene unit
+        Chem.MolFromSmarts("CC-C(C)-C"),
+        # Alternative isoprene connection
+        Chem.MolFromSmarts("C-C(C)=C-C")
+    ]
     
-    # Check for branching pattern characteristic of isoprene units
-    methyl_branches = Chem.MolFromSmarts("[CH3]-[C]=[C]")
-    if not mol.HasSubstructMatch(methyl_branches):
-        return False, "Missing methyl branches characteristic of isoprene units"
+    total_isoprene_matches = 0
+    for pattern in isoprene_patterns:
+        if pattern is not None:
+            matches = len(mol.GetSubstructMatches(pattern))
+            total_isoprene_matches += matches
+    
+    if total_isoprene_matches == 0:
+        return False, "No isoprene units found"
+    
+    # Look for double bonds
+    double_bond_pattern = Chem.MolFromSmarts("C=C")
+    if double_bond_pattern:
+        double_bonds = len(mol.GetSubstructMatches(double_bond_pattern))
+    else:
+        double_bonds = 0
+        
+    # Check for branching methyl groups characteristic of prenols
+    methyl_branch_pattern = Chem.MolFromSmarts("C-C(C)-[C,c]")
+    if not mol.HasSubstructMatch(methyl_branch_pattern):
+        return False, "Missing characteristic methyl branches"
     
     # Additional check for phosphate groups (some prenols can be phosphorylated)
-    phosphate_pattern = Chem.MolFromSmarts("[P](=[O])([O-])")
-    has_phosphate = mol.HasSubstructMatch(phosphate_pattern)
+    phosphate_patterns = [
+        Chem.MolFromSmarts("[P](=[O])([O-])([O-])=O"),  # Diphosphate
+        Chem.MolFromSmarts("[P](=[O])([O-])[O]"),       # Phosphate
+    ]
+    has_phosphate = any(pattern is not None and mol.HasSubstructMatch(pattern) 
+                       for pattern in phosphate_patterns)
     
-    # Calculate basic properties
+    # Calculate molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    
+    # Check for reasonable molecular weight range for prenols
+    if mol_wt < 70:  # Smallest prenol (C5H10O) would be about 86
+        return False, "Molecular weight too low for prenol"
     
     # Construct detailed reason
     reason_parts = []
-    reason_parts.append(f"Contains {len(isoprene_matches)} isoprene unit(s)")
+    reason_parts.append(f"Contains {total_isoprene_matches} isoprene unit(s)")
     reason_parts.append("has terminal hydroxyl group")
+    reason_parts.append(f"has {double_bonds} double bond(s)")
     if has_phosphate:
         reason_parts.append("contains phosphate group")
     reason_parts.append(f"MW: {mol_wt:.1f}")
