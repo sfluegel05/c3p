@@ -27,53 +27,25 @@ def is_aliphatic_nitrile(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Exclude molecules containing metals or disallowed elements
-    allowed_atomic_nums = {1, 6, 7, 8, 9, 15, 16, 17, 35, 53}  # H, C, N, O, F, P, S, Cl, Br, I
-    for atom in mol.GetAtoms():
-        atomic_num = atom.GetAtomicNum()
-        if atomic_num not in allowed_atomic_nums:
-            return False, f"Molecule contains disallowed element with atomic number {atomic_num}"
-    
-    # Find nitrile groups: carbon triple-bonded to nitrogen
-    nitrile_pattern = Chem.MolFromSmarts("[C]#[N]")
-    nitrile_matches = mol.GetSubstructMatches(nitrile_pattern)
+    # Check for nitrile group attached to aliphatic carbon
+    aliphatic_nitrile_pattern = Chem.MolFromSmarts("[C;!a]#N")
+    nitrile_matches = mol.GetSubstructMatches(aliphatic_nitrile_pattern)
     if not nitrile_matches:
-        return False, "No nitrile group found"
+        return False, "No nitrile group attached to aliphatic carbon found"
     
-    # Check that nitrile carbon is attached to an aliphatic (non-aromatic) carbon
-    for match in nitrile_matches:
-        nitrile_c_idx = match[0]
-        nitrile_n_idx = match[1]
-        nitrile_c_atom = mol.GetAtomWithIdx(nitrile_c_idx)
-        nitrile_n_atom = mol.GetAtomWithIdx(nitrile_n_idx)
-        
-        # Get neighbors of nitrile carbon, excluding the nitrogen
-        neighbors = [nbr for nbr in nitrile_c_atom.GetNeighbors() if nbr.GetIdx() != nitrile_n_idx]
-        
-        if not neighbors:
-            return False, "Nitrile carbon has no attached group"
-        
-        # Check that the nitrile carbon is attached to a non-aromatic carbon
-        attached_atom = neighbors[0]
-        if attached_atom.GetAtomicNum() != 6:
-            return False, "Nitrile carbon is not bonded to a carbon atom"
-        if attached_atom.GetIsAromatic():
-            return False, "Nitrile carbon is attached to an aromatic carbon"
-        
-        # Optional: check that the attached carbon is aliphatic (sp3 hybridized)
-        if attached_atom.GetHybridization() != Chem.rdchem.HybridizationType.SP3:
-            return False, "Nitrile carbon is not attached to an aliphatic carbon"
+    # Check for aromatic rings in the molecule
+    num_aromatic_rings = rdMolDescriptors.CalcNumAromaticRings(mol)
+    if num_aromatic_rings > 0:
+        return False, f"Molecule contains {num_aromatic_rings} aromatic ring(s), not purely aliphatic"
     
-    # If passed all checks, it's an aliphatic nitrile
-    return True, "Contains nitrile group attached to an aliphatic carbon"
+    # Check for aromatic atoms in the molecule
+    aromatic_atoms = [atom for atom in mol.GetAtoms() if atom.GetIsAromatic()]
+    if aromatic_atoms:
+        return False, "Molecule contains aromatic atoms, not purely aliphatic"
+    
+    return True, "Contains nitrile group attached to aliphatic carbon and molecule is aliphatic"
 
-__metadata__ = {   
-    'chemical_class': {   
-        'name': 'aliphatic nitrile',
-        'definition': 'Any nitrile derived from an aliphatic compound.'
-    },
-    'config': {   
-        'llm_model_name': 'lbl/claude-sonnet',
-        'f1_threshold': 0.8
-    }
-}
+__metadata__ = {   'chemical_class': {   'name': 'aliphatic nitrile',
+                              'definition': 'Any nitrile derived from an aliphatic compound.'},
+        'config': {   'llm_model_name': 'lbl/claude-sonnet',
+                      'f1_threshold': 0.8}}
