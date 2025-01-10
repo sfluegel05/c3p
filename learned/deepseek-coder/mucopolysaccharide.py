@@ -27,23 +27,23 @@ def is_mucopolysaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # More general uronic acid pattern (carboxyl group attached to a ring)
-    uronic_acid_pattern = Chem.MolFromSmarts("[CX4;R][CX3](=[OX1])[OX2H0]")
+    # More general uronic acid pattern (carboxyl group)
+    uronic_acid_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H0]")
     if not mol.HasSubstructMatch(uronic_acid_pattern):
         return False, "No uronic acid pattern found"
 
-    # More general glycosamine pattern (amino group attached to a ring)
-    glycosamine_pattern = Chem.MolFromSmarts("[CX4;R][NX3H0,H1,H2]")
+    # More general glycosamine pattern (amino group)
+    glycosamine_pattern = Chem.MolFromSmarts("[NX3H0,H1,H2]")
     if not mol.HasSubstructMatch(glycosamine_pattern):
         return False, "No glycosamine pattern found"
 
-    # Check for sulfate ester groups (common in mucopolysaccharides)
+    # Check for sulfate ester groups (optional)
     sulfate_pattern = Chem.MolFromSmarts("[OX2][SX4](=[OX1])(=[OX1])[OX2]")
     has_sulfate = mol.HasSubstructMatch(sulfate_pattern)
 
     # Check molecular weight - mucopolysaccharides are typically large molecules
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 500:
+    if mol_wt < 300:
         return False, "Molecular weight too low for mucopolysaccharide"
 
     # Count carbons, oxygens, and nitrogens
@@ -51,16 +51,16 @@ def is_mucopolysaccharide(smiles: str):
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
     
-    if c_count < 20:
+    if c_count < 10:
         return False, "Too few carbons for mucopolysaccharide"
-    if o_count < 10:
+    if o_count < 5:
         return False, "Too few oxygens for mucopolysaccharide"
     if n_count < 1:
         return False, "Too few nitrogens for mucopolysaccharide"
 
     # Check for carbohydrate-like structure (multiple hydroxyl groups)
     hydroxyl_count = sum(1 for atom in mol.GetAtoms() if atom.GetTotalNumHs() > 0 and atom.GetAtomicNum() == 8)
-    if hydroxyl_count < 3:
+    if hydroxyl_count < 2:
         return False, "Too few hydroxyl groups for carbohydrate structure"
 
     reason = "Contains uronic acids and glycosamines"
