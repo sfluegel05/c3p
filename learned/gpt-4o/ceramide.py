@@ -23,28 +23,29 @@ def is_ceramide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Revised pattern: Long-chain base (aliphatic chain, aminodiol)
-    sphingoid_pattern = Chem.MolFromSmarts("C[C@@H](O)[C@@H](O)CO[C@H]([NH,C](C(=O)))")
+    # Look for sphingoid base structure - Long aliphatic chain with aminodiol pattern
+    sphingoid_pattern = Chem.MolFromSmarts("C[C@@H](O)[C@@H](O)CO")
     if not mol.HasSubstructMatch(sphingoid_pattern):
         return False, "No sphingoid base found"
 
-    # Look for amide linkage - linked fatty acid
+    # Look for an amide linkage pattern
     amide_pattern = Chem.MolFromSmarts("C(=O)N")
     if not mol.HasSubstructMatch(amide_pattern):
         return False, "No amide bond found"
 
-    # Assess chain length - count carbon atoms in associated groups
-    carbon_sn1 = rdMolDescriptors.CalcNumAliphaticCarbocycles(mol)
-    total_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    # Calculate the total number of carbon atoms
+    carbon_atoms = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     
-    if total_carbons < 18:  # Minimal total carbons to account for backbone plus fatty acid chain
-        return False, f"Too few carbon atoms, found {total_carbons}"
+    # Check if total carbon count meets expectations for ceramides
+    if carbon_atoms < 18:
+        return False, f"Too few carbon atoms for ceramide, found {carbon_atoms}"
 
     return True, "Contains sphingoid base with amide-linked fatty acid"
 
 # Test the function
 examples = [
     "CCCCCCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO)[C@H](O)CCCCCCCCCCCCCCC",  # N-hexacosanoylsphinganine
+    "O1C(C(O)C(O)C(O)C1OCC(NC(=O)C(O)CCCCCCCCCCCC)C(O)/C=C\\CC/C=C\\CCCCCCCCC)CO",  # AS 1-1
     # Add more example SMILES strings to test
 ]
 
