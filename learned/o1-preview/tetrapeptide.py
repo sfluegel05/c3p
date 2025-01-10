@@ -5,7 +5,6 @@ Classifies: CHEBI:48030 tetrapeptide
 Classifies: tetrapeptide
 """
 from rdkit import Chem
-from rdkit.Chem import rdchem
 
 def is_tetrapeptide(smiles: str):
     """
@@ -25,33 +24,41 @@ def is_tetrapeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Simplify the molecule by removing side chain variations
     try:
-        # Attempt to find the peptide backbone
-        backbone_pattern = Chem.MolFromSmarts("[N;!R][C;!R][C;!R](=O)")
-        backbone_matches = mol.GetSubstructMatches(backbone_pattern)
+        # Define peptide bond pattern (amide bond between N and C=O)
+        peptide_bond_pattern = Chem.MolFromSmarts("[$(NC(=O))]")
 
-        # Count the number of amino acid residues
-        residues = []
-        for match in backbone_matches:
-            residue_atoms = set(match)
-            # Extend the residue to include side chains
-            atom = mol.GetAtomWithIdx(match[1])  # Alpha carbon
-            residue = Chem.GetMolFragment(mol, atom.GetIdx(), asMols=False, sanitizeFrags=False)
-            residues.append(residue)
+        # Find all peptide bonds in the molecule
+        peptide_bonds = mol.GetSubstructMatches(peptide_bond_pattern)
 
-        num_residues = len(backbone_matches)
+        # Count the number of peptide bonds
+        num_peptide_bonds = len(peptide_bonds)
 
-        if num_residues != 4:
-            return False, f"Found {num_residues} amino acid residues, expected 4 for tetrapeptide"
+        if num_peptide_bonds != 3:
+            return False, f"Found {num_peptide_bonds} peptide bonds, expected 3 for tetrapeptide"
 
-        # Ensure residues are connected in sequence
-        # Check for continuous peptide chain without interruptions
-        if not Chem.MolToSmiles(mol).count("C(=O)N") >= 3:
-            return False, "Peptide bonds do not form a continuous chain"
+        # Optional: Ensure peptide bonds form a continuous chain
+        # Check that peptide bonds are connected in sequence
+        amide_bond_idxs = []
+        for match in peptide_bonds:
+            n_idx = match[0]
+            c_idx = match[1]
 
-        # Check for N-terminal and C-terminal groups (optional)
-        # Allows for variations like acetylation or amidation
+            # Find the bond between N and C=O (amide bond)
+            bond = mol.GetBondBetweenAtoms(n_idx, c_idx)
+            if bond is not None:
+                amide_bond_idxs.append(bond.GetIdx())
+
+        # Get the subgraph formed by peptide bonds
+        fragmented_mol = Chem.FragmentOnBonds(mol, amide_bond_idxs, addDummies=False)
+        frags = Chem.GetMolFrags(fragmented_mol, asMols=True)
+
+        # Count the number of fragments (should be equal to number of residues)
+        num_fragments = len(frags)
+
+        if num_fragments != 4:
+            return False, f"Found {num_fragments} amino acid residues, expected 4 for tetrapeptide"
+
         return True, "Molecule is a tetrapeptide with 4 amino acid residues connected via peptide bonds"
 
     except Exception as e:
