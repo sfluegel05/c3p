@@ -25,50 +25,52 @@ def is_tetradecanoate_ester(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-        
-    # Look for ester group pattern
-    ester_pattern = Chem.MolFromSmarts("[CX4,CH2X4:1][CX3:2](=[OX1:3])[OX2:4][C,c:5]")
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
+
+    # Look for non-cyclic ester group pattern
+    # [C:1] must be sp3 carbon (no double bonds)
+    # Must not be in ring
+    ester_pattern = Chem.MolFromSmarts("[CH3X4:1][CH2X4:2][CH2X4:3][CH2X4:4][CH2X4:5][CH2X4:6][CH2X4:7][CH2X4:8][CH2X4:9][CH2X4:10][CH2X4:11][CH2X4:12][CH2X4:13][CX3:14](=[OX1:15])[OX2:16][*:17]")
     
-    if not ester_matches:
-        return False, "No ester group found"
+    if not mol.HasSubstructMatch(ester_pattern):
+        return False, "No tetradecanoate ester group found"
+        
+    matches = mol.GetSubstructMatches(ester_pattern)
     
-    # For each ester group, check if it's part of a tetradecanoyl group
-    for match in ester_matches:
-        # Get the carbon atom of the ester carbonyl
-        carbonyl_carbon = mol.GetAtomWithIdx(match[1])
+    for match in matches:
+        # Get the matched atoms
+        chain_atoms = match[0:13]  # First 13 carbons
+        carbonyl_carbon = match[13]
+        ester_oxygen = match[15]
         
-        # Count carbons in the chain before the ester group
-        visited = set()
-        chain = []
-        current = mol.GetAtomWithIdx(match[0])  # Start from first carbon
-        
-        while current is not None and len(chain) < 14:
-            if current.GetIdx() in visited:
+        # Verify none of the chain atoms are in a ring
+        ring_atoms = mol.GetRingInfo().AtomRings()
+        if any(atom_idx in {atom for ring in ring_atoms for atom in ring} for atom_idx in chain_atoms):
+            continue
+            
+        # Verify chain carbons don't have additional carbon substituents
+        has_branches = False
+        for atom_idx in chain_atoms:
+            atom = mol.GetAtomWithIdx(atom_idx)
+            carbon_neighbors = len([n for n in atom.GetNeighbors() if n.GetAtomicNum() == 6])
+            if carbon_neighbors > 2:  # More than 2 carbon neighbors means branching
+                has_branches = True
                 break
                 
-            visited.add(current.GetIdx())
-            if current.GetAtomicNum() == 6:  # Carbon
-                chain.append(current)
-                
-            # Get next carbon in chain
-            next_atom = None
-            for neighbor in current.GetNeighbors():
-                if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:
-                    next_atom = neighbor
-                    break
-            current = next_atom
+        if has_branches:
+            continue
             
-        # Check if we found exactly 13 carbons in the chain (plus the carbonyl carbon = 14)
-        if len(chain) == 13:
-            # Verify it's a straight chain
-            is_straight = True
-            for atom in chain:
-                if len([n for n in atom.GetNeighbors() if n.GetAtomicNum() == 6]) > 2:
-                    is_straight = False
-                    break
-                    
-            if is_straight:
-                return True, "Contains tetradecanoate (myristoyl) ester group"
-    
-    return False, "No tetradecanoate ester group found"
+        # Verify no modifications on the chain (OH groups, double bonds, etc)
+        has_modifications = False
+        for atom_idx in chain_atoms:
+            atom = mol.GetAtomWithIdx(atom_idx)
+            if atom.GetTotalNumHs() + len([n for n in atom.GetNeighbors() if n.GetAtomicNum() == 6]) < 4:
+                has_modifications = True
+                break
+                
+        if has_modifications:
+            continue
+            
+        # If we get here, we've found a valid tetradecanoate ester group
+        return True, "Contains tetradecanoate (myristoyl) ester group"
+        
+    return False, "No valid tetradecanoate ester group found"
