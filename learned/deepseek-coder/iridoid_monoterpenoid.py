@@ -26,15 +26,14 @@ def is_iridoid_monoterpenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for the presence of a cyclopentane ring fused to a six-membered oxygen heterocycle
-    # This is the core structure of iridoids
-    iridoid_pattern = Chem.MolFromSmarts("[C]1[C][C][C][C]1.[C]2[C][C][C][C][O]2")
+    # Define a more specific SMARTS pattern for the fused cyclopentane and six-membered oxygen heterocycle
+    iridoid_pattern = Chem.MolFromSmarts("[C]1[C][C][C][C]1@[C]2[C][C][C][C][O]2")
     if not mol.HasSubstructMatch(iridoid_pattern):
         return False, "No cyclopentane ring fused to a six-membered oxygen heterocycle found"
 
     # Check for monoterpenoid backbone (typically 10 carbons, derived from isoprene units)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 8 or c_count > 20:
+    if c_count < 8 or c_count > 30:
         return False, f"Carbon count ({c_count}) not consistent with monoterpenoid backbone"
 
     # Check for oxygen heterocycle (at least one oxygen in a ring)
@@ -46,5 +45,10 @@ def is_iridoid_monoterpenoid(smiles: str):
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 150 or mol_wt > 800:
         return False, f"Molecular weight ({mol_wt:.2f} Da) not consistent with iridoid monoterpenoids"
+
+    # Check for isoprene-like substructures
+    isoprene_pattern = Chem.MolFromSmarts("[C]=[C]-[C]=[C]")
+    if not mol.HasSubstructMatch(isoprene_pattern):
+        return False, "No isoprene-like substructure found"
 
     return True, "Contains cyclopentane ring fused to a six-membered oxygen heterocycle, consistent with iridoid monoterpenoid structure"
