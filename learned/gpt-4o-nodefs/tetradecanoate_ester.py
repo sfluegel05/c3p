@@ -12,7 +12,7 @@ def is_tetradecanoate_ester(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a tetradecanoate ester, False otherwise
+        bool: True if the molecule is a tetradecanoate ester, False otherwise
         str: Reason for classification
     """
     
@@ -21,10 +21,17 @@ def is_tetradecanoate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for tetradecanoate moiety pattern ("CCCCCCCCCCCCCC(=O)O")
-    tetradecanoate_pattern = Chem.MolFromSmarts("CCCCCCCCCCCCCC(=O)O")
-    
-    if mol.HasSubstructMatch(tetradecanoate_pattern):
-        return True, "Contains tetradecanoate moiety"
-    else:
-        return False, "Does not contain tetradecanoate moiety"
+    # Attempt a broader pattern for tetradecanoate substructure
+    # Pattern for C14 chain followed by ester linkage 
+    # Allow for some flexibility in surrounding context
+    tetradecanoate_patterns = [
+        Chem.MolFromSmarts("CCCCCCCCCCCCCC(=O)OC"),
+        Chem.MolFromSmarts("CCCCCCCCCCCCCC(=O)O"),
+        Chem.MolFromSmarts("CCCCCCCCCCC(CCCCCO)C(=O)O"),  # Allow variance
+    ]
+
+    for pattern in tetradecanoate_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return True, "Contains tetradecanoate moiety"
+
+    return False, "Does not contain tetradecanoate moiety"
