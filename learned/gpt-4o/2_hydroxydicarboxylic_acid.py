@@ -24,26 +24,32 @@ def is_2_hydroxydicarboxylic_acid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define the carboxylic acid pattern
-    carboxylic_pattern = Chem.MolFromSmarts("C(=O)[O]")
-    carboxylic_matches = mol.GetSubstructMatches(carboxylic_pattern)
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
+    carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
     
-    if len(carboxylic_matches) < 2:
-        return False, "Found less than two carboxylic acid groups"
+    if len(carboxylic_acid_matches) < 2:
+        return False, "Found fewer than two separate carboxylic acid groups"
     
-    # Identify potential alpha-carbon positions
-    carboxylic_ids = [match[0] for match in carboxylic_matches]  # Carbon atom index in carboxylic acids
-    
-    # Check for alpha-hydroxy pattern: Carbon with -OH directly attached and connected to a carboxylic carbon
-    for atom in mol.GetAtoms():
-        if atom.GetSymbol() == 'C':  # Only interested in carbon atoms
-            neighbors = atom.GetNeighbors()
-            # Check if the carbon has both a hydroxy group and a carboxy group neighbors
-            has_oh = any(nb.GetSymbol() == 'O' and mol.GetBondBetweenAtoms(atom.GetIdx(), nb.GetIdx()).GetBondTypeAsDouble() == 1.0 for nb in neighbors)
-            has_cox = any(nb.GetIdx() in carboxylic_ids for nb in neighbors)
-            if has_oh and has_cox:
-                return True, "Contains two carboxylic acid groups and a hydroxy group on the alpha carbon"
-    
-    return False, "No hydroxy group on alpha carbon found"
+    # Analyze potential alpha-carbon with hydroxyl attachment for each carboxylic group
+    for idx1, carbox1 in enumerate(carboxylic_acid_matches):
+        for idx2, carbox2 in enumerate(carboxylic_acid_matches):
+            if idx1 >= idx2:  # Avoid duplicate pair analysis and self-pair analysis
+                continue
+            
+            carbox1_carbon = carbox1[0]
+            carbox2_carbon = carbox2[0]
 
-# Examples to test the function
-print(is_2_hydroxydicarboxylic_acid("CC(C(O)=O)C(C)(O)C(O)=O")) # 2,3-dimethylmalic acid
+            # Check adjacent carbons (potential alpha carbons)
+            candidate_alpha_carbons = set(atom.GetIdx() for atom in mol.GetAtomWithIdx(carbox1_carbon).GetNeighbors()) & \
+                                      set(atom.GetIdx() for atom in mol.GetAtomWithIdx(carbox2_carbon).GetNeighbors())
+            
+            for alpha_carbon in candidate_alpha_carbons:
+                # Check for hydroxyl group on the candidate alpha carbon
+                for neighbor in mol.GetAtomWithIdx(alpha_carbon).GetNeighbors():
+                    if neighbor.GetSymbol() == 'O' and mol.GetBondBetweenAtoms(alpha_carbon, neighbor.GetIdx()).GetBondTypeAsDouble() == 1.0:
+                        return True, "Contains two carboxylic acid groups and a hydroxy group on the alpha carbon"
+
+    return False, "No suitable 2-hydroxydicarboxylic acid pattern found"
+
+# Example test cases
+print(is_2_hydroxydicarboxylic_acid("CC(C(O)=O)C(C)(O)C(O)=O"))  # 2,3-dimethylmalic acid
