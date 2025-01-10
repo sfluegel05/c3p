@@ -24,13 +24,16 @@ def is_alpha_amino_acid_zwitterion(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the SMARTS pattern for alpha-amino acid zwitterion
-    # [C@@H] or [C@H] indicates a chiral alpha carbon, common in amino acids
-    # Make sure patterns allow for chirality and potential side chains
-    zwitterion_pattern = Chem.MolFromSmarts("[NH3+][C@@H](-*)[C](=O)[O-] | [NH3+][C@H](-*)[C](=O)[O-]")
+    # Define the separate SMARTS patterns for each group
+    # Ammonium group on alpha carbon with chirality, flexible for any side chain
+    ammonium_pattern_1 = Chem.MolFromSmarts("[NH3+][C@@H]C(=O)[O-]")
+    ammonium_pattern_2 = Chem.MolFromSmarts("[NH3+][C@H]C(=O)[O-]")
 
-    # Check if the pattern matches the molecule
-    if not mol.HasSubstructMatch(zwitterion_pattern):
+    # Check if any of the ammonium patterns match the molecule
+    match_1 = mol.HasSubstructMatch(ammonium_pattern_1)
+    match_2 = mol.HasSubstructMatch(ammonium_pattern_2)
+
+    if not match_1 and not match_2:
         return False, "No alpha-amino acid zwitterion pattern found"
     
     return True, "Molecule is an alpha-amino acid zwitterion with alpha carbon bound to [NH3+] and C(=O)[O-]."
