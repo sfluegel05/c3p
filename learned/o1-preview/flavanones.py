@@ -23,8 +23,22 @@ def is_flavanones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define flavanone core SMARTS pattern
-    flavanone_smarts = 'O=C1CCC(Oc2ccccc2)C3=CC=CC=C13'  # Flavanone core structure with fused rings
+    # Define the flavanone core SMARTS pattern
+    # This pattern represents the 2,3-dihydro-2-arylchromen-4-one skeleton
+    flavanone_smarts = """
+    [
+        # Oxygen of the ketone at position 4
+        O=;
+
+        # Ring closure bonds
+        $([C]1CCC2C(C1)=C(O)C=CC2=O)
+    ]
+    """
+
+    # Simplified SMARTS pattern for flavanone core
+    flavanone_smarts = 'O=C1CC[C@H](Oc2ccccc2)C3=CC=CC=C13'
+
+    # Create a Mol object from the SMARTS pattern
     flavanone_pattern = Chem.MolFromSmarts(flavanone_smarts)
     if flavanone_pattern is None:
         return False, "Invalid flavanone core SMARTS pattern"
@@ -55,7 +69,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 2,
+    'attempt': 3,
     'success': True,
     'best': True,
     'error': '',
