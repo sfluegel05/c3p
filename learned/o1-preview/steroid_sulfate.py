@@ -6,8 +6,52 @@ Classifies: steroid sulfate
 """
 
 from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+
+def get_fused_ring_subgraphs(mol):
+    """
+    Helper function to identify fused ring systems in a molecule.
+
+    Args:
+        mol: rdkit.Chem.Mol object
+
+    Returns:
+        List of sets, each set contains indices of rings that are fused together
+    """
+    ri = mol.GetRingInfo()
+    atom_rings = ri.AtomRings()
+
+    # Build adjacency lists for rings
+    ring_adj_list = []
+    num_rings = len(atom_rings)
+    for i in range(num_rings):
+        ring_i_atoms = set(atom_rings[i])
+        fused = []
+        for j in range(num_rings):
+            if i != j:
+                ring_j_atoms = set(atom_rings[j])
+                if ring_i_atoms & ring_j_atoms:
+                    fused.append(j)
+        ring_adj_list.append(fused)
+
+    # Find connected components in ring adjacency graph
+    from collections import deque
+    visited = set()
+    fused_ring_systems = []
+    for i in range(num_rings):
+        if i not in visited:
+            system = set()
+            queue = deque([i])
+            while queue:
+                idx = queue.popleft()
+                if idx not in visited:
+                    visited.add(idx)
+                    system.add(idx)
+                    neighbors = ring_adj_list[idx]
+                    for n in neighbors:
+                        if n not in visited:
+                            queue.append(n)
+            fused_ring_systems.append(system)
+    return fused_ring_systems
 
 def is_steroid_sulfate(smiles: str):
     """
@@ -27,25 +71,48 @@ def is_steroid_sulfate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define steroid backbone pattern (cyclopentanoperhydrophenanthrene nucleus)
-    steroid_pattern = Chem.MolFromSmarts('C1CCC2C3C(C4C=C5)=C5C4C3CCC2C1')  # Adjusted SMARTS pattern for steroid nucleus
-    if not mol.HasSubstructMatch(steroid_pattern):
+    # Get ring information
+    ri = mol.GetRingInfo()
+    atom_rings = ri.AtomRings()
+
+    # Get fused ring systems
+    fused_ring_systems = get_fused_ring_subgraphs(mol)
+
+    # Identify steroid backbone
+    steroid_found = False
+    steroid_atom_indices = set()
+
+    for ring_idxs in fused_ring_systems:
+        # Collect atom indices and ring sizes
+        ring_atoms = set()
+        ring_sizes = []
+        for ring_idx in ring_idxs:
+            ring = atom_rings[ring_idx]
+            ring_atoms.update(ring)
+            ring_sizes.append(len(ring))
+        # Check for 4-ring system with sizes 6,6,6,5 and 17 carbons
+        if len(ring_idxs) == 4:
+            ring_sizes_sorted = sorted(ring_sizes)
+            if ring_sizes_sorted == [5,6,6,6] and len(ring_atoms) == 17:
+                steroid_found = True
+                steroid_atom_indices = ring_atoms
+                break
+
+    if not steroid_found:
         return False, "No steroid backbone found"
 
-    # Define sulfate ester group pattern
-    sulfate_pattern = Chem.MolFromSmarts('O[S](=O)(=O)[O]')
-    sulfate_matches = mol.GetSubstructMatches(sulfate_pattern)
+    # Define sulfate ester group patterns (protonated and deprotonated)
+    sulfate_pattern = Chem.MolFromSmarts('OS(=O)(=O)[O-]')
+    sulfate_pattern_unprotonated = Chem.MolFromSmarts('OS(=O)(=O)O')
+
+    sulfate_matches = mol.GetSubstructMatches(sulfate_pattern) + mol.GetSubstructMatches(sulfate_pattern_unprotonated)
+
     if not sulfate_matches:
         return False, "No sulfate ester group found"
 
-    # Check that sulfate group is attached via oxygen to the steroid backbone
-    steroid_matches = mol.GetSubstructMatch(steroid_pattern)
-    steroid_atom_indices = set(steroid_matches)
-
-    # For each sulfate ester group, check connection to steroid backbone
+    # Check if sulfate is attached to steroid backbone via oxygen
     for match in sulfate_matches:
-        # The ester oxygen atom connected to sulfur
-        ester_oxygen_idx = match[0]
+        ester_oxygen_idx = match[0]  # Oxygen connected to sulfur
         ester_oxygen_atom = mol.GetAtomWithIdx(ester_oxygen_idx)
         # Check neighbors of ester oxygen atom
         for neighbor in ester_oxygen_atom.GetNeighbors():
@@ -54,31 +121,3 @@ def is_steroid_sulfate(smiles: str):
                 return True, "Contains steroid backbone with sulfate ester group attached via oxygen"
 
     return False, "Sulfate group not attached to steroid backbone via ester linkage"
-
-
-__metadata__ = {
-    'chemical_class': {
-        'id': None,
-        'name': 'steroid sulfate',
-        'definition': 'A sulfuric ester obtained by the formal condensation of a hydroxy group of any steroid with sulfuric acid.',
-        'parents': []
-    },
-    'config': {
-        'llm_model_name': 'lbl/claude-sonnet',
-        'f1_threshold': 0.8,
-        'max_attempts': 5,
-        'max_positive_instances': None,
-        'max_positive_to_test': None,
-        'max_negative_to_test': None,
-        'max_positive_in_prompt': 50,
-        'max_negative_in_prompt': 20,
-        'max_instances_in_prompt': 100,
-        'test_proportion': 0.1
-    },
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None
-}
