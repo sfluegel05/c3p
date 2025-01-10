@@ -26,11 +26,16 @@ def is_steroid_sulfate(smiles: str):
     if not mol.HasSubstructMatch(sulfate_pattern):
         return False, "No sulfate groups found"
 
-    # Look for steroid backbone pattern
-    # This is a more flexible pattern to reflect the common steroid structure: 3 six-membered rings and 1 five-membered ring
-    steroid_pattern = Chem.MolFromSmarts("C1CC2CCC3C4CCCC4CCC3C2C1")
+    # Look for flexible steroid backbone pattern:
+    # 3 six-membered carbon rings and 1 five-membered carbon ring. 
+    # Allow optional oxygens and typical fusion points. 
+    # Permit AEDQR steroid skeletons in linear arrangement with fusion at C9-C11 such as C1C[C@H]2C[C@H]3CC[C@H]4C([C@@H]4[C@@H](C3)CC2)(C1) etc.
+    steroid_pattern = Chem.MolFromSmarts("C1C[C@H]2C[C@H]3CC[C@H]4[C@@H]34[C@@H](C2)CC1")
     
     if not mol.HasSubstructMatch(steroid_pattern):
-        return False, "No steroid backbone found"
+        # Try another pattern in case the initial is too strict (can extend this based on observation of known errors)
+        steroid_pattern_alt = Chem.MolFromSmarts("C1CCC2C3CCC4=C[C@H]([C@H]34)C2=C1") 
+        if not mol.HasSubstructMatch(steroid_pattern_alt):
+            return False, "No steroid backbone found (tried multiple patterns)"
 
     return True, "Contains steroid backbone with sulfate group(s)"
