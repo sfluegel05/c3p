@@ -21,27 +21,21 @@ def is_catechols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define a more extensive catechol SMARTS pattern to detect o-diphenol groups, accounting for substitutions
-    catechol_pattern = Chem.MolFromSmarts("c1c(O)[cH]c(O)[cH]c1")  # Adjacent OH groups on an aromatic ring
-    
-    # Check for catechol substructure
-    if mol.HasSubstructMatch(catechol_pattern):
-        return True, "Contains a catechol moiety (o-diphenol component)"
-    
-    # Additional SMARTS pattern to catch some common variants
-    # Include some flexible OH placement or slight substituents
-    alt_patterns = [
-        Chem.MolFromSmarts("c1c(O)cc(O)c1"),  # Allows other small substituents between
-        Chem.MolFromSmarts("c1cc(O)c(O)c1"),  # Placement variants
+    # Define catechol SMARTS pattern
+    # Adjust pattern to better capture variants and adjacent aromatic hydroxyls
+    catechol_patterns = [
+        Chem.MolFromSmarts("c1c(O)c(O)ccc1"), # Basic catechol pattern
+        Chem.MolFromSmarts("c1cc(O)c(O)cc1"), # Alternate flexible pattern
+        Chem.MolFromSmarts("c1(O)c(O)cccc1")  # Consider minor ring position variations
     ]
 
-    for pattern in alt_patterns:
+    for pattern in catechol_patterns:
         if mol.HasSubstructMatch(pattern):
-            return True, "Contains a catechol moiety (pattern variant detected)"
+            return True, "Contains a catechol moiety (o-diphenol component)"
     
     return False, "No catechol moiety found"
 
-# Test with different SMILES strings
+# Test with various SMILES strings
 test_smiles = {
     "O[C@H]([C@H](OC(=O)\\C=C\\c1ccc(O)c(O)c1)C(O)=O)C(O)=O": "(2S,3R)-trans-caftaric acid",
     "Oc1cc(O)cc(O)c1": "Simple catechol",
