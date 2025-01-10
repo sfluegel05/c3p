@@ -25,14 +25,16 @@ def is_tertiary_amine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for tertiary amines
-    # This matches nitrogen with exactly 3 single bonds to carbon atoms
-    # and accounts for both neutral and charged nitrogen
-    tertiary_amine_pattern = Chem.MolFromSmarts("[NX3;+0]([C])([C])[C] | [NX4;+1]([C])([C])[C]")
-    
-    # Check if the molecule matches the pattern
-    if mol.HasSubstructMatch(tertiary_amine_pattern):
-        return True, "Contains a nitrogen atom bonded to three carbon atoms (tertiary amine)"
+    # Iterate through all nitrogen atoms in the molecule
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 7:  # Nitrogen atom
+            # Check if the nitrogen is bonded to exactly 3 carbon atoms
+            carbon_neighbors = [neighbor for neighbor in atom.GetNeighbors() if neighbor.GetAtomicNum() == 6]
+            if len(carbon_neighbors) == 3:
+                return True, "Contains a nitrogen atom bonded to three carbon atoms (tertiary amine)"
 
-    # If no match, return False
+    # If no such nitrogen is found, it's not a tertiary amine
     return False, "No nitrogen atom bonded to three carbon atoms found"
+
+# Example usage:
+# print(is_tertiary_amine("CCN(CC)CC"))  # Should return (True, "Contains a nitrogen atom bonded to three carbon atoms (tertiary amine)")
