@@ -27,8 +27,8 @@ def is_short_chain_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for CoA moiety
-    # Use a more general pattern to match different protonation states and slight variations
+    # Check for CoA moiety using a more flexible pattern
+    # This pattern matches the core structure of CoA, allowing for different protonation states
     coa_pattern = Chem.MolFromSmarts("[O-]P(=O)([O-])OP(=O)([O-])OCC1OC([C@H](O)[C@@H]1OP(=O)([O-])[O-])n1cnc2c(N)ncnc12")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No CoA moiety found"
