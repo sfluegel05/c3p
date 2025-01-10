@@ -33,12 +33,12 @@ def is_phospho_sugar(smiles: str):
         return False, "No phosphate group found"
 
     # Look for sugar backbone (3-7 carbons with multiple hydroxyl groups)
-    # This pattern matches a chain of 3-7 carbons with at least 3 hydroxyl groups
-    sugar_pattern = Chem.MolFromSmarts("[C;H1,H2][C;H1,H2][C;H1,H2]([OH])[C;H1,H2]([OH])[C;H1,H2]([OH])")
+    # This pattern matches a chain or ring of 3-7 carbons with at least 2 hydroxyl groups
+    sugar_pattern = Chem.MolFromSmarts("[C;H1,H2][C;H1,H2][C;H1,H2]([OH])[C;H1,H2]([OH])")
     sugar_matches = mol.GetSubstructMatches(sugar_pattern)
     if len(sugar_matches) == 0:
         # Also check for ring structures (common in sugars)
-        ring_sugar_pattern = Chem.MolFromSmarts("[C;H1,H2]1[C;H1,H2][C;H1,H2]([OH])[C;H1,H2]([OH])[C;H1,H2]([OH])1")
+        ring_sugar_pattern = Chem.MolFromSmarts("[C;H1,H2]1[C;H1,H2][C;H1,H2]([OH])[C;H1,H2]([OH])[C;H1,H2]1")
         ring_sugar_matches = mol.GetSubstructMatches(ring_sugar_pattern)
         if len(ring_sugar_matches) == 0:
             return False, "No sugar backbone found"
