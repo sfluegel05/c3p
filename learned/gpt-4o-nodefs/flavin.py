@@ -6,7 +6,8 @@ from rdkit import Chem
 def is_flavin(smiles: str):
     """
     Determines if a molecule is a flavin based on its SMILES string.
-    Flavins are heterocyclic compounds characterized by the isoalloxazine ring system.
+    Flavins are characterized by the isoalloxazine ring system, which
+    consists of a tricyclic ring system with two keto groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -16,16 +17,16 @@ def is_flavin(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES to molecule object
+    # Parse SMILES to a molecule object
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Revised Isoalloxazine core SMARTS pattern
-    # This pattern seeks to more accurately match the structure typically found in flavins.
-    isoalloxazine_pattern = Chem.MolFromSmarts("c1cc2nc3c(c(=O)n(c4ccccc4)c3=O)c2nc1")
+    # Revised Isoalloxazine pattern for flavins
+    # This broader pattern should capture common structural motifs in the isoalloxazine system.
+    isoalloxazine_pattern = Chem.MolFromSmarts("c1cc2nc3c(nc(=O)[nH]c3=O)c2nc1")
 
-    # Check for isoalloxazine pattern in molecule
+    # Check for isoalloxazine pattern in the molecule
     if mol.HasSubstructMatch(isoalloxazine_pattern):
         return True, "Contains isoalloxazine ring system characteristic of flavins"
     else:
