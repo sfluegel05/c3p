@@ -21,18 +21,10 @@ def is_tertiary_amine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Identify nitrogen atoms in the molecule
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 7:  # Check for nitrogen
-            # Count the number of non-hydrogen bonds
-            non_hydrogen_count = sum(1 for neighbor in atom.GetNeighbors() if neighbor.GetAtomicNum() != 1)
-            # Count the number of carbon bonds
-            carbon_count = sum(1 for neighbor in atom.GetNeighbors() if neighbor.GetAtomicNum() == 6)
+    # SMARTS pattern for tertiary amine: Nitrogen with 3 carbons not being part of carbonyl (C=O) or cyano groups (C#N)
+    tertiary_amine_pattern = Chem.MolFromSmarts("[$([NX3](C)(C)C)]!@[$(C=O)]!@[#7]")
 
-            # Ensure the nitrogen is bonded to exactly three carbon atoms and exclude other functional groups
-            if carbon_count == 3 and non_hydrogen_count == 3:
-                # Additional verification to exclude specific non-tertiary configurations
-                if not (atom.IsInRing() or "C(=O)N" in smiles or "N#C" in smiles):  # Exclude amides, rings, nitriles
-                    return True, "Nitrogen bonded to three carbon atoms found indicating a tertiary amine"
+    if mol.HasSubstructMatch(tertiary_amine_pattern):
+        return True, "Nitrogen bonded to three carbon atoms found indicating a tertiary amine"
 
     return False, "No nitrogen bonded to three carbon atoms found or specific configurations excluded"
