@@ -32,8 +32,8 @@ def is_polyprenol(smiles: str):
     if not mol.HasSubstructMatch(hydroxyl_pattern):
         return False, "No terminal hydroxyl group found"
 
-    # Define isoprene unit pattern with methyl group
-    isoprene_pattern = Chem.MolFromSmarts("[CH3][CH]=[CH][CH2]")
+    # Define a more flexible isoprene unit pattern
+    isoprene_pattern = Chem.MolFromSmarts("[CH3][CH]=C[CH2]")
     isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
     
     # Need at least 2 isoprene units
@@ -93,38 +93,3 @@ def is_polyprenol(smiles: str):
             prev_double = False
 
     return True, "Contains terminal hydroxyl group and chain of more than one isoprene units with alternating double bonds"
-
-
-__metadata__ = {   'chemical_class': {   'id': 'CHEBI:26195',
-                          'name': 'polyprenol',
-                          'definition': 'Any member of the class of prenols '
-                                        'possessing the general formula '
-                                        'H-[CH2C(Me)=CHCH2]nOH in which the '
-                                        'carbon skeleton is composed of more '
-                                        'than one isoprene units.',
-                          'parents': ['CHEBI:26195', 'CHEBI:26195']},
-    'config': {   'llm_model_name': 'lbl/claude-sonnet',
-                  'f1_threshold': 0.8,
-                  'max_attempts': 5,
-                  'max_positive_instances': None,
-                  'max_positive_to_test': None,
-                  'max_negative_to_test': None,
-                  'max_positive_in_prompt': 50,
-                  'max_negative_in_prompt': 20,
-                  'max_instances_in_prompt': 100,
-                  'test_proportion': 0.1},
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 150,
-    'num_false_positives': 4,
-    'num_true_negatives': 182407,
-    'num_false_negatives': 23,
-    'num_negatives': None,
-    'precision': 0.974025974025974,
-    'recall': 0.8670520231213873,
-    'f1': 0.9174311926605504,
-    'accuracy': 0.9998521228585199}
