@@ -15,30 +15,25 @@ def is_phosphatidylinositol(smiles: str):
         bool: True if molecule is a phosphatidylinositol, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check of inositol scaffold is present with 5 hydroxyl groups
-    inositol_oh_pattern = Chem.MolFromSmarts("C1([C@@H]([C@H]([C@H]([C@@H]([C@H]1O)O)O)O)O)O")
+    # Confirm inositol ring with 5 hydroxyl groups
+    inositol_oh_pattern = Chem.MolFromSmarts("C1([C@@H]([C@H]([C@H]([C@@H]([C@H]1O)O)O)O)O)O") 
     if not mol.HasSubstructMatch(inositol_oh_pattern):
         return False, "No inositol ring with 5 hydroxyl groups found"
-
-    # Look for the phosphatidyl group ester linkage
-    phosphatidyl_pattern = Chem.MolFromSmarts("C(OC(=O)C)OP(=O)(O)O")
-    if not mol.HasSubstructMatch(phosphatidyl_pattern):
-        return False, "No phosphatidyl ester linkage found"
-        
-    # Check for full glycerol presence in phosphatidyl group
-    glycerol_pattern = Chem.MolFromSmarts("C(C(CO)O)O")
+    
+    # Verify glycerol presence esterified to phosphate
+    glycerol_pattern = Chem.MolFromSmarts("[O][CH2]C([O])([CH2][O][P](=O)([O])[O])")
     if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone found in association with phosphate"
+        return False, "No glycerol backbone connected to phosphate"
 
-    # Ensure linkage of glycerol to inositol
-    esterified_inositol_pattern = Chem.MolFromSmarts("OC[C@H](O[CH2])OP")
-    if not mol.HasSubstructMatch(esterified_inositol_pattern):
-        return False, "No ester linkage correctly connecting glycerol phosphate to inositol"
+    # Ensure phosphatidyl is connected correctly through ester bonds
+    phosphatidyl_pattern = Chem.MolFromSmarts("C(OC=O)C(OC=O)C(OP(=O)(O)O)O")
+    if not mol.HasSubstructMatch(phosphatidyl_pattern):
+        return False, "No phosphatidyl ester linkage pattern found"
 
-    return True, "Contains glycerol backbone with phosphatidyl group esterified to inositol"
+    return True, "Consistent with a phosphatidylinositol: inositol esterified with glycerophosphate connected to phosphatidyl groups"
