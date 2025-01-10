@@ -22,25 +22,24 @@ def is_wax(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
    
-    # Check for ester group presence with more robust pattern
+    # Check for ester group presence
     ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H0]")
     if not mol.HasSubstructMatch(ester_pattern):
         return False, "No ester linkages found"
     
-    # Identify long alkyl chains: Recognize both linear and some branched chains
-    long_alkyl_pattern = Chem.MolFromSmarts("CCCCCCCCCCC")  # Minimum length of 11 carbons
+    # Identify long alkyl chains with branching
+    long_alkyl_pattern = Chem.MolFromSmarts("C[C@H]([C@H](C.C)C)CCCCCCCC")  # Pattern allowing for some branching
     if not mol.HasSubstructMatch(long_alkyl_pattern):
         return False, "No sufficient long alkyl chains found"
     
-    # Check for molecular weight indicative of larger waxes
+    # Check for molecular weight indicative of waxes
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 300:  # Adjusted threshold to include lighter valid waxes
+    if mol_wt < 400:  # Adjusted threshold based on common examples
         return False, "Molecular weight too low for a typical wax compound"
     
-    # Consider other structural features typical of waxes
-    # For refinement: No complex functional groups are typical of waxes
-    non_wax_groups = Chem.MolFromSmarts("[#7,#15,#16,#17,#35,#53]")  # Exclude N, P, S, Cl, Br, I
+    # Exclude structures with elements uncommon in waxes
+    non_wax_groups = Chem.MolFromSmarts("[#7,#15,#16,#17,#35,#53]")  # Exclude highly electronegative elements
     if mol.HasSubstructMatch(non_wax_groups):
         return False, "Contains elements atypical of waxes"
-
+    
     return True, "Contains characteristic ester linkage and long alkyl chains typical of waxes"
