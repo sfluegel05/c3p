@@ -21,15 +21,23 @@ def is_isoflavones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define a SMARTS for the 3-aryl-chromen-4-one (isoflavone) core structure
-    # This pattern is designed to match the core benzopyranone structure with flexibility for substitutions.
-    isoflavone_pattern = Chem.MolFromSmarts(
-        "[o]1ccc2c(c1=O)cc(cc2)-c3c/c(=O)\c4ccccc4o3"
-    )
-    
+    # SMARTS pattern for the 3-aryl-1-benzopyran-4-one structure
+    isoflavone_pattern = Chem.MolFromSmarts("c1ccc2c(c1)c(=O)oc3c2cc[cH,cH,ccH,cX3]3")
+
     # Check if the molecule contains the isoflavone pattern
     if not mol.HasSubstructMatch(isoflavone_pattern):
         return False, "Does not contain the 3-aryl-chromen-4-one core structure"
     
     # It contains the essential structure of isoflavones
     return True, "Contains the 3-aryl-chromen-4-one core structure"
+
+__metadata__ = {   
+    'chemical_class': {   
+        'id': 'CHEBI:50807',  # Example CHEBI identifier for isoflavones
+        'name': 'isoflavones',
+        'definition': 'Any isoflavonoid with a 3-aryl-1-benzopyran-4-one (3-aryl-4H-chromen-4-one) skeleton.'},
+    'source': 'madewithml.com',
+    'author': 'AI Model',
+    'contributor': 'Researcher',
+    'confidence': 'Medium'
+}
