@@ -34,62 +34,37 @@ def is_ultra_long_chain_fatty_acid(smiles: str):
     if len(carboxy_matches) != 1:
         return False, f"Found {len(carboxy_matches)} carboxylic acid groups, expected exactly 1"
 
-    # Get the carboxylic acid carbon atom index
-    carboxy_c_idx = carboxy_matches[0][0]
+    # Build adjacency list of carbon atoms
+    adj_list = {}
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6:  # Carbon atom
+            idx = atom.GetIdx()
+            adj_list[idx] = []
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 6:
+                    adj_list[idx].append(neighbor.GetIdx())
 
-    # Initialize variables
-    max_chain_length = 0
-    visited = set()
-
-    def traverse_chain(atom_idx, prev_idx, current_length):
-        atom = mol.GetAtomWithIdx(atom_idx)
-        atom_symbol = atom.GetSymbol()
-
-        # Allow carbon atoms and oxygen atoms bonded to carbon (e.g., hydroxyl groups)
-        if atom_symbol == 'C' or (atom_symbol == 'O' and atom.GetDegree() == 1 and atom.GetNeighbors()[0].GetSymbol() == 'C'):
-            pass
-        else:
-            return current_length
-
-        visited.add(atom_idx)
-        neighbors = atom.GetNeighbors()
-
-        # Count only carbon atoms in the chain length
-        if atom_symbol == 'C':
-            current_length += 1
-
-        # Exclude atoms with more than 2 heavy atom neighbors (branch points)
-        heavy_neighbors = [nbr for nbr in neighbors if nbr.GetAtomicNum() > 1]
-        if len(heavy_neighbors) > 2:
-            visited.remove(atom_idx)
-            return current_length
-
-        max_length = current_length
-        for neighbor in neighbors:
-            neighbor_idx = neighbor.GetIdx()
-            if neighbor_idx == prev_idx:
-                continue
-            if neighbor_idx in visited:
-                continue
-            bond = mol.GetBondBetweenAtoms(atom_idx, neighbor_idx)
-            # Only traverse single or double bonds
-            if bond.GetBondType() not in (Chem.rdchem.BondType.SINGLE, Chem.rdchem.BondType.DOUBLE):
-                continue
-            # Recursively traverse neighbor atoms
-            length = traverse_chain(neighbor_idx, atom_idx, current_length)
-            if length > max_length:
-                max_length = length
-
-        visited.remove(atom_idx)
+    # Function to perform depth-first search to find the longest carbon chain
+    def dfs(node, visited):
+        visited.add(node)
+        max_length = 1  # Start with current carbon atom
+        for neighbor in adj_list.get(node, []):
+            if neighbor not in visited:
+                length = 1 + dfs(neighbor, visited.copy())
+                if length > max_length:
+                    max_length = length
         return max_length
 
-    # Start traversal from the carboxylic acid carbon atom
-    chain_length = traverse_chain(carboxy_c_idx, -1, 0)
+    max_chain_length = 0
+    for node in adj_list.keys():
+        length = dfs(node, set())
+        if length > max_chain_length:
+            max_chain_length = length
 
-    if chain_length > 27:
-        return True, f"Contains linear hydrocarbon chain of {chain_length} carbons"
+    if max_chain_length > 27:
+        return True, f"Contains linear hydrocarbon chain of {max_chain_length} carbons"
     else:
-        return False, f"Longest linear hydrocarbon chain is {chain_length} carbons, which is not greater than 27"
+        return False, f"Longest linear hydrocarbon chain is {max_chain_length} carbons, which is not greater than 27"
 
 __metadata__ = {
     'chemical_class': {
