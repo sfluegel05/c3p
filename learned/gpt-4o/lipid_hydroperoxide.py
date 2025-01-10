@@ -21,22 +21,20 @@ def is_lipid_hydroperoxide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for hydroperoxy group pattern (-O-O-H)
+    # Look for hydroperoxy group pattern (-OOH)
     hydroperoxy_pattern = Chem.MolFromSmarts("OO")
     if not mol.HasSubstructMatch(hydroperoxy_pattern):
         return False, "No hydroperoxy group (-OOH) found"
 
-    # Look for long carbon chain or unsaturated lipid-like structure
-    # Commonly seen as extended chains with unsaturations
-    long_chain_pattern = Chem.MolFromSmarts("CC(C)C=CCC=CCC=CC")
+    # Look for a generalized long carbon chain with possible unsaturation
+    long_chain_pattern = Chem.MolFromSmarts("[#6]-[#6]-[#6]-[#6](=O)~[#8]") # This pattern covers broader lipid structures
     if not mol.HasSubstructMatch(long_chain_pattern):
         return False, "No long carbon chain or suitable lipid-like structure found"
 
-    # Check if hydroperoxy group is attached to the carbon backbone
+    # Ensure hydroperoxy group is connected correctly to the lipid structure
     for match in mol.GetSubstructMatches(hydroperoxy_pattern):
-        # Ensure it connects to a carbon chain, focused on chain connectivity
-        if all(atom.GetAtomicNum() == 6 for atom in mol.GetAtomWithIdx(match[0]).GetNeighbors()):
-            continue
-        return False, "Hydroperoxy group not attached correctly to carbon backbone"
+        neighbor_atoms = [a.GetAtomicNum() for a in mol.GetAtomWithIdx(match[0]).GetNeighbors()]
+        if 6 in neighbor_atoms:  # Checking if adjacent atoms include carbon
+            return True, "Contains hydroperoxy groups attached to a lipid backbone"
     
-    return True, "Contains hydroperoxy groups attached to a lipid backbone"
+    return False, "Hydroperoxy group not attached correctly to carbon backbone"
