@@ -2,7 +2,6 @@
 Classifies: CHEBI:52639 N-acylsphingosine
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_N_acylsphingosine(smiles: str):
     """
@@ -22,14 +21,14 @@ def is_N_acylsphingosine(smiles: str):
         return False, "Invalid SMILES string"
     
     # Improved pattern for sphingosine backbone
-    sphingosine_pattern = Chem.MolFromSmarts("[C@@H](CO)[C@H](O)CC=C")  # Simplified pattern, look for core fragments
+    sphingosine_pattern = Chem.MolFromSmarts("[C@H](O)[C@@H](N)[C@@H](CO)")  # Detailed pattern with C-N link
 
-    # Check for sphingosine backbone
+    # Check for presence of sphingosine backbone
     if not mol.HasSubstructMatch(sphingosine_pattern):
         return False, "No sphingosine backbone found"
     
-    # Simplified pattern for N-acyl group allowing variation
-    n_acyl_pattern = Chem.MolFromSmarts("NC(=O)C")  # Simplified acyl group check
+    # Improved pattern for N-acyl group
+    n_acyl_pattern = Chem.MolFromSmarts("N-C(=O)-C")  # More comprehensive acyl group check
     if not mol.HasSubstructMatch(n_acyl_pattern):
         return False, "No N-acyl group found"
 
@@ -38,7 +37,7 @@ def is_N_acylsphingosine(smiles: str):
 # Test examples
 smiles_examples = [
     "CCCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO)[C@H](O)\\C=C\\CCCCCCCCCCCCC",  # N-tetracosanoylsphingosine
-    "CCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO)[C@H](O)\\C=C\\CCCCCCCCCCCCC",   # N-2-hydroxystearoylsphingosine
+    "CCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO)[C@H](O)\\C=C\\CCCCCCCCCCCCC",    # N-2-hydroxystearoylsphingosine
     "C(CCCCCCCCCC)CC\\C=C\\[C@@H](O)[C@@H](NC(=O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCO)CO",  # N-(omega-hydroxytriacontanoyl)sphingosine
 ]
 
