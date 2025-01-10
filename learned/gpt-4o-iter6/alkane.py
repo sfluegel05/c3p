@@ -6,9 +6,8 @@ from rdkit import Chem
 def is_alkane(smiles: str):
     """
     Determines if a molecule is an alkane based on its SMILES string.
-    An alkane is characterized as an acyclic branched or unbranched hydrocarbon
-    having the formula CnH2n+2, consisting entirely of hydrogen atoms and
-    saturated carbon atoms.
+    An alkane is characterized by the formula CnH2n+2 and consists of
+    saturated carbon atoms and hydrogen atoms, without any rings.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,7 +21,7 @@ def is_alkane(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for presence of atoms other than carbon and hydrogen
+    # Check for presence of only carbon and hydrogen atoms
     elements = {atom.GetAtomicNum() for atom in mol.GetAtoms()}
     if elements.difference({6, 1}):  # Atomic number 6 is C, 1 is H
         return False, "Contains atoms other than carbon and hydrogen"
@@ -36,10 +35,11 @@ def is_alkane(smiles: str):
     if mol.GetRingInfo().NumRings() > 0:
         return False, "Contains rings, not acyclic"
     
-    # Check if the formula matches CnH2n+2
+    # Correctly count carbons and hydrogens
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     hydrogen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 1)
-    
+
+    # Check if the formula matches CnH2n+2
     if hydrogen_count != 2 * carbon_count + 2:
         return False, f"Formula C{carbon_count}H{hydrogen_count} does not match CnH2n+2"
     
