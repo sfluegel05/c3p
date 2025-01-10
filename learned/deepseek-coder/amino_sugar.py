@@ -25,67 +25,41 @@ def is_amino_sugar(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check if the molecule is a sugar (contains multiple hydroxyl groups and a ring)
-    sugar_pattern = Chem.MolFromSmarts("[OH]-[C]-[C]-[C]-[C]-[C]-[OH]")
-    if not mol.HasSubstructMatch(sugar_pattern):
-        return False, "No sugar-like structure found"
+    # Check for sugar-like structure (ring with multiple hydroxyls)
+    ring_info = mol.GetRingInfo()
+    if not ring_info.NumRings():
+        return False, "No ring structure found"
+    
+    # Look for at least 3 hydroxyl groups (sugar-like)
+    hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
+    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
+    if len(hydroxyl_matches) < 3:
+        return False, "Not enough hydroxyl groups for a sugar"
 
-    # Check for the presence of amino groups (NH2 or substituted amino groups)
-    amino_pattern = Chem.MolFromSmarts("[NX3;H2,H1;!$(NC=O)]")
+    # Check for amino groups (including N-acetyl and other substitutions)
+    amino_pattern = Chem.MolFromSmarts("[NX3;H2,H1;!$(N=O)]")
     amino_matches = mol.GetSubstructMatches(amino_pattern)
     if len(amino_matches) == 0:
         return False, "No amino groups found"
 
-    # Check if the amino group is attached to a carbon in the sugar ring
-    amino_sugar_pattern = Chem.MolFromSmarts("[C]-[NX3;H2,H1;!$(NC=O)]")
+    # Check if amino groups are attached to ring carbons
+    amino_sugar_pattern = Chem.MolFromSmarts("[C&R]-[NX3;H2,H1;!$(N=O)]")
     if not mol.HasSubstructMatch(amino_sugar_pattern):
-        return False, "Amino group not attached to sugar carbon"
+        return False, "Amino group not attached to ring carbon"
 
-    # Count the number of amino groups
-    n_amino = len(amino_matches)
-    if n_amino < 1:
+    # Check for N-acetyl groups specifically
+    n_acetyl_pattern = Chem.MolFromSmarts("[NX3;H0]([C&R])(C=O)")
+    n_acetyl_matches = mol.GetSubstructMatches(n_acetyl_pattern)
+    
+    # Count total amino groups (including N-acetyl)
+    total_amino = len(amino_matches) + len(n_acetyl_matches)
+    if total_amino < 1:
         return False, "No amino groups found"
 
-    # Count the number of hydroxyl groups
-    hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    n_hydroxyl = len(hydroxyl_matches)
+    # Additional check for sugar-like properties
+    # Look for multiple contiguous carbons with hydroxyl groups
+    sugar_pattern = Chem.MolFromSmarts("[C&R][C&R][C&R][C&R][C&R][C&R]")
+    if not mol.HasSubstructMatch(sugar_pattern):
+        return False, "No sugar-like carbon chain found"
 
-    # Ensure the molecule has multiple hydroxyl groups (sugar-like)
-    if n_hydroxyl < 2:
-        return False, "Not enough hydroxyl groups for a sugar"
-
-    return True, f"Contains a sugar structure with {n_amino} amino group(s) attached"
-
-
-__metadata__ = {   'chemical_class': {   'id': 'CHEBI:37671',
-                          'name': 'amino sugar',
-                          'definition': 'Any sugar having one or more alcoholic '
-                                        'hydroxy groups replaced by substituted '
-                                        'or unsubstituted amino groups.',
-                          'parents': ['CHEBI:47778', 'CHEBI:76579']},
-    'config': {   'llm_model_name': 'lbl/claude-sonnet',
-                  'f1_threshold': 0.8,
-                  'max_attempts': 5,
-                  'max_positive_instances': None,
-                  'max_positive_to_test': None,
-                  'max_negative_to_test': None,
-                  'max_positive_in_prompt': 50,
-                  'max_negative_in_prompt': 20,
-                  'max_instances_in_prompt': 100,
-                  'test_proportion': 0.1},
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 150,
-    'num_false_positives': 4,
-    'num_true_negatives': 182407,
-    'num_false_negatives': 23,
-    'num_negatives': None,
-    'precision': 0.974025974025974,
-    'recall': 0.8670520231213873,
-    'f1': 0.9174311926605504,
-    'accuracy': 0.9998521228585199}
+    return True, f"Contains a sugar structure with {total_amino} amino group(s) attached"
