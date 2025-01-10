@@ -2,11 +2,12 @@
 Classifies: CHEBI:29348 fatty amide
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_fatty_amide(smiles: str):
     """
     Determines if a molecule is a fatty amide based on its SMILES string.
-    A fatty amide is defined by an amide group derived from a long chain fatty acid.
+    A fatty amide is defined by an amide group derived from a long-chain fatty acid.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,32 +27,37 @@ def is_fatty_amide(smiles: str):
     if not mol.HasSubstructMatch(amide_pattern):
         return False, "No amide bond found"
 
-    # Find the carbonyl group within the amide bond
     amide_matches = mol.GetSubstructMatches(amide_pattern)
+    
+    # Check for long carbon chain after the carbonyl group
     for match in amide_matches:
         carbonyl_c_idx = match[0]
+        nitrogen_idx = match[1]
         
-        # Perform a breadth-first search starting from the carbonyl carbon to ensure a long carbon chain
+        # Start from the carbonyl carbon and assess chain length connected to nitrogen
         visited = set()
-        queue = [carbonyl_c_idx]
         carbon_chain_length = 0
-        
-        while queue:
-            current_idx = queue.pop()
-            if current_idx in visited:
-                continue
-            visited.add(current_idx)
-            
-            current_atom = mol.GetAtomWithIdx(current_idx)
-            if current_atom.GetAtomicNum() == 6:  # Check if it's a carbon atom
-                carbon_chain_length += 1
-                if carbon_chain_length >= 8:  # Chain is long enough
-                    return True, "Contains amide bond derived from a long chain fatty acid"
 
-            # Add neighbors to the search queue
-            for neighbor in current_atom.GetNeighbors():
-                neighbor_idx = neighbor.GetIdx()
-                if neighbor_idx not in visited:
-                    queue.append(neighbor_idx)
+        # Check carbon atoms connected to carbonyl carbon, excluding the direct amide nitrogen
+        for atom in mol.GetAtomWithIdx(carbonyl_c_idx).GetNeighbors():
+            if atom.GetIdx() != nitrogen_idx:
+                queue = [(atom, 1)]  # (atom, depth)
+        
+                while queue:
+                    current_atom, depth = queue.pop(0)
+                    if current_atom.GetIdx() in visited or depth > 2:
+                        continue
+                    
+                    visited.add(current_atom.GetIdx())
+
+                    if current_atom.GetAtomicNum() == 6:  # Check if it's a carbon atom
+                        carbon_chain_length += 1
+
+                    # Only add carbon atoms (ignores branching through heteroatoms)
+                    queue.extend([(neighbor, depth + 1) for neighbor in current_atom.GetNeighbors() if neighbor.GetIdx() not in visited and neighbor.GetAtomicNum() == 6])
+
+        # Verify if enough carbon atoms are found
+        if carbon_chain_length >= 8:
+            return True, "Contains amide bond derived from a long chain fatty acid"
 
     return False, "Insufficient carbon chain length beyond amide bond"
