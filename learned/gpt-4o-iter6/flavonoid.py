@@ -21,21 +21,14 @@ def is_flavonoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Adjusted pattern to include variations for 1-benzopyran (flavonoid core)
-    benzopyran_pattern = Chem.MolFromSmarts("c1c2ccccc2oc1")
-    if not mol.HasSubstructMatch(benzopyran_pattern):
-        return False, "No flavonoid core (1-benzopyran structure) found"
+    # Core structure of flavonoid: 1-benzopyran-4-one or chromen-4-one
+    flavonoid_core_pattern = Chem.MolFromSmarts("c1cc2oc(=O)ccc2cc1-c3cc(*)ccc3")  # Core and flexible substitution point
+    if not mol.HasSubstructMatch(flavonoid_core_pattern):
+        return False, "No flavonoid core (1-benzopyran structure) found with aryl substitution"
+    
+    # Ensure that it has a well-formed aryl substitution on position 2
+    substitution_check_pattern = Chem.MolFromSmarts("c1cc2oc(=O)ccc2cc1-c3ccccc3")  # specifically check if an aryl group is present
+    if not mol.HasSubstructMatch(substitution_check_pattern):
+        return False, "No aryl substitution found at position 2"
 
-    # Alternative approach to find the 1-benzopyran core without specific aryl substitution matching
-    # Allow for any aryl substitution as long as 1-benzopyran core is intact
-    # Here, we are assuming any group attached to position 2 of benzopyran is acceptable as a substitution
-    aryl_substituted_pattern = Chem.MolFromSmarts("C1=COc2ccccc2C1-*")  # Using * to represent any possible substitution
-    if not mol.HasSubstructMatch(aryl_substituted_pattern):
-        return False, "Aryl substitution not found at position 2"
-
-    # Hydroxyl groups are commonly found but not mandatory
-    # hydroxyl_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetTotalNumHs() == 1)
-    # if hydroxyl_count < 1:
-    #     return False, "Insufficient hydroxyl groups for a typical flavonoid structure"
-
-    return True, "Identified flavonoid structure with 1-benzopyran core and aryl substitution"
+    return True, "Identified flavonoid structure with 1-benzopyran core and aryl substitution at position 2"
