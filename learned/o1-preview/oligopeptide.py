@@ -5,8 +5,6 @@ Classifies: CHEBI:25676 oligopeptide
 Classifies: oligopeptide
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_oligopeptide(smiles: str):
     """
@@ -25,35 +23,29 @@ def is_oligopeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define peptide bond pattern (amide bond between amino acids)
-    peptide_bond = Chem.MolFromSmarts("N[C;H1,C](=O)")
-    peptide_bonds = mol.GetSubstructMatches(peptide_bond)
+    # Find all amide bonds not in rings (peptide bonds)
+    amide_bond_smarts = "[NX3][CX3](=O)"
+    amide_bond_pattern = Chem.MolFromSmarts(amide_bond_smarts)
+    amide_matches = mol.GetSubstructMatches(amide_bond_pattern)
     
-    if not peptide_bonds:
+    num_peptide_bonds = 0
+    for match in amide_matches:
+        n_idx = match[0]
+        c_idx = match[1]
+        # Check if the bond between N and C is not in a ring
+        bond = mol.GetBondBetweenAtoms(n_idx, c_idx)
+        if bond and not bond.IsInRing():
+            num_peptide_bonds += 1
+    
+    if num_peptide_bonds == 0:
         return False, "No peptide bonds found"
     
-    # Identify amino acid residues by looking for alpha carbon patterns
-    alpha_carbon = Chem.MolFromSmarts("[C;H1,H2]([C;H2,H3])[C](=O)N")
-    residues = mol.GetSubstructMatches(alpha_carbon)
-    num_residues = len(residues)
-    
+    # Estimate number of amino acid residues
+    num_residues = num_peptide_bonds + 1  # For linear peptides
+
     if num_residues < 2:
         return False, f"Only {num_residues} amino acid residue found, need at least 2"
     elif num_residues > 20:
         return False, f"{num_residues} amino acid residues found, exceeds typical oligopeptide length"
     
-    # Check if all peptide bonds are connected to form a peptide chain
-    # Create a graph to check connectivity
-    peptide_bond_indices = [bond[1] for bond in peptide_bonds]  # Get bonded carbonyl carbons
-    residue_atoms = [res[0] for res in residues]  # Get alpha carbons
-    # Check if peptide bonds connect the residues sequentially
-    connected = True
-    for i in range(len(residue_atoms)-1):
-        path = Chem.GetShortestPath(mol, residue_atoms[i], residue_atoms[i+1])
-        if not any(atom_idx in peptide_bond_indices for atom_idx in path):
-            connected = False
-            break
-    if not connected:
-        return False, "Amino acids are not connected via peptide bonds"
-    
-    return True, f"Oligopeptide with {num_residues} amino acid residues"
+    return True, f"Oligopeptide with approximately {num_residues} amino acid residues"
