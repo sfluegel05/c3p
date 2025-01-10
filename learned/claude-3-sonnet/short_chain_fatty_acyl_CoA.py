@@ -23,75 +23,82 @@ def is_short_chain_fatty_acyl_CoA(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-        
-    # Check for CoA structure components
+
+    # Essential structural components of CoA
     
-    # Adenine base - using more flexible SMARTS patterns
+    # Adenine base (multiple patterns to catch different representations)
     adenine_patterns = [
-        Chem.MolFromSmarts("n1cnc2c(N)ncnc12"),  # Most common form
-        Chem.MolFromSmarts("N1C=NC2=C1N=CN=C2N"),  # Alternative form
-        Chem.MolFromSmarts("[#7]1:[#6]:[#7]:[#6]2:[#6]1:[#7]:[#6]:[#7]:[#6]:2[#7]")  # Generic form
+        "[#7]1:[#6]:[#7]:[#6]2:[#6](:[#7]:[#6]:[#7]:[#6]:2:[#7]1)[#7]",  # Most generic form
+        "n1cnc2c(N)ncnc12",  # Common form
+        "N1C=NC2=C1N=CN=C2N"  # Alternative form
     ]
+    
     has_adenine = False
     for pattern in adenine_patterns:
-        if mol.HasSubstructMatch(pattern):
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
             has_adenine = True
             break
     if not has_adenine:
-        return False, "Missing adenine base (CoA component)"
+        return False, "Missing adenine base structure"
+
+    # Ribose with phosphate
+    ribose_phosphate = Chem.MolFromSmarts("[CH2]OP(O)(O)=O")
+    if not mol.HasSubstructMatch(ribose_phosphate):
+        return False, "Missing ribose phosphate group"
+
+    # Pantetheine arm patterns (more flexible)
+    pantetheine_patterns = [
+        "NCCC(=O)NCCSC(=O)",  # Basic pattern
+        "NC(=O)CCNC(=O)CCSC(=O)",  # Alternative pattern
+        "[NH2][CH2][CH2][C](=[O])[NH][CH2][CH2]SC(=O)"  # More explicit pattern
+    ]
     
-    # Pantetheine arm with thioester
-    pantetheine_pattern = Chem.MolFromSmarts("NC(=O)CCNC(=O)CCSC(=O)")
-    if not mol.HasSubstructMatch(pantetheine_pattern):
-        return False, "Missing pantetheine arm with thioester"
-    
-    # Phosphate groups (at least 3)
-    phosphate_pattern = Chem.MolFromSmarts("[OX2]P(=O)([OX2])[OX2]")
-    phosphate_matches = len(mol.GetSubstructMatches(phosphate_pattern))
-    if phosphate_matches < 3:
-        return False, f"Insufficient phosphate groups (found {phosphate_matches}, need ≥3)"
-        
-    # Get the acyl part by splitting at the thioester
+    has_pantetheine = False
+    for pattern in pantetheine_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            has_pantetheine = True
+            break
+    if not has_pantetheine:
+        return False, "Missing pantetheine arm structure"
+
+    # Check for thioester linkage
     thioester_pattern = Chem.MolFromSmarts("[CX3](=O)[SX2]")
     thioester_matches = mol.GetSubstructMatches(thioester_pattern)
     if not thioester_matches:
         return False, "Missing thioester linkage"
-    
-    # Find the acyl carbon (the one double bonded to oxygen in thioester)
+
+    # Find the acyl chain
     acyl_carbon = thioester_matches[0][0]
     
-    # Count carbons in the acyl chain using BFS
-    visited = set()
-    stack = [acyl_carbon]
-    while stack:
-        current = stack.pop()
-        if current not in visited:
-            visited.add(current)
-            atom = mol.GetAtomWithIdx(current)
-            if atom.GetAtomicNum() == 6:  # Carbon
-                for neighbor in atom.GetNeighbors():
-                    if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:
-                        stack.append(neighbor.GetIdx())
+    # Get the fragment containing the acyl chain
+    # Break the S-C bond of thioester to isolate acyl part
+    fragments = Chem.FragmentOnBonds(mol, [mol.GetBondBetweenAtoms(thioester_matches[0][0], 
+                                         thioester_matches[0][1]).GetIdx()], addDummies=False)
     
-    chain_length = len([x for x in visited if mol.GetAtomWithIdx(x).GetAtomicNum() == 6])
+    if fragments is None:
+        return False, "Could not analyze acyl chain"
+        
+    # Count carbons in the acyl fragment
+    acyl_fragment = Chem.GetMolFrags(fragments, asMols=True)[0]
+    carbon_count = sum(1 for atom in acyl_fragment.GetAtoms() if atom.GetAtomicNum() == 6)
     
-    if chain_length > 6:
-        return False, f"Acyl chain too long ({chain_length} carbons) for short-chain fatty acid"
-    if chain_length < 2:
-        return False, f"Acyl chain too short ({chain_length} carbons)"
-    
-    # Check for common modifications
+    if carbon_count > 6:
+        return False, f"Acyl chain too long ({carbon_count} carbons) for short-chain fatty acid"
+    if carbon_count < 2:
+        return False, f"Acyl chain too short ({carbon_count} carbons)"
+
+    # Check for modifications
     modifications = []
     mod_patterns = {
         "hydroxy": ("[OX2H1]", "hydroxyl"),
         "amino": ("[NX3H2]", "amino"),
-        "double_bond": ("[CX3]=[CX3]", "unsaturated"),
-        "methyl_branch": ("[CX4H3]", "methyl branch")
+        "unsaturated": ("[CX3]=[CX3]", "unsaturated"),
+        "branched": ("[CX4]([CX4])([CX4])[CX4]", "branched")
     }
     
-    for substructure, (pattern, name) in mod_patterns.items():
-        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
-            modifications.append(name)
-    
+    for mod_name, (pattern, desc) in mod_patterns.items():
+        if acyl_fragment.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            modifications.append(desc)
+
     mod_text = " with " + ", ".join(modifications) if modifications else ""
-    return True, f"Valid short-chain ({chain_length} carbons) fatty acyl-CoA{mod_text}"
+    return True, f"Short-chain ({carbon_count} carbons) fatty acyl-CoA{mod_text}"
