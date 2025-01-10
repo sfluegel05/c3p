@@ -18,20 +18,24 @@ def is_proteinogenic_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for standard amino acid backbone (N-C-C(=O)-O) with chirality
-    backbone_pattern = Chem.MolFromSmarts("N[C@H](C(=O)O)")
+    # Standard amino acid core patterns
+    amino_acid_pattern = Chem.MolFromSmarts("[N+0;!H2][C@&H1;X4]([C;X3](=[O;X1])[O;X2])[!#1]")
+    glycine_pattern = Chem.MolFromSmarts("[N+0]CC(=O)[O;X2]")
 
-    # Check if the mol has the standard amino acid backbone with chirality
-    if not mol.HasSubstructMatch(backbone_pattern):
-        # Glycine exception, which is achiral
-        glycine_pattern = Chem.MolFromSmarts("NCC(=O)O")
+    # Check if the mol has the amino acid backbone (allows isotopic labels/deuteration)
+    if not mol.HasSubstructMatch(amino_acid_pattern):
         if mol.HasSubstructMatch(glycine_pattern):
             return True, "SMILES matches glycine structure, an exception to chirality"
-        return False, "No standard amino acid backbone with chirality found"
+        return False, "No standard amino acid backbone with valid chirality found"
 
-    # Check for chirality
-    if not any(atom.GetChiralTag() != Chem.CHI_UNSPECIFIED for atom in mol.GetAtoms()):
-        return False, "Chirality not found in molecule except for glycine"
+    # Further chirality and derivative check
+    chiral_atoms = [atom for atom in mol.GetAtoms() if atom.GetChiralTag() != Chem.CHI_UNSPECIFIED]
+    if not chiral_atoms:
+        return False, "Lacking required chirality or has unresolved chirality"
+
+    # Ensure single amino acid and check for lone peptide bonds or extended structures
+    if mol.GetNumBonds() > 10:  # Arbitrary threshold for complexity beyond single amino acid
+        return False, "Molecule too complex; likely a peptide or larger compound"
 
     return True, "Valid backbone and chirality detected; matches a proteinogenic amino acid"
 
