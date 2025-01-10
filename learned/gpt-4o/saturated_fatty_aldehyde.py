@@ -22,22 +22,32 @@ def is_saturated_fatty_aldehyde(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for aldehyde group pattern at the terminal position: R-CHO
-    aldehyde_pattern = Chem.MolFromSmarts("[#6][CX3H](=O)")
-    if not mol.HasSubstructMatch(aldehyde_pattern):
-        return False, "Aldehyde group not at terminal position"
+    # Check for terminal aldehyde group pattern: R-CHO
+    terminal_aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)[CH2]")
+    if not mol.HasSubstructMatch(terminal_aldehyde_pattern):
+        return False, "Terminal aldehyde group not found"
+
+    # Ensure only one aldehyde group
+    aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)")
+    if len(mol.GetSubstructMatches(aldehyde_pattern)) != 1:
+        return False, "More than one aldehyde group present or not at terminal position"
 
     # Ensure no carbon-carbon double bonds
     unsaturation_pattern = Chem.MolFromSmarts("C=C")
     if mol.HasSubstructMatch(unsaturation_pattern):
         return False, "Contains carbon-carbon unsaturation"
 
-    # Check for a minimum of 6 consecutive carbons excluding the aldehyde carbon
-    carbon_chain_pattern = Chem.MolFromSmarts("C" * 6)
+    # Check for a minimum of 5 consecutive carbons, including aldehyde carbon
+    carbon_chain_pattern = Chem.MolFromSmarts("[CH2]" * 4 + "[CX3H1](=O)[CH2]")
     if not mol.HasSubstructMatch(carbon_chain_pattern):
-        return False, "Insufficient carbon chain length for a fatty aldehyde"
+        return False, "Insufficient chain length including aldehyde carbon (minimum 5 carbons)"
 
-    # Ensure no rings - fatty alcohols are non-cyclic
+    # Ensure no other oxygen-containing functional groups present
+    other_oxygen_pattern = Chem.MolFromSmarts("[OX2H1,OX2H0]")
+    if mol.HasSubstructMatch(other_oxygen_pattern):
+        return False, "Additional oxygen-containing functional groups detected"
+
+    # Ensure no rings - fatty aldehydes are non-cyclic
     if rdMolDescriptors.CalcNumRings(mol) > 0:
         return False, "Contains rings, not a linear/branched carbon chain"
 
