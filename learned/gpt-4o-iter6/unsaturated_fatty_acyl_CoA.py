@@ -21,20 +21,19 @@ def is_unsaturated_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define patterns for detection:
-    # Coenzyme A moiety components (look for consistent CoA structure portions)
-    phosphopantetheine_pattern = Chem.MolFromSmarts("[C@H](O)C(C)(C)COP(=O)(O)O")
-    if not mol.HasSubstructMatch(phosphopantetheine_pattern):
-        return False, "Phosphopantetheine component of Coenzyme A not found"
-    
-    adenine_pattern = Chem.MolFromSmarts("N1C=NC2=C1N=CN=C2N")
+    # Define patterns for Coenzyme A moiety:
+    adenine_pattern = Chem.MolFromSmarts("n1cnc2c1ncnc2N")
     if not mol.HasSubstructMatch(adenine_pattern):
         return False, "Adenine component of Coenzyme A not found"
     
-    ribose_pattern = Chem.MolFromSmarts("C1OC(OP(O)(O)=O)C(O)C1O")
+    ribose_pattern = Chem.MolFromSmarts("OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)OP(=O)(O)O")
     if not mol.HasSubstructMatch(ribose_pattern):
         return False, "Ribose component of Coenzyme A not found"
     
+    phosphopantetheine_pattern = Chem.MolFromSmarts("[C@H](O)C(C)(C)COP(=O)(O)O")
+    if not mol.HasSubstructMatch(phosphopantetheine_pattern):
+        return False, "Phosphopantetheine component of Coenzyme A not found"
+
     # Thioester linkage pattern
     thioester_pattern = Chem.MolFromSmarts("C(=O)SC")
     if not mol.HasSubstructMatch(thioester_pattern):
