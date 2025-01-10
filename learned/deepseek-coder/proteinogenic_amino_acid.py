@@ -31,6 +31,9 @@ def is_proteinogenic_amino_acid(smiles: str):
     amino_pattern = Chem.MolFromSmarts("[NX3;H2,H1;!$(NC=O)]")
     carboxyl_pattern = Chem.MolFromSmarts("C(=O)[OX2H1,OX1H0-]")
     
+    if amino_pattern is None or carboxyl_pattern is None:
+        return False, "Failed to compile SMARTS patterns for amino or carboxyl groups"
+    
     if not mol.HasSubstructMatch(amino_pattern):
         return False, "No amino group found"
     if not mol.HasSubstructMatch(carboxyl_pattern):
@@ -38,12 +41,18 @@ def is_proteinogenic_amino_acid(smiles: str):
 
     # Check that the amino and carboxyl groups are attached to the same carbon (alpha carbon)
     alpha_carbon_pattern = Chem.MolFromSmarts("[CX4H]([NX3H2,NX3H1])[CX3](=O)[OX2H1,OX1H0-]")
+    if alpha_carbon_pattern is None:
+        return False, "Failed to compile SMARTS pattern for alpha carbon"
+    
     if not mol.HasSubstructMatch(alpha_carbon_pattern):
         return False, "Amino and carboxyl groups not attached to the same carbon (alpha carbon)"
 
     # Check for the presence of a side chain (R group) attached to the alpha carbon
     # Glycine is an exception, where the side chain is just a hydrogen
     glycine_pattern = Chem.MolFromSmarts("[NX3H2][CH2][CX3](=O)[OX2H1,OX1H0-]")
+    if glycine_pattern is None:
+        return False, "Failed to compile SMARTS pattern for glycine"
+    
     if mol.HasSubstructMatch(glycine_pattern):
         return True, "Glycine detected (achiral proteinogenic amino acid)"
 
@@ -86,8 +95,15 @@ def is_proteinogenic_amino_acid(smiles: str):
         "[15N]"  # 15N-labeled amino acids
     ]
     
-    has_valid_side_chain = any(mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)) 
-                              for pattern in side_chain_patterns)
+    has_valid_side_chain = False
+    for pattern in side_chain_patterns:
+        compiled_pattern = Chem.MolFromSmarts(pattern)
+        if compiled_pattern is None:
+            continue  # Skip invalid patterns
+        if mol.HasSubstructMatch(compiled_pattern):
+            has_valid_side_chain = True
+            break
+    
     if not has_valid_side_chain:
         return False, "No valid proteinogenic amino acid side chain found"
 
@@ -96,11 +112,11 @@ def is_proteinogenic_amino_acid(smiles: str):
     pyrrolysine_pattern = Chem.MolFromSmarts("[CH2][CH2][CH2]C1=CC=CC=N1")
     n_formylmethionine_pattern = Chem.MolFromSmarts("C(=O)N[CH2][CH2]S[CH3]")
     
-    if mol.HasSubstructMatch(selenocysteine_pattern):
+    if selenocysteine_pattern is not None and mol.HasSubstructMatch(selenocysteine_pattern):
         return True, "Selenocysteine detected"
-    if mol.HasSubstructMatch(pyrrolysine_pattern):
+    if pyrrolysine_pattern is not None and mol.HasSubstructMatch(pyrrolysine_pattern):
         return True, "Pyrrolysine detected"
-    if mol.HasSubstructMatch(n_formylmethionine_pattern):
+    if n_formylmethionine_pattern is not None and mol.HasSubstructMatch(n_formylmethionine_pattern):
         return True, "N-formylmethionine detected"
 
     return True, "Contains amino group, carboxyl group, and side chain attached to alpha carbon with L-configuration"
