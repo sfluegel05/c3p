@@ -32,19 +32,20 @@ def is_phospho_sugar(smiles: str):
     if len(phosphate_matches) == 0:
         return False, "No phosphate group found"
 
-    # Look for sugar backbone (3-7 carbons with multiple hydroxyl groups)
-    # This pattern matches a chain or ring of 3-7 carbons with at least 2 hydroxyl groups
-    sugar_pattern = Chem.MolFromSmarts("[C;H1,H2][C;H1,H2][C;H1,H2]([OH])[C;H1,H2]([OH])")
+    # Look for sugar backbone (3-8 carbons with multiple hydroxyl groups)
+    # More flexible pattern that matches both linear and cyclic sugars
+    sugar_pattern = Chem.MolFromSmarts("[C;H0,H1,H2][C;H0,H1,H2]([OH])[C;H0,H1,H2]([OH])")
     sugar_matches = mol.GetSubstructMatches(sugar_pattern)
     if len(sugar_matches) == 0:
-        # Also check for ring structures (common in sugars)
-        ring_sugar_pattern = Chem.MolFromSmarts("[C;H1,H2]1[C;H1,H2][C;H1,H2]([OH])[C;H1,H2]([OH])[C;H1,H2]1")
+        # Check for ring structures with at least two hydroxyl groups
+        ring_sugar_pattern = Chem.MolFromSmarts("[C;H0,H1,H2]1[C;H0,H1,H2][C;H0,H1,H2]([OH])[C;H0,H1,H2]([OH])[C;H0,H1,H2]1")
         ring_sugar_matches = mol.GetSubstructMatches(ring_sugar_pattern)
         if len(ring_sugar_matches) == 0:
             return False, "No sugar backbone found"
 
     # Check if the phosphate is attached to the sugar via an ester bond
-    ester_pattern = Chem.MolFromSmarts("[OX2][PX4](=[OX1])([OX2])[OX2]")
+    # More comprehensive ester bond pattern
+    ester_pattern = Chem.MolFromSmarts("[C;H0,H1,H2][OX2][PX4](=[OX1])([OX2])[OX2]")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) == 0:
         return False, "Phosphate not esterified to sugar"
@@ -53,7 +54,8 @@ def is_phospho_sugar(smiles: str):
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     
-    if c_count < 3 or c_count > 7:
+    # Relax carbon count restriction to 3-8 to accommodate heptoses
+    if c_count < 3 or c_count > 8:
         return False, "Not a monosaccharide (incorrect number of carbons)"
     if o_count < 4:
         return False, "Too few oxygens for a phospho sugar"
