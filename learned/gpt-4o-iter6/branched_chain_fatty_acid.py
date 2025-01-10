@@ -2,7 +2,6 @@
 Classifies: CHEBI:35819 branched-chain fatty acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_branched_chain_fatty_acid(smiles: str):
     """
@@ -27,20 +26,14 @@ def is_branched_chain_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
 
-    # Check for long alkyl chain (R-CH2-R)
-    alkyl_chain_pattern = Chem.MolFromSmarts("[CX3](C)C")
-    alkyl_matches = mol.GetSubstructMatches(alkyl_chain_pattern)
-    if len(alkyl_matches) < 5:  # Typically long chains in fatty acids
-        return False, "Alkyl chain too short"
+    # Check for alkyl chain by counting carbon atoms
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 10:  # Assumes at least 10 carbons indicative of long chain
+        return False, "Insufficient carbon count for alkyl chain"
 
-    # Look for branching (branches must exist for BCFA)
-    branch_pattern = Chem.MolFromSmarts("[CX4][CX4]([CX4])C")
+    # Look for branching
+    branch_pattern = Chem.MolFromSmarts("[CX4][CX4,CX3]([CX4,CX3])[CX4,CX3]")
     if not mol.HasSubstructMatch(branch_pattern):
         return False, "No branch points found"
 
-    # Estimate molecular weight - emphasizing long chain
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 200:
-        return False, "Molecular weight too low for typical BCFA"
-
-    return True, "Contains long carbon chain with branch points and a carboxylic acid group"
+    return True, "Contains sufficient carbon chain with branch points and a carboxylic acid group"
