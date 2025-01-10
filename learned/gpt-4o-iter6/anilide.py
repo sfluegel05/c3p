@@ -16,18 +16,20 @@ def is_anilide(smiles: str):
         bool: True if molecule is an anilide, False otherwise.
         str: Reason for classification.
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Enhanced anilide pattern: phenyl group directly bonded to amide nitrogen with potential additional substituents
-    # In order to mitigate false positives, we add some complexity to the SMARTS pattern that accounts for common cases
-    # But preserves the primary structure of aniline-based acylation.
-    anilide_pattern = Chem.MolFromSmarts("c1ccc(cc1)NC(=O)C")
-
-    # Check for anilide pattern
+    # Anilide pattern: phenyl group directly bonded to amide nitrogen
+    # We will use a pattern that allows for general anilide structure
+    # Phenyl ring (c1ccccc1) connected to amide nitrogen (NC(=O))
+    # This pattern is broad to capture variations, focuses on the critical aspect of the anilide structure.
+    
+    anilide_pattern = Chem.MolFromSmarts("c1ccccc1NC(=O)")
+    
+    # Check for anilide pattern with flexibility in C part of NC(=O)
     match = mol.HasSubstructMatch(anilide_pattern)
     
     if not match:
