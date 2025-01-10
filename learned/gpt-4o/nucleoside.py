@@ -19,31 +19,30 @@ def is_nucleoside(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return (None, "Invalid SMILES string")
+        return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns for nucleobases with flexibility for substitutions
-    adenine_pattern = Chem.MolFromSmarts('*ncnc*n(cn*)*')
-    guanine_pattern = Chem.MolFromSmarts('*nc*n(c*n*)n*')
-    uracil_pattern = Chem.MolFromSmarts('*[*]cc(=O)n(*=O)[*]')
-    thymine_pattern = Chem.MolFromSmarts('c1c[nH]c(=O)n(C)[*]')
-    cytosine_pattern = Chem.MolFromSmarts('*[*]c(=O)nc[nH]*[*)')
+    # Define SMARTS patterns for more precise nucleobases
+    adenine_pattern = Chem.MolFromSmarts('n1cnc2[nH]cnc2c1')  # Adenine
+    guanine_pattern = Chem.MolFromSmarts('n1c2[nH]cnc2c(=O)[nH]c1=O')  # Guanine
+    uracil_pattern = Chem.MolFromSmarts('n1c(=O)ccc[nH]1=O')  # Uracil
+    thymine_pattern = Chem.MolFromSmarts('n1c(=O)ccn(C)c1=O')  # Thymine
+    cytosine_pattern = Chem.MolFromSmarts('n1c(=O)ccn[nH]1')  # Cytosine
 
-    nucleobases_patterns = [adenine_pattern, guanine_pattern,
-                            uracil_pattern, thymine_pattern, cytosine_pattern]
-    
+    nucleobase_patterns = [adenine_pattern, guanine_pattern, uracil_pattern, thymine_pattern, cytosine_pattern]
+
     # Check for nucleobases presence
-    has_nucleobase = any(mol.HasSubstructMatch(pattern) for pattern in nucleobases_patterns)
+    has_nucleobase = any(mol.HasSubstructMatch(pattern) for pattern in nucleobase_patterns)
     if not has_nucleobase:
         return False, "No common nucleobase found"
 
-    # Define less restrictive SMARTS pattern for a ribose or deoxyribose sugar
-    ribose_pattern = Chem.MolFromSmarts('*O[C@H]1[*@H]([*])[C@H]([*])[C@H](CO)O1')  # Allowing variations
-    deoxyribose_pattern = Chem.MolFromSmarts('*O[C@H]1[*@H][C@H](CO)[C@H][*]1O')  # Allowing variations
+    # Define more precise SMARTS patterns for ribose and deoxyribose sugar
+    ribose_pattern = Chem.MolFromSmarts('O[C@H]1[C@@H]([C@H](O)[C@H](O1)CO)O')  # Ribose
+    deoxyribose_pattern = Chem.MolFromSmarts('O[C@H]1[C@@H]([C@H](O)[C@H](CO)O1)')  # Deoxyribose
 
-    sugars_patterns = [ribose_pattern, deoxyribose_pattern]
-    
+    sugar_patterns = [ribose_pattern, deoxyribose_pattern]
+
     # Check for sugar presence
-    has_sugar = any(mol.HasSubstructMatch(pattern) for pattern in sugars_patterns)
+    has_sugar = any(mol.HasSubstructMatch(pattern) for pattern in sugar_patterns)
     if not has_sugar:
         return False, "No ribose or deoxyribose sugar found"
 
