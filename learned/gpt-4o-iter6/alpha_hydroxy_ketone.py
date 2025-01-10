@@ -21,11 +21,14 @@ def is_alpha_hydroxy_ketone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define a more comprehensive SMARTS pattern for an alpha-hydroxy ketone
-    # Pattern: carbonyl carbon, bonded to an alpha carbon with OH group
-    alpha_hydroxy_ketone_pattern = Chem.MolFromSmarts("[$([CX3](=O)[C-!!$(C=O,CO,N)])][$([CX4][OX2H])]")  # C(alpha)-C(=O)-C(alpha)-OH
+    # Define the SMARTS pattern for an alpha-hydroxy ketone
+    # Pattern: carbonyl carbon (C=O), bonded to an alpha carbon with a hydroxyl group (C-OH)
+    alpha_hydroxy_ketone_pattern = Chem.MolFromSmarts("[CX3](=O)[CX4][OX2H]")  # Capture the C(=O) and adjacent C with OH
     
-    # Search for Kohen groups with adjacent OH
+    if alpha_hydroxy_ketone_pattern is None:
+        return False, "Invalid SMARTS pattern"
+    
+    # Search for the alpha-hydroxy ketone pattern in the molecule
     substructures_found = mol.GetSubstructMatches(alpha_hydroxy_ketone_pattern)
 
     # Check if the pattern matches any substructure
