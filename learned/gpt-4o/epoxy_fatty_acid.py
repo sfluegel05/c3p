@@ -2,6 +2,7 @@
 Classifies: CHEBI:61498 epoxy fatty acid
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_epoxy_fatty_acid(smiles: str):
     """
@@ -22,32 +23,30 @@ def is_epoxy_fatty_acid(smiles: str):
         return False, "Invalid SMILES string"
     
     # Look for epoxide ring pattern, which is a three-membered ring with an oxygen
-    epoxide_pattern = Chem.MolFromSmarts("[C]-[O]-[C]")
-    if not mol.HasSubstructMatch(epoxide_pattern):
+    # Ensure it forms a ring using a more precise SMARTS
+    epoxide_ring_pattern = Chem.MolFromSmarts("C1OC1")
+    if not mol.HasSubstructMatch(epoxide_ring_pattern):
         return False, "No epoxide ring found"
 
     # Check for a long carbon chain characteristic of fatty acids
-    # This includes the constraint for length and branched structure with minimal heteroatoms
-    # Assuming more than 12 carbon atoms considering the variances in chain length
+    # Include unsaturations and allow some branching
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 12:
-        return False, "Too few carbons to be a fatty acid"
+    h_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 1)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    
+    if c_count < 12 or h_count < (c_count * 2 - 2):  # Allowing for unsaturations typical in fatty acids
+        return False, "Too few carbons or incorrect C:H ratio for a fatty acid"
 
-    # Find carboxylic acid group typically at the end of the chain
+    # Find carboxylic acid group typically at/near chain end
     carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[OH]")
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
 
-    # Ensure the molecule is not overly complex beyond typical epoxy fatty acid features
-    # Avoid presence of additional rings, heterocycles, or large functional groups that are atypical
-    # for a simple fatty acid structure
+    # Ring systems count - should avoid complex molecules with multiple distinct rings
+    ring_info = mol.GetRingInfo()
+    if ring_info.NumRings() > 2:
+        return False, "Too many rings for a typical epoxy fatty acid"
 
-    # Examine bond count or complexity for confounding structures
-    ring_systems = Chem.GetSymmSSSR(mol)
-    if len(ring_systems) > 1:
-        return False, "Too many rings for typical epoxy fatty acid"
-
-    # Ensure stereochemistry of epoxide if needed, assuming it enhances specificity
-    # This is commented out as RDKit handles stereochemistry incompleteness
-
-    return True, "Contains an epoxide ring and characteristics of a epoxy fatty acid (long carbon chain and carboxylic acid group)"
+    # Run more checks if needed depending on misclassifications here noted in debugs
+    
+    return True, "Contains an epoxide ring and typical characteristics of an epoxy fatty acid (long carbon chain and carboxylic acid group)"
