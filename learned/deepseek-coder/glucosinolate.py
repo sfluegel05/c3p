@@ -32,27 +32,6 @@ def is_glucosinolate(smiles: str):
     if not mol.HasSubstructMatch(glucosinolate_pattern):
         return False, "Core glucosinolate pattern not found"
 
-    # Check for the anti stereochemistry across the C=N double bond
-    # This requires the side chain and sulfate group to be on opposite sides
-    # RDKit's stereochemistry tools can be used to verify this
-    matches = mol.GetSubstructMatches(glucosinolate_pattern)
-    for match in matches:
-        central_carbon_idx = match[0]
-        sulfur_idx = match[1]
-        nitrogen_idx = match[2]
-        side_group_idx = match[3]
-
-        # Get the stereochemistry of the central carbon
-        central_carbon = mol.GetAtomWithIdx(central_carbon_idx)
-        if not central_carbon.HasProp("_CIPCode"):
-            return False, "Stereochemistry not defined for central carbon"
-
-        # Check if the side group and sulfate group are anti
-        # This is a simplified check; a more rigorous approach would involve 3D coordinates
-        # or explicit stereochemistry checks
-        if central_carbon.GetProp("_CIPCode") not in ["R", "S"]:
-            return False, "Stereochemistry not R or S for central carbon"
-
     # Check for the presence of a glycone group (glucose-like structure)
     glycone_pattern = Chem.MolFromSmarts("[C@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O")
     if not mol.HasSubstructMatch(glycone_pattern):
@@ -68,7 +47,7 @@ def is_glucosinolate(smiles: str):
     if not mol.HasSubstructMatch(side_group_pattern):
         return False, "Side group not found"
 
-    return True, "Contains core glucosinolate structure with anti stereochemistry"
+    return True, "Contains core glucosinolate structure"
 
 
 __metadata__ = {
