@@ -22,20 +22,16 @@ def is_lysophosphatidic_acids(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for glycerol backbone pattern: OCC(O)CO
-    glycerol_pattern = Chem.MolFromSmarts("OCC(O)CO")
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone found"
+    # Identify glycerol backbone linked to phosphate: 
+    # Considering patterns like [O][C@@H](CO)COP(=O)(O)O
+    glycerol_phosphate_pattern = Chem.MolFromSmarts("O[C@H](CO)COP(=O)(O)O")
+    if not mol.HasSubstructMatch(glycerol_phosphate_pattern):
+        return False, "No glycerol-phosphate linkage found"
         
-    # Look for a single acyl chain: OC(=O)C
-    acyl_pattern = Chem.MolFromSmarts("OC(=O)C")
-    acyl_matches = mol.GetSubstructMatches(acyl_pattern)
+    # Check for only one acyl chain, accounting for variations: OC(=O)C(C)*
+    acyl_chain_pattern = Chem.MolFromSmarts("OC(=O)C(C)C")
+    acyl_matches = mol.GetSubstructMatches(acyl_chain_pattern)
     if len(acyl_matches) != 1:
         return False, f"Found {len(acyl_matches)} acyl chains, need exactly 1"
-
-    # Look for phosphate group: P(=O)(O)O
-    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)O")
-    if not mol.HasSubstructMatch(phosphate_pattern):
-        return False, "No phosphate group found"
 
     return True, "Matches all structural features of a lysophosphatidic acid"
