@@ -5,9 +5,8 @@ from rdkit import Chem
 
 def is_flavones(smiles: str):
     """
-    Determines if a molecule is a flavonoid, specifically a flavone, 
-    based on its SMILES string. 
-    A flavone is characterized by a 2-aryl-1-benzopyran-4-one skeleton.
+    Determines if a molecule is a flavone based on its SMILES string.
+    A flavone has a 2-aryl-1-benzopyran-4-one skeleton.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,11 +21,14 @@ def is_flavones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Generalized flavone core pattern, allowing substitutions on the rings
-    flavone_pattern = Chem.MolFromSmarts("c1cc(C=c2oc3cc(ccc3oc2=O)c2ccccc2)ccc1")
-    # Note: We're accounting for substitution flexibility on relevant positions.
+    # Corrected flavone core pattern, allowing for substitutions on the rings
+    flavone_pattern = Chem.MolFromSmarts("c1cc(-c2cc(-c3oc(cc3=O)-c3ccccc3)c(=O)oc2)ccc1")
     
+    # Check for flavone core pattern match
     if mol.HasSubstructMatch(flavone_pattern):
-        return True, "Contains generalized 2-aryl-1-benzopyran-4-one skeleton"
+        return True, "Contains 2-aryl-1-benzopyran-4-one skeleton"
     else:
         return False, "Does not contain flavone skeleton"
+
+# Test Cases
+# This function should now be tested with known flavone and non-flavone compounds to ensure accuracy.
