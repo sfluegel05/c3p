@@ -21,13 +21,14 @@ def is_hopanoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # A more detailed SMARTS pattern for the hopane skeleton based on known structures.
-    # These SMILES are based on structures with a pentacyclic ring system.
-    hopane_pattern = Chem.MolFromSmarts("C1CCC2C3CCC4CCCC5C4(C3(C2)C1)CC5")
+    # A detailed SMARTS pattern for the hopane skeleton.
+    # We are attempting to define rings and sterochemistry known in hopanoids
+    hopane_pattern = Chem.MolFromSmarts("C1CCC2C3C4[C@H]5CC[C@@H](C5)CC4CCC3CC2CCC1")
 
     if hopane_pattern is None:
         return False, "Error in SMARTS pattern"
 
+    # Check for substructure match in the molecule
     if mol.HasSubstructMatch(hopane_pattern):
         return True, "Contains hopane skeleton"
     else:
