@@ -60,7 +60,7 @@ def is_decanoate_ester(smiles: str):
                             break
                     current_atom = next_atom
                 
-                if chain_length >= 10:
+                if chain_length == 10:
                     return True, "Contains a decanoate ester group (10-carbon chain with ester linkage)"
 
     return False, "No decanoate ester group found (10-carbon chain with ester linkage)"
