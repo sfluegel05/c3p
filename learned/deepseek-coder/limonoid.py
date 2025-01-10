@@ -57,6 +57,11 @@ def is_limonoid(smiles: str):
     if n_rotatable < 5:
         return False, "Too few rotatable bonds for a limonoid"
 
+    # Check for the presence of multiple rings (limonoids typically have several rings)
+    n_rings = rdMolDescriptors.CalcNumRings(mol)
+    if n_rings < 4:
+        return False, "Too few rings for a limonoid"
+
     return True, "Contains furan ring, multiple oxygen-containing groups, and a triterpenoid skeleton"
 
 
