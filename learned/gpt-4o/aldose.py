@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_aldose(smiles: str):
     """
     Determines if a molecule is an aldose based on its SMILES string.
-    An aldose is a sugar containing an aldehydic parent group and its potential cyclic forms.
+    An aldose is a sugar containing an aldehydic group and its cyclic forms known as furanoses and pyranoses.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,8 +21,8 @@ def is_aldose(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check if it's an open chain form with an aldehyde group.
-    aldehyde_pattern = Chem.MolFromSmarts("[CX3H](O)=O")
+    # Check for an open chain form with an aldehyde group: [CX3H]=O
+    aldehyde_pattern = Chem.MolFromSmarts("[CX3H](=O)")
     if mol.HasSubstructMatch(aldehyde_pattern):
         found_aldehyde = True
         reason = "Contains an aldehyde group."
@@ -32,8 +32,14 @@ def is_aldose(smiles: str):
 
     # Check for cyclic forms: furanoses (5-membered rings) and pyranoses (6-membered rings) with oxygen
     ring_info = mol.GetRingInfo()
-    furanose_ring = any(len(ring) == 5 and any(mol.GetAtomWithIdx(idx).GetSymbol() == 'O' for idx in ring) for ring in ring_info.AtomRings())
-    pyranose_ring = any(len(ring) == 6 and any(mol.GetAtomWithIdx(idx).GetSymbol() == 'O' for idx in ring) for ring in ring_info.AtomRings())
+    furanose_ring = False
+    pyranose_ring = False
+    for ring in ring_info.AtomRings():
+        ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
+        if len(ring) == 5 and any(atom.GetSymbol() == 'O' for atom in ring_atoms):
+            furanose_ring = True
+        elif len(ring) == 6 and any(atom.GetSymbol() == 'O' for atom in ring_atoms):
+            pyranose_ring = True
 
     if furanose_ring:
         found_cyclic = True
@@ -45,13 +51,13 @@ def is_aldose(smiles: str):
         found_cyclic = False
         reason += " No furanose or pyranose ring detected."
 
-    # Check for multiple hydroxyl groups
+    # Check for sufficient hydroxyl groups, root structure is important
     hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
     hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    min_hydroxyl_groups = 2 if found_aldehyde else 3
+    min_hydroxyl_groups = 3  # Have multiple hydroxyls in cyclic and acyclic forms
 
     if len(hydroxyl_matches) < min_hydroxyl_groups:
-        return False, f"Insufficient hydroxyl groups: found {len(hydroxyl_matches)}, but requires at least {min_hydroxyl_groups}."
+        return False, f"Insufficient hydroxyl groups: found {len(hydroxyl_matches)}, need at least {min_hydroxyl_groups}."
 
     if found_aldehyde or found_cyclic:
         return True, reason
