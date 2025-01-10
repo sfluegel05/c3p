@@ -23,47 +23,59 @@ def is_aliphatic_aldoxime(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-        
-    # Look for aldoxime group pattern [H]C=NOH or C=NOH
-    # Multiple SMARTS patterns to catch different representations
-    aldoxime_patterns = [
-        Chem.MolFromSmarts("[CH1](=N[OH1])"), # Explicit hydrogen
-        Chem.MolFromSmarts("[CH0](=N[OH1])"),  # For cases where H is on other side
-        Chem.MolFromSmarts("[CH1](=NO)"),      # Implicit H on oxygen
-        Chem.MolFromSmarts("[CH0](=NO)")       # Alternative representation
-    ]
-    
-    found_aldoxime = False
-    for pattern in aldoxime_patterns:
-        if pattern is not None and mol.HasSubstructMatch(pattern):
-            found_aldoxime = True
-            break
-            
-    if not found_aldoxime:
-        return False, "No aldoxime group (HC=NOH) found"
 
-    # Check for aromatic atoms
-    if any(atom.GetIsAromatic() for atom in mol.GetAtoms()):
-        return False, "Contains aromatic atoms - must be aliphatic"
-        
-    # Get the carbon atom that's part of the C=N bond
-    c_n_pattern = Chem.MolFromSmarts("[#6]=[#7][OH1]")
-    if c_n_pattern is None:
-        return False, "Error in SMARTS pattern"
-        
-    matches = mol.GetSubstructMatches(c_n_pattern)
-    if not matches:
-        return False, "No C=N-OH group found"
-        
-    # Check the hybridization of the carbon atom
+    # First check for aldoxime group pattern [H]C=NOH
+    # More specific SMARTS pattern for aldoxime
+    aldoxime_pattern = Chem.MolFromSmarts("[CH1](=N[OH1])-[!$(C=O);!$(C=N);!$(C=C);!$([N+]=[O-])]")
+    
+    if not mol.HasSubstructMatch(aldoxime_pattern):
+        return False, "No proper aldoxime group (HC=NOH) found"
+
+    # Get matches for the aldoxime group
+    matches = mol.GetSubstructMatches(aldoxime_pattern)
+    
+    # Check each potential aldoxime group
     for match in matches:
         c_atom = mol.GetAtomWithIdx(match[0])
+        n_atom = mol.GetAtomWithIdx(match[1])
+        o_atom = mol.GetAtomWithIdx(match[2])
+        
+        # Verify hybridization
         if c_atom.GetHybridization() != Chem.HybridizationType.SP2:
             return False, "Carbon in C=N must be sp2 hybridized"
-            
-        # Check that the carbon has exactly one hydrogen
-        # (characteristic of aldoxime vs ketoxime)
+        
+        # Check that carbon has exactly one hydrogen
         if c_atom.GetTotalNumHs() != 1:
             return False, "Carbon must have exactly one hydrogen (aldoxime)"
+        
+        # Check formal charges
+        if c_atom.GetFormalCharge() != 0 or n_atom.GetFormalCharge() != 0:
+            return False, "Unexpected formal charges on C or N atoms"
             
+        # Check for aci-nitro compounds
+        aci_nitro = Chem.MolFromSmarts("[O-][N+](=C)O")
+        if mol.HasSubstructMatch(aci_nitro):
+            return False, "Compound is an aci-nitro compound, not an aldoxime"
+
+    # Check for aromatic or conjugated systems
+    conjugated_patterns = [
+        Chem.MolFromSmarts("C=C-C=N"), # conjugated alkene
+        Chem.MolFromSmarts("C=C-N=C"), # conjugated imine
+        Chem.MolFromSmarts("O=C-C=N"), # conjugated carbonyl
+        Chem.MolFromSmarts("n1ccccc1"), # pyridine
+        Chem.MolFromSmarts("c1ccccc1")  # benzene
+    ]
+    
+    for pattern in conjugated_patterns:
+        if pattern is not None and mol.HasSubstructMatch(pattern):
+            return False, "Contains conjugated or aromatic system"
+
+    # Check that carbon attached to C=N is sp3 (aliphatic)
+    for match in matches:
+        neighbors = mol.GetAtomWithIdx(match[0]).GetNeighbors()
+        for neighbor in neighbors:
+            if neighbor.GetIdx() not in [match[1]]:  # exclude the N atom
+                if neighbor.GetHybridization() != Chem.HybridizationType.SP3:
+                    return False, "Carbon chain must be aliphatic"
+
     return True, "Contains aliphatic aldoxime group (HC=NOH)"
