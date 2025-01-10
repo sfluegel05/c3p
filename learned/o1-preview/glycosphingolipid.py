@@ -25,42 +25,56 @@ def is_glycosphingolipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a general SMARTS pattern for the sphingoid base
-    # Sphingoid base: long-chain amino alcohol with hydroxyl at C1 and amino at C2
-    sphingoid_smarts = "[#8][CH][CH](N)[CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH3]"
+    # Define a general SMARTS pattern for the amide bond (N-acylation)
+    amide_smarts = "[NX3][CX3](=O)[CX4,CX3]"
+    amide_pattern = Chem.MolFromSmarts(amide_smarts)
+
+    # Find all amide groups
+    amide_matches = mol.GetSubstructMatches(amide_pattern)
+    if not amide_matches:
+        return False, "No amide (N-acylation) found"
+
+    # Define a general SMARTS pattern for the sphingoid base (long-chain amino alcohol)
+    # Nitrogen connected to a chain with at least one hydroxyl group
+    sphingoid_smarts = "[NX3][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][OX2H1,OX1H0]"
     sphingoid_pattern = Chem.MolFromSmarts(sphingoid_smarts)
 
-    # Define a general SMARTS pattern for the ceramide backbone
-    # Ceramide: N-acylated sphingoid base
-    ceramide_smarts = "[#8][CH][CH](NC(=O)[#6])[CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH3]"
-    ceramide_pattern = Chem.MolFromSmarts(ceramide_smarts)
-
-    # Check for sphingoid base or ceramide backbone
+    # Check if sphingoid base is present
     has_sphingoid = mol.HasSubstructMatch(sphingoid_pattern)
-    has_ceramide = mol.HasSubstructMatch(ceramide_pattern)
+    if not has_sphingoid:
+        return False, "No sphingoid base (long-chain amino alcohol) found"
 
-    if not (has_sphingoid or has_ceramide):
-        return False, "No sphingoid base or ceramide backbone found"
-
-    # Define SMARTS pattern for a sugar moiety (pyranose ring)
-    sugar_ring_smarts = "O[C@H]1[C@H][C@H][C@H][C@H]O1"
+    # Define SMARTS pattern for sugar moiety (pyranose ring)
+    sugar_ring_smarts = "[OX2H][C@@H]1[O,C][C@@H][C@@H][C@@H][O,C]1"
     sugar_ring_pattern = Chem.MolFromSmarts(sugar_ring_smarts)
 
     # Check for sugar ring
     has_sugar_ring = mol.HasSubstructMatch(sugar_ring_pattern)
-
     if not has_sugar_ring:
-        return False, "No sugar ring detected"
+        return False, "No sugar moiety detected"
 
     # Define SMARTS pattern for glycosidic linkage to O-1 of sphingoid
-    # Looking for oxygen connecting sphingoid C1 and sugar anomeric carbon
-    glycosidic_smarts = "[#8]-[CH]-1~[O]-[#6]-[#6]-[#6]-[#6]-[#8]-1"
-    glycosidic_pattern = Chem.MolFromSmarts(glycosidic_smarts)
+    glycosidic_linkage_smarts = "[OX2H]-[C]"
+    glycosidic_linkage_pattern = Chem.MolFromSmarts(glycosidic_linkage_smarts)
 
-    # Check for glycosidic linkage
-    has_glycosidic_linkage = mol.HasSubstructMatch(glycosidic_pattern)
+    # Check for glycosidic linkage between sphingoid base and sugar
+    # Find oxygen connected to sphingoid carbon and sugar anomeric carbon
+    found_glycosidic_linkage = False
+    for match in mol.GetSubstructMatches(glycosidic_linkage_pattern):
+        o_atom = mol.GetAtomWithIdx(match[0])
+        neighbors = o_atom.GetNeighbors()
+        has_sphingoid_carbon = False
+        has_sugar_carbon = False
+        for neighbor in neighbors:
+            if neighbor.IsInRing():  # Sugar ring carbon
+                has_sugar_carbon = True
+            elif neighbor.GetAtomicNum() == 6:  # Carbon connected to sphingoid base
+                has_sphingoid_carbon = True
+        if has_sphingoid_carbon and has_sugar_carbon:
+            found_glycosidic_linkage = True
+            break
 
-    if not has_glycosidic_linkage:
-        return False, "No carbohydrate residue attached via glycosidic linkage to O-1"
+    if not found_glycosidic_linkage:
+        return False, "No glycosidic linkage between sphingoid base and sugar moiety found"
 
-    return True, "Contains sphingoid or ceramide backbone with sugar moiety attached via glycosidic linkage to O-1"
+    return True, "Contains sphingoid base with sugar moiety attached via glycosidic linkage to O-1"
