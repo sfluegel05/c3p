@@ -22,9 +22,9 @@ def is_lactol(smiles: str):
     if mol is None:
         return None, "Invalid SMILES string"
 
-    # Refined lactol pattern
-    # Ensures a carbon is bonded to both an hydroxyl group and an ether oxygen, and both oxygens are part of the ring
-    lactol_smart_pattern = '[C;R]([O;R;H1])[O;R]'
+    # New lactol pattern
+    # This pattern attempts to detect a carbon in a ring system bonded to an -OH group and having adjacent ether like cyclic linkage.
+    lactol_smart_pattern = '[C;R]([OH])[O;R]'
 
     lactol_pattern = Chem.MolFromSmarts(lactol_smart_pattern)
     
@@ -34,5 +34,5 @@ def is_lactol(smiles: str):
         return False, "Does not contain cyclic hemiacetal (lactol) structure"
 
 # Example usage:
-# result, reason = is_lactol("O1C2=C(C(C[C@@]1(C3=CC=...=C2)O)O")
+# result, reason = is_lactol("O1C2=C(C(C[C@@]1(C3=CC=CC=C3)O)=O)C(=CC(=C2)O)O")
 # print(result, reason)
