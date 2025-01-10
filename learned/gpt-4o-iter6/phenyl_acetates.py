@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_phenyl_acetates(smiles: str):
     """
     Determines if a molecule is a phenyl acetate based on its SMILES string.
-    A phenyl acetate is defined as an acetate ester obtained by condensation of acetic acid with
+    A phenyl acetate is defined as an acetate ester obtained by formal condensation of acetic acid with
     the hydroxy group of any phenol.
 
     Args:
@@ -21,19 +21,12 @@ def is_phenyl_acetates(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define pattern for acetoxy group connected to an aromatic ring (phenyl group)
-    acetoxy_aromatic_pattern = Chem.MolFromSmarts("c1ccccc1OC(=O)C")
-    if mol.HasSubstructMatch(acetoxy_aromatic_pattern):
-        return True, "Molecule is a phenyl acetate with the acetate ester linked to an aromatic carbon"
-
-    # Define pattern for acetoxy bound to phenol derivatives
-    acetoxy_phenol_pattern = Chem.MolFromSmarts("Oc1ccccc1OC(=O)C")
-    if mol.HasSubstructMatch(acetoxy_phenol_pattern):
-        return True, "Molecule features phenolic oxygen linked to phenyl acetate"
-
-    # Define a more general aromatic ester linkage pattern
-    generic_aromatic_acetate_pattern = Chem.MolFromSmarts("c[OH]cOC(=O)C")
-    if mol.HasSubstructMatch(generic_aromatic_acetate_pattern):
-        return True, "Molecule matches generic pattern for aromatic acetate linkage"
+    # Define more specific pattern for acetoxy group connected to an aromatic ring (phenyl group)
+    # The pattern first ensures an aromatic ring is connected to an ester group OC(=O)C
+    phenyl_acetate_pattern = Chem.MolFromSmarts("c1ccccc1[O][C](=O)C")
+    
+    # Check if the molecule matches the phenyl acetate pattern
+    if mol.HasSubstructMatch(phenyl_acetate_pattern):
+        return True, "Molecule is a phenyl acetate with correctly positioned acetate ester linked to an aromatic carbon"
 
     return False, "Molecule does not exhibit key phenyl acetate structural traits"
