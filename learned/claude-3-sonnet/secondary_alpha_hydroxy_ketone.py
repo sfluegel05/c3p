@@ -26,40 +26,48 @@ def is_secondary_alpha_hydroxy_ketone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Add explicit hydrogens for proper matching
-    mol = Chem.AddHs(mol)
-    
-    # SMARTS pattern for secondary alpha-hydroxy ketone:
-    # [CH1] - carbon with exactly one H
-    # [CX3](=O) - carbonyl group
-    # [OX2H1] - hydroxy group
-    # The central carbon must have exactly one H and be connected to a carbon 
-    # (representing the organyl group)
-    pattern = Chem.MolFromSmarts("[CX3](=[OX1])[CH1]([OX2H1])[#6]")
-    
-    if not mol.HasSubstructMatch(pattern):
-        return False, "No secondary alpha-hydroxy ketone pattern found"
-    
-    matches = mol.GetSubstructMatches(pattern)
-    
-    # Additional validation to ensure correct pattern
-    for match in matches:
-        carbonyl_c = mol.GetAtomWithIdx(match[0])
-        alpha_c = mol.GetAtomWithIdx(match[1])
-        hydroxy_o = mol.GetAtomWithIdx(match[2])
-        
-        # Verify the alpha carbon has exactly one hydrogen
-        if alpha_c.GetTotalNumHs() != 1:
-            continue
-            
-        # Verify the carbonyl carbon is sp2 hybridized
-        if carbonyl_c.GetHybridization() != Chem.HybridizationType.SP2:
-            continue
-            
-        # Verify hydroxy oxygen has one hydrogen
-        if hydroxy_o.GetTotalNumHs() != 1:
-            continue
-            
-        return True, "Contains carbonyl group adjacent to carbon with OH, H, and organyl group"
-        
-    return False, "Structure does not match secondary alpha-hydroxy ketone pattern"
+    # Multiple SMARTS patterns to catch different arrangements
+    patterns = [
+        # Basic alpha-hydroxy ketone pattern
+        "[OX2H1,OX2-]-[CX4;H1](-[#6])-[CX3](=[OX1])",
+        # Alternative pattern with different connectivity
+        "[CX3](=[OX1])-[CX4;H1](-[OX2H1,OX2-])-[#6]",
+        # Pattern for cyclic variants
+        "[OX2H1,OX2-]-[CX4;H1](-[#6]@[#6])-[CX3](=[OX1])",
+        # Pattern catching ring-based alpha-hydroxy ketones
+        "[CX3]1(=[OX1])-[CX4;H1](-[OX2H1,OX2-])-[#6]-[#6]-[#6]-1"
+    ]
+
+    for pattern in patterns:
+        pat = Chem.MolFromSmarts(pattern)
+        if mol.HasSubstructMatch(pat):
+            matches = mol.GetSubstructMatches(pat)
+            for match in matches:
+                # Get the matched atoms
+                hydroxy_o = mol.GetAtomWithIdx(match[0])
+                alpha_c = mol.GetAtomWithIdx(match[1])
+                carbonyl_c = mol.GetAtomWithIdx(match[3])
+
+                # Verify basic requirements
+                if alpha_c.GetTotalValence() != 4:  # Must be sp3
+                    continue
+                    
+                # Count non-H neighbors of alpha carbon
+                non_h_neighbors = sum(1 for neighbor in alpha_c.GetNeighbors() 
+                                   if neighbor.GetAtomicNum() != 1)
+                if non_h_neighbors != 3:  # Must have exactly 3 non-H neighbors
+                    continue
+
+                # Verify carbonyl is really a ketone (not aldehyde, acid, etc)
+                carbonyl_neighbors = [atom for atom in carbonyl_c.GetNeighbors() 
+                                   if atom.GetAtomicNum() != 8]
+                if len(carbonyl_neighbors) != 1:
+                    continue
+
+                # Check if alpha carbon has one H (implicitly or explicitly)
+                if alpha_c.GetTotalNumHs() != 1:
+                    continue
+
+                return True, "Contains secondary alpha-hydroxy ketone group"
+
+    return False, "No secondary alpha-hydroxy ketone pattern found"
