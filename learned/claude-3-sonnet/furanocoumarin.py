@@ -25,79 +25,54 @@ def is_furanocoumarin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Basic requirements
-    ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() < 3:  # Must have at least 3 rings (benzene + pyrone + furan)
-        return False, "Insufficient number of rings"
-
-    # Count oxygens (need at least 3: one in pyrone ring, one in ether linkage, one in furan)
-    o_count = len([atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8])
-    if o_count < 3:
-        return False, "Insufficient number of oxygen atoms"
-
-    # Basic coumarin patterns (more generalized)
-    coumarin_patterns = [
-        # Basic coumarin core with flexible bond types
-        "[#8]-1-[#6]~2~[#6]~[#6]~[#6]~[#6]~[#6]~2-[#6](=[#8])-[#6]-1",  # Basic pattern
-        "[#8]-1-[#6]~2~[#6]~[#6]~[#6]~[#6]~[#6]~2-[#6](=[#8])-[#6]=1",   # Alternative
-        "[#8]-1-c~2c(C(=O)C=1)cccc2",  # Simpler pattern
-        "O=C1Oc2ccccc2C1",             # Allow for different saturation
-    ]
-    
-    has_coumarin = False
-    for pat in coumarin_patterns:
-        pattern = Chem.MolFromSmarts(pat)
-        if pattern and mol.HasSubstructMatch(pattern):
-            has_coumarin = True
-            break
-            
-    if not has_coumarin:
+    # Look for coumarin core (benzopyrone)
+    # Pattern matches benzene fused with α-pyrone
+    coumarin_pattern = Chem.MolFromSmarts("c1cc2c(cc1)OC(=O)C=C2")
+    if not mol.HasSubstructMatch(coumarin_pattern):
         return False, "No coumarin core found"
 
-    # Furan patterns (both saturated and unsaturated)
-    furan_patterns = [
-        "[#8]1[#6]~[#6]~[#6]~[#6]1",    # Basic furan/dihydrofuran
-        "o1cccc1",                        # Aromatic furan
-        "O1CCCC1",                        # Saturated furan
-        "[#8]1-[#6]=[#6]-[#6]=[#6]1",    # Explicit double bonds
-    ]
-    
-    has_furan = False
-    for pat in furan_patterns:
-        pattern = Chem.MolFromSmarts(pat)
-        if pattern and mol.HasSubstructMatch(pattern):
-            has_furan = True
-            break
-            
-    if not has_furan:
+    # Look for furan ring pattern
+    furan_pattern = Chem.MolFromSmarts("c1cocc1")
+    if not mol.HasSubstructMatch(furan_pattern):
         return False, "No furan ring found"
 
-    # Check for fusion between coumarin and furan
-    # These patterns look for the characteristic fusion points
-    fusion_patterns = [
-        # Linear fusion patterns
-        "[#8]1[#6]~[#6]~2~[#6](~[#6]~1)~[#6]~3~[#6](=[#8])~[#8]~[#6]~[#6]~3~[#6]~2",
-        # Angular fusion patterns
-        "[#8]1[#6]~[#6]~2~[#6]~3~[#6](=[#8])~[#8]~[#6]~[#6]~3~[#6](~[#6]~2)~[#6]~1",
-        # Simplified fusion patterns
-        "O1CCc2c1cc1ccc(=O)oc21",
-        "O1CCc2c3c(cc12)ccc(=O)o3",
+    # Check for linear furanocoumarin pattern (furo[3,2-g]coumarin)
+    linear_pattern = Chem.MolFromSmarts("c1cc2c(cc1)OC(=O)C=C2c1cocc1")
+    
+    # Check for angular furanocoumarin pattern (furo[2,3-h]coumarin)
+    angular_pattern = Chem.MolFromSmarts("c1c2c(cc3oc(=O)ccc3c1)occ2")
+    
+    if not (mol.HasSubstructMatch(linear_pattern) or mol.HasSubstructMatch(angular_pattern)):
+        return False, "Furan ring not properly fused to coumarin core"
+
+    # Count rings to ensure we don't have extra fused rings beyond the basic furanocoumarin
+    ring_info = mol.GetRingInfo()
+    if ring_info.NumRings() < 3:  # Should have at least 3 rings (benzene, pyrone, furan)
+        return False, "Insufficient number of rings"
+        
+    # Basic checks passed - this appears to be a furanocoumarin
+    fusion_type = []
+    if mol.HasSubstructMatch(linear_pattern):
+        fusion_type.append("linear")
+    if mol.HasSubstructMatch(angular_pattern):
+        fusion_type.append("angular")
+        
+    return True, f"Contains furanocoumarin core ({', '.join(fusion_type)} fusion)"
+
+def test_furanocoumarin():
+    """Test function with known furanocoumarins"""
+    test_cases = [
+        ("CC(C)=CCOc1c2ccoc2cc2oc(=O)ccc12", True),  # Simple linear furanocoumarin
+        ("Cc1cc2ccc(=O)oc2cc1O", False),  # Coumarin but no furan
+        ("c1ccoc1", False),  # Just furan
+        ("O1C(C(OC)(C)C)CC2=C1C=CC3=C2OC(=O)C=C3", True),  # Angular furanocoumarin
     ]
     
-    has_fusion = False
-    fusion_type = []
-    
-    for i, pat in enumerate(fusion_patterns):
-        pattern = Chem.MolFromSmarts(pat)
-        if pattern and mol.HasSubstructMatch(pattern):
-            has_fusion = True
-            if i < 2:
-                fusion_type.append("linear")
-            else:
-                fusion_type.append("angular")
-                
-    if not has_fusion:
-        return False, "No proper fusion between furan and coumarin rings"
+    for smiles, expected in test_cases:
+        result, reason = is_furanocoumarin(smiles)
+        print(f"SMILES: {smiles}")
+        print(f"Expected: {expected}, Got: {result}")
+        print(f"Reason: {reason}\n")
 
-    fusion_desc = f"({', '.join(set(fusion_type))} fusion)" if fusion_type else "(fusion type undetermined)"
-    return True, f"Confirmed furanocoumarin structure {fusion_desc}"
+if __name__ == "__main__":
+    test_furanocoumarin()
