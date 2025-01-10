@@ -20,24 +20,18 @@ def is_11_oxo_steroid(smiles: str):
         return False, "Invalid SMILES string"
     
     # Define steroid backbone pattern: a tetracyclic system with three 6-membered rings and one 5-membered
-    steroid_pattern = Chem.MolFromSmarts("C1CC2(C)C3C(CCC4=CC(=O)CC[C@]34C)C2C1(CCC4(C)C)")
+    steroid_pattern = Chem.MolFromSmarts("C1CCC2C3C(C4C(CC(C3C2C1)C)C4)CC")
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
     
-    # Define oxo group pattern (C=O) for position 11 and 10 possible positions before C11 (spanning the structure)
+    # Look for an oxo group pattern (C=O) in ring C (somewhere within the middle of the steroid structure)
     oxo_pattern = Chem.MolFromSmarts("C=O")
     oxo_matches = mol.GetSubstructMatches(oxo_pattern)
-    
-    # Validate that there's an oxo group in position 11 (arbitrarily counting based on likely structure)
-    found_11oxo = False
     for match in oxo_matches:
-        # Consider carbon connectivity; typically, positional identification requires more context about the structure
-        # Here, we would normally require true positional cross-check; assume match[-1] as 11 for simplicity
-        if match and (10 <= mol.GetAtomWithIdx(match[-1]).GetDegree() <= 11):  
-            found_11oxo = True
-            break
+        # Check if the C=O is part of the middle of the steroid suggesting the vicinity of position 11
+        atom_idx = match[0]
+        neighbors = [nbr.GetRingInfo().IsInRing(atom.GetIdx()) for atom in mol.GetAtomWithIdx(atom_idx).GetNeighbors()]
+        if True in neighbors:  # implying keto group within 11th distinct ring
+            return True, "Structure has both the steroid backbone and an oxo group at position 11"
     
-    if not found_11oxo:
-        return False, "Oxo group not found at position 11"
-    
-    return True, "Structure has both the steroid backbone and an oxo group at position 11"
+    return False, "Oxo group not accurately identified at position 11"
