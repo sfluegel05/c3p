@@ -27,49 +27,79 @@ def is_secondary_amine(smiles: str):
     # Add explicit hydrogens
     mol = Chem.AddHs(mol)
 
-    # SMARTS patterns to exclude
-    exclude_patterns = [
-        "[nX2]",  # aromatic nitrogen in 5-membered ring
-        "[NX3]C(=O)",  # amide
-        "[N+](=O)[O-]",  # nitro
-        "[N]=[O]",  # nitroso
-        "[NX2]=[C,N]",  # imine
-        "[N-][N+]#N",  # azide
-        "n1cccc1",  # nitrogen in pyrrole
-        "[n;H0]",  # aromatic N without H
-        "[NH0]",  # N without any H
-        "[N+]",  # quaternary N
-        "[N-]",  # negatively charged N
-    ]
+    # Patterns to exclude
+    exclude_patterns = {
+        "amide": "[NX3H1]C(=O)",
+        "sulfonamide": "[NX3H1]S(=O)(=O)",
+        "nitro": "[NX3]([O-])=O",
+        "nitroso": "[NX2]=O",
+        "imine": "[NX2]=C",
+        "azide": "[N-][N+]#N",
+        "aromatic_n": "n",
+        "guanidine": "[NX3H1]C(=N)N",
+        "urea": "[NX3H1]C(=O)N",
+        "carbamate": "[NX3H1]C(=O)O",
+        "charged_n": "[$([N+]),$([N-])]",
+        "thiourea": "[NX3H1]C(=S)N",
+        "phosphoramide": "[NX3H1]P(=O)",
+        "n_oxide": "[NX4+]",
+    }
 
-    # Create molecules from SMARTS patterns
-    exclude_mols = [Chem.MolFromSmarts(pattern) for pattern in exclude_patterns]
+    # Convert patterns to RDKit molecules
+    exclude_mols = {name: Chem.MolFromSmarts(pattern) 
+                   for name, pattern in exclude_patterns.items()}
 
-    # Secondary amine pattern: N with exactly one H and at least 2 non-H neighbors
-    sec_amine_pattern = Chem.MolFromSmarts("[NX3H1][!H]")
-    
-    if not mol.HasSubstructMatch(sec_amine_pattern):
-        return False, "No nitrogen with one hydrogen and two substituents found"
-
-    # Get matches for secondary amine pattern
-    matches = mol.GetSubstructMatches(sec_amine_pattern)
+    # Find all nitrogens with exactly one hydrogen
+    matches = mol.GetSubstructMatches(Chem.MolFromSmarts("[NX3H1]"))
     
     for match in matches:
         N_idx = match[0]
         N_atom = mol.GetAtomWithIdx(N_idx)
         
-        # Skip if nitrogen is part of any excluded pattern
-        if any(mol.HasSubstructMatch(pattern) for pattern in exclude_mols):
+        # Skip if nitrogen is aromatic
+        if N_atom.GetIsAromatic():
             continue
             
         # Count non-hydrogen neighbors
         heavy_neighbors = len([n for n in N_atom.GetNeighbors() 
                              if n.GetAtomicNum() != 1])
         
-        # Secondary amine must have exactly 2 non-H substituents
-        if heavy_neighbors == 2:
-            # Check that the nitrogen is not part of a ring system
-            if not N_atom.IsInRing() or N_atom.IsInRingSize(6):  # Allow 6-membered rings
-                return True, "Contains secondary amine group (NH with two non-H substituents)"
+        if heavy_neighbors != 2:
+            continue
             
+        # Check if this nitrogen is part of any excluded patterns
+        excluded = False
+        for name, pattern in exclude_mols.items():
+            if pattern is not None and mol.HasSubstructMatch(pattern):
+                matches = mol.GetSubstructMatches(pattern)
+                for m in matches:
+                    if N_idx in m:
+                        excluded = True
+                        break
+            if excluded:
+                break
+                
+        if not excluded:
+            # Additional checks for specific cases
+            neighbors = [n for n in N_atom.GetNeighbors() if n.GetAtomicNum() != 1]
+            
+            # Check if both neighbors are carbons (most common case)
+            if all(n.GetAtomicNum() == 6 for n in neighbors):
+                return True, "Contains secondary amine group (NH with two carbon substituents)"
+            
+            # Check if neighbors are C, O, or alkyl groups
+            valid_neighbors = True
+            for n in neighbors:
+                if n.GetAtomicNum() not in [6, 8]:  # C or O
+                    valid_neighbors = False
+                elif n.GetIsAromatic():
+                    # Allow aromatic carbons
+                    continue
+                elif any(bond.GetBondType() != Chem.BondType.SINGLE 
+                        for bond in n.GetBonds()):
+                    valid_neighbors = False
+                    
+            if valid_neighbors:
+                return True, "Contains secondary amine group (NH with two non-H substituents)"
+
     return False, "No valid secondary amine group found"
