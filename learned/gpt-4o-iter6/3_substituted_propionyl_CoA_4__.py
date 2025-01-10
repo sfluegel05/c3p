@@ -19,24 +19,27 @@ def is_3_substituted_propionyl_CoA_4__(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string, cannot parse"
+        return False, "Invalid SMILES string"
 
-    # Full CoA pattern, ensure we include the key structural motifs
-    coA_full_pattern = Chem.MolFromSmarts(
-        "NC(=O)CCNC(=O)C[C@H](O)C(C)(C)COP(=O)([O-])OP(=O)([O-])OC[C@H]1O[C@H]([C@H](O)[C@H]1OP(=O)([O-])[O-])n2cnc3c(N)ncnc23"
-    )
-    if not mol.HasSubstructMatch(coA_full_pattern):
-        return False, "Missing or incomplete coenzyme A structure"
+    # 1. Check for phosphopantetheine moiety
+    coA_pattern = Chem.MolFromSmarts("OC(C)C(NC(=O)CCNC(=O)S)COP(=O)([O-])OP(=O)([O-])")
+    if not mol.HasSubstructMatch(coA_pattern):
+        return False, "Missing phosphopantetheine and diphosphate connections"
 
-    # Generalized 3-substituted propionyl pattern: allowing for variable R-group substitution at C3
-    propionyl_pattern = Chem.MolFromSmarts("SC(=O)C(C[CX4,CX3])")
-    if not mol.HasSubstructMatch(propionyl_pattern):
-        return False, "Missing or incorrectly structured 3-substituted propionyl chain"
+    # 2. Possibly match adenine-related structure
+    adenine_pattern = Chem.MolFromSmarts("N1C=NC2=C(N=CN=C2N1)")
+    if not mol.HasSubstructMatch(adenine_pattern):
+        return False, "Adenine-related structure not found"
 
-    # Ensure exactly four negatively charged oxygens
-    n_neg_oxygens = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'O' and atom.GetFormalCharge() == -1)
-    if n_neg_oxygens != 4:
-        return False, f"Incorrect number of negatively charged oxygens, found {n_neg_oxygens}, expected 4"
+    # 3. Check acyl chain with 3-position branching
+    acyl_pattern = Chem.MolFromSmarts("CCC(=O)")
+    if not mol.HasSubstructMatch(acyl_pattern):
+        return False, "Missing 3-substituted propionyl linkage"
 
-    # If all checks pass, it is a 3-substituted propionyl-CoA(4-)
-    return True, "Matches 3-substituted propionyl-CoA(4-) structure"
+    # 4. Check for negative charge states
+    neg_charge_pat = Chem.MolFromSmarts("[O-]")
+    neg_charge_matches = mol.GetSubstructMatches(neg_charge_pat)
+    if len(neg_charge_matches) < 3:
+        return False, "Insufficient deprotonated groups for 4- charge"
+
+    return True, "Contains features of 3-substituted propionyl-CoA(4-)"
