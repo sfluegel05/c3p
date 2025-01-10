@@ -5,17 +5,17 @@ Classifies: CHEBI:61905 short-chain fatty acyl-CoA
 Classifies: CHEBI:60940 short-chain fatty acyl-CoA
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_short_chain_fatty_acyl_CoA(smiles: str):
     """
     Determines if a molecule is a short-chain fatty acyl-CoA based on its SMILES string.
-    A short-chain fatty acyl-CoA results from the condensation of the thiol group of coenzyme A
-    with the carboxy group of any short-chain fatty acid (2 to 5 carbons long).
+    A short-chain fatty acyl-CoA is a fatty acyl-CoA that results from the formal condensation 
+    of the thiol group of coenzyme A with the carboxy group of any short-chain fatty acid.
     
     Args:
         smiles (str): SMILES string of the molecule
-
+    
     Returns:
         bool: True if molecule is a short-chain fatty acyl-CoA, False otherwise
         str: Reason for classification
@@ -25,62 +25,57 @@ def is_short_chain_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a SMARTS pattern for Coenzyme A moiety
-    # Include key features: adenine ring, ribose, diphosphates, pantetheine arm
-    # Use a simplified pattern to avoid over-specification
-    coA_smarts_str = 'NC1=NC=NC2=C1N=CN2[C@H]3O[C@H](COP(=O)(O)OP(=O)(O)OC[C@H]4O[C@@H](N5C=NC=N5)[C@@H](O)[C@H]4OP(=O)(O)O)[C@H](O)[C@H]3OP(=O)(O)O'
-    coA_pattern = Chem.MolFromSmarts(coA_smarts_str)
-
-    if not mol.HasSubstructMatch(coA_pattern):
+    # Define SMARTS pattern for Coenzyme A (partial pattern to match key features)
+    coA_smarts = Chem.MolFromSmarts("""
+    NC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H](CO[P](=O)(O)O)[C@@H](O)[C@H]1O
+    """)
+    if not mol.HasSubstructMatch(coA_smarts):
         return False, "Coenzyme A moiety not found"
 
-    # Define a SMARTS pattern for the thioester linkage
-    thioester_smarts_str = 'C(=O)SC'
-    thioester_pattern = Chem.MolFromSmarts(thioester_smarts_str)
-    thioester_matches = mol.GetSubstructMatches(thioester_pattern)
-
+    # Define SMARTS pattern for thioester linkage between fatty acyl group and CoA
+    thioester_smarts = Chem.MolFromSmarts("C(=O)SCCN")  # Simplified pattern including part of CoA
+    thioester_matches = mol.GetSubstructMatches(thioester_smarts)
     if not thioester_matches:
         return False, "Thioester linkage not found"
 
-    # For each thioester linkage, attempt to identify the acyl chain length
+    # Identify the acyl chain attached via thioester linkage
     for match in thioester_matches:
-        carbonyl_c_idx = match[0]  # Carbon of C=O
-        sulfur_idx = match[2]      # Sulfur atom index
+        carbonyl_c_idx = match[0]  # Carbonyl carbon
+        sulfur_idx = match[2]      # Sulfur atom
 
-        # Get the acyl chain starting from the carbonyl carbon
-        acyl_chain_atoms = []
-        visited = set()
-        stack = [carbonyl_c_idx]
-        while stack:
-            atom_idx = stack.pop()
-            if atom_idx in visited:
-                continue
-            visited.add(atom_idx)
-            atom = mol.GetAtomWithIdx(atom_idx)
-            acyl_chain_atoms.append(atom)
-            if atom_idx != carbonyl_c_idx:  # Do not include the carbonyl carbon again
-                # Only traverse through carbons (exclude sulfur to prevent crossing into CoA moiety)
-                if atom.GetAtomicNum() != 6:
-                    continue
-            for neighbor in atom.GetNeighbors():
-                neighbor_idx = neighbor.GetIdx()
-                # Stop at the sulfur atom to prevent crossing into CoA
-                if neighbor_idx == sulfur_idx:
-                    continue
-                if neighbor_idx not in visited:
-                    stack.append(neighbor_idx)
+        # Get bond between carbonyl carbon and sulfur
+        bond = mol.GetBondBetweenAtoms(carbonyl_c_idx, sulfur_idx)
+        if bond is None:
+            continue
 
-        # Count the number of carbon atoms in the acyl chain, excluding the carbonyl carbon
-        num_carbons = sum(1 for atom in acyl_chain_atoms if atom.GetAtomicNum() == 6) - 1  # Exclude carbonyl carbon
+        # Break the bond to isolate the fatty acyl chain
+        mol_frag = Chem.FragmentOnBonds(mol, [bond.GetIdx()], addDummies=False)
+        frags = Chem.GetMolFrags(mol_frag, asMols=True, sanitizeFrags=True)
+        
+        # Identify the fragment containing the fatty acyl chain
+        acyl_chain = None
+        for frag in frags:
+            atom_indices = [atom.GetIdx() for atom in frag.GetAtoms()]
+            if carbonyl_c_idx in atom_indices:
+                acyl_chain = frag
+                break
+        
+        if acyl_chain is None:
+            continue
 
-        if 1 <= num_carbons <= 4:
-            return True, f"Found short-chain fatty acyl-CoA with acyl chain length {num_carbons +1} carbons"
+        # Count the number of carbons in the acyl chain
+        num_carbons = sum(1 for atom in acyl_chain.GetAtoms() if atom.GetAtomicNum() == 6)
+        # Exclude the carbonyl carbon (assumed to be counted)
+        num_carbons -= 1
+
+        if num_carbons <= 5:
+            return True, f"Found short-chain fatty acyl-CoA with acyl chain length {num_carbons}"
         else:
-            return False, f"Acyl chain length is {num_carbons +1}, not short-chain"
+            return False, f"Acyl chain length is {num_carbons}, not short-chain"
 
-    return False, "Acyl chain not identified or not short-chain"
+    return False, "Thioester linkage not properly formed or acyl chain not identified"
 
-# Add metadata
+
 __metadata__ = {
     'chemical_class': {
         'id': 'CHEBI:60940',
@@ -101,9 +96,18 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 3,
+    'attempt': 0,
     'success': True,
     'best': True,
     'error': '',
-    'stdout': None
+    'stdout': None,
+    'num_true_positives': 150,
+    'num_false_positives': 4,
+    'num_true_negatives': 182407,
+    'num_false_negatives': 23,
+    'num_negatives': None,
+    'precision': 0.974025974025974,
+    'recall': 0.8670520231213873,
+    'f1': 0.9174311926605504,
+    'accuracy': 0.9998521228585199
 }
