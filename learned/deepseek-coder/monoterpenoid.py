@@ -28,8 +28,8 @@ def is_monoterpenoid(smiles: str):
     # Count the number of carbon atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     
-    # Monoterpenoids typically have 10 carbons, but modifications may expand this range slightly
-    if c_count < 8 or c_count > 20:
+    # Monoterpenoids typically have 10 carbons, but modifications may expand this range
+    if c_count < 8 or c_count > 30:
         return False, f"Carbon count ({c_count}) is outside the expected range for a monoterpenoid"
 
     # Check for isoprene-like patterns (C5 units) or modified forms
@@ -39,11 +39,7 @@ def is_monoterpenoid(smiles: str):
         "[CH3]-[CH]=[CH2]",        # Simplified isoprene unit
         "[CH3]-[CH]=[CH]",         # Further simplified isoprene unit
         "[CH2]-[CH]=[CH2]",        # Another common pattern
-        "[CH2]-[CH]=[CH]",         # Another common pattern
-        "[CH3]-[CH2]-[CH2]-[CH]=[CH2]",  # Extended isoprene-like pattern
-        "[CH3]-[CH2]-[CH2]-[CH]=[CH]",   # Extended isoprene-like pattern
-        "[CH3]-[CH2]-[CH2]-[CH2]-[CH]=[CH2]",  # Extended isoprene-like pattern
-        "[CH3]-[CH2]-[CH2]-[CH2]-[CH]=[CH]",   # Extended isoprene-like pattern
+        "[CH2]-[CH]=[CH]"          # Another common pattern
     ]
     has_isoprene_pattern = any(mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)) for pattern in isoprene_patterns)
     if not has_isoprene_pattern:
@@ -63,9 +59,14 @@ def is_monoterpenoid(smiles: str):
     if not has_functional_group:
         return False, "No typical monoterpenoid functional groups found"
 
+    # Check for ring structures (many monoterpenoids are cyclic)
+    ring_info = mol.GetRingInfo()
+    if not ring_info.NumRings():
+        return False, "No ring structures found, which are common in monoterpenoids"
+
     # Check molecular weight (monoterpenoids typically have MW between 130 and 300)
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 130 or mol_wt > 300:
+    if mol_wt < 130 or mol_wt > 500:
         return False, f"Molecular weight ({mol_wt:.2f}) is outside the expected range for a monoterpenoid"
 
     return True, "Contains a C10 skeleton or modified form with typical monoterpenoid features"
