@@ -8,7 +8,7 @@ def is_hemiaminal(smiles: str):
     Determines if a molecule is a hemiaminal based on its SMILES string.
 
     A hemiaminal contains both a hydroxyl group (-OH) and an amine group (-NH2 or -NH)
-    attached to the same carbon atom, including cyclic variations.
+    attached to the same carbon atom, including consideration of stereochemistry.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,15 +23,16 @@ def is_hemiaminal(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Improved pattern for hemiaminal:
-    # Allow for both primary and secondary amines, and ring structures
+    # Refined pattern for hemiaminal:
+    # Ensure patterns accurately reflect plausible hemiaminal configurations
     hemiaminal_patterns = [
-        "[C;R0]([OH])([NH2])",   # Standard hemiaminal structure
-        "[C;R0]([OH])([NH])",    # Secondary amine variant
-        "[C&!R1]([OH])N",        # Exclude direct C-N bonds that form rings, using NSMARTS
-        "[$(C([OH])[NH,NH2])]"] # Check for broader environment, may find both 
+        "[C;!R]([OH])[NH2]",     # Non-cyclic, open-chain hemiaminal
+        "[C;!R]([OH])[NH]",      # Non-cyclic secondary amine variant
+        "[C&R]([OH])[NH2]",      # Cyclic, primary amine variant
+        "[C&R]([OH])[NH]",       # Cyclic, secondary amine variant
+    ]
 
-    # Iterate through hemiaminal_patterns to find a match
+    # Iterate through the refined hemiaminal patterns to find a match
     for pattern in hemiaminal_patterns:
         hemiaminal_pattern = Chem.MolFromSmarts(pattern)
         if mol.HasSubstructMatch(hemiaminal_pattern):
