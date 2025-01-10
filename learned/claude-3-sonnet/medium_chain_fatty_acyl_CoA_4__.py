@@ -26,17 +26,16 @@ def is_medium_chain_fatty_acyl_CoA_4__(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
         
-    # Check for CoA phosphate groups - more general pattern
-    phosphate_pattern = Chem.MolFromSmarts("P(=O)([O-,OH])([O-,OH])")
+    # Check for CoA phosphate groups - using more flexible pattern
+    phosphate_pattern = Chem.MolFromSmarts("[PX4](=[OX1])([OX2H,OX1-])[OX2H,OX1-]")
     phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
     if len(phosphate_matches) < 3:
-        return False, f"Found only {len(phosphate_matches)} phosphate groups, need at least 3"
+        return False, f"Found {len(phosphate_matches)} phosphate groups, need at least 3"
         
-    # Check for exactly 4 negative charges
-    charge_pattern = Chem.MolFromSmarts("[O-]")
-    charge_matches = mol.GetSubstructMatches(charge_pattern)
-    if len(charge_matches) != 4:
-        return False, f"Found {len(charge_matches)} negative charges, need exactly 4"
+    # Count negative charges
+    explicit_charge = sum(atom.GetFormalCharge() for atom in mol.GetAtoms())
+    if explicit_charge != -4:
+        return False, f"Total charge is {explicit_charge}, need -4"
         
     # Check for adenine
     adenine_pattern = Chem.MolFromSmarts("c1nc(c2c(n1)ncn2)N")
