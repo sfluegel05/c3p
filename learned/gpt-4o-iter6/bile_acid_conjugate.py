@@ -21,27 +21,28 @@ def is_bile_acid_conjugate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # More flexible bile acid steroid backbone pattern
-    steroid_backbone_pattern = Chem.MolFromSmarts("C1CC2CCC3C(C2C1)C4CCC5C(C=CCC5C4)C3C")
+    # Generic bile acid steroid backbone pattern (allows for flexibility)
+    steroid_backbone_pattern = Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2CC4C(C3)CC(C4)C")  # Core steroid structure
     if not mol.HasSubstructMatch(steroid_backbone_pattern):
         return False, "No bile acid core structure found"
 
-    # Improved conjugation patterns
-    glycine_pattern = Chem.MolFromSmarts("NC[C@@H](C(=O)O)")
-    taurine_pattern = Chem.MolFromSmarts("S(=O)(=O)CCN")
-    sulfate_pattern = Chem.MolFromSmarts("OS(=O)(=O)[O-]")  # Includes common charged state
-    generic_amino_acid_pattern = Chem.MolFromSmarts("NC(C(=O)O)C")  # Covers more generic amino acids
+    # Enhanced conjugation patterns
+    conjugation_patterns = [
+        Chem.MolFromSmarts("NC(C)=O"),  # Simple glycine pattern
+        Chem.MolFromSmarts("S(=O)(=O)CCN"),  # Taurine pattern
+        Chem.MolFromSmarts("OS(=O)(=O)O"),  # Sulfate pattern
+        Chem.MolFromSmarts("C(O)C(=O)O"),  # Generic carboxylic acid pattern for glucuronates
+        Chem.MolFromSmarts("C1OC(CO)C(O)C1O"),  # Glucose-like pattern
+        Chem.MolFromSmarts("O[C@@H]1[C@H]([C@H](O)[C@H](O)[C@H](O)[C@H]1O)C"),  # Specific sugar motifs
+        Chem.MolFromSmarts("NC(C(=O)O)C"),  # Generic amino acid pattern
+    ]
 
-    # Check for presence of any known conjugation pattern
+    # Check for any known conjugation pattern
     conjugates_found = False
-    if mol.HasSubstructMatch(glycine_pattern):
-        conjugates_found = True
-    elif mol.HasSubstructMatch(taurine_pattern):
-        conjugates_found = True
-    elif mol.HasSubstructMatch(sulfate_pattern):
-        conjugates_found = True
-    elif mol.HasSubstructMatch(generic_amino_acid_pattern):
-        conjugates_found = True
+    for pattern in conjugation_patterns:
+        if mol.HasSubstructMatch(pattern):
+            conjugates_found = True
+            break
 
     if not conjugates_found:
         return False, "No known bile acid conjugate pattern found"
