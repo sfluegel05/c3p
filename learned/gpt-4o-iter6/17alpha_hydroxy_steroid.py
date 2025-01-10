@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_17alpha_hydroxy_steroid(smiles: str):
     """
     Determines if a molecule is a 17alpha-hydroxy steroid based on its SMILES string.
-    A 17alpha-hydroxy steroid has a hydroxyl group at the 17alpha position on the steroid structure.
+    A 17alpha-hydroxy steroid should have a hydroxyl group at the 17alpha position on the steroid structure.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,15 +21,13 @@ def is_17alpha_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Revising the SMARTS pattern for steroid backbone to be more comprehensive
-    # Including key structural elements of characteristic steroid core
-    steroid_pattern = Chem.MolFromSmarts("C1CC[C@H]2[C@@H](C1)CC[C@]3([C@H]2CCC4=CC(=O)CC[C@]34C)C")
+    # SMARTS pattern for the steroid backbone - cyclopenta[a]phenanthrene skeleton
+    steroid_pattern = Chem.MolFromSmarts("[C@]12CC[C@H]3[C@@H](C(=O)CC[C@]3(C)[C@@]1([H])[C@@H](O)CC[C@@]2([H])[C@@H](O))")
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
     
-    # Revising SMARTS pattern for 17alpha-hydroxy group
-    # Adjust to check specific positioning and stereochemistry
-    hydroxyl_pattern = Chem.MolFromSmarts("C[C@H](O)[CH2][C@H]1")
+    # SMARTS for a 17alpha-hydroxy group in context with potential attached sub-structures
+    hydroxyl_pattern = Chem.MolFromSmarts("[C@](O)C[C@H](C)O")
     if not mol.HasSubstructMatch(hydroxyl_pattern):
         return False, "No 17alpha-hydroxyl group found"
     
