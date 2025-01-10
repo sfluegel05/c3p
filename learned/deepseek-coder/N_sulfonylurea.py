@@ -25,6 +25,13 @@ def is_N_sulfonylurea(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
+    # Define the urea group pattern
+    urea_pattern = Chem.MolFromSmarts("[NX3][C](=[OX1])[NX3]")
+    
+    # Check if the molecule contains a urea group
+    if not mol.HasSubstructMatch(urea_pattern):
+        return False, "No urea group found"
+
     # Define the N-sulfonylurea pattern: urea group with one nitrogen attached to a sulfonyl group
     n_sulfonylurea_pattern = Chem.MolFromSmarts("[NX3][C](=[OX1])[NX3][S](=[OX1])(=[OX1])")
     
