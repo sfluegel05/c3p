@@ -28,15 +28,16 @@ def is_phosphatidylinositol_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for inositol ring (6-membered ring with all carbons and correct substitution)
-    inositol_pattern = Chem.MolFromSmarts("[C]1[C][C][C][C][C]1")
+    # Look for myo-inositol ring pattern (6-membered ring with all carbons and hydroxyls)
+    # More specific pattern including hydroxyl groups
+    inositol_pattern = Chem.MolFromSmarts("[C]1([OH])[C]([OH])[C]([OH])[C]([OH])[C]([OH])[C]1[OH]")
     if not mol.HasSubstructMatch(inositol_pattern):
-        return False, "No inositol ring found"
+        return False, "No myo-inositol ring found"
 
     # Find inositol ring atoms
     inositol_matches = mol.GetSubstructMatches(inositol_pattern)
     if not inositol_matches:
-        return False, "No inositol ring found"
+        return False, "No myo-inositol ring found"
     inositol_atoms = set(inositol_matches[0])
 
     # Pattern for phosphate group attached to oxygen
@@ -58,22 +59,21 @@ def is_phosphatidylinositol_phosphate(smiles: str):
 
     # Must have at least one phosphate directly on inositol ring
     # (not counting the bridging phosphate to glycerol)
-    if inositol_phosphates < 2:  # One phosphate is the bridge to glycerol
-        return False, "No additional phosphate groups on inositol ring beyond the glycerol linkage"
+    if inositol_phosphates < 1:
+        return False, "No phosphate modifications found on inositol ring"
 
-    # Look for glycerol backbone pattern
+    # Look for glycerol backbone or ester modifications
     glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
     ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
     
-    # Verify either glycerol backbone or modified structure
-    is_modified = False
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        is_modified = True
-        if not mol.HasSubstructMatch(ester_pattern):
-            return False, "Neither glycerol backbone nor modified structure found"
+    has_glycerol = mol.HasSubstructMatch(glycerol_pattern)
+    has_esters = mol.HasSubstructMatch(ester_pattern)
+    
+    if not (has_glycerol or has_esters):
+        return False, "Missing required glycerol backbone or ester modifications"
 
-    # For standard PIPs, verify fatty acid chains
-    if not is_modified:
+    # For standard PIPs with glycerol, verify fatty acid chains
+    if has_glycerol:
         fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
         fatty_acid_matches = len(mol.GetSubstructMatches(fatty_acid_pattern))
         if fatty_acid_matches < 2:
@@ -83,10 +83,10 @@ def is_phosphatidylinositol_phosphate(smiles: str):
     actual_modifications = inositol_phosphates - 1  # Subtract the bridging phosphate
     
     if actual_modifications >= 3:
-        return True, "Contains inositol ring with trisphosphate modification (PIP3)"
+        return True, "Contains myo-inositol ring with trisphosphate modification (PIP3)"
     elif actual_modifications == 2:
-        return True, "Contains inositol ring with bisphosphate modification (PIP2)"
+        return True, "Contains myo-inositol ring with bisphosphate modification (PIP2)"
     elif actual_modifications == 1:
-        return True, "Contains inositol ring with monophosphate modification (PIP)"
+        return True, "Contains myo-inositol ring with monophosphate modification (PIP)"
     else:
-        return False, "Insufficient phosphate modifications on inositol ring"
+        return True, "Contains myo-inositol ring with phosphate modification"
