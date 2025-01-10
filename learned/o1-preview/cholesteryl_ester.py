@@ -26,17 +26,17 @@ def is_cholesteryl_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the cholesteryl ester pattern
-    # Cholesterol backbone with an ester linkage at the 3-hydroxy position
+    # Define cholesteryl ester SMARTS pattern
+    # Cholesterol backbone with ester linkage at 3-position
     cholesteryl_ester_smarts = """
-    [#6;A]1-[#6;A]-[#6;A]-[#6;A]2(-[#1])-[#6;A](-[#6;A]3(-[#6;A](-[#6;A]4(-[#6;A]-[#6;A]-[#6;A]-[#6;A]-[#6;A]-4)-[#1])(-[#1])-[#6;A]-3-[#1])(-[#1])-[#6;A]-2-[#6;A]-1)-[#8]-[#6](=O)-[#6]
+    [C@H](OC(=O)[#6])[CH2][CH2][C@H]1[C@@H]([CH2][C@@H]2[C@H]([CH2][CH2]3[C@](C)([CH2][CH2][C@@H]3[C@@H]2CC=C1C)C)C)C
     """
     cholesteryl_ester_pattern = Chem.MolFromSmarts(cholesteryl_ester_smarts)
     if cholesteryl_ester_pattern is None:
         return False, "Invalid cholesteryl ester SMARTS pattern"
 
-    # Check for substructure match
-    if not mol.HasSubstructMatch(cholesteryl_ester_pattern):
+    # Check for substructure match with chirality
+    if mol.HasSubstructMatch(cholesteryl_ester_pattern,useChirality=True):
+        return True, "Molecule is a cholesteryl ester (cholesterol esterified at 3-hydroxy position)"
+    else:
         return False, "Cholesteryl ester pattern not found"
-
-    return True, "Molecule is a cholesteryl ester (cholesterol esterified at 3-hydroxy position)"
