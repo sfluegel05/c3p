@@ -6,13 +6,14 @@ from rdkit import Chem
 def is_phenylpropanoid(smiles: str):
     """
     Determines if a molecule is a phenylpropanoid based on its SMILES string.
-    Phenylpropanoids are organic aromatic compounds with a structure based on a phenylpropane skeleton.
+    Phenylpropanoids are organic aromatic compounds with a structure based on a phenyl ring attached
+    to small carbon chains or functional groups.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a phenylpropanoid, False otherwise
+        bool: True if the molecule is a phenylpropanoid, False otherwise
         str: Reason for classification
     """
     
@@ -20,22 +21,18 @@ def is_phenylpropanoid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define key features to identify a phenylpropanoid
-    # A basic phenylpropanoid can be represented as "c1ccccc1CCC" - a phenyl ring followed by 3-carbons (propane).
-    phenylpropane_pattern = Chem.MolFromSmarts("c1ccccc1CCC")
     
-    # Check for the presence of the phenylpropane core
-    if not mol.HasSubstructMatch(phenylpropane_pattern):
-        phenyl_pattern = Chem.MolFromSmarts("c1ccccc1")
-        if not mol.HasSubstructMatch(phenyl_pattern):
-            return False, "No phenyl ring found"
+    # Define a flexible phenylpropanoid pattern:
+    # The main aromatic ring with varying potential linkers (C chains or linking groups)
+    phenyl_pattern = Chem.MolFromSmarts("c1ccccc1")
+    functional_groups_pattern = Chem.MolFromSmarts("[OX2,CX3,CX4]")
+    
+    # Check for the presence of at least one phenyl ring
+    if not mol.HasSubstructMatch(phenyl_pattern):
+        return False, "No aromatic (phenyl) ring found"
         
-        # Check for presence of alternative phenyl linked with small carbon structures, e.g., CO-coupled systems
-        coupled_pattern = Chem.MolFromSmarts("[cH1]-[CX3](=[OX1])-[O,N]", asQuery=True)
-        if not mol.HasSubstructMatch(coupled_pattern):
-            return False, "Missing typical phenylpropanoid linkage (e.g., phenolic or carbonyl coupled system)"
-    
-    return True, "Structure consistent with phenylpropanoid, containing phenyl/group and typical linkages"
+    # Validate the connection to small aliphatic/functional groups
+    if not mol.HasSubstructMatch(functional_groups_pattern):
+        return False, "Missing connection to appropriate aliphatic chains or functional groups"
 
-# Note: This is a heuristic approach due to the diverse nature of phenylpropanoids.
+    return True, "Structure consistent with phenylpropanoid, containing phenyl ring and typical linkages"
