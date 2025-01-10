@@ -22,15 +22,17 @@ def is_sphingomyelin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define more general SMARTS patterns for key structural features of sphingomyelin
-    # General pattern for amide bond with any alkyl chain
-    amide_bond_pattern = Chem.MolFromSmarts("[NX3][CX4]([H])[CX3](=O)[CX4]")
-    
-    # Phosphorylcholine group - verify if exactly the same structure needed
+    # General pattern for amide linkage with any long carbon chain
+    # Allow for variability in the alkyl chains and stereochemistry
+    amide_bond_pattern = Chem.MolFromSmarts("N[C@@H](C)C(=O)C")
+
+    # Phosphorylcholine group
     phosphorylcholine_pattern = Chem.MolFromSmarts("COP([O-])(=O)OCC[N+](C)(C)C")
     
-    # General pattern for sphingoid base (ensuring variability in stereochemistry and functional groups)
-    sphingoid_base_pattern = Chem.MolFromSmarts("C[C@@H](OC)C[CX4](O)(C)")
+    # Pattern for sphingoid base
+    # Include stereochemistry options where observed and necessary
+    # Allow for variability in oxygen and nitrogen bonding (hydroxyl and amino)
+    sphingoid_base_pattern = Chem.MolFromSmarts("C[C@H](O)[C@@H](NC(=O)[C,C]C)[CX4]")
 
     # Check for amide bond
     if not mol.HasSubstructMatch(amide_bond_pattern):
