@@ -27,18 +27,18 @@ def is_nucleoside_5__phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define more flexible patterns
-    # Sugar with phosphate group (less specific stereochemistry)
-    sugar_phosphate_pattern = Chem.MolFromSmarts("[C@H]1O[C@H](COP(=O)([OX1,O])([OX2,O]))[C@@H]([OX2,O])[C@H]1[OX2,O]")
+    # Define patterns for key components
+    # Ribose or deoxyribose sugar ring pattern
+    sugar_pattern = Chem.MolFromSmarts("[C@H]1O[C@H](COP(=O)(O)O)[C@@H](O)[C@H]1O")
     
-    # More general purine pattern
-    purine_pattern = Chem.MolFromSmarts("[nX2]1[cX2][nX2][cX2]2[nX2][cX2][nX2][cX2]12")
+    # Purine base pattern (adenine, guanine)
+    purine_pattern = Chem.MolFromSmarts("n1cnc2ncnc12")
     
-    # More general pyrimidine pattern
-    pyrimidine_pattern = Chem.MolFromSmarts("[nX2]1[cX2][cX2][cX2]([#8X1]=[#6X3])[nX2][cX2]1=O")
+    # Pyrimidine base pattern (cytosine, thymine, uracil)
+    pyrimidine_pattern = Chem.MolFromSmarts("n1ccc(=O)[nH]c1=O")
     
-    # Check for sugar with phosphate group
-    if not mol.HasSubstructMatch(sugar_phosphate_pattern):
+    # Check for sugar ring with phosphate group
+    if not mol.HasSubstructMatch(sugar_pattern):
         return False, "No ribose/deoxyribose sugar with 5'-phosphate found"
     
     # Check for purine or pyrimidine base
@@ -48,15 +48,15 @@ def is_nucleoside_5__phosphate(smiles: str):
     if not (has_purine or has_pyrimidine):
         return False, "No purine or pyrimidine base found"
     
-    # Check for phosphate group (including esterified forms)
-    phosphate_pattern = Chem.MolFromSmarts("[PX4](=O)([OX2,O])([OX2,O])[OX2,O]")
+    # Count phosphate groups
+    phosphate_pattern = Chem.MolFromSmarts("[PX4](=O)(O)(O)O")
     phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
     if len(phosphate_matches) < 1:
         return False, "No phosphate group found"
     
-    # Check molecular weight - nucleoside 5'-phosphates typically >200 Da
+    # Check molecular weight - nucleoside 5'-phosphates typically >300 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 200:
+    if mol_wt < 300:
         return False, "Molecular weight too low for nucleoside 5'-phosphate"
     
     # Count carbons, oxygens, and nitrogens
@@ -66,7 +66,7 @@ def is_nucleoside_5__phosphate(smiles: str):
     
     if c_count < 5:
         return False, "Too few carbons for nucleoside 5'-phosphate"
-    if o_count < 4:
+    if o_count < 5:
         return False, "Too few oxygens for nucleoside 5'-phosphate"
     if n_count < 1:
         return False, "No nitrogen found in base"
