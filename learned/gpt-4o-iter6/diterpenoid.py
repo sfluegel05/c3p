@@ -26,16 +26,13 @@ def is_diterpenoid(smiles: str):
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     
     # Diterpenoids typically have a backbone ranging around 20 carbons, but may vary due to rearrangements
-    if c_count < 15 or c_count > 25:  # Allow more flexibility than a strict C20
+    if c_count < 18 or c_count > 30:  # Allow flexibility for known diterpenoid variants and rearrangements
         return False, f"Uncommon carbon count ({c_count}) for diterpenoids"
 
-    # Terpenoid characteristics: made from isoprene (C5) units, but can be rearranged
-    # Terpenoids often have C=C bonds, epoxide groups, and can form complex fused rings
-
-    # Check for presence of at least one cycle (ring structure)
+    # Check for presence of multiple cycles (ring structures)
     ring_info = mol.GetRingInfo()
-    if not ring_info or ring_info.NumRings() < 1:
-        return False, "Diterpenoids typically have at least one ring structure"
+    if not ring_info or ring_info.NumRings() < 2:
+        return False, "Diterpenoids typically have multiple ring structures"
     
     # Check for presence of double bonds (C=C), common in terpenoid structures
     double_bond_count = sum(1 for bond in mol.GetBonds() if bond.GetBondTypeAsDouble() == 2)
@@ -46,5 +43,13 @@ def is_diterpenoid(smiles: str):
     has_oxygen = any(atom.GetAtomicNum() == 8 for atom in mol.GetAtoms())
     if not has_oxygen:
         return False, "Lack of typical functional groups like alcohols or ethers"
+
+    # Check for common diterpenoid patterns, such as epoxides or specific hydroxyl arrangements
+    diterpenoid_patterns = [
+        Chem.MolFromSmarts("[C@](C)(O)"),  # Example: Hydroxyl group pattern
+        Chem.MolFromSmarts("O=[C]OC"),   # Example: Ester or epoxide pattern
+    ]
+    if not any(mol.HasSubstructMatch(pattern) for pattern in diterpenoid_patterns):
+        return False, "Missing signature substructures for diterpenoids"
 
     return True, "Molecule matches diterpenoid characteristics with flexible carbon count and typical structural features"
