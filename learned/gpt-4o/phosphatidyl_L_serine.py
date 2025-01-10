@@ -21,18 +21,20 @@ def is_phosphatidyl_L_serine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for glycerol backbone with phosphorus and serine esterification allowing stereochemistry variation
-    structural_pattern = Chem.MolFromSmarts("OCC(O[P](=O)(O)OCC(N)C(=O)O)COP(O)(=O)O")
+    # Look for chiral phosphate linkage with a serine attachment
+    serine_pattern = Chem.MolFromSmarts("P(=O)(O[C@@H](N)C(=O)O)O")
+    if not mol.HasSubstructMatch(serine_pattern):
+        return False, "No phosphoserine linkage found"
     
-    if not mol.HasSubstructMatch(structural_pattern):
-        return False, "No phosphatidyl-L-serine backbone structure detected"
-    
-    # Find ester groups connected with carbon chains, accounting for potential variations
-    ester_pattern = Chem.MolFromSmarts("C(=O)O[C@H]C")
+    # Look for two fatty acid ester chains - accounts for various carbon chain lengths and configurations
+    ester_pattern = Chem.MolFromSmarts("OC(=O)C")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
-
-    # Ensure there are at least two ester linkages denoting two fatty acid chains
     if len(ester_matches) < 2:
-        return False, f"Found {len(ester_matches)} fatty acid ester links, need at least 2"
+        return False, f"Found {len(ester_matches)} ester links, need at least 2 for fatty acid chains"
     
-    return True, "Contains glycerol backbone with two fatty acid chains and phosphatidyl group esterified to serine"
+    # Check for glycerol backbone structure: A chain of 3 oxygen-connected carbons
+    glycerol_pattern = Chem.MolFromSmarts("OCC(O)CO")
+    if not mol.HasSubstructMatch(glycerol_pattern):
+        return False, "No glycerol backbone detected"
+    
+    return True, "Contains glycerol backbone, two fatty acid chains, and phosphatidyl group esterified to serine"
