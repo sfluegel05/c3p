@@ -2,13 +2,12 @@
 Classifies: CHEBI:74716 withanolide
 """
 from rdkit import Chem
+from rdkit.Chem import Descriptors
 
 def is_withanolide(smiles: str):
     """
     Determines if a molecule is a withanolide based on its SMILES string.
-    
-    A withanolide is characterized as a steroid lactone with specific structural features,
-    such as a C28 steroid with a modified side chain forming a lactone ring.
+    A withanolide is defined as a C28 steroid lactone with modified side chains forming a lactone ring.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,35 +21,23 @@ def is_withanolide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Expanded steroid core patterns to include more diverse arrangements
-    steroid_core_patterns = [
-        Chem.MolFromSmarts("C1CC2=C(C3CC[C@@H]4C=C[C@H]4[C@@H]3C2)C=CC=C1"),  # 6-6-6-5 with conjugations
-        Chem.MolFromSmarts("C1CCC2C3CCC4(C)C=CC4C3CC2C1C"),                 # Common steroid nucleus
-    ]
+    # Check for steroid core (4 fused rings pattern)
+    steroid_pattern = Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2CCC4(C3)CCCC4")
+    if not mol.HasSubstructMatch(steroid_pattern):
+        return False, "No steroid core structure found"
     
-    # Check if any steroid core pattern is present
-    if not any(mol.HasSubstructMatch(pattern) for pattern in steroid_core_patterns):
-        return False, "No valid steroid core structure found"
-    
-    # Flexible lactone recognition
-    lactone_patterns = [
-        Chem.MolFromSmarts("O=C1O[C@@H]1"),            # 3 to 7-member lactone configurations
-        Chem.MolFromSmarts("O=C1COC=C1"),              # possibility of substitutions
-    ]
-    
-    # Check for lactone presence
-    if not any(mol.HasSubstructMatch(pattern) for pattern in lactone_patterns):
+    # Check for presence of lactone ring
+    lactone_pattern = Chem.MolFromSmarts("O=C1OC=CC1")
+    if not mol.HasSubstructMatch(lactone_pattern):
         return False, "No lactone ring found"
     
-    # Count total carbons
-    carbon_count = sum(atom.GetAtomicNum() == 6 for atom in mol.GetAtoms())
-    if not (26 <= carbon_count <= 30):
-        return False, f"Molecule has {carbon_count} carbons, outside expected range for withanolides"
+    # Check for C28 structure
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 28:
+        return False, "Molecule has fewer than 28 carbons"
     
-    # Presence of hydroxyl groups matching common withanolide substituent
-    hydroxyl_pattern = Chem.MolFromSmarts("[CX4H1][OH]")
-    if not mol.HasSubstructMatch(hydroxyl_pattern):
-        return False, "No hydroxyl group found"
+    return True, "Contains steroid core with lactone ring and sufficient carbon atoms"
 
-    # Return True if all conditions hold
-    return True, "The molecule contains key features of a withanolide"
+# Example usage
+example_smiles = "CC1=C(C)C(=O)O[C@H](C1)[C@](C)(O)[C@@]12O[C@@H]1C[C@H]1[C@@H]3C[C@H]4O[C@]44[C@@H](O)C=CC(=O)[C@]4(C)[C@H]3CC[C@]21C"
+is_withanolide(example_smiles)
