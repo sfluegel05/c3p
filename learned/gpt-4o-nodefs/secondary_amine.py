@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_secondary_amine(smiles: str):
     """
     Determines if a molecule is a secondary amine based on its SMILES string.
-    A secondary amine has a nitrogen atom bonded to exactly two carbon atoms and one hydrogen atom.
+    A secondary amine has a nitrogen atom bonded to exactly two carbon atoms.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,15 +23,13 @@ def is_secondary_amine(smiles: str):
 
     # Iterate over all atoms to find secondary amine characteristic
     for atom in mol.GetAtoms():
-        # Check if the atom is nitrogen with hybridization that can fit secondary amines
-        if atom.GetAtomicNum() == 7 and atom.GetHybridization() < 4:
-            # Get neighbors and verify they include two carbons and one hydrogen
+        if atom.GetAtomicNum() == 7:  # Check for Nitrogen atom
             neighbors = atom.GetNeighbors()
             num_carbon = sum(1 for neighbor in neighbors if neighbor.GetAtomicNum() == 6)
-            num_hydrogen = sum(1 for neighbor in neighbors if neighbor.GetAtomicNum() == 1)
-            
-            # Check the requirements for a secondary amine
-            if num_carbon == 2 and num_hydrogen == 1:
+            num_nonH = sum(1 for neighbor in neighbors if neighbor.GetAtomicNum() != 1)
+
+            # A secondary amine has Nitrogen connected to two Carbon atoms and an optional hydrogen or other atom
+            if num_carbon == 2 and num_nonH == 2:
                 return True, "Contains a secondary amine group"
     
     return False, "Does not contain a secondary amine group"
