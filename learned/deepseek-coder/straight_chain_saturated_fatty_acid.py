@@ -30,13 +30,16 @@ def is_straight_chain_saturated_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
 
-    # Check for unsaturation (double/triple bonds)
+    # Check for unsaturation (double/triple bonds) in the carbon chain
+    # Exclude the carboxylic acid group from the unsaturation check
     for bond in mol.GetBonds():
         if bond.GetBondType() not in [Chem.BondType.SINGLE, Chem.BondType.AROMATIC]:
-            return False, "Molecule contains double or triple bonds (unsaturated)"
+            # Check if the bond is part of the carboxylic acid group
+            if not (bond.GetBeginAtom().GetAtomicNum() == 6 and bond.GetEndAtom().GetAtomicNum() == 8 and bond.GetBondType() == Chem.BondType.DOUBLE):
+                return False, "Molecule contains double or triple bonds (unsaturated)"
 
     # Check for branching in the carbon chain
-    # We look for carbons connected to more than 2 other carbons
+    # We look for carbons connected to more than 2 other carbons, excluding the carboxylic acid group
     carbon_chain_branch_pattern = Chem.MolFromSmarts("[CX4;H0,H1,H2]([CX4])([CX4])[CX4]")
     if mol.HasSubstructMatch(carbon_chain_branch_pattern):
         return False, "Molecule contains branches in the carbon chain"
@@ -47,34 +50,3 @@ def is_straight_chain_saturated_fatty_acid(smiles: str):
         return False, "Carbon chain too short (minimum 4 carbons required)"
 
     return True, "Straight-chain saturated fatty acid with a carboxylic acid group"
-
-
-__metadata__ = {   'chemical_class': {   'id': 'CHEBI:26607',
-                          'name': 'straight-chain saturated fatty acid',
-                          'definition': 'Any saturated fatty acid lacking a side-chain.',
-                          'parents': ['CHEBI:26607', 'CHEBI:35366']},
-    'config': {   'llm_model_name': 'lbl/claude-sonnet',
-                  'f1_threshold': 0.8,
-                  'max_attempts': 5,
-                  'max_positive_instances': None,
-                  'max_positive_to_test': None,
-                  'max_negative_to_test': None,
-                  'max_positive_in_prompt': 50,
-                  'max_negative_in_prompt': 20,
-                  'max_instances_in_prompt': 100,
-                  'test_proportion': 0.1},
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 150,
-    'num_false_positives': 4,
-    'num_true_negatives': 182407,
-    'num_false_negatives': 23,
-    'num_negatives': None,
-    'precision': 0.974025974025974,
-    'recall': 0.8670520231213873,
-    'f1': 0.9174311926605504,
-    'accuracy': 0.9998521228585199}
