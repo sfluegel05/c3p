@@ -2,11 +2,13 @@
 Classifies: CHEBI:166828 saccharolipid
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_saccharolipid(smiles: str):
     """
     Determines if a molecule is a saccharolipid based on its SMILES string.
-    It checks for features typical of saccharolipids: fatty acid chains, sugar moieties, and ester/ether linkages.
+    It checks for features typical of saccharolipids: long fatty acid chains, diverse sugar moieties,
+    and various ester/ether linkages.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,23 +23,26 @@ def is_saccharolipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Saccharolipids typically include long hydrocarbon chains (fatty acids)
-    long_chain_pattern = Chem.MolFromSmarts("C(CCCC)(CCCC)(CCCC)")  # Simplified example for a long alkyl chain
-    if not mol.HasSubstructMatch(long_chain_pattern):
-        return False, "No long hydrocarbon chains (saccharolipid characteristic) detected"
+    # Checking for long hydrocarbon chains (simplified long alkyl chain pattern)
+    num_long_chains = sum(1 for atom in mol.GetAtoms()
+                          if atom.GetAtomicNum() == 6 and atom.GetDegree() > 2)
+    if num_long_chains < 12:  # Arbitrary threshold for long chains
+        return False, "No long alkyl chains detected"
     
-    # Look for sugar moieties - attempt to capture common sugar patterns broadly
-    sugar_patterns = [
-        Chem.MolFromSmarts("O[C@@H]1[C@H](O)[C@H](O)[C@@H](O)[C@H](CO)O1"),  # Glucose-like
-        Chem.MolFromSmarts("O[C@H]1CO[C@@H](O)[C@H](O)[C@H](O)[C@H]1O")]  # Another cyclic sugar
-    if not any(mol.HasSubstructMatch(pattern) for pattern in sugar_patterns):
-        return False, "No sugar moieties detected"
+    # Broadly capture sugar moieties
+    ring_info = mol.GetRingInfo()
+    num_sugar_like_rings = sum(1 for ring in ring_info.BondRings()
+                               if len(ring) == 5 or len(ring) == 6)  # 5 or 6-membered sugar rings
+    if num_sugar_like_rings == 0:
+        return False, "No sugar-like rings detected"
     
-    # Check for ester or glycosidic linkages
-    linkage_patterns = [
+    # Check for ester and glycosidic linkages
+    ester_glyco_linkage_patterns = [
         Chem.MolFromSmarts("[C](=O)[O][C]"),  # Ester
-        Chem.MolFromSmarts("O[C@H]")]  # Glycosidic
-    if not any(mol.HasSubstructMatch(pattern) for pattern in linkage_patterns):
+        Chem.MolFromSmarts("O[C@H]"),         # Glycosidic
+        Chem.MolFromSmarts("[C](=O)O[C@@H]")  # Another common motif
+    ]
+    if not any(mol.HasSubstructMatch(pattern) for pattern in ester_glyco_linkage_patterns):
         return False, "No ester or glycosidic linkages found"
 
-    return True, "Contains features typical of saccharolipids: fatty acids, sugars, and characteristic linkages"
+    return True, "Contains typical saccharolipid features: long fatty acid chains, sugar moieties, and characteristic linkages"
