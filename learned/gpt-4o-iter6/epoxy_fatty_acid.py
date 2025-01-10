@@ -7,6 +7,9 @@ def is_epoxy_fatty_acid(smiles: str):
     """
     Determines if a molecule is an epoxy fatty acid based on its SMILES string.
 
+    An epoxy fatty acid is characterized by a long carbon chain, an epoxide ring,
+    and a carboxylic acid group.
+
     Args:
         smiles (str): SMILES string of the molecule.
 
@@ -19,8 +22,8 @@ def is_epoxy_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for the epoxide group pattern (three-membered cyclic ether: C1OC1)
-    epoxide_pattern = Chem.MolFromSmarts("[C]1-[O]-[C]1")
+    # Look for the epoxide group pattern
+    epoxide_pattern = Chem.MolFromSmarts("[C@]1(O[C@H]1)C")
     if not mol.HasSubstructMatch(epoxide_pattern):
         return False, "No epoxide group found"
 
@@ -30,18 +33,19 @@ def is_epoxy_fatty_acid(smiles: str):
         return False, "No carboxylic acid group found"
 
     # Confirm a chain-like structure appropriate for a fatty acid
-    carbon_chain_pattern = Chem.MolFromSmarts("C~C~C~C~C~C")  # General long carbon chain pattern
+    # Could match with 14-30 carbon atoms in linear unsaturated forms
+    carbon_chain_pattern = Chem.MolFromSmarts("C(~C(~C(~C(~C~C~C~C~C~C~C~C~C~C~C)=*)=*))*")  # Adjusted for demonstration
     if not mol.HasSubstructMatch(carbon_chain_pattern):
         return False, "Insufficient carbon chain length for fatty acid structure"
 
     # Reassess the number of carbon atoms to ensure a reasonable range for fatty acids
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 14 or c_count > 30:  # Adjust heuristic for upper and lower limits
+    if c_count < 14 or c_count > 30:
         return False, f"Unexpected carbon count for a fatty acid, found {c_count}"
 
-    # Avoid configurations indicating ring systems beyond simple alkyl chains
-    unwanted_ring_pattern = Chem.MolFromSmarts("C1-=C-=C1")  # Example, complex or polycyclic structures
-    if mol.HasSubstructMatch(unwanted_ring_pattern):
-        return False, "Unwanted ring or fused ring structures detected"
+    # Use specific functional group and structural detection rather than broad patterns
+    complex_undesired = Chem.MolFromSmarts("[R2]")  # Represents complex unwanted ring systems, to be refined
+    if mol.HasSubstructMatch(complex_undesired):
+        return False, "Complex or polycyclic structures detected"
 
     return True, "Identified as an epoxy fatty acid with appropriate functional groups and chain length"
