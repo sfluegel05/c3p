@@ -21,20 +21,23 @@ def is_cardiolipin(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Check for specific cardiolipin structural features
-    # Pattern for the core cardiolipin structure: phosphatidylglycerol-phosphatidylglycerol
-    # Use SMARTS patterns to identify known cardiolipin connectivity
     
-    cardiolipin_core_pattern = Chem.MolFromSmarts("O(=P)(O)OCC(O)COP(O)(=O)O")  # Simplified core structure pattern
+    # Improved pattern for core cardiolipin structure
+    cardiolipin_core_pattern = Chem.MolFromSmarts("O=P(O)(OCC(O)COP(O)(O)CC(O)CO)O")
     
     if not mol.HasSubstructMatch(cardiolipin_core_pattern):
         return False, "Structure does not match cardiolipin core motif"
 
-    # Check for exactly four ester linkages in correct positions signifying acyl chains
-    ester_pattern = Chem.MolFromSmarts("C(=O)O[C]")
+    # Check for exactly four ester linkages representing the acyl chains
+    ester_pattern = Chem.MolFromSmarts("C(=O)O[C@H]CO")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) != 4:
-        return False, f"Found {len(ester_matches)} ester linkages, need exactly 4 in cardiolipin-specific context"
+    if len(ester_matches) < 4:
+        return False, f"Found {len(ester_matches)} ester linkages, need at least 4 in cardiolipin-specific context"
+    
+    # Ensure phosphates link through glycerol (two per cardiolipin)
+    phosphate_pattern = Chem.MolFromSmarts("O=P(O)OCC(O)CO")
+    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
+    if len(phosphate_matches) != 2:
+        return False, f"Found {len(phosphate_matches)} phosphate linkages, need exactly 2 for cardiolipin"
 
     return True, "Contains structural motifs of cardiolipin (unique glycerol-phosphate core with four ester-linked acyl chains)"
