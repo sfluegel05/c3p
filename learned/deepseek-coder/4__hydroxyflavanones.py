@@ -27,46 +27,17 @@ def is_4__hydroxyflavanones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more flexible flavanone backbone pattern
-    flavanone_pattern = Chem.MolFromSmarts("[#6]1-[#6](-[#6]=O)-[#6](-[#8]-[#6]2:[#6]:[#6]:[#6]:[#6]:[#6]:2)-[#6]-1")
+    # Define the flavanone backbone pattern (2,3-dihydro-2-phenylchromen-4-one)
+    flavanone_pattern = Chem.MolFromSmarts("[O;H0]c1ccc2C(=O)CC(Oc2c1)c1ccc([OH])cc1")
     if not mol.HasSubstructMatch(flavanone_pattern):
         return False, "No flavanone backbone found"
 
-    # Find the phenyl ring attached to the flavanone core
-    phenyl_pattern = Chem.MolFromSmarts("[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1")
-    phenyl_matches = mol.GetSubstructMatches(phenyl_pattern)
-    
-    # Check each phenyl ring for a hydroxy group at the 4' position
-    for match in phenyl_matches:
-        # Get the atoms in the phenyl ring
-        ring_atoms = [mol.GetAtomWithIdx(i) for i in match]
-        
-        # Check if this phenyl ring is attached to the flavanone oxygen
-        for atom in ring_atoms:
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetSymbol() == 'O' and neighbor.GetDegree() == 2:
-                    # This is the phenyl ring attached to the flavanone core
-                    # Now check for a hydroxy group at the 4' position
-                    # The 4' position is the carbon opposite the attachment point
-                    attachment_point = atom.GetIdx()
-                    opposite_carbon = None
-                    for ring_atom in ring_atoms:
-                        if ring_atom.GetIdx() != attachment_point and \
-                           not mol.GetBondBetweenAtoms(ring_atom.GetIdx(), attachment_point):
-                            opposite_carbon = ring_atom
-                            break
-                    
-                    if opposite_carbon:
-                        # Check if the opposite carbon has a hydroxy group
-                        for neighbor in opposite_carbon.GetNeighbors():
-                            if neighbor.GetSymbol() == 'O' and neighbor.GetTotalNumHs() == 1:
-                                return True, "Contains flavanone backbone with a hydroxy group at the 4' position"
-                        # Also check for deprotonated hydroxy groups
-                        for neighbor in opposite_carbon.GetNeighbors():
-                            if neighbor.GetSymbol() == 'O' and neighbor.GetFormalCharge() == -1:
-                                return True, "Contains flavanone backbone with a deprotonated hydroxy group at the 4' position"
+    # Check for the hydroxy group at the 4' position (4th carbon of the phenyl ring)
+    hydroxy_4_prime_pattern = Chem.MolFromSmarts("[OH]c1ccc(cc1)C2CC(=O)c3ccccc3O2")
+    if not mol.HasSubstructMatch(hydroxy_4_prime_pattern):
+        return False, "No hydroxy group at the 4' position"
 
-    return False, "No hydroxy group at the 4' position"
+    return True, "Contains flavanone backbone with a hydroxy group at the 4' position"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:XXXXX',
