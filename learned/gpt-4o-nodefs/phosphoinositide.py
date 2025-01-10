@@ -22,28 +22,35 @@ def is_phosphoinositide(smiles: str):
         return False, "Invalid SMILES string"
     
     # Define SMARTS pattern for myo-inositol ring
-    inositol_pattern = Chem.MolFromSmarts("C1(CO)C(O)C(O)C(O)C(O)O1")
+    inositol_pattern = Chem.MolFromSmarts("C1(OC)C(O)C(O)C(O)C(O)O1")
     if not mol.HasSubstructMatch(inositol_pattern):
         return False, "No myo-inositol structure found"
 
-    # Check for phosphate groups (P(=O)(O)(O))
-    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)O")
+    # Check for phosphate groups
+    phosphate_pattern = Chem.MolFromSmarts("OP(O)(O)=O")
     phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
     if len(phosphate_matches) < 1:
         return False, "Less than one phosphate group found"
     
-    # Define pattern for glycerol backbone linking to inositol with ester linkage
-    glycerol_with_fatty_acid = Chem.MolFromSmarts("OC[C@H](O)COP(=O)(O)O")
-    if not mol.HasSubstructMatch(glycerol_with_fatty_acid):
-        return False, "No glycerol backbone with ester-linked phosphate found"
+    # Optional: Check for connected phosphates (common in derivatives)
+    # connected_phosphate_pattern = Chem.MolFromSmarts("[O,P](=O)(O)[O;R0]")
+    
+    # Check for fatty acid tails via ester linkage to glycerol backbones
+    # Look for ester linkage as part of glycerol backbone
+    ester_pattern = Chem.MolFromSmarts("C(=O)O[C@H](CO)CO")
+    if not mol.HasSubstructMatch(ester_pattern):
+        return False, "No ester-linked glycerol backbone found"
 
-    # Check for long hydrocarbon fatty acid chains (C=12 or more)
-    long_chain_pattern = Chem.MolFromSmarts("CCCCCCCCCCCC")  # At least 12 carbon chain
-    if len(mol.GetSubstructMatches(long_chain_pattern)) < 2:  # At least two such chains
-        return False, "Not enough long hydrocarbon chains found to match fatty acid chains"
+    # Reinterpretation of long hydrocarbon chain through more flexible approach
+    # to accommodate various chain lengths seen in examples
+    long_chain_pattern = Chem.MolFromSmarts("C(CCCCCCCCCCCC)C") # Ideal: At minimum, detect one chain.
+    long_chain_matches = mol.GetSubstructMatches(long_chain_pattern)
 
-    return True, "Contains myo-inositol ring with phosphate group(s) and long fatty acid chains"
+    if len(long_chain_matches) < 1:
+        return False, "No sufficient long hydrocarbon chains detected"
+    
+    return True, "Compound matches a phosphoinositide with typical features"
 
-# Example usage
-# smiles_str = "a SMILES string for a known phosphoinositide"
-# is_phosphoinositide(smiles_str)
+# Testing example structure
+# smiles_str = "O=C(CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)O[C@@H](COP(O[C@H]1[C@@H]([C@H]([C@@H]([C@H]([C@H]1O)O)OP(O)(=O)O)O)O)(=O)O)COC(=O)CCCCCCCCCCCCCCCCC"
+# print(is_phosphoinositide(smiles_str))
