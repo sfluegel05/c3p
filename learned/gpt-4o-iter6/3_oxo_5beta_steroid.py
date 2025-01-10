@@ -21,22 +21,19 @@ def is_3_oxo_5beta_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a simpler SMARTS pattern for the 3-oxo group within a steroid backbone
-    oxo_pattern = Chem.MolFromSmarts("C(=O)")
-    if not mol.HasSubstructMatch(oxo_pattern):
-        return False, "No 3-oxo group found in the molecule"
+    # Define a SMARTS pattern for the 3-oxo group as part of the steroid structure
+    # The pattern considers a carbonyl group (C=O) connected within a cyclopentanoperhydrophenanthrene structure (common core for steroids)
+    oxo_steroid_pattern = Chem.MolFromSmarts("[C@@]12([C@]3(CC[C@@H]4[C@]([C@@]3(C1)C)(CCC5[C@@]4(CCC5C(C)C)C)C)C)CCC(=O)[C@]2(C)CCC")
+    if not mol.HasSubstructMatch(oxo_steroid_pattern):
+        return False, "3-oxo steroid core pattern not found"
     
-    # Define a general pattern for steroid backbones, ensuring rings and connections
-    steroid_core_pattern = Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2CCC4C3CCCC4")
-    if not mol.HasSubstructMatch(steroid_core_pattern):
-        return False, "Steroid core not found"
-
-    # Check for 5beta stereochemistry
+    # Check for the presence of 5beta stereochemistry
     chiral_centers = Chem.FindMolChiralCenters(mol, force=True, includeUnassigned=True)
-    # Look specifically for the stereocenter at position 5 which should be beta ('R' in most cases)
-    stereochemically_correct = any(idx == 5 and code == 'R' for idx, code in chiral_centers)
+    # This is a simplification to match chiral centers that relate to position 5 in a relevant steroid context
+    # Function may need refining based on specific chirality representation in RDKit for these molecules
+    five_beta_stereo = any(idx == 9 and code == 'S' for idx, code in chiral_centers)  # Adjust the idx according to specific position in structure
     
-    if not stereochemically_correct:
-        return False, "5beta stereochemistry not resolved"
+    if not five_beta_stereo:
+        return False, "The 5beta stereochemistry was not found or does not match"
 
     return True, "Molecule is identified as a 3-oxo-5beta-steroid with appropriate stereochemistry"
