@@ -6,8 +6,7 @@ from rdkit import Chem
 def is_polyprenol(smiles: str):
     """
     Determines if a molecule is a polyprenol based on its SMILES string.
-    Polyprenols are oligomers with three or more isoprene units, often ending in
-    an alcohol group.
+    Polyprenols consist of three or more isoprene units, usually terminating with an alcohol group.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,24 +21,24 @@ def is_polyprenol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for generic isoprene unit in various configurations: CH=C-C=C or C=C-C=C
-    # This accommodates variations in isoprene subunit connectivity seen in polyprenols
-    isoprene_smarts = "[C;R0]=[C;R0]-[C;R0]-[C;R0]"
+    # SMARTS patterns for various forms of isoprene units
+    isoprene_patterns = [
+        "[C;!R]=[C;!R]-[C;!R]-[C;!R]",  # generic acyclic isoprene-like linking
+        "[C;!R]=[C;!R]-[CX4]-[C;!R]",  # with saturated carbon within
+        "[CX4]-[C;!R]=[C;!R]-[CX4]"  # fully saturated alternative matching
+    ]
 
-    isoprene_pattern = Chem.MolFromSmarts(isoprene_smarts)
-
-    # Find substructure matches
-    isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
-
-    # Polyprenols should have at least 3 such isoprene units
-    if len(isoprene_matches) < 3:
-        return False, f"Only {len(isoprene_matches)} isoprene units found, at least 3 required"
-
-    # Check for alcohol group (OH) at the terminal
-    # This pattern looks for terminal or near-terminal OH bound to a saturated carbon (which is often Csp3 in alcohols)
-    alcohol_pattern = Chem.MolFromSmarts("[OX2H1]")  # Hydroxyl group
+    num_isoprene_units = sum(len(mol.GetSubstructMatches(Chem.MolFromSmarts(pattern))) for pattern in isoprene_patterns)
     
-    if not mol.HasSubstructMatch(alcohol_pattern):
+    # Polyprenols should have at least 3 isoprene units
+    if num_isoprene_units < 3:
+        return False, f"Only {num_isoprene_units} isoprene units found, at least 3 required"
+
+    # Check for terminal or near-terminal alcohol groups
+    alcohol_pattern = Chem.MolFromSmarts("[CX4][OX2H1]")  # alcohol on a saturated carbon
+    terminal_alcohol = mol.GetNumAtoms() - 1 in [match[-1] for match in mol.GetSubstructMatches(alcohol_pattern)]
+
+    if not terminal_alcohol:
         return False, "Molecule does not have a terminal alcohol group"
 
     return True, "Molecule is a polyprenol with three or more isoprene units and a terminal alcohol group"
