@@ -22,18 +22,12 @@ def is_beta_D_galactoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Updated beta-D-galactopyranosyl pattern
-    # Consider both alpha and beta anomeric positions, 
-    # while focusing on the pyranose form and common substitutions
-    # Account for potential substitutions and linkage variations.
+    # Refined beta-D-galactopyranosyl pattern
     beta_d_galactoside_pattern = Chem.MolFromSmarts(
-        "[C@H]1(O)[C@@H](O)[C@H](O)[C@H](O)[C@H](CO)O1"
-    )
-    extended_gal_pattern = Chem.MolFromSmarts(
-        "[C@H]1(O)[C@@H](O)[C@H](O)CO[C@@H](O)C1"
+        "[C@@H]1(O)[C@H](O)[C@@H](O)[C@H](O)[C@H](CO)O1"
     )
     
-    if mol.HasSubstructMatch(beta_d_galactoside_pattern) or mol.HasSubstructMatch(extended_gal_pattern):
+    if mol.HasSubstructMatch(beta_d_galactoside_pattern):
         return True, "Contains beta-D-galactopyranosyl unit"
 
     return False, "Does not contain beta-D-galactopyranosyl unit"
