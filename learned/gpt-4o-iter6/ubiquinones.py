@@ -21,20 +21,21 @@ def is_ubiquinones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for the benzoquinone pattern
-    benzoquinone_pattern = Chem.MolFromSmarts("O=C1C=C(C(=O)C=C1)C")
-    if not mol.HasSubstructMatch(benzoquinone_pattern):
+    # Check for the benzoquinone core pattern
+    benzoquinone_core_pattern = Chem.MolFromSmarts("C1(=O)C=CC(=O)C=C1")
+    if not mol.HasSubstructMatch(benzoquinone_core_pattern):
         return False, "No benzoquinone moiety found"
 
-    # Check for methoxy groups (at least 2 for ubiquinones)
-    methoxy_pattern = Chem.MolFromSmarts("COC")
-    if len(mol.GetSubstructMatches(methoxy_pattern)) < 2:
-        return False, "Insufficient methoxy groups found"
+    # Check for methoxy groups (typically 2,3-dimethoxybenzoquinone)
+    methoxy_groups_pattern = Chem.MolFromSmarts("COC1=C(OC)C=CC(=O)C=C1")
+    if not mol.HasSubstructMatch(methoxy_groups_pattern):
+        return False, "Required methoxy groups not found on the benzoquinone moiety"
     
-    # Check for long polyisoprenoid chain
-    isoprenoid_chain_pattern = Chem.MolFromSmarts("[C](=C)[CH1]CCCC=C")  # Simplified pattern for long chain
-    isoprenoid_matches = mol.GetSubstructMatches(isoprenoid_chain_pattern)
-    if len(isoprenoid_matches) < 1:
-        return False, "No long polyisoprenoid chain at position 6"
+    # Check for long polyisoprenoid chain (more than one isoprene unit)
+    # Adjusted for simplicity but captures extendable repeats
+    polyisoprenoid_pattern = Chem.MolFromSmarts("C=C(C)CCC=C")
+    matches = mol.GetSubstructMatches(polyisoprenoid_pattern)
+    if len(matches) < 2:
+        return False, "No extended polyisoprenoid chain found"
 
-    return True, "Contains a benzoquinone moiety with methoxy groups and a polyisoprenoid side chain"
+    return True, "Matches the characteristics of a ubiquinone: contains appropriate benzoquinone moiety with methoxy groups and an attached polyisoprenoid chain"
