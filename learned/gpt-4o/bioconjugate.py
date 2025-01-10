@@ -21,41 +21,31 @@ def is_bioconjugate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define specific patterns to recognize components within bioconjugates
+    # Expanded patterns for detecting common bioconjugate motifs
     patterns = {
-        "peptide_bond": Chem.MolFromSmarts("N[C@H](C)C(=O)"),  # Typical amide in peptides
-        "thioester_bond": Chem.MolFromSmarts("C(=O)S"),  # Common in acyl-CoA
-        "disulfide_bond": Chem.MolFromSmarts("S-S"),  # Disulfide bonds in proteins
-        "glutathione_motif": Chem.MolFromSmarts("N[C@H](CC(=O)NCCS)C(=O)NCC(=O)")  # Part of glutathione
-    }
-
-    # Other potential patterns that may hint at biological functionality
-    accessory_patterns = {
-        "phosphate_group": Chem.MolFromSmarts("P(=O)(O)O"),  # Nucleotide or ATP-like
-        "heterocyclic_nitrogen": Chem.MolFromSmarts("n"),  # Purine/pyrimidine-like
-        "ether_linkage": Chem.MolFromSmarts("C-O-C"),  # Often seen in glycolipids
-        "sulfur_containing": Chem.MolFromSmarts("S")  # Can indicate methionine, cysteine, CoA
+        "peptide_bond": Chem.MolFromSmarts("N[C@H](C)C(=O)"),
+        "disulfide_bond": Chem.MolFromSmarts("S-S"),
+        "glutathione_like": Chem.MolFromSmarts("N[C@H](CC(=O)NCCS)C(=O)NCC(=O)O"),
+        "coenzyme_a_linkage": Chem.MolFromSmarts("SCCNC(=O)CCNC(=O)[C@H](O)"),
+        "thioester_bond": Chem.MolFromSmarts("C(=O)S"),
+        "ester_bond": Chem.MolFromSmarts("C(=O)O"),
+        "amide_bond": Chem.MolFromSmarts("C(=O)N"),
+        "heterocyclic_nitrogen": Chem.MolFromSmarts("n")
     }
     
-    # Track which primary patterns we match
+    # Track which patterns we match
     matched_patterns = set()
     for name, pattern in patterns.items():
         if mol.HasSubstructMatch(pattern):
             matched_patterns.add(name)
-    
-    # Track which accessory patterns we match
-    accessory_matches = set()
-    for name, pattern in accessory_patterns.items():
-        if mol.HasSubstructMatch(pattern):
-            accessory_matches.add(name)
 
     # Determine if there are at least two distinctive substructures suggesting bioconjugation
-    if len(matched_patterns) >= 2 or (len(matched_patterns) == 1 and len(accessory_matches) > 1):
-        return True, f"Contains patterns: {', '.join(matched_patterns.union(accessory_matches))}"
+    if len(matched_patterns) >= 2:
+        return True, f"Contains patterns: {', '.join(matched_patterns)}"
 
-    # Provide reasoning for non-bioconjugate classification
-    if matched_patterns or accessory_matches:
-        return False, f"Partially matched patterns, found: {', '.join(matched_patterns.union(accessory_matches))}"
+    # For failed cases, provide reasoning based on detected patterns
+    if matched_patterns:
+        return False, f"Partially matched patterns, only found: {', '.join(matched_patterns)}"
 
-    # Return explanation for no pattern matches
+    # Provide explanation when no patterns are matched
     return False, "No definitive bioconjugate patterns found"
