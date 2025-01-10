@@ -23,25 +23,31 @@ def is_beta_D_galactoside(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-        
-    # Pattern for beta-D-galactopyranose core
-    # [OH1,O][C@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O
-    # Note: The anomeric oxygen can be part of a glycosidic bond
-    galactose_pattern = Chem.MolFromSmarts('[OX2][C@H]1O[C@H](C[OX2])[C@H]([OX2])[C@H]([OX2])[C@H]1[OX2]')
+
+    # Pattern for beta-D-galactopyranose core with correct stereochemistry
+    # C1 (anomeric) - beta configuration [@H]
+    # C2 - equatorial OH [@H]
+    # C3 - equatorial OH [@H]
+    # C4 - axial OH [@@H]
+    # C5 - [H] configuration maintains ring shape
+    # C6 - CH2O group
+    galactose_pattern = Chem.MolFromSmarts('''
+        [OX2][C@H]1[C@H]([OX2])[C@H]([OX2])[C@@H]([OX2])[C@H]([C][OX2])O1
+    ''')
     
     if not mol.HasSubstructMatch(galactose_pattern):
-        return False, "No beta-D-galactose moiety found"
+        return False, "No galactopyranose core found"
     
     # Get matches for the galactose pattern
     matches = mol.GetSubstructMatches(galactose_pattern)
     
-    # Check each match
     for match in matches:
-        # Get the anomeric carbon (C1) and its attached oxygen atoms
-        c1_idx = match[2]  # Index of C1 in the pattern
+        # Get the anomeric carbon (C1)
+        c1_idx = match[1]
         c1 = mol.GetAtomWithIdx(c1_idx)
         
-        # Get neighboring oxygen atoms of C1
+        # Check for beta configuration at anomeric center
+        # In beta configuration, the substituent at C1 should be equatorial
         o_neighbors = [n for n in c1.GetNeighbors() if n.GetAtomicNum() == 8]
         if len(o_neighbors) != 2:
             continue
@@ -58,18 +64,30 @@ def is_beta_D_galactoside(smiles: str):
         if ring_o is None or subst_o is None:
             continue
             
-        # Verify beta configuration by checking if substituent is below the ring
-        # In the given pattern, beta configuration is encoded in the stereochemistry
-        return True, "Contains beta-D-galactoside moiety"
-        
+        # Check C4 hydroxyl is axial (characteristic of galactose)
+        c4_idx = match[4]
+        c4 = mol.GetAtomWithIdx(c4_idx)
+        c4_neighbors = [n for n in c4.GetNeighbors() if n.GetAtomicNum() == 8]
+        if not any(n.GetChiralTag() == Chem.ChiralType.CHI_TETRAHEDRAL_CCW for n in c4_neighbors):
+            continue
+
+        # Verify all required stereocenters are present
+        required_stereocenters = [c1_idx, match[2], match[3], c4_idx]
+        if all(mol.GetAtomWithIdx(idx).GetChiralTag() != Chem.ChiralType.CHI_UNSPECIFIED 
+               for idx in required_stereocenters):
+            return True, "Contains beta-D-galactoside moiety with correct stereochemistry"
+    
     return False, "No beta-D-galactoside configuration found"
 
 def test_examples():
     """Test function with some example molecules"""
     examples = [
-        "CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O",  # methyl beta-D-galactoside
-        "O[C@H]1[C@@H](O)[C@H](O)[C@H](O)[C@H](O)C1=O",  # Not a galactoside
-        "CO[C@H]1O[C@H](CO)[C@@H](O)[C@@H](O)[C@H]1O"   # methyl alpha-D-glucoside
+        # Methyl beta-D-galactoside
+        "CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O",
+        # beta-D-Galp-(1->3)-D-Xylp
+        "O([C@@H]1O[C@@H]([C@H](O)[C@H](O)[C@H]1O)CO)[C@@H]2[C@@H](O)C(OC[C@H]2O)O",
+        # Not a galactoside (glucose)
+        "O[C@H]1[C@@H](O)[C@H](O)[C@H](O)[C@H](O)C1=O"
     ]
     
     for smi in examples:
