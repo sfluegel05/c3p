@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_ribonucleoside(smiles: str):
     """
     Determines if a molecule is a ribonucleoside based on its SMILES string.
-    A ribonucleoside is identified by the presence of a nucleobase attached to a ribose sugar.
+    A ribonucleoside is identified by the presence of a nucleobase and a flexible ribose sugar component.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,18 +20,19 @@ def is_ribonucleoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more flexible ribose ring pattern (considering common configurations of D-ribose)
-    ribose_pattern = Chem.MolFromSmarts("[C@H]1O[C@@H]([C@H]([C@@H]([C@H]1O)O)CO)")
+    # Flexible ribose sugar pattern (allowing variability in stereochemistry)
+    ribose_pattern = Chem.MolFromSmarts("[C@H]1(O)O[C@H]([C@H]([C@@H]([C@H]1O)O)CO)")
 
     # Check for ribose sugar
     if not mol.HasSubstructMatch(ribose_pattern):
         return False, "No ribose sugar ring found"
 
-    # Define broader nucleobase backbone patterns
+    # Broader nucleobase patterns including variability in structures
     nucleobase_patterns = [
-        Chem.MolFromSmarts("n1cnc2c1nc[nH]c2"),  # purine (e.g., adenine, guanine)
-        Chem.MolFromSmarts("c1ncnc2[nH]cnc12"),  # pyrimidine (e.g., cytosine, uracil)
-        Chem.MolFromSmarts("c1nc[nH]c2[nH]cnc12"),  # broader purine consideration
+        Chem.MolFromSmarts("n1cnc2c1nc[nH]c2"),  # common purine
+        Chem.MolFromSmarts("c1ncnc2[nH]cnc12"),  # common pyrimidine
+        Chem.MolFromSmarts("c1nc[nH]c2[nH]cnc12"),  # extended purine
+        Chem.MolFromSmarts("c1c[nH]cnc1")  # additional heterocyclic components
     ]
 
     # Check for nucleobase attachment
