@@ -5,7 +5,6 @@ Classifies: CHEBI:90546 medium-chain fatty acyl-CoA(4-)
 Classifies: medium-chain fatty acyl-CoA(4-)
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_medium_chain_fatty_acyl_CoA_4__(smiles: str):
@@ -22,43 +21,41 @@ def is_medium_chain_fatty_acyl_CoA_4__(smiles: str):
         bool: True if molecule is a medium-chain fatty acyl-CoA(4-), False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Add hydrogens to accurately count atoms
-    mol = Chem.AddHs(mol)
-    
-    # Define Coenzyme A SMARTS pattern (simplified for matching)
+    # Define Coenzyme A SMARTS pattern
     # This pattern represents the ADP and pantetheine portion of CoA
-    coa_smarts = """
-    O=P(O)([O-])OP(O)([O-])OC[C@H]1O[C@H](COP(O)([O-])=O)[C@@H](O)[C@H]1O
-    n1cnc2c(ncnc12)N
-    """
-    coa_pattern = Chem.MolFromSmarts(coa_smarts)
-    if coa_pattern is None:
+    # Using a simplified pattern to match the key features of CoA
+    coa_smarts = Chem.MolFromSmarts("""
+    [#8]-[#6]-[#1]-[#8]-[#3+](-[#8-])(-[#8-])-[#8]-[#6]-1-[#8]-[#6]-[#6]-[#8]-[#1]-1
+    -[#7]-1-[#6]-[#7]-[#6]-2-[#7]-[#6]-[#7]-[#6]-2-[#7]-1
+    """)
+
+    if coa_smarts is None:
         return False, "Invalid CoA SMARTS pattern"
 
-    if not mol.HasSubstructMatch(coa_pattern):
+    if not mol.HasSubstructMatch(coa_smarts):
         return False, "Coenzyme A moiety not found"
 
     # Find the thioester bond (C(=O)-S-C)
-    thioester_pattern = Chem.MolFromSmarts("C(=O)S")
-    if not mol.HasSubstructMatch(thioester_pattern):
+    thioester_pattern = Chem.MolFromSmarts("C(=O)S[C;!H0]")
+    thioester_matches = mol.GetSubstructMatches(thioester_pattern)
+    if not thioester_matches:
         return False, "Thioester bond not found"
 
-    # Locate the acyl chain attached to the thioester
-    # Find the carbonyl carbon in the thioester bond
-    thioester_matches = mol.GetSubstructMatch(thioester_pattern)
-    acyl_carbon_idx = thioester_matches[0]
-    acyl_carbon = mol.GetAtomWithIdx(acyl_carbon_idx)
-    
+    # Assume the first match is the acyl chain
+    acyl_carbon_idx = thioester_matches[0][0]
+    sulfur_idx = thioester_matches[0][2]
+
     # Traverse the acyl chain to count carbons
     visited = set()
     carbons_in_chain = 0
-    stack = [acyl_carbon]
+    stack = [mol.GetAtomWithIdx(acyl_carbon_idx)]
+
     while stack:
         atom = stack.pop()
         idx = atom.GetIdx()
@@ -67,25 +64,24 @@ def is_medium_chain_fatty_acyl_CoA_4__(smiles: str):
         visited.add(idx)
         if atom.GetAtomicNum() == 6:
             carbons_in_chain += 1
-            # Add neighboring atoms except those connected via double bonds to oxygen (to avoid counting carbonyl carbons multiple times)
-            for bond in atom.GetBonds():
-                neighbor = bond.GetOtherAtom(atom)
-                if neighbor.GetAtomicNum() == 8 and bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+            for neighbor in atom.GetNeighbors():
+                neighbor_idx = neighbor.GetIdx()
+                # Do not go back to sulfur atom
+                if neighbor_idx == sulfur_idx:
                     continue
-                if bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
-                    stack.append(neighbor)
-                    
+                stack.append(neighbor)
+
     # Subtract one to exclude the carbonyl carbon
     acyl_chain_length = carbons_in_chain - 1
     if acyl_chain_length < 6 or acyl_chain_length > 12:
         return False, f"Acyl chain length is {acyl_chain_length}, not in the range 6-12 for medium-chain fatty acids"
 
     # Check for deprotonated phosphate groups (4- charge)
-    # Count the number of phosphate groups with negative charges
-    phosphate_pattern = Chem.MolFromSmarts("P(=O)([O-])[O-]")
-    phosphates = mol.GetSubstructMatches(phosphate_pattern)
-    if len(phosphates) < 2:
-        return False, "Phosphate groups not fully deprotonated to 4- charge state"
+    # Count the number of phosphate oxygens with negative charges
+    negative_oxygen_count = sum(1 for atom in mol.GetAtoms()
+                                if atom.GetAtomicNum() == 8 and atom.GetFormalCharge() == -1)
+    if negative_oxygen_count < 4:
+        return False, f"Found {negative_oxygen_count} negatively charged oxygens, expected at least 4 for deprotonated phosphates"
 
     return True, "Molecule is a medium-chain fatty acyl-CoA(4-) with appropriate acyl chain length and charge"
 
@@ -109,7 +105,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 0,
+    'attempt': 1,
     'success': True,
     'best': True,
     'error': '',
