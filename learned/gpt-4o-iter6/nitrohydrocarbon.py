@@ -29,21 +29,17 @@ def is_nitrohydrocarbon(smiles: str):
     if not nitro_matches:
         return False, "No nitro groups found"
 
-    # Verify the molecule contains carbon besides nitro group(s)
+    # Verify the molecule contains a carbon backbone with hydrogens
     carbon_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
-    if not carbon_atoms:
-        return False, "No carbon atoms found, not a hydrocarbon base"
+    hydrogen_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 1]
+    if not carbon_atoms or not hydrogen_atoms:
+        return False, "No sufficient carbon-hydrogen backbone found"
     
-    # Count the nitro groups and ensure they are part of hydrocarbon substitution
-    nitro_count = len(nitro_matches)
-    
-    # Check for non-hydrocarbon atoms excluding the nitro groups (exclude C, H, N, O)
-    non_hydrocarbon_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() not in (1, 6, 7, 8)]
-    if len(non_hydrocarbon_atoms) > 0:
-        return False, "Other functional groups overshadow hydrocarbon nature"
+    # Check that nitro groups are substituting hydrogens on a carbon backbone
+    for atom in carbon_atoms:
+        if atom.GetDegree() < 4:  # A fully saturated carbon would usually have 4 bonds
+            attached_nitro = any(mol.GetBondBetweenAtoms(atom.GetIdx(), n[0]) for n in nitro_matches)
+            if attached_nitro:
+                return True, "Molecule is a nitrohydrocarbon with nitro groups substituting hydrogens"
 
-    # Ensure a significant portion of the molecule is hydrocarbon with nitro groups attached
-    if nitro_count > 0 and len(carbon_atoms) >= nitro_count:
-        return True, "Molecule is a nitrohydrocarbon with nitro groups substituting one or more hydrogens on a carbon skeleton"
-
-    return False, "Insufficient hydrocarbon structure or imbalance with nitro groups"
+    return False, "Nitro groups are not part of main hydrocarbon substitution"
