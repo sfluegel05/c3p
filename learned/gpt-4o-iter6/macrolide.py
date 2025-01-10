@@ -22,19 +22,21 @@ def is_macrolide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for a macrocyclic lactone (Cyclic ester with ring size of 12 or more)
-    # SMARTS for esters: [C](=O)O
-    ester_pattern = Chem.MolFromSmarts("[C](=O)O")
-    # Get rings, filter for those containing an ester
+    # Improved SMARTS pattern for cyclic ester rings (lactone)
+    # We define a ring with a simple ester group as well as accounting for oxygen and carbon cycling properly
+    ester_lactone_pattern = Chem.MolFromSmarts("C1OC(=O)[C;R1]1")
+    
+    # Explore ring information within the molecule
     ring_info = mol.GetRingInfo()
     for ring_atoms in ring_info.AtomRings():
         if len(ring_atoms) >= 12:
+            # We confirm the presence of a lactone functional group in the ring
             submol = Chem.PathToSubmol(mol, ring_atoms)
-            if submol.HasSubstructMatch(ester_pattern):
+            if submol.HasSubstructMatch(ester_lactone_pattern):
                 return True, "Contains a macrocyclic lactone with 12 or more atoms"
 
+    # Additional refinement and confirmation would use domain-specific rules if further customization is needed
     return False, "Does not contain a macrocyclic lactone with 12 or more atoms"
-
 
 # Example usage:
 # result, reason = is_macrolide("SMILES_STRING_HERE")
