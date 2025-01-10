@@ -2,6 +2,7 @@
 Classifies: CHEBI:140331 4'-hydroxyflavanones
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_4_hydroxyflavanones(smiles: str):
     """
@@ -21,16 +22,20 @@ def is_4_hydroxyflavanones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define core flavanone structure; C3-C6 coupling, closed C-ring with carbonyl
-    flavanone_core_smarts = "[#6]1=[#8]-[C@H]2C(c3ccccc3O2)=C(c4ccccc4)C1=O"
+    # Match flavanone structure: C6-C3-C6 with a ketone (4-carbon)
+    flavanone_core_smarts = "C1=CC(=CC=C1)[C@H]2CC(=O)c3ccccc3O2"  # Core structure with stereochemistry variability
     flavanone_core_mol = Chem.MolFromSmarts(flayanone_core_smarts)
     if not mol.HasSubstructMatch(flayanone_core_mol):
         return False, "Missing core flavanone structure"
-    
-    # SMARTS for specific 4'-hydroxy group on the B-ring (phenyl group opposite the ketone)
-    hydroxy_4_prime_position_smarts = "[#6](=[#8])[C@@H]1O[C@@H](C=C1)c2ccc(O)cc2"  # Hydroxy on B-ring's para position
-    hydroxy_4_prime_mol = Chem.MolFromSmarts(hydroxy_4_prime_position_smarts)
-    if mol.HasSubstructMatch(hydroxy_4_prime_mol):
-        return True, "Molecule is a 4'-hydroxyflavanone"
 
-    return False, "No 4'-hydroxy group found on flavanone B ring"
+    # Look for the hydroxy group at the 4' position on B ring
+    hydroxy_b_ring_smarts = "[OH]c1ccc(cc1)"  # General hydroxy position on phenyl ring
+    b_ring_hydroxy_mol = Chem.MolFromSmarts(hydroxy_b_ring_smarts)
+    hydroxy_matches = mol.GetSubstructMatches(b_ring_hydroxy_mol)
+
+    # Ensure a hydroxy is specifically at the 4' position
+    found_hydroxy_4prime = any(Chem.MolToSmiles(match) in list_4_hydroxy_cases for match in hydroxy_matches)
+    if not found_hydroxy_4prime:
+        return False, "No 4'-hydroxy group found on flavanone B ring"
+
+    return True, "Molecule is a 4'-hydroxyflavanone"
