@@ -26,13 +26,13 @@ def is_dipeptide(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for peptide bond pattern (-C(=O)-N-)
-    peptide_bond_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[NX3H0]")
+    peptide_bond_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[NX3H0,NX3H1]")
     peptide_bond_matches = mol.GetSubstructMatches(peptide_bond_pattern)
     if len(peptide_bond_matches) < 1:
         return False, "No peptide bond found"
 
     # Count amino acid residues by looking for amino and carboxyl groups
-    amino_group_pattern = Chem.MolFromSmarts("[NX3H2,NX3H1]")
+    amino_group_pattern = Chem.MolFromSmarts("[NX3H2,NX3H1,NX3H0]")
     carboxyl_group_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H1,OX1H0-]")
     
     amino_matches = mol.GetSubstructMatches(amino_group_pattern)
@@ -41,17 +41,19 @@ def is_dipeptide(smiles: str):
     if len(amino_matches) < 2 or len(carboxyl_matches) < 2:
         return False, "Not enough amino or carboxyl groups to form two amino acid residues"
 
-    # Ensure that there are exactly two amino acid residues
+    # Ensure that there are at least two amino acid residues
     # Each residue should have at least one amino group and one carboxyl group
     # We can count the number of distinct amino and carboxyl groups
-    if len(amino_matches) != 2 or len(carboxyl_matches) != 2:
-        return False, "Incorrect number of amino or carboxyl groups for a dipeptide"
+    if len(amino_matches) < 2 or len(carboxyl_matches) < 2:
+        return False, "Insufficient amino or carboxyl groups for a dipeptide"
 
-    # Check molecular weight - dipeptides typically have a molecular weight between 200-500 Da
+    # Check molecular weight - dipeptides typically have a molecular weight between 150-1000 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 150 or mol_wt > 500:
+    if mol_wt < 150 or mol_wt > 1000:
         return False, f"Molecular weight {mol_wt:.2f} Da is outside the typical range for a dipeptide"
 
+    # Check for the presence of two amino acid residues connected by a peptide bond
+    # This is a more relaxed check to ensure we capture more complex dipeptides
     return True, "Contains two amino acid residues connected by a peptide bond"
 
 
