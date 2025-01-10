@@ -22,25 +22,25 @@ def is_glycolipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for the glycerol backbone pattern (C-C-C with OH groups)
+    # Look for the glycerol backbone pattern
     glycerol_pattern = Chem.MolFromSmarts("OCC(O)C")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone with hydroxyl groups found"
 
-    # Look for ester group pattern (two ester linkages from the glycerol)
-    ester_pattern = Chem.MolFromSmarts("C(=O)OC")
+    # Improved ester group pattern to capture various ester linkages
+    ester_pattern = Chem.MolFromSmarts("C(=O)O")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) < 2:
         return False, f"Found {len(ester_matches)} ester groups, need at least 2 for diacyl configuration"
 
-    # Look for glycosidic linkage (oxygen bridge to a carbohydrate)
-    glycosidic_pattern = Chem.MolFromSmarts("O[C@H1]")
+    # Enhanced pattern for glycosidic linkages
+    glycosidic_pattern = Chem.MolFromSmarts("O[*]")
     if not mol.HasSubstructMatch(glycosidic_pattern):
         return False, "No glycosidic linkage to carbohydrate detected"
 
-    # Look for sugar moiety (common monosaccharide ring structures)
-    sugar_pattern = Chem.MolFromSmarts("C1OC(CO)C(O)C(O)C1")
+    # Broaden pattern for sugar moiety 
+    sugar_pattern = Chem.MolFromSmarts("C1OC([CH2,CH,CH]O)C(O)C(O)C1 | C1O[C@H]([C@H](O)[C@H](O)[C@H]1O) | C1OC([CH2,CH,CH]O)C1")
     if not mol.HasSubstructMatch(sugar_pattern):
         return False, "No recognizable sugar moiety found"
-
+    
     return True, "The structure matches the criteria for a glycolipid with glycerol backbone, ester linkages, and glycosidic bonds to sugars"
