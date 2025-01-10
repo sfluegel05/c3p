@@ -21,20 +21,17 @@ def is_macrolide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Make sure ring info is initialized
+    # Define the SMARTS pattern for a lactone
+    # Cycloalkane with a ester functionality needed
+    lactone_pattern = Chem.MolFromSmarts("C1C(=O)O[C;R1]1")
+    
+    # Use RDKit's built-in methods to extract rings
     ring_info = mol.GetRingInfo()
-    if not ring_info.IsInitialized():
-        return False, "Ring information not initialized"
-    
-    # Define the SMARTS pattern for a macrocyclic lactone
-    lactone_pattern = Chem.MolFromSmarts("C1OC(=O)[C;R1]1")
-    
-    # Check each ring within the molecule
     for ring_atoms in ring_info.AtomRings():
-        if len(ring_atoms) >= 12:
+        if len(ring_atoms) >= 12:  # Ensure ring size is 12 or more
             # Extract substructure corresponding to the ring
             submol = Chem.PathToSubmol(mol, ring_atoms)
-            # Check if the ring matches the lactone pattern
+            # Check for lactone pattern within this macroring
             if submol.HasSubstructMatch(lactone_pattern):
                 return True, "Contains a macrocyclic lactone with 12 or more members"
     
