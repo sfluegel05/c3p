@@ -13,7 +13,7 @@ def is_nucleoside_phosphate(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a nucleoside phosphate, False otherwise
+        bool: True if the molecule is a nucleoside phosphate, False otherwise
         str: Reason for classification
     """
     
@@ -22,27 +22,27 @@ def is_nucleoside_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS pattern for a phosphate group (PO4)
-    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)(O)O")
+    # Define SMARTS pattern for a phosphate group
+    # Considering both organic phosphates (P(=O)(O)OP) and variations like cyclic, linked forms
+    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)O")
     if not mol.HasSubstructMatch(phosphate_pattern):
         return False, "No phosphate group found"
 
-    # Define SMARTS pattern for a ribose or deoxyribose sugar (five-membered ring with oxygen)
-    sugar_pattern = Chem.MolFromSmarts("C1=C(C(C(O1)CO)O)O")
+    # Define a more inclusive SMARTS pattern for a sugar (five-membered ring with an oxygen member)
+    sugar_pattern = Chem.MolFromSmarts("C1OC(CO)C1")
     if not mol.HasSubstructMatch(sugar_pattern):
-        return False, "No ribose or deoxyribose sugar found"
+        return False, "No ribose or deoxyribose sugar pattern found"
     
-    # Define nitrogenous base patterns (purine and pyrimidine)
-    purine_pattern = Chem.MolFromSmarts("NC1=NC=NC2=C1N=CN=C2")
-    pyrimidine_pattern = Chem.MolFromSmarts("C1=NC=CN=C1")
+    # Broaden nitrogenous base patterns to include more diverse structures
+    purine_pattern = Chem.MolFromSmarts("c1ncnc2[nH]cnc12") 
+    pyrimidine_pattern = Chem.MolFromSmarts("c1[nH]cnc1")
     
-    if not mol.HasSubstructMatch(purine_pattern) and not mol.HasSubstructMatch(pyrimidine_pattern):
+    if not (mol.HasSubstructMatch(purine_pattern) or mol.HasSubstructMatch(pyrimidine_pattern)):
         return False, "No nitrogenous base (purine or pyrimidine) found"
     
     return True, "Molecule contains features of a nucleoside phosphate"
 
 # Example usage:
-# Test SMILES: "Nc1ccn([C@@H]2O[C@H](CO)[C@@H](OP(O)(O)=O)[C@H]2O)c(=O)n1"  # Example SMILES for a known nucleoside phosphate
+# test_smiles = "Nc1ccn([C@@H]2O[C@H](CO)[C@@H](OP(O)(O)=O)[C@H]2O)c(=O)n1" # Example SMILES for a known nucleoside phosphate
 # result, reason = is_nucleoside_phosphate(test_smiles)
-# Print result and reason for classification
 # print(result, reason)
