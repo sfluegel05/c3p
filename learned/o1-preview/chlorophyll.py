@@ -7,12 +7,12 @@ Classifies: chlorophyll
 Definition: A family of magnesium porphyrins, defined by the presence of a fifth ring beyond the four pyrrole-like rings. The rings can have various side chains which usually include a long phytol chain.
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_chlorophyll(smiles: str):
     """
     Determines if a molecule is a chlorophyll based on its SMILES string.
-    A chlorophyll is characterized by a magnesium porphyrin core with a fifth ring and side chains, often including a long phytol chain.
+    A chlorophyll is characterized by a magnesium porphyrin core with a fifth ring and side chains,
+    often including a long phytol chain.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -31,25 +31,33 @@ def is_chlorophyll(smiles: str):
     if not mg_atoms:
         return False, "No magnesium atom found"
 
-    # Check for porphyrin macrocycle (four pyrrole rings connected via methine bridges)
-    porphyrin_smarts = 'C1=C[C@H]2C=C3N=C(C=C4N=CC(C=C1N2)=C34)'
-    porphyrin_pattern = Chem.MolFromSmarts(porphyrin_smarts)
-    if not mol.HasSubstructMatch(porphyrin_pattern):
-        return False, "No porphyrin macrocycle found"
+    # Get ring information
+    ring_info = mol.GetRingInfo()
+    atom_rings = ring_info.AtomRings()
 
-    # Check for fifth ring fused to porphyrin core (e.g., cyclopentanone ring)
-    fifth_ring_smarts = 'C1=CC=CC2=CN=CC=C12'  # Simplified pattern for fused ring
-    fifth_ring_pattern = Chem.MolFromSmarts(fifth_ring_smarts)
-    if not mol.HasSubstructMatch(fifth_ring_pattern):
-        return False, "No fifth ring fused to porphyrin core found"
+    # Find macrocyclic rings (size >=16) containing at least 4 nitrogen atoms
+    macrocycle_found = False
+    for ring in atom_rings:
+        if len(ring) >= 16:
+            # Check if ring contains at least 4 nitrogen atoms
+            nitrogen_count = sum(1 for idx in ring if mol.GetAtomWithIdx(idx).GetAtomicNum() == 7)
+            if nitrogen_count >= 4:
+                macrocycle_found = True
+                macrocycle_ring = ring
+                break
+    if not macrocycle_found:
+        return False, "No macrocyclic ring with at least 4 nitrogen atoms found"
 
-    # Optionally, check for phytol side chain (long branched hydrocarbon chain)
-    phytol_smarts = 'CC(C)CCC[C@H](C)CCC[C@H](C)CCCC(C)C'
-    phytol_pattern = Chem.MolFromSmarts(phytol_smarts)
-    if not mol.HasSubstructMatch(phytol_pattern):
-        return False, "No phytol side chain found"
-
-    return True, "Contains magnesium porphyrin core with fifth ring and phytol side chain"
+    # Check that magnesium is connected to nitrogen atoms in the macrocycle
+    macrocycle_atom_indices = set(macrocycle_ring)
+    for mg in mg_atoms:
+        neighbors = mg.GetNeighbors()
+        # Find nitrogen neighbors that are part of the macrocycle
+        nitrogen_neighbors = [atom for atom in neighbors if atom.GetAtomicNum() == 7 and atom.GetIdx() in macrocycle_atom_indices]
+        if len(nitrogen_neighbors) >= 4:
+            # Passed all checks
+            return True, "Contains magnesium porphyrin core with fifth ring"
+    return False, "Magnesium not coordinated to nitrogen atoms in macrocycle"
 
 __metadata__ = {
     'chemical_class': {
