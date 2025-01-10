@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_withanolide(smiles: str):
     """
     Determines if a molecule is a withanolide based on its SMILES string.
-    A withanolide typically has a steroid-like skeleton with some oxygen-containing
-    functionalities and a lactone group or similar structural connection.
+    A withanolide should typically include a modified steroid skeleton,
+    including additional oxygen functionalities and a lactone group.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -16,36 +16,33 @@ def is_withanolide(smiles: str):
         bool: True if molecule is a withanolide, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # A more flexible pattern for steroid core structure
-    steroid_pattern = Chem.MolFromSmarts("C1CC2CC3C4CCC(C4)CC3CCC2C1")
+    # Define the steroid core with a more flexible SMARTS pattern
+    steroid_pattern = Chem.MolFromSmarts("C1CCC2C3CC(C(C(C3)C2)C4CCC5C4(CCC5)O)C1")
     if not mol.HasSubstructMatch(steroid_pattern):
-        return False, "No flexible core steroid-like structure found"
-
-    # Look for a lactone or similar ester group pattern
-    lactone_patterns = [
-        Chem.MolFromSmarts("O=C1OC[C@@H]1"),  # Simple lactone ring
-        Chem.MolFromSmarts("C1OC(=O)CC1")     # More inclusive lactone/ester pattern
-    ]
+        return False, "No steroid-like structure found"
     
-    found_lactone = any(mol.HasSubstructMatch(patt) for patt in lactone_patterns)
-    if not found_lactone:
-        return False, "No lactone or ester-type cyclic structure found"
+    # Look for lactone groups attached to the steroid D-ring
+    lactone_pattern = Chem.MolFromSmarts("C1=CC(=O)OCC1")  # Lactone structure within a ring
+    if not mol.HasSubstructMatch(lactone_pattern):
+        return False, "No lactone ring attached to steroid structure found"
         
-    # Check for additional oxygen functionalities
+    # Detect common oxygen functionalities
     oxy_func_patterns = [
-        Chem.MolFromSmarts("[OH]"),           # Hydroxyl group
-        Chem.MolFromSmarts("[CX3](=O)[#6]")   # Ketone
+        Chem.MolFromSmarts("O"),  # General oxygen presence (hydroxyl, ketone, etc.)
+        Chem.MolFromSmarts("C=O"), # Carbonyl group
+        Chem.MolFromSmarts("OC"),
+        Chem.MolFromSmarts("CO"),
     ]
-    
-    found_oxy_func = any(mol.HasSubstructMatch(patt) for patt in oxy_func_patterns)
-    if not found_oxy_func:
-        return False, "Missing expected oxygen functionalities (hydroxyl, ketone)"
 
-    # If matches all the criteria
-    return True, "Contains steroid-like structure, lactone/ester ring, and oxygen functionalities"
+    # Check that there are several oxygens in various functionalities
+    oxy_count = sum(len(mol.GetSubstructMatches(patt)) for patt in oxy_func_patterns)
+    if oxy_count < 4:  # Arbitrary threshold for withanolides which are heavily oxygenated
+        return False, "Insufficient oxygen functionalities detected"
+
+    return True, "Matches characteristics of withanolide: steroid core, lactone, and oxygen functionalities"
