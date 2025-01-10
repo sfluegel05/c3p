@@ -8,7 +8,7 @@ def is_ganglioside(smiles: str):
     """
     Determines if a molecule is a ganglioside based on its SMILES string.
     Gangliosides are glycosphingolipids that contain one or more sialic acid residues
-    linked on the sugar chain.
+    linked on the sugar chain, and a ceramide backbone.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,22 +21,25 @@ def is_ganglioside(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return None, "Invalid SMILES string"
+        return False, "Invalid SMILES string"
 
-    # Look for ceramide backbone pattern
-    ceramide_pattern = Chem.MolFromSmarts("NC([C@@H](O)CO)C(=O)")
+    # Refined patterns for ceramide backbone
+    # Ceramide is more varied; include the amide linkage and long chain portions
+    ceramide_pattern = Chem.MolFromSmarts("NC(=O)C[C@H](O)CO")  # Including different chain lengths and positions
     if not mol.HasSubstructMatch(ceramide_pattern):
-        return False, "No ceramide backbone found"
+        return False, "No valid ceramide backbone found"
 
-    # Look for sialic acid residue (NeuAc)
-    sialic_acid_pattern = Chem.MolFromSmarts("C[C@H](O1)C(=O)O[C@@H]([C@@H](CO)O)[C@@H]1NC=O")
+    # Refined patterns for sialic acid residues (using "C[C@H](O1)C(=O)O[C@@H]1" part more flexibly)
+    # Generalized sialic acid indicator by focusing more on characteristic linkage
+    sialic_acid_pattern = Chem.MolFromSmarts("[C@H](O[C@@H]([C@@H](CO)O)[C@H](NC(=O)C))")
     if not mol.HasSubstructMatch(sialic_acid_pattern):
-        return False, "No sialic acid residue found"
-        
-    # Look for glycan residues: glucose and galactose
-    glycan_pattern = Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@H](CO)O[C@H]1O[C@H]1[C@H](O)[C@H](C=O)O[C@@H]1O")
+        return False, "No valid sialic acid residue found"
+
+    # Relaxed glycan pattern to efficiently match glucose and galactose configurations
+    # Focusing on common glycosidic linkage patterns
+    glycan_pattern = Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@H](O)[C@@H](CO)O[C@H]1")  # Flexible glucose/galactose pattern
     glycan_matches = mol.GetSubstructMatches(glycan_pattern)
     if len(glycan_matches) < 1:
         return False, "Missing necessary glycan residues"
         
-    return True, "Contains ceramide backbone with sialic acid and glycan residues"
+    return True, "Contains ceramide backbone with sialic acid and necessary glycan residues"
