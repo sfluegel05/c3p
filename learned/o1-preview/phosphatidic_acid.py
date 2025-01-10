@@ -5,8 +5,6 @@ Classifies: CHEBI:16337 phosphatidic acid
 Classifies: phosphatidic acid
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_phosphatidic_acid(smiles: str):
     """
@@ -27,57 +25,53 @@ def is_phosphatidic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for phosphate group
-    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)(O)[O]")
-    if not mol.HasSubstructMatch(phosphate_pattern):
-        return False, "No phosphate group found"
+    # Look for glycerol backbone (C-C-C with 3 oxygens attached)
+    # Using a more general pattern to account for stereochemistry and variances
+    glycerol_pattern = Chem.MolFromSmarts("C([O])[C@H]([O])[C]([O])")
+    matches = mol.GetSubstructMatches(glycerol_pattern)
+    if not matches:
+        # Try without stereochemistry
+        glycerol_pattern = Chem.MolFromSmarts("C([O])C([O])C([O])")
+        matches = mol.GetSubstructMatches(glycerol_pattern)
+        if not matches:
+            return False, "No glycerol backbone found"
 
-    # Look for glycerol backbone
-    glycerol_pattern = Chem.MolFromSmarts("[CH2][CH][CH2]")
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone found"
+    # For each glycerol backbone found, check attachments
+    for match in matches:
+        c1_idx, c2_idx, c3_idx, o1_idx, o2_idx, o3_idx = match[0], match[1], match[2], match[3], match[4], match[5]
+        c1 = mol.GetAtomWithIdx(c1_idx)
+        c2 = mol.GetAtomWithIdx(c2_idx)
+        c3 = mol.GetAtomWithIdx(c3_idx)
+        o1 = mol.GetAtomWithIdx(o1_idx)
+        o2 = mol.GetAtomWithIdx(o2_idx)
+        o3 = mol.GetAtomWithIdx(o3_idx)
+        # Check for phosphate group attached to one oxygen
+        phosphate_attached = False
+        ester_count = 0
+        for oxygen in [o1, o2, o3]:
+            for neighbor in oxygen.GetNeighbors():
+                if neighbor.GetAtomicNum() == 15:  # Phosphorus
+                    phosphate_attached = True
+                    break
+                elif neighbor.GetAtomicNum() == 6:
+                    # Check if connected to carbonyl (ester linkage)
+                    for n_bond in neighbor.GetBonds():
+                        if n_bond.GetBondType() == Chem.rdchem.BondType.DOUBLE and n_bond.GetOtherAtom(neighbor).GetAtomicNum() == 8:
+                            ester_count += 1
+                            break
+            if phosphate_attached:
+                break  # Only one phosphate group needed
 
-    # Look for ester groups connected to glycerol carbons
-    ester_pattern = Chem.MolFromSmarts("C(=O)O[CH]")
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) < 2:
-        return False, f"Found {len(ester_matches)} ester groups connected to glycerol carbons, need at least 2"
+        if not phosphate_attached:
+            return False, "No phosphate group attached to glycerol backbone"
 
-    # Check that esters are connected to fatty acid chains (long carbon chains)
-    long_chain_count = 0
-    for match in ester_matches:
-        carbonyl_c_idx = match[0]
-        # Get the carbonyl carbon atom
-        c_atom = mol.GetAtomWithIdx(carbonyl_c_idx)
-        # Get the carbon chain length starting from the carbonyl carbon
-        chain_length = count_chain_length(c_atom, mol)
-        if chain_length >= 8:
-            long_chain_count += 1
+        if ester_count < 2:
+            return False, f"Found {ester_count} ester groups connected to glycerol carbons, need at least 2"
 
-    if long_chain_count < 2:
-        return False, f"Found {long_chain_count} fatty acid chains of sufficient length, need at least 2"
+        # Check passed
+        return True, "Contains glycerol backbone with phosphate group and two fatty acid chains attached via ester bonds"
 
-    return True, "Contains glycerol backbone with phosphate group and two fatty acid chains attached via ester bonds"
-
-# Helper function to count chain length
-def count_chain_length(c_atom, mol):
-    visited = set()
-    queue = [(c_atom, 0)]
-    max_chain_length = 0
-    while queue:
-        atom, length = queue.pop(0)
-        atom_idx = atom.GetIdx()
-        if atom_idx in visited:
-            continue
-        visited.add(atom_idx)
-        if atom.GetAtomicNum() == 6:
-            length += 1
-            if length > max_chain_length:
-                max_chain_length = length
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:
-                    queue.append((neighbor, length))
-    return max_chain_length
+    return False, "Does not match phosphatidic acid structure"
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:49105',
                               'name': 'phosphatidic acid',
@@ -87,7 +81,7 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:49105',
                       'f1_threshold': 0.8,
                       'max_attempts': 5},
         'message': None,
-        'attempt': 0,
+        'attempt': 1,
         'success': True,
         'best': True,
         'error': '',
