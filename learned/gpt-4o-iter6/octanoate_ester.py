@@ -6,31 +6,30 @@ from rdkit import Chem
 def is_octanoate_ester(smiles: str):
     """
     Determines if a molecule is an octanoate ester based on its SMILES string.
-    An octanoate ester includes an octanoyl group, which is a characteristic 
-    C(=O)O group linked to an 8-carbon alkyl chain.
-
+    An octanoate ester includes an octanoyl group, a C(=O)O linked to an 8-carbon chain.
+    
     Args:
         smiles (str): SMILES string of the molecule
-
+        
     Returns:
-        bool: True if molecule is an octanoate ester, False otherwise
-        str: Reason for classification
+        bool, str: True and the reason if molecule is an octanoate ester; otherwise False and reason.
     """
-
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return (None, "Invalid SMILES string")
-
-    # SMARTS pattern for octanoyl ester: [C](=O)OCCCCCCCC
-    octanoate_pattern = Chem.MolFromSmarts("C(=O)OCCCCCCCC")
+        return (False, "Invalid SMILES string")
     
-    if not octanoate_pattern:
-        return (None, "Invalid octanoate SMARTS pattern")
+    # SMARTS patterns for octanoyl ester - allowing branching: could be flexible
+    octanoate_patterns = [
+        Chem.MolFromSmarts("C(=O)OCCCCCCCC"),  # Linear chain
+        Chem.MolFromSmarts("C(=O)OCCCCCC(C)C"),  # Branching at end
+        Chem.MolFromSmarts("C(=O)O[CH2]CCCCC[CH2]C"),  # Ditto, chain can vary
+        Chem.MolFromSmarts("C(=O)OCC(C)CCCC"),  # Midchain branch
+    ]
     
-    matches = mol.GetSubstructMatches(octanoate_pattern)
-    
-    if matches:
-        return True, f"Contains octanoyl ester moiety at positions: {matches}"
+    for pattern in octanoate_patterns:
+        matches = mol.GetSubstructMatches(pattern)
+        if matches:
+            return True, f"Contains octanoyl ester moiety at positions: {matches}"
     
     return False, "No valid octanoate ester linkage with an 8-carbon chain found"
