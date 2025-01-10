@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_monoamine(smiles: str):
     """
     Determines if a molecule is a monoamine based on its SMILES string.
-    A monoamine typically has an amino group linked to an aromatic system
-    by a two-carbon chain.
+    A monoamine typically contains an amino group linked to an aromatic system,
+    sometimes connected directly or through a short spacer.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,16 +22,18 @@ def is_monoamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for a general aromatic pattern
-    aromatic_pattern = Chem.MolFromSmarts("[a]") # any aromatic atom
-    if not mol.HasSubstructMatch(aromatic_pattern):
-        return False, "No aromatic system found"
-    
-    # Look for a generalized amine pattern linked through a two-carbon chain
-    # [NX3;H2,H1,H0] matches any nitrogen (primary, secondary, tertiary amines)
-    # connected via a two-carbon chain to the aromatic system
-    amine_chain_pattern = Chem.MolFromSmarts("[NX3;H2,H1,H0]CC[a]")
-    if not mol.HasSubstructMatch(amine_chain_pattern):
-        return False, "No amine linked by a two-carbon chain to an aromatic system found"
+    # General aromatic system pattern
+    aromatic_pattern = Chem.MolFromSmarts("c")  # Any aromatic carbon
 
-    return True, "Contains an aromatic system with an amino group linked via a two-carbon chain"
+    # Check for aromatic system
+    if not mol.HasSubstructMatch(aromatic_pattern):
+        return False, "No aromatic system (with carbon) found"
+    
+    # Look for a generalized amine pattern linked possibly close to the aromatic system; relaxed to allow for zero or more atoms in the middle
+    # [NX3;H2,H1,H0] matches any nitrogen (primary, secondary, tertiary amines)
+    amine_pattern = Chem.MolFromSmarts("[NX3;H2,H1,H0]C*[*]c")  # Relaxing linkage requirements
+    
+    if not mol.HasSubstructMatch(amine_pattern):
+        return False, "No amine involving an aromatic system and short connectors found"
+
+    return True, "Contains an aromatic system with an amino group potentially connected through a shorter chain"
