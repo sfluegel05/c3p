@@ -10,7 +10,7 @@ def is_guaiacols(smiles: str):
     
     Args:
         smiles (str): SMILES string of the molecule
-    
+
     Returns:
         bool: True if molecule is a guaiacol, False otherwise
         str: Reason for classification
@@ -19,70 +19,36 @@ def is_guaiacols(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Get ring information
-    rings = mol.GetRingInfo().AtomRings()
-    for ring in rings:
-        # Check for aromatic ring of size 6 (benzene ring)
-        if len(ring) == 6 and all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring):
-            # Iterate over atoms in the ring
-            ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
-            num_atoms = len(ring_atoms)
-            for i in range(num_atoms):
-                atom1 = ring_atoms[i]
-                atom2 = ring_atoms[(i + 1) % num_atoms]  # Next atom in ring (adjacent)
-                
-                # Check if atom1 has -OH attached
-                has_OH1 = False
-                for nbr in atom1.GetNeighbors():
-                    if nbr.GetAtomicNum() == 8 and nbr.GetDegree() == 1 and nbr.GetTotalNumHs() == 1:
-                        has_OH1 = True
-                        break
-                # Check if atom2 has -OCH3 attached
-                has_OCH3_2 = False
-                for nbr in atom2.GetNeighbors():
-                    if nbr.GetAtomicNum() == 8 and nbr.GetDegree() == 2:
-                        # Oxygen with degree 2 may be methoxy
-                        attached_methyl = False
-                        oxy_neighbors = nbr.GetNeighbors()
-                        if len(oxy_neighbors) == 2:
-                            for nbr2 in oxy_neighbors:
-                                if nbr2.GetIdx() != atom2.GetIdx():
-                                    if nbr2.GetAtomicNum() == 6 and nbr2.GetDegree() == 1 and nbr2.GetTotalNumHs() == 3:
-                                        # Found methyl group attached to oxygen
-                                        attached_methyl = True
-                                        break
-                        if attached_methyl:
-                            has_OCH3_2 = True
+        
+    # Iterate over atoms to find aromatic carbons with OH group
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6 and atom.GetIsAromatic():
+            # Check if this carbon is bonded to OH
+            has_OH = False
+            for nbr in atom.GetNeighbors():
+                if nbr.GetAtomicNum() == 8:
+                    bond = mol.GetBondBetweenAtoms(atom.GetIdx(), nbr.GetIdx())
+                    if bond is not None and bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
+                        # Check if O atom has only one neighbor (it's an OH group)
+                        if nbr.GetDegree() == 1:
+                            has_OH = True
                             break
-                # Check if adjacent atoms have -OH and -OCH3
-                if has_OH1 and has_OCH3_2:
-                    return True, "Contains phenol with methoxy group at ortho-position"
-                
-                # Also check the reverse (atom1 has -OCH3, atom2 has -OH)
-                # Check if atom1 has -OCH3 attached
-                has_OCH3_1 = False
-                for nbr in atom1.GetNeighbors():
-                    if nbr.GetAtomicNum() == 8 and nbr.GetDegree() == 2:
-                        # Oxygen with degree 2 may be methoxy
-                        attached_methyl = False
-                        oxy_neighbors = nbr.GetNeighbors()
-                        if len(oxy_neighbors) == 2:
-                            for nbr2 in oxy_neighbors:
-                                if nbr2.GetIdx() != atom1.GetIdx():
-                                    if nbr2.GetAtomicNum() == 6 and nbr2.GetDegree() == 1 and nbr2.GetTotalNumHs() == 3:
-                                        # Found methyl group attached to oxygen
-                                        attached_methyl = True
-                                        break
-                        if attached_methyl:
-                            has_OCH3_1 = True
-                            break
-                # Check if atom2 has -OH attached
-                has_OH2 = False
-                for nbr in atom2.GetNeighbors():
-                    if nbr.GetAtomicNum() == 8 and nbr.GetDegree() == 1 and nbr.GetTotalNumHs() == 1:
-                        has_OH2 = True
-                        break
-                if has_OCH3_1 and has_OH2:
-                    return True, "Contains phenol with methoxy group at ortho-position"
-    return False, "Does not contain phenol with methoxy group at ortho-position"
+            if has_OH:
+                # Now check for adjacent aromatic carbon with OCH3 group
+                for neighbor in atom.GetNeighbors():
+                    if neighbor.GetAtomicNum() == 6 and neighbor.GetIsAromatic():
+                        # Exclude the oxygen
+                        if neighbor.GetIdx() != nbr.GetIdx():
+                            for neigh_nbr in neighbor.GetNeighbors():
+                                if neigh_nbr.GetAtomicNum() == 8:
+                                    bond = mol.GetBondBetweenAtoms(neighbor.GetIdx(), neigh_nbr.GetIdx())
+                                    if bond is not None and bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
+                                        # Check if O atom is connected to a methyl group
+                                        if neigh_nbr.GetDegree() == 2:
+                                            attached_carbons = [a for a in neigh_nbr.GetNeighbors() if a.GetIdx() != neighbor.GetIdx()]
+                                            if len(attached_carbons) == 1:
+                                                c_atom = attached_carbons[0]
+                                                if c_atom.GetAtomicNum() == 6 and c_atom.GetDegree() == 1:
+                                                    # Found OCH3 group at ortho position
+                                                    return True, "Contains phenol with ortho-methoxy group"
+    return False, "Does not contain phenol with ortho-methoxy group"
