@@ -6,7 +6,8 @@ from rdkit import Chem
 def is_polypyrrole(smiles: str):
     """
     Determines if a molecule is a polypyrrole based on its SMILES string.
-    A polypyrrole is defined as a compound composed of two or more pyrrole units.
+    A polypyrrole is defined as a compound composed of two or more pyrrole units or
+    pyrrole-like structures in larger, fused systems.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,20 +22,29 @@ def is_polypyrrole(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the SMARTS pattern for a pyrrole unit
-    pyrrole_pattern = Chem.MolFromSmarts("n1cccc1")
-    if pyrrole_pattern is None:
-        return False, "Failed to generate SMARTS pattern for pyrrole"
+    # Define a list of SMARTS patterns for pyrrole and commonly recognized pyrrole-related structures
+    pyrrole_patterns = [
+        Chem.MolFromSmarts("n1cccc1"),    # Simple pyrrole ring
+        Chem.MolFromSmarts("n1ccccc1"),   # Wider pyrrole-like fused ring
+        Chem.MolFromSmarts("n3c4c5c2cnc6nc(c1c(ccc6)n12)c(c1c3c(c(c5)n4)c(cc1)n5)"),  # Porphyrin-like pattern
+        Chem.MolFromSmarts("n2c1c(ncnc1ccc2)"),  # Azole-like pyrrole structure
+    ]
 
-    # Find all pyrrole matches in the molecule
-    pyrrole_matches = mol.GetSubstructMatches(pyrrole_pattern)
-    
-    # Check if there are two or more pyrrole units
-    num_pyrroles = len(pyrrole_matches)
-    if num_pyrroles >= 2:
-        return True, f"Contains {num_pyrroles} pyrrole units"
+    # Count the number of occurrences of pyrrole units in the molecule
+    num_pyrrole_structures = 0
+
+    for pattern in pyrrole_patterns:
+        if pattern is None:
+            continue
+
+        matches = mol.GetSubstructMatches(pattern)
+        num_pyrrole_structures += len(matches)
+
+    # Check if there are two or more pyrrole/pyrrole-like units
+    if num_pyrrole_structures >= 2:
+        return True, f"Contains {num_pyrrole_structures} pyrrole-like structures"
     else:
-        return False, "Contains less than two pyrrole units"
+        return False, "Contains less than two pyrrole-like structures"
 
 # Example usage:
 smiles_example = "C1=CNC=C1C1=CC=CN=C1"
