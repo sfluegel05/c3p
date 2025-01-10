@@ -34,7 +34,7 @@ def is_iridoid_monoterpenoid(smiles: str):
 
     # Check for monoterpenoid backbone (typically 10 carbons, derived from isoprene units)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 10 or c_count > 15:
+    if c_count < 8 or c_count > 20:
         return False, f"Carbon count ({c_count}) not consistent with monoterpenoid backbone"
 
     # Check for oxygen heterocycle (at least one oxygen in a ring)
@@ -42,16 +42,9 @@ def is_iridoid_monoterpenoid(smiles: str):
     if not o_in_ring:
         return False, "No oxygen atom in a ring (required for oxygen heterocycle)"
 
-    # Check for typical iridoid functional groups (e.g., esters, aldehydes, alcohols)
-    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
-    aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)")
-    alcohol_pattern = Chem.MolFromSmarts("[OX2H]")
-    if not (mol.HasSubstructMatch(ester_pattern) or mol.HasSubstructMatch(aldehyde_pattern) or mol.HasSubstructMatch(alcohol_pattern)):
-        return False, "No typical iridoid functional groups (ester, aldehyde, alcohol) found"
-
-    # Check molecular weight (iridoids typically have MW between 150-500 Da)
+    # Check molecular weight (iridoids typically have MW between 150-800 Da)
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 150 or mol_wt > 500:
+    if mol_wt < 150 or mol_wt > 800:
         return False, f"Molecular weight ({mol_wt:.2f} Da) not consistent with iridoid monoterpenoids"
 
     return True, "Contains cyclopentane ring fused to a six-membered oxygen heterocycle, consistent with iridoid monoterpenoid structure"
