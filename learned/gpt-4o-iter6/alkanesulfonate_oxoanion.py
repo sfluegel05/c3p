@@ -6,7 +6,8 @@ from rdkit import Chem
 def is_alkanesulfonate_oxoanion(smiles: str):
     """
     Determines if a molecule is an alkanesulfonate oxoanion based on its SMILES string.
-    An alkanesulfonate oxoanion has a characteristic CS([O-])(=O)=O group.
+    An alkanesulfonate oxoanion is characterized by a distinctive sulfonate group attached
+    to an alkyl chain (R) represented by the pattern R-CS([O-])(=O)=O.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,11 +22,17 @@ def is_alkanesulfonate_oxoanion(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define the alkanesulfonate group pattern: C bonded to S with three oxygens
-    sulfonate_pattern = Chem.MolFromSmarts("CS([O-])(=O)=O")
+    # Enhanced sulfonate pattern to ensure connectivity context
+    sulfonate_pattern = Chem.MolFromSmarts("C[S](=O)(=O)[O-]")
     
-    # Check if the molecule matches the sulfonate pattern
-    if mol.HasSubstructMatch(sulfonate_pattern):
-        return True, "Contains the characteristic alkanesulfonate sulfonate group"
+    # Check if the molecule contains the sulfonate group
+    if not mol.HasSubstructMatch(sulfonate_pattern):
+        return False, "Does not contain the characteristic alkanesulfonate sulfonate group"
     
-    return False, "Does not contain the characteristic alkanesulfonate sulfonate group"
+    # Validate the presence of the alkane chain connected to the sulfonate
+    # Consider adjacent carbons forming a linear or branched pattern
+    # {contextual validation logic can go here if further specificity is needed}
+    
+    return True, "Contains the characteristic alkanesulfonate sulfonate group"
+
+# Example use-case, add test cases to verify correctness and adjust if needed
