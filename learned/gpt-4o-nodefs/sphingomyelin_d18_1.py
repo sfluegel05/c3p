@@ -23,19 +23,19 @@ def is_sphingomyelin_d18_1(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Sphingosine backbone with specific unsaturation (trans- or cis-)
-    sphingosine_pattern = Chem.MolFromSmarts("[C@H](O)[C@H](NC(=O)[C])(/C=C/C)")  # Adjusted to match common patterns
-    if not mol.HasSubstructMatch(sphingosine_pattern):
-        return False, "No sphingosine backbone with correct stereochemistry found"
+    # Sphingosine backbone pattern (typically d18:1 represents 18 carbons with one double bond)
+    sphingodiene = Chem.MolFromSmarts("[C@H](O)[C@H](NC(=O)[C])[C](C=C)[C]")  # Basic pattern for sphingodiene backbone
+    if not mol.HasSubstructMatch(sphingodiene):
+        return False, "No sphingodiene backbone found"
     
-    # Phosphocholine head group
-    phosphocholine_pattern = Chem.MolFromSmarts("COP([O-])(=O)OCC[N+](C)(C)C")
-    if not mol.HasSubstructMatch(phosphocholine_pattern):
+    # Phosphocholine group
+    phosphocholine_group = Chem.MolFromSmarts("COP(=O)([O-])OCC[N+](C)(C)C")  # More inclusive pattern
+    if not mol.HasSubstructMatch(phosphocholine_group):
         return False, "No phosphocholine group found"
 
-    # Amide linkage to a fatty acid
-    amide_pattern = Chem.MolFromSmarts("NC(=O)C")
-    if not mol.HasSubstructMatch(amide_pattern):
+    # Amide linkage with flexible fatty acid chain
+    amide_linkage = Chem.MolFromSmarts("[NX3][C](=O)[C]")  # More general amide bond pattern
+    if not mol.HasSubstructMatch(amide_linkage):
         return False, "No amide linkage found"
 
     return True, "Matches key patterns for sphingomyelin d18:1"
