@@ -2,15 +2,16 @@
 Classifies: CHEBI:26607 saturated fatty acid
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_saturated_fatty_acid(smiles: str):
     """
     Determines if a molecule is a saturated fatty acid based on its SMILES string.
+    A saturated fatty acid is a long aliphatic chain with a carboxylic acid group at one end
+    and no unsaturation or rings.
     
     Args:
         smiles (str): SMILES string of the molecule
-
+    
     Returns:
         bool: True if molecule is a saturated fatty acid, False otherwise
         str: Reason for classification
@@ -19,41 +20,36 @@ def is_saturated_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Identify carboxylic acid group at terminal position
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
-    matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
-    if not matches:
-        return False, "No carboxylic acid group found"
+    # Check for carboxylic acid group at terminal position
+    carboxylate_pattern = Chem.MolFromSmarts("C(=O)[OH]")
+    carboxylate_matches = mol.GetSubstructMatches(carboxylate_pattern)
+    if len(carboxylate_matches) != 1:
+        return False, f"Found {len(carboxylate_matches)} carboxylic acid groups; requires exactly 1"
     
-    num_carboxylic_acids = len(matches)
-    if num_carboxylic_acids != 1:
-        return False, f"Found {num_carboxylic_acids} carboxylic acid groups; requires exactly 1"
-
-    # Ensure that the carboxylic acid is at one end of a chain
-    match = matches[0]
-    carboxylic_carbon_idx = match[0]
-    is_terminal_carboxylic = False
-    
-    for atom in mol.GetAtomWithIdx(carboxylic_carbon_idx).GetNeighbors():
-        if atom.GetAtomicNum() == 6:
-            # Check if the carbon has only one non-carboxylate neighbor
-            if len([neighbor for neighbor in atom.GetNeighbors() if neighbor.GetIdx() != carboxylic_carbon_idx]) == 1:
-                is_terminal_carboxylic = True
-    
-    if not is_terminal_carboxylic:
+    # Check terminal carbon directly adjacent to carboxylate
+    carboxylate_match = carboxylate_matches[0]
+    carboxylic_carbon_idx = carboxylate_match[0]
+    neighbors = mol.GetAtomWithIdx(carboxylic_carbon_idx).GetNeighbors()
+    terminal = any(neighbor.GetDegree() == 1 for neighbor in neighbors)
+    if not terminal:
         return False, "Carboxylic acid group is not at a terminal position"
     
-    # Check chain connectivity: long aliphatic chain (ignores branches but must not have rings)
-    if not AllChem.EmbedMolecule(mol, randomSeed=42) >= 0:  # creates 3D structure to evaluate chain length
-        return False, "Could not generate 3D structure for chain analysis"
-    
-    # Check for absence of unsaturation: presence of double bonds
+    # Check for presence of any double bonds (unsaturation)
     if mol.HasSubstructMatch(Chem.MolFromSmarts("C=C")):
         return False, "Contains unsaturation (double bonds found)"
     
-    # Verify absence of other functional groups (unsuspected heteroatoms)
-    other_groups = Chem.MolFromSmarts("[!C&!c&!H][!C&!c&!H]")
-    if mol.HasSubstructMatch(other_groups):
-        return False, "Unexpected functional groups or heteroatoms found"
+    # Check for rings
+    if mol.HasSubstructMatch(Chem.MolFromSmarts("R")):
+        return False, "Rings detected, should be aliphatic"
     
+    # Verify chain length
+    carbon_chain_pattern = Chem.MolFromSmarts("C" * 8)  # Minimum length of 8 for saturated fatty acids
+    if not mol.HasSubstructMatch(carbon_chain_pattern):
+        return False, "Chain length too short for fatty acid"
+
+    # Ensure absence of other functional groups or heteroatoms besides oxygen
+    non_carbon_heteroatoms = Chem.MolFromSmarts("[!C!O]")
+    if mol.HasSubstructMatch(non_carbon_heteroatoms):
+        return False, "Unexpected heteroatoms found"
+
     return True, "Molecule is a saturated fatty acid"
