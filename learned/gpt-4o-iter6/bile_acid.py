@@ -21,23 +21,23 @@ def is_bile_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Refined pattern for 5beta-cholanic acid framework
-    cholanic_pattern = Chem.MolFromSmarts('[C@@H]1[C@H]([C@H]2[C@@H](CCC3[C@@H](C)C[C@H](O)[C@@H]4[C@@H]3CC[C@]4(C)[C@H]2CC1)O)C(C)C(=O)O')
-    if not mol.HasSubstructMatch(cholanic_pattern):
-        return False, "5beta-cholanic acid framework not found"
-    
-    # Check for at least 2 or 3 hydroxyl groups - this might depend on specific bile acid examples
-    hydroxy_pattern = Chem.MolFromSmarts('[C@H](O)')
+    # General pattern for 5beta-cholanic acid framework (allowing flexibility in peripherals)
+    sterane_pattern = Chem.MolFromSmarts('[C@]12[C@@H]3CC[C@]4([C@H]3C=C[C@]4([C@@H]2CC[C@H]1[CH3])C)CC(=O)')
+    if not mol.HasSubstructMatch(sterane_pattern):
+        return False, "5-beta-steroid nucleus not identified"
+
+    # Check for hydroxyl groups
+    hydroxy_pattern = Chem.MolFromSmarts('C(O)')
     hydroxyl_matches = mol.GetSubstructMatches(hydroxy_pattern)
-    if len(hydroxyl_matches) < 2:
-        return False, "Insufficient number of hydroxy groups (less than two)"
+    if len(hydroxyl_matches) < 1:
+        return False, "Insufficient number of hydroxy groups (less than one)"
 
     # Check for the carboxylic acid group
-    carboxylic_pattern = Chem.MolFromSmarts('C(=O)O')
+    carboxylic_pattern = Chem.MolFromSmarts('C(=O)[O-]')
     if not mol.HasSubstructMatch(carboxylic_pattern):
-        return False, "Carboxylic acid group not found"
+        return False, "Carboxylic acid group not identified"
 
-    return True, "Valid bile acid: contains 5beta-cholanic framework, hydroxyl groups, and a terminal carboxylic group"
+    return True, "Valid bile acid: contains flexible steroid framework, hydroxyl groups, and a terminal carboxylic group"
 
 # Example usage:
 # result, reason = is_bile_acid("O[C@@H]1[C@]2([C@]...")
