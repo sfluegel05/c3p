@@ -31,11 +31,23 @@ def is_diketone(smiles: str):
     ketone_matches = mol.GetSubstructMatches(ketone_pattern)
     
     # Check if there are exactly two ketone groups
-    if len(ketone_matches) == 2:
-        # Ensure that there are no additional ketone groups
-        # by checking that the total number of ketone groups is exactly 2
-        return True, "Contains exactly two ketone functional groups"
-    elif len(ketone_matches) > 2:
+    if len(ketone_matches) != 2:
         return False, f"Found {len(ketone_matches)} ketone groups, need exactly 2"
-    else:
-        return False, f"Found {len(ketone_matches)} ketone groups, need exactly 2"
+
+    # Ensure that the ketone groups are not part of other functional groups like esters or amides
+    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
+    amide_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])")
+    
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    amide_matches = mol.GetSubstructMatches(amide_pattern)
+    
+    # If any ketone group is part of an ester or amide, it's not a diketone
+    for match in ketone_matches:
+        for ester_match in ester_matches:
+            if match[0] == ester_match[1]:  # Check if the carbon of the ketone is part of an ester
+                return False, "Ketone group is part of an ester"
+        for amide_match in amide_matches:
+            if match[0] == amide_match[1]:  # Check if the carbon of the ketone is part of an amide
+                return False, "Ketone group is part of an amide"
+
+    return True, "Contains exactly two ketone functional groups"
