@@ -11,7 +11,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_aromatic_primary_alcohol(smiles: str):
     """
     Determines if a molecule is an aromatic primary alcohol based on its SMILES string.
-    An aromatic primary alcohol has a primary alcohol group (-CH2OH) attached to a carbon in an aromatic ring.
+    An aromatic primary alcohol has a primary alcohol group (-CH2OH) attached to a carbon in an aromatic ring or directly bonded to an aromatic ring.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -34,7 +34,7 @@ def is_aromatic_primary_alcohol(smiles: str):
     # Find all matches for the primary alcohol group
     primary_alcohol_matches = mol.GetSubstructMatches(primary_alcohol_pattern)
     
-    # Check if any of the primary alcohol groups are attached to an aromatic carbon
+    # Check if any of the primary alcohol groups are attached to an aromatic carbon or a carbon bonded to an aromatic ring
     for match in primary_alcohol_matches:
         carbon_idx = match[0]  # Index of the carbon in the -CH2OH group
         carbon_atom = mol.GetAtomWithIdx(carbon_idx)
@@ -43,9 +43,10 @@ def is_aromatic_primary_alcohol(smiles: str):
         if carbon_atom.GetIsAromatic():
             return True, "Primary alcohol group (-CH2OH) attached to an aromatic carbon"
         
-        # Alternatively, check if the carbon is bonded to an aromatic ring
+        # Check if the carbon is bonded to an aromatic ring
         for neighbor in carbon_atom.GetNeighbors():
             if neighbor.GetIsAromatic():
+                # Ensure the aromatic ring is directly bonded to the carbon bearing the -CH2OH group
                 return True, "Primary alcohol group (-CH2OH) attached to a carbon bonded to an aromatic ring"
 
     return False, "Primary alcohol group (-CH2OH) not attached to an aromatic carbon or a carbon bonded to an aromatic ring"
