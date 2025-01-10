@@ -7,9 +7,7 @@ def is_quinic_acid(smiles: str):
     """
     Determines if a molecule is quinic acid or its derivative based on its SMILES string.
     
-    Quinic acid is a cyclitol carboxylic acid derivative characterized by a cyclohexane ring
-    with multiple hydroxyl groups and a carboxylic acid group.
-    The molecule may have additional ester-linked modifications.
+    Quinic acid is a cyclitol carboxylic acid with specific hydroxyl and carboxylic acid groups on a cyclohexane ring.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,24 +21,24 @@ def is_quinic_acid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # More flexible core pattern for quinic acid
-    # Basic cyclohexane with optional stereochemistry, at least 3 OH and 1 COOH
-    core_pattern = Chem.MolFromSmarts("C1C(C(O)C(C(C1[OH])))[OH]C(=O)O")
-    
-    # Check for quinic acid core
-    if not mol.HasSubstructMatch(core_pattern):
+
+    # Define SMARTS pattern for cyclohexane with hydroxyls and carboxylic acid groups
+    quinic_acid_pattern = Chem.MolFromSmarts("C1[C@H](O)[C@@H](O)[C@H](O)[C@H](C(=O)O)C1")
+    # Check for quinic acid backbone
+    if not mol.HasSubstructMatch(quinic_acid_pattern):
         return False, "Missing quinic acid backbone structure"
     
-    # Pattern for caffeoyl or other ester-linked modifications
-    ester_pattern = Chem.MolFromSmarts("C(=O)O[C@@H]1C[C@H](O)C(O)C[C@H]1O")
-    if mol.HasSubstructMatch(ester_pattern):
-        return True, "Quinic acid derivative with ester linkages detected"
+    # Check for additional substitutions like caffeoyl or feruloyl groups
+    caffeoyl_pattern = Chem.MolFromSmarts("c1ccc(O)c(O)c1/C=C/C(=O)O")
+    feruloyl_pattern = Chem.MolFromSmarts("c1cc(O)cc(OC)c1/C=C/C(=O)O")
     
-    # Handling additional structural complexity
-    additional_complexity_pattern = Chem.MolFromSmarts("C(=O)O")
-    if mol.HasSubstructMatch(additional_complexity_pattern):
-        return True, "Quinic acid with complex modifications including acetylation"
+    caffeoyl_matches = mol.GetSubstructMatches(caffeoyl_pattern)
+    feruloyl_matches = mol.GetSubstructMatches(feruloyl_pattern)
 
-    # If structure does not match any complex patterns but matches core
-    return True, "Base quinic acid or simple derivative identified"
+    if len(caffeoyl_matches) > 0:
+        return True, "Quinic acid derivative with caffeoyl group(s)"
+    if len(feruloyl_matches) > 0:
+        return True, "Quinic acid derivative with feruloyl group(s)"
+
+    # If no additional groups, classify as base quinic acid
+    return True, "Base quinic acid with no additional groups detected"
