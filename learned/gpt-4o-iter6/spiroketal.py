@@ -7,7 +7,7 @@ def is_spiroketal(smiles: str):
     """
     Determines if a molecule is a spiroketal based on its SMILES string.
     A spiroketal contains a spiro center that is the only common atom of two rings,
-    with two attached oxygen atoms each part of a different ring.
+    with each ring containing one of the connected oxygen atoms.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,32 +22,31 @@ def is_spiroketal(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define a SMARTS pattern for spiroketal
-    # The pattern can be defined as a carbon atom involved as a spiro center having
-    # two connections to oxygens with those oxygens being in separate rings
-    spiroketal_smarts = "[C]1([O])([O])" # Improvised SMARTS (this likely needs refinement)
-    
+    # Refining the SMARTS pattern for spiroketal
+    # SMARTS for spiroketal requires a carbon spiro center with two oxygens, each in a different ring
+    spiroketal_smarts = "[C]([O][R])[O][R]"  # Improved SMARTS, see if a single carbon joins two ether oxygens of different rings
     spiroketal_pattern = Chem.MolFromSmarts(spiroketal_smarts)
     if not spiroketal_pattern:
         return None, "Invalid SMARTS pattern"
     
     # Find matches
     matches = mol.GetSubstructMatches(spiroketal_pattern)
-    # Ring information
     ring_info = mol.GetRingInfo()
     
     for match in matches:
-        # Check ring count for oxygen attachments
-        # Assuming match provides indices, needs to verify each O in different ring structs
+        # The first match index is the spiro carbon, followed by two oxygens
         carbon_idx = match[0]
-        o_indices = match[1:3]
-        if all(ring_info.NumAtomRings(o_idx) >= 1 for o_idx in o_indices):
-            o_rings = [ring_info.AtomRingsFromIdx(o_idx) for o_idx in o_indices]
-            if all(len(o_ring_set) > 0 for o_ring_set in o_rings):
-                # Ensure distinct ring sets
-                ring_sets = [set(ring) for rings in o_rings for ring in rings]
-                # Check that each oxygen is part of a separate ring
-                if len(set.intersection(*ring_sets)) == 0:
-                    return True, "Found a spiroketal with the correct linkage"
+        oxygen_indices = match[1:3]
+        
+        # Check that each oxygen is part of a distinct ring structure
+        o_ring_assignments = [ring_info.AtomRingsFromIdx(o_idx) for o_idx in oxygen_indices]
+        
+        # Ensure oxygens are in different rings
+        if all(len(oxygen_rings) > 0 for oxygen_rings in o_ring_assignments):
+            first_ring_set, second_ring_set = [set(ring) for rings in o_ring_assignments for ring in rings]
             
-    return False, "No spiroketal found"
+            # Confirm they are in separate ring systems
+            if len(set.intersection(first_ring_set, second_ring_set)) == 0:
+                return True, "Found a spiroketal with distinct ring linkages via a spiro center"
+            
+    return False, "No spiroketal structure found"
