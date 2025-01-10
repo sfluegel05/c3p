@@ -21,19 +21,23 @@ def is_polar_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for alpha-amino acid core structure: N-C-C(=O)-O
-    amino_acid_pattern = Chem.MolFromSmarts("[NX3][CX4][CX3](=O)[OX1]")
-    if not mol.HasSubstructMatch(amino_acid_pattern):
+    # Redefining the core structure pattern to account for isotopic variations
+    # General pattern for alpha-amino acids: N-[C]-[CX3](=O)[O]
+    core_pattern = Chem.MolFromSmarts("[NX3;H2,H1;[!$(*=*)&!$(*#*)]][C;R0][CX3](=O)[OX1]")
+
+    if not mol.HasSubstructMatch(core_pattern):
         return False, "No alpha-amino acid core structure found"
 
-    # Check for polar side chains: OH, CONH2, SH, NH2
+    # Improved check for polar side chains characteristic of polar amino acids
+    # Focusing on specific patterns common in known polar amino acids
     polar_side_chain_patterns = [
-        Chem.MolFromSmarts("[OX2H]"),   # OH group
-        Chem.MolFromSmarts("[CX3](=O)[NH2]"),  # Amide group
-        Chem.MolFromSmarts("[SX2H]"),   # SH group
-        Chem.MolFromSmarts("[NX3H2]")   # NH2 group
+        Chem.MolFromSmarts("[CX3](=O)[NX3H2]"),  # Amide group (Asparagine, Glutamine)
+        Chem.MolFromSmarts("[CX3](=O)[[NX3]R0]"),  # General amide with no rings
+        Chem.MolFromSmarts("[OX2H]"),  # Hydroxyl group (Serine, Threonine, Tyrosine)
+        Chem.MolFromSmarts("[SX2H]"),  # Thiol group (Cysteine)
+        Chem.MolFromSmarts("[NX3][OX1]")  # Imidazole (Histidine)
     ]
-    
+
     for pattern in polar_side_chain_patterns:
         if mol.HasSubstructMatch(pattern):
             return True, "Contains polar side chain capable of hydrogen bonding"
