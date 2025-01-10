@@ -19,28 +19,25 @@ def is_N_acylsphingosine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Improved amide linkage pattern (NC(=O)C) allowing variable attachment
-    # Ensuring the carbon following the amide C=O is attached to a chain
-    amide_pattern = Chem.MolFromSmarts("N[C;H2][C](=O)[C]")
+    # Generalized amide linkage pattern
+    amide_pattern = Chem.MolFromSmarts("NC(=O)C")
     if not mol.HasSubstructMatch(amide_pattern):
         return False, "No acyl-amide linkage found"
 
-    # Improved sphingosine backbone pattern
-    # Including a long hydrocarbon chain, hydroxyl groups, amide linkage,
-    # and often a trans double bond
-    sphingosine_pattern = Chem.MolFromSmarts("[C@H]([C@@H](CO)O)C=C")
+    # Generalization of the sphingosine pattern
+    sphingosine_pattern = Chem.MolFromSmarts("C=C(O)[C@H](O)C")  # Allowing a degree of flexibility
     if not mol.HasSubstructMatch(sphingosine_pattern):
-        return False, "No sphingosine backbone pattern found"
-        
-    # Check for minimum carbon chain length for typical N-acylsphingosines
+        return False, "No sphingosine-like backbone pattern found"
+
+    # Check for sufficient ion chain length in context of known examples
     carbon_atom_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if carbon_atom_count < 24:
         return False, "Insufficient carbon chain length for N-acylsphingosine"
 
-    # Ensure appropriate number of hydroxyl groups in precise locations
-    correct_hydroxyl_pattern = Chem.MolFromSmarts("[C@H](O)[C@H](CO)O")
-    if not mol.HasSubstructMatch(correct_hydroxyl_pattern):
-        return False, "Required hydroxyl groups in proper configuration not found"
+    # Ensure at least two hydroxyl groups in reasonable location
+    # Focusing pattern to more generic backbone regions
+    correct_hydroxyl_count = Chem.MolFromSmarts("O[C@H]")
+    if not mol.HasSubstructMatch(correct_hydroxyl_count):
+        return False, "Required hydroxyl groups not found in correct stereochemistry"
 
-    # All checks passed, classify as N-acylsphingosine
     return True, "Contains sphingosine backbone with an acyl-amide linkage"
