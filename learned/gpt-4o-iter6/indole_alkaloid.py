@@ -6,40 +6,35 @@ from rdkit import Chem
 def is_indole_alkaloid(smiles: str):
     """
     Determines if a molecule is an indole alkaloid based on its SMILES string.
-    It checks for the presence of an indole skeleton and other typical alkaloid features.
+    An indole alkaloid must have an indole skeleton and typically contains other nitrogen atoms.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if the molecule is an indole alkaloid, False otherwise
+        bool: True if molecule is an indole alkaloid, False otherwise
         str: Reason for classification
     """
     
-    # Parse SMILES into RDKit Molecule
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Look for common indole pattern
-    indole_patterns = [
-        Chem.MolFromSmarts('c1c[nH]c2cccc2c1'),  # canonical indole
-        Chem.MolFromSmarts('c1cnc2cccc2c1'),    # indole without hydrogen
-        Chem.MolFromSmarts('c1c[n,nH]c2ccccc2c1')  # more flexible with options for N
-    ]
-    
-    # Check if any indole patterns are present
-    if not any(mol.HasSubstructMatch(pattern) for pattern in indole_patterns):
-        return False, "No recognizable indole-like skeleton found"
 
-    # Verify presence of additional nitrogen atoms; typical for complex alkaloids
-    n_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7]
-    if len(n_atoms) <= 1:
-        return False, "Not enough nitrogen atoms typical of indole alkaloids"
+    # Define a flexible SMARTS pattern for the indole core
+    indole_flex_pattern = Chem.MolFromSmarts('c1ccc2[nH]ccc2c1')  # Matches the indole core structure
+    if not mol.HasSubstructMatch(indole_flex_pattern):
+        return False, "No indole skeleton found"
 
-    return True, "Molecule possesses an indole structure with characteristics of an alkaloid"
+    # Define pattern to capture any additional nitrogen atoms, which are typical in alkaloids
+    additional_nitrogen_pattern = Chem.MolFromSmarts('[#7]')  # General pattern for nitrogen
+    nitrogen_count = len(mol.GetSubstructMatches(additional_nitrogen_pattern))
+    if nitrogen_count < 2:
+        return False, f"Lacks sufficient nitrogen atoms for typical alkaloid structure, found {nitrogen_count}"
 
-# Example use case for testing based on provided SMILES strings
+    return True, "Contains indole skeleton and features typical of alkaloids"
+
+# Example usage for testing based on provided SMILES strings
 example_smiles = "O=C1N2[C@H]([C@@]3(O[C@](C(N3[C@H]1CC(C)C)=O)(NC(=O)[C@@H]4C=C5C6=C7C(NC=C7C[C@H]5N(C4)C)=CC=C6)CC)O)CCC2"
 result, reason = is_indole_alkaloid(example_smiles)
 print(result, reason)
