@@ -2,6 +2,7 @@
 Classifies: CHEBI:36702 2-acyl-1-alkyl-sn-glycero-3-phosphocholine
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_2_acyl_1_alkyl_sn_glycero_3_phosphocholine(smiles: str):
     """
@@ -21,8 +22,8 @@ def is_2_acyl_1_alkyl_sn_glycero_3_phosphocholine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for the glycerol backbone with stereochemistry [C@H](CO)(CO)
-    glycerol_pattern = Chem.MolFromSmarts("[C@@H](CO)(CO)")
+    # Look for the glycerol backbone with stereochemistry [C@H](COC)(O)
+    glycerol_pattern = Chem.MolFromSmarts("[C@H](COP)(O)CO")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No correct glycerol backbone found"
     
@@ -37,7 +38,7 @@ def is_2_acyl_1_alkyl_sn_glycero_3_phosphocholine(smiles: str):
         return False, "No ester linkage for acyl chain found"
     
     # Phosphocholine group verification
-    phosphocholine_group = Chem.MolFromSmarts("N(C)(C)CCOP(=O)(O)O[H]")
+    phosphocholine_group = Chem.MolFromSmarts("N(C)(C)CCOP(=O)(O)O")
     if not mol.HasSubstructMatch(phosphocholine_group):
         return False, "No phosphocholine group found"
 
