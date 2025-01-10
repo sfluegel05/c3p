@@ -20,44 +20,65 @@ def is_fatty_acid(smiles: str):
         bool: True if molecule is a fatty acid, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Identify carboxylic acid groups: [C](=O)[O-] or [C](=O)[OH]
-    carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX1H1,OX1H0-]")
+    # Ensure the molecule is not aromatic
+    if mol.HasSubstructMatch(Chem.MolFromSmarts('a')):
+        return False, "Molecule contains aromatic rings, which is not characteristic of fatty acids"
+
+    # Identify carboxylic acid groups: [C](=O)[O][H]
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[O;H1]")
     carboxylic_acids = mol.GetSubstructMatches(carboxylic_acid_pattern)
     if len(carboxylic_acids) != 1:
         return False, f"Found {len(carboxylic_acids)} carboxylic acid groups, need exactly 1"
 
     # Get the carboxyl carbon atom index
     carboxyl_c_index = carboxylic_acids[0][0]
+
+    # Allowed atoms in fatty acids
+    allowed_atomic_nums = {1, 6, 7, 8, 9, 16, 17, 35, 53}  # H, C, N, O, F, S, Cl, Br, I
+
+    # Check for disallowed elements
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() not in allowed_atomic_nums:
+            return False, f"Contains disallowed element: {atom.GetSymbol()}"
+
+    # Traverse the molecule to find the longest carbon chain connected to the carboxyl carbon
     visited = set()
 
-    # Define atoms allowed in fatty acids
-    allowed_atoms = {6, 1, 8, 16, 17, 35, 53}  # C, H, O, S, Cl, Br, I
-
-    # Function to recursively find the longest carbon chain from a given atom
-    def find_longest_chain(atom_idx, length):
-        visited.add(atom_idx)
-        max_length = length
+    def traverse_chain(atom_idx):
         atom = mol.GetAtomWithIdx(atom_idx)
+        atomic_num = atom.GetAtomicNum()
+        if atomic_num != 6:  # Only consider carbon atoms
+            return []
+        visited.add(atom_idx)
+        chain = [atom_idx]
         for neighbor in atom.GetNeighbors():
             n_idx = neighbor.GetIdx()
-            n_atomic_num = neighbor.GetAtomicNum()
-            bond = mol.GetBondBetweenAtoms(atom_idx, n_idx)
-            # Allow traversal through C, O, S atoms (common in fatty acids)
-            if n_atomic_num in allowed_atoms and n_idx not in visited:
-                chain_length = find_longest_chain(n_idx, length + (1 if n_atomic_num == 6 else 0))
-                if chain_length > max_length:
-                    max_length = chain_length
-        visited.remove(atom_idx)
-        return max_length
+            if n_idx not in visited and neighbor.GetAtomicNum() == 6:
+                chain.extend(traverse_chain(n_idx))
+        return chain
 
-    # Find the longest carbon chain starting from the carboxyl carbon
-    chain_length = find_longest_chain(carboxyl_c_index, 0)
+    # Start traversal from the carbon next to the carboxyl carbon
+    carboxyl_carbon = mol.GetAtomWithIdx(carboxyl_c_index)
+    chains = []
+    for neighbor in carboxyl_carbon.GetNeighbors():
+        n_idx = neighbor.GetIdx()
+        if mol.GetAtomWithIdx(n_idx).GetAtomicNum() == 6:
+            visited.clear()
+            chain = traverse_chain(n_idx)
+            chains.append(chain)
+
+    if not chains:
+        return False, "No carbon chain found attached to the carboxyl group"
+
+    # Find the longest carbon chain
+    longest_chain = max(chains, key=len)
+    chain_length = len(set(longest_chain))  # Number of unique carbons in the chain
 
     # Check if chain length is within typical fatty acid range
     if chain_length < 4:
@@ -65,10 +86,11 @@ def is_fatty_acid(smiles: str):
     elif chain_length > 28:
         return False, f"Chain length {chain_length} is too long for typical fatty acids"
 
-    # Check if molecule contains only allowed elements (C, H, O, S, halogens)
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() not in allowed_atoms:
-            return False, f"Contains disallowed element: {atom.GetSymbol()}"
+    # Ensure the chain is aliphatic (no rings)
+    for idx in longest_chain:
+        atom = mol.GetAtomWithIdx(idx)
+        if atom.IsInRing():
+            return False, "Carbon chain contains ring structures, which is not characteristic of fatty acids"
 
     return True, f"Contains a single carboxylic acid group and an aliphatic chain of {chain_length} carbons"
 
@@ -92,18 +114,18 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
+    'attempt': 1,
+    'success': False,
+    'best': False,
     'error': '',
     'stdout': None,
-    'num_true_positives': 150,
-    'num_false_positives': 4,
-    'num_true_negatives': 182407,
-    'num_false_negatives': 23,
+    'num_true_positives': 0,
+    'num_false_positives': 0,
+    'num_true_negatives': 0,
+    'num_false_negatives': 0,
     'num_negatives': None,
-    'precision': 0.974025974025974,
-    'recall': 0.8670520231213873,
-    'f1': 0.9174311926605504,
-    'accuracy': 0.9998521228585199
+    'precision': 0.0,
+    'recall': 0.0,
+    'f1': 0.0,
+    'accuracy': 0.0
 }
