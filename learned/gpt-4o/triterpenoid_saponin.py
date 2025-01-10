@@ -25,7 +25,11 @@ def is_triterpenoid_saponin(smiles: str):
         Chem.MolFromSmarts("C1CCC2(C)C(C)C3CCC4C(C)C(CCC5=C4C=CC=C5)C3(C)C2C1"),  # ursane
         Chem.MolFromSmarts("C1CCC2(C)(C=CC3C2C(C)CCC4(C)C3CC(C)=C(C)C4"),  # lupane
     ]
-    
+
+    # Ensure patterns are valid
+    if not all(pattern for pattern in triterpenoid_patterns):
+        return None, "One or more triterpenoid backbone patterns could not be parsed"
+
     if not any(mol.HasSubstructMatch(pattern) for pattern in triterpenoid_patterns):
         return False, "No triterpenoid backbone found"
 
@@ -36,6 +40,10 @@ def is_triterpenoid_saponin(smiles: str):
         Chem.MolFromSmarts("O[C@@H]1[C@H](O[C@H]2O[C@@H](CO)[C@@H](O)[C@@H](O)[C@@H]2O)[C@@H](O)[C@@H](O)[C@H]1"), # complex sugar component
         Chem.MolFromSmarts("O[C@H]([C@@H]1[C@H](O)[C@@H](O)[C@@H](O)[C@H]1O)O[C@@H]1O[C@H]2C[C@@H]1[C@H]1"), # diverse glycosidic linkage in complex saponins
     ]
+
+    # Ensure patterns are valid
+    if not all(pattern for pattern in glycosidic_patterns):
+        return None, "One or more glycosidic patterns could not be parsed"
 
     if not any(mol.HasSubstructMatch(pattern) for pattern in glycosidic_patterns):
         return False, "No significant glycosidic linkage found with sugar rings"
