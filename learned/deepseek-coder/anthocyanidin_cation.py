@@ -28,7 +28,8 @@ def is_anthocyanidin_cation(smiles: str):
 
     # Check for the presence of a positively charged oxygen in the chromenylium ring
     # The pattern matches the flavylium cation structure: [O+]=C1C=C(C2=CC=CC=C2)C=C1
-    flavylium_pattern = Chem.MolFromSmarts("[O+]=c1ccc2ccccc2c1")
+    # This pattern is more flexible to account for substitutions
+    flavylium_pattern = Chem.MolFromSmarts("[O+]=c1ccc(-c2ccccc2)cc1")
     if not mol.HasSubstructMatch(flavylium_pattern):
         return False, "No flavylium cation structure found"
 
