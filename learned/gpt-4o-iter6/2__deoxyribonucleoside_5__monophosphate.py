@@ -2,7 +2,6 @@
 Classifies: CHEBI:18241 2'-deoxyribonucleoside 5'-monophosphate
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_2__deoxyribonucleoside_5__monophosphate(smiles: str):
     """
@@ -20,22 +19,32 @@ def is_2__deoxyribonucleoside_5__monophosphate(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Relaxed 2'-deoxyribose sugar pattern, focused on structural ring & connections
-    deoxyribose_pattern = Chem.MolFromSmarts("C1OC(CO)CO1")
+    
+    # More precise 2'-deoxyribose pattern considering stereochemistry
+    deoxyribose_pattern = Chem.MolFromSmarts("[C@H]1([C@H]([C@@H]([C@@H](O1)CO)O)O)")
     if not mol.HasSubstructMatch(deoxyribose_pattern):
         return False, "No 2'-deoxyribose sugar structure found"
-
-    # Phosphate group pattern with flexibility on charge
+    
+    # Flexible pattern for monophosphate group, allowing for charge variations
     phosphate_pattern = Chem.MolFromSmarts("COP(=O)(O)O")
     if not mol.HasSubstructMatch(phosphate_pattern):
-        return False, "No 5'-monophosphate group found"
-
-    # Checking broadly for nucleobase structures
-    # Supporting purine and pyrimidine base presence with simplified patterns
-    purine_pattern = Chem.MolFromSmarts("n1cnc2c1ncnc2")
-    pyrimidine_pattern = Chem.MolFromSmarts("c1ccn(c(=O)n1)")
-    if not (mol.HasSubstructMatch(purine_pattern) or mol.HasSubstructMatch(pyrimidine_pattern)):
+        phosphate_pattern_charged = Chem.MolFromSmarts("COP([O-])(=O)O")
+        if not mol.HasSubstructMatch(phosphate_pattern_charged):
+            return False, "No 5'-monophosphate group found"
+    
+    # Comprehensive nucleobase patterns
+    nucleobase_patterns = [
+        Chem.MolFromSmarts("n1cnc2c1ncnc2"),  # purines (generic)
+        Chem.MolFromSmarts("n1cnc2ncnc(c12)N"),  # adenine-like
+        Chem.MolFromSmarts("n1c[nH]cnc1")  # guanine-like
+    ] + [
+        Chem.MolFromSmarts("c1cnc(=O)nc1"),  # pyrimidine
+        Chem.MolFromSmarts("n1cc(cn1C)C=O"), # thymine-like
+        Chem.MolFromSmarts("c1[nH]cnc1=N"),  # cytosine-like
+        Chem.MolFromSmarts("[nH]1c(=O)[nH]c(=O)c([nH]1)N")  # uracil-like
+    ]
+    
+    if not any(mol.HasSubstructMatch(pattern) for pattern in nucleobase_patterns):
         return False, "No recognized purine or pyrimidine nucleobase found"
-
+    
     return True, "Valid 2'-deoxyribonucleoside 5'-monophosphate with correct sugar, phosphate, and nucleobase"
