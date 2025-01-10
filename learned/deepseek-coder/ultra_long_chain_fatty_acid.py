@@ -26,25 +26,36 @@ def is_ultra_long_chain_fatty_acid(smiles: str):
 
     # Check for carboxylic acid group (-C(=O)OH)
     carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
-    if not mol.HasSubstructMatch(carboxylic_acid_pattern):
+    carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
+    if not carboxylic_acid_matches:
         return False, "No carboxylic acid group found"
 
     # Find the longest carbon chain
     longest_chain_length = 0
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 6:  # Carbon atom
-            # Traverse the chain starting from this atom
-            chain_length = 1
-            visited = set()
-            stack = [(atom, chain_length, None)]  # (current_atom, current_length, previous_atom)
-            while stack:
-                current_atom, current_length, previous_atom = stack.pop()
-                visited.add(current_atom.GetIdx())
-                if current_length > longest_chain_length:
-                    longest_chain_length = current_length
-                for neighbor in current_atom.GetNeighbors():
-                    if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited and neighbor != previous_atom:
-                        stack.append((neighbor, current_length + 1, current_atom))
+    best_chain = []
+    
+    # Iterate through all carboxylic acid groups
+    for match in carboxylic_acid_matches:
+        # Start from the carbon in the carboxylic acid group
+        start_atom = mol.GetAtomWithIdx(match[0])
+        visited = set()
+        stack = [(start_atom, 1, [start_atom.GetIdx()])]  # (current_atom, current_length, current_chain)
+        
+        while stack:
+            current_atom, current_length, current_chain = stack.pop()
+            visited.add(current_atom.GetIdx())
+            
+            # Update longest chain if necessary
+            if current_length > longest_chain_length:
+                longest_chain_length = current_length
+                best_chain = current_chain
+            
+            # Explore neighbors
+            for neighbor in current_atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:
+                    # Only continue if the neighbor is not part of a ring and not already in the chain
+                    if not neighbor.IsInRing() and neighbor.GetIdx() not in current_chain:
+                        stack.append((neighbor, current_length + 1, current_chain + [neighbor.GetIdx()]))
 
     # Check if the longest chain is greater than C27
     if longest_chain_length > 27:
