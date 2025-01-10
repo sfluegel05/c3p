@@ -22,17 +22,19 @@ def is_glucosylceramide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for beta-D-glucose
-    glucose_pattern = Chem.MolFromSmarts("O[C@H]1[C@@H]([C@H](CO)O)[C@H](O)[C@@H](O)[C@H]1O")
+    # SMARTS pattern for beta-D-glucose moiety
+    glucose_pattern = Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@@H](CO)O1")
     if not mol.HasSubstructMatch(glucose_pattern):
         return False, "No beta-D-glucose moiety found"
     
-    # General pattern for ceramide: sphingosine-like backbone with a fatty acid
-    ceramide_pattern = Chem.MolFromSmarts("C(=O)NC[C@H](O)[C@@H](CO)")
+    # SMARTS pattern for typical ceramide-like structure (sphingosine with a fatty acid)
+    ceramide_pattern = Chem.MolFromSmarts("C(=O)N[C@@H](CO[C@H]1O[C@H](CO)O[C@H](O)[C@H]1O)C")
     if not mol.HasSubstructMatch(ceramide_pattern):
         return False, "No ceramide-like backbone found"
     
-    # Further verification could include checks for long hydrocarbon chains
-    # but those checks are more complex and dependent on the definition of "long"
+    # Check for long hydrocarbon chains, a characteristic of ceramides
+    long_chain_pattern = Chem.MolFromSmarts("CCCCCCCCCCCC")
+    if not mol.HasSubstructMatch(long_chain_pattern):
+        return False, "No long hydrocarbon chain, typical of ceramides"
 
     return True, "Contains a beta-D-glucose moiety and a ceramide-like backbone"
