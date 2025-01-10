@@ -27,7 +27,10 @@ def is_icosanoid(smiles: str):
 
     # Count the number of carbon atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 18 or c_count > 22:
+
+    # Since icosanoids are derived from C20 fatty acids, but may have modifications,
+    # accept molecules with carbon counts between 18 and 40
+    if c_count < 18 or c_count > 40:
         return False, f"Molecule has {c_count} carbon atoms; expected approximately 20 for an icosanoid"
 
     # Count the number of oxygen atoms
@@ -35,47 +38,71 @@ def is_icosanoid(smiles: str):
     if o_count < 2:
         return False, "Molecule has insufficient oxygen atoms; expected oxidation products"
 
-    # Check for presence of functional groups
+    # Check for presence of common functional groups
     functional_groups = []
 
     # Hydroxyl group (OH)
     hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
-    if mol.HasSubstructMatch(hydroxyl_pattern):
+    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
+    if hydroxyl_matches:
         functional_groups.append("hydroxyl")
 
     # Ketone group (>C=O)
-    ketone_pattern = Chem.MolFromSmarts("[CX3]=[OX1]")
-    if mol.HasSubstructMatch(ketone_pattern):
+    ketone_pattern = Chem.MolFromSmarts("[CX3](=O)[#6]")
+    ketone_matches = mol.GetSubstructMatches(ketone_pattern)
+    if ketone_matches:
         functional_groups.append("ketone")
+
+    # Carboxylic acid group (-C(=O)OH)
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[OX1H1]")
+    carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
+    if carboxylic_acid_matches:
+        functional_groups.append("carboxylic acid")
+
+    # Ester group (-C(=O)O-C)
+    ester_pattern = Chem.MolFromSmarts("C(=O)O[CX4]")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    if ester_matches:
+        functional_groups.append("ester")
+
+    # Amide group (-C(=O)N)
+    amide_pattern = Chem.MolFromSmarts("C(=O)N")
+    amide_matches = mol.GetSubstructMatches(amide_pattern)
+    if amide_matches:
+        functional_groups.append("amide")
+
+    # Sulfide group (-S-)
+    sulfide_pattern = Chem.MolFromSmarts("S")
+    sulfide_matches = mol.GetSubstructMatches(sulfide_pattern)
+    if sulfide_matches:
+        functional_groups.append("sulfide")
 
     # Epoxide group (three-membered ring with an oxygen)
     epoxide_pattern = Chem.MolFromSmarts("[C]1[O][C]1")
-    if mol.HasSubstructMatch(epoxide_pattern):
+    epoxide_matches = mol.GetSubstructMatches(epoxide_pattern)
+    if epoxide_matches:
         functional_groups.append("epoxide")
 
     # Peroxide group (-O-O-)
     peroxide_pattern = Chem.MolFromSmarts("[OX2][OX2]")
-    if mol.HasSubstructMatch(peroxide_pattern):
+    peroxide_matches = mol.GetSubstructMatches(peroxide_pattern)
+    if peroxide_matches:
         functional_groups.append("peroxide")
 
     if not functional_groups:
-        return False, "Molecule lacks characteristic functional groups of icosanoids (hydroxyl, ketone, epoxide, peroxide)"
+        return False, "Molecule lacks characteristic functional groups of icosanoids"
 
-    # Estimate the number of rotatable bonds to infer chain length
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 10:
-        return False, f"Not enough rotatable bonds ({n_rotatable}); molecule may not have long aliphatic chains"
+    # Check for long hydrocarbon chain (saturated or unsaturated)
+    # Look for chain of at least 15 carbons
+    chain_pattern = Chem.MolFromSmarts("[C][C][C][C][C][C][C][C][C][C][C][C][C][C][C]")
+    if not mol.HasSubstructMatch(chain_pattern):
+        return False, "Molecule does not have a long hydrocarbon chain"
 
-    # Check for cyclopentane ring (for prostaglandins)
-    cyclopentane_pattern = Chem.MolFromSmarts("C1CCCC1")
-    has_cyclopentane = mol.HasSubstructMatch(cyclopentane_pattern)
-
-    # Check for conjugated double bonds (for leukotrienes)
-    conjugated_diene_pattern = Chem.MolFromSmarts("C=CC=CC=CC=C")
-    has_conjugated_diene = mol.HasSubstructMatch(conjugated_diene_pattern)
-
-    if not (has_cyclopentane or has_conjugated_diene):
-        return False, "Molecule lacks characteristic rings or conjugated double bonds of icosanoids"
+    # Check for multiple unsaturations (double bonds)
+    double_bond_pattern = Chem.MolFromSmarts("C=C")
+    double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
+    if len(double_bond_matches) < 2:
+        return False, "Molecule has insufficient double bonds; expected multiple unsaturations"
 
     return True, f"Molecule has characteristics of an icosanoid (carbon count: {c_count}, functional groups: {', '.join(functional_groups)})"
 
@@ -99,7 +126,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 1,
+    'attempt': 2,
     'success': True,
     'best': True,
     'error': '',
