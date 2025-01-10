@@ -2,13 +2,14 @@
 Classifies: CHEBI:53156 polychlorobiphenyl
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_polychlorobiphenyl(smiles: str):
     """
     Determines if a molecule is a polychlorobiphenyl based on its SMILES string.
     A PCB is a biphenyl compound containing between 2 and 10 chlorine atoms
     attached to the two benzene rings.
-
+    
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -21,33 +22,27 @@ def is_polychlorobiphenyl(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Pattern to match biphenyl core: two benzene rings connected by a single bond
-    biphenyl_pattern = Chem.MolFromSmarts("c1ccccc1-c1ccccc1")
+    
+    # Check for biphenyl core (two benzene rings connected by a single bond)
+    biphenyl_pattern = Chem.MolFromSmarts("c1ccccc1-c2ccccc2")
     if not mol.HasSubstructMatch(biphenyl_pattern):
         return False, "No biphenyl core found"
+    
+    # Count chlorine atoms
+    chlorine_count = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'Cl')
 
-    # Ensure all chlorines are attached to aromatic benzene rings
-    chlorine_count = 0
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 17:  # Chlorine
-            neighbors = atom.GetNeighbors()
-            if any(neigh.GetIsAromatic() and neigh.GetSymbol() == 'C' for neigh in neighbors):
-                chlorine_count += 1
-            else:
-                return False, "Chlorine not attached to aromatic carbons"
-
+    # Check if chlorine count is between 2 and 10
     if not 2 <= chlorine_count <= 10:
-        return False, f"Chlorine count is {chlorine_count}, not within 2-10"
+        return False, f"Chlorine atom count is {chlorine_count}, which is not between 2 and 10"
 
-    return True, "Valid polychlorobiphenyl"
+    return True, "Contains a biphenyl core with the correct number of chlorine atoms"
 
-# Example SMILES to test the function
+# Examples to test the function
 example_smiles = [
-    "Clc1ccc(cc1)-c1cc(Cl)c(Cl)c(Cl)c1Cl",  # Valid PCB example
-    "Clc1ccccc1",  # Not a PCB, just single chlorinated benzene
-    "C#Cc1ccc(Cl)cc1", # Alkyne attached, not PCB
-    "Clc1cc(Cl)c(cc1)-c1ccc(c(Cl)cc1)Cl"  # Valid PCB with 4 Cl
+    "Clc1ccc(cc1)-c1cc(Cl)c(Cl)c(Cl)c1Cl", # PCB example
+    "Clc1ccccc1",  # Not a PCB, single benzene ring
+    "Clc1ccccc1-c1ccccc1",  # Biphenyl but only 2 Cl
+    "Clc1cc(Cl)c(Cl)c(c1)-c1cc(Cl)cc(Cl)c1Cl"  # PCB with 6 Cl
 ]
 
 for smiles in example_smiles:
