@@ -6,7 +6,8 @@ from rdkit import Chem
 def is_3_hydroxy_fatty_acid(smiles: str):
     """
     Determines if a molecule is a 3-hydroxy fatty acid based on its SMILES string.
-    A 3-hydroxy fatty acid has a hydroxyl group at the beta- or 3-position relative to the carboxyl group.
+    A 3-hydroxy fatty acid has a hydroxyl group at the beta- or 3-position relative to the carboxyl group
+    and is part of a long hydrocarbon chain.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -16,23 +17,28 @@ def is_3_hydroxy_fatty_acid(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
+    # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Identify the pattern: a carboxylic acid attached to a carbon chain with an OH on the 3rd carbon
-    # The SMARTS pattern captures [C]-[C](-O)[C(=O)O], where the first [C] is the first
-    # carbon chain position, the second [C] is the 2nd position with a hydroxyl group, and [C(=O)O] is the carboxyl group.
-    hydroxy_fatty_acid_pattern = Chem.MolFromSmarts("CCO[C@H][C](=O)O")
-    
-    # Check for presence of the 3-hydroxy fatty acid pattern
-    if mol.HasSubstructMatch(hydroxy_fatty_acid_pattern):
+    # Define the SMARTS pattern for a carboxyl group at the end of the chain 
+    # with a hydroxyl group at the 3rd carbon position
+    # The pattern captures the carbon chain, hydroxyl group in the 3-position, and terminal carboxylic acid
+    pattern = Chem.MolFromSmarts("CC(C)(O)[C](=O)O")  # General pattern without stereochemistry
+    stereo_pattern = Chem.MolFromSmarts("C[C@H](O)C(=O)O | C[C@@H](O)C(=O)O")  # Stereochemical patterns
+
+    # Check for the general and stereochemical patterns
+    if mol.HasSubstructMatch(pattern):
         return True, "Contains hydroxyl group at the 3-position and carboxylic acid group"
 
-    # Adding handling for potential stereoisomer patterns, i.e., the presence of @ or @@ in SMILES
-    stereo_hydroxy_fatty_acid_pattern = Chem.MolFromSmarts("C[C@H](O)[C](=O)O")
-    if mol.HasSubstructMatch(stereo_hydroxy_fatty_acid_pattern):
+    if mol.HasSubstructMatch(stereo_pattern):
         return True, "Contains stereochemical hydroxyl group pattern at the 3-position and carboxylic acid group"
+
+    # Final check for extended hydrocarbon chains, implying it's a fatty acid
+    carbon_chain_length = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if carbon_chain_length > 10 and oxygen_count >= 3:  # Reasonable length for fatty acid and OH + COO presence
+        return True, "Has characteristic 3-hydroxy pattern as part of a fatty acid chain"
 
     return False, "Hydroxyl group not found at the 3-position or missing carboxyl group"
