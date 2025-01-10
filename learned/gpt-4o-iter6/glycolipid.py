@@ -6,8 +6,7 @@ from rdkit import Chem
 def is_glycolipid(smiles: str):
     """
     Determines if a molecule is a glycolipid based on its SMILES string.
-    A glycolipid is defined by the presence of a 1,2-di-O-acylglycerol structure 
-    linked to a glycosidic saccharide moiety.
+    A glycolipid is defined as containing a lipid portion connected via glycosidic linkage to a sugar moiety.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,19 +21,27 @@ def is_glycolipid(smiles: str):
     if mol is None:
         return (None, "Invalid SMILES string")
 
-    # Generic glycerol backbone with acyl groups pattern
-    glycerol_diacyl_pattern = Chem.MolFromSmarts("C(COC(=O)[CX4][O])OC(=O)[CX4]")
-    if not mol.HasSubstructMatch(glycerol_diacyl_pattern):
-        return False, "No 1,2-di-O-acylglycerol structure found"
+    # Look for a lipid backbone pattern, generalized to include sphingo-like lipids
+    lipid_backbone_patterns = [
+        Chem.MolFromSmarts("C(COC(=O)[CX4])"),  # General ester linkage (e.g., glycerolipid)
+        Chem.MolFromSmarts("N[C@@H](C)[CX4]"),  # Amide linkage (e.g., typical in sphingolipids)
+    ]
+    
+    if not any(mol.HasSubstructMatch(pat) for pat in lipid_backbone_patterns):
+        return False, "No recognizable lipid backbone structure found"
 
-    # Generic glycosidic linkage to a carbohydrate moiety
-    glycosidic_linkage_pattern = Chem.MolFromSmarts("OC[C@]([AX4])(O[C@]1([AX4])O[C@H]([AX4])C([AX4])O1)")
+    # Look for glycosidic linkage pattern
+    glycosidic_linkage_pattern = Chem.MolFromSmarts("C-O-C")
     if not mol.HasSubstructMatch(glycosidic_linkage_pattern):
-        return False, "No glycosidic linkage with carbohydrate moiety detected"
+        return False, "No glycosidic linkage detected"
 
-    # Enhanced pattern for recognizing a sugar moiety (broad coverage)
-    sugar_pattern = Chem.MolFromSmarts("C1OC(C[OX2H])C[OX2H]C1[OX2H]")
-    if not mol.HasSubstructMatch(sugar_pattern):
+    # Recognize a broad pattern for sugar moieties
+    sugar_patterns = [
+        Chem.MolFromSmarts("C1OC(O)C(O)C(O)C1"),  # Simple monosaccharide unit
+        Chem.MolFromSmarts("C1OC(C(O)C(O1))"),  # 1,2 linked sugar ring
+    ]
+
+    if not any(mol.HasSubstructMatch(pat) for pat in sugar_patterns):
         return False, "No recognizable sugar moiety found"
     
-    return True, "The structure matches the criteria for a glycolipid with 1,2-di-O-acylglycerol structure and glycosidic linkage to sugar moiety"
+    return True, "The structure matches the criteria for a glycolipid, containing a lipid backbone linked via glycosidic linkage to a sugar moiety"
