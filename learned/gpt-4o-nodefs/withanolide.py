@@ -2,12 +2,12 @@
 Classifies: CHEBI:74716 withanolide
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_withanolide(smiles: str):
     """
     Determines if a molecule is a withanolide based on its SMILES string.
-    A withanolide typically has a steroid skeleton with a lactone ring and oxygen functionalities.
+    A withanolide typically has a steroid-like skeleton with some oxygen-containing
+    functionalities and a lactone group or similar structural connection.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,25 +22,30 @@ def is_withanolide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for core steroid structure - ergostane-like
-    steroid_pattern = Chem.MolFromSmarts("C1CCC2C3CCC4C5CCC(C1)C2C5CCC3C4")
+    # A more flexible pattern for steroid core structure
+    steroid_pattern = Chem.MolFromSmarts("C1CC2CC3C4CCC(C4)CC3CCC2C1")
     if not mol.HasSubstructMatch(steroid_pattern):
-        return False, "No core steroid structure found"
+        return False, "No flexible core steroid-like structure found"
 
-    # Look for lactone ring
-    lactone_pattern = Chem.MolFromSmarts("C1C=CC(=O)O1")
-    if not mol.HasSubstructMatch(lactone_pattern):
-        return False, "No lactone ring found"
-
-    # Check for oxygen functionalities (hydroxyl, ketone)
-    oxy_func_patterns = [
-        "[OH]",  # Hydroxyl group
-        "[CX3](=O)[#6]"  # Ketone
+    # Look for a lactone or similar ester group pattern
+    lactone_patterns = [
+        Chem.MolFromSmarts("O=C1OC[C@@H]1"),  # Simple lactone ring
+        Chem.MolFromSmarts("C1OC(=O)CC1")     # More inclusive lactone/ester pattern
     ]
-
-    found_oxy_func = any(mol.HasSubstructMatch(Chem.MolFromSmarts(patt)) for patt in oxy_func_patterns)
+    
+    found_lactone = any(mol.HasSubstructMatch(patt) for patt in lactone_patterns)
+    if not found_lactone:
+        return False, "No lactone or ester-type cyclic structure found"
+        
+    # Check for additional oxygen functionalities
+    oxy_func_patterns = [
+        Chem.MolFromSmarts("[OH]"),           # Hydroxyl group
+        Chem.MolFromSmarts("[CX3](=O)[#6]")   # Ketone
+    ]
+    
+    found_oxy_func = any(mol.HasSubstructMatch(patt) for patt in oxy_func_patterns)
     if not found_oxy_func:
         return False, "Missing expected oxygen functionalities (hydroxyl, ketone)"
 
     # If matches all the criteria
-    return True, "Contains steroid backbone, lactone ring, and oxygen functionalities"
+    return True, "Contains steroid-like structure, lactone/ester ring, and oxygen functionalities"
