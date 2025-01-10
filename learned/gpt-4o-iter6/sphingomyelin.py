@@ -2,7 +2,6 @@
 Classifies: CHEBI:64583 sphingomyelin
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 from rdkit.Chem import AllChem
 
 def is_sphingomyelin(smiles: str):
@@ -12,9 +11,9 @@ def is_sphingomyelin(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
+
     # Check for amide linkage with fatty acid (N-C=O)
-    amide_pattern = Chem.MolFromSmarts("N[C@@]([C@H](O)COP([O-])(=O)OCC[N+](C)(C)C)=O")
+    amide_pattern = Chem.MolFromSmarts("NC(=O)[C@@H][C@H](O)")
     if not mol.HasSubstructMatch(amide_pattern):
         return False, "Does not have the characteristic amide linkage with fatty acid"
     
@@ -23,10 +22,10 @@ def is_sphingomyelin(smiles: str):
     if not mol.HasSubstructMatch(phosphorylcholine_pattern):
         return False, "Does not have phosphorylcholine group"
     
-    # Check for sphingoid base structure - long chain with double bond/s and hydroxyl groups
-    # This is a simplification and may not cover all structural features of sphingoid bases
-    base_pattern = Chem.MolFromSmarts("[C@H](O)[C@H](O)[C@@H]/C=C/CCCCCCCC")
-    if not mol.HasSubstructMatch(base_pattern):
+    # Check for sphingoid base structure - refined pattern
+    # Looking for long chain, possibly with one or two homoallylic hydroxyl groups
+    sphingoid_base_pattern = Chem.MolFromSmarts("[C@H](O)[C@H](O)CC")
+    if not mol.HasSubstructMatch(sphingoid_base_pattern):
         return False, "Missing sphingoid base features"
     
     return True, "Molecule matches the core structural features of sphingomyelin"
