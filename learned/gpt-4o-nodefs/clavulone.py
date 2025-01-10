@@ -2,7 +2,6 @@
 Classifies: CHEBI:36092 clavulone
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_clavulone(smiles: str):
     """
@@ -21,35 +20,21 @@ def is_clavulone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for complex unsaturated chain (approximate)
-    unsaturated_chain = Chem.MolFromSmarts("C=CCCC")
-    if not mol.HasSubstructMatch(unsaturated_chain):
-        return False, "Missing complex unsaturated carbon chain"
+    # Common clavulone substructure: complex polyunsaturated lactone with ester groups
+    clavulone_pattern = Chem.MolFromSmarts("C1(C(C(=O)C=C1)=CC)=C")
+    if not mol.HasSubstructMatch(clavulone_pattern):
+        return False, f"Missing characteristic polyunsaturated lactone structure"
 
-    # Check for cyclic structures
-    ring_info = mol.GetRingInfo()
-    if not ring_info.NumRings() > 0:
-        return False, "Lacking necessary cyclic structures"
+    # Adjust code to prioritize structures found in the clavulones provided
+    # Verify presence of ester groups connected to cyclic moieties and unsaturated backbones
+    ester_cyclic_pattern = Chem.MolFromSmarts("C(=O)O[C@H]1C[CH]C(=O)C(=C1)C")
+    if not mol.HasSubstructMatch(ester_cyclic_pattern):
+        return False, f"No cyclic connected esters matching clavulone structure"
 
-    # Check for ester groups with specific position
-    ester_pattern = Chem.MolFromSmarts("OC(=O)C")
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) < 2:
-        return False, "Insufficient ester groups in the expected positions"
-
-    # Check for chiral centers
-    chiral_centers = len(Chem.FindMolChiralCenters(mol, includeUnassigned=True))
-    if chiral_centers < 2:
-        return False, "Lacking required stereochemical centers"
-
-    # Check for presence of halogens
-    halogen = Chem.MolFromSmarts("[Cl,Br,I]")
-    has_halogen = mol.HasSubstructMatch(halogen)
+    # Check for at least one chiral center
+    chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
+    if len(chiral_centers) < 1:
+        return False, "Lacking required chiral center"
 
     # Classify based on the structural features
-    if has_halogen:
-        return True, "Contains complex unsaturated chain, ester groups, cyclic structures, and halogen"
-    else:
-        return False, "Missing required halogen"
-
-    return None, None
+    return True, "Matches clavulone structure with polyunsaturated lactone core and ester groups"
