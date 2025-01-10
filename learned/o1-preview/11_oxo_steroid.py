@@ -23,39 +23,48 @@ def is_11_oxo_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for the steroid nucleus (four fused rings)
-    steroid_pattern = Chem.MolFromSmarts('C1CCC2C3C(C1)CC4CC(C(C2)C3)C4')  # Basic steroid backbone
-    if not mol.HasSubstructMatch(steroid_pattern):
+    # Define a general SMARTS pattern for the steroid nucleus with atom mapping
+    steroid_smarts = """
+    [#6]1-[#6]-[#6]-[#6]2-[#6]-[#6]3-[#6]([#6]-[#6]1)-[#6]-[#6]4-[#6]([#6]-[#6]([#6]-2)-[#6]3)-[#6]-[#6]-[#6]-4
+    """
+    steroid_pattern = Chem.MolFromSmarts(steroid_smarts)
+    if steroid_pattern is None:
+        return False, "Invalid steroid SMARTS pattern"
+
+    # Check if molecule has a steroid nucleus
+    steroid_match = mol.GetSubstructMatch(steroid_pattern)
+    if not steroid_match:
         return False, "Molecule does not have a steroid nucleus"
 
-    # Identify the rings in the molecule
-    ssr = Chem.GetSymmSSSR(mol)
-    if len(ssr) < 4:
-        return False, "Molecule does not have the required four rings of a steroid nucleus"
+    # Map the steroid nucleus to identify position 11
+    # Create a template steroid with atom mapping numbers corresponding to standard steroid positions
+    steroid_template = Chem.MolFromSmiles("""
+    C[C@H]1CC[C@H]2[C@@H]3CCC4=CC(=O)CC[C@]4(C)[C@@H]3CC[C@]12C
+    """)
 
-    # Separate six-membered and five-membered rings
-    six_membered_rings = [ring for ring in ssr if len(ring) == 6]
-    five_membered_rings = [ring for ring in ssr if len(ring) == 5]
+    if steroid_template is None:
+        return False, "Failed to create steroid template"
 
-    if len(six_membered_rings) < 3 or len(five_membered_rings) < 1:
-        return False, "Steroid nucleus must have three six-membered rings and one five-membered ring"
+    # Align the molecule to the steroid template
+    match = mol.GetSubstructMatch(steroid_template)
+    if not match:
+        return False, "Molecule does not align with steroid template"
 
-    # Define SMARTS pattern for ketone (=O) group
-    ketone_pattern = Chem.MolFromSmarts('C=O')
-    ketone_matches = mol.GetSubstructMatches(ketone_pattern)
-    if not ketone_matches:
-        return False, "No ketone (=O) group found in molecule"
+    # Position 11 corresponds to atom index 9 in the template (zero-based indexing)
+    # Get the mapped atom in the molecule
+    pos11_atom_idx = match[9]
+    pos11_atom = mol.GetAtomWithIdx(pos11_atom_idx)
 
-    # Check if any ketone is in ring C (the third six-membered ring)
-    ring_C = six_membered_rings[2]  # Assuming ring C is the third six-membered ring
-    ketone_in_ringC = False
-    for match in ketone_matches:
-        carbon_idx = match[0]
-        if carbon_idx in ring_C:
-            ketone_in_ringC = True
-            break
+    # Check if position 11 has a ketone group (=O)
+    found_oxo = False
+    for neighbor in pos11_atom.GetNeighbors():
+        bond = mol.GetBondBetweenAtoms(pos11_atom.GetIdx(), neighbor.GetIdx())
+        if bond is not None and bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+            if neighbor.GetAtomicNum() == 8:  # Oxygen atom
+                found_oxo = True
+                break
 
-    if not ketone_in_ringC:
-        return False, "Ketone group is not located on ring C (position 11)"
+    if not found_oxo:
+        return False, "No oxo group (=O) at position 11"
 
-    return True, "Molecule has a steroid nucleus with a ketone group at position 11"
+    return True, "Molecule has a steroid nucleus with an oxo group at position 11"
