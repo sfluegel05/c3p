@@ -27,9 +27,11 @@ def is_prenylquinone(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for quinone core (1,4-benzoquinone or 1,4-naphthoquinone)
-    quinone_pattern = Chem.MolFromSmarts("[#6]1([#6]=[#8])[#6]=[#6][#6](=[#8])[#6]=[#6]1")
+    quinone_pattern = Chem.MolFromSmarts("[#6]1([#6]=[#8])[#6]=[#6][#6](=[#8])[#6]=[#6]1 |(1:2,3:4,5:6)|")
     if not mol.HasSubstructMatch(quinone_pattern):
-        return False, "No quinone core found"
+        quinone_pattern = Chem.MolFromSmarts("[#6]1([#6]=[#8])[#6]=[#6][#6](=[#8])[#6]=[#6][#6]=[#6]1 |(1:2,3:4,5:6,7:8)|")
+        if not mol.HasSubstructMatch(quinone_pattern):
+            return False, "No quinone core found"
 
     # Look for polyprenyl side-chain (long isoprenoid chain)
     # Pattern for isoprene units: C=C(C)C or C=C(C)CC
@@ -37,6 +39,24 @@ def is_prenylquinone(smiles: str):
     isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
     if len(isoprene_matches) < 2:
         return False, f"Found {len(isoprene_matches)} isoprene units, need at least 2"
+
+    # Check if isoprene units are connected in a chain
+    # Ensure that the isoprene units are connected sequentially
+    isoprene_chain = False
+    for match in isoprene_matches:
+        for atom in match:
+            neighbors = mol.GetAtomWithIdx(atom).GetNeighbors()
+            for neighbor in neighbors:
+                if neighbor.GetIdx() in [a for m in isoprene_matches for a in m]:
+                    isoprene_chain = True
+                    break
+            if isoprene_chain:
+                break
+        if isoprene_chain:
+            break
+
+    if not isoprene_chain:
+        return False, "Isoprene units not connected in a chain"
 
     # Check molecular weight - prenylquinones typically >300 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
