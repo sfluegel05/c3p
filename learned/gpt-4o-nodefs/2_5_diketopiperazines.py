@@ -20,12 +20,16 @@ def is_2_5_diketopiperazines(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Refined pattern to strictly match 2,5-diketopiperazine
-    # Here we focus on the core cyclization: a six-membered ring with two nitrogen atoms and two carbonyl groups
-    diketopiperazine_core_pattern = Chem.MolFromSmarts("C1CN(C(=O)C1)C(=O)")
-
-    # Check if the molecule matches the refined 2,5-diketopiperazine core pattern
-    if mol.HasSubstructMatch(diketopiperazine_core_pattern):
-        return True, "Contains 2,5-diketopiperazine motif"
+    # Define more comprehensive SMARTS patterns to match 2,5-diketopiperazine variability
+    # Pattern accounts for possible substitutions and flexibility around the cyclic core
+    diketopiperazine_patterns = [
+        Chem.MolFromSmarts("N1C(=O)CNC(=O)C1"), # Simple diketopiperazine
+        Chem.MolFromSmarts("N1C(=O)[C@H,R][NR][C@H,R]C(=O)1"), # Include stereochemistry
+        Chem.MolFromSmarts("O=C1N[C@H,R]C(=O)N[C@H,R]1"), # Flexible connections
+    ]
+    
+    for pattern in diketopiperazine_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return True, "Contains 2,5-diketopiperazine motif"
     
     return False, "Does not contain 2,5-diketopiperazine motif"
