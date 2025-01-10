@@ -36,95 +36,82 @@ def is_volatile_organic_compound(smiles: str):
     tpsa = Descriptors.TPSA(mol)
     log_p = Descriptors.MolLogP(mol)
     
-    # Count specific atoms and features
+    # Count atoms and rings
     num_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    num_heavy_atoms = mol.GetNumHeavyAtoms()
+    num_heteroatoms = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() not in [1, 6])
+    num_rings = rdMolDescriptors.CalcNumRings(mol)
+    num_aromatic_rings = rdMolDescriptors.CalcNumAromaticRings(mol)
     
-    # Rules for non-volatile compounds
-    
-    # Very large molecules are unlikely to be volatile
-    if mol_wt > 400:
-        return False, f"Molecular weight ({mol_wt:.1f}) too high for VOC"
-    
-    # Many rotatable bonds indicate flexibility and higher boiling point
-    if rotatable_bonds > 20:
-        return False, f"Too many rotatable bonds ({rotatable_bonds}) for VOC"
-    
-    # High polarity (TPSA) generally means higher boiling point
-    if tpsa > 100:
-        return False, f"Too polar (TPSA={tpsa:.1f}) for VOC"
-
-    # Extremely hydrophobic compounds (high logP) tend to have high boiling points
-    if log_p > 8:
-        return False, f"Too hydrophobic (logP={log_p:.1f}) for VOC"
-
-    # Common VOC structural patterns
+    # Structural patterns
     alcohol_pattern = Chem.MolFromSmarts("[CH2,CH3,CH1][OH1]")
     alkene_pattern = Chem.MolFromSmarts("[C]=[C]")
     alkyne_pattern = Chem.MolFromSmarts("[C]#[C]")
     small_ring_pattern = Chem.MolFromSmarts("[r3,r4,r5,r6]")
+    complex_ring_pattern = Chem.MolFromSmarts("[r7,r8,r9,r10,r11,r12]")
     
     has_alcohol = mol.HasSubstructMatch(alcohol_pattern)
     has_alkene = mol.HasSubstructMatch(alkene_pattern)
     has_alkyne = mol.HasSubstructMatch(alkyne_pattern)
     has_small_ring = mol.HasSubstructMatch(small_ring_pattern)
-        
-    # Common VOC characteristics
-    likely_voc = (
-        (mol_wt < 250) or  # Small molecules
-        (mol_wt < 300 and tpsa < 40) or  # Small hydrocarbons
-        (mol_wt < 350 and rotatable_bonds < 12) or  # Rigid molecules
-        (num_heavy_atoms < 20 and log_p < 5) or  # Small, moderately polar molecules
-        (has_alcohol and mol_wt < 400) or  # Linear alcohols
-        (has_alkene and mol_wt < 400) or  # Alkenes
-        (has_alkyne and mol_wt < 400) or  # Alkynes
-        (has_small_ring and mol_wt < 400)  # Small cyclic compounds
-    )
-    
-    if likely_voc:
-        reasons = []
-        if mol_wt < 250:
-            reasons.append(f"low molecular weight ({mol_wt:.1f})")
-        if num_carbons < 15:
-            reasons.append(f"short carbon chain (C{num_carbons})")
-        if rotatable_bonds < 12:
-            reasons.append("relatively rigid structure")
-        if log_p < 5:
-            reasons.append("moderate hydrophobicity")
-        if has_alcohol:
-            reasons.append("contains alcohol group")
-        if has_alkene:
-            reasons.append("contains alkene")
-        if has_alkyne:
-            reasons.append("contains alkyne")
-        if has_small_ring:
-            reasons.append("contains small ring")
-            
-        return True, "Likely VOC due to: " + ", ".join(reasons)
-    
-    # For borderline cases, use a more complex heuristic
-    volatility_score = (
-        -0.005 * mol_wt +  # Lower weight = more volatile
-        -0.3 * rotatable_bonds +  # Fewer rotatable bonds = more volatile
-        -0.1 * tpsa +  # Lower polarity = more volatile
-        -0.2 * log_p +  # Moderate logP is preferred
-        (2 if has_alcohol else 0) +  # Common VOC features
-        (1 if has_alkene else 0) +
-        (1 if has_alkyne else 0) +
-        (1 if has_small_ring else 0)
-    )
-    
-    if volatility_score > -12:
-        return True, "Borderline VOC based on combined physicochemical properties"
-        
-    return False, "Combined physicochemical properties suggest non-volatile compound"
+    has_complex_ring = mol.HasSubstructMatch(complex_ring_pattern)
 
-__metadata__ = {
-    'chemical_class': {
-        'id': 'CHEBI:33262',
-        'name': 'volatile organic compound',
-        'definition': 'Any organic compound having an initial boiling point less '
-                     'than or equal to 250 degreeC (482 degreeF) measured at a '
-                     'standard atmospheric pressure of 101.3 kPa.',
-    }
-}
+    # Automatic rejections
+    if mol_wt > 350 and not has_alcohol:  # Higher limit for alcohols
+        return False, f"Molecular weight ({mol_wt:.1f}) too high for VOC"
+    
+    if tpsa > 90:  # Reduced from 100
+        return False, f"Too polar (TPSA={tpsa:.1f}) for VOC"
+        
+    if num_rings > 4 and not has_alcohol:
+        return False, "Too many ring systems for VOC"
+        
+    if has_complex_ring and num_heteroatoms > 3:
+        return False, "Complex ring system with multiple heteroatoms"
+        
+    if num_aromatic_rings > 3:
+        return False, "Too many aromatic rings for VOC"
+
+    # Special cases - always consider as VOCs
+    if any([
+        (mol_wt < 150),  # Very small molecules
+        (mol_wt < 200 and num_rings == 1),  # Small monocyclic compounds
+        (has_alcohol and num_carbons <= 20),  # Medium-chain alcohols
+        (has_alkene and mol_wt < 250 and num_rings <= 2),  # Small alkenes
+        (has_alkyne and mol_wt < 200),  # Small alkynes
+    ]):
+        reasons = []
+        if mol_wt < 150:
+            reasons.append(f"very low molecular weight ({mol_wt:.1f})")
+        if mol_wt < 200 and num_rings == 1:
+            reasons.append("small monocyclic compound")
+        if has_alcohol and num_carbons <= 20:
+            reasons.append("medium-chain alcohol")
+        if has_alkene and mol_wt < 250:
+            reasons.append("small alkene")
+        if has_alkyne and mol_wt < 200:
+            reasons.append("small alkyne")
+        return True, "VOC due to: " + ", ".join(reasons)
+
+    # Long-chain alcohol special case
+    if has_alcohol and num_carbons <= 30:  # Increased from previous limit
+        if rotatable_bonds <= 25:  # Increased from 20
+            return True, "Long-chain alcohol within VOC parameters"
+    
+    # Combined property score for other cases
+    volatility_score = (
+        -0.004 * mol_wt +  # Reduced weight factor
+        -0.2 * rotatable_bonds +  # Reduced penalty for flexibility
+        -0.05 * tpsa +  # Reduced polarity penalty
+        -0.1 * log_p +  # Reduced hydrophobicity penalty
+        -1.0 * num_rings +  # Penalty for ring systems
+        -0.5 * num_heteroatoms +  # Penalty for heteroatoms
+        (2 if has_alcohol else 0) +  # Bonus for alcohol groups
+        (1 if has_alkene else 0) +  # Bonus for alkenes
+        (1 if has_alkyne else 0) +  # Bonus for alkynes
+        (0.5 if has_small_ring else 0)  # Reduced bonus for rings
+    )
+    
+    if volatility_score > -8:  # Adjusted threshold
+        return True, "VOC based on combined physicochemical properties"
+        
+    return False, "Properties suggest non-volatile compound"
