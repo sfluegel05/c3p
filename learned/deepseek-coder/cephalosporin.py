@@ -41,10 +41,4 @@ def is_cephalosporin(smiles: str):
     if not mol.HasSubstructMatch(carboxyl_pattern):
         return False, "No carboxyl group (or ester) at position 4 of the dihydrothiazine ring"
 
-    # Check for the presence of an amino group or similar at position 7 of the beta-lactam ring
-    # This pattern is more flexible and allows for various substitutions
-    amino_pattern = Chem.MolFromSmarts("[C@H]12SCC(=C(N1C(=O)[C@@H]2[NH2,NH,*])*)*")
-    if not mol.HasSubstructMatch(amino_pattern):
-        return False, "No amino group or similar at position 7 of the beta-lactam ring"
-
-    return True, "Contains the core structure of a cephalosporin with a carboxyl group (or ester) at position 4 and an amino group or similar at position 7"
+    return True, "Contains the core structure of a cephalosporin with a carboxyl group (or ester) at position 4"
