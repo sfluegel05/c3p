@@ -19,36 +19,14 @@ def is_guaiacols(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-        
-    # Iterate over atoms to find aromatic carbons with OH group
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 6 and atom.GetIsAromatic():
-            # Check if this carbon is bonded to OH
-            has_OH = False
-            for nbr in atom.GetNeighbors():
-                if nbr.GetAtomicNum() == 8:
-                    bond = mol.GetBondBetweenAtoms(atom.GetIdx(), nbr.GetIdx())
-                    if bond is not None and bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
-                        # Check if O atom has only one neighbor (it's an OH group)
-                        if nbr.GetDegree() == 1:
-                            has_OH = True
-                            break
-            if has_OH:
-                # Now check for adjacent aromatic carbon with OCH3 group
-                for neighbor in atom.GetNeighbors():
-                    if neighbor.GetAtomicNum() == 6 and neighbor.GetIsAromatic():
-                        # Exclude the oxygen
-                        if neighbor.GetIdx() != nbr.GetIdx():
-                            for neigh_nbr in neighbor.GetNeighbors():
-                                if neigh_nbr.GetAtomicNum() == 8:
-                                    bond = mol.GetBondBetweenAtoms(neighbor.GetIdx(), neigh_nbr.GetIdx())
-                                    if bond is not None and bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
-                                        # Check if O atom is connected to a methyl group
-                                        if neigh_nbr.GetDegree() == 2:
-                                            attached_carbons = [a for a in neigh_nbr.GetNeighbors() if a.GetIdx() != neighbor.GetIdx()]
-                                            if len(attached_carbons) == 1:
-                                                c_atom = attached_carbons[0]
-                                                if c_atom.GetAtomicNum() == 6 and c_atom.GetDegree() == 1:
-                                                    # Found OCH3 group at ortho position
-                                                    return True, "Contains phenol with ortho-methoxy group"
-    return False, "Does not contain phenol with ortho-methoxy group"
+
+    # Define SMARTS pattern for guaiacols (phenol with ortho-methoxy group)
+    guaiacol_pattern = Chem.MolFromSmarts('[OH]c1c([OCH3])cccc1')
+    if guaiacol_pattern is None:
+        return False, "Invalid SMARTS pattern"
+
+    # Check if molecule matches the guaiacol pattern
+    if mol.HasSubstructMatch(guaiacol_pattern):
+        return True, "Contains phenol with ortho-methoxy group at ortho-position"
+    else:
+        return False, "Does not contain phenol with ortho-methoxy group at ortho-position"
