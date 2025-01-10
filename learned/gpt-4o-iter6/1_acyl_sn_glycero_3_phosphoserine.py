@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_1_acyl_sn_glycero_3_phosphoserine(smiles: str):
     """
     Determines if a molecule is a 1-acyl-sn-glycero-3-phosphoserine based on its SMILES string.
-    This classification is based on the presence of glycerophosphoserine backbone and an acyl
-    substituent at the 1-hydroxy position, attached through an ester linkage.
+    The classification is based on having a glycerophosphoserine backbone with an acyl group 
+    at the 1-hydroxy position, linked through an ester linkage.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,19 +21,17 @@ def is_1_acyl_sn_glycero_3_phosphoserine(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define a more generic SMARTS pattern for the glycerophosphoserine backbone
-    glycerophosphoserine_pattern = Chem.MolFromSmarts("P(OC[C@H](O)CO)(OC[C@H](N)C(=O)O)O")
     
-    # Alter to allow variable regions and account for common stereo centers in this class
+    # Define SMARTS pattern to capture 1-acyl-sn-glycero-3-phosphoserine structure, focusing more on acyl link
+    glycerophosphoserine_pattern = Chem.MolFromSmarts("P(OC[C@H](O)CO)(OC[C@H](N)C(=O)O)O")
+    acyl_chain_pattern = Chem.MolFromSmarts("C(=O)OC[C@H](O)CO")
+    
+    # Check for specific backbone
     if not mol.HasSubstructMatch(glycerophosphoserine_pattern):
         return False, "No glycerophosphoserine backbone found"
 
-    # Define a SMARTS pattern for the acyl group linked through an ester at the primary position
-    acyl_chain_pattern = Chem.MolFromSmarts("C(=O)O[C@H](O)C")
-    acyl_alternative_pattern = Chem.MolFromSmarts("C(=O)OCC(O)C")  # Allows for absence of explicit stereochemistry
-    if not mol.HasSubstructMatch(acyl_chain_pattern) and not mol.HasSubstructMatch(acyl_alternative_pattern):
-        return False, "No acyl group found specifically at the 1-hydroxy position"
+    # Check for specific acyl linkage
+    if not mol.HasSubstructMatch(acyl_chain_pattern):
+        return False, "No acyl group at 1-hydroxy position found"
 
-    # If both patterns are found, this is a positive match
     return True, "Contains 1-acyl-sn-glycero-3-phosphoserine structure"
