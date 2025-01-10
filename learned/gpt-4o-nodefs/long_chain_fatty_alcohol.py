@@ -16,22 +16,27 @@ def is_long_chain_fatty_alcohol(smiles: str):
         bool: True if molecule is a long-chain fatty alcohol, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for alcohol group (oxygen connected to a saturated carbon)
-    alcohol_pattern = Chem.MolFromSmarts('[CX4H2,CX4H3][OX2H]')
-    if not mol.HasSubstructMatch(alcohol_pattern):
+    # Check for alcohol group (oxygen connected to a carbon, checking for both primary, secondary)
+    alcohol_pattern_primary = Chem.MolFromSmarts('[CX4][OX2H]')
+    alcohol_pattern_secondary = Chem.MolFromSmarts('[CX3][OX2H]')
+    alcohol_pattern_tertiary = Chem.MolFromSmarts('[CX2][OX2H]')
+    if not (mol.HasSubstructMatch(alcohol_pattern_primary) or 
+            mol.HasSubstructMatch(alcohol_pattern_secondary) or 
+            mol.HasSubstructMatch(alcohol_pattern_tertiary)):
         return False, "No proper alcohol group found"
 
-    # Check for long carbon chain of at least 14 carbons
-    carbon_chain_pattern = Chem.MolFromSmarts('[CR0][CR0][CR0][CR0][CR0][CR0][CR0][CR0][CR0][CR0][CR0][CR0][CR0]')
-    if not mol.HasSubstructMatch(carbon_chain_pattern):
-        return False, "No long hydrocarbon chain found"
+    # Check for total carbon count (at least 14)
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 14:
+        return False, "Not enough total carbons for a long hydrocarbon chain"
 
+    # Success: Detected a long-chain fatty alcohol
     return True, "Contains long hydrocarbon chain with an alcohol group"
 
 # Test the function with a sample SMILES string from the list:
