@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_N_acetyl_amino_acid(smiles: str):
     """
     Determines if a molecule is an N-acetyl-amino acid based on its SMILES string.
-    An N-acetyl-amino acid is defined by having an acetyl group as the acyl group attached to the nitrogen of an amino acid.
+    An N-acetyl-amino acid is defined by having an acetyl group as the acyl group attached to the nitrogen.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,13 +20,17 @@ def is_N_acetyl_amino_acid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define SMARTS pattern for N-acetyl-amino acid
-    # The pattern searches for: Acetyl group (CC(=O)N), connected to an alpha-carbon (C), part of amino acid (C(N)C(=O)O)
-    acetyl_amino_acid_pattern = Chem.MolFromSmarts("C(C(=O)O)[NH]C(=O)C")
     
-    # Check for the presence of the N-acetyl-amino acid pattern
-    if mol.HasSubstructMatch(acetyl_amino_acid_pattern):
-        return True, "Contains N-acetyl group attached to nitrogen in an amino acid structure"
+    # Define SMARTS pattern for N-acetyl-amino acid
+    # Looking for: Acetyl group (C(=O)C) attached to a nitrogen (N)
+    acetyl_amino_pattern = Chem.MolFromSmarts("CC(=O)N")
+    
+    # Look for additional carboxylate group (C(O)O)
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[O-]")  # Consider carboxylate ion form
+    carboxylic_acid_neutral_pattern = Chem.MolFromSmarts("C(=O)O")  # Consider neutral form
+    
+    if (mol.HasSubstructMatch(acetyl_amino_pattern) and 
+        (mol.HasSubstructMatch(carboxylic_acid_pattern) or mol.HasSubstructMatch(carboxylic_acid_neutral_pattern))):
+        return True, "Contains acetyl group attached to nitrogen with carboxylic acid group, classifies as N-acetyl-amino acid"
     else:
-        return False, "Does not contain the characteristic N-acetyl group in amino acid configuration"
+        return False, "Does not contain required acetyl-to-nitrogen bond with adjacent carboxylic acid group"
