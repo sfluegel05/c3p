@@ -2,12 +2,14 @@
 Classifies: CHEBI:16337 phosphatidic acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_phosphatidic_acid(smiles: str):
     """
     Determines if a molecule is a phosphatidic acid based on its SMILES string.
     
+    A phosphatidic acid is characterized by a glycerol backbone where two of the hydroxy groups
+    are esterified with fatty acids and the third is esterified with phosphoric acid.
+
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -21,25 +23,25 @@ def is_phosphatidic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for glycerol backbone pattern (-OC[CH](OC)-)
-    glycerol_pattern = Chem.MolFromSmarts("[O][CH2][CH](O[CH2][O])")
+    # Correct glycerol backbone pattern with potential esterified positions
+    glycerol_pattern = Chem.MolFromSmarts("C(CO[PH0,PH1]=O)O")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
-    
-    # Look for phosphoric acid group (P(O)(O)=O)
+
+    # Check for the presence of phosphoric acid group
     phosphoric_pattern = Chem.MolFromSmarts("P(=O)(O)(O)")
     if not mol.HasSubstructMatch(phosphoric_pattern):
         return False, "No phosphoric acid group found"
-    
-    # Look for 2 ester linkages (RCOOR')
-    ester_pattern = Chem.MolFromSmarts("OC(=O)")
+
+    # Check for at least two ester linkages
+    ester_pattern = Chem.MolFromSmarts("OC(=O)[C,c]")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) < 2:
         return False, f"Found {len(ester_matches)} ester linkages, need at least 2"
 
-    # Count total number of oxygens to ensure consistency with the structure
+    # Count total number of oxygens for a complete check
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     if o_count < 6:
-        return False, "Too few oxygens for phosphatidic acid"
+        return False, "Too few oxygens for phosphatidic acid structure"
 
     return True, "Contains glycerol backbone, two esterified fatty acid chains, and a phosphoric acid group"
