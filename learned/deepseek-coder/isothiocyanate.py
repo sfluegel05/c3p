@@ -44,7 +44,12 @@ def is_isothiocyanate(smiles: str):
     # This is a heuristic and may need refinement based on specific cases.
     functional_groups = Chem.MolFromSmarts("[*]!@[N]=[C]=[S]")
     if len(mol.GetSubstructMatches(functional_groups)) > 1:
-        return False, "Molecule has multiple functional groups or complex structure"
+        # Allow multiple isothiocyanate groups
+        isothiocyanate_count = len(mol.GetSubstructMatches(isothiocyanate_pattern))
+        if isothiocyanate_count > 1:
+            return True, "Contains multiple isothiocyanate groups (-N=C=S)"
+        else:
+            return False, "Molecule has multiple functional groups or complex structure"
 
     return True, "Contains the isothiocyanate group (-N=C=S) and is not part of a larger, more complex structure"
 
