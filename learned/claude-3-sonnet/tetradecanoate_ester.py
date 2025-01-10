@@ -26,48 +26,84 @@ def is_tetradecanoate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for non-cyclic ester group pattern
-    # [C:1] must be sp3 carbon (no double bonds)
-    # Must not be in ring
-    ester_pattern = Chem.MolFromSmarts("[CH3X4:1][CH2X4:2][CH2X4:3][CH2X4:4][CH2X4:5][CH2X4:6][CH2X4:7][CH2X4:8][CH2X4:9][CH2X4:10][CH2X4:11][CH2X4:12][CH2X4:13][CX3:14](=[OX1:15])[OX2:16][*:17]")
+    # SMARTS pattern for tetradecanoate ester
+    # More specific pattern that ensures:
+    # - Exactly 13 carbons in chain before ester group
+    # - No branching or substitutions on the chain
+    # - Proper ester linkage
+    pattern = """
+        [CH3X4:1]                     # Terminal methyl
+        [CH2X4:2]                     # 12 methylene groups
+        [CH2X4:3]
+        [CH2X4:4]
+        [CH2X4:5]
+        [CH2X4:6]
+        [CH2X4:7]
+        [CH2X4:8]
+        [CH2X4:9]
+        [CH2X4:10]
+        [CH2X4:11]
+        [CH2X4:12]
+        [CH2X4:13]
+        [CX3:14](=[OX1:15])          # Carbonyl group
+        [OX2:16]                      # Ester oxygen
+        [!O&!S:17]                    # Connected to carbon (not O or S)
+    """
+    pattern = "".join(pattern.split())  # Remove whitespace
     
-    if not mol.HasSubstructMatch(ester_pattern):
+    tetradecanoate_pattern = Chem.MolFromSmarts(pattern)
+    if not mol.HasSubstructMatch(tetradecanoate_pattern):
         return False, "No tetradecanoate ester group found"
         
-    matches = mol.GetSubstructMatches(ester_pattern)
+    matches = mol.GetSubstructMatches(tetradecanoate_pattern)
     
     for match in matches:
         # Get the matched atoms
         chain_atoms = match[0:13]  # First 13 carbons
         carbonyl_carbon = match[13]
+        carbonyl_oxygen = match[14]
         ester_oxygen = match[15]
         
-        # Verify none of the chain atoms are in a ring
-        ring_atoms = mol.GetRingInfo().AtomRings()
-        if any(atom_idx in {atom for ring in ring_atoms for atom in ring} for atom_idx in chain_atoms):
+        # Verify the chain is linear (no rings)
+        ring_info = mol.GetRingInfo()
+        if any(ring_info.IsAtomInRing(atom_idx) for atom_idx in chain_atoms):
             continue
             
-        # Verify chain carbons don't have additional carbon substituents
+        # Verify no branching on the chain
         has_branches = False
         for atom_idx in chain_atoms:
             atom = mol.GetAtomWithIdx(atom_idx)
-            carbon_neighbors = len([n for n in atom.GetNeighbors() if n.GetAtomicNum() == 6])
-            if carbon_neighbors > 2:  # More than 2 carbon neighbors means branching
+            # Count carbon neighbors
+            carbon_neighbors = len([n for n in atom.GetNeighbors() 
+                                 if n.GetAtomicNum() == 6 and 
+                                 n.GetIdx() not in chain_atoms])
+            if carbon_neighbors > 0:  # Any additional carbon means branching
                 has_branches = True
                 break
                 
         if has_branches:
             continue
             
-        # Verify no modifications on the chain (OH groups, double bonds, etc)
-        has_modifications = False
-        for atom_idx in chain_atoms:
+        # Verify each carbon in chain has correct number of hydrogens
+        has_wrong_hydrogens = False
+        for i, atom_idx in enumerate(chain_atoms):
             atom = mol.GetAtomWithIdx(atom_idx)
-            if atom.GetTotalNumHs() + len([n for n in atom.GetNeighbors() if n.GetAtomicNum() == 6]) < 4:
-                has_modifications = True
-                break
-                
-        if has_modifications:
+            if i == 0:  # Terminal methyl
+                if atom.GetTotalNumHs() != 3:
+                    has_wrong_hydrogens = True
+                    break
+            else:  # Methylene groups
+                if atom.GetTotalNumHs() != 2:
+                    has_wrong_hydrogens = True
+                    break
+                    
+        if has_wrong_hydrogens:
+            continue
+            
+        # Verify ester linkage
+        ester_atom = mol.GetAtomWithIdx(ester_oxygen)
+        if not (len(ester_atom.GetNeighbors()) == 2 and
+                all(n.GetAtomicNum() == 6 for n in ester_atom.GetNeighbors())):
             continue
             
         # If we get here, we've found a valid tetradecanoate ester group
