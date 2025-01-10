@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_glycosaminoglycan(smiles: str):
     """
     Determines if a molecule is a glycosaminoglycan based on its SMILES string.
-    A glycosaminoglycan is a polysaccharide containing a substantial proportion of aminomonosaccharide residues.
+    Glycosaminoglycans are polysaccharides with a significant proportion of aminomonosaccharide residues.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,11 +21,12 @@ def is_glycosaminoglycan(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define extended SMARTS patterns for aminomonosaccharides
+    # Define patterns for possible aminomonosaccharides, including variants
     aminomonosaccharide_patterns = [
-        Chem.MolFromSmarts("[C@H]1([NH2])[C@@H]([OH])[C@@H]([OH])[C@H]([OH])[C@H]([OH])[O@H]1"),  # Glucosamine
-        Chem.MolFromSmarts("[C@H]1([NH2])[C@@H]([OH])[C@H]([OH])[C@@H]([OH])[C@H]([OH])[O@H]1"),  # Galactosamine
-        Chem.MolFromSmarts("[C@H]1([NH][C@H](C=O)*)[C@@H]([OH])[C@@H]([OH])[C@H]([OH])[C@H]([OH])[O@H]1")  # N-acetylglucosamine
+        Chem.MolFromSmarts("[C@H]1([NH2])[C@@H]([OH])[C@@H]([OH])[C@H]([OH])[C@H]([OH])[O@H]1"),  # Glucosamine type
+        Chem.MolFromSmarts("[C@H]1([NH2])[C@@H]([OH])[C@H]([OH])[C@@H]([OH])[C@H]([OH])[O@H]1"),  # Galactosamine type
+        Chem.MolFromSmarts("[C@H]1([NH][C@H](C=O)*)[C@@H]([OH])[C@@H]([OH])[C@H]([OH])[C@H]([OH])[O@H]1"),  # N-acetylglucosamine type
+        Chem.MolFromSmarts("[C@@H]1([C@H](O)[C@H](O)[C@@H](N)[C@@H]1O)"),  # General aminomonosaccharide
     ]
     
     total_aminomonosaccharide_matches = 0
@@ -33,12 +34,14 @@ def is_glycosaminoglycan(smiles: str):
         matches = mol.GetSubstructMatches(pattern)
         total_aminomonosaccharide_matches += len(matches)
 
-    # Estimate the total number of sugar-like units by counting oxygen atoms
-    oxygen_atoms = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    sugar_units_estimation = oxygen_atoms // 2  # heuristic: two oxygens per sugar unit
+    # Calculate a better estimation for sugar units
+    oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
 
-    # Adjusting the percentage threshold to define substantial as 30%
-    if total_aminomonosaccharide_matches > 0 and total_aminomonosaccharide_matches / sugar_units_estimation > 0.3:
+    # Glycosaminoglycans are largely composed of sugars, let's assume ~3 oxygens per sugar for better specificity
+    sugar_units_estimation = max(1, oxygen_count // 3)
+
+    # Set threshold for classification, assuming at least 30% units should be amino sugars
+    if total_aminomonosaccharide_matches / sugar_units_estimation > 0.3:
         return True, f"Glycosaminoglycan identified. Aminomonosaccharide count: {total_aminomonosaccharide_matches}"
 
     return False, "Insufficient proportion of aminomonosaccharide residues found"
