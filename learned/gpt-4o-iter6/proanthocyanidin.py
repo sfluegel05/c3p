@@ -21,17 +21,21 @@ def is_proanthocyanidin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Pattern for phenolic groups in proanthocyanidins
-    phenol_pattern = Chem.MolFromSmarts("c1c(O)ccc(O)c1")  # Generalized phenolic pattern
+    # Pattern for hydroxy groups in phenolic rings as part of flavan units
+    phenol_pattern = Chem.MolFromSmarts("c1c(O)ccc(O)c1")  # Phenolic pattern
     phenol_matches = mol.GetSubstructMatches(phenol_pattern)
-    if len(phenol_matches) < 4:  # Checking for at least 2 phenolic groups per flavan unit, suggests at least 2 flavan units present
+    if len(phenol_matches) < 4:  # Ensure at least indicative of two flavan units
         return False, "Insufficient phenolic groups to suggest multiple hydroxyflavan units"
     
-    # More generalized C4-C8 and C4-C6 linkage pattern search
-    linkage_pattern = Chem.MolFromSmarts("[C@H]1(c2cc(O)cc(O)c2)C1-[c]3[c]([OH])[c]([OH])[c]([OH])[c]([c]3[OH])")
-    linkage_matches = mol.GetSubstructMatches(linkage_pattern)
+    # Patterns for interflavan C4-C8 or C4-C6 linkages
+    linkage_pattern_c8 = Chem.MolFromSmarts("[C@H]1c(O)cc(O)c1-c2c(O)ccc(O)c2")  # One approach to C4-C8 linkage with stereochemistry
+    linkage_pattern_c6 = Chem.MolFromSmarts("[C@H]1c(O)cc(O)c1-c2cc(O)ccc2")  # One approach to C4-C6 linkage
     
-    if len(linkage_matches) < 1:  # Needs at least one C4-CX linkage
+    # Check for presence of any valid linkage
+    linkage_matches_c8 = mol.GetSubstructMatches(linkage_pattern_c8)
+    linkage_matches_c6 = mol.GetSubstructMatches(linkage_pattern_c6)
+    
+    if len(linkage_matches_c8) < 1 and len(linkage_matches_c6) < 1:
         return False, "No interflavan linkage found"
     
     return True, "Contains multiple hydroxyflavan units with at least one interflavan linkage"
