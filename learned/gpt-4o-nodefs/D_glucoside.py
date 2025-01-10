@@ -7,7 +7,7 @@ def is_D_glucoside(smiles: str):
     """
     Determines if a molecule is a D-glucoside based on its SMILES string.
     A D-glucoside typically contains a D-glucopyranosyl unit that may appear
-    as a specific substructure in a larger molecule.
+    as a specific substructure in a larger molecule, often with specific stereochemistry.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,15 +22,14 @@ def is_D_glucoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define the D-glucopyranoside substructure pattern
-    # This pattern needs to target the specific glucose ring with correct stereochemistry
-    # including beta anomeric configuration for D-glucosides
-    glucoside_pattern = Chem.MolFromSmarts("O[C@H]1[C@@H]([C@H](O)[C@H](O)[C@H](CO)O1)C")
+    # Define a more specific and flexible SMARTS pattern for D-glucopyranosyl rings
+    # Capturing both alpha and beta anomers with a common D-glucose pattern
+    # The below SMARTS attempts to match the glucose unit with variable substituents
+    glucoside_pattern = Chem.MolFromSmarts("[O;R][C@H]1[C@@H]([C@H]([C@@H](O)[C@H](O)[C@H]1O)O)(*[C@H](C)*)")
     
     if mol.HasSubstructMatch(glucoside_pattern):
         return True, "Contains D-glucopyranosyl unit indicative of D-glucoside"
     
     return False, "D-glucopyranosyl unit not found"
 
-# Note: This output assumes SMILES input follows conventional representation
-# for D-glucopyranosyl units. Adjustments to SMARTS may be required.
+# Test cases should include manual validation to ensure diverse structures are correctly identified
