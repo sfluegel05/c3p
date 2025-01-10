@@ -6,13 +6,14 @@ from rdkit import Chem
 def is_galactosylceramide(smiles: str):
     """
     Determines if a molecule is a galactosylceramide based on its SMILES string.
-    A galactosylceramide typically includes a beta-D-galactosyl group attached to a ceramide backbone.
+    Galactosylceramides usually have a beta-D-galactosyl moiety attached to a ceramide backbone,
+    which includes amide linkages and long fatty acid chains.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a galactosylceramide, False otherwise
+        bool: True if the molecule is a galactosylceramide, False otherwise
         str: Reason for classification
     """
     
@@ -23,7 +24,8 @@ def is_galactosylceramide(smiles: str):
 
     # Define SMARTS patterns for galactosylceramide
     galactose_pattern = Chem.MolFromSmarts("O[C@@H]1[C@H](O)[C@@H](O)[C@@H](O)[C@H](CO)C1O")  # Beta-D-galactosyl pattern
-    amide_pattern = Chem.MolFromSmarts("NC(=O)C")  # Basic amide group present in ceramide
+    amide_pattern = Chem.MolFromSmarts("NC(=O)[C@@H]")  # Improved amide linkage to specify chiral center
+    long_chain_pattern = Chem.MolFromSmarts("CCCCCCCCCC")  # Representation of long chains; can be expanded further
 
     # Match galactose
     if not mol.HasSubstructMatch(galactose_pattern):
@@ -31,10 +33,9 @@ def is_galactosylceramide(smiles: str):
     
     # Match amide group (part of the ceramide backbone)
     if not mol.HasSubstructMatch(amide_pattern):
-        return False, "Missing amide linkage of ceramide"
+        return False, "Missing amide linkage characteristic of ceramide"
 
     # Check for long-chain features indicative of fatty acid tails and sphingosine
-    long_chain_pattern = Chem.MolFromSmarts("CCCCCCCCCCCC")  # Simplified pattern representing long chains
     if not mol.HasSubstructMatch(long_chain_pattern):
         return False, "Missing long-chain characteristic of ceramide"
 
