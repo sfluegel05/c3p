@@ -22,14 +22,14 @@ def is_secondary_amine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Secondary amine detection pattern
-    secondary_amine_pattern = Chem.MolFromSmarts("[NX3;H1,H2]([#6])[#6]")  # Extended to include secondary amine NH groups
+    # Secondary amine detection pattern with additional specificity
+    secondary_amine_pattern = Chem.MolFromSmarts("[NX3;H1][C;$([CDATA1,#6X4]),!$(C=#[!#6])][C,$([CDATA1,#6X4]),!$(C=#[!#6])]")
         
     # Interfering group patterns
     nitroso_pattern = Chem.MolFromSmarts("[NX2]=O")
     amide_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[NX3]")
     urea_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[NX3]")
-    sulfonamide_pattern = Chem.MolFromSmarts("[NX3][#16](=O)=O")
+    sulfonamide_pattern = Chem.MolFromSmarts("[NX3][#16](=[OX1])=[OX1]")
 
     if mol.HasSubstructMatch(secondary_amine_pattern):
         # Check for interfering groups
