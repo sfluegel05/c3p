@@ -28,39 +28,41 @@ def is_D_hexose(smiles: str):
 
     # Check if the molecule has a ring structure
     if not mol.GetRingInfo().NumRings():
-        return False, "No ring structure found"
+        # Allow linear forms (aldehydo forms)
+        pass
 
-    # Check for the presence of multiple hydroxyl groups
-    hydroxyl_pattern = Chem.MolFromSmarts("[C][O]")
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    if len(hydroxyl_matches) < 4:
-        return False, "Not enough hydroxyl groups for a hexose"
+    # Check for at least 4 oxygen atoms (hydroxyl or ring oxygen)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if o_count < 4:
+        return False, "Not enough oxygen atoms for a hexose"
 
-    # Find the carbon at position 5 (second-to-last carbon in the ring)
-    # We assume that the ring is a 6-membered ring (typical for hexoses)
-    ring_atoms = mol.GetRingInfo().AtomRings()[0]
-    if len(ring_atoms) != 6:
-        return False, "Not a 6-membered ring"
+    # Find all potential position 5 carbons
+    # Look for carbons with a hydroxyl group and chirality
+    potential_position_5 = []
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6:  # Carbon
+            # Check for hydroxyl group
+            has_hydroxyl = False
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 8 and neighbor.GetDegree() == 1:
+                    has_hydroxyl = True
+                    break
+            if has_hydroxyl and atom.GetChiralTag() != Chem.ChiralType.CHI_UNSPECIFIED:
+                potential_position_5.append(atom)
 
-    # Position 5 is the second-to-last carbon in the ring
-    carbon_at_position_5 = mol.GetAtomWithIdx(ring_atoms[-2])
+    # Check if any potential position 5 carbon has D-configuration
+    for carbon in potential_position_5:
+        # Check stereochemistry - D-configuration is R in Cahn-Ingold-Prelog
+        try:
+            Chem.AssignStereochemistry(mol, force=True, cleanIt=True)
+            if carbon.GetProp('_CIPCode') == 'R':
+                return True, "Hexose with D-configuration at position 5"
+        except:
+            # If stereochemistry assignment fails, try alternative method
+            if carbon.GetChiralTag() == Chem.ChiralType.CHI_TETRAHEDRAL_CW:
+                return True, "Hexose with D-configuration at position 5"
 
-    # Check if the carbon at position 5 has a hydroxyl group
-    has_hydroxyl = False
-    for neighbor in carbon_at_position_5.GetNeighbors():
-        if neighbor.GetAtomicNum() == 8 and neighbor.GetDegree() == 1:
-            has_hydroxyl = True
-            break
-
-    if not has_hydroxyl:
-        return False, "No hydroxyl group at position 5"
-
-    # Check the stereochemistry of the carbon at position 5
-    # In RDKit, the chirality is represented by the ChiralTag
-    if carbon_at_position_5.GetChiralTag() != Chem.ChiralType.CHI_TETRAHEDRAL_CW:
-        return False, "Carbon at position 5 does not have D-configuration"
-
-    return True, "Hexose with D-configuration at position 5"
+    return False, "No carbon with D-configuration found at position 5"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:15903',
