@@ -20,28 +20,27 @@ def is_flavonoids(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Flavonoid core pattern C6-C3-C6: Two phenyl rings with a heterocycle
-    flavonoid_core_patterns = [
-        Chem.MolFromSmarts("c1cc(-c2ccccc2)ccc1C3=CC=CC(=O)O3"),  # Flavone
-        Chem.MolFromSmarts("c1cc(-c2ccc(o2)C3=CC=CC(=O)O3)ccc1"),  # Isoflavone
-        Chem.MolFromSmarts("c1cc(-c2cc(c(o2)C3=CC=CC(=O)O3)cc2)ccc1")  # Neoflavonoid
-    ]
-    
-    matches_core = any(mol.HasSubstructMatch(pattern) for pattern in flavonoid_core_patterns)
-    if not matches_core:
-        return False, "No flavonoid core C6-C3-C6 pattern variation found"
-    
-    # Check for typical flavonoid functional groups
+    # Define a SMARTS pattern for a generic flavonoid core
+    flavonoid_core_pattern = Chem.MolFromSmarts("c1ccc2c(c1)C(=O)c3c(cccc3)c2")  # General flavone core
+    if flavonoid_core_pattern is None:
+        return False, "Critical error: Could not compile flavonoid core pattern"
+
+    if not mol.HasSubstructMatch(flavonoid_core_pattern):
+        return False, "No flavonoid core found"
+
+    # Check for at least two aromatic rings
+    aromatic_rings = [ring for ring in mol.GetRingInfo().AtomRings()
+                      if all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring)]
+    if len(aromatic_rings) < 2:
+        return False, "Too few aromatic rings for flavonoid classification"
+
+    # Check for common functional groups (e.g., hydroxyl)
     hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
-    hydroxyl_matches = mol.HasSubstructMatch(hydroxyl_pattern)
-    
-    # Count number of aromatic rings
-    arom_rings = [ring for ring in mol.GetRingInfo().AtomRings()
-                  if all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring)]
-    aromatic_rings_count = len(arom_rings)
-    
-    # Validate that there are enough aromatic rings (typically 2)
-    if aromatic_rings_count < 2:
-        return False, f"Too few aromatic rings ({aromatic_rings_count}) to be considered a flavonoid"
-    
-    return True, "Flavonoid pattern detected with expected core and functional groups"
+    if hydroxyl_pattern is None:
+        return False, "Critical error: Could not compile hydroxyl pattern"
+
+    hydroxyl_count = len(mol.GetSubstructMatches(hydroxyl_pattern))
+    if hydroxyl_count == 0:
+        return False, "No hydroxyl group found which is typical for flavonoids"
+
+    return True, "Flavonoid detected with a recognized core and functional group presence"
