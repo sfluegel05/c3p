@@ -26,53 +26,73 @@ def is_para_terphenyl(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # First check for presence of exactly 3 benzene rings
-    benzene_pattern = Chem.MolFromSmarts("c1ccccc1")
-    benzene_matches = mol.GetSubstructMatches(benzene_pattern)
-    if len(benzene_matches) < 3:
-        return False, "Less than 3 benzene rings found"
-    
-    # Look for para-terphenyl core structure
-    # This pattern enforces:
-    # - Central benzene ring
+    # Look for basic para-terphenyl core structure
+    # This pattern matches:
+    # - A central 6-membered ring (can be aromatic or not)
     # - Two phenyl groups in para positions
-    # - Allows substitutions on any position
-    para_terphenyl_pattern = Chem.MolFromSmarts("[cR1]1[cR1][cR1](-[cR1]2[cR1][cR1][cR1][cR1][cR1]2)[cR1][cR1](-[cR1]3[cR1][cR1][cR1][cR1][cR1]3)[cR1]1")
+    # - Allows for substitutions
+    para_terphenyl_pattern = Chem.MolFromSmarts(
+        "[c,C]1[c,C][c,C]([c,C]2[c,C][c,C][c,C][c,C][c,C]2)[c,C][c,C]([c,C]3[c,C][c,C][c,C][c,C][c,C]3)[c,C]1"
+    )
     
     if not mol.HasSubstructMatch(para_terphenyl_pattern):
         return False, "No para-terphenyl core structure found"
     
-    # Get all rings
+    # Get the match atoms
+    match = mol.GetSubstructMatch(para_terphenyl_pattern)
+    if not match:
+        return False, "Could not map core structure"
+    
+    # Check that we have three distinct 6-membered rings
     ring_info = mol.GetRingInfo()
-    rings = list(ring_info.AtomRings())
+    rings = ring_info.AtomRings()
     
-    # Check that we have exactly 3 six-membered aromatic rings
-    aromatic_rings = [ring for ring in rings 
-                     if len(ring) == 6 and 
-                     all(mol.GetAtomWithIdx(i).GetIsAromatic() for i in ring)]
+    # Convert match indices to ring atoms sets for the core structure
+    match_atoms = set(match)
+    core_rings = []
+    for ring in rings:
+        ring_set = set(ring)
+        if len(ring_set.intersection(match_atoms)) >= 6:  # Ring is part of core
+            core_rings.append(ring_set)
     
-    if len(aromatic_rings) != 3:
-        return False, f"Found {len(aromatic_rings)} aromatic 6-membered rings, need exactly 3"
-
-    # Check that rings are not fused (should share no atoms)
-    for i, ring1 in enumerate(aromatic_rings):
-        for ring2 in aromatic_rings[i+1:]:
-            shared_atoms = set(ring1).intersection(set(ring2))
-            if len(shared_atoms) > 0:
+    # Should find exactly 3 rings that are part of the core
+    if len(core_rings) < 3:
+        return False, f"Found only {len(core_rings)} rings in core structure"
+    
+    # Check that the rings are not fused (should share at most 1 atom between any pair)
+    for i, ring1 in enumerate(core_rings):
+        for j, ring2 in enumerate(core_rings[i+1:], i+1):
+            shared = len(ring1.intersection(ring2))
+            if shared > 1:
                 return False, "Contains fused rings"
     
-    # Find the central ring (should be connected to both other rings)
-    for ring in aromatic_rings:
+    # Verify carbons in core rings are sp2 hybridized (aromatic or conjugated)
+    for ring in core_rings:
+        for atom_idx in ring:
+            atom = mol.GetAtomWithIdx(atom_idx)
+            if atom.GetAtomicNum() != 6:  # Must be carbon
+                continue
+            # Check hybridization - must be sp2 or aromatic
+            if not (atom.GetIsAromatic() or atom.GetHybridization() == Chem.HybridizationType.SP2):
+                return False, "Core structure contains non-sp2 carbons"
+    
+    # Additional check for connectivity - central ring should connect to both outer rings
+    central_ring = None
+    for ring in core_rings:
         connections = 0
-        ring_atoms = set(ring)
         for atom_idx in ring:
             atom = mol.GetAtomWithIdx(atom_idx)
             for neighbor in atom.GetNeighbors():
-                if neighbor.GetIdx() not in ring_atoms and neighbor.GetIsAromatic():
-                    connections += 1
-        if connections == 2:  # This is the central ring
+                if neighbor.GetIdx() not in ring:
+                    for other_ring in core_rings:
+                        if neighbor.GetIdx() in other_ring:
+                            connections += 1
+                            break
+        if connections >= 2:  # This is likely the central ring
+            central_ring = ring
             break
-    else:
+    
+    if central_ring is None:
         return False, "Could not identify central ring with correct connectivity"
 
     return True, "Contains para-terphenyl core structure with appropriate substitution pattern"
