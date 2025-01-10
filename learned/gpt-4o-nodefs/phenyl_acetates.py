@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_phenyl_acetates(smiles: str):
     """
     Determines if a molecule is a phenyl acetate derivative based on its SMILES string.
-    A phenyl acetate has an acetyl group (-C(=O)C) directly attached to a phenyl ring.
+    A phenyl acetate can have an acetyl group (-C(=O)) connected via oxygen or nitrogen to a phenyl ring.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,11 +21,11 @@ def is_phenyl_acetates(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Phenyl ring with acetyl group pattern
-    # Specifically look for a bond from the acetyl carbonyl (C=O) to an aromatic carbon
-    phenyl_acetate_pattern = Chem.MolFromSmarts("c1ccccc1C(=O)C")
+    # Look for acetate ester connected to phenyl group pattern
+    # This pattern includes esters, where the carbonyl carbon is directly bonded to an oxygen attached to a phenyl ring.
+    phenyl_acetate_pattern = Chem.MolFromSmarts("c1ccccc1OC(=O)C")
     
     if mol.HasSubstructMatch(phenyl_acetate_pattern):
-        return True, "Contains phenyl ring with acetyl group attached"
+        return True, "Contains phenyl acetate ester pattern"
 
-    return False, "No acetyl group directly attached to phenyl ring"
+    return False, "Does not match phenyl acetate ester pattern"
