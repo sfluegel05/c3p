@@ -20,32 +20,34 @@ def is_ether_lipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Specific ether linkage pattern
-    ether_linkage_pattern = Chem.MolFromSmarts("[!#1]-O-[!#1]")  # Non-hydrogen atoms on both sides of O
+    # Detect ether linkages - flexible atom types but with carbon chains
+    ether_linkage_pattern = Chem.MolFromSmarts("[C]O[C]")  # Alkyl-O-Alkyl pattern
     if not mol.HasSubstructMatch(ether_linkage_pattern):
         return False, "No ether linkage pattern found"
     
-    # Broad range of possible glycerol backbone patterns
+    # Detect glycerol backbone with option for ether or ester linkages
     glycerol_patterns = [
-        Chem.MolFromSmarts("C(CO)CO"),  # Standard glycerol
-        Chem.MolFromSmarts("[C@@H](CO)CO"),  # Stereospecific
-        Chem.MolFromSmarts("[C@H](CO)CO")   # Alternative stereo
+        Chem.MolFromSmarts("[C@@H](CO[C])O[C]"),  # sn-glycero-3-phosphate form
+        Chem.MolFromSmarts("[C@H](CO[C])O[C]"),   # alternative stereo
+        Chem.MolFromSmarts("CO[C@H](CO)CO"),      # alternative etherified glycerol
+        Chem.MolFromSmarts("[C@H](O[C])CO[C]")    # generalized form
     ]
     if not any(mol.HasSubstructMatch(pattern) for pattern in glycerol_patterns):
-        return False, "No suitable glycerol backbone found"
+        return False, "No identifiable glycerol backbone found"
     
-    # Expanded recognition of polar head groups
+    # Broad recognizing patterns for polar head groups
     head_group_patterns = [
         Chem.MolFromSmarts("OP(=O)(O)O"),  # Phosphate group
         Chem.MolFromSmarts("N(C)(C)C"),    # Choline
-        Chem.MolFromSmarts("OC(=O)O"),     # carboxyl group
-        Chem.MolFromSmarts("NP([O-])(=O)O") # phosphate - ammonia pattern
+        Chem.MolFromSmarts("OC(=O)O"),     # Carboxyl group
+        Chem.MolFromSmarts("P(=O)(O)OC"),  # Phosphonate group
+        Chem.MolFromSmarts("NP(=O)(O)OC")  # Aminophosphate pattern
     ]
     if not any(mol.HasSubstructMatch(pattern) for pattern in head_group_patterns):
-        return False, "No recognized polar head group found (e.g., phosphate, choline, carboxyl)"
+        return False, "No recognizable polar head group found (e.g., phosphate, choline, carboxyl)"
     
-    # Recognition of long alkyl chains, possibly involving unsaturation
-    long_chain_pattern = Chem.MolFromSmarts("[C](~[C,!H0])~[!#1]")  # General long carbon chain with possible unsaturation
+    # Ensure long hydrocarbon chains, potentially unsaturated
+    long_chain_pattern = Chem.MolFromSmarts("C(C)C(C)C")  # General repeated -CH2- units
     if not mol.HasSubstructMatch(long_chain_pattern):
         return False, "No adequate long hydrocarbon chains found typical of ether lipids"
     
