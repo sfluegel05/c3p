@@ -2,7 +2,6 @@
 Classifies: CHEBI:17408 monoacylglycerol
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_monoacylglycerol(smiles: str):
     """
@@ -20,29 +19,23 @@ def is_monoacylglycerol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for glycerol backbone pattern (O-C-C-C-O)
-    glycerol_backbone_pattern = Chem.MolFromSmarts("OCCO")
-    if not mol.HasSubstructMatch(glycerol_backbone_pattern):
+    # Look for glycerol moiety pattern (C-C-C where two have hydroxyl groups)
+    glycerol_pattern = Chem.MolFromSmarts("[CX4](CO)[CX4](CO)CO")
+    if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
     
-    # Look for acyl group pattern (O=C-C)
-    acyl_group_pattern = Chem.MolFromSmarts("O=C(C)")
-    acyl_groups = mol.GetSubstructMatches(acyl_group_pattern)
-    if len(acyl_groups) != 1:
-        return False, f"Found {len(acyl_groups)} acyl groups, requires exactly 1"
+    # Look for esterified acyl group pattern (O=C-C linked to O of glycerol)
+    ester_pattern = Chem.MolFromSmarts("O=C([#6])O[CX4](CO)[CX4](CO)CO")
+    if not mol.HasSubstructMatch(ester_pattern):
+        return False, "No esterified acyl group linked to glycerol found"
     
-    # Ensure the acyl group is connected to glycerol backbone
-    ester_bond_pattern = Chem.MolFromSmarts("O=C(C)OCCO")
-    if not mol.HasSubstructMatch(ester_bond_pattern):
-        return False, "Acyl group not properly ester linked to glycerol backbone"
+    # Count the esterified acyl groups
+    ester_groups = mol.GetSubstructMatches(ester_pattern)
+    if len(ester_groups) != 1:
+        return False, f"Found {len(ester_groups)} esterified acyl groups, requires exactly 1"
     
-    # Verify molecular parts: 3 carbons for glycerol, at least 2 oxygens, and one acyl chain
-    glycerol_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6 and len(atom.GetNeighbors()) == 3 and any(nei.GetAtomicNum() == 8 for nei in atom.GetNeighbors()))
-    if glycerol_carbons < 3:
-        return False, "Too few carbons for a complete glycerol backbone"
-
-    glycerol_oxygens = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and any(nei.GetAtomicNum() == 6 for nei in atom.GetNeighbors()))
-    if glycerol_oxygens < 2:
-        return False, "Too few oxygens for a complete glycerol structure"
+    # Verify the molecular structure: ensure only one esterified acyl group
+    if len(ester_groups) != 1:
+        return False, "More than one esterified acyl group"
     
-    return True, "Contains a glycerol backbone with one acyl group and two hydroxyl groups"
+    return True, "Contains a glycerol backbone with one esterified acyl group"
