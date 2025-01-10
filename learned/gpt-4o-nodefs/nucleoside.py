@@ -22,19 +22,29 @@ def is_nucleoside(smiles: str):
         return False, "Invalid SMILES string"
 
     # SMARTS patterns for identifying purine and pyrimidine bases
-    purine_pattern = Chem.MolFromSmarts('c1ncnc2[nH]cnc12')  # Adjusted to catch common variations
-    pyrimidine_pattern = Chem.MolFromSmarts('c1ccncn1')      # Generalized pyrimidine structure
+    purine_pattern = Chem.MolFromSmarts('n1cnc2c1ncnc2')  # Purine base pattern
+    pyrimidine_pattern = Chem.MolFromSmarts('n1c([nH])cnc1=O')  # Simplified pyrimidine pattern
     if not (mol.HasSubstructMatch(purine_pattern) or mol.HasSubstructMatch(pyrimidine_pattern)):
         return False, "No recognizable nucleobase pattern found"
     
     # Generalized SMARTS pattern for ribose or deoxyribose units
     sugar_pattern = Chem.MolFromSmarts('O[C@@H]1[C@H](O)[C@@H](O)[C@H](CO)O1')  # Capture flexibility in sugar structure
-    if not mol.HasSubstructMatch(sugar_pattern):
+    alternate_sugar_pattern = Chem.MolFromSmarts('O[C@H]1[C@@H](O)[C@@H](O)[C@H](CO)O1')  # Another orientation of ribose
+    if not (mol.HasSubstructMatch(sugar_pattern) or mol.HasSubstructMatch(alternate_sugar_pattern)):
         return False, "No recognizable ribose or deoxyribose pattern found"
     
-    # Validate glycosidic bond pattern
-    glycosidic_bond_pattern = Chem.MolFromSmarts('CO(c1[nH]c(cn1))')  # Match `base-O-sugar` linkage
-    if not mol.HasSubstructMatch(glycosidic_bond_pattern):
+    # Validate presence of a glycosidic bond between a base and a sugar
+    # We assume the link involves a nitrogen in the base connecting to the anomeric carbon of the sugar
+    glycosidic_bond_found = False
+    for bond in mol.GetBonds():
+        if (bond.GetBeginAtom().GetAtomicNum() == 8 and bond.GetEndAtom().GetAtomicNum() == 6) or \
+           (bond.GetBeginAtom().GetAtomicNum() == 6 and bond.GetEndAtom().GetAtomicNum() == 8):
+            if (mol.HasSubstructMatch(purine_pattern) or mol.HasSubstructMatch(pyrimidine_pattern)) and \
+               (mol.HasSubstructMatch(sugar_pattern) or mol.HasSubstructMatch(alternate_sugar_pattern)):
+                glycosidic_bond_found = True
+                break
+    
+    if not glycosidic_bond_found:
         return False, "No proper glycosidic bond between sugar and base"
 
     return True, "Contains nucleobase and sugar moiety with appropriate glycosidic bond"
