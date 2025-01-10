@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_wax(smiles: str):
     """
     Determines if a molecule is classified as a wax based on its SMILES string.
-    Waxes typically consist of long-chain alcohols esterified to long-chain fatty acids.
+    Waxes are characterized by long-chain fatty acids esterified to long-chain alcohols.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,25 +20,44 @@ def is_wax(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define ester pattern with a requirement for long chains on both sides
-    ester_pattern_smarts = "C(=O)O"
-    ester_pattern = Chem.MolFromSmarts(ester_pattern_smarts)
-    
-    # Check for ester presence
+    # Define ester bond pattern
+    ester_pattern = Chem.MolFromSmarts("C(=O)O")
+
+    # Check for presence of ester bond
     if not mol.HasSubstructMatch(ester_pattern):
         return False, "No ester bond present"
 
-    # Helper function to determine if a chain has sufficient length & aliphatic nature
-    def is_long_aliphatic_chain(chain):
-        c_count = sum(1 for atom in chain.GetAtoms() if atom.GetAtomicNum() == 6)
-        return c_count >= 15  # Modified threshold based on typical wax chain lengths
+    # Helper function to check for long aliphatic chains
+    def is_long_aliphatic_chain(atom_idx):
+        visited_atoms = set()
+        stack = [atom_idx]
 
-    # Iterate over all ester matches
-    for ester in mol.GetSubstructMatches(ester_pattern):
-        acyl_chain = Chem.PathToSubmol(mol, [ester[0]])  # Part before ester linkage
-        alkoxy_chain = Chem.PathToSubmol(mol, [ester[2]])  # Part after ester linkage
+        carbon_count = 0
+        while stack:
+            atom_id = stack.pop()
+            atom = mol.GetAtomWithIdx(atom_id)
+            if atom.GetAtomicNum() == 6:  # Carbon
+                carbon_count += 1
+                
+                if carbon_count >= 14:
+                    return True
 
-        if is_long_aliphatic_chain(acyl_chain) and is_long_aliphatic_chain(alkoxy_chain):
-            return True, "Contains a long-chain ester typical of waxes"
+                visited_atoms.add(atom_id)
+                for neighbor in atom.GetNeighbors():
+                    neighbor_idx = neighbor.GetIdx()
+                    if neighbor_idx not in visited_atoms:
+                        stack.append(neighbor_idx)
 
-    return False, "Ester bond present, but lacking required long aliphatic chains"
+        return False
+
+    # Iterate over ester bonds found
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    for match in ester_matches:
+        # Check the carbon chain lengths on both side of ester linkage
+        carbonyl_carbon_idx = match[0]
+        aliphatic_oxygen_idx = match[2]
+
+        if is_long_aliphatic_chain(carbonyl_carbon_idx) and is_long_aliphatic_chain(aliphatic_oxygen_idx):
+            return True, "Molecule contains long aliphatic ester typical of wax"
+
+    return False, "Ester bond found but does not form a typical wax structure (long aliphatic chains missing)"
