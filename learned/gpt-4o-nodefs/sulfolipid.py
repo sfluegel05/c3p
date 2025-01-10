@@ -11,7 +11,7 @@ def is_sulfolipid(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a sulfolipid, False otherwise
+        bool: True if the molecule is a sulfolipid, False otherwise
         str: Reason for classification
     """
     
@@ -20,23 +20,26 @@ def is_sulfolipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for sulfate group pattern (corrected)
-    sulfate_pattern = Chem.MolFromSmarts("OS(=O)(=O)O") 
-    sulfate_matches = mol.HasSubstructMatch(sulfate_pattern)
-    if not sulfate_matches:
+    # Look for sulfate group pattern
+    sulfate_pattern = Chem.MolFromSmarts("OS(=O)(=O)[O-]")  # Consider negatively charged sulfate structure
+    if not mol.HasSubstructMatch(sulfate_pattern):
         return False, "No sulfate group found"
 
-    # Look for six-membered sugar ring pattern containing oxygens (more specific)
-    sugar_ring_pattern = Chem.MolFromSmarts("C1OC(O)C(O)C(O)C1")
-    sugar_matches = mol.HasSubstructMatch(sugar_ring_pattern)
-    if not sugar_matches:
-        return False, "No six-membered ring sugar structure found"
+    # General sugar-like ring, accounting possible variations in natural sulfolipids
+    sugar_ring_patterns = [
+        Chem.MolFromSmarts("O[C@@H]1[C@@H](O)[C@H](O[C@H]1*)*"),  # generalized sugar like rings
+        Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@@H](O[C@@H]1*)*")   # different stereochemistry
+    ]
+    if not any(mol.HasSubstructMatch(pattern) for pattern in sugar_ring_patterns):
+        return False, "No suitable sugar-like ring structure found"
 
-    # Look for long chain fatty acid structures (correct chain length)
-    long_chain_pattern = Chem.MolFromSmarts("C[CH2]{12,}[C(=O)O]")  # e.g., longer alkyl chain
-    long_chain_matches = mol.HasSubstructMatch(long_chain_pattern)
-    if not long_chain_matches:
-        return False, "No long fatty acid chain found"
+    # Long Chain Fatty Acids: More generic pattern with flexible carbon length
+    long_chain_patterns = [
+        Chem.MolFromSmarts("C[CH2]{10,}C(=O)O"),                  # Flexible chain length
+        Chem.MolFromSmarts("CCCCCCCCCCCCCC(=O)O")  # Minimum length
+    ]
+    if not any(mol.HasSubstructMatch(pattern) for pattern in long_chain_patterns):
+        return False, "No sufficient long fatty acid chain found"
 
     # If all key features are found
-    return True, "Contains a sulfate group, a sugar-like ring structure, and a long fatty acid chain"
+    return True, "Contains a sulfate group, a suitable sugar-like ring structure, and a long fatty acid chain"
