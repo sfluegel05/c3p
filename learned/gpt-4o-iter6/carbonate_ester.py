@@ -21,16 +21,16 @@ def is_carbonate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the SMARTS pattern for a carbonate species
-    # Capture linear and cyclic variations of carbonate groups
-    carbonate_ester_patterns = [
-        Chem.MolFromSmarts("[$([#6])-]-O-C(=O)-O-[$([#6])]"),  # R-O-C(=O)-O-R', linear
-        Chem.MolFromSmarts("O=C1OC[*]C1"),  # Cyclic carbonate, e.g., ethylene carbonate
-        Chem.MolFromSmarts("C(=O)(O[*])O[*]")  # General template, possible variations within rings
+    # Define SMARTS pattern for carbonate ester
+    # Ensure we only match the carbonate ester functional group and not other ester-like groups
+    patterns = [
+        Chem.MolFromSmarts("O=C(O)O"),                 # linear carbonate ester
+        Chem.MolFromSmarts("O=C1OC1"),                 # cyclic carbonate like ethylene carbonate
+        Chem.MolFromSmarts("[$(C(=O)(O)(OC))]")       # general pattern for the tri-oxo carbonate
     ]
 
     # Check if the molecule matches any known carbonate ester pattern
-    for pattern in carbonate_ester_patterns:
+    for pattern in patterns:
         if mol.HasSubstructMatch(pattern):
             return True, "Contains carbonate ester functional group"
     
