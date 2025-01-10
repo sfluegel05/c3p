@@ -28,11 +28,13 @@ def is_pyrroline(smiles: str):
     pyrroline_pattern = Chem.MolFromSmarts("[nH0]1[CH]=,:[CH][CH2]1")
     pyrroline_pattern_alt = Chem.MolFromSmarts("[nH0]1[CH2][CH]=,:[CH]1")
     pyrroline_pattern_alt2 = Chem.MolFromSmarts("[nH0]1[CH]=,:[CH2][CH]1")
+    pyrroline_pattern_alt3 = Chem.MolFromSmarts("[nH0]1[CH]=,:[CH][CH]=,:[CH]1")
     
     # Check if the molecule contains any of the pyrroline patterns
     if (mol.HasSubstructMatch(pyrroline_pattern) or 
         mol.HasSubstructMatch(pyrroline_pattern_alt) or 
-        mol.HasSubstructMatch(pyrroline_pattern_alt2)):
+        mol.HasSubstructMatch(pyrroline_pattern_alt2) or
+        mol.HasSubstructMatch(pyrroline_pattern_alt3)):
         
         # Ensure the matched ring is a five-membered ring
         ring_info = mol.GetRingInfo()
@@ -40,6 +42,12 @@ def is_pyrroline(smiles: str):
             if atom.GetAtomicNum() == 7:  # Nitrogen atom
                 for ring in ring_info.AtomRings():
                     if len(ring) == 5 and atom.GetIdx() in ring:
-                        return True, "Contains a dihydropyrrole ring (pyrroline)"
+                        # Check if the ring has exactly one double bond
+                        double_bond_count = 0
+                        for bond in mol.GetBonds():
+                            if bond.GetBondType() == Chem.BondType.DOUBLE and bond.GetBeginAtomIdx() in ring and bond.GetEndAtomIdx() in ring:
+                                double_bond_count += 1
+                        if double_bond_count == 1:
+                            return True, "Contains a dihydropyrrole ring (pyrroline)"
         
     return False, "No dihydropyrrole ring (pyrroline) found"
