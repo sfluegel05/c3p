@@ -9,6 +9,7 @@ Definition: A 3-hydroxy steroid in which the 3-hydroxy substituent is in the bet
 
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_3beta_hydroxy_steroid(smiles: str):
     """
@@ -22,6 +23,7 @@ def is_3beta_hydroxy_steroid(smiles: str):
         bool: True if molecule is a 3beta-hydroxy steroid, False otherwise
         str: Reason for classification
     """
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
@@ -33,8 +35,11 @@ def is_3beta_hydroxy_steroid(smiles: str):
     # Assign stereochemistry
     Chem.AssignStereochemistry(mol, force=True, cleanIt=True)
 
-    # Corrected steroid SMARTS pattern with atom mapping at position 3
-    steroid_smarts = "[#6]1([#6][#6][#6]2[#6][#6][#6]3[#6][#6][#6]([#6][#6]3)[#6][#6]2[#6][#6]1)[#6:3]"
+    # Define SMARTS pattern for steroid backbone
+    steroid_smarts = '''
+    [#6]1([#6])[#6][#6]2[#6]([#6]1)[#6][#6]3[#6]2[#6][#6][#6]4[#6]3=[#6][#6][#6]([#6]4)
+    '''
+
     steroid_pattern = Chem.MolFromSmarts(steroid_smarts)
     if steroid_pattern is None:
         return False, "Error in steroid SMARTS pattern"
@@ -44,10 +49,14 @@ def is_3beta_hydroxy_steroid(smiles: str):
     if not matches:
         return False, "No steroid backbone found"
 
-    # Loop over matches to the steroid backbone
+    # Look for hydroxyl group at position 3
+    # For steroids, position 3 is typically the second atom in the pattern
     for match in matches:
-        # Get the index of the atom mapped as position 3
-        pos3_idx = match[steroid_pattern.GetSubstructMatch(mol)[-1] - 1]  # Adjust for zero-based indexing
+        # Get the atom indices from the match
+        steroid_atoms = list(match)
+
+        # Assume position 3 is at atom index steroid_atoms[1]
+        pos3_idx = steroid_atoms[1]
         pos3_atom = mol.GetAtomWithIdx(pos3_idx)
 
         # Check if there is a hydroxy (-OH) group attached to position 3
@@ -55,18 +64,22 @@ def is_3beta_hydroxy_steroid(smiles: str):
         for neighbor in pos3_atom.GetNeighbors():
             if neighbor.GetAtomicNum() == 8 and neighbor.GetDegree() == 1:
                 has_oh = True
-                oxygen_atom = neighbor
                 break
         if not has_oh:
             continue  # No hydroxyl group at position 3
 
         # Check if position 3 is a chiral center
-        if not pos3_atom.HasProp('_CIPCode'):
-            continue  # Chirality not assigned at position 3
+        if not pos3_atom.HasProp('_ChiralityPossible'):
+            continue  # Position 3 is not chiral
 
-        stereo = pos3_atom.GetProp('_CIPCode')
+        chiral_tag = pos3_atom.GetChiralTag()
+        if chiral_tag == Chem.ChiralType.CHI_UNSPECIFIED:
+            continue  # Chirality not specified
+
+        # Get the R/S configuration
+        stereo = rdMolDescriptors.CalcAtomRSLabel(pos3_atom)
         if stereo == 'R':
-            # In steroids, R configuration at position 3 corresponds to beta
+            # In steroids, R configuration at position 3 usually corresponds to beta
             return True, "3beta-hydroxy steroid identified"
         else:
             return False, "Hydroxy group at position 3 is not in beta configuration"
