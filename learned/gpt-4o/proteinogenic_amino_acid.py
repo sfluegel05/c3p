@@ -2,6 +2,7 @@
 Classifies: CHEBI:83813 proteinogenic amino acid
 """
 from rdkit import Chem
+from rdkit.Chem import rdqueries
 
 def is_proteinogenic_amino_acid(smiles: str):
     """
@@ -19,30 +20,28 @@ def is_proteinogenic_amino_acid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define chiral and non-chiral alpha amino acid patterns
-    aa_pattern = Chem.MolFromSmarts("[C@@H](N)C(=O)O")  # Pattern for chiral alpha amino acids
-    glycine_pattern = Chem.MolFromSmarts("NC(=O)O")     # Pattern for glycine (non-chiral)
+        
+    # Define a pattern for an alpha-amino acid - broader to include derivatives or modifications
+    aa_pattern = Chem.MolFromSmarts("[C@@H](N)([CX4,CX3])C(=O)O")  # Pattern matching chiral alpha amino acids
+    glycine_pattern = Chem.MolFromSmarts("NCC(=O)O")                # Pattern matching glycine backbone
+    cys_pattern = Chem.MolFromSmarts("SC[C@@H](N)C(=O)O")           # Specific pattern for L-cysteine
 
     # Match against the patterns
     has_aa_pattern = mol.HasSubstructMatch(aa_pattern)
     is_glycine = mol.HasSubstructMatch(glycine_pattern)
-
-    if not (has_aa_pattern or is_glycine):
+    is_cysteine = mol.HasSubstructMatch(cys_pattern)
+    
+    if not (has_aa_pattern or is_glycine or is_cysteine):
         return False, "No proteinogenic amino acid pattern found"
 
-    # If pattern is found, glycine is okay as is
-    if is_glycine:
-        return True, "Pattern matches proteinogenic (glycine) amino acid"
-
-    # For chiral amino acids, ensure correct stereochemistry
+    # Check chiral centers correctly for non-glycine amino acids
     chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
-    
     for idx, center in chiral_centers:
         atom = mol.GetAtomWithIdx(idx)
         if atom.GetSymbol() == 'C':
-            # Consider any L amino acids or valid isotopic labels
-            if center == 'R':  # Typically L-amino acids are S; may need manual S/R correction knowing input set
+            # Consider L-amino acids must be the S configuration except for cysteine (R)
+            # Check correctly set flags or isotopic labels
+            if (center == 'S' or is_cysteine and center == 'R') or is_glycine:
                 return True, "Pattern matches proteinogenic amino acid"
-    
+
     return False, "Non-L configuration found for chiral center or unknown modifications"
