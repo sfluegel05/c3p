@@ -6,7 +6,6 @@ Classifies: 3-oxo-fatty acyl-CoA(4-)
 """
 
 from rdkit import Chem
-from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_3_oxo_fatty_acyl_CoA_4__(smiles: str):
@@ -27,25 +26,31 @@ def is_3_oxo_fatty_acyl_CoA_4__(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for Coenzyme A (CoA) moiety
-    # CoA SMARTS pattern (simplified version)
-    coa_smarts = Chem.MolFromSmarts('NC(=O)CCNC(=O)C(O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H](CN2C=NC3=C(N)N=CN=C32)[C@H](O)[C@@H]1OP(O)(O)=O')
-    if not mol.HasSubstructMatch(coa_smarts):
-        return False, "Coenzyme A moiety not found"
+    # Check for thioester linkage with 3-oxo-fatty acyl chain
+    # Pattern: O=C-C(=O)-S-C (beta-keto group connected via thioester linkage)
+    beta_keto_thioester_smarts = Chem.MolFromSmarts('O=C-C(=O)-S-C')
+    if not mol.HasSubstructMatch(beta_keto_thioester_smarts):
+        return False, "3-oxo-fatty acyl chain with thioester linkage not found"
 
-    # Check for thioester linkage: C(=O)-S-
-    thioester_smarts = Chem.MolFromSmarts('C(=O)SC')
-    if not mol.HasSubstructMatch(thioester_smarts):
-        return False, "Thioester linkage not found"
+    # Check for pantetheine unit (simplified)
+    # Pattern: NC(=O)CCNC(=O)C[C@H](O)C(C)(C)COP
+    pantetheine_smarts = Chem.MolFromSmarts('NC(=O)CCNC(=O)[C@H](O)C(C)(C)COP')
+    if not mol.HasSubstructMatch(pantetheine_smarts):
+        return False, "Pantetheine unit not found"
 
-    # Check for beta-ketoacyl group
-    # Pattern: O=C-C-C(=O)-C (beta-keto group in fatty acyl chain)
-    beta_ketoacyl_smarts = Chem.MolFromSmarts('O=CCC(=O)C')
-    if not mol.HasSubstructMatch(beta_ketoacyl_smarts):
-        return False, "3-oxo (beta-ketoacyl) group not found in acyl chain"
+    # Check for adenosine diphosphate moiety (simplified)
+    # Pattern: n1cnc2c1ncnc2N
+    adenosine_smarts = Chem.MolFromSmarts('n1cnc2c1ncnc2N')
+    if not mol.HasSubstructMatch(adenosine_smarts):
+        return False, "Adenosine moiety not found"
 
-    # Check for deprotonated phosphate groups
-    # Count total negative charges (should be -4)
+    # Check for diphosphate groups (deprotonated)
+    # Pattern: [O-]P(=O)([O-])OP(=O)([O-])[O-]
+    diphosphate_smarts = Chem.MolFromSmarts('[O-]P(=O)([O-])OP(=O)([O-])[O-]')
+    if not mol.HasSubstructMatch(diphosphate_smarts):
+        return False, "Deprotonated diphosphate groups not found"
+
+    # Check for net charge of -4
     total_charge = Chem.GetFormalCharge(mol)
     if total_charge != -4:
         return False, f"Incorrect net charge ({total_charge}), expected -4 for deprotonated phosphate groups"
