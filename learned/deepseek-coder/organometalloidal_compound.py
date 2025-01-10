@@ -25,20 +25,18 @@ def is_organometalloidal_compound(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define metalloid atoms (As, Ge, Sb, Te, Po)
-    metalloid_atomic_numbers = {33, 32, 51, 52, 84}
+    # Define metalloid atoms (As, Si, B, Ge, Sb, Te, Po)
+    metalloid_atomic_numbers = {33, 14, 5, 32, 51, 52, 84}
 
     # Check if the molecule contains any metalloid atoms
     metalloid_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() in metalloid_atomic_numbers]
     if not metalloid_atoms:
         return False, "No metalloid atoms found"
 
-    # Check for at least one carbon-metalloid bond where the carbon is part of an organyl group
+    # Check for at least one carbon-metalloid bond
     for atom in metalloid_atoms:
         for neighbor in atom.GetNeighbors():
             if neighbor.GetAtomicNum() == 6:  # Carbon atom
-                # Ensure the carbon is part of an organyl group (i.e., bonded to at least two other carbons or hydrogens)
-                if sum(1 for nbr in neighbor.GetNeighbors() if nbr.GetAtomicNum() == 6 or nbr.GetAtomicNum() == 1) >= 2:
-                    return True, "Contains at least one carbon-metalloid bond in an organyl group"
+                return True, "Contains at least one carbon-metalloid bond"
 
-    return False, "No carbon-metalloid bonds found in an organyl group"
+    return False, "No carbon-metalloid bonds found"
