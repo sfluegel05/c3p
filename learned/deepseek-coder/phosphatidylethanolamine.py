@@ -50,9 +50,8 @@ def is_phosphatidylethanolamine(smiles: str):
     if not phosphate_attached:
         return False, "Phosphate group not attached to glycerol backbone"
 
-    # Look for ethanolamine group (more flexible pattern)
-    # Pattern matches both neutral and protonated forms, with optional oxygen bridge
-    ethanolamine_pattern = Chem.MolFromSmarts("[NX3,nX3+][CH2X4][OX2,oX1-]")
+    # More flexible ethanolamine pattern to catch different protonation states and connectivity
+    ethanolamine_pattern = Chem.MolFromSmarts("[NX3,nX3+][CH2X4][OX2,oX1-]?")
     ethanolamine_matches = mol.GetSubstructMatches(ethanolamine_pattern)
     if len(ethanolamine_matches) == 0:
         return False, "No ethanolamine group found"
