@@ -25,8 +25,11 @@ def is_aliphatic_nitrile(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for cyano group (C≡N)
-    cyano_pattern = Chem.MolFromSmarts("[C#N]")
+    # Look for cyano group (C≡N) - more specific pattern that ensures proper connectivity
+    cyano_pattern = Chem.MolFromSmarts("[CX2]#[NX1]")
+    if cyano_pattern is None:
+        return False, "Error in SMARTS pattern"
+        
     cyano_matches = mol.GetSubstructMatches(cyano_pattern)
     
     if not cyano_matches:
@@ -34,20 +37,27 @@ def is_aliphatic_nitrile(smiles: str):
     
     # For each cyano group, check if it's attached to an aliphatic carbon
     for match in cyano_matches:
-        nitrile_n = mol.GetAtomWithIdx(match[0])
+        nitrile_c = mol.GetAtomWithIdx(match[0])  # Get the carbon of C≡N
         
-        # Get the carbon atom attached to the nitrile nitrogen
-        for neighbor in nitrile_n.GetNeighbors():
-            if neighbor.GetAtomicNum() == 6:  # Carbon
-                # Check if this carbon is part of an aromatic system
-                if neighbor.GetIsAromatic():
-                    continue  # Skip this cyano group if it's attached to aromatic carbon
-                
-                # If we found at least one cyano group attached to non-aromatic carbon,
-                # this is an aliphatic nitrile
-                return True, "Contains cyano group (C≡N) attached to aliphatic carbon"
+        # Get the carbon atom attached to the nitrile carbon
+        for neighbor in nitrile_c.GetNeighbors():
+            if neighbor.GetAtomicNum() != 7:  # Skip the nitrogen atom of C≡N
+                # Check if this carbon is NOT part of an aromatic system
+                if not neighbor.GetIsAromatic():
+                    # Check if the parent carbon is not in a ring or is in an aliphatic ring
+                    ring_info = mol.GetRingInfo()
+                    if not ring_info.IsAtomInRingOfSize(neighbor.GetIdx(), 6) or not neighbor.GetIsAromatic():
+                        # Additional check to ensure the whole connected system is not aromatic
+                        aromatic_system = False
+                        for next_neighbor in neighbor.GetNeighbors():
+                            if next_neighbor.GetIsAromatic():
+                                aromatic_system = True
+                                break
+                        
+                        if not aromatic_system:
+                            return True, "Contains cyano group (C≡N) attached to aliphatic carbon"
     
-    return False, "All cyano groups are attached to aromatic carbons or no valid cyano groups found"
+    return False, "No cyano groups attached to aliphatic carbons found"
 
 __metadata__ = {
     'chemical_class': {
