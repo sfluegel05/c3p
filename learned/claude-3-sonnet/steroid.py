@@ -25,66 +25,79 @@ def is_steroid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Multiple SMARTS patterns for steroid core with variations
-    steroid_patterns = [
-        # Basic 6-6-6-5 fused ring system with flexibility for saturation
-        "[#6]~1~2~[#6]~[#6]~[#6]~3~[#6]~[#6]~[#6]~4~[#6]~[#6]~[#6]~[#6]~[#6]~1~[#6]~[#6]~[#6]~2~[#6]~3~4",
-        # Alternative pattern allowing for some ring modifications
-        "[#6]~1~2~[#6]~[#6]~[#6]~3~[#6]~[#6]~[#6]~4~[#6]~[#6]~[#6]~[#6]([#6]~1)~[#6]~[#6]~[#6]~2~[#6]~3~4",
-        # Pattern for possible aromatic rings
-        "[#6]~1~2~[#6]~[#6]~[#6]~3~[#6]:,[#6]~[#6]:,[#6]~4~[#6]~[#6]~[#6]~[#6]([#6]~1)~[#6]~[#6]~[#6]~2~[#6]~3~4",
-        # Pattern allowing for heteroatoms in rings
-        "[#6,#8,#7]~1~2~[#6]~[#6]~[#6]~3~[#6]~[#6]~[#6]~4~[#6]~[#6]~[#6]~[#6]([#6]~1)~[#6]~[#6]~[#6]~2~[#6]~3~4"
+
+    # Simpler SMARTS patterns for steroid core components
+    core_patterns = [
+        # Basic 6-6-6-5 ring connectivity with flexibility
+        "[#6]1[#6][#6][#6]2[#6][#6][#6]3[#6][#6][#6][#6]([#6]1)[#6][#6][#6]2[#6]3",
+        # Alternative pattern with more flexibility
+        "[#6]1[#6][#6]2[#6][#6][#6]3[#6][#6][#6][#6]([#6]1)[#6][#6][#6]2[#6]3",
+        # Pattern for partially unsaturated core
+        "[#6]1[#6][#6]2[#6]=,:[#6][#6]3[#6][#6][#6][#6](:[#6]1)[#6][#6][#6]2[#6]3"
     ]
     
-    found_skeleton = False
-    for pattern in steroid_patterns:
-        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
-            found_skeleton = True
+    found_core = False
+    valid_pattern = None
+    for pattern in core_patterns:
+        pattern_mol = Chem.MolFromSmarts(pattern)
+        if pattern_mol is not None and mol.HasSubstructMatch(pattern_mol):
+            found_core = True
+            valid_pattern = pattern_mol
             break
             
-    if not found_skeleton:
-        return False, "No steroid skeleton found"
+    if not found_core:
+        return False, "No steroid core skeleton found"
 
-    # Check carbon count (steroids typically have 17+ carbons)
+    # Count rings (steroids typically have 4 or more rings)
+    ring_info = mol.GetRingInfo()
+    if ring_info.NumRings() < 4:
+        return False, "Insufficient number of rings for steroid structure"
+
+    # Count carbons (steroids typically have 17+ carbons)
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if carbon_count < 17:
         return False, "Too few carbons for steroid structure"
 
-    # Check for ring systems
-    ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() < 4:
-        return False, "Insufficient number of rings for steroid structure"
-    
-    # Check molecular weight (typical range for steroids and derivatives)
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if not (200 <= mol_wt <= 1000):  # Expanded range to include glycosylated steroids
-        return False, f"Molecular weight {mol_wt:.1f} outside typical steroid range"
-
-    # Look for common steroid features
+    # Look for characteristic features
     features = []
     
-    # Check for angular methyl groups (common but not required)
-    methyl_pattern = "[CH3][C](@[#6])(@[#6])([#6])"
-    if mol.HasSubstructMatch(Chem.MolFromSmarts(methyl_pattern)):
-        features.append("angular methyl groups")
-    
-    # Common functional groups
-    functional_groups = {
-        "hydroxyl": "[OH]",
-        "ketone": "[#6][C](=[O])[#6]",
-        "ester": "[#6]C(=O)O[#6]",
-        "carboxylic acid": "[#6]C(=O)[OH]",
-        "double bond": "[#6]=[#6]"
+    # Common substitution patterns
+    patterns = {
+        "angular_methyl": "[CH3][C](@[#6])(@[#6])[#6]",  # Angular methyl groups
+        "hydroxyl": "[OH1]",  # Hydroxyl groups
+        "ketone": "[#6]C(=O)[#6]",  # Ketone groups
+        "ester": "[#6]C(=O)O[#6]",  # Ester groups
+        "double_bond": "[#6]=[#6]",  # Double bonds
+        "carboxyl": "[#6]C(=O)[OH1]",  # Carboxylic acid
+        "alkyl_side_chain": "[CH2][CH2][CH2][CH1]([CH3])*"  # Common side chain pattern
     }
-    
-    for group_name, smarts in functional_groups.items():
-        if mol.HasSubstructMatch(Chem.MolFromSmarts(smarts)):
-            features.append(group_name)
+
+    for name, smarts in patterns.items():
+        pattern_mol = Chem.MolFromSmarts(smarts)
+        if pattern_mol is not None and mol.HasSubstructMatch(pattern_mol):
+            if name == "angular_methyl":
+                features.append("angular methyl groups")
+            elif name == "hydroxyl":
+                features.append("hydroxyl groups")
+            elif name == "ketone":
+                features.append("ketone groups")
+            elif name == "ester":
+                features.append("ester groups")
+            elif name == "double_bond":
+                features.append("unsaturation")
+            elif name == "carboxyl":
+                features.append("carboxylic acid")
+            elif name == "alkyl_side_chain":
+                features.append("alkyl side chain")
+
+    # Check number of matches to core pattern
+    if valid_pattern:
+        matches = len(mol.GetSubstructMatches(valid_pattern))
+        if matches > 1:
+            return False, "Multiple steroid-like cores found, likely not a steroid"
 
     # Final classification
-    reason = "Contains steroid skeleton"
+    reason = "Contains steroid core skeleton"
     if features:
         reason += f" with {', '.join(features)}"
     
