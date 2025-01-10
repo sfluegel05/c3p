@@ -6,7 +6,6 @@ from rdkit import Chem
 def is_mineral_nutrient(smiles: str):
     """
     Determines if a compound is a mineral nutrient based on its SMILES string.
-    Extends the range of essential inorganic nutrients with a broader set of elements.
     
     Args:
         smiles (str): SMILES string of the compound
@@ -21,24 +20,25 @@ def is_mineral_nutrient(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define broader range of essential metallic elements typically found in nutrients
+    # Essential metallic elements typically found in nutrients
     essential_metallic_elements = {'Ca', 'Mg', 'K', 'Na', 'Fe', 'Zn', 'Ba', 'La', 'Cs', 'Al', 'Sb', 'Pd'}
-    # Define essential non-metallic elements associated with nutrients
-    nutrient_anions = {'P', 'S', 'Cl', 'F', 'O', 'N'}  # Common in simple inorganic salts
-
-    # Check for presence of at least one essential metallic element
+    # Narrower essential non-metallic elements associated with mineral nutrients
+    nutrient_anions = {'Cl', 'F', 'S', 'P', 'O', 'N'}
+    # Avoid organic-like structures (extensive carbon chains, typically)
+    
+    # Check for the presence of at least one essential metallic element
     metal_found = any(atom.GetSymbol() in essential_metallic_elements for atom in mol.GetAtoms())
     if not metal_found:
         return False, "No essential metallic elements found"
 
-    # Check for presence of common inorganic anions (e.g., sulfates, phosphates, chlorides) in simpler structures
+    # Ensure relevant inorganic anions for nutrient character are present
     anion_found = any(atom.GetSymbol() in nutrient_anions for atom in mol.GetAtoms())
     if not anion_found:
         return False, "No relevant mineral nutrient anions found"
 
-    # Allow more complex structures since some valid nutrients might include them
-    # for magnesium distearate or other larger salts/hydrates
-    if mol.GetNumAtoms() > 50:
-        return False, "Structure unnecessarily complex to be a typical nutrient"
+    # Check for presence of substantial carbon leads (5+ carbon atoms without matching known essential group elements)
+    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'C')
+    if carbon_count > 4:
+        return False, f"Contains {carbon_count} carbon atoms suggesting an organic molecule, typically not a nutrient mineral"
 
     return True, "Structure consistent with mineral nutrients containing essential elements and simple inorganic anions"
