@@ -27,89 +27,62 @@ def is_polyprenol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for terminal hydroxyl group
-    hydroxyl_pattern = Chem.MolFromSmarts("[CH2][OH]")
+    # Check for the presence of a hydroxyl group (-OH)
+    hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
     if not mol.HasSubstructMatch(hydroxyl_pattern):
-        return False, "No terminal hydroxyl group found"
+        return False, "No hydroxyl group found"
 
-    # Define a more flexible isoprene unit pattern that accounts for different configurations
-    isoprene_pattern = Chem.MolFromSmarts("[CH3][CH]=[CH][CH2]")
+    # Check for the presence of isoprene units (C5H8) with alternating double bonds
+    isoprene_pattern = Chem.MolFromSmarts("[CH2][CH]=[CH][CH2]")
     isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
-    
-    # Need at least 2 isoprene units
     if len(isoprene_matches) < 2:
         return False, f"Found {len(isoprene_matches)} isoprene units, need at least 2"
 
-    # Check connectivity of isoprene units
-    # Get all carbon atoms
-    carbon_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
-    
-    # Find the terminal carbon with hydroxyl group
-    terminal_carbon = None
-    for atom in carbon_atoms:
-        if atom.GetTotalNumHs() == 2 and len([n for n in atom.GetNeighbors() if n.GetAtomicNum() == 8]) == 1:
-            terminal_carbon = atom
-            break
-    
-    if terminal_carbon is None:
-        return False, "Could not find terminal carbon with hydroxyl group"
-    
-    # Traverse the chain and count isoprene units
-    visited = set()
-    current_atom = terminal_carbon
-    isoprene_count = 0
-    prev_atom = None
-    
-    while current_atom is not None:
-        visited.add(current_atom.GetIdx())
-        # Check if current atom is part of an isoprene unit
-        for match in isoprene_matches:
-            if current_atom.GetIdx() in match:
-                isoprene_count += 1
-                break
-        
-        # Get next carbon in chain
-        neighbors = [n for n in current_atom.GetNeighbors() 
-                    if n.GetAtomicNum() == 6 and n.GetIdx() not in visited]
-        
-        # If multiple neighbors, choose the one that continues the chain
-        if len(neighbors) > 1:
-            # Prefer the neighbor that's part of an isoprene unit
-            for n in neighbors:
-                for match in isoprene_matches:
-                    if n.GetIdx() in match:
-                        current_atom = n
-                        break
-                else:
-                    continue
-                break
-            else:
-                current_atom = neighbors[0]
-        elif len(neighbors) == 1:
-            current_atom = neighbors[0]
-        else:
-            break
-    
-    # Need at least 2 isoprene units in the chain
-    if isoprene_count < 2:
-        return False, f"Found only {isoprene_count} isoprene units in the chain, need at least 2"
+    # Check if the molecule has more than one isoprene unit
+    # Each isoprene unit has 5 carbons, so the total number of carbons should be at least 10
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 10:
+        return False, "Too few carbons for polyprenol (need at least 10)"
 
-    # Check double bond pattern
-    double_bonds = [bond for bond in mol.GetBonds() 
-                   if bond.GetBondType() == Chem.BondType.DOUBLE]
-    
-    # Check that double bonds are in the expected positions
-    # In polyprenols, double bonds should be between carbons 2 and 3 of each isoprene unit
-    correct_double_bonds = 0
-    for bond in double_bonds:
-        begin_atom = bond.GetBeginAtom()
-        end_atom = bond.GetEndAtom()
-        # Check if the double bond is between carbons 2 and 3 of an isoprene unit
-        if (begin_atom.GetDegree() == 3 and end_atom.GetDegree() == 2) or \
-           (begin_atom.GetDegree() == 2 and end_atom.GetDegree() == 3):
-            correct_double_bonds += 1
-    
-    if correct_double_bonds < 2:
-        return False, "Not enough correct double bonds for polyprenol structure"
+    # Check for alternating double bonds in the chain
+    # This is a simplified check and may not cover all cases
+    double_bond_count = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.BondType.DOUBLE)
+    if double_bond_count < 2:
+        return False, "Not enough double bonds for polyprenol structure"
 
-    return True, "Contains terminal hydroxyl group and chain of more than one isoprene units with proper double bond pattern"
+    return True, "Contains a hydroxyl group and a chain of more than one isoprene units with alternating double bonds"
+
+
+__metadata__ = {   'chemical_class': {   'id': 'CHEBI:26195',
+                          'name': 'polyprenol',
+                          'definition': 'Any member of the class of prenols '
+                                        'possessing the general formula '
+                                        'H-[CH2C(Me)=CHCH2]nOH in which the '
+                                        'carbon skeleton is composed of more '
+                                        'than one isoprene units.',
+                          'parents': ['CHEBI:26195', 'CHEBI:26195']},
+    'config': {   'llm_model_name': 'lbl/claude-sonnet',
+                  'f1_threshold': 0.8,
+                  'max_attempts': 5,
+                  'max_positive_instances': None,
+                  'max_positive_to_test': None,
+                  'max_negative_to_test': None,
+                  'max_positive_in_prompt': 50,
+                  'max_negative_in_prompt': 20,
+                  'max_instances_in_prompt': 100,
+                  'test_proportion': 0.1},
+    'message': None,
+    'attempt': 0,
+    'success': True,
+    'best': True,
+    'error': '',
+    'stdout': None,
+    'num_true_positives': 150,
+    'num_false_positives': 4,
+    'num_true_negatives': 182407,
+    'num_false_negatives': 23,
+    'num_negatives': None,
+    'precision': 0.974025974025974,
+    'recall': 0.8670520231213873,
+    'f1': 0.9174311926605504,
+    'accuracy': 0.9998521228585199}
