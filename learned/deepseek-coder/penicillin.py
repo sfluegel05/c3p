@@ -29,29 +29,25 @@ def is_penicillin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Remove salts and hydrates
-    mol = Chem.RemoveHs(mol)
-    mol = Chem.RemoveStereochemistry(mol)
-
-    # Define the penicillin core structure pattern (less strict stereochemistry)
-    penicillin_core = Chem.MolFromSmarts("[C]1[C]2N(C1=O)[C](C(S2)(C)C)C(=O)O")
+    # Define the penicillin core structure pattern
+    penicillin_core = Chem.MolFromSmarts("[C]1([C@@H]2N([C@@H]1=O)[C@@H](C(S2)(C)C)C(=O)O)C")
     if not mol.HasSubstructMatch(penicillin_core):
         return False, "No penicillin core structure found"
 
     # Check for two methyl groups at position 2
-    methyl_pattern = Chem.MolFromSmarts("[C]1[C]2N(C1=O)[C](C(S2)(C)C)C(=O)O")
+    methyl_pattern = Chem.MolFromSmarts("[C]1([C@@H]2N([C@@H]1=O)[C@@H](C(S2)(C)C)C(=O)O)C")
     methyl_matches = mol.GetSubstructMatches(methyl_pattern)
     if len(methyl_matches) == 0:
         return False, "No methyl groups found at position 2"
 
     # Check for carboxylate group at position 3
-    carboxylate_pattern = Chem.MolFromSmarts("[C]1[C]2N(C1=O)[C](C(S2)(C)C)C(=O)O")
+    carboxylate_pattern = Chem.MolFromSmarts("[C]1([C@@H]2N([C@@H]1=O)[C@@H](C(S2)(C)C)C(=O)O)C")
     carboxylate_matches = mol.GetSubstructMatches(carboxylate_pattern)
     if len(carboxylate_matches) == 0:
         return False, "No carboxylate group found at position 3"
 
     # Check for carboxamido group at position 6
-    carboxamido_pattern = Chem.MolFromSmarts("[C]1[C]2N(C1=O)[C](C(S2)(C)C)C(=O)N")
+    carboxamido_pattern = Chem.MolFromSmarts("[C]1([C@@H]2N([C@@H]1=O)[C@@H](C(S2)(C)C)C(=O)N)C")
     carboxamido_matches = mol.GetSubstructMatches(carboxamido_pattern)
     if len(carboxamido_matches) == 0:
         return False, "No carboxamido group found at position 6"
