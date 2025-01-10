@@ -16,36 +16,37 @@ def is_amino_sugar(smiles: str):
         bool: True if molecule is an amino sugar, False otherwise
         str: Reason for classification
     """
-
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
     # Define SMARTS for amino group which should replace a hydroxyl group
-    amino_group_pattern = Chem.MolFromSmarts("[NX3;H2,H1;!$(NC=O)]")  # Primary or secondary amine not in amides
+    amino_group_pattern = Chem.MolFromSmarts("[NX3;H2,H1,H0]")  # Any amine (primary, secondary, tertiary)
 
     # Check we have an amino group
     if not mol.HasSubstructMatch(amino_group_pattern):
         return False, "No amino groups found"
 
-    # Basic pattern for a monosaccharide ring (e.g., hexopyranose)
-    sugar_ring_pattern = Chem.MolFromSmarts("C1(OC)[C@H](O)[C@@H](O)[C@H](O)[C@H](O)C[O]1")
-
+    # Basic pattern for a sugar-like structure, matches pyranose/furanose rings commonly
+    pyranose_pattern = Chem.MolFromSmarts("C1OC([C@H](O)[C@@H](O)[C@H](O))C(O)C1")
+    furanose_pattern = Chem.MolFromSmarts("C1OC([C@H](O)[C@@H](O)[C@@H](O)C1)O")
+    
     # Check for sugar-like structure
-    if not mol.HasSubstructMatch(sugar_ring_pattern):
+    has_sugar_ring = mol.HasSubstructMatch(pyranose_pattern) or mol.HasSubstructMatch(furanose_pattern)
+    if not has_sugar_ring:
         return False, "No sugar-like structure found"
 
-    # Analyze if the amino group replaces an OH: We can check this by ensuring no free hydroxyl on same carbon
+    # Check replacements of the hydroxyl groups by amine groups
     for atom in mol.GetAtoms():
         if atom.GetSymbol() == 'N':
-            # Inspect bonded atoms to check if one of the oxygens (replaced hydroxyl) is missing
-            neighbors = [a.GetSymbol() for a in atom.GetNeighbors()]
-            if 'C' in neighbors:
-                carbon = next(a for a in atom.GetNeighbors() if a.GetSymbol() == 'C')
-                _oh_neighbors = [a.GetSymbol() for a in carbon.GetNeighbors()]
-                if 'O' in _oh_neighbors:
-                    continue  # Still has oxygen, so not replacing the hydroxyl group
-                return True, "Contains sugar backbone with one or more amino groups replacing hydroxy groups"
+            # Inspect bonded atoms to check if it's possible to replace OH
+            nitrogen_neighbors = [a.GetAtomicNum() for a in atom.GetNeighbors()]
+            if 6 in nitrogen_neighbors:  # Checking for carbon around the nitrogen
+                neighboring_carbon = next(a for a in atom.GetNeighbors() if a.GetSymbol() == 'C')
+                # If a carbon atom's hydroxyl is replaced by amine so check removal of oxygen which should be adjacent
+                carbon_oxygen_bond = [a.GetAtomicNum() for a in neighboring_carbon.GetNeighbors()]
+                if 8 not in carbon_oxygen_bond:
+                    return True, "Contains a sugar backbone with amino groups substituting hydroxyl groups."
 
-    return False, "No correct hydroxyl replacement was found by an amino group"
+    return False, "No correct hydroxyl replacement was found by an amino group."
