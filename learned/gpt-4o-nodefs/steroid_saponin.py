@@ -2,7 +2,7 @@
 Classifies: CHEBI:61655 steroid saponin
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import AllChem
 
 def is_steroid_saponin(smiles: str):
     """
@@ -21,33 +21,33 @@ def is_steroid_saponin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Modified steroid backbone pattern; more versatile to account for known variations
+    # Better patterns for the steroid backbone
     steroid_patterns = [
-        Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2CC4=CC(=O)CC=C4C3"),
-        Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2C=C4C=CC(=O)CC4C3"),  # Provide different steroid skeletons
-        # Add more versatile steroid patterns if necessary
+        Chem.MolFromSmarts("C1CCC2C(C1)CCC3C(C2)CCC4)(C=C3)CCC4"),  # Cholestane skeleton
+        Chem.MolFromSmarts("C1CCC2C(C1)C3CCC4(C2)C=CC(=O)CC4O"),    # Spirostane skeleton
+        Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2CCC4CCC3OC4"),
+        # More spirostane variations can be added
     ]
     if not any(mol.HasSubstructMatch(p) for p in steroid_patterns):
-        return False, "No steroid backbone found"
+        return False, "No suitable steroid backbone found"
         
-    # Enhanced glycosidic linkage pattern allowing for variable sugar attachments
-    # This pattern takes into account the complexity and variability of glycosidic linkages
-    glycosidic_linkage = Chem.MolFromSmarts("[C,O]-[O]-[C]")
+    # Enhanced pattern for glycosidic linkage
+    glycosidic_linkage = Chem.MolFromSmarts("[O]-[C]([O,CO])[O]")
     if not mol.HasSubstructMatch(glycosidic_linkage):
         return False, "No glycosidic linkage found"
         
-    # Improved pattern for sugar moieties; aims to capture general sugar-like structures
+    # Improved patterns for sugar moieties with variability in the structures
     sugar_patterns = [
-        Chem.MolFromSmarts("C(O)C(O)C(O)C"),  # Simple pattern for sugars
-        Chem.MolFromSmarts("C(C(CO)O)O"),      # Patterns for common sugar variants
-        # Additional sugar patterns could be defined here
+        Chem.MolFromSmarts("C(O[C,N])[C@H](O)[C@H](O)[C@H](O)"),  # Common sugar linkages
+        Chem.MolFromSmarts("O[C@H]1[C@@H](O)[C@H](O[C@@H]2O)[C@@H](O)[C@H](O)[C@@H]1O"),  # Cyclic sugars
+        # Consider adding patterns for various substituents like acetyl groups if needed
     ]
     if not any(mol.HasSubstructMatch(p) for p in sugar_patterns):
         return False, "No sugar moiety found"
 
-    # Additional checks for molecular weight and ring system
-    mol_weight = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_weight < 400:  # Steroid saponins typically have higher molecular weights
-        return False, "Molecular weight too low for steroid saponin"
+    # Additional checks: the presence of multiple sugar moieties connected to the steroid core
+    # counting the number of times glycosidic linkage appears might indicate multiple sugars
+    if mol.GetSubstructMatches(glycosidic_linkage) < 2:
+        return False, "Insufficient glycosidic linkages for steroid saponin (usually has more than one sugar)"
 
-    return True, "Contains steroid backbone with glycosidic linkage to sugar moieties"
+    return True, "Contains a suitable steroid backbone linked with sugar moieties via glycosidic bonds"
