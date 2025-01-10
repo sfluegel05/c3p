@@ -7,8 +7,8 @@ from rdkit.Chem import AllChem
 def is_lipopolysaccharide(smiles: str):
     """
     Determines if a molecule is a lipopolysaccharide based on its SMILES string.
-    Lipopolysaccharides consist of a trisaccharide repeating unit with oligosaccharide side chains 
-    and 3-hydroxytetradecanoic acid units.
+    Lipopolysaccharides are complex molecules including oligosaccharides, fatty acids, and are a major
+    component of Gram-negative bacteria cell walls.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,23 +23,34 @@ def is_lipopolysaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for sugar patterns (repeating saccharide units)
-    sugar_pattern = Chem.MolFromSmarts("C1C(O)C(O)C(O)C(O)C1")  # Basic pattern for sugars
-    if not mol.HasSubstructMatch(sugar_pattern):
+    # Look for more general sugar patterns including various linkages (five or six-membered rings)
+    sugar_patterns = [
+        Chem.MolFromSmarts("C1(O)C(O)C(O)C(O)C(O)C1"),  # Basic glucose
+        Chem.MolFromSmarts("O1COC(O)C1"),  # Furanose
+        Chem.MolFromSmarts("O1C(COC(O)C1)O"),  # Pyranose
+    ]
+    sugar_matches = any(mol.HasSubstructMatch(pattern) for pattern in sugar_patterns)
+    if not sugar_matches:
         return False, "No sugar patterns detected"
 
-    # Look for fatty acid-like chain (specifically long chains like 3-hydroxytetradecanoic)
-    fatty_acid_pattern = Chem.MolFromSmarts("CCCCCCCCCCCCCC(O)C(=O)O")  # heuristic pattern for tetradecanoic acid
-    if not mol.HasSubstructMatch(fatty_acid_pattern):
-        return False, "No long-chain fatty acid detected (e.g., 3-hydroxytetradecanoic acid)"
+    # Look for long-chain fatty acid patterns (explore different chain lengths and hydroxylation)
+    fatty_acid_patterns = [
+        Chem.MolFromSmarts("CCCCCCCCCCCCCC(=O)O"),  # simple long acid
+        Chem.MolFromSmarts("CCCCCCCCCCCCC(O)C(=O)O"),  # hydroxylated fatty acid
+        Chem.MolFromSmarts("CCC(O)CCCCCCCCCC=O"),  # alternative hydroxyl group
+    ]
+    fatty_acid_matches = any(mol.HasSubstructMatch(pattern) for pattern in fatty_acid_patterns)
+    if not fatty_acid_matches:
+        return False, "No long-chain fatty acid detected, e.g., hydroxylated fatty acids"
 
-    # Check for multiple repeating units and branching typical of polysaccharides
-    num_sugar_units = len(mol.GetSubstructMatches(sugar_pattern))
+    # Check for evidence of polysaccharide structure, ensuring branching or repeating nature
+    num_sugar_units = sum(len(mol.GetSubstructMatches(pattern)) for pattern in sugar_patterns)
     if num_sugar_units < 3:
         return False, f"Insufficient sugar units for a lipopolysaccharide, found {num_sugar_units}"
 
-    # As a simple implementation, further specificity checks like ensuring oligosaccharides or validating exact 
-    # trisaccharide nature is beyond scope given complexity without detailed SMARTS for each feature
-    # But assuming sugar and fatty acid presence is a fair first approximation for lipopolysaccharides
+    # Look for ester linkages typical of lipopolysaccharide lipid A groups
+    ester_pattern = Chem.MolFromSmarts("C(=O)OC")
+    if not mol.HasSubstructMatch(ester_pattern):
+        return False, "Missing ester linkages typical for lipid structures"
 
     return True, "Structure consistent with lipopolysaccharide characteristics"
