@@ -50,20 +50,29 @@ def is_phosphatidylethanolamine(smiles: str):
     if not phosphate_attached:
         return False, "Phosphate group not attached to glycerol backbone"
 
-    # Look for ethanolamine group attached to phosphate
-    ethanolamine_pattern = Chem.MolFromSmarts("[NX3][CH2X4][OX2]")
+    # Look for ethanolamine group (more flexible pattern)
+    # Pattern matches both neutral and protonated forms, with optional oxygen bridge
+    ethanolamine_pattern = Chem.MolFromSmarts("[NX3,nX3+][CH2X4][OX2,oX1-]")
     ethanolamine_matches = mol.GetSubstructMatches(ethanolamine_pattern)
     if len(ethanolamine_matches) == 0:
         return False, "No ethanolamine group found"
 
-    # Check if ethanolamine is attached to phosphate
+    # Check if ethanolamine is attached to phosphate (directly or through oxygen)
     ethanolamine_attached = False
     for match in ethanolamine_matches:
         ethanolamine_atom = mol.GetAtomWithIdx(match[0])
+        # Check direct P-N bond or P-O-C-N connection
         for neighbor in ethanolamine_atom.GetNeighbors():
             if neighbor.GetSymbol() == 'P':
                 ethanolamine_attached = True
                 break
+            elif neighbor.GetSymbol() == 'O':
+                for o_neighbor in neighbor.GetNeighbors():
+                    if o_neighbor.GetSymbol() == 'P':
+                        ethanolamine_attached = True
+                        break
+                if ethanolamine_attached:
+                    break
         if ethanolamine_attached:
             break
     if not ethanolamine_attached:
