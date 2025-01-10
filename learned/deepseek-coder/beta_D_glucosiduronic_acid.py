@@ -8,7 +8,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_beta_D_glucosiduronic_acid(smiles: str):
     """
     Determines if a molecule is a beta-D-glucosiduronic acid based on its SMILES string.
-    A beta-D-glucosiduronic acid has a beta-D-glucuronic acid moiety connected via a glycosidic bond.
+    A beta-D-glucosiduronic acid has a beta-D-glucuronic acid moiety connected via a beta-glycosidic bond.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,32 +23,32 @@ def is_beta_D_glucosiduronic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define glucuronic acid pattern (beta-D-glucuronic acid with open glycosidic bond)
+    # Define more specific glucuronic acid pattern with stereochemistry
     glucuronic_acid_pattern = Chem.MolFromSmarts("[C@H]1([C@@H]([C@H]([C@@H]([C@H](O1)C(=O)O)O)O)O)[OX2]")
     if not mol.HasSubstructMatch(glucuronic_acid_pattern):
         return False, "No beta-D-glucuronic acid moiety found"
 
-    # Verify the glycosidic bond is beta (C1-O-C')
-    glycosidic_bond = None
-    for bond in mol.GetBonds():
-        if bond.GetBondType() == Chem.BondType.SINGLE:
-            begin_atom = bond.GetBeginAtom()
-            end_atom = bond.GetEndAtom()
-            if (begin_atom.GetAtomicNum() == 8 and end_atom.GetAtomicNum() == 6 and
-                begin_atom.GetDegree() == 2 and end_atom.GetDegree() >= 2):
-                glycosidic_bond = bond
-                break
-
-    if glycosidic_bond is None:
-        return False, "No glycosidic bond found"
-
-    # Check if the glycosidic bond is beta (C1-O-C')
-    glucuronic_acid_matches = mol.GetSubstructMatches(glucuronic_acid_pattern)
-    for match in glucuronic_acid_matches:
+    # Find all matches of the glucuronic acid pattern
+    matches = mol.GetSubstructMatches(glucuronic_acid_pattern)
+    
+    for match in matches:
+        # Get the anomeric carbon (C1) and glycosidic oxygen
         anomeric_carbon = match[0]
-        oxygen = match[5]
-        if (mol.GetBondBetweenAtoms(anomeric_carbon, oxygen) == glycosidic_bond and
-            mol.GetAtomWithIdx(anomeric_carbon).GetChiralTag() == Chem.ChiralType.CHI_TETRAHEDRAL_CCW):
-            return True, "Contains beta-D-glucuronic acid moiety connected via glycosidic bond"
+        glycosidic_oxygen = match[5]
+        
+        # Get the bond between C1 and glycosidic oxygen
+        bond = mol.GetBondBetweenAtoms(anomeric_carbon, glycosidic_oxygen)
+        if bond is None:
+            continue
+            
+        # Verify the beta configuration (C1-O bond is equatorial)
+        # In RDKit, CHI_TETRAHEDRAL_CCW corresponds to beta configuration
+        if (mol.GetAtomWithIdx(anomeric_carbon).GetChiralTag() == Chem.ChiralType.CHI_TETRAHEDRAL_CCW and
+            bond.GetBondType() == Chem.BondType.SINGLE):
+            
+            # Verify the glycosidic oxygen is connected to another carbon
+            glycosidic_oxygen_atom = mol.GetAtomWithIdx(glycosidic_oxygen)
+            if any(neighbor.GetAtomicNum() == 6 for neighbor in glycosidic_oxygen_atom.GetNeighbors()):
+                return True, "Contains beta-D-glucuronic acid moiety connected via beta-glycosidic bond"
 
-    return False, "No beta-glycosidic bond found"
+    return False, "No beta-glycosidic bond found between glucuronic acid and another molecule"
