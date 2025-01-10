@@ -60,7 +60,10 @@ def is_spiroketal(smiles: str):
         if len(common_atoms) == 1 and ketal_carbon_idx in common_atoms:
             # Ensure that the ketal carbon is part of both rings
             if ketal_carbon_idx in ring1 and ketal_carbon_idx in ring2:
-                return True, "Contains a spiroketal structure with a ketal carbon as the only common atom between two rings"
+                # Additional check to ensure the rings are not fused in a way that violates the spiroketal definition
+                # For example, the rings should not share more than one atom
+                if len(common_atoms) == 1:
+                    return True, "Contains a spiroketal structure with a ketal carbon as the only common atom between two rings"
     
     return False, "No spiroketal structure found with a ketal carbon as the only common atom between two rings"
 
