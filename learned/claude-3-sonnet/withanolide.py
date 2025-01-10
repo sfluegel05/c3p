@@ -19,7 +19,7 @@ def is_withanolide(smiles: str):
 
     Returns:
         bool: True if molecule is a withanolide, False otherwise
-        str: Reason for classification
+        str: str: Reason for classification
     """
     
     # Parse SMILES
@@ -27,41 +27,54 @@ def is_withanolide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Count carbons - withanolides should have 28 carbons
+    # Count carbons - withanolides typically have around 28 carbons
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if not (26 <= c_count <= 30):  # Allow some flexibility for derivatives
-        return False, f"Carbon count {c_count} not consistent with withanolide structure (expected ~28)"
+    if not (24 <= c_count <= 35):  # Wider range to accommodate derivatives
+        return False, f"Carbon count {c_count} not typical for withanolide structure"
 
-    # Check for steroid core (four fused rings)
-    steroid_core = Chem.MolFromSmarts("[C]1[C][C]2[C][C][C]3[C][C][C]4[C][C][C][C]4[C]3[C]2[C]1")
+    # More flexible steroid core pattern that accounts for variations
+    steroid_core = Chem.MolFromSmarts("[#6]1~[#6]~[#6]2~[#6]~[#6]~[#6]3~[#6]~[#6]~[#6]4~[#6]~[#6]~[#6]~[#6]4~[#6]3~[#6]2~[#6]1")
     if not mol.HasSubstructMatch(steroid_core):
         return False, "No steroid core structure found"
 
-    # Check for lactone ring (usually δ-lactone)
-    lactone_pattern = Chem.MolFromSmarts("O=C1OCC[C]1")  # Basic lactone pattern
-    if not mol.HasSubstructMatch(lactone_pattern):
-        return False, "No lactone ring found"
+    # Check for characteristic δ-lactone ring in side chain
+    # This pattern looks for the specific lactone arrangement found in withanolides
+    lactone_patterns = [
+        Chem.MolFromSmarts("O=C1OC[C@@H]([C@H]1C)C"), # Common withanolide lactone
+        Chem.MolFromSmarts("O=C1OC[CH][CH]1"), # Simpler lactone pattern
+        Chem.MolFromSmarts("O=C1OC(C)=C(C)C1"), # Alternative lactone pattern
+        Chem.MolFromSmarts("O=C1OC(C)(C)C=C1") # Another variation
+    ]
+    
+    lactone_found = False
+    for pattern in lactone_patterns:
+        if pattern is not None and mol.HasSubstructMatch(pattern):
+            lactone_found = True
+            break
+    
+    if not lactone_found:
+        return False, "No characteristic withanolide lactone ring found"
 
-    # Check for typical oxygen count (usually 4-7 oxygens including lactone)
+    # Check for oxygen count (including lactone oxygens)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if not (3 <= o_count <= 12):  # Allow range for various derivatives
+    if not (2 <= o_count <= 15):  # Wider range to accommodate derivatives and glycosides
         return False, f"Oxygen count {o_count} not typical for withanolides"
 
     # Check for reasonable molecular weight range
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if not (400 <= mol_wt <= 800):  # Typical range for withanolides
+    if not (350 <= mol_wt <= 900):  # Wider range to accommodate derivatives
         return False, f"Molecular weight {mol_wt} outside typical range for withanolides"
 
-    # Check for ring count (should have at least 5 rings - 4 from steroid core + lactone)
+    # Check for ring count
     ring_count = rdMolDescriptors.CalcNumRings(mol)
     if ring_count < 5:
         return False, f"Ring count {ring_count} too low for withanolide structure"
 
-    # Check for specific withanolide substructure pattern
-    # This pattern looks for the characteristic steroid core with lactone side chain
-    withanolide_pattern = Chem.MolFromSmarts("[#6]1~[#6]~[#6]2~[#6]~[#6]~[#6]3~[#6]~[#6]~[#6]4~[#6]~[#6]~[#6]~[#6]4~[#6]3~[#6]2~[#6]1")
-    if not mol.HasSubstructMatch(withanolide_pattern):
-        return False, "Does not match characteristic withanolide structure"
+    # Additional structural features common in withanolides
+    # Look for characteristic oxygen substitutions
+    hydroxy_pattern = Chem.MolFromSmarts("[#6]~[OX2H1]")
+    if not mol.HasSubstructMatch(hydroxy_pattern):
+        return False, "Missing typical oxygen substitutions"
 
     # If all checks pass, it's likely a withanolide
-    return True, "Matches withanolide structure with steroid core and lactone ring"
+    return True, "Matches withanolide structure with steroid core, lactone ring, and characteristic substitution pattern"
