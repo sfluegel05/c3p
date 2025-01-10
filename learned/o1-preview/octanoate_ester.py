@@ -24,47 +24,75 @@ def is_octanoate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define ester functional group pattern
+    # Define ester functional group pattern (non-cyclic ester)
     ester_pattern = Chem.MolFromSmarts('[$(C(=O)[O;!R])]')  # Non-cyclic ester group
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if not ester_matches:
         return False, "No ester groups found"
 
-    # Traverse acyl chain for each ester to find if any is octanoate
+    # For each ester group, check if the acyl chain is unbranched and 8 carbons long
     for match in ester_matches:
         carbonyl_c_idx = match[0]  # Index of carbonyl carbon atom
-        visited_atoms = set()
-        acyl_chain_length = count_acyl_chain_carbons(mol, carbonyl_c_idx, visited_atoms)
 
+        acyl_chain_length = count_acyl_chain_length(mol, carbonyl_c_idx)
         if acyl_chain_length == 8:
-            return True, "Contains octanoate ester group with 8-carbon acyl chain"
-    return False, "No octanoate ester groups with 8-carbon acyl chain found"
+            return True, "Contains octanoate ester group with 8-carbon unbranched acyl chain"
 
-def count_acyl_chain_carbons(mol, atom_idx, visited_atoms):
+    return False, "No octanoate ester groups with unbranched 8-carbon acyl chain found"
+
+def count_acyl_chain_length(mol, carbonyl_atom_idx):
     """
-    Recursively counts the number of carbons in the acyl chain starting from the carbonyl carbon.
+    Counts the number of carbons in the acyl chain starting from the carbonyl carbon,
+    proceeding along a linear, unbranched path.
 
     Args:
         mol (Chem.Mol): RDKit molecule object
-        atom_idx (int): Index of the current atom
-        visited_atoms (set): Set of visited atom indices to avoid cycles
+        carbonyl_atom_idx (int): Index of the carbonyl carbon atom
 
     Returns:
-        int: Total number of carbons in the acyl chain
+        int: Total number of carbons in the acyl chain, or None if not linear or acyclic
     """
-    atom = mol.GetAtomWithIdx(atom_idx)
-    visited_atoms.add(atom_idx)
-    carbon_count = 0
+    length = 1  # Start with the carbonyl carbon
+    prev_atom_idx = carbonyl_atom_idx
+    current_atom_idx = None
 
-    if atom.GetAtomicNum() == 6:  # Carbon atom
-        carbon_count += 1
-        for neighbor in atom.GetNeighbors():
-            neighbor_idx = neighbor.GetIdx()
-            if neighbor_idx not in visited_atoms:
-                # Skip oxygens to stay on the acyl chain side
-                if neighbor.GetAtomicNum() != 8:
-                    carbon_count += count_acyl_chain_carbons(mol, neighbor_idx, visited_atoms)
-    return carbon_count
+    carbonyl_atom = mol.GetAtomWithIdx(carbonyl_atom_idx)
+
+    # Find the alpha carbon (carbon attached to carbonyl carbon)
+    for neighbor in carbonyl_atom.GetNeighbors():
+        if neighbor.GetAtomicNum() == 6:  # Carbon atom
+            current_atom_idx = neighbor.GetIdx()
+            current_atom = neighbor
+            break
+    else:
+        # No carbon neighbor found
+        return None
+
+    visited_atoms = set()
+    visited_atoms.add(prev_atom_idx)
+    visited_atoms.add(current_atom_idx)
+
+    while True:
+        length += 1
+        neighbor_atoms = [nbr for nbr in current_atom.GetNeighbors() if nbr.GetAtomicNum() == 6 and nbr.GetIdx() != prev_atom_idx]
+
+        if len(neighbor_atoms) == 0:
+            # Reached end of chain (terminal carbon)
+            break
+        elif len(neighbor_atoms) > 1:
+            # Branching detected
+            return None  # Not a linear unbranched chain
+        else:
+            # Proceed to next carbon
+            prev_atom_idx = current_atom_idx
+            current_atom_idx = neighbor_atoms[0].GetIdx()
+            if current_atom_idx in visited_atoms:
+                # Cycle detected
+                return None
+            visited_atoms.add(current_atom_idx)
+            current_atom = neighbor_atoms[0]
+
+    return length
 
 __metadata__ = {
     'chemical_class': {
