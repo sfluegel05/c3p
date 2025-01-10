@@ -21,21 +21,21 @@ def is_non_proteinogenic_amino_acid(smiles: str):
     if mol is None:
         return None, "Invalid SMILES string"
 
-    # General pattern for amino acids with flexibility for different chain lengths
-    amino_acid_pattern = Chem.MolFromSmarts("N[C@]?H([C,R0,N0])C(=O)O")
+    # Check for the basic amino acid backbone structure with flexibility for non-standard additions
+    amino_acid_pattern = Chem.MolFromSmarts("N[C@@H](C)C(=O)O")
     if not mol.HasSubstructMatch(amino_acid_pattern):
-        return False, "Lacks recognizable amino acid backbone"
+        return False, "Lacks basic amino acid backbone"
 
-    # Expand uncommon patterns to cover broader set
+    # Uncommon patterns for non-proteinogenic features
     uncommon_patterns = {
         "halogenated_side_chain": Chem.MolFromSmarts("[CX4][F,Cl,Br,I]"),
         "nitrile_group": Chem.MolFromSmarts("[CX2]#N"),
         "selenium": Chem.MolFromSmarts("[Se]"),
         "amide_or_imide": Chem.MolFromSmarts("[CX3](=O)[NX3]"),
-        "keto_acid": Chem.MolFromSmarts("OC(=O)[CX3](=O)"),
-        "proline_like_ring": Chem.MolFromSmarts("C1[NH,C@H](C1)[CX3](=O)O"),
-        "beta_hydroxy_acid": Chem.MolFromSmarts("O[C@H](C)[CX3](=O)[OX2H]"),
-        "nitro_group": Chem.MolFromSmarts("[NX3](=O)=O"),
+        "keto_acid": Chem.MolFromSmarts("C(=O)C(=O)"),
+        "proline_like_ring": Chem.MolFromSmarts("C1N[C@H](C1)C(=O)O"),
+        "beta_hydroxy_acid": Chem.MolFromSmarts("O[C@H](C)C(=O)[OX2H]"),
+        "nitro_group": Chem.MolFromSmarts("[CX3]=[N+][O-]"),
         "thioether_linkage": Chem.MolFromSmarts("[SX2]C[SX2]")
     }
 
@@ -44,7 +44,7 @@ def is_non_proteinogenic_amino_acid(smiles: str):
         if mol.HasSubstructMatch(pattern):
             return True, f"Contains uncommon feature: {name}"
 
-    # Enhanced stereochemistry check
+    # Stereochemistry Check
     chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
     unusual_stereochemistry = False
     for center, stereochemistry in chiral_centers:
