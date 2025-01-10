@@ -29,16 +29,13 @@ def is_aliphatic_nitrile(smiles: str):
     if not nitrile_matches:
         return False, "No nitrile group found"
 
-    # Ensuring nitrile group is connected to an aliphatic chain
+    # A SMARTS pattern ensuring connection to non-aromatic systems
+    aliphatic_chain_pattern = Chem.MolFromSmarts("[CX4,CX3][CX2]#N")
+    
+    # Enhanced check focused on connection to non-aromatic systems directly:
     for match in nitrile_matches:
-        nitrile_carbon = mol.GetAtomWithIdx(match[0])
-
-        # Consider the carbon attached to the nitrile group
-        for neighbor in nitrile_carbon.GetNeighbors():
-            # Check if neighbor is a non-aromatic carbon
-            if neighbor.GetAtomicNum() == 6 and not neighbor.GetIsAromatic():
-                # Further check if this neighbor is part of a non-aromatic carbon chain
-                if all(not n.GetIsAromatic() and n.GetAtomicNum() == 6 for n in neighbor.GetNeighbors() if n.GetIdx() != nitrile_carbon.GetIdx()):
-                    return True, "Contains an aliphatic nitrile group"
+        for path in mol.GetSubstructMatches(aliphatic_chain_pattern):
+            if match == path[1:]:  # If nitrile is part of such a pattern
+                return True, "Contains an aliphatic nitrile group"
 
     return False, "Nitrile group is not connected to an aliphatic chain"
