@@ -49,8 +49,16 @@ def is_cucurbitacin(smiles: str):
         return False, "No carbonyl groups found"
 
     # Check for cucurbitane skeleton pattern (specific ring arrangement)
+    # This pattern captures the core structure of cucurbitane with specific connectivity
     cucurbitane_pattern = Chem.MolFromSmarts("[C]1[C][C][C]2[C]3[C][C][C]4[C]5[C][C][C]1[C]2[C]3[C]4[C]5")
     if not mol.HasSubstructMatch(cucurbitane_pattern):
         return False, "No cucurbitane skeleton found"
 
-    return True, "Contains tetracyclic triterpenoid structure with cucurbitane skeleton and key functional groups"
+    # Check for typical cucurbitacin side chains (e.g., hydroxyl, carbonyl, ester groups)
+    # This pattern captures common side chains in cucurbitacins
+    side_chain_pattern = Chem.MolFromSmarts("[C][C](=O)[C]")
+    side_chain_matches = mol.GetSubstructMatches(side_chain_pattern)
+    if len(side_chain_matches) < 1:
+        return False, "No typical cucurbitacin side chains found"
+
+    return True, "Contains tetracyclic triterpenoid structure with cucurbitane skeleton, key functional groups, and typical side chains"
