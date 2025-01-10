@@ -25,25 +25,30 @@ def is_carotenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for the presence of a long polyene chain (at least 8 conjugated double bonds)
-    # Use a more flexible pattern to account for substitutions and variations
-    polyene_pattern = Chem.MolFromSmarts("[C,c]=[C,c]-[C,c]=[C,c]-[C,c]=[C,c]-[C,c]=[C,c]-[C,c]=[C,c]-[C,c]=[C,c]")
+    # Check for the presence of a long polyene chain (at least 7 conjugated double bonds)
+    # More flexible pattern that allows for substitutions and variations
+    polyene_pattern = Chem.MolFromSmarts("[C,c]=[C,c]~[C,c]=[C,c]~[C,c]=[C,c]~[C,c]=[C,c]~[C,c]=[C,c]~[C,c]=[C,c]")
     if not mol.HasSubstructMatch(polyene_pattern):
-        return False, "No long polyene chain found (at least 8 conjugated double bonds required)"
+        return False, "No long polyene chain found (at least 7 conjugated double bonds required)"
 
-    # Check molecular weight - carotenoids typically have a molecular weight around 500-650 Da
+    # Check molecular weight - carotenoids typically have a molecular weight around 400-700 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 450 or mol_wt > 700:
-        return False, f"Molecular weight {mol_wt:.2f} Da is outside the typical range for carotenoids (450-700 Da)"
+    if mol_wt < 400 or mol_wt > 750:
+        return False, f"Molecular weight {mol_wt:.2f} Da is outside the typical range for carotenoids (400-750 Da)"
 
-    # Count carbons - carotenoids typically have around 40 carbons
+    # Count carbons - carotenoids typically have around 30-50 carbons
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if c_count < 30 or c_count > 50:
-        return False, f"Found {c_count} carbons, expected around 40 for carotenoids"
+        return False, f"Found {c_count} carbons, expected 30-50 for carotenoids"
 
-    # Check for functional groups like hydroxyl, carbonyl, etc. (optional)
-    functional_group_pattern = Chem.MolFromSmarts("[OH,OX1,C=O]")
-    if not mol.HasSubstructMatch(functional_group_pattern):
-        return False, "No functional groups found (some carotenoids have hydroxyl or carbonyl groups)"
+    # Count double bonds - carotenoids typically have many double bonds
+    double_bond_count = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.BondType.DOUBLE)
+    if double_bond_count < 7:
+        return False, f"Found only {double_bond_count} double bonds, expected at least 7 for carotenoids"
 
-    return True, "Contains a long polyene chain with conjugated double bonds, typical of carotenoids"
+    # Check for typical carotenoid end groups (optional)
+    end_group_pattern = Chem.MolFromSmarts("[C,c]~[C,c]~[C,c]([C,c])~[C,c]~[C,c]")
+    if not mol.HasSubstructMatch(end_group_pattern):
+        return False, "No typical carotenoid end groups found"
+
+    return True, "Contains a long polyene chain with conjugated double bonds and typical carotenoid characteristics"
