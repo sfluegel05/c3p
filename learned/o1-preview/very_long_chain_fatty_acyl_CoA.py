@@ -25,11 +25,11 @@ def is_very_long_chain_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the Coenzyme A (CoA) SMARTS pattern
-    # This pattern includes the adenosine diphosphate and pantetheine moiety
+    # Define a simplified Coenzyme A (CoA) SMARTS pattern
+    # Focus on key structural features of CoA without stereochemistry
     coa_smarts = """
-    O[P](=O)(O)OC[C@H]1O[C@H]([C@@H](O)[C@H]1O)N2C=NC3=C(N)N=CN=C23
-    """.replace('\n', '').strip()
+    NC(=O)CCNC(=O)C(O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C]1OC(CO[P](=O)(O)O)C(O)C1O
+    """
     coa_pattern = Chem.MolFromSmarts(coa_smarts)
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "CoA moiety not found"
@@ -73,10 +73,15 @@ def is_very_long_chain_fatty_acyl_CoA(smiles: str):
                 acyl_chain_carbon_idxs.add(atom_idx)
                 for neighbor in atom.GetNeighbors():
                     neighbor_idx = neighbor.GetIdx()
-                    neighbor_atom = mol.GetAtomWithIdx(neighbor_idx)
-                    if neighbor_atom.GetAtomicNum() == 6 and neighbor_idx not in visited_atoms:
-                        # Continue traversing carbons
+                    neighbor_atomic_num = neighbor.GetAtomicNum()
+                    bond = mol.GetBondBetweenAtoms(atom_idx, neighbor_idx)
+                    bond_type = bond.GetBondType()
+                    if neighbor_atomic_num in [6, 1] and neighbor_idx not in visited_atoms:
+                        # Continue traversing carbons and hydrogens
                         atoms_to_visit.append(neighbor_idx)
+                    elif neighbor_atomic_num not in [6, 1]:
+                        # Stop traversal at heteroatoms
+                        continue
             else:
                 # Stop traversal at heteroatoms
                 continue
@@ -107,7 +112,7 @@ __metadata__ = {
         'max_instances_in_prompt': 100,
         'test_proportion': 0.1},
     'message': None,
-    'attempt': 1,
+    'attempt': 2,
     'success': True,
     'best': True,
     'error': '',
