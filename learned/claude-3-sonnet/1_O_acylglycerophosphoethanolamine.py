@@ -28,62 +28,46 @@ def is_1_O_acylglycerophosphoethanolamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for glycerol backbone connected to correct groups
-    # [CH2X4]-[CHX4]-[CH2X4] where:
-    # - One CH2 has ester (sn-1)
-    # - CH has OH (sn-2)
-    # - Other CH2 has phosphate (sn-3)
-    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone found"
-
-    # Check for phosphoethanolamine group with primary amine
-    # -P(=O)(O)-O-CH2-CH2-NH2/NH3+
-    phosphoethanolamine = Chem.MolFromSmarts("[PX4](=O)([OH,O-])[OX2][CH2X4][CH2X4][NH2X3,NH3X4+]")
-    if not mol.HasSubstructMatch(phosphoethanolamine):
-        return False, "No phosphoethanolamine group with primary amine found"
-
-    # Exclude phosphocholine (N(CH3)3+)
-    phosphocholine = Chem.MolFromSmarts("[NX4+](C)(C)(C)")
-    if mol.HasSubstructMatch(phosphocholine):
-        return False, "Contains quaternary amine (phosphocholine) instead of primary amine"
-
-    # Check for single ester group at sn-1
-    # R-C(=O)-O-CH2- connected to glycerol
-    ester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2][CH2X4][CHX4]([OX2H1])[CH2X4]O")
-    if not mol.HasSubstructMatch(ester_pattern):
-        return False, "No ester group at sn-1 position found"
+    # Core structure pattern that matches both neutral and zwitterionic forms
+    # Includes glycerol backbone with ester at sn-1, OH at sn-2, and phosphoethanolamine at sn-3
+    core_pattern = Chem.MolFromSmarts("""
+        [C,c:1](=[O:2])[O:3][CH2:4][CH:5]([OH1,O:6])[CH2:7][O:8]P(=[O:9])([O,OH:10])[O:11][CH2:12][CH2:13][NH2,NH3+:14]
+    """)
     
-    # Count ester groups - should only be one
-    ester_matches = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[CX3](=[OX1])[OX2]")))
-    if ester_matches != 1:
-        return False, f"Found {ester_matches} ester groups, should be exactly 1"
+    if not mol.HasSubstructMatch(core_pattern):
+        return False, "Missing core glycerophosphoethanolamine structure"
 
-    # Exclude vinyl ethers (plasmalogens)
-    vinyl_ether = Chem.MolFromSmarts("[OX2][CH2X4][CHX4]([OX2H1])[CH2X4]O[CH2X3]=[CH1X3]")
-    if mol.HasSubstructMatch(vinyl_ether):
-        return False, "Contains vinyl ether (plasmalogen) instead of ester at sn-1"
-
-    # Exclude N-acylated versions
-    n_acyl = Chem.MolFromSmarts("[NX3][CX3]=[OX1]")
-    if mol.HasSubstructMatch(n_acyl):
-        return False, "Contains N-acylation"
-
-    # Verify basic composition
-    p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
-
+    # Count key features to ensure we have the right structure
+    # Count phosphorus atoms - should be exactly 1
+    p_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[#15]")))
     if p_count != 1:
         return False, f"Should have exactly 1 phosphorus, found {p_count}"
-    if o_count < 5:
-        return False, f"Should have at least 5 oxygens, found {o_count}"
+
+    # Count ester groups - should be exactly 1
+    ester_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[C,c](=O)[O][CH2,CH]")))
+    if ester_count != 1:
+        return False, f"Should have exactly 1 ester group, found {ester_count}"
+
+    # Count nitrogen atoms - should be exactly 1
+    n_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[#7]")))
     if n_count != 1:
         return False, f"Should have exactly 1 nitrogen, found {n_count}"
 
-    # Check for acyl chain length - should be at least 4 carbons
-    carbon_chain = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
-    if not mol.HasSubstructMatch(carbon_chain):
-        return False, "Acyl chain too short"
+    # Verify it's not a phosphocholine (no N(CH3)3+)
+    if mol.HasSubstructMatch(Chem.MolFromSmarts("[NX4+](C)(C)(C)")):
+        return False, "Contains quaternary amine (phosphocholine)"
+
+    # Check for minimum acyl chain length (at least 4 carbons)
+    acyl_chain = Chem.MolFromSmarts("[C,c](=O)[O][CH2][CH]([OH1,O])[CH2][O]P")
+    matches = mol.GetSubstructMatches(acyl_chain)
+    if not matches:
+        return False, "Could not verify acyl chain position"
+    
+    # Get the first carbon of the acyl group and count connected carbons
+    for match in matches:
+        acyl_c = mol.GetAtomWithIdx(match[0])
+        chain_length = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+        if chain_length < 7:  # Minimum total carbons needed (3 glycerol + 4 acyl chain)
+            return False, "Acyl chain too short"
 
     return True, "Contains glycerol backbone with phosphoethanolamine group and single acyl substituent at sn-1"
