@@ -2,12 +2,11 @@
 Classifies: CHEBI:39418 straight-chain saturated fatty acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdchem
 
 def is_straight_chain_saturated_fatty_acid(smiles: str):
     """
     Determines if a molecule is a straight-chain saturated fatty acid based on its SMILES string.
-    
+
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -15,7 +14,6 @@ def is_straight_chain_saturated_fatty_acid(smiles: str):
         bool: True if molecule is a straight-chain saturated fatty acid, False otherwise
         str: Reason for classification
     """
-    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
@@ -26,35 +24,39 @@ def is_straight_chain_saturated_fatty_acid(smiles: str):
     if not carboxylic_acid_match:
         return False, "No terminal carboxylic acid group found"
     
-    carbon_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]  # All carbon atoms
+    carbon_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
     if not carbon_atoms:
         return False, "No carbon atoms found, not a fatty acid."
 
-    # Verify a continuous chain of sp3 carbons ending in carboxyl
-    current = carboxylic_acid_match[0]  # Carboxyl carbon
-
-    num_carbons = 0
     visited = set()
 
-    while mol.GetAtomWithIdx(current).GetDegree() <= 2 and current not in visited:
-        atom = mol.GetAtomWithIdx(current)
-        # All traversed carbons must be sp3 (excluding carboxylic carbon)
-        if num_carbons > 0 and atom.GetHybridization() != rdchem.HybridizationType.SP3:
-            return False, f"Contains unsaturated carbon (non-sp3 hybridized) at index {current}"
+    # Depth-first search to validate chain of carbons (excluding branches)
+    def dfs(atom_idx):
+        if atom_idx in visited:
+            return 0
+        visited.add(atom_idx)
 
-        num_carbons += 1
-        visited.add(current)
+        atom = mol.GetAtomWithIdx(atom_idx)
+        if atom.GetAtomicNum() != 6:  # Must be a carbon
+            return 0
 
-        # Move to the next carbon in the chain
-        neighbors = [n.GetIdx() for n in atom.GetNeighbors() if n.GetAtomicNum() == 6 and n.GetIdx() not in visited]
-        if not neighbors:
-            break
-        current = neighbors[0]
+        # If this carbon is part of the carboxylic group, end chain here
+        if atom_idx in carboxylic_acid_match:
+            return 1
 
-    # Natural fatty acids typically have lengths of 4-36 carbons
+        # Explore neighboring carbons
+        carbon_count = 1
+        for neighbor in atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 6:
+                carbon_count += dfs(neighbor.GetIdx())
+
+        return carbon_count
+
+    # Start DFS from the carboxylic group carbon to ensure chain follows the carboxylic acid
+    num_carbons = dfs(carboxylic_acid_match[0])
+
+    # Natural fatty acids should be straight-chain and have between 4-36 carbons
     if num_carbons < 4 or num_carbons > 36:
         return False, f"{num_carbons} carbons found; expected a chain length between 4 and 36"
-
+    
     return True, f"Contains {num_carbons} carbons in a straight-chain saturated fatty acid structure"
-
-# Note: The refined chain detection logic ensures carbons form an unbranched structure with a carboxylic acid group at the end.
