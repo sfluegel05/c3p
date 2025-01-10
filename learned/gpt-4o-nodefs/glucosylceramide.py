@@ -7,7 +7,7 @@ def is_glucosylceramide(smiles: str):
     """
     Determines if a molecule is a glucosylceramide based on its SMILES string.
     A glucosylceramide contains a glucose residue linked via a glycosidic bond
-    to a ceramide backbone (sphingosine plus fatty acid).
+    to a ceramide backbone (sphingosine or a similar sphingoid base plus a fatty acid).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,19 +22,19 @@ def is_glucosylceramide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for beta-D-glucose moiety
-    glucose_pattern = Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@@H](CO)O1")
+    # SMARTS pattern for beta-D-glucose moiety (more tolerant to stereochemistry)
+    glucose_pattern = Chem.MolFromSmarts("O[C@@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](CO)O1")
     if not mol.HasSubstructMatch(glucose_pattern):
         return False, "No beta-D-glucose moiety found"
     
-    # SMARTS pattern for typical ceramide-like structure (sphingosine with a fatty acid)
-    ceramide_pattern = Chem.MolFromSmarts("C(=O)N[C@@H](CO[C@H]1O[C@H](CO)O[C@H](O)[C@H]1O)C")
+    # SMARTS pattern for generic ceramide-like structure (flexible sphingoid base)
+    ceramide_pattern = Chem.MolFromSmarts("N[C@@H](CO[*])C(=O)C")
     if not mol.HasSubstructMatch(ceramide_pattern):
         return False, "No ceramide-like backbone found"
     
-    # Check for long hydrocarbon chains, a characteristic of ceramides
-    long_chain_pattern = Chem.MolFromSmarts("CCCCCCCCCCCC")
-    if not mol.HasSubstructMatch(long_chain_pattern):
+    # Check for long hydrocarbon chain patterns
+    long_chain_pattern = Chem.MolFromSmarts("C{8,}")
+    if not any(mol.HasSubstructMatch(Chem.MolFromSmarts(f"C{i}")) for i in range(8, 24)):
         return False, "No long hydrocarbon chain, typical of ceramides"
 
     return True, "Contains a beta-D-glucose moiety and a ceramide-like backbone"
