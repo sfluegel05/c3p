@@ -26,7 +26,7 @@ def is_oligosaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for glycosidic linkage pattern (C-O-C)
+    # Look for glycosidic linkage pattern (C-O-C between two sugar units)
     glycosidic_pattern = Chem.MolFromSmarts("[C][O][C]")
     if not mol.HasSubstructMatch(glycosidic_pattern):
         return False, "No glycosidic linkage found"
