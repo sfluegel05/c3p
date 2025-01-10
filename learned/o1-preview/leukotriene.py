@@ -5,7 +5,7 @@ Classifies: CHEBI:25029 leukotriene
 Classifies: leukotriene
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import AllChem
 
 def is_leukotriene(smiles: str):
     """
@@ -32,50 +32,50 @@ def is_leukotriene(smiles: str):
 
     # Count the number of carbon atoms
     c_count = sum(1 for atom in mol2.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count != 20:
-        return False, f"Molecule has {c_count} carbon atoms, expected exactly 20 for leukotriene"
+    if c_count < 20:
+        return False, f"Molecule has {c_count} carbon atoms, expected at least 20 for leukotriene"
 
-    # Identify double bonds
+    # Identify conjugated triene system in a linear chain (exclude rings)
+    conjugated_triene = Chem.MolFromSmarts("[#6]-[CH]=[CH]-[CH]=[CH]-[CH]=[CH]-[#6]")
+    matches_triene = mol2.HasSubstructMatch(conjugated_triene)
+    if not matches_triene:
+        return False, "No conjugated triene system found"
+
+    # Check for at least four double bonds (total)
     double_bonds = [bond for bond in mol2.GetBonds() if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE]
     if len(double_bonds) < 4:
         return False, f"Molecule has {len(double_bonds)} double bonds, expected at least 4 for leukotriene"
 
-    # Check for at least one conjugated triene system (three conjugated double bonds)
-    # This SMARTS pattern matches three consecutive double bonds
-    conjugated_triene_pattern = Chem.MolFromSmarts("*/[!R]=[!R]/[!R]=[!R]/[!R]=[!R]*")
-    conjugated_triene_matches = mol2.GetSubstructMatches(conjugated_triene_pattern)
-    if len(conjugated_triene_matches) == 0:
-        return False, "No conjugated triene (three conjugated double bonds) found"
-
-    # Allow only epoxide rings; exclude other ring systems
-    ring_info = mol2.GetRingInfo()
-    if ring_info.NumRings() > 0:
-        # Check if all rings are epoxides (3-membered rings with one oxygen)
-        for ring in ring_info.AtomRings():
-            if len(ring) != 3:
-                return False, "Molecule contains rings other than epoxides"
-            atoms_in_ring = [mol2.GetAtomWithIdx(idx) for idx in ring]
-            o_count = sum(1 for atom in atoms_in_ring if atom.GetAtomicNum() == 8)
-            c_count_in_ring = sum(1 for atom in atoms_in_ring if atom.GetAtomicNum() == 6)
-            if o_count != 1 or c_count_in_ring != 2:
-                return False, "Molecule contains rings other than epoxides"
-
-    # Check for carboxylic acid group (-COOH) at one end
+    # Check for terminal carboxylic acid group (-COOH)
     carboxylic_acid = Chem.MolFromSmarts("C(=O)[O;H1]")
     if not mol2.HasSubstructMatch(carboxylic_acid):
         return False, "No terminal carboxylic acid group found"
 
-    # Optional: Check for presence of cysteine or glutathione conjugates
-    # Cysteine conjugate pattern (e.g., for LTC4, LTD4, LTE4)
-    cysteine_conjugate = Chem.MolFromSmarts("N[C@@H](CS)[C@@H](C(=O)O)N")
-    if mol2.HasSubstructMatch(cysteine_conjugate):
-        contains_conjugate = True
-    else:
-        contains_conjugate = False
+    # Check for linear long chain fatty acid (exclude rings except epoxides)
+    ring_info = mol2.GetRingInfo()
+    non_epoxide_rings = 0
+    for ring in ring_info.AtomRings():
+        ring_atoms = [mol2.GetAtomWithIdx(idx) for idx in ring]
+        # Check if ring is epoxide (3-membered ring with one oxygen)
+        if len(ring) == 3:
+            o_count = sum(1 for atom in ring_atoms if atom.GetAtomicNum() == 8)
+            if o_count == 1:
+                continue  # Epoxide ring is acceptable
+        non_epoxide_rings += 1
+    if non_epoxide_rings > 0:
+        return False, "Molecule contains ring structures other than epoxides"
 
-    # Check for any hydroxyl groups (-OH), but make it optional
-    hydroxyl_group = Chem.MolFromSmarts("[OX2H]")
-    has_hydroxyl = mol2.HasSubstructMatch(hydroxyl_group)
+    # Check for leukotriene-specific functional groups
+    # Optional hydroxyl groups (-OH) at C5, C12 positions
+    hydroxyl_groups = Chem.MolFromSmarts("[#6][CH](O)[#6]")
+    hydroxyl_matches = mol2.GetSubstructMatches(hydroxyl_groups)
+    if len(hydroxyl_matches) == 0:
+        return False, "No hydroxyl groups found, expected at least one"
+
+    # Exclude molecules known to be other eicosanoids (e.g., resolvins, lipoxins)
+    # For simplicity, exclude if molecule has more than one hydroxyl group beyond C5 and C12
+    if len(hydroxyl_matches) > 2:
+        return False, "Molecule has multiple hydroxyl groups, may not be a leukotriene"
 
     # If molecule meets all criteria, classify as leukotriene
     return True, "Molecule matches criteria for a leukotriene"
@@ -95,7 +95,7 @@ __metadata__ = {   'chemical_class': {   'id': 'LEUKOTRIENE',
                       'max_instances_in_prompt': 100,
                       'test_proportion': 0.1},
         'message': None,
-        'attempt': 2,
+        'attempt': 3,
         'success': True,
         'best': True,
         'error': '',
