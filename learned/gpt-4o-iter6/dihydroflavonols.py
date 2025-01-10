@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_dihydroflavonols(smiles: str):
     """
     Determines if a molecule is a dihydroflavonol based on its SMILES string.
-    A dihydroflavonol is a hydroxyflavanone with a hydroxyl group at position 3 of the C-ring.
+    A dihydroflavonol is defined as hydroxyflavanone with a hydroxyl group at position 3 of the ring structure.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -16,21 +16,25 @@ def is_dihydroflavonols(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
+    # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for flavanone backbone with 3-hydroxy group
-    flavanone_pattern = Chem.MolFromSmarts("O[C@H]1[C@H](O)c2ccc(O)cc2:C1=O")
-    if mol.HasSubstructMatch(flavanone_pattern):
-        return True, "Contains flavanone backbone with 3-hydroxy group"
+    # Define a broader SMARTS pattern for dihydroflavonol
+    # The pattern should capture the basic flavan-3-ol structure with flexibility for substituents and stereochemistry
+    base_pattern = "[OH][C@]1([C@@H]([OH])[C@H](=O)C2=CC=C(C=C2)[OH])OC3=CC=CC=C31"
+    dihydroflavonol_pattern = Chem.MolFromSmarts(base_pattern)
     
-    # Check alternative orientation for stereo chemistry
-    flavanone_pattern_alternative = Chem.MolFromSmarts("O[C@@H]1[C@@H](O)c2ccc(O)cc2:C1=O")
-    if mol.HasSubstructMatch(flavanone_pattern_alternative):
-        return True, "Contains flavanone backbone with 3-hydroxy group (alternative stereochemistry)"
+    # Check for basic dihydroflavonol structure
+    if mol.HasSubstructMatch(dihydroflavonol_pattern):
+        return True, "Contains dihydroflavonol core structure"
     
-    return False, "Does not contain the 3-hydroxyflavanone structure"
+    # Test with generalized patterns accounting for variations
+    generic_pattern = Chem.MolFromSmarts("O[C@H]([C@@H]([OH])C(=O)c1ccccc1)C2(OCc3ccccc32)")
+    if mol.HasSubstructMatch(generic_pattern):
+        return True, "Contains generalized dihydroflavonol structure with flexible stereochemistry"
+    
+    return False, "Does not match any dihydroflavonol backbone patterns"
 
 # Example usage: is_dihydroflavonols("OC1C(Oc2cc(O)cc(O)c2C1=O)c1cc(O)c(O)c(O)c1")
