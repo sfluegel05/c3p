@@ -15,15 +15,16 @@ def is_lipopeptide(smiles: str):
         bool: True if molecule is likely a lipopeptide, False otherwise
         str: Reason for classification
     """
+    
     # Parse the SMILES into an RDKit molecule object
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
     # Check for presence of long aliphatic chain as part of lipid moiety
-    # Let's check for paths of length 12 to 24, which are representative of typical fatty acids
+    # Let's check for paths of length 14 to 28, representing longer fatty acids
     long_chain_found = False
-    for length in range(12, 25):
+    for length in range(14, 29):
         num_chains = len(rdmolops.FindAllPathsOfLengthN(mol, length, useBonds=True))
         if num_chains > 0:
             long_chain_found = True
@@ -35,16 +36,20 @@ def is_lipopeptide(smiles: str):
     # Check for presence of amide bonds typically found in peptide chains
     amide_pattern = Chem.MolFromSmarts("C(=O)N")
     amide_matches = mol.GetSubstructMatches(amide_pattern)
-    if len(amide_matches) < 3:  # Increased the requirement to a minimum of 3
-        return False, f"Found {len(amide_matches)} amide bonds, need at least 3 for peptide linkage"
-
+    if len(amide_matches) < 4:  # Increased to a minimum of 4
+        return False, f"Found {len(amide_matches)} amide bonds, need at least 4 for peptide linkage"
+    
     # Count chiral centers as a proxy for peptide sequence complexity
     chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
-    if len(chiral_centers) < 2:  # Reduced to 2, as lipopeptides may be simple in structure
+    if len(chiral_centers) < 3:
         return False, f"Found {len(chiral_centers)} chiral centers, indicating insufficient peptide component"
+    
+    # Attempt to detect an amphiphilic pattern:
+    # Check if there are at least 2 distinct hydrophobic and hydrophilic zones
+    num_hydrophobic = len(list(filter(lambda x: x.GetAtomicNum() == 6, mol.GetAtoms())))
+    num_hydrophilic = len(list(filter(lambda x: x.GetAtomicNum() in [7, 8, 16], mol.GetAtoms())))  # N and O primarily
+    
+    if num_hydrophobic < 12 or num_hydrophilic < 3:
+        return False, "Does not have enough hydrophobic and hydrophilic regions for a typical amphiphilic lipopeptide"
 
-    # This additional pattern can help identify more peptide-like properties
-    # e.g., looking for typical N-terminus
-    # nitrogen_pattern = Chem.MolFromSmarts("[NH2,NH3+,NH+]")
-
-    return True, "Contains long hydrocarbon chain and multiple amide bonds and chiral centers indicative of lipopeptide structure"
+    return True, "Contains amphiphilic character with long hydrocarbon chain, multiple amide bonds, and several chiral centers indicative of lipopeptide structure"
