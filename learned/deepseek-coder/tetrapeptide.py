@@ -27,38 +27,44 @@ def is_tetrapeptide(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define the peptide bond pattern (-C(=O)-N-)
-    peptide_bond_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[NX3H1]")
+    peptide_bond_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[NX3H0,H1]")
     peptide_bond_matches = mol.GetSubstructMatches(peptide_bond_pattern)
     
-    # A tetrapeptide should have exactly 3 peptide bonds (connecting 4 amino acids)
-    if len(peptide_bond_matches) != 3:
-        return False, f"Found {len(peptide_bond_matches)} peptide bonds, need exactly 3"
+    # A tetrapeptide should have at least 3 peptide bonds (connecting 4 amino acids)
+    if len(peptide_bond_matches) < 3:
+        return False, f"Found {len(peptide_bond_matches)} peptide bonds, need at least 3"
 
-    # Count the number of amino acid residues
-    # Each amino acid residue should have a carboxyl group (-C(=O)-OH) and an amino group (-NH2)
-    amino_acid_pattern = Chem.MolFromSmarts("[CX4][CX3](=[OX1])[OX2H1].[NX3H2]")
+    # Count the number of amino acid residues using a more flexible pattern
+    # Each amino acid residue should have at least a carboxyl group (-C(=O)-) and an amino group (-NH-)
+    amino_acid_pattern = Chem.MolFromSmarts("[CX4][CX3](=[OX1])[OX2H0,H1].[NX3H0,H1,H2]")
     amino_acid_matches = mol.GetSubstructMatches(amino_acid_pattern)
     
-    # A tetrapeptide should have 4 amino acid residues
+    # A tetrapeptide should have at least 4 amino acid residues
     if len(amino_acid_matches) < 4:
-        return False, f"Found {len(amino_acid_matches)} amino acid residues, need at least 4"
+        return False, f"Found {len(amino_acid_matches)} amino acid-like groups, need at least 4"
 
-    # Check for the presence of a terminal carboxyl group and a terminal amino group
+    # Check for the presence of at least one terminal carboxyl group and one terminal amino group
     terminal_carboxyl_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H1]")
     terminal_amino_pattern = Chem.MolFromSmarts("[NX3H2]")
     
     terminal_carboxyl_matches = mol.GetSubstructMatches(terminal_carboxyl_pattern)
     terminal_amino_matches = mol.GetSubstructMatches(terminal_amino_pattern)
     
-    if len(terminal_carboxyl_matches) < 1 or len(terminal_amino_matches) < 1:
-        return False, "Missing terminal carboxyl or amino group"
+    if len(terminal_carboxyl_matches) < 1 and len(terminal_amino_matches) < 1:
+        return False, "Missing both terminal carboxyl and amino groups"
 
-    # Check molecular weight - tetrapeptides typically have a molecular weight between 400-600 Da
+    # Check molecular weight - tetrapeptides typically have a molecular weight between 300-1000 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 400 or mol_wt > 600:
+    if mol_wt < 300 or mol_wt > 1000:
         return False, f"Molecular weight {mol_wt:.2f} Da is outside the typical range for tetrapeptides"
 
-    return True, "Contains four amino acid residues connected by three peptide bonds"
+    # Check for linearity of the peptide chain
+    # Count the number of rotatable bonds - should be at least 3 for a tetrapeptide
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 3:
+        return False, "Too few rotatable bonds for a tetrapeptide"
+
+    return True, "Contains four amino acid residues connected by at least three peptide bonds"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:48030',
