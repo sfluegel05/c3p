@@ -32,9 +32,7 @@ def is_metal_atom(smiles: str):
     atom = mol.GetAtomWithIdx(0)
     atomic_num = atom.GetAtomicNum()
     symbol = atom.GetSymbol()
-
-    # Strip any isotope information by getting the symbol name without numeric components
-    pure_symbol = ''.join([i for i in symbol if not i.isdigit()])
+    formal_charge = atom.GetFormalCharge()
 
     # List of atomic numbers for metal elements based on metallic properties
     metal_atomic_nums = [
@@ -43,14 +41,17 @@ def is_metal_atom(smiles: str):
         56, 57, 58, 59, 60, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72,
         73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 87, 88, 89, 90,
         91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104,
-        105, 106, 107, 108, 110, 111, 112
+        105, 106, 107, 108, 109, 110, 111, 112
     ]
 
-    # Check if the atomic number corresponds to a metal
-    if atomic_num in metal_atomic_nums:
-        return True, f"The atom is a metal with symbol '{pure_symbol}' and atomic number {atomic_num}"
+    # Check if the atomic number corresponds to a metal and charge is neutral
+    if atomic_num in metal_atomic_nums and formal_charge == 0:
+        return True, f"The atom is a metal with symbol '{symbol}' and atomic number {atomic_num}"
 
-    return False, f"The atom with symbol '{pure_symbol}' and atomic number {atomic_num} is not a metal"
+    if formal_charge != 0:
+        return False, f"The atom with symbol '{symbol}' and atomic number {atomic_num} is charged and not considered a neutral metal atom"
+    
+    return False, f"The atom with symbol '{symbol}' and atomic number {atomic_num} is not a metal"
 
 # Example usage:
 # print(is_metal_atom("[23Na]"))
