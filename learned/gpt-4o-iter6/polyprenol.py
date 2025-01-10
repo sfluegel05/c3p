@@ -2,7 +2,6 @@
 Classifies: CHEBI:26199 polyprenol
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_polyprenol(smiles: str):
     """
@@ -19,34 +18,41 @@ def is_polyprenol(smiles: str):
     
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
-    
     if mol is None:
         return False, "Invalid SMILES string"
+
+    # Define SMARTS pattern for isoprene unit (C(=C)C-C)
+    isoprene_pattern = Chem.MolFromSmarts("C=C-C-C")
     
-    # Define SMARTS pattern for isoprene units including stereochemistry
-    isoprene_pattern = Chem.MolFromSmarts("[C:1](=[C:2])[C:3](C)[CH2]")
-    
+    # Find all isoprene units
     isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
     if len(isoprene_matches) < 2:
         return False, f"Found {len(isoprene_matches)} isoprene units, need more than 1"
+
+    # Check for connectivity of isoprene units
+    visited_atoms = set()
+    chain_length = 0
+    for match in isoprene_matches:
+        for idx in match:
+            if idx not in visited_atoms:
+                chain_length += 1
+                visited_atoms.add(idx)
     
-    # Identify hydroxyl groups
+    if chain_length < 2 * len(isoprene_matches):
+        return False, "Isoprene units not connected as a chain"
+
+    # Identify hydroxyl group
     hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
     hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
     
     if not hydroxyl_matches:
         return False, "No hydroxyl group found"
-    
-    # Check connectivity of hydroxyl group
+
+    # Check if hydroxyl is terminal
     for match in hydroxyl_matches:
         oh_atom_idx = match[0]
-        oh_atom = mol.GetAtomWithIdx(oh_atom_idx)
-        neighbor_indices = [neighbor.GetIdx() for neighbor in oh_atom.GetNeighbors()]
+        oh_neighbors = mol.GetAtomWithIdx(oh_atom_idx).GetNeighbors()
+        if all(neighbor.GetIdx() in visited_atoms for neighbor in oh_neighbors):
+            return True, "Contains more than one isoprene unit with terminal hydroxyl group"
 
-        # Check if the hydroxyl is at the end of isoprene unit chains
-        for index in neighbor_indices:
-            if any(index in m for m in isoprene_matches):
-                # Detected OH connected reliably at the chain end
-                return True, "Contains more than one isoprene unit with hydroxyl end"
-    
-    return False, "The hydroxyl group is not positioned correctly relative to isoprene units"
+    return False, "Hydroxyl group is not positioned correctly relative to isoprene units"
