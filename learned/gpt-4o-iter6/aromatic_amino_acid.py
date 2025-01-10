@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_aromatic_amino_acid(smiles: str):
     """
     Determines if a molecule is an aromatic amino acid based on its SMILES string.
-    An aromatic amino acid has both an aromatic ring and an amino acid structure (amino and carboxyl group).
+    An aromatic amino acid contains an aromatic ring connected to an amino and carboxyl group.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,22 +22,22 @@ def is_aromatic_amino_acid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for an aromatic ring
-    aromatic_ring_pattern = Chem.MolFromSmarts("[a]")
+    aromatic_ring_pattern = Chem.MolFromSmarts("a")
     if not mol.HasSubstructMatch(aromatic_ring_pattern):
         return False, "No aromatic ring found"
     
-    # Look for amino group, specifically targeting connection that fits in overall amino acid structure
-    amino_group_pattern = Chem.MolFromSmarts("[NX3][CX4]")
+    # Look for amino group (more general acceptance)
+    amino_group_pattern = Chem.MolFromSmarts("[NX3;H2,H1,H0]-[C;!H0]")
     if not mol.HasSubstructMatch(amino_group_pattern):
         return False, "No suitable amino group found"
     
     # Look for carboxyl group (C(=O)O)
-    carboxyl_group_pattern = Chem.MolFromSmarts("C(=O)[O]")
+    carboxyl_group_pattern = Chem.MolFromSmarts("C(=O)[O,H]")
     if not mol.HasSubstructMatch(carboxyl_group_pattern):
         return False, "No carboxyl group found"
     
-    # Check the connectivity: The aromatic ring directly connects to a carbon atom that also connects to an amine and a carboxylate structure within a short chain (three bonds)
-    aromatic_amino_acid_pattern = Chem.MolFromSmarts("a-[CX3]-[NX3]-C(=O)[O]")
+    # Check the connectivity: More versatile connection pattern, allows the carbon to connect differently to satisfy aromatic amino acid contexts
+    aromatic_amino_acid_pattern = Chem.MolFromSmarts("a-[CX3]-[NX3]-C(=O)[O,H]")
     if not mol.HasSubstructMatch(aromatic_amino_acid_pattern):
         return False, "Aromatic ring not properly connected to amino acid functionality"
 
