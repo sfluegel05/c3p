@@ -6,7 +6,8 @@ from rdkit import Chem
 def is_polymer(smiles: str):
     """
     Determines if a molecule is a polymer based on its SMILES string.
-    Polymers are characterized by repeating units (monomers) and specific structural features.
+    Polymers are characterized by repeating units (monomers), specific structural features,
+    and often have long chain-like structures with possible branching or network formation.
 
     Args:
         smiles (str): SMILES string of the molecule.
@@ -20,41 +21,43 @@ def is_polymer(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define potential polymer SMARTS patterns
+    # Define a list of potential repeating unit SMARTS patterns
     repeating_unit_patterns = [
         Chem.MolFromSmarts("C(C(C)=O)"),  # ester unit -COOH (e.g., acrylates)
-        Chem.MolFromSmarts("CNC(=O)"),   # amide unit -CONH- (e.g., nylons)
+        Chem.MolFromSmarts("CNC(=O)"),   # amide unit -CONH- (e.g., nylons),
         Chem.MolFromSmarts("COC"),       # ether unit -O- (e.g., polyethylene oxide)
+        Chem.MolFromSmarts("C(=C)C"),    # vinyl unit (e.g., polyvinyl chloride)
+        Chem.MolFromSmarts("[*]([*])[*]") # generic branching pattern
     ]
 
-    # Search for repeating units
+    # Check for repeating units indicative of polymer structures
     for pattern in repeating_unit_patterns:
         if mol.HasSubstructMatch(pattern):
             return True, f"Matches polymer-related structure: {Chem.MolToSmarts(pattern)}"
 
-    # Check chain length
-    chain_length_threshold = 30  # Dynamic threshold based on polymer features
+    # Calculate longest chain and check if it's indicative of a polymer
+    chain_length_threshold = 30  # Adjusted threshold
     longest_chain = 0
     
     for atom in mol.GetAtoms():
         if atom.GetDegree() > 2:
-            continue  # Skip branch points for simple linear chain searches
-        current_chain = 1
+            continue  # Skip obvious branch points for simple linear chains
         visited_atoms = set()
-        
-        # Simple DFS to find longest chain
-        to_visit = [(atom, 1)]
+        to_visit = [(atom, 0)]  # Include branching depth
+
         while to_visit:
             current, depth = to_visit.pop()
+            if current.GetIdx() in visited_atoms:
+                continue
             visited_atoms.add(current.GetIdx())
-            if depth > current_chain:
-                current_chain = depth
+            longest_chain = max(longest_chain, depth)
             for neighbor in current.GetNeighbors():
                 if neighbor.GetIdx() not in visited_atoms:
-                    to_visit.append((neighbor, depth + 1))
-                    visited_atoms.add(neighbor.GetIdx())
-        
-        longest_chain = max(longest_chain, current_chain)
+                    if neighbor.GetDegree() > 2:
+                        branch_depth = depth + 1
+                    else:
+                        branch_depth = depth + 1
+                    to_visit.append((neighbor, branch_depth))
 
     if longest_chain >= chain_length_threshold:
         return True, f"Found long chain (length: {longest_chain}) typical for polymers"
