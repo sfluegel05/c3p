@@ -14,6 +14,8 @@ def is_flavonoids(smiles: str):
     connected by a three-carbon bridge that may form a third heterocyclic ring (C),
     resulting in a C6-C3-C6 skeleton.
 
+    This function checks for the presence of common flavonoid core structures.
+
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -27,19 +29,16 @@ def is_flavonoids(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define more general SMARTS patterns for core flavonoid structures
+    # Define valid SMARTS patterns for core flavonoid structures
 
-    # General flavonoid core (C6-C3-C6 skeleton)
-    flavonoid_core_pattern = Chem.MolFromSmarts('[cR6]1[c,c]ccc[c,c]1[$([CH2][CH2][CH2]),$([CH]=[CH][CH]=),$([CH2][CH]=[CH2]),$([CH]=[CH][CH2])][cR6]2[c,c]ccc[c,c]2')
-
-    # Flavone and flavonol core (2-phenylchromen-4-one and derivatives)
-    flavone_pattern = Chem.MolFromSmarts('O=C1C=CC(=O)c2c(O1)cccc2')
+    # Flavone core (2-phenylchromen-4-one)
+    flavone_pattern = Chem.MolFromSmarts('O=C1C=CC(=O)c2ccccc12')
 
     # Isoflavone core (3-phenylchromen-4-one)
-    isoflavone_pattern = Chem.MolFromSmarts('O=C1C=CC(=O)c2c(C1=CC=CC2)cccc2')
+    isoflavone_pattern = Chem.MolFromSmarts('O=C1C=CC(=O)c2ccccc2C1=CC=CC=C1')
 
     # Flavanone core (2-phenylchroman-4-one)
-    flavanone_pattern = Chem.MolFromSmarts('O=C1CCc2c(O1)cccc2')
+    flavanone_pattern = Chem.MolFromSmarts('O=C1CCc2ccccc2O1')
 
     # Chalcone core (1,3-diphenylprop-2-en-1-one)
     chalcone_pattern = Chem.MolFromSmarts('O=CC=CCc1ccccc1')
@@ -51,7 +50,7 @@ def is_flavonoids(smiles: str):
     aurone_pattern = Chem.MolFromSmarts('O=C1OC=CC1=CCc2ccccc2')
 
     # Flavanol core (2-phenyl-3,4-dihydro-2H-chromen-3-ol)
-    flavanol_pattern = Chem.MolFromSmarts('O[C@@H]1CCc2ccccc2O1')
+    flavanol_pattern = Chem.MolFromSmarts('O[C@H]1Cc2ccccc2O1')
 
     # Anthocyanidin core (2-phenylbenzopyrylium)
     anthocyanidin_pattern = Chem.MolFromSmarts('[O+]1c2ccccc2Oc3ccccc13')
@@ -62,13 +61,12 @@ def is_flavonoids(smiles: str):
     # Neoflavonoid core (4-arylchromene)
     neoflavonoid_pattern = Chem.MolFromSmarts('c1ccc2Oc3ccccc3C=Cc2c1')
 
-    # Include flavonolignan core
+    # Flavonolignan core
     flavonolignan_pattern = Chem.MolFromSmarts('c1ccccc1C2CC(OC3=CC=CC=C3O2)c4ccccc4')
 
     # List of patterns to check
     flavonoid_patterns = [
-        (flavonoid_core_pattern, "General C6-C3-C6 flavonoid skeleton detected"),
-        (flavone_pattern, "Flavone or flavonol core detected"),
+        (flavone_pattern, "Flavone core detected"),
         (isoflavone_pattern, "Isoflavone core detected"),
         (flavanone_pattern, "Flavanone core detected"),
         (chalcone_pattern, "Chalcone core detected"),
@@ -83,6 +81,8 @@ def is_flavonoids(smiles: str):
 
     # Check for each pattern
     for pattern, reason in flavonoid_patterns:
+        if pattern is None:
+            continue  # Skip invalid pattern
         if mol.HasSubstructMatch(pattern):
             return True, reason
 
