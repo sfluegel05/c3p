@@ -21,11 +21,11 @@ def is_steroid_sulfate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Basic steroid core patterns, deducing a typical fused-ring backbone system
+    # Expanded steroid core patterns - including variations found commonly in steroids
     core_patterns = [
-        "C1CCC2C(C1)CCC3C2CCC4C3CCC4",  # Typical backbone
-        "[C@H]1([C@H]2CC[C@@H]3[C@@H]2[C@@H](CC[C@@H]4[C@@H]3CC[C@@H]1[C@@H]4CO)O)"
-        # These can be improved/extended based on specific examples or libraries
+        "C1CCC2C(C1)CCC3C2CCC4C3CCC4",  # Basic steroid backbone
+        "[C@H]1([C@@H]2CCC3C=C(C2)CC4[C@@H]1CC(O)CC34)",  # Additional possible steroid core
+        "C1C2CC3CCC4C(CCC4C3)C2C1"  # Simplified pattern with stereochemistry consideration
     ]
 
     # Check presence of a steroid-like core
@@ -33,37 +33,35 @@ def is_steroid_sulfate(smiles: str):
     if not steroid_match:
         return False, "No steroid backbone found"
 
-    # Recognize sulfate group
+    # Sulfate group matching, focusing on ester linkages
     sulfate_patterns = [
-        "OS(=O)(=O)[O-]",  # Handling of sulfate ions
-        "OS([O-])(=O)=O",  # Additional potential form in salts
-        "OS(=O)(=O)O"     # Sulfate ester
+        "O[S](=O)(=O)[O-]",   # With negative charge for salts
+        "O[S](=O)(=O)O",      # Neutral sulfate ester
+        "O[S](=O)(=O)[O0]"    # Consider neutral sulfate without explicit charge
     ]
 
-    # Check any pattern of sulfate ester presence
-    sulfate_match = any(mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)) for pattern in sulfate_patterns)
-    if not sulfate_match:
-        return False, "No sulfate groups correctly attached"
-
-    # Ensuring sulfate bond attach to potential hydroxy site's carbon first before linkage
-    alcohol_attached_sulfate = False
+    # Verification of sulfate connected to hydroxy group
+    sulfate_found = False
     for sulfate_pattern in sulfate_patterns:
         sulfate = Chem.MolFromSmarts(sulfate_pattern)
         matches = mol.GetSubstructMatches(sulfate)
-        for match in matches:
-            # Should possess connectivity to alcohol site that forms the ester
-            atom = mol.GetAtomWithIdx(match[0])  # Getting S atom
-            neighbors = [n for n in atom.GetNeighbors() if n.GetSymbol() == 'O' and n.GetDegree() == 2]  # Check O attaches to C
-            for n in neighbors:
-                if any(nei.GetSymbol() == 'C' for nei in n.GetNeighbors()):
-                    alcohol_attached_sulfate = True
-                    break
+        sulfate_group_atoms = [mol.GetAtomWithIdx(match[0]) for match in matches]
+        
+        for sulfur_atom in sulfate_group_atoms:
+            oxygen_neighbors = [n for n in sulfur_atom.GetNeighbors() if n.GetSymbol() == 'O']
+            for oxygen in oxygen_neighbors:
+                carbon_neighbors = [n for n in oxygen.GetNeighbors() if n.GetSymbol() == 'C']
+                for carbon in carbon_neighbors:
+                    if mol.HasSubstructMatch(Chem.MolFromSmarts("CO")):  # Check if connected to OH group
+                        for neighbor in carbon.GetNeighbors():
+                            if neighbor.GetSymbol() == 'O' and 'H' in [a.GetSymbol() for a in neighbor.GetNeighbors()]:
+                                sulfate_found = True
+                                break
 
-    # If all checks succeed, return true.
-    if alcohol_attached_sulfate:
-        return True, "Contains sulfate ester linked to steroid backbone at a hydroxy group"
+    if not sulfate_found:
+        return False, "Sulfate groups found but not linked properly to steroid backbone"
 
-    return False, "Sulfate groups found but not linked properly to steroid backbone"
+    return True, "Contains sulfate ester linked to steroid backbone at a hydroxy group"
 
 # Example for testing
 smiles = "[Na+].C[C@]12CC[C@H]3C(=CCc4cc(OS([O-])(=O)=O)ccc34)[C@@H]1CCC2=O"
