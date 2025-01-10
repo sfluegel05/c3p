@@ -10,7 +10,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_trienoic_fatty_acid(smiles: str):
     """
     Determines if a molecule is a trienoic fatty acid based on its SMILES string.
-    A trienoic fatty acid is any polyunsaturated fatty acid that contains three double bonds.
+    A trienoic fatty acid is any polyunsaturated fatty acid that contains three or more double bonds.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -30,6 +30,10 @@ def is_trienoic_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(carboxylic_acid):
         return False, "No carboxylic acid group found"
 
+    # Check for rings; fatty acids do not contain rings
+    if mol.GetRingInfo().NumRings() > 0:
+        return False, "Molecule contains rings"
+
     # Count number of carbon-carbon double bonds
     num_double_bonds = 0
     for bond in mol.GetBonds():
@@ -39,11 +43,15 @@ def is_trienoic_fatty_acid(smiles: str):
             if begin_atom.GetAtomicNum() == 6 and end_atom.GetAtomicNum() == 6:
                 num_double_bonds += 1
 
-    if num_double_bonds != 3:
-        return False, f"Contains {num_double_bonds} carbon-carbon double bonds, expected 3"
+    if num_double_bonds < 3:
+        return False, f"Contains {num_double_bonds} carbon-carbon double bonds, expected at least 3"
 
-    return True, "Contains carboxylic acid group and exactly three carbon-carbon double bonds"
+    # Check that the molecule is primarily a long carbon chain (e.g., at least 12 carbons)
+    num_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if num_carbons < 12:
+        return False, f"Contains {num_carbons} carbon atoms, expected at least 12"
 
+    return True, "Molecule is a trienoic fatty acid: contains carboxylic acid group, no rings, and at least three carbon-carbon double bonds"
 
 __metadata__ = {
     'chemical_class': {
