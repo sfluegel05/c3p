@@ -21,11 +21,11 @@ def is_guaiacols(smiles: str):
     if mol is None:
         return (False, "Invalid SMILES string")
 
-    # Enhanced pattern: Phenol with ortho methoxy group
-    # Here, 'c1[OH]c(OC)ccc1' and 'c1c(O)c(OC)ccc1' should detect guaiacols where both groups are precisely ortho
-    guaiacol_pattern_ortho = Chem.MolFromSmarts('c1c(O)[cH](OC)ccc1')
+    # Revised pattern: Phenol with ortho methoxy group
+    # Using `c1ccccc1` for benzene, ensure O and OC are ortho to each other
+    guaiacol_pattern_ortho = Chem.MolFromSmarts('c1c(O)cc(OC)cc1')
 
-    # Match for the improved ortho pattern
+    # Match for the revised ortho pattern
     if mol.HasSubstructMatch(guaiacol_pattern_ortho):
         return (True, "Molecule is classified as a guaiacol: contains phenol with ortho-position methoxy group")
     
