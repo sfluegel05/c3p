@@ -23,14 +23,16 @@ def is_organometalloidal_compound(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Find arsenic atoms
-    arsenic_atoms = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 33]
-    if not arsenic_atoms:
+    # Find metalloid atoms such as arsenic
+    metalloids = {33}  # Atomic number for arsenic
+    metalloid_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() in metalloids]
+    
+    if not metalloid_atoms:
         return False, "No metalloid atoms (e.g., arsenic) found"
     
-    # Check for bonds between arsenic and carbon
-    for atom_idx in arsenic_atoms:
-        for neighbor in mol.GetAtomWithIdx(atom_idx).GetNeighbors():
+    # Check for direct bonds to carbon atoms
+    for metalloid_atom in metalloid_atoms:
+        for neighbor in metalloid_atom.GetNeighbors():
             if neighbor.GetAtomicNum() == 6:  # Carbon
                 return True, "Contains metalloid-carbon bond: an organometalloidal compound"
     
