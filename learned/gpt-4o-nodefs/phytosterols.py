@@ -2,7 +2,6 @@
 Classifies: CHEBI:26125 phytosterols
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_phytosterols(smiles: str):
     """
@@ -23,32 +22,24 @@ def is_phytosterols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for steroid backbone pattern
-    steroid_patterns = [
-        Chem.MolFromSmarts("C1CCC2C1(CCC3C2CCC4C3(CCCC4)C)C"),  # basic steroid skeleton
-        Chem.MolFromSmarts("C1=CC[C@H]2[C@@H]3CC[C@@]4([H])CCC[C@]4(C)[C@H]3CC[C@@]21[H]")  # alternate stereo/unsaturated
-    ]
-    if not any(mol.HasSubstructMatch(pattern) for pattern in steroid_patterns):
+    # General steroid backbone pattern (accounting for stereochemistry and variant structures)
+    steroid_backbone = Chem.MolFromSmarts("C1CCC2C1CCC3C2CCC4C3CCCC4")
+    if not mol.HasSubstructMatch(steroid_backbone):
         return False, "No steroid backbone found"
         
-    # Check for hydroxyl group at position 3
-    hydroxy_position_3 = Chem.MolFromSmarts("O[C@@H]1CC[C@H](C2CCCC3C2CCC4CC(C)(C)C3(C)CC4)C1")
-    if not mol.HasSubstructMatch(hydroxy_position_3):
+    # Check for hydroxyl group at position 3 (allowing for stereochemistry variance)
+    hydroxy_position_3_pattern = Chem.MolFromSmarts("O[C@@H]1CC[C@@H](C)CC2CCCC3C2CCC4C3CCCC4")
+    if not mol.HasSubstructMatch(hydroxy_position_3_pattern):
         return False, "Missing hydroxyl group at position 3"
 
-    # Check for typical phytosterol double bond positions, e.g., at C5, C6
-    double_bond_patterns = [
-        Chem.MolFromSmarts("C1=CC[C@H]2[C@@H]3CC=C4C(C2)[C@H]3CC[C@@]41C")  # common phytosterol unsaturations
-    ]
-    if not any(mol.HasSubstructMatch(pattern) for pattern in double_bond_patterns):
+    # Check for common unsaturations in sterols, e.g., within the B ring
+    double_bond_pattern = Chem.MolFromSmarts("C=C")
+    if not mol.HasSubstructMatch(double_bond_pattern):
         return False, "No expected double bonds found in rings"
 
-    # Check for side chain modifications (e.g., methyl or ethyl groups)
-    side_chain_patterns = [
-        Chem.MolFromSmarts("[CX4,CX3](C)"),  # broader search for alkylation
-        Chem.MolFromSmarts("[C@H](C)[C@H](CC)C(C)C")  # specific for C24 modification linked to sitosterol-like structures
-    ]
-    if not any(mol.HasSubstructMatch(pattern) for pattern in side_chain_patterns):
-        return False, "No typical phytosterol side chain alkylations found"
+    # Check for side chain modifications (general alkyl patterns including methyl or ethyl groups)
+    side_chain_modifications = Chem.MolFromSmarts("C(C)C")
+    if not mol.HasSubstructMatch(side_chain_modifications):
+        return False, "No typical phytosterol side chain modifications found"
 
     return True, "Steroid nucleus with typical phytosterol hydroxyl, double bonds, and side chain modifications found"
