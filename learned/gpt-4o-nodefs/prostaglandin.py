@@ -17,28 +17,31 @@ def is_prostaglandin(smiles: str):
         bool: True if molecule resembles a prostaglandin structure, False otherwise
         str: Reason for classification
     """
-    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Attempt to find general prostaglandin likeness via SMARTS
-    # Prostaglandin pattern: Cyclopentane with chains and optional functional groups
-    prostaglandin_pattern = Chem.MolFromSmarts('[C@H]1[C@H](C=C1)CC(=O)|CC(=O)|O|CC=C|C=C')
-    
+    # Define a cyclopentane pattern with an alkyl chain and typical prostaglandin functional groups
+  # These include hydroxyl (-OH), ketone (=O), and carboxylic acid (-COOH)
+    prostaglandin_pattern = Chem.MolFromSmarts(
+        "[C@H]1[C@@H]([C@H](O)[C@@H]([C@H]1O)C=C)CCC(=O)C"  # Cyclopentane with chains
+    )
+    if prostaglandin_pattern is None:  # SMARTS parsing failed
+        return False, "Pattern parsing failed"
+
     if not mol.HasSubstructMatch(prostaglandin_pattern):
         return False, "Structure does not match typical prostaglandin cyclopentane pattern"
 
     # Count key oxygens for groups - prostaglandins generally have multiple hydrophilic groups
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count < 3:  # Heuristic: Prostaglandins tend to have at least 3 oxygens (OH, COOH, ketones)
+    if o_count < 3:  # Heuristic: Prostaglandins tend to have at least 3 oxygens
         return False, "Too few oxygen atoms for typical prostaglandin"
 
-    # Check overall carbon count, should typically be 20
+    # Check overall carbon count, prostaglandins usually have around 20 carbons
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count != 20:
-        return False, f"Number of carbons is {c_count}, expected about 20 for prostaglandins"
+    if c_count < 15 or c_count > 25:
+        return False, f"Number of carbons is {c_count}, expected around 20 for prostaglandins"
 
     # Check for significant stereochemistry - many prostaglandins are chiral
     chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
