@@ -40,13 +40,22 @@ def is_semisynthetic_derivative(smiles: str):
     if mol.HasSubstructMatch(alkyl_halide_pattern):
         synthetic_modifications += 1
 
-    # If there are multiple synthetic modifications, it is likely a semisynthetic derivative
-    if synthetic_modifications >= 2:
-        return True, "Contains multiple synthetic modifications (e.g., esters, amides, ethers, alkyl halides)"
+    # Check molecular weight - natural products are typically larger
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 200:
+        return False, "Molecular weight too low for a natural product derivative"
 
-    # If there is at least one synthetic modification, it might be a semisynthetic derivative
-    if synthetic_modifications == 1:
-        return True, "Contains at least one synthetic modification (e.g., ester, amide, ether, alkyl halide)"
+    # Check for complex structure (e.g., multiple rings, chiral centers)
+    n_rings = rdMolDescriptors.CalcNumRings(mol)
+    n_chiral_centers = len(Chem.FindMolChiralCenters(mol, includeUnassigned=True))
+
+    # If there are multiple synthetic modifications, a complex structure, and a high molecular weight, it is likely a semisynthetic derivative
+    if synthetic_modifications >= 2 and n_rings >= 2 and n_chiral_centers >= 1:
+        return True, "Contains multiple synthetic modifications, complex structure, and high molecular weight"
+
+    # If there is at least one synthetic modification and a complex structure, it might be a semisynthetic derivative
+    if synthetic_modifications >= 1 and n_rings >= 2 and n_chiral_centers >= 1:
+        return True, "Contains at least one synthetic modification and a complex structure"
 
     # If no synthetic modifications are found, it is less likely to be a semisynthetic derivative
-    return False, "No significant synthetic modifications found"
+    return False, "No significant synthetic modifications or complex structure found"
