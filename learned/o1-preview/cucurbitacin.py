@@ -6,13 +6,12 @@ Classifies: cucurbitacin
 """
 
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_cucurbitacin(smiles: str):
     """
     Determines if a molecule is a cucurbitacin based on its SMILES string.
     Cucurbitacins are tetracyclic triterpenoids derived from cucurbitane.
-    They have a characteristic cucurbitane skeleton with specific stereochemistry.
+    They have a characteristic tetracyclic skeleton with specific functional groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -27,37 +26,36 @@ def is_cucurbitacin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the cucurbitane skeleton SMARTS pattern with stereochemistry
-    cucurbitane_smarts = """
-    [#6@H]1CC[C@@]2(C)[C@@H](CC[C@]3(C)[C@]2(CC[C@@H]1C)C)[C@H]1CC[C@@]4(C)[C@@H](CC[C@]4(C)[C@]3(CC1)C)C
-    """
-    cucurbitane_pattern = Chem.MolFromSmarts(cucurbitane_smarts)
-    if cucurbitane_pattern is None:
-        return False, "Invalid cucurbitane SMARTS pattern"
+    # Remove stereochemistry from the molecule to make matching less specific
+    Chem.RemoveStereochemistry(mol)
+
+    # Use the cucurbitane backbone as substructure pattern
+    # Cucurbitane SMILES without stereochemistry
+    cucurbitane_smiles = 'CC1CCC2(C)C1CCC3(C)C(C)CCC4C(C)(C)CCC23C4'
+    cucurbitane_mol = Chem.MolFromSmiles(cucurbitane_smiles)
+    if cucurbitane_mol is None:
+        return False, "Invalid cucurbitane SMILES"
+
+    # Remove stereochemistry from the cucurbitane molecule
+    Chem.RemoveStereochemistry(cucurbitane_mol)
 
     # Check for cucurbitane skeleton
-    if not mol.HasSubstructMatch(cucurbitane_pattern):
+    if not mol.HasSubstructMatch(cucurbitane_mol):
         return False, "Does not contain the cucurbitane skeleton characteristic of cucurbitacins"
 
     # Check for characteristic functional groups
-    # Cucurbitacins often have multiple hydroxyl and ketone groups, and an alpha,beta-unsaturated ketone
-    num_hydroxyl = len(mol.GetSubstructMatches(Chem.MolFromSmarts('[C;H1,H2]-[OH]')))
-    num_ketone = len(mol.GetSubstructMatches(Chem.MolFromSmarts('C(=O)[C;!$(C=O)]')))
-    num_enone = len(mol.GetSubstructMatches(Chem.MolFromSmarts('C=CC=O')))
+    # Cucurbitacins often have multiple hydroxyl groups and ketones
+    num_hydroxyl = len(mol.GetSubstructMatches(Chem.MolFromSmarts('[OX2H]')))
+    num_ketone = len(mol.GetSubstructMatches(Chem.MolFromSmarts('C(=O)[!$([O-])]')))
 
-    if num_hydroxyl + num_ketone + num_enone < 3:
-        return False, f"Contains {num_hydroxyl} hydroxyls, {num_ketone} ketones, and {num_enone} enones, less than 3 total characteristic functional groups"
+    total_functional_groups = num_hydroxyl + num_ketone
+    if total_functional_groups < 3:
+        return False, f"Contains {total_functional_groups} hydroxyls and ketones, less than 3 total characteristic functional groups"
 
-    # Check for triterpenoid skeleton (30 carbons)
+    # Check for triterpenoid skeleton (at least 30 carbons)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if c_count < 30:
         return False, f"Carbon count {c_count} is less than 30, not a triterpenoid"
-
-    # Additional check for common functional groups in cucurbitacins
-    # Cucurbitacins often have an acetoxy group at C25
-    acetoxy_pattern = Chem.MolFromSmarts('C(C)(C)OC(=O)C')
-    if len(mol.GetSubstructMatches(acetoxy_pattern)) > 0:
-        return True, "Contains cucurbitane skeleton and characteristic functional groups of cucurbitacins, including acetoxy group"
 
     return True, "Contains cucurbitane skeleton and characteristic functional groups of cucurbitacins"
 
