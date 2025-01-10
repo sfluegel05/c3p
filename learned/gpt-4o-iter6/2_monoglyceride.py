@@ -22,12 +22,23 @@ def is_2_monoglyceride(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for 2-monoglyceride pattern:
-    # [CX4] = central carbon with 4 attachments
-    # Ester linkage (O-C(=O)) at the second carbon of glycerol [-CH(OC(=O)R)-]
-    # Hydroxyls (-OH) at the first and third positions [-CHOH-]
-    glycerol_2_mono_pattern = Chem.MolFromSmarts("OCC(O)C(OC(=O))")
+    # The substructure is described as:
+    # C1 is the first carbon with a hydroxyl group, C2 is the second carbon with 
+    # the ester linkage, and C3 is the third carbon with another hydroxyl group
+    glycerol_2_mono_pattern = Chem.MolFromSmarts("C(CO)C(OC(=O))CO")
     
-    if not mol.HasSubstructMatch(glycerol_2_mono_pattern):
+    # Validate that the ester is specifically linked to the second carbon
+    matches = mol.GetSubstructMatches(glycerol_2_mono_pattern)
+    if not matches:
         return False, "No specific 2-monoglyceride pattern found with esterification at C2"
 
-    return True, "Contains 2-monoglyceride structure with acyl group esterified at the second position"
+    for match in matches:
+        c2_index = match[1]  # Index of C2 in the matches
+        c1, c2, c3 = mol.GetAtomWithIdx(c2_index).GetNeighbors()
+        # Confirm C1 and C3 are the carbon atoms with hydroxyl groups, not oxygens
+        if (c1.GetSymbol() == 'C' and c3.GetSymbol() == 'C' and 
+            any(n.GetSymbol() == 'O' for n in c1.GetNeighbors()) and 
+            any(n.GetSymbol() == 'O' for n in c3.GetNeighbors())):
+            return True, "Contains 2-monoglyceride structure with acyl group esterified at the second position"
+    
+    return False, "The structure does not match the specific pattern of a 2-monoglyceride"
