@@ -30,21 +30,32 @@ def is_tannin(smiles: str):
 
     # Define structural patterns
     patterns = {
-        # Core structural patterns
-        'galloyl': ['O=C(O)c1c(O)c(O)c(O)cc1', 'O=C([O,N])c1c(O)c(O)c(O)cc1'],
-        'catechol': ['[OH]c1[cX3]cc([OH])cc1', '[OH]c1[cX3]cccc1[OH]'],
-        'pyrogallol': ['[OH]c1c([OH])c([OH])[cX3]cc1', '[OH]c1[cX3]c([OH])c([OH])cc1'],
-        'ellagic_core': ['O=C1Oc2c(O)c(O)cc3c2c2c(c1)c(O)c(O)cc2oc13'],
-        'glucose_core': ['[OH]C1OC(CO)[CH]([OH])[CH]([OH])[CH]1[OH]'],
+        # Core phenolic patterns (more general)
+        'phenol': ['[OH]c1ccccc1', '[OH]c1cccc([OH])c1', '[OH]c1cc([OH])ccc1'],
+        'catechol': ['[OH]c1c([OH])cccc1', '[OH]c1c([OH])cc([OH])cc1'],
+        'pyrogallol': ['[OH]c1c([OH])c([OH])ccc1', '[OH]c1c([OH])c([OH])cc([OH])c1'],
         
-        # Linkage patterns
-        'ester': ['C(=O)O[CH0]', 'C(=O)OC'],
-        'flavonoid_link': ['O1c2c(cc([OH])cc2)C(c2ccc([OH])cc2)CC1'],
-        'c4c8_link': ['c1c(c2)c(O)cc(c1)C(O)Cc1c(O)cc(O)c(c1)C2'],
+        # Ester and ether linkages (more flexible)
+        'ester': ['C(=O)O[CH0,CH1,CH2]', 'O=C([O,N])c'],
+        'ether': ['cOc', 'COc', 'COC'],
+        
+        # Sugar-related patterns (more general)
+        'sugar_core': ['[OH]C1O[CH]([CH]([OH])[CH]([OH])[CH]1[OH])',
+                      'OC1OC([CH]([OH])[CH]([OH]))CC1',
+                      'C1OC([CH]O)C([OH])C([OH])C1'],
         
         # General features
         'hydroxyl': ['[OH]'],
-        'aromatic_oxygen': ['c1ccc(Oc2)cc1', 'c1cc(Oc2)ccc1']
+        'aromatic': ['c1ccccc1'],
+        'carbonyl': ['C(=O)'],
+        
+        # Complex linkage patterns
+        'flavonoid_core': ['O1c2c(cc([OH])cc2)CC(c2ccc([OH])cc2)C1',
+                          'Oc1cc(O)c2C(=O)CC(c3ccc(O)cc3)Oc2c1'],
+        
+        # Oligomeric patterns
+        'biaryl': ['c1ccc(-c2ccccc2)cc1',
+                   'c1cc(-c2cc([OH])c([OH])cc2)ccc1']
     }
     
     # Count structural features
@@ -61,7 +72,7 @@ def is_tannin(smiles: str):
                 matches[name].extend(these_matches)
 
     # Basic requirements
-    if counts['hydroxyl'] < 4:
+    if counts['hydroxyl'] < 3:
         return False, f"Too few hydroxyl groups ({counts['hydroxyl']}) for tannin"
 
     ring_count = rdMolDescriptors.CalcNumRings(mol)
@@ -72,44 +83,41 @@ def is_tannin(smiles: str):
     if aromatic_rings < 1:
         return False, "No aromatic rings found"
 
-    # Check for characteristic tannin features
-    is_hydrolyzable = False
-    is_condensed = False
-    
-    # Hydrolyzable tannin check
-    if counts['galloyl'] > 0 and counts['ester'] > 0:
-        if counts['glucose_core'] > 0 or counts['ellagic_core'] > 0:
-            is_hydrolyzable = True
-            
-    # Condensed tannin check
-    if (counts['flavonoid_link'] > 0 or counts['c4c8_link'] > 0):
-        if (counts['catechol'] + counts['pyrogallol'] >= 2):
-            is_condensed = True
-    elif counts['catechol'] + counts['pyrogallol'] >= 3:
-        # Check if catechol/pyrogallol groups are properly connected
-        if counts['aromatic_oxygen'] >= 1:
-            is_condensed = True
+    # Calculate phenolic character
+    phenolic_groups = counts['phenol'] + counts['catechol'] + counts['pyrogallol']
+    if phenolic_groups < 2:
+        return False, f"Insufficient phenolic groups ({phenolic_groups})"
 
-    # Verify phenolic group density
+    # Verify polyphenolic nature
     num_carbons = len([a for a in mol.GetAtoms() if a.GetAtomicNum() == 6])
-    phenolic_density = (counts['catechol'] + counts['pyrogallol'] + counts['galloyl']) / num_carbons
-    if phenolic_density < 0.1:  # At least 10% of carbons should be part of phenolic groups
+    phenolic_density = phenolic_groups / num_carbons
+    if phenolic_density < 0.05:  # Lowered threshold to 5%
         return False, "Insufficient phenolic group density"
 
-    # Build description of features
+    # Check for hydrolyzable tannin characteristics
+    is_hydrolyzable = (counts['ester'] >= 1 and 
+                      (counts['sugar_core'] >= 1 or 
+                       (counts['carbonyl'] >= 2 and counts['ether'] >= 1)))
+
+    # Check for condensed tannin characteristics
+    is_condensed = ((counts['flavonoid_core'] >= 1) or
+                   (counts['biaryl'] >= 1 and phenolic_groups >= 3) or
+                   (counts['catechol'] + counts['pyrogallol'] >= 3 and counts['ether'] >= 1))
+
+    # Build feature description
     features = []
-    if counts['galloyl'] > 0:
-        features.append(f"{counts['galloyl']} galloyl groups")
+    if counts['phenol'] > 0:
+        features.append(f"{counts['phenol']} phenolic groups")
     if counts['catechol'] > 0:
         features.append(f"{counts['catechol']} catechol groups")
     if counts['pyrogallol'] > 0:
         features.append(f"{counts['pyrogallol']} pyrogallol groups")
     if counts['ester'] > 0:
         features.append(f"{counts['ester']} ester bonds")
-    if counts['ellagic_core'] > 0:
-        features.append("ellagic acid core")
-    if counts['glucose_core'] > 0:
-        features.append("glucose core")
+    if counts['sugar_core'] > 0:
+        features.append("sugar core")
+    if counts['flavonoid_core'] > 0:
+        features.append("flavonoid core")
 
     # Final classification
     if is_hydrolyzable or is_condensed:
@@ -120,5 +128,11 @@ def is_tannin(smiles: str):
             tannin_type.append("condensed")
         
         return True, f"Contains {counts['hydroxyl']} hydroxyl groups, {ring_count} rings, and {', '.join(features)}. Classified as {' and '.join(tannin_type)} tannin"
+
+    # Additional check for complex polyphenols that might not fit standard patterns
+    if (phenolic_groups >= 4 and 
+        ring_count >= 3 and 
+        (counts['ether'] >= 2 or counts['ester'] >= 2)):
+        return True, f"Complex polyphenolic structure with {counts['hydroxyl']} hydroxyl groups and {ring_count} rings"
 
     return False, "Does not meet structural requirements for tannin classification"
