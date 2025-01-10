@@ -25,12 +25,16 @@ def is_aralkylamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Iterate over all aliphatic nitrogen atoms (excluding aromatic and ring nitrogens)
+    # Iterate over all nitrogen atoms (excluding aromatic nitrogens)
     for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 7 and not atom.GetIsAromatic() and not atom.IsInRing():
-            # Perform BFS to find a path to an aromatic ring via aliphatic carbons
+        if atom.GetAtomicNum() == 7 and not atom.GetIsAromatic():
+            # Skip if nitrogen is directly connected to an aromatic carbon (arylamine)
+            if any(neighbor.GetIsAromatic() and neighbor.GetAtomicNum() == 6 for neighbor in atom.GetNeighbors()):
+                continue
+
+            # Perform BFS to find a path to an aromatic ring via non-aromatic atoms
             visited = set()
-            queue = [(atom.GetIdx(), [])]  # Each element is (atom index, path)
+            queue = [(atom.GetIdx(), [atom.GetIdx()])]  # Each element is (atom index, path)
             while queue:
                 current_idx, path = queue.pop(0)
                 if current_idx in visited:
@@ -38,24 +42,14 @@ def is_aralkylamine(smiles: str):
                 visited.add(current_idx)
                 current_atom = mol.GetAtomWithIdx(current_idx)
 
-                if current_atom.GetIsAromatic() and current_atom.GetAtomicNum() == 6:
+                if current_idx != atom.GetIdx() and current_atom.GetIsAromatic() and current_atom.GetAtomicNum() == 6:
                     # Found an aromatic carbon
-                    # Ensure the path consists only of aliphatic carbons
-                    if all(mol.GetAtomWithIdx(idx).GetAtomicNum() == 6 and not mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in path):
-                        return True, "Contains amino group connected via alkyl chain to aromatic ring"
+                    return True, "Contains amino group connected via alkyl chain to aromatic ring"
                 else:
-                    # Continue traversal through aliphatic carbons
-                    if (current_atom.GetAtomicNum() == 6 and not current_atom.GetIsAromatic()) or current_idx == atom.GetIdx():
+                    # Continue traversal through non-aromatic atoms
+                    if not current_atom.GetIsAromatic():
                         for neighbor in current_atom.GetNeighbors():
                             nbr_idx = neighbor.GetIdx()
                             if nbr_idx not in visited:
                                 queue.append((nbr_idx, path + [current_idx]))
-        else:
-            continue
-
-    # Check if nitrogen is directly attached to an aromatic ring (arylamine)
-    arylamine_pattern = Chem.MolFromSmarts("[#7;!H0]-a")  # Nitrogen attached to aromatic atom
-    if mol.HasSubstructMatch(arylamine_pattern):
-        return False, "Amino group directly attached to aromatic ring, not an aralkylamine"
-
     return False, "Does not contain amino group connected via alkyl chain to aromatic ring"
