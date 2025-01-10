@@ -28,31 +28,47 @@ def is_16beta_hydroxy_steroid(smiles: str):
     mol = Chem.AddHs(mol)
     
     try:
-        # More flexible steroid core pattern
-        # Four connected rings with some flexibility in saturation
-        steroid_core = Chem.MolFromSmarts("C1~C~C~C2~C~C~C3~C~C~C4~C~C~C~C4~C3~C2~1")
-        if steroid_core is None:
-            return False, "Invalid steroid core SMARTS pattern"
-            
-        if not mol.HasSubstructMatch(steroid_core):
+        # Define multiple steroid core patterns to catch different variants
+        steroid_patterns = [
+            # Basic steroid core (more flexible)
+            "[#6]~1~[#6]~[#6]~[#6]~2~[#6]~[#6]~[#6]~3~[#6]~[#6]~[#6]~4~[#6]~[#6]~[#6]~[#6]~4~[#6]~3~[#6]~2~1",
+            # Alternative pattern with more specific bond types
+            "C~1~C~C~C~2~C~C~C~3~C~C~C~4~C~C~C(O)~C~4~C~3~C~2~1",
+            # Pattern for estrane derivatives
+            "c1cc2C~C~C~3~C~C~C~4~C~C~C(O)~C~4~C~3~C~c2cc1"
+        ]
+        
+        has_steroid_core = False
+        for pattern in steroid_patterns:
+            steroid_core = Chem.MolFromSmarts(pattern)
+            if steroid_core is not None and mol.HasSubstructMatch(steroid_core):
+                has_steroid_core = True
+                break
+                
+        if not has_steroid_core:
             return False, "No steroid core structure found"
 
-        # Pattern for 16-beta-hydroxy group
-        # More specific pattern focusing on position 16 and beta configuration
-        # [C@@H] indicates specific stereochemistry
-        beta_oh_16 = Chem.MolFromSmarts("[C]1~[C]~[C]~[C]2~[C]~[C]~[C]3~[C]~[C]~[C]4~[C]~[C]~[C@@H](O)~[C]4~[C]3~[C]2~1")
-        if beta_oh_16 is None:
-            return False, "Invalid 16-beta-hydroxy SMARTS pattern"
-            
-        if not mol.HasSubstructMatch(beta_oh_16, useChirality=True):
+        # Pattern specifically for 16-beta-hydroxy
+        # This pattern looks for the D ring with a beta-OH at position 16
+        # The [C@@H] ensures beta stereochemistry
+        beta_oh_patterns = [
+            # Pattern for saturated D ring with 16β-OH
+            "[C]~1~[C]~[C]~[C]~2~[C]~[C]~[C]~3~[C@@H](O)~[C]~[C]~[C]~3~[C]~2~1",
+            # Alternative pattern with more explicit stereochemistry
+            "[#6]~1~[#6]~[#6]~[#6]~2~[#6]~[#6]~[#6]~3~[C@@H](O)~[#6]~[#6]~[#6]~3~[#6]~2~1"
+        ]
+        
+        has_16beta_oh = False
+        for pattern in beta_oh_patterns:
+            beta_oh = Chem.MolFromSmarts(pattern)
+            if beta_oh is not None and mol.HasSubstructMatch(beta_oh, useChirality=True):
+                has_16beta_oh = True
+                break
+                
+        if not has_16beta_oh:
             return False, "No 16-beta-hydroxy group found or wrong stereochemistry"
 
         # Basic molecular property checks
-        mol_weight = Chem.Descriptors.ExactMolWt(mol)
-        if mol_weight < 250 or mol_weight > 1000:
-            return False, f"Molecular weight {mol_weight} outside typical steroid range (250-1000)"
-
-        # Count carbons (steroids typically have 17+ carbons)
         carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
         if carbon_count < 17:
             return False, f"Too few carbons ({carbon_count}) for a steroid structure"
@@ -62,11 +78,8 @@ def is_16beta_hydroxy_steroid(smiles: str):
         if oxygen_count < 1:
             return False, "No oxygen atoms found"
 
-        # Look for specific OH group
+        # Additional check for hydroxyl group
         hydroxy_pattern = Chem.MolFromSmarts("[OH]")
-        if hydroxy_pattern is None:
-            return False, "Invalid hydroxy SMARTS pattern"
-            
         if not mol.HasSubstructMatch(hydroxy_pattern):
             return False, "No hydroxy group found"
 
