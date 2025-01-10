@@ -7,7 +7,7 @@ def is_cephalosporin(smiles: str):
     """
     Determines if a molecule is a cephalosporin based on its SMILES string.
     A cephalosporin is characterized by having a beta-lactam ring and a 6-membered
-    dihydrothiazine ring.
+    dihydrothiazine ring fused together with variable side chains.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -27,16 +27,16 @@ def is_cephalosporin(smiles: str):
     if not mol.HasSubstructMatch(beta_lactam_pattern):
         return False, "No beta-lactam ring found"
 
-    # Six-membered dihydrothiazine ring pattern: helps make it unique from penicillins
-    dihydrothiazine_pattern = Chem.MolFromSmarts("C1(C(=O)N2C(S1)C2)")
+    # Updated 6-membered dihydrothiazine ring pattern
+    dihydrothiazine_pattern = Chem.MolFromSmarts("C1C=NC(=O)C(=C1)S")
     if not mol.HasSubstructMatch(dihydrothiazine_pattern):
         return False, "No dihydrothiazine ring found"
 
-    # Ensure it does not have a penicillin-like five-membered thiazolidine ring
-    penicillin_pattern = Chem.MolFromSmarts("C1CN2C(S1)C(=O)N(C2)")
-    if mol.HasSubstructMatch(penicillin_pattern):
-        return False, "Molecule is more penicillin-like"
-    
+    # Check for common cephalosporin side chain patterns
+    common_sidechain_pattern = Chem.MolFromSmarts("C(=O)NCC")
+    if not mol.HasSubstructMatch(common_sidechain_pattern):
+        return False, "Common cephalosporin side chain not found"
+
     return True, "Molecule contains a beta-lactam and a 6-membered dihydrothiazine ring consistent with cephalosporins"
 
 __metadata__ = {
