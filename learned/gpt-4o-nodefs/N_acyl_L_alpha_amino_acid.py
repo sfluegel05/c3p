@@ -22,8 +22,8 @@ def is_N_acyl_L_alpha_amino_acid(smiles: str):
         return False, "Invalid SMILES string"
     
     # Define the SMARTS pattern for an N-acyl-L-alpha-amino acid
-    # [C@H] - alpha carbon chiral center, followed by the core of an amino acid pattern
-    pattern = Chem.MolFromSmarts("[C@H](N[C@@H1C(=O)*])C(=O)O")
+    # Pattern: Acyl group (O=C-) bonded to Nitrogen (N) bonded to chiral alpha carbon [C@H]
+    pattern = Chem.MolFromSmarts("N([C@H])C(=O)")
     
     # Check if the molecule matches the N-acyl-L-alpha-amino acid pattern
     if mol.HasSubstructMatch(pattern):
@@ -33,4 +33,4 @@ def is_N_acyl_L_alpha_amino_acid(smiles: str):
 
 # Example usage:
 smiles_example = "C[C@H](NC(=O)Cc1c[nH]c2ccccc12)C(O)=O"  # Example SMILES
-is_N_acyl_L_alpha_amino_acid(smiles_example)
+print(is_N_acyl_L_alpha_amino_acid(smiles_example))
