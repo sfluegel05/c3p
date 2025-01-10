@@ -24,7 +24,7 @@ def is_volatile_organic_compound(smiles: str):
     
     # Determine molecular weight
     mol_wt = Descriptors.ExactMolWt(mol)
-    if mol_wt > 300:
+    if mol_wt > 350:
         return False, f"Molecular weight too high ({mol_wt:.2f} Da) for typical VOC"
 
     # Check for elements common in VOCs including halogenated ones
@@ -34,24 +34,25 @@ def is_volatile_organic_compound(smiles: str):
     
     # Identify presence of volatile functional groups: alcohols, ethers, aldehydes, ketones, chloroalkanes
     volatile_functional_groups = [
-        Chem.MolFromSmarts("[CX3](=O)[OX2H1]"),  # Aldehydes
+        Chem.MolFromSmarts("[CX3H1](=O)[CX4]"),  # Aldehydes
         Chem.MolFromSmarts("[#6]-[#8]-[#6]"),    # Ethers
         Chem.MolFromSmarts("[CX3](=O)[#6]"),     # Ketones
-        Chem.MolFromSmarts("[#6][CX2]([#6])([#6])[#8X2H]"),  # Alcohols
+        Chem.MolFromSmarts("[#6][OX2H]"),        # Alcohols
         Chem.MolFromSmarts("[Cl,Br,F,I][#6]"),   # Halogenated hydrocarbons
     ]
     for pattern in volatile_functional_groups:
         if mol.HasSubstructMatch(pattern):
             return True, "Contains typical volatile functional groups"
     
-    # Calculate number of rotatable bonds
+    # Calculate number of rotatable bonds for structural complexity check
     num_rotatable_bonds = rdMolDescriptors.CalcNumRotatableBonds(mol)
     num_rings = rdMolDescriptors.CalcNumRings(mol)
 
-    # Apply a rotable bond and ring heuristic (favor cyclic structures)
-    if num_rotatable_bonds + num_rings > 8:
-        return False, "Too many unbounded or undefined bonds for a VOC"
+    # Use a threshold for combined measure of rotatable bonds and rings to identify complex non-VOCs
+    if num_rotatable_bonds > 10 and num_rings < 1:
+        return False, "Too many rotatable bonds for a typical VOC without stabilizing cyclic structures"
 
+    # Consider default as potential VOC based on collected features
     return True, "Likely a VOC based on molecular weight, typical elements, and structure"
 
 # __metadata__ or additional configuration can be added here if needed.
