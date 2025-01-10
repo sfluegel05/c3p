@@ -21,22 +21,21 @@ def is_catecholamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Broad SMARTS pattern for catechol structure (benzene with two adjacent hydroxyl groups)
-    catechol_pattern = Chem.MolFromSmarts("c1c(O)cc(O)cc1")
-    
-    # Flexible pattern for aminoethyl group or related side-chain presence on the catechol 
-    # and allowing structural variations or substitutions while ensuring intact core structure
-    aminoethyl_pattern = Chem.MolFromSmarts("c1(O)c(O)[c|a]c[c|a]c1CCN")  # Allowing for adjacent attachment
+    # Accurate SMARTS pattern for catechol (benzene-1,2-diol)
+    catechol_pattern = Chem.MolFromSmarts("c1ccc(O)c(O)c1")
 
+    # Accurate SMARTS pattern for aminoethyl group adjacent to the catechol structure
+    aminoethyl_pattern = Chem.MolFromSmarts("CCN")
+    
     # Check for presence of the catechol structure
     if not mol.HasSubstructMatch(catechol_pattern):
         return False, "No catechol (benzene-1,2-diol) structure found"
     
-    # Match for flexible aminoethyl-like attachment to the catechol
+    # Match for aminoethyl attached to the benzene ring
     if not mol.HasSubstructMatch(aminoethyl_pattern):
-        return False, "No aminoethyl-like side chain correctly attached to catechol"
+        return False, "No attached aminoethyl group found"
 
-    return True, "Contains catechol structure with aminoethyl-like side chain correctly attached"
+    return True, "Contains catechol structure with an attached aminoethyl group"
 
 # Example usage and testing one from the given list
 smiles_example = "CNC[C@H](O)c1ccc(O)c(O)c1"  # Example SMILES for adrenaline
