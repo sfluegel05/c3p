@@ -37,11 +37,11 @@ def is_cardiolipin(smiles: str):
     if len(ester_matches) != 4:
         return False, f"Found {len(ester_matches)} ester groups, need exactly 4"
 
-    # Look for 2 phosphate groups (P(=O)(O)-O-)
-    phosphate_pattern = Chem.MolFromSmarts("[PX4](=[OX1])([OX2])[OX2]")
-    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
-    if len(phosphate_matches) != 2:
-        return False, f"Found {len(phosphate_matches)} phosphate groups, need exactly 2"
+    # Look for phosphatidic acid groups (glycerol with phosphate and fatty acid chains)
+    phosphatidic_acid_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]([OX2][PX4](=[OX1])([OX2])[OX2])")
+    phosphatidic_acid_matches = mol.GetSubstructMatches(phosphatidic_acid_pattern)
+    if len(phosphatidic_acid_matches) < 2:
+        return False, f"Found {len(phosphatidic_acid_matches)} phosphatidic acid groups, need at least 2"
 
     # Check for fatty acid chains (long carbon chains attached to esters)
     fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]") 
@@ -65,7 +65,7 @@ def is_cardiolipin(smiles: str):
     
     if c_count < 30:
         return False, "Too few carbons for cardiolipin"
-    if o_count != 8:
-        return False, "Must have exactly 8 oxygens (4 ester groups and 2 phosphate groups)"
+    if o_count < 8:
+        return False, "Too few oxygens for cardiolipin"
 
     return True, "Contains glycerol backbone with two phosphatidic acid groups attached via phosphate linkages"
