@@ -24,19 +24,27 @@ def is_tetrachlorobenzene(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for benzene ring pattern
+    # Get all benzene rings in the molecule
     benzene_pattern = Chem.MolFromSmarts("c1ccccc1")
-    if not mol.HasSubstructMatch(benzene_pattern):
+    benzene_matches = mol.GetSubstructMatches(benzene_pattern)
+    
+    if not benzene_matches:
         return False, "No benzene ring found"
 
-    # Count the total number of chlorine atoms in the molecule
-    chlorine_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 17)
-    if chlorine_count < 4:
-        return False, f"Found {chlorine_count} chlorine atoms, need at least 4"
-
-    # Check if the benzene ring has exactly four chlorine atoms attached
-    tetrachlorobenzene_pattern = Chem.MolFromSmarts("c1(Cl)c(Cl)c(Cl)c(Cl)cc1")
-    if mol.HasSubstructMatch(tetrachlorobenzene_pattern):
-        return True, "Contains a benzene ring with exactly four chlorine atoms attached"
+    # Check each benzene ring for exactly four chlorine substituents
+    for match in benzene_matches:
+        # Get atoms in this benzene ring
+        ring_atoms = set(match)
+        
+        # Count chlorine atoms directly attached to this benzene ring
+        chlorine_count = 0
+        for atom_idx in ring_atoms:
+            atom = mol.GetAtomWithIdx(atom_idx)
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 17 and neighbor.GetIdx() not in ring_atoms:
+                    chlorine_count += 1
+        
+        if chlorine_count == 4:
+            return True, "Contains a benzene ring with exactly four chlorine atoms attached"
 
     return False, "No benzene ring with exactly four chlorine atoms found"
