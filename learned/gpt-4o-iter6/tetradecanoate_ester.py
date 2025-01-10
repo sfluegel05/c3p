@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_tetradecanoate_ester(smiles: str):
     """
     Determines if a molecule is a tetradecanoate ester based on its SMILES string.
-    A tetradecanoate ester is an ester formed from tetradecanoic acid (14-carbon chain).
+    A tetradecanoate ester is an ester formed via the esterification of tetradecanoic acid.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,22 +21,23 @@ def is_tetradecanoate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define an enhanced SMARTS pattern for a tetradecanoate ester
-    # Looking for ester group with a 14-carbon chain specifically
-    tetradecanoate_pattern = Chem.MolFromSmarts("CCCCCCCCCCCC(CC)=O")  # Sequence for 14-carbons ending in carboxylic acid esters
-   
+    # Enhanced SMARTS pattern for tetradecanoate ester
+    # Look for ester sequence: 14-carbon chain with ester bond component
+    tetradecanoate_pattern = Chem.MolFromSmarts("CCCCCCCCCCCCCC(=O)O")
+
     if mol.HasSubstructMatch(tetradecanoate_pattern):
-        # Get matches and ensure they conform to expected carbon count
+        # Get matches and ensure they conform to expected structure
         matches = mol.GetSubstructMatches(tetradecanoate_pattern)
         for match in matches:
-            # The ends of the matched SMARTS should indicate attachment to ester oxygen
+            # Ensuring the ester oxygen is bonded correctly
+            # Count carbons in the match for validation
             c_count = 0
             for atom_idx in match:
                 atom = mol.GetAtomWithIdx(atom_idx)
                 if atom.GetAtomicNum() == 6:
                     c_count += 1
-
-            if c_count == 14:  # Ensuring the exact carbon count matching myristic acid
+        
+            if c_count == 14:
                 return True, "Valid tetradecanoate ester group found"
     
-    return False, "No valid tetradecanoate ester group found or incorrect carbon chain"
+    return False, "No valid tetradecanoate ester group found or incorrect structure"
