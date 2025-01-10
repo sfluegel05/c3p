@@ -20,18 +20,14 @@ def is_endocannabinoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for saturated and unsaturated long carbon chains
-    # Specifically looking for multiple double bonded sections
-    long_chain_pattern = Chem.MolFromSmarts("CCCCCCCCCCCCCC")
-    if len(mol.GetSubstructMatches(long_chain_pattern)) < 1:
-        return False, "No long carbon chain typical of endocannabinoids found."
-    
-    # Check for unsaturations (cis/trans isomers)
-    unsaturated_chain = Chem.MolFromSmarts("C=C")
-    if mol.HasSubstructMatch(unsaturated_chain):
-        return False, "No unsaturations in carbon chain found."
+    # Adjust criteria for long carbon chain identifying both straight and kinked structures
+    polyunsaturated_chain_pattern = Chem.MolFromSmarts("C=CCCC=CCCC=CCC")
+    long_chain_match = mol.HasSubstructMatch(polyunsaturated_chain_pattern)
 
-    # Check for specific functional groups like ethanolamine, amide, or glycerol structure    
+    if not long_chain_match:
+        return False, "No polyunsaturated long carbon chain typical of endocannabinoids found."
+    
+    # Check for specific key functional groups like ethanolamine, distinct patterns
     ethanolamine_pattern = Chem.MolFromSmarts("NCCO")
     amide_pattern = Chem.MolFromSmarts("NC=O")
     glycerol_pattern = Chem.MolFromSmarts("OCC(O)CO")
@@ -42,8 +38,7 @@ def is_endocannabinoid(smiles: str):
     if not has_key_group:
         return False, "No identified endocannabinoid functional group (ethanolamine, amide, glycerol) found."
 
-    # Check for ether, ester, or amide linkages
-    # Ensure at least one linkage present
+    # Check for typical linkages
     ether_pattern = Chem.MolFromSmarts("COC")
     ester_pattern = Chem.MolFromSmarts("C(=O)O")
     amide_linkage_pattern = Chem.MolFromSmarts("C(=O)N")
