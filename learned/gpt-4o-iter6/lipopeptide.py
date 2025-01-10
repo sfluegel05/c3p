@@ -2,13 +2,12 @@
 Classifies: CHEBI:46895 lipopeptide
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_lipopeptide(smiles: str):
     """
     Determines if a molecule is a lipopeptide based on its SMILES string.
-    A lipopeptide comprises a peptide moiety and an attached lipid (flexible long hydrocarbon chain).
-
+    A lipopeptide comprises a peptide moiety and an attached lipid (long hydrocarbon chain).
+    
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -22,21 +21,15 @@ def is_lipopeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Identify peptide bonds (amide linkages)
-    peptide_pattern = Chem.MolFromSmarts("C(=O)N")
-    peptide_matches = mol.GetSubstructMatches(peptide_pattern)
-    if len(peptide_matches) < 2:  # Require at least 2 peptide bonds for a protein-like fragment
-        return False, "Insufficient peptide bonds found"
+    # Identify peptide bonds
+    peptide_pattern = Chem.MolFromSmarts("C(=O)N")  # Amide bond pattern
+    if not mol.HasSubstructMatch(peptide_pattern):
+        return False, "No peptide bonds found"
     
-    # Identify lipid-like long hydrocarbon chains
-    # Broad pattern for long aliphatic chains, considering branching and unsaturation
-    lipid_pattern = Chem.MolFromSmarts("CCCCCCCCC")  # Linear chain with minimum length
+    # Improved pattern for flexible identification of long hydrocarbon chains
+    # Allow for some branching - target a minimum of 8 carbon atoms overall
+    lipid_pattern = Chem.MolFromSmarts("C~C~C~C~C~C~C~C")  # Flexible pattern with connectivity
     if not mol.HasSubstructMatch(lipid_pattern):
         return False, "No sufficient long hydrocarbon chains found"
-    
-    # Check molecular weight - often indicative of complex lipopeptides
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 500:
-        return False, "Molecular weight may be too low for a lipopeptide"
-    
+
     return True, "Contains both peptide bonds and sufficient long hydrocarbon chains, characteristic of lipopeptides"
