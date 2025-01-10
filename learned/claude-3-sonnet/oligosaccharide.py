@@ -25,13 +25,15 @@ def is_oligosaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for sugar rings (6-membered oxane or 5-membered oxolane)
-    oxane_pattern = Chem.MolFromSmarts("[C]1[C][C][C][C]O1")  # 6-membered sugar ring
-    oxolane_pattern = Chem.MolFromSmarts("[C]1[C][C][C]O1")   # 5-membered sugar ring
+    # Look for sugar rings with proper substitution patterns
+    # Pyranose (6-membered) ring pattern with typical sugar substitutions
+    pyranose_pattern = Chem.MolFromSmarts("[C]1[C]([OH0,OH1])[C]([OH0,OH1])[C]([OH0,OH1])[C]([OH0,OH1])O1")
+    # Furanose (5-membered) ring pattern with typical sugar substitutions
+    furanose_pattern = Chem.MolFromSmarts("[C]1[C]([OH0,OH1])[C]([OH0,OH1])[C]([OH0,OH1])O1")
     
-    oxane_matches = len(mol.GetSubstructMatches(oxane_pattern))
-    oxolane_matches = len(mol.GetSubstructMatches(oxolane_pattern))
-    total_rings = oxane_matches + oxolane_matches
+    pyranose_matches = len(mol.GetSubstructMatches(pyranose_pattern))
+    furanose_matches = len(mol.GetSubstructMatches(furanose_pattern))
+    total_rings = pyranose_matches + furanose_matches
     
     if total_rings < 2:
         return False, f"Found only {total_rings} sugar rings, need at least 2"
@@ -39,41 +41,53 @@ def is_oligosaccharide(smiles: str):
     if total_rings > 20:
         return False, f"Found {total_rings} sugar rings, likely a polysaccharide"
         
-    # Look for glycosidic linkages (C-O-C between rings)
-    glycosidic_pattern = Chem.MolFromSmarts("[C][O][C]")
+    # Look for glycosidic linkages between rings
+    # More specific pattern that looks for C-O-C between ring carbons
+    glycosidic_pattern = Chem.MolFromSmarts("[C;R][O][C;R]")
     glycosidic_matches = len(mol.GetSubstructMatches(glycosidic_pattern))
     
     if glycosidic_matches < 1:
         return False, "No glycosidic linkages found"
         
-    # Check for hydroxyl groups (characteristic of sugars)
-    hydroxyl_pattern = Chem.MolFromSmarts("[O][H]")
+    # Check for hydroxyl and hydroxyl-derived groups (including modified ones)
+    hydroxyl_pattern = Chem.MolFromSmarts("[$([OH1]),$([OH0][C]=[O]),$(O[CH3]),$(O[C]=[O])]")
     hydroxyl_matches = len(mol.GetSubstructMatches(hydroxyl_pattern))
     
-    if hydroxyl_matches < 3:
-        return False, "Too few hydroxyl groups for an oligosaccharide"
+    if hydroxyl_matches < 4:
+        return False, "Too few hydroxyl or hydroxyl-derived groups"
         
-    # Count oxygen atoms (should be abundant in sugars)
+    # Count oxygen atoms
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count < 5:
+    if o_count < 6:
         return False, "Too few oxygen atoms for an oligosaccharide"
         
-    # Calculate molecular weight (should be within reasonable range for oligosaccharides)
+    # Calculate molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 250:
+    if mol_wt < 200:  # Lowered threshold
         return False, "Molecular weight too low for oligosaccharide"
-    if mol_wt > 5000:
+    if mol_wt > 10000:  # Increased threshold
         return False, "Molecular weight too high, likely a polysaccharide"
         
-    # Check ring connectivity
-    ring_info = mol.GetRingInfo()
-    if not ring_info.NumRings():
-        return False, "No rings found"
-        
-    # Additional check for characteristic sugar features
-    sugar_pattern = Chem.MolFromSmarts("[CH1,CH2][OH]")  # CHOH or CH2OH groups
-    sugar_matches = len(mol.GetSubstructMatches(sugar_pattern))
-    if sugar_matches < 2:
-        return False, "Missing characteristic sugar hydroxyl groups"
+    # Check for characteristic sugar features
+    # Look for CH2OH groups (common in sugars)
+    ch2oh_pattern = Chem.MolFromSmarts("[CH2][OH1]")
+    # Look for CHOH groups
+    choh_pattern = Chem.MolFromSmarts("[CH1][OH1]")
+    # Look for modified versions (acetylated, methylated, etc)
+    modified_pattern = Chem.MolFromSmarts("[CH1,CH2][O][C]")
+    
+    sugar_features = (
+        len(mol.GetSubstructMatches(ch2oh_pattern)) +
+        len(mol.GetSubstructMatches(choh_pattern)) +
+        len(mol.GetSubstructMatches(modified_pattern))
+    )
+    
+    if sugar_features < 3:
+        return False, "Missing characteristic sugar structural features"
 
-    return True, f"Contains {total_rings} sugar rings connected by glycosidic linkages with appropriate hydroxyl groups"
+    # Check for reasonable C:O ratio for sugars
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count > 0 and o_count/c_count < 0.3:
+        return False, "Carbon to oxygen ratio not consistent with oligosaccharides"
+
+    return True, f"Contains {total_rings} sugar rings connected by glycosidic linkages with appropriate sugar characteristics"
