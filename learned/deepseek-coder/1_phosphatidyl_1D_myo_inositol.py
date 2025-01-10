@@ -58,4 +58,9 @@ def is_1_phosphatidyl_1D_myo_inositol(smiles: str):
     if not mol.HasSubstructMatch(phosphate_pattern):
         return False, "Phosphate group not properly positioned"
 
+    # Additional check for the correct number of hydroxyl groups on the inositol moiety
+    hydroxyl_matches = mol.GetSubstructMatches(Chem.MolFromSmarts("[C@H]1([C@@H]([C@H]([C@@H]([C@H]([C@@H]1O)O)O)O)O)"))
+    if len(hydroxyl_matches) != 1:
+        return False, "Incorrect number of hydroxyl groups on the inositol moiety"
+
     return True, "Contains glycerol backbone with two fatty acid chains, a phosphate group, and a 1D-myo-inositol moiety attached to the phosphate group"
