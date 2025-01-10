@@ -6,12 +6,13 @@ Classifies: Bile Acid Conjugate
 """
 
 from rdkit import Chem
+from rdkit.Chem import rdchem
 
 def is_bile_acid_conjugate(smiles: str):
     """
     Determines if a molecule is a bile acid conjugate based on its SMILES string.
-    A bile acid conjugate is a bile acid attached to a hydrophilic group such as glycine, taurine,
-    other amino acids, sulfate, glucuronic acid, glucose, other sugars, or coenzyme A.
+    A bile acid conjugate is a bile acid attached to a functional group that adds hydrophilicity or charge,
+    such as glycine, taurine, other amino acids, sulfate, glucuronic acid, glucose, or coenzyme A.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,47 +27,41 @@ def is_bile_acid_conjugate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for steroid nucleus: fused ring system of four rings (6-6-6-5)
-    ri = mol.GetRingInfo()
-    sssr = ri.AtomRings()
-    if len(sssr) < 4:
-        return False, "No steroid nucleus found (not enough rings)"
+    # Check for bile acid core structure
+    # Bile acids are steroids with a specific ring system and side chain
+    bile_acid_core_smarts = "C1[C@H]2CC[C@H]3C[C@@H](O)[C@]4(C)CC[C@@H](O)CC4=C[C@H]3[C@@]2(C)CC[C@H]1C(=O)O"
+    bile_acid_core = Chem.MolFromSmarts(bile_acid_core_smarts)
+    if not mol.HasSubstructMatch(bile_acid_core):
+        return False, "No bile acid core structure found"
 
-    # Get ring sizes
-    ring_sizes = [len(ring) for ring in sssr]
-
-    # Check for ring sizes 6-6-6-5
-    six_membered_rings = ring_sizes.count(6)
-    five_membered_rings = ring_sizes.count(5)
-    if not (six_membered_rings >= 3 and five_membered_rings >= 1):
-        return False, "No steroid nucleus found (incorrect ring sizes)"
-
-    # Now check for hydrophilic conjugation groups
-    # Define SMARTS patterns for conjugation groups
-
+    # Check for conjugation groups attached to the side chain
     # Glycine conjugation (amide bond to glycine)
-    glycine_conj_smarts = '[NX3][CX3](=O)[CX4][CX3](=O)[O-,O]'
+    glycine_conj_smarts = "[NX3][C@@H](C(=O)[O-,O])[C@@H](C(=O)[O-,O])N"
     glycine_conj = Chem.MolFromSmarts(glycine_conj_smarts)
 
     # Taurine conjugation (amide bond to taurine)
-    taurine_conj_smarts = '[NX3][CX4][CX4][SX4](=O)(=O)[O-,O]'
+    taurine_conj_smarts = "[NX3][C@@H](C(=O)[O-,O])[C@@H](CCS(=O)(=O)[O-,O])[N]"
     taurine_conj = Chem.MolFromSmarts(taurine_conj_smarts)
 
-    # Sulfate conjugation (sulfate ester)
-    sulfate_conj_smarts = '[OX2][SX4](=O)(=O)[O-,O]'
+    # Sulfate conjugation attached to hydroxyl groups
+    sulfate_conj_smarts = "[OX2H][SX4](=O)(=O)[O-]"
     sulfate_conj = Chem.MolFromSmarts(sulfate_conj_smarts)
 
-    # Glucuronic acid conjugation (ester or glycosidic bond to glucuronic acid)
-    glucuronic_acid_conj_smarts = 'O[C@H]1[C@@H](O)[C@H](O)[C@H](O)[C@@H]1C(=O)[O-,O]'
+    # Glucuronic acid conjugation (glycosidic bond to glucuronic acid)
+    glucuronic_acid_conj_smarts = "O[C@H]1[C@@H](O)[C@H](O)[C@H](O)[C@@H]1C(=O)[O-,O]"
     glucuronic_acid_conj = Chem.MolFromSmarts(glucuronic_acid_conj_smarts)
 
     # Glucose conjugation (glycosidic bond)
-    glucose_conj_smarts = 'O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@H]1O'
+    glucose_conj_smarts = "O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@H]1O"
     glucose_conj = Chem.MolFromSmarts(glucose_conj_smarts)
 
     # General amino acid conjugation (amide bond to amino acid side chain)
-    amino_acid_conj_smarts = '[NX3][CX3](=O)[CX4][CX3](=O)[O-,O]'
+    amino_acid_conj_smarts = "[NX3][C@@H](C(=O)[O-,O])[C@H](O)[C@H](O)[C@@H](C(=O)[O-,O])[N]"
     amino_acid_conj = Chem.MolFromSmarts(amino_acid_conj_smarts)
+
+    # Coenzyme A conjugation (thioester bond to coenzyme A)
+    coa_conj_smarts = "C(=O)SCCNC(=O)[CX4]"
+    coa_conj = Chem.MolFromSmarts(coa_conj_smarts)
 
     # List of conjugation patterns
     conjugation_patterns = [
@@ -75,7 +70,8 @@ def is_bile_acid_conjugate(smiles: str):
         ('sulfate', sulfate_conj),
         ('glucuronic acid', glucuronic_acid_conj),
         ('glucose', glucose_conj),
-        ('amino acid', amino_acid_conj)
+        ('amino acid', amino_acid_conj),
+        ('coenzyme A', coa_conj)
     ]
 
     # Check for conjugation
@@ -83,10 +79,11 @@ def is_bile_acid_conjugate(smiles: str):
         if mol.HasSubstructMatch(pattern):
             return True, f"Contains {name} conjugation"
 
-    # Also check for coenzyme A conjugation (simplified pattern)
-    coa_conj_smarts = 'NC(=O)CCNC(=O)[CX4][CX3](=O)[O-,O]'
-    coa_conj = Chem.MolFromSmarts(coa_conj_smarts)
-    if mol.HasSubstructMatch(coa_conj):
-        return True, "Contains coenzyme A conjugation"
+    # Also check for other amino acids conjugated via amide bond
+    # Pattern for amide bond at side chain
+    amide_conj_smarts = "[CX3](=O)[NX3][CX4][CX3](=O)[O-,O]"
+    amide_conj = Chem.MolFromSmarts(amide_conj_smarts)
+    if mol.HasSubstructMatch(amide_conj):
+        return True, "Contains amino acid conjugation"
 
-    return False, "No hydrophilic conjugation found"
+    return False, "No bile acid conjugation found"
