@@ -27,44 +27,42 @@ def is_N_acylglycine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Convert to neutral form if possible (handle cases with charged carboxylate)
-    mol = Chem.AddHs(mol)
-
-    # Look for glycine moiety pattern (NH-CH2-COOH)
-    # [NH;!$(NC=O):1] means nitrogen with H, not already part of an amide
-    # [CH2:2] means CH2 group
-    # [CX3:3](=[OX1])[OH] means carboxylic acid group
-    glycine_pattern = Chem.MolFromSmarts('[NH;!$(NC=O):1][CH2:2][CX3:3](=[OX1])[OH]')
+    # Look for N-acylglycine pattern:
+    # [C:1](=[O:2])[N:3][CH2:4][C:5](=[O:6])[O,OH]
+    # This matches:
+    # - Any carbon with double-bonded oxygen (the acyl group)
+    # - Connected to a nitrogen
+    # - Connected to CH2
+    # - Connected to a carboxyl group (handles both acid and charged forms)
+    pattern = Chem.MolFromSmarts('[C:1](=[O:2])[N:3][CH2:4][C:5](=[O:6])[O,OH]')
     
-    # Look for acyl group pattern (R-C(=O)-)
-    acyl_pattern = Chem.MolFromSmarts('[#6,#1;A][CX3](=O)[NX3;H1]')
+    matches = mol.GetSubstructMatches(pattern)
     
-    glycine_matches = mol.GetSubstructMatches(glycine_pattern)
-    acyl_matches = mol.GetSubstructMatches(acyl_pattern)
+    if not matches:
+        return False, "No N-acylglycine moiety found"
     
-    if not glycine_matches:
-        return False, "No glycine moiety (NH-CH2-COOH) found"
+    # For each match, verify it's a true N-acylglycine:
+    for match in matches:
+        acyl_c = mol.GetAtomWithIdx(match[0])
+        nitrogen = mol.GetAtomWithIdx(match[2])
+        ch2 = mol.GetAtomWithIdx(match[3])
+        acid_c = mol.GetAtomWithIdx(match[4])
         
-    if not acyl_matches:
-        return False, "No acyl group (R-C=O-NH) found"
-    
-    # Now verify that the acyl group is connected to the glycine nitrogen
-    # Get all atoms in the molecule
-    atoms = mol.GetAtoms()
-    
-    # Check each glycine match
-    for gly_match in glycine_matches:
-        gly_n = mol.GetAtomWithIdx(gly_match[0])  # nitrogen atom
-        gly_c = mol.GetAtomWithIdx(gly_match[1])  # CH2 carbon
-        gly_acid = mol.GetAtomWithIdx(gly_match[2])  # acid carbon
+        # Verify acyl carbon has a non-oxygen neighbor (R group)
+        has_r_group = False
+        for neighbor in acyl_c.GetNeighbors():
+            if neighbor.GetAtomicNum() != 8 and neighbor.GetAtomicNum() != 7:
+                has_r_group = True
+                break
+                
+        if not has_r_group:
+            continue
+            
+        # Verify CH2 is only connected to N and acid C
+        if len(list(ch2.GetNeighbors())) != 2:
+            continue
+            
+        # All checks passed
+        return True, "Contains N-acylglycine structure: R-C(=O)-NH-CH2-C(=O)-O"
         
-        # Check neighbors of nitrogen
-        for neighbor in gly_n.GetNeighbors():
-            # Look for carbonyl carbon attached to nitrogen
-            if neighbor.GetAtomicNum() == 6:  # Carbon
-                for n_neighbor in neighbor.GetNeighbors():
-                    if n_neighbor.GetAtomicNum() == 8 and n_neighbor.GetBonds()[0].GetBondType() == Chem.BondType.DOUBLE:
-                        # Found N-acylglycine structure
-                        return True, "Contains glycine moiety with N-acyl group"
-    
-    return False, "Glycine and acyl groups present but not connected correctly"
+    return False, "Contains similar groups but not in N-acylglycine arrangement"
