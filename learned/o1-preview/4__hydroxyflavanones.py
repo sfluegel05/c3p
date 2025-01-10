@@ -21,8 +21,8 @@ def is_4__hydroxyflavanones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the flavanone core SMARTS pattern
-    flavanone_core_smarts = 'C1(=O)CCOc2ccccc12'  # Flavanone core with rings fused at positions 1 and 2
+    # Define the flavanone core SMARTS pattern (corrected)
+    flavanone_core_smarts = 'O=C1CCOc2ccccc12'  # Corrected flavanone core
     flavanone_core = Chem.MolFromSmarts(flavanone_core_smarts)
     if flavanone_core is None:
         return None, "Error in flavanone core SMARTS pattern"
@@ -31,14 +31,31 @@ def is_4__hydroxyflavanones(smiles: str):
     if not mol.HasSubstructMatch(flavanone_core):
         return False, "Flavanone core not found"
 
-    # Define SMARTS pattern for hydroxy group at 4' position on B-ring
-    hydroxy_b_ring_smarts = 'C1(=O)CCOc2ccc(O)cc12'  # Hydroxy at para position on B-ring
+    # Define SMARTS pattern for hydroxy group at 4' position on B-ring (corrected)
+    hydroxy_b_ring_smarts = 'O=C1CCOc2ccc(O)cc12'  # Corrected pattern with hydroxy on B-ring
     hydroxy_b_ring = Chem.MolFromSmarts(hydroxy_b_ring_smarts)
     if hydroxy_b_ring is None:
         return None, "Error in 4'-hydroxyflavanone SMARTS pattern"
 
-    # Check if molecule matches the 4'-hydroxyflavanone pattern
+    # Check if molecule has the hydroxy group at 4' position
     if mol.HasSubstructMatch(hydroxy_b_ring):
         return True, "Molecule is a 4'-hydroxyflavanone"
     else:
-        return False, "4'-hydroxy group at B-ring not found"
+        # Further check for substituted B-rings with hydroxy at 4' position
+        # Use a more general pattern for flavanone core with substitutions allowed
+        flavanone_general_smarts = 'O=C1CCOc2ccccc12'  # General flavanone core
+        flavanone_general = Chem.MolFromSmarts(flavanone_general_smarts)
+        matches = mol.GetSubstructMatches(flavanone_general)
+        if matches:
+            for match in matches:
+                # Get the atom indices of the B-ring carbons
+                b_ring_atoms = [match[i] for i in range(6,12)]  # Atoms of B-ring in the match
+                for atom_idx in b_ring_atoms:
+                    atom = mol.GetAtomWithIdx(atom_idx)
+                    # Check for hydroxy group attached to B-ring carbons
+                    for neighbor in atom.GetNeighbors():
+                        if neighbor.GetAtomicNum() == 8 and neighbor.GetDegree() == 1:
+                            return True, "Molecule is a 4'-hydroxyflavanone with substituted B-ring"
+            return False, "4'-hydroxy group on B-ring not found"
+        else:
+            return False, "Flavanone core not found"
