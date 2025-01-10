@@ -21,27 +21,20 @@ def is_thiol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for a thiol group (covering open chains, rings, etc.)
-    thiol_patterns = [
-        Chem.MolFromSmarts("[SX2H]"),          # standard thiol
-        Chem.MolFromSmarts("[cH][SX2H]"),      # thiol adjacent to aromatic carbon
-        Chem.MolFromSmarts("[C;!R]S"),         # aliphatic thiol
-    ]
-
-    # Look for thiol group in the molecule
-    for pattern in thiol_patterns:
-        if mol.HasSubstructMatch(pattern):
-            return True, "Contains a thiol group (-SH)"
+    # Define SMARTS pattern for a thiol group (must be connected to carbon)
+    thiol_pattern = Chem.MolFromSmarts("[CX4,CX3;!R][SX2H]")  # upgrade aliphatic context only
+    
+    # Search for the thiol group in the molecule structure
+    if mol.HasSubstructMatch(thiol_pattern):
+        return True, "Contains a thiol group (-SH) attached to a carbon"
 
     return False, "No thiol group found"
-
 
 # Example usage
 smiles_examples = [
     "CCSCCS", "CC(C)(CO)[C@@H](O)C(=O)NCCC(=O)NCCS", "SCC(CC)C",
-    "CCO[C@@H](CC1=CC=CC=C1)C(=O)N[C@@H](CCS(C)(=O)=O)C(=O)OC(C)C",
-    "NC(=O)CCCCC(S)CCS", "SC(CS)(C)C", "Mary had a little lamb",
-    "SCCCCCCCS", "NCCS"
+    "NC(=O)CCCCC(S)CCS", "SC(CS)(C)C", "NCCS", "OC(=O)C(=O)CS", 
+    "SC1=CC=C(F)C=C1", "SCCCCCCCS"
 ]
 
 # Test the function
