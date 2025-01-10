@@ -27,44 +27,43 @@ def is_nucleobase_analogue(smiles: str):
     
     # Basic size/composition checks
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt > 400:  # Lowered from 500
+    if mol_wt > 500:
         return False, "Molecular weight too high for nucleobase analogue"
     
     num_heavy = mol.GetNumHeavyAtoms()
-    if num_heavy > 25:  # Lowered from 30
+    if num_heavy > 30:
         return False, "Too many heavy atoms for nucleobase analogue"
     
-    # Must contain rings
-    ring_info = mol.GetRingInfo()
-    if not ring_info.NumRings():
-        return False, "No rings found"
-    
-    # Count nitrogens and carbons
+    # Count atoms
     n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     
     if n_count < 2 or n_count > 7:
         return False, "Incorrect number of nitrogen atoms for nucleobase"
-    if c_count < 4 or c_count > 12:
+    if c_count < 2 or c_count > 12:
         return False, "Incorrect number of carbon atoms for nucleobase"
-    
-    # Core structure patterns
-    nucleobase_patterns = [
-        # Pyrimidine cores (uracil, thymine, cytosine)
-        "[nX2,NX3]1[cX3,CX3][cX3,CX3][nX2,NX3][cX3,CX3][cX3,CX3]1", # Basic pyrimidine
-        "[NX3]1[CX3]=,:[CX3][NX3][CX3]=,:[CX3]1", # Reduced pyrimidine
+    if o_count > 4:
+        return False, "Too many oxygen atoms for nucleobase"
+
+    # Core structure patterns - more specific than before
+    nucleobase_cores = [
+        # Pyrimidine cores (uracil, thymine, cytosine-like)
+        "[nX2,NX3]1[cX3,CX3][cX3,CX3][nX2,NX3]([cX3,CX3](=O))[cX3,CX3]1(=O)", # Uracil-like
+        "[nX2,NX3]1[cX3,CX3][cX3,CX3][nX2,NX3][cX3,CX3](N)[cX3,CX3]1=O", # Cytosine-like
         
-        # Purine cores (adenine, guanine)
-        "[nX2,NX3]1[cX3,CX3]2[nX2,NX3][cX3,CX3][nX2,NX3][cX3,CX3][cX3,CX3]2[nX2,NX3][cX3,CX3]1",
-        "[NX3]1[CX3]=,:[CX3]2[NX3][CX3]=,:[NX3][CX3]=,:[CX3]2[NX3][CX3]1",
+        # Purine cores (adenine, guanine-like)
+        "[nX2,NX3]1[cX3,CX3]2[nX2,NX3][cX3,CX3][nX2,NX3][cX3,CX3](N)[cX3,CX3]2[nX2,NX3][cX3,CX3]1", # Adenine-like
+        "[nX2,NX3]1[cX3,CX3]2[nX2,NX3][cX3,CX3][nX2,NX3][cX3,CX3](=O)[cX3,CX3]2[nX2,NX3][cX3,CX3]1", # Guanine-like
         
         # Modified cores
-        "[nX2,NX3]1[cX3,CX3][cX3,CX3][nX2,NX3][cX3,CX3,nX2,NX3][cX3,CX3,nX2,NX3]1", # Modified pyrimidine
-        "[nX2,NX3]1[cX3,CX3]2[nX2,NX3][cX3,CX3][nX2,NX3][cX3,CX3,nX2][cX3,CX3]2[nX2,NX3][cX3,CX3]1" # Modified purine
+        "[nX2,NX3]1[cX3,CX3][cX3,CX3][nX2,NX3][cX3,CX3](=O)[nX2,NX3]1", # Modified pyrimidine
+        "[nX2,NX3]1[nX2,NX3][cX3,CX3][nX2,NX3][cX3,CX3](=O)[cX3,CX3]1" # Azapyrimidine
     ]
     
+    # Check for core structures
     found_core = False
-    for pattern in nucleobase_patterns:
+    for pattern in nucleobase_cores:
         if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
             found_core = True
             break
@@ -72,32 +71,26 @@ def is_nucleobase_analogue(smiles: str):
     if not found_core:
         return False, "No nucleobase core structure found"
     
-    # Essential functional groups
-    essential_groups = [
-        ("[CX3](=O)[NX3]", "amide"), # Amide
-        ("[NX3;H2,H1;!$(NC=O)]", "amine"), # Primary/secondary amine
-        ("[#6]=O", "carbonyl"), # Carbonyl
-        ("[NX2]=[CX3]", "imine"), # Imine
+    # Required functional group patterns in specific positions
+    essential_features = [
+        # At least one of these must be present
+        ("[nX2,NX3]1[cX3,CX3]([cX3,CX3])[nX2,NX3][cX3,CX3](=O)[cX3,CX3]1=O", "pyrimidine with carbonyls"),
+        ("[nX2,NX3]1[cX3,CX3]2[nX2,NX3][cX3,CX3][nX2,NX3][cX3,CX3](N)[cX3,CX3]2[nX2,NX3][cX3,CX3]1", "purine with amine"),
+        ("[nX2,NX3]1[cX3,CX3]2[nX2,NX3][cX3,CX3][nX2,NX3][cX3,CX3](=O)[cX3,CX3]2[nX2,NX3][cX3,CX3]1", "purine with carbonyl")
     ]
     
-    found_groups = []
-    for pattern, group_name in essential_groups:
+    found_features = []
+    for pattern, feature_name in essential_features:
         if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
-            found_groups.append(group_name)
+            found_features.append(feature_name)
     
-    if not found_groups:
-        return False, "Missing characteristic nucleobase functional groups"
+    if not found_features:
+        return False, "Missing characteristic nucleobase features"
     
-    # Additional filters
-    ring_atoms = set()
-    for ring in ring_info.AtomRings():
-        ring_atoms.update(ring)
-    
-    # Most atoms should be in rings for nucleobases
-    ring_atom_ratio = len(ring_atoms) / num_heavy
-    if ring_atom_ratio < 0.5:
-        return False, "Too few atoms in ring systems"
-    
+    # Ring analysis
+    ring_info = mol.GetRingInfo()
+    if not ring_info.NumRings():
+        return False, "No rings found"
+        
     # Success case
-    reason = f"Contains nucleobase core structure with {', '.join(found_groups)}"
-    return True, reason
+    return True, f"Contains {found_features[0]} structure with appropriate modifications"
