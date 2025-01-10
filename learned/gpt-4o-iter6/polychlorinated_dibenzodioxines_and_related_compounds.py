@@ -21,27 +21,28 @@ def is_polychlorinated_dibenzodioxines_and_related_compounds(smiles: str):
 
     # Check for sufficient halogen atoms (Cl or Br)
     halogen_count = sum(atom.GetSymbol() in ['Cl', 'Br'] for atom in mol.GetAtoms())
-    if halogen_count < 3:
-        return False, "Not enough halogen atoms for a polychlorinated or polybrominated compound"
+    if halogen_count < 2:
+        return False, "Not enough halogen atoms for a relevant compound"
 
-    # SMARTS patterns for checking the relevant structures
-    pcb_pattern = Chem.MolFromSmarts('c1ccccc1-c2ccccc2')  # Biphenyl structure
-    dioxin_pattern = Chem.MolFromSmarts('c1cc2Oc3cc(Cl)ccc3Oc2cc1')  # Chlorinated dibenzodioxin
-    furan_pattern = Chem.MolFromSmarts('c1cc2oc3cc(Cl)ccc3c2cc1')   # Chlorinated dibenzofuran
-
-    # SMARTS pattern for a more general polychlorinated aromatic compound
-    polychlorinated_aromatics_pattern = Chem.MolFromSmarts('c1cc(-c2ccccc2)cc1')
+    # Define SMARTS pattern for biphenyl structure potentially with various chlorination
+    biphenyl_pattern = Chem.MolFromSmarts('c1ccccc1-c2ccccc2')
+    
+    # Define SMARTS pattern for common polychlorinated dibenzodioxins
+    dioxin_patterns = [
+        Chem.MolFromSmarts('c1cc2Oc3ccc(cc3Oc2cc1)Cl'),  # Generic dioxin pattern
+        Chem.MolFromSmarts('c1cc2Oc3cc(Cl)c(Cl)cc3Oc2cc1')  # Specific chlorination
+    ]
+    
+    # Define SMARTS pattern for common polychlorinated dibenzofurans
+    furan_patterns = [
+        Chem.MolFromSmarts('c1cc2oc3ccc(cc3)c2cc1'),
+        Chem.MolFromSmarts('c1cc2oc3cc(Cl)c(Cl)cc3c2cc1')
+    ]
 
     # Check for presence of these patterns in the molecule
-    if (mol.HasSubstructMatch(pcb_pattern) or
-        mol.HasSubstructMatch(dioxin_pattern) or
-        mol.HasSubstructMatch(furan_pattern) or
-        mol.HasSubstructMatch(polychlorinated_aromatics_pattern)):
+    if (mol.HasSubstructMatch(biphenyl_pattern) or
+        any(mol.HasSubstructMatch(pattern) for pattern in dioxin_patterns) or
+        any(mol.HasSubstructMatch(pattern) for pattern in furan_patterns)):
         return True, "Matches polychlorinated dibenzodioxin or related compound pattern"
 
     return False, "Does not match polychlorinated dibenzodioxin or related compound pattern"
-
-# Example to test the function
-smiles_example = "Clc1cc2oc3ccccc3c2cc1"
-result, reason = is_polychlorinated_dibenzodioxines_and_related_compounds(smiles_example)
-print(f"Result: {result}, Reason: {reason}")
