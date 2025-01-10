@@ -11,6 +11,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_3_substituted_propionyl_CoA_4__(smiles: str):
     """
     Determines if a molecule is a 3-substituted propionyl-CoA(4-) based on its SMILES string.
+    Must have propionyl base structure substituted at 3-position and exactly 4 negative charges.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -31,52 +32,39 @@ def is_3_substituted_propionyl_CoA_4__(smiles: str):
     if len(charge_matches) != 4:
         return False, f"Found {len(charge_matches)} negative charges, need exactly 4"
 
-    # Check for adenine base (more flexible pattern)
-    adenine_pattern = Chem.MolFromSmarts("c1ncnc2[nH0]cnc12")
-    if not mol.HasSubstructMatch(adenine_pattern):
-        return False, "No adenine base found"
+    # Check for complete CoA core structure
+    coa_core = Chem.MolFromSmarts("[$(N1C=NC=2C(N)=NC=NC2=1)]" # Adenine
+                                 "[$(OC1C(O)C(COP([O-])([O-])=O)OC1)]" # Ribose + phosphate
+                                 "[$(OP(=O)([O-])OP(=O)([O-])OCC(C)(C)[CH](O))]" # Diphosphate + pantothenic acid
+                                 "[$(C(=O)NCCC(=O)NCCSC(=O))]") # Pantetheine arm + thioester
+    if not mol.HasSubstructMatch(coa_core):
+        return False, "Missing or incomplete CoA core structure"
 
-    # Check for ribose (simplified pattern)
-    ribose_pattern = Chem.MolFromSmarts("OC1C(O)C(CO)OC1")
-    if not mol.HasSubstructMatch(ribose_pattern):
-        return False, "No ribose moiety found"
+    # Check for 3-substituted propionyl structure (C-C-C with substitution at C3)
+    # The pattern looks for: S-C(=O)-CH2-CH(R)-R where R is not H
+    propionyl_pattern = Chem.MolFromSmarts("SC(=O)CC([!H])([!H])")
+    if not mol.HasSubstructMatch(propionyl_pattern):
+        return False, "No 3-substituted propionyl structure found"
 
-    # Check for phosphate groups (more flexible pattern)
-    phosphate_pattern = Chem.MolFromSmarts("OP(=O)([O-])O")
-    phosphate_matches = len(mol.GetSubstructMatches(phosphate_pattern))
-    if phosphate_matches < 3:
-        return False, f"Insufficient phosphate groups found: {phosphate_matches}"
-
-    # Check for pantetheine arm (more flexible pattern)
-    pantetheine_pattern = Chem.MolFromSmarts("NCCC(=O)NCCSC(=O)")
-    if not mol.HasSubstructMatch(pantetheine_pattern):
-        return False, "No pantetheine arm found"
-
-    # Check for thioester linkage
-    thioester_pattern = Chem.MolFromSmarts("SC(=O)C")
-    if not mol.HasSubstructMatch(thioester_pattern):
-        return False, "No thioester linkage found"
-
-    # Verify presence of acyl chain with at least 3 carbons
-    acyl_chain = Chem.MolFromSmarts("SC(=O)CC")
-    if not mol.HasSubstructMatch(acyl_chain):
-        return False, "Acyl chain too short or missing"
+    # Exclude specific patterns that would indicate different CoA derivatives
+    exclude_patterns = [
+        ("SC(=O)C(O)", "2-hydroxy"), # 2-hydroxy CoAs
+        ("SC(=O)CC(=O)", "3-oxo"), # 3-oxo CoAs
+        ("SC(=O)CCO", "hydroxy"), # hydroxy CoAs
+        ("SC(=O)C(=O)", "2-oxo"), # 2-oxo CoAs
+    ]
+    
+    for pattern, name in exclude_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            return False, f"Molecule is a {name}-CoA derivative"
 
     # Count key atoms to verify overall composition
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
     p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
     s_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 16)
-
-    # Basic sanity checks on atom counts
+    
     if p_count != 3:
         return False, f"Must have exactly 3 phosphorus atoms, found {p_count}"
     if s_count != 1:
         return False, f"Must have exactly 1 sulfur atom, found {s_count}"
-    if n_count < 5:
-        return False, f"Insufficient nitrogen atoms for CoA structure, found {n_count}"
-    if c_count < 20:
-        return False, f"Insufficient carbon atoms for CoA structure, found {c_count}"
 
-    # All criteria met
-    return True, "Contains CoA(4-) moiety with appropriate thioester linkage and substituted acyl chain"
+    return True, "Contains CoA(4-) moiety with 3-substituted propionyl structure"
