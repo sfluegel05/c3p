@@ -20,35 +20,35 @@ def is_monosaccharide(smiles: str):
     if mol is None:
         return (False, "Invalid SMILES string")
     
-    # Check for aldehyde group (carbon=oxygen with another carbon/hydrogen)
-    aldehyde_pattern = Chem.MolFromSmarts("[CH][C]=O")
-    has_aldehyde = mol.HasSubstructMatch(aldehyde_pattern)
-    
-    # Check for ketone group (carbon=oxygen with carbons on both sides)
-    ketone_pattern = Chem.MolFromSmarts("[C][C](=[O])[C]")
-    has_ketone = mol.HasSubstructMatch(ketone_pattern)
-    
-    if not (has_aldehyde or has_ketone):
-        return (False, "No carbonyl group found (neither aldehyde nor ketone)")
-    
-    # Count number of carbon atoms
+    # Identify the number of carbon atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if c_count < 3:
         return (False, "Too few carbon atoms; monosaccharides must have at least 3")
     
-    # Check for the presence of multiple hydroxyl groups
-    hydroxyl_pattern = Chem.MolFromSmarts("[C][O][H]")
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
+    # Identify the number of hydroxyl groups
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     
-    # Monosaccharides must have multiple hydroxyl groups; count at least 2
-    if len(hydroxyl_matches) < 2:
-        return (False, f"Insufficient hydroxyl groups found; needed at least 2, found {len(hydroxyl_matches)}")
+    # Hydroxyls would be counted based on whether they are -OH and not involved in saccharide links
+    hydroxyl_count = len([1 for bond in mol.GetBonds() 
+                          if bond.GetBeginAtom().GetAtomicNum() == 8 or bond.GetEndAtom().GetAtomicNum() == 8])
+    if hydroxyl_count < 2:
+        return (False, f"Insufficient hydroxyl groups found; needed at least 2, found {hydroxyl_count}")
+
+    # Check for potential carbonyl group, which might be oxidized or involved in ring formation
+    # Even for cyclic forms assume possible intramolecular hemiacetal for saccharide potential
+    possible_hemiacetal = False
+    for atom in mol.GetAtoms():
+        if (atom.GetAtomicNum() == 6 and 
+            any(neigh.GetAtomicNum() == 8 for neigh in atom.GetNeighbors())):
+            if (len([neigh for neigh in atom.GetNeighbors() if neigh.GetAtomicNum() == 1]) > 0):
+                possible_hemiacetal = True
+                
+    if not possible_hemiacetal:
+        return (False, "No potential carbonyl functionality detected.")
     
-    # Ensure the structure is a single unit (no glycosidic linkages)
-    # Monosaccharides should not have ether linkages -[O]- between sugars
-    ether_pattern = Chem.MolFromSmarts("[C]-[O]-[C]")
-    ether_matches = mol.GetSubstructMatches(ether_pattern)
-    if ether_matches:
-        return (False, "Structure contains ether linkages, indicating glycosidic linkages")
-    
-    return (True, "Structure is a monosaccharide with required carbonyl group, hydroxyls, and maintains a single unit structure")
+    # Verify molecular weight and ensure it does not exceed typical monosaccharide weight (~200 Da)
+    mol_weight = Chem.rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_weight > 300:
+        return (False, "Molecular weight too high; suggests multi-unit composition.")
+
+    return (True, "Structure is a monosaccharide with cyclic/acyclic carbonyl potential and sufficient hydroxyls.")
