@@ -24,11 +24,11 @@ def is_nonclassic_icosanoid(smiles: str):
 
     # Ensure 20 carbon count (specific count for C20 fatty acid backbone)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count != 20:
-        return False, "Does not have 20 carbons, which is required for C20 fatty acids"
+    if c_count < 20:
+        return False, "Does not have at least 20 carbons, which is required for C20 fatty acids"
 
     # Check for at least three double bonds, enforced for icosatrienoid backbones
-    dbl_bond_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts("C=C")))
+    dbl_bond_count = len([bond for bond in mol.GetBonds() if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE])
     if dbl_bond_count < 3:
         return False, "Insufficient double bonds (at least three required for icosatrienes)"
 
@@ -40,7 +40,7 @@ def is_nonclassic_icosanoid(smiles: str):
     if hydroxyl_count < 1 and epoxy_count < 1 and carboxylic_acid_count < 1:
         return False, "Lacking essential functional groups (need at least one OH, epoxy, or COOH group)"
 
-    # Use exclusion for classic derivatives based on known structures
+    # Exclude classic leukotrienes or prostanoids
     leukotriene_exclusion = Chem.MolFromSmarts("[CH2X4]=[CHX3][CH2X4][CHX4]=[CHX3][CHX4]C") 
     prostanoid_exclusion = Chem.MolFromSmarts("C1=CCCCC1[C](=O)O")
 
