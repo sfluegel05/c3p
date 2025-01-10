@@ -30,33 +30,38 @@ def is_sesterterpenoid(smiles: str):
     
     # Count number of carbons
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 20 or c_count > 30:
+    if c_count < 22 or c_count > 28:
         return False, f"Carbon count is {c_count}, which is not typical for a sesterterpenoid (expected ~25 carbons)"
-
-    # Look for isoprene units (C=C-C-C=C)
-    isoprene_pattern = Chem.MolFromSmarts("C=C-C-C=C")
-    isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
-    if len(isoprene_matches) < 2:
-        return False, f"Found {len(isoprene_matches)} isoprene units, less than expected for sesterterpenoid (at least 2)"
-
-    # Check for oxygen atoms (common in terpenoids)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count == 0:
-        return False, "No oxygen atoms found, not a terpenoid"
     
-    # Check for ring structures
+    # Check for the presence of rings (common in terpenoids)
     ring_info = mol.GetRingInfo()
-    if not ring_info.IsInitialized() or ring_info.NumRings() == 0:
+    if ring_info.NumRings() < 1:
         return False, "No ring structures found, unlikely to be a terpenoid"
     
-    # Additional terpenoid features (optional)
-    # Check for hydroxyl groups
+    # Check for oxygen atoms (common in terpenoids)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if o_count < 1:
+        return False, "No oxygen atoms found, terpenoids often contain oxygen"
+    
+    # Check for common functional groups in terpenoids
+    # Hydroxyl group
     hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    if len(hydroxyl_matches) == 0:
+    if not mol.HasSubstructMatch(hydroxyl_pattern):
         return False, "No hydroxyl groups found, which are common in terpenoids"
     
-    # Passed all checks
+    # Carbonyl group
+    carbonyl_pattern = Chem.MolFromSmarts("C=O")
+    if not mol.HasSubstructMatch(carbonyl_pattern):
+        return False, "No carbonyl groups found, which are common in terpenoids"
+    
+    # Calculate molecular weight
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 300 or mol_wt > 600:
+        return False, f"Molecular weight is {mol_wt:.2f}, which is not typical for a sesterterpenoid"
+    
+    # Check for terpenoid-like skeleton using fingerprint similarity (optional)
+    # This can be implemented if more advanced methods are allowed
+    
     return True, "Molecule meets criteria for a sesterterpenoid"
 
 __metadata__ = {
