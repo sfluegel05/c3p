@@ -21,36 +21,51 @@ def is_steroid_sulfate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a rough steroid backbone pattern (acknowledge complexity and why exact match is challenging)
-    # The SMARTS string "C1CCC2C(C1)CCC3C2CCC4C3CCC4" represents a basic cholesterol steroid ring pattern, not too specific for all steroids due to variability.
+    # Basic steroid core patterns, deducing a typical fused-ring backbone system
+    core_patterns = [
+        "C1CCC2C(C1)CCC3C2CCC4C3CCC4",  # Typical backbone
+        "[C@H]1([C@H]2CC[C@@H]3[C@@H]2[C@@H](CC[C@@H]4[C@@H]3CC[C@@H]1[C@@H]4CO)O)"
+        # These can be improved/extended based on specific examples or libraries
+    ]
 
-    # Check for presence of a rough steroid backbone
-    steroid_pattern = Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2CCC4C3CCC4")
-    if not mol.HasSubstructMatch(steroid_pattern):
+    # Check presence of a steroid-like core
+    steroid_match = any(mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)) for pattern in core_patterns)
+    if not steroid_match:
         return False, "No steroid backbone found"
 
-    # Look for sulfate groups esters
-    sulfate_pattern = Chem.MolFromSmarts("OS(=O)(=O)O")  # Corrected sulfate ester bond
+    # Recognize sulfate group
+    sulfate_patterns = [
+        "OS(=O)(=O)[O-]",  # Handling of sulfate ions
+        "OS([O-])(=O)=O",  # Additional potential form in salts
+        "OS(=O)(=O)O"     # Sulfate ester
+    ]
 
-    # Check if the sulfate group exists and is connected to the steroid backbone
-    sulfate_matches = mol.GetSubstructMatches(sulfate_pattern)
-    if not sulfate_matches:
-        return False, "No sulfate groups connected as esters"
+    # Check any pattern of sulfate ester presence
+    sulfate_match = any(mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)) for pattern in sulfate_patterns)
+    if not sulfate_match:
+        return False, "No sulfate groups correctly attached"
 
-    # Check connectivity to alcohols (which would have been the type to esterify)
-    hydroxyl_pattern = Chem.MolFromSmarts("CO")
-    if not mol.HasSubstructMatch(hydroxyl_pattern):
-        return False, "No hydroxyl groups found for esterification"
+    # Ensuring sulfate bond attach to potential hydroxy site's carbon first before linkage
+    alcohol_attached_sulfate = False
+    for sulfate_pattern in sulfate_patterns:
+        sulfate = Chem.MolFromSmarts(sulfate_pattern)
+        matches = mol.GetSubstructMatches(sulfate)
+        for match in matches:
+            # Should possess connectivity to alcohol site that forms the ester
+            atom = mol.GetAtomWithIdx(match[0])  # Getting S atom
+            neighbors = [n for n in atom.GetNeighbors() if n.GetSymbol() == 'O' and n.GetDegree() == 2]  # Check O attaches to C
+            for n in neighbors:
+                if any(nei.GetSymbol() == 'C' for nei in n.GetNeighbors()):
+                    alcohol_attached_sulfate = True
+                    break
 
-    for match in sulfate_matches:
-        # Ensure ester linkage to the hydroxy site on predicted steroid backbone
-        atom_indices = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetSymbol() == 'O']
-        if any(mol.GetAtomWithIdx(idx).GetNeighbors()[0].GetSymbol() == 'C' for idx in atom_indices):
-            return True, "Contains sulfate ester linked to steroid backbone at a hydroxy group"
+    # If all checks succeed, return true.
+    if alcohol_attached_sulfate:
+        return True, "Contains sulfate ester linked to steroid backbone at a hydroxy group"
 
     return False, "Sulfate groups found but not linked properly to steroid backbone"
 
-# Example structure for testing (estrone sodium sulfate)
-smiles = "[Na].C[C@]12CC[C@H]3C(=CCc4cc(OS([O-])(=O)=O)ccc34)[C@@H]1CCC2=O"
+# Example for testing
+smiles = "[Na+].C[C@]12CC[C@H]3C(=CCc4cc(OS([O-])(=O)=O)ccc34)[C@@H]1CCC2=O"
 result, reason = is_steroid_sulfate(smiles)
 print(f"Result: {result}, Reason: {reason}")
