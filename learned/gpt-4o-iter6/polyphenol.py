@@ -2,7 +2,6 @@
 Classifies: CHEBI:26195 polyphenol
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_polyphenol(smiles: str):
     """
@@ -20,8 +19,8 @@ def is_polyphenol(smiles: str):
     # Parse SMILES into a molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return None, "Invalid SMILES string"
-
+        return False, "Invalid SMILES string"
+    
     # Define pattern for benzene ring (aromatic ring)
     benzene_pattern = Chem.MolFromSmarts('c1ccccc1')
     
@@ -31,21 +30,32 @@ def is_polyphenol(smiles: str):
     # Must have at least 2 benzene rings
     if len(benzene_matches) < 2:
         return False, "Fewer than 2 benzene rings found"
-
+    
     # Check each benzene ring for at least one hydroxy substitution
-    hydroxy_pattern = Chem.MolFromSmarts('[OH]')
     benzene_with_hydroxy_count = 0
     for match in benzene_matches:
-        # Check if any atom in benzene match has a hydroxy neighbor
+        has_hydroxy = False
         for atom_idx in match:
             atom = mol.GetAtomWithIdx(atom_idx)
             for neighbor in atom.GetNeighbors():
-                if neighbor.HasSubstructMatch(hydroxy_pattern):
-                    benzene_with_hydroxy_count += 1
-                    break
+                # Check if the neighbor is an oxygen and has a single hydrogen (implying -OH)
+                if neighbor.GetAtomicNum() == 8:  # Oxygen
+                    # Ensure it has only one hydrogen attached to be -OH
+                    found_hydrogen = False
+                    for sub_neighbor in neighbor.GetNeighbors():
+                        if sub_neighbor.GetAtomicNum() == 1:  # Hydrogen
+                            # O-H implies this is a hydroxy group
+                            found_hydrogen = True
+                            break
+                    if found_hydrogen:
+                        has_hydroxy = True
+                        break
+            if has_hydroxy:
+                benzene_with_hydroxy_count += 1
+                break
     
     # Each benzene ring must have at least one hydroxy substitution
-    if benzene_with_hydroxy_count < len(benzene_matches):
+    if benzene_with_hydroxy_count < 2:
         return False, "Not all benzene rings have a hydroxy substitution"
 
     return True, "Contains 2 or more benzene rings each with at least one hydroxy group"
