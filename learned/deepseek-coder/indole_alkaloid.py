@@ -26,12 +26,16 @@ def is_indole_alkaloid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # More flexible indole pattern that matches substituted nitrogens and fused systems
+    # Expanded indole patterns to match more variations
     indole_patterns = [
         Chem.MolFromSmarts("[nX3]1ccc2ccccc12"),  # Basic indole with any nitrogen type
         Chem.MolFromSmarts("[nX2]1ccc2ccccc12"),  # Indole with double-bonded nitrogen
         Chem.MolFromSmarts("[n+]1ccc2ccccc12"),   # Indole with charged nitrogen
-        Chem.MolFromSmarts("[nH]1ccc2ccccc12")    # Original pattern for completeness
+        Chem.MolFromSmarts("[nH]1ccc2ccccc12"),   # Indole with hydrogen on nitrogen
+        Chem.MolFromSmarts("[nX3]1ccc2c1cccc2"),  # Indole with fused rings
+        Chem.MolFromSmarts("[nX2]1ccc2c1cccc2"),  # Indole with fused rings and double-bonded nitrogen
+        Chem.MolFromSmarts("[n+]1ccc2c1cccc2"),   # Indole with fused rings and charged nitrogen
+        Chem.MolFromSmarts("[nH]1ccc2c1cccc2")    # Indole with fused rings and hydrogen on nitrogen
     ]
 
     # Check for any indole pattern match
@@ -39,14 +43,23 @@ def is_indole_alkaloid(smiles: str):
     if not indole_found:
         return False, "No indole skeleton found"
 
-    # Check for nitrogen atoms (alkaloids typically contain nitrogen)
+    # Check for nitrogen atoms in the context of the indole skeleton
     nitrogen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
     if nitrogen_count == 0:
         return False, "No nitrogen atoms found"
 
-    # Check molecular weight - indole alkaloids typically >200 Da
+    # Check if at least one nitrogen is part of the indole skeleton
+    indole_nitrogen_found = any(
+        any(atom.GetAtomicNum() == 7 for atom in mol.GetAtoms()[match[0]:match[-1]+1])
+        for pattern in indole_patterns
+        for match in mol.GetSubstructMatches(pattern)
+    )
+    if not indole_nitrogen_found:
+        return False, "No nitrogen atoms in indole skeleton"
+
+    # Check molecular weight - indole alkaloids typically >150 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 200:
+    if mol_wt < 150:
         return False, "Molecular weight too low for indole alkaloid"
 
     return True, "Contains indole skeleton and nitrogen atoms"
