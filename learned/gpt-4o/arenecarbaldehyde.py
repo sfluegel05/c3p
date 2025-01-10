@@ -30,19 +30,19 @@ def is_arenecarbaldehyde(smiles: str):
     if not aldehyde_matches:
         return False, "No aldehyde group found"
     
-    # Check if carbon of aldehyde is directly attached to an aromatic atom
+    # Check for aromatic moiety directly attached to the aldehyde carbon
+    aromatic_pattern = Chem.MolFromSmarts("a")
+    
     for match in aldehyde_matches:
         aldehyde_carbon_idx = match[0]
-        aldehyde_carbon_atom = mol.GetAtomWithIdx(aldehyde_carbon_idx)
+        aromatic_neighbors = [neighbor.GetIdx() for neighbor in mol.GetAtomWithIdx(aldehyde_carbon_idx).GetNeighbors() if neighbor.GetIsAromatic()]
         
-        for neighbor in aldehyde_carbon_atom.GetNeighbors():
-            if neighbor.GetIsAromatic():
-                aromatic_system = False
-                for aromatic_neighbor in neighbor.GetNeighbors():
-                    if aromatic_neighbor.GetIsAromatic():
-                        aromatic_system=True
-                if not aromatic_system:
-                    continue
-                return True, "Contains aldehyde group directly attached to an aromatic moiety"
+        if aromatic_neighbors:
+            for aromatic_atom_idx in aromatic_neighbors:
+                atom = mol.GetAtomWithIdx(aromatic_atom_idx)
+                if atom.GetDegree() > 1:  # More complex connectivity suggests being part of an aromatic system
+                    # Check if part of an aromatic ring or part of conjugation
+                    if mol.HasSubstructMatch(aromatic_pattern):
+                        return True, "Contains aldehyde group directly attached to an aromatic moiety"
     
-    return False, "Aldehyde group not attached to aromatic moiety"
+    return False, "Aldehyde group not properly attached to aromatic moiety"
