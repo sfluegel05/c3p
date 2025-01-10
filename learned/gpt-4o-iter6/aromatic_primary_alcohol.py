@@ -23,10 +23,13 @@ def is_aromatic_primary_alcohol(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define primary alcohol attached to aromatic pattern:
-    # A primary alcohol has the form [CH2]OH, where [CH2] is bonded to an aromatic ring.
-    aromatic_primary_alcohol_pattern = Chem.MolFromSmarts("[CH2][OH]c1[cH,c,n,o,s]")
+    # It is [CH2][OH] where [CH2] connects to an aromatic ring [c].
+    aromatic_primary_alcohol_pattern = Chem.MolFromSmarts("[c][CH2][OH]")
 
     # Find substructures matching the aromatic primary alcohol pattern
+    if aromatic_primary_alcohol_pattern is None:
+        return False, "Invalid SMARTS pattern"
+
     matches = mol.GetSubstructMatches(aromatic_primary_alcohol_pattern)
     
     if matches:
