@@ -11,7 +11,7 @@ def is_organometalloidal_compound(smiles: str):
     Determines if a molecule is an organometalloidal compound based on its SMILES string.
     An organometalloidal compound is defined as 'A compound having bonds between one or more metalloid atoms and one or more carbon atoms of an organyl group.'
 
-    Metalloid elements include boron (B), silicon (Si), germanium (Ge), arsenic (As), antimony (Sb), and tellurium (Te).
+    Metalloid elements considered here are arsenic (As) and antimony (Sb), as they are commonly involved in organometalloidal compounds.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,8 +20,8 @@ def is_organometalloidal_compound(smiles: str):
         bool: True if molecule is an organometalloidal compound, False otherwise
         str: Reason for classification
     """
-    # List of metalloid atomic numbers
-    metalloid_atomic_nums = [5, 14, 32, 33, 51, 52]  # B, Si, Ge, As, Sb, Te
+    # List of metalloid atomic numbers to consider
+    metalloid_atomic_nums = [33, 51]  # As, Sb
 
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
@@ -31,16 +31,32 @@ def is_organometalloidal_compound(smiles: str):
     # Flag to check for metalloid-carbon bond
     has_metalloid_carbon_bond = False
 
-    # Iterate over atoms
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() in metalloid_atomic_nums:
-            # This is a metalloid atom
-            metalloid_atom = atom
-            # Get neighbors
-            neighbors = atom.GetNeighbors()
-            for neighbor in neighbors:
-                if neighbor.GetAtomicNum() == 6:
-                    # Metalloid atom is bonded to carbon
-                    return True, f"Metalloid atom ({atom.GetSymbol()}) bonded to carbon atom"
+    # Iterate over bonds
+    for bond in mol.GetBonds():
+        atom1 = bond.GetBeginAtom()
+        atom2 = bond.GetEndAtom()
+        atomic_num1 = atom1.GetAtomicNum()
+        atomic_num2 = atom2.GetAtomicNum()
+
+        # Check if bond is between metalloid and carbon
+        if ((atomic_num1 in metalloid_atomic_nums and atomic_num2 == 6) or
+            (atomic_num2 in metalloid_atomic_nums and atomic_num1 == 6)):
+
+            # Check if carbon is part of an organyl group (exclude carbonyl carbons)
+            if atom1.GetAtomicNum() == 6:
+                carbon_atom = atom1
+            else:
+                carbon_atom = atom2
+
+            # Exclude carbons double-bonded to oxygen (carbonyl groups)
+            is_carbonyl = False
+            for neighbor in carbon_atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 8 and carbon_atom.GetBondBetweenAtoms(carbon_atom.GetIdx(), neighbor.GetIdx()).GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                    is_carbonyl = True
+                    break
+
+            if not is_carbonyl:
+                return True, f"Metalloid atom ({atom1.GetSymbol() if atomic_num1 in metalloid_atomic_nums else atom2.GetSymbol()}) bonded to carbon atom of organyl group"
+
     # If no metalloid-carbon bonds found
-    return False, "No metalloid-carbon bonds found"
+    return False, "No metalloid-carbon bonds to organyl groups found"
