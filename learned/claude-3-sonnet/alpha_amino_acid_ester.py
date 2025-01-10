@@ -25,63 +25,53 @@ def is_alpha_amino_acid_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for ester pattern (-C(=O)OR)
-    ester_pattern = Chem.MolFromSmarts("[C;!$(C(=O)N)](=O)O[C,H]")
-    if not mol.HasSubstructMatch(ester_pattern):
-        return False, "No ester group found"
-
-    # Look for basic alpha-amino acid ester pattern
-    # Carbon with both amine and ester attached
-    basic_pattern = Chem.MolFromSmarts("[NX3;!$(NC=O)][CH1,CH2][C](=O)O[C,H]")
+    # Pattern 1: Basic alpha-amino acid ester pattern
+    # Matches both primary and secondary amines
+    pattern1 = Chem.MolFromSmarts("[NX3;!$(N=*);!$(N#*)][CH1,CH2][C](=O)O[C,H]")
     
-    # Alternative pattern for N-substituted amino acid esters
-    substituted_pattern = Chem.MolFromSmarts("[#7;!$(NC=O);!$(N=*);!$(N#*)][CH1,CH2][C](=O)O[C,H]")
+    # Pattern 2: N-substituted amino acid ester pattern (including tertiary amines)
+    pattern2 = Chem.MolFromSmarts("[#7;!$(N=*);!$(N#*)][CH1,CH2][C](=O)O[C,H]")
     
-    # Check if either pattern matches
-    if not (mol.HasSubstructMatch(basic_pattern) or mol.HasSubstructMatch(substituted_pattern)):
-        return False, "No alpha-amino acid ester pattern found"
+    # Pattern 3: Cyclic amino acid ester pattern (like proline derivatives)
+    pattern3 = Chem.MolFromSmarts("[#7;R][CH1,CH2;R][C](=O)O[C,H]")
     
-    # Get all atoms that match either pattern
-    matches = []
-    for pattern in [basic_pattern, substituted_pattern]:
+    # Pattern 4: Complex ring systems with embedded amino acid ester
+    pattern4 = Chem.MolFromSmarts("[#7;R][CH1,CH2][C](=O)O[C,H]")
+    
+    patterns = [
+        (pattern1, "basic alpha-amino acid ester"),
+        (pattern2, "N-substituted amino acid ester"),
+        (pattern3, "cyclic amino acid ester"),
+        (pattern4, "ring-containing amino acid ester")
+    ]
+    
+    for pattern, pattern_name in patterns:
         if mol.HasSubstructMatch(pattern):
-            matches.extend(mol.GetSubstructMatches(pattern))
+            matches = mol.GetSubstructMatches(pattern)
+            for match in matches:
+                n_atom = mol.GetAtomWithIdx(match[0])
+                c_atom = mol.GetAtomWithIdx(match[1])
+                
+                # Verify nitrogen properties
+                if n_atom.GetAtomicNum() != 7:  # Must be nitrogen
+                    continue
+                    
+                # Check if carbon is really alpha to both N and C(=O)
+                has_n = False
+                has_ester = False
+                for neighbor in c_atom.GetNeighbors():
+                    if neighbor.GetAtomicNum() == 7:  # Nitrogen
+                        has_n = True
+                    elif neighbor.GetAtomicNum() == 6:  # Carbon
+                        for bond in neighbor.GetBonds():
+                            other_atom = bond.GetOtherAtom(neighbor)
+                            if other_atom.GetAtomicNum() == 8 and bond.GetBondType() == Chem.BondType.DOUBLE:
+                                has_ester = True
+                
+                if has_n and has_ester:
+                    # Additional check for valid ester group
+                    ester_env = Chem.MolFromSmarts("[C](=O)O[C,H]")
+                    if mol.HasSubstructMatch(ester_env):
+                        return True, f"Contains {pattern_name} pattern"
     
-    # Verify the matches
-    for match in matches:
-        n_atom = mol.GetAtomWithIdx(match[0])
-        c_atom = mol.GetAtomWithIdx(match[1])
-        
-        # Check nitrogen hybridization (should be sp3)
-        if n_atom.GetHybridization() != Chem.HybridizationType.SP3:
-            continue
-            
-        # Check if nitrogen is part of an amide (exclude)
-        amide_pattern = Chem.MolFromSmarts("[NX3][C](=O)")
-        is_amide = False
-        for neighbor in n_atom.GetNeighbors():
-            if neighbor.GetAtomicNum() == 6:  # Carbon
-                for bond in neighbor.GetBonds():
-                    other_atom = bond.GetOtherAtom(neighbor)
-                    if other_atom.GetAtomicNum() == 8 and bond.GetBondType() == Chem.BondType.DOUBLE:
-                        is_amide = True
-                        break
-        if is_amide:
-            continue
-            
-        # Verify carbon is really alpha to both N and C(=O)
-        has_n = False
-        has_ester = False
-        for neighbor in c_atom.GetNeighbors():
-            if neighbor.GetAtomicNum() == 7:  # Nitrogen
-                has_n = True
-            elif neighbor.GetAtomicNum() == 6:  # Carbon
-                for bond in neighbor.GetBonds():
-                    other_atom = bond.GetOtherAtom(neighbor)
-                    if other_atom.GetAtomicNum() == 8 and bond.GetBondType() == Chem.BondType.DOUBLE:
-                        has_ester = True
-        
-        if has_n and has_ester:
-            return True, "Contains alpha-amino acid ester pattern"
-            
     return False, "No valid alpha-amino acid ester pattern found"
