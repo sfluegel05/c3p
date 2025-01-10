@@ -21,19 +21,19 @@ def is_galactosylceramide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a flexible sphingosine-like backbone pattern allowing variations
-    sphingosine_pattern = Chem.MolFromSmarts("C[C@@H](O)C(N[C@H]1COC(O)C(O)C(O)C1O)")
+    # General sphingosine backbone pattern
+    sphingosine_pattern = Chem.MolFromSmarts("C[C@H](O)CC(N)[C@H](O)")
     if not mol.HasSubstructMatch(sphingosine_pattern):
-        return False, "No flexible sphingosine-like backbone found"
-    
-    # Look for amide linkage with long carbon chain
-    amide_chain_pattern = Chem.MolFromSmarts("C(=O)N[C@@H](C)C")
-    if not mol.HasSubstructMatch(amide_chain_pattern):
-        return False, "No amide linkage with long carbon chain found"
-    
-    # Look for galactose head group pattern - allow for variability like sulfation
-    galactose_pattern = Chem.MolFromSmarts("C1(O[C@H](CO)[C@H](OC)C(O)C(O)C1O)")
-    if not mol.HasSubstructMatch(galactose_pattern):
-        return False, "No variable galactose head group found"
+        return False, "No general sphingosine backbone found"
 
-    return True, "Contains a flexible sphingosine-like backbone with amide linkage and galactose head group"
+    # Amide linkage - long hydrocarbon chain
+    amide_pattern = Chem.MolFromSmarts("C(=O)N[C@@H](C)CCCCCCCCCCCCCCCC")
+    if not mol.HasSubstructMatch(amide_pattern):
+        return False, "No long-chain amide linkage found"
+
+    # Flexible pattern for galactose including variations like sulfation
+    galactose_pattern = Chem.MolFromSmarts("CO[C@H]1O[C@H](CO)C(O)C(O)C1O")
+    if not mol.HasSubstructMatch(galactose_pattern):
+        return False, "No flexible galactose head group found"
+
+    return True, "Contains a general sphingosine backbone with long-chain amide linkage and a flexible galactose head group"
