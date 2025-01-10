@@ -53,4 +53,17 @@ def is_methyl_branched_fatty_acid(smiles: str):
                     if len([n for n in neighbor.GetNeighbors() if n.GetAtomicNum() == 6 and n.GetDegree() > 1]) > 0:
                         return False, "Non-methyl branches detected"
 
+    # Additional check to ensure the molecule is a fatty acid
+    # Fatty acids typically have a long carbon chain with a carboxylic acid at one end
+    # We can check if the carboxylic acid is at the end of the chain
+    carboxylic_acid_atoms = mol.GetSubstructMatches(carboxylic_acid_pattern)
+    if len(carboxylic_acid_atoms) == 0:
+        return False, "Carboxylic acid group not found at the end of the chain"
+
+    # Check if the carboxylic acid is at the end of the chain
+    for match in carboxylic_acid_atoms:
+        carbon_atom = mol.GetAtomWithIdx(match[0])
+        if carbon_atom.GetDegree() != 2:
+            return False, "Carboxylic acid group not at the end of the chain"
+
     return True, "Contains carboxylic acid group, methyl branches, and a long carbon chain"
