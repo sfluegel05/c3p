@@ -24,13 +24,14 @@ def is_diol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Count the number of hydroxyl groups (-OH)
-    hydroxyl_count = 0
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 8:  # Oxygen
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetAtomicNum() == 1:  # Hydrogen
-                    hydroxyl_count += 1
+    # Define a SMARTS pattern for hydroxyl groups (-OH)
+    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
+    
+    # Find all matches for the hydroxyl pattern
+    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
+    
+    # Count the number of hydroxyl groups
+    hydroxyl_count = len(hydroxyl_matches)
 
     # Check if the molecule has exactly two hydroxyl groups
     if hydroxyl_count == 2:
