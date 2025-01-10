@@ -25,36 +25,48 @@ def is_aromatic_amino_acid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for aromatic ring
-    has_aromatic = False
-    for atom in mol.GetAtoms():
-        if atom.GetIsAromatic():
-            has_aromatic = True
-            break
+    ring_info = mol.GetRingInfo()
+    aromatic_rings = []
+    for ring in ring_info.AtomRings():
+        if all(mol.GetAtomWithIdx(i).GetIsAromatic() for i in ring):
+            aromatic_rings.append(ring)
             
-    if not has_aromatic:
+    if not aromatic_rings:
         return False, "No aromatic ring found"
 
-    # Look for amino acid pattern
-    # This SMARTS pattern looks for:
-    # - A carbon with a carboxylic acid (-C(=O)OH)
-    # - Connected to a nitrogen (can be NH2, NHR, or NR2)
-    amino_acid_pattern = Chem.MolFromSmarts("[NX3][CX4]C(=O)[OH]")
-    if not mol.HasSubstructMatch(amino_acid_pattern):
-        return False, "No amino acid group found"
+    # Look for carboxylic acid group
+    carboxyl_pattern = Chem.MolFromSmarts("C(=O)[OH]")
+    if not mol.HasSubstructMatch(carboxyl_pattern):
+        return False, "No carboxylic acid group found"
 
-    # Additional check for aromatic ring connected to amino acid portion
-    # We'll look at the distance between aromatic atoms and the amino acid carbon
-    amino_acid_matches = mol.GetSubstructMatches(amino_acid_pattern)
-    if not amino_acid_matches:
-        return False, "Could not locate amino acid group atoms"
-        
-    for match in amino_acid_matches:
-        amino_c = match[1]  # The carbon connected to both NH2 and COOH
-        for atom in mol.GetAtoms():
-            if atom.GetIsAromatic():
-                # Check if aromatic ring is within reasonable distance of amino acid group
-                path_length = len(Chem.GetShortestPath(mol, atom.GetIdx(), amino_c))
-                if path_length <= 4:  # Within 3 bonds typically
-                    return True, "Contains aromatic ring connected to amino acid group"
+    # Look for amine group (primary or secondary)
+    amine_pattern = Chem.MolFromSmarts("[NX3;H2,H1;!$(NC=O)]")
+    if not mol.HasSubstructMatch(amine_pattern):
+        return False, "No suitable amine group found"
+
+    # Check for peptide bonds - if present, likely a peptide not an amino acid
+    peptide_pattern = Chem.MolFromSmarts("[NX3;H1,H0][CX3](=[OX1])[#6]")
+    if len(mol.GetSubstructMatches(peptide_pattern)) > 0:
+        return False, "Contains peptide bonds - likely a peptide not an amino acid"
+
+    # Get matches for both amine and carboxyl groups
+    amine_matches = mol.GetSubstructMatches(amine_pattern)
+    carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
+
+    # Check if amine and carboxyl are connected through a reasonable path
+    # and are properly connected to an aromatic ring
+    for amine_match in amine_matches:
+        amine_idx = amine_match[0]
+        for carboxyl_match in carboxyl_matches:
+            carboxyl_idx = carboxyl_match[0]
+            path = Chem.GetShortestPath(mol, amine_idx, carboxyl_idx)
+            if 2 <= len(path) <= 4:  # Reasonable path length for amino acid
+                # Check connection to aromatic ring
+                for ring in aromatic_rings:
+                    for ring_atom in ring:
+                        to_amine = len(Chem.GetShortestPath(mol, ring_atom, amine_idx))
+                        to_carboxyl = len(Chem.GetShortestPath(mol, ring_atom, carboxyl_idx))
+                        if min(to_amine, to_carboxyl) <= 4:
+                            return True, "Contains aromatic ring properly connected to amino acid group"
 
     return False, "Aromatic ring not properly connected to amino acid group"
