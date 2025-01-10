@@ -23,9 +23,14 @@ def is_N_acetyl_amino_acid(smiles: str):
     
     # Define SMARTS pattern for N-acetyl-amino acid
     # Looking for: Acetyl group (C(=O)C) attached to a nitrogen (N)
-    acetyl_amino_pattern = Chem.MolFromSmarts("C(=O)C-N")
+    acetyl_amino_pattern = Chem.MolFromSmarts("CC(=O)N")
     
-    if mol.HasSubstructMatch(acetyl_amino_pattern):
-        return True, "Contains acetyl group attached to nitrogen, classifies as N-acetyl-amino acid"
+    # Look for additional carboxylate group (C(O)O)
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[O-]")  # Consider carboxylate ion form
+    carboxylic_acid_neutral_pattern = Chem.MolFromSmarts("C(=O)O")  # Consider neutral form
+    
+    if (mol.HasSubstructMatch(acetyl_amino_pattern) and 
+        (mol.HasSubstructMatch(carboxylic_acid_pattern) or mol.HasSubstructMatch(carboxylic_acid_neutral_pattern))):
+        return True, "Contains acetyl group attached to nitrogen with carboxylic acid group, classifies as N-acetyl-amino acid"
     else:
-        return False, "Does not contain acetyl group attached to nitrogen"
+        return False, "Does not contain required acetyl-to-nitrogen bond with adjacent carboxylic acid group"
