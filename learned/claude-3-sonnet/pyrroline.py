@@ -11,7 +11,7 @@ def is_pyrroline(smiles: str):
     """
     Determines if a molecule contains a pyrroline ring based on its SMILES string.
     A pyrroline is a dihydropyrrole - a 5-membered heterocyclic ring containing 
-    one nitrogen atom and one double bond.
+    one nitrogen atom with various degrees of unsaturation.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,71 +26,83 @@ def is_pyrroline(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Make a copy for Kekulization
-    mol_kekulized = Chem.Mol(mol)
-    try:
-        Chem.Kekulize(mol_kekulized, clearAromaticFlags=True)
-    except:
-        mol_kekulized = None  # If kekulization fails, set to None
-    
-    # Basic pyrroline patterns
+    # Basic patterns for pyrroline and related structures
     patterns = [
-        # 2,3-dihydro-1H-pyrrole (3,4-double bond)
-        "[NX3R5]1[CH2][CH2][CH]=[CH]1",
-        # 2,5-dihydro-1H-pyrrole (3,4-double bond)
-        "[NX3R5]1[CH2][CH]=[CH][CH2]1",
-        # 4,5-dihydro-1H-pyrrole (2,3-double bond)
-        "[NX3R5]1[CH]=[CH][CH2][CH2]1",
+        # Basic pyrroline patterns (including saturated and unsaturated forms)
+        "[NX3,NX2]1[#6]~[#6]~[#6]~[#6]1",  # Generic pattern
         
-        # More general patterns
-        "[NX3R5]1[CR4,CR3][CR4,CR3][CR4,CR3][CR4,CR3]1",  # Any saturated/unsaturated combo
-        "[nX3R5]1[cR5,CR4,CR3][cR5,CR4,CR3][cR5,CR4,CR3][cR5,CR4,CR3]1",  # Aromatic version
-        
-        # Patterns with carbonyls
-        "[NX3R5]1[CR4,CR3][C](=[O,S])[CR4,CR3][CR4,CR3]1",
-        "[NX3R5]1[C](=[O,S])[CR4,CR3][CR4,CR3][CR4,CR3]1",
+        # Lactam forms (pyrrolones)
+        "[NX3]1[#6][#6](=[O,S])[#6]~[#6]1",
+        "[NX3]1[#6](=[O,S])[#6]~[#6]~[#6]1",
         
         # Imine forms
-        "[NX2R5]1=[CR4,CR3][CR4,CR3][CR4,CR3][CR4,CR3]1",
+        "[NX2]1=[#6][#6]~[#6]~[#6]1",
         
         # Charged forms
-        "[N+X4R5]1[CR4,CR3][CR4,CR3][CR4,CR3][CR4,CR3]1"
+        "[N+X4]1[#6]~[#6]~[#6]~[#6]1",
+        
+        # Enamine forms
+        "[NX3]1[#6]=[#6][#6]~[#6]1",
+        
+        # Handle different tautomers
+        "[NX3]1[#6]~[#6](=[O,S])[#6]~[#6]1",
     ]
 
+    # Convert patterns to SMARTS objects
     valid_patterns = []
     for pattern in patterns:
         patt = Chem.MolFromSmarts(pattern)
         if patt is not None:
             valid_patterns.append(patt)
-    
+
     if not valid_patterns:
         return None, "Failed to create valid SMARTS patterns"
 
+    # Check for matches
     for patt in valid_patterns:
         if mol.HasSubstructMatch(patt):
-            # Additional validation
-            rings = mol.GetRingInfo().AtomRings()
-            for ring in rings:
-                if len(ring) == 5:  # Check 5-membered rings
-                    ring_atoms = [mol.GetAtomWithIdx(i) for i in ring]
-                    n_count = sum(1 for atom in ring_atoms if atom.GetAtomicNum() == 7)
-                    if n_count == 1:  # One nitrogen
-                        # Count double bonds and aromatic bonds in ring
-                        double_bonds = 0
-                        aromatic_bonds = 0
-                        for i in range(len(ring)):
-                            atom1_idx = ring[i]
-                            atom2_idx = ring[(i + 1) % 5]
-                            bond = mol.GetBondBetweenAtoms(atom1_idx, atom2_idx)
-                            if bond.GetBondTypeAsDouble() == 2:
-                                double_bonds += 1
-                            if bond.GetIsAromatic():
-                                aromatic_bonds += 1
-                        
-                        # Check conditions for pyrroline
-                        if aromatic_bonds == 5:  # Aromatic ring is not pyrroline
-                            continue
-                        if double_bonds == 1 or (double_bonds == 0 and any(a.GetFormalCharge() > 0 for a in ring_atoms)):
-                            return True, "Contains pyrroline ring (5-membered ring with N and appropriate unsaturation)"
-            
+            matches = mol.GetSubstructMatches(patt)
+            for match in matches:
+                # Get the matched ring atoms
+                ring_atoms = [mol.GetAtomWithIdx(i) for i in match]
+                
+                # Verify it's a 5-membered ring
+                ring_info = mol.GetRingInfo()
+                rings = ring_info.AtomRings()
+                is_in_5ring = False
+                for ring in rings:
+                    if len(ring) == 5 and all(atom.GetIdx() in ring for atom in ring_atoms):
+                        is_in_5ring = True
+                        break
+                
+                if not is_in_5ring:
+                    continue
+                
+                # Count nitrogens in the ring
+                n_count = sum(1 for atom in ring_atoms if atom.GetAtomicNum() == 7)
+                if n_count != 1:
+                    continue
+                
+                # Count total ring unsaturation (double bonds + formal charges)
+                double_bonds = 0
+                for i in range(len(match)):
+                    atom1_idx = match[i]
+                    atom2_idx = match[(i + 1) % 5]
+                    bond = mol.GetBondBetweenAtoms(atom1_idx, atom2_idx)
+                    if bond.GetBondTypeAsDouble() == 2:
+                        double_bonds += 1
+                
+                formal_charges = sum(abs(atom.GetFormalCharge()) for atom in ring_atoms)
+                
+                # Check for aromatic ring
+                aromatic_atoms = sum(1 for atom in ring_atoms if atom.GetIsAromatic())
+                
+                # If it's fully aromatic, it's not a pyrroline
+                if aromatic_atoms == 5:
+                    continue
+                    
+                # Valid pyrroline should have appropriate unsaturation
+                if double_bonds > 0 or formal_charges > 0:
+                    return True, "Contains pyrroline ring (5-membered ring with N and appropriate unsaturation)"
+
     return False, "No pyrroline ring found"
