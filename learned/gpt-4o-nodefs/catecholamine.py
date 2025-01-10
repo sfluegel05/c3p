@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_catecholamine(smiles: str):
     """
     Determines if a molecule is a catecholamine based on its SMILES string.
-    Catecholamines typically have a catechol moiety (benzene with hydroxyl groups)
-    and an amine group.
+    A catecholamine typically has a catechol moiety (benzene with hydroxyl groups on adjacent carbons)
+    and an amine group attached via a two-carbon side chain.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,24 +21,18 @@ def is_catecholamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for catechol moiety (benzene with hydroxyl groups, allowing flexibility)
-    catechol_moiety = Chem.MolFromSmarts("c1cc(O)c(O)c(O)c1 |c1cc(O)c(O)cc1|")  # Allow flexibility in hydroxyl positioning
-    catechol_matches = mol.GetSubstructMatches(catechol_moiety)
-    if not catechol_matches:
+    # Look for catechol moiety (benzene with hydroxyl groups on adjacent carbons)
+    catechol_pattern = Chem.MolFromSmarts("c1cc(O)c(O)cc1")
+    if not mol.HasSubstructMatch(catechol_pattern):
         return False, "No catechol moiety found"
     
-    # Look for an amine group (allowing tertiary and quaternary amines)
-    amine_patterns = [
-        Chem.MolFromSmarts("[NX3;H2,H1,H0;!$(NC=O)]"),  # Terminal nitrogen patterns (primary, secondary, tertiary amines)
-        Chem.MolFromSmarts("[NX4+]")  # Quaternary amine (charged nitrogen)
-    ]
-
-    amine_found = any(mol.HasSubstructMatch(pattern) for pattern in amine_patterns)
-    if not amine_found:
-        return False, "No amine group found"
+    # Ensure presence of an amine group attached by a two-carbon side chain
+    side_chain_amine_pattern = Chem.MolFromSmarts("C[C@H](O)[C,N]")
+    if not mol.HasSubstructMatch(side_chain_amine_pattern):
+        return False, "No appropriate amine group found"
     
     return True, "Contains catechol moiety and amine group indicating a catecholamine"
 
 # Example usage
 print(is_catecholamine("CC(C)NC[C@H](O)c1ccc(O)c(O)c1"))  # L-isoprenaline
-print(is_catecholamine("COC1=CC=CC=C1"))  # Anisole (should not be catecholamine)
+print(is_catecholamine("C=C(O)C1=CC(=CCC1)O"))  # Non-catecholamine (This SMILES example does not depict a catecholamine)
