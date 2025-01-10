@@ -6,8 +6,7 @@ from rdkit import Chem
 def is_amino_acid(smiles: str):
     """
     Determines if a molecule is an amino acid based on its SMILES string.
-    An amino acid typically has an amino group, a carboxyl group, and a side chain
-    attached to a central α-carbon.
+    An amino acid typically has an amino group and a carboxyl group attached to the same carbon (α-carbon).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,24 +22,19 @@ def is_amino_acid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define SMARTS patterns for amino group and carboxyl group
-    amino_pattern = Chem.MolFromSmarts("[NH2,NH1,NH0+]")
-    carboxyl_pattern = Chem.MolFromSmarts("C(=O)[O;H1,-]")
-    
-    # Search for amino and carboxyl groups in the molecule
-    amino_matches = mol.GetSubstructMatches(amino_pattern)
-    carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
-    
-    if not amino_matches:
-        return False, "No amino group found"
-    if not carboxyl_matches:
-        return False, "No carboxyl group found"
+    # We expect these to be attached to the same carbon atom
+    amino_group = Chem.MolFromSmarts("[NX3;H2,H1,H0;!$(NC=O)][$([C;H2,H1;!$(C=O)])]")
+    carboxyl_group = Chem.MolFromSmarts("[$(C(=O)[O;H1,-1,-])]")
 
     # Check if amino and carboxyl groups are attached to the same carbon atom
-    # Assume the patterns matched a single atom for amino and one or two for carboxyl (O only in case of salts)
-    possible_a_carbon = {a[0] for a in amino_matches}.intersection({c[0] for c in carboxyl_matches})
+    matches_a = mol.GetSubstructMatches(amino_group)
+    matches_c = mol.GetSubstructMatches(carboxyl_group)
     
-    if not possible_a_carbon:
-        return False, "Amino and carboxyl groups are not connected to the same α-carbon"
-    
+    # Look for common carbon indices in both matches (represents α-carbon)
+    alpha_carbons = set(m[1] for m in matches_a).intersection(set(m[0] for m in matches_c))
+
+    if not alpha_carbons:
+        return False, "Amino and carboxyl groups are not attached to the same α-carbon"
+
     # If the structure passes all tests, consider it an amino acid
     return True, "Identified as an amino acid with appropriate functional groups"
