@@ -14,35 +14,49 @@ def is_straight_chain_saturated_fatty_acid(smiles: str):
         bool: True if the molecule is a straight-chain saturated fatty acid, False otherwise
         str: Reason for classification
     """
-    
     # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return None, "Invalid SMILES string"
 
-    # Look for the carboxylic acid group (-C(=O)O)
-    carboxylate_pattern = Chem.MolFromSmarts("C(=O)[O]")
+    # Look for the carboxylic acid group pattern
+    carboxylate_pattern = Chem.MolFromSmarts("C(=O)O")
     if not mol.HasSubstructMatch(carboxylate_pattern):
         return False, "No carboxylic acid group found"
-    
-    # Identify the largest carbon chain
-    carbon_chains = mol.GetSubstructMatches(Chem.MolFromSmarts("C"))
-    if not carbon_chains:
-        return False, "No carbon chain found"
 
-    # Check for saturation (no double or triple bonds in the carbon chain)
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 6:  # Carbon
-            if any([bond.GetBondType() in (Chem.BondType.DOUBLE, Chem.BondType.TRIPLE) for bond in atom.GetBonds()]):
-                return False, "Carbon chain contains double or triple bonds"
+    # Start from the carboxylic group and trace the carbon chain
+    for match in mol.GetSubstructMatches(carboxylate_pattern):
+        carboxyl_carbon = mol.GetAtomWithIdx(match[0])
 
-    # Check for branching (more than two single bonds for any carbon)
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 6:  # Carbon
-            n_single_bonds = sum(1 for bond in atom.GetBonds() if bond.GetBondType() == Chem.BondType.SINGLE)
-            if n_single_bonds > 2:
-                return False, "Carbon chain is branched"
-    
+        # Traverse the longest straight carbon chain starting near carboxyl group
+        visited_atoms = set()
+        stack = [(carboxyl_carbon, None)]  # atom and previous carbon
+
+        while stack:
+            atom, prev_carbon = stack.pop()
+            visited_atoms.add(atom.GetIdx())
+
+            # Check saturation and branching:
+            if atom.GetAtomicNum() == 6:  # Carbon
+                # non-terminal carbons past the first should have exactly two hydrogen removals
+                single_bond_partners = [
+                    b.GetOtherAtom(atom) for b in atom.GetBonds() 
+                    if b.GetBondType() == Chem.BondType.SINGLE and b.GetOtherAtom(atom).GetIdx() != prev_carbon
+                ]
+
+                if len(single_bond_partners) > 2:
+                    return False, "Carbon chain is branched"
+
+                for bond in atom.GetBonds():
+                    # Verify it's part of the main chain
+                    if bond.GetBondType() not in (Chem.BondType.SINGLE,):
+                        return False, "Carbon chain contains double or triple bonds"
+
+                # Continue visiting neighbors
+                for partner in single_bond_partners:
+                    if partner.GetIdx() not in visited_atoms:
+                        stack.append((partner, atom.GetIdx()))
+
     return True, "Molecule is a straight-chain saturated fatty acid"
 
 # Examples
