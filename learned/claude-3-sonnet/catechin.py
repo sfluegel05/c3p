@@ -10,7 +10,7 @@ from rdkit.Chem import AllChem
 def is_catechin(smiles: str):
     """
     Determines if a molecule is a catechin based on its SMILES string.
-    Catechins are flavan-3-ols with various substitution patterns.
+    Catechins are flavan-3-ols with a characteristic structure and substitution pattern.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -24,67 +24,72 @@ def is_catechin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # More flexible benzopyran core pattern that allows for substitutions
-    # Matches the basic C6-C3-C6 skeleton with oxygen bridge
-    core_pattern = Chem.MolFromSmarts("[#6]1-[#6]-[#6]-c2c(-[#6]1)c([#6,#8,#1])c([#6,#8,#1])c([#6,#8,#1])c2")
-    if not mol.HasSubstructMatch(core_pattern):
-        return False, "No flavonoid core structure found"
+    # Basic flavan-3-ol core (more flexible pattern)
+    # Matches the benzopyran core with 3-OH, allowing for various substitutions
+    core_pattern = Chem.MolFromSmarts("[OX2][CH1]1[CH2][c]2c([CH1]1)cccc2")
+    
+    # Alternative core pattern to catch more complex derivatives
+    core_pattern2 = Chem.MolFromSmarts("O1[CH1][CH2]c2c([CH1]1)c([OH1,O])cc([OH1,O])c2")
+    
+    if not (mol.HasSubstructMatch(core_pattern) or mol.HasSubstructMatch(core_pattern2)):
+        return False, "Missing required flavan-3-ol core structure"
 
-    # Check for the characteristic flavan-3-ol structure with more flexibility
-    # Allows for various substitutions and both stereochemistries
-    flavan3ol_pattern = Chem.MolFromSmarts("O1[C][C]([OH1])c2c(-[C]1)cccc2")
-    if not mol.HasSubstructMatch(flavan3ol_pattern):
-        return False, "No flavan-3-ol structure found"
+    # Count rings to ensure basic structure
+    ring_count = Chem.rdMolDescriptors.CalcNumRings(mol)
+    if ring_count < 2:
+        return False, "Insufficient ring count for catechin structure"
 
-    # Count hydroxyl groups (both aliphatic and aromatic)
-    oh_pattern = Chem.MolFromSmarts("[OH1]")
-    oh_matches = len(mol.GetSubstructMatches(oh_pattern))
-    if oh_matches < 2:
-        return False, f"Too few hydroxyl groups ({oh_matches}) for a catechin"
-
-    # Look for characteristic substitution patterns
+    # Check for characteristic A-ring substitution (5,7-dihydroxy pattern)
+    a_ring = Chem.MolFromSmarts("O1[CH1][CH2]c2c([CH1]1)c([OH1,O])cc([OH1,O])c2")
+    
+    # Check for B-ring patterns (allowing for various hydroxylation patterns)
+    b_ring_dihydroxy = Chem.MolFromSmarts("c1c([OH1,O])c([OH1,O])ccc1")
+    b_ring_trihydroxy = Chem.MolFromSmarts("c1c([OH1,O])c([OH1,O])c([OH1,O])cc1")
+    
     features = []
     
-    # Check for common A-ring substitution patterns (more flexible)
-    a_ring_pattern = Chem.MolFromSmarts("O1[C][C]c2c(-[C]1)c(O)cc(O)c2")
-    if mol.HasSubstructMatch(a_ring_pattern):
+    if mol.HasSubstructMatch(a_ring):
         features.append("5,7-dihydroxy pattern")
-
-    # Check for B-ring patterns with more flexibility
-    catechol_pattern = Chem.MolFromSmarts("c1c(O)c(O)cc([C])c1")
-    pyrogallol_pattern = Chem.MolFromSmarts("c1c(O)c(O)c(O)cc1")
     
-    if mol.HasSubstructMatch(pyrogallol_pattern):
-        features.append("trihydroxyphenyl group")
-    elif mol.HasSubstructMatch(catechol_pattern):
-        features.append("dihydroxyphenyl group")
-
+    if mol.HasSubstructMatch(b_ring_trihydroxy):
+        features.append("trihydroxyphenyl B-ring")
+    elif mol.HasSubstructMatch(b_ring_dihydroxy):
+        features.append("dihydroxyphenyl B-ring")
+        
     # Check for common modifications
-    ester_pattern = Chem.MolFromSmarts("OC(=O)")
+    galloyl_pattern = Chem.MolFromSmarts("C(=O)c1c([OH1])c([OH1])c([OH1])cc1")
     methoxy_pattern = Chem.MolFromSmarts("OC")
-    sulfate_pattern = Chem.MolFromSmarts("OS(=O)(=O)O")
+    sulfate_pattern = Chem.MolFromSmarts("OS(=O)(=O)[OH1]")
     
-    if mol.HasSubstructMatch(ester_pattern):
-        features.append("ester derivative")
+    if mol.HasSubstructMatch(galloyl_pattern):
+        features.append("galloyl group")
     if mol.HasSubstructMatch(methoxy_pattern):
         features.append("methoxy substitution")
     if mol.HasSubstructMatch(sulfate_pattern):
         features.append("sulfate group")
 
-    # Basic structural checks
-    ring_count = Chem.rdMolDescriptors.CalcNumRings(mol)
-    if ring_count < 2:
-        return False, "Insufficient ring count for a catechin structure"
-
+    # Count hydroxyl groups
+    oh_pattern = Chem.MolFromSmarts("[OH1]")
+    oh_count = len(mol.GetSubstructMatches(oh_pattern))
+    
+    # Basic structural requirements
+    if oh_count < 2:
+        return False, f"Insufficient hydroxyl groups ({oh_count}) for catechin"
+    
     mol_wt = Chem.Descriptors.ExactMolWt(mol)
-    if mol_wt < 200 or mol_wt > 1500:
+    if mol_wt < 250 or mol_wt > 2000:
         return False, f"Molecular weight ({mol_wt:.1f}) outside typical range for catechins"
 
-    # Count aromatic rings
-    arom_pattern = Chem.MolFromSmarts("a1aaaaa1")
-    arom_rings = len(mol.GetSubstructMatches(arom_pattern))
-    if arom_rings < 1:
-        return False, "Missing required aromatic ring system"
+    # Additional check for characteristic oxygen pattern
+    o_pattern = Chem.MolFromSmarts("[OX2]")
+    o_count = len(mol.GetSubstructMatches(o_pattern))
+    if o_count < 3:
+        return False, "Insufficient oxygen atoms for catechin structure"
 
-    feature_str = ", ".join(features) if features else "basic"
-    return True, f"Contains flavan-3-ol core with {oh_matches} hydroxyl groups. Features: {feature_str}"
+    # If we have the core and at least some characteristic features, classify as catechin
+    if features:
+        feature_str = ", ".join(features)
+        return True, f"Catechin derivative with {feature_str}. Contains {oh_count} hydroxyl groups"
+    
+    # If we have the core but no characteristic features, be more cautious
+    return False, "Has basic structure but lacks characteristic catechin substitution patterns"
