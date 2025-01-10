@@ -6,10 +6,7 @@ from rdkit import Chem
 def is_3_hydroxy_fatty_acyl_CoA_4_(smiles: str):
     """
     Classifies a molecule as a 3-hydroxy fatty acyl-CoA(4-) based on its SMILES string.
-
-    The criteria focus on the presence of a 3-hydroxy group, a Coenzyme A moiety,
-    and deprotonated phosphate groups. It also considers the long fatty acid chain.
-
+    
     Args:
         smiles (str): The SMILES string of the molecule.
 
@@ -17,31 +14,23 @@ def is_3_hydroxy_fatty_acyl_CoA_4_(smiles: str):
         bool: True if the molecule is a 3-hydroxy fatty acyl-CoA(4-), False otherwise
         str: Reason for classification
     """
-    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if not mol:
         return False, "Invalid SMILES string"
 
-    # Check for a 3-hydroxy group on the fatty acyl chain
-    three_hydroxy_pattern = Chem.MolFromSmarts("[C@H](CC(O)C)[CX3](=O)")
-    if not mol.HasSubstructMatch(three_hydroxy_pattern):
-        return False, "No correctly positioned 3-hydroxy group found on fatty acid chain"
+    # Pattern for 3-hydroxy group attached to a fatty acyl chain (-C-C(COC)O-)
+    hydroxy_pattern = Chem.MolFromSmarts("[C@@H](O)[C;!R]")  # 3-hydroxy pattern
+    if not mol.HasSubstructMatch(hydroxy_pattern):
+        return False, "No 3-hydroxy fatty acid moiety found"
 
-    # Coenzyme A moiety pattern including the thioester linkage
-    coa_pattern = Chem.MolFromSmarts("C(=O)SCCNC(=O)CCNC(=O)[C@H](C)(C)COP(=O)([O-])[O-]")
+    # Pattern for Coenzyme A via thioester linkage (-C(=O)SCCNC)
+    coa_pattern = Chem.MolFromSmarts("C(=O)SCCNC(=O)")  
     if not mol.HasSubstructMatch(coa_pattern):
-        return False, "Coenzyme A moiety with thioester linkage not found"
+        return False, "Coenzyme A moiety via thioester linkage not found"
 
-    # Look for at least two deprotonated phosphate groups
-    phosphate_pattern = Chem.MolFromSmarts("P(=O)([O-])[O-]")
-    phosphate_matches = len(mol.GetSubstructMatches(phosphate_pattern))
-    if phosphate_matches < 2:
-        return False, f"Found {phosphate_matches} deprotonated phosphate groups, need at least 2"
+    # Pattern for negative charge in phosphate & diphosphate groups - ([O-])
+    phosphates_pattern = Chem.MolFromSmarts("P([O-])([O-])")
+    if len(mol.GetSubstructMatches(phosphates_pattern)) < 1:
+        return False, "Deprotonated phosphate groups not found"
 
-    # Fatty acid chain recognition
-    # In this case, the diversity and extensive length of the chain may require flexible pattern matching.
-    acyl_chain_pattern = Chem.MolFromSmarts("[CX3](=O)C")
-    if not mol.HasSubstructMatch(acyl_chain_pattern):
-        return False, "Insufficiently long or structured fatty acyl chain detected"
-
-    return True, "The molecule is identified as a 3-hydroxy fatty acyl-CoA(4-)"
+    return True, "The molecule is a 3-hydroxy fatty acyl-CoA(4-)"
