@@ -29,46 +29,67 @@ def is_long_chain_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for adenine base (part of CoA)
-    adenine_pattern = Chem.MolFromSmarts("n1cnc2c(N)ncnc12")
-    if not mol.HasSubstructMatch(adenine_pattern):
-        return False, "No adenine moiety found (required for CoA)"
+    # Define and validate all SMARTS patterns
+    patterns = {
+        'adenine': 'n1cnc2c(N)ncnc12',
+        'thioester': 'C(=O)SC',
+        'pantetheine': 'CCNC(=O)CCNC(=O)',
+        'diphosphate': 'OP(=O)(O)OP(=O)(O)',
+        'ribose_phosphate': 'OCC1OC(n)C(O)C1OP(O)(O)=O'
+    }
+    
+    smarts_patterns = {}
+    for name, pattern in patterns.items():
+        smarts_mol = Chem.MolFromSmarts(pattern)
+        if smarts_mol is None:
+            return False, f"Internal error: Invalid SMARTS pattern for {name}"
+        smarts_patterns[name] = smarts_mol
 
-    # Check for ribose with phosphate (part of CoA) 
-    ribose_phosphate = Chem.MolFromSmarts("OCC1OC(n2cnc3c2)C(O)C1OP(O)(O)=O")
-    if not mol.HasSubstructMatch(ribose_phosphate):
-        return False, "No ribose-phosphate moiety found (required for CoA)"
+    # Check for required CoA structural features
+    required_features = ['adenine', 'thioester', 'pantetheine', 'diphosphate']
+    for feature in required_features:
+        if not mol.HasSubstructMatch(smarts_patterns[feature]):
+            return False, f"Missing {feature} moiety required for CoA structure"
 
-    # Check for pantothenic acid part (part of CoA)
-    pantothenic = Chem.MolFromSmarts("NCCC(=O)NCCC(O)C(C)(C)")
-    if not mol.HasSubstructMatch(pantothenic):
-        return False, "No pantothenic acid moiety found (required for CoA)"
-
-    # Check for thioester linkage
-    thioester = Chem.MolFromSmarts("[CX3](=[OX1])[SX2]")
-    if not mol.HasSubstructMatch(thioester):
-        return False, "No thioester linkage found"
-
-    # Count carbons in the fatty acid chain
-    # First, find the thioester carbon
-    thioester_matches = mol.GetSubstructMatches(thioester)
+    # Find the thioester carbon and traverse the fatty acid chain
+    thioester_matches = mol.GetSubstructMatches(smarts_patterns['thioester'])
     if not thioester_matches:
-        return False, "Could not analyze fatty acid chain"
+        return False, "Could not identify thioester linkage"
     
-    # Count carbons in the main chain (excluding CoA)
-    # This is an approximation - we count all carbons not part of CoA structure
-    coa_carbons = 23  # Approximate number of carbons in CoA
+    # Get the total number of carbons and oxygens
     total_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    chain_carbons = total_carbons - coa_carbons
     
+    # CoA typically has 21-23 carbons depending on configuration
+    # Subtract from total to get fatty acid chain length
+    # Allow for some variation in CoA structure
+    estimated_coa_carbons = 22  # Average
+    chain_carbons = total_carbons - estimated_coa_carbons
+    
+    # Check chain length (C13-C22)
     if chain_carbons < 13:
-        return False, f"Fatty acid chain too short (C{chain_carbons}, need C13-C22)"
+        return False, f"Fatty acid chain too short (approximately C{chain_carbons}, need C13-C22)"
     if chain_carbons > 22:
-        return False, f"Fatty acid chain too long (C{chain_carbons}, need C13-C22)"
+        return False, f"Fatty acid chain too long (approximately C{chain_carbons}, need C13-C22)"
 
-    # Additional check for diphosphate bridge
-    diphosphate = Chem.MolFromSmarts("OP(=O)(O)OP(=O)(O)")
-    if not mol.HasSubstructMatch(diphosphate):
-        return False, "No diphosphate bridge found (required for CoA)"
-
-    return True, f"Long-chain fatty acyl-CoA with approximately C{chain_carbons} fatty acid chain"
+    # Additional checks for common features
+    # Count unsaturations
+    double_bonds = rdMolDescriptors.CalcNumAliphaticDoubleBonds(mol)
+    triple_bonds = rdMolDescriptors.CalcNumAliphaticTripleBonds(mol)
+    
+    # Look for common modifications
+    hydroxy_pattern = Chem.MolFromSmarts('CO')
+    oxo_pattern = Chem.MolFromSmarts('CC(=O)C')
+    
+    features = []
+    if double_bonds > 0:
+        features.append(f"{double_bonds} double bond(s)")
+    if mol.HasSubstructMatch(hydroxy_pattern):
+        features.append("hydroxy group(s)")
+    if mol.HasSubstructMatch(oxo_pattern):
+        features.append("oxo group(s)")
+    
+    feature_str = ", ".join(features)
+    if feature_str:
+        feature_str = f" with {feature_str}"
+    
+    return True, f"Long-chain fatty acyl-CoA (approximately C{chain_carbons}){feature_str}"
