@@ -48,6 +48,17 @@ def is_carbonate_ester(smiles: str):
             if not has_carbon_neighbor:
                 return False, f"Oxygen atom {oxygen_atom.GetIdx()} is not bonded to a carbon atom (not an organyl group)"
 
+    # Additional check to avoid false positives: ensure no other interfering functional groups
+    # For example, check for carboxylic acids, esters, etc.
+    carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
+    if mol.HasSubstructMatch(carboxylic_acid_pattern):
+        return False, "Contains a carboxylic acid group, which is not a carbonate ester"
+
+    ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H0]")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    if len(ester_matches) > 1:
+        return False, "Contains multiple ester groups, which may interfere with carbonate ester classification"
+
     return True, "Contains a carbonate ester functional group with organyl substituents"
 
 
