@@ -6,7 +6,6 @@ from rdkit import Chem
 def is_polyprenol_phosphate(smiles: str):
     """
     Determines if a molecule is a polyprenol phosphate based on its SMILES string.
-    A polyprenol phosphate is characterized by a polyprenyl chain terminated by a phosphate or diphosphate group.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -18,27 +17,25 @@ def is_polyprenol_phosphate(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return None, "Invalid SMILES string"
     
-    # Define SMARTS for isoprene units
-    isoprene_pattern = Chem.MolFromSmarts("C(=C)C-C")
-
+    # Define SMARTS for polyprenyl chain (patterns of isoprene units)
+    isoprene_pattern = Chem.MolFromSmarts("C=C-C-C")
+    
     # Find matching substructures for isoprene units
     isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
-
-    # Check for sufficient isoprene units (polyprenol usually has multiple units)
-    if len(isoprene_matches) < 2: # Adjust this number appropriately to classify based on definition
+    if len(isoprene_matches) < 2:  # Must be more than one isoprene unit
         return False, "Too few isoprene units for polyprenol"
 
-    # Define SMARTS patterns for phosphate and diphosphate groups
-    phosphate_pattern = Chem.MolFromSmarts("[O]P(=O)(O)O")
-    diphosphate_pattern = Chem.MolFromSmarts("OP(=O)([O])OP(=O)([O])O")
-
-    # Check whether the molecule contains a terminal phosphate or diphosphate group
-    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
-    diphosphate_matches = mol.GetSubstructMatches(diphosphate_pattern)
-
-    if not (phosphate_matches or diphosphate_matches):
-        return False, "No terminal phosphate or diphosphate group found"
+    # Define SMARTS for phosphate groups
+    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)O")
+    diphosphate_pattern = Chem.MolFromSmarts("P(=O)(O)OP(=O)(O)O")
+    
+    # Check if it contains a phosphate or diphosphate group
+    has_phosphate = mol.HasSubstructMatch(phosphate_pattern)
+    has_diphosphate = mol.HasSubstructMatch(diphosphate_pattern)
+    
+    if not (has_phosphate or has_diphosphate):
+        return False, "No phosphate or diphosphate group found"
 
     return True, "Contains polyprenyl chain with terminal phosphate or diphosphate group"
