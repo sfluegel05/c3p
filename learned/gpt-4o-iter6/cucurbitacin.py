@@ -2,12 +2,13 @@
 Classifies: CHEBI:16219 cucurbitacin
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import rdqueries
 
 def is_cucurbitacin(smiles: str):
     """
     Determines if a molecule is a cucurbitacin based on its SMILES string.
-    Cucurbitacins are tetracyclic triterpenoids derived from cucurbitane.
+    Cucurbitacins are tetracyclic triterpenoids derived from cucurbitane,
+    typically featuring extensive hydroxylation and distinctive carbonyl groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,29 +23,28 @@ def is_cucurbitacin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for the tetracyclic triterpenoid structure, generically as 4 rings
-    ring_info = mol.GetRingInfo()
-    if not ring_info.IsInitialized():
-        return False, "Ring information could not be determined"
-    
-    num_rings = len(ring_info.AtomRings())
-    if num_rings < 4:
+    # Check for at least 4 rings (approximation for tetracyclic structure)
+    if len(Chem.GetSymmSSSR(mol)) < 4:
         return False, "Less than 4 rings, does not meet tetracyclic criteria"
     
-    # Simplistic checks for key functional groups
-    hydroxyl_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetAtomMapNum() is None)
-    if hydroxyl_count < 1:
-        return False, "Does not have expected hydroxyl groups"
+    # Check for hydroxyl groups using SMARTS [#6][OH]
+    hydroxyl_smarts = Chem.MolFromSmarts('[CX4][OH]')
+    if not mol.HasSubstructMatch(hydroxyl_smarts):
+        return False, "Missing expected hydroxyl groups"
+    
+    # Check for carbonyl groups using SMARTS C=O
+    carbonyl_smarts = Chem.MolFromSmarts('C=O')
+    if not mol.HasSubstructMatch(carbonyl_smarts):
+        return False, "Missing expected carbonyl groups"
 
-    carbonyl_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetAtomMapNum() == 1)
-    if carbonyl_count < 1:
-        return False, "Does not have expected carbonyl groups"
-    
-    # Count total carbon atoms
+    # Count total carbon atoms, cucurbitacins typically have 30 carbons
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if carbon_count < 20:
-        return False, "Too few carbons to represent common cucurbitacins"
+    if carbon_count < 25:
+        return False, "Too few carbons to represent typical cucurbitacins"
     
-    # Optionally, match specific substructure patterns if known
+    # Provide a more detailed structural match, targeting the cucurbitane backbone
+    cucurbitane_smarts = Chem.MolFromSmarts('C1CCC2C3C1C(=O)C=C4C3C(C2)[C@@]5(CC[C@H](O)[C@@H](O)C5=O)C4')
+    if not mol.HasSubstructMatch(cucurbitane_smarts):
+        return False, "Does not contain the cucurbitane backbone"
     
-    return True, "Contains structural features typical of cucurbitacins"
+    return True, "This molecule matches cucurbitacin structural features typical of tetracyclic triterpenoids"
