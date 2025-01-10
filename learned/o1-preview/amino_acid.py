@@ -5,8 +5,6 @@ Classifies: CHEBI:33709 amino acid
 Classifies: amino acid
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_amino_acid(smiles: str):
     """
@@ -26,15 +24,14 @@ def is_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for carboxylic acid group: -C(=O)OH
-    carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
+    # Look for carboxylic acid group: C(=O)OH
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O[H]")
     carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
     if len(carboxylic_acid_matches) == 0:
         return False, "No carboxylic acid group found"
     
-    # Look for amino groups: -NH2, -NHR, -NR2 (excluding amides, nitro groups, nitriles)
-    # Exclude nitrogens connected to carbonyl carbons (amides), nitro groups, and nitriles
-    amino_group_pattern = Chem.MolFromSmarts("[NX3;$([H2,$(H1-,H0-)]);!$(NC=O);!$(N=O);!$(N#C)]")
+    # Look for amino groups: primary or secondary amines (excluding amides)
+    amino_group_pattern = Chem.MolFromSmarts("[N;H1,H2;!$(N-C=O)]")
     amino_group_matches = mol.GetSubstructMatches(amino_group_pattern)
     if len(amino_group_matches) == 0:
         return False, "No amino group found"
@@ -56,9 +53,9 @@ __metadata__ = {   'chemical_class': {   'id': None,
                      'max_instances_in_prompt': 100,
                      'test_proportion': 0.1},
     'message': None,
-    'attempt': 0,
-    'success': False,
-    'best': False,
+    'attempt': 1,
+    'success': True,
+    'best': True,
     'error': '',
     'stdout': None,
     'num_true_positives': None,
