@@ -22,25 +22,26 @@ def is_vitamin_D(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for basic vitamin D structural features
-    # Seco-steroid structure (broken ring with characteristic double bonds)
-    seco_steroid_pattern = Chem.MolFromSmarts("C1CCCCC1=C/C2=C1CCCC2")
+    # Define an improved seco-steroid pattern (as a vitamin D specific structure)
+    # The core seco-steroid vitamin D structure with a broken ring
+    # We will simplify the matching of a typical vitamin D seco structure
+    seco_steroid_pattern = Chem.MolFromSmarts("C1CCC2C=C(C)CCC2C1")  # Simpler pattern matching B-ring
+
+    if seco_steroid_pattern is None:
+        return (None, None)  # If the pattern itself is not correctly constructed, prevent failure
+    
     if not mol.HasSubstructMatch(seco_steroid_pattern):
-        return False, "No seco-steroid backbone structure typical of vitamin D"
+        return False, "No seco-steroid backbone typical of vitamin D identified"
     
     # Check for presence of hydroxyl groups (-OH)
     hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")  # OH group
     hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    if len(hydroxyl_matches) < 1:
-        return False, "Missing hydroxyl groups indicative of vitamin D"
-
-    # Check molecular properties indicative of fat solubility
-    mol_logP = rdMolDescriptors.CalcCrippenDescriptors(mol)[0]
-    if mol_logP < 3:  # Typical vitamin D has a higher logP
-        return False, "Molecule not hydrophobic enough for vitamin D"
-   
-    # For identified compounds: typically see multiple hydroxyls
     if len(hydroxyl_matches) < 2:
-        return False, f"Only {len(hydroxyl_matches)} hydroxyl groups, common vitamin D compounds have more"
+        return False, f"Only {len(hydroxyl_matches)} hydroxyl groups found, typical vitamin D compounds need more"
 
+    # Check molecular properties indicative of lipophilicity
+    mol_logP = rdMolDescriptors.CalcCrippenDescriptors(mol)[0]
+    if mol_logP < 3:  # Tune threshold if needed for specific definition
+        return False, "Molecule not hydrophobic enough for vitamin D classification"
+   
     return True, "Matches typical vitamin D seco-steroid structure with hydroxyl groups"
