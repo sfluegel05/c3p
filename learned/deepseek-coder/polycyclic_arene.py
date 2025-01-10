@@ -25,12 +25,24 @@ def is_polycyclic_arene(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check if all atoms are aromatic
-    for atom in mol.GetAtoms():
-        if not atom.GetIsAromatic():
-            return False, "Not all atoms are aromatic"
+    # Check if the core structure is a polycyclic arene
+    # First, find the largest aromatic system
+    aromatic_systems = Chem.GetSymmSSSR(mol)
+    largest_aromatic_system = []
+    for ring in aromatic_systems:
+        if all(mol.GetAtomWithIdx(atom).GetIsAromatic() for atom in ring):
+            if len(ring) > len(largest_aromatic_system):
+                largest_aromatic_system = ring
 
-    # Count the number of aromatic rings
+    if not largest_aromatic_system:
+        return False, "No aromatic system found"
+
+    # Check if the largest aromatic system consists only of carbon atoms
+    for atom_idx in largest_aromatic_system:
+        if mol.GetAtomWithIdx(atom_idx).GetAtomicNum() != 6:
+            return False, "Aromatic system contains non-carbon atoms"
+
+    # Count the number of aromatic rings in the largest aromatic system
     n_aromatic_rings = rdMolDescriptors.CalcNumAromaticRings(mol)
     if n_aromatic_rings < 2:
         return False, f"Only {n_aromatic_rings} aromatic ring(s) found, need at least 2"
@@ -40,4 +52,4 @@ def is_polycyclic_arene(smiles: str):
     if len(ring_info.AtomRings()) < 2:
         return False, "Not enough rings to be polycyclic"
 
-    return True, "Contains multiple fused aromatic rings"
+    return True, "Contains multiple fused aromatic rings consisting only of carbon atoms"
