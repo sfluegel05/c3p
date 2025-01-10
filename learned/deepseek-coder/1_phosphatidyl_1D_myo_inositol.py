@@ -27,36 +27,35 @@ def is_1_phosphatidyl_1D_myo_inositol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for glycerol backbone pattern (C-C-C with 2 oxygens attached)
-    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone found"
-        
-    # Look for 2 ester groups (-O-C(=O)-)
-    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    # Define the complete pattern for 1-phosphatidyl-1D-myo-inositol
+    pattern = Chem.MolFromSmarts(
+        "[CH2X4][CHX4]([OX2][CX3](=[OX1]))[CH2X4][OX2]P(=O)([OX2])[OX2][C@H]1([C@@H]([C@H]([C@@H]([C@H]([C@@H]1O)O)O)O)O)"
+    )
+    
+    # Check if the complete pattern matches
+    if not mol.HasSubstructMatch(pattern):
+        return False, "Does not match 1-phosphatidyl-1D-myo-inositol pattern"
+
+    # Verify the presence of two fatty acid chains
+    ester_matches = mol.GetSubstructMatches(Chem.MolFromSmarts("[OX2][CX3](=[OX1])"))
     if len(ester_matches) != 2:
         return False, f"Found {len(ester_matches)} ester groups, need exactly 2"
 
-    # Check for fatty acid chains (long carbon chains attached to esters)
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]") 
-    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
-    if len(fatty_acid_matches) < 2:
-        return False, f"Missing fatty acid chains, got {len(fatty_acid_matches)}"
-
-    # Look for phosphate group (-O-P(=O)(-O)-)
-    phosphate_pattern = Chem.MolFromSmarts("[OX2]P(=O)([OX2])[OX2]")
-    if not mol.HasSubstructMatch(phosphate_pattern):
-        return False, "No phosphate group found"
-
-    # Look for 1D-myo-inositol moiety (6-membered ring with 6 hydroxyl groups)
+    # Verify the stereochemistry of the inositol moiety
     inositol_pattern = Chem.MolFromSmarts("[C@H]1([C@@H]([C@H]([C@@H]([C@H]([C@@H]1O)O)O)O)O)")
     if not mol.HasSubstructMatch(inositol_pattern):
-        return False, "No 1D-myo-inositol moiety found"
+        return False, "Incorrect stereochemistry in inositol moiety"
 
-    # Check that the phosphate group is attached to the inositol moiety
-    phosphate_inositol_pattern = Chem.MolFromSmarts("[OX2]P(=O)([OX2])[OX2][C@H]1([C@@H]([C@H]([C@@H]([C@H]([C@@H]1O)O)O)O)O)")
-    if not mol.HasSubstructMatch(phosphate_inositol_pattern):
-        return False, "Phosphate group not attached to 1D-myo-inositol moiety"
+    # Verify the connectivity between components
+    connectivity_pattern = Chem.MolFromSmarts(
+        "[CH2X4][CHX4]([OX2][CX3](=[OX1]))[CH2X4][OX2]P(=O)([OX2])[OX2][C@H]1([C@@H]([C@H]([C@@H]([C@H]([C@@H]1O)O)O)O)O)"
+    )
+    if not mol.HasSubstructMatch(connectivity_pattern):
+        return False, "Incorrect connectivity between components"
+
+    # Verify the phosphate group is properly positioned
+    phosphate_pattern = Chem.MolFromSmarts("[CH2X4][OX2]P(=O)([OX2])[OX2][C@H]1([C@@H]([C@H]([C@@H]([C@H]([C@@H]1O)O)O)O)O)")
+    if not mol.HasSubstructMatch(phosphate_pattern):
+        return False, "Phosphate group not properly positioned"
 
     return True, "Contains glycerol backbone with two fatty acid chains, a phosphate group, and a 1D-myo-inositol moiety attached to the phosphate group"
