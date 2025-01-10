@@ -2,7 +2,6 @@
 Classifies: CHEBI:55493 1-O-acylglycerophosphoethanolamine
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_1_O_acylglycerophosphoethanolamine(smiles: str):
     """
@@ -21,19 +20,25 @@ def is_1_O_acylglycerophosphoethanolamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for glycerol backbone with an acyl group at the 1-position
-    glycerol_acyl_pattern = Chem.MolFromSmarts("[C@H](CO[P]([O-])([O-])OCCN)(OC(=O)[C,C@-][C,C@H]...)O")  
-    if not mol.HasSubstructMatch(glycerol_acyl_pattern):
-        return False, "No glycerol-acyl pattern found at 1-position with stereochemistry"
+    # Define pattern for 1-O-acylglycerol: a glycerol backbone with an acyl group at position 1
+    acyl_glycerol_pattern = Chem.MolFromSmarts("OCC(O)COC(=O)C")
+    if not mol.HasSubstructMatch(acyl_glycerol_pattern):
+        return False, "No 1-O-acylglycerol pattern found"
 
-    # Look for phosphoethanolamine group
-    phosphoethanolamine_pattern = Chem.MolFromSmarts("OP(=O)(OCCN)O")
+    # Define pattern for phosphoethanolamine
+    phosphoethanolamine_pattern = Chem.MolFromSmarts("COP(O)(=O)OCCN")
     if not mol.HasSubstructMatch(phosphoethanolamine_pattern):
         return False, "Phosphoethanolamine group not found"
     
-    # Check for presence of long acyl chains via carbon count, associated with fatty acids
-    num_carbons = sum(atom.GetAtomicNum() == 6 for atom in mol.GetAtoms())
-    if num_carbons < 15:
-        return False, f"Not enough carbon atoms for a typical acyl chain, found {num_carbons}"
+    # Check carbon chain length of the linked acyl group (usually a long chain)
+    # Count carbon atoms (excluding rings or erroneous interpretations)
+    acyl_chain_pattern = Chem.MolFromSmarts("C=O")
+    matches = mol.GetSubstructMatches(acyl_chain_pattern)
+    if not matches:
+        return False, "No acyl chain found"
+    
+    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if carbon_count < 15:
+        return False, f"Not enough carbon atoms for a typical long acyl chain, found {carbon_count}"
 
     return True, "Contains 1-O-acylglycerophosphoethanolamine structure with appropriate groups"
