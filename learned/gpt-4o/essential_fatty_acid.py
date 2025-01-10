@@ -15,29 +15,35 @@ def is_essential_fatty_acid(smiles: str):
         bool: True if molecule is an essential fatty acid, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return (False, "Invalid SMILES string")
+        return False, "Invalid SMILES string"
     
-    # Check for terminal carboxylic acid group
+    # Look for a terminal carboxylic acid
     carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
-        return (False, "No terminal carboxylic acid found")
+        return False, "No terminal carboxylic acid found"
     
-    # Check carbon chain length (at least 18 carbons common in essential fatty acids)
+    # Calculate carbon count to ensure it's a reasonable length for an essential fatty acid
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if carbon_count < 18:
-        return (False, f"Carbon chain is too short: only {carbon_count} carbon atoms")
+    if carbon_count < 16:
+        return False, f"Carbon chain is too short: only {carbon_count} carbon atoms"
     
-    # Check for multiple Z (cis) configuration double bonds pattern
-    # Consider more expansive cis detection patterns
-    cis_double_bond_pattern = Chem.MolFromSmarts("C=C")
-    cis_double_bond_matches = mol.GetSubstructMatches(cis_double_bond_pattern)
-
-    # Ensure there is a noteworthy number of double bonds, ideally in a sequence
-    if len(cis_double_bond_matches) < 2:
-        return (False, f"Only {len(cis_double_bond_matches)} double bonds found, require multiple for PUFA")
+    # Attempt to find multiple cis-configured double bonds for polyunsaturation
+    # This pattern attempts to capture cis patterns along the chain
+    cis_double_bond_pattern = Chem.MolFromSmarts("C/C=C\\C")
+    double_bond_count = len(mol.GetSubstructMatches(cis_double_bond_pattern))
     
-    return (True, "Matches essential fatty acid pattern with polyunsaturation and a terminal carboxylic acid")
+    # We consider a significant number of double bonds for the class
+    if double_bond_count < 3:
+        return False, f"Insufficient cis double bonds: only {double_bond_count} found"
+    
+    # Example: a fatty acid typically will not have complex ring structures or heteroatoms beyond -COOH
+    # Create pattern to recognize exclusions due to complex structures, if needed
+    complex_structure_pattern = Chem.MolFromSmarts("[R]")  # Generic, can refine
+    if mol.HasSubstructMatch(complex_structure_pattern):
+        return False, "Complex structure not typical of essential fatty acids"
+    
+    return True, "Matches essential fatty acid pattern with polyunsaturation and a terminal carboxylic acid"
