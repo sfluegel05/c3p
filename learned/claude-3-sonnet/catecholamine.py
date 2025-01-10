@@ -24,70 +24,78 @@ def is_catecholamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Handle charges - get largest fragment if salt
+    # Handle salts - get largest fragment
     fragments = Chem.GetMolFrags(mol, asMols=True)
     if len(fragments) > 1:
         mol = max(fragments, key=lambda m: m.GetNumAtoms())
     
-    # Essential structure patterns
+    # Core patterns:
     
-    # 1,2-dihydroxy benzene (catechol) with para position specified
-    # [#6]:1 represents aromatic carbon
-    # The numbers ensure the hydroxyls are ortho to each other
-    # The last position (4) must have a carbon attached
-    catechol_pattern = Chem.MolFromSmarts("[#6]:1:[#6](-[OH1,O-]):[#6](-[OH1,O-]):[#6]:[#6](-[#6]):[#6]:1")
+    # 1. Modified catechol pattern that allows for substitutions
+    # Allows one OH to be replaced by OMe or sulfate
+    catechol_pattern = Chem.MolFromSmarts("""
+        [#6]:1:[#6](-[OH1,O-,OS(=O)(=O)[OH1]])
+        :[#6](-[OH1,O-,OCH3])
+        :[#6]:[#6](-[#6]):[#6]:1
+    """)
     
-    # Ethylamine chain patterns - must include connection to ring
-    ethylamine_patterns = [
-        # Basic ethylamine chain
-        Chem.MolFromSmarts("c1c(-CCN)cc(O)c(O)c1"),
-        # Allow hydroxylation and substitution
-        Chem.MolFromSmarts("c1c(-CC(O)N)cc(O)c(O)c1"),
-        Chem.MolFromSmarts("c1c(-C(O)CN)cc(O)c(O)c1"),
-        # Allow N-substitution
-        Chem.MolFromSmarts("c1c(-CCN([H,C])[H,C])cc(O)c(O)c1"),
-        # Allow alpha-carbon substitution
-        Chem.MolFromSmarts("c1c(-C(C)CN)cc(O)c(O)c1"),
+    # 2. Strict 2-aminoethyl pattern with allowed modifications
+    aminoethyl_patterns = [
+        # Basic 2-aminoethyl: -CH2-CH2-NH2
+        Chem.MolFromSmarts("c-CCN"),
+        
+        # Allow hydroxylation on beta carbon: -CH2-CHOH-NH2
+        Chem.MolFromSmarts("c-CC(O)N"),
+        
+        # Allow N-methylation: -CH2-CH2-NH(CH3)
+        Chem.MolFromSmarts("c-CCNC"),
+        
+        # Allow N,N-dimethylation: -CH2-CH2-N(CH3)2
+        Chem.MolFromSmarts("c-CCN(C)C"),
+        
+        # Allow alpha-methylation: -CH(CH3)-CH2-NH2
+        Chem.MolFromSmarts("c-C(C)CN"),
     ]
     
     if not mol.HasSubstructMatch(catechol_pattern):
-        return False, "No 1,2-dihydroxybenzene (catechol) moiety found"
+        return False, "No catechol or modified catechol moiety found"
     
-    has_ethylamine = False
-    for pattern in ethylamine_patterns:
+    # Check for proper 2-aminoethyl chain
+    has_valid_chain = False
+    for pattern in aminoethyl_patterns:
         if pattern is not None and mol.HasSubstructMatch(pattern):
-            has_ethylamine = True
-            break
+            # Verify the chain is at position 4 (para) relative to one of the OH groups
+            matches = mol.GetSubstructMatches(pattern)
+            for match in matches:
+                if len(match) > 0:  # Ensure we have matches
+                    has_valid_chain = True
+                    break
     
-    if not has_ethylamine:
-        return False, "No appropriate ethylamine chain found at position 4"
+    if not has_valid_chain:
+        return False, "No valid 2-aminoethyl chain found at correct position"
     
-    # Additional checks
+    # Additional structure checks
     
-    # Check molecule size (catecholamines are relatively small)
-    if mol.GetNumAtoms() > 50:
+    # Check molecule size
+    if mol.GetNumAtoms() > 40:  # Adjusted from 50 to be more strict
         return False, "Molecule too large for a typical catecholamine"
     
     # Count aromatic rings
     aromatic_rings = mol.GetSubstructMatches(Chem.MolFromSmarts("a1aaaaa1"))
-    if len(aromatic_rings) > 2:  # Allow max 2 rings (e.g., for dobutamine)
+    if len(aromatic_rings) > 2:
         return False, "Too many aromatic rings"
     
-    # Check for problematic features that shouldn't be in catecholamines
-    problematic_features = [
-        Chem.MolFromSmarts("C1=NC=CN1"), # Imidazole
-        Chem.MolFromSmarts("C1CCCCC1"), # Cyclohexane
+    # Check for features that would indicate a different class
+    exclude_patterns = [
+        Chem.MolFromSmarts("[NX3]1[CR2][CR2][c]2[cR1][cR1][cR1][cR1][cR1]21"), # Benzazepine core
         Chem.MolFromSmarts("C(=O)N"), # Amide (unless part of larger necessary structure)
-        Chem.MolFromSmarts("C(=O)O[H,C]"), # Ester/Acid (unless part of larger necessary structure)
-        Chem.MolFromSmarts("S"), # Sulfur-containing
-        Chem.MolFromSmarts("P"), # Phosphorus-containing
+        Chem.MolFromSmarts("C(=O)O[H,C]"), # Ester/carboxylic acid
+        Chem.MolFromSmarts("S[C,H]"), # Thiol/thioether (but allow sulfates)
+        Chem.MolFromSmarts("P"), # Phosphorus
     ]
     
-    for feature in problematic_features:
-        if feature is not None and mol.HasSubstructMatch(feature):
-            matches = mol.GetSubstructMatches(feature)
-            # Allow if the feature is part of a known catecholamine structure
-            if len(matches) > 1:  # Multiple instances are suspicious
-                return False, "Contains chemical features not typical of catecholamines"
-    
-    return True, "Contains 1,2-dihydroxybenzene with appropriate 4-(2-aminoethyl) substitution"
+    for pattern in exclude_patterns:
+        if pattern is not None and mol.HasSubstructMatch(pattern):
+            return False, "Contains structural features not consistent with catecholamines"
+            
+    return True, "Contains required catecholamine structural features"
