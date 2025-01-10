@@ -20,7 +20,7 @@ def is_cephalosporin(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES - consider largest fragment for salts
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
@@ -30,21 +30,25 @@ def is_cephalosporin(smiles: str):
     if fragments:
         mol = max(fragments, key=lambda m: m.GetNumAtoms())
 
-    # Core cephalosporin patterns - trying multiple SMARTS to catch variations
+    # Core cephalosporin patterns - multiple SMARTS to catch all variations
     core_patterns = [
-        # Basic ceph core with explicit stereochemistry
-        '[H][C@@]12SCC=C(N1C(=O)[C@H]2[*])[*]',
-        # Alternative core pattern
-        'S1CC=C2N([*])C(=O)[C@H]2N1',
-        # More generic pattern
-        'S1CC=C2N(C(=O)C2[*])C1=C[*]'
+        # Basic cephalosporin core (more general)
+        'S1CC2N(C(=O)C2*)C(=C1*)*',
+        # Alternative with explicit connection points
+        'S1CC2N(C(=O)C2NC*)C(=C1C*)C(=O)[O,N]',
+        # More generic pattern allowing for variations
+        'S1[CH2,CH1]C2N([*])C(=O)C2[*]C1[*]',
+        # Pattern for saturated versions
+        'S1[CH2][CH1]2N([*])C(=O)[CH1]2[*]C1[*]'
     ]
     
     found_core = False
+    matching_pattern = None
     for pattern in core_patterns:
         core = Chem.MolFromSmarts(pattern)
         if core and mol.HasSubstructMatch(core):
             found_core = True
+            matching_pattern = pattern
             break
             
     if not found_core:
@@ -54,7 +58,7 @@ def is_cephalosporin(smiles: str):
     carboxyl_patterns = [
         'C(=O)[OH]',      # carboxylic acid
         'C(=O)[O-]',      # carboxylate
-        'C(=O)O[Na]',     # sodium salt
+        'C(=O)O[Na,K]',   # metal salts
         'C(=O)O'          # generic carboxyl
     ]
     
@@ -68,12 +72,11 @@ def is_cephalosporin(smiles: str):
     if not has_carboxyl:
         return False, "Missing carboxylic acid group"
 
-    # Check for characteristic substituents
+    # Check for characteristic substituents commonly found in cephalosporins
     substituent_patterns = {
         'aminothiazole': 'c1csc(N)n1',
-        'tetrazole': 'n1nnn[nH]1',
-        'methyltetrazole': 'Cn1nnnc1',
-        'oxime': 'C=NOC',
+        'tetrazole': 'n1nnn[nH,c]1',
+        'oxime': '[CX3]=[NX2][OX2][*]',
         'acetoxymethyl': 'CC(=O)OC',
         'amino': '[NH2]',
         'amide': 'NC(=O)',
@@ -86,22 +89,26 @@ def is_cephalosporin(smiles: str):
         if p and mol.HasSubstructMatch(p):
             found_substituents.append(name)
 
-    # Verify basic properties
-    num_atoms = mol.GetNumAtoms()
-    if num_atoms < 15:
-        return False, "Molecule too small to be a cephalosporin"
-
-    # Count rings
+    # Additional structural checks
     ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() < 2:
-        return False, "Insufficient ring count for cephalosporin structure"
+    num_rings = ring_info.NumRings()
+    
+    # Count S atoms (should have at least one in core)
+    s_count = len([atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 16])
+    
+    # Count N atoms (should have at least 2 - one in beta-lactam, one in side chain)
+    n_count = len([atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7])
+
+    if num_rings < 2 or s_count < 1 or n_count < 2:
+        return False, "Missing essential structural elements for cephalosporin"
 
     # Build reason string
-    reason = "Identified as cephalosporin due to:\n"
-    reason += "- Contains fused beta-lactam-dihydrothiazine ring system\n"
-    reason += "- Contains carboxylic acid/carboxylate group\n"
+    reason = "Identified as cephalosporin:\n"
+    reason += "- Contains beta-lactam fused to dihydrothiazine ring system\n"
+    if has_carboxyl:
+        reason += "- Contains carboxylic acid/carboxylate group\n"
     if found_substituents:
         reason += f"- Found characteristic substituents: {', '.join(found_substituents)}\n"
-    reason += f"- Contains appropriate molecular complexity ({num_atoms} atoms, {ring_info.NumRings()} rings)"
+    reason += f"- Structure contains {num_rings} rings, {s_count} sulfur atoms, {n_count} nitrogen atoms"
 
     return True, reason
