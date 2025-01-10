@@ -25,47 +25,58 @@ def is_phospho_sugar(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for phosphate group pattern
-    phosphate_pattern = Chem.MolFromSmarts("[OX2][P](=[O])([OX2H,OX1-])[OX2H,OX1-]")
-    if not mol.HasSubstructMatch(phosphate_pattern):
-        return False, "No phosphate group found"
+    # Look for phosphate group connected to carbon
+    phosphate_patterns = [
+        "[CX4]-[OX2]-[P](=[O])([O,OH])([O,OH])",  # Standard phosphate ester
+        "[CX4]-[OX2]-P(=O)([O-])([O-])",  # Ionized form
+        "[CX4]-[OX2]-P([O-])([O-])=O",    # Alternative ionized form
+        "[CX4]-[OX2]-P([OH])(=O)[OH]"     # Fully protonated form
+    ]
+    
+    has_phosphate = False
+    for pattern in phosphate_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            has_phosphate = True
+            break
+            
+    if not has_phosphate:
+        return False, "No phosphate ester found"
 
-    # Look for sugar patterns - both cyclic and open chain forms
-    # Furanose pattern (5-membered ring with oxygens)
-    furanose_pattern = Chem.MolFromSmarts("[CH2X4,CH1X4,CH0X4]-[CH1X4](-[OX2])-[CH1X4](-[OX2])-[CH1X4](-[OX2])-[OX2]")
-    # Pyranose pattern (6-membered ring with oxygens)
-    pyranose_pattern = Chem.MolFromSmarts("[CH2X4,CH1X4,CH0X4]-[CH1X4](-[OX2])-[CH1X4](-[OX2])-[CH1X4](-[OX2])-[CH1X4](-[OX2])-[OX2]")
-    # Open chain sugar pattern (multiple hydroxyls)
-    open_sugar_pattern = Chem.MolFromSmarts("[CH2X4,CH1X4](-[OX2])-[CH1X4](-[OX2])-[CH1X4](-[OX2])-[CH1X4](-[OX2])")
+    # Sugar patterns
+    sugar_patterns = [
+        # Furanose (5-membered ring)
+        "[CH2X4,CH1X4]-1-[CH1X4](-[OX2])-[CH1X4](-[OX2])-[CH1X4](-[OX2])-[OX2]-1",
+        # Pyranose (6-membered ring)
+        "[CH2X4,CH1X4]-1-[CH1X4](-[OX2])-[CH1X4](-[OX2])-[CH1X4](-[OX2])-[CH1X4](-[OX2])-[OX2]-1",
+        # Ribose specific pattern
+        "[CH2X4]-[CH1X4](-[OX2])-[CH1X4](-[OX2])-[CH1X4](-[OX2])-[OX2]",
+        # Ketose pattern (fructose-like)
+        "[CH2X4](-[OX2])-[CX4](-[OX2])-[CH1X4](-[OX2])-[CH1X4](-[OX2])",
+        # Open chain aldose
+        "[CH1X4](=O)-[CH1X4](-[OX2])-[CH1X4](-[OX2])-[CH1X4](-[OX2])",
+        # Deoxyribose pattern
+        "[CH2X4]-[CH1X4]-[CH1X4](-[OX2])-[CH1X4](-[OX2])-[OX2]"
+    ]
 
-    is_sugar = False
-    if mol.HasSubstructMatch(furanose_pattern):
-        is_sugar = True
-    elif mol.HasSubstructMatch(pyranose_pattern):
-        is_sugar = True
-    elif mol.HasSubstructMatch(open_sugar_pattern):
-        is_sugar = True
+    has_sugar = False
+    for pattern in sugar_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            has_sugar = True
+            break
 
-    if not is_sugar:
+    if not has_sugar:
         return False, "No sugar moiety found"
 
-    # Verify phosphate is connected to sugar via ester linkage
-    phospho_ester_pattern = Chem.MolFromSmarts("[CX4]-[OX2]-[P](=[O])([OX2H,OX1-])[OX2H,OX1-]")
-    if not mol.HasSubstructMatch(phospho_ester_pattern):
-        return False, "Phosphate not connected to sugar via ester bond"
-
-    # Count hydroxyl groups (excluding phosphate hydroxyls)
-    hydroxyl_pattern = Chem.MolFromSmarts("[CX4]-[OX2H]")
-    hydroxyl_matches = len(mol.GetSubstructMatches(hydroxyl_pattern))
+    # Count hydroxyl/phosphoryl attachment points
+    hydroxyl_pattern = Chem.MolFromSmarts("[CX4]-[OX2]")
+    hydroxyl_count = len(mol.GetSubstructMatches(hydroxyl_pattern))
     
-    if hydroxyl_matches < 2:
-        return False, "Insufficient hydroxyl groups for a sugar"
+    if hydroxyl_count < 3:  # Need at least 3 oxygens attached to carbons
+        return False, "Insufficient oxygen attachments for a sugar"
 
-    # Additional check for nucleotides - if has nucleobase, must have sugar-phosphate
-    nucleobase_pattern = Chem.MolFromSmarts("[#7r5,#7r6]1[#6r5,#6r6][#7r5,#7r6][#6r5,#6r6][#6r5,#6r6]1")
-    if mol.HasSubstructMatch(nucleobase_pattern):
-        sugar_phosphate_pattern = Chem.MolFromSmarts("[CH2X4]-[OX2]-[P](=[O])([OX2H,OX1-])[OX2H,OX1-]")
-        if not mol.HasSubstructMatch(sugar_phosphate_pattern):
-            return False, "Nucleotide without proper sugar-phosphate linkage"
+    # Verify the structure has appropriate molecular weight
+    mol_weight = sum([atom.GetMass() for atom in mol.GetAtoms()])
+    if mol_weight < 150:  # Minimum weight for a phosphorylated sugar
+        return False, "Molecule too small to be a phospho sugar"
 
     return True, "Contains monosaccharide with phosphate ester"
