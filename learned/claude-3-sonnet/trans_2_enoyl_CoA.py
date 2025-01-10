@@ -7,13 +7,6 @@ Classifies: trans-2-enoyl-CoA
 from rdkit import Chem
 from rdkit.Chem import AllChem
 
-def create_pattern(smarts):
-    """Helper function to safely create and verify SMARTS patterns"""
-    pattern = Chem.MolFromSmarts(smarts)
-    if pattern is None:
-        raise ValueError(f"Invalid SMARTS pattern: {smarts}")
-    return pattern
-
 def is_trans_2_enoyl_CoA(smiles: str):
     """
     Determines if a molecule is a trans-2-enoyl-CoA based on its SMILES string.
@@ -34,51 +27,53 @@ def is_trans_2_enoyl_CoA(smiles: str):
 
         # Essential structural patterns
         patterns = {
-            "adenine": "c1nc(N)c2ncnc2n1",
-            "phosphate": "OP(=O)(O)O",
-            "thioester": "C(=O)SC",
-            "pantetheine": "SCCNC(=O)CCNC(=O)",
-            # Two possible SMARTS representations for trans double bond
-            "trans_enoyl_1": "\\C=C\\C(=O)S",
-            "trans_enoyl_2": "/C=C/C(=O)S",
-            "cis_enoyl_1": "/C=C\\C(=O)S",
-            "cis_enoyl_2": "\\C=C/C(=O)S"
+            # Core CoA structure components
+            "adenine": Chem.MolFromSmarts("c1nc(N)c2ncnc2n1"),
+            "phosphate": Chem.MolFromSmarts("OP(=O)(O)O"),
+            "thioester": Chem.MolFromSmarts("C(=O)SC"),
+            "pantetheine": Chem.MolFromSmarts("SCCNC(=O)CCNC(=O)"),
+            # Pattern for alpha-beta unsaturated thioester, without stereochemistry
+            "enoyl": Chem.MolFromSmarts("C=CC(=O)SC")
         }
-        
-        # Create all patterns
-        mol_patterns = {name: create_pattern(smarts) for name, smarts in patterns.items()}
 
         # Check for CoA moiety components
-        if not mol.HasSubstructMatch(mol_patterns["adenine"]):
+        if not mol.HasSubstructMatch(patterns["adenine"]):
             return False, "No CoA moiety found (missing adenine)"
 
-        phosphate_matches = len(mol.GetSubstructMatches(mol_patterns["phosphate"]))
+        phosphate_matches = len(mol.GetSubstructMatches(patterns["phosphate"]))
         if phosphate_matches < 2:
             return False, "No CoA moiety found (insufficient phosphate groups)"
 
-        if not mol.HasSubstructMatch(mol_patterns["thioester"]):
+        if not mol.HasSubstructMatch(patterns["thioester"]):
             return False, "No thioester linkage found"
 
-        if not mol.HasSubstructMatch(mol_patterns["pantetheine"]):
+        if not mol.HasSubstructMatch(patterns["pantetheine"]):
             return False, "Missing pantetheine arm of CoA"
 
-        # Check for trans double bond configuration
-        has_trans = (mol.HasSubstructMatch(mol_patterns["trans_enoyl_1"]) or 
-                    mol.HasSubstructMatch(mol_patterns["trans_enoyl_2"]))
-        has_cis = (mol.HasSubstructMatch(mol_patterns["cis_enoyl_1"]) or 
-                  mol.HasSubstructMatch(mol_patterns["cis_enoyl_2"]))
-
-        if not (has_trans or has_cis):
+        # Find all double bonds connected to thioester
+        enoyl_matches = mol.GetSubstructMatches(patterns["enoyl"])
+        if not enoyl_matches:
             return False, "No α,β-unsaturated thioester found"
-        
-        if has_cis and not has_trans:
-            return False, "Found cis-enoyl-CoA instead of trans"
 
-        # Additional checks for position 2
-        # Count carbons between double bond and thioester to ensure position 2
-        acyl_chain_pattern = create_pattern("C=CC(=O)S")
-        if not mol.HasSubstructMatch(acyl_chain_pattern):
-            return False, "Double bond not in position 2"
+        # Check stereochemistry of the double bonds
+        found_trans = False
+        for match in enoyl_matches:
+            # Get the double bond atoms
+            double_bond_atoms = [match[0], match[1]]  # C=C atoms from the match
+            bond = mol.GetBondBetweenAtoms(double_bond_atoms[0], double_bond_atoms[1])
+            
+            # Check if it's a double bond and has stereochemistry
+            if bond.GetBondType() == Chem.BondType.DOUBLE:
+                # E/trans configuration is represented by STEREOCIS in RDKit
+                if bond.GetStereo() == Chem.BondStereo.STEREOE:
+                    found_trans = True
+                    break
+
+        if not found_trans:
+            return False, "No trans configuration found at position 2"
+
+        # Additional check for position (should be alpha to the thioester)
+        # This is already enforced by our enoyl pattern
 
         return True, "Contains CoA moiety with trans-2-enoyl group"
 
