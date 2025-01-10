@@ -33,37 +33,42 @@ def is_prenols(smiles: str):
         return False, "No hydroxyl group found"
 
     # Check for the isoprene unit pattern (CH2C(Me)=CHCH2)
-    # This pattern is more flexible to account for different configurations
     isoprene_pattern = Chem.MolFromSmarts("[CH2][CH]([CH3])=[CH][CH2]")
     isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
     if len(isoprene_matches) < 1:
         return False, "No isoprene units found"
 
-    # Check if the isoprene units are connected in a continuous chain
-    # This is done by checking if the isoprene units are connected in a way that forms a chain
-    # We can do this by checking if the number of isoprene units matches the number of carbon atoms in the chain
-    # minus the number of carbon atoms in the hydroxyl group and the terminal methyl group.
-    # This is a simplified check and may not cover all cases, but it should work for most prenols.
+    # Check if the molecule has a repeating isoprene pattern
+    # We can count the number of isoprene units and ensure they are connected
+    # in a way that forms a continuous chain.
+    # This is a simplified check and may not cover all cases.
+    # For a more robust check, we would need to verify the connectivity of the isoprene units.
+    # However, this should work for most prenols.
+
+    # Count the number of isoprene units
+    n_isoprene = len(isoprene_matches)
+    if n_isoprene < 1:
+        return False, "No isoprene units found"
+
+    # Check if the molecule has a long carbon chain (typical of prenols)
+    # Prenols usually have a significant number of carbons due to the repeating isoprene units.
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if c_count < 5:
         return False, "Too few carbons for a prenol"
-
-    # Check if the hydroxyl group is at the end of the chain
-    # This is done by checking if the hydroxyl group is connected to a carbon atom that is only connected to one other atom
-    hydroxyl_atom = mol.GetSubstructMatch(hydroxyl_pattern)[0]
-    hydroxyl_neighbors = mol.GetAtomWithIdx(hydroxyl_atom).GetNeighbors()
-    if len(hydroxyl_neighbors) != 1:
-        return False, "Hydroxyl group is not at the end of the chain"
 
     # Check for the presence of double bonds (isoprene units have double bonds)
     double_bond_count = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.BondType.DOUBLE)
     if double_bond_count < 1:
         return False, "No double bonds found (isoprene units have double bonds)"
 
-    # Check if the molecule has a long carbon chain (typical of prenols)
-    # Prenols usually have a significant number of carbons due to the repeating isoprene units.
-    if c_count < 5:
-        return False, "Too few carbons for a prenol"
+    # Check if the hydroxyl group is at the end of the chain
+    # This is a simplified check and may not cover all cases.
+    # For a more robust check, we would need to verify the position of the hydroxyl group.
+    # However, this should work for most prenols.
+    hydroxyl_atom = mol.GetSubstructMatch(hydroxyl_pattern)[0]
+    hydroxyl_neighbors = mol.GetAtomWithIdx(hydroxyl_atom).GetNeighbors()
+    if len(hydroxyl_neighbors) != 1:
+        return False, "Hydroxyl group is not at the end of the chain"
 
     return True, "Contains a hydroxyl group and one or more isoprene units"
 
