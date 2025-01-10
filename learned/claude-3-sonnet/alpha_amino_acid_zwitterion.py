@@ -23,72 +23,57 @@ def is_alpha_amino_acid_zwitterion(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for counter ions like Na+, K+, etc.
-    metal_pattern = Chem.MolFromSmarts("[Na+,K+,Li+,Mg+2,Ca+2]")
-    if mol.HasSubstructMatch(metal_pattern):
-        return False, "Contains metal counter ions - not a pure zwitterion"
-
-    # Look for carboxylate group(s)
+    # Count total charge
+    total_charge = sum(atom.GetFormalCharge() for atom in mol.GetAtoms())
+    if total_charge != 0:
+        return False, "Total charge must be 0 for a zwitterion"
+    
+    # Look for positively charged nitrogen (NH3+, NH2+, N+)
+    charged_n_pattern = Chem.MolFromSmarts("[$([NH3+]),$([NH2+]),$([NH+])]")
+    charged_n_matches = mol.GetSubstructMatches(charged_n_pattern)
+    if not charged_n_matches:
+        return False, "No positively charged nitrogen found"
+    
+    # Look for carboxylate group (C(=O)[O-])
     carboxylate_pattern = Chem.MolFromSmarts("[C](=[O])[O-]")
     carboxylate_matches = mol.GetSubstructMatches(carboxylate_pattern)
     if not carboxylate_matches:
         return False, "No carboxylate group found"
 
-    # Look for charged nitrogen groups
-    nh3_pattern = Chem.MolFromSmarts("[NH3+]")
-    nh2_pattern = Chem.MolFromSmarts("[NH2+]")
-    nh_pattern = Chem.MolFromSmarts("[NH+]")
-    n_pattern = Chem.MolFromSmarts("[N+]")
+    # Pattern for alpha-amino acid core structure with various N charges:
+    # [N+]-C-C(=O)[O-] where C is sp3
+    core_pattern = Chem.MolFromSmarts("[$([NH3+]),$([NH2+]),$([NH+]),$([N+])][C;X4][C](=[O])[O-]")
+    core_matches = mol.GetSubstructMatches(core_pattern)
     
-    n_matches = (mol.GetSubstructMatches(nh3_pattern) + 
-                mol.GetSubstructMatches(nh2_pattern) +
-                mol.GetSubstructMatches(nh_pattern) +
-                mol.GetSubstructMatches(n_pattern))
+    if not core_matches:
+        return False, "No alpha-amino acid zwitterion core structure found"
     
-    if not n_matches:
-        return False, "No positively charged nitrogen group found"
-
-    # Multiple patterns for alpha-amino acid core structure
-    core_patterns = [
-        # Standard alpha-amino acid
-        Chem.MolFromSmarts("[NX4+]-[CH1](-[*])-C(=[O])[O-]"),
-        # Cyclic amino acids (like proline)
-        Chem.MolFromSmarts("[NX4+]1-[CH2]-[CH2]-[CH1](-C(=[O])[O-])-[CH2]-1"),
-        # Alternative connectivity
-        Chem.MolFromSmarts("[NX4+]-[CH2]-[CH1](-C(=[O])[O-])-[*]"),
-        # Diazaniumyl compounds
-        Chem.MolFromSmarts("[NX4+]-[CH1](-[NX3])-C(=[O])[O-]"),
-    ]
-
-    found_valid_core = False
-    for pattern in core_patterns:
-        if mol.HasSubstructMatch(pattern):
-            found_valid_core = True
-            break
-
-    if not found_valid_core:
-        return False, "No valid alpha-amino acid core structure found"
-
-    # Check for reasonable number of charged groups
-    n_pos_charges = len(n_matches)
-    n_neg_charges = len(carboxylate_matches)
-    
-    if n_pos_charges > 2 or n_neg_charges > 2:
-        return False, "Too many charged groups"
+    # For each potential core, verify it's a proper alpha-amino acid structure
+    for match in core_matches:
+        n_idx, alpha_c_idx, carboxyl_c_idx = match[0:3]
         
-    if n_pos_charges != n_neg_charges:
-        return False, "Unbalanced charges"
+        # Get the alpha carbon atom
+        alpha_carbon = mol.GetAtomWithIdx(alpha_c_idx)
+        n_atom = mol.GetAtomWithIdx(n_idx)
+        
+        # Check if alpha carbon has correct connectivity
+        if alpha_carbon.GetDegree() < 2 or alpha_carbon.GetDegree() > 4:
+            continue
+            
+        # Check if nitrogen has appropriate number of bonds
+        if n_atom.GetDegree() > 4:
+            continue
 
-    # Additional validation for dizwitterions
-    if n_pos_charges == 2:
-        # Check if the charged groups are properly separated
-        for match1 in carboxylate_matches:
-            for match2 in carboxylate_matches:
-                if match1 == match2:
-                    continue
-                # Get shortest path between carboxylates
-                path_len = len(Chem.GetShortestPath(mol, match1[0], match2[0]))
-                if path_len < 4:  # Must be reasonably separated
-                    return False, "Charged groups too close together"
+        # Count number of carboxylate groups
+        carboxylate_count = len(carboxylate_matches)
+        if carboxylate_count > 2:  # Allow up to dizwitterions
+            return False, "Too many carboxylate groups for simple amino acid zwitterion"
+            
+        # Count number of charged nitrogens
+        charged_n_count = len(charged_n_matches)
+        if charged_n_count > 2:  # Allow up to dizwitterions
+            return False, "Too many charged nitrogens for simple amino acid zwitterion"
 
-    return True, "Valid alpha-amino acid zwitterion structure found"
+        return True, "Contains alpha-amino acid zwitterion structure with charged N and COO- groups"
+    
+    return False, "No valid alpha-amino acid zwitterion structure found"
