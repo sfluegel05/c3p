@@ -15,30 +15,30 @@ def is_nucleoside_5__phosphate(smiles: str):
         bool: True if molecule is a nucleoside 5'-phosphate, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+    
+    # SMARTS pattern for ribose or deoxyribose with variable phosphate attachment at 5'
+    sugar_phosphate_pattern = Chem.MolFromSmarts("C1C(O)C(O)C(O)C1O[*:1]P(=O)(O)O")
+    
+    # Nucleobase SMARTS patterns: expanded to consider variations (the generic form of pyrimidine, purine, including tautomeric shifts)
+    nucleobase_patterns = [
+        Chem.MolFromSmarts("n1cnc2ncnc2n1"),  # Adenine akin, including modifications
+        Chem.MolFromSmarts("n1c2c(ncnc2n(c1))O"),  # Guanine akin
+        Chem.MolFromSmarts("n1cnc2[nH]cnc2n1"),  # Cytosine, working-bearing nitrogenous atoms
+        Chem.MolFromSmarts("C1=C[NH]C(=O)N(C1)=O"),  # Thymine/uracil reflection
+        # More could be added for less common modifications.
+    ]
 
-    # Flexible patterns for ribose or deoxyribose sugars with phosphate
-    sugar_phosphate_pattern = Chem.MolFromSmarts("C1C(O[C@H]2CO[C@@H](C2)O)C(COP(O)(=O)[O])O1")
-
-    # Flexible SMARTS patterns for canonical nucleobases
-    adenine_pattern = Chem.MolFromSmarts("n1cnc2ncnc2n1")
-    guanine_pattern = Chem.MolFromSmarts("n1c2c(ncnc2n(c1))O")
-    cytosine_pattern = Chem.MolFromSmarts("n1c2c(ncnc2n(c1))N")
-    thymine_pattern = Chem.MolFromSmarts("C1=CN(C=O)C(=O)N(C1)=O")
-    uracil_pattern = Chem.MolFromSmarts("C1=CN(C=O)C(=O)NC1")
-
-    nucleobase_patterns = [adenine_pattern, guanine_pattern, cytosine_pattern, thymine_pattern, uracil_pattern]
-
-    # Check for the presence of a ribose or deoxyribose sugar with phosphate
+    # Check for the presence of a sugar with phosphate group
     if not mol.HasSubstructMatch(sugar_phosphate_pattern):
-        return False, "No 5'-phosphate sugar found"
-
-    # Check for the presence of any nucleobase
+        return False, "No valid 5'-phosphate sugar recognized"
+    
+    # Check for the presence of a nucleobase
     if not any(mol.HasSubstructMatch(base) for base in nucleobase_patterns):
         return False, "No nucleobase found"
 
-    return True, "Contains sugar, nucleobase, and phosphate group at the 5' position"
+    return True, "Contains a nucleobase and 5'-phosphate sugar."
