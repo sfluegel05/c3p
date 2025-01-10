@@ -25,15 +25,21 @@ def is_phosphatidylinositol(smiles: str):
     inositol_oh_pattern = Chem.MolFromSmarts("C1([C@@H]([C@H]([C@H]([C@@H]([C@H]1O)O)O)O)O)O") 
     if not mol.HasSubstructMatch(inositol_oh_pattern):
         return False, "No inositol ring with 5 hydroxyl groups found"
+
+    # Phosphodiester linkage (glycerophosphate connected to inositol)
+    phosphodiester_pattern = Chem.MolFromSmarts("O[P](=O)(O)[O][C@H]([O])[C@H]([O])[C@H]") 
+    if not mol.HasSubstructMatch(phosphodiester_pattern):
+        return False, "No glycerophosphate linkage to inositol found"
+
+    # Recognition of esterified fatty acid chains connected to glycerol
+    ester_pattern = Chem.MolFromSmarts("C(=O)O[C@H]C(=O)O")  # Example pattern for ester linkages in phosphatidyl group
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    if len(ester_matches) < 1:
+        return False, f"Found {len(ester_matches)} ester groups, need at least 1 connected to phosphatidyl group"
     
-    # Verify glycerol presence esterified to phosphate
-    glycerol_pattern = Chem.MolFromSmarts("[O][CH2]C([O])([CH2][O][P](=O)([O])[O])")
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone connected to phosphate"
-
-    # Ensure phosphatidyl is connected correctly through ester bonds
-    phosphatidyl_pattern = Chem.MolFromSmarts("C(OC=O)C(OC=O)C(OP(=O)(O)O)O")
-    if not mol.HasSubstructMatch(phosphatidyl_pattern):
-        return False, "No phosphatidyl ester linkage pattern found"
-
+    # Ensure connection of long aliphatic tail indicating fatty acid presence
+    long_chain_pattern = Chem.MolFromSmarts("C~C~C~C~C~C")  # Generic long chain alkane pattern
+    if not mol.HasSubstructMatch(long_chain_pattern):
+        return False, "No long aliphatic chain found indicating phosphatidyl groups"
+    
     return True, "Consistent with a phosphatidylinositol: inositol esterified with glycerophosphate connected to phosphatidyl groups"
