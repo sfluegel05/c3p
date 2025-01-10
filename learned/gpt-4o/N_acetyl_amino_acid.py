@@ -21,11 +21,12 @@ def is_N_acetyl_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for acetyl group directly attached to an amino nitrogen
-    acetyl_to_amino_pattern = Chem.MolFromSmarts("N[C@@H](C(=O)[O,O-])C(=O)C")
+    # Define SMARTS pattern for N-acetyl-amino acid
+    # The pattern searches for: Acetyl group (CC(=O)N), connected to an alpha-carbon (C), part of amino acid (C(N)C(=O)O)
+    acetyl_amino_acid_pattern = Chem.MolFromSmarts("C(C(=O)O)[NH]C(=O)C")
     
-    # Check for the presence of the pattern
-    if mol.HasSubstructMatch(acetyl_to_amino_pattern):
-        return True, "Contains acetyl group directly attached to nitrogen with a typical amino acid structure"
+    # Check for the presence of the N-acetyl-amino acid pattern
+    if mol.HasSubstructMatch(acetyl_amino_acid_pattern):
+        return True, "Contains N-acetyl group attached to nitrogen in an amino acid structure"
     else:
         return False, "Does not contain the characteristic N-acetyl group in amino acid configuration"
