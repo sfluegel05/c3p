@@ -23,29 +23,29 @@ def is_hydroxynaphthoquinone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # First check for naphthalene core (two fused 6-membered rings)
-    naphthalene_pattern = Chem.MolFromSmarts("c1ccc2ccccc2c1")
-    if not mol.HasSubstructMatch(naphthalene_pattern):
-        return False, "No naphthalene core found"
+    # Look for naphthoquinone core - two fused 6-membered rings where some carbons can be non-aromatic
+    # due to ketone groups
+    naphthoquinone_pattern = Chem.MolFromSmarts("[#6]1[#6][#6][#6]2[#6][#6][#6][#6][#6][#6]2[#6]1")
+    if not mol.HasSubstructMatch(naphthoquinone_pattern):
+        return False, "No bicyclic core found"
 
-    # Check for ketone groups (=O)
-    ketone_pattern = Chem.MolFromSmarts("C(=O)")
-    ketone_matches = mol.GetSubstructMatches(ketone_pattern)
-    if len(ketone_matches) < 2:
-        return False, f"Found only {len(ketone_matches)} ketone groups, need at least 2"
+    # Find naphthoquinone system with two ketones
+    # This pattern looks for a bicyclic system with two ketone groups
+    naphthoquinone_with_ketones = Chem.MolFromSmarts(
+        "[#6]1[#6][#6][#6]2[#6][#6][#6][#6][#6][#6]2[#6]1(=[O,N])" # Bicyclic core with one ketone
+        ".[#6]1[#6][#6][#6]2[#6][#6][#6][#6][#6][#6]2[#6]1(=[O,N])" # Same core with second ketone
+    )
+    if not mol.HasSubstructMatch(naphthoquinone_with_ketones):
+        return False, "No naphthoquinone system found (missing ketone groups)"
 
-    # Check for hydroxy groups
-    hydroxy_pattern = Chem.MolFromSmarts("[OX2H]")
-    hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
-    if not hydroxy_matches:
-        return False, "No hydroxy groups found"
-
-    # Get the naphthalene core atoms
-    core_matches = mol.GetSubstructMatches(naphthalene_pattern)
+    # Get the naphthoquinone core atoms
+    core_matches = mol.GetSubstructMatches(naphthoquinone_pattern)
+    if not core_matches:
+        return False, "Could not identify naphthoquinone core atoms"
+    
     core_atoms = set(core_matches[0])
     
     # Find atoms that are part of the extended naphthoquinone system
-    # (includes the core and directly attached atoms)
     extended_core = set()
     for atom_idx in core_atoms:
         extended_core.add(atom_idx)
@@ -53,15 +53,12 @@ def is_hydroxynaphthoquinone(smiles: str):
         for neighbor in atom.GetNeighbors():
             extended_core.add(neighbor.GetIdx())
 
-    # Check if ketones are part of the naphthoquinone system
-    ketone_on_core = False
-    for ketone_match in ketone_matches:
-        if ketone_match[0] in extended_core:
-            ketone_on_core = True
-            break
+    # Check for hydroxy groups attached to the naphthoquinone core
+    hydroxy_pattern = Chem.MolFromSmarts("[OX2H]")
+    hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
     
-    if not ketone_on_core:
-        return False, "Ketone groups not part of naphthoquinone system"
+    if not hydroxy_matches:
+        return False, "No hydroxy groups found"
 
     # Check if any hydroxy group is attached to the extended naphthoquinone core
     for hydroxy_match in hydroxy_matches:
@@ -69,7 +66,7 @@ def is_hydroxynaphthoquinone(smiles: str):
         # Get the atom the OH is attached to
         neighbors = mol.GetAtomWithIdx(oh_oxygen).GetNeighbors()
         for neighbor in neighbors:
-            if neighbor.GetIdx() in extended_core:
-                return True, "Contains naphthoquinone core with at least one hydroxy group attached"
+            if neighbor.GetIdx() in core_atoms:  # Check core atoms only, not extended core
+                return True, "Found hydroxynaphthoquinone structure"
 
     return False, "Hydroxy groups present but not attached to naphthoquinone core"
