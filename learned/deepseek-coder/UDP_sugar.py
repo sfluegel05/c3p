@@ -34,7 +34,10 @@ def is_UDP_sugar(smiles: str):
     # Look for the ribose sugar attached to uracil - more general pattern
     ribose_pattern = Chem.MolFromSmarts("[nH0,nH1]1ccc(=O)[nH0,nH1]c1=O[C@H]1[C@H](O)[C@H](O)[C@H](O)CO1")
     if not mol.HasSubstructMatch(ribose_pattern):
-        return False, "No ribose sugar attached to uracil found"
+        # Relax the pattern to allow for variations in the ribose structure
+        ribose_pattern = Chem.MolFromSmarts("[nH0,nH1]1ccc(=O)[nH0,nH1]c1=O[C@H]1[C@H](O)[C@H](O)[C@H](O)C1")
+        if not mol.HasSubstructMatch(ribose_pattern):
+            return False, "No ribose sugar attached to uracil found"
 
     # Look for the diphosphate group (two phosphate groups in sequence)
     diphosphate_pattern = Chem.MolFromSmarts("[OX2]P(=O)([OX2])OP(=O)([OX2])[OX2]")
