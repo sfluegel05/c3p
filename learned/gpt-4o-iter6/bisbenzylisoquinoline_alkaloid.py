@@ -16,29 +16,28 @@ def is_bisbenzylisoquinoline_alkaloid(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS for bisbenzylisoquinoline pattern
-    # This pattern looks for isoquinoline units with attached ether linkages
-    isoquinoline_unit_pattern = Chem.MolFromSmarts("c1ccc2c(c1)cc[nH]c2")
-    ether_bridge_pattern = Chem.MolFromSmarts("-O-")
+    # Possible patterns for detecting isoquinoline-like structures
+    isoquinoline_pattern = Chem.MolFromSmarts("c1ccc2ncccc2c1")
+    
+    # Broad pattern to detect oxygen bridge linkages
+    ether_linkage_pattern = Chem.MolFromSmarts("c-O-c")
 
-    # Check for two isoquinoline units
-    isoquinoline_matches = mol.GetSubstructMatches(isoquinoline_unit_pattern)
+    # Search for benzylisoquinoline units
+    isoquinoline_matches = mol.GetSubstructMatches(isoquinoline_pattern)
     if len(isoquinoline_matches) < 2:
-        return False, "Less than two isoquinoline units detected"
+        return False, "Less than two isoquinoline-like units detected"
 
-    # Check for ether bridge between isoquinoline units
-    ether_matches = mol.GetSubstructMatches(ether_bridge_pattern)
-    if not ether_matches:
-        return False, "No valid ether bridges detected between units"
+    # Ensure there is an ether link across significant structures
+    ether_matches = mol.GetSubstructMatches(ether_linkage_pattern)
+    if len(ether_matches) < 1:
+        return False, "No ether linkages detected"
 
-    # Additional bridging check (optional, based on complex structures seen)
-    methylenedioxy_bridge_pattern = Chem.MolFromSmarts("O1COC2=CC(=O)NC2")
-    if mol.HasSubstructMatch(methylenedioxy_bridge_pattern):
-        return True, "Contains two isoquinoline units linked by ether bridges and additional methylenedioxy bridging"
+    # Additional checks for bridging patterns, e.g., direct carbon-carbon bridges
+    # Check for methylenedioxy groups indirectly - this is complex, hence only hinted here
+    # methylenedioxy_pattern = Chem.MolFromSmarts("COC")
 
-    return True, "Contains two isoquinoline units linked by ether bridges"
+    return True, "Contains two benzylisoquinoline units linked by ether and possibly other bridges"
