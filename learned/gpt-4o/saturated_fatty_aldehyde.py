@@ -2,7 +2,6 @@
 Classifies: CHEBI:133249 saturated fatty aldehyde
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_saturated_fatty_aldehyde(smiles: str):
     """
@@ -22,8 +21,8 @@ def is_saturated_fatty_aldehyde(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for aldehyde group pattern: C(=O)[H]
-    aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)")
+    # Look for aldehyde group pattern: O=C and ensuring the terminal carbon is present
+    aldehyde_pattern = Chem.MolFromSmarts("[CX3](=O)[!$([#1])]")  # Focus on carbon doubly bonded to oxygen
     if not mol.HasSubstructMatch(aldehyde_pattern):
         return False, "No aldehyde group found"
     
@@ -36,10 +35,5 @@ def is_saturated_fatty_aldehyde(smiles: str):
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if c_count < 4:
         return False, "Too few carbons to be a fatty aldehyde"
-    
-    # Ensure the molecule has hydrogen in aldehyde position
-    h_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 1)
-    if h_count < 1:
-        return False, "Aldehyde group is missing the hydrogen atom"
 
     return True, "Contains aldehyde group with a saturated carbon chain"
