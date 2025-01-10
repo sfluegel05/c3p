@@ -25,63 +25,55 @@ def is_isoflavonoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define the chromone core with a variable substituent at position 3
-    # The SMARTS pattern includes atom mapping to identify position 3
-    chromone_smarts = '[O]=C1C=CC([#6:1])=CC=C1'  # Atom map 1 corresponds to position 3
-    pattern = Chem.MolFromSmarts(chromone_smarts)
+    # Define the isoflavonoid core (3-phenylchromen-4-one)
+    # The SMARTS pattern includes atom mapping to identify position 3 and the aryl substituent
+    isoflavonoid_smarts = """
+    [O]=C1/C=C(\C=C2/COC=C12)[c:3][cH][cH][cH][cH][cH]
+    """
+    # Clean up the SMARTS pattern
+    isoflavonoid_smarts = isoflavonoid_smarts.replace('\n', '').replace(' ', '')
+    pattern = Chem.MolFromSmarts(isoflavonoid_smarts)
     if pattern is None:
-        return False, "Invalid SMARTS pattern for chromone core"
+        return False, "Invalid SMARTS pattern for isoflavonoid core"
     
-    # Build mapping from query atom indices to atom map numbers
-    query_map = {}  # atom map number to query atom index
-    for atom in pattern.GetAtoms():
-        map_num = atom.GetAtomMapNum()
-        if map_num > 0:
-            query_map[map_num] = atom.GetIdx()
-    
-    # Find substructure matches of the chromone core
+    # Find substructure matches of the isoflavonoid core
     matches = mol.GetSubstructMatches(pattern)
     if not matches:
-        return False, "No chromone core found"
+        return False, "No isoflavonoid core found"
     
+    # Check each match for the aryl substituent at position 3
     for match in matches:
-        # Get the atom index corresponding to position 3
-        atom_idx = match[query_map[1]]
-        atom = mol.GetAtomWithIdx(atom_idx)
+        # The index of the atom mapped as [c:3] corresponds to the carbon at position 3
+        # Verify that this carbon is connected to an aryl group
+        pos3_idx = match[pattern.GetSubstructMatch(pattern)[2]]  # Position of [c:3]
+        pos3_atom = mol.GetAtomWithIdx(pos3_idx)
         
-        # Get the substituents attached to position 3 that are not part of the chromone core
-        pattern_atom_indices = set(match)
-        neighbors = [nbr for nbr in atom.GetNeighbors() if nbr.GetIdx() not in pattern_atom_indices]
-        if not neighbors:
-            continue  # No substituents attached to position 3
+        # Get neighbors of the carbon at position 3 not part of the core
+        core_atoms = set(match)
+        neighbors = [nbr for nbr in pos3_atom.GetNeighbors() if nbr.GetIdx() not in core_atoms]
         
-        # Check if the substituent contains an aryl group
+        # Check if any neighbor leads to an aryl group
         aryl_found = False
         for nbr in neighbors:
-            # Perform a breadth-first search to find an aromatic ring
-            visited = set()
-            stack = [nbr]
-            while stack:
-                current_atom = stack.pop()
-                current_idx = current_atom.GetIdx()
-                if current_idx in visited or current_idx in pattern_atom_indices:
-                    continue
-                visited.add(current_idx)
-                if current_atom.GetIsAromatic() and current_atom.IsInRing():
+            # Use Chem.FindAtomEnvironmentOfRadiusN to find if an aromatic ring is connected
+            env = Chem.FindAtomEnvironmentOfRadiusN(mol, radius=3, atomId=nbr.GetIdx())
+            amap = {}
+            submol = Chem.PathToSubmol(mol, env, atomMap=amap)
+            aro_rings = submol.GetRingInfo().AtomRings()
+            for ring in aro_rings:
+                if all(submol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring):
                     aryl_found = True
                     break
-                else:
-                    stack.extend([n for n in current_atom.GetNeighbors() if n.GetIdx() not in visited])
             if aryl_found:
-                break  # Aryl group found
+                break
         if aryl_found:
-            return True, "Contains chromone core with aryl substituent at position 3"
+            return True, "Contains isoflavonoid core with aryl substituent at position 3"
         else:
             continue  # Check next match if available
     
-    return False, "Chromone core found, but no aryl substituent at position 3"
+    return False, "Isoflavonoid core found, but no aryl substituent at position 3"
 
 # Example usage:
-# smiles = 'O=C1C=CC2=CC=CC=C2O1C3=CC=CC=C3'  # Isoflavone
+# smiles = 'Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O'  # Daidzein, an isoflavonoid
 # result, reason = is_isoflavonoid(smiles)
 # print(result, reason)
