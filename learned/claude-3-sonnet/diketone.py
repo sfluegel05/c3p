@@ -11,7 +11,7 @@ from rdkit.Chem import AllChem
 def is_diketone(smiles: str):
     """
     Determines if a molecule is a diketone based on its SMILES string.
-    A diketone contains exactly two ketone groups (C=O where C is bonded to carbons).
+    A diketone contains exactly two ketone groups (C=O where C is bonded to two other carbons).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,54 +26,60 @@ def is_diketone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Find all carbonyls
-    carbonyl_pattern = Chem.MolFromSmarts("[CX3](=[OX1])")
-    if carbonyl_pattern is None:
-        return False, "Error in SMARTS pattern"
-    
-    carbonyl_matches = mol.GetSubstructMatches(carbonyl_pattern)
-    if len(carbonyl_matches) < 2:
-        return False, f"Found only {len(carbonyl_matches)} carbonyl groups"
+    # Kekulize the molecule to ensure proper aromatic bond representation
+    Chem.Kekulize(mol, clearAromaticFlags=True)
 
-    # Find carboxylic acids
+    # SMARTS pattern for a ketone group: carbon double bonded to oxygen,
+    # where the carbon is connected to exactly two other carbons
+    # [#6] = any carbon
+    # X4 = exactly 4 total bonds
+    # [CX3](=[OX1])[#6] = carbonyl carbon connected to another carbon
+    ketone_pattern = Chem.MolFromSmarts("[#6][CX3](=[OX1])[#6]")
+    
+    # Find all ketone matches
+    ketone_matches = mol.GetSubstructMatches(ketone_pattern)
+    
+    if len(ketone_matches) != 2:
+        return False, f"Found {len(ketone_matches)} ketone groups, need exactly 2"
+
+    # Additional check to exclude cases where we might have matched other carbonyl groups
+    # Look for competing functional groups that might have been matched
+    
+    # Carboxylic acid pattern
     acid_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H1]")
-    acid_matches = set() if acid_pattern is None else set(x[0] for x in mol.GetSubstructMatches(acid_pattern))
+    acid_matches = mol.GetSubstructMatches(acid_pattern)
     
-    # Find esters
+    # Ester pattern
     ester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2][#6]")
-    ester_matches = set() if ester_pattern is None else set(x[0] for x in mol.GetSubstructMatches(ester_pattern))
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
     
-    # Find amides
+    # Amide pattern
     amide_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[NX3]")
-    amide_matches = set() if amide_pattern is None else set(x[0] for x in mol.GetSubstructMatches(amide_pattern))
-
-    # Get all non-ketone carbonyls
-    non_ketone_carbonyls = acid_matches | ester_matches | amide_matches
+    amide_matches = mol.GetSubstructMatches(amide_pattern)
     
-    # Get ketone carbonyls (carbonyls that aren't part of acids/esters/amides)
-    ketone_carbons = set(match[0] for match in carbonyl_matches) - non_ketone_carbonyls
+    # Check if any of our ketone matches overlap with these other functional groups
+    ketone_carbons = set(match[1] for match in ketone_matches)  # Get the carbonyl carbons
     
-    if len(ketone_carbons) != 2:
-        return False, f"Found {len(ketone_carbons)} ketone groups, need exactly 2"
-
-    # Validate each ketone carbon has at least one carbon neighbor
-    for carbon_idx in ketone_carbons:
-        atom = mol.GetAtomWithIdx(carbon_idx)
-        carbon_neighbors = sum(1 for n in atom.GetNeighbors() if n.GetAtomicNum() == 6)
-        if carbon_neighbors == 0:
-            return False, "Ketone carbon must be bonded to at least one carbon atom"
-
-    # Check for specific diketone patterns
-    alpha_diketone = Chem.MolFromSmarts("[#6]C(=O)C(=O)[#6]")
-    cyclic_13_diketone = Chem.MolFromSmarts("[#6]1[#6]C(=O)[#6][#6]C1=O")
-    cyclic_14_diketone = Chem.MolFromSmarts("[#6]1[#6]C(=O)[#6][#6]C(=O)[#6]1")
+    other_carbonyls = set()
+    for matches in [acid_matches, ester_matches, amide_matches]:
+        for match in matches:
+            other_carbonyls.add(match[0])
     
-    pattern_found = ""
-    if mol.HasSubstructMatch(alpha_diketone):
-        pattern_found = " (alpha-diketone pattern)"
-    elif mol.HasSubstructMatch(cyclic_13_diketone):
-        pattern_found = " (1,3-diketone pattern)"
-    elif mol.HasSubstructMatch(cyclic_14_diketone):
-        pattern_found = " (1,4-diketone pattern)"
+    # If there's overlap between ketone carbons and other carbonyl groups,
+    # we might have misidentified some groups
+    if ketone_carbons.intersection(other_carbonyls):
+        return False, "Contains carbonyl groups that are not ketones"
 
-    return True, f"Contains exactly two ketone groups{pattern_found}"
+    # Additional validation - check that the carbons attached to the ketone
+    # are not part of other functional groups
+    for match in ketone_matches:
+        carbonyl_carbon = match[1]
+        atom = mol.GetAtomWithIdx(carbonyl_carbon)
+        
+        # Check neighbors of the carbonyl carbon
+        for neighbor in atom.GetNeighbors():
+            if neighbor.GetAtomicNum() != 6:  # if not carbon
+                if neighbor.GetAtomicNum() != 8:  # ignore the oxygen of the ketone
+                    return False, "Ketone group is part of another functional group"
+
+    return True, "Contains exactly two ketone groups"
