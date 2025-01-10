@@ -22,43 +22,25 @@ def is_long_chain_fatty_alcohol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for a hydroxyl group (-OH) attached to aliphatic carbon
+    # Look for a hydroxyl group (-OH) attached to an aliphatic carbon
     hydroxyl_pattern = Chem.MolFromSmarts("[CX4][OX2H]")  # Aliphatic carbon with OH
     hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
 
     if not hydroxyl_matches:
         return False, "No aliphatic hydroxyl group (-OH) found on a carbon chain"
 
-    # Check longest aliphatic carbon chain with the attached hydroxyl group
-    def max_aliphatic_chain_length(attached_idx):
-        max_chain_length = 0
-        for atom in mol.GetAtoms():
-            if atom.GetAtomicNum() == 6:  # Carbon
-                visited = set()
-                stack = [(atom.GetIdx(), 1)]  # (Current atom index, chain length)
-                while stack:
-                    current_atom_idx, current_length = stack.pop()
-                    if current_atom_idx not in visited:
-                        visited.add(current_atom_idx)
-                        current_atom = mol.GetAtomWithIdx(current_atom_idx)
-                        for neighbor in current_atom.GetNeighbors():
-                            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:
-                                stack.append((neighbor.GetIdx(), current_length + 1))
-                        if current_atom.GetIdx() == attached_idx:
-                            max_chain_length = max(max_chain_length, current_length)
-        return max_chain_length
+    # Utilize RDKit's function to identify the longest carbon chain
+    longest_chain_length = rdMolDescriptors.CalcLongestAliphaticChain(mol)
+    
+    # Check if the longest aliphatic chain meets the criteria for a long chain
+    if longest_chain_length >= 13 and longest_chain_length <= 22:
+        return True, "Has a hydroxyl group and the carbon chain length is within range for long-chain fatty alcohol"
+    else:
+        return False, f"Carbon chain length is {longest_chain_length}, expected between 13 and 22"
 
-    # Evaluate each hydroxyl group's attachment
-    valid_alcohol = False
-    reason = ""
-    for match in hydroxyl_matches:
-        carbon_idx, oxygen_idx = match
-        chain_length = max_aliphatic_chain_length(carbon_idx)
-        if 13 <= chain_length <= 22:
-            valid_alcohol = True
-            reason = "Has a hydroxyl group and the carbon chain length is within range for long-chain fatty alcohol"
-            break
-        else:
-            reason = f"Carbon chain length is {chain_length}, expected between 13 and 22"
-
-    return valid_alcohol, reason
+__metadata__ = {   'chemical_class': {   'name': 'long-chain fatty alcohol',
+                                         'definition': 'A fatty alcohol with a chain length ranging from C13 to C22.'},
+                   'attempt': 0,
+                   'success': True,
+                   'best': True,
+                   'message': None}
