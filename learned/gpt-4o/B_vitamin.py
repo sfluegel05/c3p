@@ -22,21 +22,21 @@ def is_B_vitamin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS patterns for some B vitamins:
+    # SMARTS patterns for key B vitamins:
     patterns = {
-        "B1_tetra": Chem.MolFromSmarts("Cc1nccn1Cc1scnc1Cc1ncc(=O)n(CCO)c1"), # Thiamine derivatives
-        "B2": Chem.MolFromSmarts("Cc1cc2nc3c(nc(oc=c3)c(C)c2)c(C)c1C"), # Riboflavin
-        "B3": Chem.MolFromSmarts("c1cc(C)c(C=O)nc1"), # Nicotinic acid
-        "B5": Chem.MolFromSmarts("CCC(C(C(=O)O)O)N"), # Pantothenic acid
-        "B6": Chem.MolFromSmarts("CC(O)c1cc(N)c(O)c(C)n1"), # Pyridoxine derivatives
-        "B7": Chem.MolFromSmarts("C1=CC2=C(S1)N(F)=V3S(N4C6=CC=C2)CC4(CCC5(C3(CC7)))"), # Biotin (indicative features)
-        "B9": Chem.MolFromSmarts("OC(=O)c1ccccc1NCc1ccc(cc1)N"), # Folic acid
-        "B12": Chem.MolFromSmarts("c1c[C@@H]2[C@@H]3C@@H]4[C@@H]5CC6CN"), # Cobalamin/related structures
+        "B1": Chem.MolFromSmarts("C[C@H]1CN(C2=CN=C(C)N=C2N)C=C1"), # Thiamine
+        "B2": Chem.MolFromSmarts("C1(=CC=C2C(O)=CN=C(NC)C2=CN=1)"), # Riboflavin
+        "B3": Chem.MolFromSmarts("OC(=O)c1cccnc1"), # Nicotinic acid
+        "B5": Chem.MolFromSmarts("CC(C)(CO)[C@@H](O)C(=O)NCCC(O)=O"), # Pantothenic acid
+        "B6": Chem.MolFromSmarts("CC1=NC=C(C=C1O)O"), # Pyridoxine
+        "B7": Chem.MolFromSmarts("NC1N(A)S(A)OC1"), # Biotin (simplified key structure)
+        "B9": Chem.MolFromSmarts("Nc1nc2NCCNC2C(=O)N1"), # Folic acid
+        "B12": Chem.MolFromSmarts("CNC1=CN=C(C=C1)C"), # Cobalamin, indicative corrin structure
     }
 
     # Check for substructures
     for vitamin, pattern in patterns.items():
-        if mol.HasSubstructMatch(pattern):
+        if pattern is not None and mol.HasSubstructMatch(pattern):
             return True, f"Matches pattern of vitamin {vitamin}"
     
     return False, "Does not match any known B vitamin patterns"
