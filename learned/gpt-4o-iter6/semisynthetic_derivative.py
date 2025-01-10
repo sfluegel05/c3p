@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_semisynthetic_derivative(smiles: str):
     """
     Determines if a molecule is a semisynthetic derivative based on its SMILES string.
-    Attempts to use more relevant substructures common in semisynthetic derivatives.
+    Employs more comprehensive and specific substructure patterns commonly seen in semisynthetic derivatives.
 
     Args:
         smiles (str): SMILES string of the molecule.
@@ -21,20 +21,24 @@ def is_semisynthetic_derivative(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define more specific patterns indicative of semisynthetic derivatives
-    lactone_pattern = Chem.MolFromSmarts("C1OC(=O)[C@@H]([C@H]1)C")  # Lactones in macrolides
-    beta_lactam_pattern = Chem.MolFromSmarts("C1NC(=O)C1")  # Beta-lactam ring, common in antibiotics
-    modified_chiral_pattern = Chem.MolFromSmarts("[C@&CX4]")  # Stereocenters (rechecking stereochemistry)
-    unique_side_chain_pattern = Chem.MolFromSmarts("[R]C([R])C([R])[R]")  # Complex side chains
-
+    # Enhanced substructure patterns
+    lactone_pattern = Chem.MolFromSmarts("C1OC(=O)C=C1")  # Extended lactone structures
+    beta_lactam_pattern = Chem.MolFromSmarts("C1NC(=O)[C@H]C1")  # Extended beta-lactam for complex antibiotics
+    ester_modification_pattern = Chem.MolFromSmarts("[C](=O)O[C,R]")  # Ester modifications
+    ether_pattern = Chem.MolFromSmarts("CCOC")  # Common ether linkages
+    
+    # Modified chiral/stereochemical complexity
+    stereochemistry_pattern = Chem.MolFromSmarts("[C@&C]")  # Any complex stereocenter
+    
     # Substructure occurrences
     matches_lactone = mol.HasSubstructMatch(lactone_pattern)
     matches_beta_lactam = mol.HasSubstructMatch(beta_lactam_pattern)
-    matches_chiral_centers = mol.HasSubstructMatch(modified_chiral_pattern)
-    matches_side_chain = mol.HasSubstructMatch(unique_side_chain_pattern)
+    matches_ester = mol.HasSubstructMatch(ester_modification_pattern)
+    matches_ether = mol.HasSubstructMatch(ether_pattern)
+    matches_stereochemistry = mol.HasSubstructMatch(stereochemistry_pattern)
 
-    # Combine using tuned heuristic
-    if any([matches_lactone, matches_beta_lactam]) and (matches_chiral_centers or matches_side_chain):
+    # Combine matches using an improved heuristic
+    if any([matches_lactone, matches_beta_lactam, matches_ester]) and any([matches_ether, matches_stereochemistry]):
         return True, "Significant markers indicative of semisynthetic modification are present"
 
     return False, "Not enough evidence for semisynthetic derivation"
