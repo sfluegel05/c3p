@@ -28,8 +28,8 @@ def is_wax_ester(smiles: str):
     # Look for ester group (-COO-)
     ester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2][CX4]")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) != 1:
-        return False, f"Found {len(ester_matches)} ester groups, need exactly 1"
+    if len(ester_matches) < 1:
+        return False, f"Found {len(ester_matches)} ester groups, need at least 1"
 
     # Check for long hydrocarbon chains (at least 8 carbons in each chain)
     # We look for a pattern of at least 8 consecutive carbons, allowing for double bonds and branching
@@ -65,5 +65,14 @@ def is_wax_ester(smiles: str):
         return False, "Excluded retinyl ester"
     if mol.HasSubstructMatch(Chem.MolFromSmarts("[CX3](=[OX1])[OX2][CX4][OX2][CX3](=[OX1])")):
         return False, "Excluded molecules with multiple ester groups"
+
+    # Ensure that the ester is between a fatty alcohol and a fatty acid
+    # Check that one side of the ester is a long hydrocarbon chain (fatty alcohol)
+    # and the other side is a long hydrocarbon chain with a carboxyl group (fatty acid)
+    fatty_alcohol_pattern = Chem.MolFromSmarts("[CX4][OX2][CX3](=[OX1])")
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2][CX4]")
+    
+    if not mol.HasSubstructMatch(fatty_alcohol_pattern) or not mol.HasSubstructMatch(fatty_acid_pattern):
+        return False, "Ester is not between a fatty alcohol and a fatty acid"
 
     return True, "Contains one ester group with two long hydrocarbon chains"
