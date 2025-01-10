@@ -16,15 +16,18 @@ def is_alpha_hydroxy_ketone(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
+    # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Check for alpha-hydroxy ketone pattern
-    # Carbon (not necessarily in a ring) with C=O adjacent to C-OH
-    alpha_hydroxy_ketone_pattern = Chem.MolFromSmarts("[#6][C](=O)[C][O]")
+    
+    # Define improved SMARTS pattern for alpha-hydroxy ketone
+    # Ensure C-C(=O)-C-OH pattern is correctly identified
+    alpha_hydroxy_ketone_pattern = Chem.MolFromSmarts("[CX4][CX3](=O)[CX4][OX2H]")
+    
+    # Apply the pattern to the molecule
     if mol.HasSubstructMatch(alpha_hydroxy_ketone_pattern):
         return True, "Contains alpha-hydroxy ketone motif (C=O and adjacent C-OH)"
     
+    # If pattern does not match, return false
     return False, "Does not contain alpha-hydroxy ketone motif"
