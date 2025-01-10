@@ -18,34 +18,25 @@ def is_3_oxo_5beta_steroid(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
+    # Parse SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # 3-oxo group pattern (ketone at 3-position)
-    oxo_pattern_3 = Chem.MolFromSmarts("C(=O)[C@@H]")  # Assuming this pattern for '3-oxo'
-    if not mol.HasSubstructMatch(oxo_pattern_3):
+
+    # Pattern for 3-oxo group (simple ketone pattern, needs contextualization)
+    oxo_pattern = Chem.MolFromSmarts("C(=O)C")
+    if not mol.HasSubstructMatch(oxo_pattern):
         return False, "3-oxo group not found"
-    
-    # Stereochemistry at 5beta: This would be part of a complete pattern for a steroid with 5beta annotation
-    # Complex, assumed 'beta' refers configuration that requires more detailed chiral recognition
-    # Simple check for presence of chiral centers
-    chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
-    
-    # Look for the steroid scaffold pattern (ABCD ring system)
-    steroid_pattern = Chem.MolFromSmarts("C1C2C3C4") # Extremely simplified steroid nucleus
+
+    # Basic pattern for a steroid backbone (simplified; needs actual steroid recognition)
+    steroid_pattern = Chem.MolFromSmarts("C1CC2CCC3C(C)CCC4C(C)CCCC4=C3C2=C1")
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "Steroid backbone not found"
-    
-    # Optional: More detailed chiral pattern matching
-    has_beta_specificity = any('beta' in center for center in chiral_centers)
-    if not has_beta_specificity:
-        return False, f"5beta stereochemistry not found; chiral centers: {chiral_centers}"
-    
-    # Additional pattern specifics for merged features could be added here as needed
 
-    return True, "3-oxo-5beta-steroid characteristic patterns found"
+    # Check for chiral centers and configuration at position 5 (beta orientation)
+    chiral_centers = Chem.FindMolChiralCenters(mol, force=True, includeUnassigned=True)
+    has_5beta = any(center[0] == 5 and '@' in center[1] for center in chiral_centers)
+    if not has_5beta:
+        return False, "5beta stereochemistry not confirmed; chiral centers: {}".format(chiral_centers)
 
-# The patterns in the code are placeholders. More precise pattern definitions
-# are required to handle actual stereochemical configurations.
+    return True, "Molecule matches the 3-oxo-5beta-steroid characteristics"
