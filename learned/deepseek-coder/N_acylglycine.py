@@ -27,7 +27,7 @@ def is_N_acylglycine(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for glycine backbone pattern (N-CH2-COOH), where N may be acylated
-    glycine_pattern = Chem.MolFromSmarts("[NX3][CH2]C(=O)[OH]")
+    glycine_pattern = Chem.MolFromSmarts("[NX3H0][CH2]C(=O)[OH]")
     if not mol.HasSubstructMatch(glycine_pattern):
         return False, "No glycine backbone found"
 
