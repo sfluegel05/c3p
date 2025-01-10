@@ -23,28 +23,24 @@ def is_penicillin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for the core penicillin scaffold: 4-thia-1-azabicyclo[3.2.0]heptane
-    penicillin_core_pattern = Chem.MolFromSmarts("C1([C@@H]2SC3N2C(=O)[C@@H](C(=O)O)C3)C")
-    if penicillin_core_pattern is None:
-        return None, None
-
-    # Check for the core penicillin structure and required stereochemistry
+    # Define SMARTS pattern for the 4-thia-1-azabicyclo[3.2.0]heptane core in penicillins
+    penicillin_core_pattern = Chem.MolFromSmarts("N1C(=O)[C@@H]2[C@@H](S1)[C@]2(C(=O)O)C")
     if not mol.HasSubstructMatch(penicillin_core_pattern):
         return False, "Core penicillin structure not found"
 
-    # Verify two methyl groups at position 2 of the penicillin core
-    methyl_pattern = Chem.MolFromSmarts("[C@@]([C@](C)(C)C1([C@@H]2SC3N2)[N](C(=O))[CH](C3)C(=O)O)=O")
+    # Check for two methyl substituents at position 2 of the core
+    methyl_pattern = Chem.MolFromSmarts("C(C)(C)C1CNC(=O)[C@@H](S1)")
     if not mol.HasSubstructMatch(methyl_pattern):
-        return False, "Methyl groups at position 2 are required but not found"
+        return False, "Methyl groups at position 2 are missing"
 
-    # Carboxylate group should be present: C(=O)O moiety at the outward-position
+    # Check for a carboxylate group at position 3
     carboxylate_pattern = Chem.MolFromSmarts("C(=O)[O-]")
     if not mol.HasSubstructMatch(carboxylate_pattern):
-        return False, "Required carboxylate group not found"
+        return False, "Required carboxylate group not found at position 3"
 
-    # Carboxamido group at position 6 of the penicillin backbone
+    # Check for a carboxamido group at position 6
     carboxamido_pattern = Chem.MolFromSmarts("NC(=O)")
     if not mol.HasSubstructMatch(carboxamido_pattern):
-        return False, "Required carboxamido group not found"
+        return False, "Required carboxamido group not found at position 6"
 
     return True, "Matches penicillin structure requirements"
