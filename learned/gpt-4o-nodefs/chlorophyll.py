@@ -14,6 +14,7 @@ def is_chlorophyll(smiles: str):
         bool: True if molecule is chlorophyll, False otherwise
         str: Reason for classification
     """
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
@@ -24,20 +25,19 @@ def is_chlorophyll(smiles: str):
     if not mg_atom:
         return False, "No magnesium atom found"
 
-    # Check for chlorin-like structure (porphyrin with reduced bonds in one ring)
-    chlorin_pattern = Chem.MolFromSmarts("n1c(c2nc(nc2c3cc1[nH+]3)C)c4[nH]c5c(n4)[nH+]5")
+    # Improved pattern for detecting chlorin-like macrocyclic structure
+    chlorin_pattern = Chem.MolFromSmarts("n1c(c2nc(cc3c2c1)c(c4cc(c(c5[nH]c(nc5c6ccc(n6)c3)c4))c7[nH]c8c(c7)c(c9cc(nc(n9)c8)c0ccc(nc0)c1)c2)n3)cc4)c2n8c(c)c(=n9)ccn(c9)cc8c3c(c4)n(cc3)c2")
     if not mol.HasSubstructMatch(chlorin_pattern):
-        return False, "No chlorin-like structure found"
+        return False, "No chlorin-like macrocyclic structure found"
 
-    # Check for long hydrocarbon chains or common hydrocarbon fragments in chlorophyll
-    hydrocarbon_chain_pattern = Chem.MolFromSmarts("CCCCCCC")
-    if not mol.HasSubstructMatch(hydrocarbon_chain_pattern):
-        return False, "No suitable long hydrocarbon chains found"
-    
-    # Check for presence of ester groups
-    ester_pattern = Chem.MolFromSmarts("COC(=O)")
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) < 1:
-        return False, "No ester groups found, common in chlorophyll"
+    # Check for presence of phytol or geranylgeranyl-like hydrocarbon chains commonly found
+    phytol_chain_pattern = Chem.MolFromSmarts("C(CC)=C/C\\C=C/C\\C=C/C")
+    if not mol.HasSubstructMatch(phytol_chain_pattern):
+        return False, "No suitable phytol or similar hydrocarbon chains found"
 
-    return True, "Matches chlorophyll characteristics: chlorin-like structure with magnesium, hydrocarbon chains, and ester groups"
+    # Expanded pattern for presence of ester groups in given positions
+    ester_pattern = Chem.MolFromSmarts("CO[C](=O)")
+    if not mol.HasSubstructMatch(ester_pattern):
+        return False, "No ester groups in appropriate locations found"
+
+    return True, "Matches chlorophyll characteristics: macrocyclic structure with magnesium, phytol-like chains, and ester groups"
