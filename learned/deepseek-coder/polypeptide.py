@@ -25,24 +25,16 @@ def is_polypeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Broad pattern to match amino acid residues
-    # Looks for N-C(=O)-C pattern, which is common in amino acids
-    aa_pattern = Chem.MolFromSmarts("[NX3H1,nX3H0][CX4H1]([CX3](=[OX1]))[CX4H1R0]")
-    aa_matches = mol.GetSubstructMatches(aa_pattern)
+    # Broad pattern to match amide bonds (peptide bonds)
+    amide_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[NX3H0,nX3H1]")
+    amide_matches = mol.GetSubstructMatches(amide_pattern)
     
-    # Each match corresponds to one amino acid residue
-    num_residues = len(aa_matches)
+    # Each amide bond corresponds to one peptide linkage
+    # Number of residues = number of amide bonds + 1
+    num_residues = len(amide_matches) + 1
     
     if num_residues < 10:
         return False, f"Found {num_residues} amino acid residues, need at least 10"
-    
-    # Check for peptide bonds
-    peptide_bond_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[NX3H1,nX3H0]")
-    peptide_bonds = len(mol.GetSubstructMatches(peptide_bond_pattern))
-    
-    # Ensure there are at least (num_residues - 1) peptide bonds
-    if peptide_bonds < num_residues - 1:
-        return False, "Insufficient peptide bonds for polypeptide"
     
     # Check for typical polypeptide elements
     n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
@@ -50,5 +42,12 @@ def is_polypeptide(smiles: str):
     
     if n_count < num_residues or o_count < num_residues:
         return False, "Insufficient nitrogen or oxygen atoms for polypeptide"
+    
+    # Check for a continuous chain of residues
+    # Ensure that the amide bonds are connected in a chain
+    # This is a simplified check and may not catch all edge cases
+    # but should work for most polypeptides
+    if not mol.HasSubstructMatch(Chem.MolFromSmarts("[NX3H0,nX3H1][CX4H1]([CX3](=[OX1]))[NX3H0,nX3H1]")):
+        return False, "Residues not connected in a continuous chain"
     
     return True, f"Contains {num_residues} amino acid residues, qualifies as a polypeptide"
