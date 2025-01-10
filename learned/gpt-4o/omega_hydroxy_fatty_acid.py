@@ -21,32 +21,34 @@ def is_omega_hydroxy_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Identify main carbon chain candidates (long carbon sequences)
-    carbon_chain_pattern = Chem.MolFromSmarts("C[C,C](C)[C,C](C)")
-    chain_candidates = mol.GetSubstructMatches(carbon_chain_pattern)
+    # Look for terminal carboxyl group
+    carboxyl_pattern = Chem.MolFromSmarts("[CX3](=O)[OX1H0-,OX2H1]")
+    carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
+    
+    if not carboxyl_matches:
+        return False, "No terminal carboxyl group detected"
 
-    if not chain_candidates:
-        return False, "No suitable carbon chain detected"
+    # Check for hydroxyl group not part of carboxyl, potentially omega position
+    hydroxy_pattern = Chem.MolFromSmarts("[CX4H2,CX4H1][OX2H1,OX1H0-]")
+    hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
 
-    # Check each candidate for terminal carboxyl and hydroxyl
-    carboxyl_pattern = Chem.MolFromSmarts("C(=O)O")
-    hydroxyl_pattern = Chem.MolFromSmarts("[CX4;H2,H3][OH]")
+    if not hydroxy_matches:
+        return False, "No terminal hydroxyl group detected"
 
-    for chain in chain_candidates:
-        start_atom = mol.GetAtomWithIdx(chain[0])
-        end_atom = mol.GetAtomWithIdx(chain[-1])
+    # Determine the hydroxyl and carboxyl groups proximity to potential main chain
+    for hydroxyl_match in hydroxy_matches:
+        hydroxyl_idx = hydroxyl_match[1]  # The -OH group atom index
+        for carboxyl_match in carboxyl_matches:
+            carboxyl_idx = carboxyl_match[0]  # The C=O group atom index of carboxyl
 
-        # Check for carboxyl group at start
-        carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
-        if not any(start_atom.GetIdx() in match for match in carboxyl_matches):
-            continue
+            # Ensure -OH is at the end of a carbon chain and separate from carboxyl
+            if mol.GetBondBetweenAtoms(carboxyl_idx, hydroxyl_idx) is not None:
+                continue  # Skip if directly bonded (should not normally happen)
 
-        # Check for hydroxyl group at end
-        hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-        if not any(end_atom.GetIdx() == match[1] for match in hydroxyl_matches):
-            continue
+            # Check distance between carboxyl and hydroxyl to assume a "main chain"
+            shortest_path = Chem.rdmolops.GetShortestPath(mol, carboxyl_idx, hydroxyl_idx)
 
-        # If both checks pass
-        return True, "Contains carboxyl group at position 1 and omega-hydroxyl group at end of the main chain as per omega-hydroxy fatty acid definition."
+            if len(shortest_path) > 4:  # decent length for a fatty acid
+                return True, "Detected omega-hydroxy group distant from carboxyl group as per definition."
 
     return False, "No omega-hydroxy fatty acid structure detected"
