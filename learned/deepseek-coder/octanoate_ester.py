@@ -28,31 +28,7 @@ def is_octanoate_ester(smiles: str):
     octanoate_pattern = Chem.MolFromSmarts("CCCCCCCC(=O)O[!H]")
     
     # Check if the pattern is present in the molecule
-    if not mol.HasSubstructMatch(octanoate_pattern):
+    if mol.HasSubstructMatch(octanoate_pattern):
+        return True, "Contains octanoate ester group (CCCCCCCC(=O)OR)"
+    else:
         return False, "No octanoate ester group found"
-
-    # Ensure the ester group is derived from octanoic acid
-    # Check that the carbon chain is exactly 8 carbons long
-    ester_matches = mol.GetSubstructMatches(octanoate_pattern)
-    for match in ester_matches:
-        ester_atom = mol.GetAtomWithIdx(match[0])  # Carbon in C=O
-        if ester_atom.GetTotalDegree() != 3:  # Ensure it's part of an ester
-            return False, "Not a valid ester group"
-        
-        # Check the chain length
-        chain_length = 0
-        neighbor = ester_atom.GetNeighbors()[0]  # First neighbor is the chain
-        while neighbor.GetAtomicNum() == 6:  # Carbon
-            chain_length += 1
-            if chain_length > 7:  # 7 carbons + 1 in C=O = 8 carbons total
-                break
-            # Move to next carbon, ensuring it's part of a linear chain
-            next_neighbors = [n for n in neighbor.GetNeighbors() if n.GetIdx() != ester_atom.GetIdx()]
-            if len(next_neighbors) != 1:
-                return False, "Chain is branched or not linear"
-            neighbor = next_neighbors[0]
-        
-        if chain_length != 7:  # 7 carbons + 1 in C=O = 8 carbons total
-            return False, "Chain length not consistent with octanoic acid"
-
-    return True, "Contains octanoate ester group (CCCCCCCC(=O)OR)"
