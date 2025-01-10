@@ -27,23 +27,23 @@ def is_fatty_alcohol(smiles: str):
 
     # Count total carbon atoms in the molecule
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    
     if carbon_count < 3:
         return False, f"Too few carbon atoms ({carbon_count}), need at least 3"
         
-    # Check for hydroxyl (-OH) groups and ensure they're attached to carbon
+    # Check for aliphatic hydroxyl (-OH) groups
     oh_pattern = Chem.MolFromSmarts("[CX4][OX2H]")
     if not mol.HasSubstructMatch(oh_pattern):
         return False, "No aliphatic hydroxyl group found on a carbon chain"
 
-    # Check that there aren't complicated branching structures: Allow chains but not excessive heteroatom involvement
-    non_hydroxy_heavy_atoms = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() not in (6, 8) or (atom.GetAtomicNum() == 8 and atom.GetTotalNumHs() == 0))
-    if non_hydroxy_heavy_atoms > 2:
-        return False, f"Structure too complex due to presence of {non_hydroxy_heavy_atoms} heteroatoms excluding alcohol functionality"
+    # Allow complex aliphatic alcohols to some extent including diols, as long as they meet the length
+    # Check if the total number of heteroatoms (non-C, non-H) is reasonable
+    oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if oxygen_count > 2 and carbon_count < 8:
+        return False, f"Too many heteroatoms for small carbon chain size, oxygen count: {oxygen_count}"
 
-    # Avoid functionality suggesting alternative classification (e.g., esters, carbonyls unless isolated)
-    undesirable_functionality = Chem.MolFromSmarts("[C](=O)")
+    # Avoid alternative functional classifications like non-isolated ester or ketone/aldehydes
+    undesirable_functionality = Chem.MolFromSmarts("[C](=O)[!C]")
     if mol.HasSubstructMatch(undesirable_functionality):
-        return False, "Contains carbonyl groups suggesting alternative functionality"
+        return False, "Contains non-isolated carbonyl suggesting alternative functionality"
 
     return True, "Contains carbon chain with hydroxyl group(s), consistent with fatty alcohols"
