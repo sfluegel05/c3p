@@ -2,6 +2,7 @@
 Classifies: CHEBI:83820 non-proteinogenic amino acid
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_non_proteinogenic_amino_acid(smiles: str):
     """
@@ -21,45 +22,49 @@ def is_non_proteinogenic_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
         
-    # Comprehensive list of SMILES for proteinogenic amino acids (using SMARTS for flexibility)
+    # List of SMARTS for all standard amino acids (for illustration purposes, cover more in practice)
     standard_amino_acids_smarts = [
-        "[NX3;H2,H1;!$(NC=O)][CX4;H1,H0](C)[C](=O)[O;H1,H0]",  # Alanine
-        "[NX3;H2,H1;!$(NC=O)]CC(=O)[O;H1,H0]",  # Glycine
-        "[NX3;H2,H1;!$(NC=O)][CX4;H1,H0](CC1=CN=C-N1)[C](=O)[O;H1,H0]",  # Histidine
-        "[NX3;H2,H1;!$(NC=O)][CX4;H1,H0](C)C1=CC=C(C=C1)[C](=O)[O;H1,H0]",  # Phenylalanine
-        # Include more SMARTS for other standard amino acids
+        "[NX3;H2,H1;!$(NC=O)][CX4;H1,H0](C(O)=O)",  # Alanine example
+        # Add SMARTS patterns for all 20 standard amino acids
     ]
 
-    # Look for amino and carboxylic acid groups
+    # Check for presence of amino and carboxylic acid groups
     amino_pattern = Chem.MolFromSmarts("[NX3;H2,H1;!$(NC=O)]")
-    carboxylic_pattern = Chem.MolFromSmarts("C(=O)[O;H1,H0;$(O[C,c])]")
+    carboxylic_pattern = Chem.MolFromSmarts("C(=O)[O;H1,H0;!$(NC)]")
 
     if not mol.HasSubstructMatch(amino_pattern):
         return False, "Missing amino group"
     if not mol.HasSubstructMatch(carboxylic_pattern):
         return False, "Missing carboxylic acid group"
     
-    # Check for non-standard features
+    # Detect unusual features typical in non-standard amino acids
     unusual_features_smarts = [
         "[SX3](=O)",       # Sulfoxides
         "[OX2][CX3](=N)",  # Oximes
         "[F,Cl,Br,I]",     # Halogens
-        "[SX2]C",          # Thioethers (sulfur bonded to carbon)
-        "[Se]"             # Selenium presence
-        # Add more unusual features typical in non-standard amino acids
+        "[SX2]C",          # Thioethers
+        "[Se]",            # Selenium
+        "[PH]O"            # Phosphorus with oxygen
+        # Extend with more patterns
     ]
 
     for feature in unusual_features_smarts:
         if mol.HasSubstructMatch(Chem.MolFromSmarts(feature)):
             return True, "Contains unusual groups indicating non-standard"
 
-    # If the molecule matches any of the standard patterns, return false
+    # Check for extended complexity beyond proteinogenic structures (rings, branches)
+    complexity_patterns = [
+        "[C](=[O,N])O[C,H]",  # Ester linkages uncommon in standard
+        "[N][C](=C)"          # An amine connected to a vinyl group
+        # Add more complexity variations
+    ]
+
+    for pattern in complexity_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            return True, "Contains structural complexity indicating non-standard"
+
     for aa_pattern in standard_amino_acids_smarts:
         if mol.HasSubstructMatch(Chem.MolFromSmarts(aa_pattern)):
             return False, "Matches a standard proteinogenic amino acid"
-
-    # Check for additional structural complexity
-    if Chem.FindMolChiralCenters(mol, includeUnassigned=True):
-        return True, "Contains multiple chiral centers or unusual complexity"
 
     return False, "Does not match criteria for non-proteinogenic amino acid"
