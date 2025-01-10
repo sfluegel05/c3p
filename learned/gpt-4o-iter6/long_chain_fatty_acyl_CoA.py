@@ -20,25 +20,42 @@ def is_long_chain_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the Coenzyme A motif, given its typical fragment features
-    coa_pattern = Chem.MolFromSmarts("OP(O)(=O)O[C@H]1O[C@@H]([C@H](O)[C@@H]1OP(O)(=O)O)n1cnc2c(N)ncnc12")
-    if not mol.HasSubstructMatch(coa_pattern):
+    # Define the Coenzyme A motif more loosely, capturing the adenine and ribose phosphate components
+    ribose_pattern = Chem.MolFromSmarts("O[C@@H]1[C@@H]([C@H](O)[C@@H]([C@@H]1O)O)OP(O)(O)=O")
+    adenine_pattern = Chem.MolFromSmarts("n1cnc2c(N)ncnc12")
+    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)O")
+    
+    if not (mol.HasSubstructMatch(ribose_pattern) and
+            mol.HasSubstructMatch(adenine_pattern) and
+            mol.HasSubstructMatch(phosphate_pattern)):
         return False, "No Coenzyme A moiety found"
 
-    # Define thioester linkage pattern (thioester should be near Coenzyme A)
+    # Define thioester linkage pattern
     thioester_pattern = Chem.MolFromSmarts("C(=O)SCC")
     thioester_matches = mol.GetSubstructMatches(thioester_pattern)
     if not thioester_matches:
         return False, "No thioester linkage found"
-
-    # Count carbon atoms in the chain (located before the ester group)
+    
+    # Attempt to find the carbon chain length from the thioester linkage
     for match in thioester_matches:
-        carbon_chain_atoms = []  # Atoms constituting the fatty chain
-        for bond in mol.GetAtomWithIdx(match[0]).GetNeighbors():
-            # Trace unfettered linear carbon chains
-            if bond.GetAtomicNum() == 6 and bond.GetSymbol() == 'C':
-                carbon_chain_atoms.append(bond.GetIdx())
+        carbon_chain_atoms = set()
+        # Start from the carbonyl carbon attached to sulfur
+        carbon = mol.GetAtomWithIdx(match[0]) 
+        visited_atoms = set()
+        queue = [carbon]
         
+        while queue:
+            current_atom = queue.pop()
+            if current_atom.GetIdx() not in visited_atoms:
+                visited_atoms.add(current_atom.GetIdx())
+                # Count contiguous C's moving away from the thioester oxygen
+                if current_atom.GetSymbol() == 'C' and current_atom.GetIdx() != match[-1]:
+                    carbon_chain_atoms.add(current_atom.GetIdx())
+                # Explore unvisited neighbors
+                for neighbor in current_atom.GetNeighbors():
+                    if neighbor.GetIdx() not in visited_atoms:
+                        queue.append(neighbor)
+
         carbon_count = len(carbon_chain_atoms)
         
         if 13 <= carbon_count <= 22:
