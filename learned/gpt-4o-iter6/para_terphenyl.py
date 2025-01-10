@@ -21,13 +21,13 @@ def is_para_terphenyl(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more general SMARTS pattern for para-terphenyl
-    # This pattern looks for three phenyl rings with 1,4-linkage, allowing for flexibility in connections
-    para_terphenyl_pattern = Chem.MolFromSmarts("c1ccc(cc1)-c2c(-c3ccc(cc3))cccc2")
-    
-    # Check if the molecule matches the flexible para-terphenyl pattern
+    # Refine SMARTS pattern for para-terphenyl
+    # This pattern ensures a central benzene ring flanked by two phenyl rings in para positions
+    para_terphenyl_pattern = Chem.MolFromSmarts("c1ccccc1-c2ccc(cc2)-c3ccccc3")
+
+    # Check if the molecule matches the para-terphenyl pattern
     if mol.HasSubstructMatch(para_terphenyl_pattern):
-        return True, "Contains a flexible 1,4-diphenylbenzene skeleton"
+        return True, "Contains a 1,4-diphenylbenzene skeleton characteristic of para-terphenyl"
     else:
         return False, "Does not contain a 1,4-diphenylbenzene skeleton"
 
