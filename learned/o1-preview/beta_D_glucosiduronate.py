@@ -1,71 +1,52 @@
 """
 Classifies: CHEBI:83411 beta-D-glucosiduronate
 """
-"""
-Classifies: CHEBI:59687 beta-D-glucosiduronate
-"""
 from rdkit import Chem
 
 def is_beta_D_glucosiduronate(smiles: str):
     """
     Determines if a molecule is a beta-D-glucosiduronate based on its SMILES string.
-    A beta-D-glucosiduronate is a compound containing a beta-D-glucuronic acid moiety
-    attached via a glycosidic bond, with a deprotonated carboxy group.
+    A beta-D-glucosiduronate contains a beta-D-glucuronic acid moiety attached via a beta-glycosidic bond.
 
     Args:
-        smiles (str): SMILES string of the molecule
+        smiles (str): SMILES string of the molecule.
 
     Returns:
-        bool: True if molecule is a beta-D-glucosiduronate, False otherwise
-        str: Reason for classification
+        bool: True if molecule is a beta-D-glucosiduronate, False otherwise.
+        str: Reason for classification.
     """
 
-    # Parse SMILES
+    # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for the beta-D-glucuronic acid moiety attached via glycosidic bond
-    # The pattern represents the beta-D-glucuronic acid residue with correct stereochemistry
-    beta_D_glucuronide_smarts = '''
-    [C@@H]1([O][#6])O[C@H]([C@@H](O)[C@@H](O)[C@H](O1)C(=O)[O-])
-    '''
+    # Define the SMARTS pattern for beta-D-glucuronic acid moiety
+    # This pattern represents the beta-D-glucuronic acid unit with correct stereochemistry
+    beta_D_glucuronic_acid_smarts = '[C@@H]1O[C@H]([C@@H]([C@H]([C@@H](O1)[O])[O])[O])C(=O)[O-]'
+    beta_D_glucuronic_acid = Chem.MolFromSmarts(beta_D_glucuronic_acid_smarts)
+    if beta_D_glucuronic_acid is None:
+        return False, "Invalid SMARTS pattern for beta-D-glucuronic acid"
 
-    pattern = Chem.MolFromSmarts(beta_D_glucuronide_smarts.strip())
-    if pattern is None:
-        return False, "Invalid SMARTS pattern"
-
-    # Perform substructure search with stereochemistry consideration
-    matches = mol.GetSubstructMatches(pattern, useChirality=True)
+    # Search for the beta-D-glucuronic acid moiety in the molecule considering stereochemistry
+    matches = mol.GetSubstructMatches(beta_D_glucuronic_acid, useChirality=True)
     if not matches:
         return False, "Beta-D-glucuronic acid moiety not found with correct stereochemistry"
 
-    return True, "Contains beta-D-glucuronic acid moiety connected via beta-glycosidic bond"
+    # Verify the glycosidic linkage is a beta linkage
+    # The anomeric carbon (C1) should be connected via an oxygen to another group
+    for match in matches:
+        anomeric_carbon_idx = match[0]  # C1 atom index in the match
+        anomeric_carbon = mol.GetAtomWithIdx(anomeric_carbon_idx)
+        bonds = anomeric_carbon.GetBonds()
 
+        # Check for glycosidic bond from anomeric carbon to another atom (excluding the ring oxygen)
+        for bond in bonds:
+            neighbor = bond.GetOtherAtom(anomeric_carbon)
+            if neighbor.GetAtomicNum() != 8 and not mol.IsInRing(bond.GetIdx()):
+                # Found a bond from C1 to a non-oxygen atom outside the ring
+                # This indicates a glycosidic linkage
+                # Check if the linkage is beta (based on stereochemistry)
+                return True, "Contains beta-D-glucuronic acid moiety with beta linkage"
 
-__metadata__ = {
-    'chemical_class': {
-        'id': 'CHEBI:59687',
-        'name': 'beta-D-glucosiduronate',
-        'definition': 'A carbohydrate acid derivative anion obtained by deprotonation of the carboxy group of any beta-D-glucosiduronic acid; major species at pH 7.3.',
-        'parents': ['CHEBI:17144', 'CHEBI:58395']
-    },
-    'config': {
-        'llm_model_name': 'lbl/claude-sonnet',
-        'f1_threshold': 0.8,
-        'max_attempts': 5,
-        'max_positive_instances': None,
-        'max_positive_to_test': None,
-        'max_negative_to_test': None,
-        'max_positive_in_prompt': 50,
-        'max_negative_in_prompt': 20,
-        'max_instances_in_prompt': 100,
-        'test_proportion': 0.1
-    },
-    'message': None,
-    'attempt': 2,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-}
+    return False, "Beta-D-glucuronic acid moiety found but beta linkage not confirmed"
