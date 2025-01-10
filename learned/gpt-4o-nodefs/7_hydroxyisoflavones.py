@@ -16,21 +16,24 @@ def is_7_hydroxyisoflavones(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
+    # Parse SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Isoflavone core pattern with a hydroxy group at the 7th position
-    # Note: This is a very simplified pattern to capture the core structure
-    hydroxyisoflavone_pattern = Chem.MolFromSmarts("Oc1ccc2oc(=O)ccc2c1")
+    # Define a refined SMARTS pattern for 7-hydroxyisoflavones
+    # capturing the benzopyran core specifically and variations
+    refined_pattern = Chem.MolFromSmarts("Oc1ccc2c(c1)c(=O)cc(o2)-*")  # Example pattern tweak
     
-    # Check for the 7-hydroxyisoflavone pattern
-    if not mol.HasSubstructMatch(hydroxyisoflavone_pattern):
-        return False, "Does not match 7-hydroxyisoflavone core structure"
+    # Check if the molecule has the refined 7-hydroxyisoflavone pattern
+    if not mol.HasSubstructMatch(refined_pattern):
+        return False, "Does not match refined 7-hydroxyisoflavone core structure"
     
-    # If matched, then it's a 7-hydroxyisoflavone
-    return True, "Matches the 7-hydroxyisoflavone core structure"
+    # Check for potential ring closure issues or alternative groups around the core
+    # Additional logic can be added to check for variations using further SMARTS or atom checks
+    
+    # If matched accurately, it is considered a 7-hydroxyisoflavone
+    return True, "Matches the refined 7-hydroxyisoflavone core structure"
 
 # Example usage
 smiles_examples = [
