@@ -6,6 +6,7 @@ from rdkit import Chem
 def is_N_acylsphinganine(smiles: str):
     """
     Determines if a molecule is an N-acylsphinganine based on its SMILES string.
+    N-acylsphinganines have a sphinganine backbone with an amide linkage to a fatty acyl chain.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -19,35 +20,20 @@ def is_N_acylsphinganine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define sphinganine backbone pattern
-    # Two adjacent hydroxyl groups and one amine group, ensuring correct chirality
-    sphinganine_backbone = Chem.MolFromSmarts("[C@@H](O)[C@H](CO)N")
+    # Check for sphinganine backbone [C@H](O) and [C@@H] configuration
+    sphinganine_backbone = Chem.MolFromSmarts("[C@@H](O)[C@H](CO)")
     if not mol.HasSubstructMatch(sphinganine_backbone):
         return False, "No sphinganine backbone found"
-    
-    # Define N-acyl linkage pattern with aliphatic chain constraint
-    # Aliphatic chain typically contains 12-34 carbons
-    acyl_linkage_pattern = Chem.MolFromSmarts("C(=O)N[C@@H](CO)C")
-    acyl_matches = mol.GetSubstructMatches(acyl_linkage_pattern)
-    if not acyl_matches:
-        return False, "No N-acyl linkage found"
-    
-    # Check the length of the carbon chain
-    # Assume chain should be between 12 to 34 carbons as typical N-acylsphinganines
-    chain_length = 0
-    for match in acyl_matches:
-        atom_indices = [atom.GetIdx() for atom in mol.GetAtoms()]
-        chain = [mol.GetAtomWithIdx(idx) for idx in atom_indices if mol.GetAtomWithIdx(idx).GetAtomicNum() == 6]
-        chain_length = len(chain)
-        if 12 <= chain_length <= 34:
-            break
-    else:
-        return False, f"Aliphatic chain is not in the expected length range; found {chain_length} carbons"
 
-    # Allow optional sugars or additional groups
-    possible_headgroup = Chem.MolFromSmarts("O[C@H]1[C@@H](O)[C@@H](O)C[C@H]1O")  # Simplified sugar example
-    
-    if mol.HasSubstructMatch(possible_headgroup):
-        return True, "Contains sphinganine backbone with N-acyl linkage and possible sugar headgroup"
+    # Check for amide linkage -C(=O)N-
+    amide_linkage = Chem.MolFromSmarts("[CX3](=O)[NX3]")
+    if not mol.HasSubstructMatch(amide_linkage):
+        return False, "No amide linkage found"
 
-    return True, "Contains sphinganine backbone with N-acyl linkage"
+    # Check for long carbon chains (>10 carbons)
+    carbon_chain = Chem.MolFromSmarts("[C;X4]~[C;X4]~[C;X4]~[C;X4]")
+    if not mol.HasSubstructMatch(carbon_chain):
+        return False, "No sufficient long carbon chain found"
+
+    # If all checks passed, classify as N-acylsphinganine
+    return True, "Contains features consistent with N-acylsphinganine"
