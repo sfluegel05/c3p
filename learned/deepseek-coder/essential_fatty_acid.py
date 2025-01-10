@@ -28,21 +28,21 @@ def is_essential_fatty_acid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for carboxyl group (-COOH)
-    carboxyl_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
+    carboxyl_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1,O-]")
     if not mol.HasSubstructMatch(carboxyl_pattern):
         return False, "No carboxyl group found"
 
     # Check for polyunsaturated fatty acid structure (multiple cis double bonds)
     # Pattern for cis double bonds separated by a methylene group
-    polyunsaturated_pattern = Chem.MolFromSmarts("[CX4][CX4]/[CX4]=[CX4]")
+    polyunsaturated_pattern = Chem.MolFromSmarts("[CX4]/[CX4]=[CX4]")
     polyunsaturated_matches = mol.GetSubstructMatches(polyunsaturated_pattern)
     if len(polyunsaturated_matches) < 2:
         return False, "Not enough cis double bonds for polyunsaturated fatty acid"
 
     # Check chain length (number of carbons)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 18 or c_count > 36:
-        return False, f"Chain length {c_count} is outside the typical range for essential fatty acids (18-36 carbons)"
+    if c_count < 16 or c_count > 38:
+        return False, f"Chain length {c_count} is outside the typical range for essential fatty acids (16-38 carbons)"
 
     # Check for at least 2 double bonds (polyunsaturated)
     double_bond_count = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.BondType.DOUBLE)
@@ -52,8 +52,11 @@ def is_essential_fatty_acid(smiles: str):
     # Check that double bonds are in the cis configuration
     # RDKit doesn't directly support cis/trans checking, but we can infer based on the SMILES string
     # If the SMILES contains "/" or "\", it indicates cis/trans configuration
-    if "/" not in smiles and "\\" not in smiles:
-        return False, "Double bonds are not in cis configuration"
+    # We need to ensure that the double bonds are in the cis configuration
+    # This is a heuristic and may not be 100% accurate
+    cis_double_bond_count = smiles.count("/") + smiles.count("\\")
+    if cis_double_bond_count < 2:
+        return False, "Not enough cis double bonds found"
 
     return True, "Polyunsaturated fatty acid with multiple cis double bonds, carboxyl group, and appropriate chain length"
 
