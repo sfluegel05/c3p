@@ -5,12 +5,12 @@ Classifies: CHEBI:87691 tetradecanoate ester
 Classifies: tetradecanoate ester
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_tetradecanoate_ester(smiles: str):
     """
     Determines if a molecule is a tetradecanoate ester based on its SMILES string.
     A tetradecanoate ester is an ester formed from tetradecanoic acid (myristic acid) and an alcohol.
-    The acyl chain must contain exactly 14 carbons (including the carbonyl carbon).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -19,62 +19,52 @@ def is_tetradecanoate_ester(smiles: str):
         bool: True if molecule is a tetradecanoate ester, False otherwise
         str: Reason for classification
     """
-
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a SMARTS pattern for ester group: carbonyl carbon connected to oxygen connected to carbon
-    ester_pattern = Chem.MolFromSmarts("[#6X3](=O)[OX2H0][#6]")
+    # Define ester SMARTS pattern: carbonyl carbon (=O), single bond to oxygen, single bond to carbon
+    ester_pattern = Chem.MolFromSmarts('[C;X3](=O)[O;X2][C]')
     if ester_pattern is None:
         return False, "Failed to create ester SMARTS pattern"
 
-    # Find all ester groups in the molecule
+    # Find ester groups
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if not ester_matches:
         return False, "No ester groups found"
 
-    # For each ester group, check if the acyl chain has exactly 14 carbons
+    # For each ester group, check if acyl chain is tetradecanoyl (14 carbons including carbonyl carbon)
     for match in ester_matches:
-        carbonyl_c_idx = match[0]  # Carbonyl carbon index
-        ester_o_idx = match[1]     # Ester oxygen index
-        alcohol_c_idx = match[2]   # Alcohol carbon index
+        carbonyl_c_idx = match[0]  # Index of carbonyl carbon
+        ester_o_idx = match[2]     # Index of ester oxygen
 
-        # Initialize a set to keep track of visited atoms
+        # Traverse acyl chain starting from carbonyl carbon, excluding ester oxygen
         visited = set()
-        acyl_carbons = set()
+        atoms_to_visit = [carbonyl_c_idx]
+        c_count = 0
 
-        # Traverse the acyl chain starting from the carbonyl carbon (excluding ester oxygen side)
-        to_visit = [carbonyl_c_idx]
-        while to_visit:
-            atom_idx = to_visit.pop()
+        while atoms_to_visit:
+            atom_idx = atoms_to_visit.pop()
             if atom_idx in visited:
                 continue
             visited.add(atom_idx)
             atom = mol.GetAtomWithIdx(atom_idx)
+            atomic_num = atom.GetAtomicNum()
+            if atomic_num == 6:
+                c_count += 1  # Count carbon atoms
+            elif atomic_num != 1:
+                # If we encounter a non-carbon, non-hydrogen atom, this is not a simple acyl chain
+                break
+            # Add neighbors to visit, excluding ester oxygen and already visited atoms
+            for neighbor in atom.GetNeighbors():
+                neighbor_idx = neighbor.GetIdx()
+                if neighbor_idx == ester_o_idx:
+                    continue  # Do not traverse towards ester oxygen
+                if neighbor_idx not in visited:
+                    atoms_to_visit.append(neighbor_idx)
 
-            if atom.GetAtomicNum() == 6:
-                # Add carbon atom to acyl carbons set
-                acyl_carbons.add(atom_idx)
-
-                # Visit neighboring atoms
-                for neighbor in atom.GetNeighbors():
-                    neighbor_idx = neighbor.GetIdx()
-                    # Do not go back to ester oxygen or previously visited atoms
-                    if neighbor_idx != ester_o_idx and neighbor_idx not in visited:
-                        to_visit.append(neighbor_idx)
-            else:
-                # Continue traversal for non-carbon atoms (e.g., to handle branching)
-                for neighbor in atom.GetNeighbors():
-                    neighbor_idx = neighbor.GetIdx()
-                    if neighbor_idx != ester_o_idx and neighbor_idx not in visited:
-                        to_visit.append(neighbor_idx)
-
-        # Count the number of carbons in the acyl chain
-        num_carbons = len(acyl_carbons)
-
-        if num_carbons == 14:
+        if c_count == 14:
             return True, "Contains tetradecanoate ester group"
 
     return False, "Does not contain tetradecanoate ester group"
@@ -99,7 +89,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 3,
+    'attempt': 0,
     'success': True,
     'best': True,
     'error': '',
