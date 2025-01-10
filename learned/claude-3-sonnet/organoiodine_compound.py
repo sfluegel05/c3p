@@ -32,32 +32,55 @@ def is_organoiodine_compound(smiles: str):
     if not iodine_atoms:
         return False, "No iodine atoms found"
 
-    # Check for valid carbon-iodine covalent bonds
+    # Check for radioactive isotopes or charged species
     for iodine in iodine_atoms:
-        # Skip if iodine has formal charge
-        if iodine.GetFormalCharge() != 0:
+        if iodine.GetIsotope() > 0:  # Skip radioactive isotopes
+            continue
+        if iodine.GetFormalCharge() != 0:  # Skip charged iodine
             continue
             
+        # Check bonds to iodine
         for bond in iodine.GetBonds():
             # Get the atom at the other end of the bond
             other_atom = bond.GetOtherAtom(iodine)
             
-            # Check if it's a carbon atom
+            # Must be a carbon atom
             if other_atom.GetAtomicNum() != 6:
                 continue
                 
-            # Check if carbon has reasonable valence and no charge
+            # Carbon must be neutral
             if other_atom.GetFormalCharge() != 0:
                 continue
                 
-            # Verify it's a single covalent bond
+            # Must be a single covalent bond
             if bond.GetBondType() != Chem.BondType.SINGLE:
                 continue
                 
-            # Additional checks for reasonable geometry
-            if other_atom.GetDegree() > 4:
+            # Carbon must have valid valence
+            if other_atom.GetTotalValence() > 4:
                 continue
                 
+            # Carbon should not be part of charged/ionic groups
+            valid_carbon = True
+            for neighbor in other_atom.GetNeighbors():
+                if neighbor.GetFormalCharge() != 0:
+                    valid_carbon = False
+                    break
+                    
+            if not valid_carbon:
+                continue
+                
+            # Check if this is part of a salt/ionic compound
+            fragment = Chem.rdmolops.GetMolFrags(mol, asMols=True, sanitizeFrags=False)
+            if len(fragment) > 1:
+                # If molecule has multiple fragments, ensure the C-I bond is in an organic fragment
+                for frag in fragment:
+                    if other_atom.GetIdx() in [a.GetIdx() for a in frag.GetAtoms()]:
+                        # Count C, H, O, N in fragment to verify it's organic
+                        c_count = sum(1 for a in frag.GetAtoms() if a.GetAtomicNum() == 6)
+                        if c_count < 1:
+                            continue
+            
             return True, "Contains at least one carbon-iodine covalent bond"
     
     return False, "No valid carbon-iodine covalent bonds found"
