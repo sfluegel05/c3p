@@ -24,21 +24,23 @@ def is_1_acyl_sn_glycero_3_phosphoserine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
+    # Kekulize the molecule
+    Chem.Kekulize(mol)
+
+    # Check for phosphoserine group (more flexible pattern)
+    # P(=O)(O)(O)-O-C-C(N)-C(=O)O
+    phosphoserine_pattern = Chem.MolFromSmarts("[PX4](=O)([OH,O-])([OH,O-])[OX2][CH2][CH]([NH2,NH3+])[CX3](=O)[OH,O-]")
+    if not mol.HasSubstructMatch(phosphoserine_pattern):
+        return False, "No phosphoserine group found"
+
     # Check for glycerol backbone with specific substitution pattern
-    # [CH2]-[CH]-[CH2] backbone
     glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
 
-    # Check for phosphoserine group
-    # Phosphoserine moiety connected to glycerol
-    phosphoserine_pattern = Chem.MolFromSmarts("[PX4](=O)([OH])([OH])[OX2][CH2][CH]([NH2])[CX3](=O)[OH]")
-    if not mol.HasSubstructMatches(phosphoserine_pattern):
-        return False, "No phosphoserine group found"
-
     # Check for acyl group at sn-1 position
-    # Look for -O-C(=O)-[C,H] pattern that's not part of the serine carboxyl
-    acyl_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])[#6;!$([CX3](=O)[OH])]")
+    # Look for -O-C(=O)-C pattern
+    acyl_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])[#6]")
     acyl_matches = mol.GetSubstructMatches(acyl_pattern)
     if len(acyl_matches) != 1:
         return False, f"Found {len(acyl_matches)} acyl groups, need exactly 1"
@@ -65,10 +67,19 @@ def is_1_acyl_sn_glycero_3_phosphoserine(smiles: str):
     if o_count < 8:  # minimum number of oxygens needed
         return False, "Insufficient number of oxygen atoms"
 
-    # Verify complete structure connectivity
-    # The phosphoserine should be connected to glycerol backbone
-    complete_pattern = Chem.MolFromSmarts("[CH2X4][CH]([OH])[CH2X4][OX2][PX4](=O)([OH])[OX2][CH2][CH]([NH2])[CX3](=O)[OH]")
-    if not mol.HasSubstructMatch(complete_pattern):
+    # Check for proper connectivity
+    # The phosphoserine should be connected to glycerol backbone at sn-3
+    base_structure = Chem.MolFromSmarts("[CH2X4][CH]([OH])[CH2X4][OX2][PX4]")
+    if not mol.HasSubstructMatch(base_structure):
         return False, "Incorrect connectivity of phosphoserine to glycerol backbone"
+
+    # Look for proper stereochemistry if specified
+    chiral_centers = Chem.FindMolChiralCenters(mol)
+    if chiral_centers:
+        # Check if any chiral center has incorrect stereochemistry
+        for center, chirality in chiral_centers:
+            # The glycerol carbon should be R configuration for sn
+            if chirality != 'R':
+                return False, "Incorrect stereochemistry for sn-glycero configuration"
 
     return True, "Contains glycerol backbone with single acyl chain at sn-1 position and phosphoserine group at sn-3 position"
