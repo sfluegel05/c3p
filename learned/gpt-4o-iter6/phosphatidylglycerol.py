@@ -20,26 +20,25 @@ def is_phosphatidylglycerol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Updated pattern for the glycerol backbone with phosphate linkage
-    # Here we enhance the pattern to ensure flexibility for different stereochemistry and connectivity
-    glycerol_phosphate_pattern = Chem.MolFromSmarts("C([C@@H](COP(O)(=O)O)O)COP(=O)(O)OC")
+    # Updated relaxed pattern for the glycerol phosphate backbone
+    glycerol_phosphate_pattern = Chem.MolFromSmarts("OCC(O)COP(=O)(O)OC")  # Allowing for variations in stereochemistry
     
-    # Check for glycerol backbone with phosphate linkage
+    # Check for glycerol phosphate backbone
     if not mol.HasSubstructMatch(glycerol_phosphate_pattern):
-        return False, "No glycerol backbone with correct phosphate linkage found"
+        return False, "No glycerol phosphate backbone found"
     
-    # Ensure the ester linkage for the fatty acids (minimum 2 ester groups expected)
-    ester_pattern = Chem.MolFromSmarts("OC(=O)C")
+    # Ensure the presence of ester-linked fatty acids (minimum 2 ester groups expected)
+    ester_pattern = Chem.MolFromSmarts("C(=O)OC")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) < 2:
         return False, f"Insufficient ester-linked fatty acids, found {len(ester_matches)}"
     
-    # Check to ensure specific non-target groups like choline/ethanolamine are absent
+    # Check for specific non-target groups (not required)
     choline_pattern = Chem.MolFromSmarts("N(C)(C)C")
     ethanolamine_pattern = Chem.MolFromSmarts("OCCN")
-    if mol.HasSubstructMatch(choline_pattern):
-        return False, "Contains choline group indicating not a phosphatidylglycerol"
-    if mol.HasSubstructMatch(ethanolamine_pattern):
-        return False, "Contains ethanolamine group indicating not a phosphatidylglycerol"
-
-    return True, "Contains glycerol backbone with phosphatidyl group and ester-linked fatty acid chains"
+    
+    # We actually want to just make sure no typical phospholipid headgroups are included.
+    if mol.HasSubstructMatch(choline_pattern) or mol.HasSubstructMatch(ethanolamine_pattern):
+        return False, "Contains non-phosphatidylglycerol headgroup (choline or ethanolamine)"
+    
+    return True, "Contains glycerol phosphate backbone with phosphatidyl group and ester-linked fatty acid chains"
