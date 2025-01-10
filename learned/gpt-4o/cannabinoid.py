@@ -2,12 +2,11 @@
 Classifies: CHEBI:67194 cannabinoid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_cannabinoid(smiles: str):
     """
     Determines if a molecule is a cannabinoid based on its SMILES string.
-    Cannabinoids are characterized by aromatic rings with attached complex hydrocarbon chains, oxygen in heterocycles or functional groups.
+    Cannabinoids are characterized by aromatic rings, long hydrocarbon chains, and oxygen-containing functional groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,27 +21,22 @@ def is_cannabinoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Pattern for aromatic system (such as phenolic rings)
+    # Pattern for aromatic systems (e.g., phenolic or indole rings)
     aromatic_pattern = Chem.MolFromSmarts("c1ccccc1")
     if not mol.HasSubstructMatch(aromatic_pattern):
         return False, "No aromatic system characteristic found"
     
-    # Check for oxygen-containing functional groups
+    # Check for presence of oxygen atoms (indicating potential functional groups)
     oxygen_pattern = Chem.MolFromSmarts("[#8]")
     if not mol.HasSubstructMatch(oxygen_pattern):
         return False, "No oxygen-containing functional groups found"
     
-    # Check for long aliphatic chains typically found in cannabinoids
+    # Check for long aliphatic chains (substantially long CH-chains)
     long_chain_pattern = Chem.MolFromSmarts("CCCCCCCC")
     if not mol.HasSubstructMatch(long_chain_pattern):
-        return False, "No long hydrocarbon chain detected"
-
-    # Flexible pattern to identify potential cannabinoids, accounting for structure diversity
-    cannabinoid_flex_pattern = Chem.MolFromSmarts("[CX4,CX3,CX2]~[*]~[CX4,CX3]~[CX4,CX3]~[OX2H1,OX2,oxide]")  
-    if mol.HasSubstructMatch(cannabinoid_flex_pattern):
-        return True, "Contains aromatic systems with associated cannabinoid structures"
-
-    return False, "Does not meet cannabinoid criteria"
+        return False, "No long hydrocarbon chains detected"
+    
+    return True, "Aromatic rings, long hydrocarbon chains, and oxygen functional groups are present"
 
 # Example SMILES strings for testing
 smiles_examples = [
