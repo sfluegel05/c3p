@@ -2,13 +2,13 @@
 Classifies: CHEBI:60027 polymer
 """
 from rdkit import Chem
-from rdkit.Chem import Descriptors
+from rdkit.Chem import Descriptors, rdMolDescriptors
 
 def is_polymer(smiles: str):
     """
     Determines if a molecule is a polymer based on its SMILES string.
-    A polymer is characterized by repetitive structural units, potentially high molecular weight, and 
-    can have specific types of linkages.
+    A polymer is characterized by complex, repetitive structural units, high molecular weight,
+    and specific types of linkages.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,28 +22,33 @@ def is_polymer(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
+    
     # Consider excluding entities with very low molecular weight first
     mol_wt = Descriptors.ExactMolWt(mol)
-    if mol_wt < 200:  # Adjusted threshold to capture more polymers
+    if mol_wt < 500:  # Increased threshold to better capture polymers
         return False, "Molecular weight too low for a typical polymer"
     
-    # Look for various repeating unit patterns
+    # Count heteroatoms (non-carbon and non-hydrogen) to check for complexity
+    heteroatom_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() not in [6, 1])
+    if heteroatom_count < 2:
+        return False, "Too few heteroatoms to suggest polymer complexity"
+    
+    # Look for a high number of rotatable bonds
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 10:
+        return False, "Insufficient rotatable bonds to be a polymer"
+
+    # Look for various common functional group linkages that indicate repeated units
     repeating_unit_patterns = [
-        Chem.MolFromSmarts("C=C"),  # Common repeating unit in vinyl-based polymers
-        Chem.MolFromSmarts("C-C-C-C-C"),  # Example of a simple long carbon chain
-        Chem.MolFromSmarts("O-C(=O)C"),  # Ester linkage, common in polyesters
-        Chem.MolFromSmarts("C-O-C")  # Ether linkages, such as in polyethylene glycol
+        Chem.MolFromSmarts("C=C"),
+        Chem.MolFromSmarts("C-O-C"),  # Ethers, common in polyethers
+        Chem.MolFromSmarts("O-C(=O)-C"),  # Esters, common in polyesters
+        Chem.MolFromSmarts("N-C(=O)-C"),  # Amide linkages, common in polyamides
     ]
     
-    found_repeating_unit = False
     for pattern in repeating_unit_patterns:
         repeating_matches = mol.GetSubstructMatches(pattern)
         if len(repeating_matches) >= 3:
-            found_repeating_unit = True
-            break
-
-    if found_repeating_unit:
-        return True, "Contains repeating units indicative of polymer structure"
+            return True, f"Contains repeating units indicative of polymer structure: {pattern.GetSmarts()}"
 
     return False, "Does not match typical polymer characteristics"
