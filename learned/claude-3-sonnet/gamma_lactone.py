@@ -22,32 +22,42 @@ def is_gamma_lactone(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+
+    # Basic gamma-lactone pattern:
+    # - [#8] represents oxygen
+    # - [#6] represents carbon
+    # - ;!@1 ensures it's part of a ring
+    # The pattern matches any 5-membered ring with an ester group
+    patterns = [
+        # Saturated gamma-lactone
+        "[#8;R1]1-[#6;R1]-[#6;R1]-[#6;R1]-[#6;R1](=[O;R1])1",
+        
+        # Unsaturated gamma-lactone (one double bond)
+        "[#8;R1]1-[#6;R1]-[#6;R1]=[#6;R1]-[#6;R1](=[O;R1])1",
+        
+        # Alternative unsaturated pattern
+        "[#8;R1]1-[#6;R1]=[#6;R1]-[#6;R1]-[#6;R1](=[O;R1])1",
+        
+        # More general pattern that can catch other variants
+        "[#8;R1]1[#6;R1][#6;R1][#6;R1][#6;R1](=[O;R1])1"
+    ]
     
-    # SMARTS pattern for gamma-lactone:
-    # 5-membered ring with ester group (-O-C(=O)-)
-    # The numbers ensure the atoms form a 5-membered ring
-    gamma_lactone_pattern = Chem.MolFromSmarts("[O;R1]1-[C;R1]-[C;R1]-[C;R1]-[C;R1](=[O;R1])1")
-    
-    # Alternative pattern that might catch other variants
-    gamma_lactone_pattern2 = Chem.MolFromSmarts("[O;R1]1-[C;R1]-[C;R1]=[C;R1]-[C;R1](=[O;R1])1")
-    
-    # Check for matches
-    matches = mol.GetSubstructMatches(gamma_lactone_pattern)
-    matches2 = mol.GetSubstructMatches(gamma_lactone_pattern2)
-    
-    all_matches = len(matches) + len(matches2)
+    all_matches = 0
+    for pattern in patterns:
+        patt = Chem.MolFromSmarts(pattern)
+        if patt is not None:
+            matches = mol.GetSubstructMatches(patt)
+            all_matches += len(matches)
     
     if all_matches > 0:
-        if all_matches == 1:
+        # Remove potential duplicate matches
+        # Use a more general pattern to count unique lactone rings
+        basic_pattern = Chem.MolFromSmarts("[#8;R1]1[#6][#6][#6][#6](=[O;R1])1")
+        unique_matches = len(mol.GetSubstructMatches(basic_pattern))
+        
+        if unique_matches == 1:
             return True, "Contains a gamma-lactone (5-membered lactone ring)"
         else:
-            return True, f"Contains {all_matches} gamma-lactone rings"
-    
-    # Additional check for potential tautomers or variants
-    variant_pattern = Chem.MolFromSmarts("[O;R1]1-[C;R1]=[C;R1]-[C;R1]-[C;R1](=[O;R1])1")
-    variant_matches = mol.GetSubstructMatches(variant_pattern)
-    
-    if len(variant_matches) > 0:
-        return True, "Contains a gamma-lactone (variant form)"
-        
+            return True, f"Contains {unique_matches} gamma-lactone rings"
+            
     return False, "No gamma-lactone substructure found"
