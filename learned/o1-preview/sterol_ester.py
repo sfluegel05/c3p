@@ -5,6 +5,8 @@ Classifies: CHEBI:35915 sterol ester
 Classifies: sterol ester
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_sterol_ester(smiles: str):
     """
@@ -24,53 +26,99 @@ def is_sterol_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define steroid nucleus pattern (sterane backbone)
-    steroid_nucleus_smiles = 'C1CCC2C(C1)CCC3C2CCC4C3CCCC4'  # Sterane skeleton
-    steroid_nucleus = Chem.MolFromSmiles(steroid_nucleus_smiles)
-    if steroid_nucleus is None:
-        return False, "Error parsing steroid nucleus pattern"
+    # Get ring information
+    ring_info = mol.GetRingInfo()
+    atom_rings = ring_info.AtomRings()
 
-    if not mol.HasSubstructMatch(steroid_nucleus):
-        return False, "No steroid nucleus found"
+    # Find rings of size 5 and 6
+    ring_sizes = [len(r) for r in atom_rings]
+    six_membered_rings = [r for r in atom_rings if len(r) == 6]
+    five_membered_rings = [r for r in atom_rings if len(r) == 5]
 
-    # Define ester functional group pattern
-    ester_pattern = Chem.MolFromSmarts('C(=O)O')
-    if ester_pattern is None:
-        return False, "Error parsing ester pattern"
+    if len(six_membered_rings) < 3 or len(five_membered_rings) < 1:
+        return False, "Does not contain required number of rings for sterol nucleus"
 
-    # Find ester functional groups
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if not ester_matches:
-        return False, "No ester group found"
+    # Build ring adjacency map
+    # The ring adjacency can be determined by checking the bonds shared between rings
+    ring_bond_map = {}
+    for idx1, ring1 in enumerate(atom_rings):
+        bonds1 = set()
+        for i in range(len(ring1)):
+            a1 = ring1[i]
+            a2 = ring1[(i+1)%len(ring1)]
+            bond = mol.GetBondBetweenAtoms(a1, a2).GetIdx()
+            bonds1.add(bond)
+        for idx2, ring2 in enumerate(atom_rings):
+            if idx1 >= idx2:
+                continue
+            bonds2 = set()
+            for i in range(len(ring2)):
+                a1 = ring2[i]
+                a2 = ring2[(i+1)%len(ring2)]
+                bond = mol.GetBondBetweenAtoms(a1, a2).GetIdx()
+                bonds2.add(bond)
+            shared_bonds = bonds1.intersection(bonds2)
+            if shared_bonds:
+                ring_bond_map.setdefault(idx1, set()).add(idx2)
+                ring_bond_map.setdefault(idx2, set()).add(idx1)
 
-    # Find steroid nucleus atom indices
-    steroid_matches = mol.GetSubstructMatches(steroid_nucleus)
-    if not steroid_matches:
-        return False, "No steroid nucleus found"
-
-    steroid_atom_indices = set()
-    for match in steroid_matches:
-        steroid_atom_indices.update(match)
-
-    # Check if any ester oxygen is connected to the steroid nucleus
-    ester_bonded_to_steroid = False
-    for match in ester_matches:
-        # Get the oxygen atom index in the ester group
-        # The ester pattern is C(=O)O, so the third atom is oxygen
-        oxygen_atom_idx = match[2]
-
-        # Get the atom connected to the ester oxygen (excluding the carbon in the ester group)
-        oxygen_atom = mol.GetAtomWithIdx(oxygen_atom_idx)
-        neighbors = [nbr for nbr in oxygen_atom.GetNeighbors() if nbr.GetIdx() != match[1]]
-        for neighbor in neighbors:
-            neighbor_idx = neighbor.GetIdx()
-            if neighbor_idx in steroid_atom_indices:
-                ester_bonded_to_steroid = True
+    # Identify fused ring system of size 6-6-6-5
+    # Try to find a set of four rings that are connected and have sizes 6-6-6-5
+    found_steroid_nucleus = False
+    for idx1 in range(len(atom_rings)):
+        for idx2 in ring_bond_map.get(idx1, []):
+            for idx3 in ring_bond_map.get(idx2, []):
+                for idx4 in ring_bond_map.get(idx3, []):
+                    ring_sizes_sequence = [len(atom_rings[idx]) for idx in [idx1, idx2, idx3, idx4]]
+                    if sorted(ring_sizes_sequence) == [5,6,6,6]:
+                        unique_indices = set([idx1, idx2, idx3, idx4])
+                        if len(unique_indices) == 4:
+                            # Check if they are all connected
+                            connections = [
+                                idx2 in ring_bond_map[idx1],
+                                idx3 in ring_bond_map[idx2],
+                                idx4 in ring_bond_map[idx3],
+                            ]
+                            if all(connections):
+                                found_steroid_nucleus = True
+                                steroid_ring_indices = [idx1, idx2, idx3, idx4]
+                                break
+                if found_steroid_nucleus:
+                    break
+            if found_steroid_nucleus:
                 break
-        if ester_bonded_to_steroid:
+        if found_steroid_nucleus:
             break
 
-    if not ester_bonded_to_steroid:
-        return False, "Ester group not connected to steroid nucleus"
+    if not found_steroid_nucleus:
+        return False, "No steroid nucleus found"
 
-    return True, "Contains steroid nucleus with esterified group connected"
+    # Get atoms in steroid nucleus
+    steroid_atom_indices = set()
+    for idx in steroid_ring_indices:
+        steroid_atom_indices.update(atom_rings[idx])
+
+    # Find oxygen atoms attached to steroid nucleus
+    steroid_atoms = [mol.GetAtomWithIdx(idx) for idx in steroid_atom_indices]
+    steroid_atom_indices_set = set(steroid_atom_indices)
+    oxygen_atoms = []
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 8:
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetIdx() in steroid_atom_indices_set:
+                    oxygen_atoms.append(atom)
+                    break
+
+    if not oxygen_atoms:
+        return False, "No oxygen atoms attached to steroid nucleus"
+
+    # Check if any of these oxygen atoms are part of an ester group
+    ester_pattern = Chem.MolFromSmarts('[CX3](=O)[OX2H0]')  # Ester group
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    ester_oxygen_indices = [match[2] for match in ester_matches]  # index of oxygen atom in ester
+
+    for o_atom in oxygen_atoms:
+        if o_atom.GetIdx() in ester_oxygen_indices:
+            return True, "Contains steroid nucleus with esterified oxygen attached"
+
+    return False, "No esterified oxygen attached to steroid nucleus found"
