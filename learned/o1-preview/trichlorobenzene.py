@@ -31,15 +31,18 @@ def is_trichlorobenzene(smiles: str):
         if len(ring) == 6 and all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring):
             # Check if all atoms in the ring are carbons
             if all(mol.GetAtomWithIdx(idx).GetAtomicNum() == 6 for idx in ring):
-                # Count the number of chlorine atoms attached to the ring
-                num_cl = 0
-                for idx in ring:
-                    atom = mol.GetAtomWithIdx(idx)
-                    for neighbor in atom.GetNeighbors():
-                        if neighbor.GetAtomicNum() == 17 and neighbor.GetIdx() not in ring:
-                            num_cl += 1
-                if num_cl == 3:
-                    return True, "Contains benzene ring with exactly three chlorine substituents"
+                # Check if the ring is not fused (atoms are only part of one ring)
+                if all(ring_info.NumAtomRings(idx) == 1 for idx in ring):
+                    # Count the number of chlorine atoms attached directly to the ring
+                    num_cl = 0
+                    for idx in ring:
+                        atom = mol.GetAtomWithIdx(idx)
+                        for neighbor in atom.GetNeighbors():
+                            # Neighbor not in ring and is chlorine
+                            if neighbor.GetAtomicNum() == 17 and neighbor.GetIdx() not in ring:
+                                num_cl += 1
+                    if num_cl == 3:
+                        return True, "Contains standalone benzene ring with exactly three chlorine substituents"
     
-    # No benzene ring with exactly three chlorine substituents found
-    return False, "Does not contain benzene ring with exactly three chlorine substituents"
+    # No suitable benzene ring with exactly three chlorine substituents found
+    return False, "Does not contain standalone benzene ring with exactly three chlorine substituents"
