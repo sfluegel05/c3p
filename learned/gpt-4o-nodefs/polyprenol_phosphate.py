@@ -2,7 +2,6 @@
 Classifies: CHEBI:16460 polyprenol phosphate
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_polyprenol_phosphate(smiles: str):
     """
@@ -19,19 +18,21 @@ def is_polyprenol_phosphate(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return None, "Invalid SMILES string"
+        return False, "Invalid SMILES string"
     
-    # Define SMARTS for isoprene units allowing for branching and stereochemistry
-    isoprene_pattern = Chem.MolFromSmarts("C(=C)[-;@]C|C-C")
+    # Define SMARTS for isoprene units
+    isoprene_pattern = Chem.MolFromSmarts("C(=C)C-C")
 
     # Find matching substructures for isoprene units
     isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
-    if len(isoprene_matches) < 1:
+
+    # Check for sufficient isoprene units (polyprenol usually has multiple units)
+    if len(isoprene_matches) < 2: # Adjust this number appropriately to classify based on definition
         return False, "Too few isoprene units for polyprenol"
-    
-    # Broadened SMARTS patterns for phosphate and diphosphate groups
-    phosphate_pattern = Chem.MolFromSmarts("OP(=O)(O)O")
-    diphosphate_pattern = Chem.MolFromSmarts("OP(=O)(O)OP(=O)(O)O")
+
+    # Define SMARTS patterns for phosphate and diphosphate groups
+    phosphate_pattern = Chem.MolFromSmarts("[O]P(=O)(O)O")
+    diphosphate_pattern = Chem.MolFromSmarts("OP(=O)([O])OP(=O)([O])O")
 
     # Check whether the molecule contains a terminal phosphate or diphosphate group
     phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
@@ -40,5 +41,4 @@ def is_polyprenol_phosphate(smiles: str):
     if not (phosphate_matches or diphosphate_matches):
         return False, "No terminal phosphate or diphosphate group found"
 
-    # Further validation for classic structural features could be impacted by anticipated structures
     return True, "Contains polyprenyl chain with terminal phosphate or diphosphate group"
