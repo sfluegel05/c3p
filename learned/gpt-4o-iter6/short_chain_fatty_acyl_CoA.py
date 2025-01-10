@@ -22,21 +22,20 @@ def is_short_chain_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Attempt to identify the Coenzyme A pattern
-    # CoA moiety often includes a core structure but can have flexible ends; using a broader pattern
-    coa_pattern = Chem.MolFromSmarts("SCCNC(=O)CCNC(=O)[C@H](O)COP(=O)(O)O[C@H]1O[C@H](COP(=O)(O)O)[C@@H](O)[C@@H]1O")
+    # Identify the Coenzyme A pattern
+    # Adjusting the pattern to allow flexibility in the `C` and `O` groups that accompany CoA
+    coa_pattern = Chem.MolFromSmarts("NC(=O)CCNC(=O)[C@H](O)C")
     if not mol.HasSubstructMatch(coa_pattern):
-        return False, "No complete Coenzyme A moiety found"
+        return False, "No identifiable Coenzyme A moiety found"
 
-    # Improve the detection of thioester group with short-chain acyl group
-    # The thioester pattern targets the sulfur linkage to an acyl group
-    thioester_pattern = Chem.MolFromSmarts("C(=O)SCC")
+    # Detect thioester and short chain (2-5 carbons)
+    thioester_pattern = Chem.MolFromSmarts("C(=O)SC")
     thioester_matches = mol.GetSubstructMatches(thioester_pattern)
 
     for match in thioester_matches:
         thioester_carbon = match[0]  # Thioester carbon
         visited = set()
-        chain_length = 0
+        carbon_chain = []
         atom_queue = [(thioester_carbon)]
         
         while atom_queue:
@@ -47,15 +46,15 @@ def is_short_chain_fatty_acyl_CoA(smiles: str):
 
             atom = mol.GetAtomWithIdx(atom_idx)
             if atom.GetAtomicNum() == 6:  # Carbon
-                chain_length += 1
-                if chain_length > 5:  # Exceeded short-chain length
+                carbon_chain.append(atom_idx)
+                if len(carbon_chain) > 5:  # Exceeded short-chain length
                     break
                 for neighbor in atom.GetNeighbors():
                     neighbor_idx = neighbor.GetIdx()
                     if neighbor_idx not in visited:  # Check all neighbors
                         atom_queue.append(neighbor_idx)
 
-        if 2 <= chain_length <= 5:  # Short-chain (2 to 5 carbons)
+        if 2 <= len(carbon_chain) <= 5:  # Short-chain (2 to 5 carbons)
             return True, "CoA moiety and short-chain fatty acyl thioester linkage present"
 
     return False, "Does not satisfy short-chain fatty acyl criteria, or invalid linkages"
