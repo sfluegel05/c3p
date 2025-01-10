@@ -25,9 +25,8 @@ def is_guaiacols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a flexible SMARTS pattern for guaiacol: phenol with methoxy at ortho position
-    # This pattern allows for additional substituents and modifications
-    guaiacol_pattern = Chem.MolFromSmarts("[c;H0]([OH]):[c;H0]([OCH3])")
+    # Define the SMARTS pattern for guaiacol: phenol with methoxy at ortho position
+    guaiacol_pattern = Chem.MolFromSmarts("[c;H1]1:[c;H1]:[c;H0]([OH]):[c;H0]([OCH3]):[c;H1]:[c;H1]:1")
     
     # Check if the molecule matches the guaiacol pattern
     if mol.HasSubstructMatch(guaiacol_pattern):
