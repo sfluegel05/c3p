@@ -20,16 +20,21 @@ def is_organic_sulfide(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
+    
     # Define patterns to match sulfide group
-    sulfide_pattern = Chem.MolFromSmarts("[#6]-[#16]-[#6]")
-    organic_sulfur_exclusions = Chem.MolFromSmarts("[#16](=[OX1])")
+    # Allow any non-hydrogen atom (organic) attached to sulfur
+    sulfide_pattern = Chem.MolFromSmarts("[!H0]-[S]-[!H0]")  # Any non-hydrogen atom on either side of S
+    # Patterns to exclude sulfoxide (R-S(=O)-R) and sulfone (R-S(=O)(=O)-R)
+    sulfoxide_pattern = Chem.MolFromSmarts("[S](=O)(!@[C,N,O])[!H0]")
+    sulfone_pattern = Chem.MolFromSmarts("[S](=O)(=O)(!@[C,N,O])[!H0]")
 
-    # Match organic sulfide pattern and exclude sulfoxide or sulfone pattern
-    sulfide_matches = mol.GetSubstructMatches(sulfide_pattern)
-    exclusion_matches = mol.GetSubstructMatches(organic_sulfur_exclusions)
+    # Match the patterns
+    sulfide_matches = mol.HasSubstructMatch(sulfide_pattern)
+    sulfoxide_matches = mol.HasSubstructMatch(sulfoxide_pattern)
+    sulfone_matches = mol.HasSubstructMatch(sulfone_pattern)
 
-    if len(sulfide_matches) > 0 and len(exclusion_matches) == 0:
+    # Check for the presence of organic sulfide and exclusion of other forms
+    if sulfide_matches and not sulfoxide_matches and not sulfone_matches:
         return True, "Contains an organic sulfide (thioether) group"
 
     return False, "No organic sulfide (thioether) group found"
