@@ -20,17 +20,15 @@ def is_17beta_hydroxy_steroid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Define a more accurate SMARTS pattern for the steroid scaffold (three 6-membered and one 5-membered rings fused)
-    steroid_skeleton_pattern = Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2CCC4(C3CCC4)C")
+
+    # Define a generalized SMARTS pattern for the steroid backbone (rings A, B, C, and D)
+    steroid_skeleton_pattern = Chem.MolFromSmarts("C1CC[C@H]2C(C1)CCC3CCC4C3CCC4C2")
     if not mol.HasSubstructMatch(steroid_skeleton_pattern):
         return False, "No steroid skeleton found"
-    
-    # Define a SMARTS pattern for hydroxyl group at 17-beta position
-    # 17 position would generally be flexible as for its placement relative to ring A.
-    # [C@] and [C@H] indicate stereochemistry and hydrogen
-    hydroxyl_17beta_pattern = Chem.MolFromSmarts("C[C@]12CC[C@H](C)[C@@H](O)[C@]1(CC=C2)C")
+
+    # Define SMARTS pattern for hydroxyl group at the 17-beta position (more broadly)
+    hydroxyl_17beta_pattern = Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2CCC4C3(CCC(O)C4)")
     if not mol.HasSubstructMatch(hydroxyl_17beta_pattern):
         return False, "No hydroxyl group at 17-beta position found"
-    
+
     return True, "Molecule matches 17beta-hydroxy steroid structure"
