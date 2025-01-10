@@ -23,25 +23,27 @@ def is_monoradylglycerol(smiles: str):
         return False, "Invalid SMILES string"
     
     # Identify glycerol backbone with one substituent
-    # Glycerol backbone pattern: (two OH groups on adjoining carbons)
-    glycerol_pattern = Chem.MolFromSmarts("C(CO)CO")
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone with two OH groups found"
+    # Glycerol backbone pattern (allowing for one substitution): (two OH groups on adjoining carbons)
+    glycerol_pattern = Chem.MolFromSmarts("[OX2H][CX4H](O)[CX4](O)O")
+    glycerol_matches = mol.GetSubstructMatches(glycerol_pattern)
     
-    # Patterns for acyl, alkyl, and alk-1-enyl linked to glycerol
-    acyl_pattern = Chem.MolFromSmarts("[$([CX3](=O)[OX2H1]),$([CX3](=O)[O][CX4])]")
-    ether_pattern = Chem.MolFromSmarts("[OX2][CX4]")
-    vinyl_ether_pattern = Chem.MolFromSmarts("[C,C]=[C][O]")
+    if not glycerol_matches:
+        return False, "No glycerol backbone found"
     
-    # Count the occurrence of these patterns
-    acyl_matches = mol.GetSubstructMatches(acyl_pattern)
-    ether_matches = mol.GetSubstructMatches(ether_pattern)
-    vinyl_ether_matches = mol.GetSubstructMatches(vinyl_ether_pattern)
+    # Patterns for acyl (ester linkage), alkyl, and alk-1-enyl groups
+    acyl_pattern = Chem.MolFromSmarts("C(=O)[OX2]")
+    alkyl_pattern = Chem.MolFromSmarts("C-C")
+    alk1_enyl_pattern = Chem.MolFromSmarts("C=C-C")
     
-    # Check if it contains exactly one type of lipid chain substituent
-    num_matches = len(acyl_matches) + len(ether_matches) + len(vinyl_ether_matches)
+    # Check for exactly one type of lipid chain substituent
+    acyl_matches = mol.HasSubstructMatch(acyl_pattern)
+    alkyl_matches = mol.HasSubstructMatch(alkyl_pattern)
+    alk1_enyl_matches = mol.HasSubstructMatch(alk1_enyl_pattern)
+    
+    # Count the occurrences
+    num_matches = sum([acyl_matches, alkyl_matches, alk1_enyl_matches])
     
     if num_matches != 1:
-        return False, f"Expected one lipid substituent, found {num_matches}"
+        return False, f"Expected one substituent, found {num_matches}"
     
-    return True, "Contains a glycerol backbone with one lipid substituent"
+    return True, "Contains a glycerol backbone with exactly one lipid substituent"
