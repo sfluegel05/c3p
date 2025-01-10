@@ -7,6 +7,7 @@ Classifies: prenylquinone
 
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import AllChem
 
 def is_prenylquinone(smiles: str):
     """
@@ -24,71 +25,96 @@ def is_prenylquinone(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define quinone patterns (1,4-benzoquinone and 1,4-naphthoquinone)
-    quinone_patterns = [
-        Chem.MolFromSmarts('O=C1C=CC=CC1=O'),  # 1,4-benzoquinone
-        Chem.MolFromSmarts('O=C1C=CC2=CC=CC=C2C1=O')  # 1,4-naphthoquinone
-    ]
     
-    # Check for presence of quinone ring
-    quinone_match = False
-    for pattern in quinone_patterns:
-        matches = mol.GetSubstructMatches(pattern)
-        if matches:
-            quinone_match = True
-            break
-    if not quinone_match:
+    # Kekulize molecules to standardize representations
+    try:
+        Chem.Kekulize(mol, clearAromaticFlags=True)
+    except:
+        pass  # Kekulization can fail for some molecules
+    
+    # Define a general quinone pattern: ring with two conjugated ketone groups
+    quinone_pattern = Chem.MolFromSmarts('[#6]=O[#6]:[#6]:[#6]:[#6]=O')  # General quinone pattern
+    
+    if not mol.HasSubstructMatch(quinone_pattern):
         return False, "No quinone ring found"
-
-    # Get ring atoms from the match
-    ring_atoms = set()
-    for idx in matches[0]:
-        ring_atoms.add(idx)
-
-    # Find side chains attached to the quinone ring
-    side_chains = []
-    for atom_idx in ring_atoms:
+    
+    # Get the indices of the atoms matching the quinone pattern
+    quinone_matches = mol.GetSubstructMatches(quinone_pattern)
+    if not quinone_matches:
+        return False, "No quinone ring found"
+    
+    # Collect quinone ring atoms
+    quinone_atoms = set()
+    for match in quinone_matches:
+        quinone_atoms.update(match)
+    
+    # Define isoprene unit pattern
+    isoprene_pattern = Chem.MolFromSmarts('C(=C)C(C)C')  # Isoprene unit
+    
+    # Identify prenyl side chains attached to quinone ring
+    prenyl_side_chain_found = False
+    for atom_idx in quinone_atoms:
         atom = mol.GetAtomWithIdx(atom_idx)
-        for neighbor in atom.GetNeighbors():
+        for bond in atom.GetBonds():
+            neighbor = bond.GetOtherAtom(atom)
             neighbor_idx = neighbor.GetIdx()
-            if neighbor_idx not in ring_atoms:
-                # Found substituent attached to ring
-                # Traverse the side chain starting from this neighbor atom
-                # Exclude ring atoms
-                atoms_in_side_chain = set()
-                bonds_in_side_chain = set()
-                stack = [neighbor_idx]
-                while stack:
-                    current_idx = stack.pop()
-                    if current_idx not in atoms_in_side_chain:
-                        atoms_in_side_chain.add(current_idx)
+            if neighbor_idx not in quinone_atoms:
+                # Potential side chain
+                side_chain_atoms = set()
+                side_chain_bonds = set()
+                atoms_to_visit = [neighbor_idx]
+                while atoms_to_visit:
+                    current_idx = atoms_to_visit.pop()
+                    if current_idx not in side_chain_atoms and current_idx not in quinone_atoms:
+                        side_chain_atoms.add(current_idx)
                         current_atom = mol.GetAtomWithIdx(current_idx)
                         for nbr in current_atom.GetNeighbors():
                             nbr_idx = nbr.GetIdx()
-                            bond = mol.GetBondBetweenAtoms(current_idx, nbr_idx)
-                            if nbr_idx not in atoms_in_side_chain and nbr_idx not in ring_atoms:
-                                stack.append(nbr_idx)
-                                bonds_in_side_chain.add(bond.GetIdx())
-                # Analyze the side chain
-                num_carbons = 0
-                num_double_bonds = 0
-                for idx in atoms_in_side_chain:
-                    atom = mol.GetAtomWithIdx(idx)
-                    if atom.GetAtomicNum() == 6:
-                        num_carbons +=1
-                for bond_idx in bonds_in_side_chain:
-                    bond = mol.GetBondWithIdx(bond_idx)
-                    if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-                        num_double_bonds +=1
-                side_chains.append({
-                    'num_carbons': num_carbons,
-                    'num_double_bonds': num_double_bonds
-                })
+                            if nbr_idx not in side_chain_atoms and nbr_idx not in quinone_atoms:
+                                atoms_to_visit.append(nbr_idx)
+                                bond = mol.GetBondBetweenAtoms(current_idx, nbr_idx)
+                                side_chain_bonds.add(bond.GetIdx())
+                # Create side chain mol
+                side_chain = Chem.PathToSubmol(mol, side_chain_bonds)
+                # Check for isoprene units
+                isoprene_matches = side_chain.GetSubstructMatches(isoprene_pattern)
+                if isoprene_matches:
+                    prenyl_side_chain_found = True
+                    break
+        if prenyl_side_chain_found:
+            break
+    
+    if not prenyl_side_chain_found:
+        return False, "No prenyl side chain attached to quinone ring"
+    
+    return True, "Contains quinone ring with polyprenyl-derived side chain"
 
-    # Check if any side chain meets the criteria for a polyprenyl chain
-    for chain in side_chains:
-        if chain['num_carbons'] >= 10 and chain['num_double_bonds'] >= 2:
-            return True, "Contains quinone ring with polyprenyl side chain"
-
-    return False, "No polyprenyl side chain attached to quinone ring"
+__metadata__ = {   'chemical_class': {   'id': '',
+                              'name': 'prenylquinone',
+                              'definition': 'A quinone substituted by a polyprenyl-derived side-chain. Prenylquinones occur in all living cells. Due to their amphiphilic character, they are mainly located in biological membranes where they function as electron and proton carriers in the photosynthetic and respiratory electron transport chains. Some prenylquinones also perform more specialised roles such as antioxidants and enzyme cofactors. Prenylquinones are classified according to ring structure: the main classes are menaquinones, phylloquinones, ubiquinones and plastoquinones.',
+                              'parents': []},
+        'config': {   'llm_model_name': 'lbl/claude-sonnet',
+                      'f1_threshold': 0.8,
+                      'max_attempts': 5,
+                      'max_positive_instances': None,
+                      'max_positive_to_test': None,
+                      'max_negative_to_test': None,
+                      'max_positive_in_prompt': 50,
+                      'max_negative_in_prompt': 20,
+                      'max_instances_in_prompt': 100,
+                      'test_proportion': 0.1},
+        'message': None,
+        'attempt': 1,
+        'success': True,
+        'best': True,
+        'error': '',
+        'stdout': None,
+        'num_true_positives': None,
+        'num_false_positives': None,
+        'num_true_negatives': None,
+        'num_false_negatives': None,
+        'num_negatives': None,
+        'precision': None,
+        'recall': None,
+        'f1': None,
+        'accuracy': None}
