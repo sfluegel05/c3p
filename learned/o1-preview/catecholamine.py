@@ -21,15 +21,20 @@ def is_catecholamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define catechol moiety pattern (aromatic ring with two adjacent hydroxyl groups)
-    catechol_pattern = Chem.MolFromSmarts('c1ccc(O)c(O)c1')
-    if not mol.HasSubstructMatch(catechol_pattern):
-        return False, "No catechol moiety found"
+    # Define catecholamine core pattern
+    # Benzene ring with hydroxyls at positions 1 and 2, aminoethyl chain at position 4
+    catecholamine_pattern = Chem.MolFromSmarts("""
+    [#6]-1
+      -[#6](=[#6]-[#6]-[#6]-[#6]-1-)
+      -[#8]-[#1]
+      -[#6]-[#6]-[#7]
+    """)
     
-    # Define aminoethyl chain attached to aromatic ring
-    # The pattern matches aromatic carbon connected to a chain of two carbons and a nitrogen
-    aminoethyl_pattern = Chem.MolFromSmarts('[c][C][C][N]')
-    if not mol.HasSubstructMatch(aminoethyl_pattern):
-        return False, "No aminoethyl chain attached to aromatic ring found"
+    # Alternative SMARTS pattern with explicit positions
+    # c1c(O)cc(O)c(c1)CCN
+    catecholamine_pattern = Chem.MolFromSmarts('c1c(O)cc(O)c(c1)CCN')
     
-    return True, "Contains catechol moiety with aminoethyl side chain attached to the ring"
+    if not mol.HasSubstructMatch(catecholamine_pattern):
+        return False, "Molecule does not match catecholamine core structure"
+    
+    return True, "Molecule matches catecholamine core structure"
