@@ -22,22 +22,26 @@ def is_bile_acid_conjugate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # More generic SMARTS pattern for the steroid nucleus - cyclopenta[a]phenanthrene
-    steroid_pattern = Chem.MolFromSmarts("C1C[C@@H]2CC[C@]3(C)C(C=C4C(CC(O)C[C@H]34)C2)C1")
+    # General SMARTS pattern for bile acids with steroid nucleus
+    steroid_pattern = Chem.MolFromSmarts("[#6]1:[#6]:[#6]:[#6]2:[#6]3:[#6]4:[#6]:1:[#6](=[#8]):[#6]:[#6]:2:[#6](=[#8]):[#6]3:[#6]:[#6]4")
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No recognizable steroid nucleus found"
 
-    # SMARTS patterns for known conjugations
+    # SMARTS patterns for known conjugations, expanded for common amino acids
     glycine_pattern = Chem.MolFromSmarts("NCC(=O)O")
     taurine_pattern = Chem.MolFromSmarts("NCCS(=O)(=O)O")
     cysteine_pattern = Chem.MolFromSmarts("NCC(=O)C(O)C(S)=O")
     alanine_pattern = Chem.MolFromSmarts("NC(C)C(=O)O")
+    serine_pattern = Chem.MolFromSmarts("NCC(O)C(=O)O")
+    threonine_pattern = Chem.MolFromSmarts("NC(C(O)C)C(=O)O")
     
     # Check for any known conjugation
     if (mol.HasSubstructMatch(glycine_pattern) or 
         mol.HasSubstructMatch(taurine_pattern) or
         mol.HasSubstructMatch(cysteine_pattern) or 
-        mol.HasSubstructMatch(alanine_pattern)):
+        mol.HasSubstructMatch(alanine_pattern) or 
+        mol.HasSubstructMatch(serine_pattern) or
+        mol.HasSubstructMatch(threonine_pattern)):
         return True, "Bile acid conjugate with a recognized amino acid conjugation pattern"
     
     return False, "Does not have a recognized bile acid conjugation pattern"
