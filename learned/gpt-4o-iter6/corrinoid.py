@@ -21,18 +21,15 @@ def is_corrinoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Construct a more generic and pragmatic pattern for the corrin nucleus
-    # Note: Due to complexity, this is simplified and assumptions are made
-    # Matching actual corrin complexity in SMARTS might exceed practical scope
-    # Look for four pyrrole-like rings connected with bridge atoms typical of the corrin structure
-    corrin_core_pattern = Chem.MolFromSmarts('C=1C=CC2=CC=CC3=CC=CC4=CC=CC=C1N=C(C2)C3=C4')
-    
-    # Example pattern lacks detail due to SMARTS limitations - adapted below for best approximation
-    # Here, looking simply for multiple interconnected nitrogen-based heterocycles is the approach
-    # Practical implementations may align with known molecule library comparisons beyond SMARTS
+    # SMARTS for corrin nucleus: four pyrrole-like rings linked by three =C- bridges and one direct C-C bond
+    # This is an approximation to capture the essence of a corrin structure.
+    # Individual pyrrole rings: C1=NC=CC=C1
+    # Connecting pyrrole-like units: [C,c]=[N,n][C,c]=[C,c][C,c]=[N,n][C,c]=[C,c][C,c]=[N,n][C,c]=[C,c][C,c]=[N,n][C,c]=[C,c]
 
-    # Match molecule to the corrin pattern
-    if mol.HasSubstructMatch(corrin_core_pattern):
+    # Corrin-like core pattern (approximation using common connectivity pattern):
+    corrin_pattern = Chem.MolFromSmarts('[C,c]1=[N,n][C,c]=[C,c][C,c]=[N,n]2[C,c]=[N,n]3[C,c]=[C,c][C,c]4=[N,n]1C2=[C,c]3[C,c]=[N,n]4')
+
+    if mol.HasSubstructMatch(corrin_pattern):
         return True, "Contains a corrin-like nucleus pattern"
     
     return False, "Does not contain a discernible corrin nucleus pattern"
