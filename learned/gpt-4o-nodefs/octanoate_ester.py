@@ -21,18 +21,20 @@ def is_octanoate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for ester bond pattern (R-C(=O)O-R')
+    # Define ester bond pattern including variable chain on either side
     ester_pattern = Chem.MolFromSmarts("C(=O)O")
+    
+    # Check for basic ester bond
     if not mol.HasSubstructMatch(ester_pattern):
         return False, "No ester bond found"
 
-    # Check for 8-carbon chain linked to ester group
-    octanoate_pattern = Chem.MolFromSmarts("CCCCCCCC(=O)O")
-    if not mol.HasSubstructMatch(octanoate_pattern):
+    # Ensure there is an 8-carbon chain linked to the ester group
+    # The pattern assumes linear CH2 groups in the chain (R-C(=O)O-R')
+    octanoate_chain_pattern = Chem.MolFromSmarts("CCCCCCCC(=O)O")
+    
+    # Check for octanoate specifically attached to an oxygen
+    if not mol.HasSubstructMatch(octanoate_chain_pattern):
         return False, "No octanoate chain found associated with ester bond"
 
+    # If all checks pass, it is an octanoate ester
     return True, "Molecule contains an octanoate ester group"
-
-# Example Call
-# result, reason = is_octanoate_ester("O(C(CCCCCCC)=O)C=1C=C2C=CC=CC2=CC1")  # Example SMILES for testing
-# print(result, reason)
