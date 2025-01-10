@@ -5,7 +5,6 @@ Classifies: CHEBI:27093 tricarboxylic acid
 Classifies: CHEBI:35757 tricarboxylic acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_tricarboxylic_acid(smiles: str):
     """
@@ -35,30 +34,4 @@ def is_tricarboxylic_acid(smiles: str):
     if len(carboxy_matches) != 3:
         return False, f"Found {len(carboxy_matches)} carboxylic acid groups, need exactly 3"
 
-    # Ensure the molecule is not a peptide or complex structure
-    # by checking the number of rotatable bonds and molecular weight
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    
-    # Tricarboxylic acids typically have a moderate number of rotatable bonds
-    # and a molecular weight within a certain range
-    if n_rotatable > 10 or mol_wt > 500:
-        return False, "Molecule is too complex or too large to be a simple tricarboxylic acid"
-
-    # Check that the carboxylic acid groups are not part of a peptide
-    peptide_pattern = Chem.MolFromSmarts("[NX3][CX3](=O)")
-    peptide_matches = mol.GetSubstructMatches(peptide_pattern)
-    if len(peptide_matches) > 0:
-        return False, "Molecule contains peptide bonds, not a simple tricarboxylic acid"
-
-    # Additional check for complex structures: ensure no large rings or multiple functional groups
-    ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() > 2:
-        return False, "Molecule contains too many rings to be a simple tricarboxylic acid"
-
-    # Check for other functional groups that might indicate complexity
-    other_functional_groups = Chem.MolFromSmarts("[#7,#8,#16,#17,#35,#53]")
-    if mol.HasSubstructMatch(other_functional_groups):
-        return False, "Molecule contains other functional groups, not a simple tricarboxylic acid"
-
-    return True, "Contains exactly 3 carboxylic acid groups and is not a complex structure"
+    return True, "Contains exactly 3 carboxylic acid groups"
