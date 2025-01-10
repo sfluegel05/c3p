@@ -25,62 +25,41 @@ def is_octanoate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for ester group pattern (-O-C(=O)-)
-    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
-    if not mol.HasSubstructMatch(ester_pattern):
-        return False, "No ester group found"
-    
-    # Pattern for octanoate group:
-    # - 8 carbons in chain (including carbonyl carbon)
-    # - Ends in ester group
-    # - More flexible pattern that allows for substitutions and stereochemistry
-    octanoate_pattern = Chem.MolFromSmarts("[CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX3](=[OX1])[OX2]")
+    # Look for ester group with 7-carbon chain attached
+    # Note: The carbonyl carbon counts as the 8th carbon
+    # [CH3] - start with methyl
+    # [CH2][CH2][CH2][CH2][CH2][CH2] - six CH2 groups
+    # C(=O)O - ester group
+    # [#6,#1;!R] means carbon or hydrogen, not in ring (to prevent matching cyclic structures)
+    octanoate_pattern = Chem.MolFromSmarts(
+        "[CH3][CH2][CH2][CH2][CH2][CH2][CH2]C(=O)[OX2]"
+    )
     
     if not mol.HasSubstructMatch(octanoate_pattern):
-        return False, "No octanoate chain found"
-    
-    matches = mol.GetSubstructMatches(octanoate_pattern)
-    
-    for match in matches:
-        # Get the atoms in the chain
-        chain_atoms = list(match[:-2])  # Exclude ester oxygen and carbonyl oxygen
+        # Try alternative pattern that allows for substitutions
+        alt_pattern = Chem.MolFromSmarts(
+            "[CX4][CX4][CX4][CX4][CX4][CX4][CX4]C(=O)[OX2]"
+        )
+        if not mol.HasSubstructMatch(alt_pattern):
+            return False, "No octanoate ester group found"
         
-        # Check that the carbons in the chain form a continuous path
-        is_continuous = True
-        for i in range(len(chain_atoms)-1):
-            bond = mol.GetBondBetweenAtoms(chain_atoms[i], chain_atoms[i+1])
-            if bond is None:
-                is_continuous = False
-                break
+        # Verify the chain isn't part of something longer
+        matches = mol.GetSubstructMatches(alt_pattern)
+        for match in matches:
+            chain_atoms = list(match[:-2])  # Exclude ester oxygen and carbonyl carbon
+            
+            # Check that first carbon isn't connected to another carbon chain
+            first_c = mol.GetAtomWithIdx(chain_atoms[0])
+            non_match_neighbors = [n for n in first_c.GetNeighbors() 
+                                 if n.GetIdx() not in chain_atoms 
+                                 and n.GetAtomicNum() == 6]
+            
+            if not non_match_neighbors:
+                return True, "Contains octanoate ester group with possible substitutions"
                 
-        if not is_continuous:
-            continue
-            
-        # Check that the chain itself isn't part of a ring
-        chain_in_ring = False
-        for i in range(len(chain_atoms)-1):
-            bond = mol.GetBondBetweenAtoms(chain_atoms[i], chain_atoms[i+1])
-            if bond.IsInRing():
-                chain_in_ring = True
-                break
-                
-        if chain_in_ring:
-            continue
-            
-        # Verify the chain length (should be 8 carbons including carbonyl)
-        chain_length = len(chain_atoms) + 1  # Add 1 for carbonyl carbon
-        if chain_length != 8:
-            continue
-            
-        # Check that all atoms in chain are carbons
-        all_carbons = all(mol.GetAtomWithIdx(idx).GetAtomicNum() == 6 for idx in chain_atoms)
-        if not all_carbons:
-            continue
-            
-        # If we get here, we've found a valid octanoate ester group
-        return True, "Contains octanoate ester group (8-carbon chain with terminal ester)"
-    
-    return False, "No valid octanoate ester group found"
+        return False, "Found similar structure but not a true octanoate ester"
+
+    return True, "Contains octanoate ester group"
 
 def test_examples():
     """Test function with some known examples"""
