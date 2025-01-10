@@ -24,59 +24,64 @@ def is_quinic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Exclude molecules with phosphate groups (to avoid phosphatidylinositols)
-    phosphate_pattern = Chem.MolFromSmarts("[P](=[O])([O,N])[O,N]")
-    if mol.HasSubstructMatch(phosphate_pattern):
-        return False, "Contains phosphate group - not a quinic acid"
+    # Basic cyclohexane ring with one carboxyl group
+    core_pattern = Chem.MolFromSmarts("[C]1[C][C][C][C][C]1")
+    if core_pattern is None:
+        return False, "Invalid SMARTS pattern for core"
+    if not mol.HasSubstructMatch(core_pattern):
+        return False, "No cyclohexane core found"
 
-    # Look for specific quinic acid core:
-    # Cyclohexane with carboxylic acid/ester and multiple hydroxyls/esters in specific positions
-    quinic_core = Chem.MolFromSmarts("""
-        [C]1([C,O;!P])([$([OX2H]),$([OX2][C])])
-        [C]([O,H;!P])[C]([O,H;!P])[C]([O,H;!P])[C]([O,H;!P])[C]1([O,H;!P])
-    """)
-    if not mol.HasSubstructMatch(quinic_core):
-        return False, "No quinic acid core structure found"
-
-    # Must have either carboxylic acid or ester
-    carboxyl_pattern = Chem.MolFromSmarts("[$([CX3](=[OX1])[OX2H1]),$([CX3](=[OX1])[OX2][C])]")
+    # Check for carboxylic acid or ester group
+    carboxyl_pattern = Chem.MolFromSmarts("[$([C](=[O])[OH]),$([C](=[O])[O][C])]")
+    if carboxyl_pattern is None:
+        return False, "Invalid SMARTS pattern for carboxyl"
     if not mol.HasSubstructMatch(carboxyl_pattern):
         return False, "No carboxylic acid or ester group found"
 
-    # Count carbons and oxygens to ensure basic composition
+    # Count basic features
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     
     if carbon_count < 7:  # minimum carbons in quinic acid
         return False, "Too few carbons for quinic acid structure"
-    
     if oxygen_count < 5:  # minimum oxygens in quinic acid
         return False, "Too few oxygens for quinic acid structure"
 
-    # Count substitution points on the core
-    core_matches = mol.GetSubstructMatches(quinic_core)
+    # Look for hydroxyl or ester groups
+    hydroxyl_pattern = Chem.MolFromSmarts("[$([OH]),$([O][C](=[O])[#6])]")
+    if hydroxyl_pattern is None:
+        return False, "Invalid SMARTS pattern for hydroxyl"
+    
+    # Get the core atoms
+    core_matches = mol.GetSubstructMatches(core_pattern)
     if not core_matches:
-        return False, "No valid quinic acid core found"
-        
-    # Get the core atoms for the first match
+        return False, "No valid cyclohexane core found"
+    
     core_atoms = set(core_matches[0])
     
-    # Count oxygen substituents on core
-    oxygen_on_core = 0
+    # Count oxygen substituents connected to core
+    oxygen_substituents = 0
     for atom_idx in core_atoms:
         atom = mol.GetAtomWithIdx(atom_idx)
         for neighbor in atom.GetNeighbors():
             if neighbor.GetAtomicNum() == 8:
-                oxygen_on_core += 1
-                
-    if oxygen_on_core < 5:  # quinic acid needs at least 5 oxygens on core
-        return False, "Insufficient oxygen substitution on core"
+                oxygen_substituents += 1
 
-    # Look for characteristic substitution pattern
-    hydroxyl_or_ester = Chem.MolFromSmarts("[$([OX2H1]),$([OX2][C](=[O])[#6])]")
-    subst_count = len(mol.GetSubstructMatches(hydroxyl_or_ester))
-    
-    if subst_count < 4:  # Need at least 4 hydroxyl/ester groups
-        return False, "Insufficient hydroxyl/ester groups"
+    if oxygen_substituents < 4:  # Need at least 4 oxygen substituents
+        return False, "Insufficient oxygen substituents on core"
 
-    return True, "Contains quinic acid core structure with characteristic substitution pattern"
+    # Check for characteristic quinic acid substitution pattern
+    # At least one carboxyl and multiple hydroxyls/esters on the ring
+    quinic_pattern = Chem.MolFromSmarts("[C]1([C](=[O])[O,H])[C]([O,H])[C]([O,H])[C]([O,H])[C]([O,H])[C]1([O,H])")
+    if quinic_pattern is None:
+        return False, "Invalid SMARTS pattern for quinic acid"
+    if not mol.HasSubstructMatch(quinic_pattern):
+        return False, "Does not match quinic acid substitution pattern"
+
+    # Additional check for connected groups
+    for atom in mol.GetAtoms():
+        # Exclude molecules with phosphate, sulfate, or other non-typical groups
+        if atom.GetAtomicNum() not in [1, 6, 8]:  # Only H, C, O allowed
+            return False, "Contains non-typical atoms for quinic acid"
+
+    return True, "Contains quinic acid core with characteristic substitution pattern"
