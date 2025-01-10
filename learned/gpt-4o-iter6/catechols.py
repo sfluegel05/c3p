@@ -20,33 +20,33 @@ def is_catechols(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define a more flexible catechol SMARTS pattern
-    catechol_pattern = Chem.MolFromSmarts("c1(O)cccc(O)c1")  # Simpler representation focusing on ortho substitution
+    
+    # Define catechol SMARTS pattern to detect o-diphenol groups on aromatic rings
+    catechol_pattern = Chem.MolFromSmarts("c1c(O)ccc(O)c1")  # Captures ortho-dihydroxy on aromatic
     
     # Check for catechol substructure
     if mol.HasSubstructMatch(catechol_pattern):
         return True, "Contains a catechol moiety (o-diphenol component)"
-    else:
-        # Try a more generalized path for other aromatic layers if flexibility fails
-        aromatic_ring = Chem.MolFromSmarts("c1ccccc1")  # General aromatic ring
-        oxy_pattern = Chem.MolFromSmarts("[OH2]")  # More flexible hydroxyl to match oxygens more easily
-        n_aromatic_rings = len(mol.GetSubstructMatches(aromatic_ring))
-        
-        # Criterion: At least one aromatic ring and ortho adjacent hydroxyls
-        hydroxyl_matches = mol.GetSubstructMatches(oxy_pattern)
-        for idx, hydroxyl in enumerate(hydroxyl_matches[:-1]):
-            if mol.GetBondBetweenAtoms(hydroxyl[0], hydroxyl_matches[idx + 1][0]) is not None:
-                if n_aromatic_rings > 0:
-                    return True, "Contains overlapping hydroxyls on an aromatic ring (catechol moiety)"
-                
-        return False, "No catechol moiety found"
+    
+    # If the specific pattern fails, try a flexible approach on adjacency
+    aromatic_atom_indices = [atom.GetIdx() for atom in mol.GetAromaticAtoms()]
+    hydroxyl_indices = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetSymbol() == 'O' and mol.GetAtomWithIdx(atom.GetIdx()).GetNeighbors()[0].GetIsAromatic()]
 
-# Examples and usage
-examples = [
+    # Check adjacency of hydroxyl groups on aromatic systems
+    for i, oxygen1 in enumerate(hydroxyl_indices):
+        for oxygen2 in hydroxyl_indices[i+1:]:
+            if mol.GetBondBetweenAtoms(oxygen1, oxygen2):
+                return True, "Contains ortho-hydroxyl groups on an aromatic ring"
+    
+    return False, "No catechol moiety found"
+
+# Test with different SMILES strings
+test_smiles = [
     "O[C@H]([C@H](OC(=O)\\C=C\\c1ccc(O)c(O)c1)C(O)=O)C(O)=O",
-    "Oc1cc(O)cc(O)c1"
+    "Oc1cc(O)cc(O)c1",
+    "C=1(C=CC(=C(C1)O)O)/C=C/C(OCC)=O"
 ]
-for example in examples:
-    result, reason = is_catechols(example)
-    print(f"SMILES: {example} -> Is Catechol: {result}, Reason: {reason}")
+
+for smiles in test_smiles:
+    result, reason = is_catechols(smiles)
+    print(f"SMILES: {smiles} -> Is Catechol: {result}, Reason: {reason}")
