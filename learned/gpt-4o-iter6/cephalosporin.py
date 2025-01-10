@@ -21,23 +21,23 @@ def is_cephalosporin(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define the beta-lactam ring pattern (4-membered cyclic amide)
-    beta_lactam_pattern = Chem.MolFromSmarts("C1CN([C@@H]1)C(=O)")
+    
+    # Proper beta-lactam ring pattern: 4-membered lactam with carbon-nitrogen amidic bond
+    beta_lactam_pattern = Chem.MolFromSmarts("C1C(=O)NC1")
     if not mol.HasSubstructMatch(beta_lactam_pattern):
         return False, "No beta-lactam ring found"
 
-    # Define the six-membered dihydrothiazine ring pattern
-    dihydrothiazine_pattern = Chem.MolFromSmarts("C1SC([NX3H,OX2H1])C(=O)N([C@H]1)")
+    # Six-membered dihydrothiazine ring pattern: helps make it unique from penicillins
+    dihydrothiazine_pattern = Chem.MolFromSmarts("C1(C(=O)N2C(S1)C2)")
     if not mol.HasSubstructMatch(dihydrothiazine_pattern):
         return False, "No dihydrothiazine ring found"
 
-    # Ensure it does not have a penicillin-like structure
-    penicillin_pattern = Chem.MolFromSmarts("C1CN2C(S1)C(=O)N(C2)C")
+    # Ensure it does not have a penicillin-like five-membered thiazolidine ring
+    penicillin_pattern = Chem.MolFromSmarts("C1CN2C(S1)C(=O)N(C2)")
     if mol.HasSubstructMatch(penicillin_pattern):
         return False, "Molecule is more penicillin-like"
-
-    return True, "Molecule contains a beta-lactam and a dihydrothiazine ring consistent with cephalosporins"
+    
+    return True, "Molecule contains a beta-lactam and a 6-membered dihydrothiazine ring consistent with cephalosporins"
 
 __metadata__ = {
     'chemical_class': {
