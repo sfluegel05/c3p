@@ -28,13 +28,16 @@ def is_prenylquinone(smiles: str):
     if not (mol.HasSubstructMatch(quinone_pattern) or mol.HasSubstructMatch(naphthoquinone_pattern)):
         return False, "No quinone structure found"
 
-    # Define SMARTS pattern for polyprenyl chain (repeated isoprene units)
-    prenyl_chain_pattern = Chem.MolFromSmarts("(C=C(C)CCC)*")
+    # Define SMARTS pattern for polyprenyl chain (repeated isoprene units: C=C-C-C units)
+    # Match at least one or more such units to categorize as polyprenyl
+    prenyl_chain_pattern = Chem.MolFromSmarts("C(=C)C-C")
     
-    # Check for polyprenyl side chain
-    if not mol.HasSubstructMatch(prenyl_chain_pattern):
-        return False, "No prenyl-derived side chain found"
-
-    # Additional classification checks can go here, if necessary
+    # Find matches
+    matches = mol.GetSubstructMatches(prenyl_chain_pattern)
+    isoprene_count = len(matches)
+    
+    # Check if at least two isoprene units are present in sequence as polyprenyl chain
+    if isoprene_count < 2:
+        return False, "No significant prenyl-derived side chain found"
 
     return True, "Contains quinone structure with prenyl-derived side chain"
