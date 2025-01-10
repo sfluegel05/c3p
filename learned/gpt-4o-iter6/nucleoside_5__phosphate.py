@@ -11,33 +11,39 @@ def is_nucleoside_5__phosphate(smiles: str):
 
     Args:
         smiles (str): SMILES string of the molecule
-
+    
     Returns:
         bool: True if molecule is a nucleoside 5'-phosphate, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the SMARTS pattern for a ribosyl or deoxyribosyl sugar with flexibility in stereochemistry
-    # and compatibility with nucleoside linking.
-    sugar_pattern = Chem.MolFromSmarts("O[C@@H]1[C@@H](O)[C@H](O)[C@H](CO)O1")  # Accept natural variations
+    # Define generalized pattern for any ribose or deoxyribose containing nucleotide or deoxynucleotide
+    sugar_pattern = Chem.MolFromSmarts("O[C@@]1([C@@H](O)C[C@@H](O)C1)[C@H]CO |C|")  # Uses generic C without specific stereocenters
+
+    # Generalized phosphate group pattern that includes mono-, di-, tri-phosphate
+    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)(O)O |C|")  # Capture multiple conformations
+
+    # General nucleotide base connection pattern
+    base_patterns = [
+        # Purines
+        Chem.MolFromSmarts("n1cnc2c1[nH]cnc2"),  # Simplified purine base pattern
+        # Pyrimidines like cytosine, uracil, thymine variations
+        Chem.MolFromSmarts("n1ccn([C@@H]2O[C@H]3O[C@H](CO)[C@@H](O)[C@H]3O2)nc1=O")
+    ]
+
+    # Check for sugar, phosphate, and base pattern matches in the molecule
     if not mol.HasSubstructMatch(sugar_pattern):
-        return False, "No ribose or deoxyribose sugar found"
+        return False, "Does not contain a generalized ribose or deoxyribose sugar structure"
 
-    # Define a broader pattern for phosphate group/s attached to the 5' carbon of the sugar.
-    phosphate_pattern = Chem.MolFromSmarts("O[C@H]1COP(O)(=O)O[*1]")  # Allow for extended phosphate groups
     if not mol.HasSubstructMatch(phosphate_pattern):
-        return False, "No phosphate group found at the 5' position of the sugar"
+        return False, "No phosphate group found attached to the sugar"
 
-    # Check for presence of purine or pyrimidine base, assume it's linked to the sugar
-    # Accepting purine/pyrimidine base connected through N-glycosidic bond
-    base_pattern = Chem.MolFromSmarts("n1cnc2c1[nH]c(=O)[nH]c2=O")  # Simplified pyrimidine (e.g. uracil)
-    purine_pattern = Chem.MolFromSmarts("N1C=NC2=C1N=CN=C2")  # Simplified purine (e.g. adenine)
-    if not mol.HasSubstructMatch(base_pattern) and not mol.HasSubstructMatch(purine_pattern):
-        return False, "No nucleobase found linked to sugar"
+    if not any(mol.HasSubstructMatch(bp) for bp in base_patterns):
+        return False, "No recognized nucleobase structure found linked via glycosidic bond"
 
-    return True, "Contains ribosyl or deoxyribosyl sugar, phosphate group at the 5' position, and nucleobase"
+    return True, "Contains a ribosyl or deoxyribosyl sugar, phosphate at 5', and a nucleobase"
