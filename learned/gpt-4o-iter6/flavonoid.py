@@ -22,19 +22,20 @@ def is_flavonoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Core flavonoid: 1-benzopyran ring with an attached phenyl ring on position 2
-    flavonoid_core_pattern = Chem.MolFromSmarts("c1cc2c(cc1)c(coc2)c3ccccc3")
+    # Refined pattern for core flavonoid: 1-benzopyran structure with an aryl group at position 2
+    flavonoid_core_pattern = Chem.MolFromSmarts("c1cc(-c2ccccc2)c2occ(c2)c1")
     if not mol.HasSubstructMatch(flavonoid_core_pattern):
         return False, "No core flavonoid 1-benzopyran structure with aryl substitution found"
     
-    # Check for typical flavonoid functional groups (e.g., -OH, =O)
+    # Check for common functional groups like hydroxyls [OH] or carbonyls (=O)
+    # Note: Position is not restricted; we're checking for general presence
     hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
-    carbonyl_pattern = Chem.MolFromSmarts("[CX3]=O")
+    carbonyl_pattern = Chem.MolFromSmarts("C=O")
     
     has_hydroxyl = mol.HasSubstructMatch(hydroxyl_pattern)
     has_carbonyl = mol.HasSubstructMatch(carbonyl_pattern)
 
     if has_hydroxyl or has_carbonyl:
-        return True, "Identified flavonoid structure with typical functional groups"
+        return True, f"Identified flavonoid structure with {'hydroxyl' if has_hydroxyl else ''}{' and ' if has_hydroxyl and has_carbonyl else ''}{'carbonyl' if has_carbonyl else ''} functional groups"
 
     return True, "Identified basic flavonoid structure (1-benzopyran core with aryl substitution)"
