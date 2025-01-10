@@ -28,31 +28,29 @@ def is_diterpenoid(smiles: str):
     # Count the number of carbon atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     
-    # Diterpenoids are derived from a C20 skeleton, but modifications may reduce the count
-    if c_count < 15 or c_count > 25:
-        return False, f"Carbon count ({c_count}) is outside the typical range for diterpenoids (15-25)"
+    # Diterpenoids are derived from a C20 skeleton, but modifications may reduce or increase the count
+    if c_count < 15 or c_count > 35:
+        return False, f"Carbon count ({c_count}) is outside the typical range for diterpenoids (15-35)"
 
-    # Check for terpenoid-like structure (isoprene units or similar)
-    # Terpenoids often have a high degree of branching and rings
+    # Check for terpenoid-like structure (rings and branching)
     n_rings = rdMolDescriptors.CalcNumRings(mol)
     if n_rings < 1:
         return False, "No rings found, unlikely to be a diterpenoid"
 
-    # Check for typical functional groups in diterpenoids (e.g., alcohols, ketones, esters)
-    functional_groups = ["[OH]", "[C=O]", "[O]", "[C(=O)O]"]
+    # Check for typical functional groups in diterpenoids (e.g., alcohols, ketones, esters, ethers)
+    functional_groups = ["[OH]", "[C=O]", "[O]", "[C(=O)O]", "[O][C]", "[C](=O)[C]"]
     has_functional_group = any(mol.HasSubstructMatch(Chem.MolFromSmarts(group)) for group in functional_groups)
     if not has_functional_group:
         return False, "No typical diterpenoid functional groups found"
 
-    # Check for isoprene-like patterns (C5H8 units)
-    isoprene_pattern = Chem.MolFromSmarts("CC(=C)C")
-    isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
-    if len(isoprene_matches) < 2:
-        return False, "Fewer than 2 isoprene-like patterns found"
-
-    # Check molecular weight - diterpenoids typically have MW between 250 and 400
+    # Check molecular weight - diterpenoids typically have MW between 250 and 500
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 250 or mol_wt > 400:
-        return False, f"Molecular weight ({mol_wt}) is outside the typical range for diterpenoids (250-400)"
+    if mol_wt < 250 or mol_wt > 500:
+        return False, f"Molecular weight ({mol_wt}) is outside the typical range for diterpenoids (250-500)"
 
-    return True, "Contains a C20 skeleton with typical diterpenoid features (rings, functional groups, isoprene-like patterns)"
+    # Check for some degree of branching
+    n_branches = sum(1 for atom in mol.GetAtoms() if len(atom.GetNeighbors()) > 2)
+    if n_branches < 2:
+        return False, "Insufficient branching for a diterpenoid structure"
+
+    return True, "Contains a modified C20 skeleton with typical diterpenoid features (rings, functional groups, branching)"
