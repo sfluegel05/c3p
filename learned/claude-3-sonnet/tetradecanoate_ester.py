@@ -26,55 +26,51 @@ def is_tetradecanoate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # First check for ester group
-    ester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2][C,c]")
+    # Look for non-cyclic ester group pattern
+    # [C:1] must be sp3 carbon (no double bonds)
+    # Must not be in ring
+    ester_pattern = Chem.MolFromSmarts("[CH3X4:1][CH2X4:2][CH2X4:3][CH2X4:4][CH2X4:5][CH2X4:6][CH2X4:7][CH2X4:8][CH2X4:9][CH2X4:10][CH2X4:11][CH2X4:12][CH2X4:13][CX3:14](=[OX1:15])[OX2:16][*:17]")
+    
     if not mol.HasSubstructMatch(ester_pattern):
-        return False, "No ester group found"
-    
-    # Find all ester groups
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    
-    for match in ester_matches:
-        carbonyl_carbon = mol.GetAtomWithIdx(match[0])
+        return False, "No tetradecanoate ester group found"
         
-        # Now check if this carbonyl carbon has a 13-carbon chain attached
-        # (making it a C14 chain in total)
-        chain_length = 0
-        visited = set()
-        current_atom = carbonyl_carbon
+    matches = mol.GetSubstructMatches(ester_pattern)
+    
+    for match in matches:
+        # Get the matched atoms
+        chain_atoms = match[0:13]  # First 13 carbons
+        carbonyl_carbon = match[13]
+        ester_oxygen = match[15]
         
-        # Traverse the carbon chain
-        while True:
-            visited.add(current_atom.GetIdx())
+        # Verify none of the chain atoms are in a ring
+        ring_atoms = mol.GetRingInfo().AtomRings()
+        if any(atom_idx in {atom for ring in ring_atoms for atom in ring} for atom_idx in chain_atoms):
+            continue
             
-            # Find next carbon in chain
-            carbon_neighbors = [n for n in current_atom.GetNeighbors() 
-                             if n.GetAtomicNum() == 6 and 
-                             n.GetIdx() not in visited and
-                             not n.IsInRing()]  # Exclude ring carbons
-            
-            if len(carbon_neighbors) != 1:
+        # Verify chain carbons don't have additional carbon substituents
+        has_branches = False
+        for atom_idx in chain_atoms:
+            atom = mol.GetAtomWithIdx(atom_idx)
+            carbon_neighbors = len([n for n in atom.GetNeighbors() if n.GetAtomicNum() == 6])
+            if carbon_neighbors > 2:  # More than 2 carbon neighbors means branching
+                has_branches = True
                 break
                 
-            current_atom = carbon_neighbors[0]
-            chain_length += 1
+        if has_branches:
+            continue
             
-            # Check for branching
-            if len([n for n in current_atom.GetNeighbors() 
-                   if n.GetAtomicNum() == 6]) > 2:
+        # Verify no modifications on the chain (OH groups, double bonds, etc)
+        has_modifications = False
+        for atom_idx in chain_atoms:
+            atom = mol.GetAtomWithIdx(atom_idx)
+            if atom.GetTotalNumHs() + len([n for n in atom.GetNeighbors() if n.GetAtomicNum() == 6]) < 4:
+                has_modifications = True
                 break
-        
-        if chain_length == 13:  # We found a 13-carbon chain attached to carbonyl
-            # Verify it's saturated (no double/triple bonds)
-            is_saturated = True
-            for atom_idx in visited:
-                atom = mol.GetAtomWithIdx(atom_idx)
-                if any(bond.GetBondType() != Chem.BondType.SINGLE 
-                      for bond in atom.GetBonds()):
-                    is_saturated = False
-                    break
+                
+        if has_modifications:
+            continue
             
-            if is_saturated:
-                return True, "Contains tetradecanoate (myristoyl) ester group"
-    
-    return False, "No tetradecanoate ester group found"
+        # If we get here, we've found a valid tetradecanoate ester group
+        return True, "Contains tetradecanoate (myristoyl) ester group"
+        
+    return False, "No valid tetradecanoate ester group found"
