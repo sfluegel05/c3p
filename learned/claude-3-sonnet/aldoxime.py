@@ -24,43 +24,61 @@ def is_aldoxime(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+
+    # Various SMARTS patterns for different oxime representations
+    patterns = [
+        # Standard aldoxime pattern: carbon must have one H and one single bond to carbon
+        "[C!R][CH1](=[NX2]-[OX2H1])",  # R-CH=N-OH
+        "[C!R][CH1](=[NX2]-[OX1-])",   # R-CH=N-O- (deprotonated)
+        # E/Z configurations
+        "[C!R][CH1](/=[NX2]/[OX2H1])",  # E isomer
+        "[C!R][CH1](\\=[NX2]\\[OX2H1])", # Z isomer
+        "[C!R][CH1](/=[NX2]\\[OX2H1])",  # Alternative E/Z
+        "[C!R][CH1](\\=[NX2]/[OX2H1])"   # Alternative E/Z
+    ]
     
-    # Look for oxime group pattern (C=N-OH)
-    # [CX3H1] ensures carbon has exactly one hydrogen
-    # [NX2] ensures nitrogen has double bond
-    # [OX2H1] ensures oxygen is connected to one hydrogen
-    oxime_pattern = Chem.MolFromSmarts("[CX3H1]=[NX2]-[OX2H1]")
+    found_match = False
+    for pattern in patterns:
+        smarts = Chem.MolFromSmarts(pattern)
+        if mol.HasSubstructMatch(smarts):
+            matches = mol.GetSubstructMatches(smarts)
+            for match in matches:
+                # Get the carbon atom of the C=N bond
+                carbon_idx = match[1]  # Index 1 is the CH1 atom
+                carbon = mol.GetAtomWithIdx(carbon_idx)
+                
+                # Verify carbon has exactly one hydrogen
+                if carbon.GetTotalNumHs() != 1:
+                    continue
+                    
+                # Verify carbon is not aromatic
+                if carbon.GetIsAromatic():
+                    continue
+                    
+                # Verify carbon is not part of a ring
+                if carbon.IsInRing():
+                    continue
+                    
+                # Count number of single bonds to carbon atoms
+                carbon_neighbors = [n for n in carbon.GetNeighbors() 
+                                 if n.GetAtomicNum() == 6 and mol.GetBondBetweenAtoms(carbon_idx, n.GetIdx()).GetBondType() == Chem.BondType.SINGLE]
+                
+                if len(carbon_neighbors) == 1:
+                    found_match = True
+                    break
+                    
+            if found_match:
+                break
     
-    # Alternative pattern for deprotonated oximes
-    oxime_anion_pattern = Chem.MolFromSmarts("[CX3H1]=[NX2]-[OX1-]")
-    
-    matches = mol.GetSubstructMatches(oxime_pattern)
-    anion_matches = mol.GetSubstructMatches(oxime_anion_pattern)
-    
-    total_matches = len(matches) + len(anion_matches)
-    
-    if total_matches == 0:
-        return False, "No aldoxime group (C(H)=N-OH) found"
-    
-    # Check if the carbon of C=N is connected to exactly one hydrogen
-    # This distinguishes aldoximes from ketoximes
-    for match in matches:
-        carbon_atom = mol.GetAtomWithIdx(match[0])
-        if carbon_atom.GetTotalNumHs() != 1:
-            return False, "Oxime carbon has incorrect number of hydrogens"
-            
-    for match in anion_matches:
-        carbon_atom = mol.GetAtomWithIdx(match[0])
-        if carbon_atom.GetTotalNumHs() != 1:
-            return False, "Oxime carbon has incorrect number of hydrogens"
-    
-    # Verify carbon is not part of C=O group (would indicate an oxime ester)
+    if not found_match:
+        return False, "No aldoxime group (R-CH=N-OH) found"
+        
+    # Additional check for oxime esters
     carbonyl_pattern = Chem.MolFromSmarts("[CX3](=O)-[OX2]")
     if mol.HasSubstructMatch(carbonyl_pattern):
-        # Check if the carbonyl carbon is the same as oxime carbon
         carbonyl_matches = mol.GetSubstructMatches(carbonyl_pattern)
-        for oxime_match in matches:
-            oxime_carbon = oxime_match[0]
+        for match in matches:
+            oxime_carbon = match[1]
             for carbonyl_match in carbonyl_matches:
                 if oxime_carbon == carbonyl_match[0]:
                     return False, "Contains oxime ester group instead of aldoxime"
