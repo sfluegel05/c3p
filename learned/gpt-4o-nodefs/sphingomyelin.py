@@ -19,19 +19,18 @@ def is_sphingomyelin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Broad phosphate-choline pattern, capturing possible variations
-    phosphate_choline_pattern = Chem.MolFromSmarts("O=P(OCC[N+](C)(C)C)(O)O")
+    # Define the phosphate-choline headgroup pattern
+    phosphate_choline_pattern = Chem.MolFromSmarts("COP([O-])(=O)OCC[N+](C)(C)C")
     if not mol.HasSubstructMatch(phosphate_choline_pattern):
         return False, "No phosphate-choline group found"
 
-    # Broadened sphingoid base detection pattern
-    # This pattern attempts to capture common structural variations
-    sphingoid_base_pattern = Chem.MolFromSmarts("[C@@H](NC(=O)[C;X4])[C@@H](O)[C;X4]")
+    # Define the sphingoid base pattern, focusing on common chiral centers and base
+    sphingoid_base_pattern = Chem.MolFromSmarts("[C@@H](NC(=O)C)[C@@H](O)C[C;X4]")
     if not mol.HasSubstructMatch(sphingoid_base_pattern):
         return False, "No sphingoid base found"
 
-    # Flexible long hydrocarbon chain pattern (allow for variations)
-    hydrocarbon_chain_pattern = Chem.MolFromSmarts("C(CCCCCCCCCCC)*)")
+    # Define a flexible long hydrocarbon chain pattern (allow for variations, including double bonds)
+    hydrocarbon_chain_pattern = Chem.MolFromSmarts("C[C@@H](O)CC([C;!H0])")
     if not mol.HasSubstructMatch(hydrocarbon_chain_pattern):
         return False, "No sufficiently long hydrocarbon chain found"
 
