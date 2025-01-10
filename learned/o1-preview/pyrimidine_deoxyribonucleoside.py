@@ -6,7 +6,6 @@ Classifies: pyrimidine deoxyribonucleoside
 """
 
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_pyrimidine_deoxyribonucleoside(smiles: str):
     """
@@ -20,35 +19,66 @@ def is_pyrimidine_deoxyribonucleoside(smiles: str):
         bool: True if molecule is a pyrimidine deoxyribonucleoside, False otherwise
         str: Reason for classification
     """
-    
-    # Parse SMILES
+
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for pyrimidine base (six-membered ring with nitrogens at positions 1 and 3)
+    # Check for phosphate group (to exclude nucleotides)
+    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)O")
+    if phosphate_pattern is None:
+        return None, "Invalid phosphate SMARTS pattern"
+    if mol.HasSubstructMatch(phosphate_pattern):
+        return False, "Molecule is a nucleotide (contains phosphate group)"
+
+    # Find pyrimidine ring
     pyrimidine_pattern = Chem.MolFromSmarts("n1cnccc1")
-    if not mol.HasSubstructMatch(pyrimidine_pattern):
+    if pyrimidine_pattern is None:
+        return None, "Invalid pyrimidine SMARTS pattern"
+    pyrimidine_matches = mol.GetSubstructMatches(pyrimidine_pattern)
+    if not pyrimidine_matches:
         return False, "No pyrimidine base found"
 
-    # Check for deoxyribose sugar (five-membered ring with oxygen and hydroxyl groups at positions 3' and 5')
-    deoxyribose_pattern = Chem.MolFromSmarts("C1[C@@H]([C@H](O)[C@@H](CO)O1)")
-    if not mol.HasSubstructMatch(deoxyribose_pattern):
+    # Find sugar ring (five-membered ring containing oxygen)
+    sugar_pattern = Chem.MolFromSmarts("C1OC(CO)C(O)C1")
+    if sugar_pattern is None:
+        return None, "Invalid sugar SMARTS pattern"
+    sugar_matches = mol.GetSubstructMatches(sugar_pattern)
+    if not sugar_matches:
         return False, "No deoxyribose sugar found"
 
-    # Check for β-N1-glycosidic bond between sugar and base
-    glycosidic_bond_pattern = Chem.MolFromSmarts("n1c[C@H]2O[C@@H](C[C@H]2O)CO")
-    if not mol.HasSubstructMatch(glycosidic_bond_pattern):
-        return False, "No β-N1-glycosidic bond between sugar and base"
+    # Now check for glycosidic bond between N1 of pyrimidine and C1' of sugar
+    # For each pyrimidine ring
+    for pyrimidine in pyrimidine_matches:
+        n1_idx = pyrimidine[0]  # N1 atom index
+        n1_atom = mol.GetAtomWithIdx(n1_idx)
+        # Check bonds from N1
+        for bond in n1_atom.GetBonds():
+            neighbor_atom = bond.GetOtherAtom(n1_atom)
+            neighbor_idx = neighbor_atom.GetIdx()
+            if neighbor_atom.GetAtomicNum() == 6:
+                # Check if neighbor atom is part of sugar ring
+                for sugar in sugar_matches:
+                    if neighbor_idx in sugar:
+                        # Found potential glycosidic bond
+                        # Now check for deoxyribose (no OH at 2' position)
+                        # Identify the carbons in the sugar ring
+                        carbon_indices = [idx for idx in sugar if mol.GetAtomWithIdx(idx).GetAtomicNum() == 6]
+                        # Check for OH group at 2' position
+                        has_2prime_OH = False
+                        for c_idx in carbon_indices:
+                            c_atom = mol.GetAtomWithIdx(c_idx)
+                            # Count how many carbons in ring the carbon atom is connected to
+                            ring_carbons = [nbr for nbr in c_atom.GetNeighbors() if nbr.GetIdx() in carbon_indices]
+                            if len(ring_carbons) == 2:
+                                # This is likely C2' position
+                                for neighbor in c_atom.GetNeighbors():
+                                    if neighbor.GetAtomicNum() == 8 and neighbor.GetIdx() not in sugar:
+                                        # Found OH group at 2' position
+                                        has_2prime_OH = True
+                        if has_2prime_OH:
+                            return False, "Sugar is ribose (has OH at 2' position)"
+                        else:
+                            return True, "Contains pyrimidine base attached to deoxyribose via N-glycosidic bond"
 
-    # Ensure the absence of hydroxyl group at 2' position (i.e., it's deoxyribose, not ribose)
-    ribose_pattern = Chem.MolFromSmarts("C1[C@H](O)[C@@H](O)[C@H](O)[C@@H]1O")
-    if mol.HasSubstructMatch(ribose_pattern):
-        return False, "Contains ribose sugar instead of deoxyribose"
-
-    # Check that the molecule is a nucleoside (base + sugar, no phosphate groups)
-    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)O")
-    if mol.HasSubstructMatch(phosphate_pattern):
-        return False, "Molecule is a nucleotide, contains phosphate group"
-
-    return True, "Contains pyrimidine base attached to deoxyribose via β-N1-glycosidic bond"
+    return False, "No glycosidic bond between pyrimidine base and sugar found"
