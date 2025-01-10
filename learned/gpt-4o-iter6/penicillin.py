@@ -22,28 +22,24 @@ def is_penicillin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # The basic penicillin scaffold: 4-thia-1-azabicyclo[3.2.0]heptane.
-    # With two methyl groups at position 2, a carboxylate at position 3, and a carboxamido at position 6.
-    penicillin_scaffold_pattern = Chem.MolFromSmarts("[C@@H]1([C@@H]2N([C@H]1C(=O)O)C(=O)S2(C)C)")
+    # Improved penicillin scaffold: 4-thia-1-azabicyclo[3.2.0]heptane core
+    penicillin_scaffold_pattern = Chem.MolFromSmarts("C1([C@H]2SC3N2C(=O)C([C@@H]3C1(=O)O)(C)C)C(=O)OX")  # X here represents possible esters or amides
     if not mol.HasSubstructMatch(penicillin_scaffold_pattern):
         return False, "Penicillin scaffold not found"
-    
-    # Ensure methylation at position 2
-    methylation_pattern = Chem.MolFromSmarts("S1[C@@]2([C@H]1C)C")
-    methylation_matches = mol.GetSubstructMatches(methylation_pattern)
-    if len(methylation_matches) == 0:
+
+    # Verify the presence of the two methyl groups at position 2
+    methylation_pattern = Chem.MolFromSmarts("SC(C)(C)C")
+    if not mol.HasSubstructMatch(methylation_pattern):
         return False, "Required methyl groups at position 2 not found"
-    
-    # Carboxylate group must be present on position 3
-    carboxylate_pattern = Chem.MolFromSmarts("C(=O)O")
-    carboxylate_matches = mol.GetSubstructMatches(carboxylate_pattern)
-    if len(carboxylate_matches) == 0:
-        return False, "Carboxylate group not found at required position"
-    
-    # Carboxamido group must be present on position 6
+
+    # Carboxylate should be present, assuming variable position due to diversity
+    carboxylate_pattern = Chem.MolFromSmarts("C(=O)[O-]")
+    if not mol.HasSubstructMatch(carboxylate_pattern):
+        return False, "Carboxylate group not found"
+
+    # Carboxamido group as part of the peptidic bond
     carboxamido_pattern = Chem.MolFromSmarts("NC(=O)")
-    carboxamido_matches = mol.GetSubstructMatches(carboxamido_pattern)
-    if len(carboxamido_matches) == 0:
-        return False, "Carboxamido group not found at required position"
+    if not mol.HasSubstructMatch(carboxamido_pattern):
+        return False, "Carboxamido group not found"
 
     return True, "SMILES string represents a penicillin"
