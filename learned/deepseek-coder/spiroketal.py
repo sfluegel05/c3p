@@ -26,7 +26,7 @@ def is_spiroketal(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the spiroketal pattern: a carbon atom bonded to two oxygen atoms, each in a separate ring
+    # Define a more flexible spiroketal pattern: a carbon atom bonded to two oxygen atoms, each in a separate ring
     spiroketal_pattern = Chem.MolFromSmarts("[CX4]([OX2][*;r])[OX2][*;r]")
     
     # Search for the pattern in the molecule
