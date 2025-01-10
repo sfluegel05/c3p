@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_polyamine(smiles: str):
     """
     Determines if a molecule is a polyamine based on its SMILES string.
-    A polyamine is an organic compound with two or more amino groups.
+    A polyamine is an organic compound with two or more amino groups, including their charged counterparts.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,18 +21,22 @@ def is_polyamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # SMARTS pattern to match amino groups
-    # Matches primary (NH2), secondary (NHR), tertiary (NR2) amines
-    # Ensure we exclude non-amino nitrogen groups such as nitro groups
-    primary_amino_pattern = Chem.MolFromSmarts("[NX3;H2,H1;!$(NC=O),!$(N~N)]")  # NH2-R or NH-R
-    secondary_tertiary_amino_pattern = Chem.MolFromSmarts("[NX3;H0;!$(NC=O),!$(N~N)]")  # NR2-R (tri/quaternary)
+    # SMARTS pattern to match amino groups, including charged states
+    # Matches primary (NH2), secondary (NH), tertiary (NR) amines and charged amines
+    primary_amino_pattern = Chem.MolFromSmarts("[NX3;H2,H1;+0]")
+    secondary_amino_pattern = Chem.MolFromSmarts("[NX3;H1;+0]")
+    tertiary_amino_pattern = Chem.MolFromSmarts("[NX3;H0;+0]")
+    charged_amino_pattern = Chem.MolFromSmarts("[NX3;+1]")
     
     # Find all matches for amino groups in the molecule
     primary_amino_matches = mol.GetSubstructMatches(primary_amino_pattern)
-    secondary_tertiary_amino_matches = mol.GetSubstructMatches(secondary_tertiary_amino_pattern)
+    secondary_amino_matches = mol.GetSubstructMatches(secondary_amino_pattern)
+    tertiary_amino_matches = mol.GetSubstructMatches(tertiary_amino_pattern)
+    charged_amino_matches = mol.GetSubstructMatches(charged_amino_pattern)
     
-    # Combine both matches to find unique amino groups
-    unique_amino_matches = set(primary_amino_matches) | set(secondary_tertiary_amino_matches)
+    # Combine all matches to find unique amino groups, considering their charge
+    unique_amino_matches = set(primary_amino_matches) | set(secondary_amino_matches) | set(tertiary_amino_matches)
+    unique_amino_matches.update(charged_amino_matches)
     num_amino_groups = len(unique_amino_matches)
 
     # Check if there are 2 or more amino groups
