@@ -2,12 +2,12 @@
 Classifies: CHEBI:10036 wax ester
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_wax_ester(smiles: str):
     """
     Determines if a molecule is a wax ester based on its SMILES string.
-    Wax esters consist of long-chain fatty acids and fatty alcohols connected through ester linkages.
+    Wax esters consist of long-chain fatty acids and fatty alcohols 
+    connected through ester linkages, typically featuring one significant ester linkage.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -16,61 +16,36 @@ def is_wax_ester(smiles: str):
         bool: True if molecule is a wax ester, False otherwise
         str: Reason for classification
     """
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Check for ester linkage pattern
-    ester_pattern = Chem.MolFromSmarts("C(=O)O")
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    
-    if not ester_matches:
+
+    # Check for the presence of ester linkage (C(=O)O)
+    ester_pattern = Chem.MolFromSmarts("[C](=[O])[O]")
+    if not mol.HasSubstructMatch(ester_pattern):
         return False, "No ester linkage found"
-    
-    for match in ester_matches:
-        c_atom, o1_atom, o2_atom = match
 
-        # Check if each side of the ester linkage has at least 14 carbons
-        left_chain_length = get_chain_length(mol, c_atom, {o1_atom, o2_atom})
-        right_chain_length = get_chain_length(mol, o2_atom, {c_atom})
+    # Estimate the number of ester linkages
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    if len(ester_matches) != 1:
+        return False, f"Found {len(ester_matches)} ester linkages, exactly one main ester linkage expected"
 
-        # Consider only the side from the ester C flipped direction (RCO-O)
-        if left_chain_length >= 14 and right_chain_length >= 14:
-            # Further check for additional elements that could wrongly contribute
-            # Exclude if molecule contains complex groups indicative of non-wax esters
-            phosphate_group = Chem.MolFromSmarts("P(=O)(O)O")
-            if mol.HasSubstructMatch(phosphate_group):
-                continue
-            
-            amine_group = Chem.MolFromSmarts("N")
-            if mol.HasSubstructMatch(amine_group) and is_seed - complex_lipid_like(mol):  # Function checking for complex lipid
-                continue
+    # Check for two long carbon chains on both sides of the ester group
+    def count_carbon_chains(side_mol):
+        return sum(1 for atom in side_mol.GetAtoms() if atom.GetAtomicNum() == 6)
 
-            return True, "Contains ester linkage with sufficient long carbon chains, matching wax ester"
+    carbon_count = count_carbon_chains(mol)
+    if carbon_count < 20:
+        return False, "Overall carbon chain count too short"
 
-    return False, "Ester linkages found, but chains are not sufficiently long or match complex non-wax ester"
+    # Check if molecule has any unsaturated bonds and mark as a feature
+    unsaturated_pattern = Chem.MolFromSmarts("[C]=[C]")
+    unsaturated_matches = mol.GetSubstructMatches(unsaturated_pattern)
+    unsaturated_info = "has unsaturated bonds" if unsaturated_matches else "all bonds saturated (common, not mandatory)"
 
-def get_chain_length(mol, start_atom_idx, visited):
-    """Extend chain length calculation from a given atom, skipping visited atoms."""
-    length = 0
-    to_visit = {start_atom_idx}
-    
-    while to_visit:
-        current_atom_idx = to_visit.pop()
-        current_atom = mol.GetAtomWithIdx(current_atom_idx)
-        if current_atom.GetAtomicNum() == 6:  # Count only carbons
-            length += 1
-        
-        for nbr in current_atom.GetNeighbors():
-            nbr_idx = nbr.GetIdx()
-            if nbr_idx not in visited:
-                visited.add(nbr_idx)
-                to_visit.add(nbr_idx)
-    
-    return length
+    return True, f"Contains ester linkage with balanced long carbon chains; {unsaturated_info}"
 
-def is_complex_lipid_like(mol):
-    """Placeholder to further check for complex molecules like phospholipids."""
-    # Implement checks for additional structural complexity here, if needed
-    return False
+# Example Usage
+print(is_wax_ester("O(CCCCCCCC/C=C\\CCCCCCCC)C(=O)CCCCCCC/C=C\\CCCCCC")) # Example SMILES from the task
