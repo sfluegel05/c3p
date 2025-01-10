@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_mucopolysaccharide(smiles: str):
     """
     Determines if a molecule is a mucopolysaccharide based on its SMILES string.
-    Mucopolysaccharides are polysaccharides composed of alternating units from uronic acids 
-    and glycosamines, often esterified with sulfuric acid.
+    Mucopolysaccharides are polysaccharides composed of repeating units of sugars which may include uronic acids 
+    and glycosamines, often being partially esterified with sulfuric acid.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -16,27 +16,25 @@ def is_mucopolysaccharide(smiles: str):
         bool: True if molecule is a mucopolysaccharide, False otherwise
         str: Reason for classification
     """
-    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Refined search: Uronic acid substructure
-    uronic_acid_pattern = Chem.MolFromSmarts("[C](=O)[O][C@,C@@H]1([O,H])[C@,C@@H]([O,H])[C@,C@@H]([O,H])[C@@H]([N]([C=O]))1")  # Pattern considering sugar ring structure
-    if not mol.HasSubstructMatch(uronic_acid_pattern):
-        return False, "No uronic acid units found"
+    # Generic sugar pattern: considering sugar ring with variations
+    sugar_like_pattern = Chem.MolFromSmarts("C1OC([H,O])C([H,O])C(O)C1")
+    if not mol.HasSubstructMatch(sugar_like_pattern):
+        return False, "No sugar-like units found, unlikely to be a mucopolysaccharide"
 
-    # Refined search: Glycosamine substructure
-    glycosamine_pattern = Chem.MolFromSmarts("[C@,C@@H]1([O,H])[C@,C@@H]([O,H])[C@,C@@H]([O,H])[C@,C@@H]([N]([C=O]))1")  # Adjust sugar-like ring with amine
-    if not mol.HasSubstructMatch(glycosamine_pattern):
-        return False, "No glycosamine units found"
-    
-    # Sulfate ester group presence is optional; check for it
-    sulfate_ester_pattern = Chem.MolFromSmarts("[O][S](=O)(=O)[O]")  # Basic sulfate ester pattern
-    if not mol.HasSubstructMatch(sulfate_ester_pattern):
-        message = "Contains uronic acids and glycosamines, could be a mucopolysaccharide, but lacks observed sulfate ester groups"
+    # Look for presence of any esterification pattern, including sulfate esters
+    any_ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H0,R0]")  # General ester pattern
+    sulfate_pattern = Chem.MolFromSmarts("O[S](=O)(=O)[O]")  # Specific sulfate ester
+        
+    if mol.HasSubstructMatch(sulfate_pattern):
+        match_ester_msg = "sulfate ester groups"
+    elif mol.HasSubstructMatch(any_ester_pattern):
+        match_ester_msg = "generic ester groups"
     else:
-        message = "Contains uronic acids and glycosamines with optional sulfate ester groups, indicating mucopolysaccharide"
+        match_ester_msg = "no explicit ester groups"
 
-    return True, message
+    return True, f"Contains sugar-like units and {match_ester_msg}, indicating potential mucopolysaccharide"
