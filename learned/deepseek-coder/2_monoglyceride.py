@@ -27,9 +27,9 @@ def is_2_monoglyceride(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for glycerol backbone pattern (C-C-C with hydroxyl groups at positions 1 and 3)
-    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
+    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4]([OH])[CH2X4]")
     if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone found"
+        return False, "No glycerol backbone with hydroxyl groups at positions 1 and 3 found"
 
     # Look for ester group at position 2 (-O-C(=O)-)
     ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
@@ -65,7 +65,7 @@ def is_2_monoglyceride(smiles: str):
     
     if c_count < 10:
         return False, "Too few carbons for 2-monoglyceride"
-    if o_count != 4:
-        return False, "Must have exactly 4 oxygens (1 ester group and 2 hydroxyl groups)"
+    if o_count < 4:
+        return False, "Must have at least 4 oxygens (1 ester group and 2 hydroxyl groups)"
 
     return True, "Contains glycerol backbone with a fatty acid chain attached at position 2 via an ester bond"
