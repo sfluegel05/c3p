@@ -27,13 +27,13 @@ def is_cholesteryl_ester(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define a more flexible cholesterol backbone pattern
-    # This pattern matches the core structure of cholesterol, allowing for different stereochemistry
-    cholesterol_pattern = Chem.MolFromSmarts("[C@H]1CC[C@@H]2[C@@]1(CC[C@H]3[C@H]2CC=C4[C@@H]3CC[C@@H]4[C@@H](C)CCCC(C)C)")
+    # This pattern matches the core structure of cholesterol, allowing for different stereochemistry and hydrogen atoms
+    cholesterol_pattern = Chem.MolFromSmarts("[C@@H]1CC[C@@H]2[C@@]1(CC[C@H]3[C@H]2CC=C4[C@@H]3CC[C@@H]4[C@@H](C)CCCC(C)C)")
     if not mol.HasSubstructMatch(cholesterol_pattern):
         return False, "No cholesterol backbone found"
 
     # Look for ester group (-O-C(=O)-) attached to the 3-hydroxy group of cholesterol
-    ester_pattern = Chem.MolFromSmarts("[CX4][C@H]([OX2])[CX4][CX3](=[OX1])")
+    ester_pattern = Chem.MolFromSmarts("[CX4][OX2][CX3](=[OX1])")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) == 0:
         return False, "No ester group found attached to the cholesterol backbone"
