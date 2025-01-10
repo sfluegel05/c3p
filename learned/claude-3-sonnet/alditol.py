@@ -6,18 +6,18 @@ Classifies: CHEBI:15972 alditol
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_alditol(smiles: str):
     """
-    Determines if a molecule contains an alditol moiety based on its SMILES string.
-    An alditol is formally derivable from an aldose by reduction of the carbonyl group,
-    having the general pattern HOCH2[CH(OH)]nCH2OH, where the hydroxyls may be substituted.
+    Determines if a molecule is an alditol based on its SMILES string.
+    An alditol is an acyclic polyol with formula HOCH2[CH(OH)]nCH2OH.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule contains an alditol moiety, False otherwise
+        bool: True if molecule is an alditol, False otherwise
         str: Reason for classification
     """
     
@@ -26,74 +26,66 @@ def is_alditol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # First look for basic alditol backbone pattern:
-    # A chain of carbons where each carbon has an oxygen attached
-    # The SMARTS pattern allows for substituted oxygens
-    alditol_backbone = """
-        # Start with carbon-oxygen
-        [CX4]([OX2])
-        # Connected to at least 2 more similar carbons
-        [CX4]([OX2])[CX4]([OX2])
-        # End with carbon-oxygen
-        [CX4]([OX2])
-    """
-    alditol_pattern = Chem.MolFromSmarts(alditol_backbone.replace('\n',''))
+    # First check for basic requirements
+    # Count carbons and oxygens
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     
-    if not mol.HasSubstructMatch(alditol_pattern):
-        return False, "No alditol backbone found (needs continuous chain of carbons with oxygen substituents)"
+    if c_count < 3:
+        return False, "Too few carbons for an alditol (minimum 3)"
+    if o_count < 3:
+        return False, "Too few oxygens for an alditol (minimum 3)"
 
-    # Get the matches
-    matches = mol.GetSubstructMatches(alditol_pattern)
+    # Check for absence of carbonyl groups
+    carbonyl_pattern = Chem.MolFromSmarts("[CX3]=[OX1]")
+    if mol.HasSubstructMatch(carbonyl_pattern):
+        return False, "Contains carbonyl group(s)"
+
+    # Look for terminal CH2OH groups
+    terminal_oh_pattern = Chem.MolFromSmarts("[CH2X4][OX2H1]")
+    terminal_oh_matches = mol.GetSubstructMatches(terminal_oh_pattern)
     
-    for match in matches:
-        # Convert match atoms to a submolecule for analysis
-        match_atoms = set(match)
-        
-        # Check if these carbons form a continuous chain
-        # by looking at bonds between matched atoms
-        is_continuous = True
-        for i in range(len(match)-1):
-            bond = mol.GetBondBetweenAtoms(match[i], match[i+1])
-            if bond is None:
-                is_continuous = False
-                break
-                
-        if not is_continuous:
-            continue
-            
-        # For each carbon in the match, verify it has proper connectivity
-        valid_carbons = True
-        for atom_idx in match:
-            atom = mol.GetAtomWithIdx(atom_idx)
-            
-            # Each carbon should:
-            # - Be sp3 hybridized
-            # - Have one oxygen substituent
-            # - Have correct number of carbons attached (1 or 2 depending on position)
-            if atom.GetHybridization() != Chem.HybridizationType.SP3:
-                valid_carbons = False
-                break
-                
-            # Count oxygen and carbon neighbors
-            o_neighbors = sum(1 for n in atom.GetNeighbors() if n.GetAtomicNum() == 8)
-            c_neighbors = sum(1 for n in atom.GetNeighbors() if n.GetAtomicNum() == 6)
-            
-            if o_neighbors < 1:
-                valid_carbons = False
-                break
-                
-            # Terminal carbons should have 1 carbon neighbor
-            # Internal carbons should have 2 carbon neighbors
-            if atom_idx in (match[0], match[-1]):
-                if c_neighbors != 1:
-                    valid_carbons = False
-                    break
-            else:
-                if c_neighbors != 2:
-                    valid_carbons = False
-                    break
-        
-        if valid_carbons:
-            return True, "Contains valid alditol structure (continuous carbon chain with hydroxyl/substituted hydroxyl groups)"
-            
-    return False, "No valid alditol structure found"
+    # For pure alditols, we need exactly two terminal CH2OH groups
+    # However, some derivatives may have modifications, so we'll be lenient here
+    if len(terminal_oh_matches) < 1:
+        return False, "Missing terminal CH2OH group"
+
+    # Check for chain of carbons with OH groups
+    chain_with_oh_pattern = Chem.MolFromSmarts("[CH2X4,CHX4][OX2H1]")
+    oh_chain_matches = mol.GetSubstructMatches(chain_with_oh_pattern)
+    
+    if len(oh_chain_matches) < 3:
+        return False, "Insufficient hydroxyl groups in carbon chain"
+
+    # For pure alditols, check if the molecule is mostly linear
+    # by comparing the number of branches to the number of atoms
+    n_atoms = mol.GetNumAtoms()
+    n_branches = 0
+    for atom in mol.GetAtoms():
+        if atom.GetDegree() > 2:
+            n_branches += 1
+    
+    # Calculate ratio of branching points to total atoms
+    branch_ratio = n_branches / n_atoms if n_atoms > 0 else 1
+    
+    # If it's a pure alditol (not a derivative), it should be mostly linear
+    if branch_ratio > 0.5:
+        return False, "Too many branches for an alditol"
+
+    # Check for presence of atoms other than C, H, O
+    # (allowing for some derivatives that might contain other atoms)
+    non_cho_atoms = sum(1 for atom in mol.GetAtoms() 
+                       if atom.GetAtomicNum() not in [1, 6, 8])
+    
+    if non_cho_atoms > 0:
+        # This might be an alditol derivative
+        return True, "Appears to be an alditol derivative"
+    
+    # If we've made it here, check the ratio of OH groups to carbons
+    # For pure alditols, this should be close to 1
+    oh_ratio = o_count / c_count
+    
+    if 0.8 <= oh_ratio <= 1.2:
+        return True, "Pure alditol structure detected"
+    else:
+        return True, "Possible alditol derivative"
