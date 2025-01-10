@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_butyrate_ester(smiles: str):
     """
     Determines if a molecule is a butyrate ester based on its SMILES string.
-    A butyrate ester contains a butyric acid moiety (4-carbon chain) attached via an ester linkage.
+    Includes more pattern variations and structure verification to capture true butyrate esters.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,17 +21,19 @@ def is_butyrate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the butyrate ester pattern: R'C(=O)O-R, with specific pattern for butyrate (4-carbon chain)
-    butyrate_ester_pattern = Chem.MolFromSmarts("C(=O)OCC[CH2]C")
+    # Define SMARTS patterns for butyrate ester variations, considering both straight-chain and branched forms
+    ester_linkage_pattern = "C(=O)O"
+    carbon_chain_4 = "CCCC"
+    branched_chain = "C(C)CC"
+    ester_patterns = [
+        Chem.MolFromSmarts(ester_linkage_pattern + carbon_chain_4),  # Straight-chain butyrate
+        Chem.MolFromSmarts(ester_linkage_pattern + branched_chain),  # Branched-chain butyrate
+        Chem.MolFromSmarts(ester_linkage_pattern + "C[CH2]C"),       # Account for middle carbon variation
+    ]
     
-    # Check for both main and branched variations of the butyrate plus ester linkage
-    standard_matches = mol.GetSubstructMatches(butyrate_ester_pattern)
+    # Check for matches with any of the ester pattern variations
+    for pattern in ester_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return True, "Contains butyrate ester functional group with valid structure"
     
-    # Also check for common branched or isomer variations of butyrate esters
-    branched_butyrate_pattern = Chem.MolFromSmarts("C(=O)O[C](C)CC")
-    branched_matches = mol.GetSubstructMatches(branched_butyrate_pattern)
-
-    if standard_matches or branched_matches:
-        return True, "Contains butyrate ester functional group with valid structure"
-
     return False, "No valid butyrate ester group found"
