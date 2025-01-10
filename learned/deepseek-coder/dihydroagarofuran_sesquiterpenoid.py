@@ -25,15 +25,16 @@ def is_dihydroagarofuran_sesquiterpenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the core dihydroagarofuran skeleton pattern
-    dihydroagarofuran_pattern = Chem.MolFromSmarts("[C@H]12[C@@H](OC(=O)*)[C@H](OC(=O)*)[C@]3(COC(=O)*)[C@H](OC(=O)*)[C@@H](OC(=O)*)[C@]4([H])[C@@H](OC(=O)*)[C@]3(O[C@@]14C)[C@@]2(C)O")
+    # Define a more flexible core dihydroagarofuran skeleton pattern
+    # This pattern captures the tricyclic system with oxygen atoms in the rings
+    dihydroagarofuran_pattern = Chem.MolFromSmarts("[C@H]12[C@@H](O)[C@H](O)[C@]3(CO)[C@H](O)[C@@H](O)[C@]4([H])[C@@H](O)[C@]3(O[C@@]14C)[C@@]2(C)O")
     if not mol.HasSubstructMatch(dihydroagarofuran_pattern):
         return False, "No dihydroagarofuran skeleton found"
 
-    # Check for sesquiterpenoid characteristics (15 carbons)
+    # Check for sesquiterpenoid characteristics (15 carbons in the core, but allow for additional carbons due to substituents)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count != 15:
-        return False, f"Expected 15 carbons for sesquiterpenoid, found {c_count}"
+    if c_count < 15:
+        return False, f"Expected at least 15 carbons for sesquiterpenoid, found {c_count}"
 
     # Check for oxygen-containing functional groups (esters, hydroxyls)
     ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
