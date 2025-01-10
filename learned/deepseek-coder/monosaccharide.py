@@ -32,73 +32,34 @@ def is_monosaccharide(smiles: str):
     if c_count < 3:
         return False, "Less than three carbon atoms, not a monosaccharide"
 
-    # Check for polyhydroxy structure (at least two hydroxyl groups)
-    hydroxyl_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetTotalNumHs() >= 1)
-    if hydroxyl_count < 2:
-        return False, "Insufficient hydroxyl groups for a monosaccharide"
-
-    # Check for a carbonyl group (aldehyde or ketone)
+    # Check for potential carbonyl group (aldehyde or ketone)
+    # Including both explicit and potential (hydrated) forms
     carbonyl_pattern = Chem.MolFromSmarts("[CX3]=[OX1]")
-    if not mol.HasSubstructMatch(carbonyl_pattern):
+    potential_carbonyl = Chem.MolFromSmarts("[CX4]([OH])[OH]")  # Hydrated carbonyl
+    if not (mol.HasSubstructMatch(carbonyl_pattern) or mol.HasSubstructMatch(potential_carbonyl)):
         return False, "No carbonyl group (aldehyde or ketone) found"
 
-    # Check for glycosidic bonds (indicating oligo/polysaccharide)
-    glycosidic_pattern = Chem.MolFromSmarts("[OX2][CX4][CX4][OX2]")
+    # Check for hydroxyl groups (at least one required)
+    hydroxyl_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetTotalNumHs() >= 1)
+    if hydroxyl_count < 1:
+        return False, "Insufficient hydroxyl groups for a monosaccharide"
+
+    # Check for glycosidic bonds (more reliable pattern)
+    # Looking for O-C-O-C pattern where both oxygens are connected to carbons
+    glycosidic_pattern = Chem.MolFromSmarts("[OX2;H0][CX4][CX4][OX2;H0]")
     if mol.HasSubstructMatch(glycosidic_pattern):
         return False, "Glycosidic bond detected, likely part of an oligo/polysaccharide"
 
-    # Check for ring structure (common in monosaccharides)
-    ring_info = mol.GetRingInfo()
-    if not ring_info.NumRings():
-        return False, "No ring structure found, uncommon for monosaccharides"
+    # Check molecular weight (monosaccharides typically < 1000 Da)
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt > 1000:
+        return False, "Molecular weight too high for a monosaccharide"
 
-    # Check for typical monosaccharide ring size (5 or 6 atoms)
-    ring_sizes = set()
-    for ring in ring_info.AtomRings():
-        ring_sizes.add(len(ring))
-    if not (5 in ring_sizes or 6 in ring_sizes):
-        return False, "Ring size not typical for monosaccharides (expected 5 or 6 atoms)"
+    # Check for typical monosaccharide composition
+    # Should have more oxygens than nitrogens
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
+    if n_count > o_count:
+        return False, "Too many nitrogen atoms for a typical monosaccharide"
 
-    return True, "Polyhydroxy aldehyde or ketone with at least three carbon atoms, no glycosidic bonds, and typical ring structure"
-
-
-__metadata__ = {   'chemical_class': {   'id': 'CHEBI:35381',
-                          'name': 'monosaccharide',
-                          'definition': 'Parent monosaccharides are polyhydroxy '
-                                        'aldehydes H[CH(OH)]nC(=O)H or '
-                                        'polyhydroxy ketones H-[CHOH]n-C(=O)[CHOH]m-H '
-                                        'with three or more carbon atoms. The generic '
-                                        'term \'monosaccharide\' (as opposed to '
-                                        'oligosaccharide or polysaccharide) denotes a '
-                                        'single unit, without glycosidic connection to '
-                                        'other such units. It includes aldoses, '
-                                        'dialdoses, aldoketoses, ketoses and diketoses, '
-                                        'as well as deoxy sugars, provided that the '
-                                        'parent compound has a (potential) carbonyl '
-                                        'group.',
-                          'parents': ['CHEBI:33838', 'CHEBI:33839']},
-    'config': {   'llm_model_name': 'lbl/claude-sonnet',
-                  'f1_threshold': 0.8,
-                  'max_attempts': 5,
-                  'max_positive_instances': None,
-                  'max_positive_to_test': None,
-                  'max_negative_to_test': None,
-                  'max_positive_in_prompt': 50,
-                  'max_negative_in_prompt': 20,
-                  'max_instances_in_prompt': 100,
-                  'test_proportion': 0.1},
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 150,
-    'num_false_positives': 4,
-    'num_true_negatives': 182407,
-    'num_false_negatives': 23,
-    'num_negatives': None,
-    'precision': 0.974025974025974,
-    'recall': 0.8670520231213873,
-    'f1': 0.9174311926605504,
-    'accuracy': 0.9998521228585199}
+    return True, "Polyhydroxy aldehyde or ketone with at least three carbon atoms, no glycosidic bonds, and appropriate composition"
