@@ -29,45 +29,64 @@ def is_branched_chain_fatty_acid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for the presence of a carboxylic acid group (C(=O)O[H])
-    carboxylic_acid_pattern = Chem.MolFromSmarts('C(=O)[OH]')
+    carboxylic_acid_pattern = Chem.MolFromSmarts('C(=O)[O;H1]')
     carboxy_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
     if not carboxy_matches:
         return False, "No carboxylic acid group found"
 
-    # Get the carboxyl carbon atom
+    # Get the carboxyl carbon atom index
     carboxyl_carbon_idx = carboxy_matches[0][0]
-    carboxyl_carbon = mol.GetAtomWithIdx(carboxyl_carbon_idx)
 
-    # Find the alpha carbon (carbon adjacent to the carboxyl carbon)
-    alpha_carbons = [nbr for nbr in carboxyl_carbon.GetNeighbors() if nbr.GetAtomicNum() == 6]
-    if not alpha_carbons:
-        return False, "No alpha carbon found"
-    alpha_carbon = alpha_carbons[0]
+    # Find all acyclic paths (i.e., chains) starting from the carboxyl carbon
+    # We will identify the longest carbon chain as the main fatty acyl chain
+    from collections import deque
 
-    # Traverse the hydrocarbon chain starting from the alpha carbon
     visited = set()
-    stack = [(alpha_carbon, carboxyl_carbon)]  # (current_atom, previous_atom)
+    max_chain = []
+    branching_found = False
 
-    while stack:
-        current_atom, prev_atom = stack.pop()
-        visited.add(current_atom.GetIdx())
-        
-        # Get all carbon neighbors excluding the previous atom
+    queue = deque()
+    queue.append((carboxyl_carbon_idx, [carboxyl_carbon_idx]))
+
+    while queue:
+        current_atom_idx, path = queue.popleft()
+        visited.add(current_atom_idx)
+        current_atom = mol.GetAtomWithIdx(current_atom_idx)
+
+        # Track the longest chain
+        if len(path) > len(max_chain):
+            max_chain = path
+
+        # Get neighbors excluding oxygens (to stay within the carbon chain)
         neighbors = [
-            nbr for nbr in current_atom.GetNeighbors()
-            if nbr.GetAtomicNum() == 6 and nbr.GetIdx() != prev_atom.GetIdx()
+            nbr.GetIdx() for nbr in current_atom.GetNeighbors()
+            if nbr.GetAtomicNum() == 6 and nbr.GetIdx() not in path
         ]
-        
-        # Check if the current carbon atom is a branching point
-        if len(neighbors) > 1:
-            return True, "Branched chain found in hydrocarbon chain"
-        
-        # Add unvisited carbon neighbors to the stack
-        for nbr in neighbors:
-            if nbr.GetIdx() not in visited:
-                stack.append((nbr, current_atom))
 
-    # If no branching points are found, it's a linear fatty acid
+        # Check for branching: if current atom has more than one carbon neighbor not in path
+        num_carbon_neighbors = sum(1 for nbr in current_atom.GetNeighbors() if nbr.GetAtomicNum() == 6)
+        if num_carbon_neighbors > 2:
+            branching_found = True
+
+        for nbr_idx in neighbors:
+            queue.append((nbr_idx, path + [nbr_idx]))
+
+    if not max_chain:
+        return False, "No hydrocarbon chain found"
+
+    # After finding the main chain, check for branches
+    main_chain_set = set(max_chain)
+    for atom_idx in max_chain:
+        atom = mol.GetAtomWithIdx(atom_idx)
+        for nbr in atom.GetNeighbors():
+            nbr_idx = nbr.GetIdx()
+            if nbr.GetAtomicNum() == 6 and nbr_idx not in main_chain_set:
+                # Found a carbon branch off the main chain
+                return True, "Branched chain found in hydrocarbon chain"
+
+    if branching_found:
+        return True, "Branched chain found in hydrocarbon chain"
+
     return False, "No branching in hydrocarbon chain"
 
 __metadata__ = {
@@ -90,18 +109,9 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 0,
+    'attempt': 1,
     'success': True,
     'best': True,
     'error': '',
-    'stdout': None,
-    'num_true_positives': 150,
-    'num_false_positives': 4,
-    'num_true_negatives': 182407,
-    'num_false_negatives': 23,
-    'num_negatives': None,
-    'precision': 0.974025974025974,
-    'recall': 0.8670520231213873,
-    'f1': 0.9174311926605504,
-    'accuracy': 0.9998521228585199
+    'stdout': None
 }
