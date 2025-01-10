@@ -20,22 +20,23 @@ def is_polyprenol_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Pattern for isoprene unit (repeated in polyprenols): [C=C(C)CCC]
-    isoprene_pattern = Chem.MolFromSmarts("C=C(C)CCC")
-    isoprene_matches = len(mol.GetSubstructMatches(isoprene_pattern))
+    # Look for isoprene units, generalized pattern to capture stereochemistry and variations
+    # Generically detect: [C=C(C)CC]
+    isoprene_pattern_general = Chem.MolFromSmarts("C=C(C)CC")
+    isoprene_matches = len(mol.GetSubstructMatches(isoprene_pattern_general))
     if isoprene_matches < 3:
-        # At least 3 isoprene units expected for polyprenyl chains
         return False, f"Found {isoprene_matches} isoprene units, need at least 3 for a polyprenol chain"
-
-    # Pattern for phosphate group: [OP(=O)(O)O]
-    phosphate_pattern = Chem.MolFromSmarts("OP(=O)(O)O")
-    phosphate_matches = len(mol.GetSubstructMatches(phosphate_pattern))
+    
+    # Identify phosphate group, adjusted pattern: [OP(=O)(O)]
+    phosphate_pattern_general = Chem.MolFromSmarts("OP(=O)(O)")
+    phosphate_matches = len(mol.GetSubstructMatches(phosphate_pattern_general))
     if phosphate_matches < 1:
         return False, "No phosphate group found"
 
-    # Check for connection between polyprenol chain and phosphate group
-    if not mol.HasSubstructMatch(Chem.MolFromSmarts("CCC[OH]P(=O)(O)O")):
-        # This is a strong pattern check combining a polyprenol terminal with phosphate linkage
+    # Check for connection between polyprenol chain and phosphate group (terminal C to P linkage)
+    # Relax strict terminal checking, check extension from one end involves O-P linkage
+    connection_pattern = Chem.MolFromSmarts("C-O-P(=O)(O)C") 
+    if not mol.HasSubstructMatch(connection_pattern):
         return False, "Polyprenol chain not appropriately connected to phosphate group"
 
     return True, "Molecule is a polyprenol phosphate"
