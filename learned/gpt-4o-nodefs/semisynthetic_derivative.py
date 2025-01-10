@@ -11,7 +11,7 @@ def is_semisynthetic_derivative(smiles: str):
     Determines if a molecule is classified as a semisynthetic derivative based on its SMILES string.
     Since semisynthetic derivatives are defined by their synthesis origin, rather than structure alone,
     this classification cannot be reliably determined from SMILES alone.
-    
+
     Args:
         smiles (str): SMILES string of the molecule
 
