@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_alkanesulfonate_oxoanion(smiles: str):
     """
     Determines if a molecule is an alkanesulfonate oxoanion based on its SMILES string.
-    An alkanesulfonate oxoanion contains a sulfonate group (SO3-) attached to an alkane,
-    which implies non-participation in olefinic or aromatic bonds directly at the attachment point.
+    An alkanesulfonate oxoanion typically contains a sulfonate group (SO3-) attached to a
+    saturated carbon atom not involved in olefinic or aromatic interactions.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,11 +20,12 @@ def is_alkanesulfonate_oxoanion(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Improve SMARTS patterns to specify context around the sulfonate
-    # The carbon directly bonded to S should not be involved in double bonds (ensure no ketones, etc.)
-    carbon_sulfonate_pattern = Chem.MolFromSmarts("[CX4][S]([O-])(=O)=O")
-    if mol.HasSubstructMatch(carbon_sulfonate_pattern):
+    
+    # SMARTS pattern for sulfonate group attached to alkane-like carbon
+    # [CX4] denotes sp3 hybridized carbon indicating a saturated carbon like in alkane
+    alkane_sulfonate_pattern = Chem.MolFromSmarts("[CX4;!R][S]([O-])(=O)=O")
+    
+    if mol.HasSubstructMatch(alkane_sulfonate_pattern):
         return True, "Contains a sulfonate group appropriately bonded to an alkane-like carbon"
 
     return False, "No matching alkanesulfonate oxoanion structure found"
