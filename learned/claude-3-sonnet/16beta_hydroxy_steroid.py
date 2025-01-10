@@ -28,14 +28,16 @@ def is_16beta_hydroxy_steroid(smiles: str):
     mol = Chem.AddHs(mol)
     
     try:
-        # Define multiple steroid core patterns to catch different variants
+        # More flexible steroid core patterns that allow for variations
         steroid_patterns = [
-            # Basic steroid core (more flexible)
-            "[#6]~1~[#6]~[#6]~[#6]~2~[#6]~[#6]~[#6]~3~[#6]~[#6]~[#6]~4~[#6]~[#6]~[#6]~[#6]~4~[#6]~3~[#6]~2~1",
-            # Alternative pattern with more specific bond types
-            "C~1~C~C~C~2~C~C~C~3~C~C~C~4~C~C~C(O)~C~4~C~3~C~2~1",
-            # Pattern for estrane derivatives
-            "c1cc2C~C~C~3~C~C~C~4~C~C~C(O)~C~4~C~3~C~c2cc1"
+            # Basic 4-ring system with flexible connectivity
+            "*~1~*~*~*~2~*~*~*~3~*~*~*~4~*~*~*~*~4~*~3~*~2~1",
+            
+            # Alternative pattern allowing for different bond types
+            "*~1~*~*~*~2~*~*~*~3~*~*~*~4~*~*~*~*~4~*~3~*~2~1",
+            
+            # Pattern for modified steroids
+            "*~1~*~*~*~2~*~*~*~3~*~*~*~*~*~3~*~2~1"
         ]
         
         has_steroid_core = False
@@ -46,16 +48,18 @@ def is_16beta_hydroxy_steroid(smiles: str):
                 break
                 
         if not has_steroid_core:
-            return False, "No steroid core structure found"
+            return False, "No steroid-like ring system found"
 
-        # Pattern specifically for 16-beta-hydroxy
-        # This pattern looks for the D ring with a beta-OH at position 16
-        # The [C@@H] ensures beta stereochemistry
+        # Patterns for 16-beta-hydroxy group with different possible environments
         beta_oh_patterns = [
-            # Pattern for saturated D ring with 16β-OH
-            "[C]~1~[C]~[C]~[C]~2~[C]~[C]~[C]~3~[C@@H](O)~[C]~[C]~[C]~3~[C]~2~1",
-            # Alternative pattern with more explicit stereochemistry
-            "[#6]~1~[#6]~[#6]~[#6]~2~[#6]~[#6]~[#6]~3~[C@@H](O)~[#6]~[#6]~[#6]~3~[#6]~2~1"
+            # General pattern for 16β-OH with beta stereochemistry
+            "[C,c]~1~[C,c]~[C,c]~[C,c]~2~[C,c]~[C,c]~[C,c]~3~[C@@H](O)~[C,c]~[C,c]~[C,c]~3~[C,c]~2~1",
+            
+            # Alternative pattern focusing on the D-ring with 16β-OH
+            "[C,c]~1~[C,c]~[C,c]~2~[C@@H](O)~[C,c]~[C,c]~[C,c]~2~1",
+            
+            # More specific pattern for common steroid variations
+            "[C,c]~1~[C,c]~[C,c]~[C,c](@[C,c])~2~[C@@H](O)~[C,c]~[C,c]~2~1"
         ]
         
         has_16beta_oh = False
@@ -66,24 +70,23 @@ def is_16beta_hydroxy_steroid(smiles: str):
                 break
                 
         if not has_16beta_oh:
-            return False, "No 16-beta-hydroxy group found or wrong stereochemistry"
+            return False, "No 16-beta-hydroxy group found or incorrect stereochemistry"
 
-        # Basic molecular property checks
+        # Count carbons and check for reasonable steroid size
         carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-        if carbon_count < 17:
+        if carbon_count < 10:  # More permissive minimum carbon count
             return False, f"Too few carbons ({carbon_count}) for a steroid structure"
 
-        # Count oxygens (need at least one for the hydroxy group)
-        oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-        if oxygen_count < 1:
-            return False, "No oxygen atoms found"
-
-        # Additional check for hydroxyl group
+        # Verify presence of hydroxy group
         hydroxy_pattern = Chem.MolFromSmarts("[OH]")
         if not mol.HasSubstructMatch(hydroxy_pattern):
             return False, "No hydroxy group found"
 
-        return True, "Contains steroid core with 16-beta-hydroxy group"
+        # Check for reasonable molecular size
+        if mol.GetNumAtoms() < 15:  # Including hydrogens
+            return False, "Molecule too small to be a steroid"
+
+        return True, "Contains steroid-like core with 16-beta-hydroxy group"
 
     except Exception as e:
         return False, f"Error in structure analysis: {str(e)}"
