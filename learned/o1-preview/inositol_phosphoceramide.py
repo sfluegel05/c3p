@@ -2,12 +2,13 @@
 Classifies: CHEBI:60245 inositol phosphoceramide
 """
 from rdkit import Chem
+from rdkit.Chem import rdmolops
 
 def is_inositol_phosphoceramide(smiles: str):
     """
     Determines if a molecule is an inositol phosphoceramide based on its SMILES string.
-    An inositol phosphoceramide consists of an inositol residue linked via a phosphodiester bridge
-    to a ceramide moiety (sphingoid base linked via an amide bond to a fatty acyl chain).
+    An inositol phosphoceramide consists of an inositol residue (possibly substituted) linked via
+    a phosphodiester bridge to a ceramide moiety (sphingoid base linked via an amide bond to a fatty acyl chain).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,58 +23,71 @@ def is_inositol_phosphoceramide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Identify inositol ring (cyclohexane ring with hydroxyl groups on each carbon)
-    inositol_pattern = Chem.MolFromSmarts("C1[C@H](O)[C@H](O)[C@H](O)[C@H](O)[C@H](O)[C@H]1O")
-    inositol_match = mol.GetSubstructMatch(inositol_pattern)
-    if not inositol_match:
-        return False, "No inositol ring found"
-
-    # Identify phosphate group (phosphoric acid ester)
-    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)(O)")
-    phosphate_match = mol.GetSubstructMatch(phosphate_pattern)
-    if not phosphate_match:
+    # Identify phosphate groups (phosphoric acid esters with two singly bonded oxygens)
+    phosphate_pattern = Chem.MolFromSmarts("[P](=O)(O)(O)")
+    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
+    if not phosphate_matches:
         return False, "No phosphate group found"
 
-    # Identify ceramide moiety (amide connected to long-chain sphingoid base)
-    ceramide_pattern = Chem.MolFromSmarts("C(=O)NCCO")
-    ceramide_match = mol.GetSubstructMatch(ceramide_pattern)
-    if not ceramide_match:
-        return False, "No ceramide moiety found"
+    # Identify inositol ring pattern (cyclohexane ring with at least 5 hydroxyl groups)
+    inositol_pattern = Chem.MolFromSmarts("C1C[C@H](O)C[C@H](O)C[C@H](O)C1")
+    # Allow for substitutions on the ring (e.g., mannose attached)
+    # We'll check for a cyclohexane ring with at least 5 hydroxyl groups
 
-    # Check connectivity between inositol ring and phosphate group
-    inositol_atoms = set(inositol_match)
-    phosphorus_idx = phosphate_match[0]  # Index of phosphorus atom in phosphate group
-    phosphate_atom = mol.GetAtomWithIdx(phosphorus_idx)
+    # Identify ceramide pattern (amide bond connected to a long chain with hydroxyl groups)
+    ceramide_pattern = Chem.MolFromSmarts("C(=O)N[C@@H]([*])[#6]-[#6]-[#6]-[#6]-[#6]-[#6]")  # Simplified pattern
 
-    # Check if phosphate is connected to inositol ring via oxygen
-    phosphate_connected_to_inositol = False
-    for oxygen in phosphate_atom.GetNeighbors():
-        if oxygen.GetAtomicNum() == 8:
-            oxygen_idx = oxygen.GetIdx()
-            for inositol_atom_idx in inositol_atoms:
-                path = Chem.rdmolops.GetShortestPath(mol, oxygen_idx, inositol_atom_idx)
-                if len(path) == 2:
-                    phosphate_connected_to_inositol = True
-                    break
-            if phosphate_connected_to_inositol:
-                break
-    if not phosphate_connected_to_inositol:
-        return False, "Phosphate group is not connected to inositol ring"
+    for match in phosphate_matches:
+        phosphorus_idx = match[0]
+        phosphorus_atom = mol.GetAtomWithIdx(phosphorus_idx)
 
-    # Check if phosphate is connected to ceramide moiety via oxygen
-    ceramide_atoms = set(ceramide_match)
-    phosphate_connected_to_ceramide = False
-    for oxygen in phosphate_atom.GetNeighbors():
-        if oxygen.GetAtomicNum() == 8:
-            oxygen_idx = oxygen.GetIdx()
-            for ceramide_atom_idx in ceramide_atoms:
-                path = Chem.rdmolops.GetShortestPath(mol, oxygen_idx, ceramide_atom_idx)
-                if path and len(path) <= 5:
-                    phosphate_connected_to_ceramide = True
-                    break
-            if phosphate_connected_to_ceramide:
-                break
-    if not phosphate_connected_to_ceramide:
-        return False, "Phosphate group is not connected to ceramide moiety"
+        # Get oxygen atoms singly bonded to phosphorus
+        oxygen_atoms = [nbr for nbr in phosphorus_atom.GetNeighbors()
+                        if nbr.GetAtomicNum() == 8 and
+                        mol.GetBondBetweenAtoms(phosphorus_idx, nbr.GetIdx()).GetBondType() == Chem.rdchem.BondType.SINGLE]
 
-    return True, "Contains inositol phosphoceramide structure"
+        if len(oxygen_atoms) < 2:
+            continue  # Not a phosphodiester bridge
+
+        connected_fragments = []
+        for oxygen_atom in oxygen_atoms:
+            frag_atoms = rdmolops.GetConnectedAtomIndices(mol, oxygen_atom.GetIdx(), excludeAtoms={phosphorus_idx})
+            frag_mol = Chem.PathToSubmol(mol, frag_atoms)
+            connected_fragments.append(frag_mol)
+
+        if len(connected_fragments) < 2:
+            continue
+
+        inositol_found = False
+        ceramide_found = False
+
+        for frag in connected_fragments:
+            # Check for inositol ring with at least 5 hydroxyl groups
+            ring_info = frag.GetRingInfo()
+            has_inositol_ring = False
+            for ring in ring_info.AtomRings():
+                if len(ring) == 6:
+                    # Count hydroxyl groups attached to ring carbons
+                    hydroxyl_count = 0
+                    for idx in ring:
+                        atom = frag.GetAtomWithIdx(idx)
+                        if atom.GetAtomicNum() == 6:  # Carbon
+                            for nbr in atom.GetNeighbors():
+                                if nbr.GetAtomicNum() == 8 and nbr.GetDegree() == 1:
+                                    hydroxyl_count += 1
+                    if hydroxyl_count >= 5:
+                        has_inositol_ring = True
+                        break
+            if has_inositol_ring:
+                inositol_found = True
+                continue
+
+            # Check for ceramide moiety
+            if frag.HasSubstructMatch(ceramide_pattern):
+                ceramide_found = True
+                continue
+
+        if inositol_found and ceramide_found:
+            return True, "Contains inositol phosphoceramide structure"
+
+    return False, "Does not contain inositol phosphoceramide structure"
