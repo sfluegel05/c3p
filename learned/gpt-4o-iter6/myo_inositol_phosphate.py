@@ -22,12 +22,12 @@ def is_myo_inositol_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for myo-inositol core
-    myo_inositol_pattern = Chem.MolFromSmarts("C1(O)C(O)C(O)C(O)C(O)C1")
+    # Define SMARTS pattern for myo-inositol core with stereochemistry
+    myo_inositol_pattern = Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@H](O)[C@@H](O)[C@H](O)[C@H]1O")
     
     # Check for presence of myo-inositol core
     if not mol.HasSubstructMatch(myo_inositol_pattern):
-        return False, "No myo-inositol core structure found"
+        return False, "No myo-inositol core structure with correct stereochemistry found"
     
     # Define SMARTS pattern for phosphate group
     phosphate_pattern = Chem.MolFromSmarts("OP(O)(O)=O")
@@ -36,25 +36,13 @@ def is_myo_inositol_phosphate(smiles: str):
     phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
     if not phosphate_matches:
         return False, "No phosphate groups found"
-    
-    # Ensure direct attachment of phosphate to the inositol core
-    phosphate_attached = False
-    for match in phosphate_matches:
-        for atom_idx in match:
-            atom = mol.GetAtomWithIdx(atom_idx)
-            if atom.GetSymbol() == 'O':  # We assume P=O connection.
-                for neighbor in atom.GetNeighbors():
-                    if neighbor.GetAtomicNum() == 6:  # Check if P-O connects to inositol's carbon.
-                        cycle_info = neighbor.IsInRingSize(6)
-                        if cycle_info:  # Check for membership in a 6-membered ring, characteristic of inositol
-                            phosphate_attached = True
-                            break
-                if phosphate_attached:
-                    break
-        if phosphate_attached:
-            break
-            
-    if not phosphate_attached:
-        return False, "Phosphate not directly attached to inositol core"
 
-    return True, "Valid myo-inositol phosphate with correctly placed phosphate groups"
+    # Ensure direct attachment of phosphate to the inositol core
+    for phosphate_match in phosphate_matches:
+        phosphate_atom = mol.GetAtomWithIdx(phosphate_match[0])
+        # Check all neighbors to find carbon (to ensure attachment to the inositol core)
+        attached_to_inositol = any(neighbor.IsInRingSize(6) and neighbor.GetAtomicNum() == 6 for neighbor in phosphate_atom.GetNeighbors())
+        if attached_to_inositol:
+            return True, "Valid myo-inositol phosphate with correctly placed phosphate groups"
+
+    return False, "Phosphate not directly attached to inositol core"
