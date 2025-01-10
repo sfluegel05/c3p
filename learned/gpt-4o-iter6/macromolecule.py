@@ -2,7 +2,6 @@
 Classifies: CHEBI:33839 macromolecule
 """
 from rdkit import Chem
-from rdkit.Chem import Descriptors
 from rdkit.Chem import rdMolDescriptors
 
 def is_macromolecule(smiles: str):
@@ -12,11 +11,11 @@ def is_macromolecule(smiles: str):
     composed of repetitive units derived from low molecular mass molecules.
     
     Args:
-        smiles (str): SMILES string of the molecule
+        smiles (str): SMILES string of the molecule.
 
     Returns:
-        bool: True if the molecule is a macromolecule, False otherwise
-        str: Reason for classification
+        bool: True if the molecule is a macromolecule, False otherwise.
+        str: Reason for classification.
     """
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
@@ -26,20 +25,22 @@ def is_macromolecule(smiles: str):
     # Calculate molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     
-    # Check for high molecular weight (arbitrary cutoff for demonstration, e.g., 2000 Da)
-    if mol_wt >= 2000:
+    # Check for high molecular weight - typically in 5000 Da or greater for common macromolecules
+    if mol_wt >= 5000:
         return True, f"Molecule has high molecular weight: {mol_wt:.2f} Da"
     
-    # Approximate check for repeating units by counting large ring systems or long chains
-    # Check number of heavy atoms
-    num_atoms = mol.GetNumAtoms()
+    # Count total number of heavy atoms (typically exceeding 100 indicates macromolecule)
+    atom_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() > 1)
     
-    # Some polymers might be linear with a high number of heavy atoms
-    if num_atoms >= 100:  # Arbitrary number for demonstration
-        return True, f"Molecule has a large number of atoms: {num_atoms}"
-
+    # For checking repeating units, we look at ring or similar structures — indicative for synthetic polymers like nylons, polyesters
+    unique_subunits = Chem.GetSymmSSSR(mol)
+    
+    # Approximate check for large number of atoms and repeating subunits might denote a polymeric nature
+    if atom_count >= 100 or len(unique_subunits) > 10:
+        return True, f"Molecule has a large number of atoms ({atom_count}) or repeating substructures ({len(unique_subunits)})"
+    
     return False, "Molecule does not meet criteria for a macromolecule"
 
 # Example testing
-example_smiles = "C1CC2=C(NC1=O)C(=O)N(C(=O)N2)C(C(=O)N3CCC(=O)N(C3=O)C4=CC=CC=C4)C5CCCN5"
+example_smiles = "O1[C@H](O[C@H]2OC(CO)C(O)C2O[C@@H](C(O)CO)O[C@@H]3O[C@@H]([C@@H](O)C(O)[C@H]3O)CO)C(O)C(O)[C@H](CO)O[C@H]4OC(CO)C(O)C4O"
 print(is_macromolecule(example_smiles))
