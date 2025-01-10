@@ -20,18 +20,31 @@ def is_neoflavonoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a phenylcoumarin pattern (backbone for many neoflavonoids)
-    phenylcoumarin_pattern = Chem.MolFromSmarts('O=C1OC2=C([C]=C(C=2)C3=CC=CC=C3)C1')
-    if not mol.HasSubstructMatch(phenylcoumarin_pattern):
-        return False, "No phenylcoumarin backbone found"
+    # Various patterns associated with neoflavonoids (broader than previously)
+    # Chroman and furan backbone-like structures could be seen in neoflavonoids
+    chroman_like_patterns = [
+        # Pattern for central chroman structure or similar
+        Chem.MolFromSmarts('O1C=2C(C=CC(O)=C2C3=CC=CC=C3)=CO1'),
+        # Furan-like structure in some neoflavonoids
+        Chem.MolFromSmarts('O1C=2C(C=CC(O)=C2)CO1')
+    ]
 
-    # Check for the variety of functional groups prevalent in neoflavonoids
-    if not (mol.HasSubstructMatch(Chem.MolFromSmarts('O')) or  # Presence of hydroxyl groups
-            mol.HasSubstructMatch(Chem.MolFromSmarts('OC')) or # Methoxy groups
-            mol.HasSubstructMatch(Chem.MolFromSmarts('COC'))): # More complex ethers
-        return False, "Lacks characteristic functional groups of neoflavonoids"
+    # Checking for any of these potential backbones
+    if not any(mol.HasSubstructMatch(pattern) for pattern in chroman_like_patterns):
+        return False, "No chroman-like or furan-like pattern found typical of neoflavonoids"
     
-    # Further checks might include confirmations for additional specific substitutions
-    # like additional oxygen groups, branching alkenyl chains etc.
+    # Check for functional groups commonly seen in neoflavonoids
+    # Hydroxyl, methoxy, ester, ketone, etc.
+    # More diversified search for functional groups than previous
+    functional_group_patterns = [
+        # Hydroxyl groups, methoxy, ethers
+        Chem.MolFromSmarts('[OX2H]'),      # Hydroxyl
+        Chem.MolFromSmarts('CO'),          # Methoxy/Ether
+        Chem.MolFromSmarts('[CX3](=O)O'),  # Ester
+        Chem.MolFromSmarts('C=O')          # Carbonyl
+    ]
 
-    return True, "Contains phenylcoumarin backbone with characteristic functional groups of neoflavonoids"
+    if not any(mol.HasSubstructMatch(fg_pattern) for fg_pattern in functional_group_patterns):
+        return False, "Lacks characteristic oxygenated functional groups of neoflavonoids"
+
+    return True, "Contains chroman-like or furan-like backbone with characteristic functional groups of neoflavonoids"
