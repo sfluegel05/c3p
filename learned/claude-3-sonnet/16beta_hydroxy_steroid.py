@@ -27,66 +27,35 @@ def is_16beta_hydroxy_steroid(smiles: str):
     # Add explicit hydrogens for stereochemistry
     mol = Chem.AddHs(mol)
     
-    try:
-        # More flexible steroid core patterns that allow for variations
-        steroid_patterns = [
-            # Basic 4-ring system with flexible connectivity
-            "*~1~*~*~*~2~*~*~*~3~*~*~*~4~*~*~*~*~4~*~3~*~2~1",
-            
-            # Alternative pattern allowing for different bond types
-            "*~1~*~*~*~2~*~*~*~3~*~*~*~4~*~*~*~*~4~*~3~*~2~1",
-            
-            # Pattern for modified steroids
-            "*~1~*~*~*~2~*~*~*~3~*~*~*~*~*~3~*~2~1"
-        ]
+    # Basic steroid core pattern (four fused rings)
+    # Using SMARTS that matches the basic steroid skeleton
+    steroid_core = Chem.MolFromSmarts("[#6]~1~[#6]~[#6]~[#6]~2~[#6]~[#6]~[#6]~3~[#6]~[#6]~[#6]~4~[#6]~[#6]~[#6]~[#6]~4~[#6]~3~[#6]~2~1")
+    
+    if not mol.HasSubstructMatch(steroid_core):
+        return False, "No steroid core structure found"
+    
+    # Pattern for 16-beta-hydroxy group
+    # The [H] specifies explicit hydrogen, OH is the hydroxy group
+    # The @ symbols specify the stereochemistry
+    beta_oh_pattern = Chem.MolFromSmarts("[C]12[C][C@H](O)[CH2][C@]1([CH2,CH3])[C@@H]3[C][C][C]2")
+    
+    if not mol.HasSubstructMatch(beta_oh_pattern):
+        return False, "No 16-beta-hydroxy group found"
+    
+    # Additional checks for reasonable molecular weight and atom counts
+    # Steroids typically have molecular weights between 250-1000
+    mol_weight = Chem.Descriptors.ExactMolWt(mol)
+    if mol_weight < 250 or mol_weight > 1000:
+        return False, f"Molecular weight {mol_weight} outside typical steroid range (250-1000)"
+    
+    # Count carbons (steroids typically have 17+ carbons)
+    carbon_count = len([atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6])
+    if carbon_count < 17:
+        return False, f"Too few carbons ({carbon_count}) for a steroid structure"
+    
+    # Check for at least one oxygen (for the hydroxy group)
+    oxygen_count = len([atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8])
+    if oxygen_count < 1:
+        return False, "No oxygen atoms found"
         
-        has_steroid_core = False
-        for pattern in steroid_patterns:
-            steroid_core = Chem.MolFromSmarts(pattern)
-            if steroid_core is not None and mol.HasSubstructMatch(steroid_core):
-                has_steroid_core = True
-                break
-                
-        if not has_steroid_core:
-            return False, "No steroid-like ring system found"
-
-        # Patterns for 16-beta-hydroxy group with different possible environments
-        beta_oh_patterns = [
-            # General pattern for 16β-OH with beta stereochemistry
-            "[C,c]~1~[C,c]~[C,c]~[C,c]~2~[C,c]~[C,c]~[C,c]~3~[C@@H](O)~[C,c]~[C,c]~[C,c]~3~[C,c]~2~1",
-            
-            # Alternative pattern focusing on the D-ring with 16β-OH
-            "[C,c]~1~[C,c]~[C,c]~2~[C@@H](O)~[C,c]~[C,c]~[C,c]~2~1",
-            
-            # More specific pattern for common steroid variations
-            "[C,c]~1~[C,c]~[C,c]~[C,c](@[C,c])~2~[C@@H](O)~[C,c]~[C,c]~2~1"
-        ]
-        
-        has_16beta_oh = False
-        for pattern in beta_oh_patterns:
-            beta_oh = Chem.MolFromSmarts(pattern)
-            if beta_oh is not None and mol.HasSubstructMatch(beta_oh, useChirality=True):
-                has_16beta_oh = True
-                break
-                
-        if not has_16beta_oh:
-            return False, "No 16-beta-hydroxy group found or incorrect stereochemistry"
-
-        # Count carbons and check for reasonable steroid size
-        carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-        if carbon_count < 10:  # More permissive minimum carbon count
-            return False, f"Too few carbons ({carbon_count}) for a steroid structure"
-
-        # Verify presence of hydroxy group
-        hydroxy_pattern = Chem.MolFromSmarts("[OH]")
-        if not mol.HasSubstructMatch(hydroxy_pattern):
-            return False, "No hydroxy group found"
-
-        # Check for reasonable molecular size
-        if mol.GetNumAtoms() < 15:  # Including hydrogens
-            return False, "Molecule too small to be a steroid"
-
-        return True, "Contains steroid-like core with 16-beta-hydroxy group"
-
-    except Exception as e:
-        return False, f"Error in structure analysis: {str(e)}"
+    return True, "Contains steroid core with 16-beta-hydroxy group"
