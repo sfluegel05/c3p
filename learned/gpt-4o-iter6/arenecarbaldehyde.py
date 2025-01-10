@@ -21,10 +21,13 @@ def is_arenecarbaldehyde(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define an aldehyde pattern where the carbonyl carbon is attached to an aromatic carbon
-    aldehyde_aromatic_attachment = Chem.MolFromSmarts("[C](=[O])[c]")
+    # Define a refined aldehyde pattern where the carbonyl carbon is attached to a benzene-like aromatic carbon
+    aldehyde_aromatic_attachment = Chem.MolFromSmarts("[C](=[O])[c;R1]")
 
     if mol.HasSubstructMatch(aldehyde_aromatic_attachment):
-        return True, "Aldehyde group attached to an aromatic moiety"
+        # Additional check to ensure the aromatic nature of the aldehyde attachment
+        aromatic_atom_ids = [m[1] for m in mol.GetSubstructMatches(aldehyde_aromatic_attachment)]
+        if all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in aromatic_atom_ids):
+            return True, "Aldehyde group attached to an aromatic moiety"
     
     return False, "Aldehyde group not attached to aromatic moiety"
