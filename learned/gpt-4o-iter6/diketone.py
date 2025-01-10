@@ -6,13 +6,13 @@ from rdkit import Chem
 def is_diketone(smiles: str):
     """
     Determines if a molecule is a diketone based on its SMILES string.
-    A diketone is defined as a compound that contains exactly two ketone functionalities.
+    A diketone is a compound that contains two ketone functionalities.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is considered a diketone, False otherwise
+        bool: True if molecule is a diketone, False otherwise
         str: Reason for classification
     """
     
@@ -20,24 +20,20 @@ def is_diketone(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Define a ketone group pattern (an aliphatic or aromatic carbon double-bonded to oxygen)
-    ketone_pattern = Chem.MolFromSmarts("C(=O)[!#8]")  # Carbon double-bonded to oxygen and not bound to oxygen (exclude esters/acid carbonyls)
 
+    # Define ketone group pattern: a carbonyl group (C=O) with carbon atoms on either side
+    ketone_pattern = Chem.MolFromSmarts("[CX3](=O)[#6]")
     if ketone_pattern is None:
         return False, "Invalid ketone SMARTS pattern"
 
     # Find substructure matches for ketone groups
     ketone_matches = mol.GetSubstructMatches(ketone_pattern)
-
-    # Count unique carbon positions for ketone groups to ensure a valid ketone context
-    unique_ketone_carbons = {match[0] for match in ketone_matches}
-
-    # Check for exactly two ketone groups
-    if len(unique_ketone_carbons) == 2:
-        return True, "Contains exactly 2 ketone groups, sufficient for diketone classification"
     
-    if len(unique_ketone_carbons) < 2:
-        return False, f"Found {len(unique_ketone_carbons)} ketone groups, not enough for diketone"
-    
-    return False, f"Found {len(unique_ketone_carbons)} ketone groups, exactly 2 needed for diketone"
+    # Check for at least two ketone groups
+    if len(ketone_matches) >= 2:
+        return True, f"Contains {len(ketone_matches)} ketone groups"
+
+    return False, f"Found {len(ketone_matches)} ketone groups, need at least 2 for diketone"
+
+# Example usage:
+# print(is_diketone("O=C(CCCCCCCCCCCCCCCCC)CC(=O)CCCCCC"))  # Hexacosane-7,9-dione
