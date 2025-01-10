@@ -22,16 +22,16 @@ def is_monoacylglycerol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for glycerol backbone pattern (C with 2 OHs and 1 O, followed by another OH)
-    glycerol_pattern = Chem.MolFromSmarts("COC(CO)(O)CO")
+    # Look for glycerol backbone pattern (Three carbon atoms each with at least one oxygen)
+    glycerol_pattern = Chem.MolFromSmarts("C(CO)OCC(O)O")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
     
-    # Look for one ester group (-O-C(=O)-), indicating one attached fatty acid chain
-    ester_pattern = Chem.MolFromSmarts("OC(=O)")
+    # Look for one ester group pattern (-C(=O)O-)
+    ester_pattern = Chem.MolFromSmarts("C(=O)O")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) != 1:
         return False, f"Found {len(ester_matches)} ester groups, need exactly 1"
 
-    # If all checks passed, classify as monoacylglycerol
+    # All checks passed, the molecule is a monoacylglycerol
     return True, "Contains glycerol backbone with one esterified fatty acid chain"
