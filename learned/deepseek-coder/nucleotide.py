@@ -28,12 +28,16 @@ def is_nucleotide(smiles: str):
 
     # Define patterns for nucleoside (sugar + base) and phosphate
     sugar_pattern = Chem.MolFromSmarts("[C@H]1O[C@H]([C@H](O)[C@@H]1O)")  # Ribose or deoxyribose sugar
-    base_pattern = Chem.MolFromSmarts("[nH]1cnc2c1nc[nH]2")  # Adenine, guanine, cytosine, thymine, or uracil
+    base_pattern = Chem.MolFromSmarts("[nH]1cnc2c1nc[nH]2 | [nH]1ccnc2c1nc[nH]2 | [nH]1ccnc2c1nc[nH]2 | [nH]1ccnc2c1nc[nH]2 | [nH]1ccnc2c1nc[nH]2")  # Adenine, guanine, cytosine, thymine, or uracil
     phosphate_pattern = Chem.MolFromSmarts("[OX2]P(=O)([OX2])[OX2]")  # Phosphate group
 
     # Check for nucleoside (sugar + base)
-    if not mol.HasSubstructMatch(sugar_pattern) or not mol.HasSubstructMatch(base_pattern):
-        return False, "No nucleoside (sugar + base) found"
+    if not mol.HasSubstructMatch(sugar_pattern):
+        return False, "No sugar (ribose or deoxyribose) found"
+
+    # Check for base (adenine, guanine, cytosine, thymine, or uracil)
+    if not mol.HasSubstructMatch(base_pattern):
+        return False, "No nucleobase (adenine, guanine, cytosine, thymine, or uracil) found"
 
     # Check for phosphate group
     if not mol.HasSubstructMatch(phosphate_pattern):
