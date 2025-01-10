@@ -26,14 +26,18 @@ def is_phospho_sugar(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for phosphate group pattern (P with 3 or 4 oxygens, one of which is double-bonded)
+    # More flexible phosphate group pattern
     phosphate_pattern = Chem.MolFromSmarts("[PX4](=[OX1])([OX2])[OX2]")
     phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
     if len(phosphate_matches) == 0:
-        return False, "No phosphate group found"
+        # Check for alternative phosphate patterns
+        phosphate_pattern2 = Chem.MolFromSmarts("[PX4]([OX2])([OX2])[OX2]")
+        phosphate_matches2 = mol.GetSubstructMatches(phosphate_pattern2)
+        if len(phosphate_matches2) == 0:
+            return False, "No phosphate group found"
 
-    # Look for sugar backbone (3-8 carbons with multiple hydroxyl groups)
-    # More flexible pattern that matches both linear and cyclic sugars
+    # More flexible sugar backbone pattern
+    # Matches both linear and cyclic sugars with at least 3 carbons and 2 hydroxyl groups
     sugar_pattern = Chem.MolFromSmarts("[C;H0,H1,H2][C;H0,H1,H2]([OH])[C;H0,H1,H2]([OH])")
     sugar_matches = mol.GetSubstructMatches(sugar_pattern)
     if len(sugar_matches) == 0:
@@ -41,22 +45,29 @@ def is_phospho_sugar(smiles: str):
         ring_sugar_pattern = Chem.MolFromSmarts("[C;H0,H1,H2]1[C;H0,H1,H2][C;H0,H1,H2]([OH])[C;H0,H1,H2]([OH])[C;H0,H1,H2]1")
         ring_sugar_matches = mol.GetSubstructMatches(ring_sugar_pattern)
         if len(ring_sugar_matches) == 0:
-            return False, "No sugar backbone found"
+            # Check for more complex sugar structures
+            complex_sugar_pattern = Chem.MolFromSmarts("[C;H0,H1,H2][C;H0,H1,H2]([OH])[C;H0,H1,H2]([OH])[C;H0,H1,H2]")
+            complex_sugar_matches = mol.GetSubstructMatches(complex_sugar_pattern)
+            if len(complex_sugar_matches) == 0:
+                return False, "No sugar backbone found"
 
-    # Check if the phosphate is attached to the sugar via an ester bond
     # More comprehensive ester bond pattern
     ester_pattern = Chem.MolFromSmarts("[C;H0,H1,H2][OX2][PX4](=[OX1])([OX2])[OX2]")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) == 0:
-        return False, "Phosphate not esterified to sugar"
+        # Check for alternative ester patterns
+        ester_pattern2 = Chem.MolFromSmarts("[C;H0,H1,H2][OX2][PX4]([OX2])([OX2])[OX2]")
+        ester_matches2 = mol.GetSubstructMatches(ester_pattern2)
+        if len(ester_matches2) == 0:
+            return False, "Phosphate not esterified to sugar"
 
-    # Count carbons and oxygens to ensure it's a monosaccharide
+    # Relaxed carbon count restriction to 3-10 to accommodate larger sugars
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    
-    # Relax carbon count restriction to 3-8 to accommodate heptoses
-    if c_count < 3 or c_count > 8:
+    if c_count < 3 or c_count > 10:
         return False, "Not a monosaccharide (incorrect number of carbons)"
+
+    # Check for sufficient oxygens (at least 4 for a basic phospho sugar)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     if o_count < 4:
         return False, "Too few oxygens for a phospho sugar"
 
