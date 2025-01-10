@@ -47,8 +47,9 @@ def is_tetrahydrofuranone(smiles: str):
     tetrahydrofuran_ring = None
     for ring in ring_atoms:
         if len(ring) == 5:  # Tetrahydrofuran is a 5-membered ring
-            # Check if the ring contains an oxygen atom
-            if any(mol.GetAtomWithIdx(atom).GetAtomicNum() == 8 for atom in ring):
+            # Check if the ring contains exactly one oxygen atom
+            oxygen_count = sum(1 for atom in ring if mol.GetAtomWithIdx(atom).GetAtomicNum() == 8)
+            if oxygen_count == 1:
                 tetrahydrofuran_ring = ring
                 break
 
@@ -59,6 +60,9 @@ def is_tetrahydrofuranone(smiles: str):
     for oxo_match in oxo_matches:
         oxo_carbon = oxo_match[0]
         if oxo_carbon in tetrahydrofuran_ring:
-            return True, "Tetrahydrofuran ring with an oxo group attached"
+            # Ensure the oxo group is directly attached to the ring
+            for neighbor in mol.GetAtomWithIdx(oxo_carbon).GetNeighbors():
+                if neighbor.GetIdx() in tetrahydrofuran_ring:
+                    return True, "Tetrahydrofuran ring with an oxo group attached"
 
     return False, "Oxo group not attached to the tetrahydrofuran ring"
