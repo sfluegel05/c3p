@@ -6,10 +6,10 @@ from rdkit import Chem
 def is_17alpha_hydroxy_steroid(smiles: str):
     """
     Determines if a molecule is a 17alpha-hydroxy steroid based on its SMILES string.
-    
+
     Args:
         smiles (str): SMILES string of the molecule
-    
+
     Returns:
         bool: True if the molecule is a 17alpha-hydroxy steroid, False otherwise
         str: Reason or structural match explanation
@@ -20,14 +20,14 @@ def is_17alpha_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Typical steroid core (more flexible)
-    steroid_pattern = Chem.MolFromSmarts('C1CCC2(C3CCC4CC(C3)CCC4C2C1)')
+    # Improved steroid core pattern
+    steroid_pattern = Chem.MolFromSmarts('C1CCC2C(C1)CCC3C2CCC4C3(C)CCC4')
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
 
     # Check for 17-alpha hydroxyl group
-    # Typical pattern around 17-alpha-hydroxy may be broader to allow flexibility
-    hydroxy_17alpha_pattern = Chem.MolFromSmarts('[C@](O)([C;R1])')
+    # Enhanced detection pattern
+    hydroxy_17alpha_pattern = Chem.MolFromSmarts('O[C@H](C)CC[C@H]1CCC2C1CC[C@H]3[C@H]2CCC4=CCCC34')
     if not mol.HasSubstructMatch(hydroxy_17alpha_pattern):
         return False, "No 17alpha-hydroxy group found"
     
