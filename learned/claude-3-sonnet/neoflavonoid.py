@@ -5,6 +5,7 @@ Classifies: CHEBI:71971 neoflavonoid
 Classifies: CHEBI:75768 neoflavonoid
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_neoflavonoid(smiles: str):
     """
@@ -23,49 +24,40 @@ def is_neoflavonoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 1-benzopyran core pattern with position 4 marked
-    # The [#0] is a dummy atom marking position 4
-    benzopyran_pattern = Chem.MolFromSmarts("O1c2ccccc2C([#0])C=C1")
-    
-    # Check if the basic core is present
+    # Look for 1-benzopyran core
+    # [#6]1~[#6]~[#6]~[#6]~[#6]~[#6]1 represents benzene ring
+    # [#8]1~[#6]~[#6] represents the pyran oxygen and adjacent carbons
+    benzopyran_pattern = Chem.MolFromSmarts("[#8]1-[#6]~[#6]-[#6]2~[#6]~[#6]~[#6]~[#6]~[#6]2-1")
     if not mol.HasSubstructMatch(benzopyran_pattern):
         return False, "No 1-benzopyran core found"
 
-    # Pattern for 1-benzopyran with aryl group at position 4
-    # More specific pattern that requires the aryl group to be directly attached
-    neoflavonoid_pattern = Chem.MolFromSmarts("O1c2ccccc2C(c3ccccc3)C=C1")
-    
-    if not mol.HasSubstructMatch(neoflavonoid_pattern):
+    # Look for aryl substituent at position 4
+    # This pattern looks for an aromatic ring connected to the 4-position of the benzopyran
+    aryl_4_pattern = Chem.MolFromSmarts("[#8]1-[#6]~[#6](-[#6]2~[#6]~[#6]~[#6]~[#6]~[#6]2)-[#6]2~[#6]~[#6]~[#6]~[#6]~[#6]2-1")
+    if not mol.HasSubstructMatch(aryl_4_pattern):
         return False, "No aryl substituent at position 4"
 
-    # Additional check for variations in the aryl group
-    # This allows for substituted phenyl rings
-    extended_aryl_pattern = Chem.MolFromSmarts("O1c2ccccc2C(c3[c,n]cccc3)C=C1")
-    
-    # Count matches to determine confidence
-    basic_matches = len(mol.GetSubstructMatches(neoflavonoid_pattern))
-    extended_matches = len(mol.GetSubstructMatches(extended_aryl_pattern))
-    
-    confidence = "medium"
-    if basic_matches > 0 and extended_matches > 0:
-        confidence = "high"
+    # Count number of rings
+    ring_info = mol.GetRingInfo()
+    if ring_info.NumRings() < 2:
+        return False, "Insufficient number of rings"
 
-    # Common substituents in neoflavonoids
-    substituents = [
-        (Chem.MolFromSmarts("[OH]"), "hydroxyl"),
-        (Chem.MolFromSmarts("O[CH3]"), "methoxy"),
-        (Chem.MolFromSmarts("C(=O)"), "carbonyl")
-    ]
+    # Check for common substituents often found in neoflavonoids
+    # Look for hydroxy, methoxy, or other oxygen-containing groups
+    substituents_pattern = Chem.MolFromSmarts("([OH,OCH3,O])")
+    substituent_matches = mol.GetSubstructMatches(substituents_pattern)
     
-    found_substituents = []
-    for pattern, name in substituents:
-        if mol.HasSubstructMatch(pattern):
-            found_substituents.append(name)
-    
-    # Build detailed reason
-    reason = "Contains 1-benzopyran core with aryl substituent at position 4"
-    if found_substituents:
-        reason += f" and {', '.join(found_substituents)} groups"
-    reason += f" ({confidence} confidence)"
+    # Most neoflavonoids have at least some oxygenated substituents
+    if len(substituent_matches) == 0:
+        return False, "No typical neoflavonoid substituents found"
 
-    return True, reason
+    # Additional check for aromatic character
+    if not any(atom.GetIsAromatic() for atom in mol.GetAtoms()):
+        return False, "No aromatic systems found"
+
+    # Check molecular weight - neoflavonoids typically >200 Da
+    mol_wt = Chem.Descriptors.ExactMolWt(mol)
+    if mol_wt < 200:
+        return False, "Molecular weight too low for neoflavonoid"
+
+    return True, "Contains 1-benzopyran core with aryl substituent at position 4 and appropriate substituents"
