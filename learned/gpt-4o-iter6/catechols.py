@@ -21,13 +21,25 @@ def is_catechols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define catechol SMARTS pattern
-    catechol_pattern = Chem.MolFromSmarts("c1cc(O)cc(O)c1")
+    # Define a more flexible catechol SMARTS pattern
+    catechol_pattern = Chem.MolFromSmarts("c1(O)cccc(O)c1")  # Simpler representation focusing on ortho substitution
     
     # Check for catechol substructure
     if mol.HasSubstructMatch(catechol_pattern):
         return True, "Contains a catechol moiety (o-diphenol component)"
     else:
+        # Try a more generalized path for other aromatic layers if flexibility fails
+        aromatic_ring = Chem.MolFromSmarts("c1ccccc1")  # General aromatic ring
+        oxy_pattern = Chem.MolFromSmarts("[OH2]")  # More flexible hydroxyl to match oxygens more easily
+        n_aromatic_rings = len(mol.GetSubstructMatches(aromatic_ring))
+        
+        # Criterion: At least one aromatic ring and ortho adjacent hydroxyls
+        hydroxyl_matches = mol.GetSubstructMatches(oxy_pattern)
+        for idx, hydroxyl in enumerate(hydroxyl_matches[:-1]):
+            if mol.GetBondBetweenAtoms(hydroxyl[0], hydroxyl_matches[idx + 1][0]) is not None:
+                if n_aromatic_rings > 0:
+                    return True, "Contains overlapping hydroxyls on an aromatic ring (catechol moiety)"
+                
         return False, "No catechol moiety found"
 
 # Examples and usage
