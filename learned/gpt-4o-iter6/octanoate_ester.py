@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_octanoate_ester(smiles: str):
     """
     Determines if a molecule is an octanoate ester based on its SMILES string.
-    An octanoate ester features the presence of the octanoyl group `(C(=O)OCCCCCCCC)`.
+    An octanoate ester features the presence of the octanoyl group, which is a C(=O)O group followed by an 8-carbon chain.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,22 +21,37 @@ def is_octanoate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for octanoyl ester linkage (-C(=O)OCCCCCCCC)
-    octanoyl_ester_pattern = Chem.MolFromSmarts("C(=O)OCCCCCCCC")
-    matches = mol.GetSubstructMatches(octanoyl_ester_pattern)
+    # SMARTS pattern for ester linkages (generic)
+    ester_pattern = Chem.MolFromSmarts("C(=O)O")
+    matches = mol.GetSubstructMatches(ester_pattern)
     
-    if len(matches) == 0:
-        return False, "No octanoyl ester linkage found"
+    if not matches:
+        return False, "No ester linkage found"
     
-    # Further verification of the carbon chain length
+    # Analyze matches for octanoyl characteristics
     for match in matches:
-        carbon_chain_atoms = match[3:]  # The last eight atoms should be the carbon chain
+        # Get the atom index after the ester oxygen to count carbon chain length
+        oxygen_idx = match[2]
         carbon_chain_length = 0
-        for atom_idx in carbon_chain_atoms:
-            if mol.GetAtomWithIdx(atom_idx).GetAtomicNum() == 6:  # Check for carbon atoms
+        visited = set()
+        to_visit = [oxygen_idx]
+        
+        while to_visit:
+            curr_idx = to_visit.pop()
+            if curr_idx in visited:
+                continue
+            visited.add(curr_idx)
+
+            # Get neighbors
+            curr_atom = mol.GetAtomWithIdx(curr_idx)
+            if curr_atom.GetAtomicNum() == 6:  # It's a carbon
                 carbon_chain_length += 1
+            for neighbor in curr_atom.GetNeighbors():
+                neigh_idx = neighbor.GetIdx()
+                if neighbor.GetAtomicNum() == 6 and neigh_idx not in visited:
+                    to_visit.append(neigh_idx)
         
         if carbon_chain_length == 8:
-            return True, "Contains valid octanoyl ester linkage"
+            return True, "Contains valid octanoyl ester linkage with 8-carbon chain"
     
-    return False, "Octanoyl group found, but carbon chain length is incorrect"
+    return False, "No valid octanoyl ester linkage with an 8-carbon chain found"
