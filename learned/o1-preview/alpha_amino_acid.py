@@ -2,7 +2,6 @@
 Classifies: CHEBI:33704 alpha-amino acid
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_alpha_amino_acid(smiles: str):
     """
@@ -23,34 +22,16 @@ def is_alpha_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define carboxylic acid group pattern: [C](=O)[OH]
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[O;H1]")
-    carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
+    # Define SMARTS pattern for alpha-amino acid
+    # Pattern: amino group [N;!$(N=*);!$(N-[C]=O)] connected to alpha carbon [C;!$(C=*)],
+    # which is connected to carboxylic acid [C(=O)[O;H]]
+    alpha_amino_acid_pattern = Chem.MolFromSmarts("[N;!$(N=*);!$(N-[C]=O)][C;!$(C=*)][C](=O)[O;H1]")
 
-    if not carboxylic_acid_matches:
-        return False, "No carboxylic acid group found"
+    if alpha_amino_acid_pattern is None:
+        return False, "Invalid SMARTS pattern"
 
-    # Define amino group pattern: [N;H2,H1;!$(N=*)]
-    amino_group_pattern = Chem.MolFromSmarts("[N;!$(N=*)]")  # Exclude imines and other N with double bonds
-
-    # For each carboxylic acid group, check for amino group on alpha carbon
-    for carboxyl_match in carboxylic_acid_matches:
-        carboxyl_carbon_idx = carboxyl_match[0]
-        carboxyl_carbon = mol.GetAtomWithIdx(carboxyl_carbon_idx)
-
-        # Find alpha carbon (carbon attached to carboxyl carbon)
-        alpha_carbons = [atom for atom in carboxyl_carbon.GetNeighbors() if atom.GetAtomicNum() == 6]
-
-        for alpha_carbon in alpha_carbons:
-            alpha_carbon_idx = alpha_carbon.GetIdx()
-
-            # Check if alpha carbon has an attached amino group
-            attached_to_alpha = [nbr for nbr in alpha_carbon.GetNeighbors()]
-            for neighbor in attached_to_alpha:
-                if neighbor.GetAtomicNum() == 7:
-                    # Check if the nitrogen matches the amino group pattern
-                    submol = Chem.PathToSubmol(mol, [neighbor.GetIdx()])
-                    if submol.HasSubstructMatch(amino_group_pattern):
-                        return True, "Amino group attached to alpha carbon next to carboxyl group"
-
-    return False, "No amino group attached to alpha carbon next to carboxyl group"
+    match = mol.HasSubstructMatch(alpha_amino_acid_pattern)
+    if match:
+        return True, "Molecule matches alpha-amino acid pattern"
+    else:
+        return False, "Molecule does not match alpha-amino acid pattern"
