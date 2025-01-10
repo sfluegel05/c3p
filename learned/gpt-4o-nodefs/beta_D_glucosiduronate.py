@@ -20,18 +20,15 @@ def is_beta_D_glucosiduronate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Refined SMARTS for beta-D-glucuronic acid moiety with exact stereochemistry
-    glucuronic_acid_pattern = Chem.MolFromSmarts("O[C@H]1[C@@H]([C@H]([C@@H]([C@H]1O)O)O)C(=O)[O-]")
+    # Correct SMARTS for detecting beta-D-glucuronic acid moiety with required stereochemistry
+    glucuronic_acid_pattern = Chem.MolFromSmarts("[C@H]1([C@@H]([C@H]([C@H](O1)CO)O)O)C(=O)[O-]")
     if not mol.HasSubstructMatch(glucuronic_acid_pattern):
         return False, "Glucuronic acid moiety not correctly found or stereochemistry missed"
 
-    # Comprehensive check for ether and ester linkages incorporating flexibility
-    # More patterns to ensure coverage of varied connections
-    # Note: Using patterns that ensure the glucuronic acid is linked appropriately
-    ether_linkage_pattern = Chem.MolFromSmarts("O[C@H]1[C@@H]([C@H]([C@@H]([C@H]1O)O)O)C(=O)[O-]~*")  # Allowing any atom after O-
-    ester_linkage_pattern = Chem.MolFromSmarts("O=C(O[C@H]1[C@H]([C@@H]([C@H]([C@H]1O)O)O)O)~*")  # Again, allowing connections
+    # Patterns to ensure correct linkage (e.g., O-ether), more flexible, allowing connection to any atom
+    ether_linkage_pattern = Chem.MolFromSmarts("[C@H]1([C@@H]([C@H]([C@H](O1)CO)O)O)C(=O)[O-]~*")  # Flexible for linkage
+    ester_linkage_pattern = Chem.MolFromSmarts("O=C(O[C@H]1[C@H]([C@@H]([C@H]([C@H]1O)O)O)CO)~*")  # Flexible for linkage
 
-    # Both or either should match as per the linkage requirements; adding more flexibility
     if not (mol.HasSubstructMatch(ether_linkage_pattern) or mol.HasSubstructMatch(ester_linkage_pattern)):
         return False, "Glucuronic acid linkage not identified; revise ether/ester condition matching"
 
