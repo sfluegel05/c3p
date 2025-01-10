@@ -25,8 +25,8 @@ def is_branched_chain_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for carboxylic acid group (-C(=O)O)
-    carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H1]")
+    # Check for carboxylic acid group (protonated or deprotonated)
+    carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H1,OX1-]")
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
 
@@ -50,11 +50,15 @@ def is_branched_chain_fatty_acid(smiles: str):
     if branch_count < 1:
         return False, "No alkyl substituents (branches) found"
 
-    # Check if the molecule is a fatty acid by ensuring it has a long hydrocarbon chain
+    # Check if the molecule is a fatty acid by ensuring it has a hydrocarbon chain
     # and not a peptide or other complex structure
-    # Calculate the number of rotatable bonds to ensure it's a fatty acid
+    # Calculate the number of rotatable bonds
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 2:
+    
+    # For short-chain fatty acids, allow fewer rotatable bonds
+    if carbon_count < 8 and n_rotatable < 1:
+        return False, "Not a fatty acid (too few rotatable bonds)"
+    elif carbon_count >= 8 and n_rotatable < 2:
         return False, "Not a fatty acid (too few rotatable bonds)"
 
     # Check for unsaturation (optional, as some branched-chain fatty acids can be unsaturated)
