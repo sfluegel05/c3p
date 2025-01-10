@@ -24,26 +24,26 @@ def is_vitamin_D(smiles: str):
         return False, "Invalid SMILES string"
     
     try:
-        Chem.SanitizeMol(mol, sanitizeOps=SanitizeFlags.SANITIZE_ALL)
-
-        # Adjusted SMARTS pattern for open B-ring with variations
-        open_b_ring_pattern = Chem.MolFromSmarts("[C@H]1(C=C/C2CCC[C@]3(C=C/C=C/4[C@]5([C@@]2(CCC3)C)CC(CCC5)CC4=C)[H])[H]")
-        if not mol.HasSubstructMatch(open_b_ring_pattern):
-            return False, "No or atypical secosteroid-like open B-ring structure found"
+        # Sanitize molecule (previously applied but omitted; RDKit usually autoinfers sanitization need)
+        Chem.SanitizeMol(mol)
         
-        # Identify conjugated triene that permits some deviations
-        triene_pattern = Chem.MolFromSmarts("C=C/C=C/C=C")
+        # Corrected SMARTS pattern for typical secosteroid-like structure
+        open_b_ring_pattern = Chem.MolFromSmarts("C1C=C2CCCCC2=C1")
+        if not mol.HasSubstructMatch(open_b_ring_pattern):
+            return False, "No typical secosteroid-like open B-ring structure found"
+        
+        # Identify conjugated triene system with flexibility
+        triene_pattern = Chem.MolFromSmarts("C=C-C=C-C=C")
         if not mol.HasSubstructMatch(triene_pattern):
             return False, "No conjugated triene system detected"
         
-        # Detect at least two or more hydroxyl groups, typical yet variable in vitamin D
+        # Detect two or more hydroxyl groups
         hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
         hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
         if len(hydroxyl_matches) < 2:
             return False, "Less than two hydroxyl groups detected"
 
-        # Additional checks for secosteroid features might include flexibility in structure
-        # Based on rotatable bonds (flexible feature check) assumed in secosteroid structures
+        # Structural flexibility in secosteroid structure characterized by sufficient rotatable bonds
         if CalcNumRotatableBonds(mol) < 3:
             return False, "Insufficient structural flexibility for vitamin D"
 
