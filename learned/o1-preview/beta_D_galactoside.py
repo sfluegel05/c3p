@@ -24,12 +24,14 @@ def is_beta_D_galactoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the SMARTS pattern for beta-D-galactoside with specific stereochemistry
-    beta_D_galactoside_smarts = """
-    [C@@H]1([O][#6])[O][C@H]([C@@H](O)[C@@H](O)[C@@H]1O)CO
-    """
-    # Remove whitespace and newlines
-    beta_D_galactoside_smarts = beta_D_galactoside_smarts.replace('\n', '').replace(' ', '')
+    # Define the SMARTS pattern for beta-D-galactoside
+    # This pattern represents the beta-D-galactopyranoside moiety with correct stereochemistry
+    beta_D_galactoside_smarts = (
+        "[C@H]1([O][#6])"
+        "[O][C@H]([C@@H](O)[C@@H](O)[C@H]1O)"
+        "[C@@H](O)[C@@H](O)[C@H](O)"
+    )
+
     beta_D_galactoside_mol = Chem.MolFromSmarts(beta_D_galactoside_smarts)
     if beta_D_galactoside_mol is None:
         return False, "Failed to create beta-D-galactoside pattern"
