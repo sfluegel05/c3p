@@ -8,6 +8,9 @@ def is_beta_D_glucosiduronic_acid(smiles: str):
     """
     Determines if a molecule contains a beta-D-glucuronic acid moiety based on its SMILES string.
     
+    The beta-D-glucuronic acid moiety is characterized by a glucose-like structure with a carboxylic acid
+    group replacing the primary hydroxyl at C6, typically connected via a beta-glycosidic bond.
+    
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -21,9 +24,9 @@ def is_beta_D_glucosiduronic_acid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Improved SMARTS pattern for beta-D-glucuronic acid moiety
-    # Including the glucose backbone with specific beta link configuration 
+    # Including the glucose backbone with specific beta link configuration
     # account for carboxylic acid at C6 position
-    glucuronic_acid_smarts = "[C@H]1([C@@H]([C@H]([C@@H]([C@H]([C@@H]1O)O)O)O)O)C(=O)O"
+    glucuronic_acid_smarts = "[C@@H]1(O[C@H](OC(=O)[*])[C@H](O)[C@@H](O)[C@H](C1)O)C(O)=O"
     glucuronic_acid_pattern = Chem.MolFromSmarts(glucuronic_acid_smarts)
     
     if mol.HasSubstructMatch(glucuronic_acid_pattern):
