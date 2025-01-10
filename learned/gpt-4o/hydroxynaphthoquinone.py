@@ -22,19 +22,26 @@ def is_hydroxynaphthoquinone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define a more generalized SMARTS pattern for naphthoquinone core
-    # Naphthoquinone structure with flexibility for additional aromatic substitutions
-    naphthoquinone_pattern = Chem.MolFromSmarts("C1=CC=C2C(=C1)C=CC(=O)C2=O")
-    if not mol.HasSubstructMatch(naphthoquinone_pattern):
+    # A more flexible SMARTS pattern for naphthoquinone with possible aromatic substitutions
+    naphthoquinone_pattern = Chem.MolFromSmarts("C1=CC=C2C(=O)C=CC(=O)C2=C1")
+    naphthoquinone_matches = mol.GetSubstructMatches(naphthoquinone_pattern)
+    if len(naphthoquinone_matches) < 1:
         return False, "No naphthoquinone core structure found"
     
-    # Define SMARTS pattern for hydroxy group
+    # Check for hydroxy groups within the molecule
     hydroxy_pattern = Chem.MolFromSmarts("[OX2H]")
     hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
     if len(hydroxy_matches) < 1:
         return False, "No hydroxy group found"
 
-    return True, "Contains naphthoquinone core with at least one hydroxy group attached"
+    # Ensure hydroxy is part of the same aromatic system as naphthoquinone
+    for match in naphthoquinone_matches:
+        for hydroxy in hydroxy_matches:
+            # If an oxygen atom in the hydroxy group is connected to an aromatic carbon in the core
+            if any(mol.GetBondBetweenAtoms(hydroxy[0], atom_idx).IsAromatic() for atom_idx in match):
+                return True, "Contains naphthoquinone core with at least one hydroxy group attached"
+
+    return False, "Hydroxy groups are not properly connected to the naphthoquinone core"
 
 # Example Usage:
 # smiles_example = "O=C1C=CC(=O)c2cc(O)ccc12"  # Example of a hydroxynaphthoquinone
