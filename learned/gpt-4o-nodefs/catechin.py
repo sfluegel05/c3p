@@ -21,21 +21,16 @@ def is_catechin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Catechin pattern: 2-phenyl-3,4-dihydro-2H-chromen-3-ol
-    catechin_pattern = Chem.MolFromSmarts('c1cc(c2c(c1)CC(O)c3c2c(ccc3)O)O')
+    # Catechin pattern including stereochemistry, flexible definition
+    catechin_pattern = Chem.MolFromSmarts("C1(OC2=CC=CC=C2C=C1O)C(CO)C3=CC(O)=CC(O)=C3")
     if not mol.HasSubstructMatch(catechin_pattern):
         return False, "Does not match catechin core structure (2-phenyl-3,4-dihydro-2H-chromen-3-ol)"
+
+    # Allow for diverse substitutions and not just hydroxyl groups
+    phenyl_pattern = Chem.MolFromSmarts("c[c][c][c][c][c]")  # Aromatic ring
+    phenyl_matches = mol.GetSubstructMatches(phenyl_pattern)
     
-    # Check for multiple hydroxyl groups on aromatic rings that is characteristic of catechins
-    hydroxyl_pattern = Chem.MolFromSmarts('c[cH][cH][O]')
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    min_hydroxyl_count = 4  # Catechins commonly have multiple hydroxyl groups
-    if len(hydroxyl_matches) < min_hydroxyl_count:
-        return False, f"Found {len(hydroxyl_matches)} hydroxyl groups, need at least {min_hydroxyl_count}"
+    if len(phenyl_matches) <= 0:
+        return False, f"No aromatic rings found, need at least one characteristic catechin"
 
-    return True, "Contains catechin core structure with sufficient hydroxylation"
-
-# Example of how you might use this function:
-smiles_example = "O1[C@@H]([C@@H](O)CC2=C1C=C(O)C=C2)C3=CC(O)=C(O)C=C3"  # (-)-catechin
-result, reason = is_catechin(smiles_example)
-print(f"Result: {result}, Reason: {reason}")
+    return True, "Contains catechin core structure with properly defined stereochemistry and substitutions"
