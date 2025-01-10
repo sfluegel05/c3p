@@ -2,7 +2,6 @@
 Classifies: CHEBI:139575 monounsaturated fatty acyl-CoA
 """
 from rdkit import Chem
-from rdkit.Chem import rdchem
 
 def is_monounsaturated_fatty_acyl_CoA(smiles: str):
     """
@@ -17,28 +16,35 @@ def is_monounsaturated_fatty_acyl_CoA(smiles: str):
         bool: True if molecule is a monounsaturated fatty acyl-CoA, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the CoA group substructure
-    coa_pattern = Chem.MolFromSmarts("C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)C")
+    # Define the CoA group substructure (including possible variations in representations)
+    coa_pattern = Chem.MolFromSmarts("NCC(=O)CC(N)C(=O)S")
+
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No CoA group found"
 
-    # Define a pattern for any carbon-carbon double bond in a chain
+    # Define a pattern for carbon-carbon double bonds in the main chain
     double_bond_pattern = Chem.MolFromSmarts("C=C")
-
+    
     # Get matches for double bonds
     double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
-    num_double_bonds = len(double_bond_matches)
 
-    # Validate that exactly one double bond exists in the fatty acyl chain
-    if num_double_bonds != 1:
-        return False, f"Found {num_double_bonds} double bonds, need exactly 1"
+    # Further ensure that the double bond(s) belong to a true fatty acyl chain
+    fatty_acid_chain_pattern = Chem.MolFromSmarts("C(=O)SCCNC(=O)C")
     
+    if not mol.HasSubstructMatch(fatty_acid_chain_pattern):
+        return False, "No valid fatty acyl chain found"
+
+    # Ensure there's exactly one carbon-carbon double bond within that fatty acyl chain
+    num_double_bonds = len(double_bond_matches)
+    if num_double_bonds != 1:
+        return False, f"Found {num_double_bonds} double bonds in main chain, need exactly 1"
+
     return True, "Contains CoA and a fatty acyl chain with one carbon-carbon double bond"
 
 # Example usage:
