@@ -23,47 +23,63 @@ def is_phospho_sugar(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for monosaccharide ring (5 or 6-membered ring with one oxygen)
-    monosaccharide_ring_smarts = "[O;R][C;R][C;R][C;R][C;R]"  # 5-membered ring with one oxygen
-    monosaccharide_ring = Chem.MolFromSmarts(monosaccharide_ring_smarts)
-    ring_matches_5 = mol.GetSubstructMatches(monosaccharide_ring)
+    # Define SMARTS pattern for monosaccharide (cyclic or acyclic)
+    # This pattern matches sugars with multiple hydroxyl groups
+    sugar_patterns = [
+        "[C;!R][C;!R][C;!R][C;!R][C;!R][C;!R]",  # Linear hexose sugar
+        "[C;R][C;R][C;R][C;R][O;R]",             # 5-membered cyclic sugar
+        "[C;R][C;R][C;R][C;R][C;R][O;R]",        # 6-membered cyclic sugar
+    ]
+    sugar_found = False
+    for smarts in sugar_patterns:
+        pattern = Chem.MolFromSmarts(smarts)
+        if mol.HasSubstructMatch(pattern):
+            sugar_found = True
+            break
 
-    monosaccharide_ring_smarts_6 = "[O;R][C;R][C;R][C;R][C;R][C;R]"  # 6-membered ring with one oxygen
-    monosaccharide_ring_6 = Chem.MolFromSmarts(monosaccharide_ring_smarts_6)
-    ring_matches_6 = mol.GetSubstructMatches(monosaccharide_ring_6)
-
-    # Combine ring matches
-    ring_matches = list(ring_matches_5) + list(ring_matches_6)
-
-    # Define SMARTS pattern for acyclic monosaccharide (chain of carbons with hydroxyl groups)
-    acyclic_sugar_smarts = "[CH2][CH](O)[CH](O)[CH](O)"  # Simplified pattern for linear tetrose
-    acyclic_sugar = Chem.MolFromSmarts(acyclic_sugar_smarts)
-    acyclic_matches = mol.GetSubstructMatches(acyclic_sugar)
-
-    if len(ring_matches) == 0 and len(acyclic_matches) == 0:
+    if not sugar_found:
         return False, "No monosaccharide unit found"
 
     # Define SMARTS pattern for phosphate ester group attached via oxygen
-    phosphate_ester_smarts = "[O]-P(=O)([O])[O]"  # Ester linkage to phosphate group
-    phosphate_ester = Chem.MolFromSmarts(phosphate_ester_smarts)
-    phosphate_matches = mol.GetSubstructMatches(phosphate_ester)
+    phosphate_patterns = [
+        "[O]-P(=O)([O])[O]",    # Phosphate ester linkage
+        "[O]-P(=O)([O-])[O-]",  # Phosphate ester with negative charges
+        "[O]-P(=O)([O])[O-]",
+    ]
+    phosphate_found = False
+    for smarts in phosphate_patterns:
+        phosphate_pattern = Chem.MolFromSmarts(smarts)
+        if mol.HasSubstructMatch(phosphate_pattern):
+            phosphate_found = True
+            break
 
-    if len(phosphate_matches) == 0:
+    if not phosphate_found:
         return False, "No phosphate ester group found"
 
-    # Collect atoms in monosaccharide units
+    # Check that the phosphate group is attached to the sugar via an oxygen atom
+    # Find the indices of the sugar atoms
     sugar_atoms = set()
-    for match in ring_matches + acyclic_matches:
-        sugar_atoms.update(match)
+    for smarts in sugar_patterns:
+        pattern = Chem.MolFromSmarts(smarts)
+        matches = mol.GetSubstructMatches(pattern)
+        for match in matches:
+            sugar_atoms.update(match)
 
-    # Check if any phosphate ester is attached to the monosaccharide
+    # Find the phosphate ester groups
+    phosphate_atoms = set()
+    for smarts in phosphate_patterns:
+        phosphate_pattern = Chem.MolFromSmarts(smarts)
+        matches = mol.GetSubstructMatches(phosphate_pattern)
+        for match in matches:
+            phosphate_atoms.add(match[0])  # Oxygen atom connected to phosphate
+
+    # Check if any of the phosphate oxygens are connected to the sugar carbons
     found_phosphate_on_sugar = False
-    for match in phosphate_matches:
-        # The first atom in the match is the oxygen connected to phosphate
-        oxygen_idx = match[0]
-        # Check if this oxygen is connected to a sugar atom
-        for neighbor in mol.GetAtomWithIdx(oxygen_idx).GetNeighbors():
-            if neighbor.GetIdx() in sugar_atoms:
+    for oxygen_idx in phosphate_atoms:
+        oxygen_atom = mol.GetAtomWithIdx(oxygen_idx)
+        for neighbor in oxygen_atom.GetNeighbors():
+            neighbor_idx = neighbor.GetIdx()
+            if neighbor_idx in sugar_atoms:
                 found_phosphate_on_sugar = True
                 break
         if found_phosphate_on_sugar:
