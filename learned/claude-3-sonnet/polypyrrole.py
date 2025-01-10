@@ -3,7 +3,6 @@ Classifies: CHEBI:38077 polypyrrole
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_polypyrrole(smiles: str):
     """
@@ -21,84 +20,69 @@ def is_polypyrrole(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Kekulize the molecule to ensure proper aromatic perception
-    Chem.Kekulize(mol, clearAromaticFlags=True)
-    
-    # Define improved pattern dictionary with more specific patterns
+        
+    # Define pyrrole patterns with their descriptions
     pattern_dict = {
-        # Basic aromatic pyrrole (excludes saturated rings)
-        'pyrrole': '[nH,n]1:c:c:c:c1',
-        
-        # Metal-coordinated patterns (more specific)
-        'metal_pyrrole': '[n]1(-[Fe,Mg,Zn,Co,Pd,B,#0]):c:c:c:c1',
-        'porphyrin_metal': '[n]1:c:c:c2:c1:[n]:[#6]:c3:c2:[n]:[#6]:c:c3',
-        
-        # Porphyrin-type cores
-        'porphyrin_core': '[nH,n]1:c:c:c2:c1:[nH,n]:c:c:c2',
-        'chlorin_core': '[nH,n]1:c:c:c2:c1:[nH,n]:C:C:c2',
-        
-        # Direct connections between pyrroles
-        'bipyrrole': '[nH,n]1:c:c:c:c1-[c]2:[nH,n]:c:c:c2',
-        
-        # Exclude these patterns (negative matches)
-        'proline': '[N]1[CH2][CH2][CH2][CH]1',
-        'indole': '[nH,n]1:c2:c:c:c:c:c2:c:c1'
+        'basic_pyrrole': '[nH,n]1cccc1',  # Basic pyrrole ring
+        'metal_pyrrole': '[n]1c(cc2)cc1',  # Metal-coordinated pyrrole
+        'reduced_pyrrole': '[NH1,N]1CCCC1',  # Reduced pyrrole
+        'fused_pyrrole': '[nH,n]1c2cccc1c2',  # Fused pyrrole system
+        'porphyrin_core': '[n]1c(cc2)cc1[n]2',  # Porphyrin-like core
+        'bipyrrole': '[nH,n]1cccc1-[c]1[c,n][c,n][c,n][c,n]1'  # Direct bipyrrole linkage
     }
     
-    # Convert patterns to RDKit molecules
-    patterns = {}
-    for name, smarts in pattern_dict.items():
-        patt = Chem.MolFromSmarts(smarts)
+    # Convert patterns to RDKit molecules and store valid ones
+    valid_patterns = {}
+    for name, pattern in pattern_dict.items():
+        patt = Chem.MolFromSmarts(pattern)
         if patt is not None:
-            patterns[name] = patt
+            valid_patterns[name] = patt
+            
+    if not valid_patterns:
+        return False, "Failed to create valid SMARTS patterns"
     
-    # Count matches for each pattern
-    matches = {}
-    for name, patt in patterns.items():
-        matches[name] = len(mol.GetSubstructMatches(patt))
+    # Find all pyrrole units
+    total_matches = set()
+    pattern_hits = {}
     
-    # Check for proline rings (exclude if only prolines found)
-    if matches.get('proline', 0) > 0 and matches.get('pyrrole', 0) == 0:
-        return False, "Contains only proline rings, not pyrroles"
+    for name, patt in valid_patterns.items():
+        matches = mol.GetSubstructMatches(patt)
+        pattern_hits[name] = len(matches)
+        total_matches.update(matches)
     
-    # Count total pyrrole units (including metal-coordinated)
-    total_pyrroles = (
-        matches.get('pyrrole', 0) + 
-        matches.get('metal_pyrrole', 0) +
-        matches.get('porphyrin_core', 0) * 2 +  # Count porphyrin cores as 2 pyrroles
-        matches.get('chlorin_core', 0) * 2 +    # Count chlorin cores as 2 pyrroles
-        matches.get('bipyrrole', 0) * 2         # Count bipyrroles as 2 pyrroles
-    )
+    # Count unique pyrrole units
+    num_pyrroles = len(total_matches)
     
-    # Special case: porphyrin with metal
-    if matches.get('porphyrin_metal', 0) > 0:
-        total_pyrroles = max(total_pyrroles, 4)  # Porphyrins always have 4 pyrroles
+    # Check for common metal centers in porphyrins and related structures
+    metal_pattern = '[Fe,Mg,Zn,Co,Pd,B]'
+    metal_mol = Chem.MolFromSmarts(metal_pattern)
+    has_metal = False
+    if metal_mol:
+        has_metal = mol.HasSubstructMatch(metal_mol)
+    
+    # Analyze structure type
+    structure_type = []
+    if pattern_hits.get('porphyrin_core', 0) > 0:
+        structure_type.append("porphyrin-like")
+    if pattern_hits.get('bipyrrole', 0) > 0:
+        structure_type.append("direct bipyrrole")
+    if pattern_hits.get('fused_pyrrole', 0) > 0:
+        structure_type.append("fused pyrrole system")
+    if has_metal:
+        structure_type.append("metal-coordinated")
         
-    # Check minimum requirement
-    if total_pyrroles < 2:
-        return False, f"Found only {total_pyrroles} pyrrole units, minimum of 2 required"
-    
-    # Determine structure type
-    structure_types = []
-    if matches.get('porphyrin_metal', 0) > 0 or matches.get('metal_pyrrole', 0) > 0:
-        structure_types.append("metal-coordinated")
-    if matches.get('porphyrin_core', 0) > 0:
-        structure_types.append("porphyrin-like")
-    if matches.get('bipyrrole', 0) > 0:
-        structure_types.append("direct bipyrrole")
-    if matches.get('chlorin_core', 0) > 0:
-        structure_types.append("chlorin-type")
+    # Decision making
+    if num_pyrroles < 2:
+        return False, f"Only {num_pyrroles} pyrrole units found, minimum of 2 required"
         
-    # Additional validation
+    # Construct detailed reason
+    reason = f"Contains {num_pyrroles} pyrrole units"
+    if structure_type:
+        reason += f" ({', '.join(structure_type)})"
+        
+    # Additional checks for specific cases
     ring_count = len(Chem.GetSymmSSSR(mol))
-    aromatic_atoms = sum(1 for atom in mol.GetAtoms() if atom.GetIsAromatic())
-    
-    # Construct reason
-    reason = f"Contains {total_pyrroles} pyrrole units"
-    if structure_types:
-        reason += f" ({', '.join(structure_types)})"
-    if ring_count > 4 and aromatic_atoms > 12:
+    if ring_count > 3 and num_pyrroles >= 4:
         reason += " in a complex polypyrrole system"
-        
+    
     return True, reason
