@@ -21,17 +21,11 @@ def is_para_terphenyl(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Refined SMARTS pattern for para-terphenyl
-    # This pattern is more specific, allowing substituents but targeting the core 1,4-diphenylbenzene structure.
-    para_terphenyl_pattern = Chem.MolFromSmarts("c1cc(ccc1-c2ccc(cc2)-c3ccccc3)")
-
+    # Modified SMARTS pattern for para-terphenyl
+    para_terphenyl_pattern = Chem.MolFromSmarts("c1(c2ccc(cc2)c3ccccc3)ccc(cc1)-c4cccc5ccccc45")
+    
     # Check if the molecule matches the para-terphenyl pattern
     if mol.HasSubstructMatch(para_terphenyl_pattern):
         return True, "Contains a 1,4-diphenylbenzene skeleton characteristic of para-terphenyl"
     else:
         return False, "Does not contain a distinct 1,4-diphenylbenzene skeleton"
-
-# Example usage
-example_smiles = "c1ccc(cc1)-c1ccc(cc1)-c1ccccc1"  # 1,4-diphenylbenzene itself
-result, reason = is_para_terphenyl(example_smiles)
-print(result, reason)
