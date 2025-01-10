@@ -6,7 +6,8 @@ from rdkit import Chem
 def is_flavanones(smiles: str):
     """
     Determines if a molecule is a flavanone based on its SMILES string.
-    A flavanone has a chroman-4-one core with a phenyl group at position 2.
+    A flavanone typically features a chroman-4-one core structure,
+    often with a phenyl or a similarly structured group.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,14 +22,14 @@ def is_flavanones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Generalized chroman-4-one core pattern
-    chromanone_pattern = Chem.MolFromSmarts("O=C1CCC2C1C=CC=C2") 
+    # Updated chroman-4-one core pattern to be more flexible
+    chromanone_pattern = Chem.MolFromSmarts("O=C1CC[C@@]2(c3ccccc3)OCCc12") 
     if not mol.HasSubstructMatch(chromanone_pattern):
-        return False, "No chroman-4-one core detected"
+        return False, "No recognized chroman-4-one core detected"
     
-    # Phenyl group attached to the 2-position of the chroman-4-one
-    phenyl_at_position_2_pattern = Chem.MolFromSmarts("c1ccccc1[C@H]2CC(O)=C2")
-    if not mol.HasSubstructMatch(phenyl_at_position_2_pattern):
-        return False, "No phenyl group at position 2 of the chroman-4-one core"
+    # Check for the phenyl-like ring attached to the core
+    phenyl_pattern = Chem.MolFromSmarts("c1cc(ccc1)-C2OC(C)=C2")
+    if not mol.HasSubstructMatch(phenyl_pattern):
+        return False, "No phenyl or similar group detected at flavanone core"
 
-    return True, "Contains chroman-4-one core with a phenyl group at position 2"
+    return True, "Contains recognizable flavanone core with appropriate substitution"
