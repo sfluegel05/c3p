@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_carbapenems(smiles: str):
     """
     Determines if a molecule is a carbapenem based on its SMILES string.
-    A carbapenem typically features a bicyclic ring structure with a β-lactam
-    fused to a five-membered ring.
+    A carbapenem contains a bicyclic ring structure with a β-lactam 
+    fused to a five-membered ring and might often include a sulfur atom.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,20 +21,25 @@ def is_carbapenems(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Define a refined SMARTS pattern for carbapenem
-    # This pattern identifies a β-lactam (4-membered) fused with a five-membered ring
-    carbapenem_pattern = Chem.MolFromSmarts("C1C(=O)N2C[C@H](C)C12")  # Broad example pattern
-    
-    if not mol.HasSubstructMatch(carbapenem_pattern):
-        return False, "Does not match the carbapenem structural core motif"
 
-    # Check for optional sulfur
+    # Define SMARTS patterns for carbapenem core structures
+    # 4-membered ring (beta-lactam) fused to a 5-membered ring with typical substitutions
+    carbapenem_patterns = [
+        Chem.MolFromSmarts("C1C(=O)N2CC(C)C12"),  # Simplified for illustration
+        Chem.MolFromSmarts("C1[C@H]2N(C1=O)C=C[C@H]2C")  # Bicyclic core
+    ]
+
+    matches_pattern = any(mol.HasSubstructMatch(pattern) for pattern in carbapenem_patterns)
+    
+    if not matches_pattern:
+        return False, "Does not match any carbapenem structural core motifs"
+
+    # Check for the presence of sulfur which is common in many carbapenems
     has_sulfur = any(atom.GetAtomicNum() == 16 for atom in mol.GetAtoms())
+
     if not has_sulfur:
-        return True, "Matches carbapenem core structure, but lacks typical sulfur"
+        return True, "Matches carbapenem core structure but lacks typical sulfur atom"
 
-    return True, "Matches carbapenem core structure with potential sulfur"
+    return True, "Matches carbapenem core structure with possible sulfur atom"
 
-# Further refinements can be made based on a more specific understanding
-# and evaluation against known carbapenem structures.
+# Ensure the SMARTS patterns and additional checks comprehensively capture the desired chemical class.
