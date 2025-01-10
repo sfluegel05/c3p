@@ -30,20 +30,22 @@ def is_monounsaturated_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
 
-    # Count double and triple bonds in the carbon chain
+    # Count double and triple bonds in the carbon chain, excluding the carboxylic acid group
     double_bonds = 0
     triple_bonds = 0
     for bond in mol.GetBonds():
         if bond.GetBondType() == Chem.BondType.DOUBLE:
-            double_bonds += 1
+            # Exclude the double bond in the carboxylic acid group
+            if not (bond.GetBeginAtom().GetAtomicNum() == 6 and bond.GetEndAtom().GetAtomicNum() == 8):
+                double_bonds += 1
         elif bond.GetBondType() == Chem.BondType.TRIPLE:
             triple_bonds += 1
 
     total_unsaturations = double_bonds + triple_bonds
 
-    # Check for exactly one double or triple bond
+    # Check for exactly one double or triple bond in the carbon chain
     if total_unsaturations != 1:
-        return False, f"Found {total_unsaturations} unsaturations, need exactly 1"
+        return False, f"Found {total_unsaturations} unsaturations in the carbon chain, need exactly 1"
 
     # Check that the rest of the chain is singly bonded
     # We can verify this by ensuring that the number of rotatable bonds is consistent with a long carbon chain
