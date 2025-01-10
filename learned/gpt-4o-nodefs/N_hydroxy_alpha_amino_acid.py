@@ -21,8 +21,8 @@ def is_N_hydroxy_alpha_amino_acid(smiles: str):
     
     # Define the key structural patterns for N-hydroxy-alpha-amino-acid
     
-    # This matches an alpha amino acid backbone with a hydroxyamino modification:
-    nhydroxy_amino_pattern = Chem.MolFromSmarts("N([OX1H0,OX2])[C@@H](C)C(=O)O")
+    # This SMARTS pattern matches an alpha amino acid backbone with a hydroxyamino modification:
+    nhydroxy_amino_pattern = Chem.MolFromSmarts("N(O)[C@@H]([*!#0])[CX3](=O)[OX1H]")
     if not mol.HasSubstructMatch(nhydroxy_amino_pattern):
         return False, "Does not contain the N-hydroxy alpha-amino acid substructure"
     
@@ -30,8 +30,9 @@ def is_N_hydroxy_alpha_amino_acid(smiles: str):
 
 # Test examples: These should return True
 example_smiles = [
-    "O=C(O)[C@@H](N(O)O)CCCCCCCSC",
-    "C(=N/O)\NCCC[C@H](N)C(=O)O",
+    r"O=C(O)[C@@H](N(O)O)CCCCCCCSC",
+    r"C(\N)(=N/O)/NCCC[C@H](N)C(=O)O",
+    r"NC(CCCNC(=N)NO)C(O)=O",
     # Add more test examples as needed
 ]
 
