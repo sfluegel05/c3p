@@ -21,20 +21,15 @@ def is_3beta_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define a simple pattern for the ABCD ring structure of steroids
-    steroid_pattern = Chem.MolFromSmarts("C1CC2CCC3C(C(CCC4=CC(CCC34)C2)C1)C")
-    if steroid_pattern is None:
-        return None, "Failed to create a valid steroid pattern"
-
+    # Define a pattern for the steroid ABCD rings, allowing for variations in saturation
+    steroid_pattern = Chem.MolFromSmarts("[#6]1-[#6]-[#6]-2-[#6]-[#6]3-[#6](-[#6]-[#6]-4-[#6R1]-[#6R1]([#6R1][#6]4)[#6R1]([#6R1][#6]3)[#6R1][#6]2)-[#6R1][#6]1")
+    
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
     
-    # Define pattern for 3beta-hydroxy group
-    # Match a tertiary alcohol pattern
-    hydroxy_pattern = Chem.MolFromSmarts("C[C@@H](O)C")
-    if hydroxy_pattern is None:
-        return None, "Failed to create a valid hydroxy pattern"
-
+    # Define a pattern for a 3beta-hydroxy group
+    hydroxy_pattern = Chem.MolFromSmarts("[C@H]1(O)[C@H](C)CC[C@]2(C)[C@@H]3CC[C@@H]4C([C@H](O)C)CCC3=[C@]2[C@H]4C1")
+    
     if not mol.HasSubstructMatch(hydroxy_pattern):
         return False, "No 3beta-hydroxy group found"
 
