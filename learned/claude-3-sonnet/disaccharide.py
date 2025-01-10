@@ -34,51 +34,73 @@ def is_disaccharide(smiles: str):
     if ring_count < 1:
         return False, f"Too few rings ({ring_count}), disaccharides need at least 1"
 
-    # Look for sugar ring patterns more specifically
-    pyranose = Chem.MolFromSmarts("[C]1[C][C][C]([C][O]1)")
-    furanose = Chem.MolFromSmarts("[C]1[C][C]([C][O]1)")
-    kdo = Chem.MolFromSmarts("CC(=O)[C@H](O)[C@@H](O)[C@H](O)[C@H](O)CO")
+    # Look for sugar ring patterns with more flexible matching
+    pyranose = Chem.MolFromSmarts("[CR1]1[CR1][CR1][CR1]([CR1][OR1]1)")
+    furanose = Chem.MolFromSmarts("[CR1]1[CR1][CR1]([CR1][OR1]1)")
     
     sugar_ring_matches = (len(mol.GetSubstructMatches(pyranose)) + 
-                         len(mol.GetSubstructMatches(furanose)) +
-                         len(mol.GetSubstructMatches(kdo)))
+                         len(mol.GetSubstructMatches(furanose)))
     
     if sugar_ring_matches < 1:
         return False, "No sugar ring patterns found"
 
-    # Check for glycosidic bond pattern with more specific context
-    glycosidic_pattern = Chem.MolFromSmarts("[C][OX2][C;R]")  # Require one carbon to be in ring
-    glycosidic_matches = mol.GetSubstructMatches(glycosidic_pattern)
-    if len(glycosidic_matches) < 1:
-        return False, "No glycosidic bond found"
+    # Check for glycosidic bond patterns - multiple possible patterns
+    glycosidic_patterns = [
+        Chem.MolFromSmarts("[CR1][OR2][CR1]"),  # Basic glycosidic bond
+        Chem.MolFromSmarts("[CR1]O[CR1;!R]"),    # Acyclic linkage
+        Chem.MolFromSmarts("[CR1]O[CR0]"),       # Special cases
+    ]
+    
+    has_glycosidic = False
+    for pattern in glycosidic_patterns:
+        if mol.HasSubstructMatch(pattern):
+            has_glycosidic = True
+            break
+            
+    if not has_glycosidic:
+        return False, "No glycosidic bond pattern found"
 
     # Count carbons and oxygens
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     
-    # Expanded ranges to accommodate modified sugars and special cases
-    if c_count < 10 or c_count > 18:  # Allow for Kdo sugars
-        return False, f"Carbon count ({c_count}) outside range for disaccharides (10-18)"
+    if c_count < 8 or c_count > 24:  # Expanded range for various disaccharides
+        return False, f"Carbon count ({c_count}) outside range for disaccharides (8-24)"
     
-    if o_count < 8 or o_count > 14:  # Allow for uronic acids and modifications
-        return False, f"Oxygen count ({o_count}) outside range for disaccharides (8-14)"
+    if o_count < 6 or o_count > 14:  # Adjusted range
+        return False, f"Oxygen count ({o_count}) outside range for disaccharides (6-14)"
 
-    # Look for hydroxyl groups with more context
-    hydroxyl_pattern = Chem.MolFromSmarts("[CX4][OX2H1]")  # Require sp3 carbon
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    if len(hydroxyl_matches) < 4:  # Reduced minimum to account for modifications
-        return False, f"Too few hydroxyl groups ({len(hydroxyl_matches)}), need at least 4"
+    # Look for hydroxyl groups - more flexible pattern
+    hydroxyl_patterns = [
+        Chem.MolFromSmarts("[CX4][OX2H1]"),  # Standard hydroxyl
+        Chem.MolFromSmarts("[CR1][OX2H1]"),   # Ring hydroxyl
+    ]
+    
+    total_hydroxyls = 0
+    for pattern in hydroxyl_patterns:
+        total_hydroxyls += len(mol.GetSubstructMatches(pattern))
+    
+    if total_hydroxyls < 3:  # Reduced minimum to account for modifications
+        return False, f"Too few hydroxyl groups ({total_hydroxyls}), need at least 3"
 
-    # Check for characteristic sugar carbon patterns
-    sugar_carbon_pattern = Chem.MolFromSmarts("[C]([O])([C])[C]([O])")
-    sugar_carbon_matches = mol.GetSubstructMatches(sugar_carbon_pattern)
-    if len(sugar_carbon_matches) < 4:
-        return False, "Insufficient sugar carbon pattern matches"
+    # Check for characteristic sugar carbon patterns - multiple patterns
+    sugar_patterns = [
+        Chem.MolFromSmarts("[CR1]([OR1])([CR1])[CR1]([OR0])"),
+        Chem.MolFromSmarts("[CR1]([OR0])([CR1])[CR1]([OR1])"),
+        Chem.MolFromSmarts("[CR1]([OR0])([CH2][OR0])[CR1]"),
+    ]
+    
+    sugar_pattern_matches = 0
+    for pattern in sugar_patterns:
+        sugar_pattern_matches += len(mol.GetSubstructMatches(pattern))
+    
+    if sugar_pattern_matches < 2:
+        return False, "Insufficient sugar structural patterns"
 
-    # Check molecular weight with expanded range
+    # Check molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 250 or mol_wt > 800:  # Expanded range for modified disaccharides
-        return False, f"Molecular weight ({mol_wt}) outside range for disaccharides (250-800)"
+    if mol_wt < 240 or mol_wt > 800:  # Slightly adjusted range
+        return False, f"Molecular weight ({mol_wt}) outside range for disaccharides (240-800)"
 
     # Additional check for non-sugar atoms
     n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
@@ -86,9 +108,12 @@ def is_disaccharide(smiles: str):
     if n_count > 2 or s_count > 1:  # Allow limited N for amino sugars
         return False, "Too many non-sugar atoms"
 
-    # Check for characteristic disaccharide connectivity
-    sugar_connection = Chem.MolFromSmarts("[C;R]([O])([C])[O][C;R]([O])([C])")
-    if not mol.HasSubstructMatch(sugar_connection):
-        return False, "Missing characteristic sugar-sugar connection"
+    # Final check for overall connectivity
+    if ring_count >= 2 and has_glycosidic and total_hydroxyls >= 3:
+        return True, "Contains two sugar units connected by glycosidic bond with appropriate hydroxyl groups"
+    
+    # If we have one ring and enough evidence of a second sugar unit
+    if ring_count == 1 and has_glycosidic and total_hydroxyls >= 4 and sugar_pattern_matches >= 3:
+        return True, "Contains connected sugar units with one in ring form"
 
-    return True, "Contains two sugar units connected by glycosidic bond with appropriate number of hydroxyl groups"
+    return False, "Does not match disaccharide pattern"
