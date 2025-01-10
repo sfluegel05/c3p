@@ -6,7 +6,6 @@ Classifies: anthocyanidin cation
 """
 
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_anthocyanidin_cation(smiles: str):
     """
@@ -27,32 +26,31 @@ def is_anthocyanidin_cation(smiles: str):
         return False, "Invalid SMILES string"
     
     # Check for positive charge
-    charge = rdMolDescriptors.CalcFormalCharge(mol)
+    charge = mol.GetFormalCharge()
     if charge <= 0:
         return False, "Molecule is not a cation"
 
     # Define SMARTS pattern for flavylium core (2-phenylchromenylium cation)
-    # Simplified pattern for flavylium core with positive charge on oxygen
-    flavylium_pattern = Chem.MolFromSmarts('c1ccccc1-c2cc3c([o+]cc3)cc2')
+    # Flavylium core: fused tricyclic ring system with a positively charged oxygen atom
+    flavylium_pattern = Chem.MolFromSmarts('c1ccccc1c2cc[o+]c3ccccc23')
     if not mol.HasSubstructMatch(flavylium_pattern):
         return False, "Flavylium core not found"
 
     # Check for oxygenated substituents (hydroxyl or methoxy groups) on aromatic rings
+    # Phenolic OH groups and methoxy groups attached to aromatic carbons
     oxygenated = False
-    oxy_substituent_pattern = Chem.MolFromSmarts('[cH]-[O;H1]')  # Phenolic OH
-    methoxy_pattern = Chem.MolFromSmarts('[cH]-O-C')  # Methoxy group
-
+    oxy_substituent_pattern = Chem.MolFromSmarts('[cH]O')  # Phenolic OH
+    methoxy_pattern = Chem.MolFromSmarts('[cH]OC')  # Methoxy group
     if mol.HasSubstructMatch(oxy_substituent_pattern):
         oxygenated = True
     elif mol.HasSubstructMatch(methoxy_pattern):
         oxygenated = True
-
-    if not oxygenated:
+    else:
         return False, "No oxygenated substituents found on aromatic rings"
 
     # Check for absence of sugar moieties (aglycone)
-    # Look for glycosidic bonds: C-O-C between carbons and oxygen
-    sugar_pattern = Chem.MolFromSmarts('[C;!R]-O-[C;!R]')
+    # Look for glycosidic bonds: C-O-C between carbons not in rings
+    sugar_pattern = Chem.MolFromSmarts('[#6;R0]-O-[#6;R0]')
     if mol.HasSubstructMatch(sugar_pattern):
         return False, "Sugar moieties detected (glycosidic bonds present)"
 
