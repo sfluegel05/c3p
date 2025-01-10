@@ -52,12 +52,23 @@ def is_polychlorobiphenyl(smiles: str):
     if chlorine_count < 2 or chlorine_count > 10:
         return False, f"Found {chlorine_count} chlorine atoms attached to biphenyl rings, need between 2 and 10"
 
-    # Additional check: ensure biphenyl is the main structure
+    # Check for disallowed functional groups (e.g., hydroxyl, nitro, etc.)
+    disallowed_patterns = [
+        Chem.MolFromSmarts("[OH]"),  # Hydroxyl group
+        Chem.MolFromSmarts("[N+](=O)[O-]"),  # Nitro group
+        Chem.MolFromSmarts("[S](=O)(=O)"),  # Sulfonyl group
+    ]
+    
+    for pattern in disallowed_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return False, "Contains disallowed functional groups"
+
+    # Additional check: ensure biphenyl is a significant part of the structure
     # Calculate the ratio of biphenyl atoms to total atoms
     biphenyl_ratio = len(biphenyl_atoms) / mol.GetNumAtoms()
     
-    # If less than 50% of the molecule is the biphenyl core, likely not a simple polychlorobiphenyl
-    if biphenyl_ratio < 0.5:
-        return False, "Biphenyl core is not the main structure"
+    # If less than 30% of the molecule is the biphenyl core, likely not a simple polychlorobiphenyl
+    if biphenyl_ratio < 0.3:
+        return False, "Biphenyl core is not a significant part of the structure"
 
     return True, f"Contains biphenyl structure with {chlorine_count} chlorine atoms attached to rings"
