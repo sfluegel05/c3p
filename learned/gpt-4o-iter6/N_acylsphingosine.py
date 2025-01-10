@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_N_acylsphingosine(smiles: str):
     """
     Determines if a molecule is an N-acylsphingosine based on its SMILES string.
-    An N-acylsphingosine consists of a sphingosine backbone with an N-linked acyl group.
+    An N-acylsphingosine has a sphingosine backbone with an N-linked fatty acyl group.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,18 +20,18 @@ def is_N_acylsphingosine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Improved pattern for sphingosine backbone
-    sphingosine_pattern = Chem.MolFromSmarts("[C@H](O)[C@@H](N)[C@@H](CO)")  # Detailed pattern with C-N link
-
+    # Correct pattern for sphingosine backbone
+    sphingosine_pattern = Chem.MolFromSmarts("C[C@H](O)C[C@@H](N)CO")  # Elongated pattern with C-N acyl and double bond
+    
     # Check for presence of sphingosine backbone
     if not mol.HasSubstructMatch(sphingosine_pattern):
         return False, "No sphingosine backbone found"
-    
-    # Improved pattern for N-acyl group
-    n_acyl_pattern = Chem.MolFromSmarts("N-C(=O)-C")  # More comprehensive acyl group check
+        
+    # Correct pattern for N-acyl group across a range of chain lengths
+    n_acyl_pattern = Chem.MolFromSmarts("NC(=O)[C,CX4][C,CX4][C,CX4]*")  # Matches N-acyl group with long hydrocarbon chains
     if not mol.HasSubstructMatch(n_acyl_pattern):
         return False, "No N-acyl group found"
-
+    
     return True, "Contains sphingosine backbone with N-linked acyl group"
 
 # Test examples
