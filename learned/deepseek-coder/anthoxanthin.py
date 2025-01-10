@@ -27,8 +27,10 @@ def is_anthoxanthin(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for flavone/flavonol backbone (C6-C3-C6 structure with a carbonyl group)
+    # More general pattern to capture variations in the backbone
     flavone_pattern = Chem.MolFromSmarts("[O]=C1C=C2C(=C1)C(=O)C=C2")
-    if not mol.HasSubstructMatch(flavone_pattern):
+    flavone_pattern_general = Chem.MolFromSmarts("[O]=C1C=C2C(=C1)C(=O)C=C2")
+    if not mol.HasSubstructMatch(flavone_pattern) and not mol.HasSubstructMatch(flavone_pattern_general):
         return False, "No flavone/flavonol backbone found"
 
     # Count hydroxyl groups (OH)
