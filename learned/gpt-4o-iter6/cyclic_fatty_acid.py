@@ -27,31 +27,29 @@ def is_cyclic_fatty_acid(smiles: str):
     if ring_info.NumRings() < 1:
         return False, "No ring structures found"
     
-    # Identify carboxylic acid groups or ester forms
+    # Identify carboxylic acid groups
     carboxylic_acid_group = Chem.MolFromSmarts("C(=O)O")
-    ester_group = Chem.MolFromSmarts("C(=O)[O;R]")
-    has_carboxylic_acid = mol.HasSubstructMatch(carboxylic_acid_group) or mol.HasSubstructMatch(ester_group)
+    has_carboxylic_acid = mol.HasSubstructMatch(carboxylic_acid_group)
 
-    # Detect common cyclic structures such as furans, epoxides, cyclopentanes
-    fragment_patterns = [
+    # Detect common cyclic structures including more diverse motifs
+    possible_cycles = [
         Chem.MolFromSmarts("c1ccoc1"),             # Furan
-        Chem.MolFromSmarts("[O]1[C][C][O]1"),      # Epoxide or similar cyclic ethers
         Chem.MolFromSmarts("C1CCCCC1"),            # Cyclohexane
         Chem.MolFromSmarts("C1CCCC1"),             # Cyclopentane
         Chem.MolFromSmarts("C1OC=CC1"),            # Pyran
+        Chem.MolFromSmarts("[O]1[C][C][O]1")       # Epoxide
     ]
 
-    has_alternative_cycle = any(mol.HasSubstructMatch(pattern) for pattern in fragment_patterns)
+    has_cyclic_structure = any(mol.HasSubstructMatch(cycle) for cycle in possible_cycles)
 
-    # Ensure presence of sufficient carbon chain
-    num_carbon_chains = len([atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6])
-    if num_carbon_chains < 12:
-        return False, "Does not contain a sufficient carbon chain typical of fatty acids"
-
-    if has_carboxylic_acid and (ring_info.NumRings() > 0 or has_alternative_cycle):
+    # Ensure presence of sufficient carbon chain typically found in fatty acids
+    carbon_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
+    long_carbon_chain = len(carbon_atoms) >= 12
+ 
+    if has_carboxylic_acid and (has_cyclic_structure or ring_info.NumRings() > 0) and long_carbon_chain:
         return True, "Contains both cyclic and fatty acid features, classifying as a cyclic fatty acid"
     
-    return False, "Does not fully fit the cyclic fatty acid criteria based on initial checks"
+    return False, "Does not fully fit the cyclic fatty acid criteria based on revised checks"
 
 # Example usage:
 # result, reason = is_cyclic_fatty_acid("OC(=O)CCCC[C@H]1CCC=C1")
