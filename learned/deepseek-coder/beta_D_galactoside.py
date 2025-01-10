@@ -39,7 +39,10 @@ def is_beta_D_galactoside(smiles: str):
             anomeric_carbon = match[0]
             for neighbor in mol.GetAtomWithIdx(anomeric_carbon).GetNeighbors():
                 if neighbor.GetAtomicNum() == 8:  # Oxygen atom
-                    return True, "Contains a galactose ring in the beta-configuration with a glycosidic bond at the anomeric carbon"
+                    # Ensure the oxygen is part of a glycosidic bond (connected to another carbon)
+                    for neighbor_of_oxygen in neighbor.GetNeighbors():
+                        if neighbor_of_oxygen.GetAtomicNum() == 6:  # Carbon atom
+                            return True, "Contains a galactose ring in the beta-configuration with a glycosidic bond at the anomeric carbon"
         return False, "No glycosidic bond found at the anomeric carbon"
     else:
         return False, "No galactose ring in the beta-configuration found"
