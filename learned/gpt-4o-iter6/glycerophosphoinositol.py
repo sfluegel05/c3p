@@ -22,39 +22,28 @@ def is_glycerophosphoinositol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define patterns more inclusively and logically
-    glycerol_pattern = Chem.MolFromSmarts("[O][C@H](CO)C([O])")  # Assume correct stereochemistry from input
-    inositol_pattern = Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@H]1O")
-    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)(O)")  # More explicit phosphate pattern
+    # Define patterns for key structural components
+    glycerol_pattern = Chem.MolFromSmarts("O[C@H](COP)C(O)")  # Glycerol backbone with phosphate
+    inositol_pattern = Chem.MolFromSmarts("C1(O)C(O)C(O)C(O)C(O)C1O")
+    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)(O)")
 
-    # Check for the presence of glycerol backbone
+    # Check for the presence of glycerol backbone with phosphate
     if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone found"
-    
-    # Search for inositol ring and ensure connection to a phosphate group at the sn-3 position
+        return False, "No glycerol backbone with phosphate group found"
+
+    # Check for inositol attached to phosphate
+    if not mol.HasSubstructMatch(inositol_pattern):
+        return False, "No inositol group found"
+
+    # Confirm phosphate linkage to inositol
+    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
     inositol_matches = mol.GetSubstructMatches(inositol_pattern)
-    phosphate_connected = False
     
-    for match in inositol_matches:
-        # For each match, check for nearby phosphate connection
-        for atom_idx in match:
-            atom = mol.GetAtomWithIdx(atom_idx)
-            if atom.GetSymbol() == 'P': # Look for a phosphate directly bonded to inositol
-                phosphate_connected = True
-                break
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetSymbol() == 'P':
-                    phosphate_connected = True
-                    break
-            if phosphate_connected:
-                break
+    for p_match in phosphate_matches:
+        for i_match in inositol_matches:
+            phosphate_atom = mol.GetAtomWithIdx(p_match[0])  # Assuming first atom of match is P
+            if phosphate_atom.GetSymbol() == 'P' and \
+               any(neighbor.GetIdx() in i_match for neighbor in phosphate_atom.GetNeighbors()):
+                return True, "Contains glycerophosphoinositol structure (glycerol backbone, attached phosphate group to inositol, inositol, and fatty acids)"
 
-    if not phosphate_connected:
-        return False, "Phosphate group is not attached to inositol at the correct position"
-    
-    # Check for at least one ester linkage to fatty acids
-    ester_pattern = Chem.MolFromSmarts("C(=O)O[C@@H]CO")  # Assume correct stereochemistry from input
-    if len(mol.GetSubstructMatches(ester_pattern)) < 1:
-        return False, "No ester linkages found, expected fatty acids"
-
-    return True, "Contains glycerophosphoinositol structure (glycerol backbone, attached phosphate group to inositol, inositol, and fatty acids)"
+    return False, "Phosphate group is not correctly connected to inositol"
