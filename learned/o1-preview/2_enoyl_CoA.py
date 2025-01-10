@@ -23,59 +23,76 @@ def is_2_enoyl_CoA(smiles: str):
         return False, "Invalid SMILES string"
 
     # Identify thioester linkage: C(=O)-S
-    thioester_pattern = Chem.MolFromSmarts("C(=O)S")
+    thioester_pattern = Chem.MolFromSmarts("C(=O)[SX1]")
     thioester_matches = mol.GetSubstructMatches(thioester_pattern)
     if not thioester_matches:
         return False, "Thioester linkage not found"
 
-    # Assume first match is the thioester linkage
-    carbonyl_c_idx = thioester_matches[0][0]
-    sulfur_idx = thioester_matches[0][2]
-    sulfur_atom = mol.GetAtomWithIdx(sulfur_idx)
+    # Identify adenine moiety (part of CoA)
+    adenine_smarts = "n1cnc2c1ncnc2N"  # SMARTS pattern for adenine
+    adenine_mol = Chem.MolFromSmarts(adenine_smarts)
+    adenine_matches = mol.GetSubstructMatches(adenine_mol)
+    if not adenine_matches:
+        return False, "Adenine moiety not found (CoA not detected)"
 
-    # Check for CoA moiety connected to sulfur atom
-    # Use a SMARTS pattern for the CoA fragment (pantetheine with diphosphate adenine)
-    coa_pattern = Chem.MolFromSmarts("SCCNC(=O)CCNC(=O)[C@@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OCC1OC(C(O)C1O)N2C=NC3=C2N=CN=C3N")
-    if not mol.HasSubstructMatch(coa_pattern):
-        return False, "CoA moiety not found connected to sulfur atom"
+    # Get indices of adenine atoms
+    adenine_atom_indices = set()
+    for match in adenine_matches:
+        adenine_atom_indices.update(match)
 
-    # Identify the carbonyl carbon atom
-    carbonyl_c = mol.GetAtomWithIdx(carbonyl_c_idx)
-    # Find the alpha carbon (next carbon in acyl chain)
-    alpha_c = None
-    for neighbor in carbonyl_c.GetNeighbors():
-        if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() != sulfur_idx:
-            alpha_c = neighbor
-            break
-    if alpha_c is None:
-        return False, "Alpha carbon in acyl chain not found"
+    # For each thioester linkage, check if sulfur is connected to adenine
+    for thioester_match in thioester_matches:
+        carbonyl_c_idx = thioester_match[0]
+        sulfur_idx = thioester_match[2]
+        sulfur_atom = mol.GetAtomWithIdx(sulfur_idx)
 
-    # Check if alpha carbon is sp2 hybridized (double-bonded to beta carbon)
-    if alpha_c.GetHybridization() != Chem.rdchem.HybridizationType.SP2:
-        return False, "Alpha carbon is not sp2 hybridized"
-
-    # Identify beta carbon (double-bonded to alpha carbon)
-    beta_c = None
-    for neighbor in alpha_c.GetNeighbors():
-        if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() != carbonyl_c_idx:
-            bond = mol.GetBondBetweenAtoms(alpha_c.GetIdx(), neighbor.GetIdx())
-            if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-                beta_c = neighbor
+        # Check if sulfur is connected to adenine moiety
+        connected_to_adenine = False
+        for adenine_atom_idx in adenine_atom_indices:
+            path = Chem.rdmolops.GetShortestPath(mol, sulfur_idx, adenine_atom_idx)
+            if path:
+                connected_to_adenine = True
                 break
-    if beta_c is None:
-        return False, "Beta carbon double-bonded to alpha carbon not found"
+        if not connected_to_adenine:
+            continue  # Try next thioester linkage
 
-    # Ensure the double bond is not part of a ring
-    if alpha_c.IsInRing() or beta_c.IsInRing():
-        return False, "Double bond is part of a ring"
+        # Identify alpha carbon (attached to carbonyl carbon but not sulfur)
+        carbonyl_c_atom = mol.GetAtomWithIdx(carbonyl_c_idx)
+        alpha_c = None
+        for neighbor in carbonyl_c_atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() != sulfur_idx:
+                alpha_c = neighbor
+                break
+        if alpha_c is None:
+            continue  # No alpha carbon found in this thioester linkage
 
-    # Check that the acyl chain continues beyond beta carbon
-    chain_continues = False
-    for neighbor in beta_c.GetNeighbors():
-        if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() != alpha_c.GetIdx():
-            chain_continues = True
-            break
-    if not chain_continues:
-        return False, "Acyl chain does not continue beyond beta carbon"
+        # Identify beta carbon (double-bonded to alpha carbon)
+        beta_c = None
+        for neighbor in alpha_c.GetNeighbors():
+            if neighbor.GetIdx() == carbonyl_c_idx:
+                continue
+            if neighbor.GetAtomicNum() == 6:
+                bond = mol.GetBondBetweenAtoms(alpha_c.GetIdx(), neighbor.GetIdx())
+                if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                    beta_c = neighbor
+                    break
+        if beta_c is None:
+            continue  # No beta carbon double-bonded to alpha carbon
 
-    return True, "2-enoyl-CoA identified with double bond between positions 2 and 3 in acyl chain"
+        # Ensure double bond is not part of a ring
+        if alpha_c.IsInRing() or beta_c.IsInRing():
+            continue  # Double bond is part of a ring
+
+        # Check that the acyl chain continues beyond beta carbon
+        chain_continues = False
+        for neighbor in beta_c.GetNeighbors():
+            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() != alpha_c.GetIdx():
+                chain_continues = True
+                break
+        if not chain_continues:
+            continue  # Acyl chain does not continue beyond beta carbon
+
+        # If all checks pass, return True
+        return True, "2-enoyl-CoA identified with double bond between positions 2 and 3 in acyl chain"
+
+    return False, "Did not match criteria for 2-enoyl-CoA"
