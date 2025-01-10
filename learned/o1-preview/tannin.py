@@ -26,37 +26,52 @@ def is_tannin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Calculate molecular weight - tannins typically have high molecular weight
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 500:
-        return False, f"Molecular weight is {mol_wt:.1f} Da, which is less than 500 Da"
+    # Define SMARTS patterns
+    # Catechol unit: benzene ring with adjacent hydroxyls at positions 1 and 2
+    catechol_pattern = Chem.MolFromSmarts('c1c(O)cccc1O')
+    # Pyrogallol unit: benzene ring with hydroxyls at positions 1,2,3
+    pyrogallol_pattern = Chem.MolFromSmarts('c1c(O)c(O)c(O)cc1')
+    # Galloyl ester: ester of gallic acid
+    galloyl_ester_pattern = Chem.MolFromSmarts('O=C(O)c1c(O)ccc(O)c1')
+    # Glycosidic linkage: sugar linkage (C-O-C between carbons)
+    glycosidic_pattern = Chem.MolFromSmarts('[CX4][OX2H][CX4]')
+    # Flavonoid unit: approximate pattern for flavan-3-ol core
+    flavonoid_pattern = Chem.MolFromSmarts('C1[C@@H](O)[C@@H](C2=CC=CC=C2)OC3=CC=CC=C13')
     
-    # Count number of phenolic hydroxyl groups (aromatic hydroxyls)
-    phenol_pattern = Chem.MolFromSmarts('c[OH]')
-    phenol_matches = mol.GetSubstructMatches(phenol_pattern)
-    num_phenols = len(phenol_matches)
-    if num_phenols < 3:
-        return False, f"Found {num_phenols} phenolic hydroxyl groups, need at least 3"
+    # Count catechol units
+    num_catechol = len(mol.GetSubstructMatches(catechol_pattern))
+    # Count pyrogallol units
+    num_pyrogallol = len(mol.GetSubstructMatches(pyrogallol_pattern))
+    # Count galloyl ester groups
+    num_galloyl = len(mol.GetSubstructMatches(galloyl_ester_pattern))
+    # Count glycosidic linkages
+    num_glycosidic = len(mol.GetSubstructMatches(glycosidic_pattern))
+    # Count flavonoid units
+    num_flavonoid = len(mol.GetSubstructMatches(flavonoid_pattern))
     
-    # Count number of aromatic rings
+    # Total number of phenolic units
+    num_phenolic_units = num_catechol + num_pyrogallol + num_galloyl + num_flavonoid
+    
+    # Check if molecule has multiple phenolic units
+    if num_phenolic_units < 2:
+        return False, f"Found {num_phenolic_units} phenolic units, need at least 2"
+    
+    # Tannins usually have multiple galloyl esters or flavonoid units
+    if num_galloyl + num_flavonoid < 2:
+        return False, f"Found {num_galloyl} galloyl esters and {num_flavonoid} flavonoid units, need at least 2 combined"
+    
+    # Check for glycosidic linkage
+    if num_glycosidic < 1:
+        return False, "No glycosidic linkages found"
+    
+    # Verify high degree of polymerization
     num_aromatic_rings = rdMolDescriptors.CalcNumAromaticRings(mol)
-    if num_aromatic_rings < 3:
-        return False, f"Found {num_aromatic_rings} aromatic rings, need at least 3"
-    
-    # Check for ester linkages (common in tannins)
-    ester_pattern = Chem.MolFromSmarts('C(=O)O')
-    has_ester = mol.HasSubstructMatch(ester_pattern)
-    
-    # Check for glycosidic linkages (sugar moieties)
-    glycosidic_pattern = Chem.MolFromSmarts('[OX2H][CX4H1]')
-    has_glycosidic = mol.HasSubstructMatch(glycosidic_pattern)
-    
-    if not (has_ester or has_glycosidic):
-        return False, "No ester or glycosidic linkages found"
+    if num_aromatic_rings < 4:
+        return False, f"Found {num_aromatic_rings} aromatic rings, need at least 4 for tannins"
     
     # All criteria met
-    return True, "Contains multiple phenolic hydroxyls, aromatic rings, high molecular weight, and ester or glycosidic linkages"
-    
+    return True, "Contains multiple phenolic units, galloyl esters/flavonoid units, glycosidic linkages, and high degree of polymerization"
+
 __metadata__ = {
     'chemical_class': {
         'id': 'CHEBI:27027',
