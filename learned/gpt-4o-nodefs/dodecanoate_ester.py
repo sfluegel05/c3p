@@ -19,13 +19,13 @@ def is_dodecanoate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Improve pattern: Look for ester connected to a 12-carbon chain, taking into account variations
-    dodecanoate_ester_pattern = Chem.MolFromSmarts("C(=O)O.CCCCCCCCCCCC")
-    
+    # Revised SMARTS pattern for dodecanoate ester
+    dodecanoate_ester_pattern = Chem.MolFromSmarts("CCCCCCCCCCCC(=O)O")
+
     # Check for a match
     has_dodecanoate_ester = mol.HasSubstructMatch(dodecanoate_ester_pattern)
     if not has_dodecanoate_ester:
-        return False, "No dodecanoic acid ester moiety found"
+        return False, "No dodecanoate ester moiety found"
     
     return True, "Contains a dodecanoate ester moiety"
 
