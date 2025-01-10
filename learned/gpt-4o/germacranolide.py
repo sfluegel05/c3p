@@ -2,11 +2,12 @@
 Classifies: CHEBI:73011 germacranolide
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_germacranolide(smiles: str):
     """
     Determines if a molecule is a germacranolide based on its SMILES string.
-    A germacranolide is a sesquiterpene lactone based on a germacrane skeleton.
+    A germacranolide is a sesquiterpene lactone with a germacrane skeleton.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,23 +21,24 @@ def is_germacranolide(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+
+    # Look for germacrane skeleton (10-membered carbon ring)
+    germacrane_pattern = Chem.MolFromSmarts('C1CCCCC[CH]CCC1')  # simplified carbon ring structure
+    if not mol.HasSubstructMatch(germacrane_pattern):
+        return False, "No germacrane skeleton found"
     
-    # More generalized germacrane skeleton pattern (can be refined iteratively)
-    germacrane_macrocycle_pattern = Chem.MolFromSmarts('C1C=CCC=CC=CC1')
-    if not mol.HasSubstructMatch(germacrane_macrocycle_pattern):
-        return False, "No germacrane skeleton found (broad pattern)"
+    # Look for lactone group (-C(=O)O-)
+    lactone_pattern = Chem.MolFromSmarts('C(=O)O')
+    lactone_matches = mol.GetSubstructMatches(lactone_pattern)
+    if len(lactone_matches) < 1:
+        return False, "No lactone group found"
     
-    # Look for a lactone moiety (OC1=O in ring context)
-    lactone_pattern = Chem.MolFromSmarts('O=C1OC=CC=CC1')
-    if not mol.HasSubstructMatch(lactone_pattern):
-        return False, "No lactone group in a cyclic context found"
+    # Check for the presence of typical sesquiterpene traits like double bonds/epoxides
+    # Note: This is a simplification; exact stereochemistry consideration requires more complex checks
+    double_bond_count = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE)
+    if double_bond_count < 2:
+        return False, "Insufficient number of double bonds for sesquiterpene lactone"
 
-    # Number of double bonds - typical region variability should allow for different locations
-    double_bonds = [bond for bond in mol.GetBonds() if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE]
-    if len(double_bonds) < 2:
-        return False, "Insufficient double bonds for sesquiterpene nature"
+    # (Optional) Further detailed stereochemical checks and substituents specific to known germacranolides
 
-    # Optional: Further checks on stereochemistry if very necessary, or consider relaxed rules
-    # These are often highly variable in natural systems, so use with caution
-
-    return True, "Contains a germacrane skeleton with a macrocyclic lactone, typical of germacranolides"
+    return True, "Contains germacrane skeleton with lactone group, typical of germacranolides"
