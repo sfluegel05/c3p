@@ -21,13 +21,16 @@ def is_butenolide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a broader SMARTS pattern for the butenolide core
-    # This accounts for the base 2-furanone and allows various substitutions
-    butenolide_pattern = Chem.MolFromSmarts("O=C1OC=CC1")  # Base furanone pattern
+    # Define a general SMARTS pattern for the butenolide core (gamma-lactone)
+    # allowing for flexibility in substitutions at various positions
+    butenolide_pattern = Chem.MolFromSmarts("O=C1O[C;!H1]C=C1")  # General gamma-lactone
+    
+    # Additional patterns to capture variations
     extra_patterns = [
-        Chem.MolFromSmarts("O=C1C=COC1"),  # Account for different unsaturation
-        Chem.MolFromSmarts("O=C1OC=CC1=O"),  # Account for further oxidation
-        Chem.MolFromSmarts("O=C1C=CC(=O)O1")  # Allow for broader keto-lactone variability
+        Chem.MolFromSmarts("O=C1O[C;!H1]=CC1"),     # Double bond within ring
+        Chem.MolFromSmarts("O=C1O[C;!H1]C=C1[!c]"), # Allow exocyclic unsaturation
+        Chem.MolFromSmarts("O=C1C=CC(=O)O1"),       # Account for oxo and hydroxyl groups
+        Chem.MolFromSmarts("O=C1C=COC1"),           # Flexibility in double bond location
     ]
     
     # Check for the base substructure match
