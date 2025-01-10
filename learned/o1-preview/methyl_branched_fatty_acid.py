@@ -5,6 +5,7 @@ Classifies: CHEBI:62499 methyl-branched fatty acid
 Classifies: methyl-branched fatty acid
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_methyl_branched_fatty_acid(smiles: str):
     """
@@ -23,63 +24,59 @@ def is_methyl_branched_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for carboxylic acid group and identify the carboxyl carbon
+    # Check for carboxylic acid group at terminal position
     carboxylic_acid = Chem.MolFromSmarts("C(=O)[OH]")
-    carboxylic_matches = mol.GetSubstructMatches(carboxylic_acid)
-    if not carboxylic_matches:
+    if not mol.HasSubstructMatch(carboxylic_acid):
         return False, "No carboxylic acid group found"
 
-    # Assume the first carboxylic acid group if multiple are present
-    carboxyl_c_idx = carboxylic_matches[0][0]
-    carboxyl_c_atom = mol.GetAtomWithIdx(carboxyl_c_idx)
+    # Check for rings (should be acyclic)
+    if mol.GetRingInfo().NumRings() > 0:
+        return False, "Molecule contains ring structures"
 
-    # Function to get the main carbon chain starting from the carboxyl carbon
-    def get_main_chain(atom_idx, visited):
+    # Identify the carboxyl carbon atom
+    matches = mol.GetSubstructMatches(carboxylic_acid)
+    carboxyl_carbons = [match[0] for match in matches]  # First atom in pattern is the carbon
+    if not carboxyl_carbons:
+        return False, "No carboxyl carbon found"
+    carboxyl_c = carboxyl_carbons[0]
+
+    # Find the longest path starting from the carboxyl carbon
+    def find_longest_path(atom_idx, visited):
+        visited = visited + [atom_idx]
+        paths = [visited]
         atom = mol.GetAtomWithIdx(atom_idx)
-        if atom_idx in visited:
-            return []
-        visited.add(atom_idx)
-
-        if atom.GetAtomicNum() != 6:
-            # Stop at heteroatoms (e.g., oxygen in carboxylic acid)
-            return []
-
-        chain = [atom_idx]
         for neighbor in atom.GetNeighbors():
-            nbr_idx = neighbor.GetIdx()
-            if neighbor.GetAtomicNum() == 6 and nbr_idx not in visited:
-                chain.extend(get_main_chain(nbr_idx, visited))
-        return chain
+            n_idx = neighbor.GetIdx()
+            if neighbor.GetAtomicNum() != 6:
+                continue  # Skip non-carbon atoms
+            if n_idx not in visited:
+                new_paths = find_longest_path(n_idx, visited)
+                if len(new_paths) > 0:
+                    paths.extend(new_paths)
+        return paths
 
-    # Get the main chain
-    visited_atoms = set()
-    main_chain = get_main_chain(carboxyl_c_idx, visited_atoms)
-
-    if len(main_chain) < 2:
-        return False, "Main carbon chain is too short"
+    all_paths = find_longest_path(carboxyl_c, [])
+    longest_path = max(all_paths, key=len)
+    main_chain_atoms = set(longest_path)
 
     # Check for branches off the main chain
-    methyl_branch_count = 0
-    for atom_idx in main_chain:
+    for atom_idx in main_chain_atoms:
         atom = mol.GetAtomWithIdx(atom_idx)
-        for neighbor in atom.GetNeighbors():
-            nbr_idx = neighbor.GetIdx()
-            if nbr_idx not in main_chain:
-                # Found a branch
-                branch_atom = mol.GetAtomWithIdx(nbr_idx)
-                if branch_atom.GetAtomicNum() != 6:
-                    return False, "Branch contains heteroatoms"
-                # Check if the branch is a methyl group (terminal carbon)
-                # Should have only one heavy atom neighbor (the main chain carbon)
-                if len([nbr for nbr in branch_atom.GetNeighbors() if nbr.GetAtomicNum() > 1]) > 1:
-                    return False, "Branch larger than methyl group found"
-                else:
-                    methyl_branch_count += 1
-
-    # Ensure there is at least one methyl branch
-    if methyl_branch_count == 0:
-        return False, "No methyl branches found"
-
+        if atom.GetAtomicNum() != 6:
+            continue  # Skip non-carbon atoms
+        neighbors = [nbr.GetIdx() for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() == 6]
+        non_chain_neighbors = [n_idx for n_idx in neighbors if n_idx not in main_chain_atoms]
+        # If there are branches
+        for n_idx in non_chain_neighbors:
+            submol_atoms = Chem.rdmolops.GetShortestPath(mol, atom_idx, n_idx)
+            branch_atoms = set(submol_atoms) - main_chain_atoms
+            # Check if branch consists of only one carbon (methyl group)
+            if len(branch_atoms) != 1:
+                return False, "Branch larger than methyl group found"
+            branch_atom = mol.GetAtomWithIdx(n_idx)
+            # Ensure that the branch atom has no further substituents (except hydrogens)
+            if any(neighbor.GetAtomicNum() != 1 for neighbor in branch_atom.GetNeighbors() if neighbor.GetIdx() != atom_idx):
+                return False, "Branch is not a methyl group"
     return True, "Molecule is a methyl-branched fatty acid with only methyl branches"
 
 __metadata__ = {
