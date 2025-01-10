@@ -26,55 +26,56 @@ def is_3_oxo_steroid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Basic steroid core pattern - four fused rings (three 6-membered, one 5-membered)
-    # More permissive pattern that allows for some variation in bond types
-    steroid_core = Chem.MolFromSmarts("[#6]~1~[#6]~[#6]~[#6]~2~[#6]~[#6]~[#6]~3~[#6]~[#6]~[#6]~4~[#6]~[#6]~[#6]~[#6]~4~[#6]~[#6]~3~[#6]~[#6]~2~[#6]~1")
-    if steroid_core is None:
-        return False, "Invalid steroid core SMARTS pattern"
+    # More flexible pattern that allows for different bond types and substitutions
+    steroid_core = Chem.MolFromSmarts(
+        "[#6]~1~[#6]~[#6]~[#6]~2~[#6]~[#6]~[#6]~3~[#6]~[#6]~[#6]~4~[#6,#8]~[#6]~[#6]~[#6]~4~[#6]~[#6]~3~[#6]~[#6]~2~[#6]~1"
+    )
     
     if not mol.HasSubstructMatch(steroid_core):
         return False, "No steroid core structure found"
 
-    # Pattern for 3-oxo group in the first ring
-    # This pattern specifically looks for a ketone at position 3 of the A ring
-    oxo_pattern = Chem.MolFromSmarts("[#6]~1~[#6]~[#6](=[O])~[#6]~[#6]~[#6]~1~[#6]~2")
-    if oxo_pattern is None:
-        return False, "Invalid oxo pattern SMARTS"
-        
+    # Pattern for 3-oxo group
+    # This looks specifically for a ketone at position 3 in the A ring
+    # The pattern ensures it's connected to the steroid core properly
+    oxo_pattern = Chem.MolFromSmarts(
+        "[#6]~1~[#6]~[#6](=O)~[#6]~[#6]~[#6]~1~[#6]~2~[#6]~[#6]~[#6]"
+    )
+    
     if not mol.HasSubstructMatch(oxo_pattern):
         return False, "No ketone group at position 3"
 
-    # Additional validation checks
-    
     # Count carbons (steroids typically have 17+ carbons)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if c_count < 17:
         return False, "Too few carbons for a steroid structure"
 
-    # Check ring count
+    # Check ring count and sizes
     ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() < 4:
+    ring_sizes = [len(ring) for ring in ring_info.AtomRings()]
+    
+    # Should have at least 4 rings
+    if len(ring_sizes) < 4:
         return False, "Insufficient number of rings"
 
-    # Verify ring sizes - should have three 6-membered rings and one 5-membered ring
-    ring_sizes = [len(ring) for ring in ring_info.AtomRings()]
-    six_membered_rings = sum(1 for size in ring_sizes if size == 6)
-    five_membered_rings = sum(1 for size in ring_sizes if size == 5)
+    # Count 5 and 6 membered rings
+    six_membered = sum(1 for size in ring_sizes if size == 6)
+    five_membered = sum(1 for size in ring_sizes if size == 5)
     
-    if six_membered_rings < 3 or five_membered_rings < 1:
-        return False, "Incorrect ring sizes for steroid structure"
+    if six_membered < 2 or five_membered < 1:
+        return False, "Incorrect ring composition for steroid structure"
 
-    # Count oxygen atoms (should have at least one for the ketone)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count < 1:
-        return False, "No oxygen atoms found"
-
-    # Additional check for ketone specifically
+    # Verify presence of ketone group
     ketone_pattern = Chem.MolFromSmarts("[#6]-C(=O)-[#6]")
-    if ketone_pattern is None:
-        return False, "Invalid ketone SMARTS pattern"
+    if not mol.HasSubstructMatch(ketone_pattern):
+        return False, "No ketone group found"
+
+    # More specific check for 3-oxo position using a detailed pattern
+    # This pattern ensures the ketone is at position 3 relative to the ring fusion
+    specific_3_oxo = Chem.MolFromSmarts(
+        "[#6]~1~[#6]~[#6](=O)~[#6]~[#6]~[#6]~1~[#6]~2~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]"
+    )
     
-    ketone_matches = len(mol.GetSubstructMatches(ketone_pattern))
-    if ketone_matches < 1:
-        return False, "No ketone groups found"
+    if not mol.HasSubstructMatch(specific_3_oxo):
+        return False, "Ketone group not at position 3"
 
     return True, "Contains steroid core with ketone group at position 3"
