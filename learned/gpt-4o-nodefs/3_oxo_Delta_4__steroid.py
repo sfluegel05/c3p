@@ -2,7 +2,6 @@
 Classifies: CHEBI:47909 3-oxo-Delta(4) steroid
 """
 from rdkit import Chem
-from rdkit.Chem import rdchem
 
 def is_3_oxo_Delta_4__steroid(smiles: str):
     """
@@ -21,25 +20,23 @@ def is_3_oxo_Delta_4__steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for the steroid backbone
-    steroid_pattern = Chem.MolFromSmarts("C1CC2=CC(C=C3C2CCC4C3(CCC4)[H])[C@](C1)([C@H]4[C@@](C)C(=O))")
+    # Check for the steroid backbone (ABCD rings)
+    steroid_pattern = Chem.MolFromSmarts("C1CCC2CCCC3C4CCC(=O)CC4CCC23")
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
     
-    # Look for the 3-oxo group (C=O at position 3)
-    oxo_pattern = Chem.MolFromSmarts("C(=O)[C@]1([H])")
-    oxo_matches = mol.GetSubstructMatches(oxo_pattern)
-    if not oxo_matches:
+    # Look for the 3-oxo group (C=O directly attached to a ring carbon)
+    oxo_pattern = Chem.MolFromSmarts("C(=O)[C&R]")
+    if not mol.HasSubstructMatch(oxo_pattern):
         return False, "Missing 3-oxo group"
     
     # Look for the Delta(4) double bond (C=C between C4 and C5)
-    delta4_pattern = Chem.MolFromSmarts("C=CC")
-    delta4_matches = mol.GetSubstructMatches(delta4_pattern)
-    if not delta4_matches:
+    delta4_pattern = Chem.MolFromSmarts("C=CC=O")
+    if not mol.HasSubstructMatch(delta4_pattern):
         return False, "Missing Delta(4) double bond"
 
     return True, "Contains the structural features of a 3-oxo-Delta(4) steroid"
 
-# Example of how the program might be used:
-# result, reason = is_3_oxo_Delta_4__steroid("[H][C@@]12CCC3=CC(=O)CC[C@]3(C)[C@@]1([H])C(=O)C[C@@]1(C)[C@@]2([H])CC[C@]1(O)C(=O)CO")
+# Example of usage:
+# result, reason = is_3_oxo_Delta_4__steroid("C[C@]12CC[C@H]3[C@@H](CCC4=CC(=O)CC[C@]34C)[C@@H]1C[C@H](O)[C@@H]2O")
 # print(result, reason)
