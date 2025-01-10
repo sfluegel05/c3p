@@ -19,20 +19,19 @@ def is_very_long_chain_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Substructure pattern for CoA (coenzyme A) part
-    coa_pattern = Chem.MolFromSmarts("SCCNC(=O)CCNC(=O)[C@@H](O)C(C)(C)COP([O-])(=O)OP([O-])(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP([O-])([O-])=O)n1cnc2c(N)ncnc12")
+    # Substructure pattern for Coenzyme A (CoA) part, using a more general pattern
+    # Simplified pattern to reduce matching issues
+    coa_pattern = Chem.MolFromSmarts("SCCNC(=O)CCNC(=O)C(O)C(C)(C)COP(O)(=O)OP(O)(=O)OC1COC1OP(O)(O)=O")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No CoA structure found"
     
-    # Substructure pattern for the thioester linkage carbonyl group
+    # Substructure pattern for the thioester linkage
     carbonyl_pattern = Chem.MolFromSmarts("C(=O)SC")
     carbonyl_match = mol.GetSubstructMatch(carbonyl_pattern)
-
     if not carbonyl_match:
         return False, "No carbonyl linked to CoA structure found"
-
-    # Starting from carbonyl carbon, find longest consecutive chain of carbon atoms
-    # Initialize variables for DFS
+    
+    # Starting from carbonyl carbon, find the longest consecutive chain of carbon atoms
     carbonyl_carbon = carbonyl_match[0]  # carbon of the carbonyl group
     visited = set()
     max_chain_length = 0
@@ -46,15 +45,15 @@ def is_very_long_chain_fatty_acyl_CoA(smiles: str):
         
         atom = mol.GetAtomWithIdx(atom_idx)
         for neighbor in atom.GetNeighbors():
-            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:
+            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:  # Check for carbon atoms
                 find_chain_length(neighbor.GetIdx(), length + 1)
 
-    # Go through neighbors of the carbonyl carbon
+    # Go through the neighbors of the carbonyl carbon
     for neighbor in mol.GetAtomWithIdx(carbonyl_carbon).GetNeighbors():
-        if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:
+        if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:  # Start DFS from carbon atom
             find_chain_length(neighbor.GetIdx(), 1)
 
-    # Check if longest carbon chain exceeds 22
+    # Check if the longest carbon chain exceeds C22
     if max_chain_length <= 22:
         return False, f"Longest carbon chain is {max_chain_length}, must be greater than 22"
 
