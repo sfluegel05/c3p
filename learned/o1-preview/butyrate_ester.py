@@ -28,48 +28,35 @@ def is_butyrate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define butyrate ester pattern: linear four-carbon chain attached to carbonyl carbon in ester linkage
-    butyrate_ester_pattern = Chem.MolFromSmarts("[CH3][CH2][CH2][C](=O)[O][#6]")
-    if butyrate_ester_pattern is None:
-        return False, "Invalid SMARTS pattern for butyrate ester"
+    # Define butyryl group pattern (butyric acid minus the OH)
+    butyryl_pattern = Chem.MolFromSmarts("CCCC(=O)")
 
-    # Search for butyrate ester pattern in the molecule
-    matches = mol.GetSubstructMatches(butyrate_ester_pattern)
-    if matches:
-        return True, "Contains butyrate ester group"
-    else:
-        return False, "Does not contain butyrate ester group"
+    # Define ester bond pattern
+    ester_pattern = Chem.MolFromSmarts("C(=O)[O,N,S]")
 
-__metadata__ = {   
-    'chemical_class': {   
-        'name': 'butyrate ester',
-        'definition': 'Any carboxylic ester where the carboxylic acid component is butyric acid.'
-    },
-    'examples': [
-        {
-            'name': 'ethyl butyrate',
-            'smiles': 'CCCC(=O)OCC',
-            'result': True
-        },
-        {
-            'name': 'isobutyl butyrate',
-            'smiles': 'CCC(C)COC(=O)CCC',
-            'result': True
-        },
-        {
-            'name': 'butyl butyrate',
-            'smiles': 'CCCCOC(=O)CCC',
-            'result': True
-        },
-        {
-            'name': 'methyl acetate',
-            'smiles': 'CC(=O)OC',
-            'result': False
-        },
-        {
-            'name': 'tributyrin',
-            'smiles': 'CCCC(=O)OCC(COC(=O)CCC)OC(=O)CCC',
-            'result': True
-        }
-    ]
-}
+    # Find ester bonds in the molecule
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+
+    if not ester_matches:
+        return False, "No ester groups found"
+
+    # For each ester group, check if the acyl part is butyryl group
+    for match in ester_matches:
+        carbonyl_c = match[0]  # Carbonyl carbon
+        heteroatom = match[2]  # Oxygen, nitrogen, or sulfur
+
+        # Get the acyl fragment (butyryl group)
+        acyl_indices = Chem.FindAtomEnvironmentOfRadiusN(mol, 3, carbonyl_c, useHs=True)
+        acyl_atoms = set()
+        for bond_idx in acyl_indices:
+            bond = mol.GetBondWithIdx(bond_idx)
+            acyl_atoms.add(bond.GetBeginAtomIdx())
+            acyl_atoms.add(bond.GetEndAtomIdx())
+
+        acyl_frag = Chem.PathToSubmol(mol, acyl_indices)
+
+        # Check if the acyl fragment matches the butyryl pattern
+        if acyl_frag.HasSubstructMatch(butyryl_pattern):
+            return True, "Contains butyrate ester group"
+
+    return False, "Does not contain butyrate ester group"
