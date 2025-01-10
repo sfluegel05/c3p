@@ -27,30 +27,20 @@ def is_catecholamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # More flexible catechol pattern that allows substitutions
+    # Look for the core catechol structure (benzene-1,2-diol)
     catechol_pattern = Chem.MolFromSmarts("[c]1([OH])[c][c][c][c]1[OH]")
     if not mol.HasSubstructMatch(catechol_pattern):
-        # Try alternative catechol pattern with different hydroxyl positions
-        catechol_pattern = Chem.MolFromSmarts("[c]1([OH])[c][c][c][c]1[OH]")
-        if not mol.HasSubstructMatch(catechol_pattern):
-            return False, "No catechol (benzene-1,2-diol) structure found"
+        return False, "No catechol (benzene-1,2-diol) structure found"
 
-    # Flexible aminoethyl pattern that allows for different types of amines and substitutions
-    aminoethyl_pattern = Chem.MolFromSmarts("[CH2]~[CH2]~[N]")
+    # Look for the 2-aminoethyl side chain (CCN)
+    aminoethyl_pattern = Chem.MolFromSmarts("[CH2][CH2][NH2]")
     if not mol.HasSubstructMatch(aminoethyl_pattern):
-        # Try alternative aminoethyl pattern with different chain lengths
-        aminoethyl_pattern = Chem.MolFromSmarts("[CH2]~[CH2]~[N]")
-        if not mol.HasSubstructMatch(aminoethyl_pattern):
-            return False, "No 2-aminoethyl-like side chain found"
+        return False, "No 2-aminoethyl side chain found"
 
     # Check if the aminoethyl side chain is attached to the catechol ring
-    # More flexible pattern that allows for substitutions and different attachment points
-    combined_pattern = Chem.MolFromSmarts("[c]1([OH])[c][c]([CH2]~[CH2]~[N])[c][c]1[OH]")
+    combined_pattern = Chem.MolFromSmarts("[c]1([OH])[c][c]([CH2][CH2][NH2])[c][c]1[OH]")
     if not mol.HasSubstructMatch(combined_pattern):
-        # Try alternative attachment points
-        combined_pattern = Chem.MolFromSmarts("[c]1([OH])[c]([CH2]~[CH2]~[N])[c][c][c]1[OH]")
-        if not mol.HasSubstructMatch(combined_pattern):
-            return False, "Aminoethyl-like side chain not properly attached to catechol ring"
+        return False, "2-aminoethyl side chain not attached to catechol ring"
 
     # Check for additional substitutions on the catechol ring or side chain
     # This allows for derivatives formed by substitution
