@@ -28,75 +28,69 @@ def is_hemiaminal(smiles: str):
     # Add explicit hydrogens
     mol = Chem.AddHs(mol)
 
-    # Core hemiaminal pattern: carbon with both OH and N attached
-    # Excludes cases where N is part of amide/peptide or OH is part of carboxylic acid
-    # [CX4] ensures sp3 carbon
-    # !$([#6](=O)[OH1]) excludes carboxylic acids
-    # !$([#7]C=O) excludes amides
-    hemiaminal_pattern = Chem.MolFromSmarts('''
-        [CX4;!$(C(=O));!$(C([#7]C=O))]-[OH1]
-        AND
-        [CX4;!$(C(=O));!$(C([#7]C=O))]-[#7;!$(NC=O)]
-    ''')
+    # Basic hemiaminal pattern: Carbon with both OH and N attached
+    # [CX4] - sp3 carbon
+    # -[OX2H1] - hydroxyl group
+    # -[#7] - any nitrogen
+    basic_pattern = Chem.MolFromSmarts('[CX4](-[OX2H1])(-[#7])')
+    
+    # Alternative pattern for cyclic structures
+    cyclic_pattern = Chem.MolFromSmarts('[CX4;R](-[OX2H1])(-[#7;R])')
+    
+    # Pattern for bridged structures often found in natural products
+    bridged_pattern = Chem.MolFromSmarts('[CX4](-[OX2H1])(-[#7X3])')
 
-    # Additional pattern for cyclic hemiaminals
-    cyclic_hemiaminal_pattern = Chem.MolFromSmarts('''
-        [CX4;!$(C(=O));!$(C([#7]C=O))](-[OH1])-[#7;R;!$(NC=O)]
-    ''')
-
-    # Exclusion patterns
-    exclude_patterns = [
-        Chem.MolFromSmarts('[NX3]-[OX2]'),  # N-hydroxy
-        Chem.MolFromSmarts('[CX3](=O)[OX2]'),  # carboxyl/ester
-        Chem.MolFromSmarts('[CX3](=O)[NX3]'),  # amide
-        Chem.MolFromSmarts('[C]-[N+](-[O-])')  # N-oxide
-    ]
-
-    # Get matches
     matches = []
-    if hemiaminal_pattern:
-        matches.extend(mol.GetSubstructMatches(hemiaminal_pattern))
-    if cyclic_hemiaminal_pattern:
-        matches.extend(mol.GetSubstructMatches(cyclic_hemiaminal_pattern))
+    
+    # Check all patterns
+    for pattern in [basic_pattern, cyclic_pattern, bridged_pattern]:
+        if pattern is not None:
+            matches.extend(mol.GetSubstructMatches(pattern))
 
     if not matches:
         return False, "No hemiaminal group found"
 
-    # Filter out matches that overlap with exclusion patterns
-    exclude_atoms = set()
+    # Exclude false positives
+    exclude_patterns = [
+        '[NX3](=[OX1])',  # Nitro group
+        '[CX3](=O)[OX2H1]',  # Carboxylic acid
+        '[NX3]-[OX2]'  # N-O bond (hydroxylamine)
+    ]
+    
+    # Convert matches to set of unique carbons (the first atom in each match)
+    carbon_matches = set(match[0] for match in matches)
+    
+    # Remove carbons that are part of excluded patterns
     for pattern in exclude_patterns:
-        if pattern:
-            for match in mol.GetSubstructMatches(pattern):
-                exclude_atoms.update(match)
+        pat = Chem.MolFromSmarts(pattern)
+        if pat:
+            exclude_matches = mol.GetSubstructMatches(pat)
+            for match in exclude_matches:
+                carbon_matches.discard(match[0])
 
-    # Keep only valid matches
-    valid_matches = []
-    for match in matches:
-        if not any(atom in exclude_atoms for atom in match):
-            valid_matches.append(match)
-
-    if not valid_matches:
+    if not carbon_matches:
         return False, "Found potential matches but they are excluded patterns"
 
-    # Additional validation: verify OH and N are on same carbon
-    confirmed_matches = []
-    for match in valid_matches:
-        carbon = mol.GetAtomWithIdx(match[0])
-        if carbon.GetHybridization() == Chem.HybridizationType.SP3:
-            # Check neighbors for both OH and N
-            has_oh = False
-            has_n = False
-            for neighbor in carbon.GetNeighbors():
-                if neighbor.GetAtomicNum() == 8 and neighbor.GetTotalNumHs() == 1:
+    # Additional validation
+    valid_carbons = set()
+    for carbon_idx in carbon_matches:
+        carbon = mol.GetAtomWithIdx(carbon_idx)
+        # Check if carbon has both O and N neighbors
+        neighbors = carbon.GetNeighbors()
+        has_oh = False
+        has_n = False
+        for neighbor in neighbors:
+            if neighbor.GetAtomicNum() == 8:
+                # Check if it's a hydroxyl
+                if neighbor.GetTotalNumHs() > 0:
                     has_oh = True
-                elif neighbor.GetAtomicNum() == 7 and not any(n.GetAtomicNum() == 8 and n.GetBonds()[0].GetBondType() == Chem.BondType.DOUBLE 
-                                                            for n in neighbor.GetNeighbors()):
-                    has_n = True
-            if has_oh and has_n:
-                confirmed_matches.append(match)
+            elif neighbor.GetAtomicNum() == 7:
+                has_n = True
+        if has_oh and has_n:
+            valid_carbons.add(carbon_idx)
 
-    if not confirmed_matches:
+    if not valid_carbons:
         return False, "No valid hemiaminal groups found after structural validation"
 
-    reason = f"Found {len(confirmed_matches)} valid hemiaminal group(s)"
+    reason = f"Found {len(valid_carbons)} valid hemiaminal group(s)"
     return True, reason
