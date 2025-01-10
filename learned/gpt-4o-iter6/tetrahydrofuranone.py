@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_tetrahydrofuranone(smiles: str):
     """
     Determines if a molecule is a tetrahydrofuranone based on its SMILES string.
-    A tetrahydrofuranone is an oxolane with an oxo- substituent.
+    A tetrahydrofuranone, or lactone, is an oxolane with an oxo- substituent.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,14 +20,13 @@ def is_tetrahydrofuranone(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # The SMARTS pattern for tetrahydrofuranone
-    # The pattern specifies a 5-membered ring with one oxygen and one carbonyl group
-    triangle_oxygen_carbonyl = Chem.MolFromSmarts("C1(=O)OC(C)C1")
-    generic_tetrahydrofuranone_pattern = Chem.MolFromSmarts("C1(=O)OCC[C@1]")
     
-    # Match the structure
-    if mol.HasSubstructMatch(triangle_oxygen_carbonyl) or mol.HasSubstructMatch(generic_tetrahydrofuranone_pattern):
+    # SMARTS pattern for a 5-membered lactone ring with an oxo- substituent
+    # This pattern represents a generic lactone: [O]C1CCCC1=O, also capturing tetrahydrofuranone structures
+    lactone_pattern = Chem.MolFromSmarts("O=C1OC(C)C1")
+    
+    # Check for tetrahydrofuranone structure
+    if mol.HasSubstructMatch(lactone_pattern):
         return True, "Tetrahydrofuranone structure confirmed"
-
+    
     return False, "No valid tetrahydrofuranone structure found"
