@@ -34,7 +34,7 @@ def is_3__hydroxyflavanones(smiles: str):
     # Define the 3'-hydroxyflavanone pattern
     # The pattern matches the flavanone backbone with a hydroxyl group at the 3' position of the phenyl ring
     # This pattern is more flexible and can match hydroxyl groups even if they are part of larger substituents
-    hydroxyflavanone_pattern = Chem.MolFromSmarts("[C@@H]1CC(=O)c2cc([OH])ccc2O1")
+    hydroxyflavanone_pattern = Chem.MolFromSmarts("[C@@H]1CC(=O)c2cc(O)ccc2O1")
     if not mol.HasSubstructMatch(hydroxyflavanone_pattern):
         return False, "No hydroxyl group at the 3' position of the phenyl ring"
 
