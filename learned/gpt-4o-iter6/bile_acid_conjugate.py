@@ -21,16 +21,16 @@ def is_bile_acid_conjugate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Generalized steroid backbone pattern to cover bile acids' variety
-    steroid_backbone_pattern = Chem.MolFromSmarts("C1(C2CCC3C(C(O)CCC3)C2)CCCCC1")  # More inclusive pattern
+    # More flexible bile acid steroid backbone pattern
+    steroid_backbone_pattern = Chem.MolFromSmarts("C1CC2CCC3C(C2C1)C4CCC5C(C=CCC5C4)C3C")
     if not mol.HasSubstructMatch(steroid_backbone_pattern):
         return False, "No bile acid core structure found"
 
-    # Expanded conjugate patterns with flexibility
-    glycine_pattern = Chem.MolFromSmarts("NCC(=O)[O-]")  # Carboxylate form
-    taurine_pattern = Chem.MolFromSmarts("S(=O)(=O)NCC(=O)")  # More inclusive sulfonamide group
-    sulfate_pattern = Chem.MolFromSmarts("OS(=O)(=O)[O-]")  # Charged sulfate group
-    glucuronic_acid_pattern = Chem.MolFromSmarts("OC[C@@H](O)[C@@H](O)C(=O)[O-]")  # Flexible ester linkage
+    # Improved conjugation patterns
+    glycine_pattern = Chem.MolFromSmarts("NC[C@@H](C(=O)O)")
+    taurine_pattern = Chem.MolFromSmarts("S(=O)(=O)CCN")
+    sulfate_pattern = Chem.MolFromSmarts("OS(=O)(=O)[O-]")  # Includes common charged state
+    generic_amino_acid_pattern = Chem.MolFromSmarts("NC(C(=O)O)C")  # Covers more generic amino acids
 
     # Check for presence of any known conjugation pattern
     conjugates_found = False
@@ -40,7 +40,7 @@ def is_bile_acid_conjugate(smiles: str):
         conjugates_found = True
     elif mol.HasSubstructMatch(sulfate_pattern):
         conjugates_found = True
-    elif mol.HasSubstructMatch(glucuronic_acid_pattern):
+    elif mol.HasSubstructMatch(generic_amino_acid_pattern):
         conjugates_found = True
 
     if not conjugates_found:
@@ -48,7 +48,7 @@ def is_bile_acid_conjugate(smiles: str):
 
     return True, "Matches bile acid core with conjugate pattern"
 
-# Test with example SMILES
-example_smiles = "C1[C@@]2(CCC(=O)NCC(=O)O)C(C)CCC3C4(C)CCC(=O)CCC4CCC23"
+# Example SMILES for testing
+example_smiles = "C[C@H](CCC(=O)NCC(O)=O)[C@H]1CC[C@H]2[C@@H]3[C@H](O)C[C@@H]4C[C@H](O)CC[C@]4(C)[C@H]3C[C@H](O)[C@]12C"  # glycocholic acid
 result, reason = is_bile_acid_conjugate(example_smiles)
 print(result, reason)
