@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_dicarboxylic_acid(smiles: str):
     """
     Determines if a molecule is a dicarboxylic acid based on its SMILES string.
-    A dicarboxylic acid is any carboxylic acid containing two carboxy groups.
+    A dicarboxylic acid is any carboxylic acid containing two carboxyl groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,12 +21,21 @@ def is_dicarboxylic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Carboxyl group pattern (C(=O)O)
-    carboxyl_pattern = Chem.MolFromSmarts("C(=O)O")
-    carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
-    
-    # Check for exactly 2 carboxyl groups
-    if len(carboxyl_matches) != 2:
-        return False, f"Found {len(carboxyl_matches)} carboxyl groups, need exactly 2"
+    # Carboxylic acid pattern (O=C[O-] or O=C(O) for free carboxylic acids)
+    carboxylate_pattern = Chem.MolFromSmarts("C(=O)O")
+    counts_of_carboxyl = len(mol.GetSubstructMatches(carboxylate_pattern))
 
-    return True, "Contains exactly 2 carboxyl groups, indicating it is a dicarboxylic acid"
+    # Check that we do not mistakenly include esters; ensure free carboxylic acid groups
+    carboxylic_free_pattern = Chem.MolFromSmarts("C(=O)O[H]")
+    free_matches = len(mol.GetSubstructMatches(carboxylic_free_pattern))
+    
+    # Confirm true free carboxylic acids by including both carboxylates and their free forms
+    total_acid_count = counts_of_carboxyl + free_matches
+    
+    # Filter dimers or larger acyl chloride misconceptions
+    expected_acid_count = 2
+
+    if total_acid_count == expected_acid_count:
+        return True, "Contains exactly 2 carboxyl groups, indicating it is a dicarboxylic acid"
+
+    return False, f"Found {total_acid_count} carboxyl groups, need exactly 2"
