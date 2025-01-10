@@ -21,15 +21,15 @@ def is_2_oxo_monocarboxylic_acid_anion(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for the 2-oxo group pattern (C(=O)) at the 2-position: [C]-[C](=O)-[other]
-    oxo_pattern = Chem.MolFromSmarts("[#6][#6](=O)")
-    if not mol.HasSubstructMatch(oxo_pattern):
-        return False, "No 2-oxo group found at the 2-position"
+    # Look for a specific pattern that represents:
+    # - a 2-oxo group pattern: carbonyl group bonded to another carbon at the 2-position
+    # - followed by a variable hydrocarbon chain
+    # - ending with a carboxylate group (correcting for adjacency is key)
+    oxo_carboxylate_pattern = Chem.MolFromSmarts("C(=O)[CX3][CX4,C](=O)[O-]")
+    
+    if not mol.HasSubstructMatch(oxo_carboxylate_pattern):
+        return False, "Pattern for 2-oxo monocarboxylic acid anion not matched"
 
-    # Look for a carboxylate anion pattern (-C(=O)[O-])
-    carboxylate_pattern = Chem.MolFromSmarts("C(=O)[O-]")
-    if not mol.HasSubstructMatch(carboxylate_pattern):
-        return False, "No carboxylate group found"
-
-    # If both patterns are found, conclude that the molecule is a 2-oxo monocarboxylic acid anion
-    return True, "Contains 2-oxo group and carboxylate anion characteristic of 2-oxo monocarboxylic acid anions"
+    # Additional filtering criteria if necessary can be applied here
+    
+    return True, "Contains 2-oxo group and carboxylate anion in the correct context for a 2-oxo monocarboxylic acid anion"
