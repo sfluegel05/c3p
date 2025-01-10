@@ -13,7 +13,7 @@ def is_sterol_ester(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a sterol ester, False otherwise
+        bool: True if the molecule is a sterol ester, False otherwise
         str: Reason for classification
     """
     
@@ -22,27 +22,40 @@ def is_sterol_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a general sterol backbone pattern (fused four-ring core)
-    sterol_pattern = Chem.MolFromSmarts("C1CCC2C3CCC4CCCC(C)(C3)O2(C3=CC=CC=C3)C1")
-    if not mol.HasSubstructMatch(sterol_pattern):
-        return False, "No sterol backbone found"
+    # Define a more general sterol pattern (fused four-ring steroid structure)
+    sterol_pattern = Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2CCC4C3CCC(O4)C")  # simplified four-ring structure
 
-    # Define ester linkage pattern (ester linked to 3-hydroxy group of sterol)
-    # "[#6](=O)[O][#6]" defines a generic ester linkage
-    # "3-hydroxy" is assumed in sterols, so check connectivity
+    if not mol.HasSubstructMatch(sterol_pattern):
+        return False, "No typical sterol backbone found"
+
+    # Define ester linkage pattern
     ester_linkage_pattern = Chem.MolFromSmarts("C(=O)O")
-    ester_matches = mol.HasSubstructMatch(ester_linkage_pattern)
+    
+    # Check if the ester linkage is part of the molecule
+    ester_matches = mol.GetSubstructMatches(ester_linkage_pattern)
     if not ester_matches:
         return False, "No ester linkage found"
 
-    # Further verify that the ester linkage is connected to the sterol backbone
-    for match in mol.GetSubstructMatches(sterol_pattern):
-        for atom_idx in match:
-            atom = mol.GetAtomWithIdx(atom_idx)
-            if atom.GetSymbol() == 'C':
-                neighbors = atom.GetNeighbors()
-                for neighbor in neighbors:
-                    if mol.HasSubstructMatch(Chem.MolFromSmarts("[OH]")) and neighbor.GetSymbol() == 'O':
-                        return True, "Contains sterol backbone with appropriate ester linkage"
-
-    return False, "No connection between sterol backbone and ester linkage found"
+    # Assume the linkage is to the 3-hydroxy group of sterol
+    hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
+    
+    # Check connectivity: ester linkage to the sterol hydroxyl
+    for ester_match in ester_matches:
+        ester_oxygen_idx = ester_match[2]  # Index of the oxygen in the ester
+        ester_oxygen_atom = mol.GetAtomWithIdx(ester_oxygen_idx)
+        ester_neighbors = ester_oxygen_atom.GetNeighbors()
+        
+        # Check if any neighbor of the ester oxygen is the hydroxyl group (on correct carbon)
+        for neighbor in ester_neighbors:
+            if neighbor.HasSubstructMatch(hydroxyl_pattern):
+                sterol_linked = False
+                # Ensure that there's correct bonding for the linkage
+                for sterol_atom_idx in sterol_pattern:
+                    if mol.GetAtomWithIdx(sterol_atom_idx).GetSymbol() == 'C':
+                        if est_oxygen_idx in [n.GetIdx() for n in mol.GetAtomWithIdx(sterol_atom_idx).GetNeighbors()]:
+                            sterol_linked = True
+                            break
+                if sterol_linked:
+                    return True, "Contains sterol backbone with ester linkage at the 3-hydroxy group"
+    
+    return False, "No ester linkage connected to the 3-hydroxy group of sterol found"
