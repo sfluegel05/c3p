@@ -23,17 +23,16 @@ def is_monoacyl_sn_glycerol_3_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Refined glycerol backbone with phosphate pattern
-    glycerol_phosphate_pattern = Chem.MolFromSmarts("O[C@H]([C@H](COP(=O)(O)O)O)CO")
+    # Flexible glycerol backbone with phosphate group pattern
+    glycerol_phosphate_pattern = Chem.MolFromSmarts("O[C@H](CO*)COP(=O)(O)O")
     if not mol.HasSubstructMatch(glycerol_phosphate_pattern):
         return False, "No glycerol backbone with phosphate correctly configured"
 
-    # Refined acyl group pattern for positions 1 or 2 on the glycerol structure
-    acyl_pattern = Chem.MolFromSmarts("C(=O)OC")
+    # More general acyl group pattern, positional flexibility for 1 or 2
+    acyl_pattern = Chem.MolFromSmarts("C(=O)O[C@H](CO)CO")
     acyl_matches = mol.GetSubstructMatches(acyl_pattern)
-    # Verify that exactly one acyl group is correctly attached
     if len(acyl_matches) != 1:
-        return False, f"Found {len(acyl_matches)} acyl groups, need exactly 1"
+        return False, f"Found {len(acyl_matches)} acyl groups in incorrect arrangements, need exactly 1"
 
     return True, "Contains a glycerol backbone with phosphate and one acyl group attached correctly"
 
