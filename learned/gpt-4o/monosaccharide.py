@@ -26,29 +26,19 @@ def is_monosaccharide(smiles: str):
         return (False, "Too few carbon atoms; monosaccharides must have at least 3")
     
     # Identify the number of hydroxyl groups
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    
-    # Hydroxyls would be counted based on whether they are -OH and not involved in saccharide links
-    hydroxyl_count = len([1 for bond in mol.GetBonds() 
-                          if bond.GetBeginAtom().GetAtomicNum() == 8 or bond.GetEndAtom().GetAtomicNum() == 8])
-    if hydroxyl_count < 2:
-        return (False, f"Insufficient hydroxyl groups found; needed at least 2, found {hydroxyl_count}")
+    oh_pattern = Chem.MolFromSmarts("[OX2H]")  # Hydroxyl group SMARTS pattern
+    hydroxyl_matches = mol.GetSubstructMatches(oh_pattern)
+    if len(hydroxyl_matches) < 2:
+        return (False, f"Insufficient hydroxyl groups found; needed at least 2, found {len(hydroxyl_matches)}")
 
-    # Check for potential carbonyl group, which might be oxidized or involved in ring formation
-    # Even for cyclic forms assume possible intramolecular hemiacetal for saccharide potential
-    possible_hemiacetal = False
-    for atom in mol.GetAtoms():
-        if (atom.GetAtomicNum() == 6 and 
-            any(neigh.GetAtomicNum() == 8 for neigh in atom.GetNeighbors())):
-            if (len([neigh for neigh in atom.GetNeighbors() if neigh.GetAtomicNum() == 1]) > 0):
-                possible_hemiacetal = True
-                
-    if not possible_hemiacetal:
-        return (False, "No potential carbonyl functionality detected.")
+    # Check for potential aldehyde or ketone functionalities or presence of hemiketals/hemiacetals
+    carbonyl_pattern = Chem.MolFromSmarts("[$([CX3]=[OX1]),$([CX3H1][OX2H])]")  # Carbonyl under acyclic or cyclic conditions
+    if not mol.HasSubstructMatch(carbonyl_pattern):
+        return (False, "No potential carbonyl or cyclic oxy-functional group detected.")
     
-    # Verify molecular weight and ensure it does not exceed typical monosaccharide weight (~200 Da)
+    # Verify molecular weight does not exceed typical monosaccharide weight (~300 Da)
     mol_weight = Chem.rdMolDescriptors.CalcExactMolWt(mol)
     if mol_weight > 300:
         return (False, "Molecular weight too high; suggests multi-unit composition.")
 
-    return (True, "Structure is a monosaccharide with cyclic/acyclic carbonyl potential and sufficient hydroxyls.")
+    return (True, "Structure is a monosaccharide with potential cyclic or acyclic carbonyl group and sufficient hydroxyls.")
