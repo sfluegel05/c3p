@@ -1,8 +1,11 @@
 """
 Classifies: CHEBI:75659 O-acyl-L-carnitine
 """
+"""
+Classifies: O-acyl-L-carnitine
+"""
 from rdkit import Chem
-from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_O_acyl_L_carnitine(smiles: str):
     """
@@ -16,97 +19,67 @@ def is_O_acyl_L_carnitine(smiles: str):
         bool: True if molecule is an O-acyl-L-carnitine, False otherwise
         str: Reason for classification
     """
-
-    # Parse the SMILES string
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Assign stereochemistry
-    Chem.AssignStereochemistry(mol, force=True, cleanIt=True)
+    # Define the quaternary ammonium group pattern
+    quat_nitrogen_smarts = "[N+](C)(C)C"
+    quat_nitrogen_mol = Chem.MolFromSmarts(quat_nitrogen_smarts)
+    if not mol.HasSubstructMatch(quat_nitrogen_mol):
+        return False, "No quaternary ammonium group found"
 
-    # Define SMARTS patterns for key features
-    # Chiral carbon with L-configuration (S) connected to:
-    # 1. Esterified oxygen with acyl group
-    # 2. Quaternary ammonium group [N+](C)(C)C
-    # 3. Carboxylate group [C](=O)[O-]
+    # Define the carboxylate group pattern
+    carboxylate_smarts = "C(=O)[O-]"
+    carboxylate_mol = Chem.MolFromSmarts(carboxylate_smarts)
+    if not mol.HasSubstructMatch(carboxylate_mol):
+        return False, "No carboxylate group found"
 
-    # Pattern for chiral center with attached groups
-    # Using [C@H] for L-configuration
-    chiral_center_pattern = "[C@H]"
+    # Define the esterified hydroxy group at position 3 with correct stereochemistry
+    # L-carnitine has (S) configuration, which corresponds to [C@@H] in SMILES/SMARTS
+    ester_smarts = "[C@@H](COC(=O)[#6])[CH2][N+](C)(C)C"
+    ester_mol = Chem.MolFromSmarts(ester_smarts)
+    if not mol.HasSubstructMatch(ester_mol, useChirality=True):
+        return False, "Esterified hydroxy group with correct stereochemistry not found"
 
-    # Ester linkage at the hydroxyl group (O-acyl)
-    ester_pattern = "O[C](=O)[#6]"  # Oxygen connected to C=O and carbon chain
+    # Check if the acyl group is attached via ester bond
+    ester_bond_found = False
+    for bond in mol.GetBonds():
+        if bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
+            atom1 = bond.GetBeginAtom()
+            atom2 = bond.GetEndAtom()
+            if (atom1.GetAtomicNum() == 8 and atom2.GetAtomicNum() == 6) or (atom1.GetAtomicNum() == 6 and atom2.GetAtomicNum() == 8):
+                # Check for C-O single bond which could be part of ester
+                neighb_atoms = [atom.GetAtomicNum() for atom in [atom1, atom2]]
+                if 6 in neighb_atoms and 8 in neighb_atoms:
+                    ester_bond_found = True
+                    break
+    if not ester_bond_found:
+        return False, "No ester bond found at hydroxy group"
 
-    # Quaternary ammonium group connected via two carbons
-    quaternary_ammonium_pattern = "C[C+](C)(C)C"  # Trimethylammonium group
+    return True, "Molecule is an O-acyl-L-carnitine with correct stereochemistry and esterified hydroxy group"
 
-    # Carboxylate group connected via one carbon
-    carboxylate_pattern = "C(=O)[O-]"
-
-    # Combine patterns to match the backbone of O-acyl-L-carnitine
-    # Chiral center connected to ester oxygen, N+ group, and carboxylate
-    o_acyl_l_carnitine_smarts = f"{chiral_center_pattern}({ester_pattern})([#6]{quaternary_ammonium_pattern})[#6]{carboxylate_pattern}"
-
-    # Create the SMARTS molecule
-    pattern = Chem.MolFromSmarts(o_acyl_l_carnitine_smarts)
-    if pattern is None:
-        return False, "Invalid SMARTS pattern"
-
-    # Search for the pattern in the molecule
-    matches = mol.GetSubstructMatches(pattern)
-
-    if not matches:
-        return False, "O-acyl-L-carnitine pattern not found"
-
-    for match in matches:
-        chiral_atom_idx = match[0]
-        chiral_atom = mol.GetAtomWithIdx(chiral_atom_idx)
-
-        # Verify that the chiral center has S configuration
-        if chiral_atom.HasProp('_CIPCode') and chiral_atom.GetProp('_CIPCode') != 'S':
-            continue  # Not S configuration
-
-        # Verify connections to ester oxygen, quaternary ammonium, and carboxylate groups
-        ester_connected = False
-        ammonium_connected = False
-        carboxylate_connected = False
-
-        for neighbor in chiral_atom.GetNeighbors():
-            neighbor_idx = neighbor.GetIdx()
-            bond = mol.GetBondBetweenAtoms(chiral_atom_idx, neighbor_idx)
-            bond_type = bond.GetBondType()
-
-            if neighbor.GetAtomicNum() == 8:  # Oxygen (possible ester linkage)
-                # Check if oxygen is part of ester linkage
-                for ester_match in mol.GetSubstructMatches(Chem.MolFromSmarts(ester_pattern)):
-                    if neighbor_idx in ester_match and chiral_atom_idx in ester_match:
-                        ester_connected = True
-                        break
-
-            elif neighbor.GetAtomicNum() == 6:  # Carbon
-                # Check for quaternary ammonium group
-                for path in Chem.FindAllPathsOfLengthN(mol, 2, useBonds=False, useHs=False):
-                    if chiral_atom_idx == path[0] and neighbor_idx == path[1]:
-                        intermediate_atom = mol.GetAtomWithIdx(path[1])
-                        if intermediate_atom.GetAtomicNum() == 6:
-                            for nbr in intermediate_atom.GetNeighbors():
-                                if nbr.GetAtomicNum() == 7 and nbr.GetFormalCharge() == 1:
-                                    # Check if nitrogen is quaternary ammonium
-                                    attached_carbons = [a for a in nbr.GetNeighbors() if a.GetAtomicNum() == 6]
-                                    if len(attached_carbons) == 3:
-                                        ammonium_connected = True
-                                        break
-                            if ammonium_connected:
-                                break
-
-                # Check for carboxylate group
-                for carboxylate_match in mol.GetSubstructMatches(Chem.MolFromSmarts(carboxylate_pattern)):
-                    if neighbor_idx in carboxylate_match:
-                        carboxylate_connected = True
-                        break
-
-        if ester_connected and ammonium_connected and carboxylate_connected:
-            return True, "Molecule is an O-acyl-L-carnitine"
-
-    return False, "Molecule does not match all criteria for O-acyl-L-carnitine"
+__metadata__ = {   
+    'chemical_class': {   
+        'id': None,
+        'name': 'O-acyl-L-carnitine',
+        'definition': 'An O-acylcarnitine in which the carnitine component has L-configuration.',
+    },
+    'config': {   'llm_model_name': None,
+                  'f1_threshold': None,
+                  'max_attempts': None,
+                  'max_positive_instances': None,
+                  'max_positive_to_test': None,
+                  'max_negative_to_test': None,
+                  'max_positive_in_prompt': None,
+                  'max_negative_in_prompt': None,
+                  'max_instances_in_prompt': None,
+                  'test_proportion': None},
+    'message': None,
+    'attempt': 0,
+    'success': True,
+    'best': True,
+    'error': '',
+    'stdout': None,
+}
