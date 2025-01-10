@@ -2,7 +2,6 @@
 Classifies: CHEBI:38131 lactol
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_lactol(smiles: str):
     """
@@ -17,6 +16,7 @@ def is_lactol(smiles: str):
         bool: True if molecule is a lactol, False otherwise
         str: Reason for classification
     """
+    
     # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
@@ -24,13 +24,13 @@ def is_lactol(smiles: str):
 
     # Check for ring systems
     ring_info = mol.GetRingInfo()
-    if not ring_info:
-        return False, "No ring structure found - lactols must be cyclic"
+    if not ring_info.IsAtomInRingOfSize(0, 5) and not ring_info.IsAtomInRingOfSize(0, 6):
+        return False, "No suitable ring structure found - lactols must be 5 or 6 member cyclic"
 
-    # Define a Smart pattern for a lactol group
-    # This pattern must detect rings with an oxygen atom within the ring forming a cyclic ether
-    # and an adjacent hydroxyl group indicative of the lactol structure.
-    lactol_pattern = Chem.MolFromSmarts("O1[C@@H](O)C1")
+    # Define a SMARTS pattern for lactol structure
+    # This pattern detects a cyclic ether linked to a hydroxyl group
+    # within 5 or 6 membered rings which are typical for lactols.
+    lactol_pattern = Chem.MolFromSmarts("O[C]1[OH][C,O][c,C]1")
 
     # Check if the molecule matches the lactol pattern
     if not mol.HasSubstructMatch(lactol_pattern):
