@@ -23,45 +23,52 @@ def is_nucleoside_5__phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for phosphate group (-OP(=O)(O)-)
-    phosphate_pattern = Chem.MolFromSmarts("[OX2][PX4](=[OX1])([OX2])[OX2]")
+    # Look for phosphate group(s)
+    # Match mono-, di-, tri-, or tetra-phosphate
+    phosphate_pattern = Chem.MolFromSmarts("[OX2]P(=O)([OX2,OX1])[OX2,OX1]")
     if not mol.HasSubstructMatch(phosphate_pattern):
         return False, "No phosphate group found"
     
-    # Look for ribose or deoxyribose sugar
-    # Pattern matches both ribose and deoxyribose with a phosphate at 5' position
-    sugar_pattern = Chem.MolFromSmarts("[CH2X4]OP([OX2,OX1])~[#8][C@H]1O[CH]([CH]([CH]1[OX2,CH2])[OX2H0,OX2H1])[#7]")
-    if not mol.HasSubstructMatch(sugar_pattern):
-        return False, "No ribose/deoxyribose sugar with 5' phosphate found"
-    
-    # Look for nucleobase patterns
+    # Look for ribose/deoxyribose sugar with 5' phosphate
+    # More general pattern that matches both ribose and deoxyribose
+    # [CH2X4] for 5' carbon, followed by oxygen and phosphorus
+    sugar_phosphate = Chem.MolFromSmarts("[CH2X4]OP(~[OX1,OX2])~[OX1,OX2]")
+    if not mol.HasSubstructMatch(sugar_phosphate):
+        return False, "No 5'-phosphate group found"
+        
+    # Check for furanose ring with proper substitution pattern
+    # More flexible pattern for ribose/deoxyribose
+    sugar_ring = Chem.MolFromSmarts("[CH2X4]OP~[#8][C@H]1O[CH]([CH]([CH]1[OX2H0,OX2H1,CH2])[OX2H0,OX2H1])[#7]")
+    if not mol.HasSubstructMatch(sugar_ring):
+        return False, "No ribose/deoxyribose ring found"
+
+    # Look for nucleobase patterns - more flexible patterns
     # Purine pattern (adenine, guanine and derivatives)
-    purine_pattern = Chem.MolFromSmarts("c12ncnc([NH2,O])c1nc([NH2,O])[nH]2")
+    purine_pattern = Chem.MolFromSmarts("[#7]1[#6]~[#7][#6]2[#6]1~[#7]~[#6]~[#7]2")
+    
     # Pyrimidine pattern (cytosine, uracil, thymine and derivatives)
-    pyrimidine_pattern = Chem.MolFromSmarts("[#7]1[#6][#6][#7][#6](=[O,S])[#7]1")
+    pyrimidine_pattern = Chem.MolFromSmarts("[#7]1[#6]~[#6]~[#7]~[#6](~[O,S,N])~[#7]1")
     
     has_purine = mol.HasSubstructMatch(purine_pattern)
     has_pyrimidine = mol.HasSubstructMatch(pyrimidine_pattern)
     
     if not (has_purine or has_pyrimidine):
         return False, "No purine or pyrimidine base found"
+
+    # Count phosphate groups
+    p_o_p_pattern = Chem.MolFromSmarts("[PX4]~[OX2]~[PX4]")
+    p_o_p_count = len(mol.GetSubstructMatches(p_o_p_pattern))
     
-    # Count phosphate groups (look for P-O-P bonds for di/tri/tetra-phosphates)
-    p_o_p_pattern = Chem.MolFromSmarts("[PX4]-[OX2]-[PX4]")
-    p_o_p_matches = len(mol.GetSubstructMatches(p_o_p_pattern))
+    if p_o_p_count > 3:
+        return False, "Too many phosphate groups"
+        
+    phosphate_types = ["mono", "di", "tri", "tetra"]
+    phosphate_type = phosphate_types[min(p_o_p_count, 3)]
     
-    phosphate_type = "mono"
-    if p_o_p_matches == 1:
-        phosphate_type = "di"
-    elif p_o_p_matches == 2:
-        phosphate_type = "tri"
-    elif p_o_p_matches == 3:
-        phosphate_type = "tetra"
-    
-    # Verify connection between sugar and base
-    sugar_base_pattern = Chem.MolFromSmarts("[#7]1[#6,#7][#6,#7][#6][#6,#7]1-[CH]1O[CH]([CH2]OP)[CH][CH]1")
-    if not mol.HasSubstructMatch(sugar_base_pattern):
+    # Additional check for connection between sugar and base
+    sugar_base_connect = Chem.MolFromSmarts("[#7]~[#6,#7]1~[#6,#7]~[#6]~[#6,#7]~1~[CH]1O[CH]([CH2]OP)[CH][CH]1")
+    if not mol.HasSubstructMatch(sugar_base_connect):
         return False, "Base not properly connected to sugar"
-    
+        
     base_type = "purine" if has_purine else "pyrimidine"
     return True, f"Found {phosphate_type}-phosphorylated nucleoside with {base_type} base"
