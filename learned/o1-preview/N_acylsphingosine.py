@@ -5,11 +5,12 @@ Classifies: CHEBI:52639 N-acylsphingosine
 Classifies: CHEBI:51294 N-acylsphingosine
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_N_acylsphingosine(smiles: str):
     """
     Determines if a molecule is an N-acylsphingosine based on its SMILES string.
-    An N-acylsphingosine is a sphingosine backbone with an acyl group attached to the nitrogen atom.
+    An N-acylsphingosine is composed of sphingosine having a fatty acyl group attached to the nitrogen.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -24,57 +25,59 @@ def is_N_acylsphingosine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for N-acylsphingosine
-    n_acyl_sphingosine_smarts = "[NX3;!$(N-[N])]-C(=O)-[C@H]([O])[C@H]([O])[*]"
-    n_acyl_sphingosine_pattern = Chem.MolFromSmarts(n_acyl_sphingosine_smarts)
-    if n_acyl_sphingosine_pattern is None:
-        return False, "Invalid SMARTS pattern"
+    # Define SMARTS patterns
 
-    if not mol.HasSubstructMatch(n_acyl_sphingosine_pattern):
-        return False, "Molecule does not match N-acylsphingosine pattern"
+    # Pattern for sphingosine backbone with a trans double bond at position 4
+    sphingosine_pattern = Chem.MolFromSmarts("""
+        [#6]-[#6]-[#7]-[#6]-[#6]=[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]
+        """)
 
-    # Check for long hydrocarbon chain (minimum 12 carbons)
-    # Starting from the beta carbon
-    matches = mol.GetSubstructMatches(n_acyl_sphingosine_pattern)
-    for match in matches:
-        # Index positions in the SMARTS pattern
-        # 0 - Nitrogen
-        # 1 - Carbonyl carbon
-        # 2 - Alpha carbon [C@H]([O])
-        # 3 - Beta carbon [C@H]([O])
-        # 4 - Next atom (could be carbon)
-        beta_carbon_idx = match[3]
-        beta_carbon = mol.GetAtomWithIdx(beta_carbon_idx)
+    # Pattern for N-acylation (amide bond)
+    n_acyl_pattern = Chem.MolFromSmarts("N-C(=O)-[C,H]")
 
-        # Traverse the chain from beta carbon
-        visited = set()
-        chain_length = 0
-        atoms_to_visit = [beta_carbon]
-        while atoms_to_visit:
-            atom = atoms_to_visit.pop()
-            idx = atom.GetIdx()
-            if idx in visited or idx in match:
-                continue
-            visited.add(idx)
-            if atom.GetAtomicNum() == 6:
-                chain_length += 1
-                for neighbor in atom.GetNeighbors():
-                    if neighbor.GetAtomicNum() == 6:
-                        atoms_to_visit.append(neighbor)
-        if chain_length >= 12:
-            return True, "Molecule is an N-acylsphingosine with sphingosine backbone"
-        else:
-            return False, f"Hydrocarbon chain too short (length {chain_length})"
+    # Check for sphingosine backbone
+    if not mol.HasSubstructMatch(sphingosine_pattern):
+        return False, "Molecule does not have sphingosine backbone"
 
-    return False, "Does not match N-acylsphingosine structure"
+    # Check for N-acylation
+    if not mol.HasSubstructMatch(n_acyl_pattern):
+        return False, "Molecule does not have N-acyl amide bond"
+
+    # Verify the connection between sphingosine backbone and acyl group
+    # Find the nitrogen atom in the amide bond
+    amide_matches = mol.GetSubstructMatches(n_acyl_pattern)
+    sphingosine_matches = mol.GetSubstructMatches(sphingosine_pattern)
+    nitrogen_indices = [match[0] for match in amide_matches]
+    sphingosine_nitrogens = [match[2] for match in sphingosine_matches]
+
+    # Check if the nitrogen in the amide bond is part of the sphingosine backbone
+    if not set(nitrogen_indices).intersection(sphingosine_nitrogens):
+        return False, "Amide nitrogen is not part of sphingosine backbone"
+
+    # Check for trans double bond in backbone
+    # Pattern for trans double bond between C4 and C5
+    trans_double_bond_pattern = Chem.MolFromSmarts("C/C=C/C")
+    if not mol.HasSubstructMatch(trans_double_bond_pattern):
+        return False, "Molecule does not have trans double bond in sphingosine backbone"
+
+    # Check for hydroxyl groups at positions 1 and 3
+    hydroxyl_pattern = Chem.MolFromSmarts("[#6]-[#6](-O)-[#6](-O)-[#6]")
+    if not mol.HasSubstructMatch(hydroxyl_pattern):
+        return False, "Molecule does not have hydroxyl groups at positions 1 and 3"
+
+    # Optional: Verify chain lengths if required
+    # Typically, sphingosine has an 18-carbon backbone
+    num_carbons = sum([1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6])
+    if num_carbons < 18:
+        return False, f"Molecule has only {num_carbons} carbons, expected at least 18"
+
+    return True, "Molecule is an N-acylsphingosine with sphingosine backbone and N-acyl group"
 
 __metadata__ = {
     'chemical_class': {
         'id': 'CHEBI:51294',
         'name': 'N-acylsphingosine',
-        'definition': 'The parent compounds of the ceramide family, composed of '
-                      'sphingosine having an unspecified fatty acyl group attached '
-                      'to the nitrogen.',
+        'definition': 'The parent compounds of the ceramide family, composed of sphingosine having an unspecified fatty acyl group attached to the nitrogen.',
         'parents': ['CHEBI:76165', 'CHEBI:76158']
     },
     'config': {
@@ -90,7 +93,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 1,
+    'attempt': 2,
     'success': True,
     'best': True,
     'error': '',
