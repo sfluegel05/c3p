@@ -2,12 +2,13 @@
 Classifies: CHEBI:36836 3beta-hydroxy steroid
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_3beta_hydroxy_steroid(smiles: str):
     """
     Determines if a molecule is a 3beta-hydroxy steroid based on its SMILES string.
     A 3beta-hydroxy steroid is characterized by a steroid structure with a hydroxyl
-    group at the 3rd carbon in the beta orientation.
+    group at the 3rd carbon in the beta configuration.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,16 +21,14 @@ def is_3beta_hydroxy_steroid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Define a pattern for the steroid ABCD rings, allowing for variations in saturation
-    steroid_pattern = Chem.MolFromSmarts("[#6]1-[#6]-[#6]-2-[#6]-[#6]3-[#6](-[#6]-[#6]-4-[#6R1]-[#6R1]([#6R1][#6]4)[#6R1]([#6R1][#6]3)[#6R1][#6]2)-[#6R1][#6]1")
-    
+
+    # Look for steroid backbone pattern (basic tetracyclic structure of steroids)
+    steroid_pattern = Chem.MolFromSmarts("C1CCC2C3C1CCC4C3CCC2(C4)")
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
     
-    # Define a pattern for a 3beta-hydroxy group
-    hydroxy_pattern = Chem.MolFromSmarts("[C@H]1(O)[C@H](C)CC[C@]2(C)[C@@H]3CC[C@@H]4C([C@H](O)C)CCC3=[C@]2[C@H]4C1")
-    
+    # Look for 3beta-hydroxy group (3rd carbon with beta stereo OH group)
+    hydroxy_pattern = Chem.MolFromSmarts("[C@@H](O)C1CCC2C3C1CCC4C3CCC2(C4)")
     if not mol.HasSubstructMatch(hydroxy_pattern):
         return False, "No 3beta-hydroxy group found"
 
