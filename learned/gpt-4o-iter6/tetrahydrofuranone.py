@@ -21,11 +21,13 @@ def is_tetrahydrofuranone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Improved generalized pattern
-    # The pattern is a 5-membered ring with 1 oxygen, at least one carbonyl (oxo-) group 
-    tetrahydrofuranone_pattern = Chem.MolFromSmarts("[O]1CC(=O)C([#6])[C@H1][C1;H4]")
+    # The SMARTS pattern for tetrahydrofuranone
+    # The pattern specifies a 5-membered ring with one oxygen and one carbonyl group
+    triangle_oxygen_carbonyl = Chem.MolFromSmarts("C1(=O)OC(C)C1")
+    generic_tetrahydrofuranone_pattern = Chem.MolFromSmarts("C1(=O)OCC[C@1]")
     
-    if mol.HasSubstructMatch(tetrahydrofuranone_pattern):
+    # Match the structure
+    if mol.HasSubstructMatch(triangle_oxygen_carbonyl) or mol.HasSubstructMatch(generic_tetrahydrofuranone_pattern):
         return True, "Tetrahydrofuranone structure confirmed"
 
     return False, "No valid tetrahydrofuranone structure found"
