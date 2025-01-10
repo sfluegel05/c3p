@@ -46,17 +46,24 @@ def is_octadecadienoic_acid(smiles: str):
     if double_bond_count != 2:
         return False, f"Expected 2 C=C double bonds, found {double_bond_count}"
 
-    # Check if the molecule is a straight-chain fatty acid
-    # Relax the straight-chain requirement to allow for slight branching or stereochemistry
-    # We will check if the molecule has a long carbon chain with minimal branching
-    # by ensuring that the number of carbons with degree > 2 is minimal
+    # Check for disallowed functional groups (e.g., hydroperoxides, triple bonds, rings)
+    disallowed_patterns = [
+        Chem.MolFromSmarts("[OX2][OX2]"),  # Hydroperoxides
+        Chem.MolFromSmarts("[CX2]#[CX2]"),  # Triple bonds
+        Chem.MolFromSmarts("[R]"),  # Rings
+    ]
+    for pattern in disallowed_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return False, "Molecule contains disallowed functional groups or rings"
+
+    # Check if the molecule is a straight-chain fatty acid with minimal branching
+    # Allow up to 2 branching carbons (e.g., for stereochemistry or slight branching)
     branching_carbons = 0
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() == 6:  # Carbon atom
             if atom.GetDegree() > 2:
                 branching_carbons += 1
 
-    # Allow up to 2 branching carbons (e.g., for stereochemistry or slight branching)
     if branching_carbons > 2:
         return False, "Molecule has too much branching to be considered a straight-chain fatty acid"
 
