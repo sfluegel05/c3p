@@ -25,50 +25,56 @@ def is_arenecarbaldehyde(smiles: str):
         return False, "Invalid SMILES string"
 
     # Find all aldehyde groups
-    # [CX3H1](=O) matches a carbon with 3 connections, one H, and a double bond to oxygen
-    aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)")
-    
-    # Alternative pattern for explicit H representation
-    aldehyde_pattern2 = Chem.MolFromSmarts("[CH1](=O)")
-    
+    # Match both explicit and implicit hydrogen representations
+    aldehyde_pattern = Chem.MolFromSmarts("[$([CH](=O))]")
     matches = mol.GetSubstructMatches(aldehyde_pattern)
-    matches2 = mol.GetSubstructMatches(aldehyde_pattern2)
     
-    all_matches = list(set(matches + matches2))
-    
-    if not all_matches:
+    if not matches:
         return False, "No aldehyde group found"
 
-    # For each aldehyde carbon, check if it's connected to an aromatic ring
-    for match in all_matches:
+    # For each aldehyde carbon, check if it's connected to an aromatic system
+    for match in matches:
         aldehyde_carbon = mol.GetAtomWithIdx(match[0])
         
         # Get all neighboring atoms of the aldehyde carbon
         for neighbor in aldehyde_carbon.GetNeighbors():
             # Skip the oxygen of the aldehyde group
-            if neighbor.GetAtomicNum() == 8:
+            if neighbor.GetAtomicNum() == 8 and neighbor.GetTotalNumHs() == 0:
                 continue
                 
-            # Check if the neighbor is aromatic
+            # Check if the neighbor is part of an aromatic system
             if neighbor.GetIsAromatic():
-                # Check if neighbor is part of an aromatic ring
-                ring_info = mol.GetRingInfo()
-                if ring_info.IsAtomInRing(neighbor.GetIdx()):
-                    return True, "Contains aldehyde group directly attached to aromatic ring"
+                return True, "Contains aldehyde group directly attached to aromatic ring"
             
-            # Check if neighbor is part of an aromatic ring system
-            elif neighbor.GetAtomicNum() == 6:  # Carbon atom
-                # Check if it's part of any ring
-                ring_info = mol.GetRingInfo()
-                if ring_info.IsAtomInRing(neighbor.GetIdx()):
-                    # Check if any atoms in the same ring are aromatic
-                    ring_atoms = set()
-                    for ring in ring_info.AtomRings():
-                        if neighbor.GetIdx() in ring:
-                            ring_atoms.update(ring)
-                    
-                    for ring_atom_idx in ring_atoms:
-                        if mol.GetAtomWithIdx(ring_atom_idx).GetIsAromatic():
-                            return True, "Contains aldehyde group directly attached to aromatic ring system"
+            # Check if neighbor is part of a ring that might be aromatic
+            ring_info = mol.GetRingInfo()
+            atom_rings = ring_info.AtomRings()
+            
+            for ring in atom_rings:
+                if neighbor.GetIdx() in ring:
+                    # Check if any atom in this ring is aromatic
+                    ring_atoms = [mol.GetAtomWithIdx(i) for i in ring]
+                    if any(atom.GetIsAromatic() for atom in ring_atoms):
+                        return True, "Contains aldehyde group directly attached to aromatic ring system"
 
     return False, "No aldehyde group attached to aromatic ring"
+
+def test_smiles():
+    """Test function with known examples"""
+    test_cases = [
+        ("O=CC1=CC=C(N)C=C1", True),  # p-aminobenzaldehyde
+        ("Cc1ccccc1C=O", True),        # o-tolualdehyde
+        ("O=CC=1N(CC)C=CC1", True),    # 1-Ethyl-1H-pyrrole-2-carboxaldehyde
+        ("CCN(CC)c1ccc(C=O)cc1", True),# 4-(diethylamino)benzaldehyde
+        ("CC(=O)CC(=O)CC", False),     # Not an arenecarbaldehyde
+        ("c1ccccc1", False),           # Not an aldehyde
+    ]
+    
+    for smiles, expected in test_cases:
+        result, reason = is_arenecarbaldehyde(smiles)
+        print(f"SMILES: {smiles}")
+        print(f"Expected: {expected}, Got: {result}")
+        print(f"Reason: {reason}\n")
+
+if __name__ == "__main__":
+    test_smiles()
