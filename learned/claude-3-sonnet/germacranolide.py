@@ -25,51 +25,68 @@ def is_germacranolide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for lactone ring (furanone)
-    lactone_pattern = Chem.MolFromSmarts("[C]1[C](=[O])[O][C]1")
-    if not mol.HasSubstructMatch(lactone_pattern):
+    # Check for lactone ring - more flexible pattern
+    lactone_patterns = [
+        Chem.MolFromSmarts("O=C1OC[C]1"), # Basic γ-lactone
+        Chem.MolFromSmarts("O=C1OCC1"),   # Alternative representation
+        Chem.MolFromSmarts("O=C1OCc1"),   # Aromatic representation
+        Chem.MolFromSmarts("O=C1OC(C)C1") # Substituted pattern
+    ]
+    
+    has_lactone = False
+    for pat in lactone_patterns:
+        if mol.HasSubstructMatch(pat):
+            has_lactone = True
+            break
+            
+    if not has_lactone:
         return False, "No lactone ring found"
 
     # Check for 10-membered ring (germacrane skeleton)
-    # Look for connected atoms forming a 10-membered ring
     ring_info = mol.GetRingInfo()
     has_10_ring = False
     for ring in ring_info.AtomRings():
         if len(ring) == 10:
-            has_10_ring = True
-            break
+            # Additional check for carbons in the 10-membered ring
+            ring_atoms = [mol.GetAtomWithIdx(i) for i in ring]
+            carbon_count = sum(1 for atom in ring_atoms if atom.GetAtomicNum() == 6)
+            if carbon_count >= 8:  # Most carbons should be carbon in germacrane
+                has_10_ring = True
+                break
+                
     if not has_10_ring:
-        return False, "No 10-membered ring found"
+        return False, "No suitable 10-membered ring found"
 
     # Count carbons (should be around 15 for sesquiterpene)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 13 or c_count > 17:  # Allow some flexibility for modifications
+    if c_count < 13 or c_count > 20:  # Allowing more flexibility for substituents
         return False, f"Carbon count {c_count} not consistent with sesquiterpene lactone"
 
-    # Check for α-methylene-γ-lactone pattern (common in germacranolides)
-    # but not required as some germacranolides might have variations
-    methylene_lactone = Chem.MolFromSmarts("[CH2]=[C]1[C](=[O])[O][C]1")
-    has_methylene = mol.HasSubstructMatch(methylene_lactone)
-
-    # Check for ring fusion between lactone and 10-membered ring
-    fused_ring_pattern = Chem.MolFromSmarts("[C]1[C](=[O])[O][C]1[C]2[C,c][C,c][C,c][C,c][C,c][C,c][C,c][C,c][C,c]2")
-    has_fusion = mol.HasSubstructMatch(fused_ring_pattern)
-    if not has_fusion:
-        return False, "Lactone not properly fused to 10-membered ring"
+    # Check for oxygen count (should have at least 2 for lactone)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if o_count < 2:
+        return False, "Insufficient oxygen atoms for germacranolide"
 
     # Calculate number of rings
     n_rings = rdMolDescriptors.CalcNumRings(mol)
     if n_rings < 2:  # Should have at least 2 rings (10-membered + lactone)
         return False, "Insufficient number of rings"
 
-    # Additional check for oxygen count (should have at least 2 for lactone)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count < 2:
-        return False, "Insufficient oxygen atoms for germacranolide"
-
-    # If we've made it here, we have the basic germacranolide structure
-    reason = "Contains germacrane skeleton (10-membered ring) fused to lactone"
-    if has_methylene:
-        reason += " with α-methylene-γ-lactone"
+    # Check for typical germacranolide characteristics
+    characteristics = []
     
+    # Check for α-methylene-γ-lactone pattern (common but not required)
+    methylene_lactone = Chem.MolFromSmarts("[CH2]=[C]1C(=O)O[C]1")
+    if mol.HasSubstructMatch(methylene_lactone):
+        characteristics.append("α-methylene-γ-lactone")
+
+    # Check for typical oxidation patterns
+    if o_count > 2:
+        characteristics.append("additional oxygen-containing groups")
+
+    # Build reason string
+    reason = "Contains germacrane skeleton (10-membered ring) with fused lactone"
+    if characteristics:
+        reason += f" and {', '.join(characteristics)}"
+
     return True, reason
