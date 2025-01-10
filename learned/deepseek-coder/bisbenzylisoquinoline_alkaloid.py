@@ -26,8 +26,8 @@ def is_bisbenzylisoquinoline_alkaloid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the core structure of a benzylisoquinoline unit
-    benzylisoquinoline_pattern = Chem.MolFromSmarts("[c]1[c][c][c][c][c]1-[CH2]-[c]2[c][c][c][c][c]2-[N]")
+    # Define a more specific pattern for the benzylisoquinoline unit
+    benzylisoquinoline_pattern = Chem.MolFromSmarts("[c]1[c][c][c][c][c]1-[CH2]-[c]2[c][c][c][c][c]2-[N]([CX4])[CX4]")
     if not mol.HasSubstructMatch(benzylisoquinoline_pattern):
         return False, "No benzylisoquinoline unit found"
 
