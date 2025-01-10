@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_alkaloid(smiles: str):
     """
     Determines if a molecule is an alkaloid based on its SMILES string.
-    An alkaloid is characterized by having a basic nitrogen atom within a heterocyclic ring,
-    and typically does not resemble a peptide or related compound.
+    Alkaloids are naturally occurring, basic nitrogen compounds (often heterocyclic)
+    found in living organisms.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,12 +21,11 @@ def is_alkaloid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for the presence of nitrogen
-    has_nitrogen = any(atom.GetAtomicNum() == 7 for atom in mol.GetAtoms())
-    if not has_nitrogen:
+    # Check for presence of nitrogen
+    if not any(atom.GetAtomicNum() == 7 for atom in mol.GetAtoms()):
         return False, "Molecule does not contain nitrogen"
 
-    # Check for heterocyclic nitrogen
+    # Check for nitrogen in ring structures
     ring_info = mol.GetRingInfo()
     has_nitrogen_in_ring = False
     for ring in ring_info.AtomRings():
@@ -37,15 +36,22 @@ def is_alkaloid(smiles: str):
     if not has_nitrogen_in_ring:
         return False, "Nitrogen is not part of a heterocyclic structure"
 
-    # Detect broad heteroaromatic nitrogen including indoles/pyrrolidines/quinolines etc.
-    broad_heteroaromatic_pattern = Chem.MolFromSmarts("[nR]")
-    if not mol.HasSubstructMatch(broad_heteroaromatic_pattern):
+    # Detect extended set of broad nitrogen-containing structures
+    broad_patterns = [
+        "[nR]",        # Generic heteroaromatic rings
+        "[NX3;R]",     # Tertiary amine in rings
+        "[NX2;R]"      # Secondary amine in rings
+    ]
+    
+    has_broad_heterocycle = any(mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)) for pattern in broad_patterns)
+    if not has_broad_heterocycle:
         return False, "Structure doesn't match broad heterocyclic alkaloid pattern"
 
-    # Avoid classifying peptide-like structures while allowing amide diversity
+    # Allow flexibility in peptide-like structures
     peptide_like_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[#6]")
     peptide_matches = mol.GetSubstructMatches(peptide_like_pattern)
-    if len(peptide_matches) > 3:
-        return False, "Appears more like a peptide or related compound"
+    if len(peptide_matches) > 4:
+        # Some flexibility on amide patterns to allow diverse alkaloids
+        return False, "Appears strongly peptide-like rather than typical alkaloid"
 
     return True, "Contains nitrogen in a heterocyclic structure typical of alkaloids"
