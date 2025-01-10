@@ -7,7 +7,7 @@ def is_tetrahydrofuranone(smiles: str):
     """
     Determines if a molecule is a tetrahydrofuranone based on its SMILES string.
     A tetrahydrofuranone is any oxolane (tetrahydrofuran ring with 4 carbons and 1 oxygen)
-    having an oxo substituent (C=O) at any position on the ring. This includes lactones
+    having an oxo substituent (C=O) at any position on the tetrahydrofuran ring. This includes lactones
     where the carbonyl is part of the ring, and compounds where a C=O is attached to 
     any atom of the ring.
 
@@ -64,14 +64,23 @@ def is_tetrahydrofuranone(smiles: str):
         if oxygen_count != 1 or carbon_count != 4:
             continue
 
-        # Check for unsaturation within the ring (exclude aromatic bonds)
+        # Check for unsaturation within the ring (exclude bonds that are not single)
         bonds_in_ring = [bond for bond in mol.GetBonds() if bond.GetBeginAtomIdx() in ring and bond.GetEndAtomIdx() in ring]
         ring_unsaturation = False
         for bond in bonds_in_ring:
-            if bond.GetBondType() == Chem.rdchem.BondType.AROMATIC:
+            if bond.GetBondType() != Chem.rdchem.BondType.SINGLE:
                 ring_unsaturation = True
                 break
         if ring_unsaturation:
+            continue
+
+        # Check that all ring atoms are sp3 hybridized (saturated)
+        ring_atoms_sp3 = True
+        for atom in ring_atoms:
+            if atom.GetHybridization() != Chem.rdchem.HybridizationType.SP3:
+                ring_atoms_sp3 = False
+                break
+        if not ring_atoms_sp3:
             continue
 
         # Check for presence of C=O bond either in the ring (lactone) or attached to ring atoms
