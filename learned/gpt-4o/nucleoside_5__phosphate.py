@@ -23,22 +23,33 @@ def is_nucleoside_5__phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Identify sugar component (ribose or deoxyribose)
-    ribose_pattern = Chem.MolFromSmarts("O[C@H]1[C@@H](C)O[C@H]([C@@H]1O)O")
-    deoxyribose_pattern = Chem.MolFromSmarts("O[C@H]1[C@@H](C)O[C@H](C1)O")
-    if not mol.HasSubstructMatch(ribose_pattern) and not mol.HasSubstructMatch(deoxyribose_pattern):
+    # Identify ribose or deoxyribose component
+    ribose_pattern = Chem.MolFromSmarts("O[C@@H]1[C@H](O)[C@H](O)[C@@H](CO)O1")
+    deoxyribose_pattern = Chem.MolFromSmarts("O[C@@H]1[C@H](O)[C@H](CO)O1")
+
+    has_ribose = mol.HasSubstructMatch(ribose_pattern)
+    has_deoxyribose = mol.HasSubstructMatch(deoxyribose_pattern)
+    
+    if not has_ribose and not has_deoxyribose:
         return False, "No ribose or deoxyribose sugar found"
 
     # Identify purine or pyrimidine base
-    purine_pattern = Chem.MolFromSmarts("c1ncnc2n(cnc12)")
-    pyrimidine_pattern = Chem.MolFromSmarts("c1ncnc2n(cnc12)")
-    if not (mol.HasSubstructMatch(purine_pattern) or mol.HasSubstructMatch(pyrimidine_pattern)):
+    purine_pattern = Chem.MolFromSmarts("n1cnc2n(cnc2c1)")
+    pyrimidine_pattern = Chem.MolFromSmarts("c1cnc[nH]c1(=O)")
+
+    has_purine = mol.HasSubstructMatch(purine_pattern)
+    has_pyrimidine = mol.HasSubstructMatch(pyrimidine_pattern)
+    
+    if not (has_purine or has_pyrimidine):
         return False, "No purine or pyrimidine base found"
 
-    # Identify phosphate group at C-5'
-    phosphate_pattern = Chem.MolFromSmarts("OP(=O)(O)O")
+    # Identify phosphate group, ensuring it is attached to the sugar at the 5' position
+    phosphate_pattern = Chem.MolFromSmarts("COP(=O)(O)O")
     phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
-    if len(phosphate_matches) < 1:
+    
+    if not phosphate_matches:
         return False, "No phosphate group found at C-5'"
+
+    # Further checks can be added here to ensure the phosphate is monophosphate, diphosphate, etc.
 
     return True, "Contains a ribosyl or deoxyribosyl derivative of a purine/pyrimidine base with a 5'-phosphate"
