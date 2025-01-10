@@ -14,29 +14,30 @@ def is_phosphatidylglycerol(smiles: str):
         bool: True if molecule is a phosphatidylglycerol, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Pattern to match the glycerol phosphate backbone with flexibility for variations
-    glycerol_phosphate_pattern = Chem.MolFromSmarts("OCC(O)COP(=O)([O-])OC")
-    
-    # Match the glycerol phosphate backbone
-    if not mol.HasSubstructMatch(glycerol_phosphate_pattern):
-        return False, "No glycerol phosphate backbone found"
-    
-    # Check for presence of two ester-linked fatty acid groups
-    ester_pattern = Chem.MolFromSmarts("C(=O)OC")
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
+
+    # Pattern to detect the glycerol backbone part of a phosphatidylglycerol
+    # Generalized for possible stereo/isomer configurations and common modifications
+    glycerol_pattern = Chem.MolFromSmarts("[C@H](CO[P](=O)(O)O)(CO)O")  # Search for glycerol-phosphate linkage
+    glycerol_matches = mol.GetSubstructMatches(glycerol_pattern)
+
+    if not glycerol_matches:
+        return False, "No glycerol backbone with phosphate linkage found"
+
+    # Pattern for ester-linked long fatty acid chains
+    ester_fatty_acid_pattern = Chem.MolFromSmarts("OC(=O)C")  # This captures ester linkage to a fatty acid chain
+    ester_matches = mol.GetSubstructMatches(ester_fatty_acid_pattern)
     if len(ester_matches) < 2:
         return False, f"Insufficient ester-linked fatty acids, found {len(ester_matches)}"
-    
-    # Ensure no choline or ethanolamine headgroups
-    choline_pattern = Chem.MolFromSmarts("N(C)(C)C")
-    ethanolamine_pattern = Chem.MolFromSmarts("OCCN")
-    if mol.HasSubstructMatch(choline_pattern) or mol.HasSubstructMatch(ethanolamine_pattern):
-        return False, "Contains non-phosphatidylglycerol headgroup (choline or ethanolamine)"
-    
-    return True, "Contains glycerol phosphate backbone with phosphatidyl group and ester-linked fatty acid chains"
+
+    # Ensure presence of at least one phosphatidyl group
+    phosphatidyl_pattern = Chem.MolFromSmarts("COP(O)(=O)OC")
+    phosphatidyl_matches = mol.GetSubstructMatches(phosphatidyl_pattern)
+    if not phosphatidyl_matches:
+        return False, "Missing phosphatidyl group"
+
+    return True, "Contains glycerol backbone with phosphatidyl group and ester-linked fatty acid chains"
