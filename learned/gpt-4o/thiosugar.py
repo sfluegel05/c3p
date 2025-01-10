@@ -1,9 +1,6 @@
 """
 Classifies: CHEBI:73754 thiosugar
 """
-"""
-Classifies: thiosugar
-"""
 from rdkit import Chem
 
 def is_thiosugar(smiles: str):
@@ -25,19 +22,24 @@ def is_thiosugar(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for a common carbohydrate ring pattern
-    # Simplified match for sugar-like patterns (5- or 6-membered rings with hydroxyl groups)
-    carbohydrate_ring_pattern_5 = Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@@H]1")
-    carbohydrate_ring_pattern_6 = Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](O)[C@@H]1")
+    # More flexible pattern for carbohydrate recognition 
+    # Allow for ring or open-chain forms with multiple hydroxyls
+    carbohydrate_pattern = Chem.MolFromSmarts("C(O)(C(=O)O)O")
     
-    if not (mol.HasSubstructMatch(carbohydrate_ring_pattern_5) or mol.HasSubstructMatch(carbohydrate_ring_pattern_6)):
-        return False, "No carbohydrate-like ring structure found"
+    # Check if there is at least one recognizable carbohydrate motif
+    if not mol.HasSubstructMatch(carbohydrate_pattern):
+        return False, "No recognizable carbohydrate motifs found"
     
-    # Check for sulfur substitutions
-    sulfur_pattern = Chem.MolFromSmarts("[SH,X2]")
-    sulfur_match = mol.HasSubstructMatch(sulfur_pattern)
+    # Look for sulfur substituents replacing oxygens or hydroxyls
+    sulfur_substitution_patterns = [
+        Chem.MolFromSmarts("[SX2]"),       # Sulfide
+        Chem.MolFromSmarts("[SX3]=O"),    # Sulfoxide
+        Chem.MolFromSmarts("[SX4](=O)(=O)"), # Sulfone
+        Chem.MolFromSmarts("S-[C]")          # Sulfur linked to carbon indicating an -SR group
+    ]
     
-    if sulfur_match:
-        return True, "Sulfur found as substitution in carbohydrate-like structure"
-
+    for pattern in sulfur_substitution_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return True, "Sulfur substitution found in potential carbohydrate structure"
+    
     return False, "No sulfur substitution found in expected carbohydrate structure locations"
