@@ -19,27 +19,28 @@ def is_N_acylsphingosine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for acyl-amide linkage pattern (NC(=O)C)
-    amide_pattern = Chem.MolFromSmarts("NC(=O)[C]")
+    # Improved amide linkage pattern (NC(=O)C) allowing variable attachment
+    # Ensuring the carbon following the amide C=O is attached to a chain
+    amide_pattern = Chem.MolFromSmarts("N[C;H2][C](=O)[C]")
     if not mol.HasSubstructMatch(amide_pattern):
         return False, "No acyl-amide linkage found"
-    
-    # Look for improved sphingosine backbone pattern
-    # Pattern should include long hydrocarbon with trans double bond, hydroxyl groups and an amide linkage
-    # Consider a general sphingosine pattern
-    sphingosine_pattern = Chem.MolFromSmarts("[C@H]([C@H](CO)O)C=C")
+
+    # Improved sphingosine backbone pattern
+    # Including a long hydrocarbon chain, hydroxyl groups, amide linkage,
+    # and often a trans double bond
+    sphingosine_pattern = Chem.MolFromSmarts("[C@H]([C@@H](CO)O)C=C")
     if not mol.HasSubstructMatch(sphingosine_pattern):
         return False, "No sphingosine backbone pattern found"
         
-    # Ensure there are two correct hydroxyl groups checking the relative position
-    hydroxyl_pattern = Chem.MolFromSmarts("[C@H](O)[C@H](CO)O")
-    if not mol.HasSubstructMatch(hydroxyl_pattern):
-        return False, "Required two hydroxyl groups pattern not found"
-    
-    # Check for sufficient carbon chain length typical of sphingosine and acyl chain
+    # Check for minimum carbon chain length for typical N-acylsphingosines
     carbon_atom_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if carbon_atom_count < 24:
         return False, "Insufficient carbon chain length for N-acylsphingosine"
 
-    # If all criteria meet, return True
+    # Ensure appropriate number of hydroxyl groups in precise locations
+    correct_hydroxyl_pattern = Chem.MolFromSmarts("[C@H](O)[C@H](CO)O")
+    if not mol.HasSubstructMatch(correct_hydroxyl_pattern):
+        return False, "Required hydroxyl groups in proper configuration not found"
+
+    # All checks passed, classify as N-acylsphingosine
     return True, "Contains sphingosine backbone with an acyl-amide linkage"
