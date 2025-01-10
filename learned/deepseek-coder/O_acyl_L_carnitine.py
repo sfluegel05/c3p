@@ -54,9 +54,9 @@ def is_O_acyl_L_carnitine(smiles: str):
         return False, "No chiral center found"
     
     # Ensure the chiral center is in the L-configuration
-    # L-configuration corresponds to 'R' in RDKit for carnitine derivatives
+    # L-configuration corresponds to 'S' in RDKit for carnitine derivatives
     for center in chiral_centers:
-        if center[1] != 'R':  # Changed from 'S' to 'R'
+        if center[1] != 'S':  # Changed from 'R' to 'S'
             return False, "Chiral center not in L-configuration"
 
     # Additional check to reduce false positives: ensure the molecule has a reasonable molecular weight
@@ -68,5 +68,10 @@ def is_O_acyl_L_carnitine(smiles: str):
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if c_count < 7 or c_count > 50:  # Reasonable range for acyl chains
         return False, "Number of carbons out of range for O-acyl-L-carnitine"
+
+    # Additional check to exclude molecules with multiple carboxylate groups
+    carboxylate_matches = mol.GetSubstructMatches(carboxylate_pattern)
+    if len(carboxylate_matches) > 1:
+        return False, "Multiple carboxylate groups found"
 
     return True, "Contains L-carnitine backbone with O-acyl group, quaternary ammonium, and carboxylate group"
