@@ -21,14 +21,14 @@ def is_N_sulfonylurea(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Look for sulfonyl group (S(=O)(=O)) attached to a nitrogen
-    sulfonyl_nitrogen_pattern = Chem.MolFromSmarts("S(=O)(=O)[N]")
+    
+    # Improved pattern to match sulfonyl group attached to nitrogen
+    sulfonyl_nitrogen_pattern = Chem.MolFromSmarts("S(=O)(=O)N")
     if not mol.HasSubstructMatch(sulfonyl_nitrogen_pattern):
         return False, "No N-sulfonyl group found"
     
-    # Look for urea moiety (-NH-C(=O)-NH-)
-    urea_pattern = Chem.MolFromSmarts("N-C(=O)-N")
+    # Improved pattern to match broader urea moiety configurations
+    urea_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[NX3]")
     if not mol.HasSubstructMatch(urea_pattern):
         return False, "No urea moiety found"
 
