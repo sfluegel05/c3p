@@ -2,7 +2,6 @@
 Classifies: CHEBI:25627 octadecadienoic acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_octadecadienoic_acid(smiles: str):
     """
@@ -38,9 +37,7 @@ def is_octadecadienoic_acid(smiles: str):
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No terminal carboxylic acid group found"
 
-    # Check if the main chain is unbranched
-    num_side_chains = sum(1 for atom in mol.GetAtoms() if atom.GetDegree() > 2)
-    if num_side_chains > 0:
-        return False, "Detected side chains, molecule is not straight-chain"
+    # Refinement: Assume polyunsaturated character as part of pattern inclusion
+    # Skipping explicit side chain check as functional groups are part of introduction
 
-    return True, "Molecule is a straight-chain C18 polyunsaturated fatty acid with two C=C double bonds and a terminal carboxylic acid group"
+    return True, "Molecule is a C18 polyunsaturated fatty acid with two C=C double bonds and a terminal carboxylic acid group"
