@@ -21,21 +21,19 @@ def is_phosphoinositide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for inositol ring pattern (6-membered ring with hydroxy groups)
-    inositol_pattern = Chem.MolFromSmarts("C1C(O)C(O)C(O)C(O)C(O)C1")
+    # Loose pattern for inositol ring (6-membered ring with at least 4 hydroxy groups)
+    inositol_pattern = Chem.MolFromSmarts("C1(O)C(O)C(O)C(O)C(O)C1")
     if not mol.HasSubstructMatch(inositol_pattern):
         return False, "No inositol ring found"
+    
+    # Check for any phosphate groups linked to oxygen (phosphodiester linkage)
+    phosphate_pattern = Chem.MolFromSmarts("OP(=O)(O)O")
+    if not mol.HasSubstructMatch(phosphate_pattern):
+        return False, "No phosphodiester found on inositol"
 
-    # Check for phosphate groups connected to inositol
-    phosphate_pattern = Chem.MolFromSmarts("O[P](=O)([O-])[O-]")
-    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
-    if len(phosphate_matches) < 1:
-        return False, "No phosphorylation found on inositol"
-
-    # Count the C(=O)O side chains indicating lipid linkage
-    lipid_linkage_pattern = Chem.MolFromSmarts("C(=O)O[C@@H]")
-    acyl_matches = mol.GetSubstructMatches(lipid_linkage_pattern)
-    if not acyl_matches:
+    # Check for glycerol-like linkage for lipid (O-C(=O)C side chain)
+    lipid_linkage_pattern = Chem.MolFromSmarts("OC(=O)C")
+    if not mol.HasSubstructMatch(lipid_linkage_pattern):
         return False, "No lipid linkage found"
 
-    return True, "Contains inositol ring with phosphorylations and lipid linkages indicating a phosphoinositide"
+    return True, "Contains inositol ring with phosphorylation and lipid linkages characteristic of a phosphoinositide"
