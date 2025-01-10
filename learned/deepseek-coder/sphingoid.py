@@ -42,12 +42,6 @@ def is_sphingoid(smiles: str):
     if not mol.HasSubstructMatch(amino_pattern):
         return False, "No amino group found"
 
-    # Check for the presence of a hydroxyl group and an amino group in the general vicinity
-    # This is a more flexible check than requiring a specific backbone
-    hydroxyl_amino_pattern = Chem.MolFromSmarts("[OX2H]~[CX4]~[NX3H2,NX4H3+,NX3H]")
-    if not mol.HasSubstructMatch(hydroxyl_amino_pattern):
-        return False, "No hydroxyl and amino group in close proximity"
-
     # Check for the presence of a long hydrocarbon chain connected to the hydroxyl and amino groups
     # This ensures that the hydroxyl and amino groups are part of the long chain
     long_chain_pattern = Chem.MolFromSmarts("[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]")
@@ -69,6 +63,11 @@ def is_sphingoid(smiles: str):
     carbohydrate_pattern = Chem.MolFromSmarts("[OX2H]~[CX4]~[OX2H]~[CX4]~[OX2H]")
     if mol.HasSubstructMatch(carbohydrate_pattern):
         return False, "Molecule is likely a carbohydrate or glycoconjugate"
+
+    # Exclude peptides and complex structures
+    peptide_pattern = Chem.MolFromSmarts("[CX3](=O)[NX3H]")
+    if mol.HasSubstructMatch(peptide_pattern):
+        return False, "Molecule is likely a peptide or complex structure"
 
     return True, "Contains a long hydrocarbon chain with a hydroxyl group, an amino group, and a 2-amino-1,3-diol or 2-amino-1,3,4-triol backbone"
 
