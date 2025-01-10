@@ -25,23 +25,16 @@ def is_flavones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the flavone core using a more general SMARTS pattern with aromatic atoms
-    # Flavone core: fused benzopyran-4-one with an aryl group at position 2
-    flavone_core_smarts = '[O]=C1c2ccccc2Oc3ccccc13'  # General flavone core
+    # Define the flavone core SMARTS pattern
+    # Flavone core: 2-arylchromen-4-one skeleton
+    flavone_core_smarts = 'c1cc(-c2ccccc2)c(=O)oc3ccccc13'  # Flavone core with 2-aryl substitution
     flavone_core = Chem.MolFromSmarts(flavone_core_smarts)
     if flavone_core is None:
         return False, "Error in flavone core SMARTS definition"
 
-    # Ensure the molecule's aromaticity matches RDKit's aromaticity model
-    Chem.SanitizeMol(mol)
-
-    # Find substructure matches of the flavone core
-    core_matches = mol.GetSubstructMatches(flavone_core)
-    if not core_matches:
+    # Check for substructure match of flavone core
+    if not mol.HasSubstructMatch(flavone_core):
         return False, "Flavone core structure not found"
-
-    # Check for 2-aryl substitution (although the core pattern includes it)
-    # Additional verification can be done if necessary
 
     return True, "Contains flavone core structure"
 
