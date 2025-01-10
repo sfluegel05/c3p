@@ -20,29 +20,35 @@ def is_tetrasaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define extended SMARTS patterns for common monosaccharide rings, considering stereochemistry and oxygen connectivity in sugars
+    # Define a more generalized pattern for cyclic monosaccharides, allowing variance in stereochemistry
+    # and recognizing common monosaccharide structural motifs
     monosaccharide_patterns = [
-        Chem.MolFromSmarts("[C@H]1(O)[C@H](O)[C@H](O)[C@H](O)[C@H](O)O1"),  # D-Glucose-like
-        Chem.MolFromSmarts("[C@H]1(O)[C@H](O)[C@H](O)[C@H](O)[C@@H](O)O1"),  # D-Galactose-like
-        Chem.MolFromSmarts("[C@H]1(O)[C@H](O)[C@@H](O)[C@H](O)O1"),  # D-Mannose-like
-        Chem.MolFromSmarts("[C@H]1(O)[C@H](O)[C@@H](O)[C@H](O)[C@H](O)O1"),  # L-fucose/furanose-like
-        # More patterns can be added for completeness
+        Chem.MolFromSmarts("[C@@H]1(O)[C@H](O)[C@H](O)[C@H](O)[C@H](O)O1"),  # Generic 6-membered sugar (pyranose)
+        Chem.MolFromSmarts("[C@@H]1(O)[C@H](O)[C@H](O)[C@@H](O)O1"),  # Generic 5-membered sugar (furanose)
     ]
     
+    # Count matches for any sugar pattern; consider we're looking for redundancy in substruct matches
     sugar_matches = sum(len(mol.GetSubstructMatches(pattern)) for pattern in monosaccharide_patterns)
     if sugar_matches != 4:
         return False, f"Only found {sugar_matches} saccharide units, need exactly 4 for a tetrasaccharide"
+    
+    # Identify glycosidic linkages within the saccharide units
+    # Use a generalized ether pattern, including variations in connectivity
+    glycosidic_linkage_pattern = Chem.MolFromSmarts("[C]-O-[C]")
+    glycosidic_matches = mol.GetSubstructMatches(glycosidic_linkage_pattern)
+    if len(glycosidic_matches) < 3:
+        return False, f"Insufficient glycosidic linkages for a tetrasaccharide, found {len(glycosidic_matches)}"
 
-    # Count ether linkages, also considering the O-C-O pattern which is characteristic of glycosidic bonds
-    ether_pattern = Chem.MolFromSmarts("[C;H0][OX2][C;H0]")
-    ether_matches = mol.GetSubstructMatches(ether_pattern)
-    if len(ether_matches) < 3:
-        return False, f"Insufficient glycosidic linkages for a tetrasaccharide, found {len(ether_matches)}"
+    # Adjusted check for hydroxyls to ensure adequate presence without a strict quota, given the structural variance
+    hydroxyl_count = Chem.MolFromSmarts("[OH]")
+    num_hydroxyls = len(mol.GetSubstructMatches(hydroxyl_count))
+    
+    if num_hydroxyls < 8:  # Allow for variance, this is an arbitrary chosen lower bound
+        return False, f"Probably insufficient hydroxyl groups for a tetrasaccharide, only found {num_hydroxyls}"
 
-    # Check for an adequate number of hydroxyl groups
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    if len(hydroxyl_matches) < 8 * sugar_matches // 2:
-        return False, f"Insufficient hydroxyl groups for a tetrasaccharide, found {len(hydroxyl_matches)}"
+    # Ensure the presence of ring structures typical of cyclic monosaccharides
+    ring_info = mol.GetRingInfo()
+    if ring_info.NumRings() < 4:
+        return False, f"Insufficient ring structures for expected tetrasaccharide, found {ring_info.NumRings()} rings"
     
     return True, "Structure matches a tetrasaccharide with four monosaccharide units linked by glycosidic bonds"
