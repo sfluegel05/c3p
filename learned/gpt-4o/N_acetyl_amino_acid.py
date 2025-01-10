@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_N_acetyl_amino_acid(smiles: str):
     """
     Determines if a molecule is an N-acetyl-amino acid based on its SMILES string.
-    An N-acetyl-amino acid is defined by having an acetyl group as the acyl group attached to the nitrogen.
+    An N-acetyl-amino acid is defined by having an acetyl group as the acyl group attached to the nitrogen of an amino acid.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,17 +20,12 @@ def is_N_acetyl_amino_acid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+
+    # Define SMARTS pattern for acetyl group directly attached to an amino nitrogen
+    acetyl_to_amino_pattern = Chem.MolFromSmarts("N[C@@H](C(=O)[O,O-])C(=O)C")
     
-    # Define SMARTS pattern for N-acetyl-amino acid
-    # Looking for: Acetyl group (C(=O)C) attached to a nitrogen (N)
-    acetyl_amino_pattern = Chem.MolFromSmarts("CC(=O)N")
-    
-    # Look for additional carboxylate group (C(O)O)
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[O-]")  # Consider carboxylate ion form
-    carboxylic_acid_neutral_pattern = Chem.MolFromSmarts("C(=O)O")  # Consider neutral form
-    
-    if (mol.HasSubstructMatch(acetyl_amino_pattern) and 
-        (mol.HasSubstructMatch(carboxylic_acid_pattern) or mol.HasSubstructMatch(carboxylic_acid_neutral_pattern))):
-        return True, "Contains acetyl group attached to nitrogen with carboxylic acid group, classifies as N-acetyl-amino acid"
+    # Check for the presence of the pattern
+    if mol.HasSubstructMatch(acetyl_to_amino_pattern):
+        return True, "Contains acetyl group directly attached to nitrogen with a typical amino acid structure"
     else:
-        return False, "Does not contain required acetyl-to-nitrogen bond with adjacent carboxylic acid group"
+        return False, "Does not contain the characteristic N-acetyl group in amino acid configuration"
