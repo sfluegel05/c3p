@@ -25,10 +25,13 @@ def is_chalcones(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define the core chalcone pattern: Ar-CH=CH-C(=O)-Ar
-    # This pattern allows for substitutions on the aromatic rings
+    # This pattern allows for substitutions and heteroatoms on the aromatic rings
     chalcone_pattern = Chem.MolFromSmarts("[c;H0,H1]1[c;H0,H1][c;H0,H1][c;H0,H1][c;H0,H1]1-[CH]=[CH]-[C](=O)-[c;H0,H1]2[c;H0,H1][c;H0,H1][c;H0,H1][c;H0,H1]2")
     if not mol.HasSubstructMatch(chalcone_pattern):
-        return False, "Core chalcone structure (Ar-CH=CH-C(=O)-Ar) not found"
+        # Try a more flexible pattern that allows for heteroatoms and substitutions
+        chalcone_pattern = Chem.MolFromSmarts("[*;H0,H1]1[*;H0,H1][*;H0,H1][*;H0,H1][*;H0,H1]1-[CH]=[CH]-[C](=O)-[*;H0,H1]2[*;H0,H1][*;H0,H1][*;H0,H1][*;H0,H1]2")
+        if not mol.HasSubstructMatch(chalcone_pattern):
+            return False, "Core chalcone structure (Ar-CH=CH-C(=O)-Ar) not found"
 
     # Ensure that the aromatic rings are properly connected to the propenone structure
     matches = mol.GetSubstructMatches(chalcone_pattern)
@@ -36,8 +39,8 @@ def is_chalcones(smiles: str):
         # Get the atoms in the match
         atoms = [mol.GetAtomWithIdx(idx) for idx in match]
         # Check that the aromatic rings are connected to the propenone structure
-        if (atoms[0].GetSymbol() == 'C' and atoms[5].GetSymbol() == 'C' and
-            atoms[0].GetDegree() == 2 and atoms[5].GetDegree() == 2):
+        if (atoms[0].GetSymbol() in ['C', 'N', 'O'] and atoms[5].GetSymbol() in ['C', 'N', 'O'] and
+            atoms[0].GetDegree() >= 2 and atoms[5].GetDegree() >= 2):
             return True, "Contains core chalcone structure (Ar-CH=CH-C(=O)-Ar) with possible substitutions"
 
     return False, "Aromatic rings not properly connected to the propenone structure"
