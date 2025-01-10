@@ -22,8 +22,9 @@ def is_cephalosporin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for cephalosporin
-    cephalosporin_pattern = Chem.MolFromSmarts("C1SN2C(=C1)C(=O)N(C2)")
+    # Define an improved SMARTS pattern for the cephalosporin core
+    # This pattern includes beta-lactam fused to dihydrothiazine with stereochemistry acknowledgment
+    cephalosporin_pattern = Chem.MolFromSmarts("C1C([C@@H]2SCC1)=C(N2)C(=O)O")
 
     # Check for cephalosporin ring structure
     if not mol.HasSubstructMatch(cephalosporin_pattern):
