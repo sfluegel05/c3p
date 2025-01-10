@@ -15,26 +15,23 @@ def is_secondary_ammonium_ion(smiles: str):
         bool: True if molecule is a secondary ammonium ion, False otherwise
         str: Reason for classification
     """
-    # Parse SMILES
+    # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-        
+
     # Define SMARTS pattern for secondary ammonium ion
-    # N+ represents a positively charged nitrogen having two carbonaceous substituents
-    secondary_ammonium_pattern = Chem.MolFromSmarts("[N+;H2]([C])[C]")  # Positively charged nitrogen with two organic (carbon) bonds
+    # A secondary ammonium ion is an [NH2+] (positively charged nitrogen with hydrogens)
+    secondary_ammonium_pattern = Chem.MolFromSmarts("[NH2+]([C])[C]")
 
     # Check for matches
     if mol.HasSubstructMatch(secondary_ammonium_pattern):
-        # Ensure both substituents are carbon-connected (organic)
+        # Validate that the nitrogen atom has exactly two carbon substitutions
         matches = mol.GetSubstructMatches(secondary_ammonium_pattern)
         for match in matches:
             n_atom = mol.GetAtomWithIdx(match[0])
-            non_h_atom_bonds = [nbr.GetAtomicNum() for nbr in n_atom.GetNeighbors() if nbr.GetAtomicNum() != 1]
-            if len(non_h_atom_bonds) == 2 and all(atom_num == 6 for atom_num in non_h_atom_bonds):  # Check if both are carbon
+            bonded_carbons = [neighbor.GetAtomicNum() for neighbor in n_atom.GetNeighbors() if neighbor.GetAtomicNum() == 6]
+            if len(bonded_carbons) == 2:
                 return True, "Contains secondary ammonium ion with [NH2+] and two organic (carbon) substituents"
-    
-    return False, "No secondary ammonium ion structure found"
 
-# Example usage:
-# print(is_secondary_ammonium_ion("CC[NH2+]CC"))
+    return False, "No secondary ammonium ion structure found"
