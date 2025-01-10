@@ -2,6 +2,7 @@
 Classifies: CHEBI:17408 monoacylglycerol
 """
 from rdkit import Chem
+from rdkit.Chem import rdqueries
 
 def is_monoacylglycerol(smiles: str):
     """
@@ -17,31 +18,31 @@ def is_monoacylglycerol(smiles: str):
         bool: True if molecule is a monoacylglycerol, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES to RDKit molecule object
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return None, "Invalid SMILES string"
+    
+    # Define glycerol backbone as C-C-C with at least two oxygens
+    glycerol_query = Chem.MolFromSmarts("[C][C](O)[C](O)")
+    if not mol.HasSubstructMatch(glycerol_query):
+        return False, "Glycerol backbone not found"
 
-    # Identify possible glycerol backbone arrangements - C(CO)(CO)O with flexible substitutions
-    glycerol_pattern_1 = Chem.MolFromSmarts("C(CO)CO")  # e.g., R-C(CO)(O)
-    glycerol_pattern_2 = Chem.MolFromSmarts("C(CO)OC")  # e.g., OC-C(O)(O)
-    if not (mol.HasSubstructMatch(glycerol_pattern_1) or mol.HasSubstructMatch(glycerol_pattern_2)):
-        return False, "No glycerol backbone found"
-
-    # Check for exactly one ester linkage - C(=O)O pattern
+    # Define ester group pattern
     ester_pattern = Chem.MolFromSmarts("C(=O)O")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
+    
     if len(ester_matches) != 1:
-        return False, f"Found {len(ester_matches)} ester groups, need exactly 1"
+        return False, f"Need exactly 1 primary ester group, found {len(ester_matches)}"
+    
+    # Define Acyl chain pattern
+    acyl_pattern = Chem.MolFromSmarts("C(=O)[C,c]")  # Long chain carbon attached pattern
+    if not mol.HasSubstructMatch(acyl_pattern):
+        return False, "No proper acyl group found"
 
-    # Validate long acyl chain presence - typical acyl group, avoiding rings
-    acyl_group_pattern = Chem.MolFromSmarts("C(=O)C-[C;!R]")
-    if not mol.HasSubstructMatch(acyl_group_pattern):
-        return False, "No appropriate acyl group found attached to ester linkage"
-
-    return True, "Contains glycerol backbone with one acyl group and variable substituents"
+    return True, "Contains glycerol backbone with one acyl group and varied substituents"
 
 # Example Test
-# smiles = "O(C(=O)CCCCCCC/C=C\CCCCCCCC)CC(O)CO" # Example of a monacylglycerol
-# print(is_monoacylglycerol(smiles))
+smiles = "O(C(=O)CCCCCCC/C=C\CCCCCCCC)CC(O)CO"  # Example of a monacylglycerol
+print(is_monoacylglycerol(smiles))
