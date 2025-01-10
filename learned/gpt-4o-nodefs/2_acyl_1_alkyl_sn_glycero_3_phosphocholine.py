@@ -20,21 +20,19 @@ def is_2_acyl_1_alkyl_sn_glycero_3_phosphocholine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Pattern for phosphocholine group
-    phosphocholine_pattern = Chem.MolFromSmarts("[O-]P(=O)(OC)OCC[N+](C)(C)C")
+    # Revised pattern for the phosphocholine group with varying bonds
+    phosphocholine_pattern = Chem.MolFromSmarts("[O-]P(=O)(OCC[N+](C)(C)C)O")
     if not mol.HasSubstructMatch(phosphocholine_pattern):
         return False, "No phosphocholine group found"
 
-    # Updated pattern for sn-1 alkyl ether linkage allowing different chain lengths
-    ether_chain_pattern = Chem.MolFromSmarts("COC[C@H]([CH2])CO[CX4]")
-    ether_matches = mol.GetSubstructMatches(ether_chain_pattern)
-    if len(ether_matches) < 1:
+    # Updated flexible pattern for the ether linkage at sn-1 position with optional variations
+    ether_chain_pattern = Chem.MolFromSmarts("CO[C@H](CO)([C,CX4])")
+    if not mol.HasSubstructMatch(ether_chain_pattern):
         return False, "No ether linkage with alkyl chain found (sn-1 position)"
 
-    # Updated pattern for sn-2 acyl group in ester linkage with variability for longer chains
-    acyl_group_pattern = Chem.MolFromSmarts("OC(=O)[CX4][CX3][CX4]")
-    acyl_matches = mol.GetSubstructMatches(acyl_group_pattern)
-    if len(acyl_matches) < 1:
+    # Flexible pattern for sn-2 ester-acyl group
+    acyl_group_pattern = Chem.MolFromSmarts("OC(=O)[C,CX4]")
+    if not mol.HasSubstructMatch(acyl_group_pattern):
         return False, "No acyl ester group found (sn-2 position)"
 
     return True, "Molecule matches the 2-acyl-1-alkyl-sn-glycero-3-phosphocholine structure"
