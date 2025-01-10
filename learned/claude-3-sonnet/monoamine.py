@@ -29,91 +29,75 @@ def is_monoamine(smiles: str):
     frags = Chem.GetMolFrags(mol, asMols=True)
     if len(frags) > 1:
         mol = max(frags, key=lambda m: m.GetNumAtoms())
-
-    # Basic structure requirements
-    if mol.GetNumAtoms() < 8:  # Minimum size for a monoamine
-        return False, "Molecule too small for monoamine structure"
     
-    if mol.GetNumAtoms() > 50:  # Maximum reasonable size
-        return False, "Molecule too large for typical monoamine"
-
     # Check for aromatic ring
-    aromatic_ring = Chem.MolFromSmarts("a1aaaaa1")  # 6-membered aromatic ring
-    if not mol.HasSubstructMatch(aromatic_ring):
+    aromatic_pattern = Chem.MolFromSmarts("a1aaaaa1")  # 6-membered aromatic ring
+    if not mol.HasSubstructMatch(aromatic_pattern):
         return False, "No aromatic ring found"
 
-    # Define core monoamine patterns more precisely
+    # Define monoamine patterns more precisely
+    # Key features:
+    # - Must have exactly two carbons between aromatic ring and amine
+    # - Allow for substitutions on the carbons
+    # - Handle both charged and uncharged forms
+    # - Exclude amides and ring nitrogens
     monoamine_patterns = [
-        # Basic ethylamine patterns with explicit connection to aromatic ring
-        "a[CH2][CH2][NH2]",  # Simple primary amine
-        "a[CH2][CH2][NH][CH3]",  # Secondary amine (methyl)
-        "a[CH2][CH2][NH]C",  # Secondary amine (any alkyl)
-        "a[CH2][CH2][N]([CH3])[CH3]",  # Tertiary amine (dimethyl)
-        
-        # Beta-hydroxyl patterns
-        "a[CH2][CH]([OH])[NH2]",
-        "a[CH2][CH]([OH])[NH][CH3]",
-        "a[CH2][CH]([OH])[N]([CH3])[CH3]",
-        
+        # Basic ethylamine pattern
+        "[aR1]!@[CH2][CH2][NX3;!R;!$(NC=O)]",
+        # Beta-hydroxyl pattern (like in adrenaline)
+        "[aR1]!@[CH2][CH1]([OH1])[NX3;!R;!$(NC=O)]",
+        # Alpha-hydroxyl pattern
+        "[aR1]!@[CH1]([OH1])[CH2][NX3;!R;!$(NC=O)]",
+        # Methylated variants
+        "[aR1]!@[CH2][CH2][NX3H2;!R;!$(NC=O)]C",
+        "[aR1]!@[CH2][CH2][NX3H1;!R;!$(NC=O)](C)C",
         # Charged variants
-        "a[CH2][CH2][NH3+]",
-        "a[CH2][CH2][NH2+][CH3]",
-        "a[CH2][CH2][NH+]([CH3])[CH3]",
-        
-        # Alpha-hydroxyl patterns
-        "a[CH]([OH])[CH2][NH2]",
-        "a[CH]([OH])[CH2][NH][CH3]",
-        "a[CH]([OH])[CH2][N]([CH3])[CH3]"
+        "[aR1]!@[CH2][CH2][NX4H3+;!R]",
+        "[aR1]!@[CH2][CH2][NX4H2+;!R]C",
+        # Additional substituted patterns
+        "[aR1]!@[CH2][CH1]([*])[NX3;!R;!$(NC=O)]",
+        "[aR1]!@[CH1]([*])[CH2][NX3;!R;!$(NC=O)]"
     ]
 
-    found_pattern = False
+    found_valid_pattern = False
     for pattern in monoamine_patterns:
         patt = Chem.MolFromSmarts(pattern)
         if patt and mol.HasSubstructMatch(patt):
-            found_pattern = True
+            found_valid_pattern = True
             break
             
-    if not found_pattern:
-        return False, "No valid monoamine pattern found"
+    if not found_valid_pattern:
+        return False, "No valid two-carbon chain connecting amine to aromatic ring"
 
-    # Count total amine groups (including charged)
-    amine_patterns = [
-        "[NH2]", "[NH][CH3]", "[N]([CH3])[CH3]",  # Neutral amines
-        "[NH3+]", "[NH2+][CH3]", "[NH+]([CH3])[CH3]"  # Charged amines
-    ]
+    # Additional validations
     
-    total_amines = 0
-    for pattern in amine_patterns:
-        patt = Chem.MolFromSmarts(pattern)
-        if patt:
-            total_amines += len(mol.GetSubstructMatches(patt))
-
-    if total_amines == 0:
-        return False, "No amine groups found"
-    if total_amines > 2:  # Allow maximum two amine groups
+    # Count non-aromatic ring nitrogens (exclude molecules with too many amines)
+    amine_pattern = Chem.MolFromSmarts("[NX3;!R;!$(NC=O)]")
+    charged_amine_pattern = Chem.MolFromSmarts("[NX4H+;!R]")
+    
+    amine_count = len(mol.GetSubstructMatches(amine_pattern))
+    charged_amine_count = len(mol.GetSubstructMatches(charged_amine_pattern))
+    total_amines = amine_count + charged_amine_count
+    
+    if total_amines > 3:  # allowing up to 3 for some derivatives
         return False, "Too many amine groups"
 
-    # Additional checks for common monoamine features
-    aromatic_oh = Chem.MolFromSmarts("aO[H]")
-    has_aromatic_oh = mol.HasSubstructMatch(aromatic_oh)
-    
-    # Check for problematic features that might indicate non-monoamine
-    problematic_features = [
-        (Chem.MolFromSmarts("[N]1[C]=[N][C]=[N][C]1"), "Contains tetrazole"),
-        (Chem.MolFromSmarts("[N]1[C]=[O][C]="), "Contains oxazole"),
-        (Chem.MolFromSmarts("[N]1[N]=[N][N]="), "Contains tetrazine"),
-        (Chem.MolFromSmarts("C(=O)O[H]"), "Contains free carboxylic acid")
-    ]
-    
-    for pattern, reason in problematic_features:
-        if pattern and mol.HasSubstructMatches(pattern):
-            matches = mol.GetSubstructMatches(pattern)
-            if len(matches) > 1:  # Allow one instance
-                return False, f"Multiple instances of {reason}"
+    # Exclude if nitrogen is part of a ring system
+    ring_n_pattern = Chem.MolFromSmarts("[NR]")
+    if mol.HasSubstructMatch(ring_n_pattern):
+        # Check if ALL nitrogens are ring nitrogens
+        n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
+        ring_n_count = len(mol.GetSubstructMatches(ring_n_pattern))
+        if ring_n_count == n_count:
+            return False, "All nitrogens are part of rings"
 
-    detail = "Contains aromatic ring with"
-    if has_aromatic_oh:
-        detail += " hydroxyl group(s) and"
-    detail += " two-carbon chain connected to amine group"
+    # Look for common monoamine features (hydroxyl groups on aromatic ring)
+    aromatic_oh_pattern = Chem.MolFromSmarts("aO[H]")
+    has_aromatic_oh = mol.HasSubstructMatch(aromatic_oh_pattern)
     
-    return True, detail
+    detail = "monoamine with"
+    if has_aromatic_oh:
+        detail += " hydroxylated"
+    detail += " aromatic ring and two-carbon amine linker"
+    
+    return True, f"Confirmed {detail}"
