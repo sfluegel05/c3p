@@ -2,7 +2,7 @@
 Classifies: CHEBI:25903 peptide antibiotic
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import Descriptors
 
 def is_peptide_antibiotic(smiles: str):
     """
@@ -28,30 +28,33 @@ def is_peptide_antibiotic(smiles: str):
     peptide_bond_pattern = Chem.MolFromSmarts("NC(=O)")
     peptide_bond_matches = mol.GetSubstructMatches(peptide_bond_pattern)
     if len(peptide_bond_matches) < 5:
-        return False, f"Found {len(peptide_bond_matches)} peptide bonds, less than expected for a complex peptide antibiotic"
+        return False, f"Found {len(peptide_bond_matches)} peptide bonds, less than expected"
     
-    # Estimates molecular complexity via atom types and counts
+    # Check for complexity and size
     n_atoms = mol.GetNumAtoms()
-    n_heteroatoms = sum(atom.GetAtomicNum() != 6 for atom in mol.GetAtoms())
-    
-    # Typical functional groups and motifs
-    unique_group_patterns = [
+    n_heteroatoms = sum(atom.GetAtomicNum() not in [6, 1] for atom in mol.GetAtoms())
+
+    # Additional functional group patterns and motifs
+    extended_patterns = [
         Chem.MolFromSmarts("C1SCCN1"),  # Thiazoline ring
         Chem.MolFromSmarts("n1c2ccc[nH]c2c[nH]c1"),  # Indole-like
         Chem.MolFromSmarts("C1=NC=CN=C1"),  # Pyrimidine ring
         Chem.MolFromSmarts("C1=CN=CO1"),  # Oxazole/thiazole ring
+        Chem.MolFromSmarts("C1=CC=CN=C1"),  # Pyridine ring
+        Chem.MolFromSmarts("C1=CC=CN=N1"),  # Pyrazine ring
+        Chem.MolFromSmarts("C1=COC=C1")  # Furan ring
     ]
     
-    for pattern in unique_group_patterns:
+    for pattern in extended_patterns:
         if mol.HasSubstructMatch(pattern):
             return True, "Contains unique group common in peptide antibiotics"
-       
-    # Check for complex cyclic structure and diversity
-    ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() > 0:
-        ring_sizes = [len(ring) for ring in ring_info.AtomRings()]
-        # Consider complexity with diverse ring sizes
-        if len(set(ring_sizes)) > 1 and n_atoms > 30 and n_heteroatoms > 5:
-            return True, "Contains complex cyclic structure and diverse elements typical of peptide antibiotics"
-
+    
+    # Check for complex cyclic structures
+    if Descriptors.MolWt(mol) > 1000 and n_heteroatoms > 10:
+        ring_info = mol.GetRingInfo()
+        if ring_info.NumRings() > 5:
+            ring_sizes = [len(ring) for ring in ring_info.AtomRings()]
+            if any(size > 6 for size in ring_sizes) and len(set(ring_sizes)) > 1:
+                return True, "Contains complex cyclic structure and diverse elements typical of peptide antibiotics"
+    
     return False, "No clear indication of structural motifs typical of peptide antibiotics found"
