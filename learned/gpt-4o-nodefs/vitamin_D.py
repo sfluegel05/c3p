@@ -2,7 +2,6 @@
 Classifies: CHEBI:27300 vitamin D
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_vitamin_D(smiles: str):
     """
@@ -16,21 +15,22 @@ def is_vitamin_D(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
+    # Parse SMILES into a molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for secosteroid pattern: secosteroid B-ring opening and triene system
-    # A simple SMARTS pattern for vitamin D secosteroid backbone could be a broken B-ring (C-C-C in sterols),
-    # and conjugated system (C=C-C=C-C) in the secosteroid backbone
-    
-    secosteroid_pattern = Chem.MolFromSmarts("C1=CC2CCCCC2C3(C=CC=CC3)C1")
-    
+    # Define SMARTS for potential secosteroid backbone with opened B-ring
+    # Include a pattern for a conjugated triene system, common in vitamin D
+
+    # Simplified: triene system would be C=C-C=C-C or similar, should be in any vit-D derivative
+    secosteroid_pattern = Chem.MolFromSmarts("[C@H]1C/C=C/C2=CC(CCC2)=C1")
+
+    # Return the classification result based on the SMARTS pattern
     if mol.HasSubstructMatch(secosteroid_pattern):
-        return True, "Contains secosteroid structural motif common to vitamin D"
-    
-    return False, "Does not contain secosteroid structural motif"
+        return True, "Contains secosteroid structural motif with triene system, suggestive of vitamin D"
+
+    return False, "Does not contain secosteroid structural motif with triene system"
 
 # Example usage
 smiles_str = "[C@@H]1(C[C@@H](C/C(=C/C=C/2\CCC[C@]3([C@]2(CC[C@]3([H])[C@](CCCC4(O)CCCC4)([H])C)[H])C)/C1=C)O)O"
