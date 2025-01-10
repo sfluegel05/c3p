@@ -6,7 +6,8 @@ from rdkit import Chem
 def is_chalcogen(smiles: str):
     """
     Determines if a molecule is a chalcogen element based on its SMILES string.
-    Chalcogens are elements belonging to group 16 of the periodic table, including O, S, Se, Te, Po.
+    Chalcogens are elements belonging to group 16 of the periodic table, including O, S, Se, Te, Po,
+    and their isotopes.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,13 +27,19 @@ def is_chalcogen(smiles: str):
         # Get the single atom in the molecule
         atom = mol.GetAtomWithIdx(0)
         
-        # Define atomic numbers for chalcogen elements
-        chalcogen_atomic_numbers = {8, 16, 34, 52, 84}  # O, S, Se, Te, Po
+        # Define atomic numbers for chalcogen elements (O, S, Se, Te, Po)
+        chalcogen_atomic_numbers = {8, 16, 34, 52, 84}
         
         # Check if the atom is a chalcogen
-        if atom.GetAtomicNum() in chalcogen_atomic_numbers and atom.GetFormalCharge() == 0:
+        if (atom.GetAtomicNum() in chalcogen_atomic_numbers 
+            and atom.GetFormalCharge() == 0 
+            and atom.GetIsotope() == 0):
             return True, f"Contains neutral chalcogen element with atomic number: {atom.GetAtomicNum()}"
+        elif atom.GetAtomicNum() in chalcogen_atomic_numbers:
+            # Consider isotopic forms of chalcogen elements
+            return True, f"Contains isotopic chalcogen element with atomic number: {atom.GetAtomicNum()}"
         else:
-            return False, "No neutral chalcogen elements found"
+            return False, "No neutral chalcogen elements or isotopes found"
     else:
-        return False, "SMILES does not represent a single atom or represents a molecule"
+        # Specifically exclude molecules
+        return False, "SMILES does not represent a single atom; it represents a molecule"
