@@ -4,9 +4,7 @@ Classifies: CHEBI:17984 acyl-CoA
 """
 Classifies: acyl-CoA
 """
-
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_acyl_CoA(smiles: str):
     """
@@ -22,55 +20,54 @@ def is_acyl_CoA(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
+    # Parse SMILES of input molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the SMARTS pattern for the CoA moiety (excluding the thiol group)
-    coa_smarts = Chem.MolFromSmarts("""
-    NC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H](n2cnc3c(N)ncnc32)[C@H](O)[C@@H]1OP(=O)(O)O
-    """)
-    if coa_smarts is None:
-        return False, "Error in defining CoA SMARTS pattern"
+    # Coenzyme A SMILES string
+    coa_smiles = "CC(=O)NCCSCCNC(=O)CCNC(=O)C(O)C(C)(C)COP(=O)(O)OP(=O)(O)OCC1OC(n2cnc3nc(N)nc(N)c32)C(O)C1OP(=O)(O)O"
+    coa_mol = Chem.MolFromSmiles(coa_smiles)
+    if coa_mol is None:
+        return False, "Error in loading CoA structure"
 
-    # Define the SMARTS pattern for the thioester linkage (-C(=O)-S-)
-    thioester_smarts = Chem.MolFromSmarts("C(=O)S")
-    if thioester_smarts is None:
-        return False, "Error in defining thioester SMARTS pattern"
+    # Find sulfur atom index in CoA molecule
+    sulfur_idx = None
+    for atom in coa_mol.GetAtoms():
+        if atom.GetSymbol() == 'S':
+            sulfur_idx = atom.GetIdx()
+            break
+    if sulfur_idx is None:
+        return False, "No sulfur atom found in CoA structure"
 
-    # Search for thioester linkage in the molecule
-    if not mol.HasSubstructMatch(thioester_smarts):
-        return False, "Thioester linkage not found"
-
-    # Search for CoA moiety in the molecule
-    if not mol.HasSubstructMatch(coa_smarts):
+    # Search for CoA substructure in input molecule
+    matches = mol.GetSubstructMatches(coa_mol, useChirality=True)
+    if not matches:
         return False, "Coenzyme A moiety not found"
 
-    # Check if the thioester linkage connects the acyl group to CoA
-    # Find the atoms involved in the thioester linkage
-    thioester_matches = mol.GetSubstructMatches(thioester_smarts)
-    coa_matches = mol.GetSubstructMatches(coa_smarts)
-    if not thioester_matches or not coa_matches:
-        return False, "Thioester linkage or CoA moiety not properly matched"
+    # For each match, check for thioester linkage
+    for match in matches:
+        # Get the corresponding sulfur atom in the input molecule
+        mol_sulfur_idx = match[sulfur_idx]
+        sulfur_atom = mol.GetAtomWithIdx(mol_sulfur_idx)
 
-    # Verify connectivity between thioester and CoA
-    # Get the atom indices for sulfur in thioester and nitrogen in CoA
-    sulfur_atoms = [atom_idx for match in thioester_matches for atom_idx in match if mol.GetAtomWithIdx(atom_idx).GetSymbol() == 'S']
-    coa_atoms = [atom_idx for match in coa_matches for atom_idx in match]
+        # Check neighbors of sulfur atom
+        neighbors = sulfur_atom.GetNeighbors()
+        found_thioester = False
+        for neighbor in neighbors:
+            if neighbor.GetAtomicNum() == 6:  # Carbon
+                # Check if this carbon is a carbonyl carbon (C=O)
+                is_carbonyl = False
+                for nbr_of_carb in neighbor.GetNeighbors():
+                    if nbr_of_carb.GetAtomicNum() == 8:  # Oxygen
+                        bond = mol.GetBondBetweenAtoms(neighbor.GetIdx(), nbr_of_carb.GetIdx())
+                        if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                            is_carbonyl = True
+                            break
+                if is_carbonyl:
+                    found_thioester = True
+                    break
+        if found_thioester:
+            return True, "Contains CoA moiety attached via thioester linkage to an acyl group"
 
-    # Check if sulfur atom in thioester is connected to CoA moiety
-    connected = False
-    for s_idx in sulfur_atoms:
-        for coa_idx in coa_atoms:
-            path = Chem.rdmolops.GetShortestPath(mol, s_idx, coa_idx)
-            if path and len(path) > 0:
-                connected = True
-                break
-        if connected:
-            break
-
-    if not connected:
-        return False, "Thioester linkage not connected to CoA moiety"
-
-    return True, "Contains CoA moiety attached via thioester linkage to an acyl group"
+    return False, "Thioester linkage not connected to CoA sulfur atom"
