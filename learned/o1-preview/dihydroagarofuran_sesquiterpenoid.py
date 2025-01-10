@@ -12,6 +12,7 @@ def is_dihydroagarofuran_sesquiterpenoid(smiles: str):
     Determines if a molecule is a dihydroagarofuran sesquiterpenoid based on its SMILES string.
     A dihydroagarofuran sesquiterpenoid has a fused tricyclic system consisting of two cyclopentane rings
     and a tetrahydrofuran ring (a five-membered ring containing an oxygen atom), forming the dihydroagarofuran skeleton.
+    Additionally, it is a sesquiterpenoid (contains 15 carbons).
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,6 +21,8 @@ def is_dihydroagarofuran_sesquiterpenoid(smiles: str):
         bool: True if molecule is a dihydroagarofuran sesquiterpenoid, False otherwise
         str: Reason for classification
     """
+    from rdkit.Chem import rdMolDescriptors
+    
     # Parse SMILES string to RDKit molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
@@ -31,59 +34,45 @@ def is_dihydroagarofuran_sesquiterpenoid(smiles: str):
         return False, f"Number of carbons ({num_carbons}) less than 15"
 
     # Get ring information
-    ring_info = mol.GetRingInfo()
-    atom_rings = ring_info.AtomRings()
-    bond_rings = ring_info.BondRings()
+    ssr = Chem.GetSymmSSSR(mol)
+    atom_rings = [set(ring) for ring in ssr]
 
-    # Initialize list to collect potential tetrahydrofuran rings (5-membered rings with oxygen)
-    thf_rings = []  # List of tuples (ring index, atom indices, bond indices)
-
-    # Collect all 5-membered rings containing an oxygen atom
-    for ring_idx, ring_atoms in enumerate(atom_rings):
-        if len(ring_atoms) == 5:
-            # Check if ring contains an oxygen atom
-            if any(mol.GetAtomWithIdx(idx).GetAtomicNum() == 8 for idx in ring_atoms):
-                # Store the ring info
-                thf_rings.append({
-                    'idx': ring_idx,
-                    'atoms': set(ring_atoms),
-                    'bonds': set(bond_rings[ring_idx])
-                })
+    # Identify five-membered rings containing an oxygen atom (THF rings)
+    thf_rings = []
+    for ring in atom_rings:
+        if len(ring) == 5:
+            ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
+            atom_nums = [atom.GetAtomicNum() for atom in ring_atoms]
+            if 8 in atom_nums:  # Oxygen atom present
+                thf_rings.append(ring)
 
     if not thf_rings:
         return False, "No tetrahydrofuran rings found"
 
-    # For each tetrahydrofuran ring, check if it's fused to exactly two cyclopentane rings
+    # For each THF ring, check if it's fused to exactly two cyclopentane rings
     for thf_ring in thf_rings:
         fused_rings = []
-        thf_bonds = thf_ring['bonds']
-
-        # Find rings that share bonds with the THF ring (fused rings)
-        for ring_idx, ring_bonds in enumerate(bond_rings):
-            if ring_idx == thf_ring['idx']:
-                continue  # Skip the THF ring itself
-            # Check if the rings share any bonds (fused)
-            shared_bonds = thf_bonds.intersection(ring_bonds)
-            if shared_bonds:
-                fused_rings.append({
-                    'idx': ring_idx,
-                    'atoms': set(atom_rings[ring_idx]),
-                    'bonds': set(ring_bonds)
-                })
+        for other_ring in atom_rings:
+            if other_ring == thf_ring:
+                continue
+            # Check if rings are fused (share at least two atoms)
+            shared_atoms = thf_ring.intersection(other_ring)
+            if len(shared_atoms) >= 2:
+                fused_rings.append(other_ring)
 
         # Check if there are exactly two fused rings
         if len(fused_rings) != 2:
-            continue  # Not the desired tricyclic system
+            continue
 
-        # Check if both fused rings are 5-membered rings composed only of carbon atoms
+        # Check if both fused rings are five-membered carbocyclic rings (cyclopentane)
         valid_fused = True
-        for fused_ring in fused_rings:
-            # Check ring size
-            if len(fused_ring['atoms']) != 5:
+        for ring in fused_rings:
+            if len(ring) != 5:
                 valid_fused = False
                 break
-            # Check if all atoms are carbons
-            if not all(mol.GetAtomWithIdx(idx).GetAtomicNum() == 6 for idx in fused_ring['atoms']):
+            ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
+            atom_nums = [atom.GetAtomicNum() for atom in ring_atoms]
+            if any(an != 6 for an in atom_nums):  # Not all carbons
                 valid_fused = False
                 break
 
@@ -91,5 +80,4 @@ def is_dihydroagarofuran_sesquiterpenoid(smiles: str):
             # Found a dihydroagarofuran skeleton
             return True, "Contains dihydroagarofuran skeleton with fused tricyclic system"
 
-    # If no valid skeleton found
     return False, "Dihydroagarofuran skeleton not found"
