@@ -31,15 +31,22 @@ def is_carbonate_ester(smiles: str):
     if not mol.HasSubstructMatch(carbonate_ester_pattern):
         return False, "No carbonate ester functional group found"
 
-    # Check that the oxygen atoms in the carbonate ester group are bonded to organyl groups (not hydrogen)
+    # Check that the oxygen atoms in the carbonate ester group are bonded to carbon atoms (organyl groups)
     for match in mol.GetSubstructMatches(carbonate_ester_pattern):
         # Get the atoms in the match
         atom1 = mol.GetAtomWithIdx(match[0])  # First oxygen
         atom2 = mol.GetAtomWithIdx(match[2])  # Second oxygen
 
         # Check that both oxygens are bonded to carbon atoms (organyl groups)
-        if atom1.GetDegree() == 1 or atom2.GetDegree() == 1:
-            return False, "One or both oxygens are bonded to hydrogen (not an organyl group)"
+        # Iterate through the neighbors of each oxygen atom
+        for oxygen_atom in [atom1, atom2]:
+            has_carbon_neighbor = False
+            for neighbor in oxygen_atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 6:  # Carbon atom
+                    has_carbon_neighbor = True
+                    break
+            if not has_carbon_neighbor:
+                return False, f"Oxygen atom {oxygen_atom.GetIdx()} is not bonded to a carbon atom (not an organyl group)"
 
     return True, "Contains a carbonate ester functional group with organyl substituents"
 
