@@ -6,8 +6,7 @@ from rdkit import Chem
 def is_sphingoid(smiles: str):
     """
     Determines if a molecule is a sphingoid based on its SMILES string.
-    Sphingoids include sphinganine, its homologs and stereoisomers, 
-    and hydroxyl or unsaturated derivatives.
+    Sphingoids include sphinganine, its homologs and stereoisomers, and hydroxyl or unsaturated derivatives.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,28 +21,25 @@ def is_sphingoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for the 2-amino-1,3-diol backbone characteristic of sphingoids
-    amino_diol_pattern = Chem.MolFromSmarts("N[C@@H](CO)C(O)")
-    if not mol.HasSubstructMatch(amino_diol_pattern):
-        return False, "Missing core 2-amino-1,3-diol moiety"
-    
-    # Look for long hydrocarbon chain (at least 14 carbons)
-    long_chain_pattern = Chem.MolFromSmarts("CCCCCCCCCCCCCC")
-    if not mol.HasSubstructMatch(long_chain_pattern):
-        return False, "No sufficiently long hydrocarbon chain found"
-    
-    # Check for either unsaturation or additional hydroxyl groups
-    double_bond_pattern = Chem.MolFromSmarts("C=C")
-    hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
-    
-    has_double_bond = mol.HasSubstructMatch(double_bond_pattern)
-    has_additional_hydroxyl = len(mol.GetSubstructMatches(hydroxyl_pattern)) > 1  # More than one hydroxyl
-    if not (has_double_bond or has_additional_hydroxyl):
-        return False, "Lacks unsaturation or additional hydroxyl groups, at least one is needed"
+    # Look for characteristic 2-amino-1,3-diol moiety in sphingoids
+    amino_alcohol_pattern = Chem.MolFromSmarts("N[C@H](C)CO")
+    if not mol.HasSubstructMatch(amino_alcohol_pattern):
+        return False, "No characteristic 2-amino-1,3-diol moiety found"
 
-    # Check for stereochemistry typical of sphingoids
-    stereo_moieties = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
-    if len(stereo_moieties) == 0:
+    # Check for minimal long hydrocarbon chain pattern
+    chain_pattern = Chem.MolFromSmarts("CCCCCCCC")  # Minimum length of 8 carbon atoms
+    if not mol.HasSubstructMatch(chain_pattern):
+        return False, "No sufficiently long hydrocarbon chain found"
+
+    # Handle unsaturation as optional with accompanying hydroxyl group requirement
+    double_bond_pattern = Chem.MolFromSmarts("C=C")
+    hydroxyl_present = any(atom.GetAtomicNum() == 8 for atom in mol.GetAtoms())
+    if not mol.HasSubstructMatch(double_bond_pattern) and not hydroxyl_present:
+        return False, "Lacks either unsaturation or a hydroxyl group, at least one is needed"
+
+    # Verify for presence of stereocenters which are common in sphingoids
+    stereo_present = any(atom.HasProp('_CIPCode') for atom in mol.GetAtoms())
+    if not stereo_present:
         return False, "No stereochemistry typical of sphingoids found"
 
     return True, "SMILES corresponds to a recognized sphingoid structure"
