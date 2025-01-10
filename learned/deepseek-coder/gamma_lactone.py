@@ -30,5 +30,13 @@ def is_gamma_lactone(smiles: str):
     # Check if the molecule matches the gamma-lactone pattern
     if mol.HasSubstructMatch(gamma_lactone_pattern):
         return True, "Contains a five-membered lactone ring (gamma-lactone)"
-    else:
-        return False, "No five-membered lactone ring found"
+    
+    # Define an alternative pattern to account for variations in the ring structure
+    alternative_pattern = Chem.MolFromSmarts("[O;R1]1[C;R1](=O)[C;R1][C;R1][C;R1]1")
+    
+    # Check if the molecule matches the alternative pattern
+    if mol.HasSubstructMatch(alternative_pattern):
+        return True, "Contains a five-membered lactone ring (gamma-lactone)"
+    
+    # If no pattern matches, return False
+    return False, "No five-membered lactone ring found"
