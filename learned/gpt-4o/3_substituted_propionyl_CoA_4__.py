@@ -19,20 +19,25 @@ def is_3_substituted_propionyl_CoA_4__(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # More generalized CoA substructure pattern, targeting the pantetheine and core CoA motifs
-    coa_core_pattern = Chem.MolFromSmarts("NC(=O)CCNC(=O)C[C@H](O)C(C)(C)COP(O)(O)O")
-    if not mol.HasSubstructMatch(coa_core_pattern):
-        return False, "CoA backbone structure not found or incorrectly matched"
+    # Check for CoA substructure
+    coa_pattern = Chem.MolFromSmarts("COP([O-])(=O)OP([O-])(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(ncnc12)N2CC([C@H](O)C)=O")
+    if not mol.HasSubstructMatch(coa_pattern):
+        return False, "CoA substructure not found"
     
-    # Broader thioester linkage pattern to accommodate variants
-    thioester_pattern = Chem.MolFromSmarts("C(=O)SCCNC(=O)C")
-    if not mol.HasSubstructMatch(thioester_pattern):
-        return False, "Thioester linkage not adequately detected"
+    # Check for acyl group with thioester linkage
+    acyl_thioester_pattern = Chem.MolFromSmarts("SCC(=O)C")
+    if not mol.HasSubstructMatch(acyl_thioester_pattern):
+        return False, "Acyl thioester linkage not found"
     
-    # Identification of deprotonated phosphate groups with flexibility
-    phosphate_pattern = Chem.MolFromSmarts("P([O-])(=O)([O-])O")
-    matches = mol.GetSubstructMatches(phosphate_pattern)
+    # Check for 3-substitution at the propionyl group
+    propionyl_substitution_pattern = Chem.MolFromSmarts("CC(C)C(=O)C[SH]")
+    if not mol.HasSubstructMatch(propionyl_substitution_pattern):
+        return False, "No 3-substituted propionyl group found"
+    
+    # Check for the presence of deprotonated phosphate groups (-4 charge)
+    phosphate_deprotonation_pattern = Chem.MolFromSmarts("P([O-])(=O)(O)OP([O-])(=O)O")
+    matches = mol.GetSubstructMatches(phosphate_deprotonation_pattern)
     if len(matches) < 2:
-        return False, "Insufficient deprotonated phosphates indicating -4 charge"
-
-    return True, "Molecule is classified as a 3-substituted propionyl-CoA(4-)"
+        return False, "Deprotonated phosphate groups indicating -4 charge not found"
+    
+    return True, "Molecule is a 3-substituted propionyl-CoA(4-)"
