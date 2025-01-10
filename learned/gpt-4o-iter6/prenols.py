@@ -21,25 +21,27 @@ def is_prenols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define isoprene unit pattern
-    isoprene_pattern = Chem.MolFromSmarts("C(C)=C-C-C")
-    if not mol.HasSubstructMatch(isoprene_pattern):
-        return False, "No isoprene unit found"
+    # Define a more complex isoprene unit pattern to account for variation and repetition
+    isoprene_pattern = Chem.MolFromSmarts("[C;R0](=C)[C;R0]-C-C")
     
-    # Define alcohol group pattern
-    alcohol_pattern = Chem.MolFromSmarts("CO")
-    if not mol.HasSubstructMatch(alcohol_pattern):
-        return False, "No alcohol group (OH) found"
+    # Define more flexible terminal alcohol pattern considering possible connectivity
+    terminal_alcohol_pattern = Chem.MolFromSmarts("[C;R0][OH]")
     
-    # Verify linkage of isoprene units
-    # This step could be enhanced to count and ensure the correct sequential linkage.
-    isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
-    alcohol_matches = mol.GetSubstructMatches(alcohol_pattern)
+    # Search for isoprene units
+    isoprene_blocks = mol.GetSubstructMatches(isoprene_pattern)
+    if len(isoprene_blocks) < 1:
+        return False, "No or insufficient isoprene units found"
+    
+    # Check alcohol presence and ensure it is terminal
+    alcohol_matches = mol.GetSubstructMatches(terminal_alcohol_pattern)
+    if len(alcohol_matches) == 0:
+        return False, "No or non-terminal alcohol group found"
 
-    # Check if there's a continuous chain ending with an alcohol
-    if len(isoprene_matches) < 1 or len(alcohol_matches) == 0:
-        return False, "Insufficient isoprene units or no terminal alcohol group"
+    # Validate the position of OH to be at the terminus of the molecule
+    terminal_endings = [match for match in alcohol_matches if mol.GetAtomWithIdx(match[0]).GetDegree() == 1]
+    if len(terminal_endings) == 0:
+        return False, "Alcohol group not at the terminal end"
 
     return True, "Contains isoprene units with a terminal alcohol group"
 
-__metadata__ = { 'chemical_class': { 'name': 'prenol' }}
+__metadata__ = {'chemical_class': {'name': 'prenol'}}
