@@ -26,14 +26,12 @@ def is_alkanethiol(smiles: str):
     if not mol.HasSubstructMatch(sulfanol_pattern):
         return False, "No -SH group found"
     
-    # Ensure -SH group is attached to an alkyl group (a saturated carbon)
-    alkyl_attachment_pattern = Chem.MolFromSmarts("[CX4H2,CX4H3,CX4H]S")  # Saturated carbon bound to sulfur
-    if not mol.HasSubstructMatch(alkyl_attachment_pattern):
-        return False, "-SH group is not attached to a saturated carbon group"
+    # Check for alkyl group attachment (any carbon attached to -SH specifically)
+    # Alkanethiols can have unsaturations or other substituents in the molecule
+    attachment_pattern = Chem.MolFromSmarts("[CX4,CX3,CX2][SX2H]")  # Carbon followed by sulfur
+    if not mol.HasSubstructMatch(attachment_pattern):
+        return False, "-SH group is not suitably attached to a carbon group"
     
-    # Consider any higher complexity check outside the basic alkanethiol pattern unnecessary
-    # because alkanethiols can be present in larger molecules without additional exclusion patterns
-
     return True, "-SH group found and suitably attached to an alkyl group"
 
 # Example usage
