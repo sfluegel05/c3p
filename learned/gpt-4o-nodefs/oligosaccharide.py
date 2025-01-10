@@ -2,7 +2,6 @@
 Classifies: CHEBI:50699 oligosaccharide
 """
 from rdkit import Chem
-from rdkit.Chem.rdchem import Atom
 
 def is_oligosaccharide(smiles: str):
     """
@@ -20,26 +19,26 @@ def is_oligosaccharide(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Count the number of saccharide rings using pyranose (C1CCO1) or furanose (C1CO1) patterns
-    pyranose_pattern = Chem.MolFromSmarts("[C&R]1O[C&R][C&R][C&R][C&R]O1")
-    furanose_pattern = Chem.MolFromSmarts("[C&R]1O[C&R][C&R]O1")
     
-    pyranose_matches = mol.GetSubstructMatches(pyranose_pattern)
-    furanose_matches = mol.GetSubstructMatches(furanose_pattern)
-    total_ring_matches = len(pyranose_matches) + len(furanose_matches)
+    # Look for pyranose/furanose rings (considering common structural variety)
+    pyranose_pattern = Chem.MolFromSmarts("[C&R]1OC(C(C1)O)O")
+    furanose_pattern = Chem.MolFromSmarts("[C&R]1O[C&R]([C&R]1)O")
+    
+    pyranose_matches = len(mol.GetSubstructMatches(pyranose_pattern))
+    furanose_matches = len(mol.GetSubstructMatches(furanose_pattern))
+    total_ring_matches = pyranose_matches + furanose_matches
+    
+    # Improved glycosidic bond pattern
+    glycosidic_pattern = Chem.MolFromSmarts("[C&R]1O[C&R][OX2&R]")
+    glycosidic_matches = len(mol.GetSubstructMatches(glycosidic_pattern))
     
     # Count the number of oxygen atoms
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
 
-    # Count the number of glycosidic linkages (C-O-C patterns)
-    glycosidic_pattern = Chem.MolFromSmarts("[C&R]O[C&R]")
-    glycosidic_matches = mol.GetSubstructMatches(glycosidic_pattern)
-
-    # Criteria for oligosaccharide classification
-    if total_ring_matches >= 2 and 10 <= o_count <= 40 and len(glycosidic_matches) >= 1:
-        return True, "Contains features characteristic of an oligosaccharide (multiple saccharide rings and glycosidic bonds)"
+    # Adjust criteria based on expected characteristics of an oligosaccharide
+    if 2 <= total_ring_matches <= 10 and 10 <= o_count <= 50 and glycosidic_matches >= 2:
+        return True, "Contains multiple saccharide-like structures with glycosidic linkages"
     else:
         reason = (f"Characterization doesn't match oligosaccharide: "
-                  f"{total_ring_matches} rings, {o_count} oxygens, {len(glycosidic_matches)} glycosidic-like bonds")
+                  f"{total_ring_matches} rings, {o_count} oxygens, {glycosidic_matches} glycosidic-like bonds")
         return False, reason
