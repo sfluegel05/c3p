@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_furanocoumarin(smiles: str):
     """
     Determines if a molecule is a furanocoumarin based on its SMILES string.
-    A furanocoumarin consists of a furan ring fused with a coumarin, allowing for different fusion patterns.
+    A furanocoumarin is defined as a furan ring fused with a coumarin structure.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -15,19 +15,25 @@ def is_furanocoumarin(smiles: str):
         bool: True if molecule is a furanocoumarin, False otherwise
         str: Reason for classification
     """
-    # Parse the SMILES string
+    
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Define SMARTS patterns for different types of furanocoumarin structures
-    linear_furanocoumarin_pattern = Chem.MolFromSmarts('c1co2c(=O)ccc2cc1')  # Generic pattern for linear furanocoumarins
-    angular_furanocoumarin_pattern = Chem.MolFromSmarts('c1cc2coc(=O)c2cc1')  # Generic pattern for angular furanocoumarins
-    
-    # Check for the presence of any recognized furanocoumarin core structure
-    if mol.HasSubstructMatch(linear_furanocoumarin_pattern):
-        return True, "Contains furanocoumarin core (linear pattern)"
-    if mol.HasSubstructMatch(angular_furanocoumarin_pattern):
-        return True, "Contains furanocoumarin core (angular pattern)"
 
-    return False, "No furanocoumarin core structure found"
+    # Look for furan ring pattern (5-membered oxygen-containing ring)
+    furan_pattern = Chem.MolFromSmarts("o1cccc1")
+    if not mol.HasSubstructMatch(furan_pattern):
+        return False, "No furan ring found"
+    
+    # Look for coumarin structure pattern (benzopyran-2-one)
+    coumarin_pattern = Chem.MolFromSmarts("O=c1ccc2c(c1)occ2")
+    if not mol.HasSubstructMatch(coumarin_pattern):
+        return False, "No coumarin structure found"
+    
+    # Check for fusion of furan and coumarin
+    fused_pattern = Chem.MolFromSmarts("o1c2c(cccc2)oc(=O)c3c1ccc2c3cccc2")
+    if not mol.HasSubstructMatch(fused_pattern):
+        return False, "Furan and coumarin are not correctly fused"
+
+    return True, "Contains a furan ring fused with a coumarin structure"
