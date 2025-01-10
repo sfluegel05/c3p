@@ -28,8 +28,8 @@ def is_glycosphingolipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define sphingoid backbone pattern (basic structure)
-    sphingoid_pattern = Chem.MolFromSmarts("[NX3][CX4][CX4]([OX2H])[CX4H]")
+    # More flexible sphingoid backbone pattern
+    sphingoid_pattern = Chem.MolFromSmarts("[NX3][CX4][CX4]([OX2H])[CX4H1,CX3H1]")
     if not mol.HasSubstructMatch(sphingoid_pattern):
         return False, "No sphingoid backbone found"
 
@@ -39,15 +39,23 @@ def is_glycosphingolipid(smiles: str):
     if len(fatty_acid_matches) == 0:
         return False, "No fatty acid chain found"
 
-    # Look for carbohydrate residue (must have at least one sugar ring)
-    sugar_pattern = Chem.MolFromSmarts("[OX2][CX4H][CX4H][CX4H][CX4H][CX4H]1[OX2][CX4H][CX4H][CX4H][CX4H]1")
+    # More comprehensive carbohydrate detection
+    # Look for at least one sugar ring (pyranose or furanose)
+    sugar_pattern = Chem.MolFromSmarts("[OX2][CX4H1][CX4H1][CX4H1][CX4H1][CX4H1]1[OX2][CX4H1][CX4H1][CX4H1][CX4H1]1")
     if not mol.HasSubstructMatch(sugar_pattern):
-        return False, "No carbohydrate residue found"
+        # Try furanose pattern
+        sugar_pattern = Chem.MolFromSmarts("[OX2][CX4H1][CX4H1][CX4H1][CX4H1]1[OX2][CX4H1][CX4H1][CX4H1]1")
+        if not mol.HasSubstructMatch(sugar_pattern):
+            return False, "No carbohydrate residue found"
 
     # Check that carbohydrate is attached to sphingoid via glycosidic bond
-    glycosidic_pattern = Chem.MolFromSmarts("[OX2][CX4H][CX4H][CX4H][CX4H][CX4H]1[OX2][CX4H][CX4H][CX4H][CX4H]1.[NX3][CX4][CX4]([OX2H])[CX4H]")
+    # Look for O-C bond between sphingoid and carbohydrate
+    glycosidic_pattern = Chem.MolFromSmarts("[NX3][CX4][CX4]([OX2H])[CX4H1,CX3H1].[OX2][CX4H1][CX4H1][CX4H1][CX4H1][CX4H1]1[OX2][CX4H1][CX4H1][CX4H1][CX4H1]1")
     if not mol.HasSubstructMatch(glycosidic_pattern):
-        return False, "Carbohydrate not properly attached to sphingoid backbone"
+        # Try furanose pattern
+        glycosidic_pattern = Chem.MolFromSmarts("[NX3][CX4][CX4]([OX2H])[CX4H1,CX3H1].[OX2][CX4H1][CX4H1][CX4H1][CX4H1]1[OX2][CX4H1][CX4H1][CX4H1]1")
+        if not mol.HasSubstructMatch(glycosidic_pattern):
+            return False, "Carbohydrate not properly attached to sphingoid backbone"
 
     # Additional checks for typical glycosphingolipid properties
     # Molecular weight typically >500 Da
