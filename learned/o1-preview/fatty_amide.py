@@ -31,49 +31,47 @@ def is_fatty_amide(smiles: str):
     if not amide_matches:
         return False, "No amide functional group found"
 
-    # Exclude molecules with multiple amide groups (e.g., peptides)
-    if len(amide_matches) > 1:
-        return False, "Multiple amide groups found, may be peptide"
-
-    # For each amide group, check the acyl chain length
+    # For each amide group, check the acyl chain attached to carbonyl carbon
     for match in amide_matches:
         carbonyl_c_index = match[0]
-        nitrogen_index = match[2]
+        carbonyl_c = mol.GetAtomWithIdx(carbonyl_c_index)
 
-        # Get the carbon chain attached to the carbonyl carbon (acyl chain)
-        acyl_chain_atoms = []
+        # Get the chain attached to the carbonyl carbon (excluding the carbonyl oxygen)
+        acyl_chain_atoms = set()
+        atoms_to_visit = [neighbor for neighbor in carbonyl_c.GetNeighbors() if neighbor.GetAtomicNum() == 6]
         visited_atoms = set()
-        atoms_to_visit = [mol.GetAtomWithIdx(carbonyl_c_index)]
-
         while atoms_to_visit:
             atom = atoms_to_visit.pop()
-            if atom.GetIdx() in visited_atoms:
+            atom_idx = atom.GetIdx()
+            if atom_idx in visited_atoms:
                 continue
-            visited_atoms.add(atom.GetIdx())
-            atomic_num = atom.GetAtomicNum()
-            # Skip the carbonyl carbon and heteroatoms
-            if atom.GetIdx() != carbonyl_c_index and atomic_num != 6:
+            visited_atoms.add(atom_idx)
+            acyl_chain_atoms.add(atom_idx)
+
+            # Exclude atoms in rings
+            if atom.IsInRing():
                 continue
-            acyl_chain_atoms.append(atom)
+
+            # Exclude heteroatoms
+            if atom.GetAtomicNum() != 6:
+                continue
+
+            # Add neighboring carbons to visit
             for neighbor in atom.GetNeighbors():
-                if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() != carbonyl_c_index:
+                neighbor_idx = neighbor.GetIdx()
+                if neighbor_idx not in visited_atoms and neighbor.GetAtomicNum() == 6:
                     atoms_to_visit.append(neighbor)
 
         # Count the number of carbons in the acyl chain
         acyl_chain_length = len(acyl_chain_atoms)
-        if acyl_chain_length < 8:
-            return False, f"Acyl chain too short ({acyl_chain_length} carbons), not a fatty amide"
+        if acyl_chain_length >= 4:
+            return True, "Molecule is a fatty amide with acyl chain derived from a fatty acid"
 
-        # Check for branching in the acyl chain
-        for atom in acyl_chain_atoms:
-            if atom.GetDegree() > 2 and atom.GetIdx() != carbonyl_c_index:
-                return False, "Branched acyl chain, not a fatty amide"
-
-    return True, "Molecule is a fatty amide with a long acyl chain derived from a fatty acid"
+    return False, "No suitable acyl chain found for fatty amide classification"
 
 
 __metadata__ = {   'chemical_class': {   'name': 'fatty amide',
-                              'definition': 'A monocarboxylic acid amide derived from a fatty acid.'},
+                                  'definition': 'A monocarboxylic acid amide derived from a fatty acid.'},
     'config': {   'llm_model_name': 'lbl/claude-sonnet',
                   'f1_threshold': 0.8,
                   'max_attempts': 5,
@@ -85,5 +83,5 @@ __metadata__ = {   'chemical_class': {   'name': 'fatty amide',
                   'max_instances_in_prompt': 100,
                   'test_proportion': 0.1},
     'message': None,
-    'attempt': 0,
+    'attempt': 1,
     'success': True}
