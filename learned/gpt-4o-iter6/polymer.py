@@ -7,9 +7,8 @@ from rdkit.Chem import Descriptors, rdMolDescriptors
 def is_polymer(smiles: str):
     """
     Determines if a molecule is a polymer based on its SMILES string.
-    A polymer is characterized by complex, repetitive structural units, high molecular weight,
-    and specific types of linkages.
-
+    A polymer is characterized by repeating structural units, varied length, and common linkage groups.
+    
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -23,32 +22,25 @@ def is_polymer(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Consider excluding entities with very low molecular weight first
+    # Consider excluding entities with low molecular weight
     mol_wt = Descriptors.ExactMolWt(mol)
-    if mol_wt < 1000:  # More stringent threshold considering polymers are large
-        return False, "Molecular weight too low for a typical polymer"
+    if mol_wt < 500:  # Reduced threshold for polymer-like behavior
+        return False, "Molecular weight too low for a typical polymer-like entity"
     
-    # Count heteroatoms (non-carbon and non-hydrogen) to check for complexity
-    heteroatom_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() not in [6, 1])
-    if heteroatom_count < 5:
-        return False, "Too few heteroatoms to suggest polymer complexity"
+    # Check for presence of significant repeating motifs
+    linkages = ["C-C", "C=C", "C-O-C", "O=C-O", "N-C(=O)-C"]
+    found_repeats = 0
+
+    for pattern in linkages:
+        if len(mol.GetSubstructMatches(Chem.MolFromSmarts(pattern))) > 1:
+            found_repeats += 1
     
-    # Look for a high number of rotatable bonds
+    if found_repeats == 0:
+        return False, "No significant repeating unit patterns found"
+    
+    # Check for a moderate number of rotatable bonds (inference of some flexibility)
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 20:  # Assuming more flexible structures
-        return False, "Insufficient rotatable bonds to be a polymer"
-
-    # Look for various common functional group linkages that indicate repeated units
-    repeating_unit_patterns = [
-        Chem.MolFromSmarts("C=C"),  # Double bonds, often as monomeric units
-        Chem.MolFromSmarts("C-O-C"),  # Ethers, common in polyethers
-        Chem.MolFromSmarts("O=C-O"),  # Esters, common in polyesters
-        Chem.MolFromSmarts("N-C(=O)-C"),  # Amide linkages, common in polyamides
-    ]
+    if n_rotatable < 5:
+        return False, "Insufficient rotatable bonds to be considered a typical polymer"
     
-    for pattern in repeating_unit_patterns:
-        repeating_matches = mol.GetSubstructMatches(pattern)
-        if len(repeating_matches) >= 3:
-            return True, f"Contains repeating units indicative of polymer structure: {pattern}"
-
-    return False, "Does not match typical polymer characteristics"
+    return True, "Contains characteristics of polymer structure including linkages and potential repetition"
