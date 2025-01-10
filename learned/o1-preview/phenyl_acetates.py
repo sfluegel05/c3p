@@ -2,7 +2,7 @@
 Classifies: CHEBI:140310 phenyl acetates
 """
 """
-Classifies: phenyl acetate
+Classifies: phenyl acetates
 """
 from rdkit import Chem
 
@@ -23,26 +23,20 @@ def is_phenyl_acetates(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for acetate ester group
-    acetate_ester_pattern = Chem.MolFromSmarts('O[C](=O)C')  # Ester linkage with acetyl group
-    acetate_matches = mol.GetSubstructMatches(acetate_ester_pattern)
-    if not acetate_matches:
-        return False, "No acetate ester group found"
+    # Define SMARTS pattern for phenyl acetate ester linkage
+    # Aromatic carbon connected to oxygen connected to acetyl group
+    phenyl_acetate_pattern = Chem.MolFromSmarts('[c][O][C](=O)C')
 
-    # For each acetate ester group, check if the oxygen is connected to an aromatic ring (phenol)
-    for match in acetate_matches:
-        oxygen_idx = match[0]  # Index of the ester oxygen atom
-        oxygen_atom = mol.GetAtomWithIdx(oxygen_idx)
-        # Get neighbors of the oxygen atom other than the carbonyl carbon
-        neighbors = [atom for atom in oxygen_atom.GetNeighbors() if atom.GetIdx() != match[1]]
-        for neighbor in neighbors:
-            if neighbor.GetIsAromatic():
-                return True, "Contains phenyl acetate ester linkage"
-    return False, "No phenyl acetate ester linkage found"
+    # Search for phenyl acetate ester linkage in the molecule
+    matches = mol.GetSubstructMatches(phenyl_acetate_pattern)
+    if matches:
+        return True, "Contains phenyl acetate ester linkage"
+    else:
+        return False, "No phenyl acetate ester linkage found"
 
 __metadata__ = {
     'chemical_class': {
-        'name': 'phenyl acetate',
+        'name': 'phenyl acetates',
         'definition': 'An acetate ester obtained by formal condensation of the carboxy group of acetic acid with the hydroxy group of any phenol.'
     }
 }
