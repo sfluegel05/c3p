@@ -21,18 +21,18 @@ def is_1_acyl_sn_glycero_3_phosphoethanolamine(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for phosphoethanolamine group
-    pe_pattern = Chem.MolFromSmarts("P(OCCN)(O)=O")
+    pe_pattern = Chem.MolFromSmarts("COP(O)(=O)OCCN")
     if not mol.HasSubstructMatch(pe_pattern):
         return False, "No phosphoethanolamine group found"
 
-    # Check for glycerol backbone with acyl linkage
-    glycerol_pattern = Chem.MolFromSmarts("[C@H](O)COC(=O)")
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone with acyl linkage found"
-
-    # Check for acyl group
-    acyl_pattern = Chem.MolFromSmarts("C(=O)O[C@H]")
-    if not mol.HasSubstructMatch(acyl_pattern):
-        return False, "No acyl group linked to chiral center found"
+    # Check for glycerol backbone with an acyl linkage
+    glycerol_acyl_pattern = Chem.MolFromSmarts("[C@@H](O)COP(O)(=O)OCCN")  # Stereochemistry specified
+    if not mol.HasSubstructMatch(glycerol_acyl_pattern):
+        return False, "No glycerol backbone with chiral center found"
+    
+    # Check specifically for acyl linkage indicating ester
+    acyl_linkage_pattern = Chem.MolFromSmarts("O[C@@H](CO)C(=O)C")
+    if not mol.HasSubstructMatch(acyl_linkage_pattern):
+        return False, "No acyl group properly linked to glycerol backbone found"
 
     return True, "Contains 1-acyl-sn-glycero-3-phosphoethanolamine structure"
