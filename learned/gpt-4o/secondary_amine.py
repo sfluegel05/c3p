@@ -24,15 +24,11 @@ def is_secondary_amine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Iterate over all atoms and find secondary amine nitrogens
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 7:  # Check for nitrogen atoms
-            # Count the number of carbon bonds
-            carbon_bond_count = sum(1 for neighbor in atom.GetNeighbors() if neighbor.GetAtomicNum() == 6)
-            non_hydrocarbon_bond_count = sum(1 for neighbor in atom.GetNeighbors() if neighbor.GetAtomicNum() != 6)
-            
-            # Check if there are exactly two carbon bonds
-            if carbon_bond_count == 2 and non_hydrocarbon_bond_count <= 1:
-                return True, "Contains nitrogen with two hydrocarbyl groups"
+    # SMARTS pattern for secondary amine: nitrogen with two carbon groups and one hydrogen
+    secondary_amine_smarts = Chem.MolFromSmarts("[NX3;H1;R0][CX4][CX4]") 
 
-    return False, "No nitrogen atom with two hydrocarbyl groups found"
+    # Check for matches in the molecule
+    if mol.HasSubstructMatch(secondary_amine_smarts):
+        return True, "Contains secondary amine pattern (nitrogen with two hydrocarbyl groups and one hydrogen)"
+
+    return False, "No secondary amine pattern found"
