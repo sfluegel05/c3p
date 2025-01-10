@@ -7,7 +7,7 @@ from rdkit.Chem import AllChem
 def is_short_chain_fatty_acyl_CoA(smiles: str):
     """
     Determines if a molecule is a short-chain fatty acyl-CoA based on its SMILES string.
-    A short-chain fatty acyl-CoA has a short fatty-acid chain (<8 carbons) attached to Coenzyme A via a thioester bond.
+    A short-chain fatty acyl-CoA has a short fatty acid chain (<8 carbons) attached to Coenzyme A via a thioester bond.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,8 +22,8 @@ def is_short_chain_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for Coenzyme A pattern
-    coa_structure_pattern = Chem.MolFromSmarts("NC(=O)CCNC(=O)[C@H](O)C(C)COP(=O)(OP(=O)OCC1OC(C(O)C1O)N1C=NC2=C1N=CN=C2N)")
+    # Updated Coenzyme A pattern (this must be verified for accuracy)
+    coa_structure_pattern = Chem.MolFromSmarts("NC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)N1C=NC2=C1N=CN=C2N")
     if not mol.HasSubstructMatch(coa_structure_pattern):
         return False, "No Coenzyme A structure found"
 
@@ -32,14 +32,18 @@ def is_short_chain_fatty_acyl_CoA(smiles: str):
     if not mol.HasSubstructMatch(thioester_pattern):
         return False, "No thioester group found"
 
-    # Look for a short fatty-acid chain (<8 carbons)
-    # Assume fatty acid starts after coenzyme structure
-    coa_match = mol.GetSubstructMatch(coa_structure_pattern)
-    fatty_acid_start_idx = coa_match[0] - 1
+    # Modify logic to identify the fatty acid chain start position
+    # Get match for thioester and check carbon chain
+    thioester_match = mol.GetSubstructMatch(thioester_pattern)
+    if not thioester_match:
+        return False, "Could not find thioester group start"
+
+    fatty_acid_start_idx = thioester_match[0]
     num_carbons = 0
 
+    # Update logic: count carbons from the position after the thioester sulfur
     for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 6:  # carbon atom
+        if atom.GetAtomicNum() == 6:  # counting carbons
             if atom.GetIdx() > fatty_acid_start_idx:
                 num_carbons += 1
 
