@@ -1,16 +1,13 @@
 """
 Classifies: CHEBI:134251 guaiacols
 """
-"""
-Classifies: Guaiacols
-"""
 from rdkit import Chem
 
 def is_guaiacols(smiles: str):
     """
     Determines if a molecule is a guaiacol based on its SMILES string.
-    Guaiacols typically have a methoxy group and a hydroxyl group attached to a benzene ring,
-    possibly in ortho, meta, or para positions.
+    Guaiacols are characterized by a methoxy group and a hydroxyl group on a benzene ring.
+    This function tries to detect these groups' presence in characteristic positions uniquely.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,22 +17,18 @@ def is_guaiacols(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
+    # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Expanded guaiacol pattern allowing for ortho, meta, and para hydroxy-methoxy pairings
-    patterns = [
-        "c1cc(OC)c(O)cc1",     # ortho (positions 1-2 on benzene)
-        "c1c(OC)cc(O)cc1",     # meta (positions 1-3 on benzene)
-        "c1cc(O)cc(OC)c1"      # para (positions 1-4 on benzene)
-    ]
     
-    # Check for multiple patterns to allow flexibility in structural identification
-    for pattern in patterns:
-        mol_pattern = Chem.MolFromSmarts(pattern)
-        if mol.HasSubstructMatch(mol_pattern):
-            return True, "Contains guaiacol core structure"
+    # Guaiacol core patterns: benzene ring with hydroxyl and methoxy adjacent positions.
+    # We ensure positions usually found in guaiacols, for example, position ('O') next to benzene rings.
+    guaiacol_pattern = Chem.MolFromSmarts("c1cc(OC)c(O)cc1")
+    
+    if mol.HasSubstructMatch(guaiacol_pattern):
+        return True, "Contains guaiacol core structure"
     
     return False, "No guaiacol core structure found"
+
+# Additional patterns can be added here if more diverse structures of guaiacols are to be included.
