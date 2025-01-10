@@ -6,20 +6,20 @@ Classifies: polymer
 """
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
+from collections import Counter
 
 def is_polymer(smiles: str):
     """
     Determines if a molecule is a polymer based on its SMILES string.
-    A polymer is characterized by high molecular weight and large size due to repeating units.
-
+    A polymer is characterized by repeating structural units (monomers) linked by covalent bonds.
+    
     Args:
         smiles (str): SMILES string of the molecule
-
+    
     Returns:
         bool: True if molecule is a polymer, False otherwise
         str: Reason for classification
     """
-
     # Parse SMILES with error handling
     try:
         mol = Chem.MolFromSmiles(smiles, sanitize=True)
@@ -29,7 +29,7 @@ def is_polymer(smiles: str):
         return False, f"SMILES Parsing Error: {str(e)}"
     except Exception as e:
         return False, f"SMILES Parsing Error: {str(e)}"
-
+    
     # Remove counter ions and small fragments, keep the largest fragment
     frags = Chem.GetMolFrags(mol, asMols=True, sanitizeFrags=True)
     if not frags:
@@ -38,32 +38,45 @@ def is_polymer(smiles: str):
         mol = max(frags, key=lambda m: m.GetNumAtoms())
     else:
         mol = frags[0]
-
-    # Calculate molecular weight
+    
+    # Adjusted threshold values
+    MW_THRESHOLD = 500   # Lowered molecular weight threshold in Daltons
+    ATOM_THRESHOLD = 50   # Lowered number of atoms threshold
+    REPEAT_UNIT_THRESHOLD = 3  # Minimum number of repeating units required
+    
+    # Calculate molecular properties
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    # Count number of atoms
     num_atoms = mol.GetNumAtoms()
-    # Count number of rotatable bonds
-    num_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-
-    # Set threshold values (these can be adjusted based on domain knowledge)
-    MW_THRESHOLD = 1000  # Molecular weight threshold in Daltons
-    ATOM_THRESHOLD = 100 # Number of atoms threshold
-    ROTATABLE_BOND_THRESHOLD = 20  # Number of rotatable bonds
-
-    if mol_wt > MW_THRESHOLD and num_atoms > ATOM_THRESHOLD and num_rotatable > ROTATABLE_BOND_THRESHOLD:
-        return True, f"Molecule has high molecular weight ({mol_wt:.2f} Da), {num_atoms} atoms, and {num_rotatable} rotatable bonds, indicative of a polymer"
+    
+    # Generate all possible ring and chain fragments of size 3 to 8 atoms
+    fragments = []
+    for size in range(3, 9):
+        ss = Chem.rdMolDescriptors.GetMolFrags(mol, asMols=True, sanitizeFrags=False)
+        for submol in ss:
+            if submol.GetNumAtoms() == size:
+                fragments.append(Chem.MolToSmiles(submol))
+    
+    # Count the frequency of each fragment
+    fragment_counts = Counter(fragments)
+    
+    # Identify fragments that repeat
+    repeating_fragments = {frag: count for frag, count in fragment_counts.items() if count >= REPEAT_UNIT_THRESHOLD}
+    
+    if repeating_fragments:
+        repeat_info = "; ".join([f"{frag} repeats {count} times" for frag, count in repeating_fragments.items()])
+        return True, f"Molecule contains repeating units: {repeat_info}"
     else:
-        reasons = []
-        if mol_wt <= MW_THRESHOLD:
-            reasons.append(f"Molecular weight ({mol_wt:.2f} Da) is below threshold ({MW_THRESHOLD} Da)")
-        if num_atoms <= ATOM_THRESHOLD:
-            reasons.append(f"Number of atoms ({num_atoms}) is below threshold ({ATOM_THRESHOLD})")
-        if num_rotatable <= ROTATABLE_BOND_THRESHOLD:
-            reasons.append(f"Number of rotatable bonds ({num_rotatable}) is below threshold ({ROTATABLE_BOND_THRESHOLD})")
-        reason_str = "; ".join(reasons)
-        return False, reason_str
-
+        # Also check molecular weight and atom count for polymers that may not have easily detectable repeating units
+        if mol_wt > MW_THRESHOLD and num_atoms > ATOM_THRESHOLD:
+            return True, f"Molecule has high molecular weight ({mol_wt:.2f} Da) and {num_atoms} atoms, indicative of a polymer"
+        else:
+            reasons = []
+            if mol_wt <= MW_THRESHOLD:
+                reasons.append(f"Molecular weight ({mol_wt:.2f} Da) is below threshold ({MW_THRESHOLD} Da)")
+            if num_atoms <= ATOM_THRESHOLD:
+                reasons.append(f"Number of atoms ({num_atoms}) is below threshold ({ATOM_THRESHOLD})")
+            reason_str = "; ".join(reasons)
+            return False, reason_str
 
 __metadata__ = {
     'chemical_class': {
@@ -85,7 +98,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 1,
+    'attempt': 2,
     'success': True,
     'best': True,
     'error': '',
