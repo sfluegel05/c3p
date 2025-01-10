@@ -27,14 +27,20 @@ def is_saturated_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(carboxylic_pattern):
         return False, "No carboxylic acid group found"
 
-    # Check for C=C and C#C bonds (unsaturation)
-    unsaturation_pattern = Chem.MolFromSmarts("C=C | C#C")
-    if mol.HasSubstructMatch(unsaturation_pattern):
-        return False, "Contains unsaturation (carbon-carbon double or triple bond)"
+    # Check for carbon-carbon double bonds (C=C)
+    double_bond_pattern = Chem.MolFromSmarts("C=C")
+    if mol.HasSubstructMatch(double_bond_pattern):
+        return False, "Contains carbon-carbon double bond indicating unsaturation"
 
-    # Check for long carbon chain, minimum 4 carbons with connected pattern
+    # Check for carbon-carbon triple bonds (C#C)
+    triple_bond_pattern = Chem.MolFromSmarts("C#C")
+    if mol.HasSubstructMatch(triple_bond_pattern):
+        return False, "Contains carbon-carbon triple bond indicating unsaturation"
+
+    # Check for long carbon chain, minimum 4 carbons
+    # This adjusted pattern looks for a sequence of at least 4 continuous sp3 carbons
     carbon_chain_pattern = Chem.MolFromSmarts("[CH2]-[CH2]-[CH2]-[CH2]")
     if not mol.HasSubstructMatch(carbon_chain_pattern):
-        return False, "Does not contain sufficiently long carbon chain"
+        return False, "Does not contain sufficiently long saturated carbon chain"
 
     return True, "Contains a long saturated carbon chain with a terminal carboxylic acid group"
