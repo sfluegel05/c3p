@@ -2,7 +2,6 @@
 Classifies: CHEBI:25608 nucleoside phosphate
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_nucleoside_phosphate(smiles: str):
     """
@@ -24,10 +23,12 @@ def is_nucleoside_phosphate(smiles: str):
     
     # Extended nucleobase patterns (covering purine and pyrimidine with common modifications)
     nucleobase_patterns = [
-        Chem.MolFromSmarts("n1cnc2c1ncnc2"),  # Purine
-        Chem.MolFromSmarts("n1c([nH])nc2c1[nH]cnc2"),  # Pyrimidine
-        Chem.MolFromSmarts("c1ncnc2ncnc(N)c12")  # Adenine-like
-        # Additional SMARTS for other nucleobase variants can be added
+        Chem.MolFromSmarts("c1[nH]cnc2c1ncnc2"),   # Purines (adenine-like)
+        Chem.MolFromSmarts("n1cnc2c1ncnc2"),      # Purines (guaninie-like)
+        Chem.MolFromSmarts("c1ccncn1"),           # Pyrimidine-like
+        Chem.MolFromSmarts("c1nc[nH]c1=O"),       # Pyrimidone-like
+        Chem.MolFromSmarts("n1c(=O)c[nH]cn1"),    # Cytosine-like
+        Chem.MolFromSmarts("c1ccc(nc1)=O")        # Modified pyrimidines
     ]
     
     nucleobase_found = any(mol.HasSubstructMatch(pattern) for pattern in nucleobase_patterns)
@@ -36,9 +37,9 @@ def is_nucleoside_phosphate(smiles: str):
     
     # Refined sugar moiety detection
     sugar_patterns = [
-        Chem.MolFromSmarts("C1OC(O)C(O)C(O)C1"),  # Ribose
-        Chem.MolFromSmarts("C1OC(C)C(O)C1"),  # Deoxyribose, allowing some substitutions
-        # Expand for other sugar forms as necessary
+        Chem.MolFromSmarts("C1OC(CO)C(O)C1"),  # Ribose / Deoxyribose and basic modifications considered
+        Chem.MolFromSmarts("C1OCC(O)C(O)C1"),  # Alternate sugar backbone for modifications
+        Chem.MolFromSmarts("C1OCC(C)C1")       # Tetrahydrofuran-like (ribose precursor)
     ]
     
     sugar_found = any(mol.HasSubstructMatch(pattern) for pattern in sugar_patterns)
@@ -46,12 +47,13 @@ def is_nucleoside_phosphate(smiles: str):
         return False, "No sugar moiety found"
     
     # Flexible phosphate group detection, allowing for mono- and polyphosphate
-    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)(O)O")  # Single phosphate pattern
-    if not mol.HasSubstructMatch(phosphate_pattern):
-        return False, "No phosphate group found"
+    phosphate_patterns = [
+        Chem.MolFromSmarts("P(=O)(O)O"),  # Phosphate
+        Chem.MolFromSmarts("P(=O)(O)(O)O"),  # Diphosphate link possibility, if misunderstood as poly
+        Chem.MolFromSmarts("OP(O)(=O)OP(=O)(O)O") # Triphosphate (ATP/GTP like)
+    ]
     
-    # Ensuring nucleobase and sugar and phosphate connectivity could involve
-    # a graph-based connection check, but we will assume molecular subunits
-    # provided in SMILES are connected in typical biological context
+    if not any(mol.HasSubstructMatch(pattern) for pattern in phosphate_patterns):
+        return False, "No phosphate group found"
 
     return True, "Contains nucleobase, sugar moiety, and phosphate group"
