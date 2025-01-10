@@ -25,17 +25,17 @@ def is_3_oxo_fatty_acyl_CoA(smiles: str):
     
     # Update the CoA moiety SMARTS pattern to incorporate more structural elements
     # Consider all features—ribose, phosphate linkages, adenine, pantetheine moiety
-    coa_pattern = Chem.MolFromSmarts("NC(=O)CCNC(=O)[C@@H](O)C(C)(C)COP(O)(=O)O[C@@H]1CO[C@H](O)[C@H]1O[P,S](=O)(O)OP(=O)(O)C[C@H]2O[C@H]([C@H](O)[C@H]2OP(=O)(O)O)n3cnc4c3ncnc4N")
+    coa_pattern = Chem.MolFromSmarts("CC(C)(COP(O)(O)=O)n1cnc2c(N)nc[nH]c12")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No Coenzyme A moiety found"
     
     # Thioester linkage
-    thioester_pattern = Chem.MolFromSmarts("C(=O)SCCNC(=O)C")
+    thioester_pattern = Chem.MolFromSmarts("SCCNC(=O)")
     if not mol.HasSubstructMatch(thioester_pattern):
         return False, "No thioester linkage found"
     
     # 3-oxo (ketone) group pattern at the third carbon of acyl chain
-    oxo_pattern = Chem.MolFromSmarts("CCC(=O)C")
+    oxo_pattern = Chem.MolFromSmarts("CC(=O)C")
     if not mol.HasSubstructMatch(oxo_pattern):
         return False, "No 3-oxo group found in the fatty acyl chain"
     
