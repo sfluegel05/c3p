@@ -2,41 +2,46 @@
 Classifies: CHEBI:35759 1-monoglyceride
 """
 from rdkit import Chem
+from rdkit.Chem import rdChemReactions as Reactions
 
 def is_1_monoglyceride(smiles: str):
     """
     Determines if a molecule is a 1-monoglyceride based on its SMILES string.
-    A 1-monoglyceride is defined as a monoglyceride with an acyl group attached to the primary hydroxyl group of glycerol.
+    A 1-monoglyceride is a molecule with a glycerol moiety where the acyl group
+    is esterified at position 1.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if the molecule is a 1-monoglyceride, False otherwise
-        str: Explanation of the result
+        bool: True if molecule is a 1-monoglyceride, False otherwise
+        str: Reason for classification
     """
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for glycerol backbone pattern: primary alcohols adjacent to secondary alcohol
-    glycerol_backbone = Chem.MolFromSmarts("OCC(O)CO")
-    if not mol.HasSubstructMatch(glycerol_backbone):
+    # Glycerol backbone pattern: C(O)C(O)CO
+    glycerol_pattern = Chem.MolFromSmarts("C(O)C(O)CO")
+    if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
 
-    # Check for ester group at the primary hydroxyl position
-    ester_primary_position = Chem.MolFromSmarts("COC(=O)[CX4H]")
-    ester_matches = mol.GetSubstructMatches(ester_primary_position)
-    if len(ester_matches) != 1:
-        return False, f"Found {len(ester_matches)} ester groups, need exactly 1 attached to primary alcohol"
+    # Ester linkage pattern at primary alcohol position: OC(=O)C 
+    ester_at_1_position = Chem.MolFromSmarts("COC(=O)C")
+    if not mol.HasSubstructMatch(ester_at_1_position):
+        return False, "No ester linkage at 1-position found"
 
-    # Check for stereochemistry if specified as sn-glycerol
-    chiral_center_check = any(atom.GetChiralTag() for atom in mol.GetAtoms())
-    sn_pattern = Chem.MolFromSmarts("[C@H](O)C(O)")
-    sn_match = mol.HasSubstructMatch(sn_pattern)
-    
-    if chiral_center_check and not sn_match:
-        return False, "Found stereochemistry but not the expected sn configuration"
+    # Ensure there is only one acyl chain esterified (checks for only one ester linkage)
+    ester_groups = mol.GetSubstructMatches(Chem.MolFromSmarts("C(=O)O"))
+    if len(ester_groups) != 1:
+        return False, f"Found {len(ester_groups)} ester groups, need exactly 1"
 
-    return True, "Contains glycerol backbone with an acyl group esterified at the primary position, consistent with a 1-monoglyceride"
+    # Glycerol specific chirality check (if Stereochemistry matters)
+    chiral_center = Chem.MolFromSmiles("[C@@H]")
+    if mol.HasSubstructMatch(chiral_center):
+        chiral_matches = mol.GetSubstructMatches(chiral_center)
+        if len(chiral_matches) == 0:
+            return False, "Needs specific glycerol chirality"
+
+    return True, "Contains glycerol backbone with single acyl group esterified at 1-position"
