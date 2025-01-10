@@ -27,54 +27,44 @@ def is_aliphatic_nitrile(smiles: str):
 
     # Look for cyano group (C≡N)
     cyano_pattern = Chem.MolFromSmarts("[CX2]#[NX1]")
-    if cyano_pattern is None:
-        return False, "Error in SMARTS pattern"
-        
-    cyano_matches = mol.GetSubstructMatches(cyano_pattern)
-    
-    if not cyano_matches:
+    if not mol.HasSubstructMatch(cyano_pattern):
         return False, "No cyano (C≡N) group found"
     
-    # Pattern for conjugated systems (C=C-C≡N or Ar-C≡N or C=N-C≡N)
-    conjugated_pattern = Chem.MolFromSmarts("[$(C=C),$(c),$(C=N)]-[CH2]C#N")
-    conjugated_matches = mol.GetSubstructMatches(conjugated_pattern) if conjugated_pattern else []
+    # Get all cyano group matches
+    cyano_matches = mol.GetSubstructMatches(cyano_pattern)
     
-    # For each cyano group, check if it's a proper aliphatic nitrile
+    # Pattern for aromatic carbon attached to cyano group
+    aromatic_cyano = Chem.MolFromSmarts("a[CX2]#[NX1]")
+    
+    # Pattern for conjugated system directly attached to cyano
+    conjugated_cyano = Chem.MolFromSmarts("[$(C=C),$(C=N),$(C=O)][CX2]#[NX1]")
+    
     for match in cyano_matches:
         nitrile_c = mol.GetAtomWithIdx(match[0])  # Get the carbon of C≡N
         
-        # Get the carbon atom attached to the nitrile carbon
-        for neighbor in nitrile_c.GetNeighbors():
-            if neighbor.GetAtomicNum() != 7:  # Skip the nitrogen atom of C≡N
-                # Check multiple conditions that would disqualify an aliphatic nitrile
-                
-                # 1. Carbon should not be aromatic
-                if neighbor.GetIsAromatic():
-                    continue
-                    
-                # 2. Carbon should not be part of a conjugated system
-                if neighbor.GetIsConjugated():
-                    continue
-                    
-                # 3. Carbon should not be sp or sp2 hybridized
-                if neighbor.GetHybridization() != Chem.HybridizationType.SP3:
-                    continue
-                    
-                # 4. Check if the carbon is part of certain functional groups that would make it non-aliphatic
-                non_aliphatic_pattern = Chem.MolFromSmarts("[$(C=O),$(C=N),$(C=C)]-[CH2]C#N")
-                if non_aliphatic_pattern and mol.HasSubstructMatch(non_aliphatic_pattern):
-                    continue
-                
-                # 5. Make sure we're not part of a complex ring system
-                ring_info = mol.GetRingInfo()
-                if ring_info.IsAtomInRingOfSize(neighbor.GetIdx(), 6):
-                    # If in a 6-membered ring, make sure it's not part of a complex/aromatic system
-                    ring_atoms = ring_info.AtomRings()[0]
-                    if any(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring_atoms):
-                        continue
-                
-                # If we passed all checks, this is an aliphatic nitrile
-                return True, "Contains cyano group (C≡N) attached to an aliphatic carbon"
+        # Get the atom attached to the nitrile carbon (excluding the nitrogen)
+        neighbors = [atom for atom in nitrile_c.GetNeighbors() 
+                    if atom.GetAtomicNum() != 7]
+        
+        if not neighbors:
+            continue
+            
+        attached_atom = neighbors[0]
+        
+        # Check if the cyano group is attached to an aromatic system
+        if attached_atom.GetIsAromatic():
+            continue
+            
+        # If the molecule has the aromatic-cyano pattern at this position, skip
+        if aromatic_cyano and mol.HasSubstructMatch(aromatic_cyano):
+            continue
+            
+        # If the cyano group is directly attached to a conjugated system, skip
+        if conjugated_cyano and mol.HasSubstructMatch(conjugated_cyano):
+            continue
+            
+        # If we get here, we have an aliphatic nitrile
+        return True, "Contains cyano group (C≡N) attached to an aliphatic carbon"
     
     return False, "No aliphatic nitrile groups found"
 
