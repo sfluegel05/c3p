@@ -2,11 +2,12 @@
 Classifies: CHEBI:26935 tetraterpenoid
 """
 from rdkit import Chem
-from rdkit.Chem import Descriptors
 
 def is_tetraterpenoid(smiles: str):
     """
     Determines if a molecule is a tetraterpenoid based on its SMILES string.
+    
+    Tetraterpenoids typically have a C40 backbone with various possible modifications.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,26 +22,25 @@ def is_tetraterpenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check number of carbon atoms, usually tetraterpenoids have around 40
+    # Check number of carbon atoms, typically 40 for tetraterpenoids
     num_carbons = sum(atom.GetAtomicNum() == 6 for atom in mol.GetAtoms())
-    if num_carbons < 35:
-        return False, f"Too few carbon atoms for tetraterpenoid: {num_carbons} carbons"
+    if num_carbons < 35 or num_carbons > 42:  # allowing some flexibility
+        return False, f"Incorrect number of carbons for tetraterpenoid: {num_carbons} carbons"
 
-    # Check for the presence of unsaturated bonds, characteristic of terpenes
-    num_double_bonds = Descriptors.CalcNumAromaticBonds(mol) + Descriptors.CalcNumAliphaticDoubleBonds(mol)
-    if num_double_bonds < 10:  # arbitrary cutoff for a complex terpene structure
+    # Check presence of unsaturated bonds, a characteristic of terpenes
+    num_double_bonds = sum(1 for bond in mol.GetBonds() if bond.GetBondTypeAsDouble() >= 2)
+    if num_double_bonds < 8:  # assuming unsaturation presence
         return False, "Insufficient double bonds for a tetraterpenoid structure"
     
-    # Scan for specific terpenoid functional groups or motifs (indicative, not exhaustive)
-    # Example: Alcohol groups, indicative of oxygenation
-    alcohol_pattern = Chem.MolFromSmarts('[OX2H]')
-    if not mol.HasSubstructMatch(alcohol_pattern):
-        return False, "Lacks common terpenoid modification groups (e.g., alcohol)"
+    # Detect common modifications: alcohol or carbonyl groups
+    alcohol_pattern = Chem.MolFromSmarts('[OX2H]')  # Hydroxyl group
+    carbonyl_pattern = Chem.MolFromSmarts('[CX3](=O)[#6]')  # Carbonyl group (>C=O)
+
+    has_alcohol = mol.HasSubstructMatch(alcohol_pattern)
+    has_carbonyl = mol.HasSubstructMatch(carbonyl_pattern)
+
+    if not (has_alcohol or has_carbonyl):
+        return False, "Lacks typical tetraterpenoid modification groups (alcohol or carbonyl)"
     
-    # Pattern matching for characteristic skeleton modification or restructuring could be complex
-    # Here we simply return None for structures that require in-depth analysis beyond simple rule matching
-
-    # If initial checks pass, assume tetraterpenoid unless specific exclusions apply
+    # If all checks pass
     return True, "Structure likely contains the characteristic features of a tetraterpenoid"
-
-# Example use: is_tetraterpenoid("CC(=O)NC1=CC=C(O)C=C1")
