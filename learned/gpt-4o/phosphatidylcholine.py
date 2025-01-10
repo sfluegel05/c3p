@@ -2,7 +2,6 @@
 Classifies: CHEBI:64482 phosphatidylcholine
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_phosphatidylcholine(smiles: str):
     """
@@ -23,20 +22,20 @@ def is_phosphatidylcholine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Glycerol backbone with flexible stereochemistry
-    glycerol_pattern = Chem.MolFromSmarts("[C@H](O)C(O)CO")
+    # Improved glycerol backbone with correct stereochemistry
+    glycerol_pattern = Chem.MolFromSmarts("[C@H](O[C])[C@@H](OC(=O)C)COP(=O)(OCC[N+](C)(C)C)O")
     if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "Glycerol backbone with correct stereochemistry not found"
+        return False, "Glycerol backbone and/or stereochemistry not found"
 
     # Phosphocholine head group pattern
-    phosphocholine_pattern = Chem.MolFromSmarts("O=P([O-])(OCC[N+](C)(C)C)O")
+    phosphocholine_pattern = Chem.MolFromSmarts("O=P(O)(OCC[N+](C)(C)C)O")
     if not mol.HasSubstructMatch(phosphocholine_pattern):
         return False, "Phosphocholine head group not found"
 
-    # Check for two acyl chains connected to glycerol. Assuming any length fatty acid chains.
-    acyl_chain_pattern = Chem.MolFromSmarts("OC(=O)C")
-    acyl_matches = mol.GetSubstructMatches(acyl_chain_pattern)
-    if len(acyl_matches) < 2:
-        return False, f"Found {len(acyl_matches)} acyl chains, need at least 2"
+    # Check for two ester-linked acyl chains connected to glycerol
+    ester_pattern = Chem.MolFromSmarts("COC(=O)C")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    if len(ester_matches) < 2:
+        return False, f"Found {len(ester_matches)} ester-linked acyl chains, need exactly 2"
 
-    return True, "Contains glycerol backbone with two acyl chains and a phosphocholine head group"
+    return True, "Contains glycerol backbone with two ester-linked acyl chains and a phosphocholine head group"
