@@ -26,8 +26,8 @@ def is_ceramide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for sphingoid base pattern (C-C-C with OH and NH groups)
-    sphingoid_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]([OH])[NH]")
+    # Look for sphingoid base pattern (more flexible pattern)
+    sphingoid_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CHX4]([OH])[NH]")
     if not mol.HasSubstructMatch(sphingoid_pattern):
         return False, "No sphingoid base found"
 
