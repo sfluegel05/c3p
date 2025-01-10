@@ -12,21 +12,25 @@ def is_diketone(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a diketone, False otherwise
+        bool: True if the molecule is a diketone, False otherwise
         str: Reason for classification
     """
-
     # Parse the SMILES string into a molecule object
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the ketone functional group pattern
-    ketone_pattern = Chem.MolFromSmarts("[#6][C](=O)[#6]")  # Carbonyl carbon double-bonded to oxygen and single-bonded to two carbons
+    # Define a SMARTS pattern for ketone functional group
+    # Carbonyl carbon (C=O) where the carbon is single-bonded to two carbons
+    ketone_pattern = Chem.MolFromSmarts("[C;X3](=O)([C])([C])")
+    if ketone_pattern is None:
+        return False, "Invalid ketone SMARTS pattern"
+
+    # Find all ketone matches in the molecule
     ketone_matches = mol.GetSubstructMatches(ketone_pattern)
     num_ketones = len(ketone_matches)
 
-    if num_ketones == 2:
-        return True, "Contains exactly two ketone functionalities"
+    if num_ketones >= 2:
+        return True, f"Contains {num_ketones} ketone functionalities"
     else:
-        return False, f"Contains {num_ketones} ketone groups, need exactly 2 for diketone"
+        return False, f"Contains {num_ketones} ketone groups, need at least 2 for diketone"
