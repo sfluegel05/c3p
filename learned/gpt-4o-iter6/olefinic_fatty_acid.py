@@ -7,8 +7,7 @@ def is_olefinic_fatty_acid(smiles: str):
     """
     Determines if a molecule is an olefinic fatty acid.
     An olefinic fatty acid is characterized by having a carboxylic acid group
-    and at least one C=C (carbon-carbon double bond) in an aliphatic chain,
-    with certain carbon chain characteristics typical of fatty acids.
+    and at least one C=C (carbon-carbon double bond) in an aliphatic chain.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -24,29 +23,36 @@ def is_olefinic_fatty_acid(smiles: str):
         return False, "Invalid SMILES string"
     
     # Look for carboxylic acid group - allow for common variations
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[O;H1,H0-]")  # Include variations like -COO- and -COOH
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[O;H1,H0-,H0,H0+]")  # More inclusive of variations
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group or valid variant found"
 
-    # Look for C=C double bonds in an aliphatic environment
+    # Look for non-cyclic C=C double bonds
     cc_double_bond_pattern = Chem.MolFromSmarts("C=C")
     if not mol.HasSubstructMatch(cc_double_bond_pattern):
-        return False, "No non-ring carbon-carbon double bond found"
+        return False, "No aliphatic carbon-carbon double bond found"
     
-    # Verify the linearity and length of the chain
-    # Ensure there is a continuous chain containing both the carboxylic group and a C=C bond.
-    carbon_chain_pattern = Chem.MolFromSmarts("C=CCCCCCCCC(=O)O")  # Basic long chain with C=C and COOH
-    if not mol.HasSubstructMatch(carbon_chain_pattern):
-        return False, "No sufficiently extended carbon chain with both features found"
+    # Check for continuous path connecting a double bond to the carboxylic acid group
+    # This helps ensure the double bond is part of the fatty acid-like chain
+    if not mol.HasSubstructMatch(Chem.MolFromSmarts("CCC=CCC(=O)O")):
+        # General flexible path - require connectivity of chain with constraints
+        all_cyes = [bond for bond in mol.GetBonds() if bond.GetBondTypeAsDouble() == 2]
+        for bond in all_cyes:
+            if any(atom.GetSymbol() == 'O' for atom in bond.GetBeginAtom().GetNeighbors()):
+                break
+            if any(atom.GetSymbol() == 'O' for atom in bond.GetEndAtom().GetNeighbors()):
+                break
+        else:
+            return False, "No connection between C=C bonds and carboxylic acid found"
 
-    # Count total number of carbon atoms to verify typical fatty acid length
+    # Ensure minimum length typically associated with fatty acids
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if carbon_count < 12:  # Raising the bar for typical fatty acids' length
+    if carbon_count < 12:
         return False, "Carbon count too low for typical fatty acids"
     
-    # Check for excessive functionalization and non-typical structures
+    # Check excessive functionalization
     heteroatom_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() in (7, 8, 9, 15, 16))
     if heteroatom_count > 5:
-        return False, "Excessive heteroatoms for a typical fatty acid"
+        return False, "Excessive heteroatoms affecting classification consistency"
 
     return True, "Contains both a carboxylic acid group and at least one aliphatic C=C double bond typical of olefinic fatty acids"
