@@ -24,15 +24,29 @@ def is_porphyrins(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the porphyrin core as a SMARTS pattern
-    porphyrin_smarts = 'c1cc2cc3ccc(cc4ccc(cc1n2)n4)n3'  # Porphyrin core without hydrogen specification
-    porphyrin_pattern = Chem.MolFromSmarts(porphyrin_smarts)
+    # Get ring information
+    ring_info = mol.GetRingInfo()
+    atom_rings = ring_info.AtomRings()
 
-    if porphyrin_pattern is None:
-        return False, "Invalid porphyrin SMARTS pattern"
+    # Flag to indicate if porphyrin ring is found
+    porphyrin_found = False
 
-    # Perform substructure search for the porphyrin core
-    if mol.HasSubstructMatch(porphyrin_pattern):
-        return True, "Porphyrin ring system detected"
+    # Iterate over all rings
+    for ring in atom_rings:
+        # Check if ring is 16-membered
+        if len(ring) == 16:
+            # Count the number of nitrogen atoms in the ring
+            num_nitrogens = 0
+            for idx in ring:
+                atom = mol.GetAtomWithIdx(idx)
+                if atom.GetSymbol() == 'N':
+                    num_nitrogens += 1
+            # Check if there are exactly 4 nitrogen atoms
+            if num_nitrogens == 4:
+                porphyrin_found = True
+                break  # No need to check other rings
+
+    if porphyrin_found:
+        return True, "Porphyrin ring system detected (16-membered ring with 4 nitrogen atoms)"
     else:
         return False, "No porphyrin ring system detected"
