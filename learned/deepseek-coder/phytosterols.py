@@ -34,7 +34,7 @@ def is_phytosterols(smiles: str):
         return False, "No steroid nucleus found (tetracyclic ring system with a hydroxyl group at the 3-position)"
 
     # Check for a side chain at the 17-position (typical of sterols)
-    # The side chain can vary in length and degree of unsaturation
+    # The side chain can vary in length and degree of unsaturation, so we use a more general pattern
     side_chain_pattern = Chem.MolFromSmarts("[C@@]12CC[C@@H]3[C@@]4(CC[C@H](C4)O)C[C@@H]1CC[C@@]2(C)CC")
     if side_chain_pattern is None:
         return False, "Failed to create side chain pattern"
