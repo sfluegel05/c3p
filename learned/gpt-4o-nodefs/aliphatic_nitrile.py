@@ -22,17 +22,21 @@ def is_aliphatic_nitrile(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for nitrile group pattern (-C#N)
-    nitrile_pattern = Chem.MolFromSmarts("[$([CX2]#N)]")
-    matches = mol.GetSubstructMatches(nitrile_pattern)
+    nitrile_pattern = Chem.MolFromSmarts("[CX2]#N")
+    nitrile_matches = mol.GetSubstructMatches(nitrile_pattern)
     
-    if not matches:
+    if not nitrile_matches:
         return False, "No nitrile group found"
 
-    # Check that nitrile group is not part of an aromatic system
-    for match in matches:
-        atom = mol.GetAtomWithIdx(match[0])
-        # Check if the atom is part of an aliphatic chain
-        if not atom.IsInRing() and atom.GetIsAromatic() == False:
-            return True, "Contains an aliphatic nitrile group"
+    # Check that nitrile group is connected to an aliphatic carbon (sp3, not part of any aromatic system)
+    for match in nitrile_matches:
+        nitrile_carbon = mol.GetAtomWithIdx(match[0])
+        if nitrile_carbon.GetIsAromatic():
+            continue
 
-    return False, "Nitrile group is part of an aromatic system"
+        # Consider the carbon directly bonded to the nitrile carbon
+        for neighbor in nitrile_carbon.GetNeighbors():
+            if neighbor.GetHybridization() == Chem.rdchem.HybridizationType.SP3 and not neighbor.GetIsAromatic():
+                return True, "Contains an aliphatic nitrile group"
+
+    return False, "Nitrile group is not connected to an aliphatic chain"
