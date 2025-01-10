@@ -7,7 +7,7 @@ Classifies: CHEBI:72564 flavanone
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
 
-def is_flavanones(smiles: str):
+def is_flavanone(smiles: str):
     """
     Determines if a molecule is a flavanone based on its SMILES string.
     A flavanone has a 3,4-dihydro-2-aryl-2H-1-benzopyran-4-one skeleton.
@@ -25,17 +25,20 @@ def is_flavanones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more flexible core flavanone pattern
-    # This pattern allows for substitutions on the benzene ring
-    flavanone_pattern = Chem.MolFromSmarts("[C@H]1CC(=O)c2c([*])c([*])c([*])c([*])c2O1")
+    # Define the core flavanone pattern
+    flavanone_pattern = Chem.MolFromSmarts("[C@@H]1CC(=O)c2ccccc2O1")
     if not mol.HasSubstructMatch(flavanone_pattern):
         return False, "No flavanone core structure found"
 
-    # Check for an aryl group at position 2 with flexibility for substituents
-    # This pattern allows for any substituents on the aryl ring
-    aryl_pattern = Chem.MolFromSmarts("[C@H]1CC(=O)c2c([*])c([*])c([*])c([*])c2O1-c3c([*])c([*])c([*])c([*])c3")
+    # Check for aromatic ring at position 2
+    aryl_pattern = Chem.MolFromSmarts("[C@@H]1CC(=O)c2ccccc2O1-c3ccccc3")
     if not mol.HasSubstructMatch(aryl_pattern):
         return False, "No aryl group at position 2"
+
+    # Verify the 3,4-dihydro structure (no double bond between C3 and C4)
+    dihydro_pattern = Chem.MolFromSmarts("[C@H]1CC(=O)c2ccccc2O1")
+    if not mol.HasSubstructMatch(dihydro_pattern):
+        return False, "No 3,4-dihydro structure found"
 
     # Count oxygen atoms (should be at least 2: one in the ring, one in the ketone)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
