@@ -33,4 +33,9 @@ def is_guaiacols(smiles: str):
     if mol.HasSubstructMatch(guaiacol_pattern):
         return True, "Contains a phenol with a methoxy group at the ortho position"
     else:
-        return False, "Does not match the guaiacol pattern (phenol with methoxy at ortho position)"
+        # Try a more flexible pattern that matches any phenol with a methoxy at ortho position
+        flexible_pattern = Chem.MolFromSmarts("[c;H0]([OH]):[c;H0]([OCH3])")
+        if mol.HasSubstructMatch(flexible_pattern):
+            return True, "Contains a phenol with a methoxy group at the ortho position"
+        else:
+            return False, "Does not match the guaiacol pattern (phenol with methoxy at ortho position)"
