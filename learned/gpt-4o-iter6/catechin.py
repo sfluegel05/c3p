@@ -22,7 +22,8 @@ def is_catechin(smiles: str):
         return False, "Invalid SMILES string"
 
     # Adjusted SMARTS pattern for flavan-3-ol backbone: Chroman core motif
-    flavan_3_ol_pattern = Chem.MolFromSmarts("c1cc2c(O)cc(O)cc2Oc1")
+    # Flavan-3-ols have a core that looks like a dihydroxychromane (adjusted pattern here)
+    flavan_3_ol_pattern = Chem.MolFromSmarts("c1cc2c(O)c(O)cc2Oc1[C@H]3CO[C@@H]4C3")
     if not mol.HasSubstructMatch(flavan_3_ol_pattern):
         return False, "No flavan-3-ol backbone found"
 
@@ -33,9 +34,9 @@ def is_catechin(smiles: str):
     if len(hydroxyl_matches) < 3:
         return False, f"Insufficient hydroxyl groups, found {len(hydroxyl_matches)}"
     
-    # Check stereochemistry: Look for common chiral centers
+    # Check stereochemistry: Look for common chiral centers assuming 2 chiral centers in flavan-3-ol
     chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=False)
     if len(chiral_centers) < 2:
         return False, "Not enough chiral centers found"
-    
+
     return True, "Contains flavan-3-ol backbone with sufficient hydroxyl groups"
