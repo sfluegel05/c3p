@@ -21,28 +21,15 @@ def is_proteinogenic_amino_acid(smiles: str):
         return False, "Invalid SMILES string"
     
     # Define a pattern for a generic proteinogenic amino acid
-    # This pattern should capture the distinct features of proteinogenic amino acids: 
-    # Central carbon (C) bonded to an amino group (N), carboxyl group (O=CO), and optional chiralities.
+    # Central carbon (Cα) with appropriate groups
     amino_acid_pattern = Chem.MolFromSmarts(
-        "[CX4H2][NX3](C(=O)[O,N])" +  # Central carbon with amino group and carboxylate
-        "[$([C,c;!$(*=,#)])]"         # Variable side chain (R group) allowance
+        "[NX3;H2,H1;!$(NC=O)]-[C@@;!$([C;D2]=O)]-[CX3](=[OX1])[O;H1,0]"  # Amino group, chiral center @ Cα, and carboxylic acid
     )
     
     # Run a substructure search with this pattern
     if not mol.HasSubstructMatch(amino_acid_pattern):
         return False, "Does not match core proteinogenic amino acid structure"
     
-    # Verify for larger molecules that they don't contain structures inconsistent with amino acids
-    # Refine based on a more localized search instead of entire structure which may better
-    # accommodate partial matching for modified residues (e.g. deuterated amino acids)
-    try:
-        # Find the first matching conformation
-        match = mol.GetSubstructMatch(amino_acid_pattern)
-        if not match:
-            return False, "Core structure is missing or improperly modified"
-    except:
-        return False, "An error occurred during matching process"
-
     # If found matches to the structural pattern that often characterize the proteinogenic amino acids
     return True, "Matches refined structure expected of proteinogenic amino acids"
 
