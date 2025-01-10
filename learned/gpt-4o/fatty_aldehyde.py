@@ -9,8 +9,8 @@ from rdkit import Chem
 def is_fatty_aldehyde(smiles: str):
     """
     Determines if a molecule is a fatty aldehyde based on its SMILES string.
-    A fatty aldehyde is defined as an aldehyde with a long carbon chain, 
-    typically derived from the reduction of a fatty acid.
+    A fatty aldehyde is defined as an aldehyde with a carbonyl group at one end
+    of a carbon chain, typically derived from the reduction of a fatty acid.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -25,23 +25,22 @@ def is_fatty_aldehyde(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for aldehyde group pattern (C=O at terminal position)
+    # Look for terminal aldehyde group pattern (C=O at terminal position)
     aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)[#6]")
     if not mol.HasSubstructMatch(aldehyde_pattern):
         return False, "No terminal aldehyde group found"
 
-    # Check for a minimal carbon count more generously
+    # Check for carbon count, allowing for smaller aldehydes
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 5:
+
+    # Allow smaller sizes, focusing on typical fatty chains
+    if c_count < 4:
         return False, f"Too few carbons for a typical fatty aldehyde (found {c_count})"
 
-    # Look for a flexible chain, accommodating for unsaturation and branching
-    # Check for any chain longer than 4, allowing for double bonds
-    flexible_chain_pattern = Chem.MolFromSmarts("[C&R1][C&R1][C&R1][C&R1]")
+    # Flexible pattern to count potential long chains, including unsaturation
+    # Allow substructure like CCC=C, and permit branching
+    flexible_chain_pattern = Chem.MolFromSmarts("[C&R1]~[C&R1]~[C&R1]~[C&R1]")
     if not mol.HasSubstructMatch(flexible_chain_pattern):
-        return False, "Does not have a sufficient long carbon chain"
+        return False, "Does not have a sufficient long carbon chain, considering unsaturations and branches"
 
-    # Some fatty aldehydes might be misclassified due to complex structure
-    # If more checks necessary, consider adding them here like molecular weight or specific subfeatures
-    
-    return True, "Contains terminal aldehyde group with a suitable long carbon chain"
+    return True, "Contains terminal aldehyde group with a carbon chain suitable as fatty aldehyde"
