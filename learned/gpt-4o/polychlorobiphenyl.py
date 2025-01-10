@@ -21,28 +21,34 @@ def is_polychlorobiphenyl(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return (False, "Invalid SMILES string")
     
-    # Check for biphenyl core (two benzene rings connected by a single bond)
-    biphenyl_pattern = Chem.MolFromSmarts("c1ccccc1-c2ccccc2")
+    # Verify biphenyl core (two phenyl rings connected by a single bond)
+    biphenyl_pattern = Chem.MolFromSmarts("c1ccccc1-c1ccccc1")
     if not mol.HasSubstructMatch(biphenyl_pattern):
-        return False, "No biphenyl core found"
-    
-    # Count chlorine atoms
-    chlorine_count = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'Cl')
+        return (False, "No biphenyl core found")
 
-    # Check if chlorine count is between 2 and 10
+    # Count all chlorine atoms
+    chlorine_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 17)
     if not 2 <= chlorine_count <= 10:
-        return False, f"Chlorine atom count is {chlorine_count}, which is not between 2 and 10"
+        return (False, f"Chlorine atom count is {chlorine_count}, which is not between 2 and 10")
 
-    return True, "Contains a biphenyl core with the correct number of chlorine atoms"
+    # Ensure all chlorine atoms are directly connected to biphenyl carbons
+    for atom in mol.GetAtoms():
+        if atom.GetSymbol() == 'Cl':
+            neighbors = atom.GetNeighbors()
+            # Assume chlorines are only on biphenyl aromatic carbons
+            if not all(neighbor.GetSymbol() == 'C' and neighbor.GetIsAromatic() for neighbor in neighbors):
+                return (False, "Chlorine attached to non-aromatic or non-biphenyl carbon")
 
-# Examples to test the function
+    return (True, "Contains a biphenyl core with the correct number of chlorine atoms")
+
+# Example SMILES to test the function
 example_smiles = [
-    "Clc1ccc(cc1)-c1cc(Cl)c(Cl)c(Cl)c1Cl", # PCB example
-    "Clc1ccccc1",  # Not a PCB, single benzene ring
-    "Clc1ccccc1-c1ccccc1",  # Biphenyl but only 2 Cl
-    "Clc1cc(Cl)c(Cl)c(c1)-c1cc(Cl)cc(Cl)c1Cl"  # PCB with 6 Cl
+    "Clc1ccc(cc1)-c1cc(Cl)c(Cl)c(Cl)c1Cl", # Valid PCB example
+    "Clc1ccccc1",  # Not a PCB, just single chlorinated benzene
+    "C#Cc1ccc(Cl)cc1", # Alkyne attached, not PCB
+    "Clc1cc(Cl)c(cc1)-c1ccc(c(Cl)cc1)Cl"  # Valid PCB with 4 Cl
 ]
 
 for smiles in example_smiles:
