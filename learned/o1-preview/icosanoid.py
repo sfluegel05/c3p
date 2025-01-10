@@ -30,13 +30,14 @@ def is_icosanoid(smiles: str):
     if c_count < 18 or c_count > 22:
         return False, f"Molecule has {c_count} carbon atoms; expected approximately 20 for an icosanoid"
 
-    # Check for presence of oxygen-containing functional groups
+    # Count the number of oxygen atoms
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     if o_count < 2:
         return False, "Molecule has insufficient oxygen atoms; expected oxidation products"
 
-    # Check for functional groups
+    # Check for presence of functional groups
     functional_groups = []
+
     # Hydroxyl group (OH)
     hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
     if mol.HasSubstructMatch(hydroxyl_pattern):
@@ -60,14 +61,10 @@ def is_icosanoid(smiles: str):
     if not functional_groups:
         return False, "Molecule lacks characteristic functional groups of icosanoids (hydroxyl, ketone, epoxide, peroxide)"
 
-    # Check for long aliphatic chain
-    chains = Chem.rdmolops.GetMolFrags(mol, asMols=True, sanitizeFrags=False)
-    max_chain_length = 0
-    for chain in chains:
-        if Chem.rdMolDescriptors.CalcNumAliphaticCs(chain) > max_chain_length:
-            max_chain_length = Chem.rdMolDescriptors.CalcNumAliphaticCs(chain)
-    if max_chain_length < 15:
-        return False, f"Molecule does not have a sufficiently long aliphatic chain (max chain length {max_chain_length})"
+    # Estimate the number of rotatable bonds to infer chain length
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 10:
+        return False, f"Not enough rotatable bonds ({n_rotatable}); molecule may not have long aliphatic chains"
 
     # Check for cyclopentane ring (for prostaglandins)
     cyclopentane_pattern = Chem.MolFromSmarts("C1CCCC1")
@@ -102,7 +99,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 0,
+    'attempt': 1,
     'success': True,
     'best': True,
     'error': '',
