@@ -21,16 +21,18 @@ def is_saccharolipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define the patterns for lipid and carbohydrate components
-    lipid_pattern = Chem.MolFromSmarts("CCCCCCCCCCCCCCCC")
-    carb_pattern = Chem.MolFromSmarts("C1O[C@H](C)O[C@@H](O)[C@@H](O)[C@H]1") # e.g., for trehalose-like structure
-
+    # Define broader patterns for lipid and carbohydrate components
+    # Lipid pattern: optional functional groups around long carbon chains
+    lipid_pattern = Chem.MolFromSmarts("C(=O)OC([C@@H,CH,C])([C@@H,CH,C])C")  # Esterified long chain
+    # Carbohydrate pattern: generic sugar rings, considering anomeric centers
+    carb_pattern = Chem.MolFromSmarts("C1OC(O)C(O)C(O)C1")
+    
     # Check for presence of lipid component
     if not mol.HasSubstructMatch(lipid_pattern):
-        return False, "No long hydrocarbon chains (lipid component) found"
+        return False, "No adequate long hydrocarbon chains (lipid component) found"
     
     # Check for presence of carbohydrate component
     if not mol.HasSubstructMatch(carb_pattern):
-        return False, "No carbohydrate moiety found"
+        return False, "No adequate carbohydrate moiety found"
     
     return True, "Contains both lipid and carbohydrate components indicating a saccharolipid"
