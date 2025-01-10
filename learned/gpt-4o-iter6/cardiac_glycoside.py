@@ -21,20 +21,23 @@ def is_cardiac_glycoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for a broad steroid backbone pattern
-    # This pattern aims to capture variations in steroid cores found in cardiac glycosides
-    steroid_pattern = Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2CCC4C3(CCCC4)C")
+    # Improved pattern for steroid nucleus (cyclopenta[a]phenanthrene)
+    steroid_pattern = Chem.MolFromSmarts("C1CCC2C3C1C4CC(C2)CCC4C3")
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid nucleus found"
 
-    # Look for common lactone ring patterns (focusing on 5-membered butenolide)
-    lactone_pattern = Chem.MolFromSmarts("C1=CC=CC(=O)C1")
+    # Improved pattern for a 5-membered lactone ring (butenolide)
+    lactone_pattern = Chem.MolFromSmarts("C1=CC(=O)OC1")
     if not mol.HasSubstructMatch(lactone_pattern):
         return False, "No lactone ring found"
 
-    # Look for sugar moieties (flexible detection for pyranose and furanose)
-    sugar_pattern = Chem.MolFromSmarts("C1OC(C(O)C(O)C1O)C")
-    if not mol.HasSubstructMatch(sugar_pattern):
+    # Improved pattern for sugar moieties (pyranose and furanose)
+    sugar_patterns = [
+        Chem.MolFromSmarts("C1OC(C(C1O)O)CO"),  # Pyranose
+        Chem.MolFromSmarts("C1OC(CO1)CO")       # Furanose
+    ]
+    sugar_found = any(mol.HasSubstructMatch(sugar) for sugar in sugar_patterns)
+    if not sugar_found:
         return False, "No sugar moieties found"
 
     return True, "Contains steroid nucleus with lactone ring and sugar moieties indicative of cardiac glycoside"
