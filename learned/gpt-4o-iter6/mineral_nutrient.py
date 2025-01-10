@@ -22,23 +22,26 @@ def is_mineral_nutrient(smiles: str):
 
     # Essential metallic elements typically found in nutrients
     essential_metallic_elements = {'Ca', 'Mg', 'K', 'Na', 'Fe', 'Zn', 'Ba', 'La', 'Cs', 'Al', 'Sb', 'Pd'}
-    # Narrower essential non-metallic elements associated with mineral nutrients
-    nutrient_anions = {'Cl', 'F', 'S', 'P', 'O', 'N'}
-    # Avoid organic-like structures (extensive carbon chains, typically)
-    
+    # Nutrient anions indicative of common inorganic nutrient minerals
+    nutrient_anions_smarts = [
+        "[Cl]", "[F]", "[O-]P([O-])(=O)", "[O-]C([O-])=O",  # Typical inorganic anions
+        "[O-]S([O-])(=O)"]  # Sulfate or Phosphate derivatives
+    ]
+
     # Check for the presence of at least one essential metallic element
     metal_found = any(atom.GetSymbol() in essential_metallic_elements for atom in mol.GetAtoms())
     if not metal_found:
         return False, "No essential metallic elements found"
 
     # Ensure relevant inorganic anions for nutrient character are present
-    anion_found = any(atom.GetSymbol() in nutrient_anions for atom in mol.GetAtoms())
+    anion_found = any(mol.HasSubstructMatch(Chem.MolFromSmarts(anion)) for anion in nutrient_anions_smarts)
     if not anion_found:
         return False, "No relevant mineral nutrient anions found"
 
-    # Check for presence of substantial carbon leads (5+ carbon atoms without matching known essential group elements)
+    # Allow for longer carbon chains if balanced by the presence of magnesium, calcium, etc.
+    # Count carbon atoms but condone if present with significant nutrient metallic atoms
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'C')
-    if carbon_count > 4:
-        return False, f"Contains {carbon_count} carbon atoms suggesting an organic molecule, typically not a nutrient mineral"
+    if carbon_count > 36:
+        return False, f"Contains {carbon_count} carbon atoms suggesting an overly complex organic molecule"
 
     return True, "Structure consistent with mineral nutrients containing essential elements and simple inorganic anions"
