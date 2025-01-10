@@ -5,6 +5,7 @@ Classifies: CHEBI:166828 saccharolipid
 Classifies: saccharolipid
 """
 from rdkit import Chem
+from rdkit.Chem import rdFMCS
 
 def is_saccharolipid(smiles: str):
     """
@@ -24,33 +25,39 @@ def is_saccharolipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS patterns for sugar moieties (pyranose and furanose rings)
-    sugar_patterns = [
-        Chem.MolFromSmarts("C1OC(O)C(O)C(O)C1O"),  # Pyranose ring
-        Chem.MolFromSmarts("C1OC(O)C(O)C1O"),      # Furanose ring
+    # Define SMARTS patterns for various sugar moieties commonly found in saccharolipids
+    sugar_smarts = [
+        "[C@H]1(O)[C@@H](O)[C@H](O)[C@@H](CO)[C@H](O)[C@H]1O",  # glucose
+        "[C@H]1(O)[C@@H](O)[C@H](O)[C@H](O[C@H]1CO)CO",          # glucosamine
+        "O=C([C@@H](O)CO)[C@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O",  # Kdo
     ]
+    sugar_patterns = [Chem.MolFromSmarts(s) for s in sugar_smarts]
     
-    # Search for sugar rings
-    has_sugar = any(mol.HasSubstructMatch(pat) for pat in sugar_patterns)
+    # Search for sugar moieties
+    has_sugar = False
+    for pat in sugar_patterns:
+        if mol.HasSubstructMatch(pat):
+            has_sugar = True
+            break
     if not has_sugar:
         return False, "No carbohydrate moiety (sugar ring) found"
     
-    # Define SMARTS pattern for fatty acyl chains attached via ester linkage to sugar
-    # Fatty acyl chain: long aliphatic chain with carbonyl group
-    # Ester linkage: [O][C](=O)[C]
-    fatty_acyl_ester_pattern = Chem.MolFromSmarts("[C;!R][C;!R][C;!R][C;!R][C;!R][C;!R][C;!R][C;!R][C;!R][C;!R][C;!R][C;!R][CX3](=O)[O][#6]")
+    # Define SMARTS patterns for fatty acyl chains attached via ester linkage to sugar oxygen
+    fatty_acyl_ester_to_sugar = Chem.MolFromSmarts("O[C;R][C](=O)[C;$(C([CH2])[CH2])]")  # Ester linkage to sugar oxygen
+    # Define SMARTS patterns for fatty acyl chains attached via amide linkage to sugar nitrogen
+    fatty_acyl_amide_to_sugar = Chem.MolFromSmarts("N[C;R][C](=O)[C;$(C([CH2])[CH2])]")  # Amide linkage to sugar nitrogen
     
-    # Define SMARTS pattern for fatty acyl chains attached via amide linkage to sugar
-    # Amide linkage: [NX3][C](=O)[C]
-    fatty_acyl_amide_pattern = Chem.MolFromSmarts("[C;!R][C;!R][C;!R][C;!R][C;!R][C;!R][C;!R][C;!R][C;!R][C;!R][C;!R][C;!R][CX3](=O)[NX3][#6]")
-    
-    # Check for fatty acyl chains connected to sugar via ester or amide linkages
-    ester_bonds = mol.GetSubstructMatches(fatty_acyl_ester_pattern)
-    amide_bonds = mol.GetSubstructMatches(fatty_acyl_amide_pattern)
-    
-    if not (ester_bonds or amide_bonds):
+    # Check for ester or amide linkages to sugar
+    ester_matches = mol.GetSubstructMatches(fatty_acyl_ester_to_sugar)
+    amide_matches = mol.GetSubstructMatches(fatty_acyl_amide_to_sugar)
+    if not (ester_matches or amide_matches):
         return False, "No fatty acyl chains attached to sugar via ester or amide linkages found"
-    
+
+    # Exclude sphingolipids by checking for sphingosine backbone
+    sphingosine_pattern = Chem.MolFromSmarts("C(CO)[NH][CH](O)CC=C")  # Simplified sphingosine backbone
+    if mol.HasSubstructMatch(sphingosine_pattern):
+        return False, "Contains sphingosine backbone, likely a glycosphingolipid"
+
     return True, "Contains sugar moiety with fatty acyl chains attached via ester or amide linkages"
 
 __metadata__ = {
