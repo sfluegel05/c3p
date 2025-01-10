@@ -15,20 +15,19 @@ def is_short_chain_fatty_acyl_CoA(smiles: str):
         bool: True if the molecule is a short-chain fatty acyl-CoA, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define complex CoA moiety pattern to capture major functional groups
-    coa_pattern = Chem.MolFromSmarts("NC(=O)CCNC(=O)CCN(C)C(=O)CCSC(=O)C")
+    # Define a more comprehensive CoA moiety pattern
+    coa_pattern = Chem.MolFromSmarts("NC(=O)CCNC(=O)CCNC(=O)[C@H](O)COP(=O)(O)O[C@H]1O[C@H](COP(=O)(O)O)[C@@H](O)[C@@H]1O")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No complete Coenzyme A moiety found"
-    
-    # Look for thioester group pattern, C(=O)S with a fatty acyl chain of length 2 to 5 carbons
-    # We assume the shortest chain is a methyl group: CC(=O)SC(...)
-    thioester_pattern = Chem.MolFromSmarts("C(=O)SC")
+
+    # Look for thioester group pattern, C(=O)SC with a fatty acyl chain of length 2 to 5 carbons
+    thioester_pattern = Chem.MolFromSmarts("C(=O)SCC")
     thioester_matches = mol.GetSubstructMatches(thioester_pattern)
 
     for match in thioester_matches:
@@ -50,7 +49,7 @@ def is_short_chain_fatty_acyl_CoA(smiles: str):
                     break
                 for neighbor in atom.GetNeighbors():
                     neighbor_idx = neighbor.GetIdx()
-                    if neighbor_idx not in visited:
+                    if neighbor_idx not in visited and neighbor.GetAtomicNum() == 6:  # Ensure neighbor is carbon
                         queue.append(neighbor_idx)
         
         if 2 <= carbon_chain_length <= 5:
