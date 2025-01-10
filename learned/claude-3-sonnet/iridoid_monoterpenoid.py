@@ -27,90 +27,104 @@ def is_iridoid_monoterpenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Molecular weight check (typical range for iridoids)
+    # Basic molecular checks
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 150 or mol_wt > 800:
         return False, "Molecular weight outside typical range for iridoids"
 
-    # Count carbons and oxygens
+    # Count atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     
     if c_count < 8 or c_count > 30:
         return False, "Carbon count outside typical range for iridoids"
-    
     if o_count < 2:
         return False, "Insufficient oxygen atoms for iridoid structure"
 
-    # Define various iridoid skeleton patterns
-    patterns = [
-        # Classic iridoid skeleton
-        "[C]1[C][C][C]2[C]1[O][C][C][C][C]2",
-        # Seco-iridoid skeleton
-        "[C]-[C]-[C]-[C]1[O][C][C][C][C]1",
-        # Modified iridoid skeleton with oxygen bridge
-        "[C]1[C][C]2[O][C][C][C][C]2[O]1",
-        # Rearranged iridoid skeleton
+    # Core iridoid skeleton patterns
+    core_patterns = [
+        # Classic cyclopentane-pyran fusion
+        "[C]1[C][C]2[C]1[O][C][C][C][C]2",
+        # Specific iridoid core with oxygen bridge
+        "[C]1[C][C]2[O][C][C][C]([C]2[C]1)",
+        # Common secoiridoid pattern
+        "[C]1[O][C][C]=[C][C]1[C][C][C]",
+        # Variation with lactone
+        "[C]1[C][C]2[C]1[O][C](=[O])[C][C]2",
+        # Specific cyclopentapyran pattern
         "[C]1[C]2[C][C][C]1[O][C][C][C]2",
-        # Cyclopentane fused to pyran (more general)
-        "[C]1[C][C]2[C][C]1[O][C][C][C]2"
+        # Hemiacetal pattern common in iridoids
+        "[C]1[C][C]2[C]1[O][C]([OH])[C][C]2"
     ]
 
-    is_iridoid_skeleton = False
-    for pattern in patterns:
+    # Check for core skeleton
+    is_core_found = False
+    for pattern in core_patterns:
         pat = Chem.MolFromSmarts(pattern)
         if pat and mol.HasSubstructMatch(pat):
-            is_iridoid_skeleton = True
+            is_core_found = True
             break
 
-    if not is_iridoid_skeleton:
-        # Check for secoiridoid patterns
+    # Additional secoiridoid patterns if core not found
+    if not is_core_found:
         seco_patterns = [
-            # Common secoiridoid patterns
-            "[C]-[C]-[C]-[C]-[C]-[O]-[C]",
-            "[C]-[C](=O)-[C]-[C]-[O]-[C]",
-            "[C]-[C](=O)-[C]-[C]-[C]-[O]"
+            # Opened cyclopentane ring with characteristic groups
+            "[C][C](=[O])[C][C][O][C]=[C][C]",
+            # Common secoiridoid with lactone
+            "[C][C](=[O])[O][C][C]=[C][C][C]",
+            # Specific pattern with hydroxyl
+            "[C][C]([OH])[C][C][O][C]=[C][C]"
         ]
-        
         for pattern in seco_patterns:
             pat = Chem.MolFromSmarts(pattern)
             if pat and mol.HasSubstructMatch(pat):
-                is_iridoid_skeleton = True
+                is_core_found = True
                 break
 
-    if not is_iridoid_skeleton:
+    if not is_core_found:
         return False, "Missing characteristic iridoid/secoiridoid skeleton"
 
-    # Check for characteristic substituent patterns
-    substituent_patterns = [
-        (Chem.MolFromSmarts("[CH2][OH]"), "hydroxymethyl"),
-        (Chem.MolFromSmarts("[C](=O)[OH]"), "carboxyl"),
-        (Chem.MolFromSmarts("[OH]"), "hydroxyl"),
-        (Chem.MolFromSmarts("[C](=O)[O][C]"), "ester"),
-        (Chem.MolFromSmarts("[CH3]"), "methyl")
+    # Check for characteristic substituents in specific positions
+    key_substituents = [
+        ("[C][C]([OH])[C]", "hydroxyl on cyclopentane"),
+        ("[C][C](=[O])[OH]", "carboxyl"),
+        ("[C][CH2][OH]", "hydroxymethyl"),
+        ("[O][C](=[O])[C]", "ester"),
+        ("[C][CH3]", "methyl")
     ]
     
     found_groups = []
-    for pattern, name in substituent_patterns:
-        if pattern and mol.HasSubstructMatch(pattern):
+    for pattern, name in key_substituents:
+        pat = Chem.MolFromSmarts(pattern)
+        if pat and mol.HasSubstructMatch(pat):
             found_groups.append(name)
-    
+
     if len(found_groups) < 2:
         return False, "Insufficient characteristic substituents"
+
+    # Exclude compounds that are primarily sugars
+    sugar_patterns = [
+        # Pyranose sugar pattern
+        "[OH]C1[CH]([OH])[CH]([OH])[CH]([OH])[CH]([OH])O1",
+        # Furanose sugar pattern
+        "[OH]C1[CH]([OH])[CH]([OH])[CH]([OH])O1",
+        # Multiple connected sugars
+        "O1[CH]([CH2][OH])[CH]([OH])[CH]([OH])[CH]([OH])[CH]1O[CH]2O[CH]([CH2][OH])[CH]([OH])[CH]([OH])[CH]2[OH]"
+    ]
+    
+    for pattern in sugar_patterns:
+        pat = Chem.MolFromSmarts(pattern)
+        if pat and mol.HasSubstructMatch(pat):
+            # Check if the sugar part is dominant
+            if o_count > 6 and rdMolDescriptors.CalcNumRings(mol) < 3:
+                return False, "Structure appears to be primarily a glycoside"
 
     # Ring count check
     ring_count = rdMolDescriptors.CalcNumRings(mol)
     if ring_count < 2 or ring_count > 6:
         return False, "Ring count outside typical range for iridoids"
 
-    # Exclude compounds that are likely to be simple glycosides
-    sugar_pattern = Chem.MolFromSmarts("[OH]C1[CH]([OH])[CH]([OH])[CH]([OH])[CH]([OH])[CH]1[OH]")
-    if sugar_pattern and mol.HasSubstructMatch(sugar_pattern):
-        # Additional check to ensure it's not just a simple glycoside
-        if ring_count == 2 and o_count > 5:
-            return False, "Likely a simple glycoside"
-
     # Success case
-    structure_type = "secoiridoid" if not any("cyclopentane" in p for p in patterns) else "iridoid"
+    structure_type = "secoiridoid" if any("seco" in p for p in found_groups) else "iridoid"
     substituents = ", ".join(found_groups)
-    return True, f"Identified as {structure_type} with {substituents} groups"
+    return True, f"Identified as {structure_type} with {substituents}"
