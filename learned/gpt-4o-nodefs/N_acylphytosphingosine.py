@@ -19,26 +19,25 @@ def is_N_acylphytosphingosine(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Identify key patterns: Look for the amino alcohol backbone with a long chain and acyl group
-    # Key Pattern 1: Look for a long hydrocarbon chain
-    long_chain_pattern = Chem.MolFromSmarts("CCCCCCCCCCCCCCCCCCCCCCCCCCC")
+
+    # Look for a long hydrocarbon chain (>12 carbons, flexible length)
+    long_chain_pattern = Chem.MolFromSmarts("C{12,}")  # Using a flexible count-based pattern
     if not mol.HasSubstructMatch(long_chain_pattern):
-        return False, "No long hydrocarbon chain found typical for N-acylphytosphingosine"
+        return False, "No sufficiently long hydrocarbon chain found typical for N-acylphytosphingosine"
     
-    # Key Pattern 2: Look for the phytosphingosine backbone (amino alcohol)
+    # Look for the phytosphingosine backbone (amino alcohol)
     backbone_pattern = Chem.MolFromSmarts("[C@H](O)[C@H](O)[C@H](CO)N")
     if not mol.HasSubstructMatch(backbone_pattern):
         return False, "No phytosphingosine backbone found"
-
-    # Key Pattern 3: Look for an acyl group bonded to the nitrogen
-    acyl_pattern = Chem.MolFromSmarts("NC(=O)")
+    
+    # Look for an acyl group bonded to the nitrogen
+    acyl_pattern = Chem.MolFromSmarts("N[C;D2](C(=O)[CX4H])")  # Ensuring connection from nitrogen to a carbonyl carbon
     if not mol.HasSubstructMatch(acyl_pattern):
         return False, "No acyl group attached to the nitrogen"
     
     return True, "Contains phytosphingosine backbone with N-acyl group"
 
 # Test the function
-example_smiles = "CCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO)C(O)C(O)C"
+example_smiles = "CCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO)[C@H](O)[C@H](O)CCCCCCCCCCCCCC"
 result, reason = is_N_acylphytosphingosine(example_smiles)
 print(f"Result: {result}, Reason: {reason}")
