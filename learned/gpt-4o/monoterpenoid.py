@@ -7,12 +7,11 @@ def is_monoterpenoid(smiles: str):
     """
     Determines if a molecule is a monoterpenoid based on its SMILES string.
     A monoterpenoid typically has a carbon skeleton derived from a monoterpene
-    with around 10 carbons, potentially rearranged or modified by the removal of
-    one or more skeletal atoms.
-
+    with around 10 carbons, potentially rearranged or modified.
+    
     Args:
         smiles (str): SMILES string of the molecule
-
+    
     Returns:
         bool: True if molecule is a monoterpenoid, False otherwise
         str: Reason for classification
@@ -21,34 +20,34 @@ def is_monoterpenoid(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Count carbons
+        return None, "Invalid SMILES string"
+
+    # Monoterpenoids generally have around 10 carbons, with flexibility in structural arrangement
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 8 or c_count > 15:
+        return False, f"Carbon count {c_count} not typical for monoterpenoid, despite potential rearrangement"
+
+    # Recognize structural flexibility of isoprene-based backbones:
+    # e.g., consider various isoprenoid arrangements
+    isoprene_like_patterns = [
+        Chem.MolFromSmarts("C(C)(C)C(C)=C"),  # Head-to-tail arrangements
+        Chem.MolFromSmarts("C=C(C)C(C)"),  # Tail-to-tail arrangements
+        Chem.MolFromSmarts("C(C)C(C)=C(C)"),  # C10 branched structures
+    ]
     
-    # Check for monoterpenoid carbon count range
-    if c_count < 8 or c_count > 13:
-        return False, f"Carbon count {c_count} not typical for monoterpenoid"
+    if not any(mol.HasSubstructMatch(pattern) for pattern in isoprene_like_patterns):
+        return False, "No sufficient isoprene-derived backbone found, not typical for monoterpenoid"
 
-    # Search for common skeletal patterns (e.g., isoprene units)
-    isoprene_pattern = Chem.MolFromSmarts("C(C)(C)C=C")  # Basic isoprene unit
-    if not mol.HasSubstructMatch(isoprene_pattern):
-        return False, "No isoprene unit found, not typical for a monoterpenoid"
+    # Check for presence of common functional groups in monoterpenoids
+    common_functional_patterns = {
+        "Alcohol": Chem.MolFromSmarts("[OX2H]"),
+        "Ketone": Chem.MolFromSmarts("C(=O)[C]"),
+        "Ester": Chem.MolFromSmarts("COC(=O)"),
+        "Oxide": Chem.MolFromSmarts("COC")
+    }
 
-    # Check for functional groups typically found in monoterpenoids
-    # Alcohols
-    alcohol_pattern = Chem.MolFromSmarts("[OX2H]")
-    if mol.HasSubstructMatch(alcohol_pattern):
-        return True, "Contains isoprene unit and alcohol functional group, consistent with monoterpenoid"
+    found_functionalities = [name for name, pattern in common_functional_patterns.items() if mol.HasSubstructMatch(pattern)]
+    if found_functionalities:
+        return True, f"Contains isoprene-like backbone and functional group(s) {', '.join(found_functionalities)}, consistent with monoterpenoid"
 
-    # Ketones
-    ketone_pattern = Chem.MolFromSmarts("C(=O)C")
-    if mol.HasSubstructMatch(ketone_pattern):
-        return True, "Contains isoprene unit and ketone functional group, consistent with monoterpenoid"
-
-    # Esters
-    ester_pattern = Chem.MolFromSmarts("COC(=O)")
-    if mol.HasSubstructMatch(ester_pattern):
-        return True, "Contains isoprene unit and ester functional group, consistent with monoterpenoid"
-
-    return False, "Unable or insufficient evidence to classify as monoterpenoid"
+    return True, "Contains isoprene-like backbone without common terminal functional groups but consistent with monoterpenoid structure"
