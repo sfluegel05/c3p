@@ -22,42 +22,63 @@ def is_3_oxo_fatty_acyl_CoA(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Check for CoA moiety
-    # Look for adenine base
-    adenine_pattern = Chem.MolFromSmarts("n1cnc2c(N)ncnc12")
-    if not mol.HasSubstructMatch(adenine_pattern):
-        return False, "Missing adenine moiety of CoA"
-    
-    # Look for ribose phosphate
-    ribose_phosphate = Chem.MolFromSmarts("OCC1OC(n2cnc3c2ncnc3)C(O)C1OP(O)(O)=O")
-    if not mol.HasSubstructMatch(ribose_phosphate):
-        return False, "Missing ribose phosphate portion of CoA"
-    
-    # Look for pantetheine portion with thioester
-    # [CX4]C(=O)NCCC(=O)NCCS represents the pantetheine chain
-    # The C(=O)S represents the thioester linkage
-    pantetheine_thioester = Chem.MolFromSmarts("[CX4]C(=O)NCCC(=O)NCCSC(=O)")
-    if not mol.HasSubstructMatch(pantetheine_thioester):
-        return False, "Missing pantetheine-thioester portion"
-    
-    # Check for 3-oxo group pattern
-    # Pattern: carbon chain - C(=O)CC(=O)S- 
-    # This represents the 3-oxo group followed by the thioester
-    oxo_pattern = Chem.MolFromSmarts("C-C(=O)CC(=O)S")
-    if not mol.HasSubstructMatch(oxo_pattern):
-        return False, "Missing 3-oxo group pattern"
-    
-    # Additional checks for fatty acid portion
-    # Count carbons in the main chain
-    # We'll be lenient here as fatty acids can vary in length
-    carbon_chain = Chem.MolFromSmarts("CCCCC")  # At least 5 carbons
-    if not mol.HasSubstructMatch(carbon_chain):
-        return False, "Carbon chain too short for fatty acid portion"
 
-    # Check for reasonable molecular weight
-    mol_wt = Chem.Descriptors.ExactMolWt(mol)
-    if mol_wt < 800:  # CoA itself is quite large
-        return False, "Molecular weight too low for 3-oxo-fatty acyl-CoA"
+    # Normalize charges - convert to neutral form where possible
+    mol = Chem.AddHs(mol)
     
-    return True, "Contains CoA moiety, 3-oxo group, and appropriate fatty acid chain"
+    # Check for CoA core structure
+    coA_pattern = Chem.MolFromSmarts("[$(N1C=NC2=C1N=CN=C2N)]" + # Adenine
+                                    "[$(C[C@H]1O[C@H](n2cnc3c(N)ncnc32)[C@H](O)[C@@H]1OP(O)(O)=O)]" + # Ribose phosphate
+                                    "[$(CC(C)(C)COP(O)(=O)OP(O)(=O)O)]" + # Diphosphate
+                                    "[$(SCCNC(=O)CCNC(=O))]") # Pantetheine
+    if not mol.HasSubstructMatch(coA_pattern):
+        return False, "Missing or incorrect CoA structure"
+
+    # Check for specific 3-oxo-fatty acyl pattern
+    # This enforces the exact position of the oxo group and linear nature
+    oxo_pattern = Chem.MolFromSmarts("[#6]-C(=O)CC(=O)SCCNC(=O)CCNC(=O)")
+    if not mol.HasSubstructMatch(oxo_pattern):
+        return False, "Missing or incorrect 3-oxo-fatty acyl pattern"
+
+    # Exclude molecules with cyclic structures in the fatty acid portion
+    # First, find the thioester carbon
+    thioester = Chem.MolFromSmarts("C(=O)SCCNC")
+    matches = mol.GetSubstructMatches(thioester)
+    if not matches:
+        return False, "Cannot locate thioester group"
+    
+    # Get the carbon atom index of the thioester
+    thioester_idx = matches[0][0]
+    
+    # Check for rings that include atoms before the thioester
+    ri = mol.GetRingInfo()
+    ring_atoms = set()
+    for ring in ri.AtomRings():
+        ring_atoms.update(ring)
+    
+    # If any ring atoms are connected to the fatty acid portion, reject
+    for atom_idx in ring_atoms:
+        if atom_idx < thioester_idx:
+            return False, "Contains cyclic structures in fatty acid portion"
+
+    # Check for branching in the fatty acid portion
+    branched_pattern = Chem.MolFromSmarts("[CH2][CH]([#6])[#6]-C(=O)CC(=O)S")
+    if mol.HasSubstructMatch(branched_pattern):
+        return False, "Contains branched structures in fatty acid portion"
+
+    # Verify linear chain length
+    chain_pattern = Chem.MolFromSmarts("CCCC-C(=O)CC(=O)S")
+    if not mol.HasSubstructMatch(chain_pattern):
+        return False, "Fatty acid chain too short"
+
+    # Additional check for aromatic rings in the fatty acid portion
+    aromatic_pattern = Chem.MolFromSmarts("a-C(=O)CC(=O)S")
+    if mol.HasSubstructMatch(aromatic_pattern):
+        return False, "Contains aromatic rings in fatty acid portion"
+
+    # Check molecular weight is in reasonable range for 3-oxo-fatty acyl-CoA
+    mol_wt = Chem.Descriptors.ExactMolWt(mol)
+    if not (850 < mol_wt < 1200):
+        return False, f"Molecular weight {mol_wt:.1f} outside expected range for 3-oxo-fatty acyl-CoA"
+
+    return True, "Valid 3-oxo-fatty acyl-CoA structure with correct CoA moiety, 3-oxo group, and linear fatty acid chain"
