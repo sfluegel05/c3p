@@ -21,18 +21,22 @@ def is_germacranolide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Proposed germacrane ring + lactone pattern with a broader search
-    # This is a simplification, capturing needed structural pieces
-    germacrane_macrocycle_pattern = Chem.MolFromSmarts('C1(C2)C=CCCC(=CC1)C(=O)OC2')
+    # More generalized germacrane skeleton pattern (can be refined iteratively)
+    germacrane_macrocycle_pattern = Chem.MolFromSmarts('C1C=CCC=CC=CC1')
     if not mol.HasSubstructMatch(germacrane_macrocycle_pattern):
-        return False, "No germacrane macrocycle with lactone structure found"
+        return False, "No germacrane skeleton found (broad pattern)"
     
-    # Check for presence of at least two double bonds; germacrane typically has multiple double bonds
+    # Look for a lactone moiety (OC1=O in ring context)
+    lactone_pattern = Chem.MolFromSmarts('O=C1OC=CC=CC1')
+    if not mol.HasSubstructMatch(lactone_pattern):
+        return False, "No lactone group in a cyclic context found"
+
+    # Number of double bonds - typical region variability should allow for different locations
     double_bonds = [bond for bond in mol.GetBonds() if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE]
     if len(double_bonds) < 2:
         return False, "Insufficient double bonds for sesquiterpene nature"
 
-    # Check for stereochemistry features: comment this if it's known to be variable in context
-    # Consider specific known patterns for stereocenters if necessary
+    # Optional: Further checks on stereochemistry if very necessary, or consider relaxed rules
+    # These are often highly variable in natural systems, so use with caution
 
     return True, "Contains a germacrane skeleton with a macrocyclic lactone, typical of germacranolides"
