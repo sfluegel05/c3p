@@ -24,33 +24,38 @@ def is_decanoate_ester(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
+
     # Look for ester group pattern (-O-C(=O)-)
     ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if not ester_matches:
+    if not mol.HasSubstructMatch(ester_pattern):
         return False, "No ester group found"
+
+    # Pattern for decanoyl group with exact chain length and no branching
+    # [CH3] ensures terminal methyl
+    # Each carbon in chain specified as [CH2] to prevent branching
+    # ($) ensures no additional connections beyond what's specified
+    decanoyl_pattern = Chem.MolFromSmarts("""
+        [OX2][CX3](=[OX1])[CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH3]
+    """)
     
-    # Pattern for decanoyl group (10-carbon chain with carbonyl)
-    # Note: The pattern looks for C(=O)-CCCCCCCCC
-    decanoyl_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4]")
-    decanoyl_matches = mol.GetSubstructMatches(decanoyl_pattern)
+    if not mol.HasSubstructMatch(decanoyl_pattern):
+        return False, "No unbranched decanoyl group found"
     
-    if not decanoyl_matches:
-        return False, "No decanoyl group found"
+    # Get matches
+    matches = mol.GetSubstructMatches(decanoyl_pattern)
     
-    # Check if any decanoyl group is part of an ester
-    found_decanoate_ester = False
-    for ester_match in ester_matches:
-        for decanoyl_match in decanoyl_matches:
-            # Check if the carbonyl carbon of the ester matches the carbonyl carbon of the decanoyl
-            if ester_match[1] == decanoyl_match[0]:
-                found_decanoate_ester = True
-                break
-        if found_decanoate_ester:
-            break
+    # Check each potential match
+    for match in matches:
+        # Verify atoms are not in ring
+        if any(mol.GetAtomWithIdx(idx).IsInRing() for idx in match):
+            continue
             
-    if not found_decanoate_ester:
-        return False, "Decanoyl group not connected via ester linkage"
-    
-    return True, "Contains decanoyl group connected via ester linkage"
+        # Verify the ester oxygen is connected to carbon (not part of phosphate, etc)
+        o_atom = mol.GetAtomWithIdx(match[0])
+        neighbors = [x for x in o_atom.GetNeighbors() if x.GetIdx() != match[1]]
+        if len(neighbors) != 1 or neighbors[0].GetAtomicNum() != 6:
+            continue
+            
+        return True, "Contains decanoyl group connected via ester linkage with exactly 10 carbons"
+        
+    return False, "No valid decanoate ester group found"
