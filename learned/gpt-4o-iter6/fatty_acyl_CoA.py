@@ -20,18 +20,18 @@ def is_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Coenzyme A structure including adenine ring, riboses, phosphates, and thiol.
-    coenzyme_a_pattern = Chem.MolFromSmarts("N=C1N=CN(C2=C1N=CN2)C3C(C(C(O3)COP(=O)(O)OP(=O)(O)OCC4C(C(C(O4)COP(=O)(O)O)O)O)O)O")
+    # Refined Coenzyme A structure: including adenine ring, riboses, phosphates, and thiol linkage.
+    coenzyme_a_pattern = Chem.MolFromSmarts("NC1=NC=CN=C1N2C=NC(N)N=C2.C3(O[C@H](COP(=O)(O)OP(=O)(O)OCC4O[C@@H](O)[C@H](O)[C@H]4O)O3).SC(=O)[C@@H](N)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)O")
     if not mol.HasSubstructMatch(coenzyme_a_pattern):
-        return False, "Incomplete Coenzyme A structure not detected"
+        return False, "Incomplete CoA structure not detected"
     
-    # Thioester pattern focusing on the acyl-CoA linkage.
-    thioester_pattern = Chem.MolFromSmarts("C(=O)SCCNC(=O)CCNC(=O)[C@H](O)")
+    # Thioester linkage pattern with some flexibility in the acyl-CoA linkage.
+    thioester_pattern = Chem.MolFromSmarts("C(=O)SCCN")
     if not mol.HasSubstructMatch(thioester_pattern):
         return False, "Thioester linkage with CoA not found"
     
     # Fatty acyl chain pattern allowing variations in length and double bonds.
-    hydrocarbon_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]=[CX4,CX3][CX4,CX3]~[CX4,CX3]{8,}")
+    hydrocarbon_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]{4,}")
     if not mol.HasSubstructMatch(hydrocarbon_chain_pattern):
         return False, "No sufficient hydrocarbon chain detected"
 
