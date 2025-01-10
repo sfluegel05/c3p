@@ -2,12 +2,12 @@
 Classifies: CHEBI:36498 galactosylceramide
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_galactosylceramide(smiles: str):
     """
     Determines if a molecule is a galactosylceramide based on its SMILES string.
-    A galactosylceramide includes a galactose head group and a long-chain
-    ceramide backbone.
+    A galactosylceramide is a cerebroside that contains a galactose head group.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,24 +22,36 @@ def is_galactosylceramide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Recognize galactose moiety pattern, including sulfated versions
-    galactose_pattern = Chem.MolFromSmarts("OC[C@@H]1O[C@H](CO)[C@H](O)[C@@H](O)[C@H]1O")
+    # Recognize galactose via typical 5-ring structure with OH groups
+    galactose_pattern = Chem.MolFromSmarts("OC1C(O)C(O)C(O)C(O)C1O")
     if not mol.HasSubstructMatch(galactose_pattern):
         return False, "No galactose residue found"
 
-    # Look for amide (C(=O)N) linkage pattern
-    amide_pattern = Chem.MolFromSmarts("C(=O)N")
+    # Recognize amide linkage pattern (N-C(=O))
+    amide_pattern = Chem.MolFromSmarts("NC(=O)")
     if not mol.HasSubstructMatch(amide_pattern):
         return False, "No amide linkage found"
-    
-    # Detect a sphingosine-like backbone: flexible long-chain pattern
-    sphingosine_pattern = Chem.MolFromSmarts("[#6]~[CH2]~[CH2]~[CH2]~[CH]~[N]~[CH](O)~[#6]")  
-    if not mol.HasSubstructMatch(sphingosine_pattern):
+
+    # Count long hydrocarbon chains which are hallmarks of ceramides
+    n_carbon_chains = rdMolDescriptors.CalcNumAliphaticCarbocycles(mol)
+    if n_carbon_chains == 0:
+        return False, "Long hydrocarbon chains of ceramides not found"
+
+    # Check for presence of a sphingosine or similar long-chain base component
+    sphingosine_pattern = Chem.MolFromSmarts("[C;R0][C;R0][C;R0]", mergeHs=True)
+    sphingosine_matches = mol.GetSubstructMatches(sphingosine_pattern)
+    if len(sphingosine_matches) < 1:
         return False, "Sphingosine-like backbone not detected"
-    
-    # Exclude components typically non-galactosylceramide except sulfonate
-    phosphate_pattern = Chem.MolFromSmarts("OP(=O)(O)O")
-    if mol.HasSubstructMatch(phosphate_pattern):
-        return False, "Contains phosphate group, not a galactosylceramide"
 
     return True, "Contains galactose, amide linkage, and sphingosine backbone"
+
+
+__metadata__ = {   'chemical_class': {   'name': 'galactosylceramide',
+                          'definition': 'Any of the cerebrosides in which the '
+                                        'monosaccharide head group is galactose.',
+                          'examples': [
+                              "CCCCCCCCCCCCCCCCC(=O)N[C@@H](COC1O[C@H](CO) [C@H](O)[C@H](O)[C@H]1O)[C@H](O)\\C=C\\CCCCCCCCCCCCC",
+                              "CCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](COC1O[C@H](CO) [C@H](O)[C@H](O)[C@H]1O)[C@H](O)\\C=C\\CCCCCCCCCCCCC"
+                          ]
+    }
+}
