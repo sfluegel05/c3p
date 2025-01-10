@@ -11,7 +11,7 @@ def is_3_sn_phosphatidyl_L_serine(smiles: str):
     """
     Determines if a molecule is a 3-sn-phosphatidyl-L-serine based on its SMILES string.
     A 3-sn-phosphatidyl-L-serine is a glycerophosphoserine compound having acyl substituents
-    at the sn-1 and sn-2 positions.
+    at the 1- and 2-hydroxy positions.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -27,23 +27,27 @@ def is_3_sn_phosphatidyl_L_serine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for the phosphatidyl-L-serine core with stereochemistry
-    phosphatidylserine_smarts = """
-    [C@@H](CO[P](=O)(O)OC[C@H](N)C(=O)O)(OC(=O)[#6])[C@@H](OC(=O)[#6])O
-    """
-
-    phosphatidylserine_pattern = Chem.MolFromSmarts(phosphatidylserine_smarts)
-    if phosphatidylserine_pattern is None:
-        return False, "Invalid SMARTS pattern"
-
-    # Check for the phosphatidyl-L-serine core structure with correct stereochemistry
-    if not mol.HasSubstructMatch(phosphatidylserine_pattern, useChirality=True):
-        return False, "Molecule does not match the phosphatidyl-L-serine core structure with correct stereochemistry"
-
-    # Optionally, check for two acyl chains (R groups) attached via ester linkages
-    acyl_ester_pattern = Chem.MolFromSmarts('OC(=O)[C]')
-    acyl_matches = mol.GetSubstructMatches(acyl_ester_pattern)
-    if len(acyl_matches) < 2:
-        return False, f"Found {len(acyl_matches)} acyl ester group(s), expected 2 at sn-1 and sn-2 positions"
-
+    # Define SMARTS patterns
+    # 1. Acyl ester linkage pattern (for acyl chains at sn-1 and sn-2 positions)
+    acyl_ester_pattern = Chem.MolFromSmarts('C(=O)O[C]')
+    
+    # 2. Glycerol backbone pattern (less restrictive)
+    glycerol_pattern = Chem.MolFromSmarts('[O][C][C][C][O]')
+    
+    # 3. Phosphate connected to serine pattern (generalized)
+    phosphate_serine_pattern = Chem.MolFromSmarts('P(=O)(O)OCC(N)C(=O)O')
+    
+    # Check for at least two acyl ester linkages (sn-1 and sn-2 positions)
+    acyl_ester_matches = mol.GetSubstructMatches(acyl_ester_pattern)
+    if len(acyl_ester_matches) < 2:
+        return False, f"Found {len(acyl_ester_matches)} acyl ester group(s), expected at least 2 acyl chains at sn-1 and sn-2 positions"
+    
+    # Check for glycerol backbone
+    if not mol.HasSubstructMatch(glycerol_pattern):
+        return False, "Glycerol backbone not found"
+    
+    # Check for phosphate group connected to serine
+    if not mol.HasSubstructMatch(phosphate_serine_pattern):
+        return False, "Phosphate group connected to serine not found"
+    
     return True, "Molecule is a 3-sn-phosphatidyl-L-serine"
