@@ -9,7 +9,7 @@ from rdkit import Chem
 def is_branched_chain_fatty_acid(smiles: str):
     """
     Determines if a molecule is a branched-chain fatty acid based on its SMILES string.
-    
+
     A branched-chain fatty acid is a fatty acid in which the hydrocarbon chain has one or more
     alkyl substituents (branches). The fatty acyl chain is usually saturated and the substituent
     is a methyl group; however, unsaturated BCFAs are found in marine animals, and branches
@@ -22,74 +22,65 @@ def is_branched_chain_fatty_acid(smiles: str):
         bool: True if molecule is a branched-chain fatty acid, False otherwise
         str: Reason for classification
     """
+    from collections import deque
 
-    # Parse the SMILES string into an RDKit molecule
+    # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check that the molecule has exactly one carboxylic acid group (C(=O)O[H])
-    carboxylic_acid_pattern = Chem.MolFromSmarts('C(=O)[O;H1]')
-    carboxy_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
-    if len(carboxy_matches) != 1:
-        return False, "Molecule does not have exactly one carboxylic acid group"
-    
-    # Check that the molecule is acyclic (no rings)
-    if mol.GetRingInfo().NumRings() > 0:
-        return False, "Molecule contains ring structures"
+    # Identify carboxylic acid group (C(=O)O[H])
+    carboxylic_acid = Chem.MolFromSmarts('C(=O)[O;H1]')
+    matches = mol.GetSubstructMatches(carboxylic_acid)
+    if len(matches) == 0:
+        return False, "No carboxylic acid group found"
 
-    # Check that the molecule is aliphatic (no aromatic atoms)
-    if any(atom.GetIsAromatic() for atom in mol.GetAtoms()):
-        return False, "Molecule contains aromatic atoms"
+    # Assume the first carboxyl carbon is the start
+    carboxyl_idx = matches[0][0]
 
-    # Check that the molecule contains only C, H, O atoms
-    allowed_atoms = {6, 1, 8}
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() not in allowed_atoms:
-            return False, f"Molecule contains forbidden atom type: {atom.GetSymbol()}"
+    # Remove carboxyl oxygens to focus on hydrocarbon chain
+    mol_no_oxygen = Chem.RWMol(mol)
+    for atom in mol_no_oxygen.GetAtoms():
+        if atom.GetAtomicNum() == 8:
+            atom.SetAtomicNum(0)  # Change oxygen to dummy atom
+    mol_no_oxygen.UpdatePropertyCache()
 
-    # Get the carboxyl carbon atom index
-    carboxyl_carbon_idx = carboxy_matches[0][0]
-    carboxyl_carbon = mol.GetAtomWithIdx(carboxyl_carbon_idx)
+    # Find the longest carbon chain starting from the carboxyl carbon
+    def longest_chain_from_atom(mol, start_idx):
+        visited = set()
+        max_path = []
 
-    # Get the carbon connected to the carboxyl carbon (the alpha carbon)
-    neighbors = [nbr for nbr in carboxyl_carbon.GetNeighbors() if nbr.GetAtomicNum() == 6]
-    if len(neighbors) != 1:
-        return False, "Carboxyl carbon does not have exactly one carbon neighbor"
-    alpha_carbon = neighbors[0]
-    alpha_carbon_idx = alpha_carbon.GetIdx()
+        def dfs(current_idx, path):
+            nonlocal max_path
+            visited.add(current_idx)
+            path = path + [current_idx]
+            if len(path) > len(max_path):
+                max_path = path
+            atom = mol.GetAtomWithIdx(current_idx)
+            for neighbor in atom.GetNeighbors():
+                nbr_idx = neighbor.GetIdx()
+                nbr_atom = mol.GetAtomWithIdx(nbr_idx)
+                if nbr_idx not in visited and nbr_atom.GetAtomicNum() == 6:
+                    dfs(nbr_idx, path)
+            visited.remove(current_idx)
 
-    # Traverse the hydrocarbon chain starting from the alpha carbon
-    visited = set()
+        dfs(start_idx, [])
+        return max_path
+
+    main_chain = longest_chain_from_atom(mol_no_oxygen, carboxyl_idx)
+
+    if len(main_chain) == 0:
+        return False, "No hydrocarbon chain found"
+
+    # Check for branching: atoms in the main chain with side chains
     branching_found = False
-    chain_length = 0
-
-    from collections import deque
-    queue = deque()
-    queue.append((alpha_carbon_idx, None))  # (current atom idx, previous atom idx)
-
-    while queue:
-        current_idx, parent_idx = queue.popleft()
-        if current_idx in visited:
-            continue
-        visited.add(current_idx)
-        atom = mol.GetAtomWithIdx(current_idx)
-        # Only consider carbon atoms
-        if atom.GetAtomicNum() != 6:
-            return False, "Hydrocarbon chain contains non-carbon atoms"
-        chain_length += 1
-        neighbor_indices = [nbr.GetIdx() for nbr in atom.GetNeighbors() if nbr.GetIdx() != parent_idx]
-        carbon_neighbors = [idx for idx in neighbor_indices if mol.GetAtomWithIdx(idx).GetAtomicNum() == 6]
-        # Check for branching (more than one carbon neighbor besides parent)
-        if len(carbon_neighbors) > 1:
+    for idx in main_chain:
+        atom = mol_no_oxygen.GetAtomWithIdx(idx)
+        neighbor_indices = [nbr.GetIdx() for nbr in atom.GetNeighbors()
+                            if nbr.GetAtomicNum() == 6 and nbr.GetIdx() not in main_chain]
+        if neighbor_indices:
             branching_found = True
-        # Add neighbors to the queue
-        for nbr_idx in carbon_neighbors:
-            queue.append((nbr_idx, current_idx))
-
-    # Ensure the chain is of sufficient length (e.g., at least 8 carbons)
-    if chain_length < 8:
-        return False, f"Hydrocarbon chain too short ({chain_length} carbons), not a fatty acid"
+            break
 
     if branching_found:
         return True, "Branched-chain fatty acid detected"
@@ -116,7 +107,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 2,
+    'attempt': 3,
     'success': True,
     'best': True,
     'error': '',
