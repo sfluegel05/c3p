@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_pterocarpans(smiles: str):
     """
     Determines if a molecule is a pterocarpan based on its SMILES string.
-    A pterocarpan is characterized by a 6a,11a-dihydro-6H-[1]benzofuro[3,2-c]chromene skeleton.
+    A pterocarpan is characterized by a benzofurochromene skeleton.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,9 +22,8 @@ def is_pterocarpans(smiles: str):
         return False, "Invalid SMILES string"
     
     # Define the substructure pattern for the core of pterocarpans
-    # Updated SMARTS pattern considering known examples and ensuring proper stereochemistry
-    # Skeleton of 6a,11a-dihydro-6H-[1]benzofuro[3,2-c]chromene
-    pterocarpan_pattern = Chem.MolFromSmarts("[C@@H]1([O])[C@@H]2Oc3c(ccc4c3OCO4)c[c@H](O)[c@@H]12")
+    # Updated SMARTS pattern to be more flexible with stereochemistry
+    pterocarpan_pattern = Chem.MolFromSmarts("O1[C@@H]2CC3=C(O)C=C(O)C=C3COC2=C(O1)")
 
     if pterocarpan_pattern is None:
         return None, "Error in defining SMARTS pattern"
