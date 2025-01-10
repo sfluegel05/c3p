@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_dicarboxylic_acid(smiles: str):
     """
     Determines if a molecule is a dicarboxylic acid based on its SMILES string.
-    A dicarboxylic acid is any carboxylic acid containing two carboxyl groups.
+    A dicarboxylic acid is any carboxylic acid containing exactly two carboxyl groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,21 +21,26 @@ def is_dicarboxylic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Carboxylic acid pattern (O=C[O-] or O=C(O) for free carboxylic acids)
-    carboxylate_pattern = Chem.MolFromSmarts("C(=O)O")
-    counts_of_carboxyl = len(mol.GetSubstructMatches(carboxylate_pattern))
+    # Carboxylic acid pattern (distinct free carboxyl groups only)
+    carboxyl_pattern = Chem.MolFromSmarts("C(=O)O")
+    carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
 
-    # Check that we do not mistakenly include esters; ensure free carboxylic acid groups
-    carboxylic_free_pattern = Chem.MolFromSmarts("C(=O)O[H]")
-    free_matches = len(mol.GetSubstructMatches(carboxylic_free_pattern))
+    # Ensure the carboxyl groups are not part of esters or amides 
+    # by checking connection(s) specifically at the 'O' of the carboxyl group
+    carboxyl_free_pattern = Chem.MolFromSmarts("C(=O)[O;H1]")
+    free_matches = mol.GetSubstructMatches(carboxyl_free_pattern)
     
-    # Confirm true free carboxylic acids by including both carboxylates and their free forms
-    total_acid_count = counts_of_carboxyl + free_matches
+    # Count the distinct carboxylic acid groups that aren't bound in esters/amides
+    num_true_carboxyls = len(free_matches)
     
-    # Filter dimers or larger acyl chloride misconceptions
-    expected_acid_count = 2
+    # Expect exactly 2 individual free carboxyl groups, not part of esters or amides
+    if num_true_carboxyls == 2:
+        return True, "Contains exactly 2 free carboxyl groups, indicating it is a dicarboxylic acid"
+    elif num_true_carboxyls > 2:
+        return False, f"Found {num_true_carboxyls} carboxyl groups; more than 2, cannot be a dicarboxylic acid"
+    else:
+        return False, f"Found {num_true_carboxyls} carboxyl groups; need exactly 2"
 
-    if total_acid_count == expected_acid_count:
-        return True, "Contains exactly 2 carboxyl groups, indicating it is a dicarboxylic acid"
-
-    return False, f"Found {total_acid_count} carboxyl groups, need exactly 2"
+# Note: While the code aims to be comprehensive, real-case implementation should include 
+# comprehensive molecular error handling, broader testing, and further feature specifics as 
+# often these entities are part of larger molecular architectures, not single forms.
