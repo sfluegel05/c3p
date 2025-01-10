@@ -28,24 +28,25 @@ def is_beta_lactam(smiles: str):
     # Convert to neutral form if possible and add Hs
     mol = Chem.AddHs(mol)
     
-    # More general SMARTS patterns for beta-lactam ring
-    # Pattern 1: Basic beta-lactam core
-    pattern1 = Chem.MolFromSmarts("[#7]1[#6][#6](=[#8])[#6]1")
-    # Pattern 2: Alternative representation accounting for different bond types
-    pattern2 = Chem.MolFromSmarts("[#7]1-[#6]-[#6](=O)-[#6]-1")
-    # Pattern 3: Account for fused systems
-    pattern3 = Chem.MolFromSmarts("[#7]1[#6][#6](=O)[#6]1[#6,#7,#8,#16]")
-    
+    # SMARTS patterns for different types of beta-lactams
     patterns = [
-        (pattern1, "basic beta-lactam core"),
-        (pattern2, "alternative beta-lactam core"),
-        (pattern3, "fused beta-lactam system")
+        # Basic beta-lactam core (more general)
+        ("[N]1[C][C](=[O])[C]1", "basic beta-lactam"),
+        # Penicillin-type structure
+        ("[N]1[C]2[C](=[O])[C]1[S][C]([C])([C])[CH]2", "penicillin-type"),
+        # Cephalosporin-type structure
+        ("[N]1[C]2[C](=[O])[C]1[S][C][C]2", "cephalosporin-type"),
+        # Carbapenem-type structure
+        ("[N]1[C]2[C](=[O])[C]1[C][C]2", "carbapenem-type"),
+        # Monobactam-type structure
+        ("[N]1[C]([C])[C](=[O])[C]1[S](=[O])(=[O])[O]", "monobactam-type")
     ]
     
     matches = []
     match_types = set()
     
-    for pattern, desc in patterns:
+    for smarts, desc in patterns:
+        pattern = Chem.MolFromSmarts(smarts)
         if pattern is not None and mol.HasSubstructMatch(pattern):
             matches.extend(mol.GetSubstructMatches(pattern))
             match_types.add(desc)
@@ -53,32 +54,35 @@ def is_beta_lactam(smiles: str):
     if not matches:
         return False, "No beta-lactam ring found"
     
-    # Verify ring properties for each match
-    ring_info = mol.GetRingInfo()
+    # Verify each match contains an amide group in a 4-membered ring
     valid_rings = 0
+    ring_info = mol.GetRingInfo()
     
     for match in matches:
+        # Get all rings containing these atoms
         ring_atoms = set(match)
-        
-        # Check if these atoms form a 4-membered ring
         for ring in ring_info.AtomRings():
-            if len(set(ring).intersection(ring_atoms)) >= 4:
-                # Verify presence of amide
+            ring_set = set(ring)
+            if len(ring_set.intersection(ring_atoms)) >= 4:
+                # Check for amide bond
                 for atom_idx in ring:
                     atom = mol.GetAtomWithIdx(atom_idx)
                     if atom.GetAtomicNum() == 7:  # Nitrogen
-                        # Check if nitrogen is connected to carbonyl
                         for neighbor in atom.GetNeighbors():
                             if neighbor.GetAtomicNum() == 6:  # Carbon
                                 for bond in neighbor.GetBonds():
                                     other_atom = bond.GetOtherAtom(neighbor)
-                                    if other_atom.GetAtomicNum() == 8 and bond.GetBondType() == Chem.BondType.DOUBLE:
+                                    if (other_atom.GetAtomicNum() == 8 and 
+                                        bond.GetBondType() == Chem.BondType.DOUBLE):
                                         valid_rings += 1
                                         break
     
     if valid_rings == 0:
         return False, "Found potential ring but missing required amide bond"
     
-    # Additional validation for specific beta-lactam types
-    found_types = ", ".join(match_types)
-    return True, f"Contains {valid_rings} beta-lactam ring(s) ({found_types})"
+    # Additional structural validation
+    if len(match_types) > 0:
+        match_desc = ", ".join(match_types)
+        return True, f"Contains beta-lactam structure(s): {match_desc}"
+    
+    return True, "Contains beta-lactam ring with amide bond"
