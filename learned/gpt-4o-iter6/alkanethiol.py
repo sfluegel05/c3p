@@ -2,6 +2,7 @@
 Classifies: CHEBI:47908 alkanethiol
 """
 from rdkit import Chem
+from rdkit.Chem import rdqueries
 
 def is_alkanethiol(smiles: str):
     """
@@ -20,14 +21,17 @@ def is_alkanethiol(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+
+    # Set up the pattern to find sulfur bound to carbon
+    sulfanyl_group = Chem.MolFromSmarts("[S][C]")
+    if not mol.HasSubstructMatch(sulfanyl_group):
+        return False, "No thiol (-SH) group directly attached to an alkyl carbon found"
     
-    # Thiol group pattern - sulfur with hydrogen and a bonding carbon
-    # This searches for sulfur with one attached hydrogen and a connection to a carbon atom
-    thiol_pattern = Chem.MolFromSmarts("[SX2][H]C")
-    
-    if not mol.HasSubstructMatch(thiol_pattern):
-        return False, "No thiol (-SH) group directly attached to carbon found"
-    
+    # Check for the presence of hydrogen, ensure the sulfur can be a thiol SH 
+    atom_with_hydrogen = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 16 and atom.GetTotalNumHs() > 0]
+    if not atom_with_hydrogen:
+        return False, "Sulfur not bonded with a hydrogen atom, not a thiol"
+
     return True, "Contains alkanethiol pattern with -SH group attached to carbon"
 
 # Example usage
