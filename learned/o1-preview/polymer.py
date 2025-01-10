@@ -6,12 +6,11 @@ Classifies: polymer
 """
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
-from rdkit.Chem import rdFMCS
 
 def is_polymer(smiles: str):
     """
     Determines if a molecule is a polymer based on its SMILES string.
-    A polymer is a macromolecule composed of repeating units connected in a chain.
+    A polymer is characterized by high molecular weight and large size due to repeating units.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,50 +20,83 @@ def is_polymer(smiles: str):
         str: Reason for classification
     """
 
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+    # Parse SMILES with error handling
+    try:
+        mol = Chem.MolFromSmiles(smiles, sanitize=True)
+        if mol is None:
+            return False, "Invalid SMILES string"
+    except Chem.rdchem.KekulizeException as e:
+        return False, f"SMILES Parsing Error: {str(e)}"
+    except Exception as e:
+        return False, f"SMILES Parsing Error: {str(e)}"
 
-    # Remove counter ions and small fragments
-    mol = Chem.GetMolFrags(mol, asMols=True, sanitizeFrags=True)
-    if len(mol) == 0:
+    # Remove counter ions and small fragments, keep the largest fragment
+    frags = Chem.GetMolFrags(mol, asMols=True, sanitizeFrags=True)
+    if not frags:
         return False, "No valid molecular fragments found"
-    elif len(mol) > 1:
-        # Choose the largest fragment
-        mol = max(mol, key=lambda m: m.GetNumAtoms())
+    elif len(frags) > 1:
+        mol = max(frags, key=lambda m: m.GetNumAtoms())
     else:
-        mol = mol[0]
+        mol = frags[0]
 
-    # Analyze the molecule for repeating units
-    # Break single bonds to try to find repeating units
-    bonds = mol.GetBonds()
-    repeating_unit = None
-    max_repeat_count = 0
+    # Calculate molecular weight
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    # Count number of atoms
+    num_atoms = mol.GetNumAtoms()
+    # Count number of rotatable bonds
+    num_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
 
-    for bond in bonds:
-        # Clone the molecule
-        mol_clone = Chem.RWMol(mol)
-        idx = bond.GetIdx()
-        # Remove the bond
-        mol_clone.RemoveBond(bond.GetBeginAtomIdx(), bond.GetEndAtomIdx())
-        # Get the fragments
-        frags = Chem.GetMolFrags(mol_clone, asMols=True)
-        if len(frags) < 2:
-            continue
-        # Try to find identical fragments
-        frag_smiles = [Chem.MolToSmiles(frag) for frag in frags]
-        frag_counts = {}
-        for fs in frag_smiles:
-            frag_counts[fs] = frag_counts.get(fs, 0) + 1
-        # Identify the most common fragment
-        common_frag = max(frag_counts, key=frag_counts.get)
-        count = frag_counts[common_frag]
-        if count > max_repeat_count:
-            max_repeat_count = count
-            repeating_unit = common_frag
+    # Set threshold values (these can be adjusted based on domain knowledge)
+    MW_THRESHOLD = 1000  # Molecular weight threshold in Daltons
+    ATOM_THRESHOLD = 100 # Number of atoms threshold
+    ROTATABLE_BOND_THRESHOLD = 20  # Number of rotatable bonds
 
-    if repeating_unit and max_repeat_count >= 5:
-        return True, f"Molecule has a repeating unit ({repeating_unit}) occurring {max_repeat_count} times, indicative of a polymer"
+    if mol_wt > MW_THRESHOLD and num_atoms > ATOM_THRESHOLD and num_rotatable > ROTATABLE_BOND_THRESHOLD:
+        return True, f"Molecule has high molecular weight ({mol_wt:.2f} Da), {num_atoms} atoms, and {num_rotatable} rotatable bonds, indicative of a polymer"
+    else:
+        reasons = []
+        if mol_wt <= MW_THRESHOLD:
+            reasons.append(f"Molecular weight ({mol_wt:.2f} Da) is below threshold ({MW_THRESHOLD} Da)")
+        if num_atoms <= ATOM_THRESHOLD:
+            reasons.append(f"Number of atoms ({num_atoms}) is below threshold ({ATOM_THRESHOLD})")
+        if num_rotatable <= ROTATABLE_BOND_THRESHOLD:
+            reasons.append(f"Number of rotatable bonds ({num_rotatable}) is below threshold ({ROTATABLE_BOND_THRESHOLD})")
+        reason_str = "; ".join(reasons)
+        return False, reason_str
 
-    return False, "No sufficient repeating units detected in the molecule"
+
+__metadata__ = {
+    'chemical_class': {
+        'id': None,
+        'name': 'polymer',
+        'definition': 'A polymer is a mixture, which is composed of macromolecules of different kinds and which may be differentiated by composition, length, degree of branching etc.',
+        'parents': []
+    },
+    'config': {
+        'llm_model_name': 'lbl/claude-sonnet',
+        'f1_threshold': 0.8,
+        'max_attempts': 5,
+        'max_positive_instances': None,
+        'max_positive_to_test': None,
+        'max_negative_to_test': None,
+        'max_positive_in_prompt': 50,
+        'max_negative_in_prompt': 20,
+        'max_instances_in_prompt': 100,
+        'test_proportion': 0.1
+    },
+    'message': None,
+    'attempt': 1,
+    'success': True,
+    'best': True,
+    'error': '',
+    'stdout': None,
+    'num_true_positives': None,
+    'num_false_positives': None,
+    'num_true_negatives': None,
+    'num_false_negatives': None,
+    'num_negatives': None,
+    'precision': None,
+    'recall': None,
+    'f1': None,
+    'accuracy': None
+}
