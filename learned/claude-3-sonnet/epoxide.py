@@ -24,38 +24,45 @@ def is_epoxide(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+        
+    # Try to sanitize the molecule
+    try:
+        Chem.SanitizeMol(mol)
+    except:
+        return False, "Could not sanitize molecule"
 
-    # Multiple SMARTS patterns to catch different epoxide representations
-    patterns = [
-        # Basic 3-membered ring with oxygen
-        "[O;R]1[C;R][C;R]1",
-        # Alternative representation
-        "C1OC1",
-        # Catch spiro cases
-        "[O;R]12[C]1[C]2"
-    ]
+    # SMARTS pattern for epoxide - a three-membered ring containing an oxygen
+    # [OX2r3] - oxygen with 2 connections in a 3-membered ring
+    # 1 - first connection point
+    # [#6r3] - any carbon in a 3-membered ring
+    # [#6r3] - second carbon in a 3-membered ring
+    # The whole pattern must form a 3-membered ring
+    epoxide_pattern = Chem.MolFromSmarts('[OX2r3]1[#6r3][#6r3]1')
     
-    for pattern in patterns:
-        epoxide_pattern = Chem.MolFromSmarts(pattern)
-        if mol.HasSubstructMatch(epoxide_pattern):
-            matches = mol.GetSubstructMatches(epoxide_pattern)
-            
-            for match in matches:
-                # Get the atoms in the potential epoxide
-                atoms = [mol.GetAtomWithIdx(idx) for idx in match]
-                
-                # Verify it's a 3-membered ring
-                ring_info = mol.GetRingInfo()
-                
-                # Check if these atoms form a 3-membered ring
-                for ring in ring_info.AtomRings():
-                    if all(atom.GetIdx() in ring for atom in atoms) and len(ring) == 3:
-                        # Verify one atom is oxygen and others are carbons
-                        atom_types = [atom.GetAtomicNum() for atom in atoms]
-                        if 8 in atom_types:  # 8 is atomic number for oxygen
-                            return True, "Contains epoxide group (3-membered ring with oxygen)"
+    if epoxide_pattern is None:
+        return False, "Error in SMARTS pattern"
     
-    return False, "No epoxide group found (3-membered ring with oxygen)"
+    # Look for matches with stereochemistry consideration
+    matches = mol.GetSubstructMatches(epoxide_pattern, useChirality=True)
+    
+    if not matches:
+        return False, "No epoxide group found"
+        
+    # Verify each match is actually a 3-membered ring containing an oxygen
+    ring_info = mol.GetRingInfo()
+    for match in matches:
+        # Get the ring size for these atoms
+        rings = ring_info.AtomRings()
+        for ring in rings:
+            if all(idx in ring for idx in match):
+                if len(ring) == 3:  # Confirm it's a 3-membered ring
+                    # Verify one atom is oxygen and others are carbons
+                    atoms = [mol.GetAtomWithIdx(idx) for idx in match]
+                    atom_types = [atom.GetAtomicNum() for atom in atoms]
+                    if atom_types.count(8) == 1:  # One oxygen
+                        return True, "Contains epoxide group (3-membered ring with oxygen)"
+    
+    return False, "No valid epoxide group found"
 
 __metadata__ = {
     'chemical_class': {
