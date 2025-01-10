@@ -2,13 +2,12 @@
 Classifies: CHEBI:73011 germacranolide
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_germacranolide(smiles: str):
     """
     Determines if a molecule is a germacranolide based on its SMILES string.
-    Germacranolides are sesquiterpene lactones with a cyclodecene framework
-    and a lactone group.
+    Germacranolides are a subclass of sesquiterpene lactones typically having
+    a multi-ring system including a cyclodecadiene and a lactone group.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -18,37 +17,29 @@ def is_germacranolide(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for a 10-membered ring
-    ring_info = mol.GetRingInfo()
-    found_10_membered_ring = False
-    for ring in ring_info.AtomRings():
-        if len(ring) == 10:
-            found_10_membered_ring = True
-            break
-
-    if not found_10_membered_ring:
-        return False, "No 10-membered ring found, typical for germacranolide"
-
-    # Look for a lactone group (cyclic ester with at least one =O in C=O)
-    lactone_pattern = Chem.MolFromSmarts("O=C1OC=CC=CC=CC(C)=CC1")
-    if not mol.HasSubstructMatch(lactone_pattern):
+    # Check cyclic ester (lactone); 5 or 6-membered rings are typical in germacranolides
+    lactone_patterns = [
+        Chem.MolFromSmarts("O=C1OC=CC=CC=CC1"),  # generic lactone within a polycyclic framework
+        Chem.MolFromSmarts("O=C1COC=CC=CC1")  # variation for different stereochemistry or substitution
+    ]
+    
+    if not any(mol.HasSubstructMatch(pattern) for pattern in lactone_patterns):
         return False, "Lactone group not found"
+    
+    # Ensure some form of a decane or fused multi-ring system is present
+    ring_info = mol.GetRingInfo()
+    has_large_ring = any(len(ring) >= 10 for ring in ring_info.AtomRings())
+    if not has_large_ring:
+        return False, "No large ring system characteristic of germacranolides found"
 
-    # Check for multiple double bonds
-    num_double_bonds = rdMolDescriptors.CalcNumDoubleBonds(mol)
+    # Check multiple different double bonds present in the structure, indicating poly-unsaturation
+    num_double_bonds = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE)
     if num_double_bonds < 2:
         return False, "Insufficient double bonds, typical germacranolides are polyunsaturated"
-
-    # Assess presence of oxygen functionalities: hydroxyl and ester groups
-    oxy_patterns = [Chem.MolFromSmarts("C=O"), Chem.MolFromSmarts("O[C@H]"), Chem.MolFromSmarts("O[C@@H]")]
-    for pattern in oxy_patterns:
-        if not mol.HasSubstructMatch(pattern):
-            return False, "Unmatched oxygen functionalities"
-
+    
     # Passed all checks: likely a germacranolide
     return True, "Matches typical structure of a germacranolide"
