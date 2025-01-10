@@ -32,7 +32,8 @@ def is_monoterpenoid_indole_alkaloid(smiles: str):
         Chem.MolFromSmarts("[nH]1ccc2c1c([*])ccc2"),  # Substituted indole
         Chem.MolFromSmarts("[nH]1ccc2c1c3ccccc32"),  # Fused ring system
         Chem.MolFromSmarts("[nH]1ccc2c1c3cc([*])cc32"),  # Fused and substituted
-        Chem.MolFromSmarts("[nH]1ccc2c1c3c([*])cccc32")  # Fused and substituted
+        Chem.MolFromSmarts("[nH]1ccc2c1c3c([*])cccc32"),  # Fused and substituted
+        Chem.MolFromSmarts("[nH]1ccc2c1c3c([*])cc([*])c32")  # Fused and multiple substitutions
     ]
     
     has_indole = any(mol.HasSubstructMatch(pattern) for pattern in indole_patterns)
@@ -44,7 +45,9 @@ def is_monoterpenoid_indole_alkaloid(smiles: str):
     terpenoid_patterns = [
         Chem.MolFromSmarts("[C;!$(C=O)]~[C;!$(C=O)]~[C;!$(C=O)]~[C;!$(C=O)]~[C;!$(C=O)]~[C;!$(C=O)]~[C;!$(C=O)]~[C;!$(C=O)]"),  # Linear
         Chem.MolFromSmarts("[C;!$(C=O)]1~[C;!$(C=O)]~[C;!$(C=O)]~[C;!$(C=O)]~[C;!$(C=O)]~[C;!$(C=O)]~[C;!$(C=O)]1"),  # Cyclic
-        Chem.MolFromSmarts("[C;!$(C=O)](~[C;!$(C=O)])(~[C;!$(C=O)])~[C;!$(C=O)]~[C;!$(C=O)]~[C;!$(C=O)]~[C;!$(C=O)]")  # Branched
+        Chem.MolFromSmarts("[C;!$(C=O)](~[C;!$(C=O)])(~[C;!$(C=O)])~[C;!$(C=O)]~[C;!$(C=O)]~[C;!$(C=O)]~[C;!$(C=O)]"),  # Branched
+        Chem.MolFromSmarts("[C;!$(C=O)]1~[C;!$(C=O)]~[C;!$(C=O)]~[C;!$(C=O)]~[C;!$(C=O)]~[C;!$(C=O)]~[C;!$(C=O)]~[C;!$(C=O)]1"),  # Larger cyclic
+        Chem.MolFromSmarts("[C;!$(C=O)](~[C;!$(C=O)])(~[C;!$(C=O)])~[C;!$(C=O)]~[C;!$(C=O)]~[C;!$(C=O)]~[C;!$(C=O)]~[C;!$(C=O)]")  # Larger branched
     ]
     
     has_terpenoid = any(mol.HasSubstructMatch(pattern) for pattern in terpenoid_patterns)
@@ -72,7 +75,9 @@ def is_monoterpenoid_indole_alkaloid(smiles: str):
     linker_patterns = [
         Chem.MolFromSmarts("[nH]1ccc2c1cccc2~[*]~[C;!$(C=O)]"),  # Direct connection
         Chem.MolFromSmarts("[nH]1ccc2c1cccc2~[*]~[O,N]~[*]~[C;!$(C=O)]"),  # Through O or N
-        Chem.MolFromSmarts("[nH]1ccc2c1cccc2~[*]~[C;!$(C=O)]~[*]~[C;!$(C=O)]")  # Through C chain
+        Chem.MolFromSmarts("[nH]1ccc2c1cccc2~[*]~[C;!$(C=O)]~[*]~[C;!$(C=O)]"),  # Through C chain
+        Chem.MolFromSmarts("[nH]1ccc2c1cccc2~[*]~[O,N]~[*]~[C;!$(C=O)]~[*]~[C;!$(C=O)]"),  # Longer chain
+        Chem.MolFromSmarts("[nH]1ccc2c1cccc2~[*]~[C;!$(C=O)]~[*]~[O,N]~[*]~[C;!$(C=O)]")  # Alternate connection
     ]
     
     has_linker = any(mol.HasSubstructMatch(pattern) for pattern in linker_patterns)
