@@ -2,13 +2,12 @@
 Classifies: CHEBI:25029 leukotriene
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_leukotriene(smiles: str):
     """
     Determines if a molecule is a leukotriene based on its SMILES string.
-    Leukotrienes are characterized by a conjugated polyene structure, typically
-    derived from arachidonic acid, with some hydroxyl or carboxyl groups.
+    Leukotrienes feature conjugated polyene structures typically derived from
+    arachidonic acid and are often associated with hydroxyl or carboxyl groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,29 +21,32 @@ def is_leukotriene(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Count carbon atoms (Expecting 20 for leukotrienes)
+    # Flexible carbon count (around 20 is typical but not rigid)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count != 20:
-        return False, f"Carbon count mismatch: found {c_count} carbons, expected 20"
+    if not (18 <= c_count <= 26):
+        return False, f"Unusual carbon count: found {c_count} carbons"
 
-    # Detect conjugated double bonds (at least 3 consecutive double bonds)
-    # Simplified assumption here: we are looking for a common pattern of conjugated dienes
-    conjugated_diene_pattern = Chem.MolFromSmarts("C=C-C=C")
-    conjugated_diene_matches = mol.GetSubstructMatches(conjugated_diene_pattern)
-    if len(conjugated_diene_matches) < 3:
-        return False, "Lacking sufficient conjugated double bond structures"
+    # Detect various configurations of conjugated double bonds
+    conjugated_patterns = [
+        Chem.MolFromSmarts("C=C-C=C-C=C"),
+        Chem.MolFromSmarts("C=C-C=C-C=C-C=C"),
+        Chem.MolFromSmarts("C=C-C-C=C-C=C")
+    ]
+    if not any(mol.HasSubstructMatch(pattern) for pattern in conjugated_patterns):
+        return False, "No suitable conjugated double bond pattern found"
 
-    # Check for a carboxyl group (COOH)
-    carboxyl_pattern = Chem.MolFromSmarts("C(=O)O")
-    if not mol.HasSubstructMatch(carboxyl_pattern):
-        return False, "No carboxyl group (COOH) detected"
+    # Check for at least one carboxyl group (COOH) or carboxylate ion (COO-)
+    carboxyl_patterns = [Chem.MolFromSmarts("C(=O)O"), Chem.MolFromSmarts("C(=O)[O-]")]
+    if not any(mol.HasSubstructMatch(pattern) for pattern in carboxyl_patterns):
+        return False, "No carboxyl group (COOH or COO-) detected"
 
-    # (Optional) Check for alcohol groups: -OH
-    alcohol_pattern = Chem.MolFromSmarts("[CX4][OX2H]")
-    if not mol.HasSubstructMatch(alcohol_pattern):
-        return False, "No hydroxyl group (OH) detected"
+    # Allow for multiple hydroxyl groups
+    hydroxyl_pattern = Chem.MolFromSmarts("[CX4][OX2H]")
+    alcohol_count = len(mol.GetSubstructMatches(hydroxyl_pattern))
+    if alcohol_count == 0:
+        return False, "No hydroxyl group (OH) found"
 
-    # Check for sulfur atom in cases of cysteinyl leukotrienes like LTC4
+    # Presence of sulfur is optional for cysteinyl leukotrienes like LTC4
     sulfur_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 16)
     if sulfur_count > 0:
         return True, "Classes as cysteinyl leukotriene with sulfur present"
