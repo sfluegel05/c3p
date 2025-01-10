@@ -24,11 +24,14 @@ def is_saturated_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
+    # Remove isotopes and explicit hydrogens for substructure matching
+    mol = Chem.MolFromSmiles(Chem.MolToSmiles(mol))
+
     # Check for carboxylic acid group (-C(=O)OH)
-    carboxylic_acid_pattern = Chem.MolFromSmarts('[CX3](=O)[OX1H1]')
+    carboxylic_acid_pattern = Chem.MolFromSmarts('[CX3](=O)[OX1H0]')
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
-    
+
     # Check for carbon-carbon multiple bonds (unsaturation)
     for bond in mol.GetBonds():
         atom1 = bond.GetBeginAtom()
@@ -39,10 +42,35 @@ def is_saturated_fatty_acid(smiles: str):
             if bond.GetBondTypeAsDouble() > 1.0:
                 return False, "Contains carbon-carbon multiple bonds (unsaturation)"
     
-    # Optional: Check for sufficient carbon chain length (e.g., at least 3 carbons)
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 3:
-        return False, f"Carbon chain too short for fatty acid (found {c_count} carbons)"
+    # Count number of carbons in the main chain
+    # Extract the carboxylic acid carbon
+    carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
+    if not carboxylic_acid_matches:
+        return False, "No carboxylic acid group found"
+    else:
+        carboxylic_acid_carbon_idx = carboxylic_acid_matches[0][0]
+
+    # Use a BFS to find the longest carbon chain starting from the carboxylic acid carbon
+    visited = set()
+    max_chain_length = 0
+    from collections import deque
+    queue = deque([(carboxylic_acid_carbon_idx, 0)])
+    while queue:
+        atom_idx, length = queue.popleft()
+        if atom_idx in visited:
+            continue
+        visited.add(atom_idx)
+        atom = mol.GetAtomWithIdx(atom_idx)
+        if atom.GetAtomicNum() == 6:
+            max_chain_length = max(max_chain_length, length)
+            for neighbor in atom.GetNeighbors():
+                neighbor_idx = neighbor.GetIdx()
+                if neighbor_idx not in visited:
+                    queue.append((neighbor_idx, length + 1))
+    
+    # A fatty acid typically has at least 3 carbons in the chain excluding the carboxyl carbon
+    if max_chain_length < 3:
+        return False, f"Carbon chain too short for fatty acid (found {max_chain_length} carbons)"
     
     return True, "Molecule is a saturated fatty acid"
 
@@ -66,18 +94,9 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 0,
+    'attempt': 1,
     'success': True,
     'best': True,
     'error': '',
-    'stdout': None,
-    'num_true_positives': 150,
-    'num_false_positives': 4,
-    'num_true_negatives': 182407,
-    'num_false_negatives': 23,
-    'num_negatives': None,
-    'precision': 0.974025974025974,
-    'recall': 0.8670520231213873,
-    'f1': 0.9174311926605504,
-    'accuracy': 0.9998521228585199
+    'stdout': None
 }
