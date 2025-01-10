@@ -6,8 +6,7 @@ from rdkit import Chem
 def is_tetrachlorobenzene(smiles: str):
     """
     Determines if a molecule is a tetrachlorobenzene based on its SMILES string.
-    A tetrachlorobenzene is defined as a molecule containing one or more benzene rings,
-    where one of the rings has exactly four chlorine substituents attached at any positions.
+    A tetrachlorobenzene is defined as a benzene ring carrying four chloro groups at unspecified positions.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -17,32 +16,30 @@ def is_tetrachlorobenzene(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES to a molecule object
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return None, "Invalid SMILES string"
+        return False, "Invalid SMILES string"
 
-    # Substructure query for aromatic ring with four chlorine substitutions
-    # This pattern allows for arbitrary positioning on benzene rings 
-    benzene_query = Chem.MolFromSmarts("c1ccccc1")
-    all_benzene_rings = mol.GetSubstructMatches(benzene_query)
+    # Find benzene rings in the molecule
+    benzene_pattern = Chem.MolFromSmarts("c1ccccc1")
+    benzene_rings = mol.GetSubstructMatches(benzene_pattern)
     
-    # Iterate over each benzene ring detected
-    for ring in all_benzene_rings:
-        chlorine_attached_count = 0
+    if not benzene_rings:
+        return False, "No benzene rings found"
+
+    # Check for chlorine atoms attached to each benzene ring
+    for ring in benzene_rings:
+        chlorine_count = sum(1 for atom_idx in ring if mol.GetAtomWithIdx(atom_idx).GetSymbol() == 'Cl')
+        
+        # Count chlorines directly connected to the benzene ring
         for atom_idx in ring:
             atom = mol.GetAtomWithIdx(atom_idx)
-            # Check neighbors of aromatic carbon atoms in the ring
             for neighbor in atom.GetNeighbors():
-                if neighbor.GetAtomicNum() == 17:  # Atomic number of Chlorine is 17
-                    chlorine_attached_count += 1
-
-        # Check for exactly four chlorine atoms on this aromatic ring
-        if chlorine_attached_count == 4:
+                if neighbor.GetSymbol() == 'Cl' and neighbor.GetIdx() not in ring:
+                    chlorine_count += 1
+        
+        if chlorine_count == 4:
             return True, "Benzene ring with exactly four chloro groups found"
-    
+        
     return False, "No benzene ring with exactly four chloro groups found"
-
-# Example usage
-smiles = "Clc1cc(Cl)c(Cl)c(Cl)c1"  # Example SMILES for testing
-print(is_tetrachlorobenzene(smiles))
