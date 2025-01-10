@@ -26,50 +26,59 @@ def is_3_oxo_fatty_acyl_CoA_4__(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for Coenzyme A moiety (pantetheine + adenosine diphosphate)
-    # Using a SMARTS pattern that matches the CoA structure without the terminal thiol group
-    coa_smarts = Chem.MolFromSmarts("""
-        [NH2][C](=O)[C][C][NH][C](=O)[C@@H]([O])[C]([C])([C])[C][OP](=O)([O-])[O][P](=O)([O-])[O][C][C@@H]1[O][C@@H]([n]2[c][n][c]3[c][n][c]([NH2])[n][c]23)[C@@H]([O])[C@@H]1[OP](=O)([O-])[O-]
-    """)
-    if not mol.HasSubstructMatch(coa_smarts):
+    # Coenzyme A moiety SMILES (deprotonated form)
+    coa_smiles = 'NC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)([O-])OP(=O)([O-])OCC1OC(n2cnc3c(N)ncnc23)C(O)C1OP(=O)([O-])[O-]'
+    coa_mol = Chem.MolFromSmiles(coa_smiles)
+    if coa_mol is None:
+        return False, "Invalid CoA SMILES pattern"
+
+    # Check for Coenzyme A moiety
+    if not mol.HasSubstructMatch(coa_mol):
         return False, "Coenzyme A moiety not found"
 
-    # Find the thioester linkage: C(=O)-S-
-    thioester_smarts = Chem.MolFromSmarts('C(=O)S')
-    thioester_matches = mol.GetSubstructMatches(thioester_smarts)
+    # Find thioester linkage: C(=O)-S-C (between acyl chain and CoA)
+    thioester_smarts = 'C(=O)SC'
+    thioester_mol = Chem.MolFromSmarts(thioester_smarts)
+    if thioester_mol is None:
+        return False, "Invalid thioester SMARTS pattern"
+
+    thioester_matches = mol.GetSubstructMatches(thioester_mol)
     if not thioester_matches:
         return False, "Thioester linkage not found"
 
     # For each thioester linkage found
     for match in thioester_matches:
-        carbonyl_c_idx = match[0]
-        sulfur_idx = match[1]
+        carbonyl_c_idx = match[0]  # C in C(=O)
+        sulfur_idx = match[2]      # S in C-S-C
+        beta_c = None
+        gamma_c = None
 
-        # Get the alpha carbon (next carbon in acyl chain)
+        # Get the alpha carbon (adjacent to carbonyl carbon in acyl chain)
         alpha_c = None
         carbonyl_c = mol.GetAtomWithIdx(carbonyl_c_idx)
         for neighbor in carbonyl_c.GetNeighbors():
-            if neighbor.GetIdx() != sulfur_idx and neighbor.GetAtomicNum() == 6:
+            if neighbor.GetIdx() != match[1] and neighbor.GetAtomicNum() == 6:
                 alpha_c = neighbor
                 break
         if alpha_c is None:
             continue  # Can't find alpha carbon, move to next match
 
-        # Get the beta carbon (second carbon in acyl chain)
-        beta_c = None
+        # Get the beta carbon (next carbon in acyl chain)
         for neighbor in alpha_c.GetNeighbors():
-            if neighbor.GetIdx() != carbonyl_c_idx and neighbor.GetAtomicNum() == 6:
+            if neighbor.GetIdx() != carbonyl_c.GetIdx() and neighbor.GetAtomicNum() == 6:
                 beta_c = neighbor
                 break
         if beta_c is None:
             continue  # Can't find beta carbon, move to next match
 
-        # Check if the beta carbon has a carbonyl group (C=O)
+        # Check if the beta carbon has a carbonyl group (C=O) attached (3-oxo group)
         has_beta_keto = False
         for neighbor in beta_c.GetNeighbors():
-            if neighbor.GetAtomicNum() == 8 and beta_c.GetBondBetween(beta_c, neighbor).GetBondType() == Chem.rdchem.BondType.DOUBLE:
-                has_beta_keto = True
-                break
+            if neighbor.GetAtomicNum() == 8:
+                bond = beta_c.GetBondBetween(beta_c, neighbor)
+                if bond and bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                    has_beta_keto = True
+                    break
         if not has_beta_keto:
             continue  # Beta carbon does not have keto group, move to next match
 
