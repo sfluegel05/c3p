@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_beta_carbolines(smiles: str):
     """
     Determines if a molecule is a beta-carboline based on its SMILES string.
-    Beta-carbolines typically contain a 9H-pyrido[3,4-b]indole core structure.
+    Beta-carbolines typically contain a pyrido[3,4-b]indole or related structure.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,12 +21,12 @@ def is_beta_carbolines(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a beta-carboline core pattern (9H-pyrido[3,4-b]indole)
-    beta_carboline_pattern = Chem.MolFromSmarts("N1C=C2C3=C(C=CC=C3)C=CN=C2C=C1")
+    # Define a wider beta-carboline-like pattern potentially capturing variations
+    beta_carboline_pattern = Chem.MolFromSmarts("c1ccc2c(c1)[nH]c3cccnc23")
 
     # Check if the molecule contains the beta-carboline core structure
     if mol.HasSubstructMatch(beta_carboline_pattern):
-        return True, "Contains beta-carboline (9H-pyrido[3,4-b]indole) core structure"
+        return True, "Contains beta-carboline (9H-pyrido[3,4-b]indole or similar) core structure"
     else:
         return False, "Missing beta-carboline core structure"
 
