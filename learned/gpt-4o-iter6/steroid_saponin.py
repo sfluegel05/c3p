@@ -23,24 +23,24 @@ def is_steroid_saponin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # SMARTS pattern for a generic steroid backbone (simplified)
-    steroid_pattern = Chem.MolFromSmarts("C1CCC2(CC1)C3C4CCC(C4)C4C(C3)C(C2)C4")
+    # Enhanced SMARTS pattern for the steroid backbone (including variations)
+    steroid_pattern = Chem.MolFromSmarts("[#6]1-[#6](-[#6]2-[#6](-[#6](-[#6]3-[#6]-[#6]-[#6](-[#6]-3)-[#6]4-[#6]-[#6]-[#6](-[#6]-1)-[#6]-4)-[#6]-2)-[#6])")
     
-    # Verify steroid backbone
+    # Verify steroid backbone presence
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
     
-    # SMARTS pattern for sugars, such as glucose, (simplified)
-    sugar_pattern = Chem.MolFromSmarts("O[C@H]1[C@@H](O)[C@H](O)[C@@H](O)[C@H]1O")
+    # SMARTS pattern for sugars, targeting beta-D-glucopyranoside-type connections
+    sugar_pattern = Chem.MolFromSmarts("[OX2H][C@H]1[C@@H]([OX2H])[C@@H]([OX2H])[C@H]([OX2H])[C@H]1[OX2H]")
     
-    # Find attached sugar moieties
+    # Finding attached sugar moieties
     sugar_matches = mol.GetSubstructMatches(sugar_pattern)
-    if not sugar_matches:
+    if len(sugar_matches) == 0:
         return False, "No sugar moieties attached"
     
-    # Check for hydroxyl groups on the steroid core
-    hydroxy_pattern = Chem.MolFromSmarts("CC(O)C")  # Simplified, looking for C-C(O)
+    # Check for hydroxyl groups on the steroid core - various positions
+    hydroxy_pattern = Chem.MolFromSmarts("C(C)(C)O")
     if not mol.HasSubstructMatch(hydroxy_pattern):
-        return False, "Steroid core lacks hydroxyl group"
-
+        return False, "Steroid core lacks hydroxyl groups"
+    
     return True, "Contains a hydroxysteroid backbone with attached sugar moieties consistent with a steroid saponin"
