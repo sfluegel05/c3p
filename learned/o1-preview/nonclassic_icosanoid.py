@@ -25,71 +25,63 @@ def is_nonclassic_icosanoid(smiles: str):
 
     # Count the number of carbon atoms
     num_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if num_carbons != 20:
-        return False, f"Molecule has {num_carbons} carbons, expected exactly 20 carbons"
+    if num_carbons < 18 or num_carbons > 24:
+        return False, f"Molecule has {num_carbons} carbons, expected between 18 and 24 carbons"
 
-    # Check for terminal carboxylic acid group (-COOH)
-    carboxylic_acid_pattern = Chem.MolFromSmarts('C(=O)[O;H1]')
-    matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
+    # Check for terminal carboxylic acid group (-COOH) or derivative
+    carboxylic_acid_pattern = Chem.MolFromSmarts('C(=O)[O;H1,H0]')
+    ester_pattern = Chem.MolFromSmarts('C(=O)O[C]')
+    if not mol.HasSubstructMatch(carboxylic_acid_pattern) and not mol.HasSubstructMatch(ester_pattern):
+        return False, "No terminal carboxylic acid group or ester found"
 
-    terminal_carboxylic_acid = False
-    for match in matches:
-        # Check if carboxylic acid is at the end of a chain (terminal)
-        idx = match[0]  # carbonyl carbon
-        atom = mol.GetAtomWithIdx(idx)
-        neighbors = atom.GetNeighbors()
-        for neighbor in neighbors:
-            if neighbor.GetAtomicNum() == 6:  # carbon
-                # Check if neighbor carbon is terminal (has only one heavy neighbor)
-                heavy_neighbors = [n for n in neighbor.GetNeighbors() if n.GetAtomicNum() > 1]
-                if len(heavy_neighbors) <= 2:
-                    terminal_carboxylic_acid = True
-                    break
-        if terminal_carboxylic_acid:
+    # Check for oxygenated functional groups (hydroxyl, epoxide, peroxide, ether, ketone)
+    oxy_funcs = ['[OX2H]', '[OX2]', '[OX1]', 'C=O']
+    has_oxygenation = False
+    for func in oxy_funcs:
+        pattern = Chem.MolFromSmarts(func)
+        if mol.HasSubstructMatch(pattern):
+            has_oxygenation = True
             break
+    if not has_oxygenation:
+        return False, "No oxygenated functional groups found"
 
-    if not terminal_carboxylic_acid:
-        return False, "No terminal carboxylic acid group found"
-
-    # Check for oxygenated functional groups (hydroxyl, epoxide)
-    hydroxyl_pattern = Chem.MolFromSmarts('[OX2H]')
-    epoxide_pattern = Chem.MolFromSmarts('[C;!R][C;R1]1[O;R1][C;R1]1[C;!R]')  # Epoxide attached to chain
-    ketone_pattern = Chem.MolFromSmarts('C(=O)[C;!$(C(=O))]')  # Ketone
-
-    has_hydroxyl = mol.HasSubstructMatch(hydroxyl_pattern)
-    has_epoxide = mol.HasSubstructMatch(epoxide_pattern)
-    has_ketone = mol.HasSubstructMatch(ketone_pattern)
-
-    if not (has_hydroxyl or has_epoxide or has_ketone):
-        return False, "No hydroxyl, epoxide, or ketone functional groups found"
-
-    # Ensure there are at least two oxygen atoms in addition to carboxylic acid
+    # Ensure there are additional oxygen atoms besides carboxylic acid or ester
     num_oxygen_atoms = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    num_oxygen_in_carboxyl = 2  # From the terminal carboxylic acid
-    if num_oxygen_atoms - num_oxygen_in_carboxyl < 1:
-        return False, "Not enough additional oxygen atoms in functional groups"
+    num_oxygen_required = 3  # At least 3 oxygen atoms including carboxyl
+    if num_oxygen_atoms < num_oxygen_required:
+        return False, f"Molecule has {num_oxygen_atoms} oxygen atoms, expected at least {num_oxygen_required}"
 
-    # Check that molecule is mostly linear (no rings except epoxides)
+    # Check that molecule is mostly linear (no large rings except possible epoxides)
     ring_info = mol.GetRingInfo()
     num_rings = ring_info.NumRings()
     if num_rings > 0:
-        # Check if all rings are epoxides (three-membered rings with one oxygen)
+        # Allow only 3-membered (epoxide) rings
         for ring in ring_info.AtomRings():
-            ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
-            if len(ring) != 3:
-                return False, "Molecule contains non-epoxide rings"
-            num_oxygen_in_ring = sum(1 for atom in ring_atoms if atom.GetAtomicNum() == 8)
-            if num_oxygen_in_ring != 1:
-                return False, "Molecule contains non-epoxide rings"
+            if len(ring) > 3:
+                return False, "Molecule contains rings larger than epoxides"
 
-    # Exclude prostanoids (must not contain cyclopentane ring with adjacent oxygenated groups)
-    prostanoid_pattern = Chem.MolFromSmarts('C1C(CCC1)C(=O)')  # Cyclopentane ring with ketone
+    # Exclude prostanoids (contains cyclopentane ring fused into the chain)
+    prostanoid_pattern = Chem.MolFromSmarts('C1CCCC1')
     if mol.HasSubstructMatch(prostanoid_pattern):
         return False, "Molecule matches prostanoid pattern (possible prostanoid)"
 
-    # Exclude leukotrienes (conjugated triene system from C5 to C12)
-    leukotriene_pattern = Chem.MolFromSmarts('C=CC=CC=CC=CC(=O)O')  # Simplified pattern
+    # Exclude leukotrienes (specific conjugated triene system)
+    leukotriene_pattern = Chem.MolFromSmarts('C=CC=CC=CC=CC(=O)')
     if mol.HasSubstructMatch(leukotriene_pattern):
         return False, "Molecule matches leukotriene pattern (possible leukotriene)"
 
+    # Check for long hydrocarbon chain
+    chain_pattern = Chem.MolFromSmarts('C' + ('C' * 10))
+    if not mol.HasSubstructMatch(chain_pattern):
+        return False, "Molecule does not contain a long hydrocarbon chain"
+
     return True, "Molecule is a nonclassic icosanoid"
+
+__metadata__ = {
+    'chemical_class': {
+        'id': None,
+        'name': 'nonclassic icosanoid',
+        'definition': 'Any biologically active signalling molecule made by oxygenation of C20 fatty acids other than the classic icosanoids (the leukotrienes and the prostanoids).',
+        'parents': []
+    }
+}
