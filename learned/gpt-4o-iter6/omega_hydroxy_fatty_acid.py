@@ -2,13 +2,12 @@
 Classifies: CHEBI:10615 omega-hydroxy fatty acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import AllChem
 
 def is_omega_hydroxy_fatty_acid(smiles: str):
     """
     Determines if a molecule is an omega-hydroxy fatty acid based on its SMILES string.
-    An omega-hydroxy fatty acid is characterized by a carboxyl group at position 1
-    and a hydroxyl group at the omega (last) position.
+    An omega-hydroxy fatty acid has a carboxyl group at position 1 and a hydroxyl group at the last position along a linear chain.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,30 +21,23 @@ def is_omega_hydroxy_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Identify carboxyl group ('C(=O)O') at the beginning
+    # Find the longest chain in the structure
+    longest_chain = Chem.rdmolops.GetLongestPath(mol)
+    if not longest_chain or len(longest_chain) < 8:
+        return False, "The main hydrocarbon chain is too short (<8 carbons)."
+
+    # Check if there's a carboxyl group (COOH) at position 1
     carboxyl_pattern = Chem.MolFromSmarts("C(=O)O")
     carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
-    if not carboxyl_matches or carboxyl_matches[0][0] != 0:
-        return False, "No terminal carboxyl group found"
+    if not carboxyl_matches or carboxyl_matches[0][0] != longest_chain[0]:
+        return False, "No terminal carboxyl group found at the start of the chain."
 
-    # Identify potential terminal hydroxyl (OH)
-    hydroxyl_pattern = Chem.MolFromSmarts("[C]O")
+    # Check if there's a hydroxyl group (OH) at the last position
+    hydroxyl_pattern = Chem.MolFromSmarts("CO")
     hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-
-    # Determine the terminal hydroxyl, ensure it is at the end of the longest chain
-    longest_chain_length = rdMolDescriptors.CalcNumAtoms(mol, onlyHeavy=True)
-    terminal_hydroxyl = False
-    for match in hydroxyl_matches:
-        if match[0] == longest_chain_length - 1:  # Check if it's at the end
-            terminal_hydroxyl = True
-            break
+    terminal_hydroxyl = any(match[1] == longest_chain[-1] for match in hydroxyl_matches)
 
     if not terminal_hydroxyl:
-        return False, "No terminal omega-hydroxyl group found"
+        return False, "No terminal omega-hydroxyl group found at the end of the chain."
 
-    # Ensure linearity: check if the hydrocarbon chain is mainly linear
-    # This assumes the molecule must have a primary chain longer than a minimal size
-    if longest_chain_length < 8:  # A usual minimum for definition
-        return False, "Chain length too short for omega fatty acid"
-
-    return True, "Matches omega-hydroxy fatty acid structure"
+    return True, "Molecule is an omega-hydroxy fatty acid: has terminal carboxyl and omega-hydroxyl groups on a linear chain."
