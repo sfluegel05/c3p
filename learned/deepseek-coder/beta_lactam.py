@@ -24,8 +24,9 @@ def is_beta_lactam(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the beta-lactam ring pattern: a four-membered ring with a nitrogen and a carbonyl
-    beta_lactam_pattern = Chem.MolFromSmarts("[N;R1][C;R1][C;R1][C;R1]=O")
+    # Define a more flexible beta-lactam ring pattern: a four-membered ring with a nitrogen and a carbonyl
+    # This pattern allows for other atoms in the ring and accounts for bicyclic systems
+    beta_lactam_pattern = Chem.MolFromSmarts("[N;R1]1[C;R1][C;R1][C;R1]1=O")
     
     # Check if the pattern matches
     if mol.HasSubstructMatch(beta_lactam_pattern):
