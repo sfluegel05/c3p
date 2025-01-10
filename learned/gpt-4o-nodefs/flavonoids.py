@@ -17,22 +17,19 @@ def is_flavonoids(smiles: str):
         str: Reason for classification
     """
     
-    # Parse the SMILES string
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Basic flavonoid structures - add more versions for comprehensive detection
-    # Flavones
-    flavone_pattern = Chem.MolFromSmarts("c1ccc2c(c1)oc(=O)cc2")
-    # Flavonols
+    # Define SMARTS patterns for flavonoid subclasses
+    flavone_pattern = Chem.MolFromSmarts("c1ccc2c(c1)oc(=O)cc2")  # Basic flavone structure
+    
+    # Other flavonoid patterns can be added here for more comprehensive detection...
     flavonol_pattern = Chem.MolFromSmarts("c1ccc2c(c1)c(=O)c3cc(O)ccc3o2")
-    # Isoflavones
     isoflavone_pattern = Chem.MolFromSmarts("c1ccc2c(c1)cc(=O)oc2c3ccc(c(c3)O)O")
-    # Flavanones
-    flavanone_pattern = Chem.MolFromSmarts("c1ccc2c(c1)oc(c2=O)CC")
 
-    # Check against each pattern individually
+    # Check for matching any of the flavonoid patterns
     if mol.HasSubstructMatch(flavone_pattern):
         return True, "Identified as flavone structure"
     
@@ -41,10 +38,7 @@ def is_flavonoids(smiles: str):
     
     if mol.HasSubstructMatch(isoflavone_pattern):
         return True, "Identified as isoflavone structure"
-    
-    if mol.HasSubstructMatch(flavanone_pattern):
-        return True, "Identified as flavanone structure"
 
-    # More patterns for other flavonoids can be added here for better coverage
-    
+    # Could add more checks for other subclasses of flavonoids
+
     return False, "No flavonoid pattern matched"
