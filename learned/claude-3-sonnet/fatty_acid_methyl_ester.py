@@ -33,60 +33,52 @@ def is_fatty_acid_methyl_ester(smiles: str):
     if not methyl_ester_matches:
         return False, "No methyl ester group found"
     
-    # Count number of methyl ester groups
-    num_methyl_esters = len(methyl_ester_matches)
-    if num_methyl_esters > 2:
-        return False, f"Too many methyl ester groups ({num_methyl_esters})"
+    # Must have exactly one methyl ester group
+    if len(methyl_ester_matches) != 1:
+        return False, f"Found {len(methyl_ester_matches)} methyl ester groups, need exactly 1"
     
-    # Get atoms in methyl ester group
-    ester_atoms = set()
-    for match in methyl_ester_matches:
-        ester_atoms.update(match)
+    # Count carbons
+    total_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    non_ester_carbons = total_carbons - 2  # Subtract carbons from methyl ester group
     
-    # Count rings and check their nature
-    ring_info = mol.GetRingInfo()
-    num_rings = ring_info.NumRings()
+    if non_ester_carbons < 4:
+        return False, "Carbon chain too short for fatty acid"
     
-    # Limit total number of rings
-    if num_rings > 3:
-        return False, "Too many ring systems for a fatty acid"
+    if non_ester_carbons > 30:
+        return False, "Carbon chain too long for typical fatty acid"
+        
+    # Check for reasonable molecular weight
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 100 or mol_wt > 500:
+        return False, f"Molecular weight {mol_wt:.1f} outside typical range for fatty acid methyl esters"
     
     # Check for aromatic rings
     num_aromatic_rings = rdMolDescriptors.CalcNumAromaticRings(mol)
     if num_aromatic_rings > 0:
         return False, "Fatty acid methyl esters should not contain aromatic rings"
     
-    # Count carbons and check chain
-    total_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    non_ester_carbons = total_carbons - (2 * num_methyl_esters)  # Subtract carbons from methyl ester groups
+    # Allow some rings (can have epoxy groups etc)
+    ring_info = mol.GetRingInfo()
+    if ring_info.NumRings() > 4:
+        return False, "Too many ring systems"
+        
+    # Check that the carbon attached to ester is sp2 (carbonyl)
+    ester_match = methyl_ester_matches[0]
+    carbonyl_carbon = mol.GetAtomWithIdx(ester_match[0])
+    if carbonyl_carbon.GetHybridization() != Chem.HybridizationType.SP2:
+        return False, "Ester carbon must be sp2 hybridized"
     
-    if non_ester_carbons < 3:
-        return False, "Carbon chain too short for fatty acid"
+    # Check for carbon chain attached to ester
+    carbon_chain_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2][CH3X4]~[#6]")
+    if not mol.HasSubstructMatch(carbon_chain_pattern):
+        return False, "No carbon chain attached to ester group"
     
-    if non_ester_carbons > 30:
-        return False, "Carbon chain too long for typical fatty acid"
-    
-    # Check for predominantly aliphatic character
-    num_sp3_carbons = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[CX4]")))
-    if num_sp3_carbons < (total_carbons * 0.5):
-        return False, "Not predominantly aliphatic"
-    
-    # Special case for dimethyl esters (like dimethyl sebacate)
-    if num_methyl_esters == 2:
-        # Check for reasonable chain length between esters
-        if non_ester_carbons < 6:
-            return False, "Chain too short for dicarboxylic acid"
-        return True, "Valid dimethyl ester of dicarboxylic acid"
-    
-    # Check for continuous carbon chain
-    longest_chain = rdMolDescriptors.CalcNumBonds(mol)
-    if longest_chain < 5:  # Minimum chain length including the ester group
-        return False, "No proper fatty acid chain"
-    
-    # Count heteroatoms (excluding the ester oxygens)
-    num_N = rdMolDescriptors.CalcNumLipinskiHBA(mol) - (2 * num_methyl_esters)
-    num_S = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[#16]")))
-    if num_N > 1 or num_S > 1:
-        return False, "Too many heteroatoms for a fatty acid"
-    
-    return True, "Contains methyl ester group with appropriate fatty acid chain"
+    # Allow various modifications (hydroxy, epoxy, peroxy, etc) but limit halogens
+    num_halogens = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[F,Cl,I]")))
+    num_Br = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[Br]")))
+    if num_halogens > 0 and num_Br == 0:  # Allow Br but not other halogens
+        return False, "Contains non-bromine halogens"
+    if num_Br > 1:
+        return False, "Contains too many bromine atoms"
+        
+    return True, "Contains single methyl ester group with appropriate fatty acid chain"
