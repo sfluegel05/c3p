@@ -21,29 +21,25 @@ def is_oligosaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Count the number of saccharide rings
-    ring_info = mol.GetRingInfo()
-    ring_count = ring_info.NumRings()
-
+    # Count the number of saccharide rings using pyranose (C1CCO1) or furanose (C1CO1) patterns
+    pyranose_pattern = Chem.MolFromSmarts("[C&R]1O[C&R][C&R][C&R][C&R]O1")
+    furanose_pattern = Chem.MolFromSmarts("[C&R]1O[C&R][C&R]O1")
+    
+    pyranose_matches = mol.GetSubstructMatches(pyranose_pattern)
+    furanose_matches = mol.GetSubstructMatches(furanose_pattern)
+    total_ring_matches = len(pyranose_matches) + len(furanose_matches)
+    
     # Count the number of oxygen atoms
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
 
-    # Count the number of carbon atoms
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-
-    # Check for glycosidic bonds (C-O-C patterns)
-    coc_pattern = Chem.MolFromSmarts("COC")
-    coc_matches = mol.GetSubstructMatches(coc_pattern)
+    # Count the number of glycosidic linkages (C-O-C patterns)
+    glycosidic_pattern = Chem.MolFromSmarts("[C&R]O[C&R]")
+    glycosidic_matches = mol.GetSubstructMatches(glycosidic_pattern)
 
     # Criteria for oligosaccharide classification
-    if ring_count >= 3 and 10 <= o_count <= 30 and len(coc_matches) >= 2:
+    if total_ring_matches >= 2 and 10 <= o_count <= 40 and len(glycosidic_matches) >= 1:
         return True, "Contains features characteristic of an oligosaccharide (multiple saccharide rings and glycosidic bonds)"
     else:
         reason = (f"Characterization doesn't match oligosaccharide: "
-                  f"{ring_count} rings, {o_count} oxygens, {len(coc_matches)} glycosidic-like bonds")
+                  f"{total_ring_matches} rings, {o_count} oxygens, {len(glycosidic_matches)} glycosidic-like bonds")
         return False, reason
-
-# Example usage: Uncomment to test
-# smiles_example = "OC[C@H]1O[C@H](O[C@@H]2[C@@H](CO)O[C@H](O[C@@H]3[C@@H](CO)O[C@H](O[C@@H]4[C@@H](CO)O[C@H](O)[C@H](O)[C@H]4O)[C@H](O)[C@H]3O)[C@H](O)[C@H]2O)[C@H](O)[C@@H](O)[C@@H]1O"
-# result, reason = is_oligosaccharide(smiles_example)
-# print(f"Result: {result}, Reason: {reason}")
