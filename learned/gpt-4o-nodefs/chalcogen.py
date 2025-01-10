@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_chalcogen(smiles: str):
     """
     Determines if a chemical entity is a chalcogen based on its SMILES string.
-    Chalcogens include atoms of oxygen (O), sulfur (S), selenium (Se), tellurium (Te), and polonium (Po),
+    Chalcogens include standalone atoms of oxygen (O), sulfur (S), selenium (Se), tellurium (Te), and polonium (Po),
     as well as their isotopes.
 
     Args:
@@ -25,14 +25,12 @@ def is_chalcogen(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check each atom in the molecule
-    for atom in mol.GetAtoms():
-        # Extract the chemical symbol and isotope if any
+    # Check if the molecule consists of exactly one atom
+    if mol.GetNumAtoms() == 1:
+        atom = mol.GetAtomWithIdx(0)
         symbol = atom.GetSymbol()
-        isotope = atom.GetIsotope()
-        
-        # Concrete isotope check (e.g. [16O]) will have atomic number matching
         if symbol in chalcogen_elements:
+            isotope = atom.GetIsotope()
             return True, f"Chemical entity is a chalcogen: {symbol} isotope {isotope}"
 
     return False, "Chemical entity is not a chalcogen"
