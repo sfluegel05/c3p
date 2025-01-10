@@ -24,19 +24,23 @@ def is_thiol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the thiol group pattern (-SH attached to a carbon)
-    thiol_pattern = Chem.MolFromSmarts("[C][SH1]")
+    # Define the thiol group pattern (-SH attached to a carbon, aliphatic or aromatic)
+    thiol_pattern = Chem.MolFromSmarts("[C,c][SH1]")
     
     # Check if the molecule contains the thiol pattern
     if mol.HasSubstructMatch(thiol_pattern):
         # Exclude molecules where sulfur is part of other functional groups
-        sulfide_pattern = Chem.MolFromSmarts("[C][S][C]")
-        disulfide_pattern = Chem.MolFromSmarts("[C][S][S][C]")
-        thioether_pattern = Chem.MolFromSmarts("[C][S][C]")
+        sulfide_pattern = Chem.MolFromSmarts("[C,c][S][C,c]")
+        disulfide_pattern = Chem.MolFromSmarts("[C,c][S][S][C,c]")
+        sulfoxide_pattern = Chem.MolFromSmarts("[C,c][S](=O)[C,c]")
+        sulfone_pattern = Chem.MolFromSmarts("[C,c][S](=O)(=O)[C,c]")
+        thiocarbonyl_pattern = Chem.MolFromSmarts("[C,c][S]=[C,c]")
         
         if (not mol.HasSubstructMatch(sulfide_pattern) and
             not mol.HasSubstructMatch(disulfide_pattern) and
-            not mol.HasSubstructMatch(thioether_pattern)):
+            not mol.HasSubstructMatch(sulfoxide_pattern) and
+            not mol.HasSubstructMatch(sulfone_pattern) and
+            not mol.HasSubstructMatch(thiocarbonyl_pattern)):
             return True, "Contains a thiol group (-SH) attached to a carbon atom"
         else:
             return False, "Sulfur is part of a non-thiol functional group"
