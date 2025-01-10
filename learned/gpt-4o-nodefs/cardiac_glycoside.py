@@ -12,7 +12,7 @@ def is_cardiac_glycoside(smiles: str):
         smiles (str): SMILES string of the molecule
     
     Returns:
-        bool: True if the molecule is a cardiac glycoside, False otherwise
+        bool: True if molecule is a cardiac glycoside, False otherwise
         str: Reason for classification
     """
     
@@ -21,30 +21,28 @@ def is_cardiac_glycoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Steroid core recognition (cyclopenta[a]phenanthrene skeleton)
-    steroid_patterns = [
-        Chem.MolFromSmarts("C1CCC2C3CCC4C(C3CC2C1)CCC4"),
-        Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2CCC4C3CCC4")
-    ]
-    if not any(mol.HasSubstructMatch(pattern) for pattern in steroid_patterns):
+    # Substructure pattern for a steroid backbone
+    steroid_pattern = Chem.MolFromSmarts('C1CCC2CC3CC(C2C1)CCC4C3CCCC4')
+    if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid core found"
 
-    # Glycoside detection (O-glycosidic linkage)
-    glycoside_pattern = Chem.MolFromSmarts("C-O[C@@H]1[C@H]([C@H]([C@@H]([C@@H](O1)CO)O)O)O")
+    # Check for glycosidic linkage to sugars
+    glycoside_pattern = Chem.MolFromSmarts('OC[C@H]1O[C@@H]([C@H](O)[C@@H](O)[C@H]1O]')
     if not mol.HasSubstructMatch(glycoside_pattern):
         return False, "No glycosidic linkage found"
 
-    # Lactone ring detection
-    lactone_patterns = [
-        Chem.MolFromSmarts("O=C1COC=C1"),
-        Chem.MolFromSmarts("O=C1COCC1")
-    ]
-    if not any(mol.HasSubstructMatch(pattern) for pattern in lactone_patterns):
+    # Check for lactone ring (e.g., butenolide)
+    lactone_pattern = Chem.MolFromSmarts('O=C1CCOC1')
+    if not mol.HasSubstructMatch(lactone_pattern):
         return False, "No lactone ring found"
     
-    # Hydroxyl groups verification
+    # Further verification can involve looking at hydroxyl groups on steroid, sugar counts, etc.
     hydroxyl_count = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'O' and atom.GetTotalDegree() == 1)
     if hydroxyl_count < 3:
         return False, f"Insufficient hydroxyl groups in the molecule: {hydroxyl_count} found"
     
     return True, "The structure contains a steroid core with glycosidic linkage and a lactone ring characteristic of cardiac glycosides"
+
+# Example usage
+# result = is_cardiac_glycoside("SMILES_STRING_HERE")
+# print(result)
