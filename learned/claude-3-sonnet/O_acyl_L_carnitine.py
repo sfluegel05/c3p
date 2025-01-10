@@ -25,58 +25,57 @@ def is_O_acyl_L_carnitine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for basic carnitine backbone structure:
-    # [C@H] or [C@@H] central carbon with:
-    # - CH2 with carboxylate
-    # - CH2 with trimethylammonium
-    # - Oxygen (part of ester)
-    carnitine_pattern = Chem.MolFromSmarts('[C@H,C@@H]([CH2][C]([O-])=O)([CH2][N+](C)(C)C)[OX2]')
+    # Check for carnitine backbone with specific stereochemistry
+    # [C@H] for L-carnitine (the central carbon)
+    # Allow for deuterated methyl groups in the trimethylammonium
+    l_carnitine_pattern = Chem.MolFromSmarts('[C@H]([CH2][C]([O-])=O)([CH2][N+]([CH3,CD3])([CH3,CD3])([CH3,CD3]))[OX2]')
+    d_carnitine_pattern = Chem.MolFromSmarts('[C@@H]([CH2][C]([O-])=O)([CH2][N+]([CH3,CD3])([CH3,CD3])([CH3,CD3]))[OX2]')
     
-    if not mol.HasSubstructMatch(carnitine_pattern):
-        return False, "Missing carnitine backbone structure"
-        
+    if mol.HasSubstructMatch(d_carnitine_pattern):
+        return False, "Incorrect stereochemistry - D-carnitine found"
+    
+    if not mol.HasSubstructMatch(l_carnitine_pattern):
+        return False, "Missing L-carnitine backbone structure"
+
     # Check for ester linkage
-    # The oxygen from carnitine should be connected to a C(=O)R group
-    ester_pattern = Chem.MolFromSmarts('[C@H,C@@H]([CH2][C]([O-])=O)([CH2][N+])O[C](=O)')
+    # More specific pattern that requires the acyl group
+    ester_pattern = Chem.MolFromSmarts('[C@H]([CH2][C]([O-])=O)([CH2][N+])O[C](=[O])[#6]')
     if not mol.HasSubstructMatch(ester_pattern):
         return False, "Missing or incorrect ester linkage"
 
-    # Check for trimethylammonium group
-    # Allow for deuterated methyl groups ([CH3,CD3])
-    trimethyl_pattern = Chem.MolFromSmarts('[N+]([CH3,CD3])([CH3,CD3])([CH3,CD3])')
-    if not mol.HasSubstructMatch(trimethyl_pattern):
-        return False, "Missing trimethylammonium group"
+    # Verify basic structure
+    # Count key functional groups
+    carboxylate_pattern = Chem.MolFromSmarts('[C](=[O])[O-]')
+    ester_pattern = Chem.MolFromSmarts('[C](=[O])[O][C]')
+    quat_n_pattern = Chem.MolFromSmarts('[N+]([CH3,CD3])([CH3,CD3])([CH3,CD3])')
     
-    # Verify charges
-    pos_charge = sum(atom.GetFormalCharge() for atom in mol.GetAtoms() if atom.GetFormalCharge() > 0)
-    neg_charge = sum(atom.GetFormalCharge() for atom in mol.GetAtoms() if atom.GetFormalCharge() < 0)
+    n_carboxylate = len(mol.GetSubstructMatches(carboxylate_pattern))
+    n_ester = len(mol.GetSubstructMatches(ester_pattern))
+    n_quat_n = len(mol.GetSubstructMatches(quat_n_pattern))
     
-    if pos_charge != 1 or neg_charge != -1:
-        return False, f"Incorrect charge distribution: +{pos_charge}, {neg_charge}"
+    if n_carboxylate < 1:
+        return False, "Missing carboxylate group"
+    if n_ester < 1:
+        return False, "Missing ester linkage"
+    if n_quat_n != 1:
+        return False, "Must have exactly one quaternary ammonium group"
 
-    # Check stereochemistry
+    # Check overall charge
+    total_charge = sum(atom.GetFormalCharge() for atom in mol.GetAtoms())
+    if total_charge != 0:
+        return False, f"Total charge must be 0, found {total_charge}"
+
     # Get all chiral centers
     chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
-    if not chiral_centers:
-        return False, "Missing required stereocenter"
     
-    # Find the central carbon (the one with OH, CH2COO-, and CH2N+)
-    central_matches = mol.GetSubstructMatches(carnitine_pattern)
+    # Verify stereochemistry of central carbon
+    central_matches = mol.GetSubstructMatches(l_carnitine_pattern)
     if not central_matches:
         return False, "Cannot determine stereochemistry"
-        
-    # The central carbon should have R configuration for L-carnitine
-    # (Note: The R configuration gives L-carnitine due to CIP priority rules)
-    central_carbon_idx = central_matches[0][0]
-    found_correct_config = False
     
+    central_carbon_idx = central_matches[0][0]
     for idx, config in chiral_centers:
-        if idx == central_carbon_idx:
-            if config == 'R':  # R configuration corresponds to L-carnitine
-                found_correct_config = True
-            break
-            
-    if not found_correct_config:
-        return False, "Incorrect stereochemistry - must be L-configuration"
+        if idx == central_carbon_idx and config != 'R':  # R configuration gives L-carnitine
+            return False, "Incorrect stereochemistry - must be L-configuration"
 
     return True, "Valid O-acyl-L-carnitine structure with correct L-configuration"
