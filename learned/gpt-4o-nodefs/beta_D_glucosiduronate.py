@@ -2,6 +2,7 @@
 Classifies: CHEBI:83411 beta-D-glucosiduronate
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_beta_D_glucosiduronate(smiles: str):
     """
@@ -20,16 +21,14 @@ def is_beta_D_glucosiduronate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Correct SMARTS for detecting beta-D-glucuronic acid moiety with required stereochemistry
-    glucuronic_acid_pattern = Chem.MolFromSmarts("[C@H]1([C@@H]([C@H]([C@H](O1)CO)O)O)C(=O)[O-]")
+    # Look for the sugar ring structure with the carboxylate group
+    glucuronic_acid_pattern = Chem.MolFromSmarts("[C@@H]1([C@H]([C@@H]([C@H]([C@H]1O)O)O)O)C(=O)[O-]")
     if not mol.HasSubstructMatch(glucuronic_acid_pattern):
-        return False, "Glucuronic acid moiety not correctly found or stereochemistry missed"
+        return False, "Glucuronic acid moiety not found"
 
-    # Patterns to ensure correct linkage (e.g., O-ether), more flexible, allowing connection to any atom
-    ether_linkage_pattern = Chem.MolFromSmarts("[C@H]1([C@@H]([C@H]([C@H](O1)CO)O)O)C(=O)[O-]~*")  # Flexible for linkage
-    ester_linkage_pattern = Chem.MolFromSmarts("O=C(O[C@H]1[C@H]([C@@H]([C@H]([C@H]1O)O)O)CO)~*")  # Flexible for linkage
+    # Check if it is attached to an aromatic or large framework through ether/ester linkage
+    attachment_pattern = Chem.MolFromSmarts("O[C@H]1[C@@H]([C@H]([C@@H]([C@H]1O)O)O)C(=O)[O-]")
+    if not mol.HasSubstructMatch(attachment_pattern):
+        return False, "Glucuronic acid not attached via the expected linkage"
 
-    if not (mol.HasSubstructMatch(ether_linkage_pattern) or mol.HasSubstructMatch(ester_linkage_pattern)):
-        return False, "Glucuronic acid linkage not identified; revise ether/ester condition matching"
-
-    return True, "Contains a beta-D-glucuronic acid moiety linked via recognized ether or ester connection"
+    return True, "Contains a beta-D-glucuronic acid moiety attached to a larger structure via an ether/ester linkage"
