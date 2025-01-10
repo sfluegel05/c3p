@@ -16,36 +16,31 @@ def is_thiosugar(smiles: str):
         bool: True if molecule is a thiosugar, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Detect the presence of a sugar moiety (cycles with oxygen atoms and carbon pattern)
+    # Detect the presence of a sugar moiety using an expanded set of patterns
     sugar_patterns = [
-        Chem.MolFromSmarts("[C@@H]1O[C@H]([C@@H](O)[C@@H](O)[C@@H]1O)"),  # pyranose 6-membered ring
-        Chem.MolFromSmarts("[C@@H]1O[C@H]([C@@H](O)[C@@H]1O)"),           # furanose 5-membered ring
-        Chem.MolFromSmarts("[C-O-C-O-C-O]")                              # general sugar pattern
+        Chem.MolFromSmarts("[C@@H]1O[C@H]([C@@H](O)*)[C@@H](O)C[C@H]1O"),  # pyranose variant
+        Chem.MolFromSmarts("[C@@H]1O[C@H]1"),                             # general sugar cycle
+        Chem.MolFromSmarts("[O-C@[C@](O)(C-O)C-O]")                       # simplified open chain
     ]
     
     has_sugar = any(mol.HasSubstructMatch(pattern) for pattern in sugar_patterns)
     if not has_sugar:
         return False, "No sugar backbone found"
     
-    # Look for sulfur replacements (S or -SR) where sulfur is bound to a carbon adjacent to the sugar
+    # Look for sulfur replacements in positions where sugars usually have oxygens
     sulfur_patterns = [
-        Chem.MolFromSmarts("[C-S]"),  # Any carbon-sulfur bond
-        Chem.MolFromSmarts("[O-S]"),  # Direct replacement of oxygen
-        Chem.MolFromSmarts("[S;D1]")  # Terminal sulfur 
+        Chem.MolFromSmarts("[O;!H1]-S"),  # oxygens directly replaced by sulfur
+        Chem.MolFromSmarts("[C-S]"),      # carbon-sulfur bonds adjacent to oxy-like positions
+        Chem.MolFromSmarts("[S;X2]")      # sulfur in right oxidation state for substitution
     ]
     
-    valid_sulfur_replacement = False
-    for pattern in sulfur_patterns:
-        if mol.HasSubstructMatch(pattern):
-            valid_sulfur_replacement = True
-            break
-
+    valid_sulfur_replacement = any(mol.HasSubstructMatch(pattern) for pattern in sulfur_patterns)
     if not valid_sulfur_replacement:
         return False, "No valid sulfur replacement detected"
     
