@@ -22,57 +22,46 @@ def is_glucosinolate(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+    
+    # Look for the core glucosinolate structure:
+    # - Sulfur linked to sugar and C=N
+    # - C=N double bond
+    # - N-O-SO3 group
+    core_pattern = Chem.MolFromSmarts('[#6]-[#16]-[#6]=[#7]-[#8]-[#16](=[#8])(=[#8])[#8]')
+    if not mol.HasSubstructMatch(core_pattern):
+        return False, "Missing core glucosinolate structure (S-C=N-O-SO3)"
 
-    # Look for N-O-SO3 group (both charged and uncharged forms)
-    # More flexible pattern to catch variations
-    sulfate_patterns = [
-        Chem.MolFromSmarts('[NX2]-[OX2]-[SX4](=[OX1])(=[OX1])[OX1,OX2H1,OX2-]'),
-        Chem.MolFromSmarts('[NX2]-[OX2]-[SX4]([OX1,OX2H1,OX2-])(=[OX1])=[OX1]')
-    ]
-    has_sulfate = any(mol.HasSubstructMatch(pattern) for pattern in sulfate_patterns)
-    if not has_sulfate:
-        return False, "Missing N-O-SO3 group"
+    # Check for pyranose sugar (glucose) pattern
+    sugar_pattern = Chem.MolFromSmarts('[#6]1-[#8]-[#6]-[#6]-[#6]-[#6]1')
+    if not mol.HasSubstructMatch(sugar_pattern):
+        return False, "Missing pyranose sugar ring"
+    
+    # Count hydroxyl groups on sugar (should be multiple OH groups)
+    hydroxyl_pattern = Chem.MolFromSmarts('[#8H1]-[#6]')
+    hydroxyl_matches = len(mol.GetSubstructMatches(hydroxyl_pattern))
+    if hydroxyl_matches < 4:  # Glucose has multiple OH groups
+        return False, "Insufficient hydroxyl groups for glucose moiety"
 
-    # Look for C=N-O linkage with some flexibility
-    cn_bond_pattern = Chem.MolFromSmarts('[CX3]=[NX2]-[OX2]')
-    if not mol.HasSubstructMatch(cn_bond_pattern):
-        return False, "Missing C=N-O linkage"
-
-    # Check for thioglycosidic linkage (C-S-C=N)
-    # More flexible pattern to catch variations
-    thio_patterns = [
-        Chem.MolFromSmarts('[CX4]-[SX2]-[CX3]=[NX2]'),
-        Chem.MolFromSmarts('[#6]-[SX2]-[CX3]=[NX2]')
-    ]
-    has_thio = any(mol.HasSubstructMatch(pattern) for pattern in thio_patterns)
-    if not has_thio:
-        return False, "Missing thioglycosidic linkage"
-
-    # Check for glucose moiety with more flexible patterns
-    sugar_patterns = [
-        # Pattern for beta-D-glucopyranose with various representations
-        Chem.MolFromSmarts('[OX2][#6]1[OX2][#6]([SX2])[#6]([OX2])[#6]([OX2])[#6]([OX2])[#6]1[CX4][OX2]'),
-        Chem.MolFromSmarts('[OX2][#6]-1-[OX2]-[#6](-[SX2])-[#6](-[OX2])-[#6](-[OX2])-[#6](-[OX2])-[#6]-1-[CX4]-[OX2]')
-    ]
-    has_sugar = any(mol.HasSubstructMatch(pattern) for pattern in sugar_patterns)
-    if not has_sugar:
-        return False, "Missing glucose moiety"
+    # Verify S-glycosidic linkage
+    glycosidic_pattern = Chem.MolFromSmarts('[#6]1-[#8]-[#6]-[#6]-[#6]-[#6]1-[#16]')
+    if not mol.HasSubstructMatch(glycosidic_pattern):
+        return False, "Missing S-glycosidic linkage"
+    
+    # Check for sulfate group
+    sulfate_pattern = Chem.MolFromSmarts('[#16](=[#8])(=[#8])-[#8]')
+    if not mol.HasSubstructMatch(sulfate_pattern):
+        return False, "Missing sulfate group"
 
     # Count key atoms to ensure reasonable composition
     s_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 16)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
     
-    if s_count < 2:  # Need at least 2 sulfur atoms (thioglycosidic + sulfate)
+    if s_count < 2:  # Need at least 2 sulfur atoms
         return False, "Insufficient sulfur atoms"
     if o_count < 7:  # Need multiple oxygens for sugar + sulfate
         return False, "Insufficient oxygen atoms"
-    if n_count != 1:  # Need exactly 1 nitrogen
-        return False, "Incorrect number of nitrogen atoms"
+    if n_count < 1:  # Need 1 nitrogen
+        return False, "Missing nitrogen atom"
 
-    # Verify the overall connectivity but with more flexible pattern
-    core_pattern = Chem.MolFromSmarts('[#6]-[SX2]-[CX3](=[NX2]-[OX2]-[SX4]~[OX1,OX2H1,OX2-])-[#6]')
-    if not mol.HasSubstructMatch(core_pattern):
-        return False, "Incorrect overall connectivity"
-
-    return True, "Contains complete glucosinolate structure with correct connectivity"
+    return True, "Contains glucosinolate core structure with glucose moiety and characteristic S-C=N-O-SO3 group"
