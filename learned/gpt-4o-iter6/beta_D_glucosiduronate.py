@@ -9,7 +9,7 @@ from rdkit import Chem
 def is_beta_D_glucosiduronate(smiles: str):
     """
     Determines if a molecule is a beta-D-glucosiduronate based on its SMILES string.
-    A beta-D-glucosiduronate contains a deprotonated beta-D-glucuronic acid moiety.
+    A beta-D-glucosiduronate contains a deprotonated β-D-glucuronic acid moiety.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -19,39 +19,20 @@ def is_beta_D_glucosiduronate(smiles: str):
         str: Reason for classification
     """
     
-    # Parse the SMILES string
+    # Parse SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string."
+        return False, "Invalid SMILES string"
 
-    # Define more comprehensive SMARTS patterns for beta-D-glucuronic acid, considering various stereochemistry configurations
-    glucuronate_smarts = [
-        'O[C@H]1[C@@H](O)[C@H](O)[C@H](O[C@@H]1)C(=O)[O-]',  # Normal anionic form
-        'O[C@@H]1[C@@H](O)[C@H](O)[C@H](O[C@H]1)C(=O)[O-]', # Reverse chiral centers
-        'O[C@H]1[C@H](O)[C@@H](O)[C@@H](O[C@@H]1)C(=O)[O-]'  # Any chiral center possibilities
-    ]
-    
-    # Check for the presence of beta-D-glucuronic acid moiety using the SMARTS patterns
-    has_glucuronate = any(mol.HasSubstructMatch(Chem.MolFromSmarts(smarts)) for smarts in glucuronate_smarts)
-    
-    if not has_glucuronate:
-        return False, "No beta-D-glucuronic acid moiety found."
+    # SMARTS pattern for beta-D-glucuronic acid moiety in deprotonated form
+    glucuronate_pattern = Chem.MolFromSmarts('[C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)[O-]')
+    if not mol.HasSubstructMatch(glucuronate_pattern):
+        return False, "No beta-D-glucuronic acid moiety found"
 
-    # Define potential linkage patterns for linkage types around the glucuronate moiety
-    linkage_patterns = [
-        '[O][#6]',         # Any carbon to oxygen linkage, possible ester or ether
-        '[C](=O)[O][C]',   # Ester link pattern with carbonyl group
-        '[N][C](=O)',      # Amide linkage pattern
-        '[O][S](=O)(=O)',  # Sulfate linkage consideration
-        'c:[O][C]',        # Aromatic ethers
-        '[C](=O)[N]',      # Possible generic amidic linkage
-        '[O]S(C)[C]',      # Specifically looking into sulfation type linkages
-    ]
+    # Check attachment type (e.g., it is often via an ether linkage)
+    # This could be broadened based on additional requirements or examples
+    ether_linkage_pattern = Chem.MolFromSmarts('O[C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)[O-]')
+    if not mol.HasSubstructMatch(ether_linkage_pattern):
+        return False, "Beta-D-glucuronic acid moiety not properly attached"
 
-    # Check the molecule for any of the valid linkage types
-    has_valid_linkage = any(mol.HasSubstructMatch(Chem.MolFromSmarts(link)) for link in linkage_patterns)
-    
-    if has_valid_linkage:
-        return True, "Contains deprotonated beta-D-glucuronic acid moiety with valid linkage."
-    
-    return False, "Beta-D-glucuronic acid moiety found but lacks recognized valid linkages."
+    return True, "Contains deprotonated beta-D-glucuronic acid moiety in correct orientation"
