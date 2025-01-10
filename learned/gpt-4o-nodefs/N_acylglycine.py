@@ -27,8 +27,8 @@ def is_N_acylglycine(smiles: str):
         return False, "No glycine moiety found"
 
     # Look for the acyl group directly attached to glycine's nitrogen
-    # Modify pattern to detect acyl variant: N-C-C(=O)
-    n_acyl_pattern = Chem.MolFromSmarts("N-[#6X3](=O)-[#6]")
+    # Use a more specific pattern: nitrogen connected to carbonyl (C=O) and carbon
+    n_acyl_pattern = Chem.MolFromSmarts("N-C(=O)-C")
     if not mol.HasSubstructMatch(n_acyl_pattern):
         return False, "No correctly attached acyl group found"
 
