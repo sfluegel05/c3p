@@ -2,7 +2,6 @@
 Classifies: CHEBI:60245 inositol phosphoceramide
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_inositol_phosphoceramide(smiles: str):
     """
@@ -21,24 +20,27 @@ def is_inositol_phosphoceramide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Identify inositol ring (6-membered carbocycl with stereochemistry and multiple hydroxyl groups)
-    inositol_pattern = Chem.MolFromSmarts("C1([C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@H](O)O)C(O)C(O)C(O)C(O)O")
+    # Identify inositol ring (6-membered carbocycle with multiple hydroxyl groups)
+    inositol_smarts = "C1[C@H](O)[C@H](O)[C@H](O)[C@H](O)[C@H](O)O1"
+    inositol_pattern = Chem.MolFromSmarts(inositol_smarts)
     if not mol.HasSubstructMatch(inositol_pattern):
-        return False, "No inositol ring found"
-    
+        return False, "No inositol ring detected"
+
     # Identify phosphodiester bridge
-    phospho_pattern = Chem.MolFromSmarts("O=P(O)(OC)OC")
+    phospho_smarts = "OP(=O)(O)OC"
+    phospho_pattern = Chem.MolFromSmarts(phospho_smarts)
     if not mol.HasSubstructMatch(phospho_pattern):
         return False, "No phosphodiester bridge found"
-    
-    # Identify ceramide moiety (amide bond plus long chain)
-    ceramide_pattern = Chem.MolFromSmarts("N[C@@H](CO)C(=O)C")
+
+    # Identify ceramide moiety (amide bond plus long hydrocarbon chain)
+    ceramide_smarts = "N[C@@H](CO)C(=O)[C@H](O)C"
+    ceramide_pattern = Chem.MolFromSmarts(ceramide_smarts)
     if not mol.HasSubstructMatch(ceramide_pattern):
         return False, "No ceramide moiety found"
 
-    # Additional check for long alkyl chain in ceramide
-    alkane_chain_length = sum([1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6 and any(neighbor.GetAtomicNum() == 1 for neighbor in atom.GetNeighbors())])
-    if alkane_chain_length < 12:
-        return False, f"Alkyl chain length in ceramide too short: {alkane_chain_length}"
-    
-    return True, "Pattern matches inositol phosphoceramide structure"
+    # Ensure sufficient length of hydrocarbon chains
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 30:
+        return False, "Insufficient carbon atoms for long chain characteristic of ceramides"
+
+    return True, "Inositol phosphoceramide structure detected"
