@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_aldoxime(smiles: str):
     """
     Determines if a molecule is an aldoxime based on its SMILES string.
-    An aldoxime is an oxime of an aldehyde containing the group RCH=NOH.
+    An aldoxime is an oxime of an aldehyde RCH=NOH.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,15 +21,15 @@ def is_aldoxime(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Updated pattern for an aldoxime focuses on the presence of RCH=NOH
-    aldoxime_pattern = Chem.MolFromSmarts("[#6][CX3](=N[OH1])[#1]") 
+    # Look for aldoxime pattern C=N-OH where C is double-bonded to N and single-bonded to H
+    aldoxime_pattern = Chem.MolFromSmarts("[CX3;$([#6])](=[NX2][OX1H])")
 
     if mol.HasSubstructMatch(aldoxime_pattern):
-        return True, "Contains C=NOH group indicating aldoxime structure"
+        return True, "Contains C=N-OH group with C bonded to a hydrogen"
 
-    return False, "Does not contain the C=NOH group typical of an aldoxime"
+    return False, "Does not contain the C=N-OH group with C bonded to a hydrogen"
 
 # Sample test
-smiles = "C(C(C)C)=NO"  # example of an aldoxime
+smiles = "C(CSC)=NO"  # example of an aldoxime
 result, reason = is_aldoxime(smiles)
 print(result, reason)
