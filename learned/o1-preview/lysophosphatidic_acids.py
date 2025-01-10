@@ -6,7 +6,8 @@ from rdkit import Chem
 def is_lysophosphatidic_acids(smiles: str):
     """
     Determines if a molecule is a lysophosphatidic acid based on its SMILES string.
-    Lysophosphatidic acids are monoacylglycerol phosphates obtained by hydrolytic removal of one of the two acyl groups of any phosphatidic acid or derivatives therein.
+    Lysophosphatidic acids are monoacylglycerol phosphates obtained by hydrolytic removal 
+    of one of the two acyl groups of any phosphatidic acid or derivatives therein.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,27 +22,37 @@ def is_lysophosphatidic_acids(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a general SMARTS pattern for the glycerol phosphate backbone
-    # This pattern matches glycerol backbone connected to a phosphate group
-    glycerol_phosphate_smarts = "[C;X4][C;X4][C;X4]OP(=O)(O)O"
-    glycerol_phosphate_pattern = Chem.MolFromSmarts(glycerol_phosphate_smarts)
-
-    if not mol.HasSubstructMatch(glycerol_phosphate_pattern):
+    # Ensure molecule has a phosphate group connected to glycerol
+    glycerol_phosphate_smarts = "[C@@H](CO[P](=O)(O)O)O"
+    gp_pattern = Chem.MolFromSmarts(glycerol_phosphate_smarts)
+    if not mol.HasSubstructMatch(gp_pattern):
         return False, "No glycerol phosphate backbone found"
 
-    # Identify the glycerol backbone carbons
-    glycerol_matches = mol.GetSubstructMatches(glycerol_phosphate_pattern)
-    glycerol_carbons = set()
-    for match in glycerol_matches:
-        # Indices of the three glycerol carbons in the match
-        glycerol_c_idx = match[0:3]
-        glycerol_carbons.update(glycerol_c_idx)
+    # Check for absence of substituents on the phosphate group (no additional atoms attached to phosphate)
+    phosphate_atom = None
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 15:
+            phosphate_atom = atom
+            break
+    if phosphate_atom is None:
+        return False, "No phosphate group found"
 
-    # Define a pattern for ester bonds (acyl chains attached via ester linkage)
-    ester_pattern = Chem.MolFromSmarts("C(=O)O[C;!$(C=O)]")  # Ester linkage not adjacent to another carbonyl
+    phosphate_neighbors = phosphate_atom.GetNeighbors()
+    num_non_oxygen_neighbors = sum(1 for neighbor in phosphate_neighbors if neighbor.GetAtomicNum() != 8)
+    if num_non_oxygen_neighbors > 1:
+        return False, "Phosphate group is substituted (not a lysophosphatidic acid)"
+
+    # Identify glycerol backbone carbons
+    glycerol_carbons = []
+    for match in mol.GetSubstructMatches(gp_pattern):
+        glycerol_carbons.extend([match[0], match[1], match[2]])  # Indices of the glycerol carbons
+        break  # Assuming one glycerol phosphate backbone
+
+    # Define ester bond pattern (acyl chain attached via ester linkage to glycerol)
+    ester_pattern = Chem.MolFromSmarts("C(=O)O[C;H2][C;H][C;H2]")  # Acyl ester attached to glycerol carbons
     ester_matches = mol.GetSubstructMatches(ester_pattern)
 
-    # Count ester bonds connected to glycerol carbons
+    # Check the number of acyl chains attached via ester bonds to glycerol carbons
     acyl_ester_count = 0
     for match in ester_matches:
         ester_oxygen_idx = match[2]
@@ -52,18 +63,14 @@ def is_lysophosphatidic_acids(smiles: str):
                 acyl_ester_count += 1
                 break
 
-    if acyl_ester_count != 1:
-        return False, f"Expected 1 acyl chain attached via ester bond to glycerol backbone, found {acyl_ester_count}"
+    if acyl_ester_count == 0:
+        return False, "No acyl chains attached via ester bonds to glycerol backbone"
+    elif acyl_ester_count > 2:
+        return False, f"Expected 1 or 2 acyl chains attached via ester bonds to glycerol backbone, found {acyl_ester_count}"
 
-    # Ensure there are no additional ester bonds (excluding phosphate ester bonds)
-    total_acyl_esters = acyl_ester_count
-    if total_acyl_esters > 1:
-        return False, f"Found {total_acyl_esters} acyl ester bonds, expected only 1"
+    # Check for additional acyl chains attached via ether bonds (LPAs should not have ether-linked chains)
+    ether_pattern = Chem.MolFromSmarts("[C;H2][O][C;H2][C;H][C;H2]")  # Ether linkage to glycerol carbons
+    if mol.HasSubstructMatch(ether_pattern):
+        return False, "Found ether-linked chains, which are not typical for LPAs"
 
-    # Check that the phosphate group is not further substituted (e.g., with choline or ethanolamine)
-    # Define a pattern for substituted phosphate groups
-    substituted_phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)(O)[!O]")
-    if mol.HasSubstructMatch(substituted_phosphate_pattern):
-        return False, "Phosphate group is substituted (not a lysophosphatidic acid)"
-
-    return True, "Molecule is a lysophosphatidic acid with glycerol phosphate backbone and one acyl chain"
+    return True, "Molecule is a lysophosphatidic acid with glycerol phosphate backbone and acyl chain(s)"
