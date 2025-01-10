@@ -2,7 +2,6 @@
 Classifies: CHEBI:35381 monosaccharide
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_monosaccharide(smiles: str):
     """
@@ -25,12 +24,12 @@ def is_monosaccharide(smiles: str):
     # Count carbon and oxygen atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    
-    # Monosaccharides must have at least 3 carbons
+
+    # Monosaccharides must have at least 3 carbon atoms
     if c_count < 3:
         return False, "Too few carbon atoms"
 
-    # Check for hydroxyl groups (at least two -OH groups)
+    # Check for hydroxyl groups (monosaccharides usually have several -OH groups)
     hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
     hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
     if len(hydroxyl_matches) < 2:
@@ -41,16 +40,11 @@ def is_monosaccharide(smiles: str):
     if not mol.HasSubstructMatch(carbonyl_pattern):
         return False, "No carbonyl group (aldehyde or ketone)"
 
-    # Check that it's a single unit (no glycosidic bond)
-    # Glycosidic linkage typically involves anomeric carbon connecting via an ether linkage
-    anomeric_ether_pattern = Chem.MolFromSmarts("[C@H](O)([CH0,CH1,CH2,CH3,O])O")
-    if mol.HasSubstructMatch(anomeric_ether_pattern):
+    # Checking if the structure is a single monosaccharide unit
+    # Need to ensure that there are no complex glycosidic connections
+    # which typically involve ether linkages to another sugar unit via the anomeric carbon
+    glycosidic_linkage_pattern = Chem.MolFromSmarts("[C@H1](O[*])O[*]")
+    if mol.HasSubstructMatch(glycosidic_linkage_pattern):
         return False, "Contains glycosidic connection"
-
-    # Checking for deoxy sugars, which still have carbonyl group
-    deoxy_pattern = Chem.MolFromSmarts("[CH]C(=O)")
-    if mol.HasSubstructMatch(deoxy_pattern):
-        if not mol.HasSubstructMatch(carbonyl_pattern):
-            return False, "Lacks necessary structural features of monosaccharide"
 
     return True, "Matches structure of a monosaccharide with polyhydroxyl groups and a carbonyl group"
