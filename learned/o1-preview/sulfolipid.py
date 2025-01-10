@@ -2,7 +2,6 @@
 Classifies: CHEBI:61384 sulfolipid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_sulfolipid(smiles: str):
     """
@@ -22,20 +21,38 @@ def is_sulfolipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for sulfonic acid group connected via carbon-sulfur bond
-    # Sulfonic acid group: S(=O)(=O)-OH attached to carbon via S-C bond
-    # SMARTS pattern matching both protonated (OH) and deprotonated (O-) forms
-    sulfonic_acid_pattern = Chem.MolFromSmarts("[#6][S](=O)(=O)[O;H1,-]")
+    # Corrected SMARTS pattern for sulfonic acid group connected via carbon-sulfur bond
+    # Sulfonic acid group: S(=O)(=O)-O[-] attached to carbon via S-C bond
+    sulfonic_acid_pattern = Chem.MolFromSmarts("[C]-S(=O)(=O)-[O;H1,-1]")
+    if sulfonic_acid_pattern is None:
+        return None, "Invalid sulfonic acid SMARTS pattern"
 
     if not mol.HasSubstructMatch(sulfonic_acid_pattern):
         return False, "No sulfonic acid group connected via carbon-sulfur bond found"
 
-    # Check for long hydrocarbon chain to assess lipid characteristic
-    # Look for aliphatic chain of at least 12 continuous carbons
-    # This pattern matches a chain of 12 or more non-ring sp3 carbons
-    alkyl_chain_pattern = Chem.MolFromSmarts("[C;D3,D4;H2,H3][C;D2,D3;H2,H3]{10,}[C;D3,D4;H3]")  # Chain of at least 12 carbons
+    # Check for lipid characteristics
+    # Instead of using unsupported SMARTS quantifiers, programmatically find long carbon chains
+    def get_longest_carbon_chain(mol):
+        max_length = 0
+        for atom in mol.GetAtoms():
+            if atom.GetAtomicNum() == 6:
+                visited = set()
+                stack = [(atom, 1)]
+                while stack:
+                    current_atom, length = stack.pop()
+                    idx = current_atom.GetIdx()
+                    if idx in visited:
+                        continue
+                    visited.add(idx)
+                    if length > max_length:
+                        max_length = length
+                    for neighbor in current_atom.GetNeighbors():
+                        if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:
+                            stack.append((neighbor, length + 1))
+        return max_length
 
-    if not mol.HasSubstructMatch(alkyl_chain_pattern):
-        return False, "No long hydrocarbon chain of at least 12 carbons found"
+    longest_chain = get_longest_carbon_chain(mol)
+    if longest_chain < 12:
+        return False, f"No long hydrocarbon chain of at least 12 carbons found (longest chain: {longest_chain})"
 
     return True, "Contains sulfonic acid group connected via carbon-sulfur bond and lipid characteristics"
