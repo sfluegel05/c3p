@@ -80,12 +80,27 @@ def is_proteinogenic_amino_acid(smiles: str):
         "[CH2][CH2][CH2]N=C(N)N",  # Arginine
         "[CH2]C1CCCN1",  # Proline
         "[CH2]SeH",  # Selenocysteine
-        "[CH2][CH2][CH2]C1=CC=CC=N1"  # Pyrrolysine
+        "[CH2][CH2][CH2]C1=CC=CC=N1",  # Pyrrolysine
+        "[2H]",  # Deuterated amino acids
+        "[13C]",  # 13C-labeled amino acids
+        "[15N]"  # 15N-labeled amino acids
     ]
     
     has_valid_side_chain = any(mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)) 
                               for pattern in side_chain_patterns)
     if not has_valid_side_chain:
         return False, "No valid proteinogenic amino acid side chain found"
+
+    # Check for specific amino acids like selenocysteine, pyrrolysine, and N-formylmethionine
+    selenocysteine_pattern = Chem.MolFromSmarts("[CH2]SeH")
+    pyrrolysine_pattern = Chem.MolFromSmarts("[CH2][CH2][CH2]C1=CC=CC=N1")
+    n_formylmethionine_pattern = Chem.MolFromSmarts("C(=O)N[CH2][CH2]S[CH3]")
+    
+    if mol.HasSubstructMatch(selenocysteine_pattern):
+        return True, "Selenocysteine detected"
+    if mol.HasSubstructMatch(pyrrolysine_pattern):
+        return True, "Pyrrolysine detected"
+    if mol.HasSubstructMatch(n_formylmethionine_pattern):
+        return True, "N-formylmethionine detected"
 
     return True, "Contains amino group, carboxyl group, and side chain attached to alpha carbon with L-configuration"
