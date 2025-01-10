@@ -24,11 +24,20 @@ def is_epoxide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the epoxide pattern: a 3-membered ring with one oxygen and two carbons
-    epoxide_pattern = Chem.MolFromSmarts("[O;R3][C;R3][C;R3]")
+    # Define the epoxide pattern: a 3-membered ring with exactly one oxygen atom
+    epoxide_pattern = Chem.MolFromSmarts("[O;r3]")
     
     # Check if the molecule contains the epoxide pattern
     if mol.HasSubstructMatch(epoxide_pattern):
-        return True, "Contains a 3-membered ring with an oxygen atom (epoxide)"
+        # Get the ring info to ensure it's a 3-membered ring
+        ring_info = mol.GetRingInfo()
+        for ring in ring_info.AtomRings():
+            if len(ring) == 3:
+                # Count the number of oxygen atoms in the ring
+                oxygen_count = sum(1 for atom_idx in ring if mol.GetAtomWithIdx(atom_idx).GetAtomicNum() == 8)
+                if oxygen_count == 1:
+                    return True, "Contains a 3-membered ring with an oxygen atom (epoxide)"
+        
+        return False, "No 3-membered ring with an oxygen atom found"
     else:
         return False, "No 3-membered ring with an oxygen atom found"
