@@ -11,6 +11,8 @@ def is_11_12_saturated_fatty_acyl_CoA_4__(smiles: str):
     """
     Determines if a molecule is a 11,12-saturated fatty acyl-CoA(4-) based on its SMILES string.
     Any fatty acyl-CoA(4-) in which the 11-12 bond of the fatty acyl group is saturated.
+    This includes all fatty acyl-CoA(4-) molecules where the bond between the 11th and 12th carbons
+    in the fatty acyl chain is either saturated (single bond) or absent (for chains shorter than 12 carbons).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,9 +28,9 @@ def is_11_12_saturated_fatty_acyl_CoA_4__(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define SMARTS pattern for fatty acyl-CoA thioester linkage
-    # The fatty acyl chain is connected via a thioester linkage: C(=O)SCCN
+    # The fatty acyl chain is connected via a thioester linkage: C(=O)SCCNC(=O)
     # We will capture the carbonyl carbon of the fatty acyl chain
-    fatty_acyl_pattern = Chem.MolFromSmarts('C(=O)SCCNC(=O)')
+    fatty_acyl_pattern = Chem.MolFromSmarts('C(=O)SCCN')
     fatty_acyl_matches = mol.GetSubstructMatches(fatty_acyl_pattern)
 
     if not fatty_acyl_matches:
@@ -39,47 +41,84 @@ def is_11_12_saturated_fatty_acyl_CoA_4__(smiles: str):
     acyl_carbon_idx = fatty_acyl_match[0]  # Carbonyl carbon of the fatty acyl chain
 
     # Traverse the fatty acyl chain starting from the carbonyl carbon
-    # We will build the acyl chain by moving from the carbonyl carbon along alkyl chain
+    # We will build the acyl chain by moving away from the carbonyl carbon along carbons
     acyl_chain_atoms = []
     visited = set()
 
     def traverse_acyl_chain(atom_idx):
         """Recursively traverse the acyl chain starting from the given atom index."""
         atom = mol.GetAtomWithIdx(atom_idx)
+        if atom_idx in visited:
+            return
         visited.add(atom_idx)
+
         if atom.GetAtomicNum() != 6:
             return  # Only consider carbon atoms
 
         acyl_chain_atoms.append(atom_idx)
-        neighbors = [nbr.GetIdx() for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() == 6]
-
-        for nbr_idx in neighbors:
+        for nbr in atom.GetNeighbors():
+            nbr_idx = nbr.GetIdx()
             bond = mol.GetBondBetweenAtoms(atom_idx, nbr_idx)
-            # Exclude the direction back towards the CoA moiety
-            if nbr_idx in visited or nbr_idx == acyl_carbon_idx:
+            if bond is None:
                 continue
-
-            # Check if the neighbor is part of the acyl chain
-            # Ensure that we are not traversing into the CoA moiety
+            if bond.IsInRing():
+                continue  # Exclude ring structures
+            if nbr_idx in visited:
+                continue
+            if nbr.GetAtomicNum() != 6:
+                continue  # Only traverse to carbon atoms
+            # Avoid going back towards the CoA moiety
+            if nbr_idx == acyl_carbon_idx:
+                continue
             traverse_acyl_chain(nbr_idx)
 
     # Start traversal from the carbon next to the carbonyl carbon
     carbonyl_carbon = mol.GetAtomWithIdx(acyl_carbon_idx)
     for neighbor in carbonyl_carbon.GetNeighbors():
         nbr_idx = neighbor.GetIdx()
-        if neighbor.GetAtomicNum() == 6 and nbr_idx != fatty_acyl_match[1]:  # Exclude the sulfur atom
+        bond = mol.GetBondBetweenAtoms(acyl_carbon_idx, nbr_idx)
+        if neighbor.GetAtomicNum() == 6 and bond.GetBondType() == rdchem.BondType.SINGLE:
             # Begin traversal
             traverse_acyl_chain(nbr_idx)
             break
 
-    # Ensure the acyl chain has at least 12 carbons
-    if len(acyl_chain_atoms) < 12:
-        return False, f"Fatty acyl chain has {len(acyl_chain_atoms)} carbons, less than 12"
+    # Sort the acyl chain atoms based on their order from the carbonyl carbon
+    # Here, acyl_chain_atoms[0] is the alpha carbon (adjacent to carbonyl carbon)
+    # We need to ensure that the chain is correctly ordered
+    # We can use a breadth-first search to get the correct order
+
+    from collections import deque
+
+    def get_chain_order(start_idx):
+        """Get the ordered list of carbon indices in the acyl chain."""
+        order = []
+        queue = deque()
+        visited = set()
+        queue.append(start_idx)
+        visited.add(start_idx)
+        while queue:
+            current_idx = queue.popleft()
+            order.append(current_idx)
+            current_atom = mol.GetAtomWithIdx(current_idx)
+            neighbors = [nbr for nbr in current_atom.GetNeighbors() if nbr.GetAtomicNum() == 6]
+            for nbr in neighbors:
+                nbr_idx = nbr.GetIdx()
+                if nbr_idx not in visited and nbr_idx in acyl_chain_atoms:
+                    queue.append(nbr_idx)
+                    visited.add(nbr_idx)
+        return order
+
+    acyl_chain_ordered = get_chain_order(acyl_chain_atoms[0])
+
+    # Count the number of carbons in the acyl chain
+    num_carbons = len(acyl_chain_ordered)
+    # For chains shorter than 12 carbons, we consider the C11-C12 bond as saturated (since it does not exist)
+    if num_carbons < 11:
+        return True, f"Fatty acyl chain has {num_carbons} carbons, C11-C12 bond is absent and considered saturated"
 
     # Get the atom indices for C11 and C12
-    # Note: acyl_chain_atoms[0] is the alpha carbon (adjacent to carbonyl carbon)
-    c11_idx = acyl_chain_atoms[10]
-    c12_idx = acyl_chain_atoms[11]
+    c11_idx = acyl_chain_ordered[10]  # 0-based indexing
+    c12_idx = acyl_chain_ordered[11]
 
     # Get the bond between C11 and C12
     bond = mol.GetBondBetweenAtoms(c11_idx, c12_idx)
@@ -89,7 +128,7 @@ def is_11_12_saturated_fatty_acyl_CoA_4__(smiles: str):
     bond_type = bond.GetBondType()
     if bond_type == rdchem.BondType.SINGLE:
         return True, "C11-C12 bond is saturated (single bond)"
-    elif bond_type == rdchem.BondType.DOUBLE:
-        return False, "C11-C12 bond is unsaturated (double bond)"
+    elif bond_type == rdchem.BondType.DOUBLE or bond_type == rdchem.BondType.TRIPLE:
+        return False, "C11-C12 bond is unsaturated (double or triple bond)"
     else:
-        return False, f"C11-C12 bond is neither single nor double (bond type: {bond_type})"
+        return False, f"C11-C12 bond is neither single nor double/triple (bond type: {bond_type})"
