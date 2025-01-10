@@ -25,10 +25,10 @@ def is_aldopentose(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for exactly 5 carbon atoms
+    # Check for 5 or 6 carbon atoms (allowing for some flexibility)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count != 5:
-        return False, f"Expected 5 carbons, found {c_count}"
+    if c_count < 5 or c_count > 6:
+        return False, f"Expected 5 or 6 carbons, found {c_count}"
 
     # Check for aldehyde group (either explicit or potential)
     aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)")
@@ -42,46 +42,15 @@ def is_aldopentose(smiles: str):
         if not potential_aldehyde_matches:
             return False, "No aldehyde or potential aldehyde group found"
 
-    # Check for multiple hydroxyl groups (at least 3)
-    hydroxyl_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetDegree() == 1)
-    if hydroxyl_count < 3:
-        return False, f"Expected at least 3 hydroxyl groups, found {hydroxyl_count}"
+    # Check for multiple hydroxyl groups (at least 3) attached to the carbon backbone
+    hydroxyl_pattern = Chem.MolFromSmarts("[C][OX2H]")
+    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
+    if len(hydroxyl_matches) < 3:
+        return False, f"Expected at least 3 hydroxyl groups attached to the carbon backbone, found {len(hydroxyl_matches)}"
 
     # Check molecular weight (should be around 150 g/mol for aldopentoses)
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 100 or mol_wt > 200:
         return False, f"Molecular weight {mol_wt:.2f} is outside expected range for aldopentoses"
 
-    return True, "Contains 5 carbons, a (potential) aldehyde group, and multiple hydroxyl groups"
-
-
-__metadata__ = {   'chemical_class': {   'id': 'CHEBI:34084',
-                          'name': 'aldopentose',
-                          'definition': 'A pentose with a (potential) aldehyde '
-                                        'group at one end.',
-                          'parents': ['CHEBI:46983', 'CHEBI:26561']},
-    'config': {   'llm_model_name': 'lbl/claude-sonnet',
-                  'f1_threshold': 0.8,
-                  'max_attempts': 5,
-                  'max_positive_instances': None,
-                  'max_positive_to_test': None,
-                  'max_negative_to_test': None,
-                  'max_positive_in_prompt': 50,
-                  'max_negative_in_prompt': 20,
-                  'max_instances_in_prompt': 100,
-                  'test_proportion': 0.1},
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 150,
-    'num_false_positives': 4,
-    'num_true_negatives': 182407,
-    'num_false_negatives': 23,
-    'num_negatives': None,
-    'precision': 0.974025974025974,
-    'recall': 0.8670520231213873,
-    'f1': 0.9174311926605504,
-    'accuracy': 0.9998521228585199}
+    return True, "Contains 5 or 6 carbons, a (potential) aldehyde group, and multiple hydroxyl groups attached to the carbon backbone"
