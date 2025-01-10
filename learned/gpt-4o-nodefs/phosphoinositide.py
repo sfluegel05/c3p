@@ -2,12 +2,12 @@
 Classifies: CHEBI:18179 phosphoinositide
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_phosphoinositide(smiles: str):
     """
     Determines if a molecule is a phosphoinositide based on its SMILES string.
-    A phosphoinositide typically contains a myo-inositol ring with one or more phosphate groups
-    and fatty acid chains.
+    A phosphoinositide must contain a myo-inositol ring with phosphate groups and fatty acid chains.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -16,41 +16,39 @@ def is_phosphoinositide(smiles: str):
         bool: True if molecule is a phosphoinositide, False otherwise
         str: Reason for classification
     """
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS pattern for myo-inositol ring
-    inositol_pattern = Chem.MolFromSmarts("C1(OC)C(O)C(O)C(O)C(O)O1")
+    # Define SMARTS patterns for myo-inositol, phosphate, and glycerol backbone
+    inositol_pattern = Chem.MolFromSmarts("C1([C@@H]([C@H]([C@@H](C([C@@H]([C@@H]1O)O)O)O)O)O)")
+    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)O")
+    glycerol_pattern = Chem.MolFromSmarts("OC[C@@H](O)CO")
+    
+    # Check for myo-inositol structure
     if not mol.HasSubstructMatch(inositol_pattern):
         return False, "No myo-inositol structure found"
-
-    # Check for phosphate groups
-    phosphate_pattern = Chem.MolFromSmarts("OP(O)(O)=O")
+    
+    # Check for at least one phosphate group
     phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
-    if len(phosphate_matches) < 1:
-        return False, "Less than one phosphate group found"
+    if len(phosphate_matches) == 0:
+        return False, "No phosphate groups found"
     
-    # Optional: Check for connected phosphates (common in derivatives)
-    # connected_phosphate_pattern = Chem.MolFromSmarts("[O,P](=O)(O)[O;R0]")
+    # Check for a glycerol backbone
+    if not mol.HasSubstructMatch(glycerol_pattern):
+        return False, "No glycerol backbone found"
     
-    # Check for fatty acid tails via ester linkage to glycerol backbones
-    # Look for ester linkage as part of glycerol backbone
-    ester_pattern = Chem.MolFromSmarts("C(=O)O[C@H](CO)CO")
-    if not mol.HasSubstructMatch(ester_pattern):
-        return False, "No ester-linked glycerol backbone found"
-
-    # Reinterpretation of long hydrocarbon chain through more flexible approach
-    # to accommodate various chain lengths seen in examples
-    long_chain_pattern = Chem.MolFromSmarts("C(CCCCCCCCCCCC)C") # Ideal: At minimum, detect one chain.
-    long_chain_matches = mol.GetSubstructMatches(long_chain_pattern)
-
-    if len(long_chain_matches) < 1:
-        return False, "No sufficient long hydrocarbon chains detected"
+    # Check for at least one fatty acid chain (2 or more carbons)
+    # Assuming a simple representation here as long carbon chain
+    carbon_chain_pattern = Chem.MolFromSmarts("CCCC")
+    if not mol.HasSubstructMatch(carbon_chain_pattern):
+        return False, "No fatty acid chains found"
     
-    return True, "Compound matches a phosphoinositide with typical features"
+    # If all checks pass
+    return True, "Contains myo-inositol structure, phosphate group(s), glycerol backbone, and fatty acid chains"
 
-# Testing example structure
-# smiles_str = "O=C(CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)O[C@@H](COP(O[C@H]1[C@@H]([C@H]([C@@H]([C@H]([C@H]1O)O)OP(O)(=O)O)O)O)(=O)O)COC(=O)CCCCCCCCCCCCCCCCC"
-# print(is_phosphoinositide(smiles_str))
+# Example usage
+# smiles_str = "a correct SMILES string for a known phosphoinositide"
+# is_phosphoinositide(smiles_str)
