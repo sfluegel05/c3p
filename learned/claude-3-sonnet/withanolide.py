@@ -27,19 +27,19 @@ def is_withanolide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Count carbons - withanolides typically have around 28 carbons
+    # Count carbons - withanolides have C28 backbone
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if not (24 <= c_count <= 35):  # Range to accommodate derivatives
-        return False, f"Carbon count {c_count} not typical for withanolide structure"
+    if not (26 <= c_count <= 32):  # Allow some variation for substitutions
+        return False, f"Carbon count {c_count} not typical for withanolide structure (expect ~28)"
 
-    # Multiple steroid core patterns to catch different variations
+    # More flexible steroid core patterns
     steroid_patterns = [
-        # Basic steroid core with flexible bonds
-        "[#6]1~[#6]~[#6]~[#6]2~[#6]~[#6]~[#6]3~[#6]~[#6]~[#6]4~[#6]~[#6]~[#6]~[#6]~4~[#6]~3~[#6]~2~[#6]~1",
-        # Alternative pattern with more specific ring connections
-        "[#6]1~[#6]~[#6]2~[#6](~[#6]~[#6]1)~[#6]~1~[#6]~[#6]~[#6]3~[#6](~[#6]~[#6]~[#6]3)~[#6]~1~[#6]2",
-        # More flexible pattern for modified cores
-        "[#6]1~[#6]~[#6]2~[#6]~[#6]~[#6]3~[#6]~[#6]~[#6]~[#6]3~[#6]2~[#6]~1"
+        # Basic 4-ring steroid system with flexible connections
+        "[#6]~1~[#6]~[#6]~[#6]~2~[#6]~[#6]~[#6]~3~[#6]~[#6]~[#6]~4~[#6]~[#6]~[#6]~[#6]~4~[#6]~3~[#6]~2~[#6]~1",
+        # Alternative pattern with more flexibility
+        "[#6]~1~[#6]~[#6]~2~[#6]~[#6]~[#6]~3~[#6]~[#6]~[#6]~[#6]~3~[#6]~2~[#6]~1",
+        # Pattern focusing on ring connectivity
+        "[#6]~1~2~[#6]~[#6]~[#6]~[#6]~1~[#6]~1~[#6]~[#6]~[#6]~3~[#6]~[#6]~[#6]~[#6]~3~[#6]~1~[#6]~2"
     ]
     
     core_found = False
@@ -49,21 +49,20 @@ def is_withanolide(smiles: str):
             break
             
     if not core_found:
-        return False, "No steroid-like core structure found"
+        return False, "No characteristic steroid core structure found"
 
-    # Check for lactone rings - multiple patterns to catch variations
+    # Specific withanolide lactone patterns
     lactone_patterns = [
-        # General δ-lactone pattern
-        "O=C1OCC[C@@H]1",
+        # α,β-unsaturated δ-lactone
+        "O=C1OC[C,C=][C,C=]1",
         # More specific withanolide lactone patterns
         "O=C1OC(C)=C(C)C1",
-        "O=C1OCC(C)C1",
-        # Unsaturated lactone patterns
-        "O=C1OC=CC1",
-        "O=C1OC(=C)CC1",
-        # More general patterns
-        "O=C1OC[C,C=]C1",
-        "O=C1O[CH2,CH][CH2,CH]C1"
+        "O=C1OCC(C)=C1C",
+        # General lactone patterns with substitutions
+        "O=C1OC([#6])[#6]C1([#6])[#6]",
+        "O=C1OC([#6])=C([#6])C1",
+        # Side chain lactone connection
+        "[#6]~2~[#6]~[#6]~1~O~C(=O)~[#6]~[#6]~1~[#6]~2"
     ]
     
     lactone_found = False
@@ -76,27 +75,13 @@ def is_withanolide(smiles: str):
     if not lactone_found:
         return False, "No characteristic lactone ring found"
 
-    # Check for oxygen count
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if not (2 <= o_count <= 15):
-        return False, f"Oxygen count {o_count} not typical for withanolides"
-
-    # Check molecular weight
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if not (350 <= mol_wt <= 900):
-        return False, f"Molecular weight {mol_wt} outside typical range for withanolides"
-
-    # Check ring count and ring connectivity
-    ring_info = mol.GetRingInfo()
-    ring_count = ring_info.NumRings()
-    if ring_count < 4:
-        return False, f"Ring count {ring_count} too low for withanolide structure"
-
-    # Look for characteristic oxygen substitutions (hydroxyl, ketone, or ester groups)
+    # Check for characteristic oxygen substitutions
     oxygen_patterns = [
-        "[OX2H1]", # hydroxyl
-        "[CX3](=[OX1])", # ketone
-        "[#6]OC(=O)[#6]" # ester
+        "[OX2H1]-[#6]~[#6]~[#6]", # hydroxyl groups
+        "[#6]-[CX3](=O)-[#6]", # ketone groups
+        "[#6]~[#6](=O)~O~[#6]", # ester groups
+        "[OX2H1]-[#6]-[#6]-[OX2H1]", # 1,2-diol pattern
+        "O=C-C=C", # α,β-unsaturated carbonyl
     ]
     
     oxygen_features = 0
@@ -105,8 +90,19 @@ def is_withanolide(smiles: str):
         if pat is not None and mol.HasSubstructMatch(pat):
             oxygen_features += 1
     
-    if oxygen_features < 1:
-        return False, "Missing characteristic oxygen-containing groups"
+    if oxygen_features < 2:
+        return False, "Missing characteristic oxygen substitution pattern"
+
+    # Check ring count
+    ring_info = mol.GetRingInfo()
+    ring_count = ring_info.NumRings()
+    if not (5 <= ring_count <= 8):
+        return False, f"Ring count {ring_count} not typical for withanolide structure"
+
+    # Check molecular weight
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if not (400 <= mol_wt <= 800):
+        return False, f"Molecular weight {mol_wt} outside typical range for withanolides"
 
     # If all checks pass
-    return True, "Matches withanolide structure with steroid core, lactone ring, and characteristic substitution pattern"
+    return True, "Matches withanolide structure with characteristic steroid core, lactone ring, and substitution pattern"
