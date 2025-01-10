@@ -20,8 +20,8 @@ def is_long_chain_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Redefine Coenzyme A motif with broader pattern recognition
-    coa_pattern = Chem.MolFromSmarts("C(=O)NCCSC(=O)CCNC(=O)C(C)(C)COP(=O)(O)OC[C@@H]1O[C@H](n2cnc3c(N)ncnc23)[C@@H](O)[C@H]1O")
+    # Redefine Coenzyme A motif with a more comprehensive pattern
+    coa_pattern = Chem.MolFromSmarts("C(=O)NCCC(=O)NCCSC(=O)CCNC(=O)[C@H](O)[C@H](COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H](n2cnc3c(N)ncnc23)[C@H](O)[C@H]1O)C(C)(C)O")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No Coenzyme A moiety found"
     
@@ -35,14 +35,13 @@ def is_long_chain_fatty_acyl_CoA(smiles: str):
     valid_long_chain = False
     for match in thioester_matches:
         # Assume the carbon following the thioester is the beginning of the chain
-        start_atom = match[0]  # Carbonyl carbon atom index
+        start_atom = match[2]  # Index of the first carbon in the chain
         
         # Count the number of carbons in the fatty acid chain
         carbon_chain = set()
-        carbon = mol.GetAtomWithIdx(start_atom)
-        visited = set([carbon.GetIdx()])
-        queue = [carbon]
-        
+        queue = [mol.GetAtomWithIdx(start_atom)]
+        visited = set([start_atom])
+
         while queue:
             current_atom = queue.pop()
             # Consider all continuous carbon atoms
@@ -50,7 +49,7 @@ def is_long_chain_fatty_acyl_CoA(smiles: str):
                 carbon_chain.add(current_atom.GetIdx())
 
             for neighbor in current_atom.GetNeighbors():
-                if neighbor.GetIdx() not in visited:
+                if neighbor.GetIdx() not in visited and neighbor.GetSymbol() == 'C':
                     visited.add(neighbor.GetIdx())
                     queue.append(neighbor)
 
