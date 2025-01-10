@@ -2,6 +2,7 @@
 Classifies: CHEBI:16749 1-phosphatidyl-1D-myo-inositol
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_1_phosphatidyl_1D_myo_inositol(smiles: str):
     """
@@ -19,17 +20,23 @@ def is_1_phosphatidyl_1D_myo_inositol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define glycerol backbone with two ester linkages and a phospho group
-    glycerol_phospho_pattern = Chem.MolFromSmarts("O[C@@H]1COC2(=O)COP(=O)(O)O2")
-    if not mol.HasSubstructMatch(glycerol_phospho_pattern):
-        return False, "No glycerol backbone with phosphatidyl linkages found"
+    # Define SMARTS patterns for the structural features of 1-phosphatidyl-1D-myo-inositol
+    # Glycerol backbone with ester linkages
+    glycerol_ester_pattern = Chem.MolFromSmarts("[C@H](OC(=O))COC(=O)")
+    if not mol.HasSubstructMatch(glycerol_ester_pattern):
+        return False, "No glycerol backbone with ester linkages found"
 
-    # Define the myo-inositol ring structure with specific stereochemistry
-    myo_inositol_pattern = Chem.MolFromSmarts("O[C@@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@H]1O")
-    if not mol.HasSubstructMatch(myo_inositol_pattern):
-        return False, "No myo-inositol ring found with correct hydroxyl configurations"
+    # Phosphate group pattern: phosphate group attached to the glycerol
+    phosphate_pattern = Chem.MolFromSmarts("COP(=O)(O)O")
+    if not mol.HasSubstructMatch(phosphate_pattern):
+        return False, "No phosphate group attached to the glycerol backbone"
 
-    return True, "Successfully matches 1-phosphatidyl-1D-myo-inositol structural features"
+    # Inositol ring pattern: cyclohexane ring with hydroxyls
+    inositol_pattern = Chem.MolFromSmarts("C1(C(O)C(O)C(O)C(O)C1O)O")
+    if not mol.HasSubstructMatch(inositol_pattern):
+        return False, "No inositol cyclohexane ring with hydroxyl groups found"
+
+    return True, "Matches 1-phosphatidyl-1D-myo-inositol structural features"
 
 # Example usage:
 smiles_examples = [
