@@ -2,6 +2,7 @@
 Classifies: CHEBI:32878 alkene
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_alkene(smiles: str):
     """
@@ -16,7 +17,7 @@ def is_alkene(smiles: str):
         bool: True if molecule is an alkene, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
@@ -26,7 +27,7 @@ def is_alkene(smiles: str):
     if mol.GetRingInfo().NumRings() > 0:
         return False, "Molecule contains cycles"
 
-    # Look for carbon-carbon double bonds (C=C)
+    # Ensure exactly one carbon-carbon double bond (C=C)
     double_bond_pattern = Chem.MolFromSmarts("C=C")
     double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
     num_double_bonds = len(double_bond_matches)
@@ -34,11 +35,21 @@ def is_alkene(smiles: str):
     if num_double_bonds != 1:
         return False, f"Found {num_double_bonds} carbon-carbon double bonds, need exactly 1"
 
-    # Check if the molecular formula matches CnH2n
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    h_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 1)
+    # Use RDKit to calculate the molecular formula
+    formula = rdMolDescriptors.CalcMolFormula(mol)
+    # Extract counts of C and H from the formula
+    c_count = 0
+    h_count = 0
+    import re
+    for match in re.finditer(r'([A-Z][a-z]*)(\d*)', formula):
+        element = match.group(1)
+        count = int(match.group(2)) if match.group(2) else 1
+        if element == 'C':
+            c_count = count
+        elif element == 'H':
+            h_count = count
 
-    if h_count != 2 * c_count:
+    if c_count == 0 or h_count == 0 or h_count != 2 * c_count:
         return False, f"Molecular formula does not match CnH2n (found C{c_count}H{h_count})"
 
     return True, "Molecule is an alkene with one carbon-carbon double bond and fits the general formula CnH2n"
