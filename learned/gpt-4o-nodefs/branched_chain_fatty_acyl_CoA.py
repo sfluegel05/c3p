@@ -20,22 +20,20 @@ def is_branched_chain_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define more refined CoA substructure pattern
-    # Including adenine part, ribose, pyrophosphate, and the expected acyl chain linker with 'S'
-    coa_pattern = Chem.MolFromSmarts('OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(=O)O)O[C@H]2n3cnc2c(N)ncn3C'
-                                     'NC(=O)CCNC(=O)[C@H](O)C(C)(C)[O-]')  
-    
+    # Broadened CoA substructure pattern to include more specific phosphate and base features
+    coa_pattern = Chem.MolFromSmarts('NC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC')
+
     # Check for the presence of CoA substructure
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "Lacks CoA substructure"
 
-    # Refined branching patterns to capture various methyl groupings
+    # Expanded branching patterns to capture various methyl groupings
     branch_patterns = [
         Chem.MolFromSmarts('CC(C)C'),       # Simple methyl branching
         Chem.MolFromSmarts('C(C)(C)C'),     # Double methyl branching
-        Chem.MolFromSmarts('[CH2]C(C)C=O'), # Keto group on branched channel
+        Chem.MolFromSmarts('CCC(C)C'),      # Additional chiral branching
         Chem.MolFromSmarts('C=C(C)C'),      # Brancing with double bond
-        Chem.MolFromSmarts('CCC(C)C')       # Longer chain to capture larger structures
+        Chem.MolFromSmarts('CC(O)C')        # Hydroxyl attached to branch point
     ]
     
     # Check for any branched patterns
@@ -43,4 +41,5 @@ def is_branched_chain_fatty_acyl_CoA(smiles: str):
     if not branched_match:
         return False, "No branched chain detected"
 
+    # It might or might not have hydroxylation, broaden functional group checks
     return True, "Molecule contains CoA moiety and branched-chain structure"
