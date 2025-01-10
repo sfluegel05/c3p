@@ -21,9 +21,8 @@ def is_polar_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define the core structure for an alpha-amino acid with flexibility for stereochemistry
-    
-    core_pattern = Chem.MolFromSmarts("N[C@H](C(=O)O)|N[C@@H](C(=O)O)")
+    # Define the core structure for an alpha-amino acid
+    core_pattern = Chem.MolFromSmarts("N[C@@H](C(=O)O)")
     if not core_pattern:
         return False, "Core pattern could not be created"
     
@@ -35,16 +34,12 @@ def is_polar_amino_acid(smiles: str):
         Chem.MolFromSmarts("C(=O)N"),  # Amide group (Asparagine, Glutamine)
         Chem.MolFromSmarts("[OH]"),    # Hydroxyl group (Serine, Threonine, Tyrosine)
         Chem.MolFromSmarts("[SH]"),    # Thiol group (Cysteine)
-        Chem.MolFromSmarts("c1cn[cH]c1")  # Imidazole ring (Histidine)
+        Chem.MolFromSmarts("C=C([NH])[NH]")  # Imidazole ring (Histidine)
     ]
 
     # Check each polar side chain pattern
     for pattern in polar_side_chain_patterns:
         if pattern and mol.HasSubstructMatch(pattern):
-            # Further filtering to reduce false positives, like molecular weight check
-            if Chem.Descriptors.MolWt(mol) < 200:  # Arbitrary threshold to weed out larger structures
-                return True, "Contains polar side chain capable of hydrogen bonding"
-            else:
-                return False, "Possible large molecule or peptide, not a simple polar amino acid"
+            return True, "Contains polar side chain capable of hydrogen bonding"
 
     return False, "No polar side chain found capable of hydrogen bonding"
