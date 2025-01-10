@@ -9,6 +9,7 @@ def is_hexose(smiles: str):
     Determines if a molecule is a hexose based on its SMILES string.
     A hexose is any six-carbon monosaccharide which in its linear form contains either
     an aldehyde group at position 1 (aldohexose) or a ketone group at position 2 (ketohexose).
+    This function accounts for both linear and cyclic forms.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -27,18 +28,45 @@ def is_hexose(smiles: str):
     if num_carbons != 6:
         return False, f"Number of carbon atoms ({num_carbons}) is not 6"
 
-    # Check for aldehyde group at position 1 (terminal aldehyde)
-    aldehyde_pattern = Chem.MolFromSmarts("[#6H1][CX3H1](=O)")
-    aldehyde_matches = mol.GetSubstructMatches(aldehyde_pattern)
-    if aldehyde_matches:
-        # Confirm aldehyde is at position 1
-        return True, "Molecule is an aldohexose (contains terminal aldehyde group at position 1)"
+    # Check for monosaccharide structure (no glycosidic bonds)
+    # Count the number of rings to exclude disaccharides and polysaccharides
+    if mol.GetRingInfo().NumRings() > 1:
+        return False, "Molecule has more than one ring, may not be a monosaccharide"
 
-    # Check for ketone group at position 2
-    ketose_pattern = Chem.MolFromSmarts("[#6H2][#6](=O)[#6H1]")
-    ketose_matches = mol.GetSubstructMatches(ketose_pattern)
-    if ketose_matches:
-        # Confirm ketone is at position 2
-        return True, "Molecule is a ketohexose (contains ketone group at position 2)"
+    # Define SMARTS patterns for aldohexoses and ketohexoses in linear and cyclic forms
+    # Aldohexose linear form
+    aldohexose_linear = Chem.MolFromSmarts("[#6H]=O-[#6]-[#6]-[#6]-[#6]-[#6]")
+    # Aldohexose cyclic form (hemiacetal pyranose and furanose)
+    aldohexose_cyclic = Chem.MolFromSmarts("C1OC([#6H])(CO)C(O)C1O")
+    # Ketohexose linear form
+    ketohexose_linear = Chem.MolFromSmarts("[#6]-C(=O)-[#6]-[#6]-[#6]-[#6]-O")
+    # Ketohexose cyclic form (hemiketal pyranose and furanose)
+    ketohexose_cyclic = Chem.MolFromSmarts("C1OC(CO)C(O)C(O)C1O")
 
-    return False, "Molecule does not have an aldehyde at position 1 or ketone at position 2"
+    # Match patterns
+    if mol.HasSubstructMatch(aldohexose_linear):
+        return True, "Molecule is an aldohexose in linear form"
+    elif mol.HasSubstructMatch(ketohexose_linear):
+        return True, "Molecule is a ketohexose in linear form"
+    elif mol.HasSubstructMatch(aldohexose_cyclic):
+        return True, "Molecule is an aldohexose in cyclic form"
+    elif mol.HasSubstructMatch(ketohexose_cyclic):
+        return True, "Molecule is a ketohexose in cyclic form"
+
+    # As an alternative, check for general hexose pattern (both cyclic and linear)
+    # Six carbons with hydroxyl groups and one oxygen in ring (for cyclic forms)
+    hexose_pattern = Chem.MolFromSmarts("""
+    [
+        $([C;H1,H2][O;H1,H0]),
+        $([C;H1,H2][O;H1,H0]),
+        $([C;H1,H2][O;H1,H0]),
+        $([C;H1,H2][O;H1,H0]),
+        $([C;H1,H2][O;H1,H0]),
+        $([C;H1,H2]=[O,N])
+    ]
+    """)
+
+    if mol.HasSubstructMatch(hexose_pattern):
+        return True, "Molecule matches general hexose pattern"
+
+    return False, "Molecule does not match hexose patterns"
