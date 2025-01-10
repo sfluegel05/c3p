@@ -5,6 +5,7 @@ Classifies: CHEBI:17984 acyl-CoA
 Classifies: acyl-CoA
 """
 from rdkit import Chem
+from rdkit.Chem import rdqueries
 
 def is_acyl_CoA(smiles: str):
     """
@@ -19,55 +20,65 @@ def is_acyl_CoA(smiles: str):
         bool: True if molecule is an acyl-CoA, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES of input molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Coenzyme A SMILES string
-    coa_smiles = "CC(=O)NCCSCCNC(=O)CCNC(=O)C(O)C(C)(C)COP(=O)(O)OP(=O)(O)OCC1OC(n2cnc3nc(N)nc(N)c32)C(O)C1OP(=O)(O)O"
-    coa_mol = Chem.MolFromSmiles(coa_smiles)
-    if coa_mol is None:
-        return False, "Error in loading CoA structure"
+    # Define thioester SMARTS pattern (C(=O)S)
+    thioester_smarts = '[CX3](=O)[SX2]'
+    thioester_pattern = Chem.MolFromSmarts(thioester_smarts)
 
-    # Find sulfur atom index in CoA molecule
-    sulfur_idx = None
-    for atom in coa_mol.GetAtoms():
-        if atom.GetSymbol() == 'S':
-            sulfur_idx = atom.GetIdx()
-            break
-    if sulfur_idx is None:
-        return False, "No sulfur atom found in CoA structure"
+    # Search for thioester groups
+    thioester_matches = mol.GetSubstructMatches(thioester_pattern, useChirality=False)
+    if not thioester_matches:
+        return False, "No thioester group found"
 
-    # Search for CoA substructure in input molecule
-    matches = mol.GetSubstructMatches(coa_mol, useChirality=True)
-    if not matches:
-        return False, "Coenzyme A moiety not found"
+    # Define adenine ring SMARTS pattern
+    adenine_smarts = 'c1ncnc2ncnc12'
+    adenine_pattern = Chem.MolFromSmarts(adenine_smarts)
+    if adenine_pattern is None:
+        return False, "Error in creating adenine pattern"
 
-    # For each match, check for thioester linkage
-    for match in matches:
-        # Get the corresponding sulfur atom in the input molecule
-        mol_sulfur_idx = match[sulfur_idx]
-        sulfur_atom = mol.GetAtomWithIdx(mol_sulfur_idx)
+    # Search for adenine ring
+    adenine_matches = mol.GetSubstructMatches(adenine_pattern, useChirality=False)
+    if not adenine_matches:
+        return False, "Adenine moiety not found"
 
-        # Check neighbors of sulfur atom
-        neighbors = sulfur_atom.GetNeighbors()
-        found_thioester = False
-        for neighbor in neighbors:
-            if neighbor.GetAtomicNum() == 6:  # Carbon
-                # Check if this carbon is a carbonyl carbon (C=O)
-                is_carbonyl = False
-                for nbr_of_carb in neighbor.GetNeighbors():
-                    if nbr_of_carb.GetAtomicNum() == 8:  # Oxygen
-                        bond = mol.GetBondBetweenAtoms(neighbor.GetIdx(), nbr_of_carb.GetIdx())
-                        if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-                            is_carbonyl = True
-                            break
-                if is_carbonyl:
-                    found_thioester = True
-                    break
-        if found_thioester:
-            return True, "Contains CoA moiety attached via thioester linkage to an acyl group"
+    # Get atom indices of adenine ring
+    adenine_atom_indices = set()
+    for match in adenine_matches:
+        adenine_atom_indices.update(match)
 
-    return False, "Thioester linkage not connected to CoA sulfur atom"
+    # For each thioester group, check connectivity to adenine
+    for thioester_match in thioester_matches:
+        sulfur_idx = thioester_match[2]  # Index of sulfur atom in thioester group
+        sulfur_atom = mol.GetAtomWithIdx(sulfur_idx)
+
+        # Perform BFS from sulfur atom to check for path to adenine atoms
+        visited = set()
+        queue = [sulfur_atom.GetIdx()]
+        found_path_to_adenine = False
+
+        while queue:
+            current_idx = queue.pop(0)
+            if current_idx in visited:
+                continue
+            visited.add(current_idx)
+
+            if current_idx in adenine_atom_indices:
+                found_path_to_adenine = True
+                break
+
+            current_atom = mol.GetAtomWithIdx(current_idx)
+            neighbors = current_atom.GetNeighbors()
+            for neighbor in neighbors:
+                neighbor_idx = neighbor.GetIdx()
+                if neighbor_idx not in visited:
+                    queue.append(neighbor_idx)
+
+        if found_path_to_adenine:
+            return True, "Contains thioester linked to CoA moiety (adenine ring connected via sulfur)"
+
+    return False, "Thioester group not connected to CoA moiety"
