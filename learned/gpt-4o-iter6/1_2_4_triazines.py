@@ -21,19 +21,11 @@ def is_1_2_4_triazines(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # SMARTS pattern for 1,2,4-Triazine core
-    triazine_pattern = Chem.MolFromSmarts("[nH]1ncn[nH]c1 | n1ncncn1")
+    # Correct SMARTS pattern for 1,2,4-Triazine core
+    triazine_pattern = Chem.MolFromSmarts("n1ncncc1")
 
     # Check if the molecule contains the 1,2,4-triazine substructure
     if mol.HasSubstructMatch(triazine_pattern):
-        # Ensure the correct configuration of N atoms (3 N atoms in a six-membered ring)
-        num_nitrogens = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'N')
-        num_carbon = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'C')
-        
-        # 1,2,4-Triazine contains exactly three nitrogen atoms and three carbon atoms in the core ring
-        if num_nitrogens >= 3 and num_carbon >= 3:
-            return True, "Contains the 1,2,4-triazine core structure with appropriate nitrogen configuration"
-        else:
-            return False, "Incorrect configuration of ring atoms"
+        return True, "Contains the 1,2,4-triazine core structure with nitrogen at positions 1, 2, and 4"
     
     return False, "Does not contain the 1,2,4-triazine core structure"
