@@ -28,9 +28,9 @@ def is_polychlorinated_dibenzodioxines_and_related_compounds(smiles: str):
 
     # Define more general core structures for dibenzodioxin, dibenzofuran, and biphenyl
     # These patterns allow for any substitution on the core structures
-    dibenzodioxin_pattern = Chem.MolFromSmarts("O1c2ccccc2Oc2ccccc12")
-    dibenzofuran_pattern = Chem.MolFromSmarts("O1c2ccccc2c2ccccc12")
-    biphenyl_pattern = Chem.MolFromSmarts("c1ccccc1-c2ccccc2")
+    dibenzodioxin_pattern = Chem.MolFromSmarts("O1c2c(*)ccc2Oc2c(*)ccc12")
+    dibenzofuran_pattern = Chem.MolFromSmarts("O1c2c(*)ccc2c2c(*)ccc12")
+    biphenyl_pattern = Chem.MolFromSmarts("c1c(*)ccc1-c2c(*)ccc2")
 
     # Check if the molecule contains any of the core structures
     has_dibenzodioxin = mol.HasSubstructMatch(dibenzodioxin_pattern)
