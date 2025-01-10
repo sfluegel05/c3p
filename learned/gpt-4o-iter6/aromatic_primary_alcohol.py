@@ -22,26 +22,18 @@ def is_aromatic_primary_alcohol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define primary alcohol pattern (carbon attached to an OH group)
-    primary_alcohol_pattern = Chem.MolFromSmarts("[CH2]O")
-    
-    # Find substructures matching primary alcohol
-    matches = mol.GetSubstructMatches(primary_alcohol_pattern)
-    
-    if not matches:
-        return False, "No primary alcohol found"
+    # Define primary alcohol attached to aromatic pattern:
+    # A primary alcohol has the form [CH2]OH, where [CH2] is bonded to an aromatic ring.
+    aromatic_primary_alcohol_pattern = Chem.MolFromSmarts("[CH2][OH]c1[cH,c,n,o,s]")
 
-    # Check if attached carbon is bonded to an aromatic ring
-    for match in matches:
-        carbon_index = match[0]
-        carbon_atom = mol.GetAtomWithIdx(carbon_index)
-        is_bonded_to_aromatic = any(nb.GetIsAromatic() for nb in carbon_atom.GetNeighbors())
-        
-        if is_bonded_to_aromatic:
-            return True, "Primary alcohol bonded to aromatic ring found"
+    # Find substructures matching the aromatic primary alcohol pattern
+    matches = mol.GetSubstructMatches(aromatic_primary_alcohol_pattern)
     
+    if matches:
+        return True, "Primary alcohol bonded to aromatic ring found"
+
     return False, "Primary alcohol not bonded to an aromatic ring"
 
-# Example usage:
+# Example usage
 # smile = "CC1=C(CO)C=CC=C1"  # 2-methylbenzyl alcohol
 # print(is_aromatic_primary_alcohol(smile))
