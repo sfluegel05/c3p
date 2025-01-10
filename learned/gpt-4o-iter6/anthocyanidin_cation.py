@@ -21,14 +21,23 @@ def is_anthocyanidin_cation(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Flavylium core pattern with a positively charged carbon
-    flavylium_pattern = Chem.MolFromSmarts("[O]=[c+]1cc2c(O)ccc(O)c2c(c1)c1cc(O)cc(O)c1")  
+    # Basic flavylium core pattern, with more flexibility in substituents
+    flavylium_pattern = Chem.MolFromSmarts("[o+]1c2ccccc2c(O)c2cc(O)ccc12")  
     if not mol.HasSubstructMatch(flavylium_pattern):
-        return False, "Does not match the anthocyanidin cation core (flavylium) pattern"
+        return False, "Does not match the anthocyanidin cation core (flexible flavylium) pattern"
     
-    # Check for sufficient number of oxygen atoms (common in anthocyanidins)
+    # Ensure positive charge is found - common in these cations
+    if not any(atom.GetFormalCharge() == 1 for atom in mol.GetAtoms()):
+        return False, "Missing positive charge expected in anthocyanidin cations"
+    
+    # Check for a reasonable count of oxygen atoms, as these are often oxygenated
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     if o_count < 3:
-        return False, "Insufficient number of oxygen substituents for anthocyanidin cation"
+        return False, f"Insufficient number of oxygen atoms ({o_count}) for anthocyanidin cation"
 
-    return True, "Contains 2-phenylchromenylium core with sufficient oxygenation"
+    # Check for some common glycosidic linkages, though not exclusively defining
+    glycoside_links = Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H]1O")
+    if mol.HasSubstructMatch(glycoside_links):
+        return True, "Contains anthocyanidin cation with glycosidic linkage"
+
+    return True, "Contains anthocyanidin cation core with sufficient oxygenation"
