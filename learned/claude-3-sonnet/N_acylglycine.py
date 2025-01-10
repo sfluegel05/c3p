@@ -27,42 +27,56 @@ def is_N_acylglycine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for N-acylglycine pattern:
-    # [C:1](=[O:2])[N:3][CH2:4][C:5](=[O:6])[O,OH]
-    # This matches:
-    # - Any carbon with double-bonded oxygen (the acyl group)
-    # - Connected to a nitrogen
-    # - Connected to CH2
-    # - Connected to a carboxyl group (handles both acid and charged forms)
+    # Look for basic N-acylglycine pattern
     pattern = Chem.MolFromSmarts('[C:1](=[O:2])[N:3][CH2:4][C:5](=[O:6])[O,OH]')
+    
+    if not mol.HasSubstructMatch(pattern):
+        return False, "No N-acylglycine moiety found"
     
     matches = mol.GetSubstructMatches(pattern)
     
-    if not matches:
-        return False, "No N-acylglycine moiety found"
+    # Pattern to detect peptide bonds
+    peptide_pattern = Chem.MolFromSmarts('[NX3:1][C:2](=[O:3])[C:4]([NX3:5])')
     
-    # For each match, verify it's a true N-acylglycine:
     for match in matches:
         acyl_c = mol.GetAtomWithIdx(match[0])
         nitrogen = mol.GetAtomWithIdx(match[2])
         ch2 = mol.GetAtomWithIdx(match[3])
         acid_c = mol.GetAtomWithIdx(match[4])
         
-        # Verify acyl carbon has a non-oxygen neighbor (R group)
-        has_r_group = False
-        for neighbor in acyl_c.GetNeighbors():
-            if neighbor.GetAtomicNum() != 8 and neighbor.GetAtomicNum() != 7:
-                has_r_group = True
-                break
-                
-        if not has_r_group:
+        # Check if nitrogen is part of a peptide chain
+        # Get all atoms in peptide bonds
+        peptide_matches = mol.GetSubstructMatches(peptide_pattern)
+        peptide_nitrogens = set()
+        for pmatch in peptide_matches:
+            peptide_nitrogens.add(pmatch[0])
+            peptide_nitrogens.add(pmatch[4])
+        
+        # Skip if this nitrogen is part of a peptide chain
+        if nitrogen.GetIdx() in peptide_nitrogens:
             continue
             
         # Verify CH2 is only connected to N and acid C
-        if len(list(ch2.GetNeighbors())) != 2:
+        ch2_neighbors = list(ch2.GetNeighbors())
+        if len(ch2_neighbors) != 2:
             continue
             
-        # All checks passed
-        return True, "Contains N-acylglycine structure: R-C(=O)-NH-CH2-C(=O)-O"
+        # Check that CH2 neighbors are only N and acid C
+        ch2_neighbor_ids = {n.GetIdx() for n in ch2_neighbors}
+        if not ch2_neighbor_ids == {nitrogen.GetIdx(), acid_c.GetIdx()}:
+            continue
         
-    return False, "Contains similar groups but not in N-acylglycine arrangement"
+        # Verify carboxylic acid group
+        acid_neighbors = list(acid_c.GetNeighbors())
+        has_oh = False
+        for neighbor in acid_neighbors:
+            if neighbor.GetAtomicNum() == 8:
+                has_oh = True
+                break
+        if not has_oh:
+            continue
+            
+        # If we get here, we have a valid N-acylglycine
+        return True, "Contains N-acylglycine structure: R-C(=O)-NH-CH2-C(=O)-OH"
+    
+    return False, "Contains similar groups but not in correct N-acylglycine arrangement"
