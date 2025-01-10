@@ -29,35 +29,29 @@ def is_flavonoids(smiles: str):
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     
     # Check carbon count (C15/C16 core + possible substituents)
-    if c_count < 15:
+    if c_count < 12:  # Relaxed from 15 to catch simpler flavonoids
         return False, "Too few carbons for flavonoid core structure"
         
     # Must contain oxygen
-    if o_count < 2:
+    if o_count < 1:  # Relaxed from 2
         return False, "Insufficient oxygen atoms for flavonoid"
-
-    # Count aromatic rings
-    ring_info = mol.GetRingInfo()
-    aromatic_rings = 0
-    for ring in ring_info.AtomRings():
-        if all(mol.GetAtomWithIdx(i).GetIsAromatic() for i in ring):
-            aromatic_rings += 1
-    
-    if aromatic_rings < 2:
-        return False, "Insufficient aromatic rings for flavonoid structure"
 
     # Core structure patterns for different flavonoid classes
     patterns = [
-        # Basic flavone/flavonol core (with variations in saturation)
-        "O=C1CC(c2ccccc2)Oc2ccccc12",
-        # Chalcone pattern (with variations in saturation)
-        "O=C(CC)c1ccccc1",
-        # Isoflavone core variation
-        "O=C1C=Cc2ccccc2O1",
-        # Flavanone core variation
-        "O1CCCCC1",
-        # General diphenylpropane skeleton
-        "c1ccccc1CCc1ccccc1"
+        # Basic flavone/flavonol core (more flexible)
+        "[#6]1~[#6]~[#6](~[#6]2~[#6]~[#6]~[#6]~[#6]~[#6]2)~[#8]~[#6]2~[#6]~[#6]~[#6]~[#6]~[#6]12",
+        # Isoflavone core
+        "[#6]1~[#6]~[#6]2~[#8]~[#6]~[#6](=O)~[#6]2=C~[#6]1",
+        # Chalcone pattern
+        "[#6]1~[#6]~[#6]~[#6]~[#6]~[#6]1~[#6](=O)~[#6]~[#6]~[#6]1~[#6]~[#6]~[#6]~[#6]~[#6]1",
+        # Flavanone core
+        "[#6]1~[#6]~[#6](~[#6]2~[#6]~[#6]~[#6]~[#6]~[#6]2)~[#8]~[#6]2~[#6](=O)~[#6]~[#6]~[#6]12",
+        # Anthocyanidin core
+        "[#6]1~[#6]~[#6]2~[#8]~[#6](~[#6]3~[#6]~[#6]~[#6]~[#6]~[#6]3)~[#6](~[#8])~[#6]~[#6]2~[#6]~[#6]1",
+        # Aurone core
+        "[#6]1~[#6]~[#6]2~[#8]~[#6](=C~[#6]3~[#6]~[#6]~[#6]~[#6]~[#6]3)~[#6](=O)~[#6]2~[#6]~[#6]1",
+        # More general diphenylpropane skeleton
+        "[#6]1~[#6]~[#6]~[#6]~[#6]~[#6]1~[#6]~[#6]~[#6]1~[#6]~[#6]~[#6]~[#6]~[#6]1"
     ]
     
     # Check for presence of any core patterns
@@ -74,47 +68,37 @@ def is_flavonoids(smiles: str):
     # Look for typical oxygen-containing functional groups
     o_patterns = [
         # Ketone/carbonyl
-        "C(=O)",
+        "[#6][#6](=[#8])[#6]",
         # Hydroxyl
-        "OH",
+        "[#8H1]",
         # Ether
-        "COC",
-        # Pyranone ring (common in flavonoids)
-        "O=C1CCOc2ccccc12"
+        "[#6][#8][#6]",
+        # Glycoside pattern
+        "[#6][#8][#6]1[#8][#6]([#6][#8])[#6]([#8])[#6]([#8])[#6]1",
+        # Pyranone ring
+        "[#6]1[#6][#6](=[#8])[#8][#6]2[#6][#6][#6][#6][#6]12"
     ]
     
     oxygen_groups = 0
     for pattern in o_patterns:
         pattern_mol = Chem.MolFromSmarts(pattern)
-        if pattern_mol is not None and mol.HasSubstructMatch(pattern_mol):
-            oxygen_groups += 1
+        if pattern_mol is not None:
+            matches = mol.GetSubstructMatches(pattern_mol)
+            oxygen_groups += len(matches)
             
-    if oxygen_groups < 2:
-        return False, "Insufficient oxygen-containing functional groups"
-
-    # Calculate molecular properties
-    mol_weight = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_weight < 200 or mol_weight > 1000:
-        return False, "Molecular weight outside typical flavonoid range"
-
-    # Calculate number of rings
-    num_rings = rdMolDescriptors.CalcNumRings(mol)
-    if num_rings < 2:
-        return False, "Insufficient ring count for flavonoid structure"
-
-    # Check for conjugated system
-    conjugated_pattern = Chem.MolFromSmarts("c1ccccc1")
-    if conjugated_pattern is not None and not mol.HasSubstructMatch(conjugated_pattern):
-        return False, "Missing conjugated aromatic system"
+    if oxygen_groups == 0:  # Relaxed from 2
+        return False, "No characteristic oxygen-containing functional groups"
 
     # Additional structural features common in flavonoids
     features = [
         # Phenol group
-        "c1ccccc1O",
-        # Common substitution pattern
-        "Oc1ccccc1",
-        # Pyrone-type ring
-        "O=C1CCOc2ccccc12"
+        "c1ccccc1[OH]",
+        # Common substitution patterns
+        "[#8]c1ccccc1",
+        # Conjugated system
+        "c1ccccc1",
+        # Common glycosylation pattern
+        "[#6][#8][#6]1[#8][#6][#6][#6][#6][#6]1[#8]"
     ]
     
     feature_count = 0
@@ -124,6 +108,11 @@ def is_flavonoids(smiles: str):
             feature_count += 1
 
     if feature_count == 0:
-        return False, "Missing typical flavonoid substitution patterns"
+        return False, "Missing typical flavonoid structural features"
+
+    # Calculate number of rings
+    num_rings = rdMolDescriptors.CalcNumRings(mol)
+    if num_rings < 2:
+        return False, "Insufficient ring count for flavonoid structure"
 
     return True, "Contains flavonoid core structure with appropriate substitution patterns"
