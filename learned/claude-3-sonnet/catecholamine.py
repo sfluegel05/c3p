@@ -27,49 +27,68 @@ def is_catecholamine(smiles: str):
     # Convert to neutral form if possible (handle salt forms)
     mol = Chem.RemoveHs(mol)  # Remove explicit hydrogens
     
-    # Look for catechol (benzene with two adjacent OH groups) pattern
-    # Allow for additional OH groups and other substituents
-    catechol_pattern = Chem.MolFromSmarts("c1c(O)c(O)cccc1")  # Basic catechol
-    catechol_pattern2 = Chem.MolFromSmarts("c1c(O)cc(O)ccc1")  # Alternative OH positions
-    catechol_pattern3 = Chem.MolFromSmarts("c1c(O)c(O)cc(O)c1")  # Trihydroxy pattern
-    
-    has_catechol = any([mol.HasSubstructMatch(pat) for pat in 
-                       [catechol_pattern, catechol_pattern2, catechol_pattern3]])
-    
-    if not has_catechol:
-        return False, "No catechol (adjacent hydroxyl groups on benzene) found"
-    
-    # Look for ethylamine chain (-CH2-CH2-N) attached to the ring
-    # Allow for substituted amines and various attachment points
-    ethylamine_patterns = [
-        Chem.MolFromSmarts("c-CCN"),  # Basic ethylamine
-        Chem.MolFromSmarts("c-CC[NH2]"),  # Primary amine
-        Chem.MolFromSmarts("c-CC[NH][CH3]"),  # Secondary amine (methylated)
-        Chem.MolFromSmarts("c-CC[NH]C"),  # Secondary amine (general)
-        Chem.MolFromSmarts("c-CCN(C)C"),  # Tertiary amine
-        Chem.MolFromSmarts("c-CC[NH+]"),  # Protonated amine
-        Chem.MolFromSmarts("c-C[CH]N"),  # Allow for substitution on carbon
-        Chem.MolFromSmarts("c-C[CH](O)N"),  # Beta-hydroxyl variant
+    # More flexible catechol patterns allowing different substitutions
+    catechol_patterns = [
+        Chem.MolFromSmarts("c1(O)c(O)cccc1"),  # 1,2-dihydroxy
+        Chem.MolFromSmarts("c1c(O)c(O)ccc1"),   # 2,3-dihydroxy
+        Chem.MolFromSmarts("c1cc(O)c(O)cc1"),   # 3,4-dihydroxy
+        Chem.MolFromSmarts("c1c(O)cc(O)cc1"),   # 2,4-dihydroxy
+        Chem.MolFromSmarts("c1(O)c(O)c(O)ccc1"), # Trihydroxy variants
+        Chem.MolFromSmarts("c1(O)c(O)cc(O)cc1"),
     ]
     
-    has_ethylamine = any([mol.HasSubstructMatch(pat) for pat in ethylamine_patterns])
+    has_catechol = False
+    for pat in catechol_patterns:
+        if pat is not None and mol.HasSubstructMatch(pat):
+            has_catechol = True
+            break
+            
+    if not has_catechol:
+        return False, "No catechol moiety found"
     
+    # More comprehensive ethylamine patterns
+    ethylamine_patterns = [
+        # Basic patterns
+        Chem.MolFromSmarts("[cR1]!@CC[NH2,NH1,NH0]"), # Direct ethylamine chain
+        Chem.MolFromSmarts("[cR1]!@CC([*,H])N"),      # Allow substitution at beta carbon
+        Chem.MolFromSmarts("[cR1]!@C([*,H])CN"),      # Allow substitution at alpha carbon
+        # Hydroxylated variants
+        Chem.MolFromSmarts("[cR1]!@CC(O)N"),          # Beta-hydroxyl
+        Chem.MolFromSmarts("[cR1]!@C(O)CN"),          # Alpha-hydroxyl
+        # Various amine substitutions
+        Chem.MolFromSmarts("[cR1]!@CCN([*,H])[*,H]"), # Secondary amine
+        Chem.MolFromSmarts("[cR1]!@CCN([*,H])([*,H])"), # Tertiary amine
+    ]
+    
+    has_ethylamine = False
+    for pat in ethylamine_patterns:
+        if pat is not None and mol.HasSubstructMatch(pat):
+            has_ethylamine = True
+            break
+            
     if not has_ethylamine:
         return False, "No ethylamine chain found"
     
-    # Additional check to ensure the catechol and ethylamine are properly connected
-    # by looking for the complete pattern
-    complete_pattern = Chem.MolFromSmarts("c1c(O)c(O)ccc1CCN")  # Basic pattern
-    complete_pattern2 = Chem.MolFromSmarts("c1c(O)c(O)cc(CCN)c1")  # Alternative attachment
+    # Additional checks to avoid false positives
     
-    has_complete = any([mol.HasSubstructMatch(pat) for pat in 
-                       [complete_pattern, complete_pattern2]])
+    # Check molecule size (catecholamines are relatively small)
+    if mol.GetNumAtoms() > 40:  # Increased from 30 to allow for some larger derivatives
+        return False, "Molecule too large for a typical catecholamine"
     
-    if not has_complete:
-        return False, "Catechol and ethylamine groups not properly connected"
+    # Check for maximum one benzene ring with catechol pattern
+    aromatic_rings = mol.GetSubstructMatches(Chem.MolFromSmarts("a1aaaaa1"))
+    if len(aromatic_rings) > 2:  # Allow max 2 rings for structures like dobutamine
+        return False, "Too many aromatic rings for a catecholamine"
         
-    # Check for reasonable molecular size (to exclude very large molecules)
-    if mol.GetNumAtoms() > 50:
-        return False, "Molecule too large to be a typical catecholamine"
+    # Check for presence of unlikely ring systems in catecholamines
+    complex_ring_systems = [
+        Chem.MolFromSmarts("C1=CC2=C(C=C1)C1=C(C=CC=C1)N2"), # Complex fused rings
+        Chem.MolFromSmarts("C1CCCCC1"), # Cyclohexane
+        Chem.MolFromSmarts("C1CCCC1"),  # Cyclopentane
+    ]
     
-    return True, "Contains catechol moiety with ethylamine chain"
+    for ring in complex_ring_systems:
+        if ring is not None and mol.HasSubstructMatch(ring):
+            return False, "Contains ring systems not typical for catecholamines"
+    
+    return True, "Contains catechol moiety with ethylamine chain in appropriate arrangement"
