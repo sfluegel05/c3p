@@ -24,85 +24,79 @@ def is_3_hydroxy_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for adenine core
-    adenine = Chem.MolFromSmarts("n1cnc2c(N)ncnc12")
-    if not mol.HasSubstructMatch(adenine):
-        return False, "No adenine moiety found"
+    # Look for CoA core structure
+    coenzyme_a = Chem.MolFromSmarts("[#6]-3-[#6](-[#6](-[#6]-[#8]-[P;X4](-[#8])(-[#8])-[#8]-[P;X4](-[#8])(-[#8])-[#8]-[#6]-[#6]-4-[#8]-[#6](-[#6](-[#8])-[#6]-4-[#8]-[P;X4](-[#8])(-[#8])=[#8])-n:2:c:1:c(:n:c(:n:c:1:[#7]):n:c:2)-[#7])(-[#6])-[#6])-[#8])-[#7]-[#6]-[#6]-[#6](-[#7]-[#6]-[#6]-[S]-)=O")
+    if not mol.HasSubstructMatch(coenzyme_a):
+        return False, "No complete CoA structure found"
 
-    # Look for ribose with phosphate
-    ribose_phosphate = Chem.MolFromSmarts("OCC1OC(n2cnc3c2ncnc3)C(O)C1OP(O)(=O)O")
-    if not mol.HasSubstructMatch(ribose_phosphate):
-        return False, "Missing ribose-phosphate structure"
-
-    # Check for pantetheine arm with thioester
-    pantetheine = Chem.MolFromSmarts("CC(C)(COP(O)(=O)OP(O)(=O)O)[C@H](O)C(=O)NCCC(=O)NCCS")
-    if not mol.HasSubstructMatch(pantetheine):
-        return False, "Missing or incomplete pantetheine arm"
-
-    # Check for thioester linkage
+    # Look for thioester linkage
     thioester = Chem.MolFromSmarts("[CX3](=[OX1])[SX2]")
-    if not mol.HasSubstructMatch(thioester):
+    if not mol.GetSubstructMatches(thioester):
         return False, "No thioester linkage found"
 
-    # Check for 3-hydroxy pattern near thioester
-    # Match both R and S configurations, including unspecified stereochemistry
+    # Check for 3-hydroxy pattern near thioester with various substitution patterns
     hydroxy_patterns = [
-        "[CH2X4]-[CH1X4]([OX2H])-[CH2X4]-C(=O)S", # Generic
-        "[CH2X4]-[C@H]([OX2H])-[CH2X4]-C(=O)S",   # S config
-        "[CH2X4]-[C@@H]([OX2H])-[CH2X4]-C(=O)S"   # R config
+        # Linear chains
+        "[CH2,CH3]-[CH1,CH0]([OH1,OH0-])-[CH2X4]-C(=O)S", # Generic
+        "[CH2,CH3]-[C@H,C@@H,C]([OH1,OH0-])-[CH2X4]-C(=O)S", # With stereochemistry
+        # Branched chains
+        "[CH2,CH3,CH]-[C]([OH1,OH0-])([#6])-[CH2X4]-C(=O)S", # Quaternary carbon
+        "[CH2,CH3]-[CH1,CH0]([OH1,OH0-])-[CH1,CH0]([#6])-C(=O)S", # Branched at beta position
+        # Ring systems
+        "[#6]-1-[#6]-[#6]-[#6]([OH1,OH0-])-[#6]-[#6]-1-C(=O)S" # Cyclohexane derivatives
     ]
     
     has_hydroxy = False
-    for pattern in hydroxy_patterns:
-        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
-            has_hydroxy = True
-            break
-            
-    if not has_hydroxy:
-        return False, "No 3-hydroxy group found adjacent to thioester"
-
-    # Count phosphate groups (including various oxidation states)
-    phosphate_pattern = Chem.MolFromSmarts("P(~O)(~O)(~O)~O")
-    phosphate_count = len(mol.GetSubstructMatches(phosphate_pattern))
-    if phosphate_count < 3:
-        return False, f"Insufficient phosphate groups (found {phosphate_count}, need at least 3)"
-
-    # Verify presence of fatty acid chain by counting carbons between OH and thioester
-    # First find the thioester carbon
-    thioester_matches = mol.GetSubstructMatches(thioester)
-    if not thioester_matches:
-        return False, "Could not locate thioester group"
-        
-    # Find hydroxy group connected to carbon chain
-    hydroxy_carbon = None
+    hydroxy_match = None
     for pattern in hydroxy_patterns:
         matches = mol.GetSubstructMatches(Chem.MolFromSmarts(pattern))
         if matches:
-            hydroxy_carbon = matches[0][1]  # Index of carbon bearing OH
+            has_hydroxy = True
+            hydroxy_match = matches[0]
             break
-    
-    if hydroxy_carbon is None:
-        return False, "Could not locate 3-hydroxy carbon"
+            
+    if not has_hydroxy:
+        return False, "No 3-hydroxy group found in correct position relative to thioester"
 
-    # Check if we have a reasonable fatty acid chain
-    # Count carbons in main chain using atomic numbers and connectivity
-    carbon_count = 0
-    visited = set()
-    def count_chain_carbons(atom_idx, prev_idx=None):
-        if atom_idx in visited:
-            return
-        visited.add(atom_idx)
-        atom = mol.GetAtomWithIdx(atom_idx)
-        if atom.GetAtomicNum() == 6:  # Carbon
-            nonlocal carbon_count
-            carbon_count += 1
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetIdx() != prev_idx and neighbor.GetAtomicNum() == 6:
-                    count_chain_carbons(neighbor.GetIdx(), atom_idx)
+    # Verify the position of the hydroxy group
+    if hydroxy_match:
+        # Get the carbon bearing the OH group
+        hydroxy_carbon = hydroxy_match[1]  # Index may need adjustment based on pattern
+        
+        # Find path to thioester
+        thioester_matches = mol.GetSubstructMatches(thioester)
+        if thioester_matches:
+            thioester_carbon = thioester_matches[0][0]
+            # Check if hydroxy is 3 carbons away from thioester carbon
+            path = Chem.GetShortestPath(mol, hydroxy_carbon, thioester_carbon)
+            if len(path) != 4:  # Should be 3 bonds apart (4 atoms in path)
+                return False, "Hydroxy group not in 3-position relative to thioester"
 
-    count_chain_carbons(hydroxy_carbon)
-    
-    if carbon_count < 4:
-        return False, f"Fatty acid chain too short (found approximately {carbon_count} carbons)"
+    # Count carbons in fatty acid portion
+    fatty_acid_pattern = Chem.MolFromSmarts("[CH2,CH3]-[CH1,CH0]([OH1,OH0-])-[CH2X4]-C(=O)S")
+    if mol.HasSubstructMatch(fatty_acid_pattern):
+        matches = mol.GetSubstructMatches(fatty_acid_pattern)
+        start_atom = matches[0][0]  # First carbon of pattern
+        
+        # Count continuous carbon chain from start
+        visited = set()
+        carbon_count = 0
+        
+        def count_carbons(atom_idx):
+            if atom_idx in visited:
+                return
+            visited.add(atom_idx)
+            atom = mol.GetAtomWithIdx(atom_idx)
+            if atom.GetAtomicNum() == 6:  # Carbon
+                nonlocal carbon_count
+                carbon_count += 1
+                for neighbor in atom.GetNeighbors():
+                    if neighbor.GetAtomicNum() == 6 and not neighbor.IsInRing():
+                        count_carbons(neighbor.GetIdx())
+        
+        count_carbons(start_atom)
+        
+        if carbon_count < 4:
+            return False, f"Carbon chain too short for fatty acid (found {carbon_count} carbons)"
 
     return True, "Contains CoA moiety with 3-hydroxy fatty acid chain attached via thioester linkage"
