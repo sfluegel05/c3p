@@ -25,8 +25,8 @@ def is_lipid_hydroperoxide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for hydroperoxy group (-OOH)
-    hydroperoxy_pattern = Chem.MolFromSmarts("[OX2][OX1]")
+    # Check for hydroperoxy group (-OOH) attached to a carbon
+    hydroperoxy_pattern = Chem.MolFromSmarts("[CX4][OX2][OX1]")
     if not mol.HasSubstructMatch(hydroperoxy_pattern):
         return False, "No hydroperoxy group found"
 
@@ -56,39 +56,3 @@ def is_lipid_hydroperoxide(smiles: str):
         return False, "Too few oxygens for lipid hydroperoxide"
 
     return True, "Contains hydroperoxy group and lipid characteristics"
-
-__metadata__ = {
-    'chemical_class': {
-        'id': 'CHEBI:36044',
-        'name': 'lipid hydroperoxide',
-        'definition': 'Any lipid carrying one or more hydroperoxy substituents.',
-        'parents': ['CHEBI:36044', 'CHEBI:36044']
-    },
-    'config': {
-        'llm_model_name': 'lbl/claude-sonnet',
-        'f1_threshold': 0.8,
-        'max_attempts': 5,
-        'max_positive_instances': None,
-        'max_positive_to_test': None,
-        'max_negative_to_test': None,
-        'max_positive_in_prompt': 50,
-        'max_negative_in_prompt': 20,
-        'max_instances_in_prompt': 100,
-        'test_proportion': 0.1
-    },
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 150,
-    'num_false_positives': 4,
-    'num_true_negatives': 182407,
-    'num_false_negatives': 23,
-    'num_negatives': None,
-    'precision': 0.974025974025974,
-    'recall': 0.8670520231213873,
-    'f1': 0.9174311926605504,
-    'accuracy': 0.9998521228585199
-}
