@@ -25,46 +25,53 @@ def is_indole_alkaloid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for indole core structure
-    indole_pattern = Chem.MolFromSmarts('c12ccccc1[nH]cc2')  # Basic indole skeleton
-    indole_pattern_2 = Chem.MolFromSmarts('c12ccccc1nc(C)c2')  # Alternative indole pattern
-    indole_pattern_3 = Chem.MolFromSmarts('c12ccccc1[nX3]cc2')  # N-substituted indole
+    # Multiple SMARTS patterns for different types of indole cores
+    indole_patterns = [
+        'c12ccccc1[nH]cc2',           # Basic indole
+        'c12ccccc1[nX3]cc2',          # N-substituted indole
+        'c12ccccc1nc(C)c2',           # Alternative indole pattern
+        'c12ccccc1[nX3]c(C)c2',       # N-substituted with C-substitution
+        'c12ccccc1[nX3]C=C2',         # Modified indole double bond
+        'c12ccccc1[nX3]CC2',          # Reduced indole
+        'c12ccccc1[nX3][C,c]2',       # Bridged indole
+        'c12ccccc1n([*])cc2',         # Any N-substituted indole
+        'c12ccccc1n([*])c([*])c2',    # Heavily substituted indole
+        'C1=CC2=C(C=C1)N=C([*])C2',   # Modified indole with imine
+        'C1=CC2=C(C=C1)NC=C2',        # Basic indole alternative
+        'C1=CC2=C(C=C1)N([*])C=C2'    # N-substituted alternative
+    ]
     
-    has_indole = mol.HasSubstructMatch(indole_pattern) or \
-                 mol.HasSubstructMatch(indole_pattern_2) or \
-                 mol.HasSubstructMatch(indole_pattern_3)
+    has_indole = any(mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)) 
+                    for pattern in indole_patterns)
     
     if not has_indole:
         return False, "No indole core structure found"
 
-    # Count nitrogens to confirm it's an alkaloid
+    # Check for nitrogen content (alkaloid requirement)
     n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
     if n_count == 0:
         return False, "No nitrogen atoms found - not an alkaloid"
-        
-    # Check for typical characteristics of alkaloids
-    # Most indole alkaloids have multiple rings
+    
+    # Structural checks typical for indole alkaloids
     ring_count = rdMolDescriptors.CalcNumRings(mol)
     if ring_count < 2:
         return False, "Too few rings for an indole alkaloid"
-        
-    # Most natural indole alkaloids have significant molecular weight
+    
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 100:
         return False, "Molecular weight too low for an indole alkaloid"
-        
-    # Check for presence of carbon atoms
+    
+    # Carbon count check
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if c_count < 8:
         return False, "Too few carbons for an indole alkaloid"
-        
-    # Additional check for connectivity
-    # Most indole alkaloids have the nitrogen as part of a larger system
+    
+    # Check nitrogen connectivity
     n_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7]
     for n_atom in n_atoms:
         if len(n_atom.GetNeighbors()) >= 2:
             return True, "Contains indole core and has characteristics of an alkaloid"
-            
+    
     return False, "Nitrogen not properly incorporated into ring system"
 
 __metadata__ = {
