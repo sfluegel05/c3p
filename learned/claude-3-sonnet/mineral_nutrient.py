@@ -28,17 +28,18 @@ def is_mineral_nutrient(smiles: str):
 
     # Essential mineral nutrient cations
     essential_cations = {
-        'Ca', 'Mg', 'K', 'Na', 'Fe', 'Zn',  # Major minerals
-        'Ba', 'Sr', 'La', 'Cs', 'Al', 'Sb'   # Less common but nutritionally relevant
+        'Ca', 'Mg', 'K', 'Na', 'Fe', 'Zn', 'Cu', 'Mn',  # Major minerals
+        'Ba', 'Sr', 'La', 'Cs', 'Al', 'Sb'  # Less common but relevant
     }
     
-    # Common nutritionally relevant anions and their components
-    common_anions = {
-        'Cl', 'F', 'P', 'S', 'Si', 'N',  # Inorganic
-        'C', 'O', 'H'  # For carbonates, phosphates, hydroxides etc.
+    # Allowed inorganic anion components
+    allowed_anions = {
+        'Cl', 'F', 'Br', 'I',  # Halides
+        'P', 'S', 'Si',  # Other common inorganic elements
+        'N', 'O', 'H'  # For nitrates, phosphates, hydroxides
     }
 
-    # Get all elements and charges present
+    # Get all elements present
     elements = set()
     has_cation = False
     has_anion = False
@@ -50,60 +51,60 @@ def is_mineral_nutrient(smiles: str):
         elif charge < 0:
             has_anion = True
 
-    # Check if at least one essential mineral cation is present
+    # Check for essential mineral cations
     essential_cations_found = elements.intersection(essential_cations)
     if not essential_cations_found:
         return False, "No essential mineral cations found"
 
-    # Handle special cases of non-ionic mineral compounds
-    direct_metal_bonds = False
-    for atom in mol.GetAtoms():
-        if atom.GetSymbol() in essential_cations:
-            if len(atom.GetBonds()) > 0:
-                direct_metal_bonds = True
-
-    # Count atoms to identify molecular complexity
+    # Count atoms
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'C')
     oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'O')
-    hydrogen_count = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'H')
     
-    # Verify ionic nature or acceptable direct metal bonds
-    if not (has_cation or has_anion) and not direct_metal_bonds:
-        return False, "Neither ionic nor valid metal compound"
+    # Define common inorganic anion patterns
+    common_anion_patterns = [
+        ('[O-]P([O-])([O-])=O', 'phosphate'),  # Phosphate
+        ('[O-]S([O-])(=O)=O', 'sulfate'),      # Sulfate
+        ('[O-]C([O-])=O', 'carbonate'),        # Carbonate
+        ('[O-][N+]([O-])=O', 'nitrate'),       # Nitrate
+        ('F', 'fluoride'),                      # Fluoride
+        ('Cl', 'chloride'),                     # Chloride
+        ('[OH-]', 'hydroxide'),                 # Hydroxide
+        ('[O-][Si]', 'silicate')               # Silicate
+    ]
 
-    # Count water molecules
-    water_pattern = Chem.MolFromSmarts("[H]O[H]")
-    if water_pattern:
-        water_matches = len(mol.GetSubstructMatches(water_pattern))
-    else:
-        water_matches = 0
-        
-    # Exclude complex organic compounds
-    if carbon_count > 2:  # Allow only simple carbonates, bicarbonates
-        if not (carbon_count == oxygen_count and has_cation):  # Exception for carbonates
-            return False, "Too complex - not a simple mineral nutrient"
+    # Check for presence of common inorganic anions
+    found_anions = []
+    for pattern, name in common_anion_patterns:
+        pattern_mol = Chem.MolFromSmarts(pattern)
+        if pattern_mol and mol.HasSubstructMatch(pattern_mol):
+            found_anions.append(name)
 
-    # Check for rings (excluding special cases)
-    ring_count = rdMolDescriptors.CalcNumRings(mol)
-    if ring_count > 0:
-        return False, "Contains rings - too complex for mineral nutrient"
+    # Handle carbon-containing compounds
+    if carbon_count > 0:
+        # Allow only if it's a carbonate
+        if not ('carbonate' in found_anions and carbon_count == found_anions.count('carbonate')):
+            return False, "Contains organic components - not a mineral nutrient"
 
-    # Check remaining elements are acceptable anions
+    # Check remaining elements are acceptable
     non_essential_elements = elements - essential_cations
-    if not non_essential_elements.issubset(common_anions):
-        unexpected_elements = non_essential_elements - common_anions
+    if not non_essential_elements.issubset(allowed_anions):
+        unexpected_elements = non_essential_elements - allowed_anions
         return False, f"Contains unexpected elements: {unexpected_elements}"
 
-    # Build reason string
-    reason_parts = []
-    if direct_metal_bonds:
-        reason_parts.append("metal-containing compound")
-    elif has_cation or has_anion:
-        reason_parts.append("ionic mineral compound")
-    
-    reason_parts.append(f"contains essential elements: {', '.join(essential_cations_found)}")
-    
-    if water_matches > 0:
-        reason_parts.append(f"hydrated form ({water_matches} water molecules)")
-    
-    return True, " - ".join(reason_parts)
+    # Verify ionic nature or valid metal compound
+    if not (has_cation or has_anion):
+        # Check for direct metal-containing compounds
+        for atom in mol.GetAtoms():
+            if atom.GetSymbol() in essential_cations:
+                if not any(neigh.GetSymbol() in ['O', 'F', 'Cl', 'Br', 'I'] 
+                          for neigh in atom.GetNeighbors()):
+                    return False, "Invalid metal bonding pattern"
+
+    # Build classification reason
+    if found_anions:
+        anion_str = " and ".join(set(found_anions))
+        reason = f"Contains {anion_str} with essential elements: {', '.join(essential_cations_found)}"
+    else:
+        reason = f"Simple inorganic compound with essential elements: {', '.join(essential_cations_found)}"
+
+    return True, reason
