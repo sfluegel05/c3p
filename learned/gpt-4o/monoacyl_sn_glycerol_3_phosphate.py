@@ -21,27 +21,30 @@ def is_monoacyl_sn_glycerol_3_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for glycerol backbone with phosphate group
-    sn_glycerol_3_phosphate_pattern = Chem.MolFromSmarts("C(COP(=O)(O)O)O")  # Part of glycerol + phosphate
+    # Look for glycerol backbone with phosphate group pattern
+    sn_glycerol_3_phosphate_pattern = Chem.MolFromSmarts("O[C@H]([C@@H](O)COP(=O)(O)O)")  # glycerol 3-phosphate
     if not mol.HasSubstructMatch(sn_glycerol_3_phosphate_pattern):
         return False, "No glycerol 3-phosphate backbone found"
     
-    # Look for a single acyl chain bound as ester
-    acyl_pattern = Chem.MolFromSmarts("C(=O)O")  # Represents ester linkage
-    acyl_matches = mol.GetSubstructMatches(acyl_pattern)
-    if len(acyl_matches) != 1:
-        return False, f"Found {len(acyl_matches)} acyl linkages, need exactly 1"
+    # Look for a fatty acid ester in connection with the glycerol backbone
+    ester_pattern = Chem.MolFromSmarts("OC(=O)")  # Represents ester linkage
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
 
-    # Confirming its binding to the glycerol backbone but excluding second acyl group
     esterified = False
-    for match in acyl_matches:
-        atom_indices = [match[0], match[1]]
-        acyl_bonded_to_glycerol = any(mol.GetBondBetweenAtoms(i, j).IsInRing() == False for i in atom_indices for j in mol.GetSubstructMatches(sn_glycerol_3_phosphate_pattern))
-        if acyl_bonded_to_glycerol:
-            esterified = True
-            break
+    # Confirm an ester linkage is part of the monoacyl-sn-glycerol structure
+    for match in ester_matches:
+        ester_bond = mol.GetBondBetweenAtoms(match[0], match[1])
+        if ester_bond and not ester_bond.IsInRing():  # Avoiding cyclic esters
+            # Determine if this ester linkage involves the glycerol backbone
+            if any(mol.HasSubstructMatch(sn_glycerol_3_phosphate_pattern)):
+                esterified = True
+                break
+
+    # Check for exactly one acyl chain as determined by a single ester linkage
+    if len(ester_matches) != 1:
+        return False, f"Found {len(ester_matches)} ester linkages, expected exactly 1 attached to backbone"
 
     if not esterified:
-        return False, "Acyl chain is not correctly bound to the glycerol backbone via ester linkage"
+        return False, "Acyl chain via ester linkage is not correctly bound to the glycerol backbone"
     
     return True, "Contains glycerol 3-phosphate backbone and one acyl group esterified to it"
