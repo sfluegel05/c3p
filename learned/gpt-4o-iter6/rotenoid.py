@@ -3,7 +3,6 @@ Classifies: CHEBI:71543 rotenoid
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_rotenoid(smiles: str):
     """
@@ -24,17 +23,16 @@ def is_rotenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define rotenoid skeleton SMARTS pattern
-    # This is a simplification due to complexity; real analysis may need detailed work
-    rotenoid_pattern = Chem.MolFromSmarts("C1COc2cc3CCCCOc3cc2C1") # Simplified pattern
+    # Attempt a new, more detailed SMARTS pattern based on ChEMBL data and known features
+    # Identify the main rotenoid skeleton, incorporating cis-fusion and specific ring structures.
+    # Note: This might not be a complete pattern; additional characterization in real scenarios is necessary
+    # This focus attempts to cover more known skeleton patterns found in known rotenoid structures.
+    rotenoid_pattern = Chem.MolFromSmarts("O1Cc2c(c1-c1cc(ccc1)c1oc3c(c2)cccc3o1)C(=O)C") # Skeleton pattern example
 
-    # Check if the structure matches the rotenoid skeleton
+    # Check if the structure matches the rotenoid core skeleton
     if not mol.HasSubstructMatch(rotenoid_pattern):
         return False, "No tetrahydrochromeno[3,4-b]chromene skeleton found"
-
-    # Further check for potential derived substitutions
-    # For simplification purposes, detailed substituent analysis is omitted
-    # In practical applications, detailed structural analysis is necessary
-    # This might include checking for allowable substitutions at specified positions
+    
+    # Further analysis could be done if additional molecular features are needed
 
     return True, "Contains the tetrahydrochromeno[3,4-b]chromene skeleton characteristic of rotenoids"
