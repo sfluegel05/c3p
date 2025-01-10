@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_catecholamine(smiles: str):
     """
     Determines if a molecule is a catecholamine based on its SMILES string.
-    A catecholamine generally has a catechol (ortho- or para-dihydroxy benzene) structure
-    and an aminoalkyl chain with possible variations, such as stereochemistry.
+    A catecholamine typically includes a catechol (benzene-1,2-diol) structure
+    and a 2-aminoethyl chain.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,19 +21,14 @@ def is_catecholamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # General catechol pattern: ortho- or para-dihydroxy on benzene
-    catechol_pattern = Chem.MolFromSmarts("c1cc(O)c(O)cc1 | c1cc(O)ccc(O)c1")
+    # Look for catechol pattern (benzene-1,2-diol)
+    catechol_pattern = Chem.MolFromSmarts("c1cc(O)c(O)cc1")
     if not mol.HasSubstructMatch(catechol_pattern):
-        return False, "No generalized catechol moiety found"
-
-    # More flexible aminoalkyl chain pattern
-    aminoalkyl_pattern = Chem.MolFromSmarts("NCC")
-    if not mol.HasSubstructMatch(aminoalkyl_pattern):
-        return False, "No general aminoalkyl chain found"
-
-    # Verify there's some common subclass markers or chiral centers
-    # Check for stereochemistry in documented common isomers
-    if mol.HasSubstructMatch(Chem.MolFromSmarts("N[C@@H](O)")) or mol.HasSubstructMatch(Chem.MolFromSmarts("N[C@H](O)")):
-        return True, "Contains generalized catechol structure with flexible aminoalkyl chain and stereochemistry, classified as catecholamine"
-
-    return True, "Contains generalized catechol structure with flexible aminoalkyl chain, classified as catecholamine"
+        return False, "No catechol (benzene-1,2-diol) moiety found"
+    
+    # Look for 2-aminoethyl chain pattern (-CCN)
+    aminoethyl_pattern = Chem.MolFromSmarts("CCN")
+    if not mol.HasSubstructMatch(aminoethyl_pattern):
+        return False, "No 2-aminoethyl chain found"
+    
+    return True, "Contains catechol structure with 2-aminoethyl chain, classified as catecholamine"
