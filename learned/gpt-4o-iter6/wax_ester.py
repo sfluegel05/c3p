@@ -22,28 +22,33 @@ def is_wax_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Ester linkage pattern: -C(=O)O-
-    ester_pattern = Chem.MolFromSmarts("C(=O)O[C,c]")
+    # Ester linkage pattern: C(=O)O
+    ester_pattern = Chem.MolFromSmarts("C(=O)OC")
     if not mol.HasSubstructMatch(ester_pattern):
         return False, "No ester linkage found"
     
-    # Check for long carbon chains, indicating fatty acid and alcohol
-    # A rough estimate: Collect chains attached to both sides of the ester group
-    carboxylic_part = Chem.MolFromSmarts("[OX1]=[CX3]([#6])O")
-    alcohol_part = Chem.MolFromSmarts("O[#6]")
+    # Find ester group and analyze chains on either side
+    matches = mol.GetSubstructMatches(ester_pattern)
 
-    carboxy_chain = mol.GetSubstructMatches(carboxylic_part)
-    alcohol_chain = mol.GetSubstructMatches(alcohol_part)
+    # Check for both sides of the ester
+    for match in matches:
+        # Get atoms on either side of the ester linkage
+        carbonyl_carbon = match[0]
+        oxygen = match[2]
 
-    if not carboxy_chain or not alcohol_chain:
-        return False, "Insufficient chain length for fatty acid or alcohol"
+        # Check for carbon chains extending from each side
+        carbon_chain_1 = set([atom.GetIdx() for atom in mol.GetAtomWithIdx(carbonyl_carbon).GetNeighbors() if atom.GetAtomicNum() == 6])
+        carbon_chain_2 = set([atom.GetIdx() for atom in mol.GetAtomWithIdx(oxygen).GetNeighbors() if atom.GetAtomicNum() == 6])
 
-    # Length of hydrocarbon chains (ignoring functional groups)
-    # This logic could be more specific if the molecular representation is complex
-    carbon_chain_length = lambda substruct: sum(1 for match in substruct for atom in match if mol.GetAtomWithIdx(atom).GetAtomicNum() == 6)
+        # Exclude ester group and check length of chains
+        carbon_chain_1.discard(carbonyl_carbon)
+        carbon_chain_1.discard(oxygen)
 
-    # Assume each half needs at least 8 carbons to be considered fatty
-    if carbon_chain_length(carboxy_chain) < 8 or carbon_chain_length(alcohol_chain) < 8:
-        return False, "Carbon chains are too short to be considered fatty acid/alcohol"
+        carbon_chain_2.discard(carbonyl_carbon)
+        carbon_chain_2.discard(oxygen)
 
-    return True, "Molecule contains a fatty acid ester linkage with sufficient carbon chain length"
+        # Check if both chains are sufficiently long
+        if len(carbon_chain_1) >= 8 and len(carbon_chain_2) >= 8:
+            return True, "Molecule contains a fatty acid ester linkage with sufficient carbon chain length"
+    
+    return False, "Carbon chains are too short to be considered fatty acid/alcohol"
