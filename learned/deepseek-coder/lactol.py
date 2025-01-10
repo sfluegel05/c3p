@@ -25,8 +25,9 @@ def is_lactol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for the lactol pattern: a ring with an oxygen and a hydroxyl group
-    lactol_pattern = Chem.MolFromSmarts("[OH]-C1-O-C-C-C1")
+    # Look for the general lactol pattern: a ring with an oxygen and a hydroxyl group
+    # This pattern is more flexible and accounts for different ring sizes
+    lactol_pattern = Chem.MolFromSmarts("[OH]-[C;R]-[O;R]")
     if not mol.HasSubstructMatch(lactol_pattern):
         return False, "No lactol pattern found (cyclic hemiacetal structure)"
 
@@ -39,17 +40,27 @@ def is_lactol(smiles: str):
     if not mol.GetRingInfo().NumRings():
         return False, "Molecule is not cyclic (lactols are cyclic hemiacetals)"
 
-    # Check for the presence of a hydroxyl group attached to the ring
-    hydroxyl_pattern = Chem.MolFromSmarts("[OH]-C1-O-C-C-C1")
-    if not mol.HasSubstructMatch(hydroxyl_pattern):
-        return False, "No hydroxyl group attached to the ring"
+    # Check that the hydroxyl group and oxygen are in the same ring
+    ring_info = mol.GetRingInfo()
+    for match in mol.GetSubstructMatches(lactol_pattern):
+        hydroxyl_atom = match[0]
+        oxygen_atom = match[2]
+        if not any(ring for ring in ring_info.AtomRings() if hydroxyl_atom in ring and oxygen_atom in ring):
+            return False, "Hydroxyl group and oxygen not in the same ring"
 
-    # Check for the presence of an oxygen in the ring
-    ring_oxygen_pattern = Chem.MolFromSmarts("C1-O-C-C-C1")
-    if not mol.HasSubstructMatch(ring_oxygen_pattern):
-        return False, "No oxygen in the ring (required for lactol structure)"
+    # Check that the carbonyl group is adjacent to the oxygen in the ring
+    carbonyl_matches = mol.GetSubstructMatches(carbonyl_pattern)
+    for carbonyl_match in carbonyl_matches:
+        carbonyl_atom = carbonyl_match[0]
+        for ring in ring_info.AtomRings():
+            if carbonyl_atom in ring:
+                # Check if the carbonyl is adjacent to the ring oxygen
+                for atom in ring:
+                    if mol.GetAtomWithIdx(atom).GetAtomicNum() == 8:  # Oxygen
+                        if mol.GetBondBetweenAtoms(carbonyl_atom, atom) is not None:
+                            return True, "Contains a cyclic hemiacetal structure with a hydroxyl group and an oxygen in the ring"
 
-    return True, "Contains a cyclic hemiacetal structure with a hydroxyl group and an oxygen in the ring"
+    return False, "No carbonyl group adjacent to ring oxygen found"
 
 # Example usage:
 # smiles = "C1C(C(C(O1)O)O)O"  # 2,3,4-trihydroxytetrahydrofuran
