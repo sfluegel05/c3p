@@ -31,19 +31,20 @@ def is_monoradylglycerol(smiles: str):
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
 
-    # Look for ester (acyl), alkyl, or alk-1-enyl substituent
-    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")  # Acyl (ester)
-    alkyl_pattern = Chem.MolFromSmarts("[CX4]")  # Alkyl
-    alkenyl_pattern = Chem.MolFromSmarts("[CX3]=[CX3]")  # Alk-1-enyl
+    # Identify the attachment points on the glycerol backbone
+    matches = mol.GetSubstructMatches(glycerol_pattern)
+    if not matches:
+        return False, "No glycerol backbone found"
 
-    # Count the number of substituents
+    # Get the atoms in the glycerol backbone
+    backbone_atoms = set(matches[0])
+
+    # Count the number of substituents attached to the glycerol backbone
     substituent_count = 0
-    if mol.HasSubstructMatch(ester_pattern):
-        substituent_count += 1
-    if mol.HasSubstructMatch(alkyl_pattern):
-        substituent_count += 1
-    if mol.HasSubstructMatch(alkenyl_pattern):
-        substituent_count += 1
+    for atom in backbone_atoms:
+        for neighbor in atom.GetNeighbors():
+            if neighbor.GetIdx() not in backbone_atoms:
+                substituent_count += 1
 
     # Check if there is exactly one substituent
     if substituent_count != 1:
