@@ -1,110 +1,90 @@
 """
 Classifies: CHEBI:18133 hexose
 """
+"""
+Classifies: CHEBI:24895 hexose
+"""
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem.Draw import IPythonConsole
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem.AllChem import ReactionFromSmarts
 
 def is_hexose(smiles: str):
     """
-    Determines if a molecule is a hexose (six-carbon monosaccharide).
-    
+    Determines if a molecule is a hexose based on its SMILES string.
+    A hexose is a six-carbon monosaccharide with either an aldehyde group (aldohexose)
+    or a ketone group (ketohexose).
+
     Args:
         smiles (str): SMILES string of the molecule
-        
+
     Returns:
         bool: True if molecule is a hexose, False otherwise
         str: Reason for classification
     """
+    
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return None, "Invalid SMILES string"
+        return False, "Invalid SMILES string"
 
-    # Count total carbons and oxygens in the molecule
-    total_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'C')
-    if total_carbons < 6:
-        return False, "Insufficient carbons for a hexose"
+    # Define hexose core patterns
+    # Pyranose patterns (both alpha and beta)
+    pyranose_patterns = [
+        "[C]-1-[C]-[C]-[C]-[C](-[O]-1)(-[OH])-[CH2][OH]",  # Basic pyranose
+        "[C]-1-[C]-[C]-[C]-[C](-[O]-1)-[CH2][OH]",         # Alternative form
+        "[C]-1-[C]-[C]-[C]-[C](-[O]-1)-[CH2]-[O]"          # Modified form
+    ]
+    
+    # Furanose patterns
+    furanose_patterns = [
+        "[C]-1-[C]-[C]-[C](-[O]-1)-[C](-[OH])-[CH2][OH]",  # Basic furanose
+        "[C]-1-[C]-[C]-[C](-[O]-1)-[C]-[CH2][OH]",         # Alternative form
+        "[C]-1-[C]-[C]-[C](-[O]-1)-[C]-[CH2]-[O]"          # Modified form
+    ]
+    
+    # Open chain patterns (aldehexoses and ketohexoses)
+    open_chain_patterns = [
+        "[CH](=O)-[C]-[C]-[C]-[C]-[CH2][OH]",              # Aldehexose
+        "[C](=O)-[C]-[C]-[C]-[C]-[CH2][OH]",               # Ketohexose
+        "[CH](=O)-[C]-[C]-[C]-[C]-[CH2]-[O]"               # Modified form
+    ]
 
-    # Find sugar rings (5 or 6-membered rings containing oxygen)
-    sugar_rings = []
-    ri = mol.GetRingInfo()
-    for ring in ri.AtomRings():
-        ring_atoms = [mol.GetAtomWithIdx(i) for i in ring]
-        ring_elements = [atom.GetSymbol() for atom in ring_atoms]
-        if ('O' in ring_elements and 
-            (len(ring) == 5 or len(ring) == 6) and 
-            sum(1 for elem in ring_elements if elem == 'C') >= 4):
-            sugar_rings.append(ring)
+    # Check for hexose core structure
+    found_core = False
+    for pattern in pyranose_patterns + furanose_patterns + open_chain_patterns:
+        patt = Chem.MolFromSmarts(pattern)
+        if mol.HasSubstructMatch(patt):
+            found_core = True
+            break
+    
+    if not found_core:
+        return False, "No hexose core structure found"
 
-    # For non-cyclic forms
-    pattern_aldehyde = Chem.MolFromSmarts('[CH]=O')
-    pattern_ketone = Chem.MolFromSmarts('[#6]-C(=O)-[#6]')
-    has_aldehyde = len(mol.GetSubstructMatches(pattern_aldehyde)) > 0
-    has_ketone = len(mol.GetSubstructMatches(pattern_ketone)) > 0
+    # Count carbons in the core structure (should be 6)
+    core_carbons = len(mol.GetSubstructMatch(patt))
+    if core_carbons < 6:
+        return False, f"Core structure contains fewer than 6 carbons ({core_carbons})"
 
-    # Helper function to count carbons in sugar chain
-    def count_sugar_carbons(start_atom, visited=None):
-        if visited is None:
-            visited = set()
-        
-        if start_atom.GetIdx() in visited:
-            return 0
-        
-        visited.add(start_atom.GetIdx())
-        
-        if start_atom.GetSymbol() != 'C':
-            return 0
-            
-        count = 1
-        for neighbor in start_atom.GetNeighbors():
-            if (neighbor.GetSymbol() in ['C', 'O'] and 
-                not neighbor.IsInRing() and 
-                neighbor.GetIdx() not in visited):
-                count += count_sugar_carbons(neighbor, visited)
-        
-        return count
+    # Check for characteristic hydroxyl pattern
+    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H1]")
+    if mol.HasSubstructMatch(hydroxyl_pattern):
+        hydroxyl_count = len(mol.GetSubstructMatches(hydroxyl_pattern))
+        if hydroxyl_count < 2:  # Allow for modified hexoses
+            return False, f"Too few hydroxyl groups ({hydroxyl_count})"
+    
+    # Check it's not a disaccharide or larger
+    glycosidic_pattern = Chem.MolFromSmarts("[OX2]([CH1][OX2])[CH1]")
+    if mol.HasSubstructMatch(glycosidic_pattern):
+        glycosidic_matches = mol.GetSubstructMatches(glycosidic_pattern)
+        if len(glycosidic_matches) > 1:
+            return False, "Appears to be a polysaccharide"
 
-    # Check linear form
-    if has_aldehyde or has_ketone:
-        # Find potential sugar chain starting from aldehyde/ketone group
-        matches = mol.GetSubstructMatches(pattern_aldehyde if has_aldehyde else pattern_ketone)
-        for match in matches:
-            start_atom = mol.GetAtomWithIdx(match[0])
-            sugar_carbons = count_sugar_carbons(start_atom)
-            if sugar_carbons == 6:
-                # Check for hydroxyl groups
-                hydroxyls = sum(1 for atom in mol.GetAtoms() 
-                              if atom.GetSymbol() == 'O' 
-                              and len(list(atom.GetNeighbors())) == 1)
-                if hydroxyls >= 4:  # Most hexoses have at least 4 OH groups
-                    return True, "Aldohexose identified" if has_aldehyde else "Ketohexose identified"
+    # Additional check for characteristic carbon chain
+    chain_pattern = Chem.MolFromSmarts("[C]-[C]-[C]-[C]-[C]-[C]")
+    if not mol.HasSubstructMatch(chain_pattern):
+        return False, "Missing characteristic six-carbon chain"
 
-    # Check cyclic form
-    if sugar_rings:
-        for ring in sugar_rings:
-            ring_set = set(ring)
-            carbons_in_ring = sum(1 for i in ring if mol.GetAtomWithIdx(i).GetSymbol() == 'C')
-            
-            # Count connected carbons outside ring that could be part of sugar
-            extra_carbons = 0
-            for ring_atom_idx in ring:
-                atom = mol.GetAtomWithIdx(ring_atom_idx)
-                for neighbor in atom.GetNeighbors():
-                    if (neighbor.GetSymbol() == 'C' and 
-                        neighbor.GetIdx() not in ring_set and 
-                        not neighbor.IsInRing()):
-                        extra_carbons += 1
-
-            if carbons_in_ring + extra_carbons == 6:
-                # Check for hydroxyl groups
-                hydroxyls = sum(1 for atom in mol.GetAtoms() 
-                              if atom.GetSymbol() == 'O' 
-                              and len(list(atom.GetNeighbors())) == 1)
-                if hydroxyls >= 3:  # Cyclic forms typically have at least 3 OH groups
-                    return True, "Cyclic hexose form identified"
-
-    return False, "Not a hexose structure"
+    return True, "Contains hexose core structure with appropriate substitution pattern"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:18133',
@@ -114,280 +94,296 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:18133',
                                         'aldehyde group at position 1 '
                                         '(aldohexose) or a ketone group at '
                                         'position 2 (ketohexose).',
-                          'parents': ['CHEBI:35381']},
-    'config': {   'llm_model_name': 'lbl/claude-sonnet',
-                  'f1_threshold': 0.8,
-                  'max_attempts': 5,
-                  'max_negative_to_test': None,
-                  'max_positive_in_prompt': 50,
-                  'max_negative_in_prompt': 20,
-                  'max_instances_in_prompt': 100,
-                  'test_proportion': 0.1},
+                          'parents': ['CHEBI:35381'],
+                          'xrefs': [   'GlyGen:G70994MS',
+                                       'GlyTouCan:G70994MS',
+                                       'KEGG:C00738'],
+                          'all_positive_examples': []},
+    'config': None,
     'message': '\n'
-               'Attempt failed: F1 score of 0.2533333333333333 is too low.\n'
-               "True positives: [('OC[C@H]1OC(O)[C@H](O)C(=O)[C@@H]1O', "
-               "'Ketohexose identified'), "
-               "('O=C(O[C@@H]1O[C@H]([C@H](O)[C@H]([C@H]1O)O)C)C2=C(N)C=CC=C2', "
-               "'Cyclic hexose form identified'), "
-               "('OC[C@]1(O)OC[C@H](O)[C@@H](O)[C@@H]1O', 'Cyclic hexose form "
-               "identified'), ('C[C@H]1O[C@H](O)[C@@H](O)[C@@H](O)[C@@H]1O', "
-               "'Cyclic hexose form identified'), "
-               "('OC[C@H]1O[C@@H](O)[C@H](O)[C@H](O)[C@@H]1O', 'Cyclic hexose "
-               "form identified'), "
-               "('O1[C@@H]([C@@H](O)[C@H](O)[C@@H](O)[C@@H]1O)C', 'Cyclic "
-               "hexose form identified'), "
-               "('O=C(O[C@@H]1O[C@H]([C@@H](O)[C@H]([C@H]1O)O)C)CC2=CC=CC=C2', "
-               "'Cyclic hexose form identified'), "
-               "('OC[C@@H]1O[C@@H](O)[C@@H](O)[C@@H](O)[C@H]1O', 'Cyclic "
-               "hexose form identified'), ('O1[C@@H]([C@@H](O)[C@H](O)CC1O)C', "
-               "'Cyclic hexose form identified'), "
-               "('OC[C@H]1O[C@@H](O)[C@@H](O)[C@@H](O)[C@H]1O', 'Cyclic hexose "
-               "form identified'), "
-               "('OC[C@@H]1O[C@@H](O)[C@@H](O)[C@H](O)[C@@H]1O', 'Cyclic "
-               "hexose form identified'), "
-               "('OC[C@@]1(O)OC[C@@H](O)[C@H](O)[C@H]1O', 'Cyclic hexose form "
-               "identified'), ('C[C@H]1OC(O)[C@@H](O)[C@@H](O)[C@@H]1O', "
-               "'Cyclic hexose form identified'), "
-               "('O1[C@H]([C@H](O)[C@H](O)[C@@H](O)[C@@H]1O)CO', 'Cyclic "
-               "hexose form identified'), "
-               "('C[C@@H]1O[C@@H](O)[C@@H](O)C[C@@H]1O', 'Cyclic hexose form "
-               "identified'), ('OC[C@H]1OC(O)C(=O)[C@@H](O)[C@H]1O', "
-               "'Ketohexose identified'), "
-               "('OC[C@@]1(O)OC[C@@H](O)[C@H](O)[C@@H]1O', 'Cyclic hexose form "
-               "identified'), ('OC[C@@H]1O[C@H](O)[C@@H](O)[C@@H](O)[C@H]1O', "
-               "'Cyclic hexose form identified'), "
-               "('O=C(O[C@@H]1O[C@H]([C@H](O)[C@H]([C@H]1O)O)C)C2=CC=C(O)C=C2', "
-               "'Cyclic hexose form identified')]\n"
-               'False positives: '
-               "[('O1[C@@H]([C@@H](OC2O[C@@H]([C@@H](O)[C@H](O)[C@H]2O)CO)[C@H](O)[C@@H](O)[C@H]1O[C@H]3[C@H](O)[C@@H](O)C(O[C@@H]3CO)O)CO', "
-               "'Cyclic hexose form identified'), "
-               "('CC(C)OC1=C(C=C(C(=C1)NC(=O)CS(=O)CC(=O)NC2=CC=CC(=C2)C(F)(F)F)Cl)Cl', "
-               "'Cyclic hexose form identified'), "
-               "('P(OC1C(O)C(O)C(O)[C@@H](O)C1O)(OC[C@H](OC(=O)CCCCCCCCCCC/C=C\\\\C/C=C\\\\CCCCC)COC(=O)CCCCCCCCCCCCCC)(O)=O', "
-               "'Cyclic hexose form identified'), "
-               "('O([C@@H]1[C@@H](NC(=O)C)[C@@H](O[C@@H]([C@@H]1O)CO)OC)[C@@H]2O[C@H]([C@H]([C@H](O)[C@H]2O)C)C(O)=O', "
-               "'Cyclic hexose form identified'), "
-               "('O([C@@H]1[C@@H](O)[C@H](O[C@H]2[C@@H](O)[C@H](OC(O)[C@@H]2NC(=O)C)CO[C@@H]3O[C@@H]([C@@H](O[C@@H]4O[C@@H]([C@H](O)[C@H](O)[C@H]4O[C@@H]5O[C@H]([C@@H](O)[C@@H](O)[C@@H]5O)C)CO)[C@H](O)[C@H]3NC(=O)C)CO)O[C@@H]([C@@H]1O)CO)[C@@H]6O[C@@H]([C@@H](O[C@@H]7O[C@@H]([C@H](O)[C@H](O[C@@H]8O[C@@H]([C@@H](O)[C@H](O)[C@H]8NC(=O)C)CO)[C@H]7O)CO)[C@H](O)[C@H]6NC(=O)C)CO', "
-               "'Cyclic hexose form identified'), "
-               "('[C@H]1([C@@H]([C@@H]([C@H]([C@@H]([C@H]1O)OP(=O)([O-])[O-])O)O)OP(=O)([O-])[O-])O', "
-               "'Cyclic hexose form identified'), "
-               "('C1COCCC1C(=O)NC2=CC3=C(C=C2)O[C@H]4[C@@H]3C[C@H](O[C@@H]4CO)CC(=O)NCC5=CN=CC=C5', "
-               "'Cyclic hexose form identified'), "
-               "('CC(\\\\C=C\\\\C=C(/C)C(=O)O[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)=C/C=C/C=C(C)/C=C/C=C(\\\\C)C(=O)O[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O', "
-               "'Cyclic hexose form identified'), "
-               "('P(OC1C(O)C(O)C(O)[C@@H](O)C1O)(OC[C@H](OC(=O)CCCCCCCCCCC/C=C\\\\C/C=C\\\\CCCCC)CO/C=C\\\\CCCCCCCCCCCCCCCCCC)(O)=O', "
-               "'Cyclic hexose form identified'), "
-               "('O1[C@@H]([C@@H](O[C@@H]2O[C@@H]([C@@H](O)[C@H](O)[C@H]2NC(=O)C)CO)[C@H](O[C@H]3O[C@@H]([C@@H](O)[C@H](O)[C@@H]3O[C@@H]4O[C@@H]([C@@H](O)[C@H](O)[C@H]4NC(=O)C)CO)CO)[C@H](O)[C@H]1O[C@H]5[C@H](O)[C@@H](NC(=O)C)C(O[C@@H]5CO)O)CO[C@H]6O[C@@H]([C@@H](O)[C@H](O)[C@@H]6O[C@@H]7O[C@@H]([C@@H](O[C@@H]8O[C@@H]([C@H](O)[C@H](O)[C@H]8O)CO)[C@H](O)[C@H]7NC(=O)C)CO)CO', "
-               "'Cyclic hexose form identified'), "
-               "('O1C(OC(CC=2C=3OC(=O)C=CC3C=CC2OC)C(CO)=C)C(O)C(O)C(O)C1C(O)=O', "
-               "'Cyclic hexose form identified'), "
-               "('S(OC[C@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O[C@@H]3[C@@H](NC(=O)C)[C@H](O[C@@H]([C@@H]3O)CO)O)O[C@@H]([C@@H]2O)CO)[C@H](NC(=O)C)[C@@H](O)[C@@H]1O)(O)(=O)=O', "
-               "'Cyclic hexose form identified'), "
-               "('CCCCCCCCCCCCC\\\\C=C\\\\[C@@H](O)[C@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O[C@@H]3O[C@H](CO)[C@H](O)[C@H](O[C@@H]4O[C@H](CO)[C@H](O)[C@H](O)[C@H]4O)[C@H]3NC(C)=O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)NC(=O)CCCCCCCCCCCCC\\\\C=C/CCCCCCCC', "
-               "'Cyclic hexose form identified'), "
-               "('C1=CC=C2C(=C1)N(C(=O)S2)CC(=O)NCC3=CC=CO3', 'Cyclic hexose "
-               "form identified'), ('OC(=O)C1=CCCN(C1)N=O', 'Cyclic hexose "
-               "form identified'), "
-               "('O1[C@@H](O[C@H]2[C@@H](O)[C@H](O)[C@H](O[C@@H]2OC[C@H]3O[C@@H](O[C@H]4[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]4CO)O[C@H]5[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]5CO)O)[C@@H](O)[C@@H](O)[C@@H]3O)CO)[C@H](NC(=O)C)[C@@H](O)[C@@H](O[C@@H]6O[C@@H]([C@H](O)[C@H](O)[C@H]6O)CO[C@]7(O[C@H]([C@H](NC(=O)C)[C@@H](O)C7)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]1CO', "
-               "'Cyclic hexose form identified'), "
-               "('C1([C@@H]([C@H]([C@@H]([C@H](O1)CO)O[C@H]2[C@@H]([C@H]([C@@H]([C@H](O2)CO)O[C@H]3[C@H]([C@H]([C@@H]([C@H](O3)CO[C@@H]4[C@H]([C@H]([C@@H]([C@H](O4)CO[C@@H]5[C@H]([C@H]([C@@H]([C@H](O5)COP(=O)(O)O)O)O)O)O)O[C@@H]6[C@H]([C@H]([C@@H]([C@H](O6)CO)O)O)O[C@@H]7[C@H]([C@H]([C@@H]([C@H](O7)CO)O)O)O)O)O)O[C@@H]8[C@H]([C@H]([C@@H]([C@H](O8)CO)O)O)O[C@@H]9[C@H]([C@H]([C@@H]([C@H](O9)COP(=O)(O)O)O)O)O)O)O)NC(C)=O)O)NC(C)=O)O', "
-               "'Cyclic hexose form identified'), "
-               "('O1[C@@H]([C@@H](OC2O[C@@H]([C@@H](O)[C@H](O)[C@H]2NC(=O)C)CO)[C@H](O[C@H]3O[C@@H]([C@@H](O)[C@H](OC4O[C@@H]([C@@H](O)[C@H](O)[C@H]4NC(=O)C)CO)[C@@H]3O)CO[C@H]5O[C@@H]([C@@H](O)[C@H](O)[C@@H]5O)CO)[C@H](O)[C@@H]1O[C@H]6[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]6CO)O[C@H]7[C@H](O)[C@@H](NC(=O)C)C(O[C@@H]7CO)O)CO[C@H]8O[C@@H]([C@@H](O)[C@H](O[C@H]9O[C@@H]([C@@H](O)[C@H](O)[C@@H]9O)CO)[C@@H]8O)CO[C@H]%10O[C@@H]([C@@H](O)[C@H](O)[C@@H]%10O)CO', "
-               "'Cyclic hexose form identified'), "
-               "('[H][C@@]1(O[C@H](O)[C@@H](O)[C@@H](O)[C@@H]1O)[C@H](O)COP(O)(O)=O', "
-               "'Cyclic hexose form identified'), "
-               "('CCCCCCCC\\\\C=C/CCCCCCCC(=O)OC[C@H](CO[C@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)OC(=O)CCCCCCC\\\\C=C/CCCCCCCC', "
-               "'Cyclic hexose form identified'), "
-               "('C[C@@H]1O[C@@H](OCCCCCCCCCCCCCC[C@@H](O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP([O-])(=O)OP([O-])(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2OP([O-])([O-])=O)N3C=NC4=C(N)N=CN=C34)[C@H](O)C[C@H]1O', "
-               "'Cyclic hexose form identified'), "
-               "('O([C@H]1[C@H](O)[C@H](O[C@@H](O[C@H]2[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]2CO)O[C@H]3[C@H](O)[C@@H](NC(=O)C)C(O[C@@H]3CO)O)[C@H]1O)CO[C@H]4O[C@@H]([C@@H](O)[C@H](O)[C@@H]4O[C@@H]5O[C@@H]([C@@H](O[C@@H]6O[C@@H]([C@H](O)[C@H](O[C@@H]7O[C@@H]([C@@H](O[C@@H]8O[C@@H]([C@H](O)[C@H](O[C@H]9O[C@@H]([C@H](O)[C@H](O)[C@H]9O)CO)[C@H]8O)CO)[C@H](O)[C@H]7NC(=O)C)CO)[C@H]6O)CO)[C@H](O)[C@H]5NC(=O)C)CO)CO)[C@H]%10O[C@@H]([C@@H](O)[C@H](O)[C@@H]%10O[C@@H]%11O[C@@H]([C@@H](O[C@@H]%12O[C@@H]([C@H](O)[C@H](O)[C@H]%12O)CO)[C@H](O)[C@H]%11NC(=O)C)CO)CO', "
-               "'Cyclic hexose form identified'), "
-               "('P(OC1C(O)C(O)C(O)[C@@H](O)C1O)(OC[C@H](OC(=O)CCCCCCC/C=C\\\\CCCC)COC(=O)CCCCCCCCCCCCCCCC)([O-])=O.[NH4+]', "
-               "'Cyclic hexose form identified'), "
-               "('O1[C@@H](O[C@H]2[C@H](O)[C@H](O)[C@H](O[C@@H]2CO)O[C@@H]3[C@H](O)[C@@H](O[C@@H]([C@H]3O)CO[C@H]4O[C@@H]([C@@H](O[C@@H]5O[C@@H]([C@@H](O[C@@H]6O[C@@H]([C@H](O)[C@H](O)[C@H]6O)CO)[C@H](O)[C@H]5NC(=O)C)CO)[C@H](O)[C@@H]4O)CO)O[C@H]7[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]7CO)O[C@H]8[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]8CO)O)[C@H](NC(=O)C)[C@@H](O[C@@H]9O[C@H]([C@@H](O)[C@@H](O)[C@@H]9O)C)[C@H](O[C@@H]%10O[C@@H]([C@H](O)[C@H](O[C@]%11(O[C@H]([C@H](NC(=O)C)[C@@H](O)C%11)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]%10O)CO)[C@H]1CO', "
-               "'Cyclic hexose form identified'), "
-               "('C1CCC(C1)C(=O)N2[C@@H]3CN(C4=CC=CC=C4[C@@H]3[C@@H]2CO)C(=O)C5=CC=CC=C5F', "
-               "'Cyclic hexose form identified'), "
-               "('O1C(C(O)C(O)C(O)C1OC=2C=C3OC(=C(OC4OC(C(O)C(O)C4O)C(O)=O)C(=O)C3=C(O)C2O)C5=CC(O)=C(O)C=C5)CO', "
-               "'Cyclic hexose form identified'), "
-               "('C=1C=CC(=C(C1)NC(CC([O-])=O)=O)O', 'Cyclic hexose form "
-               "identified'), "
-               "('O([C@H]1[C@H](O)[C@@H](NC(=O)C)C(O[C@@H]1CO)OC[C@@H](O)[C@H](O)[C@H](O[C@@H]2O[C@@H]([C@H](O)[C@H](O)[C@H]2O[C@@H]3O[C@H]([C@@H](O)[C@@H](O)[C@@H]3O)C)CO)[C@@H](NC(=O)C)CO)[C@@H]4O[C@@H]([C@H](O)[C@H](O[C@H]5O[C@@H]([C@H](O)[C@H](O)[C@H]5NC(=O)C)CO)[C@H]4O)CO', "
-               "'Cyclic hexose form identified'), "
-               "('O([C@@H]1[C@H](O)[C@@H](O)[C@@H](O[C@@H]1CO)O[C@H]2[C@H](O)[C@@H](O)[C@@H](O[C@@H]2CO)O)[C@@H]3O[C@@H]([C@H](O[C@@H]4O[C@@H]([C@H](O)[C@H](O)[C@H]4O)CO)[C@H](O)[C@H]3NC(=O)C)CO', "
-               "'Cyclic hexose form identified'), "
-               "('C[C@@H]1O[C@@H](OC[C@H]2O[C@@H](O[C@@H]3[C@@H](O)[C@@H](O)CO[C@H]3O[C@H]3CC[C@@]4(C)[C@@H](CC[C@]5(C)[C@@H]4CC=C4[C@@H]6CC(C)(C)CC[C@@]6(CC[C@@]54C)C(O)=O)[C@]3(C)CO)[C@H](O)[C@@H](O)[C@@H]2O)[C@H](O)[C@H](O)[C@H]1O', "
-               "'Cyclic hexose form identified'), "
-               "('O([C@H]1[C@H](O)[C@@H](NC(=O)C)[C@H](O[C@@H]1CO)O)[C@@H]2O[C@@H]([C@H](O)[C@H](O)[C@H]2O[C@@H]3O[C@H]([C@@H](O)[C@@H](O)[C@@H]3O)C)CO', "
-               "'Cyclic hexose form identified'), "
-               "('O1C(C(O)C(O)C(O)C1OC2=CC=C(CC(O)CO)C=C2)CO', 'Cyclic hexose "
-               "form identified'), "
-               "('O([C@@H]1O[C@@H]([C@@H](O[C@@H]2O[C@@H]([C@H](O)[C@H](O)[C@H]2O)CO)[C@H](O[C@@H]3O[C@H]([C@@H](O)[C@@H](O)[C@@H]3O)C)[C@H]1NC(=O)C)CO)[C@@H]4[C@@H](O[C@@H]5[C@H](O)[C@H](O[C@H]6[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]6CO)O[C@H]7[C@H](O)[C@@H](NC(=O)C)C(O[C@@H]7CO[C@@H]8O[C@H]([C@@H](O)[C@@H](O)[C@@H]8O)C)O)O[C@@H]([C@H]5O)CO[C@H]9O[C@@H]([C@@H](O)[C@H](O)[C@@H]9O)CO)O[C@@H]([C@@H](O)[C@@H]4O)CO', "
-               "'Cyclic hexose form identified'), "
-               "('O([C@H]1[C@H](O)[C@H](O[C@@H](O[C@H]2[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]2CO)O[C@H]3[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]3CO[C@@H]4O[C@H]([C@@H](O)[C@@H](O)[C@@H]4O)C)O)[C@H]1O)CO[C@H]5O[C@@H]([C@@H](O[C@@H]6O[C@@H]([C@@H](O[C@@H]7O[C@@H]([C@H](O)[C@H](O[C@@H]8O[C@@H]([C@@H](O[C@@H]9O[C@@H]([C@H](O)[C@H](O)[C@H]9O)CO)[C@H](O)[C@H]8NC(=O)C)CO)[C@H]7O)CO)[C@H](O)[C@H]6NC(=O)C)CO)[C@H](O)[C@@H]5O[C@@H]%10O[C@@H]([C@@H](O[C@@H]%11O[C@@H]([C@H](O)[C@H](O[C@@H]%12O[C@@H]([C@@H](O[C@@H]%13O[C@@H]([C@H](O)[C@H](O)[C@H]%13O)CO)[C@H](O)[C@H]%12NC(=O)C)CO)[C@H]%11O)CO)[C@H](O)[C@H]%10NC(=O)C)CO)CO)[C@H]%14O[C@@H]([C@@H](O)[C@H](O)[C@@H]%14O[C@@H]%15O[C@@H]([C@@H](O[C@@H]%16O[C@@H]([C@H](O)[C@H](O[C@@H]%17O[C@@H]([C@@H](O[C@@H]%18O[C@@H]([C@H](O)[C@H](O)[C@H]%18O)CO)[C@H](O)[C@H]%17NC(=O)C)CO)[C@H]%16O)CO)[C@H](O)[C@H]%15NC(=O)C)CO)CO[C@@H]%19O[C@@H]([C@@H](O[C@@H]%20O[C@@H]([C@H](O)[C@H](O[C@@H]%21O[C@@H]([C@@H](O[C@@H]%22O[C@@H]([C@H](O)[C@H](O)[C@H]%22O)CO)[C@H](O)[C@H]%21NC(=O)C)CO)[C@H]%20O)CO)[C@H](O)[C@H]%19NC(=O)C)CO', "
-               "'Cyclic hexose form identified'), "
-               "('O([C@@H]1[C@H](O)[C@H](O[C@H]2[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]2CO)O[C@H]3[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]3CO)O)O[C@@H]([C@H]1O)CO[C@H]4O[C@@H]([C@@H](O)[C@H](O)[C@@H]4O[C@@H]5O[C@@H]([C@@H](O)[C@H](O)[C@H]5NC(=O)C)CO[C@@H]6O[C@H]([C@@H](O)[C@@H](O)[C@@H]6O)C)CO)[C@H]7O[C@@H]([C@@H](O)[C@H](O)[C@@H]7O[C@@H]8O[C@@H]([C@@H](O[C@@H]9O[C@@H]([C@H](O)[C@H](O)[C@H]9O)CO[C@]%10(O[C@H]([C@H](NC(=O)C)[C@@H](O)C%10)[C@H](O)[C@H](O)CO)C(O)=O)[C@H](O)[C@H]8NC(=O)C)CO)CO', "
-               "'Cyclic hexose form identified'), "
-               "('[NH3+]CCCC(=O)C1=CN=C(O)C=C1', 'Ketohexose identified'), "
-               "('[C@@H]1([C@@H]([C@H]([C@H]([C@H](O1)CO)O)O[C@H]2[C@@H]([C@H]([C@H]([C@H](O2)CO)O)O[C@H]3[C@@H]([C@H]([C@@H]([C@H](O3)C(O)=O)O[C@H]4[C@@H]([C@H]([C@H]([C@H](O4)CO)OS(=O)(=O)O)O[C@H]5[C@H]([C@@H]([C@H]([C@H](O5)C(O)=O)O[C@H]6[C@@H]([C@H]([C@H]([C@H](O6)CO)O)O)NC(C)=O)O)OS(=O)(=O)O)NC(C)=O)O)O)O)O)O[C@H]7[C@@H]([C@H]([C@@H](OC7)*)O)O', "
-               "'Cyclic hexose form identified'), "
-               "('O([C@@H]1[C@@H](NC(=O)C)[C@@H](O[C@@H]([C@@H]1O)CO[C@]2(O[C@H]([C@H](NC(=O)C)[C@@H](O)C2)[C@H](O)[C@H](O[C@]3(O[C@H]([C@H](NC(=O)C)[C@@H](O)C3)[C@H](O)[C@H](O)CO)C(O)=O)CO)C(O)=O)O[C@@H]4[C@H](O)[C@@H](O)[C@@H](O[C@@H]4CO)O[C@H]5[C@H](O)[C@@H](O)[C@@H](O[C@@H]5CO)O)[C@@H]6O[C@@H]([C@H](O)[C@H](O[C@]7(O[C@H]([C@H](NC(=O)C)[C@@H](O)C7)[C@H](O)[C@H](O[C@]8(O[C@H]([C@H](NC(=O)C)[C@@H](O)C8)[C@H](O)[C@H](O)CO)C(O)=O)CO)C(O)=O)[C@H]6O)CO', "
-               "'Cyclic hexose form identified'), "
-               "('C[C@H](CCCCCCC(=O)CC(O)=O)O[C@@H]1O[C@@H](C)[C@H](O)C[C@H]1O', "
-               "'Ketohexose identified'), "
-               "('O1[C@@H]([C@@H](O)[C@H](O)[C@@H](O)[C@@H]1OC=2C=C3OC(=C(O[C@@H]4O[C@@H]([C@@H](O)[C@H](O)[C@H]4O)CO)C(=O)C3=C(O)C2)C5=CC(O)=C(O)C=C5)CO[C@@H]6O[C@@H]([C@@H](O)[C@H](O)[C@H]6O)CO', "
-               "'Cyclic hexose form identified'), "
-               "('O([C@@H]1[C@@H](O)[C@H](O[C@H]2[C@@H](O)[C@H](OC(O)[C@@H]2NC(=O)C)CO[C@@H]3O[C@@H]([C@H](O)[C@H](O)[C@H]3O)CO)O[C@@H]([C@@H]1O)CO)[C@@H]4O[C@@H]([C@@H](O[C@@H]5O[C@@H]([C@H](O)[C@H](O)[C@H]5O)CO)[C@H](O)[C@H]4NC(=O)C)CO', "
-               "'Cyclic hexose form identified'), "
-               "('C1=CC=C(C(=C1)NC(=O)C2=C(N=CN2)C(=O)NC3=CC=C(C=C3)F)[N+](=O)[O-]', "
-               "'Cyclic hexose form identified'), "
-               "('[H]C(=O)N[C@@H]1[C@@H](C)O[C@@H](O[C@@H]2[C@H](O)[C@@H](NC(C)=O)[C@@H](O[C@@H]3[C@H](O)[C@@H](NC(C)=O)[C@@H](O[C@H]4[C@H](O)[C@@H](C)O[C@@H](O[C@@H]5[C@@H](O)[C@H](NC([H])=O)[C@@H](C)O[C@H]5O[C@@H]5[C@H](O)[C@@H](NC(C)=O)[C@@H](O[C@@H]6[C@H](O)[C@@H](NC(C)=O)[C@@H](O[C@H]7[C@H](O)[C@@H](C)O[C@@H](O[C@@H]8[C@@H](O)[C@H](NC([H])=O)[C@@H](C)O[C@H]8O[C@@H]8[C@H](O)[C@@H](NC(C)=O)[C@@H](O[C@@H]9[C@H](O)[C@@H](NC(C)=O)[C@@H](O[C@H]%10[C@H](O)[C@@H](C)O[C@@H](O[C@@H]%11[C@@H](CO)O[C@@H](O[C@H]%12[C@H](O)[C@H](O[C@@H]%13O[C@H](CO)[C@@H](O)[C@H](O)[C@H]%13O)[C@H](O[C@@H]%12CO)O[C@@H]%12[C@H](O)C[C@@](O)(O[C@]%12([H])[C@H](O)CO)C(O)=O)[C@@H](O[C@H]%12O[C@H](CO)[C@H](O)[C@H](O)[C@H]%12N)[C@H]%11O[C@H]%11O[C@H](CO)[C@@H](O)[C@H](O)[C@H]%11O)[C@@H]%10NC(C)=O)O[C@@H]9C(N)=O)O[C@@H]8C(N)=O)[C@@H]7NC(C)=O)O[C@@H]6C(N)=O)O[C@@H]5C(N)=O)[C@@H]4NC(C)=O)O[C@@H]3C(N)=O)O[C@@H]2C(N)=O)[C@H](O)[C@H]1O', "
-               "'Aldohexose identified'), "
-               "('O([C@H]1[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]1CO)OC[C@@H](O)[C@H](O)[C@H](O[C@@H]2O[C@@H]([C@H](O)[C@H](O)[C@H]2O)CO)[C@@H](NC(=O)C)CO)[C@@H]3O[C@@H]([C@H](O)[C@H](O[C@H]4O[C@@H]([C@H](O)[C@H](O)[C@H]4O)CO)[C@H]3O)CO', "
-               "'Cyclic hexose form identified'), "
-               "('COC1=CC=C(C=C1)S(=O)(=O)N2C[C@H](COC[C@@H]3[C@@H]2CC[C@@H](O3)CC(=O)N[C@@H]4CCN(C4)CC5=CC=CC=C5)O', "
-               "'Cyclic hexose form identified'), "
-               "('O1[C@@H]([C@@H](O)C(O)C(O)[C@@H]1OC2=C(OC=3C(C2=O)=C(O)C=C(O)C3)C4=CC(O)=C(O)C=C4)CO', "
-               "'Cyclic hexose form identified'), "
-               "('O([C@H]1[C@@H](O)[C@H](O[C@@H]2O[C@@H]([C@@H](O[C@@H]3O[C@@H]([C@H](O)[C@H](O[C@]4(O[C@H]([C@H](NC(=O)C)[C@@H](O)C4)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]3O)CO)[C@H](O)[C@H]2NC(=O)C)CO)[C@H](O[C@@H]1O[C@H]5[C@H](O)[C@H](O[C@@H](O[C@H]6[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]6CO)O[C@H]7[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]7CO)O)[C@H]5O)CO[C@H]8O[C@@H]([C@@H](O)[C@H](O)[C@@H]8O[C@@H]9O[C@@H]([C@@H](O[C@@H]%10O[C@@H]([C@H](O)[C@H](O[C@]%11(O[C@H]([C@H](NC(=O)C)[C@@H](O)C%11)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]%10O)CO)[C@H](O)[C@H]9NC(=O)C)CO)CO)CO)[C@@H]%12O[C@@H]([C@@H](O[C@@H]%13O[C@@H]([C@H](O)[C@H](O[C@]%14(O[C@H]([C@H](NC(=O)C)[C@@H](O)C%14)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]%13O)CO)[C@H](O)[C@H]%12NC(=O)C)CO', "
-               "'Cyclic hexose form identified'), "
-               "('O([C@@H]1[C@@H](O)[C@@H](O[C@@H]([C@@H]1O)CO)O[C@H]2[C@H](O)[C@@H](O)C(O[C@@H]2CO)O)[C@@H]3O[C@@H]([C@H](O)[C@H](O[C@@H]4O[C@@H]([C@H](O)[C@H](O)[C@H]4O)CO)[C@H]3NC(=O)C)CO', "
-               "'Cyclic hexose form identified'), "
-               "('[H][C@]1(O[C@@H]2O[C@@H](C)[C@@H](NO[C@H]3C[C@H](O)[C@H](SC(=O)c4c(C)c(I)c(O[C@@H]5O[C@@H](C)[C@H](O)[C@@H](OC)[C@H]5O)c(OC)c4OC)[C@@H](C)O3)[C@H](O)[C@H]2O[C@H]2C[C@H](OC)[C@H](CO2)NCC)C#C\\\\C=C/C#C[C@]2(O)CC(=O)C(NC(=O)OC)=C1/C2=C\\\\CSSSC', "
-               "'Ketohexose identified'), "
-               "('O([C@@H]1O[C@@H]([C@@H](O[C@@H]2O[C@@H]([C@H](O)[C@H](O)[C@H]2O)CO)[C@H](O[C@@H]3O[C@H]([C@@H](O)[C@@H](O)[C@@H]3O)C)[C@H]1NC(=O)C)CO)[C@H]4[C@@H](O)[C@H](O[C@@H](O[C@@H]([C@@H](O)[C@H](O)CO[C@@H]5O[C@@H]([C@@H](O[C@@H]6O[C@@H]([C@H](O)[C@H](O)[C@H]6O)CO)[C@H](O)[C@H]5NC(=O)C)CO)[C@@H](NC(=O)C)CO)[C@@H]4O)CO[C@@H]7O[C@@H]([C@@H](O[C@@H]8O[C@@H]([C@H](O)[C@H](O)[C@H]8O)CO)[C@H](O[C@@H]9O[C@H]([C@@H](O)[C@@H](O)[C@@H]9O)C)[C@H]7NC(=O)C)CO', "
-               "'Cyclic hexose form identified'), "
-               "('O1[C@@H]([C@@H](O)C(O)C(O)[C@@H]1OC[C@H](NC(=O)CCCCCCCCCCCCCCCCCCC)[C@H](O)/C=C/CCCCCCCCCC)CO', "
-               "'Cyclic hexose form identified'), "
-               "('O([C@H]1[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]1CO)O[C@H]2[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]2CO)O)[C@@H]3O[C@@H]([C@@H](O)[C@H](O[C@H]4O[C@@H]([C@@H](O)[C@H](O)[C@@H]4O[C@@H]5O[C@@H]([C@@H](O)[C@H](O)[C@@H]5O)CO)CO)[C@@H]3O)CO[C@H]6O[C@@H]([C@@H](O)[C@H](O[C@H]7O[C@@H]([C@@H](O)[C@H](O)[C@@H]7O[C@H]8O[C@@H]([C@@H](O)[C@H](O)[C@@H]8O)CO)CO)[C@@H]6O)CO[C@H]9O[C@@H]([C@@H](O)[C@H](O)[C@@H]9O[C@H]%10O[C@@H]([C@@H](O)[C@H](O)[C@@H]%10O)CO)CO', "
-               "'Cyclic hexose form identified'), "
-               "('Nc1ccc(O[C@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@@H]2O)cc1', "
-               "'Cyclic hexose form identified'), "
-               "('O[C@H]1[C@H]([C@H](O[C@H]([C@@H]1O)O[C@@H]2[C@H](O[C@@H](OC[C@@H]([C@@H](*)O)NC(=O)*)[C@@H]([C@H]2O)O)CO)CO)O[C@H]3[C@@H]([C@H]([C@@H](O)[C@H](O3)CO)O[C@@H]4O[C@@H]([C@@H]([C@@H]([C@H]4O)O[C@]5(O[C@]([C@@H]([C@H](C5)O)NC(C)=O)([C@@H]([C@@H](CO)O)O)[H])C([O-])=O)O[C@H]6[C@@H]([C@H]([C@@H](O)[C@H](O6)CO)O)NC(C)=O)CO)NC(C)=O', "
-               "'Cyclic hexose form identified'), "
-               "('O([C@H]1[C@H](O[C@@H]2O[C@H]([C@@H](O)[C@@H](O)[C@@H]2O)C)[C@@H](NC(=O)C)[C@@H](O[C@@H]1CO)OC[C@@H](O)[C@H](O)[C@H](O[C@@H]3O[C@@H]([C@H](O)[C@H](O)[C@H]3O)CO)[C@@H](NC(=O)C)CO)[C@@H]4O[C@@H]([C@H](O)[C@H](O[C@@H]5O[C@@H]([C@H](O)[C@H](O)[C@H]5NC(=O)C)CO)[C@H]4O)CO', "
-               "'Cyclic hexose form identified'), "
-               "('C1=CC=C(C=C1)NC(=O)NNC(=O)C2=CC(=NC3=CC=CC=C32)C4=C(C=C(C=C4)Cl)Cl', "
-               "'Cyclic hexose form identified'), "
-               "('O[C@@H]1[C@@H](COC(=O)CC(O)=O)O[C@@H](Oc2cc(O)cc3[o+]c(c(O[C@@H]4O[C@H](COC(=O)\\\\C=C\\\\c5ccc(O)cc5)[C@@H](O)[C@H](O)[C@H]4O)cc23)-c2cc(O)c(O)c(O)c2)[C@H](O)[C@H]1O', "
-               "'Cyclic hexose form identified'), "
-               "('O([C@H]1O[C@@H]([C@@H](O)[C@H](O)[C@@H]1O)CO)C[C@H]2O[C@@H](O[C@H]3[C@H](O)[C@@H](NC(=O)C)C(O[C@@H]3CO)O)[C@@H](O)[C@@H](O)[C@@H]2O', "
-               "'Cyclic hexose form identified'), "
-               "('[H][C@@](O)(C[C@H]1O[C@@H](O[C@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2NC(C)=O)[C@H](NC(=O)\\\\C=C\\\\CCCCCCCCCCCC(C)C)[C@@H](O)[C@H]1O)[C@@]1([H])O[C@H]([C@H](O)[C@@H]1O)n1ccc(=O)[nH]c1=O', "
-               "'Cyclic hexose form identified'), "
-               "('O([C@@H]1[C@@H](O)[C@H](O[C@H]2[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]2CO)O[C@H]3[C@@H](O)[C@H](O[C@H](O)[C@@H]3NC(=O)C)CO[C@]4(O[C@H]([C@H](NC(=O)C)[C@@H](O)C4)[C@H](O)[C@H](O)CO)C(O)=O)O[C@@H]([C@@H]1O)CO[C@]5(O[C@H]([C@H](NC(=O)C)[C@@H](O)C5)[C@H](O)[C@H](O)CO)C(O)=O)[C@@H]6O[C@@H]([C@@H](O[C@@H]7O[C@@H]([C@H](O)[C@H](O[C@@H]8O[C@@H]([C@@H](O)[C@H](O)[C@H]8NC(=O)C)CO)[C@H]7O)CO[C@]9(O[C@H]([C@H](NC(=O)C)[C@@H](O)C9)[C@H](O)[C@H](O)CO)C(O)=O)[C@H](O)[C@H]6NC(=O)C)CO', "
-               "'Cyclic hexose form identified'), "
-               "('O1C([C@@H](O)[C@H](O)C(O)[C@@H]1OC2=C3OC=CC3=C4OC(=C(OC)C(=O)C4=C2)C5=CC=CC=C5)CO', "
-               "'Cyclic hexose form identified'), "
-               "('O([C@H]1[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]1CO)O[C@H]2[C@H](O)[C@@H](NC(=O)C)C(O[C@@H]2CO)O)[C@@H]3O[C@@H]([C@@H](O)[C@H](O[C@H]4O[C@@H]([C@@H](O)[C@H](O)[C@@H]4O)CO)[C@@H]3O)CO[C@H]5O[C@@H]([C@@H](O)[C@H](O[C@H]6O[C@@H]([C@@H](O)[C@H](O)[C@@H]6O[C@H]7O[C@@H]([C@@H](O)[C@H](O)[C@@H]7O[C@H]8O[C@@H]([C@@H](O)[C@H](O)[C@@H]8O)CO)CO)CO)[C@@H]5O)CO[C@H]9O[C@@H]([C@@H](O)[C@H](O)[C@@H]9O)CO', "
-               "'Cyclic hexose form identified'), "
-               "('C1CCC(CC1)NC(=O)C[C@H]2C[C@@H]3[C@H]([C@@H](O2)CO)OC4=C3C=C(C=C4)NC(=O)C5=CN=CC=C5', "
-               "'Cyclic hexose form identified'), "
-               "('OC[C@@H](O)[C@@H](O)[C@H](O)[C@H](O)COC1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O', "
-               "'Cyclic hexose form identified'), "
-               "('O1[C@@H]([C@@H](O)[C@H](O)[C@@H](O)[C@@H]1OC=2C(=C(C=CC2)C)C(=O)C)CO', "
-               "'Ketohexose identified'), "
-               "('COC1=CC=C(C=C1)NC(=O)N[C@H]2CC[C@H](O[C@H]2CO)CCNC(=O)NC3=C(C=CC(=C3)F)F', "
-               "'Cyclic hexose form identified'), "
-               "('O1[C@H](OC2=C(OC)C(OC)=NC(=C2C)C/C=C(/C/C=C/C(=C/[C@H]([C@@H](O[C@@H]3O[C@@H]([C@@H](O)[C@@H]([C@H]3O)O)CO)/C(=C/C)/C)C)/C)\\\\C)[C@H](O)[C@@H](O)[C@@H]([C@H]1CO)O', "
-               "'Cyclic hexose form identified'), "
-               "('O([C@H]1[C@H](O)[C@H](O[C@@H](O[C@H]2[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]2CO)O[C@H]3[C@H](O)[C@@H](NC(=O)C)C(O[C@@H]3CO[C@@H]4O[C@H]([C@@H](O)[C@@H](O)[C@@H]4O)C)O)[C@H]1O)CO[C@H]5O[C@@H]([C@@H](O)[C@H](O)[C@@H]5O[C@@H]6O[C@@H]([C@@H](O[C@@H]7O[C@@H]([C@H](O)[C@H](O[C@@H]8O[C@@H]([C@@H](O[C@@H]9O[C@@H]([C@H](O)[C@H](O)[C@H]9O)CO)[C@H](O)[C@H]8NC(=O)C)CO)[C@@H]7O)CO)[C@H](O)[C@H]6NC(=O)C)CO)CO[C@@H]%10O[C@@H]([C@@H](O[C@@H]%11O[C@@H]([C@H](O)[C@H](O[C@@H]%12O[C@@H]([C@@H](O[C@@H]%13O[C@@H]([C@H](O)[C@H](O)[C@H]%13O)CO)[C@H](O)[C@H]%12NC(=O)C)CO)[C@H]%11O)CO)[C@H](O)[C@H]%10NC(=O)C)CO)[C@H]%14O[C@@H]([C@@H](O[C@@H]%15O[C@@H]([C@@H](O[C@@H]%16O[C@@H]([C@H](O)[C@H](O)[C@H]%16O)CO)[C@H](O)[C@H]%15NC(=O)C)CO)[C@H](O)[C@@H]%14O[C@@H]%17O[C@@H]([C@@H](O[C@@H]%18O[C@@H]([C@H](O)[C@H](O)[C@H]%18O)CO)[C@H](O)[C@H]%17NC(=O)C)CO)CO', "
-               "'Cyclic hexose form identified'), "
-               "('O([C@@H]1[C@@H](NC(=O)C)[C@@H](O[C@@H]([C@H]1O[C@@H]2O[C@@H]([C@H](O)[C@H](O)[C@H]2O)CO)CO)O[C@@H]3[C@@H](O)[C@@H](O[C@@H]([C@@H]3O)CO)O[C@H]4[C@H](O)[C@@H](NC(=O)C)C(O[C@@H]4CO)O)[C@]5(O[C@H]([C@H](NC(=O)C)[C@@H](O)C5)[C@H](O)[C@H](O)CO)C(O)=O', "
-               "'Cyclic hexose form identified'), "
-               "('O1C(C(O)C(O)C(O)C1OC(=O)/C=C/C2=CC(OC)=C(O)C(OC)=C2)CO', "
-               "'Cyclic hexose form identified'), "
-               "('O([C@H]1[C@@H](O)[C@H](O)[C@H](O[C@@H]1O[C@H]2[C@@H](O)[C@H](O)[C@H](O[C@H]2O)CO)CO)[C@H]3O[C@@H]([C@@H](O)[C@H](O)[C@@H]3O[C@H]4O[C@@H]([C@@H](O)[C@H](O)[C@@H]4O)CO)CO', "
-               "'Cyclic hexose form identified'), "
-               "('O([C@H]1O[C@@H]([C@H](O)[C@H](O)[C@H]1O[C@@H]2O[C@H]([C@@H](O)[C@@H](O)[C@@H]2O)C)CO)[C@H]3[C@H](O)[C@@H](O)[C@@H](O[C@@H]3CO)O', "
-               "'Cyclic hexose form identified'), "
-               "('O([C@H]1[C@H](O)[C@H](O[C@@H](O[C@H]2[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]2CO)O[C@H]3[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]3CO[C@@H]4O[C@H]([C@@H](O)[C@@H](O)[C@@H]4O)C)O)[C@H]1O)CO[C@H]5O[C@@H]([C@@H](O)[C@H](O)[C@@H]5O[C@@H]6O[C@@H]([C@@H](O[C@@H]7O[C@@H]([C@H](O)[C@H](O)[C@H]7O)CO)[C@H](O)[C@H]6NC(=O)C)CO)CO[C@@H]8O[C@@H]([C@@H](O[C@@H]9O[C@@H]([C@H](O)[C@H](O)[C@H]9O)CO)[C@H](O)[C@H]8NC(=O)C)CO)[C@H]%10O[C@@H]([C@@H](O[C@@H]%11O[C@@H]([C@@H](O)[C@H](O[C@@H]%12O[C@@H]([C@H](O)[C@H](O)[C@H]%12O)CO)[C@H]%11NC(=O)C)CO)[C@H](O)[C@@H]%10O[C@@H]%13O[C@@H]([C@@H](O[C@@H]%14O[C@@H]([C@H](O)[C@H](O)[C@H]%14O)CO)[C@H](O)[C@H]%13NC(=O)C)CO)CO', "
-               "'Cyclic hexose form identified'), "
-               "('O([C@H]1[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]1CO)O[C@@H]2[C@@H](NC(=O)C)[C@@H](O[C@@H]([C@@H]2O)CO)O)[C@@H]3O[C@@H]([C@H](O)[C@H](O)[C@H]3O[C@@H]4O[C@H]([C@@H](O)[C@@H](O)[C@@H]4O)C)CO', "
-               "'Cyclic hexose form identified'), "
-               "('P(OC1C(O)C(O)C(O)[C@@H](O)C1O)(OC[C@H](OC(=O)CCCCCCCCCCC/C=C\\\\C/C=C\\\\CCCCC)COC(=O)CC/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\CC)(O)=O', "
-               "'Cyclic hexose form identified'), "
-               "('S(O[C@H]1[C@H](O[C@H]2[C@H](O)[C@@H](NC(=O)C)C(O[C@@H]2CO)O)OC(=C(O)[C@@H]1O)C(O)=O)(O)(=O)=O', "
-               "'Cyclic hexose form identified'), "
-               "('O1[C@@H]([C@@H](O[C@@H]2OC(=C(O)[C@H](O)[C@H]2O)C(O)=O)[C@H](O)[C@@H](NS(O)(=O)=O)C1O)COS(O)(=O)=O', "
-               "'Cyclic hexose form identified'), "
-               "('N[C@@H]1[C@@H](O)[C@@H](O)O[C@H](CO)[C@H]1O', 'Cyclic hexose "
-               "form identified'), "
-               "('O([C@H]1[C@H](O)[C@@H](O)[C@@H](O[C@@H]1CO)OC[C@H]2OC(O)[C@H](NC(=O)C)[C@@H](O)[C@H]2O)[C@@H]3O[C@@H]([C@H](O)[C@H](O)[C@H]3O)CO', "
-               "'Cyclic hexose form identified'), "
-               "('[C@H]1([C@H]([C@@H]([C@H]([C@@H]([C@@H]1O)OP(OC[C@H](COC(CCCCCCC)=O)OC(CCCCCCC)=O)(=O)O)O)OP(=O)(O)O)OP(O)(=O)O)O', "
-               "'Cyclic hexose form identified'), ('Oc1ccccc1Oc1cccc(O)c1O', "
-               "'Cyclic hexose form identified'), "
-               "('CC(CCOP(O)(=O)O[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@@H]1O)CC\\\\C=C(\\\\C)CC\\\\C=C(\\\\C)CC\\\\C=C(\\\\C)CC\\\\C=C(/C)CC\\\\C=C(/C)CCC=C(C)C', "
-               "'Cyclic hexose form identified'), "
-               "('C[C@@H]1O[C@@H](OCCCCCCCCCCCCCCC(=O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2OP(O)(O)=O)N3C=NC4=C(N)N=CN=C34)[C@H](O)C[C@H]1O', "
-               "'Ketohexose identified'), "
-               "('O1[C@@H]([C@H](O[C@@H]2O[C@@H]([C@H](O)[C@H](O)[C@H]2O)CO)[C@H](O[C@@H]3O[C@@H]([C@H](O)[C@H](O)[C@H]3O)CO)[C@@H](O)[C@@H]1O[C@@H]([C@@H](O)[C@H](O)CO[C@@H]4O[C@@H]([C@@H](O)[C@H](O)[C@H]4NC(=O)C)CO)[C@@H](NC(=O)C)CO)CO', "
-               "'Cyclic hexose form identified'), "
-               "('C[C@@H]1O[C@@H](OCCCCCCCCCCCCCCC(=O)CC([O-])=O)[C@H](O)C[C@H]1O', "
-               "'Ketohexose identified'), "
-               "('[C@@]1(O[C@H]2[C@H]([C@H](O[C@H]([C@@H]2O)O[C@@H]3[C@H](O[C@@H](OC[C@@H]([C@@H](/C=C/CCCCCCCCCCCCC)O)NC(=O)*)[C@@H]([C@H]3O)O)CO)CO)O[C@H]4[C@@H]([C@H]([C@@H](O)[C@H](O4)CO)O)NC(C)=O)(O[C@]([C@H](NC(=O)C)[C@H](C1)O)([C@@H]([C@H](O[C@]5(O[C@]([C@@H]([C@H](C5)O)NC(C)=O)([C@@H]([C@@H](CO)O)OC(=O)C)[H])C([O-])=O)CO)O)[H])C([O-])=O', "
-               "'Cyclic hexose form identified'), "
-               "('O1C(C(O)C(O)C(O)C1OC=2C=C3[O+]=C(C(O)=CC3=C(O)C2)C4=CC(O)=C(O)C=C4)C(O)=O', "
-               "'Cyclic hexose form identified'), "
-               "('O(C1C(O)C(O)C(OC1OC=2C=C3C(OC4OC(C(O)C(O)C4O)CO)=CC(O)=CC3=[O+]C2C5=CC=C(O)C=C5)CO)C6OC(C(O)C(O)C6O)CO', "
-               "'Cyclic hexose form identified'), "
-               "('N[C@@H]1[C@@H](O)[C@H](O)[C@@H](CO[C@@H]2O[C@H](CO)[C@@H](OP(O)(O)=O)[C@H](O)[C@H]2N)O[C@@H]1OP(O)(O)=O', "
-               "'Cyclic hexose form identified'), "
-               "('O1[C@@H]([C@@H](O[C@@H]2O[C@@H]([C@@H](O)[C@H](O)[C@H]2NC(=O)C)CO)[C@H](O[C@H]3O[C@@H]([C@@H](O)[C@H](O)[C@@H]3O[C@@H]4O[C@@H]([C@@H](O[C@@H]5O[C@@H]([C@H](O)[C@H](O)[C@H]5O)CO)[C@H](O)[C@H]4NC(=O)C)CO)CO)[C@H](O)[C@@H]1O[C@H]6[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]6CO)O[C@H]7[C@H](O)[C@@H](NC(=O)C)C(O[C@@H]7CO[C@@H]8O[C@H]([C@@H](O)[C@@H](O)[C@@H]8O)C)O)CO[C@H]9O[C@@H]([C@@H](O)[C@H](O)[C@@H]9O[C@@H]%10O[C@@H]([C@@H](O[C@@H]%11O[C@@H]([C@H](O)[C@H](O)[C@H]%11O)CO)[C@H](O[C@@H]%12O[C@H]([C@@H](O)[C@@H](O)[C@@H]%12O)C)[C@H]%10NC(=O)C)CO)CO', "
-               "'Cyclic hexose form identified'), "
-               "('O([C@H]1[C@H](O)[C@H](O[C@@H](O[C@H]2[C@H](O)[C@@H](NC(=O)C)C(O[C@@H]2CO)O)[C@H]1O)CO[C@H]3O[C@@H]([C@@H](O)[C@H](O)[C@@H]3O[C@@H]4O[C@@H]([C@@H](O[C@@H]5O[C@@H]([C@H](O)[C@H](O)[C@H]5O)CO)[C@H](O)[C@H]4NC(=O)C)CO)CO[C@@H]6O[C@@H]([C@@H](O[C@@H]7O[C@@H]([C@H](O)[C@H](O)[C@H]7O)CO)[C@H](O)[C@H]6NC(=O)C)CO)[C@H]8O[C@@H]([C@@H](O[C@@H]9O[C@@H]([C@@H](O[C@@H]%10O[C@@H]([C@H](O)[C@H](O)[C@H]%10O)CO)[C@H](O)[C@H]9NC(=O)C)CO)[C@H](O)[C@@H]8O)CO', "
-               "'Cyclic hexose form identified'), "
-               "('O([C@H]1[C@@H](O)[C@H](O)[C@H](O[C@@H]1OC[C@H]2O[C@H](OC[C@@H]3O[C@@H]([C@@H](O)[C@@H]3O)CO)[C@@H](O)[C@@H](O)[C@@H]2O)CO)[C@H]4O[C@@H]([C@@H](O)[C@H](O)[C@@H]4O[C@H]5O[C@@H]([C@@H](O)[C@H](O)[C@@H]5O)CO)CO', "
-               "'Cyclic hexose form identified'), "
-               "('C[C@H](CN([C@@H](C)CO)S(=O)(=O)C1=CC=C(C=C1)F)[C@@H](CN(C)C(=O)C2=CC3=C(C=C2)OCO3)OC', "
-               "'Cyclic hexose form identified'), "
-               "('C[C@@H]1O[C@@H](OCCC([O-])=O)[C@H](O)C[C@H]1O', 'Cyclic "
-               "hexose form identified'), "
-               "('O([C@@H]1[C@H](O)[C@H](O[C@H]2[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]2CO)O[C@H]3[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]3CO)O)O[C@@H]([C@H]1O)CO[C@H]4O[C@@H]([C@@H](O)[C@H](O)[C@@H]4O[C@@H]5O[C@@H]([C@@H](O)[C@H](O)[C@H]5NC(=O)C)CO)CO)[C@H]6O[C@@H]([C@@H](O[C@@H]7O[C@@H]([C@@H](O)[C@H](O)[C@H]7NC(=O)C)CO)[C@H](O)[C@@H]6O[C@@H]8O[C@@H]([C@@H](O)[C@H](O)[C@H]8NC(=O)C)CO)CO', "
-               "'Cyclic hexose form identified'), "
-               "('O1[C@@H]([C@@H](O)[C@H](O)[C@@H](O)[C@@H]1OC=2C3=C(O[C@@H](CC3=O)C4=CC=CC=C4)C(OC)=C(OC)C2)CO', "
-               "'Ketohexose identified'), "
-               "('C1CCC(C1)(C2=CN(N=N2)CC[C@@H]3CC[C@H]([C@@H](O3)CO)NC(=O)NC4=CC=C(C=C4)Cl)O', "
-               "'Cyclic hexose form identified'), "
-               "('P(OC1C(O)C(O)C(O)[C@@H](O)C1O)(OC[C@H](OC(=O)CCC/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\CC)COC(=O)CCCC/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\CC)(O)=O', "
-               "'Cyclic hexose form identified'), "
-               "('COC1=CC=C(C=C1)NC(=O)N[C@@H]2CC[C@H](O[C@H]2CO)CCN3C=C(N=N3)C4=CC=CC=N4', "
-               "'Cyclic hexose form identified'), "
-               "('O([C@@H]1[C@@H](O[C@H]2O[C@@H]([C@@H](O)[C@H](O)[C@H]2O)CO)[C@@H](O[C@@H]([C@@H]1O)CO)O)[C@H]3O[C@@H]([C@@H](O)[C@H](O)[C@H]3O)CO', "
-               "'Cyclic hexose form identified')]\n"
-               'False negatives: '
-               "[('O1[C@@H]([C@@H](O)[C@H](O)[C@@H]1O)[C@H](O)C', 'No sugar "
-               "ring found'), ('OC[C@@H](O)[C@H](O)[C@H](O)[C@H](O)C=O', 'No "
-               "sugar ring found'), "
-               "('[H][C@@]1(O[C@@H](O)[C@H](O)[C@@H]1O)[C@H](O)CO', 'No sugar "
-               "ring found'), "
-               "('O1[C@@H]([C@H](O)[C@@H](O)[C@@H]1O)[C@@H](O)CO', 'No sugar "
-               "ring found'), ('O1[C@@H]([C@@H](O)[C@H](O)C1O)[C@@H](O)CO', "
-               "'No sugar ring found'), "
-               "('O1[C@@H]([C@H](O)[C@H](O)[C@@H]1O)[C@H](O)CO', 'No sugar "
-               "ring found'), "
-               "('O1[C@H]([C@H](O)[C@@H](O)[C@@H]1O)[C@@H](O)CO', 'No sugar "
-               "ring found'), ('C([C@H](C([C@@H]([C@H](CO)O)O)=O)O)O', 'No "
-               "sugar ring found'), "
-               "('O([C@@H]([C@H](O)[C@H](O)CO)[C@H](O)CO)C/C=C(/CC[C@@]1(C(=CCC[C@H]1C)C)C)\\\\C', "
-               "'Found 10 carbons, hexose must have exactly 6'), "
-               "('C=1C=C(C=CC1OC2C(C(C(C(O2)C(O)O)C)C)C)CC3CCC(O3)=O', 'Found "
-               "7 carbons, hexose must have exactly 6'), "
-               "('O1[C@@H]([C@H](O)[C@@H](O)[C@H]1O)[C@H](O)CO', 'No sugar "
-               "ring found'), ('C[C@@H](O)[C@H]1O[C@H](O)[C@@H](O)[C@H]1O', "
-               "'No sugar ring found')]",
+               'Attempt failed: F1 score of 0.6437246963562753 is too low.\n'
+               'Outcomes:\n'
+               '------\n'
+               '\n'
+               'True positives: SMILES: OC[C@H]1OC(O)(CO)[C@H](O)[C@H]1O NAME: '
+               'D-sorbofuranose REASON: CORRECT Matches hexose pattern with '
+               'correct number of carbons and hydroxyls\n'
+               ' * SMILES: OC[C@]1(O)OC[C@@H](O)[C@H](O)[C@H]1O NAME: '
+               'alpha-D-sorbopyranose REASON: CORRECT Matches hexose pattern '
+               'with correct number of carbons and hydroxyls\n'
+               ' * SMILES: O1[C@@H]([C@@H](O)[C@@H](O)[C@@H]1O)[C@@H](O)CO '
+               'NAME: alpha-L-talofuranose REASON: CORRECT Matches hexose '
+               'pattern with correct number of carbons and hydroxyls\n'
+               ' * SMILES: [H]C(=O)[C@H](O)[C@@H](O)[C@H](O)[C@H](O)CO NAME: '
+               'aldehydo-D-glucose REASON: CORRECT Matches hexose pattern with '
+               'correct number of carbons and hydroxyls\n'
+               ' * SMILES: OC[C@H]1O[C@@H](O)[C@H](O)C(=O)[C@H]1O NAME: '
+               '3-keto-beta-D-galactose REASON: CORRECT Matches hexose pattern '
+               'with correct number of carbons and hydroxyls\n'
+               ' * SMILES: C1([C@H]([C@@H]([C@H]([C@H](O1)CO)O)O)O)O NAME: '
+               'D-idopyranose REASON: CORRECT Matches hexose pattern with '
+               'correct number of carbons and hydroxyls\n'
+               ' * SMILES: O1[C@H]([C@@H](O)[C@H](O)[C@@H]1O)[C@@H](O)CO NAME: '
+               'alpha-L-glucofuranose REASON: CORRECT Matches hexose pattern '
+               'with correct number of carbons and hydroxyls\n'
+               ' * SMILES: OC[C@H](O)[C@@H](O)[C@H](O)C(=O)CO NAME: '
+               'keto-L-sorbose REASON: CORRECT Matches hexose pattern with '
+               'correct number of carbons and hydroxyls\n'
+               ' * SMILES: OC[C@H]1O[C@@](O)(CO)[C@@H](O)[C@H]1O NAME: '
+               'alpha-D-tagatofuranose REASON: CORRECT Matches hexose pattern '
+               'with correct number of carbons and hydroxyls\n'
+               ' * SMILES: [C@H]1(O)C(O)O[C@H](C=O)[C@H]([C@@H]1O)O NAME: '
+               '6-dehydro-D-glucose REASON: CORRECT Matches hexose pattern '
+               'with correct number of carbons and hydroxyls\n'
+               ' * SMILES: OC[C@H]1O[C@@H](O)[C@H](O)[C@H](O)[C@@H]1O NAME: '
+               'beta-D-allose REASON: CORRECT Matches hexose pattern with '
+               'correct number of carbons and hydroxyls\n'
+               ' * SMILES: OC[C@H]1O[C@](O)(CO)[C@H](O)[C@H]1O NAME: '
+               'beta-D-sorbofuranose REASON: CORRECT Matches hexose pattern '
+               'with correct number of carbons and hydroxyls\n'
+               ' * SMILES: O1[C@@H]([C@@H](O)[C@H](O)[C@@H]1O)[C@H](O)CO NAME: '
+               'beta-D-altrofuranose REASON: CORRECT Matches hexose pattern '
+               'with correct number of carbons and hydroxyls\n'
+               ' * SMILES: OC[C@H]1O[C@@H](O)[C@H](O)[C@H](O)[C@H]1O NAME: '
+               'beta-D-gulose REASON: CORRECT Matches hexose pattern with '
+               'correct number of carbons and hydroxyls\n'
+               ' * SMILES: OC[C@@H]1O[C@@H](O)[C@@H](O)[C@@H](O)[C@@H]1O NAME: '
+               'alpha-L-gulose REASON: CORRECT Matches hexose pattern with '
+               'correct number of carbons and hydroxyls\n'
+               ' * SMILES: OC[C@H]([C@H](CC(CO)=O)O)O NAME: '
+               '3-deoxy-keto-D-fructose REASON: CORRECT Matches hexose pattern '
+               'with correct number of carbons and hydroxyls\n'
+               ' * SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@@H]1O)[C@@H](O)CO '
+               'NAME: alpha-L-idofuranose REASON: CORRECT Matches hexose '
+               'pattern with correct number of carbons and hydroxyls\n'
+               ' * SMILES: [C@H](O)(C(CO)=O)[C@@H]([C@H](CO)O)O NAME: '
+               'keto-L-tagatose REASON: CORRECT Matches hexose pattern with '
+               'correct number of carbons and hydroxyls\n'
+               ' * SMILES: O1[C@H]([C@@H](O)[C@H](O)C1O)[C@@H](O)CO NAME: '
+               'L-glucofuranose REASON: CORRECT Matches hexose pattern with '
+               'correct number of carbons and hydroxyls\n'
+               ' * SMILES: OC[C@H](O)[C@@H](O)[C@@H](O)[C@@H](O)C=O NAME: '
+               'aldehydo-L-talose REASON: CORRECT Matches hexose pattern with '
+               'correct number of carbons and hydroxyls\n'
+               ' * SMILES: OC[C@@H]1OC(O)[C@@H](O)[C@H](O)[C@@H]1O NAME: '
+               'L-galactopyranose REASON: CORRECT Matches hexose pattern with '
+               'correct number of carbons and hydroxyls\n'
+               ' * SMILES: OC[C@H]1O[C@](O)(CO)[C@@H](O)[C@H]1O NAME: '
+               'beta-D-tagatofuranose REASON: CORRECT Matches hexose pattern '
+               'with correct number of carbons and hydroxyls\n'
+               ' * SMILES: [H]C(=O)[C@@H](O)[C@@H](O)[C@H](O)[C@@H](O)CO NAME: '
+               'aldehydo-L-gulose REASON: CORRECT Matches hexose pattern with '
+               'correct number of carbons and hydroxyls\n'
+               ' * SMILES: O1[C@H]([C@H](O)[C@H](O)[C@@H](O)C1O)CO NAME: '
+               'L-altropyranose REASON: CORRECT Matches hexose pattern with '
+               'correct number of carbons and hydroxyls\n'
+               ' * SMILES: [H]C(=O)[C@H](O)[C@H](O)[C@@H](O)[C@H](O)CO NAME: '
+               'aldehydo-D-gulose REASON: CORRECT Matches hexose pattern with '
+               'correct number of carbons and hydroxyls\n'
+               'False positives: SMILES: '
+               '[NH3+][C@@H]1[C@@H](O)[C@@H](O)O[C@H](CO)[C@H]1O NAME: '
+               'alpha-D-kanosamine(1+) REASON: WRONGLY CLASSIFIED Matches '
+               'hexose pattern with correct number of carbons and hydroxyls\n'
+               ' * SMILES: [H]C(=O)[C@H]([18F])[C@@H](O)[C@H](O)[C@H](O)CO '
+               'NAME: 2-deoxy-2-((18)F)fluoro-aldehydo-D-glucose REASON: '
+               'WRONGLY CLASSIFIED Matches hexose pattern with correct number '
+               'of carbons and hydroxyls\n'
+               ' * SMILES: O1[C@@H]([C@H](O)[C@H](O)[C@@H](O)C1O)C=O NAME: '
+               'Galacto-hexodialdose REASON: WRONGLY CLASSIFIED Matches hexose '
+               'pattern with correct number of carbons and hydroxyls\n'
+               ' * SMILES: OC[C@]1(O)[C@H](O)OC[C@@H](O)[C@H]1O NAME: '
+               'beta-D-hamamelose REASON: WRONGLY CLASSIFIED Matches hexose '
+               'pattern with correct number of carbons and hydroxyls\n'
+               ' * SMILES: O1C(C(O)C(O)C(O)C1)CO NAME: 1,5-anhydrohexitol '
+               'REASON: WRONGLY CLASSIFIED Matches hexose pattern with correct '
+               'number of carbons and hydroxyls\n'
+               ' * SMILES: OC[C@H]1OC(O)[C@H](F)[C@@H](O)[C@@H]1O NAME: '
+               '2-deoxy-2-fluoro-D-glucopyranose REASON: WRONGLY CLASSIFIED '
+               'Matches hexose pattern with correct number of carbons and '
+               'hydroxyls\n'
+               ' * SMILES: '
+               'O([C@]([C@](O[H])([C@](O[H])(C(=O)[H])[H])[H])([C@@](O[H])(C([H])([H])[H])[H])[H])[H] '
+               'NAME: 6-deoxy-L-allose REASON: WRONGLY CLASSIFIED Matches '
+               'hexose pattern with correct number of carbons and hydroxyls\n'
+               ' * SMILES: '
+               'O([C@]([C@@](O[H])([C@](N([H])[H])(C(=O)[H])[H])[H])([C@@](O[H])(C(O[H])([H])[H])[H])[H])[H] '
+               'NAME: L-glucosamine REASON: WRONGLY CLASSIFIED Matches hexose '
+               'pattern with correct number of carbons and hydroxyls\n'
+               ' * SMILES: '
+               'O([C@@]([C@](O[H])(C(O[H])([H])[H])[H])([C@](O[H])(C(=O)C([H])([H])[H])[H])[H])[H] '
+               'NAME: 1-deoxy-D-tagatose REASON: WRONGLY CLASSIFIED Matches '
+               'hexose pattern with correct number of carbons and hydroxyls\n'
+               ' * SMILES: OC[C@@H](O)[C@H](O)CC(=O)C(O)=O NAME: '
+               '2-dehydro-3-deoxy-D-galactonic acid REASON: WRONGLY CLASSIFIED '
+               'Matches hexose pattern with correct number of carbons and '
+               'hydroxyls\n'
+               ' * SMILES: C(=O)(CC(=O)[C@H](O)[C@H](O)CO)O NAME: '
+               '3-dehydro-2-deoxy-D-gluconic acid REASON: WRONGLY CLASSIFIED '
+               'Matches hexose pattern with correct number of carbons and '
+               'hydroxyls\n'
+               ' * SMILES: O[C@@H](C[C@H](O)C(O)=O)[C@H](O)CO NAME: '
+               '3-deoxy-D-arabino-hexonic acid REASON: WRONGLY CLASSIFIED '
+               'Matches hexose pattern with correct number of carbons and '
+               'hydroxyls\n'
+               ' * SMILES: N[C@@H]1[C@@H](O)C(O)O[C@H](CO)[C@H]1O NAME: '
+               '3-amino-3-deoxy-D-glucopyranose REASON: WRONGLY CLASSIFIED '
+               'Matches hexose pattern with correct number of carbons and '
+               'hydroxyls\n'
+               ' * SMILES: [H]C(=O)[C@@](O)(CO)[C@H](O)[C@H](O)CO NAME: '
+               'D-hamamelose REASON: WRONGLY CLASSIFIED Matches hexose pattern '
+               'with correct number of carbons and hydroxyls\n'
+               ' * SMILES: OCC(CO)(CO)NCC(O)=O NAME: '
+               'N-tris(hydroxymethyl)methylglycine REASON: WRONGLY CLASSIFIED '
+               'Matches hexose pattern with correct number of carbons and '
+               'hydroxyls\n'
+               ' * SMILES: [C@H]1(O)[C@H](O)[C@@H](CO)O[C@@H](O)[C@@H]1[NH3+] '
+               'NAME: beta-D-glucosamine(1+) REASON: WRONGLY CLASSIFIED '
+               'Matches hexose pattern with correct number of carbons and '
+               'hydroxyls\n'
+               ' * SMILES: N[C@H]([C@@H](O)[C@H](O)[C@H](O)CO)C([O-])=O NAME: '
+               '2-amino-2-deoxy-D-gluconate REASON: WRONGLY CLASSIFIED Matches '
+               'hexose pattern with correct number of carbons and hydroxyls\n'
+               ' * SMILES: '
+               'O1[C@]([C@@](O[H])([C@@](O[H])([C@](N([H])[H])(C1(O[H])[H])[H])[H])[H])(C(O[H])([H])[H])[H] '
+               'NAME: L-galactosamine REASON: WRONGLY CLASSIFIED Matches '
+               'hexose pattern with correct number of carbons and hydroxyls\n'
+               ' * SMILES: N[C@@H](C=O)[C@@H](O)[C@@H](O)[C@H](O)CO NAME: '
+               'aldehydo-D-galactosamine REASON: WRONGLY CLASSIFIED Matches '
+               'hexose pattern with correct number of carbons and hydroxyls\n'
+               ' * SMILES: OC[C@H]1OC[C@@H](O)[C@@H](O)[C@@H]1O NAME: '
+               '1,5-anhydro-D-mannitol REASON: WRONGLY CLASSIFIED Matches '
+               'hexose pattern with correct number of carbons and hydroxyls\n'
+               ' * SMILES: NC(=O)[C@H]1O[C@@H](O)[C@H](O)[C@@H](O)[C@@H]1O '
+               'NAME: beta-D-glucuronamide REASON: WRONGLY CLASSIFIED Matches '
+               'hexose pattern with correct number of carbons and hydroxyls\n'
+               ' * SMILES: C(=O)(C[C@@H](O)[C@H](O)[C@H](O)CO)[O-] NAME: '
+               '2-deoxy-D-gluconate REASON: WRONGLY CLASSIFIED Matches hexose '
+               'pattern with correct number of carbons and hydroxyls\n'
+               ' * SMILES: '
+               'O([C@@]([C@](O[H])([C@](O[H])(C(=O)[H])[H])[H])([C@@](O[H])(C([H])([H])[H])[H])[H])[H] '
+               'NAME: 6-deoxy-L-gulose REASON: WRONGLY CLASSIFIED Matches '
+               'hexose pattern with correct number of carbons and hydroxyls\n'
+               ' * SMILES: OC[C@H]1O[C@H](O)[C@@H](F)[C@@H](O)[C@@H]1O NAME: '
+               '2-deoxy-2-fluoro-alpha-D-mannose REASON: WRONGLY CLASSIFIED '
+               'Matches hexose pattern with correct number of carbons and '
+               'hydroxyls\n'
+               ' * SMILES: [H][C@]1([18F])C(O)O[C@H](CO)[C@H](O)[C@@H]1O NAME: '
+               '2-deoxy-2-((18)F)fluoro-D-galactopyranose REASON: WRONGLY '
+               'CLASSIFIED Matches hexose pattern with correct number of '
+               'carbons and hydroxyls\n'
+               'False negatives: SMILES: '
+               'O1C(OC)C(O)CC(C1C)(O)[C@@H](O)C[C@H](OC)[C@H](O)[C@H](O)C '
+               'NAME: Caryophyllan REASON: MISSED Must have exactly 6 carbons, '
+               'found 14\n'
+               ' * SMILES: O[C@@H]([C@H](O)[C@H](O)C)[C@@H](O)CO NAME: '
+               '6-Deoxyglucitol REASON: MISSED No sugar ring or carbonyl group '
+               'found\n'
+               ' * SMILES: '
+               'O1C(O)[C@H](O)C[C@]([C@H]1C)(O)[C@@H](O)C[C@H](O)[C@H](O)[C@H](O)C '
+               'NAME: Caryophyllose REASON: MISSED Must have exactly 6 '
+               'carbons, found 12\n'
+               ' * SMILES: '
+               '[H]C([H])([C@@]([H])(O)C=O)[C@@]([H])(O)[C@@]([H])(C)O NAME: '
+               'abequose REASON: MISSED Expected 5-6 oxygens, found 4\n'
+               ' * SMILES: [H][C@](C)(O)[C@]([H])(O)[C@@]([H])(O)CC=O NAME: '
+               'boivinose REASON: MISSED Expected 5-6 oxygens, found 4\n'
+               ' * SMILES: O1C(C(O)C(O)C(O)C1OC(=O)/C(=C/CC=C(C)C)/C)CO NAME: '
+               'Glucosyl (E)-2,6-Dimethyl-2,5-heptadienoate REASON: MISSED '
+               'Must have exactly 6 carbons, found 15\n'
+               ' * SMILES: CNCC(C(C(C(CO)O)O)O)O NAME: '
+               '6-(methylamino)hexane-1,2,3,4,5-pentol REASON: MISSED Must '
+               'have exactly 6 carbons, found 7\n'
+               ' * SMILES: O1C(C(O)C(O)C(OC(=O)C2=CC=CC=C2)C1O)CO NAME: '
+               '2-O-Benzoyl-D-glucose REASON: MISSED Must have exactly 6 '
+               'carbons, found 13\n'
+               ' * SMILES: C[C@@H](O)[C@@H](O)CCC=O NAME: amicetose REASON: '
+               'MISSED Expected 5-6 oxygens, found 3\n'
+               ' * SMILES: '
+               'O=C(NCCC1=CC=CC=C1)[C@H](N[C@H](C(=O)NC=CC2=CC=C(O[C@@H]3O[C@@H]([C@H](NC(=O)C)[C@@H]([C@H]3O)O)C)C=C2)CC=4C5=C(C=CC=C5)N(C4)C)C(C)C '
+               'NAME: Rhabdoplanin B REASON: MISSED Must have exactly 6 '
+               'carbons, found 41\n'
+               '------\n'
+               '\n'
+               'In your reasoning step, analyze the previous program and the '
+               'above outcomes, hypothesizing about what went wrong, and how '
+               'to improve.\n',
+    'sample_true_negatives': [],
+    'sample_false_negatives': [   {   'smiles': 'OC[C@H]1OC(O)(CO)[C@H](O)[C@H]1O',
+                                      'name': 'D-sorbofuranose',
+                                      'reason': 'No hexose core structure '
+                                                'found'},
+                                  {   'smiles': 'O1C(OC)C(O)CC(C1C)(O)[C@@H](O)C[C@H](OC)[C@H](O)[C@H](O)C',
+                                      'name': 'Caryophyllan',
+                                      'reason': 'No hexose core structure '
+                                                'found'},
+                                  {   'smiles': 'O[C@@H]([C@H](O)[C@H](O)C)[C@@H](O)CO',
+                                      'name': '6-Deoxyglucitol',
+                                      'reason': 'No hexose core structure '
+                                                'found'},
+                                  {   'smiles': 'O1C(O)[C@H](O)C[C@]([C@H]1C)(O)[C@@H](O)C[C@H](O)[C@H](O)[C@H](O)C',
+                                      'name': 'Caryophyllose',
+                                      'reason': 'No hexose core structure '
+                                                'found'},
+                                  {   'smiles': '[H]C([H])([C@@]([H])(O)C=O)[C@@]([H])(O)[C@@]([H])(C)O',
+                                      'name': 'abequose',
+                                      'reason': 'No hexose core structure '
+                                                'found'},
+                                  {   'smiles': 'OC[C@H](O)[C@@H](O)[C@H](O)C(=O)CO',
+                                      'name': 'keto-L-sorbose',
+                                      'reason': 'No hexose core structure '
+                                                'found'},
+                                  {   'smiles': 'OC[C@H]1O[C@@](O)(CO)[C@@H](O)[C@H]1O',
+                                      'name': 'alpha-D-tagatofuranose',
+                                      'reason': 'No hexose core structure '
+                                                'found'},
+                                  {   'smiles': '[C@H]1(O)C(O)O[C@H](C=O)[C@H]([C@@H]1O)O',
+                                      'name': '6-dehydro-D-glucose',
+                                      'reason': 'No hexose core structure '
+                                                'found'},
+                                  {   'smiles': '[H][C@](C)(O)[C@]([H])(O)[C@@]([H])(O)CC=O',
+                                      'name': 'boivinose',
+                                      'reason': 'No hexose core structure '
+                                                'found'},
+                                  {   'smiles': 'OC[C@H]1O[C@](O)(CO)[C@H](O)[C@H]1O',
+                                      'name': 'beta-D-sorbofuranose',
+                                      'reason': 'No hexose core structure '
+                                                'found'}],
     'attempt': 1,
+    'reasoning': 'Let me analyze the issues with the previous code and suggest '
+                 'improvements:\n'
+                 '\n'
+                 '1. **Carbon Count Issue**: The strict requirement of exactly '
+                 '6 carbons is causing us to miss valid hexose derivatives and '
+                 'modified hexoses. For example, "Caryophyllan" and '
+                 '"2-O-Benzoyl-D-glucose" are valid hexoses with '
+                 'modifications. We should focus on the core hexose structure '
+                 'rather than total carbon count.\n'
+                 '\n'
+                 '2. **Oxygen Count**: The oxygen count check is too '
+                 'restrictive. Modified hexoses may have different numbers of '
+                 'oxygens due to substitutions or modifications.\n'
+                 '\n'
+                 '3. **Ring Pattern Detection**: The current ring pattern '
+                 'detection is too simple. We need more specific patterns that '
+                 'can identify the characteristic hexose ring structure with '
+                 'its specific substitution pattern.\n'
+                 '\n'
+                 '4. **Derivatives Handling**: The code rejects molecules with '
+                 'ester groups, but some valid hexose derivatives contain '
+                 'esters or other modifications.\n'
+                 '\n'
+                 "Here's my improved approach:",
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 21,
-    'num_false_positives': 100,
-    'num_true_negatives': 390,
-    'num_false_negatives': 10,
+    'num_true_positives': 115,
+    'num_false_positives': 0,
+    'num_true_negatives': 0,
+    'num_false_negatives': 100,
     'num_negatives': None,
-    'precision': 0.17355371900826447,
-    'recall': 0.6774193548387096,
-    'f1': 0.2763157894736842,
-    'accuracy': 0.7888675623800384}
+    'precision': 1.0,
+    'recall': 0.5348837209302325,
+    'f1': 0.6969696969696969,
+    'accuracy': 0.5348837209302325,
+    'negative_predictive_value': 0.0}

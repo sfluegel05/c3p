@@ -2,67 +2,59 @@
 Classifies: CHEBI:25029 leukotriene
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_leukotriene(smiles: str):
     """
-    Determines if a molecule is a leukotriene based on structural characteristics.
-    
+    Determines if a molecule is a leukotriene based on its SMILES string.
+    Leukotrienes have polyene structures, usually derived from arachidonic acid,
+    containing conjugated double bonds, carboxyl groups, and may include hydroxyl
+    and sulfur-containing groups.
+
     Args:
         smiles (str): SMILES string of the molecule
-        
+
     Returns:
         bool: True if molecule is a leukotriene, False otherwise
         str: Reason for classification
     """
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return None, "Invalid SMILES string"
+        return False, "Invalid SMILES string"
 
-    # Check for carboxylic acid group
-    carboxylic_pattern = Chem.MolFromSmarts('C(=O)[OH]')
-    if not mol.HasSubstructMatch(carboxylic_pattern):
-        return False, "Missing carboxylic acid group"
+    # Revise carbon count to encompass broader variations in chains
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if not (18 <= c_count <= 58):
+        return False, f"Unusual carbon count: found {c_count} carbons"
 
-    # Count carbon atoms
-    carbon_count = len([atom for atom in mol.GetAtoms() if atom.GetSymbol() == 'C'])
-    if carbon_count < 20:
-        return False, "Less than 20 carbons"
-
-    # Count conjugated double bonds
-    conjugated_pattern = Chem.MolFromSmarts('C=CC=CC=C')
-    if not mol.HasSubstructMatch(conjugated_pattern):
-        return False, "Missing required conjugated double bond system"
-
-    # Count total double bonds
-    double_bond_pattern = Chem.MolFromSmarts('C=C')
-    double_bond_count = len(mol.GetSubstructMatches(double_bond_pattern))
-    if double_bond_count < 4:
-        return False, "Insufficient number of double bonds"
-
-    # Define specific leukotriene patterns
-    patterns = [
-        'O=C(O)CCC[CH]C=CC=CC=CC',  # Basic core
-        'O=C(O)CCC[CH]C=CC=CC=C[CH]', # With hydroxyl group positions
-        'SC[CH](NC(=O))C(=O)', # Cysteinyl leukotriene specific part
+    # Conjugated double bond patterns - expanded possibilities
+    conjugated_patterns = [
+        Chem.MolFromSmarts("[#6]=[#6]-[#6]=[#6]-[#6]=[#6]"),
+        Chem.MolFromSmarts("[#6]-[#6]=[#6]-[#6]=[#6]-[#6]=[#6]"),
+        Chem.MolFromSmarts("[#6]=[#6]-[#6]=[#6]"),
+        Chem.MolFromSmarts("[#6]-[#6]=[#6]-[#6]=[#6]"),
+        Chem.MolFromSmarts("[#6]-[#6]=[#6]-[#6]-[#6]=[#6]"),
+        Chem.MolFromSmarts("[#6]=[#6]-[#6]=[#6]-[#6]=[#6]-[#6]"),
     ]
+    if not any(mol.HasSubstructMatch(pattern) for pattern in conjugated_patterns):
+        return False, "No suitable conjugated double bond pattern found"
 
-    for pattern in patterns:
-        patt = Chem.MolFromSmarts(pattern)
-        if mol.HasSubstructMatch(patt):
-            # Check if molecule contains sulfur (cysteinyl leukotrienes)
-            contains_sulfur = any(atom.GetSymbol() == 'S' for atom in mol.GetAtoms())
-            if contains_sulfur:
-                return True, "Cysteinyl leukotriene"
-            
-            # Check for hydroxyl groups
-            hydroxyl_pattern = Chem.MolFromSmarts('[CH]O')
-            if mol.HasSubstructMatch(hydroxyl_pattern):
-                return True, "Hydroxylated leukotriene"
-            
-            return True, "Basic leukotriene structure"
+    # Carboxyl groups presence
+    carboxyl_patterns = [Chem.MolFromSmarts("C(=O)[OH]"), Chem.MolFromSmarts("C(=O)[O-]")]
+    if not any(mol.HasSubstructMatch(pattern) for pattern in carboxyl_patterns):
+        return False, "No carboxyl group (COOH or COO-) detected"
 
-    return False, "Does not match leukotriene structural requirements"
+    # Check for hydroxyl groups (flexible count)
+    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
+    if len(mol.GetSubstructMatches(hydroxyl_pattern)) == 0:
+        return False, "No hydroxyl group (OH) found"
+
+    # Consider sulfur - optional due to variety in leukotriene types
+    sulfur_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 16)
+    
+    # Optional validation if there are distinguishing sulfur patterns
+
+    return True, "Structure matches typical features of leukotrienes"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:25029',
@@ -73,179 +65,366 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:25029',
                                         'from arachidonic acid, each member '
                                         'having four double bonds of which '
                                         'three are conjugated.',
-                          'parents': ['CHEBI:23899']},
-    'config': {   'llm_model_name': 'lbl/claude-sonnet',
-                  'f1_threshold': 0.8,
-                  'max_attempts': 5,
-                  'max_negative_to_test': None,
-                  'max_positive_in_prompt': 50,
-                  'max_negative_in_prompt': 20,
-                  'max_instances_in_prompt': 100,
-                  'test_proportion': 0.1},
+                          'parents': ['CHEBI:23899'],
+                          'xrefs': [   'LIPID_MAPS_class:LMFA0302',
+                                       'PMID:10922142',
+                                       'PMID:15794321',
+                                       'PMID:3001504',
+                                       'PMID:6129158',
+                                       'PMID:6293196',
+                                       'PMID:6311078',
+                                       'PMID:8842590',
+                                       'PMID:9526099',
+                                       'PMID:9561094'],
+                          'all_positive_examples': []},
+    'config': None,
     'message': '\n'
-               'Attempt failed: F1 score of 0.07792207792207793 is too low.\n'
-               'True positives: '
-               "[('O[C@@H](CCCC(O)=O)/C=C/C=C\\\\C=C\\\\[C@@H](O)C/C=C\\\\CCCCC', "
-               "'Leukotriene with core structure'), "
-               "('C(C(/C=C/C=C/C=C/[C@H](CCCC(O)=O)O)=O)/C=C\\\\CCCCC', "
-               "'Leukotriene with core structure'), "
-               "('CCCCC\\\\C=C/CC(=O)\\\\C=C\\\\C=C\\\\C=C/[C@@H](O)CCCC(O)=O', "
-               "'Leukotriene with core structure')]\n"
-               'False positives: '
-               "[('C[C@H]1C=CC=CCCC=CC=CC=CC=C[C@@H](C[C@H]2[C@@H]([C@H](C[C@](O2)(C[C@H]([C@@H](CC[C@H](C[C@H](C[C@H](CC(=O)O[C@H]([C@@H]([C@@H]1O)C)C)O)O)O)O)O)O)O)C(=O)O)O[C@H]3[C@H]([C@H]([C@@H]([C@H](O3)C)O)N)O', "
-               "'Leukotriene with core structure'), "
-               "('S(CCNC(=O)CCNC(=O)C(O)C(COP(OP(OCC1OC(N2C3=NC=NC(N)=C3N=C2)C(O)C1OP(O)(O)=O)(O)=O)(O)=O)(C)C)C(=O)CCC=CCC(O)C=CC=CC=CC(O)CCCC(O)=O', "
-               "'Cysteinyl leukotriene'), "
-               "('C[C@@H]1[C@H]([C@@H]([C@@H]([C@@H](O1)OC2CC(C(C(CC(=O)CC(C(CCC(CC(CC(CC(=O)OC(C(C(C(C=CC=CCCC=CC=CC=CC=C2)C)O)C)C)O)O)O)O)O)O)C(=O)O)O)O)N)O', "
-               "'Leukotriene with core structure'), "
-               "('[H][C@@]12C[C@H](O)C[C@]3(O)C[C@H](O)[C@@H](C(O)=O)[C@]([H])(C[C@@H](O[C@@H]4O[C@H](C)[C@@H](O)[C@H](N)[C@@H]4O)\\\\C=C\\\\C=C\\\\C=C\\\\C=C\\\\C[C@@H](C)OC(=O)\\\\C=C\\\\[C@H]1O2)O3', "
-               "'Leukotriene with core structure'), "
-               "('C(\\\\[C@H](CCCC(O)=O)O)=C\\\\C=C\\\\C=C\\\\[C@@H](C/C=C\\\\C=C\\\\C(CC)=O)O', "
-               "'Leukotriene with core structure'), "
-               "('OC(CCCC(O)=O)C=CC=CC=CC(O)CC=CCCC(O)=O', 'Leukotriene with "
-               "core structure'), "
-               "('O[C@H](CCCC(O)=O)/C=C\\\\C=C\\\\C=C\\\\C(=O)C/C=C\\\\CCCCC(O)=O', "
-               "'Leukotriene with core structure'), "
-               "('O[C@@H](CCCC(O)=O)\\\\C=C/C=C/C=C/[C@H](O)C\\\\C=C/CCC(O)=O', "
-               "'Leukotriene with core structure'), "
-               "('O[C@@H](CCCC(O)=O)\\\\C=C/C=C/C=C/C(=O)C/C=C\\\\C=C\\\\[C@@H](O)CC', "
-               "'Leukotriene with core structure'), "
-               "('O=C1OC(C(C=CC=CC=CC=C[C@@H](O[C@@H]2O[C@@H]([C@@H](O)[C@@H]([C@@H]2O)N)C)C[C@H]3O[C@](C[C@@H](C[C@@H]4[C@H](C=C1)O4)O)(O)C[C@@H](O)[C@@H]3C(=O)O)C)C', "
-               "'Leukotriene with core structure'), "
-               "('O=C1OC(C(CC)C)CC=CC=CC=CC=CC=CC(O[C@@H]2O[C@@H]([C@@H](O)[C@@H]([C@@H]2O)N)C)CC3OC(CC(CCCC(CC(C1)O)=O)O)(O)CC(O)C3C(=O)O', "
-               "'Leukotriene with core structure'), "
-               "('CCCCC[C@H](O)[C@H](O)\\\\C=C\\\\C=C\\\\C=C/C=C/[C@@H](O)CCCC(O)=O', "
-               "'Leukotriene with core structure'), "
-               "('O[C@@H](CCCC(O)=O)/C=C\\\\C=C\\\\C=C\\\\[C@H](O)C/C=C\\\\C=C\\\\[C@@H](O)C(O)C', "
-               "'Leukotriene with core structure'), "
-               "('O=C1O[C@H]([C@@H](C=CC=CC=CC=CC=CC=CC=C[C@H](O[C@H]2O[C@@H]([C@H](O)[C@H]([C@H]2O)N)C)C[C@@H]3O[C@@](C[C@@H](C[C@@H](C[C@@H](C[C@@H](CC(C[C@H](C1)O)=O)O)O)O)O)(O)C[C@H](O)[C@H]3C(=O)O)C)[C@@H](CC[C@@H](O)CC(=O)C4=CC=C(N)C=C4)C', "
-               "'Leukotriene with core structure'), "
-               "('[H]C(CCC=C([H])C=C([H])C=C([H])CCCCC(O)=O)=CCCCCC', "
-               "'Leukotriene with core structure'), "
-               "('[H][C@]12C[C@@H](O[C@@H]3O[C@H](C)[C@@H](O)[C@H](N)[C@@H]3O)\\\\C=C\\\\C=C\\\\C=C\\\\C=C\\\\C=C\\\\C=C\\\\C=C\\\\[C@H](C)[C@@H](O)[C@@H](C)[C@H](C)OC(=O)C[C@H](O)C[C@H](O)CC[C@@H](O)[C@H](O)C[C@H](O)C[C@](O)(C[C@H](O)[C@H]1C(O)=O)O2', "
-               "'Leukotriene with core structure'), "
-               "('CC1C\\\\C(C)=C(C)/C=C/C2=CC=C(C)\\\\C(O2)=C2OC(C)(C(C(O)=O)C1=O)C(O)=C\\\\2O', "
-               "'Leukotriene with core structure'), "
-               "('O=C1OC(C(CC)C)CC=CC=CC=CC=CC=CC(O[C@@H]2O[C@@H]([C@@H](O)[C@@H]([C@@H]2O)N)C)CC3OC(CC(C(CCC(CC(C1)O)=O)O)O)(O)CC(O)C3C(=O)O', "
-               "'Leukotriene with core structure'), "
-               "('O=C1OC(C(C=CC=CC=CC=CC(OC2O[C@@H]([C@@H](O)[C@@H]([C@@H]2O)N)C)CC3OC(CC(CC(C(C=C1)O)O)O)(O)CC(O)C3C(=O)O)CC)C', "
-               "'Leukotriene with core structure'), "
-               "('O=C1OC(C(C=CC=CC=CC=CC=CC=CC=CC(OC2O[C@@H]([C@@H](O)[C@@H]([C@@H]2O)N)C)CC3OC(CC(CC(CC(CCCC(CC(C1)O)O)O)O)O)(O)CC(O)C3C(=O)O)C)C(CCC(O)CC(=O)C4=CC=C(NC)C=C4)C', "
-               "'Leukotriene with core structure'), "
-               "('O[C@@H]([C@H](O)/C=C/C=C/C=C\\\\C=C\\\\[C@H](O)CCCC(O)=O)C/C=C\\\\CC', "
-               "'Leukotriene with core structure'), "
-               "('O1C(C1/C=C/C=C/C=C\\\\C/C=C\\\\C/C=C\\\\C=C\\\\[C@H](O)C/C=C\\\\CC)CCC(O)=O', "
-               "'Leukotriene with core structure'), "
-               "('OC(CCCC(O)=O)\\\\C=C\\\\C=C\\\\C=C\\\\C(O)C\\\\C=C/C=C\\\\C(O)CC', "
-               "'Leukotriene with core structure'), "
-               "('C1(CC2(OC(C1C(=O)O)CC(O[C@H]3[C@H]([C@H]([C@@H]([C@H](O3)C)O)N)O)C=CC=CC=CC=CCC(CCCC)OC(C=CC4C(O4)CC(C2)O)=O)O)O', "
-               "'Leukotriene with core structure'), "
-               "('O[C@@H](CCCC(O)=O)/C=C\\\\C=C\\\\C=C\\\\[C@H](O)C/C=C\\\\C=C\\\\[C@@H](O)CCO', "
-               "'Leukotriene with core structure'), "
-               "('CCC[C@@H]1C\\\\C=C\\\\C=C\\\\C=C\\\\C=C\\\\[C@@H](C[C@@H]2O[C@@](O)(C[C@H](O)[C@H]2C(O)=O)C[C@@H](O)CCCC(=O)C[C@@H](O)[C@H](CC)C(=O)O1)O[C@@H]1O[C@H](C)[C@@H](O)[C@H](N)[C@@H]1O', "
-               "'Leukotriene with core structure'), "
-               "('O=C1N([C@H](CCC(=O)O)C(C1=C(O)/C=C/C=C/C=C/C=C\\\\C=C/C(=C/[C@H]([C@@H](O[C@@H]2O[C@@H]([C@H](O)[C@@H](C2)O)C)C(C)C)C)/C)=O)C', "
-               "'Leukotriene with core structure'), "
-               "('O=C(C(=O)/C=C/C(CC)C)/C=C/C=C/C=C/C=C/C=C/C=C/C1OC(C(=O)O)C(C1)O', "
-               "'Leukotriene with core structure'), "
-               "('O=C1OC(CC=CC=CC=CC=CC(OC2OC(C(N)C(C2O)O)C)CC3OC(CC(CC4C(C=C1)O4)O)(O)CC(O)C3C(=O)O)CCC', "
-               "'Leukotriene with core structure'), "
-               "('CC(CCC(O)CC(=O)c1ccc(N)cc1)C1OC(=O)CC(=O)CCCC(O)CC(O)CC(O)CC(O)CC2(O)CC(O)C(C(CC(O[C@@H]3O[C@H](C)[C@@H](O)[C@H](N)[C@@H]3O)\\\\C=C\\\\C=C\\\\C=C\\\\C=C\\\\C=C\\\\C=C\\\\C=C\\\\C1C)O2)C(O)=O', "
-               "'Leukotriene with core structure'), "
-               "('O=C1N[C@@H](CCC(=O)O)C(C1=C(O)/C=C/C=C/[C@H]2[C@H](C=C[C@@H]3[C@@H]2C[C@@H](C)[C@H]3C(=O)C)/C=C/C=C/C(=O)N)=O', "
-               "'Leukotriene with core structure'), "
-               "('[H][C@]12C[C@@H](O[C@@H]3O[C@H](C)[C@@H](O)[C@H](N)[C@@H]3O)\\\\C=C\\\\C=C\\\\C=C\\\\C=C\\\\CC\\\\C=C\\\\C=C\\\\[C@H](C)[C@@H](O)[C@@H](C)[C@H](C)OC(=O)C[C@H](O)C[C@H](O)C[C@H](O)CC[C@@H](O)[C@H](O)C[C@](O)(C[C@H](O)[C@H]1C(O)=O)O2', "
-               "'Leukotriene with core structure'), "
-               "('OC(CCCCC)C(O)\\\\C=C\\\\C=C\\\\C=C\\\\C=C\\\\C(O)CCCC(O)=O', "
-               "'Leukotriene with core structure'), "
-               "('O(O)C(CCCC(O)=O)/C=C/C=C/C=C/C(OO)C/C=C\\\\CCCCC', "
-               "'Leukotriene with core structure'), "
-               "('O=C1OC(CC=CC=CC=CC=CC(O[C@@H]2O[C@@H]([C@@H](O)[C@@H]([C@@H]2O)N)C)CC3OC(CC(CC(CC(CC(C1C)O)O)O)O)(O)CC(O)C3C(=O)O)CCCC', "
-               "'Leukotriene with core structure'), "
-               "('P(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCCCC)COC(=O)CCC[C@H](O)\\\\C=C/C=C/C=C/[C@H](O)C/C=C\\\\CCCCC)(OC[C@H](N)C(O)=O)(O)=O', "
-               "'Leukotriene with core structure'), "
-               "('CC[C@H]1[C@H](O)CC(=O)CCC[C@H](O)C[C@]2(O)C[C@H](O)[C@H]([C@H](C[C@@H](O[C@@H]3O[C@H](C)[C@@H](O)[C@H](N)[C@@H]3O)\\\\C=C\\\\C=C\\\\C=C\\\\C=C\\\\C[C@@H](C)OC1=O)O2)C(O)=O', "
-               "'Leukotriene with core structure'), "
-               "('C(C(O)=O)C[C@@H]([C@@H](/C=C/C=C/C=C\\\\C/C=C\\\\C=C\\\\[C@H](C/C=C\\\\CC)O)O)O', "
-               "'Leukotriene with core structure'), "
-               "('O=C1N[C@@H](CCC(=O)O)C(C1=C(O)/C=C/C=C/[C@H]2[C@H](C=C[C@@H]3[C@@H]2C[C@@H](C)[C@H]3CC)/C=C/C=C/C(=O)N)=O', "
-               "'Leukotriene with core structure'), "
-               "('C(\\\\[C@H](CCCC(O)=O)O)=C\\\\C=C\\\\C=C\\\\[C@@H](C\\\\C=C/C=C/[C@@H](CC)O)O', "
-               "'Leukotriene with core structure'), "
-               "('C(\\\\C/C=C\\\\C=C\\\\C=C\\\\C1O[C@H]1CCC(=O)O)=C\\\\C=C\\\\[C@H](O)C/C=C\\\\CC', "
-               "'Leukotriene with core structure'), "
-               "('O1C2(O)CC(O)C(C1CC(O[C@H]3O[C@H]([C@H](O)[C@@H](N)[C@H]3O)C)C=CC=CC=CC=CC=CC=CC=CC(C(OC(=O)CC(O)CC(=O)CC(O)CC(O)CC(O)CC(O)C2)C(CCC(O)CC(=O)C4=CC=C(N)C=C4)C)C)C(O)=O', "
-               "'Leukotriene with core structure'), "
-               "('C(C(O)=O)C[C@@H]([C@@H](/C=C/C=C/C=C\\\\C\\\\C=C/C=C/[C@@H](C/C=C\\\\CC)O)O)O', "
-               "'Leukotriene with core structure'), "
-               "('C[C@H]1C=CC=CC=CC=CC=CC=CC=C[C@@H](C[C@@H]2[C@@H]([C@H](C[C@](O2)(C[C@H](C[C@H]([C@@H](CC[C@H](C[C@H](CC(=O)O[C@H]([C@@H]([C@@H]1O)C)C)O)O)O)O)O)O)O)C(=O)O)O[C@H]3[C@H]([C@H]([C@@H]([C@H](O3)C)O)N)O', "
-               "'Leukotriene with core structure'), "
-               "('O=C1C(C2=CC=C3[C@]4([C@]([C@@H]([C@H](C(=O)O)CCC(=C)C(C)C)[C@@H](C4)O)(C)CC=C3[C@@]2(C)CC1)C)(C)C', "
-               "'Leukotriene with core structure'), "
-               "('CC(CCC(O)CC(=O)c1ccc(N)cc1)C1OC(=O)CC(=O)CC([*])CC(O)CC([*])CC(O)CC(O)CC2(O)CC(O)C(C(CC(O[C@@H]3O[C@H](C)[C@@H](O)[C@H](N)[C@@H]3O)\\\\C=C\\\\C=C\\\\C=C\\\\C=C\\\\C=C\\\\C=C\\\\C=C\\\\C1C)O2)C(O)=O', "
-               "'Leukotriene with core structure'), "
-               "('O1[C@@]2(O)C[C@H](O)[C@H]([C@@H]1C[C@@H](O[C@@H]3O[C@@H]([C@@H](O)[C@H](N)[C@@H]3O)C)C=CC=CC=CC=CC=CC=CC=C[C@@H]([C@@H](O)[C@@H]([C@@H](OC(=O)C[C@H](O)C[C@H](O)[C@@H](O)CC[C@H](O)C[C@H](O)C2)C)C)C)C(O)=O', "
-               "'Leukotriene with core structure'), "
-               "('C[C@@H]1[C@H]([C@@H]([C@@H]([C@@H](O1)OC2CC3C(C(CC(O3)(CC(CC4C(O4)C=CC(=O)OC(CC=CC=CC=CC=C2)C)O)O)O)C(=O)O)O)N)O', "
-               "'Leukotriene with core structure'), "
-               "('C(C(/C=C/C=C/C=C\\\\[C@H](CCCC(O)=O)O)=O)/C=C\\\\CCCCC=O', "
-               "'Leukotriene with core structure'), "
-               "('P(OC[C@H](OC(=O)CCC[C@@H](O)/C=C\\\\C=C\\\\C=C\\\\[C@@H](O)C/C=C\\\\CCCCC)COC(=O)CCCCCCCCCCC/C=C\\\\C/C=C\\\\CCCCC)(OC[C@H](N)C(O)=O)(O)=O', "
-               "'Leukotriene with core structure'), "
-               "('O=C1O/C(=C(\\\\C2=CC=C(O)C=C2)/C(=O)O)/C(=C1C3=CC(=O)[C@@]4([C@H]3[C@H]5C(=O)O[C@@H]6[C@@]5(C=7C(=O)O\\\\C(\\\\C7O)=C(/C8=CC=C(O)C=C8)\\\\C(=O)O)[C@H]4C(=O)C6)O)O', "
-               "'Leukotriene with core structure'), "
-               "('O=C1O[C@@H]([C@H](C=CC=CC=CC=CC=CC=CC=C[C@@H](O[C@@H]2O[C@@H]([C@@H](O)[C@@H]([C@H]2O)N)C)C[C@H]3O[C@](C[C@@H](C[C@@H](C[C@H](C[C@@H](CC(C[C@H](C1)O)=O)O)O)O)O)(O)C[C@@H](O)[C@H]3C(=O)O)C)[C@@H](CC[C@@H](O)CC(=O)C4=CC=C(NC)C=C4)C', "
-               "'Leukotriene with core structure'), "
-               "('OCCCCC\\\\C=C/C[C@@H](O)\\\\C=C\\\\C=C\\\\C=C/[C@@H](O)CCCC(O)=O', "
-               "'Leukotriene with core structure'), "
-               "('C(\\\\C=C/C=C/C=C/[C@H]([C@H](CCCCCO)O)O)=C/[C@H](CCCC(O)=O)O', "
-               "'Leukotriene with core structure'), "
-               "('O[C@H](CCCC(O)=O)/C=C\\\\C=C\\\\C=C\\\\[C@@H](O)C/C=C\\\\CCC(O)=O', "
-               "'Leukotriene with core structure'), "
-               "('CC1C=CC=CC=CC=CC=CC=CC=CC(CC2C(C(CC(O2)(CC(CC(C(CCC(CC(CC(=O)OC(C(C1O)C)C)O)O)O)O)O)O)O)C(=O)O)O[C@@H]3C(C(C(C(O3)C)O)N)O', "
-               "'Leukotriene with core structure'), "
-               "('CCCCC[C@@H](O)[C@H](O)\\\\C=C\\\\C=C\\\\C=C/C=C/[C@@H](O)CCCC(O)=O', "
-               "'Leukotriene with core structure'), "
-               "('C[C@H]1C=CC=CCCC=CC=CC=CC=CC(CC2C(C(C[C@](O2)(CC(C(CCC(CC(CC(CC(=O)O[C@H](C([C@@H]1O)C)C)O)O)O)O)O)O)O)C(=O)O)OC3[C@H]([C@H]([C@@H]([C@H](O3)C)O)N)O', "
-               "'Leukotriene with core structure'), "
-               "('[H][C@]12C[C@@H](O[C@@H]3O[C@H](C)[C@@H](O)[C@H](N)[C@@H]3O)\\\\C=C\\\\C=C\\\\C=C\\\\C=C\\\\CC\\\\C=C\\\\C=C\\\\[C@H](C)[C@@H](OC3C[C@@H](O)[C@@H](O)[C@H](C)O3)[C@@H](C)[C@H](C)OC(=O)C[C@H](O)C[C@H](O)C[C@H](O)CC[C@@H](O)[C@H](O)C[C@](O)(C[C@H](O)[C@H]1C(O)=O)O2', "
-               "'Leukotriene with core structure'), "
-               "('C(\\\\[C@H](CCCC(O)=O)O)=C\\\\C=C\\\\C=C\\\\[C@@H](C\\\\C=C/C=C/[C@H](CC)O)O', "
-               "'Leukotriene with core structure'), "
-               "('O=C1OC(C(C=CC=CC=CC=CC=CC=CC=CC(OC2O[C@@H]([C@@H](O)[C@@H]([C@@H]2O)N)C)CC3OC(CC(CC(CC(CCCC(CC(C1)O)O)O)O)O)(O)CC(O)C3C(=O)O)C)C(CCC(O)CC(=O)C4=CC=C(N)C=C4)C', "
-               "'Leukotriene with core structure'), "
-               "('O=C(CCCC(O)=O)/C=C/C=C\\\\C=C\\\\[C@H](C/C=C\\\\CCCCC)O', "
-               "'Leukotriene with core structure'), "
-               "('[H][C@]12C[C@@H](O[C@@H]3O[C@H](C)[C@@H](O)[C@H](N)[C@@H]3O)\\\\C=C\\\\C=C\\\\C=C\\\\C=C\\\\CC\\\\C=C\\\\C=C\\\\[C@H](C)[C@@H](O)[C@@H](C)[C@H](C)OC(=O)C[C@H](O)C[C@H](O)C[C@H](O)CCC[C@H](O)C[C@](O)(C[C@H](O)[C@H]1C(O)=O)O2', "
-               "'Leukotriene with core structure'), "
-               "('CC(CC(C)C1OC(=O)CC(=O)CCCC(=O)CC(O)CC(O)CC(O)CC(=O)CC(O)C(C(O)CC(OC2O[C@H](C)[C@@H](O)[C@H](N)[C@@H]2O)\\\\C=C\\\\C=C\\\\C=C\\\\C=C\\\\C=C\\\\C=C\\\\C=C\\\\C1C)C(O)=O)C(O)CC(=O)c1ccc(N)cc1', "
-               "'Leukotriene with core structure'), "
-               "('CC(CCC(O)CC(=O)c1ccc(N)cc1)C1OC(=O)CC(=O)CC(O)CC(O)CCCC(O)CC(O)CC2(O)CC(O)C(C(CC(O[C@@H]3O[C@H](C)[C@@H](O)[C@H](N)[C@@H]3O)\\\\C=C\\\\C=C\\\\C=C\\\\C=C\\\\C=C\\\\C=C\\\\C=C\\\\C1C)O2)C(O)=O', "
-               "'Leukotriene with core structure'), "
-               "('OC(CCCC(\\\\C=C/C=C/C=C/C(C\\\\C=C/C=C/[C@@H](CC)O)O)O)=O', "
-               "'Leukotriene with core structure'), "
-               "('O=C1OC(C(C=CC=CC=CC=CC=CC=CC=CC(OC2O[C@@H]([C@@H](O)[C@@H]([C@@H]2O)N)C)CC3OC(CC(CC(CC(CCCC(CC(C1)O)O)O)O)O)(O)CC(O)C3C(=O)O)C)C(CCC(O)CC(=O)/C=C/C=C/C)C', "
-               "'Leukotriene with core structure'), "
-               "('O[C@H](CCCC(O)=O)/C=C/C=C\\\\C=C\\\\[C@@H](O)C/C=C\\\\C=C\\\\[C@H](O)CC', "
-               "'Leukotriene with core structure')]\n"
-               'False negatives: '
-               "[('C([C@H](NC(CC[C@@H](C(=O)O)N)=O)C(NCC(=O)O)=O)S[C@H](\\\\C=C\\\\C=C\\\\C[C@@H](C/C=C\\\\CCCCC)O)[C@@H](O)CCCC(=O)O', "
-               "'Missing required conjugated double bond system'), "
-               "('C(/C=C\\\\CCCCC(=O)O)\\\\C=C/C=C/C=C/[C@H]([C@@H](O)CCCC(=O)O)SC[C@H](N)C(=O)O', "
-               "'Does not match leukotriene structural requirements'), "
-               "('C(/C=C\\\\CCCCC)\\\\C=C/C=C/C=C/[C@H]([C@@H](O)CCCC(=O)OC)SC[C@H](NC(=O)CC[C@H](N)C(O)=O)C(NCC(=O)O)=O', "
-               "'Does not match leukotriene structural requirements')]",
-    'attempt': 4,
+               'Attempt failed: F1 score of 0.3917525773195876 is too low.\n'
+               'Outcomes:\n'
+               '------\n'
+               '\n'
+               'True positives: SMILES: '
+               'CCCCC\\C=C/C\\C=C/C=C/C=C/[C@@H](SC[C@H](N)C(=O)NCC(O)=O)[C@@H](O)CCCC(O)=O '
+               'NAME: leukotriene D4 REASON: CORRECT Classes as cysteinyl '
+               'leukotriene with sulfur present\n'
+               ' * SMILES: C(C(/C=C/C=C/C=C\\[C@H](CCCC(O)=O)O)=O)/C=C\\CCCCCO '
+               'NAME: 12-oxo-20-hydroxyleukotriene B4 REASON: CORRECT '
+               'Structure matches typical features of leukotrienes\n'
+               ' * SMILES: '
+               'CCCCC\\C=C/C\\C=C\\C=C\\C=C\\[C@@H](SC[C@H](N)C(O)=O)[C@@H](O)CCCC(O)=O '
+               'NAME: 11-trans-LTE4 REASON: CORRECT Classes as cysteinyl '
+               'leukotriene with sulfur present\n'
+               ' * SMILES: '
+               'O[C@@H](CCCC(O)=O)\\C=C/C=C/C=C/[C@H](O)C\\C=C/CCCCC=O NAME: '
+               '20-oxoleukotriene B4 REASON: CORRECT Structure matches typical '
+               'features of leukotrienes\n'
+               ' * SMILES: '
+               'CCCCC[C@H](O)[C@H](SC[C@H](N)C(=O)NCC(O)=O)\\C=C\\C=C\\C=C/C\\C=C/CCCC(O)=O '
+               'NAME: eoxin D4 REASON: CORRECT Classes as cysteinyl '
+               'leukotriene with sulfur present\n'
+               ' * SMILES: '
+               'O[C@H](CCCC(O)=O)/C=C\\C=C\\C=C\\C(=O)C/C=C\\CCCCC(O)O NAME: '
+               '12-oxo-20-dihydroxy-leukotriene B4 REASON: CORRECT Structure '
+               'matches typical features of leukotrienes\n'
+               ' * SMILES: '
+               'S([C@@H]([C@@H](O)CCCC(O)=O)/C=C/C=C/C=C\\C/C=C\\CCCCC)C[C@H](N)C(OC[C@@H](O)CO)=O '
+               'NAME: MG(LTE4/0:0/0:0) REASON: CORRECT Classes as cysteinyl '
+               'leukotriene with sulfur present\n'
+               ' * SMILES: '
+               'C([C@H](/C=C/C=C/C=C\\[C@H](CCCC(O)=O)O)O)/C=C\\CCC(CC)O NAME: '
+               '18-hydroxyleukotriene B4 REASON: CORRECT Structure matches '
+               'typical features of leukotrienes\n'
+               ' * SMILES: '
+               'C([C@H](/C=C/C=C/C=C/[C@H](CCCC(O)=O)O)O)/C=C\\CCCCCO NAME: '
+               '20-hydroxy-6-trans-leukotriene B4 REASON: CORRECT Structure '
+               'matches typical features of leukotrienes\n'
+               ' * SMILES: '
+               'CCCCC[C@H](O)[C@H](SC[C@H](NC(=O)CC[C@H](N)C(O)=O)C(=O)NCC(O)=O)\\C=C\\C=C\\C=C/C\\C=C/CCCC(O)=O '
+               'NAME: eoxin C4 REASON: CORRECT Classes as cysteinyl '
+               'leukotriene with sulfur present\n'
+               ' * SMILES: '
+               'C([C@H](NC(CC[C@H](N)C(=O)O)=O)C(O)=O)S[C@H](\\C=C\\C=C\\C=C/C/C=C\\CCCCC)[C@@H](O)CCCC(=O)O '
+               'NAME: leukotriene F4 REASON: CORRECT Classes as cysteinyl '
+               'leukotriene with sulfur present\n'
+               ' * SMILES: '
+               'CCCCC\\C=C/C\\C=C/C=C/C=C/[C@@H](SC[C@H](NC(=O)CC[C@H](N)C(O)=O)C(=O)NCC(O)=O)[C@@H](O)CCCC(O)=O '
+               'NAME: leukotriene C4 REASON: CORRECT Classes as cysteinyl '
+               'leukotriene with sulfur present\n'
+               ' * SMILES: O[C@H](C/C=C\\CCCCC)/C=C/C=C/C=C/C(=O)CCCC(O)=O '
+               'NAME: 5-Oxo-6-trans-leukotriene B4 REASON: CORRECT Structure '
+               'matches typical features of leukotrienes\n'
+               ' * SMILES: '
+               'CCCCC\\C=C/C[C@H](O)\\C=C\\C=C\\C=C\\[C@@H](O)CCCC(O)=O NAME: '
+               'Delta(6)-trans-12-epi-leukotriene B4 REASON: CORRECT Structure '
+               'matches typical features of leukotrienes\n'
+               ' * SMILES: '
+               'C(\\C=C/C=C/C=C/[C@H]([C@@H](O)CCCC(=O)O)SC[C@H](N)C(=O)NCC(=O)O)CCCCCCC '
+               'NAME: leukotriene D3 REASON: CORRECT Classes as cysteinyl '
+               'leukotriene with sulfur present\n'
+               ' * SMILES: O[C@@H](CCCC(O)=O)\\C=C/C=C/C=C/[C@H](O)CC#CCCCCC '
+               'NAME: 14,15-dehydro-LTB4 REASON: CORRECT Structure matches '
+               'typical features of leukotrienes\n'
+               ' * SMILES: '
+               'C(/C=C\\CCCCC)\\C=C/C=C/C=C/[C@H]([C@@H](O)CCCC(=O)OC)SC[C@H](NC(=O)CC[C@H](N)C(O)=O)C(NCC(=O)O)=O '
+               'NAME: leukotriene C4 methyl ester REASON: CORRECT Classes as '
+               'cysteinyl leukotriene with sulfur present\n'
+               ' * SMILES: '
+               'CCCCC\\C=C/C[C@H](O)\\C=C\\C=C\\C=C/[C@@H](O)CCCC(O)=O NAME: '
+               '12-epi-leukotriene B4 REASON: CORRECT Structure matches '
+               'typical features of leukotrienes\n'
+               ' * SMILES: '
+               'O[C@@H](CCCC(O)=O)\\C=C/C=C/C=C/[C@H](O)C/C=C\\C/C=C\\CC NAME: '
+               'leukotriene B5 REASON: CORRECT Structure matches typical '
+               'features of leukotrienes\n'
+               ' * SMILES: '
+               'C(/C=C\\CCCCC(=O)O)\\C=C/C=C/C=C/[C@H]([C@@H](O)CCCC(=O)O)SC[C@H](N)C(=O)O '
+               'NAME: 20-carboxyleukotriene E4 REASON: CORRECT Classes as '
+               'cysteinyl leukotriene with sulfur present\n'
+               ' * SMILES: '
+               'C([C@H](/C=C/C=C/C=C\\[C@H](CCCC(O)=O)O)O)/C=C\\CCCCC(O)O '
+               'NAME: 20,20-dihydroxyleukotriene B4 REASON: CORRECT Structure '
+               'matches typical features of leukotrienes\n'
+               ' * SMILES: '
+               'C(/C=C\\CCCCC(=O)[H])\\C=C/C=C/C=C/[C@H]([C@@H](O)CCCC(=O)O)SC[C@H](N)C(=O)O '
+               'NAME: 20-oxoleukotriene E4 REASON: CORRECT Classes as '
+               'cysteinyl leukotriene with sulfur present\n'
+               ' * SMILES: '
+               'OC(O)(O)CCCC/C=C\\CC(=O)\\C=C\\C=C\\C=C/[C@H](O)CCCC(O)=O '
+               'NAME: 12-Oxo-20-trihydroxy-leukotriene B4 REASON: CORRECT '
+               'Structure matches typical features of leukotrienes\n'
+               ' * SMILES: '
+               'CC[C@@H](O)\\C=C\\C=C/C\\C=C\\C=C\\C=C\\C1OC1CCCC(O)=O NAME: '
+               '5,6-Epoxy-18R-HEPE REASON: CORRECT Structure matches typical '
+               'features of leukotrienes\n'
+               ' * SMILES: '
+               'CCCCC\\C=C/C[C@@H](O)\\C=C\\C=C\\C=C\\[C@@H](O)CCCC(O)=O NAME: '
+               '6-trans-leukotriene B4 REASON: CORRECT Structure matches '
+               'typical features of leukotrienes\n'
+               'False positives: SMILES: '
+               'C(\\CC)=C\\C/C=C\\CC(/C=C/C=C\\C/C=C\\CCCC(=O)O)O NAME: '
+               '12-HEPE REASON: WRONGLY CLASSIFIED Structure matches typical '
+               'features of leukotrienes\n'
+               ' * SMILES: '
+               'O=C1OC([C@@H]2CCC=3[C@]4([C@](C([C@H]5[C@H](O)C[C@@H](C5)[C@@](OC(=O)C)(C(=O)O)C)CC4)(C)CCC3C=C2C=C1)C)(C)C '
+               'NAME: Kadhenrischinin E REASON: WRONGLY CLASSIFIED Structure '
+               'matches typical features of leukotrienes\n'
+               ' * SMILES: '
+               'S([C@H]([C@H](O)CCCC(O)=O)/C=C/C=C/C=C\\C/C=C\\C/C=C\\CC)C[C@H](N)C(=O)NCC(O)=O '
+               'NAME: Leukotriene D5 REASON: WRONGLY CLASSIFIED Classes as '
+               'cysteinyl leukotriene with sulfur present\n'
+               ' * SMILES: '
+               'O[C@@H](CCCC(O)=O)/C=C\\C=C\\C=C\\[C@H](O)C/C=C\\C=C\\[C@@H](O)CCO '
+               'NAME: 20-Hydroxy-Resolvin E1 REASON: WRONGLY CLASSIFIED '
+               'Structure matches typical features of leukotrienes\n'
+               ' * SMILES: '
+               'C(\\CCC(O)=O)=C\\C[C@@H]([C@@H](\\C=C\\C=C\\C=C/C=C/[C@H](C/C=C\\CC)O)O)O '
+               'NAME: resolvin D1 REASON: WRONGLY CLASSIFIED Structure matches '
+               'typical features of leukotrienes\n'
+               ' * SMILES: '
+               'O=C1[C@]2([C@@H](C=C[C@@H]3[C@@H]2C[C@@H](OC(=O)C)[C@@H]([C@H]3O)C)C[C@H]([C@@]14C(=O)OC(C4=O)CO)C=CC=CC=CC(=O)O)C '
+               'NAME: Lucensimycin B REASON: WRONGLY CLASSIFIED Structure '
+               'matches typical features of leukotrienes\n'
+               ' * SMILES: '
+               'C12(C(CCCC1(C)O2)(C)C)/C=C/C(=C/C=C/C(=C/C(O[C@H]3[C@@H]([C@H]([C@@H]([C@H](O3)C(=O)O)O)O)O)=O)/C)/C '
+               'NAME: 1-O-(5,6-epoxyretinoyl)-beta-D-glucuronic acid REASON: '
+               'WRONGLY CLASSIFIED Structure matches typical features of '
+               'leukotrienes\n'
+               ' * SMILES: '
+               'O=C(O)/C=C/C=C/C=C/[C@@H]1[C@@](O)(C(=C[C@H]2[C@H]1CC=C(C2)C)C)[C@]3(O[C@@H]3[C@@H](CC)C)C '
+               'NAME: Cladobotric acid A REASON: WRONGLY CLASSIFIED Structure '
+               'matches typical features of leukotrienes\n'
+               ' * SMILES: OC(C/C=C\\C/C=C\\CCCCC)\\C=C/C=C/C/C=C\\C(O)=O '
+               'NAME: 9-hydroxy-2z,5e,7z,11z,14z-eicosapentaenoic acid REASON: '
+               'WRONGLY CLASSIFIED Structure matches typical features of '
+               'leukotrienes\n'
+               ' * SMILES: '
+               'O=C1C=C2[C@@H]3[C@](O)(CCC[C@H]3/C=C(/C=C(\\OC)/C=C/C(=O)O)\\C)O[C@H]2[C@@H]4[C@H]1O4 '
+               'NAME: JBIR-24 REASON: WRONGLY CLASSIFIED Structure matches '
+               'typical features of leukotrienes\n'
+               ' * SMILES: '
+               'C(C([O-])=O)C/C=C\\C/C=C\\C/C=C\\C=C\\[C@@H](C/C=C\\C/C=C\\CC)O '
+               'NAME: (14R)-HDoHE(1-) REASON: WRONGLY CLASSIFIED Structure '
+               'matches typical features of leukotrienes\n'
+               ' * SMILES: '
+               'CC/C=C\\C\\C=C/C=C/C(C(/C=C/C=C\\C(CCCCCC(=O)[O-])O)O)O NAME: '
+               'resolvin T2(1-) REASON: WRONGLY CLASSIFIED Structure matches '
+               'typical features of leukotrienes\n'
+               ' * SMILES: '
+               'C(CC/C=C\\C/C=C\\C/C=C\\C\\C=C/C=C/[C@@H](C/C=C\\CC)O)(=O)[O-] '
+               'NAME: 17(R)-HDoHE(1-) REASON: WRONGLY CLASSIFIED Structure '
+               'matches typical features of leukotrienes\n'
+               ' * SMILES: '
+               'O=C(O)/C=C/C=C/C1=C(C=C[C@@H]2[C@@H]1[C@@H](C[C@](C2)(O)C)C)C '
+               'NAME: Tanzawaic acid L REASON: WRONGLY CLASSIFIED Structure '
+               'matches typical features of leukotrienes\n'
+               ' * SMILES: '
+               'CCCCC\\C=C/C[C@@H](O)\\C=C\\C=C\\C=C/[C@@H](O)CCCC([O-])=O '
+               'NAME: leukotriene B4(1-) REASON: WRONGLY CLASSIFIED Structure '
+               'matches typical features of leukotrienes\n'
+               ' * SMILES: C(=CC=C/C=C/C(C(C/C=C\\CC)O)O)C=CC(CCCCCC(O)=O)O '
+               'NAME: '
+               '7,16,17-trihydroxy-(14E,19Z)-docosa-8,10,12,14,19-pentaenoic '
+               'acid REASON: WRONGLY CLASSIFIED Structure matches typical '
+               'features of leukotrienes\n'
+               ' * SMILES: '
+               'O=C\\1NC(CC(O)(C(=O)O)C(C)C)C(/C1=C(\\O)/C=C/C=C/CCC)=O NAME: '
+               'Demethyl-harzianic acid REASON: WRONGLY CLASSIFIED Structure '
+               'matches typical features of leukotrienes\n'
+               ' * SMILES: '
+               'CCCCC[C@H](O)CC\\C=C/C=C/C=C/[C@@H](O)[C@@H](O)CCCC([O-])=O '
+               'NAME: 13,14-dihydrolipoxin A4(1-) REASON: WRONGLY CLASSIFIED '
+               'Structure matches typical features of leukotrienes\n'
+               ' * SMILES: '
+               'O[C@@H](C/C=C\\CCCCC)/C=C/C=C\\C/C=C\\CCCC(=O)NCC(O)=O NAME: '
+               '12-HETE-Gly REASON: WRONGLY CLASSIFIED Structure matches '
+               'typical features of leukotrienes\n'
+               ' * SMILES: '
+               'C(C(O)=O)C/C=C\\C/C=C\\C\\C=C/C=C/[C@@H](C/C=C\\C/C=C\\[C@@H](C)O)O '
+               'NAME: (4Z,7Z,10Z,12E,14R,16Z,19Z,21R)-dihydroxydocosahexaenoic '
+               'acid REASON: WRONGLY CLASSIFIED Structure matches typical '
+               'features of leukotrienes\n'
+               ' * SMILES: '
+               '[H][C@@]1(CC[C@@]2([H])\\C(CCC[C@]12C)=C\\C=C1\\C[C@@H](O)C[C@H](O)C1=C)[C@H](C)CC(O)=O '
+               'NAME: calcitroic acid REASON: WRONGLY CLASSIFIED Structure '
+               'matches typical features of leukotrienes\n'
+               ' * SMILES: '
+               '[C@@]1(C)(CO)CC[C@@H](C(=C1\\C=C\\C(=C\\C=C\\C(=C\\C(=O)O)\\C)\\C)C)O '
+               'NAME: (4S)-4,16-dihydroxyretinoic acid REASON: WRONGLY '
+               'CLASSIFIED Structure matches typical features of leukotrienes\n'
+               ' * SMILES: '
+               'C(CC)(/C=C/C=C\\C/C=C\\C\\C=C/C=C/[C@H](CCCC(=O)O)OO)O NAME: '
+               '(5S)-hydroperoxy-18-hydroxy-EPE REASON: WRONGLY CLASSIFIED '
+               'Structure matches typical features of leukotrienes\n'
+               ' * SMILES: CCCCC[C@H](O)\\C=C\\C1=C(C\\C=C/CCCC(O)=O)C(=O)CC1 '
+               'NAME: prostaglandin B2 REASON: WRONGLY CLASSIFIED Structure '
+               'matches typical features of leukotrienes\n'
+               ' * SMILES: '
+               'C(C(O)=O)C/C=C\\C/C=C\\C\\C=C/C=C/[C@H](C/C=C\\C/C=C\\[C@@H](C)O)O '
+               'NAME: (4Z,7Z,10Z,12E,14S,16Z,19Z,21R)-dihydroxydocosahexaenoic '
+               'acid REASON: WRONGLY CLASSIFIED Structure matches typical '
+               'features of leukotrienes\n'
+               'False negatives: SMILES: '
+               'CCCCC[C@@H]1O[C@H]1\\C=C\\C=C\\C=C/C\\C=C/CCCC(O)=O NAME: '
+               'eoxin A4 REASON: MISSED No hydroxyl group (OH) found\n'
+               ' * SMILES: '
+               'S([C@@H]([C@@H](O)CCCC(O)=O)/C=C/C=C/C=C\\C/C=C\\CCCCC)C[C@H](N)C(O[C@H](COC(=O)CCCCCCCCCCCCCCCCCCCCCCC)COP(OCCN)(O)=O)=O '
+               'NAME: PE(24:0/LTE4) REASON: MISSED Unusual carbon count: found '
+               '52 carbons\n'
+               ' * SMILES: '
+               'C([C@H](CC/C=C/C=C\\[C@H](CCCC(O)=O)O)O)/C=C\\CCCCC(O)(O)O '
+               'NAME: 10,11-dihydro-20,20,20-trihydroxyleukotriene B4 REASON: '
+               'MISSED No suitable conjugated double bond pattern found\n'
+               ' * SMILES: CCCCC\\C=C/C\\C=C/C=C/C=C/C[C@H]1O[C@@H]1CCC(O)=O '
+               'NAME: 4,5-leukotriene A4 REASON: MISSED No hydroxyl group (OH) '
+               'found\n'
+               ' * SMILES: '
+               'C(/C=C\\CCCCC)[C@H](C/C=C/C=C/[C@H]([C@@H](O)CCCC(=O)O)SC[C@H](N)C(=O)O)O '
+               'NAME: (12R)-hydroxy-10,11-dihydroleukotriene E4 REASON: MISSED '
+               'No suitable conjugated double bond pattern found\n'
+               ' * SMILES: '
+               'S([C@@H]([C@@H](O)CCCC(O)=O)/C=C/C=C/C=C\\C/C=C\\CCCCC)C[C@H](N)C(OC[C@@H](OC(=O)CC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCCC)COP(OC[C@H](N)C(O)=O)(O)=O)=O '
+               'NAME: PS(LTE4/22:5(4Z,7Z,10Z,13Z,16Z)) REASON: MISSED Unusual '
+               'carbon count: found 51 carbons\n'
+               ' * SMILES: '
+               'S([C@@H]([C@@H](O)CCCC(O)=O)/C=C/C=C/C=C\\C/C=C\\CCCCC)C[C@H](N)C(OC[C@@H](OC(=O)CCCCCCCCCCCCCCCCC(CC)C)COP(OC[C@@H](O)CO)(O)=O)=O '
+               'NAME: PG(LTE4/a-21:0) REASON: MISSED Unusual carbon count: '
+               'found 50 carbons\n'
+               ' * SMILES: CCCCC\\C=C/C\\C=C/C=C/C=C/[C@@H]1O[C@H]1CCCC(O)=O '
+               'NAME: leukotriene A4 REASON: MISSED No hydroxyl group (OH) '
+               'found\n'
+               ' * SMILES: '
+               'C([C@H](NC(CC[C@@H](C(=O)O)N)=O)C(NCC(=O)O)=O)S[C@@H](\\C=C\\C=C\\CC(C/C=C\\CCCCC)=O)[C@H](O)CCCC(=O)O '
+               'NAME: 11,12-dihydro-12-oxoleukotriene C4 REASON: MISSED No '
+               'suitable conjugated double bond pattern found\n'
+               ' * SMILES: '
+               'S([C@@H]([C@@H](O)CCCC(O)=O)/C=C/C=C/C=C\\C/C=C\\CCCCC)C[C@H](N)C(O[C@H](CO\\C=C\\CCCCCCCCCCCCCC)COP(OCCN)(O)=O)=O '
+               'NAME: PE(P-16:0/LTE4) REASON: MISSED Unusual carbon count: '
+               'found 44 carbons\n'
+               '------\n'
+               '\n'
+               'In your reasoning step, analyze the previous program and the '
+               'above outcomes, hypothesizing about what went wrong, and how '
+               'to improve.\n',
+    'sample_true_negatives': [   {   'smiles': 'P(OCC(OC(=O)CC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)COC(=O)CCC/C=C\\C/C=C\\C/C=C\\CCCCCCCC)(OCCN(C)C)(O)=O',
+                                     'name': 'Pe-nme2(20:3(5Z,8Z,11Z)/22:6(4Z,7Z,10Z,13Z,16Z,19Z))',
+                                     'reason': 'No carboxyl group (COOH or '
+                                               'COO-) detected'},
+                                 {   'smiles': 'O1[C@]2([C@@H](O)[C@H](O)[C@@H](O)[C@@]1(OCC[C@H](CCC=C(C(OC[C@]3(O)[C@@H](O)[C@@](OC3)(OC2)[H])=O)C)C)[H])[H]',
+                                     'name': 'Urceolide',
+                                     'reason': 'No suitable conjugated double '
+                                               'bond pattern found'},
+                                 {   'smiles': 'CC1=CC(=C(C=C1)C)C(=O)CSC2=NN=C(S2)C',
+                                     'name': '1-(2,5-dimethylphenyl)-2-[(5-methyl-1,3,4-thiadiazol-2-yl)thio]ethanone',
+                                     'reason': 'Unusual carbon count: found 13 '
+                                               'carbons'},
+                                 {   'smiles': 'O=C1C=C([C@@]2(C(C[C@@H](C2)O)(C)C)C)CC[C@@]1(O)C',
+                                     'name': 'Enokipodin H',
+                                     'reason': 'Unusual carbon count: found 15 '
+                                               'carbons'},
+                                 {   'smiles': 'CCCC[C@](Cn1cncn1)(C#N)c1ccc(Cl)cc1',
+                                     'name': '(S)-myclobutanil',
+                                     'reason': 'Unusual carbon count: found 15 '
+                                               'carbons'},
+                                 {   'smiles': 'O=C1O[C@@H]([C@H](NC(=O)[C@@H](NC(=O)CCCCC)CC(=O)O)C(=O)N[C@H](C(=O)N[C@H]2CC[C@H](N([C@H](C(N([C@H](C(N[C@H]1C(C)C)=O)CC3=CC=CC=C3)C)=O)CC(C)C)C2=O)O)CCCCN(C)C)C',
+                                     'name': 'Cyanopeptolin D',
+                                     'reason': 'No suitable conjugated double '
+                                               'bond pattern found'},
+                                 {   'smiles': 'O1[C@]2(O)N([C@H](C(=O)N3[C@]2(CCC3)[H])C(C)C)C(=O)[C@@]1(NC(=O)[C@H]4CN([C@]5(C(=C4)C6=C7C(C5)=CNC7=CC=C6)[H])C)C',
+                                     'name': 'Ergovaline',
+                                     'reason': 'No suitable conjugated double '
+                                               'bond pattern found'},
+                                 {   'smiles': 'OC(=O)CCCCCCC#CCCCC',
+                                     'name': '8-tridecynoic acid',
+                                     'reason': 'Unusual carbon count: found 13 '
+                                               'carbons'},
+                                 {   'smiles': 'CC(=O)N([O-])CCC[C@H](N)C(=O)N[C@@H](CCCN([O-])C(C)=O)C(=O)N[C@@H](CCCN([O-])C(C)=O)C(=O)N[C@@H](CO)C(=O)N[C@H]([C@H](O)[C@H]1S[C@H]([C@H](O)[C@H]1O)n1ccc(=N)n(C)c1=O)C(O)=O',
+                                     'name': 'desferrialbomycin epsilon(3-)',
+                                     'reason': 'No suitable conjugated double '
+                                               'bond pattern found'},
+                                 {   'smiles': 'OC[C@H]1O[C@H](O[C@@H]2[C@@H](CO)O[C@H](O[C@@H]3[C@@H](CO)O[C@H](O[C@@H]4[C@@H](CO)O[C@H](O)[C@H](O)[C@H]4O)[C@H](O)[C@H]3O)[C@H](O)[C@H]2O)[C@H](O)[C@@H](O)[C@@H]1O',
+                                     'name': 'alpha-maltotetraose',
+                                     'reason': 'No suitable conjugated double '
+                                               'bond pattern found'}],
+    'sample_false_negatives': [],
+    'attempt': 3,
+    'reasoning': "In revising the `is_leukotriene` function, we'll take into "
+                 'account the feedback from the failed attempt, aiming to '
+                 'enhance the classification accuracy. The previous classifier '
+                 'failed due to several false positives and false negatives, '
+                 'indicating the need for refined criteria that align more '
+                 'closely with the biochemical characteristics of '
+                 'leukotrienes.\n'
+                 '\n'
+                 '### Areas to Improve\n'
+                 '1. **Carbon Count Range**: The existing carbon count range '
+                 '(18-32) is too narrow for some leukotrienes causing false '
+                 'negatives. We should increase the range to accommodate '
+                 'longer chain variations, especially for leukotriene variants '
+                 'containing more extensive aliphatic chains.\n'
+                 '   \n'
+                 '2. **Conjugated Double Bond Patterns**: The false negatives '
+                 'suggest the current double-bond patterns do not adequately '
+                 'capture all leukotriene structures. The conjugation pattern '
+                 'should be more comprehensive, considering both linear and '
+                 'branched-chain forms, and further varied in length.\n'
+                 '\n'
+                 '3. **Functional Groups**:\n'
+                 '   - **Hydroxyl (OH) Groups**: Ensure no false negatives '
+                 'occur by allowing for the presence of multiple hydroxyl '
+                 'groups as leukotrienes can have multiple OH groups.\n'
+                 '   - **Sulfur Content**: Cysteinyl leukotrienes have sulfur '
+                 'atoms. However, not all leukotrienes have sulfur; thus, '
+                 'sulfur should not be a mandatory feature.\n'
+                 '\n'
+                 '4. **Additional Structural Features**: Consider heterocycles '
+                 'and other expert rules from known leukotriene metabolites. '
+                 'Ensure patterns like epoxides or keto groups that have been '
+                 'missed are incorporated.\n'
+                 '\n'
+                 '### Updated Plan\n'
+                 '- **Carbon Count**: Expand to a more inclusive range (e.g., '
+                 '18-58), particularly to accommodate extended-chain '
+                 'derivatives and conjugated patterns.\n'
+                 '- **Conjugated Systems**: Broaden conjugated bond detection '
+                 'to recognize varied combinations and longer lengths.\n'
+                 '- **OH Group Relaxation**: Enable flexibility in the count '
+                 'and position of hydroxyl groups.\n'
+                 '- **Additional Checks**: Confirm epoxide functionality and '
+                 'any common cyclic or heterocyclic structures that define '
+                 'certain leukotrienes.\n'
+                 '\n'
+                 'Here is an updated version of the code:',
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 4,
-    'num_false_positives': 73,
-    'num_true_negatives': 183797,
-    'num_false_negatives': 2,
+    'num_true_positives': 56,
+    'num_false_positives': 100,
+    'num_true_negatives': 4740,
+    'num_false_negatives': 0,
     'num_negatives': None,
-    'precision': 0.05194805194805195,
-    'recall': 0.6666666666666666,
-    'f1': 0.0963855421686747,
-    'accuracy': 0.9995921164262873}
+    'precision': 0.358974358974359,
+    'recall': 1.0,
+    'f1': 0.5283018867924528,
+    'accuracy': 0.9795751633986928,
+    'negative_predictive_value': 1.0}

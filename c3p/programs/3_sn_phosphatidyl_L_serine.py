@@ -1,12 +1,15 @@
 """
 Classifies: CHEBI:11750 3-sn-phosphatidyl-L-serine
 """
+"""
+Classifies: CHEBI:57262 3-sn-phosphatidyl-L-serine
+"""
 from rdkit import Chem
 from rdkit.Chem import AllChem
 
 def is_3_sn_phosphatidyl_L_serine(smiles: str):
     """
-    Determines if a molecule is a 3-sn-phosphatidyl-L-serine.
+    Determines if a molecule is a 3-sn-phosphatidyl-L-serine based on its SMILES string.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -15,48 +18,60 @@ def is_3_sn_phosphatidyl_L_serine(smiles: str):
         bool: True if molecule is a 3-sn-phosphatidyl-L-serine, False otherwise
         str: Reason for classification
     """
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-        
-    # Check for phosphate group
-    patt_phosphate = Chem.MolFromSmarts('[O,OH]-P(=O)([O,OH])-O')
-    if not mol.HasSubstructMatch(patt_phosphate):
-        return False, "Missing phosphate group"
-        
-    # Check for serine moiety
-    patt_serine = Chem.MolFromSmarts('[NH2][CH]([CH2]OP(=O)([O,OH])[O,OH])C(=O)[O,OH]')
-    if not mol.HasSubstructMatch(patt_serine):
-        return False, "Missing serine moiety"
-        
-    # Check for glycerol backbone with 2 ester groups
-    patt_glycerol = Chem.MolFromSmarts('[CH2]OC(=O)[*]-[CH]([CH2]OP(=O)([O,OH])[O,OH])OC(=O)[*]')
-    if not mol.HasSubstructMatch(patt_glycerol):
-        return False, "Missing glycerol backbone with ester groups"
-        
-    # Check stereochemistry at the 2-position of glycerol (sn-3)
-    matches = mol.GetSubstructMatches(patt_glycerol)
-    if matches:
-        for match in matches:
-            # Get the chiral center atom
-            chiral_atom = mol.GetAtomWithIdx(match[2])  # Index of the CH in the glycerol backbone
-            if chiral_atom.GetChiralTag() == Chem.ChiralType.CHI_UNSPECIFIED:
-                return False, "Unspecified stereochemistry at glycerol 2-position"
-    else:
-        return False, "Could not verify stereochemistry"
-        
-    # Check stereochemistry of serine (L-configuration)
-    matches = mol.GetSubstructMatches(patt_serine)
-    if matches:
-        for match in matches:
-            # Get the chiral center atom
-            chiral_atom = mol.GetAtomWithIdx(match[1])  # Index of the CH in serine
-            if chiral_atom.GetChiralTag() == Chem.ChiralType.CHI_UNSPECIFIED:
-                return False, "Unspecified stereochemistry at serine alpha carbon"
-    else:
-        return False, "Could not verify serine stereochemistry"
 
-    return True, "Valid 3-sn-phosphatidyl-L-serine structure"
+    # Check for phosphate group
+    phosphate_pattern = Chem.MolFromSmarts("[OX2][P](=[O])([OX2])[OX2]")
+    if not mol.HasSubstructMatch(phosphate_pattern):
+        return False, "No phosphate group found"
+
+    # Check for glycerol backbone with specific stereochemistry at sn-2 position
+    # [C@H] indicates R stereochemistry at carbon 2 of glycerol (sn notation)
+    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][C@H]([CH2X4])[OX2]")
+    if not mol.HasSubstructMatch(glycerol_pattern):
+        return False, "No glycerol backbone with correct stereochemistry found"
+
+    # Check for L-serine moiety with correct stereochemistry
+    # [C@H] indicates S stereochemistry for L-serine
+    serine_pattern = Chem.MolFromSmarts("[NH2][C@H](C(=O)[OH])CO")
+    if not mol.HasSubstructMatch(serine_pattern):
+        return False, "No L-serine moiety found with correct stereochemistry"
+
+    # Check for two ester groups at sn-1 and sn-2 positions
+    ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2][CH2,CH]")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    if len(ester_matches) != 2:
+        return False, f"Found {len(ester_matches)} ester groups, need exactly 2"
+
+    # Verify the complete 3-sn-phosphatidylserine structure
+    # This pattern checks the entire core structure with correct stereochemistry
+    complete_pattern = Chem.MolFromSmarts(
+        "[CH2X4][C@H]([CH2X4][OX2]P(=[O])([OX2])[OX2]C[C@H](N)C(=O)O)[OX2]"
+    )
+    if not mol.HasSubstructMatch(complete_pattern):
+        return False, "Incorrect connectivity or stereochemistry in core structure"
+
+    # Check for phosphorus count
+    p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
+    if p_count != 1:
+        return False, "Must have exactly one phosphorus atom"
+
+    # Verify fatty acid chains
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
+    if len(fatty_acid_matches) < 2:
+        return False, "Fatty acid chains too short or missing"
+
+    # Check that both ester groups are connected to fatty acid chains
+    acyl_pattern = Chem.MolFromSmarts("C(=O)[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    acyl_matches = mol.GetSubstructMatches(acyl_pattern)
+    if len(acyl_matches) < 2:
+        return False, "Missing acyl groups with proper fatty acid chains"
+
+    return True, "Contains glycerol backbone with two acyl groups and phosphoserine moiety in correct configuration"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:11750',
@@ -64,27 +79,732 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:11750',
                           'definition': 'A 3-sn-glycerophosphoserine compound '
                                         'having acyl substituents at the 1- '
                                         'and 2-hydroxy positions.',
-                          'parents': ['CHEBI:18303']},
-    'config': {   'llm_model_name': 'lbl/claude-sonnet',
-                  'f1_threshold': 0.8,
-                  'max_attempts': 5,
-                  'max_negative_to_test': None,
-                  'max_positive_in_prompt': 50,
-                  'max_negative_in_prompt': 20,
-                  'max_instances_in_prompt': 100,
-                  'test_proportion': 0.1},
-    'message': None,
-    'attempt': 0,
+                          'parents': ['CHEBI:18303'],
+                          'xrefs': [   'KEGG:C02737',
+                                       'LIPID_MAPS_instance:LMGP03010000',
+                                       'PMID:16341241'],
+                          'all_positive_examples': []},
+    'config': None,
+    'message': '\n'
+               'Attempt failed: F1 score of 0.3221476510067114 is too low.\n'
+               'Outcomes:\n'
+               '------\n'
+               '\n'
+               'True positives: SMILES: '
+               'C([C@](COP(O)(=O)OC[C@@](COC(=O)CCCCCCCCCCCCCCCCC)(OC(=O)CCCCCCCCCCCCCCCCCCC)[H])(N)[H])(=O)O '
+               'NAME: PS(18:0/20:0) REASON: CORRECT Contains glycerol backbone '
+               'with two acyl groups and phosphoserine moiety in correct '
+               'configuration\n'
+               ' * SMILES: '
+               'CCCCCCCCCCCCCCCC(=O)O[C@H](COC(=O)CCCCCCC\\C=C/CCCCCCCC)COP(O)(=O)OC[C@H](N)C(O)=O '
+               'NAME: 1-oleoyl-2-palmitoyl-sn-glycero-3-phospho-L-serine '
+               'REASON: CORRECT Contains glycerol backbone with two acyl '
+               'groups and phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'C([C@](COP(O)(=O)OC[C@@](COC(=O)CCCCCCC/C=C\\C/C=C\\CCCCC)(OC(=O)CCCCCCCCCCCCCCCCCCC)[H])(N)[H])(=O)O '
+               'NAME: PS(18:2(9Z,12Z)/20:0) REASON: CORRECT Contains glycerol '
+               'backbone with two acyl groups and phosphoserine moiety in '
+               'correct configuration\n'
+               ' * SMILES: '
+               'CCCCCCCC\\C=C/CCCCCCCC(=O)OC[C@H](COP(O)(=O)OC[C@H](N)C(O)=O)OC(=O)CCCCCCC\\C=C/CCCCCC '
+               'NAME: 1-oleoyl-2-palmitoleoyl-sn-glycero-3-phospho-L-serine '
+               'REASON: CORRECT Contains glycerol backbone with two acyl '
+               'groups and phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)OC[C@H](N)C(O)=O)OC(=O)C\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/CCC '
+               'NAME: '
+               '1-octadecanoyl-2-(3Z,6Z,9Z,12Z,15Z,18Z-docosahexaenoyl)-sn-glycero-3-phosphoserine '
+               'REASON: CORRECT Contains glycerol backbone with two acyl '
+               'groups and phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'CCCCCCCC\\C=C/CCCCCCCC(=O)OC[C@H](COP(O)(=O)OC[C@H](N)C(O)=O)OC(=O)CCC\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCC '
+               'NAME: 1-oleoyl-2-arachidonoyl-sn-glycero-3-phospho-L-serine '
+               'REASON: CORRECT Contains glycerol backbone with two acyl '
+               'groups and phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'CCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)OC[C@H](N)C(O)=O)OC(=O)CCCCCCCCCCC '
+               'NAME: 1,2-dilauroyl-sn-glycero-3-phosphoserine REASON: CORRECT '
+               'Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               '[H][C@](COP(OC[C@@](COC(CCCCCCC/C=C\\C/C=C\\CCCCC)=O)(OC(CCCCCCC/C=C\\C/C=C\\CCCCC)=O)[H])(=O)O)(C(O)=O)N '
+               'NAME: PS(18:2(9Z,12Z)/18:2(9Z,12Z)) REASON: CORRECT Contains '
+               'glycerol backbone with two acyl groups and phosphoserine '
+               'moiety in correct configuration\n'
+               ' * SMILES: '
+               'CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)OC[C@H](N)C(O)=O)OC(=O)CCCCCCC\\C=C/CCCCCCCC '
+               'NAME: 1-stearoyl-2-oleoyl-sn-glycero-3-phosphoserine REASON: '
+               'CORRECT Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'CCCCCCCCCCCCCCCCCC(=O)O[C@H](COC(=O)CCCCCCCCCCCCCCC)COP(O)(=O)OC[C@H](N)C(O)=O '
+               'NAME: 1-palmitoyl-2-stearoyl-sn-glycero-3-phosphoserine '
+               'REASON: CORRECT Contains glycerol backbone with two acyl '
+               'groups and phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)OC[C@H](N)C(O)=O)OC(=O)CCCCCCCCCCCCCCCCC '
+               'NAME: 1,2-distearoyl-sn-glycero-3-phosphoserine REASON: '
+               'CORRECT Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'CCCCCCCC(=O)OC[C@H](COP(O)(=O)OC[C@H](N)C(O)=O)OC(=O)CCCCCCC '
+               'NAME: 1,2-dioctanoyl-sn-glycero-3-phosphoserine REASON: '
+               'CORRECT Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               '[H][C@](COP(OC[C@@](COC(CCCCCCCCCCCCCCCCC)=O)(OC(CCCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)=O)[H])(=O)O)(C(O)=O)N '
+               'NAME: PS(18:0/22:5(7Z,10Z,13Z,16Z,19Z)) REASON: CORRECT '
+               'Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'C([C@](COP(O)(=O)OC[C@@](COC(=O)CCCCCCCCCCCCCCCCC)(OC(=O)CCCCCCCCCCCCCCCCCC)[H])(N)[H])(=O)O '
+               'NAME: PS(18:0/19:0) REASON: CORRECT Contains glycerol backbone '
+               'with two acyl groups and phosphoserine moiety in correct '
+               'configuration\n'
+               ' * SMILES: '
+               'CCCCCCCCCCCCCCCCCC(=O)O[C@H](COC(=O)CCCCCCC\\C=C/CCCCCCCC)COP(O)(=O)OC[C@H](N)C(O)=O '
+               'NAME: 1-oleoyl-2-stearoyl-sn-glycero-3-phospho-L-serine '
+               'REASON: CORRECT Contains glycerol backbone with two acyl '
+               'groups and phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)OC[C@H](N)C(O)=O)OC(=O)CCC\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCC '
+               'NAME: 1-stearoyl-2-arachidonoyl-sn-glycero-3-phosphoserine '
+               'REASON: CORRECT Contains glycerol backbone with two acyl '
+               'groups and phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)OC[C@H](N)C(O)=O)OC(=O)CCCCCC\\C=C/C\\C=C/C\\C=C/CCCCC '
+               'NAME: '
+               '1-stearoyl-2-(8Z,11Z,14Z-icosatrienoyl)-sn-glycero-3-phosphoserine '
+               'REASON: CORRECT Contains glycerol backbone with two acyl '
+               'groups and phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)OC[C@H](N)C(O)=O)OC(=O)CC\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/CC '
+               'NAME: '
+               '1-octadecanoyl-2-(4Z,7Z,10Z,13Z,16Z,19Z-docosahexaenoyl)-sn-glycero-3-phosphoserine '
+               'REASON: CORRECT Contains glycerol backbone with two acyl '
+               'groups and phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'CCCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)OC[C@H](N)C(O)=O)OC(=O)CCC\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCC '
+               'NAME: '
+               '1-heptadecanoyl-2-arachidonoyl-sn-glycero-3-phosphoserine '
+               'REASON: CORRECT Contains glycerol backbone with two acyl '
+               'groups and phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'CCCCCCCC\\C=C/CCCCCCCC(=O)OC[C@H](COP(O)(=O)OC[C@H](N)C(O)=O)OC(=O)CCCCCCC\\C=C/C\\C=C/CCCCC '
+               'NAME: 1-oleoyl-2-linoleoyl-sn-glycero-3-phospho-L-serine '
+               'REASON: CORRECT Contains glycerol backbone with two acyl '
+               'groups and phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)OC[C@H](N)C(O)=O)OC(=O)CCCCCCCCCCCCCCC '
+               'NAME: 1,2-dihexadecanoyl-sn-glycero-3-phosphoserine REASON: '
+               'CORRECT Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'O(C[C@H](COP(=O)(OC[C@@H](C(O)=O)N)O)OC(CCCCCCC/C=C/CCCCCCCC)=O)C(CCCCCCC/C=C/CCCCCCCC)=O '
+               'NAME: 1,2-di-(9E-octadecenoyl)-sn-glycero-3-phosphoserine '
+               'REASON: CORRECT Contains glycerol backbone with two acyl '
+               'groups and phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'CCCCCCCC\\C=C/CCCCCCCC(=O)OC[C@H](COP(O)(=O)OC[C@H](N)C(O)=O)OC(=O)CCCCCCC\\C=C/CCCCCCCC '
+               'NAME: 1,2-dioleoyl-sn-glycero-3-phospho-L-serine REASON: '
+               'CORRECT Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)OC[C@H](N)C(O)=O)OC(=O)CCCCCCC\\C=C/C\\C=C/CCCCC '
+               'NAME: 1-stearoyl-2-linoleoyl-sn-glycero-3-phospho-L-serine '
+               'REASON: CORRECT Contains glycerol backbone with two acyl '
+               'groups and phosphoserine moiety in correct configuration\n'
+               'False positives: SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCCCC/C=C\\CCCCCCCC)COC(=O)CCCCCCCCCCCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(24:0/24:1(15Z)) REASON: WRONGLY CLASSIFIED Contains '
+               'glycerol backbone with two acyl groups and phosphoserine '
+               'moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCC/C=C\\C/C=C\\CCCCC)COC(=O)CCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(12:0/22:2(13Z,16Z)) REASON: WRONGLY CLASSIFIED '
+               'Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCCC)COC(=O)CCCCCCCCC/C=C\\CCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(20:1(11Z)/22:4(7Z,10Z,13Z,16Z)) REASON: WRONGLY '
+               'CLASSIFIED Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCC=O)COC(=O)CCCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: POV-PS REASON: WRONGLY CLASSIFIED Contains glycerol '
+               'backbone with two acyl groups and phosphoserine moiety in '
+               'correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCC/C=C\\C/C=C\\CCCCC)COC(=O)CCCCCCC/C=C\\C/C=C\\C/C=C\\CC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(18:3(9Z,12Z,15Z)/20:2(11Z,14Z)) REASON: WRONGLY '
+               'CLASSIFIED Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCCCC)COC(=O)CCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(20:4(5Z,8Z,11Z,14Z)/20:0) REASON: WRONGLY CLASSIFIED '
+               'Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCCCC/C=C\\CCCCCCCC)COC(=O)CCCCCCCCCCCCC/C=C\\CCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(24:1(15Z)/24:1(15Z)) REASON: WRONGLY CLASSIFIED '
+               'Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](O)COC(=O)CCCCCCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(19:0/0:0) REASON: WRONGLY CLASSIFIED Contains '
+               'glycerol backbone with two acyl groups and phosphoserine '
+               'moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCCCCCCCC)COC(=O)CCCCCCCCCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: '
+               '(2S)-2-amino-3-({[(2R)-3-(docosanoyloxy)-2-(tetracosanoyloxy)propoxy](hydroxy)phosphoryl}oxy)propanoic '
+               'acid REASON: WRONGLY CLASSIFIED Contains glycerol backbone '
+               'with two acyl groups and phosphoserine moiety in correct '
+               'configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCCC)COC(=O)CCCCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(17:0/22:4(7Z,10Z,13Z,16Z)) REASON: WRONGLY CLASSIFIED '
+               'Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OCC(OC(=O)CCCCCCCCC=1OC(=C(C1C)C)CCC)COC(=O)CCCCCCCCC=2OC(=C(C2C)C)CCCCC)(OCC(N)C(O)=O)(O)=O '
+               'NAME: PS(DIME(9,5)/DIME(9,3)) REASON: WRONGLY CLASSIFIED '
+               'Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCCC)COCCCCCCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(O-18:0/13:0) REASON: WRONGLY CLASSIFIED Contains '
+               'glycerol backbone with two acyl groups and phosphoserine '
+               'moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCC(O)/C=C/C=O)COC(=O)CCCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PHOHA-PS REASON: WRONGLY CLASSIFIED Contains glycerol '
+               'backbone with two acyl groups and phosphoserine moiety in '
+               'correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCCCC/C=C\\CCCCCCCC)COC(=O)CCCCCCCCCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: '
+               '(2S)-2-amino-3-({[(2R)-3-(docosanoyloxy)-2-[(15Z)-tetracos-15-enoyloxy]propoxy](hydroxy)phosphoryl}oxy)propanoic '
+               'acid REASON: WRONGLY CLASSIFIED Contains glycerol backbone '
+               'with two acyl groups and phosphoserine moiety in correct '
+               'configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCCC)COC(=O)CCCCCCC/C=C\\C/C=C\\C/C=C\\CC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(18:3(9Z,12Z,15Z)/19:0) REASON: WRONGLY CLASSIFIED '
+               'Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCC/C=C\\C/C=C\\CCCC)CO/C=C\\CCCCCCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(P-20:0/17:2(9Z,12Z)) REASON: WRONGLY CLASSIFIED '
+               'Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCCCCC)COC(=O)CCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(12:0/21:0) REASON: WRONGLY CLASSIFIED Contains '
+               'glycerol backbone with two acyl groups and phosphoserine '
+               'moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCCC)COC(=O)CCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(14:0/19:0) REASON: WRONGLY CLASSIFIED Contains '
+               'glycerol backbone with two acyl groups and phosphoserine '
+               'moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCCCCC)COC(=O)CC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(22:6(4Z,7Z,10Z,13Z,16Z,19Z)/21:0) REASON: WRONGLY '
+               'CLASSIFIED Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCCCCCC)COC(=O)CCCCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(17:0/16:0) REASON: WRONGLY CLASSIFIED Contains '
+               'glycerol backbone with two acyl groups and phosphoserine '
+               'moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCC(O)=O)COC(=O)CCCCCCC/C=C\\CCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: OG-PS REASON: WRONGLY CLASSIFIED Contains glycerol '
+               'backbone with two acyl groups and phosphoserine moiety in '
+               'correct configuration\n'
+               ' * SMILES: '
+               '[H][C@](COP(OC[C@@](COC(CCCCCCC/C=C\\C/C=C\\C/C=C\\CC)=O)(OC(CCCCCCC/C=C\\CCCCCCCC)=O)[H])(=O)O)(C(O)=O)N '
+               'NAME: PS(18:3(9Z,12Z,15Z)/18:1(9Z)) REASON: WRONGLY CLASSIFIED '
+               'Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCCCCCC)COC(=O)CCCCCCCCC/C=C\\C/C=C\\CCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(20:2(11Z,14Z)/16:0) REASON: WRONGLY CLASSIFIED '
+               'Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCC/C=C\\C/C=C\\C/C=C\\CC)COC(=O)CCC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(20:5(5Z,8Z,11Z,14Z,17Z)/18:3(9Z,12Z,15Z)) REASON: '
+               'WRONGLY CLASSIFIED Contains glycerol backbone with two acyl '
+               'groups and phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               '[H][C@](COP(OC[C@@](COC(CCCCCC/C=C\\C/C=C\\C/C=C\\CCCCC)=O)(OC(CCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCCC)=O)[H])(=O)O)(C(O)=O)N '
+               'NAME: PS(20:3(8Z,11Z,14Z)/20:4(5Z,8Z,11Z,14Z)) REASON: WRONGLY '
+               'CLASSIFIED Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCCCCC)COC(=O)CCCCCCC/C=C\\C/C=C\\C/C=C\\CC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(18:3(9Z,12Z,15Z)/21:0) REASON: WRONGLY CLASSIFIED '
+               'Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCCCC)COC(=O)CCCCCCC/C=C\\CCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(14:1(9Z)/20:0) REASON: WRONGLY CLASSIFIED Contains '
+               'glycerol backbone with two acyl groups and phosphoserine '
+               'moiety in correct configuration\n'
+               ' * SMILES: '
+               '[H][C@](COP(OC[C@@](COC(CCCCCCCCCCCCCCCCC)=O)(OC(CCCCCCCCCCCCCCC)=O)[H])(=O)O)(C(O)=O)N '
+               'NAME: PS(18:0/16:0) REASON: WRONGLY CLASSIFIED Contains '
+               'glycerol backbone with two acyl groups and phosphoserine '
+               'moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](O)COC(=O)CCCCCCC/C=C\\C/C=C\\C/C=C\\CC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(18:3(9Z,12Z,15Z)/0:0) REASON: WRONGLY CLASSIFIED '
+               'Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               '[H][C@](COP(OC[C@@](COC(CCCCCCCCCCCCCCCCC)=O)(OC(CCCCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)=O)[H])(=O)O)(C(O)=O)N '
+               'NAME: PS(18:0/20:4(8Z,11Z,14Z,17Z)) REASON: WRONGLY CLASSIFIED '
+               'Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCC(O)=O)COC(=O)CCCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PA-PS REASON: WRONGLY CLASSIFIED Contains glycerol '
+               'backbone with two acyl groups and phosphoserine moiety in '
+               'correct configuration\n'
+               ' * SMILES: '
+               '[H][C@](COP(OC[C@@](COC(CCCCCCC/C=C\\C/C=C\\C/C=C\\CC)=O)(OC(CCCCCC/C=C\\C/C=C\\C/C=C\\CCCCC)=O)[H])(=O)O)(C(O)=O)N '
+               'NAME: PS(18:3(9Z,12Z,15Z)/20:3(8Z,11Z,14Z)) REASON: WRONGLY '
+               'CLASSIFIED Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCC/C=C\\CCCC)COC(=O)CCCCCCCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(20:0/14:1(9Z)) REASON: WRONGLY CLASSIFIED Contains '
+               'glycerol backbone with two acyl groups and phosphoserine '
+               'moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCC/C=C\\CCCCCCCCC)COC(=O)CCCCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(17:0/19:1(9Z)) REASON: WRONGLY CLASSIFIED Contains '
+               'glycerol backbone with two acyl groups and phosphoserine '
+               'moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCC[C@@H]1[C@H]([C@H](O)C[C@@H]1O)/C=C/[C@@H](O)CCCCC)COC(=O)CCCCCCCCCCCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(24:0/PGF1alpha) REASON: WRONGLY CLASSIFIED Contains '
+               'glycerol backbone with two acyl groups and phosphoserine '
+               'moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCC/C=C\\CCCCCCCCCC)COC(=O)CCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(14:0/22:1(11Z)) REASON: WRONGLY CLASSIFIED Contains '
+               'glycerol backbone with two acyl groups and phosphoserine '
+               'moiety in correct configuration\n'
+               ' * SMILES: '
+               '[H][C@](COP(OC[C@@](COC(CCCCCCC/C=C\\CCCCCCCC)=O)(OC(CCCCCCC/C=C\\C/C=C\\C/C=C\\CC)=O)[H])(=O)O)(C(O)=O)N '
+               'NAME: PS(18:1(9Z)/18:3(9Z,12Z,15Z)) REASON: WRONGLY CLASSIFIED '
+               'Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](O)COC(=O)CCCC/C=C\\C/C=C\\C/C=C\\CCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(18:3(6Z,9Z,12Z)/0:0) REASON: WRONGLY CLASSIFIED '
+               'Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCCC)COC(=O)CCCCCCC/C=C\\CCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(16:1(9Z)/22:4(7Z,10Z,13Z,16Z)) REASON: WRONGLY '
+               'CLASSIFIED Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCCCCCCC)COC(=O)CCCCCCCCC/C=C\\C/C=C\\CCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(20:2(11Z,14Z)/17:0) REASON: WRONGLY CLASSIFIED '
+               'Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCC/C=C\\CCCCCCC)COC(=O)CCCCCCC/C=C\\CCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(19:1(9Z)/17:1(9Z)) REASON: WRONGLY CLASSIFIED '
+               'Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCC/C=C\\C/C=C\\C/C=C\\CCCCC)COCCCCCCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(O-18:0/18:3(6Z,9Z,12Z)) REASON: WRONGLY CLASSIFIED '
+               'Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCCC)COC(=O)CCCCCCC/C=C\\CCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(17:1(9Z)/19:0) REASON: WRONGLY CLASSIFIED Contains '
+               'glycerol backbone with two acyl groups and phosphoserine '
+               'moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCCCC/C=C\\CCCCCCCC)COC(=O)CCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(15:0/24:1(15Z)) REASON: WRONGLY CLASSIFIED Contains '
+               'glycerol backbone with two acyl groups and phosphoserine '
+               'moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCCCC)COCCCCCCCCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(O-20:0/14:0) REASON: WRONGLY CLASSIFIED Contains '
+               'glycerol backbone with two acyl groups and phosphoserine '
+               'moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](O)COC(=O)CCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(18:4(6Z,9Z,12Z,15Z)/0:0) REASON: WRONGLY CLASSIFIED '
+               'Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCC/C=C\\C/C=C\\C/C=C\\CC)COCCCCCCCCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(O-20:0/18:3(9Z,12Z,15Z)) REASON: WRONGLY CLASSIFIED '
+               'Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCC\\C=C\\C[C@@H]1[C@H]([C@H](O)C[C@@H]1O)/C=C/[C@@H](O)CCCCC)COC(=O)CCCCCCCCCCCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(24:0/PGF2alpha) REASON: WRONGLY CLASSIFIED Contains '
+               'glycerol backbone with two acyl groups and phosphoserine '
+               'moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCCCCCCC)CO/C=C\\CCCCCCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(P-20:0/17:0) REASON: WRONGLY CLASSIFIED Contains '
+               'glycerol backbone with two acyl groups and phosphoserine '
+               'moiety in correct configuration\n'
+               ' * SMILES: '
+               '[H][C@](COP(OC[C@@](COC(CCCCCCC/C=C\\CCCCCCCC)=O)(OC(CCCCCC/C=C\\C/C=C\\C/C=C\\CCCCC)=O)[H])(=O)O)(C(O)=O)N '
+               'NAME: PS(18:1(9Z)/20:3(8Z,11Z,14Z)) REASON: WRONGLY CLASSIFIED '
+               'Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               '[H][C@](COP(OC[C@@](COC(CCCCCCC/C=C\\C/C=C\\CCCCC)=O)(OC(CCCCCCCCCCCCCCCCC)=O)[H])(=O)O)(C(O)=O)N '
+               'NAME: PS(18:2(9Z,12Z)/18:0) REASON: WRONGLY CLASSIFIED '
+               'Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)COC(=O)CCCCCCC/C=C\\CCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(19:1(9Z)/22:6(4Z,7Z,10Z,13Z,16Z,19Z)) REASON: WRONGLY '
+               'CLASSIFIED Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCCC)COC(=O)CCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(20:4(5Z,8Z,11Z,14Z)/13:0) REASON: WRONGLY CLASSIFIED '
+               'Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCC(=O)/C=C/C=O)COC(=O)CCCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PKOOA-PS REASON: WRONGLY CLASSIFIED Contains glycerol '
+               'backbone with two acyl groups and phosphoserine moiety in '
+               'correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCCC)COC(=O)CC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(22:6(4Z,7Z,10Z,13Z,16Z,19Z)/20:4(5Z,8Z,11Z,14Z)) '
+               'REASON: WRONGLY CLASSIFIED Contains glycerol backbone with two '
+               'acyl groups and phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCCC)COC(=O)CCCCCCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(19:0/20:4(5Z,8Z,11Z,14Z)) REASON: WRONGLY CLASSIFIED '
+               'Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCC(O)/C=C/C=O)COC(=O)CCCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PHODA-PS REASON: WRONGLY CLASSIFIED Contains glycerol '
+               'backbone with two acyl groups and phosphoserine moiety in '
+               'correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCCCC)COC(=O)CCCCCCC/C=C\\CCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(14:1(9Z)/14:0) REASON: WRONGLY CLASSIFIED Contains '
+               'glycerol backbone with two acyl groups and phosphoserine '
+               'moiety in correct configuration\n'
+               ' * SMILES: '
+               '[H][C@](COP(OC[C@@](COC(=O)CCCCCCCCCCCCC)(OC(CCCCCCC/C=C\\CCCCCCCC)=O)[H])(=O)O)(C(O)=O)N '
+               'NAME: PS(14:0/18:1(9Z)) REASON: WRONGLY CLASSIFIED Contains '
+               'glycerol backbone with two acyl groups and phosphoserine '
+               'moiety in correct configuration\n'
+               ' * SMILES: '
+               '[H][C@](COP(OC[C@@](COC(CCCCCCC/C=C\\C/C=C\\CCCCC)=O)(OC(CCCCCC/C=C\\C/C=C\\C/C=C\\CCCCC)=O)[H])(=O)O)(C(O)=O)N '
+               'NAME: PS(18:2(9Z,12Z)/20:3(8Z,11Z,14Z)) REASON: WRONGLY '
+               'CLASSIFIED Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](O)COC(=O)CCCCCCC/C=C\\C/C=C\\CCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(17:2(9Z,12Z)/0:0) REASON: WRONGLY CLASSIFIED Contains '
+               'glycerol backbone with two acyl groups and phosphoserine '
+               'moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCC/C=C\\C/C=C\\CCCCC)COCCCCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(O-16:0/20:2(11Z,14Z)) REASON: WRONGLY CLASSIFIED '
+               'Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCC(=O)/C=C/C(O)=O)COC(=O)CCCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: pkddia-ps REASON: WRONGLY CLASSIFIED Contains glycerol '
+               'backbone with two acyl groups and phosphoserine moiety in '
+               'correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](O)COC(=O)CCCCCCC/C=C\\CCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(17:1(9Z)/0:0) REASON: WRONGLY CLASSIFIED Contains '
+               'glycerol backbone with two acyl groups and phosphoserine '
+               'moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCC/C=C\\C/C=C\\C/C=C\\CCCCC)COC(=O)CCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: Ps(15:0/20:3(8z,11z,14z)) REASON: WRONGLY CLASSIFIED '
+               'Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCCCC)COC(=O)CCCCCCCCC/C=C\\CCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(20:1(11Z)/14:0) REASON: WRONGLY CLASSIFIED Contains '
+               'glycerol backbone with two acyl groups and phosphoserine '
+               'moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCC/C=C\\CCCC)COC(=O)CCCCCCCCC/C=C\\CCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(22:1(11Z)/14:1(9Z)) REASON: WRONGLY CLASSIFIED '
+               'Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)COC(=O)CCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(14:0/20:4(8Z,11Z,14Z,17Z)) REASON: WRONGLY CLASSIFIED '
+               'Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)COC(=O)CCCCCCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(19:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)) REASON: WRONGLY '
+               'CLASSIFIED Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OCC(OC(=O)CCCCCCCCCCC=1OC(=CC1C)CCC)COC(=O)CCCCCCCCCCC=2OC(=C(C2C)C)CCC)(OCC(N)C(O)=O)(O)=O '
+               'NAME: PS(DiMe(11,3)/MonoMe(11,3)) REASON: WRONGLY CLASSIFIED '
+               'Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCC/C=C\\C/C=C\\C/C=C\\CCCCC)COCCCCCCCCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(O-20:0/18:3(6Z,9Z,12Z)) REASON: WRONGLY CLASSIFIED '
+               'Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCC/C=C\\C/C=C\\CCCCC)CO/C=C\\CCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(P-16:0/22:2(13Z,16Z)) REASON: WRONGLY CLASSIFIED '
+               'Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCC/C=C\\C/C=C\\CCCCC)COC(=O)CCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(13:0/18:2(9Z,12Z)) REASON: WRONGLY CLASSIFIED '
+               'Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCC/C=C\\CCCCCC)COC(=O)CCCCCCCCC/C=C\\CCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(20:1(11Z)/16:1(9Z)) REASON: WRONGLY CLASSIFIED '
+               'Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCCCCCC)COC(=O)CCCCCCCCC/C=C\\CCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(20:1(11Z)/22:0) REASON: WRONGLY CLASSIFIED Contains '
+               'glycerol backbone with two acyl groups and phosphoserine '
+               'moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCC/C=C\\C[C@H]1[C@@H](O)CC(O[C@@H]1/C=C/[C@@H](O)CCCCC)O)COC(=O)CCCCCCC/C=C\\CCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(16:1(9Z)/TXB2) REASON: WRONGLY CLASSIFIED Contains '
+               'glycerol backbone with two acyl groups and phosphoserine '
+               'moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCCCCC)COC(=O)CCCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(22:4(7Z,10Z,13Z,16Z)/21:0) REASON: WRONGLY CLASSIFIED '
+               'Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCC/C=C\\C/C=C\\CCCC)COC(=O)CCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(14:0/17:2(9Z,12Z)) REASON: WRONGLY CLASSIFIED '
+               'Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               '[H][C@](COP(OC[C@@](COC(CC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)=O)(OC(CCCCCCCCCCCCCCCCC)=O)[H])(=O)O)(C(O)=O)N '
+               'NAME: PS(22:6(4Z,7Z,10Z,13Z,16Z,19Z)/18:0) REASON: WRONGLY '
+               'CLASSIFIED Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               '[H][C@](COP(OC[C@@](COC(CCCCCC/C=C\\C/C=C\\C/C=C\\CCCCC)=O)(OC(CCCCCCC/C=C\\C/C=C\\CCCCC)=O)[H])(=O)O)(C(O)=O)N '
+               'NAME: PS(20:3(8Z,11Z,14Z)/18:2(9Z,12Z)) REASON: WRONGLY '
+               'CLASSIFIED Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCCC)COC(=O)CCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(18:4(6Z,9Z,12Z,15Z)/20:4(5Z,8Z,11Z,14Z)) REASON: '
+               'WRONGLY CLASSIFIED Contains glycerol backbone with two acyl '
+               'groups and phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               '[H][C@](COP(OC[C@@](COC(CCCCCCC/C=C\\CCCCCC)=O)(OC(CCCCCCC/C=C\\CCCCCCCC)=O)[H])(=O)O)(C(O)=O)N '
+               'NAME: PS(16:1(9Z)/18:1(9Z)) REASON: WRONGLY CLASSIFIED '
+               'Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCCCCCC)COC(=O)CCCCCCCCC/C=C\\CCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(20:1(11Z)/16:0) REASON: WRONGLY CLASSIFIED Contains '
+               'glycerol backbone with two acyl groups and phosphoserine '
+               'moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCC/C=C\\C/C=C\\CCCCC)COC(=O)CCCCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(17:0/22:2(13Z,16Z)) REASON: WRONGLY CLASSIFIED '
+               'Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCCC)COC(=O)CCCCCCC/C=C\\CCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(14:1(9Z)/20:4(5Z,8Z,11Z,14Z)) REASON: WRONGLY '
+               'CLASSIFIED Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCC)COC(=O)CCCCCCCCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(21:0/12:0) REASON: WRONGLY CLASSIFIED Contains '
+               'glycerol backbone with two acyl groups and phosphoserine '
+               'moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCC(O)/C=C/C(O)=O)COC(=O)CCCCCCC/C=C\\CCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: OHHdiA-PS REASON: WRONGLY CLASSIFIED Contains glycerol '
+               'backbone with two acyl groups and phosphoserine moiety in '
+               'correct configuration\n'
+               ' * SMILES: '
+               'P(OCC(OC(=O)CCCCCCCCCCCCC=1OC(=C(C1C)C)CCCCC)COC(=O)CCCCCCCCC=2OC(=C(C2C)C)CCCCC)(OCC(N)C(O)=O)(O)=O '
+               'NAME: PS(DIME(9,5)/DIME(13,5)) REASON: WRONGLY CLASSIFIED '
+               'Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCC/C=C\\C/C=C\\C/C=C\\CC)COC(=O)CCCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(16:0/18:3(9Z,12Z,15Z)) REASON: WRONGLY CLASSIFIED '
+               'Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               '[H][C@](COP(OC[C@@](COC(CCCCCCC/C=C\\CCCCCC)=O)(OC(CCCCCC/C=C\\C/C=C\\C/C=C\\CCCCC)=O)[H])(=O)O)(C(O)=O)N '
+               'NAME: PS(16:1(9Z)/20:3(8Z,11Z,14Z)) REASON: WRONGLY CLASSIFIED '
+               'Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCC/C=C\\C/C=C\\CCCCC)COCCCCCCCCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(O-20:0/20:2(11Z,14Z)) REASON: WRONGLY CLASSIFIED '
+               'Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)COC(=O)CCC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(20:5(5Z,8Z,11Z,14Z,17Z)/22:6(4Z,7Z,10Z,13Z,16Z,19Z)) '
+               'REASON: WRONGLY CLASSIFIED Contains glycerol backbone with two '
+               'acyl groups and phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCC/C=C\\C/C=C\\CCCCC)CO/C=C\\CCCCCCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(P-20:0/18:2(9Z,12Z)) REASON: WRONGLY CLASSIFIED '
+               'Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCCCCCC)COC(=O)CCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(15:0/16:0) REASON: WRONGLY CLASSIFIED Contains '
+               'glycerol backbone with two acyl groups and phosphoserine '
+               'moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCCCCC)COC(=O)CCCCCC/C=C\\C/C=C\\C/C=C\\CCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(20:3(8Z,11Z,14Z)/21:0) REASON: WRONGLY CLASSIFIED '
+               'Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCCC)COCCCCCCCCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(O-20:0/22:4(7Z,10Z,13Z,16Z)) REASON: WRONGLY '
+               'CLASSIFIED Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCC/C=C\\C/C=C\\CCCCC)CO/C=C\\CCCCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(P-18:0/22:2(13Z,16Z)) REASON: WRONGLY CLASSIFIED '
+               'Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCCC)COC(=O)CCCCCC/C=C\\C/C=C\\C/C=C\\CCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(20:3(8Z,11Z,14Z)/22:4(7Z,10Z,13Z,16Z)) REASON: '
+               'WRONGLY CLASSIFIED Contains glycerol backbone with two acyl '
+               'groups and phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCC)COC(=O)CCCCCCC/C=C\\C=C\\C(=O)CCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(18:2(9Z,11E)+=O(13)/18:0) REASON: WRONGLY CLASSIFIED '
+               'Contains glycerol backbone with two acyl groups and '
+               'phosphoserine moiety in correct configuration\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCCC)COCCCCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(O-16:0/13:0) REASON: WRONGLY CLASSIFIED Contains '
+               'glycerol backbone with two acyl groups and phosphoserine '
+               'moiety in correct configuration\n'
+               'False negatives: SMILES: '
+               'P(=O)(OC[C@H](OC(CCCCCNC=1C2=NON=C2C(=CC1)[N+]([O-])=O)=O)COC(CCCCCCC/C=C\\CCCCCCCC)=O)(OC[C@@H](C(O)=O)N)O '
+               'NAME: '
+               '1-oleoyl-2-{6-[(7-nitro-2-1,3-benzoxadiazol-4-yl)amino]hexanoyl}-sn-glycero-3-phospho-L-serine '
+               'REASON: MISSED Must have exactly one nitrogen atom (from '
+               'serine)\n'
+               '------\n'
+               '\n'
+               'In your reasoning step, analyze the previous program and the '
+               'above outcomes, hypothesizing about what went wrong, and how '
+               'to improve.\n',
+    'sample_true_negatives': [   {   'smiles': 'N12CN3CN(CN(C1)CC3)CC2',
+                                     'name': '1,3,6,8-tetraazatricyclo[4,4,1,1(3,8)]dodecane',
+                                     'reason': 'No phosphate group found'},
+                                 {   'smiles': 'CC1CC2C(CC=C1CCO)C(C)C(=O)O2',
+                                     'name': '(8alpha,10beta,11beta)-3-hydroxy-4,15-dinor-1(5)-xanthen-12,8-olide',
+                                     'reason': 'No phosphate group found'},
+                                 {   'smiles': 'CCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](COP(O)(O)=O)[C@H](O)\\C=C\\CCCCCCCCCCCCC',
+                                     'name': 'N-docosanoylsphingosine-1-phosphate',
+                                     'reason': 'No glycerol backbone with '
+                                               'correct stereochemistry found'},
+                                 {   'smiles': 'C1CNCCC1SC2=NC(=CC=C2)Cl',
+                                     'name': '2-chloro-6-(4-piperidinylthio)pyridine',
+                                     'reason': 'No phosphate group found'},
+                                 {   'smiles': '[H][C@@]1(CC[C@@]2(C)[C@]3([H])CC[C@@]4([H])[C@@](C)([C@H](CC[C@@]44C[C@@]34CC[C@]12C)OC(C)=O)C(O)=O)[C@H](C)CCC(=O)C(C)C',
+                                     'name': 'bonianic acid B, (rel)-',
+                                     'reason': 'No phosphate group found'},
+                                 {   'smiles': 'O=C1OC[C@@]2(C1=C(CC[C@]34[C@H]2C[C@H](CC[C@H]3C)C4(C)C)C)C',
+                                     'name': 'Harzianelactone',
+                                     'reason': 'No phosphate group found'},
+                                 {   'smiles': 'O=C(NC1=NC=C(Cl)C=C1)CSC2=NN=C3C(NC4=C3C=CC=C4)=N2',
+                                     'name': 'dCeMM2',
+                                     'reason': 'No phosphate group found'},
+                                 {   'smiles': 'N[C@@H](CS[C@H](\\C=C\\C=C\\C=C/C=C/CC(O)=O)[C@@H](O)CCCC(O)=O)C(O)=O',
+                                     'name': '(13E)-16-carboxy-Delta(13)-17,18,19,20-tetranor-leukotriene '
+                                             'E4',
+                                     'reason': 'No phosphate group found'},
+                                 {   'smiles': 'C[C@@H]1O[C@@H](OC[C@H]2OC(O)[C@H](NC(C)=O)[C@@H](O[C@@H]3O[C@@H](C)[C@@H](O)[C@@H](O)[C@@H]3O)[C@@H]2O[C@@H]2O[C@H](CO)[C@@H](O[C@@H]3O[C@H](CO[C@H]4O[C@H](CO)[C@@H](O)[C@H](O)[C@@H]4O[C@@H]4O[C@H](CO)[C@@H](O)[C@H](O)[C@H]4NC(C)=O)[C@@H](O)[C@H](O[C@H]4O[C@H](CO)[C@@H](O)[C@H](O)[C@@H]4O[C@@H]4O[C@H](CO)[C@@H](O)[C@H](O)[C@H]4NC(C)=O)[C@@H]3O)[C@H](O)[C@H]2NC(C)=O)[C@@H](O)[C@H](O)[C@@H]1O',
+                                     'name': 'alpha-L-Fucp-(1->3)-[alpha-L-Fucp-(1->6)]-{beta-D-GlcpNAc-(1->2)-alpha-D-Manp-(1->3)-[beta-D-GlcpNAc-(1->2)-alpha-D-Manp-(1->6)]-beta-D-Manp-(1->4)-beta-GlcpNAc-(1->4)}-D-GlcpNAc',
+                                     'reason': 'No phosphate group found'},
+                                 {   'smiles': 'CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1ccc(N)nc1=O)OC(=O)CC\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/CC',
+                                     'name': 'CDP-1-stearoyl-2-(4Z,7Z,10Z,13Z,16Z,19Z)-docosahexaenoyl-sn-glycerol',
+                                     'reason': 'No L-serine moiety found with '
+                                               'correct stereochemistry'}],
+    'sample_false_negatives': [],
+    'attempt': 1,
+    'reasoning': 'Let me analyze the previous attempt and its outcomes:\n'
+                 '\n'
+                 '1. False Positives Analysis:\n'
+                 '- The program incorrectly classified many phosphatidylserine '
+                 'variants with different fatty acid chains\n'
+                 "- The stereochemistry check wasn't strict enough - we need "
+                 'to verify both the glycerol and serine stereochemistry\n'
+                 "- The connectivity pattern check wasn't specific enough\n"
+                 '\n'
+                 '2. False Negatives Analysis:\n'
+                 '- The program missed one compound (NBD-labeled PS) because '
+                 'it had additional nitrogen atoms from the NBD group\n'
+                 '- The nitrogen count check was too strict\n'
+                 '\n'
+                 '3. Key Issues:\n'
+                 "- Stereochemistry wasn't properly checked for both glycerol "
+                 'and serine centers\n'
+                 '- The nitrogen count requirement was too restrictive\n'
+                 '- The connectivity pattern needs to be more specific about '
+                 'the 3-sn configuration\n'
+                 '- The fatty acid chain verification could be improved\n'
+                 '\n'
+                 '4. Improvements Needed:\n'
+                 '- Use more specific SMARTS patterns for stereochemistry\n'
+                 '- Remove or modify the nitrogen count restriction\n'
+                 '- Add more specific checks for the 3-sn configuration\n'
+                 '- Improve the phosphoserine connectivity pattern\n'
+                 '- Better validation of fatty acid chain positions\n'
+                 '\n'
+                 "Here's my proposed improved version:",
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 0,
-    'num_false_positives': 0,
-    'num_true_negatives': 183903,
-    'num_false_negatives': 8,
+    'num_true_positives': 25,
+    'num_false_positives': 100,
+    'num_true_negatives': 51612,
+    'num_false_negatives': 0,
     'num_negatives': None,
-    'precision': 0.0,
-    'recall': 0.0,
-    'f1': 0.0,
-    'accuracy': 0.9999565006987076}
+    'precision': 0.2,
+    'recall': 1.0,
+    'f1': 0.33333333333333337,
+    'accuracy': 0.9980671473027041,
+    'negative_predictive_value': 1.0}

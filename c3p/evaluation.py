@@ -17,15 +17,15 @@ def split_to_training_test(classes: List[ChemicalClass], proportion_test=0.2, n:
     for c in classes[start:n+start]:
         test_c = copy(c)
         train_c = copy(c)
-        positive_examples = copy(c.instances)
+        positive_examples = copy(c.positive_instances)
         negative_examples = copy(c.negative_instances)
         random.shuffle(positive_examples)
         random.shuffle(negative_examples)
         i_positive = int(len(positive_examples) * proportion_test)
         i_negative = int(len(negative_examples) * proportion_test)
-        test_c.instances = positive_examples[:i_positive]
+        test_c.positive_instances = positive_examples[:i_positive]
         test_c.negative_instances = negative_examples[:i_negative]
-        train_c.instances = positive_examples[i_positive:]
+        train_c.positive_instances = positive_examples[i_positive:]
         train_c.negative_instances = negative_examples[i_negative:]
         test_set.append(test_c)
         training_set.append(train_c)

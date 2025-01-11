@@ -1,85 +1,90 @@
 """
 Classifies: CHEBI:10615 omega-hydroxy fatty acid
 """
+"""
+Classifies: omega-hydroxy fatty acid
+"""
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_omega_hydroxy_fatty_acid(smiles: str):
     """
-    Determines if a molecule is an omega-hydroxy fatty acid.
+    Determines if a molecule is an omega-hydroxy fatty acid based on its SMILES string.
+    An omega-hydroxy fatty acid has a carboxyl group at position 1 and a hydroxyl at the
+    opposite end (omega position) of a primarily linear carbon chain.
     
     Args:
         smiles (str): SMILES string of the molecule
-        
+
     Returns:
         bool: True if molecule is an omega-hydroxy fatty acid, False otherwise
         str: Reason for classification
     """
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return None, "Invalid SMILES string"
+        return False, "Invalid SMILES string"
 
-    # Check for carboxylic acid group
-    carboxyl_pattern = Chem.MolFromSmarts('C(=O)O')
-    if not mol.HasSubstructMatch(carboxyl_pattern):
+    # Look for carboxylic acid group
+    carboxylic_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
+    if not mol.HasSubstructMatch(carboxylic_pattern):
         return False, "No carboxylic acid group found"
     
-    # Find carboxylic acid carbon
-    matches = mol.GetSubstructMatches(carboxyl_pattern)
-    carboxyl_carbon = matches[0][0]
+    # Count carboxylic acid groups - should only have one
+    carboxylic_matches = mol.GetSubstructMatches(carboxylic_pattern)
+    if len(carboxylic_matches) > 1:
+        return False, "Multiple carboxylic acid groups found"
     
-    # Get all terminal OH groups
-    terminal_oh_pattern = Chem.MolFromSmarts('[OH][CH2]C')
+    # Look for terminal hydroxyl group (CH2-OH)
+    terminal_oh_pattern = Chem.MolFromSmarts("[CH2][OX2H1]")
     if not mol.HasSubstructMatch(terminal_oh_pattern):
         return False, "No terminal hydroxyl group found"
-        
-    # Get all carbons in longest chain from carboxyl carbon
-    visited = set()
-    longest_chain = []
+
+    # Get the indices of key atoms
+    carboxylic_carbon = mol.GetSubstructMatch(carboxylic_pattern)[0]
+    terminal_ch2 = mol.GetSubstructMatch(terminal_oh_pattern)[0]
     
-    def get_longest_chain(atom_idx, current_chain):
-        nonlocal longest_chain
-        visited.add(atom_idx)
-        current_chain.append(atom_idx)
+    # Get shortest path between COOH carbon and terminal CH2
+    path = Chem.GetShortestPath(mol, carboxylic_carbon, terminal_ch2)
+    if not path:
+        return False, "No valid path between COOH and terminal OH"
+    
+    # Check path length (minimum 4 atoms for shortest omega-hydroxy fatty acid)
+    if len(path) < 4:
+        return False, "Chain too short for omega-hydroxy fatty acid"
         
+    # Check for excessive hydroxyl groups
+    oh_pattern = Chem.MolFromSmarts("[OX2H1]")
+    oh_matches = len(mol.GetSubstructMatches(oh_pattern))
+    if oh_matches > 3:  # Allow up to 3 OH groups (COOH + terminal OH + one possible extra)
+        return False, "Too many hydroxyl groups for omega-hydroxy fatty acid"
+
+    # Verify the atoms in the main chain
+    path_atoms = [mol.GetAtomWithIdx(i) for i in path]
+    non_carbon_count = sum(1 for atom in path_atoms if atom.GetAtomicNum() != 6)
+    if non_carbon_count > 2:  # Allow only COOH and terminal OH as non-carbon
+        return False, "Main chain contains too many non-carbon atoms"
+    
+    # Check for branching along the main chain
+    for atom_idx in path:
         atom = mol.GetAtomWithIdx(atom_idx)
-        neighbors = atom.GetNeighbors()
-        
-        terminal = True
-        for neighbor in neighbors:
-            n_idx = neighbor.GetIdx()
-            if n_idx not in visited and neighbor.GetSymbol() == 'C':
-                terminal = False
-                get_longest_chain(n_idx, current_chain.copy())
-                
-        if terminal and len(current_chain) > len(longest_chain):
-            longest_chain = current_chain.copy()
-        visited.remove(atom_idx)
-        current_chain.pop()
-            
-    get_longest_chain(carboxyl_carbon, [])
-    
-    # Check if terminal carbon has OH group
-    terminal_carbon = mol.GetAtomWithIdx(longest_chain[-1])
-    has_terminal_oh = False
-    for neighbor in terminal_carbon.GetNeighbors():
-        if neighbor.GetSymbol() == 'O' and neighbor.GetTotalNumHs() == 1:
-            has_terminal_oh = True
-            break
-            
-    if not has_terminal_oh:
-        return False, "Hydroxyl group not at terminal (omega) position"
-        
-    # Check if chain is straight (each carbon has max 2 carbons connected)
-    for idx in longest_chain:
-        atom = mol.GetAtomWithIdx(idx)
-        carbon_neighbors = sum(1 for n in atom.GetNeighbors() if n.GetSymbol() == 'C')
-        if carbon_neighbors > 2:
-            return False, "Chain is branched"
-            
-    chain_length = len(longest_chain)
-    return True, f"Omega-hydroxy fatty acid with chain length {chain_length}"
+        if atom.GetAtomicNum() == 6:  # Only check carbon atoms
+            if len([n for n in atom.GetNeighbors() if n.GetAtomicNum() == 6]) > 2:
+                return False, "Excessive branching along main chain"
+
+    # Count total carbons and check ratio against path length
+    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    path_length = len(path)
+    if carbon_count > path_length + 1:  # Allow at most one carbon branch
+        return False, "Too many carbons outside main chain"
+
+    # Verify the molecule consists only of C, H, O
+    allowed_atoms = {1, 6, 8}  # H, C, O
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() not in allowed_atoms:
+            return False, "Contains elements other than C, H, O"
+
+    return True, "Contains terminal hydroxyl and carboxylic acid groups at opposite ends of primarily linear carbon chain"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:10615',
@@ -89,27 +94,820 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:10615',
                                         'fatty acids n carbon atoms long with '
                                         'a carboxyl group at position 1 and a '
                                         'hydroxyl at position n (omega).',
-                          'parents': ['CHEBI:15734', 'CHEBI:24654']},
-    'config': {   'llm_model_name': 'lbl/claude-sonnet',
-                  'f1_threshold': 0.8,
-                  'max_attempts': 5,
-                  'max_negative_to_test': None,
-                  'max_positive_in_prompt': 50,
-                  'max_negative_in_prompt': 20,
-                  'max_instances_in_prompt': 100,
-                  'test_proportion': 0.1},
-    'message': None,
-    'attempt': 0,
+                          'parents': ['CHEBI:15734', 'CHEBI:24654'],
+                          'xrefs': [   'KEGG:C03547',
+                                       'PMID:13771448',
+                                       'PMID:16660004'],
+                          'all_positive_examples': []},
+    'config': None,
+    'message': '\n'
+               'Attempt failed: F1 score of 0.596774193548387 is too low.\n'
+               'Outcomes:\n'
+               '------\n'
+               '\n'
+               'True positives: SMILES: OCCCCCCCCC[C@@H](O)CC(O)=O NAME: '
+               '(3R)-3,12-dihydroxylauric acid REASON: CORRECT Contains '
+               'terminal hydroxyl and carboxylic acid groups at opposite ends '
+               'of primarily linear carbon chain\n'
+               ' * SMILES: '
+               'C(C(O)=O)C/C=C\\C/C=C\\C/C=C\\C=C\\[C@@H](C/C=C\\C/C=C\\CCO)O '
+               'NAME: '
+               '(4Z,7Z,10Z,12E,14R,16Z,19Z)-14,22-dihydroxydocosahexaenoic '
+               'acid REASON: CORRECT Contains terminal hydroxyl and carboxylic '
+               'acid groups at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OC(CCCCCCCCCCC(CCCCCCO)O)=O NAME: '
+               '12,18-dihydroxyoctadecanoic acid REASON: CORRECT Contains '
+               'terminal hydroxyl and carboxylic acid groups at opposite ends '
+               'of primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCCCCCCCCCCCCCCCCCCCC(O)=O NAME: '
+               'omega-hydroxytetracosanoic acid REASON: CORRECT Contains '
+               'terminal hydroxyl and carboxylic acid groups at opposite ends '
+               'of primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCCCCCCCCCCCC[C@@H](O)CC(O)=O NAME: '
+               '(3R)-3,19-dihydroxynonadecanoic acid REASON: CORRECT Contains '
+               'terminal hydroxyl and carboxylic acid groups at opposite ends '
+               'of primarily linear carbon chain\n'
+               ' * SMILES: C(CCCCCCCCCCO)CC[C@H](CC(O)=O)O NAME: '
+               '(3R)-3,16-dihydroxyhexadecanoic acid REASON: CORRECT Contains '
+               'terminal hydroxyl and carboxylic acid groups at opposite ends '
+               'of primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCCCCCCCCCCCCC\\C=C\\C(O)=O NAME: '
+               '(2E)-20-hydroxyicos-2-enoic acid REASON: CORRECT Contains '
+               'terminal hydroxyl and carboxylic acid groups at opposite ends '
+               'of primarily linear carbon chain\n'
+               ' * SMILES: C(\\CC(/C=C/C=C\\C/C=C\\CCCCCO)O)=C\\CCCC(O)=O '
+               'NAME: 8,20-DiHETE REASON: CORRECT Contains terminal hydroxyl '
+               'and carboxylic acid groups at opposite ends of primarily '
+               'linear carbon chain\n'
+               ' * SMILES: OCCCC\\C=C\\C(O)=O NAME: (2E)-7-hydroxyhept-2-enoic '
+               'acid REASON: CORRECT Contains terminal hydroxyl and carboxylic '
+               'acid groups at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: C(CCCO)C/C=C\\C/C=C\\C/C=C\\CC1C(CCCC(O)=O)O1 NAME: '
+               '5,6-epoxy-20-hydroxy-(8Z,11Z,14Z)-icosatrienoic acid REASON: '
+               'CORRECT Contains terminal hydroxyl and carboxylic acid groups '
+               'at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCCCC(O)=O NAME: 8-hydroxyoctanoic acid REASON: '
+               'CORRECT Contains terminal hydroxyl and carboxylic acid groups '
+               'at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCCCCCCCC[C@@H](O)CC(O)=O NAME: '
+               '(3R)-3,15-dihydroxypentadecanoic acid REASON: CORRECT Contains '
+               'terminal hydroxyl and carboxylic acid groups at opposite ends '
+               'of primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCCCCCCCCCCCCCCCC[C@@H](O)CC(O)=O NAME: '
+               '(3R)-3,22-dihydroxytricosanoic acid REASON: CORRECT Contains '
+               'terminal hydroxyl and carboxylic acid groups at opposite ends '
+               'of primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCCCCCCCCCCCCCC\\C=C\\C(O)=O NAME: '
+               '(2E)-21-hydroxyhenicos-2-enoic acid REASON: CORRECT Contains '
+               'terminal hydroxyl and carboxylic acid groups at opposite ends '
+               'of primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCCCC[C@@H](O)CC(O)=O NAME: '
+               '(3R)-3,11-dihydroxyundecanoic acid REASON: CORRECT Contains '
+               'terminal hydroxyl and carboxylic acid groups at opposite ends '
+               'of primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCCCCCCCCCCCCCCCCCC(O)=O NAME: '
+               '22-hydroxydocosanoic acid REASON: CORRECT Contains terminal '
+               'hydroxyl and carboxylic acid groups at opposite ends of '
+               'primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O NAME: '
+               'omega-hydroxydotriacontanoic acid REASON: CORRECT Contains '
+               'terminal hydroxyl and carboxylic acid groups at opposite ends '
+               'of primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O NAME: '
+               'omega-hydroxyheptacosanoic acid REASON: CORRECT Contains '
+               'terminal hydroxyl and carboxylic acid groups at opposite ends '
+               'of primarily linear carbon chain\n'
+               ' * SMILES: C(=C\\CC1OC1CCCCCO)\\CCCCCCCC(=O)O NAME: '
+               '12,13-epoxy-18-hydroxy-(9Z)-octadecenoic acid REASON: CORRECT '
+               'Contains terminal hydroxyl and carboxylic acid groups at '
+               'opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCCCCCCCCCCCC(O)CC(O)=O NAME: '
+               '3,18-dihydroxyoctadecanoic acid REASON: CORRECT Contains '
+               'terminal hydroxyl and carboxylic acid groups at opposite ends '
+               'of primarily linear carbon chain\n'
+               ' * SMILES: '
+               'C(\\C=C/C=C/C=C/[C@H]([C@H](CCCCCO)O)O)=C/[C@H](CCCC(O)=O)O '
+               'NAME: 20-hydroxylipoxin B4 REASON: CORRECT Contains terminal '
+               'hydroxyl and carboxylic acid groups at opposite ends of '
+               'primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCCCCCCCCCCCCC(O)=O NAME: 17-hydroxymargaric '
+               'acid REASON: CORRECT Contains terminal hydroxyl and carboxylic '
+               'acid groups at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: C1(CCCCCCCC(=O)O)C(CCCCCCCCO)O1 NAME: '
+               '9,10-epoxy-18-hydroxyoctadecanoic acid REASON: CORRECT '
+               'Contains terminal hydroxyl and carboxylic acid groups at '
+               'opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCCC[C@@H](O)CC(O)=O NAME: '
+               '(3R)-3,10-dihydroxydecanoic acid REASON: CORRECT Contains '
+               'terminal hydroxyl and carboxylic acid groups at opposite ends '
+               'of primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCCC(O)=O NAME: 7-hydroxyheptanoic acid REASON: '
+               'CORRECT Contains terminal hydroxyl and carboxylic acid groups '
+               'at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: C(=O)(O)CCCC(\\C=C\\C=C/C/C=C\\C/C=C\\CCCCCO)O '
+               'NAME: 5,20-DiHETE REASON: CORRECT Contains terminal hydroxyl '
+               'and carboxylic acid groups at opposite ends of primarily '
+               'linear carbon chain\n'
+               ' * SMILES: C1(C(C/C=C\\CCCCCO)O1)CCCCCCCC(=O)O NAME: '
+               '9,10-epoxy-18-hydroxy-(12Z)-octadecenoic acid REASON: CORRECT '
+               'Contains terminal hydroxyl and carboxylic acid groups at '
+               'opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCCCC\\C=C\\C(O)=O NAME: '
+               '(2E)-11-hydroxyundec-2-enoic acid REASON: CORRECT Contains '
+               'terminal hydroxyl and carboxylic acid groups at opposite ends '
+               'of primarily linear carbon chain\n'
+               ' * SMILES: '
+               'C([C@H](/C=C/C=C/C=C/[C@H](CCCC(O)=O)O)O)/C=C\\CCCCCO NAME: '
+               '20-hydroxy-6-trans-leukotriene B4 REASON: CORRECT Contains '
+               'terminal hydroxyl and carboxylic acid groups at opposite ends '
+               'of primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCCCCCCC(O)=O NAME: 11-hydroxyundecanoic acid '
+               'REASON: CORRECT Contains terminal hydroxyl and carboxylic acid '
+               'groups at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: C(CCCC(CCCCCCO)=O)CCCCC(O)=O NAME: '
+               '16-hydroxy-10-oxohexadecanoic acid REASON: CORRECT Contains '
+               'terminal hydroxyl and carboxylic acid groups at opposite ends '
+               'of primarily linear carbon chain\n'
+               ' * SMILES: OC(=O)CCCCCC(=C(CCCCCCCCO)[H])[H] NAME: ambrettolic '
+               'acid REASON: CORRECT Contains terminal hydroxyl and carboxylic '
+               'acid groups at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O NAME: '
+               'omega-hydroxynonacosanoic acid REASON: CORRECT Contains '
+               'terminal hydroxyl and carboxylic acid groups at opposite ends '
+               'of primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O NAME: '
+               'omega-hydroxytriacontanoic acid REASON: CORRECT Contains '
+               'terminal hydroxyl and carboxylic acid groups at opposite ends '
+               'of primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCCCCCCCCCC\\C=C\\C(O)=O NAME: '
+               '(2E)-17-hydroxyheptadec-2-enoic acid REASON: CORRECT Contains '
+               'terminal hydroxyl and carboxylic acid groups at opposite ends '
+               'of primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCCCCCCCCCCCCCCCC(O)=O NAME: '
+               '20-hydroxyicosanoic acid REASON: CORRECT Contains terminal '
+               'hydroxyl and carboxylic acid groups at opposite ends of '
+               'primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCC[C@@H](O)CC(O)=O NAME: '
+               '(3R)-3,9-dihydroxynonanoic acid REASON: CORRECT Contains '
+               'terminal hydroxyl and carboxylic acid groups at opposite ends '
+               'of primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCCCCCCCCC\\C=C\\C(O)=O NAME: '
+               '(2E)-16-hydroxyhexadec-2-enoic acid REASON: CORRECT Contains '
+               'terminal hydroxyl and carboxylic acid groups at opposite ends '
+               'of primarily linear carbon chain\n'
+               ' * SMILES: C(C(C(CCCCCCCCO)O)O)CCCCCCC(=O)O NAME: '
+               '9,10,18-trihydroxyoctadecanoic acid REASON: CORRECT Contains '
+               'terminal hydroxyl and carboxylic acid groups at opposite ends '
+               'of primarily linear carbon chain\n'
+               ' * SMILES: '
+               'C(C(O)=O)C/C=C\\C/C=C\\C/C=C\\C=C\\[C@H](C/C=C\\C/C=C\\CCO)O '
+               'NAME: '
+               '(4Z,7Z,10Z,12E,14S,16Z,19Z)-14,22-dihydroxydocosahexaenoic '
+               'acid REASON: CORRECT Contains terminal hydroxyl and carboxylic '
+               'acid groups at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O NAME: '
+               'omega-hydroxytritriacontanoic acid REASON: CORRECT Contains '
+               'terminal hydroxyl and carboxylic acid groups at opposite ends '
+               'of primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCCCCCCCCCCCCCC(O)=O NAME: '
+               '18-hydroxyoctadecanoic acid REASON: CORRECT Contains terminal '
+               'hydroxyl and carboxylic acid groups at opposite ends of '
+               'primarily linear carbon chain\n'
+               ' * SMILES: C(CCCCCCCCCCO)CCCC[C@H](CC(O)=O)O NAME: '
+               '(3R)-3,18-dihydroxyoctadecanoic acid REASON: CORRECT Contains '
+               'terminal hydroxyl and carboxylic acid groups at opposite ends '
+               'of primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCCCCC\\C=C\\C(O)=O NAME: '
+               '(2E)-12-hydroxydodec-2-enoic acid REASON: CORRECT Contains '
+               'terminal hydroxyl and carboxylic acid groups at opposite ends '
+               'of primarily linear carbon chain\n'
+               ' * SMILES: OCCC(O)=O NAME: 3-hydroxypropionic acid REASON: '
+               'CORRECT Contains terminal hydroxyl and carboxylic acid groups '
+               'at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCCCCCCCCC(O)=O NAME: 13-hydroxytridecanoic '
+               'acid REASON: CORRECT Contains terminal hydroxyl and carboxylic '
+               'acid groups at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCCCCCCCCCCCC\\C=C\\C(O)=O NAME: '
+               '(2E)-19-hydroxynonadec-2-enoic acid REASON: CORRECT Contains '
+               'terminal hydroxyl and carboxylic acid groups at opposite ends '
+               'of primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCCCCCCCC(O)=O NAME: 12-hydroxylauric acid '
+               'REASON: CORRECT Contains terminal hydroxyl and carboxylic acid '
+               'groups at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCCCC\\C=C/CCCCCCCC(O)=O NAME: 18-hydroxyoleic '
+               'acid REASON: CORRECT Contains terminal hydroxyl and carboxylic '
+               'acid groups at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: C(CCCO)C/C=C\\CC1C(C/C=C\\C/C=C\\CCCC(O)=O)O1 NAME: '
+               '11,12-epoxy-20-hydroxy-(5Z,8Z,14Z)-icosatrienoic acid REASON: '
+               'CORRECT Contains terminal hydroxyl and carboxylic acid groups '
+               'at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCCCCCC(O)=O NAME: 10-hydroxycapric acid '
+               'REASON: CORRECT Contains terminal hydroxyl and carboxylic acid '
+               'groups at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCCCCCCCCCC(O)CC(O)=O NAME: '
+               '3,16-dihydroxyhexadecanoic acid REASON: CORRECT Contains '
+               'terminal hydroxyl and carboxylic acid groups at opposite ends '
+               'of primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCCCCCCCCCCC(O)=O NAME: 15-hydroxypentadecanoic '
+               'acid REASON: CORRECT Contains terminal hydroxyl and carboxylic '
+               'acid groups at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O NAME: '
+               '26-hydroxyhexacosanoic acid REASON: CORRECT Contains terminal '
+               'hydroxyl and carboxylic acid groups at opposite ends of '
+               'primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCCCCCC\\C=C\\C(O)=O NAME: '
+               '(2E)-13-hydroxytridec-2-enoic acid REASON: CORRECT Contains '
+               'terminal hydroxyl and carboxylic acid groups at opposite ends '
+               'of primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCC(O)=O NAME: 6-hydroxyhexanoic acid REASON: '
+               'CORRECT Contains terminal hydroxyl and carboxylic acid groups '
+               'at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCCCCCC(O)CC(O)=O NAME: 3,12-dihydroxylauric '
+               'acid REASON: CORRECT Contains terminal hydroxyl and carboxylic '
+               'acid groups at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCCCCCCCCCCC\\C=C\\C(O)=O NAME: '
+               '(2E)-18-hydroxyoctadec-2-enoic acid REASON: CORRECT Contains '
+               'terminal hydroxyl and carboxylic acid groups at opposite ends '
+               'of primarily linear carbon chain\n'
+               ' * SMILES: C(=C\\C(C/C=C\\CCCCCO)O)/C=C\\C/C=C\\CCCC(=O)O '
+               'NAME: 12,20-DiHETE REASON: CORRECT Contains terminal hydroxyl '
+               'and carboxylic acid groups at opposite ends of primarily '
+               'linear carbon chain\n'
+               ' * SMILES: '
+               'OC(CC/C=C\\C/C=C\\C[C@H](\\C=C\\C=C\\C=C/[C@H](C/C=C\\CCO)O)O)=O '
+               'NAME: 22-hydroxyprotectin D1 REASON: CORRECT Contains terminal '
+               'hydroxyl and carboxylic acid groups at opposite ends of '
+               'primarily linear carbon chain\n'
+               ' * SMILES: C(CCCO)C/C=C\\C/C=C\\CC1C(C/C=C\\CCCC(O)=O)O1 NAME: '
+               '8,9-epoxy-20-hydroxy-(5Z,11Z,14Z)-icosatrienoic acid REASON: '
+               'CORRECT Contains terminal hydroxyl and carboxylic acid groups '
+               'at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCCCCCCCCCC(O)=O NAME: 14-hydroxymyristic acid '
+               'REASON: CORRECT Contains terminal hydroxyl and carboxylic acid '
+               'groups at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCC\\C=C\\C(O)=O NAME: '
+               '(2E)-9-hydroxynon-2-enoic acid REASON: CORRECT Contains '
+               'terminal hydroxyl and carboxylic acid groups at opposite ends '
+               'of primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCCCCCC[C@@H](O)CC(O)=O NAME: '
+               '(3R)-3,13-dihydroxytridecanoic acid REASON: CORRECT Contains '
+               'terminal hydroxyl and carboxylic acid groups at opposite ends '
+               'of primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCCC\\C=C\\C(O)=O NAME: '
+               '(E)-10-hydroxydec-2-enoic acid REASON: CORRECT Contains '
+               'terminal hydroxyl and carboxylic acid groups at opposite ends '
+               'of primarily linear carbon chain\n'
+               ' * SMILES: C(CCC(O)=O)/C=C\\C/C=C\\C/C=C\\CCCCCCCCO NAME: '
+               '20-HETrE REASON: CORRECT Contains terminal hydroxyl and '
+               'carboxylic acid groups at opposite ends of primarily linear '
+               'carbon chain\n'
+               ' * SMILES: [C@@H]1(CCCCCCCC(=O)O)[C@H](CCCCCCCCO)O1 NAME: '
+               '(9R,10S)-9,10-epoxy-18-hydroxyoctadecanoic acid REASON: '
+               'CORRECT Contains terminal hydroxyl and carboxylic acid groups '
+               'at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCCCCCCCCCCCCC[C@@H](O)CC(O)=O NAME: '
+               '(3R)-3,20-dihydroxyicosanoic acid REASON: CORRECT Contains '
+               'terminal hydroxyl and carboxylic acid groups at opposite ends '
+               'of primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCCCCCCCCCC[C@@H](O)CC(O)=O NAME: '
+               '(3R)-3,17-dihydroxymargaric acid REASON: CORRECT Contains '
+               'terminal hydroxyl and carboxylic acid groups at opposite ends '
+               'of primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCCCCCCCCCCCCCC[C@@H](O)CC(O)=O NAME: '
+               '(3R)-3,21-dihydroxyhenicosanoic acid REASON: CORRECT Contains '
+               'terminal hydroxyl and carboxylic acid groups at opposite ends '
+               'of primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCCCCCCC\\C=C\\C(O)=O NAME: '
+               '(2E)-14-hydroxytetradec-2-enoic acid REASON: CORRECT Contains '
+               'terminal hydroxyl and carboxylic acid groups at opposite ends '
+               'of primarily linear carbon chain\n'
+               ' * SMILES: '
+               'C(/C=C\\C=C\\[C@H](CCCCCO)O)=C\\C=C\\[C@H]([C@H](CCCC(=O)O)O)O '
+               'NAME: 20-hydroxylipoxin A4 REASON: CORRECT Contains terminal '
+               'hydroxyl and carboxylic acid groups at opposite ends of '
+               'primarily linear carbon chain\n'
+               ' * SMILES: C(=C\\C/C=C\\CCCCCO)\\CCCCCCCC(=O)O NAME: '
+               '18-hydroxylinoleic acid REASON: CORRECT Contains terminal '
+               'hydroxyl and carboxylic acid groups at opposite ends of '
+               'primarily linear carbon chain\n'
+               ' * SMILES: C(CCCO)CC1C(C/C=C\\C/C=C\\C/C=C\\CCCC(O)=O)O1 NAME: '
+               '14,15-epoxy-20-hydroxy-(5Z,8Z,11Z)-icosatrienoic acid REASON: '
+               'CORRECT Contains terminal hydroxyl and carboxylic acid groups '
+               'at opposite ends of primarily linear carbon chain\n'
+               'False positives: SMILES: OC[C@@H]([C@H]([C@H](C(O)=O)O)O)O '
+               'NAME: L-lyxonic acid REASON: WRONGLY CLASSIFIED Contains '
+               'terminal hydroxyl and carboxylic acid groups at opposite ends '
+               'of primarily linear carbon chain\n'
+               ' * SMILES: OCC[C@H](C)/C=C/C=C/C(O)=O NAME: Dendryphiellic '
+               'acid B REASON: WRONGLY CLASSIFIED Contains terminal hydroxyl '
+               'and carboxylic acid groups at opposite ends of primarily '
+               'linear carbon chain\n'
+               ' * SMILES: OCCOC(=O)CCCCC(O)=O NAME: '
+               '6-(2-hydroxyethoxy)-6-oxohexanoic acid REASON: WRONGLY '
+               'CLASSIFIED Contains terminal hydroxyl and carboxylic acid '
+               'groups at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: '
+               'O[C@@H](CCCC(O)=O)/C=C\\C=C\\C=C\\[C@H](O)C/C=C\\C=C\\[C@@H](O)CCO '
+               'NAME: 20-Hydroxy-Resolvin E1 REASON: WRONGLY CLASSIFIED '
+               'Contains terminal hydroxyl and carboxylic acid groups at '
+               'opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OC[C@@H](C(C(O)=O)=O)O NAME: '
+               '(S)-3,4-dihydroxy-2-oxobutanoic acid REASON: WRONGLY '
+               'CLASSIFIED Contains terminal hydroxyl and carboxylic acid '
+               'groups at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: C(O)C(O)C(O)C(O)C(=O)C(O)=O NAME: '
+               '2-Keto-L-gluconate REASON: WRONGLY CLASSIFIED Contains '
+               'terminal hydroxyl and carboxylic acid groups at opposite ends '
+               'of primarily linear carbon chain\n'
+               ' * SMILES: CCC(CO)C(O)=O NAME: 2-ethylhydracrylic acid REASON: '
+               'WRONGLY CLASSIFIED Contains terminal hydroxyl and carboxylic '
+               'acid groups at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: O[C@@H](CCCCCCCCC(O)=O)CCCCCCO NAME: '
+               '(S)-10,16-Dihydroxyhexadecanoic acid REASON: WRONGLY '
+               'CLASSIFIED Contains terminal hydroxyl and carboxylic acid '
+               'groups at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: C(O)(=O)C#CC#CC#CCCCO NAME: '
+               '10-hydroxy-8E-decene-2,4,6-triynoic acid REASON: WRONGLY '
+               'CLASSIFIED Contains terminal hydroxyl and carboxylic acid '
+               'groups at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OCCCCCCCCCCCCC/C=C\\CCCCCCCCC(O)=O NAME: '
+               '24-hydroxy-10Z-tetracosenoic acid REASON: WRONGLY CLASSIFIED '
+               'Contains terminal hydroxyl and carboxylic acid groups at '
+               'opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OCCCC#CC(O)=O NAME: 6-Hydroxy-2-hexynoic acid '
+               'REASON: WRONGLY CLASSIFIED Contains terminal hydroxyl and '
+               'carboxylic acid groups at opposite ends of primarily linear '
+               'carbon chain\n'
+               ' * SMILES: O[C@H]([C@@H](O)[C@@H](O)C(O)=O)[C@H](O)CO NAME: '
+               'D-gulonic acid REASON: WRONGLY CLASSIFIED Contains terminal '
+               'hydroxyl and carboxylic acid groups at opposite ends of '
+               'primarily linear carbon chain\n'
+               ' * SMILES: OC(CC#CC#CC#CCO)C(O)=O NAME: '
+               '2,10-dihydroxy-4,6,8-decatriynoic acid REASON: WRONGLY '
+               'CLASSIFIED Contains terminal hydroxyl and carboxylic acid '
+               'groups at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OC[C@H](O)[C@@H](O)C(=O)C(=O)C(O)=O NAME: '
+               '2,3-diketogulonic acid REASON: WRONGLY CLASSIFIED Contains '
+               'terminal hydroxyl and carboxylic acid groups at opposite ends '
+               'of primarily linear carbon chain\n'
+               ' * SMILES: '
+               'O(C\\C=C(\\CC\\C=C(\\CC\\C=C(\\CC/C=C(/CO)\\C)/C)/C)/C)C(=O)/C(/C)=C/C(O)=O '
+               'NAME: Cavipetin D REASON: WRONGLY CLASSIFIED Contains terminal '
+               'hydroxyl and carboxylic acid groups at opposite ends of '
+               'primarily linear carbon chain\n'
+               ' * SMILES: OC[C@@H](O)[C@@H](O)CC(=O)C(O)=O NAME: '
+               '2-dehydro-3-deoxy-D-gluconic acid REASON: WRONGLY CLASSIFIED '
+               'Contains terminal hydroxyl and carboxylic acid groups at '
+               'opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: C(O)(=O)CCCCCCC/C=C/CCCCCCO NAME: '
+               '16-hydroxy-9E-hexadecenoic acid REASON: WRONGLY CLASSIFIED '
+               'Contains terminal hydroxyl and carboxylic acid groups at '
+               'opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: C(=O)(CC(=O)[C@H](O)[C@H](O)CO)O NAME: '
+               '3-dehydro-2-deoxy-D-gluconic acid REASON: WRONGLY CLASSIFIED '
+               'Contains terminal hydroxyl and carboxylic acid groups at '
+               'opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: CC(C)(CO)C(=O)C(O)=O NAME: 2-dehydropantoic acid '
+               'REASON: WRONGLY CLASSIFIED Contains terminal hydroxyl and '
+               'carboxylic acid groups at opposite ends of primarily linear '
+               'carbon chain\n'
+               ' * SMILES: OC[C@H](O)[C@H](O)[C@@H](O)[C@H](O)C(O)=O NAME: '
+               'L-gluconic acid REASON: WRONGLY CLASSIFIED Contains terminal '
+               'hydroxyl and carboxylic acid groups at opposite ends of '
+               'primarily linear carbon chain\n'
+               ' * SMILES: O(C(=O)CCCCCCCC(O)=O)CC(O)CO NAME: '
+               '9-(2,3-dihydroxypropoxy)-9-oxononanoic acid REASON: WRONGLY '
+               'CLASSIFIED Contains terminal hydroxyl and carboxylic acid '
+               'groups at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OC(C(O)C(O)CO)C(O)C(O)C(O)=O NAME: '
+               '2,3,4,5,6,7-Hexahydroxyheptanoic acid REASON: WRONGLY '
+               'CLASSIFIED Contains terminal hydroxyl and carboxylic acid '
+               'groups at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: C[C@](O)(CCO)CC(O)=O NAME: (S)-mevalonic acid '
+               'REASON: WRONGLY CLASSIFIED Contains terminal hydroxyl and '
+               'carboxylic acid groups at opposite ends of primarily linear '
+               'carbon chain\n'
+               ' * SMILES: OCCCCCCCCCC/C=C/CCCC(O)=O NAME: '
+               '16-hydroxy-5-hexadecenoic acid REASON: WRONGLY CLASSIFIED '
+               'Contains terminal hydroxyl and carboxylic acid groups at '
+               'opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: O=C(O)CCC[C@@H](O)C#CC#C[C@@H]1O[C@H]1CO NAME: '
+               'Pyranone C REASON: WRONGLY CLASSIFIED Contains terminal '
+               'hydroxyl and carboxylic acid groups at opposite ends of '
+               'primarily linear carbon chain\n'
+               ' * SMILES: C(O)(=O)CC#CC#C/C=C\\CO NAME: '
+               '9-hydroxy-7Z-nonene-3,5-diynoic acid REASON: WRONGLY '
+               'CLASSIFIED Contains terminal hydroxyl and carboxylic acid '
+               'groups at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OC[C@@H](O)[C@@H](O)[C@H](O)[C@H](O)CC(=O)C(O)=O '
+               'NAME: keto-3-deoxy-D-manno-octulosonic acid REASON: WRONGLY '
+               'CLASSIFIED Contains terminal hydroxyl and carboxylic acid '
+               'groups at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OC(C(O)CCCCCCC(O)=O)CCCCCCCO NAME: '
+               '8,9,16-Trihydroxypalmitic acid REASON: WRONGLY CLASSIFIED '
+               'Contains terminal hydroxyl and carboxylic acid groups at '
+               'opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: CC(CO)CCCCCCCCCCCCCC(O)=O NAME: '
+               'omega-hydroxy-15-methylpalmitic acid REASON: WRONGLY '
+               'CLASSIFIED Contains terminal hydroxyl and carboxylic acid '
+               'groups at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OC[C@@H](O)[C@@H](O)[C@H](O)C(O)=O NAME: '
+               'D-arabinonic acid REASON: WRONGLY CLASSIFIED Contains terminal '
+               'hydroxyl and carboxylic acid groups at opposite ends of '
+               'primarily linear carbon chain\n'
+               ' * SMILES: OC[C@H](O)[C@@H](O)C(=O)[C@H](O)C(O)=O NAME: '
+               '3-dehydro-L-gulonic acid REASON: WRONGLY CLASSIFIED Contains '
+               'terminal hydroxyl and carboxylic acid groups at opposite ends '
+               'of primarily linear carbon chain\n'
+               ' * SMILES: OCCCC(O)=O NAME: 4-hydroxybutyric acid REASON: '
+               'WRONGLY CLASSIFIED Contains terminal hydroxyl and carboxylic '
+               'acid groups at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OC[C@H](O)C(O)=O NAME: L-glyceric acid REASON: '
+               'WRONGLY CLASSIFIED Contains terminal hydroxyl and carboxylic '
+               'acid groups at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OCC(C)=CC(O)=O NAME: 4-hydroxy-3-methylbut-2-enoic '
+               'acid REASON: WRONGLY CLASSIFIED Contains terminal hydroxyl and '
+               'carboxylic acid groups at opposite ends of primarily linear '
+               'carbon chain\n'
+               ' * SMILES: '
+               'OC[C@@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@@H](O)C(O)=O NAME: '
+               'glucoheptonic acid REASON: WRONGLY CLASSIFIED Contains '
+               'terminal hydroxyl and carboxylic acid groups at opposite ends '
+               'of primarily linear carbon chain\n'
+               ' * SMILES: '
+               'OCCC(C(C(/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCC(O)=O)([2H])[2H])([2H])[2H])([2H])[2H] '
+               'NAME: 20-HETE-d6 REASON: WRONGLY CLASSIFIED Contains terminal '
+               'hydroxyl and carboxylic acid groups at opposite ends of '
+               'primarily linear carbon chain\n'
+               ' * SMILES: O[C@@H](CCCCCCCC(O)=O)[C@@H](O)C/C=C\\CCCCCO NAME: '
+               '9,10,18-TriHOME(12Z) REASON: WRONGLY CLASSIFIED Contains '
+               'terminal hydroxyl and carboxylic acid groups at opposite ends '
+               'of primarily linear carbon chain\n'
+               ' * SMILES: OC(=O)CCCCCCC/C=C/C=C/C=C/CCCCO NAME: '
+               'beta-kamlolenic acid REASON: WRONGLY CLASSIFIED Contains '
+               'terminal hydroxyl and carboxylic acid groups at opposite ends '
+               'of primarily linear carbon chain\n'
+               ' * SMILES: OCC\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCC(O)=O '
+               'NAME: 20-HEPE REASON: WRONGLY CLASSIFIED Contains terminal '
+               'hydroxyl and carboxylic acid groups at opposite ends of '
+               'primarily linear carbon chain\n'
+               ' * SMILES: '
+               'C\\C(CC\\C=C(/C)C(=O)OC\\C=C(/C)CC\\C=C(/C)C(O)=O)=C/CO NAME: '
+               '(2E,6E)-8-{[(2E,6E)-8-hydroxy-2,6-dimethylocta-2,6-dienoyl]oxy}-2,6-dimethylocta-2,6-dienoic '
+               'acid REASON: WRONGLY CLASSIFIED Contains terminal hydroxyl and '
+               'carboxylic acid groups at opposite ends of primarily linear '
+               'carbon chain\n'
+               ' * SMILES: OC[C@@H](C)C(O)=O NAME: (R)-3-Hydroxyisobutyric '
+               'acid REASON: WRONGLY CLASSIFIED Contains terminal hydroxyl and '
+               'carboxylic acid groups at opposite ends of primarily linear '
+               'carbon chain\n'
+               ' * SMILES: CC(C)(CO)[C@@H](O)C(O)=O NAME: (R)-pantoic acid '
+               'REASON: WRONGLY CLASSIFIED Contains terminal hydroxyl and '
+               'carboxylic acid groups at opposite ends of primarily linear '
+               'carbon chain\n'
+               ' * SMILES: '
+               'O[C@H]([C@H](O)[C@@H](O)CC(=O)C(O)=O)[C@H](O)[C@H](O)CO NAME: '
+               'Sialosonic acid REASON: WRONGLY CLASSIFIED Contains terminal '
+               'hydroxyl and carboxylic acid groups at opposite ends of '
+               'primarily linear carbon chain\n'
+               ' * SMILES: OC(=O)CCCCCCC/C=C\\CC(=O)/C=C(\\O)/C=C/CCO NAME: '
+               '14,18-Dihydroxy-12-oxo-9,13,15-octadecatrienoic acid REASON: '
+               'WRONGLY CLASSIFIED Contains terminal hydroxyl and carboxylic '
+               'acid groups at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OCCC(O)(O)C(O)=O NAME: 2,2,4-trihydroxybutanoic '
+               'acid REASON: WRONGLY CLASSIFIED Contains terminal hydroxyl and '
+               'carboxylic acid groups at opposite ends of primarily linear '
+               'carbon chain\n'
+               ' * SMILES: OC[C@H](O)[C@@H](O)[C@H](O)C(O)=O NAME: L-xylonic '
+               'acid REASON: WRONGLY CLASSIFIED Contains terminal hydroxyl and '
+               'carboxylic acid groups at opposite ends of primarily linear '
+               'carbon chain\n'
+               ' * SMILES: OC[C@@H](O)[C@H](O)C(O)=O NAME: D-threonic acid '
+               'REASON: WRONGLY CLASSIFIED Contains terminal hydroxyl and '
+               'carboxylic acid groups at opposite ends of primarily linear '
+               'carbon chain\n'
+               ' * SMILES: OC[C@@H](O)[C@@H](O)[C@H](O)[C@@H](O)C(O)=O NAME: '
+               'D-gluconic acid REASON: WRONGLY CLASSIFIED Contains terminal '
+               'hydroxyl and carboxylic acid groups at opposite ends of '
+               'primarily linear carbon chain\n'
+               ' * SMILES: OC[C@H](O)[C@H](O)[C@@H](O)C(O)=O NAME: '
+               'L-arabinonic acid REASON: WRONGLY CLASSIFIED Contains terminal '
+               'hydroxyl and carboxylic acid groups at opposite ends of '
+               'primarily linear carbon chain\n'
+               ' * SMILES: '
+               'O=C(OC/C=C(/CC/C=C(/CC/C=C(/CC/C=C(/CO)\\C)\\C)\\C)\\C)/C=C/C(=O)O '
+               'NAME: Boletinin F REASON: WRONGLY CLASSIFIED Contains terminal '
+               'hydroxyl and carboxylic acid groups at opposite ends of '
+               'primarily linear carbon chain\n'
+               ' * SMILES: '
+               'O=C(O)/C(=C/CC[C@](O)([C@@H](O)CC/C(=C/CC/C=C(/CC[C@H](O)[C@@](O)(CC/C=C(/CO)\\C)C)\\C)/C)C)/C '
+               'NAME: Concentricol B REASON: WRONGLY CLASSIFIED Contains '
+               'terminal hydroxyl and carboxylic acid groups at opposite ends '
+               'of primarily linear carbon chain\n'
+               ' * SMILES: O=C(O)/C=C(\\CC/C=C(/CCC(O)C(O)(CO)C)\\C)/C NAME: '
+               '(2Z,6E)-10,11,12-trihydroxy-3,7,11-trimethyldodeca-2,6-dienoic '
+               'acid REASON: WRONGLY CLASSIFIED Contains terminal hydroxyl and '
+               'carboxylic acid groups at opposite ends of primarily linear '
+               'carbon chain\n'
+               ' * SMILES: OCC(C)C(=O)C(O)=O NAME: AKOS006378692 REASON: '
+               'WRONGLY CLASSIFIED Contains terminal hydroxyl and carboxylic '
+               'acid groups at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OC[C@H](O)CC(=O)C(O)=O NAME: '
+               '2-dehydro-3-deoxy-L-arabinonic acid REASON: WRONGLY CLASSIFIED '
+               'Contains terminal hydroxyl and carboxylic acid groups at '
+               'opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: C([C@@H](C(CO)=O)O)(O)=O NAME: '
+               '(R)-2,4-dihydroxy-3-oxobutanoic acid REASON: WRONGLY '
+               'CLASSIFIED Contains terminal hydroxyl and carboxylic acid '
+               'groups at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OCCCC#CC#C/C=C/C(O)=O NAME: '
+               '(E)-10-Hydroxy-2-decene-4,6-diynoic acid REASON: WRONGLY '
+               'CLASSIFIED Contains terminal hydroxyl and carboxylic acid '
+               'groups at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: CC(O)(CO)C(O)=O NAME: '
+               '2,3-dihydroxy-2-methylpropanoic acid REASON: WRONGLY '
+               'CLASSIFIED Contains terminal hydroxyl and carboxylic acid '
+               'groups at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OC([C@@H](O)C(O)=O)(CO)CO NAME: Apionic acid '
+               'REASON: WRONGLY CLASSIFIED Contains terminal hydroxyl and '
+               'carboxylic acid groups at opposite ends of primarily linear '
+               'carbon chain\n'
+               ' * SMILES: OC[C@@H](O)CC(=O)C(O)=O NAME: '
+               '2-dehydro-3-deoxy-D-arabinonic acid REASON: WRONGLY CLASSIFIED '
+               'Contains terminal hydroxyl and carboxylic acid groups at '
+               'opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: O[C@@H]([C@@H](O)CO)[C@H](O)C(O)=O NAME: L-ribonic '
+               'acid REASON: WRONGLY CLASSIFIED Contains terminal hydroxyl and '
+               'carboxylic acid groups at opposite ends of primarily linear '
+               'carbon chain\n'
+               ' * SMILES: OC(=O)CCCCCCCCCC/C=C/CO NAME: '
+               '14-Hydroxy-12-tetradecenoic acid REASON: WRONGLY CLASSIFIED '
+               'Contains terminal hydroxyl and carboxylic acid groups at '
+               'opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OC(C(O)C(=O)CO)C(O)C(O)=O NAME: 5-Keto-D-gluconate '
+               'REASON: WRONGLY CLASSIFIED Contains terminal hydroxyl and '
+               'carboxylic acid groups at opposite ends of primarily linear '
+               'carbon chain\n'
+               ' * SMILES: OCC(=O)[C@@H](O)[C@H](O)[C@@H](O)C(O)=O NAME: '
+               '5-dehydro-D-gluconic acid REASON: WRONGLY CLASSIFIED Contains '
+               'terminal hydroxyl and carboxylic acid groups at opposite ends '
+               'of primarily linear carbon chain\n'
+               ' * SMILES: OC(CCCCC(O)=O)CCO NAME: 6,8-Dihydroxyoctanoic acid '
+               'REASON: WRONGLY CLASSIFIED Contains terminal hydroxyl and '
+               'carboxylic acid groups at opposite ends of primarily linear '
+               'carbon chain\n'
+               ' * SMILES: OC[C@@H](O)[C@H](O)CC(=O)C(O)=O NAME: '
+               '2-dehydro-3-deoxy-D-galactonic acid REASON: WRONGLY CLASSIFIED '
+               'Contains terminal hydroxyl and carboxylic acid groups at '
+               'opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: O[C@@H]([C@@H](O)CCCCCCCC(O)=O)CCCCCCCCO NAME: '
+               '18-hydroxy-9S,10R-dihydroxy-stearic acid REASON: WRONGLY '
+               'CLASSIFIED Contains terminal hydroxyl and carboxylic acid '
+               'groups at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OCC([C@@H](C(O)=O)O)=O NAME: '
+               '(S)-2,4-dihydroxy-3-oxobutanoic acid REASON: WRONGLY '
+               'CLASSIFIED Contains terminal hydroxyl and carboxylic acid '
+               'groups at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OC(=O)CCCC=C=CCO NAME: 8-Hydroxy-5,6-octadienoic '
+               'acid REASON: WRONGLY CLASSIFIED Contains terminal hydroxyl and '
+               'carboxylic acid groups at opposite ends of primarily linear '
+               'carbon chain\n'
+               ' * SMILES: OC(CCCCCCCCCCCCCO)C(O)=O NAME: '
+               '2,15-dihydroxy-pentadecylic acid REASON: WRONGLY CLASSIFIED '
+               'Contains terminal hydroxyl and carboxylic acid groups at '
+               'opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OC(CC(O)C(O)=O)C(O)CO NAME: 3-deoxyhexonic acid '
+               'REASON: WRONGLY CLASSIFIED Contains terminal hydroxyl and '
+               'carboxylic acid groups at opposite ends of primarily linear '
+               'carbon chain\n'
+               ' * SMILES: OCCC(C)C(O)=O NAME: 4-hydroxy-2-methylbutanoic acid '
+               'REASON: WRONGLY CLASSIFIED Contains terminal hydroxyl and '
+               'carboxylic acid groups at opposite ends of primarily linear '
+               'carbon chain\n'
+               ' * SMILES: '
+               'OCC\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/CCC(O)=O NAME: '
+               '(4Z,7Z,10Z,13Z,16Z,19Z)-22-hydroxydocosahexaenoic acid REASON: '
+               'WRONGLY CLASSIFIED Contains terminal hydroxyl and carboxylic '
+               'acid groups at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OCC(CO)(CO)C(O)=O NAME: '
+               '3-hydroxy-2,2-bis(hydroxymethyl)propanoic acid REASON: WRONGLY '
+               'CLASSIFIED Contains terminal hydroxyl and carboxylic acid '
+               'groups at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OCC(CC=O)C(O)=O NAME: '
+               '2-(hydroxymethyl)-4-oxobutanoic acid REASON: WRONGLY '
+               'CLASSIFIED Contains terminal hydroxyl and carboxylic acid '
+               'groups at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OC[C@H](C(C(O)=O)=O)O NAME: '
+               '(R)-3,4-dihydroxy-2-oxobutanoic acid REASON: WRONGLY '
+               'CLASSIFIED Contains terminal hydroxyl and carboxylic acid '
+               'groups at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: C[C@@H](CCO)CC\\C=C(/C)C(O)=O NAME: '
+               '(2E,6R)-8-hydroxy-2,6-dimethyl-2-octenoic acid REASON: WRONGLY '
+               'CLASSIFIED Contains terminal hydroxyl and carboxylic acid '
+               'groups at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OC[C@@H](O)[C@@H](O)CC(O)=O NAME: 2-deoxy-D-ribonic '
+               'acid REASON: WRONGLY CLASSIFIED Contains terminal hydroxyl and '
+               'carboxylic acid groups at opposite ends of primarily linear '
+               'carbon chain\n'
+               ' * SMILES: OCCC(=O)C(O)=O NAME: 4-Hydroxy-2-oxobutanoic acid '
+               'REASON: WRONGLY CLASSIFIED Contains terminal hydroxyl and '
+               'carboxylic acid groups at opposite ends of primarily linear '
+               'carbon chain\n'
+               ' * SMILES: OC[C@H](O)[C@@H](O)CC(=O)C(O)=O NAME: '
+               '2-keto-3-deoxy-L-galactonic acid REASON: WRONGLY CLASSIFIED '
+               'Contains terminal hydroxyl and carboxylic acid groups at '
+               'opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OCC(=O)CC(=O)C(O)=O NAME: '
+               '5-hydroxy-2,4-dioxopentanoic acid REASON: WRONGLY CLASSIFIED '
+               'Contains terminal hydroxyl and carboxylic acid groups at '
+               'opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OC(=O)CCCCCC/C=C/CO NAME: '
+               '(8E)-10-hydroxy-8-decenoic acid REASON: WRONGLY CLASSIFIED '
+               'Contains terminal hydroxyl and carboxylic acid groups at '
+               'opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OC[C@H](O)[C@H](O)C(O)=O NAME: L-erythronic acid '
+               'REASON: WRONGLY CLASSIFIED Contains terminal hydroxyl and '
+               'carboxylic acid groups at opposite ends of primarily linear '
+               'carbon chain\n'
+               ' * SMILES: OC[C@H](O)[C@@H](O)[C@@H](O)[C@H](O)C(O)=O NAME: '
+               'L-galactonic acid REASON: WRONGLY CLASSIFIED Contains terminal '
+               'hydroxyl and carboxylic acid groups at opposite ends of '
+               'primarily linear carbon chain\n'
+               ' * SMILES: OCCCC/C=C\\CCCCCCC/C=C\\CCCCC(O)=O NAME: 20-HeDE '
+               'REASON: WRONGLY CLASSIFIED Contains terminal hydroxyl and '
+               'carboxylic acid groups at opposite ends of primarily linear '
+               'carbon chain\n'
+               ' * SMILES: OCCCCCCCC/C=C/CC(O)=O NAME: '
+               '(3Z)-12-Hydroxy-3-dodecenoic acid REASON: WRONGLY CLASSIFIED '
+               'Contains terminal hydroxyl and carboxylic acid groups at '
+               'opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OC(=O)CCCCCCCC/C=C/CO NAME: '
+               '12-hydroxy-10-dodecenoic acid REASON: WRONGLY CLASSIFIED '
+               'Contains terminal hydroxyl and carboxylic acid groups at '
+               'opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: O=C(O)/C=C(/OC)\\CCO NAME: Arabenoic acid REASON: '
+               'WRONGLY CLASSIFIED Contains terminal hydroxyl and carboxylic '
+               'acid groups at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OCC(=O)[C@@H](O)[C@H](O)C(=O)C(O)=O NAME: '
+               '2,5-didehydro-D-gluconic acid REASON: WRONGLY CLASSIFIED '
+               'Contains terminal hydroxyl and carboxylic acid groups at '
+               'opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: O=C(O)/C=C/C=C/CCC(O)CC(O)CCO NAME: YF-0200R-B '
+               'REASON: WRONGLY CLASSIFIED Contains terminal hydroxyl and '
+               'carboxylic acid groups at opposite ends of primarily linear '
+               'carbon chain\n'
+               ' * SMILES: O=C(O)/C=C/C=C/CCC[C@H](O)CO NAME: Cladosporacid E '
+               'REASON: WRONGLY CLASSIFIED Contains terminal hydroxyl and '
+               'carboxylic acid groups at opposite ends of primarily linear '
+               'carbon chain\n'
+               ' * SMILES: OCCCCCCC/C=C\\C(O)=O NAME: 10-hydroxy-2Z-decenoic '
+               'acid REASON: WRONGLY CLASSIFIED Contains terminal hydroxyl and '
+               'carboxylic acid groups at opposite ends of primarily linear '
+               'carbon chain\n'
+               ' * SMILES: OC[C@H](O)[C@@H](O)C(O)=O NAME: L-threonic acid '
+               'REASON: WRONGLY CLASSIFIED Contains terminal hydroxyl and '
+               'carboxylic acid groups at opposite ends of primarily linear '
+               'carbon chain\n'
+               ' * SMILES: OC[C@@H](O)[C@@H](O)[C@H](O)[C@H](O)C(O)=O NAME: '
+               'D-mannonic acid REASON: WRONGLY CLASSIFIED Contains terminal '
+               'hydroxyl and carboxylic acid groups at opposite ends of '
+               'primarily linear carbon chain\n'
+               ' * SMILES: OC/C=C/C#CC#C\\C=C\\C(O)=O NAME: '
+               '10-hydroxy-2E,8E-Decadiene-4,6-diynoic acid REASON: WRONGLY '
+               'CLASSIFIED Contains terminal hydroxyl and carboxylic acid '
+               'groups at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OC[C@@H](O)[C@@H](O)[C@H](O)[C@@H](O)C(O)C(O)=O '
+               'NAME: (2xi)-D-gluco-heptonic acid REASON: WRONGLY CLASSIFIED '
+               'Contains terminal hydroxyl and carboxylic acid groups at '
+               'opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: OC[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)C(O)=O NAME: '
+               'L-idonic acid REASON: WRONGLY CLASSIFIED Contains terminal '
+               'hydroxyl and carboxylic acid groups at opposite ends of '
+               'primarily linear carbon chain\n'
+               ' * SMILES: O[C@@H]([C@@H](O)CCCCCCO)CCCCCCCC(O)=O NAME: '
+               'Aleuritic Acid REASON: WRONGLY CLASSIFIED Contains terminal '
+               'hydroxyl and carboxylic acid groups at opposite ends of '
+               'primarily linear carbon chain\n'
+               ' * SMILES: OC\\C=C\\CCC#C\\C=C\\C(O)=O NAME: '
+               '10-hydroxy-(2E,8E)-decadien-4-ynoic acid REASON: WRONGLY '
+               'CLASSIFIED Contains terminal hydroxyl and carboxylic acid '
+               'groups at opposite ends of primarily linear carbon chain\n'
+               ' * SMILES: C([C@H]([C@@H]([C@@H](C(=O)O)O)O)O)O NAME: '
+               'D-lyxonic acid REASON: WRONGLY CLASSIFIED Contains terminal '
+               'hydroxyl and carboxylic acid groups at opposite ends of '
+               'primarily linear carbon chain\n'
+               ' * SMILES: OC(CC(=O)/C=C/C(O)=O)CO NAME: '
+               '6,7-dihydroxy-4-oxo-2-heptenoic acid REASON: WRONGLY '
+               'CLASSIFIED Contains terminal hydroxyl and carboxylic acid '
+               'groups at opposite ends of primarily linear carbon chain\n'
+               'False negatives: NONE\n'
+               '------\n'
+               '\n'
+               'In your reasoning step, analyze the previous program and the '
+               'above outcomes, hypothesizing about what went wrong, and how '
+               'to improve.\n',
+    'sample_true_negatives': [   {   'smiles': 'N12CN3CN(CN(C1)CC3)CC2',
+                                     'name': '1,3,6,8-tetraazatricyclo[4,4,1,1(3,8)]dodecane',
+                                     'reason': 'No carboxylic acid group '
+                                               'found'},
+                                 {   'smiles': 'CC1CC2C(CC=C1CCO)C(C)C(=O)O2',
+                                     'name': '(8alpha,10beta,11beta)-3-hydroxy-4,15-dinor-1(5)-xanthen-12,8-olide',
+                                     'reason': 'No carboxylic acid group '
+                                               'found'},
+                                 {   'smiles': 'CCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](COP(O)(O)=O)[C@H](O)\\C=C\\CCCCCCCCCCCCC',
+                                     'name': 'N-docosanoylsphingosine-1-phosphate',
+                                     'reason': 'No carboxylic acid group '
+                                               'found'},
+                                 {   'smiles': 'C1CNCCC1SC2=NC(=CC=C2)Cl',
+                                     'name': '2-chloro-6-(4-piperidinylthio)pyridine',
+                                     'reason': 'No carboxylic acid group '
+                                               'found'},
+                                 {   'smiles': '[H][C@@]1(CC[C@@]2(C)[C@]3([H])CC[C@@]4([H])[C@@](C)([C@H](CC[C@@]44C[C@@]34CC[C@]12C)OC(C)=O)C(O)=O)[C@H](C)CCC(=O)C(C)C',
+                                     'name': 'bonianic acid B, (rel)-',
+                                     'reason': 'No terminal hydroxyl group '
+                                               'found'},
+                                 {   'smiles': 'O=C1OC[C@@]2(C1=C(CC[C@]34[C@H]2C[C@H](CC[C@H]3C)C4(C)C)C)C',
+                                     'name': 'Harzianelactone',
+                                     'reason': 'No carboxylic acid group '
+                                               'found'},
+                                 {   'smiles': 'O=C(NC1=NC=C(Cl)C=C1)CSC2=NN=C3C(NC4=C3C=CC=C4)=N2',
+                                     'name': 'dCeMM2',
+                                     'reason': 'No carboxylic acid group '
+                                               'found'},
+                                 {   'smiles': 'N[C@@H](CS[C@H](\\C=C\\C=C\\C=C/C=C/CC(O)=O)[C@@H](O)CCCC(O)=O)C(O)=O',
+                                     'name': '(13E)-16-carboxy-Delta(13)-17,18,19,20-tetranor-leukotriene '
+                                             'E4',
+                                     'reason': 'Multiple carboxylic acid '
+                                               'groups found'},
+                                 {   'smiles': 'C[C@@H]1O[C@@H](OC[C@H]2OC(O)[C@H](NC(C)=O)[C@@H](O[C@@H]3O[C@@H](C)[C@@H](O)[C@@H](O)[C@@H]3O)[C@@H]2O[C@@H]2O[C@H](CO)[C@@H](O[C@@H]3O[C@H](CO[C@H]4O[C@H](CO)[C@@H](O)[C@H](O)[C@@H]4O[C@@H]4O[C@H](CO)[C@@H](O)[C@H](O)[C@H]4NC(C)=O)[C@@H](O)[C@H](O[C@H]4O[C@H](CO)[C@@H](O)[C@H](O)[C@@H]4O[C@@H]4O[C@H](CO)[C@@H](O)[C@H](O)[C@H]4NC(C)=O)[C@@H]3O)[C@H](O)[C@H]2NC(C)=O)[C@@H](O)[C@H](O)[C@@H]1O',
+                                     'name': 'alpha-L-Fucp-(1->3)-[alpha-L-Fucp-(1->6)]-{beta-D-GlcpNAc-(1->2)-alpha-D-Manp-(1->3)-[beta-D-GlcpNAc-(1->2)-alpha-D-Manp-(1->6)]-beta-D-Manp-(1->4)-beta-GlcpNAc-(1->4)}-D-GlcpNAc',
+                                     'reason': 'No carboxylic acid group '
+                                               'found'},
+                                 {   'smiles': 'CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1ccc(N)nc1=O)OC(=O)CC\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/CC',
+                                     'name': 'CDP-1-stearoyl-2-(4Z,7Z,10Z,13Z,16Z,19Z)-docosahexaenoyl-sn-glycerol',
+                                     'reason': 'No carboxylic acid group '
+                                               'found'}],
+    'sample_false_negatives': [   {   'smiles': 'C(\\C=C/C=C/C=C/[C@H]([C@H](CCCCCO)O)O)=C/[C@H](CCCC(O)=O)O',
+                                      'name': '20-hydroxylipoxin B4',
+                                      'reason': 'Too many hydroxyl groups for '
+                                                'omega-hydroxy fatty acid'},
+                                  {   'smiles': 'C([C@H](/C=C/C=C/C=C/[C@H](CCCC(O)=O)O)O)/C=C\\CCCCCO',
+                                      'name': '20-hydroxy-6-trans-leukotriene '
+                                              'B4',
+                                      'reason': 'Too many hydroxyl groups for '
+                                                'omega-hydroxy fatty acid'},
+                                  {   'smiles': 'C(C(C(CCCCCCCCO)O)O)CCCCCCC(=O)O',
+                                      'name': '9,10,18-trihydroxyoctadecanoic '
+                                              'acid',
+                                      'reason': 'Too many hydroxyl groups for '
+                                                'omega-hydroxy fatty acid'},
+                                  {   'smiles': 'OCCC(O)=O',
+                                      'name': '3-hydroxypropionic acid',
+                                      'reason': 'Chain too short for '
+                                                'omega-hydroxy fatty acid'},
+                                  {   'smiles': 'OC(CC/C=C\\C/C=C\\C[C@H](\\C=C\\C=C\\C=C/[C@H](C/C=C\\CCO)O)O)=O',
+                                      'name': '22-hydroxyprotectin D1',
+                                      'reason': 'Too many hydroxyl groups for '
+                                                'omega-hydroxy fatty acid'},
+                                  {   'smiles': 'C(/C=C\\C=C\\[C@H](CCCCCO)O)=C\\C=C\\[C@H]([C@H](CCCC(=O)O)O)O',
+                                      'name': '20-hydroxylipoxin A4',
+                                      'reason': 'Too many hydroxyl groups for '
+                                                'omega-hydroxy fatty acid'}],
+    'attempt': 3,
+    'reasoning': "Let's analyze the issues with the previous code and propose "
+                 'improvements:\n'
+                 '\n'
+                 '1. **False Positives Analysis**:\n'
+                 "The code is accepting many compounds that aren't true "
+                 'omega-hydroxy fatty acids, including:\n'
+                 '- Sugar acids (like gluconic acid, mannonic acid)\n'
+                 '- Branched hydroxy acids\n'
+                 '- Short-chain hydroxy acids\n'
+                 '- Compounds with multiple OH groups along the chain\n'
+                 '- Compounds with other functional groups (epoxides, '
+                 'ketones)\n'
+                 '\n'
+                 '2. **Main Issues**:\n'
+                 '- Too permissive in allowing branching\n'
+                 '- Not properly enforcing linearity of the main chain\n'
+                 '- Not distinguishing between terminal OH and internal OH '
+                 'groups\n'
+                 '- Not properly handling unsaturated fatty acids\n'
+                 '\n'
+                 '3. **Proposed Improvements**:\n'
+                 '\n'
+                 "Here's an improved version:",
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 9,
-    'num_false_positives': 100,
-    'num_true_negatives': 3099,
-    'num_false_negatives': 0,
+    'num_true_positives': 68,
+    'num_false_positives': 62,
+    'num_true_negatives': 142164,
+    'num_false_negatives': 6,
     'num_negatives': None,
-    'precision': 0.08256880733944955,
-    'recall': 1.0,
-    'f1': 0.15254237288135594,
-    'accuracy': 0.9688279301745636}
+    'precision': 0.5230769230769231,
+    'recall': 0.918918918918919,
+    'f1': 0.6666666666666666,
+    'accuracy': 0.9995221363316936,
+    'negative_predictive_value': 0.9999577970035872}

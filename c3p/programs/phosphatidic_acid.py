@@ -1,13 +1,18 @@
 """
 Classifies: CHEBI:16337 phosphatidic acid
 """
+"""
+Classifies: CHEBI:16337 phosphatidic acid
+"""
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_phosphatidic_acid(smiles: str):
     """
-    Determines if a molecule is a phosphatidic acid - a derivative of glycerol with one hydroxy group 
-    esterified with phosphoric acid and the other two esterified with fatty acids.
+    Determines if a molecule is a phosphatidic acid based on its SMILES string.
+    A phosphatidic acid has a glycerol backbone with two fatty acid chains 
+    attached via ester bonds and one phosphate group.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -16,44 +21,57 @@ def is_phosphatidic_acid(smiles: str):
         bool: True if molecule is a phosphatidic acid, False otherwise
         str: Reason for classification
     """
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return None, "Invalid SMILES string"
+        return False, "Invalid SMILES string"
 
-    # Look for phosphate group (-OP(=O)(O)O)
-    phosphate_pattern = Chem.MolFromSmarts('[O,OH]-P(=O)([O,OH])[O,OH]')
+    # Look for glycerol backbone pattern (C-C-C with oxygens attached)
+    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
+    if not mol.HasSubstructMatch(glycerol_pattern):
+        return False, "No glycerol backbone found"
+        
+    # Look for exactly 2 ester groups (-O-C(=O)-)
+    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    if len(ester_matches) != 2:
+        return False, f"Found {len(ester_matches)} ester groups, need exactly 2"
+
+    # Look for phosphate group (-O-P(=O)(O)(O))
+    phosphate_pattern = Chem.MolFromSmarts("[OX2][PX4](=[OX1])([OX2H,OX1-])[OX2H,OX1-]")
     if not mol.HasSubstructMatch(phosphate_pattern):
         return False, "No phosphate group found"
 
-    # Look for glycerol backbone with specific connectivity
-    # Pattern matches glycerol backbone with phosphate and two ester groups
-    glycerol_pattern = Chem.MolFromSmarts('[#6]C(=O)O[CH2][CH](O[#6])[CH2]OP(=O)([O,OH])[O,OH]')
+    # Check for fatty acid chains (long carbon chains attached to esters)
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]") 
+    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
+    if len(fatty_acid_matches) < 2:
+        return False, f"Missing fatty acid chains, found {len(fatty_acid_matches)}"
+
+    # Count rotatable bonds to verify long chains
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 8:
+        return False, "Chains too short to be fatty acids"
+
+    # Count carbons and oxygens
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
     
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        # Try alternative pattern for different representation
-        glycerol_pattern2 = Chem.MolFromSmarts('[#6]C(=O)OC[CH]([CH2]OP(=O)([O,OH])[O,OH])OC(=O)[#6]')
-        if not mol.HasSubstructMatch(glycerol_pattern2):
-            # Try pattern for generic structures with wildcards
-            if '*' in smiles:
-                generic_pattern = Chem.MolFromSmarts('C(O[#6])(CO[#6])[CH2]OP(=O)([O,OH])[O,OH]')
-                if mol.HasSubstructMatch(generic_pattern):
-                    return True, "Generic phosphatidic acid structure found"
-            return False, "No proper glycerol backbone found"
+    if c_count < 10:
+        return False, "Too few carbons for phosphatidic acid"
+    if o_count < 7:
+        return False, "Must have at least 7 oxygens (2 esters + phosphate)"
+    if p_count != 1:
+        return False, "Must have exactly one phosphorus atom"
 
-    # Look for two ester groups (-C(=O)O-) connected to glycerol
-    ester_pattern = Chem.MolFromSmarts('C(=O)O[CH2,CH]')
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) < 2:
-        return False, "Less than 2 ester groups found"
+    # Check molecular weight - phosphatidic acids typically >400 Da
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 400:
+        return False, "Molecular weight too low for phosphatidic acid"
 
-    # Check for fatty acid chains (at least 4 carbons in length)
-    fatty_acid_pattern = Chem.MolFromSmarts('C(=O)O[CH2,CH]-[CH2]-[CH2]-[CH2]')
-    if not mol.HasSubstructMatch(fatty_acid_pattern):
-        return False, "No proper fatty acid chains found"
-
-    # All criteria met
-    return True, "Valid phosphatidic acid structure found"
+    return True, "Contains glycerol backbone with 2 fatty acid chains and phosphate group"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:16337',
@@ -63,237 +81,116 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:16337',
                                         'necessarily primary, is esterified '
                                         'with phosphoric acid and the other '
                                         'two are esterified with fatty acids.',
-                          'parents': ['CHEBI:37739']},
-    'config': {   'llm_model_name': 'lbl/claude-sonnet',
-                  'f1_threshold': 0.8,
-                  'max_attempts': 5,
-                  'max_negative_to_test': None,
-                  'max_positive_in_prompt': 50,
-                  'max_negative_in_prompt': 20,
-                  'max_instances_in_prompt': 100,
-                  'test_proportion': 0.1},
-    'message': '\n'
-               'Attempt failed: F1 score of 0 is too low.\n'
-               'True positives: []\n'
-               'False positives: '
-               "[('C([C@H](NC(*)=O)C([O-])=O)OP(=O)([O-])OC[C@H](O)COC(=O)*', "
-               "'Generic phosphatidic acid structure found'), "
-               "('P([O-])(=O)(OC[C@@H](C(=O)[O-])[NH3+])OC[C@@H](COC(=O)*)OC(=O)*', "
-               "'Generic phosphatidic acid structure found'), "
-               "('[NH3+][C@@H](COP([O-])(=O)OC[C@@H](CO[*])O[*])C([O-])=O', "
-               "'Generic phosphatidic acid structure found'), "
-               "('[NH3+][C@@H](COP([O-])(=O)OCC(COC([*])=O)OC([*])=O)C([O-])=O', "
-               "'Generic phosphatidic acid structure found'), "
-               "('[C@@H](COC(=O)*)(COP(OC[C@@H](C(=O)[O-])[NH3+])(=O)[O-])OC(=O)*', "
-               "'Generic phosphatidic acid structure found'), "
-               "('[NH3+][C@@H](COP([O-])(=O)OCC(CO)OC([*])=O)C([O-])=O', "
-               "'Generic phosphatidic acid structure found'), "
-               "('[NH3+][C@@H](COP([O-])(=O)OCC(CO[*])O[*])C([O-])=O', "
-               "'Generic phosphatidic acid structure found'), "
-               "('[NH3+][C@@H](COP(O)(=O)OC[C@H](COC([*])=O)OC([*])=O)C([O-])=O', "
-               "'Generic phosphatidic acid structure found'), "
-               "('N[C@@H](COP(O)(=O)OC[C@@H](CO[*])O[*])C(O)=O', 'Generic "
-               "phosphatidic acid structure found'), "
-               "('[NH3+][C@@H](COP([O-])(=O)OC[C@@H](CO)OC([*])=O)C([O-])=O', "
-               "'Generic phosphatidic acid structure found'), "
-               "('C(=O)(N[C@H](C(=O)O)COP(OC[C@@H](COC(=O)*)OC(=O)*)(=O)O)*', "
-               "'Generic phosphatidic acid structure found'), "
-               "('P([O-])(=O)(OC[C@@H](C(=O)[O-])NC(C[NH3+])=O)OC[C@@H](COC(=O)*)OC(=O)*', "
-               "'Generic phosphatidic acid structure found'), "
-               "('[C@](CO/C=C\\\\*)(O)([H])COP(OC[C@@H](C(O)=O)N)(=O)O', "
-               "'Generic phosphatidic acid structure found'), "
-               "('CCCCCCCC\\\\C=C/CCCCCCCC(=O)O[C@H](COC([*])=O)COP([O-])(=O)OC[C@H]([NH3+])C([O-])=O', "
-               "'Generic phosphatidic acid structure found'), "
-               "('[NH3+][C@@H](COP([O-])(=O)OCC(CO[*])OC([*])=O)C([O-])=O', "
-               "'Generic phosphatidic acid structure found'), "
-               "('N[C@@H](COP(O)(=O)OC[C@@H](CO[*])OC([*])=O)C(O)=O', 'Generic "
-               "phosphatidic acid structure found'), "
-               "('CCCCCCCC\\\\C=C/CCCCCCCC(=O)O[C@H](COC=C[*])COP([O-])(=O)OC[C@H]([NH3+])C([O-])=O', "
-               "'Generic phosphatidic acid structure found'), "
-               "('[NH3+][C@@H](COP([O-])(=O)OC[C@@H](COC([*])=O)O[*])C([O-])=O', "
-               "'Generic phosphatidic acid structure found'), "
-               "('[NH3+][C@@H](COP([O-])(=O)OC[C@@H](CO[*])OC([*])=O)C([O-])=O', "
-               "'Generic phosphatidic acid structure found'), "
-               "('[NH3+][C@@H](COP([O-])(=O)OC[C@H](COC([*])=O)OC([*])=O)C([O-])=O', "
-               "'Generic phosphatidic acid structure found'), "
-               "('[NH3+][C@@H](COP([O-])(=O)OCC(O)COC=C[*])C([O-])=O', "
-               "'Generic phosphatidic acid structure found'), "
-               "('[C@](CO*)(O)([H])COP(OC[C@@H](C(O)=O)N)(=O)O', 'Generic "
-               "phosphatidic acid structure found'), "
-               "('[C@@H](COC(=O)*)(COP(OC[C@@H](C(=O)O)N)(=O)O)OC(=O)*', "
-               "'Generic phosphatidic acid structure found'), "
-               "('[NH3+][C@@H](COP([O-])(=O)OCC(O)COC([*])=O)C([O-])=O', "
-               "'Generic phosphatidic acid structure found'), "
-               "('C([C@H](NC(*)=O)C([O-])=O)OP(=O)([O-])OC[C@H](OC(*)=O)COC(=O)*', "
-               "'Generic phosphatidic acid structure found'), "
-               "('P(O)(=O)(OC[C@@H](C(=O)O)N)OC[C@@H](CO*)O*', 'Generic "
-               "phosphatidic acid structure found'), "
-               "('[NH3+][C@@H](COP([O-])(=O)OC[C@H](O)COC=C[*])C([O-])=O', "
-               "'Generic phosphatidic acid structure found'), "
-               "('C(OC[C@H](COP(OC[C@@H](C(O)=O)N)(=O)O)OC(*)=O)=C*', 'Generic "
-               "phosphatidic acid structure found'), "
-               "('CCCCCC\\\\C=C/CCCCCCCC(=O)O[C@H](COC([*])=O)COP([O-])(=O)OC[C@H]([NH3+])C([O-])=O', "
-               "'Generic phosphatidic acid structure found'), "
-               "('[NH3+][C@@H](COP([O-])(=O)OC[C@H](O)CO\\\\C=C/[*])C([O-])=O', "
-               "'Generic phosphatidic acid structure found'), "
-               "('[NH3+][C@@H](COP([O-])(=O)OC[C@@H](COC([*])=O)OC([*])=O)C([O-])=O', "
-               "'Generic phosphatidic acid structure found'), "
-               "('P(O)(=O)(OC[C@@H](C(=O)O)N)OC[C@@H](COC(=O)*)OC(=O)*', "
-               "'Generic phosphatidic acid structure found'), "
-               "('N[C@@H](COP(O)(=O)OC[C@@H](CO)OC([*])=O)C(O)=O', 'Generic "
-               "phosphatidic acid structure found'), "
-               "('N[C@@H](COP(O)(=O)OC[C@@H](COC([*])=O)O[*])C(O)=O', 'Generic "
-               "phosphatidic acid structure found'), "
-               "('Nc1ncnc2n(cnc12)[C@@H]1O[C@H](COP([O-])(-*)=O)[C@@H](OC(=O)[C@@H]([NH3+])COP([O-])([O-])=O)[C@H]1O', "
-               "'Generic phosphatidic acid structure found'), "
-               "('CCCCC\\\\C=C/C\\\\C=C/CCCCCCCC(=O)O[C@H](COC([*])=O)COP([O-])(=O)OC[C@H]([NH3+])C([O-])=O', "
-               "'Generic phosphatidic acid structure found'), "
-               "('O(P(OC[C@@H](C(=O)O)N)(=O)O)C[C@@H](CO*)O*', 'Generic "
-               "phosphatidic acid structure found'), "
-               "('O(C[C@@H](C(=O)[O-])[NH3+])P(=O)(OC[C@@H](COC(=O)*)O)[O-]', "
-               "'Generic phosphatidic acid structure found'), "
-               "('N[C@@H](COP(O)(=O)OC[C@H](O)COC([*])=O)C(O)=O', 'Generic "
-               "phosphatidic acid structure found'), "
-               "('O(P(=O)(OC[C@@H](C([O-])=O)NC(CNC(=O)[C@@H](N*)*)=O)[O-])C[C@H](OC(*)=O)COC(*)=O', "
-               "'Generic phosphatidic acid structure found'), "
-               "('[NH3+][C@@H](COP([O-])(=O)OC[C@H](O)CO[*])C([O-])=O', "
-               "'Generic phosphatidic acid structure found'), "
-               "('[NH3+][C@@H](COP([O-])(=O)OC[C@@H](CO\\\\C=C/[*])OC([*])=O)C([O-])=O', "
-               "'Generic phosphatidic acid structure found'), "
-               "('P(=O)(OC[C@@H](C(=O)[O-])[NH3+])(OC[C@@H](COC(=O)*)OC(=O)*)[O-]', "
-               "'Generic phosphatidic acid structure found'), "
-               "('[NH3+][C@@H](COP([O-])(=O)OCC(O)CO[*])C([O-])=O', 'Generic "
-               "phosphatidic acid structure found'), "
-               "('CCCCCCCC\\\\C=C/CCCCCCCC(=O)O[C@H](CO\\\\C=C/[*])COP([O-])(=O)OC[C@H]([NH3+])C([O-])=O', "
-               "'Generic phosphatidic acid structure found'), "
-               "('O(P(=O)(OC[C@@H](C([O-])=O)NC(CN*)=O)[O-])C[C@H](OC(*)=O)COC(*)=O', "
-               "'Generic phosphatidic acid structure found'), "
-               "('N[C@@H](COP(O)(=O)OC[C@@H](COC([*])=O)OC([*])=O)C(O)=O', "
-               "'Generic phosphatidic acid structure found'), "
-               "('[NH3+][C@@H](COP([O-])(=O)OCC(COC=C[*])OC([*])=O)C([O-])=O', "
-               "'Generic phosphatidic acid structure found'), "
-               "('CCCCC\\\\C=C/C\\\\C=C/C\\\\C=C/C\\\\C=C/CCCC(=O)O[C@H](COC([*])=O)COP([O-])(=O)OC[C@H]([NH3+])C([O-])=O', "
-               "'Generic phosphatidic acid structure found'), "
-               "('C(C(COP(=O)(OC[C@@H](C(=O)O)N)O)OC(=O)*)OC(=O)*', 'Generic "
-               "phosphatidic acid structure found'), "
-               "('N[C@@H](COP(O)(=O)OC[C@H](COC([*])=O)OC([*])=O)C(O)=O', "
-               "'Generic phosphatidic acid structure found'), "
-               "('[NH3+][C@@H](COP([O-])(=O)OC[C@@H](COC=C[*])OC([*])=O)C([O-])=O', "
-               "'Generic phosphatidic acid structure found'), "
-               "('CC(C)(COP(O)(=O)OC[C@H](N)C(O)=O)[C@@H](O)C(=O)NCCC(=O)NCCSC([*])=O', "
-               "'Generic phosphatidic acid structure found'), "
-               "('CCCCCCCC\\\\C=C/CCCCCCCC(=O)OC[C@H](COP([O-])(=O)OC[C@H]([NH3+])C([O-])=O)OC([*])=O', "
-               "'Generic phosphatidic acid structure found')]\n"
-               'False negatives: '
-               "[('P(OC[C@H](OC(=O)CCCCCC/C=C\\\\C/C=C\\\\C/C=C\\\\CCCCC)COC(=O)CCCCCCC/C=C\\\\C/C=C\\\\C/C=C\\\\CC)(O)(O)=O', "
-               "'No proper glycerol backbone found'), "
-               "('P(OC[C@H](OC(=O)CCCCCCC/C=C\\\\CCCCCCC)COC(=O)CCCCCCCCCCCCCCCCCCC)(O)(O)=O', "
-               "'No proper glycerol backbone found'), "
-               "('P(OC[C@H](OC(=O)CCC/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\CC)COC(=O)CCCCCCCCCCCCCCCCC)(O)(O)=O', "
-               "'No proper glycerol backbone found'), "
-               "('CCCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(O)=O)OC(=O)CCCCCCC\\\\C=C/CCCCCCCC', "
-               "'No proper glycerol backbone found'), "
-               "('CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(O)=O)OC(=O)CCCCCCC\\\\C=C/C\\\\C=C/CCCCC', "
-               "'No proper glycerol backbone found'), "
-               "('P(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCC)COC(=O)CCCCCCCCCCCC)(O)(O)=O', "
-               "'No proper glycerol backbone found'), "
-               "('P(OC[C@H](OC(=O)CCCCCCC/C=C\\\\CCCCCC)COC(=O)CCCCC/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\CCCCC)(O)(O)=O', "
-               "'No proper glycerol backbone found'), "
-               "('CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(O)=O)OC(=O)CCC\\\\C=C/C\\\\C=C/C\\\\C=C/C\\\\C=C/CCCCC', "
-               "'No proper glycerol backbone found'), "
-               "('P(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCCCCC)COC(=O)CCCCCCC/C=C\\\\CCCCC)(O)(O)=O', "
-               "'No proper glycerol backbone found'), "
-               "('P(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCCCCCC)COC(=O)CCCCCCCCCCCCCCCC)(O)(O)=O', "
-               "'No proper glycerol backbone found'), "
-               "('P(OC[C@H](OC(=O)CCCCCCCCCCCCCCC)COC(=O)CCCCCCCCCCC/C=C\\\\C/C=C\\\\CCCCC)(O)(O)=O', "
-               "'No proper glycerol backbone found'), "
-               "('CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(O)=O)OC(=O)CCC\\\\C=C/C\\\\C=C/C\\\\C=C/C\\\\C=C/CCCCC', "
-               "'No proper glycerol backbone found'), "
-               "('P(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCC)COC(=O)CCCCCCC/C=C\\\\C/C=C\\\\C/C=C\\\\CC)(O)(O)=O', "
-               "'No proper glycerol backbone found'), "
-               "('P(OC[C@H](OC(=O)CCCCCCCCCCCCCCCC)COC(=O)CCCCCCCCCCCCC)(O)(O)=O', "
-               "'No proper glycerol backbone found'), "
-               "('P(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCCCCC)COC(=O)CCCCCCC/C=C\\\\CCCC)(O)(O)=O', "
-               "'No proper glycerol backbone found'), "
-               "('P(OC[C@H](OC(=O)CCCC(O)/C=C/C=O)COC(=O)CCCCCCCCCCCCCCC)(O)(O)=O', "
-               "'No proper glycerol backbone found'), "
-               "('P(OC[C@H](OC(=O)CCCCCCCCCCC/C=C\\\\C/C=C\\\\CCCCC)COC(=O)CCCCCCC/C=C\\\\CCCCCCCCC)(O)(O)=O', "
-               "'No proper glycerol backbone found'), "
-               "('P(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCCC)COC(=O)CCCCCCCCCCCCCC)(O)(O)=O', "
-               "'No proper glycerol backbone found'), "
-               "('[C@@H](COC(=O)*)(COP(=O)(O)O)OC(*)=O', 'No proper glycerol "
-               "backbone found'), "
-               "('CCCCCCCCCC(=O)OC[C@H](COP(O)(O)=O)OC(=O)CCCCCCCCC', 'No "
-               "proper glycerol backbone found'), "
-               "('P(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCC)COC(=O)CCCCCCC/C=C\\\\CCCCC)(O)(O)=O', "
-               "'No proper glycerol backbone found'), "
-               "('P(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCCCC)COC(=O)CCCCCCCCCCCCCCCC)(O)(O)=O', "
-               "'No proper glycerol backbone found'), "
-               "('P(OC[C@H](OC(=O)CCCC/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\CC)COC(=O)CCCCCCCCCCC/C=C\\\\C/C=C\\\\CCCCC)(O)(O)=O', "
-               "'No proper glycerol backbone found'), "
-               "('P(OC[C@H](OC(=O)CCCC(=O)/C=C/C(O)=O)COC(=O)CCCCCCCCCCCCCCC)(O)(O)=O', "
-               "'No proper glycerol backbone found'), "
-               "('O(C(*)=O)C(COC(=O)*)COP(=O)(O)O', 'No proper glycerol "
-               "backbone found'), "
-               "('P(OC[C@H](OC(=O)CCCCCCCCCCCCCC)COC(=O)CCCCCCCCC/C=C\\\\C/C=C\\\\CCCCC)(O)(O)=O', "
-               "'No proper glycerol backbone found'), "
-               "('P(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCCCCCC(C)C)COC(=O)CCCCCCCCCCCCCCCCCCCCC(C)C)(O)(O)=O', "
-               "'No proper glycerol backbone found'), "
-               "('P(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCCCC)COC(=O)CCCCCCCCCCC/C=C\\\\C/C=C\\\\CCCCC)(O)(O)=O', "
-               "'No proper glycerol backbone found'), "
-               "('CCCCCCCCCCCCCCCCCCCC(=O)O[C@H](COC(=O)CCCCCCC\\\\C=C/CCCCCCCC)COP(O)(O)=O', "
-               "'No proper glycerol backbone found'), "
-               "('P(OC[C@H](OC(=O)CC/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\CC)COC(=O)CCCCCCCCCCCC)(O)(O)=O', "
-               "'No proper glycerol backbone found'), "
-               "('P(OC[C@H](OC(=O)CCCCCCCCCCCCC)COC(=O)CCCCCCCCCCCCCCCCCCC)(O)(O)=O', "
-               "'No proper glycerol backbone found'), "
-               "('O(C(*)=O)C(COC(=O)*)COP(=O)(O)O', 'No proper glycerol "
-               "backbone found'), "
-               "('P(OC[C@H](OC(=O)CCCCCCCCC/C=C\\\\C/C=C\\\\CCCCC)COC(=O)CCCCCCCCC/C=C\\\\CCCCCCCCCC)(O)(O)=O', "
-               "'No proper glycerol backbone found'), "
-               "('P(OC[C@H](OC(=O)CCCCCCC[C@H](O)[C@@H](O)C/C=C\\\\CCCCC)COC(=O)CCCCCCCCCCCCC/C=C\\\\CCCCCCCC)(O)(O)=O', "
-               "'No proper glycerol backbone found'), "
-               "('P(OC[C@H](OC(=O)CCCCCCCCC/C=C\\\\C/C=C\\\\CCCCC)COC(=O)CCCCCCC/C=C\\\\CCCCCCCC)(O)(O)=O', "
-               "'No proper glycerol backbone found'), "
-               "('P(OC[C@H](OC(=O)CCCCCCCCC/C=C\\\\CCCCCCCC)COC(=O)CCCCCCCCCCCCCC)(O)(O)=O', "
-               "'No proper glycerol backbone found'), "
-               "('P(OC[C@H](OC(=O)CCCCCCCCCCCC)COC(=O)CCCCCCCCCCCCCCC)(O)(O)=O', "
-               "'No proper glycerol backbone found'), "
-               "('P(OC[C@H](OC(=O)CC/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\CC)COC(=O)CCCCCCCCCCCCCCCCCCCCC)(O)(O)=O', "
-               "'No proper glycerol backbone found'), "
-               "('P(OC[C@H](OC(=O)CCC/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\CCCCC)COC(=O)CCCCCCC/C=C\\\\C/C=C\\\\CCCCC)(O)(O)=O', "
-               "'No proper glycerol backbone found'), "
-               "('CCCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(O)=O)OC(=O)CCCCCCCCCCC', "
-               "'No proper glycerol backbone found'), "
-               "('O(C(*)=O)C(COC(=O)*)COP(=O)(O)O', 'No proper glycerol "
-               "backbone found'), "
-               "('C([C@@](COC(CCCCCCCCC/C=C\\\\CCCCCC)=O)(OC(CCCCCCC/C=C\\\\CCCCCCCC)=O)[H])OP(O)(=O)O', "
-               "'No proper glycerol backbone found'), "
-               "('O(C(*)=O)C(COC(=O)*)COP(=O)(O)O', 'No proper glycerol "
-               "backbone found'), "
-               "('P(OC[C@H](OC(=O)CCCCCCC/C=C\\\\C/C=C\\\\CCCCC)COC(=O)CCCCCCCCCCCC)(O)(O)=O', "
-               "'No proper glycerol backbone found'), "
-               "('P(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCCCCCC)COC(=O)CCCCCCC/C=C\\\\C/C=C\\\\CCCCC)(O)(O)=O', "
-               "'No proper glycerol backbone found'), "
-               "('P(OC[C@H](OC(=O)CCCCCCCCC/C=C\\\\C/C=C\\\\CCCCC)COC(=O)CCCCCCCCCCCCC)(O)(O)=O', "
-               "'No proper glycerol backbone found'), "
-               "('P(OC[C@H](OC(=O)CCCCCCCCC/C=C\\\\CCCCCCCC)COC(=O)CCCCCCCCCCCCCCCCCCCC)(O)(O)=O', "
-               "'No proper glycerol backbone found'), "
-               "('P(OC[C@H](OC(=O)CCCCCCCCCCC/C=C\\\\CCCCCCCC)COC(=O)CC/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\CCCCC)(O)(O)=O', "
-               "'No proper glycerol backbone found'), "
-               "('P(OC[C@H](OC(=O)CCCC(O)/C=C/C(O)=O)COC(=O)CCCCCCCCCCCCCCC)(O)(O)=O', "
-               "'No proper glycerol backbone found')]",
-    'attempt': 3,
+                          'parents': ['CHEBI:37739'],
+                          'xrefs': ['KEGG:C00416'],
+                          'all_positive_examples': []},
+    'config': None,
+    'message': None,
+    'sample_true_negatives': [   {   'smiles': 'S(=O)(=O)(C1=C2C(=CC3=C1NC=4C=CC=CC34)[C@@]5([C@H]([C@](C(=O)O)([C@@H](O)CC5)C)CC2)C)C6=CC7=C(NC8=C7C=C9[C@@]%10([C@H]([C@](C(=O)O)([C@@H](O)CC%10)C)CCC9=C8)C)C=C6',
+                                     'name': 'Sulfadixiamycin C',
+                                     'reason': 'No glycerol backbone found'},
+                                 {   'smiles': 'CNC(O)=O',
+                                     'name': 'methylcarbamic acid',
+                                     'reason': 'No glycerol backbone found'},
+                                 {   'smiles': 'CCNC(=O)NC1=CC2=C(C=C1)OC[C@H]3[C@@H](CC[C@H](O3)CC(=O)N[C@@H](C)C4=CC=CC=C4)N(C2=O)C',
+                                     'name': '2-[(2S,4aR,12aR)-8-(ethylcarbamoylamino)-5-methyl-6-oxo-2,3,4,4a,12,12a-hexahydropyrano[2,3-c][1,5]benzoxazocin-2-yl]-N-[(1S)-1-phenylethyl]acetamide',
+                                     'reason': 'Found 0 ester groups, need '
+                                               'exactly 2'},
+                                 {   'smiles': 'O([C@H]1O[C@@H]([C@@H](O[C@@H]2O[C@@H]([C@@H](O[C@@H]3O[C@@H]([C@H](O)[C@H](O)[C@H]3O)CO[C@]4(O[C@H]([C@H](NC(=O)C)[C@@H](O)C4)[C@H](O)[C@H](O)CO)C(O)=O)[C@H](O)[C@H]2NC(=O)C)CO)[C@H](O)[C@@H]1O[C@@H]5O[C@@H]([C@@H](O[C@@H]6O[C@@H]([C@H](O)[C@H](O)[C@H]6O)CO[C@]7(O[C@H]([C@H](NC(=O)C)[C@@H](O)C7)[C@H](O)[C@H](O)CO)C(O)=O)[C@H](O)[C@H]5NC(=O)C)CO)CO)[C@H]8[C@H](O)[C@H](O[C@@H](O[C@H]9[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]9CO)O[C@H]%10[C@H](O)[C@@H](NC(=O)C)C(O[C@@H]%10CO[C@@H]%11O[C@H]([C@@H](O)[C@@H](O)[C@@H]%11O)C)O)[C@H]8O)CO[C@H]%12O[C@@H]([C@@H](O)[C@H](O)[C@@H]%12O[C@@H]%13O[C@@H]([C@@H](O[C@@H]%14O[C@@H]([C@H](O)[C@H](O[C@]%15(O[C@H]([C@H](NC(=O)C)[C@@H](O)C%15)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]%14O)CO)[C@H](O)[C@H]%13NC(=O)C)CO)CO[C@@H]%16O[C@@H]([C@@H](O[C@@H]%17O[C@@H]([C@H](O)[C@H](O)[C@H]%17O)CO[C@]%18(O[C@H]([C@H](NC(=O)C)[C@@H](O)C%18)[C@H](O)[C@H](O)CO)C(O)=O)[C@H](O)[C@H]%16NC(=O)C)CO',
+                                     'name': 'CID 91851985',
+                                     'reason': 'No glycerol backbone found'},
+                                 {   'smiles': 'O(C(=O)C(C1C(CN2C(C1)C=3NC=4C(C3CC2)=CC=CC4)CC)=COC)C',
+                                     'name': 'Methyl '
+                                             '2-(3-ethyl-1,2,3,4,6,7,12,12b-octahydroindolo[2,3-a]quinolizin-2-yl)-3-methoxyprop-2-enoate',
+                                     'reason': 'Found 1 ester groups, need '
+                                               'exactly 2'},
+                                 {   'smiles': 'O[C@H](/C=C/C=C/C=C/[C@H](O)[C@H](O)C=C)[C@H](O)/C=C/C',
+                                     'name': 'Separacene C',
+                                     'reason': 'No glycerol backbone found'},
+                                 {   'smiles': 'C[C@@H]1O[C@@H](O[C@@H]2[C@@H](CO)O[C@@H](O[C@@H]3[C@@H](O)C(O)O[C@H](CO)[C@@H]3O)[C@H](NC(C)=O)[C@H]2O[C@@H]2O[C@H](CO)[C@H](O)[C@H](OS(O)(=O)=O)[C@H]2O)[C@@H](O)[C@H](O)[C@@H]1O',
+                                     'name': 'alpha-L-Fucp-(1->4)-[beta-D-Galp3S-(1->3)]-beta-D-GlcpNAc-(1->3)-D-Galp',
+                                     'reason': 'No glycerol backbone found'},
+                                 {   'smiles': 'C1=CC=CC2=C1C(N([C@H](C(N2)=O)CC=3C=CC(=CC3)OC)C)=O',
+                                     'name': "(S)-4'-methoxycyclopeptine",
+                                     'reason': 'No glycerol backbone found'},
+                                 {   'smiles': 'O=C(N[C@@H](CC=1C=2C(NC1)=CC=CC2)C(O)=O)[C@@H](NC(=O)[C@@H](N)C(C)C)C(C)C',
+                                     'name': 'Val-Val-Trp',
+                                     'reason': 'No glycerol backbone found'},
+                                 {   'smiles': 'C=1C(=C(C=CC1/C=C/CO)OC(CO)C(O)C=2C=C(C(=CC2)O)OC)OC',
+                                     'name': 'guaiacylglycerol beta-coniferyl '
+                                             'ether',
+                                     'reason': 'No glycerol backbone found'}],
+    'sample_false_negatives': [   {   'smiles': 'CCCCC\\C=C/C\\C=C/C\\C=C/CCCCC(=O)OC[C@@H](O)COP(O)(O)=O',
+                                      'name': '1-(gamma-linolenoyl)-sn-glycero-3-phosphate',
+                                      'reason': 'Found 1 ester groups, need '
+                                                'exactly 2'},
+                                  {   'smiles': 'P(OC[C@H](OC(=O)CCCCCCCC(O)/C=C/C(O)=O)COC(=O)CCCCCCC/C=C\\CCCCCCCC)(O)(O)=O',
+                                      'name': 'OHDdiA-PA',
+                                      'reason': 'Found 3 ester groups, need '
+                                                'exactly 2'},
+                                  {   'smiles': 'CCCCCCCCCCCCCCCC(=O)OCC(COP(O)(=O)OCC(O)COP(O)(O)=O)OC(=O)CCCCCCC\\C=C/CCCCCCCC',
+                                      'name': '1-hexadecanoyl-2-[(Z)-octadec-9-enoyl]-sn-glycero-3-phospho-sn-glycerol '
+                                              '3-phosphate',
+                                      'reason': 'Must have exactly one '
+                                                'phosphorus atom'},
+                                  {   'smiles': 'P(OC[C@@H](COC(CCCCC)=O)OC(CCCCC)=O)(=O)(O)O',
+                                      'name': '1,2-dihexanoyl-sn-glycero-3-phosphate',
+                                      'reason': 'Molecular weight too low for '
+                                                'phosphatidic acid'},
+                                  {   'smiles': 'P(OC[C@H](OC(=O)CCCCCCCC(=O)/C=C/C(O)=O)COC(=O)CCCCCCCCCCCCCCC)(O)(O)=O',
+                                      'name': 'PKDdiA-PA',
+                                      'reason': 'Found 3 ester groups, need '
+                                                'exactly 2'},
+                                  {   'smiles': 'O1C(C1)COC(=O)CCCC=CCC=CCC=CCC=CCCCCC',
+                                      'name': 'O-Arachidonoyl Glycidol',
+                                      'reason': 'Found 1 ester groups, need '
+                                                'exactly 2'},
+                                  {   'smiles': 'P(OC[C@H](OC(=O)CCC(O)/C=C/C(O)=O)COC(=O)CCCCCCC/C=C\\CCCCCCCC)(O)(O)=O',
+                                      'name': 'OHHdiA-PA',
+                                      'reason': 'Found 3 ester groups, need '
+                                                'exactly 2'},
+                                  {   'smiles': 'P(OC[C@H](OC(=O)CCC(=O)/C=C/C(O)=O)COC(=O)CCCCCCCCCCCCCCC)(O)(O)=O',
+                                      'name': 'PKHdiA-PA',
+                                      'reason': 'Found 3 ester groups, need '
+                                                'exactly 2'},
+                                  {   'smiles': 'P(OC[C@H](OC(=O)CCCCCCCC(O)/C=C/C(O)=O)COC(=O)CCCCCCCCCCCCCCC)(O)(O)=O',
+                                      'name': 'PHDdiA-PA',
+                                      'reason': 'Found 3 ester groups, need '
+                                                'exactly 2'},
+                                  {   'smiles': 'P(OC[C@H](OC(=O)CCCC(O)/C=C/C(O)=O)COC(=O)CCCCCCC/C=C\\CCCCCCCC)(O)(O)=O',
+                                      'name': 'OHODiA-PA',
+                                      'reason': 'Found 3 ester groups, need '
+                                                'exactly 2'}],
+    'attempt': 0,
+    'reasoning': 'Let me break this down step by step:\n'
+                 '\n'
+                 '1. A phosphatidic acid has a glycerol backbone with:\n'
+                 '   - Two fatty acid chains attached via ester bonds\n'
+                 '   - One phosphate group attached to the remaining OH group\n'
+                 '\n'
+                 '2. Key structural features to check:\n'
+                 '   - Glycerol backbone (C-C-C)\n'
+                 '   - Two ester groups (-O-C(=O)-)\n'
+                 '   - One phosphate group (-O-P(=O)(OH)2)\n'
+                 '   - Long carbon chains (fatty acids)\n'
+                 '\n'
+                 '3. Common characteristics from examples:\n'
+                 '   - Various fatty acid chain lengths\n'
+                 '   - Can have saturated or unsaturated fatty acids\n'
+                 '   - Specific stereochemistry at the glycerol carbon\n'
+                 '\n'
+                 "Here's the code:",
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 5,
-    'num_false_positives': 100,
-    'num_true_negatives': 49316,
-    'num_false_negatives': 44,
+    'num_true_positives': 351,
+    'num_false_positives': 78,
+    'num_true_negatives': 141857,
+    'num_false_negatives': 14,
     'num_negatives': None,
-    'precision': 0.047619047619047616,
-    'recall': 0.10204081632653061,
-    'f1': 0.06493506493506494,
-    'accuracy': 0.997088850702517}
+    'precision': 0.8181818181818182,
+    'recall': 0.9616438356164384,
+    'f1': 0.8841309823677582,
+    'accuracy': 0.999353478566409,
+    'negative_predictive_value': 0.9999013188037019}

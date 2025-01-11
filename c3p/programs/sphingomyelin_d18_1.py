@@ -1,12 +1,16 @@
 """
 Classifies: CHEBI:17636 sphingomyelin d18:1
 """
+"""
+Classifies: sphingomyelin d18:1
+"""
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_sphingomyelin_d18_1(smiles: str):
     """
-    Determines if a molecule is a sphingomyelin d18:1 (sphingomyelin with sphingosine backbone).
+    Determines if a molecule is a sphingomyelin d18:1 based on its SMILES string.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -15,100 +19,108 @@ def is_sphingomyelin_d18_1(smiles: str):
         bool: True if molecule is a sphingomyelin d18:1, False otherwise
         str: Reason for classification
     """
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return None, "Invalid SMILES string"
+        return False, "Invalid SMILES string"
 
-    # Check for required functional groups
-    # 1. Phosphocholine group
-    phosphocholine_pattern = 'COP([O-])(=O)OCC[N+](C)(C)C'
-    phos_mol = Chem.MolFromSmarts(phosphocholine_pattern)
-    if not mol.HasSubstructMatch(phos_mol):
-        return False, "Missing phosphocholine group"
+    # Check for phosphocholine head group
+    phosphocholine = Chem.MolFromSmarts("[O-]P(=O)(OCC[N+](C)(C)C)O")
+    if not mol.HasSubstructMatch(phosphocholine):
+        return False, "Missing phosphocholine head group"
 
-    # 2. Sphingosine backbone with specific stereochemistry and double bond
-    # Look for the core structure with amide, hydroxyl group and trans double bond
-    sphingosine_patterns = [
-        '[C@@H](O)[C@H](COP)NC(=O)',  # One stereochemistry possibility
-        '[C@H](O)[C@@H](COP)NC(=O)'   # Alternative stereochemistry
-    ]
+    # Check for sphingosine backbone with amide bond
+    # [C@H] ensures correct stereochemistry
+    # \C=C\ ensures trans double bond
+    sphingosine_pattern = Chem.MolFromSmarts("[C@H](O)(/C=C/C)[C@H](COP)NC(=O)")
+    if not mol.HasSubstructMatch(sphingosine_pattern):
+        return False, "Missing characteristic sphingosine backbone structure"
+
+    # Count specific features
+    double_bonds = rdMolDescriptors.CalcNumAliphaticDoubleBonds(mol)
+    if double_bonds < 1:
+        return False, "Missing required double bond"
+
+    # Check for amide group
+    amide_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[#6]")
+    if not mol.HasSubstructMatch(amide_pattern):
+        return False, "Missing amide bond"
+
+    # Check for two hydroxyl groups (one on sphingosine, one from phosphate)
+    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H1]")
+    hydroxyl_matches = len(mol.GetSubstructMatches(hydroxyl_pattern))
+    if hydroxyl_matches < 1:
+        return False, "Missing hydroxyl group on sphingosine"
+
+    # Count carbons in longest chain from NH to end of sphingosine
+    # This should be 18 for d18:1
+    backbone_pattern = Chem.MolFromSmarts("CCCCCCCCCCCCC/C=C/[C@@H](O)[C@H]")
+    if not mol.HasSubstructMatch(backbone_pattern):
+        return False, "Sphingosine backbone must be 18 carbons long (d18:1)"
+
+    # Verify presence of fatty acid chain
+    fatty_acid_pattern = Chem.MolFromSmarts("C(=O)CCCCC")  # At least 6 carbons
+    if not mol.HasSubstructMatch(fatty_acid_pattern):
+        return False, "Missing fatty acid chain"
+
+    # Check total molecular weight (should be >600 Da for sphingomyelins)
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 600:
+        return False, "Molecular weight too low for sphingomyelin"
+
+    # Count key atoms
+    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
+    p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
     
-    found_sphingosine = False
-    for pattern in sphingosine_patterns:
-        pattern_mol = Chem.MolFromSmarts(pattern)
-        if pattern_mol is not None and mol.HasSubstructMatch(pattern_mol):
-            found_sphingosine = True
-            break
-    
-    if not found_sphingosine:
-        return False, "Missing sphingosine backbone with correct stereochemistry"
+    if n_count != 2:  # One from amide, one from choline
+        return False, "Must have exactly 2 nitrogen atoms"
+    if p_count != 1:
+        return False, "Must have exactly 1 phosphorus atom"
 
-    # 3. Check for trans double bond in correct position
-    trans_db_patterns = [
-        'C\C=C\[C@@H](O)[C@H]',
-        'C\C=C\[C@H](O)[C@@H]',
-        'C/C=C/[C@@H](O)[C@H]',
-        'C/C=C/[C@H](O)[C@@H]'
-    ]
-    
-    found_trans_db = False
-    for pattern in trans_db_patterns:
-        pattern_mol = Chem.MolFromSmarts(pattern)
-        if pattern_mol is not None and mol.HasSubstructMatch(pattern_mol):
-            found_trans_db = True
-            break
-            
-    if not found_trans_db:
-        return False, "Missing trans double bond in correct position"
-
-    # 4. Check for long carbon chain (d18:1 requires 18-carbon sphingosine backbone)
-    carbon_chain = 'CCCCCCCCCCCC'  # At least 12 carbons in chain
-    chain_mol = Chem.MolFromSmarts(carbon_chain)
-    if not mol.HasSubstructMatch(chain_mol):
-        return False, "Missing required carbon chain length"
-
-    return True, "Contains sphingomyelin d18:1 structure with correct stereochemistry"
+    return True, "Contains sphingosine d18:1 backbone with phosphocholine head group and fatty acid chain"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:17636',
                           'name': 'sphingomyelin d18:1',
                           'definition': 'Any sphingomyelin having sphingosine '
                                         'as the sphingoid component.',
-                          'parents': ['CHEBI:64583']},
-    'config': {   'llm_model_name': 'lbl/claude-sonnet',
-                  'f1_threshold': 0.8,
-                  'max_attempts': 5,
-                  'max_negative_to_test': None,
-                  'max_positive_in_prompt': 50,
-                  'max_negative_in_prompt': 20,
-                  'max_instances_in_prompt': 100,
-                  'test_proportion': 0.1},
-    'message': '\n'
-               'Attempt failed: F1 score of 0 is too low.\n'
-               'True positives: []\n'
-               'False positives: []\n'
-               'False negatives: '
-               "[('CCCCCCCCCCCCC\\\\C=C\\\\[C@@H](O)[C@H](COP([O-])(=O)OCC[N+](C)(C)C)NC([*])=O', "
-               "'Missing sphingosine backbone with correct stereochemistry'), "
-               "('CCCCCCCCCCCCCCCCCCC(=O)N[C@@H](COP([O-])(=O)OCC[N+](C)(C)C)[C@H](O)\\\\C=C\\\\CCCCCCCCCCCCC', "
-               "'Missing sphingosine backbone with correct stereochemistry'), "
-               "('[C@@H]([C@@H](/C=C/CCCCCCCCCCCCC)O)(COP(OCC[N+](C)(C)C)(=O)[O-])NC(=O)*', "
-               "'Missing sphingosine backbone with correct stereochemistry'), "
-               "('CCCCCCCCCCCCC\\\\C=C\\\\[C@@H](O)[C@H](COP([O-])(=O)OCC[N+](C)(C)C)NC([*])=O', "
-               "'Missing sphingosine backbone with correct stereochemistry'), "
-               "('C(CCCCCCCCCC)CC\\\\C=C\\\\[C@@H](O)[C@@H](NC(=O)CCCCCCCCCCCCCCCCCCCCC)COP(=O)([O-])OCC[N+](C)(C)C', "
-               "'Missing sphingosine backbone with correct stereochemistry')]",
-    'attempt': 4,
-    'success': True,
+                          'parents': ['CHEBI:64583'],
+                          'xrefs': [   'KEGG:C00550',
+                                       'LIPID_MAPS_instance:LMSP03010000',
+                                       'PMID:3196084'],
+                          'all_positive_examples': []},
+    'config': None,
+    'message': None,
+    'sample_true_negatives': None,
+    'sample_false_negatives': None,
+    'attempt': 0,
+    'reasoning': 'Let me help create a program to classify sphingomyelin d18:1 '
+                 'molecules. These molecules have several key '
+                 'characteristics:\n'
+                 '\n'
+                 '1. A sphingosine base (d18:1) which has:\n'
+                 '   - 18 carbons\n'
+                 '   - One double bond (typically trans)\n'
+                 '   - Two hydroxyl groups\n'
+                 '   - An amino group\n'
+                 '\n'
+                 '2. A phosphocholine head group (-PO4-CH2-CH2-N(CH3)3)\n'
+                 '\n'
+                 '3. A fatty acid connected via an amide bond\n'
+                 '\n'
+                 "Here's the program:",
+    'success': False,
     'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 5,
-    'num_false_positives': 94,
-    'num_true_negatives': 183812,
+    'error': "module 'rdkit.Chem.rdMolDescriptors' has no attribute "
+             "'CalcNumAliphaticDoubleBonds'",
+    'stdout': '',
+    'num_true_positives': 0,
+    'num_false_positives': 0,
+    'num_true_negatives': 0,
     'num_false_negatives': 0,
     'num_negatives': None,
-    'precision': 0.050505050505050504,
-    'recall': 1.0,
-    'f1': 0.09615384615384615,
-    'accuracy': 0.9994888832098134}
+    'precision': 0.0,
+    'recall': 0.0,
+    'f1': 0.0,
+    'accuracy': None,
+    'negative_predictive_value': 0.0}
