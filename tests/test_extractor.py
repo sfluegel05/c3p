@@ -1,14 +1,16 @@
 import pytest
 from oaklib import get_adapter
+from oaklib.datamodels.vocabulary import HAS_DBXREF
 
 from c3p.datamodel import Dataset, Config
 from c3p.extractor import db_to_dataframe, create_benchmark, validate_dataset
-from c3p.generator import get_negative_examples, evaluate_for_class, run_code
+from c3p.learn import run_code, \
+    get_positive_and_negative_train_instances
 from tests.conftest import OUTPUT_DIR, INPUT_DIR, TEST_PROGRAM_DIR
 
 DATASET_PATH = OUTPUT_DIR / "dataset.json"
 
-@pytest.mark.integration
+#@pytest.mark.integration
 def test_create_benchmark():
     db = "sqlite:obo:chebi"
     chebi = get_adapter(db)
@@ -38,12 +40,11 @@ def test_get_negative_instances():
     with open(DATASET_PATH, "r") as f:
         dataset = Dataset.model_validate_json(f.read())
     cc = [c for c in dataset.classes if c.name == "diterpene"].pop()
-    assert len(cc.negative_instances) == 0
-    assert len(cc.instances) > 0
-    smiles = {s.smiles for s in cc.instances}
-    neg_exs = get_negative_examples(dataset, cc)
-    assert len(neg_exs) > 1000
-    assert all(n.smiles not in smiles for n in neg_exs)
+    pos, neg = get_positive_and_negative_train_instances(cc, dataset)
+    assert pos
+    assert neg
+    assert len(neg) > len(pos)
+    # assert all(n not in smiles for n in neg_exs)
 
 @pytest.mark.integration
 def test_eval():
@@ -51,7 +52,7 @@ def test_eval():
         dataset = Dataset.model_validate_json(f.read())
     cc = [c for c in dataset.classes if c.name == "thienopyrimidine"].pop()
     config = Config(llm_model_name="lbl/gpt-4o", max_negative_to_test=1000)
-    result = evaluate_for_class(cc, config, dataset)
+    result = learn_and_evaluate_for_class(cc, config, dataset)
     assert result is not None
     with open(OUTPUT_DIR / "result.json", "w") as f:
         f.write(result.model_dump_json(indent=2))

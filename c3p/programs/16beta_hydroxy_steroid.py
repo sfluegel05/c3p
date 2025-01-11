@@ -1,13 +1,16 @@
 """
 Classifies: CHEBI:17354 16beta-hydroxy steroid
 """
+"""
+Classifies: CHEBI:16beta-hydroxy steroid
+A 16-hydroxy steroid in which the hydroxy group at position 16 has a beta-configuration.
+"""
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem.AllChem import Compute2DCoords
 
 def is_16beta_hydroxy_steroid(smiles: str):
     """
-    Determines if a molecule is a 16beta-hydroxy steroid.
+    Determines if a molecule is a 16beta-hydroxy steroid based on its SMILES string.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -16,47 +19,46 @@ def is_16beta_hydroxy_steroid(smiles: str):
         bool: True if molecule is a 16beta-hydroxy steroid, False otherwise
         str: Reason for classification
     """
-    
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return None, "Invalid SMILES string"
-        
-    # Check for steroid core
-    steroid_pattern = Chem.MolFromSmarts("[#6]~1~[#6]~[#6]~[#6]~2~[#6]~[#6]~[#6]~3~[#6]~[#6]~[#6]~4~[#6]~[#6]~[#6]~[#6]~[#6]~4~[#6]~[#6]~3~[#6]~[#6]~2~[#6]~1")
-    if not mol.HasSubstructMatch(steroid_pattern):
-        return False, "No steroid core found"
-        
-    # Check for OH group at position 16
-    oh_pattern = Chem.MolFromSmarts("[C;H1]16-[OH]")
-    if not mol.HasSubstructMatch(oh_pattern):
-        return False, "No hydroxyl group at position 16"
-        
-    # Generate 3D coordinates if not present
-    if mol.GetNumConformers() == 0:
-        AllChem.EmbedMolecule(mol, randomSeed=42)
-        AllChem.MMFFOptimizeMolecule(mol)
-        
-    # Get the atoms involved in the 16-OH bond
-    matches = mol.GetSubstructMatches(oh_pattern)
-    if not matches:
-        return False, "Could not find 16-OH bond"
-        
-    c16_idx = matches[0][0]
-    oh_idx = matches[0][1]
+        return False, "Invalid SMILES string"
     
-    # Get neighboring atoms to check configuration
-    neighbors = [n.GetIdx() for n in mol.GetAtomWithIdx(c16_idx).GetNeighbors()]
-    neighbors.remove(oh_idx)
+    # Add explicit hydrogens for stereochemistry
+    mol = Chem.AddHs(mol)
     
-    # Check beta configuration by examining dihedral angles
-    conf = mol.GetConformer()
-    dihedral = Chem.rdMolTransforms.GetDihedralDeg(conf, neighbors[0], c16_idx, oh_idx, neighbors[1])
+    # Basic steroid core pattern (four fused rings)
+    # Using SMARTS that matches the basic steroid skeleton
+    steroid_core = Chem.MolFromSmarts("[#6]~1~[#6]~[#6]~[#6]~2~[#6]~[#6]~[#6]~3~[#6]~[#6]~[#6]~4~[#6]~[#6]~[#6]~[#6]~4~[#6]~3~[#6]~2~1")
     
-    # Beta configuration should have dihedral angle around -60 degrees
-    if -120 < dihedral < 0:
-        return True, "16beta-hydroxy steroid found"
-    else:
-        return False, "Hydroxyl group at position 16 is not in beta configuration"
+    if not mol.HasSubstructMatch(steroid_core):
+        return False, "No steroid core structure found"
+    
+    # Pattern for 16-beta-hydroxy group
+    # The [H] specifies explicit hydrogen, OH is the hydroxy group
+    # The @ symbols specify the stereochemistry
+    beta_oh_pattern = Chem.MolFromSmarts("[C]12[C][C@H](O)[CH2][C@]1([CH2,CH3])[C@@H]3[C][C][C]2")
+    
+    if not mol.HasSubstructMatch(beta_oh_pattern):
+        return False, "No 16-beta-hydroxy group found"
+    
+    # Additional checks for reasonable molecular weight and atom counts
+    # Steroids typically have molecular weights between 250-1000
+    mol_weight = Chem.Descriptors.ExactMolWt(mol)
+    if mol_weight < 250 or mol_weight > 1000:
+        return False, f"Molecular weight {mol_weight} outside typical steroid range (250-1000)"
+    
+    # Count carbons (steroids typically have 17+ carbons)
+    carbon_count = len([atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6])
+    if carbon_count < 17:
+        return False, f"Too few carbons ({carbon_count}) for a steroid structure"
+    
+    # Check for at least one oxygen (for the hydroxy group)
+    oxygen_count = len([atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8])
+    if oxygen_count < 1:
+        return False, "No oxygen atoms found"
+        
+    return True, "Contains steroid core with 16-beta-hydroxy group"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:17354',
@@ -64,27 +66,48 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:17354',
                           'definition': 'A 16-hydroxy steroid in which the '
                                         'hydroxy group at position 16 has a '
                                         'beta-configuration.',
-                          'parents': ['CHEBI:36840']},
-    'config': {   'llm_model_name': 'lbl/claude-sonnet',
-                  'f1_threshold': 0.8,
-                  'max_attempts': 5,
-                  'max_negative_to_test': None,
-                  'max_positive_in_prompt': 50,
-                  'max_negative_in_prompt': 20,
-                  'max_instances_in_prompt': 100,
-                  'test_proportion': 0.1},
+                          'parents': ['CHEBI:36840'],
+                          'xrefs': [   'KEGG:C03050',
+                                       'MetaCyc:16-BETA-HYDROXYSTEROID'],
+                          'all_positive_examples': []},
+    'config': None,
     'message': None,
+    'sample_true_negatives': None,
+    'sample_false_negatives': None,
     'attempt': 0,
-    'success': True,
+    'reasoning': "I'll create a program to classify 16beta-hydroxy steroids. "
+                 "Let's break this down into steps:\n"
+                 '\n'
+                 '1. First, we need to identify the steroid core structure\n'
+                 "2. Then locate position 16 and verify there's a hydroxy "
+                 'group there\n'
+                 '3. Finally, confirm the beta configuration of the hydroxy '
+                 'group\n'
+                 '\n'
+                 "Here's the implementation:",
+    'success': False,
     'best': True,
-    'error': '',
-    'stdout': None,
+    'error': 'Python argument types in\n'
+             '    Mol.HasSubstructMatch(Mol, NoneType)\n'
+             'did not match C++ signature:\n'
+             '    HasSubstructMatch(RDKit::ROMol self, RDKit::MolBundle query, '
+             'RDKit::SubstructMatchParameters params=True)\n'
+             '    HasSubstructMatch(RDKit::ROMol self, RDKit::ROMol query, '
+             'RDKit::SubstructMatchParameters params)\n'
+             '    HasSubstructMatch(RDKit::ROMol self, RDKit::MolBundle query, '
+             'bool recursionPossible=True, bool useChirality=False, bool '
+             'useQueryQueryMatches=False)\n'
+             '    HasSubstructMatch(RDKit::ROMol self, RDKit::ROMol query, '
+             'bool recursionPossible=True, bool useChirality=False, bool '
+             'useQueryQueryMatches=False)',
+    'stdout': '',
     'num_true_positives': 0,
     'num_false_positives': 0,
-    'num_true_negatives': 183905,
-    'num_false_negatives': 3,
+    'num_true_negatives': 0,
+    'num_false_negatives': 0,
     'num_negatives': None,
     'precision': 0.0,
     'recall': 0.0,
     'f1': 0.0,
-    'accuracy': 0.9999836874959219}
+    'accuracy': None,
+    'negative_predictive_value': 0.0}

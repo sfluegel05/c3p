@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Iterator, Annotated, List, Optional
+from typing import Annotated, List, Optional
 
 import typer
 import yaml
@@ -66,6 +66,9 @@ def classify(
         confidence_cutoff: Optional[float] = typer.Option(
           0.2, "--confidence-cutoff", "-c", help="minimum value for f1_score"
         ),
+        chemical_classes: Optional[List[str]] = typer.Option(
+            None, "--chemical-classes", "-N", help="chemical classes to consider"
+        ),
         verbose: Annotated[int, verbose_option] = 0
 ) -> None:
     """
@@ -98,7 +101,7 @@ def classify(
 
     logger.info(f"Starting classification for SMILES: {smiles_list}")
     logger.debug(f"Searching for programs in: {program_directory}")
-    for result in classifier.classify(smiles_list, program_directory=program_directory, strict=False):
+    for result in classifier.classify(smiles_list, program_directory=program_directory, chemical_classes=chemical_classes, strict=False):
         if confidence_cutoff is not None and result.confidence < confidence_cutoff:
             continue
         if exclude_negative and not result.is_match:

@@ -2,69 +2,45 @@
 Classifies: CHEBI:17517 phosphatidylglycerol
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import Descriptors
-from rdkit.Chem import rdMolDescriptors
 
 def is_phosphatidylglycerol(smiles: str):
     """
-    Determines if a molecule is a phosphatidylglycerol.
-    
+    Determines if a molecule is a phosphatidylglycerol based on its SMILES string.
+
     Args:
         smiles (str): SMILES string of the molecule
-        
+
     Returns:
         bool: True if molecule is a phosphatidylglycerol, False otherwise
         str: Reason for classification
     """
     
-    try:
-        mol = Chem.MolFromSmiles(smiles)
-        if mol is None:
-            return False, "Invalid SMILES string"
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-        # Check for presence of phosphorus
-        atoms = [atom.GetSymbol() for atom in mol.GetAtoms()]
-        if 'P' not in atoms:
-            return False, "No phosphorus atom found"
-            
-        # Check for presence of phosphate group
-        phosphate_pattern = Chem.MolFromSmarts('[P](=O)([O,OH])[O,OH]')
-        if not mol.HasSubstructMatch(phosphate_pattern):
-            return False, "No phosphate group found"
-            
-        # Check for glycerol backbone with phosphate
-        glycerol_phosphate = Chem.MolFromSmarts('[#6]-[#6]-[#6]-O-P(=O)([O,OH])-O-[#6]-[#6]-[#6]')
-        if not mol.HasSubstructMatch(glycerol_phosphate):
-            return False, "No glycerol-phosphate backbone found"
+    # Pattern to detect the glycerol backbone part of a phosphatidylglycerol
+    # Generalized for possible stereo/isomer configurations and common modifications
+    glycerol_pattern = Chem.MolFromSmarts("[C@H](CO[P](=O)(O)O)(CO)O")  # Search for glycerol-phosphate linkage
+    glycerol_matches = mol.GetSubstructMatches(glycerol_pattern)
 
-        # Check for ester linkages
-        ester_pattern = Chem.MolFromSmarts('C(=O)-O')
-        ester_count = len(mol.GetSubstructMatches(ester_pattern))
-        if ester_count < 1:
-            return False, "Missing ester linkages"
+    if not glycerol_matches:
+        return False, "No glycerol backbone with phosphate linkage found"
 
-        # Look for terminal glycerol moiety
-        terminal_glycerol = Chem.MolFromSmarts('O-C-C(O)-CO')
-        if not mol.HasSubstructMatch(terminal_glycerol):
-            # Try alternative pattern for masked terminal groups
-            alt_terminal = Chem.MolFromSmarts('O-C-C-C-O')
-            if not mol.HasSubstructMatch(alt_terminal):
-                return False, "Missing terminal glycerol group"
+    # Pattern for ester-linked long fatty acid chains
+    ester_fatty_acid_pattern = Chem.MolFromSmarts("OC(=O)C")  # This captures ester linkage to a fatty acid chain
+    ester_matches = mol.GetSubstructMatches(ester_fatty_acid_pattern)
+    if len(ester_matches) < 2:
+        return False, f"Insufficient ester-linked fatty acids, found {len(ester_matches)}"
 
-        # Special check for generic/masked structures
-        if '*' in smiles:
-            return True, "Valid phosphatidylglycerol structure with masked groups"
+    # Ensure presence of at least one phosphatidyl group
+    phosphatidyl_pattern = Chem.MolFromSmarts("COP(O)(=O)OC")
+    phosphatidyl_matches = mol.GetSubstructMatches(phosphatidyl_pattern)
+    if not phosphatidyl_matches:
+        return False, "Missing phosphatidyl group"
 
-        # Check for fatty acid chains or their masked representations
-        carbon_chain = Chem.MolFromSmarts('CCCC')  # Shorter chain requirement
-        if not mol.HasSubstructMatch(carbon_chain) and '*' not in smiles:
-            return False, "No acyl chains found"
-
-        return True, "Valid phosphatidylglycerol structure identified"
-
-    except Exception as e:
-        return None, f"Error analyzing molecule: {str(e)}"
+    return True, "Contains glycerol backbone with phosphatidyl group and ester-linked fatty acid chains"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:17517',
@@ -74,328 +50,148 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:17517',
                                         'of the primary hydroxy groups has '
                                         'been replaced by a phosphatidyl '
                                         'group.',
-                          'parents': ['CHEBI:24360']},
-    'config': {   'llm_model_name': 'lbl/claude-sonnet',
-                  'f1_threshold': 0.8,
-                  'max_attempts': 5,
-                  'max_negative_to_test': None,
-                  'max_positive_in_prompt': 50,
-                  'max_negative_in_prompt': 20,
-                  'max_instances_in_prompt': 100,
-                  'test_proportion': 0.1},
+                          'parents': ['CHEBI:24360'],
+                          'xrefs': ['KEGG:C00344'],
+                          'all_positive_examples': []},
+    'config': None,
     'message': '\n'
-               'Attempt failed: F1 score of 0.4126984126984127 is too low.\n'
-               'True positives: '
-               "[('C([C@@](COC(CCCCCCCCC/C=C\\\\CCCCCC)=O)(OC(CC/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\CCCCC)=O)[H])OP(=O)(O)OC[C@@](CO)([H])O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCC(C)C)COC(=O)CCCCCCCC(O)/C=C/C=C/C/C=C/CC)(OC[C@@H](O)COP(O)(O)=O)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC[C@H](OC(=O)CCCCCCCCCCCCCCC)COC(=O)CCCCCCC/C=C\\\\CCCCCCCC)(OC[C@@H](O)COP(OC[C@H](OC(=O)CCCCCCC/C=C\\\\CCCCCCCC)COC(=O)CCCCCCCCCCCCCCCCC)(O)=O)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('C([C@@](COC(CCCCCCC/C=C\\\\CCCCCCCC)=O)(OC(CCCCCCC/C=C\\\\CCCCCC)=O)[H])OP(=O)(O)OC[C@@](CO)([H])O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('C([C@@](COC(CCCC/C=C\\\\C/C=C\\\\C/C=C\\\\CCCCC)=O)(OC(CCCCCCCCCCCCCCCCC)=O)[H])OP(=O)(O)OC[C@@](CO)([H])O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('C([C@@](COC(CCCCCCC/C=C\\\\CCCCCCCC)=O)(OC(CCCCCCC/C=C\\\\C/C=C\\\\CCCCC)=O)[H])OP(=O)(O)OC[C@@](CO)([H])O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC[C@H](OC(=O)CCCC/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\CC)COC(=O)CCCCCCCCCCCC)(OC[C@@H](O)CO)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('C([C@@](COC(CCCCCCC/C=C\\\\CCCCCC)=O)(OC(CCC/C=C\\\\C/C=C\\\\C/C=C\\\\CCCCCCCC)=O)[H])OP(=O)(O)OC[C@@](CO)([H])O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('CCCCCCCC\\\\C=C/CCCCCCCC(=O)OC[C@H](COP(O)(=O)OC[C@@H](O)COP(O)(O)=O)OC(=O)CCCCCCC\\\\C=C/CCCCCCCC', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('C([C@@](COC(CCCC/C=C\\\\C/C=C\\\\C/C=C\\\\CCCCC)=O)(OC(CC/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\CC)=O)[H])OP(=O)(O)OC[C@@](CO)([H])O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC[C@H](OC(=O)CCCCCC/C=C\\\\C/C=C\\\\C/C=C\\\\CCCCC)COC(=O)CCCCCCCCCCCCCC)(OC[C@@H](O)CO)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC[C@H](OC(=O)CCCCCCC/C=C\\\\C/C=C\\\\CCCCC)COC(=O)CCCCCCCCCCCCCC)(OC[C@@H](O)CO)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)OC[C@@H](O)CO)OC(=O)CCC\\\\C=C/C\\\\C=C/C\\\\C=C/C\\\\C=C/CCCCC', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('CCCCC\\\\C=C/C\\\\C=C/CCCCCCCC(=O)OCC(COP(O)(=O)OCC(O)CO)OC(=O)CCCCCCC\\\\C=C/C\\\\C=C/CCCCC', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)OC[C@@H](O)CO)OC(=O)CCCCCCC\\\\C=C/CCCCCCCC', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC[C@H](OC(=O)CCCCCCCCCCCCCC)COC(=O)CCCCCCC/C=C\\\\C/C=C\\\\CCCC)(OC[C@@H](O)CO)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC[C@H](OC(=O)CCCCCCCCCCCCC)COC(=O)CCCCCCCCCC)(OC[C@@H](O)COP(OC[C@H](OC(=O)CCCCCCC)COC(=O)CCCCCCC)(O)=O)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC[C@H](OC(=O)CCCCCCCCCCCCCCC)COC(=O)CCCCCCCCCCCCCCCCCCC)(OC[C@H](O)COP(OC[C@H](OC(=O)CCCCCCC/C=C\\\\C/C=C\\\\CCCCC)COC(=O)CCCCCCCCCCCCCCC)(O)=O)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('C([C@@](COC(CCCCCCC/C=C\\\\CCCCCC)=O)(OC(CCCCCCC/C=C\\\\CCCCCCCC)=O)[H])OP(=O)(O)OC[C@@](CO)([H])O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC[C@H](OC(=O)CCCCCCC/C=C\\\\C/C=C\\\\CCCC)COC(=O)CCC/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\CCCCC)(OC[C@@H](O)CO)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCCCC)COC(=O)CCCCCCCCCCCCC)(OC[C@@H](O)CO)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('C(OP(=O)(OCC(CO)O)O)[C@@H](COC(CCCCCCC/C=C\\\\C/C=C\\\\C/C=C\\\\CC)=O)OC(C/C=C/CCCCCCCCCCCC)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCC)COC(=O)CCCCCCCCCCCCCCCC)(OC[C@@H](O)CO)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('CCCCCCCCCCCC(=O)OCC(COP(O)(=O)OCC(O)CO)OC(=O)CCCCCCCCCCC', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('CCCCCCCC\\\\C=C/CCCCCCCC(=O)OC[C@@H](O)COP(O)(=O)OCC(O)COP(O)(=O)OC[C@H](O)COC(=O)CCCCCCC\\\\C=C/CCCCCCCC', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC[C@H](OC(=O)CCCCCCCC(=O)/C=C/C=C\\\\CCCCC)COC(=O)CCCCCCCCCCC(CC)C)(OC[C@@H](O)COP(O)(O)=O)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('C([C@@](COC(CCCCCCCCC/C=C\\\\CCCCCC)=O)(OC(CCCCC/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\CCCCC)=O)[H])OP(=O)(O)OC[C@@](CO)([H])O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC[C@H](OC(=O)CCCCCCCCCCCCCCC)COC(=O)CCCC/C=C\\\\C/C=C\\\\C/C=C\\\\CCCCC)(OC[C@@H](O)CO)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)OC[C@@H](O)CO)OC(=O)CCCCCCCCCCCCCCC', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCCCCC)COC(=O)CCCCCCC/C=C\\\\CCCCCCCC)(OC[C@@H](O)CO)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC[C@H](OC(=O)CCC(O)/C=C/C=O)COC(=O)CCCCCCCCCCCCCCC)(OC[C@@H](O)CO)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC[C@H](OC(=O)CCC/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\CC)COC(=O)CCCCCCCCCCC)(OC[C@@H](O)CO)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCCCCC)COC(=O)CCCC/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\CC)(OC[C@@H](O)CO)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('C([C@@](COC(CCCCCCC/C=C\\\\C/C=C\\\\CCCCC)=O)(OC(CCCCC/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\CCCCC)=O)[H])OP(=O)(O)OC[C@@](CO)([H])O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC[C@H](OC(=O)CCCCCCCCCCCCCCCC(C)C)COC(=O)CCCC(=O)/C=C/C=C\\\\C/C=C\\\\C/C=C\\\\CCCCC)(OC[C@@H](O)CO)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('O(P(OCC(COP(OC[C@@H](COC(CCCCCCCC=CCCCCCC)=O)OC(CCCCCCCC=CCCCCCC)=O)(O)=O)O)(O)=O)C[C@@H](COC(CCCCCCCC=CCCCCCC)=O)OC(CCCCCCCC=CCCCCCC)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('CCCCCCCCCCCCCCCC(=O)O[C@H](COC(=O)CCCCCCC\\\\C=C/CCCCCCCC)COP(O)(=O)OC[C@@H](O)CO', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC[C@H](OC(=O)CCCCCCCCC(C)C)COC(=O)CCCCCCCCC(CC)C)(OC[C@@H](O)COP(O)(O)=O)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC[C@H](OC(=O)CCCCCCCCC/C=C\\\\CCCCCCCC)COC(=O)CC/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\CC)(OC[C@@H](O)CO)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified')]\n"
-               'False positives: '
-               "[('P(OC1C(O)C(O)C(O)[C@@H](O)C1O)(OC[C@H](OC(=O)CCCCCCCCCCC/C=C\\\\C/C=C\\\\CCCCC)COC(=O)CCCCCCCCCCCCCC)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC1C(O)C(O)C(O)[C@@H](O)C1O)(OC[C@H](OC(=O)CCCCCCCCCCC/C=C\\\\C/C=C\\\\CCCCC)CO/C=C\\\\CCCCCCCCCCCCCCCCCC)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('C(CCCCCCC/C=C\\\\CCCCCCCC)(=O)O[C@@H](COP(=O)(OCCN)O)CO/C=C\\\\CCCCCCCCCCCCCC', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('C([C@@](COC(CCCCCCC/C=C\\\\CCCCCCCC)=O)(OC(CCCCCCCCCCC/C=C\\\\C/C=C\\\\CCCCC)=O)[H])OP([O-])(=O)OCC[N+](C)(C)C', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('C([C@@](COC(CCCCCCC/C=C\\\\CCCCCC)=O)(OC(CCCCCCCCCCCCCCCCCCC)=O)[H])OP([O-])(=O)OCC[N+](C)(C)C', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC1C(O)C(O)C(O)[C@@H](O)C1O)(OC[C@H](OC(=O)CCCCCCC/C=C\\\\CCCC)COC(=O)CCCCCCCCCCCCCCCC)([O-])=O.[NH4+]', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('C(C[N+](C)(C)C)OP(=O)([O-])OC[C@H](OC(=O)[H])COCCCCCCCCCCCCCCCC', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('O(C[C@@H](COP([O-])(=O)OC[C@H](COC(CCCCCCCCCCCCC)=O)O)O)C(CCCCCCCCCCCCC)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC[C@H](OC(=O)CCCCCCCCCCCCCC)COC(=O)CCCCCCC/C=C\\\\CCCCCCCC)(OCCN)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC[C@H](OC(=O)CCC/C=C\\\\C[C@H]1[C@@H](O)CC(O[C@@H]1/C=C/[C@@H](O)CCCCC)O)COC(=O)CCCCCCCCCCCCCCCC(C)C)(OC[C@@H](O)CO)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('[C@](COC(=O)CCCCCCCCCCCCCCCCCCCC)(OC(=O)CCCCCCCCCCCCCCC)([H])COP(OCCN)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC1C(O)C(O)C(O)[C@@H](O)C1O)(OC[C@H](OC(=O)CCCCCCCCCCC/C=C\\\\C/C=C\\\\CCCCC)COC(=O)CC/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\CC)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC[C@H](OC(=O)CC/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\CCCCC)COC(=O)CCC\\\\C=C\\\\C[C@@H]1[C@H]([C@H](O)C[C@@H]1O)/C=C/[C@@H](O)CCCCC)(OCCN)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('[C@H]1([C@H]([C@@H]([C@H]([C@@H]([C@@H]1O)OP(OC[C@H](COC(CCCCCCC)=O)OC(CCCCCCC)=O)(=O)O)O)OP(=O)(O)O)OP(O)(=O)O)O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('CCCCC\\\\C=C/C\\\\C=C/C\\\\C=C/C\\\\C=C/CCCC(=O)O[C@H](COC([*])=O)COP([O-])(=O)OC[C@H]([NH3+])C([O-])=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC[C@H](OC(=O)CCC/C=C\\\\C/C=C\\\\C/C=C\\\\CCCCCCCC)COC(=O)CCCCCC/C=C\\\\C/C=C\\\\C/C=C\\\\CCCCC)(OCCN)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC1C(O)C(O)C(O)[C@@H](O)C1O)(OC[C@H](OC(=O)CCC/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\CC)COC(=O)CCCC/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\CC)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('[C@](COC(=O)CCCCCCC/C=C\\\\CCCC)(OC(=O)CCCCCCCCCCCCC/C=C\\\\CCCCCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC[C@H](O)COCC(OC)CCCCCCCCCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('[C@@H](COC(=O)CCCCCCCCCCCCCCC)(COP(OCC[N+](C)(C)C)(=O)[O-])O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('[C@@H]1([C@@H]([C@@H]([C@@H]([C@H]([C@@H]1O)O)O)O*)OP(OC[C@H](CO*)OC(*)=O)(=O)[O-])O[C@@H]2[C@H]([NH3+])[C@@H](O)[C@@H]([C@H](O2)CO)O[C@@H]3[C@H]([C@H]([C@@H]([C@H](O3)CO[C@@H]4[C@H]([C@H]([C@@H]([C@H](O4)CO*)O)O)O[C@@H]5[C@H]([C@H]([C@@H]([C@H](O5)COP([O-])(=O)OCCNC([C@@H](N*)CO)=O)O)O)O*)O*)O*)O*', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(=O)(OC[C@H](OC(=O)CCCCCCCCCCCCCCC)COC(=O)CCCCCCCC[C@@H](CCCCCCCC)C)(OCCN)O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC[C@H](OC(=O)CCCCCCC/C=C\\\\CCCCCCCC)COC(=O)CCCCCCCCCCCCCCCCCCC)(OC[C@H]([NH3+])C([O-])=O)([O-])=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('CCCCCCCCCCCCCC(=O)OC[C@@H](O)COP([O-])(=O)OC[C@@H](O)CO', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('C([C@@](COC(CCCCCCCCC/C=C\\\\CCCCCCCC)=O)(OC(CCCCCCCCCCC/C=C\\\\CCCCCCCC)=O)[H])OP([O-])(=O)OCC[N+](C)(C)C', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('[C@@H]1([C@@H]([C@@H]([C@@H]([C@H]([C@@H]1O)O)O)OC(=O)*)OP(OC[C@H](CO*)OC(=O)*)(=O)[O-])O[C@@H]2[C@H]([NH3+])[C@@H](O)[C@@H]([C@H](O2)CO)O[C@@H]3[C@H]([C@H]([C@@H]([C@H](O3)CO[C@@H]4[C@H]([C@H]([C@@H]([C@H](O4)COP([O-])(=O)OCC[NH3+])O)O)O[C@@H]5[C@H]([C@H]([C@@H]([C@H](O5)COP([O-])(=O)OCC[NH3+])O)O)O)O)O)OP([O-])(=O)OCC[NH3+]', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('[S+](CCOP(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCCCCCC)COC(=O)CCCCCCCCCCCCCCCCCCC)([O-])=O)(C)C', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('C(C(COC(CCCCCCCCC/C=C\\\\CCCCCCCC)=O)O/C=C\\\\CCCCCCCC/C=C\\\\CCCCCC)OP([O-])(=O)OCC[N+](C)(C)C', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OCC(OC(=O)CCCCCCCCCCCCC)COC(=O)CCCCCCCCCCC/C=C\\\\CCCCCCCC)(OCCN(C)C)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)OC[C@H](N)C(O)=O)OC(=O)CCCCCCC\\\\C=C/C\\\\C=C/CCCCC', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('[C@](COC(=O)CCCCCCC/C=C\\\\CCCC)(O)([H])COP(OCCN)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('C([C@@](COC(CCCCCCCCC/C=C\\\\C/C=C\\\\CCCCC)=O)(OC(CCCCCCCCCCCCC)=O)[H])OP([O-])(=O)OCC[N+](C)(C)C', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)OCCN)OC(=O)CCCCCCCCCCCCCCCCC', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OCC[N+](C)(C)C)(OC[C@H](OC(=O)CCCC/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\CC)COC(=O)CCCCCCCCCCCCC)([O-])=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OCC[N+](C)(C)C)(OC[C@H](OC(=O)CCCCCCC/C=C\\\\CCCCCCC)COC(=O)CCCCCCC/C=C\\\\CCCC)([O-])=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC[C@H](OC(=O)CCCCCCCCCCCCCCC)COCCCCCCCCCCCCCCCCCC)(OCCN)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC[C@H](OC(=O)CCCCCCCCCCCCCCCC)COC(=O)CCCCCCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OCC(OC(=O)CCCCCCCCC/C=C\\\\CCCCCC)COC(=O)CCC/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\CCCCC)(OCCN(C)C)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('[H]C(=O)CCCC(=O)O[C@H](COC(=O)CCCCC)COP(O)(=O)OCC[N+](C)(C)C', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC1C(O)C(O)C(O)[C@@H](O)C1O)(OC[C@H](O)COC(=O)CCCCCCC/C=C\\\\CCCCC)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('CCCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCC[N+](C)(C)C)OC(=O)CCCC', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('CCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCC[N+](C)(C)C)OC(=O)CCCCCCCCCCCCCC', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('CCCCCCCC\\\\C=C/CCCCCCCC(=O)O[C@H](COC(=O)CCCCCCC\\\\C=C/C\\\\C=C/CCCCC)COP([O-])(=O)OCC(O)COP([O-])(=O)OC[C@@H](COC(=O)CCCCCCC\\\\C=C/C\\\\C=C/CCCCC)OC(=O)CCCCCCC\\\\C=C/C\\\\C=C/CCCCC', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('[C@](COC(=O)CCCCCCCCC/C=C\\\\C/C=C\\\\CCCCC)(OC(=O)CCC/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\CCCCC)([H])COP(OCCN)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('CCCCCCCCCCOC[C@H](COP([O-])(=O)OCC[N+](C)(C)C)OC(C)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OCC(OC(=O)CCCCCCCCCCCCCCC)COC(=O)CC/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\CCCCC)(OCCNC)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('CCCCCCCCCCCCCCCCCC(=O)O[C@H](CO)COP([O-])(=O)OCC[N+](C)(C)C', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC[C@H](OC(=O)CCCCCCC/C=C\\\\CCCCCCC)CO/C=C\\\\CCCCCCCCCCCCCCCCCC)(OCCN)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('C([C@@](COC(CCC/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\CCCCC)=O)(OC(CCCCCCCCCCCCC)=O)[H])OP([O-])(=O)OCC[N+](C)(C)C', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('O([C@H](COC(=O)CCCCCCCCCCCCCCC)COP(OCC[N+](C)(C)C)(=O)[O-])C(=O)CCCCCCCCO', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('[C@](COC(=O)CCCCCCC/C=C\\\\CCCCCC)(O)([H])COP(OCCN)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('CCCCCCCC\\\\C=C/CCCCCCCC(=O)OC[C@@H](O)COP([O-])(=O)OCC(O)COP([O-])(=O)OC[C@H](O)COC(=O)CCCCCCC\\\\C=C/CCCCCCCC', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('C([C@@](COC(CCCCCCCCC/C=C\\\\CCCCCCCC)=O)(OC(CCCCCCC/C=C\\\\C/C=C\\\\CCCCC)=O)[H])OP([O-])(=O)OCC[N+](C)(C)C', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC[C@H](OC(=O)CCCCCCCCC/C=C\\\\CCCCCCCC)COC(=O)CCCCCC/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\CC)(OCCN)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('CCCCCCCC\\\\C=C/CCCCCCCC(=O)O[C@H](COC([*])=O)COP([O-])(=O)OC[C@H]([NH3+])C([O-])=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OCC(OC(=O)CCCCCC/C=C\\\\C/C=C\\\\C/C=C\\\\CCCCC)COC(=O)CCCCCCC/C=C\\\\CCCCCCCC)(OCCN(C)C)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC[C@H](O)COC(=O)CCCCCCC/C=C\\\\CCCCCC)(OC[C@H](N)C(O)=O)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('[C@@H](OC(CCC/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\CCCCC)=O)(COC(=O)CCCCCCCCCCCCCCC)COP(O[C@H]1[C@@H]([C@H]([C@@H]([C@H]([C@H]1O)O)O)O)O)(=O)O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC[C@@H](CO/C=C\\\\CCCCCCCCCCCCCCCC)OC(CCCCCC/C=C\\\\C/C=C\\\\C/C=C\\\\CCCCC)=O)(=O)(OCCN)O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('CCCCCCCC\\\\C=C/CCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCC[N+](C)(C)C)OC(=O)CCC\\\\C=C/C\\\\C=C/C\\\\C=C/C\\\\C=C/C\\\\C=C/CC', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('CCCCCC\\\\C=C\\\\CCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCC[N+](C)(C)C)OC(=O)CCCCCCC\\\\C=C\\\\CCCCCC', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('CCCCCCCC\\\\C=C/CCCCCCCC(=O)OC[C@H](COP([O-])(=O)OC[C@@H](O)CO)OC(=O)CCCCCCC\\\\C=C/CCCCCCCC', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(O[C@@H]1C(O)[C@H](OP(O)(O)=O)C(O)C(O)C1O)(OC[C@H](OC(=O)CCCCCCC/C=C\\\\C/C=C\\\\C/C=C\\\\CC)COC(=O)CCCCCCCCCCCCCCCCC)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(=O)(O)(OCCN)OC[C@@H](CO)OC(CCC/C=C\\\\C[C@H]1[C@@H]2C[C@H]([C@@H]1/C=C/[C@H](CCCCC)OO)OO2)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('OC1C(O)C(O)C(OP([O-])(=O)OCC(COC=C[*])OC([*])=O)C(O)C1O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC[C@H](OC(=O)CCCCCC[C@@H]1[C@H]([C@H](O)C[C@@H]1O)/C=C/[C@@H](O)CCCCC)COC(=O)CCCCCCCCCCCCCCCCCCCCCCC)(OCCN)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC[C@H](OC(=O)CCCCCCC/C=C\\\\CCCCCC)COC(=O)CC/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\CC)(OC[C@H](N)C(O)=O)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OCC[N+](C)(C)C)(OC[C@H](OC(=O)CCCCC/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\CCCCC)COC(=O)CCCCCCCCC/C=C\\\\CCCCCCCCCC)([O-])=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC[C@H](OC(=O)CCCCCCC/C=C\\\\C/C=C\\\\CCCCC)COC(=O)CCCCCC[C@@H]1[C@H]([C@H](O)C[C@@H]1O)/C=C/[C@@H](O)CCCCC)(OCCN)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)OC[C@H](N)C(O)=O)OC(=O)CC\\\\C=C/C\\\\C=C/C\\\\C=C/C\\\\C=C/C\\\\C=C/C\\\\C=C/CC', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('[H]/C(/CC)=C(/[H])\\\\C/C(/[H])=C(\\\\[H])/C/C(/[H])=C(\\\\[H])/C/C(/[H])=C(\\\\[H])/C/C(/[H])=C(\\\\[H])/CCCCCC(=O)OC[C@]([H])(COP(O)(=O)OCCN)O/C(/[H])=C(\\\\[H])/CCCCCC/C(/[H])=C(\\\\[H])/CCCCCCCC', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('[C@](COC(=O)CCCCCCCCCCCCCCC)(O)([H])COP(OCCN*)(=O)[O-]', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('[C@@H]1(C(C(C([C@H](C1O)O)O)O)O)OP(OC[C@@](COC(CCCCCCC/C=C\\\\C/C=C\\\\C/C=C\\\\CC)=O)(OC(CCCCCCCCC/C=C\\\\CCCCCC)=O)[H])(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC[C@H](OC(=O)CCCCCCCCCCCCC=1OC(=C(C1C)C)CCCCC)COC(=O)CCCCC(=O)C[C@@H]2[C@H]([C@H](O)C[C@@H]2O)/C=C/[C@@H](O)CCCCC)(OCC[N+](C)(C)C)([O-])=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OCC[N+](C)(C)C)(OC[C@H](OC(=O)CCCCCCCCC/C=C\\\\CCCCCCCCCC)COC(=O)CCCCCCCCCCCCCC)([O-])=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('O(P(=O)(OCC[N+](C)(C)C)[O-])C[C@H](O)COC(CCCCCCCC(O)=O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('C([C@@](COC(CC/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\CCCCC)=O)(OC(CCCCCCCCCCCCC)=O)[H])OP([O-])(=O)OCC[N+](C)(C)C', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('O(P(OC[C@H]1O[C@@H](N2C=3N=CN=C(N)C3N=C2)[C@@H]([C@@H]1O)O)(=O)O)C(CCCCCCCCCCCCCCCCCCC4=CC=C(C=C4)O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('CCCCCCCCCCCCCCCCCCCC(=O)NCCOP([O-])(=O)OC[C@H](O)COC(=O)CCCCCCC\\\\C=C/CCCCCCCC', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OCC(OC(=O)CCCCCC/C=C\\\\C/C=C\\\\C/C=C\\\\C/C=C\\\\CC)COC(=O)CCCCCCC/C=C\\\\CCCCCCCC)(OCCNC)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OCC[N+](C)(C)C)(OC[C@H](OC(=O)CCCCCCCCCCC)COC(=O)CCCCCCC/C=C\\\\CCCCCCCC)([O-])=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC[C@H](OC(=O)CCCCCCCCCCCCCC)COC(=O)CCCCCCCCCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC[C@@H](CO)OC(CCCCCCC/C=C\\\\CC(CCCCCC)O)=O)(=O)(OCC[N+](C)(C)C)[O-]', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC[C@H](OC(=O)CCCCCCC/C=C\\\\CCCCCCC)COC(=O)CCCCCCC/C=C\\\\CCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('[H][C@@]1(O[C@H](O[C@@H]2[C@H](O)[C@@H](O[C@@H]3[C@@H](C[C@@](O)(O[C@]3([H])[C@H](O)CO)C(O)=O)O[C@@]3(C[C@@H](O)[C@@H](O)[C@]([H])(O3)[C@H](O)CO)C(O)=O)O[C@]([H])([C@@H](O)CO)[C@H]2O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O)[C@@H](O[C@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2NC(C)=O)[C@@H](OP(O)(=O)OCCN)[C@@H]1O)[C@@H](O)CO', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC[C@H](O)COC(=O)CCCCCCCCC/C=C\\\\C/C=C\\\\CCCCC)(OC[C@@H](O)CO)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('[H][C@@](COC(=O)CCCCCCCCCCCCCCC)(COP(O)(=O)OCCN)OC(=O)CCCCCCC\\\\C=C/CCCCCCCC', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('N(CCOP(OC[C@@H](COC(CCCCCCCCCCCCCCCC)=O)OC(CCCCCCCCCCCCCCCC)=O)(=O)O)C(=O)CCCCCCC/C=C\\\\CCCCCCCC', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('CCCCCCCC\\\\C=C/CCCCCCCC(=O)NCCOP([O-])(=O)OC[C@H](O)COC(=O)CCCCCCC\\\\C=C/CCCCCCCC', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('C([C@@](COC(CCCCCCCCC/C=C\\\\CCCCCC)=O)(OC(CCCCCCC/C=C\\\\CCCCCC)=O)[H])OP([O-])(=O)OCC[N+](C)(C)C', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC[C@H](OC(=O)CCCCCCCCCCCCC)COC(=O)CCCCCCCCCCCCCCCCC)(OCCN)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('[H][C@](COP(OC[C@@](COC(CCCCCCCCCCCCCCCCC)=O)(OC(CCCCCCCCCCCCCCC)=O)[H])(=O)O)(C(O)=O)N', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('CCCCCCCC\\\\C=C/CCCCCCCC(=O)O[C@H](COC([*])=O)COP(O)(=O)OCC[N+](C)(C)C', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('[C@](COC(=O)CCCCCCC/C=C\\\\CCCC)(O/C=C\\\\CCCCCCCCCCCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC[C@H](OC(=O)CCCCCCC/C=C\\\\CCCCCC)COC(=O)CCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('C(C(COC(CCCCCCCCCCCCC)=O)O/C=C\\\\CCCCCCCCCCCCCCCC)OP([O-])(=O)OCC[N+](C)(C)C', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('O=P([O-])(O[C@@H]1[C@@H]([C@@H]([C@H]([C@@H]([C@H]1O)O)O)O)O)OC[C@@H](COC(CCCCCCC/C=C\\\\CCCCCCCC)=O)OC(CCCCCC/C=C\\\\C/C=C\\\\C/C=C\\\\CCCCC)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('P(OC[C@H](OC(=O)CCCCCCCCC/C=C\\\\CCCCCCCCCC)COC(=O)CCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('CCCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)OCCN)OC(=O)CCC\\\\C=C/C\\\\C=C/C\\\\C=C/C\\\\C=C/CCCCC', "
-               "'Valid phosphatidylglycerol structure identified'), "
-               "('CCCCCC\\\\C=C/CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCC[N+](C)(C)C)OC(=O)CC\\\\C=C/C\\\\C=C/C\\\\C=C/C\\\\C=C/C\\\\C=C/C\\\\C=C/CC', "
-               "'Valid phosphatidylglycerol structure identified')]\n"
-               "False negatives: [('C(=O)(OCC(COP(=O)(OCC(CO)O)O)OC(*)=O)*', "
-               "'No long carbon chains found'), "
-               "('C(=O)(OC[C@H](COP(=O)(OCC(CO)O)O)OC(*)=O)*', 'No long carbon "
-               "chains found'), ('C(=O)(OCC(COP(=O)(OCC(CO)O)O)OC(*)=O)*', 'No "
-               "long carbon chains found'), "
-               "('O(P(=O)(OCC(COP(=O)(O)O)O)O)CC(OC(*)=O)COC(*)=O', 'No long "
-               "carbon chains found'), "
-               "('C(=O)(OCC(COP(=O)(OCC(CO)O)O)OC(*)=O)*', 'No long carbon "
-               "chains found'), "
-               "('*C(O[C@@H](COP(OCC(COP(OC[C@H](OC(*)=O)COC(*)=O)(O)=O)O)(O)=O)COC(*)=O)=O', "
-               "'No long carbon chains found'), "
-               "('*C(O[C@@H](COP(OCC(COP(OC[C@H](OC(*)=O)COC(*)=O)(O)=O)O)(O)=O)COC(*)=O)=O', "
-               "'No long carbon chains found'), "
-               "('OC(COP(O)(=O)OC[C@@H](COC([*])=O)OC([*])=O)COP(O)(=O)OC[C@@H](COC([*])=O)OC([*])=O', "
-               "'No long carbon chains found'), "
-               "('C(=O)(OCC(COP(=O)(OCC(CO)O)O)OC(*)=O)*', 'No long carbon "
-               "chains found'), ('C(=O)(OCC(COP(=O)(OCC(CO)O)O)OC(*)=O)*', 'No "
-               "long carbon chains found'), "
-               "('C(=O)(OCC(COP(=O)(OCC(CO)O)O)OC(*)=O)*', 'No long carbon "
-               "chains found')]",
-    'attempt': 3,
+               'Attempt failed: F1 score of 0 is too low.\n'
+               'Outcomes:\n'
+               '------\n'
+               '\n'
+               'True positives: NONE\n'
+               'False positives: NONE\n'
+               'False negatives: SMILES: '
+               'C([C@@](COC(CCCCCCCCC/C=C\\CCCCCC)=O)(OC(CCCCCCCCC/C=C\\CCCCCC)=O)[H])OP(=O)(O)OC[C@@](CO)([H])O '
+               'NAME: PG(18:1(11Z)/18:1(11Z)) REASON: MISSED No '
+               'phosphatidylglycerol backbone found\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCC(O)/C=C/C=O)COC(=O)CCCCCCC/C=C\\CCCCCCCC)(OC[C@@H](O)CO)(O)=O '
+               'NAME: OHOOA-PG REASON: MISSED No phosphatidylglycerol backbone '
+               'found\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCC(O)=O)COC(=O)CCCCCCCCCCCCCCC)(OC[C@@H](O)CO)(O)=O '
+               'NAME: PS-PG REASON: MISSED No phosphatidylglycerol backbone '
+               'found\n'
+               ' * SMILES: '
+               'C([C@@](COC(CCCCCCC/C=C\\C/C=C\\CCCCC)=O)(OC(CC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)=O)[H])OP(=O)(O)OC[C@@](CO)([H])O '
+               'NAME: PG(18:2(9Z,12Z)/22:6(4Z,7Z,10Z,13Z,16Z,19Z)) REASON: '
+               'MISSED No phosphatidylglycerol backbone found\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCCC)COC(=O)CCCCCCCCCCCCCCC)(OC[C@@H](O)CO)(O)=O '
+               'NAME: PG(16:0/13:0) REASON: MISSED No phosphatidylglycerol '
+               'backbone found\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)COC(=O)CCCCCCCCCCC)(OC[C@@H](O)CO)(O)=O '
+               'NAME: PG(12:0/20:5(5Z,8Z,11Z,14Z,17Z)) REASON: MISSED No '
+               'phosphatidylglycerol backbone found\n'
+               ' * SMILES: '
+               'CCCCCCCC\\C=C/CCCCCCCC(=O)OC[C@H](COP(O)(=O)OC[C@@H](O)CO)OC(=O)CCCCCCC\\C=C/CCCCCCCC '
+               "NAME: 1,2-dioleoyl-sn-glycero-3-phospho-(1'-sn-glycerol) "
+               'REASON: MISSED No phosphatidylglycerol backbone found\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)COC(=O)CCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCCC)(OC[C@@H](O)CO)(O)=O '
+               'NAME: PG(20:4(5Z,8Z,11Z,14Z)/22:6(4Z,7Z,10Z,13Z,16Z,19Z)) '
+               'REASON: MISSED No phosphatidylglycerol backbone found\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)COC(=O)CCCCCCCCCCCCCCCCCCCCC)(OC[C@@H](O)CO)(O)=O '
+               'NAME: PG(22:0/18:4(6Z,9Z,12Z,15Z)) REASON: MISSED No '
+               'phosphatidylglycerol backbone found\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCCC)COC(=O)CCC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)(OC[C@@H](O)CO)(O)=O '
+               'NAME: PG(20:5(5Z,8Z,11Z,14Z,17Z)/13:0) REASON: MISSED No '
+               'phosphatidylglycerol backbone found\n'
+               '------\n'
+               '\n'
+               'In your reasoning step, analyze the previous program and the '
+               'above outcomes, hypothesizing about what went wrong, and how '
+               'to improve.\n',
+    'sample_true_negatives': [   {   'smiles': 'C[C@@H]1OC(=O)C=C1',
+                                     'name': '(S)-5-methylfuran-2(5H)-one',
+                                     'reason': 'No glycerol backbone with '
+                                               'phosphate linkage found'},
+                                 {   'smiles': 'Cc1cccc(c1)C(O)=O',
+                                     'name': 'm-toluic acid',
+                                     'reason': 'No glycerol backbone with '
+                                               'phosphate linkage found'},
+                                 {   'smiles': 'CN(C)CC(=O)NC[C@@H]1[C@@H]([C@@H](N1)CO)C2=CC=C(C=C2)C3=CC=CC(=C3)C#N',
+                                     'name': 'N-[[(2S,3S,4R)-3-[4-(3-cyanophenyl)phenyl]-4-(hydroxymethyl)-2-azetidinyl]methyl]-2-(dimethylamino)acetamide',
+                                     'reason': 'No glycerol backbone with '
+                                               'phosphate linkage found'},
+                                 {   'smiles': 'C[C@@H]1O[C@@H](OCCCCCCCCCC(=O)CC(O)=O)[C@H](O)C[C@H]1O',
+                                     'name': 'bkos#20',
+                                     'reason': 'No glycerol backbone with '
+                                               'phosphate linkage found'},
+                                 {   'smiles': 'O=C(N1C(C(=O)NC(C(=O)NC(C(=O)NC(C(=O)NC(C(=O)NC(CO)CC=2C3=C(C=CC=C3)NC2)CCC(=O)N)(C)C)(C)C)(CC)C)CCC1)C(NC(=O)C(NC(=O)C(NC(=O)C(NC(=O)C(NC(=O)CNC(=O)C(NC(=O)C(NC(=O)C(NC(=O)C(NC(=O)C(NC(=O)C(NC(=O)C(NC(=O)C)CC4=CC=CC=C4)(C)C)CO)(C)C)(C)C)CC(C)C)CCC(=O)N)(C)C)(C)C)C)C)(C)C',
+                                     'name': 'Chrysospermin B',
+                                     'reason': 'No glycerol backbone with '
+                                               'phosphate linkage found'},
+                                 {   'smiles': 'CC1(C=CC2=C3C(=CC(=C2O1)OC)C(=O)C(=CO3)C4=CC5=C(C=C4OC)OCO5)C',
+                                     'name': '6-methoxy-3-(6-methoxy-1,3-benzodioxol-5-yl)-8,8-dimethyl-4-pyrano[2,3-h][1]benzopyranone',
+                                     'reason': 'No glycerol backbone with '
+                                               'phosphate linkage found'},
+                                 {   'smiles': 'O[C@@H]([C@H](NC(=O)[C@@H](N)CCC(O)=O)C(=O)NCC(O)=O)C',
+                                     'name': 'Glu-Thr-Gly',
+                                     'reason': 'No glycerol backbone with '
+                                               'phosphate linkage found'},
+                                 {   'smiles': 'O([C@H]1[C@H](O[C@@H]2O[C@H]([C@@H](O)[C@@H](O)[C@@H]2O)C)[C@@H](NC(=O)C)[C@@H](O[C@@H]1CO)O[C@H]3[C@@H](O)[C@H](O)[C@H](O[C@@H]3OC[C@H]4O[C@@H](O[C@H]5[C@H](O)[C@@H](NC(=O)C)C(O[C@@H]5CO)O)[C@@H](O)[C@@H](O)[C@@H]4O)CO)[C@@H]6O[C@@H]([C@H](O)[C@H](O[C@]7(O[C@H]([C@H](NC(=O)C)[C@@H](O)C7)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]6O)CO',
+                                     'name': '(2S,4S,5R,6R)-5-Acetamido-2-[(2S,3R,4S,5S,6R)-2-[(2R,3S,4R,5R,6S)-5-acetamido-6-[(2S,3S,4S,5S,6R)-2-[[(2R,3S,4S,5S,6S)-6-[(2R,3S,4R,5R)-5-acetamido-4,6-dihydroxy-2-(hydroxymethyl)oxan-3-yl]oxy-3,4,5-trihydroxyoxan-2-yl]methoxy]-4,5-dihydroxy-6-(hydroxymethyl)oxan-3-yl]oxy-2-(hydroxymethyl)-4-[(2S,3S,4R,5S,6S)-3,4,5-trihydroxy-6-methyloxan-2-yl]oxyoxan-3-yl]oxy-3,5-dihydroxy-6-(hydroxymethyl)oxan-4-yl]oxy-4-hydroxy-6-[(1R,2R)-1,2,3-trihydroxypropyl]oxane-2-carboxylic '
+                                             'acid',
+                                     'reason': 'No glycerol backbone with '
+                                               'phosphate linkage found'},
+                                 {   'smiles': 'COCCOC(C)C(O)=O',
+                                     'name': '2-(2-methoxyethoxy)propanoic '
+                                             'acid',
+                                     'reason': 'No glycerol backbone with '
+                                               'phosphate linkage found'},
+                                 {   'smiles': 'O1[C@H]([C@H](NC(=O)C)[C@@H](O)C[C@]1(O[C@@H]2[C@@H](O)[C@@H](O[C@@H]([C@@H]2O)CO)O[C@H]3[C@H](O)[C@@H](O)[C@@H](O[C@@H]3CO)O)C(O)=O)[C@H](O)[C@H](O[C@]4(O[C@H]([C@H](NC(=O)C)[C@@H](O)C4)[C@H](OC(=O)C)[C@H](O)CO)C(O)=O)CO',
+                                     'name': '(2S,4S,5R,6R)-5-Acetamido-6-[(1S,2R)-2-[(2S,4S,5R,6R)-5-acetamido-6-[(1R,2R)-1-acetyloxy-2,3-dihydroxypropyl]-2-carboxy-4-hydroxyoxan-2-yl]oxy-1,3-dihydroxypropyl]-2-[(2R,3S,4S,5R,6S)-3,5-dihydroxy-2-(hydroxymethyl)-6-[(2R,3S,4R,5R,6R)-4,5,6-trihydroxy-2-(hydroxymethyl)oxan-3-yl]oxyoxan-4-yl]oxy-4-hydroxyoxane-2-carboxylic '
+                                             'acid',
+                                     'reason': 'No glycerol backbone with '
+                                               'phosphate linkage found'}],
+    'sample_false_negatives': [],
+    'attempt': 1,
+    'reasoning': 'Analyzing the previous attempt, it seems that the failure '
+                 'might be due to the use of overly simplistic SMARTS patterns '
+                 'which did not generalize well to the structures presented. '
+                 'Specifically, the pattern for the glycerol backbone with a '
+                 'phosphatidyl group might be too narrow and not matching the '
+                 'diverse representation seen in the dataset.\n'
+                 '\n'
+                 'Key observations:\n'
+                 '1. **Phosphatidyl Group:** The phosphatidylglycerol backbone '
+                 'involves a glycerol unit connected via a phosphoester '
+                 'linkage to another glycerol, with at least one being part of '
+                 'a phosphatidyl structure.\n'
+                 '2. **Ester Linkages:** These are essential for connecting '
+                 'fatty acid chains. Two are necessary for defining this class '
+                 'but their connection to glycerol needs refinement.\n'
+                 '3. **Diverse Structures:** Some of the provided examples '
+                 'have complex modifications such as additional sugars or '
+                 "stereoisomers which weren't considered.\n"
+                 '\n'
+                 'To improve:\n'
+                 '- Broaden the glycerol backbone detection pattern, focusing '
+                 'not only on one hydroxyl group but providing greater '
+                 'flexibility.\n'
+                 '- Ensure correct identification of ester linkages connected '
+                 'to a valid phosphatidylglycerol backbone. Both major ester '
+                 'linkages (to fatty acids) must be included.\n'
+                 '- Re-assess the extraction of phosphate groups. Verify that '
+                 "the glycerol's hydroxyl is replaced appropriately.\n"
+                 '\n'
+                 'Here’s an updated version with these considerations:',
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 50,
+    'num_true_positives': 329,
     'num_false_positives': 100,
-    'num_true_negatives': 8981,
+    'num_true_negatives': 5818,
     'num_false_negatives': 0,
     'num_negatives': None,
-    'precision': 0.3333333333333333,
+    'precision': 0.7668997668997669,
     'recall': 1.0,
-    'f1': 0.5,
-    'accuracy': 0.989048297010185}
+    'f1': 0.8680738786279684,
+    'accuracy': 0.9839923163118297,
+    'negative_predictive_value': 1.0}

@@ -2,54 +2,57 @@
 Classifies: CHEBI:134045 polychlorinated dibenzodioxines and related compounds
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_polychlorinated_dibenzodioxines_and_related_compounds(smiles: str):
     """
-    Determines if a molecule is a polychlorinated dibenzodioxine or related compound.
-    This includes polychlorinated dibenzofurans and polychlorinated/brominated biphenyls.
-
+    Classifies a molecule as a polychlorinated dibenzodioxin or structurally related compound based on its SMILES string.
+    
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule belongs to this class, False otherwise
+        bool: True if molecule belongs to the class, False otherwise
         str: Reason for classification
     """
+    # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return None, "Invalid SMILES string"
+        return False, "Invalid SMILES string"
 
-    # Count number of chlorine and bromine atoms
-    num_cl = len([atom for atom in mol.GetAtoms() if atom.GetSymbol() == 'Cl'])
-    num_br = len([atom for atom in mol.GetAtoms() if atom.GetSymbol() == 'Br'])
+    # Check for sufficient number of chlorine or bromine atoms
+    halogen_count = sum(atom.GetSymbol() in ['Cl', 'Br'] for atom in mol.GetAtoms())
+    if halogen_count < 3:  # Lowered to capture more true positives
+        return False, "Insufficient halogen atoms for a likely related compound."
 
-    # Define SMARTS patterns for the core structures
-    biphenyl_pattern = Chem.MolFromSmarts('c1ccccc1-c1ccccc1')
-    dioxin_pattern = Chem.MolFromSmarts('c1ccc2Oc3ccccc3Oc2c1')
-    furan_pattern = Chem.MolFromSmarts('c1ccc2oc3ccccc3c2c1')
-
-    # Check for core structures
-    is_biphenyl = mol.HasSubstructMatch(biphenyl_pattern)
-    is_dioxin = mol.HasSubstructMatch(dioxin_pattern)
-    is_furan = mol.HasSubstructMatch(furan_pattern)
-
-    # For biphenyls, require at least 4 chlorines or bromines
-    if is_biphenyl:
-        if num_cl >= 4:
-            return True, f"Polychlorinated biphenyl with {num_cl} chlorine atoms"
-        elif num_br >= 4:
-            return True, f"Polybrominated biphenyl with {num_br} bromine atoms"
-
-    # For dioxins and furans, require at least 4 chlorine
-    if is_dioxin and num_cl >= 4:
-        return True, f"Polychlorinated dibenzodioxin with {num_cl} chlorine atoms"
+    # SMARTS pattern for polychlorinated biphenyls (PCBs)
+    biphenyl_pattern = Chem.MolFromSmarts('c1cc(c(cc1)-c2ccccc2)[Cl,Br]')
     
-    if is_furan and num_cl >= 4:
-        return True, f"Polychlorinated dibenzofuran with {num_cl} chlorine atoms"
+    # SMARTS patterns for polychlorinated dibenzodioxins (PCDDs)
+    dioxin_patterns = [
+        Chem.MolFromSmarts('Oc1cc2Oc3ccccc3Oc2cc1'),  # Allow variability in Cl positions
+        Chem.MolFromSmarts('c1cc2Oc3ccc(Cl)cc3cc2cc1')
+    ]
+    
+    # SMARTS patterns for polychlorinated dibenzofurans (PCDFs)
+    furan_patterns = [
+        Chem.MolFromSmarts('c1cc2oc3cc(Cl)ccc3c2cc1'),
+        Chem.MolFromSmarts('c1cc2oc3ccc(Cl)c2cc3cc1')
+    ]
+    
+    # Check for presence of these patterns
+    matches_dioxin_furan = any(mol.HasSubstructMatch(pattern) for pattern in dioxin_patterns + furan_patterns)
+    matches_biphenyl = mol.HasSubstructMatch(biphenyl_pattern)
 
-    return False, "Does not match structural requirements for this class"
+    # Exclude common false patterns
+    common_false_patterns = [
+        Chem.MolFromSmarts('[OH]'),  # Hydroxy groups are not typical in PCBs, PCDD/Fs
+    ]
+    false_positive_match = any(mol.HasSubstructMatch(pattern) for pattern in common_false_patterns)
+
+    if (matches_dioxin_furan or matches_biphenyl) and not false_positive_match:
+        return True, "Matches polychlorinated dibenzodioxin or related compound pattern."
+
+    return False, "Does not match polychlorinated dibenzodioxin or related compound pattern."
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:134045',
@@ -66,242 +69,268 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:134045',
                                         'toxicity, but their toxic mode of '
                                         'action is through the aryl '
                                         'hydrocarbon receptor.',
-                          'parents': ['CHEBI:17792']},
-    'config': {   'llm_model_name': 'lbl/claude-sonnet',
-                  'f1_threshold': 0.8,
-                  'max_attempts': 5,
-                  'max_negative_to_test': None,
-                  'max_positive_in_prompt': 50,
-                  'max_negative_in_prompt': 20,
-                  'max_instances_in_prompt': 100,
-                  'test_proportion': 0.1},
+                          'parents': ['CHEBI:17792'],
+                          'xrefs': [   'Wikipedia:Dioxins_and_dioxin-like_compounds'],
+                          'all_positive_examples': []},
+    'config': None,
     'message': '\n'
-               'Attempt failed: F1 score of 0.10714285714285715 is too low.\n'
-               "True positives: [('Clc1ccc(-c2cc(Cl)c(Cl)c(Cl)c2)c(Cl)c1Cl', "
-               "'Polychlorinated biphenyl with 6 chlorine atoms'), "
-               "('ClC1=C(O)C(Cl)=C2C([C@H]3CC=4C(Cl)=C(OC)C=C(C4C([C@]3(C(C2=C1O)=O)O)=O)C5=C(OC)C=C(OC)C(=C5C)Cl)(C)C', "
-               "'Polychlorinated biphenyl with 4 chlorine atoms'), "
-               "('Clc1cccc(c1)-c1cc(Cl)c(Cl)c(Cl)c1Cl', 'Polychlorinated "
-               "biphenyl with 5 chlorine atoms'), "
-               "('Clc1cc(Cl)c(Cl)c(c1)-c1cc(Cl)cc(Cl)c1Cl', 'Polychlorinated "
-               "biphenyl with 6 chlorine atoms'), "
-               "('Clc1ccc(cc1Cl)-c1cc(Cl)c(Cl)cc1Cl', 'Polychlorinated "
-               "biphenyl with 5 chlorine atoms'), "
-               "('Clc1cc2oc3cc(Cl)c(Cl)c(Cl)c3c2c(Cl)c1Cl', 'Polychlorinated "
-               "dibenzofuran with 6 chlorine atoms')]\n"
-               'False positives: '
-               "[('Brc1ccc2c(c[nH]c2c1)[C@H]1CNC(=O)C(=N1)c1c[nH]c2cc(Br)ccc12', "
-               "'Polybrominated aromatic compound with 2 bromine atoms'), "
-               "('ClC1=C(O)C=C2OC3=C(O)C=CC(=C3)[C@@H](NC)C(N[C@H]4C(N[C@H](C1=C2)C(=O)N[C@H]5C(=O)N[C@@H]6C(=O)N[C@H](C(=O)NC(C(=O)O)C=7C(C8=CC6=CC(Cl)=C8O[C@@H]9O[C@H]([C@H](O)[C@H]([C@H]9O)O)CO)=C(O)C=C(O)C7)[C@@H](O[C@@H]%10O[C@H](C(=O)O)[C@@H](O)[C@@H]([C@H]%10NC(=O)CCCCCCCCC)O)C%11=CC(=C(OC=%12C=C5C=C(OC%13=C(C=C([C@H]4O)C=C%13)Cl)C%12O[C@@H]%14O[C@H]([C@H](O)[C@H]([C@H]%14O)O)CO)C(Cl)=C%11)Cl)=O)=O', "
-               "'Polychlorinated biphenyl with 5 chlorine atoms'), "
-               "('ClC1=CC(=C(NC(=O)CN2CCC(CC2)C)C=C1)C(=O)C=3C(Cl)=CC=CC3', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('[H+].[H+].[Cl-].[Cl-].COc1ccc2nc3cc(Cl)ccc3c(NC(C)CCCN(CCCl)CCCl)c2c1', "
-               "'Polychlorinated aromatic compound with 5 chlorine atoms'), "
-               "('CC(C)(C)C1=CC=C(C=C1)C(=O)NC2=CC(=C(C=C2C(=O)O)Cl)Cl', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('C1=CC(=CN=C1)C(=O)N[C@@H]2C=C[C@H](O[C@@H]2CO)CC(=O)NCC3=CC(=C(C=C3)Cl)Cl', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('C[C@@H]1CCCCO[C@H]([C@@H](CN(C(=O)C2=C(O1)C=CC(=C2)N(C)C)[C@@H](C)CO)C)CN(C)CC3=CC(=C(C=C3)Cl)Cl', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('N1=C2C(=C(C3=C1C=CC(=C3)OC)[NH2+]CCC[NH2+]CCCl)C=CC(=C2)Cl', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('C1=CC(=CC(=C1)OCC2=C(C=C(C=C2)Cl)Cl)C=C3C(=O)N(C(=S)S3)CC(=O)O', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('NC(=N)NCCCCNC(=O)[C@@]1(O)[C@H](c2c[nH]c3cc(Br)ccc23)[C@@](O)(Cc2c[nH]c3cc(Br)ccc23)C(=O)N1CCCCNC(N)=N', "
-               "'Polybrominated aromatic compound with 2 bromine atoms'), "
-               "('CC1=C(C=CC(=C1)[N+](=O)[O-])NS(=O)(=O)C2=C(C=CC(=C2)Cl)Cl', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('ClC1=C(C=2OC3=C(C=C(Cl)C=C3)C(NC2C(=C1)C(=O)N)=O)C', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('ClC1=C(C=2OC3=C(C=C(Cl)C=C3)C(NC2C(=C1)C(=O)O)=O)C', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('Oc1cc(Cl)c(cc1Cl)-c1ccccc1Cl', 'Polychlorinated biphenyl "
-               "with 3 chlorine atoms'), "
-               "('O\\\\N=C1\\\\Cc2cc(Br)c(Oc3cc(C\\\\C(C(=O)NCCc4cc(Br)c(O)c(Oc5ccc(CCNC1=O)cc5Br)c4)=N/O)cc(Br)c3O)c(Br)c2', "
-               "'Polybrominated aromatic compound with 5 bromine atoms'), "
-               "('Clc1ccc(NC(=O)Nc2ccc(Cl)c(Cl)c2)cc1', 'Polychlorinated "
-               "aromatic compound with 3 chlorine atoms'), "
-               "('BrC1=CC=2NC=3C=C(Br)C=CC3C2C=C1', 'Polybrominated aromatic "
-               "compound with 2 bromine atoms'), "
-               "('C=1C2=C(C(=CC1Cl)Cl)OC(C=C2)C=3C=CC=CC3', 'Polychlorinated "
-               "aromatic compound with 2 chlorine atoms'), "
-               "('C1=CC=C(C(=C1)COC2=C(C=C(C=C2)Br)C=C3C(=O)NC(=S)S3)Br', "
-               "'Polybrominated aromatic compound with 2 bromine atoms'), "
-               "('[H]C(=CC([H])=C1N(CC)c2cc(Cl)c(Cl)cc2N1CC)c1n(CC)c2cc(Cl)c(Cl)cc2[n+]1CC', "
-               "'Polychlorinated aromatic compound with 4 chlorine atoms'), "
-               "('COC1=CC=C(C=C1)C(C(=O)NC2CCCCC2)N(C3=CC(=CC=C3)Cl)C(=O)CCl', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('C[C@@H]1CN(C(=O)C2=C(C(=CC=C2)N(C)C)O[C@H]1CN(C)CC3=CC(=C(C=C3)Cl)Cl)[C@@H](C)CO', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('C1=CC=NC(=C1)C=NNC(=O)C2=CC(=C(C=C2)Cl)Cl', 'Polychlorinated "
-               "aromatic compound with 2 chlorine atoms'), "
-               "('CN(C)CC(O)Cn1c2ccc(Br)cc2c2cc(Br)ccc12', 'Polybrominated "
-               "aromatic compound with 2 bromine atoms'), "
-               "('ClC(Cl)CCC[C@@H]1C2=C(O)C=C([C@H](OC(=O)N)[C@H](CCCC[C@H](CCCC(Cl)Cl)C3=C(C=C(C[C@H](CCCC1)C)C=C3O)O)C)C=C2O', "
-               "'Polychlorinated aromatic compound with 4 chlorine atoms'), "
-               "('OC(=O)C(O)(c1ccc(Cl)cc1)c1ccc(Cl)cc1', 'Polychlorinated "
-               "aromatic compound with 2 chlorine atoms'), "
-               "('ClC1=C(O)C(Cl)=C2[C@@H](CC)OC(C2=C1OC3=C(OC)C=C(O)C(=C3CCC)Cl)=O', "
-               "'Polychlorinated aromatic compound with 3 chlorine atoms'), "
-               "('C[C@]12CC[C@H]3[C@@H](CCc4cc(OC(=O)Cc5ccc(cc5)N(CCCl)CCCl)ccc34)[C@@H]1CC[C@@H]2OC(=O)Cc1ccc(cc1)N(CCCl)CCCl', "
-               "'Polychlorinated aromatic compound with 4 chlorine atoms'), "
-               "('ClC1=C2OC3=C(Cl)C(O)=C(Cl)C(=C3C(C2=C(O)C(=C1O)Cl)=O)C', "
-               "'Polychlorinated aromatic compound with 4 chlorine atoms'), "
-               "('OC(=O)c1nn(Cc2ccc(Cl)cc2Cl)c2ccccc12', 'Polychlorinated "
-               "aromatic compound with 2 chlorine atoms'), "
-               "('C1=CC=C2C(=C1)C=CC=C2CC(=O)NC(C(Cl)(Cl)Cl)NC(=S)NC3=CC=CC=C3Cl', "
-               "'Polychlorinated aromatic compound with 4 chlorine atoms'), "
-               "('ClC1=C(O)C2=C(OC=3N([C@@H]4O[C@@H]([C@@H](O)[C@@H]([C@H]4O)O)CO)C(=CC3C2=O)Cl)C(=C1)C', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('ClC1=CC2=CC=C1OC=3C(O)=C4C=C([C@@](NC([C@@]5([H])NC(=O)[C@](CC=6C=C(Cl)C(O4)=CC6)([H])NC(=O)[C@H](NS(=O)(=O)C=7C=CC=CC7)C=8C=C(C(=CC8)O)OC=9C=C5C=C(C9)O)=O)(C(N[C@]%10([H])C%11=CC=C(O)C(=C%11)C%12=C(C=C(C=C%12O)O)[C@H](C(=O)O)NC(=O)[C@@]([H])([C@]2([H])O[C@@H]%13O[C@H](CO)[C@H]([C@@H]([C@H]%13NC(=O)C)O)O)NC%10=O)O)[H])C3', "
-               "'Polychlorinated biphenyl with 2 chlorine atoms'), "
-               "('Cl.[H][C@]1(CC[C@H](NC)c2ccccc12)c1ccc(Cl)c(Cl)c1', "
-               "'Polychlorinated aromatic compound with 3 chlorine atoms'), "
-               "('ClC1=C(OC)C(Cl)=CC(=C1)COC(=O)C2=CC(Cl)=C(O)C(=C2)Cl', "
-               "'Polychlorinated aromatic compound with 4 chlorine atoms'), "
-               "('CN[C@H]1CC[C@@H](C2=CC=CC=C12)C3=CC(=C(C=C3)Cl)Cl', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('Clc1cc(Cl)c2C(c3ccccc3CCc2c1)n1ccnc1', 'Polychlorinated "
-               "aromatic compound with 2 chlorine atoms'), "
-               "('O[N+]([O-])=O.Clc1ccc([C@@H](Cn2ccnc2)OCc2c(Cl)cccc2Cl)c(Cl)c1', "
-               "'Polychlorinated aromatic compound with 4 chlorine atoms'), "
-               "('CC1=C(C(=NO1)C2=C(C=CC=C2Cl)Cl)COC(=O)C3=CC=C(C=C3)[N+](=O)[O-]', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('CC1(C)C(C=C(Cl)c2ccc(Cl)cc2)C1C(=O)OC(C#N)c1ccc(F)c(Oc2ccccc2)c1', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('ClC1=C(O)C(Cl)=C2[C@@H](CC)OC(C2=C1OC3=C(OC)C=C(OC)C(=C3CCC)Cl)=O', "
-               "'Polychlorinated aromatic compound with 3 chlorine atoms'), "
-               "('C[C@H]1CN(C(=O)C2=C(C=CC(=C2)NC(=O)CN3C=NN=N3)O[C@@H]1CN(C)CC4=CC(=C(C=C4)Cl)Cl)[C@@H](C)CO', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('ClC1=C2OC3=C(C=C(O)C=C3CCC)OC(C2=C(CCC)C(=C1O)Cl)=O', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('COC1=CC2=C(C=C1)N(C(=O)C1=C(Cl)C(Cl)=CC=C1)C(C)=C2CCN1CCOCC1', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('CC(C)N=c1cc2n(-c3ccc(Cl)cc3)c3ccccc3nc2cc1Nc1ccc(Cl)cc1', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('C[C@@H]1CCCCO[C@H]([C@@H](CN(C(=O)C2=C(O1)C=CC(=C2)NC(=O)NC3=CC4=C(C=C3)OCO4)[C@@H](C)CO)C)CN(C)CC5=CC(=C(C=C5)Cl)Cl', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('Cc1cc(cc(Br)c1O)C1(OS(=O)(=O)c2ccccc12)c1cc(C)c(O)c(Br)c1', "
-               "'Polybrominated aromatic compound with 2 bromine atoms'), "
-               "('C[C@@H](CN([C@H](C)CO)C(=O)NC1=CC=C(C=C1)F)[C@@H](CN(C)C(=O)C2=CC(=CC(=C2)Cl)Cl)OC', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('ClC1=C(OC)C(=C(C)C(=C1O)Cl)C(=O)O[C@H]2[C@H](O[C@@H]3O[C@H]([C@H](OC)[C@](C3)([N+](=O)[O-])C)C)C[C@H](O[C@H]4[C@H](O)C[C@@]5(O[C@@]6([C@H](O)[C@H](O[C@H]7[C@@H](OC)[C@H](O[C@H]([C@@H]7O)O[C@H]8[C@H](O)[C@H](OC)[C@H](O[C@@H]9OC[C@@H]%10O[C@@]%11(O[C@H]%10[C@H]9O)OC[C@@H](OC(=O)C%12=C(O)C=C(O)C=C%12C)[C@H]%13[C@H]%11OCO%13)O[C@@H]8COC)C)O[C@@H]([C@H]6O5)C)C)O[C@@H]4C)O[C@@H]2C', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('ClC1=C(O)C(Cl)=C(CCCCC)C(=C1O)C(=O)OC2=CC(OC)=C(C(=O)O)C(=C2)CCCCC', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('ClC(c1ccccc1)c1ccccc1Cl', 'Polychlorinated aromatic compound "
-               "with 2 chlorine atoms'), "
-               "('C1=CC=C2C(=C1)C(=NN2CC3=CC(=C(C=C3)Cl)Cl)C(=O)O', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('C1C[C@@H]([C@@H](O[C@@H]1CCNC(=O)C2=CC(=CC(=C2)Cl)Cl)CO)NC(=O)CC3=CC=CC=N3', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('ClC1=C(OC)C(C2=C3C(=O)C=4C(=O)C5=C(O)C=C(O)C=C5C(C4C(C3=C(Cl)C(=C2)OC)=O)(C)C)=C(C)C=C1OC', "
-               "'Polychlorinated biphenyl with 2 chlorine atoms'), "
-               "('C1=CC(=CC=C1NC(=O)OCC2=CN(N=N2)C3=CC=C(C=C3)Cl)Cl', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('CC1=CC=CC=C1C(=O)NN=C(C)CC(=O)NC2=C(C(=CC=C2)Cl)Cl', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('CCN1CCC(CC1)N2C=C(N=N2)CNC3=CC(=C4C(=C3)C(=C(C=N4)C#N)NC5=CC(=C(C=C5)F)Cl)Cl', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('C1=CC(=CC(=C1)Cl)NC(=O)CSC2=NC(=O)NC(=N2)C3=CC=C(C=C3)Cl', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('O.[Cl-].[Cl-].CCO.[H][C@@]12[C@@H](C)c3cccc(O)c3C(=O)C1=C(O)[C@]1(O)C(=O)C(C(N)=O)=C(O)[C@@H]([NH+](C)C)[C@]1([H])[C@H]2O.[H][C@@]12[C@@H](C)c3cccc(O)c3C(=O)C1=C(O)[C@]1(O)C(=O)C(C(N)=O)=C(O)[C@@H]([NH+](C)C)[C@]1([H])[C@H]2O', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('CC1=C(N(N=C1C(=O)NN2CCOCC2)C3=C(C=C(C=C3)Cl)Cl)C4=CC=C(C=C4)I', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('FC(F)(F)C1=NC=CC=C1C(=O)NC1CCC1C1=C(Cl)C=C(Cl)C=C1', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('CSC1=NC2=C(S1)C=C(C=C2)NS(=O)(=O)C3=C(C=CC=C3Cl)Cl', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('ClC1=C(O)C=CC(=C1)C2NC(=O)[C@H](N(C(=O)[C@@H](NC(=O)[C@@H](C)CC(=C[C@@H]([C@H](OC([C@H]2O)=O)C)C)C)C)C)CC3=C(Cl)NC4=C3C=CC=C4', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('OCC(c1ccc(Cl)cc1)c1ccc(Cl)cc1', 'Polychlorinated aromatic "
-               "compound with 2 chlorine atoms'), "
-               "('Oc1cc(Cl)c(cc1Cl)-c1cc(Cl)c(Cl)cc1Cl', 'Polychlorinated "
-               "biphenyl with 5 chlorine atoms'), "
-               "('COC1=CC=C(C=C1)NC(=O)N[C@H]2CC[C@@H](O[C@H]2CO)CCNC(=O)C3=CC(=CC(=C3)Cl)Cl', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('C1CN(CCN1C2=C3C=CC(=CC3=NC=C2)Cl)C(=O)C4=CC=C(C=C4)Cl', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('C1=CC(=C(C=C1Cl)Cl)CN=C(N)NC(=O)C2=C(N=C(C(=N2)Cl)N)N', "
-               "'Polychlorinated aromatic compound with 3 chlorine atoms'), "
-               "('ClC=1C=2NC3=C(C=C4NC5=C(C(=O)C4=C3)C=CC=C5Cl)C(=O)C2C=CC1', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('C[C@H]1CN(C(=O)C2=C(C(=CC=C2)NS(=O)(=O)C)O[C@H]1CN(C)CC3=CC(=C(C=C3)Cl)Cl)[C@H](C)CO', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('C[C@H]1CCCCO[C@@H]([C@H](CN(C(=O)C2=C(O1)C=CC(=C2)NC(=O)C3CCCCC3)[C@H](C)CO)C)CN(C)CC4=CC(=C(C=C4)Cl)Cl', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('C1=CC(=C(C=C1Cl)Cl)NN2C=NC3=NN=CC3=C2N', 'Polychlorinated "
-               "aromatic compound with 2 chlorine atoms'), "
-               "('[Cl-].[Cl-].CC1COCC(C)N1C(=O)C[n+]1ccc(cc1)-c1cc[n+](CC(=O)N2C(C)COCC2C)cc1', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('Nc1ccc(Oc2ccc(N)c(Cl)c2)cc1Cl', 'Polychlorinated aromatic "
-               "compound with 2 chlorine atoms'), "
-               "('Clc1ccc(CSC(Cn2ccnc2)c2ccc(Cl)cc2Cl)cc1', 'Polychlorinated "
-               "aromatic compound with 3 chlorine atoms'), "
-               "('ClC1=C(O)C(O[C@H]2OC[C@H](N(C)C)[C@@H](C2)O)=CC3=C1NC=4C=5N(C=6C(Cl)=CC=CC6C5C7=C(C34)C(=O)N(C)C7=O)[C@@H]8O[C@@H]([C@H](OC)[C@@H]([C@H]8O)O)CO', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('ClC1=C(O)C(Cl)=CC(=C1)C=2C(=O)C3=C(C=C(O)C=C3)OC2', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('C1CCC(CC1)NC(=O)C(C2=CN=CC=C2)N(C3=CC(=CC=C3)Cl)C(=O)CCl', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('C1=CC=C(C=C1)N=C(C2=CC=CC=N2)NN=CC3=C(C=C(C=C3)Cl)Cl', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('Clc1ccc([C@@H](Cn2ccnc2)OCc2ccc(Sc3ccccc3)cc2)c(Cl)c1', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('Cc1cc(C(C#N)c2ccc(Cl)cc2)c(Cl)cc1NC(=O)c1cc(I)cc(I)c1O', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('ClC1=C(Cl)C=CC2=C1N(C=3C=NC=CC23)C', 'Polychlorinated "
-               "aromatic compound with 2 chlorine atoms'), "
-               "('CCOC(=O)Nc1ccc(SC[C@H]2CO[C@@](Cn3ccnc3)(O2)c2ccc(Cl)cc2Cl)cc1', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('C[C@H]1CN(C(=O)C2=C(C=CC(=C2)NC(=O)C3=CC=NC=C3)O[C@H]1CN(C)CC4=CC(=C(C=C4)Cl)Cl)[C@H](C)CO', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('Clc1ccc(c(Cl)c1)C(=O)n1cnc2ccccc12', 'Polychlorinated "
-               "aromatic compound with 2 chlorine atoms'), "
-               "('C[C@H](CN([C@H](C)CO)C(=O)NC1=CC=C(C=C1)F)[C@@H](CN(C)C(=O)C2=CC(=CC(=C2)Cl)Cl)OC', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('Cl.CN(C)C(=O)C(CCN1CCC(O)(CC1)c1ccc(Cl)cc1)(c1ccccc1)c1ccccc1', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('C[C@H]1CN[C@H](COC2=C(C=C(C=C2)NC(=O)NC3=CC(=C(C=C3)Cl)Cl)C(=O)N(C[C@@H]1OC)C)C', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('ClC1=C(Cl)C=CC2=C1N(C=3C(=O)NC=CC23)C', 'Polychlorinated "
-               "aromatic compound with 2 chlorine atoms'), "
-               "('ClC(Cl)[C@H](O)CC=1OC(=O)C=2C(O)=CC(=CC2C1)OC', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('ClC1=CC=C(C=C1)\\\\C=N\\\\N\\\\C(=N\\\\N=C\\\\C2=CC=C(Cl)C=C2)\\\\N', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('CC1COC2(N1CC(=O)Nc1ccc(Cl)cc21)c1ccccc1Cl', 'Polychlorinated "
-               "aromatic compound with 2 chlorine atoms'), "
-               "('CC(C)N1CCN(CC1)c1ccc(OC[C@H]2CO[C@@](Cn3cncn3)(O2)c2ccc(Cl)cc2Cl)cc1', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('C1C[C@H]([C@H](O[C@@H]1CCNC(=O)C2=CC=C(C=C2)F)CO)NC(=O)NC3=CC(=C(C=C3)Cl)Cl', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('C1CC(=O)N[C@@H](COC(=O)[C@@H](CC=C1)CC(=O)NCC2=CC=C(C=C2)Cl)C3=CC=C(C=C3)Cl', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('Oc1c(Br)cc(Br)cc1-c1cc(Br)cc(Br)c1OP(O)(O)=O', "
-               "'Polybrominated biphenyl with 4 bromine atoms'), "
-               "('C1C[C@H]([C@H](O[C@H]1CC(=O)NCC2=CC(=C(C=C2)Cl)Cl)CO)NC(=O)C3=CN=CC=C3', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('C[NH2+][C@H](CC(C)C)C(=O)N[C@@H]1[C@H](O)c2ccc(Oc3cc4cc(Oc5ccc(cc5Cl)[C@@H](O)[C@@H]5NC(=O)[C@H](NC(=O)[C@@H]4NC(=O)[C@H](CC(N)=O)NC1=O)c1ccc(O)c(c1)-c1c(O)cc(O)cc1[C@H](NC5=O)C([O-])=O)c3O)c(Cl)c2', "
-               "'Polychlorinated biphenyl with 2 chlorine atoms'), "
-               "('C[C@@H]1CN(C(=O)CC2=C(C=CC(=C2)NS(=O)(=O)C)O[C@H]1CN(C)CC3=CC(=C(C=C3)Cl)Cl)[C@H](C)CO', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms'), "
-               "('ClC(Cl)C(O)CC=1OC(=O)C=2C(O[C@@H]3O[C@@H]([C@@H](O)[C@@H]([C@H]3O)O)CO)=CC(=CC2C1)OC', "
-               "'Polychlorinated aromatic compound with 2 chlorine atoms')]\n"
-               'False negatives: []',
+               'Attempt failed: F1 score of 0.55 is too low.\n'
+               'Outcomes:\n'
+               '------\n'
+               '\n'
+               'True positives: SMILES: '
+               'Clc1cc2Oc3c(Cl)c(Cl)c(Cl)c(Cl)c3Oc2c(Cl)c1Cl NAME: '
+               '1,2,3,4,6,7,8-Heptachlorodibenzodioxin REASON: CORRECT Matches '
+               'polychlorinated dibenzodioxin or related compound pattern.\n'
+               ' * SMILES: Clc1c(Cl)c(Cl)c2Oc3ccccc3Oc2c1Cl NAME: '
+               '1,2,3,4-tetrachlorodibenzodioxine REASON: CORRECT Matches '
+               'polychlorinated dibenzodioxin or related compound pattern.\n'
+               ' * SMILES: Clc1cc2oc3c(Cl)c(Cl)c(Cl)c(Cl)c3c2c(Cl)c1Cl NAME: '
+               '1,2,3,4,7,8,9-Heptachlorodibenzofuran REASON: CORRECT Matches '
+               'polychlorinated dibenzodioxin or related compound pattern.\n'
+               ' * SMILES: Clc1cc2Oc3c(Cl)c(Cl)c(Cl)c(Cl)c3Oc2cc1Cl NAME: '
+               '1,2,3,4,7,8-Hexachlorodibenzodioxin REASON: CORRECT Matches '
+               'polychlorinated dibenzodioxin or related compound pattern.\n'
+               ' * SMILES: Clc1cc2oc3cc(Cl)c(Cl)c(Cl)c3c2c(Cl)c1Cl NAME: '
+               '1,2,3,7,8,9-Hexachlorodibenzofuran REASON: CORRECT Matches '
+               'polychlorinated dibenzodioxin or related compound pattern.\n'
+               ' * SMILES: Clc1cc2c(oc3c(Cl)c(Cl)c(Cl)c(Cl)c23)c(Cl)c1Cl NAME: '
+               '1,2,3,4,6,7,8-Heptachlorodibenzofuran REASON: CORRECT Matches '
+               'polychlorinated dibenzodioxin or related compound pattern.\n'
+               ' * SMILES: Clc1cc2Oc3c(Oc2c(Cl)c1Cl)cc(Cl)c(Cl)c3Cl NAME: '
+               '1,2,3,6,7,8-Hexachlorodibenzodioxin REASON: CORRECT Matches '
+               'polychlorinated dibenzodioxin or related compound pattern.\n'
+               ' * SMILES: Clc1cc(Cl)c(cc1Cl)-c1cc(Cl)c(Cl)cc1Cl NAME: '
+               "2,2',4,4',5,5'-hexachlorobiphenyl REASON: CORRECT Matches "
+               'polychlorinated dibenzodioxin or related compound pattern.\n'
+               ' * SMILES: Clc1cc2oc3c(Cl)c(Cl)c(Cl)c(Cl)c3c2cc1Cl NAME: '
+               '1,2,3,4,7,8-Hexachlorodibenzofuran REASON: CORRECT Matches '
+               'polychlorinated dibenzodioxin or related compound pattern.\n'
+               ' * SMILES: Clc1ccc(-c2cc(Cl)c(Cl)c(Cl)c2)c(Cl)c1Cl NAME: '
+               "2,3,3',4,4',5'-Hexachlorobiphenyl REASON: CORRECT Matches "
+               'polychlorinated dibenzodioxin or related compound pattern.\n'
+               ' * SMILES: Clc1ccc(cc1Cl)-c1cc(Cl)c(Cl)cc1Cl NAME: '
+               "2,3',4,4',5-Pentachlorobiphenyl REASON: CORRECT Matches "
+               'polychlorinated dibenzodioxin or related compound pattern.\n'
+               ' * SMILES: Clc1cc2oc3cc(Cl)c(Cl)c(Cl)c3c2cc1Cl NAME: '
+               '1,2,3,7,8-Pentachlorodibenzofuran REASON: CORRECT Matches '
+               'polychlorinated dibenzodioxin or related compound pattern.\n'
+               ' * SMILES: ClC=1C(C=2C(Cl)=CC(Cl)=C(Cl)C2)=CC(Cl)=C(Cl)C1Cl '
+               'NAME: PCB180 REASON: CORRECT Matches polychlorinated '
+               'dibenzodioxin or related compound pattern.\n'
+               ' * SMILES: Clc1cc2Oc3cc(Cl)c(Cl)c(Cl)c3Oc2c(Cl)c1Cl NAME: '
+               '1,2,3,7,8,9-Hexachlorodibenzodioxin REASON: CORRECT Matches '
+               'polychlorinated dibenzodioxin or related compound pattern.\n'
+               ' * SMILES: Clc1cc2Oc3cc(Cl)c(Cl)cc3Oc2cc1Cl NAME: '
+               '2,3,7,8-tetrachlorodibenzodioxine REASON: CORRECT Matches '
+               'polychlorinated dibenzodioxin or related compound pattern.\n'
+               ' * SMILES: Clc1ccc(c(Cl)c1)-c1cc(Cl)c(Cl)c(Cl)c1 NAME: '
+               "2,3',4,4',5'-Pentachlorobiphenyl REASON: CORRECT Matches "
+               'polychlorinated dibenzodioxin or related compound pattern.\n'
+               ' * SMILES: Clc1ccc(cc1Cl)-c1ccc(Cl)c(Cl)c1Cl NAME: '
+               "2,3,4,3',4'-Pentachlorobiphenyl REASON: CORRECT Matches "
+               'polychlorinated dibenzodioxin or related compound pattern.\n'
+               ' * SMILES: Clc1c(Cl)c(Cl)c2Oc3c(Cl)c(Cl)c(Cl)c(Cl)c3Oc2c1Cl '
+               'NAME: 1,2,3,4,6,7,8,9-Octachlorodibenzo-p-dioxin REASON: '
+               'CORRECT Matches polychlorinated dibenzodioxin or related '
+               'compound pattern.\n'
+               ' * SMILES: ClC1=C(C=2C(Cl)=CC(Cl)=C(Cl)C2)C=CC(Cl)=C1Cl NAME: '
+               'PCB138 REASON: CORRECT Matches polychlorinated dibenzodioxin '
+               'or related compound pattern.\n'
+               ' * SMILES: Clc1ccc(cc1Cl)-c1cc(Cl)c(Cl)c(Cl)c1Cl NAME: '
+               "2,3,3',4,4',5-Hexachlorobiphenyl REASON: CORRECT Matches "
+               'polychlorinated dibenzodioxin or related compound pattern.\n'
+               ' * SMILES: Clc1cc(Cl)c2Oc3cc(Cl)cc(Cl)c3Oc2c1 NAME: '
+               '1,3,6,8-tetrachlorodibenzodioxine REASON: CORRECT Matches '
+               'polychlorinated dibenzodioxin or related compound pattern.\n'
+               ' * SMILES: Clc1cc2Oc3cc(Cl)c(Cl)c(Cl)c3Oc2cc1Cl NAME: '
+               '1,2,3,7,8-Pentachlorodibenzodioxin REASON: CORRECT Matches '
+               'polychlorinated dibenzodioxin or related compound pattern.\n'
+               'False positives: SMILES: '
+               'Oc1c(Cl)c(Cl)cc(c1Cl)-c1cc(Cl)c(Cl)c(Cl)c1Cl NAME: '
+               "2,2',3',4,4',5,5'-Heptachloro-3-biphenylol REASON: WRONGLY "
+               'CLASSIFIED Matches polychlorinated dibenzodioxin or related '
+               'compound pattern.\n'
+               ' * SMILES: Oc1c(Cl)cc2c(oc3cc(Cl)c(Cl)c(Cl)c23)c1Cl NAME: '
+               '7-hydroxy-1,2,3,6,8-pentachlorodibenzofuran REASON: WRONGLY '
+               'CLASSIFIED Matches polychlorinated dibenzodioxin or related '
+               'compound pattern.\n'
+               'False negatives: SMILES: Clc1ccc(cc1)-c1cc(Cl)c(Cl)c(Cl)c1Cl '
+               "NAME: 2,3,4,4',5-Pentachlorobiphenyl REASON: MISSED Does not "
+               'match polychlorinated dibenzodioxin or related compound '
+               'pattern.\n'
+               ' * SMILES: Clc1cccc(c1)-c1cc(Cl)c(Cl)c(Cl)c1Cl NAME: '
+               "2,3,3',4,5-pentachlorobiphenyl REASON: MISSED Does not match "
+               'polychlorinated dibenzodioxin or related compound pattern.\n'
+               ' * SMILES: Clc1cc(Cl)cc(c1)-c1cc(Cl)cc(Cl)c1 NAME: '
+               "3,3',5,5'-tetrachlorobiphenyl REASON: MISSED Does not match "
+               'polychlorinated dibenzodioxin or related compound pattern.\n'
+               ' * SMILES: '
+               'ClC1=C(O)C=2C(=O)[C@]3(O)C(=O)C4=C(C5=C(OC)C=C(OC)C(=C5C)Cl)C=C(OC)C(=C4C[C@@H]3C(C2C=C1O)(C)C)Cl '
+               'NAME: Formicamycin F REASON: MISSED Insufficient halogen atoms '
+               'for a likely related compound.\n'
+               ' * SMILES: Clc1c(Cl)c(Cl)c(-c2ccccc2)c(Cl)c1Cl NAME: '
+               '2,3,4,5,6-pentachlorobiphenyl REASON: MISSED Does not match '
+               'polychlorinated dibenzodioxin or related compound pattern.\n'
+               ' * SMILES: Clc1cc(Cl)cc(c1)-c1ccccc1 NAME: '
+               '3,5-dichlorobiphenyl REASON: MISSED Insufficient halogen atoms '
+               'for a likely related compound.\n'
+               ' * SMILES: Clc1ccc(cc1)-c1c(Cl)cc(Cl)cc1Cl NAME: '
+               "2,4,4',6-tetrachlorobiphenyl REASON: MISSED Does not match "
+               'polychlorinated dibenzodioxin or related compound pattern.\n'
+               ' * SMILES: Clc1cccc(Cl)c1-c1ccccc1 NAME: 2,6-dichlorobiphenyl '
+               'REASON: MISSED Insufficient halogen atoms for a likely related '
+               'compound.\n'
+               ' * SMILES: '
+               'ClC1=C(O)C(Cl)=C2C([C@H]3CC=4C(Cl)=C(OC)C=C(C4C([C@]3(C(C2=C1O)=O)O)=O)C5=C(O)C=C(OC)C(=C5C)Cl)(C)C '
+               'NAME: Formicamycin I REASON: MISSED Does not match '
+               'polychlorinated dibenzodioxin or related compound pattern.\n'
+               ' * SMILES: Clc1cccc(c1)-c1cc(Cl)ccc1Cl NAME: '
+               "2,3',5-trichlorobiphenyl REASON: MISSED Insufficient halogen "
+               'atoms for a likely related compound.\n'
+               '------\n'
+               '\n'
+               'In your reasoning step, analyze the previous program and the '
+               'above outcomes, hypothesizing about what went wrong, and how '
+               'to improve.\n',
+    'sample_true_negatives': [   {   'smiles': 'C[C@@H]1OC(=O)C=C1',
+                                     'name': '(S)-5-methylfuran-2(5H)-one',
+                                     'reason': 'Insufficient halogen atoms for '
+                                               'a likely related compound.'},
+                                 {   'smiles': 'Cc1cccc(c1)C(O)=O',
+                                     'name': 'm-toluic acid',
+                                     'reason': 'Insufficient halogen atoms for '
+                                               'a likely related compound.'},
+                                 {   'smiles': 'CN(C)CC(=O)NC[C@@H]1[C@@H]([C@@H](N1)CO)C2=CC=C(C=C2)C3=CC=CC(=C3)C#N',
+                                     'name': 'N-[[(2S,3S,4R)-3-[4-(3-cyanophenyl)phenyl]-4-(hydroxymethyl)-2-azetidinyl]methyl]-2-(dimethylamino)acetamide',
+                                     'reason': 'Insufficient halogen atoms for '
+                                               'a likely related compound.'},
+                                 {   'smiles': 'C[C@@H]1O[C@@H](OCCCCCCCCCC(=O)CC(O)=O)[C@H](O)C[C@H]1O',
+                                     'name': 'bkos#20',
+                                     'reason': 'Insufficient halogen atoms for '
+                                               'a likely related compound.'},
+                                 {   'smiles': 'C([C@@](COC(CCCCCCCCC/C=C\\CCCCCC)=O)(OC(CCCCCCCCC/C=C\\CCCCCC)=O)[H])OP(=O)(O)OC[C@@](CO)([H])O',
+                                     'name': 'PG(18:1(11Z)/18:1(11Z))',
+                                     'reason': 'Insufficient halogen atoms for '
+                                               'a likely related compound.'},
+                                 {   'smiles': 'O=C(N1C(C(=O)NC(C(=O)NC(C(=O)NC(C(=O)NC(C(=O)NC(CO)CC=2C3=C(C=CC=C3)NC2)CCC(=O)N)(C)C)(C)C)(CC)C)CCC1)C(NC(=O)C(NC(=O)C(NC(=O)C(NC(=O)C(NC(=O)CNC(=O)C(NC(=O)C(NC(=O)C(NC(=O)C(NC(=O)C(NC(=O)C(NC(=O)C(NC(=O)C)CC4=CC=CC=C4)(C)C)CO)(C)C)(C)C)CC(C)C)CCC(=O)N)(C)C)(C)C)C)C)(C)C',
+                                     'name': 'Chrysospermin B',
+                                     'reason': 'Insufficient halogen atoms for '
+                                               'a likely related compound.'},
+                                 {   'smiles': 'CC1(C=CC2=C3C(=CC(=C2O1)OC)C(=O)C(=CO3)C4=CC5=C(C=C4OC)OCO5)C',
+                                     'name': '6-methoxy-3-(6-methoxy-1,3-benzodioxol-5-yl)-8,8-dimethyl-4-pyrano[2,3-h][1]benzopyranone',
+                                     'reason': 'Insufficient halogen atoms for '
+                                               'a likely related compound.'},
+                                 {   'smiles': 'O[C@@H]([C@H](NC(=O)[C@@H](N)CCC(O)=O)C(=O)NCC(O)=O)C',
+                                     'name': 'Glu-Thr-Gly',
+                                     'reason': 'Insufficient halogen atoms for '
+                                               'a likely related compound.'},
+                                 {   'smiles': 'O([C@H]1[C@H](O[C@@H]2O[C@H]([C@@H](O)[C@@H](O)[C@@H]2O)C)[C@@H](NC(=O)C)[C@@H](O[C@@H]1CO)O[C@H]3[C@@H](O)[C@H](O)[C@H](O[C@@H]3OC[C@H]4O[C@@H](O[C@H]5[C@H](O)[C@@H](NC(=O)C)C(O[C@@H]5CO)O)[C@@H](O)[C@@H](O)[C@@H]4O)CO)[C@@H]6O[C@@H]([C@H](O)[C@H](O[C@]7(O[C@H]([C@H](NC(=O)C)[C@@H](O)C7)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]6O)CO',
+                                     'name': '(2S,4S,5R,6R)-5-Acetamido-2-[(2S,3R,4S,5S,6R)-2-[(2R,3S,4R,5R,6S)-5-acetamido-6-[(2S,3S,4S,5S,6R)-2-[[(2R,3S,4S,5S,6S)-6-[(2R,3S,4R,5R)-5-acetamido-4,6-dihydroxy-2-(hydroxymethyl)oxan-3-yl]oxy-3,4,5-trihydroxyoxan-2-yl]methoxy]-4,5-dihydroxy-6-(hydroxymethyl)oxan-3-yl]oxy-2-(hydroxymethyl)-4-[(2S,3S,4R,5S,6S)-3,4,5-trihydroxy-6-methyloxan-2-yl]oxyoxan-3-yl]oxy-3,5-dihydroxy-6-(hydroxymethyl)oxan-4-yl]oxy-4-hydroxy-6-[(1R,2R)-1,2,3-trihydroxypropyl]oxane-2-carboxylic '
+                                             'acid',
+                                     'reason': 'Insufficient halogen atoms for '
+                                               'a likely related compound.'},
+                                 {   'smiles': 'COCCOC(C)C(O)=O',
+                                     'name': '2-(2-methoxyethoxy)propanoic '
+                                             'acid',
+                                     'reason': 'Insufficient halogen atoms for '
+                                               'a likely related compound.'}],
+    'sample_false_negatives': [   {   'smiles': 'Clc1cc(Cl)cc(c1)-c1cc(Cl)cc(Cl)c1',
+                                      'name': "3,3',5,5'-tetrachlorobiphenyl",
+                                      'reason': 'Does not match '
+                                                'polychlorinated dibenzodioxin '
+                                                'or related compound pattern.'},
+                                  {   'smiles': 'Clc1cc2Oc3c(Cl)c(Cl)c(Cl)c(Cl)c3Oc2c(Cl)c1Cl',
+                                      'name': '1,2,3,4,6,7,8-Heptachlorodibenzodioxin',
+                                      'reason': 'Does not match '
+                                                'polychlorinated dibenzodioxin '
+                                                'or related compound pattern.'},
+                                  {   'smiles': 'ClC1=C(O)C=2C(=O)[C@]3(O)C(=O)C4=C(C5=C(OC)C=C(OC)C(=C5C)Cl)C=C(OC)C(=C4C[C@@H]3C(C2C=C1O)(C)C)Cl',
+                                      'name': 'Formicamycin F',
+                                      'reason': 'Does not match '
+                                                'polychlorinated dibenzodioxin '
+                                                'or related compound pattern.'},
+                                  {   'smiles': 'Clc1c(Cl)c(Cl)c2Oc3ccccc3Oc2c1Cl',
+                                      'name': '1,2,3,4-tetrachlorodibenzodioxine',
+                                      'reason': 'Does not match '
+                                                'polychlorinated dibenzodioxin '
+                                                'or related compound pattern.'},
+                                  {   'smiles': 'Clc1cc(Cl)cc(c1)-c1ccccc1',
+                                      'name': '3,5-dichlorobiphenyl',
+                                      'reason': 'Insufficient halogen atoms '
+                                                'for a likely related '
+                                                'compound.'},
+                                  {   'smiles': 'Clc1cccc(Cl)c1-c1ccccc1',
+                                      'name': '2,6-dichlorobiphenyl',
+                                      'reason': 'Insufficient halogen atoms '
+                                                'for a likely related '
+                                                'compound.'},
+                                  {   'smiles': 'Clc1cc2Oc3c(Cl)c(Cl)c(Cl)c(Cl)c3Oc2cc1Cl',
+                                      'name': '1,2,3,4,7,8-Hexachlorodibenzodioxin',
+                                      'reason': 'Does not match '
+                                                'polychlorinated dibenzodioxin '
+                                                'or related compound pattern.'},
+                                  {   'smiles': 'ClC1=C(O)C(Cl)=C2C([C@H]3CC=4C(Cl)=C(OC)C=C(C4C([C@]3(C(C2=C1O)=O)O)=O)C5=C(O)C=C(OC)C(=C5C)Cl)(C)C',
+                                      'name': 'Formicamycin I',
+                                      'reason': 'Does not match '
+                                                'polychlorinated dibenzodioxin '
+                                                'or related compound pattern.'},
+                                  {   'smiles': 'OC1=C(C=C(C=C1[N+]([O-])=O)Cl)C2=C(O)C([N+](=O)[O-])=CC(=C2)Cl',
+                                      'name': 'niclofolan',
+                                      'reason': 'Insufficient halogen atoms '
+                                                'for a likely related '
+                                                'compound.'},
+                                  {   'smiles': 'Clc1cc2Oc3c(Oc2c(Cl)c1Cl)cc(Cl)c(Cl)c3Cl',
+                                      'name': '1,2,3,6,7,8-Hexachlorodibenzodioxin',
+                                      'reason': 'Does not match '
+                                                'polychlorinated dibenzodioxin '
+                                                'or related compound '
+                                                'pattern.'}],
     'attempt': 4,
+    'reasoning': 'Based on the outcomes of the previous attempt, there are '
+                 'several issues contributing to the low F1 score. Let’s '
+                 'examine and address these:\n'
+                 '\n'
+                 '1. **False Positives**: The program misclassified molecules '
+                 "as belonging to the target class when they shouldn't. The "
+                 'presence of hydroxy groups (like -OH) seems to confuse the '
+                 'pattern matching. We should ensure that SMARTS patterns '
+                 'exclude molecules with functional groups that would '
+                 'typically not belong in these types of compounds.\n'
+                 '\n'
+                 '2. **False Negatives**: The program failed to identify '
+                 'several compounds that should belong to the target class. '
+                 'This might indicate inadequate or overly specific SMARTS '
+                 'patterns, or failure to encompass the variability within the '
+                 'class (like insufficient bromine or chlorine atoms being too '
+                 'strictly enforced).\n'
+                 '\n'
+                 '3. **SMARTS Pattern Flexibility**: The existing SMARTS '
+                 'patterns are potentially too rigid. These compounds are '
+                 'quite diverse, and patterns should be generalized to capture '
+                 'this diversity without setting unrealistic constraints.\n'
+                 '\n'
+                 'To improve:\n'
+                 '- Broaden the existing SMARTS patterns to catch the class '
+                 'diversity.\n'
+                 '- Add checks for high substitution of chlorine or bromine '
+                 'atoms but relax the absolute threshold slightly to capture '
+                 'more true positives.\n'
+                 '- Combine specific substructural checks to exclude common '
+                 'false positive confounders efficiently.\n'
+                 '\n'
+                 "Let's implement these improvements:",
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 6,
-    'num_false_positives': 36,
-    'num_true_negatives': 183830,
-    'num_false_negatives': 0,
+    'num_true_positives': 28,
+    'num_false_positives': 2,
+    'num_true_negatives': 142242,
+    'num_false_negatives': 28,
     'num_negatives': None,
-    'precision': 0.14285714285714285,
-    'recall': 1.0,
-    'f1': 0.25,
-    'accuracy': 0.9998042116254786}
+    'precision': 0.9333333333333333,
+    'recall': 0.5,
+    'f1': 0.6511627906976745,
+    'accuracy': 0.9997891777933943,
+    'negative_predictive_value': 0.9998031911154847}

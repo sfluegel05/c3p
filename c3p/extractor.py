@@ -1,18 +1,20 @@
+import random
+from copy import copy
 from pathlib import Path
-from typing import Tuple, Iterator
+from typing import Tuple, Iterator, Set
 
 import pandas as pd
 from oaklib.cli import ontology_versions
-from oaklib.datamodels.vocabulary import HAS_DEFINITION_CURIE, RDFS_LABEL, OWL_VERSION_IRI
+from oaklib.datamodels.vocabulary import HAS_DEFINITION_CURIE, RDFS_LABEL, OWL_VERSION_IRI, HAS_DBXREF
 from rdflib.plugins.shared.jsonld.keys import VERSION
 from rdkit import Chem
-from semsql.sqla.semsql import Statements, Edge, EntailedEdge
+from semsql.sqla.semsql import Statements, Edge, EntailedEdge, HasDbxrefStatement
 from sqlalchemy import select, Select, not_
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.loading import instances
 from sssom.constants import RDFS_SUBCLASS_OF
 
-from c3p.datamodel import ChemicalStructure, ChemicalClass, Dataset
+from c3p.datamodel import ChemicalStructure, ChemicalClass, Dataset, SMILES_STRING
 
 SMILES = "obo:chebi/smiles"
 
@@ -104,7 +106,7 @@ def db_to_dataframe(session: Session, prefix = "CHEBI") -> pd.DataFrame:
         else:
             q = q.where(not_(tbl.subject.startswith("_:")))
         return q
-    # Data triples
+    # Data triples for annotations, e.g. SMILES, definition, mappings
     q = select(Statements.subject,
                   Statements.predicate,
                   Statements.value).where(Statements.value != None)
@@ -151,7 +153,7 @@ def get_ontology_version(session: Session):
         ont = "chemessence"
     return ont + v.split("/")[-2]
 
-def create_benchmark(df: pd.DataFrame, session: Session, min_members=50, max_members=5000) -> Dataset:
+def create_benchmark(df: pd.DataFrame, session: Session, validation_proportion=0.2, min_members=25, max_members=5000, exclude_wildcard=True) -> Dataset:
     v = get_ontology_version(session)
     structure_df = df[df[SMILES].notnull()]
     defined_df = df[df[HAS_DEFINITION_CURIE].notnull()]
@@ -163,13 +165,20 @@ def create_benchmark(df: pd.DataFrame, session: Session, min_members=50, max_mem
                 parents = [parents]
             else:
                 parents = []
+        xrefs = row.get(HAS_DBXREF, [])
+        if xrefs and not isinstance(xrefs, list):
+            if isinstance(xrefs, str):
+                xrefs = [xrefs]
+            else:
+                xrefs = []
         cc = ChemicalClass(id=row["subject"], name=row[RDFS_LABEL], definition=row[HAS_DEFINITION_CURIE],
-                           parents=parents,
-                           instances=[], negative_instances=[])
+                           parents=parents, xrefs=xrefs)
         cc_map[cc.id] = cc
     s_map = {}
     for _, row in structure_df.iterrows():
         smiles_str = row[SMILES]
+        if exclude_wildcard and "*" in smiles_str:
+            continue
         #smiles_str_sanitized = sanitize_smiles(smiles_str)
         #if smiles_str_sanitized != smiles_str:
         #    raise ValueError(f"Invalid SMILES string: {smiles_str} != {smiles_str_sanitized}")
@@ -180,37 +189,56 @@ def create_benchmark(df: pd.DataFrame, session: Session, min_members=50, max_mem
                 continue
             if a in cc_map:
                 cc = cc_map[a]
-                cc.instances.append(structure)
-                if len(cc.instances) > max_members:
+                cc.all_positive_examples.append(structure.smiles)
+                if len(cc.all_positive_examples) > max_members:
                     del cc_map[a]
-    ccs = [v for v in cc_map.values() if len(v.instances) >= min_members]
-    if False:
-        # TODO: calculate negatives later as we want to include all
-        for cc in ccs:
-            negative_smiles = []
-            positive_smiles = [s.smiles for s in cc.instances]
-            num_positive = len(positive_smiles)
-            negative_candidates = list(set(s_map.keys()).difference(positive_smiles))
-            parents = cc.parents
-            for p in parents:
-                if p in cc_map:
-                    for i in cc_map[p].instances:
-                        s = i.smiles
-                        if s not in positive_smiles:
-                            negative_smiles.append(s)
-            negative_smiles = negative_smiles[:num_positive]
-            if len(negative_smiles) < num_positive:
-                import random
-                random.shuffle(negative_candidates)
-                negative_smiles.extend(negative_candidates[:num_positive - len(negative_smiles)])
-            cc.negative_instances = [s_map[s] for s in negative_smiles]
+    ccs = [v for v in cc_map.values() if len(v.all_positive_examples) >= min_members]
+    structures = list(s_map.values())
+    all_smiles = list(set(s.smiles for s in s_map.values()))
+    random.shuffle(all_smiles)
+    #all_smiles = {s.smiles for s in s_map.values()}
+    #for cc in ccs:
+    #    split_instances_for_class(cc, all_smiles, validation_proportion=validation_proportion)
     return Dataset(
         ontology_version=v,
         min_members=min_members,
         max_members=max_members,
         classes=ccs,
-        structures=list(s_map.values()),
+        structures=structures,
+        validation_examples=all_smiles[:int(validation_proportion * len(all_smiles))]
     )
+
+def split_instances_for_class(cc: ChemicalClass, all_smiles: Set[SMILES_STRING], validation_proportion=0.2, max_validation_negative=1000):
+    """
+    Split instances for a chemical class into training and validation sets.
+
+    We assume that cc is already loaded with all positive instances as train_positive
+
+    Args:
+        cc:
+        validation_proportion:
+
+    Returns:
+
+    """
+    all_positive_instances = copy(cc.train_positive)
+    num_positive_instances = len(all_positive_instances)
+    num_validate_positive = int(num_positive_instances * validation_proportion)
+    num_train_positive = num_positive_instances - num_validate_positive
+    # Shuffle instances
+    random.shuffle(all_positive_instances)
+    cc.train_positive = all_positive_instances[:num_train_positive]
+    cc.validate_positive = all_positive_instances[num_train_positive:]
+    cc.num_train_positive = len(cc.train_positive)
+    cc.num_validate_positive = len(cc.validate_positive)
+    all_negative_instances = list(all_smiles - set(all_positive_instances))
+    random.shuffle(all_negative_instances)
+    num_negative_instances = len(all_negative_instances)
+    num_validate_negative = min(num_negative_instances * validation_proportion, max_validation_negative)
+    cc.validate_negative = all_negative_instances[:num_validate_negative]
+    cc.train_negative = None  # can be inferred
+    cc.num_validate_negative = len(cc.validate_negative)
+    cc.num_train_negative = num_negative_instances - num_validate_negative
 
 def validate_dataset(dataset: Dataset) -> Iterator[Tuple[ChemicalStructure, str]]:
     """
