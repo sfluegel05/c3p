@@ -3,7 +3,6 @@ Classifies: CHEBI:25413 monounsaturated fatty acid
 """
 """
 Classifies: CHEBI:36975 monounsaturated fatty acid
-Any fatty acid with one double or triple bond in the fatty acid chain and singly bonded carbon atoms in the rest of the chain. MUFAs have positive effects on the cardiovascular system, and in diabetes treatment.
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
@@ -12,6 +11,8 @@ from rdkit.Chem import rdMolDescriptors
 def is_monounsaturated_fatty_acid(smiles: str):
     """
     Determines if a molecule is a monounsaturated fatty acid based on its SMILES string.
+    A monounsaturated fatty acid has one double or triple bond in the fatty acid chain
+    and singly bonded carbon atoms in the rest of the chain.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,38 +27,33 @@ def is_monounsaturated_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for carboxylic acid group
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
-    if not mol.HasSubstructMatch(carboxylic_acid_pattern):
+    # Check for carboxylic acid group (-C(=O)OH)
+    acid_pattern = Chem.MolFromSmarts("C(=O)[O;H,-]")
+    if not mol.HasSubstructMatch(acid_pattern):
         return False, "No carboxylic acid group found"
     
-    # Check for carbon chain with at least 4 carbons
-    chain_pattern = Chem.MolFromSmarts("[C;H3]-[C;H2]~[C;H2]~[C;H2]")
+    # Check for one double or triple bond
+    bond_types = [bond.GetBondType() for bond in mol.GetBonds()]
+    double_bonds = bond_types.count(Chem.BondType.DOUBLE)
+    triple_bonds = bond_types.count(Chem.BondType.TRIPLE)
+    if double_bonds + triple_bonds != 1:
+        return False, "Found more than one double/triple bond"
+    
+    # Check for singly bonded carbon chain
+    chain_pattern = Chem.MolFromSmarts("[C;H3]-[C;H2]-[C;H2]~[C;H2]~[C;H2]")
     if not mol.HasSubstructMatch(chain_pattern):
-        return False, "Carbon chain too short"
+        return False, "No singly bonded carbon chain found"
     
-    # Check for exactly one double or triple bond, ignoring oxygen-containing groups
-    double_bond_pattern = Chem.MolFromSmarts("[C;H2]=[C;H2]")
-    triple_bond_pattern = Chem.MolFromSmarts("[C;H2]#[C;H2]")
-    double_bond_matches = mol.GetSubstructMatches(double_bond_pattern, useOpReversedChains=True, useQueryRootDescriptors=True, ignoreOxidePermuteDerivatives=True)
-    triple_bond_matches = mol.GetSubstructMatches(triple_bond_pattern, useOpReversedChains=True, useQueryRootDescriptors=True, ignoreOxidePermuteDerivatives=True)
-    
-    if len(double_bond_matches) + len(triple_bond_matches) != 1:
-        return False, "Found multiple or no double/triple bonds"
-    
-    # Check for reasonable molecular weight and atom counts
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 100 or mol_wt > 700:
-        return False, "Molecular weight outside typical range for fatty acids"
-    
+    # Count carbon and hydrogen atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    h_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 1)
     
-    if c_count < 4 or o_count > 4:
-        return False, "Unusual atom counts for a fatty acid"
+    # Check for reasonable carbon count (>=4)
+    if c_count < 4:
+        return False, "Too few carbon atoms for fatty acid"
     
-    # Exclude deuterated compounds (optional)
-    if any(atom.GetIsotope() > 0 for atom in mol.GetAtoms()):
-        return False, "Deuterated compound detected"
+    # Check for reasonable hydrogen count (>=6)
+    if h_count < 6:
+        return False, "Too few hydrogen atoms for fatty acid"
     
-    return True, "Contains exactly one double or triple bond in a carbon chain with a carboxylic acid group"
+    return True, "Contains one double/triple bond and a singly bonded carbon chain with a carboxylic acid group"
