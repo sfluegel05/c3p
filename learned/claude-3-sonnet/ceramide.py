@@ -1,30 +1,56 @@
 """
 Classifies: CHEBI:17761 ceramide
 """
-After analyzing the previous code and the provided outcomes, it appears that the primary issue is the pattern used to identify the sphingosine backbone. The current pattern `"[CH2X4][NX3][CH2X4][CH2X4][CH2X4][CH2X4][OH1]"` is too specific and fails to match many of the provided examples.
+from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
-The sphingosine backbone in ceramides can have variations, such as different chain lengths, unsaturations, and substituents. To address this issue, we need to use a more general pattern that can capture these variations.
+def is_ceramide(smiles: str):
+    """
+    Determines if a molecule is a ceramide based on its SMILES string.
+    
+    A ceramide is a sphingoid base derivative with an amide-linked fatty acid.
+    The fatty acids are typically saturated or monounsaturated with chain lengths
+    from 14 to 26 carbon atoms, and the presence of a hydroxyl group on carbon 2
+    is fairly common. Ceramides are generally precursors of more complex sphingolipids.
 
-Here are some suggestions for improving the program:
+    Args:
+        smiles (str): SMILES string of the molecule
 
-1. Use a more flexible pattern for the sphingosine backbone:
-   - The pattern `"[CH2X4][NX3][CH2X4][CH2X4][CH2X4][CH0X3]([OH1])[CH2X4]"` allows for variations in the chain length and the presence of an optional hydroxyl group on the terminal carbon.
-   - Alternatively, you could use a more general pattern like `"[CH2X4][NX3][CH2X4][CH2X4][CH2X4]"` and check for the presence of a hydroxyl group separately.
-
-2. Consider handling additional variations:
-   - Some examples have unsaturated bonds in the sphingosine backbone, which the current pattern does not account for.
-   - Some examples have additional substituents (e.g., sulfate, phosphate) attached to the sphingosine backbone.
-
-3. Check for the presence of a fatty acid chain:
-   - Instead of looking for the amide pattern `"C(=O)N"`, you could search for a longer pattern that includes the fatty acid chain.
-   - This would help ensure that the amide is connected to a proper fatty acid chain and not just any amide group.
-
-4. Incorporate additional checks:
-   - Check the carbon chain length of the fatty acid separately, as some examples have longer chains than the current range of 14-26 carbons.
-   - Check for the presence of a hydroxyl group on the C2 position of the fatty acid chain, as this is a common feature of ceramides.
-
-5. Consider using additional filtering criteria:
-   - Molecular weight or atom count ranges could help filter out false positives or negatives.
-   - Checking for specific functional groups or substituents that are common in ceramides could improve accuracy.
-
-By addressing these points, you should be able to improve the performance of the `is_ceramide` function and better classify the provided examples.
+    Returns:
+        bool: True if molecule is a ceramide, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Look for sphingosine backbone pattern
+    sphingosine_pattern = Chem.MolFromSmarts("[CH2X4][NX3][CH2X4][CH2X4][CH2X4][CH0X3]([OH1])[CH2X4]")
+    if not mol.HasSubstructMatch(sphingosine_pattern):
+        return False, "No sphingosine backbone found"
+    
+    # Check for fatty acid chain
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[NX3][CX4]([CH1X4])[CH2X4][CH2X4][CH2X4][CH2X4]")
+    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
+    if not fatty_acid_matches:
+        return False, "No fatty acid chain found"
+    
+    # Check fatty acid chain length (14-26 carbons)
+    fatty_acid_chain_length = sum(1 for atom in mol.GetAtomWithIdx(fatty_acid_matches[0][2]).GetNeighbors() if atom.GetAtomicNum() == 6)
+    if not (14 <= fatty_acid_chain_length <= 26):
+        return False, f"Fatty acid chain length ({fatty_acid_chain_length}) outside typical range (14-26)"
+    
+    # Check for hydroxyl group on C2 of fatty acid chain
+    c2_fatty_acid = mol.GetAtomWithIdx(fatty_acid_matches[0][3])
+    has_c2_hydroxyl = any(atom.GetAtomicNum() == 8 and atom.GetFormalCharge() == 0 for atom in c2_fatty_acid.GetNeighbors())
+    
+    # Check molecular weight (typically > 500 Da)
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 500:
+        return False, "Molecular weight too low for ceramide"
+    
+    # Additional checks or filtering criteria can be added here
+    
+    return True, "Contains sphingosine backbone with amide-linked fatty acid chain"
