@@ -21,18 +21,14 @@ def is_organometalloidal_compound(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Arsenic directly bonded to carbon
+    # Patterns
     arsenic_carbon_pattern = Chem.MolFromSmarts("[As][C]")
-    # Arsenic surrounded by carbon and oxygen, covering carboxylic/functional groups
-    organoarsenic_pattern = Chem.MolFromSmarts("[C][As](=O)")
-    # Arsenic within aromatic rings or complex structures
+    organoarsenic_pattern = Chem.MolFromSmarts("[As](=O)(O)([C])")  # Expand to cover varied functional arsenic configurations
     aromatic_arsenic_pattern = Chem.MolFromSmarts("c[As]")
-
-    # Checking for multiple arsenic atoms, potential polymeric features
-    multiple_arsenic_pattern = Chem.MolFromSmarts("[As][As]")
+    organometal_multiple_arsenic_pattern = Chem.MolFromSmarts("[C][As][As][C]")  # Multiple arsenic atoms involving carbon
     
     found_patterns = []
-    
+
     # Check for each pattern and record reason
     if mol.HasSubstructMatch(arsenic_carbon_pattern):
         found_patterns.append("Contains arsenic-carbon bonds")
@@ -40,8 +36,8 @@ def is_organometalloidal_compound(smiles: str):
         found_patterns.append("Contains functional organyl-arsenic component")
     if mol.HasSubstructMatch(aromatic_arsenic_pattern):
         found_patterns.append("Contains arsenic in an aromatic context")
-    if mol.HasSubstructMatch(multiple_arsenic_pattern):
-        found_patterns.append("Contains multiple arsenic atoms forming complex bonds")
+    if mol.HasSubstructMatch(organometal_multiple_arsenic_pattern):
+        found_patterns.append("Contains multiple arsenic atoms with organic linkages")
 
     if found_patterns:
         return True, " and ".join(found_patterns) + " indicative of organometalloidal compounds"
