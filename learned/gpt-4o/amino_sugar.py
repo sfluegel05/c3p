@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_amino_sugar(smiles: str):
     """
     Determines if a molecule is an amino sugar based on its SMILES string.
-    An amino sugar is any sugar having one or more alcoholic hydroxy groups
+    An amino sugar is defined as any sugar having one or more alcoholic hydroxy groups
     replaced by substituted or unsubstituted amino groups.
 
     Args:
@@ -19,17 +19,17 @@ def is_amino_sugar(smiles: str):
     
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
+    if not mol:
         return False, "Invalid SMILES string"
 
-    # Look for standard C-O-C or C-C-O patterns found in sugars
-    sugar_pattern = Chem.MolFromSmarts("C(O)C(O)C(O)")  # Simplified sugar-like structure
+    # Look for sugar-like ring structures typical of pyranoses (6-membered rings)
+    sugar_pattern = Chem.MolFromSmarts("C1[C@H]([O])[C@@H]([O])[C@H]([O])[C@H](O)O1")  # Pyranose ring
     if not mol.HasSubstructMatch(sugar_pattern):
-        return False, "No sugar-like backbone found"
+        return False, "No typical sugar-like ring structure found"
 
-    # Look for NH2 or substituted amino group replacing an OH
-    amino_pattern = Chem.MolFromSmarts("[CX4][NH2,NH,R,NR2,C(=O)NR]")  # Simplified amino pattern
+    # Look for amino groups, possibly replacing -OH groups in these structures
+    amino_pattern = Chem.MolFromSmarts("[CX4;R][NX3;H2,H1,H0]")  # Carbon attached to an NHx in a ring
     if not mol.HasSubstructMatch(amino_pattern):
-        return False, "No amino group replacing hydroxy group found"
+        return False, "No amino group replacing a hydroxy group found"
 
-    return True, "Contains sugar-like backbone with one or more hydroxyl groups replaced by amino groups"
+    return True, "Contains a sugar-like ring structure with one or more hydroxyl groups replaced by amino groups"
