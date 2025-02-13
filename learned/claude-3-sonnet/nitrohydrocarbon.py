@@ -26,6 +26,7 @@ def is_nitrohydrocarbon(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for presence of nitro groups (-NO2)
+    # More specific SMARTS pattern for nitro groups
     nitro_pattern = Chem.MolFromSmarts('[NX3+](=[OX1])([O-])-[#6]')
     nitro_matches = mol.GetSubstructMatches(nitro_pattern)
     if not nitro_matches:
@@ -45,33 +46,37 @@ def is_nitrohydrocarbon(smiles: str):
     if not carbon_atoms:
         return False, "No carbon atoms found"
 
-    # Check for non-hydrocarbon functional groups
-    unwanted_patterns = [
-        ('[CX3](=O)[OX2H1]', 'carboxylic acid'),
+    # Check for unwanted functional groups that would make it not a pure nitrohydrocarbon
+    unwanted_groups = [
+        ('[CX3](=O)[OX2H1]', 'carboxylic acid'),  # More specific SMARTS
         ('[CX3](=O)[O-]', 'carboxylate'),
         ('[CX3]=O', 'ketone/aldehyde'),
-        ('[OX2H]', 'hydroxyl'),
-        ('[OX2](-[#6])-[#6]', 'ether'),
-        ('[NX3]', 'amine'),
-        ('[NX2]=O', 'nitroso'),
-        ('[NX2]=[NX2]', 'azo'),
+        ('[NX3;H2,H1;!$(NC=O)]', 'amine'),  # More specific, excludes nitro
         ('[SX2]', 'thiol/sulfide'),
-        ('[PX3]', 'phosphine')
+        ('[Cl]', 'chloride'),
+        ('[Br]', 'bromide'),
+        ('[F]', 'fluoride'),
+        ('[I]', 'iodide'),
+        ('[OX2H]', 'hydroxyl'),  # More specific SMARTS
+        ('[OX2H]-[CX4]', 'alcohol'),  # More specific SMARTS
     ]
     
-    for pattern, group_name in unwanted_patterns:
+    for pattern, group_name in unwanted_groups:
         pattern_mol = Chem.MolFromSmarts(pattern)
         if pattern_mol and mol.HasSubstructMatch(pattern_mol):
             return False, f"Contains {group_name} group"
 
-    # Count nitro groups and verify all N and O atoms are part of nitro groups
-    n_atoms = sum(1 for atom in atoms if atom.GetAtomicNum() == 7)
-    o_atoms = sum(1 for atom in atoms if atom.GetAtomicNum() == 8)
+    # Count nitro groups
+    num_nitro = len(nitro_matches)
     
-    if n_atoms != len(nitro_matches):
+    # Verify all nitrogen atoms are part of nitro groups
+    n_atoms = [atom for atom in atoms if atom.GetAtomicNum() == 7]
+    if len(n_atoms) != len(nitro_matches):
         return False, "Contains nitrogen atoms not in nitro groups"
-    if o_atoms != 2 * len(nitro_matches):
+    
+    # Verify all oxygen atoms are part of nitro groups
+    o_atoms = [atom for atom in atoms if atom.GetAtomicNum() == 8]
+    if len(o_atoms) != 2 * len(nitro_matches):
         return False, "Contains oxygen atoms not in nitro groups"
     
-    num_nitro = len(nitro_matches)
     return True, f"Hydrocarbon with {num_nitro} nitro group{'s' if num_nitro > 1 else ''}"
