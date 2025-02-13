@@ -31,31 +31,30 @@ def is_leukotriene(smiles: str):
     if c_count != 20:
         return False, f"Found {c_count} carbons, leukotriene must have exactly 20"
     
-    # Check for 4 double bonds
-    bond_count = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.BondType.DOUBLE)
-    if bond_count != 4:
-        return False, f"Found {bond_count} double bonds, leukotriene must have exactly 4"
+    # Check for 3 conjugated double bonds
+    conj_bonds = rdMolDescriptors.CalcNumAromaticRings(mol, 6)
+    if conj_bonds != 3:
+        return False, f"Found {conj_bonds} conjugated double bonds, leukotriene must have exactly 3"
     
-    # Check if 3 double bonds are conjugated
-    conj_pattern = Chem.MolFromSmarts("[C]=[C][C]=[C][C]=[C]")
-    conj_matches = mol.GetSubstructMatches(conj_pattern)
-    if len(conj_matches) < 1:
-        return False, "No conjugated triene system found"
-    
-    # Check for carboxylic acid
-    cooh_pattern = Chem.MolFromSmarts("C(=O)O")
+    # Check for carboxylic acid at specific position
+    cooh_pattern = Chem.MolFromSmarts("CCCCCCCCCCCCCCCCCCCC(=O)O")
     cooh_matches = mol.GetSubstructMatches(cooh_pattern)
     if len(cooh_matches) != 1:
-        return False, f"Found {len(cooh_matches)} carboxylic acid groups, leukotriene must have exactly 1"
+        return False, "Carboxylic acid not found at the expected position"
     
-    # Check for alcohol
-    oh_pattern = Chem.MolFromSmarts("O")
+    # Check for alcohol at specific position
+    oh_pattern = Chem.MolFromSmarts("CCCCCCCCCCCCCCCCCCCC(O)C")
     oh_matches = mol.GetSubstructMatches(oh_pattern)
-    if len(oh_matches) < 1:
-        return False, "No alcohol group found, leukotriene must have at least 1"
+    if len(oh_matches) != 1:
+        return False, "Alcohol not found at the expected position"
     
-    # Optional: Check for common leukotriene substructures like cysteinyl group
+    # Check for common leukotriene substructures like cysteinyl group (optional)
     cys_pattern = Chem.MolFromSmarts("C(N)CS")
     cys_matches = mol.GetSubstructMatches(cys_pattern)
     
-    return True, "Molecule meets criteria for leukotriene: 20 carbons, 4 double bonds (3 conjugated), carboxylic acid, alcohol"
+    # Check molecular weight range (optional)
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 300 or mol_wt > 600:
+        return False, "Molecular weight outside the typical range for leukotrienes"
+    
+    return True, "Molecule meets criteria for leukotriene"
