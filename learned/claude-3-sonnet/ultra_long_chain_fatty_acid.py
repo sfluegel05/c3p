@@ -30,15 +30,21 @@ def is_ultra_long_chain_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "Does not contain a carboxylic acid group"
     
-    # Count carbon chain length
-    carbon_chain_pattern = Chem.MolFromSmarts("[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]")
-    chain_matches = mol.GetSubstructMatches(carbon_chain_pattern)
-    max_chain_length = 0
-    for match in chain_matches:
-        chain_length = len(match) + 1  # Add 1 for the carboxylic acid carbon
-        max_chain_length = max(max_chain_length, chain_length)
+    # Get the length of the longest carbon chain
+    chain_length = rdMolDescriptors.GetLongestChain(mol)
     
-    if max_chain_length <= 27:
-        return False, f"Carbon chain length is only {max_chain_length}, need greater than 27"
+    if chain_length <= 27:
+        return False, f"Carbon chain length is only {chain_length}, need greater than 27"
     
-    return True, f"Contains a carbon chain of length {max_chain_length} with a carboxylic acid group"
+    # Additional checks (optional)
+    # Check for the absence of rings
+    if mol.GetRingInfo().NumRings() > 0:
+        return False, "Contains ring structures, expected an acyclic compound"
+    
+    # Check for the presence of only single bonds in the carbon chain
+    # ...
+    
+    # Check for the absence of additional functional groups
+    # ...
+    
+    return True, f"Contains a carbon chain of length {chain_length} with a carboxylic acid group"
