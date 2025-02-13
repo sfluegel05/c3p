@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_nucleoside_5__phosphate(smiles: str):
     """
     Determines if a molecule is a nucleoside 5'-phosphate based on its SMILES string.
-    A nucleoside 5'-phosphate is a ribosyl or deoxyribosyl derivative of a pyrimidine
-    or purine base with C-5 of the ribose ring being mono-, di-, tri- or tetra-phosphorylated.
+    A nucleoside 5'-phosphate consists of a ribosyl or deoxyribosyl sugar linked to
+    a nucleobase with a phosphate group attached to the 5' position of the sugar.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,25 +22,30 @@ def is_nucleoside_5__phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define a pattern for the sugar moiety (more generic version)
-    sugar_pattern = Chem.MolFromSmarts("O[C@@H]1[C@H](CO)O[C@H](n)C1")
+    # Define SMARTS patterns for ribose, deoxyribose, nucleobases, and phosphate groups
+    ribose_pattern = Chem.MolFromSmarts("[C@@H]1O[C@H]([C@@H](O)[C@H]1O)")
+    deoxyribose_pattern = Chem.MolFromSmarts("[C@@H]1O[C@H]([C@@H]([C@H]1)O)")
+    phosphate_pattern = Chem.MolFromSmarts("COP(O)(O)=O")
 
-    # Pattern for 5'-phosphate group, could be one or more phosphate groups
-    phosphate_pattern = Chem.MolFromSmarts("COP([O-])([O-])=O")
+    # Check for the ribose or deoxyribose part
+    if not (mol.HasSubstructMatch(ribose_pattern) or mol.HasSubstructMatch(deoxyribose_pattern)):
+        return False, "No ribose or deoxyribose sugar detected"
     
-    # Check for the presence of the sugar moiety
-    if not mol.HasSubstructMatch(sugar_pattern):
-        return False, "No recognized ribose or deoxyribose sugar detected"
+    # Simplified check for presence of a common nucleobase (using canonical SMILES patterns)
+    adenine_base = Chem.MolFromSmarts("n1cnc2c1ncnc2")
+    guanine_base = Chem.MolFromSmarts("c1[nH]c2c(n1)ncnc2")
+    cytosine_base = Chem.MolFromSmarts("n1cnc(c=O)n1")
+    thymine_base = Chem.MolFromSmarts("c1c[nH]c(=O)nc1=O")
+    uracil_base = Chem.MolFromSmarts("c1c[nH]c(=O)n1")
     
-    # Check for the presence of a phosphate group
-    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
-    if not phosphate_matches:
-        return False, "No recognizable phosphate group at the 5' position"
-
-    # Check for nucleobase; purine or pyrimidine
-    nucleobase_smarts = Chem.MolFromSmarts("n1cnc2c1ncnc2 |C|")
-
-    if not mol.HasSubstructMatch(nucleobase_smarts):
+    if not any(
+        mol.HasSubstructMatch(base)
+        for base in [adenine_base, guanine_base, cytosine_base, thymine_base, uracil_base]
+    ):
         return False, "No recognizable nucleobase found"
+
+    # Check for the phosphate group at 5' position
+    if not mol.HasSubstructMatch(phosphate_pattern):
+        return False, "No phosphate group at the 5' position"
 
     return True, "Contains ribose or deoxyribose sugar, nucleobase, and 5'-phosphate group"
