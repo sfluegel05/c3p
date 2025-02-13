@@ -1,53 +1,28 @@
 """
 Classifies: CHEBI:37142 organoiodine compound
 """
-"""
-Classifies: CHEBI:50729 organoiodine compound
-An organoiodine compound is a compound containing at least one carbon-iodine bond.
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
+The previous attempt failed because the program did not seem to accurately classify the given examples of organoiodine compounds. The error message "F1 score of 0 is too low" suggests that the program misclassified all the examples, either as false positives or false negatives.
 
-def is_organoiodine_compound(smiles: str):
-    """
-    Determines if a molecule is an organoiodine compound based on its SMILES string.
+Here are some potential reasons for the failure and ways to improve the program:
 
-    Args:
-        smiles (str): SMILES string of the molecule
+1. **Missed structural patterns**: The program checks for the presence of iodine atoms and carbon-iodine bonds, but it may have missed certain structural patterns that are characteristic of organoiodine compounds. For example, it does not account for iodine atoms attached to aromatic rings or heterocyclic systems, which are common in many organoiodine compounds.
 
-    Returns:
-        bool: True if molecule is an organoiodine compound, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+Improvement: Analyze the examples more closely and identify any additional structural patterns or substructures that define organoiodine compounds. Incorporate these into the program using SMARTS patterns or other RDKit functionality.
 
-    # Check for iodine atoms
-    iodine_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 53]
-    if not iodine_atoms:
-        return False, "No iodine atoms found"
+2. **Overly restrictive rules**: The program checks that the iodine atom is bonded to only one carbon atom, which may be too restrictive. Some organoiodine compounds may have iodine atoms bonded to multiple carbon atoms, as long as they are part of an organic moiety.
 
-    # Check for carbon-iodine bonds
-    c_i_bond_pattern = Chem.MolFromSmarts("[I;X1]-[C;X3]")
-    c_i_bonds = mol.GetSubstructMatches(c_i_bond_pattern)
-    if not c_i_bonds:
-        return False, "No carbon-iodine bonds found"
+Improvement: Relax the rule that checks for iodine bonded to only one carbon atom, and focus more on ensuring that the iodine is part of an organic moiety.
 
-    # Check that iodine is bonded directly to carbon in an organic moiety
-    for bond in c_i_bonds:
-        i_idx, c_idx = bond
-        i_atom = mol.GetAtomWithIdx(i_idx)
-        c_atom = mol.GetAtomWithIdx(c_idx)
-        
-        # Check if carbon atom is part of an organic moiety
-        if not any(nbr.GetAtomicNum() == 6 for nbr in c_atom.GetNeighbors()):
-            return False, "Iodine not bonded to an organic carbon"
-        
-        # Check if iodine atom is bonded to only one carbon
-        if len([bond for bond in mol.GetBondedAtoms(i_idx) if bond.GetAtomicNum() == 6]) > 1:
-            return False, "Iodine bonded to multiple carbon atoms"
+3. **Handling of charged and ionic species**: Some of the examples provided are charged or ionic species, such as the doxorubicinium and thyroxine sulfate examples. The program may not be correctly handling these types of molecules.
 
-    return True, "Molecule contains at least one carbon-iodine bond in an organic moiety"
+Improvement: Incorporate additional checks or preprocessing steps to handle charged or ionic species, such as neutralizing the molecule or considering resonance structures.
+
+4. **Handling of tautomers and isomers**: The program may not be correctly handling different tautomeric or isomeric forms of the same compound, leading to misclassifications.
+
+Improvement: Use RDKit's functionality to generate tautomers or enumerate isomers, and ensure that the program correctly classifies all relevant forms of a compound.
+
+5. **Handling of specific functional groups or moieties**: Some of the examples contain specific functional groups or moieties that may require special handling, such as carboxylic acids, amides, or heterocyclic systems.
+
+Improvement: Analyze the examples more closely and identify any functional groups or moieties that may require special treatment. Incorporate additional checks or rules to handle these cases appropriately.
+
+By addressing these potential issues and making improvements based on a thorough analysis of the examples, the program's accuracy in classifying organoiodine compounds should improve.
