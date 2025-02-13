@@ -22,12 +22,11 @@ def is_thiol(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for thiol group pattern, -SH attached to carbon (aliphatic or aromatic)
-    # This includes aliphatic carbon ([CX4H,CX3H0]), aromatic carbon ([c]), and covers general aliphatic connections as well.
-    thiol_pattern_aliphatic = Chem.MolFromSmarts("[CX4H0,CX3][SH]")
-    thiol_pattern_aromatic = Chem.MolFromSmarts("[c][SH]")
+    # This includes all carbon types directly bonded to sulfur.
+    thiol_pattern = Chem.MolFromSmarts("[#6][SH]")
 
     # Check for thiol pattern matches in the molecule
-    if mol.HasSubstructMatch(thiol_pattern_aliphatic) or mol.HasSubstructMatch(thiol_pattern_aromatic):
+    if mol.HasSubstructMatch(thiol_pattern):
         return True, "Contains a thiol group (-SH) attached to a carbon atom"
 
     return False, "No thiol group found"
