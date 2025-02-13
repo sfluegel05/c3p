@@ -1,24 +1,79 @@
 """
 Classifies: CHEBI:26658 sesquiterpenoid
 """
-The previous program had a few issues that led to the low F1 score:
+"""
+Classifies: CHEBI:35411 sesquiterpenoid
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-1. **Incomplete sesquiterpene skeleton patterns**: The list of SMARTS patterns for identifying sesquiterpene skeletons was not comprehensive enough. While it covered some common skeletons, it missed many others, leading to false negatives.
+# Comprehensive list of SMARTS patterns for common sesquiterpene skeletons
+sesquiterpene_skeletons = [
+    "[C@@]12CC[C@@](C)(O)[C@]1([H])[C@]1([H])[C@]([H])(CCC2=C)C1(C)C", # ent-spathulenol
+    "[C@@]12CC[C@@](C)(O)[C@]1([H])[C@]1([H])[C@]([H])(CC[C@]2(C)C)C1(C)C", # curcumol
+    "O1[C@]23[C@@](CC[C@@H]2C)(C(C[C@]1(O)[C@@H](C3)C(C)C)=C)[H]", # curcumol
+    "O1[C@]23[C@@](CC[C@@H]2C)(C(C[C@]1(O)[C@@H](C3)C(C)C)=C)[H]", # cucumin H
+    "[C@]12CC[C@@](C)(O)[C@]1([H])[C@]1([H])[C@]([H])(CC[C@@]2(C)C)C1(C)C", # epi-curcumol
+    "O[C@]12C(=C)CC[C@@H]([C@H]1C=C(CO)CC2)C(C)C", # donacinol A
+    # Add more SMARTS patterns for other common sesquiterpene skeletons
+]
 
-2. **Over-reliance on skeleton patterns**: The program heavily relied on finding a specific skeleton pattern. If none were found, it then checked other criteria like ring count and rotatable bonds. However, these criteria alone are not sufficient to definitively classify a molecule as a sesquiterpenoid, leading to false positives.
+# Additional structural features characteristic of sesquiterpenoids
+sesquiterpene_features = [
+    "[OH]", # Alcohol
+    "[O]", # Ether
+    "[OC(=O)]", # Ester
+    "[C@@]", # Stereocenter
+    "[r6,r5,r4]", # Rings of size 6, 5, or 4
+    "[/C=C(/C)]", # Conjugated double bonds
+    "[C@@H]1[C@@H]([C@@H]([C@@H]([C@@H]1)C)C)C", # Decalin system
+    "[C@@]12[C@@H]([C@@H]([C@@H]1[C@@H]2)C)C", # Bicyclo[3.3.1] system
+]
 
-3. **Strict carbon count requirement**: The program required exactly 15 carbon atoms for a sesquiterpenoid. While this is generally true, there are exceptions where sesquiterpenoids can have fewer or more carbon atoms due to rearrangements or modifications.
+def is_sesquiterpenoid(smiles: str):
+    """
+    Determines if a molecule is a sesquiterpenoid based on its SMILES string.
 
-To improve the program, we can consider the following strategies:
+    Args:
+        smiles (str): SMILES string of the molecule
 
-1. **Expand the list of sesquiterpene skeleton patterns**: Manually curate a more comprehensive list of SMARTS patterns that cover a wider range of sesquiterpene skeletons. This will help reduce false negatives.
+    Returns:
+        bool: True if molecule is a sesquiterpenoid, False otherwise
+        str: Reason for classification
+    """
 
-2. **Incorporate more specific structural features**: In addition to skeleton patterns, look for other structural features that are characteristic of sesquiterpenoids, such as the presence of specific functional groups (e.g., alcohols, esters, ethers), specific ring systems (e.g., decalins, bicyclo[3.3.1] systems), or specific carbon skeletal rearrangements.
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-3. **Relax the strict carbon count requirement**: Instead of requiring exactly 15 carbon atoms, allow for a range of carbon counts (e.g., 13-17) to account for potential modifications or rearrangements.
+    # Check for sesquiterpene skeletons
+    for skeleton in sesquiterpene_skeletons:
+        skeleton_mol = Chem.MolFromSmarts(skeleton)
+        if mol.HasSubstructMatch(skeleton_mol):
+            return True, f"Matched sesquiterpene skeleton: {skeleton}"
 
-4. **Consider using machine learning models**: If curating a comprehensive set of rules and patterns becomes too complex, consider training a machine learning model (e.g., random forest, neural network) on a large dataset of labeled sesquiterpenoids and non-sesquiterpenoids. This could potentially learn the complex patterns more effectively than hand-crafted rules.
+    # Check for additional sesquiterpenoid features
+    feature_count = 0
+    for feature in sesquiterpene_features:
+        feature_mol = Chem.MolFromSmarts(feature)
+        if mol.HasSubstructMatch(feature_mol):
+            feature_count += 1
 
-5. **Incorporate additional descriptors**: Explore the use of additional molecular descriptors (e.g., topological indices, molecular fingerprints) that could help differentiate sesquiterpenoids from other molecules.
+    # Require at least 3 additional features
+    if feature_count >= 3:
+        return True, "Matched at least 3 additional sesquiterpenoid features"
 
-By addressing these issues, the program's performance in classifying sesquiterpenoids should improve significantly.
+    # Check for carbon count in a reasonable range
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 13 or c_count > 17:
+        return False, "Carbon count outside the expected range for sesquiterpenoids"
+
+    # Check for a reasonable number of rotatable bonds
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 3 or n_rotatable > 10:
+        return False, "Rotatable bond count outside the expected range for sesquiterpenoids"
+
+    # If none of the above conditions are met, classify as non-sesquiterpenoid
+    return False, "Does not match sesquiterpenoid criteria"
