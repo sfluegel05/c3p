@@ -1,26 +1,61 @@
 """
 Classifies: CHEBI:33184 long-chain fatty acyl-CoA
 """
-The previous program was attempting to identify long-chain fatty acyl-CoA molecules based on their SMILES strings. However, it seems that the program had some limitations and missed several positive examples, resulting in a low F1 score.
+"""
+Classifies: CHEBI:36345 long-chain fatty acyl-CoA
+"""
+from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem.rdchem import BondType
 
-Here are some potential issues and suggestions for improvement:
+def is_long_chain_fatty_acyl_CoA(smiles: str):
+    """
+    Determines if a molecule is a long-chain fatty acyl-CoA based on its SMILES string.
+    A long-chain fatty acyl-CoA results from the condensation of CoA with a long-chain (C13-C22) fatty acid.
 
-1. **Substructure Matching**: The program relied heavily on substructure matching using SMARTS patterns. While this approach can work well for simple cases, it may not be robust enough for more complex molecules like long-chain fatty acyl-CoAs, which can have various substitutions, double bond positions, and stereochemistry. The substructure matching rules might need to be more flexible or use multiple patterns to account for different variations.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **Chain Length Check**: The program checked for the presence of a long-chain fatty acid (C13-C22) using a SMARTS pattern that looked for a specific number of consecutive carbon chains. However, this approach might be too rigid and may miss molecules with slightly shorter or longer chains, or those with substituents or branching in the fatty acid chain.
-
-3. **Double Bond Requirement**: The program required the presence of at least one double bond in the fatty acid chain. While this is a reasonable assumption for many long-chain fatty acyl-CoAs, it might not hold true for all cases. Some molecules in the positive examples, like 3-oxooctadecanoyl-CoA, do not have double bonds in the fatty acid chain.
-
-4. **Stereochemistry Handling**: The program did not explicitly consider stereochemistry, which can be important for correctly identifying some long-chain fatty acyl-CoAs, as evident from the positive examples that include stereochemical information in their names (e.g., (3R,11Z)-3-hydroxyoctadecenoyl-CoA).
-
-To improve the program, you could consider the following approaches:
-
-1. **Machine Learning Approach**: Instead of relying solely on substructure matching and rules, you could explore using machine learning techniques to train a model on a set of positive and negative examples. This would allow the model to learn the relevant patterns and features automatically, potentially leading to better generalization and performance.
-
-2. **Fingerprint-based Similarity Search**: An alternative approach could be to use molecular fingerprints (e.g., Morgan fingerprints) to calculate the similarity between the input molecule and a set of known long-chain fatty acyl-CoA molecules. If the similarity score is above a certain threshold, the molecule can be classified as a positive example.
-
-3. **Hybrid Approach**: Combine the rule-based approach with machine learning techniques. Use substructure matching and other rules to filter out obvious negative cases, and then apply a machine learning model to classify the remaining molecules more accurately.
-
-4. **Improve Rule-based Approach**: If you prefer to stick with a rule-based approach, you could refine the existing rules and patterns to account for the limitations mentioned earlier. This might involve using multiple SMARTS patterns, considering stereochemistry, and allowing for more flexibility in the chain length and substitution patterns.
-
-Regardless of the approach you choose, it is recommended to use a diverse set of positive and negative examples for training or testing purposes to ensure robust performance and generalization.
+    Returns:
+        bool: True if molecule is a long-chain fatty acyl-CoA, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Check for CoA substructure
+    coa_pattern = Chem.MolFromSmarts("C(C)(COP(=O)([O-])OP(=O)([O-])OC1OC(n2cnc3c(N)ncnc23)C(O)C1OP(=O)([O-]))")
+    if not mol.HasSubstructMatch(coa_pattern):
+        return False, "No coenzyme A substructure found"
+    
+    # Check for carbonyl group
+    carbonyl_pattern = Chem.MolFromSmarts("C(=O)")
+    carbonyl_matches = mol.GetSubstructMatches(carbonyl_pattern)
+    if len(carbonyl_matches) != 1:
+        return False, f"Expected 1 carbonyl group, found {len(carbonyl_matches)}"
+    
+    # Check for thioester bond between carbonyl and CoA
+    thioester_pattern = Chem.MolFromSmarts("C(=O)SCCNC(=O)")
+    if not mol.HasSubstructMatch(thioester_pattern):
+        return False, "No thioester bond between carbonyl and CoA found"
+    
+    # Check for long-chain fatty acid
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
+    if len(fatty_acid_matches) == 0:
+        return False, "No long fatty acid chain found"
+    
+    # Count carbon atoms in fatty acid chain
+    fatty_acid_atoms = [mol.GetAtomWithIdx(match[0]).GetAtomicNum() for match in fatty_acid_matches]
+    n_carbons = sum(1 for atom in fatty_acid_atoms if atom == 6)
+    if n_carbons < 13 or n_carbons > 22:
+        return False, f"Fatty acid chain has {n_carbons} carbons, expected 13-22"
+    
+    # Check for unsaturations/double bonds in fatty acid chain
+    fatty_acid_bonds = [mol.GetBondBetweenAtoms(match[i], match[i+1]).GetBondType() for match in fatty_acid_matches for i in range(len(match)-1)]
+    n_double_bonds = sum(1 for bond in fatty_acid_bonds if bond == BondType.DOUBLE)
+    
+    return True, f"Long-chain fatty acid with {n_carbons} carbons and {n_double_bonds} double bonds attached to CoA via thioester"
