@@ -21,14 +21,14 @@ def is_4_hydroxyflavanones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Flavanone core with proper stereochemistry taking into account variable stereocenters
-    flavanone_core_smarts = "[cH1]1[cH1][cH1][cH1][cH1][cH1]2[C@@H]([C@@H]([C@@H]2C1=O)[cH1]3[cH1][cH1][cH1][cH1][cH1]3)O" 
+    # Define the core flavanone structure with a carbonyl group and a three-carbon bridge
+    flavanone_core_smarts = "c1ccccc1C2C(=O)C3C=C(c4ccccc4)O3"
     flavanone_core_mol = Chem.MolFromSmarts(flayanone_core_smarts)
     if not mol.HasSubstructMatch(flayanone_core_mol):
         return False, "Missing core flavanone structure"
     
-    # Correct pattern to specifically find hydroxyl attached at the 4' position
-    hydroxy_b_ring_smarts = "O[cH]1[cH][cH][cH](O)[cH][cH]1"  # Apply general hydroxy to benzene using SMARTS
+    # Pattern to specifically find a hydroxyl group at the 4' position on the B-ring
+    hydroxy_b_ring_smarts = "c1cc(ccc1O)c2cc(c(=O)C3OC(C=C3)c2)c4ccccc4"  # Account for the correct hydroxyl position
     b_ring_hydroxy_mol = Chem.MolFromSmarts(hydroxy_b_ring_smarts)
     if mol.HasSubstructMatch(b_ring_hydroxy_mol):
         return True, "Molecule is a 4'-hydroxyflavanone"
