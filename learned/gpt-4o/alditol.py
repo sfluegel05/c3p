@@ -24,8 +24,10 @@ def is_alditol(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define the SMARTS pattern for an alditol structure
-    # The pattern should match [CH2OH][CH(OH)]n[CH2OH] with n >= 2
-    alditol_pattern = Chem.MolFromSmarts("OCC(O)C(O)*CO")
+    # Correct pattern for HOCH2-[CH(OH)]n-CH2OH might look like "OCC(O)C(O)C(O)*CO"
+    # However, we need to ensure we are matching linear structures, hence a better
+    # pattern would target all hydroxylated carbon chains of sufficient length
+    alditol_pattern = Chem.MolFromSmarts("[CX4](O)CO")  # Generic repeating unit for acyclic polyols
     if alditol_pattern is None:
         return (None, "Invalid SMARTS pattern")
 
@@ -33,9 +35,12 @@ def is_alditol(smiles: str):
     if rdmolops.GetSSSR(mol) > 0:
         return False, "Molecule contains a ring structure, not an acyclic alditol"
 
-    # Check if the molecule matches the alditol SMARTS pattern
-    match = mol.HasSubstructMatch(alditol_pattern)
-    if not match:
-        return False, "No continuous acyclic polyol chain matching alditol found"
-
-    return True, "SMILES string matches the structural pattern of an alditol"
+    # Calculate the total number of carbon atoms
+    carbon_atoms = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'C')
+    # Check if molecule has enough contiguous polyol chain as per alditol requirements
+    # Minimum of 3 pairs of [C-O] for HO(CH(OH))nCH2OH with n >= 2 and ends with -CH2OH
+    match = mol.GetSubstructMatches(alditol_pattern)
+    if len(match) < 2 or carbon_atoms < 4:
+        return False, f"Structure with {len(match)} C-O patterns, insufficient for alditol"
+    
+    return True, "SMILES string matches the structural pattern of an acyclic alditol"
