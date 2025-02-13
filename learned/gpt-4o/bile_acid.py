@@ -2,12 +2,12 @@
 Classifies: CHEBI:3098 bile acid
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
+from rdkit.Chem import rdchem
 
 def is_bile_acid(smiles: str):
     """
     Determines if a molecule is a bile acid based on its SMILES string.
-    A bile acid is a hydroxy-5beta-cholanic acid occurring in bile. 
+    A bile acid is a hydroxy-5beta-cholanic acid occurring in bile.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,22 +22,22 @@ def is_bile_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Substructure pattern for cholanic acid backbone with 5beta configuration
-    cholanic_base_pattern = Chem.MolFromSmarts('C1CC2CCC3C(C2(C1)C)CC4C3CCCC4')
+    # Update substructure pattern for cholanic acid backbone with 5beta configuration
+    cholanic_base_pattern = Chem.MolFromSmarts('[CH]1([C@@]2([C@@H](CC[C@]3([C@@H](CCC[C@@H]4[C@H]3CC[C@@H]4O)C2)C)C1)O)')
 
     if not mol.HasSubstructMatch(cholanic_base_pattern):
-        return False, "No cholanic acid backbone with 5beta configuration"
+        return False, "No cholanic acid backbone with 5β configuration"
 
-    # Look for hydroxy groups (–OH) on the steroid core
-    hydroxy_group = Chem.MolFromSmarts('[C;H1,H2]O')
+    # Count the number of hydroxy groups
+    hydroxy_group = Chem.MolFromSmarts('[CX4][OH]')
     ho_count = len(mol.GetSubstructMatches(hydroxy_group))
-    
+
     if ho_count < 1:
         return False, "No hydroxy groups identified"
 
-    # Presence of carboxylic acid group (for bile acids, typically at the end)
+    # Presence of carboxylic acid group (COOH)
     carboxylic_acid_pattern = Chem.MolFromSmarts('C(=O)O')
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
     
-    return True, "Contains cholanic acid backbone with 5beta configuration and typical functional groups of bile acids"
+    return True, "Contains cholanic acid backbone with 5β configuration and typical functional groups of bile acids"
