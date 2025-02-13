@@ -2,8 +2,8 @@
 Classifies: CHEBI:47788 3-oxo steroid
 """
 """
-Classifies: CHEBI:35713 3-oxo steroid
-Definition: Any oxo steroid where an oxo substituent is located at position 3.
+Classifies: CHEBI:35693 3-oxo steroid
+A 3-oxo steroid is any oxo steroid where an oxo substituent is located at position 3.
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
@@ -25,23 +25,14 @@ def is_3_oxo_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for steroid backbone pattern
-    steroid_pattern = Chem.MolFromSmarts("[C@H]1[C@H]2[C@@]3([C@H](C[C@@H]4CC=C5C[C@@H](CC[C@]5(C)[C@H]4C3)C2)C1)C")
+    # Check for steroid backbone
+    steroid_pattern = Chem.MolFromSmarts("[C@]1(C[C@@]23[C@]([H])(CC[C@@]([H])(C2)C(C3)=O)CC[C@@]1([H])C)C")
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
     
-    # Look for oxo group at position 3
-    oxo_pattern = Chem.MolFromSmarts("[C](=O)[C@H]1CC[C@H]2[C@@H]3CC[C@H]([C@@H]3CC[C@]12C)C")
+    # Check for oxo group at position 3
+    oxo_pattern = Chem.MolFromSmarts("[C](=O)[C@]1(C)CC[C@@]2([H])[C@]3([H])CCC4=CC(=O)CC[C@]4(C)[C@@]3([H])CC[C@]12C")
     if not mol.HasSubstructMatch(oxo_pattern):
         return False, "No oxo group at position 3"
     
-    # Additional checks
-    mol_wt = Chem.Descriptors.MolWt(mol)
-    if mol_wt < 250 or mol_wt > 600:
-        return False, "Molecular weight outside typical range for 3-oxo steroids"
-    
-    ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() < 3 or ring_info.NumRings() > 5:
-        return False, "Number of rings outside typical range for steroids"
-    
-    return True, "Contains steroid backbone with oxo group at position 3"
+    return True, "Contains a steroid backbone with an oxo group at position 3"
