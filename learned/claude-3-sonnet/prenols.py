@@ -2,15 +2,15 @@
 Classifies: CHEBI:26244 prenols
 """
 """
-Classifies: CHEBI:27290 prenol
-A prenol is any alcohol possessing the general formula H-[CH2C(Me)=CHCH2]nOH, where the carbon skeleton
-is composed of one or more isoprene units (biogenetic precursors of the isoprenoids).
+Classifies chemical entities as prenols based on their SMILES string.
+Prenols are defined as 'Any alcohol possessing the general formula H-[CH2C(Me)=CHCH2]nOH in which the carbon skeleton is composed of one or more isoprene units (biogenetic precursors of the isoprenoids).'
 """
 
 from rdkit import Chem
-from rdkit.Chem import AllChem, rdMolDescriptors
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-def is_prenol(smiles: str) -> tuple[bool, str]:
+def is_prenol(smiles: str):
     """
     Determines if a molecule is a prenol based on its SMILES string.
 
@@ -21,54 +21,42 @@ def is_prenol(smiles: str) -> tuple[bool, str]:
         bool: True if molecule is a prenol, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for alcohol group
-    alcohol_pattern = Chem.MolFromSmarts("[OX1H]")
+    # Check for terminal alcohol group
+    alcohol_pattern = Chem.MolFromSmarts("[OX2H1]")
     if not mol.HasSubstructMatch(alcohol_pattern):
-        return False, "No alcohol group found"
+        return False, "No terminal alcohol group found"
 
-    # Look for isoprene units (CH2=C(CH3)CH=CH2)
-    isoprene_pattern = Chem.MolFromSmarts("[CH2]=[C@H]([CH3])[CH]=[CH2]")
+    # Check for isoprene units
+    isoprene_pattern = Chem.MolFromSmarts("[CH2X4][CX3](=[CX3][CH2X4])[CH3]")
     isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
     if not isoprene_matches:
         return False, "No isoprene units found"
 
+    # Count isoprene units
+    n_isoprene = len(isoprene_matches)
+
     # Check for linear carbon skeleton
-    skeleton_pattern = Chem.MolFromSmarts("[CH2]~[CH]~[CH2]~[CH]~[CH2]")
-    skeleton_matches = mol.GetSubstructMatches(skeleton_pattern)
-    if not skeleton_matches:
+    linear_pattern = Chem.MolFromSmarts("[CH2X4][CH2X4]")
+    linear_matches = mol.GetSubstructMatches(linear_pattern)
+    if len(linear_matches) != n_isoprene:
         return False, "Carbon skeleton is not linear"
 
-    # Check for correct stereochemistry
-    stereochem_pattern = Chem.MolFromSmarts("[CH2]=[C@H]([CH3])/[CH]=[CH/@H]")
-    stereochem_matches = mol.GetSubstructMatches(stereochem_pattern)
-    if not stereochem_matches:
-        return False, "Incorrect stereochemistry"
+    # Check for double bonds in correct positions
+    double_bond_pattern = Chem.MolFromSmarts("[CX3]=[CX3]")
+    double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
+    if len(double_bond_matches) != n_isoprene:
+        return False, "Incorrect number of double bonds"
 
-    # Count isoprene units and carbon chain length
-    n_isoprene = len(isoprene_matches)
-    chain_length = len(skeleton_matches[0]) + 1
-    if chain_length != n_isoprene * 5:
-        return False, "Incorrect chain length for the number of isoprene units"
+    # Check for methyl groups in correct positions
+    methyl_pattern = Chem.MolFromSmarts("[CX3][CH3]")
+    methyl_matches = mol.GetSubstructMatches(methyl_pattern)
+    if len(methyl_matches) != n_isoprene:
+        return False, "Incorrect number of methyl groups"
 
-    # Additional checks
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 68 or mol_wt > 1000:
-        return False, "Molecular weight outside typical range for prenols"
-
-    ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() > 0:
-        return False, "Prenols should not contain rings"
-
-    # Sanitize the molecule
-    try:
-        AllChem.SanitizeMol(mol)
-    except ValueError as e:
-        return False, str(e)
-
-    return True, "Molecule is a prenol"
+    return True, "Molecule matches the prenol structural pattern"
