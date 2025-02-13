@@ -1,28 +1,63 @@
 """
 Classifies: CHEBI:25413 monounsaturated fatty acid
 """
-Based on the outcomes provided, it seems that the previous program has the following issues:
+"""
+Classifies: CHEBI:36975 monounsaturated fatty acid
+Any fatty acid with one double or triple bond in the fatty acid chain and singly bonded carbon atoms in the rest of the chain. MUFAs have positive effects on the cardiovascular system, and in diabetes treatment.
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-1. **False Negatives**: The program fails to correctly classify several known monounsaturated fatty acids as positive examples. This could be due to the following reasons:
+def is_monounsaturated_fatty_acid(smiles: str):
+    """
+    Determines if a molecule is a monounsaturated fatty acid based on its SMILES string.
 
-   - The program checks for the presence of a "singly bonded carbon chain" using the SMARTS pattern `"[C;H3]-[C;H2]-[C;H2]~[C;H2]~[C;H2]"`. However, this pattern may be too restrictive and might not match longer carbon chains or chains with different substitution patterns.
-   - The program does not account for possible variations in the position or stereochemistry of the double/triple bond.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **False Positives**: The program incorrectly classifies some molecules as monounsaturated fatty acids, even though they do not have a double or triple bond. This could be due to the following reasons:
-
-   - The program only checks for the presence of a carboxylic acid group and a carbon chain, but does not explicitly check for the absence of double/triple bonds.
-   - The program does not consider the possibility of deuterated compounds, which can have the same connectivity but different isotopic composition.
-
-To improve the program, we can consider the following modifications:
-
-1. **Use a more flexible SMARTS pattern for the carbon chain**: Instead of a specific pattern, we can use a more general pattern that matches any linear carbon chain of a certain length. For example, `"[C;H3]-[C;H2]-[C;H2]~[C;H2]~[C;H2]~[C;H2]"` would match chains of at least 6 carbons.
-
-2. **Check for the presence of exactly one double/triple bond**: Instead of checking for the absence of multiple double/triple bonds, we can explicitly check for the presence of exactly one double or triple bond using a SMARTS pattern like `"[C;H2]=[C;H2]"` or `"[C;H2]#[C;H2]"`.
-
-3. **Consider stereochemistry and position of the double/triple bond**: We can use SMARTS patterns to match specific stereochemistry and position of the double/triple bond if required, or use a more general pattern that matches any position and stereochemistry.
-
-4. **Exclude deuterated compounds**: We can add a check to exclude compounds with isotopic labeling, or handle them separately if required.
-
-5. **Check for reasonable molecular weight and atom counts**: We can add additional checks for reasonable molecular weight and atom counts for fatty acids, to further improve the classification accuracy.
-
-By incorporating these modifications, we can potentially improve the accuracy of the program in classifying monounsaturated fatty acids.
+    Returns:
+        bool: True if molecule is a monounsaturated fatty acid, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Check for carboxylic acid group
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
+    if not mol.HasSubstructMatch(carboxylic_acid_pattern):
+        return False, "No carboxylic acid group found"
+    
+    # Check for linear carbon chain of at least 6 carbons
+    chain_pattern = Chem.MolFromSmarts("[C;H3]-[C;H2]-[C;H2]~[C;H2]~[C;H2]~[C;H2]")
+    if not mol.HasSubstructMatch(chain_pattern):
+        return False, "Carbon chain too short or not linear"
+    
+    # Check for exactly one double or triple bond
+    double_bond_pattern = Chem.MolFromSmarts("[C;H2]=[C;H2]")
+    triple_bond_pattern = Chem.MolFromSmarts("[C;H2]#[C;H2]")
+    double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
+    triple_bond_matches = mol.GetSubstructMatches(triple_bond_pattern)
+    
+    if len(double_bond_matches) + len(triple_bond_matches) != 1:
+        return False, "Found multiple or no double/triple bonds"
+    
+    # Check for reasonable molecular weight and atom counts
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 150 or mol_wt > 500:
+        return False, "Molecular weight outside typical range for fatty acids"
+    
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    
+    if c_count < 6 or o_count != 2:
+        return False, "Unusual atom counts for a fatty acid"
+    
+    # Exclude deuterated compounds (optional)
+    if any(atom.GetIsotope() > 0 for atom in mol.GetAtoms()):
+        return False, "Deuterated compound detected"
+    
+    return True, "Contains exactly one double or triple bond in a linear carbon chain with a carboxylic acid group"
