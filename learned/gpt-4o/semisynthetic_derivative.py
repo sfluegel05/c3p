@@ -2,12 +2,11 @@
 Classifies: CHEBI:72588 semisynthetic derivative
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
-from rdkit.Chem import Descriptors
 
 def is_semisynthetic_derivative(smiles: str):
     """
-    Determines if a molecule could be classified as a semisynthetic derivative based on its SMILES string.
+    Determines if a molecule could potentially be classified as a semisynthetic derivative
+    based on its SMILES string.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -16,40 +15,41 @@ def is_semisynthetic_derivative(smiles: str):
         bool: True if molecule is likely a semisynthetic derivative, False otherwise
         str: Reason for classification
     """
-    
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return None, "Invalid SMILES string"
 
-    # Look for typical semisynthetic modification groups
-    # Ester groups in general
-    ester_group = Chem.MolFromSmarts("C(=O)O")
-    if mol.HasSubstructMatch(ester_group):
-        return True, "Contains ester group, indicates possible chemical modification"
-
-    # Ether bonds
-    ether_group = Chem.MolFromSmarts("COC")
-    if mol.HasSubstructMatch(ether_group):
-        return True, "Contains ether bond, indicates possible chemical modification"
-
-    # Tertiary amines (methylated amines)
-    tertiary_amine = Chem.MolFromSmarts("N(C)(C)C")
-    if mol.HasSubstructMatch(tertiary_amine):
-        return True, "Contains tertiary amine, common in semisynthetic derivatives"
+    # Consider known modification groups and combinations commonly used in semisynthetic derivatives
+    # More focused structures than the previous attempt.
     
-    # Chlorination/Bromination (halogenated aromatics)
-    halogenated_aromatic = Chem.MolFromSmarts("c[F,Cl,Br,I]")
-    if mol.HasSubstructMatch(halogenated_aromatic):
-        return True, "Contains halogenated aromatic, indicates possible chemical modification"
+    # Check for specific complex ester patterns, unusual in natural products
+    complex_ester_group = Chem.MolFromSmarts("COC(=O)C")
+    if mol.HasSubstructMatch(complex_ester_group):
+        return True, "Contains complex ester group, indicative of chemical modification"
 
-    # Amide groups extensively used in derivatization
-    amide_group = Chem.MolFromSmarts("C(=O)N")
-    if mol.HasSubstructMatch(amide_group):
-        return True, "Contains amide group, common in semisynthetic derivatives"
+    # Combined ether and ester groups close in structure
+    ether_ester_combination = Chem.MolFromSmarts("C(OC)C(=O)O")
+    if mol.HasSubstructMatch(ether_ester_combination):
+        return True, "Contains ether and ester combination, indicative of semisynthetic processing"
 
-    # Look for branching (indicating complex modifications)
-    branching_pattern = Chem.MolFromSmarts("C(C)(C)C")
-    if mol.HasSubstructMatch(branching_pattern):
-        return True, "Contains branching pattern, indicative of derivatization"
+    # Include sugar-like structures attached to non-sugar core (common indication of derivatization)
+    sugar_derivative_pattern = Chem.MolFromSmarts("[C@H]1([O][C@H]([C@@H](O)[C@H]1O)O[C@H]1C[C@@H](O)[C@@H]1O)C")
+    if mol.HasSubstructMatch(sugar_derivative_pattern):
+        return True, "Contains sugar derivative, indicative of semisynthetic derivation"
 
-    return False, "Molecule does not have typical indicators of semisynthetic derivation"
+    # Include larger macrocyclic esters or lactone rings that are rare in natural products but common in derivatization
+    macrocyclic_lactone = Chem.MolFromSmarts("C1(OC(=O)C)OC1")
+    if mol.HasSubstructMatch(macrocyclic_lactone):
+        return True, "Contains macrocyclic lactone, indicative of synthetic derivation"
+
+    # Mixed amide and ester groups
+    amide_ester_combination = Chem.MolFromSmarts("C(=O)NC(=O)O")
+    if mol.HasSubstructMatch(amide_ester_combination):
+        return True, "Contains amide and ester combination, potential semisynthetic derivative"
+
+    # Prioritize known complex synthetic modifications such as acetals in complex structures
+    acetal_like_structure = Chem.MolFromSmarts("C(OC)(OC)C")
+    if mol.HasSubstructMatch(acetal_like_structure):
+        return True, "Contains acetal-like structure, indicates synthetic methodology"
+
+    return False, "Molecule does not have typical refined indicators of semisynthetic derivation"
