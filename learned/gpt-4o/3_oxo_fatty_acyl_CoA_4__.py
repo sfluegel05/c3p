@@ -6,8 +6,7 @@ from rdkit import Chem
 def is_3_oxo_fatty_acyl_CoA_4__(smiles: str):
     """
     Determines if a molecule is a 3-oxo-fatty acyl-CoA(4-) based on its SMILES string.
-    This class is characterized by the presence of a 3-oxo group and a Coenzyme A moiety,
-    and a long fatty acyl chain.
+    This class features a 3-oxo group, a fatty acyl chain, and a Coenzyme A moiety.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,24 +19,22 @@ def is_3_oxo_fatty_acyl_CoA_4__(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return None, "Invalid SMILES string"
-    
-    # Check for Coenzyme A moiety
-    # Coenzyme A pattern redesigned to be more flexible
-    coa_pattern = Chem.MolFromSmarts("NC(=O)CC(COP(=O)([O-])OP(=O)([O-])OCC1O[C@H](n2cnc3c(N)ncnc23)[C@H]1O)O[C@H]1[C@H](O)[C@H](n2cnc3c(N)ncnc23)O[C@H]1COP(=O)([O-])OP([O-])(=O)OCC([C@@H](O)CNC(=O)CCNC(=O)C)[S]CC")
+        return False, "Invalid SMILES string"
+
+    # Check for the Coenzyme A moiety pattern
+    coa_pattern = Chem.MolFromSmarts("OP([O-])(=O)OP([O-])(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP([O-])([O-])=O)n1cnc2c(N)ncnc12")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No Coenzyme A moiety found"
-    
-    # Check for 3-oxo group attached to a fatty acyl chain
-    # More precise pattern for 3-oxo group (O=C-C(=O))
-    oxo_acyl_pattern = Chem.MolFromSmarts("C(=O)CC(=O)")
-    if not mol.HasSubstructMatch(oxo_acyl_pattern):
-        return False, "No 3-oxo group or incomplete acyl chain found"
 
-    # Ensure there are long carbon chains indicating fatty acids
-    carbon_chains = mol.GetSubstructMatches(Chem.MolFromSmarts("C" * 14))  # Look for at least 14 connected carbons
-    if not carbon_chains:
-        return False, "Carbon chain length too short for typical fatty acids"
+    # Check for the 3-oxo group pattern
+    oxo_group_pattern = Chem.MolFromSmarts("CC(=O)")
+    if not mol.HasSubstructMatch(oxo_group_pattern):
+        return False, "No 3-oxo group found"
+
+    # Check for long fatty acyl chain
+    acyl_chain_pattern = Chem.MolFromSmarts("[#6]-[#6](=O)-[#6]-[#6]")
+    if not mol.HasSubstructMatch(acyl_chain_pattern):
+        return False, "No long fatty acyl chain found"
 
     return True, "Valid 3-oxo-fatty acyl-CoA(4-) structure identified"
 
