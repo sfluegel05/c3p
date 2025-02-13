@@ -31,15 +31,12 @@ def is_arenecarbaldehyde(smiles: str):
     if not aldehyde_matches:
         return False, "No aldehyde group found"
 
-    # Check for aromatic neighbors
+    # Check if aldehyde is part of an aromatic system
+    aromatic_rings = [ring for ring in mol.GetRingInfo().AtomRings() if all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring)]
     for match in aldehyde_matches:
         carbonyl_carbon_idx = match[0]
         carbonyl_carbon = mol.GetAtomWithIdx(carbonyl_carbon_idx)
-        aromatic_neighbors = [
-            neighbor for neighbor in carbonyl_carbon.GetNeighbors()
-            if neighbor.GetIsAromatic()
-        ]
-        if aromatic_neighbors:
+        if any(carbonyl_carbon_idx in ring for ring in aromatic_rings):
             return True, "Contains an aldehyde group attached to an aromatic ring"
 
     return False, "Aldehyde group not attached to an aromatic ring"
