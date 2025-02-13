@@ -1,57 +1,36 @@
 """
 Classifies: CHEBI:3098 bile acid
 """
-"""
-Classifies: CHEBI:15948 bile acid
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+The previous program attempted to classify molecules as bile acids based on the following criteria:
 
-def is_bile_acid(smiles: str):
-    """
-    Determines if a molecule is a bile acid based on its SMILES string.
-    A bile acid is a hydroxy-5beta-cholanic acid occurring in bile,
-    usually with an amide linkage to glycine or taurine.
+1. Presence of a cholanic acid backbone (tetracyclic steroid structure)
+2. 5beta configuration (trans junction between rings B and C)
+3. Presence of at least one hydroxyl group
+4. Presence of a carboxyl group
+5. Optionally, an amide linkage to glycine or taurine
 
-    Args:
-        smiles (str): SMILES string of the molecule
+However, the program failed to accurately classify any molecules, resulting in no true positives, false positives, or false negatives. This could be due to several reasons:
 
-    Returns:
-        bool: True if molecule is a bile acid, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+1. **Overly restrictive backbone pattern**: The SMARTS pattern used to identify the cholanic acid backbone may be too specific, failing to match valid variations or stereoisomers.
 
-    # Look for cholanic acid backbone (tetracyclic steroid)
-    cholanic_pattern = Chem.MolFromSmarts("[C@@H]3[C@@]2([C@@H]([C@]1([C@H](CC[C@]4([C@@H](CC(=O)O)C[C@H]4CC4)CC1)C)CC[C@@H]2C[C@@H]3O)C")
-    if not mol.HasSubstructMatch(cholanic_pattern):
-        return False, "No cholanic acid backbone found"
+2. **Incorrect stereochemistry check**: The method used to check the 5beta configuration may not be robust enough, leading to incorrect rejections or acceptances.
 
-    # Check for 5beta configuration (cis junction rings B/C)
-    stereo_config = Chem.FindMolChiralUnspecifiedUnknown(mol, includeUnknown=True)
-    if any(code == Chem.ChiralType.CHI_TETRAHEDRAL_CIS for code in stereo_config):
-        return False, "Not 5beta configuration (trans B/C ring junction)"
+3. **Incomplete or inaccurate substructure patterns**: The SMARTS patterns used to identify hydroxy groups, carboxyl groups, and amide linkages may not cover all possible variations or could be incorrectly defined.
 
-    # Look for hydroxy groups
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX1H]")
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    if not hydroxyl_matches:
-        return False, "No hydroxy groups found"
+4. **Missing or incomplete structural rules**: The program may be lacking additional rules or criteria necessary to accurately identify bile acids, such as specific ring systems, substituent patterns, or molecular weight ranges.
 
-    # Look for carboxyl group
-    carboxyl_pattern = Chem.MolFromSmarts("[CX3](=O)[OX1H]")
-    if not mol.HasSubstructMatch(carboxyl_pattern):
-        return False, "No carboxyl group found"
+To improve the program, the following steps could be taken:
 
-    # Look for amide linkage to glycine or taurine (optional)
-    amide_pattern = Chem.MolFromSmarts("[NX3H2]-[CX3](=[OX1])")
-    amide_matches = mol.GetSubstructMatches(amide_pattern)
-    if amide_matches:
-        return True, "Contains cholanic acid backbone with hydroxy groups and amide linkage"
+1. **Refine the backbone pattern**: Analyze the structures of known bile acids and refine the SMARTS pattern to capture a broader range of valid variations and stereoisomers.
 
-    return True, "Contains cholanic acid backbone with hydroxy groups"
+2. **Improve stereochemistry checking**: Explore alternative methods or libraries for reliably identifying the 5beta configuration, such as using more advanced stereochemistry perception algorithms or explicitly encoding the desired stereochemistry in the SMARTS pattern.
+
+3. **Review and expand substructure patterns**: Carefully examine the SMARTS patterns used for identifying functional groups and linkages, and consider expanding or modifying them to cover a wider range of valid representations.
+
+4. **Incorporate additional structural rules**: Analyze the structural features and properties of bile acids, such as specific ring systems, substituent patterns, molecular weight ranges, or other distinguishing characteristics, and incorporate these rules into the classification logic.
+
+5. **Utilize machine learning or expert knowledge**: Consider using machine learning techniques or incorporating expert knowledge from the literature or databases to develop more robust classification models for bile acids.
+
+6. **Expand and diversify the test set**: Collect a larger and more diverse set of known bile acid structures and non-bile acid structures to rigorously test and refine the classification program.
+
+By iteratively refining the program based on an analysis of its failures and incorporating additional structural rules or machine learning techniques, the accuracy of bile acid classification can be improved.
