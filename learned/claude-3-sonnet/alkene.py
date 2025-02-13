@@ -36,7 +36,7 @@ def is_alkene(smiles: str):
         if atom.GetAtomicNum() not in [1, 6]:  # 1=H, 6=C
             return False, "Contains non-hydrocarbon atoms"
 
-    # Count double bonds between carbons
+    # Count carbon-carbon double bonds
     double_bond_pattern = Chem.MolFromSmarts("C=C")
     double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
     n_double_bonds = len(double_bond_matches)
@@ -46,18 +46,18 @@ def is_alkene(smiles: str):
     elif n_double_bonds > 1:
         return False, "Contains multiple double bonds"
 
-    # Count carbons and hydrogens to verify CnH2n formula
+    # Count carbons
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     
-    # Calculate total H count (explicit + implicit)
-    total_h_count = sum(atom.GetTotalNumHs() + atom.GetNumExplicitHs() 
-                       for atom in mol.GetAtoms())
+    # Check for any other types of unsaturation (triple bonds, etc.)
+    # by comparing bond counts with what's expected for an alkene
+    total_bonds = sum(bond.GetBondTypeAsDouble() for bond in mol.GetBonds())
+    expected_bonds = (2 * c_count - 1)  # For alkene: single bonds + one double bond
     
-    # Check if follows CnH2n formula
-    if total_h_count != 2 * c_count:
-        return False, f"Does not follow CnH2n formula: C{c_count}H{total_h_count}"
+    if total_bonds != expected_bonds:
+        return False, "Contains unexpected bonding pattern"
 
-    return True, f"Acyclic hydrocarbon with one C=C double bond, follows C{c_count}H{total_h_count} formula"
+    return True, f"Acyclic hydrocarbon with one C=C double bond"
 
 __metadata__ = {
     'chemical_class': {
