@@ -1,24 +1,55 @@
 """
 Classifies: CHEBI:83820 non-proteinogenic amino acid
 """
-The previous code appears to have the following issues:
+"""
+Classifies: CHEBI:33669 non-proteinogenic amino acid
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-1. **Incomplete amino acid backbone pattern**: The SMARTS pattern used to identify the amino acid backbone (`[NX3,NX4;H2]([CH1]([CH3X4,CH2X3,CH1X2,CH0X1])C(=O)[OH,OX1])`) only checks for the presence of an amino group (-NH2) and a carboxyl group (-COOH) connected by a single carbon atom. However, this pattern fails to capture amino acids with more complex side chains or additional functional groups.
+def is_non_proteinogenic_amino_acid(smiles: str):
+    """
+    Determines if a molecule is a non-proteinogenic amino acid based on its SMILES string.
+    A non-proteinogenic amino acid is any amino acid that is not naturally encoded in the genetic code of any organism.
 
-2. **Inefficient proteinogenic amino acid exclusion**: The code checks for proteinogenic amino acids by iterating over a list of SMARTS patterns for each individual proteinogenic amino acid. This approach is inefficient and does not scale well as the number of proteinogenic amino acids increases.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Lack of positive identification**: The code only checks for the absence of a proteinogenic amino acid backbone and returns `True` if none is found. However, it does not explicitly check for the presence of non-proteinogenic amino acid features, which may lead to false positives.
-
-To improve the program, we can consider the following steps:
-
-1. **Enhance the amino acid backbone pattern**: Use a more comprehensive SMARTS pattern that captures a broader range of amino acid structures, including those with more complex side chains and additional functional groups.
-
-2. **Improve proteinogenic amino acid exclusion**: Instead of checking for individual proteinogenic amino acids, use a single SMARTS pattern that captures the general structure of proteinogenic amino acids. This can be achieved by identifying the common structural features of proteinogenic amino acids and encoding them in a single pattern.
-
-3. **Incorporate positive identification**: In addition to excluding proteinogenic amino acids, include specific checks for features or substructures that are characteristic of non-proteinogenic amino acids. This will help reduce false positives and improve the overall accuracy of the classification.
-
-4. **Consider additional features**: Explore other molecular descriptors or properties that can aid in the classification of non-proteinogenic amino acids, such as molecular weight, chemical composition, or the presence of specific functional groups.
-
-5. **Utilize machine learning techniques**: If the rule-based approach proves insufficient, consider using machine learning techniques to train a model on a dataset of known non-proteinogenic amino acids and their corresponding features. This may provide a more robust and accurate classification, especially for complex or ambiguous cases.
-
-By addressing these issues, the program should be able to classify non-proteinogenic amino acids more accurately and robustly.
+    Returns:
+        bool: True if molecule is a non-proteinogenic amino acid, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Check for amino acid backbone (-NH-CH(R)-COOH)
+    amino_acid_pattern = Chem.MolFromSmarts("[NX3,NX4;H2]([CH1]([CH3X4,CH2X3,CH1X2,CH0X1])C(=O)[OH,OX1])")
+    if not mol.HasSubstructMatch(amino_acid_pattern):
+        return False, "No amino acid backbone found"
+    
+    # Check for proteinogenic amino acids
+    proteinogenic_smarts = ["NC(C)C(=O)O", "NC(CC(=O)O)C(=O)O", "NC(CS)C(=O)O", "NC(Cc1ccccc1)C(=O)O",
+                             "NC(Cc1c[nH]cn1)C(=O)O", "NC(CC(=O)O)C(=O)N", "NC(CC[C@H](C(=O)O)N)C(=O)O",
+                             "NC(Cc1cnc[nH]1)C(=O)O", "NC(CC1=CNC2=C1C=CC=C2)C(=O)O", "NC(CC(N)=O)C(=O)O",
+                             "NC(CC1=CC=CC=N1)C(=O)O", "NC(CC1=CN=CN1)C(=O)O", "NC(Cc1c[nH]c2c1cccc2)C(=O)O",
+                             "NC(CO)C(=O)O", "NC(Cc1c[nH]c2ccccc12)C(=O)O", "NC(C(=O)O)C(C)(C)C",
+                             "NC(Cc1ccc(O)cc1)C(=O)O", "NC(Cc1c[nH]cn1)C(=O)N", "NC(CCC(=O)O)C(=O)O"]
+    for smarts in proteinogenic_smarts:
+        proteinogenic_pattern = Chem.MolFromSmarts(smarts)
+        if mol.HasSubstructMatch(proteinogenic_pattern):
+            return False, "Molecule is a proteinogenic amino acid"
+    
+    # Count number of amino groups (-NH2) and carboxyl groups (-COOH)
+    amino_count = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'N'
+                      and sum(mol.GetAtomWithIdx(i).GetFormalCharge() for i in atom.GetNeighbors()) == 1)
+    carboxyl_count = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'C'
+                         and atom.GetFormalCharge() == 0
+                         and sum(mol.GetAtomWithIdx(i).GetFormalCharge() for i in atom.GetNeighbors()) == -1)
+    if amino_count != 1 or carboxyl_count != 1:
+        return False, "Must have exactly one amino and one carboxyl group"
+    
+    return True, "Contains an amino acid backbone and is not a proteinogenic amino acid"
