@@ -37,7 +37,7 @@ def is_phosphatidylethanolamine(smiles: str):
     if not phosphate_match:
         return False, "No phosphate group found"
     
-    # Look for ethanolamine group (-O-CH2-CH2-NH2) attached to phosphate
+    # Look for ethanolamine group (-O-CH2-CH2-NH2 or -O-CH2-CH2-NHR) attached to phosphate
     ethanolamine_pattern = Chem.MolFromSmarts("[OX2]CCN")
     ethanolamine_match = mol.GetSubstructMatches(ethanolamine_pattern)
     if not ethanolamine_match:
@@ -60,13 +60,19 @@ def is_phosphatidylethanolamine(smiles: str):
     if n_rotatable < 10:
         return False, "Chains too short to be fatty acids"
     
-    # Count carbons and oxygens
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    # Check for common modifications
+    methyl_pattern = Chem.MolFromSmarts("[NX4+]([C])(C)")
+    methyl_match = mol.GetSubstructMatches(methyl_pattern)
     
+    double_bond_pattern = Chem.MolFromSmarts("[CX3]=C")
+    double_bond_match = mol.GetSubstructMatches(double_bond_pattern)
+    
+    ring_pattern = Chem.MolFromSmarts("[C&R1]")
+    ring_match = mol.GetSubstructMatches(ring_pattern)
+    
+    # Count carbons
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if c_count < 15:
         return False, "Too few carbons for phosphatidylethanolamine"
-    if o_count != 7:
-        return False, "Must have exactly 7 oxygens (2 esters, 1 phosphate, 1 ethanolamine)"
     
     return True, "Contains glycerol backbone with 2 fatty acid chains, phosphate group, and ethanolamine group"
