@@ -2,7 +2,6 @@
 Classifies: CHEBI:24654 hydroxy fatty acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_hydroxy_fatty_acid(smiles: str):
     """
@@ -22,27 +21,26 @@ def is_hydroxy_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for the presence of a carboxylic acid group (-COOH)
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
+    # Check for a carboxylic acid group (-C(=O)O)
+    carboxylic_acid_pattern = Chem.MolFromSmarts("O=C[OH]")
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
     
-    # Look for the presence of at least one hydroxy group (-OH)
+    # Check for at least one hydroxy group (-O[H])
     hydroxy_pattern = Chem.MolFromSmarts("[OX2H]")
     hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
     if len(hydroxy_matches) < 1:
         return False, "No hydroxy (OH) group found"
     
-    # Check for sufficiently long carbon chains (aliphatic)
+    # Check the carbon chain length is sufficient
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 10:  # Assuming a simple minimum chain length (can be adjusted)
+    if c_count < 8:  # Assume a practical minimum length for a hydroxy fatty acid
         return False, "Too few carbon atoms for a fatty acid"
+    
+    # Fatty acids are primarily linear
+    # We allow some degree of non-linearity (branching/rings) but should be limited
+    ring_info = mol.GetRingInfo()
+    if ring_info.NumRings() > 1:
+        return False, "Too many rings detected, inconsistent with typical fatty acid structure"
 
-    # Check if chain is mostly linear (e.g., limited branching/cycles significant in fatty acids)
-    # Fatty acids are primarily linear; however, they can have some branches or minor rings
-    if not mol.GetRingInfo().IsAtomInRingOfSize(6): 
-        return True, "Contains a carboxylic acid group and one or more hydroxy groups; valid fatty acid configuration"
-    else:
-        return False, "Presence of cyclic structures inconsistent with a typical fatty acid"
-
-    return True, "Contains a carboxylic acid group and one or more hydroxy groups on a sufficiently long carbon chain"
+    return True, "Molecule contains a carboxylic acid group and one or more hydroxy groups; matches hydroxy fatty acid structure"
