@@ -1,28 +1,54 @@
 """
 Classifies: CHEBI:36836 3beta-hydroxy steroid
 """
-The previous code attempts to identify 3beta-hydroxy steroids by looking for the steroid backbone and the 3beta-hydroxyl group using SMARTS patterns. However, the outcomes show that it failed to identify any of the provided examples as true positives, resulting in an F1 score of 0.
+"""
+Classifies: CHEBI:36506 3beta-hydroxy steroid
+A 3-hydroxy steroid in which the 3-hydroxy substituent is in the beta-position.
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-Here are some potential issues and improvements:
+def is_3beta_hydroxy_steroid(smiles: str):
+    """
+    Determines if a molecule is a 3beta-hydroxy steroid based on its SMILES string.
 
-1. **Overly Strict Steroid Backbone Pattern**: The steroid backbone pattern used in the code is very specific and may not capture all possible variations of the steroid backbone. Steroids can have different substituents, double bonds, and ring fusions, which could make the pattern too restrictive.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-   **Improvement**: Use a more general pattern for the steroid backbone or consider using a combination of patterns to cover a broader range of structures.
+    Returns:
+        bool: True if molecule is a 3beta-hydroxy steroid, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-2. **Limited Coverage of 3beta-Hydroxyl Group Pattern**: The pattern for the 3beta-hydroxyl group assumes a specific ring fusion and stereochemistry, which may not hold true for all examples.
-
-   **Improvement**: Modify the 3beta-hydroxyl group pattern to be more flexible and cover different ring fusions and stereochemistries.
-
-3. **Lack of Additional Checks**: The code only checks for the presence of the steroid backbone and the 3beta-hydroxyl group. However, some examples may require additional checks to ensure they meet the criteria for the class.
-
-   **Improvement**: Incorporate additional checks or filters based on the provided examples, such as checking for specific functional groups, ring systems, or other structural features that define the class.
-
-4. **Handling of Stereochemistry**: The provided SMILES strings may not accurately represent the stereochemistry of the molecules, leading to mismatches with the SMARTS patterns.
-
-   **Improvement**: Investigate ways to handle stereochemistry more robustly, either by using different tools or by preprocessing the SMILES strings.
-
-5. **Exhaustive Pattern Matching**: Instead of using SMARTS patterns, an alternative approach could be to enumerate all possible patterns for the steroid backbone and the 3beta-hydroxyl group, and match them against the input molecule.
-
-   **Improvement**: Explore the use of exhaustive pattern matching, which may be more effective for this specific task, although it could be computationally more expensive.
-
-Overall, the key improvements would involve refining the SMARTS patterns to cover a broader range of structures, incorporating additional checks or filters based on the provided examples, and handling stereochemistry more robustly. Additionally, exploring alternative approaches, such as exhaustive pattern matching, could be beneficial.
+    # Look for steroid backbone pattern
+    steroid_backbone_pattern = Chem.MolFromSmarts("[C@]12CCC[C@]3([C@@H]4CC[C@@]([C@](C)(CC[C@]2([H])CC1)(C)C4)C)C")
+    if not mol.HasSubstructMatch(steroid_backbone_pattern):
+        return False, "No steroid backbone found"
+    
+    # Look for 3beta-hydroxyl group pattern
+    hydroxy_pattern = Chem.MolFromSmarts("[C@@]1(CC[C@@]2([H])CC[C@]3([H])C[C@@H](O)CC[C@]23C)[C@H](C)CCCC")
+    if not mol.HasSubstructMatch(hydroxy_pattern):
+        return False, "No 3beta-hydroxyl group found"
+    
+    # Check for additional structural features
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 5:
+        return False, "Too few rotatable bonds for steroid"
+    
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 20:
+        return False, "Too few carbon atoms for steroid"
+    
+    # Count rings to ensure tetracyclic structure
+    ring_info = mol.GetRingInfo()
+    num_rings = len(ring_info.AtomRings())
+    if num_rings != 4:
+        return False, "Not a tetracyclic structure"
+    
+    return True, "Contains steroid backbone and 3beta-hydroxyl group"
