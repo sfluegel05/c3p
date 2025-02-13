@@ -21,17 +21,16 @@ def is_withanolide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define steroid scaffold (simplified cyclohexane, cyclopentane structures like C27H45)
-    # Using full perhydrophenanthrene, without redundancy that may complicate pattern
-    steroid_pattern = Chem.MolFromSmarts('C1CCC2C(C1)CCC3C2CCC4C3CC(C4)C')
+    # Define a more accurate steroid backbone pattern
+    steroid_pattern = Chem.MolFromSmarts('C1CC2CCC3C(C2)C1CCC4=C3C=CC=C4')
     if steroid_pattern is None:
         return False, "Steroid pattern definition error"
     
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
     
-    # Check for the presence of a lactone ring
-    lactone_pattern = Chem.MolFromSmarts('O=C1OC[CH2][CX3](=O)1')
+    # Define an improved lactone ring pattern (five-membered lactone ring)
+    lactone_pattern = Chem.MolFromSmarts('O=C1COC(=O)C1')
     if lactone_pattern is None:
         return False, "Lactone pattern definition error"
     
