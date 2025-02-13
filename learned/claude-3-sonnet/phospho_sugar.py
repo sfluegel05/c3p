@@ -26,47 +26,36 @@ def is_phospho_sugar(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for phosphate group patterns
-    phosphate_patterns = [Chem.MolFromSmarts("[P+](O)(O)(O)=O"),
-                          Chem.MolFromSmarts("OP(O)(O)=O"),
-                          Chem.MolFromSmarts("P(=O)(O)(O)"),
-                          Chem.MolFromSmarts("P(O)(O)=O")]
-
-    phosphate_match = False
-    for pattern in phosphate_patterns:
-        if mol.HasSubstructMatch(pattern):
-            phosphate_match = True
-            break
-
-    if not phosphate_match:
+    phosphate_pattern = Chem.MolFromSmarts("[P+](O)(O)(O)=O")
+    if not mol.HasSubstructMatch(phosphate_pattern):
         return False, "No phosphate group found"
 
-    # Look for sugar backbone patterns
-    sugar_patterns = [Chem.MolFromSmarts("[OX2]r1[CX4]([OX2])[CX4]([OX2])[CX4]([OX2])1"),  # Ring
-                      Chem.MolFromSmarts("[OX2][CX4]([OX2])[CX4]([OX2])[CX4]([OX2])"),  # Open chain
-                      Chem.MolFromSmarts("[OX2]r1[CX4]([OX2])[CX4]([OX2])1")]  # 5-membered ring
+    # Look for monosaccharide backbone patterns
+    monosaccharide_patterns = [Chem.MolFromSmarts("[OX2]r1[CX4]([OX2])[CX4]([OX2])[CX4]([OX2])[CX4]([OX2])1"),  # Pyranose ring
+                               Chem.MolFromSmarts("[OX2]r1[CX4]([OX2])[CX4]([OX2])[CX4]([OX2])1")]  # Furanose ring
 
-    sugar_match = False
-    for pattern in sugar_patterns:
-        if mol.HasSubstructMatch(pattern):
-            sugar_match = True
+    monosaccharide_match = False
+    for pattern in monosaccharide_patterns:
+        if len(mol.GetSubstructMatches(pattern)) == 1:
+            monosaccharide_match = True
             break
 
-    if not sugar_match:
-        return False, "No sugar backbone found"
+    if not monosaccharide_match:
+        return False, "No monosaccharide backbone found"
 
     # Check for phosphate-sugar connectivity
-    phospho_sugar_pattern = Chem.MolFromSmarts("[P]~[OX2]~[CX4]")
+    phospho_sugar_pattern = Chem.MolFromSmarts("[P+](O)(O)(O)=O~[OX2]~[CX4]")
     if not mol.HasSubstructMatch(phospho_sugar_pattern):
-        return False, "Phosphate group not connected to sugar backbone"
+        return False, "Phosphate group not connected to an alcoholic hydroxy group"
 
     # Additional checks
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
 
-    if c_count < 3 or c_count > 20:
-        return False, "Number of carbons outside the expected range"
+    if c_count < 3 or c_count > 8:
+        return False, "Number of carbons outside the expected range for monosaccharides"
 
-    if o_count < 4 or o_count > 12:
-        return False, "Number of oxygens outside the expected range"
+    if o_count < 3 or o_count > 8:
+        return False, "Number of oxygens outside the expected range for monosaccharides"
 
-    return True, "Contains a phosphate group attached to a sugar backbone"
+    return True, "Contains a phosphate group attached to an alcoholic hydroxy group of a monosaccharide"
