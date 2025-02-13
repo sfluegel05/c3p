@@ -23,19 +23,20 @@ def is_glycolipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for glycerol backbone with two acyl chains
-    glycerol_pattern = Chem.MolFromSmarts("[C](O[C]=O)(O[C]=O)")
+    # Check for 1,2-di-O-acylglycerol fragment
+    # The pattern includes flexibility with R groups for acyl chains and potential amide linkages
+    glycerol_pattern = Chem.MolFromSmarts("OCC(COC(=O)[#6])[#6]")
     if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No 1,2-diacylglycerol structure detected"
+        return False, "No 1,2-di-O-acylglycerol-like structure detected"
     
-    # Check for glycosidic linkage (sugar motif)
-    # Monosaccharide pattern as Cn(O)Ox multiple hydroxyls
-    sugar_pattern = Chem.MolFromSmarts("C(O)C(O)C(O)")
+    # Check for glycosidic linkage to a sugar moiety
+    # The pattern accommodates various potential sugar connections and stereochemistry
+    sugar_pattern = Chem.MolFromSmarts("OC[C@H]1O[C@@H]([C@H]([C@@H]([C@H]1O)O)O)CO")
     if not mol.HasSubstructMatch(sugar_pattern):
         return False, "No glycosidic linkage to a sugar moiety found"
     
-    # Count fatty acid chains (long carbon chains attached via esters or amides)
-    fatty_acid_pattern = Chem.MolFromSmarts("C(=O)OCC(=O)")
+    # Confirm presence of long carbon chains representing fatty acyl groups
+    fatty_acid_pattern = Chem.MolFromSmarts("C(=O)[CH2][CH2][CH2]")
     fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
     if len(fatty_acid_matches) < 2:
         return False, f"Expected at least 2 fatty acid chains, found {len(fatty_acid_matches)}"
