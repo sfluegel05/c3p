@@ -6,7 +6,6 @@ Classifies: sphingomyelin d18:1
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_sphingomyelin_d18_1(smiles: str):
     """
@@ -29,52 +28,49 @@ def is_sphingomyelin_d18_1(smiles: str):
     if not mol.HasSubstructMatch(phosphocholine):
         return False, "Missing phosphocholine head group"
 
-    # Check for sphingosine backbone with amide bond
-    # [C@H] ensures correct stereochemistry
+    # Check for sphingosine backbone with specific stereochemistry
+    # [C@@H] and [C@H] ensure correct stereochemistry
     # \C=C\ ensures trans double bond
-    sphingosine_pattern = Chem.MolFromSmarts("[C@H](O)(/C=C/C)[C@H](COP)NC(=O)")
+    sphingosine_pattern = Chem.MolFromSmarts("[CH2]CCCCCCCCCCCC/C=C/[C@@H](O)[C@H](COP)NC(=O)")
     if not mol.HasSubstructMatch(sphingosine_pattern):
-        return False, "Missing characteristic sphingosine backbone structure"
+        return False, "Missing characteristic sphingosine d18:1 backbone structure"
 
-    # Count specific features
-    double_bonds = rdMolDescriptors.CalcNumAliphaticDoubleBonds(mol)
-    if double_bonds < 1:
+    # Count double bonds in molecule
+    double_bond_pattern = Chem.MolFromSmarts("C=C")
+    double_bond_count = len(mol.GetSubstructMatches(double_bond_pattern))
+    if double_bond_count < 1:
         return False, "Missing required double bond"
 
     # Check for amide group
     amide_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[#6]")
-    if not mol.HasSubstructMatch(amide_pattern):
+    if not mol.HasSubstructMatches(amide_pattern):
         return False, "Missing amide bond"
 
-    # Check for two hydroxyl groups (one on sphingosine, one from phosphate)
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H1]")
-    hydroxyl_matches = len(mol.GetSubstructMatches(hydroxyl_pattern))
-    if hydroxyl_matches < 1:
-        return False, "Missing hydroxyl group on sphingosine"
+    # Check for hydroxyl group on sphingosine
+    hydroxyl_pattern = Chem.MolFromSmarts("[C@@H](O)[C@H](COP)")
+    if not mol.HasSubstructMatch(hydroxyl_pattern):
+        return False, "Missing or incorrect hydroxyl group on sphingosine"
 
-    # Count carbons in longest chain from NH to end of sphingosine
-    # This should be 18 for d18:1
-    backbone_pattern = Chem.MolFromSmarts("CCCCCCCCCCCCC/C=C/[C@@H](O)[C@H]")
-    if not mol.HasSubstructMatch(backbone_pattern):
-        return False, "Sphingosine backbone must be 18 carbons long (d18:1)"
-
-    # Verify presence of fatty acid chain
-    fatty_acid_pattern = Chem.MolFromSmarts("C(=O)CCCCC")  # At least 6 carbons
-    if not mol.HasSubstructMatch(fatty_acid_pattern):
-        return False, "Missing fatty acid chain"
-
-    # Check total molecular weight (should be >600 Da for sphingomyelins)
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 600:
-        return False, "Molecular weight too low for sphingomyelin"
+    # Verify N-acyl chain
+    acyl_pattern = Chem.MolFromSmarts("NC(=O)CCCCC")  # At least 6 carbons
+    if not mol.HasSubstructMatch(acyl_pattern):
+        return False, "Missing N-acyl chain"
 
     # Count key atoms
     n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
     p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     
     if n_count != 2:  # One from amide, one from choline
         return False, "Must have exactly 2 nitrogen atoms"
     if p_count != 1:
         return False, "Must have exactly 1 phosphorus atom"
+    if o_count < 6:  # Minimum 6 oxygens (phosphate, hydroxyl, amide, phosphocholine)
+        return False, "Insufficient oxygen atoms"
 
-    return True, "Contains sphingosine d18:1 backbone with phosphocholine head group and fatty acid chain"
+    # Additional check for correct carbon chain length in sphingosine part
+    sphingosine_chain = Chem.MolFromSmarts("CCCCCCCCCCCCC/C=C/[C@@H](O)[C@H]")
+    if not mol.HasSubstructMatch(sphingosine_chain):
+        return False, "Incorrect sphingosine chain length (must be 18 carbons)"
+
+    return True, "Contains sphingosine d18:1 backbone with phosphocholine head group and N-acyl chain"
