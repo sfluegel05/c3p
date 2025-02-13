@@ -8,7 +8,7 @@ def is_branched_chain_fatty_acid(smiles: str):
     Determines if a molecule is a branched-chain fatty acid based on its SMILES string.
     A BCFA is characterized by the presence of a carboxylic acid group (or its ionized form),
     and one or more branching points typically involving smaller alkyl groups attached 
-    to the main hydrocarbon chain.
+    to the main hydrocarbon chain, avoiding ring-contained branches except cyclopropyl.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,30 +23,33 @@ def is_branched_chain_fatty_acid(smiles: str):
         return None, "Invalid SMILES string"
 
     # Look for carboxylic acid group (including ionized form)
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[O,H]")
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[O;H1,-1]")
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
 
-    # Find branching points (carbon attached to at least 3 other carbons)
-    branch_patterns = [Chem.MolFromSmarts("[C;D3]"), Chem.MolFromSmarts("[C;D4]")]
+    # Identify branching points: carbon with 3 or more non-ring single bonds
     branch_found = False
-    for pattern in branch_patterns:
-        for match in mol.GetSubstructMatches(pattern):
-            atom = mol.GetAtomWithIdx(match[0])
-            if atom.GetDegree() > 2:  # Implies branching
-                if not any(atom.IsInRingSize(size) for size in (3,)):  # Cyclopropyl ring exception
-                    branch_found = True
-                    break
-    
+    for atom in mol.GetAtoms():
+        # Check if the atom is carbon
+        if atom.GetAtomicNum() != 6:
+            continue
+        # Check connections and ensure it is not part of a ring
+        if atom.GetDegree() > 2 and not atom.IsInRing():
+            branch_found = True
+            break
+            
     if not branch_found:
         return False, "No suitable branching pattern found"
 
     return True, "Contains a branched hydrocarbon chain with carboxylic acid group"
 
-# Test examples (provide one or two example SMILES strings here to check classification)
+# Test the function with some example SMILES strings
 smiles_examples = [
-    "CC(C)CCCCCCC(=O)O",  # Expected: True, branched chain
-    "CCCCCCCCCCCCCCCCCC(=O)O",  # Expected: False, straight chain
+    "OC(=O)\\C=C\\C(C)(C)C",  # 4,4-dimethyl-2E-pentenoic acid
+    "OC(=O)CCC(C)(C)C",      # 4,4-dimethyl valeric acid
+    "CC(C)CCCCCCCCCCCCCCCCC(O)=O",  # 18-methylnonadecanoic acid
+    "CC(C)(C)C(O)=O",        # pivalic acid
+    "CCCCCCCCCCCCCCCCCC(=O)O",  # Straight chain - not branched
 ]
 
 # Output results for testing examples
