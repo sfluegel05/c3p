@@ -2,7 +2,6 @@
 Classifies: CHEBI:76579 triradylglycerol
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_triradylglycerol(smiles: str):
     """
@@ -16,34 +15,34 @@ def is_triradylglycerol(smiles: str):
         str: Reason for classification
     """
     
-    # Parse the SMILES string into a molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return None, "Invalid SMILES string"
 
-    # Identify the glycerol backbone pattern
-    glycerol_pattern = Chem.MolFromSmarts("[C@H](O)[C@H](O)[C@H](O)")
+    # SMARTS pattern for glycerol backbone
+    glycerol_pattern = Chem.MolFromSmarts("C(O)C(O)C(O)")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
-
-    # Identify the ester bonds to long chains [-C(=O)O- or -CO-]
-    ester_pattern = Chem.MolFromSmarts("C(=O)O[C@H]")
-    acyl_pattern = Chem.MolFromSmarts("C(=O)O")
-    alkyl_pattern = Chem.MolFromSmarts("CO")
-    alk1enyl_pattern = Chem.MolFromSmarts("CO[C@H]=C")
-
-    matches = mol.GetSubstructMatches(ester_pattern)
     
-    # Check for ester linkages in all 3 positions
-    if len(matches) < 3:
-        return False, f"Found only {len(matches)} ester/alkyl/alk-1-enyl linkages, need all 3"
+    # Pattern to identify ester bond
+    ester_pattern = Chem.MolFromSmarts("C(=O)OC")
+    # Patterns for acyl, alkyl, and alk-1-enyl groups
+    acyl_pattern = Chem.MolFromSmarts("C(=O)O")
+    alkyl_pattern = Chem.MolFromSmarts("[C][O]")  # Extended to match different possible alkyl groups
+    alk1enyl_pattern = Chem.MolFromSmarts("[C]=[C][O]")
+    
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    acyl_matches = mol.GetSubstructMatches(acyl_pattern)
+    alkyl_matches = mol.GetSubstructMatches(alkyl_pattern)
+    alk1enyl_matches = mol.GetSubstructMatches(alk1enyl_pattern)
 
-    # Verify diversity of substituent types
-    acyl_match_count = len(mol.GetSubstructMatches(acyl_pattern))
-    alkyl_match_count = len(mol.GetSubstructMatches(alkyl_pattern))
-    alk1enyl_match_count = len(mol.GetSubstructMatches(alk1enyl_pattern))
+    # Check for at least three ester or possible linkage groups
+    if len(ester_matches) < 3:
+        return False, f"Found {len(ester_matches)} ester linkages, need at least 3"
 
-    if acyl_match_count + alkyl_match_count + alk1enyl_match_count < 3:
-        return False, "Less than 3 valid acyl/alkyl/alk-1-enyl substituents found"
-
-    return True, "Is a triradylglycerol with appropriate substituents at all three positions"
+    # Ensure diverse presence of substituents across positions
+    if len(acyl_matches) > 0 or len(alkyl_matches) > 0 or len(alk1enyl_matches) > 0:
+        if len(acyl_matches) + len(alkyl_matches) + len(alk1enyl_matches) >= 3:
+            return True, "Is a triradylglycerol with enough diversity in substituents"
+    
+    return False, "Insufficient diversity among acyl/alkyl/alk-1-enyl substituents"
