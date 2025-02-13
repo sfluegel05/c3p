@@ -21,14 +21,10 @@ def is_cyanohydrin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for cyanohydrin considering both stereo and non-stereo varieties:
-    # Primary focus is on a carbon connected to hydroxyl (O) and nitrile (C#N) groups
-    # Using [C@H](O)C#N to capture stereo center with hydroxyl and nitrile
-    # [C](O)C#N addresses both stereo and non-stereo cases
-    cyanohydrin_pattern = Chem.MolFromSmarts("[C;D3;!R][O][C]#[N]") 
-    
-    # "[C;D3]" ensures the carbon is tetrahedral attached to three atoms
-    # [O] identifies the hydroxyl group and [C]#[N] the nitrile group
+    # Define SMARTS pattern for cyanohydrin; focus on carbon 
+    # bonded to hydroxyl (O) and nitrile (C#N) groups
+    # Including all stereo variations and ring possibilities
+    cyanohydrin_pattern = Chem.MolFromSmarts("[C;!R]([O])[C]#[N]") 
     
     # Check if the molecule matches the cyanohydrin pattern
     if mol.HasSubstructMatch(cyanohydrin_pattern):
