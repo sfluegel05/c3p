@@ -2,7 +2,6 @@
 Classifies: CHEBI:35366 fatty acid
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_fatty_acid(smiles: str):
     """
@@ -26,23 +25,32 @@ def is_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
 
-    # Count carbon atoms to determine chain length
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 4 or c_count > 28:
+    # Check for carbon atoms linked mainly in a linear chain
+    c_count = 0
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6:  # Count Carbon atoms
+            # Check atom not in a ring, ensuring it's part of the main chain
+            if not atom.IsInRing():
+                c_count += 1
+
+    # Natural fatty acids usually range from C4 to C28
+    if not (4 <= c_count <= 28):
         return False, f"Carbon chain length of {c_count}, must be between 4 and 28"
 
-    # Check if the molecule has aromatic rings
+    # Ensure molecule is mostly aliphatic (no aromatic rings)
     if any(atom.GetIsAromatic() for atom in mol.GetAtoms()):
         return False, "Contains aromatic rings, not a fatty acid"
 
-    # Check if all carbons are part of a non-cyclic, mostly linear chain (aliphatic)
-    # The GetSSSR function returns all the smallest sets of smallest rings in the molecule.
-    if Chem.GetSSSR(mol) > 0:
+    # Verify it is non-cyclic with no aromatic contents
+    if Chem.rdmolops.GetSSSR(mol) > 0:
         return False, "Contains cyclic structures, not purely aliphatic"
 
-    # If all checks pass, classify as fatty acid
+    # Potentially allow additional functionalities or modifications (e.g. epoxides, hydroxy)
+    # We may recognize specific features to support more complex fatty acids
+    
+    # Passed all checks, classifies as a fatty acid
     return True, "Contains aliphatic carbon chain with a carboxylic acid group"
 
-# Example usage
-# smiles = "CCCCC(=O)O"  # A simple example of a fatty acid, pentanoic acid
-# print(is_fatty_acid(smiles))
+# Example usage for testing
+# smiles_ex = "CCCCC(=O)O"  # Pentanoic acid
+# print(is_fatty_acid(smiles_ex))
