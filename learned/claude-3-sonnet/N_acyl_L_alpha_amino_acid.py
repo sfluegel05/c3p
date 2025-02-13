@@ -23,58 +23,44 @@ def is_N_acyl_L_alpha_amino_acid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+        
+    # Check for carboxylic acid group
+    carboxyl_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H1]")
+    if not mol.HasSubstructMatch(carboxyl_pattern):
+        return False, "No carboxylic acid group found"
 
-    # More flexible pattern for alpha-amino acid core
-    # Matches both protonated and deprotonated forms
-    # Uses [C@@H] or [C@H] for L-amino acids
-    amino_acid_pattern = Chem.MolFromSmarts('[C@@H,C@H]([NH0,NH1,NH2])(C(=O)[OH0,OH1,O-])[#6]')
+    # Check for alpha-amino acid core with N-acyl
+    # [C:1] is alpha carbon, must have H
+    # [N:2] is amino group, must have acyl substituent
+    # [C:3] is carbonyl carbon of acyl group
+    amino_acid_pattern = Chem.MolFromSmarts("[C:1]([H])([N:2]C(=[O:3])[#6,#7,#8])[C](=[O])[O]")
+    matches = mol.GetSubstructMatches(amino_acid_pattern)
     
-    if not mol.HasSubstructMatch(amino_acid_pattern, useChirality=True):
-        return False, "No L-alpha-amino acid core found"
-
-    # More flexible N-acyl pattern
-    # Matches any acyl group (R-C=O) attached to the amino acid nitrogen
-    n_acyl_pattern = Chem.MolFromSmarts('[#6]C(=O)[NH0,NH1][C@@H,C@H]([#6])[CX3](=[OX1])[OH0,OH1,O-]')
-    
-    if not mol.HasSubstructMatch(n_acyl_pattern, useChirality=True):
-        return False, "No N-acyl group found"
-
-    # Get matches of the amino acid pattern
-    matches = mol.GetSubstructMatches(amino_acid_pattern, useChirality=True)
-    
+    if not matches:
+        return False, "No N-acyl alpha-amino acid core structure found"
+        
+    # Get the alpha carbon and check its chirality
     for match in matches:
         alpha_carbon_idx = match[0]
-        nitrogen_idx = match[1]
-        
-        # Get the alpha carbon
         alpha_carbon = mol.GetAtomWithIdx(alpha_carbon_idx)
         
-        # Skip if chirality is not specified
+        # Check if carbon is chiral
         if alpha_carbon.GetChiralTag() == Chem.ChiralType.CHI_UNSPECIFIED:
-            continue
+            return False, "Unspecified stereochemistry at alpha carbon"
             
-        # Get the nitrogen atom
-        nitrogen = mol.GetAtomWithIdx(nitrogen_idx)
+        # In RDKit, counterclockwise (CCW) is typically R configuration
+        # For amino acids, L configuration corresponds to S configuration at the alpha carbon
+        # Due to CIP priority rules, this usually corresponds to CCW/R in RDKit
+        if alpha_carbon.GetChiralTag() != Chem.ChiralType.CHI_TETRAHEDRAL_CCW:
+            return False, "Not L configuration at alpha carbon"
+            
+        # Check N-acyl group
+        nitrogen_idx = match[1]
+        carbonyl_idx = match[2]
         
-        # Check nitrogen's acylation
-        for neighbor in nitrogen.GetNeighbors():
-            if neighbor.GetAtomicNum() == 6:  # Carbon
-                # Look for carbonyl group attached to nitrogen
-                carbonyl_found = False
-                for n2 in neighbor.GetNeighbors():
-                    if n2.GetAtomicNum() == 8:  # Oxygen
-                        if any(b.GetBondType() == Chem.BondType.DOUBLE 
-                              for b in neighbor.GetBonds()):
-                            carbonyl_found = True
-                            break
-                
-                if carbonyl_found:
-                    # Verify carboxylic acid/carboxylate group
-                    for c_neighbor in alpha_carbon.GetNeighbors():
-                        if c_neighbor.GetAtomicNum() == 6:  # Carbon
-                            if any(n.GetAtomicNum() == 8 for n in c_neighbor.GetNeighbors()):
-                                if any(b.GetBondType() == Chem.BondType.DOUBLE 
-                                      for b in c_neighbor.GetBonds()):
-                                    return True, "Contains N-acyl-L-alpha-amino acid structure"
-
-    return False, "No valid N-acyl-L-alpha-amino acid structure found"
+        # Verify N-acyl group
+        nitrogen = mol.GetAtomWithIdx(nitrogen_idx)
+        if nitrogen.GetTotalNumHs() > 1:  # Should only have 0 or 1 H (not free NH2)
+            return False, "No N-acyl group found"
+            
+    return True, "Contains N-acyl-L-alpha-amino acid structure"
