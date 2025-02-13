@@ -33,24 +33,25 @@ def is_very_long_chain_fatty_acyl_CoA(smiles: str):
     if not thioester_idx:
         return False, "No thioester linkage found"
 
-    # Assuming the thioester sulfur is found, trace carbons before that
-    acyl_chain_atoms = []
+    # Trace acyl chain: Start from any carbon directly attached to sulfur
+    acyl_chain_atoms = set()
+    visited = set()
 
-    def atom_dfs(atom, visited):
-        if atom.GetIdx() in visited:
+    def atom_dfs(atom):
+        if atom.GetIdx() in visited or atom.GetAtomicNum() != 6:  # Only consider carbons
             return
+        acyl_chain_atoms.add(atom.GetIdx())
         visited.add(atom.GetIdx())
-        if atom.GetAtomicNum() == 6:  # Carbon
-            acyl_chain_atoms.append(atom)
+        # Check linear connections and avoid cyclic/branched paths
         for neighbor in atom.GetNeighbors():
-            if neighbor.GetIdx() not in visited and neighbor.GetIdx() != thioester_idx[0]:
-                atom_dfs(neighbor, visited)
+            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in acyl_chain_atoms:
+                atom_dfs(neighbor)
 
-    # Start DFS from a carbon atom neighbor to the thioester sulfur atom
     thioester_sulfur = mol.GetAtomWithIdx(thioester_idx[0])
     for neighbor in thioester_sulfur.GetNeighbors():
-        if neighbor.GetAtomicNum() == 6:  # Start from carbon atoms
-            atom_dfs(neighbor, set())
+        if neighbor.GetAtomicNum() == 6:  # Start DFS tree from carbon atoms
+            atom_dfs(neighbor)
+            break  # Consider only one primary chain extending from the attachment point
 
     # Count the number of carbon atoms in the acyl chain
     carbon_count = len(acyl_chain_atoms)
