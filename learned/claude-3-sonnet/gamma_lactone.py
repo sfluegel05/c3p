@@ -6,11 +6,12 @@ Classifies: CHEBI:35524 gamma-lactone
 A lactone having a five-membered lactone ring.
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_gamma_lactone(smiles: str):
     """
     Determines if a molecule is a gamma-lactone based on its SMILES string.
-    A gamma-lactone is defined as a five-membered lactone ring.
+    A gamma-lactone is a lactone with a five-membered ring.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -25,25 +26,14 @@ def is_gamma_lactone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Get ring information
-    ring_info = mol.GetRingInfo()
+    # Look for lactone pattern (cyclic ester)
+    lactone_pattern = Chem.MolFromSmarts("[O;R]1[C;R]=C[C;R][C;R]=O1")
+    lactone_matches = mol.GetSubstructMatches(lactone_pattern)
     
-    # Iterate over rings
-    for ring in ring_info.AtomRings():
-        if len(ring) == 5:  # Five-membered ring
-            oxygen_atoms = [mol.GetAtomWithIdx(idx).GetSymbol() == 'O' for idx in ring]
-            if sum(oxygen_atoms) == 1:  # Exactly one oxygen atom
-                oxygen_idx = ring[oxygen_atoms.index(True)]
-                oxygen_atom = mol.GetAtomWithIdx(oxygen_idx)
-                
-                # Check if oxygen is part of a lactone
-                if oxygen_atom.IsInRingSize(5) and oxygen_atom.GetIsAromatic() == False:
-                    neighbors = [mol.GetAtomWithIdx(neighbor_idx) for neighbor_idx in oxygen_atom.GetNeighbors()]
-                    carbonyl_carbons = [neighbor for neighbor in neighbors if neighbor.GetSymbol() == 'C' and neighbor.GetFormalCharge() == 0]
-                    if len(carbonyl_carbons) == 1:
-                        carbonyl_carbon = carbonyl_carbons[0]
-                        neighbors_of_carbonyl = [mol.GetAtomWithIdx(neighbor_idx) for neighbor_idx in carbonyl_carbon.GetNeighbors()]
-                        if len([neighbor for neighbor in neighbors_of_carbonyl if neighbor.GetSymbol() == 'O' and neighbor.GetFormalCharge() == 0]) == 1:
-                            return True, "Contains a five-membered lactone ring"
+    # Check if any of the matches have a 5-membered ring
+    for match in lactone_matches:
+        ring_atoms = mol.GetAtomRingInfo().AtomRings()[match]
+        if len(ring_atoms) == 5:
+            return True, "Contains a five-membered lactone ring"
     
-    return False, "No gamma-lactone substructure found"
+    return False, "No five-membered lactone ring found"
