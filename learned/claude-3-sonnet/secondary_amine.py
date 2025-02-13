@@ -2,15 +2,18 @@
 Classifies: CHEBI:32863 secondary amine
 """
 """
-Classifies: CHEBI:35612 secondary amine
-A compound formally derived from ammonia by replacing two hydrogen atoms by hydrocarbyl groups.
+Classifies: CHEBI:33899 secondary amine
 """
+from typing import Tuple
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
 
-def is_secondary_amine(smiles: str):
+
+def is_secondary_amine(smiles: str) -> Tuple[bool, str]:
     """
     Determines if a molecule is a secondary amine based on its SMILES string.
+    A secondary amine is a compound formally derived from ammonia by replacing
+    two hydrogen atoms by hydrocarbyl groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -24,53 +27,28 @@ def is_secondary_amine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for presence of nitrogen atom
-    nitrogen_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7]
-    if not nitrogen_atoms:
+    # Count nitrogen atoms
+    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
+    if n_count == 0:
         return False, "No nitrogen atom found"
 
-    # Check for nitrogen atoms bonded to two alkyl/aryl groups
-    is_secondary_amine = False
-    for n_atom in nitrogen_atoms:
-        n_neighbors = [neighbor for neighbor in n_atom.GetNeighbors() if neighbor.GetAtomicNum() == 6]
-        if len(n_neighbors) >= 2:
-            # Identify alkyl/aryl groups
-            alkyl_aryl_groups = []
-            for neighbor in n_neighbors:
-                alkyl_aryl_group = [neighbor]
-                visited = set()
-                to_visit = [neighbor]
-                while to_visit:
-                    cur_atom = to_visit.pop(0)
-                    if cur_atom.GetAtomicNum() == 6:
-                        alkyl_aryl_group.append(cur_atom)
-                        visited.add(cur_atom)
-                        for neighbor in cur_atom.GetNeighbors():
-                            if neighbor.GetAtomicNum() == 6 and neighbor not in visited:
-                                to_visit.append(neighbor)
-                alkyl_aryl_groups.append(alkyl_aryl_group)
+    # Check for secondary amine pattern
+    sec_amine_pattern = Chem.MolFromSmarts("N($(*C),$(*C))")
+    sec_amine_matches = mol.GetSubstructMatches(sec_amine_pattern)
 
-            # Check for at least two separate alkyl/aryl groups
-            if len(alkyl_aryl_groups) >= 2:
-                is_secondary_amine = True
-                break
+    if len(sec_amine_matches) == 0:
+        return False, "No secondary amine pattern found"
 
-    if not is_secondary_amine:
-        return False, "Nitrogen atom not bonded to at least two alkyl/aryl groups"
+    # Check for other nitrogen patterns (primary, tertiary, quaternary)
+    other_nitrogen_patterns = [
+        Chem.MolFromSmarts("N($(*C),$(*N))"),  # Tertiary amine
+        Chem.MolFromSmarts("N($(*C),$(*C),$(*C),$(*C))"),  # Quaternary amine
+        Chem.MolFromSmarts("N($(*C))"),  # Primary amine
+    ]
 
-    # Check for common functional groups/heteroatoms
-    heteroatoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() not in [1, 6, 7]]
-    if heteroatoms:
-        functional_groups = []
-        for atom in heteroatoms:
-            if atom.GetAtomicNum() == 8:  # Oxygen
-                functional_groups.append("hydroxy" if sum(neighbor.GetAtomicNum() == 1 for neighbor in atom.GetNeighbors()) else "carbonyl")
-            elif atom.GetAtomicNum() == 16:  # Sulfur
-                functional_groups.append("thiol" if sum(neighbor.GetAtomicNum() == 1 for neighbor in atom.GetNeighbors()) else "sulfur")
-            else:
-                functional_groups.append(f"heteroatom {atom.GetSymbol()}")
-        reason = f"Contains a nitrogen atom bonded to at least two alkyl/aryl groups, with additional functional group(s): {', '.join(functional_groups)}"
-    else:
-        reason = "Contains a nitrogen atom bonded to at least two alkyl/aryl groups"
+    for pattern in other_nitrogen_patterns:
+        other_matches = mol.GetSubstructMatches(pattern)
+        if len(other_matches) > 0:
+            return False, "Molecule contains other nitrogen patterns"
 
-    return True, reason
+    return True, "Contains secondary amine group(s)"
