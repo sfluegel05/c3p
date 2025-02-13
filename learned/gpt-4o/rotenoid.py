@@ -21,12 +21,12 @@ def is_rotenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Revised SMARTS pattern for rotenoid structure
-    # The pattern aims to capture essential features of the rotenoid scaffold, including the cis-fused rings.
-    rotenoid_pattern = Chem.MolFromSmarts("C12OC3=C(O1)C=CC4=C3OC5=CC=CC5=C24")
+    # Revised SMARTS pattern for rotenoid core structure
+    # A simplified and possibly inclusive pattern for the tetrahydrochromeno[3,4-b]chromene core
+    rotenoid_core_pattern = Chem.MolFromSmarts("C1Oc2ccccc2Oc3ccccc13")
     
-    # Check if the molecule has the rotenoid pattern
-    if mol.HasSubstructMatch(rotenoid_pattern):
-        return True, "Matches the rotenoid pattern"
+    # Check if the molecule contains the reduced rotenoid core pattern
+    if mol.HasSubstructMatch(rotenoid_core_pattern):
+        return True, "Matches the rotenoid core pattern"
     else:
-        return False, "Does not match the rotenoid pattern"
+        return False, "Does not match the rotenoid core pattern"
