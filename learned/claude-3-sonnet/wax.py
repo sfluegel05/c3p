@@ -30,8 +30,10 @@ def is_wax(smiles: str):
     # Look for ester groups (-O-C(=O)-)
     ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) != 1:
-        return False, f"Must have exactly 1 ester group, found {len(ester_matches)}"
+    if len(ester_matches) == 0:
+        return False, "No ester groups found"
+    if len(ester_matches) > 3:
+        return False, f"Too many ester groups ({len(ester_matches)}) for a typical wax"
 
     # Count atoms and check composition
     total_atoms = mol.GetNumAtoms()
@@ -40,10 +42,10 @@ def is_wax(smiles: str):
     other_count = total_atoms - c_count - o_count
     
     # Waxes should be mostly carbon and hydrogen
-    if c_count < 20:
+    if c_count < 16:
         return False, f"Too few carbons ({c_count}) for a wax"
-    if o_count != 2:
-        return False, f"Waxes should have exactly 2 oxygens (ester group), found {o_count}"
+    if o_count < 2:
+        return False, "Must have at least 2 oxygens (ester group)"
     if other_count > 0:
         return False, "Contains atoms other than C, H, and O"
 
@@ -58,9 +60,15 @@ def is_wax(smiles: str):
     if len(long_chain_matches) < 2:
         return False, "Must have at least two long hydrocarbon chains"
 
+    # Check for methyl/ethyl esters (not waxes)
+    methyl_ester = Chem.MolFromSmarts("[CH3]OC(=O)")
+    ethyl_ester = Chem.MolFromSmarts("[CH3]COC(=O)")
+    if mol.HasSubstructMatch(methyl_ester) or mol.HasSubstructMatch(ethyl_ester):
+        return False, "Methyl/ethyl esters are not considered waxes"
+
     # Count rotatable bonds to verify flexibility
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 10:
+    if n_rotatable < 8:
         return False, "Not enough rotatable bonds for a wax"
 
     # Check molecular weight - waxes typically >350 Da
@@ -75,11 +83,16 @@ def is_wax(smiles: str):
     if mol.HasSubstructMatch(acid_pattern):
         return False, "Contains free carboxylic acid group"
 
-    # Calculate fraction of sp3 carbons (should be high for waxes)
-    sp3_pattern = Chem.MolFromSmarts("[CX4]")
-    sp3_count = len(mol.GetSubstructMatches(sp3_pattern))
-    sp3_fraction = sp3_count / c_count
-    if sp3_fraction < 0.8:
-        return False, "Too many unsaturated carbons for a typical wax"
+    # Check for short-chain esters (less than C8 on either side)
+    for match in ester_matches:
+        # Get the atoms connected to the ester oxygen
+        o_atom = mol.GetAtomWithIdx(match[0])
+        neighbors = [n for n in o_atom.GetNeighbors()]
+        for n in neighbors:
+            if n.GetIdx() != match[1]:  # not the carbonyl carbon
+                # Count continuous carbon chain from this atom
+                chain_pattern = Chem.MolFromSmarts(f"[#6]{'~[#6]'*7}")  # At least 8 carbons
+                if not mol.HasSubstructMatch(chain_pattern):
+                    return False, "One or more alkyl chains too short for a wax"
 
     return True, "Long-chain ester with appropriate molecular weight and composition typical of waxes"
