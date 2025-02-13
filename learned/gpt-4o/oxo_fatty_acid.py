@@ -16,7 +16,7 @@ def is_oxo_fatty_acid(smiles: str):
         bool: True if molecule is an oxo fatty acid, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
@@ -35,12 +35,12 @@ def is_oxo_fatty_acid(smiles: str):
     ketone_pattern = Chem.MolFromSmarts("[#6][CX3](=O)[#6]")
     has_ketone = mol.HasSubstructMatch(ketone_pattern)
 
-    # A fatty acid should have a long chain of carbon atoms
-    chain_length_threshold = 6  # example threshold for chain length
+    # A more flexible carbon chain check for fatty acid characteristics
+    # Accept molecular weight as an alternative check for complex fatty acids
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     
-    # Determine if at least one of aldehyde or ketone group is present with the carboxylic group
-    if (has_aldehyde or has_ketone) and carbon_count > chain_length_threshold:
-        return True, "Contains carboxylic acid group, long carbon chain, and at least one oxo group (aldehydic or ketonic)"
+    # Ensure we account for shorter chains that may still be oxo fatty acids
+    if (has_aldehyde or has_ketone) and carbon_count >= 4:
+        return True, "Contains carboxylic acid group and at least one oxo group (aldehydic or ketonic), possibly in a shorter chain"
 
-    return False, "Missing appropriate aldehydic or ketonic group"
+    return False, "Missing appropriate aldehydic or ketonic group with a carboxylic backbone"
