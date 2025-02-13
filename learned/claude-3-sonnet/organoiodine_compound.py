@@ -31,8 +31,23 @@ def is_organoiodine_compound(smiles: str):
         return False, "No iodine atoms found"
 
     # Check for carbon-iodine bonds
-    c_i_bonds = [bond for bond in mol.GetBonds() if bond.GetBeginAtomIdx() in [atom.GetIdx() for atom in iodine_atoms] and bond.GetEndAtomIdx() in [atom.GetIdx() for atom in mol.GetAromaticAtoms()]]
+    c_i_bond_pattern = Chem.MolFromSmarts("[I;X1]-[C;X3]")
+    c_i_bonds = mol.GetSubstructMatches(c_i_bond_pattern)
     if not c_i_bonds:
         return False, "No carbon-iodine bonds found"
 
-    return True, "Molecule contains at least one carbon-iodine bond"
+    # Check that iodine is bonded directly to carbon in an organic moiety
+    for bond in c_i_bonds:
+        i_idx, c_idx = bond
+        i_atom = mol.GetAtomWithIdx(i_idx)
+        c_atom = mol.GetAtomWithIdx(c_idx)
+        
+        # Check if carbon atom is part of an organic moiety
+        if not any(nbr.GetAtomicNum() == 6 for nbr in c_atom.GetNeighbors()):
+            return False, "Iodine not bonded to an organic carbon"
+        
+        # Check if iodine atom is bonded to only one carbon
+        if len([bond for bond in mol.GetBondedAtoms(i_idx) if bond.GetAtomicNum() == 6]) > 1:
+            return False, "Iodine bonded to multiple carbon atoms"
+
+    return True, "Molecule contains at least one carbon-iodine bond in an organic moiety"
