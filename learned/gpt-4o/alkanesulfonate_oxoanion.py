@@ -20,19 +20,21 @@ def is_alkanesulfonate_oxoanion(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Detect sulfonate group with [O-]: S([O-])(=O)=O or S([O-])(=O)(=O)
-    sulfonate_pattern = Chem.MolFromSmarts("S([O-])(=O)(=O)")
+    # SMARTS pattern for a sulfonate directly attached to an aliphatic carbon
+    sulfonate_pattern = Chem.MolFromSmarts("C-S([O-])(=O)(=O)")
     matches = mol.GetSubstructMatches(sulfonate_pattern)
     if not matches:
-        return False, "No sulfonate group S([O-])(=O)(=O) found"
+        return False, "No sulfonate group attached to an aliphatic carbon found"
 
-    # Check connections of the sulfur atom to ensure it is bonded correctly
+    # Check for valid R group attachments
     for match in matches:
-        sulfur_atom = mol.GetAtomWithIdx(match[0])
+        carbon_atom = mol.GetAtomWithIdx(match[0])
         
-        # Check for carbon or permitted atom neighbors of sulfur; extending beyond just saturated carbon
-        connected_atoms = [n for n in sulfur_atom.GetNeighbors() if n.GetAtomicNum() in [6, 1, 7, 8, 15]]
-        if connected_atoms:
-            return True, "Found an appropriately attached sulfonate group with a diverse R group"
+        # Ensure the carbon is not further part of an aromatic system
+        if not carbon_atom.GetIsAromatic():
+            # Check attached groups to the carbon
+            valid_connections = any(n.GetAtomicNum() in [1, 6, 7, 8] for n in carbon_atom.GetNeighbors())
+            if valid_connections:
+                return True, "Found an appropriately attached sulfonate group with a diverse R group"
 
-    return False, "Sulfonate group not properly attached"
+    return False, "Sulfonate group not properly attached to valid carbon or R group connections"
