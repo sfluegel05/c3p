@@ -21,18 +21,14 @@ def is_dodecanoate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for a dodecanoate ester (12-carbon chain attached to ester group)
-    # This pattern specifically checks for a C(=O)O linkage with a long alkyl chain
-    lauric_acid_ester_pattern = Chem.MolFromSmarts("CCCCCCCCCCCC(=O)O")  # 12 carbon chain before ester_group
+    # Refined lauric acid ester SMARTS pattern
+    # This pattern is meant to specifically capture an ester bond with lauric acid
+    lauric_acid_ester_pattern = Chem.MolFromSmarts("CCCCCCCCCCCC(=O)O[CX4]")
+    if lauric_acid_ester_pattern is None:
+        return None, None  # If the pattern cannot be compiled
 
-    # Attempt to match the pattern
+    # Check for lauric acid ester substructure
     if mol.HasSubstructMatch(lauric_acid_ester_pattern):
-        # Verify the context of the matching substructure
-        matches = mol.GetSubstructMatches(lauric_acid_ester_pattern)
-        for match in matches:
-            # Verify the chain length (encapsulating additional context checks if needed)
-            carbon_atoms = [mol.GetAtomWithIdx(idx) for idx in match if mol.GetAtomWithIdx(idx).GetAtomicNum() == 6]
-            if len(carbon_atoms) == 12:
-                return True, "Contains lauric acid (12-carbon) ester component"
-        
+        return True, "Contains lauric acid ester component"
+
     return False, "Does not contain lauric acid ester component"
