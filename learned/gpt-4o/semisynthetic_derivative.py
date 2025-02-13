@@ -16,36 +16,40 @@ def is_semisynthetic_derivative(smiles: str):
         bool: True if molecule is likely a semisynthetic derivative, False otherwise
         str: Reason for classification
     """
-
+    
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return None, "Invalid SMILES string"
 
-    # Assess complexity using molecular descriptors: MolWt and TPSA as proxies
-    mol_wt = Descriptors.MolWt(mol)
-    tpsa = Descriptors.TPSA(mol)
-
-    # Consider compounds above certain size/complexity as potential semisynthetic derivatives
-    if mol_wt < 300 or tpsa < 40:
-        return False, "Molecule seems too simple to be semisynthetic"
-    
     # Look for typical semisynthetic modification groups
-    acetyl_group = Chem.MolFromSmarts("CC(=O)O")
-    if mol.HasSubstructMatch(acetyl_group):
-        return True, "Contains acetyl group, indicates possible chemical modification"
+    # Ester groups in general
+    ester_group = Chem.MolFromSmarts("C(=O)O")
+    if mol.HasSubstructMatch(ester_group):
+        return True, "Contains ester group, indicates possible chemical modification"
 
-    methylation = Chem.MolFromSmarts("C")
-    methyl_count = len(mol.GetSubstructMatches(methylation))
-    if methyl_count > 3:
-        return True, "High degree of methylation, indicates possible semisynthetic modification"
+    # Ether bonds
+    ether_group = Chem.MolFromSmarts("COC")
+    if mol.HasSubstructMatch(ether_group):
+        return True, "Contains ether bond, indicates possible chemical modification"
 
-    halogen_group = Chem.MolFromSmarts("[F,Cl,Br,I]")
-    if mol.HasSubstructMatch(halogen_group):
-        return True, "Contains halogen group, indicates possible chemical modification"
+    # Tertiary amines (methylated amines)
+    tertiary_amine = Chem.MolFromSmarts("N(C)(C)C")
+    if mol.HasSubstructMatch(tertiary_amine):
+        return True, "Contains tertiary amine, common in semisynthetic derivatives"
     
+    # Chlorination/Bromination (halogenated aromatics)
+    halogenated_aromatic = Chem.MolFromSmarts("c[F,Cl,Br,I]")
+    if mol.HasSubstructMatch(halogenated_aromatic):
+        return True, "Contains halogenated aromatic, indicates possible chemical modification"
+
+    # Amide groups extensively used in derivatization
     amide_group = Chem.MolFromSmarts("C(=O)N")
     if mol.HasSubstructMatch(amide_group):
         return True, "Contains amide group, common in semisynthetic derivatives"
-    
-    # If none of the inference patterns provide definitive classification
-    return None, "Cannot reliably classify as semisynthetic derivative based on structure alone"
+
+    # Look for branching (indicating complex modifications)
+    branching_pattern = Chem.MolFromSmarts("C(C)(C)C")
+    if mol.HasSubstructMatch(branching_pattern):
+        return True, "Contains branching pattern, indicative of derivatization"
+
+    return False, "Molecule does not have typical indicators of semisynthetic derivation"
