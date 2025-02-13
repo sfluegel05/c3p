@@ -6,7 +6,7 @@ Classifies: CHEBI:36195 fatty alcohol
 
 A fatty alcohol is an aliphatic alcohol consisting of a chain of 3 to greater than
 27 carbon atoms. Fatty alcohols may be saturated or unsaturated and may be branched
-or unbranched. They may contain one or more alcohol groups.
+or unbranched.
 """
 
 from rdkit import Chem
@@ -30,42 +30,21 @@ def is_fatty_alcohol(smiles: str):
     # Count alcohol groups (-OH)
     alcohol_pattern = Chem.MolFromSmarts("[OX1H]")
     alcohol_matches = mol.GetSubstructMatches(alcohol_pattern)
-    if len(alcohol_matches) < 1:
-        return False, "No alcohol groups found"
+    if len(alcohol_matches) != 1:
+        return False, f"Found {len(alcohol_matches)} alcohol groups, need exactly 1"
 
-    # Find longest aliphatic carbon chain
-    chain_pattern = Chem.MolFromSmarts("[CH2][CH2][CH2]")
-    chain_matches = mol.GetSubstructMatches(chain_pattern)
-    if not chain_matches:
-        return False, "No aliphatic carbon chain found"
+    # Count carbon chain length
+    carbon_chain = max(len(AllChem.GenerateDepictionMatching3DStructure(mol, Chem.MolFromSmarts("[C]~[C]"), useHs=False)) + 1
+    if carbon_chain < 3 or carbon_chain > 27:
+        return False, f"Carbon chain length ({carbon_chain}) outside of allowed range (3-27)"
 
-    chain_lengths = []
-    for match in chain_matches:
-        chain_start = match[0]
-        chain = Chem.Mol.GetAtomBrandsDepthFirstSearch(mol, chain_start)
-        chain_lengths.append(len(chain))
-
-    longest_chain_length = max(chain_lengths)
-
-    if longest_chain_length < 3 or longest_chain_length > 27:
-        return False, f"Longest carbon chain length ({longest_chain_length}) outside of allowed range (3-27)"
-
-    # Check for aliphatic (allow branched structures)
+    # Check for aliphatic (no cyclic structures)
     if mol.GetRingInfo().NumRings() > 0:
-        return False, "Contains cyclic structures, not allowed"
+        return False, "Contains cyclic structures, must be aliphatic"
 
-    # Count unsaturations (double bonds and triple bonds)
+    # Count unsaturations (double bonds)
     num_double_bonds = rdMolDescriptors.CalcNumRotatableBonds(mol) - rdMolDescriptors.CalcNumRotatableBonds(Chem.RemoveHs(mol))
-    num_triple_bonds = rdMolDescriptors.CalcNumRotatableBonds(mol) - rdMolDescriptors.CalcNumRotatableBonds(Chem.RemoveHs(mol, implicitOnly=False))
-    num_unsaturations = num_double_bonds + num_triple_bonds
-
-    if num_unsaturations > longest_chain_length - 1:
+    if num_double_bonds > carbon_chain - 3:
         return False, "Too many unsaturations for carbon chain length"
 
-    # Check for forbidden functional groups
-    forbidden_patterns = ["[N]", "[S]", "[P]", "C(=O)O", "C(=O)N", "C(=O)C(=O)", "O=C-O", "O-C=O", "C-O-C"]
-    for pattern in forbidden_patterns:
-        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
-            return False, f"Contains forbidden functional group: {pattern}"
-
-    return True, "Aliphatic alcohol with 3-27 carbon chain length and one or more alcohol groups"
+    return True, "Aliphatic alcohol with 3-27 carbon chain length"
