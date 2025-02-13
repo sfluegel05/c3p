@@ -2,17 +2,15 @@
 Classifies: CHEBI:18133 hexose
 """
 """
-Classifies: CHEBI:18020 hexose
+Classifies: CHEBI:18107 hexose
+A hexose is any six-carbon monosaccharide which in its linear form contains either an aldehyde group at position 1 (aldohexose) or a ketone group at position 2 (ketohexose).
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem.rdchem import BondType
 
 def is_hexose(smiles: str):
     """
     Determines if a molecule is a hexose based on its SMILES string.
-    A hexose is a six-carbon monosaccharide with an aldehyde group at position 1 (aldohexose)
-    or a ketone group at position 2 (ketohexose), existing as a linear or cyclic structure.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,43 +24,24 @@ def is_hexose(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Check for 6 carbon atoms and sufficient oxygen atoms
+
+    # Count number of carbon and oxygen atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if c_count != 6 or o_count < 5:
-        return False, "Does not contain 6 carbon atoms or sufficient oxygen atoms for a hexose"
-    
-    # Define SMARTS patterns for aldohexose and ketohexose
-    aldohexose_pattern = Chem.MolFromSmarts("[CH2](C(=O)C[CH][CH][CH][CH]O)")  # Linear aldohexose
-    ketohexose_pattern = Chem.MolFromSmarts("[CH](C(=O)C[CH][CH][CH]O)")  # Linear ketohexose
-    pyranose_pattern = Chem.MolFromSmarts("O1C[CH][CH][CH][CH]C1")  # Pyranose ring
-    furanose_pattern = Chem.MolFromSmarts("O1C[CH][CH]C[CH]1")  # Furanose ring
-    
-    # Check for linear aldohexose or ketohexose
-    if mol.HasSubstructMatch(aldohexose_pattern):
-        return True, "Linear aldohexose structure found"
-    if mol.HasSubstructMatch(ketohexose_pattern):
-        return True, "Linear ketohexose structure found"
-    
-    # Check for cyclic pyranose or furanose structures
-    if mol.HasSubstructMatch(pyranose_pattern) or mol.HasSubstructMatch(furanose_pattern):
-        # Check for aldehyde or ketone group in ring
-        for atom in mol.GetAtoms():
-            if atom.GetAtomicNum() == 6:  # Carbon atom
-                bond_types = [bond.GetBondType() for bond in atom.GetBonds()]
-                if BondType.DOUBLE in bond_types:
-                    # Check if connected to oxygen (aldehyde or ketone)
-                    for bond in atom.GetBonds():
-                        if bond.GetBondType() == BondType.DOUBLE and bond.GetOtherAtom(atom).GetAtomicNum() == 8:
-                            # Check position of aldehyde or ketone group
-                            ring_picker = AllChem.RingPicker.RingPicker()
-                            ring_atoms = ring_picker.pickRing(mol, includeRoot=atom.GetIdx())
-                            if len(ring_atoms) == 6:
-                                ring_pos = ring_atoms.index(atom.GetIdx())
-                                if ring_pos == 0:
-                                    return True, "Aldopyranose or aldofuranose structure found"
-                                elif ring_pos == 1:
-                                    return True, "Ketopyranose or ketofuranose structure found"
-    
-    return False, "No hexose structure found"
+    if c_count != 6 or o_count < 5 or o_count > 6:
+        return False, "Incorrect number of carbon (6) or oxygen (5-6) atoms"
+
+    # Check for aldehyde or ketone group
+    aldehyde_pattern = Chem.MolFromSmarts("[CH2](C=O)")
+    ketone_pattern = Chem.MolFromSmarts("C(=O)C")
+    aldehyde_matches = mol.GetSubstructMatches(aldehyde_pattern)
+    ketone_matches = mol.GetSubstructMatches(ketone_pattern)
+
+    if len(aldehyde_matches) == 1:
+        return True, "Molecule contains an aldehyde group at position 1 (aldohexose)"
+    elif len(ketone_matches) == 1:
+        return True, "Molecule contains a ketone group at position 2 (ketohexose)"
+    else:
+        return False, "No aldehyde or ketone group found in the correct position"
+
+    return False, "Molecule does not meet hexose criteria"
