@@ -1,26 +1,58 @@
 """
 Classifies: CHEBI:26935 tetraterpenoid
 """
-Based on the provided code and the evaluation outcomes, it appears that the program is not accurately classifying tetraterpenoid structures. The issues seem to be related to the criteria used for classification. Here are some hypotheses on what went wrong and potential improvements:
+"""
+Classifies: CHEBI:36567 tetraterpenoid
 
-1. **Number of carbon atoms:** The program checks for the number of carbon atoms to be between 40 and 60, which is reasonable for tetraterpenoids. However, some of the false negatives, such as C1-15 thermocryptoxanthin-15, have 61 carbon atoms, which falls outside the specified range. This criterion may need to be relaxed or adjusted to account for potential modifications or additions to the core tetraterpenoid structure.
+A tetraterpenoid is any terpenoid derived from a tetraterpene. The term includes compounds in which
+the C40 skeleton of the parent tetraterpene has been rearranged or modified by the removal of one
+or more skeletal atoms (generally methyl groups).
+"""
 
-2. **Molecular weight:** The molecular weight range of 500-1000 Da seems too narrow for tetraterpenoids. Some of the provided examples, such as C1-15 thermocryptoxanthin-15 and Salinixanthin, have higher molecular weights but are still considered tetraterpenoids. This criterion may need to be removed or adjusted to a wider range.
+from rdkit import Chem
+from rdkit.Chem import AllChem, rdMolDescriptors
 
-3. **Isoprene units:** The program checks for the presence of at least 8 isoprene units, which is a reasonable criterion. However, some of the false negatives, such as 3,4,11′,12′-tetrahydrospheroidene and e,e-carotene-3,3'-dione, have fewer than 8 isoprene units but are still classified as tetraterpenoids. This criterion may need to be relaxed or combined with other structural features.
+def is_tetraterpenoid(smiles: str):
+    """
+    Determines if a molecule is a tetraterpenoid based on its SMILES string.
 
-4. **Long carbon chains and rings:** The program checks for the presence of long carbon chains or rings, which is a good criterion. However, it seems that this criterion alone is not sufficient, as some of the false negatives, such as (3S,4E,6E,8E,10E,12E,14E,16E,18E,20E,22E,24E,26E,28E)-2,6,10,14,19,23,27,31-octamethyl-3-(3-methylbut-2-enyl)dotriaconta-4,6,8,10,12,14,16,18,20,22,24,26,28,30-tetradecaen-2-ol, contain long carbon chains but are still not classified correctly.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-Potential improvements:
-
-1. **Adjust criteria ranges:** Expand the ranges for the number of carbon atoms and molecular weight to accommodate a wider variety of tetraterpenoid structures.
-
-2. **Incorporate additional structural features:** Consider incorporating additional structural features specific to tetraterpenoids, such as the presence of cyclic rings, long carbon chains with specific patterns, or specific functional groups.
-
-3. **Use machine learning:** Instead of relying solely on predefined rules, consider training a machine learning model on a dataset of known tetraterpenoid and non-tetraterpenoid structures. This approach could potentially capture more complex structural patterns and improve classification accuracy.
-
-4. **Combine multiple criteria:** Instead of using individual criteria independently, combine multiple criteria using logical operations (e.g., AND, OR) to create more specific conditions for classification.
-
-5. **Consult literature and experts:** Consult relevant literature and domain experts to better understand the structural characteristics and variations of tetraterpenoids, which could inform the development of more accurate classification criteria.
-
-By addressing these issues and incorporating improvements, the program's ability to accurately classify tetraterpenoid structures can be enhanced.
+    Returns:
+        bool: True if molecule is a tetraterpenoid, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Calculate number of atoms
+    num_atoms = mol.GetNumAtoms()
+    
+    # Tetraterpenoids typically have 40-50 carbon atoms
+    num_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if num_carbons < 40 or num_carbons > 50:
+        return False, f"Number of carbon atoms ({num_carbons}) outside expected range for tetraterpenoid"
+    
+    # Check for long carbon chains and rings, typical of terpenoids
+    Sssr = Chem.GetSymmSSSR(mol)
+    has_long_chains = any(len(ring) > 8 for ring in Sssr)
+    has_rings = len(Sssr) > 0
+    if not has_long_chains or not has_rings:
+        return False, "No long carbon chains or rings found, typical of terpenoids"
+    
+    # Check for isoprene units (C5H8)
+    isoprene_pattern = Chem.MolFromSmarts("[C@H]([CH3])=C[CH2][CH2]")
+    isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
+    if len(isoprene_matches) < 8:  # At least 8 isoprene units expected for tetraterpenoids
+        return False, f"Found {len(isoprene_matches)} isoprene units, expected at least 8"
+    
+    # Check molecular weight - tetraterpenoids typically 500-700 Da
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 500 or mol_wt > 700:
+        return False, f"Molecular weight ({mol_wt:.2f} Da) outside expected range for tetraterpenoid"
+    
+    return True, "Contains typical features of a tetraterpenoid"
