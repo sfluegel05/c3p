@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_secondary_amine(smiles: str):
     """
     Determines if a molecule is a secondary amine based on its SMILES string.
-    A secondary amine has a nitrogen atom connected to two carbon atoms and one hydrogen.
+    A secondary amine has a nitrogen atom connected to two carbon atoms.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,24 +20,13 @@ def is_secondary_amine(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
+    
     # Iterate over all nitrogen atoms
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() == 7:  # Atomic number of nitrogen
-            # Get the neighbor atoms of the nitrogen
-            neighbors = atom.GetNeighbors()
-            carbon_count = 0
-            hydrogen_count = 0
-
-            # Count carbon and hydrogen neighbors
-            for neighbor in neighbors:
-                if neighbor.GetAtomicNum() == 6:  # Carbon
-                    carbon_count += 1
-                elif neighbor.GetAtomicNum() == 1:  # Hydrogen
-                    hydrogen_count += 1
-
-            # Check if nitrogen has exactly two carbon and one hydrogen neighbors
-            if carbon_count == 2 and hydrogen_count == 1:
-                return True, "Nitrogen is bonded to two carbons and one hydrogen, indicative of a secondary amine"
-
-    return False, "No nitrogen atom bonded to exactly two carbons and one hydrogen found"
+            if atom.GetTotalDegree() == 3:  # Total degree includes implicit hydrogens
+                carbon_neighbor_count = sum(1 for neighbor in atom.GetNeighbors() if neighbor.GetAtomicNum() == 6)
+                if carbon_neighbor_count == 2:
+                    return True, "Nitrogen is bonded to two carbons and has a total degree of 3, indicative of a secondary amine"
+    
+    return False, "No nitrogen atom bonded to exactly two carbons found"
