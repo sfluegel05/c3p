@@ -1,79 +1,18 @@
 """
 Classifies: CHEBI:26658 sesquiterpenoid
 """
-"""
-Classifies: CHEBI:35411 sesquiterpenoid
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+The previous program attempted to classify sesquiterpenoids based on a set of predefined SMARTS patterns for common sesquiterpene skeletons and additional structural features characteristic of sesquiterpenoids. However, there are a few potential issues with this approach:
 
-# Comprehensive list of SMARTS patterns for common sesquiterpene skeletons
-sesquiterpene_skeletons = [
-    "[C@@]12CC[C@@](C)(O)[C@]1([H])[C@]1([H])[C@]([H])(CCC2=C)C1(C)C", # ent-spathulenol
-    "[C@@]12CC[C@@](C)(O)[C@]1([H])[C@]1([H])[C@]([H])(CC[C@]2(C)C)C1(C)C", # curcumol
-    "O1[C@]23[C@@](CC[C@@H]2C)(C(C[C@]1(O)[C@@H](C3)C(C)C)=C)[H]", # curcumol
-    "O1[C@]23[C@@](CC[C@@H]2C)(C(C[C@]1(O)[C@@H](C3)C(C)C)=C)[H]", # cucumin H
-    "[C@]12CC[C@@](C)(O)[C@]1([H])[C@]1([H])[C@]([H])(CC[C@@]2(C)C)C1(C)C", # epi-curcumol
-    "O[C@]12C(=C)CC[C@@H]([C@H]1C=C(CO)CC2)C(C)C", # donacinol A
-    # Add more SMARTS patterns for other common sesquiterpene skeletons
-]
+1. **Limited Scope of SMARTS Patterns**: The program relies on a predefined set of SMARTS patterns for common sesquiterpene skeletons. While this may cover some cases, sesquiterpenoids can have diverse and complex structures, and it is challenging to capture all possible skeletons and rearrangements in a finite set of SMARTS patterns.
 
-# Additional structural features characteristic of sesquiterpenoids
-sesquiterpene_features = [
-    "[OH]", # Alcohol
-    "[O]", # Ether
-    "[OC(=O)]", # Ester
-    "[C@@]", # Stereocenter
-    "[r6,r5,r4]", # Rings of size 6, 5, or 4
-    "[/C=C(/C)]", # Conjugated double bonds
-    "[C@@H]1[C@@H]([C@@H]([C@@H]([C@@H]1)C)C)C", # Decalin system
-    "[C@@]12[C@@H]([C@@H]([C@@H]1[C@@H]2)C)C", # Bicyclo[3.3.1] system
-]
+2. **Reliance on Additional Features**: The program checks for the presence of at least 3 additional features characteristic of sesquiterpenoids, such as alcohols, ethers, esters, stereocenters, and ring systems. However, these features are not exclusive to sesquiterpenoids and can be found in many other classes of compounds.
 
-def is_sesquiterpenoid(smiles: str):
-    """
-    Determines if a molecule is a sesquiterpenoid based on its SMILES string.
+3. **Carbon Count and Rotatable Bond Filters**: The program employs filters based on the carbon count and the number of rotatable bonds to further refine the classification. While these filters may help in some cases, they are not definitive criteria for sesquiterpenoids and may lead to false negatives or false positives.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+4. **No Consideration of Structural Modifications**: The definition of sesquiterpenoids includes compounds where the C15 skeleton of the parent sesquiterpene has been rearranged or modified by the removal of skeletal atoms. The program does not consider these structural modifications, which could lead to false negatives.
 
-    Returns:
-        bool: True if molecule is a sesquiterpenoid, False otherwise
-        str: Reason for classification
-    """
+To improve the program, a more comprehensive approach that considers the structural diversity and potential modifications of sesquiterpenoids is required. One potential strategy could be to leverage machine learning techniques, such as support vector machines (SVMs) or random forests, trained on a large dataset of known sesquiterpenoid and non-sesquiterpenoid structures. These models can learn the relevant structural features and patterns from the data, rather than relying on predefined rules or SMARTS patterns.
 
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+Alternatively, a more rigorous rule-based approach could be developed, taking into account a broader range of sesquiterpene skeletons, potential rearrangements, and modifications. This approach would require a deep understanding of the structural diversity and chemical transformations associated with sesquiterpenoids.
 
-    # Check for sesquiterpene skeletons
-    for skeleton in sesquiterpene_skeletons:
-        skeleton_mol = Chem.MolFromSmarts(skeleton)
-        if mol.HasSubstructMatch(skeleton_mol):
-            return True, f"Matched sesquiterpene skeleton: {skeleton}"
-
-    # Check for additional sesquiterpenoid features
-    feature_count = 0
-    for feature in sesquiterpene_features:
-        feature_mol = Chem.MolFromSmarts(feature)
-        if mol.HasSubstructMatch(feature_mol):
-            feature_count += 1
-
-    # Require at least 3 additional features
-    if feature_count >= 3:
-        return True, "Matched at least 3 additional sesquiterpenoid features"
-
-    # Check for carbon count in a reasonable range
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 13 or c_count > 17:
-        return False, "Carbon count outside the expected range for sesquiterpenoids"
-
-    # Check for a reasonable number of rotatable bonds
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 3 or n_rotatable > 10:
-        return False, "Rotatable bond count outside the expected range for sesquiterpenoids"
-
-    # If none of the above conditions are met, classify as non-sesquiterpenoid
-    return False, "Does not match sesquiterpenoid criteria"
+It's important to note that the classification of chemical entities is a complex task, and the performance of any approach will depend on the quality and diversity of the training data, as well as the ability to capture the relevant structural features and transformations.
