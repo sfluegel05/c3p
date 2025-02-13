@@ -16,32 +16,34 @@ def is_proanthocyanidin(smiles: str):
         bool: True if molecule is a proanthocyanidin, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for hydroxyflavan pattern (Common in all proanthocyanidins)
-    hydroxyflavan_pattern = Chem.MolFromSmarts("c1cc(O)ccc1C2(CO)Oc3cc(O)ccc3C2")  # Simplified
+    # Redefine a more general hydroxyflavan structural pattern
+    hydroxyflavan_pattern = Chem.MolFromSmarts("c1(cc(O)ccc1)[C@H]2COc3cc(O)ccc3[C@H]2O")
     if not mol.HasSubstructMatch(hydroxyflavan_pattern):
         return False, "No hydroxyflavan units found"
 
-    # Check for linkage pattern (4->8 or 4->6 linkages)
-    linkage_pattern = Chem.MolFromSmarts("C1(COC2)CC(C3(OCC4))") # Simplified 4->8 linkage
-    linkage_matches = mol.GetSubstructMatches(linkage_pattern)
-    if len(linkage_matches) < 1:
+    # Check for typical proanthocyanidin linkage patterns: 4->8, 4->6
+    # Considering common flavonoid oligomer linkages
+    linkage_4_8_pattern = Chem.MolFromSmarts("c1(cccc(c1))C(CO)Oc2ccccc2")
+    linkage_4_6_pattern = Chem.MolFromSmarts("c1ccccc1[C@H](C(CO)O)c2ccccc2")
+    
+    if not (mol.HasSubstructMatch(linkage_4_8_pattern) or mol.HasSubstructMatch(linkage_4_6_pattern)):
         return False, "Missing flavan linkages (4->8 or 4->6)"
 
-    # Check for oligomeric structure (multiple flavan units)
-    flavan_units_pattern = Chem.MolFromSmarts("C1(CO)C2(OCC3)")  # Base flavan structure
-    flavan_units_matches = mol.GetSubstructMatches(flavan_units_pattern)
-    if len(flavan_units_matches) < 2:
-        return False, f"Only {len(flavan_units_matches)} flavan unit(s) found, need at least 2"
+    # Check for oligomeric structure
+    # Counting presence of multiple units as a simple method for oligomer check
+    flavan_unit_matches = mol.GetSubstructMatches(hydroxyflavan_pattern)
+    if len(favan_unit_matches) < 2:
+        return False, f"Only {len(favan_unit_matches)} flavan unit(s) found, need at least 2"
 
-    # Optional: Check for common modifications like gallate esters
-    # gallate_pattern = Chem.MolFromSmarts("OC(=O)C1=CC(O)=C(O)C=C1") 
+    # (Optional) Check existence of gallate, but not necessary for basic proanthocyanidin
+    # gallate_pattern = Chem.MolFromSmarts("OC(=O)c1cc(O)c(O)c(O)c1")  # Example of common modification
     # if any(mol.HasSubstructMatch(patt) for patt in [gallate_pattern]):
-    #     print("Gallate ester groups detected")
+    #     print("Contains gallate ester groups")
 
-    return True, "Contains multiple hydroxyflavan units with appropriate linkages"
+    return True, "Contains multiple hydroxyflavan units with linkages typical of proanthocyanidins"
