@@ -8,7 +8,6 @@ A cyclic fatty acid is defined as any fatty acid containing anywhere in its stru
 """
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
-from rdkit.Chem import Lipinski
 
 def is_cyclic_fatty_acid(smiles: str):
     """
@@ -32,19 +31,22 @@ def is_cyclic_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(acid_pattern):
         return False, "No carboxylic acid group found"
 
-    # Check for ring structure
-    ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() == 0:
-        return False, "No ring structure found"
+    # Check for ring structure within the carbon chain
+    chain_ring_pattern = Chem.MolFromSmarts("[R2]@[R2]@[R2]@[R2]")
+    if not mol.HasSubstructMatch(chain_ring_pattern):
+        return False, "No ring structure found within the carbon chain"
 
-    # Check for long carbon chain (fatty acid)
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 200:  # arbitrary threshold for fatty acid
-        return False, "Molecular weight too low for fatty acid"
+    # Check for long aliphatic carbon chain (fatty acid)
+    aliphatic_chain_pattern = Chem.MolFromSmarts("[C;H3][C;H2]~[C;H2]~[C;H2]~[C;H2]~[C;H2]~[C;H2]~[C;H2]")
+    if not mol.HasSubstructMatch(aliphatic_chain_pattern):
+        return False, "No long aliphatic carbon chain found"
 
-    # Check if molecule violates Lipinski rule
-    lipinski_violation = Lipinski.FailViolators(Lipinski.PROPS)
-    if len(lipinski_violation) == 0:
-        return False, "Molecule does not violate Lipinski rule"
+    # Check for unsaturation (optional)
+    unsaturation_pattern = Chem.MolFromSmarts("[C]=[C]")
+    unsaturation_count = len(mol.GetSubstructMatches(unsaturation_pattern))
+    if unsaturation_count == 0:
+        reason = "Saturated cyclic fatty acid"
+    else:
+        reason = f"Unsaturated cyclic fatty acid with {unsaturation_count} double bonds"
 
-    return True, "Contains a carboxylic acid group, ring structure, and long carbon chain"
+    return True, reason
