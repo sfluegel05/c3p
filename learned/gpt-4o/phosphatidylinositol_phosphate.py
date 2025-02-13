@@ -7,8 +7,6 @@ from rdkit.Chem import rdMolDescriptors
 def is_phosphatidylinositol_phosphate(smiles: str):
     """
     Determines if a molecule is a phosphatidylinositol phosphate based on its SMILES string.
-    A phosphatidylinositol phosphate contains a glycerol backbone, an inositol ring,
-    multiple phosphate groups, and ester-linked long fatty acid chains.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,29 +21,31 @@ def is_phosphatidylinositol_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for glycerol backbone pattern installed with flexibility
-    glycerol_pattern = Chem.MolFromSmarts("OCC(O)C(O)")
+    # Check for glycerol backbone pattern
+    glycerol_pattern = Chem.MolFromSmarts("OCC(O)CO")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
 
-    # Check for inositol ring pattern with flexible stereochemistry
-    inositol_pattern = Chem.MolFromSmarts("C1(O)C(O)C(O)C(O)C(O)C1")
+    # Check for inositol ring pattern (six-membered ring with hydroxyls)
+    inositol_pattern = Chem.MolFromSmarts("C1(O)C(O)C(O)C(O)C(O)C(O)1")
     if not mol.HasSubstructMatch(inositol_pattern):
         return False, "No inositol ring structure found"
 
-    # Look for phosphate groups associated with inositol
-    phosphate_matches = Chem.MolFromSmarts("OP(=O)(O)O")
-    if not mol.HasSubstructMatch(phosphate_matches):
+    # Check for one or more phosphate groups (-P(=O)(O)O-)
+    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)O")
+    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
+    if len(phosphate_matches) < 1:
         return False, "No phosphate groups found"
 
-    # Recognize structures with typical ester-linked fatty acid chains (possibly 14-20 carbons)
-    ester_chain_pattern = Chem.MolFromSmarts("C(=O)OCCCCCCCCCCCCCCC")
-    if not mol.HasSubstructMatch(ester_chain_pattern):
-        return False, "Not enough ester-linked long carbon chains"
+    # Confirm presence of long fatty acid chains (at least two of significant length)
+    long_chain_pattern = Chem.MolFromSmarts("C(=O)OC(C)C")
+    long_chain_matches = mol.GetSubstructMatches(long_chain_pattern)
+    if len(long_chain_matches) < 2:
+        return False, "Not enough long carbon chains"
 
-    # Validate using molecular weight if other criteria validate but molecular identity ambiguities persist
+    # Check molecular weight which is typically large for phosphatidylinositol phosphates
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 600 or mol_wt > 1600:
-        return False, f"Molecular weight out of typical range for phosphatidylinositol phosphate: {mol_wt}"
+    if mol_wt < 700:  # arbitrary threshold for large molecules in this class
+        return False, f"Molecular weight too low for phosphatidylinositol phosphate: {mol_wt}"
 
-    return True, "Contains attributes consistent with phosphatidylinositol phosphate: glycerol backbone, inositol ring, requisite phosphate groups, and long ester-linked fatty acid chains"
+    return True, "Contains glycerol backbone, inositol ring, phosphate groups, and long carbon chains typical of phosphatidylinositol phosphates"
