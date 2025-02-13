@@ -2,7 +2,6 @@
 Classifies: CHEBI:26658 sesquiterpenoid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_sesquiterpenoid(smiles: str):
     """
@@ -23,27 +22,25 @@ def is_sesquiterpenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for presence of carbon skeleton typically related to sesquiterpenoids
-    sesquiterpene_pattern = Chem.MolFromSmarts('C1C(C)CCC1')
-    if not mol.HasSubstructMatch(sesquiterpene_pattern):
-        return False, "Does not contain a substructure typical of sesquiterpenoid backbone"
+    # Count the number of carbon atoms
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 15:
+        return False, f"Contains {c_count} carbons, less than required for sesquiterpenoids"
 
-    # Check for presence of oxygen indicating functionalization
+    if c_count > 15:
+        return False, f"Contains {c_count} carbons, more complex than a typical sesquiterpenoid"
+
+    # Count the number of rings
+    ring_info = mol.GetRingInfo()
+    if ring_info.NumRings() < 1:
+        return False, "Lacks ring structures typically present in sesquiterpenoids"
+
+    # Look for common functional groups indicating derivations (e.g., -OH, =O)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     if o_count < 1:
         return False, "Does not contain oxygen, unlikely to be a sesquiterpenoid"
 
-    # Check for additional complex sesquiterpenoid structures or functional groups
-    complex_sesquiterpenoid_patterns = [
-        Chem.MolFromSmarts('C=1C[CH]C2=C1[CH][CH2]C=CC2')  # Example complex pattern smarts
-    ]
-
-    for pattern in complex_sesquiterpenoid_patterns:
-        if mol.HasSubstructMatch(pattern):
-            return True, "Contains complex sesquiterpenoid pattern"
-
-    # If passes backbone and modification checks, it's likely a sesquiterpenoid
     return True, "Contains characteristics typical of a sesquiterpenoid"
 
 # Example
-print(is_sesquiterpenoid('O=C1C=C2C=CC(=O)[C@@]([C@]2(C)C[C@]1(O)C(=C)COC(=O)C)(O)C'))  # Expected True classification
+print(is_sesquiterpenoid('O=C1C=C2C=CC(=O)[C@@]([C@]2(C)C[C@]1(O)C(=C)COC(=O)C)(O)C'))  # Example test
