@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_flavonols(smiles: str):
     """
     Determines if a molecule is a flavonol based on its SMILES string.
-    Flavonols are characterized by a 3-hydroxyflavone backbone.
+    A flavonol has a core 3-hydroxyflavone structure.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,19 +21,24 @@ def is_flavonols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Extended SMARTS pattern to capture core flavonol structure with more variations
-    # Flavonol defined by a benzopyranone core with C3 hydroxyl group
-    flavonol_pattern = Chem.MolFromSmarts('c1cc(O)c2c(c1)oc(c(=O)c2)-c1ccc(O)cc1')
+    # Updated general SMARTS pattern for flavonol structure:
+    # 3-hydroxyflavone structure: aromatic ring fused to a pyranone with a 3-hydroxy group
+    flavonol_pattern = Chem.MolFromSmarts('Oc1c2ccccc2oc(=O)c1-c1ccc(*c1)')
     
     if not mol.HasSubstructMatch(flavonol_pattern):
         return False, "No flavonol core structure found"
 
-    # Additional criteria for flavonols - more flexible on number/position
+    # Pattern to find any hydroxyl groups, considering their common presence
     hydroxy_pattern = Chem.MolFromSmarts('[OX2H]')
     hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
 
-    if len(hydroxy_matches) < 3:
+    # Ensure at least two hydroxy groups overall, including the core one at position 3
+    if len(hydroxy_matches) < 2:
         return False, f"Insufficient hydroxyl groups, found {len(hydroxy_matches)}"
 
-    # If no issues, confirm it's a flavonol
+    # If no other issues, confirm it's a flavonol
     return True, "Contains the core structure of a flavonol with sufficient hydroxyl groups"
+
+# Test with some input SMILES strings as a demonstration
+print(is_flavonols('O1C(C2=CC(=CC=C2)C(=O)C3=CC=CC=C3)=C(O)C(=O)C=4C1=CC(O)=CC4O'))  # Example: 2-(3-benzoylphenyl)-3,5,7-trihydroxychromen-4-one
+print(is_flavonols('COc1ccc(cc1)-c1oc2cc(O)cc(O)c2c(=O)c1O'))  # Example: kaempferide
