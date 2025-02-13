@@ -21,15 +21,20 @@ def is_isoflavonoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more flexible pattern for 1-benzopyran
-    # Consider approximation of benzopyran as a fused bicyclic structure with oxygen in one ring
-    benzopyran_pattern = Chem.MolFromSmarts("c1ccc2c(c1)occ2") # A representation of benzopyran system
+    # 1-benzopyran structure: a benzene ring fused to a 6-membered ring with an oxygen
+    benzopyran_pattern = Chem.MolFromSmarts("c1cc2ccocc2c1") # Adjusted pattern for benzopyran
+    if benzopyran_pattern is None:
+        return False, "Error in SMARTS pattern definition"
+
     if not mol.HasSubstructMatch(benzopyran_pattern):
         return False, "No 1-benzopyran backbone found"
         
-    # Check for an aryl group (aromatic ring) directly connected to the benzopyran system
-    # Detect any aromatic ring connected to the fused ring system
-    aryl_group_pattern = Chem.MolFromSmarts("c1ccc(-c2c(oc3ccccc3)c(=O)cc2)c2ccccc2")  # Simplified to detect substitution
+    # Pattern for aryl group at position 3 (adjacent to oxygen in the pyranyl ring)
+    # Using additional rules to ensure the correct attachment
+    aryl_group_pattern = Chem.MolFromSmarts("c1ccc(-c2c(oc3ccc(-c4ccccc4)cc3)c(=O)cc2)c1")  # More general aryl attachment
+    if aryl_group_pattern is None:
+        return False, "Error in SMARTS pattern definition for aryl group"
+
     if not mol.HasSubstructMatch(aryl_group_pattern):
         return False, "No aryl substituent at position 3 found"
 
