@@ -1,28 +1,52 @@
 """
 Classifies: CHEBI:27933 beta-lactam antibiotic
 """
-The previous program attempts to classify molecules as beta-lactam antibiotics based on the presence of certain structural features, such as the penam (penicillin), cepham (cephalosporin), carbapenem, and monobactam nuclei, as well as the presence of carboxyl and amine groups. However, the outcomes show that the program has some limitations and inaccuracies.
+"""
+Classifies: CHEBI:35457 beta-lactam antibiotic
+An organonitrogen heterocyclic antibiotic that contains a beta-lactam ring.
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-Here are some observations and potential improvements:
+def is_beta_lactam_antibiotic(smiles: str):
+    """
+    Determines if a molecule is a beta-lactam antibiotic based on its SMILES string.
 
-1. **False positives**: The program incorrectly classified several compounds as beta-lactam antibiotics, even though they do not belong to this class. This is likely due to the presence of carboxyl and amine groups in these molecules, which is not a sufficient condition for classification. The program should consider additional structural features and constraints to reduce false positives.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **False negatives**: The program missed several compounds that are known beta-lactam antibiotics, such as penam, 1beta-methylcarbapenem, and some others. This could be due to the limitations of the SMARTS patterns used to detect the characteristic nuclei or the lack of consideration for other structural features present in these molecules.
+    Returns:
+        bool: True if molecule is a beta-lactam antibiotic, False otherwise
+        str: Reason for classification
+    """
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-3. **Limited structural diversity**: The program only considers a few specific structural features (nuclei and functional groups) and may not be able to accurately classify beta-lactam antibiotics with more diverse structures or those that deviate from the typical patterns.
+    # Look for beta-lactam ring pattern
+    beta_lactam_pattern = Chem.MolFromSmarts("[C&R1]1=[C&R2](N[C&R3]1[C&R4]=[O])")
+    if not mol.HasSubstructMatch(beta_lactam_pattern):
+        return False, "No beta-lactam ring found"
 
-4. **Molecular properties**: The program does not consider other molecular properties or descriptors that could potentially aid in the classification, such as molecular weight, LogP, or topological indices.
+    # Look for nitrogen-containing heterocycle
+    heterocycle_pattern = Chem.MolFromSmarts("[&!r5&!r6]12[&!r5&!r6][&!r5&!r6][&!r5&!r6][&!r5&!r6]1[&!r5&!r6][&!r5&!r6][&!r5&!r6]2")
+    heterocycle_match = mol.GetSubstructMatches(heterocycle_pattern)
+    if not heterocycle_match:
+        return False, "No nitrogen-containing heterocycle found"
 
-To improve the classification performance, the following strategies could be considered:
+    # Check for carboxyl group
+    carboxyl_pattern = Chem.MolFromSmarts("[C&R5](=O)[O&R6]")
+    carboxyl_match = mol.GetSubstructMatches(carboxyl_pattern)
+    if not carboxyl_match:
+        return False, "No carboxyl group found"
 
-1. **Enhance structural pattern recognition**: Refine the SMARTS patterns or develop more comprehensive patterns to better capture the structural diversity of beta-lactam antibiotics. This could involve analyzing a larger dataset of known compounds and identifying common structural motifs.
+    # Check for amine group
+    amine_pattern = Chem.MolFromSmarts("[N&R7;!H0]")
+    amine_match = mol.GetSubstructMatches(amine_pattern)
+    if not amine_match:
+        return False, "No amine group found"
 
-2. **Incorporate machine learning**: Instead of relying solely on predefined rules and patterns, consider training a machine learning model (e.g., random forest, support vector machine) on a diverse dataset of beta-lactam antibiotics and non-antibiotics. The model can learn to recognize relevant features and patterns, potentially improving the classification accuracy.
-
-3. **Use molecular descriptors**: Calculate and incorporate various molecular descriptors (e.g., topological, constitutional, electronic) into the classification process. These descriptors can provide additional information about the molecular structure and properties, potentially enhancing the model's ability to discriminate between classes.
-
-4. **Implement a multi-step classification process**: Instead of a single classification step, consider a multi-step process where the program first filters out obvious non-antibiotics based on simple rules, and then applies more sophisticated methods (e.g., machine learning, molecular descriptors) to classify the remaining compounds.
-
-5. **Integrate external knowledge**: Explore the possibility of incorporating external knowledge sources, such as databases or literature, to identify known beta-lactam antibiotic structures or substructures that could be used to improve the classification process.
-
-By addressing these limitations and incorporating additional features and methods, the classification performance of the program can potentially be improved, reducing both false positives and false negatives, and enabling more accurate identification of beta-lactam antibiotics across a broader range of structural diversity.
+    # If all conditions are met, classify as beta-lactam antibiotic
+    return True, "Contains beta-lactam ring, nitrogen-containing heterocycle, carboxyl group, and amine group"
