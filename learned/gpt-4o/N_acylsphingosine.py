@@ -23,19 +23,14 @@ def is_N_acylsphingosine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for sphingosine backbone pattern:
-    # Simplified pattern considering mostly the backbone
-    sphingosine_pattern = Chem.MolFromSmarts("O[C@@H](CO)C[C@@H](C=C)CCCC(=N)")
+    # Update sphingosine backbone pattern:
+    # Looking for a long chain structure with key functional groups
+    sphingosine_pattern = Chem.MolFromSmarts("NC(CO)C(O)CCCCCCCC=C")
     if not mol.HasSubstructMatch(sphingosine_pattern):
         return False, "No sphingosine backbone found"
     
-    # Check for presence of double bond in the backbone
-    double_bond_pattern = Chem.MolFromSmarts("C=C")
-    if not mol.HasSubstructMatch(double_bond_pattern):
-        return False, "Missing double bond in sphingosine-like structure"
-    
-    # Look for amide bond pattern where nitrogen is connected to carbonyl carbon of a fatty acyl chain
-    amide_pattern = Chem.MolFromSmarts("NC(=O)")
+    # Robust check for amide bond attached to nitrogen
+    amide_pattern = Chem.MolFromSmarts("N[C](=O)[C]")
     if not mol.HasSubstructMatch(amide_pattern):
         return False, "No amide bond found connecting nitrogen to fatty acyl group"
 
