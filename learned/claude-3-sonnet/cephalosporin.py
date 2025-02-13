@@ -20,71 +20,88 @@ def is_cephalosporin(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
+    # Parse SMILES - consider largest fragment for salts
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+    
+    # Split into fragments (for salts/hydrates) and get largest fragment
+    fragments = Chem.GetMolFrags(mol, asMols=True)
+    if fragments:
+        mol = max(fragments, key=lambda m: m.GetNumAtoms())
 
-    # First check for the core cephalosporin structure:
-    # Beta-lactam (4-membered ring) fused to 6-membered dihydrothiazine ring
-    ceph_core = Chem.MolFromSmarts('[#16]-1-[#6]-[#6]=2-[#6](=[#6]-1)-[#7]-3-[#6](=[#8])-[#6]-[#6]-2-3')
-    if not mol.HasSubstructMatch(ceph_core):
-        return False, "Missing cephalosporin core structure (fused beta-lactam and dihydrothiazine rings)"
-
-    # Check for beta-lactam ring specifically
-    beta_lactam = Chem.MolFromSmarts('[#7]-1-[#6](=[#8])-[#6]-[#6]-1')
-    if not mol.HasSubstructMatch(beta_lactam):
-        return False, "Missing beta-lactam ring"
-
-    # Check for carboxylic acid/carboxylate group at position 2
-    carboxyl_patterns = [
-        Chem.MolFromSmarts('C(=O)[OH]'),  # carboxylic acid
-        Chem.MolFromSmarts('C(=O)[O-]')   # carboxylate
+    # Core cephalosporin patterns - trying multiple SMARTS to catch variations
+    core_patterns = [
+        # Basic ceph core with explicit stereochemistry
+        '[H][C@@]12SCC=C(N1C(=O)[C@H]2[*])[*]',
+        # Alternative core pattern
+        'S1CC=C2N([*])C(=O)[C@H]2N1',
+        # More generic pattern
+        'S1CC=C2N(C(=O)C2[*])C1=C[*]'
     ]
-    has_carboxyl = any(mol.HasSubstructMatch(p) for p in carboxyl_patterns if p is not None)
+    
+    found_core = False
+    for pattern in core_patterns:
+        core = Chem.MolFromSmarts(pattern)
+        if core and mol.HasSubstructMatch(core):
+            found_core = True
+            break
+            
+    if not found_core:
+        return False, "Missing cephalosporin core structure"
+
+    # Check for carboxylic acid/carboxylate group
+    carboxyl_patterns = [
+        'C(=O)[OH]',      # carboxylic acid
+        'C(=O)[O-]',      # carboxylate
+        'C(=O)O[Na]',     # sodium salt
+        'C(=O)O'          # generic carboxyl
+    ]
+    
+    has_carboxyl = False
+    for pattern in carboxyl_patterns:
+        p = Chem.MolFromSmarts(pattern)
+        if p and mol.HasSubstructMatch(p):
+            has_carboxyl = True
+            break
+            
     if not has_carboxyl:
-        return False, "Missing carboxylic acid/carboxylate group"
+        return False, "Missing carboxylic acid group"
 
-    # Check for amide group at position 7
-    amide = Chem.MolFromSmarts('[NH]-[#6](=[#8])')
-    if not mol.HasSubstructMatch(amide):
-        return False, "Missing amide group at position 7"
-
-    # Additional checks for common substituents that might indicate a cephalosporin
+    # Check for characteristic substituents
     substituent_patterns = {
-        'aminothiazole': Chem.MolFromSmarts('c1csc(N)n1'),
-        'tetrazole': Chem.MolFromSmarts('n1nnn[nH]1'),
-        'methyltetrazole': Chem.MolFromSmarts('Cn1nnnc1'),
-        'oxime': Chem.MolFromSmarts('C=NOC'),
-        'acetoxymethyl': Chem.MolFromSmarts('CC(=O)OC'),
-        'carboxamide': Chem.MolFromSmarts('NC(=O)')
+        'aminothiazole': 'c1csc(N)n1',
+        'tetrazole': 'n1nnn[nH]1',
+        'methyltetrazole': 'Cn1nnnc1',
+        'oxime': 'C=NOC',
+        'acetoxymethyl': 'CC(=O)OC',
+        'amino': '[NH2]',
+        'amide': 'NC(=O)',
+        'thiadiazole': 'c1nncs1'
     }
     
     found_substituents = []
     for name, pattern in substituent_patterns.items():
-        if pattern is not None and mol.HasSubstructMatch(pattern):
+        p = Chem.MolFromSmarts(pattern)
+        if p and mol.HasSubstructMatch(p):
             found_substituents.append(name)
 
-    # Verify ring system
-    ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() < 2:
-        return False, "Insufficient ring count for cephalosporin structure"
-
-    # Check molecular complexity
+    # Verify basic properties
     num_atoms = mol.GetNumAtoms()
     if num_atoms < 15:
         return False, "Molecule too small to be a cephalosporin"
 
-    # Additional check for characteristic sulfur atom
-    sulfur_count = len([atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 16])
-    if sulfur_count < 1:
-        return False, "Missing characteristic sulfur atom"
+    # Count rings
+    ring_info = mol.GetRingInfo()
+    if ring_info.NumRings() < 2:
+        return False, "Insufficient ring count for cephalosporin structure"
 
-    reason = "Contains cephalosporin core structure with:"
-    reason += "\n- Beta-lactam fused to dihydrothiazine ring"
-    reason += "\n- Carboxylic acid/carboxylate group"
-    reason += "\n- Amide group"
+    # Build reason string
+    reason = "Identified as cephalosporin due to:\n"
+    reason += "- Contains fused beta-lactam-dihydrothiazine ring system\n"
+    reason += "- Contains carboxylic acid/carboxylate group\n"
     if found_substituents:
-        reason += f"\n- Found substituents: {', '.join(found_substituents)}"
+        reason += f"- Found characteristic substituents: {', '.join(found_substituents)}\n"
+    reason += f"- Contains appropriate molecular complexity ({num_atoms} atoms, {ring_info.NumRings()} rings)"
 
     return True, reason
