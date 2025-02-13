@@ -10,6 +10,11 @@ from rdkit.Chem import AllChem
 def is_1_O_acylglycerophosphoethanolamine(smiles: str):
     """
     Determines if a molecule is a 1-O-acylglycerophosphoethanolamine based on its SMILES string.
+    These compounds have:
+    - A glycerol backbone
+    - An acyl group (ester) at sn-1 position
+    - A hydroxyl at sn-2 position
+    - A phosphoethanolamine group at sn-3 position
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,39 +28,48 @@ def is_1_O_acylglycerophosphoethanolamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for glycerol backbone with phosphoethanolamine
-    # [CH2X4]-[CHX4]-[CH2X4] where one CH2 has ester, one has phosphate, and CH has OH
+    # Check for glycerol backbone connected to correct groups
+    # [CH2X4]-[CHX4]-[CH2X4] where:
+    # - One CH2 has ester (sn-1)
+    # - CH has OH (sn-2)
+    # - Other CH2 has phosphate (sn-3)
     glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
 
-    # Check for phosphoethanolamine group
-    # -P(=O)(O)-O-CH2-CH2-N
-    phosphoethanolamine = Chem.MolFromSmarts("[PX4](=O)([OH,O-])[OX2][CH2X4][CH2X4][NX3,NX4]")
+    # Check for phosphoethanolamine group with primary amine
+    # -P(=O)(O)-O-CH2-CH2-NH2/NH3+
+    phosphoethanolamine = Chem.MolFromSmarts("[PX4](=O)([OH,O-])[OX2][CH2X4][CH2X4][NH2X3,NH3X4+]")
     if not mol.HasSubstructMatch(phosphoethanolamine):
-        return False, "No phosphoethanolamine group found"
+        return False, "No phosphoethanolamine group with primary amine found"
 
-    # Check for ester group (acyl)
-    # R-C(=O)-O-
-    ester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2]")
+    # Exclude phosphocholine (N(CH3)3+)
+    phosphocholine = Chem.MolFromSmarts("[NX4+](C)(C)(C)")
+    if mol.HasSubstructMatch(phosphocholine):
+        return False, "Contains quaternary amine (phosphocholine) instead of primary amine"
+
+    # Check for single ester group at sn-1
+    # R-C(=O)-O-CH2- connected to glycerol
+    ester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2][CH2X4][CHX4]([OX2H1])[CH2X4]O")
     if not mol.HasSubstructMatch(ester_pattern):
-        return False, "No ester (acyl) group found"
+        return False, "No ester group at sn-1 position found"
     
     # Count ester groups - should only be one
-    ester_matches = len(mol.GetSubstructMatches(ester_pattern))
+    ester_matches = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[CX3](=[OX1])[OX2]")))
     if ester_matches != 1:
         return False, f"Found {ester_matches} ester groups, should be exactly 1"
 
-    # Check for free hydroxyl group
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H1]")
-    if not mol.HasSubstructMatch(hydroxyl_pattern):
-        return False, "No free hydroxyl group found"
+    # Exclude vinyl ethers (plasmalogens)
+    vinyl_ether = Chem.MolFromSmarts("[OX2][CH2X4][CHX4]([OX2H1])[CH2X4]O[CH2X3]=[CH1X3]")
+    if mol.HasSubstructMatch(vinyl_ether):
+        return False, "Contains vinyl ether (plasmalogen) instead of ester at sn-1"
+
+    # Exclude N-acylated versions
+    n_acyl = Chem.MolFromSmarts("[NX3][CX3]=[OX1]")
+    if mol.HasSubstructMatch(n_acyl):
+        return False, "Contains N-acylation"
 
     # Verify basic composition
-    # Should have exactly:
-    # - One phosphorus
-    # - At least 5 oxygens (1 carbonyl, 1 ester, 1 hydroxyl, 2 phosphate)
-    # - One nitrogen
     p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
@@ -72,4 +86,4 @@ def is_1_O_acylglycerophosphoethanolamine(smiles: str):
     if not mol.HasSubstructMatch(carbon_chain):
         return False, "Acyl chain too short"
 
-    return True, "Contains glycerol backbone with phosphoethanolamine group and single acyl substituent"
+    return True, "Contains glycerol backbone with phosphoethanolamine group and single acyl substituent at sn-1"
