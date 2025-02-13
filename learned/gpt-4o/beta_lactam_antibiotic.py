@@ -7,7 +7,8 @@ def is_beta_lactam_antibiotic(smiles: str):
     """
     Determines if a molecule is a beta-lactam antibiotic based on its SMILES string.
     A beta-lactam antibiotic contains a beta-lactam ring (four-membered cyclic amide), 
-    typically in a derivative scaffold like penicillins or cephalosporins.
+    which is a key feature of antibiotics such as penicillins, cephalosporins, 
+    monobactams, and carbapenems.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,18 +23,21 @@ def is_beta_lactam_antibiotic(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Enhanced SMARTS patterns for beta-lactam structures
-    beta_lactam_patterns = [
-        Chem.MolFromSmarts("C1C(=O)N(C)C1"),  # Core four-membered beta-lactam ring
-        Chem.MolFromSmarts("C1C(=O)N(C)C1C"),  # Simple beta-lactam with alkyl substitution
-        Chem.MolFromSmarts("C1C(=O)N2C(C)C2S1"),  # Penicillin-like structure
-        Chem.MolFromSmarts("C1C2=C(C)SC(N2C(N1)=O)C(=O)"),  # Cephalosporin-like structure
-        Chem.MolFromSmarts("C1C(=O)N2C2C(=O)C1N"),  # Monobactam-like structure
-    ]
+    # SMARTS pattern for detecting the beta-lactam ring
+    beta_lactam_ring_pattern = Chem.MolFromSmarts("C1C(=O)N(C)C1")
     
-    # Check each pattern for a match
-    for pattern in beta_lactam_patterns:
-        if mol.HasSubstructMatch(pattern):
-            return True, "Contains a beta-lactam ring"
+    if mol.HasSubstructMatch(beta_lactam_ring_pattern):
+        # Check for additional structural features typical of beta-lactam antibiotics
+        # such as specific side chains or functional groups
+        penicillin_pattern = Chem.MolFromSmarts("C1C(=O)N2C(C)C2SC1")
+        cephalosporin_pattern = Chem.MolFromSmarts("C1C2=C(C)SC(N2C(N1)=O)C(=O)")
+        carbapenem_pattern = Chem.MolFromSmarts("C1C2=C(O)C(=O)N(C2C1)C=O")
+        
+        if (mol.HasSubstructMatch(penicillin_pattern) or
+            mol.HasSubstructMatch(cephalosporin_pattern) or
+            mol.HasSubstructMatch(carbapenem_pattern)):
+            return True, "Contains beta-lactam ring with known antibiotic structure features"
 
+        return True, "Contains a beta-lactam ring"
+    
     return False, "No beta-lactam ring found"
