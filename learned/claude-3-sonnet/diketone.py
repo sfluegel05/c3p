@@ -1,28 +1,55 @@
 """
 Classifies: CHEBI:46640 diketone
 """
-The previous program attempted to classify diketones by counting the number of ketone groups (C(=O)C) in the molecule using a SMARTS pattern. However, it appears that this approach did not adequately capture the complexity of the diketone class, leading to incorrect classifications.
+"""
+Classifies: CHEBI:35558 diketone
+A diketone is a compound that contains two ketone functionalities.
+"""
+from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors, rdMolTransforms
 
-Here are a few potential issues with the previous approach:
+def is_diketone(smiles: str):
+    """
+    Determines if a molecule is a diketone based on its SMILES string.
 
-1. **Structural constraints:** The program only checks for the presence of two or more ketone groups, but it does not consider the structural context or connectivity of these groups. Some diketones may have specific structural requirements, such as being part of a cyclic system or having a specific spatial arrangement, which are not accounted for in the current implementation.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **Functional group ambiguity:** The ketone SMARTS pattern `C(=O)C` may match other functional groups, such as esters or carboxylic acids, leading to false positives. A more specific pattern or additional checks may be required to ensure that the matched groups are indeed ketones.
+    Returns:
+        bool: True if molecule is a diketone, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-3. **Tautomerism:** Some diketones may exist in tautomeric forms, where the ketone functionality is not explicitly represented in the SMILES string. The current approach may miss these cases.
+    # Look for ketone groups
+    ketone_pattern = Chem.MolFromSmarts("C(=O)C")
+    ketone_matches = mol.GetSubstructMatches(ketone_pattern)
 
-4. **Edge cases and exceptions:** There may be specific exceptions or edge cases within the diketone class that the current program does not handle correctly.
+    # Check for at least two ketone groups
+    if len(ketone_matches) < 2:
+        return False, f"Found {len(ketone_matches)} ketone groups, need at least 2"
 
-To improve the classification accuracy, the following steps could be considered:
+    # Check if ketone groups are part of the same molecule
+    # (not separate fragments)
+    if not rdMolDescriptors.CalcNumAliphaticRings(mol) == 0:
+        # Enumerates all possible tautomers
+        tautomers = list(rdMolTransforms.EnumerateTautomers(mol))
+        has_valid_tautomer = False
+        for tautomer in tautomers:
+            tautomer_matches = tautomer.GetSubstructMatches(ketone_pattern)
+            if len(tautomer_matches) >= 2:
+                has_valid_tautomer = True
+                break
+        if not has_valid_tautomer:
+            return False, "Ketone groups are not part of the same molecule"
 
-1. **Analyze the diketone class in more detail:** Study the structural and chemical properties of diketones, including common substructures, connectivity patterns, and any specific constraints or exceptions.
+    # Additional checks to ensure the matched groups are indeed ketones
+    # and not other functional groups like esters or carboxylic acids
+    for atom_idx in set().union(*ketone_matches):
+        atom = mol.GetAtomWithIdx(atom_idx)
+        if atom.GetFormalCharge() != 0 or atom.GetTotalNumHs() != 0:
+            return False, "Matched groups are not ketones"
 
-2. **Develop more sophisticated SMARTS patterns:** Create SMARTS patterns that capture the essential structural features of diketones, considering factors such as connectivity, ring systems, and tautomerism.
-
-3. **Implement additional checks and filters:** Incorporate additional checks and filters to ensure that the matched substructures are indeed ketone groups and not other functional groups. This could involve examining the atomic environments, bond orders, and other chemical properties.
-
-4. **Consider machine learning approaches:** If the diketone class exhibits complex patterns or exceptions that are difficult to capture with rule-based approaches, consider exploring machine learning techniques. These techniques can learn patterns from labeled training data and potentially generalize better to unseen cases.
-
-5. **Test and refine the program:** Continuously test the program against a diverse set of diketone and non-diketone structures, analyze the results, and refine the approach accordingly.
-
-By iterating on the program and incorporating more sophisticated patterns and checks, the classification accuracy for the diketone class can potentially be improved.
+    return True, "Contains at least two ketone functionalities"
