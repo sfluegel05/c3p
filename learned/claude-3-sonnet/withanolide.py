@@ -28,32 +28,25 @@ def is_withanolide(smiles: str) -> tuple[bool, str]:
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for steroid backbone
-    steroid_patterns = [
-        Chem.MolFromSmarts("[C@@](C)(CC[C@@](C)(C[C@@H]([C@H]1[C@@H](C[C@@H](C[C@@H]([C@@H](C[C@H]([C@@H](C1)C)C)C)C)C)C)C)C"),
-        Chem.MolFromSmarts("[C@@](C)(CC[C@@](C)(C[C@@H]([C@H]1[C@@H](C[C@@H](C[C@@H]([C@@H](C[C@H]([C@@H](C1)C)C)C)C)C)C)C)C"),
-        # Add more steroid backbone patterns if needed
-    ]
-    if not any(mol.HasSubstructMatch(pattern) for pattern in steroid_patterns):
-        return False, "Does not contain steroid backbone"
+    # Check for C28 steroid skeleton
+    c28_pattern = Chem.MolFromSmarts("[C@]1(C)(CC[C@]2([H])[C@]3([H])CC[C@]4([H])C[C@@]([H])(O)[C@@H](O)C=C5[C@@]6([H])C[C@@H]7[C@]8([H])C[C@@H](O)[C@H](O)[C@]([H])(C9=CC(=O)O[C@H]9[C@@]1([H])C)[C@]7(C[C@H]8[C@]%10%11[C@@H]%12[C@@H]([C@H]([C@@H]%13[C@H]([C@@H]%14C)OC)C)OC%15)C)[C@@H]%16%17[C@H](C)[C@@H](O)[C@@H](C)[C@H](OC(=O)CC)[C@@H](C)[C@@H](OC)[C@@H](C)[C@@H](OC(=O)CC)[C@H](C)[C@H]3[C@]4([H])C[C@H]%18C%19C%20=C[C@H]([C@@H]6O5)[C@@H]2C")
+
+    if not mol.HasSubstructMatch(c28_pattern):
+        return False, "Does not contain C28 steroid skeleton"
 
     # Check for lactone ring
-    lactone_pattern = Chem.MolFromSmarts("C(=O)OC")
-    lactone_matches = mol.GetSubstructMatches(lactone_pattern)
-    if not lactone_matches:
+    lactone_pattern = Chem.MolFromSmarts("[C&r5,r6]1[C&r5,r6][C&r5,r6][C&r5,r6][C&r5,r6]1(=O)")
+    if not mol.HasSubstructMatch(lactone_pattern):
         return False, "No lactone ring found"
 
-    # Check for C28 carbon skeleton
-    num_heavy_atoms = mol.GetNumHeavyAtoms()
-    if num_heavy_atoms < 28 or num_heavy_atoms > 32:
-        return False, "Does not have a C28 carbon skeleton"
-
-    # Check molecular weight
+    # Check molecular weight (typically 400-600 Da for withanolides)
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 350 or mol_wt > 650:
+    if mol_wt < 400 or mol_wt > 600:
         return False, "Molecular weight outside typical range for withanolides"
 
-    # Additional checks (optional)
-    # ...
+    # Count number of oxygen atoms (typically 6-8 for withanolides)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if o_count < 6 or o_count > 8:
+        return False, "Number of oxygen atoms outside typical range for withanolides"
 
-    return True, "Contains steroid backbone with a lactone ring and a C28 carbon skeleton"
+    return True, "Contains C28 steroid skeleton with lactone ring and modified side chain"
