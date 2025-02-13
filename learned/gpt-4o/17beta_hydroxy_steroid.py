@@ -21,23 +21,25 @@ def is_17beta_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # General steroid backbone pattern - focusing on four rings common in steroids
-    steroid_pattern = Chem.MolFromSmarts("[#6]12CC[C@H]3[C@@H](CCC4=C3C=CC=C4)CC[C@@H]1C2")
-    if not mol.HasSubstructMatch(steroid_pattern):
+    # General steroid backbone pattern - four rings A/B/C/D with flexibility in stereo and connectivity
+    steroid_patterns = [
+        Chem.MolFromSmarts("[#6]12CC[C@H]3[C@H](CCC4=C(C=CC=C4)C3)CCC1C2"),  # typical steroid pattern
+        Chem.MolFromSmarts("[#6]12CC[C@@H]3[C@H](CCC4=CCCCC34)CCC1C2")  # variant with slight deviations
+    ]
+    
+    if not any(mol.HasSubstructMatch(pattern) for pattern in steroid_patterns):
         return False, "No suitable steroid backbone found"
 
-    # Look for the 17beta-hydroxy group configuration
-    hydroxy_pattern = Chem.MolFromSmarts("[C@@H](O)[C@H]1CC[C@@H]2C[C@@H]3C[C@H](CC4=CC=CC=C34)[H]CC[C@@H]2C1")
-    if mol.HasSubstructMatch(hydroxy_pattern):
-        return True, "17beta-Hydroxy steroid structure identified"
-
-    # Check for a general attachment of a beta-oriented hydroxy group at C17
+    # Look for the 17beta-hydroxy group configuration specifically
     for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 6:  # Find carbon atoms
-            idx = atom.GetIdx()
-            if any(n.GetAtomicNum() == 8 for n in atom.GetNeighbors()):  # Check for connected Oxygen (hydroxy)
-                # Verify stereochemistry implies beta orientation
-                if atom.GetChiralTag() == Chem.ChiralType.CHI_TETRAHEDRAL_CCW:
-                    return True, "17beta-hydroxy group with identifiable stereochemistry found"
+        if atom.GetAtomicNum() == 6 and atom.GetDegree() == 4:  # Look for quaternary carbon
+            neighbors = atom.GetNeighbors()
+            for nei in neighbors:
+                if nei.GetAtomicNum() == 8 and nei.GetChiralTag() in [
+                    Chem.ChiralType.CHI_TETRAHEDRAL_CCW, Chem.ChiralType.CHI_TETRAHEDRAL_CW
+                ]:  # Check for hydroxy with stereochemistry
+                    # This orientation check assumes C17 has a distinct stereochemical marker
+                    if "beta" in nei.GetProp('_CIPCode', '').lower():
+                        return True, "17beta hydroxy group confirmed with stereochemistry"
 
     return False, "No 17beta-hydroxy steroid configuration detected"
