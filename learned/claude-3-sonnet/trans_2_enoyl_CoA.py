@@ -1,70 +1,30 @@
 """
 Classifies: CHEBI:50998 trans-2-enoyl-CoA
 """
-"""
-Classifies: CHEBI:72737 trans-2-enoyl-CoA
+The previous code has some issues that led to the low F1 score. Here are the potential problems and improvements:
 
-A trans-2-enoyl-CoA is an unsaturated fatty acyl-CoA that results from the formal condensation
-of the thiol group of coenzyme A with the carboxy group of any 2,3-trans-enoic acid.
-"""
-from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+1. **The coenzyme A backbone pattern is too specific**: The SMARTS pattern used to identify the coenzyme A backbone is very specific and may not match all possible variations of the coenzyme A structure. A more general pattern that captures the essential features of coenzyme A would be better.
 
-def is_trans_2_enoyl_CoA(smiles: str):
-    """
-    Determines if a molecule is a trans-2-enoyl-CoA based on its SMILES string.
+2. **The trans-2-enoyl group pattern is too specific**: Similar to the coenzyme A pattern, the SMARTS pattern used to identify the trans-2-enoyl group is quite specific and may not match all possible variations of this functional group.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+3. **The fatty acid chain pattern is too lenient**: The pattern used to identify the fatty acid chain ([CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]) is too lenient and may match non-fatty acid chains or even smaller fragments.
 
-    Returns:
-        bool: True if molecule is a trans-2-enoyl-CoA, False otherwise
-        str: Reason for classification
-    """
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+4. **The molecular weight check is too strict**: The molecular weight check (> 1000 Da) is too strict and may exclude some valid trans-2-enoyl-CoA molecules.
 
-    # Look for coenzyme A backbone
-    coenzyme_A_pattern = Chem.MolFromSmarts("C(C)(C)(CO)C(=O)NCCC(=O)NCCS")
-    if not mol.HasSubstructMatch(coenzyme_A_pattern):
-        return False, "No coenzyme A backbone found"
+5. **The atom count checks are too specific**: The checks for the exact number of carbon, oxygen, nitrogen, and sulfur atoms are too specific and may exclude valid structures with slightly different atom counts.
 
-    # Look for trans-2-enoyl group
-    trans_2_enoyl_pattern = Chem.MolFromSmarts("[CX3](/C=C/[CX3]([CX3])=[OX1])")
-    if not mol.HasSubstructMatch(trans_2_enoyl_pattern):
-        return False, "No trans-2-enoyl group found"
+To improve the code, you could consider the following:
 
-    # Look for fatty acid chain (long carbon chain)
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
-    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
-    if len(fatty_acid_matches) < 1:
-        return False, f"Missing fatty acid chain, got {len(fatty_acid_matches)} matches"
+1. **Use a more general pattern for the coenzyme A backbone**: Look for the essential features of coenzyme A, such as the adenosine and pantothenic acid moieties, without being too specific about the connectivity or stereochemistry.
 
-    # Count rotatable bonds to verify long chain
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 6:
-        return False, "Chain too short to be a fatty acid"
+2. **Use a more general pattern for the trans-2-enoyl group**: Look for the general feature of a trans double bond at the second position of an acyl chain, without being too specific about the substituents or stereochemistry.
 
-    # Check molecular weight - typically >1000 Da
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 1000:
-        return False, "Molecular weight too low for trans-2-enoyl-CoA"
+3. **Use a more robust pattern for the fatty acid chain**: Look for long carbon chains with a specific minimum length, allowing for branching and substitutions.
 
-    # Count carbons, oxygens, nitrogens, and sulfurs
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
-    s_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 16)
+4. **Relax the molecular weight check**: Instead of a strict cutoff, use a range of molecular weights that is typical for trans-2-enoyl-CoA molecules.
 
-    if c_count < 20:
-        return False, "Too few carbons for trans-2-enoyl-CoA"
-    if o_count != 10:
-        return False, "Must have exactly 10 oxygens"
-    if n_count != 3:
-        return False, "Must have exactly 3 nitrogens"
-    if s_count != 1:
-        return False, "Must have exactly 1 sulfur"
+5. **Remove or relax the atom count checks**: These checks may not be necessary, as the other patterns and checks should be sufficient to identify valid structures.
 
-    return True, "Contains coenzyme A backbone with trans-2-enoyl group and fatty acid chain"
+6. **Consider using additional checks or features**: You could explore additional features or checks that are specific to trans-2-enoyl-CoA molecules, such as the presence of certain functional groups or substructures.
+
+By addressing these issues and improving the patterns and checks, you should be able to achieve a higher F1 score for the classification task.
