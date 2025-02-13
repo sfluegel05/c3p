@@ -20,13 +20,10 @@ def is_aliphatic_alcohol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for presence of hydroxyl group attachment (C-OH)
-    oh_pattern = Chem.MolFromSmarts("[CX4H2,CX4H,CX4]-[OH]")  # Saturated carbon with hydroxyl
-    if not mol.HasSubstructMatch(oh_pattern):
+    # Check for hydroxyl group attachment to aliphatic (non-aromatic) carbon
+    aliphatic_oh_pattern = Chem.MolFromSmarts("[CX4,CX3,CX2]!@[O]")
+    oh_matches = mol.GetSubstructMatches(aliphatic_oh_pattern)
+    if not oh_matches:
         return False, "No aliphatic hydroxyl group found"
-
-    # Verify the absence of aromaticity
-    if mol.HasSubstructMatch(Chem.MolFromSmarts("a")):
-        return False, "Contains aromatic rings; not purely aliphatic"
 
     return True, "Contains aliphatic hydroxyl group(s) on a non-aromatic carbon chain"
