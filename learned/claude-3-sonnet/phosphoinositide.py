@@ -27,6 +27,10 @@ def is_phosphoinositide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
+    # Handle charged structures
+    mol = Chem.RemoveHs(mol)
+    mol = Chem.RemoveAllProp(mol)
+    
     # Look for glycerol backbone pattern (C-C-C with 2 oxygens attached)
     glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
     if not mol.HasSubstructMatch(glycerol_pattern):
@@ -43,6 +47,16 @@ def is_phosphoinositide(smiles: str):
     fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
     if len(fatty_acid_matches) < 2:
         return False, f"Missing fatty acid chains, got {len(fatty_acid_matches)}"
+    
+    # Count rotatable bonds to verify long chains
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 10:
+        return False, "Chains too short to be fatty acids"
+    
+    # Check molecular weight - phosphoinositides typically >500 Da
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 500:
+        return False, "Molecular weight too low for phosphoinositide"
 
     # Look for inositol ring attached to glycerol via phosphate
     inositol_pattern = Chem.MolFromSmarts("OC1C(O)C(O)C(O)C(O)C1OP")
@@ -50,7 +64,7 @@ def is_phosphoinositide(smiles: str):
         return False, "No inositol ring attached to glycerol via phosphate"
     
     # Check for additional phosphate groups on inositol
-    inositol_p_pattern = Chem.MolFromSmarts("OC1C(O)C(OP)C(O)C(O)C1OP")
+    inositol_p_pattern = Chem.MolFromSmarts("OC1C(O)C(OP)C(O)C(O)C1")
     if not mol.HasSubstructMatch(inositol_p_pattern):
         return False, "Inositol ring not phosphorylated"
 
