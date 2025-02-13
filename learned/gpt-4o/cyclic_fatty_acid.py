@@ -2,7 +2,7 @@
 Classifies: CHEBI:59238 cyclic fatty acid
 """
 from rdkit import Chem
-from rdkit.Chem import Descriptors
+from rdkit.Chem import rdMolDescriptors
 
 def is_cyclic_fatty_acid(smiles: str):
     """
@@ -17,24 +17,23 @@ def is_cyclic_fatty_acid(smiles: str):
         str: Reason for classification
     """
     
-    # Parse the SMILES string
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for carboxyl group (-COOH) or ester-like (-COO) patterns, allowing fatty acid derivatives
-    carboxyl_or_ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX1H0,OX2H1]")
-    if not mol.HasSubstructMatch(carboxyl_or_ester_pattern):
-        return False, "No carboxyl or ester group found, not a recognized fatty acid derivative"
+    # Look for carboxyl group (-COOH)
+    carboxyl_pattern = Chem.MolFromSmarts("C(=O)[OH]")
+    if not mol.HasSubstructMatch(carboxyl_pattern):
+        return False, "No carboxyl group found, not a fatty acid"
 
-    # Calculate the number of carbon atoms to ensure a fatty acid characteristic
-    c_count = sum(atom.GetAtomicNum() == 6 for atom in mol.GetAtoms())
-    # Ensure there's a reasonable length for what could be a fatty acid (usually > 6-8 carbons)
-    if c_count < 8:
-        return False, f"Too few carbon atoms ({c_count}), not a characteristic fatty acid or derivative"
+    # Check for long carbon chain (minimum criteria could be, e.g., 6 continuous carbons)
+    chain_pattern = Chem.MolFromSmarts("C~C~C~C~C~C")
+    if not mol.HasSubstructMatch(chain_pattern):
+        return False, "No sufficient carbon chain found, not a fatty acid"
 
     # Detect any cyclic structure
     if not mol.GetRingInfo().NumRings():
         return False, "No cyclic structure found"
 
-    return True, "Contains cyclic structure with characteristics of a fatty acid or its derivative"
+    return True, "Contains cyclic structure and fatty acid characteristics"
