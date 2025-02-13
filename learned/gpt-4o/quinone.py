@@ -22,14 +22,15 @@ def is_quinone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # SMARTS patterns for various quinone structures
+    # SMARTS patterns for various fully conjugated cyclic dione structures
     quinone_patterns = [
-        Chem.MolFromSmarts("c1c(=O)c(=O)c1"),  # Simple benzoquinone, covers various positions
-        Chem.MolFromSmarts("c1cc(=O)c(=O)c(c1)c2ccccc2"),  # Naphthoquinone-like
-        Chem.MolFromSmarts("c1cc2c(c1)c(=O)c3ccccc3c(=O)c2"),  # Anthraquinone-like
-        Chem.MolFromSmarts("c1c(=O)c2ccccc2c(=O)c1")  # Covers variations of large conjugations
+        Chem.MolFromSmarts("c1c(=O)c([OH1])c([OH1])c(=O)c1"),  # Simple benzoquinone
+        Chem.MolFromSmarts("c1cc(=O)c2c(c1)ccc(=O)c2"),         # Naphthoquinone-like
+        Chem.MolFromSmarts("c1cc2c(c1)c(=O)c3ccccc3c2=O"),     # Anthraquinone-like
+        Chem.MolFromSmarts("Oc1ccc2C(=O)C=CC(=O)c2c1"),        # Extended conjugation
+        Chem.MolFromSmarts("[OH1]c1cc2C(=O)C=C(C1)C(=O)c3cc(C2)c4ccccc4c3=O")  # Complex cyclic with layers
     ]
-
+    
     # Check for quinone patterns
     for pattern in quinone_patterns:
         if mol.HasSubstructMatch(pattern):
