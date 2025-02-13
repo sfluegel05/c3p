@@ -25,17 +25,20 @@ def is_acetate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for acetate group pattern (-O-C(=O)C)
-    acetate_pattern = Chem.MolFromSmarts("[OX2]C(=O)C")
-    acetate_matches = mol.GetSubstructMatches(acetate_pattern)
-    
-    # Look for ester pattern (-O-C(=O)-)
-    ester_pattern = Chem.MolFromSmarts("[OX2]C(=O)")
+    # Look for ester pattern (-O-C(=O)-) with flexible SMARTS
+    ester_pattern = Chem.MolFromSmarts("[OX2]C(=O)[A;!$(OC)]")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     
-    # Check if any ester group is also an acetate group
+    # Check if any ester group is an acetate ester
     for ester_match in ester_matches:
-        if any(ester_match in acetate_match for acetate_match in acetate_matches):
+        ester_atoms = [mol.GetAtomWithIdx(idx) for idx in ester_match]
+        carbonyl_atom = ester_atoms[1]
+        
+        # Look for acetate group (-O-C(=O)C) connected to the ester carbonyl
+        acetate_pattern = Chem.MolFromSmarts("[OX2]C(=O)(C)[A]")
+        acetate_match = mol.GetSubstructMatches(acetate_pattern, atomsToUse=ester_atoms)
+        
+        if acetate_match:
             return True, "Contains an acetate ester group (-O-C(=O)C)"
 
     return False, "No acetate ester group found"
