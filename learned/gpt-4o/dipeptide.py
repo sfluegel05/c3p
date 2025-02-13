@@ -21,31 +21,26 @@ def is_dipeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # SMARTS patterns for peptide bond and amino acid residue features
-    peptide_bond_pattern = Chem.MolFromSmarts("C(=O)N")
-    amine_group_pattern = Chem.MolFromSmarts("[NX3][CX4]")  # e.g., primary amine
-    carboxyl_group_pattern = Chem.MolFromSmarts("C(=O)O")
+    # SMARTS pattern to detect amino acid residue (NH connected to alpha carbon connected to COOH)
+    alpha_amino_acid_pattern = Chem.MolFromSmarts("[N;!R][C;!R](C)[C](=O)[O]")
+
+    # Match pattern in molecule
+    amino_acid_matches = mol.GetSubstructMatches(alpha_amino_acid_pattern)
     
-    # Look for the peptide bond pattern
-    if mol.HasSubstructMatch(peptide_bond_pattern):
-        # Locate the peptide bond(s)
+    # Check if there are exactly two alpha amino acid residues
+    if len(amino_acid_matches) == 2:
+        # Check for peptide bonds between these residues
+        peptide_bond_pattern = Chem.MolFromSmarts("C(=O)N")
         peptide_bond_matches = mol.GetSubstructMatches(peptide_bond_pattern)
         
-        # Check around each peptide bond for amino acid signatures
-        amino_acid_count = 0
-        for match in peptide_bond_matches:
-            # Ensure there's an amino acid before and after the bond
-            if mol.HasSubstructMatch(amine_group_pattern) and mol.HasSubstructMatch(carboxyl_group_pattern):
-                amino_acid_count += 1
-
-        # A dipeptide should have exactly two amino acid moieties connected via peptide bond(s)
-        if amino_acid_count == 2:
+        # Ensure there's one and only one peptide bond
+        if len(peptide_bond_matches) == 1:
             return True, "Consists of two amino acids connected by a peptide bond"
         else:
-            return False, f"Expected 2 amino acid residues, found {amino_acid_count} connections"
-            
+            return False, f"Unexpected number of peptide bonds: {len(peptide_bond_matches)}"
+    
     else:
-        return False, "No peptide bond found or not connected correctly"
+        return False, f"Expected 2 amino acid residues, found {len(amino_acid_matches)}"
 
 # Example usage
 # smile = "CC[C@H](C)[C@H](NC(=O)[C@@H](N)CCSC)C(O)=O"  # Example SMILES of Met-Ile
