@@ -2,7 +2,6 @@
 Classifies: CHEBI:59238 cyclic fatty acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_cyclic_fatty_acid(smiles: str):
     """
@@ -17,20 +16,19 @@ def is_cyclic_fatty_acid(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
+    # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for carboxyl group (-COOH)
-    carboxyl_pattern = Chem.MolFromSmarts("C(=O)[OH]")
-    if not mol.HasSubstructMatch(carboxyl_pattern):
+    # Check for carboxyl group (-COOH or C(=O)O)
+    if not mol.HasSubstructMatch(Chem.MolFromSmarts("C(=O)O")):
         return False, "No carboxyl group found, not a fatty acid"
 
-    # Check for long carbon chain (minimum criteria could be, e.g., 6 continuous carbons)
-    chain_pattern = Chem.MolFromSmarts("C~C~C~C~C~C")
-    if not mol.HasSubstructMatch(chain_pattern):
-        return False, "No sufficient carbon chain found, not a fatty acid"
+    # Calculate the number of carbons
+    c_count = sum(atom.GetAtomicNum() == 6 for atom in mol.GetAtoms())
+    if c_count < 8:
+        return False, f"Too few carbon atoms ({c_count}), not a fatty acid"
 
     # Detect any cyclic structure
     if not mol.GetRingInfo().NumRings():
