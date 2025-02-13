@@ -30,11 +30,15 @@ def is_carbamate_ester(smiles: str):
     if not mol.HasSubstructMatch(carbamate_pattern):
         return False, "No carbamate ester functional group found"
 
-    # Check for other common features of carbamate esters
-    has_aromatic_ring = any(ring.IsAromaticRing() for ring in mol.GetRingInfo().AtomRings())
+    # Check for aromatic rings
+    rings = mol.GetRingInfo().AtomRings()
+    has_aromatic_ring = any(mol.GetAtomWithIdx(idx).GetIsAromatic() for ring in rings for idx in ring)
+
+    # Check for alkyl groups
     has_alkyl_groups = any(atom.GetHybridization() == Chem.HybridizationType.SP3 and atom.GetSymbol() == 'C' for atom in mol.GetAtoms())
 
-    if has_aromatic_ring and has_alkyl_groups:
+    # Carbamate esters often (but not always) have aromatic rings and/or alkyl groups
+    if has_aromatic_ring or has_alkyl_groups:
         return True, "Contains carbamate ester functional group and common structural features"
     else:
-        return False, "Does not have typical structural features of carbamate esters"
+        return True, "Contains carbamate ester functional group but lacks typical structural features"
