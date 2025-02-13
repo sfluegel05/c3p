@@ -28,21 +28,18 @@ def is_nucleoside(smiles: str):
 
     # Define SMARTS patterns
     patterns = {
-        # Sugar patterns - more flexible to catch variations
-        'sugar_ring': '[CH2,CH][CR0;r5][CR0;r5][CR0;r5][OR0;r5]',
+        # Furanose sugar patterns - more flexible to catch variations
+        'sugar_ring': '[#6]1[#6][#6][#6][#8]1', # Basic furanose
+        'ribose': '[#6]1([#6][#8])[#8][#6]([#6]([#8])[#6]1[#8])',  # More specific ribose pattern
         
-        # Purine patterns
-        'purine_basic': 'n1cnc2c1ncnc2',
-        'purine_mod': 'n1cnc2c1nc[nH]c2',
-        'purine_var': '[nR1r6]1c[nR1r6]c2[nR1r6]c[nR1r6]cc12',
+        # Nucleobase patterns
+        'purine_core': 'c1ncnc2[nX2]cnc12',  # Basic purine scaffold
+        'purine_mod': 'c1nc([*,#7,#8])nc2[nX2]cnc12',  # Modified purine
+        'pyrimidine_core': 'c1cn([*])[cX3][cX3,nX2]n1',  # Basic pyrimidine
+        'pyrimidine_mod': 'c1c([*,#7,#8])n([*])[cX3][cX3,nX2]n1',  # Modified pyrimidine
         
-        # Pyrimidine patterns
-        'pyrimidine_basic': 'n1c[nH]c(=O)[nH]c1=O',
-        'pyrimidine_mod': '[nR1r6]1c(=O)[nH]c(=O)cc1',
-        'pyrimidine_var': '[nR1r6]1cc[nR1r6]c(=O)[nH]1',
-        
-        # N-glycosidic bond - more general pattern
-        'n_glycosidic': '[nR1]1[cR1][#6,#7]~[#6,#7][cR1,nR1]1[CR0]1[OR0][CR0][CR0][CR0]1',
+        # N-glycosidic bond - simplified
+        'n_glycosidic': '[#6]1[#8][#6][#6][#6]1[NX3]',  # Sugar-N connection
     }
     
     # Convert patterns to RDKit molecules
@@ -53,56 +50,53 @@ def is_nucleoside(smiles: str):
             continue
         smart_patterns[name] = smart_pat
 
-    # Check for sugar ring
-    has_sugar = mol.HasSubstructMatch(smart_patterns['sugar_ring'])
+    # Check for sugar ring (either basic furanose or specific ribose pattern)
+    has_sugar = False
+    if mol.HasSubstructMatch(smart_patterns['sugar_ring']):
+        has_sugar = True
+    if mol.HasSubstructMatch(smart_patterns['ribose']):
+        has_sugar = True
+    
     if not has_sugar:
-        return False, "No ribose/deoxyribose/arabinose sugar found"
+        return False, "No ribose/deoxyribose sugar found"
 
     # Check for nucleobase
-    base_patterns = ['purine_basic', 'purine_mod', 'purine_var', 
-                    'pyrimidine_basic', 'pyrimidine_mod', 'pyrimidine_var']
-    found_base = False
-    for base_pat in base_patterns:
-        if base_pat in smart_patterns and mol.HasSubstructMatch(smart_patterns[base_pat]):
-            found_base = True
+    has_base = False
+    base_patterns = ['purine_core', 'purine_mod', 'pyrimidine_core', 'pyrimidine_mod']
+    for pattern in base_patterns:
+        if pattern in smart_patterns and mol.HasSubstructMatch(smart_patterns[pattern]):
+            has_base = True
             break
-    
-    if not found_base:
+
+    if not has_base:
         return False, "No nucleobase pattern found"
 
     # Check for N-glycosidic linkage
     if not mol.HasSubstructMatch(smart_patterns['n_glycosidic']):
-        # Additional check for modified N-glycosidic bonds
-        ring_bonds = mol.GetSubstructMatches(smart_patterns['sugar_ring'])
-        if not ring_bonds:
-            return False, "No N-glycosidic bond found"
-        
-        # Check if any nitrogen is connected to the sugar ring
-        sugar_atoms = set([atom for bond in ring_bonds for atom in bond])
-        for atom in mol.GetAtoms():
-            if atom.GetAtomicNum() == 7 and atom.IsInRing():
-                for neighbor in atom.GetNeighbors():
-                    if neighbor.GetIdx() in sugar_atoms:
-                        found_base = True
-                        break
-        if not found_base:
-            return False, "No valid connection between base and sugar"
+        return False, "No N-glycosidic bond found"
 
-    # Basic composition checks
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    # Additional structural checks
+    ring_info = mol.GetRingInfo()
+    if ring_info.NumRings() < 2:
+        return False, "Must contain at least 2 rings (sugar + base)"
+
+    # Count key atoms
     n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     
-    if c_count < 7:
-        return False, "Too few carbons for nucleoside"
-    if n_count < 2:
-        return False, "Too few nitrogens for nucleoside"
-    if o_count < 2:
-        return False, "Too few oxygens for nucleoside"
+    if n_count < 1:
+        return False, "Must contain at least 1 nitrogen"
+    if o_count < 3:
+        return False, "Must contain at least 3 oxygens"
 
-    # Ring checks
-    ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() < 2:
-        return False, "Nucleosides must contain at least 2 rings"
+    # Check ring sizes
+    ring_sizes = [len(ring) for ring in ring_info.AtomRings()]
+    if 5 not in ring_sizes:
+        return False, "Must contain 5-membered sugar ring"
+    
+    # Calculate basic properties
+    mw = rdMolDescriptors.CalcExactMolWt(mol)
+    if mw < 200 or mw > 800:
+        return False, "Molecular weight outside typical range for nucleosides"
 
     return True, "Contains nucleobase attached to sugar via N-glycosidic bond"
