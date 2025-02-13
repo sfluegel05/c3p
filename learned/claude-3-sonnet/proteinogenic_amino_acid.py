@@ -1,16 +1,54 @@
 """
 Classifies: CHEBI:83813 proteinogenic amino acid
 """
-Here's my analysis of the previous program and the outcomes:
+"""
+Classifies: CHEBI:33709 proteinogenic amino acid
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
 
-The previous program attempted to classify proteinogenic amino acids by checking if the molecule is an alpha-amino acid, and then checking if the side chain matches one of the proteinogenic amino acid side chains. However, there were a few issues:
+def is_proteinogenic_amino_acid(smiles: str):
+    """
+    Determines if a molecule is a proteinogenic amino acid based on its SMILES string.
+    Proteinogenic amino acids are the 23 alpha-amino acids that are precursors to proteins
+    and are incorporated into proteins during translation.
 
-1. **Import Error**: The program tried to import `AllChem` from `rdkit.Chem.rdChemReactions`, which is incorrect. `AllChem` is a part of the `rdkit.Chem` module, not `rdkit.Chem.rdChemReactions`. This caused an import error and the program failed to run.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **Side Chain Identification**: The program used `AllChem.GetMolFragsWithSPorts` to identify the side chain of the amino acid. However, this function is designed to find specific reaction sites in a molecule, not to identify side chains. This likely caused the side chain identification to fail in many cases.
+    Returns:
+        bool: True if molecule is a proteinogenic amino acid, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-3. **Side Chain Matching**: The program attempted to match the side chain SMARTS pattern against a dictionary of proteinogenic amino acid side chain patterns (`AllChem.SmartsPatts.proteinogenic_amino_acids`). However, this dictionary does not seem to be a part of the RDKit library, which suggests that it is either a custom dictionary or a typo.
+    # Look for alpha-amino acid pattern (N-C-C-C=O)
+    amino_acid_pattern = Chem.MolFromSmarts("[N;H2,H1&!$(NC=[!#6])][C@H]([C,c])([C,c])[C](=O)[O,N]")
+    if not mol.HasSubstructMatch(amino_acid_pattern):
+        return False, "Not an alpha-amino acid"
 
-4. **Stereochemistry**: The program did not check for the stereochemistry of the amino acid, which is a crucial aspect of proteinogenic amino acids (except for glycine). Most proteinogenic amino acids have the L-configuration, and this should be checked.
+    # Check for chirality (excluding glycine)
+    if mol.GetAtomWithIdx(1).GetChiralTag() != Chem.ChiralType.CHI_TETRAHEDRAL_CW:
+        if not mol.GetSmiles() == "NCC(=O)O":  # Glycine
+            return False, "Not L-configured"
 
-To improve the program, we need to fix the import issue, find a more reliable way to identify and extract the side chain, and implement checks for the stereochemistry and specific side chain patterns of proteinogenic amino acids. We can also consider using pre-defined molecular patterns or SMARTS patterns for proteinogenic amino acids, rather than trying to build them dynamically.
+    # Check for common side chains
+    side_chains = ["C", "CC", "CCC", "CCCC", "CCCCC", "CCCCCC", "C(=O)N", "CC(C)C", "CC(N)=O",
+                   "CS", "CC1=CC=CC=C1", "CC1=CNC=N1", "CC1=CN=CN1", "C(C)(C)CC(C)(N)C(=O)O"]
+
+    side_chain = Chem.DeleteSubstructs(mol, amino_acid_pattern)
+    side_chain_smiles = Chem.MolToSmiles(side_chain)
+
+    if side_chain_smiles not in side_chains:
+        if side_chain_smiles == "CC(N)CC(=O)NC(C1=CN=CNC1=O)C(=O)O":  # Pyrrolysine
+            return True, "Proteinogenic amino acid (Pyrrolysine)"
+        elif side_chain_smiles == "CSCCC":  # Selenocysteine
+            return True, "Proteinogenic amino acid (Selenocysteine)"
+        else:
+            return False, "Unknown side chain"
+
+    return True, "Proteinogenic amino acid"
