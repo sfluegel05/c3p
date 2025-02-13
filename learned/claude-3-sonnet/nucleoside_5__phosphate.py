@@ -1,53 +1,34 @@
 """
 Classifies: CHEBI:16701 nucleoside 5'-phosphate
 """
-"""
-Classifies: CHEBI:60367 nucleoside 5'-phosphate
+The previous code attempted to classify nucleoside 5'-phosphates by checking for the following structural features:
 
-A nucleoside 5'-phosphate is a ribosyl or deoxyribosyl derivative of a pyrimidine or purine base
-in which C-5 of the ribose ring is mono-, di-, tri- or tetra-phosphorylated.
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+1. Ribose or deoxyribose backbone
+2. Pyrimidine or purine base
+3. Phosphate group(s) attached to the C-5 position of the ribose/deoxyribose ring
 
-def is_nucleoside_5__phosphate(smiles: str):
-    """
-    Determines if a molecule is a nucleoside 5'-phosphate based on its SMILES string.
+However, the code failed to correctly identify any true positive or false positive/negative examples, suggesting issues with the implemented logic.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+Here are some potential reasons for the failure and suggestions for improvement:
 
-    Returns:
-        bool: True if molecule is a nucleoside 5'-phosphate, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Look for ribose/deoxyribose backbone
-    ribose_pattern = Chem.MolFromSmarts("[OX2]C1[CH]([OX2])[CH]([OX2])[CH]([OX2])[CH]1")
-    if not mol.HasSubstructMatch(ribose_pattern):
-        return False, "No ribose/deoxyribose backbone found"
-    
-    # Look for pyrimidine or purine base
-    base_patterns = [Chem.MolFromSmarts(sma) for sma in ["c1ncnc2n1cncn12", "c1cnc2n1cncn12",
-                                                          "c1ncnc2[nH]1ccn12", "c1cnc2[nH]1ccn12"]]
-    base_match = any(mol.HasSubstructMatch(pat) for pat in base_patterns)
-    if not base_match:
-        return False, "No pyrimidine or purine base found"
-    
-    # Look for phosphate group(s) attached to C-5 of ribose
-    phosphate_pattern = Chem.MolFromSmarts("OP(=O)([OX2])[OX2]")
-    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
-    ribose_atoms = mol.GetSubstructMatches(ribose_pattern)[0]
-    c5_idx = ribose_atoms[4]
-    phosphate_attached = any(c5_idx in match for match in phosphate_matches)
-    
-    if not phosphate_attached:
-        return False, "No phosphate group attached to C-5 of ribose"
-    
-    return True, "Contains ribose/deoxyribose backbone with pyrimidine/purine base and phosphate group on C-5"
+1. **Ribose/deoxyribose backbone detection**: The SMARTS pattern used for detecting the ribose/deoxyribose backbone (`"[OX2]C1[CH]([OX2])[CH]([OX2])[CH]([OX2])[CH]1"`) may not be accurate or comprehensive enough. It might be missing some valid variations or including invalid ones.
+
+   - Suggestion: Analyze the false negatives and true positives to identify patterns that were missed. Consider using a more flexible or relaxed SMARTS pattern or combine multiple patterns.
+
+2. **Pyrimidine/purine base detection**: The SMARTS patterns used for detecting the bases are limited to a specific set of tautomers and may not cover all possible representations.
+
+   - Suggestion: Explore using more general SMARTS patterns or investigate alternative methods for base detection, such as substructure matching against a set of known base fragments.
+
+3. **Phosphate group detection and attachment**: The code checks for the presence of a phosphate group and its attachment to the C-5 position of the ribose/deoxyribose ring. However, it does not consider the possibility of multiple phosphate groups (di-, tri-, or tetra-phosphorylated) or handle branched phosphate groups correctly.
+
+   - Suggestion: Modify the phosphate group detection logic to handle multiple phosphate groups and branched structures. Consider using recursive SMARTS patterns or substructure matching against a set of known phosphate group patterns.
+
+4. **False positives and negatives**: Without any identified true positives or false positives/negatives, it is difficult to pinpoint the exact issues in the logic.
+
+   - Suggestion: Analyze the provided examples and identify potential true positives and false positives/negatives. Use this information to refine the logic and patterns used in the code.
+
+5. **Additional checks**: The current code does not perform any additional checks or validations beyond the basic structural features.
+
+   - Suggestion: Consider adding additional checks or filters based on the provided definition, such as molecular weight, atom count, or other relevant molecular descriptors.
+
+By addressing these potential issues and incorporating the suggested improvements, the code's ability to correctly classify nucleoside 5'-phosphates should improve. Additionally, it is essential to iteratively test and refine the code using a diverse set of examples to ensure robustness and accuracy.
