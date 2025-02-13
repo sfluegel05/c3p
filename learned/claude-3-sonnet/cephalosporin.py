@@ -26,50 +26,65 @@ def is_cephalosporin(smiles: str):
         return False, "Invalid SMILES string"
 
     # First check for the core cephalosporin structure:
-    # Beta-lactam fused to 6-membered dihydrothiazine ring
-    # [S] represents sulfur atom in the 6-membered ring
-    # The numbers indicate the atom mapping to ensure correct connectivity
-    ceph_core = Chem.MolFromSmarts("""
-        [S:1]-[C:2]-[C:3]=C-[N:4]-1-C(=O)-[C:5]-[C:6]-1
-        """)
-    
+    # Beta-lactam (4-membered ring) fused to 6-membered dihydrothiazine ring
+    ceph_core = Chem.MolFromSmarts('[#16]-1-[#6]-[#6]=2-[#6](=[#6]-1)-[#7]-3-[#6](=[#8])-[#6]-[#6]-2-3')
     if not mol.HasSubstructMatch(ceph_core):
         return False, "Missing cephalosporin core structure (fused beta-lactam and dihydrothiazine rings)"
 
-    # Check for carboxylic acid group typically present at position 2
-    carboxyl = Chem.MolFromSmarts("C(=O)[OH]")
-    carboxylate = Chem.MolFromSmarts("C(=O)[O-]")
-    
-    if not (mol.HasSubstructMatch(carboxyl) or mol.HasSubstructMatch(carboxylate)):
+    # Check for beta-lactam ring specifically
+    beta_lactam = Chem.MolFromSmarts('[#7]-1-[#6](=[#8])-[#6]-[#6]-1')
+    if not mol.HasSubstructMatch(beta_lactam):
+        return False, "Missing beta-lactam ring"
+
+    # Check for carboxylic acid/carboxylate group at position 2
+    carboxyl_patterns = [
+        Chem.MolFromSmarts('C(=O)[OH]'),  # carboxylic acid
+        Chem.MolFromSmarts('C(=O)[O-]')   # carboxylate
+    ]
+    has_carboxyl = any(mol.HasSubstructMatch(p) for p in carboxyl_patterns if p is not None)
+    if not has_carboxyl:
         return False, "Missing carboxylic acid/carboxylate group"
 
     # Check for amide group at position 7
-    amide = Chem.MolFromSmarts("[NH]C(=O)")
+    amide = Chem.MolFromSmarts('[NH]-[#6](=[#8])')
     if not mol.HasSubstructMatch(amide):
         return False, "Missing amide group at position 7"
 
-    # Additional check to ensure proper ring system
+    # Additional checks for common substituents that might indicate a cephalosporin
+    substituent_patterns = {
+        'aminothiazole': Chem.MolFromSmarts('c1csc(N)n1'),
+        'tetrazole': Chem.MolFromSmarts('n1nnn[nH]1'),
+        'methyltetrazole': Chem.MolFromSmarts('Cn1nnnc1'),
+        'oxime': Chem.MolFromSmarts('C=NOC'),
+        'acetoxymethyl': Chem.MolFromSmarts('CC(=O)OC'),
+        'carboxamide': Chem.MolFromSmarts('NC(=O)')
+    }
+    
+    found_substituents = []
+    for name, pattern in substituent_patterns.items():
+        if pattern is not None and mol.HasSubstructMatch(pattern):
+            found_substituents.append(name)
+
+    # Verify ring system
     ring_info = mol.GetRingInfo()
     if ring_info.NumRings() < 2:
         return False, "Insufficient ring count for cephalosporin structure"
 
-    # Check for common substituents that might indicate a cephalosporin
-    common_substituents = [
-        (Chem.MolFromSmarts("NC(=O)"), "carboxamide"),
-        (Chem.MolFromSmarts("OC(=O)"), "carboxyl"),
-        (Chem.MolFromSmarts("n1nnn[nH]1"), "tetrazole"),
-        (Chem.MolFromSmarts("c1csc(N)n1"), "aminothiazole"),
-        (Chem.MolFromSmarts("C=C"), "vinyl"),
-    ]
-    
-    found_substituents = []
-    for pattern, name in common_substituents:
-        if pattern and mol.HasSubstructMatch(pattern):
-            found_substituents.append(name)
-
-    # Final verification - molecule should have sufficient complexity
+    # Check molecular complexity
     num_atoms = mol.GetNumAtoms()
-    if num_atoms < 15:  # Typical cephalosporins are larger
+    if num_atoms < 15:
         return False, "Molecule too small to be a cephalosporin"
 
-    return True, f"Contains cephalosporin core structure (beta-lactam fused to dihydrothiazine ring) with typical substituents: {', '.join(found_substituents)}"
+    # Additional check for characteristic sulfur atom
+    sulfur_count = len([atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 16])
+    if sulfur_count < 1:
+        return False, "Missing characteristic sulfur atom"
+
+    reason = "Contains cephalosporin core structure with:"
+    reason += "\n- Beta-lactam fused to dihydrothiazine ring"
+    reason += "\n- Carboxylic acid/carboxylate group"
+    reason += "\n- Amide group"
+    if found_substituents:
+        reason += f"\n- Found substituents: {', '.join(found_substituents)}"
+
+    return True, reason
