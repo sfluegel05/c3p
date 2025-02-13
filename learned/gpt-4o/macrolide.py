@@ -2,12 +2,11 @@
 Classifies: CHEBI:25106 macrolide
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_macrolide(smiles: str):
     """
     Determines if a molecule is a macrolide based on its SMILES string.
-    A macrolide contains a macrocyclic lactone with a ring of twelve or more members.
+    A macrolide contains a macrocyclic lactone ring with 12 or more members derived from a polyketide.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -25,15 +24,18 @@ def is_macrolide(smiles: str):
     # Identify large rings (12 or more members)
     ring_info = mol.GetRingInfo()
     ring_sizes = [len(ring) for ring in ring_info.AtomRings()]
+    large_rings = [ring for ring in ring_info.AtomRings() if len(ring) >= 12]
     
-    has_large_ring = any(size >= 12 for size in ring_sizes)
-    if not has_large_ring:
+    if not large_rings:
         return False, "No ring with 12 or more members found"
 
-    # Look for lactone (cyclic ester) presence
-    lactone_smarts = "[OX2H1][#6]1~[#6](=[OX1])[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~1" # 12-member ring with an ester
-    lactone_pattern = Chem.MolFromSmarts(lactone_smarts)
-    if not mol.HasSubstructMatch(lactone_pattern):
-        return False, "No macrocyclic lactone structure found"
+    # Check for a macrocyclic lactone (cyclic ester) presence
+    # Improved SMARTS pattern for macrocyclic lactone:
+    lactone_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2][#6]~1~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~1")
     
-    return True, "Contains a macrocyclic lactone ring with 12 or more members"
+    for ring in large_rings:
+        submol = Chem.PathToSubmol(mol, ring)
+        if submol.HasSubstructMatch(lactone_pattern):
+            return True, "Contains a macrocyclic lactone ring with 12 or more members"
+
+    return False, "No macrocyclic lactone structure found in large rings"
