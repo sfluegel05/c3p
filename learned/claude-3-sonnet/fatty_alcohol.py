@@ -34,21 +34,32 @@ def is_fatty_alcohol(smiles: str):
         return False, "No alcohol groups found"
 
     # Find longest aliphatic carbon chain
+    chain_pattern = Chem.MolFromSmarts("[CH2][CH2][CH2]")
+    chain_matches = mol.GetSubstructMatches(chain_pattern)
+    if not chain_matches:
+        return False, "No aliphatic carbon chain found"
+
     chain_lengths = []
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 6 and atom.GetIsAromatic() is False:
-            chain = Chem.Mol.GetAtomBrandsDepthFirstSearch(mol, atom.GetIdx())
-            chain_lengths.append(len(chain))
-    if max(chain_lengths) < 3 or max(chain_lengths) > 27:
-        return False, f"Longest carbon chain length ({max(chain_lengths)}) outside of allowed range (3-27)"
+    for match in chain_matches:
+        chain_start = match[0]
+        chain = Chem.Mol.GetAtomBrandsDepthFirstSearch(mol, chain_start)
+        chain_lengths.append(len(chain))
+
+    longest_chain_length = max(chain_lengths)
+
+    if longest_chain_length < 3 or longest_chain_length > 27:
+        return False, f"Longest carbon chain length ({longest_chain_length}) outside of allowed range (3-27)"
 
     # Check for aliphatic (allow branched structures)
     if mol.GetRingInfo().NumRings() > 0:
         return False, "Contains cyclic structures, not allowed"
 
-    # Count unsaturations (double bonds)
+    # Count unsaturations (double bonds and triple bonds)
     num_double_bonds = rdMolDescriptors.CalcNumRotatableBonds(mol) - rdMolDescriptors.CalcNumRotatableBonds(Chem.RemoveHs(mol))
-    if num_double_bonds > max(chain_lengths) - 1:
+    num_triple_bonds = rdMolDescriptors.CalcNumRotatableBonds(mol) - rdMolDescriptors.CalcNumRotatableBonds(Chem.RemoveHs(mol, implicitOnly=False))
+    num_unsaturations = num_double_bonds + num_triple_bonds
+
+    if num_unsaturations > longest_chain_length - 1:
         return False, "Too many unsaturations for carbon chain length"
 
     # Check for forbidden functional groups
