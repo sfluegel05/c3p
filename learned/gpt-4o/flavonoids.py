@@ -21,10 +21,23 @@ def is_flavonoids(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the core flavonoid pattern (using basic representation)
-    flavonoid_pattern = Chem.MolFromSmarts("c1ccccc1-c2cc3c(ccc(O)c3o2)")
+    # Define SMARTS patterns for various flavonoid subclasses
+    flavonoid_core_patterns = [
+        # Basic flavonoid structure
+        Chem.MolFromSmarts("c1cc(O)c2c(c1)C=CC(=O)O2"),
+        # Isoflavonoid structure
+        Chem.MolFromSmarts("c1cc2c(cc1)O[C]=C(C=O)C2"),
+        # Chalcone structure
+        Chem.MolFromSmarts("c1cc(O)cc(c1)C=CC(=O)c2ccccc2"),
+        # Neoflavonoid structure (3-arylchromen-4-one)
+        Chem.MolFromSmarts("c1ccc2c(c1)C=CC(=O)O2"),
+        # Flavanone
+        Chem.MolFromSmarts("c1ccc2c(c1)OC(=O)C(C2)O"),
+    ]
+    
+    # Search for flavonoid core structures
+    for pattern in flavonoid_core_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return True, "Contains flavonoid substructure (phenyl-substituted chromanone or related pattern)"
 
-    if not mol.HasSubstructMatch(flavonoid_pattern):
-        return False, "No core flavonoid structure found"
-
-    return True, "Contains core flavonoid structure (phenyl-substituted benzopyran)"
+    return False, "No core flavonoid substructure found"
