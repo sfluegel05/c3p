@@ -21,15 +21,15 @@ def is_3_hydroxy_fatty_acyl_CoA(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Coenzyme A pattern (simplified for matching the nucleotide portion and phosphates)
-    coa_pattern = Chem.MolFromSmarts("O[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12")
+    
+    # Coenzyme A pattern including ribose, adenine, and phosphates
+    coa_pattern = Chem.MolFromSmarts("NC(=O)C(COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12)C(O)=O")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "Coenzyme A structure not found"
-
-    # 3-hydroxy acyl pattern: C[CH](OH)C(=O) matching a 3-hydroxy group
-    hydroxy_acyl_pattern = Chem.MolFromSmarts("C[CH](O)C(=O)S")
+    
+    # Pattern for 3-hydroxy fatty acyl: 3-hydroxy group bonded to a carbon chain, linked by a thioester bond
+    hydroxy_acyl_pattern = Chem.MolFromSmarts("C[C@@H](O)C(=O)SCC")
     if not mol.HasSubstructMatch(hydroxy_acyl_pattern):
-        return False, "3-hydroxy group with thioester linkage not found"
+        return False, "3-hydroxy group with correct linkage not found"
 
     return True, "Contains structure consistent with a 3-hydroxy fatty acyl-CoA"
