@@ -20,47 +20,32 @@ def is_medium_chain_fatty_acyl_CoA_4__(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Updated CoA moiety pattern
-    coa_pattern = Chem.MolFromSmarts("NC(=O)CCNC(=O)C[C@H](O)C(C)(C)COP(O)(=O)OCC1OC(n2cnc3nc[nH]c(N)c23)[C@@H](O)C1OP(O)(O)=O")
+    # Check for CoA moiety
+    coa_pattern = Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@@H]([C@@H]1OP([O-])([O-])=O)OCN2CN=C(N)N=C2")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No CoA moiety found"
     
-    # Generalized thioester pattern for flexibility
-    thioester_pattern = Chem.MolFromSmarts("C(=O)SC")
-    if not mol.HasSubstructMatch(thioester_pattern):
-        return False, "No thioester linkage found"
+    # Check for medium-chain fatty acyl group, length 6 to 12 carbons
+    # Note: Define pattern for medium chain fatty acyl part
+    fatty_acyl_pattern = Chem.MolFromSmarts("C(=O)S")
+    if not mol.HasSubstructMatch(fatty_acyl_pattern):
+        return False, "No fatty acyl chain connected via thioester bond found"
 
-    # Check for medium-chain length in the fatty acyl portion
-    acyl_pattern = Chem.MolFromSmarts("C(=O)SC")
-    matches = mol.GetSubstructMatches(acyl_pattern)
-    medium_chain_found = False
+    # Extract the aliphatic chain preceding the thioester bond
+    chain_carbon_atoms = []
 
-    for match in matches:
-        # Check chain length from the carbonyl adjacent to thioester
-        carbon_count = 0
-        atom_queue = [mol.GetAtomWithIdx(match[-1])]
-        visited = set()
-        
-        while atom_queue:
-            current_atom = atom_queue.pop(0)
-            if current_atom.GetIdx() not in visited:
-                visited.add(current_atom.GetIdx())
-                if current_atom.GetSymbol() == 'C':
-                    carbon_count += 1
-                for neighbor in current_atom.GetNeighbors():
-                    if neighbor.GetIdx() not in visited and neighbor.GetSymbol() in ['C', 'H']:
-                        atom_queue.append(neighbor)
-
-        if 8 <= carbon_count <= 12:
-            medium_chain_found = True
-            break
+    for atom in mol.GetAtoms():
+        # Only consider aliphatic carbon atoms
+        if atom.GetAtomicNum() == 6 and atom.GetDegree() == 4:
+            chain_carbon_atoms.append(atom)
     
-    if not medium_chain_found:
-        return False, "No medium-chain (8-12 carbons) fatty acyl portion found"
+    # Check the length of the chain is within 6 to 12 carbons
+    if len(chain_carbon_atoms) < 6 or len(chain_carbon_atoms) > 12:
+        return False, f"Carbon chain length {len(chain_carbon_atoms)} is not medium-chain (6-12 carbons)"
 
-    # Check for the number of deprotonated oxygens
-    deprotonated_oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetFormalCharge() == -1)
-    if deprotonated_oxygen_count < 4:
-        return False, f"Insufficient number of deprotonated oxygens: {deprotonated_oxygen_count}"
+    # Check deprotonation (4- charge) of phosphate and diphosphate groups
+    phosphate_matches = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetFormalCharge() == -1]
+    if len(phosphate_matches) < 4:
+        return False, f"Insufficient deprotonated oxygens detected, found {len(phosphate_matches)}"
 
     return True, "Molecule is a medium-chain fatty acyl-CoA(4-)"
