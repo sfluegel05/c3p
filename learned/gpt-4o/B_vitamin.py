@@ -23,16 +23,16 @@ def is_B_vitamin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define improved and specific SMARTS patterns for B vitamins
+    # Define SMARTS patterns for B vitamins
     b_vitamins_patterns = {
-        'Vitamin B1 (thiamine and derivatives)': 'Cn1cnc(C)[n+](c1C)CCOP(O)(=O)O',  # Specific to phosphorylated forms
-        'Vitamin B2 (riboflavin and derivatives)': 'CNC1=NC2=C(NC1=O)c3c4c(cnc(c4)O)cnc3C2=O',  # Core isoalloxazine structure
-        'Vitamin B3 (niacin and derivatives)': 'c1cc(c(nc1)C(=O)O)[Nh]',  # Add tautomeric forms
-        'Vitamin B5 (pantothenic acid and derivatives)': 'NC(CCC([O-])=O)C(=O)O[C@H](CO)C(C)(C)[H]',  # Include stereochemistry
-        'Vitamin B6 (pyridoxal and derivatives)': 'c1cn(C)c(CO)c(O)c1C(=O)O',  # Pyridine-based with functionalized groups
-        'Vitamin B7 (biotin and derivatives)': 'OC(=O)CCC[C@H]1N2CC(C2)SC1',  # Include both ring and open chain forms
-        'Vitamin B9 (folic acid and derivatives)': 'CN1C=NC2=C1c1c(c(=O)n(cn1)[nH]2)c1ccc(NC(=O)C2=NN=C3C=CC=CC3=N2)cc1',  # More detailed with folate chain
-        'Vitamin B12 (cobalamin-related)': '[Co]([C@@H]1NC(CCN1C=CC2=NC[C@@H](CC2)C(C)C)C3=CNC4=C3C=CC2=C4)C',  # Focus on cobalt core structure
+        'Vitamin B1 (thiamine)': '[n+]-C-C-S',
+        'Vitamin B2 (riboflavin)': 'C1=C(C=CC2=C1NC3=C(C=CC(=C3N=C2)O)O)O',
+        'Vitamin B3 (niacin)': 'C1=CC=C(C=C1)C(=O)N',
+        'Vitamin B5 (pantothenic acid)': 'C(C(C(C(=O)N)CO)C(=O)O)C',
+        'Vitamin B6 (pyridoxine and derivatives)': 'c1c(CO)cnc(C)c1O',
+        'Vitamin B7 (biotin)': '[H][C@@]1(C2=SCC[NH2+]2)[C@@H](C(=O)NC1)CCCCC(=O)O',
+        'Vitamin B9 (folic acid and derivatives)': 'NC1=C(NC=NC2=C1N=C(NC2=O)N)C3=CC=CC=C3',
+        'Vitamin B12 (cobalamin-related structures)': 'CNC1=CC2=C(C=C1)N=C(N=O2)C=3[C@H]([C@H]([C@H](O3)O)O)C'
     }
     
     # Check for substructures
