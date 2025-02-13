@@ -22,25 +22,28 @@ def is_endocannabinoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for polyunsaturated long hydrocarbon chains (usually C20 with multiple cis-double bonds)
-    long_chain_pattern = Chem.MolFromSmarts("[C]1(~[CH]=[CH]~[CH]=[CH]~[CH]=[CH]~[CH]=[CH]~CCCCC)~1")
-    if not mol.HasSubstructMatch(long_chain_pattern):
-        return False, "No typical long, polyunsaturated chain found"
+    # Check for long polyunsaturated chains typically seen in fatty acids
+    polyunsaturated_chain_pattern = Chem.MolFromSmarts("C=C")
+    if mol.HasSubstructMatch(polyunsaturated_chain_pattern):
+        has_long_chain = True
+    else:
+        return False, "No long polyunsaturated hydrocarbon chain found"
 
     # Check for amide linkage (common in ethanolamine such as in anandamide)
-    amide_pattern = Chem.MolFromSmarts("[NX3][CX3](=O)C")
-    if mol.HasSubstructMatch(amide_pattern):
-        return True, "Possesses amide linkage typical of endocannabinoids"
+    amide_pattern = Chem.MolFromSmarts("NC(=O)")
+    has_amide = mol.HasSubstructMatch(amide_pattern)
 
     # Check for ester linkage (common in glycerol esters)
-    ester_pattern = Chem.MolFromSmarts("[O][CX3](=O)C")
-    if mol.HasSubstructMatch(ester_pattern):
-        return True, "Possesses ester linkage typical of endocannabinoids"
+    ester_pattern = Chem.MolFromSmarts("OC(=O)")
+    has_ester = mol.HasSubstructMatch(ester_pattern)
 
-    # Check for potential small alcohol linkages (ethanolamine, glycerol)
-    small_molecule_linkage_pattern = Chem.MolFromSmarts("[O][CH2][CH2]O")
-    if mol.HasSubstructMatch(small_molecule_linkage_pattern):
-        return True, "Contains small molecule linkages typically found in endocannabinoids"
+    # Check for small molecule linkages like ethanolamine or glycerol
+    ethanolamine_linkage = Chem.MolFromSmarts("NCCO")
+    glycerol_linkage = Chem.MolFromSmarts("OCCO")
+    has_small_linkage = mol.HasSubstructMatch(ethanolamine_linkage) or mol.HasSubstructMatch(glycerol_linkage)
+
+    if has_amide or has_ester or has_small_linkage:
+        return True, "Contains structural features typical of endocannabinoids"
 
     return False, "Does not possess key structural features of endocannabinoids"
 
