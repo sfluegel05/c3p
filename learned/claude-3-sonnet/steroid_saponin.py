@@ -25,10 +25,16 @@ def is_steroid_saponin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for steroid backbone (4 fused rings, 3 rings with 6 carbons, 1 ring with 5 carbons)
-    steroid_pattern = Chem.MolFromSmarts("[C&r5,r6]1[C&r5,r6][C&r5,r6][C&r5,r6][C&r5,r6][C&r5,r6]1[C&r5,r6]2[C&r5,r6][C&r5,r6][C&r5,r6][C&r5,r6][C&r6]2[C&r5,r6]3[C&r5,r6][C&r5,r6][C&r5,r6][C&r5]3")
-    if not mol.HasSubstructMatch(steroid_pattern):
-        return False, "No steroid backbone found"
+    # Check for cyclopentanoperhydrophenanthrene scaffold (core steroid structure)
+    steroid_core_pattern = Chem.MolFromSmarts("[C&r5,r6]1[C&r5,r6][C&r5,r6][C&r5,r6][C&r5,r6][C&r5,r6]1[C&r5,r6]2[C&r5,r6][C&r5,r6][C&r5,r6][C&r5,r6][C&r6]2")
+    if not mol.HasSubstructMatch(steroid_core_pattern):
+        return False, "No steroid core found"
+    
+    # Check for an additional fused ring (5, 6, or 7 carbons)
+    ring_sizes = [5, 6, 7]
+    has_additional_ring = any(mol.HasSubstructMatch(Chem.MolFromSmarts(f"[C&r{size}]")) for size in ring_sizes)
+    if not has_additional_ring:
+        return False, "No additional fused ring found"
     
     # Check for OH groups (hydroxysteroid)
     n_oh = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and sum(bond.GetBondTypeAsDouble() < 2 for bond in atom.GetBonds()) > 0)
