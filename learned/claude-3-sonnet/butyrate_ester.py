@@ -25,31 +25,44 @@ def is_butyrate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for ester group pattern (-O-C(=O)-)
+    # Look for basic ester group pattern (-O-C(=O)-)
     ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
     if not mol.HasSubstructMatch(ester_pattern):
         return False, "No ester group found"
     
-    # Look for butyrate ester pattern: -O-C(=O)-CH2-CH2-CH3
-    # This matches the butyric acid component connected via an ester bond
-    butyrate_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])[CH2X4][CH2X4][CH3X4]")
+    # Look for butyrate ester pattern with more flexible matching
+    # Allow for potential substitutions on the carbon chain
+    butyrate_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])[$([CX4H2]),$([CX4H1]),$([CX4H0])][$([CX4H2]),$([CX4H1]),$([CX4H0])][CX4]")
     matches = mol.GetSubstructMatches(butyrate_pattern)
     
     if not matches:
         return False, "No butyrate ester group found"
     
-    # For each potential match, verify it's a butyrate ester by checking:
-    # 1. The carbon chain is exactly 3 carbons (plus the carbonyl carbon)
-    # 2. No branching in the butyric acid part
+    # For each potential match, verify it's a butyrate ester
     for match in matches:
-        # Get the atoms involved in the match
-        ester_o, carbonyl_c, c1, c2, c3 = [mol.GetAtomWithIdx(idx) for idx in match]
-        
-        # Check that the carbons in the chain have correct number of hydrogens
-        # C1 and C2 should be CH2, C3 should be CH3
-        if (c1.GetTotalNumHs() == 2 and 
-            c2.GetTotalNumHs() == 2 and 
-            c3.GetTotalNumHs() == 3):
-            return True, "Contains butyrate ester group (-O-C(=O)-CH2-CH2-CH3)"
+        if len(match) < 5:  # Safety check
+            continue
             
+        # Get the atoms involved in the match
+        ester_o = mol.GetAtomWithIdx(match[0])
+        carbonyl_c = mol.GetAtomWithIdx(match[1])
+        c1 = mol.GetAtomWithIdx(match[2])
+        c2 = mol.GetAtomWithIdx(match[3])
+        c3 = mol.GetAtomWithIdx(match[4])
+        
+        # Verify the basic connectivity
+        if not all([atom.GetDegree() <= 4 for atom in [c1, c2, c3]]):
+            continue
+            
+        # Check that we have a proper carbon chain
+        # Allow for substitutions but verify basic carbon backbone
+        if (c1.GetAtomicNum() == 6 and 
+            c2.GetAtomicNum() == 6 and 
+            c3.GetAtomicNum() == 6):
+            
+            # Check that the chain is properly terminated
+            # The last carbon should have at least one hydrogen
+            if c3.GetTotalNumHs() >= 1:
+                return True, "Contains butyrate ester group (R-O-C(=O)-CH2-CH2-CH3 or substituted variant)"
+    
     return False, "Found similar structure but not a true butyrate ester"
