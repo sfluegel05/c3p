@@ -22,7 +22,9 @@ def is_methyl_sulfide(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define the SMARTS pattern for sulfur bonded to a methyl group
-    methyl_sulfide_pattern = Chem.MolFromSmarts("[$(S-[CH3])]")
+    # Ensure sulfur (S) is bonded to a methyl group (CH3) without directly bonding to oxygen or nitrogen
+    # which would indicate sulfoxides or sulfones, hence requiring specificity for simple methylthio groups
+    methyl_sulfide_pattern = Chem.MolFromSmarts("[S;D2]-[CH3]")
 
     # Check if there is any sulfur atom with a bonded methyl group
     if mol.HasSubstructMatch(methyl_sulfide_pattern):
@@ -35,7 +37,7 @@ example_smiles = [
     "O=C(O)[C@@H](N)CCCCSC",
     "CSc1nc(N)nc(N)n1",
     "O=C(O)[C@@H](N)CCCCCSC",
-    "C(=C/C(O)=O)(\CCCSC)/C(=O)O",
+    "C(=C/C(O)=O)(\\CCCSC)/C(=O)O",
     "CSCCCO",
     "CCSC"
 ]
