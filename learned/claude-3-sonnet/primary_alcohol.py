@@ -2,9 +2,10 @@
 Classifies: CHEBI:15734 primary alcohol
 """
 """
-Classifies: CHEBI:15734 primary alcohol
-
-A primary alcohol is a compound in which a hydroxy group, -OH, is attached to a saturated carbon atom which has either three hydrogen atoms attached to it or only one other carbon atom and two hydrogen atoms attached to it.
+Classifies: CHEBI:15677 primary alcohol
+A primary alcohol is a compound in which a hydroxy group, -OH, is attached to a saturated 
+carbon atom which has either three hydrogen atoms attached to it or only one other carbon atom
+and two hydrogen atoms attached to it.
 """
 
 from rdkit import Chem
@@ -27,28 +28,23 @@ def is_primary_alcohol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Find all hydroxy (-OH) groups
-    hydroxy_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetTotalNumHs() == 1]
+    # Find all hydroxy groups (-OH)
+    hydroxy_pattern = Chem.MolFromSmarts("[OH]")
+    hydroxy_atoms = mol.GetSubstructMatches(hydroxy_pattern)
     
-    # Check if at least one hydroxy group is present
-    if not hydroxy_atoms:
-        return False, "No hydroxy (-OH) group found"
-    
-    # Check each hydroxy group
-    for hydroxy_atom in hydroxy_atoms:
-        # Get the carbon atom attached to the hydroxy group
+    # Check each hydroxy to see if it is primary
+    for hydroxy_idx in hydroxy_atoms:
+        hydroxy_atom = mol.GetAtomWithIdx(hydroxy_idx)
         carbon = hydroxy_atom.GetNeighbors()[0]
         
-        # Check if the carbon is saturated (all bonds are single)
-        if sum(bond.GetBondType() == Chem.BondType.SINGLE for bond in carbon.GetBonds()) != len(carbon.GetBonds()):
+        # Check if carbon is saturated (has 4 neighbors)
+        if carbon.GetTotalDegree() != 4:
             continue
         
-        # Check if the carbon has 3 hydrogens or 1 carbon + 2 hydrogens
-        carbon_neighbors = carbon.GetNeighbors()
-        hydrogen_count = sum(1 for neighbor in carbon_neighbors if neighbor.GetAtomicNum() == 1)
-        carbon_count = sum(1 for neighbor in carbon_neighbors if neighbor.GetAtomicNum() == 6 and not neighbor.IsInRingSize(3))
-        
-        if hydrogen_count == 3 or (hydrogen_count == 2 and carbon_count == 1):
-            return True, "Contains a hydroxy (-OH) group attached to a saturated carbon atom with either 3 hydrogens or 1 carbon and 2 hydrogens"
+        # Check if carbon has 3 hydrogens OR 1 carbon and 2 hydrogens
+        neighbors = [nbr.GetAtomicNum() for nbr in carbon.GetNeighbors()]
+        if neighbors.count(1) == 3 or (neighbors.count(6) == 1 and neighbors.count(1) == 2):
+            return True, "Contains a primary alcohol group (-OH attached to a saturated carbon with 3 H's or 1 C + 2 H's)"
     
-    return False, "No primary alcohol group found"
+    # If no primary alcohols found
+    return False, "No primary alcohol groups found"
