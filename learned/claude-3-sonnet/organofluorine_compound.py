@@ -25,17 +25,24 @@ def is_organofluorine_compound(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for fluorine atoms
-    has_fluorine = any(atom.GetAtomicNum() == 9 for atom in mol.GetAtoms())
-    
     # Check for carbon-fluorine bonds
-    has_c_f_bond = any(atom.GetAtomicNum() == 9 and
-                       any(nbr.GetAtomicNum() == 6 for nbr in atom.GetNeighbors())
-                       for atom in mol.GetAtoms())
+    has_c_f_bond = False
+    for bond in mol.GetBonds():
+        atom1 = bond.GetBeginAtom()
+        atom2 = bond.GetEndAtom()
+        if (atom1.GetAtomicNum() == 6 and atom2.GetAtomicNum() == 9) or (atom1.GetAtomicNum() == 9 and atom2.GetAtomicNum() == 6):
+            has_c_f_bond = True
+            break
+    
+    # Check for fluorinated alkyl groups
+    if not has_c_f_bond:
+        smarts_patterns = ['[C]C(F)(F)(F)', '[C]C(F)(F)']
+        for pattern in smarts_patterns:
+            if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+                has_c_f_bond = True
+                break
     
     if has_c_f_bond:
         return True, "Contains at least one carbon-fluorine bond"
-    elif has_fluorine:
-        return False, "Contains fluorine but no carbon-fluorine bonds"
     else:
-        return False, "Does not contain any fluorine atoms"
+        return False, "Does not contain any carbon-fluorine bonds"
