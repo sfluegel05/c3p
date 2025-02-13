@@ -6,7 +6,6 @@ Classifies: CHEBI:51714 prenylquinone
 """
 from rdkit import Chem
 from rdkit.Chem import rdqueries
-from rdkit.Chem import rdMolDescriptors
 
 def is_prenylquinone(smiles: str):
     """
@@ -37,16 +36,13 @@ def is_prenylquinone(smiles: str):
     if not prenyl_matches:
         return False, "No prenyl side-chain found"
 
-    # Check that prenyl chain(s) are connected to the quinone
+    # Check that prenyl chain(s) are connected to or near the quinone
     quinone_atoms = set(atom.GetIdx() for match in mol.GetSubstructMatches(quinone_pattern) for atom in match)
     prenyl_atoms = set(atom for match in prenyl_matches for atom in match)
-    connected_atoms = quinone_atoms.intersection(prenyl_atoms)
-    if not connected_atoms:
-        return False, "Prenyl side-chain(s) not connected to quinone"
+    nearby_atoms = set()
+    for prenyl_atom in prenyl_atoms:
+        nearby_atoms.update(mol.GetAtomWithIdx(prenyl_atom).GetNeighbors())
+    if not quinone_atoms.intersection(nearby_atoms):
+        return False, "Prenyl side-chain(s) not connected or near the quinone"
 
-    # Check for polyprenyl chains (at least two prenyl units)
-    n_isoprene_units = rdMolDescriptors.CalcNumAliphaticRings(mol)
-    if n_isoprene_units < 2:
-        return False, "Only one prenyl unit found, need at least two"
-
-    return True, "Contains a quinone substructure with one or more polyprenyl side-chains"
+    return True, "Contains a quinone substructure with one or more prenyl side-chains"
