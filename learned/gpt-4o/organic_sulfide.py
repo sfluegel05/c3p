@@ -6,7 +6,8 @@ from rdkit import Chem
 def is_organic_sulfide(smiles: str):
     """
     Determines if a molecule is an organic sulfide based on its SMILES string.
-    An organic sulfide has a sulfur atom bonded to two carbon atoms, represented as R-S-R.
+    An organic sulfide has a sulfur atom bonded to two organic groups, designated as R1-S-R2,
+    where neither R1 nor R2 is a hydrogen atom.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -15,20 +16,27 @@ def is_organic_sulfide(smiles: str):
         bool: True if molecule is an organic sulfide, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES string to RDKit molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern: Match sulfur with two alkyl/aromatic groups
-    sulfide_pattern = Chem.MolFromSmarts("[C;!H0][S][C;!H0]")  # Avoid chemo-specific [SH] types
+    # Define SMARTS pattern: Match sulfur with likely organic surroundings
+    # This pattern considers more versatile scenarios including complex organic attachments
+    sulfide_patterns = [
+        "[C,c][S][C,c]",  # Basic organic paths, allows aromatic or non-aromatic
+        "[a][S][!#1]",    # Aromatic atoms connected to sulfur, not hydrogen
+        "[!#1][S][!#1]"   # More general check where sulfur is not bonded to any hydrogen
+    ]
 
-    # Check molecule for organic sulfide structure
-    if mol.HasSubstructMatch(sulfide_pattern):
-        return True, "Contains organic sulfide group (R-S-R where R is not H)"
-    else:
-        return False, "No organic sulfide group found"
+    # Check molecule for organic sulfide structure using multiple patterns
+    for pattern in sulfide_patterns:
+        sulfide_match = Chem.MolFromSmarts(pattern)
+        if mol.HasSubstructMatch(sulfide_match):
+            return True, f"Contains organic sulfide group matching pattern: {pattern}"
+
+    return False, "No organic sulfide group found"
 
 # Test with various SMILES examples
 test_smiles = [
