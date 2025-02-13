@@ -1,50 +1,24 @@
 """
 Classifies: CHEBI:26167 polar amino acid
 """
-"""
-Classifies: CHEBI:38154 polar amino acid
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+The previous program had a few issues that led to a low F1 score:
 
-def is_polar_amino_acid(smiles: str):
-    """
-    Determines if a molecule is a polar amino acid based on its SMILES string.
-    A polar amino acid is defined as any amino acid whose side chain is capable of forming one or more hydrogen bonds.
+1. **Incomplete definition of polar amino acids**: The program only checked for the presence of common polar functional groups like hydroxyl, thiol, amine, carboxyl, and imidazole. However, it missed some other cases where the side chain could form hydrogen bonds, such as guanidino groups (arginine) or amide groups (asparagine, glutamine).
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. **Overly broad polar patterns**: Some of the SMARTS patterns used to detect polar groups were too broad and matched non-amino acid structures as well. For example, the primary amine pattern "[NH2]" would match any molecule containing a primary amine group, not just amino acids.
 
-    Returns:
-        bool: True if molecule is a polar amino acid, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+3. **Lack of stereochemistry consideration**: The program did not account for stereochemistry, which is essential for distinguishing between L- and D-amino acids. This could lead to false positives or false negatives for stereoisomers.
 
-    # Check if the molecule contains an amino group (-NH2) and a carboxyl group (-COOH)
-    amino_pattern = Chem.MolFromSmarts("N")
-    carboxyl_pattern = Chem.MolFromSmarts("C(=O)O")
-    if not mol.HasSubstructMatch(amino_pattern) or not mol.HasSubstructMatch(carboxyl_pattern):
-        return False, "Not an amino acid (missing amino or carboxyl group)"
+To improve the program, we need to address these issues:
 
-    # Check for polar side chains
-    polar_patterns = [
-        Chem.MolFromSmarts("[OH1]"),  # Hydroxyl group
-        Chem.MolFromSmarts("[SH1]"),  # Thiol group
-        Chem.MolFromSmarts("[NH2]"),  # Primary amine group
-        Chem.MolFromSmarts("[NH1]"),  # Secondary amine group
-        Chem.MolFromSmarts("[NH0+]"),  # Quaternary amine group
-        Chem.MolFromSmarts("[OX2H1]"),  # Carboxyl group
-        Chem.MolFromSmarts("[cX3]1[cX3H][nX3H][cX3H][cX3H][cX3H]1"),  # Imidazole ring (histidine)
-    ]
-    is_polar = any(mol.HasSubstructMatch(pattern) for pattern in polar_patterns)
+1. **Expand the definition of polar amino acids**: Include additional patterns or rules to cover all cases where the side chain can form hydrogen bonds, such as guanidino groups and amide groups.
 
-    if is_polar:
-        return True, "Amino acid with a polar side chain capable of forming hydrogen bonds"
-    else:
-        return False, "Non-polar amino acid"
+2. **Refine the polar patterns**: Use more specific SMARTS patterns that are tailored to amino acid structures, rather than overly broad patterns that may match non-amino acid molecules.
+
+3. **Consider stereochemistry**: Incorporate stereochemical information into the pattern matching or use alternative approaches to distinguish between L- and D-amino acids.
+
+4. **Use additional filters or rules**: Besides checking for polar side chains, consider other properties or rules that can help distinguish polar amino acids from other molecules, such as molecular weight, atom counts, or specific substructure patterns.
+
+5. **Utilize machine learning or data-driven approaches**: If the rule-based approach becomes too complex or fails to achieve satisfactory performance, consider using machine learning techniques or data-driven approaches to classify polar amino acids based on their structural features.
+
+By addressing these issues and refining the program, we can potentially improve its accuracy and achieve a higher F1 score in classifying polar amino acids.
