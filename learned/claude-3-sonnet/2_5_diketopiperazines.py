@@ -7,7 +7,7 @@ Classifies: CHEBI:50813 2,5-diketopiperazines
 from rdkit import Chem
 from rdkit.Chem import AllChem
 
-def is_2_5_diketopiperazines(smiles: str):
+def is_2_5_diketopiperazine(smiles: str):
     """
     Determines if a molecule is a 2,5-diketopiperazine based on its SMILES string.
     A 2,5-diketopiperazine contains a piperazine-2,5-dione skeleton.
@@ -31,7 +31,7 @@ def is_2_5_diketopiperazines(smiles: str):
         return False, "No piperazine-2,5-dione skeleton found"
 
     # Check for cyclic structure
-    if not mol.GetRingInfo().AtomRings():
+    if not mol.GetRingInfo().IsAtomRingBond(0):
         return False, "Structure is not cyclic"
 
     # Count nitrogens and oxygens
