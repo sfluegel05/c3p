@@ -2,12 +2,11 @@
 Classifies: CHEBI:27283 very long-chain fatty acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdmolops
 
 def is_very_long_chain_fatty_acid(smiles: str):
     """
     Determines if a molecule is a very long-chain fatty acid based on its SMILES string.
-    A very long-chain fatty acid has a carbon chain length greater than 22.
+    A very long-chain fatty acid has a chain length greater than 22.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -28,36 +27,23 @@ def is_very_long_chain_fatty_acid(smiles: str):
     if not carboxyl_matches:
         return False, "No carboxylic acid group found"
 
-    max_chain_length = 0
-    
-    def count_longest_chain_from_atom(atom_index):
-        visited = set()
-        stack = [(atom_index, 0)]  # (current_atom_index, current_chain_length)
-        max_length = 0
+    def dfs_chain_length(atom_index, visited, chain_length):
+        visited.add(atom_index)
+        max_length = chain_length
 
-        while stack:
-            current_atom, current_length = stack.pop()
-            if current_atom not in visited:
-                visited.add(current_atom)
-                found_extension = False
-                
-                for neighbor in mol.GetAtomWithIdx(current_atom).GetNeighbors():
-                    neighbor_index = neighbor.GetIdx()
+        for neighbor in mol.GetAtomWithIdx(atom_index).GetNeighbors():
+            neighbor_index = neighbor.GetIdx()
+            if neighbor_index not in visited and neighbor.GetAtomicNum() == 6:
+                max_length = max(max_length, dfs_chain_length(neighbor_index, visited.copy(), chain_length + 1))
 
-                    # Continue if we find a carbon that is not the one in the carboxyl group and is not visited
-                    if neighbor_index not in visited and neighbor.GetAtomicNum() == 6:  # is a carbon
-                        stack.append((neighbor_index, current_length + 1))
-                        found_extension = True
-
-                if not found_extension:
-                    max_length = max(max_length, current_length)
-        
         return max_length
+
+    max_chain_length = 0
 
     # Measure max chain length from each carboxylic acid group's primary carbon atom
     for match in carboxyl_matches:
         carbon_in_carboxyl = match[0]  # The first atom in the match is the carbon atom
-        chain_length = count_longest_chain_from_atom(carbon_in_carboxyl)
+        chain_length = dfs_chain_length(carbon_in_carboxyl, set(), 1)  # Start the chain length count from the first carbon
 
         if chain_length > max_chain_length:
             max_chain_length = chain_length
