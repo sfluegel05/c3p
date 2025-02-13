@@ -19,45 +19,68 @@ def is_bile_acid_conjugate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
         
-    # Check for steroid core (four connected rings)
-    steroid_core = Chem.MolFromSmarts("[#6]1~[#6]~[#6]~[#6]2~[#6]~[#6]~[#6]~[#6]3~[#6]~[#6]~[#6]4~[#6]~[#6]~[#6]~[#6]~[#6]4~[#6]~[#6]3~[#6]~[#6]2~[#6]~1")
-    if not mol.HasSubstructMatch(steroid_core):
+    # Check for steroid core (four connected rings) - more flexible pattern
+    steroid_core = Chem.MolFromSmarts("C1C(C)CCC2C1CCC3C2CC(C)C4CCC(C)C34")
+    steroid_core2 = Chem.MolFromSmarts("C1CC2CCC3C(C2C1)CCC4C3(C)CCC4") # Alternative pattern
+    
+    if not (mol.HasSubstructMatch(steroid_core) or mol.HasSubstructMatch(steroid_core2)):
         return False, "No steroid core structure found"
 
-    # Check for carboxylic acid group
-    carboxylic_acid = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
-    if not mol.HasSubstructMatch(carboxylic_acid):
-        return False, "No carboxylic acid group found"
-        
     # Check for conjugation patterns
     
-    # 1. Amino acid conjugation (look for amide bond + carboxylic acid)
-    amino_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[NX3][CX4][CX3](=O)[OX2H1]")
+    # 1. Amino acid conjugations (multiple patterns)
+    amino_acid_patterns = [
+        Chem.MolFromSmarts("[CX3](=O)[NX3][CX4][CX3](=O)[OX2H1,OX1-]"), # General amino acid
+        Chem.MolFromSmarts("[CX3](=O)[NX3]CC(=O)[OX2H1,OX1-]"), # Glycine
+        Chem.MolFromSmarts("[CX3](=O)[NX3]C(C)C(=O)[OX2H1,OX1-]"), # Alanine
+        Chem.MolFromSmarts("[CX3](=O)[NX3]C(CC(=O)[OX2H1,OX1-])C(=O)[OX2H1,OX1-]"), # Aspartic acid
+        Chem.MolFromSmarts("[CX3](=O)[NX3]C(Cc1ccccc1)C(=O)[OX2H1,OX1-]"), # Phenylalanine
+    ]
     
-    # 2. Taurine conjugation
-    taurine_pattern = Chem.MolFromSmarts("[CX3](=O)[NX3][CX4][CX4][SX4](=O)(=O)[OX2H1,OX1-]")
+    # 2. Taurine conjugation patterns
+    taurine_patterns = [
+        Chem.MolFromSmarts("[CX3](=O)[NX3]CCS(=O)(=O)[OX2H1,OX1-]"),
+        Chem.MolFromSmarts("[CX3](=O)[NX3]CCO[SX4](=O)(=O)[OX2H1,OX1-]")
+    ]
     
     # 3. Sulfate conjugation
     sulfate_pattern = Chem.MolFromSmarts("[OX2]S(=O)(=O)[OX2H1,OX1-]")
     
-    # 4. Glucuronic acid conjugation (simplified pattern)
-    glucuronic_pattern = Chem.MolFromSmarts("[OX2]C1[OX2][CX4][CX4][CX4]([CX3](=O)[OX2H1])[CX4]1")
-    
-    # 5. Sugar conjugation (simplified pattern for glucose)
-    sugar_pattern = Chem.MolFromSmarts("[OX2]C1[OX2][CX4][CX4][CX4][CX4]1")
-    
-    conjugation_patterns = [
-        (amino_acid_pattern, "amino acid"),
-        (taurine_pattern, "taurine"),
-        (sulfate_pattern, "sulfate"),
-        (glucuronic_pattern, "glucuronic acid"),
-        (sugar_pattern, "sugar")
+    # 4. Glucuronic acid conjugation
+    glucuronic_patterns = [
+        Chem.MolFromSmarts("OC1OC(C(=O)O)C(O)C(O)C1O"),
+        Chem.MolFromSmarts("OC1OC(C(=O)[OH1,O-])C(O)C(O)C1")
     ]
     
+    # 5. Sugar conjugation (more general pattern)
+    sugar_pattern = Chem.MolFromSmarts("OC1OC(CO)C(O)C(O)C1")
+    
+    # Check for conjugations
     found_conjugations = []
-    for pattern, name in conjugation_patterns:
+    
+    # Check amino acid patterns
+    for pattern in amino_acid_patterns:
         if pattern is not None and mol.HasSubstructMatch(pattern):
-            found_conjugations.append(name)
+            found_conjugations.append("amino acid")
+            break
+            
+    # Check taurine patterns
+    for pattern in taurine_patterns:
+        if pattern is not None and mol.HasSubstructMatch(pattern):
+            found_conjugations.append("taurine")
+            break
+            
+    # Check other patterns
+    if sulfate_pattern is not None and mol.HasSubstructMatch(sulfate_pattern):
+        found_conjugations.append("sulfate")
+        
+    for pattern in glucuronic_patterns:
+        if pattern is not None and mol.HasSubstructMatch(pattern):
+            found_conjugations.append("glucuronic acid")
+            break
+            
+    if sugar_pattern is not None and mol.HasSubstructMatch(sugar_pattern):
+        found_conjugations.append("sugar")
             
     if not found_conjugations:
         return False, "No conjugation patterns found"
@@ -68,5 +91,10 @@ def is_bile_acid_conjugate(smiles: str):
     
     if hydroxyl_matches < 1:
         return False, "No hydroxyl groups found on steroid core"
-        
-    return True, f"Bile acid conjugated with {', '.join(found_conjugations)}"
+    
+    # Additional checks for molecular properties
+    mol_weight = Chem.Descriptors.ExactMolWt(mol)
+    if mol_weight < 300 or mol_weight > 1200:
+        return False, "Molecular weight outside typical range for bile acid conjugates"
+    
+    return True, f"Bile acid conjugated with {', '.join(set(found_conjugations))}"
