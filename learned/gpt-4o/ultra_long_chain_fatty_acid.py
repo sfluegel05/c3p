@@ -22,34 +22,35 @@ def is_ultra_long_chain_fatty_acid(smiles: str):
         return False, "Invalid SMILES string"
     
     # Look for carboxylic acid group (COOH)
-    carboxylic_pattern = Chem.MolFromSmarts("C(=O)O")
+    carboxylic_pattern = Chem.MolFromSmarts("C(=O)[O;H,-]")
     if not mol.HasSubstructMatch(carboxylic_pattern):
         return False, "No carboxylic acid group found"
-    
-    def get_longest_carbon_chain(mol):
-        """ Finds the longest path of carbon atoms in the molecule """
+
+    def get_longest_linear_carbon_chain(mol):
+        """ Finds the longest path of linear, acyclic carbon atoms in the molecule """
         longest_chain = 0
         for atom in mol.GetAtoms():
             if atom.GetAtomicNum() == 6:  # Only consider carbon atoms
                 visited = set()
-                current_chain = explore_chain(atom, visited)
+                current_chain = explore_linear_chain(atom, visited)
                 longest_chain = max(longest_chain, current_chain)
         return longest_chain
-    
-    def explore_chain(atom, visited):
-        """ Explore carbon chain starting at the given atom """
-        if atom.GetAtomicNum() != 6:
+
+    def explore_linear_chain(atom, visited):
+        """ Explore acyclic carbon chain starting at the given atom """
+        if atom.GetAtomicNum() != 6 or atom.GetIsAromatic():  # Avoid aromatic carbons
             return 0
         visited.add(atom.GetIdx())
         max_length = 0
         for neighbor in atom.GetNeighbors():
-            if neighbor.GetIdx() not in visited and neighbor.GetAtomicNum() == 6:
-                chain_length = explore_chain(neighbor, visited.copy())
+            if neighbor.GetIdx() not in visited and neighbor.GetAtomicNum() == 6 and len(neighbor.GetNeighbors()) <= 4:
+                # Ensure acyclic by limiting bonds
+                chain_length = explore_linear_chain(neighbor, visited.copy())
                 max_length = max(max_length, chain_length)
         return max_length + 1
-    
-    # Calculate the longest carbon chain in the molecule
-    longest_chain_length = get_longest_carbon_chain(mol)
+
+    # Calculate the longest linear carbon chain in the molecule
+    longest_chain_length = get_longest_linear_carbon_chain(mol)
     
     if longest_chain_length > 27:
         return True, f"Contains a carbon chain of length {longest_chain_length}, qualifying as ultra-long-chain"
