@@ -26,20 +26,22 @@ def is_macromolecule(smiles: str):
     if mol_wt < 1000:
         return False, f"Molecular weight too low ({mol_wt} < 1000 g/mol)"
     
-    # Look for repeating units which could indicate a polymeric structure
-    # Simplified approach: check for duplicate substructs within reasonable size
-    fragment_counts = Chem.rdMolDescriptors.CalcNumRings(mol)
-    if fragment_counts < 5:
-        return False, "No significant repeating structural motifs"
+    # Check for repeating structural motifs using substructure search (simplified approximation)
+    # Typical motifs for proteins or glycosylated compounds and synthetic polymers
+    repeating_motif_patterns = [
+        "[NX3][CX3](=O)C", # Amide bonds (peptide linkage)
+        "C(=O)O",         # Ester bonds (polyester)
+        "[OX2H]",         # Hydroxyls, capping extended chains like in polysaccharides
+    ]
     
-    # Check for high complexity: high number of atoms and bonds
-    num_atoms = mol.GetNumAtoms()
-    num_bonds = mol.GetNumBonds()
-    if num_atoms > 100 and num_bonds > 150:
-        return True, f"Contains {num_atoms} atoms and {num_bonds} bonds indicating high complexity"
-    
-    # If both high molecular weight and repeating motifs are detected
-    if mol_wt >= 1000 and fragment_counts >= 5:
-        return True, f"Considerable molecular weight and repeating structural motifs"
+    matches_count = sum(mol.HasSubstructMatch(Chem.MolFromSmarts(pat)) for pat in repeating_motif_patterns)
+    if matches_count >= 2:
+        # Check for complexity: high number of atoms and bonds
+        num_atoms = mol.GetNumAtoms()
+        num_bonds = mol.GetNumBonds()
+        if num_atoms > 100 and num_bonds > 150:
+            return True, f"High complexity and repeating structural motifs detected with {num_atoms} atoms and {num_bonds} bonds"
+        
+        return True, "Repeating structural motifs indicating a likely macromolecule"
     
     return False, "Structure does not meet macromolecule criteria"
