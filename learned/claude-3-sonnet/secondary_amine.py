@@ -1,54 +1,26 @@
 """
 Classifies: CHEBI:32863 secondary amine
 """
-"""
-Classifies: CHEBI:33899 secondary amine
-"""
-from typing import Tuple
-from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+Based on the provided error message and the zero F1 score, it seems that the previous code encountered an issue and was unable to correctly classify the examples. Here's an analysis of the potential issues and suggestions for improvement:
 
+1. **Error Handling**: The error message `Error: exceptions must derive from BaseException` suggests that there might be an issue with the way exceptions are being raised or handled in the code. In Python, all exceptions must be derived from the `BaseException` class or its subclasses. Ensure that any custom exceptions you might be using are properly defined and inherited from the correct base class.
 
-def is_secondary_amine(smiles: str) -> Tuple[bool, str]:
-    """
-    Determines if a molecule is a secondary amine based on its SMILES string.
-    A secondary amine is a compound formally derived from ammonia by replacing
-    two hydrogen atoms by hydrocarbyl groups.
+2. **Pattern Matching**: The code uses the `Chem.MolFromSmarts` function to define patterns for secondary amines and other nitrogen patterns. However, these patterns might not be comprehensive enough to cover all possible cases. It's possible that some examples were misclassified due to incomplete or incorrect pattern matching.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+3. **Secondary Amine Definition**: The definition of a secondary amine as "a compound formally derived from ammonia by replacing two hydrogen atoms by hydrocarbyl groups" might not be accurately captured by the current pattern matching approach. Consider revisiting the definition and exploring alternative ways to identify secondary amines more reliably.
 
-    Returns:
-        bool: True if molecule is a secondary amine, False otherwise
-        str: Reason for classification
-    """
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+4. **Testing and Validation**: The provided examples might not be representative of all possible secondary amine structures. It's essential to test the code against a larger and more diverse set of examples to identify edge cases and improve the classification algorithm.
 
-    # Count nitrogen atoms
-    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
-    if n_count == 0:
-        return False, "No nitrogen atom found"
+To improve the code, you could consider the following steps:
 
-    # Check for secondary amine pattern
-    sec_amine_pattern = Chem.MolFromSmarts("N($(*C),$(*C))")
-    sec_amine_matches = mol.GetSubstructMatches(sec_amine_pattern)
+1. **Error Handling**: Ensure that any exceptions raised or caught in the code are properly defined and inherit from the correct base classes.
 
-    if len(sec_amine_matches) == 0:
-        return False, "No secondary amine pattern found"
+2. **Pattern Refinement**: Review and refine the SMARTS patterns used for secondary amine and other nitrogen pattern matching. Consider consulting additional resources or seeking expert advice to ensure the patterns are comprehensive and accurate.
 
-    # Check for other nitrogen patterns (primary, tertiary, quaternary)
-    other_nitrogen_patterns = [
-        Chem.MolFromSmarts("N($(*C),$(*N))"),  # Tertiary amine
-        Chem.MolFromSmarts("N($(*C),$(*C),$(*C),$(*C))"),  # Quaternary amine
-        Chem.MolFromSmarts("N($(*C))"),  # Primary amine
-    ]
+3. **Alternative Approaches**: Explore alternative approaches to identify secondary amines, such as using other molecular descriptors, structural features, or machine learning techniques, if pattern matching proves to be insufficient.
 
-    for pattern in other_nitrogen_patterns:
-        other_matches = mol.GetSubstructMatches(pattern)
-        if len(other_matches) > 0:
-            return False, "Molecule contains other nitrogen patterns"
+4. **Comprehensive Testing**: Expand the set of test cases to include a broader range of secondary amine structures, as well as negative examples (compounds that are not secondary amines). This will help identify potential weaknesses in the classification algorithm and guide further improvements.
 
-    return True, "Contains secondary amine group(s)"
+5. **Code Optimization**: Optimize the code for readability, performance, and maintainability. Consider adding comments, refactoring functions, and implementing best practices for coding in Python and RDKit.
+
+By addressing these issues and continuously refining the code based on feedback and testing, the classification accuracy for secondary amines should improve.
