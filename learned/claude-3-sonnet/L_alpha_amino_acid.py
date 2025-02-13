@@ -5,7 +5,7 @@ Classifies: CHEBI:15705 L-alpha-amino acid
 Classifies: CHEBI:33709 L-alpha-amino acid
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_L_alpha_amino_acid(smiles: str):
     """
@@ -26,7 +26,7 @@ def is_L_alpha_amino_acid(smiles: str):
         return False, "Invalid SMILES string"
     
     # Look for alpha-amino acid pattern: N[C@H](*)C(=O)O
-    amino_acid_pattern = Chem.MolFromSmarts("N[C@H](*)[C@](=O)O")
+    amino_acid_pattern = Chem.MolFromSmarts("N[C@H](*)[C@@](=O)O")
     matches = mol.GetSubstructMatches(amino_acid_pattern)
     
     if not matches:
@@ -40,9 +40,9 @@ def is_L_alpha_amino_acid(smiles: str):
     if alpha_carbon.GetProp("_ChiralityPossible") == "No":
         return False, "Alpha-carbon is not a chiral center"
     
-    # Determine stereochemistry using AllChem.rbMolDescriptors.SMARTSChiralityType
-    smarts_type = AllChem.rbMolDescriptors.SMARTSChiralityType(alpha_carbon.GetChiralTag())
-    if smarts_type == "TH":  # "TH" stands for "Tetrahedral, H first"
+    # Determine stereochemistry using rdkit.Chem.rdMolDescriptors.GetAtomPairStereoSigma
+    stereochemistry = rdMolDescriptors.GetAtomPairStereoSigma(mol, alpha_carbon.GetIdx())
+    if stereochemistry == "S":
         return True, "Contains an L-alpha-amino acid substructure"
     else:
         return False, "Contains a D-alpha-amino acid substructure"
