@@ -22,61 +22,47 @@ def is_penicillin(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES with stereochemistry
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Basic penam core pattern - beta-lactam fused to thiazolidine
-    penam_core = Chem.MolFromSmarts('[#7]1[#6][#6](=O)[#7][#6]2[#16][#6][#6]12')
-    if penam_core is None:
-        return None, "Invalid SMARTS pattern for penam core"
+    # Check for penam core structure (beta-lactam fused to thiazolidine ring)
+    # [S]-[CH]-[N]-C(=O)-[CH]-[CH]-[N] forms the core scaffold
+    penam_core = Chem.MolFromSmarts('[S]1[CH]2[N]C(=O)[CH][CH]2[N]1')
     if not mol.HasSubstructMatch(penam_core):
         return False, "No penam core structure found"
 
-    # Check for the specific stereochemistry of the bicyclic system
-    stereo_core = Chem.MolFromSmarts('[H][C@]12S[C@@]([C@@H](N1)C(=O)N2)(C)C')
-    if stereo_core is None:
-        return None, "Invalid SMARTS pattern for stereo core"
-    if not mol.HasSubstructMatch(stereo_core, useChirality=True):
-        return False, "Incorrect stereochemistry of penam core"
-
-    # Check for carboxylate group (both acid and ester forms)
-    carboxyl = Chem.MolFromSmarts('[CX3](=[OX1])[OX2,OX1-]')
-    if carboxyl is None:
-        return None, "Invalid SMARTS pattern for carboxyl"
-    if not mol.HasSubstructMatch(carboxyl):
-        return False, "Missing carboxylate group"
-
     # Check for two methyl groups at position 2
-    dimethyl = Chem.MolFromSmarts('S[C](C)(C)')
-    if dimethyl is None:
-        return None, "Invalid SMARTS pattern for dimethyl"
-    if not mol.HasSubstructMatch(dimethyl):
-        return False, "Missing geminal dimethyl groups"
+    two_methyls = Chem.MolFromSmarts('[CH3][C]([CH3])(S1)[C]')
+    if not mol.HasSubstructMatch(two_methyls):
+        return False, "Missing two methyl groups at position 2"
+
+    # Check for carboxylate group at position 3
+    carboxylate = Chem.MolFromSmarts('[C](S1)([CH]N)C(=O)[OH,O-]')
+    if not mol.HasSubstructMatch(carboxylate):
+        return False, "Missing carboxylate group at position 3"
 
     # Check for carboxamido group at position 6
-    carboxamido = Chem.MolFromSmarts('[NH][CH]1C(=O)N')
-    if carboxamido is None:
-        return None, "Invalid SMARTS pattern for carboxamido"
+    carboxamido = Chem.MolFromSmarts('[CH](NC(=O)*)C(=O)N')
     if not mol.HasSubstructMatch(carboxamido):
-        return False, "Missing carboxamido group"
+        return False, "Missing carboxamido group at position 6"
 
-    # Verify atom counts
-    s_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts('[#16]')))
-    n_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts('[#7]')))
-    o_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts('[#8]')))
+    # Additional check for correct stereochemistry
+    # We look for the characteristic trans junction between the beta-lactam and thiazolidine rings
+    stereochem_pattern = Chem.MolFromSmarts('[S][C@H]1[N]C(=O)[C@@H]')
+    if not mol.HasSubstructMatch(stereochem_pattern):
+        return False, "Incorrect stereochemistry at ring junction"
 
+    # Verify basic penicillin formula by counting key atoms
+    # Should have exactly one sulfur atom
+    s_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 16)
     if s_count != 1:
         return False, f"Incorrect number of sulfur atoms (found {s_count}, expected 1)"
+
+    # Should have at least 2 nitrogen atoms (one in beta-lactam, one in carboxamido)
+    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
     if n_count < 2:
         return False, f"Too few nitrogen atoms (found {n_count}, expected at least 2)"
-    if o_count < 3:
-        return False, f"Too few oxygen atoms (found {o_count}, expected at least 3)"
 
-    # Check ring system
-    ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() < 2:
-        return False, "Missing required bicyclic system"
-
-    return True, "Structure contains penam core with correct substituents and stereochemistry"
+    return True, "Contains penam core with correct substituents and stereochemistry"
