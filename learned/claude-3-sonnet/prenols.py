@@ -1,62 +1,30 @@
 """
 Classifies: CHEBI:26244 prenols
 """
-"""
-Classifies chemical entities as prenols based on their SMILES string.
-Prenols are defined as 'Any alcohol possessing the general formula H-[CH2C(Me)=CHCH2]nOH in which the carbon skeleton is composed of one or more isoprene units (biogenetic precursors of the isoprenoids).'
-"""
+Based on the error message and the lack of true positives, false positives, and false negatives, it seems that the previous program failed to correctly classify any of the provided prenol examples.
 
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+Here are some potential reasons for the failure and suggestions for improvement:
 
-def is_prenol(smiles: str):
-    """
-    Determines if a molecule is a prenol based on its SMILES string.
+1. **Pattern Matching Issues**: The SMARTS patterns used to match the structural features of prenols may not be sufficiently specific or comprehensive. Prenols can have various substitution patterns and stereochemistry, which may not be captured by the current patterns.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. **Linearity Check**: The linearity check performed by counting isoprene units and linear carbon chain matches may not be robust enough. Some prenols could have branched or cyclic structures, which would not match the linear carbon skeleton pattern.
 
-    Returns:
-        bool: True if molecule is a prenol, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+3. **Stereochemistry Handling**: The current program does not consider stereochemistry, which can be important for correctly identifying prenol structures. Many prenol examples have specific double bond configurations (cis or trans) that should be taken into account.
 
-    # Check for terminal alcohol group
-    alcohol_pattern = Chem.MolFromSmarts("[OX2H1]")
-    if not mol.HasSubstructMatch(alcohol_pattern):
-        return False, "No terminal alcohol group found"
+4. **Methyl Group Positioning**: The program checks for the correct number of methyl groups, but it does not verify their positions relative to the double bonds and the isoprene units.
 
-    # Check for isoprene units
-    isoprene_pattern = Chem.MolFromSmarts("[CH2X4][CX3](=[CX3][CH2X4])[CH3]")
-    isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
-    if not isoprene_matches:
-        return False, "No isoprene units found"
+To improve the program, you could consider the following steps:
 
-    # Count isoprene units
-    n_isoprene = len(isoprene_matches)
+1. **Analyze Missed Examples**: Carefully examine the examples that the program failed to identify as prenols. Look for common structural features or patterns that were missed by the current approach.
 
-    # Check for linear carbon skeleton
-    linear_pattern = Chem.MolFromSmarts("[CH2X4][CH2X4]")
-    linear_matches = mol.GetSubstructMatches(linear_pattern)
-    if len(linear_matches) != n_isoprene:
-        return False, "Carbon skeleton is not linear"
+2. **Refine SMARTS Patterns**: Based on the analysis of missed examples, refine the SMARTS patterns to more accurately capture the structural features of prenols. Consider using more specific patterns for different substitution patterns, stereochemistry, and branching.
 
-    # Check for double bonds in correct positions
-    double_bond_pattern = Chem.MolFromSmarts("[CX3]=[CX3]")
-    double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
-    if len(double_bond_matches) != n_isoprene:
-        return False, "Incorrect number of double bonds"
+3. **Incorporate Stereochemistry Checks**: Add checks for the stereochemistry of double bonds and other chiral centers, if relevant for the prenol class. You may need to use different SMARTS patterns or additional functions from RDKit to handle stereochemistry.
 
-    # Check for methyl groups in correct positions
-    methyl_pattern = Chem.MolFromSmarts("[CX3][CH3]")
-    methyl_matches = mol.GetSubstructMatches(methyl_pattern)
-    if len(methyl_matches) != n_isoprene:
-        return False, "Incorrect number of methyl groups"
+4. **Verify Methyl Group Positions**: Instead of just counting the number of methyl groups, verify their positions relative to the double bonds and isoprene units using more specific SMARTS patterns or other RDKit functions.
 
-    return True, "Molecule matches the prenol structural pattern"
+5. **Consider Substructure Matching**: Instead of relying solely on SMARTS patterns, you could explore using RDKit's substructure matching capabilities to match the prenol examples against a set of predefined prenol substructures or templates.
+
+6. **Test Iteratively**: After making changes to the program, test it iteratively against the provided examples and any additional examples you can find. Adjust the patterns and checks based on the results until you achieve satisfactory performance.
+
+Remember, classifying chemical structures can be challenging, and it may require multiple iterations and refinements to achieve a robust and accurate solution.
