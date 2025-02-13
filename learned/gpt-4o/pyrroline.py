@@ -2,7 +2,6 @@
 Classifies: CHEBI:23763 pyrroline
 """
 from rdkit import Chem
-from rdkit.Chem import rdchem
 
 def is_pyrroline(smiles: str):
     """
@@ -21,19 +20,17 @@ def is_pyrroline(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Look for a five-membered ring with one nitrogen atom and one double bond
-    pyrroline_pattern = Chem.MolFromSmarts("C1C=CCN1")
-    pyrroline_matches = mol.GetSubstructMatches(pyrroline_pattern)
     
-    if not pyrroline_matches:
-        return False, "No dihydropyrrole (pyrroline) ring found"
-
-    # Additional check for exactly one nitrogen atom in the identified ring
-    for match in pyrroline_matches:
-        ring = set(match)
-        nitrogen_count = sum(1 for atom_idx in ring if mol.GetAtomWithIdx(atom_idx).GetAtomicNum() == 7)
-        if nitrogen_count == 1:
+    # Look for different pyrroline patterns: Allow flexible positions for the double bond
+    # Patterns cover 2-pyrroline, 3-pyrroline, etc.
+    pyrroline_patterns = [
+        Chem.MolFromSmarts("C1=CCNC1"),   # 2-pyrroline
+        Chem.MolFromSmarts("C1=CNCC1"),   # 3-pyrroline
+        Chem.MolFromSmarts("[n]=1[c,C][c,C][c,C][c,C]1"),  # Generic pyrroline with flexible atom type
+    ]
+    
+    for pattern in pyrroline_patterns:
+        if mol.HasSubstructMatch(pattern):
             return True, "Contains a dihydropyrrole (pyrroline) ring"
-
-    return False, "Ring found, but does not match pyrroline specifications (e.g., wrong number of nitrogen atoms)"
+    
+    return False, "No pyrroline structure found"
