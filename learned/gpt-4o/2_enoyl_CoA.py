@@ -16,38 +16,34 @@ def is_2_enoyl_CoA(smiles: str):
         bool: True if the molecule is a 2-enoyl-CoA, False otherwise
         str: Reason for classification
     """
-
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more comprehensive SMARTS pattern for Coenzyme A
-    # This pattern captures a broader section of the CoA moiety,
-    # with focus on the adenosine part attached via a phosphothioester linkage
-    coenzyme_a_pattern = Chem.MolFromSmarts("C=O)SCCNC(=O)CC")
-    if not mol.HasSubstructMatch(coenzyme_a_pattern):
+    # Define SMARTS for Coenzyme A moiety, focusing on the typical structural features
+    coa_pattern = Chem.MolFromSmarts("CC(C)C(=O)NCCSC(=O)C")
+    if not mol.HasSubstructMatch(coa_pattern):
         return False, "No Coenzyme A moiety found"
 
-    # Define a pattern for a flexible double bond starting early in the acyl chain,
-    # but not assuming it's directly after CoA, to handle branched structures
-    double_bond_2_3_pattern = Chem.MolFromSmarts("C=CC")
-    matches = mol.GetSubstructMatches(double_bond_2_3_pattern)
+    # Define SMARTS for a double bond between the 2nd and 3rd carbon in the acyl chain
+    double_bond_2_3_pattern = Chem.MolFromSmarts("C-C=C-C")
+    substruct_matches = mol.GetSubstructMatches(double_bond_2_3_pattern)
 
-    if not matches:
-        return False, "No double bond between the 2nd and 3rd positions"
+    if not substruct_matches:
+        return False, "No suitable double bond between C2 and C3 found"
 
-    # Validate positional match within the acyl chain near the CoA linkage
-    # Ensure the double bond isn't part of a cyclized structure, irrelevant to the required connectivity
-    for match in matches:
-        # Check the atom indices of the double bond match to ensure it's within the acyl chain directly bonded to CoA
-        start, end = match[0], match[1]
-        atom_start = mol.GetAtomWithIdx(start)
-        atom_end = mol.GetAtomWithIdx(end)
+    # Verify positional context - check that the identified double bond is part of an acyl chain
+    # and near the CoA linkage
+    for match in substruct_matches:
+        # Assuming match is the fragment where the double bond is located
+        # [C1, C2, C3, C4] where C2=C3 is the double bond
+        chain_carbon_2 = mol.GetAtomWithIdx(match[1])
+        chain_carbon_3 = mol.GetAtomWithIdx(match[2])
 
-        # Ensure it's a linear acyl chain fragment for the CoA moiety
-        # This is a simple heuristic check; more complex molecular graph analysis would be better in a production system.
-        if atom_start.GetDegree() <= 2 and atom_end.GetDegree() <= 2:
-            return True, "Contains a 2,3-double bond and Coenzyme A moiety"
+        # Both carbons should be part of a chain, not in a cycle
+        if chain_carbon_2.GetDegree() <= 3 and chain_carbon_3.GetDegree() <= 3:
+            # Verify acyl linkage is nearby, indicating it's in the correct acyl position
+            return True, "Contains a suitable 2,3-double bond and Coenzyme A moiety"
 
     return False, "Matched double bond is not appropriate in positional context"
