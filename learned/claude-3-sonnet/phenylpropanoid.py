@@ -1,48 +1,24 @@
 """
 Classifies: CHEBI:26004 phenylpropanoid
 """
-"""
-Classifies: CHEBI:37134 phenylpropanoid
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+Based on the previous code and the outcomes, it appears that the program was unable to correctly classify any of the provided examples as phenylpropanoids. This could be due to several reasons:
 
-def is_phenylpropanoid(smiles: str):
-    """
-    Determines if a molecule is a phenylpropanoid based on its SMILES string.
-    Phenylpropanoids are organic aromatic compounds with a phenylpropane skeleton.
+1. **Incomplete or overly strict pattern matching**: The current implementation relies on matching a specific SMARTS pattern for the phenylpropane skeleton. However, this pattern may not cover all possible variations of the phenylpropanoid structure. Additionally, the check for extra features (rings and oxy substitutions) may be too simplistic and miss out on other relevant structural features.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. **Lack of comprehensive structural analysis**: The program only checks for the presence of certain substructures but does not perform a more in-depth analysis of the molecular structure. It may be necessary to consider additional factors, such as the number and position of specific functional groups, bond orders, and stereochemistry, to correctly identify phenylpropanoids.
 
-    Returns:
-        bool: True if molecule is a phenylpropanoid, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+3. **Potential issues with the provided examples**: It's also possible that some of the provided example SMILES strings are incorrect or represent structures that do not strictly belong to the phenylpropanoid class. It's essential to validate the examples before using them as a benchmark.
 
-    # Check for aromatic ring
-    if not mol.GetAromaticRings():
-        return False, "No aromatic rings found"
+To improve the program, the following steps could be taken:
 
-    # Check for phenylpropane skeleton
-    phenylpropane_pattern = Chem.MolFromSmarts("[c:1]1[c;r6]([c;r6][c;r6][c:2]1)[C:3]=[C:4][C:5]")
-    match = mol.GetSubstructMatches(phenylpropane_pattern)
-    if not match:
-        return False, "No phenylpropane skeleton found"
+1. **Expand the pattern matching**: Instead of relying on a single SMARTS pattern for the phenylpropane skeleton, consider using multiple patterns or a more flexible approach, such as substructure matching with different variations of the phenylpropanoid core.
 
-    # Check for additional rings, oxy substitutions, etc.
-    ring_patterns = [Chem.MolFromSmarts("[Or:6]"), Chem.MolFromSmarts("[c:6]1[c;r6][c;r6][c;r6][c;r6][c;r6]1")]
-    extra_features = any(mol.HasSubstructMatch(pattern) for pattern in ring_patterns)
+2. **Incorporate additional structural analysis**: Implement more comprehensive structural analysis techniques, such as functional group identification, ring perception, and stereochemistry analysis. These additional checks can help differentiate between different types of phenylpropanoids and improve the classification accuracy.
 
-    # Basic phenylpropanoids have a phenylpropane skeleton and aromatic ring
-    if not extra_features:
-        return True, "Contains phenylpropane skeleton and aromatic ring"
+3. **Utilize machine learning techniques**: If the structural analysis becomes too complex, consider using machine learning techniques like support vector machines or random forests to learn the patterns and features that distinguish phenylpropanoids from other compounds.
 
-    # More complex phenylpropanoids may have additional rings, oxy substitutions, etc.
-    return True, "Contains phenylpropane skeleton, aromatic ring, and additional features"
+4. **Validate the example data**: Carefully review the provided example SMILES strings to ensure they represent valid phenylpropanoid structures. If necessary, consult with domain experts or refer to authoritative sources to confirm the validity of the examples.
+
+5. **Implement unit tests**: Develop a comprehensive set of unit tests with known positive and negative examples to ensure the program's correctness and facilitate further development and refactoring.
+
+By addressing these issues and incorporating more robust structural analysis techniques, the program's ability to correctly classify phenylpropanoids can be significantly improved.
