@@ -8,7 +8,7 @@ from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
 from typing import Tuple
 
-def is_polychlorinated_dibenzodioxins_and_related_compounds(smiles: str) -> Tuple[bool, str]:
+def is_polychlorinated_dibenzodioxines_and_related_compounds(smiles: str) -> Tuple[bool, str]:
     """
     Determines if a molecule belongs to the class of polychlorinated dibenzodioxins and related compounds
     based on its SMILES string.
@@ -40,8 +40,6 @@ def is_polychlorinated_dibenzodioxins_and_related_compounds(smiles: str) -> Tupl
     dioxin_pattern = Chem.MolFromSmarts("O1c2ccccc2Oc3ccccc3O1")
     furan_pattern = Chem.MolFromSmarts("O1c2ccccc2oc3ccccc3O1")
     has_dioxin_furan = mol.HasSubstructMatch(dioxin_pattern) or mol.HasSubstructMatch(furan_pattern)
-    if not has_dioxin_furan:
-        return False, "No dioxin or furan ring found"
     
     # Check for biphenyl substructure
     biphenyl_pattern = Chem.MolFromSmarts("c1ccccc1c2ccccc2")
@@ -51,7 +49,11 @@ def is_polychlorinated_dibenzodioxins_and_related_compounds(smiles: str) -> Tupl
     halogenated_benzene_pattern = Chem.MolFromSmarts("c1c(Cl)c(Cl)c(Cl)c(Cl)c1")
     has_halogenated_benzene = mol.HasSubstructMatch(halogenated_benzene_pattern)
     
-    if has_dioxin_furan and (has_biphenyl or has_halogenated_benzene):
-        return True, "Contains polychlorinated dibenzodioxin, dibenzofuran, or halogenated biphenyl substructures"
+    # Check for polybrominated substructures
+    polybrominated_pattern = Chem.MolFromSmarts("c1c(Br)c(Br)c(Br)c(Br)c1")
+    has_polybrominated = mol.HasSubstructMatch(polybrominated_pattern)
+    
+    if (has_dioxin_furan or has_biphenyl or has_halogenated_benzene or has_polybrominated) and has_halogens:
+        return True, "Contains polychlorinated dibenzodioxin, dibenzofuran, halogenated biphenyl, or polybrominated substructures"
     else:
         return False, "Does not meet structural criteria for polychlorinated dibenzodioxins and related compounds"
