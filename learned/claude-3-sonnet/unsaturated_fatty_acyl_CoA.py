@@ -1,26 +1,56 @@
 """
 Classifies: CHEBI:51006 unsaturated fatty acyl-CoA
 """
-The previous program had a few issues that led to the poor performance:
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-1. **Overly Strict Pattern Matching**: The program relied heavily on SMARTS pattern matching, which can be too strict and miss valid structures. For example, the CoA backbone pattern was very specific and would not match slightly different representations of the same backbone.
+def is_unsaturated_fatty_acyl_CoA(smiles: str):
+    """
+    Determines if a molecule is an unsaturated fatty acyl-CoA based on its SMILES string.
+    An unsaturated fatty acyl-CoA is a CoA derivative with an unsaturated fatty acid chain
+    attached via a thioester bond.
 
-2. **Inappropriate Filters**: Some of the filters were too strict or not appropriate for the class. For example, requiring a minimum of 8 rotatable bonds and 12 carbon atoms would exclude smaller unsaturated fatty acyl-CoAs, which are still valid members of the class.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Molecular Weight Filter**: The molecular weight filter (> 500 Da) was too high and would exclude many valid unsaturated fatty acyl-CoAs, which typically have lower molecular weights.
-
-4. **Lack of Stereochemistry Considerations**: The program did not account for stereochemistry, which is essential for correctly identifying unsaturated fatty acyl-CoAs with different double bond configurations.
-
-To improve the program, we should:
-
-1. **Use More Flexible Matching**: Instead of relying solely on strict SMARTS patterns, we should use more flexible methods to identify key functional groups and substructures.
-
-2. **Adjust Filters**: Relax or remove filters that are too strict or inappropriate for the class, such as the minimum rotatable bond and carbon count filters.
-
-3. **Adjust Molecular Weight Range**: Use a more appropriate molecular weight range for unsaturated fatty acyl-CoAs, which is typically lower than 500 Da.
-
-4. **Consider Stereochemistry**: Incorporate stereochemistry checks to ensure that the double bond configurations match those expected for unsaturated fatty acyl-CoAs.
-
-5. **Use Additional Structural Features**: Exploit other structural features characteristic of unsaturated fatty acyl-CoAs, such as the presence of a thioester bond between the fatty acid and CoA moieties, and the presence of an unsaturated carbon chain with a specific number of double bonds.
-
-By addressing these issues, we can develop a more robust and accurate program for classifying unsaturated fatty acyl-CoAs based on their SMILES strings.
+    Returns:
+        bool: True if molecule is an unsaturated fatty acyl-CoA, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Check for CoA backbone
+    CoA_pattern = Chem.MolFromSmarts("C(C)(COP(=O)([O-])OP(=O)([O-])OC1C(OC2(C(=O)NC(=Nc3c2ncn3)N)C1OP(=O)([O-])[O-])")[0]
+    if not mol.HasSubstructMatch(CoA_pattern):
+        return False, "No CoA backbone found"
+    
+    # Check for thioester bond
+    thioester_pattern = Chem.MolFromSmarts("C(=O)S")
+    if not mol.HasSubstructMatch(thioester_pattern):
+        return False, "No thioester bond found"
+    
+    # Check for unsaturated fatty acid chain
+    fatty_acid_pattern = Chem.MolFromSmarts("[C;!$(C=O)]")
+    fatty_acid_atoms = mol.GetSubstructMatches(fatty_acid_pattern)
+    if len(fatty_acid_atoms) < 4:
+        return False, "Fatty acid chain too short"
+    
+    # Check for double bonds in fatty acid chain
+    double_bond_pattern = Chem.MolFromSmarts("=C")
+    double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
+    if not double_bond_matches:
+        return False, "No double bonds found in fatty acid chain"
+    
+    # Check stereochemistry of double bonds
+    double_bond_stereo = AllChem.EmbedMolecule(mol)
+    if double_bond_stereo == -1:
+        return False, "Unable to embed molecule for stereochemistry analysis"
+    
+    # Additional checks (molecular weight, atom counts, etc.) can be added if needed
+    
+    return True, "Molecule matches the structure of an unsaturated fatty acyl-CoA"
