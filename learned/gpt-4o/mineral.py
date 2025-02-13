@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_mineral(smiles: str):
     """
     Determines if a molecule is a mineral based on its SMILES string.
-    Minerals typically contain metal ions, sulfides, oxides, phosphates, or are metalloids.
+    Minerals typically contain metal ions/metalloids and anions such as sulfates, phosphates, chlorides, oxides, or carbonates.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -25,6 +25,7 @@ def is_mineral(smiles: str):
     metal_and_metalloid_atomic_numbers = [
         3, 11, 19, 20, 22, 23, 24, 25, 26, 27, 28, 29, 30, 37, 38, 
         39, 40, 42, 47, 48, 56, 57, 58, 79, 80, 81, 82, 83, 51, 33 # added Sb and As
+        # Additional elements commonly found in minerals
     ]
 
     # Check for presence of metal ions or metalloids
@@ -32,28 +33,21 @@ def is_mineral(smiles: str):
     if not contains_metal_or_metalloid:
         return False, "No metal ions or metalloids found in structure"
     
-    # Check for presence of key anions and functional groups typical in minerals
+    # Check for presence of applicable anions in minerals
     mineral_group_smarts = [
         '[O-]S(=O)(=O)[O-]',  # sulfate
         'C(=O)([O-])[O-]',    # carbonate
         'P(=O)([O-])([O-])[O-]',  # phosphate
-        '[N+]([O-])=O'        # nitrate
+        '[N+]([O-])=O',       # nitrate
+        'Cl',  # chloride common in many minerals
+        '[O]',  # potential oxides/hydrates indicator
+        '[S-]'  # potential sulfide indicator
     ]
     
     for group_smarts in mineral_group_smarts:
         group_pattern = Chem.MolFromSmarts(group_smarts)
         if mol.HasSubstructMatch(group_pattern):
-            return True, "Contains metal ions/metalloids and common mineral anion"
-    
-    # Consider sulfides and oxides common in minerals
-    sulfide_oxide_patterns = [
-        '[S]',  # sulfur presence indicating possible sulfide
-        '[O]'    # oxygen presence - possible oxides or hydrates
-    ]
-    
-    for pattern in sulfide_oxide_patterns:
-        substruct_pattern = Chem.MolFromSmarts(pattern)
-        if mol.HasSubstructMatch(substruct_pattern):
-            return True, "Contains common mineral-forming elements like S or O"
-    
+            if '[C]' not in smiles or len(smiles) < 45: # Ensure it's not a large organic compound
+                return True, "Contains metal ions/metalloids and suitable anion."
+
     return False, "Does not match typical mineral structure"
