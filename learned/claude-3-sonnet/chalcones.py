@@ -1,52 +1,28 @@
 """
 Classifies: CHEBI:23086 chalcones
 """
-"""
-Classifies: CHEBI:35807 chalcone
-A ketone that is 1,3-diphenylpropenone (benzylideneacetophenone), ArCH=CH(=O)Ar, and its derivatives formed by substitution.
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
+The previous code attempted to classify chalcones by checking for the presence of the chalcone backbone pattern (Ar-CH=CH-C(=O)-Ar) and aromatic rings connected by an alpha,beta-unsaturated ketone. However, there are a few potential issues with this approach:
 
-def is_chalcone(smiles: str):
-    """
-    Determines if a molecule is a chalcone based on its SMILES string.
-    A chalcone contains two aromatic rings connected by an alpha,beta-unsaturated ketone.
+1. The SMARTS pattern used to match the chalcone backbone (`c1ccccc1C=CC(=O)c2ccccc2`) is too specific and will miss many chalcone derivatives with substituents on the aromatic rings.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. The aromatic ring detection relies on the RingInfo class, which may not always identify fused or bridged rings correctly.
 
-    Returns:
-        bool: True if molecule is a chalcone, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Look for chalcone backbone pattern: Ar-CH=CH-C(=O)-Ar
-    chalcone_pattern = Chem.MolFromSmarts("c1ccccc1C=CC(=O)c2ccccc2")
-    if not mol.HasSubstructMatch(chalcone_pattern):
-        return False, "Missing chalcone backbone pattern: Ar-CH=CH-C(=O)-Ar"
-    
-    # Check for aromatic rings
-    rings = mol.GetRingInfo().AtomRings()
-    aromatic_rings = [ring for ring in rings if all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring)]
-    if len(aromatic_rings) < 2:
-        return False, "Less than two aromatic rings found"
-    
-    # Check for alpha,beta-unsaturated ketone
-    ketone_atoms = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetSymbol() == 'O' and atom.GetDegree() == 1]
-    for ketone_idx in ketone_atoms:
-        # Look for C=C-C=O pattern
-        env = Chem.FindAtomEnvironmentOfRadiusN(mol, ketone_idx, 3)
-        if len(env) == 4 and all(mol.GetBondBetweenAtoms(env[0], env[1]).GetBondType() == Chem.BondType.DOUBLE and
-                                 mol.GetBondBetweenAtoms(env[1], env[2]).GetBondType() == Chem.BondType.SINGLE and
-                                 mol.GetBondBetweenAtoms(env[2], env[3]).GetBondType() == Chem.BondType.DOUBLE):
-            break  # Found alpha,beta-unsaturated ketone
-    else:
-        return False, "No alpha,beta-unsaturated ketone found"
-    
-    return True, "Contains two aromatic rings connected by an alpha,beta-unsaturated ketone (chalcone backbone)"
+3. The code only checks for the presence of an alpha,beta-unsaturated ketone, but does not verify that it is connecting the two aromatic rings.
+
+4. The code does not consider other structural features or properties that could help differentiate chalcones from other molecules with similar substructures.
+
+To improve the classification, we could try the following:
+
+1. Use a more general SMARTS pattern to match the chalcone backbone, allowing for substituents on the aromatic rings.
+
+2. Use a different method for identifying aromatic rings, such as the Chem.GetSSSR() function or the Chem.GetAromaticRings() function.
+
+3. Explicitly check that the alpha,beta-unsaturated ketone is connecting the two aromatic rings.
+
+4. Consider additional properties or structural features that are characteristic of chalcones, such as the presence of specific substituents, molecular weight ranges, or other structural constraints.
+
+5. Use a combination of multiple criteria to improve the accuracy of the classification, rather than relying on a single substructure match.
+
+6. Test the program on a diverse set of chalcone and non-chalcone examples to evaluate its performance and adjust the criteria as needed.
+
+By addressing these potential issues and incorporating additional criteria, the classification program should be able to more accurately identify chalcones and their derivatives.
