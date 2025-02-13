@@ -36,10 +36,10 @@ def is_glycerophospholipid(smiles: str):
     if not mol.HasSubstructMatch(phosphate_pattern):
         return False, "No phosphate group found"
     
-    # Look for ester linkage between phosphate and glycerol
-    ester_pattern = Chem.MolFromSmarts("[OX2][CX4][CX4][OX2]P(~O)(~O)(~O)(~O)")
+    # Look for ester linkage between phosphate and terminal carbon of glycerol
+    ester_pattern = Chem.MolFromSmarts("[OX2][CH2X4][CX4][OX2]P(~O)(~O)(~O)(~O)")
     if not mol.HasSubstructMatch(ester_pattern):
-        return False, "Phosphate not ester-linked to glycerol backbone"
+        return False, "Phosphate not ester-linked to terminal carbon of glycerol backbone"
     
     # Look for fatty acid chains (long carbon chains attached to esters)
     fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
@@ -69,4 +69,4 @@ def is_glycerophospholipid(smiles: str):
     if p_count != 1:
         return False, "Must have exactly 1 phosphorus atom"
 
-    return True, "Contains glycerol backbone with phosphate group and fatty acid chains"
+    return True, "Contains glycerol backbone with phosphate group ester-linked to terminal carbon and fatty acid chains"
