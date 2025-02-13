@@ -1,32 +1,58 @@
 """
 Classifies: CHEBI:46761 dipeptide
 """
-The previous program attempted to identify dipeptides by looking for the presence of a single peptide bond (-C(=O)-N-C-C(=O)-) and two amino acid residues (N-C-C). However, the approach has some limitations, as evidenced by the outcomes where it failed to correctly identify several known dipeptides.
+"""
+Classifies: CHEBI:15554 dipeptide
 
-Here are some potential issues with the previous approach and suggestions for improvement:
+A dipeptide is any molecule that contains two amino-acid residues connected by peptide linkages.
+"""
 
-1. **Peptide bond pattern too specific**: The SMARTS pattern `C(=O)NC(=O)` used to identify peptide bonds is too specific and may miss some valid peptide bond patterns. For example, it would not match a peptide bond where the nitrogen is protonated or has other substituents.
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-2. **Amino acid pattern too specific**: The SMARTS pattern `[N;X3;H2,H1]([C;X4])[C;X4]` used to identify amino acid residues is also quite specific and may miss some valid residues. For instance, it would not match residues with non-standard substitutions or those with different valence states.
+def is_dipeptide(smiles: str):
+    """
+    Determines if a molecule is a dipeptide based on its SMILES string.
 
-3. **Ignoring stereochemistry**: The current approach does not consider stereochemistry, which is crucial for identifying specific dipeptides correctly.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-4. **Failure to account for protecting groups**: Many synthetic dipeptides may have protecting groups or other modifications that could prevent the patterns from being recognized correctly.
+    Returns:
+        bool: True if the molecule is a dipeptide, False otherwise
+        str: Reason for classification
+    """
 
-5. **Reliance on substructure matching**: While substructure matching is a powerful tool, it may not be sufficient for accurately identifying complex molecular structures like dipeptides, especially in the presence of uncommon or non-standard features.
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-To improve the program, we could consider the following approaches:
+    # Look for peptide bond pattern (-C(=O)-N-)
+    peptide_bond_pattern = Chem.MolFromSmarts("C(=O)N")
+    peptide_bond_matches = mol.GetSubstructMatches(peptide_bond_pattern)
 
-1. **Use a more comprehensive set of SMARTS patterns**: Instead of relying on a single pattern for peptide bonds and amino acid residues, we could use a set of patterns that cover a broader range of possibilities, including different protonation states, substitutions, and protecting groups.
+    # Count number of peptide bonds
+    n_peptide_bonds = len(peptide_bond_matches)
+    if n_peptide_bonds != 2:
+        return False, f"Found {n_peptide_bonds} peptide bonds, expected 2 for a dipeptide"
 
-2. **Incorporate stereochemistry**: We could use RDKit's functionality to detect and match specific stereochemical configurations, which are essential for correctly identifying specific dipeptides.
+    # Look for amino acid residues
+    amino_acid_pattern = Chem.MolFromSmarts("[N;H2,H1][C;H1]([C;H2,H1,H0])[C;H2,H1,H0]")
+    amino_acid_matches = mol.GetSubstructMatches(amino_acid_pattern)
 
-3. **Utilize machine learning models**: Instead of relying solely on substructure matching, we could explore the use of machine learning models trained on a large dataset of dipeptides and non-dipeptides. These models could potentially learn to recognize more complex patterns and features that are not easily captured by SMARTS patterns.
+    # Count number of amino acid residues
+    n_amino_acids = len(amino_acid_matches)
+    if n_amino_acids != 2:
+        return False, f"Found {n_amino_acids} amino acid residues, expected 2 for a dipeptide"
 
-4. **Combine multiple approaches**: We could combine different approaches, such as substructure matching, stereochemistry checking, and machine learning models, to create a more robust and accurate dipeptide classification system.
+    # Check for terminal groups (-COOH and -NH2)
+    carboxyl_pattern = Chem.MolFromSmarts("[C;H1](=O)[O;H1]")
+    carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
+    amine_pattern = Chem.MolFromSmarts("[N;H2]")
+    amine_matches = mol.GetSubstructMatches(amine_pattern)
 
-5. **Leverage external data sources**: We could utilize external data sources, such as databases of known dipeptides or literature references, to improve the training and validation of our classification system.
+    if len(carboxyl_matches) != 1 or len(amine_matches) != 1:
+        return False, "Missing terminal -COOH or -NH2 group"
 
-6. **Handle exceptional cases**: We could explicitly handle exceptional cases, such as cyclic peptides, peptides with non-standard amino acids, or those with unusual modifications, by incorporating additional rules or patterns.
-
-Ultimately, accurately classifying complex chemical entities like dipeptides may require a more sophisticated approach that combines multiple techniques and leverages additional data sources and domain knowledge.
+    return True, "Contains two amino acid residues connected by peptide linkages"
