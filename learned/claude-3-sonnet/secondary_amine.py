@@ -25,47 +25,52 @@ def is_secondary_amine(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for presence of nitrogen atom
-    if sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7) == 0:
+    nitrogen_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7]
+    if not nitrogen_atoms:
         return False, "No nitrogen atom found"
 
-    # Check for single nitrogen atom bonded to exactly two carbons
-    nitrogen_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7]
+    # Check for nitrogen atoms bonded to two alkyl/aryl groups
     is_secondary_amine = False
     for n_atom in nitrogen_atoms:
         n_neighbors = [neighbor for neighbor in n_atom.GetNeighbors() if neighbor.GetAtomicNum() == 6]
-        if len(n_neighbors) == 2:
-            is_secondary_amine = True
-            break
+        if len(n_neighbors) >= 2:
+            # Identify alkyl/aryl groups
+            alkyl_aryl_groups = []
+            for neighbor in n_neighbors:
+                alkyl_aryl_group = [neighbor]
+                visited = set()
+                to_visit = [neighbor]
+                while to_visit:
+                    cur_atom = to_visit.pop(0)
+                    if cur_atom.GetAtomicNum() == 6:
+                        alkyl_aryl_group.append(cur_atom)
+                        visited.add(cur_atom)
+                        for neighbor in cur_atom.GetNeighbors():
+                            if neighbor.GetAtomicNum() == 6 and neighbor not in visited:
+                                to_visit.append(neighbor)
+                alkyl_aryl_groups.append(alkyl_aryl_group)
+
+            # Check for at least two separate alkyl/aryl groups
+            if len(alkyl_aryl_groups) >= 2:
+                is_secondary_amine = True
+                break
 
     if not is_secondary_amine:
-        return False, "Nitrogen atom not bonded to exactly two carbons"
+        return False, "Nitrogen atom not bonded to at least two alkyl/aryl groups"
 
-    # Check for two separate alkyl/aryl groups attached to nitrogen
-    n_atom = n_neighbors[0]
-    first_chain = [n_atom]
-    second_chain = [n_neighbors[1]]
+    # Check for common functional groups/heteroatoms
+    heteroatoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() not in [1, 6, 7]]
+    if heteroatoms:
+        functional_groups = []
+        for atom in heteroatoms:
+            if atom.GetAtomicNum() == 8:  # Oxygen
+                functional_groups.append("hydroxy" if sum(neighbor.GetAtomicNum() == 1 for neighbor in atom.GetNeighbors()) else "carbonyl")
+            elif atom.GetAtomicNum() == 16:  # Sulfur
+                functional_groups.append("thiol" if sum(neighbor.GetAtomicNum() == 1 for neighbor in atom.GetNeighbors()) else "sulfur")
+            else:
+                functional_groups.append(f"heteroatom {atom.GetSymbol()}")
+        reason = f"Contains a nitrogen atom bonded to at least two alkyl/aryl groups, with additional functional group(s): {', '.join(functional_groups)}"
+    else:
+        reason = "Contains a nitrogen atom bonded to at least two alkyl/aryl groups"
 
-    while True:
-        next_atoms = []
-        for atom in first_chain:
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetAtomicNum() == 6 and neighbor not in first_chain:
-                    next_atoms.append(neighbor)
-        if not next_atoms:
-            break
-        first_chain.extend(next_atoms)
-
-    while True:
-        next_atoms = []
-        for atom in second_chain:
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetAtomicNum() == 6 and neighbor not in second_chain:
-                    next_atoms.append(neighbor)
-        if not next_atoms:
-            break
-        second_chain.extend(next_atoms)
-
-    if len(first_chain) == 1 or len(second_chain) == 1:
-        return False, "At least one of the substituents is not an alkyl/aryl group"
-
-    return True, "Contains a nitrogen atom bonded to two separate alkyl/aryl groups"
+    return True, reason
