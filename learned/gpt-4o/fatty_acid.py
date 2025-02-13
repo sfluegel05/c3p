@@ -19,38 +19,30 @@ def is_fatty_acid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
+
     # Check for the presence of a carboxylic acid group
     carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
 
-    # Check for carbon atoms linked mainly in a linear chain
-    c_count = 0
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 6:  # Count Carbon atoms
-            # Check atom not in a ring, ensuring it's part of the main chain
-            if not atom.IsInRing():
-                c_count += 1
+    # Count carbon atoms to evaluate aliphatic chain length
+    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
 
-    # Natural fatty acids usually range from C4 to C28
-    if not (4 <= c_count <= 28):
-        return False, f"Carbon chain length of {c_count}, must be between 4 and 28"
+    # Natural fatty acids commonly range from C4 to C28 in aliphatic count
+    if not (4 <= carbon_count <= 28):
+        return False, f"Carbon chain length of {carbon_count}, must be between 4 and 28"
 
-    # Ensure molecule is mostly aliphatic (no aromatic rings)
+    # Check for the presence of aromaticity
     if any(atom.GetIsAromatic() for atom in mol.GetAtoms()):
         return False, "Contains aromatic rings, not a fatty acid"
 
-    # Verify it is non-cyclic with no aromatic contents
-    if Chem.rdmolops.GetSSSR(mol) > 0:
-        return False, "Contains cyclic structures, not purely aliphatic"
+    # Check if the molecule is predominantly linear
+    cyclic = any(atom.IsInRing() for atom in mol.GetAtoms())
+    if cyclic:
+        # Some natural fatty acids could have minimal cyclic systems (rare)
+        return False, "Has cyclic structures which are typically not part of standard fatty acids"
 
-    # Potentially allow additional functionalities or modifications (e.g. epoxides, hydroxy)
-    # We may recognize specific features to support more complex fatty acids
+    # Verify functionalities like hydroxyls or epoxides are accommodated
+    # These rules can be expanded based on detailed chemical understanding
     
-    # Passed all checks, classifies as a fatty acid
-    return True, "Contains aliphatic carbon chain with a carboxylic acid group"
-
-# Example usage for testing
-# smiles_ex = "CCCCC(=O)O"  # Pentanoic acid
-# print(is_fatty_acid(smiles_ex))
+    return True, "Contains aliphatic carbon chain with a carboxylic acid group, fits fatty acid profile"
