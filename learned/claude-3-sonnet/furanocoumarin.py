@@ -2,15 +2,14 @@
 Classifies: CHEBI:24128 furanocoumarin
 """
 """
-Classifies: CHEBI:51287 furanocoumarin
+Classifies: CHEBI:32798 furanocoumarin
 
 A furanocoumarin is any furochromene that consists of a furan ring fused with a coumarin.
 The fusion may occur in different ways to give several isomers.
 """
 
 from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import rdFMCS
 
 def is_furanocoumarin(smiles: str):
     """
@@ -23,42 +22,24 @@ def is_furanocoumarin(smiles: str):
         bool: True if molecule is a furanocoumarin, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for furan ring
-    furan_pattern = Chem.MolFromSmarts("O1C=CC=C1")
-    furan_match = mol.HasSubstructMatch(furan_pattern)
-    if not furan_match:
-        return False, "No furan ring found"
+    # Define furanocoumarin scaffold
+    scaffold = Chem.MolFromSmarts("[o,O]1c2c(c3ccoc3)oc(=O)cc2c1")
 
-    # Check for coumarin ring
-    coumarin_pattern = Chem.MolFromSmarts("O=C1C=CC=CC2=C1OCC=C2")
-    coumarin_match = mol.HasSubstructMatch(coumarin_pattern)
-    if not coumarin_match:
-        return False, "No coumarin ring found"
-
-    # Check for fused ring system
-    ring_info = mol.GetRingInfo()
-    fused_rings = any(len(x) > 1 for x in ring_info.BondRings())
-    if not fused_rings:
-        return False, "No fused ring system found"
-
-    # Check for ether/ester groups (optional)
-    ether_pattern = Chem.MolFromSmarts("[OX2]")
-    ether_match = mol.HasSubstructMatch(ether_pattern)
-    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
-    ester_match = mol.HasSubstructMatch(ester_pattern)
-
-    # Check molecular weight range (optional)
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 200 or mol_wt > 600:
-        return False, "Molecular weight outside typical range for furanocoumarins"
-
-    if ether_match or ester_match:
-        return True, "Contains furan and coumarin rings in a fused system, with ether/ester groups"
+    # Check if molecule contains furanocoumarin scaffold
+    if mol.HasSubstructMatch(scaffold):
+        return True, "Contains furanocoumarin scaffold (fused furan and coumarin rings)"
     else:
-        return True, "Contains furan and coumarin rings in a fused system"
+        return False, "Does not contain furanocoumarin scaffold"
+
+    # Alternative approach using SMARTS pattern:
+    # furanocoumarin_pattern = Chem.MolFromSmarts("[o,O]1c2c(c3ccoc3)oc(=O)cc2c1")
+    # if mol.HasSubstructMatch(furanocoumarin_pattern):
+    #     return True, "Contains furanocoumarin scaffold"
+    # else:
+    #     return False, "Does not contain furanocoumarin scaffold"
