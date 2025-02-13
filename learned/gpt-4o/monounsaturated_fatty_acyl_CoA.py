@@ -24,22 +24,22 @@ def is_monounsaturated_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for Coenzyme A (CoA) pattern
-    coa_pattern = Chem.MolFromSmarts("COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12")
+    # Look for Coenzyme A (CoA) pattern - more flexible to handle variability
+    coa_pattern = Chem.MolFromSmarts("SCCNC(=O)CCNC(=O)")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No Coenzyme A pattern found"
-    
-    # Find all C=C double bonds
-    double_bond_pattern = Chem.MolFromSmarts("C=C")
-    double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
-    
-    if len(double_bond_matches) != 1:
-        return False, f"Found {len(double_bond_matches)} carbon-carbon double bonds, need exactly 1"
 
-    # Check if the rest of the structure can be considered a fatty acyl chain
-    # This is somewhat heuristic, based on typical fatty acyl chain length and saturation
-    fatty_acyl_chain_pattern = Chem.MolFromSmarts("C(=O)SCCNC(=O)")
-    if not mol.HasSubstructMatch(fatty_acyl_chain_pattern):
-        return False, "No fatty acyl chain structure detected"
+    # Find all C=C double bonds
+    double_bond_pattern = Chem.MolFromSmarts("C=O.C=C")
+    double_bond_matches = [match for match in mol.GetSubstructMatches(double_bond_pattern)]
+
+    # Ensure that double bond counted is part of the fatty acyl chain separately
+    if len(double_bond_matches) != 1:
+        return False, f"Found {len(double_bond_matches)} carbon-carbon double bonds, need exactly 1 in the acyl chain"
+
+    # Check for indicative acyl-CoA linkage
+    acyl_linkage_pattern = Chem.MolFromSmarts("C(=O)SCCNC(=O)")
+    if not mol.HasSubstructMatch(acyl_linkage_pattern):
+        return False, "No fatty acyl chain with proper linkage detected"
     
     return True, "Structure is a monounsaturated fatty acyl-CoA with one double bond in the acyl chain"
