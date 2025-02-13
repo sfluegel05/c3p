@@ -1,23 +1,59 @@
 """
 Classifies: CHEBI:17522 alditol
 """
-The previous program made a reasonable attempt to classify alditols, but it missed some key aspects of the definition, leading to incorrect classifications.
+"""
+Classifies: CHEBI:18237 alditol
+An alditol is a carbohydrate that is an acyclic polyol having the general formula HOCH2[CH(OH)]nCH2OH
+(formally derivable from an aldose by reduction of the carbonyl group).
+"""
 
-Here are some potential issues and improvements:
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-1. **Acyclic structure check**: The program correctly checks for acyclic structures, but this condition is necessary but not sufficient to identify alditols.
+def is_alditol(smiles: str):
+    """
+    Determines if a molecule is an alditol based on its SMILES string.
 
-2. **Hydroxyl and ether group check**: This check is too broad and allows for molecules that are not alditols. Alditols have a specific pattern of hydroxyl and ether groups, not just the presence of these groups.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Alditol pattern check**: The program uses a SMARTS pattern to check for the -CH2-CH(OH)-CH2- pattern, which is a good start. However, this pattern alone is not sufficient to identify alditols, as it can match other linear compounds with the same pattern but different end groups.
+    Returns:
+        bool: True if molecule is an alditol, False otherwise
+        str: Reason for classification
+    """
 
-4. **Carbon and oxygen count check**: While this check ensures a minimum number of carbon and oxygen atoms, it does not enforce the specific ratio or arrangement of these atoms as required for alditols.
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-To improve the classification, we need to incorporate additional checks that more closely align with the definition of alditols:
+    # Check for acyclic structure
+    if mol.HasSubstructMatch(Chem.MolFromSmarts("C1CCCCC1")):
+        return False, "Molecule contains a ring system"
 
-- Check for the presence of a terminal -CH2OH group at one end of the molecule.
-- Check for the presence of a -HOCH2- group at the other end of the molecule.
-- Ensure that the molecule has the correct number of carbon and oxygen atoms based on the number of -CH(OH)- groups (n+2 carbons and n+2 oxygens).
-- Verify that the -CH(OH)- groups are linearly arranged and not part of any ring system.
+    # Check for terminal groups
+    if not mol.HasSubstructMatch(Chem.MolFromSmarts("CO")):
+        return False, "Missing terminal -CH2OH group"
+    if not mol.HasSubstructMatch(Chem.MolFromSmarts("OC")):
+        return False, "Missing terminal -HOCH2 group"
 
-By incorporating these additional checks, the program should be able to more accurately classify alditols based on their SMILES strings.
+    # Count carbon and oxygen atoms
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+
+    # Check for -CH(OH)- pattern
+    choh_pattern = Chem.MolFromSmarts("[CH](O)")
+    choh_matches = mol.GetSubstructMatches(choh_pattern)
+    n_choh = len(choh_matches)
+
+    if c_count != n_choh + 2 or o_count != n_choh + 2:
+        return False, "Incorrect number of carbon and oxygen atoms for alditol"
+
+    # Check for linear arrangement of -CH(OH)- groups
+    for idx in choh_matches:
+        atom = mol.GetAtomWithIdx(idx)
+        if atom.GetDegree() != 2:
+            return False, "-CH(OH)- groups not linearly arranged"
+
+    return True, "Acyclic polyol with correct terminal groups and linear -CH(OH)- arrangement"
