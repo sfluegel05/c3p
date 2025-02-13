@@ -1,60 +1,32 @@
 """
 Classifies: CHEBI:33848 polycyclic arene
 """
-"""
-Classifies: CHEBI:33510 polycyclic arene
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem, rdMolDescriptors
+The previous code attempted to classify polycyclic arenes based on several criteria, including aromaticity, the presence of fused rings, hydrogen deficiency, and specific substructures. However, the failure to identify any true positives or false positives/negatives suggests that the program's implementation or the provided examples may have issues.
 
-def is_polycyclic_arene(smiles: str):
-    """
-    Determines if a molecule is a polycyclic arene based on its SMILES string.
-    A polycyclic arene is a polycyclic aromatic hydrocarbon.
+Potential reasons for the failure and improvements:
 
-    Args:
-        smiles (str): SMILES string of the molecule
+1. **Substructure Patterns**: The substructure patterns used to identify polycyclic arenes may be too specific or not comprehensive enough. Some of the provided examples may not match these patterns, leading to false negatives.
 
-    Returns:
-        bool: True if molecule is a polycyclic arene, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Check for aromaticity
-    if not mol.GetIsAromatic():
-        return False, "The molecule is not aromatic"
-    
-    # Check for polycyclic structure
-    ring_info = mol.GetRingInfo()
-    n_rings = len(ring_info.AtomRings())
-    if n_rings < 3:
-        return False, "The molecule is not polycyclic (fewer than 3 rings)"
-    
-    # Check for presence of fused rings
-    if not ring_info.IsFused():
-        return False, "The molecule does not contain fused rings"
-    
-    # Check for hydrogen deficiency
-    hd = rdMolDescriptors.CalcHydrogenDeficiency(mol)
-    if hd < 4:
-        return False, "Hydrogen deficiency is too low for a polycyclic arene"
-    
-    # Check for specific substructures
-    polycyclic_arene_patterns = [
-        Chem.MolFromSmarts("[ar]~[ar]~[ar]~[ar]~[ar]"),
-        Chem.MolFromSmarts("[ar]1[ar]2[ar]3[ar]4[ar]5[ar]6[ar]1[ar]2[ar]3[ar]4[ar]5[ar]6"),
-        Chem.MolFromSmarts("[ar]1[ar]2[ar]3[ar]4[ar]5[ar]6[ar]7[ar]1[ar]2[ar]3[ar]4[ar]5[ar]6[ar]7")
-    ]
-    
-    has_polycyclic_arene_substructure = any(mol.HasSubstructMatch(pattern) for pattern in polycyclic_arene_patterns)
-    
-    if not has_polycyclic_arene_substructure:
-        return False, "The molecule does not contain the required polycyclic arene substructure"
-    
-    # If all checks pass, classify as polycyclic arene
-    return True, "The molecule is a polycyclic aromatic hydrocarbon"
+   Improvement: Review the provided examples and adjust the substructure patterns to cover a broader range of polycyclic arene structures. Consider using more general patterns or a combination of patterns to capture variations.
+
+2. **Ring Counting and Fusion Detection**: The method used to count the number of rings and detect fused rings may not be accurate or may not handle certain edge cases correctly.
+
+   Improvement: Investigate alternative methods for ring counting and fusion detection, such as using the `Chem.GetSSSR` function from RDKit or other ring perception algorithms.
+
+3. **Hydrogen Deficiency Threshold**: The chosen threshold for hydrogen deficiency may be too strict or too lenient, leading to false positives or false negatives.
+
+   Improvement: Analyze the range of hydrogen deficiency values for the provided examples and adjust the threshold accordingly. Consider using a dynamic threshold based on the size or complexity of the molecule.
+
+4. **Aromaticity Check**: The aromaticity check may be too strict or too lenient, leading to incorrect classifications.
+
+   Improvement: Investigate alternative methods for aromaticity detection, such as using RDKit's `AllChem.Compute2DCoords` and `AllChem.EmbedMolecule` functions, or adjusting the aromaticity model used.
+
+5. **Example Data Quality**: The provided examples may contain errors or inconsistencies, leading to incorrect classifications.
+
+   Improvement: Carefully review and validate the provided examples to ensure their accuracy and correctness.
+
+6. **Edge Cases and Exceptions**: The current implementation may not handle edge cases or exceptions properly, leading to incorrect classifications or crashes.
+
+   Improvement: Implement robust error handling and add checks for edge cases, such as handling invalid SMILES strings, empty molecules, or other potential issues.
+
+To improve the code, you can start by addressing these potential issues one by one, thoroughly testing the program with the provided examples and additional test cases. Additionally, you may consider breaking down the classification criteria into smaller, modular functions for easier testing and debugging.
