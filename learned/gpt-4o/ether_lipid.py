@@ -2,13 +2,11 @@
 Classifies: CHEBI:64611 ether lipid
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_ether_lipid(smiles: str):
     """
     Determines if a molecule is an ether lipid based on its SMILES string.
-    An ether lipid is similar to a glycerolipid but with one or more ether linkages
-    at the glycerol backbone.
+    An ether lipid features one or more ether linkages replacing the usual ester linkages with a glycerol backbone.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -18,24 +16,29 @@ def is_ether_lipid(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
+    # Parse SMILES string to RDKit molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Flexibly recognize glycerol backbone with ether linkage
-    # Pattern must account for chirality, branching, and variability
-    glycerol_ether_pattern = Chem.MolFromSmarts("COC[C@H]([O*])COP([O-])(=O)OCC[N+]([CH3])([CH3])[CH3]")  # Example pattern including phosphocholine
-    if not mol.HasSubstructMatch(glycerol_ether_pattern):
-        return False, "No ether-linked glycerol backbone found"
-    
-    # Must have at least one ether linkage (-O-C-) substituting an ester
-    ether_linkage_pattern = Chem.MolFromSmarts("[OX2][CX4]")
-    ether_linkages = mol.GetSubstructMatches(ether_linkage_pattern)
-    if len(ether_linkages) < 1:
-        return False, "No sufficient ether linkage found substituting ester linkage"
+    # Define the ether linkage pattern (R-O-R') that should replace ester linkage (R-C(=O)-O-R)
+    ether_linkage_pattern = Chem.MolFromSmarts("COC")  # Defines a simple ether linkage from glycerol to alkyl chain
 
-    return True, "Contains ether linkage with glycerol backbone"
+    # Define the glycerol ether pattern to ensure it's part of the backbone
+    # This should capture more varied structures with different head groups after the glycerol moiety
+    glycerol_ether_pattern = Chem.MolFromSmarts("C(CO)CO")  # Simplified glycerol backbone, allowing ether linkage
+
+    # Check for presence of ether linkage
+    has_ether_linkage = mol.HasSubstructMatch(ether_linkage_pattern)
+    
+    # Check if the molecule has a glycerol backbone element with potential ether links
+    has_glycerol_structure = mol.HasSubstructMatch(glycerol_ether_pattern)
+    
+    # Determine if the molecule is an ether lipid
+    if has_ether_linkage and has_glycerol_structure:
+        return True, "Contains ether linkage with glycerol backbone"
+    
+    return False, "No ether-linked glycerol backbone found"
 
 # Example usage
 example_smiles = "P(OCC[N+](C)(C)C)(OC[C@H](OC(=O)C=C)COCCCCCCCCCCCCCCCCCC)([O-])=O"
