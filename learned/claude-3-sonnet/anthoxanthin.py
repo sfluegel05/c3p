@@ -1,60 +1,35 @@
 """
 Classifies: CHEBI:192499 anthoxanthin
 """
-"""
-Classifies: CHEBI:78354 anthoxanthin
+The previous code attempted to classify anthoxanthins based on the following criteria:
 
-Anthoxanthins are a type of flavonoid pigments in plants. They are water-soluble pigments that range in color from white or colorless to a creamy yellow, often found in petals of flowers.
-"""
+1. Presence of a flavone backbone
+2. At least two hydroxyl groups
+3. Presence of glycosidic bonds (oxygen attached to two carbons) or other common substituents like methoxy, sulfate, etc.
+4. Molecular weight greater than 300 Da
 
-from rdkit import Chem
-from rdkit.Chem import rdFMCS
+However, the outcomes show that this approach failed to correctly classify several known anthoxanthins, resulting in many false negatives.
 
-def is_anthoxanthin(smiles: str):
-    """
-    Determines if a molecule is an anthoxanthin based on its SMILES string.
+Here are some potential reasons for the failure and suggestions for improvement:
 
-    Args:
-        smiles (str): SMILES string of the molecule
+1. **Structural Diversity**: Anthoxanthins can have diverse structural variations beyond just the flavone backbone. The code should consider other backbones like flavonols (e.g., quercetin derivatives) or chalcones, which are also common anthoxanthin structures.
 
-    Returns:
-        bool: True if molecule is an anthoxanthin, False otherwise
-        str: Reason for classification
-    """
+2. **Substituent Patterns**: The code only checks for the presence of glycosidic bonds or a few common substituents. However, anthoxanthins can have a wide range of substituents, including acyl groups, sulfate esters, and more complex glycosidic linkages. A more comprehensive approach to recognizing common anthoxanthin substituent patterns is needed.
 
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+3. **Molecular Properties**: Relying solely on molecular weight as a property criterion may be too restrictive. Anthoxanthins can have a wide range of molecular weights, and some smaller compounds may still qualify as anthoxanthins based on their structure and properties.
 
-    # Look for flavone backbone
-    flavone_pattern = Chem.MolFromSmarts("c1cc(=O)c2c(cccc2)o1")
-    if not mol.HasSubstructMatch(flavone_pattern):
-        return False, "No flavone backbone found"
+4. **Substructure Matching**: The substructure matching approach used in the code may be too strict or too lenient in some cases. It might be helpful to explore more flexible techniques like maximum common substructure (MCS) analysis or machine learning-based approaches.
 
-    # Look for hydroxyl groups
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX1H]")
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    if len(hydroxyl_matches) < 2:
-        return False, "Fewer than 2 hydroxyl groups found"
+To improve the program, consider the following steps:
 
-    # Look for glycosidic bonds (oxygen attached to two carbons)
-    glycosidic_pattern = Chem.MolFromSmarts("[OX2;!R]")
-    glycosidic_matches = mol.GetSubstructMatches(glycosidic_pattern)
+1. **Expand the Structural Diversity**: Include additional backbone patterns beyond just flavones, such as flavonols, chalcones, and potentially others.
 
-    # Check for other substituents like methoxy, sulfate, etc.
-    substituents = ["[OX2C]", "[SX4](=O)(=O)([OX1])", "[CX3](=O)[OX2H]"]
-    sub_matches = []
-    for sub_pattern in substituents:
-        sub_pattern = Chem.MolFromSmarts(sub_pattern)
-        sub_matches.extend(mol.GetSubstructMatches(sub_pattern))
+2. **Enhance Substituent Recognition**: Develop a more comprehensive set of SMARTS patterns or other techniques to recognize common anthoxanthin substituents, including acyl groups, sulfate esters, and complex glycosidic linkages.
 
-    # Anthoxanthins are typically large, colored, and water-soluble
-    mol_weight = Chem.rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_weight < 300:
-        return False, "Molecular weight too low for anthoxanthin"
+3. **Refine Molecular Property Criteria**: Instead of relying solely on molecular weight, consider incorporating other relevant properties like logP, hydrogen bond donors/acceptors, or even machine learning-based predictions of water solubility and color.
 
-    if len(glycosidic_matches) > 0 or len(sub_matches) > 0:
-        return True, "Contains flavone backbone with hydroxyl and glycosidic/other substituents"
-    else:
-        return False, "No glycosidic or other common substituents found"
+4. **Explore Alternative Approaches**: Consider using maximum common substructure (MCS) analysis or machine learning techniques to more flexibly identify structural similarities with known anthoxanthins. These approaches may be better suited to handle the structural diversity of this class.
+
+5. **Curate a Diverse Training Set**: Assemble a comprehensive set of known anthoxanthin structures, including both positive and negative examples, to train and validate any machine learning or MCS-based approaches.
+
+By addressing these points, the program's ability to accurately classify anthoxanthins should improve significantly.
