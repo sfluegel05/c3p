@@ -27,8 +27,9 @@ def is_3_substituted_propionyl_CoA_4__(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for CoA(4-) backbone
-    coa_pattern = Chem.MolFromSmarts("C(COP([O-])(=O)OP([O-])(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP([O-])([O-])=O)n1cnc2c(N)ncnc12)(NC(=O)CCNC(=O)[C@H](O)C(C)(C)COP([O-])(=O)OP([O-])(=O))")
-    if not mol.HasSubstructMatch(coa_pattern):
+    coa_pattern = Chem.MolFromSmarts("C(COP([O-])(=O)OP([O-])(=O)OC[C@@H]1O[C@H]([C@H](O)[C@@H]1OP([O-])([O-])=O)n1cnc2c(N)ncnc12)(NC(=O)CCNC(=O)[C@H](O)C(C)(C)COP([O-])(=O)OP([O-])(=O))")
+    coa_match = mol.GetSubstructMatch(coa_pattern)
+    if not coa_match:
         return False, "Missing CoA(4-) backbone"
         
     # Look for substituted propionyl group attached via thioester
@@ -36,12 +37,18 @@ def is_3_substituted_propionyl_CoA_4__(smiles: str):
     propionyl_matches = mol.GetSubstructMatches(propionyl_pattern)
     if len(propionyl_matches) != 1:
         return False, f"Found {len(propionyl_matches)} propionyl groups, need exactly 1"
+    propionyl_atom = mol.GetAtomWithIdx(propionyl_matches[0][0])
     
     # Check for substitution on propionyl group
-    propionyl_atom = mol.GetAtomWithIdx(propionyl_matches[0][0])
     substitutions = sum(1 for atom in propionyl_atom.GetNeighbors() if atom.GetAtomicNum() != 8 and atom.GetAtomicNum() != 6)
     if substitutions < 1:
         return False, "Propionyl group is not substituted"
+    
+    # Check for connectivity between CoA(4-) backbone and substituted propionyl group
+    coa_atoms = [mol.GetAtomWithIdx(idx) for idx in coa_match]
+    coa_neighbors = [atom for atom in propionyl_atom.GetNeighbors() if atom in coa_atoms]
+    if not coa_neighbors:
+        return False, "CoA(4-) backbone and substituted propionyl group are not connected"
     
     # Check for negative charge on phosphate groups
     negative_charges = sum(1 for atom in mol.GetAtoms() if atom.GetFormalCharge() == -1)
