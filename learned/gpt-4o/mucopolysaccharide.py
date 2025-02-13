@@ -19,26 +19,30 @@ def is_mucopolysaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Simplified check for uronic acid-like and glycosamine-like features
-    # Uronic acids (often COOH groups), glycosamine (often NH2 groups)
-    uronic_acid_pattern = Chem.MolFromSmarts("[C,c](=O)[O,N]")
-    glycosamine_pattern = Chem.MolFromSmarts("[N;H2]")
+    # Enhanced check for uronic acid-like features
+    uronic_acid_patterns = [
+        Chem.MolFromSmarts("[C;R0](=O)[O;R0]"),  # Carboxyl group, often in uronic acids
+        Chem.MolFromSmarts("[C;R0](=O)O[CH1][CH2]")  # Sugars leading to uronic acids often have this attachment
+    ]
     
-    uronic_matches = mol.GetSubstructMatches(uronic_acid_pattern)
-    glycosamine_matches = mol.GetSubstructMatches(glycosamine_pattern)
+    # Check for some nitrogen functionalities hinting glycosamines (fairly generalized)
+    glycosamine_patterns = [
+        Chem.MolFromSmarts("[*][NX3][CX4]"),
+        Chem.MolFromSmarts("[*][NX3][CX3]=O")
+    ]
     
-    if len(uronic_matches) == 0 or len(glycosamine_matches) == 0:
-        return False, "Missing uronic acid or glycosamine features"
-    
-    # Assume partial esterification with sulfate is present more heuristically,
-    # as strict identification would require specific sulfate group context
+    # Check for sulfate esterification
     sulfate_pattern = Chem.MolFromSmarts("[SX4](=[OX1])(=[OX1])([OX2])")
-    sulfate_matches = mol.GetSubstructMatches(sulfate_pattern)
-    
-    # Simplified logic: detect presence of all components, not ratios or polymer length
-    if len(sulfate_matches) > 0:
-        return True, "Characteristics of mucopolysaccharide present, including sulfate groups"
-    else:
-        return True, "Characteristics of mucopolysaccharide present, but no sulfate groups"
 
-    return False, "Could not classify as a mucopolysaccharide"
+    # Checking for individual and alternating patterns
+    has_uronic_acid = any(mol.HasSubstructMatch(pat) for pat in uronic_acid_patterns)
+    has_glycosamine = any(mol.HasSubstructMatch(pat) for pat in glycosamine_patterns)
+    has_sulfate = mol.HasSubstructMatch(sulfate_pattern)
+
+    if has_uronic_acid and has_glycosamine:
+        if has_sulfate:
+            return True, "Characteristics of mucopolysaccharide, including sulfate esterification"
+        else:
+            return True, "Characteristics of mucopolysaccharide without detectable sulfate groups"
+        
+    return False, "Missing key features of a mucopolysaccharide"
