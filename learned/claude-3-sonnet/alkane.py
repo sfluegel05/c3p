@@ -40,16 +40,18 @@ def is_alkane(smiles: str):
         if bond.GetBondTypeAsDouble() != 1.0:  # 1.0 = single bond
             return False, "Contains unsaturated bonds"
             
-    # Count carbons and calculate expected hydrogens
+    # Count carbons
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     expected_h = 2*c_count + 2  # CnH2n+2 formula
     
-    # Get actual hydrogen count
-    h_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 1)
+    # Get total hydrogen count (including implicit hydrogens)
+    total_h = 0
+    for atom in mol.GetAtoms():
+        total_h += atom.GetTotalNumHs() + int(atom.GetNumExplicitHs())
     
     # Verify hydrogen count matches formula
-    if h_count != expected_h:
-        return False, f"H count {h_count} doesn't match expected {expected_h} for alkane formula CnH2n+2"
+    if total_h != expected_h:
+        return False, f"H count {total_h} doesn't match expected {expected_h} for alkane formula CnH2n+2"
     
     # Check all carbons are sp3 (saturated)
     for atom in mol.GetAtoms():
@@ -57,4 +59,4 @@ def is_alkane(smiles: str):
             if atom.GetHybridization() != Chem.HybridizationType.SP3:
                 return False, "Contains non-sp3 carbons"
             
-    return True, f"Acyclic saturated hydrocarbon with formula C{c_count}H{h_count}"
+    return True, f"Acyclic saturated hydrocarbon with formula C{c_count}H{total_h}"
