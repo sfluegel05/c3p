@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_tertiary_amine(smiles: str):
     """
     Determines if a molecule is a tertiary amine based on its SMILES string.
-    A tertiary amine has a nitrogen atom bonded to three hydrocarbyl groups, 
-    i.e., three carbon atoms, directly or through a simple chain.
+    A tertiary amine has a nitrogen atom bonded to three hydrocarbyl groups,
+    i.e., three carbon atoms directly attached.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -30,13 +30,9 @@ def is_tertiary_amine(smiles: str):
             for neighbor in atom.GetNeighbors():
                 if neighbor.GetAtomicNum() == 6:
                     carbon_bonds += 1
-                # Ensure they are fully hydrocarbyl groups (not part of amide, etc.)
-                if neighbor.IsInRing() or neighbor.GetIsAromatic():
-                    carbon_bonds = -1  # Invalid setting for hydrocarbyl group
-                    break
 
             if carbon_bonds == 3:
-                return True, "Contains a tertiary amine group (N bonded to 3 carbons or equivalent hydrocarbyl groups)"
+                return True, "Contains a tertiary amine group (N bonded to 3 carbons)"
 
     return False, "No tertiary amine group found"
 
