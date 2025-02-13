@@ -1,18 +1,55 @@
 """
 Classifies: CHEBI:50699 oligosaccharide
 """
-The error "type object 'Mol' has no attribute 'GetNumAtomsSplitByConnectedComponent'" suggests that the method `GetNumAtomsSplitByConnectedComponent` is not a valid method for the `Mol` object in RDKit. It seems that the previous code was attempting to use this method to check if the molecule consisted of a single connected component, which was used as a simplistic criterion to determine if it was a defined oligosaccharide structure or a mixture/polymer.
+"""
+Classifies: CHEBI:36973 oligosaccharide
+"""
+from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors, rdqueries
 
-To improve the program, we need to find an alternative way to check for a defined structure, or refine the criteria for classification. Here are some potential improvements:
+def is_oligosaccharide(smiles: str):
+    """
+    Determines if a molecule is an oligosaccharide based on its SMILES string.
+    An oligosaccharide is a compound where monosaccharide units are joined by glycosidic linkages.
 
-1. **Improve the monosaccharide pattern**: The current pattern (`[C@H]1[C@H]([C@@H]([C@H]([C@@H]1O)O)O)O`) only matches hexose monosaccharides. We could extend the pattern to include other common monosaccharides like pentoses, deoxysugars, and amino sugars.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **Refine the glycosidic bond pattern**: The current pattern (`[OX2][CR]`) may match oxygen atoms that are not involved in glycosidic bonds. We could improve the pattern to be more specific, e.g., by considering the connectivity and environment of the oxygen atom.
-
-3. **Consider other structural features**: Instead of relying solely on molecular weight and the number of connected components, we could look for other structural features that are characteristic of oligosaccharides, such as the presence of multiple glycosidic bonds, the absence of other functional groups (e.g., carboxylic acids, amines), or the presence of specific monosaccharide sequences.
-
-4. **Use a different approach**: Instead of relying on SMARTS patterns and structural features, we could explore other approaches such as machine learning models trained on a dataset of known oligosaccharides and non-oligosaccharides.
-
-5. **Improve the reasoning for classification**: The current reason for classification ("Contains multiple monosaccharide units joined by glycosidic linkages in a defined structure") could be made more specific and informative by providing details about the monosaccharide units, glycosidic linkages, and other structural features that led to the classification.
-
-Overall, the previous program provides a good starting point, but there is room for improvement in the patterns, structural features, and reasoning used for classification. Addressing these areas could lead to a more robust and accurate oligosaccharide classifier.
+    Returns:
+        bool: True if molecule is an oligosaccharide, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Check for glycosidic bonds
+    glycosidic_bond = Chem.MolFromSmarts("[OX2][CR]')
+    if not mol.HasSubstructMatch(glycosidic_bond):
+        return False, "No glycosidic bonds found"
+    
+    # Check for monosaccharide units
+    monosaccharide_pattern = Chem.MolFromSmarts("[OX2][CR][CR][CR][CR][CR][CR]')
+    monosaccharide_matches = mol.GetSubstructMatches(monosaccharide_pattern)
+    if not monosaccharide_matches:
+        return False, "No monosaccharide units found"
+    
+    # Check for multiple monosaccharide units
+    if len(monosaccharide_matches) < 2:
+        return False, "Only one monosaccharide unit found, need at least two"
+    
+    # Check molecular weight range (typically 300-6000 Da)
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 300 or mol_wt > 6000:
+        return False, "Molecular weight outside typical range for oligosaccharides"
+    
+    # Count oxygen and carbon atoms
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    
+    if o_count < c_count / 2:
+        return False, "Too few oxygen atoms for an oligosaccharide"
+    
+    return True, "Contains multiple monosaccharide units joined by glycosidic linkages"
