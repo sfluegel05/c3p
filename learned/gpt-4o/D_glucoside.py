@@ -6,6 +6,7 @@ from rdkit import Chem
 def is_D_glucoside(smiles: str):
     """
     Determines if a molecule is a D-glucoside based on its SMILES string.
+    A D-glucoside contains a D-glucose unit attached via a glycoside bond.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -19,21 +20,20 @@ def is_D_glucoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a SMARTS pattern for D-glucopyranosyl unit
-    d_glucose_pattern = Chem.MolFromSmarts("OC[C@H]1O[C@H](O)[C@H](O)[C@@H](O)[C@@H]1O")
+    # Define a SMARTS pattern for D-glucose based unit, covering both alpha and beta anomers
+    glucose_pattern = Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@H](O)[C@@H](O)[C@H](CO)[C@H]1O")
     
-    # Check if the molecule contains the D-glucose pattern
-    if not mol.HasSubstructMatch(d_glucose_pattern):
-        return False, "No D-glucose-derived glycoside group found"
+    # Check if the molecule contains at least one D-glucose unit
+    if not mol.HasSubstructMatch(glucose_pattern):
+        return False, "No D-glucose unit found"
     
-    # Check for glycosidic linkage (presence of O-glycoside bond)
-    # This might be more complex based on specific linkage types
-    glycoside_pattern = Chem.MolFromSmarts("[C,O]OC[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O")
-    if not mol.HasSubstructMatch(glycoside_pattern):
-        return False, "No glycoside linkage found"
+    # Define a more generalized pattern for glycosidic linkage
+    # This pattern attempts to match an O-glycosidic linkage with at least one D-glucose unit
+    glycosidic_linkage_pattern = Chem.MolFromSmarts("[C,c,O]O[C@H]1[C@H](O)[C@H](O)[C@@H](O)[C@H](CO)[C@H]1O")
+    
+    # Check if the molecule contains a glycosidic linkage
+    # Note: This is a generalized linkage pattern
+    if not mol.HasSubstructMatch(glycosidic_linkage_pattern):
+        return False, "No glycosidic linkage found"
 
-    return True, "Contains D-glucose-derived glycoside group with appropriate glycosidic linkage"
-
-# Example usage:
-# smiles = "OCC(CO)O[C@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O"  # 2-O-(alpha-D-glucopyranosyl)glycerol
-# is_D_glucoside(smiles)
+    return True, "Contains D-glucose unit with glycosidic linkage"
