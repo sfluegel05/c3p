@@ -1,26 +1,50 @@
 """
 Classifies: CHEBI:27325 xanthophyll
 """
-Here is my analysis of the previous program and the outcomes:
+"""
+Classifies: CHEBI:37335 xanthophyll
+A subclass of carotenoids consisting of the oxygenated carotenes.
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-The previous program attempted to classify xanthophylls, a subclass of carotenoids containing oxygenated groups. The overall approach of checking for a carotenoid backbone and the presence of oxygen atoms is reasonable. However, there are a few issues that could explain the failure to correctly classify any examples:
+def is_xanthophyll(smiles: str):
+    """
+    Determines if a molecule is a xanthophyll based on its SMILES string.
+    A xanthophyll is an oxygenated carotenoid containing oxygen atoms.
 
-1. **Insufficient Pattern Matching**: The program looks for a generic carotenoid backbone using the SMARTS pattern `[C;R]=[C;R][C;R]=[C;R][C;R]=[C;R][C;R]=[C;R][C;R]=[C;R]`. While this will match many carotenoid backbones, it may miss some more complex or irregular structures. Xanthophylls can have various substitutions and cyclizations that this pattern may not account for.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **Overly Strict Oxygen Position Check**: The program checks if the oxygen atoms are present at specific positions (3, 3', 4, 4', 5, 6, 5', 6') based on the assumption that xanthophylls typically have oxygens at these positions. However, this may be too restrictive, as there could be valid xanthophyll structures with oxygens at different positions.
+    Returns:
+        bool: True if molecule is a xanthophyll, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-3. **Incorrect Functional Group Patterns**: The patterns used for detecting hydroxy (`[OH]`), epoxy (`[O;R]`), and keto (`[C=O]`) groups may not be sufficient or accurate enough. For example, the epoxy pattern `[O;R]` could potentially match other oxygen-containing groups as well.
+    # Check for carotenoid backbone (long chain of conjugated double bonds)
+    carotenoid_pattern = Chem.MolFromSmarts("[C;R]=[C;R][C;R]=[C;R][C;R]=[C;R][C;R]=[C;R][C;R]=[C;R]")
+    if not mol.HasSubstructMatch(carotenoid_pattern):
+        return False, "No carotenoid backbone found"
+    
+    # Check for oxygen atoms
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if o_count == 0:
+        return False, "No oxygen atoms found, not a xanthophyll"
 
-To improve the program, we could consider the following steps:
+    # Count rotatable bonds to verify long chain
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 10:
+        return False, "Chain too short for a carotenoid"
 
-1. **Enhance Carotenoid Backbone Matching**: Use more flexible SMARTS patterns or a combination of patterns to better account for diverse carotenoid backbone structures, including cyclizations and substitutions.
+    # Check molecular weight - xanthophylls typically >500 Da
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 500:
+        return False, "Molecular weight too low for xanthophyll"
 
-2. **Relax Oxygen Position Constraints**: Instead of strictly checking for specific positions, we could check for the presence of oxygen atoms within the carotenoid backbone or at reasonable positions based on a broader analysis of xanthophyll structures.
-
-3. **Refine Functional Group Detection**: Improve the SMARTS patterns used for detecting hydroxy, epoxy, and keto groups, potentially using more specific patterns or combinations of patterns to increase accuracy.
-
-4. **Incorporate Additional Structural Features**: Analyze other structural features that could help distinguish xanthophylls from non-xanthophyll carotenoids, such as molecular weight, the number of specific functional groups, or the presence of certain substructures.
-
-5. **Use Machine Learning**: As an alternative approach, we could consider training a machine learning model on a dataset of known xanthophyll and non-xanthophyll structures to learn the relevant structural patterns automatically.
-
-By addressing these issues and incorporating additional structural analyses or machine learning techniques, we may be able to improve the accuracy of the xanthophyll classification program.
+    return True, "Contains a carotenoid backbone with oxygen atoms"
