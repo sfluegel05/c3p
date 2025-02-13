@@ -21,29 +21,32 @@ def is_anthoxanthin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Use more general patterns for flavonoid core that can account for variations
+    # Broad flavonoid core patterns
     flavonoid_core_patterns = [
-        Chem.MolFromSmarts("O=c1cc2ccccc2oc1"),  # Basic flavone pattern
-        Chem.MolFromSmarts("Oc1cc2c(O)cc(O)cc2oc1"),  # More complex flavonoid core
+        Chem.MolFromSmarts("O=c1cc2ccccc2oc1"),       # Flavone pattern
+        Chem.MolFromSmarts("Oc1cc2c(O)cc(O)cc2oc1"),  # Flavanol pattern
+        Chem.MolFromSmarts("Oc1cc2cc(O)c([O])c(O)c2c(=O)c1"), # Aurone pattern
     ]
 
-    # Check for the flavonoid core
-    if not any(mol.HasSubstructMatch(p) for p in flavonoid_core_patterns):
+    # Check for any flavonoid core structure
+    has_core_structure = any(mol.HasSubstructMatch(p) for p in flavonoid_core_patterns)
+    if not has_core_structure:
         return False, "Flavonoid core structure not found"
 
-    # Check for hydroxyl groups - essential for anthoxanthins
-    hydroxyl_group_pattern = Chem.MolFromSmarts("[OX2H]")
-    if not mol.HasSubstructMatch(hydroxyl_group_pattern):
-        return False, "No hydroxyl groups found, these are essential for anthoxanthins"
+    # Ensure multiple hydroxyl groups, not just one
+    hydroxyl_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[OX2H]")))
+    if hydroxyl_count < 2:
+        return False, "Insufficient hydroxyl groups for typical anthoxanthin structure"
 
-    # Check for glycosylation pattern (sugar components)
-    sugar_pattern = Chem.MolFromSmarts("C1([OX2H][C@H]([O])C([O])[C@H](O)[C@H]1O)O")  # Simplified sugar pattern
-    sugar_matches = mol.GetSubstructMatches(sugar_pattern)
-    has_sugar = len(sugar_matches) > 0
+    # Check for glycosylation pattern (sugar moieties)
+    sugar_patterns = [
+        Chem.MolFromSmarts("C1([OX2H][C@H](O)[C@H](O)[C@H](O)C1O)O"),  # Glucose
+        Chem.MolFromSmarts("C1O[C@H](C([OX2H])[C@H](O)[C@H](O)[C@H]1O)O"), # Arabinose
+    ]
+    has_sugar = any(len(mol.GetSubstructMatches(p)) > 0 for p in sugar_patterns)
     
-    # Return results based on identified patterns
-    details = "Flavonoid core with hydroxyl groups"
+    details = "Flavonoid core with sufficient hydroxyl groups"
     if has_sugar:
         details += " and glycosylation present"
-
+    
     return True, details
