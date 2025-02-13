@@ -2,12 +2,12 @@
 Classifies: CHEBI:67194 cannabinoid
 """
 from rdkit import Chem
-from rdkit.Chem import rdqueries
-from rdkit.Chem import rdMolDescriptors
 
 def is_cannabinoid(smiles: str):
     """
     Determines if a molecule is a cannabinoid based on its SMILES string.
+    A cannabinoid is identified by characteristic structural motifs and functional groups, 
+    common in pharmacologically active compounds from or resembling the Cannabis plant.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,20 +21,28 @@ def is_cannabinoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for a phenolic group - common in cannabinoids
-    phenol_pattern = Chem.MolFromSmarts('c1cc(O)ccc1')
-    if not mol.HasSubstructMatch(phenol_pattern):
-        return False, "No phenolic group detected - common in cannabinoids"
+    # Broaden pattern for cannabinoid-like core structures
+    # Example: Patterns for aromatic rings with common attachments like oxygens 
+    cannabinoid_core_patterns = [
+        Chem.MolFromSmarts('c1cc(O)c(C)c(C=CC(=O)O)c1'),  # General THC-like structure
+        Chem.MolFromSmarts('c1cc(O)c(CO)cc1'),           # CBD-like
+        Chem.MolFromSmarts('C=Cc1cc(O)c(C)cc1'),         # Delta-9-like core
+    ]
 
-    # Check for long carbon chains, typically present in cannabinoids
-    chain_pattern = Chem.MolFromSmarts('CCCCCCCCCCCC')  # Long C-chain
-    if not mol.HasSubstructMatch(chain_pattern):
-        return False, "No long carbon chain detected, typical of cannabinoids"
+    # Check for any one of the cannabinoid core patterns
+    for pattern in cannabinoid_core_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return True, "Cannabinoid-like core structure detected"
+    
+    # Additional common characteristic features (presence of an ether, ester, or amide group)
+    functional_groups = [
+        Chem.MolFromSmarts('CO'),                 # Ethers
+        Chem.MolFromSmarts('OC(=O)'),             # Esters
+        Chem.MolFromSmarts('NC(=O)'),             # Amides
+    ]
 
-    # Check for oxygen in heterocyclic ring or as functional group
-    oxygen_pattern = Chem.MolFromSmarts('[O]')
-    if not mol.HasSubstructMatch(oxygen_pattern):
-        return False, "No heterocyclic oxygen or oxygen-containing group found"
-
-    # These checks confirm essential cannabinoid characteristics
-    return True, "Phenolic group, long carbon chain, and oxygen-containing functional groups detected"
+    for pattern in functional_groups:
+        if mol.HasSubstructMatch(pattern):
+            return True, "Interesting functional group indicative of cannabinoids detected"
+    
+    return False, "No cannabinoid characteristic patterns detected"
