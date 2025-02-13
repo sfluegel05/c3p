@@ -2,19 +2,17 @@
 Classifies: CHEBI:26214 porphyrins
 """
 """
-Classifies: CHEBI:35626 porphyrins
-
-Porphyrins are natural pigments containing a fundamental skeleton of four pyrrole nuclei
-united through the alpha-positions by four methine groups to form a macrocyclic structure.
+Classifies: CHEBI:27092 porphyrins
 """
-
 from rdkit import Chem
-from rdkit.Chem import rdchem
+from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
-def is_porphyrin(smiles):
+def is_porphyrin(smiles: str):
     """
     Determines if a molecule is a porphyrin based on its SMILES string.
+    Porphyrins are natural pigments containing a fundamental skeleton of four pyrrole nuclei
+    united through the alpha-positions by four methine groups to form a macrocyclic structure.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,69 +21,37 @@ def is_porphyrin(smiles):
         bool: True if molecule is a porphyrin, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for tetrapyrrole macrocycle
-    rings = mol.GetRingInfo().AtomRings()
-    porphyrin_ring = None
-    for ring in rings:
-        if len(ring) == 16:  # Typical porphyrin macrocycle size
-            porphyrin_ring = ring
-            break
-    if not porphyrin_ring:
-        return False, "No tetrapyrrole macrocycle found"
-
-    # Check if macrocycle has 4 pyrrole rings
-    pyrrole_count = 0
-    for atom_idx in porphyrin_ring:
-        atom = mol.GetAtomWithIdx(atom_idx)
-        if atom.GetIsAromatic() and atom.GetAtomicNum() == 7:  # Aromatic nitrogen
-            neighbors = atom.GetNeighbors()
-            if len(neighbors) == 2:  # Connected to 2 carbons
-                carbon_neighbors = [mol.GetAtomWithIdx(n.GetIdx()).GetAtomicNum() == 6 for n in neighbors]
-                if all(carbon_neighbors):
-                    pyrrole_count += 1
-    if pyrrole_count != 4:
-        return False, f"Found {pyrrole_count} pyrrole rings in macrocycle, expected 4"
-
-    # Check for 4 methine bridges
-    methine_count = 0
-    for bond in mol.GetBonds():
-        if bond.GetBondType() == Chem.BondType.SINGLE:
-            atom1 = mol.GetAtomWithIdx(bond.GetBeginAtomIdx())
-            atom2 = mol.GetAtomWithIdx(bond.GetEndAtomIdx())
-            if atom1.GetIsAromatic() and atom2.GetIsAromatic():
-                if atom1.GetIdx() in porphyrin_ring and atom2.GetIdx() in porphyrin_ring:
-                    methine_count += 1
-    if methine_count != 4:
-        return False, f"Found {methine_count} methine bridges, expected 4"
-
-    # Check for conjugated system
-    conjugated = True
-    for atom_idx in porphyrin_ring:
-        atom = mol.GetAtomWithIdx(atom_idx)
-        if not atom.GetIsAromatic():
-            conjugated = False
-            break
-    if not conjugated:
-        return False, "Macrocycle is not fully conjugated"
-
-    # Check for planarity
-    if not rdMolDescriptors.CalcPMI(mol, force=True) < 0.1:
-        return False, "Macrocycle is not planar"
-
-    # Additional checks for common porphyrin features
-    has_substituents = any(atom.GetDegree() > 3 for atom in mol.GetAtoms() if atom.GetIdx() in porphyrin_ring)
-    has_metal_center = any(atom.GetFormalCharge() != 0 for atom in mol.GetAtoms())
-
-    reason = "Contains a tetrapyrrole macrocycle with 4 pyrrole rings connected by 4 methine bridges, forming a conjugated planar system"
-    if has_substituents:
-        reason += ", with substituents present"
-    if has_metal_center:
-        reason += ", and a metal center"
-
-    return True, reason
+    # Look for porphyrin macrocycle
+    porphyrin_pattern = Chem.MolFromSmarts("c1nc2nc3nc4nc1ccc4cc3cc2")
+    if not mol.HasSubstructMatch(porphyrin_pattern):
+        return False, "No porphyrin macrocycle found"
+    
+    # Check for 4 pyrrole rings
+    pyrrole_pattern = Chem.MolFromSmarts("c1cc[nH]c1")
+    pyrrole_matches = mol.GetSubstructMatches(pyrrole_pattern)
+    if len(pyrrole_matches) != 4:
+        return False, f"Found {len(pyrrole_matches)} pyrrole rings, need exactly 4"
+    
+    # Check for methine groups connecting pyrroles
+    methine_pattern = Chem.MolFromSmarts("C=C")
+    methine_matches = mol.GetSubstructMatches(methine_pattern)
+    if len(methine_matches) != 4:
+        return False, f"Found {len(methine_matches)} methine groups, need exactly 4"
+    
+    # Check for aromaticity
+    if not mol.GetAromaticRingInfo():
+        return False, "Porphyrin macrocycle is not aromatic"
+    
+    # Check for substituents (metals, side chains, etc.)
+    # This is not strictly required, but porphyrins usually have substituents
+    substituents = [atom.GetSymbol() for atom in mol.GetAtoms() if atom.GetAtomicNum() not in [5, 6, 7, 8]]
+    if not substituents:
+        return True, "Contains bare porphyrin macrocycle"
+    else:
+        return True, f"Contains porphyrin macrocycle with substituents: {', '.join(set(substituents))}"
