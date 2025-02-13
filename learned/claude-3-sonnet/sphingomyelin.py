@@ -28,7 +28,7 @@ def is_sphingomyelin(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for sphingoid base pattern
-    sphingoid_base_pattern = Chem.MolFromSmarts("[N;X3;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2]")
+    sphingoid_base_pattern = Chem.MolFromSmarts("[N;X3;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][O;X2;H1]")
     if not mol.HasSubstructMatch(sphingoid_base_pattern):
         return False, "No sphingoid base found"
 
@@ -42,32 +42,22 @@ def is_sphingomyelin(smiles: str):
     if not mol.HasSubstructMatch(phosphocholine_pattern):
         return False, "No phosphorylcholine group ester-linked to terminal hydroxy group"
 
-    # Check for correct connectivity and positioning
-    connectivity_pattern = Chem.MolFromSmarts("[N;X3;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][O;X2][C;X4;H1,H2][N;X3;H1,H2][C;X3;H1,H2](=[O;X1])[C;X4;H1,H2]")
-    if not mol.HasSubstructMatch(connectivity_pattern):
-        return False, "Key components not correctly connected or positioned"
-
     # Check for trans double bond in sphingoid base
-    trans_double_bond_pattern = Chem.MolFromSmarts("[C;X3]=[C;X3]")
+    trans_double_bond_pattern = Chem.MolFromSmarts("/C=C/")
     if not mol.HasSubstructMatch(trans_double_bond_pattern):
         return False, "No trans double bond in sphingoid base"
 
-    # Check for specific stereochemistry of sphingoid base
-    stereochemistry_pattern = Chem.MolFromSmarts("[C@H]([N])[C@@H]([O])[C@@H]([C])[C@@H]([C])[C@@H]([C])[C@@H]([C])[C@@H]([C])[C@@H]([C])[C@@H]([C])[C@@H]([C])[C@@H]([C])[C@@H]([C])[O]")
-    if not mol.HasSubstructMatch(stereochemistry_pattern):
-        return False, "Incorrect stereochemistry of sphingoid base"
-
     # Check molecular weight and atom counts
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 500 or mol_wt > 1000:
+    if mol_wt < 400 or mol_wt > 1200:
         return False, "Molecular weight outside typical range for sphingomyelins"
 
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 30 or c_count > 60:
+    if c_count < 20 or c_count > 70:
         return False, "Carbon count outside typical range for sphingomyelins"
 
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count < 5 or o_count > 10:
+    if o_count < 4 or o_count > 12:
         return False, "Oxygen count outside typical range for sphingomyelins"
 
     return True, "Contains sphingoid base, fatty acid chain linked via amide bond, and phosphorylcholine group ester-linked to terminal hydroxy group"
