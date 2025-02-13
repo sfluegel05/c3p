@@ -32,30 +32,28 @@ def is_polycyclic_arene(smiles: str):
     # Check for polycyclic structure
     ring_info = mol.GetRingInfo()
     n_rings = len(ring_info.AtomRings())
-    if n_rings < 2:
-        return False, "The molecule is not polycyclic"
+    if n_rings < 3:
+        return False, "The molecule is not polycyclic (fewer than 3 rings)"
     
-    # Check for presence of five-membered rings
-    if any(len(ring) == 5 for ring in ring_info.AtomRings()):
-        # Allow specific five-membered rings like in fluorene and acenaphthylene
-        pass
-    else:
-        # Exclude other five-membered rings
-        return False, "The molecule contains a non-aromatic five-membered ring"
+    # Check for presence of fused rings
+    if not ring_info.IsFused():
+        return False, "The molecule does not contain fused rings"
     
     # Check for hydrogen deficiency
     hd = rdMolDescriptors.CalcHydrogenDeficiency(mol)
     if hd < 4:
         return False, "Hydrogen deficiency is too low for a polycyclic arene"
     
-    # Check for presence of heteroatoms
-    atoms = [atom.GetAtomicNum() for atom in mol.GetAtoms()]
-    if any(atom not in [1, 6, 8] for atom in atoms):
-        return False, "The molecule contains heteroatoms other than hydrogen, carbon, and oxygen"
-    
     # Check for specific substructures
-    polycyclic_arene_pattern = Chem.MolFromSmarts("[ar]~[ar]~[ar]~[ar]")
-    if not mol.HasSubstructMatch(polycyclic_arene_pattern):
+    polycyclic_arene_patterns = [
+        Chem.MolFromSmarts("[ar]~[ar]~[ar]~[ar]~[ar]"),
+        Chem.MolFromSmarts("[ar]1[ar]2[ar]3[ar]4[ar]5[ar]6[ar]1[ar]2[ar]3[ar]4[ar]5[ar]6"),
+        Chem.MolFromSmarts("[ar]1[ar]2[ar]3[ar]4[ar]5[ar]6[ar]7[ar]1[ar]2[ar]3[ar]4[ar]5[ar]6[ar]7")
+    ]
+    
+    has_polycyclic_arene_substructure = any(mol.HasSubstructMatch(pattern) for pattern in polycyclic_arene_patterns)
+    
+    if not has_polycyclic_arene_substructure:
         return False, "The molecule does not contain the required polycyclic arene substructure"
     
     # If all checks pass, classify as polycyclic arene
