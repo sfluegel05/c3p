@@ -25,41 +25,51 @@ def is_isoflavonoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Basic pattern for isoflavonoid core:
-    # - Benzene ring fused to oxygen-containing heterocycle
-    # - Aryl group at position 3
-    # - Allows for variations in saturation and substitution
-    core_pattern = Chem.MolFromSmarts('[c,C]1[c,C][c,C][c,C][c,C][c,C]2O[c,C][c,C]([$(c3ccccc3),$(C3=CC=CC=C3)])[c,C](=O)[c,C]12')
+    # Core pattern for isoflavonoid (3-phenylchromen-4-one core)
+    # Specifically matches:
+    # - The chromen-4-one core with oxygen at position 1
+    # - A phenyl ring at position 3
+    # - Allows for various substitutions
+    core_pattern = Chem.MolFromSmarts('[#6]1=C(c2[c,C]:[c,C]:[c,C]:[c,C]:[c,C]:2)Oc2c(C1=O):[c,C]:[c,C]:[c,C]:[c,C]:2')
     
-    # Alternative pattern for more complex fused systems
-    alt_pattern = Chem.MolFromSmarts('[c,C]1[c,C][c,C][c,C][c,C]2O[c,C][c,C]([$(c3ccccc3),$(C3=CC=CC=C3)])[c,C](=O)[c,C]12')
-    
-    if core_pattern is None or alt_pattern is None:
-        return None, "Error in SMARTS patterns"
+    if core_pattern is None:
+        return None, "Error in SMARTS pattern"
 
-    # Check for required substructures
-    if not (mol.HasSubstructMatch(core_pattern) or mol.HasSubstructMatch(alt_pattern)):
+    # Check for basic isoflavonoid core
+    if not mol.HasSubstructMatch(core_pattern):
         return False, "No isoflavonoid core structure found"
 
-    # Verify presence of oxygen-containing heterocycle
-    pyran_pattern = Chem.MolFromSmarts('c1c2c(cc1)OCC(=O)c2')
-    if not mol.HasSubstructMatch(pyran_pattern):
-        return False, "Missing benzopyran core"
+    # Additional verification patterns
+    
+    # Check for chromene oxygen and ketone
+    chromene_pattern = Chem.MolFromSmarts('O1c2ccccc2C(=O)C=C1')
+    if not mol.HasSubstructMatch(chromene_pattern):
+        return False, "Missing required chromene core with ketone"
 
-    # Check for aryl group
-    aryl_pattern = Chem.MolFromSmarts('a1aaaa1')
-    aryl_matches = len(mol.GetSubstructMatches(aryl_pattern))
-    if aryl_matches < 2:  # Need at least 2 aromatic rings (one from core, one from substituent)
-        return False, "Missing required aryl substituent"
+    # Verify position 3 phenyl substituent
+    pos3_phenyl = Chem.MolFromSmarts('C1=COc2ccccc2C1(=O)C1=CC=CC=C1')
+    if not mol.HasSubstructMatch(pos3_phenyl):
+        return False, "Missing phenyl substituent at position 3"
 
-    # Count oxygens to ensure we have enough for the core structure
-    oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if oxygen_count < 2:
-        return False, "Insufficient oxygen atoms for isoflavonoid structure"
-
-    # Additional check for ring systems
+    # Count ring systems
     ring_info = mol.GetRingInfo()
     if ring_info.NumRings() < 2:
         return False, "Insufficient ring count for isoflavonoid structure"
 
-    return True, "Contains isoflavonoid core structure with aryl substituent at position 3"
+    # Verify aromatic character
+    aromatic_atoms = sum(1 for atom in mol.GetAtoms() if atom.GetIsAromatic())
+    if aromatic_atoms < 6:
+        return False, "Insufficient aromatic character"
+
+    # Additional structural requirements
+    required_features = [
+        (8, 2, "Insufficient oxygen atoms (need at least 2)"),  # At least 2 oxygens
+        (6, 15, "Insufficient carbon atoms for isoflavonoid structure")  # At least 15 carbons
+    ]
+    
+    for atomic_num, min_count, error_msg in required_features:
+        atom_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == atomic_num)
+        if atom_count < min_count:
+            return False, error_msg
+
+    return True, "Contains isoflavonoid core structure (3-phenylchromen-4-one) with required substituents"
