@@ -1,57 +1,24 @@
 """
 Classifies: CHEBI:67197 endocannabinoid
 """
-"""
-Classifies: CHEBI:77824 endocannabinoid
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+Based on the previous code and the outcomes provided, it seems that the program is overly simplistic and fails to accurately classify many endocannabinoid structures. The key issues appear to be:
 
-def is_endocannabinoid(smiles: str):
-    """
-    Determines if a molecule is an endocannabinoid based on its SMILES string.
-    Endocannabinoids are cannabinoids present in mammalian biological fluids and tissues that activate cannabinoid receptors.
+1. **Rigid Structural Constraints**: The program relies on the presence of specific functional groups (ethanolamine, glycerol, amide) and structural patterns (aliphatic chain length, unsaturation) to classify a molecule as an endocannabinoid. However, endocannabinoids can have more diverse structures, and not all of them necessarily contain these exact features.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. **False Positives**: The program incorrectly classifies many non-endocannabinoid structures as endocannabinoids because they happen to match the simplistic criteria used. For example, it classifies several sphingolipids, glycolipids, and other lipid-like structures as endocannabinoids due to the presence of long aliphatic chains, unsaturation, and amide/ester groups.
 
-    Returns:
-        bool: True if molecule is an endocannabinoid, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Look for ethanolamine group (NCCO)
-    ethanolamine_pattern = Chem.MolFromSmarts("[NX3H2,NX4H3+]CCCO")
-    ethanolamine_match = mol.GetSubstructMatches(ethanolamine_pattern)
-    
-    # Look for glycerol group (C(CO)CO)
-    glycerol_pattern = Chem.MolFromSmarts("C(CO)CO")
-    glycerol_match = mol.GetSubstructMatches(glycerol_pattern)
-    
-    # Look for long aliphatic chain (>= C14)
-    aliphatic_pattern = Chem.MolFromSmarts("[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]")
-    aliphatic_match = mol.GetSubstructMatches(aliphatic_pattern)
-    
-    # Look for unsaturated aliphatic chain
-    unsaturated_pattern = Chem.MolFromSmarts("[CX3]=[CX3]")
-    unsaturated_match = mol.GetSubstructMatches(unsaturated_pattern)
-    
-    # Check for amide group (C(=O)N)
-    amide_pattern = Chem.MolFromSmarts("C(=O)[NX3]")
-    amide_match = mol.GetSubstructMatches(amide_pattern)
-    
-    # Classify as endocannabinoid if it has:
-    # - Ethanolamine or glycerol group
-    # - Long aliphatic chain (>= C14)
-    # - Unsaturated aliphatic chain
-    # - Amide group
-    if (ethanolamine_match or glycerol_match) and aliphatic_match and unsaturated_match and amide_match:
-        return True, "Contains ethanolamine/glycerol, long aliphatic chain, unsaturation, and amide group"
-    else:
-        return False, "Missing one or more key structural features of endocannabinoids"
+3. **False Negatives**: The program misses several known endocannabinoid structures, such as palmitoyl ethanolamide, because they do not strictly match the prescribed criteria. For instance, palmitoyl ethanolamide lacks the unsaturated aliphatic chain required by the program.
+
+To improve the classification accuracy, the following approaches could be considered:
+
+1. **Use a More Comprehensive Structural Database**: Instead of relying on simplistic rules, the program could use a database of known endocannabinoid structures and their SMILES representations. The input molecule could then be compared against this database to determine if it matches any of the known endocannabinoids.
+
+2. **Employ Machine Learning Techniques**: With a sufficiently large dataset of endocannabinoid and non-endocannabinoid structures, machine learning algorithms could be trained to recognize the structural patterns and features that distinguish endocannabinoids from other molecules.
+
+3. **Incorporate Expert Knowledge**: Consult with experts in the field of endocannabinoid research to understand the structural diversity and nuances of these molecules. This knowledge could then be incorporated into more sophisticated rules or feature engineering for machine learning models.
+
+4. **Use Molecular Similarity Measures**: Compute molecular similarity scores between the input molecule and known endocannabinoid structures. If the similarity score exceeds a certain threshold, the molecule could be classified as an endocannabinoid.
+
+5. **Consider Substructure Matching**: Instead of relying on the presence of specific functional groups or patterns, the program could perform substructure matching against a set of known endocannabinoid substructures or fragments.
+
+Ultimately, accurately classifying endocannabinoids based solely on their SMILES strings is a non-trivial task due to the structural diversity of these molecules. A combination of expert knowledge, comprehensive structural databases, and advanced machine learning techniques may be required to achieve reliable classification performance.
