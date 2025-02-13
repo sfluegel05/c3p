@@ -31,33 +31,33 @@ def is_monounsaturated_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
     
-    # Check for linear carbon chain of at least 6 carbons
-    chain_pattern = Chem.MolFromSmarts("[C;H3]-[C;H2]-[C;H2]~[C;H2]~[C;H2]~[C;H2]")
+    # Check for carbon chain with at least 4 carbons
+    chain_pattern = Chem.MolFromSmarts("[C;H3]-[C;H2]~[C;H2]~[C;H2]")
     if not mol.HasSubstructMatch(chain_pattern):
-        return False, "Carbon chain too short or not linear"
+        return False, "Carbon chain too short"
     
-    # Check for exactly one double or triple bond
+    # Check for exactly one double or triple bond, ignoring oxygen-containing groups
     double_bond_pattern = Chem.MolFromSmarts("[C;H2]=[C;H2]")
     triple_bond_pattern = Chem.MolFromSmarts("[C;H2]#[C;H2]")
-    double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
-    triple_bond_matches = mol.GetSubstructMatches(triple_bond_pattern)
+    double_bond_matches = mol.GetSubstructMatches(double_bond_pattern, useOpReversedChains=True, useQueryRootDescriptors=True, ignoreOxidePermuteDerivatives=True)
+    triple_bond_matches = mol.GetSubstructMatches(triple_bond_pattern, useOpReversedChains=True, useQueryRootDescriptors=True, ignoreOxidePermuteDerivatives=True)
     
     if len(double_bond_matches) + len(triple_bond_matches) != 1:
         return False, "Found multiple or no double/triple bonds"
     
     # Check for reasonable molecular weight and atom counts
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 150 or mol_wt > 500:
+    if mol_wt < 100 or mol_wt > 700:
         return False, "Molecular weight outside typical range for fatty acids"
     
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     
-    if c_count < 6 or o_count != 2:
+    if c_count < 4 or o_count > 4:
         return False, "Unusual atom counts for a fatty acid"
     
     # Exclude deuterated compounds (optional)
     if any(atom.GetIsotope() > 0 for atom in mol.GetAtoms()):
         return False, "Deuterated compound detected"
     
-    return True, "Contains exactly one double or triple bond in a linear carbon chain with a carboxylic acid group"
+    return True, "Contains exactly one double or triple bond in a carbon chain with a carboxylic acid group"
