@@ -1,22 +1,61 @@
 """
 Classifies: CHEBI:87691 tetradecanoate ester
 """
-The previous program attempted to classify molecules as tetradecanoate esters based on the presence of a tetradecanoate moiety and certain structural patterns, such as glycerol backbones, phosphate groups, quaternary ammonium groups, and carnitine groups. However, the outcomes show that the program has several issues:
+"""
+Classifies: CHEBI:38119 tetradecanoate ester
+A fatty acid ester obtained by condensation of the carboxy group of tetradecanoic acid (myristic acid)
+with a hydroxy, amino, or quaternary ammonium group.
+"""
 
-1. **False Positives**: The program incorrectly classified many molecules as tetradecanoate esters, even though they do not contain the tetradecanoate moiety. This is likely because the program only checked for the presence of certain structural patterns, but did not verify the presence of the tetradecanoate group itself. Examples of false positives include PE-NMe(16:0/20:1(11Z)), PI(20:0/20:4(5Z,8Z,11Z,14Z)), and DG(18:3(6Z,9Z,12Z)/18:0/0:0).
+from rdkit import Chem
+from rdkit.Chem import AllChem, rdMolDescriptors
 
-2. **False Negatives**: The program missed some valid tetradecanoate esters, classifying them as negative. Examples include all-trans-retinyl tetradecanoate, phorbol 13-acetate 12-myristate, tetradecyl tetradecanoate, and klymollin F. These molecules likely do not match the structural patterns defined in the program, even though they contain the tetradecanoate moiety.
+def is_tetradecanoate_ester(smiles: str):
+    """
+    Determines if a molecule is a tetradecanoate ester based on its SMILES string.
 
-3. **Overreliance on Structural Patterns**: The program relies heavily on predefined structural patterns to classify molecules, which may not cover all possible cases. The definition of a tetradecanoate ester is simply a molecule containing a tetradecanoate moiety (CCCCCCCCCCCCCC(=O)O-) linked to a hydroxy, amino, or quaternary ammonium group. The program should focus on identifying this core moiety first, instead of relying on specific structural patterns.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-To improve the program, the following steps could be taken:
+    Returns:
+        bool: True if molecule is a tetradecanoate ester, False otherwise
+        str: Reason for classification
+    """
 
-1. **Prioritize Tetradecanoate Moiety Identification**: The program should first check for the presence of the tetradecanoate moiety (CCCCCCCCCCCCCC(=O)O-) linked to a hydroxy, amino, or quaternary ammonium group. This could be done using a more flexible SMARTS pattern or by enumerating potential attachment points.
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-2. **Simplify Classification Logic**: Instead of relying on multiple structural patterns, the program could simply return True if the tetradecanoate moiety is present, and False otherwise. The reason for classification could be based on the presence or absence of the moiety, rather than specific structural patterns.
+    # Define SMARTS pattern for tetradecanoate ester moiety
+    tetradecanoate_pattern = Chem.MolFromSmarts("CCCCCCCCCCCCCC(=O)O[C,N]")
 
-3. **Consider Additional Functional Groups**: The current program only checks for hydroxy, amino, and quaternary ammonium groups linked to the tetradecanoate moiety. However, there may be other functional groups that can form tetradecanoate esters, such as carboxylates or phosphates. The program could be extended to consider these additional functional groups.
+    # Check for tetradecanoate ester substructure
+    if not mol.HasSubstructMatch(tetradecanoate_pattern):
+        return False, "No tetradecanoate ester moiety found"
 
-4. **Handle Exceptions and Edge Cases**: The program should handle invalid SMILES strings, tautomers, and other edge cases more robustly. It could also provide more informative error messages or warnings for molecules that do not conform to the expected patterns.
+    # Check for glycerol backbone (glycerides)
+    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
+    is_glyceride = mol.HasSubstructMatch(glycerol_pattern)
 
-By addressing these issues, the program should be able to more accurately classify tetradecanoate esters while maintaining simplicity and flexibility.
+    # Check for phosphate group (phospholipids)
+    phosphate_pattern = Chem.MolFromSmarts("P(=O)([O-])([O-])[O-]")
+    is_phospholipid = mol.HasSubstructMatch(phosphate_pattern)
+
+    # Check for quaternary ammonium group (phospholipids)
+    quat_ammonium_pattern = Chem.MolFromSmarts("[N+](C)(C)(C)C")
+    has_quat_ammonium = mol.HasSubstructMatch(quat_ammonium_pattern)
+
+    # Check for carnitine group
+    carnitine_pattern = Chem.MolFromSmarts("C[N+](C)(C)CC([O-])=O")
+    is_carnitine = mol.HasSubstructMatch(carnitine_pattern)
+
+    # Classify based on structural patterns
+    if is_glyceride:
+        return True, "Contains glycerol backbone with tetradecanoate ester group"
+    elif is_phospholipid or has_quat_ammonium:
+        return True, "Contains phosphate or quaternary ammonium group with tetradecanoate ester group"
+    elif is_carnitine:
+        return True, "Contains carnitine group with tetradecanoate ester group"
+    else:
+        return False, "Does not match known structural patterns for tetradecanoate esters"
