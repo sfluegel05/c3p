@@ -1,56 +1,20 @@
 """
 Classifies: CHEBI:67197 endocannabinoid
 """
-"""
-Classifies: CHEBI:38608 endocannabinoid
-"""
-from rdkit import Chem, DataStructs
-from rdkit.Chem import AllChem
-from rdkit.Chem import MACCSkeys
-import os
+Based on the error message and the previous code, it seems that the program was unable to find a file called "endocannabinoid_database.smi" in the current working directory. This file was supposed to contain a list of SMILES strings of known endocannabinoid structures, which would be used as a reference database for classification.
 
-# Load a database of known endocannabinoid SMILES strings
-known_endocannabinoids = set()
-with open("endocannabinoid_database.smi", "r") as f:
-    for line in f:
-        known_endocannabinoids.add(line.strip())
+The low F1 score of 0 indicates that the program was unable to correctly classify any of the provided examples as endocannabinoids or non-endocannabinoids. This could be due to the missing reference database file, or it could also be an issue with the classification algorithm itself.
 
-def is_endocannabinoid(smiles: str):
-    """
-    Determines if a molecule is an endocannabinoid based on its SMILES string.
-    Uses a database of known endocannabinoid structures and molecular similarity measures.
+To improve the program, we can take the following steps:
 
-    Args:
-        smiles (str): SMILES string of the molecule
+1. **Include a reference database**: Since the program relies on a reference database of known endocannabinoid structures, we should include a valid database file or generate one programmatically. This can be done by creating a list or set of known endocannabinoid SMILES strings within the Python code itself.
 
-    Returns:
-        bool: True if molecule is an endocannabinoid, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+2. **Analyze the classification algorithm**: The current algorithm computes molecular fingerprints (MACCS keys) for the input molecule and known endocannabinoids, and then calculates the maximum similarity between the input and the known structures. If this maximum similarity exceeds a certain threshold (0.7), the molecule is classified as an endocannabinoid.
 
-    # Check if SMILES matches a known endocannabinoid
-    if smiles in known_endocannabinoids:
-        return True, "Matches a known endocannabinoid structure"
+   While this approach is reasonable, it may not be sufficient to accurately classify endocannabinoids, as they may share common structural features with other classes of molecules. We could consider incorporating additional structural rules or patterns specific to endocannabinoids, such as the presence of an ethanolamine or glycerol ether functional group, certain carbon chain lengths, or specific unsaturation patterns.
 
-    # Compute molecular fingerprints
-    fp_mol = MACCSkeys.GenMACCSKeys(mol)
-    
-    # Compute similarity to known endocannabinoids
-    max_similarity = 0
-    for endocannabinoid in known_endocannabinoids:
-        endocannabinoid_mol = Chem.MolFromSmiles(endocannabinoid)
-        fp_endocannabinoid = MACCSkeys.GenMACCSKeys(endocannabinoid_mol)
-        similarity = DataStructs.FingerprintSimilarity(fp_mol, fp_endocannabinoid)
-        max_similarity = max(max_similarity, similarity)
+3. **Refine the similarity threshold**: The current similarity threshold of 0.7 may be too strict or too lenient for endocannabinoid classification. We could explore different threshold values or use a more sophisticated method for determining the optimal threshold, such as cross-validation or receiver operating characteristic (ROC) analysis.
 
-    # Classify based on similarity threshold
-    similarity_threshold = 0.7
-    if max_similarity >= similarity_threshold:
-        return True, f"Structurally similar to known endocannabinoids (similarity: {max_similarity:.2f})"
-    else:
-        return False, f"Not structurally similar to known endocannabinoids (max similarity: {max_similarity:.2f})"
+4. **Handle potential errors**: The program should gracefully handle cases where the input SMILES string is invalid or cannot be processed by RDKit. Additionally, we could add checks for cases where no known endocannabinoids are found in the reference database or where the similarity calculation fails for some reason.
+
+By addressing these issues, we can improve the accuracy and robustness of the endocannabinoid classification program.
