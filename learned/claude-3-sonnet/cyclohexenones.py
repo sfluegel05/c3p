@@ -3,12 +3,12 @@ Classifies: CHEBI:48953 cyclohexenones
 """
 """
 Classifies: CHEBI:33738 cyclohexenone
-Any six-membered alicyclic ketone having one double bond in the ring.
+A cyclohexenone is any six-membered alicyclic ketone having one double bond in the ring.
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-def is_cyclohexenones(smiles: str):
+def is_cyclohexenone(smiles: str):
     """
     Determines if a molecule is a cyclohexenone based on its SMILES string.
 
@@ -25,26 +25,29 @@ def is_cyclohexenones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Find all 6-membered alicyclic rings
+    # Check for exactly one ring with 6 atoms
     ring_info = mol.GetRingInfo()
-    alicyclic_6_rings = [ring for ring in ring_info.AtomRings() if len(ring) == 6 and all(mol.GetAtomWithIdx(idx).GetAtomicNum() == 6 for idx in ring)]
+    rings = [ring for ring in ring_info.AtomRings() if len(ring) == 6]
+    if len(rings) != 1:
+        return False, "Must have exactly one 6-membered ring"
 
-    if not alicyclic_6_rings:
-        return False, "No 6-membered alicyclic rings found"
+    # Check if the ring is alicyclic (no heteroatoms in the ring)
+    ring_atoms = [mol.GetAtomWithIdx(idx) for idx in rings[0]]
+    if any(atom.GetAtomicNum() != 6 for atom in ring_atoms):
+        return False, "Ring must be alicyclic (no heteroatoms)"
 
-    # Check if any of the 6-membered alicyclic rings has exactly one C=O and one C=C in the ring or attached to the ring
-    cyclohexenone_rings = []
-    for ring in alicyclic_6_rings:
-        ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
-        carbonyl_pattern = Chem.MolFromSmarts("[C=O]")
-        carbonyl_matches = [mol.GetAtomWithIdx(match) for match in mol.GetSubstructMatches(carbonyl_pattern) if mol.GetAtomWithIdx(match) in ring_atoms or any(mol.GetBondBetweenAtoms(match, idx).GetBondType() == Chem.BondType.SINGLE for idx in ring)]
-        double_bond_pattern = Chem.MolFromSmarts("[C=C]")
-        double_bond_matches = [mol.GetBondBetweenAtoms(match[0], match[1]) for match in mol.GetSubstructMatches(double_bond_pattern) if mol.GetAtomWithIdx(match[0]) in ring_atoms or mol.GetAtomWithIdx(match[1]) in ring_atoms]
+    # Check for exactly one C=O group in the ring
+    carbonyl_pattern = Chem.MolFromSmarts("[C=O]")
+    carbonyl_matches = mol.GetSubstructMatches(carbonyl_pattern)
+    carbonyl_ring_matches = [match for match in carbonyl_matches if mol.GetAtomWithIdx(match) in ring_atoms]
+    if len(carbonyl_ring_matches) != 1:
+        return False, "Must have exactly one carbonyl group in the ring"
 
-        if len(carbonyl_matches) == 1 and len(double_bond_matches) == 1:
-            cyclohexenone_rings.append(ring)
+    # Check for exactly one C=C bond in the ring
+    double_bond_pattern = Chem.MolFromSmarts("[C=C]")
+    double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
+    double_bond_ring_matches = [match for match in double_bond_matches if mol.GetBondBetweenAtoms(match[0], match[1]).IsInRing()]
+    if len(double_bond_ring_matches) != 1:
+        return False, "Must have exactly one double bond in the ring"
 
-    if cyclohexenone_rings:
-        return True, f"Molecule contains {len(cyclohexenone_rings)} cyclohexenone ring(s)"
-    else:
-        return False, "No valid cyclohexenone rings found"
+    return True, "Molecule is a cyclohexenone"
