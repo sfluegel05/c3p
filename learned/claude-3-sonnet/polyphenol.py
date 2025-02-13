@@ -1,24 +1,53 @@
 """
 Classifies: CHEBI:26195 polyphenol
 """
-After analyzing the previous code and the outcomes, it seems that the program was not able to correctly classify any of the provided examples as polyphenols. This could be due to a few reasons:
+"""
+Classifies: CHEBI:16641 polyphenol
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
 
-1. **Handling of complex structures**: The provided examples contain various complex structural features, such as fused rings, substituents, and multiple hydroxyl groups. The current implementation might not be robust enough to handle these complexities.
+def is_polyphenol(smiles: str):
+    """
+    Determines if a molecule is a polyphenol based on its SMILES string.
+    A polyphenol is defined as a member of the class of phenols that contains 2 or more benzene rings, each of which is substituted by at least one hydroxyl group.
 
-2. **Identifying aromatic rings**: The method used to identify aromatic rings (`Chem.GetSymmSSSR`) might not be capturing all the relevant ring systems, especially in more complex structures.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Checking hydroxyl group attachment**: The current approach to check if each aromatic ring has at least one hydroxyl group might not be comprehensive enough. It considers direct attachment and immediate neighbors, but it might miss cases where the hydroxyl group is connected through a longer chain or a different substructure.
-
-To improve the program, we could consider the following strategies:
-
-1. **Utilize more advanced RDKit functionalities**: RDKit provides various functionalities for substructure matching, ring perception, and molecular descriptors. We could explore these capabilities to develop a more robust and comprehensive approach for identifying polyphenols.
-
-2. **Use SMARTS patterns**: Instead of relying solely on ring perception and neighbor checking, we could define SMARTS patterns to match the structural features of polyphenols more effectively.
-
-3. **Incorporate molecular descriptors**: Molecular descriptors, such as the number of aromatic rings, the number of hydroxyl groups, and the presence of specific functional groups, could be used as additional criteria for classification.
-
-4. **Implement a machine learning approach**: If the rule-based approach proves too complex or ineffective, we could consider training a machine learning model on a labeled dataset of polyphenols and non-polyphenols to learn the patterns and features that distinguish them.
-
-5. **Handle specific exceptions**: Some of the provided examples might have unique structural features that require special handling or exception cases in the code.
-
-By addressing these potential issues and exploring more advanced techniques, we could improve the program's ability to accurately classify polyphenols based on their SMILES strings.
+    Returns:
+        bool: True if molecule is a polyphenol, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Define SMARTS patterns
+    aromatic_ring_pattern = Chem.MolFromSmarts("c1ccccc1")
+    hydroxyl_group_pattern = Chem.MolFromSmarts("[OX2H]")
+    
+    # Find all aromatic rings
+    aromatic_rings = mol.GetSubstructMatches(aromatic_ring_pattern)
+    
+    # Check if there are at least 2 aromatic rings
+    if len(aromatic_rings) < 2:
+        return False, "Fewer than 2 aromatic rings"
+    
+    # Check if each aromatic ring has at least one hydroxyl group
+    for ring in aromatic_rings:
+        ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
+        ring_has_hydroxy = any(mol.HasSubstructMatch(hydroxyl_group_pattern, atoms=ring_atoms))
+        if not ring_has_hydroxy:
+            return False, "At least one aromatic ring lacks a hydroxyl group"
+    
+    # Check for at least one hydroxyl group outside of the aromatic rings
+    non_ring_atoms = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetIdx() not in [idx for ring in aromatic_rings for idx in ring]]
+    has_non_ring_hydroxy = mol.HasSubstructMatch(hydroxyl_group_pattern, atoms=non_ring_atoms)
+    
+    if has_non_ring_hydroxy:
+        return True, "Contains 2 or more aromatic rings, each with at least one hydroxyl group, and at least one additional hydroxyl group"
+    else:
+        return False, "No hydroxyl groups outside of the aromatic rings"
