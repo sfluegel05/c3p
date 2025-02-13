@@ -22,16 +22,20 @@ def is_azole(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
+    # Expanded pattern library for different azoles
     azole_patterns = [
-        Chem.MolFromSmarts("n1cccn1"),  # Pyrrole-like azole
-        Chem.MolFromSmarts("n1c[nH]cc1"),  # Imidazole
-        Chem.MolFromSmarts("n1ncc[nH]1"),  # 1,2,3-Triazole
-        Chem.MolFromSmarts("n1ncnn1"),  # 1,2,4-Triazole
-        Chem.MolFromSmarts("n1nncn1"),  # Tetrazole
-        Chem.MolFromSmarts("c1ncn[nH]1"),  # Variant for 1,2,4-Triazole
-        Chem.MolFromSmarts("c1nocn1"),  # Oxazole
-        Chem.MolFromSmarts("c1nosc1"),  # Thiazole
-        Chem.MolFromSmarts("c1nscn1")  # Another Thiazole variant
+        Chem.MolFromSmarts("n1cccn1"),      # Pyrrole-like structure
+        Chem.MolFromSmarts("c1[nH]cnc1"),   # Imidazole
+        Chem.MolFromSmarts("n1ncc[nH]1"),   # 1,2,3-Triazole
+        Chem.MolFromSmarts("n1ncnn1"),      # 1,2,4-Triazole
+        Chem.MolFromSmarts("c1nc[nH]n1"),   # Another orientation for triazole
+        Chem.MolFromSmarts("n1nncn1"),      # Tetrazole
+        Chem.MolFromSmarts("c1ncc[nH]1"),   # Variant for 1,2,4-Triazole
+        Chem.MolFromSmarts("c1nocn1"),      # Oxazole
+        Chem.MolFromSmarts("c1nosc1"),      # Thiazole
+        Chem.MolFromSmarts("c1nscn1"),      # Another Thiazole variant
+        Chem.MolFromSmarts("c1nocnc1"),     # Fused ring or variant
+        Chem.MolFromSmarts("c1ncncn1"),     # Pyrimidine-like structure that may hold azole features
     ]
 
     # Check if any azole pattern is present in the molecule
