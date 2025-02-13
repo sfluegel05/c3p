@@ -1,24 +1,55 @@
 """
 Classifies: CHEBI:64985 bioconjugate
 """
-The previous program attempted to classify bioconjugates by checking for the presence of at least two different types of biological molecule fragments (amino, hydroxyl, nucleic acid bases, thiol, and fatty acid chains) and a covalent linkage between them.
+"""
+Classifies: CHEBI:36357 bioconjugate
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem, rdMolDescriptors
 
-However, based on the outcomes, it appears that this approach has some limitations:
+def is_bioconjugate(smiles: str):
+    """
+    Determines if a molecule is a bioconjugate based on its SMILES string.
+    A bioconjugate is a molecular entity consisting of at least 2 biological molecules covalently linked together.
 
-1. **False positives**: The program incorrectly classified several molecules as bioconjugates, even though they do not contain distinct biological molecule fragments linked together. This could be due to the broad nature of the SMARTS patterns used for identifying biological fragments, leading to false positives.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **False negatives**: The program missed some true bioconjugates, such as sulforaphane-cysteine and others. This could be because the SMARTS patterns were too specific and did not cover all possible biological molecule fragments or linkages.
+    Returns:
+        bool: True if molecule is a bioconjugate, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-To improve the program, we could consider the following approaches:
+    # Check for common biological molecule fragments
+    amino_acid_pattern = Chem.MolFromSmarts("[N;H2,H1;!$(NC=O)]")
+    nucleic_acid_pattern = Chem.MolFromSmarts("N1C=NC2=NC=NC=N12")
+    fatty_acid_pattern = Chem.MolFromSmarts("CCCCCC(=O)O")
+    carbohydrate_pattern = Chem.MolFromSmarts("OC[C@H](O)[C@H](O)[C@H](O)[C@H](O)CO")
+    peptide_pattern = Chem.MolFromSmarts("[N;H2,H1]C(=O)[C@H]([N;H2,H1])C(=O)")
 
-1. **Refine the SMARTS patterns**: Instead of using broad patterns for biological fragments, we could use more specific patterns to identify common biological molecules or substructures. For example, instead of checking for any amino group, we could look for specific amino acid residues or motifs.
+    biological_fragments = [
+        mol.HasSubstructMatch(amino_acid_pattern),
+        mol.HasSubstructMatch(nucleic_acid_pattern),
+        mol.HasSubstructMatch(fatty_acid_pattern),
+        mol.HasSubstructMatch(carbohydrate_pattern),
+        mol.HasSubstructMatch(peptide_pattern)
+    ]
 
-2. **Incorporate additional rules**: In addition to checking for the presence of biological fragments and covalent linkages, we could add additional rules or heuristics to better identify bioconjugates. For example, we could check for specific functional groups or substructures that are commonly found in bioconjugates, such as linkers or spacers used in conjugation reactions.
+    # Check for at least 2 different types of biological fragments
+    num_fragment_types = sum(1 for frag in biological_fragments if frag)
+    if num_fragment_types < 2:
+        return False, "Less than 2 types of biological fragments found"
 
-3. **Use machine learning techniques**: Instead of relying on hand-crafted rules, we could explore machine learning techniques to train a model on a dataset of known bioconjugates and non-bioconjugates. This approach could potentially capture more complex patterns and improve the classification accuracy.
+    # Check for covalent linkage between fragments
+    linker_pattern = Chem.MolFromSmarts("[N,O,S]-!@[N,O,S]")
+    if not mol.HasSubstructMatch(linker_pattern):
+        return False, "No covalent linkage found between biological fragments"
 
-4. **Combine with other cheminformatics techniques**: We could incorporate additional cheminformatics techniques, such as molecular fingerprints or descriptors, to better distinguish bioconjugates from non-bioconjugates.
+    # Additional checks or rules can be added here
 
-5. **Iterative refinement**: As we identify false positives and false negatives, we could iteratively refine the program by adjusting the SMARTS patterns, adding new rules, or incorporating feedback from domain experts.
-
-Overall, the current program provides a good starting point, but it requires further refinement and possibly a combination of different approaches to improve its accuracy in classifying bioconjugates.
+    return True, "Contains at least 2 types of biological fragments covalently linked"
