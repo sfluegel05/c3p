@@ -24,23 +24,29 @@ def is_3_oxo_5beta_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for basic steroid core (4 fused rings)
-    # More flexible pattern that matches the cyclopentanoperhydrophenanthrene core
-    steroid_core = Chem.MolFromSmarts("C1C[C@H]2[C@H]3CC[C@H]4CCCC4[C@H]3CC2C1")
+    # More general steroid core pattern - four fused rings
+    # This pattern represents the basic connectivity without being too strict about stereochemistry
+    steroid_core = Chem.MolFromSmarts("C1CC2CCC3C(CCC4CCCC43C)C2C1")
     if not mol.HasSubstructMatch(steroid_core):
         return False, "No steroid core structure found"
 
     # Check for ketone at position 3
-    # Look for C(=O) in first ring
-    ketone_pattern = Chem.MolFromSmarts("C1CC(=O)CC2")
+    # More specific pattern that ensures the ketone is at position 3
+    # The pattern includes the A ring and part of the B ring to ensure correct position
+    ketone_pattern = Chem.MolFromSmarts("C1CC(=O)CC2CCC3")
     if not mol.HasSubstructMatch(ketone_pattern):
         return False, "No ketone group at position 3"
 
     # Check for 5-beta configuration
-    # In 5-beta steroids, the A/B ring junction has the hydrogen in alpha position (down)
-    # This creates the characteristic bent shape of 5-beta steroids
-    beta_config_pattern = Chem.MolFromSmarts("[C]1[CH2][C](=O)[CH2][C@@H]2")
-    if not mol.HasSubstructMatch(beta_config_pattern):
+    # In 5-beta steroids, the A/B ring junction has the hydrogen in alpha position
+    # This creates a cis fusion between rings A and B
+    # The pattern looks for the specific stereochemistry at position 5
+    beta_config_pattern = Chem.MolFromSmarts("[C]1[CH2][C](=O)[CH2][C@@H]2[CH2][CH2]")
+    
+    # Alternative 5-beta pattern that might catch some other representations
+    beta_config_pattern2 = Chem.MolFromSmarts("[C]1[CH2][C](=O)[CH2][C@]2([H])")
+    
+    if not (mol.HasSubstructMatch(beta_config_pattern) or mol.HasSubstructMatch(beta_config_pattern2)):
         return False, "Not a 5-beta configuration"
 
     # Additional validation: Check carbon count (steroids typically have 19-27 carbons)
@@ -53,5 +59,5 @@ def is_3_oxo_5beta_steroid(smiles: str):
     if mol_weight < 250 or mol_weight > 500:
         return False, f"Molecular weight {mol_weight:.1f} outside typical steroid range (250-500)"
 
-    # If we get here, it's a 3-oxo-5beta-steroid
+    # If all checks pass, we have a 3-oxo-5beta-steroid
     return True, "Molecule contains steroid core with 3-oxo group and 5-beta configuration"
