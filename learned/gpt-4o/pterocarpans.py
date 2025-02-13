@@ -2,7 +2,6 @@
 Classifies: CHEBI:26377 pterocarpans
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_pterocarpans(smiles: str):
     """
@@ -22,8 +21,8 @@ def is_pterocarpans(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define pterocarpan skeleton SMARTS pattern (dihydrobenzofurochromene)
-    pterocarpan_pattern = Chem.MolFromSmarts("C12OC3=C(O1)C=CC=C3C=C2")
+    # Define a more general pterocarpan skeleton SMARTS pattern
+    pterocarpan_pattern = Chem.MolFromSmarts("C12Oc3ccccc3C(C4C=CC=CC4)=C1COC2")
 
     # Check for the presence of the pterocarpan skeleton
     if mol.HasSubstructMatch(pterocarpan_pattern):
