@@ -1,38 +1,24 @@
 """
 Classifies: CHEBI:139588 alpha-hydroxy ketone
 """
-"""
-Classifies: CHEBI:18243 alpha-hydroxy ketone
-An alpha-hydroxy ketone is a ketone containing a hydroxy group on the alpha-carbon relative to the C=O group.
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
+The previous program attempted to identify alpha-hydroxy ketones by first finding all non-aromatic ketone atoms (C=O groups) in the molecule, and then checking if the neighboring carbon atom (alpha carbon) has a hydrogen atom attached (i.e., a hydroxy group).
 
-def is_alpha_hydroxy_ketone(smiles: str):
-    """
-    Determines if a molecule is an alpha-hydroxy ketone based on its SMILES string.
+However, the program has a few issues:
 
-    Args:
-        smiles (str): SMILES string of the molecule
+1. It does not account for the possibility of multiple ketone groups in the molecule, some of which may be alpha-hydroxy ketones while others may not. If at least one alpha-hydroxy ketone group is present, the molecule should be classified as such.
 
-    Returns:
-        bool: True if molecule is an alpha-hydroxy ketone, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Find ketone atoms
-    ketone_atoms = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetIsAromatic() is False and atom.GetTotalDegree() == 2]
-    
-    # Check for hydroxy group on alpha carbon for each ketone
-    for ketone_idx in ketone_atoms:
-        alpha_carbon = mol.GetAtomWithIdx(ketone_idx).GetNeighbors()[0].GetIdx()
-        alpha_carbon_atom = mol.GetAtomWithIdx(alpha_carbon)
-        if alpha_carbon_atom.GetTotalNumHs() > 0:
-            return True, "Contains a ketone with a hydroxy group on the alpha carbon"
-    
-    return False, "Does not contain an alpha-hydroxy ketone group"
+2. It does not consider the possibility of enol tautomers, where the hydroxy group may be attached to a carbon adjacent to the ketone group, rather than directly on the alpha carbon.
+
+3. It does not consider other structural features or molecular properties that may be characteristic of alpha-hydroxy ketones, such as the presence of specific functional groups, molecular weight, or other descriptors.
+
+To improve the program, we can address these issues by:
+
+1. Modifying the loop to continue checking for alpha-hydroxy ketone groups even after finding one, and returning True if at least one such group is found.
+
+2. Including a check for enol tautomers by looking for hydroxy groups on carbons adjacent to the ketone group.
+
+3. Incorporating additional checks or filters based on other relevant molecular properties or structural features.
+
+4. Considering the use of more sophisticated pattern matching techniques, such as SMARTS patterns or substructure matching, to identify the alpha-hydroxy ketone moiety more reliably.
+
+Additionally, it would be beneficial to test the program extensively on a diverse set of positive and negative examples to evaluate its performance and identify any remaining issues or edge cases.
