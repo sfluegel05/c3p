@@ -1,22 +1,64 @@
 """
 Classifies: CHEBI:73080 hemiaminal
 """
-Based on the outcomes, it appears that the previous program has several issues that need to be addressed:
+"""
+Classifies: CHEBI:48243 hemiaminal
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
 
-1. **False positives**: The program is incorrectly classifying some molecules as hemiaminals when they do not meet the criteria. This could be due to the SMARTS pattern being too broad or not specific enough to exclude other similar substructures.
+def is_hemiaminal(smiles: str):
+    """
+    Determines if a molecule is a hemiaminal based on its SMILES string.
+    A hemiaminal is an organic amino compound that has an amino group and a
+    hydroxy group attached to the same carbon atom.
 
-2. **False negatives**: The program is missing some true hemiaminal structures, failing to identify them correctly. This could be because the SMARTS pattern is too strict or not capturing all possible variations of the hemiaminal substructure.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Stereochemistry**: The program does not account for stereochemistry, which can be important in determining whether a given structure is a hemiaminal or not. Some of the false positives and false negatives could be related to this issue.
+    Returns:
+        bool: True if molecule is a hemiaminal, False otherwise
+        str: Reason for classification
+    """
 
-To improve the program, the following steps can be taken:
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-1. **Refine the SMARTS pattern**: Analyze the false positives and false negatives to identify patterns or substructures that are being incorrectly handled. Modify the SMARTS pattern to be more specific and exclude undesired substructures while including all valid hemiaminal variations.
+    # Define SMARTS pattern for hemiaminal substructure
+    hemiaminal_pattern = Chem.MolFromSmarts("[NX3,NX4+0][CX4][OX2H]")
 
-2. **Consider stereochemistry**: Incorporate stereochemical information into the SMARTS pattern or add additional checks to ensure that the program correctly identifies hemiaminals based on their stereochemistry.
+    # Find matches for hemiaminal pattern
+    matches = mol.GetSubstructMatches(hemiaminal_pattern)
 
-3. **Additional checks**: Implement additional checks beyond the SMARTS pattern match, such as verifying the connectivity of the atoms, checking for other functional groups or substituents that may disqualify a structure from being a hemiaminal, or ensuring that the amino group and hydroxy group are attached to the same carbon atom.
+    if not matches:
+        return False, "No hemiaminal substructure found"
 
-4. **Test extensively**: Build a comprehensive set of test cases, including true positives, true negatives, and edge cases, to thoroughly evaluate the program's performance and identify any remaining issues or edge cases that need to be addressed.
+    # Check stereochemistry and connectivity
+    for match in matches:
+        nitrogen_idx = match[0]
+        carbon_idx = match[1]
+        oxygen_idx = match[2]
 
-By addressing these issues, the program should be able to more accurately classify hemiaminal structures and reduce the number of false positives and false negatives.
+        # Check if the nitrogen and oxygen are connected to the same carbon
+        if not mol.GetBondBetweenAtoms(carbon_idx, nitrogen_idx):
+            continue
+        if not mol.GetBondBetweenAtoms(carbon_idx, oxygen_idx):
+            continue
+
+        # Check stereochemistry (if defined)
+        carbon_atom = mol.GetAtomWithIdx(carbon_idx)
+        if carbon_atom.HasProp("_CIPCode"):
+            carbon_chirality = int(carbon_atom.GetProp("_CIPCode"))
+            if carbon_chirality != Chem.rdchem.CHI_TETRAHEDRAL_CCW:
+                continue  # Incorrect stereochemistry
+
+        # Check for other functional groups or substituents
+        # that may disqualify the structure from being a hemiaminal
+        # ...
+
+        # If all checks pass, it's a hemiaminal
+        return True, "Contains an amino group and a hydroxy group attached to the same carbon atom"
+
+    return False, "No valid hemiaminal substructure found"
