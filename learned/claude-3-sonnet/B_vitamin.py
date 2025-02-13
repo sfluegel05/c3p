@@ -1,30 +1,68 @@
 """
 Classifies: CHEBI:75769 B vitamin
 """
-It seems that the previous program relies primarily on checking for specific substructure patterns (thiazole, isoalloxazine, pyridine, pterin, and corrin rings) to identify B vitamins. While this approach can work for some B vitamins, it may not be comprehensive enough to cover all possible structures that belong to this class.
+"""
+Classifies: CHEBI:37563 B vitamin
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-The outcomes indicate that the program did not identify any true positives, false positives, or false negatives, which suggests that it failed to classify any of the provided examples correctly.
+def is_B_vitamin(smiles: str):
+    """
+    Determines if a molecule is a B vitamin based on its SMILES string.
+    B vitamins are a group of eight water-soluble vitamins that play important roles in cell metabolism,
+    comprising of vitamin B1, B2, B3, B5, B6, B7, B9, and B12.
 
-Here are a few potential issues and improvements:
+    Args:
+        smiles (str): SMILES string of the molecule
 
-1. **Limited substructure patterns**: The program only checks for a few specific substructures, which may not be present in all B vitamin structures. B vitamins can have diverse structures beyond the rings considered in the previous code.
+    Returns:
+        bool: True if molecule is a B vitamin, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-2. **Incomplete pyridine pattern handling**: For the pyridine pattern, the code does not provide any further checks or classification logic for B3, B5, and B6 vitamins, which also contain pyridine rings.
+    # Check for common substructures and functional groups in B vitamins
+    thiazole_pattern = Chem.MolFromSmarts("c1csc[n+]1")  # B1 (thiamine)
+    if mol.HasSubstructMatch(thiazole_pattern):
+        return True, "Contains thiazole ring, characteristic of vitamin B1 (thiamine)"
 
-3. **Lack of additional patterns and checks**: The program does not include any additional patterns or checks beyond the common substructures. It may be necessary to consider other structural features, molecular properties, or a combination of criteria to accurately identify B vitamins.
+    isoalloxazine_pattern = Chem.MolFromSmarts("c1nc2nc3ccc(cc3nc2n1)C")  # B2 (riboflavin)
+    if mol.HasSubstructMatch(isoalloxazine_pattern):
+        return True, "Contains isoalloxazine ring system, characteristic of vitamin B2 (riboflavin)"
 
-To improve the program, consider the following steps:
+    pyridine_pattern = Chem.MolFromSmarts("c1ccncc1")  # B3, B5, B6
+    pyridine_matches = mol.GetSubstructMatches(pyridine_pattern)
+    if pyridine_matches:
+        # Check for additional criteria for B3, B5, and B6
+        if mol.HasSubstructMatch(Chem.MolFromSmarts("[NH3+]")):  # B3 (niacin)
+            return True, "Contains pyridine ring and ammonium group, characteristic of vitamin B3 (niacin)"
+        elif mol.HasSubstructMatch(Chem.MolFromSmarts("C(=O)CC(O)=O")):  # B5 (pantothenic acid)
+            return True, "Contains pyridine ring and acetic acid group, characteristic of vitamin B5 (pantothenic acid)"
+        elif mol.HasSubstructMatch(Chem.MolFromSmarts("C(=O)C=C")):  # B6 (pyridoxine)
+            return True, "Contains pyridine ring and enone group, characteristic of vitamin B6 (pyridoxine)"
 
-1. **Analyze a larger set of B vitamin structures**: Examine a diverse set of B vitamin structures to identify common structural patterns, functional groups, or molecular properties that can be used for classification.
+    pterin_pattern = Chem.MolFromSmarts("c1nc2nc(nc2n1)N")  # B9 (folate)
+    if mol.HasSubstructMatch(pterin_pattern):
+        return True, "Contains pterin ring system, characteristic of vitamin B9 (folate)"
 
-2. **Incorporate additional substructure patterns**: Based on your analysis, create SMARTS patterns for additional substructures or functional groups that are characteristic of B vitamins.
+    corrin_pattern = Chem.MolFromSmarts("[Co]")  # B12 (cobalamin)
+    if mol.HasSubstructMatch(corrin_pattern):
+        return True, "Contains corrin ring with cobalt, characteristic of vitamin B12 (cobalamin)"
 
-3. **Implement additional checks and criteria**: In addition to substructure matching, consider incorporating checks for molecular properties such as molecular weight, atom counts, or other relevant descriptors that can aid in classification.
+    # Additional checks for molecular properties
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 100 or mol_wt > 1500:
+        return False, "Molecular weight outside typical range for B vitamins"
 
-4. **Handle pyridine pattern properly**: Develop a more comprehensive approach to handle pyridine-containing B vitamins (B3, B5, and B6) by considering additional structural features or properties specific to these vitamins.
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 2:
+        return False, "Too few rotatable bonds for a B vitamin"
 
-5. **Consider machine learning approaches**: If creating a rule-based approach becomes too complex, you could explore machine learning techniques, such as training a classification model on a labeled dataset of B vitamin and non-B vitamin structures.
-
-6. **Handle exceptional cases**: Be prepared to handle exceptional cases or borderline structures that may not fit neatly into the defined criteria for B vitamins.
-
-By addressing these issues and incorporating a more comprehensive set of patterns, checks, and criteria, you can improve the accuracy and robustness of your B vitamin classification program.
+    # No match found
+    return False, "Structure does not match any known B vitamin substructure or criteria"
