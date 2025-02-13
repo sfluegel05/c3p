@@ -21,10 +21,10 @@ def is_disaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns for typical sugar rings with stereochemistry
-    pyranose_smarts = "[C@H]1([C@H](O)[C@@H](O)[C@H](O)[C@H]1O)O"
-    furanose_smarts = "[C@H]1([C@H](O)[C@H](O)[C@@H]1O)O"
-
+    # Define more generic SMARTS patterns for pyranose and furanose sugar rings
+    pyranose_smarts = "[C@H]1(O)[C@H](O)[C@@H](O)[C@H](O)[C@H](O)[C@@H]1"
+    furanose_smarts = "[C@H]1(O)[C@H](O)[C@H](O)[C@@H]1"
+    
     pyranose_pattern = Chem.MolFromSmarts(pyranose_smarts)
     furanose_pattern = Chem.MolFromSmarts(furanose_smarts)
 
@@ -37,12 +37,13 @@ def is_disaccharide(smiles: str):
     if total_sugar_rings != 2:
         return False, f"Expected 2 monosaccharide units, found {total_sugar_rings}"
 
-    # Define more specific SMARTS for glycosidic linkage
-    glycosidic_smarts = "[CX4H]([OH1,OR0])[OX2H1,OX2H0][CX4H]"
+    # Define generalized SMARTS for glycosidic linkage
+    glycosidic_smarts = "[OD2H1,OD2H0][CX4]([OX2H1,OX2H0])[C]"
     glycosidic_pattern = Chem.MolFromSmarts(glycosidic_smarts)
 
     # Check for a glycosidic bond specifically linking the sugar rings
-    if not mol.HasSubstructMatch(glycosidic_pattern):
+    glycosidic_matches = mol.GetSubstructMatches(glycosidic_pattern)
+    if len(glycosidic_matches) == 0:
         return False, "No glycosidic bond found connecting sugar units properly"
 
     return True, "Contains two monosaccharide units joined by a glycosidic bond"
