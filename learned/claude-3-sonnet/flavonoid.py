@@ -1,26 +1,57 @@
 """
 Classifies: CHEBI:47916 flavonoid
 """
-Based on the provided outcomes, it seems that the previous program was unable to correctly classify any flavonoid molecules from the given examples. Here are some potential issues and improvements:
+"""
+Classifies: CHEBI:35508 flavonoid
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
 
-1. **Incomplete structural pattern**: The current program only checks for the presence of a 1-benzopyran core and an aryl substituent at position 2. However, the definition of flavonoids also mentions that the aryl substituent should be on the 2-position of the 1-benzopyran core. The provided pattern does not enforce this spatial constraint.
+def is_flavonoid(smiles: str):
+    """
+    Determines if a molecule is a flavonoid based on its SMILES string.
+    A flavonoid is a compound whose skeleton is based on 1-benzopyran with an aryl substituent at position 2.
 
-2. **Limited functional group recognition**: The program checks for the presence of hydroxy, methoxy, and glycoside groups, which are common in flavonoids. However, flavonoids can have many other substituents, such as prenyl, methyl, isoprenyl, and various acyl groups. The current approach may miss many valid flavonoid structures.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Lack of ring constraints**: The definition of flavonoids mentions that the structure is based on a 1-benzopyran core with an aryl substituent at position 2. However, the program does not explicitly check for the presence of the pyran and benzene rings in the correct arrangement.
-
-4. **No consideration of stereochemistry**: Many of the provided examples have specific stereochemistry defined, which is not being considered by the current program.
-
-To improve the program, here are some potential steps:
-
-1. **Define a more comprehensive structural pattern**: Use a SMARTS pattern that captures the entire flavonoid skeleton, including the precise arrangement of the pyran and benzene rings, as well as the position of the aryl substituent.
-
-2. **Expand functional group recognition**: Identify and incorporate patterns for other common substituents found in flavonoids, such as prenyl, methyl, isoprenyl, and various acyl groups.
-
-3. **Consider stereochemistry**: Incorporate stereochemistry information into the structural pattern or implement additional checks to validate the correct stereochemistry of the identified substructures.
-
-4. **Use machine learning techniques**: Given the complexity of the flavonoid class and the potential for diverse substituents and structural variations, consider using machine learning techniques to train a model on a large dataset of known flavonoid structures. This could potentially improve the accuracy and generalization ability of the classification.
-
-5. **Leverage existing databases**: Utilize existing databases of flavonoid structures, such as those provided by resources like PubChem or ChEBI, to validate and refine the structural patterns and rules used for classification.
-
-By addressing these potential issues and incorporating more comprehensive structural patterns, functional group recognition, stereochemistry checks, and potentially leveraging machine learning techniques or existing databases, the program's ability to accurately classify flavonoid molecules could be significantly improved.
+    Returns:
+        bool: True if molecule is a flavonoid, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Define flavonoid core pattern
+    flavonoid_core = Chem.MolFromSmarts('[o;r5]1[c;r5]2[c;r6]([c;r5][c;r5][c;r6]1)[c;r6][c;r6][c;r6]2[c;r5]3[c;r6][c;r6][c;r5][c;r6][c;r6]3')
+    
+    # Check for flavonoid core
+    match = mol.GetSubstructMatch(flavonoid_core)
+    if not match:
+        return False, "Missing flavonoid core skeleton"
+    
+    # Check for aryl substituent at position 2
+    aryl_sub_pattern = Chem.MolFromSmarts('[c;r6][a;r6][a;r6][a;r6]')
+    aryl_sub_match = mol.GetSubstructMatches(aryl_sub_pattern)
+    for idx in aryl_sub_match:
+        if mol.GetBondBetweenAtoms(idx[0], match[2]).GetBondType() == Chem.BondType.SINGLE:
+            break
+    else:
+        return False, "No aryl substituent found at position 2"
+    
+    # Check for common flavonoid substituents
+    sub_patterns = [
+        Chem.MolFromSmarts('[OH]'),      # hydroxy
+        Chem.MolFromSmarts('[OC]'),      # methoxy
+        Chem.MolFromSmarts('[O;r6]'),    # glycoside
+        Chem.MolFromSmarts('[C=C]'),     # prenyl/isoprenyl
+        Chem.MolFromSmarts('[CX3](=O)'), # acyl
+    ]
+    sub_matches = [mol.GetSubstructMatches(pat) for pat in sub_patterns]
+    if not any(sub_matches):
+        return False, "No common flavonoid substituents found"
+    
+    return True, "Contains flavonoid core skeleton with aryl substituent at position 2"
