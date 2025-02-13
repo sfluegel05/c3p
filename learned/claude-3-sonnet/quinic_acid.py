@@ -1,51 +1,32 @@
 """
 Classifies: CHEBI:26493 quinic acid
 """
-"""
-Classifies: CHEBI:16857 quinic acid
-A cyclitol carboxylic acid.
-"""
-from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+The previous program attempted to classify quinic acids based on the presence of a cyclohexane core, at least three hydroxyl groups, and a carboxylic acid group. However, the F1 score of 0.3125 indicates that the program missed many true positives and/or classified many false positives.
 
-def is_quinic_acid(smiles: str):
-    """
-    Determines if a molecule is a quinic acid based on its SMILES string.
-    A quinic acid is a cyclitol carboxylic acid, with a cyclohexane core,
-    multiple hydroxyl groups, and a carboxylic acid group.
+Here are some potential issues and improvements:
 
-    Args:
-        smiles (str): SMILES string of the molecule
+1. **False negatives**: The program failed to identify some true quinic acids, likely due to the strict requirement of a carboxylic acid group with a specific SMARTS pattern. Some quinic acid derivatives may have modified or protected carboxylic acid groups that do not match the SMARTS pattern used.
 
-    Returns:
-        bool: True if molecule is a quinic acid, False otherwise
-        str: Reason for classification
-    """
+   **Improvement**: Relax the carboxylic acid check or use multiple SMARTS patterns to account for different representations of the carboxylic acid group.
 
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+2. **False positives**: The program classified many non-quinic acid molecules as quinic acids, likely due to the loose criteria of a cyclohexane core, at least three hydroxyl groups, and a carboxylic acid group. This is a common pattern in many molecules, not just quinic acids.
 
-    # Look for cyclohexane core
-    cyclohexane_pattern = Chem.MolFromSmarts("[C&R1]1[C&R1][C&R1][C&R1][C&R1][C&R1]1")
-    if not mol.HasSubstructMatch(cyclohexane_pattern):
-        return False, "No cyclohexane core found"
+   **Improvement**: Introduce additional checks to ensure the specific arrangement of functional groups characteristic of quinic acids. For example, look for the specific attachment points of the hydroxyl groups and the carboxylic acid group relative to the cyclohexane core.
 
-    # Look for at least three hydroxyl groups (cyclitol)
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    if len(hydroxyl_matches) < 3:
-        return False, "Fewer than 3 hydroxyl groups found"
+3. **Stereochemistry**: The program does not consider the stereochemistry of the hydroxyl groups and the cyclohexane core, which is crucial for correctly identifying quinic acids.
 
-    # Look for carboxylic acid group
-    carboxyl_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
-    if not mol.HasSubstructMatch(carboxyl_pattern):
-        return False, "No carboxylic acid group found"
+   **Improvement**: Incorporate checks for the specific stereochemistry of quinic acids, such as using SMARTS patterns that consider the stereochemical arrangements.
 
-    # Count oxygens
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count < 5:
-        return False, "Oxygen count too low for quinic acid"
+4. **Substituents**: The program does not account for potential substituents or modifications on the quinic acid core, which are common in many quinic acid derivatives.
 
-    return True, "Contains cyclohexane core with multiple hydroxyl groups and a carboxylic acid"
+   **Improvement**: Consider allowing for common substituents or modifications on the quinic acid core, while still ensuring the core structure is present.
+
+5. **Oxygen count**: The oxygen count check may be too strict or too loose, depending on the desired level of strictness for the classification.
+
+   **Improvement**: Adjust the oxygen count threshold based on the specific requirements of the classification task and the range of quinic acid derivatives to be considered.
+
+6. **Molecular weight or other descriptors**: Additional molecular descriptors, such as molecular weight or hydrogen bond donor/acceptor counts, could help refine the classification and reduce false positives.
+
+   **Improvement**: Introduce checks for additional molecular descriptors that are characteristic of quinic acids and can help differentiate them from other molecules.
+
+By addressing these issues and incorporating appropriate improvements, the classification program should achieve a higher F1 score and better performance in identifying quinic acids and their derivatives.
