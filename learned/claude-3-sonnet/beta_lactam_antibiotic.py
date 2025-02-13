@@ -26,20 +26,30 @@ def is_beta_lactam_antibiotic(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for beta-lactam ring pattern
-    beta_lactam_pattern = Chem.MolFromSmarts("[NR]1[CR]2[CR][CR][NR]1[CR]2=O")
-    if not mol.HasSubstructMatch(beta_lactam_pattern):
-        return False, "No beta-lactam ring found"
+    # Look for penam (penicillin) nucleus
+    penam_pattern = Chem.MolFromSmarts("[NR]1[CR]2[CR][CR][NR]1[CR]2=O.[SX2]")
+    if mol.HasSubstructMatch(penam_pattern):
+        return True, "Contains a penam (penicillin) nucleus"
 
-    # Look for heterocyclic rings (4-membered rings containing nitrogen)
-    heterocyclic_rings = [ring for ring in mol.GetRingInfo().AtomRings()
-                          if any(mol.GetAtomWithIdx(idx).GetAtomicNum() == 7 for idx in ring)]
-    if not heterocyclic_rings:
-        return False, "No heterocyclic rings found"
+    # Look for cepham (cephalosporin) nucleus
+    cepham_pattern = Chem.MolFromSmarts("[NR]1[CR]2[CR][CR][NR]1[CR]2=O.[SX2][CX4]")
+    if mol.HasSubstructMatch(cepham_pattern):
+        return True, "Contains a cepham (cephalosporin) nucleus"
 
-    # Look for nitrogen atoms outside the beta-lactam ring
-    n_atoms = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7]
-    if not any(idx not in ring for ring in heterocyclic_rings for idx in ring):
-        return False, "No nitrogen atoms outside the beta-lactam ring"
+    # Look for carbapenem nucleus
+    carbapenem_pattern = Chem.MolFromSmarts("[NR]1[CR]2[CR][CR][NR]1[CR]2=O")
+    if mol.HasSubstructMatch(carbapenem_pattern):
+        return True, "Contains a carbapenem nucleus"
 
-    return True, "Contains a beta-lactam ring and heterocyclic rings with nitrogen atoms outside the beta-lactam ring"
+    # Look for monobactam nucleus
+    monobactam_pattern = Chem.MolFromSmarts("[NR]1[CR]2[CR][CR][NR]1[CR]2=O.[NX3]")
+    if mol.HasSubstructMatch(monobactam_pattern):
+        return True, "Contains a monobactam nucleus"
+
+    # Look for carboxyl groups and amine groups
+    carboxyl_pattern = Chem.MolFromSmarts("C(=O)[O;H,-]")
+    amine_pattern = Chem.MolFromSmarts("[N;H2,H1,H0]")
+    if mol.HasSubstructMatch(carboxyl_pattern) and mol.HasSubstructMatch(amine_pattern):
+        return True, "Contains carboxyl and amine groups"
+
+    return False, "No characteristic features of beta-lactam antibiotics found"
