@@ -27,32 +27,36 @@ def is_fatty_amide(smiles: str):
 
     # Look for amide group (-C(=O)N)
     amide_pattern = Chem.MolFromSmarts("C(=O)N")
-    if not mol.HasSubstructMatch(amide_pattern):
+    amide_match = mol.GetSubstructMatch(amide_pattern)
+    if not amide_match:
         return False, "No amide group found"
 
-    # Look for long carbon chain (>= 8 carbons) attached to amide
-    fatty_chain_pattern = Chem.MolFromSmarts("[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]")
-    fatty_chain_matches = mol.GetSubstructMatches(fatty_chain_pattern)
-    if not fatty_chain_matches:
-        return False, "No fatty acid chain found (>= 8 carbons)"
+    # Look for carbon chain attached to amide
+    carbon_chain_pattern = Chem.MolFromSmarts("[CX4]~[CX4]")
+    carbon_chain_matches = mol.GetSubstructMatches(carbon_chain_pattern, amide_match[0])
+    if not carbon_chain_matches:
+        return False, "No carbon chain found attached to amide group"
 
-    # Count rotatable bonds to verify long chains
+    # Check if amide is part of a larger ring system
+    ring_info = mol.GetRingInfo()
+    amide_atom = mol.GetAtomWithIdx(amide_match[0])
+    if any(amide_atom.IsInRingSize(size) for size in ring_info.AtomRings()):
+        return False, "Amide group is part of a ring system"
+
+    # Check for common functional groups found in lipids/carbohydrates
+    lipid_pattern = Chem.MolFromSmarts("[OX2H,OX1H0-]")
+    carbohydrate_pattern = Chem.MolFromSmarts("[OX2H][CX4][OX2H]")
+    if mol.HasSubstructMatch(lipid_pattern) or mol.HasSubstructMatch(carbohydrate_pattern):
+        return False, "Molecule contains functional groups typical of lipids or carbohydrates"
+
+    # Count rotatable bonds to verify chain length
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 5:
-        return False, "Chains too short to be fatty amide"
+    if n_rotatable < 2:
+        return False, "Carbon chain too short to be a fatty amide"
 
-    # Check molecular weight - fatty amides typically >150 Da
+    # Check molecular weight - fatty amides typically >100 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 150:
+    if mol_wt < 100:
         return False, "Molecular weight too low for fatty amide"
 
-    # Count carbons and nitrogens
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
-    
-    if c_count < 10:
-        return False, "Too few carbons for fatty amide"
-    if n_count != 1:
-        return False, "Must have exactly 1 nitrogen (amide group)"
-
-    return True, "Contains amide group with a long carbon chain (fatty acid)"
+    return True, "Contains amide group with a carbon chain (fatty acid)"
