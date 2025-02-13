@@ -25,49 +25,30 @@ def is_trichlorobenzene(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS patterns for different trichlorobenzene substitution patterns
-    # Note: [cH0] means a non-hydrogen-substituted aromatic carbon
-    patterns = [
-        # Generic pattern for benzene with exactly 3 chlorines
-        "[cH0]1([Cl])[cH1,cH0][cH1,cH0][cH0]([Cl])[cH1,cH0][cH0]1[Cl]",
-        # 1,2,3-trichlorobenzene pattern
-        "c1c(Cl)c(Cl)c(Cl)cc1",
-        # 1,2,4-trichlorobenzene pattern
-        "c1c(Cl)cc(Cl)c(Cl)c1",
-        # 1,3,5-trichlorobenzene pattern
-        "c1c(Cl)cc(Cl)cc1Cl"
-    ]
+    # Find all benzene rings
+    benzene_pattern = Chem.MolFromSmarts("c1ccccc1")
+    if not mol.HasSubstructMatch(benzene_pattern):
+        return False, "No benzene ring found"
     
-    # Check each pattern
-    for pattern in patterns:
-        pattern_mol = Chem.MolFromSmarts(pattern)
-        if pattern_mol is not None and mol.HasSubstructMatch(pattern_mol):
-            # Count chlorines in each matching substructure
-            matches = mol.GetSubstructMatches(pattern_mol)
-            for match in matches:
-                # Get atoms in the match
-                match_atoms = set(match)
-                # Count chlorines connected to the matched benzene ring
-                chlorine_count = 0
-                for atom_idx in match_atoms:
-                    atom = mol.GetAtomWithIdx(atom_idx)
-                    if atom.GetSymbol() == "C":  # Only check carbons
-                        for neighbor in atom.GetNeighbors():
-                            if neighbor.GetSymbol() == "Cl" and neighbor.GetIdx() not in match_atoms:
-                                chlorine_count += 1
-                
-                if chlorine_count == 3:
-                    positions = []
-                    # Determine substitution pattern
-                    if mol.HasSubstructMatch(Chem.MolFromSmarts("c1c(Cl)c(Cl)c(Cl)cc1")):
-                        positions = "1,2,3"
-                    elif mol.HasSubstructMatch(Chem.MolFromSmarts("c1c(Cl)cc(Cl)c(Cl)c1")):
-                        positions = "1,2,4"
-                    elif mol.HasSubstructMatch(Chem.MolFromSmarts("c1c(Cl)cc(Cl)cc1Cl")):
-                        positions = "1,3,5"
-                    else:
-                        positions = "unspecified"
-                        
-                    return True, f"Contains {positions}-trichlorobenzene substructure"
+    # Get all benzene rings
+    benzene_matches = mol.GetSubstructMatches(benzene_pattern)
     
-    return False, "No trichlorobenzene substructure found"
+    # Check each benzene ring for chlorine substituents
+    for ring_atoms in benzene_matches:
+        chlorine_count = 0
+        ring_atom_set = set(ring_atoms)
+        
+        # Count chlorines attached to this ring
+        for ring_atom_idx in ring_atoms:
+            atom = mol.GetAtomWithIdx(ring_atom_idx)
+            # Check neighbors of each carbon in the ring
+            for neighbor in atom.GetNeighbors():
+                # Only count chlorines that aren't part of the ring atoms
+                if neighbor.GetSymbol() == "Cl" and neighbor.GetIdx() not in ring_atom_set:
+                    chlorine_count += 1
+        
+        # If we found exactly 3 chlorines on this ring
+        if chlorine_count == 3:
+            return True, "Contains benzene ring with exactly 3 chlorine substituents"
+            
+    return False, "No benzene ring with exactly 3 chlorine substituents found"
