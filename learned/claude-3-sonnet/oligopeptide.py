@@ -6,10 +6,9 @@ Classifies: CHEBI:16670 oligopeptide
 """
 
 from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import Descriptors
 
-AA_CODES = "ALA ARG ASN ASP CYS GLN GLU GLY HIS ILE LEU LYS MET PHE PRO SER THR TRP TYR VAL".split()
+AA_CODES = "Ala Arg Asn Asp Cys Gln Glu Gly His Ile Leu Lys Met Phe Pro Ser Thr Trp Tyr Val".split()
 
 def is_oligopeptide(smiles: str):
     """
@@ -29,39 +28,28 @@ def is_oligopeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check molecular weight range (300-2000 Da)
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 300 or mol_wt > 2000:
-        return False, f"Molecular weight ({mol_wt:.2f} Da) outside typical oligopeptide range"
+    # Get molecular weight
+    mol_wt = Descriptors.ExactMolWt(mol)
 
     # Count amino acid residues
-    aa_residues = sum(1 for atom in mol.GetAtoms() if atom.GetSmarts()[0] in AA_CODES)
-    if aa_residues < 2:
-        return False, "Less than 2 amino acid residues"
+    long_name = Descriptors.GetMULongName(mol)
+    aa_residues = sum(code in long_name for code in AA_CODES)
 
     # Look for peptide bonds
-    peptide_bond_pattern = Chem.MolFromSmarts("[N;X3;H2,H1][C;X4][C;X3](=O)[N;X3]")
+    peptide_bond_pattern = Chem.MolFromSmarts("[N;X3][C;X3](=[O;X1])[C;X3][N;X3]")
     peptide_bond_matches = mol.GetSubstructMatches(peptide_bond_pattern)
-    if len(peptide_bond_matches) < 1:
-        return False, "No peptide bonds found"
 
-    # Check for common amino acid sidechains
-    sidechain_patterns = [Chem.MolFromSmarts(smi) for smi in [
-        "[NH2]-[CH2]-[CH2]-[CH2]-[CH2]-[NH]",  # Lys
-        "[CH3]-[CH2]-[CH]-[NH]",  # Ala
-        "[CH3]-[CH]-[CH3]",  # Val
-        "[CH3]-[CH2]-[CH2]-[CH]-[NH]",  # Leu
-        "[CH2]-[CH2]-[CH2]-[CH2]-[NH]",  # Pro (cyclic)
-        "[CH3]-[S]-[CH3]",  # Met
-        "[cH]-1-[cH]-[cH]-[cH]-[cH]-[cH]-1-[NH]",  # Phe, Tyr, Trp
-        "[NH]-[CH2]-[CH2]-[CH2]-[NH2]",  # Arg
-        "[CH2]-[CH2]-[C]-[NH]",  # Asp, Glu
-        "[CH2]-[C]-[NH2]",  # Asn, Gln
-        "[CH2]-[CH2]-[CH2]-[NH2]",  # His
-        "[S]-[CH3]"  # Cys
-    ]]
-    has_sidechains = any(mol.HasSubstructMatch(pattern) for pattern in sidechain_patterns)
-    if not has_sidechains:
-        return False, "No common amino acid sidechains found"
+    # Check for common functional groups
+    has_carboxyl = mol.HasSubstructMatch(Chem.MolFromSmarts("[C;X3](=O)[O;X1]"))
+    has_amino = mol.HasSubstructMatch(Chem.MolFromSmarts("[N;X3;H2,H1]"))
+    has_hydroxyl = mol.HasSubstructMatch(Chem.MolFromSmarts("[O;H1]"))
+    has_aromatic = mol.HasSubstructMatch(Chem.MolFromSmarts("[a]"))
 
-    return True, "Contains multiple amino acid residues connected by peptide bonds"
+    # Classify as oligopeptide
+    if aa_residues >= 2 and len(peptide_bond_matches) >= 1 and has_carboxyl and has_amino and (has_hydroxyl or has_aromatic):
+        if mol_wt > 500 and mol_wt < 5000:
+            return True, f"Contains {aa_residues} amino acid residues connected by peptide bonds, with common functional groups"
+        else:
+            return False, f"Molecular weight ({mol_wt:.2f} Da) outside typical oligopeptide range"
+    else:
+        return False, "Lacks characteristic features of oligopeptides"
