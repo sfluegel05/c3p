@@ -1,36 +1,65 @@
 """
 Classifies: CHEBI:61703 nonclassic icosanoid
 """
-The previous program attempted to classify nonclassic icosanoids by checking for the following criteria:
+"""
+Classifies: CHEBI:51625 nonclassic icosanoid
 
-1. Exactly 20 carbon atoms
-2. At least 2 oxygens
-3. A carbon chain of at least 10 carbons
-4. At least 2 double bonds (unsaturation)
-5. At least 2 oxygenated functional groups (hydroxyl, epoxide, hydroperoxide, ketone)
-6. Absence of prostanoid and leukotriene patterns
+A nonclassic icosanoid is any biologically active signaling molecule made by oxygenation
+of C20 fatty acids other than the classic icosanoids (the leukotrienes and the prostanoids).
+"""
 
-While this approach captured some key characteristics of nonclassic icosanoids, it fell short in several aspects, as evidenced by the low F1 score of 0.051.
+from rdkit import Chem
+from rdkit.Chem import AllChem
 
-Here are some potential issues with the previous approach and suggestions for improvement:
+def is_nonclassic_icosanoid(smiles: str):
+    """
+    Determines if a molecule is a nonclassic icosanoid based on its SMILES string.
 
-1. **Insufficient criteria for oxygenation and unsaturation**: The program only checked for the presence of at least 2 oxygens and 2 double bonds. However, many of the example structures provided have more extensive oxygenation and unsaturation patterns. It might be better to check for specific oxygenated functional groups (e.g., epoxides, hydroxyls) and specific patterns of unsaturation (e.g., conjugated double bonds).
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **Lack of substructure matching for specific motifs**: Instead of relying on general patterns like carbon chains and double bonds, it could be more effective to use SMARTS patterns to match specific substructures found in nonclassic icosanoids, such as epoxy groups adjacent to double bonds, or hydroxy groups on specific carbon positions.
+    Returns:
+        bool: True if molecule is a nonclassic icosanoid, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-3. **Overly restrictive carbon count**: The program required exactly 20 carbon atoms, but some examples (e.g., lipoxin C4) had fewer than 20 carbons. It might be better to allow a range of carbon counts (e.g., 18-22) or use a more flexible approach for carbon chain length.
+    # Check carbon count (18-22)
+    n_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if n_carbons < 18 or n_carbons > 22:
+        return False, f"Carbon count ({n_carbons}) outside the expected range for nonclassic icosanoids"
 
-4. **Insufficient handling of stereochemistry**: Many of the example structures have specific stereochemistry, which was not accounted for in the previous program. Incorporating stereochemistry checks could improve classification accuracy.
+    # Check for at least 2 oxygens
+    n_oxygens = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if n_oxygens < 2:
+        return False, "Insufficient oxygenation for nonclassic icosanoid"
 
-5. **Negative filtering approach**: The program tried to exclude classic icosanoids (prostanoids and leukotrienes) by checking for their absence. However, this approach may miss other types of molecules that should be excluded. It might be better to take a positive filtering approach, explicitly identifying the substructures and patterns that define nonclassic icosanoids.
+    # Check for specific oxygenated functional groups and unsaturation patterns
+    epoxide_pattern = Chem.MolFromSmarts("[C@]1[C@@]2[C@@]1[C@]2")
+    hydroxy_pattern = Chem.MolFromSmarts("[OX2H]")
+    conj_diene_pattern = Chem.MolFromSmarts("/C=C/C=C")
 
-To improve the program, you could consider the following steps:
+    epoxide_match = mol.HasSubstructMatch(epoxide_pattern)
+    hydroxy_match = mol.HasSubstructMatch(hydroxy_pattern)
+    conj_diene_match = mol.HasSubstructMatch(conj_diene_pattern)
 
-1. Analyze the provided example structures and identify common substructures, oxygenation patterns, and unsaturation patterns specific to nonclassic icosanoids.
-2. Develop SMARTS patterns to match these specific motifs and use them for substructure matching.
-3. Refine the criteria for carbon count, oxygenation, and unsaturation based on the examples.
-4. Incorporate stereochemistry checks where relevant.
-5. Take a positive filtering approach, explicitly identifying molecules as nonclassic icosanoids based on the presence of the identified motifs, rather than excluding classic icosanoids.
-6. Consider using machine learning techniques or rule-based systems to learn from the examples and develop more robust classification models.
+    if not (epoxide_match or hydroxy_match or conj_diene_match):
+        return False, "No characteristic oxygenation or unsaturation patterns found"
 
-By addressing these issues and refining the approach based on the provided examples, you should be able to improve the classification accuracy for nonclassic icosanoids.
+    # Check for specific substructures found in nonclassic icosanoids
+    substructure_patterns = [
+        Chem.MolFromSmarts("[C@@H]1[C@]2[C@@]1[C@]2"),  # epoxide adjacent to double bond
+        Chem.MolFromSmarts("[C@H](O)[C@@H](O)"),  # vicinal diols
+        Chem.MolFromSmarts("[C@H]([C@@H](O)O)O"),  # triol
+        Chem.MolFromSmarts("C/C=C/C=C/C=C/C=C/C"),  # long conjugated system
+        Chem.MolFromSmarts("C(=O)O"),  # carboxylic acid
+    ]
+
+    has_substructure = any(mol.HasSubstructMatch(pattern) for pattern in substructure_patterns)
+
+    if not has_substructure:
+        return False, "No characteristic substructures found for nonclassic icosanoid"
+
+    return True, "Contains characteristic oxygenation, unsaturation, and substructures of nonclassic icosanoids"
