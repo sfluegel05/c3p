@@ -1,54 +1,24 @@
 """
 Classifies: CHEBI:36836 3beta-hydroxy steroid
 """
-"""
-Classifies: CHEBI:36506 3beta-hydroxy steroid
-A 3-hydroxy steroid in which the 3-hydroxy substituent is in the beta-position.
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+The previous code seems to have attempted to classify 3beta-hydroxy steroids by looking for the steroid backbone and a specific 3beta-hydroxyl group pattern. However, there are a few potential issues that could have led to the low F1 score:
 
-def is_3beta_hydroxy_steroid(smiles: str):
-    """
-    Determines if a molecule is a 3beta-hydroxy steroid based on its SMILES string.
+1. **Overly Specific Patterns**: The patterns used to match the steroid backbone and the 3beta-hydroxyl group are very specific and may not cover the diverse range of structures within the 3beta-hydroxy steroid class. For example, the backbone pattern does not account for variations in the ring system or substituents, and the hydroxyl pattern only matches a specific connectivity pattern.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. **Lack of Sufficient Structural Checks**: While the code checks for the number of rotatable bonds, carbon atoms, and rings, these checks may not be sufficient to accurately classify 3beta-hydroxy steroids. Additional checks for specific functional groups, substituents, or other structural features may be necessary.
 
-    Returns:
-        bool: True if molecule is a 3beta-hydroxy steroid, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+3. **False Negatives**: The code may be too strict, leading to false negatives where valid 3beta-hydroxy steroid structures are incorrectly classified as negative due to the specific patterns not matching.
 
-    # Look for steroid backbone pattern
-    steroid_backbone_pattern = Chem.MolFromSmarts("[C@]12CCC[C@]3([C@@H]4CC[C@@]([C@](C)(CC[C@]2([H])CC1)(C)C4)C)C")
-    if not mol.HasSubstructMatch(steroid_backbone_pattern):
-        return False, "No steroid backbone found"
-    
-    # Look for 3beta-hydroxyl group pattern
-    hydroxy_pattern = Chem.MolFromSmarts("[C@@]1(CC[C@@]2([H])CC[C@]3([H])C[C@@H](O)CC[C@]23C)[C@H](C)CCCC")
-    if not mol.HasSubstructMatch(hydroxy_pattern):
-        return False, "No 3beta-hydroxyl group found"
-    
-    # Check for additional structural features
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 5:
-        return False, "Too few rotatable bonds for steroid"
-    
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 20:
-        return False, "Too few carbon atoms for steroid"
-    
-    # Count rings to ensure tetracyclic structure
-    ring_info = mol.GetRingInfo()
-    num_rings = len(ring_info.AtomRings())
-    if num_rings != 4:
-        return False, "Not a tetracyclic structure"
-    
-    return True, "Contains steroid backbone and 3beta-hydroxyl group"
+To improve the classification, we could consider the following approaches:
+
+1. **Use More General Patterns**: Instead of using highly specific patterns, we could use more general patterns that capture the core structural features of 3beta-hydroxy steroids, such as the tetracyclic ring system, the presence of a 3-hydroxyl group, and the presence of specific functional groups or substituents commonly found in this class.
+
+2. **Incorporate Additional Structural Checks**: We could add more structural checks to ensure that the molecule meets the necessary criteria for being a 3beta-hydroxy steroid, such as checking for the presence of specific functional groups, substituents, or other structural features.
+
+3. **Use Machine Learning Techniques**: Instead of relying solely on predefined patterns and rules, we could explore the use of machine learning techniques, such as support vector machines (SVMs) or random forests, trained on a dataset of known 3beta-hydroxy steroid structures. These techniques can learn the complex structural patterns and relationships from the data, potentially providing more accurate classification.
+
+4. **Combine Multiple Approaches**: We could combine different approaches, such as using general patterns and structural checks as a first step, and then employing machine learning techniques on the remaining molecules to improve classification accuracy.
+
+5. **Expand the Training Set**: If using machine learning techniques, we should ensure that the training set covers a diverse range of 3beta-hydroxy steroid structures, including variations in substituents, ring systems, and other structural features.
+
+By addressing these potential issues and exploring different approaches, we may be able to improve the classification accuracy and achieve a higher F1 score for the 3beta-hydroxy steroid class.
