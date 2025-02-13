@@ -64,18 +64,28 @@ def is_porphyrin(smiles):
     if methine_count != 4:
         return False, f"Found {methine_count} methine bridges, expected 4"
 
+    # Check for conjugated system
+    conjugated = True
+    for atom_idx in porphyrin_ring:
+        atom = mol.GetAtomWithIdx(atom_idx)
+        if not atom.GetIsAromatic():
+            conjugated = False
+            break
+    if not conjugated:
+        return False, "Macrocycle is not fully conjugated"
+
+    # Check for planarity
+    if not rdMolDescriptors.CalcPMI(mol, force=True) < 0.1:
+        return False, "Macrocycle is not planar"
+
     # Additional checks for common porphyrin features
     has_substituents = any(atom.GetDegree() > 3 for atom in mol.GetAtoms() if atom.GetIdx() in porphyrin_ring)
     has_metal_center = any(atom.GetFormalCharge() != 0 for atom in mol.GetAtoms())
 
-    reason = "Contains a tetrapyrrole macrocycle with 4 pyrrole rings connected by 4 methine bridges"
+    reason = "Contains a tetrapyrrole macrocycle with 4 pyrrole rings connected by 4 methine bridges, forming a conjugated planar system"
     if has_substituents:
         reason += ", with substituents present"
     if has_metal_center:
         reason += ", and a metal center"
 
     return True, reason
-
-# Example usage
-print(is_porphyrin("C1=2N3C(C=C4N5=C(C=C6N7C(=CC8=N(C(=C1)C(=C8CCC([O-])=O)C([H])=O)[Fe+]735)C(=C6C)CCC([O-])=O)C(=C4C)C=C)=C(C2C)[C@H](CC/C=C(\C)/CC/C=C(/CCC=C(C)C)\C)O"))
-# Output: (True, 'Contains a tetrapyrrole macrocycle with 4 pyrrole rings connected by 4 methine bridges, with substituents present, and a metal center')
