@@ -6,12 +6,38 @@ Classifies: CHEBI:27555 flavanone
 """
 
 from rdkit import Chem
-from rdkit.Chem import rdFMCS
+from rdkit.Chem import AllChem
+from rdkit.ML.Descriptors import MoleculeDescriptors
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import f1_score
+
+# Load training data (replace with your own data)
+flavanones = [Chem.MolFromSmiles(smiles) for smiles in ["CC(C)=CCc1c(O)c(CC=C(C)C)c2O[C@@H](CC(=O)c2c1O)c1ccc(O)cc1", ...]]
+non_flavanones = [Chem.MolFromSmiles(smiles) for smiles in ["CCCC", ...]]
+
+# Prepare data
+X = flavanones + non_flavanones
+y = [1] * len(flavanones) + [0] * len(non_flavanones)
+
+# Split into train and test sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Calculate fingerprints
+fingerprint = MoleculeDescriptors.MorganFingerprint
+
+# Train the classifier
+clf = RandomForestClassifier()
+clf.fit([fingerprint(mol) for mol in X_train], y_train)
+
+# Evaluate the model
+y_pred = clf.predict([fingerprint(mol) for mol in X_test])
+f1 = f1_score(y_test, y_pred)
+print(f"F1 score: {f1:.2f}")
 
 def is_flavanone(smiles: str):
     """
-    Determines if a molecule is a flavanone based on its SMILES string.
-    Flavanones are defined as members of the class of flavans with a 3,4-dihydro-2-aryl-2H-1-benzopyran-4-one skeleton and its substituted derivatives.
+    Determines if a molecule is a flavanone based on its SMILES string using a trained machine learning model.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,29 +46,12 @@ def is_flavanone(smiles: str):
         bool: True if molecule is a flavanone, False otherwise
         str: Reason for classification
     """
-    
-    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define the core flavanone scaffold
-    flavanone_core = Chem.MolFromSmarts("[C@@]12(C=CC=C1)OC(=O)C(C2)c1ccccc1")
-    
-    # Check if the molecule contains the flavanone core
-    if mol.HasSubstructMatch(flavanone_core):
-        return True, "Contains the 3,4-dihydro-2-aryl-2H-1-benzopyran-4-one flavanone skeleton"
+    prediction = clf.predict([fingerprint(mol)])[0]
+    if prediction == 1:
+        return True, "Classified as a flavanone by the trained model"
     else:
-        # Check for common substituted derivatives
-        derivatives = [
-            Chem.MolFromSmarts("[C@]12(C=CC=C1)OC(=O)C(C2)c1ccccc1"), # 2-aryl-2H-chromen-4-one (flavanone with additional chiral center)
-            Chem.MolFromSmarts("[C@@]12(C=CC=C1)OC(=O)C(C2)c1ccccc1O"), # 7-hydroxyflavanone
-            Chem.MolFromSmarts("[C@@]12(C=CC=C1)OC(=O)C(C2)c1ccc(O)cc1"), # 4'-hydroxyflavanone
-            # Add more common derivative patterns here
-        ]
-        
-        for derivative in derivatives:
-            if mol.HasSubstructMatch(derivative):
-                return True, "Contains a substituted flavanone derivative"
-        
-        return False, "Does not contain the flavanone skeleton or common derivatives"
+        return False, "Classified as non-flavanone by the trained model"
