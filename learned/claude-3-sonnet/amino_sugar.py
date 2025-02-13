@@ -1,24 +1,49 @@
 """
 Classifies: CHEBI:28963 amino sugar
 """
-After analyzing the previous code and the outcomes, it appears that the main issue lies in the way the code is identifying amino sugars. The current approach of checking for the presence of an amino group and a sugar backbone pattern is not sufficient to accurately classify amino sugars.
+"""
+Classifies: CHEBI:27195 amino sugar
+Any sugar having one or more alcoholic hydroxy groups replaced by substituted or unsubstituted amino groups.
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-Here are the key problems:
+def is_amino_sugar(smiles: str):
+    """
+    Determines if a molecule is an amino sugar based on its SMILES string.
 
-1. **Incomplete sugar backbone pattern**: The sugar backbone pattern used (`"[OX2][CX4][CX4][CX4][CX4][CX4][OX2]"`) only matches linear sugar backbones with six carbon atoms. However, amino sugars can have different ring sizes and branching structures, which are not covered by this pattern.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **Incorrect amino group attachment check**: The code checks if the amino group is attached to the sugar backbone using the pattern `"[OX2][CX4][NX3][CX4][CX4][CX4][OX2]"`. While this pattern identifies amino groups directly attached to the sugar backbone, it fails to recognize cases where the amino group is separated from the backbone by one or more atoms.
-
-3. **Hydroxy and amino group count threshold**: The code requires at least three hydroxy and amino groups combined for a molecule to be classified as an amino sugar. However, this condition is too strict, as some amino sugars may have fewer than three hydroxy groups.
-
-To improve the classification accuracy, the following modifications could be made:
-
-1. **Use a more comprehensive sugar backbone pattern**: Utilize a more general SMARTS pattern that can capture various sugar backbone structures, including branched and cyclic forms. This could involve using a recursive SMARTS pattern or a set of patterns to cover different backbone types.
-
-2. **Improve amino group attachment detection**: Instead of relying on a fixed pattern, consider using recursive SMARTS or graph traversal techniques to identify amino groups connected to the sugar backbone, regardless of their distance or intervening atoms.
-
-3. **Relax the hydroxy and amino group count condition**: Instead of requiring a specific number of hydroxy and amino groups, consider classifying a molecule as an amino sugar if it has at least one amino group attached to the sugar backbone, regardless of the number of hydroxy groups.
-
-Additionally, it might be helpful to incorporate other structural features or properties of amino sugars, such as the presence of specific functional groups or the overall molecular weight range, to further refine the classification process.
-
-By addressing these issues and incorporating more comprehensive patterns and techniques, the accuracy of the amino sugar classification program can be significantly improved.
+    Returns:
+        bool: True if molecule is an amino sugar, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Check for amino group(s)
+    amino_groups = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7 and atom.GetTotalNumHs() < 2)
+    if amino_groups == 0:
+        return False, "No amino group found"
+    
+    # Check for sugar backbone pattern
+    sugar_pattern = Chem.MolFromSmarts("[OX2][CX4][CX4][CX4][CX4][CX4][OX2]")
+    if not mol.HasSubstructMatch(sugar_pattern):
+        return False, "No sugar backbone pattern found"
+    
+    # Check for amino group(s) attached to the sugar backbone
+    amino_sugar_pattern = Chem.MolFromSmarts("[OX2][CX4][NX3][CX4][CX4][CX4][OX2]")
+    if not mol.HasSubstructMatch(amino_sugar_pattern):
+        return False, "Amino group not attached to sugar backbone"
+    
+    # Count hydroxy and amino groups
+    hydroxy_groups = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetTotalNumHs() == 1)
+    if hydroxy_groups + amino_groups < 3:
+        return False, "Too few hydroxy and amino groups for amino sugar"
+    
+    return True, "Molecule contains a sugar backbone with at least one hydroxy group replaced by an amino group"
