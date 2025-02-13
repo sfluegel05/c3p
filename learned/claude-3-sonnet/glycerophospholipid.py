@@ -6,7 +6,6 @@ Classifies: CHEBI:18294 glycerophospholipid
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_glycerophospholipid(smiles: str):
     """
@@ -27,7 +26,7 @@ def is_glycerophospholipid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for glycerol backbone pattern (C-C-C with 3 oxygens attached)
-    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]O")
+    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]([OX2])[OX2][OX2]")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
     
@@ -37,34 +36,13 @@ def is_glycerophospholipid(smiles: str):
         return False, "No phosphate group found"
     
     # Look for ester linkage between phosphate and any carbon of the glycerol
-    ester_pattern = Chem.MolFromSmarts("[OX2][CH2X4][CH2X4][OX2]P(~O)(~O)(~O)(~O)")
+    ester_pattern = Chem.MolFromSmarts("[OX2][CH2X4][CH2X4][CH2X4][OX2]P(~O)(~O)(~O)(~O)")
     if not mol.HasSubstructMatch(ester_pattern):
         return False, "Phosphate not ester-linked to glycerol backbone"
     
-    # Look for fatty acid chains (long carbon chains attached to esters)
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
-    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
-    
-    # Count rotatable bonds to verify long chains
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 10:
-        return False, "Chains too short to be fatty acids"
-    
-    # Check molecular weight - glycerophospholipids typically >500 Da
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 500:
-        return False, "Molecular weight too low for glycerophospholipid"
-    
-    # Count carbons, oxygens and phosphorus
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
-    
-    if c_count < 20:
-        return False, "Too few carbons for glycerophospholipid"
-    if o_count < 6:
-        return False, "Too few oxygens for glycerophospholipid"
-    if p_count != 1:
-        return False, "Must have exactly 1 phosphorus atom"
+    # Look for fatty acid chains (long carbon chains attached to oxygens of the glycerol)
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[OX2][CH2X4][CH2X4][CH2X4]")
+    if not mol.HasSubstructMatch(fatty_acid_pattern):
+        return False, "No fatty acid chains attached to glycerol backbone"
 
     return True, "Contains glycerol backbone with phosphate group ester-linked and fatty acid chains"
