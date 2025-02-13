@@ -27,17 +27,17 @@ def is_dipeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for peptide bond pattern (-C(=O)-N-C-C-)
-    peptide_bond_pattern = Chem.MolFromSmarts("C(=O)N[C][C]")
+    # Look for peptide bond pattern (-C(=O)-N-C-C(=O)-)
+    peptide_bond_pattern = Chem.MolFromSmarts("C(=O)NC(=O)")
     peptide_bond_matches = mol.GetSubstructMatches(peptide_bond_pattern)
 
     # Count number of peptide bonds
     n_peptide_bonds = len(peptide_bond_matches)
-    if n_peptide_bonds != 2:
-        return False, f"Found {n_peptide_bonds} peptide bonds, expected 2 for a dipeptide"
+    if n_peptide_bonds != 1:
+        return False, f"Found {n_peptide_bonds} peptide bonds, expected 1 for a dipeptide"
 
     # Look for amino acid residues (N-C-C)
-    amino_acid_pattern = Chem.MolFromSmarts("N[C][C]")
+    amino_acid_pattern = Chem.MolFromSmarts("[N;X3;H2,H1]([C;X4])[C;X4]")
     amino_acid_matches = mol.GetSubstructMatches(amino_acid_pattern)
 
     # Count number of amino acid residues
@@ -45,28 +45,4 @@ def is_dipeptide(smiles: str):
     if n_amino_acids != 2:
         return False, f"Found {n_amino_acids} amino acid residues, expected 2 for a dipeptide"
 
-    # Check for glycine residue
-    glycine_pattern = Chem.MolFromSmarts("N[CH2]C(=O)")
-    glycine_matches = mol.GetSubstructMatches(glycine_pattern)
-
-    if not glycine_matches:
-        return False, "No glycine residue found"
-
-    # Check for cyclic or linear dipeptide
-    cycle_pattern = Chem.MolFromSmarts("N1C(=O)C(N)C1")
-    cycle_matches = mol.GetSubstructMatches(cycle_pattern)
-
-    if cycle_matches:
-        # Cyclic dipeptide
-        return True, "Contains two amino acid residues connected by peptide linkages in a cyclic form"
-    else:
-        # Linear dipeptide
-        carboxyl_pattern = Chem.MolFromSmarts("C(=O)O")
-        carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
-        amine_pattern = Chem.MolFromSmarts("N")
-        amine_matches = mol.GetSubstructMatches(amine_pattern)
-
-        if len(carboxyl_matches) != 1 or len(amine_matches) != 2:
-            return False, "Missing terminal -COOH or -NH2 group"
-
-        return True, "Contains two amino acid residues connected by peptide linkages in a linear form"
+    return True, "Contains two amino acid residues connected by a peptide linkage"
