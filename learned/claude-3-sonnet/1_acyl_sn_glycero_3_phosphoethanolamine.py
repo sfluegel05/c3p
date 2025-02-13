@@ -1,26 +1,62 @@
 """
 Classifies: CHEBI:29017 1-acyl-sn-glycero-3-phosphoethanolamine
 """
-It seems that the previous program was on the right track, but there are a few potential issues that might have led to the failure:
+"""
+Classifies: CHEBI:17901 1-acyl-sn-glycero-3-phosphoethanolamine
+A 1-O-acylglycerophosphoethanolamine having (R)-configuration.
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-1. **Insufficient Examples in the Training Data**: The provided examples cover a diverse set of structures, but the training data might not have been comprehensive enough for the model to learn the patterns effectively.
+def is_1_acyl_sn_glycero_3_phosphoethanolamine(smiles: str):
+    """
+    Determines if a molecule is a 1-acyl-sn-glycero-3-phosphoethanolamine based on its SMILES string.
 
-2. **Handling of Stereochemistry**: The program checks for the (R)-configuration of the chiral center, but some of the examples provided do not explicitly specify the stereochemistry. This could lead to false negatives for valid structures.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Substructure Matching Limitations**: The program relies on SMARTS patterns to identify the glycerol backbone, acyl chain, and phosphoethanolamine group. However, these patterns might not cover all possible variations, leading to false negatives or false positives.
+    Returns:
+        bool: True if molecule is a 1-acyl-sn-glycero-3-phosphoethanolamine, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-4. **Additional Constraints**: There might be additional constraints or structural features that are not explicitly captured in the program, such as specific atom environments, bond orders, or ring systems.
+    # Look for glycerol backbone pattern (C-C-C with 2 oxygens attached)
+    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
+    if not mol.HasSubstructMatch(glycerol_pattern):
+        return False, "No glycerol backbone found"
 
-To improve the program, you could consider the following steps:
+    # Look for ester group (-O-C(=O)-)
+    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    if len(ester_matches) != 1:
+        return False, f"Found {len(ester_matches)} ester groups, need exactly 1"
 
-1. **Expand the Training Data**: Gather more diverse examples of 1-acyl-sn-glycero-3-phosphoethanolamine structures, including variations in stereochemistry, chain lengths, and substituents.
+    # Look for phosphoethanolamine group (-O-P(=O)(-O-)-O-CH2-CH2-NH2)
+    pe_pattern = Chem.MolFromSmarts("OP(OCCN)(=O)O[CX4H2][CX4H2]O")
+    if not mol.HasSubstructMatch(pe_pattern):
+        return False, "No phosphoethanolamine group found"
 
-2. **Handle Stereochemistry More Robustly**: Instead of relying solely on the CIP code, you could consider checking the actual atom environments and bond configurations to determine the stereochemistry.
+    # Check for (R)-configuration at the chiral carbon
+    chiral_centers = Chem.FindMolChiralCenters(mol, includeUnspec=True)
+    if len(chiral_centers) != 1:
+        return False, "Expected exactly one chiral center"
 
-3. **Refine Substructure Matching**: Analyze the false positives and false negatives to identify any issues with the SMARTS patterns, and refine them as needed. Additionally, you could consider using more advanced substructure matching techniques or machine learning models.
+    chiral_atom = mol.GetAtomWithIdx(chiral_centers[0][0])
+    if chiral_atom.GetProp('_CIPCode') != 'R':
+        return False, "Chiral center not in (R)-configuration"
 
-4. **Identify Additional Constraints**: Carefully analyze the examples and the definition of the chemical class to identify any additional constraints or structural features that need to be checked.
+    # Additional checks for long fatty acid chain
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
+    if len(fatty_acid_matches) < 1:
+        return False, f"Missing fatty acid chain, got {len(fatty_acid_matches)}"
 
-5. **Consider Ensemble Approaches**: Combine multiple approaches, such as substructure matching, molecular descriptors, and machine learning models, to improve the overall classification accuracy.
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 5:
+        return False, "Fatty acid chain too short"
 
-It's also important to note that some chemical classes might be inherently challenging to classify based solely on the SMILES string, and additional information or techniques might be required for accurate classification.
+    return True, "Molecule matches the structure of a 1-acyl-sn-glycero-3-phosphoethanolamine"
