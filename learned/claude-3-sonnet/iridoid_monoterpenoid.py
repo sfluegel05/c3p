@@ -1,70 +1,24 @@
 """
 Classifies: CHEBI:50563 iridoid monoterpenoid
 """
-"""
-Classifies: CHEBI:27894 iridoid monoterpenoid
+After analyzing the previous code and the outcomes, it appears that the main issue is the approach used to identify iridoid monoterpenoids. The code relies heavily on substructure matching for specific patterns, which may not be sufficient to capture the wide range of structural variations present in this class of compounds.
 
-One of a class of monoterpenoids biosynthesized from isoprene and often intermediates in the biosynthesis of alkaloids. 
-Iridoids usually consist of a cyclopentane ring fused to a six-membered oxygen heterocycle; cleavage of a bond in the cyclopentane ring gives rise to the subclass known as secoiridoids.
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+Additionally, some of the patterns used may be too specific or too general, leading to false negatives or false positives, respectively. For example, the sugar pattern used to identify glycosidic substituents is quite specific and may miss other types of glycosidic linkages.
 
-def is_iridoid_monoterpenoid(smiles: str):
-    """
-    Determines if a molecule is an iridoid monoterpenoid based on its SMILES string.
+To improve the classification accuracy, a more comprehensive approach is needed that considers the overall molecular structure and properties, rather than relying solely on substructure matching.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+Here are some potential improvements:
 
-    Returns:
-        bool: True if molecule is an iridoid monoterpenoid, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Look for core iridoid scaffold
-    iridoid_pattern = Chem.MolFromSmarts("[C@H]1[C@H]2[C@H]([C@H](C[C@]1(C)O2)C)C")
-    if not mol.HasSubstructMatch(iridoid_pattern):
-        return False, "Core iridoid scaffold not found"
-    
-    # Check for common iridoid modifications
-    
-    # Glycosidic substituents
-    sugar_pattern = Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@H]1O")
-    sugar_matches = mol.GetSubstructMatches(sugar_pattern)
-    
-    # Acyl substituents (e.g., caffeoyl, feruloyl)
-    acyl_pattern = Chem.MolFromSmarts("O=C(O)C=Cc1ccc(O)cc1")
-    acyl_matches = mol.GetSubstructMatches(acyl_pattern)
-    
-    # Oxidation patterns (alcohols, ketones, carboxylic acids)
-    alcohol_pattern = Chem.MolFromSmarts("[OH]")
-    alcohol_matches = mol.GetSubstructMatches(alcohol_pattern)
-    
-    ketone_pattern = Chem.MolFromSmarts("C=O")
-    ketone_matches = mol.GetSubstructMatches(ketone_pattern)
-    
-    acid_pattern = Chem.MolFromSmarts("C(=O)O")
-    acid_matches = mol.GetSubstructMatches(acid_pattern)
-    
-    # Ring cleavage (secoiridoids)
-    seco_pattern = Chem.MolFromSmarts("[C@H]1[C@H]2[C@@H]([C@H](C[C@@]1(C)O2)C)CC")
-    seco_matches = mol.GetSubstructMatches(seco_pattern)
-    
-    # Check molecular properties
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    
-    if len(sugar_matches) > 0 or len(acyl_matches) > 0 or \
-       len(alcohol_matches) > 0 or len(ketone_matches) > 0 or \
-       len(acid_matches) > 0 or len(seco_matches) > 0 or \
-       (mol_wt >= 200 and mol_wt <= 500 and n_rotatable >= 3):
-        return True, "Molecule contains the core iridoid scaffold and common iridoid modifications"
-    
-    return False, "Molecule does not meet the criteria for an iridoid monoterpenoid"
+1. **Analyze the molecular framework**: Instead of looking for a specific substructure pattern, analyze the overall molecular framework to identify the cyclopentane ring fused to a six-membered oxygen heterocycle, which is a defining characteristic of iridoid monoterpenoids.
+
+2. **Consider ring geometry and stereochemistry**: Incorporate checks for the stereochemistry of the fused ring system, as iridoid monoterpenoids often have a specific stereochemical arrangement.
+
+3. **Look for common structural modifications**: Instead of using rigid substructure patterns, consider more flexible methods to identify common modifications, such as glycosidic substituents, acyl groups, oxidation patterns, and ring cleavage (secoiridoids).
+
+4. **Utilize molecular descriptors**: Incorporate molecular descriptors like molecular weight, number of rings, and atom counts to ensure the molecule falls within the expected range for iridoid monoterpenoids.
+
+5. **Consider machine learning approaches**: If a large enough dataset of iridoid monoterpenoids and non-iridoid monoterpenoids is available, consider training a machine learning model to learn the patterns and structural features that distinguish this class of compounds.
+
+6. **Iterative refinement**: Continuously refine the classification criteria based on the performance on a diverse set of examples, adjusting the rules and thresholds as needed to improve accuracy.
+
+By incorporating a combination of these strategies, it is likely that the classification accuracy for iridoid monoterpenoids can be significantly improved.
