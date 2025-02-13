@@ -1,32 +1,57 @@
 """
 Classifies: CHEBI:39434 limonoid
 """
-The previous program attempted to classify limonoids based on the following criteria:
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-1. Presence of a furan ring
-2. At least 4 rings (triterpene skeleton)
-3. At least 5 oxygen atoms (highly oxygenated)
-4. At least 3 methyl groups at specific positions
-5. At least 5 rotatable bonds (to ensure a triterpenoid-like size)
+def is_limonoid(smiles: str) -> tuple[bool, str]:
+    """
+    Determines if a molecule is a limonoid based on its SMILES string.
+    
+    A limonoid is a highly oxygenated triterpenoid with a prototypical structure either
+    containing or derived from a precursor with a 4,4,8-trimethyl-17-furanylsteroid skeleton.
 
-However, the outcomes show that this approach has some limitations:
+    Args:
+        smiles (str): SMILES string of the molecule
 
-1. False positives: Several molecules were incorrectly classified as limonoids because they contained a furan ring and met the other criteria, even though they were not actually limonoids.
-
-2. False negatives: Some true limonoids were missed because they did not meet all the criteria. For example, some limonoids may have fewer than 5 oxygens or fewer than 3 methyl groups.
-
-3. Lack of specificity: The criteria used were quite broad and could potentially match other classes of compounds as well, leading to false positives.
-
-To improve the classification, we could consider the following approaches:
-
-1. Use more specific substructure patterns: Instead of relying on general criteria like the number of rings or oxygens, we could look for specific substructure patterns that are characteristic of limonoids. This could involve defining SMARTS patterns for the core limonoid skeleton and checking for matches.
-
-2. Use machine learning: Train a machine learning model (e.g., a random forest or neural network) on a dataset of known limonoids and non-limonoids. This could learn more complex patterns and features that distinguish limonoids from other compounds.
-
-3. Combine multiple criteria: Use a combination of more specific criteria, such as checking for the presence of specific functional groups, ring systems, and stereochemistry patterns, in addition to the existing criteria.
-
-4. Incorporate other molecular descriptors: Explore the use of other molecular descriptors that could be relevant for limonoid classification, such as topological polar surface area, Lipinski's rules, or other shape/size descriptors.
-
-5. Use expert knowledge: Consult with experts in the field of limonoid chemistry to understand the key structural features and rules that define this class of compounds, and incorporate that knowledge into the classification algorithm.
-
-Overall, while the previous program made a reasonable attempt at limonoid classification, its performance could be improved by incorporating more specific structural features and patterns, leveraging machine learning techniques, and potentially combining multiple criteria or descriptors.
+    Returns:
+        bool: True if molecule is a limonoid, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Check for furan ring
+    furan_pattern = Chem.MolFromSmarts("c1cocc1")
+    if not mol.HasSubstructMatch(furan_pattern):
+        return False, "No furan ring present"
+    
+    # Check for triterpenoid skeleton
+    limonoid_core = Chem.MolFromSmarts("[C@]12[C@@](C)(CC[C@@]3([H])[C@@]4(C)C=CC(=O)OC(C)(C)[C@]4([H])C[C@@H]([C@@]3([H])C)C1=O)[C@@H](C[C@@]2([H])C)c1ccoc1"
+    if not mol.HasSubstructMatch(limonoid_core):
+        return False, "Missing limonoid core skeleton"
+    
+    # Check for high oxygenation
+    num_oxygens = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if num_oxygens < 5:
+        return False, "Not highly oxygenated (fewer than 5 oxygens)"
+    
+    # Check for methyl groups at specific positions
+    methyl_pattern = Chem.MolFromSmarts("[C@@]1(C)[C@@]2([H])[C@@]3([H])[C@]4([H])[C@@]5([H])[C@@]6([H])CC[C@@]7([H])[C@@]6(C)C=CC(=O)OC(C)(C)[C@]7([H])[C@@H]([C@@]5([H])[C@@]4(C)C(=O)[C@@]3([H])[C@@]2([H])C[C@@]1([H])C)C")
+    if not mol.HasSubstructMatch(methyl_pattern):
+        return False, "Missing methyl groups at required positions"
+    
+    # Check for molecular weight and rotatable bonds (indicative of triterpenoid size)
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 400:
+        return False, "Molecular weight too low for triterpenoid"
+    
+    num_rotatable_bonds = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if num_rotatable_bonds < 5:
+        return False, "Too few rotatable bonds for triterpenoid"
+    
+    return True, "Meets the structural requirements of a limonoid"
