@@ -7,7 +7,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_alkene(smiles: str):
     """
     Determines if a molecule is an alkene based on its SMILES string.
-    An alkene is defined as an acyclic branched or unbranched hydrocarbon having 
+    An alkene is defined as an acyclic branched or unbranched hydrocarbon having
     exactly one carbon-carbon double bond with the general formula CnH2n.
 
     Args:
@@ -23,9 +23,10 @@ def is_alkene(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check if the molecule is acyclic
-    if mol.GetRingInfo().NumRings() > 0:
-        return False, "Molecule contains cycles"
+    # Ensure only contains Carbon and Hydrogen atoms
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() not in (6, 1):
+            return False, "Molecule contains elements other than carbon and hydrogen"
 
     # Ensure exactly one carbon-carbon double bond (C=C)
     double_bond_pattern = Chem.MolFromSmarts("C=C")
@@ -37,6 +38,7 @@ def is_alkene(smiles: str):
 
     # Use RDKit to calculate the molecular formula
     formula = rdMolDescriptors.CalcMolFormula(mol)
+    
     # Extract counts of C and H from the formula
     c_count = 0
     h_count = 0
@@ -48,8 +50,8 @@ def is_alkene(smiles: str):
             c_count = count
         elif element == 'H':
             h_count = count
-
+    
     if c_count == 0 or h_count == 0 or h_count != 2 * c_count:
         return False, f"Molecular formula does not match CnH2n (found C{c_count}H{h_count})"
-
+    
     return True, "Molecule is an alkene with one carbon-carbon double bond and fits the general formula CnH2n"
