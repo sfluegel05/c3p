@@ -1,65 +1,30 @@
 """
 Classifies: CHEBI:4986 fatty acid methyl ester
 """
-"""
-Classifies: CHEBI:35368 fatty acid methyl ester
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+The previous code had a few issues that led to the low performance in classifying fatty acid methyl esters:
 
-def is_fatty_acid_methyl_ester(smiles: str):
-    """
-    Determines if a molecule is a fatty acid methyl ester based on its SMILES string.
-    A fatty acid methyl ester is a fatty acid ester that is the carboxylic ester 
-    obtained by the formal condensation of a fatty acid with methanol.
+1. **Overly strict fatty acid chain length criteria**: The code required at least 5 consecutive carbon-carbon bonds to identify a fatty acid chain. However, some shorter-chain fatty acid methyl esters (e.g., methyl octanoate) were missed. The criteria should be relaxed to allow for shorter chains.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. **Inflexible ester group pattern**: The code only looked for a specific ester group pattern (-C(=O)O-C). However, some valid structures had different atom orders or substitutions around the ester group, causing them to be missed. A more flexible pattern matching approach is needed.
 
-    Returns:
-        bool: True if molecule is a fatty acid methyl ester, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+3. **Strict oxygen count requirement**: The code required exactly 2 oxygens for a valid fatty acid methyl ester. However, some structures had additional oxygen atoms (e.g., in epoxy or hydroperoxy groups), leading to false negatives. The oxygen count criteria should be more flexible.
 
-    # Look for methyl ester group (-C(=O)O-C)
-    ester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2]C")
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) != 1:
-        return False, "Must have exactly one methyl ester group"
+4. **No check for methyl group**: The code did not explicitly check for the presence of a methyl group (-CH3) attached to the ester oxygen. This could lead to false positives for other types of esters.
 
-    # Look for long carbon chain (fatty acid part)
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
-    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
-    if len(fatty_acid_matches) < 1:
-        return False, "Missing fatty acid chain"
+5. **No check for disconnected structures**: The code did not check if the identified fatty acid chain and ester group were part of the same connected component. This could lead to false positives for disconnected structures.
 
-    # Count rotatable bonds to verify long chain
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 7:
-        return False, "Chain too short to be a fatty acid"
+To improve the classification performance, the following modifications can be made:
 
-    # Count carbons and oxygens
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    
-    if c_count < 8:
-        return False, "Too few carbons for fatty acid methyl ester"
-    if o_count != 2:
-        return False, "Must have exactly 2 oxygens (methyl ester)"
+1. **Relax the fatty acid chain length criteria**: Instead of a fixed minimum number of consecutive carbon-carbon bonds, use a broader pattern that matches longer carbon chains with optional double bonds and substitutions.
 
-    # Check if the carbon chain is attached to the ester group
-    ester_atom_idx = ester_matches[0][0]
-    ester_atom = mol.GetAtomWithIdx(ester_atom_idx)
-    for neighbor_atom in ester_atom.GetNeighbors():
-        if neighbor_atom.GetAtomicNum() == 6:
-            break
-    else:
-        return False, "Fatty acid chain not attached to ester group"
+2. **Use a more flexible ester group pattern**: Use a generalized SMARTS pattern that matches various ester group configurations, including substitutions and different atom orders.
 
-    return True, "Contains a methyl ester group attached to a fatty acid chain"
+3. **Remove strict oxygen count requirement**: Instead of checking for an exact oxygen count, focus on ensuring the presence of the ester group and fatty acid chain.
+
+4. **Check for the presence of a methyl group**: Add a pattern match or atom neighborhood check to ensure the ester oxygen is connected to a methyl group (-CH3).
+
+5. **Check for connectivity**: Ensure that the identified fatty acid chain and ester group are part of the same connected component in the molecule.
+
+6. **Consider additional validation rules**: Optionally, add additional checks or heuristics based on properties like molecular weight, hydrogen deficiency, or specific substructure patterns to further improve classification accuracy.
+
+By addressing these issues, the program should be better equipped to accurately classify a wider range of fatty acid methyl ester structures.
