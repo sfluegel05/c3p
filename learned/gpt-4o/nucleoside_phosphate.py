@@ -24,13 +24,13 @@ def is_nucleoside_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Nucleobase patterns (SMILES)
+    # List of nucleobase patterns (SMARTS)
     nucleobases = [
-        '[nH]1cnc2c1ncnc2N',     # Adenine
-        'n1ccn([C@H]2O[C@H])c(=O)n1',  # Cytosine
-        'Nc1nc2n(cnc2c(=O)[nH]1)',     # Guanine 
-        'c1cc(C)cn(c1)[C@H]2O',    # Thymine and modifications
-        'O=C1NC=CN1[C@H]2C[C@H]2O' # Uracil
+        '[nH]1cnc2c1ncnc2N',          # Adenine
+        'n1ccn(c(=O)[nH]1)[C@H]2O',   # Cytosine
+        'Nc1nc2n(cnc2c(=O)[nH]1)',    # Guanine 
+        'c1cc(=O)nc(n1)[C@H]2O',      # Thymine
+        'O=C1NC=NC2=C1C@H(O)C@H>2)O'  # Uracil
     ]
 
     # Check for nucleobase structure
@@ -44,12 +44,12 @@ def is_nucleoside_phosphate(smiles: str):
     if not nucleobase_detected:
         return False, "Nucleobase not found in molecule"
 
-    # Phosphate group pattern (can exist in different forms)
+    # Phosphate group patterns
     phosphate_patterns = [
-        '[O-]P(=O)([O-])[O-]', # triphosphate
-        'P(=O)(O)(O)',         # monophosphate
-        'PO(=O)([O-])[O-]',    # diphosphate or variations
-        'OP(=O)(O)O'           # another form
+        'P(=O)(O)(O)',        # monophosphate
+        'OP(=O)(O)[O-]',      # deprotonated monophosphate variant
+        'P(=O)(O)(O)O',       # monoester phosphate
+        'P(=O)(O)(O)OCC'      # phosphate linked to sugar
     ]
     
     # Check if at least one phosphate group is present
