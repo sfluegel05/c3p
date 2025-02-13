@@ -2,7 +2,6 @@
 Classifies: CHEBI:36702 2-acyl-1-alkyl-sn-glycero-3-phosphocholine
 """
 from rdkit import Chem
-from rdkit.Chem import rdchem
 
 def is_2_acyl_1_alkyl_sn_glycero_3_phosphocholine(smiles: str):
     """
@@ -17,25 +16,26 @@ def is_2_acyl_1_alkyl_sn_glycero_3_phosphocholine(smiles: str):
         bool: True if molecule is a 2-acyl-1-alkyl-sn-glycero-3-phosphocholine, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
     # Look for glycerol backbone with phosphocholine at position 3
-    backbone_phosphocholine_pattern = Chem.MolFromSmarts("[C@H](O[P](=O)(OCC[N+](C)(C)C)[O-])[C](O)[C](OC)=O")
-    if not mol.HasSubstructMatch(backbone_phosphocholine_pattern):
+    glycerol_phosphocholine_pattern = Chem.MolFromSmarts("[C@@H](O[P](=O)(OCC[N+](C)(C)C)[O-])[C@H](OC)[C](=O)OC")
+    if not mol.HasSubstructMatch(glycerol_phosphocholine_pattern):
         return False, "Structure doesn't match glycerol backbone with phosphocholine group"
 
     # Look for alkyl group at position 1
-    alkyl_pattern = Chem.MolFromSmarts("COC")
-    if not mol.HasSubstructMatch(alkyl_pattern):
-        return False, "No alkyl group found at position 1"
+    alkyl_pattern = Chem.MolFromSmarts("OC[*]CO")
+    alkyl_matches = mol.GetSubstructMatches(alkyl_pattern)
+    if not any(len(match) >= 2 for match in alkyl_matches):
+        return False, "No adequate long chain alkyl groups found at position 1"
 
     # Look for acyl group at position 2
-    acyl_pattern = Chem.MolFromSmarts("COC(=O)")
+    acyl_pattern = Chem.MolFromSmarts("O[C@H](CO)C(=O)C")
     if not mol.HasSubstructMatch(acyl_pattern):
         return False, "No acyl group found at position 2"
 
-    return True, "Contains a glycerol backbone with an alkyl group at position 1, acyl group at position 2, and phosphocholine at position 3"
+    return True, "Structure matches a 2-acyl-1-alkyl-sn-glycero-3-phosphocholine, with correct glycerol backbone, alkyl, and acyl groups"
