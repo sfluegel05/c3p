@@ -6,7 +6,6 @@ from rdkit import Chem
 def is_mineral(smiles: str):
     """
     Determines if a molecule is a mineral based on its SMILES string.
-    Minerals typically contain metal ions/metalloids and anions such as sulfates, phosphates, chlorides, oxides, or carbonates.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,11 +20,10 @@ def is_mineral(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # List of common metal ions and metalloids (atomic numbers for metals and some metalloids)
+    # Improved list of common metal and metalloid atomic numbers
     metal_and_metalloid_atomic_numbers = [
-        3, 11, 19, 20, 22, 23, 24, 25, 26, 27, 28, 29, 30, 37, 38, 
-        39, 40, 42, 47, 48, 56, 57, 58, 79, 80, 81, 82, 83, 51, 33 # added Sb and As
-        # Additional elements commonly found in minerals
+        3, 4, 11, 12, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 38, 39, 40, 50,
+        51, 56, 58, 73, 74, 81, 82, 87, 88, 90 # Includes many commonly used metals and metalloids
     ]
 
     # Check for presence of metal ions or metalloids
@@ -33,21 +31,23 @@ def is_mineral(smiles: str):
     if not contains_metal_or_metalloid:
         return False, "No metal ions or metalloids found in structure"
     
-    # Check for presence of applicable anions in minerals
+    # Check for presence of typical anions or groups in minerals
     mineral_group_smarts = [
         '[O-]S(=O)(=O)[O-]',  # sulfate
-        'C(=O)([O-])[O-]',    # carbonate
+        'C(=O)([O-])[O-]',  # carbonate
         'P(=O)([O-])([O-])[O-]',  # phosphate
-        '[N+]([O-])=O',       # nitrate
-        'Cl',  # chloride common in many minerals
+        '[N+]([O-])=O',  # nitrate
+        'Cl',  # chloride
         '[O]',  # potential oxides/hydrates indicator
-        '[S-]'  # potential sulfide indicator
+        '[S-]'  # sulfide
     ]
     
     for group_smarts in mineral_group_smarts:
         group_pattern = Chem.MolFromSmarts(group_smarts)
         if mol.HasSubstructMatch(group_pattern):
-            if '[C]' not in smiles or len(smiles) < 45: # Ensure it's not a large organic compound
-                return True, "Contains metal ions/metalloids and suitable anion."
+            # Distinguish from large organic species, e.g., checks such as few carbons or small structure true for ions
+            carbon_atoms = [atom.GetAtomicNum() == 6 for atom in mol.GetAtoms()]
+            if sum(carbon_atoms) < 6:  # Small number of carbon atoms
+                return True, "Contains metal ions/metalloids and suitable anion structure with low organic content."
 
     return False, "Does not match typical mineral structure"
