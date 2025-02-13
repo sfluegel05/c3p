@@ -2,7 +2,6 @@
 Classifies: CHEBI:39418 straight-chain saturated fatty acid
 """
 from rdkit import Chem
-from rdkit.Chem import Descriptors
 
 def is_straight_chain_saturated_fatty_acid(smiles: str):
     """
@@ -20,28 +19,55 @@ def is_straight_chain_saturated_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for carboxylic acid group
+    # Look for carboxylic acid group (must be terminal)
     carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
-    if not mol.HasSubstructMatch(carboxylic_acid_pattern):
-        return False, "No carboxylic acid group found"
+    carboxylic_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
+    
+    if len(carboxylic_matches) != 1:
+        return False, "No terminal carboxylic acid group found or multiple groups detected"
 
-    # Ensure all bonds in the main chain are single bonds (saturated)
-    if not all(bond.GetBondType() == Chem.BondType.SINGLE for bond in mol.GetBonds()):
-        return False, "Presence of double or triple bonds indicates unsaturation"
+    # Ensure carbon chain saturation (apart from carboxylic)
+    # Saturation refers to carbon-carbon bonds only
+    for bond in mol.GetBonds():
+        if bond.GetBeginAtom().GetAtomicNum() == 6 and bond.GetEndAtom().GetAtomicNum() == 6:
+            if bond.GetBondType() != Chem.BondType.SINGLE:
+                return False, "Presence of non-single C-C bonds indicates unsaturation"
 
     # Determine if molecule is a straight chain
-    # Count carbon atoms in the longest chain
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    
-    # We assume that a fatty acid will have n+1 carbons when saturated with a terminal carboxylic group
-    if mol.GetNumHeavyAtoms() != c_count + 2:
-        return False, "Presence of branch or other functional group"
+    # Count carbon atoms; ensure they are forming a continuous chain
+    c_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
+    if len(c_atoms) < 3:
+        return False, "Too few carbon atoms for a fatty acid"
 
-    # Hydroxy group allowance: count OH groups
+    # We require a linear alignment with carboxylic acid
+    terminal_carbon_index = carboxylic_matches[0][0]
+    carbon_chain = [terminal_carbon_index]
+    current_index = terminal_carbon_index
+    
+    while True:
+        # Extend the chain forward
+        next_carbon = None
+        for neighbor in mol.GetAtomWithIdx(current_index).GetNeighbors():
+            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in carbon_chain:
+                next_carbon = neighbor.GetIdx()
+                break
+        
+        if next_carbon is None:
+            break
+        
+        carbon_chain.append(next_carbon)
+        current_index = next_carbon
+
+    if len(carbon_chain) != len(c_atoms):
+        return False, "Not a continuous straight chain; branches or side chains detected"
+
+    # Hydroxy group allowance: count OH groups apart from in carboxylic acid
     hydroxy_pattern = Chem.MolFromSmarts("[OX2H]")
-    hydroxy_count = len(mol.GetSubstructMatches(hydroxy_pattern))
-    if hydroxy_count > 1:
-        return False, f"Too many hydroxy groups: found {hydroxy_count}, need at most 1"
+    hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
+
+    if any(oxyg_match[0] in chain for chain in hydroxy_matches):
+        if len(hydroxy_matches) > 1:
+            return False, f"Too many hydroxy groups: found {len(hydroxy_matches)}, need at most 1"
 
     return True, "Molecule is a straight-chain saturated fatty acid"
 
