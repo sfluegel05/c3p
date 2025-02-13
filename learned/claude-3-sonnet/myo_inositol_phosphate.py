@@ -24,15 +24,6 @@ def is_myo_inositol_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Remove charges to normalize the structure
-    uncharge_smiles = Chem.MolToSmiles(mol, kekuleSmiles=True, allHsExplicit=False)
-    mol = Chem.MolFromSmiles(uncharge_smiles)
-    
-    # Check for cyclohexane core
-    cyclohexane_pattern = Chem.MolFromSmarts("C1CCCCC1")
-    if not mol.HasSubstructMatch(cyclohexane_pattern):
-        return False, "No cyclohexane core found"
-    
     # Count carbons (should be exactly 6 for myo-inositol)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if c_count != 6:
@@ -48,41 +39,71 @@ def is_myo_inositol_phosphate(smiles: str):
     ring_sizes = [len(ring) for ring in ring_info.AtomRings()]
     if not any(size == 6 for size in ring_sizes):
         return False, "No 6-membered ring found"
+        
+    # Multiple patterns to match different representations of myo-inositol core
+    myo_patterns = [
+        # Pattern 1: Standard myo-inositol with explicit stereochemistry
+        "[C@@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@H](O)1",
+        # Pattern 2: Alternative representation
+        "[C@H]1[C@@H](O)[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)1",
+        # Pattern 3: More general pattern with any substituents
+        "C1C(O)C(O)C(O)C(O)C(O)1"
+    ]
     
-    # More specific pattern for myo-inositol core with correct stereochemistry
-    # This pattern looks for a cyclohexane with 5 equatorial and 1 axial substituents
-    # The @ and @@ specify the stereochemistry
-    myo_pattern = Chem.MolFromSmarts("[C@@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@H](O)1")
-    if not mol.HasSubstructMatch(myo_pattern):
-        return False, "Does not match myo-inositol stereochemistry pattern"
+    found_myo = False
+    for pattern in myo_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            found_myo = True
+            break
+            
+    if not found_myo:
+        return False, "Does not match myo-inositol core pattern"
     
-    # Check for phosphate groups - more flexible pattern that matches both charged and uncharged forms
-    phosphate_pattern = Chem.MolFromSmarts("[OX2][P]([OX2,OX1-])([OX2,OX1-])=[OX1,OX2-]")
-    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
-    if len(phosphate_matches) == 0:
+    # Check for phosphate groups - multiple patterns to match different forms
+    phosphate_patterns = [
+        # Standard phosphate
+        "[OX2][P]([OX2,OX1-])([OX2,OX1-])=[OX1,OX2-]",
+        # Charged phosphate
+        "[O-][P](=[O])([O-])[O-]",
+        # Alternative phosphate representation
+        "[P](=O)([O,O-])([O,O-])[O,O-]"
+    ]
+    
+    phosphate_found = False
+    for pattern in phosphate_patterns:
+        phos_pattern = Chem.MolFromSmarts(pattern)
+        if mol.HasSubstructMatch(phos_pattern):
+            phosphate_found = True
+            break
+            
+    if not phosphate_found:
         return False, "No phosphate groups found"
     
-    # Verify that phosphates are attached to the inositol ring
+    # Verify phosphate attachment to ring
     ring_atoms = ring_info.AtomRings()[0]
     ring_carbons = set(idx for idx in ring_atoms if mol.GetAtomWithIdx(idx).GetAtomicNum() == 6)
     
-    # Check oxygen connections between ring and phosphates
+    phosphate_attached = False
     for carbon_idx in ring_carbons:
         carbon = mol.GetAtomWithIdx(carbon_idx)
         for neighbor in carbon.GetNeighbors():
             if neighbor.GetAtomicNum() == 8:  # Oxygen
                 for next_neighbor in neighbor.GetNeighbors():
                     if next_neighbor.GetAtomicNum() == 15:  # Phosphorus
+                        phosphate_attached = True
                         break
-                else:
-                    continue
-                break
-    
-    # Count phosphate-oxygen bonds to verify phosphate groups
-    p_o_pattern = Chem.MolFromSmarts("[P]~[O]")
-    p_o_count = len(mol.GetSubstructMatches(p_o_pattern))
-    min_expected_o = p_count * 3  # Each P should have at least 3 oxygens
-    if p_o_count < min_expected_o:
-        return False, "Insufficient phosphate-oxygen bonds"
+                if phosphate_attached:
+                    break
+        if phosphate_attached:
+            break
+            
+    if not phosphate_attached:
+        return False, "Phosphate groups not properly attached to inositol ring"
+
+    # Count total oxygens to verify complete phosphate groups
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    min_o_needed = 6 + (p_count * 3)  # 6 for ring hydroxyls + 3 per phosphate
+    if o_count < min_o_needed:
+        return False, "Insufficient oxygen atoms for complete phosphate groups"
 
     return True, f"Contains myo-inositol core with {p_count} phosphorus atoms in phosphate groups"
