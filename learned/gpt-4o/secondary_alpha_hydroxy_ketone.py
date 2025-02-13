@@ -6,6 +6,9 @@ from rdkit import Chem
 def is_secondary_alpha_hydroxy_ketone(smiles: str):
     """
     Determines if a molecule is a secondary alpha-hydroxy ketone based on its SMILES string.
+    A secondary alpha-hydroxy ketone has an alpha carbon bonded to one hydroxyl group, 
+    one hydrogen atom and two carbons (making it a secondary carbon) that is adjacent 
+    to a carbonyl (C=O) group.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,9 +23,12 @@ def is_secondary_alpha_hydroxy_ketone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for alpha-hydroxy ketone pattern: [OH] next to the [C=O] connected by [C] with [H][R]
-    alpha_hydroxy_ketone_pattern = Chem.MolFromSmarts('[CX4H1][CX3](=O)[CX4](O)')
-    if not mol.HasSubstructMatch(alpha_hydroxy_ketone_pattern):
+    # SMARTS for secondary alpha-hydroxy ketone
+    # `[C;H1&R0]`: Secondary carbon (H1 means single hydrogen, indicating secondary, and R0 to ensure no cyclic reference)
+    # `[OH]`: directly attached hydroxyl group
+    # `[C]=[O]`: carbonyl group adjacent to the alpha position
+    secondary_alpha_hydroxy_ketone_pattern = Chem.MolFromSmarts('[C;H1&R0][C;H1]([OH])[R0][C]=[O]')
+    if not mol.HasSubstructMatch(secondary_alpha_hydroxy_ketone_pattern):
         return False, "No secondary alpha-hydroxy ketone structure found"
 
     return True, "Contains secondary alpha-hydroxy ketone structure"
