@@ -1,22 +1,67 @@
 """
 Classifies: CHEBI:18133 hexose
 """
-The previous program had a few limitations that led to the poor performance:
+"""
+Classifies: CHEBI:18020 hexose
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem.rdchem import BondType
 
-1. **Incorrect Aldehyde and Ketone Pattern Detection**: The program used SMARTS patterns to detect aldehyde and ketone groups, but these patterns were too simplistic and did not account for the position of the groups within the molecule. The aldehyde pattern `"[CH2](C=O)"` only looks for a carbon connected to an aldehyde group, and the ketone pattern `"C(=O)C"` only looks for a ketone group sandwiched between two carbons. These patterns do not ensure that the aldehyde or ketone group is in the correct position (position 1 or 2) for a hexose.
+def is_hexose(smiles: str):
+    """
+    Determines if a molecule is a hexose based on its SMILES string.
+    A hexose is a six-carbon monosaccharide with an aldehyde group at position 1 (aldohexose)
+    or a ketone group at position 2 (ketohexose), existing as a linear or cyclic structure.
 
-2. **No Consideration for Ring Structures**: The program did not account for the fact that many hexoses exist in cyclic forms, such as pyranoses and furanoses. The program only looked for linear aldehyde and ketone groups, which would miss many common hexose structures.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Limited Structural Checks**: The program only checked for the presence of an aldehyde or ketone group and the correct number of carbon and oxygen atoms. However, there are additional structural features that could be used to more accurately identify hexoses, such as the presence of specific ring systems, stereochemistry, and connectivity patterns.
-
-To improve the program, we can take the following steps:
-
-1. **Use More Specific SMARTS Patterns**: We can define SMARTS patterns that specifically look for aldehyde and ketone groups in the correct position (position 1 or 2) within a linear or cyclic hexose structure. This will require more complex patterns that consider the connectivity and ring systems.
-
-2. **Consider Ring Structures**: We can extend the program to handle both linear and cyclic hexose structures by using SMARTS patterns that match common ring systems like pyranoses and furanoses.
-
-3. **Incorporate Additional Structural Checks**: We can add additional checks for structural features that are characteristic of hexoses, such as specific ring systems, stereochemistry, and connectivity patterns. These checks can be implemented using SMARTS patterns, substructure matching, or other RDKit functionality.
-
-4. **Improve Reasoning and Error Handling**: We can enhance the reasoning and error handling in the program to provide more informative feedback when a molecule does not meet the hexose criteria. This can include specific reasons for why a molecule was not classified as a hexose, such as incorrect ring system, stereochemistry, or connectivity pattern.
-
-By addressing these limitations and incorporating more advanced structural analysis techniques, we can significantly improve the accuracy and robustness of the hexose classification program.
+    Returns:
+        bool: True if molecule is a hexose, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Check for 6 carbon atoms and sufficient oxygen atoms
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if c_count != 6 or o_count < 5:
+        return False, "Does not contain 6 carbon atoms or sufficient oxygen atoms for a hexose"
+    
+    # Define SMARTS patterns for aldohexose and ketohexose
+    aldohexose_pattern = Chem.MolFromSmarts("[CH2](C(=O)C[CH][CH][CH][CH]O)")  # Linear aldohexose
+    ketohexose_pattern = Chem.MolFromSmarts("[CH](C(=O)C[CH][CH][CH]O)")  # Linear ketohexose
+    pyranose_pattern = Chem.MolFromSmarts("O1C[CH][CH][CH][CH]C1")  # Pyranose ring
+    furanose_pattern = Chem.MolFromSmarts("O1C[CH][CH]C[CH]1")  # Furanose ring
+    
+    # Check for linear aldohexose or ketohexose
+    if mol.HasSubstructMatch(aldohexose_pattern):
+        return True, "Linear aldohexose structure found"
+    if mol.HasSubstructMatch(ketohexose_pattern):
+        return True, "Linear ketohexose structure found"
+    
+    # Check for cyclic pyranose or furanose structures
+    if mol.HasSubstructMatch(pyranose_pattern) or mol.HasSubstructMatch(furanose_pattern):
+        # Check for aldehyde or ketone group in ring
+        for atom in mol.GetAtoms():
+            if atom.GetAtomicNum() == 6:  # Carbon atom
+                bond_types = [bond.GetBondType() for bond in atom.GetBonds()]
+                if BondType.DOUBLE in bond_types:
+                    # Check if connected to oxygen (aldehyde or ketone)
+                    for bond in atom.GetBonds():
+                        if bond.GetBondType() == BondType.DOUBLE and bond.GetOtherAtom(atom).GetAtomicNum() == 8:
+                            # Check position of aldehyde or ketone group
+                            ring_atoms = mol.GetRingInfo().AtomRings[mol.GetRingInfo().IsCyclic(atom.GetIdx())][1]
+                            if len(ring_atoms) == 6:
+                                ring_pos = ring_atoms.index(atom.GetIdx())
+                                if ring_pos == 0:
+                                    return True, "Aldopyranose or aldofuranose structure found"
+                                elif ring_pos == 1:
+                                    return True, "Ketopyranose or ketofuranose structure found"
+    
+    return False, "No hexose structure found"
