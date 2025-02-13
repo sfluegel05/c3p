@@ -2,12 +2,14 @@
 Classifies: CHEBI:25608 nucleoside phosphate
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_nucleoside_phosphate(smiles: str):
     """
     Determines if a molecule is a nucleoside phosphate based on its SMILES string.
-    A nucleoside phosphate is characterized by a nucleobase attached to a sugar with 
-    one or more phosphate groups.
+    A nucleoside phosphate is defined as a nucleobase-containing molecular entity that is 
+    a nucleoside in which one or more of the sugar hydroxy groups has been converted into 
+    a mono- or poly-phosphate.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -16,35 +18,38 @@ def is_nucleoside_phosphate(smiles: str):
         bool: True if the molecule is a nucleoside phosphate, False otherwise
         str: Reason for classification
     """
+    
     # Parse the SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Comprehensive list of nucleobase patterns (SMARTS)
+    # Nucleobase patterns (SMILES)
     nucleobases = [
-        'c1nc[nH]c2c1ncnc2N',       # Adenine
-        'Nc1ncnc2n(ccn(c12))',      # Guanine 
-        'c1cc(=O)[nH]c(n1)[C@H]2O', # Thymine
-        'O=C1NC=NC2=C1[N]C[C@H]2O', # Uracil
-        'n1cc(c(=O)[nH]c1)[C@@H]2O' # Cytosine
+        '[nH]1cnc2c1ncnc2N',     # Adenine
+        'n1ccn([C@H]2O[C@H])c(=O)n1',  # Cytosine
+        'Nc1nc2n(cnc2c(=O)[nH]1)',     # Guanine 
+        'c1cc(C)cn(c1)[C@H]2O',    # Thymine and modifications
+        'O=C1NC=CN1[C@H]2C[C@H]2O' # Uracil
     ]
 
-    # Check for nucleobase structure in the molecule
+    # Check for nucleobase structure
     nucleobase_detected = False
     for base in nucleobases:
         base_pattern = Chem.MolFromSmarts(base)
         if mol.HasSubstructMatch(base_pattern):
             nucleobase_detected = True
             break
-
+      
     if not nucleobase_detected:
         return False, "Nucleobase not found in molecule"
 
-    # Phosphate group patterns; including polyphosphates and unique linkages
+    # Phosphate group pattern (can exist in different forms)
     phosphate_patterns = [
-        '[OP](=O)(O)[O-]',      # Mono phosphate ion
-        '[O-]P(=O)(O)O[C@@H]',  # Additional linkage allowing for phosphate esters
+        '[O-]P(=O)([O-])[O-]', # triphosphate
+        'P(=O)(O)(O)',         # monophosphate
+        'PO(=O)([O-])[O-]',    # diphosphate or variations
+        'OP(=O)(O)O'           # another form
     ]
     
     # Check if at least one phosphate group is present
@@ -56,22 +61,6 @@ def is_nucleoside_phosphate(smiles: str):
             break
 
     if not phosphate_detected:
-        return False, "No phosphate group found in the molecule"
+        return False, "No phosphate group found in molecule"
 
-    # Check for sugar connection (e.g., ribose or deoxyribose)
-    sugar_patterns = [
-        '[C@H]1(O)C(O)C(O)C(O1)',   # Ribose
-        '[C@H]1(O)C[C@H](O)C(O1)O'  # Deoxyribose
-    ]
-    
-    sugar_detected = False
-    for sugar in sugar_patterns:
-        sugar_pattern = Chem.MolFromSmarts(sugar)
-        if mol.HasSubstructMatch(sugar_pattern):
-            sugar_detected = True
-            break
-
-    if not sugar_detected:
-        return False, "No sugar structure found in nucleoside phosphate"
-
-    return True, "Contains a nucleobase, sugar, and phosphate group, classified as nucleoside phosphate"
+    return True, "Contains a nucleobase and phosphate group, thus classified as nucleoside phosphate"
