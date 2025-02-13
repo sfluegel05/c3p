@@ -2,16 +2,16 @@
 Classifies: CHEBI:27208 unsaturated fatty acid
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_unsaturated_fatty_acid(smiles: str):
     """
     Determines if a molecule is an unsaturated fatty acid based on its SMILES string.
-    An unsaturated fatty acid contains at least one C=C or C#C bond, a carboxyl group, 
-    and a sufficiently long aliphatic chain.
+    An unsaturated fatty acid contains at least one C=C or C#C bond and a terminal carboxyl group.
     
     Args:
         smiles (str): SMILES string of the molecule
-
+    
     Returns:
         bool: True if molecule is an unsaturated fatty acid, False otherwise
         str: Reason for classification
@@ -21,20 +21,27 @@ def is_unsaturated_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for carboxyl group
+    # Check for presence of terminal carboxyl group
     carboxyl_pattern = Chem.MolFromSmarts("C(=O)O")
-    if not mol.HasSubstructMatch(carboxyl_pattern):
-        return False, "No carboxyl group found (-COOH)"
+    carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
+    if not carboxyl_matches:
+        return False, "No terminal carboxyl group found (-COOH)"
     
-    # Check for presence of unsaturation: C=C or C#C bonds
+    # Check for presence of unsaturation: C=C bonds
     double_bond_pattern = Chem.MolFromSmarts("C=C")
-    triple_bond_pattern = Chem.MolFromSmarts("C#C")
-    if not (mol.HasSubstructMatch(double_bond_pattern) or mol.HasSubstructMatch(triple_bond_pattern)):
+    if mol.HasSubstructMatch(double_bond_pattern):
+        unsat_bonds = True
+    else:
+        # Check for presence of unsaturation: C#C bonds
+        triple_bond_pattern = Chem.MolFromSmarts("C#C")
+        unsat_bonds = mol.HasSubstructMatch(triple_bond_pattern)
+    
+    if not unsat_bonds:
         return False, "No unsaturation (C=C or C#C) found in the structure"
 
-    # Check for long aliphatic chain; adjust chain length to a more suitable threshold
-    carbon_chain_pattern = Chem.MolFromSmarts("[CH2]~[CH2]~[CH2]~[CH2]~[CH2]~[CH2]~[CH2]~[CH2]")  # At least 8 continuous carbons
-    if not mol.HasSubstructMatch(carbon_chain_pattern):
-        return False, "Aliphatic chain is too short to be considered a fatty acid"
+    # Check for long aliphatic chain
+    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if carbon_count < 10:  # Assuming a minimum chain length of 10 carbons
+        return False, "Carbon chain too short to be considered a fatty acid"
 
-    return True, "Contains at least one unsaturation and a sufficiently long carbon chain with a carboxyl group, typical of unsaturated fatty acids"
+    return True, "Contains at least one unsaturation and terminal carboxyl group, typical of unsaturated fatty acids"
