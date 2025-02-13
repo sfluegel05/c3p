@@ -9,7 +9,6 @@ A dipeptide is any molecule that contains two amino-acid residues connected by p
 
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_dipeptide(smiles: str):
     """
@@ -28,8 +27,8 @@ def is_dipeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for peptide bond pattern (-C(=O)-N-)
-    peptide_bond_pattern = Chem.MolFromSmarts("C(=O)N")
+    # Look for peptide bond pattern (-C(=O)-N-C-C-)
+    peptide_bond_pattern = Chem.MolFromSmarts("C(=O)N[C][C]")
     peptide_bond_matches = mol.GetSubstructMatches(peptide_bond_pattern)
 
     # Count number of peptide bonds
@@ -37,8 +36,8 @@ def is_dipeptide(smiles: str):
     if n_peptide_bonds != 2:
         return False, f"Found {n_peptide_bonds} peptide bonds, expected 2 for a dipeptide"
 
-    # Look for amino acid residues
-    amino_acid_pattern = Chem.MolFromSmarts("[N;H2,H1][C;H1]([C;H2,H1,H0])[C;H2,H1,H0]")
+    # Look for amino acid residues (N-C-C)
+    amino_acid_pattern = Chem.MolFromSmarts("N[C][C]")
     amino_acid_matches = mol.GetSubstructMatches(amino_acid_pattern)
 
     # Count number of amino acid residues
@@ -46,13 +45,28 @@ def is_dipeptide(smiles: str):
     if n_amino_acids != 2:
         return False, f"Found {n_amino_acids} amino acid residues, expected 2 for a dipeptide"
 
-    # Check for terminal groups (-COOH and -NH2)
-    carboxyl_pattern = Chem.MolFromSmarts("[C;H1](=O)[O;H1]")
-    carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
-    amine_pattern = Chem.MolFromSmarts("[N;H2]")
-    amine_matches = mol.GetSubstructMatches(amine_pattern)
+    # Check for glycine residue
+    glycine_pattern = Chem.MolFromSmarts("N[CH2]C(=O)")
+    glycine_matches = mol.GetSubstructMatches(glycine_pattern)
 
-    if len(carboxyl_matches) != 1 or len(amine_matches) != 1:
-        return False, "Missing terminal -COOH or -NH2 group"
+    if not glycine_matches:
+        return False, "No glycine residue found"
 
-    return True, "Contains two amino acid residues connected by peptide linkages"
+    # Check for cyclic or linear dipeptide
+    cycle_pattern = Chem.MolFromSmarts("N1C(=O)C(N)C1")
+    cycle_matches = mol.GetSubstructMatches(cycle_pattern)
+
+    if cycle_matches:
+        # Cyclic dipeptide
+        return True, "Contains two amino acid residues connected by peptide linkages in a cyclic form"
+    else:
+        # Linear dipeptide
+        carboxyl_pattern = Chem.MolFromSmarts("C(=O)O")
+        carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
+        amine_pattern = Chem.MolFromSmarts("N")
+        amine_matches = mol.GetSubstructMatches(amine_pattern)
+
+        if len(carboxyl_matches) != 1 or len(amine_matches) != 2:
+            return False, "Missing terminal -COOH or -NH2 group"
+
+        return True, "Contains two amino acid residues connected by peptide linkages in a linear form"
