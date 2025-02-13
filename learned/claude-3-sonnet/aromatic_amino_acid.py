@@ -1,26 +1,41 @@
 """
 Classifies: CHEBI:33856 aromatic amino acid
 """
-The previous attempt failed because the code has some limitations in correctly identifying aromatic amino acids. Here are some potential issues and improvements:
+from rdkit import Chem
+from rdkit.Chem import AllChem
 
-1. **Amino acid functional group check**: The code checks for the presence of an amino group (-NH2) and a carboxyl group (-COOH), which is a good start. However, it does not verify if these groups are connected in a way that forms an amino acid. For example, it would incorrectly classify a molecule with an amino group and a separate carboxyl group as an amino acid.
+def is_aromatic_amino_acid(smiles: str):
+    """
+    Determines if a molecule is an aromatic amino acid based on its SMILES string.
+    An aromatic amino acid is an amino acid with an aromatic ring in its side chain.
 
-2. **Aromatic ring check**: The code checks for the presence of aromatic rings, but it does not verify if the aromatic ring is part of the amino acid side chain. For instance, it would incorrectly classify an amino acid with an additional aromatic ring (e.g., phenylalanine with an extra benzene ring) as an aromatic amino acid.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Side chain attachment**: The code does not check if the aromatic ring is correctly attached to the amino acid backbone. It should ensure that the aromatic ring is connected to the alpha carbon of the amino acid.
+    Returns:
+        bool: True if the molecule is an aromatic amino acid, False otherwise
+        str: Reason for classification
+    """
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-4. **Stereochemistry**: The code does not consider stereochemistry, which is important for distinguishing between L- and D-isomers of amino acids.
+    # Identify amino acid backbone
+    amino_acid_pattern = Chem.MolFromSmarts("[N;H2,H1;!$(N-[!#6]);!$(N-[!#6]=[!#6])]C(=O)[O;H1,-]")
+    if not mol.HasSubstructMatch(amino_acid_pattern):
+        return False, "Molecule does not contain an amino acid backbone"
 
-To improve the program, you could consider the following steps:
+    # Check for aromatic ring attachment
+    aromatic_amino_acid_pattern = Chem.MolFromSmarts("[N;H2,H1;!$(N-[!#6]);!$(N-[!#6]=[!#6])]C(=O)[O;H1,-]C1=[c;r]")
+    if not mol.HasSubstructMatch(aromatic_amino_acid_pattern):
+        return False, "Aromatic ring not attached to the amino acid backbone"
 
-1. **Identify the amino acid backbone**: Use a SMARTS pattern to identify the amino acid backbone (e.g., `"[N;H2,H1;!$(N-[!#6]);!$(N-[!#6]=[!#6])]C(=O)[O;H1,-]"`). This pattern matches the amino group and the carboxyl group connected by a carbon atom.
+    # Consider stereochemistry (if needed)
+    # You can use RDKit's built-in functions to determine the stereochemistry
+    # and handle specific stereoisomers if required
 
-2. **Check for aromatic ring attachment**: Use a SMARTS pattern to check if an aromatic ring is attached to the alpha carbon of the amino acid backbone (e.g., `"[N;H2,H1;!$(N-[!#6]);!$(N-[!#6]=[!#6])]C(=O)[O;H1,-]C1=[c;r]"`). This pattern includes the amino acid backbone pattern and an aromatic ring (`[c;r]`) connected to the alpha carbon.
+    # Handle edge cases (e.g., multiple aromatic rings, aromatic heterocycles)
+    # You can add additional checks or patterns for specific edge cases
 
-3. **Consider stereochemistry**: If necessary, you can use SMARTS patterns to identify specific stereoisomers or use RDKit's built-in functions to determine the stereochemistry of the amino acid.
-
-4. **Handle edge cases**: Consider edge cases such as amino acids with multiple aromatic rings or amino acids with aromatic heterocycles (e.g., histidine).
-
-5. **Use additional checks**: You can use additional checks like molecular weight, atom counts, or specific substructure patterns to further refine the classification.
-
-By addressing these issues, you should be able to improve the accuracy of the `is_aromatic_amino_acid` function.
+    return True, "Molecule is an aromatic amino acid"
