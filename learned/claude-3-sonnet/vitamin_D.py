@@ -1,26 +1,58 @@
 """
 Classifies: CHEBI:27300 vitamin D
 """
-The previous code attempted to classify molecules as vitamin D based on the presence of a specific ring system, cis double bonds, and hydroxyl groups. However, it failed to correctly classify many of the provided examples, resulting in a low F1 score.
+"""
+Classifies: CHEBI:27279 vitamin D
+Any member of a group of fat-soluble hydroxy seco-steroids that exhibit biological activity against vitamin D deficiency. 
+Vitamin D can be obtained from sun exposure, food and supplements and is biologically inactive and converted into 
+the biologically active calcitriol via double hydroxylation in the body.
+"""
 
-Here are some potential issues with the previous approach and suggestions for improvement:
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-1. **Strict Pattern Matching**: The code relied heavily on strict pattern matching using SMARTS patterns. While this approach works well for identifying specific substructures, it may not be flexible enough to capture the structural diversity of vitamin D molecules. Vitamin D compounds can have various modifications and substitutions while still belonging to the class.
+def is_vitamin_D(smiles: str):
+    """
+    Determines if a molecule is a vitamin D compound based on its SMILES string.
 
-2. **Insufficient Structural Constraints**: The SMARTS patterns used in the previous code were not comprehensive enough to capture all the necessary structural features of vitamin D molecules. For example, the code did not check for the presence of the seco-steroid backbone or the specific position of the hydroxyl groups, which are crucial for defining the vitamin D class.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Lack of Molecular Descriptors**: The code only used basic molecular properties like molecular weight and atom counts. While these properties can provide additional information, they may not be sufficient to distinguish vitamin D molecules from other compounds with similar weights and compositions.
-
-To improve the classification performance, you could consider the following strategies:
-
-1. **Utilize More Comprehensive SMARTS Patterns**: Develop more sophisticated SMARTS patterns that capture the essential structural features of vitamin D molecules, such as the seco-steroid backbone, the positions of hydroxyl groups, and the specific stereochemistry. This may require breaking down the pattern matching into multiple steps and combining the results.
-
-2. **Incorporate Molecular Fingerprints**: Instead of relying solely on SMARTS patterns, you could use molecular fingerprints, which encode structural information in a more flexible and comprehensive manner. Fingerprints can capture various structural features and allow for similarity comparisons with known vitamin D compounds.
-
-3. **Use Machine Learning Approaches**: If you have a sufficiently large dataset of labeled vitamin D and non-vitamin D molecules, you could train a machine learning model, such as a random forest or a neural network, to learn the structural patterns and features that distinguish vitamin D compounds. This approach can potentially capture more complex relationships and handle structural variations more effectively.
-
-4. **Combine Multiple Approaches**: You could combine different approaches, such as SMARTS pattern matching, molecular descriptors, fingerprints, and machine learning models, to create a more robust and accurate classification system. This can leverage the strengths of each approach and compensate for their individual limitations.
-
-5. **Curate and Expand the Training Data**: Ensure that your training data is representative of the structural diversity within the vitamin D class and includes both positive and negative examples. If the provided examples are not sufficient, consider expanding the dataset with additional vitamin D and non-vitamin D compounds from public databases or literature.
-
-By addressing these issues and exploring more advanced techniques, you may be able to improve the classification performance and achieve a higher F1 score for the vitamin D class.
+    Returns:
+        bool: True if molecule is a vitamin D compound, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Check for seco-steroid backbone
+    seco_steroid_pattern = Chem.MolFromSmarts("[C@]12[C@H](CCC[C@@H]1[C@H](C)CCCC(C)(C)O)[C@@H](CC[C@@]3([C@H]2CCC4=CC(=O)CC[C@@]34C)C)O"
+    if not mol.HasSubstructMatch(seco_steroid_pattern):
+        return False, "No seco-steroid backbone found"
+    
+    # Check for cis-triene system
+    cis_triene_pattern = Chem.MolFromSmarts("/C=C/C=C/C=C/"
+    if not mol.HasSubstructMatch(cis_triene_pattern):
+        return False, "No cis-triene system found"
+    
+    # Check for hydroxyl groups
+    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
+    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
+    if len(hydroxyl_matches) < 2:
+        return False, "Less than 2 hydroxyl groups found"
+    
+    # Check molecular weight range (typically 300-500 Da)
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 300 or mol_wt > 500:
+        return False, "Molecular weight outside typical range for vitamin D"
+    
+    # Check for additional structural features
+    additional_features_pattern = Chem.MolFromSmarts("[C@@]1(CCC[C@@H](C1)O)[C@H](C)CCCC(C)(C)O"
+    if not mol.HasSubstructMatch(additional_features_pattern):
+        return False, "Missing additional structural features of vitamin D"
+    
+    return True, "Molecule exhibits structural features of vitamin D"
