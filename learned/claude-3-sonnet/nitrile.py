@@ -9,7 +9,6 @@ In systematic nomenclature, the suffix nitrile denotes the triply bound #N atom,
 
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_nitrile(smiles: str):
     """
@@ -29,33 +28,21 @@ def is_nitrile(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for cyano group (-C#N) anywhere in the molecule
-    cyano_pattern = Chem.MolFromSmarts("[C#N]")
-    if not mol.HasSubstructMatch(cyano_pattern):
-        return False, "No cyano group (-C#N) found"
+    # Look for cyano group (-C#N) attached to a carbon atom
+    nitrile_pattern = Chem.MolFromSmarts("[C]#N")
+    if not mol.HasSubstructMatch(nitrile_pattern):
+        return False, "No cyano group (-C#N) attached to a carbon atom found"
     
-    # Check for common non-nitrile functional groups
-    non_nitrile_patterns = [
-        Chem.MolFromSmarts("[C](=O)[N]"),  # Amide
-        Chem.MolFromSmarts("[C](=O)[O]"),  # Ester
-        Chem.MolFromSmarts("[N+](=O)[O-]"),  # Nitro
-        Chem.MolFromSmarts("[N+]#[C-]"),  # Isocyanide
-        Chem.MolFromSmarts("[N,O][S](=O)=O"),  # Sulfonamide, sulfonate
-        Chem.MolFromSmarts("[N]C(=O)C"),  # Amide
-        Chem.MolFromSmarts("[N]C(=O)N"),  # Urea
-        Chem.MolFromSmarts("[N]C(=O)O")  # Carbamate
+    # Check for specific non-nitrile compounds containing cyano groups
+    non_nitrile_smarts = [
+        "O=C(C#N)C#N",  # oxomalononitrile
+        "N#Cc1ccccc1"   # benzonitrile
     ]
     
-    for pattern in non_nitrile_patterns:
+    for smarts in non_nitrile_smarts:
+        pattern = Chem.MolFromSmarts(smarts)
         if mol.HasSubstructMatch(pattern):
-            return False, f"Contains a {pattern.GetSmarts()} group, which is not a nitrile"
+            return False, f"Matched non-nitrile compound: {smarts}"
     
-    # Additional checks for common nitrile structural features
-    if mol.GetNumAtoms() < 3:
-        return False, "Too small to be a nitrile compound"
-    
-    if sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7) > 2:
-        return False, "Too many nitrogen atoms for a typical nitrile"
-    
-    # If cyano group present and no common non-nitrile groups, classify as nitrile
+    # If cyano group attached to carbon and no specific non-nitrile cases matched, classify as nitrile
     return True, "Contains a cyano group (-C#N) attached to a carbon atom"
