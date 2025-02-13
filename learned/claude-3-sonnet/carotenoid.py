@@ -1,33 +1,56 @@
 """
 Classifies: CHEBI:23044 carotenoid
 """
-The previous program attempted to classify carotenoids based on several criteria:
+"""
+Classifies: CHEBI:36689 carotenoid
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-1. Check if the molecule has a C40 backbone.
-2. Check if the molecule has a tetraterpenoid scaffold.
-3. Check for evidence of cyclization, dehydrogenation, or oxidation.
-4. Check for the absence of a retinoid scaffold.
+def is_carotenoid(smiles: str):
+    """
+    Determines if a molecule is a carotenoid based on its SMILES string.
+    A carotenoid is defined as a tetraterpenoid (C40) with a polyene chain (alternating C=C and C-C bonds)
+    and may contain cyclic end groups and/or oxygen atoms (xanthophylls).
 
-However, there are several issues with this approach:
+    Args:
+        smiles (str): SMILES string of the molecule
 
-1. The program assumes that all carotenoids have exactly 40 carbon atoms, which is not always the case. Some carotenoids can have fewer or more carbon atoms due to rearrangements or loss of part of the structure.
+    Returns:
+        bool: True if molecule is a carotenoid, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-2. The tetraterpenoid scaffold check looks for a specific pattern that may not be present in all carotenoids, especially those with rearranged or modified skeletons.
+    # Check for polyene chain (minimum 8 conjugated double bonds)
+    polyene_pattern = Chem.MolFromSmarts("[C]=[C][C]=[C][C]=[C][C]=[C][C]=[C][C]=[C][C]=[C]")
+    polyene_matches = mol.GetSubstructMatches(polyene_pattern)
+    if not polyene_matches:
+        return False, "No polyene chain found (minimum 8 conjugated double bonds)"
 
-3. The checks for cyclization, dehydrogenation, and oxidation are too broad and may also match non-carotenoid molecules.
+    # Check for cyclic end groups
+    cyclic_end_pattern = Chem.MolFromSmarts("[C@]1(CCCC1)[C]=[C]")
+    cyclic_end_matches = mol.GetSubstructMatches(cyclic_end_pattern)
 
-4. The retinoid scaffold check is unnecessary, as retinoids are explicitly excluded from the definition of carotenoids.
+    # Check for oxygen atoms (xanthophylls)
+    oxygens = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
 
-To improve the program, we need to focus on the specific structural features that define carotenoids, as outlined in the definition. Here's a proposed approach:
+    # Check for typical carotenoid backbone (C40 or close)
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 35 or c_count > 45:
+        return False, "Carbon count outside typical carotenoid range (35-45)"
 
-1. Check for the presence of a polyene chain (alternating carbon-carbon double and single bonds) with a minimum length of 8 double bonds, which is a characteristic feature of carotenoids.
-
-2. Check for the presence of cyclic end groups, such as beta-ionone rings or epsilon-ionone rings, which are common in many carotenoids.
-
-3. Check for the presence of oxygen atoms, indicating the presence of xanthophylls (oxygenated carotenoids).
-
-4. Optionally, check for the absence of specific functional groups or substructures that are not typically found in carotenoids, such as retinoid scaffolds or aromatic rings.
-
-5. Consider using machine learning techniques or rule-based systems trained on a dataset of known carotenoids to improve the classification accuracy.
-
-By focusing on these specific structural features, we can develop a more robust and accurate program for classifying carotenoids.
+    # Classify based on findings
+    if cyclic_end_matches and oxygens:
+        return True, "Contains polyene chain, cyclic end groups, and oxygens (xanthophyll carotenoid)"
+    elif cyclic_end_matches:
+        return True, "Contains polyene chain and cyclic end groups (carotene carotenoid)"
+    elif oxygens:
+        return True, "Contains polyene chain and oxygens (xanthophyll carotenoid)"
+    else:
+        return True, "Contains polyene chain (carotene carotenoid)"
