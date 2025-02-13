@@ -22,25 +22,31 @@ def is_disaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS patterns for pyranose and furanose rings
-    pyranose_pattern = Chem.MolFromSmarts("C1(CO)OCC(CO)O1") # Simplified
-    furanose_pattern = Chem.MolFromSmarts("C1(CO)OCCO1")     # Simplified
+    # Define more comprehensive SMARTS patterns for pyranose and furanose rings
+    # Including specific ring sizes and common stereochemistry patterns
+    pyranose_pattern = Chem.MolFromSmarts("C1OC(CO)C(O)C(O)C1")  # 6-membered pyranose form
+    furanose_pattern = Chem.MolFromSmarts("C1OC(CO)C(O)C1")      # 5-membered furanose form
     
-    # Find matches for these patterns
+    # Look for these ring patterns twice (to ensure we have two sugar rings)
     pyranose_matches = mol.GetSubstructMatches(pyranose_pattern)
     furanose_matches = mol.GetSubstructMatches(furanose_pattern)
     
-    # Ensure exactly two ring units (either pyranoses or furanoses)
-    total_rings = len(pyranose_matches) + len(furanose_matches)
-    if total_rings != 2:
-        return False, f"Expected 2 monosaccharide units, found {total_rings}"
+    # Ensure exactly two monosaccharide ring structures
+    total_sugar_rings = len(pyranose_matches) + len(furanose_matches)
+    if total_sugar_rings != 2:
+        return False, f"Expected 2 monosaccharide units, found {total_sugar_rings}"
+
+    # Define a more specific SMARTS pattern for glycosidic linkage
+    # Ensuring it connects the anomeric carbon of one sugar to a hydroxyl of another
+    glycosidic_pattern = Chem.MolFromSmarts("COC")  # Simplified representation
     
-    # Define SMARTS pattern for a glycosidic bond type
-    glycosidic_pattern = Chem.MolFromSmarts("C-O-C")
+    # Check for a glycosidic bond specifically linking the sugar rings
     glycosidic_matches = mol.GetSubstructMatches(glycosidic_pattern)
-    
-    # Ensure there is a glycosidic bond connecting the two sugars
-    if len(glycosidic_matches) < 1:
+    # Checking that it is not just any ether group but specifically between sugars
+    if not any(
+        set(m1) & set(m2) for m1 in pyranose_matches + furanose_matches 
+        for m2 in glycosidic_matches
+    ):
         return False, "No glycosidic bond found connecting sugar units"
 
     return True, "Contains two monosaccharide units joined by a glycosidic bond"
