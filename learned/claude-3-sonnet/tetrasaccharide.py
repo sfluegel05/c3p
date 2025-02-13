@@ -3,6 +3,7 @@ Classifies: CHEBI:50126 tetrasaccharide
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_tetrasaccharide(smiles: str):
     """
@@ -23,24 +24,46 @@ def is_tetrasaccharide(smiles: str):
         return False, "Invalid SMILES string"
     
     # Define SMARTS patterns for monosaccharide units and glycosidic bonds
-    monosaccharide_pattern = ['OC1OC(CO)C(O)C(O)C1', 'OC1OC(O)C(O)C(O)C1', 'OC1C(O)C(O)C(CO)C(O)C1',
-                              'OC1C(O)C(O)C(O)C(O)C1', 'C1C(O)C(O)C(CO)C(O)C1', 'C1C(O)C(O)C(O)C(O)C1']
-    glycosidic_bond_pattern = 'OC[C@@]([H])([C@@]([H])(O[C@@]([H])([C@]([H])(O)[C@@]([H])([C@]([H])(O)[C@]([H])(O)CO)O)O)'
+    monosaccharide_pattern = Chem.MolFromSmarts('OC[C@H]1O[C@H](O)[C@H](O)[C@@H](O)[C@@H]1O')
+    glycosidic_bond_pattern = Chem.MolFromSmarts('O[C@H]1[C@H](O)[C@@H](O[C@@H]2[C@@H](CO)O[C@@H]([C@H](O)[C@H]2O)O)[C@@H](O)[C@H](O)[C@@H]1')
     
     # Count monosaccharide units
-    num_monosaccharides = 0
-    for pattern in monosaccharide_pattern:
-        num_monosaccharides += len(mol.GetSubstructMatches(Chem.MolFromSmarts(pattern)))
+    num_monosaccharides = len(mol.GetSubstructMatches(monosaccharide_pattern))
     
     # Count glycosidic bonds
-    num_glycosidic_bonds = len(mol.GetSubstructMatches(Chem.MolFromSmarts(glycosidic_bond_pattern)))
+    num_glycosidic_bonds = len(mol.GetSubstructMatches(glycosidic_bond_pattern))
+    
+    # Check for continuous chain of monosaccharide units
+    continuous_chain = check_continuous_chain(mol, glycosidic_bond_pattern)
     
     # Check criteria for tetrasaccharide
-    if num_monosaccharides == 4 and num_glycosidic_bonds >= 3:
-        return True, "Contains 4 monosaccharide units and at least 3 glycosidic bonds"
+    if num_monosaccharides == 4 and num_glycosidic_bonds >= 3 and continuous_chain:
+        return True, "Contains 4 monosaccharide units connected by at least 3 glycosidic bonds"
     else:
-        return False, f"Found {num_monosaccharides} monosaccharide units and {num_glycosidic_bonds} glycosidic bonds"
+        return False, f"Found {num_monosaccharides} monosaccharide units and {num_glycosidic_bonds} glycosidic bonds, but the structure does not match a tetrasaccharide"
+
+def check_continuous_chain(mol, glycosidic_bond_pattern):
+    """
+    Checks if the monosaccharide units form a continuous chain connected by glycosidic bonds.
+
+    Args:
+        mol (rdkit.Chem.rdchem.Mol): RDKit molecule object
+        glycosidic_bond_pattern (rdkit.Chem.rdchem.Mol): SMARTS pattern for glycosidic bonds
+
+    Returns:
+        bool: True if the monosaccharide units form a continuous chain, False otherwise
+    """
+    atom_indices = set()
+    for match in mol.GetSubstructMatches(glycosidic_bond_pattern):
+        for idx in match:
+            atom_indices.add(idx)
+    
+    num_atoms = mol.GetNumAtoms()
+    if len(atom_indices) == num_atoms:
+        return True
+    else:
+        return False
 
 # Example usage
 print(is_tetrasaccharide('OC[C@H]1O[C@@H](O[C@@H]2[C@@H](CO)O[C@@H](O[C@@H]3[C@@H](CO)O[C@@H](O[C@@H]4[C@@H](CO)OC(O)[C@H](O)[C@H]4O)[C@H](O)[C@H]3O)[C@H](O)[C@H]2O)[C@H](O)[C@@H](O)[C@@H]1O'))
-# Output: (True, 'Contains 4 monosaccharide units and at least 3 glycosidic bonds')
+# Output: (True, 'Contains 4 monosaccharide units connected by at least 3 glycosidic bonds')
