@@ -23,23 +23,20 @@ def is_glycerophosphoinositol(smiles: str):
         return False, "Invalid SMILES string"
 
     # Glycerol backbone pattern: C-C-C with oxygens
-    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
+    glycerol_pattern = Chem.MolFromSmarts("OCC(O)COP(=O)(O)O")
     if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone found"
+        return False, "No glycerol backbone with phosphate at sn-3 found"
     
-    # Phosphate group at sn-3: specific arrangement with inositol
-    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)O[C@H]1[C@@H](O)[C@H](O)[C@H](O)[C@H](O)[C@H]1O")
-    if not mol.HasSubstructMatch(phosphate_pattern):
-        return False, "No phosphate group attached to inositol found at sn-3 position"
-
-    # Fatty acyl chains pattern: detect two ester linkages typical for glycerophospholipids
-    ester_pattern = Chem.MolFromSmarts("[CX3](=O)[O][CH2][CH](=O)")
+    # Inositol moiety attached to phosphate
+    inositol_phosphate_pattern = Chem.MolFromSmarts("P(=O)(OCC1OC(O)C(O)C(O)C1O)(OC)O")
+    if not mol.HasSubstructMatch(inositol_phosphate_pattern):
+        return False, "No inositol group esterified to phosphate found"
+    
+    # Fatty acyl chains pattern: detect at least two ester linkages typical for glycerophospholipids
+    ester_pattern = Chem.MolFromSmarts("C(=O)OC")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) < 2:
         return False, f"Expected at least 2 ester linkages, found {len(ester_matches)}"
-
-    # Verification step: molecular attributes like MW, atom counts if needed
-    # We expect longer chains and specific features, but for simplicity focus on key patterns
 
     return True, "Contains glycerol backbone with inositol esterified to phosphate at sn-3 position"
 
