@@ -8,7 +8,7 @@ is composed of one or more isoprene units (biogenetic precursors of the isopreno
 """
 
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import AllChem, rdMolDescriptors
 
 def is_prenol(smiles: str) -> tuple[bool, str]:
     """
@@ -55,5 +55,20 @@ def is_prenol(smiles: str) -> tuple[bool, str]:
     chain_length = len(skeleton_matches[0]) + 1
     if chain_length != n_isoprene * 5:
         return False, "Incorrect chain length for the number of isoprene units"
+
+    # Additional checks
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 68 or mol_wt > 1000:
+        return False, "Molecular weight outside typical range for prenols"
+
+    ring_info = mol.GetRingInfo()
+    if ring_info.NumRings() > 0:
+        return False, "Prenols should not contain rings"
+
+    # Sanitize the molecule
+    try:
+        AllChem.SanitizeMol(mol)
+    except ValueError as e:
+        return False, str(e)
 
     return True, "Molecule is a prenol"
