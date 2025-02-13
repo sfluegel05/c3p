@@ -1,20 +1,61 @@
 """
 Classifies: CHEBI:18154 polysaccharide
 """
-Based on the code and the outcomes provided, it seems that the program is failing to identify glycosidic linkages correctly. The key issue appears to be that the SMARTS pattern used to detect glycosidic linkages is too specific and is not capturing all possible variations of these linkages.
+"""
+Classifies: CHEBI:18064 polysaccharide
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-The current SMARTS pattern `"O[C@H]1[C@@H](O)[C@H](O)[C@@H](O[C@@H]2O[C@@H]([C@H](O)[C@H](O)[C@@H]2O)CO)O[C@@H]1CO"` is designed to match a specific type of glycosidic linkage between two glucose units. However, polysaccharides can have different types of monosaccharide units (e.g., glucose, fructose, galactose, etc.) linked in various configurations, and the current pattern fails to account for this diversity.
+def is_polysaccharide(smiles: str):
+    """
+    Determines if a molecule is a polysaccharide based on its SMILES string.
+    A polysaccharide is a biomacromolecule consisting of large numbers of monosaccharide
+    residues linked glycosidically. This term is commonly used only for those containing
+    more than ten monosaccharide residues.
 
-To improve the program, you could consider the following modifications:
+    Args:
+        smiles (str): SMILES string of the molecule
 
-1. **Use a more general SMARTS pattern for glycosidic linkages**: Instead of a specific pattern, you could try a more general SMARTS pattern that captures the essential feature of a glycosidic linkage, which is an oxygen atom connecting two monosaccharide units. A potential SMARTS pattern could be `"O[C@H]1[C@@H](O)[C@H](O)[C@@H](O[C@@H]2[C@H](O)[C@H](O)[C@@H](O)[C@@H]2O)O[C@@H]1CO"`. This pattern would match any glycosidic linkage between two monosaccharide units, regardless of their specific configuration or type.
+    Returns:
+        bool: True if molecule is a polysaccharide, False otherwise
+        str: Reason for classification
+    """
 
-2. **Iterate over multiple SMARTS patterns for glycosidic linkages**: Since there can be various configurations of glycosidic linkages, you could define multiple SMARTS patterns to cover different possibilities and iterate over them to find matches in the molecule.
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-3. **Consider using a more sophisticated approach**: The RDKit library provides some built-in functionality for working with carbohydrates, such as `Chem.MolToSmiles(mol, isomericSmiles=True, kekuleSmiles=False, allHsExplicit=False, allCHsExplicit=False, allCsUnknown=False, allCHsUnknown=False, allCCsUnknown=False, allCHsPointingOutward=False, allBondsExplicit=False, allStereoEffects=False, allBondsOnly=False, baculateForTheState=True, sugStructOpt=True)`. This function can generate a canonical SMILES string for carbohydrates, which might be more reliable for identifying glycosidic linkages and determining if a molecule is a polysaccharide.
+    # Define SMARTS patterns for common monosaccharide units
+    glucose_pattern = Chem.MolFromSmarts("OC[C@H]1O[C@H](O)[C@@H](O)[C@@H](O)[C@@H]1O")
+    fructose_pattern = Chem.MolFromSmarts("OC[C@H]1O[C@H](O)[C@@H](O)[C@@H](O)[C@@H]1O")
+    galactose_pattern = Chem.MolFromSmarts("OC[C@H]1O[C@H](O)[C@@H](O)[C@@H](O)[C@@H]1O")
+    mannose_pattern = Chem.MolFromSmarts("OC[C@H]1O[C@H](O)[C@@H](O)[C@@H](O)[C@@H]1O")
+    xylose_pattern = Chem.MolFromSmarts("OC[C@H]1O[C@H](O)[C@@H](O)[C@@H](O)[C@@H]1O")
 
-4. **Improve the identification of monosaccharide units**: While the current code attempts to identify monosaccharide units using SMARTS patterns for glucose and fructose, this approach may not be comprehensive enough. You could consider expanding the list of SMARTS patterns to include other common monosaccharide units found in polysaccharides, such as galactose, mannose, and xylose.
+    # Count the number of monosaccharide units
+    monosaccharide_count = sum(
+        1 for pattern in [glucose_pattern, fructose_pattern, galactose_pattern, mannose_pattern, xylose_pattern]
+        if mol.HasSubstructMatch(pattern)
+    )
 
-5. **Consider additional criteria**: Apart from the presence of glycosidic linkages and a sufficient number of monosaccharide units, you could consider incorporating additional criteria to improve the classification accuracy. For example, you could check the molecular weight, as polysaccharides tend to have high molecular weights due to their polymeric nature.
+    # Define a general SMARTS pattern for glycosidic linkages
+    glycosidic_linkage_pattern = Chem.MolFromSmarts("O[C@H]1[C@@H](O)[C@H](O)[C@@H](O[C@@H]2[C@H](O)[C@H](O)[C@@H](O)[C@@H]2O)O[C@@H]1CO")
 
-By addressing these potential improvements, you may be able to enhance the program's ability to correctly identify polysaccharides based on their SMILES strings.
+    # Count the number of glycosidic linkages
+    glycosidic_linkage_count = len(mol.GetSubstructMatches(glycosidic_linkage_pattern))
+
+    # Check if the molecule has a sufficient number of monosaccharide units and glycosidic linkages
+    if monosaccharide_count >= 10 and glycosidic_linkage_count >= 10:
+        # Calculate molecular weight
+        mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+
+        # Check if the molecular weight falls within a reasonable range for polysaccharides (500 - 1,000,000 Da)
+        if 500 < mol_wt < 1000000:
+            return True, "Contains more than 10 monosaccharide units linked by glycosidic bonds, and molecular weight is within the expected range for polysaccharides"
+        else:
+            return False, f"Molecular weight ({mol_wt:.2f} Da) is outside the expected range for polysaccharides"
+    else:
+        return False, f"Insufficient number of monosaccharide units ({monosaccharide_count}) or glycosidic linkages ({glycosidic_linkage_count})"
