@@ -1,26 +1,67 @@
 """
 Classifies: CHEBI:26208 polyunsaturated fatty acid
 """
-The previous program attempted to classify polyunsaturated fatty acids by checking for the presence of a carboxylic acid group, multiple double bonds, and a long carbon chain. However, the outcomes show several issues with this approach:
+"""
+Classifies: CHEBI:36400 polyunsaturated fatty acid
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-1. **False Positives**: Many molecules containing carboxylic acids, double bonds, and long carbon chains were incorrectly classified as polyunsaturated fatty acids. These include lipids like phospholipids, diglycerides, and triglycerides, which do not fall under the definition of polyunsaturated fatty acids.
+def is_polyunsaturated_fatty_acid(smiles: str):
+    """
+    Determines if a molecule is a polyunsaturated fatty acid based on its SMILES string.
+    A polyunsaturated fatty acid is a fatty acid containing more than one double bond.
 
-2. **False Negatives**: Several polyunsaturated fatty acids with shorter carbon chains were missed by the program because it required a minimum of three consecutive CH2/CH3 groups to identify a "long carbon chain."
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Lack of Specificity**: The program does not account for the specific structural features that define polyunsaturated fatty acids, such as the location and geometry of the double bonds, the length of the carbon chain, and the presence of other functional groups.
-
-To improve the classification, we need to incorporate more specific rules and patterns that capture the essential characteristics of polyunsaturated fatty acids. Here are some suggestions:
-
-1. **Check for a single carboxylic acid group**: Polyunsaturated fatty acids should have exactly one carboxylic acid group at one end of the molecule.
-
-2. **Check for double bond geometry and position**: Polyunsaturated fatty acids typically have cis double bonds spaced at specific intervals along the carbon chain (e.g., Δ9, Δ12, Δ15, etc.).
-
-3. **Check for carbon chain length**: Polyunsaturated fatty acids typically have carbon chain lengths between 16 and 24 carbons.
-
-4. **Exclude other lipid classes**: Explicitly check for the absence of other functional groups or structural features that would classify the molecule as a different lipid class (e.g., phosphate groups for phospholipids, glycerol backbone for triglycerides, etc.).
-
-5. **Use a more comprehensive set of SMARTS patterns**: Develop SMARTS patterns that capture the specific structural features of polyunsaturated fatty acids, including double bond geometry, carbon chain length, and the presence/absence of certain functional groups.
-
-6. **Consider using machine learning models**: For more complex classifications, machine learning models trained on a diverse dataset of polyunsaturated fatty acids and other lipid classes may provide better accuracy and generalization.
-
-By incorporating these improvements, the program should be able to more accurately classify polyunsaturated fatty acids while minimizing false positives and false negatives.
+    Returns:
+        bool: True if molecule is a polyunsaturated fatty acid, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Check for exactly one carboxylic acid group
+    carboxyl_pattern = Chem.MolFromSmarts("[C](=O)[O;H,-]")
+    carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
+    if len(carboxyl_matches) != 1:
+        return False, "Must have exactly one carboxylic acid group"
+    
+    # Check for carbon chain length between 16 and 24
+    n_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if n_carbons < 16 or n_carbons > 24:
+        return False, "Carbon chain length outside typical range (16-24)"
+    
+    # Look for multiple cis double bonds
+    cis_double_bond_pattern = Chem.MolFromSmarts("/C=C/")
+    cis_double_bond_matches = mol.GetSubstructMatches(cis_double_bond_pattern)
+    if len(cis_double_bond_matches) < 2:
+        return False, "Fewer than two cis double bonds found"
+    
+    # Check for typical polyunsaturated fatty acid double bond positions
+    double_bond_positions = []
+    for match in cis_double_bond_matches:
+        bond = mol.GetBondBetweenAtoms(match[0], match[1])
+        double_bond_positions.append(bond.GetBeginAtomIdx())
+    
+    typical_positions = [9, 12, 15, 18, 21]  # Common double bond positions
+    if not any(pos in typical_positions for pos in double_bond_positions):
+        return False, "Double bond positions atypical for polyunsaturated fatty acids"
+    
+    # Exclude other lipid classes
+    # Check for absence of phosphate groups (phospholipids)
+    phosphate_pattern = Chem.MolFromSmarts("[P]")
+    if mol.HasSubstructMatch(phosphate_pattern):
+        return False, "Likely a phospholipid (phosphate group present)"
+    
+    # Check for absence of glycerol backbone (triglycerides)
+    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
+    if mol.HasSubstructMatch(glycerol_pattern):
+        return False, "Likely a triglyceride (glycerol backbone present)"
+    
+    return True, "Meets criteria for polyunsaturated fatty acid"
