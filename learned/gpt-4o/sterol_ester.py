@@ -22,23 +22,34 @@ def is_sterol_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # General steroid (four ring pattern) with connections
-    steroid_pattern = Chem.MolFromSmarts("C1CC[C@H]2[C@@H]3CC[C@H]4[C@@]3(CC[C@@H]2[C@@H]1C4)C")
-    
-    # Ester pattern - specifically connected to an oxygen (3-hydroxy position potential)
-    ester_pattern = Chem.MolFromSmarts("C(=O)O[C@H]1CC[C@]2(C)[C@H]3CC[C@]4(C)[C@H](CC[C@H]4[C@@H]3CC=C2C1)")
-    
+    # Flexibly recognize the steroid skeleton (cyclopentanoperhydrophenanthrene core)
+    steroid_pattern = Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2CCC4=C3CCCC4")
+
+    # Recognize ester linkage (C(=O)O) but focus on it being attached in the right way
+    ester_pattern = Chem.MolFromSmarts("C(=O)O")
+
     # Check for steroid skeleton
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid skeleton found"
 
-    # Check for ester linkage at specific position (3-hydroxy)
+    # Check for ester linkage
     ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if not ester_matches:
-        return False, "Ester linkage not found at the 3-hydroxy group"
 
-    # If both steroid skeleton and correct ester linkage were found
-    return True, "Contains a steroid skeleton with the ester linkage on the 3-hydroxy group"
+    if not ester_matches:
+        return False, "No ester linkage found"
+
+    # Further refine to ensure 3-hydroxy specific attachment
+    for match in ester_matches:
+        # Check if the ester is connected to a possible secondary hydroxyl position in steroids
+        # This step can be more chemistry aware if needed for more accurate filtering
+        ester_atom_index = matches[0]  # Index of O in the ester from pattern match
+        connected_atoms = mol.GetAtomWithIdx(ester_atom_index).GetNeighbors()
+
+        # Ensure one connected atom is part of the steroid core
+        if any(mol.GetSubstructMatch(steroid_pattern).count(atom.GetIdx()) > 0 for atom in connected_atoms):
+            return True, "Contains a steroid skeleton with ester linkage"
+
+    return False, "Ester linkage not found in the appropriate 3-hydroxy position"
 
 # Test the function with a sterol ester example
 smiles_example = "CCCCCCCCCCCCCCCCC(=O)O[C@H]1CC[C@]2(C)[C@H]3CC[C@]4(C)[C@H](CC[C@H]4[C@@H]3CC=C2C1)[C@H](C)CCCC(C)C"
