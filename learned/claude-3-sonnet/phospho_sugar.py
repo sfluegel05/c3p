@@ -1,24 +1,72 @@
 """
 Classifies: CHEBI:33447 phospho sugar
 """
-From the previous code and the outcomes, it seems that the approach of checking for the presence of a phosphate group and a sugar backbone is not sufficient to classify phospho sugars accurately. Here are some potential issues and improvements:
+"""
+Classifies: CHEBI:27838 phospho sugar
+A phospho sugar is any monosaccharide containing an alcoholic hydroxy group esterified with phosphoric acid.
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
 
-1. **False negatives**: Many of the false negatives arise because the code is specifically looking for the pattern `OP(O)(O)=O` or `[P+](O)(O)(O)=O` to identify the phosphate group. However, some of the examples contain more complex phosphate groups, such as `P(=O)(O)O`, `P(O)(O)=O`, or `OP(O)(=O)O`. To address this, the phosphate pattern should be more general and account for different valence states and connectivities of the phosphorus atom.
+def is_phospho_sugar(smiles: str):
+    """
+    Determines if a molecule is a phospho sugar based on its SMILES string.
 
-2. **Sugar backbone pattern**: The current pattern `[OX2]r1[CX4]([OX2])[CX4]([OX2])[CX4]([OX2])1` is looking for a ring with multiple hydroxy groups, but it may not cover all possible sugar backbones. Some of the examples contain open-chain structures or different ring sizes. The pattern should be more flexible to accommodate these variations.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Ester bond check**: The current approach checks for the presence of an ester bond between the phosphate group and a hydroxy group, assuming that the phosphate is directly attached to the sugar backbone. However, some examples have more complex structures where the phosphate group is attached through a linker or a different functional group. This check may need to be relaxed or removed.
+    Returns:
+        bool: True if molecule is a phospho sugar, False otherwise
+        str: Reason for classification
+    """
 
-4. **Molecular weight check**: While the molecular weight check is reasonable, it may not be necessary if the other checks are robust enough. Additionally, the current threshold of 500 Da may be too strict and exclude some larger phospho sugars.
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-5. **Carbon and oxygen count check**: The check for a minimum number of carbons and oxygens is a good heuristic, but it may not be necessary if the other checks are sufficient. Additionally, it may be better to check for a specific range of carbons and oxygens rather than a hard minimum.
+    # Look for phosphate group patterns
+    phosphate_patterns = [Chem.MolFromSmarts("[P+](O)(O)(O)=O"),
+                          Chem.MolFromSmarts("OP(O)(O)=O"),
+                          Chem.MolFromSmarts("P(=O)(O)(O)"),
+                          Chem.MolFromSmarts("P(O)(O)=O")]
 
-To improve the program, you can consider the following steps:
+    phosphate_match = False
+    for pattern in phosphate_patterns:
+        if mol.HasSubstructMatch(pattern):
+            phosphate_match = True
+            break
 
-1. Analyze the false negatives and identify common patterns or substructures that are not being detected by the current approach.
-2. Develop a more general pattern or set of patterns to identify phosphate groups, accounting for different valence states and connectivities.
-3. Revise the sugar backbone pattern to be more flexible and cover a wider range of structures, including open-chain and different ring sizes.
-4. Re-evaluate the necessity of the ester bond check and the molecular weight check, and adjust or remove them as needed.
-5. Consider adding additional checks or heuristics to improve the classification accuracy, such as checking for specific functional groups or atom environments that are characteristic of phospho sugars.
+    if not phosphate_match:
+        return False, "No phosphate group found"
 
-By iteratively refining the approach based on the false negatives and incorporating more general patterns and heuristics, the program's performance can be improved.
+    # Look for sugar backbone patterns
+    sugar_patterns = [Chem.MolFromSmarts("[OX2]r1[CX4]([OX2])[CX4]([OX2])[CX4]([OX2])1"),  # Ring
+                      Chem.MolFromSmarts("[OX2][CX4]([OX2])[CX4]([OX2])[CX4]([OX2])"),  # Open chain
+                      Chem.MolFromSmarts("[OX2]r1[CX4]([OX2])[CX4]([OX2])1")]  # 5-membered ring
+
+    sugar_match = False
+    for pattern in sugar_patterns:
+        if mol.HasSubstructMatch(pattern):
+            sugar_match = True
+            break
+
+    if not sugar_match:
+        return False, "No sugar backbone found"
+
+    # Check for phosphate-sugar connectivity
+    phospho_sugar_pattern = Chem.MolFromSmarts("[P]~[OX2]~[CX4]")
+    if not mol.HasSubstructMatch(phospho_sugar_pattern):
+        return False, "Phosphate group not connected to sugar backbone"
+
+    # Additional checks
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+
+    if c_count < 3 or c_count > 20:
+        return False, "Number of carbons outside the expected range"
+
+    if o_count < 4 or o_count > 12:
+        return False, "Number of oxygens outside the expected range"
+
+    return True, "Contains a phosphate group attached to a sugar backbone"
