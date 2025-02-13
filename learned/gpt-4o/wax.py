@@ -2,12 +2,13 @@
 Classifies: CHEBI:73702 wax
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_wax(smiles: str):
     """
     Determines if a molecule is considered a wax based on its SMILES string.
-    A wax is characterized by long-chain hydrocarbons, typically containing esters,
-    being malleable at ambient temperatures, favoring linear aliphatic chains.
+    A wax is characterized by long-chain molecules, typically containing esters,
+    and being malleable at ambient temperatures.
     
     Args:
         smiles (str): SMILES string of the molecule.
@@ -27,30 +28,22 @@ def is_wax(smiles: str):
     if not mol.HasSubstructMatch(ester_pattern):
         return False, "No ester linkage found"
     
-    # Finding and evaluating the longest carbon chains linked to ester linkage
-    carbon_chains = []
+    # Check for long carbon chains (usually more than 14 carbons in a single chain)
+    c_counts = [0] * (mol.GetNumAtoms() + 1)
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6:  # Carbon
+            neighbors = atom.GetNeighbors()
+            c_neighbors = sum(1 for n in neighbors if n.GetAtomicNum() == 6)
+            if c_neighbors == 2 or c_neighbors == 3:
+                c_counts[atom.GetIdx()] = 1 + max(c_counts[n.GetIdx()] for n in neighbors if n.GetAtomicNum() == 6)
     
-    # Find ester group atoms
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    for est_match in ester_matches:
-        explored = set()
-        def explore_chain(atom_idx, length=0):
-            explored.add(atom_idx)
-            atom = mol.GetAtomWithIdx(atom_idx)
-            if atom.GetAtomicNum() == 6:  # Carbon
-                length += 1
-            for neighbor in atom.GetNeighbors():
-                n_idx = neighbor.GetIdx()
-                if n_idx not in explored and neighbor.GetAtomicNum() == 6:
-                    length = explore_chain(n_idx, length)
-            return length
-        
-        # Check both sides of the ester linkage (C and O atom indices)
-        chain_lengths = [explore_chain(est_match[0]), explore_chain(est_match[2])]
-        carbon_chains.extend(chain_lengths)
+    max_chain = max(c_counts)
+    if max_chain < 14:
+        return False, f"Longest carbon chain is {max_chain}, which is too short for a wax"
     
-    # Check for at least one long chain
-    if any(chain >= 16 for chain in carbon_chains):
-        return True, "Contains ester linkage and at least one long carbon chain indicative of a wax"
+    # Check for sufficient flexibility (many rotatable bonds)
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 5:
+        return False, f"Insufficient rotatable bonds ({n_rotatable}), waxes should be flexible"
     
-    return False, "No sufficiently long carbon chains found for wax"
+    return True, f"Structure meets criteria for wax: Contains ester linkage, long carbon chain ({max_chain} carbons), and sufficient rotatable bonds ({n_rotatable})"
