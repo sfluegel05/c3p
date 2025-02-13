@@ -26,42 +26,51 @@ def is_fatty_aldehyde(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for aldehyde group (-CH=O)
-    aldehyde_pattern = Chem.MolFromSmarts("[CH1X3](=[OX1])")
+    # Reject molecules with rings (except small rings that might be errors in SMILES)
+    ring_count = rdMolDescriptors.CalcNumRings(mol)
+    if ring_count > 0:
+        # Check ring sizes - only allow 3-membered rings which might be SMILES artifacts
+        ssr = Chem.GetSymmSSSR(mol)
+        for ring in ssr:
+            if len(ring) > 3:
+                return False, "Contains ring structure - not a fatty aldehyde"
+
+    # Look for aldehyde groups (-CH=O)
+    aldehyde_pattern = Chem.MolFromSmarts("[CH1,CH0]([H,#1,*])=O")
     aldehyde_matches = mol.GetSubstructMatches(aldehyde_pattern)
-    
-    # Also check for non-explicit hydrogen aldehyde pattern
-    if not aldehyde_matches:
-        aldehyde_pattern = Chem.MolFromSmarts("[CX3H0](=[OX1])")
-        aldehyde_matches = mol.GetSubstructMatches(aldehyde_pattern)
     
     if not aldehyde_matches:
         return False, "No aldehyde group found"
-    
-    if len(aldehyde_matches) > 1:
-        return False, "Multiple aldehyde groups found"
 
     # Count carbons
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if carbon_count < 4:
         return False, "Carbon chain too short for fatty aldehyde"
 
-    # Verify the aldehyde is terminal (should have only one non-H neighbor)
-    aldehyde_carbon = mol.GetAtomWithIdx(aldehyde_matches[0][0])
-    non_h_neighbors = [n for n in aldehyde_carbon.GetNeighbors() 
-                      if n.GetAtomicNum() != 1 and n.GetSymbol() != 'O']
-    if len(non_h_neighbors) != 1:
-        return False, "Aldehyde group is not terminal"
+    # Check for carboxylic acids
+    acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
+    if mol.HasSubstructMatch(acid_pattern):
+        return False, "Contains carboxylic acid group"
 
-    # Look for carbon chain
-    chain_pattern = Chem.MolFromSmarts("[C]~[C]")
+    # Check for linear carbon chain
+    chain_pattern = Chem.MolFromSmarts("[C]~[C]~[C]~[C]")
     if not mol.HasSubstructMatch(chain_pattern):
-        return False, "No carbon chain found"
+        return False, "No sufficient carbon chain found"
 
     # Check that most atoms are carbons (allowing for some heteroatoms)
-    total_atoms = mol.GetNumAtoms()
-    if carbon_count < total_atoms * 0.6:
+    total_heavy_atoms = mol.GetNumHeavyAtoms()
+    if carbon_count < total_heavy_atoms * 0.7:
         return False, "Too many heteroatoms for fatty aldehyde"
+
+    # Check for excessive branching
+    branching_points = 0
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6:  # Carbon atom
+            if len([n for n in atom.GetNeighbors() if n.GetAtomicNum() == 6]) > 2:
+                branching_points += 1
+    
+    if branching_points > 2:  # Allow some branching but not too much
+        return False, "Too many branch points for fatty aldehyde"
 
     # Success - determine if saturated or unsaturated
     double_bond_pattern = Chem.MolFromSmarts("[C]=[C]")
