@@ -21,27 +21,20 @@ def is_medium_chain_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for CoA adenine part: a common fragment of Coenzyme A
-    coa_adenine_pattern = Chem.MolFromSmarts("n1cnc2c(ncnc2n1)C3CC(O[C@@H]4[C@H](O)C[C@@H](COP(O)(O)=O)O4)C3")
-    if not mol.HasSubstructMatch(coa_adenine_pattern):
-        return False, "Missing Coenzyme A adenine component"
-    
-    # Check for CoA phosphate component 
-    coa_phosphate_pattern = Chem.MolFromSmarts("COP(=O)(O)O[C@H]1[C@H](O)[C@@H](O)C(O)C1")
-    if not mol.HasSubstructMatch(coa_phosphate_pattern):
-        return False, "Missing Coenzyme A phosphate component"
+    # Complete pattern for Coenzyme A core structure including adenine, ribose, and thiol linkage
+    coa_pattern = Chem.MolFromSmarts("NC(=O)CCNC(=O)[C@H](O)[C@H](COP(=O)(O)OP(=O)(O)OC[C@@H]1O[C@@H](O)[C@@H](O)C1O)n1cnc2c(ncnc2n1)C3CC(O3)O")
+    if not mol.HasSubstructMatch(coa_pattern):
+        return False, "Missing complete Coenzyme A structure"
 
-    # Check for thioester linkage (should be part of the fatty acid-CoA linkage): -C(=O)-SCC
-    thioester_pattern = Chem.MolFromSmarts("C(=O)SCCNC(=O)C")
+    # Check for thioester linkage (should be part of the fatty acid-CoA linkage): -C(=O)-S- with linkage to a medium chain
+    thioester_pattern = Chem.MolFromSmarts("C(=O)SCCCC")
     if not mol.HasSubstructMatch(thioester_pattern):
-        return False, "No thioester linkage found to CoA"
+        return False, "No thioester linkage found to CoA or incorrect fatty chain length"
 
-    # Check for medium-chain fatty acid length (6-12 carbons)
-    # Adjust the carbon chain pattern to belong solely to the fatty acid component
-    # The pattern denotes the carbon chain length following the C(=O) moiety
-    chain_pattern_6_12 = Chem.MolFromSmarts("CCCCCC")
-    carbon_chains = mol.GetSubstructMatches(chain_pattern_6_12)
-    if any(6 <= len(chain) <= 12 for chain in carbon_chains):
-        return True, "Contains medium-chain fatty acyl-CoA structure with appropriate length"
-    
-    return False, "Fatty acid chain not in medium range (6-12 carbons)"
+    # Extract carbon chain length in fatty acyl chain
+    fatty_acid_chain = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
+    chain_length = len(fatty_acid_chain)
+    if not (6 <= chain_length <= 12):
+        return False, f"Fatty acid chain length not within 6-12 carbons, found {chain_length} carbons"
+
+    return True, "Contains medium-chain fatty acyl-CoA structure with correct components and chain length"
