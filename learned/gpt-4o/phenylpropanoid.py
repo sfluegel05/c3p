@@ -5,8 +5,8 @@ from rdkit import Chem
 
 def is_phenylpropanoid(smiles: str):
     """
-    Determines if a molecule is a phenylpropanoid based on its SMILES string.
-    Includes molecules derived from phenylpropane with aromatic rings and characteristic linkages.
+    Determines if a molecule belongs to the phenylpropanoid class based on its SMILES string.
+    The class is determined by the presence of an aromatic system, key structural linkages, and characteristic functional groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,28 +20,28 @@ def is_phenylpropanoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Detect aromatic systems which are central to phenylpropanoids
-    aromatic_system_pattern = Chem.MolFromSmarts("a1aaaaa1")
-    if not mol.HasSubstructMatch(aromatic_system_pattern):
+    # Detect aromatic rings
+    aromatic_ring_pattern = Chem.MolFromSmarts("c1ccccc1")  # Aromatic phenyl group
+    if not mol.HasSubstructMatch(aromatic_ring_pattern):
         return False, "No aromatic system found"
 
-    # Check for phenylpropanoid-like linkages or C6-C3 structure
-    phenylpropanoid_pattern = Chem.MolFromSmarts("c1ccccc1CC=C")  # Simplified phenylpropane topology
-    if not mol.HasSubstructMatch(phenylpropanoid_pattern):
-        return False, "No phenylpropanoid structure found"
+    # Complex phenylpropanoid structures often have C6-C3 backbones with variations
+    phenylpropanoid_varied_topology = Chem.MolFromSmarts("c1ccc(cc1)C1CC1")  # Expanding topology recognition
+    if not mol.HasSubstructMatch(phenylpropanoid_varied_topology):
+        return False, "No phenylpropanoid-related structure found"
 
-    # Check for frequently occurring functional groups in phenylpropanoids
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")  # -OH groups
-    ether_pattern = Chem.MolFromSmarts("CO")  # Methoxy groups
-    carbonyl_pattern = Chem.MolFromSmarts("C=O")  # Ketones, aldehydes
-    olefinic_pattern = Chem.MolFromSmarts("C=C")  # Double-bond in side chains
-
+    # Functional groups common in phenylpropanoids
+    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")  # Hydroxyl (-OH) groups
+    methoxy_ether_pattern = Chem.MolFromSmarts("COc")  # Methoxy (-OCH3) typically in ethers
+    ester_pattern = Chem.MolFromSmarts("C(=O)O")  # Ester groups
+    olefinic_attachment_pattern = Chem.MolFromSmarts("C=C")  # Double bonds
+    
     has_functional_group = any(
         mol.HasSubstructMatch(pattern) 
-        for pattern in [hydroxyl_pattern, ether_pattern, carbonyl_pattern, olefinic_pattern]
+        for pattern in [hydroxyl_pattern, methoxy_ether_pattern, ester_pattern, olefinic_attachment_pattern]
     )
     
     if not has_functional_group:
-        return False, "Missing characteristic functional groups for phenylpropanoids"
+        return False, "Characteristic functional groups for phenylpropanoids are missing"
 
-    return True, "Contains aromatic system and expected phenylpropanoid linkages & functional groups"
+    return True, "Contains aromatic system and expected phenylpropanoid characteristics"
