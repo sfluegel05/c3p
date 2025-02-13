@@ -1,42 +1,24 @@
 """
 Classifies: CHEBI:27093 tricarboxylic acid
 """
-"""
-Classifies: CHEBI:33594 tricarboxylic acid
-An oxoacid containing three carboxy groups.
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
+After analyzing the previous program and the outcomes, it appears that the approach of solely looking for the presence of three carboxyl groups (-COOH) and an oxoacid group (-C(=O)-OH) is not sufficient to accurately classify tricarboxylic acids. The program has a high false positive rate, incorrectly classifying many non-tricarboxylic acid compounds as tricarboxylic acids.
 
-def is_tricarboxylic_acid(smiles: str):
-    """
-    Determines if a molecule is a tricarboxylic acid based on its SMILES string.
+The main issue is that the current approach does not consider the connectivity and arrangement of the carboxyl groups within the molecule. It only checks for the presence of three carboxyl groups and an oxoacid group, without ensuring that the carboxyl groups are connected to the same carbon skeleton or backbone.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+To improve the classification, we need to incorporate additional checks and patterns to ensure that the three carboxyl groups are connected to a common carbon backbone or ring system. This will help eliminate false positives and improve the overall accuracy of the classification.
 
-    Returns:
-        bool: True if molecule is a tricarboxylic acid, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+Here are some potential improvements to consider:
 
-    # Look for carboxyl group pattern (-COOH)
-    carboxyl_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
-    carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
-    
-    # Check if there are exactly 3 carboxyl groups
-    if len(carboxyl_matches) != 3:
-        return False, f"Found {len(carboxyl_matches)} carboxyl groups, need exactly 3"
+1. **Check for a common carbon backbone or ring system**: Develop a pattern or substructure query that searches for a carbon backbone or ring system with three carboxyl groups attached to it. This can be done using SMARTS patterns or other substructure matching techniques in RDKit.
 
-    # Check for oxoacid pattern (-C(=O)-OH)
-    oxoacid_pattern = Chem.MolFromSmarts("C(=O)O")
-    oxoacid_match = mol.HasSubstructMatch(oxoacid_pattern)
-    if not oxoacid_match:
-        return False, "Not an oxoacid (missing -C(=O)-OH group)"
+2. **Impose distance or connectivity constraints**: Ensure that the three carboxyl groups are within a certain distance or connectivity threshold from each other, indicating that they belong to the same molecular skeleton.
 
-    return True, "Contains three carboxyl groups (-COOH)"
+3. **Consider tautomeric forms**: Some tricarboxylic acids may exist in tautomeric forms, where the carboxyl groups are represented differently in the SMILES string. The program should be able to handle these cases by considering alternative tautomeric representations.
+
+4. **Incorporate additional chemical rules or filters**: Implement additional chemical rules or filters to exclude common false positive cases or compounds that are not tricarboxylic acids but satisfy the current criteria.
+
+5. **Utilize chemical databases or knowledge sources**: Leverage existing chemical databases or knowledge sources to identify known tricarboxylic acid structures and incorporate their structural patterns into the classification algorithm.
+
+6. **Consider machine learning approaches**: If the structural patterns or rules become too complex, consider using machine learning techniques, such as molecular fingerprints or graph neural networks, to learn and classify tricarboxylic acids based on a training dataset.
+
+By incorporating these improvements, the accuracy of the tricarboxylic acid classification program can be significantly enhanced, reducing false positives and improving the overall performance.
