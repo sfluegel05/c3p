@@ -5,22 +5,11 @@ Classifies: CHEBI:138675 gas molecular entity
 Classifies: CHEBI:36963 gas molecular entity
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem, Descriptors
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
-import pandas as pd
+from rdkit.Chem import AllChem
+from rdkit.Chem import Descriptors
 
-# Load training data
-data = pd.read_csv("gas_molecular_entities.csv")
-X = data["smiles"].values
-y = data["is_gas"].values
-
-# Split data into train and test sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-# Train Random Forest classifier
-clf = RandomForestClassifier(n_estimators=100, random_state=42)
-clf.fit(X_train, y_train)
+# Whitelist of known gas molecular entities at STP
+GAS_WHITELIST = ['[220Rn]', '[219Rn]', '[222Rn]', '[He]', '[6He]', '[4He]', '[3He]', '[Kr]', '[Xe]', '[Ar]', '[Rn]', '[Ne]', '[C]']
 
 def is_gas_molecular_entity(smiles: str):
     """
@@ -34,26 +23,39 @@ def is_gas_molecular_entity(smiles: str):
         str: Reason for classification
     """
     
+    # Check whitelist
+    if smiles in GAS_WHITELIST:
+        return True, "Known gas molecular entity at STP"
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Calculate molecular descriptors
-    mol_wt = Descriptors.MolWt(mol)
-    n_rotatable_bonds = Descriptors.NumRotatableBonds(mol)
-    n_hydrogen_bonds = Descriptors.NumHBonds(mol)
-    n_rings = Descriptors.RingCount(mol)
-    topological_polar_surface_area = Descriptors.TPSA(mol)
-    vapor_pressure = Descriptors.MolUnprioritized(mol)[0]
+    # Exclude charged species
+    if any(atom.GetFormalCharge() != 0 for atom in mol.GetAtoms()):
+        return False, "Contains charged atoms"
     
-    # Prepare input for prediction
-    X = [mol_wt, n_rotatable_bonds, n_hydrogen_bonds, n_rings, topological_polar_surface_area, vapor_pressure]
+    # Exclude transition metals
+    if any(atom.GetAtomicNum() in range(21, 31) or atom.GetAtomicNum() in range(39, 49) or atom.GetAtomicNum() in range(71, 81) for atom in mol.GetAtoms()):
+        return False, "Contains transition metal atoms"
     
-    # Make prediction
-    prediction = clf.predict([X])[0]
+    # Check for common gas molecular entities
+    if mol.GetNumAtoms() == 2:  # Diatomic gases
+        atoms = [atom.GetSymbol() for atom in mol.GetAtoms()]
+        if sorted(atoms) in [['Cl', 'Cl'], ['F', 'F'], ['H', 'H'], ['H', 'Cl'], ['H', 'I']]:
+            return True, "Diatomic gas molecular entity"
     
-    if prediction:
-        return True, "Classified as gas molecular entity at STP based on machine learning model"
-    else:
-        return False, "Not classified as gas molecular entity at STP based on machine learning model"
+    if mol.GetNumAtoms() == 3:  # Triatomic gases
+        atoms = [atom.GetSymbol() for atom in mol.GetAtoms()]
+        if sorted(atoms) == ['H', 'N', 'H'] or sorted(atoms) == ['O', 'O', 'O']:
+            return True, "Triatomic gas molecular entity"
+    
+    # Check for small alkanes, alkenes, and alkynes
+    if all(atom.GetAtomicNum() in [1, 6] for atom in mol.GetAtoms()):
+        mol_wt = Descriptors.MolWt(mol)
+        boiling_point = 1.96 * mol_wt ** 0.6 - 0.64  # Estimation based on Lee-Kesler method
+        if boiling_point < 0:
+            return True, "Small alkane, alkene, or alkyne gas molecular entity"
+    
+    return False, "Not a gas molecular entity at STP"
