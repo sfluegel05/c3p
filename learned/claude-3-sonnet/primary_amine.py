@@ -20,44 +20,38 @@ def is_primary_amine(smiles: str):
         bool: True if molecule is a primary amine, False otherwise
         str: Reason for classification
     """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Count nitrogen atoms
-    n_atoms = [atom.GetAtomicNum() for atom in mol.GetAtoms()]
-    n_count = n_atoms.count(7)  # 7 is atomic number for nitrogen
-    if n_count != 1:
-        return False, f"Found {n_count} nitrogen atoms, primary amines should have exactly 1"
+    try:
+        # Parse SMILES
+        mol = Chem.MolFromSmiles(smiles)
+        if mol is None:
+            return False, "Invalid SMILES string"
 
-    # Get nitrogen atom
-    n_atom = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7][0]
+        # Get list of nitrogen atoms
+        n_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7]
 
-    # Check for aromatic nitrogen
-    if n_atom.GetIsAromatic():
-        return False, "Nitrogen atom is aromatic, primary amines should have an aliphatic nitrogen"
+        # Check if at least one nitrogen atom meets primary amine criteria
+        for n_atom in n_atoms:
+            # Check for double/triple bonds to nitrogen or other unsaturated bonds
+            if sum(bond.GetBondTypeAsDouble() for bond in mol.GetBondEdges(n_atom.GetIdx())) > 1 \
+                or any(bond.GetBondType() == Chem.BondType.DOUBLE or bond.GetBondType() == Chem.BondType.TRIPLE for bond in mol.GetBonds()):
+                continue
 
-    # Check for double/triple bonds to nitrogen
-    if sum(bond.GetBondTypeAsDouble() for bond in mol.GetBondEdges(n_atom.GetIdx())) > 1:
-        return False, "Nitrogen has double/triple bonds, primary amines should have a single bond"
+            # Check for exactly one hydrogen atom attached to nitrogen
+            n_hydrogens = sum(1 for bond in mol.GetBondEdges(n_atom.GetIdx()) if mol.GetAtomWithIdx(bond[1]).GetAtomicNum() == 1)
+            if n_hydrogens != 1:
+                continue
 
-    # Check for other functional groups
-    if any(atom.GetAtomicNum() == 8 and sum(bond.GetBondTypeAsDouble() for bond in mol.GetBondEdges(atom.GetIdx())) > 1 for atom in mol.GetAtoms()):
-        return False, "Molecule contains carbonyl groups, primary amines should not"
+            # Check for alkyl or aryl substituent
+            alkyl_pattern = Chem.MolFromSmarts("[CH3][CH2]*[NH]")
+            aryl_pattern = Chem.MolFromSmarts("a[NH]")
+            if not mol.HasSubstructMatch(alkyl_pattern) and not mol.HasSubstructMatch(aryl_pattern):
+                continue
 
-    # Check for characteristic structural patterns
-    alkyl_pattern = Chem.MolFromSmarts("[CH3][CH2]*[NH2]")
-    benzyl_pattern = Chem.MolFromSmarts("c1ccccc1[CH2][NH2]")
-    if not mol.HasSubstructMatch(alkyl_pattern) and not mol.HasSubstructMatch(benzyl_pattern):
-        return False, "No characteristic alkyl or benzyl group attached to nitrogen"
+            # If all checks pass, this is a primary amine
+            return True, "Molecule has characteristic structural features of a primary amine"
 
-    # Check molecular weight and atom counts
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    h_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 1)
-    if mol_wt < 30 or mol_wt > 300 or c_count < 1 or h_count < 4:
-        return False, "Molecular weight or atom counts outside typical range for primary amines"
+        # If no nitrogen atoms meet criteria, return false
+        return False, "No nitrogen atoms meet the criteria for a primary amine"
 
-    return True, "Molecule has characteristic structural features of a primary amine"
+    except Exception as e:
+        return False, f"Error: {str(e)}"
