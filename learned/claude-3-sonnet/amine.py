@@ -1,42 +1,27 @@
 """
 Classifies: CHEBI:32952 amine
 """
-"""
-Classifies: CHEBI:33838 amine
+The previous code attempts to classify molecules as amines based on the presence of at least one nitrogen atom and at least one N-C bond, where the nitrogen is not part of a ring. However, the results show that this approach has some limitations and can lead to both false positives and false negatives.
 
-An amine is a compound formally derived from ammonia by replacing one, two or three hydrogen atoms by hydrocarbyl groups.
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
+False Positives:
+The code is classifying some molecules as amines incorrectly, resulting in false positives. This could be due to the following reasons:
 
-def is_amine(smiles: str):
-    """
-    Determines if a molecule is an amine based on its SMILES string.
+1. The code does not account for nitrogen atoms in specific functional groups or substructures that are not considered amines, such as amides, nitro groups, or heterocyclic rings containing nitrogen.
+2. The code does not consider the overall connectivity and valence state of the nitrogen atom, which is crucial in determining whether it is part of an amine or not.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+False Negatives:
+The code is also missing some true amines, leading to false negatives. This could be because:
 
-    Returns:
-        bool: True if molecule is an amine, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+1. The code specifically looks for N-C bonds where the nitrogen is not part of a ring. However, some amines can have the nitrogen atom as part of a ring structure.
+2. The code does not account for certain edge cases or specific structural features that define amines.
 
-    # Check for the presence of at least one nitrogen atom
-    n_atoms = mol.GetNumAtoms()
-    n_nitrogen = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
-    if n_nitrogen == 0:
-        return False, "No nitrogen atoms found"
+Improvements:
+To improve the classification of amines, here are some potential approaches:
 
-    # Check for at least one N-C bond (nitrogen bound to carbon and not part of a ring)
-    n_nc_bonds = sum(1 for bond in mol.GetBonds()
-                     if bond.GetBeginAtom().GetAtomicNum() == 7 and bond.GetEndAtom().GetAtomicNum() == 6
-                     and not bond.GetBeginAtom().IsInRing() and not bond.GetEndAtom().IsInRing())
-    if n_nc_bonds == 0:
-        return False, "No N-C bonds found (nitrogen not part of a ring)"
+1. Use more specific substructure matching patterns to identify common amine functional groups and substructures, such as primary, secondary, tertiary, and aromatic amines.
+2. Consider the valence state and overall connectivity of the nitrogen atom, ensuring that it is trivalent and not part of a functional group that would exclude it from being an amine (e.g., amides, nitro groups).
+3. Account for nitrogen atoms that are part of ring structures, as cyclic amines are also valid amines.
+4. Implement additional checks or filters to exclude false positives, such as checking for the presence of specific functional groups or substructures that would disqualify a molecule from being an amine.
+5. Consider using machine learning techniques or pre-trained models specifically designed for functional group classification, which may provide better accuracy and handle more edge cases.
 
-    return True, "Contains at least one nitrogen atom with N-C bond (not part of a ring)"
+It's important to note that accurately classifying functional groups can be a challenging task, and the specific approach may depend on the requirements of the application and the level of accuracy needed. Additionally, incorporating domain knowledge and chemical rules can significantly improve the performance of such classification algorithms.
