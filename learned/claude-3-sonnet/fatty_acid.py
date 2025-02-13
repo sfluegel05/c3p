@@ -1,30 +1,84 @@
 """
 Classifies: CHEBI:35366 fatty acid
 """
-Reasoning:
+"""
+Classifies: CHEBI:36978 fatty acid
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-The previous program attempted to classify fatty acids based on several structural criteria, such as the presence of a carboxylic acid group, an aliphatic chain of appropriate length, and the absence of cyclic structures and branching. However, it failed to correctly classify some examples, as evident from the zero F1 score.
+def is_valid_smiles(smiles):
+    """
+    Validates a SMILES string.
 
-The error message "exceptions must derive from BaseException" suggests that the program encountered an exception that was not properly handled or defined. This could be due to a variety of reasons, such as unexpected input data or edge cases that the program did not account for.
+    Args:
+        smiles (str): SMILES string
 
-To improve the program, we need to carefully analyze the examples that were not correctly classified (false negatives and false positives) and identify the potential issues or missing criteria in the current implementation. Additionally, we should handle exceptions properly and provide informative error messages when unexpected situations arise.
+    Returns:
+        bool: True if the SMILES string is valid, False otherwise
+    """
+    try:
+        mol = Chem.MolFromSmiles(smiles)
+        return mol is not None
+    except ValueError:
+        return False
 
-Potential improvements:
+def is_fatty_acid(smiles):
+    """
+    Determines if a molecule is a fatty acid based on its SMILES string.
+    A fatty acid is an aliphatic monocarboxylic acid with a chain length
+    typically ranging from 4 to 28 carbons, which may be saturated or unsaturated.
 
-1. **Handle exceptions**: Wrap the code in a try-except block to catch and handle exceptions gracefully, providing meaningful error messages.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **Analyze false negatives**: Examine the examples that were incorrectly classified as non-fatty acids (false negatives) and identify any structural patterns or criteria that the current implementation is missing.
+    Returns:
+        bool: True if the molecule is a fatty acid, False otherwise
+        str: Reason for classification
+    """
+    try:
+        # Validate SMILES string
+        if not is_valid_smiles(smiles):
+            return False, "Invalid SMILES string"
 
-3. **Analyze false positives**: Investigate the examples that were incorrectly classified as fatty acids (false positives) and identify any additional constraints or filters that could be added to exclude these molecules.
+        # Parse SMILES
+        mol = Chem.MolFromSmiles(smiles)
 
-4. **Refine chain length criteria**: The current chain length criterion (4 to 28 carbons) may need to be adjusted or refined based on the examples provided.
+        # Look for carboxylic acid group
+        acid_pattern = Chem.MolFromSmarts("C(=O)O")
+        if not mol.HasSubstructMatch(acid_pattern):
+            return False, "No carboxylic acid group found"
 
-5. **Consider additional structural constraints**: Fatty acids may have additional structural constraints, such as specific bond types (e.g., double bonds), stereochemistry, or functional groups, which could be incorporated into the classification criteria.
+        # Look for aliphatic chain
+        chain_pattern = Chem.MolFromSmarts("C~C~C~C")
+        chain_matches = mol.GetSubstructMatches(chain_pattern)
+        if not chain_matches:
+            return False, "No aliphatic chain found"
 
-6. **Improve handling of unusual structures**: Some examples may contain unusual or edge-case structures that are not handled correctly by the current implementation. These cases should be identified and addressed appropriately.
+        # Count number of carbon atoms in the longest chain
+        longest_chain_length = max(len(set([mol.GetAtomWithIdx(idx).GetNeighbors()[0].GetIdx()
+                                            for match in chain_matches
+                                            for idx in match])) + 1, default=0)
 
-7. **Optimize pattern matching**: Review the SMARTS patterns used for pattern matching and explore alternative or more efficient patterns if necessary.
+        # Check chain length (typically 4 to 28 carbons)
+        if not (4 <= longest_chain_length <= 28):
+            return False, f"Chain length ({longest_chain_length}) is outside the typical range for fatty acids (4-28 carbons)"
 
-8. **Test and validate**: Thoroughly test the updated program with a comprehensive set of examples, including both positive and negative cases, to ensure accurate classification and identify any remaining issues.
+        # Check for cyclic structures
+        if any(ring.IsAromaticRing() for ring in mol.GetRingInfo().AtomRings()):
+            return False, "Cyclic structures detected, fatty acids should be acyclic"
 
-By addressing these potential improvements, the program's classification accuracy for fatty acids should improve, leading to a higher F1 score.
+        # Check for branching (allow for limited branching)
+        branching_pattern = Chem.MolFromSmarts("CC(C)(C)C")
+        branching_matches = mol.GetSubstructMatches(branching_pattern)
+        if len(branching_matches) > 1:
+            return False, "Excessive branching detected, fatty acids should have limited branching"
+
+        # Additional criteria can be added here, such as checking for specific functional groups
+        # or handling edge cases
+
+        return True, "Molecule meets the structural criteria for a fatty acid"
+
+    except Exception as e:
+        return False, f"An error occurred: {str(e)}"
