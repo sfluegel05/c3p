@@ -21,34 +21,26 @@ def is_phenyl_acetates(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Define acetate ester part
-    # Represents ester linkage with aryl group
+
+    # Define the ester linkage pattern (acetate group)
     ester_pattern = Chem.MolFromSmarts("OC(=O)C")
-    
-    # Define a generic phenyl (aryl) pattern with potential for attachment
-    phenol_derived_pattern = Chem.MolFromSmarts("c[OX2H0]")
 
-    # Check if the molecule has an ester pattern
+    # Define aromatic ring with attachment site
+    aromatic_oxy_pattern = Chem.MolFromSmarts("aOc")
+
+    # Check for ester group in the molecule
     if not mol.HasSubstructMatch(ester_pattern):
-        return False, "No ester linkage found"
+        return False, "No acetate ester linkage found"
     
-    # Check if the molecule has an aryl structure with a hydroxy connection
-    if not mol.HasSubstructMatch(phenol_derived_pattern):
-        return False, "No aryl structure with hydroxy connection found"
+    # Check for an aromatic connection with ester oxygen
+    if not mol.HasSubstructMatch(aromatic_oxy_pattern):
+        return False, "No aromatic structure connected through ester to oxy group"
 
-    # Ensure both structures are present within the same molecule
+    # Ensure that both patterns are found in the molecule
     ester_matches = mol.GetSubstructMatches(ester_pattern)
-    aryl_matches = mol.GetSubstructMatches(phenol_derived_pattern)
-
-    for ester in ester_matches:
-        ester_ester_oxygen = ester[0]  # oxygen in ester
-
-        for aryl in aryl_matches:
-            aryl_hydroxy_oxygen = aryl[1]  # oxy connection in aryl structure
-
-            # Check if there is a bond between the ester oxygen and aryl hydroxy oxygen
-            if mol.GetBondBetweenAtoms(ester_ester_oxygen, aryl_hydroxy_oxygen) is not None:
-                return True, "Contains a linkage of an acetate ester to an aryloxy group"
-
-    return False, "Ester linkage and aryl structure are not properly connected"
+    aro_matches = mol.GetSubstructMatches(aromatic_oxy_pattern)
+    
+    if ester_matches and aro_matches:
+        return True, "Contains a phenyl acetate ester linkage"
+    
+    return False, "Ester linkage and aromatic structure are missing proper connection"
