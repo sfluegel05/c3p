@@ -21,28 +21,26 @@ def is_N_acetyl_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define an N-acetyl group specifically bound to a nitrogen atom
-    n_acetyl_pattern = Chem.MolFromSmarts("CN(C=O)")
+    # Look for N-acetyl group pattern
+    acetyl_pattern = Chem.MolFromSmarts("N[C,CX3](=O)C")  # Allow broader context of acetyl linkage
+    if not mol.HasSubstructMatch(acetyl_pattern):
+        return False, "No N-acetyl group found"
 
-    # Check if the N-acetyl pattern is present
-    if not mol.HasSubstructMatch(n_acetyl_pattern):
-        return False, "No N-acetyl group directly on nitrogen found"
-
-    # Look for common amino acid backbone or analog structures
+    # Look for amino acid backbone or variants: allow some flexibility on amino group to catch more configurations
     amino_acid_patterns = [
-        Chem.MolFromSmarts("N[C@@H](C(=O)O)"),   # L-amino acid pattern
-        Chem.MolFromSmarts("N[C@H](C(=O)O)"),    # D-amino acid pattern
-        Chem.MolFromSmarts("NCC(=O)O"),          # Generic amino acid pattern
-        Chem.MolFromSmarts("N1CCCC1C(=O)O"),     # Cyclic (proline-like) pattern
-        Chem.MolFromSmarts("NC(=O)[C@H](C(=O)O)"),  # Variants with additional attached groups
+        Chem.MolFromSmarts("[NX3][C@@H](C)C(=O)O"),   # Common chiral structures
+        Chem.MolFromSmarts("[NX3][C@H](C)C(=O)O"),    # Non-chiral counterpart
+        Chem.MolFromSmarts("N[*]CC(=O)O"),            # Generic structural variant for non-chiral centers
+        Chem.MolFromSmarts("N1[C@@H](C)C1C(=O)O"),    # Cyclic structures like proline
     ]
     
     has_amino_acid_structure = any(mol.HasSubstructMatch(pattern) for pattern in amino_acid_patterns)
     if not has_amino_acid_structure:
         return False, "No identifiable amino acid structure"
 
-    # Allow for moderate molecular size to accommodate known examples
-    if mol.GetNumAtoms() > 35:  # Updated limit
-        return False, "Molecule too large, likely not a simple N-acetyl-amino acid"
+    # Check if there's only a single N-acetyl amino acid like structure
+    # This checks for overall molecule size constraints to avoid complex structures like peptides
+    if mol.GetNumAtoms() > 25:  # Arbitrary limit, might adjust after further tests
+        return False, "Molecule too large to be a single N-acetyl-amino acid"
 
     return True, "Contains N-acetyl group attached to an amino acid structure"
