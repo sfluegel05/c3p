@@ -22,10 +22,11 @@ def is_glycerophosphoinositol(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
+    # Parse SMILES and handle counterions
+    mol = Chem.MolFromSmiles(smiles, removeHs=False)
     if mol is None:
         return False, "Invalid SMILES string"
+    mol = Chem.RemoveHs(mol)
     
     # Look for glycerol backbone pattern (C-C-C with 2 oxygen attachments)
     glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
@@ -39,8 +40,15 @@ def is_glycerophosphoinositol(smiles: str):
         return False, "No phosphate group found"
     
     # Look for inositol ring attached to phosphate (-O-P-O-C1COCC(O)C1)
-    inositol_pattern = Chem.MolFromSmarts("[PX4](-[OX2]1[CH2X4][CH1X4]([OH1X3])[CH1X4]([OH1X3])[CH1X4]([OH1X3])[CH1X4]([OH1X3])[CH1X4]([OH1X3])O1)-[OX2]")
-    inositol_matches = mol.GetSubstructMatches(inositol_pattern)
+    inositol_patterns = [
+        Chem.MolFromSmarts("[PX4](-[OX2]1[CH2X4][CH1X4]([OH1X3])[CH1X4]([OH1X3])[CH1X4]([OH1X3])[CH1X4]([OH1X3])[CH1X4]([OH1X3])O1)-[OX2]"),
+        Chem.MolFromSmarts("[PX4](-[OX2]1[CH1X4]([OH1X3])[CH1X4]([OH1X3])[CH1X4]([OH1X3])[CH1X4]([OH1X3])[CH1X4]([OH1X3])O[CH2X4]1)-[OX2]")
+    ]
+    inositol_matches = False
+    for pattern in inositol_patterns:
+        inositol_matches = mol.GetSubstructMatches(pattern)
+        if inositol_matches:
+            break
     if not inositol_matches:
         return False, "No inositol group found"
     
@@ -52,6 +60,19 @@ def is_glycerophosphoinositol(smiles: str):
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
     if n_rotatable < 4:
         return False, "Chains too short for glycerophosphoinositol"
+    
+    # Check for correct attachment of chains to glycerol backbone
+    glycerol_atoms = set(mol.GetSubstructMatch(glycerol_pattern))
+    chain_atoms = set()
+    for match in chain_matches:
+        chain_atoms.update(match)
+    if not glycerol_atoms.intersection(chain_atoms):
+        return False, "Acyl/alkyl chains not correctly attached to glycerol backbone"
+    
+    # Check molecular weight
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 500:
+        return False, "Molecular weight too low for glycerophosphoinositol"
     
     # Decide based on presence of chains
     if not chain_matches:
