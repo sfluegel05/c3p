@@ -1,20 +1,58 @@
 """
 Classifies: CHEBI:24402 glycosphingolipid
 """
-The previous program attempted to use a machine learning approach to classify molecules as glycosphingolipids or not based on their SMILES strings. However, the program failed with an error, suggesting that the dataset file 'glycosphingolipid_dataset.csv' was not found.
+"""
+Classifies: CHEBI:17670 glycosphingolipid
+A glycosphingolipid is a glycolipid that is a carbohydrate-containing derivative of a sphingoid or ceramide. 
+It is understood that the carbohydrate residue is attached by a glycosidic linkage to O-1 of the sphingoid.
+"""
 
-Here are a few potential reasons for the failure and suggestions for improvement:
+from rdkit import Chem
+from rdkit.Chem import AllChem, rdFMCS
 
-1. **Missing Dataset File**: The error message clearly indicates that the program could not find the file 'glycosphingolipid_dataset.csv'. This file should contain the SMILES strings of known glycosphingolipids and non-glycosphingolipids, along with their corresponding labels. Without this dataset, the program cannot train the machine learning model. You should ensure that the dataset file is present in the correct location and has the correct name.
+def is_glycosphingolipid(smiles: str):
+    """
+    Determines if a molecule is a glycosphingolipid based on its SMILES string.
 
-2. **Incorrect Dataset Format**: If the dataset file is present, the issue might be with its format. The program assumes that the dataset is a CSV file with columns named 'SMILES' and 'is_glycosphingolipid'. If the dataset has a different format or column names, you will need to modify the code accordingly.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Lack of Domain-Specific Knowledge**: While machine learning can be a powerful approach, it may not always be the best solution, especially when dealing with complex chemical structures and patterns. Glycosphingolipids have specific structural features and patterns that may be better captured using rule-based or expert-designed approaches. A hybrid approach that combines machine learning with domain-specific knowledge might be more effective.
-
-4. **Overfitting or Underfitting**: If the dataset is small or imbalanced, the machine learning model might overfit or underfit, leading to poor performance. You should ensure that the dataset is sufficiently large and diverse, and consider techniques like data augmentation, stratified sampling, or class weighting to handle imbalanced data.
-
-5. **Feature Selection**: The program uses all available molecular descriptors calculated by RDKit's `MoleculeDescriptors` module. However, not all descriptors may be relevant or informative for the task of classifying glycosphingolipids. You may need to perform feature selection or engineering to identify the most relevant descriptors or create new descriptors specific to the structural patterns of glycosphingolipids.
-
-6. **Alternative Approaches**: Instead of relying solely on machine learning, you could consider a rule-based approach that leverages domain knowledge and structural patterns specific to glycosphingolipids. This could involve identifying and checking for the presence of key substructures, functional groups, or stereochemical patterns that define glycosphingolipids.
-
-In summary, while the machine learning approach has its merits, it may not be the best solution for this specific task without careful consideration of the dataset quality, feature selection, and domain-specific knowledge. A hybrid approach or a rule-based method that incorporates expert knowledge of glycosphingolipid structures might be more effective.
+    Returns:
+        bool: True if molecule is a glycosphingolipid, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Look for ceramide backbone (alkyl chain + amide + alkene)
+    ceramide_pattern = Chem.MolFromSmarts("[N;X3][C;X3](=[O])[C;X4]([C;X4])(CCCC[C;X3]=C)")
+    if not mol.HasSubstructMatch(ceramide_pattern):
+        return False, "No ceramide backbone found"
+    
+    # Look for glycosidic linkage to sphingoid (O-C-O)
+    glycosidic_pattern = Chem.MolFromSmarts("[O;X2][C;X4][O;X2]")
+    if not AllChem.MolToSmarts(mol).count("OC") > 1:
+        return False, "No glycosidic linkage found"
+    
+    # Look for carbohydrate residue (cyclitol or sugar)
+    carb_pattern = Chem.MolFromSmarts("[C@H]1[C@H]([C@@H]([C@H]([C@@H]1O)O)O)O")
+    if not mol.HasSubstructMatch(carb_pattern):
+        return False, "No carbohydrate residue found"
+    
+    # Check for multiple carbohydrate rings (glycosphingolipids often have branched oligosaccharides)
+    rings = mol.GetRingInfo().AtomRings()
+    carb_rings = [r for r in rings if all(mol.GetAtomWithIdx(i).GetSymbol() in ['C', 'O'] for i in r)]
+    if len(carb_rings) < 2:
+        return False, "Only one carbohydrate ring found, glycosphingolipids typically have branched oligosaccharides"
+    
+    # Check for common structural motifs of glycosphingolipids
+    motifs = ['CC(=O)NC[C@H](O)/C=C', 'C[C@H](O)/C=C/C']
+    mol_smarts = AllChem.MolToSmarts(mol)
+    if not any(motif in mol_smarts for motif in motifs):
+        return False, "No common structural motifs of glycosphingolipids found"
+    
+    # If all checks pass, classify as glycosphingolipid
+    return True, "Contains a ceramide backbone with a carbohydrate residue attached via a glycosidic linkage"
