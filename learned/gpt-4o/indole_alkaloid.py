@@ -10,8 +10,7 @@ def is_indole_alkaloid(smiles: str):
     """
     Determines if a molecule is an indole alkaloid based on its SMILES string.
     An indole alkaloid must contain an indole skeleton (a bicyclic structure consisting
-    of a benzene ring fused to a pyrrole ring) and also contain functional groups
-    or structural features characteristic of alkaloids.
+    of a benzene ring fused to a pyrrole ring).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -25,19 +24,10 @@ def is_indole_alkaloid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define a general indole skeleton pattern with a broader nitrogen definition
-    indole_pattern = Chem.MolFromSmarts('c1ccc2c(c1)cnc2')  # A simple fused bicyclic structure
-
-    # General patterns for additional nitrogen-containing functionalities typical in alkaloids
-    alkaloid_pattern = Chem.MolFromSmarts('[#7]')  # Any nitrogen atom
-
-    # Match using the indole skeleton pattern
+    
+    # Define the SMARTS pattern for an indole skeleton
+    indole_pattern = Chem.MolFromSmarts('c1ccc2c(c1)[nH]cc2')
     if mol.HasSubstructMatch(indole_pattern):
-        # Check for nitrogen atoms indicating alkaloid characteristics
-        if mol.HasSubstructMatch(alkaloid_pattern):
-            return True, "Contains indole skeleton with additional alkaloid features"
-
-        return False, "Contains indole skeleton but lacks typical alkaloid nitrogen features"
+        return True, "Contains indole skeleton"
     else:
         return False, "No indole skeleton found"
