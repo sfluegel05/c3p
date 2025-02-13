@@ -29,16 +29,29 @@ def is_carboxamidine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for carboxamidine pattern: R-C(=NR)-NR2
-    carboxamidine_pattern = Chem.MolFromSmarts("[NX3][CX3]([NX3])=[NX2]")
-    if not mol.HasSubstructMatch(carboxamidine_pattern):
+    # Look for carboxamidine patterns
+    carboxamidine_patterns = [
+        Chem.MolFromSmarts("[NX3][CX3]([NX3])=[NX2]"),  # Original pattern
+        Chem.MolFromSmarts("[NX3][CX3]([NX3])=[NX2]C"),  # Allow additional substitutions
+        Chem.MolFromSmarts("[NX3][CX3]([NX3])=[NX2]N"),  # Allow additional substitutions
+        # Add more patterns as needed
+    ]
+    
+    for pattern in carboxamidine_patterns:
+        if mol.HasSubstructMatch(pattern):
+            break
+    else:
         return False, "No carboxamidine substructure found"
     
-    # Check if all atoms are accounted for in the matched pattern
-    matched_atoms = set()
-    for match in mol.GetSubstructMatches(carboxamidine_pattern):
-        matched_atoms.update(match)
-    if len(matched_atoms) != mol.GetNumAtoms():
-        return False, "Carboxamidine substructure does not cover the entire molecule"
+    # Additional checks
+    atom_counts = mol.GetAtomWithImplicitHydrogens().GetNumAtomicNumSetOnlyAtoms()
+    if atom_counts.get(7, 0) < 3:  # At least 3 nitrogens
+        return False, "Insufficient nitrogen atoms for carboxamidine"
+    
+    if atom_counts.get(6, 0) < 1:  # At least 1 carbon
+        return False, "No carbon atom found"
+    
+    # Check for specific exceptions or edge cases
+    # ...
     
     return True, "Molecule contains the carboxamidine substructure R-C(=NR)-NR2"
