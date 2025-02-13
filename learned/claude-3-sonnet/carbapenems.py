@@ -11,7 +11,7 @@ def is_carbapenems(smiles: str):
     """
     Determines if a molecule is a carbapenem based on its SMILES string.
     Carbapenems have a beta-lactam ring fused to a 5-membered ring with
-    substitutions at positions 2 (double bond), 3 (thioether), and 6 (hydroxyethyl).
+    various substitutions at positions 2, 3, and 6.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,14 +26,14 @@ def is_carbapenems(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Core carbapenem patterns - multiple representations to catch variations
+    # Essential core patterns - beta-lactam fused to 5-membered ring
     core_patterns = [
-        # Basic beta-lactam fused to 5-membered ring with C2-C3 double bond
-        Chem.MolFromSmarts("[#6]1~[#6]~[#6]~[#7]2~[#6](=[O])~[#6]12"),
-        # Alternative with explicit double bond
-        Chem.MolFromSmarts("[#6]1-[#6]=,:[#6]-[#7]2-[#6](=O)-[#6]12"),
-        # Pattern focusing on the beta-lactam fusion
-        Chem.MolFromSmarts("[#6]2~[#6]~[#6]~[#7]1~[#6](=O)~[#6]1~[#6]2")
+        # Basic beta-lactam fusion pattern (more flexible)
+        Chem.MolFromSmarts("[#6]1~[#6]~[#6]~[#7]2~[#6]~[#6]12"),
+        # Alternative representation
+        Chem.MolFromSmarts("[#6]2~[#6]~[#6]~[#7]1~[#6](=[O])~[#6]12"),
+        # Pattern with carbonyl
+        Chem.MolFromSmarts("[#6]1~[#6]~[#6]~[#7]2~[#6](=O)~[#6]12")
     ]
     
     core_match = False
@@ -43,59 +43,63 @@ def is_carbapenems(smiles: str):
             break
             
     if not core_match:
-        return False, "Missing carbapenem core structure (fused beta-lactam and 5-membered ring)"
+        return False, "Missing carbapenem core structure (fused beta-lactam ring system)"
 
-    # Check for beta-lactam ring (4-membered) and 5-membered ring
+    # Check for ring sizes
     ring_info = mol.GetRingInfo()
     ring_sizes = [len(ring) for ring in ring_info.AtomRings()]
     if not (4 in ring_sizes and 5 in ring_sizes):
         return False, "Must contain both 4-membered (beta-lactam) and 5-membered rings"
 
-    # Look for key substituents and features
-    # Carboxylic acid/carboxylate group at C3
-    carboxyl_patterns = [
-        Chem.MolFromSmarts("C(=O)O"),
-        Chem.MolFromSmarts("C(=O)[O-]")
-    ]
-    has_carboxyl = any(mol.HasSubstructMatch(pat) for pat in carboxyl_patterns if pat is not None)
+    # Look for characteristic groups
+    patterns = {
+        'carboxyl': [
+            Chem.MolFromSmarts("C(=O)O"),
+            Chem.MolFromSmarts("C(=O)[O-]")
+        ],
+        'sulfur': [
+            Chem.MolFromSmarts("[#6]~[#16]"),  # C-S bond
+            Chem.MolFromSmarts("[#6]S[#6]")    # C-S-C
+        ],
+        'hydroxy': [
+            Chem.MolFromSmarts("CO"),          # Any hydroxyl
+            Chem.MolFromSmarts("CC(O)C"),      # Secondary alcohol
+            Chem.MolFromSmarts("CC(O)")        # Terminal hydroxyl
+        ],
+        'beta_lactam': [
+            Chem.MolFromSmarts("[#7]1[#6](=O)[#6][#6]1"),  # Beta-lactam ring
+            Chem.MolFromSmarts("[#7]1[#6](=O)[#6][#6]1")   # Alternative representation
+        ]
+    }
 
-    # Common substituent patterns
-    sulfur_pattern = Chem.MolFromSmarts("[#6]~[#16]")  # Carbon-Sulfur bond
-    hydroxyethyl_pattern = Chem.MolFromSmarts("CC(O)")
-    double_bond_pattern = Chem.MolFromSmarts("C=C")
-
-    has_sulfur = mol.HasSubstructMatch(sulfur_pattern) if sulfur_pattern else False
-    has_hydroxyethyl = mol.HasSubstructMatch(hydroxyethyl_pattern) if hydroxyethyl_pattern else False
-    has_double_bond = mol.HasSubstructMatch(double_bond_pattern) if double_bond_pattern else False
-
-    # Count key elements
-    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-
-    if n_count < 1:
-        return False, "Must contain at least one nitrogen atom (beta-lactam)"
-    if o_count < 2:
-        return False, "Must contain at least two oxygen atoms"
-
-    # Check molecular weight
-    mol_wt = Chem.Descriptors.ExactMolWt(mol)
-    if mol_wt < 200:
-        return False, "Molecular weight too low for carbapenem"
-
-    # Score features to make final decision
+    # Check for presence of key features
     features = []
-    if has_carboxyl:
-        features.append("carboxylic acid group")
-    if has_sulfur:
-        features.append("sulfur-containing substituent")
-    if has_hydroxyethyl:
-        features.append("hydroxyethyl group")
-    if has_double_bond:
-        features.append("unsaturation")
+    for feature, pattern_list in patterns.items():
+        for pattern in pattern_list:
+            if pattern is not None and mol.HasSubstructMatch(pattern):
+                features.append(feature)
+                break
 
-    # Require at least 2 characteristic features for positive classification
-    if len(features) < 2:
+    # Must have beta-lactam and at least one other feature
+    if 'beta_lactam' not in features:
+        return False, "Missing beta-lactam ring"
+    
+    if len(set(features)) < 2:  # Using set to count unique features
         return False, "Insufficient characteristic carbapenem features"
 
-    reason = f"Contains carbapenem core structure with {', '.join(features)}"
+    # Additional checks
+    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    mol_wt = Chem.Descriptors.ExactMolWt(mol)
+
+    if n_count < 1:
+        return False, "Must contain at least one nitrogen atom"
+    if o_count < 2:
+        return False, "Must contain at least two oxygen atoms"
+    if mol_wt < 150:  # Lowered threshold to catch simpler core structures
+        return False, "Molecular weight too low for carbapenem"
+
+    # Success case
+    unique_features = set(features) - {'beta_lactam'}  # Remove beta_lactam from feature list
+    reason = f"Contains carbapenem core structure with {', '.join(unique_features)}"
     return True, reason
