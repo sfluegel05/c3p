@@ -25,37 +25,34 @@ def is_tetrachlorobenzene(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Create SMARTS patterns for different tetrachlorobenzene arrangements
-    # Match a benzene ring where exactly 4 carbons have chlorine substituents
-    patterns = [
-        # Generic pattern for any tetrachlorobenzene
-        "c1(-[Cl])c(-[Cl])c(-[Cl])c(-[Cl])cc1",
-        "c1(-[Cl])c(-[Cl])c(-[Cl])cc(-[Cl])1",
-        "c1(-[Cl])c(-[Cl])cc(-[Cl])c(-[Cl])1",
-    ]
-
-    for pattern in patterns:
-        substructure = Chem.MolFromSmarts(pattern)
-        if substructure is None:
-            continue
-            
-        matches = mol.GetSubstructMatches(substructure)
-        if matches:
-            # For each match, verify it's a valid tetrachlorobenzene
-            for match in matches:
-                # Get the benzene carbons from the match
-                benzene_carbons = set(match[:6])  # First 6 atoms are the benzene carbons
-                
-                # Count chlorines attached to these specific carbons
-                chlorine_count = 0
-                for carbon_idx in benzene_carbons:
-                    atom = mol.GetAtomWithIdx(carbon_idx)
-                    for neighbor in atom.GetNeighbors():
-                        if neighbor.GetAtomicNum() == 17:  # Chlorine
-                            chlorine_count += 1
-                
-                # Verify exactly 4 chlorines are attached to the benzene ring
-                if chlorine_count == 4:
-                    return True, "Found valid tetrachlorobenzene structure"
+    # Create a SMARTS pattern that matches a benzene ring with any substituents
+    # and then we'll check for exactly 4 chlorines
+    # The pattern uses recursive SMARTS to ensure we match a benzene ring 
+    # where exactly 4 carbons have chlorine substituents
+    pattern = """
+        c1c(*)c(*)c(*)c(*)c(*)1    # benzene ring with any substituents
+    """
     
-    return False, "No tetrachlorobenzene substructure found"
+    substructure = Chem.MolFromSmarts(pattern)
+    if substructure is None:
+        return False, "Invalid SMARTS pattern"
+            
+    matches = mol.GetSubstructMatches(substructure)
+    
+    for match in matches:
+        # Get the benzene carbons from the match
+        benzene_carbons = set(match[:6])  # First 6 atoms are the benzene ring carbons
+        
+        # Count chlorines directly attached to these carbons
+        chlorine_count = 0
+        for carbon_idx in benzene_carbons:
+            atom = mol.GetAtomWithIdx(carbon_idx)
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 17:  # Chlorine
+                    chlorine_count += 1
+        
+        # If we find exactly 4 chlorines on this benzene ring, it's a match
+        if chlorine_count == 4:
+            return True, "Found benzene ring with exactly 4 chlorine substituents"
+    
+    return False, "No benzene ring with exactly 4 chlorine substituents found"
