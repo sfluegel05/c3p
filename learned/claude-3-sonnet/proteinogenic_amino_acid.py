@@ -1,54 +1,28 @@
 """
 Classifies: CHEBI:83813 proteinogenic amino acid
 """
-"""
-Classifies: CHEBI:33709 proteinogenic amino acid
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
+After analyzing the previous code and the outcomes, it appears that the program was unable to correctly classify proteinogenic amino acids. Here are some potential issues and suggestions for improvement:
 
-def is_proteinogenic_amino_acid(smiles: str):
-    """
-    Determines if a molecule is a proteinogenic amino acid based on its SMILES string.
-    Proteinogenic amino acids are the 23 alpha-amino acids that are precursors to proteins
-    and are incorporated into proteins during translation.
+1. **Missed cases:** The program missed several proteinogenic amino acids, such as L-glutamic acid, L-methionine, L-isoleucine, L-arginine, and others. This is likely due to the limitations of the SMARTS pattern used to identify alpha-amino acids and the side chain matching approach.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. **Deuterated and isotopically labeled compounds:** The program did not handle deuterated or isotopically labeled compounds correctly. These compounds should still be classified as proteinogenic amino acids, but the program failed to recognize them.
 
-    Returns:
-        bool: True if molecule is a proteinogenic amino acid, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+3. **Side chain matching:** The side chain matching approach used in the program is limited and may not cover all possible side chains present in proteinogenic amino acids. Additionally, it does not account for variations in the order or placement of the side chain atoms.
 
-    # Look for alpha-amino acid pattern (N-C-C-C=O)
-    amino_acid_pattern = Chem.MolFromSmarts("[N;H2,H1&!$(NC=[!#6])][C@H]([C,c])([C,c])[C](=O)[O,N]")
-    if not mol.HasSubstructMatch(amino_acid_pattern):
-        return False, "Not an alpha-amino acid"
+4. **Chirality check:** The chirality check in the program assumes that all proteinogenic amino acids, except glycine, have the L-configuration. However, this may not always be the case, as there could be examples with the D-configuration or other chiral configurations.
 
-    # Check for chirality (excluding glycine)
-    if mol.GetAtomWithIdx(1).GetChiralTag() != Chem.ChiralType.CHI_TETRAHEDRAL_CW:
-        if not mol.GetSmiles() == "NCC(=O)O":  # Glycine
-            return False, "Not L-configured"
+To improve the program, consider the following suggestions:
 
-    # Check for common side chains
-    side_chains = ["C", "CC", "CCC", "CCCC", "CCCCC", "CCCCCC", "C(=O)N", "CC(C)C", "CC(N)=O",
-                   "CS", "CC1=CC=CC=C1", "CC1=CNC=N1", "CC1=CN=CN1", "C(C)(C)CC(C)(N)C(=O)O"]
+1. **Use a more robust SMARTS pattern:** Instead of relying on a single SMARTS pattern, consider using multiple SMARTS patterns or a more flexible approach to identify the core structure of proteinogenic amino acids, including variations in the side chains and isotopic labeling.
 
-    side_chain = Chem.DeleteSubstructs(mol, amino_acid_pattern)
-    side_chain_smiles = Chem.MolToSmiles(side_chain)
+2. **Utilize RDKit's built-in functionality:** RDKit provides several built-in functions and classes for handling amino acids and peptides. Consider using these functionalities to simplify the classification process and improve accuracy.
 
-    if side_chain_smiles not in side_chains:
-        if side_chain_smiles == "CC(N)CC(=O)NC(C1=CN=CNC1=O)C(=O)O":  # Pyrrolysine
-            return True, "Proteinogenic amino acid (Pyrrolysine)"
-        elif side_chain_smiles == "CSCCC":  # Selenocysteine
-            return True, "Proteinogenic amino acid (Selenocysteine)"
-        else:
-            return False, "Unknown side chain"
+3. **Handle isotopic labeling and deuteration:** Implement specific checks or rules to handle isotopically labeled and deuterated compounds correctly. This may involve checking for specific isotope patterns or using RDKit's built-in functionality for handling isotopes.
 
-    return True, "Proteinogenic amino acid"
+4. **Improve side chain matching:** Instead of relying on a predefined list of side chains, consider using a more flexible approach to match side chains, such as substructure matching or pattern recognition algorithms.
+
+5. **Handle different chiral configurations:** Expand the chirality check to handle different chiral configurations, or consider using RDKit's built-in functionality for handling chirality.
+
+6. **Expand test cases:** Include a more comprehensive set of test cases, covering a wide range of proteinogenic amino acids, including those with less common side chains, deuterated compounds, and different chiral configurations.
+
+By addressing these issues and incorporating the suggested improvements, the program should be able to classify proteinogenic amino acids more accurately and handle a broader range of cases.
