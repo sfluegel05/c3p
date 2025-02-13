@@ -26,16 +26,28 @@ def is_aromatic_amino_acid(smiles: str):
     if not mol.HasSubstructMatch(amino_acid_pattern):
         return False, "Molecule does not contain an amino acid backbone"
 
-    # Check for aromatic ring attachment
-    aromatic_amino_acid_pattern = Chem.MolFromSmarts("[N;H2,H1;!$(N-[!#6]);!$(N-[!#6]=[!#6])]C(=O)[O;H1,-]C1=[c;r]")
+    # Check for aromatic ring attachment (improved pattern)
+    aromatic_amino_acid_pattern = Chem.MolFromSmarts("[N;H2,H1;!$(N-[!#6]);!$(N-[!#6]=[!#6])]C(=O)[O;H1,-][C;R1]1=[c;r][c;r][c;r][c;r][c;r]1")
     if not mol.HasSubstructMatch(aromatic_amino_acid_pattern):
         return False, "Aromatic ring not attached to the amino acid backbone"
 
-    # Consider stereochemistry (if needed)
-    # You can use RDKit's built-in functions to determine the stereochemistry
-    # and handle specific stereoisomers if required
+    # Handle stereochemistry
+    try:
+        AllChem.AssignStereochemistry(mol)
+        stereochemistry_ok = True
+    except Exception as e:
+        stereochemistry_ok = False
+        print(f"Warning: Failed to assign stereochemistry: {e}")
 
     # Handle edge cases (e.g., multiple aromatic rings, aromatic heterocycles)
-    # You can add additional checks or patterns for specific edge cases
+    aromatic_rings = mol.GetAromaticRings()
+    if len(aromatic_rings) > 1:
+        return False, "Molecule contains multiple aromatic rings"
+
+    hetero_aromatic_rings = [ring for ring in aromatic_rings if any(atom.GetAtomicNum() != 6 for atom in ring)]
+    if hetero_aromatic_rings:
+        return False, "Molecule contains aromatic heterocycles"
+
+    # Additional checks or patterns for specific cases
 
     return True, "Molecule is an aromatic amino acid"
