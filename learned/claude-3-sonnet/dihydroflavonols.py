@@ -25,36 +25,38 @@ def is_dihydroflavonols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Basic dihydroflavonol core:
-    # - Chromanone core (benzopyran-4-one)
-    # - OH at position 3
-    # - Phenyl at position 2
-    # Note: Using more flexible pattern that allows substitutions
-    core_pattern = Chem.MolFromSmarts('[O;!H0]-[CH1]-1-[c]2[c]([c,n])[c,n][c,n][c,n]2-C(=O)-[CH]([O;!H0])-[CH1]-1-[c]1[c][c][c][c][c]1')
+    # Basic flavanone core structure with 3-OH
+    # [#6]1-[#6]-[#6](=[#8])-c2c(O1)cccc2
+    # Adding 3-OH position requirement
+    dihydroflavonol_pattern = Chem.MolFromSmarts(
+        '[#6]1-[#6]([OH1])-[#6](=[#8])-c2c(O1)cccc2'
+    )
     
-    if core_pattern is None:
-        return None, "Invalid SMARTS pattern"
-    
-    if not mol.HasSubstructMatch(core_pattern):
-        # Try alternative pattern allowing for any substitution at position 2
-        alt_pattern = Chem.MolFromSmarts('[O]1[CH1][c]2[c]([c,n])[c,n][c,n][c,n]2C(=O)[CH]([O;!H0])[CH1]1[c]1[c,n][c,n][c,n][c,n][c,n]1')
-        if alt_pattern is None:
-            return None, "Invalid alternative SMARTS pattern"
-        if not mol.HasSubstructMatch(alt_pattern):
-            return False, "Missing dihydroflavonol core structure"
+    if not mol.HasSubstructMatch(dihydroflavonol_pattern):
+        return False, "Missing dihydroflavonol core structure with 3-OH group"
 
-    # Count basic features to ensure reasonable composition
+    # Must have phenyl ring attached at position 2
+    phenyl_pattern = Chem.MolFromSmarts('O1[CH1][c]2[c,n]cccc2')
+    if not mol.HasSubstructMatch(phenyl_pattern):
+        return False, "Missing 2-phenyl substituent"
+
+    # Count carbons and oxygens to ensure basic composition
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     
     if c_count < 15:
         return False, "Too few carbons for dihydroflavonol structure"
-    if o_count < 3:
+    if o_count < 4:
         return False, "Too few oxygens for dihydroflavonol structure"
 
-    # Check for ring systems
-    ri = mol.GetRingInfo()
-    if ri.NumRings() < 3:
-        return False, "Missing required ring systems"
+    # Check for ketone group in the correct position
+    ketone_pattern = Chem.MolFromSmarts('[#6]-[#6](=[#8])-[#6]')
+    if not mol.HasSubstructMatch(ketone_pattern):
+        return False, "Missing ketone group"
+
+    # Verify the presence of the chromanone system
+    chromanone_pattern = Chem.MolFromSmarts('O1[#6][#6][#6](=[#8])c2c1cccc2')
+    if not mol.HasSubstructMatch(chromanone_pattern):
+        return False, "Missing chromanone system"
 
     return True, "Contains dihydroflavonol core structure with 3-OH group"
