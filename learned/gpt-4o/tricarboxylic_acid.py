@@ -19,7 +19,7 @@ def is_tricarboxylic_acid(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return None, "Invalid SMILES string"
+        return (None, "Invalid SMILES string")
 
     # Define patterns for carboxylic acid group and its anionic form
     carboxy_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
@@ -32,34 +32,34 @@ def is_tricarboxylic_acid(smiles: str):
     # Total carboxylic/carboxylate groups
     total_carboxy_groups = len(carboxy_matches) + len(carboxylate_matches)
     
-    # Specificity checks: Exclude molecules known to commonly misclassify 
     if total_carboxy_groups == 3:
-        # Check if other functional groups may interfere with classification
-        if not has_interfering_groups(mol):
-            return True, "Contains exactly three carboxylic acid or carboxylate groups and no interfering groups"
+        # Check for specific unreactive or significant interfering groups that are known
+        if not has_strong_interfering_groups(mol):
+            return True, "Contains exactly three carboxylic acid or carboxylate groups and no strong interfering groups"
         else:
-            return False, "Contains three carboxylic acid or carboxylate groups but also interfering groups"
+            return False, "Contains three carboxylic acid or carboxylate groups but also strong interfering groups"
     else:
         return False, f"Found {total_carboxy_groups} carboxylic acid or carboxylate groups, need exactly 3"
 
-def has_interfering_groups(mol):
+def has_strong_interfering_groups(mol):
     """
-    Checks for additional functional groups or potential interferers that may misclassify
+    Checks for additional functional groups or potential interferers that strongly misclassify
     a molecule as a tricarboxylic acid.
 
     Args:
         mol: RDKit Mol object
 
     Returns:
-        bool: True if interfering groups are present, False otherwise
+        bool: True if strong interfering groups are present, False otherwise
     """
-    # Example of interfering group pattern (duplicate check for significant peptides)
-    interfering_patterns = [
-        Chem.MolFromSmarts("[N]"),  # Example: Nitrogen-containing groups in specific contexts
-        # Add more patterns identified from analysis that could indicate misclassification
+    # Patterns for groups that are likely to cause misclassification if present with three carboxyl groups
+    strong_interfering_patterns = [
+        Chem.MolFromSmarts("[NX3]"),  # Targets amide or amine groups that might form part of amino acids
+        Chem.MolFromSmarts("[SX2]")   # Targets thiol groups as potential peptide or cysteine fragments
+        # Add more patterns as identified to prevent wrong classifications
     ]
 
-    for pattern in interfering_patterns:
+    for pattern in strong_interfering_patterns:
         if mol.HasSubstructMatch(pattern):
             return True
     return False
