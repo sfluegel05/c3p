@@ -6,7 +6,8 @@ from rdkit import Chem
 def is_sesquiterpenoid(smiles: str):
     """
     Determines if a molecule is a sesquiterpenoid based on its SMILES string.
-    A sesquiterpenoid is any terpenoid derived from a sesquiterpene, often rearranged or modified.
+    A sesquiterpenoid is any terpenoid derived from a sesquiterpene, often modified by rearrangement 
+    or methyl group removal, having a C15 carbon skeleton.
     
     Args:
         smiles (str): SMILES string of the molecule.
@@ -23,18 +24,21 @@ def is_sesquiterpenoid(smiles: str):
 
     # Count the number of carbon atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if not (10 <= c_count <= 20):
-        return False, f"Contains {c_count} carbons, outside typical range for sesquiterpenoids"
+    if c_count < 15:
+        return False, f"Contains {c_count} carbons, less than required for sesquiterpenoids"
 
-    # Check for at least one ring (common in sesquiterpenoids)
+    if c_count > 15:
+        return False, f"Contains {c_count} carbons, more complex than a typical sesquiterpenoid"
+
+    # Count the number of rings
     ring_info = mol.GetRingInfo()
     if ring_info.NumRings() < 1:
         return False, "Lacks ring structures typically present in sesquiterpenoids"
 
-    # Check for typical sesquiterpene motifs
-    sesquiterpene_motif = Chem.MolFromSmarts('C1=CC=C1')  # Replace with a more specific motif if needed
-    if not mol.HasSubstructMatch(sesquiterpene_motif):
-        return False, "Does not contain common sesquiterpene motif"
+    # Look for common functional groups indicating derivations (e.g., -OH, =O)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if o_count < 1:
+        return False, "Does not contain oxygen, unlikely to be a sesquiterpenoid"
 
     return True, "Contains characteristics typical of a sesquiterpenoid"
 
