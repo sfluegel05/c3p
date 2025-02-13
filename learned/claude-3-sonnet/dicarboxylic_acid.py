@@ -1,23 +1,53 @@
 """
 Classifies: CHEBI:35692 dicarboxylic acid
 """
-Based on the outcomes, it seems that the previous code has some limitations in accurately classifying dicarboxylic acids. Here are some observations and potential improvements:
+"""
+Classifies: CHEBI:35701 dicarboxylic acid
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
 
-1. **False positives**: The code is incorrectly classifying some molecules as dicarboxylic acids, even though they do not contain two carboxyl groups. Examples include lipids, phospholipids, and other molecules with only one carboxyl group or no carboxyl group at all. This issue could be addressed by:
-   - Filtering out common lipid/phospholipid substructures or patterns before checking for carboxyl groups.
-   - Implementing additional checks to ensure that the identified carboxyl groups are not part of larger functional groups like esters, amides, or anhydrides.
+def is_dicarboxylic_acid(smiles: str):
+    """
+    Determines if a molecule is a dicarboxylic acid based on its SMILES string.
+    A dicarboxylic acid is any carboxylic acid containing two carboxy groups.
 
-2. **False negatives**: The code is missing some valid dicarboxylic acid structures, particularly those with less common or more complex substructures. Examples include structures with enols, tautomers, or different resonance forms that obscure the carboxyl group patterns. This issue could be addressed by:
-   - Using a more comprehensive set of SMARTS patterns to detect carboxyl groups in different environments.
-   - Implementing additional checks for specific substructures or functional groups commonly found in dicarboxylic acids (e.g., alpha-keto acids, amino acids, cyclic dicarboxylic acids).
-   - Considering the use of other molecular descriptors or properties (e.g., formal charges, hydrogen bond donors/acceptors) to identify potential carboxyl groups.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Handling tautomers and resonance structures**: Some molecules may exist as tautomers or resonance structures, where the carboxyl groups are not explicitly represented in the SMILES or molecular structure. This could be addressed by:
-   - Generating and considering tautomers or resonance structures before checking for carboxyl group patterns.
-   - Implementing additional checks for specific substructures or functional groups that may indicate the presence of carboxyl groups in tautomers or resonance structures.
+    Returns:
+        bool: True if molecule is a dicarboxylic acid, False otherwise
+        str: Reason for classification
+    """
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-4. **Molecular weight or size considerations**: Dicarboxylic acids are typically smaller molecules, so applying a molecular weight or size filter could help eliminate some false positives. However, this approach should be used with caution, as there may be larger dicarboxylic acid structures as well.
+    # Generate tautomers and resonance structures
+    tautomers = list(AllChem.ResonanceMolSupplier(mol, AllChem.KIDERS_ALL))
+    tautomers.append(mol)
 
-5. **Handling edge cases**: The code does not seem to handle some edge cases or specific substructures well, such as enols, hydrates, or zwitterionic forms of dicarboxylic acids. Additional checks or rules may be required to handle these cases correctly.
+    # Check for two carboxyl groups
+    carboxyl_pattern = Chem.MolFromSmarts("[C](=[O])(O)")
+    for tautomer in tautomers:
+        carboxyl_matches = tautomer.GetSubstructMatches(carboxyl_pattern)
+        if len(carboxyl_matches) >= 2:
+            # Check if the carboxyl groups are part of larger functional groups like esters or amides
+            ester_pattern = Chem.MolFromSmarts("[C](=[O])(O)[O]")
+            amide_pattern = Chem.MolFromSmarts("[C](=[O])(O)[N]")
+            if not any(tautomer.HasSubstructMatch(ester_pattern) or tautomer.HasSubstructMatch(amide_pattern)):
+                return True, "Contains two or more carboxyl groups not part of esters or amides"
 
-Overall, improving the accuracy of the classification may require a combination of more comprehensive SMARTS patterns, additional checks for specific substructures or functional groups, consideration of tautomers and resonance structures, and potentially the use of other molecular descriptors or properties. Additionally, it may be beneficial to use a curated dataset of known dicarboxylic acid structures for training and testing purposes.
+    # Check for specific substructures or functional groups commonly found in dicarboxylic acids
+    alpha_keto_acid_pattern = Chem.MolFromSmarts("[C](=[O])(O)[C](=[O])")
+    amino_acid_pattern = Chem.MolFromSmarts("[N;H2]([C]([C](=[O])(O))([C](=[O])(O)))")
+    cyclic_dicarboxylic_acid_pattern = Chem.MolFromSmarts("[C]([C](=[O])(O))([C](=[O])(O))1[C]([H])([H])[C]([H])([H])[C]([H])([H])[C]1([H])([H])")
+
+    for tautomer in tautomers:
+        if tautomer.HasSubstructMatch(alpha_keto_acid_pattern) or \
+           tautomer.HasSubstructMatch(amino_acid_pattern) or \
+           tautomer.HasSubstructMatch(cyclic_dicarboxylic_acid_pattern):
+            return True, "Contains specific substructures or functional groups commonly found in dicarboxylic acids"
+
+    return False, "Does not contain two or more carboxyl groups or specific dicarboxylic acid substructures"
