@@ -7,7 +7,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_17beta_hydroxy_steroid(smiles: str):
     """
     Determines if a molecule is a 17beta-hydroxy steroid based on its SMILES string.
-    A 17beta-hydroxy steroid is defined by having a steroid backbone with a beta-configured hydroxy group at position 17.
+    The structure must feature a hydroxyl group at position 17 in a beta configuration on a steroid backbone.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,24 +20,23 @@ def is_17beta_hydroxy_steroid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+
+    # Basic SMARTS pattern for steroid backbone
+    steroid_pattern = Chem.MolFromSmarts("C1CCC2C3C(C=CC2)CC4=C3C=CC=C4C1")
+    if not mol.HasSubstructMatch(steroid_pattern):
+        return False, "No steroid core structure found"
+
+    # Identify 17beta-hydroxy group pattern on steroid
+    # The pattern explores beta-attachment on the typical steroid carbon backbone
+    hydroxy_pattern = Chem.MolFromSmarts("[C@@H]1(C)C[C@@H]([C@H](O)[H])CC[C@@H](C)C1")
     
-    # General steroid backbone pattern - four rings A/B/C/D with flexibility in stereo and connectivity
-    # These SMARTS patterns aim to capture the core steroid backbone, allowing for stereochemical variations
-    # The specific SMARTS patterns should be developed in accordance with the structure of known steroids
-    steroid_patterns = [
-        Chem.MolFromSmarts("C1C2CC3CC4=C(C=CC=C4)CC3C2C1"),  # Simplified steroid backbone
-        Chem.MolFromSmarts("C1C2CC3CC4=CC=CC=C4CC3C2C1"),   # A more generic pattern capturing aromatic C-ring possibility
-    ]
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6 and atom.GetIsAromatic() == False:
+            idx = atom.GetIdx()
+            neighbors = [n.GetAtomicNum() for n in atom.GetNeighbors()]
+            if neighbors.count(8) == 1:  # Hydroxyl group
+                # Check stereochemistry
+                if mol.GetAtomWithIdx(idx).GetChiralTag() == Chem.rdchem.CHI_TETRAHEDRAL_CCW:
+                    return True, "17beta-Hydroxy steroid identified"
     
-    if not any(mol.HasSubstructMatch(pattern) for pattern in steroid_patterns):
-        return False, "No suitable steroid backbone found"
-    
-    # Look for the 17beta-hydroxy group configuration specifically
-    # Assuming that the 17th carbon is part of the general steroid alkane ring system,
-    # Adjust the pattern to accurately represent the possible locations and include stereochemistry.
-    # This SMARTS assumes we know the general 17-OH placement chemistry typical in steroids.
-    hydroxy_pattern = Chem.MolFromSmarts("[C@@H](O)")  # An stereospecific pattern assuming beta configuration
-    if not mol.HasSubstructMatch(hydroxy_pattern):
-        return False, "No 17beta-hydroxy group detected"
-    
-    return True, "Detected a 17beta-hydroxy steroid configuration"
+    return False, "Does not have a 17beta-hydroxy configuration on steroid scaffold"
