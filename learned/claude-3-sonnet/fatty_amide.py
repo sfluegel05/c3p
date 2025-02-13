@@ -1,62 +1,36 @@
 """
 Classifies: CHEBI:29348 fatty amide
 """
-"""
-Classifies: CHEBI:34974 fatty amide
-A monocarboxylic acid amide derived from a fatty acid.
-"""
-from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+In the previous attempt, there were a few issues that led to a low F1 score:
 
-def is_fatty_amide(smiles: str):
-    """
-    Determines if a molecule is a fatty amide based on its SMILES string.
-    A fatty amide is a monocarboxylic acid amide derived from a fatty acid.
+1. **Error handling**: The code raises an exception when the `MolFromSmiles` function fails to parse the SMILES string, which is not ideal. Instead, it should return `False` and an appropriate error message.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. **Pattern matching**: The pattern used to match the amide group (`C(=O)N`) is too broad and can match other functional groups containing a carbonyl and a nitrogen atom, such as imines or nitriles. A more specific pattern for amides should be used.
 
-    Returns:
-        bool: True if molecule is a fatty amide, False otherwise
-        str: Reason for classification
-    """
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+3. **Carbon chain matching**: The pattern used to match the carbon chain (`[CX4]~[CX4]`) is too broad and can match any two connected carbon atoms, including those in ring systems or with other functional groups. A more specific pattern for linear carbon chains should be used.
 
-    # Look for amide group (-C(=O)N)
-    amide_pattern = Chem.MolFromSmarts("C(=O)N")
-    amide_match = mol.GetSubstructMatch(amide_pattern)
-    if not amide_match:
-        return False, "No amide group found"
+4. **Ring system check**: The code checks if the amide group is part of a ring system, but this check may be too strict. Some fatty amides may contain ring systems as part of their structure, as long as the amide group is not part of the ring.
 
-    # Look for carbon chain attached to amide
-    carbon_chain_pattern = Chem.MolFromSmarts("[CX4]~[CX4]")
-    carbon_chain_matches = mol.GetSubstructMatches(carbon_chain_pattern, amide_match[0])
-    if not carbon_chain_matches:
-        return False, "No carbon chain found attached to amide group"
+5. **Functional group check**: The code checks for the presence of common functional groups found in lipids and carbohydrates, but this check may be too broad and exclude some valid fatty amides that contain these functional groups.
 
-    # Check if amide is part of a larger ring system
-    ring_info = mol.GetRingInfo()
-    amide_atom = mol.GetAtomWithIdx(amide_match[0])
-    if any(amide_atom.IsInRingSize(size) for size in ring_info.AtomRings()):
-        return False, "Amide group is part of a ring system"
+6. **Rotatable bond count**: The rotatable bond count threshold of 2 may be too low for some fatty amides, especially those with longer carbon chains.
 
-    # Check for common functional groups found in lipids/carbohydrates
-    lipid_pattern = Chem.MolFromSmarts("[OX2H,OX1H0-]")
-    carbohydrate_pattern = Chem.MolFromSmarts("[OX2H][CX4][OX2H]")
-    if mol.HasSubstructMatch(lipid_pattern) or mol.HasSubstructMatch(carbohydrate_pattern):
-        return False, "Molecule contains functional groups typical of lipids or carbohydrates"
+7. **Molecular weight check**: The molecular weight threshold of 100 Da may be too low for some fatty amides, especially those with longer carbon chains or additional substituents.
 
-    # Count rotatable bonds to verify chain length
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 2:
-        return False, "Carbon chain too short to be a fatty amide"
+To improve the program, the following steps could be taken:
 
-    # Check molecular weight - fatty amides typically >100 Da
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 100:
-        return False, "Molecular weight too low for fatty amide"
+1. **Error handling**: Use a try-except block to catch the `MolFromSmiles` error and return `False` and an appropriate error message.
 
-    return True, "Contains amide group with a carbon chain (fatty acid)"
+2. **Pattern matching**: Use a more specific pattern for amide groups, such as `C(=O)N[!#1]`, which matches a carbonyl carbon connected to a nitrogen atom that is not connected to a hydrogen atom.
+
+3. **Carbon chain matching**: Use a pattern that matches linear carbon chains of a certain length, such as `[CX4][CX4]~[CX4]~[CX4]~[CX4]` for chains of at least 5 carbon atoms.
+
+4. **Ring system check**: Instead of checking if the amide group is part of a ring system, check if the carbon chain is part of a ring system, as some fatty amides may contain ring systems in their structure.
+
+5. **Functional group check**: Remove or modify the check for common functional groups found in lipids and carbohydrates, as some valid fatty amides may contain these groups.
+
+6. **Rotatable bond count**: Increase the rotatable bond count threshold to a higher value, such as 5 or more, to account for longer carbon chains.
+
+7. **Molecular weight check**: Increase the molecular weight threshold to a higher value, such as 200 Da or more, to account for longer carbon chains and additional substituents.
+
+By implementing these improvements, the program should be able to classify fatty amides more accurately and achieve a higher F1 score.
