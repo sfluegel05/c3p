@@ -1,28 +1,69 @@
 """
 Classifies: CHEBI:61912 branched-chain fatty acyl-CoA
 """
-Based on the previous code and the outcomes provided, it seems that the program is not correctly identifying branched-chain fatty acyl-CoA molecules. Here are some potential issues and improvements:
+"""
+Classifies: CHEBI:36639 branched-chain fatty acyl-CoA
+A fatty acyl-CoA that results from the formal condensation of the thiol group of coenzyme A 
+with the carboxy group of any branched-chain fatty acid.
+"""
 
-1. **Pattern Matching Issues**: The program is relying solely on SMARTS pattern matching to identify the CoA backbone and the branched fatty acid chain. However, SMARTS patterns can sometimes be too specific or too general, leading to false negatives or false positives. Additionally, the current patterns may not cover all possible variations of branched-chain fatty acyl-CoA structures.
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem.rdchem import BondType
 
-2. **Lack of Stereochemistry Consideration**: The provided SMILES strings contain stereochemical information, but the current program does not consider stereochemistry when matching patterns. This could lead to incorrect classifications, especially for molecules with multiple stereogenic centers.
+def is_branched_chain_fatty_acyl_CoA(smiles: str):
+    """
+    Determines if a molecule is a branched-chain fatty acyl-CoA based on its SMILES string.
 
-3. **Rotatable Bond Count Threshold**: The program uses a rotatable bond count threshold of 5 to determine if the chain is long enough to be a fatty acid. However, this threshold may be too low or too high, depending on the specific class of branched-chain fatty acyl-CoA molecules being considered.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-4. **Ester Bond Identification**: The program assumes that there should be exactly one ester bond between the CoA backbone and the fatty acid chain. However, some branched-chain fatty acyl-CoA molecules may have additional ester or other functional groups, leading to incorrect classifications.
+    Returns:
+        bool: True if molecule is a branched-chain fatty acyl-CoA, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-To improve the program, you could consider the following:
+    # Look for CoA backbone pattern
+    coa_pattern = Chem.MolFromSmarts("[C@@H](OP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12)")
+    coa_matches = mol.GetSubstructMatches(coa_pattern)
+    if not coa_matches:
+        return False, "No CoA backbone found"
 
-1. **Use Machine Learning Models**: Instead of relying solely on pattern matching, you could explore using machine learning models trained on a large dataset of known branched-chain fatty acyl-CoA molecules and their counterparts. This approach could potentially capture more subtle structural features and handle stereochemistry better.
+    # Look for branched fatty acid chain
+    branched_chain_pattern = Chem.MolFromSmarts("[CX4H2][CX4H2]([CX4])[CX4H2]")
+    branched_chain_matches = mol.GetSubstructMatches(branched_chain_pattern)
+    if not branched_chain_matches:
+        return False, "No branched fatty acid chain found"
 
-2. **Combine Pattern Matching with Other Descriptors**: While pattern matching can be helpful, you could also incorporate other molecular descriptors, such as functional group counts, atomic properties, and topological indices, to improve the classification accuracy.
+    # Check for ester bond between CoA and fatty acid chain
+    ester_bond_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2]")
+    ester_bond_matches = mol.GetSubstructMatches(ester_bond_pattern)
+    if not ester_bond_matches:
+        return False, "No ester bond found between CoA and fatty acid chain"
 
-3. **Adjust Thresholds and Patterns**: Carefully review the thresholds and SMARTS patterns used in the program, and adjust them based on a more comprehensive analysis of the class of molecules being considered. This could involve analyzing a larger dataset of known examples and counterexamples.
+    # Check for long fatty acid chain
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 8:
+        return False, "Fatty acid chain too short"
 
-4. **Consider Additional Structural Constraints**: Depending on the specific definition of the class, you may need to incorporate additional structural constraints beyond the CoA backbone, branched fatty acid chain, and ester bond. For example, you could check for the presence of specific functional groups or substructures that are characteristic of the class.
+    # Check for branching in the fatty acid chain
+    for match in branched_chain_matches:
+        atom1 = mol.GetAtomWithIdx(match[0])
+        atom2 = mol.GetAtomWithIdx(match[1])
+        atom3 = mol.GetAtomWithIdx(match[2])
+        atom4 = mol.GetAtomWithIdx(match[3])
 
-5. **Handle Stereochemistry**: Incorporate stereochemical information into the pattern matching or machine learning models to ensure accurate classification of molecules with stereogenic centers.
+        # Check for branching at atom2 or atom3
+        branched_at_2 = sum(1 for bond in atom2.GetBonds() if bond.GetBondType() == BondType.SINGLE) > 2
+        branched_at_3 = sum(1 for bond in atom3.GetBonds() if bond.GetBondType() == BondType.SINGLE) > 2
 
-6. **Implement a Confidence Score**: Instead of a binary classification, you could assign a confidence score to each prediction, allowing you to set a threshold for confident classifications and flag ambiguous cases for further analysis.
+        if branched_at_2 or branched_at_3:
+            return True, "Contains CoA backbone with branched fatty acid chain"
 
-By addressing these potential issues and incorporating additional structural information and machine learning techniques, you may be able to improve the accuracy of the program in classifying branched-chain fatty acyl-CoA molecules.
+    return False, "No branching found in the fatty acid chain"
