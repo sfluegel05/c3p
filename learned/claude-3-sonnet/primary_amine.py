@@ -1,22 +1,63 @@
 """
 Classifies: CHEBI:32877 primary amine
 """
-Analyzing the previous code and the outcomes, it appears that the program correctly identifies most primary amines, but also wrongly classifies some molecules as primary amines, leading to false positives. Additionally, it misses some primary amines, resulting in false negatives.
+"""
+Classifies: CHEBI:36975 primary amine
+A compound formally derived from ammonia by replacing one hydrogen atom by a hydrocarbyl group.
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-The main issue with the previous code is that it relies solely on the presence of a nitrogen atom with one substituent (excluding hydrogen) to classify a molecule as a primary amine. This approach is too simplistic and fails to account for other structural features and bonding patterns that may or may not be consistent with a primary amine.
+def is_primary_amine(smiles: str):
+    """
+    Determines if a molecule is a primary amine based on its SMILES string.
 
-To improve the program, we need to incorporate additional checks and criteria to better distinguish primary amines from other nitrogen-containing compounds. Here are some suggestions:
+    Args:
+        smiles (str): SMILES string of the molecule
 
-1. **Check for aromatic nitrogen atoms**: Primary amines typically have an aliphatic (non-aromatic) nitrogen atom. We should exclude molecules with aromatic nitrogen atoms, as these are more likely to be aromatic amines or heterocycles rather than primary amines.
+    Returns:
+        bool: True if molecule is a primary amine, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Count nitrogen atoms
+    n_atoms = [atom.GetAtomicNum() for atom in mol.GetAtoms()]
+    n_count = n_atoms.count(7)  # 7 is atomic number for nitrogen
+    if n_count != 1:
+        return False, f"Found {n_count} nitrogen atoms, primary amines should have exactly 1"
 
-2. **Check for multiple nitrogen atoms**: Primary amines should have only one nitrogen atom. Molecules with multiple nitrogen atoms are likely to be other types of compounds, such as amines with other substituents or heterocycles.
+    # Get nitrogen atom
+    n_atom = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7][0]
 
-3. **Check for double or triple bonds to nitrogen**: Primary amines have a single bond between the nitrogen atom and its substituent. Molecules with double or triple bonds to the nitrogen atom should be excluded, as these are more likely to be imines, nitriles, or other nitrogen-containing functional groups.
+    # Check for aromatic nitrogen
+    if n_atom.GetIsAromatic():
+        return False, "Nitrogen atom is aromatic, primary amines should have an aliphatic nitrogen"
 
-4. **Check for other functional groups**: Primary amines should not have certain functional groups, such as carbonyl groups (e.g., amides, esters, or carboxylic acids), which would indicate a different type of compound.
+    # Check for double/triple bonds to nitrogen
+    if sum(bond.GetBondTypeAsDouble() for bond in mol.GetBondEdges(n_atom.GetIdx())) > 1:
+        return False, "Nitrogen has double/triple bonds, primary amines should have a single bond"
 
-5. **Check for specific structural patterns**: Primary amines often have a characteristic structural pattern, such as a alkyl chain or a benzyl group attached to the nitrogen atom. We could use substructure matching to identify these patterns and increase the confidence in the classification.
+    # Check for other functional groups
+    if any(atom.GetAtomicNum() == 8 and sum(bond.GetBondTypeAsDouble() for bond in mol.GetBondEdges(atom.GetIdx())) > 1 for atom in mol.GetAtoms()):
+        return False, "Molecule contains carbonyl groups, primary amines should not"
 
-6. **Consider molecular weight and atom counts**: Primary amines typically have a relatively low molecular weight and a specific range of carbon, nitrogen, and hydrogen atom counts. We could set thresholds or ranges for these properties to further refine the classification.
+    # Check for characteristic structural patterns
+    alkyl_pattern = Chem.MolFromSmarts("[CH3][CH2]*[NH2]")
+    benzyl_pattern = Chem.MolFromSmarts("c1ccccc1[CH2][NH2]")
+    if not mol.HasSubstructMatch(alkyl_pattern) and not mol.HasSubstructMatch(benzyl_pattern):
+        return False, "No characteristic alkyl or benzyl group attached to nitrogen"
 
-By incorporating these additional checks and criteria, we can significantly improve the accuracy of the primary amine classification program and reduce the number of false positives and false negatives.
+    # Check molecular weight and atom counts
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    h_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 1)
+    if mol_wt < 30 or mol_wt > 300 or c_count < 1 or h_count < 4:
+        return False, "Molecular weight or atom counts outside typical range for primary amines"
+
+    return True, "Molecule has characteristic structural features of a primary amine"
