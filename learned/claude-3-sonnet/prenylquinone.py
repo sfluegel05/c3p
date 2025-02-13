@@ -1,16 +1,58 @@
 """
 Classifies: CHEBI:26255 prenylquinone
 """
-The previous program fails to classify prenylquinones correctly because the approach taken is too narrow and does not account for the diversity of structures in this class. Here are some potential issues and improvements:
+"""
+Classifies: CHEBI:51829 prenylquinone
 
-1. The quinone pattern used only checks for a specific benzoquinone substructure, but prenylquinones can have different ring systems like naphthoquinones, anthraquinones, etc. The quinone pattern should be more general.
+A prenylquinone is a quinone substituted by a polyprenyl-derived side-chain.
+They are characterized by a quinone core (benzoquinone, naphthoquinone, anthraquinone, etc.)
+with one or more prenyl/polyprenyl chains attached.
+"""
 
-2. The prenyl pattern only checks for a 5-carbon prenyl unit. However, prenylquinones can have longer polyprenyl chains of varying lengths. The program should look for longer prenyl/polyprenyl chains.
+from rdkit import Chem
+from rdkit.Chem import rdqueries, rdMolDescriptors
 
-3. The program checks if the prenyl chains are connected or near the quinone, but does not verify if they are actually substituents on the quinone ring system. It may give false positives for molecules where the prenyl and quinone moieties are disconnected.
+def is_prenylquinone(smiles: str):
+    """
+    Determines if a molecule is a prenylquinone based on its SMILES string.
 
-4. The program does not account for other common structural features of prenylquinones like additional substituents (e.g. methoxy, hydroxy groups), ring junctions, stereochemistry, etc.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-5. The program does not check any physicochemical properties that are generally expected for prenylquinones (e.g. molecular weight, lipophilicity).
+    Returns:
+        bool: True if molecule is a prenylquinone, False otherwise
+        str: Reason for classification
+    """
 
-To improve the classification, a more holistic approach considering the diverse structural features and properties of prenylquinones is needed. This may involve using more flexible substructure patterns, checking for ring junctions, enumerating common substituents, applying physicochemical filters, and potentially using machine learning techniques trained on a diverse set of prenylquinone structures.
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+
+    # Check for quinone core
+    quinone_patterns = ['*1=,=,*2*3=,=,*4*=1*=2*=3*=4', # Benzoquinone
+                        'c1c(=O)c2ccccc2c(=O)c1', # Naphthoquinone
+                        'c1c(=O)c2ccccc2c(=O)c3ccccc13'] # Anthraquinone
+    quinone_match = any(mol.HasSubstructMatch(Chem.MolFromSmarts(p)) for p in quinone_patterns)
+    if not quinone_match:
+        return False, "No quinone core found"
+
+    # Check for prenyl/polyprenyl chains
+    prenyl_pattern = rdqueries.PolyprenylQueries().HavingPolyprenylSidechains()
+    prenyl_match = mol.HasSubstructMatch(prenyl_pattern)
+    if not prenyl_match:
+        return False, "No prenyl/polyprenyl chains found"
+
+    # Check if prenyl chains are attached to quinone core
+    quinone_atoms = set(hit for p in quinone_patterns
+                            for hit in mol.GetSubstructMatches(Chem.MolFromSmarts(p)))
+    prenyl_atoms = set(hit for hit in mol.GetSubstructMatches(prenyl_pattern))
+    if not prenyl_atoms.intersection(quinone_atoms):
+        return False, "Prenyl chains not attached to quinone core"
+
+    # Check molecular weight range
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 300 or mol_wt > 1500:
+        return False, "Molecular weight outside expected range for prenylquinones"
+
+    return True, "Contains a quinone core with prenyl/polyprenyl substituents"
