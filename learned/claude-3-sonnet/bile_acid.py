@@ -1,51 +1,22 @@
 """
 Classifies: CHEBI:3098 bile acid
 """
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+The previous program made a reasonable attempt at identifying bile acids, but it had some issues that led to a low F1 score. Let's analyze the outcomes and identify areas for improvement.
 
-def is_bile_acid(smiles: str):
-    """
-    Determines if a molecule is a bile acid based on its SMILES string.
+Missed True Positives:
+- The program correctly identified the presence of the cholanic acid backbone, but failed to recognize some true bile acid structures due to additional constraints.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+Potential Issues:
+1. The cholanic acid backbone pattern may be too specific, missing variations in the tetracyclic structure or stereochemistry.
+2. The requirement for a carboxyl group may be too strict, as some bile acids can have other functional groups (e.g., ketones, alcohols) instead of a carboxyl group.
+3. The optional amide linkage check may be too narrow, missing other potential modifications or conjugations.
+4. The molecular weight range check may be too restrictive or not account for different conjugations or modifications.
 
-    Returns:
-        bool: True if molecule is a bile acid, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+Improvements:
+1. Relax the cholanic acid backbone pattern to account for more structural variations and stereochemical configurations.
+2. Allow for other functional groups or modifications besides the carboxyl group.
+3. Expand the check for amide linkages or other conjugations to include a broader range of possibilities.
+4. Adjust the molecular weight range or remove it entirely, as it may not be a reliable indicator for all bile acids.
+5. Consider additional checks for common structural features or substructures found in bile acids, such as ring systems, oxidation patterns, or specific functional group arrangements.
 
-    # Look for cholanic acid backbone pattern (tetracyclic steroid structure with 5beta configuration)
-    backbone_pattern = Chem.MolFromSmarts("[C@]12[C@H]([C@@H]3[C@H]([C@H]([C@H]4[C@@H](C[C@@H]5[C@@]4(CC[C@]6(C)[C@H]5[C@@H](C7=CC(=O)CC7)C6)C)C3)C2)C)C1")
-    if not mol.HasSubstructMatch(backbone_pattern):
-        return False, "No cholanic acid backbone found"
-
-    # Check for presence of at least one hydroxyl group
-    if sum(1 for atom in mol.GetAtoms() if atom.GetHybridization() == Chem.HybridizationType.SP3 and atom.GetTotalNumHs() > 0) < 1:
-        return False, "No hydroxyl group found"
-
-    # Check for presence of a carboxyl group
-    carboxyl_pattern = Chem.MolFromSmarts("C(=O)O")
-    if not mol.HasSubstructMatch(carboxyl_pattern):
-        return False, "No carboxyl group found"
-
-    # Check for optional amide linkage to glycine or taurine
-    amide_pattern = Chem.MolFromSmarts("C(=O)N[C@@H](N)C(=O)O")
-    if mol.HasSubstructMatch(amide_pattern):
-        reason = "Contains cholanic acid backbone with hydroxyl and carboxyl groups, and an amide linkage"
-    else:
-        reason = "Contains cholanic acid backbone with hydroxyl and carboxyl groups"
-
-    # Additional checks (e.g., molecular weight range, specific ring systems, etc.)
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 300 or mol_wt > 800:
-        return False, "Molecular weight outside typical range for bile acids"
-
-    return True, reason
+Additionally, it may be beneficial to use a combination of substructure matching and machine learning techniques to improve the classification accuracy. This could involve training a model on a larger dataset of bile acid structures and using it in conjunction with the existing substructure matching rules.
