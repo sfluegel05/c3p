@@ -1,24 +1,58 @@
 """
 Classifies: CHEBI:27208 unsaturated fatty acid
 """
-The previous program correctly identifies unsaturated fatty acids that contain a carboxylic acid group (-C(=O)O) and at least one C=C or C#C unsaturation. However, there are a few issues that lead to incorrect classifications:
+"""
+Classifies: CHEBI:36195 unsaturated fatty acid
+"""
+from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
-1. **False positives**: The program incorrectly classifies some molecules as unsaturated fatty acids because it only checks for the presence of a carboxylic acid group and at least one unsaturated bond. These molecules may contain other functional groups or structural features that disqualify them from being fatty acids. Examples include esters, amides, and cyclic compounds.
+def is_unsaturated_fatty_acid(smiles: str):
+    """
+    Determines if a molecule is an unsaturated fatty acid based on its SMILES string.
+    An unsaturated fatty acid is any fatty acid containing at least one C=C or C#C bond.
 
-2. **False negatives**: The program fails to identify some unsaturated fatty acids because it requires exactly two oxygen atoms. However, some unsaturated fatty acids may contain additional hydroxyl or hydroperoxy groups, leading to more than two oxygen atoms. Examples include 2-hydroxylinoleic acid, resolvin D6, and 20-Hydroxy-Resolvin E1.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Rotatable bonds check**: The check for the number of rotatable bonds (`n_rotatable >= 4`) may not be sufficient to ensure a long fatty acid chain. Some unsaturated fatty acids may have fewer rotatable bonds due to their specific structure or the presence of cyclic elements.
+    Returns:
+        bool: True if molecule is an unsaturated fatty acid, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-To improve the program and address these issues, we can consider the following modifications:
+    # Look for terminal carboxylic acid group
+    terminal_acid_pattern = Chem.MolFromSmarts("[CH3,CH2,CH]C(=O)O")
+    if not mol.HasSubstructMatch(terminal_acid_pattern):
+        return False, "No terminal carboxylic acid group found"
+    
+    # Look for at least one C=C or C#C bond
+    unsaturated_bond_pattern = Chem.MolFromSmarts("C=C,C#C")
+    if not mol.HasSubstructMatch(unsaturated_bond_pattern):
+        return False, "No unsaturated bonds found"
 
-1. **Enhance the carboxylic acid pattern**: Instead of just checking for the -C(=O)O pattern, we can use a more specific SMARTS pattern that checks for a terminal carboxylic acid group. For example, `[CH3,CH2,CH]C(=O)O` matches a carboxylic acid group at the end of a carbon chain.
+    # Check for undesirable functional groups
+    exclude_patterns = [
+        Chem.MolFromSmarts("O=C-O-C"),  # esters
+        Chem.MolFromSmarts("C(=O)N"),   # amides
+        Chem.MolFromSmarts("C1CCCCCC1") # cyclic structures
+    ]
+    for pattern in exclude_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return False, "Contains undesirable functional group"
 
-2. **Handle additional functional groups**: Introduce additional checks or SMARTS patterns to exclude molecules with other functional groups that are not typically found in fatty acids, such as esters, amides, or cyclic structures.
+    # Count carbons, oxygens, and check rotatable bonds
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
 
-3. **Relax the oxygen count check**: Instead of requiring exactly two oxygen atoms, we can allow for a range of oxygen atoms (e.g., 2 to 4) to accommodate unsaturated fatty acids with additional hydroxyl or hydroperoxy groups.
+    if o_count < 2 or o_count > 4:
+        return False, "Incorrect number of oxygens for fatty acid"
+    if n_rotatable < c_count - 2:
+        return False, "Carbon chain too short for fatty acid"
 
-4. **Improve the rotatable bonds check**: Instead of a fixed threshold, we can use a more flexible approach based on the number of carbon atoms. For example, we can require a minimum number of rotatable bonds based on the carbon count (e.g., `n_rotatable >= (c_count - 2)`).
-
-5. **Consider additional structural features**: Incorporate additional checks or SMARTS patterns to identify specific structural features commonly found in unsaturated fatty acids, such as long carbon chains with specific positions of unsaturated bonds.
-
-By implementing these improvements, the program should become more robust and accurate in classifying unsaturated fatty acids while reducing false positives and false negatives.
+    return True, "Contains at least one unsaturated bond and a terminal carboxylic acid group"
