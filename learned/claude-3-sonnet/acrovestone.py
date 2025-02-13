@@ -26,86 +26,50 @@ def is_acrovestone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Isoflavone/chromone core patterns
-    core_patterns = [
-        # Basic isoflavone core
-        "O=C1C(=COc2ccccc12)c3ccccc3",
-        # More general chromone core
-        "O=C1C=COc2ccccc12",
-        # Alternative pattern for isoflavone
-        "O=C1Cc2ccccc2Oc1c3ccccc3"
-    ]
-    
-    has_core = False
-    for pattern in core_patterns:
-        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
-            has_core = True
-            break
-    
-    if not has_core:
-        return False, "No isoflavone/chromone core structure found"
+    # Look for chromone core (benzopyran with ketone)
+    chromone_pattern = Chem.MolFromSmarts("O=C1C=COc2ccccc12")
+    if not mol.HasSubstructMatch(chromone_pattern):
+        return False, "No chromone core structure found"
 
-    # Sugar and glycosidic patterns
-    sugar_patterns = [
-        # Pyranose ring
-        "O1[C@H]([C@@H](O)[C@H](O)[C@@H](O)[C@@H]1O)CO",
-        # O-glycosidic bond
-        "Oc1ccc([C@H]2O[C@@H](O)[C@H](O)[C@@H](O)[C@@H]2O)cc1",
-        # Glucuronic acid
-        "O1[C@H]([C@@H](O)[C@H](O)[C@@H](O)[C@@H]1O)C(=O)O",
-        # Basic sugar ring with hydroxyls
-        "O1[CH]([CH]O)[CH]([CH]O)[CH]([CH]1O)CO"
-    ]
-    
-    has_sugar = False
-    for pattern in sugar_patterns:
-        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
-            has_sugar = True
-            break
+    # Check for presence of sugar moiety patterns
+    sugar_pattern = Chem.MolFromSmarts("[OX2][CH]1[CH][CH][CH]([CH][CH]1)(O)[CH2][OX2]")
+    if not mol.HasSubstructMatch(sugar_pattern):
+        sugar_pattern2 = Chem.MolFromSmarts("[OX2][CH]1[CH][CH][CH]([CH]1)(O)[CH2][OX2]")
+        if not mol.HasSubstructMatch(sugar_pattern2):
+            return False, "No glycosidic moiety found"
 
-    # Count key features
+    # Count hydroxyl groups
     hydroxyl_pattern = Chem.MolFromSmarts("[OX2H1]")
-    methoxy_pattern = Chem.MolFromSmarts("COc")
-    o_glycosidic_pattern = Chem.MolFromSmarts("O[CH]1O[CH][CH][CH][CH][CH]1")
-    
-    hydroxyl_count = len(mol.GetSubstructMatches(hydroxyl_pattern))
-    methoxy_count = len(mol.GetSubstructMatches(methoxy_pattern))
-    o_glycosidic_count = len(mol.GetSubstructMatches(o_glycosidic_pattern))
-    
-    # Calculate basic properties
+    hydroxyl_matches = len(mol.GetSubstructMatches(hydroxyl_pattern))
+    if hydroxyl_matches < 2:
+        return False, "Insufficient hydroxyl groups"
+
+    # Check for aromatic rings
+    aromatic_rings = len(rdMolDescriptors.CalcAromaticRings(mol))
+    if aromatic_rings < 2:
+        return False, "Insufficient aromatic rings"
+
+    # Calculate molecular weight - should be substantial due to sugar moieties
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    aromatic_rings = len(mol.GetAromaticAtoms()) // 6  # Approximate number of 6-membered aromatic rings
+    if mol_wt < 300:
+        return False, "Molecular weight too low for acrovestone compound"
+
+    # Count oxygen atoms - should have multiple due to glycosidic bonds and hydroxyl groups
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if o_count < 5:
+        return False, "Insufficient oxygen atoms"
 
-    # Scoring system
-    score = 0
-    score += 3 if has_core else 0
-    score += 2 if has_sugar else 0
-    score += min(hydroxyl_count, 3)  # Up to 3 points for hydroxyls
-    score += min(methoxy_count, 2)   # Up to 2 points for methoxy groups
-    score += 1 if aromatic_rings >= 2 else 0
-    score += 1 if o_count >= 5 else 0
-    score += 2 if o_glycosidic_count > 0 else 0
-    score += 1 if 300 <= mol_wt <= 800 else 0
-
-    # Decision making
-    if score < 6:
-        return False, "Insufficient structural features for acrovestone classification"
+    # Look for potential methoxy groups (common in these compounds)
+    methoxy_pattern = Chem.MolFromSmarts("COc")
+    methoxy_matches = len(mol.GetSubstructMatches(methoxy_pattern))
 
     # Build reason string
     features = []
-    if has_core:
-        features.append("Contains isoflavone/chromone core")
-    if has_sugar:
-        features.append("Contains glycosidic moiety")
-    if hydroxyl_count > 0:
-        features.append(f"Has {hydroxyl_count} hydroxyl groups")
-    if methoxy_count > 0:
-        features.append(f"Has {methoxy_count} methoxy groups")
-    if o_glycosidic_count > 0:
-        features.append(f"Has {o_glycosidic_count} O-glycosidic bonds")
+    features.append("Contains chromone core")
+    features.append(f"Has {hydroxyl_matches} hydroxyl groups")
     features.append(f"Contains {aromatic_rings} aromatic rings")
-    features.append(f"Contains {o_count} oxygen atoms")
-    features.append(f"Molecular weight: {int(mol_wt)}")
-
+    features.append("Contains glycosidic moiety")
+    if methoxy_matches > 0:
+        features.append(f"Has {methoxy_matches} methoxy groups")
+    
     return True, "; ".join(features)
