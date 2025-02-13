@@ -1,51 +1,30 @@
 """
 Classifies: CHEBI:37554 fatty acyl-CoA
 """
-"""
-Classifies: CHEBI:33309 fatty acyl-CoA
-An acyl-CoA that results from the formal condensation of the thiol group of 
-coenzyme A with the carboxy group of any fatty acid.
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+The previous program appears to have multiple issues that led to the failure in correctly classifying the provided examples as fatty acyl-CoA molecules. Let's analyze the outcomes and identify areas for improvement:
 
-def is_fatty_acyl_CoA(smiles: str):
-    """
-    Determines if a molecule is a fatty acyl-CoA based on its SMILES string.
+1. **False Negatives**: The program missed all the provided examples, classifying them as false negatives. This suggests that the implemented rules are too strict or incomplete to capture the structural diversity present in fatty acyl-CoA molecules.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. **Coenzyme A Backbone Pattern**: The SMARTS pattern used to identify the coenzyme A backbone seems too specific and may not account for variations in the stereochemistry or bond orders. It's possible that some of the provided examples have slightly different representations of the coenzyme A backbone, causing the program to miss them.
 
-    Returns:
-        bool: True if molecule is a fatty acyl-CoA, False otherwise
-        str: Reason for classification
-    """
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+3. **Thioester Linkage**: The program requires exactly one thioester linkage (-C(=O)-S-) to be present. However, some fatty acyl-CoA molecules may have additional functional groups or modifications, leading to multiple thioester linkages or different arrangements of the thioester group.
 
-    # Look for coenzyme A backbone pattern
-    coa_pattern = Chem.MolFromSmarts("[C@H]1[N@+]2=CN=C(N)N=C2N1C3OC(COP(=O)([O-])OP(=O)([O-])OP(=O)(O)O)C(OP(=O)([O-])O)C3O")
-    if not mol.HasSubstructMatch(coa_pattern):
-        return False, "No coenzyme A backbone found"
+4. **Fatty Acid Chain**: The SMARTS pattern used to identify the fatty acid chain is relatively simple and may not capture more complex structures, such as branched chains, cyclic systems, or additional functional groups.
 
-    # Look for thioester (-C(=O)-S-) linkage
-    thioester_pattern = Chem.MolFromSmarts("C(=O)SC")
-    thioester_matches = mol.GetSubstructMatches(thioester_pattern)
-    if len(thioester_matches) != 1:
-        return False, f"Found {len(thioester_matches)} thioester groups, need exactly 1"
+5. **Rotatable Bond Count**: The program uses a fixed cutoff of 6 rotatable bonds to determine if the chain is sufficiently long to be considered a fatty acid. This cutoff may be too strict or too lenient, depending on the specific examples.
 
-    # Check for fatty acid chain (long carbon chain attached to thioester)
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]") 
-    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
-    if len(fatty_acid_matches) < 1:
-        return False, f"Missing fatty acid chain, got {len(fatty_acid_matches)}"
+To improve the program, consider the following strategies:
 
-    # Count rotatable bonds to verify long chain
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 6:
-        return False, "Chain too short to be fatty acid"
+1. **Expand the Coenzyme A Backbone Pattern**: Use a more flexible SMARTS pattern or a combination of patterns to account for variations in stereochemistry, bond orders, and potentially different representations of the coenzyme A backbone.
 
-    return True, "Contains coenzyme A backbone with a fatty acid chain attached via a thioester bond"
+2. **Allow for Multiple Thioester Linkages**: Modify the program to handle molecules with multiple thioester linkages or different arrangements of the thioester group.
+
+3. **Enhance Fatty Acid Chain Identification**: Develop a more sophisticated approach to identify fatty acid chains, potentially using multiple SMARTS patterns or considering additional structural features like branching, cyclic systems, or functional groups.
+
+4. **Adjust Rotatable Bond Count**: Experiment with different cutoff values for the rotatable bond count or consider other molecular descriptors to assess the length and complexity of the fatty acid chain.
+
+5. **Incorporate Additional Structural Rules**: Explore additional rules or constraints specific to fatty acyl-CoA molecules, such as the presence of certain functional groups, stereochemistry, or other structural features.
+
+6. **Utilize Machine Learning or Data-Driven Approaches**: If the rule-based approach becomes too complex or fails to capture all variations, consider using machine learning techniques or data-driven approaches to learn the structural patterns of fatty acyl-CoA molecules from a large dataset.
+
+By addressing these issues and refining the program's rules and patterns, it is possible to improve its performance in correctly classifying fatty acyl-CoA molecules based on their SMILES strings.
