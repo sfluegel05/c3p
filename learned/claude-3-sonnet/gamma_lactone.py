@@ -11,7 +11,7 @@ from rdkit.Chem import AllChem
 def is_gamma_lactone(smiles: str):
     """
     Determines if a molecule is a gamma-lactone based on its SMILES string.
-    A gamma-lactone is a lactone with a five-membered ring.
+    A gamma-lactone is a lactone with a five-membered ring containing an unsaturated bond.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,14 +26,30 @@ def is_gamma_lactone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for lactone pattern (cyclic ester)
-    lactone_pattern = Chem.MolFromSmarts("[O;R]1[C;R]=C[C;R][C;R]=O1")
-    lactone_matches = mol.GetSubstructMatches(lactone_pattern)
+    # Look for gamma-lactone pattern
+    gamma_lactone_pattern = Chem.MolFromSmarts("[O;R]1[C;R]=C[C;R][C;R]=O1")
+    gamma_lactone_matches = mol.GetSubstructMatches(gamma_lactone_pattern)
     
-    # Check if any of the matches have a 5-membered ring
-    for match in lactone_matches:
+    if len(gamma_lactone_matches) == 0:
+        return False, "No gamma-lactone substructure found"
+    
+    # Check if the matched substructure is a valid gamma-lactone
+    for match in gamma_lactone_matches:
         ring_atoms = mol.GetAtomRingInfo().AtomRings()[match]
-        if len(ring_atoms) == 5:
-            return True, "Contains a five-membered lactone ring"
+        if len(ring_atoms) != 5:
+            continue
+        
+        # Check for unsaturation in the ring
+        unsaturated_bond = False
+        for i in range(len(ring_atoms)):
+            atom1 = mol.GetAtomWithIdx(ring_atoms[i])
+            atom2 = mol.GetAtomWithIdx(ring_atoms[(i+1)%5])
+            bond = mol.GetBondBetweenAtoms(atom1.GetIdx(), atom2.GetIdx())
+            if bond.GetBondType() == Chem.BondType.DOUBLE:
+                unsaturated_bond = True
+                break
+        
+        if unsaturated_bond:
+            return True, "Contains a five-membered lactone ring with an unsaturated bond"
     
-    return False, "No five-membered lactone ring found"
+    return False, "No valid gamma-lactone substructure found"
