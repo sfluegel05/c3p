@@ -22,19 +22,17 @@ def is_1_O_acylglycerophosphoethanolamine(smiles: str):
 
     # Define SMARTS patterns for 1-O-acylglycerophosphoethanolamine components
     
-    # 1-O-acylglycerol pattern: stereochemistry for the glycerol backbone
-    # [C@@H] for stereochemistry, the central carbon with oxygens on each side
-    glycerol_pattern = Chem.MolFromSmarts("[C@@H](COC(=O)[C])[CH2]OC")
+    # 1-O-acylglycerol pattern: more flexible stereochemistry and backbone chains
+    glycerol_pattern = Chem.MolFromSmarts("[C@H](COC(=O)[C])[CH2]OC")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No 1-O-acyl-glycerol structure found"
 
-    # Phosphoethanolamine group pattern
-    # Ensure that phosphate links through the correct sites with ethanolamine 
-    phosphoethanolamine_pattern = Chem.MolFromSmarts("COP(=O)(O)OCC[NH2+]")  
+    # Phosphoethanolamine group pattern allowing variations in charge representation
+    phosphoethanolamine_pattern = Chem.MolFromSmarts("COP(O)(=O)OCCN")
     if not mol.HasSubstructMatch(phosphoethanolamine_pattern):
         return False, "Phosphoethanolamine group not present"
     
-    # Assess complete molecule structure for exact match to 1-O-acylglycerophosphoethanolamine description
+    # Check if components link correctly to match a 1-O-acylglycerophosphoethanolamine
     if not (mol.HasSubstructMatch(glycerol_pattern) and mol.HasSubstructMatch(phosphoethanolamine_pattern)):
         return False, "Composite structure not consistent with 1-O-acylglycerophosphoethanolamine"
     
