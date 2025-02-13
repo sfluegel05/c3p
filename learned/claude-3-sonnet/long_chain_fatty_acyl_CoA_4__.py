@@ -1,28 +1,57 @@
 """
 Classifies: CHEBI:83139 long-chain fatty acyl-CoA(4-)
 """
-The previous program attempted to classify long-chain fatty acyl-CoA(4-) molecules based on various criteria, such as the presence of the CoA backbone, the length of the fatty acid chain, the presence of a carboxylate group, the ester linkage between the fatty acid and CoA, and the overall charge of the molecule. It also checked for common structural features like double bonds, stereochemistry, hydroxyl groups, keto groups, and epoxide groups.
+"""
+Classifies: CHEBI:36499 long-chain fatty acyl-CoA(4-)
 
-However, the program failed to correctly identify some of the provided examples, as indicated by the outcomes. Here's an analysis of what went wrong and some potential improvements:
+A fatty acyl-CoA(4-) arising from deprotonation of the phosphate and diphosphate OH groups of any long-chain fatty acyl-CoA; major species at pH 7.3.
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-1. **Missing CoA backbone**: The program relies heavily on the presence of the CoA backbone, as defined by the `coa_pattern` SMARTS pattern. However, this pattern may not accurately capture all possible variations of the CoA backbone structure. Some of the false negatives could be due to slight structural differences in the CoA backbone that are not accounted for by the current pattern.
+def is_long_chain_fatty_acyl_CoA_4_(smiles: str):
+    """
+    Determines if a molecule is a long-chain fatty acyl-CoA(4-) based on its SMILES string.
 
-   **Improvement**: Carefully examine the false negatives and refine the `coa_pattern` to accommodate any variations in the CoA backbone structure that were missed.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **Fatty acid chain length**: The program checks for a minimum length of the fatty acid chain by counting the number of carbon atoms and rotatable bonds. While this approach is reasonable, it may not be sufficient to capture all long-chain fatty acids accurately.
+    Returns:
+        bool: True if molecule is a long-chain fatty acyl-CoA(4-), False otherwise
+        str: Reason for classification
+    """
 
-   **Improvement**: Consider additional criteria or adjust the thresholds for the number of carbon atoms and rotatable bonds to better classify long-chain fatty acids.
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-3. **Structural features**: The program checks for various structural features like double bonds, stereochemistry, hydroxyl groups, keto groups, and epoxide groups. However, it does not differentiate between these features being present in the fatty acid chain or elsewhere in the molecule.
+    # Look for CoA backbone pattern
+    coa_pattern = Chem.MolFromSmarts("C(C)(COP([O-])(=O)OP([O-])(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP([O-])([O-])=O)n1cnc2c(N)ncnc12)C(=O)NCCC(=O)NCCS")
+    if not mol.HasSubstructMatch(coa_pattern):
+        return False, "No CoA backbone found"
 
-   **Improvement**: Modify the SMARTS patterns to ensure that these structural features are specifically present in the fatty acid chain and not elsewhere in the molecule.
+    # Look for fatty acid chain
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
+    if len(fatty_acid_matches) < 1:
+        return False, "Missing fatty acid chain"
 
-4. **Edge cases**: Some of the false negatives may be edge cases or exceptions that the program does not handle correctly. For example, there may be specific substituents or modifications that are not accounted for in the current implementation.
+    # Check for ester linkage between fatty acid and CoA
+    ester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2]")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    if len(ester_matches) != 1:
+        return False, "Incorrect ester linkage"
 
-   **Improvement**: Carefully examine the false negatives and identify any edge cases or exceptions that need to be handled explicitly.
+    # Count rotatable bonds to verify long chain
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 10:
+        return False, "Fatty acid chain too short"
 
-5. **Reason for classification**: The reason for classification provided by the program is based on the presence or absence of certain structural features. However, this reason may not accurately reflect the definition of long-chain fatty acyl-CoA(4-) molecules, which is based on the deprotonation of the phosphate and diphosphate groups.
+    # Check for overall -4 charge
+    mol_formal_charge = AllChem.GetFormalCharge(mol)
+    if mol_formal_charge != -4:
+        return False, "Incorrect overall charge"
 
-   **Improvement**: Revise the reason for classification to better align with the definition of long-chain fatty acyl-CoA(4-) molecules, focusing on the deprotonation of the phosphate and diphosphate groups and the overall charge of the molecule.
-
-By addressing these issues and improving the program's ability to accurately identify and classify long-chain fatty acyl-CoA(4-) molecules, you should be able to achieve a better F1 score and meet the desired performance criteria.
+    return True, "Contains long-chain fatty acyl group attached to CoA backbone with -4 charge from deprotonated phosphate and diphosphate groups"
