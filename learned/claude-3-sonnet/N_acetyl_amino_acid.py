@@ -23,12 +23,8 @@ def is_N_acetyl_amino_acid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Neutralize the molecule to handle different protonation states
-    uncharger = Chem.AllChem.UnchargeModel()
-    mol = uncharger.uncharge(mol)
 
-    # Look for carboxylic acid group
+    # Look for carboxylic acid group (including deprotonated form)
     carboxylic_acid = Chem.MolFromSmarts('[CX3](=O)[OX2H1,OX1-]')
     if not mol.HasSubstructMatch(carboxylic_acid):
         return False, "No carboxylic acid group found"
@@ -39,22 +35,20 @@ def is_N_acetyl_amino_acid(smiles: str):
         return False, "No N-acetyl group found"
 
     # Look for amino acid core with N-acetyl
-    # [C] is alpha carbon, [N] is acetylated N, [C]=O is carboxylic acid
+    # More flexible pattern that allows different substitutions on alpha carbon
     amino_acid_core = Chem.MolFromSmarts('[CH3][CX3](=O)[NX3][CX4][CX3](=O)[OX2H1,OX1-]')
     if not mol.HasSubstructMatch(amino_acid_core):
         return False, "No N-acetylated amino acid core structure found"
 
-    # Count number of N-acetyl groups
+    # Additional check for cyclic amino acids (like proline derivatives)
+    cyclic_amino_acid = Chem.MolFromSmarts('[CH3]C(=O)N1[CH2,CH]CC[CH2,CH][C@H]1C(=O)[OH]')
+    
+    # Count number of acetyl groups
     n_acetyl_matches = len(mol.GetSubstructMatches(n_acetyl))
     if n_acetyl_matches > 2:
         return False, f"Too many N-acetyl groups ({n_acetyl_matches})"
 
-    # Count carbons and oxygens to ensure reasonable size
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 4:
-        return False, "Too few carbons for N-acetyl-amino acid"
-
-    # Check that nitrogen is connected to both acetyl and alpha carbon
+    # Verify connectivity: N-acetyl must be on amino acid nitrogen
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() == 7:  # Nitrogen
             neighbors = atom.GetNeighbors()
@@ -62,15 +56,25 @@ def is_N_acetyl_amino_acid(smiles: str):
             alpha_c = False
             for neighbor in neighbors:
                 # Check if neighbor is carbonyl carbon of acetyl
-                if neighbor.GetAtomicNum() == 6 and any(n.GetAtomicNum() == 8 and n.GetDegree() == 1 
-                                                      for n in neighbor.GetNeighbors()):
-                    acetyl_c = True
+                if neighbor.GetAtomicNum() == 6:
+                    for n2 in neighbor.GetNeighbors():
+                        if n2.GetAtomicNum() == 8 and n2.GetDegree() == 1:  # C=O
+                            for n3 in neighbor.GetNeighbors():
+                                if n3.GetAtomicNum() == 6 and n3.GetDegree() == 4:  # CH3
+                                    acetyl_c = True
                 # Check if neighbor is alpha carbon (connected to COOH)
-                if neighbor.GetAtomicNum() == 6 and any(n.GetAtomicNum() == 6 and 
-                                                      any(nn.GetAtomicNum() == 8 for nn in n.GetNeighbors())
-                                                      for n in neighbor.GetNeighbors()):
-                    alpha_c = True
+                if neighbor.GetAtomicNum() == 6:
+                    for n2 in neighbor.GetNeighbors():
+                        if n2.GetAtomicNum() == 6:
+                            for n3 in n2.GetNeighbors():
+                                if n3.GetAtomicNum() == 8:
+                                    alpha_c = True
+
             if acetyl_c and alpha_c:
                 return True, "Contains N-acetyl group attached to amino acid core"
+            
+    # Check for cyclic amino acids separately
+    if mol.HasSubstructMatch(cyclic_amino_acid):
+        return True, "Contains N-acetyl group attached to cyclic amino acid core"
 
     return False, "Structure does not match N-acetyl-amino acid pattern"
