@@ -34,17 +34,23 @@ def is_fatty_alcohol(smiles: str):
         return False, f"Found {len(alcohol_matches)} alcohol groups, need exactly 1"
 
     # Count carbon chain length
-    carbon_chain = max(len(AllChem.GenerateDepictionMatching3DStructure(mol, Chem.MolFromSmarts("[C]~[C]"), useHs=False)) + 1
-    if carbon_chain < 3 or carbon_chain > 27:
-        return False, f"Carbon chain length ({carbon_chain}) outside of allowed range (3-27)"
+    carbon_chain_length = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if carbon_chain_length < 3 or carbon_chain_length > 27:
+        return False, f"Carbon chain length ({carbon_chain_length}) outside of allowed range (3-27)"
 
-    # Check for aliphatic (no cyclic structures)
-    if mol.GetRingInfo().NumRings() > 0:
-        return False, "Contains cyclic structures, must be aliphatic"
+    # Check for aliphatic (allow branched structures)
+    if mol.GetRingInfo().NumRings() > 1:
+        return False, "Contains multiple cyclic structures, only one ring allowed"
 
     # Count unsaturations (double bonds)
     num_double_bonds = rdMolDescriptors.CalcNumRotatableBonds(mol) - rdMolDescriptors.CalcNumRotatableBonds(Chem.RemoveHs(mol))
-    if num_double_bonds > carbon_chain - 3:
+    if num_double_bonds > carbon_chain_length - 2:
         return False, "Too many unsaturations for carbon chain length"
+
+    # Check for other functional groups
+    forbidden_patterns = ["[N]", "[S]", "[P]", "C(=O)O", "C(=O)N", "C(=O)C(=O)"]
+    for pattern in forbidden_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            return False, f"Contains forbidden functional group: {pattern}"
 
     return True, "Aliphatic alcohol with 3-27 carbon chain length"
