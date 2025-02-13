@@ -32,8 +32,8 @@ def is_monoterpenoid(smiles: str):
 
     # Count number of atoms
     n_atoms = mol.GetNumAtoms()
-    if n_atoms < 10:
-        return False, "Too few atoms for monoterpenoid"
+    if n_atoms < 10 or n_atoms > 20:
+        return False, "Atom count outside the range for monoterpenoids"
 
     # Check for C10 skeleton
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
@@ -41,20 +41,19 @@ def is_monoterpenoid(smiles: str):
         return False, "Less than 10 carbon atoms"
 
     # Check for rearranged or modified monoterpene skeleton
-    ring_info = mol.GetRingInfo()
-    if ring_info.AtomRings():
-        largest_ring_size = max(len(ring) for ring in ring_info.AtomRings())
-        if largest_ring_size >= 6:
-            return True, "Contains rearranged or modified monoterpene skeleton"
+    monoterpene_skeleton_pattern = Chem.MolFromSmarts("[C&r6,C&r5]")
+    if mol.HasSubstructMatch(monoterpene_skeleton_pattern):
+        return True, "Contains rearranged or modified monoterpene skeleton"
 
-    # Check for characteristic functional groups
+    # Check for characteristic functional groups and substructures
     alcohol_pattern = Chem.MolFromSmarts("[OH]")
     ketone_pattern = Chem.MolFromSmarts("C(=O)C")
     ether_pattern = Chem.MolFromSmarts("COC")
-    if mol.HasSubstructMatch(alcohol_pattern) or mol.HasSubstructMatch(ketone_pattern) or mol.HasSubstructMatch(ether_pattern):
-        return True, "Contains characteristic functional group of monoterpenoids"
+    epoxide_pattern = Chem.MolFromSmarts("C1OC1")
+    if mol.HasSubstructMatch(alcohol_pattern) or mol.HasSubstructMatch(ketone_pattern) or mol.HasSubstructMatch(ether_pattern) or mol.HasSubstructMatch(epoxide_pattern):
+        return True, "Contains characteristic functional group or substructure of monoterpenoids"
 
-    # Check for long hydrocarbon chains
+    # Check for long hydrocarbon chains (but not as a strict rule)
     hydrocarbon_pattern = Chem.MolFromSmarts("[CX4]~[CX4]~[CX4]~[CX4]")
     if mol.HasSubstructMatch(hydrocarbon_pattern):
         return False, "Likely a sesquiterpenoid or diterpenoid"
