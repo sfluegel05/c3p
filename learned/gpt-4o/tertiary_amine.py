@@ -6,7 +6,8 @@ from rdkit import Chem
 def is_tertiary_amine(smiles: str):
     """
     Determines if a molecule is a tertiary amine based on its SMILES string.
-    A tertiary amine has a nitrogen atom bonded to three carbon atoms.
+    A tertiary amine has a nitrogen atom bonded to three hydrocarbyl groups, 
+    i.e., three carbon atoms, directly or through a simple chain.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -16,19 +17,28 @@ def is_tertiary_amine(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES to Molecule
+    # Parse SMILES to RDKit Molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for a tertiary amine (N atom with exactly 3 carbon neighbors)
-    tertiary_amine_pattern = Chem.MolFromSmarts("[NX3]([C])[C][C]")
-    
-    # Check if the molecule matches the tertiary amine SMARTS pattern
-    if mol.HasSubstructMatch(tertiary_amine_pattern):
-        return True, "Contains a tertiary amine group (N bonded to 3 carbons)"
-    else:
-        return False, "No tertiary amine group found"
+    # Iterate over each atom in the molecule
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 7 and atom.GetDegree() == 3:
+            # Check if the nitrogen is bonded to 3 carbon atoms
+            carbon_bonds = 0
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 6:
+                    carbon_bonds += 1
+                # Ensure they are fully hydrocarbyl groups (not part of amide, etc.)
+                if neighbor.IsInRing() or neighbor.GetIsAromatic():
+                    carbon_bonds = -1  # Invalid setting for hydrocarbyl group
+                    break
+
+            if carbon_bonds == 3:
+                return True, "Contains a tertiary amine group (N bonded to 3 carbons or equivalent hydrocarbyl groups)"
+
+    return False, "No tertiary amine group found"
 
 # Example usages for validation
 print(is_tertiary_amine("CCN(CC)CC"))  # Expected: True, "Contains a tertiary amine group (N bonded to 3 carbons)"
