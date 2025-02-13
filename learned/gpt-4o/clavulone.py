@@ -28,22 +28,26 @@ def is_clavulone(smiles: str):
     if len(ester_matches) < 2:
         return False, f"Insufficient ester groups for clavulone classification, found {len(ester_matches)}"
     
-    # Check for cyclopentane ring and conjugated system
-    conjugated_system_pattern = Chem.MolFromSmarts("C=CC=CC")  # Simple conjugated pattern
-    if mol.HasSubstructMatch(conjugated_system_pattern):
-        conjugated_present = True
-    else:
-        conjugated_present = False
+    # Check for complex conjugated systems
+    conjugated_system_pattern = Chem.MolFromSmarts("C=CCCC=CCC")
+    if not mol.HasSubstructMatch(conjugated_system_pattern):
+        return False, "Lacks complex conjugated system typical of clavulones"
     
-    # Check for halogen atoms
+    # Check for halogen atoms (Cl, Br, I)
     halogens = [atom.GetAtomicNum() for atom in mol.GetAtoms() if atom.GetAtomicNum() in {9, 17, 35, 53}]
     if not halogens:
         return False, "No halogen atoms found, not typical for marine prostanoids"
     
-    # Chiral centers check
-    chiral_centers = Chem.FindPotentialChiralCenters(mol, includeUnassigned=True)
-    if len(chiral_centers) < 1:
-        return False, f"Insufficient chiral centers, found {len(chiral_centers)}"
+    # Check for five-membered ring
+    ring_info = mol.GetRingInfo()
+    five_membered_rings = any(len(ring) == 5 for ring in ring_info.AtomRings())
+    if not five_membered_rings:
+        return False, "No five-membered rings found, atypical structure for prostanoids"
+    
+    # Check for chiral centers based on stereochemistry indicators
+    if "@" not in smiles:
+        return False, "No chiral centers indicated in SMILES"
 
-    reason = f"Contains ester groups, halogen atoms, and {'conjugated system' if conjugated_present else 'no conjugated system'}"
+    # If all checks pass, classify as clavulone
+    reason = f"Contains ester groups, halogen atoms, complex conjugated system, and five-membered rings with chiral centers"
     return True, reason
