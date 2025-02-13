@@ -6,6 +6,7 @@ Classifies: CHEBI:51744 anthocyanidin cation
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_anthocyanidin_cation(smiles: str):
     """
@@ -25,20 +26,6 @@ def is_anthocyanidin_cation(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for flavylium (2-phenylchromenylium) core
-    flavylium_pattern = Chem.MolFromSmarts("[o+]1c2ccccc2cc1")
-    if not mol.HasSubstructMatch(flavylium_pattern):
-        return False, "Molecule does not contain flavylium core"
-
-    # Check for oxygenated groups (hydroxy, methoxy, etc.)
-    has_oxygenated = False
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 8:  # Oxygen
-            has_oxygenated = True
-            break
-    if not has_oxygenated:
-        return False, "Molecule is not oxygenated"
-
     # Check for positive charge
     if sum(1 for atom in mol.GetAtoms() if atom.GetFormalCharge() == 1) != 1:
         return False, "Molecule does not have a single positive charge"
@@ -47,4 +34,25 @@ def is_anthocyanidin_cation(smiles: str):
     if Chem.GetSSSR(mol) == []:
         return False, "Molecule does not contain rings"
 
-    return True, "Molecule contains flavylium core and is oxygenated with a single positive charge"
+    # Check for presence of oxygen atoms
+    oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if oxygen_count < 3:
+        return False, "Molecule does not contain enough oxygen atoms"
+
+    # Check for presence of aromatic rings
+    aromatic_rings = [r for r in Chem.GetSymmSSSR(mol) if mol.GetRingInfo().IsAromaticRing(r)]
+    if len(aromatic_rings) < 2:
+        return False, "Molecule does not contain enough aromatic rings"
+
+    # Check for presence of hydroxyl groups
+    hydroxyl_pattern = Chem.MolFromSmarts("[OX1H]")
+    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
+    if len(hydroxyl_matches) < 2:
+        return False, "Molecule does not contain enough hydroxyl groups"
+
+    # Check for molecular weight range (typically 200-500 Da)
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 200 or mol_wt > 500:
+        return False, "Molecular weight outside the typical range for anthocyanidin cations"
+
+    return True, "Molecule exhibits structural features consistent with an anthocyanidin cation"
