@@ -1,75 +1,26 @@
 """
 Classifies: CHEBI:15341 beta-D-glucosiduronic acid
 """
-"""
-Classifies: CHEBI:36349 beta-D-glucosiduronic acid
-A glucosiduronic acid resulting from the formal condensation of any substance with beta-D-glucuronic acid to form a glycosidic bond.
-"""
+The previous program attempted to classify beta-D-glucosiduronic acids based on the presence of a glucuronic acid substructure, an anomeric carbon involved in a glycosidic bond, and the beta configuration of the glucuronic acid moiety. However, the outcomes show that this approach missed all the positive examples, suggesting that the program is not adequately capturing the structural features of this class of compounds.
 
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdChemReactions
-from rdkit.Chem import rdMolDescriptors
+Here are some potential issues and improvements:
 
-def is_beta_D_glucosiduronic_acid(smiles: str):
-    """
-    Determines if a molecule is a beta-D-glucosiduronic acid based on its SMILES string.
+1. **Lack of consideration for the aglycone (non-carbohydrate) part**: The program focuses solely on identifying the glucuronic acid substructure and its configuration but does not explicitly check for the presence of an aglycone moiety connected via a glycosidic bond. This is a critical feature of glucosiduronic acids, which are formed by the condensation of glucuronic acid with another substance.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. **Rigid definition of the glucuronic acid substructure**: The program checks for an exact match of the glucuronic acid substructure, which may not be flexible enough to capture variations in the sugar moiety, such as additional substituents or modifications.
 
-    Returns:
-        bool: True if molecule is a beta-D-glucosiduronic acid, False otherwise
-        str: Reason for classification
-    """
+3. **Reliance on 3D structure generation**: The program embeds the molecule and uses 3D coordinates to determine the beta configuration. This step may be unnecessary and could introduce errors or limitations, especially for larger or more complex molecules.
 
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+To improve the program, consider the following changes:
 
-    # Look for glucuronic acid substructure
-    glucuronic_acid = Chem.MolFromSmiles("O=C(O)C(O)C(O)C(O)C(O)CO")
-    if not mol.HasSubstructMatch(glucuronic_acid):
-        return False, "No glucuronic acid substructure found"
+1. **Identify the aglycone moiety**: Implement a step to identify the non-carbohydrate part of the molecule and ensure that it is connected to the glucuronic acid substructure via a glycosidic bond.
 
-    # Check for glycosidic bond (acetal or ether bond to anomeric carbon)
-    anomeric_carbon = None
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 8 and atom.GetTotalNumHs() == 1:
-            neighbors = [n.GetIdx() for n in atom.GetNeighbors()]
-            if len(neighbors) == 2:
-                anomeric_carbon = neighbors[0] if neighbors[1] == atom.GetIdx() else neighbors[1]
-                break
+2. **Use a more flexible substructure matching approach**: Instead of checking for an exact match of the glucuronic acid substructure, use a more flexible approach like SMARTS patterns or substructure matching with atom-mapping.
 
-    if anomeric_carbon is None:
-        return False, "No anomeric carbon found"
+3. **Determine the beta configuration based on 2D structure**: Rather than relying on 3D coordinates, explore methods to determine the beta configuration from the 2D structure, such as checking the stereochemistry of the anomeric carbon or using established rules for stereochemical assignments.
 
-    # Check that the anomeric carbon is part of a glycosidic bond
-    anomeric_atom = mol.GetAtomWithIdx(anomeric_carbon)
-    if anomeric_atom.GetHybridization() != Chem.HybridizationType.SP3:
-        return False, "Anomeric carbon is not sp3 hybridized"
+4. **Consider additional structural features**: Incorporate checks for other common features of glucosiduronic acids, such as the presence of specific functional groups, the size or complexity of the aglycone, or the presence of additional sugar moieties.
 
-    if len(anomeric_atom.GetNeighbors()) != 2:
-        return False, "Anomeric carbon does not have 2 neighbors"
+5. **Use machine learning or knowledge-based approaches**: If the rule-based approach proves too challenging or limited, consider exploring machine learning techniques or knowledge-based approaches that can learn the structural patterns of glucosiduronic acids from a larger set of examples.
 
-    neighbor1, neighbor2 = anomeric_atom.GetNeighbors()
-    if neighbor1.GetAtomicNum() != 8 or neighbor2.GetAtomicNum() != 8:
-        return False, "Anomeric carbon is not part of a glycosidic bond"
-
-    # Check that the glucuronic acid substructure is in the beta configuration
-    if not AllChem.EmbedMolecule(mol):
-        return False, "Could not embed molecule for 3D structure generation"
-
-    conf = mol.GetConformer()
-    for bond in mol.GetBonds():
-        if bond.GetBeginAtomIdx() == anomeric_carbon or bond.GetEndAtomIdx() == anomeric_carbon:
-            begin_coords = conf.GetAtomPosition(bond.GetBeginAtomIdx())
-            end_coords = conf.GetAtomPosition(bond.GetEndAtomIdx())
-            v1 = begin_coords - end_coords
-            v2 = end_coords - conf.GetAtomPosition(anomeric_carbon)
-            cross = v1.CrossProduct(v2)
-            if cross.z < 0:
-                return True, "Contains beta-D-glucuronic acid substructure"
-
-    return False, "Glucuronic acid substructure is not in the beta configuration"
+By addressing these issues and incorporating additional structural features and more flexible matching approaches, the program should be better equipped to accurately classify molecules as beta-D-glucosiduronic acids.
