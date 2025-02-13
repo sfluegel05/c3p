@@ -6,7 +6,7 @@ Classifies: CHEBI:27090 guaiacols
 Any phenol carrying an additional methoxy substituent at the ortho-position.
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_guaiacols(smiles: str):
     """
@@ -26,22 +26,20 @@ def is_guaiacols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for phenol rings (aromatic ring with -OH substituent)
-    phenol_pattern = Chem.MolFromSmarts("c1ccccc1O")
-    phenol_matches = mol.GetSubstructMatches(phenol_pattern)
-    if not phenol_matches:
-        return False, "No phenol moiety found"
+    # Look for guaiacol substructure pattern
+    guaiacol_pattern = Chem.MolFromSmarts("Oc1ccc(OC)cc1")
+    if not mol.HasSubstructMatch(guaiacol_pattern):
+        return False, "No guaiacol substructure found"
     
-    # Look for ortho-methoxy substituent on phenol rings
-    ortho_methoxy_pattern = Chem.MolFromSmarts("Oc1ccc(OC)cc1")
-    found_guaiacol = False
-    for phenol_match in phenol_matches:
-        atoms = [mol.GetAtomWithIdx(idx).GetSymbol() for idx in phenol_match]
-        if any(mol.GetAtomWithIdx(idx).HasSubstructMatch(ortho_methoxy_pattern) for idx in phenol_match):
-            found_guaiacol = True
-            break
+    # Count methoxy and hydroxyl groups
+    methoxy_count = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == "O" and sum(bond.GetBondTypeAsDouble() for bond in atom.GetBonds()) == 1)
+    hydroxyl_count = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == "O" and sum(bond.GetBondTypeAsDouble() for bond in atom.GetBonds()) == 2)
+    if methoxy_count != 1 or hydroxyl_count != 1:
+        return False, "Incorrect number of methoxy or hydroxyl groups"
     
-    if found_guaiacol:
-        return True, "Contains a phenol ring with a methoxy substituent at the ortho position"
-    else:
-        return False, "No phenol ring with ortho-methoxy substituent found"
+    # Check molecular weight range
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 100 or mol_wt > 500:
+        return False, "Molecular weight outside typical range for guaiacols"
+    
+    return True, "Contains a phenol ring with a methoxy substituent at the ortho position"
