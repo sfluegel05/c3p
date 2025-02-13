@@ -2,11 +2,11 @@
 Classifies: CHEBI:15705 L-alpha-amino acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdChemReactions
 
 def is_L_alpha_amino_acid(smiles: str):
     """
     Determines if a molecule is an L-alpha-amino acid based on its SMILES string.
+    An L-alpha-amino acid has an amino group, carboxyl group, and an alkyl side chain with the L-configuration at the alpha carbon.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -19,27 +19,20 @@ def is_L_alpha_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for L-alpha-amino acid pattern
-    # Carbon with a chiral center having attached NH2 and COOH, and verify L-configuration
-    # Also require this not to be part of a peptide chain
-    alpha_amino_acid_pattern = Chem.MolFromSmarts("[C@@H](N)[C;!$([N]C=O)](=O)O")
-    if not mol.HasSubstructMatch(alpha_amino_acid_pattern):
-        return False, "Does not match the L-alpha-amino acid structure"
+    # Pattern to recognize the L-alpha-amino acid backbone
+    pattern = Chem.MolFromSmarts("[C@@H](N)C(=O)O")
+    
+    matches = mol.GetSubstructMatches(pattern)
+    if not matches:
+        return False, "Structure does not match the L-alpha-amino acid backbone"
 
-    # Verify stereochemistry for L-configuration at correct center
-    # The COO and NH2 attached chiral center must be (S) stereochemistry in most standards
-    chiral_matches = mol.GetSubstructMatches(alpha_amino_acid_pattern)
-    for match in chiral_matches:
-        atom = mol.GetAtomWithIdx(match[0])
-        if atom.GetChiralTag() != Chem.rdchem.ChiralType.CHI_TETRAHEDRAL_CCW:
-            continue
+    # Check the stereochemistry of the alpha carbon
+    for match in matches:
+        alpha_carbon = mol.GetAtomWithIdx(match[0])
+        chiral_tag = alpha_carbon.GetChiralTag()
         
-        # Verify if the pattern occurs isolated, not forming peptide bonds
-        neighbors = atom.GetNeighbors()
-        num_carboxylic_acid = sum(1 for n in neighbors if n.GetSymbol() == 'O' and n.GetDoubleProp("_CIPRank") > atom.GetDoubleProp("_CIPRank"))
-        num_amino = sum(1 for n in neighbors if n.GetSymbol() == 'N')
+        # CHI_TETRAHEDRAL_CCW indicates 'S' stereochemistry in RDKit's default settings
+        if chiral_tag == Chem.rdchem.ChiralType.CHI_TETRAHEDRAL_CCW:
+            return True, "Contains L-alpha-amino acid structure with L-configuration"
         
-        if num_carboxylic_acid == 2 and num_amino == 1:
-            return True, "Contains L-alpha-amino acid structure"
-
-    return False, "Does not match the isolated L-alpha-amino acid structure without peptide linkage"
+    return False, "Structure does not have the L-configuration at the alpha carbon"
