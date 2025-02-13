@@ -1,63 +1,28 @@
 """
 Classifies: CHEBI:23849 diterpenoid
 """
-"""
-Classifies: CHEBI:36655 diterpenoid
+The previous code attempted to classify molecules as diterpenoids based on several criteria, including molecular weight range, number of carbon atoms, presence of ring systems, and common diterpenoid substructures. However, the code did not produce any true positives, false positives, or false negatives, suggesting that the classification approach was not effective.
 
-Diterpenoids are terpenoids derived from a diterpene, where the C20 skeleton of
-the parent diterpene has been rearranged or modified by the removal of one or
-more skeletal atoms (generally methyl groups).
-"""
+Here are some potential reasons for the failure and suggestions for improvement:
 
-from rdkit import Chem
-from rdkit.Chem import AllChem, rdMolDescriptors
+1. **Molecular weight range**: The code checks for a molecular weight range of 250-500 Da, which may be too restrictive. Diterpenoids can have a wider range of molecular weights, depending on their substituents and modifications.
 
-def is_diterpenoid(smiles: str) -> tuple[bool, str]:
-    """
-    Determines if a molecule is a diterpenoid based on its SMILES string.
+2. **Number of carbon atoms**: The code checks for exactly 20 carbon atoms, which may be too strict. While diterpenoids are derived from a C20 diterpene skeleton, they can have additional or fewer carbon atoms due to modifications or rearrangements.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+3. **Ring system size**: The code checks for ring systems with 4-8 members, but diterpenoids can have larger or smaller ring systems due to rearrangements or fused ring systems.
 
-    Returns:
-        bool: True if molecule is a diterpenoid, False otherwise
-        str: Reason for classification
-    """
+4. **Substructure patterns**: The code checks for a limited set of common diterpenoid substructures, but diterpenoids can have a wide variety of structural features and modifications, making it challenging to capture all possibilities with a few predefined patterns.
 
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+To improve the classification, consider the following approaches:
 
-    # Check molecular weight range (typical for diterpenoids)
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 250 or mol_wt > 500:
-        return False, f"Molecular weight {mol_wt:.2f} outside typical diterpenoid range"
+1. **Use machine learning**: Instead of relying on predefined rules and patterns, you could train a machine learning model (e.g., random forest, support vector machine) on a dataset of known diterpenoids and non-diterpenoids. This would allow the model to learn the relevant features from the data itself, potentially capturing a broader range of diterpenoid structures.
 
-    # Check for diterpene backbone (20 carbon atoms)
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count != 20:
-        return False, f"Number of carbon atoms ({c_count}) not equal to 20"
+2. **Incorporate additional structural features**: In addition to molecular weight, number of atoms, and ring systems, consider incorporating other structural features that could be relevant for diterpenoids, such as the presence of specific functional groups, stereochemistry, or topological descriptors.
 
-    # Look for rearranged or modified skeletons
-    sssr = Chem.GetSymmSSSR(mol)
-    largest_ring = max(rings for rings in sssr)
-    if len(largest_ring) < 4 or len(largest_ring) > 8:
-        return False, "Diterpenoids typically have 4-8 membered ring systems"
+3. **Refine the substructure patterns**: If you prefer to use a rule-based approach, you could refine the substructure patterns by analyzing a larger set of known diterpenoids and identifying common structural motifs or fragments.
 
-    # Look for common diterpenoid substructures
-    patterns = (
-        "[C@H]1CC[C@@]2(C(=C)C)C[C@@H](O)[C@H](C)[C@]12C",  # labdane
-        "[C@H]1C[C@@]2(C(=C)C)[C@@H](O)C[C@H](C)[C@]12C",   # clerodane
-        "[C@H]1C[C@@H]2[C@@H](C)C[C@@H](C)[C@@]2(C)C1=C",   # pimarane
-        "[C@H]1C[C@@H]2[C@@H](O)[C@H](C)C[C@@]2(C)C1=C",    # abietane
-        "[C@H]1C[C@@H]2[C@@H](C)C[C@@H](C)[C@]2(C)C1=C",    # kaurane
-    )
+4. **Use a hierarchical or ensemble approach**: You could combine multiple classification techniques, such as substructure matching, molecular descriptors, and machine learning models, in a hierarchical or ensemble approach to improve the overall performance.
 
-    for patt in patterns:
-        patt_mol = Chem.MolFromSmarts(patt)
-        if mol.HasSubstructMatch(patt_mol):
-            return True, "Contains typical diterpenoid substructure"
+5. **Expand the training and evaluation data**: Ensure that you have a diverse and representative dataset of diterpenoids and non-diterpenoids for training and evaluation purposes. This will help the model or rules capture the wide range of structural variations within this class.
 
-    # No diterpenoid features found
-    return False, "No diterpenoid features identified"
+Remember that classifying chemical entities based solely on their structures can be challenging, especially for diverse and complex classes like diterpenoids. It may be necessary to incorporate additional information, such as biological activity or spectroscopic data, to improve the classification accuracy.
