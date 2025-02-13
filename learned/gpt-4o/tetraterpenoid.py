@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_tetraterpenoid(smiles: str):
     """
     Determines if a molecule is a tetraterpenoid based on its SMILES string.
-    
+
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -21,23 +21,30 @@ def is_tetraterpenoid(smiles: str):
     
     # Count carbon atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if not (35 <= c_count <= 42):
+    if not (30 <= c_count <= 50):
         return False, f"Expected around 40 carbon atoms, found {c_count}"
 
-    # Check for conjugated double bonds pattern
-    # Adjusting SMARTS for longer conjugation typically seen in tetraterpenoids
-    polyene_pattern = Chem.MolFromSmarts("C=CC=CC=CC=C")
-    if not mol.HasSubstructMatch(polyene_pattern):
+    # Check for a more generalized extended conjugated system
+    polyene_patterns = [
+        Chem.MolFromSmarts("C=CC=CC=CC=C"),  # Existing pattern
+        Chem.MolFromSmarts("C=CC=CC=CC=CC=C"),  # Longer conjugation
+        Chem.MolFromSmarts("C=C(C=C)C=C")  # Alternate conjugation form
+    ]
+    found_polyene = any(mol.HasSubstructMatch(pat) for pat in polyene_patterns)
+    if not found_polyene:
         return False, "No extended conjugated polyene system found"
 
-    # Check for presence of functional groups (e.g., -OH, =O)
+    # Check for presence of a diverse set of functional groups
     functional_patterns = [
         Chem.MolFromSmarts("[OH]"),  # Hydroxyl group
         Chem.MolFromSmarts("[C]=O"),  # Carbonyl group
         Chem.MolFromSmarts("[OX2]"),  # Generic oxygen presence, covers hydroxyl and epoxide
+        Chem.MolFromSmarts("O"),  # Any oxygen atom
     ]
     found_functional_groups = any(mol.HasSubstructMatch(pat) for pat in functional_patterns)
-    if not found_functional_groups:
-        return False, "No common functional groups (e.g., hydroxyl, carbonyl, epoxide) found"
 
-    return True, "Structure consistent with a tetraterpenoid: extended polyene system and functional group present"
+    # Accept if either polyene system or functional groups are found satisfactorily
+    if not found_functional_groups and not found_polyene:
+        return False, "Neither functional group nor extended conjugation system found"
+    
+    return True, "Structure consistent with a tetraterpenoid: extended polyene and/or functional group present"
