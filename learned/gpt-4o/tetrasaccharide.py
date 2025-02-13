@@ -7,11 +7,10 @@ from rdkit.Chem import rdMolDescriptors
 def is_tetrasaccharide(smiles: str):
     """
     Determines if a molecule is a tetrasaccharide based on its SMILES string.
-    A tetrasaccharide consists of four monosaccharide units linked together.
-
+    
     Args:
         smiles (str): SMILES string of the molecule
-
+    
     Returns:
         bool: True if molecule is a tetrasaccharide, False otherwise
         str: Reason for classification
@@ -22,23 +21,23 @@ def is_tetrasaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern to identify common monosaccharide units (furanose/pyranose rings with OH groups)
-    # This pattern needs to capture variations of such units realistically
-    monosaccharide_pattern = Chem.MolFromSmarts("O[C@H]1(CO)[C@@H]([C@H](O)[C@@H](O)O1) | [C@H]1(O[C@H]([C@H]([C@@H](O)C1O)O)CO)[C@H](O)O")
+    # Define SMARTS pattern to match the furanose and pyranose rings 
+    # with variable OH distributions and linkages
+    # This pattern is an oversimplified representation and might need refinement
+    pyranose_pattern = Chem.MolFromSmarts("[OX2H][C@H]1[C@H]([OX2H])[C@@H]([OX2H])[C@H]([OX2H])[C@@H]1[OX2H]")
+    furanose_pattern = Chem.MolFromSmarts("[OX2H][C@H]1[C@H]([OX2H])[C@@H]([OX2H])[C@H]([OX2H])1")
     
-    if not monosaccharide_pattern:
-        return (None, None)
+    # Count pyranose and furanose rings
+    pyranose_matches = mol.GetSubstructMatches(pyranose_pattern)
+    furanose_matches = mol.GetSubstructMatches(furanose_pattern)
     
-    # Find all matches of the pattern in the molecule
-    monosaccharide_matches = mol.GetSubstructMatches(monosaccharide_pattern)
-    
-    # Count the number of unique monosaccharide units (this might need adjustment depending on exact determination)
-    num_monosaccharide_units = len(monosaccharide_matches)
+    # Each pyranose/furanose ring can be considered a monosaccharide unit
+    num_monosaccharide_units = len(pyranose_matches) + len(furanose_matches)
     
     if num_monosaccharide_units == 4:
-        return True, "Contains four monosaccharide units linked together"
+        return True, "Contains four linked monosaccharide units"
     else:
         return False, f"Found {num_monosaccharide_units} monosaccharide units, need exactly 4"
 
 # Example usage:
-# print(is_tetrasaccharide("OC[C@H](O)[C@@H](O)[C@H](O)[C@H](O)COC[C@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O"))  # Modify with example SMILES
+# print(is_tetrasaccharide("example_smiles_string"))  # Replace with an actual SMILES for testing
