@@ -1,32 +1,63 @@
 """
 Classifies: CHEBI:15489 3-oxo-fatty acyl-CoA
 """
-The previous program attempted to classify 3-oxo-fatty acyl-CoA molecules based on the presence of the CoA substructure, a 3-oxo group on the fatty acid chain, and a long carbon chain. However, the outcomes show that it failed to identify any true positives and missed several valid examples of 3-oxo-fatty acyl-CoA molecules.
+"""
+Classifies: CHEBI:138163 3-oxo-fatty acyl-CoA
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-Here are some potential issues with the previous approach and suggestions for improvement:
+def is_3_oxo_fatty_acyl_CoA(smiles: str) -> tuple[bool, str]:
+    """
+    Determines if a molecule is a 3-oxo-fatty acyl-CoA based on its SMILES string.
+    A 3-oxo-fatty acyl-CoA is defined as an oxo fatty acyl-CoA that results from the formal condensation
+    of the thiol group of coenzyme A with the carboxy group of any 3-oxo-fatty acid.
 
-1. **Overly strict pattern matching**: The program used a single SMARTS pattern to match the CoA substructure, which may have been too rigid and missed variations in the CoA structure. Instead of a single pattern, it would be better to break down the CoA substructure into smaller, more flexible patterns and check for the presence of these substructures.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **Inadequate handling of double bonds and stereochemistry**: The program did not consider the presence of double bonds and their stereochemistry in the fatty acid chain, which is an important structural feature of many 3-oxo-fatty acyl-CoA molecules. The pattern matching should be modified to account for double bonds and their stereochemistry.
+    Returns:
+        tuple[bool, str]: A tuple containing:
+            bool: True if the molecule is a 3-oxo-fatty acyl-CoA, False otherwise
+            str: Reason for the classification
+    """
 
-3. **Insufficient checks for fatty acid chain length**: The program relied solely on counting rotatable bonds to determine the length of the fatty acid chain, which may not be accurate for molecules with double bonds or cyclic structures. A better approach would be to use a combination of methods, such as counting carbon atoms in the longest chain and checking for specific substructures that indicate a long fatty acid chain.
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-4. **Rigid atom count thresholds**: The program used fixed thresholds for the number of carbon and oxygen atoms, which may not be suitable for all 3-oxo-fatty acyl-CoA molecules. Instead of hard-coded thresholds, it would be better to use more flexible rules based on the presence of specific substructures and the overall molecular weight.
+    # Check for CoA substructure
+    coa_pattern = Chem.MolFromSmarts("CNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12")
+    if not mol.HasSubstructMatch(coa_pattern):
+        return False, "Missing CoA substructure"
 
-5. **Lack of handling for isomers and variations**: The program did not account for structural variations and isomers of 3-oxo-fatty acyl-CoA molecules, such as different positions of double bonds or the presence of additional functional groups. A more comprehensive approach would involve identifying and handling these variations.
+    # Check for 3-oxo group on fatty acid chain
+    oxo_pattern = Chem.MolFromSmarts("CC(=O)")
+    oxo_matches = mol.GetSubstructMatches(oxo_pattern)
+    if not oxo_matches:
+        return False, "No 3-oxo group found on fatty acid chain"
 
-To improve the program, you could consider the following steps:
+    # Check for double bonds and stereochemistry
+    double_bond_pattern = Chem.MolFromSmarts("C=C")
+    double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
 
-1. **Decompose the CoA substructure into smaller, more flexible patterns**: Instead of a single rigid pattern, use a combination of smaller patterns to match the CoA substructure, allowing for more variations.
+    # Count carbon atoms in the longest chain
+    atom_ranks = AllChem.Canon.CanonicalRankAtomsInMolecule(mol)
+    longest_chain_length = max(atom_ranks.values())
 
-2. **Incorporate double bond and stereochemistry handling**: Modify the pattern matching to account for double bonds and their stereochemistry in the fatty acid chain.
+    # Check molecular weight and atom counts
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
 
-3. **Implement a combination of methods for fatty acid chain length determination**: Use a combination of methods, such as counting carbon atoms in the longest chain, checking for specific substructures, and considering double bonds and cyclic structures, to determine the length of the fatty acid chain more accurately.
-
-4. **Use more flexible rules based on substructures and molecular weight**: Instead of hard-coded thresholds for atom counts, develop rules based on the presence of specific substructures and the overall molecular weight to identify 3-oxo-fatty acyl-CoA molecules more robustly.
-
-5. **Handle isomers and variations**: Identify and account for structural variations and isomers of 3-oxo-fatty acyl-CoA molecules, such as different positions of double bonds or the presence of additional functional groups.
-
-6. **Incorporate domain knowledge and expert rules**: Consult with domain experts or literature to identify additional structural features or rules that can help in the classification of 3-oxo-fatty acyl-CoA molecules.
-
-By addressing these issues and incorporating more comprehensive pattern matching, substructure identification, and domain knowledge, you can significantly improve the accuracy and robustness of the program in classifying 3-oxo-fatty acyl-CoA molecules.
+    # Classify based on various criteria
+    if longest_chain_length >= 12 and mol_wt >= 500 and c_count >= 20 and o_count >= 6:
+        if double_bond_matches:
+            reason = f"Contains CoA substructure, 3-oxo group, {len(double_bond_matches)} double bonds, and a long fatty acid chain"
+        else:
+            reason = "Contains CoA substructure, 3-oxo group, and a long fatty acid chain"
+        return True, reason
+    else:
+        return False, "Molecule does not meet the criteria for a 3-oxo-fatty acyl-CoA"
