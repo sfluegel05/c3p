@@ -24,13 +24,19 @@ def is_monoradylglycerol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for specific glycerol backbone patterns with substituents
-    # Pattern 1: -O-CH2-CH(OH)-CH2-OH (1-substituted)
-    # Pattern 2: -O-CH2-CH(OH)-CH2-OH (2-substituted)
-    # Pattern 3: -O-CH2-CH(OH)-CH2-OH (3-substituted)
+    # Count total oxygens - monoradylglycerols should have 3-4 oxygens
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if not (3 <= o_count <= 4):
+        return False, f"Invalid number of oxygen atoms ({o_count}), expected 3-4"
+
+    # Look for glycerol backbone patterns
     glycerol_patterns = [
-        "[OX2][CH2][CH]([OH1])[CH2][OH1]",  # Generic pattern
-        "[OH1][CH2][CH]([OH1])[CH2][OX2]",  # Alternative arrangement
+        # 1-substituted
+        "[OX2][CH2][CH]([OH1])[CH2][OH1]",
+        # 2-substituted
+        "[OH1][CH2][CH]([OX2])[CH2][OH1]",
+        # 3-substituted
+        "[OH1][CH2][CH]([OH1])[CH2][OX2]"
     ]
     
     found_glycerol = False
@@ -40,40 +46,41 @@ def is_monoradylglycerol(smiles: str):
             break
             
     if not found_glycerol:
-        return False, "No glycerol backbone with correct substitution pattern found"
+        return False, "No glycerol backbone found"
 
-    # Count free hydroxyls (-OH groups)
+    # Count free hydroxyls
     oh_pattern = Chem.MolFromSmarts("[OX2H1]")
     oh_matches = len(mol.GetSubstructMatches(oh_pattern))
     if oh_matches != 2:
         return False, f"Found {oh_matches} free hydroxyl groups, need exactly 2"
 
-    # Look for valid substituents
-    # Acyl group (ester)
-    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])[#6]")
-    # Alkyl group (ether)
-    ether_pattern = Chem.MolFromSmarts("[OX2]([CH2][CH]([OH1])[CH2][OH1])[CX4]")
+    # Check for valid substituents
+    # Acyl group (ester) - more specific pattern
+    ester_pattern = Chem.MolFromSmarts("[OX2]([CH2,CH1][CH]([OH1])[CH2][OH1])[CX3](=[OX1])[#6]")
+    # Alkyl group (ether) - more specific pattern
+    ether_pattern = Chem.MolFromSmarts("[OX2]([CH2,CH1][CH]([OH1])[CH2][OH1])[CX4;!$(C=O)]")
     # Alk-1-enyl group
-    alkenyl_pattern = Chem.MolFromSmarts("[OX2]([CH2][CH]([OH1])[CH2][OH1])[CH2][CH]=[CH]")
+    alkenyl_pattern = Chem.MolFromSmarts("[OX2]([CH2,CH1][CH]([OH1])[CH2][OH1])[CH2][CH]=[CH]")
     
     ester_matches = len(mol.GetSubstructMatches(ester_pattern))
     ether_matches = len(mol.GetSubstructMatches(ether_pattern))
     alkenyl_matches = len(mol.GetSubstructMatches(alkenyl_pattern))
     
-    # Must have exactly one type of substituent
-    if ester_matches > 0:
-        if ester_matches == 1 and ether_matches == 0 and alkenyl_matches == 0:
+    total_substituents = ester_matches + ether_matches + alkenyl_matches
+    
+    if total_substituents != 1:
+        return False, f"Found {total_substituents} substituents, need exactly 1"
+
+    # Classify based on substituent type
+    if ester_matches == 1:
+        # Additional check for ester group
+        if mol.HasSubstructMatch(Chem.MolFromSmarts("[CX3](=[OX1])[OX2][CH2,CH1][CH]([OH1])[CH2][OH1]")):
             return True, "Valid monoradylglycerol with one acyl substituent"
-    elif ether_matches > 0:
-        if ether_matches == 1 and alkenyl_matches == 0:
+    elif ether_matches == 1:
+        # Additional check for proper ether linkage
+        if mol.HasSubstructMatch(Chem.MolFromSmarts("[OX2]([CH2,CH1][CH]([OH1])[CH2][OH1])[CX4]")):
             return True, "Valid monoradylglycerol with one alkyl substituent"
     elif alkenyl_matches == 1:
         return True, "Valid monoradylglycerol with one alk-1-enyl substituent"
-    
-    # Check for carboxylic acids (to avoid false positives)
-    acid_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H1]")
-    if mol.HasSubstructMatch(acid_pattern):
-        return False, "Contains carboxylic acid group, not a monoradylglycerol"
-        
-    # If we get here, the substitution pattern is wrong
+
     return False, "Does not have correct single substituent pattern"
