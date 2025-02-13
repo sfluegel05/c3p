@@ -24,58 +24,47 @@ def is_1_acyl_sn_glycero_3_phosphoserine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for phosphate group connected to serine
-    # More flexible pattern that matches various representations
-    phosphoserine_pattern = Chem.MolFromSmarts("[PX4](=[OX1])([OX2,OH])([OX2,OH])[OX2][CH2][CH]([NH2,NH3+,N])[CX3](=[OX1])[OX2,OH]")
+    # Check for glycerol backbone with specific substitution pattern
+    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
+    if not mol.HasSubstructMatch(glycerol_pattern):
+        return False, "No glycerol backbone found"
+
+    # Check for phosphoserine group
+    # [P](=O)(O)-O-C-C(N)-C(=O)O
+    phosphoserine_pattern = Chem.MolFromSmarts("[PX4](=O)([OH])[OX2][CH2][CH]([NH2])[CX3](=O)[OH]")
     if not mol.HasSubstructMatch(phosphoserine_pattern):
         return False, "No phosphoserine group found"
 
-    # Check for glycerol backbone 
-    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
-    if not mol.GetSubstructMatches(glycerol_pattern):
-        return False, "No glycerol backbone found"
+    # Check for single ester group (acyl chain)
+    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])[#6]")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    if len(ester_matches) != 1:
+        return False, f"Found {len(ester_matches)} ester groups, need exactly 1"
 
-    # Check for acyl group (ester linkage)
-    acyl_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2]")
-    acyl_matches = mol.GetSubstructMatches(acyl_pattern)
-    if not acyl_matches:
-        return False, "No acyl group found"
+    # Check for free hydroxyl group
+    hydroxyl_pattern = Chem.MolFromSmarts("[CHX4][OHX2]")
+    if not mol.HasSubstructMatch(hydroxyl_pattern):
+        return False, "No free hydroxyl group found"
 
-    # Check for fatty acid chain (at least 4 carbons)
-    fatty_chain = Chem.MolFromSmarts("C(~C)(~C)~C")
-    if not mol.HasSubstructMatch(fatty_chain):
+    # Check for fatty acid chain (at least 4 carbons in chain)
+    fatty_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    if not mol.HasSubstructMatch(fatty_chain_pattern):
         return False, "No fatty acid chain found"
-
-    # Verify core structure connectivity
-    # Phosphate connected to glycerol
-    core_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4][OX2][PX4]")
-    if not mol.HasSubstructMatch(core_pattern):
-        return False, "Incorrect connectivity between glycerol and phosphate"
 
     # Count key atoms to verify overall composition
     p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
     n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     
     if p_count != 1:
         return False, "Must have exactly one phosphorus atom"
     if n_count != 1:
         return False, "Must have exactly one nitrogen atom"
-    if o_count < 8:
-        return False, "Insufficient number of oxygen atoms"
 
-    # Check for sn-2 hydroxyl group (free OH)
-    sn2_pattern = Chem.MolFromSmarts("[CH2X4][CH]([OH,O])[CH2X4]")
-    if not mol.HasSubstructMatch(sn2_pattern):
-        return False, "Missing hydroxyl group at sn-2 position"
+    # Verify stereochemistry if specified
+    if '@' in smiles:
+        # The glycerol carbon should be R configuration (@@ in SMILES) if specified
+        # and the serine carbon should be S configuration (@ in SMILES) if specified
+        if not ('@@' in smiles and '@' in smiles and '@@' in smiles.split('@')[1]):
+            return False, "Incorrect stereochemistry for 1-acyl-sn-glycero-3-phosphoserine"
 
-    # Verify the presence of all key components
-    if all([
-        mol.HasSubstructMatch(phosphoserine_pattern),
-        mol.HasSubstructMatch(glycerol_pattern),
-        mol.HasSubstructMatch(acyl_pattern),
-        mol.HasSubstructMatch(core_pattern)
-    ]):
-        return True, "Contains glycerol backbone with acyl chain and phosphoserine group in correct positions"
-
-    return False, "Missing one or more required structural features"
+    return True, "Contains glycerol backbone with single acyl chain and phosphoserine group in correct configuration"
