@@ -25,61 +25,73 @@ def is_carbonate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define carbonate ester patterns
-    # Pattern 1: R-O-C(=O)-O-R (symmetric or asymmetric)
+    # Define patterns
+    # Linear carbonate ester pattern
     carbonate_pattern = Chem.MolFromSmarts("[O;X2][C;X3](=[O;X1])[O;X2]")
     
-    # Pattern 2: R-O-C(=O)-OH (monocarbonate ester)
+    # Cyclic carbonate pattern
+    cyclic_carbonate_pattern = Chem.MolFromSmarts("O=C1OCC1") 
+    
+    # Monocarbonate ester pattern (R-O-C(=O)-OH)
     monocarbonate_pattern = Chem.MolFromSmarts("[O;X2][C;X3](=[O;X1])[O;H1]")
+    
+    # Exclusion patterns
+    anhydride_pattern = Chem.MolFromSmarts("[C;X3](=[O;X1])[O;X2][C;X3](=[O;X1])")
+    carbamate_pattern = Chem.MolFromSmarts("[NX3][C;X3](=[O;X1])[O;X2]")
     
     # Find matches
     carbonate_matches = mol.GetSubstructMatches(carbonate_pattern)
+    cyclic_matches = mol.GetSubstructMatches(cyclic_carbonate_pattern)
     monocarbonate_matches = mol.GetSubstructMatches(monocarbonate_pattern)
     
-    if not (carbonate_matches or monocarbonate_matches):
+    # Check exclusions
+    anhydride_matches = mol.GetSubstructMatches(anhydride_pattern)
+    carbamate_matches = mol.GetSubstructMatches(carbamate_pattern)
+    
+    if not (carbonate_matches or cyclic_matches or monocarbonate_matches):
         return False, "No carbonate ester group found"
     
-    # For each carbonate match, verify it's not part of other functional groups
-    for match in carbonate_matches:
-        c_atom = match[1]  # The central carbon atom
+    def is_valid_carbonate(match, mol):
+        c_atom = match[1]  # Central carbon
+        c_atom_obj = mol.GetAtomWithIdx(c_atom)
         
-        # Get neighboring atoms
-        neighbors = [atom.GetAtomicNum() for atom in mol.GetAtomWithIdx(c_atom).GetNeighbors()]
-        
-        # Must have exactly 3 oxygen atoms connected
-        if neighbors.count(8) != 3:  # 8 is atomic number for oxygen
-            continue
+        # Must have exactly 3 oxygens connected
+        o_neighbors = sum(1 for atom in c_atom_obj.GetNeighbors() if atom.GetAtomicNum() == 8)
+        if o_neighbors != 3:
+            return False
             
-        # Check if at least one oxygen is connected to carbon (organic group)
-        organic = False
-        for o_idx in [match[0], match[2]]:  # Check both O atoms
+        # At least one oxygen must be connected to carbon (organic group)
+        for o_idx in [match[0], match[2]]:
             o_atom = mol.GetAtomWithIdx(o_idx)
             for neighbor in o_atom.GetNeighbors():
-                if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() != c_atom:
-                    organic = True
-                    break
-            if organic:
-                break
-                
-        if organic:
-            return True, "Contains carbonate ester group (R-O-C(=O)-O-R or R-O-C(=O)-O-R')"
+                if (neighbor.GetAtomicNum() == 6 and 
+                    neighbor.GetIdx() != c_atom and 
+                    not any(neighbor.GetIdx() in m for m in anhydride_matches)):
+                    return True
+        return False
+    
+    # Check linear carbonate matches
+    for match in carbonate_matches:
+        # Skip if part of anhydride or carbamate
+        if any(match[1] in m for m in anhydride_matches):
+            continue
+        if any(match[1] in m for m in carbamate_matches):
+            continue
+            
+        if is_valid_carbonate(match, mol):
+            return True, "Contains linear carbonate ester group (R-O-C(=O)-O-R)"
+            
+    # Check cyclic carbonate matches
+    for match in cyclic_matches:
+        c_atom = match[0]  # Central carbon
+        if not any(c_atom in m for m in anhydride_matches):
+            return True, "Contains cyclic carbonate ester group"
             
     # Check monocarbonate matches
     for match in monocarbonate_matches:
-        c_atom = match[1]  # The central carbon atom
-        
-        # Get neighboring atoms
-        neighbors = [atom.GetAtomicNum() for atom in mol.GetAtomWithIdx(c_atom).GetNeighbors()]
-        
-        # Must have exactly 3 oxygen atoms connected
-        if neighbors.count(8) != 3:
+        if any(match[1] in m for m in anhydride_matches):
             continue
-            
-        # Check if at least one oxygen is connected to carbon (organic group)
-        for o_idx in [match[0]]:  # Check the non-OH oxygen
-            o_atom = mol.GetAtomWithIdx(o_idx)
-            for neighbor in o_atom.GetNeighbors():
-                if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() != c_atom:
-                    return True, "Contains monocarbonate ester group (R-O-C(=O)-OH)"
-                    
+        if is_valid_carbonate(match, mol):
+            return True, "Contains monocarbonate ester group (R-O-C(=O)-OH)"
+    
     return False, "No valid carbonate ester group found"
