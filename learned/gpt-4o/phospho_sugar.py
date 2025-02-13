@@ -2,7 +2,7 @@
 Classifies: CHEBI:33447 phospho sugar
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import AllChem
 
 def is_phospho_sugar(smiles: str):
     """
@@ -22,14 +22,14 @@ def is_phospho_sugar(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for sugar ring (5 or 6-membered ring with multiple hydroxyl groups)
-    sugar_pattern = Chem.MolFromSmarts("C1C(O)C(O)C(O)C(O)C1 | C1C(O)C(O)C(O)C1")
-    if not mol.HasSubstructMatch(sugar_pattern):
+    # Generic sugar pattern (5 or 6-membered ring with oxygens)
+    sugar_pattern = Chem.MolFromSmarts("OC[C@H]1O[C@H](CO)[C@@H](O)[C@@H]1O | OC[C@H]1O[C@H](O)[C@H](O)[C@@H]1O | OC1C(O)C(O)C(O)CO1 | OC1C(O)C(O)C(O)C1")
+    if not sugar_pattern or not mol.HasSubstructMatch(sugar_pattern):
         return False, "No sugar ring structure found"
     
-    # Look for phosphate ester linkage: -C-O-P(=O)(O)O
-    phosphate_pattern = Chem.MolFromSmarts("[CX4,CX3]-[OX2]-P(=O)([OX1])[OX2]")
-    if not mol.HasSubstructMatch(phosphate_pattern):
+    # Phosphate ester linkage: -O-P(=O)(O)O
+    phosphate_pattern = Chem.MolFromSmarts("OP(=O)(O)O")
+    if not phosphate_pattern or not mol.HasSubstructMatch(phosphate_pattern):
         return False, "No phosphate ester linkage found"
 
     return True, "Contains sugar ring structure with a phosphate ester linkage"
