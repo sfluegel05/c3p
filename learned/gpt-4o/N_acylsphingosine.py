@@ -4,7 +4,6 @@ Classifies: CHEBI:52639 N-acylsphingosine
 """
 Classifies: N-acylsphingosine
 """
-
 from rdkit import Chem
 
 def is_N_acylsphingosine(smiles: str):
@@ -25,14 +24,18 @@ def is_N_acylsphingosine(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for sphingosine backbone pattern:
-    # This is approximate, focusing on the chain with double bonds and hydroxyl and amine groups
-    # The pattern includes a hydrocarbon chain, OH groups and NH
-    sphingosine_pattern = Chem.MolFromSmarts("CO[C@@H](NC=O)CC\\C=C\\[C@H](O)CCCCC")
+    # Simplified pattern considering mostly the backbone
+    sphingosine_pattern = Chem.MolFromSmarts("O[C@@H](CO)C[C@@H](C=C)CCCC(=N)")
     if not mol.HasSubstructMatch(sphingosine_pattern):
         return False, "No sphingosine backbone found"
-
+    
+    # Check for presence of double bond in the backbone
+    double_bond_pattern = Chem.MolFromSmarts("C=C")
+    if not mol.HasSubstructMatch(double_bond_pattern):
+        return False, "Missing double bond in sphingosine-like structure"
+    
     # Look for amide bond pattern where nitrogen is connected to carbonyl carbon of a fatty acyl chain
-    amide_pattern = Chem.MolFromSmarts("NC=O")
+    amide_pattern = Chem.MolFromSmarts("NC(=O)")
     if not mol.HasSubstructMatch(amide_pattern):
         return False, "No amide bond found connecting nitrogen to fatty acyl group"
 
