@@ -20,22 +20,28 @@ def is_polychlorobiphenyl(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Identify biphenyl structure: two phenyl rings connected via a single bond
+    # Improved biphenyl pattern with two connected benzene rings
     biphenyl_pattern = Chem.MolFromSmarts("c1ccccc1-c2ccccc2")
-    if not mol.HasSubstructMatch(biphenyl_pattern):
+    matches = mol.GetSubstructMatches(biphenyl_pattern)
+
+    if not matches:
         return False, "No biphenyl structure found"
 
-    # Count chlorine atoms attached to any carbon in heavy atom rings (phenyl rings)
+    # Check each biphenyl match and count chlorines specifically on these phenyl rings
     chlorine_count = 0
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 17:  # Chlorine atom
-            # Check if the chlorine is connected to a carbon in a phenyl ring
-            neighbors = atom.GetNeighbors()
-            if any(neighbor.GetSymbol() == 'C' and neighbor.IsInRing() for neighbor in neighbors):
-                chlorine_count += 1
+    chlorine_atoms = {atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 17}
+
+    for match in matches:
+        for idx in match:
+            atom = mol.GetAtomWithIdx(idx)
+            if atom.GetSymbol() == 'C' and atom.IsInRing():
+                # Check neighbors for attached chlorines
+                for neighbor in atom.GetNeighbors():
+                    if neighbor.GetIdx() in chlorine_atoms:
+                        chlorine_count += 1
 
     # Check if the chlorine count is between 2 and 10
     if chlorine_count < 2 or chlorine_count > 10:
-        return False, f"Contains {chlorine_count} chlorine atoms, needs between 2 and 10"
+        return False, f"Contains {chlorine_count} chlorine atoms on the biphenyl structure, needs between 2 and 10"
 
     return True, "Contains biphenyl structure with acceptable number of chlorine atoms (between 2 and 10)"
