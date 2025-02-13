@@ -1,26 +1,56 @@
 """
 Classifies: CHEBI:87658 decanoate ester
 """
-The previous program seems to have some issues that led to the low F1 score:
+"""
+Classifies: CHEBI:33673 decanoate ester
 
-1. **False Positives**: The program is incorrectly classifying some molecules as decanoate esters when they are not. This is likely because the program is only checking for the presence of a decanoate (decanoyl) group and an ester group, without considering other structural features that might disqualify a molecule from being a decanoate ester.
+A fatty acid ester resulting from the formal condensation of the carboxy group 
+of decanoic acid (capric acid) with the hydroxy group of an alcohol or phenol.
+"""
 
-2. **Lack of Specificity**: The definition of a decanoate ester is "A fatty acid ester resulting from the formal condensation of the carboxy group of decanoic acid (capric acid) with the hydroxy group of an alcohol or phenol." The current program does not explicitly check for the presence of an alcohol or phenol group, nor does it ensure that the decanoate group is specifically attached to the alcohol/phenol oxygen.
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-3. **Potential Missed Cases**: The program might be missing some valid decanoate esters because it only looks for the specific SMARTS pattern "CCCCCCCCCC(=O)[O;X2]" for the decanoate group. Some molecules might have a slightly different pattern or representation in their SMILES string.
+def is_decanoate_ester(smiles: str):
+    """
+    Determines if a molecule is a decanoate ester based on its SMILES string.
 
-To improve the program, we can consider the following modifications:
+    Args:
+        smiles (str): SMILES string of the molecule
 
-1. **Check for Alcohol/Phenol Group**: Add a step to explicitly check for the presence of an alcohol or phenol group in the molecule, and ensure that the decanoate group is attached to the oxygen of this group.
+    Returns:
+        bool: True if molecule is a decanoate ester, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-2. **Consider Additional Structural Features**: Incorporate additional structural features or constraints to better distinguish decanoate esters from other molecules. For example, you could check for the molecular weight, the number of oxygens, or the presence of specific functional groups.
+    # Look for decanoate group (decanoyl, CCCCCCCCCC(=O)-) attached to an oxygen
+    decanoate_pattern = Chem.MolFromSmarts("CCCCCCCCCC(=O)[O;X2]")
+    decanoate_matches = mol.GetSubstructMatches(decanoate_pattern)
+    if not decanoate_matches:
+        return False, "No decanoate group found"
 
-3. **Use More Flexible SMARTS Patterns**: Instead of relying on a single fixed SMARTS pattern for the decanoate group, consider using a more flexible pattern that can match different representations or variations.
+    # Check if the oxygen is part of an alcohol or phenol group
+    alcohol_pattern = Chem.MolFromSmarts("[O;X2][C;X4]")
+    phenol_pattern = Chem.MolFromSmarts("[O;X2][c]")
+    alcohol_matches = mol.GetSubstructMatches(alcohol_pattern)
+    phenol_matches = mol.GetSubstructMatches(phenol_pattern)
+    
+    if not alcohol_matches and not phenol_matches:
+        return False, "Decanoate group not attached to an alcohol or phenol"
 
-4. **Use Machine Learning**: If the structural rules become too complex, you could consider training a machine learning model on a dataset of known decanoate esters and non-esters, and use that model for classification instead of relying on handcrafted rules.
+    # Additional checks
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 200 or mol_wt > 800:
+        return False, "Molecular weight outside typical range for decanoate esters"
 
-5. **Handle Tautomers and Stereochemistry**: Ensure that the program can handle different tautomeric forms and stereochemical representations of the same molecule.
+    oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if oxygen_count < 2 or oxygen_count > 8:
+        return False, "Number of oxygens outside typical range for decanoate esters"
 
-6. **Improve SMILES Parsing**: Double-check the SMILES parsing step to ensure that no valid SMILES strings are being incorrectly rejected or misinterpreted.
-
-By addressing these potential issues, you should be able to improve the accuracy and robustness of the decanoate ester classification program.
+    return True, "Contains a decanoate group attached to an alcohol or phenol group"
