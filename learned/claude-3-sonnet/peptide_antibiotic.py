@@ -1,28 +1,68 @@
 """
 Classifies: CHEBI:25903 peptide antibiotic
 """
-The previous program aimed to classify molecules as peptide antibiotics based on the presence of peptide bonds, amino acid residues, molecular weight within a typical range, and the presence of ring systems (to distinguish between ribosomal and non-ribosomal peptides). However, the performance was not satisfactory, as evident from the low F1 score and the false positives and false negatives.
+from rdkit import Chem
+from rdkit.Chem import AllChem, Descriptors, Lipinski
 
-Here are some potential reasons for the poor performance and suggestions for improvement:
+def is_peptide_antibiotic(smiles: str):
+    """
+    Determines if a molecule is a peptide antibiotic based on its SMILES string.
 
-1. **Limitations of the SMARTS patterns for amino acid residues**: The program relies on a set of predefined SMARTS patterns to identify amino acid residues. However, this approach may miss some less common or modified amino acid residues, leading to false negatives. Additionally, the SMARTS patterns may be too general, causing false positives for molecules that contain substructures matching the patterns but are not actual amino acid residues.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-   **Potential improvement**: Instead of relying on predefined SMARTS patterns, consider using more sophisticated methods for amino acid residue identification, such as machine learning models trained on labeled data or rule-based expert systems that incorporate domain knowledge.
-
-2. **Limitations of the molecular weight range**: The program uses a fixed molecular weight range (500-5000 Da) to filter out non-peptide molecules. However, this range may be too restrictive or too broad, leading to false negatives or false positives, respectively.
-
-   **Potential improvement**: Refine the molecular weight range based on a more comprehensive analysis of known peptide antibiotics. Additionally, consider incorporating other molecular descriptors, such as the number of rotatable bonds or polar surface area, to improve the filtering process.
-
-3. **Oversimplification of the distinction between ribosomal and non-ribosomal peptides**: The program relies solely on the presence of ring systems to distinguish between ribosomal and non-ribosomal peptides. While this is a reasonable heuristic, it may not always hold true, as some ribosomal peptides can contain ring systems, and some non-ribosomal peptides may lack ring systems.
-
-   **Potential improvement**: Instead of relying solely on the presence of ring systems, consider incorporating additional structural features or employ machine learning models trained on labeled data to better distinguish between ribosomal and non-ribosomal peptides.
-
-4. **Lack of consideration for structural modifications**: Peptide antibiotics often undergo various structural modifications, such as cyclization, N-methylation, or the addition of non-proteinogenic amino acids. The current program does not account for these modifications, potentially leading to false negatives.
-
-   **Potential improvement**: Incorporate rules or patterns to detect common structural modifications found in peptide antibiotics. This could involve identifying specific substructures or implementing more sophisticated algorithms for structural pattern recognition.
-
-5. **Lack of consideration for biological activity**: The program classifies molecules based solely on their structural features, without considering their potential antimicrobial activity. While structural features are important, considering biological activity data (e.g., minimum inhibitory concentrations against various bacterial strains) could improve the classification accuracy.
-
-   **Potential improvement**: If available, incorporate biological activity data (e.g., from databases or experimental assays) into the classification process. This could involve training machine learning models or implementing rule-based systems that combine structural features and biological activity data.
-
-Overall, while the current program provides a reasonable starting point, its performance could be improved by addressing the limitations mentioned above. Incorporating more sophisticated pattern recognition techniques, refining the molecular descriptors used, and considering biological activity data could lead to a more robust and accurate classification of peptide antibiotics.
+    Returns:
+        bool: True if molecule is a peptide antibiotic, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Check if molecule is organic
+    if not mol.GetAtomWithIdx(0).GetSymbol() == "C":
+        return False, "Not an organic molecule"
+        
+    # Calculate molecular properties
+    mw = Descriptors.MolWt(mol)
+    n_rotatable = Descriptors.NumRotatableBonds(mol)
+    h_bond_donor = Lipinski.NumHDonors(mol)
+    h_bond_acceptor = Lipinski.NumHAcceptors(mol)
+    
+    # Check if molecule meets basic peptide criteria
+    if mw < 500 or mw > 5000:
+        return False, f"Molecular weight ({mw:.2f} Da) out of typical peptide range"
+    if n_rotatable < 5:
+        return False, "Too few rotatable bonds for a peptide"
+    if h_bond_donor < 2 or h_bond_acceptor < 4:
+        return False, "Insufficient hydrogen bond donors/acceptors for a peptide"
+        
+    # Look for peptide bonds
+    peptide_pattern = Chem.MolFromSmarts("C(=O)NCC")
+    if not mol.HasSubstructMatch(peptide_pattern):
+        return False, "No peptide bonds found"
+    
+    # Look for amino acid residues
+    amino_acid_patterns = [Chem.MolFromSmarts(s) for s in [
+        "[NH2]CCC(=O)O", # Basic
+        "N[C@H](C)C(=O)O", # Ala
+        "NC(C(=O)O)CC", # Asp/Asn
+        # Add patterns for other amino acids here
+    ]]
+    
+    amino_acid_matches = []
+    for pattern in amino_acid_patterns:
+        amino_acid_matches.extend(mol.GetSubstructMatches(pattern))
+    
+    if not amino_acid_matches:
+        return False, "No amino acid residues found"
+    
+    # Look for non-ribosomal signature (ring systems)
+    ring_info = mol.GetRingInfo()
+    if not ring_info.AtomRings():
+        return False, "No ring systems found (likely ribosomal peptide)"
+    
+    # Passed all checks, classify as peptide antibiotic
+    return True, "Molecule meets criteria for peptide antibiotic"
