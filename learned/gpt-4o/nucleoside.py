@@ -23,17 +23,19 @@ def is_nucleoside(smiles: str):
     
     # Define SMARTS patterns for nucleobases
     nucleobases_patterns = [
-        Chem.MolFromSmarts("c1[nH]cnc2c1ncnc2"),  # adenine
-        Chem.MolFromSmarts("c1nc2[nH]cnc2n1"),    # guanine
-        Chem.MolFromSmarts("c1cnc[nH]c1=O"),      # cytosine
-        Chem.MolFromSmarts("c1cc[nH]c(=O)n1"),    # uracil
-        Chem.MolFromSmarts("c1cc[nH]c(=O)n1C"),   # thymine
+        Chem.MolFromSmarts("c1[nH]cnc2c1ncnc2"),  # adenine-like
+        Chem.MolFromSmarts("c1nc2[nH]cnc2n1"),    # guanine-like
+        Chem.MolFromSmarts("c1cnc[nH]c1=O"),      # cytosine-like
+        Chem.MolFromSmarts("c1cc[nH]c(=O)n1"),    # uracil-like
+        Chem.MolFromSmarts("c1cc[nH]c(=O)n1C"),   # thymine-like
+        Chem.MolFromSmarts("n1cnc2n(cnc2c1=O)")   # xanthine-like and variations
     ]
     
-    # Ribose and deoxyribose patterns with some flexibility
+    # Ribose and deoxyribose patterns (including flexible stereochemistry)
     sugar_patterns = [
-        Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@@H](CO)O[C@H]1"),
-        Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@H](CO)O[C@H]1"),
+        Chem.MolFromSmarts("O[C@@H]1[C@H](O)[C@@H](CO)O[C@H]1"),  # ribose
+        Chem.MolFromSmarts("O[C@@H]1C[C@H](O)[C@@H](CO)O1"),      # deoxyribose
+        Chem.MolFromSmarts("OC1C(O)C(O)C(O)C1O"),                 # generic ribose variant
     ]
     
     # Check for presence of a nucleobase
