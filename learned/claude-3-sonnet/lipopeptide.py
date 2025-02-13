@@ -1,67 +1,47 @@
 """
 Classifies: CHEBI:46895 lipopeptide
 """
+"""
+Classifies: CHEBI:51842 lipopeptide
+"""
 from rdkit import Chem
-from rdkit.Chem import AllChem, rdMolDescriptors
-import numpy as np
-from sklearn.ensemble import RandomForestClassifier
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-def calculate_descriptors(mol):
+def is_lipopeptide(smiles: str):
     """
-    Calculate relevant molecular descriptors for a given molecule.
-
-    Args:
-        mol (Mol): RDKit molecule object
-
-    Returns:
-        list: List of descriptor values
-    """
-    descriptors = []
-    
-    # Calculate molecular weight
-    descriptors.append(rdMolDescriptors.CalcExactMolWt(mol))
-    
-    # Calculate number of atoms and bonds
-    descriptors.append(mol.GetNumAtoms())
-    descriptors.append(mol.GetNumBonds())
-    
-    # Calculate number of rotatable bonds
-    descriptors.append(rdMolDescriptors.CalcNumRotatableBonds(mol))
-    
-    # Calculate topological polar surface area
-    descriptors.append(rdMolDescriptors.CalcTPSA(mol))
-    
-    # Calculate Wiener index
-    descriptors.append(rdMolDescriptors.CalcWienerIndex(mol))
-    
-    return descriptors
-
-def is_lipopeptide(smiles):
-    """
-    Determine if a molecule is a lipopeptide based on its SMILES string.
+    Determines if a molecule is a lipopeptide based on its SMILES string.
+    A lipopeptide is a compound consisting of a peptide with attached lipid.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        tuple: (bool, str) - Classification result and reason
+        bool: True if molecule is a lipopeptide, False otherwise
+        str: Reason for classification
     """
+    
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Calculate molecular descriptors
-    descriptors = calculate_descriptors(mol)
     
-    # Predict using pre-trained random forest model
-    prediction = model.predict([descriptors])
+    # Look for peptide backbone (-C(=O)-N-)
+    peptide_pattern = Chem.MolFromSmarts("[C&D2](-[N&D2])=O")
+    peptide_matches = mol.GetSubstructMatches(peptide_pattern)
+    if not peptide_matches:
+        return False, "No peptide backbone found"
     
-    if prediction[0]:
-        return True, "Molecule classified as lipopeptide by the model"
-    else:
-        return False, "Molecule not classified as lipopeptide by the model"
-
-# Load or train the random forest model
-X_train, y_train = load_training_data()  # Replace with code to load training data
-model = RandomForestClassifier()
-model.fit(X_train, y_train)
+    # Look for lipid chains (long carbon chains)
+    lipid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    lipid_matches = mol.GetSubstructMatches(lipid_pattern)
+    if not lipid_matches:
+        return False, "No lipid chains found"
+    
+    # Check for attachment of lipid to peptide
+    for lipid_match in lipid_matches:
+        for peptide_match in peptide_matches:
+            if any(atom.GetIdx() in lipid_match for atom in mol.GetAtomWithIdx(peptide_match[0]).GetNeighbors()):
+                return True, "Contains a peptide with attached lipid chain"
+    
+    return False, "No evidence of lipid attached to peptide"
