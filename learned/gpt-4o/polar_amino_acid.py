@@ -25,27 +25,26 @@ def is_polar_amino_acid(smiles: str):
     aa_backbone = Chem.MolFromSmarts("N[C@@H](C)C(=O)O")  # Using chirality to ensure alpha-carbon is included
     if not mol.HasSubstructMatch(aa_backbone):
         return False, "No amino acid backbone found"
-    
-    # Potential polar side chain patterns including exclusions of backbone components
-    polar_side_chain_patterns = [
-        "[CX4][CX3](O)[OH2]",  # Alcohol/hydroxyl, e.g., serine
-        "[NX3][CX3]=[OX1]",    # Amide, e.g., asparagine
-        "[S][CX4]",            # Thiol, e.g., cysteine
-        "[nH]",                # Imidazole, e.g., histidine
-        "[OX1][CX3]=O",        # Carboxylate, e.g., aspartic acid, in context of side chain
-        "[CX4][CX4][NX3]",     # Amine group in side chain, e.g., lysine
-    ]
 
-    # Check out side chain functionality
-    mol_fragments = Chem.GetMolFrags(mol, asMols=True, sanitizeFrags=False)
+    # Define specific side chains for polar amino acids
+    polar_side_chains = {
+        "Ser": "[CX3](O)C",    # Serine
+        "Thr": "[CX4](O)C",    # Threonine
+        "Asn": "[CX3](N)C(=O)", # Asparagine
+        "Gln": "[CX3](N)CCC(=O)", # Glutamine
+        "Cys": "[CX3](S)C",    # Cysteine
+        "Tyr": "c(O)cc",       # Tyrosine (phenolic OH on aromatic ring)
+        "Asp": "CC(=O)O",      # Aspartic Acid (contains COOH side group)
+        "Glu": "CCC(=O)O",     # Glutamic Acid (contains COOH side group)
+        "His": "Cc1c[nH]cn1",  # Histidine (contains imidazole ring)
+        "Lys": "CCCC[N+]",     # Lysine (contains amine)
+        "Arg": "CNC(=N)N"      # Arginine (includes complex amine)
+    }
 
-    for frag in mol_fragments:
-        if frag.HasSubstructMatch(aa_backbone):
-            continue
-
-        for pattern in polar_side_chain_patterns:
-            polar_group = Chem.MolFromSmarts(pattern)
-            if frag.HasSubstructMatch(polar_group):
-                return True, f"Polar group '{pattern}' found in side chain"
+    # Check if the side chain matches any known polar side chain pattern
+    for name, pattern in polar_side_chains.items():
+        side_chain = Chem.MolFromSmarts(pattern)
+        if mol.HasSubstructMatch(side_chain):
+            return True, f"Polar side chain '{name}' identified"
 
     return False, "No polar groups found in side chain"
