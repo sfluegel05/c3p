@@ -8,7 +8,6 @@ They were once called thioethers.
 """
 
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_organic_sulfide(smiles: str):
     """
@@ -22,25 +21,25 @@ def is_organic_sulfide(smiles: str):
         str: Reason for classification
     """
 
-    # Parse SMILES and get isomeric SMILES
-    mol = Chem.MolFromSmiles(smiles, isomericSmiles=True)
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for sulfur atoms with exactly two non-hydrogen substituents
+    # Check if the molecule contains any sulfur atoms
     sulfur_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 16]
     if not sulfur_atoms:
         return False, "No sulfur atoms found"
 
+    # Check if at least one sulfur atom has exactly two non-hydrogen substituents
+    has_organic_sulfide = False
     for s_atom in sulfur_atoms:
-        r_groups = [nb.GetSymbol() != "H" for nb in s_atom.GetNeighbors()]
-        if sum(r_groups) != 2:
-            return False, f"Sulfur atom has {sum(r_groups)} non-hydrogen substituents, should be 2"
+        non_h_neighbors = [nb for nb in s_atom.GetNeighbors() if nb.GetSymbol() != "H"]
+        if len(non_h_neighbors) == 2:
+            has_organic_sulfide = True
+            break
 
-    # Look for C-S-C pattern
-    csc_pattern = Chem.MolFromSmarts("[C&!R]-[S&!R]-[C&!R]")
-    if mol.HasSubstructMatch(csc_pattern):
-        return True, "Contains C-S-C pattern characteristic of organic sulfides"
-
-    # If all checks pass, it is an organic sulfide
-    return True, "Contains sulfur atoms with two non-hydrogen substituents (RSR)"
+    if has_organic_sulfide:
+        return True, "Contains at least one sulfur atom with two non-hydrogen substituents (RSR)"
+    else:
+        return False, "No sulfur atoms with exactly two non-hydrogen substituents found"
