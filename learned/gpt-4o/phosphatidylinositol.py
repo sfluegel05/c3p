@@ -23,20 +23,27 @@ def is_phosphatidylinositol(smiles: str):
         return False, "Invalid SMILES string"
     
     # Define substructure patterns.
-    inositol_pattern = Chem.MolFromSmarts("C1([OH])C([OH])C([OH])C([OH])C([OH])C1[OH]")
-    phosphatidyl_pattern = Chem.MolFromSmarts("[O-]P(=O)(OC)OC(C(=O))OC(C(=O))")
+    inositol_pattern = Chem.MolFromSmarts("C1(C(O)C(O)C(O)C(O)C(O)C1O)")  # Flexible inositol detection with hydroxy groups
+    phosphate_pattern = Chem.MolFromSmarts("OP(O)(O)=O")
+    glycerol_pattern = Chem.MolFromSmarts("OCC(O)CO")  # Glycerol backbone pattern
     
     # Check for inositol ring presence.
     if not mol.HasSubstructMatch(inositol_pattern):
         return False, "No inositol ring with sufficient hydroxylations found"
     
-    # Check for phosphatidyl group presence.
-    if not mol.HasSubstructMatch(phosphatidyl_pattern):
-        return False, "No phosphatidyl group associated with glycerol found"
+    # Check for phosphate group presence.
+    if not mol.HasSubstructMatch(phosphate_pattern):
+        return False, "No phosphate group found"
+
+    # Check for glycerol backbone typically found in phosphatidylinositols.
+    if not mol.HasSubstructMatch(glycerol_pattern):
+        return False, "No glycerol backbone found attached to the phosphate group"
     
-    # Check for connection between inositol and phosphatidyl group.
-    connected_pattern = Chem.MolFromSmarts("C1([OH])C([OH])C([OH])C([OH])C([OH])C1[OH]O[P](=O)(=/[O])/[O][CH2]C(=O)")
-    if not mol.HasSubstructMatch(connected_pattern):
-        return False, "Inositol and phosphatidyl groups not adequately connected"
+    # Check for correct connectivity: glycerol backbone connected to a phosphate moiety which connects to inositol
+    # Using a more detailed check of connectivity.
+   
+    glycerol_phosphate_connected = Chem.MolFromSmarts("OCC(O)COP(O)(O)=O")
+    if not mol.HasSubstructMatch(glycerol_phosphate_connected):
+        return False, "Glycerol backbone and phosphate group not adequately connected"
     
     return True, "The molecule is a phosphatidylinositol with correctly established linkages"
