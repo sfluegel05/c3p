@@ -22,32 +22,25 @@ def is_polypyrrole(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS pattern for a connected pyrrole unit
-    pyrrole_pattern = Chem.MolFromSmarts("[nH]1ccc[nH]1")
+    # Define SMARTS pattern for a pyrrole unit
+    pyrrole_pattern = Chem.MolFromSmarts("n1cccc1")
     
     # Find all matches of the pyrrole pattern in the molecule
     pyrrole_matches = mol.GetSubstructMatches(pyrrole_pattern)
     
-    # Keep track of the total number of pyrrole units
-    total_pyrrole_units = 0
+    # Extract unique ring systems containing pyrrole units
+    ring_info = mol.GetRingInfo()
+    pyrrole_ring_systems = []
+    for ring in ring_info.AtomRings():
+        ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
+        if any(mol.GetAtomWithIdx(idx).GetIsAromaticHeteroatom() for idx in ring):
+            pyrrole_ring_systems.append(set(ring))
     
-    # Iterate over matches to identify connected pyrrole fragments
-    for match in pyrrole_matches:
-        pyrrole_fragment = []
-        for atom_idx in match:
-            pyrrole_fragment.append(atom_idx)
-            # Check for connected pyrrole units
-            connected_pyrroles = mol.GetAtomWithIdx(atom_idx).GetNeighbors()
-            for neighbor in connected_pyrroles:
-                if neighbor.GetIdx() not in pyrrole_fragment and mol.GetAtomWithIdx(neighbor.GetIdx()).GetIsAromaticHeteroatom():
-                    pyrrole_fragment.append(neighbor.GetIdx())
-        
-        # Count the number of pyrrole units in the fragment
-        pyrrole_units_in_fragment = len(pyrrole_fragment) // 5
-        total_pyrrole_units += pyrrole_units_in_fragment
+    # Count the number of unique ring systems containing two or more pyrrole units
+    polypyrrole_ring_systems = [ring_system for ring_system in pyrrole_ring_systems if sum(1 for atom_idx in ring_system if mol.GetAtomWithIdx(atom_idx).GetIsAromaticHeteroatom()) >= 2]
     
-    # Classify as a polypyrrole if at least two pyrrole units are found
-    if total_pyrrole_units >= 2:
-        return True, f"Contains {total_pyrrole_units} connected pyrrole units"
+    # Classify as a polypyrrole if at least one qualifying ring system is found
+    if polypyrrole_ring_systems:
+        return True, f"Contains {len(polypyrrole_ring_systems)} ring system(s) with two or more pyrrole units"
     else:
-        return False, "Less than two connected pyrrole units found"
+        return False, "No ring systems with two or more pyrrole units found"
