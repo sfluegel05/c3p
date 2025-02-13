@@ -2,10 +2,11 @@
 Classifies: CHEBI:51689 enone
 """
 """
-Classifies: CHEBI:24768 enone
-Definition: An alpha,beta-unsaturated ketone of general formula R(1)R(2)C=CR(3)-C(=O)R(4) (R(4) ≠ H) 
+Classifies: CHEBI:37858 enone
+An alpha,beta-unsaturated ketone of general formula R(1)R(2)C=CR(3)-C(=O)R(4) (R(4) =/= H) 
 in which the C=O function is conjugated to a C=C double bond at the alpha,beta position.
 """
+
 from rdkit import Chem
 from rdkit.Chem import AllChem
 
@@ -28,24 +29,21 @@ def is_enone(smiles: str):
     
     # Look for alpha,beta-unsaturated ketone substructure
     enone_pattern = Chem.MolFromSmarts("[CD3]=[CD2][C@]=O")
-    enone_matches = mol.GetSubstructMatches(enone_pattern)
+    matches = mol.GetSubstructMatches(enone_pattern)
     
-    if not enone_matches:
+    if not matches:
         return False, "No alpha,beta-unsaturated ketone substructure found"
     
-    # Check for conjugation and non-hydrogen substituent at carbonyl carbon
-    for match in enone_matches:
-        c_alpha, c_beta, c_carbonyl = match
+    # Check for conjugation
+    for match in matches:
+        c1_idx, c2_idx, c3_idx = match
+        c1 = mol.GetAtomWithIdx(c1_idx)
+        c2 = mol.GetAtomWithIdx(c2_idx)
+        c3 = mol.GetAtomWithIdx(c3_idx)
         
-        # Check for non-hydrogen substituent at carbonyl carbon
-        carbonyl_atom = mol.GetAtomWithIdx(c_carbonyl)
-        if all(nbr.GetAtomicNum() == 1 for nbr in carbonyl_atom.GetNeighbors()):
-            continue
-        
-        # Check if alpha,beta-unsaturated ketone is part of an aromatic system
-        aromatic_rings = mol.GetAromaticRings()
-        for ring in aromatic_rings:
-            if c_alpha in ring and c_beta in ring and c_carbonyl in ring:
-                return True, "Molecule contains an alpha,beta-unsaturated ketone with conjugation"
+        if c1.GetHybridization() == Chem.HybridizationType.SP2 and \
+           c2.GetHybridization() == Chem.HybridizationType.SP2 and \
+           c3.GetHybridization() == Chem.HybridizationType.SP2:
+            return True, "Contains an alpha,beta-unsaturated ketone with conjugated C=C and C=O bonds"
     
-    return False, "Alpha,beta-unsaturated ketone not conjugated or no non-hydrogen substituent at carbonyl carbon"
+    return False, "No conjugated alpha,beta-unsaturated ketone found"
