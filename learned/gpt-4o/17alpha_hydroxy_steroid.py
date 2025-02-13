@@ -6,8 +6,7 @@ from rdkit import Chem
 def is_17alpha_hydroxy_steroid(smiles: str):
     """
     Determines if a molecule is a 17alpha-hydroxy steroid based on its SMILES string.
-    This classification requires the presence of a hydroxyl group at the 17-alpha position
-    in conjunction with the steroid backbone.
+    A 17alpha-hydroxy steroid has a hydroxyl group at the 17-alpha position on the steroid backbone.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -16,19 +15,20 @@ def is_17alpha_hydroxy_steroid(smiles: str):
         bool: True if the molecule is a 17alpha-hydroxy steroid, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
     # Define the steroid backbone SMARTS pattern
-    steroid_backbone_smarts = "C1=CC2CC3CCC4CCCC(C)(C)O3CC2C(C1)=O"
+    # This pattern includes the four fused rings (phenanthrene skeleton) common to steroids
+    steroid_backbone_smarts = "C1CCC2C(C1)CCC3C2CCC4(C3CCC4)"
 
-    # Define SMARTS pattern for 17alpha-hydroxy group in a simplified way
-    # The 'alpha' hydroxy group could be represented in a way specific to steroid hydroxylation patterns
-    # Here, we use a general pattern for hydroxy over a four-ring structure, though it's a simplistic representation
-    hydroxy_17alpha_smarts = "[C@H]1([C@@H](C2CCCC3CC(O)CCCC3=O)O)CCC2C1"
+    # Define SMARTS pattern for 17alpha-hydroxy group
+    # The hydroxyl group should be attached to the D ring, which is the part of the molecule represented
+    # by a cyclohexane attached to cyclopentane in steroids, at the 17th carbon.
+    hydroxy_17alpha_smarts = "[C@]1([C@@H](O)CC2)CC3CC[C@H]4[C@@H](C2)CC[C@]34C1"
 
     # Check for the steroid backbone
     steroid_backbone = Chem.MolFromSmarts(steroid_backbone_smarts)
