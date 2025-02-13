@@ -25,41 +25,34 @@ def is_4__hydroxyflavanones(smiles: str):
 
     # Basic flavanone core (chroman-4-one system)
     # More general pattern that allows for substitutions
-    flavanone_core = Chem.MolFromSmarts("[#6]1-[#6]-[#6](=[O])-c2c(-[#6]1)cccc2")
-    if flavanone_core is None:
-        return False, "Invalid SMARTS pattern for flavanone core"
-    
+    flavanone_core = Chem.MolFromSmarts("O=C1CC(c2ccccc2)Oc2ccccc12")
     if not mol.HasSubstructMatch(flavanone_core):
         return False, "No flavanone core structure found"
 
-    # Check for saturated C2-C3 bond (to distinguish from flavones)
-    # Match the specific C2-C3 single bond pattern
-    c2c3_bond = Chem.MolFromSmarts("O=C1C-C-c2ccccc2O1")
-    if c2c3_bond is None:
-        return False, "Invalid SMARTS pattern for C2-C3 bond"
-        
-    if not mol.HasSubstructMatch(c2c3_bond):
-        return False, "C2-C3 bond must be saturated (not a flavone)"
+    # Look for B-ring with 4'-hydroxy
+    # This pattern matches the B-ring connected to the C2 position with a hydroxy at 4' position
+    b_ring_pattern = Chem.MolFromSmarts("[OH]-[c]1[cH,c][cH,c][c]([CH1]-2-[CH2]-C(=O)[c]3[cH,c][cH,c][cH,c][c]3O2)[cH,c][cH,c]1")
+    if not mol.HasSubstructMatch(b_ring_pattern):
+        return False, "Missing required 4'-hydroxy group"
 
-    # Check for 4'-hydroxy group
-    # This pattern specifically looks for the B-ring with 4'-OH
-    # The connection point to the C-ring is specified
-    b_ring_4_oh = Chem.MolFromSmarts("[#6]-[#6]1:[#6]:[#6]:[#6](O):[#6]:[#6]:1")
-    if b_ring_4_oh is None:
-        return False, "Invalid SMARTS pattern for 4'-hydroxy group"
-        
-    if not mol.HasSubstructMatch(b_ring_4_oh):
-        return False, "Missing hydroxy group at 4' position"
+    # Verify C2-C3 saturation (to distinguish from flavones)
+    # The pattern looks for the specific single bond between C2-C3
+    c2c3_pattern = Chem.MolFromSmarts("O=C1[CH2][CH1]([c2ccccc2])Oc2ccccc12")
+    if not mol.HasSubstructMatch(c2c3_pattern):
+        return False, "Not a flavanone (C2-C3 bond must be saturated)"
 
-    # Additional check to ensure the 4'-OH is properly positioned relative to the core
-    complete_pattern = Chem.MolFromSmarts("O=C1CC(c2ccc(O)cc2)Oc2ccccc12")
-    if complete_pattern is None:
-        return False, "Invalid SMARTS pattern for complete structure"
-        
-    if not mol.HasSubstructMatch(complete_pattern):
-        return False, "4'-hydroxy group not properly positioned relative to core"
+    # Additional check for ketone group at C4
+    ketone_pattern = Chem.MolFromSmarts("O=C1[CH2][CH1]([c2ccccc2])Oc2ccccc12")
+    if not mol.HasSubstructMatch(ketone_pattern):
+        return False, "Missing required ketone group at C4"
 
-    return True, "Molecule is a 4'-hydroxyflavanone"
+    # Verify the presence of both the flavanone core and 4'-OH
+    # Count the number of matches to ensure we have the correct structure
+    matches = mol.GetSubstructMatches(b_ring_pattern)
+    if len(matches) < 1:
+        return False, "Structure does not match 4'-hydroxyflavanone pattern"
+
+    return True, "Molecule is a 4'-hydroxyflavanone with correct core structure and 4'-OH group"
 
 def test_examples():
     """Test function with example molecules"""
