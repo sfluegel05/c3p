@@ -8,7 +8,7 @@ def is_branched_chain_fatty_acyl_CoA(smiles: str):
     Determines if a molecule is a branched-chain fatty acyl-CoA based on its SMILES string.
     This class is characterized by the formal condensation of the thiol group of coenzyme A
     with the carboxy group of any branched-chain fatty acid.
-    
+
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -28,7 +28,7 @@ def is_branched_chain_fatty_acyl_CoA(smiles: str):
         return False, "No thioester linkage found indicative of acyl-CoA"
 
     # Identify the coenzyme A moiety using a more comprehensive pattern
-    coa_pattern = Chem.MolFromSmarts("NC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(OP(=O)(O)O)OC[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O")
+    coa_pattern = Chem.MolFromSmarts("NC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OOC[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "Missing segments indicative of coenzyme A"
 
