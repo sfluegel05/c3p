@@ -15,20 +15,25 @@ def is_dicarboxylic_acid(smiles: str):
         bool: True if molecule is a dicarboxylic acid, False otherwise
         str: Reason for classification
     """
-    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the carboxylic acid pattern
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
-    
+    # Define the carboxylic acid pattern including extra constraints to avoid matches due to errors
+    # Note: '?' allows for zero or one hydrogen in SMARTS to match OH/O/varied typo forms accurately.
+    carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX1H0-,OX1H1]")
+
     # Get matches for the carboxylic acid pattern
     carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
+
+    # Count distinct groups, filtering to prevent gluings or internal errors/misidentifications in larger constructs
+    distinct_matches = len(set(carboxylic_acid_matches))
     
     # Check the number of carboxylic acid groups
-    if len(carboxylic_acid_matches) == 2:
+    if distinct_matches == 2:
         return True, "Contains exactly two carboxylic acid groups"
+    elif distinct_matches > 2:
+        return False, f"Contains {distinct_matches} carboxylic acid groups, which is more than 2"
     else:
-        return False, f"Contains {len(carboxylic_acid_matches)} carboxylic acid groups, not exactly 2"
+        return False, f"Contains only {distinct_matches} carboxylic acid groups, less than or greater than needed"
