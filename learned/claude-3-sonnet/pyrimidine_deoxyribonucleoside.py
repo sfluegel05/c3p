@@ -10,6 +10,8 @@ from rdkit.Chem import AllChem
 def is_pyrimidine_deoxyribonucleoside(smiles: str):
     """
     Determines if a molecule is a pyrimidine deoxyribonucleoside based on its SMILES string.
+    A pyrimidine deoxyribonucleoside consists of a pyrimidine base connected to a 
+    deoxyribose sugar via an N-glycosidic bond.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,38 +25,52 @@ def is_pyrimidine_deoxyribonucleoside(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-        
-    # Check for deoxyribose sugar pattern
-    # [OH0,1] means oxygen with 0 or 1 hydrogens (to account for modifications)
-    # The pattern looks for a 5-membered ring with an oxygen and appropriate substitutions
-    deoxyribose_pattern = Chem.MolFromSmarts("[OH0,1]1[CH2][CH1,2][CH1]([CH2][OH0,1])[CH]1")
-    if not mol.HasSubstructMatch(deoxyribose_pattern):
-        return False, "No deoxyribose sugar found"
 
-    # Check for pyrimidine base pattern
-    # Looking for the basic 6-membered ring with nitrogens at positions 1 and 3
-    # This will match cytosine, thymine, uracil and their derivatives
-    pyrimidine_pattern = Chem.MolFromSmarts("n1c([*,H])c([*,H])c([*,H])nc1")
+    # Check for basic 5-membered sugar ring with oxygen
+    # More permissive pattern that allows for various substitutions
+    sugar_pattern = Chem.MolFromSmarts("[O;R1]1[C;R1][C;R1][C;R1][C;R1]1")
+    if not mol.HasSubstructMatch(sugar_pattern):
+        return False, "No furanose sugar ring found"
+
+    # Check for pyrimidine base - look for 6-membered ring with two nitrogens
+    # Pattern matches common pyrimidine bases (cytosine, thymine, uracil)
+    pyrimidine_pattern = Chem.MolFromSmarts("n1[c;$(C=O)]nc([c;$(C=O)])cc1")
     if not mol.HasSubstructMatch(pyrimidine_pattern):
         return False, "No pyrimidine base found"
 
     # Check for N-glycosidic bond between sugar and base
-    # The pattern looks for the connection between the sugar and the pyrimidine
-    glycosidic_bond_pattern = Chem.MolFromSmarts("[OH0,1]1[CH2][CH1,2][CH1][CH]1[NH0]2[c]([*,H])[c]([*,H])[c]([*,H])[n][c]2")
-    if not mol.HasSubstructMatch(glycosidic_bond_pattern):
-        return False, "No N-glycosidic bond between sugar and pyrimidine found"
+    # Simplified pattern that just looks for the key connection
+    glycosidic_pattern = Chem.MolFromSmarts("[O;R1]1[C;R1][C;R1][C;R1][C;R1]1[N;R1]2[c;R1][n;R1][c;R1][c;R1][c;R1]2")
+    if not mol.HasSubstructMatch(glycosidic_pattern):
+        return False, "No N-glycosidic bond between sugar and base"
 
-    # Additional check for carbonyl groups in the pyrimidine ring
-    # Pyrimidine bases should have at least one C=O group
+    # Verify presence of at least one carbonyl group
     carbonyl_pattern = Chem.MolFromSmarts("C(=O)N")
     if not mol.HasSubstructMatch(carbonyl_pattern):
-        return False, "Missing characteristic carbonyl group in pyrimidine base"
+        return False, "Missing characteristic carbonyl group"
 
-    # Check ring count to avoid complex molecules with additional large rings
+    # Check that the sugar is deoxyribose by looking for correct number of oxygens
+    # Get atoms in the sugar ring
+    sugar_matches = mol.GetSubstructMatches(sugar_pattern)
+    if sugar_matches:
+        sugar_atoms = set(sugar_matches[0])
+        # Count oxygens connected to sugar ring carbons
+        oxygen_count = 0
+        for atom_idx in sugar_atoms:
+            atom = mol.GetAtomWithIdx(atom_idx)
+            if atom.GetAtomicNum() == 6:  # If it's a carbon
+                for neighbor in atom.GetNeighbors():
+                    if neighbor.GetAtomicNum() == 8:  # If neighbor is oxygen
+                        oxygen_count += 1
+        # Deoxyribose should have 3 oxygens (ring O + 2 hydroxyls)
+        if oxygen_count > 4:  # Allow one extra for modifications
+            return False, "Sugar has too many oxygens to be deoxyribose"
+        if oxygen_count < 2:  # Must have at least ring O + 1 hydroxyl
+            return False, "Sugar lacks minimum oxygens for deoxyribose"
+
+    # Check total ring count
     rings = mol.GetRingInfo().NumRings()
-    if rings > 3:  # Should typically have 2 rings (sugar + base)
-        # Allow up to 3 rings to account for some modifications
-        if rings > 4:
-            return False, "Too many rings in structure"
+    if rings > 4:  # Allow up to 4 rings to account for modifications
+        return False, "Structure too complex - too many rings"
 
-    return True, "Contains deoxyribose sugar connected to pyrimidine base via N-glycosidic bond"
+    return True, "Contains pyrimidine base connected to deoxyribose via N-glycosidic bond"
