@@ -1,39 +1,28 @@
 """
 Classifies: CHEBI:36836 3beta-hydroxy steroid
 """
-"""
-Classifies: CHEBI:36621 3beta-hydroxy steroid
-A 3-hydroxy steroid in which the 3-hydroxy substituent is in the beta-position.
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
+The previous code attempts to identify 3beta-hydroxy steroids by looking for the steroid backbone and the 3beta-hydroxyl group using SMARTS patterns. However, the outcomes show that it failed to identify any of the provided examples as true positives, resulting in an F1 score of 0.
 
-def is_3beta_hydroxy_steroid(smiles: str):
-    """
-    Determines if a molecule is a 3beta-hydroxy steroid based on its SMILES string.
+Here are some potential issues and improvements:
 
-    Args:
-        smiles (str): SMILES string of the molecule
+1. **Overly Strict Steroid Backbone Pattern**: The steroid backbone pattern used in the code is very specific and may not capture all possible variations of the steroid backbone. Steroids can have different substituents, double bonds, and ring fusions, which could make the pattern too restrictive.
 
-    Returns:
-        bool: True if molecule is a 3beta-hydroxy steroid, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+   **Improvement**: Use a more general pattern for the steroid backbone or consider using a combination of patterns to cover a broader range of structures.
 
-    # Look for steroid backbone pattern
-    # Steroid backbone is a fused ring system with 3 6-membered rings and 1 5-membered ring
-    steroid_pattern = Chem.MolFromSmarts('[C@@]1(CC[C@@]2([H])[C@]3([H])CC[C@@]4([H])C[C@@]([H])(CC[C@@]4([H])C3)C2)CC[C@]1([H])O')
-    if not mol.HasSubstructMatch(steroid_pattern):
-        return False, "No steroid backbone found"
+2. **Limited Coverage of 3beta-Hydroxyl Group Pattern**: The pattern for the 3beta-hydroxyl group assumes a specific ring fusion and stereochemistry, which may not hold true for all examples.
 
-    # Check for hydroxyl group at position 3 in beta configuration
-    hydroxy_pattern = Chem.MolFromSmarts('[C@@]1(CC[C@@]2([H])[C@]3([H])CC[C@@]4([H])C[C@@]([H])(CC[C@@]4([H])C3)[C@H]2O)CC[C@]1([H])O')
-    if not mol.HasSubstructMatch(hydroxy_pattern):
-        return False, "No 3beta-hydroxyl group found"
+   **Improvement**: Modify the 3beta-hydroxyl group pattern to be more flexible and cover different ring fusions and stereochemistries.
 
-    return True, "Contains a steroid backbone with a 3beta-hydroxyl group"
+3. **Lack of Additional Checks**: The code only checks for the presence of the steroid backbone and the 3beta-hydroxyl group. However, some examples may require additional checks to ensure they meet the criteria for the class.
+
+   **Improvement**: Incorporate additional checks or filters based on the provided examples, such as checking for specific functional groups, ring systems, or other structural features that define the class.
+
+4. **Handling of Stereochemistry**: The provided SMILES strings may not accurately represent the stereochemistry of the molecules, leading to mismatches with the SMARTS patterns.
+
+   **Improvement**: Investigate ways to handle stereochemistry more robustly, either by using different tools or by preprocessing the SMILES strings.
+
+5. **Exhaustive Pattern Matching**: Instead of using SMARTS patterns, an alternative approach could be to enumerate all possible patterns for the steroid backbone and the 3beta-hydroxyl group, and match them against the input molecule.
+
+   **Improvement**: Explore the use of exhaustive pattern matching, which may be more effective for this specific task, although it could be computationally more expensive.
+
+Overall, the key improvements would involve refining the SMARTS patterns to cover a broader range of structures, incorporating additional checks or filters based on the provided examples, and handling stereochemistry more robustly. Additionally, exploring alternative approaches, such as exhaustive pattern matching, could be beneficial.
