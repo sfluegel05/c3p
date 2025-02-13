@@ -2,11 +2,11 @@
 Classifies: CHEBI:17792 organohalogen compound
 """
 """
-Classifies: CHEBI:38114 organohalogen compound
-A compound containing at least one carbon-halogen bond (where X is a halogen atom).
+Classifies: CHEBI:33383 organohalogen compound
+An organohalogen compound is defined as a compound containing at least one carbon-halogen bond 
+(where X is a halogen atom).
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_organohalogen_compound(smiles: str):
     """
@@ -25,27 +25,18 @@ def is_organohalogen_compound(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Remove salts and counterions
-    mol = AllChem.RemoveHeavyAtomSalts(mol)
+    # Check if molecule contains any halogen atoms
+    halogen_atoms = ['Cl', 'Br', 'I', 'F']
+    has_halogen = any(atom.GetSymbol() in halogen_atoms for atom in mol.GetAtoms())
+    if not has_halogen:
+        return False, "No halogen atoms present"
     
-    # Check for carbon-halogen bonds
-    has_c_x_bond = False
-    for bond in mol.GetBonds():
-        a1 = bond.GetBeginAtom()
-        a2 = bond.GetEndAtom()
-        if a1.GetAtomicNum() == 6 and a2.GetAtomicNum() in [9, 17, 35, 53]:
-            has_c_x_bond = True
-            break
-        elif a2.GetAtomicNum() == 6 and a1.GetAtomicNum() in [9, 17, 35, 53]:
-            has_c_x_bond = True
-            break
+    # Check if any halogen atom is bonded to a carbon
+    has_c_x_bond = any(atom.GetSymbol() in halogen_atoms and
+                       any(nbr_atom.GetSymbol() == 'C' for nbr_atom in atom.GetNeighbors())
+                       for atom in mol.GetAtoms())
     
     if has_c_x_bond:
         return True, "Contains at least one carbon-halogen bond"
     else:
         return False, "No carbon-halogen bonds found"
-
-# Example usage
-smiles = "CCCBr"
-result, reason = is_organohalogen_compound(smiles)
-print(f"Is organohalogen compound? {result} ({reason})")
