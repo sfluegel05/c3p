@@ -26,7 +26,7 @@ def is_steroid_saponin(smiles: str):
         return False, "Invalid SMILES string"
     
     # Check for cyclopentanoperhydrophenanthrene scaffold (core steroid structure)
-    steroid_core_pattern = Chem.MolFromSmarts("[C&r5,r6]1[C&r5,r6][C&r5,r6][C&r5,r6][C&r5,r6][C&r5,r6]1[C&r5,r6]2[C&r5,r6][C&r5,r6][C&r5,r6][C&r5,r6][C&r6]2")
+    steroid_core_pattern = Chem.MolFromSmarts("[C&r5,r6]1[C&r5,r6][C&r5,r6][C&r5,r6][C&r5,r6][C&r5,r6]1[C&r6]2[C&r5,r6][C&r5,r6][C&r5,r6][C&r5,r6][C&r6]2")
     if not mol.HasSubstructMatch(steroid_core_pattern):
         return False, "No steroid core found"
     
