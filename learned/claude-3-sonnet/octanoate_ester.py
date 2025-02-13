@@ -1,22 +1,47 @@
 """
 Classifies: CHEBI:87657 octanoate ester
 """
-The previous program focused solely on finding the octanoate (caprylic acid) pattern "CCCCCCCC(=O)O" in the molecule. While this approach correctly identified many true positives, it missed some more complex structures containing octanoate esters and also falsely flagged some molecules that didn't contain the target ester group.
+"""
+Classifies: CHEBI:35997 octanoate ester
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
 
-Here are some potential improvements:
+def is_octanoate_ester(smiles: str):
+    """
+    Determines if a molecule is an octanoate ester based on its SMILES string.
+    An octanoate ester is any fatty acid ester in which the carboxylic acid component is octanoic acid (caprylic acid).
 
-1. **Check for ester bonds:** Instead of just looking for the octanoate pattern, we should check for the presence of ester bonds (-C(=O)O-) and then verify if one of the components is octanoic acid (CCCCCCCC(=O)).
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **Handle different tautomers**: Carboxylic acids can exist in different tautomeric forms, so we should also check for patterns like -C(O)=O or -C(OH)=O.
-
-3. **Exclude false positives**: Some false positives contained the octanoate pattern but not as an ester. We should exclude cases where the pattern is part of a larger ring system or other functional groups.
-
-4. **Consider stereochemistry**: Some false negatives might be due to ignoring stereochemistry. We could try to account for different stereoisomers or use a more flexible pattern matching approach.
-
-5. **Use more advanced pattern matching**: The `MolFromSmarts` function used in the previous code is relatively basic. We could explore more advanced pattern matching techniques like recursive SMARTS or substructure matching with different bond types.
-
-6. **Combine multiple patterns**: Instead of relying on a single pattern, we could combine multiple patterns to cover different scenarios and increase the overall accuracy.
-
-7. **Consider molecular properties**: In addition to substructure matching, we could incorporate molecular properties like molecular weight, atom counts, or other descriptors to further refine the classification.
-
-By addressing these potential issues and incorporating more sophisticated pattern matching techniques and molecular property checks, we can likely improve the accuracy of the octanoate ester classification.
+    Returns:
+        bool: True if molecule is an octanoate ester, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Define patterns for octanoic acid and ester bonds
+    octanoic_acid_pattern = Chem.MolFromSmarts("CCCCCCCC(=O)[OH]")
+    ester_pattern = Chem.MolFromSmarts("C(=O)OC")
+    
+    # Check for octanoic acid and ester substructures
+    octanoic_acid_matches = mol.GetSubstructMatches(octanoic_acid_pattern)
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    
+    if not octanoic_acid_matches or not ester_matches:
+        return False, "Missing octanoic acid or ester substructure"
+    
+    # Check if any ester bond is attached to octanoic acid
+    for ester_match in ester_matches:
+        ester_atom = mol.GetAtomWithIdx(ester_match[1])
+        if ester_atom.GetDegree() == 2:  # Exclude false positives like ring systems
+            neighbor_atoms = [mol.GetAtomWithIdx(nbr_idx).GetSmarts() for nbr_idx in ester_atom.GetNeighbors()]
+            if "CCCCCCCC(=O)[OH]" in neighbor_atoms:
+                return True, "Contains octanoic acid ester group"
+    
+    return False, "No octanoic acid ester group found"
