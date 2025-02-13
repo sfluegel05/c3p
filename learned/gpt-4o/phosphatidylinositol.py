@@ -21,19 +21,19 @@ def is_phosphatidylinositol(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Identify the inositol ring pattern: a six-carbon ring with all hydroxyl groups
-    inositol_pattern = Chem.MolFromSmarts("C1(C(O)C(O)C(O)C(O)C(O)O1)")
+    
+    # Identify the inositol ring pattern: six-carbon ring all hydroxylated
+    inositol_pattern = Chem.MolFromSmarts("C1(CO)C(O)C(O)C(O)C(O)O1")
     if not mol.HasSubstructMatch(inositol_pattern):
         return False, "No inositol ring found"
-    
-    # Identify the phosphatidyl group pattern: phosphate attached to glycerol
-    phosphatidyl_pattern = Chem.MolFromSmarts("C(COP(=O)(O)O)CO")
+
+    # Identify the phosphatidyl group pattern: phosphate linked to glycerol
+    phosphatidyl_pattern = Chem.MolFromSmarts("COP(=O)(O)OCC(=O)O")
     if not mol.HasSubstructMatch(phosphatidyl_pattern):
         return False, "No phosphatidyl group found"
 
-    # Check if the two patterns are connected correctly
-    connected_pattern = Chem.MolFromSmarts("C1(C(O)C(O)C(O)C(O)C(O)O1)O-[P](=O)(O)-O-[C]-[C]-[O]-[C]-[O]")
+    # Check if the inositol and phosphatidyl groups are correctly esterified
+    connected_pattern = Chem.MolFromSmarts("[C1(CO)C(O)C(O)C(O)C(O)O1]O[P](=O)(O)OCC(=O)O")
     if not mol.HasSubstructMatch(connected_pattern):
         return False, "Inositol and phosphatidyl groups not connected correctly"
     
