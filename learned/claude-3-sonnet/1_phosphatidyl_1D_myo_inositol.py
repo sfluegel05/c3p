@@ -24,73 +24,44 @@ def is_1_phosphatidyl_1D_myo_inositol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # More flexible patterns for myo-inositol ring with correct stereochemistry
-    myo_inositol_patterns = [
-        # Basic cyclohexane ring with 6 OH groups
-        "C1C(O)C(O)C(O)C(O)C(O)C1O",
-        # Specific stereochemistry patterns
-        "[C@H]1([OH])[C@H]([OH])[C@@H]([OH])[C@H]([OH])[C@@H]([OH])[C@H]1[OH]",
-        "[C@@H]1([OH])[C@@H]([OH])[C@H]([OH])[C@@H]([OH])[C@H]([OH])[C@@H]1[OH]",
-        # Alternative representations
-        "[C@H]1([OH])C([OH])C([OH])C([OH])C([OH])C1[OH]",
-        "C1([OH])[C@H]([OH])[C@@H]([OH])[C@H]([OH])[C@@H]([OH])[C@H]1[OH]"
-    ]
+    # 1D-myo-inositol ring pattern with specific stereochemistry
+    # The pattern matches the characteristic 1D-myo-inositol with:
+    # - axial OH at position 2
+    # - equatorial OHs at positions 3,4,5,6
+    # - position 1 connected to phosphate
+    myo_inositol_pattern = Chem.MolFromSmarts(
+        "[O,P]-[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@H](O)1"
+    )
     
-    found_inositol = False
-    for pattern in myo_inositol_patterns:
-        patt = Chem.MolFromSmarts(pattern)
-        if patt and mol.HasSubstructMatch(patt):
-            found_inositol = True
-            break
-            
-    if not found_inositol:
-        return False, "No myo-inositol ring found"
+    if not mol.HasSubstructMatch(myo_inositol_pattern):
+        return False, "No 1D-myo-inositol ring with correct stereochemistry found"
 
-    # More flexible phosphate group pattern
-    phosphate_patterns = [
-        "[O,OH]-P(=O)([O,OH])-O",
-        "OP(=O)(O)O",
-        "P(=O)(O)(O)O"
-    ]
+    # Phosphate group connected to position 1 of inositol
+    phosphate_pattern = Chem.MolFromSmarts(
+        "[O,OH]-[P](=O)([O,OH])-O-[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@H](O)1"
+    )
     
-    found_phosphate = False
-    for pattern in phosphate_patterns:
-        patt = Chem.MolFromSmarts(pattern)
-        if patt and mol.HasSubstructMatch(patt):
-            found_phosphate = True
-            break
-            
-    if not found_phosphate:
-        return False, "No phosphate group found"
+    if not mol.HasSubstructMatch(phosphate_pattern):
+        return False, "No phosphate group at position 1 of inositol"
 
-    # Check for glycerol backbone - more flexible pattern
-    glycerol_patterns = [
-        "CC(CO)(CO)",
-        "[CH2][CH][CH2]",
-        "C[C@H](CO)CO",
-        "C[C@@H](CO)CO"
-    ]
+    # Glycerophospholipid backbone with two ester-linked fatty acids
+    glycerol_pattern = Chem.MolFromSmarts(
+        "[#6]C(=O)OC[CH](COC(=O)[#6])COP(=O)([O,OH])-O"
+    )
     
-    found_glycerol = False
-    for pattern in glycerol_patterns:
-        patt = Chem.MolFromSmarts(pattern)
-        if patt and mol.HasSubstructMatch(patt):
-            found_glycerol = True
-            break
-            
-    if not found_glycerol:
-        return False, "No glycerol backbone found"
+    if not mol.HasSubstructMatch(glycerol_pattern):
+        return False, "No glycerophospholipid backbone found"
 
     # Check for two ester groups
-    ester_pattern = Chem.MolFromSmarts("[#6]-C(=O)-O-[#6]")
+    ester_pattern = Chem.MolFromSmarts("[#6]C(=O)O[#6]")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) < 2:
         return False, f"Found {len(ester_matches)} ester groups, need at least 2"
 
-    # Check for fatty acid chains (more flexible pattern)
-    fatty_acid_pattern = Chem.MolFromSmarts("[#6]~[#6]~[#6]~[#6]~[#6]~[#6]")
-    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
-    if len(fatty_acid_matches) < 2:
+    # Check for fatty acid chains (at least 4 carbons in length)
+    fatty_acid_pattern = Chem.MolFromSmarts("[#6]~[#6]~[#6]~[#6]")
+    fatty_acid_matches = len(mol.GetSubstructMatches(fatty_acid_pattern))
+    if fatty_acid_matches < 2:
         return False, "Missing fatty acid chains"
 
     # Verify overall composition
@@ -105,4 +76,4 @@ def is_1_phosphatidyl_1D_myo_inositol(smiles: str):
     if c_count < 20:  # minimum for shortest possible chains
         return False, "Carbon chains too short"
 
-    return True, "Contains myo-inositol ring with phosphate group and two fatty acid chains"
+    return True, "Contains 1D-myo-inositol ring with phosphate at position 1 and two fatty acid chains"
