@@ -19,21 +19,21 @@ def is_3_oxo_5alpha_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # More refined steroid backbone pattern, four rings (A, B, C, D)
-    steroid_pattern = Chem.MolFromSmarts("C1CCC2C3CCC4CCCCC4C3CCC2C1")
+    # Define a more accurate steroid backbone pattern (four rings)
+    steroid_pattern = Chem.MolFromSmarts("C1CCC2C3CCC4CCCC(C4)C3CCC2C1")
     if not mol.HasSubstructMatch(steroid_pattern):
-        return False, "No refined steroid backbone found"
+        return False, "No steroid backbone found"
 
-    # Check for 3-oxo group
-    oxo_pattern = Chem.MolFromSmarts("C1(=O)[C@@H]2CCC3")
+    # Check for the presence of a 3-oxo group in the steroid nucleus
+    oxo_pattern = Chem.MolFromSmarts("C(=O)[C@H]1CC[C@H]2")
     oxo_matches = mol.GetSubstructMatches(oxo_pattern)
     if not oxo_matches:
         return False, "No 3-oxo group found"
 
-    # Ensure 5alpha configuration: A hydrogen atom at the alpha position on C5
+    # Ensure 5alpha configuration by identifying the appropriate stereochemistry
     five_alpha_pattern = Chem.MolFromSmarts("C[C@@H]1CCC2")
     if not mol.HasSubstructMatch(five_alpha_pattern):
         return False, "No 5alpha configuration found"
 
     # Passed all checks
-    return True, "Contains a 3-oxo group and the 5alpha stereochemical configuration, indicating a 3-oxo-5alpha-steroid"
+    return True, "Contains a steroid backbone with a 3-oxo group and the 5alpha stereochemical configuration"
