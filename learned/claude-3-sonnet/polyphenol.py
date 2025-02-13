@@ -2,15 +2,18 @@
 Classifies: CHEBI:26195 polyphenol
 """
 """
-Classifies: CHEBI:16641 polyphenol
+Classifies: CHEBI:24851 polyphenol
+
+A polyphenol is defined as a member of the class of phenols that contain 2 or more benzene rings
+each of which is substituted by at least one hydroxy group.
 """
+
 from rdkit import Chem
-from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_polyphenol(smiles: str):
     """
     Determines if a molecule is a polyphenol based on its SMILES string.
-    A polyphenol is defined as a member of the class of phenols that contains 2 or more benzene rings, each of which is substituted by at least one hydroxyl group.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -25,29 +28,32 @@ def is_polyphenol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS patterns
-    aromatic_ring_pattern = Chem.MolFromSmarts("c1ccccc1")
-    hydroxyl_group_pattern = Chem.MolFromSmarts("[OX2H]")
+    # Count aromatic rings
+    aromatic_rings = mol.GetRingInfo().AtomRings()
+    num_aromatic_rings = sum(1 for ring in aromatic_rings if all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring))
+    if num_aromatic_rings < 2:
+        return False, "Less than 2 aromatic rings"
     
-    # Find all aromatic rings
-    aromatic_rings = mol.GetSubstructMatches(aromatic_ring_pattern)
+    # Check for hydroxyl groups on aromatic rings
+    aromatic_atoms = [atom.GetIdx() for atom in mol.GetAromaticAtoms()]
+    has_hydroxy_on_aromatic = False
+    for atom_idx in aromatic_atoms:
+        atom = mol.GetAtomWithIdx(atom_idx)
+        if atom.GetSymbol() == 'O' and atom.GetTotalNumHs() == 1:
+            has_hydroxy_on_aromatic = True
+            break
+    if not has_hydroxy_on_aromatic:
+        return False, "No hydroxyl groups on aromatic rings"
     
-    # Check if there are at least 2 aromatic rings
-    if len(aromatic_rings) < 2:
-        return False, "Fewer than 2 aromatic rings"
+    # Check if all aromatic rings have at least one hydroxyl group
+    ring_with_hydroxy = set()
+    for atom_idx in aromatic_atoms:
+        atom = mol.GetAtomWithIdx(atom_idx)
+        if atom.GetSymbol() == 'O' and atom.GetTotalNumHs() == 1:
+            ring_idx = mol.GetAtomRingInfo().IsAtomInRingOfSize(atom_idx, 6)
+            if ring_idx >= 0:
+                ring_with_hydroxy.add(ring_idx)
+    if len(ring_with_hydroxy) < num_aromatic_rings:
+        return False, "Not all aromatic rings have a hydroxyl group"
     
-    # Check if each aromatic ring has at least one hydroxyl group
-    for ring in aromatic_rings:
-        ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
-        ring_has_hydroxy = any(mol.HasSubstructMatch(hydroxyl_group_pattern, atoms=ring_atoms))
-        if not ring_has_hydroxy:
-            return False, "At least one aromatic ring lacks a hydroxyl group"
-    
-    # Check for at least one hydroxyl group outside of the aromatic rings
-    non_ring_atoms = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetIdx() not in [idx for ring in aromatic_rings for idx in ring]]
-    has_non_ring_hydroxy = mol.HasSubstructMatch(hydroxyl_group_pattern, atoms=non_ring_atoms)
-    
-    if has_non_ring_hydroxy:
-        return True, "Contains 2 or more aromatic rings, each with at least one hydroxyl group, and at least one additional hydroxyl group"
-    else:
-        return False, "No hydroxyl groups outside of the aromatic rings"
+    return True, "Contains 2 or more aromatic rings, each with at least one hydroxyl group"
