@@ -1,48 +1,28 @@
 """
 Classifies: CHEBI:36233 disaccharide
 """
-"""
-Classifies: CHEBI:36973 disaccharide
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+The previous program attempted to identify disaccharides by looking for two monosaccharide subunits and a glycosidic bond connecting them. However, the approach has several limitations:
 
-def is_disaccharide(smiles: str):
-    """
-    Determines if a molecule is a disaccharide based on its SMILES string.
-    A disaccharide is a compound with two monosaccharides joined by a glycosidic bond.
+1. **Overly Simplified Monosaccharide Pattern**: The SMARTS pattern used to identify monosaccharides `[OX2][CX4](O)[CX3](O)[CX3](O)[CX3](O)[CX3](O)[CX2]` is too simplistic and only accounts for a linear chain of carbon atoms with oxygens attached. This pattern fails to capture the variety of monosaccharide structures, including ring formations, stereochemistry, and substituents.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. **False Positives for Non-Disaccharides**: The program may falsely identify molecules with two monosaccharide-like subunits connected by a glycosidic bond as disaccharides, even if they are not biologically relevant disaccharides.
 
-    Returns:
-        bool: True if molecule is a disaccharide, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Look for monosaccharide patterns
-    monosaccharide_pattern = Chem.MolFromSmarts("[OX2][CX4](O)[CX3](O)[CX3](O)[CX3](O)[CX3](O)[CX2]")
-    monosaccharide_matches = mol.GetSubstructMatches(monosaccharide_pattern)
-    
-    # Check if there are exactly 2 monosaccharide subunits
-    if len(monosaccharide_matches) != 2:
-        return False, f"Found {len(monosaccharide_matches)} monosaccharide units, need exactly 2"
-    
-    # Check if the monosaccharide units are joined by a glycosidic bond
-    glycosidic_bond_pattern = Chem.MolFromSmarts("[OX2][CX4][CX3][OX2]")
-    glycosidic_bond_matches = mol.GetSubstructMatches(glycosidic_bond_pattern)
-    if not glycosidic_bond_matches:
-        return False, "No glycosidic bond found between monosaccharide units"
-    
-    # Check molecular weight - disaccharides typically 300-600 Da
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 300 or mol_wt > 600:
-        return False, "Molecular weight outside typical range for disaccharides"
-    
-    return True, "Contains two monosaccharide units joined by a glycosidic bond"
+3. **Molecular Weight Constraint Too Broad**: The molecular weight constraint (300-600 Da) is too broad and may include or exclude valid disaccharides.
+
+To improve the program, we need to consider the following:
+
+1. **Incorporate Ring Detection**: Monosaccharides are typically cyclic structures, so we should incorporate ring detection into the monosaccharide pattern.
+
+2. **Account for Stereochemistry**: Stereochemistry is crucial for the biological activity of carbohydrates. We should account for stereochemistry in the monosaccharide pattern.
+
+3. **Handle Substituents**: Monosaccharides can have various substituents, such as phosphate groups, acetyl groups, or methyl groups. We should consider these substituents in the monosaccharide pattern.
+
+4. **Refine Glycosidic Bond Pattern**: The current glycosidic bond pattern may be too broad and should be refined to capture the specific bond formation between the two monosaccharide units.
+
+5. **Leverage Existing Monosaccharide Databases**: Instead of defining a SMARTS pattern from scratch, we could leverage existing databases of known monosaccharide structures and use their SMARTS patterns for substructure matching.
+
+6. **Adjust Molecular Weight Constraints**: The molecular weight constraints should be refined based on the specific disaccharide class being targeted, as different disaccharides have different molecular weight ranges.
+
+7. **Consider Additional Constraints**: Additional constraints, such as the number of oxygens, the presence of specific functional groups, or the presence of specific substituents, could be incorporated to improve the classification accuracy.
+
+By addressing these limitations and incorporating more specific patterns and constraints, we can improve the accuracy and robustness of the disaccharide classification program.
