@@ -25,24 +25,14 @@ def is_2_hydroxy_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for carboxylic acid group (-C(O)=O)
-    acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX1H0-]")
-    if not mol.HasSubstructMatch(acid_pattern):
-        return False, "No carboxylic acid group found"
+    # Look for carboxylic acid group (-C(O)=O) and hydroxy group (-OH) in alpha or beta position
+    hydroxy_fatty_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1,OX1-][CX4H2][OX2H1]")
+    if mol.HasSubstructMatch(hydroxy_fatty_acid_pattern):
+        return True, "Molecule contains a hydroxy group in the alpha (2) or beta (3) position of a fatty acid"
 
-    # Look for hydroxy group (-OH) attached to C2 (alpha position)
-    alpha_hydroxy_pattern = Chem.MolFromSmarts("[CX4H2]([CX3](=O)[OX1H0-])[OX2H1]")
-    if mol.HasSubstructMatch(alpha_hydroxy_pattern):
-        return True, "Molecule contains a hydroxy group in the alpha (2) position"
-
-    # Look for hydroxy group (-OH) attached to C2 (beta position)
-    beta_hydroxy_pattern = Chem.MolFromSmarts("[CX4H2]([CX4][CX3](=O)[OX1H0-])[OX2H1]")
-    if mol.HasSubstructMatch(beta_hydroxy_pattern):
-        return True, "Molecule contains a hydroxy group in the beta (2) position"
-
-    # Check for long carbon chain (fatty acid)
-    carbon_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
-    if not mol.HasSubstructMatch(carbon_chain_pattern):
+    # Look for long carbon chain (fatty acid) with potential double bonds
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    if not mol.HasSubstructMatch(fatty_acid_pattern):
         return False, "No long carbon chain found (not a fatty acid)"
 
     return False, "No 2-hydroxy group found on a fatty acid"
