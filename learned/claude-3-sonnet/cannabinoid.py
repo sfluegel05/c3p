@@ -1,48 +1,10 @@
 """
 Classifies: CHEBI:67194 cannabinoid
 """
-"""
-Classifies: CHEBI:36311 cannabinoid
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem, rdMolDescriptors
+It seems the previous program attempted to classify cannabinoids based on the presence of oxygen, long aliphatic chains (15-25 carbon atoms), double bonds in the aliphatic chain, and the presence of heterocyclic rings. However, the outcomes show that the program failed to correctly classify any of the provided examples.
 
-def is_cannabinoid(smiles: str):
-    """
-    Determines if a molecule is a cannabinoid based on its SMILES string.
-    Cannabinoids are characterized by the presence of an oxygen atom as part of a heterocyclic ring
-    or in various functional groups, long aliphatic chains (typically 15-25 carbon atoms), and one
-    or more double bonds in the aliphatic chains.
+The root cause of the error is that the rdkit.Chem.AllChem module does not have a function called GetLongestAliphaticChain. This function does not exist in the RDKit library, which is likely why the program failed to classify any of the examples correctly.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+To improve the program, we need to find an alternative way to identify the longest aliphatic chain in a molecule. One possible approach could be to use the RDKit SMARTS pattern matching functionality to identify the longest chain of aliphatic (sp3 hybridized) carbon atoms. Additionally, we may need to refine the criteria for identifying cannabinoids, as the current criteria may not be sufficient or accurate.
 
-    Returns:
-        bool: True if molecule is a cannabinoid, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-
-    # Check for presence of oxygen
-    if sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8) == 0:
-        return False, "No oxygen atom present"
-
-    # Check for long aliphatic chains (15-25 carbon atoms)
-    longest_chain = AllChem.GetLongestAliphaticChain(mol)
-    if longest_chain is None or (longest_chain.Length() < 15 or longest_chain.Length() > 25):
-        return False, "Aliphatic chain length not in the range of 15-25 carbon atoms"
-
-    # Check for presence of double bonds in the aliphatic chain
-    if AllChem.CalcNumAliphaticDoubleBonds(mol) == 0:
-        return False, "No double bonds present in the aliphatic chain"
-
-    # Check for presence of heterocyclic rings
-    heterocyclic_rings = [ring for ring in AllChem.GetSymmSSSR(mol) if ring.IsHeterocyclic()]
-    if len(heterocyclic_rings) == 0:
-        return True, "Contains oxygen, long aliphatic chain with double bonds (non-cyclic cannabinoid)"
-
-    return True, "Contains oxygen, long aliphatic chain with double bonds, and heterocyclic ring(s)"
+Here's an attempt at improving the program:
