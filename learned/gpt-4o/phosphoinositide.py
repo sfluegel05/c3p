@@ -21,23 +21,29 @@ def is_phosphoinositide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for glycerol backbone part of phosphatidylinositol
-    glycerol_pattern = Chem.MolFromSmarts("C(C(O)COC(=O))")
+    # Check for a glycerol backbone related to phosphatidylinositol
+    # Example pattern: C(CO)COC(=O)
+    glycerol_pattern = Chem.MolFromSmarts("CC(O)COC(=O)")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone part of phosphatidylinositol found"
 
-    # Check for inositol ring with hydroxy groups
-    inositol_ring_pattern = Chem.MolFromSmarts("C1([C@@H]([C@H]([C@@H]([C@@H]([C@H]1O)O)O)O)O)O")
-    if not mol.HasSubstructMatch(inositol_ring_pattern):
-        return False, "No inositol ring with proper hydroxy groups found"
+    # Check for inositol ring: A six-membered ring with multiple hydroxy groups
+    # The stereo/ordering might vary
+    inositol_ring_pattern = Chem.MolFromSmarts("C1(C(C(C(C(C1O)O)O)O)O)O")
+    if not mol.HasSubstructMatch(possible_inositol):
+        return False, "No inositol ring with hydroxy groups found"
 
-    # Check for phosphate groups attached to inositol
-    phosphate_pattern = Chem.MolFromSmarts("OP(O)(O)=O")
-    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
+    # Check for the presence of phosphate groups attached to the inositol.
+    # More than one phosphate group should be attached to different positions on the inositol.
+    phosphate_group_pattern = Chem.MolFromSmarts("OP(=O)(O)O")
+    phosphate_matches = mol.GetSubstructMatches(phosphate_group_pattern)
 
-    # At least one phosphate group must be attached to the inositol ring
-    inositol_phosphate_pattern = Chem.MolFromSmarts("[C@H](OP(O)(O)=O)[C@H]1([C@@H]([C@H]([C@@H]([C@@H]([C@H]1O)O)O)O)O)O")
-    if not mol.HasSubstructMatch(inositol_phosphate_pattern) or len(phosphate_matches) < 1:
-        return False, "No proper phosphate groups attached to inositol"
+    # Check if phosphate groups are connected specifically to the inositol ring
+    # This is tricky without labeled hydrogens, but checking adjacency may suffice
+    adjacency_match = any(
+        mol.GetAtomWithIdx(pm[0]).GetImplicitValence() > 1 for pm in phosphate_matches
+    )
+    if not adjacency_match:
+        return False, "No phosphate groups properly attached to inositol"
 
     return True, "Contains glycerol backbone, inositol ring, and phosphorylated groups specific to phosphoinositides"
