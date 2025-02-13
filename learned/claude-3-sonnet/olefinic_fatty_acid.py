@@ -1,41 +1,22 @@
 """
 Classifies: CHEBI:53339 olefinic fatty acid
 """
-"""
-Classifies: CHEBI:51770 olefinic fatty acid
-An olefinic fatty acid is any fatty acid containing at least one C=C double bond.
-"""
-from rdkit import Chem
+The previous code appears to have a few shortcomings that led to the poor performance:
 
-def is_olefinic_fatty_acid(smiles: str):
-    """
-    Determines if a molecule is an olefinic fatty acid based on its SMILES string.
+1. **Missed positives**: The code correctly identifies molecules with a carboxylic acid group and at least one carbon-carbon double bond. However, it misses some valid olefinic fatty acids because they do not have a carboxylic acid group in the form of `-C(=O)O-`. Many of the false negatives have a carboxylic acid group in a different representation, such as `-C(O)=O`.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. **Overclassification**: The code is too broad and classifies many molecules as olefinic fatty acids even though they lack the structural characteristics of a fatty acid. For example, it wrongly classifies molecules with a carboxylic acid group and a double bond, but with a non-fatty acid backbone or additional functional groups.
 
-    Returns:
-        bool: True if molecule is an olefinic fatty acid, False otherwise
-        str: Reason for classification
-    """
+3. **No checks for fatty acid backbone**: The code does not explicitly check if the molecule has a long aliphatic chain, which is a defining characteristic of fatty acids.
 
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+To improve the performance of the classifier, we can address these issues as follows:
 
-    # Look for carboxylic acid group (-C(=O)O-) attached to any carbon
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O[C]")
-    if not mol.HasSubstructMatch(carboxylic_acid_pattern):
-        return False, "No valid carboxylic acid group found"
+1. **Handle various carboxylic acid representations**: Instead of looking for a specific SMARTS pattern for the carboxylic acid group, we can use the RDKit functionality to identify all carboxylic acid groups, regardless of their representation.
 
-    # Look for carbon-carbon double bonds (C=C) anywhere in the molecule
-    double_bond_pattern = Chem.MolFromSmarts("C=C")
-    double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
-    if not double_bond_matches:
-        return False, "No carbon-carbon double bonds found"
+2. **Additional filters for fatty acid structure**: We can add additional checks to ensure that the molecule has a long aliphatic chain and does not have additional functional groups that would disqualify it from being a fatty acid.
 
-    # Additional checks for specific double bond configurations or other criteria
-    # ...
+3. **Prioritize specific patterns**: For molecules that pass the initial filters, we can prioritize matching against specific SMARTS patterns of known olefinic fatty acids, rather than relying solely on the presence of a carboxylic acid group and a double bond.
 
-    return True, "Contains a carboxylic acid group and at least one carbon-carbon double bond"
+4. **Utilize fatty acid databases or literature**: We can incorporate information from fatty acid databases or literature to create a more comprehensive set of SMARTS patterns or structural rules for olefinic fatty acids.
+
+By incorporating these improvements, we can create a more robust and accurate classifier for olefinic fatty acids.
