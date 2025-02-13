@@ -30,18 +30,20 @@ def is_very_long_chain_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(carboxylic_pattern):
         return False, "No carboxylic acid group found"
 
-    # Count carbon chain length
-    carbon_chain = Chem.MolFromSmarts("[CH4]~[CH2,CH3]~[CH2,CH3]~[CH2,CH3]")
-    chain_matches = mol.GetSubstructMatches(carbon_chain)
-    chain_lengths = [len(match) for match in chain_matches]
-    max_chain_length = max(chain_lengths, default=0)
+    # Find the longest linear carbon chain
+    longest_chain_length = 0
+    for chain in Chem.FindAllSubgraphsOfLengthMToN(mol, 1, 1000):
+        chain_length = len(chain)
+        is_linear = all(atom.GetDegree() <= 2 for atom in chain)
+        if is_linear and chain_length > longest_chain_length:
+            longest_chain_length = chain_length
 
-    if max_chain_length <= 22:
-        return False, f"Longest carbon chain has {max_chain_length} atoms, must be > 22"
+    if longest_chain_length <= 22:
+        return False, f"Longest carbon chain has {longest_chain_length} atoms, must be > 22"
 
     # Check for unsaturations
-    unsaturated_chain = Chem.MolFromSmarts("[CH2]=[CH]~[CH2]~[CH2]")
-    unsaturated_matches = mol.GetSubstructMatches(unsaturated_chain)
+    unsaturated_pattern = Chem.MolFromSmarts("[CH2]=[CH]~[CH2]~[CH2]")
+    unsaturated_matches = mol.GetSubstructMatches(unsaturated_pattern)
     unsaturated_lengths = [len(match) for match in unsaturated_matches]
     max_unsaturated_length = max(unsaturated_lengths, default=0)
 
@@ -50,7 +52,9 @@ def is_very_long_chain_fatty_acid(smiles: str):
 
     # Check molecular formula
     formula = rdMolDescriptors.CalcMolFormula(mol)
-    if "Br" in formula or "Cl" in formula or "F" in formula or "I" in formula:
-        return False, "Halogenated compounds not allowed"
+    allowed_atoms = set("C H O".split())
+    formula_atoms = set(formula.replace("[", "").replace("]", ""))
+    if not formula_atoms.issubset(allowed_atoms):
+        return False, "Only C, H, and O atoms are allowed"
 
     return True, "Carbon chain length > 22, with carboxylic acid group"
