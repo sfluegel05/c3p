@@ -1,70 +1,26 @@
 """
 Classifies: CHEBI:18254 ribonucleoside
 """
-"""
-Classifies: CHEBI:18021 ribonucleoside
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
+The previous program correctly identified the key structural features of a ribonucleoside: the presence of a D-ribose sugar, a nucleobase (pyrimidine or purine), and an N-glycosidic bond between the two. It also checked for common functional groups like hydroxyls and phosphates, as well as molecular weight and atom count ranges typical of ribonucleosides.
 
-def is_ribonucleoside(smiles: str):
-    """
-    Determines if a molecule is a ribonucleoside based on its SMILES string.
-    A ribonucleoside is a nucleoside where the sugar component is D-ribose.
+However, the program failed to correctly classify several examples of ribonucleosides, as evident from the outcomes. Here's an analysis of what went wrong and how to improve the program:
 
-    Args:
-        smiles (str): SMILES string of the molecule
+1. The SMARTS pattern for the D-ribose sugar ([C@H]1([C@H]([C@@H]([C@H]([C@@H](O1)O)O)O)O)") is too strict and fails to match ribose sugars with additional substitutions or modifications. A more flexible pattern or multiple patterns may be needed to account for common ribonucleoside modifications.
 
-    Returns:
-        bool: True if molecule is a ribonucleoside, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Look for D-ribose sugar pattern
-    ribose_pattern = Chem.MolFromSmarts("[C@H]1([C@H]([C@@H]([C@H]([C@@H](O1)O)O)O)O)")
-    if not mol.HasSubstructMatch(ribose_pattern):
-        return False, "No D-ribose sugar found"
-    
-    # Look for nucleobases (pyrimidine or purine)
-    pyrimidine_pattern = Chem.MolFromSmarts("n1c(=O)[nH]c(=O)[nH]c1")
-    purine_pattern = Chem.MolFromSmarts("n1cnc2c1ncnc2")
-    if not (mol.HasSubstructMatch(pyrimidine_pattern) or mol.HasSubstructMatch(purine_pattern)):
-        return False, "No nucleobase found"
-    
-    # Look for N-glycosidic bond between ribose and nucleobase
-    glycosidic_bond_pattern = Chem.MolFromSmarts("[C@H]1([C@H]([C@@H]([C@H]([C@@H](O1)O)O)O)O)[nr3r5,nr5r5,nr5r6]")
-    if not mol.HasSubstructMatch(glycosidic_bond_pattern):
-        return False, "No N-glycosidic bond found"
-    
-    # Check for common functional groups and substituents
-    has_hydroxyl = any(atom.GetSymbol() == 'O' and atom.GetTotalNumHs() == 1 for atom in mol.GetAtoms())
-    has_phosphate = any(atom.GetSymbol() == 'P' for atom in mol.GetAtoms())
-    
-    # Check molecular weight and atom counts
-    mol_wt = Chem.Descriptors.ExactMolWt(mol)
-    num_c = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'C')
-    num_n = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'N')
-    num_o = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'O')
-    
-    if not (200 < mol_wt < 600):
-        return False, "Molecular weight out of typical range for ribonucleosides"
-    if not (5 <= num_c <= 20):
-        return False, "Carbon atom count out of typical range for ribonucleosides"
-    if not (1 <= num_n <= 8):
-        return False, "Nitrogen atom count out of typical range for ribonucleosides"
-    if not (3 <= num_o <= 10):
-        return False, "Oxygen atom count out of typical range for ribonucleosides"
-    
-    # If all checks pass, classify as a ribonucleoside
-    reason = "Contains D-ribose sugar, nucleobase, and N-glycosidic bond"
-    if has_hydroxyl:
-        reason += ", with hydroxyl group(s)"
-    if has_phosphate:
-        reason += ", with phosphate group(s)"
-    
-    return True, reason
+2. The program only checks for pyrimidine and purine bases, but there are other possible nucleobases like those in the examples (e.g., imidazole, diazine, triazine). A more comprehensive set of patterns or a generalized approach to detect nucleobases may be required.
+
+3. The program assumes that the N-glycosidic bond is formed between the ribose sugar and a nitrogen atom in the nucleobase. However, some examples like 9-(beta-D-ribofuranosyl)uric acid have the glycosidic bond formed with a carbon atom in the nucleobase. The pattern should be more flexible to account for such cases.
+
+4. The program checks for common functional groups like hydroxyls and phosphates, but it does not account for other possible substituents or modifications present in some examples (e.g., fluorine, methyl, acetyl, amino groups).
+
+5. The molecular weight and atom count ranges may be too narrow and exclude some valid ribonucleosides with larger or more complex substituents or modifications.
+
+To improve the program, the following steps could be taken:
+
+1. Analyze the examples and identify common patterns or structural features that distinguish ribonucleosides from other molecules.
+2. Develop a more flexible set of SMARTS patterns or a generalized approach to detect the ribose sugar, nucleobases, and the N-glycosidic bond, accounting for common modifications and substitutions.
+3. Consider using machine learning techniques or molecular fingerprints to learn the structural features of ribonucleosides from a larger dataset, rather than relying solely on predefined patterns.
+4. Expand the range of functional groups and substituents checked for, or use a more general approach to detect common substituents and modifications.
+5. Adjust the molecular weight and atom count ranges based on the examples and other ribonucleosides, or consider using other molecular descriptors or properties to distinguish ribonucleosides from other molecules.
+
+Overall, the program's failure highlights the difficulty of defining rigid rules or patterns to identify complex chemical entities, especially when there can be numerous variations and modifications. A more flexible, data-driven approach or a combination of different techniques may be required to improve the classification accuracy.
