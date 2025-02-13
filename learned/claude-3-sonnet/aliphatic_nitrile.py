@@ -1,46 +1,24 @@
 """
 Classifies: CHEBI:80291 aliphatic nitrile
 """
-"""
-Classifies: CHEBI:46907 aliphatic nitrile
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+The previous code attempted to classify aliphatic nitriles by checking for the presence of a nitrile group (-C≡N) and the absence of aromatic rings. It also ensured that the molecule contains only certain allowed atoms. However, the low F1 score of 0.23938223938223938 suggests that this approach was not sufficient to accurately classify aliphatic nitriles.
 
-def is_aliphatic_nitrile(smiles: str):
-    """
-    Determines if a molecule is an aliphatic nitrile based on its SMILES string.
-    An aliphatic nitrile is any nitrile derived from an aliphatic compound.
+Here are some potential issues with the previous code and suggestions for improvement:
 
-    Args:
-        smiles (str): SMILES string of the molecule
+1. **Handling of cyclic aliphatic nitriles**: The current code assumes that the absence of aromatic rings implies an aliphatic molecule. However, there can be cyclic aliphatic nitriles, such as 3-oxocyclopentanecarbonitrile (SMILES: O=C1CCC(C1)C#N), which would be incorrectly classified as non-aliphatic due to the presence of a ring.
 
-    Returns:
-        bool: True if molecule is an aliphatic nitrile, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+   Solution: Instead of checking for the absence of aromatic rings, the code should check for the absence of aromatic atoms or bonds explicitly.
 
-    # Look for nitrile group (-C≡N)
-    nitrile_pattern = Chem.MolFromSmarts("[C;X2]#[N;X1]")
-    nitrile_matches = mol.GetSubstructMatches(nitrile_pattern)
-    if not nitrile_matches:
-        return False, "No nitrile group found"
+2. **Handling of aliphatic substituents on aromatic rings**: Some molecules may contain an aliphatic nitrile group attached to an aromatic ring, such as vildagliptin (SMILES: C1C2CC3(CC1(NCC(N4CCC[C@H]4C#N)=O)CC(C3)C2)O). These molecules would be incorrectly classified as non-aliphatic due to the presence of aromatic rings.
 
-    # Check if the molecule is aliphatic (no aromatic rings)
-    num_aromatic_rings = rdMolDescriptors.CalcNumAromaticRings(mol)
-    if num_aromatic_rings > 0:
-        return False, "Molecule contains aromatic rings, not aliphatic"
+   Solution: The code should identify and differentiate the aliphatic and aromatic parts of the molecule, and consider the molecule as an aliphatic nitrile if it contains an aliphatic nitrile group, even if it also has an aromatic portion.
 
-    # Check if the molecule contains only C, H, N, and optionally O, S, P, F, Cl, Br, I
-    allowed_atoms = set([6, 1, 7, 8, 16, 15, 9, 17, 35, 53])
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() not in allowed_atoms:
-            return False, f"Molecule contains disallowed atom {atom.GetSymbol()}"
+3. **Handling of specific functional groups or substructures**: The current code does not consider specific functional groups or substructures that may be present in aliphatic nitriles, such as esters, amides, or heterocycles. Some of the false positives and false negatives may be due to the presence or absence of such groups.
 
-    return True, "Molecule is an aliphatic nitrile"
+   Solution: The code could incorporate additional checks for common functional groups or substructures found in aliphatic nitriles, either by using additional SMARTS patterns or by implementing more sophisticated rules based on chemical knowledge.
+
+4. **Handling of edge cases or unusual structures**: Some of the false positives and false negatives may be due to edge cases or unusual structures that the current code does not account for.
+
+   Solution: Analyze the false positives and false negatives to identify any edge cases or unusual structures, and incorporate additional checks or rules to handle them.
+
+To improve the classification accuracy, you could consider a combination of the above solutions, as well as exploring machine learning techniques or using more advanced cheminformatics tools and libraries if necessary.
