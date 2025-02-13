@@ -19,28 +19,23 @@ def is_nucleotide(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return None, "Invalid SMILES string"
+        return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns for nucleobases (purines and pyrimidines)
-    purine_pattern = Chem.MolFromSmarts("c1ncnc2[nH]c[nH]c12")  # General purine ring
-    pyrimidine_pattern = Chem.MolFromSmarts("c1ncnc(N)c1=O")  # General pyrimidine ring
+    # Define SMARTS patterns for nucleobases, sugar, and phosphate groups
+    nucleobase_pattern = Chem.MolFromSmarts("n1cnc2c1ncnc2 | N-containing heterocycle")
+    sugar_pattern = Chem.MolFromSmarts("OC[C@H]1O[C@H](O)[C@@H](O)[C@H]1 | Ribose or deoxyribose structure")
+    phosphate_pattern = Chem.MolFromSmarts("OP(O)(O)=O")  # Phosphate group
 
-    # Define pattern for ribose or deoxyribose sugars, allowing for some variation
-    sugar_pattern = Chem.MolFromSmarts("[C@@H]1(O)[C@@H](O)[C@H](CO)O[C@H]1")  # Ribose structure generalized
-
-    # General phosphate pattern, accounting for potential variations
-    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)(O)")
-
-    # Check for the presence of nucleobase (purine or pyrimidine)
-    if not (mol.HasSubstructMatch(purine_pattern) or mol.HasSubstructMatch(pyrimidine_pattern)):
+    # Check for nucleobase presence
+    if not mol.HasSubstructMatch(nucleobase_pattern):
         return False, "No nucleobase found"
 
-    # Check for the presence of a sugar structure
+    # Check for sugar structure presence
     if not mol.HasSubstructMatch(sugar_pattern):
         return False, "No sugar structure (ribose or deoxyribose) found"
     
-    # Check for the presence of at least one phosphate group
+    # Check for phosphate group presence
     if not mol.HasSubstructMatch(phosphate_pattern):
         return False, "No phosphate group found"
 
-    return True, "Molecule contains nucleobase, sugar, and phosphate group consistent with a nucleotide"
+    return True, "Contains nucleobase attached to a sugar with a phosphate group"
