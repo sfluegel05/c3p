@@ -1,61 +1,30 @@
 """
 Classifies: CHEBI:46662 mineral
 """
-"""
-Classifies: CHEBI:27008 mineral
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+The previous program made some reasonable attempts at classifying minerals, but clearly had some shortcomings as evidenced by the outcomes. Here are some potential issues and ways to improve:
 
-def is_mineral(smiles: str):
-    """
-    Determines if a molecule is a mineral based on its SMILES string.
-    Minerals are typically inorganic crystalline solids formed through geological processes.
+1. **Molecular weight cutoff**: The program rejected molecules with a molecular weight below 100 as being too low for a mineral. However, some of the false negatives like calcium dihydroxide and calcium difluoride have very low molecular weights but are still considered minerals. The molecular weight cutoff may need to be lowered or removed entirely.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. **Organic carbon filter**: The program filtered out molecules containing organic carbon atoms (except carbonates and formates). While this is generally a good heuristic, it missed compounds like magnesium distearate which contain organic carbon chains but are still considered minerals. The filter could be relaxed to allow certain types of organic carbon compounds.
 
-    Returns:
-        bool: True if molecule is a mineral, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+3. **Common mineral elements**: The program checked for the presence of common mineral elements, but it's possible that the list of elements was incomplete or too broad. A more curated list of elements known to form minerals may improve accuracy.
 
-    # Check for organics (molecules with carbon atoms, excluding carbonates and formates)
-    if sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6 and not any(neighbor.GetAtomicNum() == 8 and sum(1 for a in neighbor.GetNeighbors() if a.GetAtomicNum() == 8) == 2 for neighbor in atom.GetNeighbors())) > 0:
-        return False, "Contains organic carbon atoms, minerals are typically inorganic"
+4. **Rotatable bond filter**: The program rejected molecules with more than 5 rotatable bonds as being unlikely minerals. While this is a reasonable heuristic, it may be too strict, as some mineral structures can have more rotatable bonds (e.g., magnesium distearate).
 
-    # Check for common mineral elements
-    common_mineral_elements = [8, 9, 11, 12, 13, 14, 15, 16, 17, 19, 20, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 33, 34, 35, 37, 38, 39, 40, 42, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 55, 56, 57, 58, 60, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 90, 92]
-    if not any(atom.GetAtomicNum() in common_mineral_elements for atom in mol.GetAtoms()):
-        return False, "Does not contain common mineral elements"
+5. **Bonding pattern recognition**: The program attempted to identify ionic, covalent, or metallic bonding patterns typical of minerals. However, the implementation may have been too simplistic, leading to false negatives like potassium chloride and pyrite being missed.
 
-    # Check for geological origin (heuristics)
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable > 5:
-        return False, "Too many rotatable bonds, unlikely to be a mineral"
+6. **Lack of structural pattern recognition**: The program did not explicitly check for common structural patterns found in minerals, such as layered structures (e.g., kaolinite), chain structures (e.g., heazlewoodite), or specific molecular geometries. Incorporating structural pattern recognition could improve accuracy.
 
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 100:
-        return False, "Molecular weight too low for a mineral"
+7. **Limited examples in the training data**: The program may have benefited from a larger and more diverse set of example minerals during training or development. The limited examples provided may have biased the program towards certain types of minerals while missing others.
 
-    # Check for ionic, covalent or metallic bonding
-    has_mineral_bonding = False
-    for bond in mol.GetBonds():
-        atom1 = bond.GetBeginAtom()
-        atom2 = bond.GetEndAtom()
-        if (atom1.GetAtomicNum() in range(19, 57) and atom2.GetAtomicNum() in range(57, 87)) or \
-           (atom2.GetAtomicNum() in range(19, 57) and atom1.GetAtomicNum() in range(57, 87)) or \
-           (atom1.GetAtomicNum() in range(21, 31) and atom2.GetAtomicNum() in range(21, 31)) or \
-           (atom1.GetAtomicNum() in range(38, 51) and atom2.GetAtomicNum() in range(38, 51)):
-            has_mineral_bonding = True
-            break
-    if not has_mineral_bonding:
-        return False, "Does not contain ionic, covalent or metallic bonding typical of minerals"
+To improve the program, you could consider the following strategies:
 
-    return True, "Inorganic compound with mineral-like bonding and common mineral elements, likely geological origin"
+- Revisit the molecular weight cutoff or remove it entirely.
+- Refine the organic carbon filter to allow certain types of organic compounds known to form minerals.
+- Curate a more comprehensive and accurate list of elements commonly found in minerals.
+- Adjust the rotatable bond filter to be less strict or remove it entirely.
+- Improve the bonding pattern recognition logic to better capture the diversity of bonding patterns found in minerals.
+- Incorporate structural pattern recognition to identify common mineral motifs and geometries.
+- Expand the training data with a larger and more diverse set of example minerals.
+
+Additionally, you may want to explore machine learning approaches, such as training a model on a large dataset of known minerals and non-minerals, which could potentially learn the relevant patterns and features more effectively than a rule-based approach.
