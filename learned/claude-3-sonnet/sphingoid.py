@@ -25,24 +25,22 @@ def is_sphingoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for sphinganine backbone pattern (long carbon chain with amine and 2+ hydroxy groups)
-    backbone_pattern = Chem.MolFromSmarts("[CH2X4][CH2X4][CH2X4][CH2X4][CH2X4][CH2X4][CH2X4][CH2X4][CH2X4][CH2X4][CH2X4][CX4]([CH2X4][CH2X4][CH2X4][CH2X4][CH3X4])[NX3H2,NX3,NX4H2+][CX4]([OX2H,OX1H,OX1-])[CX4]([OX2H,OX1H,OX1-])")
-    if not mol.HasSubstructMatch(backbone_pattern):
-        return False, "No sphinganine backbone found"
+    # Look for sphinganine core (long aliphatic chain with amine group)
+    core_pattern = Chem.MolFromSmarts("[CH2X4][CH2X4][CH2X4][CH2X4][CH2X4][CH2X4][CH2X4][CH2X4][CH2X4][CH2X4][CH2X4][CX4]([CH2X4][CH2X4][CH2X4][CH2X4][CH3X4])[NX3H2,NX3,NX4H2+]")
+    if not mol.HasSubstructMatch(core_pattern):
+        return False, "No sphinganine core found"
     
-    # Look for long aliphatic chains
-    chain_pattern = Chem.MolFromSmarts("[CH2X4,CH3X4]~[CH2X4,CH3X4]~[CH2X4,CH3X4]~[CH2X4,CH3X4]~[CH2X4,CH3X4]")
-    chain_matches = mol.GetSubstructMatches(chain_pattern)
-    if len(chain_matches) < 2:
-        return False, "Missing long aliphatic chains"
-    
-    # Check for hydroxy groups or unsaturated bonds
+    # Look for hydroxy groups
     has_hydroxy = any(atom.GetAtomicNum() == 8 and atom.GetTotalNumHs() == 1 for atom in mol.GetAtoms())
+    
+    # Look for unsaturated bonds
     has_unsaturation = any(bond.GetBondType() == Chem.BondType.DOUBLE for bond in mol.GetBonds())
+    
+    # Sphingoids must have either hydroxy groups or unsaturated bonds
     if not (has_hydroxy or has_unsaturation):
         return False, "No hydroxy groups or unsaturated bonds found"
     
     # Check for chiral centers (optional)
     chiral_centers = any(atom.HasProp("_ChiralityPossible") and atom.HasProp("_CIPCode") and atom.GetProp("_CIPCode") in ["R", "S"] for atom in mol.GetAtoms())
     
-    return True, "Contains sphinganine backbone with long aliphatic chains and hydroxy/unsaturated groups" + (", chiral centers present" if chiral_centers else "")
+    return True, "Contains sphinganine core with hydroxy/unsaturated groups" + (", chiral centers present" if chiral_centers else "")
