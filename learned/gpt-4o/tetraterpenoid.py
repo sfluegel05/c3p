@@ -21,30 +21,29 @@ def is_tetraterpenoid(smiles: str):
     
     # Count carbon atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if not (30 <= c_count <= 50):
+    if not (35 <= c_count <= 55):
         return False, f"Expected around 40 carbon atoms, found {c_count}"
 
-    # Check for a more generalized extended conjugated system
+    # Check for an extended conjugated system typical in tetraterpenoids
     polyene_patterns = [
-        Chem.MolFromSmarts("C=CC=CC=CC=C"),  # Existing pattern
-        Chem.MolFromSmarts("C=CC=CC=CC=CC=C"),  # Longer conjugation
-        Chem.MolFromSmarts("C=C(C=C)C=C")  # Alternate conjugation form
+        Chem.MolFromSmarts("C=CC=CC=CC=CC=C"),  # Standard long conjugated chain
+        Chem.MolFromSmarts("C=CC=C(C=C)C=C"),  # Branched conjugation
+        Chem.MolFromSmarts("C=CC=CC=C(CC)C=C"),  # With terminal groups
     ]
     found_polyene = any(mol.HasSubstructMatch(pat) for pat in polyene_patterns)
     if not found_polyene:
         return False, "No extended conjugated polyene system found"
 
-    # Check for presence of a diverse set of functional groups
+    # Check for presence of possible functional groups
     functional_patterns = [
         Chem.MolFromSmarts("[OH]"),  # Hydroxyl group
         Chem.MolFromSmarts("[C]=O"),  # Carbonyl group
-        Chem.MolFromSmarts("[OX2]"),  # Generic oxygen presence, covers hydroxyl and epoxide
+        Chem.MolFromSmarts("O([CX3]=[OX1])"),  # Ester or similar
         Chem.MolFromSmarts("O"),  # Any oxygen atom
     ]
     found_functional_groups = any(mol.HasSubstructMatch(pat) for pat in functional_patterns)
 
-    # Accept if either polyene system or functional groups are found satisfactorily
-    if not found_functional_groups and not found_polyene:
-        return False, "Neither functional group nor extended conjugation system found"
+    if not found_functional_groups:
+        return False, "Missing expected functional groups indicative of tetraterpenoids"
     
-    return True, "Structure consistent with a tetraterpenoid: extended polyene and/or functional group present"
+    return True, "Structure consistent with a tetraterpenoid: extended polyene and presence of functional groups"
