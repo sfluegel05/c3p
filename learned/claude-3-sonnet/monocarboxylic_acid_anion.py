@@ -1,24 +1,70 @@
 """
 Classifies: CHEBI:35757 monocarboxylic acid anion
 """
-The previous code attempted to identify monocarboxylic acid anions by checking for the presence of exactly one carboxylate anion group (-C(=O)[O-]) and the absence of any intact carboxy groups (-C(=O)OH). However, the outcomes show that this approach missed several examples of monocarboxylic acid anions.
+"""
+Classifies: CHEBI:36342 monocarboxylic acid anion
 
-Here are some potential issues and improvements:
+A carboxylic acid anion formed when the carboxy group of a monocarboxylic acid is deprotonated.
+"""
 
-1. **Missed deprotonated carboxy groups**: The code only checks for the specific SMARTS pattern "C(=O)[O-]" for carboxylate anions. However, some examples like "2-dehydro-D-gluconate" have the carboxylate group represented differently (e.g., OC(=O)C([O-])=O). The SMARTS pattern should be more flexible to capture these variations.
+from rdkit import Chem
+from rdkit.Chem import AllChem, rdMolDescriptors
 
-2. **Presence of other functional groups**: The code assumes that the presence of a single carboxylate group is sufficient to classify a molecule as a monocarboxylic acid anion. However, some examples like "5-nitroanthranilate" contain additional functional groups (e.g., nitro groups), which were not accounted for.
+def is_monocarboxylic_acid_anion(smiles: str):
+    """
+    Determines if a molecule is a monocarboxylic acid anion based on its SMILES string.
 
-3. **Lack of context-specific checks**: The code does not consider the specific context of the monocarboxylic acid anion, such as the presence of a hydrocarbon chain or a ring system. This led to false negatives like "chlorimuron," which does not have a carboxylate group.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-To improve the program, the following modifications could be made:
-
-1. **Use a more flexible SMARTS pattern**: Instead of a fixed SMARTS pattern, use a more flexible pattern that captures different representations of carboxylate groups. For example, "[CX3](=[OX1])[OX2-]" would match deprotonated carboxy groups with various substitution patterns.
-
-2. **Include additional checks for functional groups**: Incorporate checks for the presence of other functional groups that are commonly found in monocarboxylic acid anions, such as hydroxy groups or alkyl chains.
-
-3. **Implement context-specific checks**: Add checks for the presence of a hydrocarbon chain or a ring system, as these are typical structural features of monocarboxylic acid anions.
-
-4. **Consider molecular properties**: Incorporate additional checks based on molecular properties, such as molecular weight, number of hydrogen bond donors/acceptors, or topological polar surface area, which can help differentiate monocarboxylic acid anions from other chemical classes.
-
-By addressing these issues and incorporating more specific checks, the program should be able to better classify monocarboxylic acid anions while reducing false negatives and false positives.
+    Returns:
+        bool: True if molecule is a monocarboxylic acid anion, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Look for carboxylate anion group (-C(=O)[O-])
+    carboxylate_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2-]")
+    carboxylate_matches = mol.GetSubstructMatches(carboxylate_pattern)
+    if len(carboxylate_matches) != 1:
+        return False, f"Found {len(carboxylate_matches)} carboxylate groups, need exactly 1"
+    
+    # Check for the absence of intact carboxy groups (-C(=O)OH)
+    intact_carboxy_pattern = Chem.MolFromSmarts("C(=O)O")
+    intact_carboxy_matches = mol.GetSubstructMatches(intact_carboxy_pattern)
+    if len(intact_carboxy_matches) > 0:
+        return False, "Found intact carboxy groups, which should be deprotonated"
+    
+    # Check for the presence of a hydrocarbon chain or ring system
+    hydrocarbon_pattern = Chem.MolFromSmarts("[C;!$(C=O)]")
+    hydrocarbon_matches = mol.GetSubstructMatches(hydrocarbon_pattern)
+    if len(hydrocarbon_matches) < 3:
+        return False, "Not enough hydrocarbon atoms to be a monocarboxylic acid anion"
+    
+    # Check for the presence of hydroxy groups (-OH)
+    hydroxy_pattern = Chem.MolFromSmarts("[OX2H]")
+    hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
+    
+    # Check molecular properties
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 60 or mol_wt > 500:
+        return False, "Molecular weight outside typical range for monocarboxylic acid anions"
+    
+    hba = rdMolDescriptors.CalcNumLipinskiHBA(mol)
+    hbd = rdMolDescriptors.CalcNumLipinskiHBD(mol)
+    if hba < 2 or hba > 10 or hbd < 1 or hbd > 6:
+        return False, "Hydrogen bond donor/acceptor counts outside typical range"
+    
+    tpsa = rdMolDescriptors.CalcTPSA(mol)
+    if tpsa < 20 or tpsa > 150:
+        return False, "Topological polar surface area outside typical range"
+    
+    # If all checks pass, classify as a monocarboxylic acid anion
+    reason = "Contains a single carboxylate anion group, a hydrocarbon chain/ring, and molecular properties consistent with a monocarboxylic acid anion."
+    if len(hydroxy_matches) > 0:
+        reason += " Also contains hydroxy groups."
+    return True, reason
