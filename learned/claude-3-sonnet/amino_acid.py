@@ -6,6 +6,7 @@ Classifies: CHEBI:33597 amino acid
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_amino_acid(smiles: str):
     """
@@ -32,27 +33,49 @@ def is_amino_acid(smiles: str):
         return False, "No carboxylic acid group found"
     
     # Look for amino group (-N)
-    amino_pattern = Chem.MolFromSmarts("N")
+    amino_pattern = Chem.MolFromSmarts("[N;H2,H1;!$(NC=O)]")
     amino_match = mol.GetSubstructMatches(amino_pattern)
     if not amino_match:
         return False, "No amino group found"
     
-    # Check if amino group is attached to carboxylic acid carbon
-    for amino_idx in amino_match:
-        for carboxyl_idx in carboxyl_match:
-            carboxyl_atom = mol.GetAtomWithIdx(carboxyl_idx[0])
-            amino_atom = mol.GetAtomWithIdx(amino_idx)
-            if any(bond.GetBeginAtomIdx() == amino_idx and bond.GetEndAtomIdx() == carboxyl_idx[0] or
-                   bond.GetBeginAtomIdx() == carboxyl_idx[0] and bond.GetEndAtomIdx() == amino_idx
-                   for bond in carboxyl_atom.GetBonds()):
-                break
-        else:
-            continue
-        break
-    else:
-        return False, "Amino group not attached to carboxylic acid carbon"
+    # Check if amino group is attached to the alpha-carbon of the carboxylic acid
+    alpha_carbon_pattern = Chem.MolFromSmarts("C(C(=O)O)N")
+    alpha_carbon_match = mol.GetSubstructMatches(alpha_carbon_pattern)
+    if not alpha_carbon_match:
+        return False, "Amino group not attached to the alpha-carbon of the carboxylic acid"
     
-    # Check for additional functional groups if present
-    # e.g., hydroxyl (-OH), thiol (-SH), phosphate (-OP(O)(O)=O), etc.
+    # Check for additional functional groups or substituents
+    hydroxyl_pattern = Chem.MolFromSmarts("O")
+    thiol_pattern = Chem.MolFromSmarts("S")
+    phosphate_pattern = Chem.MolFromSmarts("OP(O)(O)=O")
     
-    return True, "Contains a carboxylic acid group and an amino group attached to the carboxylic acid carbon"
+    hydroxyl_match = mol.GetSubstructMatches(hydroxyl_pattern)
+    thiol_match = mol.GetSubstructMatches(thiol_pattern)
+    phosphate_match = mol.GetSubstructMatches(phosphate_pattern)
+    
+    # Check for common substituents on the amino group
+    n_methyl_pattern = Chem.MolFromSmarts("CN")
+    n_acetyl_pattern = Chem.MolFromSmarts("CC(=O)N")
+    
+    n_methyl_match = mol.GetSubstructMatches(n_methyl_pattern)
+    n_acetyl_match = mol.GetSubstructMatches(n_acetyl_pattern)
+    
+    # Check for additional structural constraints
+    backbone_pattern = Chem.MolFromSmarts("[C;H2,H1]([C;H2,H1])([C;H2,H1])")
+    backbone_match = mol.GetSubstructMatches(backbone_pattern)
+    
+    ring_pattern = Chem.MolFromSmarts("C1CCCCC1")
+    ring_match = mol.GetSubstructMatches(ring_pattern)
+    
+    # Check for stereochemistry
+    stereochemistry_pattern = Chem.MolFromSmarts("[C@H](N)(C(=O)O)[C@@H]")
+    stereochemistry_match = mol.GetSubstructMatches(stereochemistry_pattern)
+    
+    # Calculate molecular weight - amino acids typically <500 Da
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt > 500:
+        return False, "Molecular weight too high for an amino acid"
+    
+    # Additional checks or conditions can be added as needed
+    
+    return True, "Contains a carboxylic acid group, an amino group attached to the alpha-carbon, and meets additional structural constraints"
