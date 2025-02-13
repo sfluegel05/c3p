@@ -1,31 +1,47 @@
 """
 Classifies: CHEBI:47788 3-oxo steroid
 """
-The previous code failed to correctly classify the provided examples of 3-oxo steroids. The main issue seems to be with the SMARTS patterns used to identify the steroid backbone and the position of the oxo group.
+"""
+Classifies: CHEBI:35713 3-oxo steroid
+Definition: Any oxo steroid where an oxo substituent is located at position 3.
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
 
-Here's a breakdown of the issues and potential improvements:
+def is_3_oxo_steroid(smiles: str):
+    """
+    Determines if a molecule is a 3-oxo steroid based on its SMILES string.
 
-1. **Steroid Backbone Pattern**:
-   - The SMARTS pattern used for the steroid backbone (`[C@]1(C[C@@]23[C@]([H])(CC[C@@]([H])(C2)C(C3)=O)CC[C@@]1([H])C)C`) is too specific and does not account for different substitutions and variations in the steroid core.
-   - A better approach would be to use a more general pattern that captures the core cyclopentanoperhydrophenanthrene ring system found in steroids.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **Oxo Group Position Pattern**:
-   - The SMARTS pattern used for the oxo group position (`[C](=O)[C@]1(C)CC[C@@]2([H])[C@]3([H])CCC4=CC(=O)CC[C@]4(C)[C@@]3([H])CC[C@]12C`) is again too specific and does not account for different substituents and stereochemistry around the oxo group.
-   - A more general pattern that identifies the presence of an oxo group at position 3 without being too restrictive would be better.
-
-3. **Stereochemistry**:
-   - The current patterns rely heavily on specifying the stereochemistry of the atoms, which may not be necessary or accurate, especially if the input SMILES does not include stereochemical information.
-   - It would be better to use patterns that are less dependent on stereochemistry or to handle cases where stereochemistry is not specified.
-
-4. **Additional Checks**:
-   - While the current code checks for the steroid backbone and the presence of an oxo group at position 3, it may be beneficial to include additional checks or filters to improve the accuracy of the classification.
-   - For example, checking the molecular weight range, the number of rings, or the presence of specific functional groups can help eliminate false positives and false negatives.
-
-To improve the program, you could try the following:
-
-1. Use more general SMARTS patterns for the steroid backbone and the oxo group position, allowing for more variations and flexibility.
-2. Handle cases where stereochemistry is not specified in the input SMILES.
-3. Incorporate additional checks or filters to improve the accuracy of the classification, such as molecular weight range, number of rings, or presence of specific functional groups.
-4. Explore alternative approaches, such as using machine learning models trained on a dataset of 3-oxo steroids, if the rule-based approach proves too complex or inaccurate.
-
-By addressing these issues, the program should be able to classify 3-oxo steroids more accurately and handle a wider range of structures.
+    Returns:
+        bool: True if molecule is a 3-oxo steroid, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Look for steroid backbone pattern
+    steroid_pattern = Chem.MolFromSmarts("[C@H]1[C@H]2[C@@]3([C@H](C[C@@H]4CC=C5C[C@@H](CC[C@]5(C)[C@H]4C3)C2)C1)C"
+    if not mol.HasSubstructMatch(steroid_pattern):
+        return False, "No steroid backbone found"
+    
+    # Look for oxo group at position 3
+    oxo_pattern = Chem.MolFromSmarts("[C](=O)[C@H]1CC[C@H]2[C@@H]3CC[C@H](CC3)[C@@H]12")
+    if not mol.HasSubstructMatch(oxo_pattern):
+        return False, "No oxo group at position 3"
+    
+    # Additional checks
+    mol_wt = Chem.Descriptors.MolWt(mol)
+    if mol_wt < 250 or mol_wt > 500:
+        return False, "Molecular weight outside typical range for 3-oxo steroids"
+    
+    ring_info = mol.GetRingInfo()
+    if ring_info.NumRings() < 3:
+        return False, "Fewer than 3 rings, not a steroid"
+    
+    return True, "Contains steroid backbone with oxo group at position 3"
