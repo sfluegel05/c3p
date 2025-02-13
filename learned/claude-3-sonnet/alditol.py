@@ -51,8 +51,9 @@ def is_alditol(smiles: str):
         return False, "Incorrect number of carbon and oxygen atoms for alditol"
 
     # Check for linear arrangement of -CH(OH)- groups
-    for idx in choh_matches:
-        atom = mol.GetAtomWithIdx(idx)
+    for match in choh_matches:
+        atom_idx = match[0]  # Get the single atom index from the tuple
+        atom = mol.GetAtomWithIdx(atom_idx)
         if atom.GetDegree() != 2:
             return False, "-CH(OH)- groups not linearly arranged"
 
