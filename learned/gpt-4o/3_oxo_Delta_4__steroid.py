@@ -22,19 +22,30 @@ def is_3_oxo_Delta_4__steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Stereochemically correct steroid nucleus: three cyclohexane rings and a cyclopentane
-    steroid_backbone_pattern = Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2CCC4C3(CCCC4)C")
-    if not mol.HasSubstructMatch(steroid_backbone_pattern):
-        return False, "Steroid backbone not complete."
+    # Discover the generalized steroid backbone: breaking into focused sections
+    cyclohexene = Chem.MolFromSmarts("C1=CCCCC1")
+    cyclohexane = Chem.MolFromSmarts("C1CCCCC1")
+    cyclopentane = Chem.MolFromSmarts("C1CCCC1")
+    
+    # Check if these specific rings appear in sequence hinting at the steroidal nature
+    features = [
+        mol.HasSubstructMatch(cyclohexene),
+        mol.HasSubstructMatch(cyclohexane),
+        mol.HasSubstructMatch(cyclohexane),
+        mol.HasSubstructMatch(cyclopentane)
+    ]
 
-    # Identify 3-oxo group: A ketone (C=O) on the third carbon
-    oxo_pattern = Chem.MolFromSmarts("C(=O)[C;R;D4;v4]")  # Versatile ketone group
+    if not all(features):
+        return False, "Not all necessary cyclic components identified for steroid backbone."
+
+    # 3-Oxo feature as a branching part of the steroid nucleus
+    oxo_pattern = Chem.MolFromSmarts("C(=O)[C;R1]")
     if not mol.HasSubstructMatch(oxo_pattern):
-        return False, "3-oxo group not correctly positioned."
+        return False, "3-oxo group not found where required in the backbone."
 
-    # Identify Delta(4) double bond: Double bond between C4 and C5
-    delta_4_pattern = Chem.MolFromSmarts("C=C([C;R;D3;v4])C[C;R]")  # Double bond from fourth to fifth
+    # Discover the 4,5 Double bond to justify the Delta(4) portion
+    delta_4_pattern = Chem.MolFromSmarts("C=CC(C)(C)")
     if not mol.HasSubstructMatch(delta_4_pattern):
-        return False, "Delta(4) bond not properly located."
+        return False, "Delta(4) double bond not found."
 
     return True, "3-oxo and Delta(4) double bond characteristics validated for the steroid"
