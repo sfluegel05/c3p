@@ -20,44 +20,43 @@ def is_monoacylglycerol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Enhanced glycerol backbone pattern allowing for ester derivation
-    glycerol_pattern = Chem.MolFromSmarts("[C@@H](O)CO")
+    # Glycerol backbone: CH2(OH)-CH(OH)-CH2(OH)
+    glycerol_pattern = Chem.MolFromSmarts("C(CO)CO")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
     
-    # Ester linkage: -O-C(=O)-
-    ester_pattern = Chem.MolFromSmarts("C(=O)O[C@@H]")
+    # Look for exactly one ester linkage: -O-C(=O)-
+    ester_pattern = Chem.MolFromSmarts("C(=O)O")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     
     if len(ester_matches) != 1:
         return False, f"Found {len(ester_matches)} ester linkages, need exactly 1"
-    
-    # Ensure the acyl group is sufficiently long (e.g., 4+ carbons for this classification)
-    acyl_start = ester_matches[0][1]  # Carbonyl carbon position
-    carbon_count = 0
-    visited_atoms = set()
 
-    def count_acyl_carbons(start_atom):
-        nonlocal carbon_count
-        current_atom = start_atom
-        while current_atom and current_atom.GetIdx() not in visited_atoms:
-            if current_atom.GetAtomicNum() == 6:  # Check for carbon
+    # Ensure the acyl group is sufficiently long (e.g., 8+ carbons in chain)
+    # We will count carbon atoms starting from the carbonyl carbon in the ester to a terminal methyl
+    acyl_carbon = ester_matches[0][1]  # The carbonyl carbon in the ester match
+    carbon_count = 0
+    # Use a set to track visited atoms to prevent cycles
+    visited_atoms = set()
+    
+    # DFS or BFS could be used, but for simplicity and typical linear nature of fatty acids, iterate directly
+    for atom in mol.GetAtomWithIdx(acyl_carbon).GetNeighbors():
+        # Start counting from the carbon attached to the ester group
+        if atom.GetAtomicNum() == 6 and atom.GetIdx() not in visited_atoms:
+            # Move linearly along the chain
+            current_atom = atom
+            while current_atom.GetDegree() == 2 or current_atom.GetDegree() == 3:
                 carbon_count += 1
                 visited_atoms.add(current_atom.GetIdx())
-                # Move to the next carbon in chain, skipping ester oxygen
-                next_atoms = [atom for atom in current_atom.GetNeighbors()
-                              if atom.GetAtomicNum() == 6 and atom.GetIdx() not in visited_atoms]
-                current_atom = next_atoms[0] if next_atoms else None
-            else:
-                break
+                next_neighbors = [neighbor for neighbor in current_atom.GetNeighbors()
+                                  if neighbor.GetIdx() != acyl_carbon and neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited_atoms]
+                if next_neighbors:
+                    current_atom = next_neighbors[0]
+                else:
+                    break
 
-    # Find first carbon in acyl chain
-    acyl_neighs = [atom for atom in mol.GetAtomWithIdx(acyl_start).GetNeighbors() if atom.GetAtomicNum() == 6]
-    if acyl_neighs:
-        count_acyl_carbons(acyl_neighs[0])
-
-    # Check carbon count in acyl chain
-    if carbon_count < 4:
+    # Check if the acyl chain length is >=8 carbons
+    if carbon_count < 8:
         return False, f"Acyl chain length is {carbon_count}, which is too short for typical monoacylglycerol"
 
     return True, "Contains glycerol backbone with one acyl group attached via ester bond"
