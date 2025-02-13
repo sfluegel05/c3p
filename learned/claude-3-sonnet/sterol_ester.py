@@ -24,44 +24,39 @@ def is_sterol_ester(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Basic steroid core pattern - four fused rings (three 6-membered, one 5-membered)
-    # More general pattern that doesn't specify aromaticity
-    steroid_core = Chem.MolFromSmarts("C1C2CCC3CCCC4CCCC(C1)C24C3")
+    
+    # Look for steroid core (four fused rings)
+    steroid_core = Chem.MolFromSmarts("[C]1[C][C]2[C][C][C]3[C][C][C]4[C][C][C][C]4[C]3[C][C]2[C]1")
     if not mol.HasSubstructMatch(steroid_core):
         return False, "No steroid core found"
 
     # Look for ester group (-O-C(=O)-)
-    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])[#6]")
-    if not mol.HasSubstructMatches(ester_pattern):
+    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    if not ester_matches:
         return False, "No ester group found"
+    
+    # Check if the ester is at position 3 of the steroid core
+    # The pattern looks for a steroid core with an ester at position 3
+    sterol_ester_pattern = Chem.MolFromSmarts("[C]1[C][C]([OX2][CX3](=[OX1]))[C]2[C][C][C]3[C][C][C]4[C][C][C][C]4[C]3[C][C]2[C]1")
+    if not mol.HasSubstructMatch(sterol_ester_pattern):
+        return False, "Ester group not at position 3 of steroid core"
 
-    # Pattern for 3-position oxygen (more general pattern)
-    # This matches the oxygen at position 3 of the first ring
-    sterol_3_o = Chem.MolFromSmarts("C1CC([OX2])CC2C1")
-    if not mol.HasSubstructMatch(sterol_3_o):
-        return False, "No oxygen at position 3 of steroid core"
-
-    # Count carbons (allowing for smaller sterol esters)
+    # Additional checks for typical sterol characteristics
+    
+    # Count carbons (sterols typically have >20 carbons)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 20:  # Lowered threshold
-        return False, f"Too few carbons ({c_count}) for a sterol ester"
-
-    # Count rings (must have at least 4 for steroid core)
+    if c_count < 20:
+        return False, "Too few carbons for a sterol ester"
+    
+    # Look for typical sterol side chain (at least 2 carbons)
+    side_chain_pattern = Chem.MolFromSmarts("[CH2][CH2][CH](C)*")
+    if not mol.HasSubstructMatch(side_chain_pattern):
+        return False, "Missing typical sterol side chain"
+    
+    # Count rings (sterols typically have 4 rings)
     ring_info = mol.GetRingInfo()
     if ring_info.NumRings() < 4:
         return False, "Too few rings for a sterol structure"
-
-    # Look for at least one angular methyl group (more general pattern)
-    angular_methyl = Chem.MolFromSmarts("[CH3][C]([#6])([#6])[#6]")
-    if not mol.HasSubstructMatch(angular_methyl):
-        return False, "Missing characteristic angular methyl group"
-
-    # Additional check for connectivity between ester and steroid core
-    # The oxygen of the ester must be connected to the steroid core
-    ester_o = Chem.MolFromSmarts("[OX2]([#6])[CX3](=[OX1])[#6]")
-    matches = mol.GetSubstructMatches(ester_o)
-    if not any(mol.GetRingInfo().IsAtomInRingOfSize(match[0], 6) for match in matches):
-        return False, "Ester group not properly connected to steroid core"
-
-    return True, "Contains steroid core with ester at position 3 and characteristic features"
+        
+    return True, "Contains steroid core with ester group at position 3"
