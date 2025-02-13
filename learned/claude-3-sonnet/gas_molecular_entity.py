@@ -1,58 +1,24 @@
 """
 Classifies: CHEBI:138675 gas molecular entity
 """
-"""
-Classifies: CHEBI:51869 gas molecular entity
-"""
-from rdkit import Chem
-from rdkit.Chem import Descriptors
+The previous program has a few issues that could be addressed to improve its performance in classifying gas molecular entities:
 
-def is_gas_molecular_entity(smiles: str):
-    """
-    Determines if a molecule is a gas molecular entity based on its SMILES string.
-    Gas molecular entities are main group molecular entities that are gaseous at standard
-    temperature and pressure (STP; 0°C and 100 kPa).
+1. **False positives**: The program classifies several organic molecules as gas molecular entities, even though they are liquids or solids at STP. This is because the conditions used to identify gas molecular entities are too broad. The program only checks the presence of H, C, and O atoms and excludes charged species and transition metals. However, many organic compounds meet these criteria but are not gases at STP.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. **False negatives**: The program misses some common gas molecular entities, such as noble gas atoms (e.g., radon, helium-6), ozone, and oxirane. This is because the program assumes that all gas molecular entities have a molecular weight below 200 Da and a boiling point below 100°C. While these assumptions generally hold, there are exceptions that the program does not account for.
 
-    Returns:
-        bool: True if molecule is a gas molecular entity, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Exclude charged species
-    if any(atom.GetFormalCharge() != 0 for atom in mol.GetAtoms()):
-        return False, "Contains charged atoms, cannot be a gas molecular entity"
-    
-    # Exclude transition metals
-    periodic_table = Chem.GetPeriodicTable()
-    if any(periodic_table.GetNOuterElecs(atom.GetAtomicNum()) > 4 for atom in mol.GetAtoms()):
-        return False, "Contains transition metals, cannot be a gas molecular entity"
-    
-    # Check molecular weight - gas molecular entities typically <200 Da
-    mol_wt = Descriptors.MolWt(mol)
-    if mol_wt > 200:
-        return False, "Molecular weight too high for a gas molecular entity"
-    
-    # Check boiling point - gas molecular entities typically boil <100°C
-    bp = Descriptors.MolWt(mol) * 0.57 + 198.2  # Approximate boiling point formula
-    if bp > 373.15:  # 100°C in K
-        return False, "Boiling point too high for a gas molecular entity"
-    
-    # Check for common gases
-    smiles_gases = ['[He]', '[Ne]', '[Ar]', '[Kr]', '[Xe]', '[Rn]', '[H][H]', '[O][O]', 'O=C=O', 'C(C)(C)(C)', 'O=N=O', '[CH4]', '[NH3]', '[H][Cl]', '[H][F]', '[H][Br]', '[H][I]', '[C-]#[O+]', '[N-]#[N+]', '[F][F]', '[Cl][Cl]', '[Br][Br]', '[I][I]']
-    if smiles in smiles_gases:
-        return True, "Common gas molecular entity"
-    
-    # Check for alkanes, alkenes, alkynes, cycloalkanes, and ethers
-    if all(atom.GetAtomicNum() in [1, 6, 8] for atom in mol.GetAtoms()):
-        return True, "Alkane, alkene, alkyne, cycloalkane, or ether gas molecular entity"
-    
-    # If none of the above conditions are met, assume it's not a gas molecular entity
-    return False, "Molecule does not appear to be a gas molecular entity"
+3. **Boiling point estimation**: The program uses a simple formula to estimate the boiling point, which may not be accurate for all types of gas molecular entities, especially those with more complex structures.
+
+To improve the program, we can consider the following changes:
+
+1. **Implement a more rigorous set of rules**: Instead of relying solely on the presence of H, C, and O atoms, we could develop a more comprehensive set of rules to identify gas molecular entities. These rules could include specific substructure patterns, molecular weight ranges, and boiling point ranges for different classes of gas molecular entities (e.g., noble gases, diatomic gases, small alkanes, alkenes, alkynes, etc.).
+
+2. **Use a more accurate boiling point estimation method**: Instead of the simple formula, we could use more sophisticated methods for estimating boiling points, such as group contribution methods or machine learning models trained on experimental data.
+
+3. **Incorporate a whitelist of known gas molecular entities**: We could create a whitelist of SMILES strings representing known gas molecular entities at STP. This whitelist could be used to directly identify these entities without relying solely on the rules.
+
+4. **Consider physical properties beyond boiling point**: In addition to boiling point, we could consider other physical properties relevant to the gaseous state, such as vapor pressure, critical temperature, and critical pressure.
+
+5. **Implement a more robust error handling**: The program could benefit from better error handling, such as returning more informative error messages when encountering invalid or unsupported SMILES strings.
+
+By addressing these issues, we can improve the accuracy and robustness of the program in classifying gas molecular entities based on their SMILES strings.
