@@ -6,7 +6,6 @@ Classifies: CHEBI:50047 steroid saponin
 """
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
-from rdkit.Chem import rdmolfiles
 
 def is_steroid_saponin(smiles: str):
     """
@@ -26,9 +25,24 @@ def is_steroid_saponin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for cyclopentanoperhydrophenanthrene scaffold (core steroid structure)
-    steroid_core_pattern = rdmolfiles.MolFromSmarts("[C&r5,r6]1[C&r5,r6][C&r5,r6][C&r5,r6][C&r5,r6][C&r5,r6]1[C&r6]2[C&r5,r6][C&r5,r6][C&r5,r6][C&r5,r6][C&r6]2")
-    if not mol.HasSubstructMatch(steroid_core_pattern):
-        return False, "No steroid core found"
+    # Check for steroid backbone (4 fused rings, 3 rings with 6 carbons, 1 ring with 5 carbons)
+    steroid_pattern = Chem.MolFromSmarts("[C&r5,r6]1[C&r5,r6][C&r5,r6][C&r5,r6][C&r5,r6][C&r5,r6]1[C&r5,r6]2[C&r5,r6][C&r5,r6][C&r5,r6][C&r5,r6][C&r6]2[C&r5,r6]3[C&r5,r6][C&r5,r6][C&r5,r6][C&r5]3")
+    if not mol.HasSubstructMatch(steroid_pattern):
+        return False, "No steroid backbone found"
     
-    # ... (rest of the code remains the same) ...
+    # Check for OH groups (hydroxysteroid)
+    n_oh = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and sum(bond.GetBondTypeAsDouble() < 2 for bond in atom.GetBonds()) > 0)
+    if n_oh < 1:
+        return False, "No hydroxyl groups found (not a hydroxysteroid)"
+    
+    # Check for glycosidic bonds (saponin)
+    glycosidic_pattern = Chem.MolFromSmarts("[O-;!$(*=,#[!$(*=-,#[!$(*=-,-,-)])>1*]=C")
+    if not mol.HasSubstructMatch(glycosidic_pattern):
+        return False, "No glycosidic bonds found (not a saponin)"
+    
+    # Typical molecular weight range for steroid saponins
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 500 or mol_wt > 2000:
+        return False, f"Molecular weight {mol_wt:.0f} Da outside typical range for steroid saponins"
+    
+    return True, "Contains steroid backbone with hydroxyl groups and glycosidic bonds"
