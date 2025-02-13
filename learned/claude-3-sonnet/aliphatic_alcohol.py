@@ -1,26 +1,53 @@
 """
 Classifies: CHEBI:2571 aliphatic alcohol
 """
-Based on the previous code and the outcomes, it seems that the program failed to correctly classify the provided examples of aliphatic alcohols. Here are some potential reasons and improvements:
+"""
+Classifies: CHEBI:15756 aliphatic alcohol
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-1. **Insufficient Pattern Matching**: The current pattern matching for aliphatic carbon chains (`[CX4H3,CX4H2]~[CX4H2]~[CX4H2]`) is too restrictive and may not cover all possible aliphatic chain structures. For example, it may fail to match longer chains or chains with branching or unsaturation.
+def is_aliphatic_alcohol(smiles: str):
+    """
+    Determines if a molecule is an aliphatic alcohol based on its SMILES string.
+    An aliphatic alcohol is an alcohol derived from an aliphatic compound.
 
-Improvement: Use a more flexible SMARTS pattern or consider alternative approaches to detect aliphatic carbon chains, such as checking for the presence of specific functional groups or analyzing the molecular graph.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **Rotatable Bond Count Threshold**: The threshold of `n_rotatable < 2` for checking the length of aliphatic chains may be too low for some aliphatic alcohols, especially those with longer chains.
+    Returns:
+        bool: True if molecule is an aliphatic alcohol, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-Improvement: Increase the rotatable bond count threshold or consider alternative methods to determine chain length, such as counting the number of contiguous carbon atoms or using molecular descriptors.
+    # Look for aliphatic carbon chains (including branched and unsaturated)
+    aliphatic_pattern = Chem.MolFromSmarts("[CX4H3,CX4H2,CX3]~[CX4H2,CX3]~[CX4H2,CX3]")
+    aliphatic_matches = mol.GetSubstructMatches(aliphatic_pattern)
+    
+    if not aliphatic_matches:
+        return False, "No aliphatic carbon chain found"
 
-3. **Handling Cyclic Structures**: The current program does not account for aliphatic alcohols with cyclic structures, as it assumes a linear aliphatic chain.
+    # Look for alcohol functional group (-OH)
+    alcohol_pattern = Chem.MolFromSmarts("[OX1H]")
+    alcohol_matches = mol.GetSubstructMatches(alcohol_pattern)
+    
+    if not alcohol_matches:
+        return False, "No alcohol functional group found"
 
-Improvement: Modify the pattern matching or introduce additional checks to handle cyclic aliphatic structures attached to the alcohol group.
+    # Check if the alcohol group is attached to the aliphatic chain
+    for alcohol_match in alcohol_matches:
+        atom = mol.GetAtomWithIdx(alcohol_match[0])
+        for neighbor in atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 6 and neighbor.GetIsAromatic() == False:
+                break
+        else:
+            continue  # Alcohol group not attached to aliphatic chain
+        return True, "Contains an aliphatic carbon chain with an alcohol functional group"
 
-4. **Handling Substituents**: Some of the examples provided may contain additional functional groups or substituents that are not accounted for in the current program.
-
-Improvement: Expand the pattern matching or introduce additional checks to handle various substituents and functional groups while still recognizing the core aliphatic alcohol structure.
-
-5. **Test Data Quality**: It's possible that the provided examples may contain errors or inconsistencies, leading to incorrect classifications.
-
-Improvement: Carefully review the provided examples and ensure that they are correct representations of aliphatic alcohols. Consider using a more curated and reliable dataset for testing and validation.
-
-To improve the program, you can consider incorporating more sophisticated pattern matching techniques, utilizing additional molecular descriptors or graph analysis methods, and potentially combining multiple approaches for a more robust classification. Additionally, testing the program with a diverse set of examples and performing iterative refinements based on the results can help improve its accuracy.
+    return False, "Alcohol group not attached to aliphatic carbon chain"
