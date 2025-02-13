@@ -25,11 +25,21 @@ def is_sulfonamide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for sulfonamide pattern RS(=O)2NR'2
-    sulfonamide_pattern = Chem.MolFromSmarts("[S+2]([N])([O-])(=[O])")
+    # Look for sulfonamide pattern S(=O)(=O)N
+    sulfonamide_pattern = Chem.MolFromSmarts("S(=O)(=O)N")
     matches = mol.GetSubstructMatches(sulfonamide_pattern)
     
-    if matches:
-        return True, "Contains sulfonamide group RS(=O)2NR'2"
+    if not matches:
+        return False, "Does not contain sulfonamide group S(=O)(=O)N"
+
+    # Check for common substituents on sulfur and nitrogen
+    s_atoms = [mol.GetAtomWithIdx(match[0]).GetNeighbors() for match in matches]
+    n_atoms = [mol.GetAtomWithIdx(match[1]).GetNeighbors() for match in matches]
+    
+    valid_s_substituents = [atom for atom in s_atoms if any(neighbor.GetAtomicNum() == 6 for neighbor in atom)]
+    valid_n_substituents = [atom for atom in n_atoms if any(neighbor.GetAtomicNum() == 6 for neighbor in atom)]
+
+    if valid_s_substituents and valid_n_substituents:
+        return True, "Contains sulfonamide group S(=O)(=O)N with valid substituents"
     else:
-        return False, "Does not contain sulfonamide group"
+        return False, "Contains S(=O)(=O)N group but lacks valid substituents"
