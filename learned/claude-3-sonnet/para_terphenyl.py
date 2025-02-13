@@ -27,20 +27,21 @@ def is_para_terphenyl(smiles: str):
     
     # Look for 1,4-diphenylbenzene core
     core_pattern = Chem.MolFromSmarts("c1ccc(cc1)-c2ccc(cc2)-c3ccccc3")
-    if not mol.HasSubstructMatch(core_pattern):
+    match = mol.GetSubstructMatches(core_pattern)
+    if not match:
         return False, "Does not contain 1,4-diphenylbenzene core"
     
     # Check for aromatic rings and substituents
-    rings = AllChem.GetSSSR(mol)
-    if len(rings) < 3:
-        return False, "Does not have at least three rings"
-    
-    aromatic_rings = [r for r in rings if mol.GetRingAtomsMDL(r).Count(lambda a: a.GetHybridization() == Chem.HybridizationType.SP2) == len(r)]
+    rings = mol.GetRingInfo().AtomRings()
+    aromatic_rings = [r for r in rings if all(mol.GetAtomWithIdx(a).GetIsAromatic() for a in r)]
     if len(aromatic_rings) < 3:
         return False, "Does not have at least three aromatic rings"
     
-    # Check for substitution on the core rings
-    substituted_rings = [r for r in aromatic_rings if any(mol.GetAtomWithIdx(a).GetTotalNumHs() < 1 for a in r)]
+    substituted_rings = []
+    for ring in aromatic_rings:
+        ring_atoms = [mol.GetAtomWithIdx(a) for a in ring]
+        if any(a.GetTotalNumHs() < 1 for a in ring_atoms):
+            substituted_rings.append(ring)
     if len(substituted_rings) < 3:
         return False, "Core rings are not substituted"
     
