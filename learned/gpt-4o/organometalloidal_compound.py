@@ -2,7 +2,6 @@
 Classifies: CHEBI:143084 organometalloidal compound
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_organometalloidal_compound(smiles: str):
     """
@@ -22,20 +21,29 @@ def is_organometalloidal_compound(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for different patterns indicative of organometalloidal compounds
-    # Direct As-C bonds, part of an organic group
-    arsenic_carbon_pattern = Chem.MolFromSmarts("[As]-[C]")
-    # Organyl groups with functional arsenic
-    organyl_arsenic_pattern = Chem.MolFromSmarts("[C][As](=O)(O)")
-    # Expanded pattern with aromatic or complex bonds
-    aromatic_arsenic_pattern = Chem.MolFromSmarts("c[As]c")
+    # Arsenic directly bonded to carbon
+    arsenic_carbon_pattern = Chem.MolFromSmarts("[As][C]")
+    # Arsenic surrounded by carbon and oxygen, covering carboxylic/functional groups
+    organoarsenic_pattern = Chem.MolFromSmarts("[C][As](=O)")
+    # Arsenic within aromatic rings or complex structures
+    aromatic_arsenic_pattern = Chem.MolFromSmarts("c[As]")
 
-    # Checking all defined patterns
+    # Checking for multiple arsenic atoms, potential polymeric features
+    multiple_arsenic_pattern = Chem.MolFromSmarts("[As][As]")
+    
+    found_patterns = []
+    
+    # Check for each pattern and record reason
     if mol.HasSubstructMatch(arsenic_carbon_pattern):
-        return True, "Contains arsenic-carbon bonds indicative of organometalloidal compounds"
-    elif mol.HasSubstructMatch(organyl_arsenic_pattern):
-        return True, "Contains functional arsenic organyl group"
-    elif mol.HasSubstructMatch(aromatic_arsenic_pattern):
-        return True, "Contains aromatic complex with arsenic characteristic of organometalloidal compounds"
+        found_patterns.append("Contains arsenic-carbon bonds")
+    if mol.HasSubstructMatch(organoarsenic_pattern):
+        found_patterns.append("Contains functional organyl-arsenic component")
+    if mol.HasSubstructMatch(aromatic_arsenic_pattern):
+        found_patterns.append("Contains arsenic in an aromatic context")
+    if mol.HasSubstructMatch(multiple_arsenic_pattern):
+        found_patterns.append("Contains multiple arsenic atoms forming complex bonds")
+
+    if found_patterns:
+        return True, " and ".join(found_patterns) + " indicative of organometalloidal compounds"
 
     return False, "Does not meet organometalloidal structural criteria"
