@@ -10,7 +10,7 @@ from rdkit.Chem import AllChem
 def is_aldoxime(smiles: str):
     """
     Determines if a molecule is an aldoxime based on its SMILES string.
-    Aldoximes are compounds with the general structure H-CR=N-OH, where R is any carbon group.
+    Aldoximes are compounds with the general structure R-CH=N-OH, where R is any carbon group.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -24,66 +24,45 @@ def is_aldoxime(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Main pattern for aldoxime group: CH=N-OH where:
-    # - C has exactly one H
-    # - C is not aromatic
-    # - C is not part of a C=O group
-    # - N is not charged
-    # - O has exactly one H
-    pattern = "[CH1X3!a;!$(C=O);!$(C[N+]);!$(C=[N+])]=[NX2v3;!+]-[OH1X2]"
     
-    smarts = Chem.MolFromSmarts(pattern)
-    if not mol.HasSubstructMatch(smarts):
-        return False, "No aldoxime group (H-CR=N-OH) found"
-        
-    matches = mol.GetSubstructMatches(smarts)
+    # Look for oxime group pattern (C=N-OH)
+    # [CX3H1] ensures carbon has exactly one hydrogen
+    # [NX2] ensures nitrogen has double bond
+    # [OX2H1] ensures oxygen is connected to one hydrogen
+    oxime_pattern = Chem.MolFromSmarts("[CX3H1]=[NX2]-[OX2H1]")
     
+    # Alternative pattern for deprotonated oximes
+    oxime_anion_pattern = Chem.MolFromSmarts("[CX3H1]=[NX2]-[OX1-]")
+    
+    matches = mol.GetSubstructMatches(oxime_pattern)
+    anion_matches = mol.GetSubstructMatches(oxime_anion_pattern)
+    
+    total_matches = len(matches) + len(anion_matches)
+    
+    if total_matches == 0:
+        return False, "No aldoxime group (C(H)=N-OH) found"
+    
+    # Check if the carbon of C=N is connected to exactly one hydrogen
+    # This distinguishes aldoximes from ketoximes
     for match in matches:
-        carbon_idx = match[0]
-        nitrogen_idx = match[1]
-        oxygen_idx = match[2]
-        
-        carbon = mol.GetAtomWithIdx(carbon_idx)
-        nitrogen = mol.GetAtomWithIdx(nitrogen_idx)
-        oxygen = mol.GetAtomWithIdx(oxygen_idx)
-        
-        # Additional validations:
-        
-        # 1. Verify carbon has exactly one hydrogen
-        if carbon.GetTotalNumHs() != 1:
-            continue
+        carbon_atom = mol.GetAtomWithIdx(match[0])
+        if carbon_atom.GetTotalNumHs() != 1:
+            return False, "Oxime carbon has incorrect number of hydrogens"
             
-        # 2. Verify carbon is not in a ring
-        if carbon.IsInRing():
-            ring_info = mol.GetRingInfo()
-            if any(carbon_idx in ring for ring in ring_info.AtomRings()):
-                continue
-                
-        # 3. Check that nitrogen has no other double bonds
-        n_bonds = nitrogen.GetBonds()
-        if sum(1 for b in n_bonds if b.GetBondType() == Chem.BondType.DOUBLE) > 1:
-            continue
-            
-        # 4. Verify oxygen is only connected to nitrogen
-        o_bonds = oxygen.GetBonds()
-        if len(o_bonds) != 1 or oxygen.GetTotalNumHs() != 1:
-            continue
-            
-        # 5. Exclude cases where carbon is part of activated systems
-        carbon_neighbors = carbon.GetNeighbors()
-        skip = False
-        for neighbor in carbon_neighbors:
-            if neighbor.GetAtomicNum() == 7 and neighbor != nitrogen:  # No other N attachments
-                skip = True
-                break
-            if neighbor.GetIsAromatic():  # Not directly connected to aromatic systems
-                skip = True
-                break
-        if skip:
-            continue
-            
-        # If we pass all validations, it's an aldoxime
-        return True, "Contains aldoxime group (H-CR=N-OH)"
-        
-    return False, "No aldoxime group (H-CR=N-OH) found"
+    for match in anion_matches:
+        carbon_atom = mol.GetAtomWithIdx(match[0])
+        if carbon_atom.GetTotalNumHs() != 1:
+            return False, "Oxime carbon has incorrect number of hydrogens"
+    
+    # Verify carbon is not part of C=O group (would indicate an oxime ester)
+    carbonyl_pattern = Chem.MolFromSmarts("[CX3](=O)-[OX2]")
+    if mol.HasSubstructMatch(carbonyl_pattern):
+        # Check if the carbonyl carbon is the same as oxime carbon
+        carbonyl_matches = mol.GetSubstructMatches(carbonyl_pattern)
+        for oxime_match in matches:
+            oxime_carbon = oxime_match[0]
+            for carbonyl_match in carbonyl_matches:
+                if oxime_carbon == carbonyl_match[0]:
+                    return False, "Contains oxime ester group instead of aldoxime"
+    
+    return True, "Contains aldoxime group (R-CH=N-OH)"
