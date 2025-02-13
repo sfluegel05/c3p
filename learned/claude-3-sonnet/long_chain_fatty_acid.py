@@ -30,13 +30,24 @@ def is_long_chain_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(carboxyl_pattern):
         return False, "No terminal carboxylic acid group found"
 
-    # Check for long unbranched aliphatic chain
-    chain_pattern = Chem.MolFromSmarts("[CH3][CH2]([CH2])[CH2]([CH2])[CH2]([CH2])[CH2]([CH2])[CH2]([CH2])[CH2]([CH2])[CH2]([CH2])[CH2]([CH2])[CH2]([CH2])[CH2]([CH2])[CH2]([CH2])[CH2]([CH2])[CH2]([CH2])[CH2]([CH2])[CH2]([CH2])[CH2]([CH2])[CH2]([CH2])[CH2]([CH2])[CH2]([CH2])[CH2]([CH2])[CH2](C(=O)O)[CH2][CH3]")
+    # Check for long aliphatic chain
+    chain_pattern = Chem.MolFromSmarts("[CH3][CH2]([CH2])[CH2]([CH2])[CH2]([CH2])[CH2]([CH2])[CH2]([CH2])[CH2]([CH2])[CH2]([CH2])[CH2]([CH2])[CH2]([CH2])[CH2]([CH2])[CH2]([CH2])[CH2]([CH2])[CH2]([CH2])[CH2]([CH2])[CH2]([CH2])[CH2]")
     if not mol.HasSubstructMatch(chain_pattern):
-        return False, "No long unbranched aliphatic chain found"
+        return False, "No long aliphatic chain found"
 
-    # Check for double bonds at specific positions (optional)
-    # ...
+    # Check for common double bond positions
+    double_bond_patterns = [
+        Chem.MolFromSmarts("[CH2]=[CH][CH2][CH2]"),  # cis
+        Chem.MolFromSmarts("[CH2]=[CH][CH2][CH3]"),  # trans
+        Chem.MolFromSmarts("[CH2]=[CH][CH2][CH2]=[CH][CH2]"),  # cis,cis
+        Chem.MolFromSmarts("[CH2]=[CH][CH2][CH3]=[CH][CH2]"),  # cis,trans
+        # Add more patterns as needed
+    ]
+    has_double_bond = any(mol.HasSubstructMatch(pattern) for pattern in double_bond_patterns)
+
+    # Check for common substituents like hydroxyl groups
+    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
+    has_hydroxyl = mol.HasSubstructMatch(hydroxyl_pattern)
 
     # Count carbon atoms in the longest chain
     longest_chain = rdMolDescriptors.CalcMolLongestChain(mol)
@@ -44,4 +55,20 @@ def is_long_chain_fatty_acid(smiles: str):
     if n_carbon < 13 or n_carbon > 22:
         return False, f"Carbon chain length ({n_carbon}) outside the range of C13 to C22"
 
-    return True, "Molecule contains a terminal carboxylic acid group and a long unbranched aliphatic chain with a length between C13 and C22"
+    # Check molecular weight - long-chain fatty acids typically >200 Da
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 200:
+        return False, "Molecular weight too low for long-chain fatty acid"
+
+    # Check number of rotatable bonds - long-chain fatty acids typically have many
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 8:
+        return False, "Too few rotatable bonds for long-chain fatty acid"
+
+    reason = "Molecule contains a terminal carboxylic acid group and a long aliphatic chain with a length between C13 and C22"
+    if has_double_bond:
+        reason += ", with one or more double bonds"
+    if has_hydroxyl:
+        reason += ", with one or more hydroxyl groups"
+
+    return True, reason
