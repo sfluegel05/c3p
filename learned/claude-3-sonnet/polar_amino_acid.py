@@ -1,30 +1,69 @@
 """
 Classifies: CHEBI:26167 polar amino acid
 """
-After analyzing the previous program and the provided outcomes, it appears that the main issue is the limited set of patterns used to identify polar side chains. The current approach checks for common polar functional groups such as hydroxyl, thiol, amines, and guanidino groups, but it fails to recognize other polar side chains like carboxylates and amides.
+"""
+Classifies: CHEBI:27594 polar amino acid
+Any amino acid whose side chain is capable of forming one or more hydrogen bonds.
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem.rdchem import BondStereo
 
-Here are a few observations and suggestions for improvement:
+def is_polar_amino_acid(smiles: str):
+    """
+    Determines if a molecule is a polar amino acid based on its SMILES string.
 
-1. **Missed polar side chains**: The false negatives include amino acids like aspartic acid, glutamic acid, and asparagine, which contain carboxylate and amide groups in their side chains. These groups are polar and capable of forming hydrogen bonds, but the current program does not recognize them as polar side chains.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **Zwitterionic forms**: The program correctly identifies the zwitterionic form of arginine, but it might miss other zwitterionic forms of amino acids, especially at different pH values.
+    Returns:
+        bool: True if molecule is a polar amino acid, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Look for amino acid backbone pattern (N-C-C-C(=O)-O)
+    backbone_pattern = Chem.MolFromSmarts("N[C@@H](C(=O)O)C")
+    if not mol.HasSubstructMatch(backbone_pattern):
+        return False, "No amino acid backbone found"
+    
+    # Look for common polar side chain groups
+    polar_groups = ["[OH]",  # Hydroxyl
+                    "[SH]",  # Thiol
+                    "[NH2]",  # Primary amine
+                    "[NH]",  # Secondary amine
+                    "c[nH]c",  # Imidazole
+                    "C(=O)N",  # Amide
+                    "N=C(N)N"]  # Guanidino
+    
+    # Check if any polar group is present in the side chain
+    for group in polar_groups:
+        side_chain_pattern = Chem.MolFromSmarts(f"N[C@@H](C(=O)O)[C@@H]({group})")
+        if mol.HasSubstructMatch(side_chain_pattern):
+            return True, f"Contains {group} polar group in the side chain"
+    
+    # Check for zwitterionic forms (e.g., arginine)
+    zwitterion_pattern = Chem.MolFromSmarts("N[C@@H](C(=O)[O-])[C@@H]([NH3+])")
+    if mol.HasSubstructMatch(zwitterion_pattern):
+        return True, "Zwitterionic form of a polar amino acid"
+    
+    return False, "No polar side chain group found"
 
-3. **Stereocenters**: The program uses the `[C@@H]` SMARTS pattern to match the α-carbon stereocenter, which works for L-amino acids but not for D-amino acids. It would be better to use a more general pattern `[CH]` or to check for both `[C@@H]` and `[C@H]` patterns.
-
-4. **False positives**: Some false positives are due to the program identifying polar groups in the amino acid backbone or in other parts of the molecule, rather than specifically in the side chain.
-
-To improve the program, you could consider the following modifications:
-
-1. **Expand the list of polar side chain patterns**: Include patterns for carboxylate groups (`C(=O)[O-]`, `C(=O)O`), amide groups (`C(=O)N`, `CC(=O)N`), and other polar groups like sulfonamides, sulfoxides, etc.
-
-2. **Implement a more robust side chain detection**: Instead of relying solely on SMARTS patterns, you could consider extracting the side chain substructure directly and checking for polar atoms or functional groups within it.
-
-3. **Handle stereochemistry**: Use a more general pattern for the α-carbon, or check for both `[C@@H]` and `[C@H]` patterns to cover both L- and D-amino acids.
-
-4. **Consider pH and protonation states**: Amino acids can exist in different protonation states depending on the pH. You could consider incorporating pH-based rules or handling zwitterionic forms more comprehensively.
-
-5. **Refine the amino acid backbone pattern**: The current pattern `N[C@@H](C(=O)O)C` might miss some less common amino acid structures. Consider using a more general pattern or additional checks for the backbone.
-
-6. **Improve false positive filtering**: Implement additional checks to ensure that the identified polar groups are actually part of the side chain and not the backbone or other parts of the molecule.
-
-By incorporating these improvements, you should be able to enhance the accuracy of the program in classifying polar amino acids based on their SMILES strings.
+# Examples
+print(is_polar_amino_acid("N[C@@H](CC(O)=O)C(O)=O"))  # L-aspartic acid
+print(is_polar_amino_acid("NCCCC[C@@H](N)C(O)=O"))  # L-lysine
+print(is_polar_amino_acid("N[C@@H](CO)C(O)=O"))  # L-serine
+print(is_polar_amino_acid("NC(CS)C(O)=O"))  # Cysteine
+print(is_polar_amino_acid("N[C@@H](CC(N)=O)C(O)=O"))  # L-asparagine
+print(is_polar_amino_acid("O=C(O)[C@H](N)CCC(=O)N"))  # D-glutamine
+print(is_polar_amino_acid("CC(CCNC(N)=N)C(N)C(O)=O"))  # 3-methylarginine
+print(is_polar_amino_acid("C[C@@H](O)[C@H](N)C(O)=O"))  # L-threonine
+print(is_polar_amino_acid("N[C@@H](Cc1c[nH]c2ccccc12)C(O)=O"))  # L-tryptophan
+print(is_polar_amino_acid("N[C@@H](CCC(N)=O)C(O)=O"))  # L-glutamine
+print(is_polar_amino_acid("N[C@@H](Cc1c[nH]cn1)C(O)=O"))  # L-histidine
+print(is_polar_amino_acid("NC(Cc1ccc(O)cc1)C(O)=O"))  # Tyrosine
+print(is_polar_amino_acid("O=C([O-])[C@@H]([NH3+])[C@@H](CCNC(=[NH2+])N)C"))  # (3R)-3-methyl-L-arginine zwitterion
