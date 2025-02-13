@@ -37,27 +37,30 @@ def is_wax_ester(smiles: str):
         if atom.GetAtomicNum() not in [1, 6, 8]:
             return False, "Contains elements other than C, H, and O"
 
-    # Count oxygens - should be exactly 2 for a wax ester
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count != 2:
-        return False, "Must have exactly 2 oxygens (one ester group)"
-
-    # Look for fatty acid chain pattern on carbonyl side
-    # At least 7 carbons in a chain attached to the carbonyl
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[CX4][CX4][CX4][CX4][CX4][CX4][CX4]")
-    if not mol.HasSubstructMatch(fatty_acid_pattern):
-        return False, "No fatty acid chain found"
-
-    # Look for fatty alcohol chain pattern on alcohol side
-    # At least 7 carbons in a chain attached to the ester oxygen
-    fatty_alcohol_pattern = Chem.MolFromSmarts("[OX2][CX4][CX4][CX4][CX4][CX4][CX4][CX4]")
-    if not mol.HasSubstructMatch(fatty_alcohol_pattern):
-        return False, "No fatty alcohol chain found"
-
     # Count carbons - wax esters typically have at least 16 total carbons
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if c_count < 16:
         return False, "Total carbon count too low for wax ester"
+
+    # Check for cyclic structures (excluding small rings that might appear in fatty acids)
+    ring_info = mol.GetRingInfo()
+    ring_sizes = [len(ring) for ring in ring_info.AtomRings()]
+    if any(size > 6 for size in ring_sizes):
+        return False, "Contains large cyclic structures (likely sterol ester)"
+    if len(ring_sizes) > 0 and all(size <= 5 for size in ring_sizes):
+        return False, "Contains only small rings (likely lactone)"
+
+    # Look for fatty acid chain pattern on carbonyl side
+    # More flexible pattern allowing for unsaturation
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[#6]~[#6]~[#6]~[#6]~[#6]~[#6]")
+    if not mol.HasSubstructMatch(fatty_acid_pattern):
+        return False, "No fatty acid chain found"
+
+    # Look for fatty alcohol chain pattern on alcohol side
+    # More flexible pattern allowing for unsaturation
+    fatty_alcohol_pattern = Chem.MolFromSmarts("[OX2][#6]~[#6]~[#6]~[#6]~[#6]~[#6]")
+    if not mol.HasSubstructMatch(fatty_alcohol_pattern):
+        return False, "No fatty alcohol chain found"
 
     # Count rotatable bonds to verify long chains
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
@@ -66,19 +69,26 @@ def is_wax_ester(smiles: str):
 
     # Look for problematic groups that would make it not a wax ester
     problematic_groups = [
-        "[OH]",  # alcohol (except the one in ester)
         "[CX3](=O)[OX2H]",  # carboxylic acid
         "[NX3]",  # amine
         "[SX2]",  # thiol/sulfide
+        "O=C1OCC1", # beta-lactone
+        "O=C1OCCC1", # gamma-lactone
+        "O=C1OCCCC1" # delta-lactone
     ]
     
     for smart in problematic_groups:
         pattern = Chem.MolFromSmarts(smart)
         if mol.HasSubstructMatch(pattern):
-            return False, "Contains additional functional groups"
+            return False, "Contains incompatible functional groups"
 
-    # Optional: Allow for unsaturation in the chains
+    # Check for unsaturation
     double_bond_pattern = Chem.MolFromSmarts("C=C")
     has_unsaturation = mol.HasSubstructMatch(double_bond_pattern)
+
+    # Verify the molecule is primarily linear/aliphatic
+    branching_atoms = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[CH](C)(C)C")))
+    if branching_atoms > 2:
+        return False, "Too highly branched for a wax ester"
 
     return True, f"Contains one ester group connecting two long hydrocarbon chains{' with unsaturation' if has_unsaturation else ''}"
