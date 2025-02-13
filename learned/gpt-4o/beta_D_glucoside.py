@@ -12,8 +12,8 @@ def is_beta_D_glucoside(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a beta-D-glucoside, False otherwise
-        str: Reason for classification
+        bool: True if the molecule is a beta-D-glucoside, False otherwise.
+        str: Reason for classification.
     """
     
     # Parse SMILES
@@ -21,16 +21,25 @@ def is_beta_D_glucoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for a beta-D-glucoside structure
-    beta_d_glucoside_pattern = Chem.MolFromSmarts("[C@@H]1(O[C@@H](CO)[C@@H](O)[C@H](O)[C@H]1O)CO")
+    # Define improved SMARTS pattern for a beta-D-glucoside structure
+    # Note: The stereochemistry in SMARTS might need further refinement depending on actual test results.
+
+    # This pattern aims to capture: - a 6-membered pyranose ring
+    #                               - hydroxyl group positions that are characteristic of glucose
+    #                               - beta anomeric carbon (-O linkage)
+    beta_d_glucoside_patterns = [
+        Chem.MolFromSmarts("[C@@H]1(O[C@@H](CO)O[C@H](O)[C@@H](O)[C@@H](O)[C@H]1O)"),
+        Chem.MolFromSmarts("O[C@@H]1[C@@H](O[C@H](O)[C@H](O)[C@H]1O)CO"),
+        Chem.MolFromSmarts("O[C@@H]1[C@H](O)[C@@H](O)[C@H](O)[C@H](O1)CO")
+    ]
     
     # Check if the molecule has the beta-D-glucoside pattern
-    if not mol.HasSubstructMatch(beta_d_glucoside_pattern):
-        return False, "No beta-D-glucoside substructure found"
+    for pattern in beta_d_glucoside_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return True, "Contains beta-D-glucoside substructure"
+    
+    return False, "No beta-D-glucoside substructure found"
 
-    return True, "Contains beta-D-glucoside substructure"
-
-# Example usage:
-# smiles_example = "OC[C@H]1O[C@@H](OCC=2C=CC=CC2)[C@@H]([C@H]([C@@H]1O)O)O"
-# result, reason = is_beta_D_glucoside(smiles_example)
+# Example of usage:
+# result, reason = is_beta_D_glucoside("OC[C@H]1O[C@@H](Oc2ccc3ccc(c2)-c2ccccc3c2)C1O")
 # print(result, reason)
