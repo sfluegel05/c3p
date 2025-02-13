@@ -21,28 +21,21 @@ def is_monoacyl_sn_glycerol_3_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for glycerol phosphate backbone without stereo-specific labels
-    glycerol_phosphate_pattern = Chem.MolFromSmarts("OC(CO)COP(=O)(O)O")
+    # Look for glycerol backbone with a phosphodiester
+    glycerol_phosphate_pattern = Chem.MolFromSmarts("[O;H1:3][C@@H]([O:1])COP(O)(O)=O")
     if not mol.HasSubstructMatch(glycerol_phosphate_pattern):
         return False, "No glycerol backbone with phosphate group found"
     
-    # Look for presence of a single ester group attached to glycerol backbone
-    ester_with_glycerol_pattern = Chem.MolFromSmarts("C(=O)OC(C)COP(=O)(O)O")
-    ester_matches_1 = mol.GetSubstructMatches(ester_with_glycerol_pattern)
-
-    # Or at the alternative position
-    ester_with_glycerol_pattern_alt = Chem.MolFromSmarts("C(=O)OC(CO)COP(=O)(O)O")
-    ester_matches_2 = mol.GetSubstructMatches(ester_with_glycerol_pattern_alt)
+    # Look for the presence of one ester linkage (-C(=O)OC-) on the glycerol backbone
+    ester_pattern = Chem.MolFromSmarts("C(=O)OC[C@@H](COP(O)(O)=O)O")
+    ester_match_1 = mol.HasSubstructMatch(ester_pattern)
     
-    # Both patterns should not match at once, and at least one match should be found
-    if len(ester_matches_1) > 0 and len(ester_matches_2) > 0:
-        return False, "Multiple ester attachments found"
-    elif len(ester_matches_1) == 0 and len(ester_matches_2) == 0:
-        return False, "No ester linkage typical of an acyl group found"
+    # Check alternative acyl attachment on the glycerol - generalized as position-1 or 2 attachment
+    alt_ester_pattern = Chem.MolFromSmarts("C(=O)O[C@@H](CO)COP(O)(O)=O")
+    ester_match_2 = mol.HasSubstructMatch(alt_ester_pattern)
     
-    # Ensure only one acyl group is present
-    acyl_group_count = len(ester_matches_1) + len(ester_matches_2)
-    if acyl_group_count != 1:
-        return False, f"Found {acyl_group_count} acyl groups, need exactly 1"
-
+    # Confirm the presence of only one ester linkage corresponding to only one acyl group
+    if (ester_match_1 and ester_match_2) or (not ester_match_1 and not ester_match_2):
+        return False, "Incorrect number of ester linkages: Expected exact one"
+    
     return True, "Contains glycerol backbone with one acyl group and a phosphate group"
