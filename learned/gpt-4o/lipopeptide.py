@@ -27,13 +27,11 @@ def is_lipopeptide(smiles: str):
     if not mol.HasSubstructMatch(peptide_pattern):
         return False, "No peptide backbone found"
 
-    # Check for lipid presence more comprehensively (long hydrocarbon chains, possibly branched or cyclic)
-    # Lipid pattern: Include flexible SMARTS to identify both linear and branched large carbons chains
-    lipid_pattern = Chem.MolFromSmarts("[R0;!$(*=*)&!D1]-[R0;!$(*=*)&!D1]-[R0;!$(*=*)&!D1]-[R0;!$(*=*)&!D1]-[R0;!$(*=*)&!D1]-[R0;!$(*=*)&!D1]")
-    
-    for i in range(len(mol.GetSubstructMatches(lipid_pattern))):
-        path = mol.GetSubstructMatch(lipid_pattern)
-        if len(path) >= 8:
-            return True, "Contains both peptide and lipid components"
+    # Check for lipid presence: long hydrocarbon chains or cyclic hydrophobic moiety
+    # Flexible SMARTS to identify both linear and branched large carbons and cyclic hydrophobic structures
+    lipid_heavy_atom_pattern = Chem.MolFromSmarts("[$([R0][R0][R0][R0][R0][R0][R0]),$([R0][R0]@[R0][R0])]")
+
+    if mol.HasSubstructMatch(lipid_heavy_atom_pattern):
+        return True, "Contains both peptide and lipid components identified"
 
     return False, "No recognizably complex lipid part found"
