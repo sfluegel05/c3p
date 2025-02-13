@@ -21,31 +21,27 @@ def is_medium_chain_fatty_acyl_CoA_4__(smiles: str):
         return False, "Invalid SMILES string"
     
     # Check for CoA moiety
-    coa_pattern = Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@@H]([C@@H]1OP([O-])([O-])=O)OCN2CN=C(N)N=C2")
+    # Updated pattern to better capture CoA structure
+    coa_pattern = Chem.MolFromSmarts("NC(=O)CCNC(=O)[C@H](O)C(C)(C)COP([O-])(=O)OP([O-])(=O)OC")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No CoA moiety found"
     
-    # Check for medium-chain fatty acyl group, length 6 to 12 carbons
-    # Note: Define pattern for medium chain fatty acyl part
-    fatty_acyl_pattern = Chem.MolFromSmarts("C(=O)S")
-    if not mol.HasSubstructMatch(fatty_acyl_pattern):
-        return False, "No fatty acyl chain connected via thioester bond found"
+    # Check for the presence of thioester linkage
+    thioester_pattern = Chem.MolFromSmarts("C(=O)SCC")
+    if not mol.HasSubstructMatch(thioester_pattern):
+        return False, "No thioester linkage found"
 
-    # Extract the aliphatic chain preceding the thioester bond
-    chain_carbon_atoms = []
+    # Identify and examine the carbon chain length using a pattern
+    chain_pattern = Chem.MolFromSmarts("C(=O)SCCCCCCCC")
+    chain_matches = mol.GetSubstructMatches(chain_pattern)
+    chain_lengths = [len(match) for match in chain_matches]
 
-    for atom in mol.GetAtoms():
-        # Only consider aliphatic carbon atoms
-        if atom.GetAtomicNum() == 6 and atom.GetDegree() == 4:
-            chain_carbon_atoms.append(atom)
+    if not any(chain_length >= 8 and chain_length <= 12 for chain_length in chain_lengths):
+        return False, f"Chain lengths {chain_lengths} do not include a medium-chain length (8-12 carbons)"
     
-    # Check the length of the chain is within 6 to 12 carbons
-    if len(chain_carbon_atoms) < 6 or len(chain_carbon_atoms) > 12:
-        return False, f"Carbon chain length {len(chain_carbon_atoms)} is not medium-chain (6-12 carbons)"
-
-    # Check deprotonation (4- charge) of phosphate and diphosphate groups
-    phosphate_matches = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetFormalCharge() == -1]
-    if len(phosphate_matches) < 4:
-        return False, f"Insufficient deprotonated oxygens detected, found {len(phosphate_matches)}"
+    # Check that there are enough deprotonated oxygens (4- charge)
+    deprotonated_oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetFormalCharge() == -1)
+    if deprotonated_oxygen_count < 4:
+        return False, f"Insufficient number of deprotonated oxygens: {deprotonated_oxygen_count}"
 
     return True, "Molecule is a medium-chain fatty acyl-CoA(4-)"
