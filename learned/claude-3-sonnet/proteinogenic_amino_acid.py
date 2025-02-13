@@ -1,49 +1,16 @@
 """
 Classifies: CHEBI:83813 proteinogenic amino acid
 """
-"""
-Classifies: CHEBI:33709 proteinogenic amino acid
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem.rdChemReactions import AllChem
+Here's my analysis of the previous program and the outcomes:
 
-def is_proteinogenic_amino_acid(smiles: str):
-    """
-    Determines if a molecule is a proteinogenic amino acid based on its SMILES string.
+The previous program attempted to classify proteinogenic amino acids by checking if the molecule is an alpha-amino acid, and then checking if the side chain matches one of the proteinogenic amino acid side chains. However, there were a few issues:
 
-    Args:
-        smiles (str): SMILES string of the molecule
+1. **Import Error**: The program tried to import `AllChem` from `rdkit.Chem.rdChemReactions`, which is incorrect. `AllChem` is a part of the `rdkit.Chem` module, not `rdkit.Chem.rdChemReactions`. This caused an import error and the program failed to run.
 
-    Returns:
-        bool: True if the molecule is a proteinogenic amino acid, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Check if the molecule is an alpha-amino acid
-    patt = Chem.MolFromSmarts('N[C@@H](C(=O)O)C')
-    if not mol.HasSubstructMatch(patt):
-        return False, "Not an alpha-amino acid"
-    
-    # Check the side chain
-    patt = Chem.MolFromSmarts('N[C@@H](C(=O)O)[C@@H]')
-    if not mol.HasSubstructMatch(patt):
-        return False, "No side chain attached"
-    
-    # Get the side chain
-    sidechains = AllChem.GetMolFragsWithSPorts(mol, AllChem.SmilesPatts.smarts_pattern['sidechain'])
-    if not sidechains:
-        return False, "Could not determine side chain"
-    
-    # Check if the side chain matches a proteinogenic amino acid
-    for chain in sidechains:
-        smarts = AllChem.GetSmilesPatternFromMol(chain)
-        if smarts in AllChem.SmartsPatts.proteinogenic_amino_acids.values():
-            return True, "Matches a proteinogenic amino acid side chain"
-    
-    return False, "Side chain does not match a proteinogenic amino acid"
+2. **Side Chain Identification**: The program used `AllChem.GetMolFragsWithSPorts` to identify the side chain of the amino acid. However, this function is designed to find specific reaction sites in a molecule, not to identify side chains. This likely caused the side chain identification to fail in many cases.
+
+3. **Side Chain Matching**: The program attempted to match the side chain SMARTS pattern against a dictionary of proteinogenic amino acid side chain patterns (`AllChem.SmartsPatts.proteinogenic_amino_acids`). However, this dictionary does not seem to be a part of the RDKit library, which suggests that it is either a custom dictionary or a typo.
+
+4. **Stereochemistry**: The program did not check for the stereochemistry of the amino acid, which is a crucial aspect of proteinogenic amino acids (except for glycine). Most proteinogenic amino acids have the L-configuration, and this should be checked.
+
+To improve the program, we need to fix the import issue, find a more reliable way to identify and extract the side chain, and implement checks for the stereochemistry and specific side chain patterns of proteinogenic amino acids. We can also consider using pre-defined molecular patterns or SMARTS patterns for proteinogenic amino acids, rather than trying to build them dynamically.
