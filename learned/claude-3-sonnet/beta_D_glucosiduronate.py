@@ -1,32 +1,57 @@
 """
 Classifies: CHEBI:83411 beta-D-glucosiduronate
 """
-The previous program attempts to classify molecules as beta-D-glucosiduronates by checking for the presence of a deprotonated carboxyl group and a glucuronic acid moiety. However, it fails to classify all the provided examples correctly.
+"""
+Classifies: CHEBI:35615 beta-D-glucosiduronate
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-Here are some potential reasons for the failure and suggestions for improvement:
+def is_beta_D_glucosiduronate(smiles: str):
+    """
+    Determines if a molecule is a beta-D-glucosiduronate based on its SMILES string.
+    A beta-D-glucosiduronate is a carbohydrate acid derivative anion obtained by deprotonation
+    of the carboxy group of any beta-D-glucosiduronic acid.
 
-1. **Incomplete glucuronic acid patterns**: The program checks for glucuronic acid patterns using only two SMARTS patterns. However, these patterns may not cover all possible conformations and substitutions of the glucuronic acid moiety. To improve this, additional SMARTS patterns should be added to cover a broader range of structures.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **No consideration of stereochemistry**: The program does not explicitly check for the correct stereochemistry of the glucuronic acid moiety. It should ensure that the stereochemistry matches the beta-D configuration.
-
-3. **No consideration of anion charge**: While the program checks for the presence of a deprotonated carboxyl group, it does not verify that the overall molecule has a negative charge, as expected for a glucosiduronate anion.
-
-4. **No consideration of connectivity**: The program does not check if the deprotonated carboxyl group and the glucuronic acid moiety are connected within the same molecule.
-
-5. **Potential false positives**: The program may classify molecules containing both a deprotonated carboxyl group and a glucuronic acid moiety as positive, even if they are not beta-D-glucosiduronates.
-
-To improve the program, consider the following suggestions:
-
-1. **Expand glucuronic acid patterns**: Add more SMARTS patterns to cover a broader range of glucuronic acid moieties, including different substitutions and conformations.
-
-2. **Check stereochemistry**: Incorporate checks for the correct stereochemistry of the glucuronic acid moiety, ensuring it matches the beta-D configuration.
-
-3. **Check overall charge**: Verify that the overall molecule has a negative charge, as expected for a glucosiduronate anion.
-
-4. **Check connectivity**: Ensure that the deprotonated carboxyl group and the glucuronic acid moiety are connected within the same molecule.
-
-5. **Implement additional checks**: Incorporate additional checks, such as molecular weight, atom counts, or other structural features, to reduce false positives and improve the classification accuracy.
-
-6. **Use machine learning or expert-curated rules**: Consider using machine learning techniques or expert-curated rules to improve the classification accuracy, especially for complex or diverse molecular structures.
-
-By addressing these potential issues and incorporating the suggested improvements, the program's ability to accurately classify beta-D-glucosiduronates should improve significantly.
+    Returns:
+        bool: True if molecule is a beta-D-glucosiduronate, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Look for glucuronic acid moiety ([C@H]1[C@H]([C@@H]([C@H]([C@H](O1)C([O-])=O)O)O)O)
+    glucuronic_pattern = Chem.MolFromSmarts("[C@H]1[C@H]([C@@H]([C@H]([C@H](O1)C([O-])=O)O)O)O")
+    if not mol.HasSubstructMatch(glucuronic_pattern):
+        return False, "No glucuronic acid moiety found"
+    
+    # Check for beta configuration (look for cis arrangement of H and OH on ring atoms)
+    beta_pattern = Chem.MolFromSmarts("[C@H]1[C@@H]([C@@H]([C@@H]([C@@H](O1)C([O-])=O)O)O)O")
+    if not mol.HasSubstructMatch(beta_pattern):
+        return False, "Not in beta configuration"
+    
+    # Check molecular weight - glucosiduronates typically >300 Da
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 300:
+        return False, "Molecular weight too low for glucosiduronate"
+    
+    # Count carbons, oxygens, and deprotonated carboxyl groups
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    deprotonated_cooh_count = sum(1 for atom in mol.GetAtoms() if atom.GetFormalCharge() == -1)
+    
+    if c_count < 6:
+        return False, "Too few carbons for glucosiduronate"
+    if o_count < 6:
+        return False, "Too few oxygens for glucosiduronate"
+    if deprotonated_cooh_count != 1:
+        return False, "Does not contain exactly one deprotonated carboxyl group"
+    
+    return True, "Contains glucuronic acid moiety in beta configuration with deprotonated carboxyl group"
