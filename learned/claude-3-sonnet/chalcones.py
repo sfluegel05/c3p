@@ -1,28 +1,63 @@
 """
 Classifies: CHEBI:23086 chalcones
 """
-The previous code attempted to classify chalcones by checking for the presence of the chalcone backbone pattern (Ar-CH=CH-C(=O)-Ar) and aromatic rings connected by an alpha,beta-unsaturated ketone. However, there are a few potential issues with this approach:
+"""
+Classifies: CHEBI:38223 chalcones
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-1. The SMARTS pattern used to match the chalcone backbone (`c1ccccc1C=CC(=O)c2ccccc2`) is too specific and will miss many chalcone derivatives with substituents on the aromatic rings.
+def is_chalcone(smiles: str):
+    """
+    Determines if a molecule is a chalcone based on its SMILES string.
+    A chalcone is a 1,3-diphenylpropenone (benzylideneacetophenone) or its derivatives
+    formed by substitution, with the general structure Ar-CH=CH-C(=O)-Ar.
 
-2. The aromatic ring detection relies on the RingInfo class, which may not always identify fused or bridged rings correctly.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. The code only checks for the presence of an alpha,beta-unsaturated ketone, but does not verify that it is connecting the two aromatic rings.
-
-4. The code does not consider other structural features or properties that could help differentiate chalcones from other molecules with similar substructures.
-
-To improve the classification, we could try the following:
-
-1. Use a more general SMARTS pattern to match the chalcone backbone, allowing for substituents on the aromatic rings.
-
-2. Use a different method for identifying aromatic rings, such as the Chem.GetSSSR() function or the Chem.GetAromaticRings() function.
-
-3. Explicitly check that the alpha,beta-unsaturated ketone is connecting the two aromatic rings.
-
-4. Consider additional properties or structural features that are characteristic of chalcones, such as the presence of specific substituents, molecular weight ranges, or other structural constraints.
-
-5. Use a combination of multiple criteria to improve the accuracy of the classification, rather than relying on a single substructure match.
-
-6. Test the program on a diverse set of chalcone and non-chalcone examples to evaluate its performance and adjust the criteria as needed.
-
-By addressing these potential issues and incorporating additional criteria, the classification program should be able to more accurately identify chalcones and their derivatives.
+    Returns:
+        bool: True if molecule is a chalcone, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Look for chalcone backbone pattern (Ar-CH=CH-C(=O)-Ar)
+    chalcone_pattern = Chem.MolFromSmarts("[a]C=CC(=O)c1ccccc1")
+    matches = mol.GetSubstructMatches(chalcone_pattern)
+    if not matches:
+        return False, "No chalcone backbone found"
+    
+    # Check for aromatic rings
+    aromatic_rings = [ring for ring in Chem.GetSymmSSSR(mol)
+                      if mol.GetRingInfo().IsAromaticRing(ring)]
+    if len(aromatic_rings) < 2:
+        return False, "Less than two aromatic rings found"
+    
+    # Check that the alpha,beta-unsaturated ketone connects the aromatic rings
+    for match in matches:
+        ring_atoms = set()
+        for ring in aromatic_rings:
+            ring_atoms.update(ring)
+        if set(match).issubset(ring_atoms):
+            break
+    else:
+        return False, "Chalcone backbone not connecting aromatic rings"
+    
+    # Check molecular weight range
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 200 or mol_wt > 600:
+        return False, "Molecular weight outside typical range for chalcones"
+    
+    # Count carbons and oxygens
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if c_count < 12 or o_count < 1:
+        return False, "Insufficient carbon or oxygen atoms for chalcone"
+    
+    return True, "Molecule contains the chalcone backbone (Ar-CH=CH-C(=O)-Ar) with aromatic rings"
