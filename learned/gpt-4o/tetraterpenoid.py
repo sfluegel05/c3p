@@ -21,23 +21,23 @@ def is_tetraterpenoid(smiles: str):
     
     # Count carbon atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if not (35 <= c_count <= 45):
+    if not (35 <= c_count <= 42):
         return False, f"Expected around 40 carbon atoms, found {c_count}"
 
     # Check for conjugated double bonds pattern
-    # SMARTS for conjugated polyene segment (repeated C=C-C-C); flexible number of repetitions
-    polyene_pattern = Chem.MolFromSmarts("C=C(-C)=C")
+    # Adjusting SMARTS for longer conjugation typically seen in tetraterpenoids
+    polyene_pattern = Chem.MolFromSmarts("C=CC=CC=CC=C")
     if not mol.HasSubstructMatch(polyene_pattern):
-        return False, "No conjugated polyene backbone found"
+        return False, "No extended conjugated polyene system found"
 
-    # Check for presence of typical functional groups (e.g., -OH, =O)
+    # Check for presence of functional groups (e.g., -OH, =O)
     functional_patterns = [
-        Chem.MolFromSmarts("O"),  # Hydroxyl
-        Chem.MolFromSmarts("C=O"),  # Carbonyl
-        Chem.MolFromSmarts("O[C@H]")  # Epoxide (stereochemistry typical for carotenoids)
+        Chem.MolFromSmarts("[OH]"),  # Hydroxyl group
+        Chem.MolFromSmarts("[C]=O"),  # Carbonyl group
+        Chem.MolFromSmarts("[OX2]"),  # Generic oxygen presence, covers hydroxyl and epoxide
     ]
     found_functional_groups = any(mol.HasSubstructMatch(pat) for pat in functional_patterns)
     if not found_functional_groups:
-        return False, "No common functional groups (e.g., hydroxyl, carbonyl) found"
+        return False, "No common functional groups (e.g., hydroxyl, carbonyl, epoxide) found"
 
-    return True, "Structure consistent with a tetraterpenoid (typical C40 backbone with isoprene units and carotenoid-like functional groups)"
+    return True, "Structure consistent with a tetraterpenoid: extended polyene system and functional group present"
