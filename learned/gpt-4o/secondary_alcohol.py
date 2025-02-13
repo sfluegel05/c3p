@@ -21,10 +21,10 @@ def is_secondary_alcohol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Refined SMARTS pattern for a secondary alcohol
-    # [C;X4] for sp3 carbon, [OH] for hydroxyl group, connected directly to another [C;X4] indicating secondary carbon
-    secondary_alcohol_pattern = Chem.MolFromSmarts("[C;X4](O)[C;X4][C;X4]")
-    
+    # Define the SMARTS pattern for a secondary alcohol
+    # [CH2] ensures the carbon is sp3 with a single hydrogen, and [OH] is the hydroxy group
+    secondary_alcohol_pattern = Chem.MolFromSmarts("[CX4;H1]([OH])[C;X4]")
+
     # Check for the presence of the secondary alcohol pattern
     if mol.HasSubstructMatch(secondary_alcohol_pattern):
         return True, "Contains a secondary alcohol functional group"
