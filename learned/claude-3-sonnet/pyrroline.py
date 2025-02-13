@@ -6,7 +6,6 @@ Classifies: CHEBI:35688 pyrroline
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem.rdchem import IsAtomInRingOfSize
 
 def is_pyrroline(smiles: str):
     """
@@ -32,8 +31,7 @@ def is_pyrroline(smiles: str):
         return False, "No dihydropyrrole ring found"
     
     # Check for aromaticity (should be non-aromatic)
-    aromatic_atoms = [atom.GetIsAromatic() for atom in mol.GetAtoms()]
-    if any(aromatic_atoms):
+    if mol.GetAromaticRingInfo().AromaticRings:
         return False, "Pyrroline ring must be non-aromatic"
     
     # Check for other rings (should be monocyclic)
@@ -48,7 +46,12 @@ def is_pyrroline(smiles: str):
             return False, "Pyrroline should only contain C and N atoms"
         elif atom.GetAtomicNum() == 7:
             # Check if nitrogen is in a 5-membered ring
-            if not any(IsAtomInRingOfSize(atom, 5)):
+            is_in_5ring = False
+            for ring in rings:
+                if atom.GetIdx() in ring and len(ring) == 5:
+                    is_in_5ring = True
+                    break
+            if not is_in_5ring:
                 return False, "Nitrogen should be part of a 5-membered ring"
     
     return True, "Contains a non-aromatic dihydropyrrole ring system"
