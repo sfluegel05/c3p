@@ -21,11 +21,11 @@ def is_amine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Common patterns to detect amines
-    primary_amine_pattern = Chem.MolFromSmarts("[NX3;H2][!C=O]")  # A non-carbonyl nitrogen
-    secondary_amine_pattern = Chem.MolFromSmarts("[NX3;H1][!C=O,#1][!C=O,#1]")  # Non-carbonyl, bound to two non-hydrogens
-    tertiary_amine_pattern = Chem.MolFromSmarts("[NX3][!C=O,#1][!C=O,#1][!C=O,#1]")  # Non-carbonyl, bound to three non-hydrogens
-    cyclic_amine_pattern = Chem.MolFromSmarts("[NX3]@[#6]")  # Nitrogen within a ring bonded to carbon
+    # More refined patterns to detect amines
+    primary_amine_pattern = Chem.MolFromSmarts("[NX3;H2,H1;!$(NC=O)]")  # Primary amine: NH2 bound to non-carbonyl
+    secondary_amine_pattern = Chem.MolFromSmarts("[NX3;H1;!$(NC=O)]")   # Secondary amine: NH bound to non-carbonyl
+    tertiary_amine_pattern = Chem.MolFromSmarts("[NX3;!$(NC=O)]")       # Tertiary amine: N bound to non-carbonyl
+    cyclic_amine_pattern = Chem.MolFromSmarts("[NX3;R]")               # Cyclic amine: N in a ring
 
     # Check the molecule for primary, secondary, tertiary, or cyclic amine patterns
     if mol.HasSubstructMatch(primary_amine_pattern):
