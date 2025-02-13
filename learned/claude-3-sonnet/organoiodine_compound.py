@@ -1,28 +1,63 @@
 """
 Classifies: CHEBI:37142 organoiodine compound
 """
-The previous attempt failed because the program did not seem to accurately classify the given examples of organoiodine compounds. The error message "F1 score of 0 is too low" suggests that the program misclassified all the examples, either as false positives or false negatives.
+"""
+Classifies: CHEBI:27380 organoiodine compound
 
-Here are some potential reasons for the failure and ways to improve the program:
+An organoiodine compound is a compound containing at least one carbon-iodine bond.
+"""
 
-1. **Missed structural patterns**: The program checks for the presence of iodine atoms and carbon-iodine bonds, but it may have missed certain structural patterns that are characteristic of organoiodine compounds. For example, it does not account for iodine atoms attached to aromatic rings or heterocyclic systems, which are common in many organoiodine compounds.
+from rdkit import Chem
+from rdkit.Chem import AllChem
 
-Improvement: Analyze the examples more closely and identify any additional structural patterns or substructures that define organoiodine compounds. Incorporate these into the program using SMARTS patterns or other RDKit functionality.
+def is_organoiodine_compound(smiles: str):
+    """
+    Determines if a molecule is an organoiodine compound based on its SMILES string.
 
-2. **Overly restrictive rules**: The program checks that the iodine atom is bonded to only one carbon atom, which may be too restrictive. Some organoiodine compounds may have iodine atoms bonded to multiple carbon atoms, as long as they are part of an organic moiety.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-Improvement: Relax the rule that checks for iodine bonded to only one carbon atom, and focus more on ensuring that the iodine is part of an organic moiety.
+    Returns:
+        bool: True if molecule is an organoiodine compound, False otherwise
+        str: Reason for classification
+    """
 
-3. **Handling of charged and ionic species**: Some of the examples provided are charged or ionic species, such as the doxorubicinium and thyroxine sulfate examples. The program may not be correctly handling these types of molecules.
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-Improvement: Incorporate additional checks or preprocessing steps to handle charged or ionic species, such as neutralizing the molecule or considering resonance structures.
+    # Check if molecule contains iodine
+    if not any(atom.GetAtomicNum() == 53 for atom in mol.GetAtoms()):
+        return False, "No iodine atoms present"
 
-4. **Handling of tautomers and isomers**: The program may not be correctly handling different tautomeric or isomeric forms of the same compound, leading to misclassifications.
+    # Check for carbon-iodine bonds
+    c_i_bonds = any(bond.GetBeginAtom().GetAtomicNum() == 6 and
+                    bond.GetEndAtom().GetAtomicNum() == 53 for bond in mol.GetBonds())
+    if not c_i_bonds:
+        return False, "No carbon-iodine bonds found"
 
-Improvement: Use RDKit's functionality to generate tautomers or enumerate isomers, and ensure that the program correctly classifies all relevant forms of a compound.
+    # Check for organic moiety
+    organic_moiety = True
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 53:  # Iodine atom
+            if not any(neighbor.GetAtomicNum() == 6 for neighbor in atom.GetNeighbors()):
+                organic_moiety = False
+                break
 
-5. **Handling of specific functional groups or moieties**: Some of the examples contain specific functional groups or moieties that may require special handling, such as carboxylic acids, amides, or heterocyclic systems.
+    if not organic_moiety:
+        return False, "Iodine atom not part of an organic moiety"
 
-Improvement: Analyze the examples more closely and identify any functional groups or moieties that may require special treatment. Incorporate additional checks or rules to handle these cases appropriately.
+    # Handle charged/ionic species
+    mol_ions = [m for m in AllChem.IonizeMolecule(mol, ionize_everything=True)]
+    for ion_mol in mol_ions:
+        if is_organoiodine_compound(Chem.MolToSmiles(ion_mol))[0]:
+            return True, "Ionized form of an organoiodine compound"
 
-By addressing these potential issues and making improvements based on a thorough analysis of the examples, the program's accuracy in classifying organoiodine compounds should improve.
+    # Handle tautomers
+    tautomers = Chem.MolToSmarts(Chem.MolFromSmiles(smiles), isomericSmiles=True)
+    for tautomer in tautomers:
+        if is_organoiodine_compound(Chem.MolToSmiles(tautomer))[0]:
+            return True, "Tautomeric form of an organoiodine compound"
+
+    return True, "Contains at least one carbon-iodine bond in an organic moiety"
