@@ -2,7 +2,6 @@
 Classifies: CHEBI:50753 isoflavonoid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_isoflavonoid(smiles: str):
     """
@@ -22,14 +21,16 @@ def is_isoflavonoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns for 1-benzopyran
-    benzopyran_pattern = Chem.MolFromSmarts("c1ccccc1OCO") # Simplified pattern for core structure
+    # Define a more flexible pattern for 1-benzopyran
+    # Consider approximation of benzopyran as a fused bicyclic structure with oxygen in one ring
+    benzopyran_pattern = Chem.MolFromSmarts("c1ccc2c(c1)occ2") # A representation of benzopyran system
     if not mol.HasSubstructMatch(benzopyran_pattern):
         return False, "No 1-benzopyran backbone found"
         
-    # Check for aryl group (i.e., ring) attached at position 3 of chromene
-    aromatic_ring_pattern = Chem.MolFromSmarts("c1[cR2]oc2c1ccc(-c3ccccc3)c2=O") # Pattern for an aryl group at position 3
-    if not mol.HasSubstructMatch(aromatic_ring_pattern):
+    # Check for an aryl group (aromatic ring) directly connected to the benzopyran system
+    # Detect any aromatic ring connected to the fused ring system
+    aryl_group_pattern = Chem.MolFromSmarts("c1ccc(-c2c(oc3ccccc3)c(=O)cc2)c2ccccc2")  # Simplified to detect substitution
+    if not mol.HasSubstructMatch(aryl_group_pattern):
         return False, "No aryl substituent at position 3 found"
 
     return True, "Contains 1-benzopyran with an aryl substituent at position 3"
