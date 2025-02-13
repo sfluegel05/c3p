@@ -22,25 +22,18 @@ def is_myo_inositol_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for a general cyclohexane with multiple hydroxyl groups which represents the myo-inositol core
-    general_inositol_core = Chem.MolFromSmarts("C1(C)(O)[C](O)[C](O)[C](O)[C](O)[C]1O")
-    if not mol.HasSubstructMatch(general_inositol_core):
-        return False, "Molecule does not match the general cyclohexane hydroxylated structure"
+    # Define the myo-inositol stereochemistry pattern
+    # Myo-inositol configuration follows [C@H] or [C@@H] pattern correctly alternating
+    myo_inositol_pattern = Chem.MolFromSmarts("C1([C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@H](O)[C@@H]1O)")
+    if not mol.HasSubstructMatch(myo_inositol_pattern):
+        return False, "Molecule does not match the myo-inositol stereochemistry"
 
-    # Identify phosphate group presence
-    phosphate_pattern = Chem.MolFromSmarts("OP(=O)(O)O")
-    phosphate_count = len(mol.GetSubstructMatches(phosphate_pattern))
-    if phosphate_count == 0:
+    # Check for the presence of phosphate groups (consider both -P(O)(O)=O and -P(O)(=O)-O forms)
+    phosphate_pattern1 = Chem.MolFromSmarts("OP(=O)(O)O")
+    phosphate_pattern2 = Chem.MolFromSmarts("OP(=O)(O)O")  # alternative phosphate visualization
+    phosphate_count1 = len(mol.GetSubstructMatches(phosphate_pattern1))
+    phosphate_count2 = len(mol.GetSubstructMatches(phosphate_pattern2))
+    if phosphate_count1 + phosphate_count2 == 0:
         return False, "No phosphate groups found"
 
-    # Avoid structures with long carbon chains that might confound myo-inositol core
-    if any(len(chain) > 6 for chain in Chem.rdmolops.GetMolFrags(mol, asMols=False)):
-        return False, "Long carbon chain detected, possibly non-inositol component"
-    
-    # Check total number of hydroxyl and phosphate groups around the cyclohexane core
-    hydroxyl_pattern = Chem.MolFromSmarts("[CX4H](O)C")
-    hydroxyl_count = len(mol.GetSubstructMatches(hydroxyl_pattern))
-    if hydroxyl_count < 5 or (hydroxyl_count + phosphate_count) < 6:
-        return False, "Insufficient hydroxyl/phosphate groups for a typical myo-inositol phosphate"
-    
-    return True, "Molecule contains inositol structure with appropriate number of hydroxyl and phosphate groups attached"
+    return True, "Molecule matches the myo-inositol stereochemistry with phosphate groups attached"
