@@ -1,26 +1,56 @@
 """
 Classifies: CHEBI:60027 polymer
 """
-Based on the outcomes, it seems that the current program has a few shortcomings in correctly identifying polymers:
+"""
+Classifies: CHEBI:24702 polymer
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem, rdMolDescriptors, rdqueries
+from typing import Tuple
 
-1. **False positives**: The program is classifying some non-polymeric molecules as polymers. This is likely due to the criteria being too broad or not specific enough. For example, the presence of large rings or long carbon chains alone is not a definitive indicator of a polymer, as many small molecules can also exhibit these structural features.
+def is_polymer(smiles: str) -> Tuple[bool, str]:
+    """
+    Determines if a molecule is a polymer based on its SMILES string.
+    A polymer is a mixture, which is composed of macromolecules of different kinds
+    and which may be differentiated by composition, length, degree of branching, etc.
 
-2. **False negatives**: The program is missing some known polymer examples, such as Quinacetol sulfate, Lactitol dihydrate, and Calcium arsenate. This suggests that the criteria used are not comprehensive enough to capture all types of polymers.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Molecular weight cutoff**: While the molecular weight cutoff of 500 Da is a reasonable starting point, it may be too strict or too lenient, depending on the specific polymer class being considered.
+    Returns:
+        bool: True if molecule is a polymer, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-To improve the program, the following steps could be taken:
+    # Check for presence of repeating structural units
+    pattern = Chem.MolFromSmarts("*~*~*~*")
+    matches = mol.GetSubstructMatches(pattern)
+    if not matches:
+        return False, "No repeating structural units found"
 
-1. **Refine the structural criteria**: Instead of solely relying on the presence of large rings or long carbon chains, more specific patterns or substructures characteristic of polymers could be identified and used as criteria. This could involve studying the structural features of known polymer examples and incorporating them into the program.
+    # Check for high molecular weight (>500 Da)
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 500:
+        return False, "Molecular weight too low for polymer"
 
-2. **Incorporate additional descriptors**: Beyond structural features, other molecular descriptors such as rotatable bond count, topological surface area, or specific functional group patterns could be used to better differentiate polymers from small molecules.
+    # Check for high number of rotatable bonds (>10)
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 10:
+        return False, "Insufficient flexibility for polymer"
 
-3. **Use machine learning**: Since the classification of polymers can be complex, involving multiple structural and physicochemical factors, a machine learning approach could be employed. A dataset of known polymers and non-polymers could be used to train a classification model, which might perform better than a rule-based approach.
+    # Check for presence of common polymer functional groups
+    polymer_smarts = ['[NX3+]', '[OX2H]', '[OX1H0-]', '[CX3](=[OX1])[OX2H]', '[SX4+2]', '[PX4]']
+    polymer_groups_found = any(mol.HasSubstructMatch(Chem.MolFromSmarts(s)) for s in polymer_smarts)
+    if not polymer_groups_found:
+        return False, "No common polymer functional groups found"
 
-4. **Adjust molecular weight cutoff**: The molecular weight cutoff could be fine-tuned based on the specific polymer class being considered or by analyzing the molecular weight distribution of known polymer examples.
+    # Check for high degree of branching
+    bi_valence_count = sum(atom.GetDegreeVector().count(2) for atom in mol.GetAtoms())
+    tri_valence_count = sum(atom.GetDegreeVector().count(3) for atom in mol.GetAtoms())
+    if bi_valence_count + tri_valence_count < 5:
+        return False, "Low degree of branching for polymer"
 
-5. **Handle mixtures and salts**: The current program attempts to handle mixtures by looking for repeating structural units, but this approach may not be robust. Additional logic could be added to handle mixtures, salts, and other complex molecular compositions more effectively.
-
-6. **Consider additional polymer classes**: The current program focuses on identifying polymers in general, but it could be extended to classify specific types of polymers, such as proteins, nucleic acids, synthetic polymers, etc., by incorporating class-specific rules or descriptors.
-
-By addressing these issues and refining the classification criteria, the program's performance in identifying polymers could be significantly improved.
+    return True, "Molecule exhibits properties of a polymer"
