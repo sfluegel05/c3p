@@ -2,7 +2,6 @@
 Classifies: CHEBI:18254 ribonucleoside
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_ribonucleoside(smiles: str):
     """
@@ -16,25 +15,42 @@ def is_ribonucleoside(smiles: str):
         bool: True if molecule is a ribonucleoside, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES to RDKit molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # D-ribose component pattern (matches ribose moiety in nucleosides)
-    ribose_pattern = Chem.MolFromSmarts("[C@@H]1O[C@H](CO)[C@@H](O)[C@H]1O")
-    
+
+    # Substructure pattern for D-ribose 
+    ribose_pattern = Chem.MolFromSmarts("O[C@@H]1[C@H](O)[C@@H](O)[C@H](CO)O1")
+
     if not mol.HasSubstructMatch(ribose_pattern):
         return False, "D-ribose component not found"
 
-    # Check for an attached nucleobase pattern (purine or pyrimidine) - indicative but generic
-    purine_base_pattern = Chem.MolFromSmarts("n1cnc2c1ncnc2")  # Generic purine-like structure
-    pyrimidine_base_pattern = Chem.MolFromSmarts("n1c[nH]c(=O)nc1")  # Generic pyrimidine-like structure
+    # More detailed purine pattern including common modifications
+    purine_pattern = Chem.MolFromSmarts("c1ncnc2[nH]cnc12")
     
-    has_nucleobase = mol.HasSubstructMatch(purine_base_pattern) or mol.HasSubstructMatch(pyrimidine_base_pattern)
+    # More detailed pyrimidine pattern including common modifications
+    pyrimidine_pattern = Chem.MolFromSmarts("c1c[nH]cnc1(=O)")
+    
+    # Ensure each matching pattern is connected directly to ribose
+    substructs = mol.GetSubstructMatches(ribose_pattern)
+    has_connected_nucleobase = False
 
-    if not has_nucleobase:
-        return False, "Nucleobase component not discernible"
+    for substruct in substructs:
+        ribose_idxs = set(substruct)  # Indices of the ribose substructure
+        for atom in mol.GetAtoms():
+            if atom.GetIdx() in ribose_idxs:
+                for neighbor in atom.GetNeighbors():
+                    connected_nucleobase = any(mol.HasSubstructMatch(pattern, atom.GetIdx())
+                                               for pattern in [purine_pattern, pyrimidine_pattern])
+                    if connected_nucleobase:
+                        has_connected_nucleobase = True
+                        break
+            if has_connected_nucleobase:
+                break
+
+    if not has_connected_nucleobase:
+        return False, "Nucleobase pattern not discernible or not connected to D-ribose"
 
     return True, "Molecule contains a D-ribose moiety linked to a nucleobase, classified as a ribonucleoside"
