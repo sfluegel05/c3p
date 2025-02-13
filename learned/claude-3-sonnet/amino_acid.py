@@ -6,7 +6,6 @@ Classifies: CHEBI:33597 amino acid
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_amino_acid(smiles: str):
     """
@@ -28,20 +27,32 @@ def is_amino_acid(smiles: str):
     
     # Look for carboxylic acid group (-C(=O)O)
     carboxyl_pattern = Chem.MolFromSmarts("C(=O)O")
-    if not mol.HasSubstructMatch(carboxyl_pattern):
+    carboxyl_match = mol.GetSubstructMatches(carboxyl_pattern)
+    if not carboxyl_match:
         return False, "No carboxylic acid group found"
     
     # Look for amino group (-N)
     amino_pattern = Chem.MolFromSmarts("N")
-    if not mol.HasSubstructMatch(amino_pattern):
+    amino_match = mol.GetSubstructMatches(amino_pattern)
+    if not amino_match:
         return False, "No amino group found"
     
-    # Check for at least one carbon-nitrogen bond (C-N) to ensure amino group is attached
-    cn_bond_pattern = Chem.MolFromSmarts("CN")
-    if not AllChem.MolToSmarts(mol).count("CN") > 0:
-        return False, "Amino group not attached to carbon"
+    # Check if amino group is attached to carboxylic acid carbon
+    for amino_idx in amino_match:
+        for carboxyl_idx in carboxyl_match:
+            carboxyl_atom = mol.GetAtomWithIdx(carboxyl_idx[0])
+            amino_atom = mol.GetAtomWithIdx(amino_idx)
+            if any(bond.GetBeginAtomIdx() == amino_idx and bond.GetEndAtomIdx() == carboxyl_idx[0] or
+                   bond.GetBeginAtomIdx() == carboxyl_idx[0] and bond.GetEndAtomIdx() == amino_idx
+                   for bond in carboxyl_atom.GetBonds()):
+                break
+        else:
+            continue
+        break
+    else:
+        return False, "Amino group not attached to carboxylic acid carbon"
     
     # Check for additional functional groups if present
     # e.g., hydroxyl (-OH), thiol (-SH), phosphate (-OP(O)(O)=O), etc.
     
-    return True, "Contains a carboxylic acid group and an amino group"
+    return True, "Contains a carboxylic acid group and an amino group attached to the carboxylic acid carbon"
