@@ -24,11 +24,23 @@ def is_2_oxo_monocarboxylic_acid_anion(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS pattern for a general 2-oxo group followed by variable chain to a carboxylate
-    oxo_monocarboxylic_pattern = Chem.MolFromSmarts("C(=O)[#6][C](=O)[O-]")
+    # Define SMARTS pattern for 2-oxo monocarboxylic acid anion
+    # The pattern looks for a carbon with an oxo group in the 2-position, followed by a carboxylate
+    oxo_monocarboxylic_pattern = Chem.MolFromSmarts("C(=O)[C;R0][CH2,C][C;R0](=O)[O-]")
     
     # Check if the pattern matches within the molecule
     if mol.HasSubstructMatch(oxo_monocarboxylic_pattern):
-        return True, "Contains an oxo group in the 2-position adjacent to a carboxylate group"
+        return True, "Contains a 2-oxo group adjacent to a carboxylate group in the correct position"
+    
+    # Additional verification for complex structures
+    # Check carbon positions and connectivity
+    for atom in mol.GetAtoms():
+        # Check for oxo group at 2-position only if it's part of a C-C-C=O sequence
+        if atom.GetAtomicNum() == 6 and len(atom.GetNeighbors()) >= 3:
+            oxy_groups = [nbr for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() == 8 and mol.GetBondBetweenAtoms(atom.GetIdx(), nbr.GetIdx()).GetBondType().name == 'DOUBLE']
+            carboxylate_groups = [nbr for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() == 6 and any([n.GetSymbol() == 'O' for n in nbr.GetNeighbors()])]
+
+            if len(oxy_groups) == 1 and len(carboxylate_groups) == 1:
+                return True, "Contains a 2-oxo group adjacent to a carboxylate group in a complex position"
     
     return False, "Does not contain a 2-oxo group adjacent to a carboxylate group"
