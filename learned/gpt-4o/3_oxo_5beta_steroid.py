@@ -22,22 +22,20 @@ def is_3_oxo_5beta_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Update steroid backbone to a more general pattern that accounts for all rings
-    steroid_pattern = Chem.MolFromSmarts("C12[C@@H]3C[C@@H]4[C@H]5CC[C@H](CCC5)[C@@]4(C)C[C@H]3CC2CCC1")  # Fused steroid rings
+    # Update to a more general steroid backbone pattern
+    steroid_pattern = Chem.MolFromSmarts("[C@]12CC[C@@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]43C)[C@@H]1CC[C@@H]2O")  # Generic 5-beta steroid structure
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found or wrong backbone configuration"
     
-    # Check for specific 3-oxo group at correct position
-    three_oxo_pattern = Chem.MolFromSmarts("C1=CC(=O)CC[C@H]1")  # More explicit 3-oxo pattern
+    # Check for 3-oxo group at A-ring
+    three_oxo_pattern = Chem.MolFromSmarts("C(=O)[C@]1([H])CC")  # Captures a typical A-ring with 3-oxo
     if not mol.HasSubstructMatch(three_oxo_pattern):
-        return False, "No ketone group at 3rd position"
+        return False, "No ketone group at 3rd position within steroid core"
 
-    # Confirm correct 5beta stereochemistry
-    five_beta_pattern = Chem.MolFromSmarts("[C@@H](C)C(C)C")  # Updated to be more precise
-    beta_matches = mol.GetSubstructMatches(five_beta_pattern)
-    if not beta_matches or not any([match for match in beta_matches if mol.GetAtomWithIdx(match[0]).GetChiralTag() == Chem.rdchem.ChiralType.CHI_TETRAHEDRAL_CCW]):
+    # Confirm correct 5beta stereochemistry in the B-ring context
+    five_beta_pattern = Chem.MolFromSmarts("C12CCC[C@@H]1")
+    five_beta_matches = mol.GetSubstructMatches(five_beta_pattern)
+    if not five_beta_matches:
         return False, "5beta configuration not detected"
 
     return True, "Contains a 3-oxo group and 5beta configuration consistent with 3-oxo-5beta-steroid class"
-
-# Example SMILES strings can be tested with this function for verification.
