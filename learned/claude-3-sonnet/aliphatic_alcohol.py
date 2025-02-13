@@ -29,24 +29,23 @@ def is_aliphatic_alcohol(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for alcohol group (-OH)
-    alcohol_pattern = Chem.MolFromSmarts("[OX1H]")
-    if not mol.HasSubstructMatch(alcohol_pattern):
+    alcohol_pattern = Chem.MolFromSmarts("[OX1,OX2H]")
+    alcohol_matches = mol.GetSubstructMatches(alcohol_pattern)
+    if not alcohol_matches:
         return False, "No alcohol group found"
 
-    # Check for aliphatic backbone (no cycles, no aromatic rings)
-    aliphatic_pattern = Chem.MolFromSmarts("[!#1!#6!r]")  # Not H, not C, not in ring
-    aliphatic_matches = mol.GetSubstructMatches(aliphatic_pattern)
-    if aliphatic_matches:
-        return False, "Contains non-aliphatic atoms or rings"
-
-    # Check for presence of carbon atoms
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 1:
-        return False, "No carbon atoms found"
+    # Check for aliphatic carbon chain attached to the alcohol group
+    aliphatic_pattern = Chem.MolFromSmarts("[CX4H3,CX4H2]~[CX4H2]~[CX4H2]")
+    for match in alcohol_matches:
+        alcohol_atom = mol.GetAtomWithIdx(match)
+        if any(neighbor.HasSubstructMatch(aliphatic_pattern) for neighbor in alcohol_atom.GetNeighbors()):
+            break
+    else:
+        return False, "No aliphatic carbon chain attached to alcohol group"
 
     # Count rotatable bonds to check for long aliphatic chains
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 3:
+    if n_rotatable < 2:
         return False, "Insufficient rotatable bonds for aliphatic chains"
 
-    return True, "Contains an alcohol group and aliphatic backbone"
+    return True, "Contains an alcohol group attached to an aliphatic carbon chain"
