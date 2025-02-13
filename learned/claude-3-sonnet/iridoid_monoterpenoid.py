@@ -1,24 +1,57 @@
 """
 Classifies: CHEBI:50563 iridoid monoterpenoid
 """
-After analyzing the previous code and the outcomes, it appears that the main issue is the approach used to identify iridoid monoterpenoids. The code relies heavily on substructure matching for specific patterns, which may not be sufficient to capture the wide range of structural variations present in this class of compounds.
+"""
+Classifies: CHEBI:25610 iridoid monoterpenoids
 
-Additionally, some of the patterns used may be too specific or too general, leading to false negatives or false positives, respectively. For example, the sugar pattern used to identify glycosidic substituents is quite specific and may miss other types of glycosidic linkages.
+Iridoid monoterpenoids are monoterpenoids biosynthesized from isoprene and often intermediates
+in the biosynthesis of alkaloids. They typically consist of a cyclopentane ring fused to a
+six-membered oxygen heterocycle. Cleavage of a bond in the cyclopentane ring gives rise to
+the subclass known as secoiridoids.
+"""
 
-To improve the classification accuracy, a more comprehensive approach is needed that considers the overall molecular structure and properties, rather than relying solely on substructure matching.
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-Here are some potential improvements:
+def is_iridoid_monoterpenoid(smiles: str):
+    """
+    Determines if a molecule is an iridoid monoterpenoid based on its SMILES string.
 
-1. **Analyze the molecular framework**: Instead of looking for a specific substructure pattern, analyze the overall molecular framework to identify the cyclopentane ring fused to a six-membered oxygen heterocycle, which is a defining characteristic of iridoid monoterpenoids.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **Consider ring geometry and stereochemistry**: Incorporate checks for the stereochemistry of the fused ring system, as iridoid monoterpenoids often have a specific stereochemical arrangement.
+    Returns:
+        bool: True if molecule is an iridoid monoterpenoid, False otherwise
+        str: Reason for classification
+    """
 
-3. **Look for common structural modifications**: Instead of using rigid substructure patterns, consider more flexible methods to identify common modifications, such as glycosidic substituents, acyl groups, oxidation patterns, and ring cleavage (secoiridoids).
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-4. **Utilize molecular descriptors**: Incorporate molecular descriptors like molecular weight, number of rings, and atom counts to ensure the molecule falls within the expected range for iridoid monoterpenoids.
+    # Look for cyclopentane-oxygen heterocycle pattern
+    iridoid_pattern = Chem.MolFromSmarts("[C@H]1[C@@H]2[C@@H]([C@H](C[C@@]1(C)O2)C)C")
+    if not mol.HasSubstructMatch(iridoid_pattern):
+        return False, "No iridoid core structure found"
 
-5. **Consider machine learning approaches**: If a large enough dataset of iridoid monoterpenoids and non-iridoid monoterpenoids is available, consider training a machine learning model to learn the patterns and structural features that distinguish this class of compounds.
+    # Check if monoterpenoid (C10 skeleton)
+    n_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if n_carbons != 10:
+        return False, "Not a monoterpenoid (skeleton does not contain 10 carbons)"
 
-6. **Iterative refinement**: Continuously refine the classification criteria based on the performance on a diverse set of examples, adjusting the rules and thresholds as needed to improve accuracy.
+    # Check for rings and ring sizes
+    rings = mol.GetRingInfo().AtomRings()
+    ring_sizes = [len(ring) for ring in rings]
+    if 5 not in ring_sizes or 6 not in ring_sizes:
+        return False, "Lacks cyclopentane and/or 6-membered oxygen heterocycle"
 
-By incorporating a combination of these strategies, it is likely that the classification accuracy for iridoid monoterpenoids can be significantly improved.
+    # Check for oxygen atoms
+    n_oxygens = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if n_oxygens < 2:
+        return False, "Fewer than 2 oxygens (iridoids typically have 2-4)"
+
+    # Todo: Add more specific checks for common iridoid substituents/decorations
+
+    return True, "Contains iridoid core structure (cyclopentane fused to 6-membered oxygen heterocycle)"
