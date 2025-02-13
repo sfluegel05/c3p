@@ -2,7 +2,6 @@
 Classifies: CHEBI:166828 saccharolipid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_saccharolipid(smiles: str):
     """
@@ -22,27 +21,38 @@ def is_saccharolipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a pattern for a carbohydrate moiety: a cyclic structure with oxygen atoms (e.g., monosaccharides)
-    carbohydrate_pattern = Chem.MolFromSmarts("C1OC(O)C(O)C(O)C(O)C1")  # Hexopyranose ring pattern
-    if not mol.HasSubstructMatch(carbohydrate_pattern):
-        return False, "No carbohydrate moiety pattern found"
+    # Define a more generalized pattern for a carbohydrate moiety: 
+    # Monosaccharides can vary widely, so include multiple recognizable features.
+    carbohydrate_patterns = [
+        Chem.MolFromSmarts("C1OC(O)C(O)C(O)C(O)C1"),  # Hexopyranose pattern
+        Chem.MolFromSmarts("C1OC(O)C(O)C(O)C1"),      # Pentose pattern
+        Chem.MolFromSmarts("[CX4](O)[CX4](O)[CX4](O)"),# Linear sugar-like structure
+        Chem.MolFromSmarts("OC[C@H](O)[C@H](O)C=O"),   # Open form of glucose
+    ]
 
-    # Define a pattern for a lipid moiety: hydrocarbon chain with an ester/amide linkage
-    lipid_chain_pattern = Chem.MolFromSmarts("C(=O)[O,N][C;R0][C;R0][C;R0][C;R0][C;R0][C;R0]")  # Fatty acid ester/amide
-    if not mol.HasSubstructMatch(lipid_chain_pattern):
-        return False, "No lipid moiety pattern found"
+    if not any(mol.HasSubstructMatch(pat) for pat in carbohydrate_patterns):
+        return False, "No recognized carbohydrate moiety pattern found"
 
-    # Check for any plausible linkage between the carbohydrate and lipid components
-    carb_matches = mol.GetSubstructMatches(carbohydrate_pattern)
-    lipid_matches = mol.GetSubstructMatches(lipid_chain_pattern)
+    # Define a pattern for a lipid moiety: longer hydrocarbon chain, ester or other typical lipid linkage
+    lipid_patterns = [
+        Chem.MolFromSmarts("C(=O)[O,N][CX4][CX4]"),    # Fatty acid ester or amide
+        Chem.MolFromSmarts("C(=O)[O,N]C[C;R0]{6,}"),   # Long chain ester/amide
+        Chem.MolFromSmarts("C(=O)O[C;R0]{5,}"),        # Ester linkage
+    ]
 
-    # A simplistic connectivity check assuming spatial proximity and shared structure linkages for saccharolipids
-    for carb_match in carb_matches:
-        for lipid_match in lipid_matches:
-            # Simplifies to assume connectedness without explicit bond data, as rdkit lacks direct linkage detection between substructures
-            if set(carb_match).intersection(lipid_match):
-                return True, "Contains both carbohydrate and lipid components directly linked"
+    if not any(mol.HasSubstructMatch(pat) for pat in lipid_patterns):
+        return False, "No recognized lipid moiety pattern found"
 
-    return False, "Carbohydrate and lipid components found but not linked within the molecule"
+    # Check for plausible linkages between detected carbohydrate and lipid parts
+    for carb_pat in carbohydrate_patterns:
+        carb_matches = mol.GetSubstructMatches(carb_pat)
+        for lipid_pat in lipid_patterns:
+            lipid_matches = mol.GetSubstructMatches(lipid_pat)
+            for carb_match in carb_matches:
+                for lipid_match in lipid_matches:
+                    if set(carb_match).intersection(lipid_match):
+                        return True, "Carbohydrate and lipid components are chemically linked"
 
-# Note: Adjust the SMARTS patterns and connectivity logic as needed since chemistry varies widely among saccharolipids.
+    return False, "Recognized moieties were not found to be directly linked"
+
+# Note: Due to structural diversity of saccharolipids, further expansion might still be needed for uncommon structures.
