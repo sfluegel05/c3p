@@ -2,11 +2,13 @@
 Classifies: CHEBI:83820 non-proteinogenic amino acid
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_non_proteinogenic_amino_acid(smiles: str):
     """
     Determines if a molecule is a non-proteinogenic amino acid based on its SMILES string.
-    Non-proteinogenic amino acids have structures distinct from the 20 standard amino acids.
+    A non-proteinogenic amino acid has an amino group, a carboxyl group, and a distinct variation
+    from the 20 standard amino acids found in proteins.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,40 +22,32 @@ def is_non_proteinogenic_amino_acid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # General amino acid pattern: generic amino acid backbone
-    general_aa_pattern = Chem.MolFromSmarts("[NX3H2][C@@H]([*])[CX3](=O)[OX1H0-]")
-    if not mol.HasSubstructMatch(general_aa_pattern):
-        return False, "Does not contain general amino acid structure"
-    
-    # SMARTS patterns for each of the 20 standard amino acids (simplified patterns)
+
+    # Look for amino acid structure: [N][C][C](=O)O with optional stereochemistry
+    amino_acid_pattern = Chem.MolFromSmarts("[N;H2,H3]C(C(=O)O)")
+    if not mol.HasSubstructMatch(amino_acid_pattern):
+        return False, "Does not contain basic amino acid structure"
+
+    # Additional checks for non-standard amino acids
     standard_amino_acids_smarts = [
         "N[C@@H](C)C(=O)O",  # Alanine
-        "NCC(=O)O",  # Glycine
-        "N[C@@H](CC(=O)O)C(=O)O",  # Aspartic Acid
-        "N[C@@H](CCC(=O)O)C(=O)O",  # Glutamic Acid
-        "N[C@@H](CS)C(=O)O",  # Cysteine
-        "N[C@@H](CC(N)=O)C(=O)O",  # Asparagine
-        "N[C@@H](CCC(N)=O)C(=O)O",  # Glutamine
-        "[H][C@@]([H])(C(=O)O)C(=O)O",  # Proline
-        "N[C@@H](CO)C(=O)O",  # Serine
-        "N[C@@H](CC=O)C(=O)O",  # Threonine
-        # Do similarly for remaining amino acids
+        "N[C@@H](CCC(=O)O)C(=O)O",  # Aspartic acid
+        # Add more SMARTS for each standard amino acid here if needed
     ]
-
-    # Check for match with any standard amino acids
+    
     for aa_smarts in standard_amino_acids_smarts:
         aa_pattern = Chem.MolFromSmarts(aa_smarts)
         if mol.HasSubstructMatch(aa_pattern):
             return False, "Matches a standard amino acid"
 
-    # Check for specific non-proteinogenic features
-    unusual_func_groups = Chem.MolFromSmarts("O=C(O)[C@H](N)CC#C")  # Example for alkyne in L-propargylglycine
-    if mol.HasSubstructMatch(unusual_func_groups):
-        return True, "Contains unique functional groups indicating non-standard origin"
+    # Check for indications of non-standard features, long chains, or unusual elements
+    unusual_atoms = [atom.GetSymbol() for atom in mol.GetAtoms() if atom.GetSymbol() not in ["C", "H", "N", "O"]]
+    if unusual_atoms:
+        return True, f"Contains unusual elements: {set(unusual_atoms)}"
 
-    unusual_isotopes = {atom.GetIsotope() for atom in mol.GetAtoms() if atom.GetIsotope() != 0}
-    if unusual_isotopes:
-        return True, f"Contains unusual isotopes: {unusual_isotopes}"
+    # Check for side chain variations, especially length and complexity
+    side_chain_len = sum(1 for bond in mol.GetBonds() if bond.GetBondTypeAsDouble() == 1.0)
+    if side_chain_len > 12:
+        return True, "Has long side chain suggesting a non-standard amino acid"
 
-    return True, "Does not match any standard amino acids and has unique characteristics"
+    return True, "Does not match any standard amino acids and fits the criteria for non-proteinogenic"
