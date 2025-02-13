@@ -1,32 +1,63 @@
 """
 Classifies: CHEBI:26493 quinic acid
 """
-The previous program attempted to classify quinic acids based on the presence of a cyclohexane core, at least three hydroxyl groups, and a carboxylic acid group. However, the F1 score of 0.3125 indicates that the program missed many true positives and/or classified many false positives.
+"""
+Classifies chemical entities of the class CHEBI:17514 quinic acid
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-Here are some potential issues and improvements:
+def is_quinic_acid(smiles: str):
+    """
+    Determines if a molecule is a quinic acid based on its SMILES string.
+    A quinic acid is defined as a cyclitol carboxylic acid.
 
-1. **False negatives**: The program failed to identify some true quinic acids, likely due to the strict requirement of a carboxylic acid group with a specific SMARTS pattern. Some quinic acid derivatives may have modified or protected carboxylic acid groups that do not match the SMARTS pattern used.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-   **Improvement**: Relax the carboxylic acid check or use multiple SMARTS patterns to account for different representations of the carboxylic acid group.
-
-2. **False positives**: The program classified many non-quinic acid molecules as quinic acids, likely due to the loose criteria of a cyclohexane core, at least three hydroxyl groups, and a carboxylic acid group. This is a common pattern in many molecules, not just quinic acids.
-
-   **Improvement**: Introduce additional checks to ensure the specific arrangement of functional groups characteristic of quinic acids. For example, look for the specific attachment points of the hydroxyl groups and the carboxylic acid group relative to the cyclohexane core.
-
-3. **Stereochemistry**: The program does not consider the stereochemistry of the hydroxyl groups and the cyclohexane core, which is crucial for correctly identifying quinic acids.
-
-   **Improvement**: Incorporate checks for the specific stereochemistry of quinic acids, such as using SMARTS patterns that consider the stereochemical arrangements.
-
-4. **Substituents**: The program does not account for potential substituents or modifications on the quinic acid core, which are common in many quinic acid derivatives.
-
-   **Improvement**: Consider allowing for common substituents or modifications on the quinic acid core, while still ensuring the core structure is present.
-
-5. **Oxygen count**: The oxygen count check may be too strict or too loose, depending on the desired level of strictness for the classification.
-
-   **Improvement**: Adjust the oxygen count threshold based on the specific requirements of the classification task and the range of quinic acid derivatives to be considered.
-
-6. **Molecular weight or other descriptors**: Additional molecular descriptors, such as molecular weight or hydrogen bond donor/acceptor counts, could help refine the classification and reduce false positives.
-
-   **Improvement**: Introduce checks for additional molecular descriptors that are characteristic of quinic acids and can help differentiate them from other molecules.
-
-By addressing these issues and incorporating appropriate improvements, the classification program should achieve a higher F1 score and better performance in identifying quinic acids and their derivatives.
+    Returns:
+        bool: True if molecule is a quinic acid, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Look for cyclohexane core
+    cyclohexane_pattern = Chem.MolFromSmarts("[C&R1&R2&R3&R4&R5&R6]1[C&R2&R3&R4&R5&R6][C&R3&R4&R5&R6][C&R4&R5&R6][C&R5&R6][C&R6]1")
+    if not mol.HasSubstructMatch(cyclohexane_pattern):
+        return False, "No cyclohexane core found"
+    
+    # Check for at least 3 hydroxyl groups
+    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
+    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
+    if len(hydroxyl_matches) < 3:
+        return False, "Fewer than 3 hydroxyl groups found"
+    
+    # Check for carboxylic acid group
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[OX2H1]")
+    carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
+    if len(carboxylic_acid_matches) != 1:
+        return False, "Did not find exactly 1 carboxylic acid group"
+    
+    # Check for specific stereochemistry of quinic acid
+    quinic_acid_pattern = Chem.MolFromSmarts("[C@H]1([C@@H]([C@H]([C@@H]([C@@H]([C@@H](O)O)O)O)O)O)C(=O)O")
+    if not mol.HasSubstructMatch(quinic_acid_pattern):
+        return False, "Stereochemistry does not match quinic acid"
+    
+    # Check for common substituents
+    allowed_substituents = ["[OC]", "[C&R1&R2&R3&R4&R5&R6]", "[C&R1&R2&R3&R4&R5&R6][C&R1&R2&R3&R4&R5&R6]", "[C](=O)[OX2H1]", "[C](=O)[OX2][C&R1&R2&R3&R4&R5&R6]"]
+    substituents = [Chem.MolToSmarts(frag) for frag in Chem.GetMolFrags(mol, aromatics=Chem.AromaticityMatchers.AromaticAny())]
+    for sub in substituents:
+        if sub not in allowed_substituents:
+            return False, f"Unexpected substituent found: {sub}"
+    
+    # Check molecular weight (quinic acids typically 192-500 Da)
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 192 or mol_wt > 500:
+        return False, "Molecular weight outside typical range for quinic acids"
+    
+    return True, "Molecule matches the structure and properties of a quinic acid"
