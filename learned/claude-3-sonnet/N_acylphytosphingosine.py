@@ -27,19 +27,16 @@ def is_N_acylphytosphingosine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for phytosphingosine backbone pattern
+    # Look for phytosphingosine backbone pattern with C-4 hydroxyl group
     phytosphingosine_pattern = Chem.MolFromSmarts("[NH1][CX4]([CH2][CH2][CH2][CH2][CH2])[CX4]([CH1]([OH1])[CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2])[CH2][OH1]")
-    if not mol.HasSubstructMatch(phytosphingosine_pattern):
+    phytosphingosine_match = mol.GetSubstructMatches(phytosphingosine_pattern)
+    if not phytosphingosine_match:
         return False, "Phytosphingosine backbone not found"
     
-    # Look for acyl chain attached to N atom
-    acyl_pattern = Chem.MolFromSmarts("[NH1][CX3](=[OX1])[CX3]")
-    if not mol.HasSubstructMatch(acyl_pattern):
-        return False, "No acyl group attached to nitrogen"
-    
-    # Check for long acyl chain (>= 6 carbons)
-    long_acyl_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[CX3]~[CX3]~[CX3]~[CX3]~[CX3]~[CX3]")
-    if not mol.HasSubstructMatch(long_acyl_pattern):
-        return False, "Acyl chain too short (< 6 carbons)"
+    # Look for acyl chain attached to N atom with optional C-2 hydroxyl group
+    acyl_pattern = Chem.MolFromSmarts("[NH1][CX3](=[OX1])[CX3]([OH1])?[CX3]~[CX3]~[CX3]~[CX3]~[CX3]~[CX3]")
+    acyl_match = mol.GetSubstructMatches(acyl_pattern)
+    if not acyl_match:
+        return False, "No acyl group attached to nitrogen or acyl chain too short (< 6 carbons)"
     
     return True, "Contains phytosphingosine backbone with acyl group attached to nitrogen"
