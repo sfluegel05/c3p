@@ -34,7 +34,7 @@ def is_nonclassic_icosanoid(smiles: str):
     if c_count != 20:
         return False, "Does not have 20 carbon atoms"
 
-    # Check for at least 2 oxygens (oxygenation)
+    # Check for oxygenation (at least 2 oxygens)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     if o_count < 2:
         return False, "Not sufficiently oxygenated"
@@ -51,11 +51,11 @@ def is_nonclassic_icosanoid(smiles: str):
     if len(double_bond_matches) < 2:
         return False, "Not sufficiently unsaturated"
 
-    # Check for at least 2 hydroxyl groups
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX1H]")
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    if len(hydroxyl_matches) < 2:
-        return False, "Not enough hydroxyl groups"
+    # Check for at least 2 oxygenated functional groups (hydroxyl, epoxide, hydroperoxide, ketone)
+    oxygenated_pattern = Chem.MolFromSmarts("[OX1H,OX2,OX3,OX4]")
+    oxygenated_matches = mol.GetSubstructMatches(oxygenated_pattern)
+    if len(oxygenated_matches) < 2:
+        return False, "Not enough oxygenated functional groups"
 
     # Check for absence of prostanoid and leukotriene patterns
     prostanoid_pattern = Chem.MolFromSmarts("[C@H]1[C@@H]2[C@@H](C1)C(=O)C[C@H]2")
