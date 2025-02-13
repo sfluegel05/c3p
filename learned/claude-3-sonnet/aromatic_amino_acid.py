@@ -1,53 +1,44 @@
 """
 Classifies: CHEBI:33856 aromatic amino acid
 """
+"""
+Classifies: CHEBI:27561 aromatic amino acid
+An amino acid whose structure includes an aromatic ring.
+"""
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_aromatic_amino_acid(smiles: str):
     """
     Determines if a molecule is an aromatic amino acid based on its SMILES string.
-    An aromatic amino acid is an amino acid with an aromatic ring in its side chain.
+    An aromatic amino acid is an amino acid that contains an aromatic ring.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if the molecule is an aromatic amino acid, False otherwise
+        bool: True if molecule is an aromatic amino acid, False otherwise
         str: Reason for classification
     """
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Identify amino acid backbone
-    amino_acid_pattern = Chem.MolFromSmarts("[N;H2,H1;!$(N-[!#6]);!$(N-[!#6]=[!#6])]C(=O)[O;H1,-]")
-    if not mol.HasSubstructMatch(amino_acid_pattern):
-        return False, "Molecule does not contain an amino acid backbone"
+    # Check for amino acid functional group (-NH2 and -COOH)
+    amino_pattern = Chem.MolFromSmarts("N")
+    acid_pattern = Chem.MolFromSmarts("C(=O)O")
+    amino_matches = mol.GetSubstructMatches(amino_pattern)
+    acid_matches = mol.GetSubstructMatches(acid_pattern)
+    if not amino_matches or not acid_matches:
+        return False, "Missing amino acid functional groups"
 
-    # Check for aromatic ring attachment (improved pattern)
-    aromatic_amino_acid_pattern = Chem.MolFromSmarts("[N;H2,H1;!$(N-[!#6]);!$(N-[!#6]=[!#6])]C(=O)[O;H1,-][C;R1]1=[c;r][c;r][c;r][c;r][c;r]1")
-    if not mol.HasSubstructMatch(aromatic_amino_acid_pattern):
-        return False, "Aromatic ring not attached to the amino acid backbone"
+    # Check for aromatic ring(s)
+    aromatic_rings = [ring for ring in mol.GetRingInfo().AtomRings() if Chem.Mol.Mol(mol).GetAromaticRingsAsMol().HasRingOnRing(ring)]
+    if not aromatic_rings:
+        return False, "No aromatic rings found"
 
-    # Handle stereochemistry
-    try:
-        AllChem.AssignStereochemistry(mol)
-        stereochemistry_ok = True
-    except Exception as e:
-        stereochemistry_ok = False
-        print(f"Warning: Failed to assign stereochemistry: {e}")
-
-    # Handle edge cases (e.g., multiple aromatic rings, aromatic heterocycles)
-    aromatic_rings = mol.GetAromaticRings()
-    if len(aromatic_rings) > 1:
-        return False, "Molecule contains multiple aromatic rings"
-
-    hetero_aromatic_rings = [ring for ring in aromatic_rings if any(atom.GetAtomicNum() != 6 for atom in ring)]
-    if hetero_aromatic_rings:
-        return False, "Molecule contains aromatic heterocycles"
-
-    # Additional checks or patterns for specific cases
-
-    return True, "Molecule is an aromatic amino acid"
+    # Success
+    return True, "Contains amino acid functional groups and aromatic ring(s)"
