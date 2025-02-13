@@ -1,28 +1,68 @@
 """
 Classifies: CHEBI:15889 sterol
 """
-The previous program attempted to classify sterols based on the following criteria:
+"""
+Classifies: CHEBI:36662 sterol
 
-1. Presence of exactly one hydroxy group in a ring system.
-2. Presence of a steroid backbone pattern.
-3. Allowing for a single side chain.
-4. Molecular weight between 300-500 Da.
-5. At least 3 rings and 20 carbon atoms.
+A sterol is defined as any 3-hydroxy steroid whose skeleton is closely related to cholestan-3-ol
+(additional carbon atoms may be present in the side chain).
 
-However, the program failed to correctly classify several examples of sterols, suggesting that the criteria used were not sufficient or accurate enough.
+Examples:
+- cholesterol
+- ergosterol
+- stigmasterol
+- campesterol
 
-Here are some potential reasons for the failure and ways to improve the program:
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-1. **Hydroxy group requirement**: The program checks for the presence of exactly one hydroxy group in a ring system. However, some examples like 7alpha,25-dihydroxycholesterol and 5alpha-androstane-3beta,6alpha,17beta-triol have multiple hydroxy groups. The definition of sterols allows for additional hydroxyl groups, so this criterion should be relaxed or removed.
+def is_sterol(smiles: str):
+    """
+    Determines if a molecule is a sterol based on its SMILES string.
 
-2. **Steroid backbone pattern**: The program uses a specific SMARTS pattern to match the steroid backbone. While this may work for some sterols, it is likely too restrictive and may not capture the diverse range of sterol structures. A more flexible approach would be to use a broader SMARTS pattern or a combination of patterns to match the core steroid skeleton.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Side chain restriction**: The program allows for only one side chain, but some examples like 4,4,24-trimethylcholesta-8,24(28)-dien-3beta-ol and 4alpha-hydroxymethyl-4beta-methyl-5alpha-8-cholesten-3beta-ol have multiple side chains. This restriction should be removed or relaxed to accommodate a wider range of sterol structures.
-
-4. **Molecular weight range**: The molecular weight range of 300-500 Da may be too narrow for some sterols. While it can serve as a general guideline, it should not be a strict requirement, as some valid sterol structures may fall outside this range.
-
-5. **Ring and carbon count requirements**: The requirements of at least 3 rings and 20 carbon atoms may be too specific and restrictive. These criteria should be revisited or removed, as they may exclude valid sterol structures that do not meet these thresholds.
-
-6. **Additional structural features**: The program does not consider other common structural features of sterols, such as the presence of double bonds, cyclopropane rings, or specific substituents. Incorporating these features into the classification criteria could improve the accuracy of the program.
-
-To improve the program, it may be beneficial to analyze a larger set of sterol structures and identify common structural patterns and features. These patterns could then be used to develop a more robust and flexible set of SMARTS patterns or other structural filters. Additionally, incorporating machine learning techniques or rule-based systems trained on a diverse set of sterol examples could potentially lead to more accurate classification.
+    Returns:
+        bool: True if molecule is a sterol, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Check for exactly one hydroxy group
+    hydroxy_pattern = Chem.MolFromSmarts("[OH]")
+    hydroxy_matches = len(mol.GetSubstructMatches(hydroxy_pattern))
+    if hydroxy_matches != 1:
+        return False, f"Found {hydroxy_matches} hydroxy groups, need exactly 1"
+    
+    # Check for steroid backbone
+    steroid_patterns = [
+        Chem.MolFromSmarts("[C@]12[C@H]([C@@H](CC1)[C@@H](CC2)[H])[H]"), # cholestane
+        Chem.MolFromSmarts("[C@@]12[C@H](CC[C@H]1[C@@H](CC2)[H])[H]"),   # cholane
+        Chem.MolFromSmarts("[C@@]12[C@H]([C@@H](CC1)[C@@H](CC2)[H])[H]"), # ergostane
+        Chem.MolFromSmarts("[C@@]12[C@H](CC[C@H]1[C@@H](CC2)[H])[H]")     # ergostane
+    ]
+    
+    backbone_match = any(mol.HasSubstructMatch(pattern) for pattern in steroid_patterns)
+    if not backbone_match:
+        return False, "No steroid backbone found"
+    
+    # Check for cyclopropane ring
+    cyclopropane_pattern = Chem.MolFromSmarts("[C@@]1([C@]2([C@@]1([H])[H])[C@@]2([H])[H])[H]")
+    cyclopropane_match = mol.HasSubstructMatch(cyclopropane_pattern)
+    
+    # Check for side chains
+    side_chain_pattern = Chem.MolFromSmarts("[CH2,CH3][CH2][CH2][CH2]")
+    side_chain_matches = mol.GetSubstructMatches(side_chain_pattern)
+    
+    # Combine criteria
+    if backbone_match and (cyclopropane_match or len(side_chain_matches) > 0):
+        return True, "Contains steroid backbone and meets other criteria for sterols"
+    else:
+        return False, "Does not meet structural criteria for sterols"
