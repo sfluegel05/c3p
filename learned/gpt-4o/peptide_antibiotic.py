@@ -20,30 +20,28 @@ def is_peptide_antibiotic(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for peptide bond pattern (O=C-N)
+    # Check for the presence of peptide bonds
     peptide_bond_pattern = Chem.MolFromSmarts("C(=O)N")
-    if not mol.HasSubstructMatch(peptide_bond_pattern):
-        return False, "No peptide bonds found"
-    
-    # Check for cyclic peptide structures
-    cycle_pattern = Chem.MolFromSmarts("[NX3][CX3](=O)[NX3][CX3](=O)@[NX3][CX3](=O)")
-    if mol.HasSubstructMatch(cycle_pattern):
-        return True, "Contains cyclic peptide bonds, a hallmark of many peptide antibiotics"
+    peptide_bond_matches = mol.GetSubstructMatches(peptide_bond_pattern)
+    if len(peptide_bond_matches) < 2:
+        return False, "Insufficient peptide bonds found"
 
-    # Check for sulfur present, common in peptide antibiotics like daptomycin
+    # Check for cyclic peptide structures
+    cycle_inds = Chem.GetSymmSSSR(mol)
+    if not cycle_inds:
+        return False, "No cyclic structures found, common in many peptide antibiotics"
+
+    # Check sulfur presence, a common element in peptide antibiotics like daptomycin
     contains_sulfur = any(atom.GetAtomicNum() == 16 for atom in mol.GetAtoms())
     if contains_sulfur:
-        return True, "Contains sulfur, common in peptide antibiotics"
+        return True, "Contains sulfur, which is common in peptide antibiotics"
 
-    # Assess overall complexity through various factors
+    # Check for complex structures characteristic of peptide antibiotics
     heavy_atoms = mol.GetNumHeavyAtoms()
     num_rings = Chem.GetSSSR(mol)
     chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
-
-    # Adjusted threshold and complexity factors
-    if heavy_atoms > 25 and num_rings >= 1 and len(chiral_centers) > 0:
-        return True, "Has sufficient complexity in structure typical of peptide antibiotics"
+    
+    if heavy_atoms > 25 and num_rings > 1 and len(chiral_centers) > 3:
+        return True, "Matches the complexity and structural features typical of peptide antibiotics"
 
     return False, "Structure does not match typical peptide antibiotics patterns"
-
-# Note: Further specific pattern detection may improve the accuracy.
