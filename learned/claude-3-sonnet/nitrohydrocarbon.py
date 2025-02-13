@@ -26,7 +26,8 @@ def is_nitrohydrocarbon(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for presence of nitro groups (-NO2)
-    nitro_pattern = Chem.MolFromSmarts('[$([N+](=[OX1])([O-])[#6])]')
+    # More specific SMARTS pattern for nitro groups
+    nitro_pattern = Chem.MolFromSmarts('[NX3+](=[OX1])([O-])-[#6]')
     nitro_matches = mol.GetSubstructMatches(nitro_pattern)
     if not nitro_matches:
         return False, "No nitro groups found"
@@ -45,39 +46,37 @@ def is_nitrohydrocarbon(smiles: str):
     if not carbon_atoms:
         return False, "No carbon atoms found"
 
-    # Check for connected carbon framework
-    carbon_smarts = Chem.MolFromSmarts('C~C')
-    if mol.HasSubstructMatch(carbon_smarts):
-        connected_carbons = True
-    else:
-        # Single carbon with nitro group is also valid
-        if len(carbon_atoms) == 1 and len(nitro_matches) >= 1:
-            connected_carbons = True
-        else:
-            connected_carbons = False
-    
-    if not connected_carbons:
-        return False, "No connected carbon framework found"
-
     # Check for unwanted functional groups that would make it not a pure nitrohydrocarbon
     unwanted_groups = [
-        ('C(=O)O', 'carboxylic acid'),
-        ('CO', 'alcohol'),
-        ('C(=O)', 'carbonyl'),
-        ('CN', 'amine'),
-        ('CS', 'thiol/sulfide'),
-        ('CCl', 'chloride'),
-        ('CBr', 'bromide'),
-        ('CF', 'fluoride'),
-        ('CI', 'iodide'),
-        ('C[OH]', 'hydroxyl'),
+        ('[CX3](=O)[OX2H1]', 'carboxylic acid'),  # More specific SMARTS
+        ('[CX3](=O)[O-]', 'carboxylate'),
+        ('[CX3]=O', 'ketone/aldehyde'),
+        ('[NX3;H2,H1;!$(NC=O)]', 'amine'),  # More specific, excludes nitro
+        ('[SX2]', 'thiol/sulfide'),
+        ('[Cl]', 'chloride'),
+        ('[Br]', 'bromide'),
+        ('[F]', 'fluoride'),
+        ('[I]', 'iodide'),
+        ('[OX2H]', 'hydroxyl'),  # More specific SMARTS
+        ('[OX2H]-[CX4]', 'alcohol'),  # More specific SMARTS
     ]
     
     for pattern, group_name in unwanted_groups:
-        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+        pattern_mol = Chem.MolFromSmarts(pattern)
+        if pattern_mol and mol.HasSubstructMatch(pattern_mol):
             return False, f"Contains {group_name} group"
 
     # Count nitro groups
     num_nitro = len(nitro_matches)
+    
+    # Verify all nitrogen atoms are part of nitro groups
+    n_atoms = [atom for atom in atoms if atom.GetAtomicNum() == 7]
+    if len(n_atoms) != len(nitro_matches):
+        return False, "Contains nitrogen atoms not in nitro groups"
+    
+    # Verify all oxygen atoms are part of nitro groups
+    o_atoms = [atom for atom in atoms if atom.GetAtomicNum() == 8]
+    if len(o_atoms) != 2 * len(nitro_matches):
+        return False, "Contains oxygen atoms not in nitro groups"
     
     return True, f"Hydrocarbon with {num_nitro} nitro group{'s' if num_nitro > 1 else ''}"
