@@ -18,33 +18,33 @@ def is_polychlorinated_dibenzodioxines_and_related_compounds(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Define SMARTS patterns for typical structures:
-    # Dioxins: Two benzene rings connected by two oxygen atoms.
+
+    # Define SMARTS patterns for polychlorinated dibenzodioxins
     dioxin_pattern = Chem.MolFromSmarts('O1c2ccccc2Oc3ccccc13')
     
-    # Dibenzofurans: Two benzene rings connected by one bridge oxygen.
+    # Define SMARTS patterns for dibenzofurans
     furan_pattern = Chem.MolFromSmarts('O1c2ccccc2-c3c1ccccc3')
+
+    # Define SMARTS patterns for halogenated biphenyls (at least tetrachlorinated)
+    biphenyl_pattern = Chem.MolFromSmarts('c1ccccc1-c1ccccc1')
     
-    # Halogenated biphenyl patterns should be more specific regarding chlorine/bromine
-    halogenated_biphenyl_pattern = Chem.MolFromSmarts('c1cc([Cl,Br])c([Cl,Br])c(c1)-c1c([Cl,Br])cc([Cl,Br])cc1')
-    
-    # Check for polychlorination/polybromination
-    high_halogens_pattern = Chem.MolFromSmarts('[Cl,Br].[Cl,Br].[Cl,Br]')  # Requires at least 3 halogens
+    # Counting halogen atoms directly
+    num_cl = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'Cl')
+    num_br = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'Br')
     
     # Determine the presence of the key structure motifs
     has_dioxin = mol.HasSubstructMatch(dioxin_pattern)
     has_furan = mol.HasSubstructMatch(furan_pattern)
-    is_halogenated_biphenyl = mol.HasSubstructMatch(halogenated_biphenyl_pattern)
+    has_biphenyl = mol.HasSubstructMatch(biphenyl_pattern)
     
-    # Check for high levels of halogen
-    has_high_halogens = mol.HasSubstructMatch(high_halogens_pattern)
-    
+    # Check whether the halogen count is significant
+    high_halogens = num_cl + num_br >= 4  # At least tetrachlorinated compounds
+
     # Ensure at least one significant structure type and significant halogenation
-    if (has_dioxin or has_furan or is_halogenated_biphenyl) and has_high_halogens:
+    if (has_dioxin or has_furan or has_biphenyl) and high_halogens:
         return True, "Classified as polychlorinated dibenzodioxin or related compound"
     
-    return False, "Does not meet classification criteria for polychlorinated dibenzodioxin or related compound"
+    return False, "Does not meet classification criteria for polychlorinated dibenzodioxins or related compounds"
 
 # Example usage
 example_smiles = "Clc1ccc(cc1)-c1cc(Cl)c(Cl)cc1Cl"
