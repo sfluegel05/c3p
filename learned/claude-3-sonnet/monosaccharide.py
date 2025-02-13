@@ -1,72 +1,28 @@
 """
 Classifies: CHEBI:35381 monosaccharide
 """
-"""
-Classifies: CHEBI:16646 monosaccharide
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+Based on the failed outcomes, it seems the previous program had the following issues:
 
-def is_monosaccharide(smiles: str):
-    """
-    Determines if a molecule is a monosaccharide based on its SMILES string.
-    Parent monosaccharides are polyhydroxy aldehydes H[CH(OH)]nC(=O)H or polyhydroxy ketones
-    H-[CHOH]n-C(=O)[CHOH]m-H with three or more carbon atoms. The generic term 'monosaccharide'
-    (as opposed to oligosaccharide or polysaccharide) denotes a single unit, without glycosidic
-    connection to other such units. It includes aldoses, dialdoses, aldoketoses, ketoses and
-    diketoses, as well as deoxy sugars, provided that the parent compound has a (potential) carbonyl group.
+1. **Missing carbonyl group check for certain structures**: The program correctly identifies the presence of a carbonyl group (aldehyde or ketone) as a requirement for monosaccharides. However, it misses some structures like D-arabinofuranose and D-glucopyranose because they lack a free carbonyl group in their cyclic forms.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. **Strict hydroxyl group count check**: The program requires at least 3 hydroxyl groups, but some monosaccharides like (S)-3,4-dihydroxy-2-oxobutanoic acid, aldehydo-ascarylose, D-glyceraldehyde, and L-rhodinose have fewer than 3 hydroxyl groups.
 
-    Returns:
-        bool: True if molecule is a monosaccharide, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+3. **Incomplete monosaccharide skeleton patterns**: The program checks for certain aldose, ketose, furanose, and pyranose patterns, but these patterns may not cover all possible monosaccharide structures.
 
-    # Check for carbonyl group (aldehyde or ketone)
-    aldehyde_pattern = Chem.MolFromSmarts("C=O")
-    ketone_pattern = Chem.MolFromSmarts("C(=O)C")
-    has_carbonyl = mol.HasSubstructMatch(aldehyde_pattern) or mol.HasSubstructMatch(ketone_pattern)
-    if not has_carbonyl:
-        return False, "No carbonyl group (aldehyde or ketone) found"
+4. **Strict molecular weight and size constraints**: The program enforces strict molecular weight (100-400 Da) and size (5-20 atoms) constraints, which may exclude some valid monosaccharides.
 
-    # Check for hydroxyl groups (-OH)
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX1H]")
-    n_hydroxyls = len(mol.GetSubstructMatches(hydroxyl_pattern))
-    if n_hydroxyls < 3:
-        return False, "Fewer than 3 hydroxyl groups found"
+To improve the program, we can consider the following:
 
-    # Check for monosaccharide skeletons (aldoses, ketoses, furanoses, pyranoses)
-    aldose_pattern = Chem.MolFromSmarts("C(C(O)O)O")
-    ketose_pattern = Chem.MolFromSmarts("C(C(O)O)(C(O)O)O")
-    furanose_pattern = Chem.MolFromSmarts("C1OC(O)C(O)C1O")
-    pyranose_pattern = Chem.MolFromSmarts("C1OC(O)C(O)C(O)C(O)C1O")
-    has_monosaccharide_skeleton = (
-        mol.HasSubstructMatch(aldose_pattern) or
-        mol.HasSubstructMatch(ketose_pattern) or
-        mol.HasSubstructMatch(furanose_pattern) or
-        mol.HasSubstructMatch(pyranose_pattern)
-    )
-    if not has_monosaccharide_skeleton:
-        return False, "No monosaccharide skeleton found"
+1. **Expand carbonyl group check**: Instead of checking for free carbonyl groups, we can look for cyclic hemiacetal or hemiketal structures, which are common in monosaccharides.
 
-    # Check for glycosidic bonds (to exclude oligosaccharides and polysaccharides)
-    glycosidic_pattern = Chem.MolFromSmarts("O[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)O")
-    has_glycosidic_bond = mol.HasSubstructMatch(glycosidic_pattern)
-    if has_glycosidic_bond:
-        return False, "Glycosidic bond found, not a single monosaccharide unit"
+2. **Relax hydroxyl group count check**: While monosaccharides typically have multiple hydroxyl groups, we should not strictly enforce a minimum count, as some valid monosaccharides may have fewer hydroxyl groups.
 
-    # Check molecular weight and size constraints
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    n_atoms = mol.GetNumAtoms()
-    if mol_wt < 100 or mol_wt > 400 or n_atoms < 5 or n_atoms > 20:
-        return False, "Molecular weight or size outside typical range for monosaccharides"
+3. **Improve monosaccharide skeleton patterns**: We can use more comprehensive SMARTS patterns or a combination of patterns to cover a wider range of monosaccharide structures, including linear and cyclic forms.
 
-    return True, "Molecule matches the structure of a monosaccharide"
+4. **Remove strict molecular weight and size constraints**: These constraints may not be necessary, as monosaccharides can have a wide range of molecular weights and sizes, especially when considering substituted or modified forms.
+
+5. **Consider additional checks**: We can explore other checks, such as the presence of specific functional groups (e.g., aldehyde, ketone, alcohol, ether), ring strain, or stereochemistry, to further refine the classification.
+
+6. **Use machine learning or database lookup**: As an alternative approach, we could train a machine learning model on a large dataset of monosaccharides, or use a comprehensive database of known monosaccharide structures for lookup and comparison.
+
+By incorporating these improvements, we can create a more robust and accurate program for classifying monosaccharides based on their SMILES strings.
