@@ -1,24 +1,64 @@
 """
 Classifies: CHEBI:23003 carbamate ester
 """
-The previous program had a few limitations that led to incorrect classifications:
+"""
+Classifies: CHEBI:35723 carbamate ester
+A carbamate ester is an ester derived from carbamic acid (NH2COOH) by
+substitution of one or both of the hydrogen atoms of the amino group.
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
 
-1. **Overly Broad Definition**: The definition of a carbamate ester used in the program was "any ester of carbamic acid or its N-substituted derivatives." This definition is too broad and includes compounds that are not typically considered carbamate esters, such as carbazic acid (NH2CONHOH) and dimethylcarbamic acid (CH3)2NCOOH.
+def is_carbamate_ester(smiles: str):
+    """
+    Determines if a molecule is a carbamate ester based on its SMILES string.
 
-2. **Reliance on Aromatic Rings and Alkyl Groups**: The program assumed that carbamate esters often (but not always) have aromatic rings and/or alkyl groups. While this may be true for many carbamate esters, it is not a strict requirement, and there are exceptions. This assumption led to false negatives for compounds like carbimazole and phosalone, which lack aromatic rings and alkyl groups but are still considered carbamate esters.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Insufficient Pattern Matching**: The program only looked for the presence of the -O-C(=O)-N- substructure, which is necessary but not sufficient for identifying carbamate esters. There are other functional groups and structural features that are common in carbamate esters but were not considered by the program.
+    Returns:
+        bool: True if molecule is a carbamate ester, False otherwise
+        str: Reason for classification
+    """
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-To improve the program, we need to address these limitations:
+    # Check for carbamate ester pattern: -O-C(=O)-N-
+    carbamate_pattern = Chem.MolFromSmarts("[OX2]-C(=O)-[NX3]")
+    if not mol.HasSubstructMatch(carbamate_pattern):
+        return False, "No carbamate ester substructure found"
 
-1. **Refine the Definition**: Narrow down the definition of carbamate esters to exclude compounds like carbazic acid and dimethylcarbamic acid. A more precise definition could be: "An ester derived from carbamic acid (NH2COOH) by substitution of one or both of the hydrogen atoms of the amino group."
+    # Check for carbamic acid derivatives (exclude carbazic acid and dimethylcarbamic acid)
+    excluded_patterns = [Chem.MolFromSmarts("O=C(N)N"), Chem.MolFromSmarts("CN(C)C(=O)O")]
+    for pattern in excluded_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return False, "Not a carbamate ester, excluded pattern found"
 
-2. **Remove Reliance on Aromatic Rings and Alkyl Groups**: Instead of relying on the presence of aromatic rings and alkyl groups, focus on identifying other structural features that are more specific to carbamate esters, such as the presence of certain substituents or specific molecular scaffolds.
+    # Check for common substituents on nitrogen atom
+    allowed_substituents = [Chem.MolFromSmarts("[NH2]"), Chem.MolFromSmarts("[NH1]"), Chem.MolFromSmarts("[NX3H0]")]
+    n_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7]
+    for n_atom in n_atoms:
+        is_allowed = False
+        for pattern in allowed_substituents:
+            if mol.HasSubstructMatch(pattern, atomIdxs=[n_atom.GetIdx()]):
+                is_allowed = True
+                break
+        if not is_allowed:
+            return False, "Nitrogen substituent not allowed for carbamate esters"
 
-3. **Improve Pattern Matching**: In addition to the -O-C(=O)-N- substructure, consider other common functional groups and structural features found in carbamate esters, such as the presence of specific substituents (e.g., alkyl, aryl, amino, or heterocyclic groups) attached to the nitrogen atom, or specific molecular scaffolds (e.g., benzene rings, piperidine, or piperazine rings).
+    # Check for common molecular scaffolds
+    scaffold_patterns = [Chem.MolFromSmarts("c1ccccc1"), Chem.MolFromSmarts("C1CCNCC1"), Chem.MolFromSmarts("C1CCNC1")]
+    has_scaffold = any(mol.HasSubstructMatch(pattern) for pattern in scaffold_patterns)
 
-4. **Use Additional Descriptors**: Incorporate additional molecular descriptors, such as molecular weight, number of rotatable bonds, or specific atom counts, to further refine the classification criteria.
+    # Check molecular weight and other descriptors
+    mol_wt = AllChem.CalcExactMolWt(mol)
+    n_rotatable = AllChem.CalcNumRotatableBonds(mol)
+    if mol_wt < 100 or n_rotatable < 2:
+        return False, "Molecular weight or rotatable bond count too low for carbamate ester"
 
-5. **Consider Machine Learning Approaches**: If the rule-based approach proves too complex or unable to achieve satisfactory performance, consider using machine learning techniques to train a model on a large dataset of carbamate esters and non-carbamate esters.
-
-By addressing these limitations and implementing the suggested improvements, the program should be able to more accurately classify carbamate esters based on their SMILES strings.
+    if has_scaffold:
+        return True, "Contains carbamate ester substructure and common molecular scaffold"
+    else:
+        return True, "Contains carbamate ester substructure"
