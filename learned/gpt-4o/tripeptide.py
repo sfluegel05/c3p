@@ -20,21 +20,28 @@ def is_tripeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Pattern specifying C(α)-N in -CONH- linkage, part of peptide backbone
-    alpha_carbon_pattern = Chem.MolFromSmarts("N[C@H]")
-    # Peptide bond pattern: -C(=O)N-
-    peptide_pattern = Chem.MolFromSmarts("C(=O)N")
+    # Improved alpha carbon chiral centers with side chains
+    # This pattern aims to be more flexible regarding alpha carbon configuration
+    alpha_carbon_patterns = [
+        Chem.MolFromSmarts("NC[C@H]"),
+        Chem.MolFromSmarts("NC[C@@H]"),
+        Chem.MolFromSmarts("N[C@]C"),
+        Chem.MolFromSmarts("N[C@@]C")
+    ]
     
+    # Peptide bond pattern: -C(=O)N- (amide linkage)
+    peptide_bond_pattern = Chem.MolFromSmarts("C(=O)N")
+
     # Check for valid patterns
-    if alpha_carbon_pattern is None or peptide_pattern is None:
+    if peptide_bond_pattern is None or any(pat is None for pat in alpha_carbon_patterns):
         return False, "Pattern creation failed"
 
-    # Find matching functionalities, crucial to amino acids
-    alpha_matches = mol.GetSubstructMatches(alpha_carbon_pattern)
-    peptide_matches = mol.GetSubstructMatches(peptide_pattern)
+    # Finding matches
+    alpha_matches = sum([len(mol.GetSubstructMatches(pat)) for pat in alpha_carbon_patterns])
+    peptide_bonds = len(mol.GetSubstructMatches(peptide_bond_pattern))
 
-    # Check if it has three alpha carbon matches indicating three residues
-    if len(alpha_matches) == 3 and len(peptide_matches) >= 2:
-        return True, "Contains three amino acid residues connected by peptide linkages"
+    # Tripeptides have 3 residues and exactly 2 peptide bonds
+    if alpha_matches == 3 and peptide_bonds == 2:
+        return True, "Contains three alpha carbon chiral centers with two peptide linkages indicating a tripeptide"
     else:
-        return False, f"Contains {len(alpha_matches)} alpha carbons and {len(peptide_matches)} peptide bonds, insufficient or excess for a tripeptide"
+        return False, f"Contains {alpha_matches} alpha carbons and {peptide_bonds} peptide bonds, insufficient or excess for a tripeptide"
