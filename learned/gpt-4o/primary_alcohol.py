@@ -27,10 +27,10 @@ def is_primary_alcohol(smiles: str):
         return False, "Invalid SMILES string"
     
     # Define SMARTS patterns for primary alcohol
-    # Identify carbon atoms bonded to OH group with only 1 other carbon (2 hydrogens)
-    primary_alcohol_pattern_1 = Chem.MolFromSmarts("[C][OH]([H])[H]")
-    # Optionally: a standalone primary alcohol carbon having three hydrogens
-    primary_alcohol_pattern_2 = Chem.MolFromSmarts("[C][OH]([H])[H][H]")
+    # Pattern for primary alcohol carbon with two hydrogens, bonded to one carbon and OH
+    primary_alcohol_pattern_1 = Chem.MolFromSmarts("[CX4;H2][OH]")
+    # Pattern for isolating primary alcohol carbon with three hydrogens
+    primary_alcohol_pattern_2 = Chem.MolFromSmarts("[CX4;H3][OH]")
     
     # Check for matches with the defined SMARTS patterns
     matches_1 = mol.GetSubstructMatches(primary_alcohol_pattern_1)
