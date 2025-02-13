@@ -2,13 +2,11 @@
 Classifies: CHEBI:18154 polysaccharide
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_polysaccharide(smiles: str):
     """
     Determines if a molecule is a polysaccharide based on its SMILES string.
-    This involves checking for more than ten glycosidic bonds (O-C-O structure in sugar rings) 
-    and a polysaccharide backbone.
+    Polysaccharides consist of more than ten monosaccharide units linked by glycosidic bonds.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,22 +21,19 @@ def is_polysaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for sugar ring pattern (typically pyranose or furanose forms)
-    # A simple ring count for demonstration purposes
-    sugar_ring_pattern = Chem.MolFromSmarts("O1C(O)C(O)C(O)C(O)C1")
-    sugar_matches = mol.GetSubstructMatches(sugar_ring_pattern)
+    # Recognize hexose rings using pyranose (including common variations)
+    pyranose_pattern = Chem.MolFromSmarts("C1C(O)C(O)C(O)C(O)O1")
+    pyranose_matches = mol.GetSubstructMatches(pyranose_pattern)
 
-    # We assume these matches represent a basic sugar unit,
-    # though polysaccharides might have complex patterns
-    if len(sugar_matches) <= 10:
-        return False, f"Found {len(sugar_matches)} monosaccharide rings, need more than 10"
+    if len(pyranose_matches) <= 10:
+        return False, f"Found {len(pyranose_matches)} pyranose rings, need more than 10"
 
-    # Check for connectivity between rings - needs adjustment based on real-world polysaccharide features
-    # For simplification: Check for overall number of ethers (O-C-O types)
-    ether_pattern = Chem.MolFromSmarts("[OX2]C[OX2]")
-    ether_matches = mol.GetSubstructMatches(ether_pattern)
-    
-    if len(ether_matches) <= 10:
-        return False, f"Found {len(ether_matches)} glycosidic bonds, need more than 10"
+    # Glycosidic linkages typically involve C-O-C bridges
+    # Adjust the pattern to match variations in glycosidic bonds
+    glycosidic_pattern = Chem.MolFromSmarts("[C;!R]-O-[C;!R]")
+    glycosidic_matches = mol.GetSubstructMatches(glycosidic_pattern)
 
-    return True, "Contains more than ten monosaccharide rings linked via glycosidic bonds"
+    if len(glycosidic_matches) < 10:
+        return False, f"Found {len(glycosidic_matches)} potential glycosidic linkages, need more than 10"
+
+    return True, "Contains more than ten pyranose rings linked via glycosidic bonds"
