@@ -7,7 +7,8 @@ Classifies: CHEBI:35831 cyclic fatty acid
 A cyclic fatty acid is defined as any fatty acid containing anywhere in its structure a ring of atoms.
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import Lipinski
 
 def is_cyclic_fatty_acid(smiles: str):
     """
@@ -37,8 +38,13 @@ def is_cyclic_fatty_acid(smiles: str):
         return False, "No ring structure found"
 
     # Check for long carbon chain (fatty acid)
-    longest_chain = AllChem.FindLongestChain(mol)
-    if len(longest_chain.GetPaths()[0]) < 6:  # arbitrary threshold for fatty acid
-        return False, "Carbon chain too short for fatty acid"
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 200:  # arbitrary threshold for fatty acid
+        return False, "Molecular weight too low for fatty acid"
+
+    # Check if molecule violates Lipinski rule
+    lipinski_violation = Lipinski.FailViolators(Lipinski.PROPS)
+    if len(lipinski_violation) == 0:
+        return False, "Molecule does not violate Lipinski rule"
 
     return True, "Contains a carboxylic acid group, ring structure, and long carbon chain"
