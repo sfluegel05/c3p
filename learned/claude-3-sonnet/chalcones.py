@@ -2,17 +2,16 @@
 Classifies: CHEBI:23086 chalcones
 """
 """
-Classifies: CHEBI:38223 chalcones
+Classifies: CHEBI:35807 chalcone
+A ketone that is 1,3-diphenylpropenone (benzylideneacetophenone), ArCH=CH(=O)Ar, and its derivatives formed by substitution.
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
-def is_chalcones(smiles: str):
+def is_chalcone(smiles: str):
     """
     Determines if a molecule is a chalcone based on its SMILES string.
-    A chalcone is a 1,3-diphenylpropenone (benzylideneacetophenone) or its derivatives
-    formed by substitution, with the general structure Ar-CH=CH-C(=O)-Ar.
+    A chalcone contains two aromatic rings connected by an alpha,beta-unsaturated ketone.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -27,44 +26,27 @@ def is_chalcones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for chalcone backbone pattern (Ar-CH=CH-C(=O)-Ar)
-    chalcone_pattern = Chem.MolFromSmarts("[a]C=CC(=O)[a]")
-    matches = mol.GetSubstructMatches(chalcone_pattern)
-    if not matches:
-        return False, "No chalcone backbone found"
+    # Look for chalcone backbone pattern: Ar-CH=CH-C(=O)-Ar
+    chalcone_pattern = Chem.MolFromSmarts("c1ccccc1C=CC(=O)c2ccccc2")
+    if not mol.HasSubstructMatch(chalcone_pattern):
+        return False, "Missing chalcone backbone pattern: Ar-CH=CH-C(=O)-Ar"
     
     # Check for aromatic rings
-    aromatic_rings = [ring for ring in Chem.GetSymmSSSR(mol)
-                      if mol.GetRingInfo().IsAromaticRing(ring)]
+    rings = mol.GetRingInfo().AtomRings()
+    aromatic_rings = [ring for ring in rings if all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring)]
     if len(aromatic_rings) < 2:
         return False, "Less than two aromatic rings found"
     
-    # Check that the alpha,beta-unsaturated ketone connects the aromatic rings
-    for match in matches:
-        ring_atoms = set()
-        for ring in aromatic_rings:
-            ring_atoms.update(ring)
-        if set(match).issubset(ring_atoms):
-            break
+    # Check for alpha,beta-unsaturated ketone
+    ketone_atoms = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetSymbol() == 'O' and atom.GetDegree() == 1]
+    for ketone_idx in ketone_atoms:
+        # Look for C=C-C=O pattern
+        env = Chem.FindAtomEnvironmentOfRadiusN(mol, ketone_idx, 3)
+        if len(env) == 4 and all(mol.GetBondBetweenAtoms(env[0], env[1]).GetBondType() == Chem.BondType.DOUBLE and
+                                 mol.GetBondBetweenAtoms(env[1], env[2]).GetBondType() == Chem.BondType.SINGLE and
+                                 mol.GetBondBetweenAtoms(env[2], env[3]).GetBondType() == Chem.BondType.DOUBLE):
+            break  # Found alpha,beta-unsaturated ketone
     else:
-        return False, "Chalcone backbone not connecting aromatic rings"
+        return False, "No alpha,beta-unsaturated ketone found"
     
-    # Check molecular weight range
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 200 or mol_wt > 600:
-        return False, "Molecular weight outside typical range for chalcones"
-    
-    # Count carbons and oxygens
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if c_count < 12 or o_count < 1:
-        return False, "Insufficient carbon or oxygen atoms for chalcone"
-    
-    # Check for substituents on aromatic rings
-    substituted_rings = [ring for ring in aromatic_rings
-                         if any(mol.GetAtomWithIdx(idx).GetTotalNumHs() < 1
-                                for idx in ring)]
-    if not substituted_rings:
-        return False, "No substituents found on aromatic rings"
-    
-    return True, "Molecule contains the chalcone backbone (Ar-CH=CH-C(=O)-Ar) with aromatic rings and substituents"
+    return True, "Contains two aromatic rings connected by an alpha,beta-unsaturated ketone (chalcone backbone)"
