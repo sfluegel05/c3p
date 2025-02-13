@@ -1,23 +1,50 @@
 """
 Classifies: CHEBI:24402 glycosphingolipid
 """
-The previous program attempted to classify glycosphingolipids based on several criteria, including the presence of a ceramide backbone, a glycosidic linkage, a carbohydrate residue, multiple carbohydrate rings, and common structural motifs. However, based on the provided outcomes, it appears that the program failed to accurately classify several known glycosphingolipids. Here are some potential issues and ways to improve the program:
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
+from rdkit.ML.Descriptors import MoleculeDescriptors
+import pandas as pd
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
 
-1. **Ceramide backbone recognition**: The pattern `[N;X3][C;X3](=[O])[C;X4]([C;X4])(CCCC[C;X3]=C)` used to detect the ceramide backbone is too specific and may not cover all possible variations of the ceramide structure. Glycosphingolipids can have different alkyl chain lengths, degrees of unsaturation, and substituents on the sphingoid base or fatty acid chains. A more flexible pattern or a combination of patterns may be needed to capture these variations.
+# Load a dataset of known glycosphingolipids and non-glycosphingolipids
+dataset = pd.read_csv('glycosphingolipid_dataset.csv')
+X = dataset['SMILES'].values
+y = dataset['is_glycosphingolipid'].values
 
-2. **Glycosidic linkage detection**: The condition `AllChem.MolToSmarts(mol).count("OC") > 1` checks for the presence of multiple O-C bonds, which may not necessarily indicate a glycosidic linkage. A more specific pattern or a combination of patterns may be needed to identify the glycosidic linkage between the carbohydrate residue and the sphingoid base.
+# Calculate molecular descriptors
+nms = [x[0] for x in Descriptors._descList]
+calc = MoleculeDescriptors.MolecularDescriptorCalculator(nms)
+X_desc = [calc.CalcDescriptors(Chem.MolFromSmiles(smile)) for smile in X]
 
-3. **Carbohydrate residue recognition**: The pattern `[C@H]1[C@H]([C@@H]([C@H]([C@@H]1O)O)O)O` used to detect the carbohydrate residue is specific to cyclitols or monosaccharides. However, glycosphingolipids can have complex oligosaccharide chains with various types of monosaccharides and branching patterns. A more comprehensive pattern or a set of patterns may be needed to cover a broader range of carbohydrate residues.
+# Split the dataset into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X_desc, y, test_size=0.2, random_state=42)
 
-4. **Multiple carbohydrate ring detection**: While the program correctly checks for the presence of multiple carbohydrate rings, it may be overly strict in requiring at least two rings. Some glycosphingolipids, particularly those with smaller carbohydrate residues, may have only one ring.
+# Train a Random Forest classifier
+clf = RandomForestClassifier(n_estimators=100, random_state=42)
+clf.fit(X_train, y_train)
 
-5. **Structural motif recognition**: The program checks for two common structural motifs, `CC(=O)NC[C@H](O)/C=C` and `C[C@H](O)/C=C/C`, which may not cover all possible variations in glycosphingolipid structures. Additionally, these motifs may not be specific enough and could be present in other classes of molecules.
+def is_glycosphingolipid(smiles):
+    """
+    Determines if a molecule is a glycosphingolipid based on its SMILES string and a trained Random Forest classifier.
 
-To improve the program, you could consider the following strategies:
+    Args:
+        smiles (str): SMILES string of the molecule
 
-- Use a more comprehensive set of SMARTS patterns to capture the diversity of ceramide backbones, glycosidic linkages, and carbohydrate residues found in glycosphingolipids.
-- Employ machine learning techniques, such as training a classifier on a large dataset of known glycosphingolipids and non-glycosphingolipids, to learn the structural features that distinguish this class of molecules.
-- Incorporate additional structural descriptors or fingerprints, such as topological or shape-based descriptors, to capture more complex structural features.
-- Utilize databases or knowledge bases of glycosphingolipid structures to construct a reference set for substructure matching or similarity searching.
+    Returns:
+        bool: True if molecule is a glycosphingolipid, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-Additionally, it may be helpful to consult literature or domain experts to gain a deeper understanding of the structural diversity and essential features of glycosphingolipids, which could inform the development of more robust classification rules or models.
+    desc = calc.CalcDescriptors(mol)
+    prediction = clf.predict([desc])
+
+    if prediction[0]:
+        return True, "Classified as a glycosphingolipid by the Random Forest model"
+    else:
+        return False, "Classified as not a glycosphingolipid by the Random Forest model"
