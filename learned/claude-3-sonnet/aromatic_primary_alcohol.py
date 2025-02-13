@@ -2,16 +2,16 @@
 Classifies: CHEBI:33857 aromatic primary alcohol
 """
 """
-Classifies: CHEBI:35476 aromatic primary alcohol
+Classifies: CHEBI:38092 aromatic primary alcohol
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_aromatic_primary_alcohol(smiles: str):
     """
     Determines if a molecule is an aromatic primary alcohol based on its SMILES string.
-    An aromatic primary alcohol is any primary alcohol where the alcoholic hydroxy group
-    is attached to a carbon atom that is itself bonded to an aromatic ring.
+    An aromatic primary alcohol is defined as any primary alcohol in which the alcoholic
+    hydroxy group is attached to a carbon which is itself bonded to an aromatic ring.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,17 +26,23 @@ def is_aromatic_primary_alcohol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Find aromatic rings
-    aromatic_rings = mol.GetAromaticRings()
-    
-    # Check if any carbon with a primary alcoholic group is attached to an aromatic ring
-    for atom in mol.GetAtoms():
-        if atom.GetSymbol() == "C" and atom.GetTotalNumHs() == 2:  # primary carbon
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetSymbol() == "O" and neighbor.GetDegree() == 1:  # hydroxyl oxygen
-                    # Check if the primary carbon is attached to an aromatic ring
-                    for ring in aromatic_rings:
-                        if atom.IsMemberOfAromaticRing(ring):
-                            return True, "Molecule contains an aromatic primary alcohol group"
+    # Check for the presence of an aromatic ring
+    has_aromatic_ring = mol.HasSubstructMatch(Chem.MolFromSmarts('c'))
+    if not has_aromatic_ring:
+        return False, "No aromatic ring found"
 
-    return False, "Molecule does not contain an aromatic primary alcohol group"
+    # Check for the presence of a primary alcoholic group (-CH2-OH)
+    has_primary_alcohol = mol.HasSubstructMatch(Chem.MolFromSmarts('[CH2,CH3]-[OH]'))
+    if not has_primary_alcohol:
+        return False, "No primary alcoholic group found"
+
+    # Check if the alcoholic group is attached to a carbon bonded to an aromatic ring
+    for atom in mol.GetAtoms():
+        if atom.GetSymbol() == 'O' and atom.GetDegree() == 1:  # Alcoholic oxygen
+            neighbor = atom.GetNeighbors()[0]
+            if neighbor.GetSymbol() == 'C' and neighbor.GetDegree() == 3:  # Primary carbon
+                for c_neighbor in neighbor.GetNeighbors():
+                    if c_neighbor.GetIsAromatic():
+                        return True, "Contains an aromatic ring with a primary alcoholic group attached"
+
+    return False, "Primary alcoholic group not attached to an aromatic ring"
