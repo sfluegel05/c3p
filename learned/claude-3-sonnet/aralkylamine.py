@@ -27,24 +27,26 @@ def is_aralkylamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for alkylamino group (-N-) and aromatic ring attached to alkyl chain
-    alkylamine_pattern = Chem.MolFromSmarts("[N;!$(NC=O)]")
-    aromatic_pattern = Chem.MolFromSmarts("a")
+    # Check for disconnected structures
+    mol_frags = Chem.GetMolFrags(mol, aromatics=Chem.SMARTSFromSmarts('c'))
     
-    alkylamine_matches = mol.GetSubstructMatches(alkylamine_pattern)
-    aromatic_matches = mol.GetSubstructMatches(aromatic_pattern)
+    for frag in mol_frags:
+        frag_mol = Chem.MolFragmentToSmiles(mol, frag)
+        
+        # Look for alkylamino group (-N-) and aromatic ring
+        alkylamine_pattern = Chem.MolFromSmarts("[N;!$(NC=O)!$(N([#6])[#6])]")
+        aromatic_pattern = Chem.MolFromSmarts("a")
+        
+        frag_mol = Chem.MolFromSmiles(frag_mol)
+        alkylamine_matches = frag_mol.GetSubstructMatches(alkylamine_pattern)
+        aromatic_matches = frag_mol.GetSubstructMatches(aromatic_pattern)
+        
+        if alkylamine_matches and aromatic_matches:
+            # Check for reasonable molecular weight and atom count
+            mol_wt = rdMolDescriptors.CalcExactMolWt(frag_mol)
+            if mol_wt > 100 and mol_wt < 500:
+                n_atoms = frag_mol.GetNumAtoms()
+                if n_atoms > 10 and n_atoms < 50:
+                    return True, "Contains alkylamino group and aromatic ring"
     
-    if not alkylamine_matches or not aromatic_matches:
-        return False, "No alkylamino group or aromatic ring found"
-    
-    # Check if aromatic ring is directly attached to alkyl chain of alkylamino group
-    for amine_idx in alkylamine_matches:
-        amine_atom = mol.GetAtomWithIdx(amine_idx)
-        for neighbor in amine_atom.GetNeighbors():
-            if neighbor.GetIsAromatic():
-                # Check for alkyl chain between amine and aromatic ring
-                alkyl_chain = Chem.Mol(Chem.FindEqualInsatNEndPts(Chem.MolFromSmiles(Chem.MolToSmiles(Chem.PathToSubmol(mol, Chem.FindAtomEnvironmentOfRadiusN(mol, amine_idx, 4), atomIdxList=[amine_idx])), allNodes=True))
-                if alkyl_chain.GetNumAtoms() > 1:
-                    return True, "Contains alkylamino group with aromatic ring attached via alkyl chain"
-    
-    return False, "Aromatic ring not directly attached to alkyl chain of alkylamino group"
+    return False, "No alkylamino group or aromatic ring found"
