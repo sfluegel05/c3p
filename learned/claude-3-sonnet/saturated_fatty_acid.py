@@ -7,6 +7,7 @@ Any fatty acid containing no carbon to carbon multiple bonds. Known to produce a
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_saturated_fatty_acid(smiles: str):
     """
@@ -20,7 +21,7 @@ def is_saturated_fatty_acid(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES and remove stereochemistry
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles, removeHs=False)
     if mol is None:
         return False, "Invalid SMILES string"
@@ -36,20 +37,21 @@ def is_saturated_fatty_acid(smiles: str):
     if any(bond.GetBondType() == Chem.BondType.TRIPLE for bond in mol.GetBonds()):
         return False, "Contains carbon-carbon triple bonds"
 
-    # Check for aliphatic carbon chain (no rings)
-    aliphatic_pattern = Chem.MolFromSmarts("[C;D3]~[C;D3]~[C;D3]~[C;D3]")
+    # Check for aliphatic carbon chain (allow branching)
+    aliphatic_pattern = Chem.MolFromSmarts("[C;D3]~[C;D3]~[C;D3]~[C;D3]~[C;D3]")
     aliphatic_matches = mol.GetSubstructMatches(aliphatic_pattern)
     if not aliphatic_matches:
-        # Handle special cases like butyric acid (CCCC(O)=O)
-        special_cases = ["CCCC(O)=O", "CC(C)C(O)=O"]
-        if smiles in special_cases:
-            return True, "Known saturated fatty acid"
-        else:
-            return False, "No aliphatic carbon chain found"
+        return False, "No aliphatic carbon chain found"
 
-    # Check carbon chain length (at least 4 carbons)
-    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if carbon_count < 4:
-        return False, "Carbon chain too short for fatty acid"
+    # Check molecular weight (at least 100 Da)
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 100:
+        return False, "Molecular weight too low for fatty acid"
+
+    # Check for additional functional groups (optional)
+    # alcohol_pattern = Chem.MolFromSmarts("[OX1H]")
+    # alcohol_matches = mol.GetSubstructMatches(alcohol_pattern)
+    # if alcohol_matches:
+    #     return True, "Contains a carboxyl group, a saturated aliphatic carbon chain, and an alcohol group"
 
     return True, "Contains a carboxyl group and a saturated aliphatic carbon chain"
