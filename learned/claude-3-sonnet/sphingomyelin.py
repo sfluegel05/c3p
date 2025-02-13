@@ -1,28 +1,73 @@
 """
 Classifies: CHEBI:64583 sphingomyelin
 """
-The previous program attempted to classify sphingomyelins by checking for the presence of a sphingoid base, a fatty acid chain attached via an amide linkage, and a phosphorylcholine group ester-linked to the terminal hydroxy group of the sphingoid base. However, it failed to correctly identify the provided examples of sphingomyelins.
+"""
+Classifies: CHEBI:18023 sphingomyelin
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-Here are some potential issues with the previous approach and ways to improve it:
+def is_sphingomyelin(smiles: str):
+    """
+    Determines if a molecule is a sphingomyelin based on its SMILES string.
+    A sphingomyelin is a phospholipid with a sphingoid base linked to a fatty acid
+    via an amide bond, and a phosphorylcholine group ester-linked to the terminal hydroxy group.
 
-1. **Rigid Substructure Matching**: The program relied on rigid SMARTS patterns to identify the key structural components of a sphingomyelin. However, sphingomyelins can have diverse structures, with varying chain lengths, double bond positions, and substituents. A more flexible approach is needed to account for this structural diversity.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **Stereochemistry Handling**: The previous program did not consider stereochemistry, which is crucial for correctly identifying sphingomyelins. The sphingoid base and the fatty acid chain can have specific stereochemistries that need to be accounted for.
+    Returns:
+        bool: True if molecule is a sphingomyelin, False otherwise
+        str: Reason for classification
+    """
 
-3. **Incomplete Structural Constraints**: The program checked for the presence of key components but did not ensure that they were correctly connected or positioned within the molecule. For example, it did not verify that the phosphorylcholine group was indeed ester-linked to the terminal hydroxy group of the sphingoid base.
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-4. **Molecular Weight and Atom Count Constraints**: While the program checked for molecular weight and atom count constraints, these may not be sufficient or robust enough to accurately classify sphingomyelins.
+    # Look for sphingoid base pattern
+    sphingoid_base_pattern = Chem.MolFromSmarts("[N;X3;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2]")
+    if not mol.HasSubstructMatch(sphingoid_base_pattern):
+        return False, "No sphingoid base found"
 
-To improve the program, we can consider the following approaches:
+    # Look for fatty acid chain linked via amide bond
+    fatty_acid_pattern = Chem.MolFromSmarts("[N;X3;H1,H2][C;X3;H1,H2](=[O;X1])[C;X4;H1,H2]")
+    if not mol.HasSubstructMatch(fatty_acid_pattern):
+        return False, "No fatty acid chain linked via amide bond"
 
-1. **Use More Flexible SMARTS Patterns**: Instead of rigid patterns, we can use more flexible SMARTS patterns that allow for variations in chain lengths, double bond positions, and substituents.
+    # Look for phosphorylcholine group ester-linked to the terminal hydroxy group
+    phosphocholine_pattern = Chem.MolFromSmarts("[O;X2][P;X4]([O;X1-])([O;X1-])[O;X2][C;X4][N+;X4]([C;X4])([C;X4])[C;X4]")
+    if not mol.HasSubstructMatch(phosphocholine_pattern):
+        return False, "No phosphorylcholine group ester-linked to terminal hydroxy group"
 
-2. **Incorporate Stereochemistry Checks**: We can include SMARTS patterns or other checks to ensure that the stereochemistry of the sphingoid base and the fatty acid chain matches the expected configurations.
+    # Check for correct connectivity and positioning
+    connectivity_pattern = Chem.MolFromSmarts("[N;X3;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][O;X2][C;X4;H1,H2][N;X3;H1,H2][C;X3;H1,H2](=[O;X1])[C;X4;H1,H2]")
+    if not mol.HasSubstructMatch(connectivity_pattern):
+        return False, "Key components not correctly connected or positioned"
 
-3. **Ensure Correct Connectivity and Positioning**: We can use SMARTS patterns or other techniques to verify that the key components (sphingoid base, fatty acid chain, and phosphorylcholine group) are correctly connected and positioned within the molecule.
+    # Check for trans double bond in sphingoid base
+    trans_double_bond_pattern = Chem.MolFromSmarts("[C;X3]=[C;X3]")
+    if not mol.HasSubstructMatch(trans_double_bond_pattern):
+        return False, "No trans double bond in sphingoid base"
 
-4. **Consider Additional Structural Features**: We may need to incorporate additional structural features or constraints specific to sphingomyelins, such as the presence of a trans double bond in the sphingoid base or the presence of a specific substituent pattern.
+    # Check for specific stereochemistry of sphingoid base
+    stereochemistry_pattern = Chem.MolFromSmarts("[C@H]([N])[C@@H]([O])[C@@H]([C])[C@@H]([C])[C@@H]([C])[C@@H]([C])[C@@H]([C])[C@@H]([C])[C@@H]([C])[C@@H]([C])[C@@H]([C])[C@@H]([C])[O]")
+    if not mol.HasSubstructMatch(stereochemistry_pattern):
+        return False, "Incorrect stereochemistry of sphingoid base"
 
-5. **Use Machine Learning Techniques**: If the rule-based approach proves too complex or fails to capture the structural diversity of sphingomyelins, we could explore the use of machine learning techniques, such as training a classifier on a large dataset of known sphingomyelins and non-sphingomyelins.
+    # Check molecular weight and atom counts
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 500 or mol_wt > 1000:
+        return False, "Molecular weight outside typical range for sphingomyelins"
 
-By addressing these issues and incorporating more robust structural constraints and checks, we can potentially improve the accuracy of the sphingomyelin classification program.
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 30 or c_count > 60:
+        return False, "Carbon count outside typical range for sphingomyelins"
+
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if o_count < 5 or o_count > 10:
+        return False, "Oxygen count outside typical range for sphingomyelins"
+
+    return True, "Contains sphingoid base, fatty acid chain linked via amide bond, and phosphorylcholine group ester-linked to terminal hydroxy group"
