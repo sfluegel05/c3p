@@ -22,24 +22,30 @@ def is_N_acylsphinganine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Sphinganine backbone: C(N)(CO)[C@H](O)CCCC
-    sphinganine_pattern = Chem.MolFromSmarts("N[C@H](CO)[C@H](O)CCCCCCCCCCC")
+    # More flexible sphinganine backbone: considering possible stereochemistry and necessary groups
+    sphinganine_pattern = Chem.MolFromSmarts("N[C@@H](CO)[C@@H](O)CCCCCCC")
     if not mol.HasSubstructMatch(sphinganine_pattern):
         return False, "No sphinganine backbone found"
     
-    # N-acyl linkage: N-C(=O)-C (long chain) - here we make it flexible to include long chains
-    n_acyl_pattern = Chem.MolFromSmarts("N[C@H](CO)[C@H](O)[C;R0]-[C;R0](=O)")
+    # N-acyl linkage: focus on the acyl group being at the nitrogen, allowing variation
+    n_acyl_pattern = Chem.MolFromSmarts("N[C@@H](C(=O)[C,R0])")
     if not mol.HasSubstructMatch(n_acyl_pattern):
         return False, "No N-acyl substitution found"
 
-    # Check for long chains with or without hydroxyl groups attached to the carbonyl
-    long_chain_patterns = [
-        Chem.MolFromSmarts("[C;R0](=O)C([OH])CCCCCCCCCCCCCCCC"),
-        Chem.MolFromSmarts("[C;R0](=O)C([OH])CCCCCCCCCCCCCCCCC"),
-        Chem.MolFromSmarts("[C;R0](=O)CCCCCCCCCCCCCCCCCCC"),  # Longer carbon chain without hydroxyl
-        Chem.MolFromSmarts("[C;R0](=O)CCCCCCCCCCCCCCCC")      # Shorter chain with less termination
-    ]
-    if not any(mol.HasSubstructMatch(pattern) for pattern in long_chain_patterns):
-        return False, "No suitable N-acyl long fatty acyl chain detected"
+    # Further, verify fatty acyl chain length (at least 12 carbons commonly)
+    fatty_acid_pattern = Chem.MolFromSmarts("C(=O)C([R0,C]){12,}")
+    if not mol.HasSubstructMatch(fatty_acid_pattern):
+        return False, "No suitable long fatty acyl chain detected"
 
     return True, "Contains sphinganine backbone with N-acyl substitution"
+
+# Test the function with example SMILES strings
+smiles_examples = [
+    "CCCCCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO)[C@H](O)CCCCCCCCCCCCCCC",
+    "CCCCCCCCCCCCCC[C@@H](O)[C@H](CO)NC(=O)C(O)CCCCCCCCCCCC",
+    "CCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@H](CO)[C@@H](O)CCCCCCCCCCCCCCC"
+]
+
+for smiles in smiles_examples:
+    result, reason = is_N_acylsphinganine(smiles)
+    print(f"SMILES: {smiles} -> {result}, {reason}")
