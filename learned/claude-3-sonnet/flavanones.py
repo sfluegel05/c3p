@@ -22,17 +22,24 @@ def is_flavanone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for the flavanone skeleton
-    flavanone_pattern = Chem.MolFromSmarts("C1C(=O)C=C(O1)c2ccccc2")
+    # Look for the core flavanone skeleton with possible substitutions
+    flavanone_pattern = Chem.MolFromSmarts("[C&ring]1(=O)C=C(O[C&ring]1[C&ring]2ccccc2)[C&ring]")
     if not mol.HasSubstructMatch(flavanone_pattern):
-        return False, "Does not contain the flavanone skeleton"
+        return False, "Does not contain the flavanone core skeleton"
 
-    # Look for the 3,4-dihydro-2-aryl-2H-1-benzopyran-4-one core structure
-    core_pattern = Chem.MolFromSmarts("C1C(=O)C=C(O1)c2ccccc2")
-    if not mol.HasSubstructMatch(core_pattern):
-        return False, "Does not contain the 3,4-dihydro-2-aryl-2H-1-benzopyran-4-one core"
+    # Check for common substituents (hydroxyl, methoxy, prenyl, etc.)
+    substituents_pattern = Chem.MolFromSmarts("[OH,OC,C=CC(C)=C]")
+    if not mol.HasSubstructMatch(substituents_pattern):
+        return False, "No common flavanone substituents found"
 
-    # Additional checks for substitutions, ring systems, etc.
-    # ...
+    # Check for additional ring systems (fused, bridged, etc.)
+    ring_systems_pattern = Chem.MolFromSmarts("[C&ring]1[C&ring][C&ring][C&ring][C&ring][C&ring]1")
+    if mol.HasSubstructMatch(ring_systems_pattern):
+        return True, "Contains the flavanone core with additional ring systems"
+
+    # Check for specific stereochemistry at C2 (if present)
+    chiral_center_pattern = Chem.MolFromSmarts("[C@H]1[C@@](O)(CC(=O)C=C(O1)c2ccccc2)[C&ring]")
+    if mol.HasSubstructMatch(chiral_center_pattern):
+        return True, "Contains the flavanone core with correct stereochemistry at C2"
 
     return True, "Matches the structural rules for flavanones"
