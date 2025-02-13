@@ -9,7 +9,6 @@ diisoprenoid (usually secolaganin) building blocks.
 """
 
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_monoterpenoid_indole_alkaloid(smiles: str):
     """
@@ -39,8 +38,9 @@ def is_monoterpenoid_indole_alkaloid(smiles: str):
         return False, "No terpene substructure found"
     
     # Check for diisoprenoid chain (C10 or C15)
-    chain_lengths = [len(c) for c in Chem.GetMolFrags(mol, arom_only=False, sanitizeFrags=False)]
-    if 10 not in chain_lengths and 15 not in chain_lengths:
+    c10_pattern = Chem.MolFromSmarts("[C@](C)(CC=C)(CC=C)"
+    c15_pattern = Chem.MolFromSmarts("[C@](C)(CC=C)(CC=C)(CC=C)")
+    if not (mol.HasSubstructMatch(c10_pattern) or mol.HasSubstructMatch(c15_pattern)):
         return False, "No diisoprenoid chain found (C10 or C15)"
     
     # Check for presence of nitrogen
@@ -51,10 +51,5 @@ def is_monoterpenoid_indole_alkaloid(smiles: str):
     rings = mol.GetRingInfo().AtomRings()
     if len(rings) < 2:
         return False, "Not enough fused rings"
-    
-    # Check for C10 or C15 terpenoid backbone
-    terpenoid_pattern = Chem.MolFromSmarts("[C@](C)(CC=C)(CC=C)" if 10 in chain_lengths else "[C@](C)(CC=C)(CC=C)(CC=C)")
-    if not mol.HasSubstructMatch(terpenoid_pattern):
-        return False, "Terpenoid backbone not found"
     
     return True, "Contains indole nucleus and terpenoid (C10 or C15) backbone"
