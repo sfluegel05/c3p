@@ -16,18 +16,21 @@ def is_tertiary_amine(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
+    # Parse SMILES to Molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for a tertiary amine (N bonded to 3 carbon atoms)
-    tertiary_amine_pattern = Chem.MolFromSmarts("N([C])[C][C]")
+    # Define SMARTS pattern for a tertiary amine (N atom with exactly 3 carbon neighbors)
+    tertiary_amine_pattern = Chem.MolFromSmarts("[NX3]([C])[C][C]")
+    
+    # Check if the molecule matches the tertiary amine SMARTS pattern
     if mol.HasSubstructMatch(tertiary_amine_pattern):
         return True, "Contains a tertiary amine group (N bonded to 3 carbons)"
     else:
         return False, "No tertiary amine group found"
 
-# Example usages
+# Example usages for validation
 print(is_tertiary_amine("CCN(CC)CC"))  # Expected: True, "Contains a tertiary amine group (N bonded to 3 carbons)"
 print(is_tertiary_amine("CCO"))       # Expected: False, "No tertiary amine group found"
+print(is_tertiary_amine("CN(C)C"))    # Expected: True, "Contains a tertiary amine group (N bonded to 3 carbons)"
