@@ -32,14 +32,17 @@ def is_L_alpha_amino_acid(smiles: str):
     if not matches:
         return False, "No alpha-amino acid substructure found"
     
-    # Check for L-configuration at alpha-carbon
+    # Get the alpha-carbon atom
     alpha_carbon_idx = matches[0][1]
     alpha_carbon = mol.GetAtomWithIdx(alpha_carbon_idx)
     
+    # Check for L-configuration at alpha-carbon
     if alpha_carbon.GetProp("_ChiralityPossible") == "No":
         return False, "Alpha-carbon is not a chiral center"
     
-    if alpha_carbon.GetProp("_CIPCode") == "S":
+    # Determine stereochemistry using AllChem.rbMolDescriptors.SMARTSChiralityType
+    smarts_type = AllChem.rbMolDescriptors.SMARTSChiralityType(alpha_carbon.GetChiralTag())
+    if smarts_type == "TH":  # "TH" stands for "Tetrahedral, H first"
         return True, "Contains an L-alpha-amino acid substructure"
     else:
         return False, "Contains a D-alpha-amino acid substructure"
