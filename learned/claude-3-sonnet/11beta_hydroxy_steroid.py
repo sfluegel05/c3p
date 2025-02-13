@@ -24,51 +24,54 @@ def is_11beta_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # More flexible steroid core pattern that allows for variations
-    # Matches the basic 6-6-6-5 ring system with any bonds
-    steroid_core = Chem.MolFromSmarts("C1C(C)C2CCC3C4CCC(C4)C3C2C1")
+    # Basic steroid core pattern that's more flexible
+    # Allows for both single and double bonds in the skeleton
+    steroid_core = Chem.MolFromSmarts("[#6]~1~[#6]~[#6]~[#6]~2~[#6]~[#6]~[#6]~[#6]~3~[#6]~[#6]~[#6]~[#6]~[#6]~3~[#6]~2~[#6]~[#6]~1")
+    
     if not mol.HasSubstructMatch(steroid_core):
         return False, "No steroid core structure found"
 
-    # Pattern for 11β-hydroxy group
-    # Uses relative positions in the steroid skeleton and explicit stereochemistry
-    # The [C@@H] ensures beta configuration of the OH group
-    hydroxy_11beta = Chem.MolFromSmarts("[#6]~1~[#6]~[#6]~[#6]~2~[#6]~[#6]~[#6]~[#6]~3~[#6]~[C@@H](O)~[#6]~[#6]~[#6]~3~[#6]~2~1")
+    # More specific pattern for 11β-hydroxy group
+    # This pattern looks for the characteristic 11β-OH configuration in the context of rings C and D
+    hydroxy_11beta_pattern = Chem.MolFromSmarts("[#6]~1~[#6]~[#6]~[#6]~2~[#6]~[#6]~[C@@H](O)~[#6]~[#6]~2~[#6]~1")
     
-    if not mol.HasSubstructMatch(hydroxy_11beta):
+    if not mol.HasSubstructMatch(hydroxy_11beta_pattern):
         return False, "No 11-beta hydroxy group found"
 
-    # Additional validation checks
-    
-    # Count rings
+    # Validate ring structure
     ring_info = mol.GetRingInfo()
     if ring_info.NumRings() < 4:
-        return False, "Too few rings for steroid structure"
+        return False, "Insufficient number of rings for steroid structure"
 
     # Count carbons and oxygens
-    num_carbons = len([atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6])
-    num_oxygens = len([atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8])
+    num_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    num_oxygens = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     
-    if num_carbons < 19 or num_carbons > 30:
-        return False, f"Carbon count ({num_carbons}) outside typical steroid range (19-30)"
+    if num_carbons < 19:
+        return False, f"Too few carbons ({num_carbons}) for steroid structure"
     
     if num_oxygens < 2:
-        return False, "Too few oxygen atoms for 11-beta-hydroxy steroid"
+        return False, "Insufficient oxygen atoms for 11-beta-hydroxy steroid"
 
-    # Look for common steroid features
-    # Most 11β-hydroxy steroids have additional oxygen-containing groups
-    ketone = Chem.MolFromSmarts("C(=O)")
-    has_ketone = mol.HasSubstructMatch(ketone)
+    # Check for common steroid features
+    ketone_pattern = Chem.MolFromSmarts("C(=O)")
+    has_ketone = mol.HasSubstructMatch(ketone_pattern)
     
-    other_hydroxy = Chem.MolFromSmarts("CO")
-    num_hydroxy = len(mol.GetSubstructMatches(other_hydroxy))
+    hydroxy_pattern = Chem.MolFromSmarts("[#6][OH]")
+    num_hydroxy = len(mol.GetSubstructMatches(hydroxy_pattern))
     
-    if num_hydroxy < 2 and not has_ketone:
+    if num_hydroxy < 1:
+        return False, "No hydroxy groups found"
+
+    # Additional check for common substituents at C-17 and C-21 positions
+    c17_c21_pattern = Chem.MolFromSmarts("[#6]-[#6](=O)-[#6,#8]")
+    if not mol.HasSubstructMatch(c17_c21_pattern) and not has_ketone:
         return False, "Missing typical steroid oxygenated substituents"
 
-    # Check for reasonable molecular weight range for steroids
+    # Check molecular weight
     mol_weight = Chem.Descriptors.ExactMolWt(mol)
-    if mol_weight < 250 or mol_weight > 600:
+    if mol_weight < 250 or mol_weight > 800:  # Increased upper limit to account for larger derivatives
         return False, f"Molecular weight {mol_weight:.1f} outside typical range for steroids"
 
+    # If all checks pass, it's likely an 11β-hydroxy steroid
     return True, "Contains steroid core with 11-beta hydroxy group and appropriate substituents"
