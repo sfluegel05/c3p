@@ -20,11 +20,11 @@ def is_organochlorine_compound(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Iterate over atoms to find chlorine atoms bonded to carbon
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 17:  # 17 is the atomic number of chlorine
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetAtomicNum() == 6:  # 6 is the atomic number of carbon
-                    return True, "Contains at least one carbon-chlorine bond"
+    # Define SMARTS pattern for carbon-chlorine bond
+    c_cl_bond_pattern = Chem.MolFromSmarts("[#6]-[#17]")
+
+    # Use pattern matching to find if there is a C-Cl bond
+    if mol.HasSubstructMatch(c_cl_bond_pattern):
+        return True, "Contains at least one carbon-chlorine bond"
 
     return False, "No carbon-chlorine bond found"
