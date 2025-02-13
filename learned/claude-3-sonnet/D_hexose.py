@@ -6,7 +6,6 @@ Classifies: CHEBI:16234 D-hexose
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem.rdMolDescriptors import CalcMolFormula
 
 def is_D_hexose(smiles: str):
     """
@@ -25,61 +24,73 @@ def is_D_hexose(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check molecular formula (allowing for isotope variations like 13C)
-    base_atoms = {'C': 6, 'H': 12, 'O': 6}
+    # Count atoms to ensure basic composition
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    
+    if c_count != 6:
+        return False, f"Must have exactly 6 carbons, found {c_count}"
+    if o_count != 6:
+        return False, f"Must have exactly 6 oxygens, found {o_count}"
+    
+    # Check for any non C/H/O atoms
     for atom in mol.GetAtoms():
-        symbol = atom.GetSymbol()
-        if symbol not in base_atoms:
-            return False, f"Contains unexpected element: {symbol}"
-        if symbol == 'C' and atom.GetIsotope() not in [0, 13]:
-            return False, "Contains unexpected carbon isotope"
+        if atom.GetAtomicNum() not in [1, 6, 8]:
+            return False, "Contains elements other than C, H, O"
 
-    # Define SMARTS patterns for different hexose forms
-    # Pyranose patterns with D-configuration at C5
-    d_pyranose_patterns = [
-        # alpha-D-pyranose pattern
-        "[C@@H]1(CO)O[CH](O)[CH]([CH]([CH]([CH]1O)O)O)O",
-        # beta-D-pyranose pattern
-        "[C@H]1(CO)O[CH](O)[CH]([CH]([CH]([CH]1O)O)O)O",
-        # Open-chain D-aldose pattern with explicit D-configuration at C5
-        "O=C[CH](O)[CH](O)[CH](O)[C@H](O)CO",
-        # D-furanose patterns
-        "O1[CH]([C@H](O)CO)[CH](O)[CH](O)[CH]1O"
+    # Check for carboxyl groups (would indicate uronic acid)
+    carboxyl_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1,OX1-]")
+    if mol.HasSubstructMatch(carboxyl_pattern):
+        return False, "Contains carboxyl group (uronic acid)"
+
+    # Check for non-hydroxyl oxygen (ethers, except for hemiacetal)
+    ether_pattern = Chem.MolFromSmarts("[OX2]([CX4])[CX4]")
+    ether_matches = len(mol.GetSubstructMatches(ether_pattern))
+    ring_o_pattern = Chem.MolFromSmarts("[OR0]")
+    ring_o_matches = len(mol.GetSubstructMatches(ring_o_pattern))
+    
+    if ether_matches > ring_o_matches:
+        return False, "Contains non-hemiacetal ether linkages"
+
+    # Patterns for different forms of D-hexoses
+    patterns = [
+        # Open chain D-aldohexose
+        "[H]C(=O)[C@H](O)[C@@H](O)[C@H](O)[C@H](O)CO",  # D-glucose
+        "[H]C(=O)[C@H](O)[C@H](O)[C@@H](O)[C@H](O)CO",  # D-galactose
+        "[H]C(=O)[C@@H](O)[C@@H](O)[C@H](O)[C@H](O)CO", # D-mannose
+        "[H]C(=O)[C@@H](O)[C@H](O)[C@@H](O)[C@H](O)CO", # D-allose
+        "[H]C(=O)[C@H](O)[C@@H](O)[C@@H](O)[C@H](O)CO", # D-altrose
+        "[H]C(=O)[C@@H](O)[C@H](O)[C@H](O)[C@H](O)CO",  # D-gulose
+        "[H]C(=O)[C@H](O)[C@H](O)[C@H](O)[C@H](O)CO",   # D-idose
+        "[H]C(=O)[C@H](O)[C@@H](O)[C@H](O)[C@H](O)CO",  # D-talose
+        
+        # α-D-pyranose forms (hemiacetal OH is axial)
+        "O[C@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@@H](O)[C@@H]1O",  # α-D-glucopyranose
+        "O[C@H]1O[C@H](CO)[C@H](O)[C@@H](O)[C@H](O)[C@@H]1O",  # α-D-galactopyranose
+        "O[C@H]1O[C@H](CO)[C@@H](O)[C@@H](O)[C@@H](O)[C@@H]1O", # α-D-mannopyranose
+        
+        # β-D-pyranose forms (hemiacetal OH is equatorial)
+        "O[C@H]1O[C@@H](CO)[C@H](O)[C@H](O)[C@@H](O)[C@@H]1O",  # β-D-glucopyranose
+        "O[C@H]1O[C@@H](CO)[C@H](O)[C@@H](O)[C@H](O)[C@@H]1O",  # β-D-galactopyranose
+        "O[C@H]1O[C@@H](CO)[C@@H](O)[C@@H](O)[C@@H](O)[C@@H]1O", # β-D-mannopyranose
+        
+        # D-furanose forms
+        "O1[C@@H]([C@H](O)[C@@H](O)[C@H]1O)[C@H](O)CO",  # D-glucofuranose
+        "O1[C@H]([C@H](O)[C@H](O)[C@@H]1O)[C@H](O)CO",   # D-galactofuranose
     ]
 
-    # Convert patterns to RDKit molecules
-    pattern_mols = [Chem.MolFromSmarts(p) for p in d_pyranose_patterns]
+    # Convert patterns to molecules
+    pattern_mols = [Chem.MolFromSmarts(p) for p in patterns]
     
-    # Check if molecule matches any D-hexose pattern
-    matches_any = False
+    # Check if molecule matches any pattern
     for pattern in pattern_mols:
         if pattern is not None and mol.HasSubstructMatch(pattern):
-            matches_any = True
-            break
-            
-    if not matches_any:
-        return False, "Does not match D-hexose pattern"
+            return True, "Matches D-hexose pattern with correct stereochemistry"
 
-    # Additional checks for correct structure
-    # Count chiral centers
+    # If no pattern matched but basic composition is correct,
+    # it might be a valid D-hexose in a different conformation
     chiral_centers = Chem.FindMolChiralCenters(mol)
-    if len(chiral_centers) < 3:
-        return False, f"Too few chiral centers for hexose: {len(chiral_centers)}"
+    if len(chiral_centers) >= 4:
+        return False, "Has correct composition but stereochemistry doesn't match D-hexose patterns"
 
-    # Count hydroxy groups
-    oh_pattern = Chem.MolFromSmarts("[OH]")
-    oh_count = len(mol.GetSubstructMatches(oh_pattern))
-    if oh_count < 4:
-        return False, "Too few hydroxyl groups for hexose"
-
-    # Check for carbonyl or hemiacetal carbon
-    carbonyl_pattern = Chem.MolFromSmarts("[$([CH]=O),$([CH]1O[CH](O)[CH]([CH]([CH]([CH]1O)O)O)O)]")
-    if not mol.HasSubstructMatch(carbonyl_pattern):
-        return False, "Missing required carbonyl or hemiacetal group"
-
-    # Verify carbon chain connectivity
-    chain_pattern = Chem.MolFromSmarts("CC(O)C(O)C(O)C(O)CO")
-    if not mol.HasSubstructMatch(chain_pattern):
-        return False, "Incorrect carbon chain connectivity"
-
-    return True, "Matches D-hexose pattern with correct stereochemistry"
+    return False, "Does not match D-hexose pattern"
