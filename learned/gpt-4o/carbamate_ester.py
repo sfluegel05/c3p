@@ -20,19 +20,12 @@ def is_carbamate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define enriched SMARTS patterns for identifying carbamate esters
-    carbamate_ester_patterns = [
-        Chem.MolFromSmarts("COC(=O)N"),          # Simple carbamate ester
-        Chem.MolFromSmarts("COC(=O)N(C)"),       # N-methyl carbamate
-        Chem.MolFromSmarts("COC(=O)N(C)C"),      # N,N-dimethyl carbamate
-        Chem.MolFromSmarts("N(C)(C)C(=O)O"),     # Tertiary amine carbamate
-        Chem.MolFromSmarts("O=C(O)N([#6])"),     # N-substituted carbamate with ester linkage
-        Chem.MolFromSmarts("O=C([O,N])[N]"),     # General pattern for carbamate linkage
-    ]
+    # Define compact SMARTS pattern for identifying carbamate ester
+    # Pattern: O=C(N)OC, generalized to account for substitutions
+    carbamate_ester_pattern = Chem.MolFromSmarts("O=C(N[*])OC[*]")
 
-    # Validate carbamate ester presence using structured substructure searches
-    for pattern in carbamate_ester_patterns:
-        if mol.HasSubstructMatch(pattern):
-            return True, "Contains carbamate ester functional group"
+    # Check for the carbamate ester presence using the defined pattern
+    if mol.HasSubstructMatch(carbamate_ester_pattern):
+        return True, "Contains carbamate ester functional group"
 
     return False, "Does not contain carbamate ester functional group"
