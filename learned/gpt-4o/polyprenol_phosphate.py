@@ -21,22 +21,26 @@ def is_polyprenol_phosphate(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
+    
     # Check for phosphate or diphosphate group pattern
-    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)(O)")
-    diphosphate_pattern = Chem.MolFromSmarts("P(=O)(O)OP(=O)(O)O")
+    phosphate_pattern = Chem.MolFromSmarts("[OX1][PX4](=[OX1])(O)")
+    diphosphate_pattern = Chem.MolFromSmarts("[OX1][PX4](=[OX1])([OX1])O[PX4](=[OX1])")
     if not (mol.HasSubstructMatch(phosphate_pattern) or mol.HasSubstructMatch(diphosphate_pattern)):
         return False, "No phosphate or diphosphate group found"
     
-    # Check for ester linkage to phosphate group
-    ester_linkage_pattern = Chem.MolFromSmarts("O-P(=O)(O)O")
-    if not mol.HasSubstructMatch(ester_linkage_pattern):
+    # Check for ester linkage to phosphate group: O-P(=O)(O)...
+    ester_linkage_smarts = "O[PX4](=O)(O)"
+    ester_linkage = Chem.MolFromSmarts(ester_linkage_smarts)
+    if not mol.HasSubstructMatch(ester_linkage):
         return False, "Ester linkage to phosphate group not found"
 
-    # Look for repeating isoprene units (C=C-C-C-C pattern)
-    isoprene_pattern = Chem.MolFromSmarts("C=C-C-C")
+    # Look for repeating isoprene units (better pattern for polyprenol) in linear fashion
+    # We are enhancing to identify C=C connectivity more precisely.
+    isoprene_pattern = Chem.MolFromSmarts("C=CC(CC=C)")
     isoprene_count = len(mol.GetSubstructMatches(isoprene_pattern))
-    if isoprene_count < 3:  # We need multiple units to classify as polyprenol
+    
+    # It's a polyprenol phosphate if there are 3 or more.
+    if isoprene_count < 3:
         return False, f"Insufficient isoprene units: {isoprene_count}"
-
+    
     return True, "Contains polyprenol chain with phosphate ester bond"
