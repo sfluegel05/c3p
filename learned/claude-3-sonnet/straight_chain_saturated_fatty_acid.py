@@ -11,6 +11,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_straight_chain_saturated_fatty_acid(smiles: str):
     """
     Determines if a molecule is a straight-chain saturated fatty acid based on its SMILES string.
+    A straight-chain saturated fatty acid is defined as any saturated fatty acid lacking a side-chain.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -55,11 +56,11 @@ def is_straight_chain_saturated_fatty_acid(smiles: str):
         next_carbon = None
         for neighbor in current.GetNeighbors():
             if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:
-                # Check for branching
+                # Check for branching - only count carbon neighbors
                 carbon_neighbors = sum(1 for n in neighbor.GetNeighbors() 
                                     if n.GetAtomicNum() == 6)
                 if carbon_neighbors > 2:
-                    return False, "Branched carbon chain detected"
+                    return False, "Branched carbon chain detected (side chain present)"
                 next_carbon = neighbor
                 break
         current = next_carbon
@@ -76,25 +77,11 @@ def is_straight_chain_saturated_fatty_acid(smiles: str):
     if mol.HasSubstructMatch(triple_bond_pattern):
         return False, "Contains triple bonds (unsaturated)"
 
-    # Check for non C,H,O atoms (excluding deuterium)
+    # Check for non C,H,O atoms (excluding isotopes of C and H)
     for atom in mol.GetAtoms():
         atomic_num = atom.GetAtomicNum()
-        if atomic_num not in [1, 6, 8]:
-            if not (atomic_num == 1 and atom.GetIsotope() == 2):  # Allow deuterium
-                return False, "Contains elements other than C, H, O (or deuterium)"
-
-    # Check for ether linkages
-    ether_pattern = Chem.MolFromSmarts("[CX4]-[OX2]-[CX4]")
-    if mol.HasSubstructMatch(ether_pattern):
-        return False, "Contains ether linkages"
-
-    # Check for additional oxygen-containing groups
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 8:  # Oxygen atom
-            # Skip the carboxylic acid oxygens
-            if atom.GetIdx() not in [match[1] for match in carboxyl_matches] and \
-               atom.GetIdx() not in [match[2] for match in carboxyl_matches]:
-                return False, "Contains additional oxygen-containing groups"
+        if atomic_num not in [1, 6, 8]:  # Allow any isotopes of H and C
+            return False, "Contains elements other than C, H, O"
 
     # All checks passed
     return True, "Straight-chain saturated fatty acid with single carboxylic acid group"
