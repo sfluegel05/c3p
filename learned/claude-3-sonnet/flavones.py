@@ -25,19 +25,36 @@ def is_flavones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for 2-arylchromen-4-one skeleton
-    # 1. Find the chromone core
-    chromone_pattern = Chem.MolFromSmarts("O=C1C=C(Oc2ccccc2)C=CC1")
+    # Look for chromone core
+    chromone_pattern = Chem.MolFromSmarts("C1=CC(=O)Oc2ccccc12")
     chromone_matches = mol.GetSubstructMatches(chromone_pattern)
     if not chromone_matches:
         return False, "No chromone core found"
     
-    # 2. Check for aromatic ring attached to the chromone
-    ring_info = mol.GetRingInfo()
-    for match in chromone_matches:
-        chromone_atom = mol.GetAtomWithIdx(match[2])
-        for neighbor in chromone_atom.GetNeighbors():
-            if ring_info.IsAtomInRingOfSize(neighbor.GetIdx(), 6) and neighbor.GetIsAromatic():
-                return True, "Contains 2-arylchromen-4-one skeleton"
+    # Look for phenyl ring attached to the chromone
+    phenyl_pattern = Chem.MolFromSmarts("c1ccccc1")
+    phenyl_matches = mol.GetSubstructMatches(phenyl_pattern)
+    if not phenyl_matches:
+        return False, "No phenyl ring found"
     
-    return False, "No 2-arylchromen-4-one skeleton found"
+    # Check if the phenyl ring is attached to the chromone core
+    ring_info = mol.GetRingInfo()
+    for chromone_match in chromone_matches:
+        chromone_atom = mol.GetAtomWithIdx(chromone_match[2])
+        for neighbor in chromone_atom.GetNeighbors():
+            if neighbor.GetIsAromatic() and any(ring_info.IsAtomInRingOfSize(neighbor_idx, 6) for neighbor_idx in neighbor.GetNeighbors()):
+                break
+        else:
+            continue
+        break
+    else:
+        return False, "No 2-arylchromen-4-one skeleton found"
+    
+    # Check for common substituents
+    has_hydroxyl = any(atom.GetSymbol() == "O" and atom.GetHybridization() == Chem.HybridizationType.SP3 for atom in mol.GetAtoms())
+    has_methoxy = any(atom.GetSymbol() == "O" and any(neighbor.GetSymbol() == "C" for neighbor in atom.GetNeighbors()) for atom in mol.GetAtoms())
+    
+    if has_hydroxyl or has_methoxy:
+        return True, "Contains 2-arylchromen-4-one skeleton with hydroxyl or methoxy substituents"
+    else:
+        return True, "Contains 2-arylchromen-4-one skeleton"
