@@ -48,9 +48,8 @@ def is_polymer(smiles: str) -> Tuple[bool, str]:
         return False, "No common polymer functional groups found"
 
     # Check for high degree of branching
-    bi_valence_count = sum(atom.GetDegreeVector().count(2) for atom in mol.GetAtoms())
-    tri_valence_count = sum(atom.GetDegreeVector().count(3) for atom in mol.GetAtoms())
-    if bi_valence_count + tri_valence_count < 5:
+    branching_count = sum(1 for atom in mol.GetAtoms() if len(atom.GetNeighbors()) >= 3)
+    if branching_count < 5:
         return False, "Low degree of branching for polymer"
 
     return True, "Molecule exhibits properties of a polymer"
