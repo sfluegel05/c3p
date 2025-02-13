@@ -25,8 +25,8 @@ def is_octanoate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for octanoate ester pattern (C(=O)OC)
-    octanoate_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2][CX4]")
+    # Look for octanoate (caprylic acid) pattern (CCCCCCCC(=O)O)
+    octanoate_pattern = Chem.MolFromSmarts("CCCCCCCC(=O)O")
     
     # Check if pattern matches
     if mol.HasSubstructMatch(octanoate_pattern):
