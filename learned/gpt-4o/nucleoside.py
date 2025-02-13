@@ -23,34 +23,37 @@ def is_nucleoside(smiles: str):
     
     # Define SMARTS patterns for nucleobases
     nucleobases_patterns = [
-        Chem.MolFromSmarts("c1ncnc2c1ncnc2"),  # general purine pattern (matches adenine, guanine)
-        Chem.MolFromSmarts("c1ncnc2c1nc[nH]c2"),  # pyrimidine pattern (matches cytosine, uracil, thymine)
+        Chem.MolFromSmarts("c1[nH]cnc2c1ncnc2"),  # adenine
+        Chem.MolFromSmarts("c1nc2[nH]cnc2n1"),    # guanine
+        Chem.MolFromSmarts("c1cnc[nH]c1=O"),      # cytosine
+        Chem.MolFromSmarts("c1cc[nH]c(=O)n1"),    # uracil
+        Chem.MolFromSmarts("c1cc[nH]c(=O)n1C"),   # thymine
     ]
     
-    # Define SMARTS pattern for ribose (deoxyribose differs by the absence of one hydroxyl)
-    ribose_pattern = Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@@H](C(O)CO)O1")
-    deoxyribose_pattern = Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@@H](CO)C1")
-
+    # Ribose and deoxyribose patterns with some flexibility
+    sugar_patterns = [
+        Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@@H](CO)O[C@H]1"),
+        Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@H](CO)O[C@H]1"),
+    ]
+    
     # Check for presence of a nucleobase
     has_nucleobase = any(mol.HasSubstructMatch(pat) for pat in nucleobases_patterns)
     if not has_nucleobase:
         return False, "No nucleobase found"
 
-    # Check for ribose or deoxyribose
-    has_ribose = mol.HasSubstructMatch(ribose_pattern)
-    has_deoxyribose = mol.HasSubstructMatch(deoxyribose_pattern)
-
-    if not (has_ribose or has_deoxyribose):
+    # Check for sugar (ribose or deoxyribose)
+    has_sugar = any(mol.HasSubstructMatch(pat) for pat in sugar_patterns)
+    if not has_sugar:
         return False, "No sugar (ribose or deoxyribose) found"
 
-    # Check for absence of phosphate group (no phosphates in nucleosides)
+    # Check for absence of phosphate group to exclude nucleotides
     phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)O")
     if mol.HasSubstructMatch(phosphate_pattern):
         return False, "Phosphate group(s) found, likely a nucleotide"
     
     return True, "Contains a nucleobase linked to a ribose or deoxyribose sugar"
 
-# Test the function with examples
+# Test the revised function with examples
 examples = [
     "O1[C@H](N2C=C(C(=O)NC2=O)C(O)=O)C[C@H](O)[C@H]1CO",  # Valid nucleoside
     "ClC1=NC(N)=C2N=CN(C2=N1)[C@@H]3O[C@H](COS(=O)(=O)N)[C@H]([C@H]3O)O",  # Nucleotide (should not classify as nucleoside)
