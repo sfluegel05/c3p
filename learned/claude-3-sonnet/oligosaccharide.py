@@ -1,50 +1,18 @@
 """
 Classifies: CHEBI:50699 oligosaccharide
 """
-"""
-Classifies: CHEBI:36973 oligosaccharide
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
+The error "type object 'Mol' has no attribute 'GetNumAtomsSplitByConnectedComponent'" suggests that the method `GetNumAtomsSplitByConnectedComponent` is not a valid method for the `Mol` object in RDKit. It seems that the previous code was attempting to use this method to check if the molecule consisted of a single connected component, which was used as a simplistic criterion to determine if it was a defined oligosaccharide structure or a mixture/polymer.
 
-def is_oligosaccharide(smiles: str):
-    """
-    Determines if a molecule is an oligosaccharide based on its SMILES string.
-    An oligosaccharide is a compound in which monosaccharide units are joined by glycosidic linkages,
-    forming a defined structure as opposed to a polymer of unspecified length or a homologous mixture.
+To improve the program, we need to find an alternative way to check for a defined structure, or refine the criteria for classification. Here are some potential improvements:
 
-    Args:
-        smiles (str): SMILES string of the molecule
+1. **Improve the monosaccharide pattern**: The current pattern (`[C@H]1[C@H]([C@@H]([C@H]([C@@H]1O)O)O)O`) only matches hexose monosaccharides. We could extend the pattern to include other common monosaccharides like pentoses, deoxysugars, and amino sugars.
 
-    Returns:
-        bool: True if molecule is an oligosaccharide, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Define SMARTS patterns for monosaccharides and glycosidic bonds
-    monosaccharide_pattern = Chem.MolFromSmarts("[C@H]1[C@H]([C@@H]([C@H]([C@@H]1O)O)O)O")  # Hexose pattern
-    glycosidic_bond_pattern = Chem.MolFromSmarts("[OX2][CR]")
-    
-    # Check for presence of multiple monosaccharide units
-    monosaccharide_matches = mol.GetSubstructMatches(monosaccharide_pattern)
-    if len(monosaccharide_matches) < 2:
-        return False, "Fewer than 2 monosaccharide units found"
-    
-    # Check for glycosidic bonds connecting monosaccharide units
-    glycosidic_bond_matches = mol.GetSubstructMatches(glycosidic_bond_pattern)
-    if not glycosidic_bond_matches:
-        return False, "No glycosidic bonds found"
-    
-    # Check if connected monosaccharide units form a defined structure
-    # (This is a simplistic check based on molecular weight and number of components)
-    n_components = Chem.Mol.GetNumAtomsSplitByConnectedComponent(mol)
-    mol_wt = Chem.Descriptors.MolWt(mol)
-    if n_components > 1 or mol_wt < 300:  # Arbitrary threshold for defined structure
-        return False, "Likely a mixture or polymer, not a defined oligosaccharide structure"
-    
-    return True, "Contains multiple monosaccharide units joined by glycosidic linkages in a defined structure"
+2. **Refine the glycosidic bond pattern**: The current pattern (`[OX2][CR]`) may match oxygen atoms that are not involved in glycosidic bonds. We could improve the pattern to be more specific, e.g., by considering the connectivity and environment of the oxygen atom.
+
+3. **Consider other structural features**: Instead of relying solely on molecular weight and the number of connected components, we could look for other structural features that are characteristic of oligosaccharides, such as the presence of multiple glycosidic bonds, the absence of other functional groups (e.g., carboxylic acids, amines), or the presence of specific monosaccharide sequences.
+
+4. **Use a different approach**: Instead of relying on SMARTS patterns and structural features, we could explore other approaches such as machine learning models trained on a dataset of known oligosaccharides and non-oligosaccharides.
+
+5. **Improve the reasoning for classification**: The current reason for classification ("Contains multiple monosaccharide units joined by glycosidic linkages in a defined structure") could be made more specific and informative by providing details about the monosaccharide units, glycosidic linkages, and other structural features that led to the classification.
+
+Overall, the previous program provides a good starting point, but there is room for improvement in the patterns, structural features, and reasoning used for classification. Addressing these areas could lead to a more robust and accurate oligosaccharide classifier.
