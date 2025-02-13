@@ -6,12 +6,11 @@ Classifies: CHEBI:35524 gamma-lactone
 A lactone having a five-membered lactone ring.
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_gamma_lactone(smiles: str):
     """
     Determines if a molecule is a gamma-lactone based on its SMILES string.
-    A gamma-lactone is a lactone with a five-membered ring containing an unsaturated bond.
+    A gamma-lactone is defined as a five-membered lactone ring.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,45 +25,25 @@ def is_gamma_lactone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for gamma-lactone pattern
-    gamma_lactone_pattern = Chem.MolFromSmarts("[O;R]1[C;R]=C[C;R]=[C;R][C;R]=O1")
-    gamma_lactone_matches = mol.GetSubstructMatches(gamma_lactone_pattern)
+    # Get ring information
+    ring_info = mol.GetRingInfo()
     
-    if len(gamma_lactone_matches) == 0:
-        return False, "No gamma-lactone substructure found"
+    # Iterate over rings
+    for ring in ring_info.AtomRings():
+        if len(ring) == 5:  # Five-membered ring
+            oxygen_atoms = [mol.GetAtomWithIdx(idx).GetSymbol() == 'O' for idx in ring]
+            if sum(oxygen_atoms) == 1:  # Exactly one oxygen atom
+                oxygen_idx = ring[oxygen_atoms.index(True)]
+                oxygen_atom = mol.GetAtomWithIdx(oxygen_idx)
+                
+                # Check if oxygen is part of a lactone
+                if oxygen_atom.IsInRingSize(5) and oxygen_atom.GetIsAromatic() == False:
+                    neighbors = [mol.GetAtomWithIdx(neighbor_idx) for neighbor_idx in oxygen_atom.GetNeighbors()]
+                    carbonyl_carbons = [neighbor for neighbor in neighbors if neighbor.GetSymbol() == 'C' and neighbor.GetFormalCharge() == 0]
+                    if len(carbonyl_carbons) == 1:
+                        carbonyl_carbon = carbonyl_carbons[0]
+                        neighbors_of_carbonyl = [mol.GetAtomWithIdx(neighbor_idx) for neighbor_idx in carbonyl_carbon.GetNeighbors()]
+                        if len([neighbor for neighbor in neighbors_of_carbonyl if neighbor.GetSymbol() == 'O' and neighbor.GetFormalCharge() == 0]) == 1:
+                            return True, "Contains a five-membered lactone ring"
     
-    # Check if the matched substructure is a valid gamma-lactone
-    for match in gamma_lactone_matches:
-        ring_atoms = mol.GetAtomRingInfo().AtomRings()[match]
-        if len(ring_atoms) != 5:
-            continue
-        
-        # Check for ester group (-O-C=O-) in the ring
-        ester_group_found = False
-        for i in range(len(ring_atoms)):
-            atom1 = mol.GetAtomWithIdx(ring_atoms[i])
-            atom2 = mol.GetAtomWithIdx(ring_atoms[(i+1)%5])
-            atom3 = mol.GetAtomWithIdx(ring_atoms[(i+2)%5])
-            if (atom1.GetSymbol() == 'O' and atom2.GetSymbol() == 'C' and
-                atom3.GetSymbol() == 'O' and atom2.GetFormalCharge() == 0):
-                ester_group_found = True
-                break
-        
-        if not ester_group_found:
-            continue
-        
-        # Check for unsaturated bond between carbon atoms in the ring
-        unsaturated_bond = False
-        for i in range(len(ring_atoms)):
-            atom1 = mol.GetAtomWithIdx(ring_atoms[i])
-            atom2 = mol.GetAtomWithIdx(ring_atoms[(i+1)%5])
-            if atom1.GetSymbol() == 'C' and atom2.GetSymbol() == 'C':
-                bond = mol.GetBondBetweenAtoms(atom1.GetIdx(), atom2.GetIdx())
-                if bond.GetBondType() == Chem.BondType.DOUBLE:
-                    unsaturated_bond = True
-                    break
-        
-        if unsaturated_bond:
-            return True, "Contains a five-membered lactone ring with an unsaturated bond"
-    
-    return False, "No valid gamma-lactone substructure found"
+    return False, "No gamma-lactone substructure found"
