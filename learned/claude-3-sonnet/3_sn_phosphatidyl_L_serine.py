@@ -28,21 +28,21 @@ def is_3_sn_phosphatidyl_L_serine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for glycerol backbone (C-C-C with 3 oxygens attached)
-    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
+    # Look for glycerol backbone with correct stereochemistry
+    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][@]([CH])(O)[CH2X4]")
     if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone found"
+        return False, "No glycerol backbone with correct stereochemistry found"
     
-    # Look for phosphoserine group (O-P(=O)(O-)-O-C-C(=O)-N)
-    phosphoserine_pattern = Chem.MolFromSmarts("[OX2]P(=O)([OX2])[OX2]C[CX3](=O)[NX3]")
+    # Look for phosphoserine group with correct stereochemistry
+    phosphoserine_pattern = Chem.MolFromSmarts("[OX2]P(=O)([OX2])[OX2]C[@H](N)[CX3](=O)O")
     if not mol.HasSubstructMatch(phosphoserine_pattern):
-        return False, "No phosphoserine group found"
+        return False, "No phosphoserine group with correct stereochemistry found"
     
-    # Look for 2 ester groups (-O-C(=O)-)
+    # Look for at least 2 ester groups (-O-C(=O)-)
     ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) != 2:
-        return False, f"Found {len(ester_matches)} ester groups, need exactly 2"
+    if len(ester_matches) < 2:
+        return False, f"Found {len(ester_matches)} ester groups, need at least 2"
     
     # Check for fatty acid chains (long carbon chains attached to esters)
     fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
@@ -63,11 +63,11 @@ def is_3_sn_phosphatidyl_L_serine(smiles: str):
     
     if c_count < 20:
         return False, "Too few carbons for 3-sn-phosphatidyl-L-serine"
-    if o_count != 8:
-        return False, "Must have exactly 8 oxygens"
+    if o_count < 8:
+        return False, "Too few oxygens for 3-sn-phosphatidyl-L-serine"
     if n_count != 1:
         return False, "Must have exactly 1 nitrogen"
     if p_count != 1:
         return False, "Must have exactly 1 phosphorus"
     
-    return True, "Contains glycerol backbone with phosphoserine head group and 2 fatty acid chains"
+    return True, "Contains glycerol backbone with phosphoserine head group and fatty acid chains"
