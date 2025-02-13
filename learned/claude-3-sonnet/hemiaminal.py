@@ -7,7 +7,6 @@ A hemiaminal is any organic amino compound that has an amino group and a hydroxy
 """
 
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_hemiaminal(smiles: str):
     """
@@ -26,21 +25,11 @@ def is_hemiaminal(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Find amino groups
-    amino_pattern = Chem.MolFromSmarts("[NX3]")
-    amino_matches = mol.GetSubstructMatches(amino_pattern)
+    # SMARTS pattern for hemiaminal substructure
+    hemiaminal_pattern = Chem.MolFromSmarts("[NX3][CX4][OX2H]")
     
-    # Find hydroxy groups
-    hydroxy_pattern = Chem.MolFromSmarts("[OX2H]")
-    hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
-    
-    # Check if any amino and hydroxy groups are attached to the same carbon
-    for amino_idx in amino_matches:
-        for hydroxy_idx in hydroxy_matches:
-            amino_atom = mol.GetAtomWithIdx(amino_idx)
-            hydroxy_atom = mol.GetAtomWithIdx(hydroxy_idx)
-            
-            if list(amino_atom.GetNeighbors()) & list(hydroxy_atom.GetNeighbors()):
-                return True, "Contains amino and hydroxy groups attached to the same carbon"
-    
-    return False, "No amino and hydroxy groups found attached to the same carbon"
+    # Check if the molecule contains the hemiaminal substructure
+    if mol.HasSubstructMatch(hemiaminal_pattern):
+        return True, "Contains amino and hydroxy groups attached to the same carbon"
+    else:
+        return False, "No hemiaminal substructure found"
