@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_2_acyl_1_alkyl_sn_glycero_3_phosphocholine(smiles: str):
     """
     Determines if a molecule is a 2-acyl-1-alkyl-sn-glycero-3-phosphocholine based on its SMILES string.
-    This class is characterized by a glycerol backbone with an alkyl ether linkage at position 1, 
-    an acyl ester linkage at position 2, and a phosphocholine group at position 3.
+    This class is characterized by a glycerol backbone with an alkyl ether at position 1, 
+    an acyl ester at position 2, and a phosphocholine group.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,19 +22,21 @@ def is_2_acyl_1_alkyl_sn_glycero_3_phosphocholine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for glycerol backbone with phosphocholine at position 3
-    glycerol_phosphocholine_pattern = Chem.MolFromSmarts("[C@H](C(O[P](=O)(OCC[N+](C)(C)C)[O-])C(O)C)OC")
-    if not mol.HasSubstructMatch(glycerol_phosphocholine_pattern):
+    # Define SMARTS patterns
+    glycerol_backbone_pattern = Chem.MolFromSmarts("[C@H](CO)(COP(=O)(OCC[N+](C)(C)C)[O-])O")
+    alkyl_ether_pattern = Chem.MolFromSmarts("COC")  # Simplified for alkyl ether presence check
+    acyl_ester_pattern = Chem.MolFromSmarts("OC(=O)C")  # Generic acyl presence
+
+    # Check for glycerol with phosphocholine at position 3
+    if not mol.HasSubstructMatch(glycerol_backbone_pattern):
         return False, "Structure doesn't match glycerol backbone with phosphocholine group"
 
-    # Look for alkyl group at position 1
-    alkyl_pattern = Chem.MolFromSmarts("O[C@H](CO)CO")
-    if not mol.HasSubstructMatch(alkyl_pattern):
+    # Check for alkyl ether at position 1
+    if not mol.HasSubstructMatch(alkyl_ether_pattern):
         return False, "No alkyl ether group found at position 1"
 
-    # Look for acyl group at position 2
-    acyl_pattern = Chem.MolFromSmarts("C(CO)(OC=O)C")
-    if not mol.HasSubstructMatch(acyl_pattern):
+    # Check for acyl ester at position 2
+    if not mol.HasSubstructMatch(acyl_ester_pattern):
         return False, "No acyl ester group found at position 2"
 
-    return True, "Structure matches a 2-acyl-1-alkyl-sn-glycero-3-phosphocholine, with correct glycerol backbone, alkyl, and acyl groups"
+    return True, "Structure matches a 2-acyl-1-alkyl-sn-glycero-3-phosphocholine, with proper glycerol, alkyl, and acyl groups."
