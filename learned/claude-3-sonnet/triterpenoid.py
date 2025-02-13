@@ -1,24 +1,50 @@
 """
 Classifies: CHEBI:36615 triterpenoid
 """
-Based on the provided code and outcomes, it seems that the previous attempt to classify triterpenoids failed because the code does not accurately capture the structural characteristics of this class of compounds. The main issues are:
+"""
+Classifies: CHEBI:36691 triterpenoid
+"""
+from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
-1. **Molecular Weight Range**: The molecular weight range (400-600 Da) used in the code may be too narrow or not specific enough for triterpenoids. While this range can capture many triterpenoids, it may exclude some valid structures that fall outside this range.
+def is_triterpenoid(smiles: str):
+    """
+    Determines if a molecule is a triterpenoid based on its SMILES string.
+    A triterpenoid is a terpenoid derived from a triterpene with a C30 skeleton,
+    which may be rearranged or modified by removal of skeletal atoms (e.g. methyl groups).
 
-2. **Substructure Checks**: The substructure checks for cyclic structures, hydroxyl groups, and cyclic carbonyl groups are too general and not specific enough to triterpenoids. These substructures can also be present in many other classes of compounds, leading to false positives.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Triterpene Skeleton Matching**: The code attempts to match the input molecule against a few specific triterpene skeletons (oleanane, ursane, lupane, and dammarane). However, triterpenoids can have a wide variety of skeletons, and limiting the search to just these few skeletons may result in false negatives for valid triterpenoids with different skeletons.
-
-To improve the classification, the following steps could be taken:
-
-1. **Revisit Molecular Weight Range**: Analyze a larger dataset of known triterpenoids to determine a more appropriate molecular weight range, or consider removing this check altogether if it is not discriminative enough.
-
-2. **Improve Substructure Checks**: Instead of using general substructures, try to identify more specific substructures or structural motifs that are characteristic of triterpenoids. This could involve analyzing the structural features of known triterpenoids and identifying common patterns or motifs.
-
-3. **Use Fingerprint-based Similarity**: Instead of attempting to match specific skeletons, consider using fingerprint-based similarity methods to compare the input molecule against a database of known triterpenoids. This approach would be more flexible and could capture a wider range of triterpenoid structures.
-
-4. **Incorporate Machine Learning**: If a large enough dataset of known triterpenoids and non-triterpenoids is available, consider training a machine learning model (e.g., random forest, support vector machine) on molecular descriptors or fingerprints to classify compounds as triterpenoids or not.
-
-5. **Utilize External Resources**: Explore external resources, such as databases or literature, to identify additional structural rules, substructures, or patterns that are specific to triterpenoids and can be incorporated into the classification logic.
-
-By addressing these issues and incorporating more specific structural information or using more advanced methods like machine learning or fingerprint-based similarity, the classification of triterpenoids can be improved.
+    Returns:
+        bool: True if molecule is a triterpenoid, False otherwise
+        str: Reason for classification
+    """
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Check for 30 carbon atoms
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count != 30:
+        return False, f"Found {c_count} carbon atoms, expected 30 for triterpenoid"
+    
+    # Check for tetracyclic structure
+    cycle_list = mol.GetRingInfo().AtomRings()
+    if len(cycle_list) < 4:
+        return False, "Less than 4 rings, expected tetracyclic structure"
+    
+    # Check for long carbon chains (lipophilic moieties)
+    long_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    long_chain_matches = mol.GetSubstructMatches(long_chain_pattern)
+    if not long_chain_matches:
+        return False, "No long carbon chains found, expected lipophilic moieties"
+    
+    # Check for triterpene skeleton
+    triterpene_pattern = Chem.MolFromSmarts("[C@@H]2[C@@H]1[C@H]([C@@H]([C@H](C1)[C@@H]2C)C)C")
+    if not mol.HasSubstructMatch(triterpene_pattern):
+        return False, "No triterpene skeleton found"
+    
+    # Passed all checks, classify as triterpenoid
+    return True, "Contains a tetracyclic structure with 30 carbon atoms and lipophilic moieties, derived from a triterpene"
