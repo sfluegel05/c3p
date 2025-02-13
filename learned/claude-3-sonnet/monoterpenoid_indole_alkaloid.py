@@ -1,24 +1,44 @@
 """
 Classifies: CHEBI:65323 monoterpenoid indole alkaloid
 """
-Based on the provided code and the error message, the issue appears to be with an unbalanced parenthesis in the code. The error message '(' was never closed indicates that there is an opening parenthesis somewhere in the code that does not have a corresponding closing parenthesis.
+"""
+Classifies: CHEBI:24049 monoterpenoid indole alkaloid
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
 
-However, upon inspecting the code, I cannot find any obvious unbalanced parentheses. It's possible that the error occurred during the code submission or parsing process.
+def is_monoterpenoid_indole_alkaloid(smiles: str):
+    """
+    Determines if a molecule is a monoterpenoid indole alkaloid based on its SMILES string.
 
-Regarding the outcomes, it's difficult to assess the performance of the program without any true positive or negative examples. The lack of any examples in the outcomes suggests that the program may not have been executed or evaluated correctly.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-To improve the program, here are some suggestions:
+    Returns:
+        bool: True if molecule is a monoterpenoid indole alkaloid, False otherwise
+        str: Reason for classification
+    """
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-1. **Double-check the code for any unbalanced parentheses**: Carefully examine the code line by line to ensure that all opening parentheses have corresponding closing parentheses.
+    # Check for indole ring system
+    indole_pattern = Chem.MolFromSmarts("c1ccc2c(c1)nc(n2)C")
+    if not mol.HasSubstructMatch(indole_pattern):
+        return False, "No indole ring system found"
 
-2. **Test the program with known examples**: Compile a list of SMILES strings that are known to be monoterpenoid indole alkaloids and those that are not. Test the program with these examples to ensure that it classifies them correctly.
+    # Check for terpene unit (fused ring system with 10 carbon atoms)
+    terpene_pattern = Chem.MolFromSmarts("C1CCCCCCCCC1")
+    if not mol.HasSubstructMatch(terpene_pattern):
+        return False, "No terpene unit found"
 
-3. **Refine the structural patterns**: The current program looks for specific substructures like the indole nucleus and terpene units. However, it may be necessary to include additional patterns or constraints to accurately capture the structural features of monoterpenoid indole alkaloids. Consult literature or databases for more detailed structural information.
+    # Check for nitrogen atom and heavy atom count
+    if not any(atom.GetAtomicNum() == 7 for atom in mol.GetAtoms()):
+        return False, "No nitrogen atom found"
 
-4. **Consider additional properties or descriptors**: In addition to substructure matching, you could incorporate other properties or descriptors, such as molecular weight, atom counts, or specific functional groups, to improve the classification accuracy.
+    heavy_atom_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() != 1)
+    if heavy_atom_count < 20 or heavy_atom_count > 40:
+        return False, "Heavy atom count outside the expected range"
 
-5. **Handle edge cases and exceptions**: Ensure that the program handles edge cases and exceptions gracefully, such as invalid SMILES strings or unexpected molecular structures.
-
-6. **Implement comprehensive testing**: Develop a set of test cases covering various scenarios, including true positives, true negatives, edge cases, and invalid inputs. This will help identify and address any issues or blind spots in the classification logic.
-
-By addressing these points, you should be able to improve the program's accuracy and reliability in classifying monoterpenoid indole alkaloids based on their SMILES strings.
+    return True, "Contains an indole ring system and a terpene unit, with a nitrogen atom and appropriate heavy atom count"
