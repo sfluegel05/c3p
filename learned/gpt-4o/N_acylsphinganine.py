@@ -2,7 +2,6 @@
 Classifies: CHEBI:31488 N-acylsphinganine
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_N_acylsphinganine(smiles: str):
     """
@@ -23,22 +22,24 @@ def is_N_acylsphinganine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define the sphinganine backbone pattern with flexibility in stereochemistry
-    sphinganine_pattern = Chem.MolFromSmarts("[NH][C@H](CO)[C@H](O)CCCCCCCCCCC")
+    # Sphinganine backbone: C(N)(CO)[C@H](O)CCCC
+    sphinganine_pattern = Chem.MolFromSmarts("N[C@H](CO)[C@H](O)CCCCCCCCCCC")
     if not mol.HasSubstructMatch(sphinganine_pattern):
         return False, "No sphinganine backbone found"
     
-    # Define the N-acyl pattern with the carbonyl attached to nitrogen
-    n_acyl_pattern = Chem.MolFromSmarts("N[C@H](CO)C(=O)C")
+    # N-acyl linkage: N-C(=O)-C (long chain) - here we make it flexible to include long chains
+    n_acyl_pattern = Chem.MolFromSmarts("N[C@H](CO)[C@H](O)[C;R0]-[C;R0](=O)")
     if not mol.HasSubstructMatch(n_acyl_pattern):
         return False, "No N-acyl substitution found"
 
-    # Extend the pattern to include hydroxylation and chain termination in fatty acids
+    # Check for long chains with or without hydroxyl groups attached to the carbonyl
     long_chain_patterns = [
-        Chem.MolFromSmarts("C(=O)CCCCCCCCCCC(O)"),  # Hydroxylated fatty acid
-        Chem.MolFromSmarts("C(=O)CCCCCCCCCCC"),    # Common fatty acid
+        Chem.MolFromSmarts("[C;R0](=O)C([OH])CCCCCCCCCCCCCCCC"),
+        Chem.MolFromSmarts("[C;R0](=O)C([OH])CCCCCCCCCCCCCCCCC"),
+        Chem.MolFromSmarts("[C;R0](=O)CCCCCCCCCCCCCCCCCCC"),  # Longer carbon chain without hydroxyl
+        Chem.MolFromSmarts("[C;R0](=O)CCCCCCCCCCCCCCCC")      # Shorter chain with less termination
     ]
     if not any(mol.HasSubstructMatch(pattern) for pattern in long_chain_patterns):
-        return False, "No suitable long fatty acyl chain connected"
+        return False, "No suitable N-acyl long fatty acyl chain detected"
 
     return True, "Contains sphinganine backbone with N-acyl substitution"
