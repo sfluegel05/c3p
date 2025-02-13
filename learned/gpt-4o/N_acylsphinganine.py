@@ -2,7 +2,6 @@
 Classifies: CHEBI:31488 N-acylsphinganine
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 from rdkit.Chem import AllChem
 
 def is_N_acylsphinganine(smiles: str):
@@ -23,21 +22,23 @@ def is_N_acylsphinganine(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define SMARTS pattern for sphinganine backbone: NC(O)C(OH)
-    sphinganine_pattern = Chem.MolFromSmarts("[C@H](O)[C@H](CO)N")
+    
+    # Define the sphinganine backbone pattern with flexibility in stereochemistry
+    sphinganine_pattern = Chem.MolFromSmarts("[NH][C@H](CO)[C@H](O)CCCCCCCCCCC")
     if not mol.HasSubstructMatch(sphinganine_pattern):
         return False, "No sphinganine backbone found"
     
-    # Check for N-acyl substitution (C(=O) bound to nitrogen)
-    n_acyl_pattern = Chem.MolFromSmarts("N[C@H]C=O")
-    acyl_matches = mol.GetSubstructMatches(n_acyl_pattern)
-    if len(acyl_matches) == 0:
+    # Define the N-acyl pattern with the carbonyl attached to nitrogen
+    n_acyl_pattern = Chem.MolFromSmarts("N[C@H](CO)C(=O)C")
+    if not mol.HasSubstructMatch(n_acyl_pattern):
         return False, "No N-acyl substitution found"
 
-    # Check for long carbon chain typically found in fatty acyl groups
-    long_chain_pattern = Chem.MolFromSmarts("C" * 14 + "C(=O)")  # At least 14 carbons followed by C=O
-    if not mol.HasSubstructMatch(long_chain_pattern):
-        return False, "No long fatty acyl chain connected"
-    
+    # Extend the pattern to include hydroxylation and chain termination in fatty acids
+    long_chain_patterns = [
+        Chem.MolFromSmarts("C(=O)CCCCCCCCCCC(O)"),  # Hydroxylated fatty acid
+        Chem.MolFromSmarts("C(=O)CCCCCCCCCCC"),    # Common fatty acid
+    ]
+    if not any(mol.HasSubstructMatch(pattern) for pattern in long_chain_patterns):
+        return False, "No suitable long fatty acyl chain connected"
+
     return True, "Contains sphinganine backbone with N-acyl substitution"
