@@ -24,70 +24,47 @@ def is_17beta_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Basic steroid core patterns - allowing for aromatic and saturated rings
-    steroid_core_patterns = [
-        # Basic steroid core with flexible bond types
-        '[C,c]1~2~[C,c]~[C,c]~[C,c]~[C,c]~3~[C,c]~[C,c]~[C,c]~[C,c]~4~[C,c]~[C,c]~[C,c]~[C,c]~1~[C,c]~[C,c]~3~[C,c]~2~4',
-        # Alternative pattern for estrane-type steroids
-        '[C,c]12[C,c][C,c][C,c]3[C,c]([C,c][C,c][C,c]4[C,c][C,c][C,c][C,c]1[C,c][C,c]3)[C,c]24'
-    ]
-    
-    has_core = False
-    for pattern in steroid_core_patterns:
-        core = Chem.MolFromSmarts(pattern)
-        if mol.HasSubstructMatch(core):
-            has_core = True
-            break
-            
-    if not has_core:
+    # Check for basic steroid core (four fused rings)
+    steroid_core = Chem.MolFromSmarts("[#6]~1~[#6]~[#6]~[#6]~2~[#6]~[#6]~[#6]~[#6]~3~[#6]~[#6]~[#6]~[#6]~4~[#6]~[#6]~[#6]~[#6]~1~[#6]~2~[#6]~3~4")
+    if not mol.HasSubstructMatch(steroid_core):
         return False, "No steroid core structure found"
 
-    # Pattern for 17β-hydroxy group - more specific pattern
-    # Looking for a carbon at position 17 with beta hydroxyl
-    # The carbon should be part of ring D and have specific connectivity
-    oh_17beta_pattern = Chem.MolFromSmarts('[C;R](@[C,c])(@[C,c])(@[C,c])[OH1]')
+    # Check for 17-OH group in beta configuration
+    # [C] is carbon 17, [OH1] is hydroxy group, '@' indicates stereochemistry
+    # The [C] must be connected to 4 atoms (saturated)
+    # Note: The exact SMARTS pattern depends on the numbering convention used
+    oh_17_beta = Chem.MolFromSmarts('[C;X4](@[*])(@[*])(@[*])[OH1]')
     
-    if not mol.HasSubstructMatch(oh_17beta_pattern):
-        return False, "No hydroxyl group found in appropriate position"
+    if not mol.HasSubstructMatch(oh_17_beta):
+        return False, "No hydroxyl group with correct connectivity found"
 
-    # Basic validation checks
+    # Get matches for OH group
+    oh_matches = mol.GetSubstructMatches(oh_17_beta)
+    
+    # Check if any of the matches are at position 17
+    found_17_beta_oh = False
+    for match in oh_matches:
+        c_atom = mol.GetAtomWithIdx(match[0])  # Get the carbon atom
+        # Check if this carbon is part of the D ring (ring 4) of the steroid
+        # by checking its environment
+        ring_info = mol.GetRingInfo()
+        if ring_info.NumAtomRings(match[0]) > 0:  # Carbon must be part of a ring
+            # Check chirality of the carbon
+            if c_atom.GetChiralTag() == Chem.ChiralType.CHI_TETRAHEDRAL_CCW:
+                found_17_beta_oh = True
+                break
+
+    if not found_17_beta_oh:
+        return False, "No 17-beta hydroxyl group found"
+
+    # Additional validation: molecule should have reasonable size for a steroid
+    num_atoms = mol.GetNumAtoms()
+    if num_atoms < 20 or num_atoms > 100:
+        return False, "Molecule size not consistent with steroid structure"
+
+    # Count rings
     ring_info = mol.GetRingInfo()
     if ring_info.NumRings() < 4:
         return False, "Insufficient number of rings for steroid structure"
 
-    # Count carbons and check for reasonable size
-    num_carbons = len([atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6])
-    if num_carbons < 16 or num_carbons > 30:  # Reasonable range for steroids
-        return False, "Number of carbons outside typical range for steroids"
-
-    # Check for 17β-hydroxy stereochemistry
-    # We'll look for specific stereochemistry patterns common in 17β-hydroxy steroids
-    beta_oh_patterns = [
-        # Pattern for 17β-OH with explicit H
-        '[H][C@@]1[C,c][C,c][C@]2([C,c])[C@@]1(C)[C,c][C,c][OH1]',
-        # Alternative pattern without explicit H
-        '[C@@]12[C,c][C,c][C,c][C@]1(C)[C,c][C,c][C@@]2(C)O'
-    ]
-    
-    has_beta_oh = False
-    for pattern in beta_oh_patterns:
-        beta_pat = Chem.MolFromSmarts(pattern)
-        if mol.HasSubstructMatch(beta_pat):
-            has_beta_oh = True
-            break
-
-    if not has_beta_oh:
-        # Additional check for beta stereochemistry using 3D conformation
-        try:
-            mol = Chem.AddHs(mol)
-            AllChem.EmbedMolecule(mol, randomSeed=42)
-            AllChem.MMFFOptimizeMolecule(mol)
-            # If we get here, the 3D structure was generated successfully
-            has_beta_oh = True
-        except:
-            pass
-
-    if not has_beta_oh:
-        return False, "Could not confirm 17β-hydroxy configuration"
-
-    return True, "Contains steroid core with 17β-hydroxy group"
+    return True, "Contains steroid core with 17-beta hydroxyl group"
