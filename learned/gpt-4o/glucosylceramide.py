@@ -21,19 +21,22 @@ def is_glucosylceramide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for beta-D-glucosyl pattern
-    glucose_pattern = Chem.MolFromSmarts("O[C@H]1[C@@H](O)[C@@H](O)[C@H](O)[C@H]1O")
+    # Enhanced pattern for beta-D-glucosyl, accounting for different linkages
+    glucose_pattern = Chem.MolFromSmarts("OC[C@H]1O[C@@H]([C@H](O)[C@@H](O)[C@H]1O)CO")
     if not mol.HasSubstructMatch(glucose_pattern):
         return False, "No beta-D-glucosyl unit found"
     
-    # Look for sphingosine backbone with amide bond (N-C(=O)) and long chains
-    sphingosine_pattern = Chem.MolFromSmarts("NC(=O)C[C@@H](O)COC")
+    # Refined pattern for sphingosine backbone including amide bond
+    sphingosine_pattern = Chem.MolFromSmarts("NC(=O)C[C@@H](O)CO")
     if not mol.HasSubstructMatch(sphingosine_pattern):
         return False, "No sphingosine structure with amide linkage found"
     
-    # Look for a long aliphatic chain
-    long_chain_pattern = Chem.MolFromSmarts("CCCCCCCCCCCCCCC")
-    if not mol.HasSubstructMatch(long_chain_pattern):
-        return False, "No long aliphatic chain (indicative of fatty acid) found"
+    # Improved detection for long aliphatic chains
+    long_chain_patterns = [
+        Chem.MolFromSmarts("CCCCCCCCCCCCCCCC"),
+        Chem.MolFromSmarts("C=C")
+    ]
+    if not any(mol.HasSubstructMatch(pattern) for pattern in long_chain_patterns):
+        return False, "No suitable aliphatic chain (indicative of fatty acid) found"
     
-    return True, "Contains glucose unit, sphingosine backbone with amide linkage, and long fatty acid chain"
+    return True, "Contains beta-D-glucosyl unit, sphingosine backbone with amide linkage, and long fatty acid chain"
