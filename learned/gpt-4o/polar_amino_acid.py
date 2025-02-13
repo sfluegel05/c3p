@@ -22,23 +22,24 @@ def is_polar_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Generic amino acid backbone pattern: includes amino group, alpha carbon, and carboxyl group
-    aa_backbone = Chem.MolFromSmarts("[NX3][C@@H]([*])[CX3](=O)[OX1]")
+    # Generalized amino acid backbone pattern: amino group -> alpha carbon -> carboxyl group
+    aa_backbone = Chem.MolFromSmarts("[NX3][C][C](=O)[O]")
     if not mol.HasSubstructMatch(aa_backbone):
         return False, "No amino acid backbone found"
 
-    # Polar side chain functional groups
-    polar_group_patterns = [
-        "[OX2H]",      # Alcohol or hydroxyl group
-        "[#7]",        # Nitrogen (amines and amides)
-        "[SX2]",       # Sulfhydryl/thiol group
-        "[NX2][NX3]",  # Imidazole (as in histidine)
-        "C(=O)O",      # Carboxylic acid
-        "C(=O)N"       # Amide
+    # Potential polar side chain patterns. Restricting to real side chains by excluding main groups
+    polar_side_chain_patterns = [
+        "[CX4][OX2H1]",  # Alcohol/hydroxyl, e.g., serine, threonine
+        "[CX3]=[NX3]",   # Carboxamide, e.g., asparagine, glutamine
+        "[CX3](=O)[OX1H1]", # Carboxylate as part of side chain, e.g., aspartate
+        "[OX2H1][CX4]",  # Phenols, e.g., tyrosine
+        "[nH]",          # Imidazole or heterocyclic nitrogen, e.g., histidine, tryptophan
+        "[SH]",          # Thiol, e.g., cysteine
+        "[CX4][NX3]"     # Primary and secondary amines in side chain
     ]
 
-    # Check if side chain contains any polar functional groups
-    for pattern in polar_group_patterns:
+    # Check if side chain contains any polar functional groups while avoiding false positives from backbone
+    for pattern in polar_side_chain_patterns:
         polar_group = Chem.MolFromSmarts(pattern)
         if mol.HasSubstructMatch(polar_group):
             return True, f"Polar group '{pattern}' found in side chain"
