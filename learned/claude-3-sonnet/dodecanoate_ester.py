@@ -7,6 +7,7 @@ Defined as: Any fatty acid ester in which the carboxylic acid component is lauri
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_dodecanoate_ester(smiles: str):
     """
@@ -30,7 +31,7 @@ def is_dodecanoate_ester(smiles: str):
     if not dodecanoate_matches:
         return False, "Dodecanoate fragment not found"
 
-    # Check for ester bonds involving the dodecanoate fragment as the carboxylic acid component
+    # Check for ester bonds involving the dodecanoate fragment
     ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     dodecanoate_ester_matches = []
@@ -38,13 +39,20 @@ def is_dodecanoate_ester(smiles: str):
         ester_atom = mol.GetAtomWithIdx(match[1])
         for dodecanoate_match in dodecanoate_matches:
             if ester_atom.GetIdx() in dodecanoate_match:
-                dodecanoate_carbonyl_idx = [idx for idx in dodecanoate_match if mol.GetAtomWithIdx(idx).GetAtomicNum() == 8][0]
-                dodecanoate_carbonyl_atom = mol.GetAtomWithIdx(dodecanoate_carbonyl_idx)
-                if mol.GetBondBetweenAtoms(dodecanoate_carbonyl_idx, ester_atom.GetIdx()).GetBondType() == Chem.BondType.DOUBLE:
-                    dodecanoate_ester_matches.append(match)
-                    break
+                dodecanoate_ester_matches.append(match)
+                break
 
     if not dodecanoate_ester_matches:
-        return False, "Dodecanoate fragment not involved in an ester bond as the carboxylic acid component"
+        return False, "No ester bond involving the dodecanoate fragment found"
+
+    # Additional checks
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 300:
+        return False, "Molecular weight too low for dodecanoate ester"
+
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if c_count < 15 or o_count < 2:
+        return False, "Insufficient carbon and oxygen atoms for dodecanoate ester"
 
     return True, "Contains dodecanoate fragment as the carboxylic acid component of an ester bond"
