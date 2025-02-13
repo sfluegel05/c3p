@@ -2,7 +2,6 @@
 Classifies: CHEBI:26660 sesterterpenoid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_sesterterpenoid(smiles: str):
     """
@@ -22,30 +21,33 @@ def is_sesterterpenoid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Count carbon atoms
+
+    # Count carbon atoms, sesterterpenoids are usually close to 25
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    
-    # Check if the carbon count is around 25, which is typical for sesterterpenoid
-    if c_count < 20 or c_count > 30:
+    if c_count < 22 or c_count > 35:
         return False, "Carbon count not typical for sesterterpenoids"
-    
-    # Identify isoprene units pattern in terpenoids
-    isoprene_pattern = Chem.MolFromSmarts("C=C(C)C")  # Isoprene unit
+
+    # Improve isoprene unit detection angles 
+    isoprene_pattern = Chem.MolFromSmarts("C(C)(C)C=C")  # consider other arrangements
     isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
     if len(isoprene_matches) < 2:
-        return False, "Insufficient isoprene unit matches found"
+        # Less than 2 but matches complex patterns might be plausible
+        five_membered_ring_pattern = Chem.MolFromSmarts("[R1]C1CCC1")  # cyclic terpenoid pattern
+        if not mol.HasSubstructMatch(five_membered_ring_pattern):
+            return False, "Insufficient or no isoprene unit or ring matches found"
     
-    # Look for common functional group patterns in terpenoids
-    # For example, check for hydroxyl groups
+    # Incorporate other functional group checks
     hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")  # Hydroxyl group
     hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
+    ketone_pattern = Chem.MolFromSmarts("C(=O)C")  # simple ketone check
+    ketone_matches = mol.GetSubstructMatches(ketone_pattern)
     
-    # Check for at least one hydroxyl group (common in terpenoids)
-    if len(hydroxyl_matches) == 0:
-        return False, "No typical terpenoid functional groups like hydroxyl found"
+    if len(hydroxyl_matches) == 0 and len(ketone_matches) == 0:
+        return False, "No typical terpenoid functional groups like hydroxyl or ketone found"
     
-    # Additional validation could include patterns for rearranged carbon structures
-    # Since molecular alterations and characteristic motifs are possible in sesterterpenoids
-
-    return True, "Molecule matches basic structure with isoprene units and functional group typical for sesterterpenoids"
+    # Recognize restructuring or common groups
+    lactone_formation = Chem.MolFromSmarts("C1OC(=O)O1") # lactone ring common in some terpenoids
+    if mol.HasSubstructMatch(lactone_formation):
+        return True, "Lactone ring present, consistent with some sesterterpenoids"
+    
+    return True, "Molecule matches structural and functional criteria typical of sesterterpenoids"
