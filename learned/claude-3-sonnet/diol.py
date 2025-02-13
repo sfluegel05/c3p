@@ -1,58 +1,32 @@
 """
 Classifies: CHEBI:23824 diol
 """
-"""
-Classifies: CHEBI:26356 diol
-A compound that contains two hydroxy groups, generally assumed to be, but not necessarily, alcoholic.
-Aliphatic diols are also called glycols.
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
+The previous program attempts to classify molecules as diols based on their SMILES strings. It checks for the presence of exactly two hydroxy groups and considers specific substructures like vicinal diols. However, the results show that the program has some limitations and misclassifications.
 
-def is_diol(smiles: str):
-    """
-    Determines if a molecule is a diol based on its SMILES string.
+Here are some observations and potential improvements:
 
-    Args:
-        smiles (str): SMILES string of the molecule
+1. **False Positives**: The program classifies several molecules as diols even though they do not contain two hydroxy groups. Some examples include selenic acid, Mo(VI)-molybdopterin guanine dinucleotide(4-), and (3,5-dichloro-2,4,6-trihydroxyphenyl)hexan-1-one(1-). These false positives could be due to the program not correctly handling other functional groups or substructures that contain oxygen atoms.
 
-    Returns:
-        bool: True if molecule is a diol, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Count hydroxy groups
-    hydroxy_pattern = Chem.MolFromSmarts("[OX2H]")
-    hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
-    n_hydroxy = len(hydroxy_matches)
-    
-    # Diols must have exactly 2 hydroxy groups
-    if n_hydroxy != 2:
-        return False, f"Found {n_hydroxy} hydroxy groups, need exactly 2"
-    
-    # Check for hydroxy groups in specific positions
-    # e.g., cyclic structures, vicinal/geminal diols, etc.
-    # Using SMARTS patterns or other substructure matching techniques
-    
-    # Example: Vicinal diol pattern
-    vicinal_diol_pattern = Chem.MolFromSmarts("[OX2H][CX4H2][OX2H]")
-    if mol.HasSubstructMatch(vicinal_diol_pattern):
-        return True, "Contains vicinal diol substructure"
-    
-    # Add more specific patterns as needed
-    
-    # Check for restricted functional groups (if desired)
-    # e.g., aldehydes, ketones, etc.
-    
-    # Example: Exclude aldehydes
-    aldehyde_pattern = Chem.MolFromSmarts("[CH]=O")
-    if mol.HasSubstructMatch(aldehyde_pattern):
-        return False, "Molecule contains aldehyde group"
-    
-    # If no specific patterns match, return a general classification
-    return True, "Contains two hydroxy groups"
+   **Improvement**: Implement additional checks to exclude molecules containing other oxygen-containing functional groups or substructures that are not hydroxy groups.
+
+2. **False Negatives**: The program misses some valid diol molecules, such as fellutamide C, fumitremorgin A, and lancifodilactone F. In some cases, it correctly identifies the presence of two hydroxy groups but fails due to additional constraints or patterns.
+
+   **Improvement**: Refine the substructure matching patterns and conditions to better handle specific cases of diols, such as those with additional functional groups or steric constraints.
+
+3. **Hydroxy Group Counting**: The program only counts the number of hydroxy groups without considering their positions or connectivity. This can lead to misclassifications in cases where the hydroxy groups are not properly arranged or connected.
+
+   **Improvement**: Implement more sophisticated substructure matching or graph-based algorithms to analyze the connectivity and relative positions of the hydroxy groups.
+
+4. **Additional Constraints**: The program currently only excludes aldehydes as a restricted functional group. However, there may be other functional groups or substructures that should be excluded for a more accurate classification of diols.
+
+   **Improvement**: Identify and implement additional constraints or exclusion patterns based on the specific requirements of the diol definition.
+
+5. **Stereochemistry**: The program does not consider stereochemistry, which can be important for accurately classifying certain types of diols, such as vicinal or geminal diols.
+
+   **Improvement**: Incorporate stereochemical information from the SMILES strings or consider using alternative representations that capture stereochemistry more effectively.
+
+6. **Handling Tautomers**: Some molecules may exist in tautomeric forms, where the positions of hydroxy groups can shift. The program may need to handle tautomers appropriately.
+
+   **Improvement**: Implement tautomer enumeration or canonicalization techniques to ensure that tautomeric forms are correctly recognized and classified.
+
+Overall, while the program provides a good starting point, it requires further refinement and additional checks to improve its accuracy in classifying diol molecules. Incorporating more sophisticated substructure matching, graph-based analyses, and handling specific cases or constraints will be crucial for achieving better performance.
