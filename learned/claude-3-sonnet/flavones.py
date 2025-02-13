@@ -33,12 +33,11 @@ def is_flavones(smiles: str):
         return False, "No chromone core found"
     
     # 2. Check for aromatic ring attached to the chromone
+    ring_info = mol.GetRingInfo()
     for match in chromone_matches:
         chromone_atom = mol.GetAtomWithIdx(match[2])
         for neighbor in chromone_atom.GetNeighbors():
-            ring_info = mol.GetAtomRingInfo(neighbor)
-            for ring in ring_info.AtomRings():
-                if len(ring) == 6 and all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring):
-                    return True, "Contains 2-arylchromen-4-one skeleton"
+            if ring_info.IsAtomInRingOfSize(neighbor.GetIdx(), 6) and neighbor.GetIsAromatic():
+                return True, "Contains 2-arylchromen-4-one skeleton"
     
     return False, "No 2-arylchromen-4-one skeleton found"
