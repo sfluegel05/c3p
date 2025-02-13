@@ -26,59 +26,75 @@ def is_cucurbitacin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for basic molecular properties
-    # Cucurbitacins are large molecules with specific atom counts
+    # Basic molecular properties
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     
-    if c_count < 25:  # Cucurbitacins typically have 30+ carbons
+    if c_count < 20:  # Lowered threshold to catch more variants
         return False, "Too few carbons for cucurbitacin"
     
-    if o_count < 2:  # Cucurbitacins have multiple oxygen-containing groups
+    if o_count < 2:
         return False, "Too few oxygens for cucurbitacin"
 
-    # Check for tetracyclic core structure (four connected rings)
+    # Check for ring systems
     ring_info = mol.GetRingInfo()
     if ring_info.NumRings() < 4:
-        return False, "Missing tetracyclic core structure"
+        return False, "Insufficient number of rings"
 
-    # Look for characteristic cucurbitacin substructures
-    # Core tetracyclic structure with specific substitution pattern
-    tetracyclic_core = Chem.MolFromSmarts("C1CC2CCC3C4CCC(C4)C3C2C1")
-    if not mol.HasSubstructMatch(tetracyclic_core):
-        return False, "Missing characteristic tetracyclic core"
+    # More flexible tetracyclic core patterns
+    core_pattern1 = Chem.MolFromSmarts("C1~C~C~2~C~C~C~3~C~4~C~C~C~3~C~2~C~1") # Basic 4-ring system
+    core_pattern2 = Chem.MolFromSmarts("C1~C~C~2~C(=C)~C~C~3~C~4~C~C~C~3~C~2~C~1") # With potential double bond
+    
+    if not (mol.HasSubstructMatch(core_pattern1) or mol.HasSubstructMatch(core_pattern2)):
+        return False, "Missing characteristic ring system"
 
-    # Check for typical functional groups found in cucurbitacins
+    # Check for characteristic functional groups
     
-    # Ketone groups
-    ketone_pattern = Chem.MolFromSmarts("[CH2,CH1,CH0]-C(=O)-[CH2,CH1,CH0]")
-    ketone_matches = len(mol.GetSubstructMatches(ketone_pattern))
+    # α,β-unsaturated ketone (common in ring A)
+    unsaturated_ketone = Chem.MolFromSmarts("C=CC(=O)C")
     
-    # Hydroxyl groups
-    hydroxyl_pattern = Chem.MolFromSmarts("[CH2,CH1,CH0]-[OH]")
-    hydroxyl_matches = len(mol.GetSubstructMatches(hydroxyl_pattern))
+    # Various oxygen-containing groups
+    ketone = Chem.MolFromSmarts("C(=O)C")
+    hydroxyl = Chem.MolFromSmarts("CO")
     
-    if ketone_matches == 0 and hydroxyl_matches == 0:
-        return False, "Missing characteristic oxygen-containing functional groups"
+    # Side chain patterns (more variations)
+    side_chain_patterns = [
+        Chem.MolFromSmarts("CC(C)(O)CC"),
+        Chem.MolFromSmarts("CC(C)(O)C=C"),
+        Chem.MolFromSmarts("CC(C)(OC(=O)C)C=C"),
+        Chem.MolFromSmarts("CC(O)CC=C"),
+    ]
+    
+    has_side_chain = any(mol.HasSubstructMatch(pattern) for pattern in side_chain_patterns)
+    
+    # Count functional groups
+    ketone_count = len(mol.GetSubstructMatches(ketone))
+    hydroxyl_count = len(mol.GetSubstructMatches(hydroxyl))
+    
+    if ketone_count + hydroxyl_count < 2:
+        return False, "Insufficient oxygen-containing groups"
 
-    # Calculate molecular weight - cucurbitacins are typically large molecules
+    # Calculate molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 400:  # Cucurbitacins typically >450 Da
+    if mol_wt < 400:
         return False, "Molecular weight too low for cucurbitacin"
 
-    # Count rings of size 6 (characteristic of cucurbitacins)
+    # Count 6-membered rings
     ring_sizes = [len(ring) for ring in ring_info.AtomRings()]
     six_membered_rings = sum(1 for size in ring_sizes if size == 6)
     
-    if six_membered_rings < 3:
+    if six_membered_rings < 2:
         return False, "Insufficient number of 6-membered rings"
 
-    # Look for characteristic side chain
-    side_chain = Chem.MolFromSmarts("CC(C)(O)CC")
-    if not mol.HasSubstructMatch(side_chain):
-        side_chain2 = Chem.MolFromSmarts("CC(C)(O)C=C")
-        if not mol.HasSubstructMatch(side_chain2):
-            return False, "Missing characteristic side chain"
-
-    # If all checks pass, it's likely a cucurbitacin
-    return True, "Contains tetracyclic core and characteristic cucurbitacin features"
+    # Scoring system
+    score = 0
+    score += 1 if has_side_chain else 0
+    score += 1 if mol.HasSubstructMatch(unsaturated_ketone) else 0
+    score += 1 if ketone_count >= 2 else 0
+    score += 1 if hydroxyl_count >= 2 else 0
+    score += 1 if six_membered_rings >= 3 else 0
+    
+    if score >= 3:
+        return True, "Contains cucurbitacin ring system and characteristic functional groups"
+    else:
+        return False, "Missing multiple characteristic cucurbitacin features"
