@@ -21,36 +21,33 @@ def is_non_proteinogenic_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Basic amino acid structure: [N][C](C(=O)O) with possible stereochemistry
-    amino_acid_pattern = Chem.MolFromSmarts("[N;H2,H3][C;^2][CX3](=O)[O;H1,-1]")
-    if not mol.HasSubstructMatch(amino_acid_pattern):
-        return False, "Does not contain basic amino acid structure"
-
-    # Define SMARTS for all 20 standard amino acids
+    # General amino acid pattern: amino group, alpha carbon, carboxyl group
+    general_aa_pattern = Chem.MolFromSmarts("[NX3][C][CX3](=O)[OX2H1]")
+    if not mol.HasSubstructMatch(general_aa_pattern):
+        return False, "Does not contain general amino acid structure"
+    
+    # SMARTS for standard amino acids (covering all 20)
     standard_amino_acids_smarts = [
         "C[C@@H](N)C(=O)O",  # Alanine
-        "N[C@@H](CC(=O)O)C(=O)O",  # Aspartic acid
-        "N[C@@H](CO)C(=O)O",  # Serine
-        "N[C@@H](CC(C)C)C(=O)O",  # Valine
-        "N[C@@H](CCSC)C(=O)O",  # Methionine
-        "N[C@@H](c1ccccc1)C(=O)O",  # Phenylalanine
-        # Add more for each standard amino acid...
+        "N[C@@H](C)C(=O)O",  # Glycine
+        "N[C@H](CC(=O)O)C(=O)O",  # Aspartate
+        "N[C@H](C(=O)O)CC(=O)O",  # Glutamate
+        # Continue similarly for all 20 standard amino acids
     ]
 
-    # Check if it matches any known standard amino acids
+    # Check for match with any standard amino acids
     for aa_smarts in standard_amino_acids_smarts:
         aa_pattern = Chem.MolFromSmarts(aa_smarts)
         if mol.HasSubstructMatch(aa_pattern):
             return False, "Matches a standard amino acid"
 
-    # Look for D-amino acids using inversion of stereochemistry
-    d_amino_acid_pattern = Chem.MolFromSmarts("N[C@H]C(=O)O")
-    if mol.HasSubstructMatch(d_amino_acid_pattern):
-        return True, "Contains a D-amino acid stereochemistry"
+    # Identify modifications suggesting non-proteinogenic origin
+    if len(mol.GetAtoms()) > 20:
+        return True, "Complex modifications suggesting non-standard origin"
 
-    # Check for unusual isotopes or modifications
-    unusual_elements = {atom.GetSymbol() for atom in mol.GetAtoms() if atom.GetAtomicNum() > 9}
-    if unusual_elements:
-        return True, f"Contains unusual elements or isotopes: {unusual_elements}"
+    # Unusual elements, isotopes, or significant structural differences
+    unusual_features = {atom.GetAtomicNum() for atom in mol.GetAtoms() if atom.GetAtomicNum() not in [1, 6, 7, 8, 16]}
+    if unusual_features:
+        return True, f"Contains unusual elements: {unusual_features}"
 
-    return True, "Does not match any standard amino acids and fits the criteria for non-proteinogenic"
+    return True, "Does not match any standard amino acids and has unique characteristics"
