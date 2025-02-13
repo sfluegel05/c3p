@@ -19,12 +19,14 @@ def is_alpha_hydroxy_ketone(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return (None, None), "Invalid SMILES string"
+        return False, "Invalid SMILES string"
 
-    # Look for alpha-hydroxy ketone pattern
-    # The pattern is: Carbon with hydroxyl group (O) bonded to alpha-carbon [C] 
-    # which is adjacent to a carbonyl carbon [C](=O) [C]
-    alpha_hydroxy_ketone_pattern = Chem.MolFromSmarts("[C](O)([C]=O)")
+    # Improved SMARTS pattern for alpha-hydroxy ketone:
+    # - A carbon bearing the hydroxyl group [C]([OH]) is bonded to another carbon [C] 
+    #   which is bonded to an oxygen [O] in a carbonyl [C](=O).
+    alpha_hydroxy_ketone_pattern = Chem.MolFromSmarts("[C;H1,H2,H3]([OH])[C]=O")
+    
+    # Check if molecule matches the pattern
     if not mol.HasSubstructMatch(alpha_hydroxy_ketone_pattern):
         return False, "No alpha-hydroxy ketone structure found"
 
