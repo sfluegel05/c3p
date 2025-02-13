@@ -1,50 +1,32 @@
 """
 Classifies: CHEBI:25106 macrolide
 """
-"""
-Classifies: CHEBI:35608 macrolide
-A macrocyclic lactone with a ring of twelve or more members derived from a polyketide.
-"""
-from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+The previous code attempted to classify macrolides based on the following properties:
 
-def is_macrolide(smiles: str):
-    """
-    Determines if a molecule is a macrolide based on its SMILES string.
+1. Presence of a macrocyclic ring (≥ 12 atoms)
+2. Presence of a lactone group
+3. Structural features suggesting a polyketide origin (long carbon chains, carbonyl groups)
 
-    Args:
-        smiles (str): SMILES string of the molecule
+However, the provided outcomes indicate that the program failed to correctly classify any molecules as macrolides or non-macrolides (no true positives, false positives, or false negatives).
 
-    Returns:
-        bool: True if molecule is a macrolide, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+Here are some potential issues and improvements:
 
-    # Get largest ring size
-    ring_info = mol.GetRingInfo()
-    largest_ring_size = max([ring.AtomCount() for ring in ring_info.AtomRings()])
+1. **Lactone pattern mismatch**: The SMARTS pattern used to identify lactone groups (`[C@H]1[C@@]([C@@H](C(=O)O1))(O)`) may be too specific and might miss other lactone representations. Consider using a more general pattern or multiple patterns to cover different lactone motifs.
 
-    # Check if molecule has a macrocyclic ring (>= 12 atoms)
-    if largest_ring_size < 12:
-        return False, "No macrocyclic ring found (largest ring size < 12)"
+2. **Polyketide origin estimation**: The criteria used to estimate polyketide origin (number of carbons, oxygens, and carbonyls) may be too rigid or inaccurate. Some macrolides may not meet these criteria, or non-macrolides might fulfill them. Consider incorporating more specific structural patterns or rules to better identify polyketide-derived structures.
 
-    # Check if molecule contains a lactone group
-    lactone_pattern = Chem.MolFromSmarts("[C@H]1[C@@]([C@@H](C(=O)O1))(O)")
-    if not mol.HasSubstructMatch(lactone_pattern):
-        return False, "No lactone group found"
+3. **Ring size constraint**: The requirement for a macrocyclic ring of at least 12 atoms may be too strict. Some macrolides might have smaller ring sizes, while other non-macrolide compounds could have larger rings. Consider adjusting or removing this constraint, and rely more on the lactone and polyketide origin criteria.
 
-    # Check if molecule is derived from polyketide
-    # Estimate based on presence of long carbon chains and carbonyl groups
-    n_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    n_oxygens = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    n_carbonyl = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and sum(bond.GetBondTypeAsDouble() == 2 for bond in atom.GetBonds()) == 1)
+4. **Test data**: It is possible that the provided test data did not contain any valid macrolide structures, leading to the failure to identify true positives. Ensure that the test data includes a diverse set of macrolide and non-macrolide examples.
 
-    if n_carbons < 15 or n_oxygens < 4 or n_carbonyl < 2:
-        return False, "Structure does not appear to be derived from polyketide"
+5. **Additional structural features**: Macrolides often exhibit specific structural features, such as sugar moieties, alkyl side chains, or other functional groups. Incorporating these features into the classification rules could improve accuracy.
 
-    return True, "Contains macrocyclic lactone ring (>= 12 atoms) derived from polyketide"
+To improve the program, consider the following steps:
+
+1. Analyze a diverse set of macrolide and non-macrolide structures to identify common patterns and structural motifs.
+2. Refine the SMARTS patterns used to identify lactone groups and polyketide-derived structures.
+3. Adjust or remove the ring size constraint if it proves too restrictive.
+4. Incorporate additional structural features specific to macrolides, such as sugar moieties or alkyl side chains.
+5. Test the program with a diverse set of molecules, including known macrolides and non-macrolides, to evaluate its performance and make further adjustments as needed.
+
+By iteratively refining the classification rules and testing against a diverse set of examples, the accuracy of the macrolide classification program can be improved.
