@@ -1,50 +1,26 @@
 """
 Classifies: CHEBI:23053 catechin
 """
-"""
-Classifies: CHEBI:28051 catechins
-Catechins are members of the class of hydroxyflavan that have a flavan-3-ol skeleton and its substituted derivatives.
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
+The previous program attempted to classify catechins by looking for the presence of a flavan-3-ol core and allowing certain substituents. However, the approach has several limitations that led to the poor performance:
 
-def is_catechin(smiles: str):
-    """
-    Determines if a molecule is a catechin based on its SMILES string.
-    A catechin contains a flavan-3-ol core and various hydroxyl and methoxy substituents.
+1. **Incomplete flavan-3-ol core pattern**: The SMARTS pattern used to find the flavan-3-ol core is too specific and does not account for all possible variations. Many catechin structures in the examples do not match this pattern.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. **Overly restrictive substituent rules**: The allowed substituent SMARTS pattern is too narrow, excluding many common catechin substituents like gallate, sulfate, and long alkyl chains.
 
-    Returns:
-        bool: True if molecule is a catechin, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Look for flavan-3-ol core
-    flavan_3_ol_pattern = Chem.MolFromSmarts("[CR1]1=CC=C2C(=C1)OC(C3=CC=C(O)C=C3)C[C@@H]2[C@@H](O)[C@@H](O)CC4=CC=CC=C4")
-    if not mol.HasSubstructMatch(flavan_3_ol_pattern):
-        return False, "No flavan-3-ol core found"
-    
-    # Check for common catechin substituents
-    allow_subs = ["c", "cO", "cOC", "c(O)c", "c(OC)c", "cc(O)", "cc(OC)"]
-    sub_smarts = Chem.MolFromSmarts(f"[{','.join(allow_subs)}]")
-    sub_matches = mol.GetSubstructMatches(sub_smarts)
-    
-    # Require at least 2 hydroxy/methoxy substituents
-    if len(sub_matches) < 2:
-        return False, "Not enough hydroxy/methoxy substituents"
-    
-    # Check for common non-catechin substructures
-    ban_smarts = ["c1ccccc1", "c1nccnc1", "C#N", "C=O", "N", "S", "P", "F", "Cl", "Br", "I"]
-    for smarts in ban_smarts:
-        ban_pattern = Chem.MolFromSmarts(smarts)
-        if mol.HasSubstructMatch(ban_pattern):
-            return False, f"Contains banned substructure: {smarts}"
-        
-    return True, "Contains flavan-3-ol core with hydroxy/methoxy substituents"
+3. **Banned substructure filtering is too aggressive**: The list of banned SMARTS patterns excludes many valid catechin structures containing carbonyl groups, sulfur, and other common substituents.
+
+4. **No consideration of structural features**: The program does not check for key structural features of catechins, such as the presence of a benzopyran core, the number of rings, or the positions of substituents.
+
+To improve the program, we need to take a more comprehensive approach that considers the diverse structural variations of catechins. Here are some suggestions:
+
+1. **Use a more flexible flavan-3-ol core pattern**: The pattern should allow for different substitution patterns and ring conformations.
+
+2. **Allow a broader range of substituents**: Catechins can have a wide variety of substituents, including gallate, sulfate, long alkyl chains, and more.
+
+3. **Remove or relax the banned substructure filtering**: Many catechins contain carbonyl groups, sulfur, and other functional groups that were previously banned.
+
+4. **Incorporate structural feature checks**: Look for the presence of a benzopyran core, the correct number of rings, and substituent positions that are consistent with catechins.
+
+5. **Consider using machine learning approaches**: Given the structural complexity and diversity of catechins, a machine learning model trained on a large dataset of catechin structures could potentially perform better than a hand-crafted rule-based approach.
+
+Addressing these limitations should improve the program's ability to accurately classify catechin structures. However, it's important to note that catechins are a diverse class of compounds, and achieving high accuracy may require a combination of different approaches and techniques.
