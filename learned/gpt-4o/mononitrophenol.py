@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_mononitrophenol(smiles: str):
     """
     Determines if a molecule is a mononitrophenol based on its SMILES string.
-    A mononitrophenol is a phenol with a single nitro group attached at unspecified position on the benzene ring.
+    A mononitrophenol is a phenol with a single nitro group attached directly on the same benzene ring.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,15 +21,16 @@ def is_mononitrophenol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for phenol pattern (benzene ring with hydroxyl group)
-    phenol_pattern = Chem.MolFromSmarts("c1ccccc1O")
-    if not mol.HasSubstructMatch(phenol_pattern):
-        return False, "No phenol group found"
+    # Define phenol with a nitro group pattern on the benzene ring
+    mononitrophenol_pattern = Chem.MolFromSmarts("c1(ccccc1O)[N+](=O)[O-]")
+    
+    # Look for a structure that matches exactly one of these mononitrophenol patterns
+    matches = mol.GetSubstructMatches(mononitrophenol_pattern)
+    if len(matches) == 0:
+        return False, "No mononitrophenol structure found"
 
-    # Look for single nitro group (NO2)
-    nitro_pattern = Chem.MolFromSmarts("[N+]([O-])=O")
-    nitro_matches = mol.GetSubstructMatches(nitro_pattern)
-    if len(nitro_matches) != 1:
-        return False, f"Found {len(nitro_matches)} nitro groups, need exactly 1"
+    # Check that there's exactly one connected phenol and nitro group
+    if len(matches) != 1:
+        return False, f"Multiple possible mononitrophenol structures found: {len(matches)}"
 
-    return True, "Contains phenol group with a single nitro group at unspecified position"
+    return True, "Contains phenol group with a single nitro group on the same benzene ring"
