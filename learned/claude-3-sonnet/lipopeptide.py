@@ -2,7 +2,7 @@
 Classifies: CHEBI:46895 lipopeptide
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem, rdMolDescriptors, MolSustainsWoodwardKey
+from rdkit.Chem import AllChem, rdMolDescriptors
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 
@@ -33,9 +33,6 @@ def calculate_descriptors(mol):
     
     # Calculate Wiener index
     descriptors.append(rdMolDescriptors.CalcWienerIndex(mol))
-    
-    # Calculate Woodward key
-    descriptors.append(MolSustainsWoodwardKey(mol))
     
     return descriptors
 
