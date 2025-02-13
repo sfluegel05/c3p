@@ -21,16 +21,16 @@ def is_aldoxime(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for aldoxime pattern: C=N-OH, focusing on =N-O-H group
-    # Allow any group (R) on the carbon when bonded to the N double bond
-    aldoxime_pattern = Chem.MolFromSmarts("[#6]=[NX2][OX1H0]")  # More flexible in allowing varied R groups
+    # The optimized pattern reflects an aldoxime functional group focusing on C=N-O-H 
+    # where C must be attached directly to only one other atom (single-bonded) or hydrogen to reflect CH=NOH
+    aldoxime_pattern = Chem.MolFromSmarts("[#6][CX2,H]=[NX2]([OX1H])") 
 
     if mol.HasSubstructMatch(aldoxime_pattern):
-        return True, "Contains C=N-OH group indicating aldoxime structure"
+        return True, "Contains C=NOH group indicating aldoxime structure"
 
-    return False, "Does not contain the C=N-OH group typical of an aldoxime"
+    return False, "Does not contain the C=NOH group typical of an aldoxime"
 
 # Sample test
-smiles = "C(CSC)=NO"  # example of an aldoxime
+smiles = "C(C(C)C)=NO"  # example of an aldoxime
 result, reason = is_aldoxime(smiles)
 print(result, reason)
