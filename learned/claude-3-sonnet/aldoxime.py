@@ -25,9 +25,13 @@ def is_aldoxime(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Main pattern for aldoxime group: CH=N-OH where C has exactly one H
-    # Use recursive SMARTS to exclude C=N-OH attached to C=O (glyoximes)
-    pattern = "[CH1]([!$(C=O)])(=N[OH1])"
+    # Main pattern for aldoxime group: CH=N-OH where:
+    # - C has exactly one H
+    # - C is not aromatic
+    # - C is not part of a C=O group
+    # - N is not charged
+    # - O has exactly one H
+    pattern = "[CH1X3!a;!$(C=O);!$(C[N+]);!$(C=[N+])]=[NX2v3;!+]-[OH1X2]"
     
     smarts = Chem.MolFromSmarts(pattern)
     if not mol.HasSubstructMatch(smarts):
@@ -36,37 +40,50 @@ def is_aldoxime(smiles: str):
     matches = mol.GetSubstructMatches(smarts)
     
     for match in matches:
-        carbon_idx = match[0]  # First atom in pattern is the carbon
-        carbon = mol.GetAtomWithIdx(carbon_idx)
+        carbon_idx = match[0]
+        nitrogen_idx = match[1]
+        oxygen_idx = match[2]
         
-        # Verify carbon has exactly one hydrogen
+        carbon = mol.GetAtomWithIdx(carbon_idx)
+        nitrogen = mol.GetAtomWithIdx(nitrogen_idx)
+        oxygen = mol.GetAtomWithIdx(oxygen_idx)
+        
+        # Additional validations:
+        
+        # 1. Verify carbon has exactly one hydrogen
         if carbon.GetTotalNumHs() != 1:
             continue
             
-        # Get all neighbors of the carbon
-        neighbors = carbon.GetNeighbors()
-        
-        # Count non-nitrogen neighbors (should be only one)
-        non_n_neighbors = [n for n in neighbors if n.GetAtomicNum() != 7]
-        if len(non_n_neighbors) != 1:
+        # 2. Verify carbon is not in a ring
+        if carbon.IsInRing():
+            ring_info = mol.GetRingInfo()
+            if any(carbon_idx in ring for ring in ring_info.AtomRings()):
+                continue
+                
+        # 3. Check that nitrogen has no other double bonds
+        n_bonds = nitrogen.GetBonds()
+        if sum(1 for b in n_bonds if b.GetBondType() == Chem.BondType.DOUBLE) > 1:
             continue
             
-        # Verify the nitrogen neighbor is indeed part of the oxime
-        n_neighbors = [n for n in neighbors if n.GetAtomicNum() == 7]
-        if not n_neighbors:
+        # 4. Verify oxygen is only connected to nitrogen
+        o_bonds = oxygen.GetBonds()
+        if len(o_bonds) != 1 or oxygen.GetTotalNumHs() != 1:
             continue
             
-        nitrogen = n_neighbors[0]
-        o_neighbors = [n for n in nitrogen.GetNeighbors() if n.GetAtomicNum() == 8]
-        if not o_neighbors:
+        # 5. Exclude cases where carbon is part of activated systems
+        carbon_neighbors = carbon.GetNeighbors()
+        skip = False
+        for neighbor in carbon_neighbors:
+            if neighbor.GetAtomicNum() == 7 and neighbor != nitrogen:  # No other N attachments
+                skip = True
+                break
+            if neighbor.GetIsAromatic():  # Not directly connected to aromatic systems
+                skip = True
+                break
+        if skip:
             continue
             
-        # Check that the oxygen is -OH (has one H)
-        oxygen = o_neighbors[0]
-        if oxygen.GetTotalNumHs() != 1:
-            continue
-            
-        # If we get here, we have a valid aldoxime group
+        # If we pass all validations, it's an aldoxime
         return True, "Contains aldoxime group (H-CR=N-OH)"
         
     return False, "No aldoxime group (H-CR=N-OH) found"
