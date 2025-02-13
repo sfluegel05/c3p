@@ -1,27 +1,66 @@
 """
 Classifies: CHEBI:26333 prostaglandin
 """
-The previous program attempted to classify molecules as prostaglandins by looking for a few key structural features:
+"""
+Classifies: CHEBI:35493 prostaglandin
 
-1. A fused cyclopentane-cyclopentene ring system
-2. Common functional groups like hydroxyl, keto, and carboxyl groups
-3. A lipid chain (long carbon chain)
-4. Molecular weight and atom count ranges typical of prostaglandins
+Prostaglandins are naturally occurring compounds derived from the parent C20 acid, prostanoic acid.
+They share a core structure consisting of a cyclopentane ring fused or joined to a cyclopentene ring,
+with various substituents, functional groups, and side chains.
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-However, the results show that this approach missed many true positive examples of prostaglandins. The primary issue seems to be the rigid requirement for a fused cyclopentane-cyclopentene ring system. While many prostaglandins do contain this structural motif, there are also many variations and isomers that deviate from this core structure.
+def is_prostaglandin(smiles: str):
+    """
+    Determines if a molecule is a prostaglandin based on its SMILES string.
 
-To improve the classification performance, we need to relax the strict structural constraints and instead focus on more general patterns and features that are common across the diverse range of prostaglandin structures.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-Here are some potential improvements:
+    Returns:
+        bool: True if molecule is a prostaglandin, False otherwise
+        str: Reason for classification
+    """
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-1. Instead of looking for a specific fused ring system, look for a broader pattern that captures the core cyclopentane and cyclopentene rings, either fused or joined by a single bond.
+    # Look for core cyclopentane and cyclopentene rings
+    core_pattern = Chem.MolFromSmarts("[C&R1&r5][C&R1&r5][C&R1&r5][C&R1&r5][C&R1&r5]1[C&R2&r5][C&R2&r5]2[C&R2&r5][C&R2&r5][C&R2&r5]12")
+    if not mol.HasSubstructMatch(core_pattern):
+        return False, "Missing core cyclopentane and cyclopentene rings"
 
-2. Incorporate additional functional group patterns beyond just hydroxyl, keto, and carboxyl groups. Prostaglandins can also contain other groups like ethers, esters, and epoxides.
+    # Look for common functional groups
+    hydroxy_pattern = Chem.MolFromSmarts("[OH]")
+    keto_pattern = Chem.MolFromSmarts("[C=O]")
+    carboxyl_pattern = Chem.MolFromSmarts("[C$(C=O)O]")
+    ether_pattern = Chem.MolFromSmarts("[O]")  # Include ethers
+    ester_pattern = Chem.MolFromSmarts("[C$(C=O)OC]")  # Include esters
+    epoxide_pattern = Chem.MolFromSmarts("[C1OC1]")  # Include epoxides
 
-3. Consider the presence of specific substructures or substituents that are characteristic of prostaglandins, such as the alpha and omega side chains, or the presence of certain stereochemical configurations.
+    functional_groups = [hydroxy_pattern, keto_pattern, carboxyl_pattern, ether_pattern, ester_pattern, epoxide_pattern]
+    functional_group_count = sum(len(mol.GetSubstructMatches(pattern)) for pattern in functional_groups)
+    if functional_group_count < 2:
+        return False, "Insufficient functional groups"
 
-4. Utilize more advanced molecular fingerprinting techniques or machine learning models trained on a diverse set of prostaglandin structures, rather than relying solely on hand-crafted rules.
+    # Look for lipid chain (long carbon chain)
+    lipid_chain_pattern = Chem.MolFromSmarts("[C&H3]~[C&H2]~[C&H2]~[C&H2]~[C&H2]~[C&H2]~[C&H2]")
+    if not mol.HasSubstructMatch(lipid_chain_pattern):
+        return False, "Missing lipid chain"
 
-5. Expand the molecular weight and atom count ranges based on the provided examples, as some prostaglandins may fall outside the initial ranges used in the previous program.
+    # Check molecular weight and atom counts
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
 
-By incorporating these improvements, the program should be better equipped to capture the structural diversity within the prostaglandin class and improve its classification performance.
+    if mol_wt < 300 or mol_wt > 600:
+        return False, "Molecular weight out of typical range for prostaglandins"
+    if c_count < 15 or c_count > 30:
+        return False, "Carbon count out of typical range for prostaglandins"
+    if o_count < 2 or o_count > 8:
+        return False, "Oxygen count out of typical range for prostaglandins"
+
+    return True, "Molecule contains core cyclopentane and cyclopentene rings, common functional groups, and a lipid chain"
