@@ -23,31 +23,26 @@ def is_prostaglandin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for cyclopentane ring (allowing substitutions)
-    cyclopentane_pattern = Chem.MolFromSmarts("C1CCCC1")
-    if not mol.HasSubstructMatch(cyclopentane_pattern):
-        # Try a flexible pattern with substitutions
-        flexible_cyclopentane_pattern = Chem.MolFromSmarts("C1(C)C(C)C(C)C1")
-        if not mol.HasSubstructMatch(flexible_cyclopentane_pattern):
-            return False, "No cyclopentane or substituted cyclopentane ring detected"
+    # Check for cyclopentane ring with possible diverse substitutions
+    flexible_cyclopentane_pattern = Chem.MolFromSmarts("[C&R2]1(~[C&R2])(~[C&R2])~[C&R2]~[C&R2]1")
+    if not mol.HasSubstructMatch(flexible_cyclopentane_pattern):
+        return False, "No flexible cyclopentane or substituted cyclopentane ring detected"
     
-    # Check for acid or acid derivative group (e.g., carboxylic acid or ester)
-    acid_pattern = Chem.MolFromSmarts("C(=O)[O,N]")
-    if not mol.HasSubstructMatch(acid_pattern):
-        return False, "Missing acid or acid-like functional group"
-
-    # Check for key functional groups close to the cyclopentane
-    key_groups_pattern = Chem.MolFromSmarts("O=C-C1CCCC1")
-    if not mol.HasSubstructMatch(key_groups_pattern):
-        # Consider the entire pattern around the cyclopentane
-        extensive_group_pattern = Chem.MolFromSmarts("O=C[C@H]1CC[C@H](O)C1")
-        if not mol.HasSubstructMatch(extensive_group_pattern):
-            return False, "Missing key functional groups in proximity to cyclopentane ring"
+    # Check for an acid or derivative (e.g., carboxylic acid, ester, amide)
+    acid_or_ester_pattern = Chem.MolFromSmarts("C(=O)[O,N,S]")
+    if not mol.HasSubstructMatch(acid_or_ester_pattern):
+        return False, "Missing acid or acid-derivative functional group"
     
-    # Consider the presence and pattern of double bonds
-    db_pattern = Chem.MolFromSmarts("C=C")
-    db_count = len(mol.GetSubstructMatches(db_pattern))
-    if db_count < 2:
-        return False, "Prostaglandins typically contain multiple double bonds; too few found"
+    # Determine presence of key double bond patterns distinct in many prostaglandins
+    db_patterns = [
+        Chem.MolFromSmarts("C=CC=CC=C"),  # Example pattern covering extended unsaturation
+    ]
+    if not any(mol.HasSubstructMatch(pattern) for pattern in db_patterns):
+        return False, "Missing typical prostaglandin double bond patterns"
 
-    return True, "Molecule contains a C20 backbone with a cyclopentane or properly substituted cyclopentane, relevant acid-functional groups and double bonds typical of prostaglandins"
+    # Consider molecular size or framework typical of C20 structures
+    num_atoms = mol.GetNumHeavyAtoms()
+    if num_atoms < 18 or num_atoms > 24:
+        return False, "Molecule size not typical for prostaglandins based on heavy atoms count"
+
+    return True, "Molecule contains a C20 backbone with a cyclopentane or properly substituted cyclopentane, relevant acid-functional groups and expected double bond patterns typical of prostaglandins"
