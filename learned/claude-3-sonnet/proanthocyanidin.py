@@ -27,56 +27,86 @@ def is_proanthocyanidin(smiles: str):
 
     # Basic molecular properties
     num_atoms = mol.GetNumAtoms()
-    if num_atoms < 30:  # Proanthocyanidins are typically large molecules
+    if num_atoms < 20:  # Lowered threshold
         return False, "Too small to be a proanthocyanidin"
 
     # Count key atoms
     num_o = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if num_o < 8:  # Need multiple hydroxyl groups
-        return False, "Insufficient oxygen atoms for hydroxyl groups"
+    if num_o < 4:  # Lowered threshold
+        return False, "Insufficient oxygen atoms"
 
-    # Basic flavan-3-ol unit pattern (more flexible than before)
-    flavan_pattern = Chem.MolFromSmarts("[#6]1-[#6]-[#6]-[#6]2-[#6](-[#6]=1)=[#6]-[#6](O)-[#6]=[#6]2")
-    flavan_matches = len(mol.GetSubstructMatches(flavan_pattern))
-    if flavan_matches < 2:
-        return False, "Need at least two flavan units"
+    # Basic flavan unit patterns (more flexible)
+    flavan_patterns = [
+        # Basic flavan-3-ol core
+        "[#6]1-[#6]-[#6]-c2c(O)cc(O)cc2O1",
+        # Alternative pattern with different hydroxylation
+        "[#6]1-[#6]-[#6]-c2c(O)cc(O)c(O)c2O1",
+        # Pattern for gallated units
+        "[#6]1-[#6]-[#6]-c2c(O)cc(O)cc2O[#6]1OC(=O)c1cc(O)c(O)c(O)c1"
+    ]
+    
+    total_flavan_matches = 0
+    for pattern in flavan_patterns:
+        patt = Chem.MolFromSmarts(pattern)
+        if patt:
+            matches = len(mol.GetSubstructMatches(patt))
+            total_flavan_matches += matches
+
+    if total_flavan_matches < 1:
+        return False, "No flavan unit found"
+
+    # Check for characteristic linkage patterns
+    linkage_patterns = [
+        # 4→8 linkage
+        "[#6]1-[#6]-[#6]-c2c(-[#6]1)cc(O)c1c2O[#6][#6][#6]c2cc(O)cc(O)c21",
+        # 4→6 linkage
+        "[#6]1-[#6]-[#6]-c2c(-[#6]1)cc(O)c(-[#6]1-[#6]-[#6]-c3c(-[#6]1)cc(O)cc3O)c2O",
+        # 2→O→7 linkage (A-type)
+        "[#6]1O[#6]2Oc3cc(O)cc(O)c3[#6][#6]2[#6][#6]1"
+    ]
+    
+    has_linkage = False
+    for pattern in linkage_patterns:
+        patt = Chem.MolFromSmarts(pattern)
+        if patt and mol.HasSubstructMatch(patt):
+            has_linkage = True
+            break
 
     # Check for characteristic hydroxylation patterns
-    # A-ring pattern (5,7-dihydroxy)
-    a_ring_pattern = Chem.MolFromSmarts("Oc1cc(O)cc2c1")
-    # B-ring patterns (3',4'-dihydroxy or 3',4',5'-trihydroxy)
-    b_ring_pattern1 = Chem.MolFromSmarts("c1c(O)c(O)ccc1")
-    b_ring_pattern2 = Chem.MolFromSmarts("c1c(O)c(O)c(O)cc1")
+    hydroxylation_patterns = [
+        # A-ring patterns
+        "Oc1cc(O)cc2c1",
+        # B-ring patterns (including gallocatechin type)
+        "c1c(O)c(O)ccc1",
+        "c1c(O)c(O)c(O)cc1",
+        # Gallate ester pattern
+        "O=C(O)c1cc(O)c(O)c(O)c1"
+    ]
     
-    if not (mol.HasSubstructMatch(a_ring_pattern) and 
-            (mol.HasSubstructMatch(b_ring_pattern1) or mol.HasSubstructMatch(b_ring_pattern2))):
-        return False, "Missing characteristic hydroxylation pattern"
+    hydroxy_matches = 0
+    for pattern in hydroxylation_patterns:
+        patt = Chem.MolFromSmarts(pattern)
+        if patt and mol.HasSubstructMatch(patt):
+            hydroxy_matches += 1
 
-    # Check for interflavanoid linkages
-    # 4→8 linkage
-    c48_pattern = Chem.MolFromSmarts("[#6]1-[#6]-[#6]-[#6]2-[#6](-[#6]=1)-[#6]-[#6]-[#6]-2")
-    # 4→6 linkage
-    c46_pattern = Chem.MolFromSmarts("[#6]1-[#6]-[#6]-[#6]2-[#6](-[#6]=1)-[#6]-[#6]-[#6]-2")
-    
-    if not (mol.HasSubstructMatch(c48_pattern) or mol.HasSubstructMatch(c46_pattern)):
-        return False, "Missing characteristic interflavanoid linkage"
-
-    # Count oxygen-containing rings (heterocycles)
-    o_ring_pattern = Chem.MolFromSmarts("O1[#6][#6][#6][#6][#6]1")
-    o_ring_matches = len(mol.GetSubstructMatches(o_ring_pattern))
-    if o_ring_matches < 2:
-        return False, "Insufficient oxygen-containing rings"
+    if hydroxy_matches < 2:
+        return False, "Missing characteristic hydroxylation patterns"
 
     # Count aromatic rings
     ring_info = mol.GetRingInfo()
     aromatic_rings = sum(1 for ring in ring_info.AtomRings() 
                         if all(mol.GetAtomWithIdx(i).GetIsAromatic() for i in ring))
-    if aromatic_rings < 4:  # Need at least 2 A-rings and 2 B-rings
+    
+    if aromatic_rings < 2:  # Need at least one A-ring and one B-ring
         return False, "Insufficient aromatic rings"
 
     # Calculate molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 500:  # Proanthocyanidins are typically large
+    if mol_wt < 400:  # Lowered threshold
         return False, "Molecular weight too low for proanthocyanidin"
 
-    return True, "Contains multiple flavan units with characteristic linkages and hydroxylation patterns"
+    # Final classification
+    if total_flavan_matches >= 2 or (total_flavan_matches >= 1 and has_linkage):
+        return True, "Contains flavan units with characteristic linkages and hydroxylation patterns"
+    else:
+        return False, "Does not meet minimum structural requirements for proanthocyanidin"
