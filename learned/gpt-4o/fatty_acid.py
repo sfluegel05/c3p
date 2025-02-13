@@ -19,41 +19,30 @@ def is_fatty_acid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
+
     # Check for the presence of a carboxylic acid group
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[O]")
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
-    
-    # Count carbon atoms in potential aliphatic chain
-    chain_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
-    
-    # Check that there is a significant aliphatic chain length
-    if len(chain_atoms) < 4:
-        return False, "Carbon chain length too short to be a fatty acid"
 
-    # Check for aromaticity
+    # Count carbon atoms to evaluate aliphatic chain length
+    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+
+    # Natural fatty acids commonly range from C4 to C28 in aliphatic count
+    if not (4 <= carbon_count <= 28):
+        return False, f"Carbon chain length of {carbon_count}, must be between 4 and 28"
+
+    # Check for the presence of aromaticity
     if any(atom.GetIsAromatic() for atom in mol.GetAtoms()):
-        return False, "Contains aromatic structures"
+        return False, "Contains aromatic rings, not a fatty acid"
 
-    # Allow minimal cyclic structures only if the carboxylic group is connected to a larger chain
-    ring_info = mol.GetRingInfo()
-    cyclic = any(len(path) > 10 for path in ring_info.AtomRings())  # Allow small functionalities
+    # Check if the molecule is predominantly linear
+    cyclic = any(atom.IsInRing() for atom in mol.GetAtoms())
     if cyclic:
-        return False, "Significant cyclic structures are present"
+        # Some natural fatty acids could have minimal cyclic systems (rare)
+        return False, "Has cyclic structures which are typically not part of standard fatty acids"
 
-    # Check if any nitrogen atoms indicate the peptide or amino linkage
-    if any(atom.GetAtomicNum() == 7 for atom in mol.GetAtoms()):
-        return False, "Contains amine or peptide linkages"
-
-    # Count any disqualifying functional groups
-    disallowed_functional_patterns = [
-        Chem.MolFromSmarts("[S]"),  # Sulfur atoms
-        Chem.MolFromSmarts("[P]"),  # Phosphoric atoms
-        Chem.MolFromSmarts("[Si]")  # Silicon for large inorganics
-    ]
+    # Verify functionalities like hydroxyls or epoxides are accommodated
+    # These rules can be expanded based on detailed chemical understanding
     
-    if any(mol.HasSubstructMatch(pattern) for pattern in disallowed_functional_patterns):
-        return False, "Contains disallowed atom types."
-
     return True, "Contains aliphatic carbon chain with a carboxylic acid group, fits fatty acid profile"
