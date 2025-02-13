@@ -1,28 +1,82 @@
 """
 Classifies: CHEBI:61907 medium-chain fatty acyl-CoA
 """
-The previous program attempts to classify molecules as medium-chain fatty acyl-CoA by checking for the presence of the Coenzyme A substructure, an acyl group, and a fatty acid chain length between 6 and 12 carbon atoms. However, the outcomes show that it fails to correctly identify many valid examples of this class.
+"""
+Classifies: CHEBI:36540 medium-chain fatty acyl-CoA
+A fatty acyl-CoA that results from the formal condensation of the thiol group of coenzyme A with the carboxy group of any medium-chain fatty acid.
+"""
 
-Here are some potential issues with the previous approach and suggestions for improvement:
+from rdkit import Chem
+from rdkit.Chem import AllChem, rdMolDescriptors
 
-1. **Rigid Coenzyme A substructure matching**: The program uses a SMARTS pattern to match the entire Coenzyme A substructure. However, this substructure can have different conformations and bond orders, leading to missed matches. A better approach would be to break down the substructure into smaller components and match them separately.
+def is_medium_chain_fatty_acyl_CoA(smiles: str):
+    """
+    Determines if a molecule is a medium-chain fatty acyl-CoA based on its SMILES string.
 
-2. **Insufficient acyl group check**: The program only checks for the presence of a single acyl group (C(=O)). However, some examples contain additional acyl groups or other functionalities like esters or alcohols. A more robust approach would be to identify the specific acyl group attached to the Coenzyme A moiety and check for its connectivity.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Oversimplified chain length check**: The program assumes that the aliphatic chain consists of only carbon atoms. However, some examples contain double bonds, substituents, or heteroatoms within the chain. A more accurate approach would be to identify the specific fatty acid chain attached to the acyl group and analyze its length and composition.
+    Returns:
+        bool: True if molecule is a medium-chain fatty acyl-CoA, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-4. **Lack of stereochemistry consideration**: Many examples contain stereochemical information, which is not considered in the current approach. Incorporating stereochemistry checks could improve the classification accuracy.
+    # Match Coenzyme A substructure components
+    coenzyme_a_patterns = [
+        Chem.MolFromSmarts("[N-]=[N+]=C1NC(=NC=N1)N"),  # Adenine base
+        Chem.MolFromSmarts("OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12"),  # Ribose-phosphate backbone
+        Chem.MolFromSmarts("C(C)(COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12)[C@@H](O)C(=O)NCCC(=O)NCCS")  # Pantothenate arm
+    ]
+    if not all(mol.HasSubstructMatch(pat) for pat in coenzyme_a_patterns):
+        return False, "Missing Coenzyme A substructure components"
 
-To improve the program, you could consider the following steps:
+    # Find acyl group attached to Coenzyme A
+    acyl_group = None
+    for atom in mol.GetAtoms():
+        if atom.GetSymbol() == 'S' and atom.GetIsAromatic() and atom.GetDegree() == 2:
+            neighbor = atom.GetNeighbors()[0]
+            if neighbor.GetAtomicNum() == 6 and neighbor.GetFormalCharge() == 0 and neighbor.GetIsAromatic():
+                acyl_group = neighbor
+                break
 
-1. Identify the Coenzyme A substructure by breaking it down into smaller components and matching them separately. This could involve matching the ribose-phosphate backbone, the adenine base, and the pantothenate arm.
+    if acyl_group is None:
+        return False, "No acyl group found attached to Coenzyme A"
 
-2. Identify the acyl group directly attached to the Coenzyme A moiety by traversing bonds from the thiol group.
+    # Traverse bonds to find fatty acid chain
+    chain = []
+    current = acyl_group
+    while current.GetDegree() > 1:
+        for neighbor in current.GetNeighbors():
+            if neighbor.GetAtomicNum() == 6 and neighbor.GetIsAromatic() == False and neighbor not in chain:
+                chain.append(neighbor)
+                current = neighbor
+                break
 
-3. Analyze the fatty acid chain attached to the acyl group by traversing bonds from the carbonyl carbon. Check the chain length, degree of unsaturation, and potential substituents or heteroatoms.
+    # Check chain length (6-12 carbons)
+    chain_length = len(chain)
+    if chain_length < 6 or chain_length > 12:
+        return False, f"Fatty acid chain length is {chain_length}, expected 6-12"
 
-4. Consider incorporating stereochemistry checks by identifying stereogenic centers and matching the specified configuration.
+    # Check for additional acyl groups, esters, alcohols
+    additional_groups = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6 and atom.GetFormalCharge() == 0 and atom.GetIsAromatic() == False and atom not in chain]
+    if additional_groups:
+        return False, "Additional acyl groups, esters, or alcohols present"
 
-5. Utilize additional structural features or properties, such as molecular weight, atom counts, or topological descriptors, to further refine the classification criteria.
+    # Check for unsaturation, substituents, heteroatoms in the chain
+    unsaturated = any(atom.GetDegree() > 3 for atom in chain)
+    substituted = any(atom.GetDegree() > 2 for atom in chain if atom.GetAtomicNum() == 6)
+    heteroatoms = any(atom.GetAtomicNum() != 6 and atom.GetAtomicNum() != 1 for atom in chain)
 
-By addressing these issues and incorporating more robust structural analysis techniques, the program's ability to accurately classify medium-chain fatty acyl-CoA molecules should improve significantly.
+    # Construct reason for classification
+    reason = "Contains Coenzyme A substructure with a medium-chain fatty acyl group (6-12 carbons) attached."
+    if unsaturated:
+        reason += " The fatty acid chain is unsaturated."
+    if substituted:
+        reason += " The fatty acid chain is substituted."
+    if heteroatoms:
+        reason += " The fatty acid chain contains heteroatoms."
+
+    return True, reason
