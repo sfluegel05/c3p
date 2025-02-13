@@ -1,24 +1,48 @@
 """
 Classifies: CHEBI:27093 tricarboxylic acid
 """
-After analyzing the previous program and the outcomes, it appears that the approach of solely looking for the presence of three carboxyl groups (-COOH) and an oxoacid group (-C(=O)-OH) is not sufficient to accurately classify tricarboxylic acids. The program has a high false positive rate, incorrectly classifying many non-tricarboxylic acid compounds as tricarboxylic acids.
+"""
+Classifies: CHEBI:33569 tricarboxylic acid
+An oxoacid containing three carboxy groups.
+"""
+from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
-The main issue is that the current approach does not consider the connectivity and arrangement of the carboxyl groups within the molecule. It only checks for the presence of three carboxyl groups and an oxoacid group, without ensuring that the carboxyl groups are connected to the same carbon skeleton or backbone.
+def is_tricarboxylic_acid(smiles: str):
+    """
+    Determines if a molecule is a tricarboxylic acid based on its SMILES string.
+    A tricarboxylic acid should have three carboxyl groups (-COOH) attached
+    to a common carbon backbone or ring system.
 
-To improve the classification, we need to incorporate additional checks and patterns to ensure that the three carboxyl groups are connected to a common carbon backbone or ring system. This will help eliminate false positives and improve the overall accuracy of the classification.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-Here are some potential improvements to consider:
+    Returns:
+        bool: True if molecule is a tricarboxylic acid, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-1. **Check for a common carbon backbone or ring system**: Develop a pattern or substructure query that searches for a carbon backbone or ring system with three carboxyl groups attached to it. This can be done using SMARTS patterns or other substructure matching techniques in RDKit.
+    # Look for carboxyl group pattern (-COOH)
+    carboxyl_pattern = Chem.MolFromSmarts("[C](=O)(O)[OH]")
+    carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
+    if len(carboxyl_matches) != 3:
+        return False, f"Found {len(carboxyl_matches)} carboxyl groups, need exactly 3"
 
-2. **Impose distance or connectivity constraints**: Ensure that the three carboxyl groups are within a certain distance or connectivity threshold from each other, indicating that they belong to the same molecular skeleton.
+    # Find the carbon atoms attached to the carboxyl groups
+    carboxyl_carbons = set(mol.GetAtomWithIdx(match[0]).GetNeighbors()[0].GetIdx() for match in carboxyl_matches)
 
-3. **Consider tautomeric forms**: Some tricarboxylic acids may exist in tautomeric forms, where the carboxyl groups are represented differently in the SMILES string. The program should be able to handle these cases by considering alternative tautomeric representations.
+    # Check if the carboxyl groups are connected to a common carbon backbone or ring
+    backbone_atoms = set()
+    for carbon in carboxyl_carbons:
+        backbone_atoms.update(Chem.AtomAtomPathFinder.findAtomPathWalk(mol, carbon, maxPath=3))
 
-4. **Incorporate additional chemical rules or filters**: Implement additional chemical rules or filters to exclude common false positive cases or compounds that are not tricarboxylic acids but satisfy the current criteria.
-
-5. **Utilize chemical databases or knowledge sources**: Leverage existing chemical databases or knowledge sources to identify known tricarboxylic acid structures and incorporate their structural patterns into the classification algorithm.
-
-6. **Consider machine learning approaches**: If the structural patterns or rules become too complex, consider using machine learning techniques, such as molecular fingerprints or graph neural networks, to learn and classify tricarboxylic acids based on a training dataset.
-
-By incorporating these improvements, the accuracy of the tricarboxylic acid classification program can be significantly enhanced, reducing false positives and improving the overall performance.
+    # If all carboxyl groups are connected, the intersection of their paths should be non-empty
+    if len(backbone_atoms.intersection(carboxyl_carbons)) >= 3:
+        return True, "Contains three carboxyl groups attached to a common carbon backbone or ring"
+    else:
+        return False, "Carboxyl groups are not connected to a common carbon backbone or ring"
