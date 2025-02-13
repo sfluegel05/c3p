@@ -24,7 +24,6 @@ def is_2_acyl_1_alkyl_sn_glycero_3_phosphocholine(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for complete phosphocholine group structure
-    # More specific SMARTS pattern to avoid partial matches
     phosphocholine = Chem.MolFromSmarts("[O][P](=[O])([O-])OCC[N+](C)(C)C")
     if not mol.HasSubstructMatch(phosphocholine):
         return False, "No phosphocholine group found"
@@ -34,34 +33,41 @@ def is_2_acyl_1_alkyl_sn_glycero_3_phosphocholine(smiles: str):
     if phosphocholine_matches != 1:
         return False, f"Found {phosphocholine_matches} phosphocholine groups, need exactly 1"
 
-    # Check for the complete glycerol backbone with correct substitution pattern
+    # Check for glycerol backbone with correct stereochemistry and substitution pattern
     # [C@H] ensures the sn-glycero configuration
-    # Position 1: -CH2-O-R (ether)
-    # Position 2: -CH-O-C(=O)- (ester)
-    # Position 3: -CH2-O-P (phosphate)
-    glycerol_pattern = Chem.MolFromSmarts("[CH2X4]-[OX2]-[CX4H2,CX4H3].[CH2X4]-[OX2]-[PX4].[C@H](-[OX2]-[CX3](=O))")
+    glycerol_pattern = Chem.MolFromSmarts("[CH2X4]-[OX2]-[#6].[CH2X4]-[OX2]-[PX4].[C@H](-[OX2]-[CX3]=O)")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "Missing correct glycerol backbone structure with required substitution pattern"
 
-    # Check for ether linkage at position 1 (long chain)
-    ether_pattern = Chem.MolFromSmarts("[CX4H2]-[OX2]-[CX4H2]-[CX4H2]-[CX4H2]")
+    # Check for ether linkage at position 1 (any alkyl)
+    ether_pattern = Chem.MolFromSmarts("[CH2X4]-[OX2]-[CX4]")
     if not mol.HasSubstructMatch(ether_pattern):
-        return False, "No long-chain alkyl ether found at position 1"
+        return False, "No alkyl ether found at position 1"
 
-    # Check for ester group at position 2
-    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])-[CX4]")
-    ester_matches = len(mol.GetSubstructMatches(ester_pattern))
-    if ester_matches != 1:
-        return False, f"Found {ester_matches} ester groups, need exactly 1"
+    # Check for acyl group at position 2 (includes formyl)
+    acyl_pattern = Chem.MolFromSmarts("[OX2]-[CX3](=[OX1])")
+    acyl_matches = mol.GetSubstructMatches(acyl_pattern)
+    if not acyl_matches:
+        return False, "No acyl group found at position 2"
+
+    # Verify correct connectivity
+    glycerol_matches = mol.GetSubstructMatches(glycerol_pattern)
+    if not glycerol_matches:
+        return False, "Incorrect connectivity in glycerol backbone"
+
+    # Check stereochemistry
+    chiral_centers = Chem.FindMolChiralCenters(mol)
+    if not any('@' in smiles for match in chiral_centers):
+        return False, "Missing or incorrect stereochemistry"
 
     # Verify minimum size requirements
     n_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if n_carbons < 15:  # Minimum size considering the basic structure
+    if n_carbons < 8:  # Minimum size considering the basic structure
         return False, "Molecule too small for expected structure"
 
-    # Check for required number of oxygens (ether, ester, phosphate)
+    # Check for required number of oxygens
     n_oxygens = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if n_oxygens < 7:  # 1 ether + 2 ester + 4 phosphate
+    if n_oxygens < 6:  # 1 ether + 2 acyl + 3 phosphate
         return False, "Insufficient oxygen atoms for required functional groups"
 
     return True, "Contains glycerol backbone with alkyl ether at position 1, acyl group at position 2, and phosphocholine at position 3"
