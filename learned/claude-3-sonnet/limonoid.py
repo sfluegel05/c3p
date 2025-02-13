@@ -1,22 +1,56 @@
 """
 Classifies: CHEBI:39434 limonoid
 """
-The previous code attempt looks good and includes key structural checks for identifying limonoids. However, it failed to correctly classify any of the example molecules, resulting in no true positives or false positives/negatives.
+"""
+Classifies: CHEBI:64655 limonoid
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-One potential issue could be that the SMARTS pattern used to match the limonoid core skeleton is too specific and restrictive. The code checks for an exact match of the 4,4,8-trimethyl-17-furanylsteroid skeleton, but limonoids can have variations and derivations from this core structure. A more flexible pattern that allows for some structural variation may be needed.
+def is_limonoid(smiles: str):
+    """
+    Determines if a molecule is a limonoid based on its SMILES string.
+    Limonoids are highly oxygenated triterpenoids with a prototypical 4,4,8-trimethyl-17-furanylsteroid skeleton.
 
-Another potential issue could be that the code relies heavily on the presence of methyl groups at specific positions, which may not hold true for all limonoid structures. Some limonoids may have different substitution patterns or additional rings/functional groups.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-To improve the program, we could try the following:
-
-1. Analyze the example limonoid structures that were not correctly identified and look for common structural features or patterns that were missed by the current code.
-
-2. Modify the SMARTS pattern for the limonoid core to be less restrictive and allow for more structural variations.
-
-3. Reconsider the requirement for specific methyl group positions and instead look for more general patterns or characteristics of limonoids.
-
-4. Incorporate additional structural checks or heuristics based on the analysis of the example structures, such as checking for specific ring systems, functional groups, or atom environments that are commonly found in limonoids.
-
-5. Adjust the thresholds for molecular weight, number of oxygens, and rotatable bonds to better reflect the range of acceptable values for limonoids.
-
-By iteratively refining the structural patterns and checks based on the analysis of the example data, we can improve the accuracy and robustness of the limonoid classification program.
+    Returns:
+        bool: True if molecule is a limonoid, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Look for furan ring
+    furan_pattern = Chem.MolFromSmarts("c1occc1")
+    if not mol.HasSubstructMatch(furan_pattern):
+        return False, "No furan ring found"
+    
+    # Look for triterpene skeleton (4 rings and a high degree of oxygenation)
+    ring_info = mol.GetRingInfo()
+    if ring_info.NumRings() < 4:
+        return False, "Less than 4 rings found"
+    
+    # Count oxygen atoms
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if o_count < 5:
+        return False, "Less than 5 oxygens found, not highly oxygenated"
+    
+    # Look for methyl groups at specific positions
+    methyl_pattern = Chem.MolFromSmarts("[CH3]")
+    methyl_matches = mol.GetSubstructMatches(methyl_pattern)
+    if len(methyl_matches) < 3:
+        return False, "Less than 3 methyl groups found"
+    
+    # Count rotatable bonds as a rough measure of size
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 5:
+        return False, "Too few rotatable bonds for a triterpenoid"
+    
+    # If all checks pass, it's likely a limonoid
+    return True, "Contains a furan ring and a highly oxygenated triterpene skeleton with methyl groups at key positions"
