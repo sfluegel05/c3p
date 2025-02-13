@@ -20,14 +20,13 @@ def is_sphingomyelin_d18_1(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # More general sphingosine backbone pattern
-    # Allow variations in stereochemistry and chain length near the double bond
-    sphingosine_pattern = Chem.MolFromSmarts("O[C@H](C)[C@H](N)C=C")  # Simplified sphingosine core
+    # Advanced sphingosine backbone pattern with specific stereochemistry
+    sphingosine_pattern = Chem.MolFromSmarts("O[C@H]1[C@H](CC=C)NC1")
     if not mol.HasSubstructMatch(sphingosine_pattern):
         return False, "No sphingosine backbone (d18:1) pattern found"
 
     # Check for the phosphocholine group
-    phosphocholine_pattern = Chem.MolFromSmarts("COP([O-])([O-])=O")
+    phosphocholine_pattern = Chem.MolFromSmarts("O=P(OCC[N+](C)(C)C)(O)O")
     if not mol.HasSubstructMatch(phosphocholine_pattern):
         return False, "No phosphocholine moiety found"
     
@@ -36,4 +35,4 @@ def is_sphingomyelin_d18_1(smiles: str):
     if not mol.HasSubstructMatch(amide_pattern):
         return False, "No amide linkage found"
 
-    return True, "Molecule has sphingosine backbone and phosphocholine group"
+    return True, "Molecule has sphingosine backbone, phosphocholine group, and amide linkage"
