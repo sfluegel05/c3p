@@ -1,57 +1,24 @@
 """
 Classifies: CHEBI:26214 porphyrins
 """
-"""
-Classifies: CHEBI:27092 porphyrins
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+The previous program attempted to classify molecules as porphyrins by checking for the presence of a porphyrin macrocycle and certain structural features, such as the presence of four pyrrole rings, four methine groups connecting them, and aromaticity. However, the outcomes indicate that the program failed to correctly identify any true positives or negatives.
 
-def is_porphyrin(smiles: str):
-    """
-    Determines if a molecule is a porphyrin based on its SMILES string.
-    Porphyrins are natural pigments containing a fundamental skeleton of four pyrrole nuclei
-    united through the alpha-positions by four methine groups to form a macrocyclic structure.
+Here are some potential reasons for the low performance and suggestions for improvement:
 
-    Args:
-        smiles (str): SMILES string of the molecule
+1. **Overly Strict Pattern Matching**: The program uses a specific SMARTS pattern to identify the porphyrin macrocycle, which may be too strict and fail to match variations in the ring numbering or atom order. Instead, a more flexible approach could be used, such as enumerating all ring systems and checking for the presence of four interconnected pyrrole rings.
 
-    Returns:
-        bool: True if molecule is a porphyrin, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+2. **Ignoring Substitution Patterns**: While the program checks for the presence of substituents, it does not consider their specific pattern or connectivity. Many porphyrins have characteristic substitution patterns, such as carboxylate groups or metal centers, which could be used for more accurate identification.
 
-    # Look for porphyrin macrocycle
-    porphyrin_pattern = Chem.MolFromSmarts("c1nc2nc3nc4nc1ccc4cc3cc2")
-    if not mol.HasSubstructMatch(porphyrin_pattern):
-        return False, "No porphyrin macrocycle found"
-    
-    # Check for 4 pyrrole rings
-    pyrrole_pattern = Chem.MolFromSmarts("c1cc[nH]c1")
-    pyrrole_matches = mol.GetSubstructMatches(pyrrole_pattern)
-    if len(pyrrole_matches) != 4:
-        return False, f"Found {len(pyrrole_matches)} pyrrole rings, need exactly 4"
-    
-    # Check for methine groups connecting pyrroles
-    methine_pattern = Chem.MolFromSmarts("C=C")
-    methine_matches = mol.GetSubstructMatches(methine_pattern)
-    if len(methine_matches) != 4:
-        return False, f"Found {len(methine_matches)} methine groups, need exactly 4"
-    
-    # Check for aromaticity
-    if not mol.GetAromaticRingInfo():
-        return False, "Porphyrin macrocycle is not aromatic"
-    
-    # Check for substituents (metals, side chains, etc.)
-    # This is not strictly required, but porphyrins usually have substituents
-    substituents = [atom.GetSymbol() for atom in mol.GetAtoms() if atom.GetAtomicNum() not in [5, 6, 7, 8]]
-    if not substituents:
-        return True, "Contains bare porphyrin macrocycle"
-    else:
-        return True, f"Contains porphyrin macrocycle with substituents: {', '.join(set(substituents))}"
+3. **Lack of Stereochemical Considerations**: Some porphyrins exhibit specific stereochemical configurations, which are not accounted for in the current program. Incorporating stereochemical checks could improve the accuracy of classification.
+
+4. **Insufficient Test Set**: The provided outcomes do not include any true positives or negatives, suggesting that the test set may be inadequate for evaluating the program's performance. A more diverse and representative set of porphyrin and non-porphyrin structures should be used for testing.
+
+To improve the program, consider the following steps:
+
+1. Implement a more flexible ring detection algorithm that can identify interconnected pyrrole rings without relying on a fixed SMARTS pattern.
+2. Incorporate checks for common substitution patterns and structural motifs found in porphyrins, such as carboxylate groups, metal centers, and specific side chains.
+3. Account for stereochemical considerations by checking for specific configurations or using techniques like conformational analysis or molecular alignment.
+4. Expand the test set to include a diverse range of porphyrin and non-porphyrin structures, covering various substitution patterns, stereochemistries, and structural variations.
+5. Consider using machine learning techniques, such as fingerprint-based classification or deep learning models, which may be better suited for capturing the structural diversity and complexity of porphyrins.
+
+By addressing these potential issues and implementing the suggested improvements, the program's ability to accurately classify porphyrins is likely to improve significantly.
