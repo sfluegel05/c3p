@@ -1,64 +1,23 @@
 """
 Classifies: CHEBI:64611 ether lipid
 """
-"""
-Classifies: CHEBI:38116 ether lipid
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+Based on the provided outcomes, it seems the previous program was not able to correctly identify ether lipids. Here's an analysis of what went wrong and how the program can be improved:
 
-def is_ether_lipid(smiles: str):
-    """
-    Determines if a molecule is an ether lipid based on its SMILES string.
-    An ether lipid is a lipid with one or more ether linkages between the glycerol backbone and alkyl chains.
+1. **Glycerol Backbone Detection**: The program looks for a glycerol backbone pattern using the SMARTS pattern `"[CH2X4][CHX4][CH2X4]"`. However, this pattern only checks for the connectivity of the atoms and not their specific types. Many of the false negatives contain glycerol-like backbones with heteroatoms (e.g., phosphorus, nitrogen) or unusual valence states. To improve this, the pattern should be made more specific to glycerol, or alternative approaches should be considered, such as checking for the presence of a central carbon atom connected to three oxygen atoms.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. **Ether Linkage Detection**: The program looks for ether linkages using the SMARTS pattern `"[OX2][CX4]"`, which matches an oxygen atom connected to a carbon atom. While this is a valid pattern for ether linkages, it may also match other functional groups like esters or alcohols. To improve this, additional checks should be made to ensure that the matched oxygen atom is part of an ether linkage and not another functional group.
 
-    Returns:
-        bool: True if molecule is an ether lipid, False otherwise
-        str: Reason for classification
-    """
+3. **Alkyl Chain Detection**: The program looks for long alkyl chains using the SMARTS pattern `"[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]"`, which matches a chain of six carbon atoms. However, some of the false negatives contain shorter alkyl chains or chains with unsaturated bonds or cyclic structures. To improve this, the pattern should be made more flexible to accommodate different alkyl chain lengths and structures.
 
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+4. **Rotatable Bond Count**: The program checks for a minimum of 8 rotatable bonds to verify the presence of long chains. However, this threshold may not be appropriate for all ether lipids, as some structures may have fewer rotatable bonds due to cyclic or unsaturated chains. Instead of relying solely on the rotatable bond count, additional checks for specific structural features may be necessary.
 
-    # Look for glycerol backbone pattern ([CH2X4][CHX4][CH2X4] with 2 or 3 ether/ester oxygens)
-    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
-    glycerol_matches = mol.GetSubstructMatches(glycerol_pattern)
-    
-    # Check if at least one glycerol match has 2 or 3 ether/ester oxygens
-    for match in glycerol_matches:
-        glycerol_atoms = [mol.GetAtomWithIdx(idx) for idx in match]
-        ether_ester_oxygens = sum(1 for atom in glycerol_atoms if atom.GetTotalDegree() == 2 and atom.GetAtomicNum() == 8)
-        if ether_ester_oxygens in [2, 3]:
-            break  # Found a valid glycerol backbone
-    else:
-        return False, "No valid glycerol backbone found"
+5. **Molecular Weight Check**: The program checks for a molecular weight greater than 400 Da for ether lipids. While this may be a reasonable threshold for many ether lipids, there could be exceptions, especially for smaller or more complex structures. It may be better to use this check as a supporting evidence rather than a strict requirement.
 
-    # Look for ether linkages (-O-C)
-    ether_pattern = Chem.MolFromSmarts("[OX2][CX4]")
-    ether_matches = mol.GetSubstructMatches(ether_pattern)
-    if not ether_matches:
-        return False, "No ether linkages found"
+To improve the program, a combination of the following approaches could be considered:
 
-    # Look for long alkyl chains (>= 6 carbons)
-    alkyl_pattern = Chem.MolFromSmarts("[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]")
-    alkyl_matches = mol.GetSubstructMatches(alkyl_pattern)
-    if not alkyl_matches:
-        return False, "No long alkyl chains found"
+1. Use more specific SMARTS patterns or substructure matching techniques to identify the glycerol backbone and ether linkages accurately.
+2. Incorporate additional checks for common structural features of ether lipids, such as alkyl chain lengths, unsaturation patterns, and cyclic structures.
+3. Utilize machine learning techniques or rule-based systems trained on a diverse set of ether lipid structures to improve the classification accuracy.
+4. Combine multiple structural features and rules to create a more robust classification system, rather than relying on a single feature or threshold.
 
-    # Count rotatable bonds to verify long chains
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 8:
-        return False, "Chains too short, need at least 8 rotatable bonds"
-
-    # Check molecular weight - ether lipids typically >400 Da
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 400:
-        return False, "Molecular weight too low for ether lipid"
-
-    return True, "Contains glycerol backbone with one or more ether-linked alkyl chains"
+By addressing these issues and incorporating more sophisticated techniques, the program's ability to accurately identify ether lipids can be significantly improved.
