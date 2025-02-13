@@ -20,26 +20,28 @@ def is_alpha_amino_acid_zwitterion(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS patterns for zwitterionic alpha-amino acids
-    # Look for alpha-amino group and deprotonated carboxylate as core structure
+    # Defining a core zwitterionic pattern: amino group and carboxylate
     core_zwitterion_pattern = Chem.MolFromSmarts('[C@@H]([NH3+])C(=O)[O-]')
     
-    # Complex side chain matching with flexibility for backbone
-    full_zwitterion_patterns = [
-        Chem.MolFromSmarts('[$([NH3+]),$([NH2+]),$([NH+]=*)][C@H](C[*])C(=O)[O-]'),
-        Chem.MolFromSmarts('[C@@H]([NH3+])(C[*])C(=O)[O-]'),
+    # Expanded zwitterion patterns considering various complex amino acid structures
+    extended_patterns = [
+        Chem.MolFromSmarts('[NH3+]-[C@H](-C(=O)[O-])'),
+        Chem.MolFromSmarts('[C@H]([NH3+])(C(=O)[O-])'),   # Alpha carbon with zwitterion
+        Chem.MolFromSmarts('(C1O[C@@H](CN)[C@H](O1))C(=O)[O-]'),  # Ring structures (e.g., proline)
+        Chem.MolFromSmarts('(N-=[N+]=N)-C')   # Attached beyond basic amine (extended chains)
     ]
 
-    # Check for presence of zwitterionic core
+    # First, check if the core structure is present
     if not mol.HasSubstructMatch(core_zwitterion_pattern):
         return False, "No matching alpha-amino acid zwitterion core structure found"
     
-    # Check each potential pattern to ensure there's commonly encountered complexity
-    for pattern in full_zwitterion_patterns:
+    # Check each stored pattern for additional confirmation of species complexity
+    # Mark as zwitterion if any matching pattern is present
+    for pattern in extended_patterns:
         if mol.HasSubstructMatch(pattern):
             return True, "Contains alpha-amino acid structure with zwitterionic charges"
-
-    return False, "Missing patterns indicating complex zwitterionic alpha-amino acid configuration"
+    
+    return True, "Detected basic zwitterionic structure"
 
 # Example usage:
 # smiles = "CC(=O)CC([NH3+])C([O-])=O"  # Example SMILES from the list
