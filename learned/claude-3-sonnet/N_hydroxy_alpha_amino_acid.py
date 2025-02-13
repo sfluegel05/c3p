@@ -27,50 +27,76 @@ def is_N_hydroxy_alpha_amino_acid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for carboxylic acid group
-    carboxyl_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H1]")
+    carboxyl_pattern = Chem.MolFromSmarts("C(=O)O")
     if not mol.HasSubstructMatch(carboxyl_pattern):
         return False, "No carboxylic acid group found"
     
-    # Patterns for different types of N-hydroxy groups
-    patterns = [
-        # N-hydroxy group (N-OH)
-        "[CX4][NX3]([H])[OX2H1]",
-        # N,N-dihydroxy group (N(OH)2)
-        "[CX4][NX3]([OX2H1])[OX2H1]",
-        # Hydroxyimino group (=N-OH)
-        "[CX4]~[NX2]~[NX2]~[OX2H1]",
-        # Alternative hydroxyimino pattern
-        "[CX4]~[NX3]~[CX3]=[NX2][OX2H1]"
+    # Define patterns for N-hydroxy groups
+    n_hydroxy_patterns = [
+        # Simple N-hydroxy
+        "[C][N]O",
+        # N,N-dihydroxy
+        "[C][N](O)O",
+        # Hydroxyimino groups (various configurations)
+        "[C]N=NO",
+        "[C]NC(=NO)",
+        "[C]NC(=N)NO",
+        # Cover both E and Z isomers
+        "[C]N/C(=N/O)",
+        "[C]N\C(=N\O)",
+        "[C]N/C(=N\O)",
+        "[C]N\C(=N/O)",
+        # Additional patterns for completeness
+        "[C]N([H])O",
+        "[C]N(O)[H]"
     ]
     
     # Check for alpha-amino acid backbone with N-hydroxy group
     found_n_hydroxy = False
-    for pattern in patterns:
+    matched_pattern = None
+    
+    for pattern in n_hydroxy_patterns:
         substructure = Chem.MolFromSmarts(pattern)
         if mol.HasSubstructMatch(substructure):
             found_n_hydroxy = True
+            matched_pattern = pattern
             break
             
     if not found_n_hydroxy:
         return False, "No N-hydroxy group found"
 
-    # Verify the structure has an alpha carbon with both carboxyl and N-hydroxy group
-    alpha_amino_acid = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H1][CX4]~[NX2,NX3]")
-    if not mol.HasSubstructMatch(alpha_amino_acid):
+    # Check for alpha-amino acid backbone
+    # More general pattern that captures various configurations
+    alpha_patterns = [
+        # Basic alpha-amino acid pattern
+        "[C]([C](=O)O)([#1,*])[N,n]",
+        # Pattern for cyclic amino acids
+        "C1([C](=O)O)([#1,*])N([OH1,OH0])CCC1",
+        # Pattern for substituted alpha carbons
+        "[C]([C](=O)O)([#1,*])[N]"
+    ]
+    
+    found_alpha = False
+    for pattern in alpha_patterns:
+        substructure = Chem.MolFromSmarts(pattern)
+        if mol.HasSubstructMatch(substructure):
+            found_alpha = True
+            break
+    
+    if not found_alpha:
         return False, "Not an alpha-amino acid structure"
 
-    # Additional check for correct connectivity
+    # Additional validation for correct connectivity
     carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
-    for match in carboxyl_matches:
-        carboxyl_carbon = mol.GetAtomWithIdx(match[0])
-        for neighbor in carboxyl_carbon.GetNeighbors():
-            if neighbor.GetAtomicNum() == 6:  # carbon
-                # Check if this carbon is connected to nitrogen
-                for n_neighbor in neighbor.GetNeighbors():
-                    if n_neighbor.GetAtomicNum() == 7:  # nitrogen
-                        # Check if nitrogen has oxygen attached
-                        for o_neighbor in n_neighbor.GetNeighbors():
-                            if o_neighbor.GetAtomicNum() == 8:  # oxygen
-                                return True, "Contains N-hydroxy group attached to alpha carbon of amino acid"
+    n_hydroxy_matches = mol.GetSubstructMatches(Chem.MolFromSmarts(matched_pattern))
+    
+    if not carboxyl_matches or not n_hydroxy_matches:
+        return False, "Required groups not properly connected"
 
-    return False, "N-hydroxy group not properly connected to alpha carbon"
+    # Success cases with specific classifications
+    if "[N](O)O" in matched_pattern:
+        return True, "Contains N,N-dihydroxy group on alpha-amino acid"
+    elif "N=NO" in matched_pattern or "C(=NO)" in matched_pattern:
+        return True, "Contains hydroxyimino group on alpha-amino acid"
+    else:
+        return True, "Contains N-hydroxy group on alpha-amino acid"
