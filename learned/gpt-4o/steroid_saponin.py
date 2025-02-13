@@ -21,11 +21,11 @@ def is_steroid_saponin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more flexible SMARTS pattern for a steroid backbone
-    steroid_pattern = Chem.MolFromSmarts("[#6]1([#6][#6])[#6][#6]2[#6]3[#6][#6]([#6]1)[#6][#6]4[#6]2[#6]3[#6]([#6]4)[#8]")  # Four-ring steroid-like structure with generic carbon and at least one hydroxyl group
+    # Define a more detailed SMARTS pattern for a steroid backbone
+    steroid_pattern = Chem.MolFromSmarts("C1CC2CCC3C(C2C1)CC4=C3CCC4")  # Generic steroid structure (cyclopenta[a]phenanthrene)
 
-    # SMARTS pattern for sugars (common pyranose ring)
-    sugar_pattern = Chem.MolFromSmarts("C1OC(O)C(O)C(O)C1O")  # Simplified pyranose pattern
+    # Example SMARTS pattern for a basic sugar moiety (glucopyranose-like)
+    sugar_pattern = Chem.MolFromSmarts("CO[C@H]1[C@H](O)C(O)C(O)C1O")  # Glucose-like pyranose
 
     # Check for steroid backbone
     if not mol.HasSubstructMatch(steroid_pattern):
