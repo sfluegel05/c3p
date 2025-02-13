@@ -1,27 +1,81 @@
 """
 Classifies: CHEBI:33563 glycolipid
 """
-After analyzing the previous program and the outcomes, I can identify the following issues and potential improvements:
+"""
+Classifies: CHEBI:16321 glycolipid
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-1. **Inadequate Carbohydrate Pattern Matching**: The current set of carbohydrate patterns is limited and only covers a few common monosaccharides. This led to many false negatives, as the program failed to recognize more complex carbohydrate structures. To improve this, a more comprehensive set of SMARTS patterns should be included to capture a wider range of carbohydrate moieties, including oligosaccharides and different stereochemistries.
+def is_glycolipid(smiles: str):
+    """
+    Determines if a molecule is a glycolipid based on its SMILES string.
+    A glycolipid is a molecule with a carbohydrate part connected to a lipid part via a glycosidic linkage.
 
-2. **Overly Simplistic Lipid Pattern Matching**: The lipid patterns used in the program are too generic and can match non-lipid structures as well. This led to several false positives, where molecules without a true lipid part were misclassified as glycolipids. The lipid patterns should be more specific and should consider common lipid moieties, such as fatty acids, sphingosines, and isoprenoid chains.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Lack of Connectivity Check**: The program checks for the presence of carbohydrate and lipid parts separately, but it does not explicitly check if they are connected via a glycosidic linkage. This led to false positives where the carbohydrate and lipid parts were present but not connected. A connectivity check should be added to ensure that the carbohydrate and lipid parts are indeed connected through a glycosidic linkage.
+    Returns:
+        bool: True if molecule is a glycolipid, False otherwise
+        str: Reason for classification
+    """
 
-4. **Incomplete Glycolipid Class Patterns**: The program only includes patterns for a few specific glycolipid classes, such as cerebrosides and gangliosides. However, there are many other classes of glycolipids that were not covered, leading to false negatives. A more comprehensive set of patterns for different glycolipid classes should be included, or alternative methods for identifying these classes should be explored.
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-5. **Molecular Weight and Atom Count Ratio Thresholds**: The thresholds used for molecular weight and atom count ratios may not be appropriate for all glycolipids. While these checks can provide a rough guideline, they should not be relied upon as the sole criteria for classification, as there can be exceptions or outliers.
+    # Look for carbohydrate patterns
+    carbohydrate_patterns = [
+        Chem.MolFromSmarts("[OX2][C@H][C@H](O)[C@H](O)[C@@H](O)C"),  # glucose
+        Chem.MolFromSmarts("[OX2][C@H][C@H](O)[C@H](O)[C@H](O)C"),   # galactose
+        Chem.MolFromSmarts("[OX2][C@H][C@H](O)[C@H](O)[C@H](O)C(O)"), # glucuronic acid
+        # Add more patterns for other monosaccharides and oligosaccharides
+    ]
+    carbohydrate_matches = [mol.HasSubstructMatch(pattern) for pattern in carbohydrate_patterns]
+    if not any(carbohydrate_matches):
+        return False, "No carbohydrate part found"
 
-6. **Lack of Structural Validation**: The program does not perform any structural validation checks, such as checking for valid valences, charges, or stereochemistry. This could lead to false positives or false negatives if the input SMILES string represents an invalid or unrealistic structure.
+    # Look for lipid part patterns
+    lipid_patterns = [
+        Chem.MolFromSmarts("CCCCCCCCCCC"),  # Linear aliphatic chain
+        Chem.MolFromSmarts("CC(C)CCCCC"),   # Branched aliphatic chain
+        Chem.MolFromSmarts("C1CCCCCCCCC1"),  # Cyclic aliphatic chain
+        # Add more patterns for other lipid moieties
+    ]
+    lipid_matches = [mol.HasSubstructMatch(pattern) for pattern in lipid_patterns]
+    if not any(lipid_matches):
+        return False, "No lipid part found"
 
-To improve the program, the following steps could be taken:
+    # Look for glycosidic linkage patterns
+    glycosidic_linkage_patterns = [
+        Chem.MolFromSmarts("[OX2][C@H][C@H](O)[C@H](O)[C@@H](O)CO"),  # Glycosidic oxygen linked to carbohydrate
+        Chem.MolFromSmarts("[OX2][C@H][C@H](O)[C@H](O)[C@H](O)COC"),  # Glycosidic oxygen linked to lipid
+        # Add more patterns for other glycosidic linkages
+    ]
+    glycosidic_linkage_matches = [mol.HasSubstructMatch(pattern) for pattern in glycosidic_linkage_patterns]
+    if not any(glycosidic_linkage_matches):
+        return False, "No glycosidic linkage found"
 
-1. Expand the set of SMARTS patterns for carbohydrate and lipid moieties, including patterns for more complex oligosaccharides and specific lipid types.
-2. Implement a connectivity check to ensure that the carbohydrate and lipid parts are connected via a glycosidic linkage.
-3. Add more patterns for different glycolipid classes or explore alternative methods for identifying these classes.
-4. Refine the molecular weight and atom count ratio thresholds based on a broader analysis of known glycolipids.
-5. Incorporate structural validation checks to ensure that the input SMILES string represents a valid and realistic chemical structure.
-6. Consider using machine learning techniques or other advanced methods for glycolipid classification, as the complexity of these molecules may require more sophisticated approaches.
+    # Look for specific glycolipid classes
+    glycolipid_class_patterns = [
+        Chem.MolFromSmarts("C[C@@H](O)[C@@H](O)COC[C@H](O)[C@H](O)CO"),  # Cerebroside
+        Chem.MolFromSmarts("[O-]C(=O)C[C@@H](O)[C@H](O)COC[C@H](O)[C@H](O)CO"),  # Ganglioside
+        # Add more patterns for other glycolipid classes
+    ]
+    glycolipid_class_matches = [mol.HasSubstructMatch(pattern) for pattern in glycolipid_class_patterns]
+    if any(glycolipid_class_matches):
+        return True, "Matches a known glycolipid class"
 
-Additionally, it would be beneficial to test the program on a larger and more diverse dataset of known glycolipids and non-glycolipids to better evaluate its performance and identify areas for further improvement.
+    # Check molecular weight and atom count ratios
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 500 or mol_wt > 2000:
+        return False, "Molecular weight outside typical range for glycolipids"
+
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if c_count < 20 or o_count < 5:
+        return False, "Insufficient carbon or oxygen atoms for a glycolipid"
+
+    return True, "Contains a carbohydrate part connected to a lipid part via a glycosidic linkage"
