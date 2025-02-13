@@ -22,66 +22,55 @@ def is_penicillin(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
+    # Parse SMILES with stereochemistry
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for penam core structure (beta-lactam fused to thiazolidine ring)
-    # Pattern includes the key stereocenters and ring fusion
-    penam_patterns = [
-        # Pattern 1: More specific with stereochemistry
-        '[H][C@]12S[C@@](C)(C)[C@@H](N1)C(=O)N2',
-        # Pattern 2: Alternative representation
-        'S1[C@]2([H])[C@@H](N[C@@H]1C(C)(C))[C(=O)N2',
-        # Pattern 3: More general pattern
-        'S1C2NC(=O)C2N1'
-    ]
-    
-    core_found = False
-    for pattern in penam_patterns:
-        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
-            core_found = True
-            break
-            
-    if not core_found:
+    # Basic penam core pattern - beta-lactam fused to thiazolidine
+    penam_core = Chem.MolFromSmarts('[#7]1[#6][#6](=O)[#7][#6]2[#16][#6][#6]12')
+    if penam_core is None:
+        return None, "Invalid SMARTS pattern for penam core"
+    if not mol.HasSubstructMatch(penam_core):
         return False, "No penam core structure found"
 
-    # Check for carboxylate group at position 3 (more flexible pattern)
-    carboxylate_patterns = [
-        'S[C@](C)(C)[C@@H](N)C(=O)[O,OH]',  # Free acid form
-        'S[C@](C)(C)[C@@H](N)C(=O)O[C,H]'   # Ester form
-    ]
-    
-    carboxylate_found = False
-    for pattern in carboxylate_patterns:
-        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
-            carboxylate_found = True
-            break
-            
-    if not carboxylate_found:
-        return False, "Missing carboxylate group at position 3"
+    # Check for the specific stereochemistry of the bicyclic system
+    stereo_core = Chem.MolFromSmarts('[H][C@]12S[C@@]([C@@H](N1)C(=O)N2)(C)C')
+    if stereo_core is None:
+        return None, "Invalid SMARTS pattern for stereo core"
+    if not mol.HasSubstructMatch(stereo_core, useChirality=True):
+        return False, "Incorrect stereochemistry of penam core"
+
+    # Check for carboxylate group (both acid and ester forms)
+    carboxyl = Chem.MolFromSmarts('[CX3](=[OX1])[OX2,OX1-]')
+    if carboxyl is None:
+        return None, "Invalid SMARTS pattern for carboxyl"
+    if not mol.HasSubstructMatch(carboxyl):
+        return False, "Missing carboxylate group"
 
     # Check for two methyl groups at position 2
-    dimethyl_pattern = Chem.MolFromSmarts('SC(C)(C)[C,H]')
-    if not mol.HasSubstructMatch(dimethyl_pattern):
-        return False, "Missing two methyl groups at position 2"
+    dimethyl = Chem.MolFromSmarts('S[C](C)(C)')
+    if dimethyl is None:
+        return None, "Invalid SMARTS pattern for dimethyl"
+    if not mol.HasSubstructMatch(dimethyl):
+        return False, "Missing geminal dimethyl groups"
 
     # Check for carboxamido group at position 6
-    carboxamido_pattern = Chem.MolFromSmarts('[NH][CH]1C(=O)N2')
-    if not mol.HasSubstructMatch(carboxamido_pattern):
-        return False, "Missing carboxamido group at position 6"
+    carboxamido = Chem.MolFromSmarts('[NH][CH]1C(=O)N')
+    if carboxamido is None:
+        return None, "Invalid SMARTS pattern for carboxamido"
+    if not mol.HasSubstructMatch(carboxamido):
+        return False, "Missing carboxamido group"
 
-    # Verify overall composition
-    s_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 16)
+    # Verify atom counts
+    s_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts('[#16]')))
+    n_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts('[#7]')))
+    o_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts('[#8]')))
+
     if s_count != 1:
         return False, f"Incorrect number of sulfur atoms (found {s_count}, expected 1)"
-
-    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
     if n_count < 2:
         return False, f"Too few nitrogen atoms (found {n_count}, expected at least 2)"
-
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     if o_count < 3:
         return False, f"Too few oxygen atoms (found {o_count}, expected at least 3)"
 
@@ -90,4 +79,4 @@ def is_penicillin(smiles: str):
     if ring_info.NumRings() < 2:
         return False, "Missing required bicyclic system"
 
-    return True, "Contains penam core with correct substituents"
+    return True, "Structure contains penam core with correct substituents and stereochemistry"
