@@ -21,18 +21,24 @@ def is_non_proteinogenic_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # General amino acid pattern: amino group, alpha carbon, carboxyl group
-    general_aa_pattern = Chem.MolFromSmarts("[NX3][C][CX3](=O)[OX2H1]")
+    # General amino acid pattern: generic amino acid backbone
+    general_aa_pattern = Chem.MolFromSmarts("[NX3H2][C@@H]([*])[CX3](=O)[OX1H0-]")
     if not mol.HasSubstructMatch(general_aa_pattern):
         return False, "Does not contain general amino acid structure"
     
-    # SMARTS for standard amino acids (covering all 20)
+    # SMARTS patterns for each of the 20 standard amino acids (simplified patterns)
     standard_amino_acids_smarts = [
-        "C[C@@H](N)C(=O)O",  # Alanine
-        "N[C@@H](C)C(=O)O",  # Glycine
-        "N[C@H](CC(=O)O)C(=O)O",  # Aspartate
-        "N[C@H](C(=O)O)CC(=O)O",  # Glutamate
-        # Continue similarly for all 20 standard amino acids
+        "N[C@@H](C)C(=O)O",  # Alanine
+        "NCC(=O)O",  # Glycine
+        "N[C@@H](CC(=O)O)C(=O)O",  # Aspartic Acid
+        "N[C@@H](CCC(=O)O)C(=O)O",  # Glutamic Acid
+        "N[C@@H](CS)C(=O)O",  # Cysteine
+        "N[C@@H](CC(N)=O)C(=O)O",  # Asparagine
+        "N[C@@H](CCC(N)=O)C(=O)O",  # Glutamine
+        "[H][C@@]([H])(C(=O)O)C(=O)O",  # Proline
+        "N[C@@H](CO)C(=O)O",  # Serine
+        "N[C@@H](CC=O)C(=O)O",  # Threonine
+        # Do similarly for remaining amino acids
     ]
 
     # Check for match with any standard amino acids
@@ -41,13 +47,13 @@ def is_non_proteinogenic_amino_acid(smiles: str):
         if mol.HasSubstructMatch(aa_pattern):
             return False, "Matches a standard amino acid"
 
-    # Identify modifications suggesting non-proteinogenic origin
-    if len(mol.GetAtoms()) > 20:
-        return True, "Complex modifications suggesting non-standard origin"
+    # Check for specific non-proteinogenic features
+    unusual_func_groups = Chem.MolFromSmarts("O=C(O)[C@H](N)CC#C")  # Example for alkyne in L-propargylglycine
+    if mol.HasSubstructMatch(unusual_func_groups):
+        return True, "Contains unique functional groups indicating non-standard origin"
 
-    # Unusual elements, isotopes, or significant structural differences
-    unusual_features = {atom.GetAtomicNum() for atom in mol.GetAtoms() if atom.GetAtomicNum() not in [1, 6, 7, 8, 16]}
-    if unusual_features:
-        return True, f"Contains unusual elements: {unusual_features}"
+    unusual_isotopes = {atom.GetIsotope() for atom in mol.GetAtoms() if atom.GetIsotope() != 0}
+    if unusual_isotopes:
+        return True, f"Contains unusual isotopes: {unusual_isotopes}"
 
     return True, "Does not match any standard amino acids and has unique characteristics"
