@@ -1,26 +1,64 @@
 """
 Classifies: CHEBI:36315 glycerophosphoinositol
 """
-The previous code attempts to classify glycerophosphoinositols, but it seems to have a few issues:
+"""
+Classifies: CHEBI:27595 glycerophosphoinositol
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-1. **Incorrect Structural Pattern**: The SMARTS pattern used to match the inositol group attached to the phosphate group is incorrect. The pattern `"[PX4](-[OX2]1[CH2X4][CH1X4]([CH2X4][OH1X3])[OH1X3][CH1X4]([OH1X3])[CH1X4]([OH1X3])[CH1X4]([OH1X3])O1)-[OX2])"` does not accurately represent the inositol ring structure.
+def is_glycerophosphoinositol(smiles: str):
+    """
+    Determines if a molecule is a glycerophosphoinositol based on its SMILES string.
+    A glycerophosphoinositol is a glycerophospholipid with an inositol group attached
+    to the phosphate group at the sn-3 position of the glycerol backbone.
 
-2. **Incorrect Acyl/Alkyl Chain Count**: The code assumes that there are exactly two acyl/alkyl chains attached to the glycerol backbone, which is not always the case for glycerophosphoinositols. While some examples have two chains, others may have only one or even no chains.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Molecular Weight Check**: The molecular weight check for glycerophosphoinositols being greater than 500 Da may be too strict, as some smaller examples provided in the prompt have lower molecular weights.
-
-4. **Outcomes Analysis**: The outcomes analysis shows that there were no true positives, false positives, or false negatives, which could indicate that the provided SMILES strings were not properly processed or that the classification logic was too strict.
-
-To improve the program, consider the following suggestions:
-
-1. **Correct Inositol Pattern**: Revise the SMARTS pattern for the inositol group to accurately represent its structure. One possible pattern is `"[PX4](-[OX2]1[CH2X4][CH1X4]([OH1X3])[CH1X4]([OH1X3])[CH1X4]([OH1X3])[CH1X4]([OH1X3])[CH1X4]([OH1X3])O1)-[OX2])"`.
-
-2. **Flexible Acyl/Alkyl Chain Count**: Instead of checking for exactly two acyl/alkyl chains, allow for zero, one, or two chains. This can be done by modifying the pattern and checking for the presence of matches instead of checking for a specific number of matches.
-
-3. **Relax Molecular Weight Check**: Consider removing the molecular weight check or adjusting the threshold based on the provided examples, as some glycerophosphoinositols may have lower molecular weights.
-
-4. **Debug SMILES Processing**: Ensure that the provided SMILES strings are being correctly parsed and processed by the RDKit functions. You may want to add additional debug statements or checks to verify this.
-
-5. **Expand Structural Checks**: Consider adding additional checks for other structural features of glycerophosphoinositols, such as the presence of specific functional groups or bond patterns, to improve the accuracy of the classification.
-
-By addressing these issues, the program should be better equipped to accurately classify glycerophosphoinositols based on their SMILES strings.
+    Returns:
+        bool: True if molecule is a glycerophosphoinositol, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Look for glycerol backbone pattern (C-C-C with 2 oxygen attachments)
+    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
+    if not mol.HasSubstructMatch(glycerol_pattern):
+        return False, "No glycerol backbone found"
+    
+    # Look for phosphate group (-O-P(=O)(-O)-O-)
+    phosphate_pattern = Chem.MolFromSmarts("O=P(-O)(-O)-O")
+    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
+    if not phosphate_matches:
+        return False, "No phosphate group found"
+    
+    # Look for inositol ring attached to phosphate (-O-P-O-C1COCC(O)C1)
+    inositol_pattern = Chem.MolFromSmarts("[PX4](-[OX2]1[CH2X4][CH1X4]([OH1X3])[CH1X4]([OH1X3])[CH1X4]([OH1X3])[CH1X4]([OH1X3])[CH1X4]([OH1X3])O1)-[OX2]")
+    inositol_matches = mol.GetSubstructMatches(inositol_pattern)
+    if not inositol_matches:
+        return False, "No inositol group found"
+    
+    # Check for acyl/alkyl chains (long carbon chains attached to glycerol)
+    chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    chain_matches = mol.GetSubstructMatches(chain_pattern)
+    
+    # Count rotatable bonds to verify long chains
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 4:
+        return False, "Chains too short for glycerophosphoinositol"
+    
+    # Decide based on presence of chains
+    if not chain_matches:
+        return True, "Contains glycerol backbone with inositol group attached to phosphate"
+    elif len(chain_matches) == 1:
+        return True, "Contains glycerol backbone with inositol group attached to phosphate and one acyl/alkyl chain"
+    elif len(chain_matches) == 2:
+        return True, "Contains glycerol backbone with inositol group attached to phosphate and two acyl/alkyl chains"
+    else:
+        return False, "Contains more than two acyl/alkyl chains"
