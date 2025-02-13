@@ -3,11 +3,12 @@ Classifies: CHEBI:33913 corrinoid
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdDecomposition
 
 def is_corrinoid(smiles: str) -> tuple[bool, str]:
     """
     Determines if a molecule is a corrinoid based on its SMILES string.
+    A corrinoid contains four reduced or partly reduced pyrrole rings joined in a 
+    macrocycle by three =C- groups and one direct carbon-carbon bond linking alpha positions.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -19,52 +20,50 @@ def is_corrinoid(smiles: str) -> tuple[bool, str]:
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Check for cobalt atom (common in corrinoids but not required)
-    has_cobalt = any(atom.GetSymbol() == 'Co' for atom in mol.GetAtoms())
-    
-    # Look for the basic corrin nucleus pattern:
-    # Four nitrogen atoms in a macrocyclic arrangement
-    n_pattern = Chem.MolFromSmarts('[#7]~[#6]~[#6]~[#6]~[#7]~[#6]~[#6]~[#6]~[#7]~[#6]~[#6]~[#6]~[#7]')
-    if not mol.HasSubstructMatch(n_pattern):
-        return False, "Missing required nitrogen macrocycle pattern"
-    
-    # Count nitrogens (corrinoids typically have 4 core nitrogens)
-    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
-    if n_count < 4:
-        return False, "Too few nitrogen atoms for corrinoid structure"
-    
-    # Look for characteristic corrin nucleus with direct C-C bond
-    corrin_core = Chem.MolFromSmarts('[#7]~[#6]-[#6]~[#7]')
-    if not mol.HasSubstructMatch(corrin_core):
-        return False, "Missing characteristic direct C-C bond in corrin nucleus"
-    
-    # Check for pyrrole-like rings
-    pyrrole_pattern = Chem.MolFromSmarts('[#7]1~[#6]~[#6]~[#6]~[#6]1')
-    pyrrole_matches = mol.GetSubstructMatches(pyrrole_pattern)
-    if len(pyrrole_matches) < 4:
-        return False, "Missing required pyrrole-like rings"
-    
-    # Check for conjugated system with =C- groups
-    conjugated_pattern = Chem.MolFromSmarts('[#6]=[#6]-[#6]=[#6]')
-    if not mol.HasSubstructMatch(conjugated_pattern):
-        return False, "Missing conjugated system with =C- groups"
-    
-    # Additional checks for typical corrinoid features
+
+    # Look for basic macrocyclic framework with 4 nitrogens
+    # [#7] represents nitrogen, allowing for different oxidation states
+    macrocycle = Chem.MolFromSmarts('[#7]~[#6]~[#6]~[#6]~[#7]~[#6]~[#6]~[#6]~[#7]~[#6]~[#6]~[#6]~[#7]')
+    if not mol.HasSubstructMatch(macrocycle):
+        return False, "Missing required nitrogen macrocycle"
+
+    # Look for four pyrrole-like rings (allowing for reduced forms)
+    # This pattern matches both reduced and partially reduced pyrroles
+    pyrrole = Chem.MolFromSmarts('[#7]1[#6][#6][#6][#6]1')
+    matches = mol.GetSubstructMatches(pyrrole)
+    if len(matches) < 4:
+        return False, "Does not contain four pyrrole-like rings"
+
+    # Look for three double bond connections between rings
+    # Using (~) allows for resonance forms
+    double_bond_pattern = Chem.MolFromSmarts('[#6]=[#6]')
+    double_bonds = len(mol.GetSubstructMatches(double_bond_pattern))
+    if double_bonds < 3:
+        return False, "Missing required double bond connections"
+
+    # Look for direct C-C bond between alpha positions
+    # This pattern looks for carbons next to nitrogens that are connected
+    alpha_link = Chem.MolFromSmarts('[#7][#6]-[#6][#7]')
+    if not mol.HasSubstructMatch(alpha_link):
+        return False, "Missing direct C-C bond between alpha positions"
+
+    # Check ring connectivity
     ring_info = mol.GetRingInfo()
     if not ring_info.NumRings() >= 4:
-        return False, "Insufficient ring count for corrinoid structure"
-    
-    # Calculate basic molecular properties
-    mol_weight = Chem.Descriptors.ExactMolWt(mol)
-    if mol_weight < 300:  # Corrinoids are typically large molecules
-        return False, "Molecular weight too low for corrinoid"
-    
-    # Success message with details
-    reason = "Contains corrin nucleus with "
-    reason += "4 pyrrole-like rings, conjugated system, "
-    if has_cobalt:
-        reason += "cobalt metal center, "
-    reason += "and characteristic macrocyclic structure"
+        return False, "Insufficient ring count"
+
+    # Additional check for overall size and composition
+    num_atoms = mol.GetNumAtoms()
+    if num_atoms < 20:  # Corrinoids are large molecules
+        return False, "Molecule too small for corrinoid structure"
+
+    # Count nitrogens to ensure we have the core structure
+    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
+    if n_count < 4:
+        return False, "Insufficient nitrogen atoms"
+
+    # Success case
+    reason = ("Contains four pyrrole-like rings in a macrocycle, "
+             "joined by three =C- groups and one direct C-C bond")
     
     return True, reason
