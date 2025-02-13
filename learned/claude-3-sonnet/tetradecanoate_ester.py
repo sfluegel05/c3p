@@ -1,56 +1,24 @@
 """
 Classifies: CHEBI:87691 tetradecanoate ester
 """
-"""
-Classifies: CHEBI:36601 tetradecanoate ester
-A fatty acid ester obtained by condensation of the carboxy group of tetradecanoic acid 
-(also known as myristic acid) with a hydroxy group of an alcohol or phenol.
-"""
+From the provided outcomes, it appears that the previous program has a few issues:
 
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+1. **False Positives**: The program incorrectly classified several molecules as tetradecanoate esters, even though they did not contain a myristic acid substructure connected to an alcohol or phenol group via an ester bond. This is likely due to the program's criteria being too broad or not accounting for certain structural patterns.
 
-def is_tetradecanoate_ester(smiles: str):
-    """
-    Determines if a molecule is a tetradecanoate ester based on its SMILES string.
+2. **False Negatives**: The program missed some valid tetradecanoate esters, such as those where the myristic acid is connected to a carnitine or quaternary ammonium group instead of an alcohol or phenol. This is because the program specifically looks for alcohol or phenol groups, which is too restrictive.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+3. **Lack of Specificity**: The program does not distinguish between different types of tetradecanoate esters (e.g., glycerides, phospholipids, carnitines, etc.). It simply checks for the presence of a myristic acid substructure, an ester bond, and an alcohol or phenol group, which may lead to false positives or false negatives for certain classes of compounds.
 
-    Returns:
-        bool: True if molecule is a tetradecanoate ester, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Look for tetradecanoic acid (myristic acid) substructure
-    myristic_acid_pattern = Chem.MolFromSmarts("CCCCCCCCCCCCCC(=O)O")
-    myristic_acid_matches = mol.GetSubstructMatches(myristic_acid_pattern)
-    if not myristic_acid_matches:
-        return False, "No myristic acid substructure found"
-    
-    # Look for ester bonds
-    ester_pattern = Chem.MolFromSmarts("C(=O)OC")
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if not ester_matches:
-        return False, "No ester bonds found"
-    
-    # Check for alcohol/phenol group
-    alcohol_pattern = Chem.MolFromSmarts("O[C;H2]")
-    alcohol_matches = mol.GetSubstructMatches(alcohol_pattern)
-    phenol_pattern = Chem.MolFromSmarts("Oc")
-    phenol_matches = mol.GetSubstructMatches(phenol_pattern)
-    if not alcohol_matches and not phenol_matches:
-        return False, "No alcohol or phenol groups found"
-    
-    # Check molecular weight - tetradecanoate esters typically >200 Da
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 200:
-        return False, "Molecular weight too low for tetradecanoate ester"
-    
-    return True, "Contains myristic acid substructure connected via ester bond to an alcohol or phenol group"
+To improve the program, the following steps could be taken:
+
+1. **Refine the Substructure Matching**: Instead of looking for a myristic acid substructure and an ester bond separately, consider using a more specific SMARTS pattern that captures the entire tetradecanoate ester moiety. This could help reduce false positives.
+
+2. **Broaden the Scope**: Instead of strictly looking for alcohol or phenol groups, consider including other common groups that can form tetradecanoate esters, such as amines (for carnitine esters), quaternary ammonium groups (for phospholipids), and glycerol backbones (for glycerides).
+
+3. **Implement Class-Specific Checks**: If the goal is to classify specific classes of tetradecanoate esters (e.g., glycerides, phospholipids, carnitines), consider implementing separate checks or functions for each class. This could involve looking for characteristic substructures or patterns specific to each class, such as glycerol backbones for glycerides or phosphate groups for phospholipids.
+
+4. **Refine Molecular Weight Checks**: The molecular weight check could be made more specific by considering the range of molecular weights for different classes of tetradecanoate esters. For example, glycerides and phospholipids tend to have higher molecular weights than carnitine esters.
+
+5. **Consider Additional Descriptors**: Incorporate additional molecular descriptors or properties (e.g., number of rotatable bonds, ring counts, atom counts, etc.) to further refine the classification criteria and reduce false positives and false negatives.
+
+By implementing these improvements, the program should become more robust and accurate in classifying tetradecanoate esters, while also providing the flexibility to distinguish between different classes of these compounds if desired.
