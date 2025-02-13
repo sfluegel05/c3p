@@ -8,7 +8,7 @@ They are thus 1-oxacycloalkan-2-ols or unsaturated analogues.
 """
 
 from rdkit import Chem
-from rdkit.Chem import rdchem
+from rdkit.Chem import rdchem, rdMolDescriptors
 
 def is_lactol(smiles: str):
     """
@@ -27,20 +27,19 @@ def is_lactol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for lactol pattern: cyclic ether with OH group on adjacent carbon
-    lactol_pattern = Chem.MolFromSmarts("[OH,OH2][C;r]1[O;r][C;r]=[C;r]~[C;r]~[C;r]~[C;r]1")
-    matches = mol.GetSubstructMatches(lactol_pattern)
+    # Check for cyclic ethers
+    cyclic_ethers = rdchem.GetSSSR(mol)
+    if not cyclic_ethers:
+        return False, "No cyclic ether found"
 
-    if matches:
-        # Check if the matched substructure is a valid lactol
-        for match in matches:
-            atoms = [mol.GetAtomWithIdx(idx) for idx in match]
-            ring_info = mol.GetRingInfo().AtomRings()
-
-            # Check if the atoms form a ring and if the ring contains a cyclic ether
-            if any(set(match) <= ring for ring in ring_info):
-                has_ether = any(atom.GetAtomicNum() == 8 and atom.GetDegree() == 2 for atom in atoms)
-                if has_ether:
+    # Check for hydroxyl groups adjacent to cyclic ethers
+    for ring in cyclic_ethers:
+        for atom_idx in ring:
+            atom = mol.GetAtomWithIdx(atom_idx)
+            if atom.GetAtomicNum() == 8 and atom.GetDegree() == 2:  # Cyclic ether oxygen
+                neighbors = [mol.GetAtomWithIdx(nbr_idx) for nbr_idx in atom.GetNeighbors()]
+                if any(nbr.GetAtomicNum() == 8 and nbr.GetTotalNumHs() == 1 for nbr in neighbors):
+                    # Adjacent hydroxyl group found
                     return True, "Molecule contains a lactol structure"
 
     return False, "No lactol structure found"
