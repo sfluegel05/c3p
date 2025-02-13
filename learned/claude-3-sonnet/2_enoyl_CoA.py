@@ -1,26 +1,62 @@
 """
 Classifies: CHEBI:19573 2-enoyl-CoA
 """
-The previous code looks good and is on the right track for identifying 2-enoyl-CoA structures. However, there are a few potential issues that could explain the low F1 score:
+"""
+Classifies: CHEBI:64514 2-enoyl-CoA
+An unsaturated fatty acyl-CoA in which the S-acyl group contains a double bond between positions 2 and 3.
+"""
 
-1. **Incomplete CoA pattern**: The CoA pattern used in the code only matches the core CoA scaffold but does not account for variations in the fatty acyl chain. Some of the example structures have additional substituents or different chain lengths, which would not match the rigid CoA pattern defined.
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-2. **Strict double bond position check**: The code checks for the double bond to be between carbon atoms at positions 2 and 3 in the fatty acyl chain. However, some of the example structures have the double bond further down the chain (e.g., (2E,9Z,12Z)-octadecatrienoyl-CoA). This strict check for positions 2 and 3 may be too restrictive.
+def is_2_enoyl_CoA(smiles: str):
+    """
+    Determines if a molecule is a 2-enoyl-CoA based on its SMILES string.
 
-3. **Lack of handling for stereochemistry**: The code does not consider stereochemistry when matching the 2-enoyl pattern. Some of the example structures have specified stereochemistry around the double bond (e.g., trans or cis), which is not being accounted for.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-4. **Potential issues with SMARTS patterns**: While SMARTS patterns are powerful for substructure matching, they can sometimes be tricky to get right, especially for complex structures like CoA derivatives. There could be subtle issues with the patterns used in the code.
+    Returns:
+        bool: True if molecule is a 2-enoyl-CoA, False otherwise
+        str: Reason for classification
+    """
 
-To improve the program and increase the F1 score, you could consider the following:
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-1. **Use a more flexible CoA pattern**: Instead of a rigid SMARTS pattern, you could use a combination of substructure matching and functional group detection to identify the CoA scaffold more flexibly.
+    # Look for CoA scaffold (flexible pattern)
+    coa_pattern = Chem.MolFromSmarts("[N&R]1C=NC2=NC=NC(=N1)N2OC[C@H]3O[C@@H]([C@H](O)[C@@H]3OP(O)(O)=O)COP(O)(=O)OCC(=O)NCCC(=O)NCCSC(=O)")
+    if not mol.HasSubstructMatch(coa_pattern):
+        return False, "CoA scaffold not found"
 
-2. **Relax the double bond position check**: Instead of strictly checking for positions 2 and 3, you could look for a double bond anywhere in the fatty acyl chain, as long as it is part of the S-acyl group attached to the CoA scaffold.
+    # Look for double bond in S-acyl chain
+    acyl_chain = Chem.MolFromSmarts("C=C")
+    acyl_matches = mol.GetSubstructMatches(acyl_chain)
 
-3. **Incorporate stereochemistry**: Modify the SMARTS patterns or use additional substructure matching to account for the specified stereochemistry around the double bond.
+    # Check if double bond is part of the S-acyl group
+    for match in acyl_matches:
+        acyl_atoms = set()
+        for bond in mol.GetBonds():
+            if bond.GetBeginAtomIdx() in match or bond.GetEndAtomIdx() in match:
+                acyl_atoms.add(bond.GetBeginAtomIdx())
+                acyl_atoms.add(bond.GetEndAtomIdx())
 
-4. **Iterate and refine the SMARTS patterns**: Carefully review the SMARTS patterns and test them against the example structures to identify any issues or opportunities for improvement.
+        acyl_atoms_coa = acyl_atoms.intersection(set(coa_pattern.GetSubstructMatch(mol)))
+        if acyl_atoms_coa:
+            break
+    else:
+        return False, "Double bond not part of S-acyl group"
 
-5. **Consider using machine learning approaches**: If the rule-based approach continues to struggle, you could explore machine learning techniques for classifying 2-enoyl-CoA structures based on their SMILES representations or molecular descriptors.
+    # Check for double bond stereochemistry (optional)
+    cis_trans_bond = mol.GetBondWithIdx(mol.GetBonds()[list(acyl_atoms)[0].GetBondIdx(list(acyl_atoms)[1])])
+    if cis_trans_bond.GetStereo() == Chem.BondStereo.STEREOE:
+        stereochemistry = "trans"
+    elif cis_trans_bond.GetStereo() == Chem.BondStereo.STEREOZ:
+        stereochemistry = "cis"
+    else:
+        stereochemistry = "unknown"
 
-By addressing these potential issues and iterating on the code, you may be able to improve the performance and achieve a higher F1 score for classifying 2-enoyl-CoA structures.
+    return True, f"Contains CoA scaffold with a {stereochemistry} double bond in the S-acyl group"
