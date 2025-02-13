@@ -23,30 +23,30 @@ def is_acrovestone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Broadly define isoflavonoid backbone pattern
-    isoflavone_pattern = Chem.MolFromSmarts("c1cc2oc(ccc2c1)-c3ccc(O)c(=O)c3")
+    # Revised definition for isoflavonoid backbone pattern
+    isoflavone_pattern = Chem.MolFromSmarts("c1c(ccc2c1oc(=O)c3ccccc3-2)O")
     if not mol.HasSubstructMatch(isoflavone_pattern):
         return False, "No isoflavonoid polyphenolic core detected"
     
-    # Define diverse glycoside patterns
+    # Expanded glycoside patterns to capture a wider array of possible configurations
     glycoside_patterns = [
-        Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@H](O)[C@@H](O)[C@@H](O)[C@H]1"), # Glucosides
+        Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@@H](O)[C@@H](O)[C@H](O)[C@@H]1[*]"), # Various hexoses
         Chem.MolFromSmarts("O[C@H]1[C@@H](O)[C@H](O)[C@H](O)[C@H]1O"),         # Fucosides, rhamnosides
-        Chem.MolFromSmarts("O1C([C@@H](O)[C@H](O)C(O)C1)CO"),                 # Misc hexoses
+        Chem.MolFromSmarts("O1[C@@H]([C@H](O)[C@H](O)C1)CO"),                 # Misc hexoses
     ]
     
     # Check for glycosidic attachments
     if not any(mol.HasSubstructMatch(pattern) for pattern in glycoside_patterns):
         return False, "No glycoside moieties detected"
 
-    # Verify presence of polyphenolic structure: at least three aromatic rings
+    # Verify presence of at least two aromatic rings for polyphenolic structure
     num_aromatic_rings = rdMolDescriptors.CalcNumAromaticRings(mol)
-    if num_aromatic_rings < 3:
+    if num_aromatic_rings < 2:
         return False, "Too few aromatic rings for a polyphenolic structure"
 
-    # Check for characteristic methoxy (-OCH3) or hydroxyl (-OH) substitutions
-    methoxy_pattern = Chem.MolFromSmarts("COC")
-    hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
+    # Check for characteristic methoxy or hydroxyl substitutions on aromatic rings
+    methoxy_pattern = Chem.MolFromSmarts("c-COC")
+    hydroxyl_pattern = Chem.MolFromSmarts("c-O")
     
     if not (mol.HasSubstructMatch(methoxy_pattern) or mol.HasSubstructMatch(hydroxyl_pattern)):
         return False, "Methoxy or hydroxyl group substitutions missing from aromatic rings"
