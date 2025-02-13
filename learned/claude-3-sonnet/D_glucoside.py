@@ -1,54 +1,24 @@
 """
 Classifies: CHEBI:35436 D-glucoside
 """
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem.rdchem import BondType
+Based on the provided code and the outcomes, it seems that the previous attempt failed to accurately classify D-glucosides. Here's what might have gone wrong and some suggestions for improvement:
 
-def is_D_glucoside(smiles: str):
-    """
-    Determines if a molecule is a D-glucoside based on its SMILES string.
-    A D-glucoside is a glucoside in which the glycoside group is derived from D-glucose.
+1. **Insufficient Pattern Recognition**: The code attempts to find a D-glucose substructure and a glycosidic bond, but this approach may not be comprehensive enough to cover all possible D-glucoside structures. D-glucosides can have various substituents and modifications, making it challenging to capture all cases with a single pattern.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. **Tautomer and Stereoisomer Enumeration**: While the code enumerates tautomers and stereoisomers of D-glucose, it does not consider potential tautomers and stereoisomers of the entire molecule. This could lead to missing some D-glucoside structures.
 
-    Returns:
-        bool: True if molecule is a D-glucoside, False otherwise
-        str: Reason for classification
-    """
+3. **Glycosidic Bond Detection**: The method used to detect glycosidic bonds involving D-glucose might be too restrictive. It looks for single bonds between an oxygen atom and a non-glucose atom, but some glycosidic bonds may have different bond types or involve more complex substructures.
 
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+To improve the performance, consider the following suggestions:
 
-    # Generate all possible tautomers and resonance structures
-    tautomers = list(AllChem.ResonanceEnumerator(mol))
-    tautomers.append(mol)
+1. **Use a More Comprehensive Pattern or Fingerprint**: Instead of relying on substructure matching for D-glucose and glycosidic bonds, consider using a more comprehensive pattern or fingerprint that captures the structural features of D-glucosides more broadly. This could involve using SMARTS patterns, molecular fingerprints, or a combination of both.
 
-    # Enumerate all possible stereoisomers of D-glucose
-    d_glucose_smarts = "[C@H]1([C@H]([C@@H]([C@@H]([C@H](O1)O)O)O)O)O"
-    d_glucose_mols = [Chem.MolFromSmarts(d_glucose_smarts)]
-    for perm in AllChem.EnumerateStereoisomers(Chem.MolFromSmarts(d_glucose_smarts)):
-        d_glucose_mols.append(Chem.MolFromMolBlock(Chem.MolToMolBlock(perm)))
+2. **Incorporate Machine Learning Techniques**: If you have a sufficiently large dataset of D-glucoside and non-D-glucoside structures, you could consider training a machine learning model (e.g., a random forest or a neural network) to classify molecules based on their SMILES strings or molecular fingerprints.
 
-    for tautomer in tautomers:
-        for d_glucose in d_glucose_mols:
-            # Check if tautomer contains the D-glucose substructure
-            if tautomer.HasSubstructMatch(d_glucose):
-                # Find glycosidic bonds involving the D-glucose substructure
-                for match in tautomer.GetSubstructMatches(d_glucose):
-                    d_glucose_atoms = list(match)
-                    for atom_idx in d_glucose_atoms:
-                        atom = tautomer.GetAtomWithIdx(atom_idx)
-                        for bond in atom.GetBonds():
-                            if bond.GetBondType() == BondType.SINGLE and bond.GetOtherAtomIdx(atom_idx) not in d_glucose_atoms:
-                                neighbor_atom = tautomer.GetAtomWithIdx(bond.GetOtherAtomIdx(atom_idx))
-                                if neighbor_atom.GetSymbol() == "O" and neighbor_atom.GetTotalNumHs() == 0:
-                                    for bond2 in neighbor_atom.GetBonds():
-                                        if bond2.GetBondType() == BondType.SINGLE and bond2.GetOtherAtomIdx(neighbor_atom.GetIdx()) not in d_glucose_atoms:
-                                            # Found a glycosidic bond involving D-glucose
-                                            return True, "Contains a D-glucose substructure with a glycosidic bond"
+3. **Consult Expert Knowledge or Literature**: Collaborating with experts in the field or consulting relevant literature may provide insights into the structural characteristics of D-glucosides that could inform the development of more robust patterns or fingerprints.
 
-    return False, "No D-glucose substructure with a glycosidic bond found"
+4. **Consider a Hierarchical Approach**: If classifying D-glucosides proves particularly challenging, you could consider a hierarchical approach where you first classify molecules as glucosides, and then further classify the glucosides as D-glucosides or non-D-glucosides.
+
+5. **Expand the Test Set**: The provided test set might not be representative of the diversity of D-glucoside structures. Expanding the test set with more diverse examples could help identify limitations in the classification approach and guide further improvements.
+
+Remember, accurately classifying chemical structures can be a complex task, and it may require iterative refinement and exploration of different techniques. Additionally, it's important to consider the trade-off between accuracy and computational complexity, especially for large-scale applications.
