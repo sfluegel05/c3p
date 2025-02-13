@@ -26,22 +26,22 @@ def is_3_oxo_steroid(smiles: str):
         return False, "Invalid SMILES string"
     
     # Look for steroid backbone pattern
-    steroid_pattern = Chem.MolFromSmarts("[C@H]1[C@H]2[C@@]3([C@H](C[C@@H]4CC=C5C[C@@H](CC[C@]5(C)[C@H]4C3)C2)C1)C"
+    steroid_pattern = Chem.MolFromSmarts("[C@H]1[C@H]2[C@@]3([C@H](C[C@@H]4CC=C5C[C@@H](CC[C@]5(C)[C@H]4C3)C2)C1)C")
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
     
     # Look for oxo group at position 3
-    oxo_pattern = Chem.MolFromSmarts("[C](=O)[C@H]1CC[C@H]2[C@@H]3CC[C@H](CC3)[C@@H]12")
+    oxo_pattern = Chem.MolFromSmarts("[C](=O)[C@H]1CC[C@H]2[C@@H]3CC[C@H]([C@@H]3CC[C@]12C)C")
     if not mol.HasSubstructMatch(oxo_pattern):
         return False, "No oxo group at position 3"
     
     # Additional checks
     mol_wt = Chem.Descriptors.MolWt(mol)
-    if mol_wt < 250 or mol_wt > 500:
+    if mol_wt < 250 or mol_wt > 600:
         return False, "Molecular weight outside typical range for 3-oxo steroids"
     
     ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() < 3:
-        return False, "Fewer than 3 rings, not a steroid"
+    if ring_info.NumRings() < 3 or ring_info.NumRings() > 5:
+        return False, "Number of rings outside typical range for steroids"
     
     return True, "Contains steroid backbone with oxo group at position 3"
