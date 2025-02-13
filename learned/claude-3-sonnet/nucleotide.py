@@ -1,19 +1,65 @@
 """
 Classifies: CHEBI:36976 nucleotide
 """
-The previous code tried to identify nucleotides based on the presence of a nucleobase, a sugar moiety, a phosphate group, and a glycosidic bond between the base and sugar. However, it appears to have some limitations:
+"""
+Classifies: CHEBI:60510 nucleotide
+A nucleotide is a nucleoside phosphate resulting from the condensation of the 3 or 5 hydroxy group of a nucleoside with phosphoric acid.
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
 
-1. The nucleobase pattern (`a1aaaanaa1`) is too general and can match non-nucleobase aromatic rings.
-2. The sugar pattern (`OC1OC(O)C(O)C1O`) only matches the ribose or deoxyribose sugar, but not other sugar moieties like cyclic phosphates.
-3. The glycosidic bond pattern (`[N,O]C1OC(O)C(O)C1O`) assumes a specific sugar conformation, which may not always hold true.
-4. The additional checks for rotatable bonds, ring count, and heteroatom count are too broad and may not be specific enough for nucleotides.
+def is_nucleotide(smiles: str):
+    """
+    Determines if a molecule is a nucleotide based on its SMILES string.
 
-To improve the program, we can consider the following:
+    Args:
+        smiles (str): SMILES string of the molecule
 
-1. Use a more specific pattern for nucleobases, such as the SMARTS patterns for adenine, guanine, cytosine, thymine, and uracil.
-2. Account for different sugar moieties, including cyclic phosphates and other modifications.
-3. Look for the phosphate group directly attached to the sugar moiety, rather than just searching for the presence of a phosphate group.
-4. Incorporate additional checks for common structural features of nucleotides, such as the presence of specific functional groups or bond types.
-5. Utilize more advanced substructure matching techniques, such as Atom Mapping or Maximum Common Substructure (MCS), to identify the nucleobase, sugar, and phosphate components more reliably.
+    Returns:
+        bool: True if molecule is a nucleotide, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-By implementing these improvements, the program should be better equipped to accurately classify nucleotides based on their structural features.
+    # Define nucleobase SMARTS patterns
+    adenine = Chem.MolFromSmarts("nc1ncnc2n(cnc12)[CH]")
+    guanine = Chem.MolFromSmarts("nc1nc2n(cnc2c(=O)[nH]1)[CH]")
+    cytosine = Chem.MolFromSmarts("nc1cc[nH]c(=O)n1")
+    thymine = Chem.MolFromSmarts("Cc1c[nH]c(=O)[nH]c1=O")
+    uracil = Chem.MolFromSmarts("O=c1ccn(C)c(=O)[nH]1")
+
+    # Check for nucleobase
+    base_match = mol.HasSubstructMatch(adenine) or mol.HasSubstructMatch(guanine) or \
+                 mol.HasSubstructMatch(cytosine) or mol.HasSubstructMatch(thymine) or \
+                 mol.HasSubstructMatch(uracil)
+    if not base_match:
+        return False, "No nucleobase found"
+
+    # Define sugar SMARTS patterns
+    ribose = Chem.MolFromSmarts("[CR1][CR1]([OR1])[OR1][CR1]([OR1])[CR1]([OR1])[OR1]")
+    deoxyribose = Chem.MolFromSmarts("[CR1][CR1]([OR1])[OR1][CR1]([OR1])[CR1]([HR1])[OR1]")
+    cyclic_phosphate = Chem.MolFromSmarts("[CR1]1[OR1][CR1]([OR1])[CR1]([OR1])[CR1]([OP])[OR1]1")
+
+    # Check for sugar moiety
+    sugar_match = mol.HasSubstructMatch(ribose) or mol.HasSubstructMatch(deoxyribose) or \
+                  mol.HasSubstructMatch(cyclic_phosphate)
+    if not sugar_match:
+        return False, "No sugar moiety found"
+
+    # Check for phosphate group
+    phosphate_pattern = Chem.MolFromSmarts("[PX4]([OX2])([OX1])([OX2])[OX2]")
+    phosphate_match = mol.HasSubstructMatch(phosphate_pattern)
+    if not phosphate_match:
+        return False, "No phosphate group found"
+
+    # Check for glycosidic bond between base and sugar
+    glycosidic_bond_pattern = Chem.MolFromSmarts("[CR1][OR1][CR1]")
+    glycosidic_bond_match = mol.HasSubstructMatch(glycosidic_bond_pattern)
+    if not glycosidic_bond_match:
+        return False, "No glycosidic bond found"
+
+    return True, "Contains a nucleobase, sugar moiety, phosphate group, and glycosidic bond"
