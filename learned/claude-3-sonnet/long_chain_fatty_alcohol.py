@@ -1,20 +1,65 @@
 """
 Classifies: CHEBI:17135 long-chain fatty alcohol
 """
-The previous program missed several positive cases of long-chain fatty alcohols, as highlighted by the false negatives in the outcomes. Here's a possible reasoning for the errors and how to improve the program:
+"""
+Classifies: CHEBI:26766 long-chain fatty alcohol
+A fatty alcohol with a chain length ranging from C13 to C22.
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-1. The program correctly checks for the presence of an alcohol (-OH) group and a long carbon chain, but it fails to account for potential unsaturation (double bonds) within the carbon chain.
+def is_long_chain_fatty_alcohol(smiles: str):
+    """
+    Determines if a molecule is a long-chain fatty alcohol based on its SMILES string.
+    A long-chain fatty alcohol has a carbon chain length ranging from C13 to C22,
+    with an -OH group attached directly or via a short linker.
 
-2. The program assumes that the carbon chain is linear and saturated by checking if the number of hydrogens is equal to (2*carbon_count + 2), accounting for the terminal methyl (-CH3) group. However, this condition fails for unsaturated chains with double bonds, which have fewer hydrogens.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. To improve the program, we need to modify the carbon chain pattern to allow for double bonds and potential branching within the specified chain length range (C13-C22).
+    Returns:
+        bool: True if molecule is a long-chain fatty alcohol, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-4. Instead of using a fixed SMARTS pattern for the carbon chain, we can use a more general pattern that matches a range of chain lengths and allows for unsaturation and branching.
+    # Check for -OH group
+    alcohol_pattern = Chem.MolFromSmarts("[OX1H]")
+    alcohol_matches = mol.GetSubstructMatches(alcohol_pattern)
+    if not alcohol_matches:
+        return False, "No alcohol (-OH) group found"
 
-5. Additionally, we can include a check for the presence of cyclic structures, as fatty alcohols are typically linear and non-cyclic.
+    # Check for long carbon chain (C13-C22)
+    chain_pattern = Chem.MolFromSmarts("[CX4]([CX4])[CX4]([CX4])[CX4]([CX4])[CX4]([CX4])[CX4]([CX4])[CX4]([CX4])[CX4]([CX4])[CX4]([CX4])[CX4]([CX4])[CX4]([CX4])[CX4]([CX4])[CX4]([CX4])[CX4]([CX4])")
+    chain_matches = mol.GetSubstructMatches(chain_pattern)
+    if not chain_matches:
+        return False, "No long carbon chain (C13-C22) found"
 
-6. To handle cases like glycerol esters, where the alcohol group is not directly attached to the carbon chain, we can use a more flexible SMARTS pattern to match the alcohol group and the carbon chain separately, allowing for intervening atoms or groups.
+    # Check for linear, non-cyclic structure
+    if mol.GetRingInfo().NumRings() > 0:
+        return False, "Molecule contains cyclic structures"
 
-7. Finally, we can consider additional criteria like molecular weight or specific functional groups to improve the classification accuracy further.
+    # Check for connectivity between alcohol group and carbon chain
+    for alcohol_idx in alcohol_matches:
+        alcohol_atom = mol.GetAtomWithIdx(alcohol_idx)
+        for chain_idx in chain_matches:
+            chain_atom = mol.GetAtomWithIdx(chain_idx)
+            if mol.GetBondBetweenAtoms(alcohol_atom.GetIdx(), chain_atom.GetIdx()) is not None:
+                break
+        else:
+            continue
+        break
+    else:
+        return False, "Alcohol group not connected to carbon chain"
 
-By incorporating these improvements, the program should be able to correctly classify a wider range of long-chain fatty alcohol structures, including those with unsaturation, branching, and intervening groups between the alcohol and the carbon chain.
+    # Check molecular weight range (typically 200-350 Da)
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 200 or mol_wt > 350:
+        return False, "Molecular weight outside typical range for long-chain fatty alcohols"
+
+    return True, "Meets criteria for long-chain fatty alcohol (C13-C22 chain, -OH group)"
