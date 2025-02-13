@@ -19,45 +19,63 @@ def is_3_oxo_5beta_steroid(smiles: str):
         bool: True if molecule is a 3-oxo-5beta-steroid, False otherwise
         str: Reason for classification
     """
-    # Parse SMILES
+    # Parse SMILES with stereochemistry
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # More general steroid core pattern - four fused rings
-    # This pattern represents the basic connectivity without being too strict about stereochemistry
+    # Basic steroid core pattern (four fused rings)
     steroid_core = Chem.MolFromSmarts("C1CC2CCC3C(CCC4CCCC43C)C2C1")
+    if steroid_core is None:
+        return False, "Invalid steroid core SMARTS pattern"
     if not mol.HasSubstructMatch(steroid_core):
         return False, "No steroid core structure found"
 
     # Check for ketone at position 3
-    # More specific pattern that ensures the ketone is at position 3
-    # The pattern includes the A ring and part of the B ring to ensure correct position
-    ketone_pattern = Chem.MolFromSmarts("C1CC(=O)CC2CCC3")
+    # Pattern for 3-keto group in context of the A ring
+    ketone_pattern = Chem.MolFromSmarts("C1CC(=O)CC2")
+    if ketone_pattern is None:
+        return False, "Invalid ketone SMARTS pattern"
     if not mol.HasSubstructMatch(ketone_pattern):
         return False, "No ketone group at position 3"
 
     # Check for 5-beta configuration
-    # In 5-beta steroids, the A/B ring junction has the hydrogen in alpha position
-    # This creates a cis fusion between rings A and B
-    # The pattern looks for the specific stereochemistry at position 5
-    beta_config_pattern = Chem.MolFromSmarts("[C]1[CH2][C](=O)[CH2][C@@H]2[CH2][CH2]")
+    # In 5-beta steroids, rings A/B are cis-fused
+    # The hydrogen at C5 is alpha (pointing up), making the fusion beta
+    # We use multiple patterns to catch different representations
+    beta_patterns = [
+        # Pattern looking for the A/B ring junction with explicit beta stereochemistry
+        "[H][C@@]12CC[C@@H]",  # C5 with alpha H (meaning beta fusion)
+        "[C@@H]1[C@@H]2CC",    # Alternative representation
+        "[C@]1([H])[C@@H]2"    # Another alternative
+    ]
     
-    # Alternative 5-beta pattern that might catch some other representations
-    beta_config_pattern2 = Chem.MolFromSmarts("[C]1[CH2][C](=O)[CH2][C@]2([H])")
+    beta_matches = False
+    for pattern in beta_patterns:
+        pat = Chem.MolFromSmarts(pattern)
+        if pat is not None and mol.HasSubstructMatch(pat, useChirality=True):
+            beta_matches = True
+            break
     
-    if not (mol.HasSubstructMatch(beta_config_pattern) or mol.HasSubstructMatch(beta_config_pattern2)):
-        return False, "Not a 5-beta configuration"
+    if not beta_matches:
+        return False, "No 5-beta configuration found"
 
-    # Additional validation: Check carbon count (steroids typically have 19-27 carbons)
+    # Additional checks for steroid-like properties
+    
+    # Count carbons (steroids typically have 19-27 carbons)
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if carbon_count < 19 or carbon_count > 30:
         return False, f"Carbon count ({carbon_count}) outside typical steroid range (19-30)"
 
-    # Check for reasonable molecular weight range for steroids
+    # Check molecular weight
     mol_weight = Chem.Descriptors.ExactMolWt(mol)
     if mol_weight < 250 or mol_weight > 500:
         return False, f"Molecular weight {mol_weight:.1f} outside typical steroid range (250-500)"
 
-    # If all checks pass, we have a 3-oxo-5beta-steroid
+    # Check ring count (steroids should have 4 main rings)
+    ring_count = len(Chem.GetSymmSSSR(mol))
+    if ring_count < 4:
+        return False, f"Too few rings ({ring_count}) for a steroid structure"
+
+    # If all checks pass
     return True, "Molecule contains steroid core with 3-oxo group and 5-beta configuration"
