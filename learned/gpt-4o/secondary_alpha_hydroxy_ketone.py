@@ -6,9 +6,8 @@ from rdkit import Chem
 def is_secondary_alpha_hydroxy_ketone(smiles: str):
     """
     Determines if a molecule is a secondary alpha-hydroxy ketone based on its SMILES string.
-    A secondary alpha-hydroxy ketone has an alpha carbon bonded to one hydroxyl group, 
-    one hydrogen atom and two carbons (making it a secondary carbon) that is adjacent 
-    to a carbonyl (C=O) group.
+    This chemical class involves a hydroxyl group at an alpha position relative to a ketone, 
+    where the alpha carbon is a secondary carbon.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,17 +22,21 @@ def is_secondary_alpha_hydroxy_ketone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # SMARTS for secondary alpha-hydroxy ketone
-    # `[C;H1&R0]`: Secondary carbon (H1 means single hydrogen, indicating secondary, and R0 to ensure no cyclic reference)
-    # `[OH]`: directly attached hydroxyl group
-    # `[C]=[O]`: carbonyl group adjacent to the alpha position
-    secondary_alpha_hydroxy_ketone_pattern = Chem.MolFromSmarts('[C;H1&R0][C;H1]([OH])[R0][C]=[O]')
+    # SMARTS pattern for secondary alpha-hydroxy ketone
+    # We'll use:
+    # 1. C[OH]: Hydroxyl group bonded to a carbon.
+    # 2. C: Secondary nature should be captured by non-terminal, but SMARTS doesn't limit directly; 
+    #    hence check hydroxyl presence and alpha connection.
+    # 3. C(=O): Alpha position of ketone.
+    # Ensuring that the SMARTS match describes a secondary character and ketone relation.
+    secondary_alpha_hydroxy_ketone_pattern = Chem.MolFromSmarts('[C@H](O)[CH2][C](=O)')
+    
     if not mol.HasSubstructMatch(secondary_alpha_hydroxy_ketone_pattern):
         return False, "No secondary alpha-hydroxy ketone structure found"
 
     return True, "Contains secondary alpha-hydroxy ketone structure"
-
+    
 # Example usage: Test the function with a known secondary alpha-hydroxy ketone.
-smiles_example = "OC[C@@H]1CC=C(O)C(=O)[C@H]1O" # 5D-(5/6)-2,6-dihydroxy-5-(hydroxymethyl)cyclohex-2-en-1-one
+smiles_example = "O[C@@H]1CC(=CC(=O)[C@H]1O)C(O)=O" # 3-dehydroshikimic acid
 result, reason = is_secondary_alpha_hydroxy_ketone(smiles_example)
 print(f"Result: {result}, Reason: {reason}")
