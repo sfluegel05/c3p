@@ -6,7 +6,6 @@ Classifies: CHEBI:33108 methyl sulfide
 Any aliphatic sulfide in which at least one of the organyl groups attached to the sulfur is a methyl group.
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_methyl_sulfide(smiles: str):
     """
@@ -44,8 +43,8 @@ def is_methyl_sulfide(smiles: str):
     if not has_methyl_sulfide:
         return False, "No methyl group attached to sulfur"
     
-    # Check if sulfide is aliphatic (no aromatic rings)
-    if mol.GetAromaticRingCount() > 0:
-        return False, "Contains aromatic rings, not aliphatic"
+    # Check if sulfide is aliphatic (no aromatic atoms)
+    if any(atom.GetIsAromatic() for atom in mol.GetAtoms()):
+        return False, "Contains aromatic atoms, not aliphatic"
     
     return True, "Contains aliphatic sulfide with methyl group attached to sulfur"
