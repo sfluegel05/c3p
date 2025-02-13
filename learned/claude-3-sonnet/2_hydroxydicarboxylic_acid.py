@@ -26,34 +26,43 @@ def is_2_hydroxydicarboxylic_acid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Find carboxylic acid groups
-    carboxyl_pattern = Chem.MolFromSmarts('[CX3](=[OX1])[OX2H1]')
+    carboxyl_pattern = Chem.MolFromSmarts('C(=O)[OH]')
     carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
     
     if len(carboxyl_matches) != 2:
         return False, f"Found {len(carboxyl_matches)} carboxylic acid groups, need exactly 2"
 
     # Find alpha-hydroxy carboxylic acid pattern
-    # [OH]-[C](-[*])(-[*])-C(=O)-[OH]
-    alpha_hydroxy_acid_pattern = Chem.MolFromSmarts('[OX2H1][CX4]([*])([*])C(=[OX1])[OX2H1]')
-    alpha_hydroxy_matches = mol.GetSubstructMatches(alpha_hydroxy_acid_pattern)
+    # Carbon with OH group that's also connected to a carboxyl group
+    alpha_hydroxy_pattern = Chem.MolFromSmarts('[OH1]-[CH1,CH0]-C(=O)[OH1]')
+    alpha_hydroxy_matches = mol.GetSubstructMatches(alpha_hydroxy_pattern)
     
     if not alpha_hydroxy_matches:
         return False, "No alpha-hydroxy carboxylic acid group found"
 
-    # Additional check to ensure the hydroxy group is actually on an alpha carbon
-    # of one of the carboxyl groups (not just anywhere in the molecule)
-    alpha_carbon_atoms = set()
-    for match in carboxyl_matches:
-        carboxyl_carbon = match[0]  # First atom in carboxyl match is the carbon
-        for neighbor in mol.GetAtomWithIdx(carboxyl_carbon).GetNeighbors():
-            if neighbor.GetAtomicNum() == 6:  # Carbon
-                alpha_carbon_atoms.add(neighbor.GetIdx())
+    # Get total atom count (excluding H)
+    heavy_atom_count = mol.GetNumHeavyAtoms()
+    
+    # Check if molecule is too complex (likely not a simple dicarboxylic acid)
+    if heavy_atom_count > 15:  # Most 2-hydroxydicarboxylic acids are relatively small
+        return False, "Molecule too complex for a simple 2-hydroxydicarboxylic acid"
 
-    hydroxy_carbons = set()
-    for match in alpha_hydroxy_matches:
-        hydroxy_carbons.add(match[1])  # Second atom in match is the carbon with OH
+    # Count number of carbons and oxygens to ensure reasonable composition
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    
+    if o_count != 5:  # 2 from carboxylic acids (2*2=4) + 1 from hydroxy = 5
+        return False, "Must have exactly 5 oxygen atoms"
 
-    if not (alpha_carbon_atoms & hydroxy_carbons):
-        return False, "Hydroxy group not on alpha carbon of carboxyl group"
+    # Check for presence of unexpected elements
+    allowed_elements = {1, 6, 8}  # H, C, O
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() not in allowed_elements:
+            return False, "Contains elements other than C, H, and O"
+
+    # Check ring count - most simple 2-hydroxydicarboxylic acids are not cyclic
+    ring_info = mol.GetRingInfo()
+    if ring_info.NumRings() > 0:
+        return False, "Contains rings - most 2-hydroxydicarboxylic acids are acyclic"
 
     return True, "Contains two carboxylic acid groups with a hydroxy group on the alpha carbon"
