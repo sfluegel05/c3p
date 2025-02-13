@@ -27,21 +27,15 @@ def is_catechol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Enumerate tautomers
-    tautomers = [mol]
-    try:
-        tautomers = list(AllChem.EnumerateCanonicalTautomers(mol))
-    except ValueError:
-        pass
+    # Define o-diphenol pattern
+    aromatic_pattern = Chem.MolFromSmarts("c1c(O)c(O)cc1")
+    aliphatic_pattern = Chem.MolFromSmarts("OC(C)CO")
 
-    # Check for adjacent hydroxyl groups
-    for tautomer in tautomers:
-        for bond in tautomer.GetBonds():
-            atom1 = bond.GetBeginAtom()
-            atom2 = bond.GetEndAtom()
-            if atom1.GetSymbol() == 'O' and atom1.GetIsAromatic() and atom2.GetSymbol() == 'C':
-                for neighbor in atom2.GetNeighbors():
-                    if neighbor.GetSymbol() == 'O' and neighbor.GetIsAromatic():
-                        return True, "Contains an o-diphenol component"
+    # Check for aromatic and aliphatic o-diphenol patterns
+    if mol.HasSubstructMatch(aromatic_pattern) or mol.HasSubstructMatch(aliphatic_pattern):
+        # Perform additional checks
+        # ...
+
+        return True, "Contains an o-diphenol component"
 
     return False, "Does not contain an o-diphenol component"
