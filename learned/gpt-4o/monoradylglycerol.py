@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_monoradylglycerol(smiles: str):
     """
     Determines if a molecule is a monoradylglycerol based on its SMILES string.
-    A monoradylglycerol has a glycerol backbone bearing a single acyl, alkyl, or alk-1-enyl substituent.
+    A monoradylglycerol has a glycerol backbone with one acyl, alkyl, or alk-1-enyl substituent.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,25 +21,29 @@ def is_monoradylglycerol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define patterns for a glycerol backbone
+    # Define the glycerol backbone pattern
     glycerol_pattern = Chem.MolFromSmarts("C(CO)CO")
-    
-    # Check for the presence of a glycerol backbone
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone found"
 
-    # Count ester/hydroxy linkages (acyl group check)
-    ester_pattern = Chem.MolFromSmarts("C(=O)O")
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    # Check for exactly one glycerol backbone match
+    glycerol_matches = mol.GetSubstructMatches(glycerol_pattern)
+    if len(glycerol_matches) != 1:
+        return False, "Glycerol backbone not found or multiple present"
 
-    # Count the number of long carbon chains (assuming a carbon chain of length >= 4 is a substituent)
-    long_chain_pattern = Chem.MolFromSmarts("C(C(C(C)C)C)C")
-    long_chain_matches = mol.GetSubstructMatches(long_chain_pattern)
+    # Define patterns to recognize substituents
+    acyl_pattern = Chem.MolFromSmarts("C(=O)[O;R]")  # R keeps it connected as part of larger structure
+    alkyl_pattern = Chem.MolFromSmarts("[C;R]([C;R])[C;R]([C;R])[C;R]")  # at least 4 connected carbons
+    alk1enyl_pattern = Chem.MolFromSmarts("C=C")  # ensure presence of double bonds
 
-    # Check for the presence of a single acyl/alkyl/alk-1-enyl substituent
-    # Note: For strict monoradylglycerol checking, we assume one ester bond and no extra long chains
-    if len(ester_matches) == 1 or len(long_chain_matches) == 1:
+    # Check for substituents
+    acyl_match = mol.HasSubstructMatch(acyl_pattern)
+    alkyl_match = mol.HasSubstructMatch(alkyl_pattern)
+    alk1enyl_match = mol.HasSubstructMatch(alk1enyl_pattern)
+
+    # Count valid substituents
+    num_substituents = sum([acyl_match, alkyl_match, alk1enyl_match])
+
+    # Ensure there is exactly one substituent
+    if num_substituents == 1:
         return True, "Contains a glycerol backbone with a single acyl, alkyl or alk-1-enyl substituent"
     
-    # If none of the patterns match specific criteria, it is not a monoradylglycerol
     return False, "Glycerol backbone does not have exactly one suitable substituent"
