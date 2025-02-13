@@ -1,18 +1,48 @@
 """
 Classifies: CHEBI:36233 disaccharide
 """
-The previous program attempted to classify disaccharides by identifying two monosaccharide subunits and a glycosidic bond connecting them. However, it failed to correctly identify all the provided examples as disaccharides. Here are some potential issues and improvements:
+"""
+Classifies: CHEBI:36973 disaccharide
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-1. **Monosaccharide SMARTS Patterns**: The SMARTS patterns used to identify monosaccharides are too general and may not cover all possible monosaccharide structures. Disaccharides can be composed of a wide variety of monosaccharides, including both common and less common ones. The program should either use more comprehensive SMARTS patterns or take a different approach to identifying monosaccharide units.
+def is_disaccharide(smiles: str):
+    """
+    Determines if a molecule is a disaccharide based on its SMILES string.
+    A disaccharide is a compound with two monosaccharides joined by a glycosidic bond.
 
-2. **Glycosidic Bond Identification**: The program checks for a glycosidic bond by looking for an O-C bond between the two identified monosaccharide units. However, this approach may not work for all disaccharide structures, especially those with more complex or unusual glycosidic linkages.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Molecular Weight Range**: The molecular weight range used (300-600 Da) may be too narrow or restrictive for some disaccharides, especially those with larger or substituted monosaccharide units.
-
-4. **Structural Features**: The program does not consider other structural features that are characteristic of disaccharides, such as the presence of specific functional groups or stereochemistry.
-
-To improve the program, one potential approach could be to use a machine learning model trained on a diverse set of disaccharide and non-disaccharide structures. This would allow the model to learn the structural patterns and features that distinguish disaccharides from other molecules, without relying on hard-coded SMARTS patterns or rules.
-
-Another approach could be to use a combination of SMARTS patterns and structural rules to identify disaccharides more reliably. This would involve developing a more comprehensive set of SMARTS patterns for common and less common monosaccharide units, as well as rules for identifying glycosidic linkages and other structural features specific to disaccharides.
-
-Regardless of the approach, it is important to test the program on a diverse set of disaccharide and non-disaccharide structures to ensure its accuracy and robustness.
+    Returns:
+        bool: True if molecule is a disaccharide, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Look for monosaccharide patterns
+    monosaccharide_pattern = Chem.MolFromSmarts("[OX2][CX4](O)[CX3](O)[CX3](O)[CX3](O)[CX3](O)[CX2]")
+    monosaccharide_matches = mol.GetSubstructMatches(monosaccharide_pattern)
+    
+    # Check if there are exactly 2 monosaccharide subunits
+    if len(monosaccharide_matches) != 2:
+        return False, f"Found {len(monosaccharide_matches)} monosaccharide units, need exactly 2"
+    
+    # Check if the monosaccharide units are joined by a glycosidic bond
+    glycosidic_bond_pattern = Chem.MolFromSmarts("[OX2][CX4][CX3][OX2]")
+    glycosidic_bond_matches = mol.GetSubstructMatches(glycosidic_bond_pattern)
+    if not glycosidic_bond_matches:
+        return False, "No glycosidic bond found between monosaccharide units"
+    
+    # Check molecular weight - disaccharides typically 300-600 Da
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 300 or mol_wt > 600:
+        return False, "Molecular weight outside typical range for disaccharides"
+    
+    return True, "Contains two monosaccharide units joined by a glycosidic bond"
