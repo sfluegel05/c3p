@@ -5,7 +5,6 @@ Classifies: CHEBI:24128 furanocoumarin
 Classifies: Furanocoumarin
 """
 from rdkit import Chem
-from rdkit.Chem import rdqueries
 
 def is_furanocoumarin(smiles: str):
     """
@@ -25,24 +24,22 @@ def is_furanocoumarin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the coumarin structure as a SMARTS pattern
-    coumarin_pattern = Chem.MolFromSmarts("c1cc2ccc(=O)oc2c1")
+    # Coumarin basic pattern (lactone ring with benzene fused)
+    coumarin_pattern = Chem.MolFromSmarts("O=C2c1ccccc1OC2")
 
-    # Define the furan ring structure as a SMARTS pattern
+    # General furan pattern
     furan_pattern = Chem.MolFromSmarts("c1occc1")
 
-    # Check presence of coumarin
+    # Extended pattern for a furanocoumarin (fused furan-benzofuranone)
+    furanocoumarin_fusion_pattern = Chem.MolFromSmarts("c1oc2ccccc2-3c1oc(=O)cc3")
+
     if not mol.HasSubstructMatch(coumarin_pattern):
         return False, "No coumarin structure found"
     
-    # Check presence of furan
     if not mol.HasSubstructMatch(furan_pattern):
         return False, "No furan ring found"
     
-    # Define a general pattern for furocoumarin fusion
-    # This could be complex, involving various isomeric forms, but as a simple check:
-    fusion_pattern = Chem.MolFromSmarts("c1occc1:c2ccccc2")
-    if not mol.HasSubstructMatch(fusion_pattern):
-        return False, "No furan-coumarin fusion ring found"
+    if not mol.HasSubstructMatch(furanocoumarin_fusion_pattern):
+        return False, "No furanocoumarin fusion detected"
 
-    return True, "Structure contains furan ring fused with a coumarin"
+    return True, "Structure contains a furan ring fused with a coumarin"
