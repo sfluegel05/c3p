@@ -1,67 +1,28 @@
 """
 Classifies: CHEBI:59644 oxo fatty acid
 """
-"""
-Classifies: CHEBI:51339 oxo fatty acid
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+The previous program made a good attempt at classifying oxo fatty acids, but some improvements can be made based on the outcomes.
 
-def is_oxo_fatty_acid(smiles: str):
-    """
-    Determines if a molecule is an oxo fatty acid based on its SMILES string.
-    An oxo fatty acid is any fatty acid containing at least one aldehydic or ketonic group
-    in addition to the carboxylic acid group.
+Issues and potential improvements:
 
-    Args:
-        smiles (str): SMILES string of the molecule
+1. **False positives**: The program incorrectly classified several molecules as oxo fatty acids. Many of these false positives were peptides, glycolipids, or other complex molecules containing carboxylic acid and carbonyl groups, but not fitting the criteria for oxo fatty acids. This suggests that the current criteria are too broad and need to be tightened.
 
-    Returns:
-        bool: True if molecule is an oxo fatty acid, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+   Potential improvement: Add additional checks to exclude non-fatty acid structures. For example, check for the presence of a long, unbranched carbon chain (e.g., using a SMARTS pattern like `[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]`), and exclude structures with certain functional groups like amines, sugars, or aromatic rings.
 
-    # Check for carboxylic acid group (-C(=O)OH)
-    carboxylic_pattern = Chem.MolFromSmarts("C(=O)O")
-    carboxylic_matches = mol.GetSubstructMatches(carboxylic_pattern)
-    if not carboxylic_matches:
-        return False, "No carboxylic acid group found"
+2. **False negatives**: The program missed several valid oxo fatty acids. Some of these were due to the molecular weight or rotatable bond cutoffs being too stringent, while others had shorter carbon chains that were still within the definition of oxo fatty acids.
 
-    # Check for aldehydic (-C(=O)-) or ketonic (-C(=O)-C-) groups
-    oxo_pattern = Chem.MolFromSmarts("C(=O)[!O]")
-    oxo_matches = mol.GetSubstructMatches(oxo_pattern)
-    if not oxo_matches:
-        return False, "No aldehydic or ketonic group found"
+   Potential improvement: Relax the molecular weight and rotatable bond cutoffs to accommodate a broader range of oxo fatty acids. Consider removing these checks entirely and relying more on the pattern matching and carbon chain length checks.
 
-    # Check for long carbon chain (fatty acid)
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
-    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
-    if len(fatty_acid_matches) < 4:
-        return False, "Carbon chain too short for fatty acid"
+3. **Carbon chain length**: The current check for a "long carbon chain" (`[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]`) only requires four connected carbon atoms, which is too short for a fatty acid.
 
-    # Count rotatable bonds to verify long chain
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 6:
-        return False, "Insufficient rotatable bonds for fatty acid"
+   Potential improvement: Increase the required length of the carbon chain pattern to at least six or eight carbon atoms (e.g., `[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]`).
 
-    # Check molecular weight - fatty acids typically >200 Da
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 200:
-        return False, "Molecular weight too low for fatty acid"
+4. **Carbonyl group position**: The current program checks for the presence of a carboxylic acid group and any other carbonyl group, but does not explicitly check if the carbonyl group is part of the carbon chain or attached to it.
 
-    # Count carbons and oxygens
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    
-    if c_count < 10:
-        return False, "Too few carbons for fatty acid"
-    if o_count < 2:
-        return False, "Insufficient oxygens for oxo fatty acid"
+   Potential improvement: Add a check to ensure that the non-carboxylic carbonyl group is part of the carbon chain, or directly attached to it (e.g., using a SMARTS pattern like `[CX4]~[CX3](=O)~[CX4]` or `[CX4]~[CX3](=O)~[CX3]`).
 
-    return True, "Contains carboxylic acid group and at least one aldehydic or ketonic group in a fatty acid chain"
+5. **Oxygen count**: The current check for a minimum of two oxygen atoms is too lenient, as it would allow molecules with a single carbonyl group (not counting the carboxylic acid) to be classified as oxo fatty acids.
+
+   Potential improvement: Increase the minimum required oxygen count to three or more, to ensure the presence of at least one additional carbonyl group besides the carboxylic acid.
+
+By addressing these issues, the program should be able to more accurately classify oxo fatty acids while reducing false positives and false negatives.
