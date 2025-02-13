@@ -1,52 +1,37 @@
 """
 Classifies: CHEBI:25608 nucleoside phosphate
 """
-"""
-Classifies: CHEBI:24604 nucleoside phosphate
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+Let's analyze the previous program and the outcomes:
 
-def is_nucleoside_phosphate(smiles: str):
-    """
-    Determines if a molecule is a nucleoside phosphate based on its SMILES string.
-    A nucleoside phosphate is a nucleobase-containing molecular entity that is a nucleoside
-    in which one or more of the sugar hydroxy groups has been converted into a mono- or
-    poly-phosphate. This includes both nucleotides and non-nucleotide nucleoside phosphates.
+The program attempted to identify nucleoside phosphates by looking for specific structural patterns:
 
-    Args:
-        smiles (str): SMILES string of the molecule
+1. A nucleobase (fused or heterocyclic rings with nitrogen atoms)
+2. A sugar ring (5-membered ring with one oxygen and four carbon atoms)
+3. One or more phosphate groups (-O-P(=O)(O)-O-)
+4. A glycosidic bond between the nucleobase and the sugar ring
 
-    Returns:
-        bool: True if molecule is a nucleoside phosphate, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+However, the outcomes show that the program failed to identify any true positives, false positives, or false negatives, which means it did not classify any molecules correctly or incorrectly.
 
-    # Look for nucleobase pattern (fused rings with N atoms or heterocyclic rings with N atoms)
-    nucleobase_pattern = Chem.MolFromSmarts("[*;r;#7]1[*;r;#7][*;r;#7][*;r;#7][*;r;#7][*;r;#7]1|[*;r;#7]1[*;r;#7][*;r;#7][*;r;#7][*;r;#7]1")
-    if not mol.HasSubstructMatch(nucleobase_pattern):
-        return False, "No nucleobase found"
+There could be a few reasons for this failure:
 
-    # Look for sugar ring (5-membered ring with O and 4 C atoms)
-    sugar_pattern = Chem.MolFromSmarts("C1OC(C)(C)C1")
-    if not mol.HasSubstructMatch(sugar_pattern):
-        return False, "No sugar ring found"
+1. **Overly restrictive patterns**: The patterns used to identify the nucleobase, sugar ring, and glycosidic bond might be too specific and not cover all possible variations of nucleoside phosphates.
 
-    # Look for phosphate groups (-O-P(=O)(O)-O-)
-    phosphate_pattern = Chem.MolFromSmarts("OP(O)(=O)O")
-    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
-    if len(phosphate_matches) < 1:
-        return False, "No phosphate groups found"
+2. **Incorrect pattern representation**: The SMARTS patterns used to represent the structural features might be incorrect or incomplete, leading to missed matches.
 
-    # Check for glycosidic bond between nucleobase and sugar
-    glycosidic_pattern = Chem.MolFromSmarts("[*;r;#7]1[*;r;#7][*;r;#7][*;r;#7][*;r;#7][*;r;#7]1OC")
-    if not mol.HasSubstructMatch(glycosidic_pattern):
-        return False, "No glycosidic bond between nucleobase and sugar"
+3. **Lack of additional checks**: The program might need additional checks or constraints to ensure that the identified substructures are correctly combined and match the definition of a nucleoside phosphate.
 
-    return True, "Contains a nucleobase, sugar ring, and phosphate group(s)"
+To improve the program, you could consider the following strategies:
+
+1. **Analyze examples**: Carefully examine the provided examples of nucleoside phosphates and identify any patterns or structural features that the current program might be missing.
+
+2. **Relax or expand patterns**: If the patterns are too restrictive, try relaxing them or using more general patterns to cover a broader range of structures.
+
+3. **Check for missing features**: Ensure that the program checks for all the necessary features defined in the nucleoside phosphate class, such as the presence of a nucleobase, sugar ring, phosphate group(s), and their correct connectivity.
+
+4. **Add additional constraints**: Implement additional checks or constraints to ensure that the identified substructures are correctly combined and satisfy the definition of a nucleoside phosphate.
+
+5. **Use existing libraries or resources**: Consider using existing libraries or resources specifically designed for identifying or working with nucleoside phosphates, as they might have more robust and comprehensive pattern matching capabilities.
+
+6. **Test and refine**: Continuously test the program with a diverse set of examples, both positive and negative, and refine the patterns and checks based on the results.
+
+By iteratively improving the program and addressing the potential issues identified in the analysis, you should be able to achieve better performance in classifying nucleoside phosphates.
