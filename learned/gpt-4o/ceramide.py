@@ -19,26 +19,28 @@ def is_ceramide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Sphingoid base: long-chain amino alcohol with a general flexible pattern
-    sphingoid_pattern = Chem.MolFromSmarts("N[C@@H](CO)C(O)")  # Include at least basic components
+    # Sphingoid base: long-chain amino alcohol with a generalized pattern
+    sphingoid_pattern = Chem.MolFromSmarts("N[C@H](CO)[C@@H](O)CC")
     
-    # Amide linkage pattern
-    amide_pattern = Chem.MolFromSmarts("N[C@@H]C(=O)C")  # Capture amide linkage specifically related to sphingoid
-    
-    # Check for amide linkage & sphingoid base
+    # Amide linkage pattern - simplified
+    amide_pattern = Chem.MolFromSmarts("N[C@H](O)C(=O)C")  # More general, detect amide
+
+    # Check for sphingoid base
     if not mol.HasSubstructMatch(sphingoid_pattern):
         return False, "Sphingoid base pattern not found"
+
+    # Check for amide linkage
     if not mol.HasSubstructMatch(amide_pattern):
         return False, "Amide linkage pattern not found"
     
-    # Ensure sufficient long chain - count carbon atoms
+    # Ensure carbon chain within reasonable range
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if c_count < 14 or c_count > 26:
         return False, f"Number of carbon atoms ({c_count}) is outside typical ceramide range (14-26)"
     
-    # Check for at least one hydroxyl group:
+    # Check for hydroxyl group
     hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")  # Recognize -OH
     if not mol.HasSubstructMatch(hydroxyl_pattern):
-        return False, "No hydroxyl groups found, common in ceramides"
+        return False, "No common hydroxyl groups found"
 
     return True, "Contains characteristic sphingoid base with an amide-linked fatty acid chain"
