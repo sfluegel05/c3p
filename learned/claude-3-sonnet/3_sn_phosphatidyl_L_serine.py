@@ -33,8 +33,8 @@ def is_3_sn_phosphatidyl_L_serine(smiles: str):
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
     
-    # Look for phosphoserine group (O-P(=O)(O-)-O-C(=O)-N)
-    phosphoserine_pattern = Chem.MolFromSmarts("[OX2]P(=O)([OX2])[OX2]C(=O)N")
+    # Look for phosphoserine group (O-P(=O)(O-)-O-C~N)
+    phosphoserine_pattern = Chem.MolFromSmarts("[OX2]P(=O)([OX2])[OX2]C~N")
     if not mol.HasSubstructMatch(phosphoserine_pattern):
         return False, "No phosphoserine group found"
     
