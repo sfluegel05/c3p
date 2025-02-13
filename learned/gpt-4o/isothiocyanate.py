@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_isothiocyanate(smiles: str):
     """
     Determines if a molecule is an isothiocyanate based on its SMILES string.
-    An isothiocyanate contains the functional group N=C=S, often as a terminal group.
+    An isothiocyanate contains the functional group N=C=S.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,20 +20,14 @@ def is_isothiocyanate(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Look for isothiocyanate group pattern N=C=S, making it more specific to common bonds
-    isothiocyanate_pattern = Chem.MolFromSmarts("N=C=S")
-    
-    # Find matches for the isothiocyanate group in the molecule
-    matches = mol.GetSubstructMatches(isothiocyanate_pattern)
 
-    if matches:
-        # Iterate over matches and confirm the pattern
-        for match in matches:
-            nx, cx, sx = match
-            if mol.GetAtomWithIdx(sx).GetDegree() == 1:  # Ensures sulfur is terminal
-                return True, "Contains terminal isothiocyanate group (N=C=S)"
-        
-        return False, "Isothiocyanate group not terminal"
+    # Look for isothiocyanate group pattern N=C=S
+    isothiocyanate_pattern = Chem.MolFromSmarts("N=C=S")
+    if mol.HasSubstructMatch(isothiocyanate_pattern):
+        return True, "Contains isothiocyanate group (N=C=S)"
     else:
         return False, "No isothiocyanate group (N=C=S) found"
+
+# Example usage:
+# result, reason = is_isothiocyanate("N(=C=S)CCCCS(=O)C")
+# print(result, reason)
