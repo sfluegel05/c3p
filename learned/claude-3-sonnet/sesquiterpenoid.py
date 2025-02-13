@@ -1,56 +1,24 @@
 """
 Classifies: CHEBI:26658 sesquiterpenoid
 """
-"""
-Classifies: CHEBI:36654 sesquiterpenoid
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+The previous program had a few issues that led to the low F1 score:
 
-def is_sesquiterpenoid(smiles: str):
-    """
-    Determines if a molecule is a sesquiterpenoid based on its SMILES string.
-    A sesquiterpenoid is a terpenoid derived from a sesquiterpene (C15 skeleton),
-    which may have rearranged or modified by the removal of one or more methyl groups.
+1. **Incomplete sesquiterpene skeleton patterns**: The list of SMARTS patterns for identifying sesquiterpene skeletons was not comprehensive enough. While it covered some common skeletons, it missed many others, leading to false negatives.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. **Over-reliance on skeleton patterns**: The program heavily relied on finding a specific skeleton pattern. If none were found, it then checked other criteria like ring count and rotatable bonds. However, these criteria alone are not sufficient to definitively classify a molecule as a sesquiterpenoid, leading to false positives.
 
-    Returns:
-        bool: True if molecule is a sesquiterpenoid, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Count number of carbon atoms
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count != 15:
-        return False, f"Found {c_count} carbon atoms, sesquiterpenoids must have exactly 15"
-    
-    # Look for characteristic sesquiterpene skeleton patterns
-    # This is a non-exhaustive list, more patterns could be added
-    patterns = ['CC(C)CCCC(C)C', 'CC(C)CCCCCC(C)C', 'CC(C)CC(C)CC(C)', 'CC(C)CCC(C)(C)C', 'CC(C)CCCC(C)(C)C']
-    for pattern in patterns:
-        patt = Chem.MolFromSmarts(pattern)
-        if mol.HasSubstructMatch(patt):
-            return True, "Found sesquiterpene skeleton pattern"
-    
-    # If no skeleton pattern matched, check other criteria
-    
-    # Count rings - terpenoids typically have 1-4 rings
-    n_rings = rdMolDescriptors.CalcNumRings(mol)
-    if n_rings < 1 or n_rings > 4:
-        return False, f"Found {n_rings} rings, sesquiterpenoids typically have 1-4 rings"
-    
-    # Count rotatable bonds - terpenoids have few rotatable bonds
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable > 10:
-        return False, "Too many rotatable bonds for a sesquiterpenoid"
-    
-    # If all criteria matched, assume it is a sesquiterpenoid
-    return True, "Meets criteria for sesquiterpenoid (15 carbons, ring/rotatable bond counts, potential skeleton pattern)"
+3. **Strict carbon count requirement**: The program required exactly 15 carbon atoms for a sesquiterpenoid. While this is generally true, there are exceptions where sesquiterpenoids can have fewer or more carbon atoms due to rearrangements or modifications.
+
+To improve the program, we can consider the following strategies:
+
+1. **Expand the list of sesquiterpene skeleton patterns**: Manually curate a more comprehensive list of SMARTS patterns that cover a wider range of sesquiterpene skeletons. This will help reduce false negatives.
+
+2. **Incorporate more specific structural features**: In addition to skeleton patterns, look for other structural features that are characteristic of sesquiterpenoids, such as the presence of specific functional groups (e.g., alcohols, esters, ethers), specific ring systems (e.g., decalins, bicyclo[3.3.1] systems), or specific carbon skeletal rearrangements.
+
+3. **Relax the strict carbon count requirement**: Instead of requiring exactly 15 carbon atoms, allow for a range of carbon counts (e.g., 13-17) to account for potential modifications or rearrangements.
+
+4. **Consider using machine learning models**: If curating a comprehensive set of rules and patterns becomes too complex, consider training a machine learning model (e.g., random forest, neural network) on a large dataset of labeled sesquiterpenoids and non-sesquiterpenoids. This could potentially learn the complex patterns more effectively than hand-crafted rules.
+
+5. **Incorporate additional descriptors**: Explore the use of additional molecular descriptors (e.g., topological indices, molecular fingerprints) that could help differentiate sesquiterpenoids from other molecules.
+
+By addressing these issues, the program's performance in classifying sesquiterpenoids should improve significantly.
