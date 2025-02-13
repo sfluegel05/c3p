@@ -24,51 +24,43 @@ def is_N_acyl_L_alpha_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for carboxylic acid/carboxylate group
-    carboxyl_pattern = Chem.MolFromSmarts("[$([CX3](=[OX1])[OX2H1]),$([CX3](=[OX1])[OX1-])]")
-    if not mol.HasSubstructMatch(carboxyl_pattern):
-        return False, "No carboxylic acid/carboxylate group found"
+    # Pattern for alpha-amino acid core with any substituent on nitrogen
+    # [C@H] ensures S stereochemistry (L-amino acid)
+    amino_acid_pattern = Chem.MolFromSmarts("[C@H](N)(C(=O)[OH1,O-])[#6,#1]")
+    if not mol.HasSubstructMatch(amino_acid_pattern, useChirality=True):
+        return False, "No L-alpha-amino acid core found"
 
-    # Look for alpha-amino acid core with N-acyl
-    # More general pattern that matches both protonated and deprotonated forms
-    # and different representations of the acyl group
-    amino_acid_pattern = Chem.MolFromSmarts("""
-        [C:1]([*,H])([N:2]([H,#6,#7,#8])[C:3](=[O:4])[#6,#7,#8,#16])[C:5](=[O:6])[O,O-]
-    """)
+    # Pattern for N-acyl group (R-C=O-N)
+    # The nitrogen should be connected to the alpha carbon
+    n_acyl_pattern = Chem.MolFromSmarts("[#6,#1]C(=O)[NH1]C([#6,#1])(C(=O)[OH1,O-])[#6,#1]")
+    if not mol.HasSubstructMatch(n_acyl_pattern):
+        return False, "No N-acyl group found"
+
+    # Get all matches of the amino acid pattern
+    matches = mol.GetSubstructMatches(amino_acid_pattern, useChirality=True)
     
-    matches = mol.GetSubstructMatches(amino_acid_pattern)
-    if not matches:
-        return False, "No N-acyl alpha-amino acid core structure found"
-
-    # Check each match for correct configuration
     for match in matches:
         alpha_carbon_idx = match[0]
         nitrogen_idx = match[1]
-        carbonyl_idx = match[2]
         
-        # Get the alpha carbon and check its chirality
+        # Get the alpha carbon and check its chirality explicitly
         alpha_carbon = mol.GetAtomWithIdx(alpha_carbon_idx)
-        
-        # Skip if not chiral
         if alpha_carbon.GetChiralTag() == Chem.ChiralType.CHI_UNSPECIFIED:
             continue
             
-        # Check for L configuration (S in CIP)
-        # Need to check both CCW and CW because SMILES representation can vary
-        chiral_tag = alpha_carbon.GetChiralTag()
-        if chiral_tag in [Chem.ChiralType.CHI_TETRAHEDRAL_CCW, Chem.ChiralType.CHI_TETRAHEDRAL_CW]:
-            # Verify N-acyl group
-            nitrogen = mol.GetAtomWithIdx(nitrogen_idx)
-            carbonyl = mol.GetAtomWithIdx(carbonyl_idx)
+        # Get the nitrogen atom and check its substitution
+        nitrogen = mol.GetAtomWithIdx(nitrogen_idx)
+        
+        # Nitrogen should have exactly one hydrogen (NH) since it's N-acylated
+        if nitrogen.GetTotalNumHs() != 1:
+            continue
             
-            # Check nitrogen substitution
-            if nitrogen.GetTotalNumHs() > 1:  # Should not be NH2
-                continue
-                
-            # Check carbonyl is part of acyl group
-            if carbonyl.GetTotalNumHs() > 0:  # Carbonyl carbon should have no H
-                continue
-                
-            return True, "Contains N-acyl-L-alpha-amino acid structure"
-            
-    return False, "No valid N-acyl-L-alpha-amino acid structure found with correct stereochemistry"
+        # Check that nitrogen is connected to a carbonyl carbon
+        for neighbor in nitrogen.GetNeighbors():
+            if neighbor.GetAtomicNum() == 6:  # Carbon
+                for n2 in neighbor.GetNeighbors():
+                    if n2.GetAtomicNum() == 8 and n2.GetIsAromatic() == False:  # Oxygen
+                        if sum(1 for b in neighbor.GetBonds() if b.GetBondType() == Chem.BondType.DOUBLE) == 1:
+                            return True, "Contains N-acyl-L-alpha-amino acid structure"
+    
+    return False, "No valid N-acyl-L-alpha-amino acid structure found with correct substitution pattern"
