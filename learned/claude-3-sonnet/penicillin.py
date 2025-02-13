@@ -28,31 +28,51 @@ def is_penicillin(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for penam core structure (beta-lactam fused to thiazolidine ring)
-    # More permissive pattern that matches the basic scaffold
-    penam_core = Chem.MolFromSmarts('[#16]1[#6]2[#7][#6](=[#8])[#6][#6]2[#7]1')
-    if not mol.HasSubstructMatch(penam_core):
+    # Pattern includes the key stereocenters and ring fusion
+    penam_patterns = [
+        # Pattern 1: More specific with stereochemistry
+        '[H][C@]12S[C@@](C)(C)[C@@H](N1)C(=O)N2',
+        # Pattern 2: Alternative representation
+        'S1[C@]2([H])[C@@H](N[C@@H]1C(C)(C))[C(=O)N2',
+        # Pattern 3: More general pattern
+        'S1C2NC(=O)C2N1'
+    ]
+    
+    core_found = False
+    for pattern in penam_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            core_found = True
+            break
+            
+    if not core_found:
         return False, "No penam core structure found"
 
-    # Check for two methyl groups at position 2
-    # More flexible pattern that matches any two methyl groups on the same carbon
-    two_methyls = Chem.MolFromSmarts('[CH3][C]([CH3])([#16])[#6]')
-    if not mol.HasSubstructMatch(two_methyls):
-        return False, "Missing two methyl groups at position 2"
-
-    # Check for carboxylate group at position 3
-    # More permissive pattern that matches different forms of carboxylate
-    carboxylate = Chem.MolFromSmarts('[#6]([#16])([#6][#7])[#6](=[#8])[#8,#8-]')
-    if not mol.HasSubstructMatch(carboxylate):
+    # Check for carboxylate group at position 3 (more flexible pattern)
+    carboxylate_patterns = [
+        'S[C@](C)(C)[C@@H](N)C(=O)[O,OH]',  # Free acid form
+        'S[C@](C)(C)[C@@H](N)C(=O)O[C,H]'   # Ester form
+    ]
+    
+    carboxylate_found = False
+    for pattern in carboxylate_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            carboxylate_found = True
+            break
+            
+    if not carboxylate_found:
         return False, "Missing carboxylate group at position 3"
 
+    # Check for two methyl groups at position 2
+    dimethyl_pattern = Chem.MolFromSmarts('SC(C)(C)[C,H]')
+    if not mol.HasSubstructMatch(dimethyl_pattern):
+        return False, "Missing two methyl groups at position 2"
+
     # Check for carboxamido group at position 6
-    # More flexible pattern that matches different types of amide substituents
-    carboxamido = Chem.MolFromSmarts('[#6][#7][#6](=[#8])[#6]1[#7][#6](=[#8])')
-    if not mol.HasSubstructMatch(carboxamido):
+    carboxamido_pattern = Chem.MolFromSmarts('[NH][CH]1C(=O)N2')
+    if not mol.HasSubstructMatch(carboxamido_pattern):
         return False, "Missing carboxamido group at position 6"
 
-    # Basic structural checks
-    # Count key atoms to verify overall composition
+    # Verify overall composition
     s_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 16)
     if s_count != 1:
         return False, f"Incorrect number of sulfur atoms (found {s_count}, expected 1)"
@@ -62,10 +82,10 @@ def is_penicillin(smiles: str):
         return False, f"Too few nitrogen atoms (found {n_count}, expected at least 2)"
 
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count < 3:  # At least 3 oxygens (carboxylate + amide)
+    if o_count < 3:
         return False, f"Too few oxygen atoms (found {o_count}, expected at least 3)"
 
-    # Additional check for bicyclic system size
+    # Check ring system
     ring_info = mol.GetRingInfo()
     if ring_info.NumRings() < 2:
         return False, "Missing required bicyclic system"
