@@ -1,66 +1,25 @@
 """
 Classifies: CHEBI:48030 tetrapeptide
 """
-"""
-Classifies: CHEBI:36357 tetrapeptide
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+Based on the previous code and the outcomes, it seems that the program is missing some key features to accurately classify tetrapeptides. Here are some potential issues and improvements:
 
-# Comprehensive set of SMARTS patterns for common amino acid residues
-AA_PATTERNS = ['[N;X3,X4](C)(C(=O)O)[C@H]([*])C(=O)N', # Ala, Gly
-               '[N;X3,X4](C([CH3]([*]))C)(C(=O)O)[C@H]([*])C(=O)N', # Val, Ile, Leu
-               '[N;X3,X4](C([CH2]([*])Cc1ccccc1))(C(=O)O)[C@H]([*])C(=O)N', # Phe
-               '[N;X3,X4](C([CH2]([*])Cc1c[nH]c2c1cccc2))(C(=O)O)[C@H]([*])C(=O)N', # Trp
-               '[N;X3,X4](C([CH2]([*])Cc1ccc(O)cc1))(C(=O)O)[C@H]([*])C(=O)N', # Tyr
-               '[N;X3,X4](C([CH2]([*])SC))(C(=O)O)[C@H]([*])C(=O)N', # Cys, Met
-               '[N;X3,X4](C([CH2]([*])C(N)=O))(C(=O)O)[C@H]([*])C(=O)N', # Asn, Gln
-               '[N;X3,X4](C([CH2]([*])C(O)=O))(C(=O)O)[C@H]([*])C(=O)N', # Asp, Glu
-               '[N;X3,X4](C([CH2]([*])CC(C)(C)N))(C(=O)O)[C@H]([*])C(=O)N', # Lys
-               '[N;X3,X4](C([CH2]([*])CC1=CNC=N1))(C(=O)O)[C@H]([*])C(=O)N', # His
-               '[N;X3,X4](C([CH2]([*])CC(C)(C)NC(N)=N))(C(=O)O)[C@H]([*])C(=O)N'] # Arg
+1. **Molecular Weight Range**: The molecular weight range of 300-800 Da might be too broad or too narrow for tetrapeptides. Tetrapeptides typically have a molecular weight in the range of 400-800 Da, depending on the amino acid residues. Adjusting this range could improve accuracy.
 
-def is_tetrapeptide(smiles: str):
-    """
-    Determines if a molecule is a tetrapeptide based on its SMILES string.
-    A tetrapeptide is any molecule that contains four amino-acid residues connected by peptide linkages.
+2. **Backbone Pattern**: The SMARTS pattern used to identify the tetrapeptide backbone is too specific. It requires the amino acids to be connected in a specific order and does not account for variations in the backbone, such as cyclic peptides or branched peptides. A more flexible pattern or a combination of patterns might be necessary to capture all possible tetrapeptide structures.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+3. **Amino Acid Residue Patterns**: The set of SMARTS patterns used to identify amino acid residues is comprehensive but might still miss some less common or modified residues. Additionally, the patterns do not account for protecting groups or other modifications that could be present in the SMILES strings.
 
-    Returns:
-        bool: True if molecule is a tetrapeptide, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Check molecular weight range (300-800 Da)
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 300 or mol_wt > 800:
-        return False, f"Molecular weight ({mol_wt:.2f} Da) outside typical range for tetrapeptides"
-    
-    # Check elemental composition
-    composition = rdMolDescriptors.CalcMolFormula(mol)
-    if "N" not in composition or "O" not in composition or "C" not in composition:
-        return False, "Missing essential elements (N, O, C) for peptides"
-    
-    # Look for tetrapeptide backbone pattern
-    tetrapeptide_pattern = Chem.MolFromSmarts("[N;X3,X4]([CH2])[CH]([*])[C](=O)[N;X3,X4]([CH2])[CH]([*])[C](=O)[N;X3,X4]([CH2])[CH]([*])[C](=O)[N;X3,X4]([CH2])[CH]([*])[C](=O)O")
-    if not mol.HasSubstructMatch(tetrapeptide_pattern):
-        return False, "No tetrapeptide backbone found"
-    
-    # Look for 4 amino acid residues
-    aa_matches = 0
-    for pattern in AA_PATTERNS:
-        aa_pattern = Chem.MolFromSmarts(pattern)
-        aa_matches += len(mol.GetSubstructMatches(aa_pattern))
-    
-    if aa_matches != 4:
-        return False, f"Found {aa_matches} amino acid residues, need exactly 4"
-    
-    return True, "Contains four amino-acid residues connected by peptide linkages"
+4. **Stereochemistry**: The current program does not consider the stereochemistry of the amino acid residues, which is crucial for correctly identifying peptides. Tetrapeptides are typically composed of L-amino acids, so checking the stereochemistry could improve the classification accuracy.
+
+5. **Handling Exceptional Cases**: Some of the false negatives in the outcomes might be due to exceptional cases or edge cases that the program does not handle correctly. For example, the program might struggle with peptides containing non-standard amino acids or unusual modifications.
+
+Here are some potential improvements to address these issues:
+
+- Refine the molecular weight range based on a more extensive analysis of tetrapeptide structures.
+- Use a more flexible SMARTS pattern or a combination of patterns to identify the tetrapeptide backbone, accounting for variations such as cyclic peptides and branched peptides.
+- Expand the set of SMARTS patterns for amino acid residues to include less common or modified residues, and consider handling protecting groups or other modifications.
+- Incorporate stereochemistry checks to ensure that the identified amino acid residues have the correct stereochemistry (typically L-amino acids).
+- Implement additional checks or exception handling for edge cases, such as peptides containing non-standard amino acids or unusual modifications.
+- Consider using machine learning techniques or other more advanced methods to improve the classification accuracy, especially for complex or exceptional cases.
+
+By addressing these issues and incorporating the suggested improvements, the program's ability to accurately classify tetrapeptides should be enhanced.
