@@ -22,12 +22,13 @@ def is_mineral_nutrient(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS pattern for common metal cations in essential mineral nutrients
-    # These metals are usually in their +1, +2 or +3 oxidation states
-    metal_cations_pattern = Chem.MolFromSmarts("[K+1, Na+1, Ca+2, Mg+2, Fe+3, Zn+2, Al+3, Ba+2, Cs+1]")
+    # Define SMARTS pattern for metal cations in essential mineral nutrients
+    metal_cations_smarts = "[K+],[Na+],[Ca+2],[Mg+2],[Fe+3],[Zn+2],[Al+3],[Ba+2],[Cs+],[La+3],[Sb+5]"
+    metal_cations_pattern = Chem.MolFromSmarts(metal_cations_smarts)
     
     # Define SMARTS patterns for common anionic groups (sulfates, chlorides, etc.)
-    anions_pattern = Chem.MolFromSmarts("[Cl-1, F-1, P([O-])([O-])([O-])=O, S(=O)([O-])([O-])[O-], C(=O)([O-])[O-], N(=O)([O-])[O-], [O-][Si]([O-])([O-])[O-]]")
+    anions_smarts = "[Cl-],[F-],[P]([O-])([O-])([O-])=O,[S]([O-])([O-])=O,[C]([O-])([O-])=O,[N]([O-])([O-])=O,[Si]([O-])([O-])([O-])"
+    anions_pattern = Chem.MolFromSmarts(anions_smarts)
     
     # Check for presence of at least one metal cation
     if not mol.HasSubstructMatch(metal_cations_pattern):
