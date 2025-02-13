@@ -28,16 +28,10 @@ def is_monocarboxylic_acid_anion(smiles: str):
         return False, "Invalid SMILES string"
     
     # Look for carboxylate anion group (-C(=O)[O-])
-    carboxylate_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2-]")
+    carboxylate_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2-,OX1-]")
     carboxylate_matches = mol.GetSubstructMatches(carboxylate_pattern)
     if len(carboxylate_matches) != 1:
         return False, f"Found {len(carboxylate_matches)} carboxylate groups, need exactly 1"
-    
-    # Check for the absence of intact carboxy groups (-C(=O)OH)
-    intact_carboxy_pattern = Chem.MolFromSmarts("C(=O)O")
-    intact_carboxy_matches = mol.GetSubstructMatches(intact_carboxy_pattern)
-    if len(intact_carboxy_matches) > 0:
-        return False, "Found intact carboxy groups, which should be deprotonated"
     
     # Check for the presence of a hydrocarbon chain or ring system
     hydrocarbon_pattern = Chem.MolFromSmarts("[C;!$(C=O)]")
@@ -48,6 +42,10 @@ def is_monocarboxylic_acid_anion(smiles: str):
     # Check for the presence of hydroxy groups (-OH)
     hydroxy_pattern = Chem.MolFromSmarts("[OX2H]")
     hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
+    
+    # Check for the presence of carbon-carbon double bonds (C=C)
+    double_bond_pattern = Chem.MolFromSmarts("C=C")
+    double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
     
     # Check molecular properties
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
@@ -67,4 +65,6 @@ def is_monocarboxylic_acid_anion(smiles: str):
     reason = "Contains a single carboxylate anion group, a hydrocarbon chain/ring, and molecular properties consistent with a monocarboxylic acid anion."
     if len(hydroxy_matches) > 0:
         reason += " Also contains hydroxy groups."
+    if len(double_bond_matches) > 0:
+        reason += " Also contains carbon-carbon double bonds."
     return True, reason
