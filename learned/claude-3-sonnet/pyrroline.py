@@ -6,6 +6,7 @@ Classifies: CHEBI:35688 pyrroline
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_pyrroline(smiles: str):
     """
@@ -26,32 +27,26 @@ def is_pyrroline(smiles: str):
         return False, "Invalid SMILES string"
     
     # Look for dihydropyrrole ring pattern
-    dihydropyrrole_pattern = Chem.MolFromSmarts("[NR1]1[CR1][CR1][CR1][CR1]1")
+    dihydropyrrole_pattern = Chem.MolFromSmarts("[NR1]1[CR1][CR1]=[CR1][CR1]1")
     if not mol.HasSubstructMatch(dihydropyrrole_pattern):
         return False, "No dihydropyrrole ring found"
     
     # Check for aromaticity (should be non-aromatic)
-    if mol.GetAromaticRingInfo().AromaticRings:
+    if rdMolDescriptors.CalcNumAromaticRings(mol) > 0:
         return False, "Pyrroline ring must be non-aromatic"
-    
-    # Check for other rings (should be monocyclic)
-    rings = mol.GetRingInfo().AtomRings()
-    if len(rings) > 1:
-        return False, "Pyrroline should be a monocyclic compound"
     
     # Check for heteroatoms other than nitrogen
     allowed_atoms = [6, 7]  # C, N
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() not in allowed_atoms:
             return False, "Pyrroline should only contain C and N atoms"
-        elif atom.GetAtomicNum() == 7:
-            # Check if nitrogen is in a 5-membered ring
-            is_in_5ring = False
-            for ring in rings:
-                if atom.GetIdx() in ring and len(ring) == 5:
-                    is_in_5ring = True
-                    break
-            if not is_in_5ring:
-                return False, "Nitrogen should be part of a 5-membered ring"
     
+    # Check for additional rings (should be monocyclic)
+    rings = mol.GetRingInfo().AtomRings()
+    if len(rings) > 1:
+        return False, "Pyrroline should be a monocyclic compound"
+    
+    # Check for specific substituent patterns or additional constraints
+    # ...
+
     return True, "Contains a non-aromatic dihydropyrrole ring system"
