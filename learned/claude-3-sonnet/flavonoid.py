@@ -1,30 +1,55 @@
 """
 Classifies: CHEBI:47916 flavonoid
 """
-The previous program attempted to classify flavonoids based on the presence of a flavonoid core skeleton and an aryl substituent at position 2. However, it appears that the approach was too strict, leading to many false negatives.
+Here's a Python program that attempts to classify chemical entities as flavonoids based on their SMILES strings:
 
-Some potential issues with the previous approach:
+"""
+Classifies chemical entities of the class CHEBI:26207 flavonoid.
 
-1. **Rigid core definition**: The program used a specific SMARTS pattern to define the flavonoid core, which may have excluded some valid variations and substitution patterns.
+A flavonoid is 'Any member of the 'superclass' flavonoids whose skeleton is based on 1-benzopyran with an aryl substituent at position 2. The term was originally restricted to natural products, but is now also used to describe semi-synthetic and fully synthetic compounds.'
+"""
 
-2. **Aryl substituent requirement**: While an aryl substituent at position 2 is a common feature, it may not be strictly necessary for all flavonoids.
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-3. **Substituent patterns**: The program checked for common flavonoid substituents, but this list may have been incomplete or too restrictive.
+def is_flavonoid(smiles: str):
+    """
+    Determines if a molecule is a flavonoid based on its SMILES string.
 
-4. **Stereochemistry handling**: The program did not consider stereochemistry, which is important for many flavonoid structures.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-To improve the classification, a more flexible approach that considers the diverse structural variations of flavonoids may be needed. Here are some potential strategies:
+    Returns:
+        bool: True if molecule is a flavonoid, False otherwise
+        str: Reason for classification
+    """
 
-1. **Use a broader core definition**: Instead of a rigid SMARTS pattern, consider using a more general definition of the flavonoid core, such as the presence of a benzopyran ring system and a phenyl ring (either fused or attached).
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-2. **Consider alternative substitution patterns**: Flavonoids can have a wide range of substituents, not just the common ones checked in the previous program. It may be better to look for common structural motifs or functional groups rather than specific substituents.
+    # Look for 1-benzopyran core
+    benzopyran_pattern = Chem.MolFromSmarts("c1c(oc2ccccc2)cc3ccccc3c1")
+    if not mol.HasSubstructMatch(benzopyran_pattern):
+        return False, "No 1-benzopyran core found"
 
-3. **Incorporate stereochemistry**: Many flavonoids have specific stereochemistry, which should be accounted for in the classification process.
+    # Look for aryl substituent at position 2
+    aryl_sub_pattern = Chem.MolFromSmarts("c1c(oc2ccccc2)c(c3ccccc3)cc4ccccc14")
+    if not mol.HasSubstructMatch(aryl_sub_pattern):
+        return False, "No aryl substituent at position 2 found"
 
-4. **Use machine learning**: Given the structural diversity of flavonoids, a machine learning approach trained on a large dataset of known flavonoid and non-flavonoid structures could be more effective than a rule-based approach.
+    # Check for common functional groups
+    hydroxy_pattern = Chem.MolFromSmarts("[OX2H]")
+    methoxy_pattern = Chem.MolFromSmarts("[OX2C]")
+    glycoside_pattern = Chem.MolFromSmarts("[OX2]C[C@H]1[C@@H]([C@H]([C@@H]([C@H](O1)O)O)O)O")
 
-5. **Leverage existing databases**: Consulting databases of known flavonoid structures, such as those curated by organizations like ChEBI or PubChem, could provide valuable insights into the structural diversity of this class and help inform the classification process.
+    has_hydroxy = mol.HasSubstructMatch(hydroxy_pattern)
+    has_methoxy = mol.HasSubstructMatch(methoxy_pattern)
+    has_glycoside = mol.HasSubstructMatch(glycoside_pattern)
 
-6. **Combine multiple approaches**: A hybrid approach that combines rule-based filtering with machine learning or database lookup could leverage the strengths of different methods and improve overall classification accuracy.
+    if not (has_hydroxy or has_methoxy or has_glycoside):
+        return False, "No common flavonoid functional groups found"
 
-Ultimately, the classification of flavonoids is a complex task due to their structural diversity, and a more nuanced approach that accounts for this diversity is likely necessary to achieve high accuracy.
+    return True, "Contains 1-benzopyran core with aryl substituent at position 2 and common functional groups"
