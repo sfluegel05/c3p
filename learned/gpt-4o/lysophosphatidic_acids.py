@@ -20,28 +20,22 @@ def is_lysophosphatidic_acids(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for glycerol backbone with two hydroxyl groups
-    glycerol_pattern = Chem.MolFromSmarts("OCC(O)CO")
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "Glycerol backbone not found"
+    # Check for glycerol backbone with phosphate group attached
+    glycerol_phosphate_pattern = Chem.MolFromSmarts("OCC(O)COP(=O)(O)O")
+    if not mol.HasSubstructMatch(glycerol_phosphate_pattern):
+        return False, "Glycerol phosphate backbone not found"
     
-    # Verify only one ester linkage (C(=O)OC) attached to the glycerol backbone
-    ester_pattern = Chem.MolFromSmarts("C(=O)OC")
+    # Check for presence of at least one ester linkage attached to glycerol
+    ester_pattern = Chem.MolFromSmarts("C(=O)OCC(O)CO")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) != 1:
-        return False, f"Expected exactly one ester linkage, found {len(ester_matches)}"
+    if len(ester_matches) == 0:
+        return False, "No acyl chain esterified to the glycerol backbone"
     
-    # Verify presence of phosphate group directly linked to the glycerol backbone
-    phosphate_pattern = Chem.MolFromSmarts("COP(=O)(O)O")
-    if not mol.HasSubstructMatch(phosphate_pattern):
-        return False, "Phosphate group not directly linked to glycerol backbone"
-    
-    # Check that there are no additional ester linkages indicating a diacylglycerol structure.
-    # Specifically, ensure that no other acyl chains are attached
-    additional_fatty_acid_pattern = Chem.MolFromSmarts("OC(=O)C")
-    additional_fatty_acid_matches = mol.GetSubstructMatches(additional_fatty_acid_pattern)
-    if len(additional_fatty_acid_matches) > 1:
-        return False, "Additional acyl chain(s) found, indicating it may not be a lysophosphatidic acid"
+    # Verify single ester linkage rule for simplicity; usually TAG structure
+    # Look for presence of only one glycerol-attached carbon chain starting with C=O
+    if len(ester_matches) > 1:
+        return False, f"More than one ester linkage identified, found {len(ester_matches)}"
 
+    # Additional checks can include typical lysophosphatidic acid characteristics like carbon chain lengths
     # All criteria met, it is a lysophosphatidic acid.
     return True, "The molecule is a lysophosphatidic acid"
