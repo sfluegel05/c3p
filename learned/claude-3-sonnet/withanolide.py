@@ -9,7 +9,7 @@ forming a lactone ring and its substituted derivatives.
 """
 
 from rdkit import Chem
-from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_withanolide(smiles: str) -> tuple[bool, str]:
     """
@@ -29,19 +29,27 @@ def is_withanolide(smiles: str) -> tuple[bool, str]:
         return False, "Invalid SMILES string"
 
     # Check for steroid backbone
-    steroid_pattern = Chem.MolFromSmarts("[C@]1(C)(CC[C@]2([H])[C@@]3([H])CC[C@@]4([H])C[C@H](C)[C@@H](O)[C@@H](C)[C@H](O)[C@@H](C)[C@@H](O)[C@@H](C)[C@@H]4CCC3=C2)CC1")
+    steroid_pattern = Chem.MolFromSmarts("[C@@](C)(CC[C@@](C)(C[C@@H]([C@H]1[C@@H](C[C@@H](C[C@@H]([C@@H](C[C@H]([C@@H](C1)C)C)C)C)C)C)C)C")
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "Does not contain steroid backbone"
 
-    # Check for modified side chain with lactone ring
-    sidechain_pattern = Chem.MolFromSmarts("[C@@]1([C@@](CC1=O)(C)[C@@]2([H])CC[C@@]3([H])[C@]4([H])CC[C@@]5([H])C[C@H](C)[C@@H](O)[C@@H](C)[C@H](O)[C@@H](C)[C@@H]5CCC4=C3C2)C")
-    if not mol.HasSubstructMatch(sidechain_pattern):
-        return False, "No modified side chain with lactone ring found"
+    # Check for lactone ring
+    lactone_pattern = Chem.MolFromSmarts("C(=O)OC")
+    if not mol.HasSubstructMatch(lactone_pattern):
+        return False, "No lactone ring found"
 
-    # Count number of rings (withanolides typically have 4-5 rings)
-    ring_info = mol.GetRingInfo()
-    n_rings = ring_info.NumRings()
-    if n_rings < 4 or n_rings > 5:
-        return False, "Number of rings outside typical range for withanolides"
+    # Check for C28 carbon skeleton
+    if mol.GetNumHeavyAtoms() != 28:
+        return False, "Does not have a C28 carbon skeleton"
 
-    return True, "Contains steroid backbone with modified side chain forming a lactone ring"
+    # Check molecular formula
+    formula = rdMolDescriptors.CalcMolFormula(mol)
+    if formula != "C28H38O4" and formula != "C28H40O4":
+        return False, "Molecular formula not consistent with withanolides"
+
+    # Additional checks (optional)
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 400 or mol_wt > 600:
+        return False, "Molecular weight outside typical range for withanolides"
+
+    return True, "Contains steroid backbone with a lactone ring and a C28 carbon skeleton"
