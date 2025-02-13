@@ -1,26 +1,70 @@
 """
 Classifies: CHEBI:67142 nucleobase analogue
 """
-The previous program attempted to classify molecules as nucleobase analogues by checking for the presence of a nucleobase ring system and then looking for common modifications on that ring. However, the approach had some limitations, which can be seen from the outcomes:
+"""
+Classifies: CHEBI:50254 nucleobase analogue
+A molecule that can substitute for a normal nucleobase in nucleic acids.
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem, rdMolDescriptors
 
-1. **Missed cases**: The program failed to identify several known nucleobase analogues, such as 6-hydroxymethyladenine, 6-[(1,2-dideoxy-D-ribityl)amino]-5-[(E)-(2-oxopropylidene)amino]uracil, and 5,6-dihydroxyuracil. This suggests that the set of patterns used to detect modifications was incomplete or too restrictive.
+def is_nucleobase_analogue(smiles: str):
+    """
+    Determines if a molecule is a nucleobase analogue based on its SMILES string.
 
-2. **False positives**: The program incorrectly classified several molecules as nucleobase analogues, including those with modified nucleobase rings but not necessarily analogues that can substitute for normal nucleobases in nucleic acids. For example, it wrongly classified UDP-N-acetylmuramoyl-L-alanyl-D-glutamic acid, which contains a modified uracil ring but is not a nucleobase analogue.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Ring system detection**: The program relied on predefined SMARTS patterns to detect nucleobase ring systems. While this approach works for common ring systems, it may miss less common or more complex ring systems found in some nucleobase analogues.
+    Returns:
+        bool: True if molecule is a nucleobase analogue, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-To improve the program, consider the following suggestions:
+    # Check for common nucleobase ring systems
+    nucleobase_patterns = [
+        Chem.MolFromSmarts("c1nc[nH]c1"),       # pyrimidine
+        Chem.MolFromSmarts("c1ncnc1"),          # pyrazine
+        Chem.MolFromSmarts("c1ncnc2[nH]cnc12"), # purine
+        Chem.MolFromSmarts("c1ncnc2nc[nH]c12"), # imidazopyridine
+    ]
+    has_nucleobase_ring = any(mol.HasSubstructMatch(pattern) for pattern in nucleobase_patterns)
 
-1. **Expand the set of modification patterns**: The current set of modification patterns is limited and may not cover all possible modifications found in nucleobase analogues. Analyze the false negatives and expand the set of patterns to include additional modifications, such as alkylations, halogenations, and more complex substitutions.
+    if not has_nucleobase_ring:
+        return False, "No nucleobase ring system found"
 
-2. **Incorporate substructure matching for modifications**: Instead of relying solely on predefined SMARTS patterns, consider using substructure matching to identify modifications on the nucleobase ring. This approach could be more flexible and capable of detecting a wider range of modifications.
+    # Check for common modifications
+    modification_patterns = [
+        Chem.MolFromSmarts("[NH2]"),            # amino
+        Chem.MolFromSmarts("[OH]"),             # hydroxy
+        Chem.MolFromSmarts("[OX2H]"),           # keto
+        Chem.MolFromSmarts("[SX2]"),            # thiol
+        Chem.MolFromSmarts("[NX3]"),            # azido
+        Chem.MolFromSmarts("[NX2]=[OX1]"),      # nitro
+        Chem.MolFromSmarts("[CH3]"),            # methyl
+        Chem.MolFromSmarts("[CH2X4]"),          # alkyl
+        Chem.MolFromSmarts("[F,Cl,Br,I]"),      # halogens
+    ]
+    has_modifications = any(mol.HasSubstructMatch(pattern) for pattern in modification_patterns)
 
-3. **Implement more specific checks**: In addition to detecting modifications, consider implementing more specific checks to ensure that the modified ring system can indeed substitute for a normal nucleobase in nucleic acids. For example, you could check for the presence of specific functional groups or analyze the molecular topology to ensure compatibility with nucleic acid structures.
+    if not has_modifications:
+        return False, "No modifications found on nucleobase ring"
 
-4. **Use machine learning models**: As an alternative approach, you could explore using machine learning models trained on a dataset of known nucleobase analogues and non-analogues. These models could potentially learn the relevant features and patterns more effectively than hand-crafted rules.
+    # Check for nucleic acid compatibility
+    has_glycosidic_bond = mol.HasSubstructMatch(Chem.MolFromSmarts("[OX2][CX4]([CX4])[CX3]([OX2H])[CX3](=O)[NX3]"))
+    if has_glycosidic_bond:
+        return True, "Contains modified nucleobase ring and is compatible with nucleic acids"
 
-5. **Handle tautomers and isomers**: Nucleobase analogues can exist in different tautomeric or isomeric forms, which may not be correctly recognized by the current program. Consider incorporating techniques to handle tautomers and isomers, such as using the RDKit `RemoveHs` and `RemoveHydrogens` functions, or implementing tautomer enumeration.
+    # Additional checks for specific functional groups
+    has_primary_amine = mol.HasSubstructMatch(Chem.MolFromSmarts("[NH2]"))
+    has_carbonyl = mol.HasSubstructMatch(Chem.MolFromSmarts("[CX3](=[OX1])"))
+    has_ring_nitrogen = any(atom.GetAtomicNum() == 7 for atom in mol.GetAtoms() if atom.IsInRing())
 
-6. **Handle false positives**: Implement additional checks or filters to eliminate false positives, such as checking for the presence of other functional groups or molecular features that are incompatible with nucleobase analogues.
+    if has_primary_amine and has_carbonyl and has_ring_nitrogen:
+        return True, "Contains modified nucleobase ring with functional groups compatible for nucleic acid substitution"
 
-By addressing these limitations and incorporating additional checks and techniques, you can improve the accuracy and robustness of the program in classifying nucleobase analogues.
+    return False, "Modified nucleobase ring, but compatibility with nucleic acids is uncertain"
