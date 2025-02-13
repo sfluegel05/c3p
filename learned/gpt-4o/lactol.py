@@ -21,10 +21,9 @@ def is_lactol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define an improved lactol pattern:
-    # The hemiacetal cyclic structure: an oxygen (as part of the ring, O1) bonded consecutively to:
-    # C in ring (for hemiacetal formation), next to one C having [OH]
-    lactol_pattern = Chem.MolFromSmarts('[#6][C@H]([O])[O]1[#6][#6]1') 
+    # Define a more generalized lactol pattern:
+    # A cyclic system where an oxygen atom (part of the ring, O1) is bonded to a carbon with a hydroxyl group
+    lactol_pattern = Chem.MolFromSmarts('[O][C@H1,O1]([OH])')
 
     # Match the lactol pattern
     if mol.HasSubstructMatch(lactol_pattern):
@@ -34,9 +33,9 @@ def is_lactol(smiles: str):
 
 # Test on identified lactol examples and review outcomes
 examples = [
+    "C/1(\C[C@H]2O[C@@H](C1)C[C@]3(C([C@H](C[C@@H](C[C@H](CC(O[C@@H]([C@@H](C)O)C[C@@]4(C\C(\[C@@H]([C@](C(C=C2)(C)C)(O4)O)OC(/C=C/C=C/CCC)=O)=C/C(OC)=O)[H])=O)O)O3)O)(C)C)O)=C\C(OC)=O",  # bryostatin 2
     "OC[C@]1(O)OC[C@@H](O)[C@@H](O)[C@@H]1O",  # alpha-D-fructopyranose
-    "OC[C@@]1(O)OC[C@@H](O)[C@@H](O)[C@@H]1O",  # beta-D-fructopyranose
-    "O1C2=C(C(CC1(C3=CC(=C(C=C3)O)O)O)=O)C(=CC(=C2)O)O",  # 2-(3,4-dihydroxyphenyl)-2,5,7-trihydroxy-2,3-dihydro-4H-chromen-4-one
+    "O1C2=C(C(C[C@@]1(C3=CC(=C(C=C3)O)O)O)=O)C(=CC(=C2)O)O",  # (2S)-2-hydroxyeriodictyol
 ]
 
 for smiles in examples:
