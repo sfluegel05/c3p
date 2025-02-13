@@ -2,10 +2,7 @@
 Classifies: CHEBI:27283 very long-chain fatty acid
 """
 """
-Classifies: CHEBI:36216 very long-chain fatty acid
-
-A fatty acid which has a chain length greater than C22. Very long-chain fatty acids
-which have a chain length greater than C27 are also known as ultra-long-chain fatty acids.
+Classifies: CHEBI:36979 very long-chain fatty acid
 """
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
@@ -13,6 +10,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_very_long_chain_fatty_acid(smiles: str):
     """
     Determines if a molecule is a very long-chain fatty acid based on its SMILES string.
+    A very long-chain fatty acid has a chain length greater than C22.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -28,48 +26,31 @@ def is_very_long_chain_fatty_acid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for carboxylic acid group
-    has_acid = any(atom.GetSymbol() == 'O' and sum(mol.GetAtomWithIdx(i).GetTotalNumHs() for i in atom.GetNeighbors()) == 1
-                   for atom in mol.GetAtoms())
-    if not has_acid:
-        return False, "Does not contain a carboxylic acid group"
-    
-    # Get the longest carbon chain
-    chain = Chem.Lipinski.GetLongestChain(mol)
-    if chain is None:
-        return False, "No carbon chain found"
+    carboxylic_pattern = Chem.MolFromSmarts("C(=O)O")
+    if not mol.HasSubstructMatch(carboxylic_pattern):
+        return False, "No carboxylic acid group found"
 
-    # Check chain length
-    chain_length = len(chain)
-    if chain_length <= 22:
-        return False, f"Carbon chain length ({chain_length}) too short"
-    
+    # Count carbon chain length
+    carbon_chain = Chem.MolFromSmarts("[CH4]~[CH2,CH3]~[CH2,CH3]~[CH2,CH3]")
+    chain_matches = mol.GetSubstructMatches(carbon_chain)
+    chain_lengths = [len(match) for match in chain_matches]
+    max_chain_length = max(chain_lengths, default=0)
+
+    if max_chain_length <= 22:
+        return False, f"Longest carbon chain has {max_chain_length} atoms, must be > 22"
+
     # Check for unsaturations
-    unsaturations = Chem.Lipinski.GetNumUnsaturatedRings(mol) + Chem.Lipinski.GetNumAlkeneRings(mol)
-    if unsaturations > 4:
-        return False, "More than 4 unsaturations"
-    
-    # Check for allowed atoms
-    allowed_atoms = {'C', 'H', 'O'}
-    atoms = set(atom.GetSymbol() for atom in mol.GetAtoms())
-    if not atoms.issubset(allowed_atoms):
-        return False, "Contains disallowed atoms"
-    
-    # Check for branching
-    if len(mol.GetSubstructMatches(Chem.MolFromSmarts('[C]([C])([C])[C]'))) > 0:
-        return False, "Contains branching"
-    
-    # Check for cycles
-    if any(len(ring) > 8 for ring in mol.GetRingInfo().AtomRings()):
-        return False, "Contains large cycles"
-    
-    # Check for substituents
-    if any(atom.GetTotalNumHs(False) > 1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'O'):
-        return False, "Contains hydroxyl or ether substituents"
-    if any(atom.GetTotalNumHs(False) == 0 for atom in mol.GetAtoms() if atom.GetSymbol() == 'O'):
-        return False, "Contains carbonyl or ester substituents"
-    
-    # Check stereochemistry
-    if mol.GetBondBetweenAtoms(0, 1).GetStereo() != Chem.BondStereo.STEREONONE:
-        return False, "Contains stereochemistry"
-    
-    return True, "Meets all criteria for a very long-chain fatty acid"
+    unsaturated_chain = Chem.MolFromSmarts("[CH2]=[CH]~[CH2]~[CH2]")
+    unsaturated_matches = mol.GetSubstructMatches(unsaturated_chain)
+    unsaturated_lengths = [len(match) for match in unsaturated_matches]
+    max_unsaturated_length = max(unsaturated_lengths, default=0)
+
+    if max_unsaturated_length > 4:
+        return False, "Too many unsaturations for fatty acid"
+
+    # Check molecular formula
+    formula = rdMolDescriptors.CalcMolFormula(mol)
+    if "Br" in formula or "Cl" in formula or "F" in formula or "I" in formula:
+        return False, "Halogenated compounds not allowed"
+
+    return True, "Carbon chain length > 22, with carboxylic acid group"
