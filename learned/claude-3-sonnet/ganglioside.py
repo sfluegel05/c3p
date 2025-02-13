@@ -29,28 +29,30 @@ def is_ganglioside(smiles: str):
     if mol_wt < 800:
         return False, "Molecular weight too low for ganglioside"
 
-    # Look for ceramide backbone
-    # Sphingosine pattern (long chain base with OH and NH)
-    sphingosine_pattern = Chem.MolFromSmarts("[CH2]-[CH]-[CH](-[OH])-[CH](-[NH]-[C](=O))-[CH2]-O")
-    if not mol.HasSubstructMatch(sphingosine_pattern):
+    # Look for ceramide backbone components
+    # More flexible sphingosine pattern - long chain base with OH and NH
+    sphingosine_pattern = Chem.MolFromSmarts("[CH2,CH]-[CH2,CH]-[CH](-[OH])-[CH](-[NH])-[CH2]-O")
+    # Acyl chain attached to NH
+    acyl_pattern = Chem.MolFromSmarts("[NH]-[C](=O)-[CH2]-[CH2]")
+    
+    if not (mol.HasSubstructMatch(sphingosine_pattern) and mol.HasSubstructMatch(acyl_pattern)):
         return False, "No ceramide backbone found"
 
-    # Look for sialic acid (Neu5Ac) pattern
-    # Core structure of sialic acid with carboxyl group
-    sialic_pattern = Chem.MolFromSmarts("[C](=O)[O;H,-]-[C]1-[C]-[C](-[NH]-[C](=O)-[CH3])-[C]-[C](-[OH])-[C]1")
+    # Look for sialic acid (Neu5Ac) pattern - more flexible version
+    # Core structure with carboxyl and N-acetyl
+    sialic_pattern = Chem.MolFromSmarts("[C,c](=O)[O;H,-]-[C,c]1-[C,c]-[C,c](-[NH]-[C](=O))-[C,c]-[C,c]-[C,c]1")
     sialic_matches = mol.GetSubstructMatches(sialic_pattern)
     if len(sialic_matches) < 1:
         return False, "No sialic acid (Neu5Ac) found"
 
-    # Look for oligosaccharide pattern
-    # Basic sugar rings with OH groups
-    sugar_pattern = Chem.MolFromSmarts("[C]1-[O]-[C]-[C]-[C]-[C]-1")
+    # Look for oligosaccharide pattern - more flexible sugar detection
+    sugar_pattern = Chem.MolFromSmarts("[C,c]1[O,o][C,c][C,c][C,c][C,c]1")
     sugar_matches = mol.GetSubstructMatches(sugar_pattern)
     if len(sugar_matches) < 3:
         return False, "Insufficient oligosaccharide chain"
 
-    # Check for glycosidic linkages
-    glycosidic_pattern = Chem.MolFromSmarts("[C]-[O]-[C]")
+    # Check for glycosidic linkages between sugars
+    glycosidic_pattern = Chem.MolFromSmarts("[C,c]-[O,o]-[C,c]")
     glycosidic_matches = mol.GetSubstructMatches(glycosidic_pattern)
     if len(glycosidic_matches) < 4:
         return False, "Insufficient glycosidic linkages"
@@ -67,8 +69,8 @@ def is_ganglioside(smiles: str):
     if n_count < 2:
         return False, "Too few nitrogens for ganglioside structure"
 
-    # Verify presence of long chain fatty acid
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    # Verify presence of long chain fatty acid - more flexible pattern
+    fatty_acid_pattern = Chem.MolFromSmarts("[CH2,CH3]-[CH2]-[CH2]-[CH2]-[CH2]-[CH2]")
     if not mol.HasSubstructMatch(fatty_acid_pattern):
         return False, "Missing long chain fatty acid"
 
