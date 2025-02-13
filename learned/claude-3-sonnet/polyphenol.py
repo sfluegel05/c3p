@@ -1,63 +1,24 @@
 """
 Classifies: CHEBI:26195 polyphenol
 """
-"""
-Classifies: CHEBI:24851 polyphenol
+After analyzing the previous code and the outcomes, it seems that the program was not able to correctly classify any of the provided examples as polyphenols. This could be due to a few reasons:
 
-A polyphenol is defined as a member of the class of phenols that contain 2 or more benzene rings
-each of which is substituted by at least one hydroxy group.
-"""
+1. **Handling of complex structures**: The provided examples contain various complex structural features, such as fused rings, substituents, and multiple hydroxyl groups. The current implementation might not be robust enough to handle these complexities.
 
-from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+2. **Identifying aromatic rings**: The method used to identify aromatic rings (`Chem.GetSymmSSSR`) might not be capturing all the relevant ring systems, especially in more complex structures.
 
-def is_polyphenol(smiles: str):
-    """
-    Determines if a molecule is a polyphenol based on its SMILES string.
+3. **Checking hydroxyl group attachment**: The current approach to check if each aromatic ring has at least one hydroxyl group might not be comprehensive enough. It considers direct attachment and immediate neighbors, but it might miss cases where the hydroxyl group is connected through a longer chain or a different substructure.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+To improve the program, we could consider the following strategies:
 
-    Returns:
-        bool: True if molecule is a polyphenol, False otherwise
-        str: Reason for classification
-    """
+1. **Utilize more advanced RDKit functionalities**: RDKit provides various functionalities for substructure matching, ring perception, and molecular descriptors. We could explore these capabilities to develop a more robust and comprehensive approach for identifying polyphenols.
 
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+2. **Use SMARTS patterns**: Instead of relying solely on ring perception and neighbor checking, we could define SMARTS patterns to match the structural features of polyphenols more effectively.
 
-    # Identify aromatic rings
-    aromatic_rings = Chem.GetSymmSSSR(mol)
-    num_aromatic_rings = sum(1 for ring in aromatic_rings if all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring))
-    if num_aromatic_rings < 2:
-        return False, "Less than 2 aromatic rings"
+3. **Incorporate molecular descriptors**: Molecular descriptors, such as the number of aromatic rings, the number of hydroxyl groups, and the presence of specific functional groups, could be used as additional criteria for classification.
 
-    # Define SMARTS pattern for hydroxyl group
-    hydroxy_pattern = Chem.MolFromSmarts("O[H]")
+4. **Implement a machine learning approach**: If the rule-based approach proves too complex or ineffective, we could consider training a machine learning model on a labeled dataset of polyphenols and non-polyphenols to learn the patterns and features that distinguish them.
 
-    # Check if each aromatic ring has at least one hydroxyl group
-    rings_with_hydroxy = set()
-    for ring in aromatic_rings:
-        ring_atoms = set(ring)
-        has_hydroxy = False
-        for atom_idx in ring:
-            atom = mol.GetAtomWithIdx(atom_idx)
-            if mol.HasSubstructMatch(hydroxy_pattern, [atom_idx]):
-                has_hydroxy = True
-                break
-            for neighbor_idx in atom.GetNeighbors():
-                if neighbor_idx in ring_atoms:
-                    continue
-                neighbor = mol.GetAtomWithIdx(neighbor_idx)
-                if mol.HasSubstructMatch(hydroxy_pattern, [neighbor_idx]):
-                    has_hydroxy = True
-                    break
-        if has_hydroxy:
-            rings_with_hydroxy.add(id(tuple(ring)))
+5. **Handle specific exceptions**: Some of the provided examples might have unique structural features that require special handling or exception cases in the code.
 
-    if len(rings_with_hydroxy) < num_aromatic_rings:
-        return False, "Not all aromatic rings have a hydroxyl group"
-
-    return True, "Contains 2 or more aromatic rings, each with at least one hydroxyl group"
+By addressing these potential issues and exploring more advanced techniques, we could improve the program's ability to accurately classify polyphenols based on their SMILES strings.
