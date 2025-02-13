@@ -1,8 +1,12 @@
 """
 Classifies: CHEBI:38077 polypyrrole
 """
+"""
+Classifies: CHEBI:38575 polypyrrole
+A compound composed of two or more pyrrole units.
+"""
 from rdkit import Chem
-from rdkit.Chem import AllChem
+from rdkit.Chem import rdqueries
 
 def is_polypyrrole(smiles: str):
     """
@@ -16,31 +20,18 @@ def is_polypyrrole(smiles: str):
         bool: True if molecule is a polypyrrole, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Define SMARTS pattern for a pyrrole unit
-    pyrrole_pattern = Chem.MolFromSmarts("n1cccc1")
-    
-    # Find all matches of the pyrrole pattern in the molecule
-    pyrrole_matches = mol.GetSubstructMatches(pyrrole_pattern)
-    
-    # Extract unique ring systems containing pyrrole units
-    ring_info = mol.GetRingInfo()
-    pyrrole_ring_systems = []
-    for ring in ring_info.AtomRings():
-        ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
-        if any(mol.GetAtomWithIdx(idx).GetIsAromaticHeteroatom() for idx in ring):
-            pyrrole_ring_systems.append(set(ring))
-    
-    # Count the number of unique ring systems containing two or more pyrrole units
-    polypyrrole_ring_systems = [ring_system for ring_system in pyrrole_ring_systems if sum(1 for atom_idx in ring_system if mol.GetAtomWithIdx(atom_idx).GetIsAromaticHeteroatom()) >= 2]
-    
-    # Classify as a polypyrrole if at least one qualifying ring system is found
-    if polypyrrole_ring_systems:
-        return True, f"Contains {len(polypyrrole_ring_systems)} ring system(s) with two or more pyrrole units"
-    else:
-        return False, "No ring systems with two or more pyrrole units found"
+
+    # Create a pyrrole ring query
+    pyrrole_query = rdqueries.IsNPyrroles(2)
+
+    # Check if molecule contains at least two pyrrole rings
+    for match in mol.GetSubstructMatches(pyrrole_query, maxMatches=2):
+        if len(match) == 2:
+            return True, "Contains at least two pyrrole units"
+
+    return False, "Does not contain at least two pyrrole units"
