@@ -1,26 +1,58 @@
 """
 Classifies: CHEBI:28868 fatty acid anion
 """
-Based on the outcomes and the previous code, it seems that the program is correctly identifying most fatty acid anions but has a few issues:
+"""
+Classifies: CHEBI:36195 fatty acid anion
+The conjugate base of a fatty acid, arising from deprotonation of the carboxylic acid group of the corresponding fatty acid.
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-1. **False Positives**: The program is incorrectly classifying some molecules as fatty acid anions even though they do not belong to this class. Many of these false positives contain carboxylate groups attached to large or complex structures, but not necessarily a long carbon chain. Examples include luteolin derivatives, complex glycosides, and porphyrins.
+def is_fatty_acid_anion(smiles: str):
+    """
+    Determines if a molecule is a fatty acid anion based on its SMILES string.
 
-2. **False Negatives**: The program is missing some valid fatty acid anions. This is likely because it requires a minimum carbon chain length of 5 (based on the SMARTS pattern used), while some shorter-chain carboxylic acids like butyrate or valerate could also be considered fatty acid anions.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Molecular Weight Cutoff**: The molecular weight cutoff of 100 Da may be too low, as some fatty acid anions with longer chains can exceed this weight.
+    Returns:
+        bool: True if molecule is a fatty acid anion, False otherwise
+        str: Reason for classification
+    """
 
-4. **Oxygen Count**: The requirement of having at least 2 oxygens is not always necessary for fatty acid anions, as some simple examples like butyrate only have the carboxylate oxygen.
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-To improve the program, here are some potential solutions:
+    # Look for carboxylate group (-COO-)
+    carboxylate_pattern = Chem.MolFromSmarts("[O-]C(=O)")
+    if not mol.HasSubstructMatch(carboxylate_pattern):
+        return False, "No carboxylate group found"
 
-1. **Improve the Carbon Chain Pattern**: Instead of using a fixed SMARTS pattern for the carbon chain, consider using a more flexible pattern that allows for variable chain lengths, while still ensuring a reasonable minimum length. For example, you could use a pattern like `[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~*` to match chains of at least 3 carbons, with an optional longer chain.
+    # Look for carbon chain of variable length (at least 3 carbons)
+    chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~*")
+    chain_matches = mol.GetSubstructMatches(chain_pattern)
+    if not chain_matches:
+        return False, "No carbon chain found"
 
-2. **Exclude Specific Substructures**: To avoid false positives from complex molecules like glycosides or porphyrins, you could add additional SMARTS patterns to check for the absence of certain substructures that are not found in typical fatty acid anions.
+    # Exclude specific substructures not found in typical fatty acid anions
+    exclude_patterns = [
+        Chem.MolFromSmarts("[#7r5,#7r6,#7r7,#7r8,#7r9]"),  # Exclude complex heterocycles
+        Chem.MolFromSmarts("[#16]"),  # Exclude sulfur atoms
+        Chem.MolFromSmarts("[#7,#8]~[#6]~[#7,#8]"),  # Exclude amide groups
+    ]
+    for pattern in exclude_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return False, "Contains substructures not typical of fatty acid anions"
 
-3. **Adjust Molecular Weight and Oxygen Count Criteria**: Increase the molecular weight cutoff to a higher value (e.g., 150 Da or higher), and consider removing the requirement for a minimum number of oxygens, as some simple fatty acid anions may only have the carboxylate oxygen.
+    # Check molecular weight - fatty acid anions typically > 150 Da
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 150:
+        return False, "Molecular weight too low for fatty acid anion"
 
-4. **Use Machine Learning**: If the rule-based approach becomes too complex or fails to capture all cases, you could consider training a machine learning model on a larger dataset of known fatty acid anions and non-fatty acid anions, using molecular descriptors as input features.
+    # Optionally, handle stereochemistry if needed
+    # ...
 
-5. **Handle Stereochemistry**: The current program does not account for stereochemistry, which could be important for correctly identifying some fatty acid anions. You may need to consider handling stereochemistry in the SMARTS patterns or using alternative approaches.
-
-Overall, the program is a good starting point, but it may require additional refinement and adjustments to improve its accuracy and coverage of the fatty acid anion class.
+    return True, "Contains a carboxylate group and a carbon chain, consistent with a fatty acid anion"
