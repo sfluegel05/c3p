@@ -19,58 +19,52 @@ def is_3alpha_hydroxy_steroid(smiles: str):
         bool: True if molecule is a 3alpha-hydroxy steroid, False otherwise
         str: Reason for classification
     """
-    # Parse SMILES
+    # Parse SMILES with stereochemistry
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # More flexible steroid core patterns to match different variants
-    steroid_patterns = [
-        # Basic steroid core (saturated)
-        "[C,c]1[C,c][C,c]2[C,c]([C,c]1)[C,c][C,c]3[C,c]([C,c]2)[C,c][C,c]4[C,c][C,c][C,c][C,c]4[C,c]3",
-        # Core with possible double bonds
-        "[C,c]1[C,c][C,c]2[C,c]([C,c]1)[C,c][C,c]3[C,c]([C,c]2)[C,c][C,c]4[C,c,C=C][C,c][C,c][C,c]4[C,c]3"
-    ]
+    # Basic steroid core pattern (four fused rings)
+    # More permissive pattern that matches both 5-alpha and 5-beta steroids
+    steroid_core = Chem.MolFromSmarts(
+        "[cH0,CH2,CH]1~[cH0,CH2,CH]~[cH0,CH2,CH]~[cH0,CH2,CH]2~[cH0,CH2,CH]~[cH0,CH2,CH]~[cH0,CH2,CH]3~[cH0,CH2,CH]~[cH0,CH2,CH]~[cH0,CH2,CH]4~[cH0,CH2,CH]~[cH0,CH2,CH]~[cH0,CH2,CH]~[cH0,CH2,CH]4~[cH0,CH2,CH]~3~[cH0,CH2,CH]~2~1"
+    )
     
-    found_core = False
-    for pattern in steroid_patterns:
-        core_pattern = Chem.MolFromSmarts(pattern)
-        if mol.HasSubstructMatch(core_pattern):
-            found_core = True
-            break
-    
-    if not found_core:
+    if steroid_core is None:
+        return False, "Error in steroid core SMARTS pattern"
+        
+    if not mol.HasSubstructMatch(steroid_core):
         return False, "No steroid core found"
 
-    # Check for 3-alpha-hydroxy group with multiple possible representations
-    alpha_3_hydroxy_patterns = [
-        # Standard alpha hydroxyl at position 3
-        "[OH][C@H]1[CH2][CH2][C]2",
-        # Alternative representation
-        "[OH][C@@H]1[CH2][CH2][C]2",
-        # More general pattern for alpha hydroxyl
-        "[OH][C@H,C@@H]1[CH2][CH2][C]"
-    ]
+    # Check for 3-alpha-hydroxy group
+    # [H] for explicit hydrogen, @ for specific stereochemistry
+    alpha_3_hydroxy = Chem.MolFromSmarts('[OH][C@H]1[CH2][CH2]')
     
-    found_alpha_hydroxy = False
-    for pattern in alpha_3_hydroxy_patterns:
-        hydroxy_pattern = Chem.MolFromSmarts(pattern)
-        if mol.HasSubstructMatch(hydroxy_pattern):
-            found_alpha_hydroxy = True
-            break
-            
-    if not found_alpha_hydroxy:
+    if alpha_3_hydroxy is None:
+        return False, "Error in hydroxy group SMARTS pattern"
+        
+    # Use useChirality=True to enforce stereochemistry matching
+    if not mol.HasSubstructMatch(alpha_3_hydroxy, useChirality=True):
         return False, "No 3-alpha hydroxy group found"
 
-    # Additional verification of ring system
+    # Additional structure validation
     ring_info = mol.GetRingInfo()
     if ring_info.NumRings() < 4:
-        return False, "Insufficient ring count for steroid structure"
+        return False, "Insufficient number of rings for steroid structure"
 
-    # Verify the presence of the characteristic four-ring system
-    # Look for rings of appropriate size (6,6,6,5 or similar patterns)
-    ring_sizes = [len(r) for r in ring_info.AtomRings()]
-    if not any(size in [5,6] for size in ring_sizes):
+    # Check for characteristic steroid ring sizes (should find 6,6,6,5 or similar)
+    ring_sizes = sorted([len(r) for r in ring_info.AtomRings()])
+    if not (5 in ring_sizes and ring_sizes.count(6) >= 2):
         return False, "Ring sizes not characteristic of steroid structure"
+
+    # Count carbons (steroids typically have 17+ carbons)
+    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if carbon_count < 17:
+        return False, "Too few carbons for steroid structure"
+
+    # Verify the molecule has appropriate number of rings and is not too small or large
+    mol_weight = Chem.Descriptors.ExactMolWt(mol)
+    if not (250 < mol_weight < 1000):
+        return False, "Molecular weight outside typical steroid range"
 
     return True, "Contains steroid core with 3-alpha hydroxy group"
