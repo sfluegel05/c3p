@@ -1,30 +1,64 @@
 """
 Classifies: CHEBI:24654 hydroxy fatty acid
 """
-The previous program attempted to classify hydroxy fatty acids based on the presence of a carboxylic acid group, an aliphatic carbon chain, and hydroxy groups attached to the carbon chain. However, it seems that there were some issues with the implementation, leading to a poor F1 score.
+"""
+Classifies: CHEBI:36942 hydroxy fatty acid
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-Potential reasons for the failure:
+def is_hydroxy_fatty_acid(smiles: str):
+    """
+    Determines if a molecule is a hydroxy fatty acid based on its SMILES string.
+    A hydroxy fatty acid is any fatty acid carrying one or more hydroxy substituents.
 
-1. **Incorrect SMARTS patterns**: The SMARTS patterns used for matching substructures may not be comprehensive or accurate enough to capture all valid hydroxy fatty acid structures. For example, the pattern for the aliphatic carbon chain ([CH3;!$(C(-!C))]) may not account for branched chains or cyclic structures.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **Insufficient checks**: The program only checks for the presence of certain substructures but does not validate their connectivity or arrangement within the molecule. Additional checks may be needed to ensure that the hydroxy groups are indeed attached to the aliphatic chain and that the carboxylic acid group is at the end of the chain.
+    Returns:
+        bool: True if molecule is a hydroxy fatty acid, False otherwise
+        str: Reason for classification
+    """
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-3. **Lack of handling for special cases**: The program may not handle edge cases or exceptions correctly, such as molecules with multiple carboxylic acid groups, molecules with other functional groups besides hydroxy groups, or molecules with unusual structural features.
+    # Look for carboxylic acid group
+    acid_pattern = Chem.MolFromSmarts("C(=O)O")
+    if not mol.HasSubstructMatch(acid_pattern):
+        return False, "No carboxylic acid group found"
 
-To improve the program, you could consider the following steps:
+    # Look for hydroxy group(s)
+    hydroxy_pattern = Chem.MolFromSmarts("O")
+    hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
+    if not hydroxy_matches:
+        return False, "No hydroxy groups found"
 
-1. **Analyze the true positives, false positives, and false negatives**: Carefully examine the examples of true positives, false positives, and false negatives to identify patterns or specific cases that the program is failing to handle correctly.
+    # Look for aliphatic carbon chain
+    chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    chain_matches = mol.GetSubstructMatches(chain_pattern)
+    if not chain_matches:
+        return False, "No aliphatic carbon chain found"
 
-2. **Refine SMARTS patterns**: Modify or add new SMARTS patterns to better capture the structural features of hydroxy fatty acids. You may need to account for branched chains, cyclic structures, and other variations.
+    # Count rotatable bonds to verify aliphatic chain
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 5:
+        return False, "Carbon chain too short to be a fatty acid"
 
-3. **Enhance connectivity checks**: Implement additional checks to ensure that the hydroxy groups are directly connected to the aliphatic carbon chain and that the carboxylic acid group is at the end of the chain.
+    # Check molecular weight - fatty acids typically >100 Da
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 100:
+        return False, "Molecular weight too low for fatty acid"
 
-4. **Handle special cases**: Add specific checks or exceptions to handle molecules with multiple carboxylic acid groups, other functional groups, or unusual structural features.
+    # Count carbons and oxygens
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
 
-5. **Consider using machine learning**: If the structural patterns become too complex to capture with SMARTS patterns and rule-based approaches, you could explore using machine learning techniques to classify hydroxy fatty acids based on their SMILES strings or molecular descriptors.
+    if c_count < 6:
+        return False, "Too few carbons for fatty acid"
+    if o_count < 2:
+        return False, "Not enough oxygens (must have at least carboxyl and hydroxy)"
 
-6. **Utilize additional molecular descriptors**: Incorporate other relevant molecular descriptors, such as molecular weight, atom counts, bond counts, or topological descriptors, to improve the classification accuracy.
-
-7. **Test with a larger and more diverse dataset**: Evaluate the program with a larger and more diverse set of examples, including true positives, true negatives, and potentially challenging edge cases, to ensure robustness and generalization.
-
-By iteratively refining the program based on the analysis of failures and incorporating additional checks and features, you can potentially improve the classification accuracy for hydroxy fatty acids.
+    return True, "Contains a carboxylic acid group, aliphatic carbon chain, and at least one hydroxy group"
