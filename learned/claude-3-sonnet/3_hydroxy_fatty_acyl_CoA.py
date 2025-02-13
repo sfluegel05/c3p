@@ -1,51 +1,24 @@
 """
 Classifies: CHEBI:20060 3-hydroxy fatty acyl-CoA
 """
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+The previous program makes a good attempt at classifying 3-hydroxy fatty acyl-CoA molecules, but there are a few issues that need to be addressed:
 
-def is_3_hydroxy_fatty_acyl_CoA(smiles):
-    """
-    Determines if a molecule is a 3-hydroxy fatty acyl-CoA based on its SMILES string.
+1. **False positives**: The program incorrectly classifies molecules like sulfoacetyl-CoA as 3-hydroxy fatty acyl-CoA because they contain the CoA moiety, a thioester bond, and a short carbon chain. However, these molecules do not have the required 3-hydroxy group on a fatty acid chain.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. **False negatives**: The program misses many valid 3-hydroxy fatty acyl-CoA molecules because it specifically checks for the thioester bond pattern "CCS(=O)". However, in many of the examples provided, the thioester bond is part of a larger substructure and not represented by that exact SMARTS pattern.
 
-    Returns:
-        bool: True if the molecule is a 3-hydroxy fatty acyl-CoA, False otherwise
-        str: Reason for the classification
-    """
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+3. **Stereochemistry**: The program does not adequately account for stereochemistry. The 3-hydroxy group can have either R or S configuration, and the fatty acid chains can have varying degrees of unsaturation and cis/trans isomerism.
 
-    # Check for CoA moiety
-    coa_pattern = Chem.MolFromSmarts("C(C)(COP(OP(OC[C@H]1O[C@@H]([C@H](O)[C@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12)(O)=O)(O)=O)[C@@H](O)C(=O)NCCC(=O)NCCSC(=O)")
-    if not mol.HasSubstructMatch(coa_pattern):
-        return False, "Missing CoA moiety"
+To improve the program, we can make the following modifications:
 
-    # Check for thioester bond
-    thioester_pattern = Chem.MolFromSmarts("CCS(=O)")
-    if not mol.HasSubstructMatch(thioester_pattern):
-        return False, "Missing thioester bond"
+1. **Refine the CoA moiety check**: Instead of using a fixed SMARTS pattern, we can check for the presence of the CoA moiety by matching the molecular formula or specific substructures.
 
-    # Check for 3-hydroxy group
-    hydroxy_pattern = Chem.MolFromSmarts("[C@@H](O)CC")
-    hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
-    if not hydroxy_matches:
-        return False, "Missing 3-hydroxy group"
+2. **Relax the thioester bond check**: Instead of looking for a specific SMARTS pattern, we can check for the presence of any thioester bond by identifying atoms with the appropriate connectivity and atom types.
 
-    # Check for fatty acid chain
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
-    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
-    if len(fatty_acid_matches) < 1:
-        return False, "Missing fatty acid chain"
+3. **Improve the 3-hydroxy group check**: Instead of using a fixed SMARTS pattern, we can look for any carbon atom with a single hydroxyl group and two neighboring carbon atoms, accounting for stereochemistry.
 
-    # Count rotatable bonds to check chain length
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 5:
-        return False, "Fatty acid chain too short"
+4. **Enhance the fatty acid chain check**: We can refine the fatty acid chain check by looking for long carbon chains (e.g., at least 6 carbon atoms) with optional unsaturation and considering both linear and branched chains.
 
-    return True, "Contains CoA moiety, 3-hydroxy group, and a fatty acid chain"
+5. **Add additional checks**: We can include additional checks for molecular weight, atom counts, and other relevant properties to further improve the classification accuracy.
+
+By implementing these changes, the program should be able to more accurately classify 3-hydroxy fatty acyl-CoA molecules while reducing false positives and negatives.
