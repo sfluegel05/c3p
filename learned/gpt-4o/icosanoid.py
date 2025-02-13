@@ -22,28 +22,36 @@ def is_icosanoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check the number of carbon atoms (20 carbon backbone)
+    # Check the number of carbon atoms (focus on the C20 backbone)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if not (18 <= c_count <= 22):  # Allowing a small range to include derivatives
-        return False, f"Carbon count ({c_count}) not consistent with C20 fatty acids"
+    if not (18 <= c_count <= 24):  # Extend range slightly for connected extensions
+        return False, f"Carbon count ({c_count}) not within expected range for C20 backbone"
 
-    # Check for presence of oxygen atoms (indicative of oxidation products)
+    # Check for presence of oxygen atoms (indicative of oxidation patterns)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count < 2:
-        return False, f"Insufficient number of oxygens ({o_count}) for an icosanoid"
+    if o_count < 3:
+        return False, f"Insufficient number of oxygens ({o_count}), expect oxidized features in icosanoids"
 
     # Check for presence of double bonds (characteristic of EFAs)
-    double_bonds = [bond for bond in mol.GetBonds() if bond.GetBondTypeAsDouble() == 2]
-    if len(double_bonds) < 3:
-        return False, f"Insufficient number of double bonds ({len(double_bonds)}) for an icosanoid"
+    double_bonds = len([bond for bond in mol.GetBonds() if bond.GetBondTypeAsDouble() == 2])
+    if double_bonds < 4:
+        return False, f"Insufficient number of double bonds ({double_bonds}) for an icosanoid"
 
-    # Check for typical functional groups in icosanoids
-    if not (Chem.MolFromSmarts("C=O") and Chem.MolFromSmarts("[OH]")).HasSubstructMatch(mol):
-        return False, "Missing keto or hydroxyl groups typical of icosanoids"
+    # Check for typical functional groups: keto (C=O) and hydroxyl (OH)
+    keto_pattern = Chem.MolFromSmarts("C=O")
+    hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
+    if not (mol.HasSubstructMatch(keto_pattern) or mol.HasSubstructMatch(hydroxyl_pattern)):
+        return False, "Missing common functional groups (keto/hydroxyl) in icosanoids"
 
-    # Optional: Check for presence of cyclic structures like cyclopentane
-    cyclic_rings = mol.GetRingInfo().NumRings()
-    if cyclic_rings < 1:
-        return False, "Missing cyclic structures typical in some icosanoids"
-    
-    return True, "Molecule fits the structural criteria of an icosanoid"
+    # Check for possible cyclic structures like cyclopentane rings
+    ring_info = mol.GetRingInfo()
+    if ring_info.NumRings() < 1:
+        return False, "Cyclopentane or similar ring structure not found in icosanoids"
+
+    # Consider additional linkages (e.g., esterified forms)
+    ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H0]")
+    amide_pattern = Chem.MolFromSmarts("[NX3][CX3](=O)")
+    if mol.HasSubstructMatch(ester_pattern) or mol.HasSubstructMatch(amide_pattern):
+        return True, "Structure contains icosanoid features with ester or amide linkages"
+
+    return True, "Molecule generally fits structural criteria suggestive of an icosanoid"
