@@ -12,7 +12,7 @@ def is_guaiacols(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if the molecule is a guaiacol, False otherwise
+        bool: True if molecule is a guaiacol, False otherwise
         str: Reason for classification
     """
     
@@ -20,11 +20,12 @@ def is_guaiacols(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Define SMARTS pattern for ortho-methoxyphenol (guaiacol structure)
-    guaiacol_pattern = Chem.MolFromSmarts("c1cc(OC)c(O)c1")
-    
-    if mol.HasSubstructMatch(guaiacol_pattern):
-        return True, "Contains ortho-methoxy group adjacent to phenol on an aromatic ring"
 
+    # Define SMARTS pattern for guaiacols (ortho-methoxyphenol)
+    guaiacol_pattern = Chem.MolFromSmarts("COc1cc(O)ccc1")
+    
+    # Check for match of guaiacol pattern
+    if mol.HasSubstructMatch(guaiacol_pattern):
+        return True, "Contains ortho-methoxy group on a phenol structure"
+    
     return False, "The structure does not match the guaiacol pattern"
