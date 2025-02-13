@@ -21,8 +21,8 @@ def is_N_acylglycine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Extended SMARTS pattern capturing typical N-acylglycine with variability in the acyl part
-    n_acylglycine_pattern = Chem.MolFromSmarts("N([CX3]=[OX1])[CX4][CX3](=[OX1])[OX2H]")  # N-acyl part bonded to glycine C(=O)O
+    # Adjusted SMARTS pattern for N-acylglycine: acyl-N-C-C(=O)O
+    n_acylglycine_pattern = Chem.MolFromSmarts("N([CX3]=[OX1])[CX4][CX3](=[OX1])[OX2H1]")  # Key pattern for glycine-derived N-acyl compound
     
     # Check for the substructure match
     if mol.HasSubstructMatch(n_acylglycine_pattern):
