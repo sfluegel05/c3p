@@ -1,41 +1,24 @@
 """
 Classifies: CHEBI:50523 butenolide
 """
-"""
-Classifies: CHEBI:30810 butenolide
-A gamma-lactone that consists of a 2-furanone skeleton and its substituted derivatives.
-"""
+Based on the outcomes, it seems that the previous program has a few issues:
 
-from rdkit import Chem
-from rdkit.Chem import AllChem
+1. **False Positives**: The program is incorrectly classifying some molecules as butenolides when they do not contain the 2-furanone skeleton. This could be because the SMARTS pattern used to identify the substituted furanone ring is too permissive, allowing other ring systems to match. Some examples of false positives include "Annomutacin", "Terrenolide S", and "Pyrrhoxanthin".
 
-def is_butenolide(smiles: str) -> tuple[bool, str]:
-    """
-    Determines if a molecule is a butenolide based on its SMILES string.
+2. **False Negatives**: The program is missing some true butenolide structures and classifying them as false negatives. This could be because the SMARTS pattern used to identify the 2-furanone skeleton is too restrictive and not capturing all valid butenolide structures. Some examples of false negatives include "10-Methyldodec-3-en-4-olide", "3,4-dihydroxy-5-(2-hydroxyethanimidoyl)oxolan-2-one", and "(Z)-3-(3,4-dihydroxybenzylidene)-5-(3,4-dihydroxyphenyl)-2(3H)-furanone".
 
-    Args:
-        smiles (str): SMILES string of the molecule
+3. **Limited Substitution Handling**: The program only checks for the presence or absence of substitutions on the furanone ring but does not further analyze the type or number of substitutions. This could lead to misclassifications, especially for molecules with specific substitution patterns that are characteristic of butenolides.
 
-    Returns:
-        bool: True if molecule is a butenolide, False otherwise
-        str: Reason for classification
-    """
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+To improve the program, you could consider the following steps:
 
-    # Look for 2-furanone skeleton
-    furanone_pattern = Chem.MolFromSmarts("O=C1OCC=C1")
-    if not mol.HasSubstructMatch(furanone_pattern):
-        return False, "Missing 2-furanone skeleton"
+1. **Refine SMARTS Patterns**: Analyze the false positive and false negative examples to identify patterns that could be used to refine the SMARTS patterns for matching the 2-furanone skeleton and its substitutions. This may involve using more specific or more general patterns, or combining multiple patterns to cover a wider range of valid butenolide structures.
 
-    # Check for substitutions on the furanone ring
-    substituted_pattern = Chem.MolFromSmarts("O=C1OC(*)C=C1*")
-    if not mol.HasSubstructMatch(substituted_pattern):
-        return True, "Unsubstituted 2-furanone skeleton (butenolide)"
+2. **Analyze Substitution Patterns**: Incorporate additional checks to analyze the type and number of substitutions on the furanone ring. You could use SMARTS patterns or other RDKit functionalities to identify specific substitution patterns that are characteristic of butenolides, such as the presence of long alkyl chains or specific functional groups.
 
-    # Check for specific substitutions (optional)
-    # ...
+3. **Use Machine Learning**: If the problem becomes too complex to handle with rule-based approaches, you could consider using machine learning techniques to train a model on a large dataset of butenolide and non-butenolide structures. This could potentially improve the classification accuracy, but would require a significant amount of labeled data and computational resources.
 
-    return True, "Contains a substituted 2-furanone skeleton (butenolide)"
+4. **Leverage Additional Molecular Descriptors**: In addition to SMARTS patterns, you could explore using other molecular descriptors or properties, such as molecular weight, atom counts, or topological indices, to aid in the classification process. However, be cautious of using descriptors that may not be specific enough to distinguish butenolides from other structural classes.
+
+5. **Implement a Hierarchical Approach**: Instead of attempting to classify butenolides in a single step, you could implement a hierarchical approach where you first classify the broader class of lactones, and then further classify the butenolides within that class. This could help to reduce the number of false positives and false negatives by narrowing down the search space.
+
+By implementing some or all of these improvements, you may be able to enhance the accuracy and robustness of the butenolide classification program.
