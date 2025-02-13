@@ -1,24 +1,64 @@
 """
 Classifies: CHEBI:47016 tetrahydrofuranone
 """
-The previous program attempted to classify molecules as tetrahydrofuranones by checking for the presence of a tetrahydrofuran ring with an oxo substituent. However, the program failed to correctly identify all the positive examples provided, resulting in a low F1 score.
+"""
+Classifies: CHEBI:33524 tetrahydrofuranone
+Any oxolane having an oxo- substituent at any position on the tetrahydrofuran ring.
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
 
-Here are some potential issues with the previous approach and suggestions for improvement:
+def is_tetrahydrofuranone(smiles: str):
+    """
+    Determines if a molecule is a tetrahydrofuranone based on its SMILES string.
 
-1. **Handling different substituent positions**: The previous program only checked for the presence of an oxo substituent on the tetrahydrofuran ring, but it did not consider the possibility of the oxo group being present at different positions on the ring. The definition of tetrahydrofuranone states that the oxo substituent can be at any position on the tetrahydrofuran ring, so the program should account for this.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **Handling different ring conformations**: The previous program assumed a specific ring conformation when checking for the tetrahydrofuran ring pattern. However, the SMARTS pattern used may not match all possible ring conformations, leading to false negatives.
+    Returns:
+        bool: True if molecule is a tetrahydrofuranone, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-3. **Handling additional ring systems**: The previous program assumed that the molecule should contain only one ring. However, the definition does not explicitly state this restriction, and some of the provided examples contain additional ring systems.
+    # Look for tetrahydrofuran ring with an oxo substituent
+    oxo_thf_pattern = Chem.MolFromSmarts("[OX1]1[C@@H][C@@H][C@@H][C@@H]O1")
+    thf_ring_atoms = mol.GetSubstructMatches(oxo_thf_pattern)
+    
+    # Check if there are any additional rings
+    additional_rings = Chem.GetSymmSSSR(mol)
+    additional_rings = [ring for ring in additional_rings if set(ring) != set(thf_ring_atoms[0])]
 
-4. **Handling different substituents**: The previous program did not consider the possibility of additional substituents on the tetrahydrofuran ring or the presence of larger substituents attached to the ring, which may affect the pattern matching.
+    if not thf_ring_atoms:
+        return False, "No tetrahydrofuran ring with oxo substituent found"
+    elif len(additional_rings) > 1:
+        return False, "More than one additional ring system present"
 
-To improve the program and better address the definition of tetrahydrofuranones, here are some suggestions:
+    # Check for specific substituent patterns
+    substituent_pattern = Chem.MolFromSmarts("[OX2]")
+    substituent_matches = mol.GetSubstructMatches(substituent_pattern)
+    
+    # Filter out substituents that are part of the tetrahydrofuran ring
+    substituent_matches = [match for match in substituent_matches if set(match) != set(thf_ring_atoms[0])]
 
-- Use a more flexible SMARTS pattern that accounts for different positions of the oxo substituent on the tetrahydrofuran ring.
-- Consider using more than one SMARTS pattern to cover different ring conformations and potential additional ring systems.
-- Remove the restriction of having only one ring in the molecule, or handle additional ring systems appropriately.
-- Account for the presence of additional substituents on the tetrahydrofuran ring or larger substituents attached to the ring.
-- Consider using additional checks or heuristics to ensure the molecule meets the structural requirements of a tetrahydrofuranone, such as checking the ring size, the number of heteroatoms, or the presence of specific functional groups.
+    # Check for common functional groups
+    ethers = Chem.MolFromSmarts("[OD2]([#6])[#6]")
+    esters = Chem.MolFromSmarts("[CX3](=[OX1])[OX2]")
+    alcohols = Chem.MolFromSmarts("[OX2H]")
+    
+    has_ether = mol.HasSubstructMatch(ethers)
+    has_ester = mol.HasSubstructMatch(esters)
+    has_alcohol = mol.HasSubstructMatch(alcohols)
 
-By addressing these potential issues and refining the approach, the program should be better equipped to correctly classify tetrahydrofuranones based on the provided definition and examples.
+    # Check ring size and heteroatom count
+    thf_ring = mol.GetAtomRingInfo().IsCyclic()
+    heteroatom_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() != 6 and atom.GetAtomicNum() != 1)
+
+    if not thf_ring or len(thf_ring_atoms[0]) != 5 or heteroatom_count > 2:
+        return False, "Ring size or heteroatom count does not match tetrahydrofuranone"
+
+    return True, "Molecule contains a tetrahydrofuran ring with an oxo substituent"
