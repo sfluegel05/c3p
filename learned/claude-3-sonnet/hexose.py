@@ -56,7 +56,8 @@ def is_hexose(smiles: str):
                     for bond in atom.GetBonds():
                         if bond.GetBondType() == BondType.DOUBLE and bond.GetOtherAtom(atom).GetAtomicNum() == 8:
                             # Check position of aldehyde or ketone group
-                            ring_atoms = mol.GetRingInfo().AtomRings[mol.GetRingInfo().IsCyclic(atom.GetIdx())][1]
+                            ring_picker = AllChem.RingPicker.RingPicker()
+                            ring_atoms = ring_picker.pickRing(mol, includeRoot=atom.GetIdx())
                             if len(ring_atoms) == 6:
                                 ring_pos = ring_atoms.index(atom.GetIdx())
                                 if ring_pos == 0:
