@@ -1,44 +1,32 @@
 """
 Classifies: CHEBI:35436 D-glucoside
 """
-"""
-Classifies: CHEBI:18237 D-glucoside
-A D-glucoside is any glucoside in which the glycoside group is derived from D-glucose.
-"""
+The previous code attempts to identify D-glucosides by looking for a D-glucose substructure and checking for the presence of a glycosidic bond (-O-C-O-) involving the D-glucose moiety. However, it seems that this approach has some limitations, as evidenced by the poor performance on the provided examples.
 
-from rdkit import Chem
-from rdkit.Chem import rdqueries, AllChem
+Here are some potential issues and improvements:
 
-def is_D_glucoside(smiles):
-    """
-    Determines if a molecule is a D-glucoside based on its SMILES string.
+1. **Limitations of the D-glucose substructure pattern**: The SMARTS pattern used to identify D-glucose may not be comprehensive enough to cover all possible representations of D-glucose in molecules. D-glucose can exist in various conformations and with different stereochemical configurations, which may not be captured by the current pattern.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+   **Improvement**: Consider using a more flexible approach to identify D-glucose substructures, such as enumerating all possible representations of D-glucose and checking for their presence in the molecule.
 
-    Returns:
-        bool: True if the molecule is a D-glucoside, False otherwise
-        str: Reason for classification
-    """
+2. **Glycosidic bond detection**: The current approach looks for any oxygen atom involved in a glycosidic bond, but it does not explicitly check if the glycosidic bond is connected to the D-glucose substructure.
 
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+   **Improvement**: Instead of looking for any glycosidic bond, specifically check for glycosidic bonds involving the identified D-glucose substructure.
 
-    # Look for D-glucose pattern
-    d_glucose_pattern = Chem.MolFromSmarts("[C@H]([C@@H]([C@@H]([C@H](C(O)=O)O)O)O)O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@H](O)[C@H]1O")
-    if not mol.HasSubstructMatch(d_glucose_pattern):
-        return False, "No D-glucose substructure found"
+3. **Handling of stereochemistry**: Many of the provided examples contain stereochemical information, which may be crucial for correctly identifying D-glucosides. The current code does not consider stereochemistry.
 
-    # Check for glycosidic bond (-O-C-O-) with the glucose
-    glycosidic_bond_pattern = Chem.MolFromSmarts("[O;r]")
-    glycosidic_bonds = mol.GetSubstructMatches(glycosidic_bond_pattern)
+   **Improvement**: Incorporate stereochemical information into the D-glucose substructure pattern and the glycosidic bond detection.
 
-    glucose_atoms = list(map(lambda x: x[0], mol.GetSubstructMatches(d_glucose_pattern)))
-    glycosidic_glucose_bonds = [bond for bond in glycosidic_bonds if bond in glucose_atoms]
+4. **Handling of tautomers and resonance structures**: Some of the provided examples may represent tautomers or resonance structures of the same molecule, which could be missed by the current approach.
 
-    if not glycosidic_glucose_bonds:
-        return False, "No glycosidic bonds found with D-glucose"
+   **Improvement**: Consider incorporating tautomer and resonance structure enumeration to ensure that all possible representations of the molecule are considered.
 
-    return True, "Contains D-glucose substructure with a glycosidic bond"
+5. **Handling of large and complex molecules**: Some of the provided examples are large and complex molecules, which may present challenges in substructure matching and bond detection.
+
+   **Improvement**: Explore more efficient and robust substructure matching algorithms or consider breaking down the molecule into smaller fragments for easier analysis.
+
+6. **Handling of edge cases**: The provided examples may contain edge cases or uncommon representations of D-glucosides that are not covered by the current approach.
+
+   **Improvement**: Analyze the false negatives and false positives to identify any edge cases or uncommon representations, and update the code accordingly.
+
+Overall, while the previous code attempts to address the problem, it may benefit from a more comprehensive and flexible approach that considers stereochemistry, tautomers, resonance structures, and edge cases. Additionally, it may be helpful to analyze the false negatives and false positives to identify specific areas for improvement.
