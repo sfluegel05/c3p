@@ -20,15 +20,19 @@ def is_prenylquinone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a basic quinone pattern (1,4-benzoquinone)
-    quinone_pattern = Chem.MolFromSmarts("C1=CC(=O)C=CC1=O")
-    if not mol.HasSubstructMatch(quinone_pattern):
+    # Define essential quinone patterns, considering variations
+    quinone_pattern1 = Chem.MolFromSmarts("C1=CC(=O)C=CC1=O")  # 1,4-benzoquinone
+    quinone_pattern2 = Chem.MolFromSmarts("C1=CC(=O)C(=C1)OC")  # common in tetrahydrobenzoquinones
+
+    if not (mol.HasSubstructMatch(quinone_pattern1) or mol.HasSubstructMatch(quinone_pattern2)):
         return False, "No quinone moiety found"
 
-    # Define a basic pattern for prenyl side-chains (isoprene units: C=C-C=C-C)
-    prenyl_sidechain_pattern = Chem.MolFromSmarts("C=C-C-C=C")
-    prenyl_matches = mol.GetSubstructMatches(prenyl_sidechain_pattern)
-    if not prenyl_matches:
+    # Extend prenyl side-chain even if more complex and branched (allow variations)
+    prenyl_sidechain_pattern = Chem.MolFromSmarts("C=C-C-C=C")  # Prototype for polyprenyl chains
+    extended_prenyl_sidechain_pattern = Chem.MolFromSmarts("C=C(C)C")  # Manage branches in prenyl chain
+
+    # Checking for either basic or extended prenyl pattern
+    if not (mol.HasSubstructMatch(prenyl_sidechain_pattern) or mol.HasSubstructMatch(extended_prenyl_sidechain_pattern)):
         return False, "No polyprenyl side-chain found"
 
-    return True, "Contains a quinone moiety with a prenyl side-chain"
+    return True, "Contains a quinone moiety with a polyprenyl-derived side-chain"
