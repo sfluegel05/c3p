@@ -35,7 +35,7 @@ def is_beta_D_glucoside(smiles: str):
     for atom in mol.GetAtoms():
         if atom.GetSymbol() == "O" and atom.GetDegree() == 2:
             neighbors = atom.GetNeighbors()
-            if any(n.GetSymbol() == "C" and n.GetDegreeTotal() == 4 for n in neighbors):
+            if any(n.GetSymbol() == "C" and n.GetDegree() == 4 for n in neighbors):
                 anomeric_atom = atom
                 break
     
@@ -46,5 +46,16 @@ def is_beta_D_glucoside(smiles: str):
     config = mol.GetAtomWithIdx(anomeric_atom.GetIdx()).GetProp("_CIPCode")
     if config != "S":
         return False, "Anomeric center is not beta configuration"
+    
+    # Additional checks
+    
+    # Check for glucosidic bond (O-C)
+    if not any(bond.GetBondType() == Chem.BondType.SINGLE for bond in mol.GetBonds()):
+        return False, "No glucosidic bond found"
+    
+    # Check for 6 oxygen atoms
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if o_count != 6:
+        return False, "Incorrect number of oxygen atoms"
     
     return True, "Molecule contains a beta-configured D-glucose moiety"
