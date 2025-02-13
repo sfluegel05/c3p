@@ -14,7 +14,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_nitrile(smiles: str):
     """
     Determines if a molecule is a nitrile based on its SMILES string.
-    A nitrile contains a cyano group (-C#N).
+    A nitrile contains a cyano group (-C#N) attached to a carbon atom.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -29,27 +29,19 @@ def is_nitrile(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for cyano group (-C#N)
-    cyano_pattern = Chem.MolFromSmarts("[C#N]")
+    # Look for cyano group (-C#N) attached to a carbon atom
+    cyano_pattern = Chem.MolFromSmarts("[C][C#N]")
     if not mol.HasSubstructMatch(cyano_pattern):
-        return False, "No cyano group (-C#N) found"
+        return False, "No cyano group (-C#N) attached to a carbon atom found"
     
-    # Count cyano groups
-    cyano_matches = mol.GetSubstructMatches(cyano_pattern)
-    n_cyano = len(cyano_matches)
+    # Check for common non-nitrile functional groups
+    amide_pattern = Chem.MolFromSmarts("[C](=O)[N]")
+    if mol.HasSubstructMatch(amide_pattern):
+        return False, "Contains an amide group, which is not a nitrile"
     
-    # Check for multiple cyano groups
-    if n_cyano > 1:
-        return True, f"Contains {n_cyano} cyano groups (-C#N)"
+    ester_pattern = Chem.MolFromSmarts("[C](=O)[O]")
+    if mol.HasSubstructMatch(ester_pattern):
+        return False, "Contains an ester group, which is not a nitrile"
     
-    # Check for other common functional groups
-    nitro_pattern = Chem.MolFromSmarts("[N+](=O)[O-]")
-    if mol.HasSubstructMatch(nitro_pattern):
-        return True, "Contains a cyano group (-C#N) and a nitro group (-NO2)"
-    
-    amine_pattern = Chem.MolFromSmarts("[N;H]")
-    if mol.HasSubstructMatch(amine_pattern):
-        return True, "Contains a cyano group (-C#N) and an amine (-NH2 or -NH-)"
-    
-    # If only one cyano group, return True
-    return True, "Contains a single cyano group (-C#N)"
+    # If cyano group attached to carbon and no common non-nitrile groups, classify as nitrile
+    return True, "Contains a cyano group (-C#N) attached to a carbon atom"
