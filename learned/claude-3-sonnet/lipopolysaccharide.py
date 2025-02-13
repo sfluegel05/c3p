@@ -1,28 +1,61 @@
 """
 Classifies: CHEBI:16412 lipopolysaccharide
 """
-The previous code attempted to classify lipopolysaccharides (LPS) by looking for specific structural features: a trisaccharide repeating unit, oligosaccharide side chains, and a 3-hydroxytetradecanoic acid unit. However, based on the outcomes, it appears that the code missed all the positive examples of lipopolysaccharides.
+"""
+Classifies: CHEBI:36345 lipopolysaccharide 
+Lipopolysaccharides are natural compounds consisting of a trisaccharide repeating unit 
+(two heptose units and octulosonic acid) with oligosaccharide side chains and 
+3-hydroxytetradecanoic acid units. They are a major constituent of the cell walls of Gram-negative bacteria.
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-Here are a few possible reasons why the code failed and how it could be improved:
+def is_lipopolysaccharide(smiles: str):
+    """
+    Determines if a molecule is a lipopolysaccharide based on its SMILES string.
 
-1. **Trisaccharide repeating unit pattern**: The patterns used to search for the trisaccharide repeating unit (two heptose units and octulosonic acid) may not be general enough to capture all possible variations. Lipopolysaccharides can have diverse structures, and the trisaccharide unit may not always conform to the exact patterns used in the code.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-   **Improvement**: Study more examples of lipopolysaccharide structures and refine the trisaccharide unit patterns to account for structural variations.
-
-2. **Oligosaccharide side chain pattern**: The pattern used to search for oligosaccharide side chains (`[OX2][CX4][OX2]`) is too general and may match unrelated structures.
-
-   **Improvement**: Use a more specific pattern or a combination of patterns to better identify oligosaccharide side chains in the context of lipopolysaccharides.
-
-3. **3-hydroxytetradecanoic acid unit pattern**: The pattern used to search for the 3-hydroxytetradecanoic acid unit (`CCCCCCCCCCCCC[C@@H](O)C(O)=O`) is very specific and may not match variations in the lipid chain length or substitution patterns.
-
-   **Improvement**: Use a more general pattern that can match different lipid chain lengths and substitution patterns, while still capturing the essential features of the 3-hydroxytetradecanoic acid unit.
-
-4. **Molecular weight filter**: The molecular weight filter of 2000 Da may be too strict, as some lipopolysaccharides may have lower molecular weights depending on their specific structures.
-
-   **Improvement**: Adjust the molecular weight filter or remove it altogether if it is not a reliable criterion for classification.
-
-5. **Structural complexity**: Lipopolysaccharides are complex molecules, and it may be challenging to capture all their structural features using a set of predefined patterns.
-
-   **Improvement**: Explore machine learning approaches that can learn the structural patterns of lipopolysaccharides from a large dataset of examples, rather than relying on manually defined patterns.
-
-Overall, the key to improving the classification of lipopolysaccharides would be to study a diverse set of examples, refine the structural patterns used for matching, and potentially explore machine learning techniques that can learn the structural features directly from data.
+    Returns:
+        bool: True if molecule is a lipopolysaccharide, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Look for patterns of trisaccharide repeating unit
+    trisaccharide_patterns = [
+        Chem.MolFromSmarts("[C@@H]1[C@H]([C@H]([C@@H]([C@H](O1)O)O)O)O[C@@H]2[C@@H]([C@H]([C@@H](O2)CO)O)O"),  # heptose-heptose-octulosonic acid
+        Chem.MolFromSmarts("[C@@H]1[C@H]([C@H]([C@@H]([C@H](O1)O)O)O)O[C@@H]2[C@@H]([C@H]([C@@H](O2)CO)O)O[C@H]3[C@@H]([C@H]([C@@H](O3)CO)O)O")  # heptose-heptose-octulosonic acid-heptose
+    ]
+    trisaccharide_match = any(mol.HasSubstructMatch(pattern) for pattern in trisaccharide_patterns)
+    if not trisaccharide_match:
+        return False, "No trisaccharide repeating unit found"
+    
+    # Look for oligosaccharide side chains
+    oligosaccharide_pattern = Chem.MolFromSmarts("[OX2][CX4][OX2]~[OX2][CX4][OX2]~[OX2][CX4][OX2]")
+    oligosaccharide_matches = mol.GetSubstructMatches(oligosaccharide_pattern)
+    if not oligosaccharide_matches:
+        return False, "No oligosaccharide side chains found"
+    
+    # Look for 3-hydroxytetradecanoic acid unit
+    lipid_patterns = [
+        Chem.MolFromSmarts("CCCCCCCCCCCCC[C@@H](O)C(O)=O"),  # 3-hydroxytetradecanoic acid
+        Chem.MolFromSmarts("[C@@H](CCCCCCCCCCCCC)O"),  # 3-hydroxylated lipid chain
+        Chem.MolFromSmarts("CCCCCCCCCCCCCC(O)=O")  # tetradecanoic acid
+    ]
+    lipid_match = any(mol.HasSubstructMatch(pattern) for pattern in lipid_patterns)
+    if not lipid_match:
+        return False, "No 3-hydroxytetradecanoic acid unit found"
+    
+    # Check molecular weight - lipopolysaccharides typically >1000 Da
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 1000:
+        return False, "Molecular weight too low for lipopolysaccharide"
+    
+    return True, "Contains trisaccharide repeating unit, oligosaccharide side chains, and 3-hydroxytetradecanoic acid unit"
