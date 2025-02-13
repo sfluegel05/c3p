@@ -26,8 +26,8 @@ def is_aldehyde(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for carbonyl carbon with one H and one R group attached
-    aldehyde_pattern = Chem.MolFromSmarts("C(=O)[H]")
+    # Look for carbonyl carbon with one H and one alkyl/aryl group attached
+    aldehyde_pattern = Chem.MolFromSmarts("[C;!$(C=O)]=[O;H1]")
     aldehyde_matches = mol.GetSubstructMatches(aldehyde_pattern)
     
     if not aldehyde_matches:
@@ -35,16 +35,22 @@ def is_aldehyde(smiles: str):
     
     # Check for presence of at least one carbon
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 1:
-        return False, "No carbon atoms found"
+    if c_count < 2:
+        return False, "Fewer than 2 carbon atoms found"
     
     # Check for presence of only one aldehyde group
     if len(aldehyde_matches) > 1:
         return False, f"Found {len(aldehyde_matches)} aldehyde groups, need exactly 1"
     
-    # Check if the carbonyl carbon is not part of a carboxylic acid group
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[O;H,-]")
-    if mol.HasSubstructMatch(carboxylic_acid_pattern):
-        return False, "Molecule contains a carboxylic acid group, not an aldehyde"
+    # Exclude carboxylic acids, esters, and amides
+    excluded_patterns = [
+        Chem.MolFromSmarts("C(=O)[O;H,-]"), # Carboxylic acid
+        Chem.MolFromSmarts("C(=O)[O;!H0]"), # Ester
+        Chem.MolFromSmarts("C(=O)[N]")      # Amide
+    ]
+    
+    for pattern in excluded_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return False, "Molecule contains a non-aldehyde carbonyl group"
     
     return True, "Contains an aldehyde functional group (R-C(=O)H)"
