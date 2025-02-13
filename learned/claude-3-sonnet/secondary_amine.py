@@ -1,26 +1,71 @@
 """
 Classifies: CHEBI:32863 secondary amine
 """
-Based on the provided error message and the zero F1 score, it seems that the previous code encountered an issue and was unable to correctly classify the examples. Here's an analysis of the potential issues and suggestions for improvement:
+"""
+Classifies: CHEBI:35612 secondary amine
+A compound formally derived from ammonia by replacing two hydrogen atoms by hydrocarbyl groups.
+"""
+from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
-1. **Error Handling**: The error message `Error: exceptions must derive from BaseException` suggests that there might be an issue with the way exceptions are being raised or handled in the code. In Python, all exceptions must be derived from the `BaseException` class or its subclasses. Ensure that any custom exceptions you might be using are properly defined and inherited from the correct base class.
+def is_secondary_amine(smiles: str):
+    """
+    Determines if a molecule is a secondary amine based on its SMILES string.
 
-2. **Pattern Matching**: The code uses the `Chem.MolFromSmarts` function to define patterns for secondary amines and other nitrogen patterns. However, these patterns might not be comprehensive enough to cover all possible cases. It's possible that some examples were misclassified due to incomplete or incorrect pattern matching.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Secondary Amine Definition**: The definition of a secondary amine as "a compound formally derived from ammonia by replacing two hydrogen atoms by hydrocarbyl groups" might not be accurately captured by the current pattern matching approach. Consider revisiting the definition and exploring alternative ways to identify secondary amines more reliably.
+    Returns:
+        bool: True if molecule is a secondary amine, False otherwise
+        str: Reason for classification
+    """
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-4. **Testing and Validation**: The provided examples might not be representative of all possible secondary amine structures. It's essential to test the code against a larger and more diverse set of examples to identify edge cases and improve the classification algorithm.
+    # Check for presence of nitrogen atom
+    if sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7) == 0:
+        return False, "No nitrogen atom found"
 
-To improve the code, you could consider the following steps:
+    # Check for single nitrogen atom bonded to exactly two carbons
+    nitrogen_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7]
+    is_secondary_amine = False
+    for n_atom in nitrogen_atoms:
+        n_neighbors = [neighbor for neighbor in n_atom.GetNeighbors() if neighbor.GetAtomicNum() == 6]
+        if len(n_neighbors) == 2:
+            is_secondary_amine = True
+            break
 
-1. **Error Handling**: Ensure that any exceptions raised or caught in the code are properly defined and inherit from the correct base classes.
+    if not is_secondary_amine:
+        return False, "Nitrogen atom not bonded to exactly two carbons"
 
-2. **Pattern Refinement**: Review and refine the SMARTS patterns used for secondary amine and other nitrogen pattern matching. Consider consulting additional resources or seeking expert advice to ensure the patterns are comprehensive and accurate.
+    # Check for two separate alkyl/aryl groups attached to nitrogen
+    n_atom = n_neighbors[0]
+    first_chain = [n_atom]
+    second_chain = [n_neighbors[1]]
 
-3. **Alternative Approaches**: Explore alternative approaches to identify secondary amines, such as using other molecular descriptors, structural features, or machine learning techniques, if pattern matching proves to be insufficient.
+    while True:
+        next_atoms = []
+        for atom in first_chain:
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 6 and neighbor not in first_chain:
+                    next_atoms.append(neighbor)
+        if not next_atoms:
+            break
+        first_chain.extend(next_atoms)
 
-4. **Comprehensive Testing**: Expand the set of test cases to include a broader range of secondary amine structures, as well as negative examples (compounds that are not secondary amines). This will help identify potential weaknesses in the classification algorithm and guide further improvements.
+    while True:
+        next_atoms = []
+        for atom in second_chain:
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 6 and neighbor not in second_chain:
+                    next_atoms.append(neighbor)
+        if not next_atoms:
+            break
+        second_chain.extend(next_atoms)
 
-5. **Code Optimization**: Optimize the code for readability, performance, and maintainability. Consider adding comments, refactoring functions, and implementing best practices for coding in Python and RDKit.
+    if len(first_chain) == 1 or len(second_chain) == 1:
+        return False, "At least one of the substituents is not an alkyl/aryl group"
 
-By addressing these issues and continuously refining the code based on feedback and testing, the classification accuracy for secondary amines should improve.
+    return True, "Contains a nitrogen atom bonded to two separate alkyl/aryl groups"
