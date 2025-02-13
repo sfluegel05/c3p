@@ -21,14 +21,19 @@ def is_aliphatic_aldoxime(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for the oxime group pattern: C=N-O
-    oxime_pattern = Chem.MolFromSmarts("[CX3]=[NX2]-[OX1H0]")
+    # Look for the oxime group pattern: C=N-O with possible stereochemistry
+    oxime_pattern = Chem.MolFromSmarts("[CX3]=[NX2]=[OX1]")
     if not mol.HasSubstructMatch(oxime_pattern):
         return False, "No oxime group found"
 
-    # Check for aliphatic chain: ensure no aromatic carbons
+    # Ensure there are no aromatic carbons
     if any(atom.GetIsAromatic() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6):
         return False, "Contains aromatic carbons, not fully aliphatic"
+
+    # Additional check: ensure at least one aliphatic carbon chain longer than one carbon is present
+    aliphatic_chain_pattern = Chem.MolFromSmarts("[CX4!H0]-[CX4!H0]")
+    if not mol.HasSubstructMatch(aliphatic_chain_pattern):
+        return False, "No sufficient aliphatic chain found"
 
     return True, "Contains an oxime group derived from an aliphatic aldehyde"
 
