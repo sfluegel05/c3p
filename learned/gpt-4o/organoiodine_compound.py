@@ -20,13 +20,13 @@ def is_organoiodine_compound(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the SMARTS pattern for a carbon-iodine bond
-    c_i_pattern = Chem.MolFromSmarts("[#6]-[I]")
-    
-    # Check if the molecule has the substructure match for each possible fragment
-    fragments = Chem.GetMolFrags(mol, asMols=True)
-    for fragment in fragments:
-        if fragment.HasSubstructMatch(c_i_pattern):
+    # Iterate over bonds and check for carbon-iodine bond
+    for bond in mol.GetBonds():
+        atom1 = bond.GetBeginAtom()
+        atom2 = bond.GetEndAtom()
+        # Check if there's a C-I bond
+        if (atom1.GetAtomicNum() == 6 and atom2.GetAtomicNum() == 53) or \
+           (atom1.GetAtomicNum() == 53 and atom2.GetAtomicNum() == 6):
             return True, "Contains carbon-iodine bond"
 
     return False, "No carbon-iodine bond found"
