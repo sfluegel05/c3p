@@ -27,13 +27,28 @@ def is_mucopolysaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for presence of uronic acid and glycosamine units
-    has_uronic_acid = any(atom.GetHybridizationStatePerBondRingCt() == Chem.HybridizationType.SP2
-                          and atom.GetTotalNumHs() == 1 for atom in mol.GetAtoms())
-    has_glycosamine = any(atom.GetAtomicNum() == 7 and atom.GetTotalNumHs() == 2 for atom in mol.GetAtoms())
+    # Define SMARTS patterns for uronic acid and glycosamine units
+    uronic_acid_pattern = Chem.MolFromSmarts("[C&X3](=[O&X1])([O&X2])[O&X2]")
+    glycosamine_pattern = Chem.MolFromSmarts("[N&X3]([C&X4])[C&X4]([O&X2])[C&X4]([O&X2])[C&X4]([O&X2])[C&X4]")
     
-    if not has_uronic_acid or not has_glycosamine:
+    # Check for alternating uronic acid-glycosamine pattern
+    uronic_acid_matches = mol.GetSubstructMatches(uronic_acid_pattern)
+    glycosamine_matches = mol.GetSubstructMatches(glycosamine_pattern)
+    
+    if not uronic_acid_matches or not glycosamine_matches:
         return False, "Missing uronic acid or glycosamine units"
+    
+    alternating_pattern = False
+    for uronic_acid_idx in uronic_acid_matches:
+        for glycosamine_idx in glycosamine_matches:
+            if abs(uronic_acid_idx - glycosamine_idx) == 1:
+                alternating_pattern = True
+                break
+        if alternating_pattern:
+            break
+    
+    if not alternating_pattern:
+        return False, "Uronic acid and glycosamine units not in alternating pattern"
     
     # Look for sulfate groups or sulfur atoms
     has_sulfate = any(atom.GetAtomicNum() == 16 for atom in mol.GetAtoms())
@@ -49,8 +64,8 @@ def is_mucopolysaccharide(smiles: str):
     if c_count < 10 or o_count < 5:
         return False, "Insufficient carbon and oxygen atoms for polysaccharide"
     
-    # Classify as mucopolysaccharide if uronic acid, glycosamine, and sulfation present
-    if has_uronic_acid and has_glycosamine and has_sulfate:
-        return True, "Contains uronic acid and glycosamine units, partially esterified with sulfate groups"
+    # Classify as mucopolysaccharide if alternating pattern and sulfation present
+    if alternating_pattern and has_sulfate:
+        return True, "Contains alternating uronic acid and glycosamine units, partially esterified with sulfate groups"
     else:
         return False, "Does not match mucopolysaccharide structural features"
