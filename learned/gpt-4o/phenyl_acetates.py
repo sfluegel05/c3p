@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_phenyl_acetates(smiles: str):
     """
     Determines if a molecule is a phenyl acetate based on its SMILES string.
-    A phenyl acetate is an acetate ester obtained by formal condensation of the carboxy group of acetic acid 
-    with the hydroxy group of any phenol.
+    A phenyl acetate is an acetate ester obtained by formal condensation
+    of the carboxy group of acetic acid with the hydroxy group of any phenol.
 
     Args:
         smiles (str): SMILES string of the molecule.
@@ -21,39 +21,34 @@ def is_phenyl_acetates(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+    
+    # Define acetate ester part
+    # Represents ester linkage with aryl group
+    ester_pattern = Chem.MolFromSmarts("OC(=O)C")
+    
+    # Define a generic phenyl (aryl) pattern with potential for attachment
+    phenol_derived_pattern = Chem.MolFromSmarts("c[OX2H0]")
 
-    # Define a more flexible acetate ester pattern
-    # Acetate typically can be represented as [CX3](=O)[OX2H1] or [CX3](=O)[OX2H0] (both forms if attached)
-    acetate_pattern = Chem.MolFromSmarts("C(=O)O[C,c]")
+    # Check if the molecule has an ester pattern
+    if not mol.HasSubstructMatch(ester_pattern):
+        return False, "No ester linkage found"
+    
+    # Check if the molecule has an aryl structure with a hydroxy connection
+    if not mol.HasSubstructMatch(phenol_derived_pattern):
+        return False, "No aryl structure with hydroxy connection found"
 
-    # Define aryl structure with an -O relationship (more general than just phenol directly)
-    aryl_with_o_pattern = Chem.MolFromSmarts("c[OX2H0,CX3](=O)")
+    # Ensure both structures are present within the same molecule
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    aryl_matches = mol.GetSubstructMatches(phenol_derived_pattern)
 
-    # Check if the molecule has a suitable acetate ester attached to an aryl with O
-    if not mol.HasSubstructMatch(acetate_pattern):
-        return False, "No acetate ester group found"
+    for ester in ester_matches:
+        ester_ester_oxygen = ester[0]  # oxygen in ester
 
-    if not mol.HasSubstructMatch(aryl_with_o_pattern):
-        return False, "No aryl structure with [O] connection found"
+        for aryl in aryl_matches:
+            aryl_hydroxy_oxygen = aryl[1]  # oxy connection in aryl structure
 
-    # Ensure the structures are linked appropriately
-    # Find matches for acetate and aryl patterns (direct bond check is better than index assumption)
-    acetate_matches = mol.GetSubstructMatches(acetate_pattern)
-    aryl_oxy_matches = mol.GetSubstructMatches(aryl_with_o_pattern)
+            # Check if there is a bond between the ester oxygen and aryl hydroxy oxygen
+            if mol.GetBondBetweenAtoms(ester_ester_oxygen, aryl_hydroxy_oxygen) is not None:
+                return True, "Contains a linkage of an acetate ester to an aryloxy group"
 
-    # Iterate through detected structures to determine connectivity
-    for acetate in acetate_matches:
-        acetate_carbonyl_oxygen = acetate[2]  # Indexed based on "C(=O)O[C,c]"
-        acetate_oxygen = acetate[1]  # Carbonyl (O) in acetate
-
-        for aryl in aryl_oxy_matches:
-            aryl_oxygen = aryl[1]  # Linked (O) in aryl pattern
-
-            # Check direct connectivity between acetate and aryloxy oxygen
-            if mol.GetBondBetweenAtoms(acetate_oxygen, aryl_oxygen) is not None:
-                return True, "Contains an appropriate linkage of an acetate ester to an aryloxy group"
-
-    return False, "Acetate ester and aryl with oxy groups are not properly connected"
-
-# Example usage
-print(is_phenyl_acetates("CC(=O)Oc1ccccc1"))  # Should return True
+    return False, "Ester linkage and aryl structure are not properly connected"
