@@ -25,51 +25,53 @@ def is_3_oxo_Delta_1__steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Basic steroid core pattern - four fused rings (A,B,C,D)
-    # More flexible pattern that allows for variations in bond types and substitutions
+    # Basic steroid core pattern - four fused rings with more flexibility
     steroid_core = Chem.MolFromSmarts(
-        "[#6]1~2~[#6]~[#6]~[#6]~3~[#6]~[#6]~[#6]~4~[#6]~[#6]~[#6]~[#6]~[#6]~4~[#6]~[#6]~3~[#6]~[#6]~2~[#6]~[#6]~[#6]~1"
+        "[#6]~1~2~[#6]~[#6]~[#6]~3~[#6]~[#6]~[#6]~4~[#6,#8]~[#6]~[#6]~[#6]~[#6]~4~[#6]~[#6]~3~[#6]~[#6]~2~[#6]~[#6]~[#6]~1"
     )
     
     if not mol.HasSubstructMatch(steroid_core):
         return False, "No steroid core structure found"
 
-    # Pattern specifically for ring A with:
-    # - Double bond between positions 1-2 (Delta-1)
-    # - Ketone group at position 3
-    # Using explicit connectivity to ensure correct positions
+    # Pattern for ring A with Delta-1 double bond and 3-oxo group
+    # More specific pattern to ensure correct positioning
     ring_a_pattern = Chem.MolFromSmarts(
-        "[#6]1=[#6]-[#6](=O)-[#6]2-[#6]-[#6]-1" # Ring A with Delta-1 and 3-oxo
+        "[#6]1=,:[#6]-[#6](=[O])-[#6]2-[#6]-[#6]" # Ring A pattern
     )
     
     if not mol.HasSubstructMatch(ring_a_pattern):
-        return False, "Missing required Delta-1 double bond and 3-oxo group in correct positions"
+        return False, "Missing required Delta-1 double bond and 3-oxo group pattern"
+
+    # Additional check for specific Delta-1 double bond
+    delta_1_pattern = Chem.MolFromSmarts("[#6]1=,:[#6]-[#6](=O)")
+    if not mol.HasSubstructMatch(delta_1_pattern):
+        return False, "Missing Delta-1 double bond"
 
     # Additional validation to ensure reasonable steroid-like structure
     
-    # Count rings
+    # Count carbons (most steroids have 19-30 carbons)
+    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if carbon_count < 17:  # Allow some flexibility
+        return False, "Too few carbons for a steroid structure"
+
+    # Count rings (steroids typically have 4 or more rings)
     ssr = Chem.GetSymmSSSR(mol)
     if len(ssr) < 4:
         return False, "Too few rings for a steroid structure"
 
-    # Count carbons
-    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if carbon_count < 19:  # Most steroids have at least 19 carbons
-        return False, "Too few carbons for a steroid structure"
-        
-    # Count oxygens (should have at least one for the 3-oxo group)
-    oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if oxygen_count < 1:
-        return False, "Missing oxygen atoms (required for 3-oxo group)"
+    # Check for ketone oxygen
+    ketone_pattern = Chem.MolFromSmarts("[#6]-[#6](=O)-[#6]")
+    if not mol.HasSubstructMatch(ketone_pattern):
+        return False, "Missing ketone group"
 
-    # Check for reasonable molecular weight
+    # Verify molecular weight is in reasonable range for steroids
     mol_weight = Chem.Descriptors.ExactMolWt(mol)
-    if mol_weight < 250 or mol_weight > 1000:  # Typical steroid weight range
+    if mol_weight < 200 or mol_weight > 1000:
         return False, "Molecular weight outside typical steroid range"
 
-    # Verify ketone is conjugated with double bond
-    conjugated_pattern = Chem.MolFromSmarts("[#6]1=[#6]-[#6](=O)")
-    if not mol.HasSubstructMatch(conjugated_pattern):
-        return False, "3-oxo group not properly conjugated with Delta-1 double bond"
+    # Check for conjugation between Delta-1 and 3-oxo
+    conjugated_enone = Chem.MolFromSmarts("[#6]1=,:[#6]-[#6](=O)-[#6]")
+    if not mol.HasSubstructMatch(conjugated_enone):
+        return False, "Missing conjugated enone system"
 
-    return True, "Contains steroid core with Delta-1 double bond and 3-oxo group in correct positions"
+    return True, "Contains steroid core with Delta-1 double bond conjugated to 3-oxo group"
