@@ -1,26 +1,66 @@
 """
 Classifies: CHEBI:36615 triterpenoid
 """
-The previous program had some issues in correctly identifying triterpenoids based on the outcomes provided. Here are some potential reasons for the failures and suggestions for improvement:
+"""
+Classifies: CHEBI:36901 Triterpenoid
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem, rdFMCS
+from rdkit.Chem.Descriptors import MolWt
 
-1. **Focusing only on the number of carbon atoms**: The program checks for exactly 30 carbon atoms, which is a necessary but not sufficient condition for triterpenoids. There are examples like staphyloxanthin (51 carbons) and combretic acid A (32 carbons) that were missed due to this strict constraint.
+def is_triterpenoid(smiles: str):
+    """
+    Determines if a molecule is a triterpenoid based on its SMILES string.
+    Triterpenoids are terpenoids derived from a triterpene, where the C30 skeleton
+    of the parent triterpene may have been rearranged or modified by the removal of
+    skeletal atoms (generally methyl groups).
 
-    **Suggestion**: Relax the constraint on the exact number of carbon atoms and instead check for a range, e.g., between 28 and 35 carbon atoms.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **Relying too much on the triterpene skeleton pattern**: The program uses a specific SMARTS pattern to check for the triterpene skeleton, which may not capture all possible rearrangements and modifications that can occur in triterpenoids.
+    Returns:
+        bool: True if molecule is a triterpenoid, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles, sanitize=True, removeHs=False)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-    **Suggestion**: Instead of relying on a single pattern, consider using a more flexible approach that checks for the presence of certain substructures or functional groups characteristic of triterpenoids, such as cyclic structures, hydroxyl groups, carbonyl groups, and long aliphatic chains.
+    # Check for molecular weight in the range typical for triterpenoids
+    mol_wt = MolWt(mol)
+    if mol_wt < 400 or mol_wt > 600:
+        return False, f"Molecular weight {mol_wt:.2f} outside typical triterpenoid range"
 
-3. **Not considering specific structural features**: Some examples like 3,21-dioxoolean-18-en-28-oic acid and (3beta,16alpha)-13,28-epoxyoleanane-3,16-diol were missed because the program did not consider specific structural features like the presence of an oleanane skeleton or epoxy groups.
+    # Check for the presence of certain substructures/functional groups
+    substructures = [
+        Chem.MolFromSmarts("[C&ring]1[C&ring][C&ring][C&ring][C&ring][C&ring][C&ring]1"),  # Cyclic structures
+        Chem.MolFromSmarts("[OH]"),  # Hydroxyl groups
+        Chem.MolFromSmarts("[C&ring](=O)"),  # Cyclic carbonyl groups
+        Chem.MolFromSmarts("[C&ring]1[C&ring][C&ring][C&ring][C&ring][C&ring][C&ring]1"),  # Additional cyclic structures
+    ]
+    
+    for substructure in substructures:
+        if not mol.HasSubstructMatch(substructure):
+            return False, f"Missing substructure: {Chem.MolToSmarts(substructure)}"
 
-    **Suggestion**: Incorporate checks for specific structural features or skeletons that are known to be present in triterpenoids, such as oleanane, ursane, lupane, and dammarane skeletons.
+    # Check for specific triterpene skeletons
+    skeletons = [
+        Chem.MolFromSmiles("C[C@H]1[C@H]2[C@@H](C[C@@H]3[C@@H]4CC[C@H]5C[C@@H](O)CC[C@]5(C)[C@H]4CC[C@]23C)O[C@@]11"),  # Oleanane
+        Chem.MolFromSmiles("C[C@@H]1[C@@H]2[C@@H](C[C@@H]3[C@@H]4CC[C@H]5C[C@@H](O)CC[C@]5(C)[C@H]4CC[C@]23C)O[C@@]11"),  # Ursane
+        Chem.MolFromSmiles("C[C@@H]1[C@H]2[C@@H](C[C@@H]3[C@@H]4CC[C@H]5C[C@@H](O)CC[C@]5(C)[C@H]4CC[C@]23C)O[C@@]11"),  # Lupane
+        Chem.MolFromSmiles("C[C@@H]1[C@H]2[C@@H](C[C@@H]3[C@@H]4CC[C@H]5C[C@@H](O)CC[C@]5(C)[C@H]4CC[C@]23C)O[C@@]11"),  # Dammarane
+    ]
 
-4. **Handling tautomeric forms**: Some triterpenoids may exist in different tautomeric forms, which can affect the SMILES representation and the structural patterns recognized by the program.
+    skeleton_match = False
+    for skeleton in skeletons:
+        mcs = rdFMCS.FindMCS([mol, skeleton], matchValences=True, completeRingsOnly=True)
+        if mcs.numAtoms > 20:  # Adjust threshold as needed
+            skeleton_match = True
+            break
 
-    **Suggestion**: Consider using tools like RDKit's MolFromSmiles function with the `isomericSmiles=True` option to handle tautomeric forms more effectively.
+    if not skeleton_match:
+        return False, "No known triterpene skeleton found"
 
-5. **Handling stereochemistry**: Triterpenoids often have complex stereochemistry, which may not be properly captured by the SMARTS patterns or substructure matching algorithms used in the program.
-
-    **Suggestion**: Incorporate checks for specific stereochemical patterns or use more advanced techniques like maximum common substructure (MCS) or molecular fingerprint-based similarity methods to better handle stereochemistry.
-
-Overall, while the previous program had a good initial approach, it may benefit from a more flexible and comprehensive set of checks that consider a broader range of structural features, tautomeric forms, and stereochemical considerations specific to triterpenoids.
+    return True, "Molecule exhibits characteristics of a triterpenoid"
