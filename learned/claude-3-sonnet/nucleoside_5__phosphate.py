@@ -1,57 +1,31 @@
 """
 Classifies: CHEBI:16701 nucleoside 5'-phosphate
 """
-"""
-Classifies: CHEBI:33696 nucleoside 5'-phosphate
+The previous code attempts to classify molecules as nucleoside 5'-phosphates based on the following criteria:
 
-A ribosyl or deoxyribosyl derivative of a pyrimidine or purine base in which C-5
-of the ribose ring is mono-, di-, tri- or tetra-phosphorylated.
-"""
+1. Presence of a ribose or deoxyribose backbone
+2. Presence of a pyrimidine or purine base
+3. Presence of a phosphate group attached to the C-5 position of the ribose/deoxyribose ring
+4. Number of phosphate groups between 1 and 4
+5. Molecular weight between 300 and 1000 Da
 
-from rdkit import Chem
-from rdkit.Chem import AllChem, rdMolDescriptors
+However, based on the outcomes provided, it seems that the code is missing some important structural features and failing to correctly identify many nucleoside 5'-phosphates.
 
-def is_nucleoside_5__phosphate(smiles: str):
-    """
-    Determines if a molecule is a nucleoside 5'-phosphate based on its SMILES string.
+The following issues can be identified:
 
-    Args:
-        smiles (str): SMILES string of the molecule
+1. The ribose/deoxyribose backbone patterns used are not comprehensive enough to cover all possible variations in the ring conformations and substitutions.
+2. The pyrimidine/purine base patterns are too specific and may not cover all possible bases present in nucleoside 5'-phosphates.
+3. The code does not account for modifications or substitutions on the base or ribose/deoxyribose rings, which are common in many nucleoside 5'-phosphates.
+4. The code does not consider the stereochemistry of the ribose/deoxyribose ring and the phosphate groups, which is crucial for correctly identifying these molecules.
+5. The molecular weight range may be too narrow, as some nucleoside 5'-phosphates with larger substituents or multiple phosphate groups can fall outside this range.
 
-    Returns:
-        bool: True if molecule is a nucleoside 5'-phosphate, False otherwise
-        str: Reason for classification
-    """
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+To improve the performance of the program, the following modifications can be considered:
 
-    # Check for ribose/deoxyribose backbone
-    ribose_patterns = ["[OX2]C1[CH]([OX2])[CH]([OX2])[CH]([OX2])[CH]1",
-                       "[OX2]C1[CH]([OX2])[CH]([OX2])[CH]([OX2])C1"]
-    has_ribose = any(mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)) for pattern in ribose_patterns)
-    if not has_ribose:
-        return False, "No ribose/deoxyribose backbone found"
+1. Use a more general SMARTS pattern to match the ribose/deoxyribose backbone, accounting for different ring conformations and substitutions.
+2. Expand the set of SMARTS patterns for pyrimidine/purine bases to cover a wider range of possible bases.
+3. Incorporate SMARTS patterns to identify common modifications and substitutions on the base and ribose/deoxyribose rings.
+4. Implement checks for the stereochemistry of the ribose/deoxyribose ring and the phosphate groups.
+5. Adjust the molecular weight range based on the range observed in the provided examples.
+6. Consider additional structural features or properties that can help differentiate nucleoside 5'-phosphates from other molecules.
 
-    # Check for pyrimidine/purine base
-    base_patterns = ["c1ncnc[nH]1", "c1[nH]cnc1", "n1cnc2c1ncnc2", "c1ncnc2[nH]cnc12"]
-    has_base = any(mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)) for pattern in base_patterns)
-    if not has_base:
-        return False, "No pyrimidine/purine base found"
-
-    # Check for phosphate group(s) attached to C-5 of ribose/deoxyribose
-    phosphate_pattern = Chem.MolFromSmarts("OP(O)(=O)O[C@H]1[C@@H]([CH]([CH]([CH]1[OX2])O)O)O")
-    has_phosphate = mol.HasSubstructMatch(phosphate_pattern)
-    if not has_phosphate:
-        return False, "No phosphate group attached to C-5 of ribose/deoxyribose"
-
-    # Additional checks
-    num_phosphates = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
-    if num_phosphates < 1 or num_phosphates > 4:
-        return False, "Number of phosphate groups must be between 1 and 4"
-
-    mol_weight = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_weight < 300 or mol_weight > 1000:
-        return False, "Molecular weight outside typical range for nucleoside phosphates"
-
-    return True, "Molecule satisfies structural requirements for nucleoside 5'-phosphate"
+Additionally, it may be beneficial to use machine learning techniques or rule-based expert systems to improve the classification accuracy, especially for complex molecules with multiple structural features.
