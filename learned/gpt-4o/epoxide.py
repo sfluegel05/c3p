@@ -21,9 +21,9 @@ def is_epoxide(smiles: str):
     if mol is None:
         return (False, "Invalid SMILES string")
 
-    # Define a more specific epoxide pattern: a three-membered ring with one oxygen and two sp3 carbons
-    epoxide_pattern = Chem.MolFromSmarts("[C;R1]1O[C;R1]1")
-    
+    # Define a more accurate epoxide pattern: a three-membered ring with one oxygen and two carbons
+    epoxide_pattern = Chem.MolFromSmarts("[C]1[O][C]1")
+
     # Check if the molecule contains an epoxide ring
     if mol.HasSubstructMatch(epoxide_pattern):
         return (True, "Contains a three-membered cyclic ether (epoxide)")
