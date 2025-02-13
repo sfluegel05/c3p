@@ -19,29 +19,32 @@ def is_bioconjugate(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return None, "Invalid SMILES string"
 
-    # Define biological components using SMARTS patterns (simplified for the example)
-    # Amino acid backbone pattern (e.g., C-C(C(=O)O)N)
-    amino_acid_pattern = Chem.MolFromSmarts("N[C@@H](C)C(=O)O")
+    # Define a range of known biological moiety patterns for identification
+    patterns = {
+        "amino_acid": Chem.MolFromSmarts("N[C@@H](C)C(=O)O"),                    # Simplified amino acid backbones
+        "fatty_acid": Chem.MolFromSmarts("C(=O)[CX4]C"),                         # General fatty acid residue
+        "nucleotide": Chem.MolFromSmarts("n1cnc2c1ncnc2"),                       # DNA/RNA bases
+        "sugar": Chem.MolFromSmarts("C(O)C(O)C(O)C(O)"),                         # Simple sugar backbone
+        "peptide_bond": Chem.MolFromSmarts("C(=O)N"),                            # Peptide linkage
+        "thiol": Chem.MolFromSmarts("CSC(C)"),                                   # Cysteine related
+        "phosphate": Chem.MolFromSmarts("P(=O)(O)O")                             # Phosphate group
+    }
+
+    # Track identified biological moieties
+    identified_moieties = set()
+
+    # Check for the presence of each biological moiety pattern
+    for name, pattern in patterns.items():
+        if mol.HasSubstructMatch(pattern):
+            identified_moieties.add(name)
+
+    # Consider it a bioconjugate if two or more distinct moieties are found
+    if len(identified_moieties) >= 2:
+        return True, f"Contains at least two different biological moieties covalently linked: {', '.join(identified_moieties)}"
     
-    # Fatty acid chain pattern (e.g., long aliphatic chain with carboxyl group)
-    fatty_acid_pattern = Chem.MolFromSmarts("C(=O)[OX1][C;R0]!@[C;R0]!@[C;R0]")
-
-    # Nucleotide pattern (simplified sugar base)
-    nucleotide_pattern = Chem.MolFromSmarts("n1cnc2c1ncnc2")
-
-    # Identify presence of these components
-    has_amino_acid = mol.HasSubstructMatch(amino_acid_pattern)
-    has_fatty_acid = mol.HasSubstructMatch(fatty_acid_pattern)
-    has_nucleotide = mol.HasSubstructMatch(nucleotide_pattern)
-
-    # Check for at least two distinct biological components
-    components = [has_amino_acid, has_fatty_acid, has_nucleotide]
-    if sum(components) >= 2:
-        return True, "Contains at least two different biological moieties covalently linked"
-    else:
-        return False, "Does not contain at least two distinct biological components"
+    return False, "Does not contain at least two distinct biological components"
 
 # Example use (replace SMILES with an actual string to test):
 # result, reason = is_bioconjugate("your_smiles_here")
