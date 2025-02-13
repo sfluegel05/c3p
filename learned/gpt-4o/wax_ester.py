@@ -2,7 +2,6 @@
 Classifies: CHEBI:10036 wax ester
 """
 from rdkit import Chem
-from rdkit.Chem.rdMolDescriptors import CalcNumAliphaticCarbocycles
 
 def is_wax_ester(smiles: str):
     """
@@ -17,7 +16,6 @@ def is_wax_ester(smiles: str):
         bool: True if molecule is a wax ester, False otherwise
         str: Reason for classification
     """
-    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
@@ -31,18 +29,40 @@ def is_wax_ester(smiles: str):
     # Get the atom indices of all ester linkages found
     ester_matches = mol.GetSubstructMatches(ester_pattern)
 
+    # Function to count contiguous carbon atoms using DFS
+    def count_carbon_chain(start_atom_idx):
+        visited = set()
+        stack = [start_atom_idx]
+        carbon_count = 0
+
+        while stack:
+            atom_idx = stack.pop()
+            if atom_idx in visited:
+                continue
+            visited.add(atom_idx)
+            atom = mol.GetAtomWithIdx(atom_idx)
+            if atom.GetAtomicNum() == 6:  # If carbon
+                carbon_count += 1
+                for neighbor in atom.GetNeighbors():
+                    stack.append(neighbor.GetIdx())
+        
+        return carbon_count
+
     # Verify that each ester group connects two sufficiently long carbon chains
     for match in ester_matches:
         atom_idx_c1 = match[0]  # Carbon of the carbonyl group
         atom_idx_o = match[2]   # Oxygen in -C(=O)O-
-        
-        # Check chain connected to atom_idx_c1
-        atom_neighbors = [neigh.GetIdx() for neigh in mol.GetAtomWithIdx(atom_idx_c1).GetNeighbors() if neigh.GetIdx() != match[1]]
-        c1_chain_length = sum(1 for _ in Chem.rdmolops.bfsTraverse(mol, startAtomIdx=atom_neighbors[0]) if mol.GetAtomWithIdx(_).GetAtomicNum() == 6)
-        
-        # Check chain connected to atom_idx_o
-        atom_neighbors = [neigh.GetIdx() for neigh in mol.GetAtomWithIdx(atom_idx_o).GetNeighbors()]
-        o_chain_length = sum(1 for _ in Chem.rdmolops.bfsTraverse(mol, startAtomIdx=atom_neighbors[0]) if mol.GetAtomWithIdx(_).GetAtomicNum() == 6)
+
+        # Get neighbors excluding the ones directly involved in the ester linkage
+        c1_neighbors = [n.GetIdx() for n in mol.GetAtomWithIdx(atom_idx_c1).GetNeighbors() if n.GetIdx() != match[1]]
+        o_neighbors = [n.GetIdx() for n in mol.GetAtomWithIdx(atom_idx_o).GetNeighbors() if n.GetIdx() != match[1]]
+
+        # Check if neighbors exist
+        if not c1_neighbors or not o_neighbors:
+            return False, "Missing chains connected to the ester linkage"
+
+        c1_chain_length = max(count_carbon_chain(neigh_idx) for neigh_idx in c1_neighbors)
+        o_chain_length = max(count_carbon_chain(neigh_idx) for neigh_idx in o_neighbors)
 
         # Ensure both chains are sufficiently long (e.g., >=8 carbons)
         if c1_chain_length < 8 or o_chain_length < 8:
