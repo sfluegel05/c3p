@@ -26,34 +26,41 @@ def is_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for cyclopenta[a]phenanthrene skeleton
-    steroid_pattern = Chem.MolFromSmarts("[C@H]1CC[C@]2([C@H]3CC[C@@]4([C@H](CC[C@]4([C@H]3CC[C@@]21C)C)C)C)C")
-    if not mol.HasSubstructMatch(steroid_pattern):
-        return False, "No cyclopenta[a]phenanthrene skeleton found"
+    # Look for cyclopenta[a]phenanthrene scaffold
+    scaffold = AllChem.MurckoScaffold.GetScaffoldForMol(mol)
+    scaffold_pattern = Chem.MolFromSmarts("C1CCC2C3CCCC4C5CCCC6C7CCCC%91%92%93%94%95%96%97")
+    if not scaffold.HasSubstructMatch(scaffold_pattern):
+        return False, "No cyclopenta[a]phenanthrene scaffold found"
     
     # Check for methyl groups at C-10 and C-13
-    c10_pattern = Chem.MolFromSmarts("[C@H]1CC[C@]2([C@H]3CC[C@@]4([C@H](CC[C@]4([C@H]3CC[C@]21C)C)[C@H](C)C)C)C")
-    c13_pattern = Chem.MolFromSmarts("[C@H]1CC[C@]2([C@H]3CC[C@@]4([C@H](CC[C@]4([C@H]3CC[C@]21C)C)C)[C@@H](C)C)C")
-    if not (mol.HasSubstructMatch(c10_pattern) and mol.HasSubstructMatch(c13_pattern)):
-        return False, "Missing methyl groups at C-10 and/or C-13"
+    ring_info = mol.GetRingInfo()
+    rings = [ring.AtomIds() for ring in ring_info.BondRings()]
+    steroid_rings = [ring for ring in rings if len(ring) in [5, 6]]
+    methyls_10_13 = False
+    for ring in steroid_rings:
+        ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
+        ring_methyls = [atom for atom in ring_atoms if atom.GetTotalNumHs() == 1 and atom.GetIsAromatic() == False]
+        if len(ring_methyls) == 2:
+            methyls_10_13 = True
+            break
+    if not methyls_10_13:
+        return False, "Missing methyl groups at C-10 and C-13"
     
     # Check for alkyl group at C-17 (optional)
-    c17_pattern = Chem.MolFromSmarts("[C@@H]1CC[C@]2([C@H]3CC[C@@]4([C@H](CC[C@]4([C@H]3CC[C@]21C)C)CC)C)C")
-    has_c17_alkyl = mol.HasSubstructMatch(c17_pattern)
-    
-    # Check for bond scissions, ring expansions/contractions
-    # Use Bemis-Murcko scaffold to identify skeleton modifications
-    scaffold = AllChem.MurckoScaffold.GetScaffoldForMol(mol)
-    scaffold_pattern = Chem.MolFromSmarts("C1CCC2C3CCC4C5CCC6C7CCC8C9CCCC%91%92%93%94%95%96%97%98%99")
-    if not scaffold.HasSubstructMatch(scaffold_pattern):
-        return False, "Skeleton modified by bond scissions, ring expansions/contractions"
+    has_c17_alkyl = False
+    for ring in steroid_rings:
+        ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
+        ring_alkyl = [atom for atom in ring_atoms if atom.GetDegree() > 3 and atom.GetIsAromatic() == False]
+        if len(ring_alkyl) == 1:
+            has_c17_alkyl = True
+            break
     
     # Check molecular weight - steroids typically 200-500 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 200 or mol_wt > 500:
         return False, "Molecular weight outside typical steroid range"
     
-    reason = "Contains cyclopenta[a]phenanthrene skeleton with methyl groups at C-10 and C-13"
+    reason = "Contains cyclopenta[a]phenanthrene scaffold with methyl groups at C-10 and C-13"
     if has_c17_alkyl:
         reason += ", and an alkyl group at C-17"
     
