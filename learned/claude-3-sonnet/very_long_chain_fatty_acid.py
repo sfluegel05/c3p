@@ -1,27 +1,75 @@
 """
 Classifies: CHEBI:27283 very long-chain fatty acid
 """
-It seems like the previous attempt failed because the provided code did not catch all the cases for classifying a very long-chain fatty acid correctly. Let's analyze the outcomes and try to improve the code.
+"""
+Classifies: CHEBI:36216 very long-chain fatty acid
 
-Outcomes:
-- True positives: NONE
-- False positives: NONE
-- False negatives: NONE
+A fatty acid which has a chain length greater than C22. Very long-chain fatty acids
+which have a chain length greater than C27 are also known as ultra-long-chain fatty acids.
+"""
+from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
-Since there are no true positives or false positives/negatives, it means that the program did not classify any molecule correctly. This could be because the provided test cases did not match the implemented criteria or the criteria itself was incomplete.
+def is_very_long_chain_fatty_acid(smiles: str):
+    """
+    Determines if a molecule is a very long-chain fatty acid based on its SMILES string.
 
-Reasoning:
-The implemented criteria in the previous code were:
-1. Presence of a carboxylic acid group
-2. Longest carbon chain length > 22
-3. Maximum of 4 unsaturations
-4. Only C, H, and O atoms allowed
+    Args:
+        smiles (str): SMILES string of the molecule
 
-While these criteria are valid for identifying very long-chain fatty acids, they may not be sufficient to cover all cases. Some additional considerations could be:
+    Returns:
+        bool: True if molecule is a very long-chain fatty acid, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-1. Handling cyclic structures: The code only looks for linear carbon chains, but some very long-chain fatty acids may contain cyclic moieties.
-2. Handling branching: The code assumes a single longest chain, but some very long-chain fatty acids may have branched structures.
-3. Handling substituents: The code only checks for C, H, and O atoms, but some very long-chain fatty acids may contain other substituents like halogens or sulfur atoms.
-4. Handling stereochemistry: The code does not consider stereochemistry, which may be important for some very long-chain fatty acids.
+    # Check for carboxylic acid group
+    has_acid = any(atom.GetSymbol() == 'O' and sum(mol.GetAtomWithIdx(i).GetTotalNumHs() for i in atom.GetNeighbors()) == 1
+                   for atom in mol.GetAtoms())
+    if not has_acid:
+        return False, "Does not contain a carboxylic acid group"
+    
+    # Get the longest carbon chain
+    chain = Chem.Lipinski.GetLongestChain(mol)
+    if chain is None:
+        return False, "No carbon chain found"
 
-To improve the code, we can incorporate these additional considerations and create a more comprehensive set of rules for classification.
+    # Check chain length
+    chain_length = len(chain)
+    if chain_length <= 22:
+        return False, f"Carbon chain length ({chain_length}) too short"
+    
+    # Check for unsaturations
+    unsaturations = Chem.Lipinski.GetNumUnsaturatedRings(mol) + Chem.Lipinski.GetNumAlkeneRings(mol)
+    if unsaturations > 4:
+        return False, "More than 4 unsaturations"
+    
+    # Check for allowed atoms
+    allowed_atoms = {'C', 'H', 'O'}
+    atoms = set(atom.GetSymbol() for atom in mol.GetAtoms())
+    if not atoms.issubset(allowed_atoms):
+        return False, "Contains disallowed atoms"
+    
+    # Check for branching
+    if len(mol.GetSubstructMatches(Chem.MolFromSmarts('[C]([C])([C])[C]'))) > 0:
+        return False, "Contains branching"
+    
+    # Check for cycles
+    if any(len(ring) > 8 for ring in mol.GetRingInfo().AtomRings()):
+        return False, "Contains large cycles"
+    
+    # Check for substituents
+    if any(atom.GetTotalNumHs(False) > 1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'O'):
+        return False, "Contains hydroxyl or ether substituents"
+    if any(atom.GetTotalNumHs(False) == 0 for atom in mol.GetAtoms() if atom.GetSymbol() == 'O'):
+        return False, "Contains carbonyl or ester substituents"
+    
+    # Check stereochemistry
+    if mol.GetBondBetweenAtoms(0, 1).GetStereo() != Chem.BondStereo.STEREONONE:
+        return False, "Contains stereochemistry"
+    
+    return True, "Meets all criteria for a very long-chain fatty acid"
