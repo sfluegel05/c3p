@@ -1,45 +1,24 @@
 """
 Classifies: CHEBI:35267 quaternary ammonium ion
 """
-"""
-Classifies: CHEBI:35485 quaternary ammonium ion
-A derivative of ammonium, NH4(+), in which all four of the hydrogens bonded to nitrogen
-have been replaced with univalent (usually organyl) groups.
-"""
-from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+The previous program attempted to classify quaternary ammonium ions by checking for the presence of a quaternary nitrogen atom with four univalent substituents and additional checks on molecular weight, number of atoms, and number of bonds. However, the approach has some limitations:
 
-def is_quaternary_ammonium_ion(smiles: str):
-    """
-    Determines if a molecule is a quaternary ammonium ion based on its SMILES string.
+1. **False Positives**: The program incorrectly classifies molecules containing a quaternary nitrogen atom but not belonging to the quaternary ammonium ion class. Examples include carnitines, indole derivatives, and other compounds containing a quaternary nitrogen but not specifically quaternary ammonium ions.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. **False Negatives**: The program misses some valid quaternary ammonium ions, such as simple quaternary ammonium salts like pentamethonium and choline derivatives without a phosphocholine group.
 
-    Returns:
-        bool: True if molecule is a quaternary ammonium ion, False otherwise
-        str: Reason for classification
-    """
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+3. **Overly Restrictive Filters**: The additional checks on molecular weight, number of atoms, and number of bonds may be too restrictive and exclude valid quaternary ammonium ions that fall outside the specified ranges.
 
-    # Check for quaternary nitrogen with four univalent substituents
-    quat_n_pattern = Chem.MolFromSmarts("[N+]([H,C,c,O,F])([H,C,c,O,F])([H,C,c,O,F])([H,C,c,O,F])")
-    quat_n_matches = mol.GetSubstructMatches(quat_n_pattern)
+To improve the program, we can consider the following strategies:
 
-    if quat_n_matches:
-        # Check if the molecule contains a phosphocholine group
-        phosphocholine_pattern = Chem.MolFromSmarts("OP(=O)(OCC[N+]([H,C,c,O,F])([H,C,c,O,F])([H,C,c,O,F])([H,C,c,O,F]))[O-]")
-        is_phosphocholine = mol.HasSubstructMatch(phosphocholine_pattern)
+1. **Use a More Specific SMARTS Pattern**: Instead of checking for any quaternary nitrogen atom, we can use a more specific SMARTS pattern that captures the core structure of quaternary ammonium ions. This can be achieved by incorporating the nitrogen atom and the four substituents in the pattern.
 
-        # Additional checks
-        mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-        n_atoms = mol.GetNumAtoms()
-        n_bonds = mol.GetNumBonds()
+2. **Handle Simple Quaternary Ammonium Salts**: Include a separate check for simple quaternary ammonium salts, such as pentamethonium and choline derivatives, which may not match the more complex SMARTS pattern.
 
-        if is_phosphocholine or (200 < mol_wt < 1000 and 10 < n_atoms < 100 and 10 < n_bonds < 150):
-            return True, "Contains quaternary nitrogen atom with four univalent substituents"
+3. **Remove Overly Restrictive Filters**: Consider removing or relaxing the additional filters on molecular weight, number of atoms, and number of bonds, as they may be excluding valid quaternary ammonium ions.
 
-    return False, "No quaternary nitrogen atom with four univalent substituents found"
+4. **Incorporate Negative Filtering**: Use additional SMARTS patterns or chemical rules to filter out known false positives, such as carnitines, indole derivatives, and other common compounds that may be misclassified.
+
+5. **Consult Chemical Databases or Experts**: Consult chemical databases or domain experts to identify more comprehensive rules or patterns for accurately classifying quaternary ammonium ions, as the class can have diverse structures and substituents.
+
+By incorporating these strategies, the program can potentially improve its accuracy in classifying quaternary ammonium ions while reducing false positives and false negatives.
