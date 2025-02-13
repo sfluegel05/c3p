@@ -1,24 +1,44 @@
 """
 Classifies: CHEBI:35436 D-glucoside
 """
-Based on the provided code and the outcomes, it seems that the previous attempt failed to accurately classify D-glucosides. Here's what might have gone wrong and some suggestions for improvement:
+"""
+Classifies: CHEBI:18237 D-glucoside
+A D-glucoside is any glucoside in which the glycoside group is derived from D-glucose.
+"""
 
-1. **Insufficient Pattern Recognition**: The code attempts to find a D-glucose substructure and a glycosidic bond, but this approach may not be comprehensive enough to cover all possible D-glucoside structures. D-glucosides can have various substituents and modifications, making it challenging to capture all cases with a single pattern.
+from rdkit import Chem
+from rdkit.Chem import rdqueries, AllChem
 
-2. **Tautomer and Stereoisomer Enumeration**: While the code enumerates tautomers and stereoisomers of D-glucose, it does not consider potential tautomers and stereoisomers of the entire molecule. This could lead to missing some D-glucoside structures.
+def is_D_glucoside(smiles):
+    """
+    Determines if a molecule is a D-glucoside based on its SMILES string.
 
-3. **Glycosidic Bond Detection**: The method used to detect glycosidic bonds involving D-glucose might be too restrictive. It looks for single bonds between an oxygen atom and a non-glucose atom, but some glycosidic bonds may have different bond types or involve more complex substructures.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-To improve the performance, consider the following suggestions:
+    Returns:
+        bool: True if the molecule is a D-glucoside, False otherwise
+        str: Reason for classification
+    """
 
-1. **Use a More Comprehensive Pattern or Fingerprint**: Instead of relying on substructure matching for D-glucose and glycosidic bonds, consider using a more comprehensive pattern or fingerprint that captures the structural features of D-glucosides more broadly. This could involve using SMARTS patterns, molecular fingerprints, or a combination of both.
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-2. **Incorporate Machine Learning Techniques**: If you have a sufficiently large dataset of D-glucoside and non-D-glucoside structures, you could consider training a machine learning model (e.g., a random forest or a neural network) to classify molecules based on their SMILES strings or molecular fingerprints.
+    # Look for D-glucose pattern
+    d_glucose_pattern = Chem.MolFromSmarts("[C@H]([C@@H]([C@@H]([C@H](C(O)=O)O)O)O)O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@H](O)[C@H]1O")
+    if not mol.HasSubstructMatch(d_glucose_pattern):
+        return False, "No D-glucose substructure found"
 
-3. **Consult Expert Knowledge or Literature**: Collaborating with experts in the field or consulting relevant literature may provide insights into the structural characteristics of D-glucosides that could inform the development of more robust patterns or fingerprints.
+    # Check for glycosidic bond (-O-C-O-) with the glucose
+    glycosidic_bond_pattern = Chem.MolFromSmarts("[O;r]")
+    glycosidic_bonds = mol.GetSubstructMatches(glycosidic_bond_pattern)
 
-4. **Consider a Hierarchical Approach**: If classifying D-glucosides proves particularly challenging, you could consider a hierarchical approach where you first classify molecules as glucosides, and then further classify the glucosides as D-glucosides or non-D-glucosides.
+    glucose_atoms = list(map(lambda x: x[0], mol.GetSubstructMatches(d_glucose_pattern)))
+    glycosidic_glucose_bonds = [bond for bond in glycosidic_bonds if bond in glucose_atoms]
 
-5. **Expand the Test Set**: The provided test set might not be representative of the diversity of D-glucoside structures. Expanding the test set with more diverse examples could help identify limitations in the classification approach and guide further improvements.
+    if not glycosidic_glucose_bonds:
+        return False, "No glycosidic bonds found with D-glucose"
 
-Remember, accurately classifying chemical structures can be a complex task, and it may require iterative refinement and exploration of different techniques. Additionally, it's important to consider the trade-off between accuracy and computational complexity, especially for large-scale applications.
+    return True, "Contains D-glucose substructure with a glycosidic bond"
