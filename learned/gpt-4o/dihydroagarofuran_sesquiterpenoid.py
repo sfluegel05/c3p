@@ -21,13 +21,17 @@ def is_dihydroagarofuran_sesquiterpenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for a dihydroagarofuran skeleton
-    # This SMARTS is a simplified representation; real implementations might require fine-tuning
-    dihydroagarofuran_pattern = Chem.MolFromSmarts("C1(C)OC2CCC3CCC(C3)C(C2)O1")
+    # Refine SMARTS pattern for a dihydroagarofuran skeleton; consider complexity, rings, and substituents.
+    dihydroagarofuran_patterns = [
+        Chem.MolFromSmarts("C1(C)OC2CCC3CC(C)(C(C2)O1)C3"),
+        Chem.MolFromSmarts("C1(C)OC2CCC3CC(C(O2)C1)C3"),
+        Chem.MolFromSmarts("C1C(C)(O)C2CCC3CC(C)(C(O1)C2)C3")
+        # Additional patterns can be added based on diversity observed in dihydroagarofuran sesquiterpenoids
+    ]
 
-    if not mol.HasSubstructMatch(dihydroagarofuran_pattern):
-        return False, "No dihydroagarofuran skeleton found in molecule"
+    # Check each pattern against the molecule
+    for pattern in dihydroagarofuran_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return True, "Contains dihydroagarofuran skeleton"
 
-    # Further checks specific to the class may be added here if necessary
-
-    return True, "Contains dihydroagarofuran skeleton"
+    return False, "No dihydroagarofuran skeleton found in molecule"
