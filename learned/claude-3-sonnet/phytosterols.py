@@ -27,15 +27,20 @@ def is_phytosterols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for steroid core (4 fused rings)
-    steroid_core = Chem.MolFromSmarts("[CH2,CH]1[CH2,CH]2[CH2,CH][CH2,CH][C,c]3[CH2,CH][CH2,CH][C,c]4[C,c][C,c][C,c][C,c]4[C,c]3[C,c][C,c]2[CH2,CH]1")
-    if not mol.HasSubstructMatch(steroid_core):
+    # More flexible steroid core pattern that accounts for variations
+    # This pattern matches the basic 6-6-6-5 ring system with flexible bond types
+    steroid_core = Chem.MolFromSmarts("C1C[C,=C]C2[C,=C]C[C,=C]C3[C,=C][C,=C][C,=C]4C[C,=C][C,=C][C@]4(C)[C@]3(C)[C@]2(C)C1")
+    
+    # Alternative core pattern for 9,19-cyclo variants
+    cyclo_core = Chem.MolFromSmarts("C12C[C,=C]C3[C,=C]C[C,=C]C4[C,=C][C,=C][C,=C](C4)[C@]3(C)[C@]1(C)CC2")
+    
+    if not (mol.HasSubstructMatch(steroid_core) or mol.HasSubstructMatch(cyclo_core)):
         return False, "No steroid core structure found"
 
-    # Check for hydroxyl group (typically at C3 position)
-    hydroxyl = Chem.MolFromSmarts("[OH]")
-    if not mol.HasSubstructMatches(hydroxyl):
-        return False, "No hydroxyl group found"
+    # Check for 3β-hydroxyl group specifically
+    beta_hydroxyl = Chem.MolFromSmarts("[H][C@@]1([C,=C][C,=C][C,=C]2)C[C@@H](O)CC[C@]12C")
+    if not mol.HasSubstructMatch(beta_hydroxyl):
+        return False, "No 3β-hydroxyl group found"
 
     # Count carbons and oxygens
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
@@ -45,27 +50,25 @@ def is_phytosterols(smiles: str):
     if c_count < 27 or c_count > 35:
         return False, f"Carbon count ({c_count}) outside typical range for phytosterols (27-35)"
 
-    # Check molecular weight - phytosterols typically 400-500 Da
+    # Check molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 350 or mol_wt > 600:
+    if mol_wt < 350 or mol_wt > 650:  # Increased upper limit to account for glycosides
         return False, "Molecular weight outside typical range for phytosterols"
 
-    # Check for aliphatic side chain
-    aliphatic_chain = Chem.MolFromSmarts("[CH2,CH3][CH2,CH][CH2,CH][CH,C]")
-    if not mol.HasSubstructMatch(aliphatic_chain):
-        return False, "No suitable aliphatic side chain found"
+    # Check for characteristic side chain at C17
+    side_chain = Chem.MolFromSmarts("[CH2,CH3][CH,C]([CH3,CH2])[CH2,CH][CH2,CH][C,CH]")
+    if not mol.HasSubstructMatch(side_chain):
+        return False, "No characteristic phytosterol side chain found"
+
+    # Check for characteristics that would exclude it from being a phytosterol
+    allowed_elements = {1, 6, 8} # H, C, O
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() not in allowed_elements:
+            return False, "Contains elements other than C, H, and O"
 
     # Count rings
     ring_info = mol.GetRingInfo()
     if ring_info.NumRings() < 4:
         return False, "Insufficient number of rings"
 
-    # Check for characteristics that would exclude it from being a phytosterol
-    # Like presence of unusual elements
-    allowed_elements = {1, 6, 8} # H, C, O
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() not in allowed_elements:
-            return False, "Contains elements other than C, H, and O"
-
-    # If all checks pass, it's likely a phytosterol
-    return True, "Contains steroid core, hydroxyl group, and appropriate side chain characteristic of phytosterols"
+    return True, "Contains steroid core with 3β-hydroxyl group and characteristic phytosterol side chain"
