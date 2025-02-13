@@ -2,19 +2,16 @@
 Classifies: CHEBI:26255 prenylquinone
 """
 """
-Classifies: CHEBI:51829 prenylquinone
-
-A prenylquinone is a quinone substituted by a polyprenyl-derived side-chain.
-They are characterized by a quinone core (benzoquinone, naphthoquinone, anthraquinone, etc.)
-with one or more prenyl/polyprenyl chains attached.
+Classifies: CHEBI:51714 prenylquinone
 """
-
 from rdkit import Chem
-from rdkit.Chem import rdqueries, rdMolDescriptors
+from rdkit.Chem import rdqueries
+from rdkit.Chem import rdMolDescriptors
 
 def is_prenylquinone(smiles: str):
     """
     Determines if a molecule is a prenylquinone based on its SMILES string.
+    A prenylquinone is a quinone substituted by a polyprenyl-derived side-chain.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,36 +20,33 @@ def is_prenylquinone(smiles: str):
         bool: True if molecule is a prenylquinone, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for quinone core
-    quinone_patterns = ['*1=,=,*2*3=,=,*4*=1*=2*=3*=4', # Benzoquinone
-                        'c1c(=O)c2ccccc2c(=O)c1', # Naphthoquinone
-                        'c1c(=O)c2ccccc2c(=O)c3ccccc13'] # Anthraquinone
-    quinone_match = any(mol.HasSubstructMatch(Chem.MolFromSmarts(p)) for p in quinone_patterns)
-    if not quinone_match:
-        return False, "No quinone core found"
+    # Check for quinone substructure
+    quinone_pattern = rdqueries.IsotonicQueriesFromSmarts("O=C1C(=O)C=CC=C1")
+    if not mol.HasSubstructMatch(quinone_pattern):
+        return False, "No quinone substructure found"
 
-    # Check for prenyl/polyprenyl chains
-    prenyl_pattern = rdqueries.PolyprenylQueries().HavingPolyprenylSidechains()
-    prenyl_match = mol.HasSubstructMatch(prenyl_pattern)
-    if not prenyl_match:
-        return False, "No prenyl/polyprenyl chains found"
+    # Check for prenyl side-chain(s)
+    prenyl_pattern = rdqueries.IsotonicQueriesFromSmarts("[CH2]=[CH][CH2][CH2][CH2][CH3]")
+    prenyl_matches = mol.GetSubstructMatches(prenyl_pattern)
+    if not prenyl_matches:
+        return False, "No prenyl side-chain found"
 
-    # Check if prenyl chains are attached to quinone core
-    quinone_atoms = set(hit for p in quinone_patterns
-                            for hit in mol.GetSubstructMatches(Chem.MolFromSmarts(p)))
-    prenyl_atoms = set(hit for hit in mol.GetSubstructMatches(prenyl_pattern))
-    if not prenyl_atoms.intersection(quinone_atoms):
-        return False, "Prenyl chains not attached to quinone core"
+    # Check that prenyl chain(s) are connected to the quinone
+    quinone_atoms = set(atom.GetIdx() for match in mol.GetSubstructMatches(quinone_pattern) for atom in match)
+    prenyl_atoms = set(atom for match in prenyl_matches for atom in match)
+    connected_atoms = quinone_atoms.intersection(prenyl_atoms)
+    if not connected_atoms:
+        return False, "Prenyl side-chain(s) not connected to quinone"
 
-    # Check molecular weight range
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 300 or mol_wt > 1500:
-        return False, "Molecular weight outside expected range for prenylquinones"
+    # Check for polyprenyl chains (at least two prenyl units)
+    n_isoprene_units = rdMolDescriptors.CalcNumAliphaticRings(mol)
+    if n_isoprene_units < 2:
+        return False, "Only one prenyl unit found, need at least two"
 
-    return True, "Contains a quinone core with prenyl/polyprenyl substituents"
+    return True, "Contains a quinone substructure with one or more polyprenyl side-chains"
