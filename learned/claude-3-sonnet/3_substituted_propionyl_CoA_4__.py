@@ -1,67 +1,26 @@
 """
 Classifies: CHEBI:65111 3-substituted propionyl-CoA(4-)
 """
-"""
-Classifies: CHEBI:61691 3-substituted propionyl-CoA(4-)
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
+After analyzing the previous code and the outcomes, it appears that the program is not correctly identifying the 3-substituted propionyl-CoA(4-) structures. The main issue seems to be with the CoA(4-) backbone pattern and the handling of double bonds in the acyl chain.
 
-def is_3_substituted_propionyl_CoA_4__(smiles: str):
-    """
-    Determines if a molecule is a 3-substituted propionyl-CoA(4-) based on its SMILES string.
-    A 3-substituted propionyl-CoA(4-) is an acyl-CoA(4-) oxoanion with a 3-substituted propionyl group
-    attached to the thiol group of coenzyme A, and a maximum acyl chain length of 20 carbons.
+Here are the potential improvements:
 
-    Args:
-        smiles (str): SMILES string of the molecule
+1. **CoA(4-) backbone pattern**: The current CoA(4-) backbone pattern is too specific and does not account for double bonds in the acyl chain. It should be modified to allow for double bonds and different stereochemistry configurations.
 
-    Returns:
-        bool: True if molecule is a 3-substituted propionyl-CoA(4-), False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+2. **Double bond handling**: The code currently does not handle double bonds in the acyl chain correctly. It assumes a linear chain of carbon atoms, but many examples contain double bonds. A new approach is needed to identify and handle double bonds in the acyl chain.
 
-    # Look for CoA(4-) backbone with correct stereochemistry
-    coa_pattern = Chem.MolFromSmarts("C(COP([O-])(=O)OP([O-])(=O)OC[C@@H]1O[C@H]([C@H](O)[C@@H]1OP([O-])([O-])=O)n1cnc2c(N)ncnc12)(NC(=O)CCNC(=O)[C@H](O)C(C)(C)COP([O-])(=O)OP([O-])(=O))")
-    coa_match = mol.GetSubstructMatch(coa_pattern)
-    if not coa_match:
-        return False, "Missing CoA(4-) backbone or incorrect stereochemistry"
-        
-    # Look for 3-substituted propionyl group attached via thioester
-    propionyl_pattern = Chem.MolFromSmarts("C(=O)SC[C@@](C)(C)[CX4]")
-    propionyl_matches = mol.GetSubstructMatches(propionyl_pattern)
-    if len(propionyl_matches) != 1:
-        return False, f"Found {len(propionyl_matches)} 3-substituted propionyl groups, need exactly 1"
-    
-    # Check for connectivity between CoA(4-) backbone and 3-substituted propionyl group
-    coa_atoms = [mol.GetAtomWithIdx(idx) for idx in coa_match]
-    propionyl_atom = mol.GetAtomWithIdx(propionyl_matches[0][2])
-    coa_neighbors = [atom for atom in propionyl_atom.GetNeighbors() if atom in coa_atoms]
-    if not coa_neighbors:
-        return False, "CoA(4-) backbone and 3-substituted propionyl group are not connected"
-    
-    # Check for acyl chain length (maximum 20 carbons)
-    acyl_chain = [propionyl_atom]
-    current_atom = propionyl_atom
-    while True:
-        neighbors = [atom for atom in current_atom.GetNeighbors() if atom.GetAtomicNum() == 6]
-        if len(neighbors) == 0:
-            break
-        elif len(neighbors) > 1:
-            return False, "More than one path in the acyl chain"
-        current_atom = neighbors[0]
-        acyl_chain.append(current_atom)
-    if len(acyl_chain) > 23:  # 20 carbons + carbonyl + alpha carbon + 3-substituted carbon
-        return False, "Acyl chain is too long (> 20 carbons)"
-    
-    # Check for negative charge on phosphate groups
-    negative_charges = sum(1 for atom in mol.GetAtoms() if atom.GetFormalCharge() == -1)
-    if negative_charges != 4:
-        return False, "Incorrect number of negative charges (should be 4)"
-    
-    return True, "Contains CoA(4-) backbone with a 3-substituted propionyl group attached via thioester"
+3. **Acyl chain length check**: The current approach to check the acyl chain length by counting the number of carbon atoms may not work for structures with double bonds. A different method, such as calculating the number of heavy atoms or using a more general pattern, might be more robust.
+
+4. **Stereochemistry handling**: While the current code checks for the correct stereochemistry of the CoA(4-) backbone, it does not consider the stereochemistry of the acyl chain. Some examples might require checking the stereochemistry of the double bonds in the acyl chain.
+
+5. **Negative charge check**: The negative charge check seems reasonable, but it might be worth double-checking the logic to ensure it is correct for all cases.
+
+To improve the program, you could try the following steps:
+
+1. Modify the CoA(4-) backbone pattern to be more general and allow for double bonds and different stereochemistry configurations.
+2. Develop a new approach to identify and handle double bonds in the acyl chain, possibly using a more general pattern or substructure matching.
+3. Revise the acyl chain length check to use a more robust method, such as counting the number of heavy atoms or using a more general pattern.
+4. Consider checking the stereochemistry of the double bonds in the acyl chain, if necessary.
+5. Double-check the negative charge check logic to ensure it is correct for all cases.
+
+By addressing these issues, the program should be able to more accurately classify the 3-substituted propionyl-CoA(4-) structures.
