@@ -28,46 +28,58 @@ def is_monoacylglycerol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for basic glycerol backbone pattern - more flexible version
-    glycerol_pattern = Chem.MolFromSmarts("[OX2H1,OX2R]-[CH2X4]-[CHX4]-[CH2X4]-[OX2H1,OX2R]")
-    glycerol_pattern2 = Chem.MolFromSmarts("[CH2X4](-[OX2H1,OX2R])-[CHX4](-[OX2H1,OX2R])-[CH2X4](-[OX2H1,OX2R])")
+    # More flexible glycerol backbone patterns that account for stereochemistry
+    glycerol_patterns = [
+        # Basic glycerol backbone
+        "[OX2,OH1]-[CH2X4]-[CHX4]-[CH2X4]-[OX2,OH1]",
+        # Pattern matching stereochemistry
+        "[OX2,OH1]-[CH2X4]-[C@H,C@@H,CH]-[CH2X4]-[OX2,OH1]",
+        # Alternative connection pattern
+        "[CH2X4](-[OX2,OH1])-[CHX4](-[OX2,OH1])-[CH2X4](-[OX2,OH1])"
+    ]
     
-    has_glycerol = mol.HasSubstructMatch(glycerol_pattern) or mol.HasSubstructMatch(glycerol_pattern2)
+    has_glycerol = False
+    for pattern in glycerol_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            has_glycerol = True
+            break
+            
     if not has_glycerol:
         return False, "No glycerol backbone found"
 
     # Look for exactly one ester group (-O-C(=O)-)
-    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])[#6]")  # Ensure carbon chain after ester
+    # More flexible ester pattern that accounts for various substitutions
+    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])[#6]")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) != 1:
         return False, f"Found {len(ester_matches)} ester groups, need exactly 1"
 
-    # Count free hydroxyl groups - should have exactly 2
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H1]")
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    if len(hydroxyl_matches) != 2:
-        return False, f"Found {len(hydroxyl_matches)} free hydroxyl groups, need exactly 2"
-
-    # Verify the molecule is not primarily a ring system
-    ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() > 1:  # Allow one ring for some natural products
-        return False, "Too many ring systems for monoacylglycerol"
+    # Count substitutable positions (OH or OR groups)
+    oh_pattern = Chem.MolFromSmarts("[OX2H1,OX2R]-[CH2X4,CHX4]")
+    oh_matches = mol.GetSubstructMatches(oh_pattern)
+    if len(oh_matches) < 2:
+        return False, "Insufficient hydroxyl or alkoxy groups"
 
     # Basic element counts and checks
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     
-    if c_count < 5:  # 3 from glycerol + at least 2 from acyl group
+    if c_count < 5:  # Minimum carbons needed
         return False, "Too few carbons for monoacylglycerol"
-    if o_count != 4:  # Must have exactly 4 oxygens (2 OH + 2 ester)
-        return False, "Must have exactly 4 oxygens"
+    if o_count < 4:  # Minimum oxygens needed
+        return False, "Too few oxygens for monoacylglycerol"
 
-    # Verify proper connectivity
-    # The glycerol carbon with the ester must connect to exactly one ester oxygen
-    ester_o = mol.GetSubstructMatch(Chem.MolFromSmarts("[OX2][CX3](=[OX1])"))[0]
-    for atom in mol.GetAtomWithIdx(ester_o).GetNeighbors():
-        if atom.GetAtomicNum() == 6:  # Carbon
-            if len([n for n in atom.GetNeighbors() if n.GetAtomicNum() == 8]) > 2:
-                return False, "Invalid connectivity around glycerol carbon"
+    # Check for reasonable molecular weight
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 120 or mol_wt > 1000:  # Reasonable range for monoacylglycerols
+        return False, "Molecular weight outside reasonable range for monoacylglycerol"
+
+    # Verify the acyl chain is attached to the glycerol backbone
+    acyl_pattern = Chem.MolFromSmarts("[OX2]-[CH2X4,CHX4]-[CHX4]-[CH2X4]-[OX2][CX3](=[OX1])")
+    if not mol.HasSubstructMatch(acyl_pattern):
+        # Try alternative pattern
+        acyl_pattern2 = Chem.MolFromSmarts("[CX3](=[OX1])[OX2]-[CH2X4,CHX4]-[CHX4](-[OX2,OH1])-[CH2X4][OX2,OH1]")
+        if not mol.HasSubstructMatch(acyl_pattern2):
+            return False, "Acyl chain not properly connected to glycerol backbone"
 
     return True, "Contains glycerol backbone with one acyl group attached via ester bond"
