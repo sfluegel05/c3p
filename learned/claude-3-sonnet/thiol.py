@@ -6,6 +6,7 @@ Classifies: CHEBI:33839 thiol
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_thiol(smiles: str):
     """
@@ -25,23 +26,36 @@ def is_thiol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for sulfhydryl (-SH) group
-    sh_pattern = Chem.MolFromSmarts("[SH]")
-    sh_matches = mol.GetSubstructMatches(sh_pattern)
-    if not sh_matches:
-        return False, "No sulfhydryl (-SH) group found"
+    # Generate tautomers
+    tautomers = AllChem.EnumerateTautomers(mol)
     
-    # Check if sulfhydryl is attached to aliphatic or aromatic carbon
-    is_thiol = False
-    for atom_idx in sh_matches[0]:
-        atom = mol.GetAtomWithIdx(atom_idx)
-        if atom.GetTotalNumHs() == 1:  # Check for -SH
-            neighbors = atom.GetNeighbors()
-            if any(nb.GetAtomicNum() == 6 and nb.GetHybridization() in (Chem.HybridizationType.SP2, Chem.HybridizationType.SP3) for nb in neighbors):
-                is_thiol = True
-                break
+    # Check each tautomer for thiol functional group
+    for tautomer in tautomers:
+        # Look for sulfhydryl (-SH) group
+        sh_pattern = Chem.MolFromSmarts("[SH]")
+        sh_matches = tautomer.GetSubstructMatches(sh_pattern)
+        if not sh_matches:
+            continue
+        
+        # Check if sulfhydryl is attached to aliphatic or aromatic carbon
+        is_thiol = False
+        for atom_idx in sh_matches[0]:
+            atom = tautomer.GetAtomWithIdx(atom_idx)
+            if atom.GetTotalNumHs() == 1:  # Check for -SH
+                neighbors = atom.GetNeighbors()
+                if any(nb.GetAtomicNum() == 6 and nb.GetHybridization() in (Chem.HybridizationType.SP2, Chem.HybridizationType.SP3) for nb in neighbors):
+                    is_thiol = True
+                    break
+        
+        if is_thiol:
+            # Check for additional descriptors to improve classification
+            mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+            if mol_wt < 50:  # Thiols typically have higher molecular weight
+                continue
+            num_sulfur = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 16)
+            if num_sulfur > 1:  # Avoid molecules with disulfide bridges
+                continue
+            
+            return True, "Contains sulfhydryl (-SH) group attached to aliphatic or aromatic carbon"
     
-    if is_thiol:
-        return True, "Contains sulfhydryl (-SH) group attached to aliphatic or aromatic carbon"
-    else:
-        return False, "Sulfhydryl (-SH) group not attached to aliphatic or aromatic carbon"
+    return False, "No thiol functional group found"
