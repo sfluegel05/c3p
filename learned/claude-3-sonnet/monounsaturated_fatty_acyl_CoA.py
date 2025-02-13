@@ -1,36 +1,56 @@
 """
 Classifies: CHEBI:139575 monounsaturated fatty acyl-CoA
 """
-The previous code attempts to classify monounsaturated fatty acyl-CoA molecules based on several criteria:
+from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
-1. The presence of the CoA substructure
-2. The presence of a monounsaturated fatty acyl chain (at least 6 carbon atoms, linear, aliphatic, with one double bond)
-3. The number of rotatable bonds (as a proxy for chain length)
-4. The number of carbon and oxygen atoms
-5. The absence of ring structures
+def is_monounsaturated_fatty_acyl_CoA(smiles):
+    """
+    Determines if a molecule is a monounsaturated fatty acyl-CoA based on its SMILES string.
+    A monounsaturated fatty acyl-CoA is an unsaturated fatty acyl-CoA with one carbon-carbon double bond in the fatty acyl chain.
 
-However, based on the outcomes, it appears that the code has some limitations and fails to correctly classify certain molecules.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-Potential issues and improvements:
+    Returns:
+        bool: True if the molecule is a monounsaturated fatty acyl-CoA, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-1. **Incomplete fatty acyl chain pattern**: The SMARTS pattern used to detect the fatty acyl chain ([CX4,CX3]~[CX3]=[CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]) may not cover all possible cases. It assumes a minimum chain length of 6 carbon atoms and a specific arrangement of the double bond. Some of the false negatives, such as vinylacetyl-CoA and trans-4-coumaroyl-CoA, have shorter or differently arranged chains.
+    # Check for CoA substructure
+    coa_pattern = Chem.MolFromSmarts("C(C)(COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12)[C@@H](O)C(=O)NCCC(=O)NCCSC(=O)")
+    if not mol.HasSubstructMatch(coa_pattern):
+        return False, "Missing CoA substructure"
 
-   **Improvement**: Modify the SMARTS pattern to cover a broader range of chain lengths and double bond positions, or use multiple patterns to capture different arrangements.
+    # Check for monounsaturated fatty acyl chain
+    chain_patterns = [
+        Chem.MolFromSmarts("[CX4,CX3]~[CX3]=[CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]"),  # Linear aliphatic chain with double bond
+        Chem.MolFromSmarts("[CX4,CX3]~[CX3]=[CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]"),  # Longer linear aliphatic chain with double bond
+        Chem.MolFromSmarts("[CX4,CX3]~[CX3]=[CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]"),  # Even longer linear aliphatic chain with double bond
+        Chem.MolFromSmarts("[CX4,CX3]~[CX3]=[CX3]~[CX4,CX3]~[CX3](=O)"),  # Chain with ketone group
+        Chem.MolFromSmarts("[CX4,CX3]~[CX3]=[CX3]~[CX4,CX3]~[OX2]"),  # Chain with hydroxyl group
+        # Add more patterns as needed to cover additional functional groups or arrangements
+    ]
+    chain_match = False
+    for pattern in chain_patterns:
+        if mol.HasSubstructMatch(pattern):
+            chain_match = True
+            break
+    if not chain_match:
+        return False, "Missing monounsaturated fatty acyl chain"
 
-2. **Strict oxygen count requirement**: The code expects exactly 6 oxygen atoms for a monounsaturated fatty acyl-CoA. However, some false negatives, like (5Z)-3-oxotetradecenoyl-CoA and (3S,5Z)-3-hydroxytetradec-5-enoyl-CoA, have additional oxygen atoms due to functional groups like ketones or hydroxyls.
+    # Check for appropriate number of rotatable bonds (proxy for chain length)
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 5:
+        return False, "Fatty acyl chain too short"
 
-   **Improvement**: Relax the oxygen count requirement or account for additional oxygen-containing functional groups on the fatty acyl chain.
+    # Check for appropriate element counts
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if c_count < 10 or o_count < 6:
+        return False, "Insufficient carbon or oxygen atoms for fatty acyl-CoA"
 
-3. **Incomplete CoA substructure pattern**: The SMARTS pattern used to detect the CoA substructure may not capture all possible variations. Some false negatives, like palmitoleoyl-CoA, have a slightly different CoA substructure arrangement.
-
-   **Improvement**: Modify the CoA substructure pattern to cover a broader range of variations, or use multiple patterns to capture different arrangements.
-
-4. **Lack of stereochemistry consideration**: The code does not consider stereochemistry, which can be important for correctly identifying certain molecules.
-
-   **Improvement**: Incorporate stereochemistry checks into the SMARTS patterns or use alternative methods to account for stereochemistry.
-
-5. **Potential false positives**: While the outcomes do not show any false positives, the current code may still allow some non-monounsaturated fatty acyl-CoA molecules to be classified as true positives.
-
-   **Improvement**: Introduce additional checks or filters to further refine the classification criteria and reduce the possibility of false positives.
-
-Overall, the code can be improved by refining the SMARTS patterns, incorporating additional checks for functional groups and stereochemistry, and potentially using multiple patterns or alternative methods to capture a broader range of monounsaturated fatty acyl-CoA molecules.
+    return True, "Molecule is a monounsaturated fatty acyl-CoA"
