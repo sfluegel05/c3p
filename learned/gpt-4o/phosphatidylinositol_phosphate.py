@@ -2,7 +2,7 @@
 Classifies: CHEBI:28765 phosphatidylinositol phosphate
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem, rdMolDescriptors
+from rdkit.Chem import rdMolDescriptors
 
 def is_phosphatidylinositol_phosphate(smiles: str):
     """
@@ -23,29 +23,29 @@ def is_phosphatidylinositol_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for glycerol backbone pattern: typically as O-C-C(O)-C(O)
-    glycerol_pattern = Chem.MolFromSmarts("OC(CO)CO")
+    # Check for glycerol backbone pattern: typically as -C(O)C(X)CO- where X is variable
+    glycerol_pattern = Chem.MolFromSmarts("OCC(O)CO")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
 
-    # Check for inositol ring pattern: cyclohexane-1,2,3,4,5,6-hexol
+    # Check for inositol ring pattern, generalize pattern for hydroxylated cyclohexane
     inositol_pattern = Chem.MolFromSmarts("C1(O)C(O)C(O)C(O)C(O)C1(O)")
     if not mol.HasSubstructMatch(inositol_pattern):
         return False, "No inositol ring structure found"
 
-    # Check for the presence of one or more phosphate groups: -P(=O)(O)O-
+    # Check for at least one phosphate group: -P(=O)(O)O-
     phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)O")
     phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
     if len(phosphate_matches) < 1:
         return False, "No phosphate groups found"
 
-    # Check for two long carbon chain esters: long acyl chains
-    long_chain_pattern = Chem.MolFromSmarts("C(=O)OCCCCC")
+    # More adaptable pattern for long carbon chains, default to a length >=8
+    long_chain_pattern = Chem.MolFromSmarts("C(=O)OCCCCCCCC")
     long_chain_matches = mol.GetSubstructMatches(long_chain_pattern)
     if len(long_chain_matches) < 2:
-        return False, "Not enough long carbon chains"
+        return False, "Not enough long carbon chains, possibly due to incorrect pattern"
 
-    # Check that the molecular weight is within typical range but broaden criteria
+    # Check molecular weight to confirm large molecule
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 600 or mol_wt > 1500:
         return False, f"Molecular weight out of typical range for phosphatidylinositol phosphate: {mol_wt}"
