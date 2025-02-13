@@ -24,22 +24,29 @@ def is_furanocoumarin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Coumarin basic pattern (lactone ring with benzene fused)
-    coumarin_pattern = Chem.MolFromSmarts("O=C2c1ccccc1OC2")
+    # Coumarin structure pattern (benzopyrone structure)
+    coumarin_pattern = Chem.MolFromSmarts("O=c1oc2ccccc2cc1")
 
-    # General furan pattern
+    # Furan heterocyclic ring
     furan_pattern = Chem.MolFromSmarts("c1occc1")
-
-    # Extended pattern for a furanocoumarin (fused furan-benzofuranone)
-    furanocoumarin_fusion_pattern = Chem.MolFromSmarts("c1oc2ccccc2-3c1oc(=O)cc3")
-
+    
+    # Patterns for linear and angular furanocoumarin
+    psoralen_pattern = Chem.MolFromSmarts("O=c1oc2cc3c(ccc3oc2c4ccccc4)c1")  # Linear type
+    angelicin_pattern = Chem.MolFromSmarts("O=c1c2c(ccc3oc4c(c2)ccoc4cc3)o1") # Angular type
+    
+    # Check for basic coumarin structure
     if not mol.HasSubstructMatch(coumarin_pattern):
         return False, "No coumarin structure found"
     
+    # Check for general furan ring
     if not mol.HasSubstructMatch(furan_pattern):
         return False, "No furan ring found"
-    
-    if not mol.HasSubstructMatch(furanocoumarin_fusion_pattern):
-        return False, "No furanocoumarin fusion detected"
 
-    return True, "Structure contains a furan ring fused with a coumarin"
+    # Check for linear or angular furanocoumarin pattern
+    if mol.HasSubstructMatch(psoralen_pattern):
+        return True, "Contains linear furanocoumarin (psoralen) structure"
+    
+    if mol.HasSubstructMatch(angelicin_pattern):
+        return True, "Contains angular furanocoumarin (angelicin) structure"
+
+    return False, "No recognized furanocoumarin fusion detected"
