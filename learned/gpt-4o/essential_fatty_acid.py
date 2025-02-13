@@ -2,7 +2,6 @@
 Classifies: CHEBI:59549 essential fatty acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_essential_fatty_acid(smiles: str):
     """
@@ -21,7 +20,7 @@ def is_essential_fatty_acid(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return None, "Invalid SMILES string"
 
     # Look for carboxylic acid group (COOH) at one end
     carboxyl_pattern = Chem.MolFromSmarts("C(=O)O")
@@ -34,16 +33,15 @@ def is_essential_fatty_acid(smiles: str):
     if len(double_bonds) < 2:
         return False, "Too few double bonds, polyunsaturation required"
 
-    # Verify long carbon chain - typically > 18 carbons
+    # Verify long carbon chain
     num_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if num_carbons < 18:
         return False, "Too few carbons for essential fatty acid"
 
-    # Ensure regular distribution of double bonds
-    # Count the number of cis double bonds
-    cis_double_bond_pattern = Chem.MolFromSmarts(r"\C=C\C")
+    # Check for cis double bonds specifically
+    cis_double_bond_pattern = Chem.MolFromSmarts(r"[/\\]C=C[/\\]")
     cis_double_bond_matches = mol.GetSubstructMatches(cis_double_bond_pattern)
-    if len(cis_double_bond_matches) < len(double_bonds) // 2:
+    if len(cis_double_bond_matches) < len(double_bonds):
         return False, "Not enough cis double bonds for essential fatty acid"
 
     return True, "Contains carboxylic acid and sufficient cis double bonds for essential fatty acid"
