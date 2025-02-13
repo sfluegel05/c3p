@@ -1,51 +1,42 @@
 """
 Classifies: CHEBI:68452 azole
 """
-"""
-Classifies: CHEBI:24636 azole
-An azole is any monocyclic heteroarene consisting of a five-membered ring containing nitrogen.
-Azoles can also contain one or more other non-carbon atoms, such as nitrogen, sulfur or oxygen.
-"""
+Analysis:
 
-from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+The previous program attempts to classify molecules as azoles based on several criteria:
 
-def is_azole(smiles: str):
-    """
-    Determines if a molecule is an azole based on its SMILES string.
+1. The molecule must contain at least one aromatic 5-membered ring with a nitrogen atom.
+2. The molecule must contain additional heteroatoms (nitrogen, oxygen, or sulfur) besides the nitrogen in the 5-membered ring.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+The code achieves this by:
 
-    Returns:
-        bool: True if molecule is an azole, False otherwise
-        str: Reason for classification
-    """
+1. Parsing the SMILES string and obtaining the RDKit molecule object.
+2. Identifying all 5-membered rings in the molecule that contain a nitrogen atom.
+3. Checking if any of these 5-membered rings are aromatic.
+4. Checking if the molecule contains additional heteroatoms (N, O, or S) besides the nitrogen in the 5-membered ring.
 
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+The low F1 score suggests that the program is either missing many true positives (azoles) or classifying many false positives as azoles.
 
-    # Look for 5-membered rings containing nitrogen
-    azole_rings = []
-    ring_info = mol.GetRingInfo()
-    for ring in ring_info.AtomRings():
-        atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
-        if len(ring) == 5 and any(atom.GetAtomicNum() == 7 for atom in atoms):
-            azole_rings.append(ring)
+Potential issues and improvements:
 
-    if not azole_rings:
-        return False, "No 5-membered rings containing nitrogen found"
+1. **Handling non-aromatic azoles**: The definition of azoles includes both aromatic and non-aromatic 5-membered rings containing nitrogen. The current program only considers aromatic rings, potentially missing non-aromatic azoles.
 
-    # Check if any of the 5-membered rings are aromatic
-    is_aromatic = any(mol.GetAtomWithIdx(idx).GetIsAromatic() for ring in azole_rings for idx in ring)
-    if not is_aromatic:
-        return False, "No aromatic 5-membered rings containing nitrogen found"
+    Improvement: Remove the check for aromaticity and consider both aromatic and non-aromatic 5-membered rings containing nitrogen.
 
-    # Check for other heteroatoms (N, O, S)
-    heteroatoms = [atom.GetAtomicNum() for atom in mol.GetAtoms() if atom.GetAtomicNum() not in (1, 6)]
-    if not any(x in heteroatoms for x in [7, 8, 16]):
-        return False, "No additional heteroatoms (N, O, S) found"
+2. **Handling fused ring systems**: Some azoles may be part of larger fused ring systems, where the 5-membered ring is not isolated. The current approach may miss these cases.
 
-    return True, "Molecule contains an aromatic 5-membered ring with nitrogen and other heteroatoms"
+    Improvement: Modify the code to handle fused ring systems by considering all 5-membered rings containing nitrogen, regardless of whether they are isolated or part of a larger fused system.
+
+3. **Handling additional ring constraints**: The definition of azoles specifies that they must be "monocyclic heteroarenes." This implies that the 5-membered ring should be the only heterocyclic ring in the molecule.
+
+    Improvement: Add a check to ensure that the molecule contains only one heterocyclic ring, which should be the 5-membered azole ring.
+
+4. **Handling multiple azole rings**: The current implementation only checks for the presence of at least one azole ring. However, some molecules may contain multiple azole rings, and it is unclear if these should be classified as azoles or not.
+
+    Improvement: Clarify the requirement for the number of azole rings (one or more) and modify the code accordingly.
+
+5. **Handling additional heteroatoms**: The current implementation checks for the presence of additional heteroatoms (N, O, or S) besides the nitrogen in the 5-membered ring. However, it is unclear if this requirement is strict or if molecules without additional heteroatoms should still be classified as azoles.
+
+    Improvement: Clarify the requirement for additional heteroatoms and modify the code accordingly.
+
+By addressing these potential issues and making the necessary improvements, the program's performance in classifying azoles should improve significantly.
