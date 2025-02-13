@@ -20,27 +20,26 @@ def is_inositol_phosphoceramide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define inositol phosphate group (more specific pattern)
-    inositol_phosphate_pattern = Chem.MolFromSmarts("OC1C(O)C(O)C(O)C(O)C1OP(=O)(O)O")
+    # Define inositol phosphate group incorporating chirality and variability
+    inositol_phosphate_pattern = Chem.MolFromSmarts("OC1[C@@H](O)C(O)C(O)C(O)[C@H]1OP(=O)(O)O")
     if not mol.HasSubstructMatch(inositol_phosphate_pattern):
         return False, "No inositol phosphate group found"
     
-    # Define ceramide moiety pattern which includes sphingosine and variations
-    ceramide_pattern = Chem.MolFromSmarts("C(=O)NC[C@@H](O)")
+    # Define a more flexible ceramide moiety pattern including sphingoid diversity
+    ceramide_pattern = Chem.MolFromSmarts("C(=O)N[C@@H]([CH2,CH][OX2])CO")
     if not mol.HasSubstructMatch(ceramide_pattern):
-        return False, "No ceramide moiety found"
+        return False, "No ceramide-like moiety found"
     
-    # Check for intact phosphodiester linkage between inositol and ceramide
-    phosphodiester_pattern = Chem.MolFromSmarts("COP(=O)(O)O[C@H]1")
+    # Define phosphodiester linkage with positional variability
+    phosphodiester_pattern = Chem.MolFromSmarts("COP(=O)(O)[O,*]") 
     if not mol.HasSubstructMatch(phosphodiester_pattern):
         return False, "No phosphodiester linkage found"
-
-    # Comprehensive validation of fatty acyl chain length (R1, R2 variability)
-    # Long-chain carbon pattern hinting at fatty acyl chains
-    long_chain_pattern = Chem.MolFromSmarts("C[C@H](O)C(=O)")
+    
+    # Long chain carbon pattern check (capturing variability in chain length)
+    long_chain_pattern = Chem.MolFromSmarts("C[C@@H](O)C[C@H](=O)NC")
     long_chain_matches = mol.GetSubstructMatches(long_chain_pattern)
     if len(long_chain_matches) < 2:
-        return False, "Expected more fatty acyl chain variability"
-
-    # Confirm successful classification if all structural components are aligned
+        return False, "Expected long acyl chain variations"
+    
+    # Checks passed successfully
     return True, "Contains inositol phosphate group, ceramide moiety, and phosphodiester linkage"
