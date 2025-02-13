@@ -5,7 +5,8 @@ Classifies: CHEBI:2468 secondary alpha-hydroxy ketone
 Classifies: CHEBI:33762 secondary alpha-hydroxy ketone
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem, rdMolDescriptors
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdChemReactions
 
 def is_secondary_alpha_hydroxy_ketone(smiles: str):
     """
@@ -20,28 +21,35 @@ def is_secondary_alpha_hydroxy_ketone(smiles: str):
         bool: True if molecule is a secondary alpha-hydroxy ketone, False otherwise
         str: Reason for classification
     """
-    try:
-        # Parse SMILES
-        mol = Chem.MolFromSmiles(smiles)
-        if mol is None:
-            return False, "Invalid SMILES string"
-
-        # Find all carbonyl and hydroxy groups
-        carbonyl_atoms = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetFormalCharge() == 0]
-        hydroxy_atoms = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetFormalCharge() == 0 and atom.GetTotalNumHs() == 1]
-
-        # Check if any carbonyl and hydroxy groups are adjacent
-        for c_idx in carbonyl_atoms:
-            for h_idx in hydroxy_atoms:
-                if mol.GetBondBetweenAtoms(c_idx, h_idx) is not None:
-                    # Check if the shared carbon has one hydrogen and one organyl group
-                    shared_carbon_idx = mol.GetBondBetweenAtoms(c_idx, h_idx).GetBeginAtomIdx()
-                    if mol.GetAtomWithIdx(shared_carbon_idx).GetHybridization() == Chem.HybridizationType.SP3 and \
-                       mol.GetAtomWithIdx(shared_carbon_idx).GetTotalNumHs() == 1 and \
-                       len([bond.GetIdx() for bond in mol.GetAtomWithIdx(shared_carbon_idx).GetBonds() if bond.GetBondTypeAsDouble() > 1]) == 1:
-                        return True, "Contains a secondary alpha-hydroxy ketone moiety"
-
-        return False, "No secondary alpha-hydroxy ketone moiety found"
-
-    except Exception as e:
-        return None, f"An error occurred: {str(e)}"
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Find carbonyl and hydroxy groups
+    carbonyl_smarts = "[C=O]"
+    hydroxy_smarts = "[OX2H]"
+    carbonyl_atoms = [atom.GetIdx() for atom in mol.GetAtoms() if mol.GetAtomWithIdx(atom.GetIdx()).HasQuery(Chem.MolFromSmarts(carbonyl_smarts))]
+    hydroxy_atoms = [atom.GetIdx() for atom in mol.GetAtoms() if mol.GetAtomWithIdx(atom.GetIdx()).HasQuery(Chem.MolFromSmarts(hydroxy_smarts))]
+    
+    # Check for at least one carbonyl and hydroxy group
+    if not carbonyl_atoms or not hydroxy_atoms:
+        return False, "Missing carbonyl or hydroxy group"
+    
+    # Find alpha carbon between carbonyl and hydroxy group
+    alpha_carbons = []
+    for c_idx in carbonyl_atoms:
+        for h_idx in hydroxy_atoms:
+            alpha_carbon = Chem.FindAtomEnvironmentOfRadiusN(mol, 2, c_idx, h_idx)
+            if alpha_carbon:
+                alpha_carbons.append(alpha_carbon[0].GetIdx())
+    
+    # Check if alpha carbon is secondary (has one H and one organyl group)
+    for alpha_idx in set(alpha_carbons):
+        alpha_atom = mol.GetAtomWithIdx(alpha_idx)
+        if alpha_atom.GetSymbol() == "C" and alpha_atom.GetTotalNumHs() == 1:
+            if len(alpha_atom.GetNeighbors()) == 3:
+                return True, "Contains a secondary alpha-hydroxy ketone moiety"
+    
+    return False, "No secondary alpha-hydroxy ketone moiety found"
