@@ -1,26 +1,55 @@
 """
 Classifies: CHEBI:17984 acyl-CoA
 """
-The previous program attempted to classify molecules as acyl-CoA compounds by checking for the presence of the CoA backbone, a thioester group, and a carboxylic acid group. However, the approach had some limitations, which led to the failure in correctly identifying the provided examples.
+"""
+Classifies: CHEBI:35510 acyl-CoA
+An acyl-CoA is a thioester that results from the formal condensation of the thiol group of coenzyme A
+with the carboxy group of any carboxylic acid.
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
 
-Here are some potential issues and suggestions for improvement:
+def is_acyl_CoA(smiles: str):
+    """
+    Determines if a molecule is an acyl-CoA based on its SMILES string.
+    An acyl-CoA contains a thioester linkage between a carboxylic acid and the thiol group of Coenzyme A.
 
-1. **Rigid CoA backbone pattern matching**: The program used a set of predefined SMARTS patterns to match the CoA backbone. While this approach can work for certain structures, it may fail to identify variations or modifications in the CoA backbone. Acyl-CoA compounds can have different substituents or modifications on the CoA backbone, making it challenging to capture all possibilities with a limited set of patterns.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **Lack of structural context**: The program looked for the presence of individual substructures (CoA backbone, thioester, carboxyl group) without considering their relative positioning or connectivity within the molecule. It's essential to ensure that these substructures are correctly connected and in the appropriate context for an acyl-CoA compound.
+    Returns:
+        bool: True if molecule is an acyl-CoA, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-3. **Handling stereochemistry**: Some of the provided examples contain stereochemical information, which might not be correctly captured by the SMARTS patterns used in the program.
+    # Look for thioester pattern (-C(=O)-S-)
+    thioester_pattern = Chem.MolFromSmarts("C(=O)S")
+    thioester_matches = mol.GetSubstructMatches(thioester_pattern)
+    if not thioester_matches:
+        return False, "No thioester linkage found"
 
-To improve the classification, a more flexible and context-aware approach is needed. Here are some suggestions:
+    # Look for CoA backbone pattern
+    coa_pattern = Chem.MolFromSmarts("C1(OP(OP(OCC(C(NC(CCNC(=O)CCNC(=O)[C@H](O)[C@@H](C)[C@@H](COP(O)(O)=O)OP(O)(O)=O)[n+]1cnc2c(N)ncnc2N)=O)=O)C)C)(O)O)[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)O")
+    if not mol.HasSubstructMatch(coa_pattern):
+        return False, "No CoA backbone found"
+    
+    # Check that thioester links carboxylic acid to CoA
+    for match in thioester_matches:
+        acid_idx = mol.GetAtomWithIdx(match[0]).GetNeighbors()[0].GetIdx()
+        coa_idx = mol.GetAtomWithIdx(match[1]).GetNeighbors()[0].GetIdx()
+        
+        acid_mol = Chem.MolFromSmiles(Chem.MolFragmentToSmiles(mol, [acid_idx], bondsToUse=[]))
+        coa_mol = Chem.MolFromSmiles(Chem.MolFragmentToSmiles(mol, [coa_idx], bondsToUse=[]))
+        
+        acid_smarts = Chem.MolToSmarts(acid_mol)
+        coa_smarts = Chem.MolToSmarts(coa_mol)
+        
+        if acid_smarts != "C(=O)O" or not coa_mol.HasSubstructMatch(coa_pattern):
+            return False, "Thioester does not link carboxylic acid and CoA"
 
-1. **Use a more flexible CoA backbone pattern**: Instead of relying on predefined SMARTS patterns, consider using a more general pattern that captures the core structure of the CoA backbone while allowing for variations and modifications.
-
-2. **Incorporate connectivity checks**: Ensure that the identified CoA backbone, thioester group, and carboxylic acid group are correctly connected within the molecule. This can be achieved by checking the bond connectivity between these substructures or by using more complex SMARTS patterns that incorporate connectivity information.
-
-3. **Consider stereochemistry**: If stereochemistry is relevant for the classification, incorporate stereochemical information into the SMARTS patterns or use alternative methods to handle stereochemistry correctly.
-
-4. **Utilize RDKit's built-in functionality**: RDKit provides various functionalities for substructure matching, atom environment analysis, and molecular feature detection. Explore these functionalities to develop a more robust and flexible approach for acyl-CoA classification.
-
-5. **Implement additional checks or filters**: Depending on the specific requirements of the classification task, you may need to incorporate additional checks or filters. For example, you could check for the presence of specific functional groups, molecular weight ranges, or other relevant properties of acyl-CoA compounds.
-
-By addressing these limitations and incorporating more flexible and context-aware approaches, you can potentially improve the accuracy of the acyl-CoA classification program.
+    return True, "Contains thioester linkage between carboxylic acid and CoA thiol group"
