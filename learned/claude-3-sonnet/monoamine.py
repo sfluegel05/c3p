@@ -46,7 +46,10 @@ def is_monoamine(smiles: str):
             path = Chem.GetShortestPath(mol, amino_idx, aromatic_idx)
             if len(path) == 3:
                 # Check if the path consists of N-C-C-Ar (two carbon chain)
-                if mol.GetAtomWithIdx(path[1]).GetAtomicNum() == 6 and mol.GetAtomWithIdx(path[2]).GetAtomicNum() == 6:
+                if (
+                    mol.GetAtomWithIdx(path[1]).GetAtomicNum() == 6
+                    and mol.GetAtomWithIdx(path[2]).GetAtomicNum() == 6
+                ):
                     return True, "Contains an amino group connected to an aromatic ring by a two-carbon chain"
     
     return False, "Amino group not connected to aromatic ring by a two-carbon chain"
