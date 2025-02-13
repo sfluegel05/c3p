@@ -6,7 +6,6 @@ Classifies: CHEBI:35781 triradylglycerol
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_triradylglycerol(smiles: str):
     """
@@ -27,25 +26,26 @@ def is_triradylglycerol(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for glycerol backbone pattern (C-C-C with 3 oxygens attached)
-    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
-    if not mol.HasSubstructMatch(glycerol_pattern):
+    glycerol_pattern = Chem.MolFromSmarts("[C;H2]([O;H1])[C;H1]([O;H1])[C;H2]([O;H1])")
+    matches = mol.GetSubstructMatches(glycerol_pattern)
+    if not matches:
         return False, "No glycerol backbone found"
     
     # Look for 3 substituents (acyl, alkyl, or alk-1-enyl groups)
     acyl_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
-    alkyl_pattern = Chem.MolFromSmarts("[CX4]")
+    alkyl_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
     alkenyl_pattern = Chem.MolFromSmarts("[CX3]=[CX3]")
     
     substituents = []
-    for atom in mol.GetAtoms():
-        if atom.GetSymbol() == "O" and atom.GetTotalNumHs() == 0:
-            neighbor = atom.GetNeighbors()[0]
-            if neighbor.HasSubstructMatch(acyl_pattern):
-                substituents.append("acyl")
-            elif neighbor.HasSubstructMatch(alkyl_pattern):
-                substituents.append("alkyl")
-            elif neighbor.HasSubstructMatch(alkenyl_pattern):
-                substituents.append("alk-1-enyl")
+    for match in matches[0]:
+        atom = mol.GetAtomWithIdx(match)
+        neighbor = atom.GetNeighbors()[0]
+        if mol.HasSubstructMatch(acyl_pattern, atomIds=[neighbor.GetIdx()]):
+            substituents.append("acyl")
+        elif mol.HasSubstructMatch(alkyl_pattern, atomIds=[neighbor.GetIdx()]):
+            substituents.append("alkyl")
+        elif mol.HasSubstructMatch(alkenyl_pattern, atomIds=[neighbor.GetIdx()]):
+            substituents.append("alk-1-enyl")
     
     if len(set(substituents)) != 3 or len(substituents) != 3:
         return False, f"Found {len(substituents)} substituents, need exactly 3 (acyl, alkyl, alk-1-enyl)"
