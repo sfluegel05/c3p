@@ -46,7 +46,7 @@ def is_primary_alcohol(smiles: str):
         # Check if the carbon has 3 hydrogens or 1 carbon + 2 hydrogens
         carbon_neighbors = carbon.GetNeighbors()
         hydrogen_count = sum(1 for neighbor in carbon_neighbors if neighbor.GetAtomicNum() == 1)
-        carbon_count = sum(1 for neighbor in carbon_neighbors if neighbor.GetAtomicNum() == 6)
+        carbon_count = sum(1 for neighbor in carbon_neighbors if neighbor.GetAtomicNum() == 6 and not neighbor.IsInRingSize(3))
         
         if hydrogen_count == 3 or (hydrogen_count == 2 and carbon_count == 1):
             return True, "Contains a hydroxy (-OH) group attached to a saturated carbon atom with either 3 hydrogens or 1 carbon and 2 hydrogens"
