@@ -21,16 +21,17 @@ def is_mononitrophenol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define phenol with a nitro group pattern on the benzene ring
-    mononitrophenol_pattern = Chem.MolFromSmarts("c1(ccccc1O)[N+](=O)[O-]")
+    # Flexible SMARTS for phenol with a single nitro group on benzene ring 
+    phenol_nitro_pattern = Chem.MolFromSmarts("c1(ccccc1O)[NX3](=O)[O-]")
     
-    # Look for a structure that matches exactly one of these mononitrophenol patterns
-    matches = mol.GetSubstructMatches(mononitrophenol_pattern)
+    # Look for a phenol ring with a single nitro group
+    matches = mol.GetSubstructMatches(phenol_nitro_pattern)
     if len(matches) == 0:
-        return False, "No mononitrophenol structure found"
-
-    # Check that there's exactly one connected phenol and nitro group
-    if len(matches) != 1:
-        return False, f"Multiple possible mononitrophenol structures found: {len(matches)}"
-
+        return False, "No phenol with a single nitro group found on the benzene ring"
+    
+    # Check that there is exactly one nitro group on the ring
+    nitro_groups = [atom for atom in mol.GetAtoms() if atom.GetSymbol() == 'N' and any(neighbor.GetSymbol() == 'O' for neighbor in atom.GetNeighbors())]
+    if len(nitro_groups) != 1:
+        return False, f"Invalid number of nitro groups: found {len(nitro_groups)}"
+    
     return True, "Contains phenol group with a single nitro group on the same benzene ring"
