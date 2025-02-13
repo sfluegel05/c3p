@@ -9,14 +9,14 @@ from rdkit import Chem
 def is_sterol(smiles: str):
     """
     Determines if a molecule is a sterol based on its SMILES string.
-    A sterol is any 3-hydroxy steroid whose skeleton is closely related
-    to cholestan-3-ol, with possible additional carbon atoms in the side chain.
+    A sterol is defined as any 3-hydroxy steroid whose skeleton is closely related
+    to cholestan-3-ol, possibly with additional carbon atoms in the side chain.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if the molecule is a sterol, False otherwise
+        bool: True if molecule is a sterol, False otherwise
         str: Reason for classification
     """
     
@@ -25,21 +25,13 @@ def is_sterol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Broadened sterol core pattern (includes cholestane framework and flexibility for side chains)
-    sterol_core_smarts = "[#6]1([#6][#6][#6]2)[#6][#6][#6]3[#6](C)([#6][#6][#6]4)[#6]([OH])[#6]4[#6][#6][#6]3[#6]2C1"
-    sterol_core_pattern = Chem.MolFromSmarts(sterol_core_smarts)
-    if not mol.HasSubstructMatch(sterol_core_pattern):
-        return False, "Does not contain a sterol core structure"
-
-    # Validate presence of a 3-hydroxy group
-    # The hydroxy group should appear at a specific position related to the sterol core
-    hydroxy_pattern = Chem.MolFromSmarts("[C@H](O)[#6]")
-    if not mol.HasSubstructMatch(hydroxy_pattern):
-        return False, "Does not have a 3-hydroxy group"
-
-    # Check alignment with a broader sterol skeleton potentially including additional chains
-    additional_chain_smarts = "[C@H][C]"
-    if len(mol.GetSubstructMatches(Chem.MolFromSmarts(additional_chain_smarts))) < 3:
-        return True, "Recognized as a sterol with 3-hydroxy group and adaptable skeleton"
-
-    return False, "Failed to match sterol's unique skeletal and functional group requirements"
+    # Pattern for a 3-hydroxy steroid core: steroid skeleton with a hydroxyl group at C3
+    steroid_core_pattern = Chem.MolFromSmarts("C1CC[C@H]2[C@@H]3CC[C@]4(C)CC[C@H](O)C4[C@]3(C)CC[C@]12C")
+    
+    if not mol.HasSubstructMatch(steroid_core_pattern):
+        return False, "Does not contain a 3-hydroxy steroid core structure"
+        
+    # Additional check for optional side chain
+    # This will be highly context-specific, so the minimum steroid pattern check is typically sufficient for sterols
+    
+    return True, "Contains a 3-hydroxy steroid structure related to cholestan-3-ol"
