@@ -38,20 +38,37 @@ def is_saturated_fatty_acid(smiles: str):
         return False, "Contains carbon-carbon triple bonds"
 
     # Check for aliphatic carbon chain (allow branching)
-    aliphatic_pattern = Chem.MolFromSmarts("[C;D3]~[C;D3]~[C;D3]~[C;D3]~[C;D3]")
+    aliphatic_pattern = Chem.MolFromSmarts("C~C~C~C")  # Recursive pattern for variable-length chain
     aliphatic_matches = mol.GetSubstructMatches(aliphatic_pattern)
     if not aliphatic_matches:
         return False, "No aliphatic carbon chain found"
 
-    # Check molecular weight (at least 100 Da)
+    # Check for branching patterns
+    branched_pattern = Chem.MolFromSmarts("[C;D4]")  # Quaternary carbon indicates branching
+    branched_matches = mol.GetSubstructMatches(branched_pattern)
+
+    # Check molecular weight (at least 120 Da)
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 100:
+    if mol_wt < 120:
         return False, "Molecular weight too low for fatty acid"
 
     # Check for additional functional groups (optional)
-    # alcohol_pattern = Chem.MolFromSmarts("[OX1H]")
-    # alcohol_matches = mol.GetSubstructMatches(alcohol_pattern)
-    # if alcohol_matches:
-    #     return True, "Contains a carboxyl group, a saturated aliphatic carbon chain, and an alcohol group"
+    alcohol_pattern = Chem.MolFromSmarts("[OX1H]")
+    alcohol_matches = mol.GetSubstructMatches(alcohol_pattern)
+    methyl_pattern = Chem.MolFromSmarts("C[C;D4]")
+    methyl_matches = mol.GetSubstructMatches(methyl_pattern)
 
-    return True, "Contains a carboxyl group and a saturated aliphatic carbon chain"
+    if branched_matches:
+        if alcohol_matches:
+            return True, "Contains a carboxyl group, a saturated branched aliphatic carbon chain, and an alcohol group"
+        elif methyl_matches:
+            return True, "Contains a carboxyl group, a saturated branched aliphatic carbon chain, and methyl groups"
+        else:
+            return True, "Contains a carboxyl group and a saturated branched aliphatic carbon chain"
+    else:
+        if alcohol_matches:
+            return True, "Contains a carboxyl group, a saturated linear aliphatic carbon chain, and an alcohol group"
+        elif methyl_matches:
+            return True, "Contains a carboxyl group, a saturated linear aliphatic carbon chain, and methyl groups"
+        else:
+            return True, "Contains a carboxyl group and a saturated linear aliphatic carbon chain"
