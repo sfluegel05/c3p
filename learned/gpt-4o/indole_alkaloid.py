@@ -24,10 +24,17 @@ def is_indole_alkaloid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Define the SMARTS pattern for an indole skeleton
-    indole_pattern = Chem.MolFromSmarts('c1ccc2c(c1)[nH]cc2')
-    if mol.HasSubstructMatch(indole_pattern):
+
+    # Define a flexible SMARTS pattern for an indole skeleton
+    # Enhance the pattern to accommodate possible substitutions and tautomers
+    indole_pattern = Chem.MolFromSmarts('[cH]1ccc2[nH]c([cH]c2c1)')
+
+    # Use alternative SMARTS to capture various indole modifications:
+    # A broader pattern matching any nitrogen (n) to account for more substitutions or non-standard tautomeric forms
+    indole_pattern_alternative = Chem.MolFromSmarts('c1ccc2[nR]c1ccc2')
+
+    # Match using both primary and alternative SMARTS patterns
+    if mol.HasSubstructMatch(indole_pattern) or mol.HasSubstructMatch(indole_pattern_alternative):
         return True, "Contains indole skeleton"
     else:
         return False, "No indole skeleton found"
