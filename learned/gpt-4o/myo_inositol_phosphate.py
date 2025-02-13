@@ -22,24 +22,25 @@ def is_myo_inositol_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for the correct core of myo-inositol (cyclohexane with alternating stereochemistry for hydroxyl groups)
-    myo_inositol_core = Chem.MolFromSmarts("C1[C@@H](O)[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@H]1O")
-    if not mol.HasSubstructMatch(myo_inositol_core):
-        return False, "Molecule does not match the myo-inositol core configuration"
+    # Check for a general cyclohexane with multiple hydroxyl groups which represents the myo-inositol core
+    general_inositol_core = Chem.MolFromSmarts("C1(C)(O)[C](O)[C](O)[C](O)[C](O)[C]1O")
+    if not mol.HasSubstructMatch(general_inositol_core):
+        return False, "Molecule does not match the general cyclohexane hydroxylated structure"
 
-    # Search for general phosphate groups
-    phosphate_patterns = [
-        Chem.MolFromSmarts("OP(O)(=O)[O-]"),
-        Chem.MolFromSmarts("OP(O)(=O)O")
-    ]
-
-    phosphate_matches = sum(mol.HasSubstructMatch(phosphate) for phosphate in phosphate_patterns)
-    if not phosphate_matches:
+    # Identify phosphate group presence
+    phosphate_pattern = Chem.MolFromSmarts("OP(=O)(O)O")
+    phosphate_count = len(mol.GetSubstructMatches(phosphate_pattern))
+    if phosphate_count == 0:
         return False, "No phosphate groups found"
 
-    # Ensure there are no long carbon chains which indicate non-inositol components (e.g., fats)
-    longest_chain = max(len(chain) for chain in Chem.rdmolops.GetMolFrags(mol, asMols=False))
-    if longest_chain > 6:
+    # Avoid structures with long carbon chains that might confound myo-inositol core
+    if any(len(chain) > 6 for chain in Chem.rdmolops.GetMolFrags(mol, asMols=False)):
         return False, "Long carbon chain detected, possibly non-inositol component"
-
-    return True, "Molecule contains myo-inositol core with phosphate groups attached"
+    
+    # Check total number of hydroxyl and phosphate groups around the cyclohexane core
+    hydroxyl_pattern = Chem.MolFromSmarts("[CX4H](O)C")
+    hydroxyl_count = len(mol.GetSubstructMatches(hydroxyl_pattern))
+    if hydroxyl_count < 5 or (hydroxyl_count + phosphate_count) < 6:
+        return False, "Insufficient hydroxyl/phosphate groups for a typical myo-inositol phosphate"
+    
+    return True, "Molecule contains inositol structure with appropriate number of hydroxyl and phosphate groups attached"
