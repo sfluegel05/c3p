@@ -1,57 +1,20 @@
 """
 Classifies: CHEBI:26199 polyprenol
 """
-"""
-Classifies: CHEBI:36845 polyprenol
+The previous program attempted to classify polyprenols by looking for specific structural features, such as the presence of isoprene units, a terminal -OH group, a linear carbon chain, and the correct number of branching methyl groups. However, the approach failed to correctly identify all the examples provided.
 
-A polyprenol is defined as any member of the class of prenols possessing the general formula
-H-[CH2C(Me)=CHCH2]nOH in which the carbon skeleton is composed of more than one isoprene units.
-"""
+Here are some potential issues with the previous program and improvements that could be made:
 
-from rdkit import Chem
-from rdkit.Chem import AllChem
+1. **Handling cis/trans isomerism**: The program only looked for the isoprene unit pattern `CH2=C(C)CH=CH2`, which represents the trans isomer. However, some examples, such as `(2-cis,6-cis)-farnesol`, contain cis double bonds, which would not match this pattern. To address this, the program should use a more general pattern that can match both cis and trans isomers, such as `[CH2]=[CH][C@H]([CH3])[CH2]=[CH2]`.
 
-def is_polyprenol(smiles: str):
-    """
-    Determines if a molecule is a polyprenol based on its SMILES string.
+2. **Handling variations in the terminal group**: The program assumed that all polyprenols have a terminal -OH group. However, some examples, like `nerol`, have a different terminal group (e.g., `C(=C\CO)(\CCC=C(C)C)/C`). The program should either relax the requirement for a terminal -OH group or allow for a wider range of terminal groups.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+3. **Handling branched structures**: The program assumed that all polyprenols have a linear carbon chain. However, some examples, like `Glisoprenin B` and `Glisoprenin E`, have branched structures. The program should either allow for branched structures or explicitly exclude them if they are not considered polyprenols.
 
-    Returns:
-        bool: True if molecule is a polyprenol, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Look for the isoprene unit pattern: CH2=C(C)CH=CH2
-    isoprene_pattern = Chem.MolFromSmarts("[CH2]=[C@H]([CH3])[CH2]=[CH2]")
-    isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
-    
-    # Polyprenols must have at least 2 isoprene units
-    if len(isoprene_matches) < 2:
-        return False, "Fewer than 2 isoprene units found"
-    
-    # Look for the terminal -OH group
-    alcohol_pattern = Chem.MolFromSmarts("[OX1H]")
-    alcohol_matches = mol.GetSubstructMatches(alcohol_pattern)
-    if not alcohol_matches:
-        return False, "No terminal -OH group found"
-    
-    # Check for linear carbon chain
-    linear_pattern = Chem.MolFromSmarts("[CH2X4]~[CH2X4]~[CH2X4]")
-    linear_matches = mol.GetSubstructMatches(linear_pattern)
-    if not linear_matches:
-        return False, "Carbon chain is not linear"
-    
-    # Check for branching methyl groups
-    methyl_pattern = Chem.MolFromSmarts("[CH3X4]")
-    methyl_matches = mol.GetSubstructMatches(methyl_pattern)
-    if len(methyl_matches) != len(isoprene_matches):
-        return False, "Incorrect number of branching methyl groups"
-    
-    return True, "Molecule matches the polyprenol definition"
+4. **Handling stereochemistry**: Some examples, like `Dolichol-19` and `Dolichol-18`, contain stereochemical information (e.g., `[C@H]`). The program should handle stereochemistry appropriately or ignore it if it is not relevant for the classification.
+
+5. **Handling multiple matches**: The program checks for the presence of at least two isoprene units, but it does not consider the possibility of multiple matches within a single molecule. This could lead to incorrect classifications for molecules with more than two isoprene units but with other structural features that disqualify them as polyprenols.
+
+6. **Handling molecular weight or size**: Some examples, like `Bionectin F`, have relatively large molecular weights or sizes. The program could incorporate additional checks based on molecular weight or size to improve the classification accuracy.
+
+To address these issues, you could consider a combination of approaches, such as using more flexible SMARTS patterns, incorporating additional checks for specific structural features or molecular properties, and potentially using machine learning techniques to learn the patterns from a larger set of examples.
