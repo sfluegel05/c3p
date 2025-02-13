@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_amino_acid(smiles: str):
     """
     Determines if a molecule is an amino acid based on its SMILES string.
-    A carboxylic acid containing one or more amino groups.
+    An amino acid is defined as a carboxylic acid containing one or more amino groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,19 +21,24 @@ def is_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for carboxylic acid group (C(=O)O)
-    carboxylic_pattern = Chem.MolFromSmarts("C(=O)O")
+    # Check for carboxylic acid group (C(=O)O)
+    carboxylic_pattern = Chem.MolFromSmarts("C(=O)[O-]")  # Slightly modified for flexibility
     if not mol.HasSubstructMatch(carboxylic_pattern):
         return False, "No carboxylic acid group found"
 
-    # Look for amino group (N)
+    # Check for amino group (N)
     amino_pattern = Chem.MolFromSmarts("[NX3;H2,H1,H0]")
     if not mol.HasSubstructMatch(amino_pattern):
         return False, "No amino group found"
-        
-    # Check the connectivity pattern to validate amino acid structure
-    amino_acid_pattern = Chem.MolFromSmarts("[C;X4](N)(C(=O)O)")
-    if not mol.HasSubstructMatch(amino_acid_pattern):
-        return False, "No typical amino acid connectivity pattern found"
 
-    return True, "Contains carboxylic acid group and amino group in the correct structure"
+    # Check for typical amino acid structure (free or side-chain modifications)
+    amino_acid_patterns = [
+        Chem.MolFromSmarts("[C;X4](N)([C;X4])(C(=O)[O-])"),  # General alpha amino acids
+        Chem.MolFromSmarts("[C;X4](C(=O)[O-])([N;X3])"),     # Beta or gamma alternative structure
+        Chem.MolFromSmarts("[NX3;H2,H1,H0]-[C;X4](C=O)[O-]") # Variations with N-C-C-C backbone
+    ]
+    
+    if not any(mol.HasSubstructMatch(pattern) for pattern in amino_acid_patterns):
+        return False, "No suitable amino acid connectivity pattern found"
+
+    return True, "Contains carboxylic acid group and amino group in a typical amino acid structure"
