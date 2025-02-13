@@ -38,41 +38,51 @@ def is_chlorophyll(smiles: str):
     if neighboring_n != 4:
         return False, f"Magnesium should have 4 coordinating nitrogens, found {neighboring_n}"
 
-    # Look for the basic porphyrin structure with 4 pyrrole-like rings
-    porphyrin_pattern = Chem.MolFromSmarts("[#7]1:[#6]:[#6]:[#6]2:[#6]:[#6]:[#6]:[#6]:[#7]:[#6]:[#6]:[#6]3:[#6]:[#6]:[#6]:[#6]:[#7]:[#6]:[#6]:[#6]4:[#6]:[#6]:[#6]:[#6]:[#7]:1:[Mg]2134")
+    # More flexible porphyrin pattern - just looking for 4 nitrogens connected to rings
+    porphyrin_pattern = Chem.MolFromSmarts("[#7]~1~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#7]~[#6]~[#6]~[#6]~[#6]~[#7]~[#6]~[#6]~[#6]~[#6]~[#7]~1")
+    if porphyrin_pattern is None:
+        return None, "Invalid SMARTS pattern for porphyrin"
     if not mol.HasSubstructMatch(porphyrin_pattern):
         return False, "No porphyrin core structure found"
 
-    # Look for fifth ring (cyclopentanone ring)
-    cyclopentanone_pattern = Chem.MolFromSmarts("C1CC(=O)C(C1)=O")
-    if not mol.HasSubstructMatch(cyclopentanone_pattern):
-        return False, "No fifth ring (cyclopentanone) found"
+    # Look for fifth ring - more flexible pattern
+    # Could be cyclopentanone or similar 5-membered ring
+    fifth_ring_pattern = Chem.MolFromSmarts("[#6]1~[#6]~[#6]~[#6]~[#6]1")
+    if fifth_ring_pattern is None:
+        return None, "Invalid SMARTS pattern for fifth ring"
+    
+    # Count number of 5-membered rings
+    five_rings = len(mol.GetSubstructMatches(fifth_ring_pattern))
+    if five_rings < 1:
+        return False, "No fifth ring found"
 
-    # Check for common substituents found in chlorophylls
+    # Check for characteristic substituents
+    substituents = []
+    
     # Vinyl group
     vinyl_pattern = Chem.MolFromSmarts("C=C")
+    if vinyl_pattern and mol.HasSubstructMatch(vinyl_pattern):
+        substituents.append("vinyl")
+        
     # Ethyl group
     ethyl_pattern = Chem.MolFromSmarts("CC")
-    # Methyl group
-    methyl_pattern = Chem.MolFromSmarts("C[CH3]")
-    
-    substituents_found = []
-    if mol.HasSubstructMatch(vinyl_pattern):
-        substituents_found.append("vinyl")
-    if mol.HasSubstructMatch(ethyl_pattern):
-        substituents_found.append("ethyl")
-    if mol.HasSubstructMatch(methyl_pattern):
-        substituents_found.append("methyl")
+    if ethyl_pattern and mol.HasSubstructMatch(ethyl_pattern):
+        substituents.append("ethyl")
         
-    if not substituents_found:
+    # Methyl group
+    methyl_pattern = Chem.MolFromSmarts("[CH3]")
+    if methyl_pattern and mol.HasSubstructMatch(methyl_pattern):
+        substituents.append("methyl")
+        
+    # Carboxyl/ester groups
+    carboxyl_pattern = Chem.MolFromSmarts("[#6](=[#8])[#8]")
+    if carboxyl_pattern and mol.HasSubstructMatch(carboxyl_pattern):
+        substituents.append("carboxyl/ester")
+
+    if not substituents:
         return False, "No characteristic substituents found"
 
-    # Look for ester groups (common in chlorophylls)
-    ester_pattern = Chem.MolFromSmarts("[#6](=O)-O")
-    if not mol.HasSubstructMatch(ester_pattern):
-        return False, "No ester groups found"
-
-    # Count carbons and nitrogens to ensure reasonable size
+    # Count carbons and nitrogens
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
     
@@ -81,4 +91,9 @@ def is_chlorophyll(smiles: str):
     if n_count != 4:
         return False, "Must have exactly 4 nitrogens in porphyrin core"
 
-    return True, f"Contains magnesium porphyrin core with fifth ring and {', '.join(substituents_found)} substituents"
+    # Additional check for conjugated system
+    conjugated_pattern = Chem.MolFromSmarts("c:c:c:c:c")
+    if conjugated_pattern and not mol.HasSubstructMatch(conjugated_pattern):
+        return False, "Missing conjugated ring system"
+
+    return True, f"Contains magnesium porphyrin core with fifth ring and {', '.join(substituents)} groups"
