@@ -31,6 +31,9 @@ def is_anthoxanthin(smiles: str):
     backbones = ['c1c(o[c@@H]2[c@H](c3ccc(O)cc3o2)ccc1O',  # flavonol (quercetin)
                  'c1c(oc2cc(O)cc(O)c2c1=O)',  # flavone
                  'C=C(C=Cc1ccc(O)c(O)c1)C(=O)/C=C/c1ccc(O)cc1',  # chalcone
+                 'c1c(oc2ccc(O)cc2c1=O)',  # flavanone
+                 'c1c(-c2ccc(O)cc2)oc2cc(O)cc(O)c2c1=O',  # isoflavone
+                 # Add more patterns as needed
                  ]
     has_backbone = any(mol.HasSubstructMatch(Chem.MolFromSmarts(b)) for b in backbones)
     if not has_backbone:
@@ -42,6 +45,8 @@ def is_anthoxanthin(smiles: str):
                     '[CX3](=O)[OX2]',  # ester/carboxylate
                     '[SX4+2]',  # sulfate
                     '[CX3][OX2][CH3]',  # methoxy
+                    '[CX3](-[OX2][CX3]=O)-[CX3]=O',  # malonyl
+                    # Add more patterns as needed
                     ]
     has_substituents = any(mol.HasSubstructMatch(Chem.MolFromSmarts(s)) for s in substituents)
     if not has_substituents:
@@ -53,11 +58,11 @@ def is_anthoxanthin(smiles: str):
     hba = rdMolDescriptors.CalcNumLipinskiHBA(mol)
     hbd = rdMolDescriptors.CalcNumLipinskiHBD(mol)
 
-    if mol_wt < 200 or mol_wt > 1000:
+    if mol_wt < 150 or mol_wt > 1500:  # Adjusted ranges
         return False, "Molecular weight out of typical anthoxanthin range"
-    if logp > 5:
+    if logp > 7:  # Adjusted range
         return False, "LogP too high for water-soluble anthoxanthin"
-    if hba < 4 or hbd < 1:
+    if hba < 3 or hbd < 1:  # Adjusted ranges
         return False, "Insufficient hydrogen bonding for water solubility"
 
     return True, "Contains anthoxanthin backbone and substituents, with properties consistent with water-soluble pigments"
