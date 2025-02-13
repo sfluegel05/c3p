@@ -2,8 +2,13 @@
 Classifies: CHEBI:64583 sphingomyelin
 """
 """
-Classifies: CHEBI:18023 sphingomyelin
+Classifies: CHEBI:16540 sphingomyelin
+
+A sphingomyelin is a phospholipid where the amino group of a sphingoid base is in amide linkage with
+one of several fatty acids, while the terminal hydroxy group of the sphingoid base is esterified to
+phosphorylcholine.
 """
+
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
@@ -11,8 +16,6 @@ from rdkit.Chem import rdMolDescriptors
 def is_sphingomyelin(smiles: str):
     """
     Determines if a molecule is a sphingomyelin based on its SMILES string.
-    A sphingomyelin is a phospholipid with a sphingoid base linked to a fatty acid
-    via an amide bond, and a phosphorylcholine group ester-linked to the terminal hydroxy group.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,43 +24,50 @@ def is_sphingomyelin(smiles: str):
         bool: True if molecule is a sphingomyelin, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Look for sphingoid base pattern
-    sphingoid_base_pattern = Chem.MolFromSmarts("[N;X3;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][C;X4;H1,H2][O;X2;H1]")
-    if not mol.HasSubstructMatch(sphingoid_base_pattern):
+    
+    # Look for sphingoid base pattern (long hydrocarbon chain with amino and hydroxy groups)
+    sphingoid_pattern = Chem.MolFromSmarts("C[C@@H](O)[C@@H](N)CCCCCCCCCCCCC")
+    if not mol.HasSubstructMatch(sphingoid_pattern):
         return False, "No sphingoid base found"
-
-    # Look for fatty acid chain linked via amide bond
-    fatty_acid_pattern = Chem.MolFromSmarts("[N;X3;H1,H2][C;X3;H1,H2](=[O;X1])[C;X4;H1,H2]")
+    
+    # Look for fatty acid chain (long hydrocarbon chain attached to amino group via amide)
+    fatty_acid_pattern = Chem.MolFromSmarts("CCC(=O)N[C@@H](CCCCCCCCCCCCC)[C@@H](O)CCCCCCCCCCCCC")
     if not mol.HasSubstructMatch(fatty_acid_pattern):
-        return False, "No fatty acid chain linked via amide bond"
-
-    # Look for phosphorylcholine group ester-linked to the terminal hydroxy group
-    phosphocholine_pattern = Chem.MolFromSmarts("[O;X2][P;X4]([O;X1-])([O;X1-])[O;X2][C;X4][N+;X4]([C;X4])([C;X4])[C;X4]")
+        return False, "No fatty acid chain attached via amide linkage"
+    
+    # Look for phosphorylcholine group (ester-linked to terminal hydroxy of sphingoid base)
+    phosphocholine_pattern = Chem.MolFromSmarts("COP(=O)([O-])OCC[N+](C)(C)C")
     if not mol.HasSubstructMatch(phosphocholine_pattern):
-        return False, "No phosphorylcholine group ester-linked to terminal hydroxy group"
-
-    # Check for trans double bond in sphingoid base
-    trans_double_bond_pattern = Chem.MolFromSmarts("/C=C/")
-    if not mol.HasSubstructMatch(trans_double_bond_pattern):
-        return False, "No trans double bond in sphingoid base"
-
-    # Check molecular weight and atom counts
+        return False, "No phosphorylcholine group found"
+    
+    # Count rotatable bonds to verify long chains
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 10:
+        return False, "Chains too short to be sphingomyelin"
+    
+    # Check molecular weight - sphingomyelins typically >600 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 400 or mol_wt > 1200:
-        return False, "Molecular weight outside typical range for sphingomyelins"
-
+    if mol_wt < 600:
+        return False, "Molecular weight too low for sphingomyelin"
+    
+    # Count carbons, nitrogens, oxygens and phosphorus
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 20 or c_count > 70:
-        return False, "Carbon count outside typical range for sphingomyelins"
-
+    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count < 4 or o_count > 12:
-        return False, "Oxygen count outside typical range for sphingomyelins"
-
-    return True, "Contains sphingoid base, fatty acid chain linked via amide bond, and phosphorylcholine group ester-linked to terminal hydroxy group"
+    p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
+    
+    if c_count < 30:
+        return False, "Too few carbons for sphingomyelin"
+    if n_count != 2:
+        return False, "Must have exactly 2 nitrogens"
+    if o_count < 5:
+        return False, "Too few oxygens for sphingomyelin"
+    if p_count != 1:
+        return False, "Must have exactly 1 phosphorus"
+    
+    return True, "Contains a sphingoid base with fatty acid chain attached via amide, and phosphorylcholine ester"
