@@ -34,9 +34,13 @@ def is_N_acylphytosphingosine(smiles: str):
         return False, "Phytosphingosine backbone not found"
     
     # Look for acyl chain attached to N atom with optional C-2 hydroxyl group
-    acyl_pattern = Chem.MolFromSmarts("[NH1][CX3](=[OX1])[CX3]([OH1])?[CX3]~[CX3]~[CX3]~[CX3]~[CX3]~[CX3]")
+    acyl_pattern = Chem.MolFromSmarts("[NH1][CX3](=[OX1])[CX3]([OH1])?[CX3]~[CX3]")
     acyl_match = mol.GetSubstructMatches(acyl_pattern)
     if not acyl_match:
-        return False, "No acyl group attached to nitrogen or acyl chain too short (< 6 carbons)"
+        return False, "No acyl group attached to nitrogen"
     
-    return True, "Contains phytosphingosine backbone with acyl group attached to nitrogen"
+    # Look for common substituents like galactose
+    galactose_pattern = Chem.MolFromSmarts("O[C@H]1[C@@H]([C@H]([C@@H]([C@H](O1)O)O)O)O")
+    galactose_match = mol.GetSubstructMatches(galactose_pattern)
+    
+    return True, "Contains phytosphingosine backbone with acyl group attached to nitrogen" + (", and galactose substituent" if galactose_match else "")
