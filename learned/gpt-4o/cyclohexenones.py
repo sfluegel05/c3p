@@ -2,7 +2,7 @@
 Classifies: CHEBI:48953 cyclohexenones
 """
 from rdkit import Chem
-from rdkit.Chem import rdchem
+from rdkit.Chem import rdMolDescriptors
 
 def is_cyclohexenones(smiles: str):
     """
@@ -21,28 +21,32 @@ def is_cyclohexenones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
+    # Initialize SMARTS patterns for ketone and any double bond
+    ketone_pattern = Chem.MolFromSmarts("C=O")
+    double_bond_pattern = Chem.MolFromSmarts("C=C")
+
     # Get ring information
     ring_info = mol.GetRingInfo()
-    for ring in ring_info.BondRings():
-        if len(ring) == 6:
-            ketone_found = False
-            double_bond_count = 0
 
-            # Iterate over all bonds in the ring
-            for bond_idx in ring:
-                bond = mol.GetBondWithIdx(bond_idx)
-                if bond.GetBondType() == Chem.BondType.DOUBLE:
-                    begin_atom_num = bond.GetBeginAtom().GetAtomicNum()
-                    end_atom_num = bond.GetEndAtom().GetAtomicNum()
-                    
-                    # Count any bond as part of a double bond (C=C or C=O)
-                    if {begin_atom_num, end_atom_num} == {6, 8}:
-                        ketone_found = True
-                    else:
-                        double_bond_count += 1
+    # Check each ring to see if it matches the cyclohexenone criteria
+    for ring in ring_info.AtomRings():
+        if len(ring) == 6:
+            # Extract the sub-molecule corresponding to the ring
+            ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
+            ring_submol = Chem.PathToSubmol(mol, ring)
             
-            # Correctly classify based on presence of ketone and at least one other double bond
-            if ketone_found and double_bond_count >= 1:
-                return True, "Contains a six-membered ring with a ketone group and at least one other double bond"
-            
+            # Check for non-aromatic ring
+            if not rdMolDescriptors.CalcNumAromaticRings(ring_submol):
+                # Check for ketone group
+                if ring_submol.HasSubstructMatch(ketone_pattern):
+                    # Check for exactly one additional C=C double bond
+                    double_bond_count = 0
+                    for atom in ring_atoms:
+                        if atom.HasSubstructMatch(double_bond_pattern):
+                            double_bond_count += 1
+
+                    # Return True if have one ketone and one double bond
+                    if double_bond_count == 1:
+                        return True, "Contains a six-membered alicyclic ring with a ketone group and one other double bond"
+    
     return False, "Does not meet cyclohexenone criteria"
