@@ -2,12 +2,12 @@
 Classifies: CHEBI:27933 beta-lactam antibiotic
 """
 """
-Classifies: CHEBI:35457 beta-lactam antibiotic
+Classifies: CHEBI:35519 beta-lactam antibiotic
 An organonitrogen heterocyclic antibiotic that contains a beta-lactam ring.
 """
+
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_beta_lactam_antibiotic(smiles: str):
     """
@@ -20,33 +20,36 @@ def is_beta_lactam_antibiotic(smiles: str):
         bool: True if molecule is a beta-lactam antibiotic, False otherwise
         str: Reason for classification
     """
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for beta-lactam ring pattern
-    beta_lactam_pattern = Chem.MolFromSmarts("[C&R1]1=[C&R2](N[C&R3]1[C&R4]=[O])")
-    if not mol.HasSubstructMatch(beta_lactam_pattern):
-        return False, "No beta-lactam ring found"
+    # Look for penam (penicillin) nucleus
+    penam_pattern = Chem.MolFromSmarts("[NR]1[CR]2[CR][CR][NR]1[CR]2=O.[SX2]")
+    if mol.HasSubstructMatch(penam_pattern):
+        return True, "Contains a penam (penicillin) nucleus"
 
-    # Look for nitrogen-containing heterocycle
-    heterocycle_pattern = Chem.MolFromSmarts("[&!r5&!r6]12[&!r5&!r6][&!r5&!r6][&!r5&!r6][&!r5&!r6]1[&!r5&!r6][&!r5&!r6][&!r5&!r6]2")
-    heterocycle_match = mol.GetSubstructMatches(heterocycle_pattern)
-    if not heterocycle_match:
-        return False, "No nitrogen-containing heterocycle found"
+    # Look for cepham (cephalosporin) nucleus
+    cepham_pattern = Chem.MolFromSmarts("[NR]1[CR]2[CR][CR][NR]1[CR]2=O.[SX2][CX4]")
+    if mol.HasSubstructMatch(cepham_pattern):
+        return True, "Contains a cepham (cephalosporin) nucleus"
 
-    # Check for carboxyl group
-    carboxyl_pattern = Chem.MolFromSmarts("[C&R5](=O)[O&R6]")
-    carboxyl_match = mol.GetSubstructMatches(carboxyl_pattern)
-    if not carboxyl_match:
-        return False, "No carboxyl group found"
+    # Look for carbapenem nucleus
+    carbapenem_pattern = Chem.MolFromSmarts("[NR]1[CR]2[CR][CR][NR]1[CR]2=O")
+    if mol.HasSubstructMatch(carbapenem_pattern):
+        return True, "Contains a carbapenem nucleus"
 
-    # Check for amine group
-    amine_pattern = Chem.MolFromSmarts("[N&R7;!H0]")
-    amine_match = mol.GetSubstructMatches(amine_pattern)
-    if not amine_match:
-        return False, "No amine group found"
+    # Look for monobactam nucleus
+    monobactam_pattern = Chem.MolFromSmarts("[NR]1[CR]2[CR][CR][NR]1[CR]2=O.[NX3]")
+    if mol.HasSubstructMatch(monobactam_pattern):
+        return True, "Contains a monobactam nucleus"
 
-    # If all conditions are met, classify as beta-lactam antibiotic
-    return True, "Contains beta-lactam ring, nitrogen-containing heterocycle, carboxyl group, and amine group"
+    # Look for carboxyl groups and amine groups
+    carboxyl_pattern = Chem.MolFromSmarts("C(=O)[O;H,-]")
+    amine_pattern = Chem.MolFromSmarts("[N;H2,H1,H0]")
+    if mol.HasSubstructMatch(carboxyl_pattern) and mol.HasSubstructMatch(amine_pattern):
+        return True, "Contains carboxyl and amine groups"
+
+    return False, "No characteristic features of beta-lactam antibiotics found"
