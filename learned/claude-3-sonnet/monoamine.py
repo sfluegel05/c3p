@@ -30,8 +30,8 @@ def is_monoamine(smiles: str):
         return False, "Invalid SMILES string"
     
     # Look for an aromatic ring
-    aromatic_rings = [ring for ring in mol.GetRingInfo().AtomRings() if mol.GetRingAtoms(ring) == list(aromatic_atoms)]
-    if not aromatic_rings:
+    aromatic_atoms = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetIsAromatic() and mol.GetRingInfo().IsAtomInRingOfSize(atom.GetIdx(), 6)]
+    if not aromatic_atoms:
         return False, "No aromatic ring found"
     
     # Look for an amino group (-NH2 or -NH3+)
@@ -42,10 +42,11 @@ def is_monoamine(smiles: str):
     
     # Check if the amino group is connected to the aromatic ring by a two-carbon chain
     for amino_idx in amino_matches:
-        chain_atoms = mol.GetAtomWithIdx(amino_idx).FindAllPathsOfLengthN(aromatic_atoms, 3, usehsenv=False)
-        if chain_atoms:
-            chain_atoms = [mol.GetAtomWithIdx(idx) for paths in chain_atoms for idx in paths[1:-1]]
-            if all(atom.GetAtomicNum() == 6 for atom in chain_atoms):
-                return True, "Contains an amino group connected to an aromatic ring by a two-carbon chain"
+        amino_atom = mol.GetAtomWithIdx(amino_idx)
+        for neighbor in amino_atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 6:  # Carbon atom
+                for neighbor2 in neighbor.GetNeighbors():
+                    if neighbor2.GetAtomicNum() == 6 and neighbor2.GetIdx() in aromatic_atoms:
+                        return True, "Contains an amino group connected to an aromatic ring by a two-carbon chain"
     
     return False, "Amino group not connected to aromatic ring by a two-carbon chain"
