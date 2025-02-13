@@ -2,7 +2,7 @@
 Classifies: CHEBI:35759 1-monoglyceride
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import AllChem
 
 def is_1_monoglyceride(smiles: str):
     """
@@ -18,28 +18,37 @@ def is_1_monoglyceride(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES string
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS pattern for glycerol backbone with OH at 2,3-positions and 1-ester linkage
-    # Simple ester linkage at position 1
-    glycerol_ester_1_pattern = Chem.MolFromSmarts("OCC(O)COC(=O)C")
-    glycerol_ester_1_pattern_racemic = Chem.MolFromSmarts("OC[C@@H](O)COC(=O)C")
+    # Glycerol backbone with ester linkage at 1-position
+    glycerol_pattern = Chem.MolFromSmarts("OCC(O)CO")
+    ester_pattern = Chem.MolFromSmarts("O(C=O)")
     
-    if not mol.HasSubstructMatch(glycerol_ester_1_pattern) and not mol.HasSubstructMatch(glycerol_ester_1_pattern_racemic):
-        return False, "No ester linkage found at 1-position of glycerol"
-
-    # Ensure only one ester linkage is present
-    ester_matches = mol.GetSubstructMatches(Chem.MolFromSmarts("C(=O)O"))
+    if not mol.HasSubstructMatch(glycerol_pattern):
+        return False, "No glycerol backbone found"
+    
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) != 1:
         return False, f"Expected 1 ester linkage, found {len(ester_matches)}"
     
-    # Check for the presence of a fatty acid chain (long hydrocarbon chain)
-    # Consider a flexible definition for a long carbon chain
-    long_chain_pattern = Chem.MolFromSmarts("C(=O)O[CX4][CX4][CX4][CX4][CX4]")
-    if not mol.HasSubstructMatch(long_chain_pattern):
-        return False, "No fatty acid chain (long hydrocarbon chain) found"
+    # Check position of ester linkage
+    ester_sites = [bond.GetBeginAtom().GetIdx() for bond in mol.GetBonds() if bond.GetBondType() == Chem.rdchem.BondType.ESTER]
+    if not ester_sites or ester_sites[0] != 0:
+        return False, "Ester linkage not at 1-position"
 
-    return True, "Contains glycerol backbone with one fatty acid chain attached via ester bond at position 1"
+    # Verify the presence of a single acyl chain attached at the ester group
+    acyl_chain_pattern = Chem.MolFromSmarts("C(=O)C")
+    acyl_chain_matches = mol.GetSubstructMatches(acyl_chain_pattern)
+    if len(acyl_chain_matches) != 1:
+        return False, "Expected 1 acyl chain, found {}".format(len(acyl_chain_matches))
+    
+    # Consideration of chiral center
+    n_chiral_centers = len(Chem.FindMolChiralCenters(mol, includeUnassigned=False))
+    if n_chiral_centers != 1:
+        has_chiral = "chiral" if n_chiral_centers >= 1 else "achiral"
+        return False, f"Molecule should ideally have 1 chiral center, found {n_chiral_centers} ({has_chiral})"
+    
+    return True, "Valid structure for a 1-monoglyceride"
