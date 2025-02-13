@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_prenols(smiles: str):
     """
     Determines if a molecule is a prenol based on its SMILES string.
-    A prenol is an alcohol possessing one or more isoprene units.
+    A prenol is an alcohol consisting of one or more isoprene units.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,21 +21,25 @@ def is_prenols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # An isoprene unit pattern represents the ongoing connectivity in prenol molecules
-    many_isoprene_pattern = Chem.MolFromSmarts("C(C)(C)=C")
-    
-    if not mol.HasSubstructMatch(many_isoprene_pattern):
+    # Look for isoprene pattern: [CH2-C(Me)=CH-CH2], representing `C-C(C)=C-C`
+    isoprene_pattern = Chem.MolFromSmarts("[CH2][C](C)=C[CH2]") 
+    isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
+
+    # Check if there's at least one isoprene unit
+    if len(isoprene_matches) < 1:
         return False, "No isoprene units found"
 
-    # Check for terminal alcohol functionalities including OH, phosphates, and others
-    term_alcohol_patterns = [
-        Chem.MolFromSmarts("[OH]"),  # Direct OH group
-        Chem.MolFromSmarts("COP(O)(=O)O"),  # Phosphate ester
-        Chem.MolFromSmarts("C(=O)O"),  # Ester form often seen in derivatized forms
-    ]
-    
-    for pattern in term_alcohol_patterns:
-        if mol.HasSubstructMatch(pattern):
-            return True, "Contains isoprene units with terminal alcohol group"
+    # Verify the presence of a terminal alcohol group (-OH)
+    if not mol.HasSubstructMatch(Chem.MolFromSmarts("[OH]")):
+        return False, "Missing terminal OH group"
 
-    return False, "No suitable terminal alcohol functionality found"
+    # Determine the connectivity of the alcohol group, typically terminal
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 8 and len(list(atom.GetBonds())) == 1:  # Oxygen with only one bond
+            bond = atom.GetBonds()[0]
+            connected_atom = bond.GetOtherAtom(atom)
+            # Look for isoprene unit connection
+            if connected_atom.GetAtomicNum() == 6 and connected_atom.GetDegree() >= 1:
+                return True, "Contains isoprene units with terminal alcohol group"
+    
+    return True, "Contains isoprene units with terminal alcohol group"
