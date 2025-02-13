@@ -2,7 +2,6 @@
 Classifies: CHEBI:65111 3-substituted propionyl-CoA(4-)
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_3_substituted_propionyl_CoA_4__(smiles: str):
     """
@@ -20,25 +19,20 @@ def is_3_substituted_propionyl_CoA_4__(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Adjusted CoA substructure pattern with flexibility in the nucleotide part
-    coa_pattern = Chem.MolFromSmarts("NC(=O)CCNC(=O)[C@H](O)C(C)(C)COP([O-])(=O)OP([O-])(=O)OCC1OC(C(O)C1O)N2C=NC3=C2N=CN=C3N")
-    if not mol.HasSubstructMatch(coa_pattern):
-        return False, "CoA substructure not found or incorrectly matched due to specificity"
+    # More generalized CoA substructure pattern, targeting the pantetheine and core CoA motifs
+    coa_core_pattern = Chem.MolFromSmarts("NC(=O)CCNC(=O)C[C@H](O)C(C)(C)COP(O)(O)O")
+    if not mol.HasSubstructMatch(coa_core_pattern):
+        return False, "CoA backbone structure not found or incorrectly matched"
     
-    # Thioester linkage pattern that allows for variations in the acyl chain
-    thioester_pattern = Chem.MolFromSmarts("C(=O)S")
+    # Broader thioester linkage pattern to accommodate variants
+    thioester_pattern = Chem.MolFromSmarts("C(=O)SCCNC(=O)C")
     if not mol.HasSubstructMatch(thioester_pattern):
-        return False, "Thioester linkage not found, or pattern is too specific"
+        return False, "Thioester linkage not adequately detected"
     
-    # Check for potential 3-substituted pattern, focusing on general acyl properties
-    substitution_pattern = Chem.MolFromSmarts("CC(=O)S")
-    if not mol.HasSubstructMatch(substitution_pattern):
-        return False, "No appropriate 3-substituted propionyl-like group identified"
-    
-    # Check for deprotonated phosphate groups, indicating a 4- charge state
-    phosphate_pattern = Chem.MolFromSmarts("P([O-])(=O)(O)OP([O-])(=O)O")
+    # Identification of deprotonated phosphate groups with flexibility
+    phosphate_pattern = Chem.MolFromSmarts("P([O-])(=O)([O-])O")
     matches = mol.GetSubstructMatches(phosphate_pattern)
     if len(matches) < 2:
-        return False, "Insufficient deprotonated phosphate groups to indicate -4 charge"
+        return False, "Insufficient deprotonated phosphates indicating -4 charge"
 
     return True, "Molecule is classified as a 3-substituted propionyl-CoA(4-)"
