@@ -6,6 +6,7 @@ Classifies: CHEBI:46907 aliphatic nitrile
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_aliphatic_nitrile(smiles: str):
     """
@@ -32,7 +33,8 @@ def is_aliphatic_nitrile(smiles: str):
         return False, "No nitrile group found"
 
     # Check if the molecule is aliphatic (no aromatic rings)
-    if mol.GetAromaticRingInfo().AromaticAtoms:
+    num_aromatic_rings = rdMolDescriptors.CalcNumAromaticRings(mol)
+    if num_aromatic_rings > 0:
         return False, "Molecule contains aromatic rings, not aliphatic"
 
     # Check if the molecule contains only C, H, N, and optionally O, S, P, F, Cl, Br, I
