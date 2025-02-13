@@ -2,6 +2,7 @@
 Classifies: CHEBI:27283 very long-chain fatty acid
 """
 from rdkit import Chem
+from rdkit.Chem import rdmolops
 
 def is_very_long_chain_fatty_acid(smiles: str):
     """
@@ -21,22 +22,30 @@ def is_very_long_chain_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for carboxylic acid group (-C(=O)O)
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
-    if not mol.HasSubstructMatch(carboxylic_acid_pattern):
+    # Ensure the molecule has a carboxylic acid group
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[OH]")
+    carboxyl_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
+    if not carboxyl_matches:
         return False, "No carboxylic acid group found"
-
-    # Identify the longest chain terminating at a carboxylic acid
-    longest_chain_length = 0
-    for atom in mol.GetAtoms():
-        # Consider only carbon atom chains
-        if atom.GetAtomicNum() == 6:
-            chain_length = len(Chem.rdmolops.FindAtomEnvironmentOfRadiusN(mol, atom, 1000))
-            if chain_length > longest_chain_length:
-                longest_chain_length = chain_length
+    
+    max_chain_length = 0
+    
+    # Measure chain length from each carboxylic acid group found
+    for index, match in enumerate(carboxyl_matches):
+        # Get the carbon atom in the carboxylic acid (usually the first in match)
+        carbon_in_carboxyl = match[0]
+        
+        # Identify the longest chain starting from carbon in the carboxylic group
+        chain_length = rdmolops.GetShortestPathLength(mol, carbon_in_carboxyl)
+        
+        if chain_length > max_chain_length:
+            max_chain_length = chain_length
+    
+    # Since carboxylic acid carbon itself is included in the length, reduce by 1
+    max_chain_length -= 1
 
     # Check chain length criteria for very long-chain fatty acids (greater than 22 carbons)
-    if longest_chain_length > 22:
-        return True, f"Longest carbon chain length is {longest_chain_length}, which is greater than 22"
+    if max_chain_length > 22:
+        return True, f"Longest carbon chain length is {max_chain_length}, which is greater than 22"
 
-    return False, f"Longest carbon chain length is {longest_chain_length}, not greater than 22"
+    return False, f"Longest carbon chain length is {max_chain_length}, not greater than 22"
