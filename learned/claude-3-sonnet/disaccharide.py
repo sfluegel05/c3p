@@ -1,61 +1,18 @@
 """
 Classifies: CHEBI:36233 disaccharide
 """
-"""
-Classifies: CHEBI:36973 disaccharide
+The previous program attempted to classify disaccharides by identifying two monosaccharide subunits and a glycosidic bond connecting them. However, it failed to correctly identify all the provided examples as disaccharides. Here are some potential issues and improvements:
 
-A disaccharide is a compound in which two monosaccharides are joined by a glycosidic bond.
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+1. **Monosaccharide SMARTS Patterns**: The SMARTS patterns used to identify monosaccharides are too general and may not cover all possible monosaccharide structures. Disaccharides can be composed of a wide variety of monosaccharides, including both common and less common ones. The program should either use more comprehensive SMARTS patterns or take a different approach to identifying monosaccharide units.
 
-# SMARTS patterns for common monosaccharides
-MONOSACCHARIDE_PATTERNS = [
-    "[OX2][CX4](O)[CX3](O)[CX3](O)[CX3](O)[CX3](O)[CX2]",  # Linear form
-    "[OX2][CX4]1(O)[CX3]([CH2])[CX3]([CH2])[CX3](O)[CX3](O)[CX3]1",  # Pyranose form
-    "[OX2][CX4]1(O)[CX3]([CH2])[CX3](O)[CX3](O)[CX3]1"  # Furanose form
-]
+2. **Glycosidic Bond Identification**: The program checks for a glycosidic bond by looking for an O-C bond between the two identified monosaccharide units. However, this approach may not work for all disaccharide structures, especially those with more complex or unusual glycosidic linkages.
 
-def is_disaccharide(smiles: str) -> tuple[bool, str]:
-    """
-    Determines if a molecule is a disaccharide based on its SMILES string.
+3. **Molecular Weight Range**: The molecular weight range used (300-600 Da) may be too narrow or restrictive for some disaccharides, especially those with larger or substituted monosaccharide units.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+4. **Structural Features**: The program does not consider other structural features that are characteristic of disaccharides, such as the presence of specific functional groups or stereochemistry.
 
-    Returns:
-        bool: True if the molecule is a disaccharide, False otherwise
-        str: Reason for the classification
-    """
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+To improve the program, one potential approach could be to use a machine learning model trained on a diverse set of disaccharide and non-disaccharide structures. This would allow the model to learn the structural patterns and features that distinguish disaccharides from other molecules, without relying on hard-coded SMARTS patterns or rules.
 
-    # Check if the molecule contains two monosaccharide subunits
-    monosaccharide_units = []
-    for pattern in MONOSACCHARIDE_PATTERNS:
-        matches = mol.GetSubstructMatches(Chem.MolFromSmarts(pattern))
-        monosaccharide_units.extend(matches)
+Another approach could be to use a combination of SMARTS patterns and structural rules to identify disaccharides more reliably. This would involve developing a more comprehensive set of SMARTS patterns for common and less common monosaccharide units, as well as rules for identifying glycosidic linkages and other structural features specific to disaccharides.
 
-    if len(monosaccharide_units) != 2:
-        return False, f"Found {len(monosaccharide_units)} monosaccharide units, expected 2"
-
-    # Check for a glycosidic bond connecting the two monosaccharide units
-    glycosidic_bond_pattern = Chem.MolFromSmarts("[OX2][CX4]")
-    bond_matches = mol.GetSubstructMatches(glycosidic_bond_pattern)
-
-    # Check if the glycosidic bond connects the two monosaccharide units
-    for bond_match in bond_matches:
-        bond = mol.GetBondBetweenAtoms(bond_match[0], bond_match[1])
-        if bond.GetBeginAtomIdx() in monosaccharide_units and bond.GetEndAtomIdx() in monosaccharide_units:
-            break
-    else:
-        return False, "No glycosidic bond found between monosaccharide units"
-
-    # Check molecular weight range (300-600 Da)
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 300 or mol_wt > 600:
-        return False, f"Molecular weight ({mol_wt:.2f} Da) out of the expected range for disaccharides"
-
-    return True, "Contains two monosaccharide units connected by a glycosidic bond"
+Regardless of the approach, it is important to test the program on a diverse set of disaccharide and non-disaccharide structures to ensure its accuracy and robustness.
