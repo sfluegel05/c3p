@@ -1,24 +1,74 @@
 """
 Classifies: CHEBI:36683 organochlorine compound
 """
-The previous code has a few issues that lead to the low F1 score:
+"""
+Classifies: CHEBI:33587 organochlorine compound
+An organochlorine compound is a compound containing at least one carbon-chlorine bond.
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem, rdMolDescriptors
 
-1. **False Positives**: The program only checks for the presence of a carbon-chlorine bond, which is a necessary but not sufficient condition for being an organochlorine compound. Some molecules without any carbon-chlorine bonds are being incorrectly classified as organochlorine compounds, leading to false positives.
+def is_organochlorine_compound(smiles: str):
+    """
+    Determines if a molecule is an organochlorine compound based on its SMILES string.
+    An organochlorine compound is a compound containing at least one carbon-chlorine bond.
 
-2. **False Negatives**: The program does not consider other types of chlorine-containing functional groups or substructures that would qualify a molecule as an organochlorine compound. This leads to false negatives where some valid organochlorine compounds are being missed.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Limited Substructure Matching**: The program only checks for direct carbon-chlorine bonds and does not consider more complex substructures or environments where the carbon and chlorine atoms may be separated by other atoms or rings.
-
-To improve the program, we need to address these issues:
-
-1. **Additional Checks**: Introduce additional checks to filter out false positives. For example, we could check for the presence of common organic functional groups or substructures that do not qualify as organochlorine compounds, even if they contain carbon-chlorine bonds.
-
-2. **Expanded Substructure Matching**: Use more sophisticated substructure matching techniques to identify organochlorine compounds with indirect carbon-chlorine connections or complex substructures. This could involve creating SMARTS patterns or using built-in functionality from RDKit.
-
-3. **Separate Functional Group Identification**: Identify common organochlorine functional groups or substructures separately and check for their presence in the molecule. This could involve creating a list of known organochlorine substructures and checking for their occurrence.
-
-4. **Molecular Descriptors**: Explore the use of molecular descriptors or fingerprints that can effectively distinguish organochlorine compounds from non-organochlorine compounds. This could involve training a machine learning model on a labeled dataset of organochlorine and non-organochlorine compounds.
-
-5. **Rule-based Approach**: Develop a set of rules based on expert knowledge or literature to identify organochlorine compounds more accurately. This could involve analyzing the structural features and connectivity patterns of known organochlorine compounds and encoding these rules into the program.
-
-By incorporating these improvements, we can potentially increase the accuracy and robustness of the organochlorine compound classification program.
+    Returns:
+        bool: True if molecule is an organochlorine compound, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Check for presence of carbon-chlorine bonds
+    pattern = Chem.MolFromSmarts("[Cl;X1]-[#6]")
+    has_carbon_chlorine_bond = mol.HasSubstructMatch(pattern)
+    
+    if not has_carbon_chlorine_bond:
+        return False, "No carbon-chlorine bonds found"
+    
+    # Check for common non-organochlorine substructures (to avoid false positives)
+    excluded_patterns = [
+        Chem.MolFromSmarts("[Cl-]"),  # Inorganic chloride anion
+        Chem.MolFromSmarts("[Cl+]"),  # Chlorine cation
+        Chem.MolFromSmarts("[Cl]~[Cl]"),  # Chlorine gas
+        Chem.MolFromSmarts("[Cl]~[#8]~[#8]"),  # Hypochlorite
+        Chem.MolFromSmarts("[Cl]~[#6](=[#8])~[#8]"),  # Chloroformate
+        Chem.MolFromSmarts("[Cl]~[#6](=[#8])[#8]"),  # Chloroacetate
+    ]
+    
+    for pattern in excluded_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return False, "Excluded non-organochlorine substructure found"
+    
+    # Additional checks for common organochlorine functional groups
+    organochlorine_patterns = [
+        Chem.MolFromSmarts("[Cl]-[#6]-[#6]"),  # Alkyl chloride
+        Chem.MolFromSmarts("[Cl]-[#6]-[#6]-[#8]"),  # Chloroalkyl ether
+        Chem.MolFromSmarts("[Cl]-[#6]-[#6]=[#8]"),  # Chloroalkyl ketone
+        Chem.MolFromSmarts("[Cl]-[#6]=[#6]"),  # Vinyl chloride
+        Chem.MolFromSmarts("[Cl]-[#6]~[#6]~[#6]~[#6]~[#6]"),  # Chlorinated cyclic alkane
+        Chem.MolFromSmarts("[Cl]-[#6]~[#6]~[#6]~[#6]~[#6]~[#6]"),  # Chlorinated aromatic ring
+    ]
+    
+    has_organochlorine_group = False
+    for pattern in organochlorine_patterns:
+        if mol.HasSubstructMatch(pattern):
+            has_organochlorine_group = True
+            break
+    
+    if not has_organochlorine_group:
+        return False, "No common organochlorine functional groups found"
+    
+    # Additional check for molecular weight (organochlorines typically > 100 Da)
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 100:
+        return False, "Molecular weight too low for an organochlorine compound"
+    
+    return True, "Molecule contains at least one carbon-chlorine bond and common organochlorine functional groups"
