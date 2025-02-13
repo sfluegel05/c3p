@@ -7,17 +7,18 @@ Definition: Any member of the class of chlorobenzenes carrying three chloro subs
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from collections import defaultdict
 
 def is_trichlorobenzene(smiles: str):
     """
     Determines if a molecule contains a trichlorobenzene substructure
-    (benzene ring with exactly 3 chlorine substituents at any positions).
+    (benzene ring with exactly 3 chlorine substituents).
     
     Args:
         smiles (str): SMILES string of the molecule
         
     Returns:
-        bool: True if molecule contains a trichlorobenzene substructure, False otherwise
+        bool: True if molecule contains trichlorobenzene, False otherwise
         str: Reason for classification
     """
     # Parse SMILES
@@ -27,28 +28,28 @@ def is_trichlorobenzene(smiles: str):
     
     # Find all benzene rings
     benzene_pattern = Chem.MolFromSmarts("c1ccccc1")
-    if not mol.HasSubstructMatch(benzene_pattern):
-        return False, "No benzene ring found"
-    
-    # Get all benzene rings
     benzene_matches = mol.GetSubstructMatches(benzene_pattern)
     
-    # Check each benzene ring for chlorine substituents
-    for ring_atoms in benzene_matches:
+    if not benzene_matches:
+        return False, "No benzene ring found"
+    
+    # For each benzene ring, check if it has exactly 3 chlorines attached
+    for benzene_atoms in benzene_matches:
         chlorine_count = 0
-        ring_atom_set = set(ring_atoms)
+        ring_substituents = defaultdict(int)
         
-        # Count chlorines attached to this ring
-        for ring_atom_idx in ring_atoms:
-            atom = mol.GetAtomWithIdx(ring_atom_idx)
-            # Check neighbors of each carbon in the ring
-            for neighbor in atom.GetNeighbors():
-                # Only count chlorines that aren't part of the ring atoms
-                if neighbor.GetSymbol() == "Cl" and neighbor.GetIdx() not in ring_atom_set:
+        # Check each atom in the benzene ring
+        for ring_atom_idx in benzene_atoms:
+            ring_atom = mol.GetAtomWithIdx(ring_atom_idx)
+            
+            # Look at neighbors of ring atom
+            for neighbor in ring_atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 17:  # Chlorine
                     chlorine_count += 1
+                elif neighbor.GetIdx() not in benzene_atoms:
+                    ring_substituents[neighbor.GetAtomicNum()] += 1
         
-        # If we found exactly 3 chlorines on this ring
         if chlorine_count == 3:
-            return True, "Contains benzene ring with exactly 3 chlorine substituents"
+            return True, "Found benzene ring with exactly 3 chlorine substituents"
             
     return False, "No benzene ring with exactly 3 chlorine substituents found"
