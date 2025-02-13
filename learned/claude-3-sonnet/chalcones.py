@@ -8,7 +8,7 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
-def is_chalcone(smiles: str):
+def is_chalcones(smiles: str):
     """
     Determines if a molecule is a chalcone based on its SMILES string.
     A chalcone is a 1,3-diphenylpropenone (benzylideneacetophenone) or its derivatives
@@ -28,7 +28,7 @@ def is_chalcone(smiles: str):
         return False, "Invalid SMILES string"
     
     # Look for chalcone backbone pattern (Ar-CH=CH-C(=O)-Ar)
-    chalcone_pattern = Chem.MolFromSmarts("[a]C=CC(=O)c1ccccc1")
+    chalcone_pattern = Chem.MolFromSmarts("[a]C=CC(=O)[a]")
     matches = mol.GetSubstructMatches(chalcone_pattern)
     if not matches:
         return False, "No chalcone backbone found"
@@ -60,4 +60,11 @@ def is_chalcone(smiles: str):
     if c_count < 12 or o_count < 1:
         return False, "Insufficient carbon or oxygen atoms for chalcone"
     
-    return True, "Molecule contains the chalcone backbone (Ar-CH=CH-C(=O)-Ar) with aromatic rings"
+    # Check for substituents on aromatic rings
+    substituted_rings = [ring for ring in aromatic_rings
+                         if any(mol.GetAtomWithIdx(idx).GetTotalNumHs() < 1
+                                for idx in ring)]
+    if not substituted_rings:
+        return False, "No substituents found on aromatic rings"
+    
+    return True, "Molecule contains the chalcone backbone (Ar-CH=CH-C(=O)-Ar) with aromatic rings and substituents"
