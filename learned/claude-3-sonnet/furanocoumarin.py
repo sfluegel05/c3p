@@ -9,7 +9,7 @@ The fusion may occur in different ways to give several isomers.
 """
 
 from rdkit import Chem
-from rdkit.Chem import rdFMCS
+from rdkit.Chem import rdMolDescriptors
 
 def is_furanocoumarin(smiles: str):
     """
@@ -28,18 +28,26 @@ def is_furanocoumarin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define furanocoumarin scaffold
-    scaffold = Chem.MolFromSmarts("[o,O]1c2c(c3ccoc3)oc(=O)cc2c1")
+    # Check for the presence of a furan and a coumarin ring
+    furan_pattern = Chem.MolFromSmarts("[o,O]1cccc1")
+    coumarin_pattern = Chem.MolFromSmarts("c1ccc2c(c1)cc(=O)oc2")
+    if not mol.HasSubstructMatch(furan_pattern) or not mol.HasSubstructMatch(coumarin_pattern):
+        return False, "Missing furan or coumarin ring"
 
-    # Check if molecule contains furanocoumarin scaffold
-    if mol.HasSubstructMatch(scaffold):
-        return True, "Contains furanocoumarin scaffold (fused furan and coumarin rings)"
-    else:
-        return False, "Does not contain furanocoumarin scaffold"
+    # Check for the presence of a fused ring system
+    fused_ring_count = rdMolDescriptors.CalcNumAromaticRings(mol) + rdMolDescriptors.CalcNumAliphaticRings(mol) - mol.GetRingInfo().NumRings()
+    if fused_ring_count < 1:
+        return False, "No fused ring system found"
 
-    # Alternative approach using SMARTS pattern:
-    # furanocoumarin_pattern = Chem.MolFromSmarts("[o,O]1c2c(c3ccoc3)oc(=O)cc2c1")
-    # if mol.HasSubstructMatch(furanocoumarin_pattern):
-    #     return True, "Contains furanocoumarin scaffold"
-    # else:
-    #     return False, "Does not contain furanocoumarin scaffold"
+    # Check for the presence of ether or ester groups (common in furanocoumarins)
+    ether_pattern = Chem.MolFromSmarts("[OX2]")
+    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
+    if not (mol.HasSubstructMatch(ether_pattern) or mol.HasSubstructMatch(ester_pattern)):
+        return False, "No ether or ester groups found"
+
+    # Check molecular weight range (typical for furanocoumarins)
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 200 or mol_wt > 600:
+        return False, "Molecular weight outside typical range for furanocoumarins"
+
+    return True, "Contains furanocoumarin scaffold (fused furan and coumarin rings, ether/ester groups, reasonable molecular weight)"
