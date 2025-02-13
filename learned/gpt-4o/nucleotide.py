@@ -21,13 +21,14 @@ def is_nucleotide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns for nucleobases, sugar, and phosphate groups
-    nucleobase_pattern = Chem.MolFromSmarts("n1cnc2c1ncnc2 | N-containing heterocycle")
-    sugar_pattern = Chem.MolFromSmarts("OC[C@H]1O[C@H](O)[C@@H](O)[C@H]1 | Ribose or deoxyribose structure")
-    phosphate_pattern = Chem.MolFromSmarts("OP(O)(O)=O")  # Phosphate group
+    # Define SMARTS patterns for nucleobases (purines and pyrimidines), sugar, and phosphate groups
+    purine_pattern = Chem.MolFromSmarts("c1ncnc2ncnc12")  # Recognize purine rings
+    pyrimidine_pattern = Chem.MolFromSmarts("c1[nH]cnc1")  # Recognize pyrimidine rings
+    sugar_pattern = Chem.MolFromSmarts("OC[C@H]1O[C@@H](O)[C@H]1")  # Ribose or deoxyribose structure
+    phosphate_pattern = Chem.MolFromSmarts("OP(O)([O-])=O")  # Diionic phosphate group
 
     # Check for nucleobase presence
-    if not mol.HasSubstructMatch(nucleobase_pattern):
+    if not (mol.HasSubstructMatch(purine_pattern) or mol.HasSubstructMatch(pyrimidine_pattern)):
         return False, "No nucleobase found"
 
     # Check for sugar structure presence
