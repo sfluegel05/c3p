@@ -1,27 +1,63 @@
 """
 Classifies: CHEBI:84948 11,12-saturated fatty acyl-CoA(4-)
 """
-The previous program attempted to classify molecules as 11,12-saturated fatty acyl-CoA(4-) based on their SMILES strings. However, the program has some issues that led to a poor performance, as evident from the outcomes.
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-Here's an analysis of the issues and suggestions for improvement:
+def is_11_12_saturated_fatty_acyl_CoA_4__(smiles):
+    """
+    Determines if a molecule is an 11,12-saturated fatty acyl-CoA(4-) based on its SMILES string.
+    An 11,12-saturated fatty acyl-CoA(4-) is a fatty acyl-CoA(4-) in which the 11-12 bond of the fatty acyl group is saturated.
 
-1. **Incorrect CoA substructure pattern**: The current CoA substructure pattern is too specific and does not account for different atom orders or stereochemistry. This caused the program to miss several valid CoA structures. A better approach would be to use a more general SMARTS pattern or to check for the presence of the CoA substructure using a different method, such as substructure matching with a pre-defined CoA molecule.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **Insufficient checks for fatty acyl chain**: The program only checks for the presence of a fatty acyl chain but does not verify its length or connectivity to the CoA substructure. It also does not check for the presence of double bonds or other functional groups in the fatty acyl chain. Additional checks should be added to ensure that the fatty acyl chain meets the structural requirements for the target class.
+    Returns:
+        bool: True if the molecule is an 11,12-saturated fatty acyl-CoA(4-), False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-3. **Incorrect position check for saturation**: The program assumes that the 11-12 position in the fatty acyl chain corresponds to atoms 10 and 11 in the SMARTS match. However, this may not be true for all molecules, especially if the fatty acyl chain has double bonds or other substituents. A more robust approach would be to count the number of double bonds and saturated bonds in the fatty acyl chain and check if the 11-12 bond is saturated based on that information.
+    # Check for CoA substructure
+    coa_pattern = Chem.MolFromSmarts('C(C)(C)(CO)C(=O)NCCC(=O)NCCS.CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP([O-])(=O)OP([O-])(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP([O-])([O-])=O)n1cnc2c(N)ncnc12')
+    if not mol.HasSubstructMatch(coa_pattern):
+        return False, "No CoA substructure found"
 
-4. **Lack of stereochemistry checks**: The program does not check for stereochemistry, which is important for correctly identifying the target class. Some of the provided examples have specific stereochemistry at the 3-position of the fatty acyl chain, which should be taken into account.
+    # Find fatty acyl chain
+    acyl_chain = None
+    for atom in mol.GetAtoms():
+        if atom.GetSymbol() == 'C' and atom.GetIsAromatic() and atom.GetDegree() == 3:
+            acyl_chain = atom
+            break
 
-5. **Molecular weight and atom count checks**: The program could benefit from additional checks on molecular weight, atom counts, or other structural features to further refine the classification criteria.
+    if acyl_chain is None:
+        return False, "No fatty acyl chain found"
 
-To improve the program, you could consider the following steps:
+    # Extract fatty acyl chain as a substructure
+    acyl_mol = Chem.PathToSubmol(mol, Chem.FindAtomEnvironmentOfRadiusN(mol, acyl_chain.GetIdx(), 10), atomMap=False)
 
-1. Refine the CoA substructure pattern or use a different approach to identify the CoA substructure.
-2. Add checks to ensure the fatty acyl chain meets the length and connectivity requirements for the target class.
-3. Implement a more robust method to identify the 11-12 position and check for saturation, taking into account double bonds and substituents in the fatty acyl chain.
-4. Include checks for stereochemistry at relevant positions, such as the 3-position of the fatty acyl chain.
-5. Consider adding additional checks on molecular weight, atom counts, or other structural features to further refine the classification criteria.
-6. Test the program thoroughly with the provided examples and additional test cases to ensure accurate classification.
+    # Check for 11-12 saturation
+    bond_orders = [bond.GetBondType() for bond in acyl_mol.GetBonds()]
+    if Chem.BondType.DOUBLE in bond_orders[10:13]:
+        return False, "The 11-12 bond of the fatty acyl group is not saturated"
 
-By addressing these issues and making the necessary improvements, the program's performance in classifying 11,12-saturated fatty acyl-CoA(4-) molecules should significantly improve.
+    # Check for fatty acyl chain length
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(acyl_mol)
+    if n_rotatable < 6:
+        return False, "Fatty acyl chain is too short"
+
+    # Check for presence of double bonds in the fatty acyl chain
+    if Chem.BondType.DOUBLE not in bond_orders:
+        return False, "Fatty acyl chain must have at least one double bond"
+
+    # Check for stereochemistry at the 3-position
+    acyl_atoms = list(acyl_mol.GetAtoms())
+    if acyl_atoms[2].GetChiralTag() != Chem.ChiralType.CHI_TETRAHEDRAL_CCW:
+        return False, "Incorrect stereochemistry at the 3-position of the fatty acyl chain"
+
+    return True, "The molecule is an 11,12-saturated fatty acyl-CoA(4-)"
