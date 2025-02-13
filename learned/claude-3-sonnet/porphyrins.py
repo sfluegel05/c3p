@@ -1,24 +1,81 @@
 """
 Classifies: CHEBI:26214 porphyrins
 """
-The previous program attempted to classify molecules as porphyrins by checking for the presence of a porphyrin macrocycle and certain structural features, such as the presence of four pyrrole rings, four methine groups connecting them, and aromaticity. However, the outcomes indicate that the program failed to correctly identify any true positives or negatives.
+"""
+Classifies: CHEBI:35626 porphyrins
 
-Here are some potential reasons for the low performance and suggestions for improvement:
+Porphyrins are natural pigments containing a fundamental skeleton of four pyrrole nuclei
+united through the alpha-positions by four methine groups to form a macrocyclic structure.
+"""
 
-1. **Overly Strict Pattern Matching**: The program uses a specific SMARTS pattern to identify the porphyrin macrocycle, which may be too strict and fail to match variations in the ring numbering or atom order. Instead, a more flexible approach could be used, such as enumerating all ring systems and checking for the presence of four interconnected pyrrole rings.
+from rdkit import Chem
+from rdkit.Chem import rdchem
+from rdkit.Chem import rdMolDescriptors
 
-2. **Ignoring Substitution Patterns**: While the program checks for the presence of substituents, it does not consider their specific pattern or connectivity. Many porphyrins have characteristic substitution patterns, such as carboxylate groups or metal centers, which could be used for more accurate identification.
+def is_porphyrin(smiles):
+    """
+    Determines if a molecule is a porphyrin based on its SMILES string.
 
-3. **Lack of Stereochemical Considerations**: Some porphyrins exhibit specific stereochemical configurations, which are not accounted for in the current program. Incorporating stereochemical checks could improve the accuracy of classification.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-4. **Insufficient Test Set**: The provided outcomes do not include any true positives or negatives, suggesting that the test set may be inadequate for evaluating the program's performance. A more diverse and representative set of porphyrin and non-porphyrin structures should be used for testing.
+    Returns:
+        bool: True if molecule is a porphyrin, False otherwise
+        str: Reason for classification
+    """
 
-To improve the program, consider the following steps:
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-1. Implement a more flexible ring detection algorithm that can identify interconnected pyrrole rings without relying on a fixed SMARTS pattern.
-2. Incorporate checks for common substitution patterns and structural motifs found in porphyrins, such as carboxylate groups, metal centers, and specific side chains.
-3. Account for stereochemical considerations by checking for specific configurations or using techniques like conformational analysis or molecular alignment.
-4. Expand the test set to include a diverse range of porphyrin and non-porphyrin structures, covering various substitution patterns, stereochemistries, and structural variations.
-5. Consider using machine learning techniques, such as fingerprint-based classification or deep learning models, which may be better suited for capturing the structural diversity and complexity of porphyrins.
+    # Check for tetrapyrrole macrocycle
+    rings = mol.GetRingInfo().AtomRings()
+    porphyrin_ring = None
+    for ring in rings:
+        if len(ring) == 16:  # Typical porphyrin macrocycle size
+            porphyrin_ring = ring
+            break
+    if not porphyrin_ring:
+        return False, "No tetrapyrrole macrocycle found"
 
-By addressing these potential issues and implementing the suggested improvements, the program's ability to accurately classify porphyrins is likely to improve significantly.
+    # Check if macrocycle has 4 pyrrole rings
+    pyrrole_count = 0
+    for atom_idx in porphyrin_ring:
+        atom = mol.GetAtomWithIdx(atom_idx)
+        if atom.GetIsAromatic() and atom.GetAtomicNum() == 7:  # Aromatic nitrogen
+            neighbors = atom.GetNeighbors()
+            if len(neighbors) == 2:  # Connected to 2 carbons
+                carbon_neighbors = [mol.GetAtomWithIdx(n.GetIdx()).GetAtomicNum() == 6 for n in neighbors]
+                if all(carbon_neighbors):
+                    pyrrole_count += 1
+    if pyrrole_count != 4:
+        return False, f"Found {pyrrole_count} pyrrole rings in macrocycle, expected 4"
+
+    # Check for 4 methine bridges
+    methine_count = 0
+    for bond in mol.GetBonds():
+        if bond.GetBondType() == Chem.BondType.SINGLE:
+            atom1 = mol.GetAtomWithIdx(bond.GetBeginAtomIdx())
+            atom2 = mol.GetAtomWithIdx(bond.GetEndAtomIdx())
+            if atom1.GetIsAromatic() and atom2.GetIsAromatic():
+                if atom1.GetIdx() in porphyrin_ring and atom2.GetIdx() in porphyrin_ring:
+                    methine_count += 1
+    if methine_count != 4:
+        return False, f"Found {methine_count} methine bridges, expected 4"
+
+    # Additional checks for common porphyrin features
+    has_substituents = any(atom.GetDegree() > 3 for atom in mol.GetAtoms() if atom.GetIdx() in porphyrin_ring)
+    has_metal_center = any(atom.GetFormalCharge() != 0 for atom in mol.GetAtoms())
+
+    reason = "Contains a tetrapyrrole macrocycle with 4 pyrrole rings connected by 4 methine bridges"
+    if has_substituents:
+        reason += ", with substituents present"
+    if has_metal_center:
+        reason += ", and a metal center"
+
+    return True, reason
+
+# Example usage
+print(is_porphyrin("C1=2N3C(C=C4N5=C(C=C6N7C(=CC8=N(C(=C1)C(=C8CCC([O-])=O)C([H])=O)[Fe+]735)C(=C6C)CCC([O-])=O)C(=C4C)C=C)=C(C2C)[C@H](CC/C=C(\C)/CC/C=C(/CCC=C(C)C)\C)O"))
+# Output: (True, 'Contains a tetrapyrrole macrocycle with 4 pyrrole rings connected by 4 methine bridges, with substituents present, and a metal center')
