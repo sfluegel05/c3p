@@ -1,26 +1,52 @@
 """
 Classifies: CHEBI:23899 icosanoid
 """
-The previous code attempted to classify icosanoids based on some general properties like the number of carbons, presence of oxidation, and unsaturations. However, it failed to accurately capture the structural features that define this class of molecules. Here's an analysis of what went wrong and some suggestions for improvement:
+"""
+Classifies: CHEBI:38108 icosanoid
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
 
-1. **Incorrect carbon count check**: The code checked for 20 or fewer carbons, but some examples like "PE(24:1(15Z)/PGE2)" and "PG(a-25:0/LTE4)" have more than 20 carbons. This check should be removed or adjusted.
+def is_icosanoid(smiles: str):
+    """
+    Determines if a molecule is an icosanoid based on its SMILES string.
+    Icosanoids are signaling molecules derived from oxidation of C20 essential fatty acids
+    like icosapentaenoic acid (EPA), arachidonic acid (AA), and dihomo-gamma-linolenic acid (DGLA).
 
-2. **Inadequate oxidation check**: The presence of a carbonyl or hydroxyl group was used as a proxy for oxidation, but this is too broad. Many non-icosanoid molecules also contain these groups.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Unsaturation check could be improved**: While the check for multiple unsaturations is relevant, it's not specific enough. Other structural features like the positions and configurations of the double bonds should be considered.
+    Returns:
+        bool: True if molecule is an icosanoid, False otherwise
+        str: Reason for classification
+    """
 
-4. **Ring check is not reliable**: Not all icosanoids have rings, and the presence of rings alone is not a strong indicator of this class.
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-To improve the classification, a more specific approach focusing on the key structural features of icosanoids is needed. Here are some suggestions:
+    # Define substructure patterns for icosanoid precursors
+    epa_pattern = Chem.MolFromSmarts("CCCCCCCCC\C=C\C/C=C\C/C=C\CCCC(O)=O")  # EPA
+    aa_pattern = Chem.MolFromSmarts("CCCCCCCCC\C=C\C/C=C\C/C=C\CCCC(O)=O")  # AA
+    dgla_pattern = Chem.MolFromSmarts("CCCCCCCCC(O)\C=C\C/C=C\C/C=C\CCCC(O)=O")  # DGLA
 
-1. **Look for specific substructures**: Icosanoids are derived from C20 essential fatty acids like EPA, AA, and DGLA. These parent compounds have distinct structural patterns that could be used as substructure queries.
+    # Check for precursor substructures
+    if mol.HasSubstructMatch(epa_pattern) or mol.HasSubstructMatch(aa_pattern) or mol.HasSubstructMatch(dgla_pattern):
+        return True, "Contains a substructure derived from EPA, AA, or DGLA"
 
-2. **Consider double bond positions and configurations**: Many icosanoids have specific patterns of double bond positions and configurations inherited from their parent fatty acids. These patterns could be encoded in substructure queries.
+    # Define common icosanoid functional group patterns
+    hydroxy_pattern = Chem.MolFromSmarts("[OX2H]")
+    epoxy_pattern = Chem.MolFromSmarts("[O;X2]1[C;X4][C;X4]1")
+    keto_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[!#8]")
+    ester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2][!#8]")
 
-3. **Identify common functional groups**: Icosanoids often contain functional groups like hydroxy, oxo, epoxy, and ester groups at specific positions. Substructure queries could be designed to capture these groups in the correct structural context.
+    # Check for common functional groups
+    has_hydroxy = mol.HasSubstructMatch(hydroxy_pattern)
+    has_epoxy = mol.HasSubstructMatch(epoxy_pattern)
+    has_keto = mol.HasSubstructMatch(keto_pattern)
+    has_ester = mol.HasSubstructMatch(ester_pattern)
 
-4. **Combine multiple substructure queries**: Since icosanoids can have diverse structures, a combination of multiple substructure queries might be necessary to cover the entire class.
+    if has_hydroxy or has_epoxy or has_keto or has_ester:
+        return True, "Contains common icosanoid functional groups"
 
-5. **Use machine learning techniques**: If substructure-based approaches are not sufficient, machine learning techniques like fingerprint-based classification or deep learning could be explored, provided sufficient labeled training data is available.
-
-By focusing on the specific structural features that define icosanoids, rather than relying on general properties, the classification accuracy could be improved. However, it's important to note that this class of molecules might have exceptions or borderline cases that could be challenging to classify accurately.
+    return False, "No evidence of being an icosanoid"
