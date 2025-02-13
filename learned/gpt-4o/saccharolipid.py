@@ -2,6 +2,7 @@
 Classifies: CHEBI:166828 saccharolipid
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_saccharolipid(smiles: str):
     """
@@ -21,41 +22,28 @@ def is_saccharolipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define patterns for diverse carbohydrate moieties
-    carbohydrate_patterns = [
-        Chem.MolFromSmarts("C1OC(O)C(O)C(O)C(O)C1"),  # Hexopyranose
-        Chem.MolFromSmarts("C1OC(O)C(O)C(O)C1"),      # Pentopyranose
-        Chem.MolFromSmarts("[CX4](O)[CX4](O)[CX4](O)"),# Linear sugar-like
-        Chem.MolFromSmarts("OC[C@H](O)[C@H](O)C=O"),   # Open sugars
-    ]
+    # Define patterns to search for: carbohydrate (sugar) moiety and lipid (fatty acid) chains
+    
+    # A simple carbohydrate pattern: a cyclic structure with multiple oxygens
+    carbohydrate_pattern = Chem.MolFromSmarts("C1(O)C(O)C(O)C(O)C(O)C1")  # generic hexose-like structure
+    if not mol.HasSubstructMatch(carbohydrate_pattern):
+        return False, "No recognizable carbohydrate moiety found"
 
-    # Check for the presence of carbohydrate moieties
-    has_carbohydrate = any(mol.HasSubstructMatch(pat) for pat in carbohydrate_patterns)
-    if not has_carbohydrate:
-        return False, "No recognized carbohydrate moiety pattern found"
+    # A simple fatty acid or lipid chain: long hydrocarbon chain possibly terminating in an ester or amide linkage
+    lipid_chain_pattern = Chem.MolFromSmarts("C(=O)[O,N][C;R0][C;R0][C;R0][C;R0][C;R0][C;R0]")  # Fatty acid ester/amide
+    if not mol.HasSubstructMatch(lipid_chain_pattern):
+        return False, "No recognizable lipid/fatty acid component found"
 
-    # Define patterns for lipid moieties
-    lipid_patterns = [
-        Chem.MolFromSmarts("C(=O)[O,N][CX4][CX4]"),    # Fatty acid ester/amide
-        Chem.MolFromSmarts("C(=O)[O,N]C[C;R0]{6,}"),   # Long chain ester/amide
-        Chem.MolFromSmarts("C(=O)O[C;R0]{5,}"),        # Ester linkage
-    ]
+    # Check if both carbohydrate and lipid are part of the same molecule
+    carb_matches = mol.GetSubstructMatches(carbohydrate_pattern)
+    lipid_matches = mol.GetSubstructMatches(lipid_chain_pattern)
+    
+    # A simplistic check assuming that both matches exist and bonds are present between them
+    for carb_match in carb_matches:
+        for lipid_match in lipid_matches:
+            if any(bond.IsInRing() for bond in mol.GetBondsBetweenAtoms(carb_match[0], lipid_match[0])):
+                return True, "Contains both carbohydrate and lipid components correctly linked"
+    
+    return False, "Carbohydrate and lipid components not sufficiently linked in structure"
 
-    # Check for the presence of lipid moieties
-    has_lipid = any(mol.HasSubstructMatch(pat) for pat in lipid_patterns)
-    if not has_lipid:
-        return False, "No recognized lipid moiety pattern found"
-
-    # Verify direct linkage between carbohydrate and lipid moieties
-    for carb_pat in carbohydrate_patterns:
-        carb_matches = mol.GetSubstructMatches(carb_pat)
-        for lipid_pat in lipid_patterns:
-            lipid_matches = mol.GetSubstructMatches(lipid_pat)
-            for carb_match in carb_matches:
-                for lipid_match in lipid_matches:
-                    if set(carb_match).intersection(lipid_match):
-                        return True, "Carbohydrate and lipid components are chemically linked"
-
-    return False, "Recognized moieties were not found to be directly linked"
-
-# Note: Classification accuracy might still be improved with more specific patterns for the distinct variants of saccharolipids.
+# This is a rough implementation for model classification. The patterns and linkages need refinement for robust applications.
