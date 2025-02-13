@@ -25,56 +25,44 @@ def is_N_acetyl_amino_acid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for carboxylic acid group (including deprotonated form)
-    carboxylic_acid = Chem.MolFromSmarts('[CX3](=O)[OX2H1,OX1-]')
+    carboxylic_acid = Chem.MolFromSmarts('C(=O)[OH,O-]')
     if not mol.HasSubstructMatch(carboxylic_acid):
         return False, "No carboxylic acid group found"
 
     # Look for N-acetyl group (CH3-C(=O)-N)
-    n_acetyl = Chem.MolFromSmarts('[CH3][CX3](=O)[NX3]')
+    n_acetyl = Chem.MolFromSmarts('[CH3]C(=O)[NH0]')  # NH0 means nitrogen with no hydrogens
     if not mol.HasSubstructMatch(n_acetyl):
         return False, "No N-acetyl group found"
 
-    # Look for amino acid core with N-acetyl
-    # More flexible pattern that allows different substitutions on alpha carbon
-    amino_acid_core = Chem.MolFromSmarts('[CH3][CX3](=O)[NX3][CX4][CX3](=O)[OX2H1,OX1-]')
-    if not mol.HasSubstructMatch(amino_acid_core):
-        return False, "No N-acetylated amino acid core structure found"
-
-    # Additional check for cyclic amino acids (like proline derivatives)
-    cyclic_amino_acid = Chem.MolFromSmarts('[CH3]C(=O)N1[CH2,CH]CC[CH2,CH][C@H]1C(=O)[OH]')
+    # More general pattern for N-acetyl amino acid core
+    # Matches: CH3-C(=O)-N-C-C(=O)O where the alpha carbon can have any substitution
+    core_pattern = Chem.MolFromSmarts('[CH3]C(=O)[NH0]C([*,H])[*]C(=O)[OH,O-]')
     
-    # Count number of acetyl groups
-    n_acetyl_matches = len(mol.GetSubstructMatches(n_acetyl))
-    if n_acetyl_matches > 2:
-        return False, f"Too many N-acetyl groups ({n_acetyl_matches})"
+    # Alternative pattern for cyclic amino acids (like proline derivatives)
+    cyclic_pattern = Chem.MolFromSmarts('[CH3]C(=O)N1[CH2,CH]CC[CH2,CH]C1C(=O)[OH,O-]')
+    
+    if not (mol.HasSubstructMatch(core_pattern) or mol.HasSubstructMatch(cyclic_pattern)):
+        return False, "No N-acetyl amino acid core structure found"
 
-    # Verify connectivity: N-acetyl must be on amino acid nitrogen
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 7:  # Nitrogen
-            neighbors = atom.GetNeighbors()
-            acetyl_c = False
-            alpha_c = False
-            for neighbor in neighbors:
-                # Check if neighbor is carbonyl carbon of acetyl
-                if neighbor.GetAtomicNum() == 6:
-                    for n2 in neighbor.GetNeighbors():
-                        if n2.GetAtomicNum() == 8 and n2.GetDegree() == 1:  # C=O
-                            for n3 in neighbor.GetNeighbors():
-                                if n3.GetAtomicNum() == 6 and n3.GetDegree() == 4:  # CH3
-                                    acetyl_c = True
-                # Check if neighbor is alpha carbon (connected to COOH)
-                if neighbor.GetAtomicNum() == 6:
-                    for n2 in neighbor.GetNeighbors():
-                        if n2.GetAtomicNum() == 6:
-                            for n3 in n2.GetNeighbors():
-                                if n3.GetAtomicNum() == 8:
-                                    alpha_c = True
-
-            if acetyl_c and alpha_c:
-                return True, "Contains N-acetyl group attached to amino acid core"
-            
-    # Check for cyclic amino acids separately
-    if mol.HasSubstructMatch(cyclic_amino_acid):
-        return True, "Contains N-acetyl group attached to cyclic amino acid core"
-
-    return False, "Structure does not match N-acetyl-amino acid pattern"
+    # Count carbons and nitrogens to avoid false positives
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
+    
+    if c_count < 4:  # Minimum carbons needed (CH3CO-NH-CH-COOH)
+        return False, "Too few carbons for N-acetyl amino acid"
+    
+    # Verify that the N-acetyl group is connected to the amino acid part
+    # by checking if there's a path between the N-acetyl nitrogen and the carboxylic acid
+    n_acetyl_matches = mol.GetSubstructMatches(n_acetyl)
+    carboxyl_matches = mol.GetSubstructMatches(carboxylic_acid)
+    
+    for n_match in n_acetyl_matches:
+        n_idx = n_match[2]  # Index of nitrogen atom in N-acetyl match
+        for c_match in carboxyl_matches:
+            c_idx = c_match[0]  # Index of carbon atom in carboxyl match
+            # Check if there's a path of appropriate length between N and COOH
+            path = Chem.GetShortestPath(mol, n_idx, c_idx)
+            if path and 2 <= len(path) <= 6:  # Path length should be reasonable
+                return True, "Contains N-acetyl group properly connected to amino acid core"
+                
+    return False, "N-acetyl group not properly connected to amino acid core"
