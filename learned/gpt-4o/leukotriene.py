@@ -2,7 +2,6 @@
 Classifies: CHEBI:25029 leukotriene
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_leukotriene(smiles: str):
     """
@@ -22,38 +21,38 @@ def is_leukotriene(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check if the molecule has a minimum of 20 carbon atoms
+    # Check if the molecule has at least 20 carbon atoms
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if carbon_count < 20:
         return False, "Molecule does not have adequate icosanoid carbon chain length"
     
-    # Check for the presence of four double bonds
+    # Check for the presence of at least four double bonds
     double_bond_pattern = Chem.MolFromSmarts("C=C")
     double_bonds = mol.GetSubstructMatches(double_bond_pattern)
     if len(double_bonds) < 4:
         return False, f"Found {len(double_bonds)} double bonds, need at least 4"
     
-    # Verify three consecutive conjugated double bonds (C=C-C=C-C=C)
-    conjugated_bonds_pattern = Chem.MolFromSmarts("C=C-C=C-C=C")
-    if not mol.HasSubstructMatch(conjugated_bonds_pattern):
-        return False, "No conjugated double bonds pattern found"
+    # Verify at least one set of three consecutive conjugated double bonds (conjugated triene)
+    conjugated_triene_pattern = Chem.MolFromSmarts("C=C-C=C-C=C")
+    if not mol.HasSubstructMatch(conjugated_triene_pattern):
+        return False, "No conjugated triene pattern found"
     
     # Check for functional groups: hydroxyl groups
     hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
     hydroxyl_groups = mol.GetSubstructMatches(hydroxyl_pattern)
     
-    # Assembly of the classification reason
+    # Construct the classification reason
     classification_reasons = [
         "Has adequate carbon chain length",
-        "Has 4 double bonds, including conjugation pattern" if mol.HasSubstructMatch(conjugated_bonds_pattern) else "Double bond conjugation pattern missing",
-        f"Contains {len(hydroxyl_groups)} hydroxyl groups" if hydroxyl_groups else "No hydroxyl groups detected"
+        f"Has {len(double_bonds)} double bonds, including a conjugated triene" if mol.HasSubstructMatch(conjugated_triene_pattern) else "Double bond conjugation pattern missing",
+        f"Contains {len(hydroxyl_groups)} hydroxyl group(s)" if hydroxyl_groups else "No hydroxyl groups detected"
     ]
     
     reason = "; ".join(filter(None, classification_reasons))
     
-    # Returning the classification and reason
+    # Return the classification and reason
     return True, reason
 
-# Testing example
+# Example test
 # result, reason = is_leukotriene("CCCCCCCCC/C=C/C=C/C=C/C=C/CCCC(=O)O")
 # print(result, reason)
