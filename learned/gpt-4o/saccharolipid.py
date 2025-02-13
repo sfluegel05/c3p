@@ -22,28 +22,27 @@ def is_saccharolipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define patterns to search for: carbohydrate (sugar) moiety and lipid (fatty acid) chains
-    
-    # A simple carbohydrate pattern: a cyclic structure with multiple oxygens
-    carbohydrate_pattern = Chem.MolFromSmarts("C1(O)C(O)C(O)C(O)C(O)C1")  # generic hexose-like structure
+    # Define a pattern for a carbohydrate moiety: a cyclic structure with oxygen atoms (e.g., monosaccharides)
+    carbohydrate_pattern = Chem.MolFromSmarts("C1OC(O)C(O)C(O)C(O)C1")  # Hexopyranose ring pattern
     if not mol.HasSubstructMatch(carbohydrate_pattern):
-        return False, "No recognizable carbohydrate moiety found"
+        return False, "No carbohydrate moiety pattern found"
 
-    # A simple fatty acid or lipid chain: long hydrocarbon chain possibly terminating in an ester or amide linkage
+    # Define a pattern for a lipid moiety: hydrocarbon chain with an ester/amide linkage
     lipid_chain_pattern = Chem.MolFromSmarts("C(=O)[O,N][C;R0][C;R0][C;R0][C;R0][C;R0][C;R0]")  # Fatty acid ester/amide
     if not mol.HasSubstructMatch(lipid_chain_pattern):
-        return False, "No recognizable lipid/fatty acid component found"
+        return False, "No lipid moiety pattern found"
 
-    # Check if both carbohydrate and lipid are part of the same molecule
+    # Check for any plausible linkage between the carbohydrate and lipid components
     carb_matches = mol.GetSubstructMatches(carbohydrate_pattern)
     lipid_matches = mol.GetSubstructMatches(lipid_chain_pattern)
-    
-    # A simplistic check assuming that both matches exist and bonds are present between them
+
+    # A simplistic connectivity check assuming spatial proximity and shared structure linkages for saccharolipids
     for carb_match in carb_matches:
         for lipid_match in lipid_matches:
-            if any(bond.IsInRing() for bond in mol.GetBondsBetweenAtoms(carb_match[0], lipid_match[0])):
-                return True, "Contains both carbohydrate and lipid components correctly linked"
-    
-    return False, "Carbohydrate and lipid components not sufficiently linked in structure"
+            # Simplifies to assume connectedness without explicit bond data, as rdkit lacks direct linkage detection between substructures
+            if set(carb_match).intersection(lipid_match):
+                return True, "Contains both carbohydrate and lipid components directly linked"
 
-# This is a rough implementation for model classification. The patterns and linkages need refinement for robust applications.
+    return False, "Carbohydrate and lipid components found but not linked within the molecule"
+
+# Note: Adjust the SMARTS patterns and connectivity logic as needed since chemistry varies widely among saccharolipids.
