@@ -6,6 +6,7 @@ Classifies: CHEBI:51165 ultra-long-chain fatty acid
 An ultra-long-chain fatty acid is any very long-chain fatty acid which has a chain length greater than C27.
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_ultra_long_chain_fatty_acid(smiles: str):
     """
@@ -24,6 +25,9 @@ def is_ultra_long_chain_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
+    # Sanitize molecule
+    AllChem.MMFFSanitizeMolecule(mol)
+    
     # Check for carboxylic acid group
     carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
@@ -40,15 +44,15 @@ def is_ultra_long_chain_fatty_acid(smiles: str):
     if chain_length <= 27:
         return False, f"Carbon chain length is only {chain_length}, need greater than 27"
     
-    # Additional checks (optional)
-    # Check for the absence of rings
-    if mol.GetRingInfo().NumRings() > 0:
-        return False, "Contains ring structures, expected an acyclic compound"
-    
     # Check for the presence of only single bonds in the carbon chain
-    # ...
+    for bond in mol.GetBonds():
+        if bond.GetBondType() != Chem.BondType.SINGLE:
+            return False, "Carbon chain contains multiple bonds"
     
     # Check for the absence of additional functional groups
-    # ...
+    allowed_atoms = [6, 8]  # Carbon and oxygen
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() not in allowed_atoms:
+            return False, "Contains additional functional groups besides the carboxylic acid"
     
-    return True, f"Contains a carbon chain of length {chain_length} with a carboxylic acid group"
+    return True, f"Contains a single, unbranched carbon chain of length {chain_length} with a carboxylic acid group"
