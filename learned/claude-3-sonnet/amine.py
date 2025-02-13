@@ -7,7 +7,7 @@ Classifies: CHEBI:33838 amine
 An amine is a compound formally derived from ammonia by replacing one, two or three hydrogen atoms by hydrocarbyl groups.
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem, Descriptors
+from rdkit.Chem import AllChem
 
 def is_amine(smiles: str):
     """
@@ -32,24 +32,11 @@ def is_amine(smiles: str):
     if n_nitrogen == 0:
         return False, "No nitrogen atoms found"
 
-    # Check for at least one N-C bond (nitrogen bound to carbon)
-    n_nc_bonds = sum(1 for bond in mol.GetBonds() if bond.GetBeginAtom().GetAtomicNum() == 7 and bond.GetEndAtom().GetAtomicNum() == 6)
+    # Check for at least one N-C bond (nitrogen bound to carbon and not part of a ring)
+    n_nc_bonds = sum(1 for bond in mol.GetBonds()
+                     if bond.GetBeginAtom().GetAtomicNum() == 7 and bond.GetEndAtom().GetAtomicNum() == 6
+                     and not bond.GetBeginAtom().IsInRing() and not bond.GetEndAtom().IsInRing())
     if n_nc_bonds == 0:
-        return False, "No N-C bonds found"
+        return False, "No N-C bonds found (nitrogen not part of a ring)"
 
-    # Check for at least one N-H bond (nitrogen bound to hydrogen)
-    n_nh_bonds = sum(1 for bond in mol.GetBonds() if bond.GetBeginAtom().GetAtomicNum() == 7 and bond.GetEndAtom().GetAtomicNum() == 1)
-    if n_nh_bonds == 0:
-        return False, "No N-H bonds found"
-
-    # Check molecular weight - amines typically <300 Da
-    mol_wt = Descriptors.MolWt(mol)
-    if mol_wt > 300:
-        return False, "Molecular weight too high for amine"
-
-    # Check for hydrogen deficiency - amines should be relatively saturated
-    h_deficiency = mol.GetNumHeavyAtoms() - Descriptors.HeavyAtomCount(mol) + 1
-    if h_deficiency > 4:
-        return False, "Too many rings or double bonds for amine"
-
-    return True, "Contains at least one nitrogen atom with N-C and N-H bonds"
+    return True, "Contains at least one nitrogen atom with N-C bond (not part of a ring)"
