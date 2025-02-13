@@ -21,15 +21,15 @@ def is_O_acyl_L_carnitine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for L-carnitine structure with ester linkage
-    # The ester pattern and L-carnitine configuration pattern ([C@H] or [C@@H]) are demonstrated
-    ester_pattern = Chem.MolFromSmarts("O[C@H](CC([O-])=O)C[N+](C)(C)C")
-    if mol.HasSubstructMatch(ester_pattern):
-        return True, "Matches O-acyl-L-carnitine pattern"
+    # Define an improved SMARTS pattern for L-carnitine esters: Check for specific acyl linkage and L-carnitine stereochemistry
+    acyl_carnitine_pattern = Chem.MolFromSmarts("C(=O)O[C@H](CC(=O)[O-])C[N+](C)(C)C")
+    # Inverse pattern for cases with 'C@@H' which is L-carnitine
+    inverse_acyl_carnitine_pattern = Chem.MolFromSmarts("C(=O)O[C@@H](CC(=O)[O-])C[N+](C)(C)C")
     
-    # Invert configuration if '[C@@H]' pattern is used
-    ester_pattern_inverse = Chem.MolFromSmarts("O[C@@H](CC([O-])=O)C[N+](C)(C)C")
-    if mol.HasSubstructMatch(ester_pattern_inverse):
-        return True, "Matches O-acyl-L-carnitine pattern with inverse stereochemistry"
-
+    # Check for presence of either configuration
+    if mol.HasSubstructMatch(acyl_carnitine_pattern):
+        return True, "Correctly matches O-acyl-L-carnitine pattern"
+    if mol.HasSubstructMatch(inverse_acyl_carnitine_pattern):
+        return True, "Correctly matches O-acyl-L-carnitine pattern with inverse stereochemistry"
+    
     return False, "Does not match O-acyl-L-carnitine pattern"
