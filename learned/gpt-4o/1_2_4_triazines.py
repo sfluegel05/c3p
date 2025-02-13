@@ -22,14 +22,11 @@ def is_1_2_4_triazines(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define comprehensive SMARTS patterns for 1,2,4-triazine
+    # Define optimized SMARTS patterns for 1,2,4-triazine
     triazine_patterns = [
-        Chem.MolFromSmarts("c1nncnc1"),  # Fully aromatic
-        Chem.MolFromSmarts("n1cnnc1"),   # Less aromatic
-        Chem.MolFromSmarts("n1cn[nH]c1"),  # Hydrogenated variations
-        Chem.MolFromSmarts("n1nc[nH]c1"),  # More hydrogenated forms
-        Chem.MolFromSmarts("n1cn[cH]n1"),  # Partially oxidized
-        Chem.MolFromSmarts("c1ncn[nH]c1")  # Errors in common triazine detection
+        Chem.MolFromSmarts("c1nconcn1"),  # Explicit reference to alternating nitrogen pattern
+        Chem.MolFromSmarts("n1cnnnc1"),   # Allow nitrogen on positions 1, 2, 4
+        Chem.MolFromSmarts("n1cnccn1"),   # Alternative positions, for potential stereo exceptions
     ]
 
     # Check for the presence of any defined 1,2,4-triazine pattern
