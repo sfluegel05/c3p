@@ -24,25 +24,24 @@ def is_phosphatidic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define glycerol backbone with two esterified hydroxyls and one phosphate ester
-    glycerol_pattern = Chem.MolFromSmarts("OCC(O*)CO*)")
-    phosphoric_acid_pattern = Chem.MolFromSmarts("P(=O)(O)(O)O")
-    fatty_acid_ester_pattern = Chem.MolFromSmarts("C(=O)O")
-    
-    # Match glycerol backbone
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone found"
+    # Define glycerol backbone pattern with ester linkages
+    glycerol_pattern = Chem.MolFromSmarts("OCC(O[CX3](=O)O)CO[CX3](=O)O")
+    # Define phosphoric acid ester pattern
+    phosphoester_pattern = Chem.MolFromSmarts("COP(O)(O)=O")
+    # Define fatty acid ester pattern
+    ester_pattern = Chem.MolFromSmarts("C(=O)O")
 
-    # Match phosphoric acid group
-    if not mol.HasSubstructMatch(phosphoric_acid_pattern):
-        return False, "No phosphoric acid group found"
+    # Match glycerol backbone including the phosphoric acid ester
+    if not mol.HasSubstructMatch(Chem.MolFromSmarts("OCC(*O)CO*")):
+        return False, "No glycerol backbone pattern with ester linkages found"
+
+    # Match phosphoric acid ester group
+    if not mol.HasSubstructMatch(phosphoester_pattern):
+        return False, "No phosphoric acid ester group found"
 
     # Match two esterified fatty acid groups
-    ester_matches = list(mol.GetSubstructMatches(fatty_acid_ester_pattern))
+    ester_matches = list(mol.GetSubstructMatches(ester_pattern))
     if len(ester_matches) < 2:
         return False, "Less than 2 fatty acid ester groups found"
-
-    # Check the chirality (if necessary in some cases, based on RS configuration)
-    # This can be added as needed using RDKit stereochemistry features.
 
     return True, "Contains glycerol backbone with 2 fatty acid esters and a phosphoric acid ester"
