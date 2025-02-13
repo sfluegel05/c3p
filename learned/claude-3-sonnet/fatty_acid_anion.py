@@ -33,14 +33,14 @@ def is_fatty_acid_anion(smiles: str):
         return False, "No carboxylate group found"
 
     # Look for long carbon chain attached to the carboxylate
-    carbon_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    carbon_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
     carbon_chain_matches = mol.GetSubstructMatches(carbon_chain_pattern)
     if len(carbon_chain_matches) < 1:
         return False, "Missing carbon chain attached to carboxylate"
 
     # Count rotatable bonds to verify long chain
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 5:
+    if n_rotatable < 8:
         return False, "Carbon chain too short to be a fatty acid"
 
     # Check molecular weight - fatty acids typically >100 Da
@@ -54,7 +54,7 @@ def is_fatty_acid_anion(smiles: str):
     
     if c_count < 8:
         return False, "Too few carbons for fatty acid anion"
-    if o_count != 2:
-        return False, "Must have exactly 2 oxygens (carboxylate group)"
+    if o_count < 2:
+        return False, "Must have at least 2 oxygens (carboxylate group and other functionality)"
 
     return True, "Contains carboxylate group (-COO-) attached to a long carbon chain"
