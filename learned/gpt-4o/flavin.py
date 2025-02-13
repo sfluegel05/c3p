@@ -21,24 +21,16 @@ def is_flavin(smiles: str):
         return False, "Invalid SMILES string"
     
     # Define SMARTS pattern for dimethylisoalloxazine core
-    pteridine_pattern = Chem.MolFromSmarts("c1cc2ncnc-3[nH]c(=O)n(c3=O)c2cc1")
+    # This pattern should ideally identify the heterocyclic core correctly.
+    core_pattern = Chem.MolFromSmarts("Cc1cc2nc3c(nc(=O)[nH]c3=O)n(C)c2cc1C")
     
-    # Check pteridine core
-    if not mol.HasSubstructMatch(pteridine_pattern):
-        return False, "Core pteridine structure missing"
+    # Check for core structure
+    if not mol.HasSubstructMatch(core_pattern):
+        return False, "Core flavin structure (dimethylisoalloxazine) missing"
     
-    # Define SMARTS pattern to identify dimethyl groups at specific positions
-    dimethyl_pattern = Chem.MolFromSmarts("c1c([CH3])c([CH3])cc1")
+    # Check for substituent at 10th position (attached to the N atom in the core)
+    substituent_pattern = Chem.MolFromSmarts("Cc1cc2nc3[nX3]c(=O)n(c3=O)c2cc1C")
+    if not mol.HasSubstructMatch(substituent_pattern):
+        return False, "No substituent detected at the 10th position"
     
-    # Check for dimethyl positions
-    if not mol.HasSubstructMatch(dimethyl_pattern):
-        return False, "Required dimethyl groups missing"
-    
-    # Define a pattern for substitution at the 10th position
-    ten_position_pattern = Chem.MolFromSmarts("n1cnc2c1nc(=O)[nH]c2=O")
-    
-    # Check substitution at the 10th position
-    if not mol.HasSubstructMatch(ten_position_pattern):
-        return False, "No substitution at the 10th position"
-    
-    return True, "Valid flavin structure with dimethylisoalloxazine core and 10th position substitution"
+    return True, "Valid flavin structure detected"
