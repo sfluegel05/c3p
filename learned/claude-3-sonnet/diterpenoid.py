@@ -1,55 +1,26 @@
 """
 Classifies: CHEBI:23849 diterpenoid
 """
-"""
-Classifies: CHEBI:37242 diterpenoid
-"""
-from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+Based on the outcomes, the previous program has several issues that need to be addressed:
 
-def is_diterpenoid(smiles: str):
-    """
-    Determines if a molecule is a diterpenoid based on its SMILES string.
-    A diterpenoid is any terpenoid derived from a diterpene (C20 skeleton),
-    which may be rearranged or modified by the removal of methyl groups.
+1. **False Positives**: The program incorrectly classified several molecules as diterpenoids, even though they belong to different classes like steroids or flavonoids. This indicates that the structural constraints implemented in the program are not specific enough to differentiate diterpenoids from other classes of compounds.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. **False Negatives**: The program missed some valid diterpenoid structures, suggesting that the constraints are too strict or that additional criteria need to be considered.
 
-    Returns:
-        bool: True if molecule is a diterpenoid, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+3. **Molecular Weight Range**: The molecular weight range used in the program (250-400 Da) may be too narrow or unsuitable for some diterpenoids. Some of the false negatives have molecular weights outside this range.
 
-    # Check for C20 skeleton
-    num_atoms = mol.GetNumAtoms()
-    if num_atoms < 20:
-        return False, "Molecule has less than 20 atoms, cannot be a diterpenoid"
+4. **Structural Diversity**: Diterpenoids can exhibit a wide range of structural diversity, including rearranged skeletons, modifications, and varying ring systems. The program's constraints may not capture this diversity effectively.
 
-    # Check for presence of only C, H, and O atoms
-    allowed_atoms = {6, 1, 8}  # C, H, O
-    atoms = set(atom.GetAtomicNum() for atom in mol.GetAtoms())
-    if not atoms.issubset(allowed_atoms):
-        return False, "Molecule contains atoms other than C, H, O"
+To improve the program, the following steps could be taken:
 
-    # Count rings
-    num_rings = mol.GetRingInfo().NumRings()
-    if num_rings < 4:
-        return False, "Diterpenoids typically have 4 or more rings"
+1. **Expand the Training Set**: Gather a more comprehensive set of diterpenoid and non-diterpenoid structures to better understand the structural features that distinguish diterpenoids from other classes.
 
-    # Count rotatable bonds
-    num_rotatable_bonds = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if num_rotatable_bonds < 2:
-        return False, "Diterpenoids typically have 2 or more rotatable bonds"
+2. **Refine the Structural Constraints**: Based on the expanded training set, refine the structural constraints and criteria used to identify diterpenoids. This may involve adjusting the molecular weight range, considering additional structural patterns or substructures, and incorporating more flexible rules to account for structural diversity.
 
-    # Check molecular weight
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 250 or mol_wt > 400:
-        return False, "Molecular weight outside typical range for diterpenoids"
+3. **Incorporate Machine Learning**: Instead of relying solely on hard-coded rules, consider using machine learning techniques to learn the structural features that characterize diterpenoids from the training set. This could involve training a classifier or using techniques like one-class classification or anomaly detection.
 
-    return True, "Molecule meets structural requirements for a diterpenoid"
+4. **Ensemble Methods**: Combine the rule-based approach with machine learning techniques using ensemble methods. This could involve using the rule-based approach as a pre-filter and then applying a machine learning model for final classification, or vice versa.
+
+5. **Iterative Refinement**: Continuously refine the program by analyzing misclassifications, identifying the reasons for errors, and adjusting the structural constraints or machine learning models accordingly.
+
+By addressing these points, the program's accuracy in classifying diterpenoids should improve. However, it's important to note that achieving high accuracy may require significant effort, especially given the structural diversity of diterpenoids and the potential overlap with other classes of compounds.
