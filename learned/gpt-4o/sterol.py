@@ -25,21 +25,21 @@ def is_sterol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Sterol core fingerprint (adjusted to match sterol carbon frameworks related to cholestan)
-    # A simple re-check on Cholesterol as a baseline
-    cholesterol_smarts = "C[C@H](O)C1CC[C@]2(C)C3CCC4C(C)(CCC4C3CCC2C1)C"
-    cholesterol_pattern = Chem.MolFromSmarts(cholesterol_smarts)
-    if not mol.HasSubstructMatch(cholesterol_pattern):
+    # Broadened sterol core pattern (includes cholestane framework and flexibility for side chains)
+    sterol_core_smarts = "[#6]1([#6][#6][#6]2)[#6][#6][#6]3[#6](C)([#6][#6][#6]4)[#6]([OH])[#6]4[#6][#6][#6]3[#6]2C1"
+    sterol_core_pattern = Chem.MolFromSmarts(sterol_core_smarts)
+    if not mol.HasSubstructMatch(sterol_core_pattern):
         return False, "Does not contain a sterol core structure"
 
-    # Validate the presence of the 3-hydroxy group (must be explicitly on 3rd carbon of the backbone)
-    # Ensure hydroxyl is attached in cholesterol's descriptive landmark
-    hydroxy_pattern = Chem.MolFromSmarts("C[C@H](O)[C@H]")
+    # Validate presence of a 3-hydroxy group
+    # The hydroxy group should appear at a specific position related to the sterol core
+    hydroxy_pattern = Chem.MolFromSmarts("[C@H](O)[#6]")
     if not mol.HasSubstructMatch(hydroxy_pattern):
-        return False, "Does not have a specific 3-hydroxy group"
+        return False, "Does not have a 3-hydroxy group"
 
-    # Allow for variations in C31 or related extensions but must maintain sterol's signature shape
-    if len(mol.GetSubstructMatches(Chem.MolFromSmarts("C[C@H](O)C"))):
-        return True, "Recognized as a sterol-related framework with a 3-hydroxy group"
+    # Check alignment with a broader sterol skeleton potentially including additional chains
+    additional_chain_smarts = "[C@H][C]"
+    if len(mol.GetSubstructMatches(Chem.MolFromSmarts(additional_chain_smarts))) < 3:
+        return True, "Recognized as a sterol with 3-hydroxy group and adaptable skeleton"
 
     return False, "Failed to match sterol's unique skeletal and functional group requirements"
