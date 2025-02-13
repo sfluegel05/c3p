@@ -2,13 +2,11 @@
 Classifies: CHEBI:25676 oligopeptide
 """
 """
-Classifies: CHEBI:16670 oligopeptide
+Classifies: CHEBI:36322 oligopeptide
 """
-
 from rdkit import Chem
-from rdkit.Chem import Descriptors
-
-AA_CODES = "Ala Arg Asn Asp Cys Gln Glu Gly His Ile Leu Lys Met Phe Pro Ser Thr Trp Tyr Val".split()
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_oligopeptide(smiles: str):
     """
@@ -27,29 +25,33 @@ def is_oligopeptide(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Get molecular weight
-    mol_wt = Descriptors.ExactMolWt(mol)
-
+    
     # Count amino acid residues
-    long_name = Descriptors.GetMULongName(mol)
-    aa_residues = sum(code in long_name for code in AA_CODES)
-
-    # Look for peptide bonds
-    peptide_bond_pattern = Chem.MolFromSmarts("[N;X3][C;X3](=[O;X1])[C;X3][N;X3]")
-    peptide_bond_matches = mol.GetSubstructMatches(peptide_bond_pattern)
-
-    # Check for common functional groups
-    has_carboxyl = mol.HasSubstructMatch(Chem.MolFromSmarts("[C;X3](=O)[O;X1]"))
-    has_amino = mol.HasSubstructMatch(Chem.MolFromSmarts("[N;X3;H2,H1]"))
-    has_hydroxyl = mol.HasSubstructMatch(Chem.MolFromSmarts("[O;H1]"))
-    has_aromatic = mol.HasSubstructMatch(Chem.MolFromSmarts("[a]"))
-
-    # Classify as oligopeptide
-    if aa_residues >= 2 and len(peptide_bond_matches) >= 1 and has_carboxyl and has_amino and (has_hydroxyl or has_aromatic):
-        if mol_wt > 500 and mol_wt < 5000:
-            return True, f"Contains {aa_residues} amino acid residues connected by peptide bonds, with common functional groups"
-        else:
-            return False, f"Molecular weight ({mol_wt:.2f} Da) outside typical oligopeptide range"
-    else:
-        return False, "Lacks characteristic features of oligopeptides"
+    pattern = Chem.MolFromSmarts("[N;X3;H2,H1&!$(N(-C=O)-O-C=O)][C;X4][C;X3](=O)[N;X3]")
+    matches = mol.GetSubstructMatches(pattern)
+    num_residues = len(matches)
+    
+    # Oligopeptides typically have 3-20 amino acid residues
+    if num_residues < 3:
+        return False, f"Only {num_residues} amino acid residues found, need at least 3"
+    elif num_residues > 20:
+        return False, f"{num_residues} amino acid residues found, too many for an oligopeptide"
+    
+    # Look for peptide bonds and amino acid sidechains
+    peptide_bond_pattern = Chem.MolFromSmarts("[N;X3][C;X3](=[O;X1])[C;X4]")
+    has_peptide_bonds = mol.HasSubstructMatch(peptide_bond_pattern)
+    
+    sidechain_pattern = Chem.MolFromSmarts("[N;X3][C;X4][C;X3](=O)[N;X3]")
+    has_sidechains = mol.HasSubstructMatch(sidechain_pattern)
+    
+    if not has_peptide_bonds or not has_sidechains:
+        return False, "Missing peptide bonds or amino acid sidechains"
+    
+    # Check molecular weight - oligopeptides typically 300-2000 Da
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 300:
+        return False, "Molecular weight too low for oligopeptide"
+    elif mol_wt > 2000:
+        return False, "Molecular weight too high for oligopeptide"
+    
+    return True, "Contains a small number of amino acid residues linked by peptide bonds"
