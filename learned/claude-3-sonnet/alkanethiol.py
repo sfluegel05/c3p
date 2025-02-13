@@ -27,20 +27,15 @@ def is_alkanethiol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Must have at least one carbon and one sulfur
-    if not all(any(atom.GetAtomicNum() == n for atom in mol.GetAtoms()) 
-               for n in [6, 16]):  # C and S
-        return False, "Missing required elements (C and S)"
-
-    # Look for -SH (sulfanyl) group pattern more specifically
-    sulfanyl_pattern = Chem.MolFromSmarts("[SH1]-[CX4]")  # Must be connected to sp3 carbon
+    # Look for -SH (sulfanyl) group pattern
+    sulfanyl_pattern = Chem.MolFromSmarts("[SH1]")
     if not mol.HasSubstructMatch(sulfanyl_pattern):
-        return False, "No sulfanyl (-SH) group attached to alkyl carbon"
+        return False, "No sulfanyl (-SH) group found"
 
     # Count sulfanyl groups
     sulfanyl_matches = len(mol.GetSubstructMatches(sulfanyl_pattern))
-    if sulfanyl_matches > 3:  # Allow up to 3 thiol groups
-        return False, "Too many sulfanyl groups"
+    if sulfanyl_matches > 2:
+        return False, "Too many sulfanyl groups for simple alkanethiol"
 
     # Exclude aromatic compounds
     if any(atom.GetIsAromatic() for atom in mol.GetAtoms()):
@@ -50,14 +45,20 @@ def is_alkanethiol(smiles: str):
     exclusion_patterns = [
         ("[CX3](=O)[OX2H1]", "Contains carboxylic acid"),
         ("[CX3](=O)[OX2][CX4]", "Contains ester group"),
+        ("[CX3]=O", "Contains ketone/aldehyde"),
         ("[NX3](~[!#1])(~[!#1])~[!#1]", "Contains tertiary amine"),
         ("[#7X2]=,:[#6]", "Contains imine or similar"),
-        ("[#6X3]~[#6X3]~[#6X3]", "Contains conjugated system"),
-        ("[S;X3,X4,X5,X6]", "Contains oxidized sulfur"),
+        ("[SX2](!@[#6])!@[#6]", "Contains thioether bridge"),
+        ("[S;!$([SH1]);!$(S(=O));!$(S(=O)=O)]", "Contains other sulfur groups"),
+        ("[CX3]=[CX3]", "Contains alkene not adjacent to SH"),
+        ("[#6X3]~[#6X3]", "Contains conjugated system"),
+        ("[S;R]", "Contains sulfur in ring"),
+        ("[C;R5]", "Contains 5-membered ring"),
+        ("[C;R6]", "Contains 6-membered ring"),
+        ("[PX4]", "Contains phosphorus"),
         ("[BX3]", "Contains boron"),
         ("[SiX4]", "Contains silicon"),
-        ("[S;R][S;R]", "Contains disulfide ring"),
-        ("[C;R7,R8,R9,R10]", "Contains large rings")
+        ("[S;X3,X4,X5,X6]", "Contains oxidized sulfur")
     ]
 
     for pattern, reason in exclusion_patterns:
@@ -65,29 +66,32 @@ def is_alkanethiol(smiles: str):
         if pat and mol.HasSubstructMatch(pat):
             return False, reason
 
-    # Allow simple rings (up to 6-membered)
-    ring_count = rdMolDescriptors.CalcNumRings(mol)
-    if ring_count > 1:
-        return False, "Contains multiple rings"
-    
-    # Check molecular complexity
-    if rdMolDescriptors.CalcNumRotatableBonds(mol) > 15:
-        return False, "Too many rotatable bonds"
-        
-    if rdMolDescriptors.CalcNumAtomStereoCenters(mol) > 3:
-        return False, "Too many chiral centers"
-
-    # Get all sulfur atoms and verify their environment
-    valid_sulfanyl = False
+    # Get all sulfur atoms and check their environment
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() == 16:  # Sulfur
             if atom.GetDegree() == 1:  # Terminal sulfur (as in -SH)
                 carbon = atom.GetNeighbors()[0]
-                if carbon.GetAtomicNum() == 6:  # Connected to carbon
-                    if not carbon.GetIsAromatic():
-                        valid_sulfanyl = True
+                if carbon.GetAtomicNum() != 6:  # Must be connected to carbon
+                    return False, "Sulfanyl not connected to carbon"
+                if carbon.GetIsAromatic():
+                    return False, "Connected to aromatic carbon"
+                if carbon.GetHybridization() != Chem.HybridizationType.SP3:
+                    return False, "Connected carbon must be sp3 hybridized"
 
-    if not valid_sulfanyl:
-        return False, "No valid sulfanyl group found"
+    # Allow simple primary amines (max 1) if present with thiol
+    amine_pattern = Chem.MolFromSmarts("[NX3H2]")
+    if mol.HasSubstructMatch(amine_pattern):
+        if len(mol.GetSubstructMatches(amine_pattern)) > 1:
+            return False, "Contains multiple primary amines"
+        # Check distance between amine and thiol
+        if rdMolDescriptors.CalcNumAtomStereoCenters(mol) > 2:
+            return False, "Too complex for simple aminothiol"
+
+    # Final check for molecular complexity
+    if rdMolDescriptors.CalcNumRotatableBonds(mol) > 12:
+        return False, "Too many rotatable bonds for simple alkanethiol"
+    
+    if rdMolDescriptors.CalcNumRings(mol) > 0:
+        return False, "Contains rings"
 
     return True, "Contains sulfanyl group (-SH) attached to an alkyl group"
