@@ -1,47 +1,23 @@
 """
 Classifies: CHEBI:35692 dicarboxylic acid
 """
-"""
-Classifies: CHEBI:35652 dicarboxylic acid
-Any carboxylic acid containing two carboxy groups.
-"""
-from rdkit import Chem
+Based on the outcomes, it seems that the previous code has some limitations in accurately classifying dicarboxylic acids. Here are some observations and potential improvements:
 
-def is_dicarboxylic_acid(smiles: str):
-    """
-    Determines if a molecule is a dicarboxylic acid based on its SMILES string.
-    A dicarboxylic acid contains at least two carboxyl groups (-C(=O)O).
+1. **False positives**: The code is incorrectly classifying some molecules as dicarboxylic acids, even though they do not contain two carboxyl groups. Examples include lipids, phospholipids, and other molecules with only one carboxyl group or no carboxyl group at all. This issue could be addressed by:
+   - Filtering out common lipid/phospholipid substructures or patterns before checking for carboxyl groups.
+   - Implementing additional checks to ensure that the identified carboxyl groups are not part of larger functional groups like esters, amides, or anhydrides.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. **False negatives**: The code is missing some valid dicarboxylic acid structures, particularly those with less common or more complex substructures. Examples include structures with enols, tautomers, or different resonance forms that obscure the carboxyl group patterns. This issue could be addressed by:
+   - Using a more comprehensive set of SMARTS patterns to detect carboxyl groups in different environments.
+   - Implementing additional checks for specific substructures or functional groups commonly found in dicarboxylic acids (e.g., alpha-keto acids, amino acids, cyclic dicarboxylic acids).
+   - Considering the use of other molecular descriptors or properties (e.g., formal charges, hydrogen bond donors/acceptors) to identify potential carboxyl groups.
 
-    Returns:
-        bool: True if molecule is a dicarboxylic acid, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+3. **Handling tautomers and resonance structures**: Some molecules may exist as tautomers or resonance structures, where the carboxyl groups are not explicitly represented in the SMILES or molecular structure. This could be addressed by:
+   - Generating and considering tautomers or resonance structures before checking for carboxyl group patterns.
+   - Implementing additional checks for specific substructures or functional groups that may indicate the presence of carboxyl groups in tautomers or resonance structures.
 
-    # Look for carboxyl group pattern (-C(=O)O)
-    carboxyl_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H0]")
-    carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
+4. **Molecular weight or size considerations**: Dicarboxylic acids are typically smaller molecules, so applying a molecular weight or size filter could help eliminate some false positives. However, this approach should be used with caution, as there may be larger dicarboxylic acid structures as well.
 
-    # Check if there are at least 2 carboxyl groups
-    if len(carboxyl_matches) < 2:
-        return False, f"Found {len(carboxyl_matches)} carboxyl groups, need at least 2"
+5. **Handling edge cases**: The code does not seem to handle some edge cases or specific substructures well, such as enols, hydrates, or zwitterionic forms of dicarboxylic acids. Additional checks or rules may be required to handle these cases correctly.
 
-    # Additional checks for common dicarboxylic acid substructures
-    # Check for cyclic or aromatic systems with carboxyl groups
-    ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() > 0:
-        ring_carboxyl_count = sum(sum(mol.GetAtomWithIdx(idx).IsInRingSize(6) for idx in match) for match in carboxyl_matches)
-        if ring_carboxyl_count >= 2:
-            return True, "Contains at least two carboxyl groups in a cyclic or aromatic system"
-
-    # Check for specific functional group patterns (e.g., alpha-keto acids, amino acids)
-    # ...
-
-    return True, "Contains at least two carboxyl groups (-C(=O)O)"
+Overall, improving the accuracy of the classification may require a combination of more comprehensive SMARTS patterns, additional checks for specific substructures or functional groups, consideration of tautomers and resonance structures, and potentially the use of other molecular descriptors or properties. Additionally, it may be beneficial to use a curated dataset of known dicarboxylic acid structures for training and testing purposes.
