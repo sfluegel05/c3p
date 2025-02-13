@@ -27,17 +27,16 @@ def is_N_hydroxy_alpha_amino_acid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for carboxylic acid group (C(=O)O)
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[O]")
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
 
-    # Look for an N-hydroxy group (N attached to O)
-    n_hydroxy_pattern_1 = Chem.MolFromSmarts("N(O)")  # Primary N-hydroxy
-    n_hydroxy_pattern_2 = Chem.MolFromSmarts("N(O)O")  # Secondary N-hydroxy
-    if not mol.HasSubstructMatch(n_hydroxy_pattern_1) and not mol.HasSubstructMatch(n_hydroxy_pattern_2):
-        return False, "No N-hydroxy group found (N-O or N(OO))"
+    # Look for N-hydroxy group specifically on an alpha carbon attached nitrogen
+    n_hydroxy_alpha_amino_pattern = Chem.MolFromSmarts("[C;H1,H2](N(O))[C](=O)O")
+    n_hydroxy_dihydroxy_alpha_amino_pattern = Chem.MolFromSmarts("[C;H1,H2](N(O)O)[C](=O)O")
+    
+    if mol.HasSubstructMatch(n_hydroxy_alpha_amino_pattern) or \
+       mol.HasSubstructMatch(n_hydroxy_dihydroxy_alpha_amino_pattern):
+        return True, "Contains N-hydroxy substitution on alpha-amino group and carboxylic acid characteristic of alpha-amino acids"
 
-    # Additional checks could include molecular weight, presence of chiral centers, etc., but these are less defined
-    # for this specific classification and could be highly variable.
-
-    return True, "Contains N-hydroxy substitution on alpha-amino group and carboxylic acid characteristic of alpha-amino acids"
+    return False, "Does not meet the criteria for N-hydroxy-alpha-amino-acid"
