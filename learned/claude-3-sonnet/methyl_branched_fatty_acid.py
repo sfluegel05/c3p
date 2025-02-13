@@ -32,8 +32,15 @@ def is_methyl_branched_fatty_acid(smiles: str):
 
     # Check for carboxylic acid group
     carboxyl_pattern = Chem.MolFromSmarts("C(=O)O")
-    if not mol.HasSubstructMatch(carboxyl_pattern):
+    carboxyl_match = mol.GetSubstructMatch(carboxyl_pattern)
+    if not carboxyl_match:
         return False, "No carboxylic acid group found"
+
+    # Check for linear carbon chain
+    linear_chain_pattern = Chem.MolFromSmarts("CC(C)CCCC")
+    linear_chain_match = mol.GetSubstructMatches(linear_chain_pattern)
+    if not linear_chain_match:
+        return False, "No linear carbon chain found"
 
     # Check for methyl branches
     methyl_branch_pattern = Chem.MolFromSmarts("CC")
@@ -41,12 +48,11 @@ def is_methyl_branched_fatty_acid(smiles: str):
     if not methyl_branch_matches:
         return False, "No methyl branches found"
 
-    # Check if all branching groups are methyl groups
-    for atom in mol.GetAtoms():
-        if atom.GetDegree() > 2 and atom.GetAtomicNum() == 6:
-            neighbors = [mol.GetAtomWithIdx(n.GetIdx()) for n in atom.GetNeighbors()]
-            methyl_groups = sum(1 for n in neighbors if n.GetAtomicNum() == 6 and n.GetDegreeWithPattern("CC") == 1)
-            if atom.GetDegree() - methyl_groups > 2:
-                return False, "Found non-methyl branching groups"
+    # Check if all branches are methyl groups
+    for match in methyl_branch_matches:
+        atom = mol.GetAtomWithIdx(match[0])
+        neighbors = [mol.GetAtomWithIdx(n.GetIdx()) for n in atom.GetNeighbors()]
+        if any(n.GetAtomicNum() != 6 for n in neighbors):
+            return False, "Found non-methyl branching groups"
 
-    return True, "Contains a carboxylic acid group and only methyl branches"
+    return True, "Contains a linear carbon chain with methyl branches and a carboxylic acid group"
