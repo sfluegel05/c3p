@@ -22,29 +22,27 @@ def is_vitamin_D(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Improved seco-steroid pattern for vitamin D
-    # This pattern looks for the characteristic cleavage of the B-ring in the steroid nucleus
-    seco_steroid_pattern = Chem.MolFromSmarts("C1C=C2C[C@H](C[C@@H](O)C2)O1") # Improved pattern for broken B-ring
+    # Characteristic seco-steroid pattern observed in vitamin D
+    seco_steroid_pattern = Chem.MolFromSmarts("C1CCC2=C(C1)C(C)(C)CCC3=CC=C4CCC2C34")
     if not mol.HasSubstructMatch(seco_steroid_pattern):
         return False, "No characteristic seco-steroid structure found"
 
-    # Ensure the presence of necessary hydroxyl groups in typical positions for vitamin D
-    hydroxyl_groups_required = [
-        "[C@H](O)",  # A chiral center with hydroxyl, indicative of position-specific hydroxylation
+    # Check for necessary hydroxyl groups, allowing for some variability
+    hydroxyl_patterns = [
+        Chem.MolFromSmarts("[C@H](O)"),  # Common chiral center with hydroxyl
+        Chem.MolFromSmarts("[C@](C)(O)") # Another common hydroxyl pattern
     ]
-    hydroxyl_match_count = 0
-    for pattern in hydroxyl_groups_required:
-        group_pattern = Chem.MolFromSmarts(pattern)
-        if mol.HasSubstructMatch(group_pattern):
-            hydroxyl_match_count += 1
+    hydroxyl_count = 0
+    for pattern in hydroxyl_patterns:
+        if mol.HasSubstructMatch(pattern):
+            hydroxyl_count += 1
     
-    if hydroxyl_match_count < 2:
-        return False, f"Found {hydroxyl_match_count} hydroxyl groups, characteristic requires more"
+    if hydroxyl_count < 1:
+        return False, f"Insufficient hydroxyl group matches, found {hydroxyl_count}"
 
-    # Check for the existence of long alkyl side chain and stereochemistry typical of vitamin D
-    alkyl_chain_pattern = Chem.MolFromSmarts("C(C)CCCC(C)")
+    # Identify long alkyl side chain typically part of vitamin D
+    alkyl_chain_pattern = Chem.MolFromSmarts("C(C)CCC(C)CCC(O)C")
     if not mol.HasSubstructMatch(alkyl_chain_pattern):
-        return False, "Missing typical long alkyl side chain"
+        return False, "Missing typical alkyl side chain"
 
-    # If all characteristics are matched, classify as vitamin D
     return True, "Molecule matches key structural features of vitamin D"
