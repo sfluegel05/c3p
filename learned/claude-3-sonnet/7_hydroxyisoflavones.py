@@ -23,40 +23,41 @@ def is_7_hydroxyisoflavones(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-        
-    # Generate 2D coordinates for the molecule
-    AllChem.Compute2DCoords(mol)
-    
-    # Basic isoflavone core pattern:
-    # [#6]1=[#6]-[#6]2=[#6](-[#6](=[#8])-[#6](=[#6]1)-[#8]-[#6]2=[#6])-[#6]3=[#6]=[#6]=[#6]=[#6]=[#6]3
-    isoflavone_core = Chem.MolFromSmarts("[#6]1=[#6]-[#6]2=[#6](-[#6](=[#8])-[#6](=[#6]1)-[#8]-[#6]2=[#6])-[#6]3=[#6]=[#6]=[#6]=[#6]=[#6]3")
-    
-    if not mol.HasSubstructMatch(isoflavone_core):
-        return False, "No isoflavone core structure found"
-    
-    # Pattern for 7-hydroxy position in isoflavone
-    # Note: The numbering in isoflavones starts from the oxygen atom in the chromone ring
-    # Position 7 is on the benzene ring of the chromone system
-    hydroxy_7_pattern = Chem.MolFromSmarts("O-[c]1[c][c]2[o][c][c](-[c]3[c][c][c][c][c]3)[c](=O)[c]2[c][c]1")
-    
+
+    # Basic chromone core pattern (benzopyrone system)
+    # The c1ccc2c(c1) ensures we have the first benzene ring
+    # occ(*)c2=O ensures we have the pyrone ring with something (*) at position 3
+    chromone_pattern = Chem.MolFromSmarts("c1ccc2c(c1)occ(*)c2=O")
+    if not mol.HasSubstructMatch(chromone_pattern):
+        return False, "No chromone core structure found"
+
+    # Check for phenyl ring at position 3 (isoflavone specific)
+    # This pattern ensures the phenyl ring is connected to the chromone at the correct position
+    isoflavone_pattern = Chem.MolFromSmarts("c1ccc2c(c1)occ(-c3ccccc3)c2=O")
+    if not mol.HasSubstructMatch(isoflavone_pattern):
+        return False, "Not an isoflavone - missing or incorrect phenyl ring at position 3"
+
+    # Pattern for 7-hydroxy position
+    # This pattern specifically looks for OH at position 7 of the chromone system
+    hydroxy_7_pattern = Chem.MolFromSmarts("Oc1ccc2c(c1)occ(-[c])c2=O")
     if not mol.HasSubstructMatch(hydroxy_7_pattern):
         return False, "No hydroxy group at position 7"
+
+    # Additional validation checks
     
-    # Additional checks to confirm it's specifically a 7-hydroxyisoflavone
-    
-    # Count the basic elements that should be present
+    # Count oxygens (minimum 3: chromone O, C=O, and 7-OH)
     num_oxygens = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if num_oxygens < 3:  # Minimum 3 oxygens (chromone oxygen + carbonyl + 7-OH)
+    if num_oxygens < 3:
         return False, "Insufficient number of oxygen atoms"
-    
-    # Verify aromatic nature
+
+    # Verify aromatic nature (minimum 12 aromatic atoms for basic isoflavone)
     num_aromatic_atoms = sum(1 for atom in mol.GetAtoms() if atom.GetIsAromatic())
-    if num_aromatic_atoms < 12:  # Minimum for isoflavone core
+    if num_aromatic_atoms < 12:
         return False, "Insufficient aromatic system"
-    
-    # Check for the carbonyl group
-    carbonyl_pattern = Chem.MolFromSmarts("[#6]=O")
+
+    # Check for required carbonyl group
+    carbonyl_pattern = Chem.MolFromSmarts("O=C1c2c(occ1)cccc2")
     if not mol.HasSubstructMatch(carbonyl_pattern):
-        return False, "No carbonyl group found"
-    
-    return True, "Molecule contains isoflavone core with a hydroxy group at position 7"
+        return False, "Missing required carbonyl group"
+
+    return True, "Valid 7-hydroxyisoflavone structure found"
