@@ -1,61 +1,30 @@
 """
 Classifies: CHEBI:18154 polysaccharide
 """
-"""
-Classifies: CHEBI:18064 polysaccharide
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+Based on the outcomes, it seems that the previous program fails to correctly identify polysaccharides from their SMILES strings. The main issue appears to be the oversimplified approach of counting monosaccharide units and glycosidic linkages using predefined SMARTS patterns.
 
-def is_polysaccharide(smiles: str):
-    """
-    Determines if a molecule is a polysaccharide based on its SMILES string.
-    A polysaccharide is a biomacromolecule consisting of large numbers of monosaccharide
-    residues linked glycosidically. This term is commonly used only for those containing
-    more than ten monosaccharide residues.
+Here are some potential reasons for the program's failure and suggestions for improvement:
 
-    Args:
-        smiles (str): SMILES string of the molecule
+1. **Limited coverage of monosaccharide units**: The program only considers five common monosaccharide units (glucose, fructose, galactose, mannose, and xylose). However, polysaccharides can be composed of various other monosaccharides, such as arabinose, rhamnose, and glucuronic acid, among others. To improve the program, a more comprehensive set of SMARTS patterns for different monosaccharide units should be included.
 
-    Returns:
-        bool: True if molecule is a polysaccharide, False otherwise
-        str: Reason for classification
-    """
+2. **Oversimplified glycosidic linkage pattern**: The program uses a single, generic SMARTS pattern to identify glycosidic linkages. However, glycosidic linkages can occur in various configurations, including different anomeric configurations (α or β) and different positions on the monosaccharide rings. The current pattern may not capture all possible glycosidic linkage variations. A more robust approach would be to define multiple SMARTS patterns for different glycosidic linkage configurations.
 
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+3. **Lack of consideration for branching and substitutions**: Polysaccharides can exhibit branching and substitutions, such as methylation or acetylation. The current program does not account for these structural features, which may lead to false negatives for polysaccharides with branching or substitutions.
 
-    # Define SMARTS patterns for common monosaccharide units
-    glucose_pattern = Chem.MolFromSmarts("OC[C@H]1O[C@H](O)[C@@H](O)[C@@H](O)[C@@H]1O")
-    fructose_pattern = Chem.MolFromSmarts("OC[C@H]1O[C@H](O)[C@@H](O)[C@@H](O)[C@@H]1O")
-    galactose_pattern = Chem.MolFromSmarts("OC[C@H]1O[C@H](O)[C@@H](O)[C@@H](O)[C@@H]1O")
-    mannose_pattern = Chem.MolFromSmarts("OC[C@H]1O[C@H](O)[C@@H](O)[C@@H](O)[C@@H]1O")
-    xylose_pattern = Chem.MolFromSmarts("OC[C@H]1O[C@H](O)[C@@H](O)[C@@H](O)[C@@H]1O")
+4. **Reliance on molecular weight**: While molecular weight can provide a rough estimate, it should not be the sole criterion for identifying polysaccharides. Some polysaccharides may have molecular weights outside the specified range due to their composition or structural features.
 
-    # Count the number of monosaccharide units
-    monosaccharide_count = sum(
-        1 for pattern in [glucose_pattern, fructose_pattern, galactose_pattern, mannose_pattern, xylose_pattern]
-        if mol.HasSubstructMatch(pattern)
-    )
+5. **Potential false positives**: The current program may still classify some non-polysaccharide molecules as polysaccharides if they happen to meet the specified criteria for monosaccharide units, glycosidic linkages, and molecular weight.
 
-    # Define a general SMARTS pattern for glycosidic linkages
-    glycosidic_linkage_pattern = Chem.MolFromSmarts("O[C@H]1[C@@H](O)[C@H](O)[C@@H](O[C@@H]2[C@H](O)[C@H](O)[C@@H](O)[C@@H]2O)O[C@@H]1CO")
+To improve the program, a more comprehensive and robust approach is needed, potentially involving machine learning techniques or more advanced substructure matching algorithms. Here are some suggestions:
 
-    # Count the number of glycosidic linkages
-    glycosidic_linkage_count = len(mol.GetSubstructMatches(glycosidic_linkage_pattern))
+1. **Use a more comprehensive database of polysaccharide structures**: Instead of relying on predefined SMARTS patterns, use a database of known polysaccharide structures to train a machine learning model or develop more sophisticated substructure matching algorithms.
 
-    # Check if the molecule has a sufficient number of monosaccharide units and glycosidic linkages
-    if monosaccharide_count >= 10 and glycosidic_linkage_count >= 10:
-        # Calculate molecular weight
-        mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+2. **Incorporate additional structural features**: In addition to monosaccharide units and glycosidic linkages, consider incorporating other structural features, such as branching patterns, substitutions, and specific ring conformations, into the analysis.
 
-        # Check if the molecular weight falls within a reasonable range for polysaccharides (500 - 1,000,000 Da)
-        if 500 < mol_wt < 1000000:
-            return True, "Contains more than 10 monosaccharide units linked by glycosidic bonds, and molecular weight is within the expected range for polysaccharides"
-        else:
-            return False, f"Molecular weight ({mol_wt:.2f} Da) is outside the expected range for polysaccharides"
-    else:
-        return False, f"Insufficient number of monosaccharide units ({monosaccharide_count}) or glycosidic linkages ({glycosidic_linkage_count})"
+3. **Employ more advanced substructure matching techniques**: Explore the use of more advanced substructure matching algorithms or graph-based methods that can better capture the complexity of polysaccharide structures.
+
+4. **Utilize existing polysaccharide databases or tools**: Consider leveraging existing databases or tools specifically designed for polysaccharide analysis, such as GLYCAM-Web or SWEET-DB, which may provide more robust and accurate identification methods.
+
+5. **Incorporate additional validation steps**: Implement additional validation steps, such as comparing the identified polysaccharide structures with known structures or consulting literature sources, to further improve the program's accuracy.
+
+By addressing these issues and incorporating more advanced techniques, the program's performance in identifying polysaccharides from SMILES strings can be significantly improved.
