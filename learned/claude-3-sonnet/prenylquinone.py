@@ -1,48 +1,16 @@
 """
 Classifies: CHEBI:26255 prenylquinone
 """
-"""
-Classifies: CHEBI:51714 prenylquinone
-"""
-from rdkit import Chem
-from rdkit.Chem import rdqueries
+The previous program fails to classify prenylquinones correctly because the approach taken is too narrow and does not account for the diversity of structures in this class. Here are some potential issues and improvements:
 
-def is_prenylquinone(smiles: str):
-    """
-    Determines if a molecule is a prenylquinone based on its SMILES string.
-    A prenylquinone is a quinone substituted by a polyprenyl-derived side-chain.
+1. The quinone pattern used only checks for a specific benzoquinone substructure, but prenylquinones can have different ring systems like naphthoquinones, anthraquinones, etc. The quinone pattern should be more general.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. The prenyl pattern only checks for a 5-carbon prenyl unit. However, prenylquinones can have longer polyprenyl chains of varying lengths. The program should look for longer prenyl/polyprenyl chains.
 
-    Returns:
-        bool: True if molecule is a prenylquinone, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+3. The program checks if the prenyl chains are connected or near the quinone, but does not verify if they are actually substituents on the quinone ring system. It may give false positives for molecules where the prenyl and quinone moieties are disconnected.
 
-    # Check for quinone substructure
-    quinone_pattern = rdqueries.IsotonicQueriesFromSmarts("O=C1C(=O)C=CC=C1")
-    if not mol.HasSubstructMatch(quinone_pattern):
-        return False, "No quinone substructure found"
+4. The program does not account for other common structural features of prenylquinones like additional substituents (e.g. methoxy, hydroxy groups), ring junctions, stereochemistry, etc.
 
-    # Check for prenyl side-chain(s)
-    prenyl_pattern = rdqueries.IsotonicQueriesFromSmarts("[CH2]=[CH][CH2][CH2][CH2][CH3]")
-    prenyl_matches = mol.GetSubstructMatches(prenyl_pattern)
-    if not prenyl_matches:
-        return False, "No prenyl side-chain found"
+5. The program does not check any physicochemical properties that are generally expected for prenylquinones (e.g. molecular weight, lipophilicity).
 
-    # Check that prenyl chain(s) are connected to or near the quinone
-    quinone_atoms = set(atom.GetIdx() for match in mol.GetSubstructMatches(quinone_pattern) for atom in match)
-    prenyl_atoms = set(atom for match in prenyl_matches for atom in match)
-    nearby_atoms = set()
-    for prenyl_atom in prenyl_atoms:
-        nearby_atoms.update(mol.GetAtomWithIdx(prenyl_atom).GetNeighbors())
-    if not quinone_atoms.intersection(nearby_atoms):
-        return False, "Prenyl side-chain(s) not connected or near the quinone"
-
-    return True, "Contains a quinone substructure with one or more prenyl side-chains"
+To improve the classification, a more holistic approach considering the diverse structural features and properties of prenylquinones is needed. This may involve using more flexible substructure patterns, checking for ring junctions, enumerating common substituents, applying physicochemical filters, and potentially using machine learning techniques trained on a diverse set of prenylquinone structures.
