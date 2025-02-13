@@ -6,7 +6,6 @@ Classifies: CHEBI:28167 flavones
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_flavones(smiles: str):
     """
@@ -34,13 +33,12 @@ def is_flavones(smiles: str):
         return False, "No chromone core found"
     
     # 2. Check for aromatic ring attached to the chromone
-    aromatic_pattern = Chem.MolFromSmarts("c1ccccc1")
     for match in chromone_matches:
         chromone_atom = mol.GetAtomWithIdx(match[2])
         for neighbor in chromone_atom.GetNeighbors():
-            if neighbor.IsInRingSize(6):
-                aromatic_ring = Chem.FindMolRing(mol, thirdSeedIdx=neighbor.GetIdx())
-                if all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in aromatic_ring):
+            ring_info = mol.GetAtomRingInfo(neighbor)
+            for ring in ring_info.AtomRings():
+                if len(ring) == 6 and all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring):
                     return True, "Contains 2-arylchromen-4-one skeleton"
     
     return False, "No 2-arylchromen-4-one skeleton found"
