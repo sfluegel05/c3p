@@ -5,7 +5,7 @@ Classifies: CHEBI:15705 L-alpha-amino acid
 Classifies: CHEBI:33709 L-alpha-amino acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import AllChem
 
 def is_L_alpha_amino_acid(smiles: str):
     """
@@ -40,9 +40,14 @@ def is_L_alpha_amino_acid(smiles: str):
     if alpha_carbon.GetProp("_ChiralityPossible") == "No":
         return False, "Alpha-carbon is not a chiral center"
     
-    # Determine stereochemistry using rdkit.Chem.rdMolDescriptors.GetAtomPairStereoSigma
-    stereochemistry = rdMolDescriptors.GetAtomPairStereoSigma(mol, alpha_carbon.GetIdx())
-    if stereochemistry == "S":
+    # Get atom indices of atoms attached to alpha-carbon
+    atom_map = {}
+    for bond in alpha_carbon.GetBonds():
+        idx = bond.GetOtherAtomIdx(alpha_carbon_idx)
+        atom_map[bond.GetStereo()] = idx
+    
+    # Determine stereochemistry based on bond directions
+    if atom_map.get(Chem.BondStereo.BEGINWEDGE) < atom_map.get(Chem.BondStereo.BEGINDASH):
         return True, "Contains an L-alpha-amino acid substructure"
     else:
         return False, "Contains a D-alpha-amino acid substructure"
