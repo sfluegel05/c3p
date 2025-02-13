@@ -2,6 +2,7 @@
 Classifies: CHEBI:61912 branched-chain fatty acyl-CoA
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_branched_chain_fatty_acyl_CoA(smiles: str):
     """
@@ -11,7 +12,7 @@ def is_branched_chain_fatty_acyl_CoA(smiles: str):
 
     Args:
         smiles (str): SMILES string of the molecule
-
+    
     Returns:
         bool: True if the molecule is a branched-chain fatty acyl-CoA, False otherwise
         str: Reason for classification
@@ -27,19 +28,16 @@ def is_branched_chain_fatty_acyl_CoA(smiles: str):
     if not mol.HasSubstructMatch(thioester_pattern):
         return False, "No thioester linkage found indicative of acyl-CoA"
 
-    # Identify key components of the Coenzyme A
-    adenine_pattern = Chem.MolFromSmarts("n1cnc2c(ncnc12)N")
-    phosphate_pattern = Chem.MolFromSmarts("COP(=O)(O)OP(=O)(O)O")
-    if not mol.HasSubstructMatch(adenine_pattern) or not mol.HasSubstructMatch(phosphate_pattern):
-        return False, "Missing adenine or phosphate groups indicative of coenzyme A"
+    # Identify the coenzyme A moiety
+    # Try a pattern including parts of the CoA - e.g., nucleoside and phosphate groups
+    coa_pattern = Chem.MolFromSmarts("P(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)")
+    if not mol.HasSubstructMatch(coa_pattern):
+        return False, "Missing segments indicative of coenzyme A"
 
     # Look for branching in the fatty acyl chain
-    # Check for tertiary or quaternary carbons
-    branching_patterns = [
-        Chem.MolFromSmarts("[C](C)(C)C"),
-        Chem.MolFromSmarts("[C](C)(C)(C)")  # This accounts for more complex branching
-    ]
-    if not any(mol.HasSubstructMatch(pattern) for pattern in branching_patterns):
+    # Check for a carbon with more than 2 bonds that is not at the ends of a chain
+    branching_pattern = Chem.MolFromSmarts("[CH2,CH](C)(C)")
+    if not mol.HasSubstructMatch(branching_pattern):
         return False, "No branching in the fatty acid chain found"
 
     return True, "Structure matches branched-chain fatty acyl-CoA"
