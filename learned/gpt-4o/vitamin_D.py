@@ -2,17 +2,18 @@
 Classifies: CHEBI:27300 vitamin D
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_vitamin_D(smiles: str):
     """
     Determines if a molecule is a vitamin D compound based on its SMILES string.
-    
-    Vitamins D are identified by their secosteroid backbone and specific side chains
-    and hydroxyl groups typical for this class of compounds.
-    
+    Vitamin D is characterized as a seco-steroid with specific hydroxyl groups and often
+    a conjugated triene system.
+
     Args:
         smiles (str): SMILES string of the molecule
-        
+
     Returns:
         bool: True if molecule is a vitamin D compound, False otherwise
         str: Reason for classification
@@ -22,23 +23,23 @@ def is_vitamin_D(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+    
+    # Check for the seco-steroid structure
+    # Broadly, this could be characterized by the presence of a broken B-ring in a steroid nucleus
+    seco_steroid_pattern = Chem.MolFromSmarts("C1C=C2CCCCC2=C1") # Simplified seco-steroid pattern
+    if not mol.HasSubstructMatch(seco_steroid_pattern):
+        return False, "No seco-steroid structure found"
+    
+    # Check for hydroxyl groups usually present at specific positions
+    hydroxyl_pattern = Chem.MolFromSmarts("O")
+    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
+    if len(hydroxyl_matches) < 2:
+        return False, f"Found {len(hydroxyl_matches)} hydroxyl groups, typically require at least 2"
 
-    # Broader secosteroid recognition pattern: open B-ring as in vitamin D
-    # Pattern represents a sterane backbone with an open B-ring
-    seco_pattern = Chem.MolFromSmarts("C1C[C@H](CCC2=CC=C3[C@@H]2CCCC3=C)CC1")
-    if not mol.HasSubstructMatch(seco_pattern):
-        return False, "No characteristic secosteroid structure found"
-    
-    # Check for the presence of multiple hydroxyl groups
-    hydroxyl_pattern = Chem.MolFromSmarts("[C@H](O)[C@H](O)C")
-    hydroxyl_count = len(mol.GetSubstructMatches(hydroxyl_pattern))
-    
-    if hydroxyl_count < 2:
-        return False, f"Insufficient hydroxyl group matches, found {hydroxyl_count}"
-    
-    # Check for long alkyl chain that is halted at C=C or alcohols, typical in Vitamin D
-    alkyl_chain_pattern = Chem.MolFromSmarts("CCCCCC(O)=C")
-    if not mol.HasSubstructMatch(alkyl_chain_pattern):
-        return False, "Missing typical alkyl side chain termination"
+    # Check for conjugated triene system (flexible configuration based on vitamin D variants)
+    conjugated_triene_pattern = Chem.MolFromSmarts("C=C-C=C-C=C") # Approximation
+    if not mol.HasSubstructMatch(conjugated_triene_pattern):
+        return False, "No conjugated triene system found"
 
+    # If all characteristics are matched, classify as vitamin D
     return True, "Molecule matches key structural features of vitamin D"
