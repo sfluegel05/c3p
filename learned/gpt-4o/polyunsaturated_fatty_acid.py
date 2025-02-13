@@ -7,6 +7,8 @@ from rdkit.Chem import rdMolDescriptors
 def is_polyunsaturated_fatty_acid(smiles: str):
     """
     Determines if a molecule is a polyunsaturated fatty acid based on its SMILES string.
+    A polyunsaturated fatty acid contains more than one double bond in a linear aliphatic chain
+    and a carboxylic acid group.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,26 +28,21 @@ def is_polyunsaturated_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
 
-    # Count the number of isolated double bonds in aliphatic chains
-    undefined_chain_pattern = Chem.MolFromSmarts("C(=C)C")
+    # Count the number of double bonds in the molecule
     double_bond_pattern = Chem.MolFromSmarts("C=C")
     double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
     
+    # Polyunsaturated definition: more than one double bond
     if len(double_bond_matches) <= 1:
         return False, f"Found {len(double_bond_matches)} double bonds, need more than one for polyunsaturation"
 
-    # Confirm that the double bonds are not entirely part of aromatic rings
+    # Ensure the double bonds are part of non-aromatic chains
     if mol.GetNumAromaticRings() > 0:
         return False, "Contains aromatic structures, not typical for fatty acids"
     
-    # Check for a sufficiently long aliphatic carbon chain (at least 12)
-    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6 and not atom.GetIsAromatic())
-    if carbon_count < 12:
-        return False, f"Chain is too short with only {carbon_count} carbons, typical fatty acids have longer chains"
-    
-    # Ensure linearity within the chains (no cross-links or complex branching)
-    branching_pattern = Chem.MolFromSmarts("CC(C)(C)C")
-    if mol.HasSubstructMatch(branching_pattern):
-        return False, "Excessive branching interrupts the linear unsaturated chain"
-    
-    return True, "Contains a carboxylic acid group with more than one isolated aliphatic double bond"
+    # Ensure linearity: more than 12 carbons in a main chain
+    carbon_chain_pattern = Chem.MolFromSmarts("C" + "~C" * 11)  # At least 12 linear carbons
+    if not mol.HasSubstructMatch(carbon_chain_pattern):
+        return False, "Chain is too short or not linear, typical fatty acids have longer chains"
+
+    return True, "Contains a carboxylic acid group and more than one double bond in an aliphatic chain"
