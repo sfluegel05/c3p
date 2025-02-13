@@ -1,38 +1,22 @@
 """
 Classifies: CHEBI:32877 primary amine
 """
-"""
-Classifies: CHEBI:36357 primary amine
-"""
-from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+Analyzing the previous code and the outcomes, it appears that the program correctly identifies most primary amines, but also wrongly classifies some molecules as primary amines, leading to false positives. Additionally, it misses some primary amines, resulting in false negatives.
 
-def is_primary_amine(smiles: str):
-    """
-    Determines if a molecule is a primary amine based on its SMILES string.
-    A primary amine is a compound formally derived from ammonia by replacing
-    one hydrogen atom by a hydrocarbyl group.
+The main issue with the previous code is that it relies solely on the presence of a nitrogen atom with one substituent (excluding hydrogen) to classify a molecule as a primary amine. This approach is too simplistic and fails to account for other structural features and bonding patterns that may or may not be consistent with a primary amine.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+To improve the program, we need to incorporate additional checks and criteria to better distinguish primary amines from other nitrogen-containing compounds. Here are some suggestions:
 
-    Returns:
-        bool: True if molecule is a primary amine, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Find nitrogen atoms
-    nitrogen_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7]
-    
-    # Check if any nitrogen atom has exactly one substituent (excluding H)
-    for nitrogen in nitrogen_atoms:
-        substituents = [neighbor for neighbor in nitrogen.GetNeighbors() if neighbor.GetAtomicNum() != 1]
-        if len(substituents) == 1:
-            return True, "Molecule contains a nitrogen atom with one substituent (primary amine)"
-    
-    return False, "Molecule does not contain a primary amine group"
+1. **Check for aromatic nitrogen atoms**: Primary amines typically have an aliphatic (non-aromatic) nitrogen atom. We should exclude molecules with aromatic nitrogen atoms, as these are more likely to be aromatic amines or heterocycles rather than primary amines.
+
+2. **Check for multiple nitrogen atoms**: Primary amines should have only one nitrogen atom. Molecules with multiple nitrogen atoms are likely to be other types of compounds, such as amines with other substituents or heterocycles.
+
+3. **Check for double or triple bonds to nitrogen**: Primary amines have a single bond between the nitrogen atom and its substituent. Molecules with double or triple bonds to the nitrogen atom should be excluded, as these are more likely to be imines, nitriles, or other nitrogen-containing functional groups.
+
+4. **Check for other functional groups**: Primary amines should not have certain functional groups, such as carbonyl groups (e.g., amides, esters, or carboxylic acids), which would indicate a different type of compound.
+
+5. **Check for specific structural patterns**: Primary amines often have a characteristic structural pattern, such as a alkyl chain or a benzyl group attached to the nitrogen atom. We could use substructure matching to identify these patterns and increase the confidence in the classification.
+
+6. **Consider molecular weight and atom counts**: Primary amines typically have a relatively low molecular weight and a specific range of carbon, nitrogen, and hydrogen atom counts. We could set thresholds or ranges for these properties to further refine the classification.
+
+By incorporating these additional checks and criteria, we can significantly improve the accuracy of the primary amine classification program and reduce the number of false positives and false negatives.
