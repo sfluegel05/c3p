@@ -22,11 +22,14 @@ def is_quaternary_ammonium_ion(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for quaternary ammonium feature: [N+] with 4 single bonds
+    # Look for quaternary ammonium feature: [N+] with 4 carbon-based single bonds or univalent groups
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() == 7:  # Nitrogen
             if atom.GetFormalCharge() == 1:  # Positive charge
-                if len(atom.GetBonds()) == 4:  # Four single bonds
-                    return True, "Contains a quaternary ammonium nitrogen: [N+](C)(C)(C)(C)"
+                bonded_atoms = [bond.GetOtherAtom(atom) for bond in atom.GetBonds()]
+                if len(bonded_atoms) == 4:  # Exactly four bonds
+                    # Check that all four bonds are to carbons or standard univalent groups
+                    if all(ba.GetAtomicNum() == 6 or ba.GetSymbol() in ['Me', 'Et', 'Pr', 'Bu'] for ba in bonded_atoms):
+                        return True, "Contains a quaternary ammonium nitrogen: [N+](C)(C)(C)(C)"
 
     return False, "Does not contain a quaternary ammonium nitrogen"
