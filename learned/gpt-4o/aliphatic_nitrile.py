@@ -26,25 +26,25 @@ def is_aliphatic_nitrile(smiles: str):
     if not mol.HasSubstructMatch(nitrile_pattern):
         return False, "No nitrile group found"
 
-    # Look for aromatic pattern
-    aromatic = False
-    for atom in mol.GetAtoms():
-        if atom.GetIsAromatic():
-            aromatic = True
-            break
-
-    # Check that nitrile group is not in an aromatic context
-    # and is part of an aliphatic chain by ensuring absence of aromatic bonds in nitrile carbon's neighbors
+    # Check that nitrile group is part of an aliphatic context
     for match in mol.GetSubstructMatches(nitrile_pattern):
         carbon_idx, nitrogen_idx = match
         carbon_atom = mol.GetAtomWithIdx(carbon_idx)
 
-        # If the nitrile carbon itself is marked aromatic, it's not aliphatic
+        # Ensure carbon atom is not directly aromatic
         if carbon_atom.GetIsAromatic():
-            return False, "Nitrile group is part of an aromatic structure"
+            return False, "Nitrile group carbon is aromatic"
 
+        # Analyze the chain linked to nitrile carbon
+        aliphatic_chain = False
         for neighbor in carbon_atom.GetNeighbors():
-            if neighbor.GetIsAromatic():
-                return False, "Nitrile group is attached to an aromatic ring"
+            # Check if neighbor is part of an aliphatic chain
+            if not neighbor.GetIsAromatic():
+                aliphatic_chain = True
+                break
 
-    return True, "Nitrile group is derived from an aliphatic compound"
+        if aliphatic_chain:
+            return True, "Nitrile group is derived from an aliphatic compound"
+
+    # If none of the nitrile linkages are truly aliphatic
+    return False, "Nitrile group is not aliphatic"
