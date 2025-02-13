@@ -21,26 +21,31 @@ def is_hydroxy_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for a carboxylic acid group (-C(=O)O)
-    carboxylic_acid_pattern = Chem.MolFromSmarts("O=C[OH]")
+    # Check for a carboxylic acid group (-C(=O)OH)
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
     
-    # Check for at least one hydroxy group (-O[H])
+    # Check for at least one hydroxy group (-OH)
     hydroxy_pattern = Chem.MolFromSmarts("[OX2H]")
     hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
     if len(hydroxy_matches) < 1:
         return False, "No hydroxy (OH) group found"
     
-    # Check the carbon chain length is sufficient
+    # Check the carbon chain length; lower threshold to include smaller fatty acids
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 8:  # Assume a practical minimum length for a hydroxy fatty acid
+    if c_count < 4:  # Reduce minimum carbon count for hydroxy fatty acids
         return False, "Too few carbon atoms for a fatty acid"
     
-    # Fatty acids are primarily linear
-    # We allow some degree of non-linearity (branching/rings) but should be limited
+    # Allow limited branching or rings, but ensure molecule is primarily a linear fatty acid
     ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() > 1:
-        return False, "Too many rings detected, inconsistent with typical fatty acid structure"
+    max_rings = 2  # Allow some structures like cyclic ethers
+    if ring_info.NumRings() > max_rings:
+        return False, f"More than {max_rings} rings detected, inconsistent with typical fatty acid structure"
+    
+    # Check for peptide-like structures as a further refinement
+    peptide_bond_pattern = Chem.MolFromSmarts("N-C(=O)")
+    if mol.HasSubstructMatch(peptide_bond_pattern):
+        return False, "Peptide-like structures detected"
 
     return True, "Molecule contains a carboxylic acid group and one or more hydroxy groups; matches hydroxy fatty acid structure"
