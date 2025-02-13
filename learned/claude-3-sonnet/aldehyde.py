@@ -1,8 +1,6 @@
 """
 Classifies: CHEBI:17478 aldehyde
 """
-Here's a Python program to classify chemical entities of the class aldehyde:
-
 """
 Classifies: CHEBI:16456 Aldehyde
 An aldehyde is a compound RC(=O)H, in which a carbonyl group is bonded to one hydrogen atom and to one R group.
@@ -30,33 +28,23 @@ def is_aldehyde(smiles: str):
     
     # Look for carbonyl carbon with one H and one R group attached
     aldehyde_pattern = Chem.MolFromSmarts("C(=O)[H]")
-    if not mol.HasSubstructMatch(aldehyde_pattern):
-        return False, "No aldehyde functional group found"
-    
-    # Count number of aldehyde groups
     aldehyde_matches = mol.GetSubstructMatches(aldehyde_pattern)
-    if len(aldehyde_matches) != 1:
-        return False, f"Found {len(aldehyde_matches)} aldehyde groups, need exactly 1"
+    
+    if not aldehyde_matches:
+        return False, "No aldehyde functional group found"
     
     # Check for presence of at least one carbon
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if c_count < 1:
         return False, "No carbon atoms found"
     
+    # Check for presence of only one aldehyde group
+    if len(aldehyde_matches) > 1:
+        return False, f"Found {len(aldehyde_matches)} aldehyde groups, need exactly 1"
+    
+    # Check if the carbonyl carbon is not part of a carboxylic acid group
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[O;H,-]")
+    if mol.HasSubstructMatch(carboxylic_acid_pattern):
+        return False, "Molecule contains a carboxylic acid group, not an aldehyde"
+    
     return True, "Contains an aldehyde functional group (R-C(=O)H)"
-
-# Examples
-print(is_aldehyde("C1[C@@]2([C@]3(CC[C@]4([C@]([C@@]3(C(C=C2C[C@H](C1)O)=O)[H])(CC[C@@]4([C@H](C)CCC[C@@H](C)C([H])=O)[H])[H])C)[H])C"))
-# (True, 'Contains an aldehyde functional group (R-C(=O)H)')
-
-print(is_aldehyde("O=C\C(=C\CCCCC)\C"))
-# (True, 'Contains an aldehyde functional group (R-C(=O)H)')
-
-print(is_aldehyde("CCCCCCCCCCC=O"))
-# (True, 'Contains an aldehyde functional group (R-C(=O)H)')
-
-print(is_aldehyde("CC(\C=C\C=O)=C/C=C/O"))
-# (True, 'Contains an aldehyde functional group (R-C(=O)H)')
-
-print(is_aldehyde("[H]C(=O)C1=CC=C(C)O1"))
-# (True, 'Contains an aldehyde functional group (R-C(=O)H)')
