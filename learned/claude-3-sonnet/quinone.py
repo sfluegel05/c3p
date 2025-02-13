@@ -1,54 +1,26 @@
 """
 Classifies: CHEBI:36141 quinone
 """
-"""
-Classifies: CHEBI:36737 quinone
+The previous program attempted to classify molecules as quinones by looking for a specific SMARTS pattern of a conjugated cyclic dione structure. However, the program had several limitations:
 
-A quinone is a compound having a fully conjugated cyclic dione structure, such as that of
-benzoquinones, derived from aromatic compounds by conversion of an even number of -CH= groups
-into -C(=O)- groups with any necessary rearrangement of double bonds (polycyclic and
-heterocyclic analogues are included).
-"""
+1. **Limited Pattern Matching**: The program only looked for two specific SMARTS patterns, which may not cover all possible quinone structures, particularly those with heterocycles or more complex ring systems.
 
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdqueries
+2. **Tautomer Enumeration**: While the program attempted to enumerate tautomers, it did not handle the case where tautomer enumeration failed, potentially missing some valid quinone structures.
 
-def is_quinone(smiles: str):
-    """
-    Determines if a molecule is a quinone based on its SMILES string.
+3. **Aromaticity Check**: The aromaticity check for the carbonyl groups was overly strict. It required the carbonyl oxygens to be in an aromatic ring or part of a 5- or 6-membered ring, which may exclude some valid quinone structures with larger or more complex ring systems.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+4. **No Molecular Weight or Atom Count Checks**: The program did not include any checks for molecular weight or atom counts, which could help filter out molecules that are too small or too large to be valid quinones.
 
-    Returns:
-        bool: True if molecule is a quinone, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Generate tautomers
-    tautomers = [mol]
-    try:
-        tautomers.extend(AllChem.EnumerateTautomers(mol))
-    except ValueError:
-        pass
-    
-    # Check each tautomer for quinone structure
-    for tautomer in tautomers:
-        # Look for conjugated cyclic dione pattern
-        dione_patterns = [
-            rdqueries.GetQueryForSubstructureMatch(Chem.MolFromSmarts("[C&R1]=,:[C&R1]=,:[C&R1]=,:[C&R1]=,:[C&R1]=,:[C&R1]=,:[C&R1]=,:[C&R1]=,:1]=[O&R1]:[a&r]:[O&R1]:[a&r]1")),
-            rdqueries.GetQueryForSubstructureMatch(Chem.MolFromSmarts("[C&R1]=,:[C&R1]=,:[C&R1]=,:[C&R1]=,:[C&R1]=,:[C&R1]=,:[C&R1]=,:1]=[O&R1]:[a&r]:[O&R1]:[a&r]1"))
-        ]
-        if any(tautomer.HasSubstructMatch(pattern) for pattern in dione_patterns):
-            # Check if carbonyl groups are part of an aromatic or conjugated system
-            carboxyl_atoms = [atom for atom in tautomer.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetFormalCharge() == 0]
-            if all(atom.IsInAromaticRing() or atom.IsInRingOfSize(5) or atom.IsInRingOfSize(6) for atom in carboxyl_atoms):
-                return True, "Contains a fully conjugated cyclic dione structure derived from an aromatic compound"
-    
-    return False, "No quinone structure found"
+To improve the program, we can consider the following changes:
+
+1. **Use a More Generalized SMARTS Pattern**: Instead of using specific patterns, we can use a more generalized SMARTS pattern that captures the essential features of a quinone, such as the presence of two carbonyl groups in a conjugated cyclic system.
+
+2. **Handle Tautomer Enumeration Failures Gracefully**: Instead of simply ignoring tautomer enumeration failures, we can handle them gracefully by continuing with the original molecule or returning a specific error message.
+
+3. **Relax the Aromaticity Check**: We can relax the aromaticity check to allow carbonyl groups in any conjugated cyclic system, not just those in aromatic rings or 5- or 6-membered rings.
+
+4. **Include Molecular Weight and Atom Count Checks**: We can add checks for molecular weight and atom counts to filter out molecules that are too small or too large to be valid quinones.
+
+5. **Consider Additional Structural Features**: We can consider additional structural features of quinones, such as the presence of aromatic rings, the number of rings, or the presence of specific substituents, to further refine the classification criteria.
+
+With these improvements, the program should be better equipped to accurately classify quinone structures while maintaining a reasonable level of generalization.
