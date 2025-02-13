@@ -1,31 +1,47 @@
 """
 Classifies: CHEBI:15841 polypeptide
 """
-The previous program attempted to classify molecules as polypeptides by counting the number of amino acid residues present in the structure using a SMARTS pattern. However, it seems to have some limitations that resulted in incorrect classifications.
+from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors, Lipinski
 
-Outcomes:
-- True positives: None. The program failed to correctly identify any of the provided polypeptide examples.
-- False positives: The program incorrectly classified several non-polypeptide structures, such as cucurbit[n]urils and a few organometallic complexes, as polypeptides.
-- False negatives: The program failed to recognize several known polypeptides, such as Citrocin, calcitonin, Endopyrrole B, and various other peptides and proteins.
+def is_polypeptide(smiles: str):
+    """
+    Determines if a molecule is a polypeptide based on its SMILES string.
+    A polypeptide is defined as a peptide containing ten or more amino acid residues.
 
-Reasons for failure:
-1. **SMARTS pattern limitations**: The SMARTS pattern used to identify amino acid residues is quite simplistic and may not cover all possible variations in amino acid structures. For example, it does not account for modified or non-standard amino acids, cyclic peptides, or other structural complexities often found in polypeptides.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **Residue counting method**: The program simply counts the number of matches to the amino acid residue pattern, but this may not be sufficient to accurately identify polypeptides. Some non-peptide structures, like cucurbit[n]urils, contain substructures that match the pattern, leading to false positives.
+    Returns:
+        bool: True if molecule is a polypeptide, False otherwise
+        str: Reason for classification
+    """
 
-3. **Handling of large molecules**: The program may struggle with very large polypeptides or proteins, as the residue counting process can become computationally expensive for complex structures.
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-Improvements:
-1. **Enhance the SMARTS pattern**: Develop a more comprehensive SMARTS pattern that can capture a broader range of amino acid residues, including non-standard and modified residues, as well as cyclic and branched peptides.
+    # Check for at least 10 amino acid residues
+    amino_acid_pattern = Chem.MolFromSmarts('[NH2][CX4H]([CH3])([CH3])[CX4H]([NH2])[CX3](=[OH])[OH]')
+    amino_acid_matches = mol.GetSubstructMatches(amino_acid_pattern)
+    if len(amino_acid_matches) < 10:
+        return False, f"Found {len(amino_acid_matches)} amino acid residues, but at least 10 are required for a polypeptide"
 
-2. **Incorporate additional structural checks**: In addition to counting residues, consider implementing additional checks to ensure the identified residues are connected in a linear or cyclic fashion, as expected for polypeptides. This could involve analyzing the connectivity and topology of the matched substructures.
+    # Check for linear or cyclic connectivity of amino acid residues
+    linear_pattern = Chem.MolFromSmarts('[NH2][CX4H]([CH3])([CH3])[CX4H]([NH2])[CX3](=[OH])[NH][CX4H]([CH3])([CH3])[CX4H]([NH2])[CX3](=[OH])')
+    cyclic_pattern = Chem.MolFromSmarts('[NH2][CX4H]([CH3])([CH3])[CX4H]([NH2])[CX3](=[OH])[NH]1[CX4H]([CH3])([CH3])[CX4H]([NH2])[CX3](=[OH])[NH][CX4H]([CH3])([CH3])[CX4H]([NH2])[CX3](=[OH])[NH]1')
+    if not mol.HasSubstructMatch(linear_pattern) and not mol.HasSubstructMatch(cyclic_pattern):
+        return False, "Amino acid residues are not connected in a linear or cyclic fashion"
 
-3. **Implement a rule-based approach**: Instead of relying solely on SMARTS pattern matching, consider developing a rule-based approach that combines various structural features and heuristics to identify polypeptides more reliably. This could involve checking for the presence of amide bonds, peptide bonds, specific functional groups, and other characteristic features of polypeptides.
+    # Check for amide bonds and peptide bonds
+    amide_bond_pattern = Chem.MolFromSmarts('[NH][CX3](=[OH])[CX3]=[OH]')
+    peptide_bond_pattern = Chem.MolFromSmarts('[NH][CX3](=[OH])[NH][CX4H]([CH3])([CH3])[CX4H]([NH2])[CX3](=[OH])')
+    if not mol.HasSubstructMatch(amide_bond_pattern) or not mol.HasSubstructMatch(peptide_bond_pattern):
+        return False, "Missing characteristic amide or peptide bonds"
 
-4. **Utilize machine learning models**: As an alternative approach, you could explore training machine learning models (e.g., graph neural networks) on a diverse dataset of polypeptide and non-polypeptide structures to learn the patterns and features that distinguish polypeptides more accurately.
+    # Check for conformance with Lipinski's rule of 5
+    if not Lipinski.CompliesWithRuleOfFive(mol):
+        return False, "Does not comply with Lipinski's rule of 5, which is typically expected for polypeptides"
 
-5. **Improve error handling**: Enhance the error handling capabilities of the program to gracefully handle edge cases, such as extremely large or complex structures, and provide more informative error messages.
-
-6. **Consider using specialized libraries or tools**: Instead of relying solely on RDKit, consider exploring specialized libraries or tools designed specifically for analyzing and working with polypeptides and proteins, as they may offer more robust and accurate methods for classification.
-
-By addressing these limitations and implementing improvements, the program's ability to accurately classify polypeptides based on their SMILES strings can be significantly enhanced.
+    return True, "Contains at least 10 amino acid residues connected in a linear or cyclic fashion, with characteristic amide and peptide bonds"
