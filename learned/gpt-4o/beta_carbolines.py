@@ -8,7 +8,7 @@ def is_beta_carbolines(smiles: str):
     Determines if a molecule is a beta-carboline based on its SMILES string.
     A beta-carboline is defined as a pyridoindole containing a beta-carboline skeleton
     and their hydrogenated derivatives.
-    
+
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -23,11 +23,12 @@ def is_beta_carbolines(smiles: str):
         return False, "Invalid SMILES string"
     
     # Define SMARTS patterns for the beta-carboline skeleton
-    # These patterns must account for various configurations, and hydrogenated derivatives
+    # Patterns include a broader range for hydrogenated derivatives and possible ring closures.
     beta_carboline_patterns = [
-        Chem.MolFromSmarts("c1cc2c3ccccc3nc2[nH]1"),   # Classic beta-carboline core
-        Chem.MolFromSmarts("c1ncc2c3ccccc3[nH]c2c1"),  # Hydrogenated variant
-        Chem.MolFromSmarts("C1=CC2=C3C(=CC=CC3=NC2=CN1)[nH]"),  # Another common structure
+        Chem.MolFromSmarts("c1cc2[nH]cc(c3ccccc32)c1"),  # Standard beta-carboline core
+        Chem.MolFromSmarts("c1cnc2c3ccccc3[nH]c2c1"),    # Classic and some hydrogenated forms
+        Chem.MolFromSmarts("c1[nH]cc2c3ccccc3cnc2c1"),   # Another common hydrogenation
+        Chem.MolFromSmarts("C1=CC=2C([nH]c3ccccc23)=NC1") # Variations of pyridoindole with shifts
     ]
 
     # Check if the molecule matches any of the beta-carboline patterns
