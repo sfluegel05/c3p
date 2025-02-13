@@ -2,15 +2,18 @@
 Classifies: CHEBI:25029 leukotriene
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import Descriptors
 
 def is_leukotriene(smiles: str):
     """
     Determines if a molecule is a leukotriene based on its SMILES string.
-    A leukotriene is characterized as a C20 polyunsaturated fatty acid with specific conjugated double bonds.
-    
+    A leukotriene is characterized by a C20 polyunsaturated fatty acid backbone with four double bonds, 
+    three of which are conjugated.
+
     Args:
         smiles (str): SMILES string of the molecule
-    
+
     Returns:
         bool: True if molecule is a leukotriene, False otherwise
         str: Reason for classification
@@ -21,38 +24,39 @@ def is_leukotriene(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check if the molecule has at least 20 carbon atoms
-    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if carbon_count < 20:
+    # Check for the presence of a carbon chain typical of icosanoids (around 20 carbons)
+    atom_count = mol.GetNumAtoms()
+    carbon_chain_length = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if carbon_chain_length < 20:
         return False, "Molecule does not have adequate icosanoid carbon chain length"
     
-    # Check for the presence of at least four double bonds
+    # Count the number of double bonds
     double_bond_pattern = Chem.MolFromSmarts("C=C")
-    double_bonds = mol.GetSubstructMatches(double_bond_pattern)
-    if len(double_bonds) < 4:
-        return False, f"Found {len(double_bonds)} double bonds, need at least 4"
+    double_bond_matches = len(mol.GetSubstructMatches(double_bond_pattern))
+    if double_bond_matches < 4:
+        return False, f"Found {double_bond_matches} double bonds, need at least 4"
     
-    # Verify at least one set of three consecutive conjugated double bonds (conjugated triene)
-    conjugated_triene_pattern = Chem.MolFromSmarts("C=C-C=C-C=C")
-    if not mol.HasSubstructMatch(conjugated_triene_pattern):
-        return False, "No conjugated triene pattern found"
+    # Check for conjugated double bonds (at least three consecutive double bonds)
+    conjugated_pattern = Chem.MolFromSmarts("C=C-C=C-C=C")
+    conjugated_matches = mol.HasSubstructMatch(conjugated_pattern)
+    if not conjugated_matches:
+        return False, "No conjugated double bonds pattern found"
     
-    # Check for functional groups: hydroxyl groups
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
-    hydroxyl_groups = mol.GetSubstructMatches(hydroxyl_pattern)
+    # Detect other characteristic groups of leukotrienes (e.g., hydroxyl groups, sulfidopeptide)
+    # Let's check for the presence of hydroxyl (OH) as a basic feature
+    oh_pattern = Chem.MolFromSmarts("[OX2H]")
+    oh_matches = mol.GetSubstructMatches(oh_pattern)
+    num_oh_groups = len(oh_matches)
     
-    # Construct the classification reason
+    # Return True with reasons for being classified as leukotriene
     classification_reasons = [
         "Has adequate carbon chain length",
-        f"Has {len(double_bonds)} double bonds, including a conjugated triene" if mol.HasSubstructMatch(conjugated_triene_pattern) else "Double bond conjugation pattern missing",
-        f"Contains {len(hydroxyl_groups)} hydroxyl group(s)" if hydroxyl_groups else "No hydroxyl groups detected"
+        f"Has {double_bond_matches} double bonds, of which pattern supports conjugation" if conjugated_matches else "",
+        f"Contains {num_oh_groups} hydroxyl groups" if num_oh_groups > 0 else "No hydroxyl groups detected"
     ]
-    
     reason = "; ".join(filter(None, classification_reasons))
     
-    # Return the classification and reason
     return True, reason
 
-# Example test
-# result, reason = is_leukotriene("CCCCCCCCC/C=C/C=C/C=C/C=C/CCCC(=O)O")
-# print(result, reason)
+# Example usage:
+# is_leukotriene("CCCCCCCCCCCCCCCCCCCC=O")
