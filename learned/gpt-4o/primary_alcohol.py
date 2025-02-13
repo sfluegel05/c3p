@@ -20,18 +20,25 @@ def is_primary_alcohol(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
+    # Parse SMILES to get RDKit molecule
     mol = Chem.MolFromSmiles(smiles)
+    
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # SMARTS pattern for primary alcohol
-    # [CX4H2][OH] means a carbon with two hydrogens attached to an OH group
-    primary_alcohol_pattern = Chem.MolFromSmarts("[CX4;H2][OH]")
-
-    # Check for primary alcohol match
-    matches = mol.GetSubstructMatches(primary_alcohol_pattern)
-    if matches:
-        return True, f"Contains {len(matches)} primary alcohol group(s)."
+    # Define SMARTS patterns for primary alcohol
+    # Identify carbon atoms bonded to OH group with only 1 other carbon (2 hydrogens)
+    primary_alcohol_pattern_1 = Chem.MolFromSmarts("[C][OH]([H])[H]")
+    # Optionally: a standalone primary alcohol carbon having three hydrogens
+    primary_alcohol_pattern_2 = Chem.MolFromSmarts("[C][OH]([H])[H][H]")
+    
+    # Check for matches with the defined SMARTS patterns
+    matches_1 = mol.GetSubstructMatches(primary_alcohol_pattern_1)
+    matches_2 = mol.GetSubstructMatches(primary_alcohol_pattern_2)
+    
+    total_matches = len(matches_1) + len(matches_2)
+    
+    if total_matches > 0:
+        return True, f"Contains {total_matches} primary alcohol group(s)."
     
     return False, "No primary alcohol group found."
