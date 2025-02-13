@@ -6,7 +6,8 @@ from rdkit import Chem
 def is_3_oxo_fatty_acyl_CoA_4__(smiles: str):
     """
     Determines if a molecule is a 3-oxo-fatty acyl-CoA(4-) based on its SMILES string.
-    This class is characterized by the presence of a 3-oxo group and a Coenzyme A moiety.
+    This class is characterized by the presence of a 3-oxo group and a Coenzyme A moiety,
+    and a long fatty acyl chain.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,20 +23,20 @@ def is_3_oxo_fatty_acyl_CoA_4__(smiles: str):
         return None, "Invalid SMILES string"
     
     # Check for Coenzyme A moiety
-    coa_smarts = "COP([O-])(=O)OP([O-])(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP([O-])([O-])=O)N1C=NC2=C(N)N=CN=C12"
-    coa_pattern = Chem.MolFromSmarts(coa_smarts)
+    # Coenzyme A pattern redesigned to be more flexible
+    coa_pattern = Chem.MolFromSmarts("NC(=O)CC(COP(=O)([O-])OP(=O)([O-])OCC1O[C@H](n2cnc3c(N)ncnc23)[C@H]1O)O[C@H]1[C@H](O)[C@H](n2cnc3c(N)ncnc23)O[C@H]1COP(=O)([O-])OP([O-])(=O)OCC([C@@H](O)CNC(=O)CCNC(=O)C)[S]CC")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No Coenzyme A moiety found"
     
     # Check for 3-oxo group attached to a fatty acyl chain
+    # More precise pattern for 3-oxo group (O=C-C(=O))
     oxo_acyl_pattern = Chem.MolFromSmarts("C(=O)CC(=O)")
     if not mol.HasSubstructMatch(oxo_acyl_pattern):
         return False, "No 3-oxo group or incomplete acyl chain found"
 
     # Ensure there are long carbon chains indicating fatty acids
-    chain_length = [atom.GetTotalNumHs() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
-    long_chain = any(cnum >= 14 for cnum in chain_length)
-    if not long_chain:
+    carbon_chains = mol.GetSubstructMatches(Chem.MolFromSmarts("C" * 14))  # Look for at least 14 connected carbons
+    if not carbon_chains:
         return False, "Carbon chain length too short for typical fatty acids"
 
     return True, "Valid 3-oxo-fatty acyl-CoA(4-) structure identified"
