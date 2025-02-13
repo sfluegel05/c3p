@@ -21,19 +21,14 @@ def is_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for the thioester linkage (-C(=O)S-)
-    thioester_pattern = Chem.MolFromSmarts("C(=O)S")
+    # Define SMARTS for the thioester linkage (-C(=O)S-)
+    thioester_pattern = Chem.MolFromSmarts("C(=O)SCCN")
     if not mol.HasSubstructMatch(thioester_pattern):
         return False, "No thioester linkage found (-C(=O)S-)"
 
-    # Define a SMARTS pattern for coenzyme A structure (including ribose-phosphate and key features)
-    coa_pattern = Chem.MolFromSmarts("NCC(=O)CC(=O)[C@H](O)C(C)(C)")
+    # Define a comprehensive SMARTS pattern for coenzyme A structure
+    coa_pattern = Chem.MolFromSmarts("[nH]1cnc2c1ncnc2N[C@H]3C(C)(C)O[C@@H](COP(O)(=O)O)O[C@H]3P(=O)(O)OP(=O)(O)O")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No coenzyme A backbone found (missing typical CoA structure)"
-    
-    # Check for the terminal phosphate group pattern
-    phosphate_pattern = Chem.MolFromSmarts("COP(O)([O-])=O")
-    if not mol.HasSubstructMatch(phosphate_pattern):
-        return False, "No terminal phosphate group pattern found"
 
     return True, "Molecule contains thioester linkage to a coenzyme A moiety"
