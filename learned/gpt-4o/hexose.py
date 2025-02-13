@@ -20,30 +20,29 @@ def is_hexose(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return None, "Invalid SMILES string"
+        return False, "Invalid SMILES string"
     
-    # Count carbon atoms
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6 and atom.GetHybridization() == Chem.HybridizationType.SP3)
+    # Count all carbon atoms
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     
-    # Check if there are exactly six sp3-hybridized carbon atoms
+    # Ensure exactly six carbon atoms are present
     if c_count != 6:
-        return False, f"Contains {c_count} sp3-hybridized carbon atoms, but a hexose requires exactly 6"
+        return False, f"Contains {c_count} carbon atoms, but a hexose requires exactly 6"
 
-    # Define more specific patterns for aldehyde or ketone groups
-    aldehyde_pattern = Chem.MolFromSmarts("[CH]=O")  # Aldehyde group
-    ketone_pattern = Chem.MolFromSmarts("[C](=O)[C]")  # Ketone group in context
+    # Define SMARTS patterns for functional groups in linear and cyclic form
+    aldehyde_pattern = Chem.MolFromSmarts("O=CC(C)(C)C")
+    ketone_pattern = Chem.MolFromSmarts("C(C)(C)C(=O)C")
 
-    # Check for an aldehyde at position 1 (linear form)
+    # Check for linear forms: aldehyde or ketone groups
     if mol.HasSubstructMatch(aldehyde_pattern):
-        return True, "Structure matches an aldohexose (aldehyde group present)"
+        return True, "Structure matches an aldohexose (aldehyde group at position 1)"
     
-    # Check for a ketone at position 2
     if mol.HasSubstructMatch(ketone_pattern):
-        return True, "Structure matches a ketohexose (ketone group present)"
+        return True, "Structure matches a ketohexose (ketone group at position 2)"
 
-    # Enhanced cyclic form patterns (pyranose or furanose)
-    furanose_pattern = Chem.MolFromSmarts("C1OC[C@H](O)[C@@H]1O")
-    pyranose_pattern = Chem.MolFromSmarts("C1OC[C@H](O)[C@@H](O)C1")
+    # Enhanced patterns for furanose and pyranose
+    furanose_pattern = Chem.MolFromSmarts("[C@H]1O[C@@H](C(C1)O)O")
+    pyranose_pattern = Chem.MolFromSmarts("[C@H]1O[C@@H](C(O)[C@H](O)C1)O")
 
     if mol.HasSubstructMatch(furanose_pattern) or mol.HasSubstructMatch(pyranose_pattern):
         return True, "Structure matches a cyclic furanose or pyranose form"
