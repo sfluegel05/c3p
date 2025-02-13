@@ -1,64 +1,29 @@
 """
 Classifies: CHEBI:47909 3-oxo-Delta(4) steroid
 """
-"""
-Classifies: CHEBI:51106 3-oxo-Delta(4) steroid
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+The previous code attempts to classify a molecule as a 3-oxo-Delta(4) steroid based on several criteria:
 
-def is_3_oxo_Delta_4__steroid(smiles: str):
-    """
-    Determines if a molecule is a 3-oxo-Delta(4) steroid based on its SMILES string.
-    A 3-oxo-Delta(4) steroid is defined as a steroid with a 3-oxo group and a C=C double bond
-    at the alpha,beta position (between C4 and C5).
+1. It checks for the presence of a steroid backbone using a SMARTS pattern.
+2. It checks for the presence of a 3-oxo group and ensures that there is only one oxo group.
+3. It checks for the presence of a C=C double bond at the alpha,beta position (between C4 and C5).
+4. It also includes some additional checks for the number of rotatable bonds and molecular weight.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+However, based on the outcomes provided, the program appears to have the following issues:
 
-    Returns:
-        bool: True if molecule is a 3-oxo-Delta(4) steroid, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Check for steroid backbone
-    steroid_pattern = Chem.MolFromSmarts("[C@]12CC[C@H]3[C@@H](CCC4=CC(=O)CC[C@]34C)[C@@H]1CC[C@@H]2C")
-    if not mol.HasSubstructMatch(steroid_pattern):
-        return False, "No steroid backbone found"
-    
-    # Check for 3-oxo group
-    oxo_pattern = Chem.MolFromSmarts("C(=O)")
-    oxo_matches = mol.GetSubstructMatches(oxo_pattern)
-    if len(oxo_matches) == 0:
-        return False, "No 3-oxo group found"
-    elif len(oxo_matches) > 1:
-        return False, "More than one oxo group found"
-    
-    # Check for alpha,beta C=C double bond
-    double_bond_pattern = Chem.MolFromSmarts("C=C")
-    double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
-    alpha_beta_match = False
-    for match in double_bond_matches:
-        bond = mol.GetBondBetweenAtoms(match[0], match[1])
-        if bond.GetBeginAtomIdx() == 3 and bond.GetEndAtomIdx() == 4:
-            alpha_beta_match = True
-            break
-    if not alpha_beta_match:
-        return False, "No alpha,beta C=C double bond found"
-    
-    # Additional checks
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 1:
-        return False, "Molecule is too rigid for a steroid"
-    
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 250 or mol_wt > 500:
-        return False, "Molecular weight outside typical range for steroids"
-    
-    return True, "Contains steroid backbone with 3-oxo group and alpha,beta C=C double bond"
+1. **False negatives**: Several examples of 3-oxo-Delta(4) steroids were incorrectly classified as negatives, with the reason "No steroid backbone found." This suggests that the SMARTS pattern used for detecting the steroid backbone is too specific and may not account for all valid variations of the steroid backbone.
+
+2. **False positives**: There were no false positives reported in the outcomes, which is a good sign. However, it's essential to ensure that the program doesn't incorrectly classify non-3-oxo-Delta(4) steroids as positives.
+
+To improve the program, we can consider the following modifications:
+
+1. **Refine the steroid backbone pattern**: Instead of using a single, highly specific SMARTS pattern, we could use a combination of more general patterns or rules to detect the steroid backbone. This could involve checking for certain ring systems, specific atom environments, or other structural features that are characteristic of steroid backbones.
+
+2. **Improve the detection of the 3-oxo group and alpha,beta C=C double bond**: The current approach of using SMARTS patterns for detecting these functional groups seems reasonable. However, we may need to refine the patterns or combine them with additional checks to ensure accurate detection.
+
+3. **Consider additional structural features**: While the program currently checks for the steroid backbone, 3-oxo group, and alpha,beta C=C double bond, there may be additional structural features that can help identify 3-oxo-Delta(4) steroids more accurately. For example, we could check for the presence of specific ring systems or atom environments that are characteristic of this class of compounds.
+
+4. **Expand the test set**: The provided outcomes include several examples, but it would be beneficial to test the program against a larger and more diverse set of examples to identify potential edge cases or blind spots.
+
+5. **Explore alternative approaches**: While the current approach of using SMARTS patterns and structural checks is a valid one, we could also explore alternative approaches, such as machine learning-based methods or more sophisticated rule-based systems, to improve the classification accuracy.
+
+Overall, the program's performance could be improved by refining the structural patterns and rules used for detecting the key features of 3-oxo-Delta(4) steroids, incorporating additional structural checks, and expanding the test set to identify potential edge cases or blind spots.
