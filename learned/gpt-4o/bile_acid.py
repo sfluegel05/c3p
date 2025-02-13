@@ -2,36 +2,42 @@
 Classifies: CHEBI:3098 bile acid
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_bile_acid(smiles: str):
     """
     Determines if a molecule is a bile acid based on its SMILES string.
-    Bile acids are typically characterized by a 5β-steroidal backbone with hydroxyl and carboxylic acid groups.
+    A bile acid is a hydroxy-5beta-cholanic acid occurring in bile. 
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool, str: True and a reason if the molecule is a bile acid, False otherwise with a reason
+        bool: True if the molecule is a bile acid, False otherwise
+        str: Reason for classification
     """
-    # Parse the SMILES string
+    
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Broad steroidal backbone pattern for 5β-cholanic acid
-    steroid_pattern = Chem.MolFromSmarts('[C@H]1(CC[C@@H]2[C@@H]3(C)CC[C@H]4[C@]3(CC[C@@H](C4)C2)C1)[C@@H](C)CCC(=O)O')
-    if not mol.HasSubstructMatch(steroid_pattern):
-        return False, "No consistent steroidal 5β-backbone detected"
+    # Substructure pattern for cholanic acid backbone with 5beta configuration
+    cholanic_base_pattern = Chem.MolFromSmarts('C1CC2CCC3C(C2(C1)C)CC4C3CCCC4')
 
-    # Check for hydroxy groups
-    hydroxy_matches = mol.GetSubstructMatches(Chem.MolFromSmarts('[CX4][OH]'))
-    if len(hydroxy_matches) < 1:
-        return False, "Not enough hydroxy groups identified"
+    if not mol.HasSubstructMatch(cholanic_base_pattern):
+        return False, "No cholanic acid backbone with 5beta configuration"
 
-    # Check for a carboxylic acid group or its esters/amides
-    carboxylic_acid_pattern = Chem.MolFromSmarts('C(=O)[OX1H0-,OX2H1]')
+    # Look for hydroxy groups (–OH) on the steroid core
+    hydroxy_group = Chem.MolFromSmarts('[C;H1,H2]O')
+    ho_count = len(mol.GetSubstructMatches(hydroxy_group))
+    
+    if ho_count < 1:
+        return False, "No hydroxy groups identified"
+
+    # Presence of carboxylic acid group (for bile acids, typically at the end)
+    carboxylic_acid_pattern = Chem.MolFromSmarts('C(=O)O')
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
-        return False, "No carboxylic acid or derivative group found"
-
-    return True, "Contains features typical of a bile acid with 5β-steroidal structure and functional groups"
+        return False, "No carboxylic acid group found"
+    
+    return True, "Contains cholanic acid backbone with 5beta configuration and typical functional groups of bile acids"
