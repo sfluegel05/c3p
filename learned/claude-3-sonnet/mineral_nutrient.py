@@ -28,9 +28,8 @@ def is_mineral_nutrient(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for organic functional groups or long carbon chains
-    organic_pattern = Chem.MolFromSmarts("[C:1]=[C:2]")  # alkene
-    organic_pattern |= Chem.MolFromSmarts("[C:1]#[C:2]")  # alkyne
-    organic_pattern |= Chem.MolFromSmarts("[C:1]~[C:2]~[C:3]~[C:4]~[C:5]~[C:6]")  # long carbon chain
+    organic_smarts = "[C:1]=[C:2]|[C:1]#[C:2]|[C:1]~[C:2]~[C:3]~[C:4]~[C:5]~[C:6]"
+    organic_pattern = Chem.MolFromSmarts(organic_smarts)
     if any(mol.HasSubstructMatch(organic_pattern) for mol in mol_list):
         return False, "Contains organic functional groups or long carbon chains"
 
