@@ -1,22 +1,56 @@
 """
 Classifies: CHEBI:72600 spiroketal
 """
-The previous program attempts to classify molecules as spiroketals by searching for ketal groups (O-C-O) and checking if any ketal carbon is shared between two rings. However, there are a few issues with the implementation:
+"""
+Classifies: CHEBI:51633 spiroketal
 
-1. **False Positives**: The program incorrectly classifies some molecules as spiroketals even though they don't contain a spiroketal substructure. This is because the program only checks if the ketal carbon is shared between two rings, but it doesn't verify if the rings are actually fused to form a spiroketal. For example, the molecule "alpha-D-Gal-(1->3)-beta-D-Gal-(1->4)-[alpha-L-Fuc-(1->3)]-beta-D-GlcNAc-(1->2)-alpha-D-Man-(1->3)-{alpha-D-Gal-(1->3)-beta-D-Gal-(1->4)-[alpha-L-Fuc-(1->3)]-beta-D-GlcNAc-(1->2)-alpha-D-Man-(1->6)}-beta-D-Man-(1->4)-beta-D-GlcNAc-(1->4)-beta-D-GlcNAc" is classified as a spiroketal because it contains a ketal carbon shared between two rings, but these rings are not fused to form a spiroketal.
+A spiroketal is a cyclic ketal in which the ketal carbon is the only common atom of two rings.
+"""
 
-2. **Missed Positives**: The program may miss some valid spiroketal structures because it doesn't consider all possible ketal patterns. For example, the program doesn't recognize the spiroketal substructure in molecules like "Pectenotoxin 7" because the ketal carbon is not in the expected "O[C;X4]O" pattern.
+from rdkit import Chem
+from rdkit.Chem import rdFMCS
 
-3. **Efficiency**: The program iterates over all ketal matches and all rings for each molecule, which may not be efficient for larger molecules with many ketal groups and rings.
+def is_spiroketal(smiles: str):
+    """
+    Determines if a molecule is a spiroketal based on its SMILES string.
 
-To improve the program, you could consider the following approaches:
+    Args:
+        smiles (str): SMILES string of the molecule
 
-1. **Use a more specific spiroketal pattern**: Instead of just checking for ketal groups, you could use a more specific SMARTS pattern that captures the spiroketal substructure. This would involve defining a pattern that includes the fused ring system and the ketal carbon shared between the two rings.
-
-2. **Implement a ring perception algorithm**: Alternatively, you could implement a ring perception algorithm that identifies all ring systems in the molecule and then checks if any of these ring systems contain a ketal carbon shared between two fused rings. This approach would be more robust but also more complex to implement.
-
-3. **Use a maximum common substructure (MCS) approach**: Another approach could be to define a set of known spiroketal substructures and use the `rdFMCS` module from RDKit to find the maximum common substructure between the input molecule and the known spiroketal substructures. This could potentially identify more complex spiroketal patterns but may still miss some cases.
-
-4. **Optimize the implementation**: Regardless of the approach, you could optimize the implementation by avoiding unnecessary iterations and using more efficient data structures and algorithms.
-
-Overall, classifying complex substructures like spiroketals can be challenging, and the approach you choose will depend on the trade-off between accuracy, robustness, and efficiency that you require for your specific use case.
+    Returns:
+        bool: True if molecule is a spiroketal, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Look for ketal pattern (O-C-O)
+    ketal_pattern = Chem.MolFromSmarts("[OX2]C([OX2])")
+    if not mol.HasSubstructMatch(ketal_pattern):
+        return False, "No ketal group found"
+    
+    # Find ring atoms
+    ring_info = mol.GetRingInfo()
+    
+    # Check if ketal carbon is shared between two rings
+    ketal_atoms = mol.GetSubstructMatches(ketal_pattern)
+    ketal_carbon = ketal_atoms[0][1]
+    ketal_rings = []
+    for ring in ring_info.AtomRings():
+        if ketal_carbon in ring:
+            ketal_rings.append(ring)
+    
+    if len(ketal_rings) != 2:
+        return False, "Ketal carbon not shared between two rings"
+    
+    # Check if ketal carbon is the only shared atom between the two rings
+    ring1 = set(ketal_rings[0])
+    ring2 = set(ketal_rings[1])
+    shared_atoms = ring1.intersection(ring2)
+    if len(shared_atoms) != 1 or list(shared_atoms)[0] != ketal_carbon:
+        return False, "Ketal carbon not the only shared atom between rings"
+    
+    return True, "Contains a ketal group where the ketal carbon is shared between two rings"
