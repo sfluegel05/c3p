@@ -23,28 +23,23 @@ def is_macromolecule(smiles: str):
     
     # Calculate molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 1000:  # Set a higher threshold for macromolecules
+    if mol_wt < 1000:
         return False, f"Molecular weight too low ({mol_wt} < 1000 g/mol)"
     
-    # Define repeating structural motifs typical in macromolecules
-    repeating_motif_patterns = [
-        "[NX3][CX3](=O)[O,N]", # Amide bonds (peptide linkages)
-        "COC(=O)",            # Ester bonds (polyester components)
-        "[OX2H][CX4]",        # Hydroxyl caps, potential for chains like polysaccharides
-        "C1OC1",              # Ether linkage in sugars
-        "[PO4]",              # Phosphate group
-    ]
+    # Look for repeating units which could indicate a polymeric structure
+    # Simplified approach: check for duplicate substructs within reasonable size
+    fragment_counts = Chem.rdMolDescriptors.CalcNumRings(mol)
+    if fragment_counts < 5:
+        return False, "No significant repeating structural motifs"
     
-    # Count matches of repeating motifs
-    matches_count = sum(mol.HasSubstructMatch(Chem.MolFromSmarts(pat)) for pat in repeating_motif_patterns)
-    # Increase threshold for number of motifs
-    if matches_count >= 5:
-        # Check for complexity: higher number of atoms and bonds
-        num_atoms = mol.GetNumAtoms()
-        num_bonds = mol.GetNumBonds()
-        if num_atoms > 100 and num_bonds > 150:
-            return True, f"Complex structure with repeating motifs detected: {num_atoms} atoms, {num_bonds} bonds"
-        
-        return True, "Extensive repeating structural motifs detected, indicating potential macromolecule structure"
+    # Check for high complexity: high number of atoms and bonds
+    num_atoms = mol.GetNumAtoms()
+    num_bonds = mol.GetNumBonds()
+    if num_atoms > 100 and num_bonds > 150:
+        return True, f"Contains {num_atoms} atoms and {num_bonds} bonds indicating high complexity"
+    
+    # If both high molecular weight and repeating motifs are detected
+    if mol_wt >= 1000 and fragment_counts >= 5:
+        return True, f"Considerable molecular weight and repeating structural motifs"
     
     return False, "Structure does not meet macromolecule criteria"
