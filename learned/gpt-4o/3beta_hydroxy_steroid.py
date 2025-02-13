@@ -12,7 +12,7 @@ def is_3beta_hydroxy_steroid(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a 3beta-hydroxy steroid, False otherwise
+        bool: True if the molecule is a 3beta-hydroxy steroid, False otherwise
         str: Reason for classification
     """
     
@@ -21,13 +21,14 @@ def is_3beta_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for steroid backbone (cyclopentanoperhydrophenanthrene nucleus)
-    steroid_pattern = Chem.MolFromSmarts('C1CCC2C(C1)CC3C(C2)CCC4C3CCCC4')
+    # Define flexible steroid backbone pattern
+    # Allow for various stereochemistry at each junction - using '@' for stereocenters
+    steroid_pattern = Chem.MolFromSmarts('[#6]12[#6][#6][#6]3[#6]1[#6][#6][#6]4[#6]3[#6][#6][#6][#6]2')
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
         
-    # SMARTS pattern for 3beta-hydroxy group
-    hydroxy_3beta_pattern = Chem.MolFromSmarts('[C@H]1(O)[C@H](CC2C(C1)CCC3C2CCC4C3CCCC4)')
+    # Define 3beta-hydroxy pattern - using '@' for flexibility in stereocenter recognition
+    hydroxy_3beta_pattern = Chem.MolFromSmarts('[C@H]1(O)[#6][#6][#6]2[#6]1[#6][#6][#6]3[#6]2[#6][#6][#6]4[#6]3[#6][#6][#6]1')
     if not mol.HasSubstructMatch(hydroxy_3beta_pattern):
         return False, "3beta-hydroxy group not found"
     
