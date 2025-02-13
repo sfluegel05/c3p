@@ -22,28 +22,28 @@ def is_nonclassic_icosanoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Step 1: Check for the presence of C20 backbone
+    # Check for presence of a central C20 backbone
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if carbon_count != 20:
-        return False, f"Contains {carbon_count} carbons; requires exactly 20 carbons"
-
-    # Step 2: Check for presence of functional groups: epoxide, hydroxyl, and carboxylic acid
-    epoxide_pattern = Chem.MolFromSmarts("C1OC1")
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
+    if carbon_count < 20:
+        return False, f"Contains {carbon_count} carbons; requires at least 20 carbons for backbone"
+    
+    # Check for presence of functional groups: epoxide, multiple hydroxyls, and carboxylic acid
+    epoxide_pattern = Chem.MolFromSmarts("[CX3]1[OX2][CX3]1")  # Improved pattern for epoxides
+    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")  # Matches hydroxyl groups
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[OX2H1]")  # Matches carboxylic acid group
     
     has_epoxide = mol.HasSubstructMatch(epoxide_pattern)
-    has_hydroxyl = mol.HasSubstructMatch(hydroxyl_pattern)
+    hydroxyl_matches = len(mol.GetSubstructMatches(hydroxyl_pattern)) >= 2  # Require two or more hydroxyl groups
     has_carboxylic_acid = mol.HasSubstructMatch(carboxylic_acid_pattern)
 
-    # Check if it has at least one of epoxide or hydroxyl group, and a carboxylic acid group
-    if not (has_epoxide or has_hydroxyl) or not has_carboxylic_acid:
-        return False, "Lacks necessary epoxide or hydroxyl groups, or carboxylic acid group"
-
-    # Step 3: Ensure it's not a classical icosanoid (a more complex task)
-    # For simplicity, we may consider this as avoiding common prostanoid and leukotriene motifs
-    prostanoid_pattern = Chem.MolFromSmarts("COC(=O)CC")
-    leukotriene_pattern = Chem.MolFromSmarts("CCCCC(CC)CC")
+    # Check if it has necessary functional groups
+    if not has_epoxide or not hydroxyl_matches or not has_carboxylic_acid:
+        return False, "Must contain epoxide group, multiple hydroxyls, and a carboxylic acid group"
+    
+    # Avoid classic icosanoid motifs
+    # Updated SMARTS for more specific avoidance in classical icosanoids
+    prostanoid_pattern = Chem.MolFromSmarts("[CX3](=O)[O][CX2][CX3](=O)[CX4]")
+    leukotriene_pattern = Chem.MolFromSmarts("CC(C)C[CX4]")
     
     if mol.HasSubstructMatch(prostanoid_pattern) or mol.HasSubstructMatch(leukotriene_pattern):
         return False, "Substructure resembles classic icosanoids (prostanoid or leukotriene patterns detected)"
