@@ -20,11 +20,13 @@ def is_aldehyde(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for an aldehyde group: carbonyl carbon bonded to a hydrogen
-    aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)[#6]")
+    # SMARTS pattern for an aldehyde group: carbonyl group (C=O) directly bonded to hydrogen (C-H)
+    # This is a more general pattern to allow for variability in surrounding atoms, but focuses on C=O with C-H
+    aldehyde_pattern = Chem.MolFromSmarts("[CX3]=O")
+    hydrogen_pattern = Chem.MolFromSmarts("[CX2H]")  # Must be bonded to hydrogen as well
 
     # Check if the molecule contains the aldehyde functional group
-    if mol.HasSubstructMatch(aldehyde_pattern):
+    if mol.HasSubstructMatch(aldehyde_pattern) and mol.HasSubstructMatch(hydrogen_pattern):
         return True, "Contains an aldehyde group (RC(=O)H)"
     
     return False, "No aldehyde group found"
