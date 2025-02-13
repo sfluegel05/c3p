@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_quinic_acid(smiles: str):
     """
     Determines if a molecule is a quinic acid or its derivative based on its SMILES string.
-    A quinic acid derivative typically consists of a cyclohexane core with hydroxy and ester groups.
+    Quinic acid derivatives generally feature a cyclohexane ring with hydroxyl and ester groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,27 +22,29 @@ def is_quinic_acid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for a cyclohexane ring
-    ring_info = mol.GetRingInfo()
-    if not any(len(ring) == 6 for ring in ring_info.AtomRings()):
+    cyclohexane_pattern = Chem.MolFromSmarts("C1CCCCC1")
+    if not mol.HasSubstructMatch(cyclohexane_pattern):
         return False, "No cyclohexane ring found"
 
-    # Check for hydroxy and ester groups on the cyclohexane, allowing flexible stereochemistry
-    hydroxy_pattern = Chem.MolFromSmarts("C(O)")
-    ester_pattern = Chem.MolFromSmarts("OC=O")
-    
-    # Check complex quinic features within the ring
-    pattern = Chem.MolFromSmarts("[C;R1]1([OH])[C;R1][C;R1](O)[C;R1]([OH])[C;R1](OC=O)[C;R1]1C(=O)O")
-    
-    if not mol.HasSubstructMatch(pattern):
-        # Check if it matches a simpler pattern where stereochemistry might not be resolved
-        rearranged_pattern = Chem.MolFromSmarts("[C;R1]1([OH])[C;R1][C;R1](O)[C;R1][C;R1](O)[C;R1]1C(=O)O")
-        if not mol.HasSubstructMatch(rearranged_pattern):
-            return False, "Does not match quinic acid core patterns"
-    
-    if any(map(mol.HasSubstructMatch, [hydroxy_pattern, ester_pattern])):
-        return True, "Contains features consistent with esterified quinic acid"
+    # Check for multiple hydroxy groups on the cyclohexane
+    hydroxy_pattern = Chem.MolFromSmarts("[C;R1]O")
+    num_hydroxy_matches = len(mol.GetSubstructMatches(hydroxy_pattern))
+    if num_hydroxy_matches < 3:
+        return False, f"Only {num_hydroxy_matches} hydroxy groups found, fewer than required for quinic acid"
 
-    return False, "Features do not match quinic acid derivatives"
+    # Check for carboxylic acid group
+    carboxylic_pattern = Chem.MolFromSmarts("C(=O)O")
+    if not mol.HasSubstructMatch(carboxylic_pattern):
+        return False, "No carboxylic acid group found"
+
+    # Check for esterification, which could indicate derivatives
+    ester_pattern = Chem.MolFromSmarts("OC=O[C;R1]")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+
+    if any(ester_matches):
+        return True, "Features consistent with esterified quinic acid"
+    
+    return True, "Core structure matches quinic acid"
 
 # Example use case
 smiles_example = "O[C@H]1C[C@@](O)(C[C@H](O)[C@H]1O)C(O)=O"
