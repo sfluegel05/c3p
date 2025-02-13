@@ -1,57 +1,24 @@
 """
 Classifies: CHEBI:50563 iridoid monoterpenoid
 """
-"""
-Classifies: CHEBI:25610 iridoid monoterpenoids
+Based on the previous code and the outcomes, it seems that the program missed identifying several iridoid monoterpenoids as true positives. The main issue appears to be that the SMARTS pattern used to identify the iridoid core structure is too specific and strict, failing to match many variations and decorations found in real examples.
 
-Iridoid monoterpenoids are monoterpenoids biosynthesized from isoprene and often intermediates
-in the biosynthesis of alkaloids. They typically consist of a cyclopentane ring fused to a
-six-membered oxygen heterocycle. Cleavage of a bond in the cyclopentane ring gives rise to
-the subclass known as secoiridoids.
-"""
+The current pattern `"[C@H]1[C@@H]2[C@@H]([C@H](C[C@@]1(C)O2)C)C"` looks for a very specific arrangement of the cyclopentane and oxygen heterocycle rings, with specific stereochemistry and substituents. However, iridoid monoterpenoids can have various modifications and substituents attached to this core scaffold, leading to different connectivity patterns.
 
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+To improve the program, we could take the following steps:
 
-def is_iridoid_monoterpenoid(smiles: str):
-    """
-    Determines if a molecule is an iridoid monoterpenoid based on its SMILES string.
+1. Use a more general SMARTS pattern to capture the core iridoid scaffold without being too specific about stereochemistry and substituents. This could be something like `"[C@@H]1[C@H]2[C@@H]([C@H](C[C@@]1(C)O2)C)C"` or even `"[C@H]1[C@H]2[C@H]([C@H](C[C@]1(C)O2)C)C"`.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. Incorporate additional checks for common decorations and modifications found in iridoid monoterpenoids, such as:
+   - Glycosidic substituents (e.g., glucose, rhamnose)
+   - Acyl substituents (e.g., caffeoyl, feruloyl)
+   - Oxidation patterns (e.g., alcohols, ketones, carboxylic acids)
+   - Ring cleavage (secoiridoids)
 
-    Returns:
-        bool: True if molecule is an iridoid monoterpenoid, False otherwise
-        str: Reason for classification
-    """
+3. Use additional SMARTS patterns or substructure searches to identify these common decorations and modifications, and combine them with the core iridoid scaffold match.
 
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+4. Consider using machine learning techniques or data-driven approaches, such as training a classifier on a dataset of known iridoid monoterpenoids and non-iridoid molecules, to capture more complex structural patterns and variations.
 
-    # Look for cyclopentane-oxygen heterocycle pattern
-    iridoid_pattern = Chem.MolFromSmarts("[C@H]1[C@@H]2[C@@H]([C@H](C[C@@]1(C)O2)C)C")
-    if not mol.HasSubstructMatch(iridoid_pattern):
-        return False, "No iridoid core structure found"
+5. Utilize additional molecular descriptors and properties, such as molecular weight, LogP, and topological indices, to supplement the structural pattern matching and improve the classification accuracy.
 
-    # Check if monoterpenoid (C10 skeleton)
-    n_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if n_carbons != 10:
-        return False, "Not a monoterpenoid (skeleton does not contain 10 carbons)"
-
-    # Check for rings and ring sizes
-    rings = mol.GetRingInfo().AtomRings()
-    ring_sizes = [len(ring) for ring in rings]
-    if 5 not in ring_sizes or 6 not in ring_sizes:
-        return False, "Lacks cyclopentane and/or 6-membered oxygen heterocycle"
-
-    # Check for oxygen atoms
-    n_oxygens = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if n_oxygens < 2:
-        return False, "Fewer than 2 oxygens (iridoids typically have 2-4)"
-
-    # Todo: Add more specific checks for common iridoid substituents/decorations
-
-    return True, "Contains iridoid core structure (cyclopentane fused to 6-membered oxygen heterocycle)"
+By incorporating these improvements, the program should be able to better identify a wider range of iridoid monoterpenoid structures, including those with various decorations and modifications. However, it's important to note that developing a highly accurate and comprehensive classifier for this class of molecules may require significant effort and access to a large and diverse dataset of examples.
