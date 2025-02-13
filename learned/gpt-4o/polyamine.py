@@ -20,16 +20,19 @@ def is_polyamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Count amino groups (nitrogen atoms, N)
-    amine_count = 0
-    for atom in mol.GetAtoms():
-        # Check if the atom is nitrogen with two or fewer other atoms connected
-        if atom.GetAtomicNum() == 7:  # Nitrogen has atomic number 7
-            # Count the number of connected non-hydrogen atoms
-            # We want to ensure it is primary/secondary amine type
-            non_h_count = sum(1 for neighbor in atom.GetNeighbors() if neighbor.GetAtomicNum() != 1)
-            if non_h_count <= 2:
-                amine_count += 1
+    # SMART pattern for amines (includes primary, secondary, and tertiary setups)
+    amine_pattern_primary_secondary = Chem.MolFromSmarts('[NX3;H2,H1;!$(NC=O)]')
+    amine_pattern_tertiary = Chem.MolFromSmarts('[NX3;H0;!$(NC=O)]')
+
+    # Count amino groups (primary and secondary amines, excluding amides)
+    amine_matches_ps = mol.GetSubstructMatches(amine_pattern_primary_secondary)
+    amine_matches_t = mol.GetSubstructMatches(amine_pattern_tertiary)
+
+    amine_count_ps = len(amine_matches_ps)
+    amine_count_t = len(amine_matches_t)
+
+    # Total amine count considering primary, secondary, and tertiary nitrogens
+    amine_count = amine_count_ps + amine_count_t
 
     # Determine classification
     if amine_count >= 2:
