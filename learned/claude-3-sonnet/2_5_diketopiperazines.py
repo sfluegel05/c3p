@@ -31,7 +31,8 @@ def is_2_5_diketopiperazines(smiles: str):
         return False, "No piperazine-2,5-dione skeleton found"
 
     # Check for cyclic structure
-    if not mol.GetRingInfo().IsAtomRingBond(0):
+    ring_info = mol.GetRingInfo()
+    if ring_info.NumRings() == 0 or not ring_info.IsCyclic():
         return False, "Structure is not cyclic"
 
     # Count nitrogens and oxygens
