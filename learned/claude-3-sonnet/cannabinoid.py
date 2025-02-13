@@ -1,10 +1,57 @@
 """
 Classifies: CHEBI:67194 cannabinoid
 """
-It seems the previous program attempted to classify cannabinoids based on the presence of oxygen, long aliphatic chains (15-25 carbon atoms), double bonds in the aliphatic chain, and the presence of heterocyclic rings. However, the outcomes show that the program failed to correctly classify any of the provided examples.
+"""
+Classifies: CHEBI:38685 cannabinoid
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-The root cause of the error is that the rdkit.Chem.AllChem module does not have a function called GetLongestAliphaticChain. This function does not exist in the RDKit library, which is likely why the program failed to classify any of the examples correctly.
+def is_cannabinoid(smiles: str):
+    """
+    Determines if a molecule is a cannabinoid based on its SMILES string.
+    Cannabinoids are a diverse group of secondary metabolites characteristic to Cannabis plant,
+    containing oxygen as part of a heterocyclic ring or in various functional groups.
 
-To improve the program, we need to find an alternative way to identify the longest aliphatic chain in a molecule. One possible approach could be to use the RDKit SMARTS pattern matching functionality to identify the longest chain of aliphatic (sp3 hybridized) carbon atoms. Additionally, we may need to refine the criteria for identifying cannabinoids, as the current criteria may not be sufficient or accurate.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-Here's an attempt at improving the program:
+    Returns:
+        bool: True if molecule is a cannabinoid, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+
+    # Look for characteristic cannabinoid ring systems (benzopyran, pyran, etc.)
+    ring_patterns = [Chem.MolFromSmarts(pat) for pat in ["c1ccc2c(c1)OCO2", "c1ccc2c(c1)OC=CO2", "c1ccc2c(c1)OCC=C2"]]
+    ring_matches = [mol.HasSubstructMatch(pat) for pat in ring_patterns]
+    if not any(ring_matches):
+        return False, "No characteristic cannabinoid ring system found"
+
+    # Look for long aliphatic chains
+    chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    chain_matches = mol.GetSubstructMatches(chain_pattern)
+    if not chain_matches:
+        return False, "No long aliphatic chain found"
+
+    # Count rotatable bonds to verify long chains
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 6:
+        return False, "Chains too short for cannabinoid"
+
+    # Check for oxygen-containing functional groups (ester, ether, hydroxyl, etc.)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if o_count < 2:
+        return False, "Not enough oxygen-containing functional groups"
+
+    # Check for aromatic rings
+    aromatic_rings = [ring for ring in AllChem.GetSymmSSSR(mol) if ring.IsAromatic()]
+    if not aromatic_rings:
+        return False, "No aromatic rings found"
+
+    return True, "Contains characteristic cannabinoid ring system, long aliphatic chain, and oxygen-containing functional groups"
