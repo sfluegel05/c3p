@@ -26,54 +26,43 @@ def is_flavin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Core isoalloxazine pattern - more flexible version
-    # Matches the tricyclic system with proper connectivity but allows for different oxidation states
-    core_pattern = Chem.MolFromSmarts("""
-        [#7]1-,:[#6]2:,-[#6]([#6,#1;!H0]):,-[#6]:,-[#6]:,-[#6]2:,-[#7]([!H0,C])-,:[#6]3:,-[#7]:,-[#6]:,-[#7]:,-[#6]3:,-[#7]1
-    """)
+    # Core tricyclic pattern with N10
+    # Simplified but specific pattern for the key structural features
+    core_pattern = Chem.MolFromSmarts('[#7]1c2c(nc(=O)[nH]c2=O)n([#6;!H3])c2cc([#6])c([#6])cc12')
+    if core_pattern is None:
+        return False, "Invalid SMARTS pattern"
     
     if not mol.HasSubstructMatch(core_pattern):
-        return False, "Missing isoalloxazine core structure"
+        # Try alternate oxidation state pattern
+        alt_pattern = Chem.MolFromSmarts('[#7]1c2c([nH]c(=O)[nH]c2=O)n([#6;!H3])c2cc([#6])c([#6])cc12')
+        if alt_pattern is None or not mol.HasSubstructMatch(alt_pattern):
+            return False, "Missing dimethylisoalloxazine core structure"
 
-    # Check for the characteristic uracil-like ring with carbonyls
-    # Allow for different tautomeric forms and oxidation states
-    uracil_pattern = Chem.MolFromSmarts("""
-        [#7]1-[#6](=[O,S])-[#7]-[#6](=[O,S])-[#6,#7]-[#7]1
-    """)
-    
-    if not mol.HasSubstructMatch(uracil_pattern):
-        return False, "Missing characteristic uracil-like ring"
-
-    # Check for N10 substitution (more permissive)
-    n10_pattern = Chem.MolFromSmarts("""
-        [#6]1:,-[#6]2:,-[#6]:,-[#6]:,-[#6]:,-[#6]2:,-[#7]([#6;!H3])-,:[#6]:,-[#7]:,-[#6]:,-[#7]:,-[#6]:,-[#7]1
-    """)
-    
-    if not mol.HasSubstructMatch(n10_pattern):
-        return False, "Missing required N10 substitution"
-
-    # Check for methyl groups on the benzene ring (more flexible)
-    # Allow for different positions and modifications
-    methyl_pattern = Chem.MolFromSmarts("""
-        [#6]1:,-[#6]2:,-[#6]([#6]):,-[#6]([#6]):,-[#6]:,-[#6]2:,-[#7]:,-[#6]:,-[#7]:,-[#6]:,-[#7]:,-[#6]:1
-    """)
-    
-    if not mol.HasSubstructMatch(methyl_pattern):
-        return False, "Missing characteristic substitution pattern on benzene ring"
-
-    # Additional validation checks
-    
-    # Count nitrogens (should have at least 4)
+    # Count key features
     n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
     if n_count < 4:
-        return False, "Insufficient number of nitrogen atoms"
+        return False, "Insufficient number of nitrogen atoms (needs at least 4)"
+
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if o_count < 2:
+        return False, "Missing carbonyl groups"
 
     # Check for proper ring system
     ring_info = mol.GetRingInfo()
     if ring_info.NumRings() < 3:
-        return False, "Insufficient ring system"
+        return False, "Insufficient ring system (needs 3 fused rings)"
 
-    return True, "Contains isoalloxazine core with proper substitution pattern"
+    # Verify N10 substitution
+    n10_pattern = Chem.MolFromSmarts('[#6]1:c:c([#6]):c([#6]):c:c1[#7]([#6;!H3])')
+    if n10_pattern is None or not mol.HasSubstructMatch(n10_pattern):
+        return False, "Missing or incorrect N10 substitution"
+
+    # Additional check for aromatic system
+    aromatic_atoms = sum(1 for atom in mol.GetAtoms() if atom.GetIsAromatic())
+    if aromatic_atoms < 6:
+        return False, "Insufficient aromatic system"
+
+    return True, "Contains dimethylisoalloxazine core with N10 substitution"
 
 def test_flavins():
     """Test function with known flavins"""
