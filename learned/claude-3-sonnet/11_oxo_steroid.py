@@ -7,7 +7,6 @@ Definition: Any oxo steroid that has an oxo substituent at position 11
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_11_oxo_steroid(smiles: str):
     """
@@ -23,48 +22,35 @@ def is_11_oxo_steroid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # More flexible steroid core pattern that accounts for different bond types and oxidation states
-    # Uses ~ to match any bond type and allows for aromatic carbons
-    steroid_core = Chem.MolFromSmarts("[#6]~1~[#6]~[#6]~[#6]~2~[#6]~[#6]~[#6]~3~[#6]~[#6]~[#6]~4~[#6]~[#6]~[#6]~[#6]~4~[#6]~3~[#6]~2~1")
     
+    # Check for basic steroid core (four fused rings)
+    steroid_core = Chem.MolFromSmarts("[#6]1~[#6]~[#6]~[#6]2~[#6]~[#6]~[#6]~3~[#6]~[#6]~[#6]~4~[#6]~[#6]~[#6]~[#6]~[#6]~4~[#6]~3~[#6]~2~[#6]~1")
     if not mol.HasSubstructMatch(steroid_core):
         return False, "No steroid core structure found"
 
-    # Pattern for 11-oxo group in context of steroid C and D rings
-    # This pattern is more specific to the 11-position ketone
-    # [#6]~1 starts at C8, follows the C and D rings, with =O at C11
-    oxo_11_pattern = Chem.MolFromSmarts("[#6]~1~[#6]~[#6]~2~[#6](=O)~[#6]~[#6]~[#6]~2~[#6]~[#6]~1")
+    # SMARTS pattern for 11-oxo group in steroid context
+    # This pattern looks for the specific environment of the 11-position ketone
+    # in the steroid ring system
+    oxo_11_pattern = Chem.MolFromSmarts("[#6]1~[#6]~[#6]2~[#6]~[#6]~[#6]~3~[#6](=[O:1])~[#6]~[#6]~[#6]~[#6]~3~[#6]~2~[#6]~[#6]~1")
     
-    if not mol.HasSubstructMatch(oxo_11_pattern):
+    # Find matches for the 11-oxo pattern
+    matches = mol.GetSubstructMatches(oxo_11_pattern)
+    if not matches:
         return False, "No ketone group at position 11"
-
-    # Count carbons (expanded range to include larger derivatives)
-    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if not (17 <= carbon_count <= 50):  # More permissive range
-        return False, f"Carbon count ({carbon_count}) outside typical steroid range"
-
-    # Count rings
-    ring_count = rdMolDescriptors.CalcNumRings(mol)
-    if ring_count < 4:
-        return False, f"Insufficient number of rings ({ring_count}) for steroid structure"
-
-    # Count ketone groups (should have at least one)
-    ketone_pattern = Chem.MolFromSmarts("[#6]=O")
-    ketone_matches = mol.GetSubstructMatches(ketone_pattern)
-    if len(ketone_matches) < 1:
-        return False, "No ketone groups found"
-
-    # Additional pattern to confirm steroid-like structure
-    # This pattern looks for the characteristic angular methyl group at C13
-    angular_methyl = Chem.MolFromSmarts("[CH3][C]12[#6]~[#6]~[#6]~[#6]~1~[#6]~[#6]~[#6]~2")
     
-    # More specific check for 11-oxo position in context of full ring system
-    specific_11_oxo = Chem.MolFromSmarts("[#6]~1~[#6]~[#6]~2~[#6](=O)~[#6]~[#6]~[#6]~2~[#6]([#6])~[#6]~1")
-    
-    # If we have both the angular methyl and specific 11-oxo pattern, we're more confident
-    if mol.HasSubstructMatch(angular_methyl) and mol.HasSubstructMatch(specific_11_oxo):
-        return True, "Confirmed 11-oxo steroid structure with characteristic features"
-    
-    # If we've made it this far, we have the basic requirements
-    return True, "Contains steroid core with ketone group at position 11"
+    # Count carbons to verify it's in the typical steroid range
+    carbon_count = len([atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6])
+    if carbon_count < 19 or carbon_count > 30:
+        return False, f"Carbon count ({carbon_count}) outside typical steroid range (19-30)"
+        
+    # Additional check for reasonable molecular weight
+    mol_wt = Chem.Descriptors.ExactMolWt(mol)
+    if mol_wt < 250 or mol_wt > 500:
+        return False, f"Molecular weight ({mol_wt:.1f}) outside typical steroid range (250-500)"
+        
+    # Count rings to ensure we have the right ring system
+    ring_info = mol.GetRingInfo()
+    if ring_info.NumRings() < 4:
+        return False, "Insufficient number of rings for steroid structure"
+        
+    return True, "Molecule contains steroid core with ketone group at position 11"
