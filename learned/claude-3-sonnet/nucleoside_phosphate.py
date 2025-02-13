@@ -28,8 +28,8 @@ def is_nucleoside_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for nucleobase pattern (fused rings with N atoms)
-    nucleobase_pattern = Chem.MolFromSmarts("c1ncnc2n1cncn2")
+    # Look for nucleobase pattern (fused rings with N atoms or heterocyclic rings with N atoms)
+    nucleobase_pattern = Chem.MolFromSmarts("[*;r;#7]1[*;r;#7][*;r;#7][*;r;#7][*;r;#7][*;r;#7]1|[*;r;#7]1[*;r;#7][*;r;#7][*;r;#7][*;r;#7]1")
     if not mol.HasSubstructMatch(nucleobase_pattern):
         return False, "No nucleobase found"
 
@@ -45,7 +45,7 @@ def is_nucleoside_phosphate(smiles: str):
         return False, "No phosphate groups found"
 
     # Check for glycosidic bond between nucleobase and sugar
-    glycosidic_pattern = Chem.MolFromSmarts("c1ncnc2n1cncn2OC")
+    glycosidic_pattern = Chem.MolFromSmarts("[*;r;#7]1[*;r;#7][*;r;#7][*;r;#7][*;r;#7][*;r;#7]1OC")
     if not mol.HasSubstructMatch(glycosidic_pattern):
         return False, "No glycosidic bond between nucleobase and sugar"
 
