@@ -6,7 +6,8 @@ from rdkit import Chem
 def is_monocarboxylic_acid_anion(smiles: str):
     """
     Determines if a molecule is a monocarboxylic acid anion based on its SMILES string.
-    A monocarboxylic acid anion has one carboxylate group, represented by the pattern C(=O)[O-].
+    A monocarboxylic acid anion has one carboxylate group, represented by the pattern C(=O)[O-],
+    and lacks other charged functional groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -30,5 +31,11 @@ def is_monocarboxylic_acid_anion(smiles: str):
             return False, "No carboxylate group found"
         else:
             return False, f"Found {len(carboxylate_matches)} carboxylate groups, expected exactly 1"
+    
+    # Exclude molecules with additional anionic groups that may indicate more than monocarboxylate
+    # This could be generalized as [O-] not part of carboxylate or other complex patterns
+    non_carboxylate_anion_pattern = Chem.MolFromSmarts("[O-]~[!C]=[!O]")
+    if mol.HasSubstructMatch(non_carboxylate_anion_pattern):
+        return False, "Contains non-carboxylate anionic group, indicating it's not a simple monocarboxylic acid anion"
 
     return True, "Contains exactly one carboxylate group, indicating a monocarboxylic acid anion"
