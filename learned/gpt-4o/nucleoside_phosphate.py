@@ -41,10 +41,10 @@ def is_nucleoside_phosphate(smiles: str):
     if not nucleobase_detected:
         return False, "Nucleobase not found in molecule"
 
-    # Phosphate group patterns
+    # Phosphate group patterns; including polyphosphates and unique linkages
     phosphate_patterns = [
-        '[OX1P](=O)(O)[O]',      # Ester-linked phosphate (covers both mono- and poly-phosphate)
-        '[OX1P](=O)(O)(O)',      # Phosphate group attached, including a potential -OP linkage
+        '[OP](=O)(O)[O-]',      # Mono phosphate ion
+        '[O-]P(=O)(O)O[C@@H]',  # Additional linkage allowing for phosphate esters
     ]
     
     # Check if at least one phosphate group is present
@@ -58,9 +58,20 @@ def is_nucleoside_phosphate(smiles: str):
     if not phosphate_detected:
         return False, "No phosphate group found in the molecule"
 
-    # Check for sugar connection (e.g., ribose or deoxyribose typical in nucleotides)
-    sugar_pattern = Chem.MolFromSmarts('C1C(O)C(O)C(O)C1O')  # Simple pattern for ribose/deoxyribose
-    if not mol.HasSubstructMatch(sugar_pattern):
+    # Check for sugar connection (e.g., ribose or deoxyribose)
+    sugar_patterns = [
+        '[C@H]1(O)C(O)C(O)C(O1)',   # Ribose
+        '[C@H]1(O)C[C@H](O)C(O1)O'  # Deoxyribose
+    ]
+    
+    sugar_detected = False
+    for sugar in sugar_patterns:
+        sugar_pattern = Chem.MolFromSmarts(sugar)
+        if mol.HasSubstructMatch(sugar_pattern):
+            sugar_detected = True
+            break
+
+    if not sugar_detected:
         return False, "No sugar structure found in nucleoside phosphate"
 
     return True, "Contains a nucleobase, sugar, and phosphate group, classified as nucleoside phosphate"
