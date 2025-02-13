@@ -25,23 +25,23 @@ def is_diterpenoid(smiles: str):
 
     # Count number of carbon atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 20:
-        return False, "Insufficient carbon atoms for diterpenoid (less than 20)"
+    if c_count < 18 or c_count > 22:
+        return False, "Carbon count not within typical diterpenoid range (18-22)"
 
-    # Family specific patterns are typically challenging, hence our focus will be on
-    # ring structures and diverse functionalities typical for diterpenoids.
-    # Check for the presence of complex ring structures
+    # Look for cyclic structures typical in terpenoids
     ring_info = mol.GetRingInfo()
-    if not ring_info.IsInitialized() or ring_info.NumRings() == 0:
-        return False, "No ring structures found"
-
-    # Check for specific terpenoid-like ring patterns
     ring_sizes = [len(ring) for ring in ring_info.AtomRings()]
-    if not any(size >= 6 for size in ring_sizes):
-        return False, "Lacks larger ring structures typical of diterpenoids"
+    if len(ring_sizes) < 2 or not any(size >= 5 for size in ring_sizes):
+        return False, "Lacks ring structures typical of diterpenoids"
 
-    # Additional checks can include specific functional groups or structural motifs
-    # Present in known diterpenoids, though complex variations exist.
+    # Check for specific functional groups like hydroxyl groups and epoxides
+    hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
+    if not mol.HasSubstructMatch(hydroxyl_pattern):
+        return False, "No hydroxyl groups found, typical in diverse diterpenoids"
 
-    # We consider here the generic properties without a highly specific pattern due to diversity
-    return True, "Matches general diterpenoid structure based on ring presence and carbon count"
+    # The presence of a five or six-membered carbon ring along with complex structure
+    complex_ring_pattern = Chem.MolFromSmarts("C1CCCC1 | C1CCCCC1")
+    if not mol.HasSubstructMatch(complex_ring_pattern):
+        return False, "Missing complex carbon ring patterns typical for this class"
+
+    return True, "Exhibits characteristics of diterpenoids (C20 skeleton, rings, and functional groups)"
