@@ -21,29 +21,30 @@ def is_3_oxo_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Generalized pattern for four-fused rings as in steroids
-    steroid_ring_smarts = '[R]1[R][R][R]2[R][R][R]3[R][R][R]4[R][R][R]2[R][R][R]1[R][R][R]3[R][R]4'
-    steroid_pattern = Chem.MolFromSmarts(steroid_ring_smarts)
+    # Generalized pattern for steroids backbone (cyclopentanoperhydrophenanthrene)
+    steroid_smarts = 'C1CCC2C3C4C=C(C=C4CCC3CCC2C1)C'
+    steroid_pattern = Chem.MolFromSmarts(steroid_smarts)
     
     # Check for steroid backbone
     if not mol.HasSubstructMatch(steroid_pattern):
-        return False, "No four-ring steroid backbone found"
+        return False, "No steroid backbone found"
 
-    # C(=O) group identification
+    # Find potential matches of the oxo groups
     oxo_smarts = '[C]=O'
     oxo_pattern = Chem.MolFromSmarts(oxo_smarts)
-    
-    # Find potential matches of the oxo groups
     oxo_matches = mol.GetSubstructMatches(oxo_pattern)
+    
     if not oxo_matches:
         return False, "No C=O bond found"
 
-    # Evaluate if the oxo group is appropriately positioned (usually at 3rd position in a common steroid layout)
-    # This typically involves checking ring adjacency or direct substitution positions
+    # Check if one of these C=O groups is at the 3rd position of a steroid ring
+    # This is checked by ensuring the carbon atom with the oxo group is part of the ring and is correctly positioned
     for match in oxo_matches:
         carbon_idx = match[0]
-        # Simple adjacency check, in practical terms this should map to 3rd position in steroid rings
-        if any(mol.GetBondWithIdx(bond.GetIdx()).IsInRing() for bond in mol.GetAtomWithIdx(carbon_idx).GetBonds()):
-            return True, "Detected steroid with a 3-oxo (C=O) group"
+        carbon_atom = mol.GetAtomWithIdx(carbon_idx)
+        
+        # Looking for adjacency within steroid backbone
+        if any(bond.GetBondType() == Chem.rdchem.BondType.SINGLE and bond.IsInRing() for bond in carbon_atom.GetBonds()):
+            return True, "Detected steroid with a 3-oxo (C=O) group at the correct position"
 
-    return False, "No oxo group at position 3 detected"
+    return False, "Oxo group is not at the 3rd position in the steroid structure"
