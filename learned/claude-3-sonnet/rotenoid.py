@@ -26,16 +26,18 @@ def is_rotenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Core structure patterns - more generalized to catch variations
-    # Basic chromeno-chromene core (more flexible pattern)
-    core_pattern = Chem.MolFromSmarts("O1c2c(C3OC4=CC=CC=C4C3=O)cccc2")
-    if core_pattern is None:
-        return False, "Invalid core SMARTS pattern"
-        
-    # Alternative core pattern for different oxidation states
-    core_pattern2 = Chem.MolFromSmarts("O1c2c(C3Oc4ccccc4C3=O)cccc2")
-    if core_pattern2 is None:
-        return False, "Invalid alternative core SMARTS pattern"
+    # Core structure patterns - multiple patterns to catch different variations
+    # Pattern 1: Basic chromenochromene core (more flexible)
+    core_pattern1 = Chem.MolFromSmarts("O1c2c([#6]3O[#6]4[#6][#6][#6][#6][#6]4[#6]3=O)cccc2")
+    
+    # Pattern 2: Alternative core with different saturation
+    core_pattern2 = Chem.MolFromSmarts("O1[#6]2[#6]([#6]3O[#6]4[#6][#6][#6][#6][#6]4[#6]3=O)[#6][#6][#6][#6][#6]2")
+    
+    # Pattern 3: More general pattern for variations
+    core_pattern3 = Chem.MolFromSmarts("O1[#6]2[#6]([#6]3O[#6][#6]~[#6]~[#6]~[#6][#6]3=O)~[#6]~[#6]~[#6]~[#6]2")
+
+    if any(pattern is None for pattern in [core_pattern1, core_pattern2, core_pattern3]):
+        return False, "Invalid SMARTS patterns"
 
     # Check ring count (should have at least 4 rings)
     ring_info = mol.GetRingInfo()
@@ -50,45 +52,49 @@ def is_rotenoid(smiles: str):
 
     # Look for carbonyl group
     carbonyl_pattern = Chem.MolFromSmarts("C=O")
-    if carbonyl_pattern is None:
-        return False, "Invalid carbonyl SMARTS pattern"
     if not mol.HasSubstructMatch(carbonyl_pattern):
         return False, "Missing required carbonyl group"
 
     # Check for core structure
     has_core = False
     core_type = ""
-    if mol.HasSubstructMatch(core_pattern):
+    
+    if mol.HasSubstructMatch(core_pattern1):
         has_core = True
         core_type = "standard"
     elif mol.HasSubstructMatch(core_pattern2):
         has_core = True
-        core_type = "alternative"
+        core_type = "saturated"
+    elif mol.HasSubstructMatch(core_pattern3):
+        has_core = True
+        core_type = "variant"
         
     if not has_core:
         return False, "Missing chromenochromene core structure"
 
-    # Look for common substituents
+    # Additional structural features
     features = []
     
-    # Check for methoxy groups (very common in rotenoids)
+    # Check for methoxy groups
     methoxy_pattern = Chem.MolFromSmarts("OC")
-    if methoxy_pattern is not None:
-        methoxy_count = len(mol.GetSubstructMatches(methoxy_pattern))
-        if methoxy_count > 0:
-            features.append(f"contains {methoxy_count} methoxy groups")
+    methoxy_count = len(mol.GetSubstructMatches(methoxy_pattern))
+    if methoxy_count > 0:
+        features.append(f"contains {methoxy_count} methoxy groups")
 
-    # Check for dioxole ring (common in some rotenoids)
-    dioxole_pattern = Chem.MolFromSmarts("O1COC2=CC=CC12")
-    if dioxole_pattern is not None and mol.HasSubstructMatch(dioxole_pattern):
+    # Check for dioxole ring
+    dioxole_pattern = Chem.MolFromSmarts("OCO")
+    if mol.HasSubstructMatch(dioxole_pattern):
         features.append("contains dioxole ring")
 
     # Check for hydroxyl groups
     hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
-    if hydroxyl_pattern is not None:
-        hydroxyl_count = len(mol.GetSubstructMatches(hydroxyl_pattern))
-        if hydroxyl_count > 0:
-            features.append(f"contains {hydroxyl_count} hydroxyl groups")
+    hydroxyl_count = len(mol.GetSubstructMatches(hydroxyl_pattern))
+    if hydroxyl_count > 0:
+        features.append(f"contains {hydroxyl_count} hydroxyl groups")
+
+    # Check for characteristic substitution patterns
+    if o_count >= 6:
+        features.append("highly oxygenated")
 
     feature_str = ", ".join(features)
     if feature_str:
