@@ -16,38 +16,31 @@ def is_corrinoid(smiles: str):
         bool: True if molecule is a corrinoid, False otherwise
         str: Reason for classification
     """
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for cobalt atom presence (indicator for some corrinoids)
+    # Check for cobalt atom presence 
     cobalt = any(atom.GetAtomicNum() == 27 for atom in mol.GetAtoms())
 
-    # SMARTS for reduced/partly reduced pyrrole - adjust to include typical bonds of corrins
-    # For simplicity, their pyrrolic nature and typical connectivity is considered
-    pyrrole_pattern = Chem.MolFromSmarts('C1=CC=[NH]C=C1')  # Detects pyrrole-like structures
+    # Correctly identify the four pyrrole-like structures part of corrins
+    pyrrole_pattern = Chem.MolFromSmarts('C1=C[C@H]2C=C[NH]C2=N1')
     pyrrole_matches = mol.GetSubstructMatches(pyrrole_pattern)
     if len(pyrrole_matches) < 4:
         return False, f"Found {len(pyrrole_matches)} pyrrole-like rings, need at least 4"
-    
-    # Additional consideration: further patterns for partial pyrrole reduction, connected via expected corrin linkages
-    partial_reduction_pattern = Chem.MolFromSmarts('C1=CC[NH]=C1')  # Simple representation of partial reduction
-    reduction_matches = mol.GetSubstructMatches(partial_reduction_pattern)
 
-    # Ensure macrocycle coherence by using a simplified accepted linkage pattern
-    # Generally encompasses directly connected =C- groups and a direct C-C characteristic bond present
-    macrocycle_confirms = False
-    # Typically, manual inspection of node-link relationships (edges) across atoms is preferred here
-    macrocycle_pattern = Chem.MolFromSmarts('C(-C=N)-C=N-C=C-C1=N-C=C1')  # Placeholder for typical corrinoid link
-    macrocycle_confirmations = mol.GetSubstructMatches(macrocycle_pattern)
-    
-    if macrocycle_confirmations:
-        macrocycle_confirms = True
+    # Check for the specific corrin like macrocyclic linkages
+    corrin_linkage_pattern = Chem.MolFromSmarts('[#6]=[#6]-1-[#6]=[#6]-[#6]=[#6]-[#7]-1')
+    macrocycle_matches = mol.GetSubstructMatches(corrin_linkage_pattern)
 
-    if macrocycle_confirms and (cobalt or True):  # Cobalt can be optional
-        return True, "Identified corrinoid macrocyclic nucleus with reduced pyrrole rings"
+    if not macrocycle_matches:
+        return False, "No corrin-like macrocyclic structure found"
     
-    return False, "Failed to identify unique corrin macrocyclic nucleus"
+    if cobalt or True:  # Cobalt can be optional as some corrinoids do not strictly require it
+        return True, "Identified corrinoid based on pyrrole and macrocyclic structure"
+
+    return False, "Failed to identify unique corrin macrocyclic structure"
 
 __metadata__ = { 'chemical_class': {'id': 'CHEBI:49026', 'name': 'corrinoid'}}
