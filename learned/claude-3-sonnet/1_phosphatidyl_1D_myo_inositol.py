@@ -24,36 +24,62 @@ def is_1_phosphatidyl_1D_myo_inositol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for myo-inositol ring
-    # Pattern matches cyclohexane ring with 6 OH groups in myo configuration
-    myo_inositol_pattern = Chem.MolFromSmarts("[C@@H]1([OH])[C@H]([OH])[C@@H]([OH])[C@H]([OH])[C@@H]([OH])[C@H]1[OH]")
-    if not mol.HasSubstructMatch(myo_inositol_pattern):
+    # Multiple possible SMARTS patterns for myo-inositol ring with correct stereochemistry
+    myo_inositol_patterns = [
+        # Pattern 1: Direct representation
+        "[C@@H]1([OH])[C@H]([OH])[C@@H]([OH])[C@H]([OH])[C@@H]([OH])[C@H]1[OH]",
+        # Pattern 2: Alternative representation
+        "[C@H]1([OH])[C@@H]([OH])[C@H]([OH])[C@@H]([OH])[C@H]([OH])[C@@H]1[OH]",
+        # Pattern 3: More general pattern for cyclohexane with 6 OH groups
+        "[CH]1([OH])[CH]([OH])[CH]([OH])[CH]([OH])[CH]([OH])[CH]1[OH]"
+    ]
+    
+    found_inositol = False
+    for pattern in myo_inositol_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            found_inositol = True
+            break
+            
+    if not found_inositol:
         return False, "No myo-inositol ring found or incorrect stereochemistry"
 
-    # Check for phosphate group (-P(=O)(O)-O-)
-    phosphate_pattern = Chem.MolFromSmarts("[OX2][P](=[O])([O,OH])[O]")
+    # Check for phosphate group connected to inositol (-P(=O)(O)-O-)
+    phosphate_pattern = Chem.MolFromSmarts("[O][P](=[O])([O,OH])[O]")
     if not mol.HasSubstructMatch(phosphate_pattern):
         return False, "No phosphate group found"
 
     # Check for glycerol backbone with correct stereochemistry
-    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][C@H][CH2X4]")
-    if not mol.HasSubstructMatch(glycerol_pattern):
+    glycerol_patterns = [
+        "[CH2X4][C@H][CH2X4]",
+        "[CH2X4][C@@H][CH2X4]"
+    ]
+    found_glycerol = False
+    for pattern in glycerol_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            found_glycerol = True
+            break
+            
+    if not found_glycerol:
         return False, "No glycerol backbone found or incorrect stereochemistry"
 
     # Check for two ester groups (-O-C(=O)-)
-    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
+    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])-[#6]")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) != 2:
         return False, f"Found {len(ester_matches)} ester groups, need exactly 2"
 
-    # Check for fatty acid chains (long carbon chains attached to esters)
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    # Check for fatty acid chains (long carbon chains)
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
     fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
     if len(fatty_acid_matches) < 2:
         return False, "Missing fatty acid chains"
 
+    # Check connectivity: phosphate must be at position 1 of inositol
+    phosphoinositol_pattern = Chem.MolFromSmarts("[O][P](=[O])([O,OH])O[C@H]1[C@H]([OH])[C@@H]([OH])[C@H]([OH])[C@@H]([OH])[C@H]1[OH]")
+    if not mol.HasSubstructMatch(phosphoinositol_pattern):
+        return False, "Phosphate not correctly connected to position 1 of inositol"
+
     # Verify overall composition
-    # Count key atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
@@ -70,4 +96,4 @@ def is_1_phosphatidyl_1D_myo_inositol(smiles: str):
     if mol_wt < 500:
         return False, "Molecular weight too low"
 
-    return True, "Contains myo-inositol ring connected via phosphate to glycerol with two fatty acid chains"
+    return True, "Contains 1D-myo-inositol ring connected via phosphate at position 1 to glycerol with two fatty acid chains"
