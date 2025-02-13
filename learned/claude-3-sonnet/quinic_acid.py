@@ -12,7 +12,7 @@ def is_quinic_acid(smiles: str):
     """
     Determines if a molecule is a quinic acid based on its SMILES string.
     A quinic acid is a cyclitol carboxylic acid, with a cyclohexane core,
-    at least one hydroxyl group, and a carboxylic acid group.
+    multiple hydroxyl groups, and a carboxylic acid group.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -32,31 +32,20 @@ def is_quinic_acid(smiles: str):
     if not mol.HasSubstructMatch(cyclohexane_pattern):
         return False, "No cyclohexane core found"
 
-    # Look for at least one hydroxyl group
+    # Look for at least three hydroxyl groups (cyclitol)
     hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
-    if not mol.HasSubstructMatch(hydroxyl_pattern):
-        return False, "No hydroxyl groups found"
+    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
+    if len(hydroxyl_matches) < 3:
+        return False, "Fewer than 3 hydroxyl groups found"
 
     # Look for carboxylic acid group
     carboxyl_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
     if not mol.HasSubstructMatch(carboxyl_pattern):
         return False, "No carboxylic acid group found"
 
-    # Count carbons, oxygens, and hydrogens
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    # Count oxygens
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    h_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 1)
+    if o_count < 5:
+        return False, "Oxygen count too low for quinic acid"
 
-    if c_count < 6 or c_count > 12:
-        return False, "Carbon count outside expected range for quinic acid"
-    if o_count < 4 or o_count > 8:
-        return False, "Oxygen count outside expected range for quinic acid"
-    if h_count < 8 or h_count > 14:
-        return False, "Hydrogen count outside expected range for quinic acid"
-
-    # Check molecular weight - quinic acids typically <300 Da
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt > 300:
-        return False, "Molecular weight too high for quinic acid"
-
-    return True, "Contains cyclohexane core with at least one hydroxyl group and a carboxylic acid"
+    return True, "Contains cyclohexane core with multiple hydroxyl groups and a carboxylic acid"
