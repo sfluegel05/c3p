@@ -22,25 +22,29 @@ def is_alditol(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define the SMARTS pattern for an alditol structure
-    # Correct pattern for HOCH2-[CH(OH)]n-CH2OH might look like "OCC(O)C(O)C(O)*CO"
-    # However, we need to ensure we are matching linear structures, hence a better
-    # pattern would target all hydroxylated carbon chains of sufficient length
-    alditol_pattern = Chem.MolFromSmarts("[CX4](O)CO")  # Generic repeating unit for acyclic polyols
-    if alditol_pattern is None:
-        return (None, "Invalid SMARTS pattern")
-
-    # Check if the molecule contains cycles
+    
+    # Check if the molecule is acyclic
     if rdmolops.GetSSSR(mol) > 0:
         return False, "Molecule contains a ring structure, not an acyclic alditol"
 
-    # Calculate the total number of carbon atoms
-    carbon_atoms = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'C')
-    # Check if molecule has enough contiguous polyol chain as per alditol requirements
-    # Minimum of 3 pairs of [C-O] for HO(CH(OH))nCH2OH with n >= 2 and ends with -CH2OH
+    # Define the SMARTS pattern for the alditol structure
+    alditol_pattern = Chem.MolFromSmarts("OCC(O)[CH2]")  # Main unit in repeating sequence
+    if alditol_pattern is None:
+        return (None, "Invalid SMARTS pattern")
+
+    # Ensure molecule ends with 'CH2OH'
+    end_group_pattern = Chem.MolFromSmarts("CO")
+    start_group_pattern = Chem.MolFromSmarts("CO[CH2]")
+
+    # Check full structure for alditol pattern matching
     match = mol.GetSubstructMatches(alditol_pattern)
-    if len(match) < 2 or carbon_atoms < 4:
-        return False, f"Structure with {len(match)} C-O patterns, insufficient for alditol"
-    
+    if len(match) < 2:  # Must be at least two repeating C(OH) units between CH2OH ends
+        return False, f"Structure with {len(match)} C-OH units, insufficient for alditol"
+
+    # Verify the ends of the molecule have the appropriate groups
+    if not mol.HasSubstructMatch(end_group_pattern):
+        return False, "Molecule does not end with a 'CH2OH' group"
+    if not mol.HasSubstructMatch(start_group_pattern):
+        return False, "Molecule does not begin with a 'HOCH2' group"
+
     return True, "SMILES string matches the structural pattern of an acyclic alditol"
