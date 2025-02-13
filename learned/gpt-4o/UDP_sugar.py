@@ -21,14 +21,14 @@ def is_UDP_sugar(smiles: str):
         return False, "Invalid SMILES string"
 
     # Identify the uridine moiety pattern: uracil ring and ribose
-    uridine_pattern = Chem.MolFromSmarts("n1c(=O)[nH]c2c1n(C[C@H]3O[C@H](CO)C(O)C(O)C3)nc2=O")
+    # Using a generalized uridine pattern
+    uridine_pattern = Chem.MolFromSmarts("n1cc(=O)[nH]c(=O)c1C2OC(C(O)C(O)C2)CO")
     if not mol.HasSubstructMatch(uridine_pattern):
         return False, "Uridine moiety not found"
 
     # Identify the diphosphate linkage pattern
-    diphosphate_pattern = Chem.MolFromSmarts("O=P(O)(O)OP(O)(O)=O")
+    diphosphate_pattern = Chem.MolFromSmarts("O=P(O)([O-])OP(O)([O-])=O")
     if not mol.HasSubstructMatch(diphosphate_pattern):
         return False, "Diphosphate linkage not found"
 
-    # We assume the linkage to the sugar is correctly represented if both patterns above exist
     return True, "Contains UDP moiety with a sugar via diphosphate linkage"
