@@ -1,26 +1,40 @@
 """
 Classifies: CHEBI:35627 beta-lactam
 """
-The previous attempt to classify beta-lactams using a machine learning approach had several issues:
+"""
+Classifies: CHEBI:25863 beta-lactam
+A lactam in which the amide bond is contained within a four-membered ring, which includes the amide nitrogen and the carbonyl carbon.
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
 
-1. **Missing Dataset**: The code assumes the existence of a dataset containing SMILES strings and labels (whether or not each molecule is a beta-lactam). However, this dataset is not provided, and the line `dataset = [...]` is just a placeholder.
+def is_beta_lactam(smiles: str):
+    """
+    Determines if a molecule is a beta-lactam based on its SMILES string.
 
-2. **Feature Extraction**: The feature extraction method used (`MoleculeDescriptors`) calculates a wide range of molecular descriptors, many of which may not be relevant for identifying beta-lactams. This can lead to overfitting and poor generalization performance.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Lack of Domain Knowledge**: The machine learning approach relies solely on the feature vectors and does not incorporate any domain knowledge about the structural characteristics of beta-lactams. This knowledge could be valuable for improving the classification accuracy.
+    Returns:
+        bool: True if molecule is a beta-lactam, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-4. **Potential Data Leakage**: If the dataset contains molecules that were used during the development or testing of the feature extraction method (`MoleculeDescriptors`), there could be data leakage, leading to overly optimistic performance estimates.
+    # Look for beta-lactam ring pattern:
+    # 4-membered ring with nitrogen, carbonyl carbon, and 2 other atoms (usually carbons)
+    beta_lactam_pattern = Chem.MolFromSmarts("[NR1]1[CR1][CR1][CR1]C(=O)1")
+    beta_lactam_matches = mol.GetSubstructMatches(beta_lactam_pattern)
+    
+    if beta_lactam_matches:
+        return True, "Contains a beta-lactam ring (4-membered ring with N, C=O, and 2 other atoms)"
+    else:
+        return False, "No beta-lactam ring found"
 
-To improve the classification of beta-lactams, we should consider the following:
-
-1. **Curate a High-Quality Dataset**: Obtain or create a dataset of beta-lactams and non-beta-lactams, ensuring that the dataset is diverse, representative, and well-balanced.
-
-2. **Incorporate Domain Knowledge**: Develop a set of structural rules or patterns that can identify the key features of beta-lactams, such as the presence of a four-membered lactam ring with an amide bond, based on the definition provided.
-
-3. **Use a Rule-Based Approach**: Instead of relying solely on machine learning, implement a rule-based approach that encodes the structural rules or patterns for identifying beta-lactams. This approach can leverage the domain knowledge and potentially provide more interpretable and reliable results.
-
-4. **Consider Hybrid Approaches**: Explore hybrid approaches that combine rule-based methods with machine learning techniques. For example, the rule-based method could be used to pre-filter potential beta-lactams, and machine learning could be applied to further refine the classification or handle edge cases.
-
-5. **Rigorous Evaluation**: Ensure that the classification method is thoroughly evaluated using appropriate metrics (e.g., precision, recall, F1-score) on a held-out test set or through cross-validation. This will provide a more reliable estimate of the method's performance.
-
-By addressing these issues and leveraging domain knowledge in addition to data-driven approaches, we can potentially develop a more accurate and reliable method for classifying beta-lactams based on their SMILES strings.
+# Example usage:
+print(is_beta_lactam("CC1(C(N2C(S1)C(C2=O)NC(=O)C(N)C3=CC=C(O)C=C3)C(=O)O)C"))  # True
+print(is_beta_lactam("CCOC(=O)C1=CC=CC=C1"))  # False
