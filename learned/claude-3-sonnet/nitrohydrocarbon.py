@@ -45,28 +45,32 @@ def is_nitrohydrocarbon(smiles: str):
     if not carbon_atoms:
         return False, "No carbon atoms found"
 
-    # Check for non-nitro oxygens
-    unwanted_o_patterns = [
+    # Check for non-hydrocarbon functional groups
+    unwanted_patterns = [
         ('[CX3](=O)[OX2H1]', 'carboxylic acid'),
         ('[CX3](=O)[O-]', 'carboxylate'),
         ('[CX3]=O', 'ketone/aldehyde'),
         ('[OX2H]', 'hydroxyl'),
-        ('[OX2](-[#6])-[#6]', 'ether')
+        ('[OX2](-[#6])-[#6]', 'ether'),
+        ('[NX3]', 'amine'),
+        ('[NX2]=O', 'nitroso'),
+        ('[NX2]=[NX2]', 'azo'),
+        ('[SX2]', 'thiol/sulfide'),
+        ('[PX3]', 'phosphine')
     ]
     
-    for pattern, group_name in unwanted_o_patterns:
+    for pattern, group_name in unwanted_patterns:
         pattern_mol = Chem.MolFromSmarts(pattern)
         if pattern_mol and mol.HasSubstructMatch(pattern_mol):
             return False, f"Contains {group_name} group"
 
-    # Verify all nitrogen atoms are part of nitro groups
-    n_atoms = [atom for atom in atoms if atom.GetAtomicNum() == 7]
-    if len(n_atoms) != len(nitro_matches):
-        return False, "Contains nitrogen atoms not in nitro groups"
+    # Count nitro groups and verify all N and O atoms are part of nitro groups
+    n_atoms = sum(1 for atom in atoms if atom.GetAtomicNum() == 7)
+    o_atoms = sum(1 for atom in atoms if atom.GetAtomicNum() == 8)
     
-    # Verify all oxygen atoms are part of nitro groups
-    o_atoms = [atom for atom in atoms if atom.GetAtomicNum() == 8]
-    if len(o_atoms) != 2 * len(nitro_matches):
+    if n_atoms != len(nitro_matches):
+        return False, "Contains nitrogen atoms not in nitro groups"
+    if o_atoms != 2 * len(nitro_matches):
         return False, "Contains oxygen atoms not in nitro groups"
     
     num_nitro = len(nitro_matches)
