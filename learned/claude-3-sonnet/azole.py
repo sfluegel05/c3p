@@ -39,7 +39,7 @@ def is_azole(smiles: str):
         return False, "No 5-membered rings containing nitrogen found"
 
     # Check if any of the 5-membered rings are aromatic
-    is_aromatic = any(mol.GetAromaticRingInfo().IsFused(x) for x in azole_rings)
+    is_aromatic = any(mol.GetAtomWithIdx(idx).GetIsAromatic() for ring in azole_rings for idx in ring)
     if not is_aromatic:
         return False, "No aromatic 5-membered rings containing nitrogen found"
 
