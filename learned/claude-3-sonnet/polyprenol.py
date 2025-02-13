@@ -25,26 +25,71 @@ def is_polyprenol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for isoprene unit pattern [CH2]=[CH][C@H]([CH3])[CH2]=[CH2]
-    isoprene_pattern = Chem.MolFromSmarts("[CH2]=[CH][C@H]([CH3])[CH2]=[CH2]")
-    isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
-    if len(isoprene_matches) < 2:
-        return False, "Less than two isoprene units found"
-
     # Check for terminal -OH group
     has_terminal_oh = any(atom.GetAtomicNum() == 8 and atom.GetTotalNumHs() == 1 for atom in mol.GetAtoms())
     if not has_terminal_oh:
         return False, "No terminal -OH group found"
 
-    # Check for linear or branched carbon chain
-    chain_pattern = Chem.MolFromSmarts("[CH2,CH3][CH2,CH3]~[CH2,CH3]~[CH2,CH3]~[CH2,CH3]")
-    chain_matches = mol.GetSubstructMatches(chain_pattern)
-    if not chain_matches:
-        return False, "No linear or branched carbon chain found"
+    # Find the longest carbon chain
+    longest_chain = get_longest_carbon_chain(mol)
+    if longest_chain is None:
+        return False, "No suitable carbon chain found"
 
-    # Check molecular weight range (typical polyprenols are between 200-1000 Da)
+    # Check if the carbon chain follows the polyprenol pattern
+    is_valid_chain, reason = is_valid_polyprenol_chain(longest_chain)
+    if not is_valid_chain:
+        return False, reason
+
+    # Optionally, check molecular weight range or other properties
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 200 or mol_wt > 1000:
         return False, "Molecular weight outside typical range for polyprenols"
 
-    return True, "Molecule contains multiple isoprene units, a terminal -OH group, and a linear or branched carbon chain"
+    return True, "Molecule contains a carbon chain following the polyprenol pattern, with a terminal -OH group"
+
+def get_longest_carbon_chain(mol):
+    """
+    Returns the longest carbon chain in the molecule.
+    """
+    longest_chain = None
+    max_length = 0
+
+    for bond in mol.GetBonds():
+        atom1 = bond.GetBeginAtom()
+        atom2 = bond.GetEndAtom()
+        if atom1.GetAtomicNum() != 6 or atom2.GetAtomicNum() != 6:
+            continue
+
+        chain = [atom1, atom2]
+        while True:
+            neighbors = [neighbor for neighbor in chain[-1].GetNeighbors() if neighbor.GetAtomicNum() == 6 and neighbor not in chain]
+            if not neighbors:
+                break
+            chain.append(neighbors[0])
+
+        if len(chain) > max_length:
+            longest_chain = chain
+            max_length = len(chain)
+
+    return longest_chain
+
+def is_valid_polyprenol_chain(chain):
+    """
+    Checks if the given carbon chain follows the polyprenol pattern: C-C=C-C-C=C-C-...
+    with at least two instances of the C=C-C pattern and the correct number of methyl groups.
+    """
+    pattern_count = 0
+    methyl_count = 0
+
+    for i in range(len(chain) - 2):
+        atom1, atom2, atom3 = chain[i:i+3]
+        if atom1.GetHybridization() == Chem.HybridizationType.SP2 and atom2.GetHybridization() == Chem.HybridizationType.SP3 and atom3.GetHybridization() == Chem.HybridizationType.SP2:
+            pattern_count += 1
+            methyl_count += sum(1 for neighbor in atom2.GetNeighbors() if neighbor.GetAtomicNum() == 6 and neighbor.GetTotalNumHs() == 3)
+
+    if pattern_count < 2:
+        return False, "Less than two isoprene units found in the carbon chain"
+    if methyl_count != pattern_count:
+        return False, "Incorrect number of methyl groups attached to the carbon chain"
+
+    return True, "Carbon chain follows the polyprenol pattern"
