@@ -40,7 +40,7 @@ def is_anthocyanidin_cation(smiles: str):
         return False, "Molecule does not contain enough oxygen atoms"
 
     # Check for presence of aromatic rings
-    aromatic_rings = [r for r in Chem.GetSymmSSSR(mol) if mol.GetRingInfo().IsAromaticRing(r)]
+    aromatic_rings = [r for r in Chem.GetSymmSSSR(mol) if all(mol.GetAtomWithIdx(i).GetIsAromatic() for i in r)]
     if len(aromatic_rings) < 2:
         return False, "Molecule does not contain enough aromatic rings"
 
@@ -54,5 +54,10 @@ def is_anthocyanidin_cation(smiles: str):
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 200 or mol_wt > 500:
         return False, "Molecular weight outside the typical range for anthocyanidin cations"
+
+    # Check for presence of flavylium (2-phenylchromenylium) substructure
+    flavylium_pattern = Chem.MolFromSmarts("[o+]1c2ccccc2cc1")
+    if not mol.HasSubstructMatch(flavylium_pattern):
+        return False, "Molecule does not contain the flavylium substructure"
 
     return True, "Molecule exhibits structural features consistent with an anthocyanidin cation"
