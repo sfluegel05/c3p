@@ -1,58 +1,23 @@
 """
 Classifies: CHEBI:24402 glycosphingolipid
 """
-"""
-Classifies: CHEBI:17670 glycosphingolipid
-A glycosphingolipid is a glycolipid that is a carbohydrate-containing derivative of a sphingoid or ceramide. 
-It is understood that the carbohydrate residue is attached by a glycosidic linkage to O-1 of the sphingoid.
-"""
+The previous program attempted to classify glycosphingolipids based on several criteria, including the presence of a ceramide backbone, a glycosidic linkage, a carbohydrate residue, multiple carbohydrate rings, and common structural motifs. However, based on the provided outcomes, it appears that the program failed to accurately classify several known glycosphingolipids. Here are some potential issues and ways to improve the program:
 
-from rdkit import Chem
-from rdkit.Chem import AllChem, rdFMCS
+1. **Ceramide backbone recognition**: The pattern `[N;X3][C;X3](=[O])[C;X4]([C;X4])(CCCC[C;X3]=C)` used to detect the ceramide backbone is too specific and may not cover all possible variations of the ceramide structure. Glycosphingolipids can have different alkyl chain lengths, degrees of unsaturation, and substituents on the sphingoid base or fatty acid chains. A more flexible pattern or a combination of patterns may be needed to capture these variations.
 
-def is_glycosphingolipid(smiles: str):
-    """
-    Determines if a molecule is a glycosphingolipid based on its SMILES string.
+2. **Glycosidic linkage detection**: The condition `AllChem.MolToSmarts(mol).count("OC") > 1` checks for the presence of multiple O-C bonds, which may not necessarily indicate a glycosidic linkage. A more specific pattern or a combination of patterns may be needed to identify the glycosidic linkage between the carbohydrate residue and the sphingoid base.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+3. **Carbohydrate residue recognition**: The pattern `[C@H]1[C@H]([C@@H]([C@H]([C@@H]1O)O)O)O` used to detect the carbohydrate residue is specific to cyclitols or monosaccharides. However, glycosphingolipids can have complex oligosaccharide chains with various types of monosaccharides and branching patterns. A more comprehensive pattern or a set of patterns may be needed to cover a broader range of carbohydrate residues.
 
-    Returns:
-        bool: True if molecule is a glycosphingolipid, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Look for ceramide backbone (alkyl chain + amide + alkene)
-    ceramide_pattern = Chem.MolFromSmarts("[N;X3][C;X3](=[O])[C;X4]([C;X4])(CCCC[C;X3]=C)")
-    if not mol.HasSubstructMatch(ceramide_pattern):
-        return False, "No ceramide backbone found"
-    
-    # Look for glycosidic linkage to sphingoid (O-C-O)
-    glycosidic_pattern = Chem.MolFromSmarts("[O;X2][C;X4][O;X2]")
-    if not AllChem.MolToSmarts(mol).count("OC") > 1:
-        return False, "No glycosidic linkage found"
-    
-    # Look for carbohydrate residue (cyclitol or sugar)
-    carb_pattern = Chem.MolFromSmarts("[C@H]1[C@H]([C@@H]([C@H]([C@@H]1O)O)O)O")
-    if not mol.HasSubstructMatch(carb_pattern):
-        return False, "No carbohydrate residue found"
-    
-    # Check for multiple carbohydrate rings (glycosphingolipids often have branched oligosaccharides)
-    rings = mol.GetRingInfo().AtomRings()
-    carb_rings = [r for r in rings if all(mol.GetAtomWithIdx(i).GetSymbol() in ['C', 'O'] for i in r)]
-    if len(carb_rings) < 2:
-        return False, "Only one carbohydrate ring found, glycosphingolipids typically have branched oligosaccharides"
-    
-    # Check for common structural motifs of glycosphingolipids
-    motifs = ['CC(=O)NC[C@H](O)/C=C', 'C[C@H](O)/C=C/C']
-    mol_smarts = AllChem.MolToSmarts(mol)
-    if not any(motif in mol_smarts for motif in motifs):
-        return False, "No common structural motifs of glycosphingolipids found"
-    
-    # If all checks pass, classify as glycosphingolipid
-    return True, "Contains a ceramide backbone with a carbohydrate residue attached via a glycosidic linkage"
+4. **Multiple carbohydrate ring detection**: While the program correctly checks for the presence of multiple carbohydrate rings, it may be overly strict in requiring at least two rings. Some glycosphingolipids, particularly those with smaller carbohydrate residues, may have only one ring.
+
+5. **Structural motif recognition**: The program checks for two common structural motifs, `CC(=O)NC[C@H](O)/C=C` and `C[C@H](O)/C=C/C`, which may not cover all possible variations in glycosphingolipid structures. Additionally, these motifs may not be specific enough and could be present in other classes of molecules.
+
+To improve the program, you could consider the following strategies:
+
+- Use a more comprehensive set of SMARTS patterns to capture the diversity of ceramide backbones, glycosidic linkages, and carbohydrate residues found in glycosphingolipids.
+- Employ machine learning techniques, such as training a classifier on a large dataset of known glycosphingolipids and non-glycosphingolipids, to learn the structural features that distinguish this class of molecules.
+- Incorporate additional structural descriptors or fingerprints, such as topological or shape-based descriptors, to capture more complex structural features.
+- Utilize databases or knowledge bases of glycosphingolipid structures to construct a reference set for substructure matching or similarity searching.
+
+Additionally, it may be helpful to consult literature or domain experts to gain a deeper understanding of the structural diversity and essential features of glycosphingolipids, which could inform the development of more robust classification rules or models.
