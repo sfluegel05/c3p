@@ -7,8 +7,8 @@ from rdkit.Chem import AllChem
 def is_alpha_amino_acid_zwitterion(smiles: str):
     """
     Determines if a molecule is an alpha-amino-acid zwitterion based on its SMILES string.
-    An alpha-amino-acid zwitterion has an amino group and a carboxyl group attached to the same carbon atom,
-    with the amino group protonated and the carboxyl group deprotonated.
+    An alpha-amino-acid zwitterion has an amino group and a carboxylate group attached to the same
+    carbon atom, which is also connected to another carbon atom (alpha position).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -28,19 +28,22 @@ def is_alpha_amino_acid_zwitterion(smiles: str):
     if not amino_matches:
         return False, "No amino group (-NH3+) found"
 
-    # Look for carboxyl group pattern
-    carboxyl_pattern = Chem.MolFromSmarts("[O-]C=O")
-    carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
-    if not carboxyl_matches:
-        return False, "No carboxyl group (-COO-) found"
+    # Look for carboxylate group pattern
+    carboxylate_pattern = Chem.MolFromSmarts("C([O-])=O")
+    carboxylate_matches = mol.GetSubstructMatches(carboxylate_pattern)
+    if not carboxylate_matches:
+        return False, "No carboxylate group (-COO-) found"
 
-    # Check if amino and carboxyl groups are attached to the same carbon
+    # Check if amino and carboxylate groups are attached to the same alpha carbon
     for amino_idx in amino_matches:
         amino_atom = mol.GetAtomWithIdx(amino_idx[0])
-        for carboxyl_idx in carboxyl_matches:
-            carboxyl_carbon = mol.GetAtomWithIdx(carboxyl_idx[0])
-            if amino_atom.GetNeighbors()[0].GetIdx() == carboxyl_carbon.GetIdx():
-                # Found alpha-amino-acid zwitterion
-                return True, "Molecule is an alpha-amino-acid zwitterion"
+        for carboxylate_idx in carboxylate_matches:
+            carboxylate_carbon = mol.GetAtomWithIdx(carboxylate_idx[0])
+            if amino_atom.GetNeighbors()[0].GetIdx() == carboxylate_carbon.GetIdx():
+                alpha_carbon = amino_atom.GetNeighbors()[0]
+                if len(alpha_carbon.GetNeighbors()) == 3:  # Alpha position
+                    # Check chirality if desired
+                    # ...
+                    return True, "Molecule is an alpha-amino-acid zwitterion"
 
-    return False, "Amino and carboxyl groups are not attached to the same carbon atom"
+    return False, "Amino and carboxylate groups are not attached to the same alpha carbon"
