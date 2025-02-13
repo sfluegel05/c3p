@@ -15,17 +15,17 @@ def is_N_acylglycine(smiles: str):
         bool: True if molecule is an N-acylglycine, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse the SMILES string into an RDKit molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the SMARTS pattern to identify the N-acylglycine structure
-    n_acylglycine_pattern = Chem.MolFromSmarts("C(=O)NCC(=O)O")
+    # Extended SMARTS pattern capturing typical N-acylglycine with variability in the acyl part
+    n_acylglycine_pattern = Chem.MolFromSmarts("N([CX3]=[OX1])[CX4][CX3](=[OX1])[OX2H]")  # N-acyl part bonded to glycine C(=O)O
     
     # Check for the substructure match
     if mol.HasSubstructMatch(n_acylglycine_pattern):
         return True, "Contains N-acylglycine structure"
-    
+
     return False, "Does not match N-acylglycine substructure"
