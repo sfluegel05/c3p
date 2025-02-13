@@ -12,19 +12,22 @@ def is_butyrate_ester(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a butyrate ester, False otherwise
+        bool: True if the molecule is a butyrate ester, False otherwise
         str: Reason for classification
     """
-    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define butyrate ester pattern specifically (butyric acid as ester: CCCC(=O)O)
-    butyrate_esters_smarts = "CCCC(=O)O[*]"  # Finds esters where the esterifying group is bonded to the "O" atom
-    butyrate_pattern = Chem.MolFromSmarts(butyrate_esters_smarts)
-    if not mol.HasSubstructMatch(butyrate_pattern):
+    # Define comprehensive butyrate ester pattern (butyric acid as ester)
+    butyrate_patterns = [
+        Chem.MolFromSmarts("CCCC(=O)O[*]"),  # Butanoate ester group
+        Chem.MolFromSmarts("CCC(C)C(=O)O[*]"),  # Variants with branching
+    ]
+
+    matches = any(mol.HasSubstructMatch(p) for p in butyrate_patterns)
+    if not matches:
         return False, "No butyrate ester group found"
 
     return True, "Contains a butyrate ester group"
