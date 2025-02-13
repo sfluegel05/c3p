@@ -1,24 +1,75 @@
 """
 Classifies: CHEBI:26004 phenylpropanoid
 """
-Based on the previous code and the outcomes, it appears that the program was unable to correctly classify any of the provided examples as phenylpropanoids. This could be due to several reasons:
+"""
+Classifies: CHEBI:35697 phenylpropanoid
 
-1. **Incomplete or overly strict pattern matching**: The current implementation relies on matching a specific SMARTS pattern for the phenylpropane skeleton. However, this pattern may not cover all possible variations of the phenylpropanoid structure. Additionally, the check for extra features (rings and oxy substitutions) may be too simplistic and miss out on other relevant structural features.
+A phenylpropanoid is any organic aromatic compound with a structure based on a phenylpropane skeleton.
+The class includes naturally occurring phenylpropanoid esters, flavonoids, anthocyanins, coumarins and 
+many small phenolic molecules as well as their semi-synthetic and synthetic analogues. Phenylpropanoids 
+are also precursors of lignin.
+"""
 
-2. **Lack of comprehensive structural analysis**: The program only checks for the presence of certain substructures but does not perform a more in-depth analysis of the molecular structure. It may be necessary to consider additional factors, such as the number and position of specific functional groups, bond orders, and stereochemistry, to correctly identify phenylpropanoids.
+from rdkit import Chem
+from rdkit.Chem import AllChem, rdMolDescriptors
 
-3. **Potential issues with the provided examples**: It's also possible that some of the provided example SMILES strings are incorrect or represent structures that do not strictly belong to the phenylpropanoid class. It's essential to validate the examples before using them as a benchmark.
-
-To improve the program, the following steps could be taken:
-
-1. **Expand the pattern matching**: Instead of relying on a single SMARTS pattern for the phenylpropane skeleton, consider using multiple patterns or a more flexible approach, such as substructure matching with different variations of the phenylpropanoid core.
-
-2. **Incorporate additional structural analysis**: Implement more comprehensive structural analysis techniques, such as functional group identification, ring perception, and stereochemistry analysis. These additional checks can help differentiate between different types of phenylpropanoids and improve the classification accuracy.
-
-3. **Utilize machine learning techniques**: If the structural analysis becomes too complex, consider using machine learning techniques like support vector machines or random forests to learn the patterns and features that distinguish phenylpropanoids from other compounds.
-
-4. **Validate the example data**: Carefully review the provided example SMILES strings to ensure they represent valid phenylpropanoid structures. If necessary, consult with domain experts or refer to authoritative sources to confirm the validity of the examples.
-
-5. **Implement unit tests**: Develop a comprehensive set of unit tests with known positive and negative examples to ensure the program's correctness and facilitate further development and refactoring.
-
-By addressing these issues and incorporating more robust structural analysis techniques, the program's ability to correctly classify phenylpropanoids can be significantly improved.
+def is_phenylpropanoid(smiles: str):
+    """
+    Determines if a molecule is a phenylpropanoid based on its SMILES string.
+    
+    Args:
+        smiles (str): SMILES string of the molecule
+        
+    Returns:
+        bool: True if molecule is a phenylpropanoid, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Look for phenylpropane skeleton (C6-C3 pattern)
+    phenylpropane_patterns = [
+        Chem.MolFromSmarts("[c:1]1[c:2][c:3][c:4][c:5][c:6][c:7]1[C:8][C:9][C:10]"),
+        Chem.MolFromSmarts("[c:1]1[c:2][c:3][c:4][c:5][c:6][c:7]1[C:8]=[C:9][C:10]")
+    ]
+    
+    phenylpropane_match = False
+    for pattern in phenylpropane_patterns:
+        if mol.HasSubstructMatch(pattern):
+            phenylpropane_match = True
+            break
+    
+    if not phenylpropane_match:
+        return False, "No phenylpropane skeleton found"
+    
+    # Check for aromatic ring
+    aromatic_rings = mol.GetAromaticRings()
+    if not aromatic_rings:
+        return False, "No aromatic ring found"
+    
+    # Check for oxy substitutions (OH, OR, O-glycosides)
+    oxy_pattern = Chem.MolFromSmarts("[OX2H,OX2R,OX2c]")
+    oxy_matches = mol.GetSubstructMatches(oxy_pattern)
+    if not oxy_matches:
+        return False, "No oxy substitutions found"
+    
+    # Check for other common phenylpropanoid features (esters, ethers, lactones)
+    feature_patterns = [
+        Chem.MolFromSmarts("[OX2][CX3](=[OX1])"), # Esters
+        Chem.MolFromSmarts("[OX2R0]"), # Ethers
+        Chem.MolFromSmarts("[OX2r5]")  # Lactones
+    ]
+    
+    feature_match = False
+    for pattern in feature_patterns:
+        if mol.HasSubstructMatch(pattern):
+            feature_match = True
+            break
+    
+    if not feature_match:
+        return False, "No common phenylpropanoid features found"
+    
+    return True, "Contains phenylpropane skeleton and common phenylpropanoid features"
