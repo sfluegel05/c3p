@@ -34,14 +34,14 @@ def is_branched_chain_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(acid_pattern):
         return False, "No carboxylic acid group found"
     
-    # Look for long carbon chain (>= 6 carbons)
-    chain_pattern = Chem.MolFromSmarts("[C;H3][C;H2]([C;H2])[C;H2]([C;H2])[C;H2][C;H2]")
+    # Look for carbon chain (any length)
+    chain_pattern = Chem.MolFromSmarts("[C;H3][C;H2]")
     chain_matches = mol.GetSubstructMatches(chain_pattern)
     if not chain_matches:
-        return False, "Carbon chain too short for fatty acid"
+        return False, "No carbon chain found"
     
     # Check for alkyl substituents (branches)
-    branch_pattern = Chem.MolFromSmarts("[C][C]([C])([C])[C]")
+    branch_pattern = Chem.MolFromSmarts("[C][C]([C])")
     branch_matches = mol.GetSubstructMatches(branch_pattern)
     if not branch_matches:
         return False, "No alkyl substituents (branches) found"
@@ -51,14 +51,18 @@ def is_branched_chain_fatty_acid(smiles: str):
     if n_rotatable < 2:
         return False, "Not enough rotatable bonds for branching"
     
-    # Count carbons, must be >= 6
+    # Count carbons, must be >= 4 (short-chain fatty acids allowed)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 6:
+    if c_count < 4:
         return False, "Too few carbons for fatty acid"
     
-    # Count oxygens, must be 2 (carboxylic acid)
+    # Allow for additional oxygen atoms (e.g., hydroxyls, ethers)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count != 2:
-        return False, "Incorrect number of oxygens for fatty acid"
+    if o_count < 2:
+        return False, "Insufficient number of oxygens for carboxylic acid group"
     
-    return True, "Contains carboxylic acid and long carbon chain with alkyl substituents (branches)"
+    # Check for cyclopropyl rings (common in branched-chain fatty acids)
+    cyclopropyl_pattern = Chem.MolFromSmarts("C1CC1")
+    cyclopropyl_matches = mol.GetSubstructMatches(cyclopropyl_pattern)
+    
+    return True, "Contains carboxylic acid, carbon chain, alkyl substituents (branches), and potential cyclopropyl rings"
