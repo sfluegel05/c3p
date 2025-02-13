@@ -9,7 +9,6 @@ is attached to R, which can represent hydrogens, a carbon chain, or other groups
 """
 
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_alkanesulfonate_oxoanion(smiles: str):
     """
@@ -28,14 +27,9 @@ def is_alkanesulfonate_oxoanion(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for alkanesulfonate group pattern (S(=O)(=O)(=O)-C)
-    alkanesulfonate_pattern = Chem.MolFromSmarts("[S](=[O])(=[O])(=[O])-[C]")
-    if not mol.HasSubstructMatch(alkanesulfonate_pattern):
-        return False, "No alkanesulfonate group found"
-
-    # Check if the molecule is an oxoanion
-    formal_charge = sum(atom.GetFormalCharge() for atom in mol.GetAtoms())
-    if formal_charge != -1:
-        return False, "Molecule is not an oxoanion (formal charge is not -1)"
+    # Look for alkanesulfonate oxoanion pattern ([*]-C-S(=O)(=O)[O-])
+    alkanesulfonate_oxoanion_pattern = Chem.MolFromSmarts("[*]-C-S(=[O])(=[O])[O-]")
+    if not mol.HasSubstructMatch(alkanesulfonate_oxoanion_pattern):
+        return False, "Not an alkanesulfonate oxoanion"
 
     return True, "Molecule is an alkanesulfonate oxoanion"
