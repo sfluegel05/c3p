@@ -19,14 +19,21 @@ def is_carbamate_ester(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Define the SMARTS pattern for a carbamate ester
-    carbamate_ester_pattern = Chem.MolFromSmarts("[O][C](=[O])[N]")
-    
-    # Check if the molecule has the carbamate ester substructure
-    if mol.HasSubstructMatch(carbamate_ester_pattern):
-        return True, "Contains carbamate ester functional group"
-    else:
-        return False, "Does not contain carbamate ester functional group"
 
-# Note: To use this function, pass a SMILES string as an argument, and it will return the classification.
+    # Define SMARTS pattern for typical carbamate ester forms
+    # This pattern might need to match various typical bond configurations.
+    carbamate_ester_patterns = [
+        Chem.MolFromSmarts("COC(=O)N"),  # Methyl ester variant
+        Chem.MolFromSmarts("COC(=O)N(C)"),  # Methyl N-alkyl carbamate
+        Chem.MolFromSmarts("COC(=O)NC"),    # N-substituted, possible secondary
+        Chem.MolFromSmarts("CC(=O)OC(=O)N"),  # E.g., ethyl/other esters
+    ]
+    
+    # Check if the molecule has any of the carbamate ester substructures
+    for pattern in carbamate_ester_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return True, "Contains carbamate ester functional group"
+
+    return False, "Does not contain carbamate ester functional group"
+
+# Note: Pass a SMILES string to the is_carbamate_ester() function to classify.
