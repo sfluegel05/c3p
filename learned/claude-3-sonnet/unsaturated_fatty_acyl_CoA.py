@@ -1,28 +1,56 @@
 """
 Classifies: CHEBI:51006 unsaturated fatty acyl-CoA
 """
-Based on the provided outcomes and the previous code, it seems that the program encountered an error during execution, potentially due to an issue with the SMILES string parsing or substructure matching.
+"""
+Classifies: CHEBI:33566 unsaturated fatty acyl-CoA
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-The error message "NoneType object is not subscriptable" suggests that the program tried to access an element of a None object, which is not a valid operation. This error could occur if the Chem.MolFromSmarts function returned None for the CoA_pattern, which would make mol.HasSubstructMatch(CoA_pattern) fail.
+def is_unsaturated_fatty_acyl_CoA(smiles: str):
+    """
+    Determines if a molecule is an unsaturated fatty acyl-CoA based on its SMILES string.
+    An unsaturated fatty acyl-CoA results from the formal condensation of the thiol group
+    of coenzyme A with the carboxy group of any unsaturated fatty acid.
 
-Here are some potential reasons for the failure and suggestions for improvement:
+    Args:
+        smiles (str): SMILES string of the molecule
 
-1. **Incorrect SMARTS Pattern**: The SMARTS pattern used for the CoA backbone might be incorrect or incomplete, causing Chem.MolFromSmarts to return None. Double-check the SMARTS pattern against the expected CoA structure and make necessary adjustments.
-
-2. **Stereochemistry Handling**: The program does not handle stereochemistry explicitly during the substructure matching. Some of the example SMILES strings contain explicit stereochemistry information, which might cause issues with the current substructure matching approach. Consider using more flexible substructure matching techniques or canonical SMILES strings for better stereochemistry handling.
-
-3. **Atom Mapping Issues**: The SMARTS patterns might not be correctly mapping the atoms between the pattern and the target molecule. Try adjusting the patterns or using different matching techniques, like atom-by-atom matching or maximum common substructure (MCS) detection.
-
-4. **Incomplete Pattern Coverage**: The current set of patterns might not cover all possible variations of unsaturated fatty acyl-CoA structures. Consider expanding the patterns or using a more comprehensive approach, such as fingerprint-based similarity scoring or machine learning models trained on a diverse set of examples.
-
-5. **Input Sanitization**: Ensure that the input SMILES strings are valid and properly sanitized before parsing them with RDKit. Invalid SMILES strings can cause unexpected behavior or errors.
-
-To improve the program, you could try the following steps:
-
-1. Validate the SMARTS patterns against known examples and adjust them as needed.
-2. Implement proper stereochemistry handling during substructure matching or use canonical SMILES strings.
-3. Explore alternative substructure matching techniques, like atom-by-atom matching or MCS detection.
-4. Expand the set of patterns or consider using more comprehensive approaches, like fingerprint-based similarity scoring or machine learning models.
-5. Add input sanitization and error handling to gracefully handle invalid SMILES strings or other unexpected situations.
-
-By addressing these potential issues, you should be able to improve the accuracy and robustness of the program in classifying unsaturated fatty acyl-CoA molecules.
+    Returns:
+        bool: True if molecule is an unsaturated fatty acyl-CoA, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Look for CoA backbone pattern
+    coa_pattern = Chem.MolFromSmarts("C1OC(COP(O)(=O)OP(O)(=O)OCP(O)(=O)OC2OC(N3C=NC4=C3N=CN=C4)C(O)C2OP(O)(O)=O)OC1COP(O)(O)=O")
+    if not mol.HasSubstructMatch(coa_pattern):
+        return False, "No CoA backbone found"
+    
+    # Look for ester bond (-C(=O)-S-) connecting fatty acid and CoA
+    ester_pattern = Chem.MolFromSmarts("C(=O)SC")
+    if not mol.HasSubstructMatch(ester_pattern):
+        return False, "No ester bond connecting fatty acid and CoA"
+    
+    # Look for carbon chain (at least 4 carbons) with at least one C=C bond
+    chain_pattern = Chem.MolFromSmarts("C~C~C~C~C~C=C~C")
+    if not mol.HasSubstructMatch(chain_pattern):
+        return False, "No unsaturated carbon chain (C=C) found"
+    
+    # Count rotatable bonds to verify long enough chain
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 8:
+        return False, "Carbon chain too short for fatty acid"
+    
+    # Count carbons and check molecular weight range
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if c_count < 12 or mol_wt < 500:
+        return False, "Molecular weight or carbon count too low for fatty acyl-CoA"
+    
+    return True, "Contains unsaturated fatty acid chain linked to CoA backbone via ester bond"
