@@ -1,34 +1,145 @@
 """
 Classifies: CHEBI:35819 branched-chain fatty acid
 """
-The previous program attempted to classify branched-chain fatty acids based on the following criteria:
+"""
+Classifies: CHEBI:16411 branched-chain fatty acid
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem, rdMolDescriptors
 
-1. Presence of a carboxylic acid group (-C(=O)O)
-2. Presence of a carbon chain of any length
-3. Presence of alkyl substituents (branches)
-4. At least two rotatable bonds (implying branching)
-5. At least four carbon atoms (allowing short-chain fatty acids)
-6. At least two oxygen atoms (for the carboxylic acid group)
-7. Potential presence of cyclopropyl rings (common in branched-chain fatty acids)
+def is_branched_chain_fatty_acid(smiles: str):
+    """
+    Determines if a molecule is a branched-chain fatty acid based on its SMILES string.
 
-However, the outcomes show that the program had a low F1 score of 0.009, indicating poor performance in correctly classifying branched-chain fatty acids.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-Here are some potential issues with the previous approach and suggestions for improvement:
+    Returns:
+        bool: True if molecule is a branched-chain fatty acid, False otherwise
+        str: Reason for classification
+    """
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-1. **Carbon chain detection**: The code used a simple SMARTS pattern `"[C;H3][C;H2]"` to detect a carbon chain. This pattern may not be sufficient to capture all possible variations of carbon chains, especially in more complex structures. A better approach could be to use the `rdkit.Chem.rdchem.Lipinski.AddHsToTheMolecule` function to add explicit hydrogen atoms, and then search for continuous carbon chains using SMARTS or other graph traversal algorithms.
+    # Add explicit hydrogens
+    AllChem.EmbedMolecule(mol)
+    AllChem.AddHs(mol)
 
-2. **Branch detection**: The code used the SMARTS pattern `"[C][C]([C])"` to detect alkyl substituents (branches). While this pattern may work for simple cases, it may miss more complex branching patterns. A better approach could be to analyze the connectivity of the carbon atoms and identify atoms with more than two neighboring carbon atoms as potential branch points.
+    # Check for carboxylic acid group
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
+    if not mol.HasSubstructMatch(carboxylic_acid_pattern):
+        return False, "No carboxylic acid group found"
 
-3. **Rotatable bond count**: The code used the number of rotatable bonds as a proxy for branching. However, this approach may not work well for cyclic structures or structures with rigid rings, where branching may occur without increasing the number of rotatable bonds. A better approach could be to analyze the connectivity of the carbon atoms and identify atoms with more than two neighboring carbon atoms as potential branch points, regardless of the number of rotatable bonds.
+    # Find the longest carbon chain
+    longest_chain = find_longest_carbon_chain(mol)
+    if longest_chain is None or len(longest_chain) < 4:
+        return False, "No carbon chain of sufficient length found"
 
-4. **Cyclopropyl ring detection**: The code used a SMARTS pattern to detect cyclopropyl rings, which are common in branched-chain fatty acids. However, this pattern may not be sufficient to capture all possible variations of cyclopropyl rings or other cyclic structures that may be present in branched-chain fatty acids. A more general approach could be to use the `rdkit.Chem.rdchem.Rings.RingFamilyDecomposition` function to identify all ring systems in the molecule and analyze their sizes and compositions.
+    # Check for branches
+    branches = find_branches(mol, longest_chain)
+    if len(branches) < 1:
+        return False, "No branches found on the carbon chain"
 
-5. **Handling false positives**: The program classified several molecules as branched-chain fatty acids that did not meet the definition provided. This could be due to the limitations of the SMARTS patterns used or the lack of additional constraints to filter out these false positives. Additional checks could be added to ensure that the identified carbon chain is connected to the carboxylic acid group and that the branches are connected to the carbon chain.
+    # Check for cyclopropyl rings
+    has_cyclopropyl_rings = check_cyclopropyl_rings(mol)
 
-6. **Handling false negatives**: The program missed several examples of branched-chain fatty acids. This could be due to the limitations of the SMARTS patterns used or the lack of additional criteria to capture more complex branched structures. Additional patterns or graph analysis techniques could be employed to identify more complex branching patterns.
+    # Check molecular weight and composition
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 150 or mol_wt > 1000:
+        return False, "Molecular weight outside typical range for fatty acids"
 
-7. **Molecular weight and composition**: The program did not consider the molecular weight or the overall composition of the molecule, which could be useful in distinguishing branched-chain fatty acids from other classes of molecules. Additional checks on the molecular weight and the relative proportions of carbon, hydrogen, and oxygen atoms could be included to improve the classification accuracy.
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if c_count < 6 or o_count < 2:
+        return False, "Composition does not match a fatty acid"
 
-8. **Handling special cases**: The program did not consider special cases or exceptions that may occur in branched-chain fatty acids. For example, some branched-chain fatty acids may contain additional functional groups or substituents that were not accounted for in the current approach. A more comprehensive set of rules or a machine learning-based approach could be used to capture these special cases.
+    reason = "Contains a carbon chain with at least one branch"
+    if has_cyclopropyl_rings:
+        reason += ", and cyclopropyl ring(s)"
 
-Overall, the task of classifying branched-chain fatty acids based on their SMILES strings is challenging and may require a more sophisticated approach than simple SMARTS pattern matching. A combination of graph analysis techniques, molecular descriptors, and machine learning methods could be employed to improve the classification accuracy.
+    return True, reason
+
+def find_longest_carbon_chain(mol):
+    """
+    Finds the longest continuous carbon chain in a molecule.
+
+    Args:
+        mol (rdkit.Chem.rdchem.Mol): RDKit molecule object
+
+    Returns:
+        list: List of atom indices representing the longest carbon chain, or None if not found
+    """
+    longest_chain = []
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6:  # Carbon atom
+            chain = find_chain(mol, atom.GetIdx())
+            if len(chain) > len(longest_chain):
+                longest_chain = chain
+    return longest_chain
+
+def find_chain(mol, start_idx):
+    """
+    Finds a continuous chain of carbon atoms starting from a given atom index.
+
+    Args:
+        mol (rdkit.Chem.rdchem.Mol): RDKit molecule object
+        start_idx (int): Index of the starting atom
+
+    Returns:
+        list: List of atom indices representing the chain
+    """
+    chain = [start_idx]
+    visited = set(chain)
+    to_visit = list(atom.GetNeighborIndices() for atom in mol.GetAtoms())
+
+    while to_visit:
+        neighbors = to_visit.pop(0)
+        for neighbor in neighbors:
+            if neighbor not in visited and mol.GetAtomWithIdx(neighbor).GetAtomicNum() == 6:
+                visited.add(neighbor)
+                chain.append(neighbor)
+                to_visit.append(mol.GetAtomWithIdx(neighbor).GetNeighborIndices())
+
+    return chain
+
+def find_branches(mol, longest_chain):
+    """
+    Finds the branches on the longest carbon chain.
+
+    Args:
+        mol (rdkit.Chem.rdchem.Mol): RDKit molecule object
+        longest_chain (list): List of atom indices representing the longest carbon chain
+
+    Returns:
+        list: List of atom indices representing the branches
+    """
+    branches = []
+    for idx in longest_chain:
+        atom = mol.GetAtomWithIdx(idx)
+        neighbors = [mol.GetAtomWithIdx(n_idx) for n_idx in atom.GetNeighborIndices()]
+        carbon_neighbors = [n for n in neighbors if n.GetAtomicNum() == 6]
+        if len(carbon_neighbors) > 2:
+            for n in carbon_neighbors:
+                if n.GetIdx() not in longest_chain:
+                    branches.append(n.GetIdx())
+    return list(set(branches))
+
+def check_cyclopropyl_rings(mol):
+    """
+    Checks if the molecule contains cyclopropyl rings.
+
+    Args:
+        mol (rdkit.Chem.rdchem.Mol): RDKit molecule object
+
+    Returns:
+        bool: True if the molecule contains cyclopropyl rings, False otherwise
+    """
+    ring_info = mol.GetRingInfo()
+    for ring in ring_info.AtomRings():
+        ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
+        carbon_atoms = [atom for atom in ring_atoms if atom.GetAtomicNum() == 6]
+        if len(carbon_atoms) == 3:
+            return True
+    return False
