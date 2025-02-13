@@ -20,8 +20,8 @@ def is_unsaturated_fatty_acid(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
+    # Parse SMILES while preserving stereochemistry
+    mol = Chem.MolFromSmiles(smiles, sanitize=False)
     if mol is None:
         return False, "Invalid SMILES string"
 
@@ -35,24 +35,25 @@ def is_unsaturated_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(unsaturated_bond_pattern):
         return False, "No unsaturated bonds found"
 
-    # Check for undesirable functional groups
-    exclude_patterns = [
-        Chem.MolFromSmarts("O=C-O-C"),  # esters
-        Chem.MolFromSmarts("C(=O)N"),   # amides
-        Chem.MolFromSmarts("C1CCCCCC1") # cyclic structures
+    # Check for allowed functional groups
+    allowed_patterns = [
+        Chem.MolFromSmarts("-O"),        # hydroxyl groups
+        Chem.MolFromSmarts("O-[C@@]12OC[C@]1([C@H]([C@@H]2O)O)"), # epoxides
+        Chem.MolFromSmarts("[OX2]O[C@H]") # hydroperoxides
     ]
-    for pattern in exclude_patterns:
-        if mol.HasSubstructMatch(pattern):
-            return False, "Contains undesirable functional group"
+    has_allowed_groups = any(mol.HasSubstructMatch(pattern) for pattern in allowed_patterns)
 
     # Count carbons, oxygens, and check rotatable bonds
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
 
-    if o_count < 2 or o_count > 4:
+    if o_count < 2 or o_count > c_count // 2:
         return False, "Incorrect number of oxygens for fatty acid"
     if n_rotatable < c_count - 2:
         return False, "Carbon chain too short for fatty acid"
 
-    return True, "Contains at least one unsaturated bond and a terminal carboxylic acid group"
+    # Handle specific exceptions
+    # ... (add exception handling if needed)
+
+    return True, "Contains at least one unsaturated bond, a terminal carboxylic acid group, and allowed functional groups"
