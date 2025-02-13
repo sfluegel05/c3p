@@ -1,63 +1,33 @@
 """
 Classifies: CHEBI:23044 carotenoid
 """
-"""
-Classifies: CHEBI:36866 carotenoid
-One of a class of tetraterpenoids (C40), formally derived from the acyclic parent,
-psi,psi-carotene by hydrogenation, dehydrogenation, cyclization, oxidation, or
-combination of these processes. This class includes carotenes, xanthophylls and
-certain compounds that arise from rearrangement of the skeleton of psi,psi-carotene
-or by loss of part of this structure. Retinoids are excluded.
-"""
+The previous program attempted to classify carotenoids based on several criteria:
 
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+1. Check if the molecule has a C40 backbone.
+2. Check if the molecule has a tetraterpenoid scaffold.
+3. Check for evidence of cyclization, dehydrogenation, or oxidation.
+4. Check for the absence of a retinoid scaffold.
 
-def is_carotenoid(smiles: str):
-    """
-    Determines if a molecule is a carotenoid based on its SMILES string.
+However, there are several issues with this approach:
 
-    Args:
-        smiles (str): SMILES string of the molecule
+1. The program assumes that all carotenoids have exactly 40 carbon atoms, which is not always the case. Some carotenoids can have fewer or more carbon atoms due to rearrangements or loss of part of the structure.
 
-    Returns:
-        bool: True if molecule is a carotenoid, False otherwise
-        str: Reason for classification
-    """
+2. The tetraterpenoid scaffold check looks for a specific pattern that may not be present in all carotenoids, especially those with rearranged or modified skeletons.
 
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+3. The checks for cyclization, dehydrogenation, and oxidation are too broad and may also match non-carotenoid molecules.
 
-    # Check for C40 backbone
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count != 40:
-        return False, "Not a C40 compound"
+4. The retinoid scaffold check is unnecessary, as retinoids are explicitly excluded from the definition of carotenoids.
 
-    # Check for tetraterpenoid scaffold
-    terpene_pattern = Chem.MolFromSmarts("[C@@H]1[C@H]([C@@H]([C@@H]([C@H](C1)C)C)C)C")
-    terpene_matches = mol.GetSubstructMatches(terpene_pattern)
-    if len(terpene_matches) < 4:
-        return False, "Not a tetraterpenoid scaffold"
+To improve the program, we need to focus on the specific structural features that define carotenoids, as outlined in the definition. Here's a proposed approach:
 
-    # Check for cyclization, dehydrogenation, oxidation patterns
-    cyclized_pattern = Chem.MolFromSmarts("C1CCCCC1")
-    dehydrogenated_pattern = Chem.MolFromSmarts("C=C")
-    oxidized_pattern = Chem.MolFromSmarts("O")
+1. Check for the presence of a polyene chain (alternating carbon-carbon double and single bonds) with a minimum length of 8 double bonds, which is a characteristic feature of carotenoids.
 
-    cyclized_matches = mol.GetSubstructMatches(cyclized_pattern)
-    dehydrogenated_matches = mol.GetSubstructMatches(dehydrogenated_pattern)
-    oxidized_matches = mol.GetSubstructMatches(oxidized_pattern)
+2. Check for the presence of cyclic end groups, such as beta-ionone rings or epsilon-ionone rings, which are common in many carotenoids.
 
-    if not (cyclized_matches or dehydrogenated_matches or oxidized_matches):
-        return False, "No evidence of cyclization, dehydrogenation or oxidation"
+3. Check for the presence of oxygen atoms, indicating the presence of xanthophylls (oxygenated carotenoids).
 
-    # Check for absence of retinoid scaffold
-    retinoid_pattern = Chem.MolFromSmarts("CC(C)(C)c1ccc(O)cc1")
-    retinoid_matches = mol.GetSubstructMatches(retinoid_pattern)
-    if retinoid_matches:
-        return False, "Contains retinoid scaffold"
+4. Optionally, check for the absence of specific functional groups or substructures that are not typically found in carotenoids, such as retinoid scaffolds or aromatic rings.
 
-    return True, "Molecule is a carotenoid"
+5. Consider using machine learning techniques or rule-based systems trained on a dataset of known carotenoids to improve the classification accuracy.
+
+By focusing on these specific structural features, we can develop a more robust and accurate program for classifying carotenoids.
