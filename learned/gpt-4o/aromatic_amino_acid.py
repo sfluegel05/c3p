@@ -2,12 +2,11 @@
 Classifies: CHEBI:33856 aromatic amino acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_aromatic_amino_acid(smiles: str):
     """
     Determines if a molecule is an aromatic amino acid based on its SMILES string.
-    An aromatic amino acid includes an amino acid structure with an aromatic ring.
+    An aromatic amino acid includes an amino acid structure with an aromatic ring attached as a side chain.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,18 +20,19 @@ def is_aromatic_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for the amino acid structure: [N][C][C(=O)O]
-    amino_acid_pattern = Chem.MolFromSmarts("N[C][C](=O)O")
+    # General pattern to identify amino acids: N and C connected with further chain continuity
+    amino_acid_pattern = Chem.MolFromSmarts("[NX3][CX4H][CX3](=O)[OX2H]")
     if not mol.HasSubstructMatch(amino_acid_pattern):
         return False, "No amino acid functional group found"
 
-    # Look for an aromatic ring (any common aromatic pattern)
+    # Aromatic ring pattern
     aromatic_ring_pattern = Chem.MolFromSmarts("a")
-    if not mol.HasSubstructMatch(aromatic_ring_pattern):
-        return False, "No aromatic ring found"
-
-    # If both patterns are present, it is an aromatic amino acid
-    return True, "Molecule contains both an amino acid group and an aromatic ring"
-
-# Example usage:
-# is_aromatic_amino_acid("Nc1ccc(cc1)C(=O)O")  # Should return True
+    
+    # We look for aromatic rings attached to the alpha carbon or adjacent to it
+    aromatic_side_chain_pattern = Chem.MolFromSmarts("[NX3][CX4H]([CX3](=O)[OX2H])[CX4,CX3](a)")
+    
+    # Check if there is any aromatic side chain pattern attached to amino acids 
+    if mol.HasSubstructMatch(aromatic_side_chain_pattern):
+        return True, "Contains amino acid functional group with an aromatic ring side chain"
+    
+    return False, "No aromatic ring attached as a side chain to an amino acid"
