@@ -1,52 +1,26 @@
 """
 Classifies: CHEBI:60027 polymer
 """
-"""
-Classifies: Polymers (CHEBI:24702)
+Based on the outcomes, it seems that the current program has a few shortcomings in correctly identifying polymers:
 
-A polymer is a mixture, which is composed of macromolecules of different kinds
-and which may be differentiated by composition, length, degree of branching, etc.
-"""
+1. **False positives**: The program is classifying some non-polymeric molecules as polymers. This is likely due to the criteria being too broad or not specific enough. For example, the presence of large rings or long carbon chains alone is not a definitive indicator of a polymer, as many small molecules can also exhibit these structural features.
 
-from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+2. **False negatives**: The program is missing some known polymer examples, such as Quinacetol sulfate, Lactitol dihydrate, and Calcium arsenate. This suggests that the criteria used are not comprehensive enough to capture all types of polymers.
 
-def is_polymer(smiles: str):
-    """
-    Determines if a molecule is a polymer based on its SMILES string.
+3. **Molecular weight cutoff**: While the molecular weight cutoff of 500 Da is a reasonable starting point, it may be too strict or too lenient, depending on the specific polymer class being considered.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+To improve the program, the following steps could be taken:
 
-    Returns:
-        bool: True if molecule is a polymer, False otherwise
-        str: Reason for classification
-    """
+1. **Refine the structural criteria**: Instead of solely relying on the presence of large rings or long carbon chains, more specific patterns or substructures characteristic of polymers could be identified and used as criteria. This could involve studying the structural features of known polymer examples and incorporating them into the program.
 
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+2. **Incorporate additional descriptors**: Beyond structural features, other molecular descriptors such as rotatable bond count, topological surface area, or specific functional group patterns could be used to better differentiate polymers from small molecules.
 
-    # Check molecular weight - polymers typically have high MW
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 500:
-        return False, "Molecular weight too low for a polymer"
+3. **Use machine learning**: Since the classification of polymers can be complex, involving multiple structural and physicochemical factors, a machine learning approach could be employed. A dataset of known polymers and non-polymers could be used to train a classification model, which might perform better than a rule-based approach.
 
-    # Look for repeating units/patterns in the SMILES
-    smiles_parts = smiles.split('.')
-    if len(smiles_parts) > 1:
-        # Multiple components, could be a mixture of macromolecules
-        repeating_parts = [part for part in smiles_parts if smiles.count(part) > 1]
-        if repeating_parts:
-            return True, "Contains repeating structural units, could be a polymer mixture"
+4. **Adjust molecular weight cutoff**: The molecular weight cutoff could be fine-tuned based on the specific polymer class being considered or by analyzing the molecular weight distribution of known polymer examples.
 
-    # Check for long carbon chains or rings (>6 atoms)
-    rings = mol.GetRingInfo().AtomRings()
-    large_rings = [len(ring) for ring in rings if len(ring) > 6]
-    chains = [len(chain) for chain in Chem.FindAllPathsOfLengthN(mol, 6, useBonds=False)]
-    if large_rings or chains:
-        return True, "Contains large rings or long carbon chains, potentially a polymer"
+5. **Handle mixtures and salts**: The current program attempts to handle mixtures by looking for repeating structural units, but this approach may not be robust. Additional logic could be added to handle mixtures, salts, and other complex molecular compositions more effectively.
 
-    # No definitive evidence of polymeric structure
-    return False, "No clear indications of a polymeric structure"
+6. **Consider additional polymer classes**: The current program focuses on identifying polymers in general, but it could be extended to classify specific types of polymers, such as proteins, nucleic acids, synthetic polymers, etc., by incorporating class-specific rules or descriptors.
+
+By addressing these issues and refining the classification criteria, the program's performance in identifying polymers could be significantly improved.
