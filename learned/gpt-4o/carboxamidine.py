@@ -21,13 +21,12 @@ def is_carboxamidine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more accurate carboxamidine SMARTS pattern
-    carboxamidine_pattern = Chem.MolFromSmarts("N=C(N)N")  # Specific pattern for carboxamidine
+    # Define a general carboxamidine SMARTS pattern
+    # -C(=NR)NR2, this considers any carbon (can be aromatic), with a double bonded N and another N
+    carboxamidine_pattern = Chem.MolFromSmarts("[#6]=N[#7]")
 
-    # Adjust pattern matching to recognize we want these to be connected.
-    # This attempts to identify the C(=N)-N pattern more reliably
     if mol.HasSubstructMatch(carboxamidine_pattern):
-        return True, "Contains carboxamidine group (-C(=N)-NR2)"
+        return True, "Contains carboxamidine group (-C(=NR)NR2)"
 
     return False, "Does not contain a carboxamidine group"
 
