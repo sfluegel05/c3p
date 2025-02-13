@@ -22,22 +22,14 @@ def is_beta_D_glucoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns for beta-D-glucoside structures
-    # Capture the 6-membered pyranose ring with correct stereochemistry
-    # and an ether linkage to an external group at the anomeric carbon.
-    beta_d_glucoside_patterns = [
-        Chem.MolFromSmarts("[C@H]1(O[C@H](CO)O[C@@H](O)[C@H](O)[C@@H](O)[C@H]1O)"),
-        Chem.MolFromSmarts("O[C@H]1[C@H](O[C@@H](O)[C@@H](O)[C@H](O)[C@H]1O)CO"),
-        Chem.MolFromSmarts("O[C@H]1[C@@H](O[C@H](O)[C@@H](O)[C@H](O)[C@H]1O)CO")
-    ]
+    # Construct a comprehensive pattern for beta-D-glucoside
+    # - Identify the pyranose ring of glucose
+    # - Ensure beta stereochemistry at the anomeric carbon
+    pattern_glucoside = Chem.MolFromSmarts("""
+        [C@H]1(O[C@H](CO[*])[*])O[C@@H](O)[C@H](O)[C@@H](O)[C@H]1O
+        """)
 
-    # Check if the molecule contains the beta-D-glucoside substructure
-    for pattern in beta_d_glucoside_patterns:
-        if mol.HasSubstructMatch(pattern):
-            return True, "Contains beta-D-glucoside substructure"
+    if mol.HasSubstructMatch(pattern_glucoside):
+        return True, "Contains beta-D-glucoside substructure with beta-configuration at anomeric center"
     
     return False, "No beta-D-glucoside substructure found"
-
-# Example usage:
-# result, reason = is_beta_D_glucoside("OC[C@H]1O[C@@H](Oc2ccc3ccc(c2)-c2ccccc3c2)C1O")
-# print(result, reason)
