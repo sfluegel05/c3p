@@ -2,15 +2,14 @@
 Classifies: CHEBI:23044 carotenoid
 """
 from rdkit import Chem
-from rdkit.Chem import rdchem
 
 def is_carotenoid(smiles: str):
     """
     Determines if a molecule is a carotenoid based on its SMILES string.
-    
+
     Args:
         smiles (str): SMILES string of the molecule
-        
+
     Returns:
         bool: True if molecule is a carotenoid, False otherwise
         str: Reason for classification
@@ -23,23 +22,27 @@ def is_carotenoid(smiles: str):
     
     # Count carbon atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 35 or c_count > 60:
+    if not (35 <= c_count <= 50):
         return False, f"Carotenoids typically have around 40 carbons, found {c_count}"
 
-    # Look for a significant number of conjugated double bonds
+    # Look for conjugated double bonds (more flexible count)
     conjugated_pattern = Chem.MolFromSmarts("C=C")
     conjugated_bonds = mol.GetSubstructMatches(conjugated_pattern)
-    if len(conjugated_bonds) < 10:
+    if len(conjugated_bonds) < 8:
         return False, "Insufficient conjugated double bonds"
-
-    # Check for multiple oxygen atoms indicative of functional diversity (without strict need for OH)
+    
+    # Oxygen atoms presence check
     num_oxygen = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     if num_oxygen < 1:
         return False, "No oxygen atoms found"
 
-    # Assess for ring presence, allowing for linear structures or complexity
-    ring_info = mol.GetRingInfo().BondRings()
-    if len(ring_info) > 0 or c_count >= 40:
-        return True, "Matches the structural criteria of carotenoids"
+    # Check the ring presence; allow linear polyene structure
+    ring_info = mol.GetRingInfo()
+    if ring_info.NumRings() > 0:  
+        return True, "Cyclic structure matches carotenoid properties"
+    else:
+        # Allow linear systems with conjugated double bonds.
+        if len(conjugated_bonds) >= 8 and num_oxygen >= 1:
+            return True, "Linear conjugated structure with oxygen matches carotenoid properties"
 
-    return False, "No ring structures or insufficient complexity to classify as carotenoid"
+    return False, "Structure does not match typical carotenoid characteristics"
