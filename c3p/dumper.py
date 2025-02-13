@@ -167,7 +167,7 @@ def result_as_dict(e: Union[Result, EvaluationResult, ResultSet]) -> dict:
     #d["attempt"] = e.train_results.best_result.attempt
     # d["num_instances"] = len(r.chemical_class.positive_instances)
     for k in ["f1", "precision", "accuracy", "attempt"]:
-        d[f"train_{k}"] = getattr(e.train_results.best_result, k)
+        d[f"train_{k}"] = getattr(e.train_results.best_result, k, None)
     return d
 
 def xxxwrite_eval_results(expt: EvaluationExperiment, results_dir: Path, f1_threshold: Optional[float]=None) -> pd.DataFrame:

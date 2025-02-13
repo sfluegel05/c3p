@@ -20,3 +20,5 @@ def test_classify(input_smiles, expected):
     pos_results = [( r.class_id, r.input_smiles) for r in results if r.is_match]
     assert len(pos_results) == len(expected)
     assert pos_results == expected
+
+

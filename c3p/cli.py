@@ -102,7 +102,7 @@ def classify(
     logger.info(f"Starting classification for SMILES: {smiles_list}")
     logger.debug(f"Searching for programs in: {program_directory}")
     for result in classifier.classify(smiles_list, program_directory=program_directory, chemical_classes=chemical_classes, strict=False):
-        if confidence_cutoff is not None and result.confidence < confidence_cutoff:
+        if result.confidence is not None and confidence_cutoff is not None and result.confidence < confidence_cutoff:
             continue
         if exclude_negative and not result.is_match:
             continue

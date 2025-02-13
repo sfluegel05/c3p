@@ -8,12 +8,11 @@ import pandas as pd
 import typer
 
 from c3p.cli import verbose_option, configure_logging
-from c3p.datamodel import Dataset, Config, EvaluationResult, ResultSet
+from c3p.datamodel import Dataset, Config, EvaluationResult, ResultSet, CodeStatistics
 from c3p.dumper import result_as_dict
-from c3p.learn import learn_ontology_iter, evaluate_class
+from c3p.learn import safe_name
 from c3p.outcome_stats import calculate_all_outcome_stats
 from c3p.plotting import plot_scatter
-from c3p.stats import calculate_macro_stats, calculate_macro_stats_as_df, calculate_micro_and_macro_stats_as_df
 
 app = typer.Typer(help="CHEBI learn.")
 
@@ -38,17 +37,27 @@ def summarize(
     n = 0
     configure_logging(verbose)
     eval_results = []
+    eval_objects = []
     for fn in working_dir.glob("*.json"):
         if "/cache" in str(working_dir):
             er = ResultSet.model_validate_json(fn.read_text())
         else:
             er = EvaluationResult.model_validate_json(fn.read_text())
+        eval_objects.append(er)
         #auprc = calculate_auprc(er)
         er_dict = result_as_dict(er)
         if isinstance(er, EvaluationResult):
             br = er.train_results.best_result
+            if not br and "chebifier" in str(working_dir):
+                br = er.test_result
         else:
             br = er
+        if not br.code_statistics and br.code:
+            print(f"calculated code statistics for {fn}")
+            br.code_statistics = CodeStatistics.from_code(br.code)
+            for k, v in br.code_statistics.model_dump().items():
+                if isinstance(v, (int, float)):
+                    er_dict[k] = v
         er_dict["num_train_examples"] = br.num_true_positives + br.num_false_negatives
         #if not er_dict["num_train_examples"]:
         #    print(f"no train examples for {er_dict['f1']} {fn}")
@@ -68,6 +77,13 @@ def summarize(
     print(all_stats_sf.T.round(3))
     if output_dir:
         output_dir.mkdir(exist_ok=True, parents=True)
+        md_dir = output_dir / "markdown"
+        md_dir.mkdir(exist_ok=True, parents=True)
+        for eo in eval_objects:
+            br = eo.train_results.best_result
+            md_fn = md_dir / f"{safe_name(br.chemical_class.name)}.md"
+            with open(md_fn, "w") as f:
+                f.write(eo.markdown)
         df.to_csv(output_dir / "results.csv", index=False)
         df.to_excel(output_dir / "results.xslx", index=False)
         all_stats_sf.to_csv(output_dir / "outcome_stats.csv", index=False)
@@ -75,6 +91,7 @@ def summarize(
         df.describe().to_html(output_dir / "summary.html", index=True)
         plot_scatter(df, "train_f1", "f1", results_dir=output_dir)
         plot_scatter(df, "log_num_train_examples", "f1", results_dir=output_dir)
+        plot_scatter(df, "complexity", "f1", results_dir=output_dir)
         #plot_scatter(df, "num_train_examples", "f1", results_dir=output_dir)
         for min_f1 in [0.05, 0.5]:
             filtered_df = df[df["train_f1"] > min_f1]

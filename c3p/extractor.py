@@ -4,14 +4,11 @@ from pathlib import Path
 from typing import Tuple, Iterator, Set
 
 import pandas as pd
-from oaklib.cli import ontology_versions
 from oaklib.datamodels.vocabulary import HAS_DEFINITION_CURIE, RDFS_LABEL, OWL_VERSION_IRI, HAS_DBXREF
-from rdflib.plugins.shared.jsonld.keys import VERSION
 from rdkit import Chem
-from semsql.sqla.semsql import Statements, Edge, EntailedEdge, HasDbxrefStatement
+from semsql.sqla.semsql import Statements, Edge, EntailedEdge
 from sqlalchemy import select, Select, not_
 from sqlalchemy.orm import Session
-from sqlalchemy.orm.loading import instances
 from sssom.constants import RDFS_SUBCLASS_OF
 
 from c3p.datamodel import ChemicalStructure, ChemicalClass, Dataset, SMILES_STRING
@@ -153,10 +150,13 @@ def get_ontology_version(session: Session):
         ont = "chemessence"
     return ont + v.split("/")[-2]
 
-def create_benchmark(df: pd.DataFrame, session: Session, validation_proportion=0.2, min_members=25, max_members=5000, exclude_wildcard=True) -> Dataset:
+def create_benchmark(df: pd.DataFrame, session: Session, validation_proportion=0.2, min_members=25, max_members=5000, exclude_wildcard=True, defined_only=True, subclass_of=None) -> Dataset:
     v = get_ontology_version(session)
     structure_df = df[df[SMILES].notnull()]
-    defined_df = df[df[HAS_DEFINITION_CURIE].notnull()]
+    if defined_only:
+        defined_df = df[df[HAS_DEFINITION_CURIE].notnull()]
+    else:
+        defined_df = df
     cc_map = {}
     for _, row in defined_df.iterrows():
         parents = row[RDFS_SUBCLASS_OF]

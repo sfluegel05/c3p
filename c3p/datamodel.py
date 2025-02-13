@@ -1,3 +1,5 @@
+import math
+import re
 from copy import copy
 
 from pydantic import BaseModel, Field
@@ -25,20 +27,10 @@ class ChemicalClass(BaseModel):
     """Represents a class/grouping of chemical entities."""
     id: str = Field(..., description="id/curie of the CHEBI class")
     name: str = Field(..., description="rdfs:label of the class in CHEBI")
-    definition: str = Field(..., description="definition of the structure from CHEBI")
+    definition: Optional[str] = Field(None, description="definition of the structure from CHEBI")
     parents: Optional[List[str]] = Field(default=None, description="parent classes")
     xrefs: Optional[List[str]] = Field(default=None, description="mappings")
     all_positive_examples: List[SMILES_STRING] = []
-    #train_positive: List[SMILES_STRING] = []
-    #train_negative: Optional[List[SMILES_STRING]] = None  # can be inferred
-    #validate_positive: List[SMILES_STRING] = []
-    #validate_negative: List[SMILES_STRING] = []
-    #num_train_positive: Optional[int] = None
-    #num_train_negative: Optional[int] = None
-    #num_validate_positive: Optional[int] = None
-    #num_validate_negative: Optional[int] = None
-    #positive_instances: List[ChemicalStructure] = Field(..., description="positive examples")
-    #negative_instances: Optional[List[ChemicalStructure]] = Field(default=None, description="negative examples")
 
     def lite_copy(self) -> "ChemicalClass":
         """
@@ -107,6 +99,7 @@ class Config(BaseModel):
     max_examples_in_feedback: Optional[int] = 25
     test_proportion: float = 0.2
     use_definitions: bool = True
+    use_the_force: bool = False
 
     @property
     def experiment_name(self):
@@ -131,11 +124,117 @@ class Outcome(BaseModel):
         return f"{self.smiles} ({self.name}): {self.reason}"
 
 
+class CodeStatistics(BaseModel):
+    """Code statistics"""
+    lines_of_code: int
+    log_lines_of_code: float
+    indent_by_line: List[int]
+    max_indent: int
+    imports: List[str]
+    imports_count: int
+    methods_called: List[str]
+    methods_called_count: int
+    smarts_strings: List[str]
+    smarts_strings_count: int
+    defs: List[str]
+    defs_count: int
+    returns: List[str]
+    returns_count: int
+    complexity: float
+
+    @classmethod
+    def from_code(cls, code: str):
+        """Extract statistics from code"""
+        imports = []
+        lines = []
+        ignored_lines = []
+        indent_by_line = []
+        returns = []
+        defs = []
+        last_line_indent = 0
+        in_def = False
+        for line in code.split("\n"):
+            if line.startswith("__metadata__"):
+                break
+            num_spaces = len(line) - len(line.lstrip())
+            line_indent = num_spaces // 4
+            if num_spaces % 4:
+                # likely not a "true" new line
+                line_indent = last_line_indent
+            elif line_indent > last_line_indent + 1:
+                # likely a continuation of the previous line
+                line_indent = last_line_indent
+            last_line_indent = line_indent
+            if in_def:
+                if line.strip() and line_indent == 0:
+                    pass
+                    #in_def = False
+                else:
+                    if line.strip():
+                        lines.append(line)
+                    indent_by_line.append(line_indent)
+            elif line.startswith("from") or line.startswith("import"):
+                imports.append(line)
+            elif line.startswith("def"):
+                in_def = True
+                defs.append(line.replace("def", "").strip())
+            else:
+                ignored_lines.append(line)
+        lines_of_code = len(lines)
+        max_indent = max(indent_by_line) if indent_by_line else 0
+        imports_count = len(imports)
+        method_re = re.compile(r"\.(\w+)\(")
+        # TODO: this misses when a variable is passed
+        smarts_re = re.compile(r"Chem.MolFromSmarts\((.+)\)")
+        methods_called = []
+        smarts_strings = []
+        def de_quote(s):
+            if s.startswith("'") and s.endswith("'"):
+                return s[1:-1]
+            if s.startswith('"') and s.endswith('"'):
+                return s[1:-1]
+            return s
+        for line in lines:
+            methods_called.extend(method_re.findall(line))
+            smarts_strings.extend([de_quote(x) for x in smarts_re.findall(line)])
+            line_lstrip = line.lstrip()
+            if line_lstrip.startswith("return"):
+                returns.append(line.replace("return", "").strip())
+            if line_lstrip.startswith("def"):
+                defs.append(line.replace("def", "").strip())
+        methods_called = list(set(methods_called))
+        methods_called_count = len(methods_called)
+        smarts_strings = list(set(smarts_strings))
+        smarts_strings_count = len(smarts_strings)
+        defs_count = len(defs)
+        returns_count = len(returns)
+        log_loc = math.log(lines_of_code) if lines_of_code else 0
+        complexity = (methods_called_count + defs_count + returns_count + log_loc + max_indent) / 5
+        return cls(
+            lines_of_code=lines_of_code,
+            log_lines_of_code=log_loc,
+            indent_by_line=indent_by_line,
+            max_indent=max_indent,
+            imports=imports,
+            imports_count=imports_count,
+            methods_called=methods_called,
+            methods_called_count=methods_called_count,
+            smarts_strings=smarts_strings,
+            smarts_strings_count=smarts_strings_count,
+            defs=defs,
+            defs_count=defs_count,
+            returns=returns,
+            returns_count=returns_count,
+            complexity=complexity,
+        )
+
+
 class Result(BaseModel):
     """Result of running workflow on a chemical class"""
     chemical_class: ChemicalClass
     config: Optional[Config] = None
     code: str
+    code_statistics: Optional[CodeStatistics] = None
     message: Optional[str] = None
     true_positives: Optional[List[Outcome]] = None
     false_positives: Optional[List[Outcome]] = None
@@ -189,6 +288,8 @@ class Result(BaseModel):
             self.negative_predictive_value = self.num_true_negatives / (self.num_true_negatives + self.num_false_negatives)
         else:
             self.negative_predictive_value = 0
+        if self.code and not self.code_statistics:
+            self.code_statistics = CodeStatistics.from_code(self.code)
 
 class ResultSet(BaseModel):
     """A set of results"""
@@ -204,6 +305,34 @@ class ResultSet(BaseModel):
         if obj.best_result:
             obj.best_result.best = True
         return obj
+
+    @property
+    def markdown(self):
+        """Generate markdown for the result set"""
+        br = self.best_result
+        best_attempt = br.attempt if br else -1
+        chem = br.chemical_class
+        md = f"# Results for {chem.id} {chem.name}\n\n"
+        for r in self.results:
+            md += f"## Attempt {r.attempt}\n\n"
+            if r.attempt == best_attempt:
+                md += f"**Best result**\n\n"
+            if r.message:
+                md += f"### Feedback from previous attempt\n\n"
+                md += f"{r.message}\n\n"
+            if r.reasoning:
+                md += f"### Reasoning\n\n"
+                md += f"{r.reasoning}\n\n"
+
+            md += "### Code\n\n"
+            md += f"```python\n{r.code}\n```\n\n"
+            if r.error:
+                md += f"### Error\n\n"
+                md += f"```python\n{r.error}\n```\n\n"
+            md += f"Precision: {r.precision:.2f}\n\n"
+            md += f"Recall: {r.recall:.2f}\n\n"
+            md += f"F1: {r.f1:.2f}\n\n"
+        return md
 
 class EvaluationResult(BaseModel):
     """Result of evaluating a model"""
@@ -221,6 +350,11 @@ class EvaluationResult(BaseModel):
         fn_penalty = tr.num_false_negatives * br.negative_predictive_value
         reward = (tp_reward - fp_penalty) - fn_penalty
         return reward
+
+    @property
+    def markdown(self):
+        """Generate markdown for the evaluation result"""
+        return self.train_results.markdown
 
 
 class EvaluationExperiment(BaseModel):

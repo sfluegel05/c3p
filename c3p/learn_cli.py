@@ -1,3 +1,4 @@
+import random
 from pathlib import Path
 from typing import List, Optional, Annotated
 
@@ -61,7 +62,9 @@ def learn_classes(
         working_dir: Path = typer.Option(None, "--workdir", "-w", help="path to workdir"),
         model_name: Optional[str] = typer.Option(None, "--model", "-m", help="model name"),
         max_negative: Optional[int] = typer.Option(None, "--max-negative", "-n", help="max negative examples"),
+        randomize_order: Annotated[bool, typer.Option(..., "--randomize-order/--no-randomize-order", help="randomize order")] = False,
         mapped_only: Annotated[bool, typer.Option("--mapped-only/--no-mapped-only", "-x/--no-x")] = False,
+        use_the_force: Annotated[bool, typer.Option("--use-the-force/--no-use-the-force", )] = False,
         max_attempts: Optional[int] = typer.Option(None, "--max-attempts", "-a", help="max attempts"),
         f1_threshold: Optional[float] = typer.Option(None, "--f1-threshold", "-f", help="f1 threshold"),
         exclude_definitions: Optional[bool] = typer.Option(None, "--exclude-definitions/--no-exclude-definitions",  help="exclude definitions"),
@@ -69,7 +72,14 @@ def learn_classes(
         verbose: Annotated[int, verbose_option] = 0
 ) -> None:
     """
-    Evaluate a model on a dataset using a single class.
+    Learn program classifiers from a dataset.
+
+    The dataset should have been created beforehand.
+
+    To learn all classes in the dataset use '-':
+
+        c3p-learn -m gpt-4o --dataset dataset.json -w results -
+
     """
     n = 0
     configure_logging(verbose)
@@ -91,6 +101,11 @@ def learn_classes(
         config.max_attempts = max_attempts
     if f1_threshold:
         config.f1_threshold = f1_threshold
+    if use_the_force:
+        config.use_the_force = True
+
+    if randomize_order:
+        random.shuffle(dataset.classes)
 
     objs = []
     for rset in learn_ontology_iter(dataset, config,

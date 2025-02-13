@@ -94,7 +94,7 @@ def generate_main_prompt(chemical_class: str, definition: str, positive_instance
 def eval_with_timeout(*args) -> Any:
     return eval(*args)
 
-def run_code(code_str: str, function_name: str, args: List[str], neg_args: List[str], max_false=100) -> List[Tuple[str, bool, str, dict]]:
+def run_code(code_str: str, function_name: str, args: List[Any], neg_args: List[Any], max_false: Optional[int]=None) -> List[Tuple[str, bool, str, dict]]:
     """
     Run the generated code and return the results.
 
@@ -112,6 +112,7 @@ def run_code(code_str: str, function_name: str, args: List[str], neg_args: List[
         function_name:
         args:
         neg_args:
+        max_false:
 
     Returns:
 
@@ -143,20 +144,27 @@ def run_code(code_str: str, function_name: str, args: List[str], neg_args: List[
         logger.info(f"Running code with {len(args)} + {len(neg_args)} instances")
         logger.debug(f"CODE:\n{code_str}")
         for i, arg in enumerate(args + neg_args):
+            if max_false and i < len(args) and num_false_negatives > max_false:
+                continue
             # use json.dumps to make sure that the argument is safely encoded
             # e.g. SMILES may use backslashes
-            arg_encoded = json.dumps(arg)
+            #arg_encoded = json.dumps(arg)
+            arg_encoded = repr(arg)
             func_exec_str = f"{function_name}({arg_encoded})"
             logger.debug(f"Executing: {func_exec_str}")
-            is_cls, reason = eval_with_timeout(func_exec_str)
+            try:
+                is_cls, reason = eval_with_timeout(func_exec_str)
+            except Exception as e:
+                raise RuntimeError(f"Error executing {func_exec_str}:\n {e}")
             if is_cls and i >= len(args):
+                # in 2nd batch, should be negative
                 num_false_positives += 1
-                if num_false_positives > max_false:
+                if max_false and num_false_positives > max_false:
                     break
             if not is_cls and i < len(args):
+                # in 1st batch, should be positive
                 num_false_negatives += 1
-                if num_false_negatives > max_false:
-                    break
+
             vals.append((arg, is_cls, reason, metadata))
     logger.info(f"Exec Output: {f.getvalue()}")
     #tmp_logger.removeHandler(handler)
@@ -230,6 +238,8 @@ def evaluate_program(code_str: str, chemical_class: ChemicalClass, positive_inst
             error=str(e) + stderr.getvalue(),
             stdout=stdout.getvalue(),
         )
+    all_structures = positive_structures + negative_structures
+    all_structures_count = len(all_structures)
     def mk(smiles, reason):
         instance = smiles_to_instance.get(smiles)
         return Outcome(smiles=smiles, name=instance.name, reason=reason)
@@ -311,6 +321,8 @@ def learn_program_single_iter(
     options = {}
     if "llama" in config.llm_model_name:
         options = {"max_tokens": 3000}
+    if "deepseek" in config.llm_model_name:
+        options = {"max_tokens": 8192}
     if "o1" in config.llm_model_name:
         response = model.prompt(f"SYSTEM PROMPT: {system_prompt} MAIN PROMPT: {main_prompt}", stream=False)
     else:
@@ -354,6 +366,14 @@ def learn_program_single_iter(
         msg += f"\n------\n"
         msg += "\nIn your reasoning step, analyze the previous program and the above outcomes, "
         msg += "hypothesizing about what went wrong, and how to improve.\n"
+        if config.use_the_force:
+            msg += "IMPORTANT NOTE: I do not have 100% confidence in the benchmark I am using. "
+            msg += "There may be occasional and systematic mistakes. "
+            msg += "Use your best judgment, and if you think the classifications your program are "
+            msg += "consistent with your understanding if the meaning of the chemical class, then "
+            msg += "you can ignore outliers, but explain your reasoning in doing so. "
+            msg += "I have great confidence in your broad understanding of chemistry and your ability to "
+            msg += "translate this into code."
         logger.info(f"Retrying {cls.name} with new prompt")
         yield from learn_program_single_iter(cls, positive_instances, negative_instances, config=config, attempt=next_attempt, err=msg, prog=code_str)
 

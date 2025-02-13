@@ -10,7 +10,7 @@ from tests.conftest import OUTPUT_DIR, INPUT_DIR, TEST_PROGRAM_DIR
 
 DATASET_PATH = OUTPUT_DIR / "dataset.json"
 
-#@pytest.mark.integration
+@pytest.mark.integration
 def test_create_benchmark():
     db = "sqlite:obo:chebi"
     chebi = get_adapter(db)
@@ -22,6 +22,20 @@ def test_create_benchmark():
     assert len(dataset.classes) > 0
     assert len(dataset.structures) > 0
     with open(DATASET_PATH, "w") as f:
+        f.write(dataset.model_dump_json(indent=2))
+
+#@pytest.mark.integration
+def test_create_large_benchmark():
+    db = "sqlite:obo:chebi"
+    chebi = get_adapter(db)
+    session = chebi.session
+    df = db_to_dataframe(session, "CHEBI")
+    assert df is not None
+    dataset = create_benchmark(df, session, defined_only=False)
+    assert dataset is not None
+    assert len(dataset.classes) > 0
+    assert len(dataset.structures) > 0
+    with open(OUTPUT_DIR / "full_dataset.json", "w") as f:
         f.write(dataset.model_dump_json(indent=2))
 
 @pytest.mark.integration
@@ -70,6 +84,27 @@ def test_run_code():
         if is_cls:
             matches.append(smiles)
     assert len(matches) > 0
+
+
+PEPTIDE = "CHEBI:16670"
+
+@pytest.mark.integration
+def test_create_peptide_benchmark():
+    db = "sqlite:obo:chebi"
+    chebi = get_adapter(db)
+    session = chebi.session
+    df = db_to_dataframe(session, "CHEBI")
+    def is_peptide(row):
+        return PEPTIDE in row["entailed_subclass_of"]
+    df = df[df.apply(is_peptide, axis=1)]
+    assert df is not None
+    dataset = create_benchmark(df, session)
+    assert dataset is not None
+    assert len(dataset.classes) > 0
+    assert len(dataset.structures) > 0
+    path = OUTPUT_DIR / "peptide_dataset.json"
+    with open(path, "w") as f:
+        f.write(dataset.model_dump_json(indent=2))
 
 
 

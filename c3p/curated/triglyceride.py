@@ -60,38 +60,3 @@ def is_triglyceride(smiles: str):
         return False, "Must have exactly 6 oxygens (3 ester groups)"
 
     return True, "Contains glycerol backbone with 3 fatty acid chains attached via ester bonds"
-
-
-__metadata__ = {   'chemical_class': {   'id': 'CHEBI:17855',
-                          'name': 'triglyceride',
-                          'definition': 'Any glyceride resulting from the '
-                                        'condensation of all three hydroxy '
-                                        'groups of glycerol '
-                                        '(propane-1,2,3-triol) with fatty '
-                                        'acids.',
-                          'parents': ['CHEBI:47778', 'CHEBI:76579']},
-    'config': {   'llm_model_name': 'lbl/claude-sonnet',
-                  'f1_threshold': 0.8,
-                  'max_attempts': 5,
-                  'max_positive_instances': None,
-                  'max_positive_to_test': None,
-                  'max_negative_to_test': None,
-                  'max_positive_in_prompt': 50,
-                  'max_negative_in_prompt': 20,
-                  'max_instances_in_prompt': 100,
-                  'test_proportion': 0.1},
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 150,
-    'num_false_positives': 4,
-    'num_true_negatives': 182407,
-    'num_false_negatives': 23,
-    'num_negatives': None,
-    'precision': 0.974025974025974,
-    'recall': 0.8670520231213873,
-    'f1': 0.9174311926605504,
-    'accuracy': 0.9998521228585199}

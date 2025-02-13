@@ -3,7 +3,7 @@ import yaml
 
 from c3p.datamodel import Dataset, Config
 from c3p.learn import learn_program_single_iter, learn_program, \
-    get_positive_and_negative_train_instances
+    get_positive_and_negative_train_instances, run_code
 from tests.test_extractor import DATASET_PATH, test_get_negative_instances
 
 
@@ -33,3 +33,23 @@ def test_learn_full():
     rset = learn_program(cc, pos, neg, config=config)
     assert rset is not None
     print(yaml.dump(rset.model_dump(), sort_keys=False))
+
+def test_run_code_str():
+    code = "def is_foo(x):\n    return x == 'foo', ''"
+    results = run_code(code, "is_foo", ["foo"], ["bar"])
+    assert results == [('foo', True, '', {}), ('bar', False, '', {})]
+
+def test_run_code_backslash():
+    code = "def has_backslash(x):\n    return '\\\\' in x, ''"
+    results = run_code(code, "has_backslash", ["foo\\a"], ["bar"])
+    assert results == [('foo\\a', True, '', {}), ('bar', False, '', {})] != [('foo', True, '', {}), ('bar', False, '', {})]
+
+def test_run_code_with_exception():
+    raised = False
+    try:
+        run_code("def foo(x):\n    return x/0, ''", "foo", [1], [])
+    except RuntimeError as e:
+        assert "foo(1)" in str(e)
+        assert "division by zero" in str(e)
+        raised = True
+    assert raised
