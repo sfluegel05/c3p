@@ -2,7 +2,6 @@
 Classifies: CHEBI:67142 nucleobase analogue
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_nucleobase_analogue(smiles: str):
     """
@@ -21,44 +20,36 @@ def is_nucleobase_analogue(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Common nucleobase scaffolds
+
+    # Patterns for nucleobase-like heterocycles
     pyrimidine_patterns = [
-        Chem.MolFromSmarts("c1ncnc1"),  # Basic pyrimidine structure
-        Chem.MolFromSmarts("c1cncnc1"),  # Extended variants of pyrimidine
-        Chem.MolFromSmarts("c1ncnn1")  # Other nitrogen substitutions
+        Chem.MolFromSmarts("c1[nH]cnc1"),  # Pyrimidine with at least one imino group
+        Chem.MolFromSmarts("c1nc[nH]c1"),  # Pyrimidine with another nitrogen configuration
     ]
     purine_patterns = [
-        Chem.MolFromSmarts("c1ncnc2[nH]ncnc12"),  # Basic purine structure
-        Chem.MolFromSmarts("c1ncnc2ncnc[nH]12"),  # Extended variants of purine
-        Chem.MolFromSmarts("c1ncnc2ncnn12"),  # Other nitrogen substitutions
+        Chem.MolFromSmarts("c1ncnc2[nH]c[nH]c12"),  # Purine-like with two imino groups
     ]
     
     # Check for pyrimidine or purine-like structures
     for pyrimidine in pyrimidine_patterns:
         if mol.HasSubstructMatch(pyrimidine):
-            return True, "Contains pyrimidine-like heterocycle"
+            # Ensure it has modifications typical for analogues
+            halogen_pattern = Chem.MolFromSmarts("[F,Cl,Br,I]")
+            hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
+            if mol.HasSubstructMatch(halogen_pattern) or mol.HasSubstructMatch(hydroxyl_pattern):
+                return True, "Contains pyrimidine-like heterocycle with modifications"
             
     for purine in purine_patterns:
         if mol.HasSubstructMatch(purine):
             return True, "Contains purine-like heterocycle"
-    
-    # Look for key functional groups common to nucleobases
+        
+    # Look for typical nucleobase-like functional group arrangements
     carbonyl_pattern = Chem.MolFromSmarts("[CX3]=[OX1]")  # Carbonyl group
-    amino_pattern = Chem.MolFromSmarts("[NX3][H]")  # Amino group
-    
-    carbonyl_matches = mol.GetSubstructMatches(carbonyl_pattern)
-    amino_matches = mol.GetSubstructMatches(amino_pattern)
-    
-    # Check for required functional group combinations
-    if len(carbonyl_matches) > 0 and len(amino_matches) > 0:
-        return True, "Contains both carbonyl and amino groups typical of nucleobases"
-    
-    # Analyze nitrogen content and heteroatom features
-    n_atoms = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
-    hetero_atm_count = rdMolDescriptors.CalcNumHeteroatoms(mol)
+    amino_pattern = Chem.MolFromSmarts("[NX3H2,X3H1]")  # Primary and secondary amines
 
-    if n_atoms >= 2 and hetero_atm_count >= 3:
-        return True, "Complex nitrogen and heteroatom structure suggesting a modified nucleobase"
+    if mol.HasSubstructMatch(carbonyl_pattern) and mol.HasSubstructMatch(amino_pattern):
+        # Additional check ensures the presence of at least a core heterocycle typical of nucleobases
+        if any(mol.HasSubstructMatch(p) for p in pyrimidine_patterns + purine_patterns):
+            return True, "Contains key nucleobase functional groups with heterocycle"
     
     return False, "Does not match features of known nucleobase analogues"
