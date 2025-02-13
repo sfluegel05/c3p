@@ -21,9 +21,11 @@ def is_cation(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for positively charged atoms
-    for atom in mol.GetAtoms():
-        if atom.GetFormalCharge() > 0:
-            return True, f"Contains positively charged atom: {atom.GetSymbol()} with charge {atom.GetFormalCharge()}"
+    # Calculate net charge of the molecule
+    net_charge = sum(atom.GetFormalCharge() for atom in mol.GetAtoms())
 
-    return False, "No positively charged atoms found"
+    # Check if net charge is positive
+    if net_charge > 0:
+        return True, f"Net positive charge of {net_charge} detected"
+
+    return False, "No net positive charge found"
