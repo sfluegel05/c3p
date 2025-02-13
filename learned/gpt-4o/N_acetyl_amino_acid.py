@@ -19,16 +19,18 @@ def is_N_acetyl_amino_acid(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return None, "Invalid SMILES string"
+        return False, "Invalid SMILES string"
 
     # Look for N-acetyl group pattern (N-C(=O)-C)
-    acetyl_pattern = Chem.MolFromSmarts("[NX3][CX3](=O)C")
+    acetyl_pattern = Chem.MolFromSmarts("[NX3;H1]C(=O)C")
     if not mol.HasSubstructMatch(acetyl_pattern):
         return False, "No N-acetyl group found"
-    
-    # Look for amino acid pattern − must have a C(=O)O and N attached to chiral alpha-carbon center
-    amino_acid_pattern = Chem.MolFromSmarts("C(=O)(O)[C@H]N")
+
+    # Look for amino acid backbone: must have an amine (N) and carboxylate (C(=O)O) group in specific relative positions
+    amino_acid_pattern = Chem.MolFromSmarts("N[C@@H](C)C(=O)O")
     if not mol.HasSubstructMatch(amino_acid_pattern):
-        return False, "No amino acid structure detected"
+        amino_acid_pattern = Chem.MolFromSmarts("N[C@H](C)C(=O)O")  # Non-chiral counterpart
+        if not mol.HasSubstructMatch(amino_acid_pattern):
+            return False, "No amino acid structure detected"
 
     return True, "Contains N-acetyl group attached to an amino acid structure"
