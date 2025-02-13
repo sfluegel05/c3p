@@ -1,30 +1,69 @@
 """
 Classifies: CHEBI:134179 volatile organic compound
 """
-The previous code attempted to classify volatile organic compounds (VOCs) based on the presence of certain functional groups and substructures commonly found in VOCs, such as aldehydes, ketones, nitriles, alkenes, esters, carboxylic acids, amides, sulfoxides, sulfones, and alcohols. It then estimated the boiling point using a combination of molecular descriptors and classified the compound as a VOC if the estimated boiling point was <= 250°C.
+"""
+Classifies: CHEBI:46281 volatile organic compound
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-However, this approach has several limitations:
+def is_volatile_organic_compound(smiles: str):
+    """
+    Determines if a molecule is a volatile organic compound (VOC) based on its SMILES string.
+    A VOC is an organic compound with an initial boiling point <= 250°C (482°F) at standard atmospheric pressure.
 
-1. **Incomplete set of VOC substructures**: The list of VOC patterns used in the code is not comprehensive enough to cover all possible VOC substructures. Many other functional groups, such as ethers, halides, and aromatic rings, can contribute to a compound being a VOC.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **Boiling point estimation inaccuracies**: The boiling point estimation method used in the code is a simple linear regression model based on molecular weight, rotatable bonds, and topological polar surface area. While this may provide a rough estimate, it may not accurately predict the boiling points of more complex molecules or molecules with specific structural features.
-
-3. **Lack of consideration for structural factors**: The code does not take into account structural factors that can significantly affect the boiling point, such as branching, cyclic structures, and intermolecular interactions like hydrogen bonding.
-
-4. **Failure to handle borderline cases**: The code classifies compounds as VOCs or non-VOCs based on a strict cutoff of 250°C. However, some compounds may have boiling points close to this cutoff, and a more nuanced classification approach may be needed.
-
-To improve the program, consider the following steps:
-
-1. **Expand the list of VOC substructures**: Incorporate a more comprehensive set of functional groups and substructures that contribute to a compound's volatility, including ethers, halides, aromatic rings, and other relevant groups.
-
-2. **Use more advanced boiling point prediction methods**: Explore the use of more sophisticated boiling point prediction models, such as group contribution methods or machine learning models trained on experimental boiling point data.
-
-3. **Consider structural factors**: Incorporate structural features like branching, cyclic structures, and intermolecular interactions into the classification algorithm, as these can significantly impact the boiling point.
-
-4. **Handle borderline cases**: Instead of a strict cutoff at 250°C, consider using a range or a probability-based approach to classify compounds with boiling points close to the cutoff.
-
-5. **Leverage experimental data**: If possible, use experimental boiling point data or other relevant physicochemical properties to train and validate the classification model.
-
-6. **Explore alternative classification approaches**: Instead of relying solely on substructure matching and boiling point estimation, investigate alternative approaches such as machine learning models trained on molecular descriptors or fingerprints.
-
-By addressing these limitations and incorporating more advanced techniques, the program can potentially achieve better performance in classifying volatile organic compounds.
+    Returns:
+        bool: True if molecule is a VOC, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Check if the molecule is organic (contains carbon)
+    if not any(atom.GetAtomicNum() == 6 for atom in mol.GetAtoms()):
+        return False, "Molecule does not contain carbon, hence not organic"
+    
+    # Check for common VOC functional groups and substructures
+    voc_patterns = [
+        Chem.MolFromSmarts("[C;H3][O;H1]"),  # Alcohols
+        Chem.MolFromSmarts("[C;H3][C;H2][O;H1]"),  # Alcohols
+        Chem.MolFromSmarts("[C;H3]=[O;H0]"),  # Aldehydes
+        Chem.MolFromSmarts("[C;H3][C;H2]=[O;H0]"),  # Ketones
+        Chem.MolFromSmarts("[C;H3][N;H0]#[C;H1]"),  # Nitriles
+        Chem.MolFromSmarts("[C;H2]=[C;H2]"),  # Alkenes
+        Chem.MolFromSmarts("[C;H3][O;H0][C;H2]=[O;H0]"),  # Esters
+        Chem.MolFromSmarts("[C;H3][C;H2][O;H0][C;H1]=[O;H0]"),  # Carboxylic acids
+        Chem.MolFromSmarts("[C;H3][C;H2][N;H0][C;H2]=[O;H0]"),  # Amides
+        Chem.MolFromSmarts("[S;H0](=[O;H0])(=[O;H0])"),  # Sulfones
+        Chem.MolFromSmarts("[S;H0](=[O;H0])[C;H3]"),  # Sulfoxides
+        Chem.MolFromSmarts("[c;H1]"),  # Aromatic rings
+        Chem.MolFromSmarts("[Cl,Br,I]"),  # Halides
+        Chem.MolFromSmarts("[O;H1]"),  # Ethers
+    ]
+    
+    voc_match = False
+    for pattern in voc_patterns:
+        if mol.HasSubstructMatch(pattern):
+            voc_match = True
+            break
+    
+    if not voc_match:
+        return False, "No common VOC functional groups or substructures found"
+    
+    # Estimate boiling point using a group contribution method
+    bp_estimator = rdMolDescriptors.MolWt(mol) ** 0.8 * rdMolDescriptors.CalcNumRotatableBonds(mol) ** 0.2
+    
+    # Consider borderline cases within a range
+    if bp_estimator <= 250:
+        return True, "Estimated boiling point <= 250°C, classified as VOC"
+    elif bp_estimator <= 270:
+        return True, "Estimated boiling point close to cutoff, classified as borderline VOC"
+    else:
+        return False, "Estimated boiling point too high for VOC"
