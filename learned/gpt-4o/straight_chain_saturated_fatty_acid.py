@@ -25,45 +25,48 @@ def is_straight_chain_saturated_fatty_acid(smiles: str):
     
     if len(carboxylic_matches) != 1:
         return False, "No carboxylic acid group found or multiple groups present"
+    
+    # Check each atom in the carboxylic acid pattern to ensure it's at the end of a chain
+    carbon, oxygen1, oxygen2 = carboxylic_matches[0]
+    carbon_atom = mol.GetAtomWithIdx(carbon)
 
-    # Ensure the terminal carbon is part of the carboxylic acid
-    terminal_carbon = carboxylic_matches[0][0]
-    # Ensure it's the end of the chain
-    neighbors = mol.GetAtomWithIdx(terminal_carbon).GetNeighbors()
-    if any(neighbor.GetAtomicNum() == 6 for neighbor in neighbors if neighbor.GetIdx() != terminal_carbon + 1):
-        return False, "Carboxylic acid group not at the end of a chain"
+    # Get neighbors excluding carboxylic oxygens
+    neighbors = [n.GetIdx() for n in carbon_atom.GetNeighbors() if n.GetIdx() not in {oxygen1, oxygen2}]
+    if len(neighbors) != 1:
+        return False, "Carboxylic acid group not at the end of a single continuous carbon chain"
 
-    # Ensure no double or triple bonds in carbon chain
+    # Ensure no double or triple bonds in carbon chain, it should be saturated
     for bond in mol.GetBonds():
         if bond.GetBeginAtom().GetAtomicNum() == 6 and bond.GetEndAtom().GetAtomicNum() == 6:
             if bond.GetBondType() != Chem.BondType.SINGLE:
                 return False, "Presence of non-single C-C bonds indicates unsaturation"
 
-    # Check for hydroxy groups, allow at most one (apart from carboxylic acid O)
-    hydroxy_pattern = Chem.MolFromSmarts("[OX2H]C")
-    hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
+    # Traverse the chain to ensure linear continuity and check for any branching
+    visited = set()
+    stack = [neighbors[0]]
+    is_linear_chain = True
+    hydroxy_count = 0
 
-    allowed_hydroxy_count = 1
-    if len(hydroxy_matches) > allowed_hydroxy_count:
-        return False, f"Too many hydroxy groups: found {len(hydroxy_matches)}, allowed at most {allowed_hydroxy_count}"
+    while stack:
+        current = stack.pop()
+        if current in visited:
+            continue
+        visited.add(current)
 
-    # Ensure it's a straight chain
-    carbon_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
+        atom = mol.GetAtomWithIdx(current)
+        if atom.GetAtomicNum() == 8 and len([n for n in atom.GetNeighbors()]) == 1:
+            hydroxy_count += 1
+            if hydroxy_count > 1:
+                return False, "More than one hydroxy group disrupting a straight chain"
+        
+        xposible_neighbors = [n.GetIdx() for n in atom.GetNeighbors() if n.GetAtomicNum() == 6]
+        if len(xposible_neighbors) > 2:
+            is_linear_chain = False
+            break
+        
+        stack.extend(xposible_neighbors)
 
-    # Create a linear chain from terminal carbon and check connectivity
-    current = terminal_carbon
-    chain_atoms = set()
-    for _ in range(len(carbon_atoms)):
-        chain_atoms.add(current)
-        neighbors = [
-            neighbor.GetIdx() for neighbor in mol.GetAtomWithIdx(current).GetNeighbors()
-            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in chain_atoms
-        ]
-        if len(neighbors) != 1:
-            return False, "Branches or side chains detected; not a straight chain"
-        current = neighbors[0]
-
-    if len(chain_atoms) != len(carbon_atoms):
-        return False, "Not a continuous straight chain; branches or side chains detected"
+    if not is_linear_chain:
+        return False, "Branches or side chains detected; not a straight chain"
 
     return True, "Molecule is a straight-chain saturated fatty acid"
