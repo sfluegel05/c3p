@@ -33,8 +33,8 @@ def is_methyl_sulfide(smiles: str):
     for sulfur in sulfur_atoms:
         for neighbor in sulfur.GetNeighbors():
             if neighbor.GetAtomicNum() == 6:  # Carbon
-                # Check if carbon has 3 hydrogen neighbors (methyl group)
-                if len([n for n in neighbor.GetNeighbors() if n.GetAtomicNum() == 1]) == 3:
+                # Check if carbon is part of a methyl group (has 3 hydrogen neighbors and is not part of a ring)
+                if len([n for n in neighbor.GetNeighbors() if n.GetAtomicNum() == 1]) == 3 and not neighbor.IsInRing():
                     has_methyl_sulfide = True
                     break
         if has_methyl_sulfide:
@@ -43,8 +43,11 @@ def is_methyl_sulfide(smiles: str):
     if not has_methyl_sulfide:
         return False, "No methyl group attached to sulfur"
     
-    # Check if sulfide is aliphatic (no aromatic atoms)
+    # Check if the molecule is an aliphatic sulfide
     if any(atom.GetIsAromatic() for atom in mol.GetAtoms()):
-        return False, "Contains aromatic atoms, not aliphatic"
+        return False, "Contains aromatic atoms, not an aliphatic sulfide"
+    
+    if len(sulfur_atoms) == 0:
+        return False, "Does not contain a sulfur atom, not a sulfide"
     
     return True, "Contains aliphatic sulfide with methyl group attached to sulfur"
