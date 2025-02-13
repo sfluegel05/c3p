@@ -21,16 +21,16 @@ def is_cephalosporin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more refined beta-lactam ring SMARTS pattern
-    beta_lactam_pattern = Chem.MolFromSmarts("C1C(=O)N[C@H]1")  # Focusing on the beta-lactam core more directly
+    # Define a refined beta-lactam ring SMARTS pattern
+    beta_lactam_pattern = Chem.MolFromSmarts("C1C(=O)N1")  # Basic beta-lactam structure
     if not mol.HasSubstructMatch(beta_lactam_pattern):
         return False, "No beta-lactam ring found"
 
     # Define a six-membered dihydrothiazine-containing pattern typical for cephalosporins.
-    # The C@ atom indicates a potential chiral center present in these types.
-    dihydrothiazine_pattern = Chem.MolFromSmarts("C2[S][C@H]1N2C(=O)C=C1")  # Focusing on the six-membered thiazine ring
+    # Without restricting chirality tightly.
+    dihydrothiazine_pattern = Chem.MolFromSmarts("C1C2SC(C=C1)N2C(=O)[#6]")  # General core
     if not mol.HasSubstructMatch(dihydrothiazine_pattern):
-        return False, "No dihydrothiazine ring found"
+        return False, "No six-membered dihydrothiazine-like ring found"
 
     return True, "Contains beta-lactam and dihydrothiazine rings characteristic of cephalosporins"
 
