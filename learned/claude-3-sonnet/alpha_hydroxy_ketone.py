@@ -26,12 +26,13 @@ def is_alpha_hydroxy_ketone(smiles: str):
         return False, "Invalid SMILES string"
     
     # Find ketone atoms
-    ketone_atoms = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and sum(mol.GetAtomWithIdx(n.GetIdx()).GetTotalNumHs() for n in atom.GetNeighbors()) == 0]
+    ketone_atoms = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetIsAromatic() is False and atom.GetTotalDegree() == 2]
     
     # Check for hydroxy group on alpha carbon for each ketone
     for ketone_idx in ketone_atoms:
-        alpha_atom_idx = mol.GetAtomWithIdx(ketone_idx).GetNeighbors()[0].GetIdx()
-        if sum(mol.GetAtomWithIdx(n.GetIdx()).GetTotalNumHs() for n in mol.GetAtomWithIdx(alpha_atom_idx).GetNeighbors()) > 0:
+        alpha_carbon = mol.GetAtomWithIdx(ketone_idx).GetNeighbors()[0].GetIdx()
+        alpha_carbon_atom = mol.GetAtomWithIdx(alpha_carbon)
+        if alpha_carbon_atom.GetTotalNumHs() > 0:
             return True, "Contains a ketone with a hydroxy group on the alpha carbon"
     
     return False, "Does not contain an alpha-hydroxy ketone group"
