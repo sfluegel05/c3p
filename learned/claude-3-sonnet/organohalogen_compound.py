@@ -1,24 +1,51 @@
 """
 Classifies: CHEBI:17792 organohalogen compound
 """
-The previous program attempts to classify whether a molecule is an organohalogen compound by checking if it contains at least one carbon-halogen bond in the parent molecule. However, the performance of the program seems to be suboptimal, as indicated by the low F1 score of 0.35375711006885546.
+"""
+Classifies: CHEBI:38114 organohalogen compound
+A compound containing at least one carbon-halogen bond (where X is a halogen atom).
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
 
-Here are some potential issues with the previous program and suggestions for improvement:
+def is_organohalogen_compound(smiles: str):
+    """
+    Determines if a molecule is an organohalogen compound based on its SMILES string.
 
-1. **Handling of disconnected structures**: The program assumes that the halogen atom and the carbon atom are part of the same parent molecule. However, in cases where the halogen and carbon are present in disconnected fragments, the program may incorrectly classify the molecule as an organohalogen compound. To address this, the program could check if the halogen atom and the carbon atom are part of the same connected component.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **Handling of counterions and salts**: The program does not seem to handle cases where the halogen atom is present as a counterion or part of a salt. In such cases, the molecule should not be classified as an organohalogen compound. The program could check for common counterion patterns or use RDKit's functionality to identify and remove counterions.
+    Returns:
+        bool: True if molecule is an organohalogen compound, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Remove salts and counterions
+    mol = AllChem.RemoveHeavyAtomSalts(mol)
+    
+    # Check for carbon-halogen bonds
+    has_c_x_bond = False
+    for bond in mol.GetBonds():
+        a1 = bond.GetBeginAtom()
+        a2 = bond.GetEndAtom()
+        if a1.GetAtomicNum() == 6 and a2.GetAtomicNum() in [9, 17, 35, 53]:
+            has_c_x_bond = True
+            break
+        elif a2.GetAtomicNum() == 6 and a1.GetAtomicNum() in [9, 17, 35, 53]:
+            has_c_x_bond = True
+            break
+    
+    if has_c_x_bond:
+        return True, "Contains at least one carbon-halogen bond"
+    else:
+        return False, "No carbon-halogen bonds found"
 
-3. **Handling of organometallic compounds**: The program may incorrectly classify organometallic compounds containing carbon-halogen bonds as organohalogen compounds. To address this, the program could check for the presence of metal atoms and exclude such compounds from the organohalogen classification.
-
-4. **Handling of edge cases**: The program may not handle edge cases correctly, such as molecules with multiple disconnected fragments, or molecules with specific functional groups or structural motifs that could lead to misclassification. Additional checks or patterns could be added to handle such cases.
-
-5. **Handling of stereochemistry**: The program does not consider stereochemistry, which may be important for certain applications. If stereochemistry is relevant, the program could be modified to take it into account.
-
-6. **Performance optimization**: Depending on the size and complexity of the molecules being processed, the program's performance could be optimized by using more efficient data structures or algorithms.
-
-7. **Expand the training data**: The program's performance could potentially be improved by expanding the training data to include a more diverse set of examples, including edge cases and counterexamples.
-
-8. **Consider using machine learning models**: Instead of relying solely on hand-crafted rules, machine learning models could be explored for this classification task. Such models could potentially learn more complex patterns and handle a wider range of scenarios, potentially improving the overall performance.
-
-By addressing these issues and incorporating additional checks, patterns, and potentially machine learning models, the program's performance in classifying organohalogen compounds could be improved.
+# Example usage
+smiles = "CCCBr"
+result, reason = is_organohalogen_compound(smiles)
+print(f"Is organohalogen compound? {result} ({reason})")
