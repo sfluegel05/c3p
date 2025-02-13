@@ -26,28 +26,20 @@ def is_L_alpha_amino_acid(smiles: str):
         return False, "Invalid SMILES string"
     
     # Look for alpha-amino acid pattern: N[C@H](*)C(=O)O
-    amino_acid_pattern = Chem.MolFromSmarts("N[C@H](*)[C@@](=O)O")
+    amino_acid_pattern = Chem.MolFromSmarts("N[C@H](*)[C@](=O)O")
     matches = mol.GetSubstructMatches(amino_acid_pattern)
     
     if not matches:
         return False, "No alpha-amino acid substructure found"
     
-    # Get the alpha-carbon atom
+    # Check for L-configuration at alpha-carbon
     alpha_carbon_idx = matches[0][1]
     alpha_carbon = mol.GetAtomWithIdx(alpha_carbon_idx)
     
-    # Check for L-configuration at alpha-carbon
     if alpha_carbon.GetProp("_ChiralityPossible") == "No":
         return False, "Alpha-carbon is not a chiral center"
     
-    # Get atom indices of atoms attached to alpha-carbon
-    atom_map = {}
-    for bond in alpha_carbon.GetBonds():
-        idx = bond.GetOtherAtomIdx(alpha_carbon_idx)
-        atom_map[bond.GetStereo()] = idx
-    
-    # Determine stereochemistry based on bond directions
-    if atom_map.get(Chem.BondStereo.BEGINWEDGE) < atom_map.get(Chem.BondStereo.BEGINDASH):
+    if alpha_carbon.GetProp("_CIPCode") == "S":
         return True, "Contains an L-alpha-amino acid substructure"
     else:
         return False, "Contains a D-alpha-amino acid substructure"
