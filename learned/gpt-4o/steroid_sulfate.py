@@ -22,34 +22,46 @@ def is_steroid_sulfate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Pattern for sulfuric ester group (e.g., -OS(=O)(=O)=O)
-    sulfate_group_pattern = Chem.MolFromSmarts("OS(=O)(=O)=O")
-    if not mol.HasSubstructMatch(sulfate_group_pattern):
-        return False, "No sulfate group found"
+    # Pattern for sulfuric ester group (e.g., various sulfate representations)
+    sulfate_group_patterns = [
+        Chem.MolFromSmarts("OS(=O)(=O)O"),
+        Chem.MolFromSmarts("OS(=O)(=O)[O-]"),
+        Chem.MolFromSmarts("[O-]S(=O)(=O)O")
+    ]
     
-    # Identify steroid backbone pattern (sterane core structure C15H24)
-    steroid_core_pattern = Chem.MolFromSmarts("C1CCC2C3CCC4CC(C2)(C3)CC4C1")
+    # Check for the presence of any recognizable sulfate group pattern
+    sulfate_found = any(mol.HasSubstructMatch(pattern) for pattern in sulfate_group_patterns)
+    if not sulfate_found:
+        return False, "No recognizable sulfate group found"
+    
+    # Pattern for detecting a more flexible steroid core
+    steroid_core_pattern = Chem.MolFromSmarts("C1C2CC3CC(C1)CCC3C4=C2C=CC=C4")
     if not mol.HasSubstructMatch(steroid_core_pattern):
         return False, "No steroid core structure found"
 
-    # Verify sulfate group's oxygen is connected to a steroid-like structure
-    sulfate_attachments = mol.GetSubstructMatches(sulfate_group_pattern)
+    # Confirm at least one sulfate group is attached correctly
     attachment_found = False
-    for match in sulfate_attachments:
-        for atom_idx in match:
-            atom = mol.GetAtomWithIdx(atom_idx)
-            # Check if connected to any sterane carbon atoms
-            for neighbor in atom.GetNeighbors():
-                if neighbor.IsInRing() and neighbor.GetAtomicNum() == 6:
-                    attachment_found = True
+    for pattern in sulfate_group_patterns:
+        sulfur_matches = mol.GetSubstructMatches(pattern)
+        for match in sulfur_matches:
+            for atom_idx in match:
+                atom = mol.GetAtomWithIdx(atom_idx)
+                # Check for attachment to steroid-like carbon atom (part of the core)
+                for neighbor in atom.GetNeighbors():
+                    if neighbor.IsInRing() and neighbor.GetAtomicNum() == 6:
+                        # Confirm it is within the steroid core
+                        if any(neighbor.HasSubstructMatch(steroid_core_pattern) for neighbor in atom.GetNeighbors()):
+                            attachment_found = True
+                            break
+                if attachment_found:
                     break
-        if attachment_found:
-            break
-
-    if not attachment_found:
-        return False, "Sulfate group not attached to steroid structure"
+            if attachment_found:
+                break
     
-    return True, "Contains steroid structure with sulfate group attached via oxygen"
+    if not attachment_found:
+        return False, "Sulfate group not correctly attached to steroid structure"
+    
+    return True, "Contains steroid structure with sulfate group attached correctly"
 
 # Example usage (test with one of the SMILES from the list above):
 print(is_steroid_sulfate("C1=C(OS(O)(=O)=O)C=CC2=C1CC[C@]3([C@@]4(CC[C@]([C@]4(CC[C@@]32[H])C)(C#C)O)[H])[H]"))
