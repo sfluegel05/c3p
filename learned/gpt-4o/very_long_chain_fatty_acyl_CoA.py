@@ -17,52 +17,51 @@ def is_very_long_chain_fatty_acyl_CoA(smiles: str):
               False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES into RDKit Mol object
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Identify Coenzyme A part by locating substructures
+    # Identify Coenzyme A part by locating substructures.
+    # Assume CoA is a fixed known structure in the molecule with common residues.
     coa_pattern = Chem.MolFromSmarts("C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12")
-    if not mol.HasSubstructMatch(coa_pattern):
+    coa_match = mol.GetSubstructMatch(coa_pattern)
+    if not coa_match:
         return False, "No Coenzyme A (CoA) core structure found"
     
-    # Locate the acyl chain part, i.e., part before thioester linkage
-    # Use S atom in thioester linkage (closest to CoA pattern) to identify acyl chain
-    thioester_sulfur = None
-    for match in mol.GetSubstructMatches(coa_pattern):
-        for atom_idx in match:
-            atom = mol.GetAtomWithIdx(atom_idx)
-            if atom.GetAtomicNum() == 16 and any(n.GetAtomicNum() == 6 for n in atom.GetNeighbors()):
-                thioester_sulfur = atom
-                break
-    
-    if thioester_sulfur is None:
-        return False, "No thioester linkage found"
+    # The position of thioester linkage, carbon for acyl chain, is directly connected to sulfur.
+    thioester_carbon = None
+    for atom_idx in coa_match:
+        atom = mol.GetAtomWithIdx(atom_idx)
+        if atom.GetSymbol() == 'S':
+            # Iterate over neighbors to find the relevant carbon
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetSymbol() == 'C':
+                    thioester_carbon = neighbor
+                    break
 
-    # Use DFS to find longest acyl chain starting from carbon neighbors of thioester sulfur
-    def find_longest_linear_chain(atom, visited=None):
+    if thioester_carbon is None:
+        return False, "Thioester bond couldn't identify."
+
+    # Function to compute the carbon chain length
+    def compute_carbon_chain(atom, visited=None):
         if visited is None:
             visited = set()
         max_length = 0
         for neighbor in atom.GetNeighbors():
-            if neighbor.GetIdx() not in visited and neighbor.GetAtomicNum() == 6:
+            if neighbor.GetIdx() not in visited and neighbor.GetSymbol() == 'C':
                 visited.add(neighbor.GetIdx())
-                chain_length = 1 + find_longest_linear_chain(neighbor, visited)
+                chain_length = 1 + compute_carbon_chain(neighbor, visited)
                 max_length = max(max_length, chain_length)
                 visited.remove(neighbor.GetIdx())
         return max_length
 
-    # Start counting carbons from the carbon directly bonded to sulfur, do not include sulfur itself
-    max_chain_length = 0
-    for neighbor in thioester_sulfur.GetNeighbors():
-        if neighbor.GetAtomicNum() == 6:
-            length = find_longest_linear_chain(neighbor)
-            max_chain_length = max(max_chain_length, length)
-    
-    # Check the length of the identified acyl chain
-    if max_chain_length > 22:
-        return True, f"Fatty acyl chain length is {max_chain_length} (> 22 carbons, valid)"
-    
-    return False, f"Fatty acyl chain length is {max_chain_length} (<= 22 carbons, not valid)"
+    # Initiate chain length check from the identified carbon
+    carbon_chain_length = compute_carbon_chain(thioester_carbon)
+
+    # Validate the length using the defined criteria
+    if carbon_chain_length > 22:
+        return True, f"Fatty acyl chain length is {carbon_chain_length} (> 22 carbons, valid)"
+    else:
+        return False, f"Fatty acyl chain length is {carbon_chain_length} (<= 22 carbons, not valid)"
