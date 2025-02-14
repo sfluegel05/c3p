@@ -25,31 +25,48 @@ def is_aldose(smiles: str):
     if len(carbon_atoms) < 3:
         return False, "Aldoses must contain at least 3 carbon atoms"
 
-    # Check for aldehyde group
-    aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)")
+    # Refined check for aldehyde group at the end of a carbon chain
+    aldehyde_pattern = Chem.MolFromSmarts("[CH1](=O)[#6]")
     has_aldehyde = mol.HasSubstructMatch(aldehyde_pattern)
 
-    # Check for intramolecular hemiacetal
-    hemiacetal_pattern = Chem.MolFromSmarts("[OX2]1[CX4H]([OX2H])[CX4H]~[CX4H]~[CX4H]1")
+    # Refined check for intramolecular hemiacetal (5 or 6 membered ring)
+    hemiacetal_pattern = Chem.MolFromSmarts("[OX2]1[CX4H]([OX2H])[CX4H]([#6])[CX4H]([#6])[CX4H]1")
     has_hemiacetal = mol.HasSubstructMatch(hemiacetal_pattern)
+    hemiacetal_pattern2 = Chem.MolFromSmarts("[OX2]1[CX4H]([OX2H])[CX4H]([#6])[CX4H]([#6])[CX4H]([#6])1") # 6 membered ring
+    has_hemiacetal2 = mol.HasSubstructMatch(hemiacetal_pattern2)
 
-    # Verify polyhydroxy nature and chain length
+
+    # Check for polyhydroxy nature
     hydroxy_pattern = Chem.MolFromSmarts("[CX4H][OX2H]")
     hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
     num_hydroxy = len(hydroxy_matches)
 
+    #Check that the ring contains only Carbon and Oxygen (except hemiacetalic OH)
+    ring_atoms_pattern = Chem.MolFromSmarts("[OX2]1[CX4H]([OX2H])[CX4H,OX2][CX4H,OX2][CX4H,OX2]1")
+    ring_atoms_pattern2 = Chem.MolFromSmarts("[OX2]1[CX4H]([OX2H])[CX4H,OX2][CX4H,OX2][CX4H,OX2][CX4H,OX2]1")
+
+    has_correct_ring_atoms = mol.HasSubstructMatch(ring_atoms_pattern)
+    has_correct_ring_atoms2 = mol.HasSubstructMatch(ring_atoms_pattern2)
+
+
+    # Explicit check for the polyhydroxy chain
+    chain_pattern = Chem.MolFromSmarts("[CH1](=O)[CH]([OX2H])[CH]([OX2H])")
+    has_polyhydroxy_chain = mol.HasSubstructMatch(chain_pattern)
+
+
     if has_aldehyde:
-        if num_hydroxy >= 2:
+        if has_polyhydroxy_chain and num_hydroxy >= 2 :
             return True, "Open-chain aldose structure detected"
         else:
-            return False, "Open-chain aldehyde detected, but not enough OH groups"
+             return False, "Open-chain aldehyde detected, but not enough OH groups or wrong chain pattern"
 
+    if has_hemiacetal or has_hemiacetal2:
 
-    if has_hemiacetal:
-       if num_hydroxy >= 3: # at least 3 for the cyclic version, one for the hemiacetal.
-          return True, "Cyclic hemiacetal aldose structure detected"
-       else:
-           return False, "Cyclic hemiacetal detected, but not enough OH groups"
+        if num_hydroxy >=3 and (has_correct_ring_atoms or has_correct_ring_atoms2) :
+           return True, "Cyclic hemiacetal aldose structure detected"
+        else:
+            return False, "Cyclic hemiacetal detected, but not enough OH groups or wrong ring atoms"
+
 
 
     return False, "Does not match aldose criteria"
