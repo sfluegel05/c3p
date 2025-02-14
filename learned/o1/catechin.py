@@ -21,9 +21,11 @@ def is_catechin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the SMARTS pattern for the flavan-3-ol skeleton
-    flavan3ol_smarts = '[#6]1(-[#6]2[#6](=C[#6]=C[#6]=C2O1))[C@@H](O)CC3=CC=CC=C3'
-    flavan3ol_pattern = Chem.MolFromSmarts(flavan3ol_smarts)
+    # Define the SMARTS pattern for the flavan-3-ol skeleton without stereochemistry
+    flavan3ol_smarts = """
+    [$([#6]1:c:[cH]:c:[cH]:c1)-!@[#6]2-[#6]-[#8]-c3c([#6]2)-c:c:c:c3]-[#8]
+    """
+    flavan3ol_pattern = Chem.MolFromSmarts(flavan3ol_smarts.strip())
     if flavan3ol_pattern is None:
         return False, "Error in SMARTS pattern"
 
