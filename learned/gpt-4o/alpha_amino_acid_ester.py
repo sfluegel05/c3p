@@ -20,10 +20,13 @@ def is_alpha_amino_acid_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Refined pattern for recognizing alpha-amino acid esters
-    # This SMARTS matches NH-CHR-COOR (R can be any alkyl group) with an alpha-amino carbon adjacent to an ester group
-    pattern = Chem.MolFromSmarts("[$([NX3H2]),$(N?*)]-[CHX4]-[CX3](=O)-[OX2]-[!$(*=O)]")
-    
+    # Pattern for recognizing alpha-amino acid esters
+    # This SMARTS matches: backbone of an alpha-amino acid ester, NH-CH(R)-C(O)-O-R'
+    pattern = Chem.MolFromSmarts("[NX3H2]-[C;H1,H2]-[C](=O)-O-[C]")
+
+    if pattern is None:
+        return None, "Pattern not defined correctly"
+
     if mol.HasSubstructMatch(pattern):
         return True, "Contains the alpha-amino acid ester functional group"
     
