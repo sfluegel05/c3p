@@ -20,9 +20,10 @@ def is_gamma_lactone(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
+    
     # Define the SMARTS pattern for the gamma-lactone ring
-    gamma_lactone_pattern = Chem.MolFromSmarts('[C,c]1[C,c][C,c](=O)[O][C,c]1')
+    # we will use the pattern [C,c](=[O])-[O]-[C,c]~[C,c]~[C]
+    gamma_lactone_pattern = Chem.MolFromSmarts('[CX3,cX3](=[OX1])-[OX2]-[CX4,cX3]~[CX4,cX3]~[CX4,cX3]')
 
     if gamma_lactone_pattern is None:
         return False, "Invalid SMARTS pattern"
