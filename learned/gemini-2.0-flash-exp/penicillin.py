@@ -23,17 +23,8 @@ def is_penicillin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 1. Penam core pattern (with numbering for easy referencing)
-    #     7    6     5
-    #   --N--[C]--[C]--
-    #  |   |     |     |
-    #  |   C------C------S
-    #  |   2     3     4
-    #   --    C=O  --
-    #
-    # Relaxed SMARTS pattern for penam core
-    # Use non stereospecific C for carbon, n for ring nitrogen, s for ring sulfur
-    penam_core_pattern = Chem.MolFromSmarts("[n1][C]([C]2[s][C](C)(C)[C]2C(O)=O)C(=O)1")
+    # 1. Penam core pattern (no specific numbering)
+    penam_core_pattern = Chem.MolFromSmarts("[N]1[C]([C]2[S][C](C)(C)[C]2[C](O)=O)[C](=O)1")
     if penam_core_pattern is None:
         return False, "Invalid Penam Core SMARTS"
     
@@ -41,23 +32,32 @@ def is_penicillin(smiles: str):
     if not substructure_matches:
        return False, "Penam core not found"
 
+    # 2. and 3. Two methyl substituents at position 2 and 3, and carboxylate at pos 3 are already captured by the SMARTS
 
-    # 2. Two methyl substituents at position 2 and 3. Carboxylate substituent at position 3. These are already checked in the penam core definition above.
-    # 4. Carboxamido group at position 6 (R-CONH-). It's not a specific R group.
+    # 4. Carboxamido group at position 6 (R-CONH-).
     carboxamido_pattern = Chem.MolFromSmarts("[N][C](=O)")
     if carboxamido_pattern is None:
         return False, "Invalid carboxamido SMARTS"
-
     
-    # get the penam substructure match, and from the match get the index of the atom at the 6 position of the penam core.
+    # Identify the carbon at position 6. Find the nitrogen of the core and then one of its neighbors should be the carbon we look for.
     match = substructure_matches[0]
     
-    # get the index of the nitrogen of the core at position 7 (index 0 in the pattern)
-    nitrogen_7_index = match[0]
-    
-    # get the index of the carbon at position 6 (index 1 in the pattern)
-    carbon_6_index = match[1]
+    # The nitrogen in the core will be the first atom in the match.
+    nitrogen_index = match[0]
 
+    # Get the nitrogen of the core.
+    nitrogen_atom = mol.GetAtomWithIdx(nitrogen_index)
+    
+    # The carbon at position 6 is a neighbor of the nitrogen in the core. There could be other neighbors, but it will always be a carbon.
+    carbon_6_index = None
+    for neighbor in nitrogen_atom.GetNeighbors():
+        if neighbor.GetAtomicNum() == 6:
+            carbon_6_index = neighbor.GetIdx()
+            break
+    
+    if carbon_6_index is None:
+        return False, "Could not identify carbon at position 6"
+    
     # Check if any carboxamido group matches the whole molecule.
     all_carboxamido_matches = mol.GetSubstructMatches(carboxamido_pattern)
 
