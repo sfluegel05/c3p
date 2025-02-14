@@ -25,17 +25,30 @@ def is_diol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define alcoholic hydroxy group pattern (OH group attached to sp3 carbon, excluding carboxylic acids)
-    alcohol_pattern = Chem.MolFromSmarts("[C;!$(C=O)][OX2H]")
-    if alcohol_pattern is None:
-        return False, "Error in alcohol SMARTS pattern"
+    # Define hydroxy group pattern (OH group)
+    hydroxy_pattern = Chem.MolFromSmarts("[OX2H]")
+    if hydroxy_pattern is None:
+        return False, "Error in hydroxy SMARTS pattern"
 
-    # Find all alcoholic hydroxy groups in the molecule
-    alcohol_matches = mol.GetSubstructMatches(alcohol_pattern)
-    num_alcohol_hydroxy = len(alcohol_matches)
+    # Find all hydroxy groups in the molecule
+    hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
+    hydroxy_oxygen_idxs = [match[0] for match in hydroxy_matches]
 
-    # Check if the molecule contains at least two alcoholic hydroxy groups
-    if num_alcohol_hydroxy >= 2:
-        return True, f"Molecule contains {num_alcohol_hydroxy} alcoholic hydroxy groups"
+    # Define carboxylic acid pattern
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[OX2H]")
+    carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
+    carboxylic_oxygen_idxs = [match[1] for match in carboxylic_acid_matches]
+
+    # Exclude hydroxy groups that are part of carboxylic acids
+    non_carboxylic_hydroxy_oxygen_idxs = set(hydroxy_oxygen_idxs) - set(carboxylic_oxygen_idxs)
+
+    num_hydroxy_groups = len(non_carboxylic_hydroxy_oxygen_idxs)
+
+    # Check if the molecule contains exactly two hydroxy groups
+    if num_hydroxy_groups == 2:
+        return True, "Molecule contains exactly two hydroxy groups"
     else:
-        return False, f"Molecule contains {num_alcohol_hydroxy} alcoholic hydroxy group(s), less than 2 required for diol"
+        return False, f"Molecule contains {num_hydroxy_groups} hydroxy group(s), diol requires exactly two"
+
+    # Additional reasoning for why classification was made
+    # Include the positions of the hydroxy groups if desired
