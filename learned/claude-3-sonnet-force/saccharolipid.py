@@ -1,26 +1,76 @@
 """
 Classifies: CHEBI:166828 saccharolipid
 """
-After analyzing the previous program and the outcomes, I can see that the approach of using SMARTS patterns was not effective in accurately identifying saccharolipids. The main issue seems to be that the patterns were too general and were missing many of the specific structural features of saccharolipids. Here are some observations and potential improvements:
+from rdkit import Chem
+from rdkit.Chem import rdFMCS
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-1. The sugar pattern used was too simple and only looked for cyclic structures with multiple hydroxyl groups. This pattern would also match many non-carbohydrate compounds. To better identify carbohydrate moieties, we need to look for specific patterns of glycosidic linkages, ring sizes, and stereochemistry.
+def is_saccharolipid(smiles: str):
+    """
+    Determines if a molecule is a saccharolipid based on its SMILES string.
+    A saccharolipid is a lipid that contains a carbohydrate moiety.
 
-2. The lipid patterns were also too general and did not account for the diverse structures of lipid moieties found in saccharolipids. For example, the patterns did not cover common lipid components such as fatty acids, isoprenoids, and more complex lipid structures like lipid A.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. The additional checks for molecular weight and atom counts were not specific enough and could exclude valid saccharolipids or include non-saccharolipids.
+    Returns:
+        bool: True if the molecule is a saccharolipid, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-To improve the program, we need to take a more targeted approach by identifying specific structural patterns and substructures that are characteristic of saccharolipids. Here are some potential improvements:
+    # Identify common carbohydrate moieties
+    carbohydrate_patterns = [
+        "[C@H]1[C@H]([C@@H]([C@H]([C@@H]1O)O)O)O",  # glucose
+        "[C@H]1[C@@H]([C@H]([C@@H]([C@@H]1O)O)O)O",  # galactose
+        "[C@H]1[C@@H]([C@H]([C@@H]([C@@H]1O)O)O)O",  # mannose
+        "[C@H]1[C@@H]([C@H]([C@@H]([C@@H]1O)O)O)N(C)C=O",  # N-acetylglucosamine
+        "[C@H]1[C@@H]([C@H]([C@@H]([C@@H]1O)O)O)O[C@H]2[C@H]([C@@H]([C@H]([C@@H]2O)O)O)O"  # heptose
+    ]
+    carbohydrate_found = False
+    for pattern in carbohydrate_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            carbohydrate_found = True
+            break
 
-1. Use a combination of SMARTS patterns and substructure matching to identify common carbohydrate moieties found in saccharolipids, such as glucose, galactose, mannose, N-acetylglucosamine, and heptose. Look for specific ring sizes, stereochemistry, and glycosidic linkages.
+    if not carbohydrate_found:
+        return False, "No carbohydrate moiety found"
 
-2. Identify common lipid moieties found in saccharolipids, such as fatty acids, isoprenoids, lipid A structures, and other complex lipids. Use a combination of SMARTS patterns and substructure matching to identify these components.
+    # Identify common lipid moieties
+    lipid_patterns = [
+        "CCCCCCCCCCCC",  # fatty acid chain
+        "C=CC(C)(C)C",  # isoprenoid
+        "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(CCCCCCCCCCCCCC)C(=O)",  # mycolic acid
+        "[C@@H]1[C@@H](O[C@H](CO)[C@@H](O)[C@@H]1OC(=O)[C@H](CCCCCCCCCCC)OC(=O)CCCCCCCCCCCCC)"  # lipid A
+    ]
+    lipid_found = False
+    for pattern in lipid_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            lipid_found = True
+            break
 
-3. Look for specific substructures and connectivity patterns that are characteristic of known saccharolipid classes, such as lipopolysaccharides, lipooligosaccharides, glycolipids, and others.
+    if not lipid_found:
+        return False, "No lipid moiety found"
 
-4. Consider using machine learning or other data-driven approaches to learn the structural features of saccharolipids from a large dataset of known examples.
+    # Check for presence of both carbohydrate and lipid components
+    carbohydrate_mcs = rdFMCS.FindMCS([mol, Chem.MolFromSmarts(carbohydrate_patterns[0])], matchValences=True, completeRingsOnly=True)
+    lipid_mcs = rdFMCS.FindMCS([mol, Chem.MolFromSmarts(lipid_patterns[0])], matchValences=True, completeRingsOnly=True)
 
-5. Implement additional checks and filters based on specific structural properties, such as the presence of both carbohydrate and lipid moieties, the relative sizes of the carbohydrate and lipid components, and the presence of characteristic functional groups or substituents.
+    if not carbohydrate_mcs.numAtoms or not lipid_mcs.numAtoms:
+        return False, "No carbohydrate-lipid connectivity found"
 
-It's important to note that accurately identifying saccharolipids based solely on their SMILES strings is a challenging task due to the diverse and complex structures of these molecules. A combination of different approaches, including pattern-based methods, substructure matching, and potentially machine learning, may be required to achieve high accuracy.
+    # Additional checks
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 500:
+        return False, "Molecular weight too low for saccharolipid"
 
-Additionally, it may be helpful to consult external sources and literature on the structural characteristics of saccharolipids to gain a deeper understanding of the specific features that define this class of molecules.
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 5:
+        return False, "Too few rotatable bonds for saccharolipid"
+
+    return True, "Contains both carbohydrate and lipid moieties"
