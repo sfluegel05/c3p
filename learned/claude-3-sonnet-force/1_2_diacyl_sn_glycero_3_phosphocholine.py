@@ -34,17 +34,13 @@ def is_1_2_diacyl_sn_glycero_3_phosphocholine(smiles: str):
         return False, "No phosphorus atom found"
     
     p_atom = p_atoms[0]
-    n_atoms = [nbr for nbr in p_atom.GetNeighbors() if nbr.GetAtomicNum() == 7 and nbr.GetFormalCharge() == 1]  # Positively charged nitrogen atoms
-    if not n_atoms:
-        return False, "No positively charged nitrogen atom found"
-    
     o_atoms = [nbr for nbr in p_atom.GetNeighbors() if nbr.GetAtomicNum() == 8]  # Oxygen atoms
-    if len(o_atoms) != 3:
+    if len(o_atoms) != 4:
         return False, "Incorrect number of oxygen atoms attached to phosphorus"
     
-    c_atoms = [nbr for nbr in n_atoms[0].GetNeighbors() if nbr.GetAtomicNum() == 6]  # Carbon atoms attached to nitrogen
-    if len(c_atoms) != 3:
-        return False, "Incorrect number of carbon atoms attached to positively charged nitrogen"
+    negatively_charged_o = [o for o in o_atoms if o.GetFormalCharge() == -1]
+    if not negatively_charged_o:
+        return False, "No negatively charged oxygen atom found"
 
     # Check for glycerol backbone
     glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
@@ -68,4 +64,4 @@ def is_1_2_diacyl_sn_glycero_3_phosphocholine(smiles: str):
     if n_rotatable < 10:
         return False, "Chains too short to be fatty acids"
 
-    return True, "Contains glycerol backbone with 2 fatty acid chains attached via ester bonds and a phosphocholine group"
+    return True, "Contains glycerol backbone with 2 fatty acid chains attached via ester bonds and a phosphocholine group with a negatively charged oxygen"
