@@ -40,7 +40,7 @@ def is_B_vitamin(smiles: str):
         return False, "Invalid SMILES string"
     
     # Handle the special case of B12 directly from the name
-    if 'B12' in smiles:
+    if 'B12' in smiles or 'cobamamide' in smiles.lower() or 'cobalamin' in smiles.lower():
         return True, "Contains B12"
 
     # remove counterions and waters
@@ -50,39 +50,53 @@ def is_B_vitamin(smiles: str):
 
     # B1 (Thiamine) - Thiazole and pyrimidine rings
     thiamine_pattern = Chem.MolFromSmarts('c1[n,+]cscc1-CC-c1cnccnc1')
+    if thiamine_pattern is None:
+      raise ValueError("Invalid SMARTS pattern for thiamine")
     if mol.HasSubstructMatch(thiamine_pattern):
        return True, "Contains thiamine (B1) substructure."
 
 
     # B2 (Riboflavin) - Isoalloxazine ring system
     riboflavin_pattern = Chem.MolFromSmarts('C1=CC=C2N(C[C@H](O)[C@H](O)[C@H](O)CO)C3=NC(=O)NC(=O)C3=NC2=C1')
+    if riboflavin_pattern is None:
+      raise ValueError("Invalid SMARTS pattern for riboflavin")
     if mol.HasSubstructMatch(riboflavin_pattern):
         return True, "Contains riboflavin (B2) substructure."
 
     # B3 (Niacin/Nicotinamide) - Pyridine with carboxyl/amide
     nicotinamide_pattern = Chem.MolFromSmarts('c1ccncc1C(=O)[N]')
     nicotinic_acid_pattern = Chem.MolFromSmarts('c1ccncc1C(=O)O')
+    if nicotinamide_pattern is None or nicotinic_acid_pattern is None:
+      raise ValueError("Invalid SMARTS pattern for niacin/nicotinamide")
     if mol.HasSubstructMatch(nicotinamide_pattern) or mol.HasSubstructMatch(nicotinic_acid_pattern):
           return True, "Contains niacin/nicotinamide (B3) substructure."
 
     # B5 (Pantothenic acid) - Pantoic acid and beta-alanine
     pantothenic_pattern = Chem.MolFromSmarts('CC(C)(CO)[C@H](O)C(=O)NCCC(O)=O')
+    if pantothenic_pattern is None:
+       raise ValueError("Invalid SMARTS pattern for pantothenic acid")
     if mol.HasSubstructMatch(pantothenic_pattern):
        return True, "Contains pantothenic acid (B5) substructure."
     
     # B6 (Pyridoxine, Pyridoxal, Pyridoxamine) - Pyridine with OH, CH2OH, CHO, and/or CH2NH2 groups
     pyridoxine_core_pattern = Chem.MolFromSmarts('c1c(O)cnc(C)c1[C]')
+    if pyridoxine_core_pattern is None:
+       raise ValueError("Invalid SMARTS pattern for pyridoxine")
     if mol.HasSubstructMatch(pyridoxine_core_pattern):
        return True, "Contains pyridoxine/pyridoxal/pyridoxamine (B6) substructure."
 
     # B7 (Biotin) - Tetrahydrothiophene and imidazole
     biotin_pattern = Chem.MolFromSmarts('C1S[CH]2[CH]([CH2][C](N2)=O)NC(=O)N[C@H]3CCCC[C@H]3')
+    if biotin_pattern is None:
+      raise ValueError("Invalid SMARTS pattern for biotin")
     if mol.HasSubstructMatch(biotin_pattern):
         return True, "Contains biotin (B7) substructure."
 
     # B9 (Folic acid/folate) - Pteridine with PABA and glutamic acid
     folic_acid_core_pattern = Chem.MolFromSmarts('c1nc2nc(N)[nH]c(=O)c2n1-CC-c1ccc(N)cc1-C(=O)NC(CCC(=O)O)C(=O)O')
     pteridine_pattern = Chem.MolFromSmarts('c1nc2nc(N)[nH]c(=O)c2n1')
+    if folic_acid_core_pattern is None or pteridine_pattern is None:
+        raise ValueError("Invalid SMARTS pattern for folic acid")
     if mol.HasSubstructMatch(folic_acid_core_pattern) or mol.HasSubstructMatch(pteridine_pattern):
         return True, "Contains folic acid (B9) substructure."
 
