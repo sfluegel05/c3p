@@ -41,7 +41,7 @@ def is_saturated_fatty_acid(smiles: str):
 
     # Check if the molecule is aliphatic (no rings)
     ring_info = mol.GetRingInfo()
-    if ring_info.IsInitialized() and ring_info.NumRings() > 0:
+    if ring_info.NumRings() > 0:
         return False, "Contains rings, not an aliphatic chain"
 
     # Count the number of carbon atoms (excluding the carboxylic acid carbon)
@@ -53,9 +53,9 @@ def is_saturated_fatty_acid(smiles: str):
 
     # Check that the chain is saturated (all carbons have single bonds with carbons and hydrogens)
     for atom in carbon_atoms:
-        for neighbor in atom.GetNeighbors():
+        for bond in atom.GetBonds():
+            neighbor = bond.GetOtherAtom(atom)
             if neighbor.GetAtomicNum() == 6:
-                bond = mol.GetBondBetweenAtoms(atom.GetIdx(), neighbor.GetIdx())
                 if bond.GetBondType() != Chem.rdchem.BondType.SINGLE:
                     return False, "Contains unsaturated bonds in aliphatic chain"
 
