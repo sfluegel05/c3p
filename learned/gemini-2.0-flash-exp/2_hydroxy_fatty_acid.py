@@ -2,7 +2,6 @@
 Classifies: CHEBI:10283 2-hydroxy fatty acid
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_2_hydroxy_fatty_acid(smiles: str):
@@ -28,15 +27,12 @@ def is_2_hydroxy_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(acid_pattern):
          return False, "No carboxylic acid group found"
 
-    # Check for 2-hydroxy group (hydroxy on the alpha carbon, or O-)
-    hydroxy_pattern = Chem.MolFromSmarts("[CX4]([OH])[CX3](=[O])[O,OH]")
+    # Check for 2-hydroxy group (hydroxy on the alpha carbon)
+    # Relaxed pattern to allow for any carbon at the alpha position
+    hydroxy_pattern = Chem.MolFromSmarts("[CX4,CX3]([OH])-[CX3](=[O])[O,OH]") 
     if not mol.HasSubstructMatch(hydroxy_pattern):
         return False, "No hydroxyl group at the alpha position found"
     
-    # Check for long chain attached to alpha carbon
-    chain_pattern = Chem.MolFromSmarts("[CX4]([OH])-[CX4]-[CX4]-[CX4]")
-    if not mol.HasSubstructMatch(chain_pattern):
-      return False, "No long carbon chain found attached to alpha carbon"
 
     # Check for number of rotatable bonds for chain length
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
@@ -45,7 +41,7 @@ def is_2_hydroxy_fatty_acid(smiles: str):
     
     # Check molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 100:
+    if mol_wt < 150:
         return False, "Molecule too small to be a fatty acid"
 
     # Check for ring system - fatty acids are usually not cyclic.
