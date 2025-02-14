@@ -31,10 +31,11 @@ def is_catecholamine(smiles: str):
     aminoethyl_pattern = Chem.MolFromSmarts("CCN")
     if not mol.HasSubstructMatch(aminoethyl_pattern):
         return False, "No 2-aminoethyl group found"
-        
-    # Check that the 2-aminoethyl group is connected to the ring. We use a SMARTS pattern for that
-    attachment_pattern = Chem.MolFromSmarts("c-C-C-N")
-    if not mol.HasSubstructMatch(attachment_pattern):
-        return False, "2-aminoethyl group not directly attached to the benzene ring"
+
+    # Check that the nitrogen is not directly attached to the 1 or 2 carbons of the benzene ring of the catechol moiety
+    
+    nitrogen_attachment_pattern = Chem.MolFromSmarts("[#7]~[#6][c;!$(c[O]);!$(c[O])]")
+    if not mol.HasSubstructMatch(nitrogen_attachment_pattern):
+        return False, "2-aminoethyl group not correctly attached to the benzene ring"
 
     return True, "Contains a catechol moiety and a 2-aminoethyl group attached to the ring"
