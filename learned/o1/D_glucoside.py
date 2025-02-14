@@ -6,7 +6,6 @@ Classifies: D-glucoside
 """
 
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_D_glucoside(smiles: str):
     """
@@ -20,57 +19,43 @@ def is_D_glucoside(smiles: str):
         bool: True if molecule is a D-glucoside, False otherwise
         str: Reason for classification
     """
-
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define D-glucose (both alpha and beta anomers)
-    alpha_D_glucose_smiles = "OC[C@@H]1O[C@H](O)[C@@H](O)[C@@H](O)[C@H]1O"
-    beta_D_glucose_smiles = "OC[C@@H]1O[C@@H](O)[C@@H](O)[C@@H](O)[C@H]1O"
+    # Define a SMARTS pattern for D-glucose moiety in pyranose form
+    # This pattern considers both alpha and beta anomers and correct stereochemistry
+    d_glucose_smarts = """
+    [C@H]1([O])[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1O)CO
+    """
 
-    alpha_D_glucose = Chem.MolFromSmiles(alpha_D_glucose_smiles)
-    beta_D_glucose = Chem.MolFromSmiles(beta_D_glucose_smiles)
-
-    if alpha_D_glucose is None or beta_D_glucose is None:
-        return False, "Failed to generate D-glucose templates"
+    d_glucose_mol = Chem.MolFromSmarts(d_glucose_smarts)
+    if d_glucose_mol is None:
+        return False, "Failed to generate D-glucose SMARTS pattern"
 
     # Use substructure search to find D-glucose moiety
-    matches_alpha = mol.GetSubstructMatches(alpha_D_glucose)
-    matches_beta = mol.GetSubstructMatches(beta_D_glucose)
-
-    if not matches_alpha and not matches_beta:
+    matches = mol.GetSubstructMatches(d_glucose_mol, useChirality=True)
+    if not matches:
         return False, "No D-glucose moiety found"
 
-    # Check for glycosidic linkage at the anomeric carbon (C1)
-    # The anomeric carbon should be connected to an oxygen which is connected to another group
-    glycosidic_bond_found = False
-    for match in matches_alpha + matches_beta:
+    # For each match, check for glycosidic linkage at the anomeric carbon (C1)
+    for match in matches:
         glucose_atoms = set(match)
-        anomeric_carbon_idx = match[1]  # C1 of glucose ring in our templates
+        anomeric_carbon_idx = match[0]  # C1 in our SMARTS pattern
         anomeric_carbon = mol.GetAtomWithIdx(anomeric_carbon_idx)
 
-        # Find bonds from the anomeric carbon
-        bonds = anomeric_carbon.GetBonds()
-        for bond in bonds:
+        # Check bonds from the anomeric carbon
+        glycosidic_bond_found = False
+        for bond in anomeric_carbon.GetBonds():
             neighbor = bond.GetOtherAtom(anomeric_carbon)
-            if neighbor.GetAtomicNum() == 8 and neighbor.GetIdx() not in glucose_atoms:
-                # Oxygen connected to anomeric carbon and outside glucose ring
-                # Check if oxygen is connected to another non-hydrogen atom outside glucose
-                oxygen = neighbor
-                oxygen_bonds = oxygen.GetBonds()
-                for o_bond in oxygen_bonds:
-                    o_neighbor = o_bond.GetOtherAtom(oxygen)
-                    if o_neighbor.GetIdx() != anomeric_carbon_idx and o_neighbor.GetAtomicNum() != 1:
-                        glycosidic_bond_found = True
-                        break
-                if glycosidic_bond_found:
-                    break
+            neighbor_idx = neighbor.GetIdx()
+            if neighbor_idx not in glucose_atoms:
+                # Atom outside the glucose moiety
+                if neighbor.GetAtomicNum() in [8, 7]:  # Oxygen or Nitrogen
+                    glycosidic_bond_found = True
+                    break  # Glycosidic bond found
         if glycosidic_bond_found:
-            break
+            return True, "Contains D-glucose moiety connected via glycosidic bond"
 
-    if not glycosidic_bond_found:
-        return False, "No glycosidic linkage found at anomeric carbon"
-
-    return True, "Contains D-glucose moiety connected via glycosidic bond"
+    return False, "No glycosidic linkage found at anomeric carbon"
