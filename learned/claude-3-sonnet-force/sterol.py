@@ -11,11 +11,12 @@ Key features:
 - Tetracyclic steroid backbone with 4 rings (3 cyclohexane rings + 1 cyclopentane ring)
 - One hydroxy group at the 3 position
 - Possible additional side chains (alkyl, alkenyl, etc.)
+- Possible additional functional groups or substituents
 """
 
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem.rdchem import BondStereo
+from rdkit.Chem import rdMolDescriptors
 from typing import Tuple
 
 def is_sterol(smiles: str) -> Tuple[bool, str]:
@@ -36,12 +37,9 @@ def is_sterol(smiles: str) -> Tuple[bool, str]:
         return False, "Invalid SMILES string"
     
     # Check for steroid backbone pattern
-    backbone_patterns = [
-        Chem.MolFromSmarts("[C@@]12[C@@]([H])(CC[C@]3([H])[C@]1([H])CC[C@]4([H])[C@@]3(CC[C@@]4([H])C)[H])C([H])(C)CC2"),
-        Chem.MolFromSmarts("[C@]12[C@]([H])(CC[C@]3([H])[C@@]1([H])CC[C@@]4([H])[C@]3(CC[C@]4([H])C)[H])C([H])(C)CC2"),
-    ]
-    has_backbone = any(mol.HasSubstructMatch(pattern) for pattern in backbone_patterns)
-    if not has_backbone:
+    backbone_pattern = Chem.MolFromSmarts("[C@@]12[C@@]([H])(CC[C@]3([H])[C@]1([H])CC[C@]4([H])[C@@]3(CC[C@@]4([H])C)[H])C([H])(C)CC2")
+    backbone_matches = mol.GetSubstructMatches(backbone_pattern)
+    if not backbone_matches:
         return False, "No steroid backbone found"
     
     # Check for one hydroxy group at the 3 position
@@ -54,16 +52,15 @@ def is_sterol(smiles: str) -> Tuple[bool, str]:
     side_chain_pattern = Chem.MolFromSmarts("[C@;!r]([H])([H])CC[C@@;!r]")
     has_side_chain = mol.HasSubstructMatch(side_chain_pattern)
     
-    # Check stereochemistry
-    AllChem.AssignAtomChiralTagsFromStructure(mol)
-    for bond in mol.GetBonds():
-        if bond.GetStereo() == BondStereo.STEREOE:
-            return False, "Unexpected stereochemistry"
-    
+    # Check side chain length (if present)
     if has_side_chain:
-        return True, "Contains steroid backbone with one 3-hydroxy group and side chain(s)"
-    else:
-        return True, "Contains steroid backbone with one 3-hydroxy group"
+        longest_chain = rdMolDescriptors.GetLongestChain(mol)
+        if len(longest_chain) < 3:
+            return False, "Side chain too short for a sterol"
+    
+    # Allow additional functional groups or substituents
+    
+    return True, "Contains steroid backbone with one 3-hydroxy group" + (" and side chain(s)" if has_side_chain else "")
 
 
 # Example usage
