@@ -6,7 +6,6 @@ Classifies: CHEBI:37585 nucleobase analogue
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_nucleobase_analogue(smiles: str):
     """
@@ -26,26 +25,32 @@ def is_nucleobase_analogue(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for heteroaromatic rings (pyrimidines, purines)
-    heteroaromatic_rings = mol.GetAromaticRings(includeExocyclic=True, includeEndocyclic=True, includeEndocyclicHeteroAtoms=True, includeExoEndoCyclic=True)
-    heteroaromatic_rings = [ring for ring in heteroaromatic_rings if any(atom.GetAtomicNum() in [7, 8] for atom in ring)]
-    if not heteroaromatic_rings:
-        return False, "No heteroaromatic rings found"
+    # Define SMARTS patterns for common nucleobase analogue structural features
+    purine_pattern = Chem.MolFromSmarts("c1nc2[nH]cnc2[nH]c1")
+    pyrimidine_pattern = Chem.MolFromSmarts("c1c[nH]c(=O)[nH]c1")
+    amino_pattern = Chem.MolFromSmarts("[NH2,NH]")
+    oxo_pattern = Chem.MolFromSmarts("C=O")
+    hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
     
-    # Check for common functional groups (amino, oxo, hydroxyl)
-    atoms = set(atom.GetAtomicNum() for atom in mol.GetAtoms())
-    if 7 not in atoms or 8 not in atoms:  # Must have N and O
-        return False, "Missing N or O atoms"
+    # Check for purine or pyrimidine ring
+    if not mol.HasSubstructMatch(purine_pattern) and not mol.HasSubstructMatch(pyrimidine_pattern):
+        return False, "No purine or pyrimidine ring found"
     
-    # Check for planar structure
-    calc = AllChem.MMFFGetMoleculeProperties(mol)
-    if calc is None or calc.PMIBondCount < 5:  # Arbitrary threshold for planarity
-        return False, "Structure is not sufficiently planar"
+    # Check for amino, oxo, and hydroxyl functional groups
+    has_amino = mol.HasSubstructMatch(amino_pattern)
+    has_oxo = mol.HasSubstructMatch(oxo_pattern)
+    has_hydroxyl = mol.HasSubstructMatch(hydroxyl_pattern)
+    if not (has_amino or has_oxo or has_hydroxyl):
+        return False, "Missing amino, oxo, or hydroxyl functional groups"
     
-    # Check for typical nucleobase size
+    # Check for typical size range of nucleobase analogues
     n_heavy_atoms = mol.GetNumHeavyAtoms()
-    if n_heavy_atoms < 5 or n_heavy_atoms > 20:
+    if n_heavy_atoms < 5 or n_heavy_atoms > 25:
         return False, "Size deviates too much from typical nucleobases"
     
+    # Check for aromaticity and planarity
+    if not mol.GetNumBEdges() or not AllChem.PlanarityAtomsSelfIter(mol):
+        return False, "Molecule is not sufficiently aromatic or planar"
+    
     # If all conditions are met, classify as nucleobase analogue
-    return True, "Contains heteroaromatic rings and functional groups typical of nucleobases"
+    return True, "Contains purine or pyrimidine ring and typical functional groups of nucleobase analogues"
