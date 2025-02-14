@@ -21,24 +21,32 @@ def is_isoflavonoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 1-benzopyran structure: a benzene ring fused to a 6-membered ring with an oxygen
-    benzopyran_pattern = Chem.MolFromSmarts("c1cc2ccocc2c1") # Adjusted pattern for benzopyran
+    # Generalized 1-benzopyran structure, looking for a bicyclic system with oxygen in one ring
+    benzopyran_pattern = Chem.MolFromSmarts("c1cc2occc2c1")
     if benzopyran_pattern is None:
         return False, "Error in SMARTS pattern definition"
 
     if not mol.HasSubstructMatch(benzopyran_pattern):
         return False, "No 1-benzopyran backbone found"
         
-    # Pattern for aryl group at position 3 (adjacent to oxygen in the pyranyl ring)
-    # Using additional rules to ensure the correct attachment
-    aryl_group_pattern = Chem.MolFromSmarts("c1ccc(-c2c(oc3ccc(-c4ccccc4)cc3)c(=O)cc2)c1")  # More general aryl attachment
+    # Generic pattern for an aryl group (a phenyl ring) attached
+    aryl_group_pattern = Chem.MolFromSmarts("c1ccccc1")
     if aryl_group_pattern is None:
         return False, "Error in SMARTS pattern definition for aryl group"
 
     if not mol.HasSubstructMatch(aryl_group_pattern):
         return False, "No aryl substituent at position 3 found"
 
-    return True, "Contains 1-benzopyran with an aryl substituent at position 3"
+    # Additional check to ensure aryl group is at the correct position (3)
+    # Using a smarter substructure search strategy
+    for match in mol.GetSubstructMatches(benzopyran_pattern):
+        # Identify the part of the molecule that matches the benzopyran
+        # and check adjacency of the aryl group
+        # Assuming the second atom in the match is the oxygen atom in the benzopyran
+        if len(match) >= 3 and mol.GetAtomWithIdx(match[3]).HasSubstructMatch(aryl_group_pattern):
+            return True, "Contains 1-benzopyran with an aryl substituent at position 3"
+    
+    return False, "Correct aryl substituent placement not confirmed"
 
 # Testing a sample isoflavonoid SMILES
 result, reason = is_isoflavonoid("COc1ccc(cc1)-c1coc2cc(O)cc(O)c2c1=O")
