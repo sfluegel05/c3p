@@ -6,7 +6,6 @@ Classifies: CHEBI:18035 essential fatty acid
 """
 from rdkit import Chem
 from rdkit.Chem import rdchem
-from rdkit.Chem import rdMolDescriptors
 
 def is_essential_fatty_acid(smiles: str):
     """
@@ -26,64 +25,73 @@ def is_essential_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a SMARTS pattern for fatty acyl chains (aliphatic chain with optional ester linkage)
-    fatty_acid_pattern = Chem.MolFromSmarts('[CX3](=O)[O,Z][C;!$(C=O);!$(C=O[O,N])].[CX4;R0][CX4;R0]')
-    # The pattern matches acyl groups connected via ester or amide linkages to aliphatic chains
+    # Find all carboxylic acid groups (-C(=O)OH)
+    carboxylic_acid_pattern = Chem.MolFromSmarts('C(=O)[O;H1]')
+    carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
 
-    # Find all matches of the fatty acid pattern
-    matches = mol.GetSubstructMatches(fatty_acid_pattern)
-    if not matches:
-        return False, "No fatty acid chains found"
+    if not carboxylic_acid_matches:
+        return False, "No carboxylic acid groups found"
 
     essential = False
     reasons = []
-    # Process each fatty acid chain
-    for match in matches:
-        carbon_chain = set()
-        double_bond_positions = []
+
+    for match in carboxylic_acid_matches:
+        # The carboxylic acid carbon atom
+        carboxyl_carbon_idx = match[0]
+        carboxyl_carbon = mol.GetAtomWithIdx(carboxyl_carbon_idx)
+
+        # Start traversal from the carboxyl carbon to find the longest chain
         visited = set()
-        queue = []
+        chain_atoms = []
+        double_bond_positions = []
+        branches = False
 
-        # Get the atom index of the carbonyl carbon
-        carbonyl_carbon_idx = match[0]
-        # Get the atom index of the alpha carbon (next carbon in the chain)
-        alpha_carbon_idx = match[2]
-
-        # Start traversal from the alpha carbon
-        queue.append((alpha_carbon_idx, 1))  # (atom_idx, position in chain)
-
-        while queue:
-            atom_idx, position = queue.pop(0)
-            if atom_idx in visited:
-                continue
-            visited.add(atom_idx)
-            atom = mol.GetAtomWithIdx(atom_idx)
-
+        def dfs(atom, position):
+            nonlocal branches
+            visited.add(atom.GetIdx())
             if atom.GetAtomicNum() == 6 and not atom.IsInRing():
-                carbon_chain.add(atom_idx)
-                # Check for double bonds
+                chain_atoms.append(atom.GetIdx())
                 for bond in atom.GetBonds():
                     neighbor = bond.GetOtherAtom(atom)
                     neighbor_idx = neighbor.GetIdx()
+                    if neighbor_idx == carboxyl_carbon_idx:
+                        continue  # Do not go back to carboxyl carbon
                     if neighbor_idx not in visited:
-                        if bond.GetBondType() == rdchem.BondType.DOUBLE and neighbor.GetAtomicNum() == 6:
-                            # Record position of the double bond relative to alpha carbon
-                            double_bond_positions.append(position)
                         if neighbor.GetAtomicNum() == 6 and not neighbor.IsInRing():
-                            queue.append((neighbor_idx, position + 1))
+                            if len(atom.GetNeighbors()) > 2:
+                                branches = True  # Detected a branch
+                            # Record double bond positions (delta numbering from carboxyl carbon)
+                            if bond.GetBondType() == rdchem.BondType.DOUBLE:
+                                double_bond_positions.append(position)
+                            dfs(neighbor, position + 1)
 
-        num_carbons = len(carbon_chain) + 1  # Include the carbonyl carbon
-        num_double_bonds = len(set(double_bond_positions))
+        # Start DFS from the carbon connected to carboxyl carbon (if any)
+        for bond in carboxyl_carbon.GetBonds():
+            neighbor = bond.GetOtherAtom(carboxyl_carbon)
+            if neighbor.GetAtomicNum() == 6 and not neighbor.IsInRing():
+                if neighbor.GetIdx() not in visited:
+                    if len(carboxyl_carbon.GetNeighbors()) > 2:
+                        branches = True
+                    if bond.GetBondType() == rdchem.BondType.DOUBLE:
+                        double_bond_positions.append(1)
+                    dfs(neighbor, 1)
 
-        # Check for essential fatty acid criteria
+        num_carbons = len(chain_atoms) + 1  # Include the carboxyl carbon
+        num_double_bonds = len(double_bond_positions)
+
+        if branches:
+            reasons.append(f"Chain has branches, not a linear fatty acid")
+            continue  # Skip branched chains
+
+        # Essential fatty acid criteria
         if num_carbons >= 16 and num_double_bonds >= 2:
-            # Check if any double bonds are beyond delta-9 position
-            beyond_delta_9 = any(pos > 9 for pos in double_bond_positions)
+            # Check for double bonds beyond delta-9 position
+            beyond_delta_9 = [pos for pos in double_bond_positions if pos > 9]
             if beyond_delta_9:
                 essential = True
                 reasons.append(
                     f"Found fatty acid chain with {num_carbons} carbons and "
-                    f"{num_double_bonds} double bonds beyond delta-9 position"
+                    f"double bonds at positions {double_bond_positions} (delta numbering)"
                 )
             else:
                 reasons.append(
