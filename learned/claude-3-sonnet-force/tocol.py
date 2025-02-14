@@ -34,19 +34,31 @@ def is_tocol(smiles: str):
     if not mol.HasSubstructMatch(chroman_pattern):
         return False, "No chroman-6-ol skeleton found"
 
-    # Look for isoprenoid chain at position 2
-    isoprenoid_pattern = Chem.MolFromSmarts("[CX4](C)(C)[CX4;R1]=[CX3][CX3]=[CX3][CX3]=[CX3][CX3]=[CX3][CX3]=[CX3]")
-    if not mol.HasSubstructMatch(isoprenoid_pattern):
+    # Look for hydrocarbon isoprenoid chain at position 2
+    isoprenoid_pattern = Chem.MolFromSmarts("[CX4]([CX4]([CX4]=[CX3][CX3]=[CX3])[CX4]=[CX3][CX3]=[CX3])[CX4]=[CX3][CX3]=[CX3]")
+    isoprenoid_match = mol.GetSubstructMatch(isoprenoid_pattern)
+    if not isoprenoid_match:
         return False, "No isoprenoid chain at position 2"
 
-    # Count number of isoprenoid units
-    isoprenoid_units = len(mol.GetSubstructMatches(isoprenoid_pattern))
-    if isoprenoid_units != 3:
-        return False, f"Found {isoprenoid_units} isoprenoid units, should be 3"
-
     # Check if chain is saturated or triply unsaturated
-    unsaturated_bonds = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.BondType.TRIPLE)
+    unsaturated_bonds = sum(1 for bond in mol.GetBondBetweenAtoms(isoprenoid_match[0], isoprenoid_match[1]).GetBondTypeAsDouble())
     if unsaturated_bonds not in [0, 3]:
         return False, "Side chain should be either saturated or triply unsaturated"
 
-    return True, "Contains a chroman-6-ol skeleton substituted at position 2 with a saturated or triply-unsaturated 3-isoprenoid chain"
+    # Check length of isoprenoid chain
+    chain_length = 0
+    for i in range(len(isoprenoid_match) - 1):
+        atom1 = mol.GetAtomWithIdx(isoprenoid_match[i])
+        atom2 = mol.GetAtomWithIdx(isoprenoid_match[i + 1])
+        if atom1.GetAtomicNum() == 6 and atom2.GetAtomicNum() == 6:
+            chain_length += 1
+    if chain_length != 3:
+        return False, f"Isoprenoid chain length is {chain_length}, should be 3"
+
+    # Check number of carbon and hydrogen atoms
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    h_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 1)
+    if c_count < 20 or c_count > 35 or h_count < 30 or h_count > 55:
+        return False, "Number of carbon and hydrogen atoms outside expected range for tocols"
+
+    return True, "Contains a chroman-6-ol skeleton substituted at position 2 with a saturated or triply-unsaturated 3-isoprenoid hydrocarbon chain"
