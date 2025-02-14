@@ -27,7 +27,7 @@ def is_cardiac_glycoside(smiles: str):
         return False, "Invalid SMILES string"
     
     # Look for steroid backbone pattern with lactone ring
-    steroid_pattern = Chem.MolFromSmarts("[C@@]12[C@H](CC[C@@]3([C@@H]1CC[C@@]4([C@]3(CC[C@@]4(C(=O)O)C)C)C)C)CC[C@]2(C)C")
+    steroid_pattern = Chem.MolFromSmarts("[C@@]12[C@@]([C@H](CC[C@@]3([C@@]1(CC[C@@]4([C@]3(CC[C@]4(C(=O)O)C)C)C)C)C)CC[C@]2(C)C)([H])[H]")
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone with lactone ring found"
     
