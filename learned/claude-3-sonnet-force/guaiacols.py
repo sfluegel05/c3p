@@ -7,7 +7,7 @@ Classifies: CHEBI:51504 guaiacols
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
 
-def is_guaiacol(smiles: str):
+def is_guaiacols(smiles: str):
     """
     Determines if a molecule is a guaiacol based on its SMILES string.
     A guaiacol is any phenol carrying an additional methoxy substituent at the ortho-position.
@@ -30,21 +30,21 @@ def is_guaiacol(smiles: str):
     if not mol.HasSubstructMatch(phenol_pattern):
         return False, "Not a phenol"
     
-    # Look for methoxy group (-O-C) at ortho position
-    methoxy_pattern = Chem.MolFromSmarts("Oc1ccccc1OC")
-    if not mol.HasSubstructMatch(methoxy_pattern):
-        return False, "No ortho-methoxy group found"
+    # Find the phenolic -OH atom
+    hydroxy_atom = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetSymbol() == "O" and atom.GetFormalCharge() == 0 and mol.GetBondBetweenAtoms(atom.GetIdx(), atom.GetNeighbors()[0]).IsInRingOfSize(6)][0]
     
-    # Check if there is only one methoxy group
-    methoxy_groups = mol.GetSubstructMatches(Chem.MolFromSmarts("OC"))
-    if len(methoxy_groups) != 1:
-        return False, f"Found {len(methoxy_groups)} methoxy groups, should be exactly 1"
+    # Look for methoxy groups (-O-C) at ortho position relative to the phenolic -OH
+    methoxy_pattern = Chem.MolFromSmarts("OC")
+    methoxy_groups = mol.GetSubstructMatches(methoxy_pattern)
     
-    # Check if the methoxy group is ortho to the -OH
-    methoxy_atom = mol.GetAtoms()[methoxy_groups[0][0]].GetIdx()
-    hydroxy_atom = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetSymbol() == "O" and atom.GetFormalCharge() == 0][0]
+    has_ortho_methoxy = False
+    for methoxy_match in methoxy_groups:
+        methoxy_atom = methoxy_match[0]
+        if mol.GetBondBetweenAtoms(methoxy_atom, hydroxy_atom).IsInRingOfSize(6):
+            has_ortho_methoxy = True
+            break
     
-    if not mol.GetBondBetweenAtoms(methoxy_atom, hydroxy_atom).IsInRingOfSize(6):
-        return False, "Methoxy group not ortho to phenolic -OH"
+    if not has_ortho_methoxy:
+        return False, "No ortho-methoxy group found relative to the phenolic -OH"
     
-    return True, "Molecule contains a phenol with an ortho-methoxy substituent"
+    return True, "Molecule contains a phenol with at least one ortho-methoxy substituent"
