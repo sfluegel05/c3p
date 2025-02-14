@@ -2,7 +2,6 @@
 Classifies: CHEBI:59549 essential fatty acid
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_essential_fatty_acid(smiles: str):
@@ -23,41 +22,21 @@ def is_essential_fatty_acid(smiles: str):
         return False, "Invalid SMILES string"
     
     # Check for carboxylic acid group
-    acid_pattern = Chem.MolFromSmarts("C(=O)O")
-    if not mol.HasSubstructMatch(acid_pattern):
-        return False, "No carboxylic acid group found"
-
-    # Check for unwanted functional groups
-    hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
-    if mol.HasSubstructMatch(hydroxyl_pattern):
-        return False, "Contains hydroxyl group, not a typical fatty acid"
+    # Accept both protonated and deprotonated forms (COOH and COO-) and make sure that we have 2 oxygens.
+    acid_pattern_protonated = Chem.MolFromSmarts("C(=O)[OH1]")
+    acid_pattern_deprotonated = Chem.MolFromSmarts("C(=O)[O-]")
     
-    peroxide_pattern = Chem.MolFromSmarts("O-O")
-    if mol.HasSubstructMatch(peroxide_pattern):
-        return False, "Contains peroxide group, not a typical fatty acid"
+    has_protonated = mol.HasSubstructMatch(acid_pattern_protonated)
+    has_deprotonated = mol.HasSubstructMatch(acid_pattern_deprotonated)
 
-    ether_pattern = Chem.MolFromSmarts("C-O-C")
-    if mol.HasSubstructMatch(ether_pattern):
-         return False, "Contains ether linkage, not a typical fatty acid"
+    if not (has_protonated or has_deprotonated):
+      return False, "No carboxylic acid group found"
+    
+    oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if oxygen_count < 2:
+        return False, "Carboxylic acid group is not complete (less than 2 oxygens)"
 
-    ester_pattern = Chem.MolFromSmarts("C(=O)[OX2;!H]") #Avoid matching the carboxylic acid
-    if len(mol.GetSubstructMatches(ester_pattern)) > 1: #Allow one matching carboxylic acid
-      return False, "Contains ester linkage, not a typical fatty acid"
-      
-    amide_pattern = Chem.MolFromSmarts("C(=O)N")
-    if mol.HasSubstructMatch(amide_pattern):
-        return False, "Contains amide linkage, not a typical fatty acid"
-
-    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)")
-    if mol.HasSubstructMatch(phosphate_pattern):
-         return False, "Contains phosphate group, not a typical fatty acid"
-
-    # Check for glycerol backbone
-    glycerol_pattern = Chem.MolFromSmarts("C(O)C(O)C(O)")
-    if mol.HasSubstructMatch(glycerol_pattern):
-      return False, "Contains glycerol backbone, not a typical fatty acid"
-
-    # Count carbons. We are more flexible now and allow for slightly longer or shorter chains.
+    # Count carbons
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if not 14 <= c_count <= 40:
       return False, "Carbon count is not within the typical range (14-40)"
@@ -68,13 +47,12 @@ def is_essential_fatty_acid(smiles: str):
     if len(double_bond_matches) < 2:
           return False, f"Found {len(double_bond_matches)} double bonds, need at least 2"
 
-    # Check for long aliphatic chain with at least 10 carbons. The previous version had [CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3], which was too short.
+    # Check for long aliphatic chain with at least 10 carbons
     aliphatic_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
     aliphatic_matches = mol.GetSubstructMatches(aliphatic_chain_pattern)
     if len(aliphatic_matches) < 1:
          return False, "Molecule does not contain long aliphatic chain"
     
-
     # Check for the presence of rings.
     if mol.GetRingInfo().NumRings() > 0:
         return False, "Molecule contains rings, not a typical fatty acid"
