@@ -25,32 +25,43 @@ def is_porphyrins(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for the porphyrin macrocycle
-    # This pattern captures the core structure with four pyrrole-like rings and four methine bridges
-    # It uses generalized nitrogen and carbon atoms to account for variations in charge and metal coordination.
-    porphyrin_core_pattern = Chem.MolFromSmarts("[nX3]1=[CX3]~[cX3]~[cX3]~[nX3]2=[CX3]~[cX3]~[cX3]~[nX3]3=[CX3]~[cX3]~[cX3]~[nX3]4=[CX3]~[cX3]~[cX3]~1423")
-
-    # Check if the core pattern matches.
+    # Define SMARTS patterns
+    # Define pyrrole ring (5-membered ring with one N)
+    pyrrole_pattern = Chem.MolFromSmarts("[nX3+]1[cX3][cX3][cX3][cX3]1") # allow for charged N
+    
+    # Define methine bridge (a carbon connecting to 3 other atoms)
+    methine_bridge = Chem.MolFromSmarts("[CX3]")
+    
+    # Define a pattern connecting 4 pyrrole rings with methine bridges
+    #This accounts for variations in bond order and connectivity within the porphyrin.
+    porphyrin_core_pattern = Chem.MolFromSmarts("([nX3+]1[cX3][cX3][cX3][cX3]1)[CX3]([nX3+]2[cX3][cX3][cX3][cX3]2)([nX3+]3[cX3][cX3][cX3][cX3]3)[CX3]([nX3+]4[cX3][cX3][cX3][cX3]4)")
+    
+    # Check if porphyrin core is present
     if not mol.HasSubstructMatch(porphyrin_core_pattern):
-        return False, "Porphyrin core macrocycle not found."
-
-
-    # Check the number of nitrogens, which should be at least 4
-    nitrogen_pattern = Chem.MolFromSmarts("[nX3]")
-    nitrogen_matches = mol.GetSubstructMatches(nitrogen_pattern)
-    if len(nitrogen_matches) < 4:
-        return False, f"Found {len(nitrogen_matches)} nitrogen atoms, require at least 4"
-
-
-    # Additional check to see if there's a macrocycle, using the number of atoms in the core
-    match = mol.GetSubstructMatch(porphyrin_core_pattern)
-    if match:
-        if len(match) != 20:  # the macrocycle core should contain 20 atoms (4 N + 16 C)
-           return False, "Porphyrin core has incorrect size"
+       return False, "Porphyrin core macrocycle not found."
+    
 
     # Check for metals
     metal_pattern = Chem.MolFromSmarts("[Fe,Mg,Zn,Co,Ni]")
     metal_matches = mol.GetSubstructMatches(metal_pattern)
+
+    # Count C, N and metals
+    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    metal_count = len(metal_matches)
+
+
+    if n_count < 4:
+        return False, "Too few nitrogens for porphyrin."
     
+    if c_count < 20:
+        return False, "Too few carbons for porphyrin."
+    
+    
+    # Additional check to confirm the presence of a macrocycle
+    match = mol.GetSubstructMatch(porphyrin_core_pattern)
+    if not match:
+        return False, "Porphyrin core not matched"
+
     
     return True, "Contains a porphyrin core macrocycle"
