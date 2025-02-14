@@ -24,8 +24,8 @@ def is_isoflavones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMILES for the isoflavone core
-    isoflavone_smiles = 'O=C1C=CC2=CC=CC=C2O1c1ccccc1'  # Isoflavone core structure
+    # Corrected SMILES for the isoflavone core
+    isoflavone_smiles = 'O=C1c2ccccc2Oc3ccccc13'  # Isoflavone core structure
     isoflavone_core = Chem.MolFromSmiles(isoflavone_smiles)
     if isoflavone_core is None:
         return False, "Error in isoflavone core SMILES"
