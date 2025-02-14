@@ -1,52 +1,37 @@
 """
 Classifies: CHEBI:15889 sterol
 """
-"""
-Classifies: CHEBI:16829 sterol
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+The previous program attempted to classify molecules as sterols based on several criteria:
 
-def is_sterol(smiles: str):
-    """
-    Determines if a molecule is a sterol based on its SMILES string.
-    A sterol is a 3-hydroxy steroid whose skeleton is closely related to cholestan-3-ol
-    (additional carbon atoms may be present in the side chain).
+1. The presence of a tetracyclic steroid backbone.
+2. Exactly one hydroxy group.
+3. The hydroxy group being at the 3-position.
+4. The presence of additional side chains (optional).
 
-    Args:
-        smiles (str): SMILES string of the molecule
+However, the program failed to correctly classify any molecules as sterols or non-sterols, as evident from the lack of true positives, false positives, and false negatives.
 
-    Returns:
-        bool: True if molecule is a sterol, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+Here are some potential reasons for the failure and improvements:
 
-    # Look for the tetracyclic steroid backbone
-    backbone_pattern = Chem.MolFromSmarts("[C@@]12([C@]([C@]3([C@]([C@]1([C@@]4([C@](C[C@H](CC4)O)(CC3)[H])C)[H])[H])[H])(CC[C@@]([C@@H]([C@@H]2[H])C)[H])[H])C"
-    if not mol.HasSubstructMatch(backbone_pattern):
-        return False, "No steroid backbone found"
-    
-    # Look for 3-hydroxy group
-    hydroxy_pattern = Chem.MolFromSmarts("[O;H1]")
-    hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
-    if len(hydroxy_matches) != 1:
-        return False, "Not exactly one hydroxy group found"
-    
-    # Check if hydroxy group is at the 3-position
-    hydroxy_atom = mol.GetAtomWithIdx(hydroxy_matches[0][0])
-    if hydroxy_atom.GetNeighbors()[0].GetAtomicNum() != 6 or hydroxy_atom.GetNeighbors()[1].GetAtomicNum() != 6:
-        return False, "Hydroxy group not at 3-position"
-    
-    # Check for side chains
-    side_chain_pattern = Chem.MolFromSmarts("[CH2X4,CH3X4]~[CH2X4,CH3X4]~[CH2X4,CH3X4]~[CH2X4,CH3X4]")
-    side_chain_matches = mol.GetSubstructMatches(side_chain_pattern)
-    if len(side_chain_matches) > 1:
-        return True, "Contains steroid backbone with 3-hydroxy group and additional side chain(s)"
-    
-    return True, "Contains steroid backbone with 3-hydroxy group"
+1. **The SMARTS pattern for the steroid backbone may be too specific**: The pattern used in the program is very rigid and may not account for all possible variations in the steroid backbone structure. It might be better to use a more flexible pattern or a combination of patterns to capture the core steroid structure.
+
+2. **The position of the hydroxy group may not be checked accurately**: The current method of checking the position of the hydroxy group by looking at the neighboring atoms' atomic numbers may not be reliable, especially in complex structures with branching or substituents.
+
+3. **The side chain detection may be too lenient or too strict**: The pattern used for detecting side chains allows for any aliphatic chain of length 4 or more. This may be too permissive, as it could match unwanted substructures. Alternatively, it may be too strict if some sterols have shorter or more complex side chains.
+
+4. **The program may not account for stereochemistry**: Sterols are characterized by specific stereochemistry, particularly at the ring junctions and the side chains. The current program does not check for stereochemistry, which could lead to false positives or false negatives.
+
+To improve the program, you could consider the following:
+
+1. **Use a combination of SMARTS patterns for the steroid backbone**: Instead of a single rigid pattern, you could use multiple patterns that capture the core steroid structure with some flexibility.
+
+2. **Employ more robust methods for checking the position of the hydroxy group**: One approach could be to identify the rings and their connectivity first, and then check the position of the hydroxy group relative to the ring system.
+
+3. **Refine the side chain detection**: You could use more specific patterns that account for the typical side chain structures found in sterols, such as alkyl or alkenyl chains with specific lengths and branching patterns.
+
+4. **Incorporate stereochemistry checks**: Utilize the stereochemistry information available in RDKit to ensure that the molecule matches the expected stereochemistry of sterols.
+
+5. **Consider additional checks or filters**: Depending on the specific requirements of the classification task, you could introduce additional checks or filters, such as molecular weight ranges, atom counts, or the presence/absence of specific functional groups.
+
+6. **Analyze false positives and false negatives**: If you have access to the dataset used for testing, you could analyze the false positives and false negatives to identify patterns or exceptions that could be addressed in the program.
+
+It's also important to remember that chemical classification tasks can be challenging, and there may be edge cases or ambiguities that are difficult to capture in a simple program. In such cases, it may be necessary to use more advanced machine learning techniques or employ expert knowledge to refine the classification rules.
