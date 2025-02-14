@@ -2,15 +2,16 @@
 Classifies: CHEBI:16366 anthocyanidin cation
 """
 """
-Classifies: CHEBI:35827 anthocyanidin cation
-Definition: Any organic cation that is an aglycon of anthocyanin cation; they are oxygenated derivatives of flavylium (2-phenylchromenylium).
+Classifies: CHEBI:36334 anthocyanidin cation
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_anthocyanidin_cation(smiles: str):
     """
     Determines if a molecule is an anthocyanidin cation based on its SMILES string.
+    An anthocyanidin cation is an oxygenated derivative of flavylium (2-phenylchromenylium) with a positive charge.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -25,38 +26,38 @@ def is_anthocyanidin_cation(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for positive charge
-    if sum(atom.GetFormalCharge() for atom in mol.GetAtoms()) != 1:
-        return False, "Molecule does not have a positive charge"
-    
-    # Check for flavylium core
-    flavylium_pattern = Chem.MolFromSmarts("[o+]1c2ccccc2oc1")
+    # Look for flavylium core (chromen-4-ylium)
+    flavylium_pattern = Chem.MolFromSmarts("[o+]1c2ccccc2cc1")
     if not mol.HasSubstructMatch(flavylium_pattern):
         return False, "No flavylium core found"
     
-    # Check for common anthocyanidin substitution patterns
-    pelargonidin_pattern = Chem.MolFromSmarts("c1ccccc1")
-    cyanidin_pattern = Chem.MolFromSmarts("c1ccc(O)cc1")
-    delphinidin_pattern = Chem.MolFromSmarts("c1cc(O)c(O)cc1")
-    petunidin_pattern = Chem.MolFromSmarts("c1cc(O)c(OC)cc1")
-    malvidin_pattern = Chem.MolFromSmarts("c1cc(OC)c(OC)cc1")
-    if not any([mol.HasSubstructMatch(pattern) for pattern in [pelargonidin_pattern, cyanidin_pattern, delphinidin_pattern, petunidin_pattern, malvidin_pattern]]):
-        return False, "No common anthocyanidin substitution pattern found"
+    # Look for phenyl ring
+    phenyl_pattern = Chem.MolFromSmarts("c1ccccc1")
+    if not mol.HasSubstructMatch(phenyl_pattern):
+        return False, "No phenyl ring found"
     
-    # Check for presence of glycosidic groups
-    glycosidic_pattern = Chem.MolFromSmarts("OC")
-    glycosidic_matches = mol.GetSubstructMatches(glycosidic_pattern)
+    # Look for oxygens outside the flavylium core
+    oxygen_pattern = Chem.MolFromSmarts("O")
+    oxygen_matches = mol.GetSubstructMatches(oxygen_pattern)
+    oxygen_counts = [0] * mol.GetNumAtoms()
+    for match in oxygen_matches:
+        oxygen_counts[match] += 1
+    n_oxygens_outside = sum(1 for count in oxygen_counts if count > 0 and not mol.GetAtomWithIdx(i).IsInRingSize(6))
+    if n_oxygens_outside < 1:
+        return False, "No oxygens outside flavylium core"
     
-    # Check for additional substituents or counter ions
-    substituent_pattern = Chem.MolFromSmarts("[!#1;!#6;!#8;!#7]")
-    substituent_matches = mol.GetSubstructMatches(substituent_pattern)
+    # Check for positive charge
+    formal_charge = rdMolDescriptors.CalcFormalCharge(mol)
+    if formal_charge != 1:
+        return False, "Incorrect formal charge (expected +1)"
     
-    # Classify based on findings
-    if glycosidic_matches and substituent_matches:
-        return True, "Contains flavylium core with anthocyanidin substitution pattern, glycosidic groups, and additional substituents"
-    elif glycosidic_matches:
-        return True, "Contains flavylium core with anthocyanidin substitution pattern and glycosidic groups"
-    elif substituent_matches:
-        return True, "Contains flavylium core with anthocyanidin substitution pattern and additional substituents"
-    else:
-        return True, "Contains flavylium core with anthocyanidin substitution pattern"
+    # Count carbons and oxygens
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    
+    if c_count < 15 or c_count > 25:
+        return False, "Carbon count outside typical range (15-25)"
+    if o_count < 4 or o_count > 10:
+        return False, "Oxygen count outside typical range (4-10)"
+    
+    return True, "Contains flavylium core with phenyl ring and oxygens outside the core, with +1 charge"
