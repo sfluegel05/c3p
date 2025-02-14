@@ -23,14 +23,24 @@ def is_catechin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Core flavan-3-ol substructure (generic, no specific substitutions).
-    flavan_3ol_core = Chem.MolFromSmarts("[CH2][CH](O)[CH2]1[c]2[c]([c][c][c][c]2)[O]1~[c]3[c][c][c][c][c]3")
+    # Core flavan-3-ol substructure (more flexible).
+    # Allows for different bonding around the central ring, specifically,
+    # the direct link to aromatic or a single bond connection with an aromatic ring.
+    flavan_3ol_core = Chem.MolFromSmarts("[CH2][CH](O)[CH]([c]1[c]([c][c][c][c]1)[O]~[c]2[c][c][c][c][c]2)")
+    
     if not mol.HasSubstructMatch(flavan_3ol_core):
         return False, "Core flavan-3-ol structure not found."
 
-    # Exclude flavanones that have a ketone group at position 4.
-    flavanone_core = Chem.MolFromSmarts("[CH2][C](=[O])[CH2]1[c]2[c]([c][c][c][c]2)[O]1")
-    if mol.HasSubstructMatch(flavanone_core):
-      return False, "Molecule is a flavanone, not a catechin"
+    # Verify the presence of two aromatic rings connected to the core structure.
+    aromatic_ring = Chem.MolFromSmarts("[c]1[c][c][c][c][c]1")
+    aromatic_matches = mol.GetSubstructMatches(aromatic_ring)
+    if len(aromatic_matches) < 2:
+        return False, "Not enough aromatic rings present for a catechin."
 
-    return True, "Molecule contains the core flavan-3-ol structure."
+    # Ensure no ketone group at the 4-position (exclude flavanones)
+    flavanone_core = Chem.MolFromSmarts("[CH2][C](=[O])[CH]1[c]2[c]([c][c][c][c]2)[O]1")
+    if mol.HasSubstructMatch(flavanone_core):
+        return False, "Molecule is a flavanone, not a catechin"
+        
+    
+    return True, "Molecule contains the core flavan-3-ol structure and 2 aromatic rings."
