@@ -26,25 +26,25 @@ def is_dihydroflavonols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for the flavanone scaffold with a hydroxy group at position 3
-    flavanone_pattern = Chem.MolFromSmarts("[O;R]1[C@@H]([C@H](C(=O)C2=C1C=CC=C2)O)[c;R]3ccc(O)cc3")
-    if not mol.HasSubstructMatch(flavanone_pattern):
+    # Look for the dihydroflavonol scaffold
+    dihydroflavonol_pattern = Chem.MolFromSmarts("[O;R]1[C@H]([C@@H](C(=O)C2=C1C=CC=C2)O)[c;R]2ccccc2")
+    if not mol.HasSubstructMatch(dihydroflavonol_pattern):
         return False, "Molecule does not contain the dihydroflavonol scaffold"
+    
+    # Check for hydroxy group at position 3 of the heterocyclic ring
+    hydroxy_at_pos_3 = any(atom.GetSymbol() == 'O' and atom.GetHybridization() == Chem.rdchem.HybridizationType.SP3
+                           for atom in mol.GetAtomWithIdx(2).GetNeighbors())
+    if not hydroxy_at_pos_3:
+        return False, "Molecule does not have a hydroxy group at position 3 of the heterocyclic ring"
     
     # Count the number of hydroxy groups
     hydroxyl_groups = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'O' and atom.GetHybridization() == Chem.rdchem.HybridizationType.SP3)
     if hydroxyl_groups < 3:
         return False, "Molecule does not have enough hydroxy groups"
     
-    # Check for additional double bonds or rings (to exclude flavones and flavonols)
-    num_double_bonds = mol.GetNumBonds(Chem.BondType.DOUBLE)
-    num_rings = mol.GetRingInfo().NumRings()
-    if num_double_bonds > 3 or num_rings > 3:
-        return False, "Molecule has too many double bonds or rings"
-    
-    # Check molecular weight - dihydroflavonols typically 200-500 Da
+    # Check molecular weight - dihydroflavonols typically 200-600 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 200 or mol_wt > 500:
+    if mol_wt < 200 or mol_wt > 600:
         return False, "Molecular weight outside typical range for dihydroflavonols"
     
     return True, "Molecule meets the criteria for a dihydroflavonol"
