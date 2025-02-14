@@ -32,14 +32,35 @@ def is_O_acyl_L_carnitine(smiles: str):
     if not mol.HasSubstructMatch(carnitine_core_pattern):
         return False, "L-carnitine core not found"
 
-    # Check for an ester group attached to the oxygen of the core. We also allow a charged ester oxygen.
-    # The key here is the explicit connection to the carnitine core with correct stereochemistry.
-    ester_smarts = "[C@H]([OX2])(CC(=O)[O-,OH])C[N+](C)(C)C[OX2][CX3](=[OX1])"
-    ester_pattern = Chem.MolFromSmarts(ester_smarts)
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    # check for any ester group directly connected to the carnitine core oxygen.
 
-    if not ester_matches:
-          return False, "No ester bond found directly linked to the carnitine core"
+    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
+
+
+    matches = mol.GetSubstructMatches(carnitine_core_pattern)
+    found_ester = False
+    for match in matches:
+        chiral_carbon_idx = match[0]
+        chiral_carbon = mol.GetAtomWithIdx(chiral_carbon_idx)
+
+        for neighbor in chiral_carbon.GetNeighbors():
+            if neighbor.GetAtomicNum() == 8:
+                oxygen_idx = neighbor.GetIdx()
+
+                # Check if any ester is attached to the oxygen atom.
+                for ester_match in mol.GetSubstructMatches(ester_pattern):
+                    if oxygen_idx in ester_match:
+                        found_ester = True
+                        break
+                if found_ester:
+                    break
+
+        if found_ester:
+           break
+    
+    if not found_ester:
+         return False, "No ester bond found directly linked to the carnitine core"
+
 
     # check that the carbon at position 1 is indeed chiral (L configuration)
     matches = mol.GetSubstructMatches(carnitine_core_pattern)
@@ -57,7 +78,7 @@ def is_O_acyl_L_carnitine(smiles: str):
         if hydrogen_idx == -1:
             return False, "No hydrogen bound to chiral carbon"
 
-        # Check that the hydrogen is pointing up
+        # Check that the hydrogen is pointing up (CW == L)
         
         if chiral_carbon.GetChiralTag() != Chem.ChiralType.CHI_TETRAHEDRAL_CW:
              return False, "Chiral center not L (or S) configuration"
