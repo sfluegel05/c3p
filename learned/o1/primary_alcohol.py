@@ -25,31 +25,11 @@ def is_primary_alcohol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    found = False
+    # Define primary alcohol SMARTS pattern
+    primary_alcohol_pattern = Chem.MolFromSmarts("[#6;H2;X4][#8;H1]")  # Carbon with two hydrogens attached to OH group
 
-    for atom in mol.GetAtoms():
-        # Look for oxygen atoms with one hydrogen (hydroxyl groups)
-        if atom.GetAtomicNum() == 8 and atom.GetTotalNumHs(includeNeighbors=True) == 1:
-            neighbors = atom.GetNeighbors()
-            if len(neighbors) != 1:
-                continue
-            carbon = neighbors[0]
-            if carbon.GetAtomicNum() != 6:
-                continue
-            # Check that carbon is sp3 hybridized (saturated)
-            if carbon.GetHybridization() != Chem.rdchem.HybridizationType.SP3:
-                continue
-            # Check that carbon is attached to exactly one other carbon (primary carbon)
-            num_carbons = sum(1 for nbr in carbon.GetNeighbors() if nbr.GetAtomicNum() == 6)
-            if num_carbons != 1:
-                continue
-            # Check that carbon is attached to exactly two hydrogens
-            if carbon.GetTotalNumHs() != 2:
-                continue
-            found = True
-            break
-
-    if not found:
+    # Search for the pattern in the molecule
+    if mol.HasSubstructMatch(primary_alcohol_pattern):
+        return True, "Contains a primary alcohol group"
+    else:
         return False, "No primary alcohol group found"
-
-    return True, "Contains a primary alcohol group attached to a saturated carbon with one other carbon neighbor and two hydrogens"
