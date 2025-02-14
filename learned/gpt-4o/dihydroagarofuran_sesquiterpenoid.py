@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_dihydroagarofuran_sesquiterpenoid(smiles: str):
     """
     Determines if a molecule is a dihydroagarofuran sesquiterpenoid based on its SMILES string.
-    A dihydroagarofuran sesquiterpenoid is any sesquiterpenoid with a dihydroagarofuran skeleton.
+    A dihydroagarofuran sesquiterpenoid is any sesquiterpenoid containing a dihydroagarofuran skeleton.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,12 +21,12 @@ def is_dihydroagarofuran_sesquiterpenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Refine SMARTS pattern for a dihydroagarofuran skeleton; consider complexity, rings, and substituents.
+    # Refine SMARTS pattern for a dihydroagarofuran skeleton; consider complexity, rings, and substituents
+    # Let's create a more general pattern that encompasses known structural elements of the skeleton.
     dihydroagarofuran_patterns = [
-        Chem.MolFromSmarts("C1(C)OC2CCC3CC(C)(C(C2)O1)C3"),
-        Chem.MolFromSmarts("C1(C)OC2CCC3CC(C(O2)C1)C3"),
-        Chem.MolFromSmarts("C1C(C)(O)C2CCC3CC(C)(C(O1)C2)C3")
-        # Additional patterns can be added based on diversity observed in dihydroagarofuran sesquiterpenoids
+        Chem.MolFromSmarts("C1C[C@@H]2[C@H]3[C@@H](C1)C[C@@H](O2)CC3"),
+        Chem.MolFromSmarts("C1C[C@H]2C[C@H]3[C@@H](C1)C[C@@H](O2)CC3"),
+        # Additional patterns can be based on varying ring junction stereochemistry and common ester linkages
     ]
 
     # Check each pattern against the molecule
