@@ -20,53 +20,63 @@ def is_alkaloid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for at least one nitrogen in a heterocyclic ring
-    heterocyclic_nitrogen_pattern = Chem.MolFromSmarts("[#7;R1]~[#6;R1]")
-    if not mol.HasSubstructMatch(heterocyclic_nitrogen_pattern):
-         return False, "No nitrogen in a heterocyclic ring"
+    # Check for at least one nitrogen atom
+    nitrogen_pattern = Chem.MolFromSmarts("[#7]")
+    if not mol.HasSubstructMatch(nitrogen_pattern):
+        return False, "No nitrogen atom present"
+    
+    # Check for presence of at least one ring
+    ring_pattern = Chem.MolFromSmarts("[R]")
+    has_ring = mol.HasSubstructMatch(ring_pattern)
+
+    # Check if there is at least one nitrogen in a ring - this is not a strict condition
+    heterocyclic_nitrogen_pattern = Chem.MolFromSmarts("[#7;R]")
+    has_ring_nitrogen = mol.HasSubstructMatch(heterocyclic_nitrogen_pattern)
+    
+    #Check for a minimum number of C and heteroatoms (N, O, S)
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    hetero_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() in [7, 8, 16])
+
+    if c_count < 10 or hetero_count < 2:
+        return False, "Too small, likely not alkaloid"
 
 
-    # Check for exocyclic nitrogen, excluding amides and similar
+    # Check for exocyclic nitrogen, excluding amides
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() == 7 and not atom.IsInRing():
-            # Check if exocyclic nitrogen is part of an amide group
+            
             is_amide_or_similar = False
             for neighbor in atom.GetNeighbors():
-                 if neighbor.GetAtomicNum() == 6:
-                   for neighbor2 in neighbor.GetNeighbors():
-                       if neighbor2.GetAtomicNum() == 8 and neighbor2.GetBondBetweenAtoms(neighbor.GetIdx(),neighbor2.GetIdx()).GetBondType() == Chem.BondType.DOUBLE:
+                if neighbor.GetAtomicNum() == 6:
+                    for neighbor2 in neighbor.GetNeighbors():
+                        if neighbor2.GetAtomicNum() == 8 and mol.GetBondBetweenAtoms(neighbor.GetIdx(), neighbor2.GetIdx()).GetBondType() == Chem.BondType.DOUBLE:
                             is_amide_or_similar = True
                             break
-                 if is_amide_or_similar:
-                   break
+                    if is_amide_or_similar:
+                        break # Move to next N
             if not is_amide_or_similar:
-                #Check if nitrogen is only attached to C atoms. If yes, it is considered an exocyclic amine and should not be an alkaloid.
+                #Check if nitrogen is only attached to C atoms. If yes, it is considered an exocyclic amine
                 neighbor_carbon_count = 0
                 for neighbor in atom.GetNeighbors():
                     if neighbor.GetAtomicNum() == 6:
                         neighbor_carbon_count +=1
-
-                if neighbor_carbon_count > 0:
-                    all_c_neighbors = True
-                    for neighbor in atom.GetNeighbors():
+                all_c_neighbors = True
+                for neighbor in atom.GetNeighbors():
                       if neighbor.GetAtomicNum() !=6:
-                        all_c_neighbors = False
-                    if all_c_neighbors and neighbor_carbon_count < 3:
-                        return False, "Contains exocyclic nitrogen as amine"
+                         all_c_neighbors = False
+
+                if all_c_neighbors and neighbor_carbon_count < 3: # simple amines should not have 3 C neighbors
+                   return False, "Contains simple exocyclic amine"
 
 
 
-    # Check for carboxylic acid groups (-C(=O)O or -C(=O)OH)
-    carboxylic_acid_pattern1 = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H0]")
-    carboxylic_acid_pattern2 = Chem.MolFromSmarts("[CX3](=[OX1])[OH1]")
-    if mol.HasSubstructMatch(carboxylic_acid_pattern1) or mol.HasSubstructMatch(carboxylic_acid_pattern2):
-        return False, "Contains carboxylic acid group"
+    reason = "Contains at least one nitrogen atom, "
+    if has_ring:
+        reason += "has at least one ring, "
+    if has_ring_nitrogen:
+      reason += "and at least one N in a ring, "
 
-    #Check for sulfonic acids
-    sulfonic_acid_pattern = Chem.MolFromSmarts("S(=O)(=O)[OH]")
-    if mol.HasSubstructMatch(sulfonic_acid_pattern):
-        return False, "Contains sulfonic acid group"
+    reason += "and is large enough, excluding simple exocyclic amine"
 
 
-
-    return True, "Contains at least one nitrogen in a heterocyclic ring, does not have simple exocyclic amine or carboxylic/sulfonic acid groups"
+    return True, reason
