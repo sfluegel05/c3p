@@ -24,32 +24,34 @@ def is_2_hydroxy_fatty_acid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for the presence of a carboxylic acid group
-    acid_pattern = Chem.MolFromSmarts("C(=O)O")
+    acid_pattern = Chem.MolFromSmarts("C(=O)[O,OH]")
     if not mol.HasSubstructMatch(acid_pattern):
          return False, "No carboxylic acid group found"
 
-    # Check for 2-hydroxy group (hydroxy on the alpha carbon)
-    hydroxy_pattern = Chem.MolFromSmarts("[CHX4]([OH])[C](=O)O")
+    # Check for 2-hydroxy group (hydroxy on the alpha carbon, or O-)
+    hydroxy_pattern = Chem.MolFromSmarts("[CX4]([OH])[CX3](=[O])[O,OH]")
     if not mol.HasSubstructMatch(hydroxy_pattern):
         return False, "No hydroxyl group at the alpha position found"
+    
+    # Check for long chain attached to alpha carbon
+    chain_pattern = Chem.MolFromSmarts("[CX4]([OH])-[CX4]-[CX4]-[CX4]")
+    if not mol.HasSubstructMatch(chain_pattern):
+      return False, "No long carbon chain found attached to alpha carbon"
 
-    # Check for long chain - count non-acid carbon atoms > 3
-    carbon_count = 0
-    for atom in mol.GetAtoms():
-      if atom.GetAtomicNum() == 6:
-        is_acid_carbon = False
-        for bond in atom.GetBonds():
-           other_atom = bond.GetOtherAtom(atom)
-           if other_atom.GetAtomicNum() == 8 and other_atom.GetIdx() != atom.GetIdx():
-             is_acid_carbon = True
-             break
-        if not is_acid_carbon:
-          carbon_count += 1
-    if carbon_count < 3:
-         return False, "Carbon chain too short for a fatty acid"
-
-    # Additional check to remove edge cases like simple molecules.
-    if rdMolDescriptors.CalcNumHeavyAtoms(mol) < 5:
+    # Check for number of rotatable bonds for chain length
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 4: # Fatty acid chains are typically long
+      return False, "Chain too short or not flexible enough to be a fatty acid"
+    
+    # Check molecular weight
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 100:
         return False, "Molecule too small to be a fatty acid"
+
+    # Check for ring system - fatty acids are usually not cyclic.
+    ring_info = mol.GetRingInfo()
+    if ring_info.IsAtomInRing(mol.GetAtoms()[0].GetIdx()):
+        return False, "Molecule is cyclic"
+
 
     return True, "Contains a carboxylic acid group with a hydroxyl group on the alpha carbon and a carbon chain"
