@@ -10,7 +10,7 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
-def is_isoflavone(smiles: str):
+def is_isoflavones(smiles: str):
     """
     Determines if a molecule is an isoflavone based on its SMILES string.
 
