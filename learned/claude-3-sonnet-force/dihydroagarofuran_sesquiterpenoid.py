@@ -5,7 +5,7 @@ Classifies: CHEBI:71548 dihydroagarofuran sesquiterpenoid
 Classifies: CHEBI:51841 dihydroagarofuran sesquiterpenoid
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem, rdMolDescriptors
+from rdkit.Chem import AllChem
 
 def is_dihydroagarofuran_sesquiterpenoid(smiles: str):
     """
@@ -25,25 +25,14 @@ def is_dihydroagarofuran_sesquiterpenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for dihydroagarofuran core
-    dihydroagarofuran_core = Chem.MolFromSmarts("[C@H]1[C@@]2([C@H](O)[C@@H]([C@H](O)[C@@H]1O)[C@@H]2O)O")
-    if not mol.HasSubstructMatch(dihydroagarofuran_core):
-        return False, "No dihydroagarofuran core found"
+    # Check if molecule is a sesquiterpenoid (C15H24 or C15H22)
+    formula = AllChem.CalcMolFormula(mol)
+    if formula not in ['C15H24', 'C15H22']:
+        return False, "Not a sesquiterpenoid (formula not C15H24 or C15H22)"
 
-    # Check for sesquiterpenoid backbone
-    sesquiterpenoid_backbone = Chem.MolFromSmarts("[C@H]1[C@H]2[C@@H]([C@@H]([C@H]([C@@H]1O)O)O)[C@@H]2O")
-    if not mol.HasSubstructMatch(sesquiterpenoid_backbone):
-        return False, "Sesquiterpenoid backbone not found"
+    # Look for dihydroagarofuran skeleton pattern
+    dihydroagarofuran_pattern = Chem.MolFromSmarts("[C@H]1[C@]2([C@@H](OC(=O)[C])OC(=O)[C])C[C@@H]([C@H](OC(=O)[C])[C@@H]1OC(=O)[C])[C@@H]2OC(=O)[C]")
+    if not mol.HasSubstructMatch(dihydroagarofuran_pattern):
+        return False, "No dihydroagarofuran skeleton found"
 
-    # Check for typical substituents and modifications
-    has_acetyl_groups = any(atom.GetSmarts() == "[#6]-[#6]-[#8]-[#6]" for atom in mol.GetAtoms())
-    has_benzoyl_groups = any(atom.GetSmarts() == "[#6]-[#6]-[#8]-[#6]-[#6]" for atom in mol.GetAtoms())
-
-    # Sesquiterpenoid with dihydroagarofuran core and typical substituents/modifications
-    reason = "Contains the dihydroagarofuran core and sesquiterpenoid backbone"
-    if has_acetyl_groups:
-        reason += ", with acetyl groups"
-    if has_benzoyl_groups:
-        reason += ", with benzoyl groups"
-
-    return True, reason
+    return True, "Contains the dihydroagarofuran skeleton characteristic of dihydroagarofuran sesquiterpenoids"
