@@ -6,7 +6,6 @@ Classifies: CHEBI:36584 O-acyl-L-carnitine
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_O_acyl_L_carnitine(smiles: str):
     """
@@ -27,10 +26,10 @@ def is_O_acyl_L_carnitine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for carnitine backbone pattern (C-C-C-N-C)
-    carnitine_pattern = Chem.MolFromSmarts("[CH2][CH2][CH2][N+]([C])[C]")
+    # Look for carnitine backbone pattern ([N+]([C])([C])[C@H](CC([O-])=O))
+    carnitine_pattern = Chem.MolFromSmarts("[N+]([C])([C])[C@H](CC([O-])=O)")
     if not mol.HasSubstructMatch(carnitine_pattern):
-        return False, "No carnitine backbone found"
+        return False, "No L-carnitine backbone found"
 
     # Look for acyl group attached to oxygen (-O-C(=O)-)
     acyl_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
@@ -38,19 +37,10 @@ def is_O_acyl_L_carnitine(smiles: str):
     if len(acyl_matches) != 1:
         return False, f"Found {len(acyl_matches)} acyl groups, expected exactly 1"
 
-    # Check for L-configuration of carnitine
-    carnitine_smarts = Chem.MolFromSmarts("[C@H](CC(=O)[O-])N")
-    carnitine_match = mol.GetSubstructMatches(carnitine_smarts)
-    if not carnitine_match:
-        return False, "Carnitine backbone not in L-configuration"
+    # Check that the acyl group is attached to the carnitine backbone
+    carnitine_atoms = set(match[0] for match in mol.GetSubstructMatches(carnitine_pattern))
+    acyl_atom = acyl_matches[0][0]
+    if acyl_atom not in carnitine_atoms:
+        return False, "Acyl group not attached to carnitine backbone"
 
-    # Check for correct atom mapping
-    atom_map = {}
-    for idx in carnitine_match[0]:
-        atom_map[idx] = mol.GetAtomWithIdx(idx).GetSymbol()
-    
-    expected_map = {'C': 'C', 'C': 'C', 'C': 'N', 'N': 'C', 'O': 'O'}
-    if atom_map != expected_map:
-        return False, "Incorrect atom mapping for carnitine backbone"
-
-    return True, "Contains carnitine backbone with an acyl group attached to oxygen, L-configuration"
+    return True, "Contains L-carnitine backbone with an acyl group attached to oxygen"
