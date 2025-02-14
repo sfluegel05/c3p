@@ -27,21 +27,26 @@ def is_essential_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(carboxyl_pattern):
         return False, "No carboxylic acid group found"
 
-    # Check for multiple double bonds (C=C) in the chain
+    # Check for multiple double bonds (C=C) along the chain
     double_bond_pattern = Chem.MolFromSmarts("C=C")
     double_bonds = mol.GetSubstructMatches(double_bond_pattern)
     if len(double_bonds) < 2:
-        return False, "Too few double bonds, polyunsaturation required"
+        return False, "Too few double bonds; polyunsaturation required"
 
-    # Verify long carbon chain
+    # Verify the presence of cis configuration double bonds
+    # Look for patterns of the form C/C=C/C or C\C=C\C, indicating cis double bonds
+    cis_double_bond_pattern = Chem.MolFromSmarts("C/C=C/C")
+    cis_double_bonds = mol.GetSubstructMatches(cis_double_bond_pattern)
+    if len(cis_double_bonds) < len(double_bonds):
+        # If insufficient cis double bonds detected, verify using alternative SMARTS
+        alt_cis_double_bond_pattern = Chem.MolFromSmarts(r"C\C=C\C") 
+        alt_cis_double_bonds = mol.GetSubstructMatches(alt_cis_double_bond_pattern)
+        if len(cis_double_bonds) + len(alt_cis_double_bonds) < len(double_bonds):
+            return False, "Not enough cis double bonds for essential fatty acid"
+
+    # Verify the total number of carbon atoms
     num_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if num_carbons < 18:
         return False, "Too few carbons for essential fatty acid"
-
-    # Check for cis double bonds specifically
-    cis_double_bond_pattern = Chem.MolFromSmarts(r"[/\\]C=C[/\\]")
-    cis_double_bond_matches = mol.GetSubstructMatches(cis_double_bond_pattern)
-    if len(cis_double_bond_matches) < len(double_bonds):
-        return False, "Not enough cis double bonds for essential fatty acid"
 
     return True, "Contains carboxylic acid and sufficient cis double bonds for essential fatty acid"
