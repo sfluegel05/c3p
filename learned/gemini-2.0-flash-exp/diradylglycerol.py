@@ -25,60 +25,32 @@ def is_diradylglycerol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define glycerol backbone atoms explicitly to control the attachment points
+    # Define glycerol backbone pattern
     glycerol_pattern = Chem.MolFromSmarts("[CH2X4]([OX2])[CHX4]([OX2])[CH2X4]([OX2])")
     glycerol_match = mol.GetSubstructMatch(glycerol_pattern)
     if not glycerol_match:
         return False, "No glycerol backbone found"
-    
+
     glycerol_atoms = glycerol_match
 
-    # Find attachments to glycerol carbons via ester, ether or enol ether
+    # Count attachments
     attachment_points = 0
-    
-    # Ester attachment
+
+    # Ester attachment pattern, explicitly attached to glycerol carbon
     ester_attach_pattern = Chem.MolFromSmarts("[CH2X4;!H0,CHX4;!H0]-[OX2][CX3](=[OX1])")
-    ester_matches = []
-    for atom_idx in glycerol_atoms:
-        carbon_atom = mol.GetAtomWithIdx(atom_idx)
-        for neighbor in carbon_atom.GetNeighbors():
-            if neighbor.GetSymbol() == 'O':
-                bond = mol.GetBondBetweenAtoms(carbon_atom.GetIdx(), neighbor.GetIdx())
-                if bond.GetBondType() == Chem.BondType.SINGLE:
-                    submol = Chem.FragmentOnBonds(mol,[bond.GetIdx()],addDummies=False)
-                    if submol and submol[0]:
-                        if submol[0].HasSubstructMatch(Chem.MolFromSmarts("[OX2][CX3](=[OX1])")):
-                             ester_matches.append(submol[0].GetSubstructMatches(Chem.MolFromSmarts("[OX2][CX3](=[OX1])")))
+    ester_matches = mol.GetSubstructMatches(ester_attach_pattern)
+    attachment_points += len(ester_matches)
 
-    #Ether attachment (alkyl)
+
+    # Ether attachment (alkyl) pattern, explicitly attached to glycerol carbon
     ether_attach_pattern = Chem.MolFromSmarts("[CH2X4;!H0,CHX4;!H0]-[OX2][CX4]")
-    ether_matches = []
-    for atom_idx in glycerol_atoms:
-        carbon_atom = mol.GetAtomWithIdx(atom_idx)
-        for neighbor in carbon_atom.GetNeighbors():
-            if neighbor.GetSymbol() == 'O':
-                bond = mol.GetBondBetweenAtoms(carbon_atom.GetIdx(), neighbor.GetIdx())
-                if bond.GetBondType() == Chem.BondType.SINGLE:
-                   submol = Chem.FragmentOnBonds(mol,[bond.GetIdx()],addDummies=False)
-                   if submol and submol[0]:
-                        if submol[0].HasSubstructMatch(Chem.MolFromSmarts("[OX2][CX4]")):
-                             ether_matches.append(submol[0].GetSubstructMatches(Chem.MolFromSmarts("[OX2][CX4]")))
+    ether_matches = mol.GetSubstructMatches(ether_attach_pattern)
+    attachment_points += len(ether_matches)
 
-
-    #Enol ether attachment (alk-1-enyl)
+    # Enol ether attachment (alk-1-enyl), explicitly attached to glycerol carbon
     enol_ether_attach_pattern = Chem.MolFromSmarts("[CH2X4;!H0,CHX4;!H0]-[OX2][CX3]=[CX3]")
-    enol_ether_matches = []
-    for atom_idx in glycerol_atoms:
-        carbon_atom = mol.GetAtomWithIdx(atom_idx)
-        for neighbor in carbon_atom.GetNeighbors():
-             if neighbor.GetSymbol() == 'O':
-                bond = mol.GetBondBetweenAtoms(carbon_atom.GetIdx(), neighbor.GetIdx())
-                if bond.GetBondType() == Chem.BondType.SINGLE:
-                     submol = Chem.FragmentOnBonds(mol,[bond.GetIdx()],addDummies=False)
-                     if submol and submol[0]:
-                         if submol[0].HasSubstructMatch(Chem.MolFromSmarts("[OX2][CX3]=[CX3]")):
-                             enol_ether_matches.append(submol[0].GetSubstructMatches(Chem.MolFromSmarts("[OX2][CX3]=[CX3]")))
-    attachment_points = len(ester_matches) + len(ether_matches) + len(enol_ether_matches)
+    enol_ether_matches = mol.GetSubstructMatches(enol_ether_attach_pattern)
+    attachment_points += len(enol_ether_matches)
 
     if attachment_points != 2:
          return False, f"Found {attachment_points} substituents, need exactly 2"
