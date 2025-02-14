@@ -27,8 +27,8 @@ def is_N_acylsphinganine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for sphinganine backbone pattern (C-C-C-N-C-C-O)
-    sphinganine_pattern = Chem.MolFromSmarts("[NH1X3,NH2X2,NH1X3+]-[CH2X4]-[CH1X4]-[CH2X4]-[CH2X4]-[CH2X4]-[OX2H1]")
+    # Look for sphinganine backbone pattern (C-C-N-C-C-O)
+    sphinganine_pattern = Chem.MolFromSmarts("[NH1X3,NH2X2,NH1X3+]-[CH2X4]-[CH1X4]-[CH2X4]-[CH2X4]-[OX2H1]")
     if not mol.HasSubstructMatch(sphinganine_pattern):
         return False, "No sphinganine backbone found"
 
