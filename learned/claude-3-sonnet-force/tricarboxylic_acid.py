@@ -1,30 +1,61 @@
 """
 Classifies: CHEBI:27093 tricarboxylic acid
 """
-After analyzing the previous code and the provided outcomes, I have identified a few potential issues and areas for improvement:
+"""
+Classifies: CHEBI:51856 tricarboxylic acid
+"An oxoacid containing three carboxy groups"
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
 
-1. **False Positives**: The program is classifying some molecules as tricarboxylic acids when they should not be classified as such. This could be due to the current criteria being too broad or not accounting for specific cases.
+def is_tricarboxylic_acid(smiles: str):
+    """
+    Determines if a molecule is a tricarboxylic acid based on its SMILES string.
+    A tricarboxylic acid is an oxoacid containing three carboxy groups.
 
-2. **False Negatives**: The program is missing some molecules that should be classified as tricarboxylic acids. This could be due to the current criteria being too strict or not capturing all relevant structural patterns.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Handling Charges and Counterions**: The program does not seem to handle charged species and counterions correctly. Some of the false positives and false negatives involve charged molecules or counterions (e.g., `[Na+]`, `[NH4+]`, `[O-]`). These need to be handled appropriately.
-
-4. **Additional Structural Patterns**: While the current program checks for the presence of three carboxy groups and an oxo group, it may need to consider additional structural patterns or constraints to improve accuracy.
-
-5. **Molecular Weight or Size Constraints**: Tricarboxylic acids are typically small to medium-sized molecules. Introducing molecular weight or size constraints could help filter out larger molecules that may be falsely classified as tricarboxylic acids.
-
-To improve the program, here are some potential steps:
-
-1. **Preprocess Charged Species and Counterions**: Before checking for structural patterns, the program could remove counterions and neutralize charged species. This can be done using RDKit's `RemoveHs` and `Uncharger` functions.
-
-2. **Refine Structural Pattern Matching**: The current pattern matching for carboxy groups (`[CX3](=O)[OX1]`) and oxo groups (`C=O`) could be refined to account for specific situations where these patterns may not accurately identify tricarboxylic acids.
-
-3. **Introduce Additional Structural Constraints**: Explore additional structural constraints that can help distinguish tricarboxylic acids from other molecules. For example, checking the connectivity of the carboxy groups or the presence of specific substructures.
-
-4. **Implement Molecular Weight or Size Constraints**: Set reasonable molecular weight or size limits for tricarboxylic acids and filter out molecules that fall outside these limits.
-
-5. **Handle Exceptions and Outliers**: Identify and handle any exceptions or outliers in the data. If there are consistent misclassifications that align with the chemical definition of tricarboxylic acids, consider adjusting the program accordingly or ignoring those outliers with appropriate reasoning.
-
-6. **Expand Test Cases and Refine the Program Iteratively**: Continuously expand the test cases and refine the program based on the outcomes, iteratively improving its accuracy and robustness.
-
-It's important to note that while the provided benchmark may contain errors, it serves as a valuable starting point for identifying potential issues and areas for improvement. By combining your chemical knowledge with iterative refinement, the program's accuracy can be enhanced to better align with the chemical definition of tricarboxylic acids.
+    Returns:
+        bool: True if molecule is a tricarboxylic acid, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Remove counterions and neutralize charges
+    mol = AllChem.RemoveHs(mol, implicitOnly=True, updateExplicitCount=True)
+    AllChem.Uncharger(mol)
+    
+    # Look for 3 carboxy groups (-C(=O)O-)
+    carboxy_pattern = Chem.MolFromSmarts("[CX3](=O)[OX1]")
+    carboxy_matches = mol.GetSubstructMatches(carboxy_pattern)
+    if len(carboxy_matches) != 3:
+        return False, f"Found {len(carboxy_matches)} carboxy groups, need exactly 3"
+    
+    # Look for oxo group (C=O)
+    oxo_pattern = Chem.MolFromSmarts("C=O")
+    oxo_match = mol.HasSubstructMatch(oxo_pattern)
+    if not oxo_match:
+        return False, "No oxo group found"
+    
+    # Check connectivity of carboxy groups
+    carboxy_atoms = set([atom.GetIdx() for match in carboxy_matches for atom in match])
+    connected_carboxy_atoms = set()
+    for atom_idx in carboxy_atoms:
+        atom = mol.GetAtomWithIdx(atom_idx)
+        connected_atoms = [mol.GetAtomWithIdx(neighbor_idx).GetIdx() for neighbor_idx in atom.GetNeighbors()]
+        connected_carboxy_atoms.update(connected_atoms)
+    
+    if len(connected_carboxy_atoms & carboxy_atoms) < 3:
+        return False, "Carboxy groups not connected to the same core"
+    
+    # Check molecular weight
+    mol_wt = Chem.rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 100 or mol_wt > 500:
+        return False, "Molecular weight outside typical range for tricarboxylic acids"
+    
+    return True, "Molecule contains three carboxy groups and an oxo group, with carboxy groups connected to the same core"
