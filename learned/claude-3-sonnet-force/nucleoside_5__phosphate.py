@@ -8,7 +8,7 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
-def is_nucleoside_5_phosphate(smiles: str):
+def is_nucleoside_5__phosphate(smiles: str):
     """
     Determines if a molecule is a nucleoside 5'-phosphate based on its SMILES string.
     A nucleoside 5'-phosphate is a ribosyl or deoxyribosyl derivative of a pyrimidine or purine base
@@ -34,34 +34,30 @@ def is_nucleoside_5_phosphate(smiles: str):
         return False, "No purine or pyrimidine base found"
     
     # Look for ribose/deoxyribose ring
-    ribose_pattern = Chem.MolFromSmarts("[OX2]C1C(C(C(O[CX4H2]([OX2H0])(=[OX1])O)O1)O)O") # Ribose
-    deoxyribose_pattern = Chem.MolFromSmarts("[OX2]C1C(C(C(O[CX4H2]([OX2H0])(=[OX1])O)O1)O)N") # Deoxyribose
+    ribose_pattern = Chem.MolFromSmarts("[OX2]C1C(C(C(O[CX4H2]([OX2H0P](=O)(O)O)O1)O)O)O") # Ribose with phosphate
+    deoxyribose_pattern = Chem.MolFromSmarts("[OX2]C1C(C(C(O[CX4H2]([OX2H0P](=O)(O)O)O1)O)N)") # Deoxyribose with phosphate
     if not (mol.HasSubstructMatch(ribose_pattern) or mol.HasSubstructMatch(deoxyribose_pattern)):
-        return False, "No ribose or deoxyribose ring found"
+        return False, "No ribose or deoxyribose ring with phosphate found"
     
-    # Look for phosphate group(s) attached to C-5 of ribose ring
-    phosphate_pattern = Chem.MolFromSmarts("[OX2H0]P(=[OX1])(O)(O)")
+    # Check for additional phosphate groups (di-, tri-, tetra-phosphorylation)
+    phosphate_pattern = Chem.MolFromSmarts("[OX2H0P](=O)(O)O")
     phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
-    if not phosphate_matches:
-        return False, "No phosphate group found"
+    if len(phosphate_matches) > 4:
+        return False, "More than 4 phosphate groups found"
     
-    # Check if phosphate group is attached to C-5 of ribose ring
-    for match in phosphate_matches:
-        ribose_atoms = mol.GetAtoms()[match[0]].GetNeighbors()
-        for atom in ribose_atoms:
-            if atom.GetAtomicNum() == 8 and atom.HasBondWithOrder(6, 1):
-                ribose_atoms = atom.GetNeighbors()
-                for ribose_atom in ribose_atoms:
-                    if ribose_atom.GetAtomicNum() == 8 and ribose_atom.HasBondWithOrder(6, 1):
-                        ribose_atoms = ribose_atom.GetNeighbors()
-                        for ribose_atom in ribose_atoms:
-                            if ribose_atom.GetAtomicNum() == 8 and ribose_atom.HasBondWithOrder(6, 1):
-                                ribose_atoms = ribose_atom.GetNeighbors()
-                                for ribose_atom in ribose_atoms:
-                                    if ribose_atom.GetAtomicNum() == 8 and ribose_atom.HasBondWithOrder(6, 1):
-                                        ribose_atoms = ribose_atom.GetNeighbors()
-                                        for ribose_atom in ribose_atoms:
-                                            if ribose_atom.GetAtomicNum() == 6 and ribose_atom.GetDegree() == 4:
-                                                return True, "Molecule contains a purine or pyrimidine base attached to a ribose or deoxyribose ring with a phosphate group at C-5"
+    # Check molecular weight range
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 300 or mol_wt > 1000:
+        return False, "Molecular weight outside expected range for nucleoside 5'-phosphate"
     
-    return False, "Phosphate group not attached to C-5 of ribose ring"
+    # Check atom counts
+    n_atoms = mol.GetNumAtoms()
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
+    
+    if n_atoms < 20 or c_count < 10 or n_count < 5 or o_count < 5 or p_count < 1:
+        return False, "Atom counts outside expected ranges for nucleoside 5'-phosphate"
+    
+    return True, "Molecule contains a purine or pyrimidine base attached to a ribose or deoxyribose ring with mono-, di-, tri- or tetra-phosphorylation at C-5"
