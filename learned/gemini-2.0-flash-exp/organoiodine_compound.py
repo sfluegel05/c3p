@@ -21,7 +21,8 @@ def is_organoiodine_compound(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define the carbon-iodine bond pattern
-    carbon_iodine_pattern = Chem.MolFromSmarts("[C]-I")
+    # ~ means any bond type
+    carbon_iodine_pattern = Chem.MolFromSmarts("[C]~[I]")
 
     # Check if the molecule has a carbon-iodine bond
     if mol.HasSubstructMatch(carbon_iodine_pattern):
