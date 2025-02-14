@@ -24,9 +24,9 @@ def is_aldoxime(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define the aldoxime SMARTS pattern
-    # [CH]=N[OH] matches a carbon with one hydrogen double-bonded to nitrogen,
+    # [C;H1;!a]=N[OH] matches a non-aromatic carbon with one hydrogen double-bonded to nitrogen,
     # which is single-bonded to an oxygen with one hydrogen (hydroxyl group)
-    aldoxime_pattern = Chem.MolFromSmarts('[CH]=N[OH]')
+    aldoxime_pattern = Chem.MolFromSmarts('[C;H1;!a]=N[OH]')
 
     # Search for the aldoxime pattern in the molecule
     if mol.HasSubstructMatch(aldoxime_pattern):
