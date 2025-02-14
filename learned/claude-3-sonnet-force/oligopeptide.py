@@ -6,7 +6,6 @@ Classifies: CHEBI:32988 oligopeptide
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import PeptideDrawing
 
 def is_oligopeptide(smiles: str):
     """
@@ -26,14 +25,21 @@ def is_oligopeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check if molecule is a peptide
-    peptide = PeptideDrawing.DetectPeptide(mol)
-    if not peptide:
+    # Check for peptide bonds (-C(=O)-N-)
+    peptide_bond_pattern = Chem.MolFromSmarts("C(=O)NC")
+    peptide_bonds = mol.GetSubstructMatches(peptide_bond_pattern)
+
+    # If no peptide bonds, it's not a peptide
+    if not peptide_bonds:
         return False, "Not a peptide"
 
-    # Count number of amino acid residues
-    residues = PeptideDrawing.DetectPeptideResidues(mol)
-    n_residues = len(residues)
+    # Count amino acid residues
+    amino_acid_pattern = Chem.MolFromSmarts("[NX3H2,NX4H3+][C@H](N)C(=O)"
+                                              "|"
+                                              "[NX3H0,NX4H+0]([C@@H](C(=O))"
+                                              "[C@@H](N)C(=O))[C@@H](N)C(=O)")
+    amino_acid_matches = mol.GetSubstructMatches(amino_acid_pattern)
+    n_residues = len(amino_acid_matches)
 
     # Oligopeptides typically have < 10 amino acids
     if n_residues < 10:
