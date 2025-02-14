@@ -5,7 +5,7 @@ Classifies: CHEBI:26125 phytosterols
 Classifies: CHEBI:18374 phytosterol
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import AllChem
 
 def is_phytosterols(smiles: str):
     """
@@ -20,54 +20,46 @@ def is_phytosterols(smiles: str):
         bool: True if molecule is a phytosterol, False otherwise
         str: Reason for classification
     """
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a general sterol core SMARTS pattern (steroid nucleus)
-    # Four fused rings: three six-membered rings and one five-membered ring
-    sterol_core_smarts = """
-    [#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1
-    -[#6]2-[#6]=[#6]-[#6]-[#6]-[#6]-2
-    -[#6]3-[#6]-[#6]-[#6]-[#6]-3
-    -[#6]4-[#6]-[#6]-[#6]-[#6]-4
-    """
-
-    sterol_core_smarts = sterol_core_smarts.replace("\n", "").replace(" ", "")
-    sterol_core = Chem.MolFromSmarts(sterol_core_smarts)
-    if sterol_core is None:
-        return False, "Error in sterol core SMARTS pattern"
+    # Steroid nucleus SMILES (cyclopentanoperhydrophenanthrene skeleton)
+    sterol_core_smiles = "C1CCC2C(C1)CCC3C2CCC4C3CCCC4"
+    sterol_core = Chem.MolFromSmiles(sterol_core_smiles)
 
     # Check if molecule contains sterol core
     if not mol.HasSubstructMatch(sterol_core):
         return False, "Steroid nucleus not found"
 
-    # Check for hydroxyl group at position 3
-    # Position 3 is adjacent to ring A of the steroid nucleus
-    hydroxyl_smarts = "[#6R1]-[#6R1]-[#6R1]([#8H])"  # Simplified pattern for C-C-C(OH)
-    hydroxyl_group = Chem.MolFromSmarts(hydroxyl_smarts)
-    if not mol.HasSubstructMatch(hydroxyl_group):
-        return False, "No hydroxyl group at position 3"
+    # Optional: Exclude cholesterol by checking the side chain at position 17
+    # Phytosterols have variations in the side chain compared to cholesterol
+    # We can check the substituent at C17 (the carbon attached to ring D)
 
-    # Optional: Check that variations are only in side chains and double bonds
-    # Generate the steroid core of the molecule
-    mol_core = Chem.DeleteSubstructs(mol, Chem.MolFromSmarts("[!R]"))
-    mol_core = Chem.RemoveHs(mol_core)
+    # Get the atom index of C17 in the sterol core
+    match = mol.GetSubstructMatch(sterol_core)
+    if not match:
+        return False, "Steroid nucleus not found"
+    c17_index = match[16]  # Indexing starts from 0
 
-    # Generate the steroid core of cholesterol for comparison
-    cholesterol_smiles = 'C[C@H](CCCC(C)C)C1CCC2C1(C)CC=C3C2CCC4[C@@H](O)CC[C@]34C'
-    cholesterol_mol = Chem.MolFromSmiles(cholesterol_smiles)
-    cholesterol_core = Chem.DeleteSubstructs(cholesterol_mol, Chem.MolFromSmarts("[!R]"))
-    cholesterol_core = Chem.RemoveHs(cholesterol_core)
+    # Get the substituents attached to C17
+    c17_atom = mol.GetAtomWithIdx(c17_index)
+    neighbors = c17_atom.GetNeighbors()
+    side_chain_atoms = [atom for atom in neighbors if atom.GetIdx() not in match]
 
-    # Compare cores using RDKit's Isomorphism
-    from rdkit.Chem import rdFMCS
-    res = rdFMCS.FindMCS([mol_core, cholesterol_core], ringMatchesRingOnly=True,
-                         completeRingsOnly=True, matchChiralTag=False)
+    # Check if there is a side chain attached to C17
+    if not side_chain_atoms:
+        return False, "No side chain attached at position C17"
 
-    if res.numAtoms < 17:  # Steroid nucleus has 17 carbon atoms
-        return False, "Core structure differs significantly from cholesterol"
+    # Optionally, check the size of the side chain (phytosterols typically have longer side chains)
+    side_chain_atom = side_chain_atoms[0]  # Assuming one side chain
+    side_chain_frag = Chem.PathToSubmol(mol, Chem.rdmolops.GetShortestPath(mol, c17_index, side_chain_atom.GetIdx()))
+    side_chain_mw = Chem.Descriptors.ExactMolWt(side_chain_frag)
 
-    # If all checks pass, classify as phytosterol
-    return True, "Molecule contains steroid nucleus and matches phytosterol criteria"
+    # If needed, set a threshold for side chain molecular weight
+    if side_chain_mw < 40:
+        return False, "Side chain at C17 is too small for phytosterol"
+
+    return True, "Molecule contains steroid nucleus characteristic of phytosterols"
