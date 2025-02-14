@@ -20,14 +20,18 @@ def is_dipeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Dipeptide pattern: two amino acids connected by one peptide bond.
-    dipeptide_pattern = Chem.MolFromSmarts("[NX3][CX4][CX3](=[OX1])N[CX4][CX3](=[OX1])[OX2]")
+    # Relaxed peptide bond pattern:
+    peptide_bond_pattern = Chem.MolFromSmarts("[CX3](=[OX1])N[X]")
     
-    if not mol.HasSubstructMatch(dipeptide_pattern):
-        return False, "Molecule does not contain the dipeptide substructure (two amino acids connected by peptide bond)"
+    if not mol.HasSubstructMatch(peptide_bond_pattern):
+        return False, "Molecule does not contain a peptide bond"
 
-    matches = mol.GetSubstructMatches(dipeptide_pattern)
-    if len(matches) != 1:
-        return False, f"Molecule has {len(matches)} dipeptide substructures, should have exactly 1."
+    # Amino acid substructure
+    amino_acid_pattern = Chem.MolFromSmarts("[NX3;H2,H1;!$(N*~[C,N,O,S])]C([CX4])(=O)[OX2]")
+
+    amino_acid_matches = mol.GetSubstructMatches(amino_acid_pattern)
+
+    if len(amino_acid_matches) != 2:
+         return False, f"Molecule contains {len(amino_acid_matches)} amino-acid residues, should be exactly 2"
 
     return True, "Contains two amino acid residues connected by a single peptide bond"
