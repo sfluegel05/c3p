@@ -26,21 +26,16 @@ def is_aldopentose(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for aldehyde group (both [CH]=O and C=O forms)
-    aldehyde_pattern = Chem.MolFromSmarts("[CH]=O,C=O")
-    has_aldehyde = mol.HasSubstructMatch(aldehyde_pattern)
+    # Check for aldehyde or alcohol group at one end
+    end_group_pattern = Chem.MolFromSmarts("[CH2O,CH2C=O]")
+    has_end_group = mol.HasSubstructMatch(end_group_pattern)
     
     # Check for pentose backbone (5 carbons with 4 oxygens attached)
-    pentose_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CHX4][CHX4][CHX3]")
+    pentose_pattern = Chem.MolFromSmarts("[CR2][OR2][CR2][OR2][CR2][OR2][CR2][CR2]")
     has_pentose_backbone = mol.HasSubstructMatch(pentose_pattern)
     
-    # Check for 4 hydroxyl groups
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    has_4_hydroxyls = len(hydroxyl_matches) == 4
-    
-    # Classify as aldopentose if it has an aldehyde group, a pentose backbone, and 4 hydroxyl groups
-    if has_aldehyde and has_pentose_backbone and has_4_hydroxyls:
-        return True, "Contains a pentose backbone with an aldehyde group and 4 hydroxyl groups"
+    # Classify as aldopentose if it has an aldehyde/alcohol group at one end and a pentose backbone
+    if has_end_group and has_pentose_backbone:
+        return True, "Contains a pentose backbone with an aldehyde or alcohol group at one end"
     else:
         return False, "Does not meet the criteria for an aldopentose"
