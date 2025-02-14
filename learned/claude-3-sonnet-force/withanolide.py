@@ -11,7 +11,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_withanolide(smiles: str):
     """
     Determines if a molecule is a withanolide based on its SMILES string.
-    A withanolide is a C28 steroid with a modified side chain forming a lactone ring.
+    A withanolide is a C28 steroid lactone with a modified side chain forming a lactone ring and its substituted derivatives.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,10 +26,12 @@ def is_withanolide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for steroid skeleton (4 fused rings)
+    # Check for steroid skeleton (4 fused rings with specific ring sizes)
     ring_info = mol.GetRingInfo()
-    if len(ring_info.AtomRings()) < 4:
-        return False, "Does not contain steroid skeleton (4 fused rings)"
+    ring_sizes = [len(ring) for ring in ring_info.AtomRings()]
+    steroid_ring_sizes = [5, 6, 6, 6]
+    if set(ring_sizes) != set(steroid_ring_sizes):
+        return False, "Does not contain steroid skeleton (4 fused rings with specific ring sizes)"
 
     # Check for lactone ring
     lactone_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
@@ -47,5 +49,15 @@ def is_withanolide(smiles: str):
     if len(alkyl_chain_matches) > 1:
         return False, "Contains simple alkyl side chain, not modified"
 
+    # Check for lactone ring formed by the side chain
+    side_chain_lactone_pattern = Chem.MolFromSmarts("[OX2]~[CX3](=[OX1])~[CX3]~[CX3]~[CX3]")
+    if not mol.HasSubstructMatch(side_chain_lactone_pattern):
+        return False, "Lactone ring not formed by the side chain"
+
+    # Check for presence of substituents on the steroid core
+    substituents_pattern = Chem.MolFromSmarts("[CX3]~[OX2]")
+    if not mol.HasSubstructMatch(substituents_pattern):
+        return False, "No substituents on the steroid core"
+
     # Passed all tests, classify as withanolide
-    return True, "Contains steroid skeleton with modified side chain forming lactone ring"
+    return True, "Contains steroid skeleton with modified side chain forming lactone ring and its substituted derivatives"
