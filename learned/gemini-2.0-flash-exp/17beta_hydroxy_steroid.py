@@ -20,39 +20,37 @@ def is_17beta_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for the steroid core (more flexible)
-    # using atom mapping to identify position C17, labeled as 17
-    steroid_core_pattern = Chem.MolFromSmarts("[C:1]12[C:2]([C:3][C:4]([C:1])([C:5]([C:6]([C:7]([C:2])[C:8]([C:3])C)CC[C:4])C)C")
+    # SMARTS pattern for the steroid core, improved to be less strict
+    steroid_core_pattern = Chem.MolFromSmarts("[C:1]1[C:2][C:3][C:4]2[C:5][C:6]([C:1])([C:7][C:8]([C:2])C)C[C:3][C:4]C")
+
     match = mol.GetSubstructMatch(steroid_core_pattern)
     if not match:
         return False, "Molecule does not have the basic steroid core structure."
 
     # Get the C17 atom
-    c17_idx = match[7]
-    c17_atom = mol.GetAtomWithIdx(c17_idx)
-    
-    # Check for exactly one hydroxyl neighbor on C17
-    oh_count = 0
-    oxygen_neighbor = None
-    for nbr in c17_atom.GetNeighbors():
-      if nbr.GetAtomicNum() == 8:
-        oh_count += 1
-        oxygen_neighbor = nbr
+    c17_idx = match[7] #Index 7 in the match array corresponds to the C17 atom
 
-    if oh_count != 1:
-        return False, "C17 does not have exactly one hydroxyl group"
+    # SMARTS pattern for beta-hydroxyl at C17 (explicit H)
+    beta_oh_pattern_with_H = Chem.MolFromSmarts("[C@]([C])([C])[OH]")
+
+    # SMARTS pattern for beta-hydroxyl at C17 (implicit H)
+    beta_oh_pattern_no_H = Chem.MolFromSmarts("[C@]([C])([C])O")
+
+    # Check for match to either of the patterns
+    match_with_H = mol.GetSubstructMatch(beta_oh_pattern_with_H)
+    match_no_H = mol.GetSubstructMatch(beta_oh_pattern_no_H)
     
-    # Check the stereochemistry of the C17 atom
-    if c17_atom.HasProp('_CIPCode'):
-        stereo = c17_atom.GetProp('_CIPCode')
-    elif c17_atom.HasProp('_Chirality'):
-        stereo = c17_atom.GetProp('_Chirality')
-    else:
-        return False, "C17 has no stereochemistry defined."
-        
-    # Check if the stereochemistry of carbon is R
-    if stereo != "R":
-      return False, "The hydroxyl group at position 17 is not beta-configured"
-    
+    c17_match = None
+    if match_with_H:
+        for idx in match_with_H:
+            if idx == c17_idx:
+              c17_match = True
+    if match_no_H:
+        for idx in match_no_H:
+           if idx == c17_idx:
+              c17_match = True
+
+    if not c17_match:
+        return False, "Hydroxyl group at position 17 is not beta-configured"
     
     return True, "Molecule contains a steroid core with a beta-hydroxy group at position 17."
