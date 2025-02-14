@@ -11,7 +11,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_3_hydroxy_fatty_acid(smiles: str):
     """
     Determines if a molecule is a 3-hydroxy fatty acid based on its SMILES string.
-    A 3-hydroxy fatty acid is a fatty acid with a hydroxy group at the 3rd carbon.
+    A 3-hydroxy fatty acid is any fatty acid with a hydroxy functional group in the beta- or 3-position.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -28,7 +28,8 @@ def is_3_hydroxy_fatty_acid(smiles: str):
     
     # Check for carboxylic acid group
     carboxylic_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
-    if not mol.HasSubstructMatch(carboxylic_pattern):
+    carboxylic_matches = mol.GetSubstructMatches(carboxylic_pattern)
+    if len(carboxylic_matches) < 1:
         return False, "No carboxylic acid group found"
     
     # Check for long carbon chain (fatty acid)
@@ -37,15 +38,10 @@ def is_3_hydroxy_fatty_acid(smiles: str):
     if len(fatty_acid_matches) < 1:
         return False, "No long carbon chain found"
     
-    # Look for hydroxyl group at 3rd carbon from carboxylic acid
-    hydroxy_pattern = Chem.MolFromSmarts("[CX4]([CX3]([OX2H1])[CX3](=O)[OX2H0])[CX4,CX3]")
+    # Look for hydroxyl group at 2nd or 3rd carbon from carboxylic acid
+    hydroxy_pattern = Chem.MolFromSmarts("[CX4]([CX3]([OX2H1])[CX3]([CX3]([CX3](=O)[OX2H0]))[CX4,CX3])")
     hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
-    if len(hydroxy_matches) != 1:
-        return False, "No hydroxyl group at 3rd carbon found"
+    if len(hydroxy_matches) < 1:
+        return False, "No hydroxyl group at 2nd or 3rd carbon found"
     
-    return True, "Contains a carboxylic acid group and a hydroxyl group at the 3rd carbon"
-
-# Example usage
-smiles = "CCCCCCCCCCCCCCCCCCCCCCC[C@H](O)CC(O)=O"
-is_3hydroxy, reason = is_3_hydroxy_fatty_acid(smiles)
-print(is_3hydroxy, reason)
+    return True, "Contains a carboxylic acid group and a hydroxyl group in the beta- or 3-position"
