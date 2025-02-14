@@ -27,21 +27,25 @@ def is_polymer(smiles: str):
     if len(smiles_parts) > 1:
         is_polymer_mixture = False
         for part in smiles_parts:
-            mol = Chem.MolFromSmiles(part)
-            if mol is None:
-                return False, "Invalid SMILES string"
-            mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-            num_rotatable_bonds = rdMolDescriptors.CalcNumRotatableBonds(mol)
-            if mol_wt > 800 and num_rotatable_bonds > 20:  # Higher threshold for mixtures
-                is_polymer_mixture = True
-                break
-            chain_pattern = Chem.MolFromSmarts("[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]") # 10 carbon chain
-            if mol.HasSubstructMatch(chain_pattern) and mol_wt > 400 :
+             mol = Chem.MolFromSmiles(part)
+             if mol is None:
+                 return False, "Invalid SMILES string"
+             mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+             num_rotatable_bonds = rdMolDescriptors.CalcNumRotatableBonds(mol)
+             if mol_wt > 500 and num_rotatable_bonds > 15:
+                  chain_pattern = Chem.MolFromSmarts("[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]") # 8 carbon chain
+                  if mol.HasSubstructMatch(chain_pattern):
+                    is_polymer_mixture = True
+                    break
+             # Check for repeating isoprene units
+             isoprene_pattern = Chem.MolFromSmarts("CC(C)=CC")
+             if mol.HasSubstructMatch(isoprene_pattern) and mol_wt > 300 and num_rotatable_bonds > 10:
                  is_polymer_mixture = True
                  break
         if is_polymer_mixture:
-            return True, "Mixture containing large molecule with repeating units or long chains, potentially a polymer"
+             return True, "Mixture containing large molecule with repeating units or long chains, potentially a polymer"
         return False, "Mixture of small molecules, not a polymer"
+
 
 
     # Parse SMILES
@@ -54,13 +58,18 @@ def is_polymer(smiles: str):
     num_rotatable_bonds = rdMolDescriptors.CalcNumRotatableBonds(mol)
 
     # Check for long chains with high molecular weight and rotatable bonds
-    if mol_wt > 800 and num_rotatable_bonds > 20:
+    if mol_wt > 1000 and num_rotatable_bonds > 30:
         return True, "High molecular weight and long chain, likely a polymer"
-
+        
     # Check for repeating patterns
-    chain_pattern = Chem.MolFromSmarts("[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]") # 10 carbon chain
-    if mol.HasSubstructMatch(chain_pattern) and mol_wt > 400:
+    chain_pattern = Chem.MolFromSmarts("[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]") # 8 carbon chain
+    if mol.HasSubstructMatch(chain_pattern) and mol_wt > 500:
         return True, "Contains long carbon chain, likely a polymer"
+
+    # Check for repeating isoprene units
+    isoprene_pattern = Chem.MolFromSmarts("CC(C)=CC")
+    if mol.HasSubstructMatch(isoprene_pattern) and mol_wt > 300 and num_rotatable_bonds > 10 :
+            return True, "Contains repeating isoprene units, likely a polymer"
 
     # Check for phosphate, sulfate, carboxylate and other potential functional groups
     phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)(O)")
@@ -80,11 +89,16 @@ def is_polymer(smiles: str):
 
     if (num_phosphates + num_sulfates + num_carboxylates) > 2 and mol_wt > 500: #biopolymers
         return True, "Contains multiple phosphate, sulfate, or carboxylate groups, likely a biopolymer"
-    if (num_amides > 2 or num_ethers > 4 or num_esters > 4) and mol_wt > 500:
+    if (num_amides > 4 or num_ethers > 5 or num_esters > 5) and mol_wt > 500:
       return True, "Contains multiple amides, ethers, or esters, potentially a polymer"
+
     # Check for explicit "poly" in the name.
     name = Chem.MolToInchiKey(mol)
     if name is not None and 'poly' in name.lower():
        return True, "Name contains poly prefix"
     
+    #Check for oligomeric structures
+    if mol_wt > 400 and num_rotatable_bonds > 10 and (num_amides > 2 or num_ethers > 2 or num_esters > 2):
+        return True, "Contains repeating or long-chain structure, potentially an oligomer"
+
     return False, "Does not meet polymer criteria"
