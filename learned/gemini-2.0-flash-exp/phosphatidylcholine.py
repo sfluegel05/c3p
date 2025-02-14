@@ -23,25 +23,20 @@ def is_phosphatidylcholine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 1. Glycerol Backbone (relaxed chirality)
-    glycerol_pattern = Chem.MolFromSmarts("[C]([O])([O])[CH2][O]")
+    # 1. Glycerol Backbone (correct stereochemistry)
+    glycerol_pattern = Chem.MolFromSmarts("[C@H]([OX2])[C]([OX2])[CH2][OX2]")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
-
-    # 2. Phosphate Group attached to glycerol
-    phosphate_pattern = Chem.MolFromSmarts("[CH2][O][P](=[O])([O])")
-    if not mol.HasSubstructMatch(phosphate_pattern):
-        return False, "No phosphate group attached to the glycerol backbone"
     
-    # 3. Choline Head Group connected to phosphate
-    choline_pattern = Chem.MolFromSmarts("[P]([O])([O])([O])OCC[N+](C)(C)C")
-    if not mol.HasSubstructMatch(choline_pattern):
-         return False, "No choline head group found"
+    # 2. Phosphate Group and Choline Head Group
+    phosphate_choline_pattern = Chem.MolFromSmarts("[CH2][O][P](=[O])([O-])OCC[N+](C)(C)C")
+    if not mol.HasSubstructMatch(phosphate_choline_pattern):
+        return False, "No phosphate and/or choline head group found"
 
-    #4. Two ester groups attached to the glycerol at positions 1 and 2 and the complete structure
-    complete_pattern = Chem.MolFromSmarts("[CH]([OX2][CX3](=[OX1]))([OX2][CX3](=[OX1]))[CH2X4][OX2][PX4](=[OX1])([OX2])OCC[N+](C)(C)C")
+    # 3. Two ester groups attached to the glycerol at positions 1 and 2 and the complete structure
+    complete_pattern = Chem.MolFromSmarts("[C@H]([OX2][CX3](=[OX1]))([OX2][CX3](=[OX1]))[CH2X4][OX2][PX4](=[OX1])([OX2-])OCC[N+](C)(C)C")
     if not mol.HasSubstructMatch(complete_pattern):
-        return False, "Ester groups are not on the 1 and 2 positions of the glycerol backbone and/or missing components"
+         return False, "Ester groups are not on the 1 and 2 positions of the glycerol backbone and/or missing components"
 
     # Check for fatty acid chains (long carbon chains attached to esters)
     fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
@@ -49,26 +44,21 @@ def is_phosphatidylcholine(smiles: str):
     if len(fatty_acid_matches) < 2:
         return False, f"Missing fatty acid chains, got {len(fatty_acid_matches)}"
 
-    # Count rotatable bonds to verify long chains
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 6:
-        return False, "Chains too short to be fatty acids"
-    
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
     p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
 
-    if c_count < 10:
+    if c_count < 8:
         return False, "Too few carbons for a phosphatidylcholine"
 
-    if o_count < 7:
-        return False, "Must have at least 7 oxygens"
+    if o_count < 6:
+        return False, "Must have at least 6 oxygens"
     
     if n_count != 1:
         return False, "Must have exactly one nitrogen (choline)"
     
     if p_count != 1:
         return False, "Must have exactly one phosphorus (phosphate)"
-
+    
     return True, "Meets all criteria for phosphatidylcholine"
