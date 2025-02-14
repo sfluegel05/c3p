@@ -23,8 +23,8 @@ def is_CDP_diacylglycerol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Identify the 1,2-diacylglycerol backbone
-    diacylglycerol_pattern = Chem.MolFromSmarts("O[C@H](COP(=O)(O)O[P](=O)(O)O)COC(=O)")
+    # Identify the glycerol backbone with 1,2-diacyl pattern
+    diacylglycerol_pattern = Chem.MolFromSmarts("O[C@H](CO[P](=O)(O)O[P](=O)(O)O)COC(=O)")
     if not mol.HasSubstructMatch(diacylglycerol_pattern):
         return False, "No 1,2-diacylglycerol backbone with CDP group at 3-position"
     
@@ -34,7 +34,7 @@ def is_CDP_diacylglycerol(smiles: str):
         return False, "No cytidine component present in structure"
     
     # Check for two acyl chains (esters typically imply this)
-    acyl_chain_pattern = Chem.MolFromSmarts("C(=O)O[C@@H]")
+    acyl_chain_pattern = Chem.MolFromSmarts("C(=O)O[C@H]")
     acyl_chain_matches = mol.GetSubstructMatches(acyl_chain_pattern)
     if len(acyl_chain_matches) < 2:
         return False, f"Less than two acyl (ester) chains found, got {len(acyl_chain_matches)}"
