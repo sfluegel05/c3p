@@ -21,26 +21,26 @@ def is_alpha_amino_acid_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for alpha carbon with amino and carboxyl/ester groups (more specific)
-    # This pattern explicitly requires the amino group and the ester group are attached to the same carbon
-    # and the ester oxygen to a carbonyl carbon
-    alpha_amino_acid_ester_pattern = Chem.MolFromSmarts("[CX4H0-1]([NX3H0-2])([CX3](=[OX1])[OX2][#6])")
-    
-    #check that the pattern is matched
-    matches = mol.GetSubstructMatches(alpha_amino_acid_ester_pattern)
+    # SMARTS pattern for alpha carbon with amino group (allowing for any other attached groups)
+    alpha_amino_pattern = Chem.MolFromSmarts("[CX4H0-2]([NX3H0-2])([CX4,CX3])") 
+    # SMARTS pattern for any ester group
+    ester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2][#6]")
+    #SMARTS pattern for carboxylic acid group
+    carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H1]")
 
-    if not matches:
-      return False, "Molecule does not contain an alpha-amino acid with an ester group"
+    #check that the patterns are matched
+    alpha_amino_matches = mol.GetSubstructMatches(alpha_amino_pattern)
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
+
+    if not alpha_amino_matches:
+        return False, "Molecule does not contain an alpha-amino acid core"
     
-    for match in matches:
-        #check if the carbon of the carboxylate has any other ester bonds attached
-        carbonyl_carbon_idx = match[2]
-        carbonyl_carbon_atom = mol.GetAtomWithIdx(carbonyl_carbon_idx)
-        
-        ester_bonds_count = 0
-        for bond in carbonyl_carbon_atom.GetBonds():
-            if bond.GetBondType() == Chem.BondType.DOUBLE and bond.GetOtherAtom(carbonyl_carbon_atom).GetAtomicNum()==8:
-                ester_bonds_count +=1
-        if ester_bonds_count != 1:
-            return False, "Carbonyl carbon should not be part of another ester"
-    return True, "Molecule contains an alpha-amino acid ester."
+    if not ester_matches:
+         return False, "Molecule does not contain an ester group"
+
+    
+    if carboxylic_acid_matches:
+        return False, "Molecule contains a free carboxylic acid, not an ester"
+
+    return True, "Molecule contains an alpha-amino acid with an ester group."
