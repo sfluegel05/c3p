@@ -26,7 +26,7 @@ def is_3_oxo_fatty_acyl_CoA_4__(smiles: str):
          return False, "Core CoA structure not found"
     
     # Check for the thioester linkage, and the adjacent carbon
-    thioester_pattern = Chem.MolFromSmarts("[CX4](=O)S")
+    thioester_pattern = Chem.MolFromSmarts("[CX3](=O)[SX2]") # Modified SMARTS to account for bond type
     if not mol.HasSubstructMatch(thioester_pattern):
         return False, "Thioester linkage not found"
     
