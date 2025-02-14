@@ -23,42 +23,33 @@ def is_lipopeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 1. Peptide backbone: Look for multiple amide bonds
-    amide_pattern = Chem.MolFromSmarts("[CX3](=[OX1])N") # C=O-N
-    amide_matches = mol.GetSubstructMatches(amide_pattern)
+    # 1. Peptide backbone: Look for repeating N-C-C(=O) pattern
+    peptide_pattern = Chem.MolFromSmarts("[NX3][CX4][CX4](=[OX1])")
+    peptide_matches = mol.GetSubstructMatches(peptide_pattern)
+    if len(peptide_matches) < 2:
+       return False, "Too few peptide backbone units found"
 
-    if len(amide_matches) < 2: # Lipopeptides contain a chain at least 2 amino acids.
-        return False, "Too few amide bonds, not a peptide"
-
-    # 2. Lipid component: Look for long aliphatic chain 
-    long_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
-    chain_matches = mol.GetSubstructMatches(long_chain_pattern)
+    # 2. Lipid component: Look for a long aliphatic chain (at least 4 carbons) linked to a carbonyl
+    lipid_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    chain_matches = mol.GetSubstructMatches(lipid_chain_pattern)
     
-    if len(chain_matches) == 0:
+    if not chain_matches:
         return False, "No long aliphatic chain found"
 
-    # 3. Check for a linkage between lipid and peptide
-    #  -Check for connectivity between chain and amide
-    linked_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX3](=[OX1])N") #  C-C(=O)N 
-    linked_chain_matches = mol.GetSubstructMatches(linked_chain_pattern)
+    # 3. Check for linkage between lipid and peptide via a carbonyl
+    linked_pattern_N = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX3](=[OX1])[NX3]")
+    linked_pattern_O = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX3](=[OX1])[OX2][#6]")
+    
+    linked_matches_N = mol.GetSubstructMatches(linked_pattern_N)
+    linked_matches_O = mol.GetSubstructMatches(linked_pattern_O)
 
-    linked_O_pattern = Chem.MolFromSmarts("[CX4,CX3]~[OX2][CX3](=[OX1])") # C-O-C=O
-    linked_O_matches = mol.GetSubstructMatches(linked_O_pattern)
-    if not linked_chain_matches and not linked_O_matches:
+
+    if not linked_matches_N and not linked_matches_O:
         return False, "No connectivity between peptide and lipid"
-
+    
     # 4. Molecular weight check. Lipopeptides are larger molecules, typically.
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 400: # Lipopeptides tend to be relatively large.
+    if mol_wt < 300:
         return False, "Molecular weight too low for a lipopeptide"
 
-    # Additional check - number of carbons and oxygens
-    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if carbon_count < 15:
-         return False, "Too few carbon atoms for a lipopeptide"
-
-    if oxygen_count < 3:
-        return False, "Too few oxygen atoms for a lipopeptide"
-    
     return True, "Contains a peptide chain linked to a lipid chain"
