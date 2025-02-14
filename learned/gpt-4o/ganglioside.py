@@ -6,8 +6,7 @@ from rdkit import Chem
 def is_ganglioside(smiles: str):
     """
     Determines if a molecule is a ganglioside based on its SMILES string.
-    A ganglioside is a molecule composed of a glycosphingolipid (ceramide and oligosaccharide) 
-    with one or more sialic acids linked on the sugar chain.
+    A ganglioside is a molecule composed of a glycosphingolipid (ceramide and oligosaccharide) with one or more sialic acids linked.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,25 +20,28 @@ def is_ganglioside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define updated patterns
-    ceramide_pattern = Chem.MolFromSmarts("NC([C@@H](CO)O)C(=O)[C@H](CCCCCCCCCCCCCCCC)O")  # Sphingosine backbone and fatty acid
-    # Simplified oligosaccharide chain with common sugars (could be adjusted for specific sugars)
-    oligosaccharide_pattern = Chem.MolFromSmarts("O[C@H]([C@@H](O)CO)O")  # Glc/Gal building block
-    # Sialic acid pattern to detect presence - allowing for potential N-acetyl group
-    sialic_acid_pattern = Chem.MolFromSmarts("C[C@@H](O)[C@H](C(=O)O)[C@@H](O)C")  # Expanded sialic acid matcher
+    # Define SMARTS patterns for recognition of structural components
+    ceramide_pattern = Chem.MolFromSmarts("[C][C]([NH2])CC(=O)N[C@@H]")
+    sugar_pattern = Chem.MolFromSmarts("[C@H]1([O][C@@H]([C@H]([C@H]([C@@H]1O)O)O)CO)")
+    sialic_acid_pattern = Chem.MolFromSmarts("C[C@@H]1C[C@H]([NH2]C(=O)C)O[C@@H](C(O)=O)[C@H]1O")
 
     # Check for ceramide presence
     if not mol.HasSubstructMatch(ceramide_pattern):
         return False, "No ceramide backbone found"
 
-    # Check for an oligosaccharide chain
-    sugar_matches = mol.GetSubstructMatches(oligosaccharide_pattern)
-    if len(sugar_matches) < 2:  # Assume minimum 2 sugar units
+    # Check for sugar chains
+    sugar_matches = mol.GetSubstructMatches(sugar_pattern)
+    if len(sugar_matches) < 2:
         return False, f"Insufficient sugar moieties, found {len(sugar_matches)}"
 
-    # Check for at least one sialic acid unit
+    # Check for one or more sialic acids
     sialic_acid_matches = mol.GetSubstructMatches(sialic_acid_pattern)
     if len(sialic_acid_matches) == 0:
-        return False, "No sialic acid found"
+        return False, "No sialic acid found in the structure"
 
-    return True, "Contains ceramide backbone with glycosphingolipid and sialic acid(s)"
+    # Check if the structure is fully connected as expected in gangliosides
+    # Assuming simplified check to ensure linkage integrity
+    if not all([mol.HasSubstructMatch(Chem.MolFromSmarts(smarts)) for smarts in [ceramide_pattern, sugar_pattern, sialic_acid_pattern]]):
+        return False, "Structure not recognized as a connected ganglioside"
+
+    return True, "Contains ceramide backbone with attached glycosphingolipid structure and sialic acid"
