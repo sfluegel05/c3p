@@ -28,7 +28,7 @@ def is_tocol(smiles: str):
 
     # Define chromanol core SMARTS pattern with atom mapping
     chromanol_smarts = """
-    [O:1]c1cccc([c:6]2c(O1)CCCO2)c1[cH:2][cH:3][cH:4][cH:5]c1
+    [O:1]1CC[C@:2]2(c3cc(O)ccc3OC2C1)  # Chroman-6-ol core with mapped atom at position 2
     """
     chromanol_pattern = Chem.MolFromSmarts(chromanol_smarts)
     if chromanol_pattern is None:
@@ -49,8 +49,8 @@ def is_tocol(smiles: str):
             if map_num > 0:
                 atom_map[map_num] = mol_idx
 
-        # Get position 2 atom (c:6 in SMARTS)
-        position_2_idx = atom_map.get(6)
+        # Get position 2 atom (mapped as :2 in SMARTS)
+        position_2_idx = atom_map.get(2)
         if position_2_idx is None:
             continue  # Try next match
 
@@ -60,7 +60,7 @@ def is_tocol(smiles: str):
         if not substituents:
             continue  # No substitution at position 2
 
-        # Assume the first substituent is the side chain
+        # Assume the substituent is the side chain
         side_chain_atom = substituents[0]
 
         # Use BFS to get all atoms in the side chain
@@ -86,7 +86,15 @@ def is_tocol(smiles: str):
         # Count number of carbons in side chain
         carbon_count = sum(1 for idx in side_chain_atoms if mol.GetAtomWithIdx(idx).GetAtomicNum() == 6)
         if carbon_count != 15:
-            continue  # Side chain does not have 15 carbons
+            continue  # Side chain does not have 15 carbons (three isoprenoid units)
+
+        # Identify isoprenoid pattern (three units of C5)
+        isoprene_smarts = "[C;D1]([C;D2]=[C;D2])[C;D2]([C;D2])"
+        isoprene_pattern = Chem.MolFromSmarts(isoprene_smarts)
+        side_chain_mol = Chem.PathToSubmol(mol, list(side_chain_atoms))
+        isoprene_matches = side_chain_mol.GetSubstructMatches(isoprene_pattern)
+        if len(isoprene_matches) not in [0, 3]:
+            continue  # Side chain does not have proper isoprenoid units
 
         # Count number of double bonds in side chain
         double_bond_count = 0
@@ -98,31 +106,36 @@ def is_tocol(smiles: str):
                     double_bond_count += 1
 
         if double_bond_count not in [0, 3]:
-            continue  # Side chain does not have correct number of double bonds
+            continue  # Side chain is not saturated or triply-unsaturated
 
         return True, "Molecule is a tocol with chromanol core and appropriate side chain"
 
     # If no matches result in a tocol, return False
-    return False, "Chromanol core found but side chain does not meet criteria"
+    return False, "Chromanol core or side chain does not meet criteria"
 
-__metadata__ = {   'chemical_class': {   'id': 'CHEBI:26416',
-                              'name': 'tocol',
-                              'definition': 'A chromanol with a chroman-6-ol skeleton that is substituted at position 2 by a saturated or triply-unsaturated hydrocarbon chain consisting of three isoprenoid units.',
-                              'parents': []},
-        'config': {   'llm_model_name': 'lbl/claude-sonnet',
-                      'f1_threshold': 0.8,
-                      'max_attempts': 5,
-                      'max_positive_instances': None,
-                      'max_positive_to_test': None,
-                      'max_negative_to_test': None,
-                      'max_positive_in_prompt': 50,
-                      'max_negative_in_prompt': 20,
-                      'max_instances_in_prompt': 100,
-                      'test_proportion': 0.1},
-        'message': None,
-        'attempt': 1,
-        'success': True,
-        'best': True,
-        'error': '',
-        'stdout': None
-    }
+__metadata__ = {
+    'chemical_class': {
+        'id': 'CHEBI:26416',
+        'name': 'tocol',
+        'definition': 'A chromanol with a chroman-6-ol skeleton that is substituted at position 2 by a saturated or triply-unsaturated hydrocarbon chain consisting of three isoprenoid units.',
+        'parents': []
+    },
+    'config': {
+        'llm_model_name': 'lbl/claude-sonnet',
+        'f1_threshold': 0.8,
+        'max_attempts': 5,
+        'max_positive_instances': None,
+        'max_positive_to_test': None,
+        'max_negative_to_test': None,
+        'max_positive_in_prompt': 50,
+        'max_negative_in_prompt': 20,
+        'max_instances_in_prompt': 100,
+        'test_proportion': 0.1
+    },
+    'message': None,
+    'attempt': 2,
+    'success': True,
+    'best': True,
+    'error': '',
+    'stdout': None
+}
