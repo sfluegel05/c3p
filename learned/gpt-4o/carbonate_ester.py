@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_carbonate_ester(smiles: str):
     """
     Determines if a molecule is a carbonate ester based on its SMILES string.
-    A carbonate ester has the structural motif of O=C(OX)OX, with variations possibly forming rings.
+    A carbonate ester contains the O=C(OX)OX motif, where variations may form cyclic esters.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,15 +20,21 @@ def is_carbonate_ester(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # General carbonate ester pattern includes both acyclic and cyclic features
+    
+    # Carbonate ester pattern including acyclic and cyclic forms
     carbonate_ester_patterns = [
-        Chem.MolFromSmarts("O=C(O[*])O[*]"),  # Linear or branched with two alkoxy groups
-        Chem.MolFromSmarts("O=C1OC(=O)O1"),  # Cyclic carbonate ester
-        Chem.MolFromSmarts("O=C(Oc1ccccc1)Oc1ccccc1")  # Include esters with aromatic esters
+        Chem.MolFromSmarts("O=C(O[*])O[*]"),  # Acyclic carbonate ester
+        Chem.MolFromSmarts("O=C1OC(=O)O1"),  # Common cyclic carbonate ester e.g., diethylene carbonate
+        Chem.MolFromSmarts("O=C(OC)OC")      # Specific ester type e.g., dimethyl carbonate
     ]
     
-    for pattern in carbonate_ester_patterns:
+    # Additional specific patterns for more variations
+    additional_patterns = [
+        Chem.MolFromSmarts("O=C(O)OC"),     # Monoester variations
+        Chem.MolFromSmarts("O=C1OCCOC1"),   # Cyclic with oxygen in ring
+    ]
+
+    for pattern in carbonate_ester_patterns + additional_patterns:
         if mol.HasSubstructMatch(pattern):
             return True, "Contains carbonate ester structure"
 
