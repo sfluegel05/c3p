@@ -26,13 +26,14 @@ def is_flavin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for dimethylisoalloxazine backbone pattern
-    backbone_pattern = Chem.MolFromSmarts("c1c2c(nc3c(=O)[nH]c(=O)nc3n2C)c(C)c(C)c1")
+    # Look for isoalloxazine backbone pattern
+    backbone_pattern = Chem.MolFromSmarts("c1nc2c(nc3c(=O)[nH]c(=O)nc23)cc1")
     if not mol.HasSubstructMatch(backbone_pattern):
-        return False, "Missing dimethylisoalloxazine backbone"
+        return False, "Missing isoalloxazine backbone"
     
     # Look for substituent at the 10 position
-    substituent_pattern = Chem.MolFromSmarts("[C]N1C=2C(=NC3=C1C=C(C(=C3)C)C)C(NC(N2)=O)=O")
+    # Use a more permissive pattern to allow for different substituents
+    substituent_pattern = Chem.MolFromSmarts("[C][N]1C=2C(=NC3=C1C=CC=C3)C(NC(N2)=O)=O")
     if not mol.HasSubstructMatch(substituent_pattern):
         return False, "No substituent at the 10 position"
     
@@ -45,4 +46,4 @@ def is_flavin(smiles: str):
     if len(ring_info.AtomRings()) < 3:
         return False, "Fewer than 3 rings found"
     
-    return True, "Contains dimethylisoalloxazine backbone with substituent on the 10 position"
+    return True, "Contains isoalloxazine backbone with substituent on the 10 position"
