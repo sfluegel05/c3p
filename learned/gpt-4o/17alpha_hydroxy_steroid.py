@@ -21,15 +21,14 @@ def is_17alpha_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the steroid backbone SMARTS pattern
-    # This pattern includes the four fused rings (phenanthrene skeleton) common to steroids
-    steroid_backbone_smarts = "C1CCC2C(C1)CCC3C2CCC4(C3CCC4)"
-
-    # Define SMARTS pattern for 17alpha-hydroxy group
-    # The hydroxyl group should be attached to the D ring, which is the part of the molecule represented
-    # by a cyclohexane attached to cyclopentane in steroids, at the 17th carbon.
-    hydroxy_17alpha_smarts = "[C@]1([C@@H](O)CC2)CC3CC[C@H]4[C@@H](C2)CC[C@]34C1"
-
+    # Define a general steroid backbone SMARTS pattern
+    # This pattern captures the four rings with stereochemistry flexibility
+    steroid_backbone_smarts = "[#6]1[#6](=[#8])-[#6]2-[#6](=[#8])-[#6]3-[#6]4[#6](=[#8])-[#6]([#6]2)[#6]([#6]3)[#6](=[#8])[#6](1)[#6](=[#8])[#6]4"
+    
+    # Define SMARTS pattern for a 17alpha-hydroxy group
+    # This aims to check for an OH group on the D ring with specific stereochemistry
+    hydroxy_17alpha_smarts = "[C@@]1([C@@H](O)[C@H]2)[C@H]3CC[C@@H]4[C@@H]([C@H]2)CC[C@]34C1"
+    
     # Check for the steroid backbone
     steroid_backbone = Chem.MolFromSmarts(steroid_backbone_smarts)
     if not mol.HasSubstructMatch(steroid_backbone):
