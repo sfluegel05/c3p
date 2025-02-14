@@ -5,7 +5,6 @@ Classifies: CHEBI:38757 isoflavones
 Classifies: Isoflavones
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_isoflavones(smiles: str):
     """
@@ -25,25 +24,15 @@ def is_isoflavones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Kekulize the molecule to handle aromaticity properly
-    try:
-        Chem.Kekulize(mol, clearAromaticFlags=True)
-    except Chem.KekulizeException:
-        return False, "Kekulization failed"
+    # Define SMILES for the isoflavone core
+    isoflavone_smiles = 'O=C1C=CC2=CC=CC=C2O1c1ccccc1'  # Isoflavone core structure
+    isoflavone_core = Chem.MolFromSmiles(isoflavone_smiles)
+    if isoflavone_core is None:
+        return False, "Error in isoflavone core SMILES"
 
-    # Define SMARTS pattern for the isoflavone core
-    # Isoflavone core: 3-phenylchromen-4-one
-    isoflavone_pattern = Chem.MolFromSmarts("""
-    [$([#6]-1=[$([#6](-[#6])=[#6]-[#6]=[#6]-[#8]-1-[#6]=O)])]-c1ccccc1
-    """)
-
-    if isoflavone_pattern is None:
-        return False, "Error in SMARTS pattern"
-
-    # Check if the molecule matches the isoflavone core pattern
-    if not mol.HasSubstructMatch(isoflavone_pattern):
+    # Check if the molecule contains the isoflavone core
+    if not mol.HasSubstructMatch(isoflavone_core):
         return False, "Does not contain the 3-aryl-1-benzopyran-4-one skeleton"
 
-    # Check for substitutions on the core (which are allowed)
-    # So we can accept the match as isoflavone
+    # The molecule contains the isoflavone core
     return True, "Contains the 3-aryl-1-benzopyran-4-one skeleton characteristic of isoflavones"
