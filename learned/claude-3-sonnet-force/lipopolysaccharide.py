@@ -1,30 +1,103 @@
 """
 Classifies: CHEBI:16412 lipopolysaccharide
 """
-Here are my observations and suggestions:
+"""
+Classifies: CHEBI:36326 lipopolysaccharide
 
-The previous program attempted to identify lipopolysaccharides by looking for the presence of specific substructures: a trisaccharide repeating unit, oligosaccharide side chains, and 3-hydroxytetradecanoic acid units. However, it seems that this approach may be too narrow and rigid, as lipopolysaccharides can have a diverse range of structures and compositions.
+Lipopolysaccharides (LPS) are complex natural compounds consisting of a trisaccharide repeating unit 
+(two heptose units and octulosonic acid) with oligosaccharide side chains and 3-hydroxytetradecanoic 
+acid units. They are a major constituent of the cell walls of Gram-negative bacteria.
+"""
 
-One potential issue is that the trisaccharide repeating unit pattern used in the code may not account for all possible variations in the sugar moieties and their stereochemistry. Lipopolysaccharides can have different combinations of heptoses and octulosonic acids, as well as different anomeric configurations and linkage patterns.
+from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import AllChem
+from rdkit.ML.Descriptors import MoleculeDescriptors
+from rdkit.Chem.Fingerprints import FingerprintMols
 
-Similarly, the oligosaccharide side chain pattern used in the code may not capture the diverse range of possible oligosaccharide structures that can be present in lipopolysaccharides.
+def is_lipopolysaccharide(smiles):
+    """
+    Determines if a molecule is a lipopolysaccharide based on its SMILES string.
 
-Another limitation is the reliance on the presence of 3-hydroxytetradecanoic acid units. While these units are common in lipopolysaccharides, they may not be present in all cases, or there could be variations in the fatty acid chain lengths and substitution patterns.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-To improve the program, a more flexible and comprehensive approach may be needed. Instead of relying solely on substructure matching, it could be beneficial to incorporate additional descriptors and features that capture the overall structural and chemical properties of lipopolysaccharides.
+    Returns:
+        bool: True if molecule is likely a lipopolysaccharide, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Calculate molecular weight
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    
+    # LPS typically have high molecular weights (>1000 Da)
+    if mol_wt < 1000:
+        return False, "Molecular weight too low for lipopolysaccharide"
+    
+    # Calculate oxygen-to-carbon ratio
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_to_c_ratio = o_count / c_count if c_count > 0 else 0
+    
+    # LPS typically have high oxygen-to-carbon ratio (>0.5)
+    if o_to_c_ratio < 0.5:
+        return False, "Oxygen-to-carbon ratio too low for lipopolysaccharide"
+    
+    # Check for presence of phosphate groups
+    phosphate_pattern = Chem.MolFromSmarts("OP(=O)([O-])[O-]")
+    has_phosphate = mol.HasSubstructMatch(phosphate_pattern)
+    
+    # LPS often contain phosphate groups
+    if not has_phosphate:
+        return False, "No phosphate groups found"
+    
+    # Check for presence of heptose and octulosonic acid units
+    heptose_pattern = Chem.MolFromSmarts("[C@H]1([C@@H]([C@H]([C@@H]([C@@H]([C@@H](CO)O1)O)O)O)O)O")
+    octulosonic_acid_pattern = Chem.MolFromSmarts("[C@@H]1([C@H]([C@@H]([C@@H]([C@H](C(=O)O)O1)O)O)O)O")
+    has_heptose = mol.HasSubstructMatch(heptose_pattern)
+    has_octulosonic_acid = mol.HasSubstructMatch(octulosonic_acid_pattern)
+    
+    if not (has_heptose and has_octulosonic_acid):
+        return False, "No heptose or octulosonic acid units found"
+    
+    # Check for presence of oligosaccharide chains
+    oligosaccharide_pattern = Chem.MolFromSmarts("[OX2][CX4][OX2][CX4][OX2][CX4][OX2][CX4][OX2]")
+    has_oligosaccharide = mol.HasSubstructMatch(oligosaccharide_pattern)
+    
+    if not has_oligosaccharide:
+        return False, "No oligosaccharide chains found"
+    
+    # Check for presence of lipid chains
+    lipid_pattern = Chem.MolFromSmarts("[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]")
+    has_lipid = mol.HasSubstructMatch(lipid_pattern)
+    
+    if not has_lipid:
+        return False, "No lipid chains found"
+    
+    # Calculate topological fingerprint similarity to known LPS structures
+    fps = [FingerprintMols.FingerprintMol(mol)]
+    known_lps_mols = [Chem.MolFromSmiles(smi) for smi in known_lps_smiles]
+    known_lps_fps = [FingerprintMols.FingerprintMol(m) for m in known_lps_mols]
+    
+    similarity_scores = [DataStructs.DiceSimilarity(fps[0], fp) for fp in known_lps_fps]
+    avg_similarity = sum(similarity_scores) / len(similarity_scores)
+    
+    # LPS structures should have high similarity to known examples
+    if avg_similarity < 0.6:
+        return False, "Low structural similarity to known lipopolysaccharides"
+    
+    return True, "Molecule exhibits structural features characteristic of lipopolysaccharides"
 
-Here are some suggestions:
-
-1. Incorporate sugar pattern recognition: Develop a more flexible way to identify the presence of heptose and octulosonic acid units, accounting for different stereochemistries and linkage patterns.
-
-2. Consider oligosaccharide descriptors: Instead of a rigid substructure match, explore descriptors or fingerprints that can capture the presence and diversity of oligosaccharide chains.
-
-3. Incorporate lipid descriptors: Use descriptors or fingerprints that can identify the presence of lipid chains, including their lengths, substitution patterns, and linkages to the saccharide moieties.
-
-4. Utilize molecular weight and compositional analysis: Lipopolysaccharides typically have high molecular weights and specific compositional features (e.g., high oxygen-to-carbon ratio, presence of phosphate groups). Incorporate these properties into the classification criteria.
-
-5. Consider machine learning approaches: If a sufficiently large and diverse dataset of lipopolysaccharide structures is available, machine learning techniques could be explored to learn the structural patterns and features that distinguish lipopolysaccharides from other chemical classes.
-
-6. Evaluate the benchmark dataset: As mentioned, there may be occasional and systematic mistakes in the benchmark dataset. It would be helpful to review the benchmark structures and ensure that they are accurately classified and representative of the lipopolysaccharide class.
-
-By incorporating a more comprehensive set of descriptors and features, and potentially leveraging machine learning techniques, the program may be better equipped to accurately classify the diverse range of lipopolysaccharide structures. However, it's important to note that developing a robust and accurate classification system for complex natural products like lipopolysaccharides is a challenging task, and may require iterative refinement and optimization.
+# List of SMILES strings for known lipopolysaccharide structures
+known_lps_smiles = [
+    "O=C(OC(CCCC(=O)O[C@@H]1[C@@H](O)[C@H](O[C@@H]([C@H]1O)CO)O[C@H]2O[C@@H]([C@@H](O)[C@@H]([C@H]2O)O)CO)CCCCC)C(=O)O",
+    "O=C(O[C@@H]1[C@@H](O[C@H](CO)[C@H]([C@@H]1OC(=O)CCCCCCCCCCCCCCC)OC(=O)C)OC[C@@H](O)[C@@H](O)CO)C(C)C",
+    "CCCCCCCCCC(=O)O[C@H]1[C@@H](O)[C@H](O)[C@@H](CO)O[C@H]1O[C@@H](C[C@H](OC(C)=O)C(\C)=C\CO[C@H]([C@H](O)CO)[C@H](O)[C@H](O)CO)[C@](C)(O)CCC=C(C)C",
+    "O=C(O[C@@H]1[C@@H](O[C@H](COC(=O)C)[C@H]([C@@H]1OC(=O)CCCCCCCCCCCCCCC)OC(=O)C)OC[C@@H](O)[C@@H](O)CO)CCCCC",
+    "O=C(O[C@@H]1[C@@H](O[C@H](CO)[C@H]([C@@H]1OC(=O)CCCCCCCCCCCCC)OC(=O)C)OC[C@@H](O)[C@@H](O)CO)C(C)C"
+]
