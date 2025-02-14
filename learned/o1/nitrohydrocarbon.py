@@ -25,53 +25,44 @@ def is_nitrohydrocarbon(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check that all atoms are C, H, N, or O
+    # Check for nitro groups attached to carbon
+    nitro_pattern = Chem.MolFromSmarts('[CX3](N(=O)=O)')  # Carbon attached to nitro group
+    nitro_matches = mol.GetSubstructMatches(nitro_pattern)
+    if not nitro_matches:
+        return False, "No nitro groups attached to carbon found"
+
+    # Clone molecule to remove nitro groups
+    mol_no_nitro = Chem.RWMol(mol)
+    atoms_to_remove = []
+    for match in nitro_matches:
+        carbon_idx = match[0]
+        nitrogen_idx = match[1]
+        oxygen1_idx = match[2]
+        oxygen2_idx = match[3]
+        atoms_to_remove.extend([nitrogen_idx, oxygen1_idx, oxygen2_idx])
+        # Change the bond between carbon and nitrogen to single bond and to hydrogen
+        mol_no_nitro.GetAtomWithIdx(carbon_idx).SetNumExplicitHs(mol_no_nitro.GetAtomWithIdx(carbon_idx).GetTotalNumHs() + 1)
+        mol_no_nitro.GetAtomWithIdx(carbon_idx).UpdatePropertyCache()
+
+    # Remove atoms in reverse order to maintain indices
+    for idx in sorted(set(atoms_to_remove), reverse=True):
+        mol_no_nitro.RemoveAtom(idx)
+
+    # Update molecule
+    mol_no_nitro.UpdatePropertyCache(strict=False)
+
+    # Check that the remaining molecule contains only carbon and hydrogen atoms
+    for atom in mol_no_nitro.GetAtoms():
+        if atom.GetAtomicNum() not in (1, 6):  # H, C
+            return False, f"Hydrocarbon part contains atom other than C and H: {atom.GetSymbol()}"
+
+    # Check that there are no other heteroatoms in the original molecule besides nitro groups
     allowed_atomic_nums = {1, 6, 7, 8}  # H, C, N, O
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() not in allowed_atomic_nums:
-            return False, f"Contains atom other than C, H, N, and O: {atom.GetSymbol()}"
+            return False, f"Molecule contains heteroatom other than nitro group: {atom.GetSymbol()}"
 
-    # Check for nitro group(s) (–NO2)
-    nitro_pattern = Chem.MolFromSmarts('[N+](=O)[O-]')  # Nitro group pattern
-    nitro_matches = mol.GetSubstructMatches(nitro_pattern)
-    if not nitro_matches:
-        return False, "No nitro groups found"
-
-    # Check that nitro groups are attached to carbons
-    nitro_carbons = False
-    for match in nitro_matches:
-        nitro_n_idx = match[0]  # Index of nitrogen in nitro group
-        nitro_n = mol.GetAtomWithIdx(nitro_n_idx)
-        attached_atoms = nitro_n.GetNeighbors()
-        carbon_found = False
-        for neighbor in attached_atoms:
-            if neighbor.GetAtomicNum() == 6:  # Carbon
-                carbon_found = True
-            elif neighbor.GetAtomicNum() != 8:  # Should only be attached to O and C
-                return False, "Nitro group is not attached to carbon"
-        if not carbon_found:
-            return False, "Nitro group is not attached to carbon"
-        else:
-            nitro_carbons = True
-    if not nitro_carbons:
-        return False, "Nitro groups are not attached to carbon"
-
-    # Remove nitro groups to check the remaining structure
-    mol_no_nitro = Chem.RWMol(mol)
-    atoms_to_remove = set()
-    for match in nitro_matches:
-        for idx in match:
-            atoms_to_remove.add(idx)
-    # Remove atoms in reverse order to keep indices valid
-    for idx in sorted(atoms_to_remove, reverse=True):
-        mol_no_nitro.RemoveAtom(idx)
-
-    # Check that remaining atoms are only C and H
-    for atom in mol_no_nitro.GetAtoms():
-        if atom.GetAtomicNum() not in (1, 6):
-            return False, f"Contains atom other than C and H in the hydrocarbon part: {atom.GetSymbol()}"
-
-    return True, "Contains hydrocarbon with nitro group(s) attached to carbon"
+    return True, "Molecule is a nitrohydrocarbon with nitro groups attached to a hydrocarbon"
 
 __metadata__ = {
     'chemical_class': {
