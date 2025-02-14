@@ -7,6 +7,7 @@ An alkylamine in which the alkyl group is substituted by an aromatic group.
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_aralkylamine(smiles: str):
     """
@@ -25,10 +26,10 @@ def is_aralkylamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for aromatic atoms
-    aromatic_atoms = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetIsAromatic()]
-    if not aromatic_atoms:
-        return False, "No aromatic atoms found"
+    # Look for aromatic ring(s)
+    aromatic_rings = mol.GetAromaticRings()
+    if not aromatic_rings:
+        return False, "No aromatic rings found"
     
     # Look for primary/secondary amine group(s)
     amine_pattern = Chem.MolFromSmarts("[NH2,NH1]")
@@ -36,17 +37,12 @@ def is_aralkylamine(smiles: str):
     if not amine_matches:
         return False, "No primary or secondary amine groups found"
     
-    # Check if amine group is connected to an aromatic system (possibly via an alkyl chain)
+    # Check if amine group is directly attached to aromatic ring
     for amine_idx in amine_matches:
         amine_atom = mol.GetAtomWithIdx(amine_idx)
-        for aromatic_idx in aromatic_atoms:
-            if mol.AreAtomsSeparatedByAnyRing(amine_idx, aromatic_idx):
-                continue  # Amine and aromatic atom are on opposite sides of a ring
-            path = Chem.rdmolops.GetShortestPath(mol, amine_idx, aromatic_idx)
-            if path is not None:
-                alkyl_chain = all(mol.GetAtomWithIdx(idx).GetAtomicNum() == 6 for idx in path[1:-1])
-                if alkyl_chain:
-                    return True, "Contains an alkylamine with aromatic substituent"
+        for neighbor in amine_atom.GetNeighbors():
+            if neighbor.GetIsAromatic():
+                return True, "Contains an alkylamine with aromatic substituent"
     
-    # Amine group(s) not connected to aromatic system via alkyl chain
-    return False, "Amine group(s) not connected to aromatic system via alkyl chain"
+    # Amine group(s) not directly attached to aromatic ring
+    return False, "Amine group(s) not directly attached to aromatic ring"
