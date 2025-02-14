@@ -37,18 +37,32 @@ def is_polyprenol_phosphate(smiles: str):
     # Look for prenol chain (long chain of C=C-C units)
     prenol_pattern = Chem.MolFromSmarts("[CX3]=C[CX3]C=[CX3]")
     prenol_matches = mol.GetSubstructMatches(prenol_pattern)
-    if len(prenol_matches) < 3:
-        return False, "Prenol chain too short or missing"
 
     # Check for hydroxyl group attached to prenol chain
-    hydroxy_pattern = Chem.MolFromSmarts("[OX2]C[CX3]=C[CX3]C=[CX3]")
-    hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
-    if not hydroxy_matches:
+    has_hydroxy = False
+    for match in prenol_matches:
+        for idx in match:
+            atom = mol.GetAtomWithIdx(idx)
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 8:  # Oxygen atom
+                    has_hydroxy = True
+                    break
+            if has_hydroxy:
+                break
+
+    if not has_hydroxy:
         return False, "No hydroxyl group attached to prenol chain"
 
-    # Count rotatable bonds to verify long chain
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 8:
+    # Count carbon atoms and double bonds to verify chain length
+    n_carbon = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    n_double_bonds = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.BondType.DOUBLE)
+
+    if n_carbon < 10 or n_double_bonds < 3:
         return False, "Prenol chain too short"
+
+    # Check molecular weight range
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 200 or mol_wt > 1000:
+        return False, "Molecular weight outside typical range for polyprenol phosphates"
 
     return True, "Contains a prenol chain with a terminal hydroxyl group condensed with phosphoric acid"
