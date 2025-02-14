@@ -49,27 +49,49 @@ def is_very_long_chain_fatty_acyl_CoA(smiles: str):
     coa_atom_indices = set()
     for match in mol.GetSubstructMatches(coa_substructure):
         coa_atom_indices.update(match)
+    
+    # Find the directly attached carbon to the carbonyl
+    neighboring_carbons = []
+    for neighbor in mol.GetAtomWithIdx(carbonyl_carbon_index).GetNeighbors():
+         if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in coa_atom_indices:
+            neighboring_carbons.append(neighbor.GetIdx())
 
+    if len(neighboring_carbons) == 0:
+         return False, "No carbon found attached to the carbonyl group."
+    
+    if len(neighboring_carbons) > 1:
+        return False, "Multiple carbons found attached to the carbonyl group, cannot identify fatty acid chain"
+    
+    first_chain_carbon_index = neighboring_carbons[0]
+    
+    # Now perform BFS from the first_chain_carbon_index to find the rest of the carbon chain.
+    fatty_acid_carbon_count = 1  # Include the carbon attached to the carbonyl
+    visited_atoms = {carbonyl_carbon_index, first_chain_carbon_index}
+    queue = [first_chain_carbon_index]
 
-    # Find the fatty acid chain by counting all carbon atoms not in CoA but linked to the carbonyl carbon of the ester
-    fatty_acid_carbon_count = 0
-    visited_atoms = {carbonyl_carbon_index}
-    queue = [carbonyl_carbon_index]
 
     while queue:
-      current_atom_index = queue.pop(0)
-      for neighbor in mol.GetAtomWithIdx(current_atom_index).GetNeighbors():
-        neighbor_idx = neighbor.GetIdx()
-        if neighbor.GetAtomicNum() == 6 and neighbor_idx not in coa_atom_indices and neighbor_idx not in visited_atoms:
-           fatty_acid_carbon_count += 1
-           visited_atoms.add(neighbor_idx)
-           queue.append(neighbor_idx)
-        elif neighbor.GetAtomicNum() == 6 and neighbor_idx not in visited_atoms and current_atom_index == carbonyl_carbon_index:
-            #Include carbons from the carboxylic group itself
+        current_atom_index = queue.pop(0)
+        
+        # Count the number of directly attached carbons to the current atom, that are NOT part of the coA.
+        # This is a proxy to make sure we are only counting the *chain* of carbons, and not branching.
+        connected_carbons = 0
+        next_carbon_index = None
+        
+        for neighbor in mol.GetAtomWithIdx(current_atom_index).GetNeighbors():
+           neighbor_idx = neighbor.GetIdx()
+           if neighbor.GetAtomicNum() == 6 and neighbor_idx not in coa_atom_indices and neighbor_idx not in visited_atoms:
+                connected_carbons += 1
+                next_carbon_index = neighbor_idx
+        
+        if connected_carbons == 1:
             fatty_acid_carbon_count += 1
-            visited_atoms.add(neighbor_idx)
-            queue.append(neighbor_idx)
-
+            visited_atoms.add(next_carbon_index)
+            queue.append(next_carbon_index)
+        elif connected_carbons > 1:
+            # Branched chain, stop counting
+            break
+    
     if fatty_acid_carbon_count > 22:
        return True, f"Fatty acid chain contains {fatty_acid_carbon_count} carbons, which is greater than 22"
     else:
