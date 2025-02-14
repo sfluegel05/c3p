@@ -1,28 +1,53 @@
 """
 Classifies: CHEBI:24402 glycosphingolipid
 """
-Based on the provided code and the outcomes, it seems that the program is not accurately identifying all glycosphingolipids. Here's my analysis and suggestions for improvement:
+from rdkit import Chem
+from rdkit.Chem import AllChem, rdMolDescriptors
 
-1. The program relies heavily on the presence of a specific substructure (ceramide backbone) and a specific glycosidic linkage pattern. While this approach can work for some glycosphingolipids, it may miss others with slightly different structural variations.
+def is_glycosphingolipid(smiles: str):
+    """
+    Determines if a molecule is a glycosphingolipid based on its SMILES string.
+    A glycosphingolipid is a glycolipid that contains a carbohydrate residue attached to a ceramide backbone.
 
-2. The program does not consider other important features of glycosphingolipids, such as the presence of a carbohydrate residue, the type and position of the glycosidic linkages, and the overall molecular weight and composition.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. The ceramide pattern used in the program (`"[N;X3;H2,H1;!$(N(*)-*=[N,O,S])]"`) may be too specific and could miss some ceramide-like backbones with different substitution patterns or hydrogen counts.
+    Returns:
+        bool: True if molecule is a glycosphingolipid, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-4. The program does not handle cases where the glycosidic linkage is not directly to the O-1 of the sphingoid, but rather through a linker or at a different position.
+    # Check for ceramide backbone pattern
+    ceramide_pattern = Chem.MolFromSmarts("[N;X3;H2,H1;!$(N(*)-*=[N,O,S])][CX3](=O)[CH0;X2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH0;X2]")
+    ceramide_matches = mol.GetSubstructMatches(ceramide_pattern)
+    if not ceramide_matches:
+        return False, "No ceramide backbone found"
 
-To improve the program, I would suggest the following:
+    # Check for carbohydrate residues
+    carbohydrate_pattern = Chem.MolFromSmarts("O[C@H]1[C@H]([C@H]([C@@H]([C@H](O1)O)O)O)O")
+    carbohydrate_matches = mol.GetSubstructMatches(carbohydrate_pattern)
+    if not carbohydrate_matches:
+        return False, "No carbohydrate residue found"
 
-1. Use a more general pattern to identify the sphingoid/ceramide backbone, such as a long alkyl chain connected to an amino group and an amide group.
+    # Check for glycosidic linkages
+    glycosidic_pattern = Chem.MolFromSmarts("[O;X2][C@H]1[C@H]([C@@H]([C@H]([C@H](O1)O)O)O)O")
+    glycosidic_matches = mol.GetSubstructMatches(glycosidic_pattern)
+    if not glycosidic_matches:
+        return False, "No glycosidic linkage found"
 
-2. Incorporate checks for the presence of carbohydrate residues (e.g., glucose, galactose, mannose, etc.) and their linkages.
+    # Check molecular weight and composition
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 500:
+        return False, "Molecular weight too low for glycosphingolipid"
 
-3. Consider the overall molecular weight and composition, as glycosphingolipids typically have a higher molecular weight and contain specific elemental ratios (e.g., high carbon and oxygen content).
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if c_count < 20 or o_count < 5:
+        return False, "Insufficient carbon or oxygen content for glycosphingolipid"
 
-4. Allow for variations in the position and type of glycosidic linkages, as well as the presence of linkers or substitutions on the sphingoid/ceramide backbone.
-
-5. Use a combination of substructure searches and molecular descriptors to capture the diverse structures of glycosphingolipids.
-
-6. If available, consider using a pre-trained model or a machine learning approach to classify glycosphingolipids based on their structural features.
-
-It's also important to note that while the benchmarks provided can be useful, they may not be 100% accurate or representative of all possible glycosphingolipid structures. In such cases, it's essential to rely on your understanding of the chemical class and make informed decisions based on the program's output and the provided examples.
+    return True, "Contains a ceramide backbone with carbohydrate residue(s) attached via glycosidic linkage(s)"
