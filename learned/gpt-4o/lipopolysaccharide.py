@@ -23,12 +23,12 @@ def is_lipopolysaccharide(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Example patterns; these would need refinement for genuine attempts
-    # Looking for sugar alcohol structures and long carbon chains
+    
+    # Define SMARTS patterns for key structures
     patterns = {
-        "sugar": Chem.MolFromSmarts("C(C(C(C(C(C=O)O)O)O)O)O"),  # Simple sugar-like pattern
-        "long_chain": Chem.MolFromSmarts("C(~C)~C~C~C~C~C~C~C~C"),  # Long chain carbon pattern
+        "heptose": Chem.MolFromSmarts("CC(O)C(C(C(C=O)O)O)O"), # Simplified heptose pattern
+        "octulosonic_acid": Chem.MolFromSmarts("O=C(O)C(C(C(C=O)O)O)CO"), # Simplified octulosonic acid pattern
+        "fatty_acid": Chem.MolFromSmarts("CCCCCCCCCCCC[CH](O)C(=O)O"), # Simplified pattern for 3-hydroxytetradecanoic acid
     }
 
     matched_patterns = []
@@ -36,11 +36,10 @@ def is_lipopolysaccharide(smiles: str):
         if mol.HasSubstructMatch(pattern):
             matched_patterns.append(name)
 
-    if "sugar" in matched_patterns and "long_chain" in matched_patterns:
-        # Simplistic condition to return True
-        return True, "Contains indicative sugar and long-chain motifs commonly found in lipopolysaccharides"
+    # Check for minimal criteria satisfaction
+    if "heptose" in matched_patterns and "octulosonic_acid" in matched_patterns and "fatty_acid" in matched_patterns:
+        return True, "Matches indicative motifs of a lipopolysaccharide"
 
-    # Complexity likely surpassing this modality without specialized software/database access
     if not matched_patterns:
         return False, "No matching indicative patterns found. Complexity likely surpasses current SMILES-based method."
 
