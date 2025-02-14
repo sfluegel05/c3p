@@ -25,8 +25,8 @@ def is_2_monoglyceride(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for glycerol backbone (C-C-C with 2 oxygens attached)
-    glycerol_pattern = Chem.MolFromSmarts("[CH2X3][CHX4][CH2X3]")
+    # Look for glycerol backbone (C-C-C with any number of substituents)
+    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
 
