@@ -26,10 +26,13 @@ def is_flavone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for flavone skeleton pattern
-    flavone_pattern = Chem.MolFromSmarts("c1cc(oc2ccccc2c1=O)-c")
-    if not mol.HasSubstructMatch(flavone_pattern):
-        return False, "Does not contain the flavone skeleton"
+    # Look for flavone skeleton pattern and its tautomers
+    flavone_patterns = [
+        Chem.MolFromSmarts("c1cc(oc2ccccc2c1=O)-c"),  # 2-aryl-1-benzopyran-4-one
+        Chem.MolFromSmarts("c1cc(oc2ccccc2C(=O)O)-c")  # Tautomer with OH group
+    ]
+    if not any(mol.HasSubstructMatch(pattern) for pattern in flavone_patterns):
+        return False, "Does not contain the flavone skeleton or its tautomers"
     
     # Count aromatic rings
     aromatic_rings = rdMolDescriptors.CalcNumAromaticRings(mol)
@@ -48,8 +51,13 @@ def is_flavone(smiles: str):
     if num_hydroxy < 1:
         return False, "No hydroxyl groups found"
     
-    # Check for common flavone substituents
-    substituents = ["CH3", "OCH3", "OH", "O", "CH2", "CH"]
+    # Check for common flavone substituents and glycosidic substituents
+    substituents = ["CH3", "OCH3", "OH", "O", "CH2", "CH", "OC1C(O)C(O)C(O)C(O)C1O"]  # Glucose
+    glycosidic_pattern = Chem.MolFromSmarts("OC1OC(CO)C(O)C(O)C1O")  # Rhamnose
+    glycosidic_matches = mol.GetSubstructMatches(glycosidic_pattern)
+    if glycosidic_matches:
+        substituents.append("OC1OC(CO)C(O)C(O)C1O")  # Add rhamnose if found
+    
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() == 6 and not atom.GetIsAromatic():
             neighbors = [nbr.GetAtomicNum() for nbr in atom.GetNeighbors()]
@@ -57,43 +65,15 @@ def is_flavone(smiles: str):
             if substituent not in substituents:
                 return False, f"Unusual substituent '{substituent}' found"
     
-    return True, "Contains the flavone skeleton with expected aromatic rings, oxygens, and substituents"
+    # Check molecular weight and Lipinski's rules (optional)
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 200 or mol_wt > 600:
+        return False, "Molecular weight outside the typical range for flavones"
+    
+    if not rdMolDescriptors.CalcLipinski(mol):
+        return False, "Violates Lipinski's rules for drug-likeness"
+    
+    return True, "Contains the flavone skeleton with expected aromatic rings, oxygens, substituents, and properties"
 
 def get_symbol(atomic_num):
     return Chem.Atom(atomic_num).GetSymbol()
-
-__metadata__ = {
-    'chemical_class': {
-        'id': 'CHEBI:17794',
-        'name': 'flavone',
-        'definition': 'A member of the class of flavonoid with a 2-aryl-1-benzopyran-4-one (2-arylchromen-4-one) skeleton and its substituted derivatives.',
-        'parents': ['CHEBI:18594', 'CHEBI:35908']
-    },
-    'config': {
-        'llm_model_name': 'lbl/claude-sonnet',
-        'f1_threshold': 0.8,
-        'max_attempts': 5,
-        'max_positive_instances': None,
-        'max_positive_to_test': None,
-        'max_negative_to_test': None,
-        'max_positive_in_prompt': 50,
-        'max_negative_in_prompt': 20,
-        'max_instances_in_prompt': 100,
-        'test_proportion': 0.1
-    },
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 151,
-    'num_false_positives': 5,
-    'num_true_negatives': 182412,
-    'num_false_negatives': 16,
-    'num_negatives': None,
-    'precision': 0.9678379149631216,
-    'recall': 0.9040404040404041,
-    'f1': 0.9351303979560504,
-    'accuracy': 0.9999530395199616
-}
