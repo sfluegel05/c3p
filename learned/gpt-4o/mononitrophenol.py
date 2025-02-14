@@ -15,28 +15,23 @@ def is_mononitrophenol(smiles: str):
         bool: True if molecule is a mononitrophenol, False otherwise
         str: Reason for classification
     """
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for phenol with a single nitro group
-    # Match phenol group (c-O) with a single nitro group attached anywhere
-    mononitrophenol_pattern = Chem.MolFromSmarts("c1ccccc1O")
-    nitro_pattern = Chem.MolFromSmarts("[N+](=O)[O-]")
-
-    # Find substructure matches
-    phenol_matches = mol.GetSubstructMatches(mononitrophenol_pattern)
+    # Flexible SMARTS for phenol with a single nitro group on benzene ring 
+    phenol_nitro_pattern = Chem.MolFromSmarts("c1(ccccc1O)[NX3](=O)[O-]")
     
-    # Find all nitro groups and ensure there is only one
-    nitro_count = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'N' and mol.HasSubstructMatch(nitro_pattern, atom.GetIdx()))
-
-    # Check conditions
-    if len(phenol_matches) > 0 and nitro_count == 1:
-        return True, "Contains phenol group with a single nitro group on the same benzene ring"
-    if len(phenol_matches) <= 0:
-        return False, "No phenol group found"
-    if nitro_count != 1:
-        return False, f"Invalid number of nitro groups: found {nitro_count}"
-
-    return False, "Does not meet mononitrophenol criteria"
+    # Look for a phenol ring with a single nitro group
+    matches = mol.GetSubstructMatches(phenol_nitro_pattern)
+    if len(matches) == 0:
+        return False, "No phenol with a single nitro group found on the benzene ring"
+    
+    # Check that there is exactly one nitro group on the ring
+    nitro_groups = [atom for atom in mol.GetAtoms() if atom.GetSymbol() == 'N' and any(neighbor.GetSymbol() == 'O' for neighbor in atom.GetNeighbors())]
+    if len(nitro_groups) != 1:
+        return False, f"Invalid number of nitro groups: found {len(nitro_groups)}"
+    
+    return True, "Contains phenol group with a single nitro group on the same benzene ring"
