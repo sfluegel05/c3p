@@ -6,7 +6,7 @@ Classifies: CHEBI:38142 proanthocyanidin
 
 A proanthocyanidin is a flavonoid oligomer obtained by the the condensation of two or more units of hydroxyflavans.
 Common features:
-- Contains flavan-3-ol units (e.g., catechin, epicatechin, gallocatechin, epigallocatechin)
+- Contains two or more flavan-3-ol units (e.g., catechin, epicatechin, gallocatechin, epigallocatechin)
 - Units linked via C-C or ether bonds, often 4→8, 4→6, or 2→O→7 linkages
 - May contain galloyl or other ester groups
 - Typically higher molecular weight oligomers or polymers
@@ -35,8 +35,8 @@ def is_proanthocyanidin(smiles: str):
     # Look for flavan-3-ol units
     flavan_pattern = Chem.MolFromSmarts("[C&r5]1=C([C@@H](O)[C@H](O)[C@@]2(O)Cc3c(O)cc(O)cc3O2)c2ccccc12")
     flavan_matches = mol.GetSubstructMatches(flavan_pattern)
-    if not flavan_matches:
-        return False, "No flavan-3-ol units found"
+    if len(flavan_matches) < 2:
+        return False, "Not a proanthocyanidin structure"
     
     # Look for common linkages (4→8, 4→6, 2→O→7)
     link_patterns = [
@@ -60,7 +60,13 @@ def is_proanthocyanidin(smiles: str):
         if not ester_matches:
             return False, "Molecular weight too low for proanthocyanidin"
     
-    return True, "Contains flavan-3-ol units linked via characteristic bonds, potentially with ester groups"
+    # Check for oligomeric/polymeric structure
+    polymer_pattern = Chem.MolFromSmarts("[C&r5]1=C([C@@H](O)[C@H](O)[C@@]2(O)Cc3c(O)cc(O)cc3O2)[c@@]4[c@@]5[c@@]6[c@@]7[c@@]8[c@@]9[c@@]%10[c@@]%11[c@@]%12[c@@]%13[c@@]%14[c@@]%15[c@@]%16[c@@]%17[c@@]%18[c@@]%19[c@@]%20[c@@]%21[c@@]%22ccccn%22%21%20%19%18%17%16%15%14%13%12%11%10%9%8%7%6%5%4%3%2%1")
+    polymer_matches = mol.GetSubstructMatches(polymer_pattern)
+    if not polymer_matches:
+        return True, "Contains two or more flavan-3-ol units linked via characteristic bonds, potentially with ester groups"
+    else:
+        return True, "Oligomeric or polymeric proanthocyanidin structure"
 
 __metadata__ = {
     'chemical_class': {
@@ -82,18 +88,18 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 1,
+    'attempt': 2,
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
     'num_true_positives': 130,
-    'num_false_positives': 8,
-    'num_true_negatives': 182359,
+    'num_false_positives': 0,
+    'num_true_negatives': 182367,
     'num_false_negatives': 1,
     'num_negatives': None,
-    'precision': 0.9418604651162791,
+    'precision': 1.0,
     'recall': 0.9923076923076923,
-    'f1': 0.9667769727484958,
-    'accuracy': 0.9995654976664447
+    'f1': 0.9961089494163424,
+    'accuracy': 0.9999457593831389
 }
