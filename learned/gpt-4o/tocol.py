@@ -2,12 +2,12 @@
 Classifies: CHEBI:39437 tocol
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import AllChem
 
 def is_tocol(smiles: str):
     """
     Determines if a molecule is a tocol based on its SMILES string.
-    A tocol is a chromanol with a chroman-6-ol skeleton that is substituted at position 2 
+    A tocol is a chromanol with a chroman-6-ol skeleton that is substituted at position 2
     by a saturated or triply-unsaturated hydrocarbon chain consisting of three isoprenoid units.
 
     Args:
@@ -23,17 +23,17 @@ def is_tocol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Improved pattern for chromanol core: aromatic benzopyran with hydroxyl group
-    # This pattern captures chroman-6-ol skeleton
-    chromanol_pattern = Chem.MolFromSmarts("Oc1ccccc1C2CCCCO2")
+    # Chromanol core pattern SMARTS: includes benzopyran-6-ol structure   
+    chromanol_pattern = Chem.MolFromSmarts("Oc1ccc(CC2CCCCO2)c(c)c1")
     if not mol.HasSubstructMatch(chromanol_pattern):
         return False, "No chromanol core found"
+
+    # Isoprenoid chain characteristics using common isoprene unit structure (C5H8)
+    # Yet flexible enough to allow saturation and unsaturation as permitted
+    isoprenoid_unit = Chem.MolFromSmarts("C(C)(C)C")
+    num_isoprenoid_units = len(mol.GetSubstructMatches(isoprenoid_unit))
     
-    # Look for substituent at position 2 with isoprenoid characteristics.
-    # Assumes the side chain is a long alkyl/isoprenoid without relying on specific stereochemistry
-    hydrocarbon_substituent_pattern = Chem.MolFromSmarts("C(C)(C)C")
-    isoprenoid_matches = mol.GetSubstructMatches(hydrocarbon_substituent_pattern)
-    if len(isoprenoid_matches) < 3:
-        return False, "Insufficient isoprenoid features in substituent"
+    if num_isoprenoid_units < 3:
+        return False, f"Insufficient isoprenoid features: {num_isoprenoid_units} found, need at least 3"
 
     return True, "Contains chromanol core and appropriate hydrocarbon substitution with isoprenoid units"
