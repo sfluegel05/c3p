@@ -1,48 +1,26 @@
 """
 Classifies: CHEBI:35346 11beta-hydroxy steroid
 """
-"""
-Classifies: CHEBI:38043 11beta-hydroxy steroid
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+Based on the provided outcomes, it appears that the previous program failed to correctly classify any of the positive or negative examples for the 11beta-hydroxy steroid class. This could be due to several reasons:
 
-def is_11beta_hydroxy_steroid(smiles: str):
-    """
-    Determines if a molecule is an 11beta-hydroxy steroid based on its SMILES string.
-    An 11beta-hydroxy steroid is a steroid with a hydroxy group at position 11 in the beta configuration.
+1. **Steroid backbone pattern**: The SMARTS pattern used to identify the steroid backbone might be too specific or restrictive. The pattern assumes a particular arrangement of rings and substituents, which may not cover all possible variations within the class. Additionally, the pattern includes an explicit hydrogen count, which can be problematic in SMILES representations.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. **11beta-hydroxy group identification**: The SMARTS pattern used to identify the 11beta-hydroxy group might be too restrictive or not capturing all possible conformations and environments. The pattern assumes a specific ring context, which may not hold true for all molecules in the class.
 
-    Returns:
-        bool: True if molecule is an 11beta-hydroxy steroid, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Check for steroid backbone
-    steroid_pattern = Chem.MolFromSmarts("[C@]12CCC[C@H]3[C@@H]4CC[C@@]5(C)[C@@H](O)CC[C@]5(O)[C@H]4CC[C@]3(C)C1=O")
-    if not mol.HasSubstructMatch(steroid_pattern):
-        return False, "No steroid backbone found"
-    
-    # Check for 11beta-hydroxy group
-    hydroxy_pattern = Chem.MolFromSmarts("[C@H](O)[C@@]1")
-    hydroxy_match = mol.GetSubstructMatches(hydroxy_pattern)
-    if not hydroxy_match:
-        return False, "No 11beta-hydroxy group found"
-    
-    # Check for additional features
-    n_ketones = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and sum(bond.GetBondType() == Chem.BondType.DOUBLE for bond in atom.GetBonds()) == 1)
-    n_double_bonds = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.BondType.DOUBLE)
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    
-    if n_ketones < 1 or n_double_bonds < 1 or mol_wt < 250 or mol_wt > 600:
-        return False, "Missing essential features for 11beta-hydroxy steroid"
-    
-    return True, "Contains steroid backbone with 11beta-hydroxy group and essential features"
+3. **Additional features**: The additional checks for the number of ketones, double bonds, and molecular weight range might be too stringent or not representative of the entire class. These features can vary among different subclasses or derivatives of 11beta-hydroxy steroids.
+
+To improve the program, we can consider the following approaches:
+
+1. **Refine the steroid backbone pattern**: Analyze the positive examples and identify common structural patterns for the steroid backbone. Develop a more flexible SMARTS pattern that captures the essential ring system and connectivity while allowing for variations in substituents and stereochemistry.
+
+2. **Improve the 11beta-hydroxy group identification**: Analyze the positive examples and identify common patterns or environments for the 11beta-hydroxy group. Develop a more flexible SMARTS pattern that can capture different conformations and ring contexts.
+
+3. **Relax or adjust additional feature checks**: Analyze the positive and negative examples to understand the range of values for the number of ketones, double bonds, and molecular weights. Adjust the checks accordingly or consider removing them if they are not essential for the classification.
+
+4. **Incorporate additional structural features**: Analyze the positive examples and identify any additional structural features or patterns that are characteristic of the 11beta-hydroxy steroid class. Incorporate these features into the classification logic using SMARTS patterns or other RDKit functionality.
+
+5. **Use machine learning techniques**: If the class is challenging to define with explicit rules and patterns, consider using machine learning techniques, such as trained classifiers or fingerprint-based methods, to learn the structural features that distinguish the 11beta-hydroxy steroid class from other classes.
+
+It's important to note that the chemical class definition provided ("Any 11-hydroxy steroid in which the hydroxy group at position 11 has beta- configuration.") might be incomplete or not accurately represent the entire class. In such cases, it may be necessary to consult additional sources or domain experts to refine the class definition and ensure that the program accurately captures the intended scope.
+
+Additionally, if you have high confidence in some of the positive or negative examples based on your understanding of the chemical class, you could consider adjusting the benchmark or ignoring potential outliers while explaining your reasoning.
