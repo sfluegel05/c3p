@@ -22,7 +22,7 @@ def is_monounsaturated_fatty_acyl_CoA(smiles: str):
         return False, "Invalid SMILES string"
 
     # 1. Check for the CoA moiety using a simplified SMARTS focusing on the core.
-    coa_pattern = Chem.MolFromSmarts("[P](=O)([O])O[C@H]1[C@@H]([C@@H]([C@H](O1)C2=CN=C3N=CN=C(N)C3=C2)O)COP(=O)([O])O") #Simplified CoA pattern
+    coa_pattern = Chem.MolFromSmarts("C[C@H](O)[C@H](COP(=O)(O)OP(=O)(O)OC[C@H]1[C@@H]([C@@H]([C@H](O1)n2cnc3c(N)ncnc23)O)O)C(=O)NCCS") # Simplified CoA pattern, without stereochemistry at the phosphates and the ribose
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "CoA moiety not found"
 
@@ -37,16 +37,11 @@ def is_monounsaturated_fatty_acyl_CoA(smiles: str):
     if len(double_bond_matches) != 1:
         return False, f"Molecule has {len(double_bond_matches)} carbon-carbon double bonds, expected 1"
     
-    # 4. Check for a long carbon chain
-    fatty_acid_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    # 4. Check for a long carbon chain attached to the thioester
+    fatty_acid_chain_pattern = Chem.MolFromSmarts("SC(=O)[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
     fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_chain_pattern)
     if len(fatty_acid_matches) < 1:
-        return False, "Missing a fatty acid chain"
-
-    # 5. Check for number of rotatable bonds - should be relatively long
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 8:
-        return False, "Fatty acid chain too short"
+        return False, "Missing a fatty acid chain attached to the thioester"
 
 
     return True, "Molecule is a monounsaturated fatty acyl-CoA"
