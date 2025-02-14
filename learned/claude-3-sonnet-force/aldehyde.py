@@ -25,30 +25,37 @@ def is_aldehyde(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for aldehyde pattern (C(=O)H)
-    aldehyde_pattern = Chem.MolFromSmarts("C(=O)[H]")
-    if not mol.HasSubstructMatch(aldehyde_pattern):
-        return False, "No aldehyde group found"
-
-    # Check if the aldehyde group is part of a ring
-    # Aldehydes in rings are not considered aldehydes in this definition
-    atom_ids = mol.GetSubstructMatches(aldehyde_pattern)[0]
-    aldehyde_atom = mol.GetAtomWithIdx(atom_ids[0])
-    if aldehyde_atom.IsInRing():
-        return False, "Aldehyde group is part of a ring"
-
-    # Check for other carbonyl groups
-    # If there are other carbonyl groups, it's not an aldehyde
+    # Look for carbonyl groups
     carbonyl_pattern = Chem.MolFromSmarts("C(=O)")
     carbonyl_matches = mol.GetSubstructMatches(carbonyl_pattern)
-    if len(carbonyl_matches) > 1:
-        return False, "Contains multiple carbonyl groups"
 
-    # Check for other heteroatoms attached to the carbonyl carbon
-    # If there are other heteroatoms, it's not an aldehyde
-    allowed_atoms = [8, 6, 1]  # O, C, H
-    for atom in aldehyde_atom.GetNeighbors():
-        if atom.GetAtomicNum() not in allowed_atoms:
-            return False, "Carbonyl carbon has other heteroatoms attached"
+    # Check if any carbonyl group meets the aldehyde criteria
+    for match in carbonyl_matches:
+        carbonyl_atom = mol.GetAtomWithIdx(match[0])
+        if is_valid_aldehyde_group(mol, carbonyl_atom):
+            return True, "Contains an aldehyde group (C(=O)H)"
 
-    return True, "Contains an aldehyde group (C(=O)H)"
+    return False, "No valid aldehyde group found"
+
+def is_valid_aldehyde_group(mol, carbonyl_atom):
+    """
+    Checks if a given carbonyl group meets the criteria for an aldehyde.
+
+    Args:
+        mol (Mol): RDKit molecule object
+        carbonyl_atom (Atom): Atom object representing the carbonyl carbon
+
+    Returns:
+        bool: True if the carbonyl group is a valid aldehyde group, False otherwise
+    """
+    # Check if the carbonyl carbon has exactly one hydrogen neighbor
+    hydrogen_count = sum(1 for neighbor in carbonyl_atom.GetNeighbors() if neighbor.GetAtomicNum() == 1)
+    if hydrogen_count != 1:
+        return False
+
+    # Check if the carbonyl carbon has exactly one other neighbor
+    other_neighbor_count = sum(1 for neighbor in carbonyl_atom.GetNeighbors() if neighbor.GetAtomicNum() != 1 and neighbor.GetAtomicNum() != 8)
+    if other_neighbor_count != 1:
+        return False
+
+    return True
