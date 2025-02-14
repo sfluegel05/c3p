@@ -1,78 +1,22 @@
 """
 Classifies: CHEBI:28034 beta-D-galactoside
 """
-"""
-Classifies: CHEBI:28577 beta-D-galactoside
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+After analyzing the previous program and the outcomes, it appears that the program was able to correctly identify beta-D-galactosides based on the presence of a D-galactose substructure in the beta configuration at the anomeric center and with a glycosidic bond (-O- linker). The program achieved an impressive F1 score of 1.0, indicating perfect precision and recall.
 
-def is_beta_D_galactoside(smiles: str):
-    """
-    Determines if a molecule is a beta-D-galactoside based on its SMILES string.
-    A beta-D-galactoside is a D-galactoside with beta configuration at its anomeric center.
+However, the failure cases reported indicate that the program missed some structures that should have been classified as beta-D-galactosides. Here are some potential reasons for these missed cases and suggestions for improvement:
 
-    Args:
-        smiles (str): SMILES string of the molecule
+1. **Structural Variations**: Some of the missed structures, such as `O-5''-beta-D-galactosylqueuosine` and `kaempferol 3-O-beta-D-galactopyranosyl-7-O-alpha-L-rhamnopyranoside`, have additional substituents or modifications to the core beta-D-galactoside structure. The current program may not be able to handle these variations effectively.
 
-    Returns:
-        bool: True if molecule is a beta-D-galactoside, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Look for D-galactose substructure
-    galactose_pattern = Chem.MolFromSmarts("[C@H]1([C@H]([C@H]([C@H]([C@H](O1)O)O)O)O)O")
-    galactose_matches = mol.GetSubstructMatches(galactose_pattern)
-    if not galactose_matches:
-        return False, "No D-galactose substructure found"
-    
-    # Check for beta configuration at anomeric center
-    beta_pattern = Chem.MolFromSmarts("[C@H](O)[C@H]1[C@H]([C@@H]([C@@H]([C@H](O1)O)O)O)O")
-    beta_matches = mol.GetSubstructMatches(beta_pattern)
-    if not beta_matches:
-        return False, "Not in beta configuration at anomeric center"
-    
-    # Check for glycosidic bond (-O- linker)
-    glycosidic_pattern = Chem.MolFromSmarts("O[C@H]1[C@H]([C@@H]([C@@H]([C@H](O1)O)O)O)O")
-    glycosidic_matches = mol.GetSubstructMatches(glycosidic_pattern)
-    if not glycosidic_matches:
-        return False, "No glycosidic bond found"
-    
-    return True, "Contains D-galactose in beta configuration at the anomeric center and a glycosidic bond"
+   **Potential Improvement**: Expand the SMARTS patterns to include common substituents or modifications that can occur in beta-D-galactosides. This can be done by analyzing the missed structures and identifying recurring structural motifs.
 
+2. **Multiple Occurrences**: Some structures, like `beta-D-GlcA3S-(1->3)-beta-D-Gal-OC6H4-4-OMe`, contain multiple occurrences of the beta-D-galactoside substructure. The current program may only detect one occurrence and miss the others.
 
-__metadata__ = {   'chemical_class': {   'id': 'CHEBI:28577',
-                          'name': 'beta-D-galactoside',
-                          'definition': 'Any D-galactoside having beta-configuration at its anomeric centre.',
-                          'parents': ['CHEBI:36432', 'CHEBI:87711']},
-    'config': {   'llm_model_name': 'lbl/claude-sonnet',
-                  'f1_threshold': 0.8,
-                  'max_attempts': 5,
-                  'max_positive_instances': None,
-                  'max_positive_to_test': None,
-                  'max_negative_to_test': None,
-                  'max_positive_in_prompt': 50,
-                  'max_negative_in_prompt': 20,
-                  'max_instances_in_prompt': 100,
-                  'test_proportion': 0.1},
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 185,
-    'num_false_positives': 0,
-    'num_true_negatives': 186783,
-    'num_false_negatives': 0,
-    'num_negatives': None,
-    'precision': 1.0,
-    'recall': 1.0,
-    'f1': 1.0,
-    'accuracy': 1.0}
+   **Potential Improvement**: Modify the code to find all occurrences of the beta-D-galactoside substructure within a molecule and classify it as a positive case if at least one occurrence is found.
+
+3. **Stereochemistry Handling**: The program relies on specific stereochemistry patterns to identify the beta configuration at the anomeric center. However, some structures may not have explicit stereochemistry specified in the SMILES string, leading to missed cases.
+
+   **Potential Improvement**: Explore ways to handle stereochemistry more robustly, such as using the `Chem.AssignStereochemistry` function from RDKit to assign stereochemistry based on certain rules or heuristics.
+
+4. **False Negatives in the Benchmark**: It is important to note that the benchmark data may not be 100% accurate, and there could be occasional systematic mistakes or misclassifications. If you have a strong understanding of the chemical class and are confident that some of the missed cases should indeed be classified as beta-D-galactosides, you could consider ignoring those outliers and explaining your reasoning.
+
+Overall, while the program achieved a high F1 score, there is still room for improvement, particularly in handling structural variations and stereochemistry more robustly. Iterative refinement of the SMARTS patterns and incorporating additional checks or rules could further enhance the performance of the classifier.
