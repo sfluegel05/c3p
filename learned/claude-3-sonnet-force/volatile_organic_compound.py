@@ -6,6 +6,8 @@ Classifies: CHEBI:51601 volatile organic compound
 """
 from rdkit import Chem
 from rdkit.Chem import Descriptors
+from rdkit.Chem.EState import EState_VSA
+from rdkit.Chem.GroupContribution import GCVPC
 
 def is_volatile_organic_compound(smiles: str):
     """
@@ -31,11 +33,11 @@ def is_volatile_organic_compound(smiles: str):
     if sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6) == 0:
         return False, "No carbon atoms found, not an organic compound"
     
-    # Calculate boiling point
-    boiling_point = Descriptors.BoilingPoint(mol)
+    # Calculate boiling point using group contribution method
+    boiling_point = GCVPC.getGroupContrib(mol)
     
     # Check if boiling point is <= 250 °C
     if boiling_point <= 250:
-        return True, f"Boiling point of {boiling_point:.2f} °C is <= 250 °C"
+        return True, f"Estimated boiling point of {boiling_point:.2f} °C is <= 250 °C"
     else:
-        return False, f"Boiling point of {boiling_point:.2f} °C is > 250 °C"
+        return False, f"Estimated boiling point of {boiling_point:.2f} °C is > 250 °C"
