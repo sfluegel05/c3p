@@ -25,18 +25,18 @@ def is_L_alpha_amino_acid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for alpha-amino acid pattern (C-N-C(=O)-O)
-    amino_acid_pattern = Chem.MolFromSmarts("[C@H](N)C(=O)O")
-    if not mol.HasSubstructMatch(amino_acid_pattern):
-        return False, "No alpha-amino acid pattern found"
+    amino_acid_pattern = Chem.MolFromSmarts("[C@@H](N)C(=O)O")
+    matches = mol.GetSubstructMatches(amino_acid_pattern)
 
-    # Find chiral centers in the molecule
-    chiral_centers = Chem.FindMolChiralCenters(mol)
+    if not matches:
+        return False, "No alpha-amino acid pattern found"
 
     # Identify the alpha-carbon
     alpha_carbon = None
-    for center in chiral_centers:
-        atom = mol.GetAtomWithIdx(center)
-        if atom.GetSymbol() == "C" and len(atom.GetNeighbors()) == 3:
+    for match in matches:
+        atom_idx = match[0]
+        atom = mol.GetAtomWithIdx(atom_idx)
+        if atom.GetSymbol() == "C" and atom.GetHybridization() == Chem.HybridizationType.SP3:
             alpha_carbon = atom
             break
 
@@ -47,10 +47,20 @@ def is_L_alpha_amino_acid(smiles: str):
     try:
         conf = alpha_carbon.GetProp("_CIPCode")
         if conf == "R":
-            return True, "L-configuration at alpha-carbon"
-        elif conf == "S":
             return False, "D-configuration at alpha-carbon"
+        elif conf == "S":
+            return True, "L-configuration at alpha-carbon"
         else:
             return False, "Unable to determine chirality at alpha-carbon"
     except KeyError:
-        return False, "Unable to determine chirality at alpha-carbon"
+        # If CIP code is not available, analyze the 3D conformation (if available)
+        if mol.GetConformer().Is3D():
+            perm = alpha_carbon.GetProp("_CIPRank")
+            if perm == "1,2,3,4":
+                return True, "L-configuration at alpha-carbon (based on 3D conformation)"
+            elif perm == "4,3,2,1":
+                return False, "D-configuration at alpha-carbon (based on 3D conformation)"
+            else:
+                return False, "Unable to determine chirality at alpha-carbon"
+        else:
+            return False, "Unable to determine chirality at alpha-carbon (no 3D conformation available)"
