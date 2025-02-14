@@ -27,26 +27,25 @@ def is_monoamine(smiles: str) -> tuple[bool, str]:
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for aromatic atoms
-    aromatic_atoms = [atom for atom in mol.GetAtoms() if atom.GetIsAromatic()]
-    if not aromatic_atoms:
+    # Look for aromatic ring
+    aromatic_ring_pattern = Chem.MolFromSmarts("c1ccccc1")
+    aromatic_ring_matches = mol.GetSubstructMatches(aromatic_ring_pattern)
+    if not aromatic_ring_matches:
         return False, "No aromatic ring found"
 
-    # Look for amino group (-NH2, -NH3+, -NHR, -NR2, -NR3+)
-    amino_pattern = Chem.MolFromSmarts("[NX3;H2,H1;!$(NC=O)]")
+    # Look for amino group (-NH2, -NH3+, -NHR, -NR2, -NR3+, =N-, =N+)
+    amino_pattern = Chem.MolFromSmarts("[NX3;H2,H1,H0;!$(NC=O)]")
     amino_matches = mol.GetSubstructMatches(amino_pattern)
     if not amino_matches:
         return False, "No amino group found"
 
-    # Check if the amino group is connected to an aromatic ring via a carbon chain
-    for atom_idx in amino_matches[0]:
-        atom = mol.GetAtomWithIdx(atom_idx)
-        for neighbor in atom.GetNeighbors():
-            if neighbor.GetIsAromatic():
-                continue
-            path = Chem.FindAllPathsOfLengthN(mol, atom_idx, neighbor.GetIdx(), 6, useBonds=False)
-            for path in path:
-                if any(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in path[1:-1]):
+    # Check if the amino group is connected to an aromatic ring via a two-carbon chain
+    for amino_idx in amino_matches[0]:
+        for ring_idx in aromatic_ring_matches[0]:
+            path = Chem.FindAllPathsOfLengthN(mol, amino_idx, ring_idx, 3, useBonds=True)
+            if path:
+                chain_atoms = [mol.GetAtomWithIdx(idx) for idx in path[0][1:-1]]
+                if len(chain_atoms) == 2 and all(atom.GetAtomicNum() == 6 for atom in chain_atoms):
                     return True, "Monoamine structure detected"
 
-    return False, "Amino group not connected to aromatic ring via carbon chain"
+    return False, "Amino group not connected to aromatic ring via two-carbon chain"
