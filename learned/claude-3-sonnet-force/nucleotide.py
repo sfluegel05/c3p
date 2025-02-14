@@ -1,26 +1,70 @@
 """
 Classifies: CHEBI:36976 nucleotide
 """
-Based on the provided examples and the previous code, it seems that the current implementation has a few limitations:
+"""
+Classifies: CHEBI:36973 nucleotide
+A nucleotide is a nucleoside phosphate resulting from the condensation of the 3 or 5 hydroxy group of a nucleoside with phosphoric acid.
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdchem
 
-1. **Nucleoside Pattern Limitations**: The current nucleoside pattern (`nucleoside_pattern`) only matches canonical purine and pyrimidine bases with specific atom numbering. However, some of the provided examples contain modified or non-canonical nucleoside bases, which would not be matched by this pattern.
+def is_nucleotide(smiles: str):
+    """
+    Determines if a molecule is a nucleotide based on its SMILES string.
 
-2. **Sugar Pattern Limitations**: The current sugar pattern (`[C@H]2[C@H]([C@H]([C@H](O2)O)O)O`) assumes a ribose sugar with a specific stereochemistry. However, some examples contain deoxyribose sugars or modified sugars, which would not be matched by this pattern.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Phosphate Position Limitation**: The current code checks if the phosphate group is attached to the 3' or 5' position of the sugar. However, some examples contain multiple phosphate groups attached at different positions or have modifications to the phosphate group itself.
+    Returns:
+        bool: True if molecule is a nucleotide, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-To improve the program and handle a broader range of nucleotide structures, we can consider the following modifications:
+    # Look for nucleoside base
+    bases = ['Adenine', 'Guanine', 'Cytosine', 'Thymine', 'Uracil']
+    base_found = False
+    for base in bases:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(f'n{base}')):
+            base_found = True
+            break
 
-1. **Use a more flexible nucleoside pattern**: Instead of relying on a specific SMARTS pattern, we can use more general substructure matching or atom environment comparisons to identify nucleoside bases. This could involve checking for the presence of specific ring systems and attached atoms/groups.
+    # Look for alternative/modified nucleoside bases
+    if not base_found:
+        for atom in mol.GetAtoms():
+            if atom.GetIsAromatic() and atom.GetSymbol() == 'N':
+                env = Chem.FindAtomEnvironmentOfRadiusN(mol, 3, atom.GetIdx())
+                if env.getIsNucleicAcidBase():
+                    base_found = True
+                    break
 
-2. **Use a more flexible sugar pattern**: Similarly, we can use a more general pattern or substructure matching approach to identify sugar moieties, allowing for different types of sugars (ribose, deoxyribose, etc.) and stereochemistries.
+    if not base_found:
+        return False, "No nucleoside base found"
 
-3. **Allow for multiple phosphate groups**: Instead of checking for a single phosphate group, we can look for the presence of one or more phosphate groups attached to the sugar moiety, without enforcing a specific position.
+    # Look for sugar moiety
+    sugar_found = False
+    for atom in mol.GetAtoms():
+        if atom.GetSymbol() == 'O' and atom.GetIsAromatic():
+            env = Chem.FindAtomEnvironmentOfRadiusN(mol, 3, atom.GetIdx())
+            if env.getIsSugar():
+                sugar_found = True
+                break
 
-4. **Consider additional structural features**: Some examples contain additional modifications or substituents, such as fatty acid chains or other functional groups. We could introduce additional checks or patterns to account for these structural features.
+    if not sugar_found:
+        return False, "No sugar moiety found"
 
-5. **Use a combination of techniques**: Instead of relying on a single approach, we could use a combination of substructure matching, atom environment comparisons, and other techniques to identify nucleotide structures more robustly.
+    # Look for phosphate groups
+    phosphate_pattern = Chem.MolFromSmarts("OP(=O)([O-,O])")
+    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
+    if not phosphate_matches:
+        return False, "No phosphate group found"
 
-While these improvements may increase the complexity of the code, they should allow for better coverage of the diverse range of nucleotide structures present in the examples.
+    # Additional checks for other structural features (if needed)
+    # ...
 
-Regarding the potential outliers or misclassifications in the benchmark, without additional context or domain knowledge, it is difficult to determine if they are genuine errors or if they highlight limitations in the benchmark itself. In such cases, it may be prudent to rely on your understanding of the chemical class and make a well-reasoned decision on whether to address or ignore the outliers.
+    return True, "Contains a nucleoside base, sugar moiety, and phosphate group(s)"
