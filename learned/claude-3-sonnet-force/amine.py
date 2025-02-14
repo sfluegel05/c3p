@@ -10,7 +10,8 @@ from rdkit.Chem import AllChem
 def is_amine(smiles: str):
     """
     Determines if a molecule is an amine based on its SMILES string.
-    An amine is a compound formally derived from ammonia by replacing one, two or three hydrogen atoms by hydrocarbyl groups.
+    An amine is a compound formally derived from ammonia by replacing one, two or three
+    hydrogen atoms by hydrocarbyl groups, or a nitrogen-containing heterocyclic compound.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -25,23 +26,35 @@ def is_amine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Count nitrogen atoms
-    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
+    # Define SMARTS patterns for different types of amines
+    primary_amine_pattern = Chem.MolFromSmarts("[NH2]")
+    secondary_amine_pattern = Chem.MolFromSmarts("[NH1]")
+    tertiary_amine_pattern = Chem.MolFromSmarts("[NH0]")
+    cyclic_amine_pattern = Chem.MolFromSmarts("[NX3]")
     
-    # An amine must have at least 1 nitrogen atom
-    if n_count == 0:
-        return False, "No nitrogen atoms present"
+    # Check for matches
+    primary_amine_matches = mol.GetSubstructMatches(primary_amine_pattern)
+    secondary_amine_matches = mol.GetSubstructMatches(secondary_amine_pattern)
+    tertiary_amine_matches = mol.GetSubstructMatches(tertiary_amine_pattern)
+    cyclic_amine_matches = mol.GetSubstructMatches(cyclic_amine_pattern)
     
-    # Check if nitrogen is attached to hydrogen or carbon
-    nitrogen_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7]
-    is_amine = False
-    for n_atom in nitrogen_atoms:
-        neighbors = [mol.GetAtomWithIdx(x).GetAtomicNum() for x in n_atom.GetNeighbors()]
-        if 1 in neighbors and 6 in neighbors:  # 1 = H, 6 = C
-            is_amine = True
-            break
+    if primary_amine_matches or secondary_amine_matches or tertiary_amine_matches or cyclic_amine_matches:
+        reason = "Contains"
+        if primary_amine_matches:
+            reason += " primary amine(s)"
+        if secondary_amine_matches:
+            reason += " secondary amine(s)"
+        if tertiary_amine_matches:
+            reason += " tertiary amine(s)"
+        if cyclic_amine_matches:
+            reason += " cyclic amine(s)"
+        return True, reason
     
-    if is_amine:
-        return True, "Contains nitrogen atom(s) attached to hydrogen and carbon"
-    else:
-        return False, "Nitrogen atom(s) not attached to both hydrogen and carbon"
+    # Exclude quaternary nitrogen atoms
+    quaternary_nitrogen_pattern = Chem.MolFromSmarts("[N+]")
+    quaternary_nitrogen_matches = mol.GetSubstructMatches(quaternary_nitrogen_pattern)
+    if quaternary_nitrogen_matches:
+        return False, "Contains quaternary nitrogen atom(s)"
+    
+    # If no amine patterns found, return False
+    return False, "No amine groups found"
