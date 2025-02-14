@@ -7,7 +7,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_cyclic_fatty_acid(smiles: str):
     """
     Determines if a molecule is a cyclic fatty acid based on its SMILES string.
-    A cyclic fatty acid is a fatty acid that contains one or more rings.
+    A cyclic fatty acid is a fatty acid that contains one or more rings as part of the fatty acid chain.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,52 +26,43 @@ def is_cyclic_fatty_acid(smiles: str):
     if ring_info.NumRings() == 0:
         return False, "No ring structure found"
 
-    # Check for carboxylic acid or ester group directly connected to a carbon chain, and a long carbon chain using SMARTS
-    # Carboxylic acid pattern and ester group are allowed
-    acid_or_ester_pattern = Chem.MolFromSmarts('[CX4,CX3](=[OX1])([OX2])[#6]') # carbonyl attached to O, attached to carbon
+    # Check for carboxylic acid or ester group directly connected to a carbon chain
+    acid_or_ester_pattern = Chem.MolFromSmarts('[CX3,CX4](=[OX1])[OX2]')
     acid_or_ester_matches = mol.GetSubstructMatches(acid_or_ester_pattern)
 
     if not acid_or_ester_matches:
-         return False, "No carboxylic acid or ester group found attached to a carbon chain"
+        return False, "No carboxylic acid or ester group found"
 
-    # Check for a hydrocarbon chain attached to the carboxylic acid group with at least 4 carbons
-    hydrocarbon_chain_pattern = Chem.MolFromSmarts('[#6][#6]([#6])[#6]')
+
+    # Check for a carbon chain, containing a ring, connected to acid group
+    # Modified to look for chain with at least 3 carbons including one carbon that is part of a ring
+    # with the carboxyl group attached to a carbon of the chain.
+    # This pattern looks for the carboxyl carbon atom, then a carbon connected to it, then a carbon inside a ring and then a carbon atom connected to it,
+    # to ensure that the ring is part of the chain.
     
-    found_long_chain = False
+    cyclic_chain_pattern = Chem.MolFromSmarts('[CX3,CX4](=[OX1])[OX2][#6]-[#6;R]-[#6]')
+
+    
+    found_chain_match = False
     for match in acid_or_ester_matches:
-        for atom_index in match:
-             atom = mol.GetAtomWithIdx(atom_index)
-             if atom.GetAtomicNum() == 6:
-                #check if this carbon is part of the hydrocarbon chain by looking at its neighbors
-                for neighbor in atom.GetNeighbors():
+        for atom_index in match: #check if the carbon of the acid/ester is part of a chain
+            if mol.GetAtomWithIdx(atom_index).GetAtomicNum() == 6:
+                for neighbor in mol.GetAtomWithIdx(atom_index).GetNeighbors(): #find carbons attached to carboxyl
                     if neighbor.GetAtomicNum() == 6:
-                        for neighbor2 in neighbor.GetNeighbors():
-                            if neighbor2.GetAtomicNum() == 6 and neighbor2.GetIdx() != atom_index :
-                                for neighbor3 in neighbor2.GetNeighbors():
-                                    if neighbor3.GetAtomicNum() == 6 and neighbor3.GetIdx() != neighbor.GetIdx():
-                                        found_long_chain=True
-    if not found_long_chain:
-      return False, "No long hydrocarbon chain attached to the acid/ester"
+                        #check for full chain pattern with carboxyl group:
+                       matches = mol.GetSubstructMatches(cyclic_chain_pattern)
+                       if matches:
+                        for m in matches:
+                            if atom_index in m:
+                             found_chain_match = True
+                               
 
-    # Check if the ring is part of the fatty acid chain (not a side group)
-    # Here we're checking if a carbon from the ring is directly attached to a carbon chain and the acid group
-    found_ring_chain = False
-    for ring_atom_idx in ring_info.AtomRings():
-        for atom_idx in ring_atom_idx:
-             atom = mol.GetAtomWithIdx(atom_idx)
-             if atom.GetAtomicNum() == 6:
-                # Check if this carbon is attached to a carbon of a long chain
-                for neighbor in atom.GetNeighbors():
-                    if neighbor.GetAtomicNum() == 6:
-                        for neighbor2 in neighbor.GetNeighbors():
-                            if neighbor2.GetAtomicNum() == 6 and neighbor2.GetIdx() != atom_idx :
-                                found_ring_chain = True
-    if not found_ring_chain:
-         return False, "Ring is not part of the fatty acid chain."
+    if not found_chain_match:
+      return False, "No ring found as part of a fatty acid carbon chain"
 
-    # count carbons: fatty acids typically have >4 carbons
+    #count carbons in whole molecule to ensure it's at least a short fatty acid (5 or more)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if c_count < 5:
         return False, "Too few carbon atoms for a fatty acid"
-   
+
     return True, "Contains ring and fatty acid substructures"
