@@ -25,11 +25,13 @@ def is_chalcogen(smiles: str):
         return False, "Invalid SMILES string"
     
     # Get the atomic numbers of all atoms in the molecule
-    atomic_numbers = [atom.GetAtomicNum() for atom in mol.GetAtoms()]
+    atomic_numbers = set([atom.GetAtomicNum() for atom in mol.GetAtoms()])
     
-    # Check if the molecule contains any chalcogen elements
-    chalcogens = [8, 16, 34, 52, 84, 118]  # Atomic numbers of chalcogen elements
-    if any(atomic_number in chalcogens for atomic_number in atomic_numbers):
-        return True, "The molecule contains one or more chalcogen elements"
+    # Check if the molecule contains only chalcogen elements
+    chalcogens = {8, 16, 34, 52, 84, 118}  # Atomic numbers of chalcogen elements
+    if atomic_numbers == chalcogens:
+        return True, "The molecule contains only chalcogen elements"
+    elif atomic_numbers.issubset(chalcogens):
+        return True, "The molecule contains only chalcogen elements"
     else:
-        return False, "The molecule does not contain any chalcogen elements"
+        return False, "The molecule contains elements other than chalcogens"
