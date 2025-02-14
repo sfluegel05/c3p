@@ -2,12 +2,11 @@
 Classifies: CHEBI:32952 amine
 """
 from rdkit import Chem
-from rdkit.Chem import rdqueries
 
 def is_amine(smiles: str):
     """
     Determines if a molecule is an amine based on its SMILES string.
-    An amine is derived from ammonia by replacing one or more hydrogen atoms with hydrocarbyl groups.
+    An amine is derived from ammonia by replacing one, two, or three hydrogen atoms with hydrocarbyl groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,26 +21,17 @@ def is_amine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define a query for a nitrogen atom with up to three single-bonded carbons (amine N)
-    amine_query = rdqueries.AtomNumEqualsQueryAtom(7)  # Nitrogen atom
-    amine_query.SetDegree(1, 3)  # Allow between 1 and 3 neighbors
+    # Define SMARTS patterns for primary, secondary, and tertiary amines
+    primary_amine_pattern = Chem.MolFromSmarts("[NX3;H2][CX4]")
+    secondary_amine_pattern = Chem.MolFromSmarts("[NX3;H1][CX4][CX4]")
+    tertiary_amine_pattern = Chem.MolFromSmarts("[NX3][CX4][CX4][CX4]")
 
-    # Exclude nitrogen atoms in specific functional groups
-    non_amine_patterns = [
-        Chem.MolFromSmarts("N-C(=O)"),  # Amide
-        Chem.MolFromSmarts("N(=O)"),    # Nitro
-    ]
-    
-    is_any_amine = False
-    for atom in mol.GetAtoms():
-        if amine_query.MatchAtom(atom):
-            # Check if this nitrogen is part of any excluded group
-            if any(mol.HasSubstructMatch(pattern) for pattern in non_amine_patterns if mol.HasSubstructMatch(pattern, recursive=False)):
-                continue
-            # If not part of excluded groups and it's an amine pattern
-            is_any_amine = True
-            break
-    
-    if is_any_amine:
-        return True, "Molecule contains an amine group"
+    # Check for primary, secondary, or tertiary amine patterns
+    if mol.HasSubstructMatch(primary_amine_pattern):
+        return True, "Molecule contains a primary amine group"
+    elif mol.HasSubstructMatch(secondary_amine_pattern):
+        return True, "Molecule contains a secondary amine group"
+    elif mol.HasSubstructMatch(tertiary_amine_pattern):
+        return True, "Molecule contains a tertiary amine group"
+
     return False, "No amine group detected"
