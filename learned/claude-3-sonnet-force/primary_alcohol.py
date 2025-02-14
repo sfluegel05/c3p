@@ -40,7 +40,17 @@ def is_primary_alcohol(smiles: str):
             hydrogen_count = sum(1 for neighbor in carbon.GetNeighbors() if neighbor.GetSymbol() == 'H')
             carbon_count = sum(1 for neighbor in carbon.GetNeighbors() if neighbor.GetSymbol() == 'C')
             if (hydrogen_count == 3) or (carbon_count == 1 and hydrogen_count == 2):
-                return True, "Contains a primary alcohol group (-OH attached to a saturated carbon atom with either three hydrogen atoms or one other carbon atom and two hydrogen atoms)"
+                # Check if carbon is part of a ring
+                is_in_ring = carbon.IsInRing()
+                # Check if molecule contains unsaturated bonds
+                has_unsaturated_bonds = any(bond.GetIsAromatic() or bond.GetBondType() == Chem.BondType.DOUBLE or bond.GetBondType() == Chem.BondType.TRIPLE for bond in mol.GetBonds())
+                
+                # If carbon is in a ring or molecule has unsaturated bonds, classify as primary alcohol
+                if is_in_ring or has_unsaturated_bonds:
+                    return True, "Contains a primary alcohol group (-OH attached to a saturated carbon atom with either three hydrogen atoms or one other carbon atom and two hydrogen atoms)"
+                # Otherwise, follow the original logic
+                else:
+                    return True, "Contains a primary alcohol group (-OH attached to a saturated carbon atom with either three hydrogen atoms or one other carbon atom and two hydrogen atoms)"
     
     # If no primary alcohol groups found
     return False, "Does not contain a primary alcohol group"
