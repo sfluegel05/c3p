@@ -5,8 +5,6 @@ Classifies: CHEBI:83139 long-chain fatty acyl-CoA(4-)
 Classifies: CHEBI:77989 long-chain fatty acyl-CoA(4-)
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdqueries
 
 def is_long_chain_fatty_acyl_CoA_4__(smiles: str):
     """
@@ -26,11 +24,8 @@ def is_long_chain_fatty_acyl_CoA_4__(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define CoA SMARTS pattern (simplified)
-    coa_smarts = """
-    O[C@H]1[C@H](O)[C@H](OP(=O)([O-])OP(=O)([O-])OC[C@H]2O[C@H](n3cnc4c(ncnc43)N)
-    [C@H]2OP(=O)([O-])[O-])[C@@H](O)[C@@H]1OP(=O)([O-])[O-]
-    """
+    # Define CoA SMARTS pattern (simplified and corrected)
+    coa_smarts = "NC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)([O-])OP(=O)([O-])OCC1OC(C(O)C1OP(=O)([O-])[O-])n2cnc3c(ncnc23)N"
     coa_pattern = Chem.MolFromSmarts(coa_smarts)
     if coa_pattern is None:
         return False, "Invalid CoA SMARTS pattern"
@@ -48,12 +43,12 @@ def is_long_chain_fatty_acyl_CoA_4__(smiles: str):
     thioester_matches = mol.GetSubstructMatches(thioester_pattern)
     if not thioester_matches:
         return False, "Thioester linkage not found"
-    thioester_atom_idx = thioester_matches[0][0]  # Carbonyl carbon
+    thioester_carbon_idx = thioester_matches[0][0]  # Carbonyl carbon
 
     # Traverse the acyl chain from the carbonyl carbon
     acyl_chain_length = 0
     visited_atoms = set()
-    atoms_to_visit = [thioester_atom_idx]
+    atoms_to_visit = [thioester_carbon_idx]
 
     while atoms_to_visit:
         atom_idx = atoms_to_visit.pop()
@@ -62,13 +57,16 @@ def is_long_chain_fatty_acyl_CoA_4__(smiles: str):
         visited_atoms.add(atom_idx)
         atom = mol.GetAtomWithIdx(atom_idx)
         if atom.GetAtomicNum() == 6:  # Carbon atom
-            acyl_chain_length += 1
-            for neighbor in atom.GetNeighbors():
-                neighbor_idx = neighbor.GetIdx()
-                if neighbor_idx not in visited_atoms:
-                    # Avoid going back towards the thioester linkage (S atom)
-                    if neighbor.GetAtomicNum() != 16:  # Exclude sulfur
-                        atoms_to_visit.append(neighbor_idx)
+            # Check if the atom is part of the CoA moiety
+            if not atom.HasSubstructMatch(coa_pattern):
+                acyl_chain_length += 1
+                for neighbor in atom.GetNeighbors():
+                    neighbor_idx = neighbor.GetIdx()
+                    if neighbor_idx not in visited_atoms:
+                        neighbor_atom = mol.GetAtomWithIdx(neighbor_idx)
+                        # Exclude sulfur atom (S) and atoms in CoA moiety
+                        if neighbor_atom.GetAtomicNum() != 16 and not neighbor_atom.HasSubstructMatch(coa_pattern):
+                            atoms_to_visit.append(neighbor_idx)
 
     # Adjust for the carbonyl carbon counted
     acyl_chain_length -= 1  # Exclude the carbonyl carbon from chain length
