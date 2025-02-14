@@ -31,17 +31,40 @@ def is_beta_D_glucoside(smiles: str):
     glucose_pattern = Chem.MolFromSmarts("[C@H]1([C@H](O)[C@@H](O)[C@H](O)[C@@H](O1)O)O")
     glucose_matches = mol.GetSubstructMatches(glucose_pattern)
 
-    # Check for beta-configuration at anomeric centers
+    # Check for glycosidic bonds and beta-configuration
     beta_glucosides = []
     for match in glucose_matches:
         anomeric_center = match[0]
-        if is_beta_configuration(mol, anomeric_center):
+        if is_glucoside(mol, anomeric_center) and is_beta_configuration(mol, anomeric_center):
             beta_glucosides.append(match)
 
     if not beta_glucosides:
-        return False, "No beta-D-glucose substructures found"
+        return False, "No beta-D-glucoside substructures found"
 
-    return True, f"Contains {len(beta_glucosides)} beta-D-glucose substructure(s)"
+    return True, f"Contains {len(beta_glucosides)} beta-D-glucoside substructure(s)"
+
+def is_glucoside(mol, atom_idx):
+    """
+    Determines if the glucose substructure at the given atom index is connected to
+    the rest of the molecule via a glycosidic bond.
+
+    Args:
+        mol (Mol): RDKit molecule object
+        atom_idx (int): Index of the anomeric center atom
+
+    Returns:
+        bool: True if the glucose substructure is part of a glucoside, False otherwise
+    """
+
+    atom = mol.GetAtomWithIdx(atom_idx)
+    neighbors = atom.GetNeighbors()
+
+    # Check if the anomeric center is connected to a non-hydrogen atom via an ether or acetal bond
+    for neighbor in neighbors:
+        if neighbor.GetAtomicNum() != 1 and neighbor.GetHybridization() == Chem.HybridizationType.SP3:
+            return True
+
+    return False
 
 def is_beta_configuration(mol, atom_idx):
     """
