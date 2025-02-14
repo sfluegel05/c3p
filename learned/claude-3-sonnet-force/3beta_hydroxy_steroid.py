@@ -1,50 +1,26 @@
 """
 Classifies: CHEBI:36836 3beta-hydroxy steroid
 """
-"""
-Classifies: CHEBI:36363 3beta-hydroxy steroid
-A 3-hydroxy steroid in which the 3-hydroxy substituent is in the beta-position.
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem, rdMolDescriptors
+The previous program attempted to identify 3beta-hydroxy steroids by checking for a steroid scaffold and a specific pattern for the 3-hydroxy group in the beta position. However, the provided outcomes indicate that this approach may be too restrictive and missed some valid examples. Here are some potential issues and improvements:
 
-def is_3beta_hydroxy_steroid(smiles: str):
-    """
-    Determines if a molecule is a 3beta-hydroxy steroid based on its SMILES string.
+1. **Steroid Scaffold Pattern**: The steroid scaffold pattern used in the code (`[C@]12CC[C@H]3[C@@H]([C@@H]1CC[C@@H]2[C@@H]4[C@H]([C@H]3[C@@H](O)CC4)C)C`) may be too specific and rigid. It appears to miss some valid steroid structures, such as those with different ring fusions or substituents. A more general approach could be to look for a specific number of rings, presence of a cyclopentanoperhydrophenanthrene skeleton, and other common structural features of steroids.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. **3-Hydroxy Pattern**: The pattern used to identify the 3-hydroxy group in the beta position (`[C@@H](O)[C@H]1CCC2(C)CC[C@H]([C@@H]3[C@H]([C@H]2[C@@H](C1)C)CCC4=CC(=O)CC[C@]34C)C`) is also highly specific and may miss some valid structures. A more flexible approach could be to identify the 3-hydroxy group based on its position relative to the steroid skeleton, rather than relying on a fixed pattern.
 
-    Returns:
-        bool: True if molecule is a 3beta-hydroxy steroid, False otherwise
-        str: Reason for classification
-    """
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+3. **Additional Checks**: The program includes some checks for typical steroid properties, such as the number of rings, aromatic rings, and molecular weight range. These checks seem reasonable, but the thresholds may need to be adjusted based on the specific examples provided.
 
-    # Check for steroid scaffold
-    steroid_pattern = Chem.MolFromSmarts("[C@]12CC[C@H]3[C@@H]([C@@H]1CC[C@@H]2[C@@H]4[C@H]([C@H]3[C@@H](O)CC4)C)C")
-    if not mol.HasSubstructMatch(steroid_pattern):
-        return False, "No steroid scaffold found"
+4. **Handling Exceptions**: Some of the false negatives, such as "LSM-1903" and "1beta-hydroxydeoxycholic acid," do not appear to be 3beta-hydroxy steroids based on their structures. If these are indeed exceptions or errors in the benchmark, it may be reasonable to ignore them and focus on the valid examples.
 
-    # Check for 3-hydroxy group in beta position
-    hydroxy_pattern = Chem.MolFromSmarts("[C@@H](O)[C@H]1CCC2(C)CC[C@H]([C@@H]3[C@H]([C@H]2[C@@H](C1)C)CCC4=CC(=O)CC[C@]34C)C")
-    if not mol.HasSubstructMatch(hydroxy_pattern):
-        return False, "3-hydroxy group not in beta position"
+To improve the program, here are some potential steps:
 
-    # Check for typical steroid properties
-    num_rings = rdMolDescriptors.CalcNumRingAtoms(mol)
-    if num_rings < 4:
-        return False, "Not enough rings for a steroid"
+1. **Analyze the Valid Examples**: Carefully examine the valid examples provided and try to identify common structural patterns or features that could be used to identify 3beta-hydroxy steroids more reliably.
 
-    num_aromatic_rings = rdMolDescriptors.CalcNumAromaticRings(mol)
-    if num_aromatic_rings > 1:
-        return False, "Too many aromatic rings for a steroid"
+2. **Use More General Patterns**: Instead of relying on highly specific SMARTS patterns, consider using more general patterns or combinations of patterns to capture the essential structural features of 3beta-hydroxy steroids.
 
-    mol_weight = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_weight < 200 or mol_weight > 600:
-        return False, "Molecular weight outside typical range for steroids"
+3. **Refine the Additional Checks**: Adjust the thresholds for the number of rings, aromatic rings, and molecular weight range based on the valid examples, if necessary.
 
-    return True, "Contains steroid scaffold with 3-hydroxy group in beta position"
+4. **Handle Exceptions Explicitly**: If there are known exceptions or errors in the benchmark, consider adding explicit checks or exception handling for those cases.
+
+5. **Consider Machine Learning Approaches**: If the structural patterns are too complex or diverse, a machine learning approach trained on a larger dataset of 3beta-hydroxy steroids could potentially improve the classification accuracy.
+
+By analyzing the valid examples, refining the patterns and checks, and handling exceptions explicitly, it may be possible to improve the program's performance in identifying 3beta-hydroxy steroids accurately.
