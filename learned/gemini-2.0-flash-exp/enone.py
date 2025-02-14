@@ -22,9 +22,9 @@ def is_enone(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define SMARTS pattern for the enone motif
-    # The pattern specifies that the carbonyl carbon is not bonded to any H, and explicitly ensures a carbon atom is attached to the carbon atom of the carbonyl group
-    enone_pattern = Chem.MolFromSmarts("[CX3]=[CX3]-[CX3](=[OX1])[CX3;!H1]")
-
+    # The pattern now specifies that the carbonyl carbon is not bonded to any H (except via double bond)
+    enone_pattern = Chem.MolFromSmarts("[C;!H0]=[C;!H0]-[C](=[O])[C;!H0]")
+    
     # Find the enone substructure
     matches = mol.GetSubstructMatches(enone_pattern)
     
