@@ -36,14 +36,9 @@ def is_polychlorobiphenyl(smiles: str):
         return False, f"Found {num_chlorines} chlorine atoms, should be between 2 and 10"
 
     # Check that chlorines are attached to the benzene rings
-    ring_info = mol.GetRingInfo()
-    ring_atoms = set()
-    for ring in ring_info.AtomRings():
-        ring_atoms.update(ring)
-
     chlorine_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 17]
     for cl_atom in chlorine_atoms:
-        if not any(mol.GetBondBetweenAtoms(cl_atom.GetIdx(), neighbor_atom.GetIdx()).IsInRing() for neighbor_atom in cl_atom.GetNeighbors()):
+        if not any(neighbor_atom.IsInRingSize(6) for neighbor_atom in cl_atom.GetNeighbors()):
             return False, "Chlorine atom not attached to a benzene ring"
 
     return True, "Biphenyl compound with 2-10 chlorine atoms attached to the benzene rings"
