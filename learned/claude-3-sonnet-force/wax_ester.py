@@ -2,7 +2,9 @@
 Classifies: CHEBI:10036 wax ester
 """
 """
-Classifies: CHEBI:38219 wax ester
+Classifies: CHEBI:33563 wax ester
+A fatty acid ester resulting from the condensation of the carboxy group of a fatty acid
+with the alcoholic hydroxy group of a fatty alcohol.
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
@@ -21,7 +23,6 @@ def is_wax_ester(smiles: str):
         bool: True if molecule is a wax ester, False otherwise
         str: Reason for classification
     """
-    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
@@ -33,37 +34,30 @@ def is_wax_ester(smiles: str):
     if len(ester_matches) != 1:
         return False, f"Found {len(ester_matches)} ester groups, need exactly 1"
 
-    # Look for fatty acid chain (long carbon chain attached to carbonyl carbon)
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    # Check for fatty acid chain (long carbon chain attached to carbonyl carbon of ester)
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
     fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
-    if not fatty_acid_matches:
-        return False, "Missing fatty acid chain"
-    
-    # Look for fatty alcohol chain (long carbon chain with terminal oxygen attached to ester oxygen)
-    fatty_alcohol_pattern = Chem.MolFromSmarts("[OX2][CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
-    fatty_alcohol_matches = mol.GetSubstructMatches(fatty_alcohol_pattern)
-    if not fatty_alcohol_matches:
-        return False, "Missing fatty alcohol chain"
+    if len(fatty_acid_matches) < 1:
+        return False, f"Missing fatty acid chain, got {len(fatty_acid_matches)}"
 
-    # Check for minimum rotatable bonds (10) to ensure long chains
+    # Count rotatable bonds to verify long chain
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
     if n_rotatable < 10:
-        return False, "Chains too short to be fatty chains"
+        return False, "Chain too short to be a fatty acid"
 
-    # Check for minimum carbon atoms (20)
+    # Check for fatty alcohol chain (long carbon chain attached to oxygen of ester)
+    fatty_alcohol_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[OX2]")
+    fatty_alcohol_matches = mol.GetSubstructMatches(fatty_alcohol_pattern)
+    if len(fatty_alcohol_matches) < 1:
+        return False, f"Missing fatty alcohol chain, got {len(fatty_alcohol_matches)}"
+
+    # Count carbons and oxygens
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+
     if c_count < 20:
-        return False, "Too few carbons for wax ester"
+        return False, "Too few carbons for a wax ester"
+    if o_count != 2:
+        return False, "Must have exactly 2 oxygens (1 ester group)"
 
-    # Check for exactly one alcohol group (-OH)
-    alcohol_pattern = Chem.MolFromSmarts("[OX2H]")
-    alcohol_matches = mol.GetSubstructMatches(alcohol_pattern)
-    if len(alcohol_matches) != 1:
-        return False, "Must have exactly one alcohol group"
-
-    # Exclude molecules with free carboxylic acid groups (-COOH)
-    carboxyl_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H]")
-    if mol.HasSubstructMatch(carboxyl_pattern):
-        return False, "Cannot contain free carboxylic acid groups"
-
-    return True, "Contains fatty acid ester with a fatty acid chain and a fatty alcohol chain"
+    return True, "Contains an ester group with a fatty acid and fatty alcohol chain"
