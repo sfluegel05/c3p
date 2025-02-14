@@ -3,10 +3,12 @@ Classifies: CHEBI:84948 11,12-saturated fatty acyl-CoA(4-)
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_11_12_saturated_fatty_acyl_CoA_4__(smiles: str):
     """
     Determines if a molecule is a 11,12-saturated fatty acyl-CoA(4-) based on its SMILES string.
+    This means checking the fatty acyl chain for saturation at position 11-12.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -15,71 +17,59 @@ def is_11_12_saturated_fatty_acyl_CoA_4__(smiles: str):
         bool: True if molecule is a 11,12-saturated fatty acyl-CoA(4-), False otherwise
         str: Reason for classification
     """
+
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS for CoA moiety
-    coa_smarts = "SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP([O-])(=O)OP([O-])(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP([O-])([O-])=O)n1cnc2c(N)ncnc12"
-    coa_pattern = Chem.MolFromSmarts(coa_smarts)
-    
+    # CoA substructure check:
+    coa_pattern = Chem.MolFromSmarts('CC(C)(COP([O-])(=O)OP([O-])(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP([O-])([O-])=O)n1cnc2c(N)ncnc12)C(O)C(=O)NCCC(=O)NCCS')
     if not mol.HasSubstructMatch(coa_pattern):
-         return False, "Molecule does not contain the CoA moiety"
-
-    # Find the sulfur atom in the CoA moiety
-    match = mol.GetSubstructMatch(coa_pattern)
-    sulfur_index = -1
-    for atom_index in match:
-        atom = mol.GetAtomWithIdx(atom_index)
-        if atom.GetAtomicNum() == 16:  # Sulfur is atomic number 16
-            sulfur_index = atom_index
-            break
-    if sulfur_index == -1:
-        return False, "Could not locate sulfur in CoA moiety"
-
-    # Find the carbonyl carbon attached to the sulfur
-    carbonyl_carbon_index = -1
-    sulfur_atom = mol.GetAtomWithIdx(sulfur_index)
-    for neighbor in sulfur_atom.GetNeighbors():
-       if neighbor.GetAtomicNum() == 6:
-          #Check if the carbon is part of a carbonyl group (-C=O)
-          for carbonyl_neighbor in neighbor.GetNeighbors():
-             if carbonyl_neighbor.GetAtomicNum() == 8 and mol.GetBondBetweenAtoms(neighbor.GetIdx(), carbonyl_neighbor.GetIdx()).GetBondType() == Chem.BondType.DOUBLE:
-                 carbonyl_carbon_index = neighbor.GetIdx()
-                 break
-          if carbonyl_carbon_index != -1:
-             break
+        return False, "Missing CoA substructure"
     
-    if carbonyl_carbon_index == -1:
-        return False, "Could not locate carbonyl carbon next to sulfur"
+    # Find thioester carbon and number the fatty acid chain carbons:
+    thioester_carbon = mol.GetSubstructMatch(Chem.MolFromSmarts('SC(=O)'))
+    if not thioester_carbon:
+      return False, "Could not identify thioester carbon"
+    thioester_carbon = thioester_carbon[1] # second atom in the SMARTS is the C in C=O
+    
+    fatty_acid_carbon_chain = []
+    current_atom = mol.GetAtomWithIdx(thioester_carbon)
+    
+    # follow the chain
+    for _ in range(30): # maximum 30 carbons, avoids infinite loops
+        connected_carbons = []
+        for neighbor in current_atom.GetNeighbors():
+          if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in fatty_acid_carbon_chain:
+              connected_carbons.append(neighbor)
 
-    # Trace the fatty acid chain with SMARTS starting from carbonyl carbon
-    fatty_acid_chain_smarts = f"[C:1](=[O])-[C;X4;!H0]-[*;!H0]-[*;!H0]-[*;!H0]-[*;!H0]-[*;!H0]-[*;!H0]-[*;!H0]-[*;!H0]-[*;!H0]-[*;!H0]-[*;!H0]" # at least 12 carbons
+        if not connected_carbons:
+           break # end of fatty acid chain
+        if len(connected_carbons) == 1:
+          current_atom = connected_carbons[0]
+          fatty_acid_carbon_chain.append(current_atom.GetIdx())
+        elif len(connected_carbons) > 1:
+          #handle branching, take the non hydroxylated
+          for carbon in connected_carbons:
+            if not carbon.HasSubstructMatch(Chem.MolFromSmarts('[CX4][OX2H]')):
+              current_atom = carbon
+              fatty_acid_carbon_chain.append(current_atom.GetIdx())
+              break
+          else:
+             break # branched, do not know what to do.
+        
     
-    fatty_acid_pattern = Chem.MolFromSmarts(fatty_acid_chain_smarts)
-    
-    matches = mol.GetSubstructMatches(fatty_acid_pattern)
-    
-    if not matches:
-        return False, "Could not find a valid fatty acid chain attached to the carbonyl"
+    if len(fatty_acid_carbon_chain) < 12: # check chain length.
+        return False, "Fatty acid chain too short to have a 11-12 bond"
 
-    fatty_acid_carbon_chain_indices = [match[1] for match in matches[0:1]]
+    # check the bond at 11-12 position
+    atom11 = mol.GetAtomWithIdx(fatty_acid_carbon_chain[10]) # 11th carbon of the acyl chain
+    atom12 = mol.GetAtomWithIdx(fatty_acid_carbon_chain[11]) # 12th carbon of the acyl chain
+    bond = mol.GetBondBetweenAtoms(atom11.GetIdx(), atom12.GetIdx())
 
-    if len(fatty_acid_carbon_chain_indices) < 12:
-       return False, "Fatty acid chain too short"
-    
-    # Check saturation between 11th and 12th carbons
-    carbon_11_index = matches[0][11] if len(matches[0]) > 11 else -1
-    carbon_12_index = matches[0][12] if len(matches[0]) > 12 else -1
-
-    if carbon_11_index == -1 or carbon_12_index == -1:
-        return False, "Could not find carbons at positions 11 and 12"
-    
-    bond = mol.GetBondBetweenAtoms(carbon_11_index, carbon_12_index)
     if bond is None:
-       return False, "No bond between carbon 11 and 12"
+        return False, "Could not identify bond between carbons 11 and 12"
+    if bond.GetBondType() != Chem.rdchem.BondType.SINGLE:
+        return False, "Bond between carbons 11 and 12 is not a single bond"
     
-    if bond.GetBondType() != Chem.BondType.SINGLE:
-        return False, "Bond between carbons 11 and 12 is not single (saturated)"
-    
-    return True, "The bond between carbons 11 and 12 is saturated in the fatty acyl chain"
+    return True, "Fatty acyl chain has a saturated bond between carbons 11 and 12 and is a CoA derivative"
