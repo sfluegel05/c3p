@@ -24,35 +24,29 @@ def is_CDP_diacylglycerol(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for CDP core.
-    # Pattern is Cytosine-Ribose-Diphosphate
-    cdp_core_pattern = Chem.MolFromSmarts('[#6]1-[#8]-[#6](-[#6](-[#8]-1)[#7]2-[#6]=[#7]-[#6](-[#7])=[#6]-[#7]2)COP(=O)(O)OP(=O)(O)O')
+    # General pattern: Cytosine-Ribose-Diphosphate
+    cdp_core_pattern = Chem.MolFromSmarts('[#6]1-[#8]-[#6](-[#6](-[#8]-1)[#7]2-[#6]=[#7]-[#6](-[#7])=[#6]-[#7]2)-[#6]-[#8]-[#15](=[#8])-[#8]-[#15](=[#8])-[#8]')
     if not mol.HasSubstructMatch(cdp_core_pattern):
        return False, "CDP core not found"
 
-    # Look for glycerol backbone pattern (C-C-C with 2 oxygens attached to each C)
-    glycerol_pattern = Chem.MolFromSmarts("[CH2X4]([OX2])[CHX4]([OX2])[CH2X4]([OX2])")
+    # Look for glycerol backbone pattern (C-C-C with at least one oxygen attached to each C)
+    glycerol_pattern = Chem.MolFromSmarts("[CX4]([OX2])[CX4]([OX2])[CX4]([OX2])")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
 
-    # Look for 2 ester groups (-O-C(=O)-)
-    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) != 2:
-        return False, f"Found {len(ester_matches)} ester groups, need exactly 2"
-
     # Look for a phosphate ester linkage to the glycerol (C-O-P)
-    phosphate_ester_pattern = Chem.MolFromSmarts("[CX4][OX2][P]")
+    phosphate_ester_pattern = Chem.MolFromSmarts("[CX4][OX2][#15]")
     phosphate_ester_matches = mol.GetSubstructMatches(phosphate_ester_pattern)
     
     if len(phosphate_ester_matches) < 1:
         return False, f"Missing phosphate ester group"
-
-    # Check for fatty acid chains (long carbon chains attached to esters)
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
-    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
-    if len(fatty_acid_matches) < 2:
-        return False, f"Missing fatty acid chains, got {len(fatty_acid_matches)}"
     
+    # Look for at least two acyl groups (ester groups, where each is at least one carbon away from the ester oxygen)
+    acyl_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])~[CX4]")
+    acyl_matches = mol.GetSubstructMatches(acyl_pattern)
+    if len(acyl_matches) < 2:
+         return False, f"Missing at least two acyl groups, got {len(acyl_matches)}"
+
     # Count phosphorus and nitrogen
     p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
     n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
