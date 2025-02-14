@@ -1,14 +1,18 @@
 """
 Classifies: CHEBI:87657 octanoate ester
 """
+"""
+Classifies: octanoate ester
+"""
+
 from rdkit import Chem
-from rdkit.Chem import rdchem
+from rdkit.Chem import rdMolDescriptors
 
 def is_octanoate_ester(smiles: str):
     """
     Determines if a molecule is an octanoate ester based on its SMILES string.
-    An octanoate ester is any ester where the acyl component is octanoic acid (caprylic acid).
-    
+    An octanoate ester is any ester where the carboxylic acid component is octanoic acid (caprylic acid).
+
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -23,84 +27,48 @@ def is_octanoate_ester(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define ester functional group pattern
-    ester_pattern = Chem.MolFromSmarts("[$([CX3](=O)[OX2H0])]")  # Ester group pattern
-
-    # Find all ester groups in the molecule
+    ester_pattern = Chem.MolFromSmarts("[#6][CX3](=O)[OX2H0][#6]")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if not ester_matches:
         return False, "No ester groups found"
 
-    # Iterate over each ester group
+    # Define octanoyl chain pattern (C(=O)CCCCCCC)
+    octanoyl_pattern = Chem.MolFromSmarts("[C](=O)[CH2][CH2][CH2][CH2][CH2][CH2][CH3]")
+
+    # Check each ester group for octanoyl chain
     for match in ester_matches:
-        carbonyl_c_idx = match[0]  # Index of the carbonyl carbon
-        ester_o_idx = match[2]     # Index of the ester oxygen
-
-        # Initialize variables for traversal
-        visited = set()
-        stack = [(carbonyl_c_idx, None)]  # Stack of (current atom idx, previous atom idx)
-        acyl_chain_length = 0
-        branching = False
-
-        # Traverse the acyl chain starting from the carbonyl carbon
+        # Extract atoms from the match
+        r1_c, c_carb, o_ester, r2_c = match[0], match[1], match[3], match[4]
+        
+        # Create a mapping for the pattern match
+        mapping = {0: c_carb, 1: match[2], 2: match[3], 3: r2_c}
+        
+        # Get the sub-molecule representing the acyl chain
+        acyl_chain = Chem.PathToSubmol(mol, [c_carb] + list(Chem.FindAtomEnvironmentOfRadiusN(mol, 7, c_carb)))
+        
+        # Check if the acyl chain matches the octanoyl pattern
+        if acyl_chain.HasSubstructMatch(octanoyl_pattern):
+            return True, "Contains octanoyl ester group"
+        
+        # Alternatively, traverse the acyl chain
+        chain_atoms = set()
+        stack = [(c_carb, None)]  # (current_atom, previous_atom)
         while stack:
-            current_atom_idx, previous_atom_idx = stack.pop()
-            if current_atom_idx in visited:
-                continue
-            visited.add(current_atom_idx)
-            current_atom = mol.GetAtomWithIdx(current_atom_idx)
+            current_atom, previous_atom = stack.pop()
+            atom = mol.GetAtomWithIdx(current_atom)
+            if atom.GetAtomicNum() != 6:
+                break  # Non-carbon atom found, not octanoyl
+            chain_atoms.add(current_atom)
+            neighbors = [n.GetIdx() for n in atom.GetNeighbors() if n.GetIdx() != previous_atom]
+            # Exclude oxygen atoms (carbonyl oxygen and ester oxygen)
+            neighbors = [n for n in neighbors if mol.GetAtomWithIdx(n).GetAtomicNum() == 6]
+            if len(chain_atoms) > 8:
+                break  # Chain too long, not octanoyl
+            if neighbors:
+                stack.append((neighbors[0], current_atom))
+            else:
+                if len(chain_atoms) == 8:
+                    return True, "Contains octanoyl ester group"
+                break  # Reached end of chain
 
-            # Count only carbon atoms (excluding the carbonyl carbon)
-            if current_atom.GetAtomicNum() == 6 and current_atom_idx != carbonyl_c_idx:
-                acyl_chain_length += 1
-
-            # Get neighbors excluding the previous atom to avoid backtracking
-            neighbors = [nbr for nbr in current_atom.GetNeighbors() if nbr.GetIdx() != previous_atom_idx]
-
-            # Check for branching (should only have two neighbors in acyl chain)
-            if len(neighbors) > 1 and current_atom_idx != carbonyl_c_idx:
-                branching = True
-                break
-
-            for neighbor in neighbors:
-                nbr_idx = neighbor.GetIdx()
-                nbr_atom = mol.GetAtomWithIdx(nbr_idx)
-                nbr_atom_num = nbr_atom.GetAtomicNum()
-
-                # Exclude ester oxygen and any heteroatoms (to ensure unbranched carbon chain)
-                if nbr_idx == ester_o_idx:
-                    continue  # Skip ester oxygen
-                elif nbr_atom_num == 6:
-                    stack.append((nbr_idx, current_atom_idx))
-                else:
-                    branching = True
-                    break
-
-            if branching:
-                break
-
-        # Check if acyl chain meets the criteria for octanoic acid
-        if branching:
-            continue  # This ester has a branched acyl chain; check next ester
-        if acyl_chain_length != 7:
-            continue  # Acyl chain does not have 7 carbons (excluding carbonyl carbon)
-        else:
-            # Check for saturation (no double bonds in acyl chain)
-            acyl_chain_atoms = list(visited)
-            unsaturation = False
-            for atom_idx in acyl_chain_atoms:
-                atom = mol.GetAtomWithIdx(atom_idx)
-                if atom.GetAtomicNum() == 6:
-                    for bond in atom.GetBonds():
-                        if bond.GetBondType() == rdchem.BondType.DOUBLE and bond.GetOtherAtomIdx(atom_idx) in acyl_chain_atoms:
-                            unsaturation = True
-                            break
-                if unsaturation:
-                    break
-            if unsaturation:
-                continue  # Acyl chain is unsaturated; check next ester
-
-            # Found an octanoate ester
-            return True, "Molecule contains an octanoate ester group"
-
-    # No octanoate ester groups found
-    return False, "No octanoate ester groups found"
+    return False, "No octanoyl ester groups found"
