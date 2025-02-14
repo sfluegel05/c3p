@@ -10,7 +10,7 @@ from rdkit import Chem
 def is_flavonoid(smiles: str):
     """
     Determines if a molecule is a flavonoid based on its SMILES string.
-    A flavonoid is based on a 1-benzopyran (chromene) with an aryl substituent at position 2.
+    A flavonoid is based on 1-benzopyran with an aryl substituent at position 2.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -19,32 +19,28 @@ def is_flavonoid(smiles: str):
         bool: True if molecule is a flavonoid, False otherwise
         str: Reason for classification
     """
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define SMARTS pattern for the flavonoid core:
-    # - A benzopyran ring system (fusion of benzene and pyran rings)
-    # - An aryl group attached at position 2 of the pyran ring
+    
+    # Define the flavonoid core SMARTS pattern
+    # This pattern represents a benzopyran fused ring system with a phenyl ring attached at position 2
     flavonoid_smarts = """
-    [$([cH]1[cH][cH][cH][cH][cH]1)]               # Benzene ring (A ring)
-    [C]                                            # Carbon connecting A and C rings
-    2                                             # Ring closure to form C ring
-    [O][cH][cH][cH]2                               # Pyran ring (C ring) with oxygen and closure
-    [c]                                            # Aromatic carbon at position 2 of pyran ring
-    [c]:[c]:[c]:[c]:[c]                            # B ring (aryl substituent)
+    [#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1            # A-ring: benzene ring
+    -[#6]2:[#8]:[#6]:[#6]:[#6]:[#6]:2           # C-ring: pyran ring fused to A-ring
+    -[#6]3:[#6]:[#6]:[#6]:[#6]:[#6]:3           # B-ring: phenyl ring attached at position 2
     """
-
-    # Remove whitespace and newlines from SMARTS pattern
-    flavonoid_smarts = ''.join(flavonoid_smarts.strip().split())
-
-    # Create SMARTS pattern
-    pattern = Chem.MolFromSmarts(flavonoid_smarts)
-    if pattern is None:
-        return False, "Invalid SMARTS pattern"
-
-    # Check for flavonoid core match
-    if mol.HasSubstructMatch(pattern):
-        return True, "Molecule matches flavonoid core structure"
-
-    return False, "Molecule does not match flavonoid core structure"
+    # Remove whitespace and newlines from the SMARTS string
+    flavonoid_smarts = "".join(flavonoid_smarts.split())
+    
+    # Create the SMARTS pattern
+    flavonoid_pattern = Chem.MolFromSmarts(flavonoid_smarts)
+    if flavonoid_pattern is None:
+        return False, "Failed to construct flavonoid SMARTS pattern"
+    
+    # Check if the molecule matches the flavonoid core
+    if mol.HasSubstructMatch(flavonoid_pattern):
+        return True, "Molecule contains flavonoid core structure"
+    else:
+        return False, "Molecule does not contain flavonoid core structure"
