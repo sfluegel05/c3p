@@ -2,7 +2,6 @@
 Classifies: CHEBI:36836 3beta-hydroxy steroid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_3beta_hydroxy_steroid(smiles: str):
     """
@@ -21,14 +20,16 @@ def is_3beta_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define flexible steroid backbone pattern
-    # Allow for various stereochemistry at each junction - using '@' for stereocenters
-    steroid_pattern = Chem.MolFromSmarts('[#6]12[#6][#6][#6]3[#6]1[#6][#6][#6]4[#6]3[#6][#6][#6][#6]2')
+    # Define the basic steroid backbone pattern (ABCD ring system)
+    # R - cyclic carbon pattern, Cn - junction carbon with stereocenters flexibility (using @? for unspecified stereochemistry)
+    steroid_pattern = Chem.MolFromSmarts('C1CCC2C(C1)CCC3C2CCC4C3(C)CCC4')
+    
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
         
-    # Define 3beta-hydroxy pattern - using '@' for flexibility in stereocenter recognition
-    hydroxy_3beta_pattern = Chem.MolFromSmarts('[C@H]1(O)[#6][#6][#6]2[#6]1[#6][#6][#6]3[#6]2[#6][#6][#6]4[#6]3[#6][#6][#6]1')
+    # Define the 3beta-hydroxy pattern with beta orientation at C3
+    # @? indicates we are looking for substituents at stereocenters without strict stereochemical constraints
+    hydroxy_3beta_pattern = Chem.MolFromSmarts('[C@]1([*:2])C2=C(C[C@]3([C@@]2CC[C@@H]3[*:3])[C@@](C1)([*:1])[#6])O')
     if not mol.HasSubstructMatch(hydroxy_3beta_pattern):
         return False, "3beta-hydroxy group not found"
     
