@@ -6,7 +6,6 @@ from rdkit import Chem
 def is_D_glucoside(smiles: str):
     """
     Determines if a molecule is a D-glucoside based on its SMILES string.
-    A D-glucoside contains a D-glucose unit which can be identified with generalized SMARTS patterns.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,33 +19,21 @@ def is_D_glucoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns to recognize D-glucose or its derivatives
-    glucose_patterns = [
-        # D-glucose or variations in open/closed form contexts
-        Chem.MolFromSmarts("C1([C@@H]([C@H]([C@H]([C@@H](C1O)O)O)O)O)"),
-        Chem.MolFromSmarts("O[C@H]1[C@H]([C@@H](C(O)O)[C@H](O1)CO)]"),
-        # Including terms for derivatives (e.g., glucopyranoside, glucosidic forms)
-        Chem.MolFromSmarts("O[C@@H]1[C@H](O)[C@H](O)[C@@H](O)[C@H](CO)[C@H]1O"),
-        Chem.MolFromSmarts("C[C@@H]1[C@@H](O)[C@H](O)[C@H](O)[C@H](CO)[C@H]1O"),
-        # Glucuronic acid version: carboxyl group included
-        Chem.MolFromSmarts("OC(=O)[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O"),
-    ]
+    # Define a SMARTS pattern for D-glucopyranosyl unit
+    d_glucose_pattern = Chem.MolFromSmarts("OC[C@H]1O[C@H](O)[C@H](O)[C@@H](O)[C@@H]1O")
+    
+    # Check if the molecule contains the D-glucose pattern
+    if not mol.HasSubstructMatch(d_glucose_pattern):
+        return False, "No D-glucose-derived glycoside group found"
+    
+    # Check for glycosidic linkage (presence of O-glycoside bond)
+    # This might be more complex based on specific linkage types
+    glycoside_pattern = Chem.MolFromSmarts("[C,O]OC[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O")
+    if not mol.HasSubstructMatch(glycoside_pattern):
+        return False, "No glycoside linkage found"
 
-    # Check for the presence of any defined glucose patterns
-    glucose_found = False
-    for pattern in glucose_patterns:
-        if mol.HasSubstructMatch(pattern):
-            glucose_found = True
-            break
+    return True, "Contains D-glucose-derived glycoside group with appropriate glycosidic linkage"
 
-    if not glucose_found:
-        return False, "No D-glucose unit or derivative found"
-
-    # Define more general glycosidic linkage pattern
-    general_glycosidic_linkage = Chem.MolFromSmarts("C-O[C@H]")
-
-    # Check for any acceptable glycosidic linkage involving a glucose derivative
-    if not mol.HasSubstructMatch(general_glycosidic_linkage):
-        return False, "D-glucose derivative found but no glycosidic linkage identified"
-
-    return True, "Contains D-glucose unit or derivative with appropriate glycosidic linkage"
+# Example usage:
+# smiles = "OCC(CO)O[C@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O"  # 2-O-(alpha-D-glucopyranosyl)glycerol
+# is_D_glucoside(smiles)
