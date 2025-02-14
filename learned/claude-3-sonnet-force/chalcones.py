@@ -27,7 +27,7 @@ def is_chalcone(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for chalcone backbone pattern (two aryl groups separated by ketone and alkene)
-    chalcone_pattern = Chem.MolFromSmarts("c1ccccc1C=CC(=O)c1ccccc1")
+    chalcone_pattern = Chem.MolFromSmarts("[a]C=CC(=O)[a]")
     if not mol.HasSubstructMatch(chalcone_pattern):
         return False, "No chalcone backbone found"
 
@@ -45,5 +45,13 @@ def is_chalcone(smiles: str):
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
     if n_rotatable < 2 or n_rotatable > 3:
         return False, "Incorrect number of rotatable bonds"
+
+    # Check for common substituents or functional groups
+    has_hydroxyl = mol.HasSubstructMatch(Chem.MolFromSmarts("[OX1]"))
+    has_methoxy = mol.HasSubstructMatch(Chem.MolFromSmarts("[OX2C]"))
+    has_prenyl = mol.HasSubstructMatch(Chem.MolFromSmarts("[CH2]=CC(C)C"))
+
+    if has_hydroxyl or has_methoxy or has_prenyl:
+        return True, "Contains the chalcone backbone ArCH=CH(=O)Ar with common substituents"
 
     return True, "Contains the chalcone backbone ArCH=CH(=O)Ar"
