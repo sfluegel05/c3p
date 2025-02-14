@@ -1,73 +1,29 @@
 """
 Classifies: CHEBI:35785 sphingoid
 """
-"""
-Classifies: CHEBI:18089 sphingoid
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+The previous program attempted to classify sphingoids by looking for a specific backbone pattern and checking for various modifications, unsaturations, and molecular properties. While this approach captured many of the key structural features of sphingoids, there were some limitations that led to the observed false positives and false negatives.
 
-def is_sphingoid(smiles: str):
-    """
-    Determines if a molecule is a sphingoid based on its SMILES string.
-    A sphingoid is defined as 'Sphinganine, its homologs and stereoisomers, and the hydroxy and unsaturated derivatives of these compounds'.
+False Positives:
+The false positives were mostly long-chain fatty acids or their derivatives, such as acyl amino acids and hydroxy fatty acids. These molecules share some structural similarities with sphingoids, like long alkyl chains, unsaturations, and amino/hydroxy groups, but they lack the characteristic sphingoid backbone with the terminal amino alcohol group.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+The backbone pattern used in the previous program was too permissive, allowing for molecules with different connectivity patterns around the nitrogen and terminal alcohol. Additionally, the program did not explicitly check for the presence of the amino alcohol group, leading to the false positives.
 
-    Returns:
-        bool: True if molecule is a sphingoid, False otherwise
-        str: Reason for classification
-    """
+False Negatives:
+The false negatives were mostly true sphingoids that were missed due to the strict backbone pattern requirement. The backbone pattern was looking for a specific chain length and connectivity, which may not capture all possible variations in sphingoids, such as shorter or longer chains, or different branching patterns.
 
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+Additionally, some sphingoids with unusual modifications or substituents may not have matched the expected patterns for glucosyl, phosphocholine, unsaturations, or branching, leading to their exclusion.
 
-    # Look for sphingoid backbone pattern (long alkyl chain with terminal amino alcohol)
-    backbone_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[NX3][CX4][CX3][OX2H]")
-    if not mol.HasSubstructMatch(backbone_pattern):
-        return False, "No sphingoid backbone found"
+Improvements:
+To address these issues, we need to refine the backbone pattern and incorporate additional checks to ensure the correct identification of sphingoids. Here are some potential improvements:
 
-    # Look for common modifications
-    glucosyl_pattern = Chem.MolFromSmarts("[OX2]C[C@@H]1[C@H]([C@@H]([C@H]([C@H](O1)O)O)O)O")
-    phosphocholine_pattern = Chem.MolFromSmarts("[NX4+]([C])(C)[C]OP(=O)([O-])[O-]")
+1. Use a more specific backbone pattern that captures the essential features of sphingoids, such as the terminal amino alcohol group and the long alkyl chain with a specific range of chain lengths.
 
-    # Check for unsaturated and branched alkyl chains
-    unsaturated_chain_pattern = Chem.MolFromSmarts("[CX3]=&!@[CX3]")
-    branched_chain_pattern = Chem.MolFromSmarts("[CX4]([CX4])([CX4])[CX4]")
+2. Incorporate additional checks for common sphingoid modifications and substituents, such as hydroxyl groups, methyl branches, and unsaturations, without relying solely on predefined patterns.
 
-    # Check for common properties
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
+3. Use a combination of substructure searches and molecular property calculations to identify the key structural and physicochemical features of sphingoids.
 
-    # Build reason for classification
-    reason = "Contains sphingoid backbone: "
-    if mol.HasSubstructMatch(glucosyl_pattern):
-        reason += "with glucosyl group, "
-    if mol.HasSubstructMatch(phosphocholine_pattern):
-        reason += "with phosphocholine group, "
-    if mol.HasSubstructMatch(unsaturated_chain_pattern):
-        reason += "with unsaturated alkyl chain, "
-    if mol.HasSubstructMatch(branched_chain_pattern):
-        reason += "with branched alkyl chain, "
-    reason += f"mol. wt. {mol_wt:.2f} Da, {c_count} carbons, {o_count} oxygens, {n_count} nitrogens, {n_rotatable} rotatable bonds"
+4. Consider implementing a machine learning-based approach that can learn the patterns and features of sphingoids from a larger dataset, rather than relying solely on predefined rules.
 
-    # Check additional criteria
-    if mol_wt < 250 or mol_wt > 800:
-        return False, "Molecular weight outside typical range for sphingoids"
-    if c_count < 12 or c_count > 30:
-        return False, "Carbon count outside typical range for sphingoids"
-    if o_count < 2 or o_count > 8:
-        return False, "Oxygen count outside typical range for sphingoids"
-    if n_count != 1:
-        return False, "Must have exactly 1 nitrogen"
-    if n_rotatable < 10:
-        return False, "Not enough rotatable bonds for long alkyl chain"
+5. Carefully review the false positives and false negatives, and adjust the classification criteria accordingly, while being mindful of potential errors or inconsistencies in the benchmark data.
 
-    return True, reason
+By implementing these improvements, we can develop a more robust and accurate sphingoid classification program that can handle a wider range of structural variations and minimize false positives and false negatives.
