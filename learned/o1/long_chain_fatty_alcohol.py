@@ -11,7 +11,7 @@ from rdkit import Chem
 def is_long_chain_fatty_alcohol(smiles: str):
     """
     Determines if a molecule is a long-chain fatty alcohol based on its SMILES string.
-    A long-chain fatty alcohol has a chain length of 13 to 22 carbons and contains at least one alcohol group.
+    A long-chain fatty alcohol has a chain length of 13 to 22 carbons and contains at least one primary alcohol group.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -25,33 +25,30 @@ def is_long_chain_fatty_alcohol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Identify alcohol groups (hydroxyl groups attached to carbon atoms)
-    # Include primary and secondary alcohols
-    alcohol_pattern = Chem.MolFromSmarts("[CX4][OX2H]")
+    # Identify primary alcohol groups (hydroxyl group attached to a primary carbon)
+    # Primary carbon: a carbon attached to only one other carbon
+    alcohol_pattern = Chem.MolFromSmarts("[CX4;H2][OX2H]")  # Primary alcohol
     alcohol_matches = mol.GetSubstructMatches(alcohol_pattern)
 
     if not alcohol_matches:
-        return False, "No alcohol group found"
+        return False, "No primary alcohol group found"
 
     min_chain_length = 13
     max_chain_length = 22
-    max_found_chain_length = 0
 
-    # For each alcohol group, find the longest carbon chain starting from it
     for match in alcohol_matches:
         alcohol_carbon_idx = match[0]
+        # Calculate the longest carbon chain from the alcohol carbon
         chain_length = longest_carbon_chain(mol, alcohol_carbon_idx)
-        if chain_length > max_found_chain_length:
-            max_found_chain_length = chain_length
+        if min_chain_length <= chain_length <= max_chain_length:
+            return True, f"Contains long-chain fatty alcohol with chain length {chain_length}"
 
-    if min_chain_length <= max_found_chain_length <= max_chain_length:
-        return True, f"Contains long-chain fatty alcohol with chain length {max_found_chain_length}"
-    else:
-        return False, f"Longest chain length {max_found_chain_length} does not fall within C{min_chain_length}-C{max_chain_length}"
+    return False, "No carbon chain of appropriate length found connected to the primary alcohol group"
+
 
 def longest_carbon_chain(mol, start_atom_idx):
     """
-    Finds the length of the longest carbon chain starting from the given atom index.
+    Finds the length of the longest continuous carbon chain starting from the given atom index.
 
     Args:
         mol (Chem.Mol): RDKit molecule
@@ -60,23 +57,31 @@ def longest_carbon_chain(mol, start_atom_idx):
     Returns:
         int: Length of the longest carbon chain (number of carbon atoms)
     """
+    max_length = [0]
     visited = set()
-    max_length = [0]  # Use a list to allow modification within nested function
 
-    def dfs(atom_idx, length):
-        visited.add(atom_idx)
-        atom = mol.GetAtomWithIdx(atom_idx)
+    def dfs(current_atom_idx, length):
+        visited.add(current_atom_idx)
+        atom = mol.GetAtomWithIdx(current_atom_idx)
+
+        # Only consider carbon atoms
         if atom.GetAtomicNum() != 6:
-            visited.remove(atom_idx)
+            visited.remove(current_atom_idx)
             return
-        # Update max_length if a longer chain is found
+
+        # Update max_length
         if length > max_length[0]:
             max_length[0] = length
+
         for neighbor in atom.GetNeighbors():
             neighbor_idx = neighbor.GetIdx()
-            if neighbor_idx not in visited and mol.GetAtomWithIdx(neighbor_idx).GetAtomicNum() == 6:
+            neighbor_atom = mol.GetAtomWithIdx(neighbor_idx)
+
+            # Continue traversal if neighbor is carbon and not visited
+            if neighbor_atom.GetAtomicNum() == 6 and neighbor_idx not in visited:
                 dfs(neighbor_idx, length + 1)
-        visited.remove(atom_idx)
+
+        visited.remove(current_atom_idx)
 
     dfs(start_atom_idx, 1)
     return max_length[0]
