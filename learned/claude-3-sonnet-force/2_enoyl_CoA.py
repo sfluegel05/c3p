@@ -1,50 +1,24 @@
 """
 Classifies: CHEBI:19573 2-enoyl-CoA
 """
-"""
-Classifies: CHEBI:36347 2-enoyl-CoA
-An unsaturated fatty acyl-CoA in which the S-acyl group contains a double bond between positions 2 and 3.
-"""
+The previous code made a good attempt to classify 2-enoyl-CoA molecules, but there were a few issues that led to the low F1 score:
 
-from rdkit import Chem
-from rdkit.Chem import AllChem
+1. **Missing rotatable bond check**: The code tried to use `Chem.CalcNumRotatableBonds(acyl_group)` to check for unsaturation in the acyl group, but this function does not exist in the RDKit library. This likely caused many false negatives, as saturated acyl groups were not filtered out correctly.
 
-def is_2_enoyl_CoA(smiles: str):
-    """
-    Determines if a molecule is a 2-enoyl-CoA based on its SMILES string.
+2. **Fatty acid chain check**: The code used a SMARTS pattern `"[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]"` to check for the presence of a fatty acid chain in the acyl group. However, this pattern is quite strict and may not match all possible fatty acid chains, especially shorter ones. This could lead to both false positives and false negatives.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+3. **Handling stereochemistry**: The code did not account for stereochemistry in the molecules, which could lead to incorrect classifications for stereoisomers.
 
-    Returns:
-        bool: True if molecule is a 2-enoyl-CoA, False otherwise
-        str: Reason for classification
-    """
+4. **Molecular weight and atom count checks**: The code did not include any checks for molecular weight or atom counts, which could help to further filter out incorrect structures.
 
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+To improve the code, we can address these issues:
 
-    # Check for CoA backbone
-    coa_pattern = Chem.MolFromSmarts("C(C)(COP(=O)([O-])OP(=O)([O-])OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(=O)([O-])O)n1cnc2c(N)ncnc12)[C@@H](O)C(=O)NCCC(=O)NCCSC")
-    if not mol.HasSubstructMatch(coa_pattern):
-        return False, "Missing CoA backbone"
+1. **Use `Chem.GetAdjacencyMatrix` to check for unsaturation**: Instead of `CalcNumRotatableBonds`, we can use the `Chem.GetAdjacencyMatrix` function to count the number of double bonds in the acyl group.
 
-    # Check for double bond between positions 2 and 3 of the acyl group
-    enoyl_pattern = Chem.MolFromSmarts("C=CC(=O)SC")
-    if not mol.HasSubstructMatch(enoyl_pattern):
-        return False, "No double bond between positions 2 and 3 of the acyl group"
+2. **Use a more flexible pattern for fatty acid chains**: We can use a more flexible SMARTS pattern to match a wider range of fatty acid chains.
 
-    # Check for unsaturation in the acyl group
-    acyl_group = Chem.MolFromSmiles(Chem.MolToSmiles(mol).split("SCCNC(=O)CCNC(=O)")[0] + "C(=O)O")
-    if Chem.CalcNumRotatableBonds(acyl_group) == 0:
-        return False, "The acyl group is saturated"
+3. **Handle stereochemistry**: We can use the `Chem.RemoveHs` function to remove explicit hydrogen atoms and ignore stereochemistry.
 
-    # Check for fatty acid chain
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
-    fatty_acid_matches = acyl_group.GetSubstructMatches(fatty_acid_pattern)
-    if not fatty_acid_matches:
-        return False, "Missing fatty acid chain in the acyl group"
+4. **Add molecular weight and atom count checks**: We can add checks for molecular weight and atom counts to further filter out incorrect structures.
 
-    return True, "Contains an unsaturated fatty acyl-CoA with a double bond between positions 2 and 3"
+By addressing these issues, the code should be able to classify 2-enoyl-CoA molecules more accurately. However, it's important to note that there may still be some outliers or edge cases that the code may not handle correctly, and manual review of the results may be necessary.
