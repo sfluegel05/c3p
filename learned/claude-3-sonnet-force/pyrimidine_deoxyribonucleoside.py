@@ -36,14 +36,14 @@ def is_pyrimidine_deoxyribonucleoside(smiles: str):
             return False
         
         # Check for oxygen and carbon atoms
-        oxygen_count = sum(1 for atom in ring if atom.GetAtomicNum() == 8)
-        carbon_count = sum(1 for atom in ring if atom.GetAtomicNum() == 6)
-        if oxygen_count != 1 or carbon_count != 4:
+        oxygen_atoms = [atom for atom in ring if atom.GetAtomicNum() == 8]
+        carbon_atoms = [atom for atom in ring if atom.GetAtomicNum() == 6]
+        if len(oxygen_atoms) != 1 or len(carbon_atoms) != 4:
             return False
         
         # Check for attached hydroxyl groups and CH2OH group
-        hydroxyl_count = sum(1 for atom in ring if atom.GetTotalNumHs() == 1 and atom.GetAtomicNum() == 8)
-        ch2oh_count = sum(1 for atom in ring if atom.GetDegree() == 3 and atom.GetAtomicNum() == 6 and sum(1 for neighbor in atom.GetNeighbors() if neighbor.GetAtomicNum() == 8 and neighbor.GetTotalNumHs() == 1) == 1)
+        hydroxyl_count = sum(1 for atom in oxygen_atoms if atom.GetTotalNumHs() == 1)
+        ch2oh_count = sum(1 for atom in carbon_atoms if atom.GetDegree() == 3 and sum(1 for neighbor in atom.GetNeighbors() if neighbor.GetAtomicNum() == 8 and neighbor.GetTotalNumHs() == 1) == 1)
         if not (hydroxyl_count == 2 and ch2oh_count == 1):
             return False
         
@@ -53,16 +53,15 @@ def is_pyrimidine_deoxyribonucleoside(smiles: str):
     if not deoxyribose_rings:
         return False, "No deoxyribose sugar found"
     
-    # Check if pyrimidine and deoxyribose are connected
+    # Check if pyrimidine and deoxyribose are connected via N-glycosidic bond
     for pyrimidine_ring in pyrimidine_rings:
         for deoxyribose_ring in deoxyribose_rings:
             pyrimidine_atoms = set(pyrimidine_ring)
             deoxyribose_atoms = set(deoxyribose_ring)
-            if any(atom_set & deoxyribose_atoms for atom_set in [set(atom.GetNeighbors()) for atom in pyrimidine_atoms]):
-                return True, "Contains a pyrimidine base connected to a deoxyribose sugar"
+            if any(atom.GetAtomicNum() == 7 and any(neighbor.GetAtomicNum() == 8 for neighbor in atom.GetNeighbors() if neighbor in deoxyribose_atoms) for atom in pyrimidine_atoms):
+                return True, "Contains a pyrimidine base connected to a deoxyribose sugar via N-glycosidic bond"
     
-    return False, "Pyrimidine and deoxyribose not connected"
-
+    return False, "Pyrimidine and deoxyribose not connected via N-glycosidic bond"
 
 __metadata__ = {
     'chemical_class': {
