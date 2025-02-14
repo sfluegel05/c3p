@@ -25,35 +25,56 @@ def is_nucleoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define general purine and pyrimidine nucleobase patterns
-    purine_base = Chem.MolFromSmarts('c1[nH]c2c([nH]1)ncnc2')  # General purine ring
-    pyrimidine_base = Chem.MolFromSmarts('c1c[nH]cnc1')        # General pyrimidine ring
+    # Get ring information
+    ring_info = mol.GetRingInfo()
 
-    # Check for presence of nucleobase
-    has_nucleobase = False
-    if mol.HasSubstructMatch(purine_base):
-        has_nucleobase = True
-        nucleobase_type = 'purine'
-    elif mol.HasSubstructMatch(pyrimidine_base):
-        has_nucleobase = True
-        nucleobase_type = 'pyrimidine'
-    else:
-        return False, "No nucleobase (purine or pyrimidine ring) found"
+    # Identify sugar rings (five-membered rings containing oxygen)
+    sugar_rings = []
+    for ring in ring_info.AtomRings():
+        if len(ring) == 5:
+            atoms_in_ring = [mol.GetAtomWithIdx(idx) for idx in ring]
+            o_count = sum(1 for atom in atoms_in_ring if atom.GetSymbol() == 'O')
+            if o_count == 1:
+                sugar_rings.append(set(ring))
 
-    # Define a general sugar pattern (furanose ring)
-    sugar_pattern = Chem.MolFromSmarts('C1OC[C@H](O)[C@@H]1O')  # Five-membered ring with oxygen and hydroxyls
-
-    # Check for presence of sugar ring
-    has_sugar = False
-    if mol.HasSubstructMatch(sugar_pattern):
-        has_sugar = True
-    else:
+    if not sugar_rings:
         return False, "No sugar ring found"
 
-    # Define N-glycosidic bond pattern between sugar anomeric carbon and nucleobase nitrogen
-    glycosidic_bond_pattern = Chem.MolFromSmarts('[C@H]1([O,N])[C,H][C,H][C,H][O]1[*:1][n,nH][c,c]')  # Anomeric carbon linked to nucleobase nitrogen
+    # Identify nucleobase rings (rings containing nitrogen atoms)
+    nucleobase_rings = []
+    for ring in ring_info.AtomRings():
+        atoms_in_ring = [mol.GetAtomWithIdx(idx) for idx in ring]
+        n_count = sum(1 for atom in atoms_in_ring if atom.GetSymbol() == 'N')
+        c_count = sum(1 for atom in atoms_in_ring if atom.GetSymbol() == 'C')
+        if n_count >= 2 and c_count >= 3:
+            nucleobase_rings.append(set(ring))
 
-    if not mol.HasSubstructMatch(glycosidic_bond_pattern):
+    if not nucleobase_rings:
+        return False, "No nucleobase ring found"
+
+    # Check for N-glycosidic bond between sugar ring and nucleobase ring
+    has_nglycosidic_bond = False
+    for sugar_ring in sugar_rings:
+        for nucleobase_ring in nucleobase_rings:
+            # Find bonds between sugar ring and nucleobase ring
+            for sugar_atom_idx in sugar_ring:
+                sugar_atom = mol.GetAtomWithIdx(sugar_atom_idx)
+                for bond in sugar_atom.GetBonds():
+                    neighbor = bond.GetOtherAtom(sugar_atom)
+                    neighbor_idx = neighbor.GetIdx()
+                    if neighbor_idx in nucleobase_ring and neighbor.GetSymbol() == 'N':
+                        # Check for bond between sugar carbon and nucleobase nitrogen
+                        if sugar_atom.GetSymbol() == 'C' and bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
+                            has_nglycosidic_bond = True
+                            break
+                if has_nglycosidic_bond:
+                    break
+            if has_nglycosidic_bond:
+                break
+        if has_nglycosidic_bond:
+            break
+
+    if not has_nglycosidic_bond:
         return False, "No N-glycosidic bond between sugar and nucleobase found"
 
-    return True, f"Contains {nucleobase_type} nucleobase attached to sugar via N-glycosidic bond"
+    return True, "Contains nucleobase attached to sugar via N-glycosidic bond"
