@@ -1,27 +1,53 @@
 """
 Classifies: CHEBI:46874 alpha-amino acid ester
 """
-The previous program attempts to classify alpha-amino acid esters by looking for the presence of an alpha-amino acid backbone (identified by the SMARTS pattern "[C](=[O])([N])([C])") and an ester group (identified by the SMARTS pattern "[C]([C](=[O])([O]))"). It then checks if the ester group is attached to the alpha carbon of the amino acid backbone.
+"""
+Classifies: CHEBI:38791 alpha-amino acid ester
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem.rdchem import BondType
 
-However, based on the provided outcomes, it seems that the program has some limitations and could be improved in the following ways:
+def is_alpha_amino_acid_ester(smiles: str):
+    """
+    Determines if a molecule is an alpha-amino acid ester based on its SMILES string.
+    An alpha-amino acid ester is an amino acid ester derivative obtained by the formal condensation of an alpha-amino acid with an alcohol.
 
-1. **Handling of charged and zwitterionic forms**: Some of the false positives, such as "bumadizone calcium" and "clorazepic acid anion", contain charged or zwitterionic forms of alpha-amino acids, which the current SMARTS patterns may not correctly identify. Incorporating additional patterns or using a different approach to handle charged species could help address this issue.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **Handling of non-standard amino acid backbones**: The current SMARTS pattern for the alpha-amino acid backbone assumes a standard backbone structure (-C(=O)N-). However, some false negatives, such as "Hexose-shinorine" and "Schizine A", contain non-standard amino acid backbones that the current pattern fails to recognize. Additional patterns or a more flexible approach may be needed to capture these cases.
-
-3. **Handling of complex molecules**: Some of the false positives, such as "GE23077 A1/A2" and "Misaugamycin A", are complex molecules containing multiple amino acid residues or other functionalities that may be misidentified as alpha-amino acid esters. Incorporating additional checks or filtering steps to handle these cases could improve the accuracy of the program.
-
-4. **Handling of non-alpha esters**: Some false positives, such as "malonamic acid" and "oxalurate", contain esters but not alpha-amino acid esters specifically. Additional checks or constraints could be added to ensure that the ester group is indeed attached to an alpha carbon of an amino acid backbone.
-
-5. **Considering molecular context**: In some cases, the program may benefit from considering the broader molecular context rather than relying solely on substructure matching. For example, the false negative "S-[(2E,6E)-farnesyl]-L-cysteine methyl ester" contains both an alpha-amino acid and an ester group, but the ester group is not directly attached to the alpha carbon. Incorporating more sophisticated analysis of the molecular structure and connectivity could help address such cases.
-
-6. **Handling of potential errors in the benchmark**: While the benchmark is generally reliable, there may be occasional errors or inconsistencies. In cases where the program's classification appears reasonable but contradicts the benchmark, it may be worth considering the possibility of a benchmark error and relying on the program's output, provided it aligns with the chemical class definition.
-
-To address these limitations, you could consider the following strategies:
-
-- Expand the set of SMARTS patterns to cover a broader range of amino acid backbones, charged/zwitterionic forms, and other relevant substructures.
-- Incorporate additional checks or filters based on molecular properties, connectivity, or other relevant features to improve the specificity of the classification.
-- Explore machine learning or rule-based approaches that can learn from a larger set of examples and potentially capture more complex patterns.
-- Consult additional resources or expert knowledge to refine the definition and understanding of the "alpha-amino acid ester" class and update the program accordingly.
-
-Remember that chemical classification can be a complex task, and iterative refinement and validation against reliable benchmarks are often necessary to achieve high accuracy.
+    Returns:
+        bool: True if molecule is an alpha-amino acid ester, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Find alpha-amino acid backbone
+    amino_acid_pattern = Chem.MolFromSmarts("[C](=[O])([N])([C])")
+    amino_acid_matches = mol.GetSubstructMatches(amino_acid_pattern)
+    
+    # Check for alpha-amino acid backbone
+    if not amino_acid_matches:
+        return False, "No alpha-amino acid backbone found"
+    
+    # Find ester groups
+    ester_pattern = Chem.MolFromSmarts("[C]([C](=[O])([O]))")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    
+    # Check for ester group
+    if not ester_matches:
+        return False, "No ester group found"
+    
+    # Check if ester is attached to alpha carbon of amino acid
+    for amino_acid_match in amino_acid_matches:
+        amino_acid_alpha_carbon = amino_acid_match[2]
+        for ester_match in ester_matches:
+            ester_carbon = ester_match[0]
+            if mol.GetBondBetweenAtoms(amino_acid_alpha_carbon, ester_carbon).GetBondType() == BondType.SINGLE:
+                return True, "Contains an alpha-amino acid backbone with an ester group attached to the alpha carbon"
+    
+    return False, "Ester group not attached to alpha carbon of amino acid backbone"
