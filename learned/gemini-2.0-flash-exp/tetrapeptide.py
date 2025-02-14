@@ -3,7 +3,6 @@ Classifies: CHEBI:48030 tetrapeptide
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_tetrapeptide(smiles: str):
     """
@@ -20,13 +19,18 @@ def is_tetrapeptide(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+    
+    # Check for the presence of the amino acid residue backbone pattern
+    amino_acid_pattern = Chem.MolFromSmarts("N[CX4][CX3](=O)")
+    residue_matches = mol.GetSubstructMatches(amino_acid_pattern)
 
-    # Check for peptide bonds (more specific pattern).
-    # The peptide bond is the essential feature of a peptide.
+    if len(residue_matches) < 4: #must have at least four
+         return False, f"Found {len(residue_matches)} amino acid residues, need at least 4"
+
+    #check for peptide bonds
     peptide_bond_pattern = Chem.MolFromSmarts("[C](=[O])-[N]")
     peptide_bonds = mol.GetSubstructMatches(peptide_bond_pattern)
-    if len(peptide_bonds) != 3:
-        return False, f"Found {len(peptide_bonds)} peptide bonds, need exactly 3"
+    if len(peptide_bonds) < 3:
+      return False, f"Found {len(peptide_bonds)} peptide bonds, need at least 3"
 
-
-    return True, "Contains four amino acid residues connected by three peptide linkages"
+    return True, "Contains four amino acid residues connected by at least three peptide linkages"
