@@ -24,19 +24,18 @@ def is_alkanethiol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Enhanced SMARTS pattern for thiol groups to more accurately target simple alkanethiols
-    thiol_pattern = Chem.MolFromSmarts("[#6][SX2H1]")  # -SH must be attached to an sp3 carbon
+    # Update SMARTS pattern for thiol groups to be more inclusive of different alkanethiol contexts
+    thiol_pattern = Chem.MolFromSmarts("[S&H1]-[C]")  # SH must be attached to any carbon, not limited to -CH2-
 
     if not mol.HasSubstructMatch(thiol_pattern):
-        return False, "No thiol group (-SH) directly attached to an alkyl group (sp3 carbon) found"
+        return False, "No thiol group (-SH) attached to an alkyl group found"
 
-    # Validate the sulfur atom is not part of larger, non-alkanethiol structures
-    for match in mol.GetSubstructMatches(thiol_pattern):
-        s_atom = mol.GetAtomWithIdx(match[1])  # Index of sulfur atom in the match
-        connected_atoms = [nbr.GetAtomicNum() for nbr in s_atom.GetNeighbors()]
+    # Exclude certain complex structures that are not simple alkanethiols
+    for atom in mol.GetAtoms():
+        if atom.GetSymbol() == 'S':
+            connected_atoms = [nbr.GetAtomicNum() for nbr in atom.GetNeighbors()]
+            # Check for forbidden patterns
+            if 7 in connected_atoms or 8 in connected_atoms or 15 in connected_atoms:
+                return False, "Sulfur atom bonded with non-alkyl group components or complex structures, possibly involving peptide, amide, or phosphorous compounds"
 
-        # Check that sulfur is only attached to carbon (6) and hydrogen (1) atoms
-        if any(atom_num not in (1, 6) for atom_num in connected_atoms):
-            return False, "Sulfur atom bonded with non-alkyl group components or complex structures"
-
-    return True, "Contains a sulfanyl group, -SH, correctly attached to an alkyl chain"
+    return True, "Contains a sulfanyl group, -SH, attached to an alkyl chain"
