@@ -30,8 +30,8 @@ def is_ganglioside(smiles: str):
     if not mol.HasSubstructMatch(ceramide_pattern):
         return False, "No ceramide backbone found"
     
-    # Look for sialic acid residue(s)
-    sialic_acid_pattern = Chem.MolFromSmarts("C1C(C(C(O1)CO)O)OC")
+    # Look for sialic acid residue(s) with a more relaxed pattern
+    sialic_acid_pattern = Chem.MolFromSmarts("[C&D2][C&D2][C&D2]([C&D2][C&D2]1[C&D2]([C&D2][C&D2][C&D2]([C&D2]1[C&D2])[O])[O])[O]")
     sialic_acid_matches = mol.GetSubstructMatches(sialic_acid_pattern)
     if not sialic_acid_matches:
         return False, "No sialic acid residues found"
@@ -48,40 +48,3 @@ def is_ganglioside(smiles: str):
         return False, "Too few heavy atoms for ganglioside"
     
     return True, "Contains ceramide backbone with sialic acid residue(s) and glycosidic linkages"
-
-
-__metadata__ = {
-    'chemical_class': {
-        'id': 'CHEBI:17619',
-        'name': 'ganglioside',
-        'definition': 'A glycosphingolipid containing one or more sialic acid residues.',
-        'parents': ['CHEBI:18060', 'CHEBI:36374']
-    },
-    'config': {
-        'llm_model_name': 'lbl/claude-sonnet',
-        'f1_threshold': 0.8,
-        'max_attempts': 5,
-        'max_positive_instances': None,
-        'max_positive_to_test': None,
-        'max_negative_to_test': None,
-        'max_positive_in_prompt': 50,
-        'max_negative_in_prompt': 20,
-        'max_instances_in_prompt': 100,
-        'test_proportion': 0.1
-    },
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 45,
-    'num_false_positives': 0,
-    'num_true_negatives': 182438,
-    'num_false_negatives': 1,
-    'num_negatives': None,
-    'precision': 1.0,
-    'recall': 0.9787234042553192,
-    'f1': 0.9892473118279569,
-    'accuracy': 0.9999947166863722
-}
