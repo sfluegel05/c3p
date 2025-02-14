@@ -28,7 +28,7 @@ def is_3_hydroxy_fatty_acyl_CoA_4__(smiles: str):
         return False, "Invalid SMILES string"
     
     # Check for CoA backbone
-    coa_pattern = Chem.MolFromSmarts("C(C)(C)(CO[P@@](=O)([O-])[O-])NC(=O)CCNC(=O)CCNC(=O)SCCCCCC(=O)")
+    coa_pattern = Chem.MolFromSmarts("C(C)(C)(CO[P@@](=O)([O-])[O-])NC(=O)CCNC(=O)CCNC(=O)SC[CX3]C(=O)")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No CoA backbone found"
     
@@ -50,40 +50,3 @@ def is_3_hydroxy_fatty_acyl_CoA_4__(smiles: str):
         return False, f"Expected charge of -4, got {mol_charge}"
     
     return True, "Contains CoA backbone with a fatty acid chain and a hydroxy group at the 3-position, overall charge of -4"
-
-
-__metadata__ = {
-    'chemical_class': {
-        'id': 'CHEBI:33171',
-        'name': '3-hydroxy fatty acyl-CoA(4-)',
-        'definition': 'An acyl-CoA(4-) oxoanion arising from deprotonation of the phosphate and diphosphate OH groups of any 3-hydroxy fatty acyl-CoA; major species at pH 7.3.',
-        'parents': ['CHEBI:36612', 'CHEBI:36608']
-    },
-    'config': {
-        'llm_model_name': 'lbl/claude-sonnet',
-        'f1_threshold': 0.8,
-        'max_attempts': 5,
-        'max_positive_instances': None,
-        'max_positive_to_test': None,
-        'max_negative_to_test': None,
-        'max_positive_in_prompt': 50,
-        'max_negative_in_prompt': 20,
-        'max_instances_in_prompt': 100,
-        'test_proportion': 0.1
-    },
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 1499,
-    'num_false_positives': 2,
-    'num_true_negatives': 1949987,
-    'num_false_negatives': 172,
-    'num_negatives': None,
-    'precision': 0.9986690799034513,
-    'recall': 0.8970349033156273,
-    'f1': 0.9464798669522516,
-    'accuracy': 0.9998859048433342
-}
