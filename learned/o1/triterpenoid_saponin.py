@@ -12,7 +12,7 @@ def is_triterpenoid_saponin(smiles: str):
     """
     Determines if a molecule is a triterpenoid saponin based on its SMILES string.
     A triterpenoid saponin is a terpene glycoside in which the terpene moiety is a triterpenoid.
-    
+
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -26,46 +26,49 @@ def is_triterpenoid_saponin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for triterpenoid core (pentacyclic triterpene)
-    # Common triterpenoid skeletons include oleanane, ursane, and lupane
-    triterpene_smarts = [
-        'C1CCC2(C1)CCC3(C2)CCC4(C3)CCC5(C4)CCCC5',  # oleanane core
-        'C1CCC2(C1)CCC3(C2)CCC4(C3)CCCC4',          # ursane core
-        'C1CCC2(C1)CCC3(C2)CCC4(C3)CCCC4'           # lupane core
-    ]
+    # Check for triterpenoid core
+    # Triterpenoids usually have 5 or more rings and are pentacyclic
+    ring_info = mol.GetRingInfo()
+    num_rings = ring_info.NumRings()
+    if num_rings < 5:
+        return False, f"Contains {num_rings} rings, less than 5 rings required for triterpenoid core"
 
-    has_triterpene_core = False
-    for smarts in triterpene_smarts:
-        pattern = Chem.MolFromSmarts(smarts)
-        if mol.HasSubstructMatch(pattern):
-            has_triterpene_core = True
-            break
+    # Check for fused ring system
+    ssr = Chem.GetSymmSSSR(mol)
+    fused_rings = 0
+    for ring in ssr:
+        atoms_in_ring = set(ring)
+        for other_ring in ssr:
+            if ring != other_ring and len(atoms_in_ring.intersection(other_ring)) > 0:
+                fused_rings += 1
+                break
+    if fused_rings < 5:
+        return False, "Insufficient fused rings for triterpenoid core"
 
-    if not has_triterpene_core:
-        return False, "No triterpenoid core structure found"
+    # Check for sugar moieties (pyranose and furanose rings)
+    sugar_smarts = Chem.MolFromSmarts('*OC[C@H]1O[C@H]([C@H]([C@@H]([C@H]1O)O)O)CO')  # Glucose-like pattern
+    sugars_found = len(mol.GetSubstructMatches(sugar_smarts)) > 0
 
-    # Check for sugar moieties (pyranose rings)
-    sugar_smarts = Chem.MolFromSmarts('[O&R]1[C&R][C&R][C&R][C&R][C&R]1')  # 6-membered ring with oxygen
-    sugar_matches = mol.GetSubstructMatches(sugar_smarts)
-    if len(sugar_matches) == 0:
+    if not sugars_found:
         return False, "No sugar moieties found"
 
     # Check for glycosidic bond between triterpenoid and sugar(s)
-    # Look for an ether linkage connecting the triterpenoid core to sugar
+    # Look for an ether linkage connecting a non-ring oxygen to the sugar ring oxygen
     glycosidic_bond_found = False
     for bond in mol.GetBonds():
         atom1 = bond.GetBeginAtom()
         atom2 = bond.GetEndAtom()
-        # Check for O-C bond where O is connected to sugar ring and C is part of triterpenoid core
         if bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
             if (atom1.GetAtomicNum() == 8 and atom2.GetAtomicNum() == 6) or \
                (atom1.GetAtomicNum() == 6 and atom2.GetAtomicNum() == 8):
-                if (atom1.IsInRingSize(6) and atom2.IsInRing() == False) or \
-                   (atom2.IsInRingSize(6) and atom1.IsInRing() == False):
+                if atom1.IsInRing() and not atom2.IsInRing():
+                    glycosidic_bond_found = True
+                    break
+                if atom2.IsInRing() and not atom1.IsInRing():
                     glycosidic_bond_found = True
                     break
 
     if not glycosidic_bond_found:
-        return False, "No glycosidic bond connecting triterpenoid and sugar moiety found"
+        return False, "No glycosidic bond connecting triterpenoid core and sugar moiety found"
 
     return True, "Contains triterpenoid core with sugar moiety linked via glycosidic bond"
