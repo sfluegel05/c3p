@@ -28,9 +28,8 @@ def is_glycerophosphoinositol(smiles: str):
         return False, "No glycerol backbone found"
 
     # 2. Check for the presence of a phosphorylated inositol attached to the glycerol
-    # The key here is to search for the phosphate group *linking* the glycerol and inositol
-    # The phosphate should be attached to the glycerol (through an oxygen), and also to the inositol
-    phosphorylated_inositol_glycerol_pattern = Chem.MolFromSmarts("[CH2X4][OX2][P](=[OX1])([OX2])-[C]1[C]([O])[C]([O])[C]([O])[C]([O])[C]([O])1")
+    phosphorylated_inositol_glycerol_pattern = Chem.MolFromSmarts("([CH2X4][OX2][P](=[OX1])([OX2])([OX2])-[OX2]-[C]1([O])[C]([O])[C]([O])[C]([O])[C]([O])[C]([O])1) or ([CHX4][OX2][P](=[OX1])([OX2])([OX2])-[OX2]-[C]1([O])[C]([O])[C]([O])[C]([O])[C]([O])[C]([O])1)")
+
     if not mol.HasSubstructMatch(phosphorylated_inositol_glycerol_pattern):
           return False, "No phosphorylated inositol group linked to glycerol found"
 
@@ -52,7 +51,7 @@ def is_glycerophosphoinositol(smiles: str):
     if n_rotatable < 6:
         return False, "Fatty acid chains are too short"
 
-    # Check for carbons and oxygens
+    # Check for carbons and oxygens and phosphorus
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
