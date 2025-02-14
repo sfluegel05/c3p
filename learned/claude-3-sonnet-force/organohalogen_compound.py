@@ -40,6 +40,23 @@ def is_organohalogen_compound(smiles: str):
             break
 
     if has_c_x_bond:
+        # Exclude compounds with trifluoromethyl (-CF3) or trifluoroacetamido (-NHCOCF3) groups
+        cf3_pattern = Chem.MolFromSmarts("C(F)(F)F")
+        nhcocf3_pattern = Chem.MolFromSmarts("C(=O)N(C(F)(F)F)")
+        if mol.HasSubstructMatch(cf3_pattern) or mol.HasSubstructMatch(nhcocf3_pattern):
+            return False, "Contains halogen but no carbon-halogen bond"
+
+        # Handle halogenated ring systems or aromatic compounds
+        aromatic_rings = mol.GetAromaticRings()
+        has_halogenated_ring = any(ring.HasAtomWithQuery(lambda atom: atom.GetAtomicNum() in [9, 17, 35, 53]) for ring in aromatic_rings)
+        if has_halogenated_ring:
+            return True, "Contains halogenated aromatic ring system"
+
+        # Check for perfluorinated alkanes
+        perfluorinated = all(atom.GetAtomicNum() in [6, 9] for atom in mol.GetAtoms())
+        if perfluorinated:
+            return False, "Perfluorinated alkane"
+
         return True, "Contains at least one carbon-halogen bond"
     else:
         return False, "No carbon-halogen bonds found"
@@ -48,9 +65,6 @@ def is_organohalogen_compound(smiles: str):
     # ...
 
     # Exclude non-carbon-halogen bonds (e.g., halogen-nitrogen, halogen-oxygen)
-    # ...
-
-    # Handle halogenated ring systems or aromatic compounds
     # ...
 
     # Utilize RDKit functionalities for advanced structure analysis
