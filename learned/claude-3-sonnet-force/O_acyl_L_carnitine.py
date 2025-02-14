@@ -28,19 +28,21 @@ def is_O_acyl_L_carnitine(smiles: str):
 
     # Look for carnitine backbone pattern ([N+]([C])([C])[C@H](CC([O-])=O))
     carnitine_pattern = Chem.MolFromSmarts("[N+]([C])([C])[C@H](CC([O-])=O)")
-    if not mol.HasSubstructMatch(carnitine_pattern):
+    carnitine_match = mol.GetSubstructMatch(carnitine_pattern)
+    if not carnitine_match:
         return False, "No L-carnitine backbone found"
 
-    # Look for acyl group attached to oxygen (-O-C(=O)-)
+    # Get the oxygen atom index of the carnitine backbone
+    carnitine_oxygen_idx = carnitine_match[3]
+
+    # Look for acyl group attached to the carnitine oxygen (-O-C(=O)-)
     acyl_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
     acyl_matches = mol.GetSubstructMatches(acyl_pattern)
     if len(acyl_matches) != 1:
         return False, f"Found {len(acyl_matches)} acyl groups, expected exactly 1"
 
-    # Check that the acyl group is attached to the carnitine backbone
-    carnitine_atoms = set(match[0] for match in mol.GetSubstructMatches(carnitine_pattern))
-    acyl_atom = acyl_matches[0][0]
-    if acyl_atom not in carnitine_atoms:
-        return False, "Acyl group not attached to carnitine backbone"
+    acyl_oxygen_idx = acyl_matches[0][0]
+    if acyl_oxygen_idx != carnitine_oxygen_idx:
+        return False, "Acyl group not attached to the oxygen of the carnitine backbone"
 
-    return True, "Contains L-carnitine backbone with an acyl group attached to oxygen"
+    return True, "Contains L-carnitine backbone with an acyl group attached to the oxygen"
