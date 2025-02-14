@@ -2,7 +2,7 @@
 Classifies: CHEBI:46761 dipeptide
 """
 """
-Classifies: CHEBI:36556 dipeptide
+Classifies: CHEBI:16670 dipeptide
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
@@ -10,7 +10,7 @@ from rdkit.Chem import AllChem
 def is_dipeptide(smiles: str):
     """
     Determines if a molecule is a dipeptide based on its SMILES string.
-    A dipeptide is a molecule containing two amino-acid residues connected by peptide linkages.
+    A dipeptide is a molecule containing two amino acid residues connected by peptide linkages.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -25,29 +25,22 @@ def is_dipeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for amino acid residues (atoms with both -NH2 and -COOH groups)
-    amino_acid_pattern = Chem.MolFromSmarts("[NH2,NH3][CX4H][CX3](=[OX1])[OX2H,OX1-]")
-    amino_acid_matches = mol.GetSubstructMatches(amino_acid_pattern)
-    if len(amino_acid_matches) != 2:
-        return False, f"Found {len(amino_acid_matches)} amino acid residues, expected exactly 2"
+    # Look for exactly two peptide bonds (-C(=O)N-)
+    peptide_bond_pattern = Chem.MolFromSmarts("C(=O)N")
+    peptide_bond_matches = mol.GetSubstructMatches(peptide_bond_pattern)
+    if len(peptide_bond_matches) != 2:
+        return False, f"Found {len(peptide_bond_matches)} peptide bonds, need exactly 2"
     
-    # Look for peptide bond patterns (-CO-NH- or -CO-N[C@@H]-)
-    peptide_bond_pattern_1 = Chem.MolFromSmarts("C(=O)NC")
-    peptide_bond_pattern_2 = Chem.MolFromSmarts("C(=O)N[C@@H]")
-    peptide_bond_matches_1 = mol.GetSubstructMatches(peptide_bond_pattern_1)
-    peptide_bond_matches_2 = mol.GetSubstructMatches(peptide_bond_pattern_2)
-    if len(peptide_bond_matches_1) + len(peptide_bond_matches_2) != 1:
-        return False, f"Found {len(peptide_bond_matches_1) + len(peptide_bond_matches_2)} peptide bonds, expected exactly 1"
+    # Check for at least one amino acid side chain
+    side_chain_pattern = Chem.MolFromSmarts("[C&!$(C=O)][NX3H2]")
+    side_chain_matches = mol.GetSubstructMatches(side_chain_pattern)
+    if not side_chain_matches:
+        return False, "No amino acid side chains found"
     
-    # Ensure the peptide bond connects the two amino acid residues
-    peptide_bond_atoms = set()
-    if peptide_bond_matches_1:
-        peptide_bond_atoms = set(atom.GetIdx() for atom in mol.GetAtoms()[peptide_bond_matches_1[0]])
-    else:
-        peptide_bond_atoms = set(atom.GetIdx() for atom in mol.GetAtoms()[peptide_bond_matches_2[0]])
+    # Check for carboxyl and amino groups
+    has_carboxyl = any(atom.GetSymbol() == "O" and sum(mol.GetAtomWithIdx(i).GetTotalNumHs() for i in mol.GetAtomNeighbors(atom.GetIdx())) > 0 for atom in mol.GetAtoms())
+    has_amino = any(atom.GetSymbol() == "N" and sum(mol.GetAtomWithIdx(i).GetTotalNumHs() for i in mol.GetAtomNeighbors(atom.GetIdx())) > 1 for atom in mol.GetAtoms())
+    if not (has_carboxyl and has_amino):
+        return False, "Missing carboxyl or amino group"
     
-    residue_atoms = set(sum([list(mol.GetAtoms()[match]) for match in amino_acid_matches], []))
-    if not peptide_bond_atoms.issubset(residue_atoms):
-        return False, "Peptide bond does not connect the two amino acid residues"
-    
-    return True, "Contains two amino acid residues connected by a peptide bond"
+    return True, "Contains two amino acid residues connected by peptide linkages"
