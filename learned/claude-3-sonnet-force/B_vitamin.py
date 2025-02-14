@@ -2,17 +2,17 @@
 Classifies: CHEBI:75769 B vitamin
 """
 """
-Classifies: B Vitamins
-Any member of the group of eight water-soluble vitamins originally thought to be a single compound (vitamin B) that play important roles in cell metabolism.
-The group comprises of vitamin B1, B2, B3, B5, B6, B7, B9, and B12 (Around 20 other compounds were once thought to be B vitamins but are no longer classified as such).
+Classifies: CHEBI:33219 B vitamins
 """
-
 from rdkit import Chem
-from rdkit.Chem import AllChem, rdMolDescriptors
+from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import AllChem
 
-def is_B_vitamin(smiles: str) -> tuple[bool, str]:
+def is_B_vitamin(smiles: str):
     """
     Determines if a molecule is a B vitamin based on its SMILES string.
+    B vitamins are a group of water-soluble vitamins that play important roles in cell metabolism,
+    including vitamins B1, B2, B3, B5, B6, B7, B9, and B12.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,55 +21,45 @@ def is_B_vitamin(smiles: str) -> tuple[bool, str]:
         bool: True if molecule is a B vitamin, False otherwise
         str: Reason for classification
     """
+    
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Thiamine (B1)
-    thiamine_patterns = ['*c1c([nH+]cs1)*', '*c1c([nH+]ccn1)*']
-    if any(mol.HasSubstructMatch(Chem.MolFromSmarts(p)) for p in thiamine_patterns):
-        return True, "Thiamine (B1) substructure found"
-
-    # Riboflavin (B2)
-    riboflavin_pattern = '*c1nc2c(=O)[nH]c(=O)[nH]c2c(*)cc1*'
-    if mol.HasSubstructMatch(Chem.MolFromSmarts(riboflavin_pattern)):
-        return True, "Riboflavin (B2) substructure found"
-
-    # Niacin (B3)
-    niacin_patterns = ['*c1ccncc1*', '*c1ccn(O)cc1*']
-    if any(mol.HasSubstructMatch(Chem.MolFromSmarts(p)) for p in niacin_patterns):
-        return True, "Niacin (B3) substructure found"
-
-    # Pantothenic acid (B5)
-    pantothenic_pattern = '*CC(C)(CO)C(O)C(=O)NCCC(=O)O*'
-    if mol.HasSubstructMatch(Chem.MolFromSmarts(pantothenic_pattern)):
-        return True, "Pantothenic acid (B5) substructure found"
-
-    # Pyridoxine (B6)
-    pyridoxine_patterns = ['*c1c(CO)ncc(CO)c1O*', '*c1c(CO)ncc(COP(O)(O)=O)c1O*']
-    if any(mol.HasSubstructMatch(Chem.MolFromSmarts(p)) for p in pyridoxine_patterns):
-        return True, "Pyridoxine (B6) substructure found"
-
-    # Biotin (B7)
-    biotin_pattern = '*C12CSC(CCCCC(O)=O)C1NC(=O)N2*'
-    if mol.HasSubstructMatch(Chem.MolFromSmarts(biotin_pattern)):
-        return True, "Biotin (B7) substructure found"
-
-    # Folate (B9)
-    folate_patterns = ['*c1cnc2nc(N)[nH]c(=O)c12*', '*c1cnc2nc(N)[nH]c(N)c12*']
-    if any(mol.HasSubstructMatch(Chem.MolFromSmarts(p)) for p in folate_patterns):
-        return True, "Folate (B9) substructure found"
-
-    # Cobalamin (B12)
-    cobalamin_pattern = '*[Co-3]1234*'
-    if mol.HasSubstructMatch(Chem.MolFromSmarts(cobalamin_pattern)):
-        return True, "Cobalamin (B12) substructure found"
-
-    # Additional checks
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    
+    # Check for common B vitamin substructures
+    patterns = [
+        # Thiamine (B1)
+        Chem.MolFromSmarts("[C;H3][c;H1][c;H0][n;+]([C;H2][c;H1][s;H0]([C;H2][C;H2][O;H1][P;X4]=[O;X1])([C;H3])[C;H3])[c;H1][n;H1][c;H1]([C;H3])[C;H3]=[N;X2+]"),
+        # Riboflavin (B2)
+        Chem.MolFromSmarts("[n;X3]1[c;H0][n;H0][c;H1]2[c;H1]([n;X2][c;H1]1[n;X3][c;H0]2[C;X4][C;X4]=[O;X1])[C;X4][C;X4]=[O;X1]"),
+        # Niacin (B3)
+        Chem.MolFromSmarts("c1[c;H1][c;H1][c;H1][n;X2][c;H1]1[C;X3](=[O;X1])[O;H1]"),
+        # Pantothenic acid (B5)
+        Chem.MolFromSmarts("[C;H3][C;H1]([C;H3])([C;H3])[C;H2]([C;X3](=[O;X1])[N;X3][C;X4][C;X4][C;X3](=[O;X1])[O;H1])[O;H1]"),
+        # Pyridoxine (B6)
+        Chem.MolFromSmarts("[C;H3][c;H1]1[c;H0][c;H0][c;H1]([C;X3](=[O;X1])[O;H1])[c;H0][c;H0][n;X2]1[C;X4][O;H1]"),
+        # Biotin (B7)
+        Chem.MolFromSmarts("c1[c;H1][c;H1][c;H1][c;H1][c;H1]1[C;X3](=[O;X1])[N;X3][C;X4]1[C;X4][S;X2][C;X4]([C;H3])([C;H1])[N;X3][C;X3]1=[O;X1]"),
+        # Folate (B9)
+        Chem.MolFromSmarts("[c;H1]1[c;H1][c;H1][c;H1]([C;X3](=[O;X1])[N;X3][C;X4]([C;H2][C;H2][C;X3](=[O;X1])[O;H1])[C;X3](=[O;X1])[O;H1])[c;H1][c;H1]1"),
+        # Cobalamin (B12)
+        Chem.MolFromSmarts("[Co-3]1234[N;X4]5[C;X4]6=[N;+]1[C;X4](=[C;X3][C;X4]1=[N;+]2[C;X4](=[C;X3][C;X4]2=[N;+]3[C;X4]([C;H3])([C;H3])[C;X4]([C;H3])([C;H3])[C;H3][C;X3](=[O;X1])[N;X3][C;X4]([C;H3])[C;X4]3([C;H3])[C;X4][C;X3](=[O;X1])[N;X3][C;X4]([C;H3])[C;X4]4([C;H3])[C;X4][C;X3](=[O;X1])[N;X3][C;X4]([C;H3])[C;X4]5([C;H3])[C;X4][C;X3](=[O;X1])[N;X3][C;X4]([C;H3])[C;X4]1([C;H3])[C;X4][C;X3](=[O;X1])[N;X3][C;X4]([C;H3])[C;X4]2([C;H3])[C;X4][C;X3](=[O;X1])[N;X3][C;X4]([C;H3])[C;H3][C;X3](=[O;X1])[N;X3])[C;X4]6=[C;X3][C;X4]5=[N;+]1[C;X4](=[C;X3][C;X4]5=[N;+]6[C;X4]([C;H3])([C;H3])[C;X4]([C;H3])([C;H3])[C;H3][C;X3](=[O;X1])[N;X3][C;X4]([C;H3])[C;X4]4([C;H3])[C;X4][C;X3](=[O;X1])[N;X3][C;X4]([C;H3])[C;X4]2([C;H3])[C;X4][C;X3](=[O;X1])[N;X3][C;X4]([C;H3])[C;H3][C;X3](=[O;X1])[N;X3])[C;X4]4([C;H3])([C;H3])[C;X4][C;H3][C;X3](=[O;X1])[N;X3][C;X4]([C;H3])[C;H3][C;X3](=[O;X1])[N;X3])[C;H3]([C;H3])[C;H3]"),
+    ]
+    
+    # Check if any pattern matches
+    for pattern in patterns:
+        if mol.HasSubstructMatch(pattern):
+            return True, "Molecule matches a known B vitamin substructure"
+    
+    # Additional checks based on molecular properties
+    mw = rdMolDescriptors.CalcExactMolWt(mol)
+    if mw > 1000:
+        return False, "Molecular weight too high for B vitamin"
+    
     n_rings = rdMolDescriptors.CalcNumRings(mol)
-
-    if mol_wt < 100 or n_rings < 2:
-        return False, "Molecular weight or ring count too low for B vitamin"
-
-    return False, "No B vitamin substructures found"
+    if n_rings > 5:
+        return False, "Too many rings for B vitamin"
+    
+    # Default to False if no pattern matched and properties didn't rule it out
+    return False, "Molecule does not match any known B vitamin substructure"
