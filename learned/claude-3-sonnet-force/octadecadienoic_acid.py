@@ -36,13 +36,13 @@ def is_octadecadienoic_acid(smiles: str):
         return False, f"Found {c_count} carbon atoms, need exactly 18"
 
     # Check for exactly 2 double bonds
-    n_double_bonds = rdMolDescriptors.CalcNumAromaticRings(mol) + rdMolDescriptors.CalcNumRotatableBonds(mol)
+    n_double_bonds = rdMolDescriptors.CalcNumHBD(mol)
     if n_double_bonds != 2:
         return False, f"Found {n_double_bonds} double bonds, need exactly 2"
 
-    # Check for straight chain
-    chain_pattern = Chem.MolFromSmarts("[CH2,CH3]~[CH2]~[CH2]~[CH2]~[CH2]~[CH2]~[CH2]~[CH2]")
+    # Check for straight chain with double bonds on the C18 chain
+    chain_pattern = Chem.MolFromSmarts("[CH3,CH2,CH]=&!@[CH2,CH]=&!@[CH2,CH]=&!@[CH2,CH]=&!@[CH2,CH]=&!@[CH2,CH]=&!@[CH2,CH]=&!@[CH2,CH]=&!@[CH2,CH]=&!@[CH2,CH]=&!@[CH2,CH]=&!@[CH2,CH]=&!@[CH2,CH]=&!@[CH2,CH]=&!@[CH2,CH]=&!@[CH2,CH]=&!@[CH2,CH]=&!@[CH2,CH]=&!@[CH,C](=C)&!@C(=O)O")
     if not mol.HasSubstructMatch(chain_pattern):
-        return False, "Not a straight chain"
+        return False, "Not a straight chain with double bonds on C18"
 
     return True, "Meets the criteria for an octadecadienoic acid"
