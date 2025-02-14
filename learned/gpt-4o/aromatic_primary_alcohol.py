@@ -22,9 +22,9 @@ def is_aromatic_primary_alcohol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Improved SMARTS query for aromatic primary alcohol
-    # Primary carbon bonded to -OH and directly connected to aromatic ring
-    aromatic_primary_alcohol_smarts = Chem.MolFromSmarts('[c]-[CH2]-[OH]')
+    # Optimized SMARTS query for aromatic primary alcohols
+    # Primary carbon bonded to -OH and directly connected to an aromatic system
+    aromatic_primary_alcohol_smarts = Chem.MolFromSmarts('[$(c-!@[CH2][OH])]')
 
     # Check if the molecule matches the aromatic primary alcohol SMARTS pattern
     if mol.HasSubstructMatch(aromatic_primary_alcohol_smarts):
