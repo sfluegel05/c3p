@@ -25,7 +25,7 @@ def is_quinic_acid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define SMARTS pattern for cyclohexane ring
-    cyclohexane_smarts = "[R]{6}"
+    cyclohexane_smarts = "[C&R]1[C&R][C&R][C&R][C&R][C&R]1"
     cyclohexane = Chem.MolFromSmarts(cyclohexane_smarts)
     ring_matches = mol.GetSubstructMatches(cyclohexane)
     if not ring_matches:
@@ -47,50 +47,37 @@ def is_quinic_acid(smiles: str):
                     if neighbor.GetAtomicNum() == 6:
                         neighbor_atom = neighbor
                         # Look for -C(=O)O pattern
-                        c_atom = neighbor_atom
-                        o_double = False
-                        o_single = False
-                        for n in c_atom.GetNeighbors():
-                            if n.GetIdx() != idx:
-                                bond_type = c_atom.GetBondBetweenAtom(n.GetIdx()).GetBondType()
-                                if n.GetAtomicNum() == 8:
-                                    if bond_type == Chem.rdchem.BondType.DOUBLE:
-                                        o_double = True
-                                    elif bond_type == Chem.rdchem.BondType.SINGLE:
-                                        o_single = True
-                        if o_double and o_single:
-                            carboxylic_acid_found = True
-                            continue
+                        ester_carboxy_smarts = Chem.MolFromSmarts("C(=O)[O,N]")
+                        bond = mol.GetBondBetweenAtoms(idx, neighbor_idx)
+                        if bond is not None and bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
+                            frag = Chem.FragmentOnBonds(mol, [bond.GetIdx()], addDummies=False)
+                            frag_smiles = Chem.MolToSmiles(frag, rootedAtAtom=neighbor_idx)
+                            frag_mol = Chem.MolFromSmiles(frag_smiles)
+                            if frag_mol is not None and frag_mol.HasSubstructMatch(ester_carboxy_smarts):
+                                # Check if it's a carboxylic acid group
+                                if neighbor_atom.GetDegree() == 3:
+                                    carboxylic_acid_found = True
+                                else:
+                                    substituent_count += 1
+                                continue
 
-                    # Check for hydroxyl group (–OH)
+                    # Check for hydroxyl or ester group (-O-)
                     if neighbor.GetAtomicNum() == 8:
-                        # Ensure it's a hydroxyl group and not an ether
+                        # Oxygen atom
+                        # Check if it's a hydroxyl group
                         if neighbor.GetDegree() == 1:
                             substituent_count += 1
                             continue
-                        else:
-                            # Check if oxygen is part of an ester linkage
-                            o_atom = neighbor
-                            for n in o_atom.GetNeighbors():
-                                if n.GetIdx() != idx:
-                                    if n.GetAtomicNum() == 6:
-                                        # Possible ester linkage
-                                        c_atom = n
-                                        double_bonded_o = False
-                                        for nn in c_atom.GetNeighbors():
-                                            if nn.GetIdx() != o_atom.GetIdx():
-                                                bond_type = c_atom.GetBondBetweenAtom(nn.GetIdx()).GetBondType()
-                                                if nn.GetAtomicNum() == 8 and bond_type == Chem.rdchem.BondType.DOUBLE:
-                                                    double_bonded_o = True
-                                        if double_bonded_o:
-                                            substituent_count +=1
-                                            break
+                        elif neighbor.GetDegree() == 2:
+                            # Possible ether or ester linkage
+                            substituent_count +=1
+                            continue
 
         if substituent_count >= 3 and carboxylic_acid_found:
             return True, "Contains cyclitol carboxylic acid core (quinic acid or derivative)"
         else:
             if substituent_count < 3:
-                return False, f"Found {substituent_count} hydroxyl/ester groups on ring, need at least 3"
+                return False, f"Found {substituent_count} hydroxyl or ester groups on ring, need at least 3"
             if not carboxylic_acid_found:
                 return False, "No carboxylic acid group attached to ring"
 
