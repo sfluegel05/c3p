@@ -25,6 +25,9 @@ def is_medium_chain_fatty_acyl_CoA_4__(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
+    # Update property cache for the molecule
+    mol.UpdatePropertyCache()
+
     # Check for phosphorus atoms (CoA derivative)
     contains_phosphorus = any(atom.GetAtomicNum() == 15 for atom in mol.GetAtoms())
     if not contains_phosphorus:
@@ -48,9 +51,26 @@ def is_medium_chain_fatty_acyl_CoA_4__(smiles: str):
 
     # Collect acyl chain atoms starting from the carbonyl carbon, excluding sulfur atom
     acyl_chain_atoms = set()
-    atoms_to_visit = [acyl_carbon_idx]
     visited_atoms = set([sulfur_idx])  # Exclude sulfur atom
 
+    current_atom = mol.GetAtomWithIdx(acyl_carbon_idx)
+    neighbors = current_atom.GetNeighbors()
+
+    # Exclude sulfur and oxygen atoms
+    excluded_atom_idxs = [nbr.GetIdx() for nbr in neighbors if nbr.GetAtomicNum() in [8, 16]]  # Oxygen and Sulfur
+    visited_atoms.update(excluded_atom_idxs)
+    visited_atoms.add(acyl_carbon_idx)  # Exclude carbonyl carbon
+
+    # Get the neighbor that is not sulfur or oxygen (start of acyl chain)
+    acyl_chain_neighbors = [nbr for nbr in neighbors if nbr.GetIdx() not in visited_atoms]
+
+    if len(acyl_chain_neighbors) != 1:
+        return False, "Could not find acyl chain attached to carbonyl carbon"
+
+    acyl_chain_start_idx = acyl_chain_neighbors[0].GetIdx()
+
+    # Now, collect acyl chain atoms
+    atoms_to_visit = [acyl_chain_start_idx]
     while atoms_to_visit:
         current_atom_idx = atoms_to_visit.pop()
         if current_atom_idx in visited_atoms:
@@ -68,6 +88,9 @@ def is_medium_chain_fatty_acyl_CoA_4__(smiles: str):
 
     if acyl_chain_frag is None or acyl_chain_frag.GetNumAtoms() == 0:
         return False, "Could not isolate acyl chain fragment"
+
+    # Update property cache for the fragment to initialize ring info
+    acyl_chain_frag.UpdatePropertyCache()
 
     # Check for rings in acyl chain
     ring_info = acyl_chain_frag.GetRingInfo()
@@ -88,19 +111,18 @@ def is_medium_chain_fatty_acyl_CoA_4__(smiles: str):
     if disallowed_atoms:
         return False, f"Acyl chain contains disallowed atoms: {', '.join(disallowed_atoms)}"
 
-    # Check for additional carboxyl groups in acyl chain
-    carboxylic_acid_pattern = Chem.MolFromSmarts('C(=O)[O-]')
-    carboxylic_acid_matches = acyl_chain_frag.GetSubstructMatches(carboxylic_acid_pattern)
-    if carboxylic_acid_matches:
-        return False, "Acyl chain contains additional carboxylate group(s)"
+    # Check for additional functional groups in acyl chain (carboxylic acids, phosphates)
+    functional_group_patterns = [
+        Chem.MolFromSmarts('C(=O)[O-]'),   # Carboxylate
+        Chem.MolFromSmarts('P(=O)([O-])[O-]'),  # Phosphate
+        Chem.MolFromSmarts('S'),  # Sulfur
+        Chem.MolFromSmarts('N')   # Nitrogen
+    ]
+    for pattern in functional_group_patterns:
+        if acyl_chain_frag.HasSubstructMatch(pattern):
+            return False, "Acyl chain contains disallowed functional groups"
 
-    # Check for phosphate groups in acyl chain
-    phosphate_pattern = Chem.MolFromSmarts('P(=O)([O-])[O-]')
-    phosphate_matches = acyl_chain_frag.GetSubstructMatches(phosphate_pattern)
-    if phosphate_matches:
-        return False, "Acyl chain contains phosphate group(s)"
-
-    # Count carbons in acyl chain (excluding carbonyl carbon already counted)
+    # Count carbons in acyl chain
     carbon_count = sum(1 for atom in acyl_chain_frag.GetAtoms() if atom.GetAtomicNum() == 6)
 
     if 6 <= carbon_count <= 12:
