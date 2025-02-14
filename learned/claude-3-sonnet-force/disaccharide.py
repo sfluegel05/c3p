@@ -1,26 +1,61 @@
 """
 Classifies: CHEBI:36233 disaccharide
 """
-After analyzing the previous code and the outcomes, there are a few potential issues that could be addressed:
+"""
+Classifies: CHEBI:24169 disaccharide
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
 
-1. **Glycosidic bond detection**: The current approach of checking for the presence of an oxygen atom (`[OX2]`) to identify a glycosidic bond is not sufficient. A glycosidic bond is a specific type of ether linkage between the anomeric carbon of one monosaccharide and a hydroxyl group of another monosaccharide. The current code does not distinguish between different types of ether linkages.
+def is_disaccharide(smiles: str):
+    """
+    Determines if a molecule is a disaccharide based on its SMILES string.
+    A disaccharide is a compound in which two monosaccharides are joined by a glycosidic bond.
 
-2. **Ring identification**: The current code assumes that all 5- or 6-membered rings are monosaccharide rings. However, this assumption may not always hold true, as there could be other cyclic structures present in the molecule that are not monosaccharides.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Connection between monosaccharide rings**: The current code checks if two monosaccharide rings share an oxygen atom, but it does not verify if the shared oxygen atom is indeed part of a glycosidic bond.
-
-4. **Handling anomeric configurations**: The current code does not consider the anomeric configurations (alpha or beta) of the monosaccharide units, which can be important for identifying specific disaccharides.
-
-To improve the program, you could consider the following approaches:
-
-1. **Use a more specific pattern for glycosidic bond detection**: Instead of just checking for the presence of an oxygen atom, you could use a more specific SMARTS pattern that captures the glycosidic bond structure. For example, `[OX2][CH1X4][CH1X4][OX2]` matches an ether linkage between two anomeric carbons.
-
-2. **Identify monosaccharide rings based on their structural features**: Instead of relying solely on ring size, you could identify monosaccharide rings based on their structural features, such as the presence of a specific number of oxygen atoms, hydroxyl groups, and anomeric carbons.
-
-3. **Verify the connection between monosaccharide rings**: After identifying the monosaccharide rings, you could verify that they are connected by a glycosidic bond by checking the connectivity of the shared oxygen atom and ensuring that it is part of an ether linkage between the anomeric carbon of one ring and a hydroxyl group of the other ring.
-
-4. **Consider anomeric configurations**: You could incorporate information about the anomeric configurations (alpha or beta) of the monosaccharide units when identifying specific disaccharides. This can be done by analyzing the stereochemistry around the anomeric carbons.
-
-5. **Use additional structural features**: Depending on the level of specificity required, you could incorporate additional structural features, such as the presence of specific substituents (e.g., acetyl groups) or the configuration of specific stereogenic centers, to improve the accuracy of the classification.
-
-By addressing these potential issues and implementing the suggested improvements, you should be able to create a more robust program for classifying disaccharides based on their SMILES strings.
+    Returns:
+        bool: True if molecule is a disaccharide, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Identify monosaccharide rings
+    monosaccharide_rings = []
+    ring_info = mol.GetRingInfo()
+    for ring in ring_info.AtomRings():
+        ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
+        oxygen_count = sum(atom.GetAtomicNum() == 8 for atom in ring_atoms)
+        hydroxyl_count = sum(atom.GetTotalNumHs(onlyExplicit=False) == 1 for atom in ring_atoms if atom.GetAtomicNum() == 8)
+        anomeric_carbons = [atom.GetIdx() for atom in ring_atoms if atom.GetAtomicNum() == 6 and atom.GetHybridization() == Chem.HybridizationType.SP2]
+        
+        if len(ring) in [5, 6] and oxygen_count >= 1 and hydroxyl_count >= 1 and len(anomeric_carbons) == 1:
+            monosaccharide_rings.append(ring)
+    
+    # Check for glycosidic bond
+    glycosidic_bond_pattern = Chem.MolFromSmarts("[OX2][CH1X4][CH1X4][OX2]")
+    glycosidic_bond_matches = mol.GetSubstructMatches(glycosidic_bond_pattern)
+    
+    if len(monosaccharide_rings) != 2 or len(glycosidic_bond_matches) == 0:
+        return False, "Does not contain two monosaccharide rings connected by a glycosidic bond"
+    
+    # Verify the glycosidic bond connection
+    for match in glycosidic_bond_matches:
+        ring1, ring2 = None, None
+        for ring in monosaccharide_rings:
+            if match[1] in ring:
+                ring1 = ring
+            if match[2] in ring:
+                ring2 = ring
+        
+        if ring1 and ring2:
+            break
+    else:
+        return False, "Glycosidic bond does not connect monosaccharide rings"
+    
+    return True, "Contains two monosaccharide rings connected by a glycosidic bond"
