@@ -1,39 +1,56 @@
 """
 Classifies: CHEBI:64611 ether lipid
 """
-The previous program attempted to classify ether lipids based on the following criteria:
+"""
+Classifies: CHEBI:38114 ether lipid
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-1. Presence of at least one ether oxygen (-O-)
-2. Absence of any ester groups (-O-C(=O)-)
-3. Presence of long alkyl chains (>= 8 carbons)
-4. Molecular weight >= 300 Da
+def is_ether_lipid(smiles: str):
+    """
+    Determines if a molecule is an ether lipid based on its SMILES string.
+    Ether lipids contain at least one ether linkage (-O-) between a glycerol backbone
+    and an alkyl chain. They may also contain ester linkages (-O-C(=O)-).
 
-However, based on the provided outcomes, it seems that this approach has some limitations and fails to correctly classify many ether lipid structures.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-Potential issues and improvements:
-
-1. **Linkage Pattern**: The program only checks for the presence of ether oxygens and absence of ester groups. However, ether lipids can have a more complex linkage pattern involving both ether and ester linkages. For example, some of the false negatives contain both ether and ester linkages, which should be allowed for ether lipids.
-
-   **Improvement**: Instead of strictly checking for the absence of esters, the program should allow for both ether and ester linkages but ensure that at least one ether linkage is present.
-
-2. **Glycerol Backbone**: The program does not explicitly check for the presence of a glycerol backbone, which is a common structural feature of many ether lipids.
-
-   **Improvement**: Add a check for a glycerol backbone pattern, similar to how it is done for triglycerides or other glycerolipids.
-
-3. **Alkyl Chain Length**: The program checks for the presence of alkyl chains with a minimum length of 8 carbons. However, some of the false negatives have shorter chains, which may still be valid for ether lipids.
-
-   **Improvement**: Relax the minimum chain length requirement or consider checking for the total number of carbons instead of individual chain lengths.
-
-4. **Molecular Weight**: While the molecular weight check can be useful, it may not be a strict requirement for all ether lipids, especially smaller or more compact structures.
-
-   **Improvement**: Consider removing the molecular weight check or adjusting the threshold based on further analysis of the false negatives.
-
-5. **Additional Structural Features**: Some of the false negatives may have additional structural features or substituents that are not accounted for in the current program.
-
-   **Improvement**: Analyze the false negatives and identify any common structural patterns or substituents that should be considered for ether lipid classification.
-
-6. **Outliers and Exceptions**: It is possible that some of the false negatives are misclassified in the benchmark data or represent edge cases or exceptions to the general definition of ether lipids.
-
-   **Improvement**: If there is a strong justification for considering certain structures as ether lipids despite not meeting the program's criteria, consider adding exceptions or more flexible rules to accommodate them.
-
-Overall, the program's approach of using SMARTS patterns and substructure matching is a good starting point, but it may require more sophisticated rules and a more comprehensive analysis of the structural diversity within the ether lipid class to improve its performance.
+    Returns:
+        bool: True if molecule is an ether lipid, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Look for glycerol backbone pattern (C-C-C with 2-3 oxygens attached)
+    glycerol_pattern = Chem.MolFromSmarts("[CH2X2,CH2X3][CHX3,CHX4][CH2X2,CH2X3]")
+    if not mol.HasSubstructMatch(glycerol_pattern):
+        return False, "No glycerol backbone found"
+    
+    # Look for ether linkages (-O-)
+    ether_pattern = Chem.MolFromSmarts("[OX2]")
+    ether_matches = mol.GetSubstructMatches(ether_pattern)
+    if not ether_matches:
+        return False, "No ether linkages found"
+    
+    # Check for long alkyl chains (>= 8 carbons)
+    alkyl_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    alkyl_matches = mol.GetSubstructMatches(alkyl_pattern)
+    if not alkyl_matches:
+        return False, "No long alkyl chains found"
+    
+    # Count carbons and oxygens
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    
+    if c_count < 12:
+        return False, "Too few carbons for ether lipid"
+    if o_count < 3:
+        return False, "Too few oxygens for ether lipid"
+    
+    return True, "Contains glycerol backbone with at least one ether linkage and long alkyl chains"
