@@ -20,37 +20,51 @@ def is_alpha_hydroxy_ketone(smiles: str):
         bool: True if molecule is an alpha-hydroxy ketone, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for ketone groups (exclude aldehydes, carboxylic acids, esters)
-    ketone_pattern = Chem.MolFromSmarts('C(=O)C')  # Ketone carbonyl group
-    ketone_matches = mol.GetSubstructMatches(ketone_pattern)
+    # Add explicit hydrogens (important for checking hydrogen counts)
+    mol = Chem.AddHs(mol)
 
-    if not ketone_matches:
-        return False, "No ketone group found"
+    found_alpha_hydroxy_ketone = False
 
-    for match in ketone_matches:
-        ketone_carbon_idx = match[0]  # Carbonyl carbon
-        alpha_carbons = []
+    # Iterate over atoms to find ketone groups
+    for atom in mol.GetAtoms():
+        # Check if the atom is a carbonyl carbon (carbon double-bonded to oxygen)
+        if atom.GetAtomicNum() == 6:  # Carbon atom
+            is_ketone = False
+            oxygen_double_bond = None
+            carbonyl_neighbors = []
+            # Examine bonds of the carbon atom
+            for bond in atom.GetBonds():
+                neighbor = bond.GetOtherAtom(atom)
+                # Check for double bond to oxygen
+                if bond.GetBondType() == Chem.BondType.DOUBLE and neighbor.GetAtomicNum() == 8:
+                    oxygen_double_bond = neighbor
+                # Collect single-bonded neighbors (potential alpha carbons)
+                elif bond.GetBondType() == Chem.BondType.SINGLE and neighbor.GetAtomicNum() == 6:
+                    carbonyl_neighbors.append(neighbor)
+            # Confirm it's a ketone (carbonyl carbon bonded to two carbons)
+            if oxygen_double_bond and len(carbonyl_neighbors) == 2:
+                is_ketone = True
 
-        # Get adjacent carbons (alpha-carbons)
-        for nbr in mol.GetAtomWithIdx(ketone_carbon_idx).GetNeighbors():
-            if nbr.GetAtomicNum() == 6:  # Carbon atom
-                alpha_carbons.append(nbr.GetIdx())
+            if is_ketone:
+                # Check alpha carbons for hydroxyl groups
+                for alpha_carbon in carbonyl_neighbors:
+                    # Check if alpha carbon has a hydroxyl group
+                    for bond in alpha_carbon.GetBonds():
+                        neighbor = bond.GetOtherAtom(alpha_carbon)
+                        # Single bond to oxygen atom
+                        if bond.GetBondType() == Chem.BondType.SINGLE and neighbor.GetAtomicNum() == 8:
+                            oxygen = neighbor
+                            # Check if oxygen atom is bonded to a hydrogen (hydroxyl group)
+                            num_hydrogens = sum(1 for nbr in oxygen.GetNeighbors() if nbr.GetAtomicNum() == 1)
+                            if num_hydrogens > 0:
+                                found_alpha_hydroxy_ketone = True
+                                return True, "Contains an alpha-hydroxy ketone group"
 
-        # Check if any alpha-carbon has a hydroxy group attached
-        for alpha_carb_idx in alpha_carbons:
-            has_hydroxy = False
-            alpha_carbon = mol.GetAtomWithIdx(alpha_carb_idx)
-            for nbr in alpha_carbon.GetNeighbors():
-                if nbr.GetAtomicNum() == 8 and nbr.GetDegree() == 1:  # Oxygen atom with single bond (hydroxy)
-                    has_hydroxy = True
-                    break
-            if has_hydroxy:
-                return True, "Contains an alpha-hydroxy ketone group"
-
-    return False, "Does not contain an alpha-hydroxy ketone group"
+    if not found_alpha_hydroxy_ketone:
+        return False, "Does not contain an alpha-hydroxy ketone group"
