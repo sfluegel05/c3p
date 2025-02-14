@@ -24,10 +24,11 @@ def is_tetrasaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more specific monosaccharide pattern (6- and 5- membered rings with multiple OH and CH2OH groups)
+    # Define a SMARTS pattern for monosaccharide rings (both 5 and 6 membered rings)
     # The carbon with two oxygens is explicit, as it is part of the cycle of monosaccharides
-    monosaccharide_pattern_6 = Chem.MolFromSmarts("[CX4]([OX2])[CX4]1[CX4]([OX2])[CX4][CX4][CX4]([OX2])1")
-    monosaccharide_pattern_5 = Chem.MolFromSmarts("[CX4]([OX2])[CX4]1[CX4]([OX2])[CX4][CX4]([OX2])1")
+    # Include all possible ring configurations with explicit CH, CH2 and oxygen atoms
+    monosaccharide_pattern_6 = Chem.MolFromSmarts("[CX4H]([OX2])[CX4H][CX4H][CX4H][CX4H]([OX2])1")
+    monosaccharide_pattern_5 = Chem.MolFromSmarts("[CX4H]([OX2])[CX4H][CX4H][CX4H]([OX2])1")
     if monosaccharide_pattern_6 is None or monosaccharide_pattern_5 is None:
         return None, "Error in SMARTS pattern"
 
@@ -36,27 +37,16 @@ def is_tetrasaccharide(smiles: str):
     monosaccharide_matches_5 = mol.GetSubstructMatches(monosaccharide_pattern_5)
     monosaccharide_matches = monosaccharide_matches_6 + monosaccharide_matches_5
 
-    
     # Check for exactly 4 units
     if len(monosaccharide_matches) != 4:
         return False, f"Found {len(monosaccharide_matches)} monosaccharide units, requires 4 for tetrasaccharide"
-
+    
     # Count glycosidic bonds (C-O-C connecting rings)
     glycosidic_bond_pattern = Chem.MolFromSmarts("[CX4][OX2][CX4]")
     glycosidic_bond_matches = mol.GetSubstructMatches(glycosidic_bond_pattern)
 
     # A tetrasaccharide will have 3 glycosidic bonds
     if len(glycosidic_bond_matches) < 3 :
-        return False, "Too few glycosidic bonds for a tetrasaccharide"
-    
-    #Additional check to make sure the monosaccharides are connected in a chain and not an other format like a cycle of 4 sugar units.
-    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if carbon_count < 20 or carbon_count > 28 :
-        return False, "Number of carbon atoms is outside tetrasaccharide range"
-
-    if oxygen_count < 12 or oxygen_count > 18 :
-        return False, "Number of oxygen atoms is outside tetrasaccharide range"
-
+         return False, f"Found {len(glycosidic_bond_matches)} glycosidic bonds, requires 3 for tetrasaccharide"
 
     return True, "Contains 4 monosaccharide units connected via glycosidic bonds"
