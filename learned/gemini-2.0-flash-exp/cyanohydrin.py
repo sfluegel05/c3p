@@ -23,8 +23,7 @@ def is_cyanohydrin(smiles: str):
         return False, "Invalid SMILES string"
 
     # SMARTS pattern for a cyanohydrin core structure: C connected to -OH and -C#N.
-    # The carbon can be tertiary or quaternary, and this is enforced with [CH0,CH1,CH2].
-    cyanohydrin_core = Chem.MolFromSmarts("[CH0,CH1,CH2]([OH1])([C#N])")
+    cyanohydrin_core = Chem.MolFromSmarts("[C]([OH])[C#N]")
     
     if cyanohydrin_core is None:
       return False, "Invalid SMARTS pattern for cyanohydrin core"
