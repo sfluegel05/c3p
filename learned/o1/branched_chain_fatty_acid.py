@@ -5,7 +5,6 @@ Classifies: CHEBI:35819 branched-chain fatty acid
 Classifies: branched-chain fatty acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_branched_chain_fatty_acid(smiles: str):
     """
@@ -22,61 +21,75 @@ def is_branched_chain_fatty_acid(smiles: str):
         str: Reason for classification
     """
 
+    from rdkit.Chem import rdmolops
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
     # Identify carboxylic acid group
-    carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[O;H1,-]")
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[O;H1]")
     carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
     if not carboxylic_acid_matches:
         return False, "No carboxylic acid group found"
 
-    # For each carboxyl group, check the hydrocarbon chain
-    for match in carboxylic_acid_matches:
-        carboxyl_carbon_idx = match[0]
-        carboxyl_carbon = mol.GetAtomWithIdx(carboxyl_carbon_idx)
+    # Assume the first carboxyl group
+    carboxyl_carbon_idx = carboxylic_acid_matches[0][0]
 
-        # Start traversal from the carboxyl carbon to build the hydrocarbon chain
-        visited = set()
-        chain_atoms = []
-        branches = 0
-        stack = [(carboxyl_carbon_idx, None)]  # (current_atom_idx, previous_atom_idx)
+    # Find all terminal carbons (carbons with only one carbon neighbor), excluding the carboxyl carbon
+    terminal_carbons = []
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6 and atom.GetIdx() != carboxyl_carbon_idx:
+            neighbor_carbons = [nbr for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() == 6]
+            if len(neighbor_carbons) == 1:
+                terminal_carbons.append(atom.GetIdx())
 
-        while stack:
-            current_atom_idx, previous_atom_idx = stack.pop()
-            if current_atom_idx in visited:
-                continue
-            visited.add(current_atom_idx)
-            current_atom = mol.GetAtomWithIdx(current_atom_idx)
+    if not terminal_carbons:
+        return False, "No terminal carbons found in the hydrocarbon chain"
 
-            # Include only carbon atoms in the chain
-            if current_atom.GetAtomicNum() == 6:
-                chain_atoms.append(current_atom_idx)
-                neighbors = [nbr.GetIdx() for nbr in current_atom.GetNeighbors()]
-                heavy_neighbors = [
-                    nbr_idx for nbr_idx in neighbors
-                    if mol.GetAtomWithIdx(nbr_idx).GetAtomicNum() > 1 and nbr_idx != previous_atom_idx
-                ]
+    # Find the longest carbon chain starting from the carboxyl carbon
+    longest_chain = []
+    max_length = 0
+    for terminal_idx in terminal_carbons:
+        # Find the shortest path between the terminal carbon and carboxyl carbon
+        path = rdmolops.GetShortestPath(mol, carboxyl_carbon_idx, terminal_idx)
+        # Verify that the path consists of carbons connected via single bonds
+        valid_path = True
+        for i in range(len(path) - 1):
+            bond = mol.GetBondBetweenAtoms(path[i], path[i+1])
+            atom1 = mol.GetAtomWithIdx(path[i])
+            atom2 = mol.GetAtomWithIdx(path[i+1])
+            if bond.GetBondType() != Chem.rdchem.BondType.SINGLE:
+                valid_path = False
+                break
+            if atom1.GetAtomicNum() != 6 or atom2.GetAtomicNum() != 6:
+                valid_path = False
+                break
+            if bond.IsInRing():
+                valid_path = False
+                break
+        if valid_path and len(path) > max_length:
+            max_length = len(path)
+            longest_chain = path
 
-                # Check for branches (more than two heavy atom neighbors indicates branching)
-                if len(heavy_neighbors) > 1:
-                    branches += len(heavy_neighbors) - 1  # Exclude the main chain progression
+    if not longest_chain:
+        return False, "No suitable hydrocarbon chain found"
 
-                # Add neighbors to stack
-                for nbr_idx in heavy_neighbors:
-                    stack.append((nbr_idx, current_atom_idx))
+    # Check for branches
+    branches = 0
+    main_chain_set = set(longest_chain)
+    for idx in longest_chain:
+        atom = mol.GetAtomWithIdx(idx)
+        neighbor_carbons = [nbr.GetIdx() for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() == 6]
+        side_chain_atoms = [nbr_idx for nbr_idx in neighbor_carbons if nbr_idx not in main_chain_set]
+        branches += len(side_chain_atoms)
 
-        chain_length = len(chain_atoms)
-        if chain_length < 4:
-            continue  # Too short to be a fatty acid chain
+    chain_length = len(longest_chain)
+    if chain_length < 4:
+        return False, f"Main chain length is {chain_length}, too short to be a fatty acid"
 
-        # Check for branches in the chain
-        if branches > 0:
-            return True, f"Contains carboxyl group with hydrocarbon chain of length {chain_length} and {branches} branch(es)"
-        else:
-            return False, "No branches detected in the hydrocarbon chain"
-
-    # If no suitable chain with branches found
-    return False, "No suitable hydrocarbon chain with branches found"
+    if branches > 0:
+        return True, f"Contains carboxyl group with hydrocarbon chain of length {chain_length} and {branches} branch(es)"
+    else:
+        return False, "No branches detected in the hydrocarbon chain"
