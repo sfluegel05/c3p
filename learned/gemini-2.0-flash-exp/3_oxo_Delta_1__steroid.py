@@ -20,12 +20,24 @@ def is_3_oxo_Delta_1__steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a single SMARTS pattern for the steroid core, 3-oxo group and delta(1) double bond
-    # This ensures all conditions are met in the same ring system.
-    # The numbering refers to specific positions in the steroid core
-    combined_pattern = Chem.MolFromSmarts("[C]1=[C][C]2[C]3[C]([C](=[O])1)([C][C]4[C]3[C]([C]2)[C]4)")
-    
-    if not mol.HasSubstructMatch(combined_pattern):
-        return False, "Molecule does not match the combined 3-oxo-Delta(1)-steroid pattern."
+    # Define a SMARTS pattern for the basic steroid core structure - 4 rings
+    # The 'A' allows for any atom but H
+    steroid_core_pattern = Chem.MolFromSmarts("[A]1[A]2[A]3[A]4[A]1[A]5[A]2[A]3[A]45") # general steroid core pattern.
 
+    if not mol.HasSubstructMatch(steroid_core_pattern):
+        return False, "Molecule does not have a steroid core."
+
+   # Define a SMARTS pattern for the 3-oxo group. Note this must be attached to a ring.
+    oxo_3_pattern = Chem.MolFromSmarts("[C]1(=O)[C]([A])[A]2[A]3[A]4[A]1[A]5[A]2[A]3[A]45")
+
+    if not mol.HasSubstructMatch(oxo_3_pattern):
+        return False, "Molecule does not have a 3-oxo group"
+
+    # Define a SMARTS pattern for the double bond between C1 and C2
+    delta_1_pattern = Chem.MolFromSmarts("[C]1=[C][C]2[A]3[A]4[A]1[A]5[A]2[A]3[A]45") # double bond from position 1 to position 2.
+
+    if not mol.HasSubstructMatch(delta_1_pattern):
+        return False, "Molecule does not have a double bond between positions 1 and 2."
+    
+    
     return True, "Molecule is a 3-oxo-Delta(1)-steroid."
