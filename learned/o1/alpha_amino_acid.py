@@ -25,43 +25,41 @@ def is_alpha_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS patterns
-    carboxylic_acid_pattern = Chem.MolFromSmarts('[CX3](=O)[OX1H1]')
-    amino_group_pattern = Chem.MolFromSmarts('[NX3;H2,H1+]')
+    # Define SMARTS patterns for carboxylic acid/carboxylate and amino groups
+    carboxy_pattern = Chem.MolFromSmarts('[CX3](=O)[OX1H0-,OX2H1]')
+    amino_pattern = Chem.MolFromSmarts('[NX3;H2,H1+,H0]')
     
-    # Find carboxylic acid groups
-    carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
-    if not carboxylic_acid_matches:
-        return False, "No carboxylic acid group found"
+    # Find carboxylic acid/carboxylate groups
+    carboxy_matches = mol.GetSubstructMatches(carboxy_pattern)
+    if not carboxy_matches:
+        return False, "No carboxylic acid or carboxylate group found"
     
-    # Iterate over carboxylic acid groups
-    for match in carboxylic_acid_matches:
-        carboxy_carbon_idx = match[0]
+    # Iterate over carboxylic groups
+    for carboxy_match in carboxy_matches:
+        carboxy_carbon_idx = carboxy_match[0]
         carboxy_carbon = mol.GetAtomWithIdx(carboxy_carbon_idx)
         
         # Find alpha carbon (carbon attached to carboxylic carbon that is not oxygen)
-        neighbors = [atom for atom in carboxy_carbon.GetNeighbors() if atom.GetAtomicNum() != 8]
-        if not neighbors:
+        alpha_carbons = [neighbor for neighbor in carboxy_carbon.GetNeighbors() if neighbor.GetAtomicNum() == 6]
+        if not alpha_carbons:
             continue  # No alpha carbon found
         
-        alpha_carbon = neighbors[0]
-        
-        # Check if alpha carbon is a carbon atom
-        if alpha_carbon.GetAtomicNum() != 6:
-            continue  # Alpha carbon is not carbon
-        
-        # Check for amino group attached to alpha carbon
-        has_amino_group = False
-        for alpha_neighbor in alpha_carbon.GetNeighbors():
-            if alpha_neighbor.GetIdx() == carboxy_carbon_idx:
-                continue  # Skip carboxylic carbon
-            if alpha_neighbor.GetAtomicNum() == 7:
-                # Check if nitrogen matches amino group pattern
-                submol = Chem.PathToSubmol(mol, [alpha_neighbor.GetIdx()])
-                if submol.HasSubstructMatch(amino_group_pattern):
-                    has_amino_group = True
-                    break
-        if has_amino_group:
-            return True, "Contains alpha-amino acid structure"
+        for alpha_carbon in alpha_carbons:
+            alpha_carbon_idx = alpha_carbon.GetIdx()
+            
+            # Check for amino group attached to alpha carbon
+            amino_neighbors = [atom for atom in alpha_carbon.GetNeighbors() if atom.GetAtomicNum() == 7]
+            if not amino_neighbors:
+                continue  # No amino group attached to alpha carbon
+            
+            for amino_nitrogen in amino_neighbors:
+                # Verify that the nitrogen matches the amino group pattern
+                submol = Chem.PathToSubmol(mol, [amino_nitrogen.GetIdx()])
+                if not submol.HasSubstructMatch(amino_pattern):
+                    continue  # Not an amino group
+                
+                # Additional checks can be added here if necessary
+                
+                return True, "Contains alpha-amino acid structure"
     
     return False, "No alpha-amino acid structure found"
