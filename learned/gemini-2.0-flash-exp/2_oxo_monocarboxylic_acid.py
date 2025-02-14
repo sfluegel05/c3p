@@ -23,20 +23,31 @@ def is_2_oxo_monocarboxylic_acid(smiles: str):
         return False, "Invalid SMILES string"
 
     # 1. Check for monocarboxylic acid group (-C(=O)OH)
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[OH]")
     carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
     if len(carboxylic_acid_matches) != 1:
-         return False, f"Molecule must have exactly one carboxylic acid group, found {len(carboxylic_acid_matches)}"
-
-    # 2. Check for 2-oxo substituent (carbonyl at alpha position) - using smarts to find chain
-    oxo_group_pattern = Chem.MolFromSmarts("C(=O)C(=O)O")
-    oxo_matches = mol.GetSubstructMatches(oxo_group_pattern)
-    if len(oxo_matches) < 1:
-        # check for carbonyl immediately adjacent to carboxyl group
-        oxo_pattern_2 = Chem.MolFromSmarts("[CX3](=O)[CX4][CX3](=O)[OX2]")
-        oxo_matches_2 = mol.GetSubstructMatches(oxo_pattern_2)
-        if len(oxo_matches_2) == 0:
-            return False, "No 2-oxo group found"
+        return False, f"Molecule must have exactly one carboxylic acid group, found {len(carboxylic_acid_matches)}"
+    
+    # Get the carboxyl carbon and verify it's connected to another carbon (the alpha carbon)
+    carboxyl_carbon_idx = carboxylic_acid_matches[0][0]
+    carboxyl_carbon = mol.GetAtomWithIdx(carboxyl_carbon_idx)
+    alpha_carbon = None
+    for neighbor in carboxyl_carbon.GetNeighbors():
+        if neighbor.GetSymbol() == 'C':
+                alpha_carbon = neighbor
+                break
+    if alpha_carbon is None:
+        return False, "Carboxylic acid group is not connected to another carbon"
+    
+    # Check if alpha carbon has a carbonyl group
+    has_carbonyl = False
+    for neighbor in alpha_carbon.GetNeighbors():
+        if neighbor.GetSymbol() == 'O' and mol.GetBondBetweenAtoms(alpha_carbon.GetIdx(), neighbor.GetIdx()).GetBondType() == Chem.BondType.DOUBLE:
+            has_carbonyl = True
+            break
+    
+    if not has_carbonyl:
+       return False, "No 2-oxo group found on the alpha carbon"
 
 
     return True, "Molecule has a 2-oxo substituent and one carboxylic acid group"
