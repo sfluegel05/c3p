@@ -1,20 +1,60 @@
 """
 Classifies: CHEBI:26660 sesterterpenoid
 """
-After analyzing the previous program and the outcomes, it appears that the issue lies with the sesterterpene_pattern SMARTS pattern used to identify the sesterterpene backbone. The error message suggests that the pattern contains a `None` value, which is not a valid input for the `HasSubstructMatch` method.
+"""
+Classifies: CHEBI:52348 Sesterterpenoids
+A sesterterpenoid is any terpenoid derived from a sesterterpene (C25 backbone). 
+The term includes compounds in which the C25 skeleton has been rearranged or modified by the removal of atoms (generally methyl groups).
+"""
 
-The reasoning behind the sesterterpene_pattern is correct, as sesterterpenoids are derived from sesterterpenes (C25 backbone) with potential rearrangements or modifications. However, the SMARTS pattern used to represent this backbone is too specific and may not account for all possible rearrangements or modifications.
+from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
-To improve the program, we can consider the following approaches:
+def is_sesterterpenoid(smiles: str):
+    """
+    Determines if a molecule is a sesterterpenoid based on its SMILES string.
 
-1. **Relax the sesterterpene_pattern**: Instead of requiring a specific pattern of 25 carbon atoms in a ring system, we can use a more general pattern that allows for rearrangements and modifications, such as "[C&Ring1;R1][C&Ring1;R1][C&Ring1;R1]CC[C&Ring1;R1][C&Ring1;R1][C&Ring1;R1]CC[C&Ring1;R1][C&Ring1;R1][C&Ring1;R1]CC[C&Ring1;R1][C&Ring1;R1][C&Ring1;R1]CC[C&Ring1;R1][C&Ring1;R1][C&Ring1;R1]CC[C&Ring1;R1][C&Ring1;R1][C&Ring1;R1]".
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **Use multiple patterns**: Instead of relying on a single pattern, we can use multiple SMARTS patterns to capture different possibilities of rearranged or modified sesterterpene backbones.
-
-3. **Modify the classification logic**: Instead of relying solely on the presence of a specific backbone pattern, we can modify the classification logic to consider a combination of features, such as the number of carbon atoms, rings, double bonds, and molecular weight, along with the presence of terpenoid-like structures.
-
-4. **Consider alternative approaches**: If the pattern-based approach proves too challenging, we can explore alternative approaches like machine learning or rule-based systems that can learn from examples and generalize better.
-
-It's important to note that the sesterterpenoid class is quite diverse, and it may be challenging to capture all possible structures with a single set of rules or patterns. In such cases, it's advisable to acknowledge the limitations of the approach and provide appropriate caveats or disclaimers in the program's documentation.
-
-Regarding the F1 score of 0 in the outcomes, this could be due to a lack of true positives, false positives, and false negatives in the benchmark dataset. If you have confidence in your understanding of the sesterterpenoid class and the program's logic, you can disregard the low F1 score and rely on your chemical knowledge to refine the program further.
+    Returns:
+        bool: True if molecule is a sesterterpenoid, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Check for terpenoid-like structure
+    n_rings = mol.GetRingInfo().NumRings()
+    if n_rings < 3:
+        return False, "Lacks terpenoid-like ring system"
+    
+    n_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if n_carbons < 20 or n_carbons > 30:
+        return False, "Number of carbons outside expected range for sesterterpenoid"
+    
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 300 or mol_wt > 600:
+        return False, "Molecular weight outside expected range for sesterterpenoid"
+    
+    # Look for sesterterpene-like backbone patterns
+    sesterterpene_patterns = [
+        "[C&Ring1;R1][C&Ring1;R1][C&Ring1;R1]CC[C&Ring1;R1][C&Ring1;R1][C&Ring1;R1]CC[C&Ring1;R1][C&Ring1;R1][C&Ring1;R1]CC[C&Ring1;R1][C&Ring1;R1][C&Ring1;R1]CC[C&Ring1;R1][C&Ring1;R1][C&Ring1;R1]",
+        "[C&Ring1;R1][C&Ring1;R1][C&Ring1;R1]CC[C&Ring1;R1][C&Ring1;R1][C&Ring1;R1]CC[C&Ring1;R1][C&Ring1;R1][C&Ring1;R1]CC[C&Ring1;R1][C&Ring1;R1][C&Ring1;R1]CC[C&Ring1;R1][C&Ring1;R1][C&Ring1;R1]C",
+        "[C&Ring1;R1][C&Ring1;R1][C&Ring1;R1]CC[C&Ring1;R1][C&Ring1;R1][C&Ring1;R1]CC[C&Ring1;R1][C&Ring1;R1][C&Ring1;R1]CC[C&Ring1;R1][C&Ring1;R1][C&Ring1;R1]CC[C&Ring1;R1][C&Ring1;R1][C&Ring1;R1]O"
+    ]
+    
+    backbone_match = False
+    for pattern in sesterterpene_patterns:
+        sesterterpene_backbone = Chem.MolFromSmarts(pattern)
+        if mol.HasSubstructMatch(sesterterpene_backbone):
+            backbone_match = True
+            break
+    
+    if not backbone_match:
+        return False, "No sesterterpene-like backbone found"
+    
+    return True, "Contains terpenoid-like ring system, appropriate number of carbons and molecular weight, and sesterterpene-like backbone"
