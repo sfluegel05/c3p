@@ -24,27 +24,26 @@ def is_diterpenoid(smiles: str):
     # Count carbons
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
 
-    # Check for ring systems
-    n_rings = rdMolDescriptors.CalcNumRings(mol)
+    # Check for ring systems complexity. Use ring bond count
+    ring_bond_count = rdMolDescriptors.CalcNumSpiroAtoms(mol) + rdMolDescriptors.CalcNumBridgeheadAtoms(mol) + rdMolDescriptors.CalcNumRings(mol)
+
+    if ring_bond_count < 3:
+        return False, f"Diterpenoids should have a complex ring system (>=3 ring bonds) this one has {ring_bond_count}"
+
+    # Check for presence of multiple isoprene units - less strict pattern this time
+    isoprene_pattern = Chem.MolFromSmarts("[CX4]([CX4])([CX4])~[CX4]~[CX4]")
+    isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
+
+    if len(isoprene_matches) < 2:
+        return False, "Too few isoprene units detected (less than 2)"
     
-    if n_rings < 2:
-        return False, f"Diterpenoids should have at least 2 rings, this one has {n_rings}"
+    if c_count < 18 or c_count > 22 :
+         return False, f"Carbon count {c_count} is not within the diterpenoid range (18-22)"
 
-    # Check for presence of multiple C5 units. Count C atoms with 1 or 2 H, or methyls.
-    # [CX4H2,CX4H1,CX4H3]
-    c5_pattern = Chem.MolFromSmarts("[CX4H2,CX4H1,CX4H3]~[CX4H2,CX4H1,CX4H3]~[CX4H2,CX4H1,CX4H3]~[CX4H2,CX4H1,CX4H3]~[CX4H2,CX4H1,CX4H3]")
-    c5_matches = mol.GetSubstructMatches(c5_pattern)
 
-    if len(c5_matches) < 1 : #Requires at least one C5 unit
-         return False, "Too few connected isoprene units detected (less than 1)"
-
-    # Complex ring check to avoid simple bicyclic systems, require a fused ring system.
-    # Look for rings where two rings share 2 or more atoms.
-    fused_ring_pattern = Chem.MolFromSmarts("*1~*~*~*~*~*1*2~*~*~*~*~*2")
-    fused_ring_matches = mol.GetSubstructMatches(fused_ring_pattern)
-
-    if len(fused_ring_matches) < 1:
-        return False, "Too few fused rings"
-
+    # Exclude common steroidal substructures - tetracyclic with specific substitutions and 17 carbons typically.
+    steroid_pattern = Chem.MolFromSmarts("[C]1[C][C]2[C]3[C]([C]1)[C]([C]2)[C][C]([C]3)[C]")
+    if mol.HasSubstructMatch(steroid_pattern) and c_count < 21 :
+        return False, "Steroidal substructure detected, likely not a diterpenoid"
 
     return True, "Likely a diterpenoid based on ring system and multiple isoprene units"
