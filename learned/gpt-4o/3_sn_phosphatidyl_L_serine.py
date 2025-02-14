@@ -13,7 +13,7 @@ def is_3_sn_phosphatidyl_L_serine(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a 3-sn-phosphatidyl-L-serine, False otherwise
+        bool: True if the molecule is a 3-sn-phosphatidyl-L-serine, False otherwise
         str: Reason for classification
     """
     
@@ -23,26 +23,21 @@ def is_3_sn_phosphatidyl_L_serine(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define SMARTS patterns for key features:
-    # 1. Pattern for glycerol backbone with correct stereochemistry
-    glycerol_pattern = Chem.MolFromSmarts("[C@@H](O[C@H](COP(O)(=O)OC[C@H](N)C(=O)O)OC(=O)[C])O")  # Basic glycerol pattern
+    # 1. Glycerol backbone with phosphoserine and ester links at 1 and 2 positions
+    glycerol_phosphoserine_pattern = Chem.MolFromSmarts(
+        "[C@@H](CO[P]([O-])([O])=O)O[C@H](CO[C@H](N)C(=O)O)OC(=O)[C]"
+    )
+    
+    if not mol.HasSubstructMatch(glycerol_phosphoserine_pattern):
+        return False, "No matching glycerol-phosphoserine backbone found, or incorrect acyl chain positions"
+    
+    # 2. Pattern for acyl chains connected via ester bonds
+    ester_chain_pattern = Chem.MolFromSmarts(
+        "C(=O)O[C@@H](COP([O-])([O])=O)OC(=O)C"
+    )
 
-    # 2. Ester bonds at 1 and 2 positions (acyl substitutes)
-    ester_pattern = Chem.MolFromSmarts("OC(=O)C")
-    
-    # Check for glycerol backbone with chlorination at stereocenters
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone with proper stereochemistry and acyl groups found"
-    
-    # Check for two ester groups
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) < 2:
-        return False, f"Incorrect number of acyl (ester) groups found. Expected at least 2, but got {len(ester_matches)}"
+    if not mol.HasSubstructMatch(ester_chain_pattern):
+        return False, "No ester bonds recognized between glycerol backbone and acyl chains"
 
-    # Check for the phosphoserine group at sn-3
-    phosphoserine_pattern = Chem.MolFromSmarts("C[C@H](N)C(=O)O")
-    serine_matches = mol.GetSubstructMatches(phosphoserine_pattern)
-    if not serine_matches:
-        return False, "Phosphoserine group not properly found at the expected position"
-    
-    # Overall match confirmation
-    return True, "Matching structure for 3-sn-phosphatidyl-L-serine found"
+    # Overall match confirmation - if any substructure needed was missing, function would have returned by now
+    return True, "Structure matches criteria for 3-sn-phosphatidyl-L-serine"
