@@ -21,14 +21,18 @@ def is_quinic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the SMARTS pattern for the core quinic acid structure: a cyclohexane with 4 hydroxyls and 1 COOH
-    quinic_acid_pattern = Chem.MolFromSmarts("[CX4]([OX2H1])([OX2H1])([OX2H1])[CX4]([CX4]([OX2H1])([OX2H1])[CX4])C(=O)[OX1H0]")
+    # Core structure: cyclohexane with COOH. At least 3 oxygens attached to ring
+    # Modified to find the basic structure with a COOH and at least 3 oxygen atoms attached
+    quinic_acid_pattern = Chem.MolFromSmarts("[CX4]1([CX4]([OX2])([CX4])([CX4])([CX4])([CX4]1))C(=O)[OX1H0]")
     if mol.HasSubstructMatch(quinic_acid_pattern):
-        return True, "Matches the quinic acid pattern (cyclohexane ring, multiple hydroxyls, and a carboxyl group)"
+        # Check that the ring has at least 3 oxygen atoms
+        ring_atoms = [atom for atom in mol.GetAtoms() if atom.IsInRing() and atom.GetAtomicNum() == 6]
+        oxygens_on_ring = 0
+        for ring_carbon in ring_atoms:
+            for neighbor in ring_carbon.GetNeighbors():
+                if neighbor.GetAtomicNum() == 8:
+                    oxygens_on_ring+=1
+        if oxygens_on_ring >= 3:
+            return True, "Matches quinic acid pattern (cyclohexane ring with at least 3 oxygen atoms and COOH)"
 
-    # Define a simpler pattern: a cyclohexane with at least 3 hydroxyl groups and 1 COOH group
-    quinic_acid_pattern_simplified = Chem.MolFromSmarts("[CX4]1[CX4]([OX2H1])[CX4]([OX2H1])[CX4]([OX2H1])[CX4]([CX4]1)C(=O)[OX1H0]")
-    if mol.HasSubstructMatch(quinic_acid_pattern_simplified):
-        return True, "Matches simplified quinic acid pattern (cyclohexane ring with at least 3 hydroxyls and COOH)"
-
-    return False, "Does not match the quinic acid pattern"
+    return False, "Does not match quinic acid pattern"
