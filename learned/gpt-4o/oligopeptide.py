@@ -2,12 +2,12 @@
 Classifies: CHEBI:25676 oligopeptide
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_oligopeptide(smiles: str):
     """
     Determines if a molecule is an oligopeptide based on its SMILES string.
-    An oligopeptide is defined as a sequence of amino acids connected by peptide bonds,
-    typically having a relatively small number of amino acids (less than 20).
+    An oligopeptide is usually a short chain of amino acids linked by peptide bonds.
 
     Args:
         smiles (str): SMILES string of the molecule.
@@ -21,9 +21,8 @@ def is_oligopeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Update the SMARTS pattern to detect peptide bonds more accurately.
-    # Pattern for peptide bonds: can be N-C(=O) bonded in a context of C-C(=O)-N-C
-    peptide_bond_pattern = Chem.MolFromSmarts("C(=O)N")
+    # SMARTS pattern for peptide bonds considering possible alpha-carbon and nitrogen
+    peptide_bond_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[CX4][NX3]")
     if peptide_bond_pattern is None:
         return False, "Unable to create SMARTS pattern for peptide bond"
 
@@ -31,10 +30,10 @@ def is_oligopeptide(smiles: str):
     peptide_bond_matches = mol.GetSubstructMatches(peptide_bond_pattern)
     num_peptide_bonds = len(peptide_bond_matches)
 
-    # Check if the number of peptide bonds corresponds to an oligopeptide
+    # Check if the number of peptide bonds is consistent with an oligopeptide
     if 2 <= num_peptide_bonds < 20:
         return True, f"Contains {num_peptide_bonds} peptide bonds, consistent with an oligopeptide"
     elif num_peptide_bonds >= 20:
         return False, f"Contains {num_peptide_bonds} peptide bonds, too many for an oligopeptide"
     else:
-        return False, "No peptide bonds found, not an oligopeptide"
+        return False, "No peptide bonds or insufficient for classification as an oligopeptide"
