@@ -6,6 +6,7 @@ Classifies: isoflavonoid
 """
 
 from rdkit import Chem
+from rdkit.Chem import rdqueries
 
 def is_isoflavonoid(smiles: str):
     """
@@ -25,28 +26,35 @@ def is_isoflavonoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a list of SMARTS patterns for isoflavonoid cores
-    isoflavonoid_smarts_list = [
-        # Isoflavone core (3-phenylchromen-4-one)
-        'O=C1C=CC2=CC=CC=C2O1-c3ccccc3',
-        # Isoflavanone core
-        'O=C1CCC2=CC=CC=C2O1-c3ccccc3',
-        # Isoflavene core
-        'C1=CC=C2C(=C1)C=CC(O2)=C3C=CC=CC3',
-        # Isoflavan core
-        'O1CCC2=CC=CC=C2C1-c3ccccc3',
-        # Pterocarpan core
-        'O1CC[C@H]2Oc3c(OC2c1ccccc1)c(OC)c(OC)cc3C1=CC=CC=C1',
-        # General benzopyran with aryl at position 3
-        '[O]1C=CC=C2C=CC=CC12-c3cccc(c3)',
-    ]
+    # Define SMARTS pattern for the benzopyran ring (1-benzopyran)
+    benzopyran_smarts = 'c1ccc2occ(c3ccccc13)cc2'
+    benzopyran_pattern = Chem.MolFromSmarts(benzopyran_smarts)
+    if benzopyran_pattern is None:
+        return False, "Invalid benzopyran SMARTS pattern"
 
-    # Search for isoflavonoid core structures
-    for smarts in isoflavonoid_smarts_list:
-        pattern = Chem.MolFromSmarts(smarts)
-        if pattern is None:
-            continue  # Skip invalid patterns
-        if mol.HasSubstructMatch(pattern):
-            return True, f"Contains isoflavonoid core structure matching pattern: {smarts}"
-    
-    return False, "Does not contain isoflavonoid core structure"
+    # Search for benzopyran core
+    matches = mol.GetSubstructMatches(benzopyran_pattern)
+    if not matches:
+        return False, "Does not contain 1-benzopyran core structure"
+
+    # For each benzopyran match, check for aryl substituent at position 3
+    for match in matches:
+        # Map the atom indices
+        atom_indices = {atom.GetAtomMapNum(): atom.GetIdx() for atom in benzopyran_pattern.GetAtoms()}
+        benzopyran_atoms = [match[i] for i in range(len(match))]
+        
+        # Position 3 in benzopyran SMARTS is atom with AtomMapNum 10
+        position_3 = match[9]  # Adjusted index for zero-based indexing
+
+        # Get the neighbors of position 3 atom excluding those in the benzopyran ring
+        position_3_atom = mol.GetAtomWithIdx(position_3)
+        neighbors = position_3_atom.GetNeighbors()
+        for neighbor in neighbors:
+            if neighbor.GetIdx() not in benzopyran_atoms:
+                # Check if the substituent is an aryl group (aromatic ring)
+                if neighbor.GetIsAromatic():
+                    # Check if the substituent is an aromatic ring
+                    ring_info = mol.GetRingInfo()
+                    if ring_info.IsAtomInRingOfSize(neighbor.GetIdx(), 6):
+                        return True, "Contains isoflavonoid core with aryl substituent at position 3"
+    return False, "Does not have aryl substituent at position 3 of benzopyran core"
