@@ -2,13 +2,13 @@
 Classifies: CHEBI:24043 flavones
 """
 """
-Classifies: CHEBI:17794 flavones
+Classifies: CHEBI:17794 flavone
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
-def is_flavones(smiles: str):
+def is_flavone(smiles: str):
     """
     Determines if a molecule is a flavone based on its SMILES string.
     A flavone is a flavonoid with a 2-aryl-1-benzopyran-4-one (2-arylchromen-4-one) skeleton and its substituted derivatives.
@@ -21,18 +21,14 @@ def is_flavones(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES and remove explicit hydrogens
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    Chem.RemoveHs(mol)
-    
-    # Kekulize to handle tautomers
-    Chem.Kekulize(mol)
     
     # Look for flavone skeleton pattern
-    flavone_skeleton = has_flavone_skeleton(mol)
-    if not flavone_skeleton:
+    flavone_pattern = Chem.MolFromSmarts("c1cc(oc2ccccc2c1=O)-c")
+    if not mol.HasSubstructMatch(flavone_pattern):
         return False, "Does not contain the flavone skeleton"
     
     # Count aromatic rings
@@ -52,81 +48,52 @@ def is_flavones(smiles: str):
     if num_hydroxy < 1:
         return False, "No hydroxyl groups found"
     
-    # Optional: Check molecular weight and Lipinski's rules
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 200 or mol_wt > 600:
-        return False, "Molecular weight outside the typical range for flavones"
+    # Check for common flavone substituents
+    substituents = ["CH3", "OCH3", "OH", "O", "CH2", "CH"]
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6 and not atom.GetIsAromatic():
+            neighbors = [nbr.GetAtomicNum() for nbr in atom.GetNeighbors()]
+            substituent = "".join([get_symbol(n) for n in sorted(neighbors)])
+            if substituent not in substituents:
+                return False, f"Unusual substituent '{substituent}' found"
     
-    if not rdMolDescriptors.CalcLipinski(mol):
-        return False, "Violates Lipinski's rules for drug-likeness"
-    
-    return True, "Contains the flavone skeleton with expected aromatic rings, oxygens, and hydroxyl groups"
+    return True, "Contains the flavone skeleton with expected aromatic rings, oxygens, and substituents"
 
-def has_flavone_skeleton(mol):
-    """
-    Checks if the molecule contains the flavone skeleton (2-aryl-1-benzopyran-4-one or 2-arylchromen-4-one).
+def get_symbol(atomic_num):
+    return Chem.Atom(atomic_num).GetSymbol()
 
-    Args:
-        mol (Mol): RDKit molecule object
-
-    Returns:
-        bool: True if the molecule contains the flavone skeleton, False otherwise
-    """
-    rings = mol.GetRingInfo().AtomRings()
-    for ring1, ring2 in itertools.combinations(rings, 2):
-        if len(ring1) == 6 and len(ring2) == 6 and set(ring1) & set(ring2):
-            # Two fused rings, check if one is benzene and the other is pyran/pyrone
-            ring1_atoms = [mol.GetAtomWithIdx(idx) for idx in ring1]
-            ring2_atoms = [mol.GetAtomWithIdx(idx) for idx in ring2]
-            
-            if is_benzene_ring(ring1_atoms) and is_pyran_pyrone_ring(ring2_atoms):
-                return True
-            elif is_benzene_ring(ring2_atoms) and is_pyran_pyrone_ring(ring1_atoms):
-                return True
-    
-    return False
-
-def is_benzene_ring(ring_atoms):
-    """
-    Checks if a ring is a benzene ring.
-
-    Args:
-        ring_atoms (list): List of Atom objects in the ring
-
-    Returns:
-        bool: True if the ring is a benzene ring, False otherwise
-    """
-    return all(atom.GetAtomicNum() == 6 and atom.GetIsAromatic() for atom in ring_atoms)
-
-def is_pyran_pyrone_ring(ring_atoms):
-    """
-    Checks if a ring is a pyran or pyrone ring with a carbonyl group at position 4.
-
-    Args:
-        ring_atoms (list): List of Atom objects in the ring
-
-    Returns:
-        bool: True if the ring is a pyran or pyrone ring with a carbonyl group at position 4, False otherwise
-    """
-    if len(ring_atoms) != 6:
-        return False
-    
-    carbonyl_atom = None
-    for atom in ring_atoms:
-        if atom.GetAtomicNum() == 8 and len(atom.GetNeighbors()) == 1:
-            carbonyl_atom = atom
-            break
-    
-    if not carbonyl_atom:
-        return False
-    
-    neighbor = carbonyl_atom.GetNeighbors()[0]
-    if neighbor.GetAtomicNum() != 6 or neighbor.GetIsAromatic():
-        return False
-    
-    ring_atoms.remove(carbonyl_atom)
-    for atom in ring_atoms:
-        if not (atom.GetAtomicNum() == 6 and atom.GetIsAromatic()):
-            return False
-    
-    return True
+__metadata__ = {
+    'chemical_class': {
+        'id': 'CHEBI:17794',
+        'name': 'flavone',
+        'definition': 'A member of the class of flavonoid with a 2-aryl-1-benzopyran-4-one (2-arylchromen-4-one) skeleton and its substituted derivatives.',
+        'parents': ['CHEBI:18594', 'CHEBI:35908']
+    },
+    'config': {
+        'llm_model_name': 'lbl/claude-sonnet',
+        'f1_threshold': 0.8,
+        'max_attempts': 5,
+        'max_positive_instances': None,
+        'max_positive_to_test': None,
+        'max_negative_to_test': None,
+        'max_positive_in_prompt': 50,
+        'max_negative_in_prompt': 20,
+        'max_instances_in_prompt': 100,
+        'test_proportion': 0.1
+    },
+    'message': None,
+    'attempt': 0,
+    'success': True,
+    'best': True,
+    'error': '',
+    'stdout': None,
+    'num_true_positives': 151,
+    'num_false_positives': 5,
+    'num_true_negatives': 182412,
+    'num_false_negatives': 16,
+    'num_negatives': None,
+    'precision': 0.9678379149631216,
+    'recall': 0.9040404040404041,
+    'f1': 0.9351303979560504,
+    'accuracy': 0.9999530395199616
+}
