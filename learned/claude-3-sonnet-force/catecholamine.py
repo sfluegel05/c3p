@@ -5,7 +5,7 @@ Classifies: CHEBI:33567 catecholamine
 Classifies: CHEBI:18148 catecholamine
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_catecholamine(smiles: str):
     """
@@ -26,32 +26,42 @@ def is_catecholamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for pyrocatechol core with 2-aminoethyl side chain
-    catecholamine_pattern = Chem.MolFromSmarts("c1c(O)cc(O)c(c1)CCNC")
+    # Look for pyrocatechol core with alkyl side chain containing amine
+    catecholamine_pattern = Chem.MolFromSmarts("c1c(O)cc(O)cc1CCCN")
     catecholamine_matches = mol.GetSubstructMatches(catecholamine_pattern)
     if not catecholamine_matches:
         return False, "No catecholamine core found"
 
-    # Check for substitutions on the pyrocatechol core
-    substituted = False
-    for match in catecholamine_matches:
-        core_atom = mol.GetAtomWithIdx(match[0])
-        if core_atom.GetDegree() > 3:
-            substituted = True
-            break
-
-    # Check for additional hydroxyl groups
+    # Check for additional hydroxyl groups or methyl substituents
     num_hydroxyl_groups = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetDegree() == 1)
-    if num_hydroxyl_groups > 2:
-        substituted = True
+    num_methyl_groups = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6 and atom.GetDegree() == 4 and atom.GetTotalNumHs() == 3)
 
-    # Check for other substitutions on the catecholamine core
-    catecholamine_core = Chem.MolFromSmarts("c1c(O)cc(O)c(CCNC)c1")
-    other_substitutions = mol.HasSubstructMatch(catecholamine_core, useChirality=True)
-    if other_substitutions:
-        substituted = True
+    # Check for quinone or oxidized form
+    quinone_pattern = Chem.MolFromSmarts("c1c(=O)c(=O)cc(CCCN)c1")
+    quinone_matches = mol.GetSubstructMatches(quinone_pattern)
 
-    if substituted:
+    # Check molecular weight range
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 100 or mol_wt > 300:
+        return False, "Molecular weight outside typical range for catecholamines"
+
+    # Check for specific ring systems and atom counts
+    ring_info = mol.GetRingInfo()
+    if not any(len(ring) == 6 for ring in ring_info.AtomRings()):
+        return False, "No benzene ring found"
+
+    num_nitrogen_atoms = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
+    if num_nitrogen_atoms != 1:
+        return False, "Must have exactly one nitrogen atom"
+
+    num_oxygen_atoms = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if num_oxygen_atoms < 2 or num_oxygen_atoms > 4:
+        return False, "Number of oxygen atoms outside typical range for catecholamines"
+
+    # Classify based on structural features
+    if quinone_matches:
+        return True, "Oxidized catecholamine derivative (quinone form)"
+    elif num_hydroxyl_groups > 2 or num_methyl_groups > 0:
         return True, "Substituted catecholamine derivative"
     else:
-        return True, "Contains unsubstituted catecholamine core"
+        return True, "Unsubstituted catecholamine"
