@@ -9,7 +9,7 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
-def is_3_oxo_Delta_4_steroid(smiles: str):
+def is_3_oxo_Delta_4__steroid(smiles: str):
     """
     Determines if a molecule is a 3-oxo-Delta(4) steroid based on its SMILES string.
 
