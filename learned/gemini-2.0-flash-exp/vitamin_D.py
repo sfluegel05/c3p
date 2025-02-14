@@ -2,7 +2,6 @@
 Classifies: CHEBI:27300 vitamin D
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_vitamin_D(smiles: str):
@@ -23,39 +22,53 @@ def is_vitamin_D(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # 1. Check for broken B-ring - Look for a 6-membered ring with a double bond connected to a single bond, and a specific connection to the other rings.
-    # The key is the presence of a C=C single bond that breaks the ring.
-    double_bond_pattern = Chem.MolFromSmarts("[C]=[C]")
-    if not mol.HasSubstructMatch(double_bond_pattern):
-        return False, "Not a seco-steroid structure (missing broken B ring: double bond)"
-    
-    # Check the presence of a 6 membered ring
-    six_member_ring = Chem.MolFromSmarts("[C;R6]1~[C;R]~[C;R]~[C;R]~[C;R]~[C;R]1")
-    if not mol.HasSubstructMatch(six_member_ring):
-        return False, "Not a seco-steroid structure (missing broken B ring: six membered ring)"
 
-    # 2. Check for triene system in the conjugated system
-    triene_pattern = Chem.MolFromSmarts("C=C~C=C~C") # this allows for both cis and trans configurations
-    if not mol.HasSubstructMatch(triene_pattern):
-        return False, "No triene system found"
+    # 0. Check for steroid skeleton.
+    steroid_skeleton = Chem.MolFromSmarts("[C;R5]1[C;R5][C;R6]2[C;R6]3[C;R6]([C;R6]2[C;R5]1)[C;R6][C;R5]3")
+    if not mol.HasSubstructMatch(steroid_skeleton):
+        return False, "Not a steroid structure (missing basic rings)"
     
-    # 3. Check for at least one hydroxyl group
-    hydroxyl_pattern = Chem.MolFromSmarts("[CH0;R][OH1]")
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
+    # 1. Check for the specific broken B-ring with triene system
+    #   This pattern matches the characteristic ring system and the broken B ring.
+    #   The specific triene system and the double bond within the B-ring break are important here.
+    #   This pattern also includes the crucial carbons to match to a vitamin D.
+    broken_b_ring_pattern = Chem.MolFromSmarts("[C;R6]1=[C;R6]-1[C;R5]~[C;R]~[C;R]=[C;R]~[C;R]=[C;R]~[C;R]")
+
+    if not mol.HasSubstructMatch(broken_b_ring_pattern):
+       return False, "Not a seco-steroid structure (missing broken B ring with triene)"
+
+    # 2. Check for hydroxyl groups at typical positions
+    # The alpha-hydroxyl group at position 1 is very important, and often 25 or 24
+    hydroxyl_pattern_1 = Chem.MolFromSmarts("[C;R][OH1]")
+    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern_1)
     if len(hydroxyl_matches) < 1:
-        return False, "No hydroxyl group found"
+        return False, "No hydroxyl group found (at least one is required)"
 
-    # 4. Check for a side chain of at least 3 carbons
-    side_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    hydroxyl_pattern_2 = Chem.MolFromSmarts("[C;R]~[C;R]~[C;R]~[C;R]([C;R])([OH1])") # hydroxyl at 25 or 24 carbon in side chain
+    hydroxyl_matches_2 = mol.GetSubstructMatches(hydroxyl_pattern_2)
+
+    if len(hydroxyl_matches) < 1 and len(hydroxyl_matches_2) < 1:
+         return False, "No hydroxyl group found (at least one in ring or at side chain is required)"
+
+
+    # 3. Check for characteristic side chain starting with -CH-CH2-CH2-CH-
+    side_chain_pattern = Chem.MolFromSmarts("[CHX4,CHX3]~[CH2X4]~[CH2X4]~[CHX4,CHX3]")
     side_chain_matches = mol.GetSubstructMatches(side_chain_pattern)
-    if len(side_chain_matches) < 1 :
-        return False, "No long enough side chain"
-
-    # 5. Check molecular weight range - Vitamin D typically between 350 and 600 Da.
+    if len(side_chain_matches) < 1:
+         return False, "No characteristic side chain found"
+    
+    # 4. Molecular weight range check
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 350 or mol_wt > 600:
         return False, f"Molecular weight out of range: {mol_wt}"
+    
+    # 5. Check number of Carbons and Oxygens (for D2/D3 variants)
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
 
+    if not (c_count in [27, 28]): #check D2 (28C) or D3 (27C)
+        return False, f"Incorrect number of carbons: {c_count}"
+    if o_count < 1:
+        return False, "Must have at least one oxygen"
 
     return True, "Meets vitamin D structural criteria"
