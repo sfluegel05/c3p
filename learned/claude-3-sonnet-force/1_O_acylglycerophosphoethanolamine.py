@@ -29,18 +29,18 @@ def is_1_O_acylglycerophosphoethanolamine(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for glycerophosphoethanolamine backbone
-    gpe_pattern = Chem.MolFromSmarts("[OX2][CHX4][CHX4][OX2][CX3](=[OX1])[OX2][CHX4][CHX4][OX2][P+](OCCN)(O)(O)")
+    gpe_pattern = Chem.MolFromSmarts("[OX2][CHX4]([OX2][CX3](=[OX1])[OX2][CHX4][CHX4][OX2][P]([OCCN])(O)(O))[CHX4][OX2]")
     if not mol.HasSubstructMatch(gpe_pattern):
         return False, "No glycerophosphoethanolamine backbone found"
     
     # Look for acyl chain connected to the 1-position of the glycerol fragment
-    acyl_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[OX2][CHX4][CHX4][OX2]")
+    acyl_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[OX2][CHX4]")
     acyl_matches = mol.GetSubstructMatches(acyl_pattern, maxMatches=1)
     
     if not acyl_matches:
         return False, "No acyl chain found"
     
-    acyl_atom_idx = acyl_matches[0][-2]
+    acyl_atom_idx = acyl_matches[0][-1]
     acyl_atom = mol.GetAtomWithIdx(acyl_atom_idx)
     
     if not any(bond.GetBeginAtomIdx() == acyl_atom_idx and bond.GetEndAtomIdx() in gpe_pattern.GetAtomsAsIndices() for bond in acyl_atom.GetBonds()):
