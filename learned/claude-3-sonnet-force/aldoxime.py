@@ -28,38 +28,51 @@ def is_aldoxime(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for oxime functional group (-CH=N-O-)
-    oxime_pattern = Chem.MolFromSmarts("[CH]=[N][OH]")
+    oxime_pattern = Chem.MolFromSmarts("[CH]=N[OH]")
     oxime_matches = mol.GetSubstructMatches(oxime_pattern)
     if not oxime_matches:
         return False, "No oxime functional group (-CH=N-O-) found"
 
-    # Check if oxime is part of the main molecular scaffold
-    scaffold_atoms = set(range(mol.GetNumAtoms()))
+    # Check if oxime is attached to an aldehyde (not a ketone)
     for match in oxime_matches:
         atom_idx = match[0]
         atom = mol.GetAtomWithIdx(atom_idx)
-        neighbors = atom.GetNeighbors()
-        scaffold_atoms.update(neighbor.GetIdx() for neighbor in neighbors)
+        if atom.GetDegree() > 1:
+            return True, "Contains aldoxime functional group (-CH=N-O-)"
 
-    if len(scaffold_atoms) != mol.GetNumAtoms():
-        return False, "Oxime group is not part of the main molecular scaffold"
+    return False, "Oxime not attached to aldehyde carbon"
 
-    # Check for exceptional cases (e.g., oximes attached to heteroatoms or in conjugated systems)
-    exceptional_pattern = Chem.MolFromSmarts("[CH]=[N][OH]~[cX3]")
-    exceptional_matches = mol.GetSubstructMatches(exceptional_pattern)
-    if exceptional_matches:
-        return True, "Contains oxime functional group in an exceptional environment"
-
-    # Check for common aldoxime environments
-    aldoxime_patterns = [
-        Chem.MolFromSmarts("[CH]=[N][OH]~[C](=O)"), # Acyl oximes
-        Chem.MolFromSmarts("[CH]=[N][OH]~[C](-[OH])=O"), # Hydroxy aldoximes
-        Chem.MolFromSmarts("[CH]=[N][OH]~[cX3](-[#6])~[#6]"), # Conjugated aldoximes
-        Chem.MolFromSmarts("[CH]=[N][OH]~[cX3](-[#7])~[#7]"), # Heteroatom-containing aldoximes
-        # Add more patterns as needed
-    ]
-    for pattern in aldoxime_patterns:
-        if mol.HasSubstructMatch(pattern):
-            return True, "Contains aldoxime functional group in a common environment"
-
-    return False, "Oxime group is not in a typical aldoxime environment"
+__metadata__ = {
+    'chemical_class': {
+        'id': 'CHEBI:35781',
+        'name': 'aldoxime', 
+        'definition': 'Oximes of aldehydes RCH=NOH.'
+    },
+    'config': {
+        'llm_model_name': 'lbl/claude-sonnet',
+        'f1_threshold': 0.8, 
+        'max_attempts': 5,
+        'max_positive_instances': None,
+        'max_positive_to_test': None,
+        'max_negative_to_test': None,
+        'max_positive_in_prompt': 50,
+        'max_negative_in_prompt': 20,
+        'max_instances_in_prompt': 100,
+        'test_proportion': 0.1
+    },
+    'message': None,
+    'attempt': 0,
+    'success': True,
+    'best': True,
+    'error': '',
+    'stdout': None,
+    'num_true_positives': 1196,
+    'num_false_positives': 15, 
+    'num_true_negatives': 182400,
+    'num_false_negatives': 0,
+    'num_negatives': None,
+    'precision': 0.9875515695067265,
+    'recall': 1.0,
+    'f1': 0.9937106918238994,
+    'accuracy': 0.9991828202390213
+}
