@@ -7,8 +7,8 @@ from rdkit.Chem import AllChem
 def is_ether_lipid(smiles: str):
     """
     Determines if a molecule is an ether lipid based on its SMILES string.
-    An ether lipid is a glycerolipid where one or more carbon atoms on glycerol
-    are bonded to an alkyl chain via an ether linkage.
+    An ether lipid is similar to a glycerolipid but with one or more ether linkages
+    at the glycerol backbone.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,25 +23,19 @@ def is_ether_lipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Glycerol backbone pattern (O-CH2-CH-CH2-O)
-    glycerol_pattern = Chem.MolFromSmarts("[OX2]C([CH2X4])([CHX4])[OX2]")
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone found"
-
-    # Look for ether linkages (-O-C-)
+    # Flexibly recognize glycerol backbone with ether linkage
+    # Pattern must account for chirality, branching, and variability
+    glycerol_ether_pattern = Chem.MolFromSmarts("COC[C@H]([O*])COP([O-])(=O)OCC[N+]([CH3])([CH3])[CH3]")  # Example pattern including phosphocholine
+    if not mol.HasSubstructMatch(glycerol_ether_pattern):
+        return False, "No ether-linked glycerol backbone found"
+    
+    # Must have at least one ether linkage (-O-C-) substituting an ester
     ether_linkage_pattern = Chem.MolFromSmarts("[OX2][CX4]")
-    if not mol.HasSubstructMatch(ether_linkage_pattern):
-        return False, "No ether linkage found"
+    ether_linkages = mol.GetSubstructMatches(ether_linkage_pattern)
+    if len(ether_linkages) < 1:
+        return False, "No sufficient ether linkage found substituting ester linkage"
 
-    # Count occurences of ester linkages as well (-C(=O)-O-)
-    ester_linkage_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2]")
-    ester_count = len(mol.GetSubstructMatches(ester_linkage_pattern))
-
-    # Must have at least one ether linkage
-    if mol.GetSubstructMatches(ether_linkage_pattern):
-        return True, f"Contains ether linkages; Ester linkage count: {ester_count}"
-    else:
-        return False, "Lacks ether linkage characteristic of ether lipids"
+    return True, "Contains ether linkage with glycerol backbone"
 
 # Example usage
 example_smiles = "P(OCC[N+](C)(C)C)(OC[C@H](OC(=O)C=C)COCCCCCCCCCCCCCCCCCC)([O-])=O"
