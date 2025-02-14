@@ -2,7 +2,6 @@
 Classifies: CHEBI:10615 omega-hydroxy fatty acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_omega_hydroxy_fatty_acid(smiles: str):
     """
@@ -27,29 +26,35 @@ def is_omega_hydroxy_fatty_acid(smiles: str):
         return False, "No carboxyl group (-COOH) found"
 
     # Check for hydroxyl group (-OH) pattern
-    hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
+    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
     hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
     if not hydroxyl_matches:
         return False, "No hydroxyl group (-OH) found"
 
-    # Check if hydroxyl is at the omega position
-    num_atoms = mol.GetNumAtoms()
-    oh_at_omega = False
-    for match in hydroxyl_matches:
-        oh_index = match[0]
-        # Ensure the OH is not directly adjacent to the carboxyl group's C
-        if mol.GetNumBonds() > 1:
-            for bond in mol.GetBondWithIdx(oh_index).GetBeginAtom().GetBonds():
-                neighbor = bond.GetOtherAtomIdx(oh_index)
-                if neighbor == (num_atoms - 2):  # Avoid direct carboxylic C-OH adjacency
-                    oh_at_omega = True
-                    
-    if not oh_at_omega:
-        return False, "Hydroxyl group is not at the omega position"
+    # The omega hydroxyl should be furthest from the carboxyl group
+    carboxyl_match = mol.GetSubstructMatch(carboxyl_pattern)  # Takes the first match
+    carboxyl_carbon_index = carboxyl_match[0]
 
-    # Ensure the carbon chain is relatively linear and long
-    num_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if num_carbons < 6:  # Typically omega-hydroxy fatty acids are longer
-        return False, "Carbon chain is too short"
+    # Gather indices of carbon atoms (excluding the one in the carboxyl group)
+    carbon_indices = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
+    carbon_indices.remove(carboxyl_carbon_index)
+
+    # Find the carbon atom bonded to the omega hydroxyl
+    omega_hydroxyl_found = False
+    for match in hydroxyl_matches:
+        hydroxyl_oxygen_index = match[0]
+        hydroxyl_atom = mol.GetAtomWithIdx(hydroxyl_oxygen_index)
+        for bond in hydroxyl_atom.GetBonds():
+            bonded_atom = bond.GetOtherAtom(hydroxyl_atom)
+            if bonded_atom.GetAtomicNum() == 6:  # Check for bonding with carbon
+                bonded_carbon_index = bonded_atom.GetIdx()
+                
+                # Check if this is the last carbon in the chain
+                if bonded_carbon_index in carbon_indices and bonded_carbon_index != carboxyl_carbon_index:
+                    omega_hydroxyl_found = True
+                    break
+
+    if not omega_hydroxyl_found:
+        return False, "Hydroxyl group is not at the omega position"
 
     return True, "Contains a terminal hydroxyl group and a carboxyl group, fitting the omega-hydroxy fatty acid structure"
