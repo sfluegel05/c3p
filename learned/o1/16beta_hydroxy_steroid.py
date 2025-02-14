@@ -5,7 +5,6 @@ Classifies: CHEBI:17354 16beta-hydroxy steroid
 Classifies: CHEBI:XXXXXX 16beta-hydroxy steroid
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_16beta_hydroxy_steroid(smiles: str):
     """
@@ -24,45 +23,45 @@ def is_16beta_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the steroid nucleus template with atom mapping
+    # Define the steroid nucleus template with correct formatting
     steroid_template = """
-  Mrv1810 07102312142D          
+     RDKit          2D
 
- 21 24  0  0  0  0            999 V2000
-    2.0000    0.0000    0.0000 C   0  0  0  0  1  0 16  0  0  0  0  0
-    2.8660   -1.5000    0.0000 C   0  0  0  0  2  0 15  0  0  0  0  0
-    4.3660   -1.5000    0.0000 C   0  0  0  0  3  0 14  0  0  0  0  0
-    5.2321    0.0000    0.0000 C   0  0  0  0  4  0 13  0  0  0  0  0
-    4.3660    1.5000    0.0000 C   0  0  0  0  5  0 12  0  0  0  0  0
-    2.8660    1.5000    0.0000 C   0  0  0  0  6  0 11  0  0  0  0  0
-    2.0000    3.0000    0.0000 C   0  0  0  0  7  0 10  0  0  0  0  0
-    0.5000    3.0000    0.0000 C   0  0  0  0  8  0  9  0  0  0  0  0
-   -0.3660    1.5000    0.0000 C   0  0  0  0 17  0  8  0  0  0  0  0
-    0.5000    0.0000    0.0000 C   0  0  0  0 18  0  1  0  0  0  0  0
-    4.3660   -3.0000    0.0000 C   0  0  0  0  9  0 17  0  0  0  0  0
-    5.8660   -3.0000    0.0000 C   0  0  0  0 10  0 18  0  0  0  0  0
-    6.7321   -1.5000    0.0000 C   0  0  0  0 11  0  4  0  0  0  0  0
-    5.8660    0.0000    0.0000 C   0  0  0  0 12  0  4  0  0  0  0  0
-    5.8660    1.5000    0.0000 C   0  0  0  0 13  0  5  0  0  0  0  0
-    4.3660    3.0000    0.0000 C   0  0  0  0 14  0  5  0  0  0  0  0
-   -0.3660   -1.5000    0.0000 C   0  0  0  0 15  0  9  0  0  0  0  0
-   -1.8660   -1.5000    0.0000 C   0  0  0  0 16  0  9  0  0  0  0  0
-   -2.7321    0.0000    0.0000 C   0  0  0  0 17  0 10  0  0  0  0  0
-   -1.8660    1.5000    0.0000 C   0  0  0  0 18  0 11  0  0  0  0  0
-    2.8660   -3.0000    0.0000 C   0  0  0  0  8  0 16  0  0  0  0  0
+ 21 24  0  0  0  0            0 V2000
+    2.0000    0.0000    0.0000 C   0  0  0  0
+    2.8660   -1.5000    0.0000 C   0  0  0  0
+    4.3660   -1.5000    0.0000 C   0  0  0  0
+    5.2321    0.0000    0.0000 C   0  0  0  0
+    4.3660    1.5000    0.0000 C   0  0  0  0
+    2.8660    1.5000    0.0000 C   0  0  0  0
+    2.0000    3.0000    0.0000 C   0  0  0  0
+    0.5000    3.0000    0.0000 C   0  0  0  0
+   -0.3660    1.5000    0.0000 C   0  0  0  0
+    0.5000    0.0000    0.0000 C   0  0  0  0
+    4.3660   -3.0000    0.0000 C   0  0  0  0
+    5.8660   -3.0000    0.0000 C   0  0  0  0
+    6.7321   -1.5000    0.0000 C   0  0  0  0
+    5.8660    0.0000    0.0000 C   0  0  0  0
+    5.8660    1.5000    0.0000 C   0  0  0  0
+    4.3660    3.0000    0.0000 C   0  0  0  0
+   -0.3660   -1.5000    0.0000 C   0  0  0  0
+   -1.8660   -1.5000    0.0000 C   0  0  0  0
+   -2.7321    0.0000    0.0000 C   0  0  0  0
+   -1.8660    1.5000    0.0000 C   0  0  0  0
+    2.8660   -3.0000    0.0000 C   0  0  0  0
   1  2  1  0
   5  6  1  0
   2  3  2  0
   3  4  1  0
   4  5  2  0
   6  1  1  0
-  5 15  1  0
- 15 13  1  0
+  5 14  1  0
+ 14 13  1  0
  13 12  2  0
  12 11  1  0
  11  2  1  0
-  5 14  1  0
- 14 16  1  0
+  5 15  1  0
+ 15 16  1  0
  16  7  1  0
   7  6  1  0
   7  8  1  0
@@ -75,7 +74,7 @@ def is_16beta_hydroxy_steroid(smiles: str):
  18 17  1  0
  17 10  1  0
 M  END
-"""
+    """
 
     # Read the steroid template molecule
     from io import StringIO
@@ -91,10 +90,8 @@ M  END
     # Map the atom indices from the template to the input molecule
     atom_map = {template_idx: mol_idx for template_idx, mol_idx in enumerate(match)}
 
-    # Get the atom corresponding to position 16
-    # In the template, let's assume that atom index 15 corresponds to position 16
-    # (Note: Atom indices start from 0)
-    position_16_atom_idx = atom_map.get(15)  # 15 corresponds to atom index 16 in the template
+    # In the template, atom index 14 corresponds to position 16
+    position_16_atom_idx = atom_map.get(14)  # Atom indices start from 0
     if position_16_atom_idx is None:
         return False, "Position 16 not found in molecule"
 
@@ -102,14 +99,14 @@ M  END
 
     # Check if there is a hydroxy group attached to position 16
     is_hydroxy = False
+    oxygen_atom = None
     for neighbor in position_16_atom.GetNeighbors():
         if neighbor.GetAtomicNum() == 8:  # Oxygen atom
-            # Check if oxygen is connected to a hydrogen (i.e., it's a hydroxyl group)
-            for atom in neighbor.GetNeighbors():
-                if atom.GetAtomicNum() == 1:  # Hydrogen atom
-                    is_hydroxy = True
-                    # Now check stereochemistry at position 16
-                    break
+            # Check if oxygen is connected only to position 16 atom
+            if len(neighbor.GetNeighbors()) == 1:
+                is_hydroxy = True
+                oxygen_atom = neighbor
+                break
 
     if not is_hydroxy:
         return False, "No hydroxy group at position 16"
@@ -125,6 +122,7 @@ M  END
     if position_16_chirality is None:
         return False, "No chiral center at position 16"
 
+    # Beta configuration corresponds to 'R' chirality in this context
     if position_16_chirality != 'R':
         return False, f"Hydroxy group at position 16 does not have beta configuration (chirality: {position_16_chirality})"
 
