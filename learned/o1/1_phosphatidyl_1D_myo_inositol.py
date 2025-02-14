@@ -5,7 +5,6 @@ Classifies: CHEBI:16749 1-phosphatidyl-1D-myo-inositol
 Classifies: CHEBI:28874 1-phosphatidyl-1D-myo-inositol
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_1_phosphatidyl_1D_myo_inositol(smiles: str):
@@ -29,36 +28,39 @@ def is_1_phosphatidyl_1D_myo_inositol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Ensure that hydrogens are explicit for accurate stereochemistry matching
-    mol = Chem.AddHs(mol)
-    
-    # Check for glycerol backbone esterified at sn-1 and sn-2 positions with fatty acids
-    glycerol_pattern = Chem.MolFromSmarts("""
-        [C@H]([O][C](=[O])[C])([O][C](=[O])[C])    # sn-glycerol esterified at sn-1 and sn-2
-    """)
+    # Check for glycerol backbone esterified at sn-1 and sn-2 with fatty acids
+    # Glycerol backbone with esters at sn-1 and sn-2 positions
+    glycerol_pattern = Chem.MolFromSmarts('[C@@H](COC(=O)[#6])[C@H](COC(=O)[#6])[CH2O]')
+    if glycerol_pattern is None:
+        return False, "Invalid glycerol pattern"
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone esterified at sn-1 and sn-2 positions found"
     
     # Check for phosphate group at sn-3 position of glycerol
-    phosphate_pattern = Chem.MolFromSmarts("""
-        [C@H]([O][P](=O)([O])[O][#6])             # Phosphate group attached at sn-3 position
-    """)
-    if not mol.HasSubstructMatch(phosphate_pattern):
+    phosphate_pattern = Chem.MolFromSmarts('O[P](=O)(O)O')
+    if phosphate_pattern is None:
+        return False, "Invalid phosphate pattern"
+    # Attach phosphate group to sn-3 position
+    glycerol_phosphate_pattern = Chem.MolFromSmarts('[CH2O][P](=O)(O)O')
+    if glycerol_phosphate_pattern is None:
+        return False, "Invalid glycerol phosphate pattern"
+    if not mol.HasSubstructMatch(glycerol_phosphate_pattern):
         return False, "No phosphate group at sn-3 position of glycerol found"
     
     # Check for inositol ring attached to phosphate group
     # Inositol ring: six-membered ring with six hydroxyl groups
-    inositol_pattern = Chem.MolFromSmarts("""
-        [O][P](=O)([O])[O][C@@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@H](O)[C@H]1O
-    """)
+    # Connect phosphate to inositol at position 1
+    inositol_pattern = Chem.MolFromSmarts('O[P](=O)(O)OC1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@H](O)[C@H]1O')
+    if inositol_pattern is None:
+        return False, "Invalid inositol pattern"
     if not mol.HasSubstructMatch(inositol_pattern):
         return False, "No inositol ring attached to phosphate group found"
     
     # Check for correct stereochemistry of 1D-myo-inositol
-    # Ensure the inositol ring has the correct stereochemistry
-    stereo_inositol_pattern = Chem.MolFromSmarts("""
-        [C@H]1([O])[C@@H](O)[C@H](O)[C@@H](O)[C@H](O)[C@H]1O
-    """)
+    # Stereochemistry of inositol ring
+    stereo_inositol_pattern = Chem.MolFromSmarts('C1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@H](O)[C@H]1O')
+    if stereo_inositol_pattern is None:
+        return False, "Invalid stereochemistry pattern"
     matches = mol.GetSubstructMatches(stereo_inositol_pattern, useChirality=True)
     if not matches:
         return False, "Inositol ring does not have correct stereochemistry (1D-myo-inositol)"
@@ -85,7 +87,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 2,
+    'attempt': 3,
     'success': True,
     'best': True,
     'error': '',
