@@ -31,14 +31,24 @@ def is_carotenoid(smiles: str):
 
     # Count carbon atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 35:
-        return False, "Too few carbon atoms for a carotenoid"
+    if c_count < 18 or c_count > 40:
+        return False, "Carbon atom count outside typical carotenoid range"
 
-    # Check for linear carbon backbone (at least 10 contiguous C=C bonds)
-    backbone_pattern = Chem.MolFromSmarts("[C]=[C]=[C]=[C]=[C]=[C]=[C]=[C]=[C]=[C]")
-    backbone_matches = mol.GetSubstructMatches(backbone_pattern)
-    if not backbone_matches:
-        return False, "No linear carbon backbone found"
+    # Calculate effective backbone length
+    backbone_length = 0
+    for bond in mol.GetBonds():
+        if bond.GetBondType() == Chem.BondType.DOUBLE:
+            backbone_length += 2
+        elif bond.GetBondType() == Chem.BondType.SINGLE:
+            backbone_length += 1
+
+    ring_info = mol.GetRingInfo()
+    for ring in ring_info.AtomRings():
+        if len(ring) == 6:  # Cyclohexene or cyclohexadiene ring
+            backbone_length += 6
+
+    if backbone_length < 18 or backbone_length > 24:
+        return False, "Backbone length outside typical carotenoid range"
 
     # Check for common functional groups (hydroxyl, keto, epoxy, glycosidic)
     functional_group_patterns = [
@@ -49,15 +59,13 @@ def is_carotenoid(smiles: str):
     ]
     has_functional_groups = any(mol.HasSubstructMatch(pattern) for pattern in functional_group_patterns)
 
-    # Check for common ring systems (cyclohexene, cyclohexadiene)
-    ring_patterns = [
-        Chem.MolFromSmarts("C1=CCCCC1"),  # Cyclohexene
-        Chem.MolFromSmarts("C1=CC=CCC1"),  # Cyclohexadiene
-    ]
-    has_ring_systems = any(mol.HasSubstructMatch(pattern) for pattern in ring_patterns)
+    # Check molecular weight
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 400 or mol_wt > 700:
+        return False, "Molecular weight outside typical carotenoid range"
 
-    # Classify as carotenoid if it has a linear backbone, functional groups, and/or ring systems
-    if has_functional_groups or has_ring_systems:
-        return True, "Contains linear carbon backbone and carotenoid-like features"
+    # Classify as carotenoid if it has an appropriate backbone length and functional groups
+    if has_functional_groups:
+        return True, "Contains carotenoid-like backbone and functional groups"
     else:
         return False, "No carotenoid-like features found"
