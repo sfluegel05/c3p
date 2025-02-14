@@ -25,105 +25,96 @@ def is_methyl_branched_fatty_acid(smiles: str):
     if mol.GetRingInfo().NumRings() > 0:
         return False, "Molecule is cyclic"
 
-    # Identify carboxylic acid group
-    carboxylic_acid_pattern = Chem.MolFromSmarts('C(=O)[O,H]')
+    # Identify carboxylic acid group using a specific SMARTS pattern
+    carboxylic_acid_pattern = Chem.MolFromSmarts('C(=O)O')
     matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
     if len(matches) != 1:
         return False, f"Found {len(matches)} carboxylic acid groups, need exactly 1"
     carboxyl_c_idx = matches[0][0]  # Index of the carboxyl carbon
 
-    # Build main chain starting from carboxyl carbon
-    main_chain = []
-    visited = set()
-    success = build_main_chain(mol, carboxyl_c_idx, visited, main_chain)
-    if not success:
-        return False, "Failed to build main chain"
-
-    # Check for branches
-    for atom_idx in main_chain:
-        atom = mol.GetAtomWithIdx(atom_idx)
-        neighbors = atom.GetNeighbors()
-        for neighbor in neighbors:
-            neighbor_idx = neighbor.GetIdx()
-            if neighbor_idx not in main_chain:
-                # This is a branch
-                branch_size = count_carbon_atoms(neighbor, set([atom_idx]))
-                if branch_size != 1:
-                    return False, f"Branch at atom {atom_idx + 1} is larger than a methyl group"
-
-    # Check for heteroatoms other than carboxyl group
-    carboxyl_oxygen_indices = [idx for match in matches for idx in match if mol.GetAtomWithIdx(idx).GetAtomicNum() == 8]
+    # Check for heteroatoms other than O in carboxyl group
+    allowed_heteroatoms = set(matches[0])
     for atom in mol.GetAtoms():
         atomic_num = atom.GetAtomicNum()
+        idx = atom.GetIdx()
         if atomic_num == 6 or atomic_num == 1:
             continue  # Carbon or Hydrogen is allowed
         elif atomic_num == 8:
-            # Oxygen atoms should only be in the carboxyl group
-            if atom.GetIdx() not in carboxyl_oxygen_indices:
-                return False, f"Extra oxygen atom found at index {atom.GetIdx() + 1}"
+            if idx not in allowed_heteroatoms:
+                return False, f"Extra oxygen atom found at index {idx + 1}"
         else:
-            return False, f"Heteroatom {atom.GetSymbol()} found at index {atom.GetIdx() + 1}"
+            return False, f"Heteroatom {atom.GetSymbol()} found at index {idx + 1}"
+
+    # Find the longest carbon chain starting from carboxyl carbon
+    main_chain = find_longest_chain(mol, carboxyl_c_idx, set())
+
+    # Check for branches (neighboring carbons not in main chain)
+    for atom_idx in main_chain:
+        atom = mol.GetAtomWithIdx(atom_idx)
+        for neighbor in atom.GetNeighbors():
+            neighbor_idx = neighbor.GetIdx()
+            if neighbor.GetAtomicNum() != 6:
+                continue  # Skip non-carbon atoms
+            if neighbor_idx in main_chain:
+                continue  # Part of main chain
+            # Found a branch, check if it's a methyl group
+            branch_length = count_branch_length(mol, neighbor_idx, set([atom_idx]))
+            if branch_length > 1:
+                return False, f"Branch at atom {atom_idx + 1} is larger than a methyl group"
 
     return True, "Molecule is a methyl-branched fatty acid"
 
-
-def build_main_chain(mol, atom_idx, visited, chain):
+def find_longest_chain(mol, current_idx, visited):
     """
-    Recursively builds the main carbon chain starting from the carboxyl carbon.
+    Finds the longest carbon chain starting from the given atom index.
 
     Args:
         mol (Chem.Mol): RDKit molecule object
-        atom_idx (int): Current atom index
+        current_idx (int): Current atom index
         visited (set): Set of visited atom indices
-        chain (list): List to store the main chain atom indices
 
     Returns:
-        bool: True if a terminal carbon is reached, False otherwise
+        list: List of atom indices representing the longest chain
     """
-    atom = mol.GetAtomWithIdx(atom_idx)
-    visited.add(atom_idx)
-    chain.append(atom_idx)
-    neighbors = [nbr for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() == 6 and nbr.GetIdx() not in visited]
+    visited.add(current_idx)
+    atom = mol.GetAtomWithIdx(current_idx)
+    max_chain = [current_idx]
 
-    if len(neighbors) == 0:
-        # Reached terminal carbon
-        return True
-    elif len(neighbors) == 1:
-        # Continue along the chain
-        return build_main_chain(mol, neighbors[0].GetIdx(), visited, chain)
-    else:
-        # Multiple paths, choose the one leading to the longest chain
-        longest_chain = []
-        for nbr in neighbors:
-            temp_chain = []
-            temp_visited = visited.copy()
-            temp_success = build_main_chain(mol, nbr.GetIdx(), temp_visited, temp_chain)
-            if temp_success and len(temp_chain) > len(longest_chain):
-                longest_chain = temp_chain
-        if longest_chain:
-            chain.extend(longest_chain)
-            return True
-    return False
+    for neighbor in atom.GetNeighbors():
+        neighbor_idx = neighbor.GetIdx()
+        if neighbor_idx in visited:
+            continue
+        if neighbor.GetAtomicNum() != 6:
+            continue  # Only traverse carbon atoms
+        new_visited = visited.copy()
+        sub_chain = find_longest_chain(mol, neighbor_idx, new_visited)
+        if len(sub_chain) + 1 > len(max_chain):
+            max_chain = [current_idx] + sub_chain
 
+    return max_chain
 
-def count_carbon_atoms(atom, visited):
+def count_branch_length(mol, atom_idx, visited):
     """
     Counts the number of carbon atoms in a branch recursively.
 
     Args:
-        atom (Chem.Atom): Starting atom
+        mol (Chem.Mol): RDKit molecule object
+        atom_idx (int): Starting atom index of the branch
         visited (set): Set of visited atom indices
 
     Returns:
         int: Number of carbon atoms in the branch
     """
-    count = 0
-    if atom.GetAtomicNum() == 6:
-        count += 1
-    else:
-        return 0  # Non-carbon atom found in branch
-    visited.add(atom.GetIdx())
+    atom = mol.GetAtomWithIdx(atom_idx)
+    if atom.GetAtomicNum() != 6:
+        return 0
+    visited.add(atom_idx)
+    length = 1  # Count current carbon
     for neighbor in atom.GetNeighbors():
-        if neighbor.GetIdx() not in visited:
-            count += count_carbon_atoms(neighbor, visited)
-    return count
+        neighbor_idx = neighbor.GetIdx()
+        if neighbor_idx in visited:
+            continue
+        if neighbor.GetAtomicNum() != 6:
+            continue
+        length += count_branch_length(mol, neighbor_idx, visited)
+    return length
