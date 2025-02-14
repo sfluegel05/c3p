@@ -22,32 +22,33 @@ def is_clavulone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for ester pattern (C(=O)OC)
+    # Look for ester pattern (C(=O)OC) - Clavulones might require more than one ester group
     ester_pattern = Chem.MolFromSmarts("C(=O)O")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) < 2:
         return False, f"Insufficient ester groups for clavulone classification, found {len(ester_matches)}"
-    
-    # Check for complex conjugated systems
-    conjugated_system_pattern = Chem.MolFromSmarts("C=CCCC=CCC")
+
+    # Check for broader conjugated systems
+    conjugated_system_pattern = Chem.MolFromSmarts("C=C-,-{2,}")
     if not mol.HasSubstructMatch(conjugated_system_pattern):
         return False, "Lacks complex conjugated system typical of clavulones"
     
     # Check for halogen atoms (Cl, Br, I)
-    halogens = [atom.GetAtomicNum() for atom in mol.GetAtoms() if atom.GetAtomicNum() in {9, 17, 35, 53}]
+    halogens = any(atom.GetAtomicNum() in {9, 17, 35, 53} for atom in mol.GetAtoms())
     if not halogens:
         return False, "No halogen atoms found, not typical for marine prostanoids"
     
-    # Check for five-membered ring
+    # Check for five-membered rings
     ring_info = mol.GetRingInfo()
     five_membered_rings = any(len(ring) == 5 for ring in ring_info.AtomRings())
     if not five_membered_rings:
         return False, "No five-membered rings found, atypical structure for prostanoids"
     
-    # Check for chiral centers based on stereochemistry indicators
-    if "@" not in smiles:
+    # Check for chiral centers
+    chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
+    if not chiral_centers:
         return False, "No chiral centers indicated in SMILES"
 
     # If all checks pass, classify as clavulone
-    reason = f"Contains ester groups, halogen atoms, complex conjugated system, and five-membered rings with chiral centers"
+    reason = "Contains ester groups, halogen atoms, complex conjugated system, and five-membered rings with chiral centers"
     return True, reason
