@@ -7,6 +7,7 @@ Classifies: CHEBI:35577 17beta-hydroxy steroid
 
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_17beta_hydroxy_steroid(smiles: str):
     """
@@ -27,17 +28,17 @@ def is_17beta_hydroxy_steroid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for steroid backbone
-    steroid_pattern = Chem.MolFromSmarts("[C&r1,r2,r3,r4]1CCC2C3=CC=C4[C@@]5(CC[C@H](C5)C4)C[C@H]3[C@@H](C2)C1")
+    steroid_pattern = Chem.MolFromSmarts("[C&r1,r2,r3,r4]1CCC2C3=CC=C4C[C@@]5(CC[C@@H](C5)C4)C[C@H]3[C@@H](C2)C1")
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
 
-    # Find the 17-hydroxy group
-    hydroxy_pattern = Chem.MolFromSmarts("[C@]([H])(O)[C@@]1([H])CC[C@]2([H])C3=CC=C4[C@@]5(CC[C@H](C5)C4)C[C@H]3[C@@H](C2)C1")
+    # Find the 17-hydroxy group in the beta configuration
+    hydroxy_pattern = Chem.MolFromSmarts("[C@]([H])(O)[C@@]1([H])CCC2=CC=C3C[C@@]4(CC[C@@H](C4)C3)C[C@H]2C1")
     matches = mol.GetSubstructMatches(hydroxy_pattern)
     if not matches:
         return False, "No 17-hydroxy group in the beta configuration found"
 
-    # Additional checks
+    # Check for basic structural requirements
     mol_weight = Chem.rdMolDescriptors.CalcExactMolWt(mol)
     if mol_weight < 250 or mol_weight > 500:
         return False, "Molecular weight out of typical range for 17beta-hydroxy steroids"
