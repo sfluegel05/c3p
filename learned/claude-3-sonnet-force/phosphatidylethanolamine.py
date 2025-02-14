@@ -41,11 +41,18 @@ def is_phosphatidylethanolamine(smiles: str):
     if not mol.HasSubstructMatch(ethanolamine_pattern):
         return False, "No ethanolamine group found"
     
-    # Look for two ester groups
+    # Exclude molecules with choline or similar groups
+    choline_pattern = Chem.MolFromSmarts("[N+](C)(C)C")
+    if mol.HasSubstructMatch(choline_pattern):
+        return False, "Contains choline or similar group"
+    
+    # Look for at least two ester groups
     ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) != 2:
-        return False, f"Found {len(ester_matches)} ester groups, need exactly 2"
+    if len(ester_matches) < 2:
+        return False, f"Found {len(ester_matches)} ester groups, need at least 2"
+    elif len(ester_matches) > 2:
+        return False, f"Found {len(ester_matches)} ester groups, need at most 2"
     
     # Check for fatty acid chains
     fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
