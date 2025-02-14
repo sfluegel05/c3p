@@ -21,8 +21,11 @@ def is_fatty_aldehyde(smiles: str):
         str: Reason for classification
     """
     
+    # Preprocess SMILES string to handle backslash characters
+    preprocessed_smiles = Chem.MolToSmiles(Chem.MolFromSmiles(smiles.replace('\\', '_')))
+    
     # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
+    mol = Chem.MolFromSmiles(preprocessed_smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
