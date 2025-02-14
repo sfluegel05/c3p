@@ -2,7 +2,6 @@
 Classifies: CHEBI:33184 long-chain fatty acyl-CoA
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 
@@ -23,13 +22,15 @@ def is_long_chain_fatty_acyl_CoA(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return None, None # Invalid SMILES
+        return False, "Invalid SMILES string"
 
     # Check for CoA substructure (adenosine diphosphate part + pantetheine fragment)
     # Simplified SMARTS pattern for CoA part, focusing on the phosphate and nucleotide region
-    coa_pattern = Chem.MolFromSmarts("COP(=O)([OX1])OP(=O)([OX1])OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(=O)(O)O)n1cnc2c(N)ncnc12")
-    if not mol.HasSubstructMatch(coa_pattern):
-        return False, "Molecule does not contain the required coenzyme A substructure"
+    coa_pattern1 = Chem.MolFromSmarts("[P](=O)([O])O[P](=O)([O])OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n2cnc3c(N)ncnc23")
+    coa_pattern2 = Chem.MolFromSmarts("NCCS")
+
+    if not mol.HasSubstructMatch(coa_pattern1) or not mol.HasSubstructMatch(coa_pattern2):
+       return False, "Molecule does not contain the required coenzyme A substructure"
 
     # Check for thioester linkage
     thioester_pattern = Chem.MolFromSmarts("[SX2][CX3](=[OX1])")
@@ -67,7 +68,11 @@ def is_long_chain_fatty_acyl_CoA(smiles: str):
     carbon_count = 0
     
     coa_atoms = set()
-    for match in mol.GetSubstructMatches(coa_pattern):
+    for match in mol.GetSubstructMatches(coa_pattern1):
+        for idx in match:
+            coa_atoms.add(idx)
+            
+    for match in mol.GetSubstructMatches(coa_pattern2):
         for idx in match:
             coa_atoms.add(idx)
             
