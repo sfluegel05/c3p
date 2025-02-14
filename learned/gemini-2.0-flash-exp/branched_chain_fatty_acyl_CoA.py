@@ -2,7 +2,6 @@
 Classifies: CHEBI:61912 branched-chain fatty acyl-CoA
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_branched_chain_fatty_acyl_CoA(smiles: str):
@@ -32,17 +31,13 @@ def is_branched_chain_fatty_acyl_CoA(smiles: str):
     if len(thioester_matches) != 1:
         return False, "Incorrect number of thioester linkages"
 
-    # Define SMARTS for branched alkyl chain, note that we don't want a linear chain
-    branched_alkyl_pattern = Chem.MolFromSmarts("[CX4]([CX4])([CX4])")
-    
-    # Find alkyl chain attached to carbonyl of thioester
+    # Find carbonyl carbon of thioester
     carbonyl_carbon_indices = [match[0] for match in mol.GetSubstructMatches(thioester_pattern)]
     if not carbonyl_carbon_indices:
        return False, "Carbonyl group of thioester not found"
     
     carbonyl_carbon_index = carbonyl_carbon_indices[0]
     
-    #Find atoms attached to the carbonyl carbon of the thioester
     carbonyl_carbon = mol.GetAtomWithIdx(carbonyl_carbon_index)
     
     # Get neighbors of carbonyl carbon
@@ -60,30 +55,44 @@ def is_branched_chain_fatty_acyl_CoA(smiles: str):
       return False, "Fatty chain carbon not found"
 
     
-    #Check if the chain is branched
-    fatty_chain_carbon = mol.GetAtomWithIdx(fatty_chain_carbon_index)
-    
-    has_branch = False
-    
-    for atom in mol.GetAtoms():
-      if atom.GetIdx() == fatty_chain_carbon_index:
-        continue
-      if atom.GetSymbol() == 'C' and atom.GetDegree() > 2:
-        neighbors_of_atom = [x.GetIdx() for x in atom.GetNeighbors() if x.GetSymbol()=='C']
-        if len(neighbors_of_atom) > 2:
-           has_branch=True
-           break
-    if not has_branch:
-        return False, "No branch found on the fatty acyl chain."
+    # Perform depth-first search, keep track of visited atoms and chain atoms
+    visited_atoms = set()
+    acyl_chain_atoms = set()
 
-    #Count carbons
-    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if carbon_count < 5: #Minimum for branched
-        return False, "Too few carbons for a fatty acid chain."
+    def dfs(atom_index):
+        if atom_index in visited_atoms:
+            return False # avoid loops
+        
+        visited_atoms.add(atom_index)
 
-    #Check molecular weight > 700
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 700:
-      return False, "Molecular weight too low for branched-chain fatty acyl-CoA"
+        atom = mol.GetAtomWithIdx(atom_index)
+        if atom.GetSymbol() != 'C':
+          return False
+        
+        acyl_chain_atoms.add(atom_index)
+        
+        
+        
+        carbon_neighbors = [neighbor.GetIdx() for neighbor in atom.GetNeighbors() if neighbor.GetSymbol() == 'C']
+        
+        #Check for branching only on the chain. Only if > 2 carbon neighbors in acyl chain
+        branching_neighbors = 0
+        for neighbor_index in carbon_neighbors:
+           if neighbor_index in acyl_chain_atoms or neighbor_index not in visited_atoms:
+                branching_neighbors+=1
+        if branching_neighbors > 2:
+            return True  # Found branch on acyl chain
+        
+
+        for neighbor_index in carbon_neighbors:
+          if dfs(neighbor_index):
+            return True
+        
+        return False  # no branch found yet
+
+    is_branched = dfs(fatty_chain_carbon_index)
     
-    return True, "Molecule is a branched-chain fatty acyl-CoA"
+    if is_branched:
+        return True, "Molecule is a branched-chain fatty acyl-CoA"
+    else:
+      return False, "No branch found on the fatty acyl chain."
