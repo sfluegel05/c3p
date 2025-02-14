@@ -21,15 +21,20 @@ def is_organofluorine_compound(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Loop through atoms to check for fluorine with a carbon neighbor
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 9:  # Fluorine atomic number is 9
-            neighbors = atom.GetNeighbors()
-            if any(neighbor.GetAtomicNum() == 6 for neighbor in neighbors):  # Carbon atomic number is 6
-                return True, "Molecule contains at least one carbon-fluorine bond"
-    
-    return False, "No carbon-fluorine bond found in the molecule"
+    # Flag to track presence of C-F bonds
+    contains_c_f = False
 
-# Example usage:
-# result, reason = is_organofluorine_compound("C[C@@H]1CN(S(=O)(=O)C2=C(C=C(C=C2)C#CC3=CC=C(C=C3)F)O[C@H]1CN(C)C(=O)C)[C@@H](C)CO")
-# print(result, reason)
+    # Traverse through bonds to check for C-F bonds
+    for bond in mol.GetBonds():
+        atom1 = bond.GetBeginAtom()
+        atom2 = bond.GetEndAtom()
+        
+        # Check if we've found a carbon-fluorine bond
+        if (atom1.GetAtomicNum() == 6 and atom2.GetAtomicNum() == 9) or (atom1.GetAtomicNum() == 9 and atom2.GetAtomicNum() == 6):
+            contains_c_f = True
+            break
+    
+    if contains_c_f:
+        return True, "Molecule contains at least one carbon-fluorine bond"
+    else:
+        return False, "No carbon-fluorine bond found in the molecule"
