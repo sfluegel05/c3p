@@ -27,60 +27,32 @@ def is_3_hydroxy_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a simplified SMARTS pattern for the CoA moiety
-    # Looking for the adenine ring connected to ribose and diphosphate
-    coa_smarts = 'NC1=NC=NC2=C1N=CN2[C@@H]3O[C@H](COP(O)(=O)OP(O)(=O)[O-])C(O)C3O'
-    coa_pattern = Chem.MolFromSmarts(coa_smarts)
-    if coa_pattern is None:
-        return False, "Error parsing CoA SMARTS pattern"
+    # Define SMARTS pattern for pantetheine moiety (part of CoA)
+    pantetheine_smarts = 'SCCNC(=O)CCNC(=O)'
+    pantetheine_pattern = Chem.MolFromSmarts(pantetheine_smarts)
+    if pantetheine_pattern is None:
+        return False, "Error parsing pantetheine SMARTS pattern"
 
-    if not mol.HasSubstructMatch(coa_pattern):
-        return False, "CoA moiety not found"
+    if not mol.HasSubstructMatch(pantetheine_pattern):
+        return False, "Pantetheine moiety (part of CoA) not found"
 
-    # Define a SMARTS pattern for the thioester linkage connecting CoA to acyl chain
-    thioester_smarts = 'C(=O)SCCNC(=O)CCNC(=O)'
-    thioester_pattern = Chem.MolFromSmarts(thioester_smarts)
-    if thioester_pattern is None:
-        return False, "Error parsing thioester SMARTS pattern"
+    # Define SMARTS pattern for adenine ring (part of CoA)
+    adenine_smarts = 'n1cnc2c(n1)ncnc2'
+    adenine_pattern = Chem.MolFromSmarts(adenine_smarts)
+    if adenine_pattern is None:
+        return False, "Error parsing adenine SMARTS pattern"
 
-    if not mol.HasSubstructMatch(thioester_pattern):
-        return False, "No thioester linkage connecting CoA to acyl chain found"
+    if not mol.HasSubstructMatch(adenine_pattern):
+        return False, "Adenine moiety (part of CoA) not found"
 
-    # Define a SMARTS pattern for 3-hydroxy fatty acyl chain
-    # Looking for a chain with a hydroxy group on the third carbon from the carbonyl carbon
-    hydroxy_acyl_smarts = 'C(=O)C[C@H](O)C'
-    hydroxy_acyl_pattern = Chem.MolFromSmarts(hydroxy_acyl_smarts)
-    if hydroxy_acyl_pattern is None:
-        return False, "Error parsing hydroxy acyl SMARTS pattern"
+    # Define SMARTS pattern for 3-hydroxy fatty acyl chain attached via thioester linkage
+    # Looking for C(=O)S-C-C(OH)-C, where the OH is on the third carbon from the carbonyl
+    thioester_hydroxy_smarts = 'C(=O)SCC[CH](O)'
+    thioester_hydroxy_pattern = Chem.MolFromSmarts(thioester_hydroxy_smarts)
+    if thioester_hydroxy_pattern is None:
+        return False, "Error parsing thioester hydroxy SMARTS pattern"
 
-    if not mol.HasSubstructMatch(hydroxy_acyl_pattern):
-        return False, "No 3-hydroxy group on acyl chain found"
-
-    # Optional: Check that the acyl chain is a fatty acid (long chain)
-    # Count the number of carbons in the acyl chain
-    # Here, we arbitrarily define a fatty acid as having at least 4 carbons in the chain
-    carbonyl_c = mol.GetSubstructMatch(Chem.MolFromSmarts('C(=O)S'))[0]
-    chain_lengths = []
-    for bond in mol.GetBonds():
-        if bond.GetBeginAtomIdx() == carbonyl_c or bond.GetEndAtomIdx() == carbonyl_c:
-            neighbor_atom_idx = bond.GetOtherAtomIdx(carbonyl_c)
-            chain_length = 0
-            visited = set()
-            stack = [neighbor_atom_idx]
-            while stack:
-                atom_idx = stack.pop()
-                if atom_idx in visited:
-                    continue
-                visited.add(atom_idx)
-                atom = mol.GetAtomWithIdx(atom_idx)
-                if atom.GetAtomicNum() == 6:
-                    chain_length += 1
-                    for nbr in atom.GetNeighbors():
-                        nbr_idx = nbr.GetIdx()
-                        if nbr_idx != carbonyl_c and nbr_idx not in visited:
-                            stack.append(nbr_idx)
-            chain_lengths.append(chain_length)
-    if not any(length >= 4 for length in chain_lengths):
-        return False, "Acyl chain is too short to be a fatty acid"
+    if not mol.HasSubstructMatch(thioester_hydroxy_pattern):
+        return False, "No 3-hydroxy group on acyl chain attached via thioester linkage found"
 
     return True, "Contains 3-hydroxy fatty acyl-CoA structure"
