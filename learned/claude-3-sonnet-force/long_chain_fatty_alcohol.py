@@ -9,7 +9,6 @@ A fatty alcohol with a chain length ranging from C13 to C22.
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
-from rdkit.Chem.Lipinski import LengthDescriptor
 
 def is_long_chain_fatty_alcohol(smiles: str):
     """
@@ -36,15 +35,15 @@ def is_long_chain_fatty_alcohol(smiles: str):
         return False, "No hydroxy (-OH) group found"
 
     # Count length of longest aliphatic chain
-    length_descriptor = LengthDescriptor(LengthDescriptor.LMCHANGESLD)
-    longest_chain_length = length_descriptor(mol)
+    whoqb_descriptors = rdMolDescriptors.CalcMolWHOQB(mol)
+    longest_chain_length = whoqb_descriptors.longest_aliphaticChain
     if not (13 <= longest_chain_length <= 22):
         return False, f"Longest aliphatic chain length is {longest_chain_length}, not in the range C13 to C22"
 
     # Check if -OH group is attached to the longest aliphatic chain
     for oh_idx in oh_indices:
         oh_atom = mol.GetAtomWithIdx(oh_idx)
-        if any(bond.GetOtherAtomIdx(oh_idx) in length_descriptor.GetAtomIndices(mol) for bond in oh_atom.GetBonds()):
+        if any(bond.GetOtherAtomIdx(oh_idx) in whoqb_descriptors.aliphaticChainAtomIndices for bond in oh_atom.GetBonds()):
             break
     else:
         return False, "Hydroxy (-OH) group not attached to the longest aliphatic chain"
