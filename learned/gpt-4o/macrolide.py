@@ -13,7 +13,7 @@ def is_macrolide(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a macrolide, False otherwise
+        bool: True if the molecule is a macrolide, False otherwise
         str: Reason for classification
     """
     
@@ -22,7 +22,7 @@ def is_macrolide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Identify large rings (12 or more members)
+    # Identify rings
     ring_info = mol.GetRingInfo()
     large_ring_exists = False
 
@@ -32,8 +32,8 @@ def is_macrolide(smiles: str):
             # Examine this specific ring for lactone characteristics
             submol = Chem.PathToSubmol(mol, ring)
 
-            # Improved lactone search, allowing for heteroatoms and ensuring a ring is formed
-            lactone_pattern = Chem.MolFromSmarts("[O;R][C;!H0;R](=O)")
+            # Define a SMARTS pattern for a lactone group within a ring
+            lactone_pattern = Chem.MolFromSmarts("O[C;R]=O")  # Lactone: ester linkage within a ring
             
             if submol.HasSubstructMatch(lactone_pattern):
                 return True, "Contains a macrocyclic lactone ring with 12 or more members"
