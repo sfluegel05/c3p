@@ -35,7 +35,7 @@ def is_2_oxo_monocarboxylic_acid_anion(smiles: str):
     carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX1H0-]") #C(=O)[O-] or C(=O)OH
     
     # Define the 2-oxo-monocarboxylic acid pattern
-    oxo_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[CX4][CX4](=O)[OX1H0-]")
+    oxo_acid_pattern = Chem.MolFromSmarts("[C](=O)[C][C](=O)")
 
     # Check if molecule has exactly one carboxylic acid group
     carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
@@ -44,7 +44,7 @@ def is_2_oxo_monocarboxylic_acid_anion(smiles: str):
         
     # Check if molecule matches the 2-oxo monocarboxylic acid anion pattern
     if not mol.HasSubstructMatch(oxo_acid_pattern):
-         return False, "Molecule does not contain the required 2-oxo monocarboxylic acid anion substructure"
+        return False, "Molecule does not contain a 2-oxo substructure"
     
     # Get the matching atoms for the oxo_acid_pattern
     match_atoms = mol.GetSubstructMatches(oxo_acid_pattern)
@@ -57,13 +57,12 @@ def is_2_oxo_monocarboxylic_acid_anion(smiles: str):
 
     # Iterate over each matching oxo-acid pattern to ensure the oxo and carboxyl are at the correct position
     for match in match_atoms:
-        # Match contains the atoms in the order defined by the SMARTS pattern [CX3](=O)[CX4][CX4](=O)[OX1H0-]
-        oxo_carbon = match[0]
+        # Match contains the atoms in the order defined by the SMARTS pattern C(=O)[C]C(=O)
         
-        # The next carbon should have the carboxylic acid
+        # The carbonyl at the end of the pattern should have a carboxy group
         carboxylic_carbon_found = False
         for carbo_match in carboxyl_atoms:
-          if match[2] == carbo_match[0]:
+          if match[2] == carbo_match[0]: # C(=O)
             carboxylic_carbon_found = True
             break
         if not carboxylic_carbon_found:
