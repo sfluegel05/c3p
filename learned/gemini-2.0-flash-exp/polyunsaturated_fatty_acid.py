@@ -26,27 +26,33 @@ def is_polyunsaturated_fatty_acid(smiles: str):
     acid_pattern = Chem.MolFromSmarts("C(=O)O")
     if not mol.HasSubstructMatch(acid_pattern):
         return False, "No carboxylic acid group found"
+
+    # Check for long carbon chain (at least 8 carbons) attached to acid group
+    chain_pattern = Chem.MolFromSmarts("[CH2,CH1,CH0]~[CH2,CH1,CH0]~[CH2,CH1,CH0]~[CH2,CH1,CH0]~[CH2,CH1,CH0]~[CH2,CH1,CH0]~[CH2,CH1,CH0]~[CH2,CH1,CH0]~C(=O)O")
+    if not mol.HasSubstructMatch(chain_pattern):
+         return False, "No long carbon chain with acid group found."
     
     # Check for more than one double or triple bond
     double_bond_pattern = Chem.MolFromSmarts("C=C")
     triple_bond_pattern = Chem.MolFromSmarts("C#C")
-
     double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
     triple_bond_matches = mol.GetSubstructMatches(triple_bond_pattern)
-
     if len(double_bond_matches) + len(triple_bond_matches) <= 1:
         return False, f"Found {len(double_bond_matches)} double and {len(triple_bond_matches)} triple bonds, need more than one."
+    
+    # Check for main carbon chain with double/triple bonds
+    chain_double_bond = Chem.MolFromSmarts("[CH2,CH1,CH0]~[CH2,CH1,CH0]=[CH,CH0]~[CH2,CH1,CH0]")
+    if not mol.HasSubstructMatch(chain_double_bond):
+        return False, "Double/triple bonds not part of the fatty acid chain."
 
-    #Check for main carbon chain with double/triple bonds and carboxylic acid
-    main_chain_pattern = Chem.MolFromSmarts("[CH2,CH1,CH0][CH2,CH1,CH0](=[CH,CH0])-[CH2,CH1,CH0](=[CH,CH0])-[CH2,CH1,CH0]-[CH2,CH1,CH0]~[CH2,CH1,CH0]~[CH2,CH1,CH0]~[CH2,CH1,CH0]~[CH2,CH1,CH0]~[CH2,CH1,CH0]~[CH2,CH1,CH0]~[CH2,CH1,CH0]~[CH2,CH1,CH0]~[CH2,CH1,CH0]~C(=O)O") # at least 12 carbons
-    if not mol.HasSubstructMatch(main_chain_pattern):
-        return False, "Double/triple bonds not part of main fatty acid carbon chain."
-        
-
-    # Check for long carbon chains by counting carbon atoms
+     # Count total carbon atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if c_count < 12:
         return False, "Too few carbons for a fatty acid"
-    
 
-    return True, "Contains a carboxylic acid group and more than one double/triple bond within the main chain, characteristic of a polyunsaturated fatty acid."
+    # Check for mostly linear chain
+    ch2_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6 and atom.GetTotalNumHs()==2)
+    if ch2_count < 8 :
+        return False, "Fatty acid must have a long linear chain."
+    
+    return True, "Contains a carboxylic acid group and more than one double/triple bond within the main fatty acid chain."
