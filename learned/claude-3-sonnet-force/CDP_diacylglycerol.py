@@ -28,7 +28,7 @@ def is_CDP_diacylglycerol(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for CDP-glycerol backbone pattern
-    cdp_glycerol_pattern = Chem.MolFromSmarts("[N]1C=NC(=NC1=O)C2C(C(C(O2)CO)OC[C@H](COP(=O)(O)OP(=O)(O)O)O)O")
+    cdp_glycerol_pattern = Chem.MolFromSmarts("[N]1C=NC(=NC1=O)C2C(C(C(O2)COP(=O)(O)OP(=O)(O)O)O)O")
     if not mol.HasSubstructMatch(cdp_glycerol_pattern):
         return False, "No CDP-glycerol backbone found"
         
@@ -56,6 +56,6 @@ def is_CDP_diacylglycerol(smiles: str):
     if c_count < 20:
         return False, "Too few carbons for CDP-diacylglycerol"
     if o_count != 15:
-        return False, "Must have exactly 15 oxygens for CDP-diacylglycerol"
+        return False, "Incorrect number of oxygens for CDP-diacylglycerol"
 
     return True, "Contains CDP-glycerol backbone with 2 fatty acid chains attached via ester bonds"
