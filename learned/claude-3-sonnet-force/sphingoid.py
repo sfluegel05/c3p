@@ -1,98 +1,53 @@
 """
 Classifies: CHEBI:35785 sphingoid
 """
-"""
-Classifies: CHEBI:36603 sphingoid
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+The previous program has a good overall approach to classifying sphingoids, but it misses some key structural features and edge cases. Here's an analysis of the outcomes and potential improvements:
 
-def is_sphingoid(smiles: str):
-    """
-    Determines if a molecule is a sphingoid based on its SMILES string.
-    Sphingoids are sphinganine, its homologs and stereoisomers, and their hydroxy and unsaturated derivatives.
+True Positives:
+The program correctly identified 42 out of 42 true sphingoids in the dataset. This is a good sign that the core logic is sound.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+False Positives:
+There was only 1 false positive, which is a low number. However, it's worth investigating to ensure that the program is not missing any important structural features.
 
-    Returns:
-        bool: True if molecule is a sphingoid, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Check for sphingoid backbone pattern: C-C-C-N-C-C-O
-    backbone_pattern = Chem.MolFromSmarts("[CH2][CH2][CH2][NH][CH][CH][OH]")
-    if not mol.HasSubstructMatch(backbone_pattern):
-        return False, "No sphingoid backbone found"
-    
-    # Check for long alkyl chain (>=14 carbons)
-    chain_pattern = Chem.MolFromSmarts("[CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2]")
-    chain_matches = mol.GetSubstructMatches(chain_pattern)
-    if not chain_matches:
-        return False, "Alkyl chain too short for sphingoid"
-    
-    # Check for hydroxyl group(s)
-    hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    if not hydroxyl_matches:
-        return False, "No hydroxyl group found"
-    
-    # Check for optional unsaturation
-    unsaturated_pattern = Chem.MolFromSmarts("[CH2][CH][CH][CH]")
-    unsaturated_matches = mol.GetSubstructMatches(unsaturated_pattern)
-    
-    # Count carbons and nitrogens
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
-    
-    if c_count < 16 or n_count != 1:
-        return False, "Incorrect atom counts for sphingoid"
-    
-    reason = "Contains sphingoid backbone with long alkyl chain and hydroxyl group"
-    if unsaturated_matches:
-        reason += ", potentially unsaturated"
-    
-    return True, reason
+False Negatives:
+All 42 true sphingoids were correctly identified, so there are no false negatives. However, there are some SMILES strings for which the program failed to provide a reason for classification, indicating potential issues.
 
+Analysis of SMILES strings without a reason:
+1. N-(2-hydroxynonadecanoyl)-1-O-beta-D-glucosyl-4-hydroxy-15-methylhexadecasphinganine
+   - This is a sphingoid with a glucosyl group attached. The program should be extended to handle such modifications.
 
-__metadata__ = {
-    'chemical_class': {
-        'id': 'CHEBI:36603',
-        'name': 'sphingoid',
-        'definition': 'Sphinganine, its homologs and stereoisomers, and the hydroxy and unsaturated derivatives of these compounds.',
-        'parents': ['CHEBI:35621', 'CHEBI:36963']
-    },
-    'config': {
-        'llm_model_name': 'lbl/claude-sonnet',
-        'f1_threshold': 0.8,
-        'max_attempts': 5,
-        'max_positive_instances': None,
-        'max_positive_to_test': None,
-        'max_negative_to_test': None,
-        'max_positive_in_prompt': 50,
-        'max_negative_in_prompt': 20,
-        'max_instances_in_prompt': 100,
-        'test_proportion': 0.1
-    },
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 42,
-    'num_false_positives': 1,
-    'num_true_negatives': 182418,
-    'num_false_negatives': 0,
-    'num_negatives': None,
-    'precision': 0.9767441860465116,
-    'recall': 1.0,
-    'f1': 0.988235294117647,
-    'accuracy': 0.9999458240233187
-}
+2. N-(2-hydroxypentacosanoyl)-1-O-beta-D-glucosyl-4-hydroxy-15-methylhexadecasphinganine
+   - Another sphingoid with a glucosyl group. Same issue as above.
+
+3. N-(2-hydroxytetracosanoyl)-4-hydroxy-15-methylhexadecasphinganine-1-phosphocholine
+   - This is a sphingoid with a phosphocholine group attached. The program should be extended to handle such modifications.
+
+4. N-(2-hydroxyhenicosanoyl)-1-O-beta-D-glucosyl-4-hydroxy-15-methylhexadecasphinganine
+   - Another sphingoid with a glucosyl group. Same issue as above.
+
+5. tetradecaphytosphingosine
+   - This is a valid sphingoid, but the program missed it because the backbone pattern is slightly different (missing the terminal -CH2OH group).
+
+6. hexadecasphinganine(1+)
+   - This is a valid sphingoid in a protonated form. The program should be extended to handle charged species.
+
+7. 3-dehydro-15-methylhexadecasphinganine
+   - This is a valid unsaturated sphingoid. The program should be extended to handle unsaturated backbones better.
+
+8. aplidiasphingosine
+   - This is a valid sphingoid with a branched alkyl chain. The program should be extended to handle branched chains.
+
+9. 1-deoxymethyl-3-dehydrosphinganine
+   - This is a valid unsaturated sphingoid with a slightly modified backbone. The program should be extended to handle such modifications.
+
+10. hexadecasphing-4-enine
+    - This is a valid unsaturated sphingoid. The program should be extended to handle unsaturated backbones better.
+
+Potential Improvements:
+1. Extend the backbone pattern to handle modifications such as glucosyl groups, phosphocholine groups, and other common modifications.
+2. Extend the backbone pattern to handle charged species (e.g., protonated forms).
+3. Improve handling of unsaturated backbones by checking for specific unsaturation patterns or using a more flexible SMARTS pattern.
+4. Handle branched alkyl chains in addition to linear chains.
+5. Consider additional checks for molecular weight, atom counts, or other properties to further refine the classification.
+
+Overall, the program has a good foundation, but it would benefit from additional refinements to handle a wider range of sphingoid structures and modifications. By addressing the issues identified in the false negatives and missed cases, the program's accuracy and coverage can be significantly improved.
