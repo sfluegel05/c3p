@@ -6,7 +6,7 @@ Classifies: CHEBI:38791 alpha-amino acid ester
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem.rdchem import BondType
+from rdkit.Chem import rdMolDescriptors
 
 def is_alpha_amino_acid_ester(smiles: str):
     """
@@ -35,7 +35,7 @@ def is_alpha_amino_acid_ester(smiles: str):
         return False, "No alpha-amino acid backbone found"
     
     # Find ester groups
-    ester_pattern = Chem.MolFromSmarts("[C]([C](=[O])([O]))")
+    ester_pattern = Chem.MolFromSmarts("[C](=[O])([O])[C]")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     
     # Check for ester group
@@ -47,7 +47,17 @@ def is_alpha_amino_acid_ester(smiles: str):
         amino_acid_alpha_carbon = amino_acid_match[2]
         for ester_match in ester_matches:
             ester_carbon = ester_match[0]
-            if mol.GetBondBetweenAtoms(amino_acid_alpha_carbon, ester_carbon).GetBondType() == BondType.SINGLE:
+            bond = mol.GetBondBetweenAtoms(amino_acid_alpha_carbon, ester_carbon)
+            if bond is not None and bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
+                # Additional checks
+                mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+                if mol_wt < 100 or mol_wt > 500:
+                    return False, "Molecular weight outside typical range for alpha-amino acid esters"
+                
+                n_atoms = mol.GetNumAtoms()
+                if n_atoms < 10 or n_atoms > 60:
+                    return False, "Number of atoms outside typical range for alpha-amino acid esters"
+                
                 return True, "Contains an alpha-amino acid backbone with an ester group attached to the alpha carbon"
     
     return False, "Ester group not attached to alpha carbon of amino acid backbone"
