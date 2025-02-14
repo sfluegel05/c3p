@@ -22,30 +22,25 @@ def is_furanocoumarin(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define SMARTS patterns for coumarin and furan
-    # Coumarin core, allowing for various substitution patterns.
-    coumarin_pattern = Chem.MolFromSmarts("[c]1[c][c]([c])[c](=[O])[o][c]1")
-    if coumarin_pattern is None:
-        return False, "Invalid coumarin SMARTS"
+    coumarin_pattern = Chem.MolFromSmarts("c1ccccc1C(=O)OC=C") #Basic coumarin
+    furan_pattern = Chem.MolFromSmarts("c1occc1")  # Furan ring
     
-    furan_pattern = Chem.MolFromSmarts("[c]1[o][c][c][c]1")  # Furan ring
-    if furan_pattern is None:
-        return False, "Invalid furan SMARTS"
-
     # Check for coumarin core
     if not mol.HasSubstructMatch(coumarin_pattern):
         return False, "No coumarin core found"
-    
+
     # Check for furan ring
     if not mol.HasSubstructMatch(furan_pattern):
-        return False, "No furan ring found"
+          return False, "No furan ring found"
 
-    # Check for the fusion. Check for the coumarin and furan with a bond in between.
-    #Simplified fusion pattern where there is a bond between carbon of coumarin and carbon of furan
-    fused_pattern = Chem.MolFromSmarts("([c]1[c][c]([c])[c](=[O])[o][c]1)-[c]2[o][c][c][c]2")
-    if fused_pattern is None:
-        return False, "Invalid fused SMARTS"
+    # Check for the fusion
+    # The following check is not ideal, since it does not guarantee that both rings are connected
+    # ideally we should be looking for the full fragment.
+    # but it was too difficult to generate a smarts for this.
+    # this check is only for a minimum overlap and should not cause too many false positives.
     
-    if not mol.HasSubstructMatch(fused_pattern):
+    combined_pattern = Chem.MolFromSmarts("[c1ccccc1C(=O)OC=C]~[c1occc1]")
+    if not mol.HasSubstructMatch(combined_pattern):
         return False, "Furan ring is not fused to the coumarin core"
-    
+
     return True, "Contains a coumarin core with a fused furan ring"
