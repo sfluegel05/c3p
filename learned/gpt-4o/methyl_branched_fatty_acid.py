@@ -23,13 +23,19 @@ def is_methyl_branched_fatty_acid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for the presence of a carboxylic acid group (-COOH)
-    carboxyl_pattern = Chem.MolFromSmarts("C(=O)O")  # Adjusted for neutral carboxylic acid
+    carboxyl_pattern = Chem.MolFromSmarts("C(=O)O")
     if not mol.HasSubstructMatch(carboxyl_pattern):
         return False, "No carboxylic acid group found"
     
     # Check for methyl branches on acyl chain
-    methyl_branch_pattern = Chem.MolFromSmarts("[C;!R][CH2][C](C)(C)C(=O)O")  # Checks for methyl branching on chain
+    # Adjust the pattern to match more general methyl branching (smallest alkyl branch possible)
+    methyl_branch_pattern = Chem.MolFromSmarts("[C;!R][CH2][C](C)O")
     if not mol.HasSubstructMatch(methyl_branch_pattern):
         return False, "Molecule does not contain methyl branches on a fatty acid backbone"
+    
+    # Estimate chain length by counting carbons and ensure it's within expected range for fatty acids
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 5:
+        return False, "Carbon chain too short for traditional fatty acid"
     
     return True, "Molecule is a methyl-branched fatty acid"
