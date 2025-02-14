@@ -24,15 +24,16 @@ def is_O_acyl_L_carnitine(smiles: str):
     # Define the L-carnitine core with correct stereochemistry using SMARTS
     # The key here is the @ which designates the chirality
     # The ester oxygen (O) and quaternary nitrogen (N) are linked to the chiral carbon (*)
-    # The 3 other carbons (C) have at least one hydrogen.
-    carnitine_core_smarts = "[C@H]([OX2])(CC(=O)[O-])C[N+](C)(C)C"
+    # The other carbons (C) have at least one hydrogen.
+
+    carnitine_core_smarts = "[C@H]([OX2])(CC(=O)[O-,OH])C[N+](C)(C)C"
     carnitine_core_pattern = Chem.MolFromSmarts(carnitine_core_smarts)
 
     if not mol.HasSubstructMatch(carnitine_core_pattern):
         return False, "L-carnitine core not found with the correct stereochemistry"
     
-    # Check for an ester group attached to the oxygen of the core
-    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
+    # Check for an ester group attached to the oxygen of the core. We also allow a charged ester oxygen.
+    ester_pattern = Chem.MolFromSmarts("[OX2-,OX2][CX3](=[OX1])")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) < 1:
         return False, "No ester bond found"
@@ -59,7 +60,6 @@ def is_O_acyl_L_carnitine(smiles: str):
     
     if not found_correct_oxygen:
         return False, "Ester bond not attached to the carnitine oxygen"
-
 
     # check the number of nitrogens (sanity check, should be 1 quaternary)
     n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7 and atom.GetFormalCharge() == 1)
