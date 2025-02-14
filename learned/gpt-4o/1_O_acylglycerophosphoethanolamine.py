@@ -2,7 +2,6 @@
 Classifies: CHEBI:55493 1-O-acylglycerophosphoethanolamine
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_1_O_acylglycerophosphoethanolamine(smiles: str):
     """
@@ -23,24 +22,20 @@ def is_1_O_acylglycerophosphoethanolamine(smiles: str):
 
     # Define SMARTS patterns for 1-O-acylglycerophosphoethanolamine components
     
-    # 1-O-acylglycerol pattern: includes stereochemistry for glycerol backbone
-    glycerol_pattern = Chem.MolFromSmarts("[C@@H](CO[*])[CH2]O")
+    # 1-O-acylglycerol pattern: stereochemistry for the glycerol backbone
+    # [C@@H] for stereochemistry, the central carbon with oxygens on each side
+    glycerol_pattern = Chem.MolFromSmarts("[C@@H](COC(=O)[C])[CH2]OC")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No 1-O-acyl-glycerol structure found"
 
-    # Ester bond pattern at 1-position (attached to the glycerol)
-    ester_pattern = Chem.MolFromSmarts("C(=O)OC[C@@H]")
-    if not mol.HasSubstructMatch(ester_pattern):
-        return False, "No ester bond at 1-position of glycerol found"
-
     # Phosphoethanolamine group pattern
-    phosphoethanolamine_pattern = Chem.MolFromSmarts("COP(=O)(O)OCCN")
+    # Ensure that phosphate links through the correct sites with ethanolamine 
+    phosphoethanolamine_pattern = Chem.MolFromSmarts("COP(=O)(O)OCC[NH2+]")  
     if not mol.HasSubstructMatch(phosphoethanolamine_pattern):
         return False, "Phosphoethanolamine group not present"
-
-    # Verify oxygen positions; one from ester, two from phosphoester
-    oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if oxygen_count < 7:  # The necessary minimum number of oxygens
-        return False, f"Insufficient oxygen atoms, found {oxygen_count}"
-
+    
+    # Assess complete molecule structure for exact match to 1-O-acylglycerophosphoethanolamine description
+    if not (mol.HasSubstructMatch(glycerol_pattern) and mol.HasSubstructMatch(phosphoethanolamine_pattern)):
+        return False, "Composite structure not consistent with 1-O-acylglycerophosphoethanolamine"
+    
     return True, "Structure matches 1-O-acylglycerophosphoethanolamine"
