@@ -16,49 +16,29 @@ def is_tertiary_amine_oxide(smiles: str):
         bool: True if molecule is a tertiary amine oxide, False otherwise
         str: Reason for classification
     """
-
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for N-oxide using SMARTS
-    n_oxide_pattern = Chem.MolFromSmarts("[N+][O-]")
+    # Check for N-oxide using SMARTS. Check that the nitrogen is bonded to 3 carbons and an oxygen.
+    # Also check that each carbon is connected to another carbon.
+    n_oxide_pattern = Chem.MolFromSmarts("[N+](-[O-])([CX4])([CX4])[CX4]")
     if not mol.HasSubstructMatch(n_oxide_pattern):
-        return False, "Not an N-oxide"
-
-    # Find the nitrogen atom and oxygen atom from the N-oxide bond.
+        return False, "Not a tertiary amine N-oxide"
+    
+    #Check if carbons are indeed part of an organic group by checking they have at least one other neighbour that is not H or a heteroatom.
     match = mol.GetSubstructMatch(n_oxide_pattern)
     nitrogen_atom = mol.GetAtomWithIdx(match[0])
-    oxygen_atom = mol.GetAtomWithIdx(match[1])
-
-    # Check that nitrogen has 4 bonds (3 with carbon, 1 with oxygen)
-    if nitrogen_atom.GetTotalValence() != 4:
-        return False, f"Nitrogen has {nitrogen_atom.GetTotalValence()} connections, not 4"
-
-    # Check the connectivity.
-    neighbors = nitrogen_atom.GetNeighbors()
-
-    # Ensure the neighbors bonded to nitrogen are carbon, and not the oxygen which has already been verified.
-    carbon_neighbors = []
-    for neighbor in neighbors:
-        if neighbor.GetIdx() != oxygen_atom.GetIdx(): # Ensure we are not evaluating the oxygen again.
-            if neighbor.GetAtomicNum() == 6:
-                carbon_neighbors.append(neighbor)
-            else:
-                return False, "Nitrogen not bonded to three carbon atoms."
-    if len(carbon_neighbors) != 3:
-        return False, "Nitrogen not bonded to three carbon atoms."
-
-    # Check that the carbon neighbours are connected to a complex organic group, and not just hydrogen atoms.
-    for carbon_neighbor in carbon_neighbors:
-        neighbor_atoms = carbon_neighbor.GetNeighbors()
-        is_organic = False
-        for neighbor_atom in neighbor_atoms:
-            if neighbor_atom.GetIdx() != nitrogen_atom.GetIdx(): # Avoid checking back towards the central N atom
-                if neighbor_atom.GetAtomicNum() != 1:
-                    is_organic = True
-        if not is_organic:
+    carbon_atoms = [mol.GetAtomWithIdx(match[i]) for i in range(2,5)]
+    for carbon_atom in carbon_atoms:
+        neighbors = carbon_atom.GetNeighbors()
+        organic_neighbor = False
+        for neighbor in neighbors:
+             if neighbor.GetIdx() != nitrogen_atom.GetIdx(): # Avoid checking back towards the central N atom
+                if neighbor.GetAtomicNum() not in [1, 7, 8, 16, 15]: # Check for H and common heteroatoms
+                    organic_neighbor = True
+        if not organic_neighbor:
              return False, "Nitrogen is not bonded to three organic groups"
 
     return True, "Tertiary amine oxide detected"
