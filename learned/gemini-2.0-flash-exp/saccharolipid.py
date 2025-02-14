@@ -28,49 +28,35 @@ def is_saccharolipid(smiles: str):
 
     has_carbohydrate = False
     if mol.HasSubstructMatch(pyranose_pattern) or mol.HasSubstructMatch(furanose_pattern):
-        if len(mol.GetSubstructMatches(glycosidic_linkage)) >= 1: # Require at least one glycosidic linkage
+        if len(mol.GetSubstructMatches(glycosidic_linkage)) >= 2: # Require multiple glycosidic linkages
            has_carbohydrate = True
 
     if not has_carbohydrate:
       # No carbohydrate detected
-        return False, "No carbohydrate moiety detected (no pyranose/furanose ring with glycosidic bond)"
+        return False, "No carbohydrate moiety detected (no pyranose/furanose ring with multiple glycosidic bonds)"
 
-    # 2. Check for lipid moiety (long hydrocarbon chain or lipid-associated functional groups connected to saccharide)
-    long_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]") # at least 8 C's in a row.
+
+    # 2. Check for lipid moiety (long hydrocarbon chain and lipid-associated functional groups)
+    long_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]") # at least 10 C's in a row.
     ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
-    ether_pattern = Chem.MolFromSmarts("[OX2][CX4]")
     amide_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])")
     phosphate_pattern = Chem.MolFromSmarts("P(=O)([OX1])([OX1])")
     sulfate_pattern = Chem.MolFromSmarts("S(=O)(=O)[OX1]")
 
     has_lipid = False
+    num_lipid_groups = 0
+    if mol.HasSubstructMatch(long_chain_pattern):
+       num_lipid_groups += 1
+    num_lipid_groups += len(mol.GetSubstructMatches(ester_pattern))
+    num_lipid_groups += len(mol.GetSubstructMatches(amide_pattern))
+    num_lipid_groups += len(mol.GetSubstructMatches(phosphate_pattern))
+    num_lipid_groups += len(mol.GetSubstructMatches(sulfate_pattern))
     
-    # Check for connection between carbohydrate and lipid
-    saccharide_atoms = mol.GetSubstructMatches(pyranose_pattern) if mol.HasSubstructMatch(pyranose_pattern) else mol.GetSubstructMatches(furanose_pattern)
-    if len(saccharide_atoms) > 0: # Check connection only if carbohydrate part exists
-        saccharide_atoms = [atom_idx for match in saccharide_atoms for atom_idx in match]
-
-        # Check if any lipid moiety is directly bonded to the saccharide.
-        for atom_idx in saccharide_atoms:
-            atom = mol.GetAtomWithIdx(atom_idx)
-            for neighbor in atom.GetNeighbors():
-               if neighbor.GetSymbol() == 'C':
-                 # Check if this carbon is part of long chain
-                 if mol.HasSubstructMatch(long_chain_pattern, [neighbor.GetIdx()]):
-                     has_lipid = True
-                     break
-               if neighbor.GetSymbol() == 'O':
-                    for neighbor_of_o in neighbor.GetNeighbors():
-                       if neighbor_of_o.GetSymbol() == 'C':
-                         # Check if this carbon is part of ester, ether or amide etc
-                         if mol.HasSubstructMatch(ester_pattern, [neighbor_of_o.GetIdx()]) or mol.HasSubstructMatch(amide_pattern, [neighbor_of_o.GetIdx()]) or mol.HasSubstructMatch(phosphate_pattern,[neighbor_of_o.GetIdx()]) or mol.HasSubstructMatch(sulfate_pattern, [neighbor_of_o.GetIdx()]):
-                             has_lipid = True
-                             break
-            if has_lipid:
-               break # Stop at first link
+    if mol.HasSubstructMatch(long_chain_pattern) and num_lipid_groups >= 2:
+        has_lipid = True # Require long chain and at least one other lipid group
 
     if not has_lipid:
-        return False, "No lipid moiety detected directly linked to the carbohydrate"
+         return False, "No lipid moiety detected (no long chain and at least one other lipid groups)"
 
     # Check number of carbons - must be >10
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
