@@ -27,13 +27,13 @@ def is_trans_2_enoyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for CoA backbone pattern
-    coa_pattern = Chem.MolFromSmarts("C1OC(COP(O)(=O)OP(O)(=O)OCC(C)(C)C(O)C(=O)NCCCC(=O)NCCSC(=O)C=CC)")
+    # Look for CoA backbone pattern (more flexible pattern)
+    coa_pattern = Chem.MolFromSmarts("[C;R](C)(C)(CO[P@@](=O)(O)O[P@@](=O)(O)OC[C@H]1[C@@H]([C@@H]([C@H](O1)n2cnc3c2ncnc3N)O)OP(=O)(O)O)C(=O)NCCCC(=O)NCCSC(=O)"
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No CoA backbone found"
 
-    # Look for trans double bond at position 2
-    trans_pattern = Chem.MolFromSmarts("C\C=C/C(=O)")
+    # Look for trans double bond at position 2 (more flexible pattern)
+    trans_pattern = Chem.MolFromSmarts("C\C=C/C(=O)[CX4]")
     if not mol.HasSubstructMatch(trans_pattern):
         return False, "No trans double bond at position 2 found"
 
