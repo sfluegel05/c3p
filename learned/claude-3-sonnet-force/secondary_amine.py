@@ -31,26 +31,26 @@ def is_secondary_amine(smiles: str):
     if len(n_atoms) != 1:
         return False, "Must have exactly one nitrogen atom"
     
-    # Get number of hydrogen atoms attached to nitrogen
+    # Get the nitrogen atom
     n_atom = n_atoms[0]
-    n_h = sum(1 for bond in n_atom.GetBonds() if bond.GetOtherAtom(n_atom).GetAtomicNum() == 1)
     
-    # Check if nitrogen has one hydrogen attached (secondary amine)
-    if n_h != 1:
-        return False, f"Nitrogen atom has {n_h} hydrogen(s) attached, should be 1"
-    
-    # Check if nitrogen is bonded to two carbon atoms (secondary amine)
-    n_c = sum(1 for bond in n_atom.GetBonds() if bond.GetOtherAtom(n_atom).GetAtomicNum() == 6)
-    if n_c != 2:
-        return False, f"Nitrogen atom bonded to {n_c} carbon(s), should be 2"
-    
-    # Check for aromatic nitrogen
+    # Check if nitrogen is aromatic
     if n_atom.GetIsAromatic():
         return False, "Nitrogen atom is aromatic, should be aliphatic"
     
     # Check for charges on nitrogen
     if n_atom.GetFormalCharge() != 0:
         return False, "Nitrogen atom has a formal charge"
+    
+    # Count substituents attached to nitrogen
+    n_substituents = sum(1 for bond in n_atom.GetBonds() if bond.GetOtherAtom(n_atom).GetAtomicNum() not in [1, 6, 7, 8, 16])
+    if n_substituents > 0:
+        return False, "Nitrogen atom has additional substituents besides C, N, O, S"
+    
+    # Check if nitrogen has at least two substituents (C, N, O, S)
+    n_subs = sum(1 for bond in n_atom.GetBonds() if bond.GetOtherAtom(n_atom).GetAtomicNum() in [6, 7, 8, 16])
+    if n_subs < 2:
+        return False, "Nitrogen atom has less than two substituents (C, N, O, S)"
     
     # Check if molecule is neutral
     mol_charge = rdMolDescriptors.CalcFormalCharge(mol)
