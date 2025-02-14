@@ -4,14 +4,13 @@ Classifies: CHEBI:24128 furanocoumarin
 """
 Classifies: furanocoumarin
 """
-
 from rdkit import Chem
 
 def is_furanocoumarin(smiles: str):
     """
     Determines if a molecule is a furanocoumarin based on its SMILES string.
-    A furanocoumarin consists of a furan ring fused with a coumarin. The fusion
-    may occur in different ways, leading to several isomers (linear and angular).
+    A furanocoumarin consists of a furan ring fused with a coumarin. The fusion may occur in different ways,
+    leading to several isomers (linear and angular).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,24 +25,24 @@ def is_furanocoumarin(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define SMARTS patterns for linear and angular furanocoumarins
-    # Linear furanocoumarin (psoralen-type) core SMARTS
-    linear_smarts = '[O]=C1C=CC2=C1Oc1ccoc1C=C2'  # Matches psoralen core
+    # Linear furanocoumarin (psoralen core)
+    linear_smarts = 'O=C1C=CC2=CC=COC2=C1'
     linear_pattern = Chem.MolFromSmarts(linear_smarts)
+    if linear_pattern is None:
+        return False, "Invalid linear furanocoumarin SMARTS pattern"
 
-    # Angular furanocoumarin (angelicin-type) core SMARTS
-    angular_smarts = 'O=C1C=CC2=C1C=CC3=COC=CC3=C2'  # Matches angelicin core
+    # Angular furanocoumarin (angelicin core)
+    angular_smarts = 'O=C1C=CC2=COC=CC2=C1'
     angular_pattern = Chem.MolFromSmarts(angular_smarts)
-
-    if linear_pattern is None or angular_pattern is None:
-        return False, "Invalid SMARTS pattern"
+    if angular_pattern is None:
+        return False, "Invalid angular furanocoumarin SMARTS pattern"
 
     # Check for linear furanocoumarin core
     if mol.HasSubstructMatch(linear_pattern):
-        return True, "Contains linear furanocoumarin core"
+        return True, "Contains linear furanocoumarin core (psoralen type)"
 
     # Check for angular furanocoumarin core
     if mol.HasSubstructMatch(angular_pattern):
-        return True, "Contains angular furanocoumarin core"
+        return True, "Contains angular furanocoumarin core (angelicin type)"
 
-    # If neither pattern matches, the molecule is not a furanocoumarin
     return False, "Does not contain furanocoumarin core"
