@@ -22,9 +22,8 @@ def is_sphingomyelin_d18_1(smiles: str) -> tuple[bool, str]:
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 1. Sphingosine backbone pattern (C-C=C-C(OH)-C(NH)-C
-    # This accounts for the stereochemistry
-    sphingosine_core_pattern = Chem.MolFromSmarts("[C@@H]([C@H](C=C)CO)N[C@H]")
+    # 1. Relaxed Sphingosine core pattern (C-C(OH)-C-C(NH)-C)
+    sphingosine_core_pattern = Chem.MolFromSmarts("[CX4]-[CX4]([OX2])-[CX4]-[CX4]([NX3])-[CX4]")
     if not mol.HasSubstructMatch(sphingosine_core_pattern):
          return False, "Sphingosine core not found"
 
@@ -37,23 +36,28 @@ def is_sphingomyelin_d18_1(smiles: str) -> tuple[bool, str]:
     amide_pattern = Chem.MolFromSmarts("C(=O)N")
     if not mol.HasSubstructMatch(amide_pattern):
          return False, "Fatty acyl chain not found"
-
-    # 4.  Check for sphingosine d18:1  (18 carbons, one double bond in the sphingosine backbone)
-    sphingosine_backbone_pattern = Chem.MolFromSmarts("CC[C@H]([C@H](C=C)CO)N[C@H]")
-    matches = mol.GetSubstructMatches(sphingosine_backbone_pattern)
-    if not matches:
-        return False, "Sphingosine d18:1 backbone not found"
-
-    # Locate the sphingosine carbon chain
-    match = matches[0] # The pattern matches only once
-    backbone_atoms = [match[0], match[1], match[2], match[3], match[4], match[5]]
-    # Find an additional carbon attached to the backbone to count all the carbons
+    
+    # 4. Find the long chain of carbons that contains the main core.
+    # Find one match for the core
+    matches = mol.GetSubstructMatches(sphingosine_core_pattern)
+    core_atoms = matches[0]
+    
+    # Now look for a long chain of carbons. It is required to have 18 atoms and one double bond.
+    # We will perform an exploration from a core atom to find the chain.
+    
+    backbone_atoms = list(core_atoms)
+    
+    # Find an additional carbon attached to the backbone to initiate the carbon tracing
     found = False
-    for neighbor in mol.GetAtomWithIdx(backbone_atoms[0]).GetNeighbors():
+    for atom_idx in core_atoms:
+      for neighbor in mol.GetAtomWithIdx(atom_idx).GetNeighbors():
         if neighbor.GetIdx() not in backbone_atoms and neighbor.GetSymbol() == 'C':
             backbone_atoms.append(neighbor.GetIdx())
             found = True
             break
+      if found:
+        break
+
     if not found:
         return False, "Error identifying complete backbone chain."
     
@@ -72,14 +76,15 @@ def is_sphingomyelin_d18_1(smiles: str) -> tuple[bool, str]:
 
     c_count = sum(1 for atom_idx in backbone_atoms if mol.GetAtomWithIdx(atom_idx).GetAtomicNum() == 6)
     if c_count != 18:
-        return False, f"Incorrect backbone carbon count. Should be 18, got {c_count}"
-
-    # Count double bonds within the sphingosine
+      return False, f"Incorrect backbone carbon count. Should be 18, got {c_count}"
+    
+    # Count double bonds within the carbon chain
     double_bond_count = 0
     for bond in mol.GetBonds():
-        if bond.GetBondType() == Chem.BondType.DOUBLE:
-            if bond.GetBeginAtomIdx() in backbone_atoms and bond.GetEndAtomIdx() in backbone_atoms:
-                double_bond_count+=1
+      if bond.GetBondType() == Chem.BondType.DOUBLE:
+        if bond.GetBeginAtomIdx() in backbone_atoms and bond.GetEndAtomIdx() in backbone_atoms:
+           double_bond_count += 1
+    
     if double_bond_count != 1:
         return False, f"Incorrect number of double bonds in backbone, should be 1, got {double_bond_count}"
 
