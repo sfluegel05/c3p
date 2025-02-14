@@ -21,12 +21,12 @@ def is_dihydroagarofuran_sesquiterpenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Refine SMARTS pattern for a dihydroagarofuran skeleton; consider complexity, rings, and substituents
-    # Let's create a more general pattern that encompasses known structural elements of the skeleton.
+    # Update SMARTS pattern for the dihydroagarofuran skeleton
+    # Reflects core bicyclic structure with additional stereochemistry and oxygens
     dihydroagarofuran_patterns = [
-        Chem.MolFromSmarts("C1C[C@@H]2[C@H]3[C@@H](C1)C[C@@H](O2)CC3"),
-        Chem.MolFromSmarts("C1C[C@H]2C[C@H]3[C@@H](C1)C[C@@H](O2)CC3"),
-        # Additional patterns can be based on varying ring junction stereochemistry and common ester linkages
+        Chem.MolFromSmarts("C1[C@H]2[C@@H](O1)C[C@H]3[C@@H]2CC3"),
+        Chem.MolFromSmarts("C1[C@@H]2[C@H](O1)C[C@@H]3[C@H]2CC3"),
+        # Include other patterns accounting for different observed stereochemistries
     ]
 
     # Check each pattern against the molecule
