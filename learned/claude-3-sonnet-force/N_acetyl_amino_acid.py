@@ -25,37 +25,18 @@ def is_N_acetyl_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for acetyl group attached to nitrogen
-    acetyl_pattern = Chem.MolFromSmarts("CC(=O)N")
-    acetyl_matches = mol.GetSubstructMatches(acetyl_pattern)
-    if not acetyl_matches:
-        return False, "No acetyl group attached to nitrogen"
+    # Look for amino acid backbone pattern (N-C-C-C=O)
+    amino_acid_pattern = Chem.MolFromSmarts("[N;X3][C;X4][C;X4][C;X3](=O)[O;X2]")
+    amino_acid_matches = mol.GetSubstructMatches(amino_acid_pattern)
+    if not amino_acid_matches:
+        return False, "No amino acid backbone found"
     
-    # Look for amino group
-    amino_pattern = Chem.MolFromSmarts("[N;X3][C;X4]")
-    amino_matches = mol.GetSubstructMatches(amino_pattern)
-    if not amino_matches:
-        return False, "No amino group found"
+    # Check if the amino nitrogen has an acetyl group attached
+    for match in amino_acid_matches:
+        amino_N = match[0]
+        amino_atom = mol.GetAtomWithIdx(amino_N)
+        for neighbor in amino_atom.GetNeighbors():
+            if neighbor.GetSmarts() == "CC(=O)":
+                return True, "Contains acetyl group attached to amino nitrogen of an amino acid"
     
-    # Check if the nitrogen attached to the acetyl group is also part of the amino group
-    for acetyl_N in [match[1] for match in acetyl_matches]:
-        for amino_N in [match[0] for match in amino_matches]:
-            if acetyl_N == amino_N:
-                break
-        else:
-            continue
-        break
-    else:
-        return False, "Acetyl group not attached to amino nitrogen"
-    
-    # Look for carboxylic acid group
-    carboxyl_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
-    if not mol.HasSubstructMatch(carboxyl_pattern):
-        return False, "No carboxylic acid group found"
-    
-    # Check if the amino group is not part of a ring (to exclude proline)
-    amino_atom = mol.GetAtomWithIdx(amino_N)
-    if amino_atom.IsInRing():
-        return False, "Amino group is part of a ring structure"
-    
-    return True, "Contains acetyl group attached to nitrogen of an amino acid"
+    return False, "No acetyl group attached to amino nitrogen"
