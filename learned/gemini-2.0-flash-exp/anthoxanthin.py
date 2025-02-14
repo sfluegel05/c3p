@@ -24,6 +24,7 @@ def is_anthoxanthin(smiles: str):
     # 1. Core benzopyran-4-one structure (flavone or flavonol) with carbonyl group
     # Using a more general SMARTS that captures flavones and flavonols
     core_pattern = Chem.MolFromSmarts("c1cc(-c2c(O)c(=O)c3ccccc3o2)ccc1 | c1cc(-c2cc(=O)c3ccccc3o2)ccc1 | c1cc(-c2c(=O)c3ccccc3o2)ccc1")
+    core_pattern = Chem.MolFromSmarts("c1cc(-c2c([OX2])c(=O)c3ccccc3o2)ccc1")
     if not mol.HasSubstructMatch(core_pattern):
          return False, "No benzopyran-4-one core structure found"
 
@@ -32,6 +33,5 @@ def is_anthoxanthin(smiles: str):
     num_methoxys = len(mol.GetSubstructMatches(Chem.MolFromSmarts("OC")))
     if num_hydroxyls == 0 and num_methoxys == 0:
       return False, "No hydroxyl or methoxy groups found"
-
-
-    return True, "Benzopyran-4-one core structure with hydroxyl and/or methoxy and additional aromatic ring found"
+    
+    return True, f"Benzopyran-4-one core structure with {num_hydroxyls} hydroxyl and {num_methoxys} methoxy group(s) found"
