@@ -10,8 +10,7 @@ def is_aliphatic_nitrile(smiles: str):
     """
     Determines if a molecule is an aliphatic nitrile based on its SMILES string.
     An aliphatic nitrile is any nitrile derived from an aliphatic compound,
-    meaning the nitrile group (-C#N) is attached to a non-aromatic, non-ring carbon atom
-    that is connected to at least one sp3-hybridized, non-aromatic carbon atom.
+    meaning the nitrile group (-C#N) is attached to an aliphatic (sp3-hybridized, non-aromatic) carbon atom.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -43,33 +42,38 @@ def is_aliphatic_nitrile(smiles: str):
         nitrile_c = mol.GetAtomWithIdx(nitrile_c_idx)
         nitrile_n = mol.GetAtomWithIdx(nitrile_n_idx)
 
-        # Check if nitrile carbon is aromatic or in a ring
-        if nitrile_c.GetIsAromatic() or nitrile_c.IsInRing():
-            continue  # Nitrile carbon is aromatic or in a ring, not an aliphatic nitrile
-
         # Get neighbors of the nitrile carbon atom (exclude the nitrogen)
         neighbors = [atom for atom in nitrile_c.GetNeighbors() if atom.GetIdx() != nitrile_n_idx]
 
-        # If nitrile carbon has no other neighbors, it's a terminal nitrile (e.g., hydrogen cyanide)
+        # If nitrile carbon has no other neighbors, it's a terminal atom (unlikely but check)
         if not neighbors:
             continue  # No adjacent atom to nitrile carbon other than nitrogen
 
         # Check if the adjacent atom to nitrile carbon is:
         # - A carbon atom
         # - Not aromatic
-        # - sp3-hybridized (indicative of aliphatic nature)
+        # - sp3 hybridized
+        # - Not double or triple bonded to nitrile carbon
         for neighbor in neighbors:
             # Check if neighbor is a carbon atom
             if neighbor.GetAtomicNum() != 6:
-                continue  # Neighbor is not a carbon atom
+                continue  # Not a carbon atom
 
             # Check if neighbor is aromatic
             if neighbor.GetIsAromatic():
-                continue  # Neighbor is aromatic, skip
+                continue  # Neighbor is aromatic
 
-            # Check if neighbor is sp3-hybridized
-            if neighbor.GetHybridization() != Chem.HybridizationType.SP3:
-                continue  # Neighbor is not sp3-hybridized
+            # Check hybridization of neighbor (should be sp3)
+            if neighbor.GetHybridization() != Chem.rdchem.HybridizationType.SP3:
+                continue  # Neighbor is not sp3 hybridized
+
+            # Check bond type between nitrile carbon and neighbor
+            bond = mol.GetBondBetweenAtoms(nitrile_c_idx, neighbor.GetIdx())
+            if bond is None:
+                continue  # No bond found (should not happen)
+
+            if bond.GetBondType() != Chem.rdchem.BondType.SINGLE:
+                continue  # Bond is not a single bond
 
             # Passed all checks; nitrile is attached to an aliphatic carbon
             has_aliphatic_nitrile = True
