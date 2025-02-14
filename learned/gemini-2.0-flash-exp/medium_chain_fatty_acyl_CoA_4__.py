@@ -22,7 +22,7 @@ def is_medium_chain_fatty_acyl_CoA_4__(smiles: str):
 
     # SMARTS pattern for the core CoA structure (more generalized)
     # This pattern focuses on key functional groups: pantetheine, pyrophosphate, ribose-adenine
-    coa_pattern = Chem.MolFromSmarts("NCC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H](O)1)n1cnc2c(N)ncnc12") # Removed specific stereochemistry
+    coa_pattern = Chem.MolFromSmarts("NCC(=O)CCNC(=O)[C](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C]1O[C]([C](O)[C](O)1)n1cnc2c(N)ncnc12") # Removed specific stereochemistry
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "CoA substructure not found"
     
@@ -41,25 +41,36 @@ def is_medium_chain_fatty_acyl_CoA_4__(smiles: str):
     # Count the carbons in acyl chain (excluding the carbonyl carbon)
     acyl_chain_start_atom_idx = acyl_chain_matches[0][2]  # Third atom in the match (carbon attached to sulfur)
     
-    # Get the heavy atoms attached to the acyl carbon, and traverse the chain
-    chain_carbons = 0
-    queue = [acyl_chain_start_atom_idx]
-    visited = set()
-    while queue:
-       current = queue.pop(0)
-       if current in visited:
-           continue
-       visited.add(current)
-       atom = mol.GetAtomWithIdx(current)
-       if atom.GetAtomicNum() == 6:
-           chain_carbons+=1
-           for neighbor in atom.GetNeighbors():
-               if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:
-                   queue.append(neighbor.GetIdx())
+    # Function to count carbons in the acyl chain
+    def count_chain_carbons(mol, start_atom_idx):
+      
+        carbons = 0
+        
+        queue = [start_atom_idx]
+        visited = set()
+        
+        while queue:
+          current_atom_idx = queue.pop(0)
+          
+          if current_atom_idx in visited:
+            continue
+          visited.add(current_atom_idx)
 
+          current_atom = mol.GetAtomWithIdx(current_atom_idx)
+          
+          if current_atom.GetAtomicNum() == 6:
+            carbons += 1
+            for neighbor in current_atom.GetNeighbors():
+               if neighbor.GetAtomicNum() == 6:
+                queue.append(neighbor.GetIdx())
+        return carbons
+            
+    chain_carbons = count_chain_carbons(mol,acyl_chain_start_atom_idx)
+    
+    
     if  chain_carbons < 6 or chain_carbons > 12:
            return False, f"Acyl chain has {chain_carbons} carbons, must be between 6 and 12"
-
+           
     # Verify the total charge of -4 using the formal charges of the atoms
     total_charge = 0
     for atom in mol.GetAtoms():
