@@ -19,10 +19,10 @@ def is_polypyrrole(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return None, None  # Invalid SMILES, return None, None
+        return False, "Invalid SMILES string"
     
-    # Define the pyrrole substructure using SMARTS
-    pyrrole_smarts = "[nX1]1[cX4][cX4][cX4][cX4]1" # Modified SMARTS to find a pyrrole ring
+    # Define the pyrrole substructure using SMARTS (relaxed version)
+    pyrrole_smarts = "[n]1ccccc1"
     pyrrole_pattern = Chem.MolFromSmarts(pyrrole_smarts)
 
     # Count the number of pyrrole rings
