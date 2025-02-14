@@ -7,7 +7,7 @@ Classifies: CHEBI:28096 4'-hydroxyflavanone
 from rdkit import Chem
 from rdkit.Chem import AllChem
 
-def is_4_hydroxyflavanone(smiles: str):
+def is_4__hydroxyflavanone(smiles: str):
     """
     Determines if a molecule is a 4'-hydroxyflavanone based on its SMILES string.
     A 4'-hydroxyflavanone has a flavanone core with a hydroxy substituent at position 4'.
@@ -36,16 +36,15 @@ def is_4_hydroxyflavanone(smiles: str):
     if not hydroxy_match:
         return False, "No hydroxy group at position 4'"
 
-    # Get atom indices of matched hydroxy group
-    hydroxy_atom_idx = hydroxy_match[0][3]
+    # Get atom indices of matched hydroxy groups
+    hydroxy_atom_indices = [match[3] for match in hydroxy_match]
 
-    # Check if hydroxy group is connected to flavanone core at position 4'
+    # Check if at least one hydroxy group is connected to flavanone core at position 4'
     flavor_core_ring = mol.GetRingInfo().BondRings()[0]
-    for bond in mol.GetBonds():
-        if bond.GetBeginAtomIdx() in flavor_core_ring and bond.GetEndAtomIdx() == hydroxy_atom_idx:
-            if bond.GetBondType() == Chem.BondType.SINGLE:
-                return True, "Contains flavanone core with hydroxy group at position 4'"
-            else:
-                return False, "Hydroxy group not connected via single bond"
+    for hydroxy_idx in hydroxy_atom_indices:
+        for bond in mol.GetBonds():
+            if bond.GetBeginAtomIdx() in flavor_core_ring and bond.GetEndAtomIdx() == hydroxy_idx:
+                if bond.GetBondType() == Chem.BondType.SINGLE:
+                    return True, "Contains flavanone core with at least one hydroxy group at position 4'"
 
-    return False, "Hydroxy group not connected to flavanone core at position 4'"
+    return False, "No hydroxy group connected to flavanone core at position 4'"
