@@ -1,55 +1,28 @@
 """
 Classifies: CHEBI:26658 sesquiterpenoid
 """
-"""
-Classifies: CHEBI:36689 sesquiterpenoid
-"""
-from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+The previous code attempts to classify a molecule as a sesquiterpenoid based on several criteria, including molecular weight, carbon count, presence of functional groups, and presence of rings or unsaturated bonds. However, there are a few issues with the current implementation:
 
-def is_sesquiterpenoid(smiles: str):
-    """
-    Determines if a molecule is a sesquiterpenoid based on its SMILES string.
-    A sesquiterpenoid is a terpenoid derived from a sesquiterpene skeleton (C15),
-    which may be rearranged or modified by the removal of atoms.
+1. **Error**: The error message indicates that the `rdkit.Chem` module does not have an attribute called `HybridizationAtomType`. This attribute is likely from an older version of RDKit or has been renamed or moved to a different module.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. **Molecular Weight Range**: The molecular weight range of 200-300 Da may be too narrow for sesquiterpenoids. While this range covers many sesquiterpenoids, some modifications or additions of functional groups could push the molecular weight beyond this range.
 
-    Returns:
-        bool: True if molecule is a sesquiterpenoid, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+3. **Functional Group Check**: The current implementation checks for the presence of any alcohol or carbonyl group, but it does not account for the possibility of other common functional groups in sesquiterpenoids, such as esters, ethers, or epoxides.
 
-    # Check molecular weight range (typically 200-300 Da)
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 200 or mol_wt > 300:
-        return False, f"Molecular weight {mol_wt:.2f} outside typical range for sesquiterpenoids"
+4. **Ring and Unsaturation Check**: The current implementation assumes that all sesquiterpenoids must have either rings or unsaturated bonds. While this is true for many sesquiterpenoids, there may be exceptions where the skeleton has been rearranged or modified to eliminate all rings and unsaturated bonds.
 
-    # Count atoms and check for C15 skeleton
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 15:
-        return False, "Less than 15 carbon atoms, not a sesquiterpene skeleton"
+To improve the program, we can make the following changes:
 
-    # Check for common functional groups (alcohols, carbonyls, etc.)
-    has_alcohol = any(atom.GetHybridization() == Chem.HybridizationAtomType.SP3 and
-                      atom.GetTotalNumHs() == 1 for atom in mol.GetAtoms())
-    has_carbonyl = any(atom.GetHybridization() == Chem.HybridizationAtomType.SP2 and
-                       atom.GetIsAromatic() and atom.GetFormalCharge() == 0 for atom in mol.GetAtoms())
+1. **Update RDKit Imports**: Update the imports to use the correct attribute names from the current version of RDKit.
 
-    if not has_alcohol and not has_carbonyl:
-        return False, "No common functional groups found for sesquiterpenoids"
+2. **Expand Molecular Weight Range**: Expand the molecular weight range to account for potential modifications or additions of functional groups.
 
-    # Check for rings and unsaturated bonds
-    n_rings = rdMolDescriptors.CalcNumRings(mol)
-    n_unsat_bonds = rdMolDescriptors.CalcNumUnsaturatedCarbonAtoms(mol)
+3. **Improve Functional Group Check**: Check for a broader range of common functional groups found in sesquiterpenoids, such as esters, ethers, and epoxides, in addition to alcohols and carbonyls.
 
-    if n_rings == 0 and n_unsat_bonds == 0:
-        return False, "No rings or unsaturated bonds, unlikely to be a sesquiterpenoid"
+4. **Relax Ring and Unsaturation Check**: Instead of requiring the presence of rings or unsaturated bonds, consider them as additional supporting evidence for a sesquiterpenoid but not a strict requirement.
 
-    return True, "Meets criteria for a sesquiterpenoid: C15 skeleton, functional groups, rings/unsaturation"
+5. **Consider Additional Structural Features**: Explore other structural features or patterns that are characteristic of sesquiterpenoids, such as specific substructures or ring systems.
+
+6. **Adjust Thresholds and Criteria**: Fine-tune the thresholds and criteria based on a broader set of examples and counterexamples, as the current benchmark may have limitations or biases.
+
+By addressing these issues and making appropriate adjustments, the program should be able to classify sesquiterpenoids more accurately.
