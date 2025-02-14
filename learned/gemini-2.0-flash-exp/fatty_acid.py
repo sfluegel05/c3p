@@ -3,8 +3,6 @@ Classifies: CHEBI:35366 fatty acid
 """
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
-from rdkit.Chem import Draw
-
 
 def is_fatty_acid(smiles: str):
     """
@@ -27,80 +25,73 @@ def is_fatty_acid(smiles: str):
     # 1. Check for carboxylic acid group (-COOH)
     carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
     carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
-    if not carboxylic_acid_matches:
-         return False, "Must have at least one carboxylic acid group"
-         
-    # 2. Check for common atoms and a main chain composed of C,H and possibly O.
+    if len(carboxylic_acid_matches) != 1:
+         return False, "Must have exactly one carboxylic acid group"
+
+
+    # 2. Check for aliphatic nature (mostly C and H) and allowed substituents
     allowed_atoms = [1, 6, 7, 8, 9, 15, 16, 17, 35, 53]  # H, C, N, O, F, P, S, Cl, Br, I
-    main_chain_atoms = [6,1,8]
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() not in allowed_atoms:
             return False, "Non-allowed atoms present"
-
-    # 3. Check number of carbons - should have at least 4 in the main chain
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 4:
-         return False, "Chain too short to be a fatty acid"
-    
-    # 4. Analyze the longest chain (as a proxy for main chain)
-    longest_chain_atoms = []
-    max_chain_len = 0;
-    for bond in mol.GetBonds():
-        a1 = bond.GetBeginAtom().GetIdx()
-        a2 = bond.GetEndAtom().GetIdx()
         
-        if bond.GetBeginAtom().GetAtomicNum() == 6 and bond.GetEndAtom().GetAtomicNum() == 6:
-             
-                visited = []
-                
-                def find_chain(current_atom_index, chain, visited):
-                    visited.append(current_atom_index)
-                    max_len = len(chain);
-                    max_chain = chain.copy()
+    # Count number of carbons
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
 
-                    neighbors = [n.GetIdx() for n in mol.GetAtomWithIdx(current_atom_index).GetNeighbors()]
-                    
-                    for neighbor_idx in neighbors:
-                        neighbor = mol.GetAtomWithIdx(neighbor_idx)
-                        if neighbor.GetAtomicNum() == 6 and neighbor_idx not in visited:
-                            
-                             new_chain, new_max_len = find_chain(neighbor_idx, chain+[neighbor_idx], visited.copy());
-                             if new_max_len > max_len:
-                                max_len = new_max_len;
-                                max_chain = new_chain
-                    return max_chain, max_len;
+    # 3. Check for chain length (min 4 carbons)
+    if c_count < 4 :
+        return False, "Chain too short to be a fatty acid"
 
-                chain1, len1 = find_chain(a1, [a1], visited.copy())
-                if len1 > max_chain_len:
-                     max_chain_len = len1;
-                     longest_chain_atoms = chain1
+    # 4. Branching Check - limit to 3 methyl or ethyl branches
+    methyl_branch = Chem.MolFromSmarts("[CX4]([H])([H])([H])")
+    ethyl_branch = Chem.MolFromSmarts("[CX4]([H])([H])([CX4][H])")
+    branch_count = len(mol.GetSubstructMatches(methyl_branch)) + len(mol.GetSubstructMatches(ethyl_branch))
+    if branch_count > 3:
+        return False, "Too many branches for a typical fatty acid"
 
-                chain2, len2 = find_chain(a2, [a2], visited.copy())
-                if len2 > max_chain_len:
-                     max_chain_len = len2;
-                     longest_chain_atoms = chain2
-
-    if max_chain_len < 4:
-         return False, "Chain too short to be a fatty acid"
-    
-    # 5. Check for branches (max 4 non-hydrogen branch points on the main chain) - use all other atoms as branch points
-    non_main_chain_atoms = 0;
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() != 1 and atom.GetIdx() not in longest_chain_atoms:
-             non_main_chain_atoms +=1;
-    if non_main_chain_atoms > 4:
-         return False, "Too many branches for a typical fatty acid"
-
-    # 6. Check for rings that are *part of the main chain*. If rings are found, the atoms must be part of the chain.
+    # 5. Rings: check that if present, they are mostly made of carbons and that the carbon in the chain is not part of an "aromatic-like" cycle
     ring_info = mol.GetRingInfo()
     if ring_info.NumRings() > 0:
          for ring in ring_info.AtomRings():
-              is_chain_ring = True;
+              is_embedded = True
               for atom_index in ring:
-                   if atom_index not in longest_chain_atoms:
-                        is_chain_ring = False;
-                        break;
-              if not is_chain_ring:
-                    return False, "Rings cannot be outside the main carbon chain."
+                    atom = mol.GetAtomWithIdx(atom_index)
+                    if atom.GetAtomicNum() != 6:
+                         is_embedded = False
+                         break;
+                    neighbors = [n.GetIdx() for n in atom.GetNeighbors()]
+                    carbon_count = 0
+                    for n_idx in neighbors:
+                        if mol.GetAtomWithIdx(n_idx).GetAtomicNum() == 6:
+                             carbon_count += 1;
+                    if carbon_count < 2: # if the carbon is not part of a chain, it's not an issue
+                        is_embedded = False
+                        break
+              if is_embedded: # if it is a carbon ring
+                    
+                    is_aromatic = True
+                    for atom_index in ring:
+                          atom = mol.GetAtomWithIdx(atom_index)
+                          if not atom.GetIsAromatic():
+                               is_aromatic=False
+                               break
+
+                    if is_aromatic:
+                        return False, "Aromatic ring found in the carbon chain"
+    
+    # 6. Check for unsaturation (double or triple bonds)
+    double_bond_pattern = Chem.MolFromSmarts("C=C")
+    triple_bond_pattern = Chem.MolFromSmarts("C#C")
+    has_double_bond = mol.HasSubstructMatch(double_bond_pattern)
+    has_triple_bond = mol.HasSubstructMatch(triple_bond_pattern)
+
+    # 7. Molecular weight check (minimum of 100, max of 1000)
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 100:
+       return False, "Molecular weight too low to be a fatty acid"
+
+    if mol_wt > 1000:
+       return False, "Molecular weight too high to be a fatty acid"
+
 
     return True, "Meets criteria for a fatty acid"
