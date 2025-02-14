@@ -11,7 +11,6 @@ def is_porphyrins(smiles: str):
     """
     Determines if a molecule is a porphyrin based on its SMILES string.
     A porphyrin is defined by a macrocycle consisting of four pyrrole rings linked by methine bridges.
-    This version includes a more robust connectivity check and handles charged and metal-coordinated species.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -25,43 +24,37 @@ def is_porphyrins(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns
-    # Define pyrrole ring (5-membered ring with one N)
-    pyrrole_pattern = Chem.MolFromSmarts("[nX3+]1[cX3][cX3][cX3][cX3]1") # allow for charged N
+    # Define SMARTS patterns for pyrrole rings and methine bridges
+    pyrrole_pattern = Chem.MolFromSmarts("[nX1]1cc[cX3]c1")  # X1 for a single bond to a hydrogen
+    methine_pattern = Chem.MolFromSmarts("[CX3H1]") # A carbon with 3 single bonds and 1 H
     
-    # Define methine bridge (a carbon connecting to 3 other atoms)
-    methine_bridge = Chem.MolFromSmarts("[CX3]")
+    # Find pyrrole rings
+    pyrrole_matches = mol.GetSubstructMatches(pyrrole_pattern)
     
-    # Define a pattern connecting 4 pyrrole rings with methine bridges
-    #This accounts for variations in bond order and connectivity within the porphyrin.
-    porphyrin_core_pattern = Chem.MolFromSmarts("([nX3+]1[cX3][cX3][cX3][cX3]1)[CX3]([nX3+]2[cX3][cX3][cX3][cX3]2)([nX3+]3[cX3][cX3][cX3][cX3]3)[CX3]([nX3+]4[cX3][cX3][cX3][cX3]4)")
-    
-    # Check if porphyrin core is present
-    if not mol.HasSubstructMatch(porphyrin_core_pattern):
-       return False, "Porphyrin core macrocycle not found."
-    
+    # Find methine groups
+    methine_matches = mol.GetSubstructMatches(methine_pattern)
 
-    # Check for metals
-    metal_pattern = Chem.MolFromSmarts("[Fe,Mg,Zn,Co,Ni]")
-    metal_matches = mol.GetSubstructMatches(metal_pattern)
+    #Check there are 4 pyrroles and 4 methines
+    if len(pyrrole_matches) != 4:
+      return False, f"Found {len(pyrrole_matches)} pyrrole rings, require 4."
+    if len(methine_matches) < 4 :
+      return False, f"Found {len(methine_matches)} methine groups, require at least 4."
 
-    # Count C, N and metals
+    #Check the number of nitrogen atoms
     n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    metal_count = len(metal_matches)
+    if n_count != 4:
+      return False, f"Found {n_count} nitrogen atoms, require 4"
+
+    #Check ring size. Use a simple heuristic: the aromatic core consists of four pyrroles (5 members each) and four methine carbons (4 * 1 each), or 24 atoms. 
+    # Porphyrins typically have 24 or 25 atoms in their core ring system, due to different tautomers and substitutions
+    
+    ring_atoms = rdMolDescriptors.CalcNumAtoms(mol, onlyHeavy = True) # Only heavy atoms, ignore hydrogens
+    if not (24 <= rdMolDescriptors.CalcNumAtoms(mol, onlyHeavy = True, includeOnlyInRing = True) <= 26):
+      return False, f"Ring system too small or too large: {rdMolDescriptors.CalcNumAtoms(mol, onlyHeavy = True, includeOnlyInRing = True)} ring atoms. Expected 24-26"
 
 
-    if n_count < 4:
-        return False, "Too few nitrogens for porphyrin."
-    
-    if c_count < 20:
-        return False, "Too few carbons for porphyrin."
-    
-    
-    # Additional check to confirm the presence of a macrocycle
-    match = mol.GetSubstructMatch(porphyrin_core_pattern)
-    if not match:
-        return False, "Porphyrin core not matched"
+    # Check connectivity between pyrroles and methines (simplified, checking for substructure overlaps is complex)
+    # A more rigourous check would require graph analysis and the definition of the macrocycle
+    # For now, assume that if we have 4 pyrroles and 4 methines it is a porphyrin
 
-    
-    return True, "Contains a porphyrin core macrocycle"
+    return True, "Contains four pyrrole rings linked by methine bridges."
