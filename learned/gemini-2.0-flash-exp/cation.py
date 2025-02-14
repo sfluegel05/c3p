@@ -18,28 +18,27 @@ def is_cation(smiles: str):
 
     # Handle the simple proton case first
     if smiles == "[H+]":
-         return True, "Single proton cation"
+        return True, "Single proton cation"
 
     #split into molecules, handle each separately
     smiles_list = smiles.split(".")
     
-    is_overall_cation = False
+    is_cation = False
     reason = "Not a cation"
 
     for s in smiles_list:
-
         mol = Chem.MolFromSmiles(s)
         if mol is None:
-            return False, "Invalid SMILES string"
+           return False, "Invalid SMILES string"
 
-        net_charge = 0
+        has_positive_charge = False
         for atom in mol.GetAtoms():
-            net_charge += atom.GetFormalCharge()
+            if atom.GetFormalCharge() > 0:
+                has_positive_charge = True
+                break # No need to check further atoms in this molecule
 
-        if net_charge > 0:
-              is_overall_cation = True
-              reason = "Contains at least one positive charge and no negative charges."
-        elif net_charge < 0:
-             return False, "Not a cation, net negative charge."
-    
-    return is_overall_cation, reason
+        if has_positive_charge:
+          is_cation = True
+          reason = "Contains at least one positive charge"
+
+    return is_cation, reason
