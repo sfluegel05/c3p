@@ -1,52 +1,26 @@
 """
 Classifies: CHEBI:33913 corrinoid
 """
-"""
-Classifies: CHEBI:27042 corrinoid
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+The previous program attempted to classify corrinoids based on the following criteria:
 
-def is_corrinoid(smiles: str):
-    """
-    Determines if a molecule is a corrinoid based on its SMILES string.
-    A corrinoid is a derivative of the corrin nucleus, which contains four reduced or partly reduced pyrrole rings
-    joined in a macrocycle by three =C- groups and one direct carbon-carbon bond linking alpha positions.
+1. Presence of a corrin macrocycle, consisting of four reduced or partially reduced pyrrole rings joined by three =C- groups and one direct carbon-carbon bond linking alpha positions.
+2. At least four reduced pyrrole rings.
+3. Exactly one direct carbon-carbon bond linking alpha positions.
+4. Presence of cobalt coordination.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+However, based on the outcomes provided, it seems that the program failed to correctly classify some corrinoid structures. Let's analyze the reasons for the failures and suggest improvements:
 
-    Returns:
-        bool: True if molecule is a corrinoid, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Look for corrin macrocycle pattern
-    corrin_pattern = Chem.MolFromSmarts("[n&r4,r5,r6]1[n&r4,r5,r6][c&r4,r5,r6][c&r4,r5,r6][n&r4,r5,r6][c&r4,r5,r6][c&r4,r5,r6][n&r4,r5,r6]1")
-    if not mol.HasSubstructMatch(corrin_pattern):
-        return False, "No corrin macrocycle found"
-    
-    # Count number of reduced pyrrole rings
-    reduced_pyrrole_pattern = Chem.MolFromSmarts("[Nr4,r5,r6]")
-    reduced_pyrroles = len(mol.GetSubstructMatches(reduced_pyrrole_pattern))
-    if reduced_pyrroles < 4:
-        return False, f"Found {reduced_pyrroles} reduced pyrrole rings, need at least 4"
-    
-    # Look for three =C- groups and one direct C-C bond linking alpha positions
-    alpha_link_pattern = Chem.MolFromSmarts("[c&r4,r5,r6][c&r4,r5,r6]")
-    alpha_links = mol.GetSubstructMatches(alpha_link_pattern)
-    if len(alpha_links) != 1:
-        return False, "Incorrect number of alpha-linked carbon atoms"
-    
-    # Check for cobalt coordination
-    cobalt_pattern = Chem.MolFromSmarts("[Co]")
-    if not mol.HasSubstructMatch(cobalt_pattern):
-        return False, "No cobalt coordination found"
-    
-    return True, "Contains corrin macrocycle with 4 reduced pyrrole rings, 3 =C- groups, 1 C-C alpha link, and cobalt coordination"
+1. **Missed structures:**
+   - **precorrin-6X, precorrin-3B, cobalt-precorrin-5B**: These structures were missed because they do not contain the corrin macrocycle pattern. However, they are precursors or intermediates in the biosynthesis of corrinoids. To account for these structures, the program could be modified to include additional patterns or substructure searches for precorrin and cobalt-precorrin structures.
+
+2. **Incorrect number of alpha-linked carbon atoms:**
+   - **methylcobalamin, cyanopseudocoenzyme B12, adenosylpseudocoenzyme B12, adenosylcobinamide, cob(II)inamide, cob(I)alamin, 5-hydroxybenzimidazolylcob(I)amide**: These structures were missed because they do not have exactly one direct carbon-carbon bond linking alpha positions. Instead, they have additional substituents or modifications that alter the alpha-linkage pattern. To handle these cases, the program could be modified to allow for variations in the alpha-linkage pattern or to consider the overall structural similarity to the corrin nucleus, rather than strictly enforcing the alpha-linkage rule.
+
+3. **Other potential improvements:**
+   - Consider including additional patterns or substructure searches for common corrinoid modifications, such as the presence of specific substituents or functional groups.
+   - Incorporate molecular weight or other molecular descriptors to further refine the classification criteria.
+   - Explore the use of machine learning techniques or similarity-based methods for more robust classification of corrinoids and their derivatives.
+
+It's important to note that the provided benchmark may not be perfect, and there could be occasional or systematic mistakes. If the classifications made by your program align with your understanding of the corrinoid class, you can choose to ignore outliers while providing a reasoned explanation.
+
+Overall, the previous program took a reasonable approach by searching for key structural features of corrinoids. However, the specific patterns and criteria used may need to be adjusted or expanded to accommodate the diversity of corrinoid structures and their biosynthetic precursors or derivatives.
