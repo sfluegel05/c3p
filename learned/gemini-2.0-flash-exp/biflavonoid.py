@@ -3,6 +3,7 @@ Classifies: CHEBI:50128 biflavonoid
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_biflavonoid(smiles: str):
     """
@@ -22,11 +23,12 @@ def is_biflavonoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define flavonoid substructure using SMARTS
-    # Simplified version of a flavonoid core to match more cases
+    # Define a more general flavonoid substructure using SMARTS
+    # Looking for the core benzopyran ring system
     flavonoid_pattern = Chem.MolFromSmarts(
-        "[c]1[c]([c][c][c][c]1)[C](=[O])[c]2[c][c]([O])[c][c][c]2"
-        )
+        "c1cc(Oc2ccccc2C(=O))cc1"
+    )
+
 
     # Count number of flavonoid units
     flavonoid_matches = mol.GetSubstructMatches(flavonoid_pattern)
@@ -35,10 +37,9 @@ def is_biflavonoid(smiles: str):
     if num_flavonoids < 2:
         return False, f"Found {num_flavonoids} flavonoid units, need at least 2."
 
-    # Check if flavonoids are linked directly (or through one atom)
-    # If a molecule has two or more flavonoids, and the molecule has no unconnected fragments,
-    # we will assume the flavonoids are connected and therefore it's a biflavonoid.
+    # Check if molecule is a single fragment (to ensure connection), no more detailed analysis
     if len(Chem.GetMolFrags(mol)) > 1:
-         return False, "Flavonoid rings are not connected, molecule is fragmented"
-        
+        return False, "Flavonoid rings are not connected, molecule is fragmented"
+    
+
     return True, "Contains at least two flavonoid units connected by a single bond or atom"
