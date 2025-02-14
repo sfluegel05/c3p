@@ -38,22 +38,18 @@ def is_anilide(smiles: str):
     # Check if aniline and amide groups are connected
     connected = False
     for aniline_match in aniline_matches:
+        aniline_atom = aniline_match[-1]  # Last atom in the aniline match
         for amide_match in amide_matches:
-            aniline_atom = aniline_match[-1]  # Last atom in the aniline match
             amide_atom = amide_match[2]  # Nitrogen atom in the amide match
             if mol.GetBondBetweenAtoms(aniline_atom, amide_atom) is not None:
                 connected = True
                 break
 
     # Check if the aniline ring is aromatic
-    aniline_ring = mol.GetAtomWithIdx(aniline_match[0]).GetIsAromatic()
+    aniline_ring = any(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in aniline_match)
 
     # Check if the amide group is part of an aromatic system
-    amide_ring = False
-    for atom in amide_match:
-        if mol.GetAtomWithIdx(atom).GetIsAromatic():
-            amide_ring = True
-            break
+    amide_ring = any(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in amide_match)
 
     # Check for acylation pattern (C(=O)N-Ar)
     acylation_pattern = Chem.MolFromSmarts("C(=O)Nc")
