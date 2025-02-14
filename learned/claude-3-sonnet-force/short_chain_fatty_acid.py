@@ -34,19 +34,31 @@ def is_short_chain_fatty_acid(smiles: str):
         return False, "No carboxylic acid group found"
     
     # Check for aliphatic chain (no rings, no heteroatoms except O)
-    aliphatic_pattern = Chem.MolFromSmarts("[CH2,CH3,CH,C](C)(C)(C)")
-    aliphatic_matches = mol.GetSubstructMatches(aliphatic_pattern)
+    aliphatic_pattern = Chem.MolFromSmarts("[CH2,CH3](C)(C)")
+    aliphatic_atoms = mol.GetSubstructMatches(aliphatic_pattern)
     non_aliphatic_atoms = [atom.GetSymbol() for atom in mol.GetAtoms() if atom.GetSymbol() not in ['C', 'H', 'O']]
-    if not aliphatic_matches or non_aliphatic_atoms:
+    if not aliphatic_atoms or non_aliphatic_atoms:
         return False, "Molecule is not aliphatic"
     
-    # Count carbon chain length
-    carbon_chain = max([len(Chem.FragmentOnSomething(mol, atom).GetAtoms()) for atom in aliphatic_matches])
-    if carbon_chain >= 6:
+    # Find the longest carbon chain
+    longest_chain = 0
+    for atom in aliphatic_atoms:
+        chain_length = 1
+        visited = set()
+        queue = [atom]
+        while queue:
+            current = queue.pop(0)
+            if current not in visited:
+                visited.add(current)
+                neighbors = [n.GetIdx() for n in mol.GetAtomWithIdx(current).GetNeighbors() if n.GetSymbol() == 'C']
+                chain_length += len(neighbors)
+                queue.extend(neighbors)
+        longest_chain = max(longest_chain, chain_length)
+    if longest_chain >= 6:
         return False, "Carbon chain is too long (>= C6)"
     
     # Check for non-hydrocarbon substituents
-    non_h_substituents = [atom for atom in mol.GetAtoms() if atom.GetSymbol() == 'C' and sum(n.GetSymbol() != 'H' for n in atom.GetNeighbors()) > 2]
+    non_h_substituents = [atom for atom in mol.GetAtoms() if atom.GetSymbol() != 'H' and sum(n.GetSymbol() != 'H' and n.GetSymbol() != 'C' and n.GetSymbol() != 'O' for n in atom.GetNeighbors()) > 0]
     if non_h_substituents:
         return False, "Molecule contains non-hydrocarbon substituents"
     
