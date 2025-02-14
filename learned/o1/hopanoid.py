@@ -24,11 +24,12 @@ def is_hopanoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the hopane skeleton without stereochemistry
-    hopane_smiles = "CC(C)C1CCC2(C)C1CCC3(C)C2CCC4(C)C3CCCC5C4CCCCC5"
-    hopane_mol = Chem.MolFromSmiles(hopane_smiles)
+    # Define the hopane skeleton SMARTS pattern (pentacyclic ring system)
+    # The pattern represents five fused rings: four cyclohexane and one cyclopentane
+    hopane_smarts = "[#6]1[#6][#6][#6]2[#6]([#6]1)[#6][#6][#6]3[#6]([#6]2)[#6][#6][#6]4[#6]([#6]3)[#6][#6][#6]5[#6]([#6]4)[#6][#6][#6]5"
+    hopane_mol = Chem.MolFromSmarts(hopane_smarts)
     if hopane_mol is None:
-        return False, "Invalid hopane skeleton SMILES"
+        return False, "Invalid hopane skeleton SMARTS"
 
     # Use substructure matching without considering stereochemistry
     if not mol.HasSubstructMatch(hopane_mol):
