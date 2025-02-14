@@ -2,12 +2,13 @@
 Classifies: CHEBI:37554 fatty acyl-CoA
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_fatty_acyl_CoA(smiles: str):
     """
     Determines if a molecule is a fatty acyl-CoA based on its SMILES string.
-    A fatty acyl-CoA results from the formal condensation of the thiol group
-    of coenzyme A with the carboxy group of any fatty acid.
+    Fatty acyl-CoA is an acyl-CoA derived from the condensation of
+    coenzyme A with a fatty acid.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -17,24 +18,23 @@ def is_fatty_acyl_CoA(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES string to an RDKit molecule object
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for the presence of a thioester linkage C(=O)S
+    # SMARTS pattern for the thioester linkage (C(=O)S) between acyl group and CoA
     thioester_pattern = Chem.MolFromSmarts("C(=O)S")
     if not mol.HasSubstructMatch(thioester_pattern):
-        return False, "No thioester linkage found between fatty acid and CoA"
+        return False, "No thioester linkage found"
 
-    # Try to identify a long carbon chain (fatty acyl) pattern allowing flexibility
-    # Acknowledging the possibility of unsaturation, branching, or other functional groups
-    fatty_acyl_pattern = Chem.MolFromSmarts("C(=O)[CX4;H2,CX3][CX4,CX3]")
+    # Enhanced SMARTS pattern for a fatty acyl chain, allowing for unsaturations
+    fatty_acyl_pattern = Chem.MolFromSmarts("C(=O)[C;!R][C;!R][C;!R][C;!R][C;!R]")  # At least a few carbons beyond the carbonyl
     if not mol.HasSubstructMatch(fatty_acyl_pattern):
         return False, "No suitable fatty acyl chain found"
 
-    # Define a more comprehensive pattern for coenzyme A
-    coa_pattern = Chem.MolFromSmarts("NCC(=O)[C@H](O)C(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1OP(O)(O)=O")
+    # Simplified SMARTS pattern for coenzyme A structure, focusing on essential features
+    coa_pattern = Chem.MolFromSmarts("C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n2cnc3c(N)ncnc23")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No CoA structure found"
 
