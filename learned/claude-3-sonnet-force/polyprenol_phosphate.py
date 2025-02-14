@@ -10,6 +10,7 @@ hydroxy group of a polyprenol with 1 mol eq. of phosphoric acid.
 
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_polyprenol_phosphate(smiles: str):
     """
@@ -33,19 +34,21 @@ def is_polyprenol_phosphate(smiles: str):
     if not mol.HasSubstructMatch(phosphate_pattern):
         return False, "No phosphate group found"
 
-    # Look for linear isoprenoid chain (alternating double bonds and methyl groups)
-    isoprenoid_pattern = Chem.MolFromSmarts("[C@H](C)=C[C@H](C)C=C")
-    isoprenoid_matches = mol.GetSubstructMatches(isoprenoid_pattern)
+    # Look for prenol chain (long chain of C=C-C units)
+    prenol_pattern = Chem.MolFromSmarts("[CX3]=C[CX3]C=[CX3]")
+    prenol_matches = mol.GetSubstructMatches(prenol_pattern)
+    if len(prenol_matches) < 3:
+        return False, "Prenol chain too short or missing"
 
-    if not isoprenoid_matches:
-        return False, "No linear isoprenoid chain found"
+    # Check for hydroxyl group attached to prenol chain
+    hydroxy_pattern = Chem.MolFromSmarts("[OX2]C[CX3]=C[CX3]C=[CX3]")
+    hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
+    if not hydroxy_matches:
+        return False, "No hydroxyl group attached to prenol chain"
 
-    # Check if the isoprenoid chain is attached to the phosphate group
-    for match in isoprenoid_matches:
-        for atom_idx in match:
-            atom = mol.GetAtomWithIdx(atom_idx)
-            for neighbor in atom.GetNeighbors():
-                if neighbor.HasSubstructMatch(phosphate_pattern):
-                    return True, "Contains a linear isoprenoid chain attached to a phosphate group"
+    # Count rotatable bonds to verify long chain
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 8:
+        return False, "Prenol chain too short"
 
-    return False, "Isoprenoid chain not attached to phosphate group"
+    return True, "Contains a prenol chain with a terminal hydroxyl group condensed with phosphoric acid"
