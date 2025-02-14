@@ -26,22 +26,24 @@ def is_dihydroagarofuran_sesquiterpenoid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for dihydroagarofuran core
-    dihydroagarofuran_core = Chem.MolFromSmarts("[C@H]1[C@]2([C@H](O)[C@@H]([C@H](O)[C@@H]1O)[C@@H]2O)O")
+    dihydroagarofuran_core = Chem.MolFromSmarts("[C@H]1[C@@]2([C@H](O)[C@@H]([C@H](O)[C@@H]1O)[C@@H]2O)O")
     if not mol.HasSubstructMatch(dihydroagarofuran_core):
         return False, "No dihydroagarofuran core found"
 
-    # Check for ring system and double bond equivalents (DBE) typical of sesquiterpenoids
-    ring_info = mol.GetRingInfo()
-    num_rings = ring_info.NumRings()
-    if num_rings < 2 or num_rings > 4:
-        return False, "Number of rings not typical for sesquiterpenoids"
+    # Check for sesquiterpenoid backbone
+    sesquiterpenoid_backbone = Chem.MolFromSmarts("[C@H]1[C@H]2[C@@H]([C@@H]([C@H]([C@@H]1O)O)O)[C@@H]2O")
+    if not mol.HasSubstructMatch(sesquiterpenoid_backbone):
+        return False, "Sesquiterpenoid backbone not found"
 
-    dbe = rdMolDescriptors.CalcNumAromaticRings(mol) + rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if dbe < 3 or dbe > 7:
-        return False, "Double bond equivalents not typical for sesquiterpenoids"
+    # Check for typical substituents and modifications
+    has_acetyl_groups = any(atom.GetSmarts() == "[#6]-[#6]-[#8]-[#6]" for atom in mol.GetAtoms())
+    has_benzoyl_groups = any(atom.GetSmarts() == "[#6]-[#6]-[#8]-[#6]-[#6]" for atom in mol.GetAtoms())
 
-    # Check for common modifications/substituents (e.g., acetylation, benzoylation)
-    has_modifications = any(atom.GetSmarts() in ["[#6]-[#6]-[#8]-[#6]", "[#6]-[#6]-[#8]-[#6]-[#6]"] for atom in mol.GetAtoms())
+    # Sesquiterpenoid with dihydroagarofuran core and typical substituents/modifications
+    reason = "Contains the dihydroagarofuran core and sesquiterpenoid backbone"
+    if has_acetyl_groups:
+        reason += ", with acetyl groups"
+    if has_benzoyl_groups:
+        reason += ", with benzoyl groups"
 
-    # Sesquiterpenoid with dihydroagarofuran core, typical ring system and DBE, allowing for common modifications
-    return True, "Contains the dihydroagarofuran core and other structural features typical of dihydroagarofuran sesquiterpenoids"
+    return True, reason
