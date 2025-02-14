@@ -45,19 +45,7 @@ def is_sulfonamide(smiles: str):
            return False, "Must have exactly 2 S=O bonds"
 
 
-    # Check for C or H directly attached to the S
-    for match in matches:
-        sulfur_atom_idx = match[0]
-        sulfur_atom = mol.GetAtomWithIdx(sulfur_atom_idx)
-        s_neighbor_is_carbon_or_hydrogen = False
-        for neighbor in sulfur_atom.GetNeighbors():
-           if neighbor.GetAtomicNum() in [1, 6]:
-              s_neighbor_is_carbon_or_hydrogen = True
-        if not s_neighbor_is_carbon_or_hydrogen:
-            return False, "Sulfur atom not bonded to C or H"
-
-
-    # Check for C or H directly attached to the N
+    # Check for at least one C or H directly attached to the N
     for match in matches:
         nitrogen_atom_idx = match[1]
         nitrogen_atom = mol.GetAtomWithIdx(nitrogen_atom_idx)
@@ -65,8 +53,8 @@ def is_sulfonamide(smiles: str):
         for neighbor in nitrogen_atom.GetNeighbors():
            if neighbor.GetAtomicNum() in [1, 6]:
               n_neighbor_is_carbon_or_hydrogen = True
+              break # Found at least one carbon or hydrogen
         if not n_neighbor_is_carbon_or_hydrogen:
-            return False, "Nitrogen atom not bonded to C or H"
-
+            return False, "Nitrogen atom not bonded to at least one C or H"
 
     return True, "Contains a sulfonamide group (S(=O)2-N)"
