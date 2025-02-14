@@ -27,20 +27,24 @@ def is_mucopolysaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for uronic acid and glycosamine patterns
-    uronic_acid_pattern = Chem.MolFromSmarts("[C&R1](=O)[O-]")
+    # Look for uronic acid and glycosamine patterns (more general)
+    uronic_acid_patterns = [Chem.MolFromSmarts("[C&R1](=O)[O-]"), Chem.MolFromSmarts("[C&R1](=O)O")]
     glycosamine_pattern = Chem.MolFromSmarts("[N;R1][C;R2][C;R2][C;R2][C;R2][O;R1]")
     
-    uronic_acids = mol.GetSubstructMatches(uronic_acid_pattern)
+    uronic_acids = sum(mol.GetSubstructMatches(pat) for pat in uronic_acid_patterns)
     glycosamines = mol.GetSubstructMatches(glycosamine_pattern)
     
     # Check for alternating units
     if not uronic_acids or not glycosamines:
         return False, "No uronic acid or glycosamine units found"
     
-    # Count sulfates
+    # Look for additional features
+    acetyl_pattern = Chem.MolFromSmarts("CC(=O)O[C;R1]")
     sulfate_pattern = Chem.MolFromSmarts("[S+4](=O)(=O)(-[O-])")
+    
+    acetyl_matches = mol.GetSubstructMatches(acetyl_pattern)
     sulfate_matches = mol.GetSubstructMatches(sulfate_pattern)
+    
     n_sulfates = len(sulfate_matches)
     
     # Check for polysaccharide structure
@@ -52,5 +56,7 @@ def is_mucopolysaccharide(smiles: str):
     # Classify based on structure
     if n_sulfates > 0:
         return True, f"Contains uronic acid and glycosamine units, {n_sulfates} sulfate groups"
+    elif acetyl_matches:
+        return True, "Contains uronic acid and glycosamine units, acetylated"
     else:
         return True, "Contains uronic acid and glycosamine units in alternating pattern"
