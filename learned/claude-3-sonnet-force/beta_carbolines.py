@@ -8,7 +8,7 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
-def is_beta_carboline(smiles: str):
+def is_beta_carbolines(smiles: str):
     """
     Determines if a molecule is a beta-carboline based on its SMILES string.
     A beta-carboline is a pyridoindole containing a beta-carboline skeleton and their hydrogenated derivatives.
