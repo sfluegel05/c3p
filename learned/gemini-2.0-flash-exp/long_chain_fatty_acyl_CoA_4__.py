@@ -2,6 +2,7 @@
 Classifies: CHEBI:83139 long-chain fatty acyl-CoA(4-)
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_long_chain_fatty_acyl_CoA_4__(smiles: str):
@@ -19,20 +20,32 @@ def is_long_chain_fatty_acyl_CoA_4__(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 1. Check for CoA core structure - using a more relaxed pattern
-    # Combined SMARTS for CoA core with deprotonated phosphates
-    coa_core_pattern = Chem.MolFromSmarts("[NX2]c1nc(N)nc[n]1[C@H]1[C@@H]([C@@H]([C@H]([CH]1)OP([O-])(=O)OP([O-])(=O)O)O)O.NC(=O)CCNC(=O)[C@H](O)C(C)(C).S-C-C-N")
-
+    # 1. Check for CoA core structure, including the deprotonated phosphates
+    #  Adenosine diphosphate part (minus one phosphate): [C@@H]1(N2C3=C(C(=NC=N3)N)N=C2)O[C@H](COP([O-])(=O)OP([O-])=O)[C@H]([C@H]1O)
+    #  Pantetheine part: NCC(=O)CCNC(=O)[C@H](O)C(C)(C)
+    #  mercaptoethylamine: -S-C-C-N 
+    coa_core_pattern = Chem.MolFromSmarts("[C@H]1([NX2]c2nc(N)nc[n+]2)[C@H]([CH2X4]OP([O-])([O-])=O[OP]([O-])([O-])=O)[C@@H]([CH](O)[CH]1O)[#6]")
     if not mol.HasSubstructMatch(coa_core_pattern):
-        return False, "MISSED CoA core structure (adenosine diphosphate) not found"
-    
+        return False, "CoA core structure not found"
+        
+    pantetheine_pattern = Chem.MolFromSmarts("[#6][CX3](=[OX1])[NX3][CX4][CX3](=[OX1])[NX3][CX4][CX3](=[OX1])[C@H](O)C(C)(C)")
+    if not mol.HasSubstructMatch(pantetheine_pattern):
+        return False, "Pantetheine substructure not found"
+
     #  Check for thioester bond (-S-C(=O)-)
     thioester_pattern = Chem.MolFromSmarts("[#16][CX3](=[OX1])")
     if not mol.HasSubstructMatch(thioester_pattern):
       return False, "Thioester bond not found"
-      
-    # 2. Check for long-chain fatty acid part (more than 10 carbons)
 
+    # 2. Check for long-chain fatty acid part (more than 10 carbons, could be branched or not)
+    # This is more complex because the chain can be variable. We need at least 10 carbons.
+    # We also consider double bonds as part of the chain.
+    
+    # Look for a long carbon chain with at least 10 carbons with possible double bonds
+    long_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    if not mol.HasSubstructMatch(long_chain_pattern):
+         return False, "No long carbon chain found in the fatty acid part"
+    
     # Count the carbons in the fatty acyl chain
     fatty_acid_carbon_count = 0
     # Find the thioester bond
@@ -75,16 +88,25 @@ def is_long_chain_fatty_acyl_CoA_4__(smiles: str):
     if fatty_acid_carbon_count < 10 :
         return False, f"Fatty acid chain is too short {fatty_acid_carbon_count} carbons."
 
-    # 3. Check for 4- charge (three deprotonated phosphates). 
-    # Count the number of deprotonated phosphate groups.
+
+
+    # 3. Check for 4- charge (three deprotonated phosphates)
+    # Count number of deprotonated O atoms (charge -1) in phosphates
+    charge_count = 0
+    for atom in mol.GetAtoms():
+       if atom.GetAtomicNum() == 8: #check for Oxygen
+          if atom.GetFormalCharge() == -1:
+            charge_count += 1
+    
+    if charge_count < 6:
+      return False, f"Not enough deprotonated phosphates. Charge is {charge_count}."
+    
+    # Note, for these molecules we need to check if there are 3 phosphate groups deprotonated
     phosphate_pattern = Chem.MolFromSmarts("[P]([O-])(=O)([O-])")
     num_phosphates = len(mol.GetSubstructMatches(phosphate_pattern))
-    if num_phosphates != 3:
-        return False, f"Expected 3 deprotonated phosphate groups, found {num_phosphates}."
-        
-    mol_charge = rdMolDescriptors.CalcMolCharge(mol)
-    if mol_charge != -4:
-        return False, f"Molecule does not have -4 charge, found {mol_charge}"
+    if num_phosphates < 2:
+        return False, "Not enough deprotonated phosphates"
+
 
 
     return True, "Molecule is a long-chain fatty acyl-CoA(4-)."
