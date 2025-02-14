@@ -21,20 +21,14 @@ def is_butyrate_ester(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define the butyrate ester substructure using SMARTS pattern.
-    # Matches a butyryl group attached to an ester oxygen linked to any carbon.
-    # Also ensures that the carbon is connected to a carbonyl group via an oxygen.
-    butyrate_pattern = Chem.MolFromSmarts("CCCC(=O)O[CX3,CX4]")
+    # Matches a butyryl group attached to an ester oxygen linked to one carbon.
+    butyrate_pattern = Chem.MolFromSmarts("CCCC(=O)O[CX4]") 
+    
+    #Matches a butyrate connected to a heteroatom
+    butyrate_pattern_hetero = Chem.MolFromSmarts("CCCC(=O)O[#7,#8,#15,#16,#17]")
 
-    #Matches an ester group
-    ester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2]")
-    
-    # Check for ester presence. If not, it's not a butyrate ester
-    if not mol.HasSubstructMatch(ester_pattern):
-      return False, "No ester group found."
-    
-    # Check to see if a butyrate is connected to the ester
-    if mol.HasSubstructMatch(butyrate_pattern):
-            # Check to see if it's an anhydride, as this is structurally similar
+    if mol.HasSubstructMatch(butyrate_pattern) or mol.HasSubstructMatch(butyrate_pattern_hetero):
+            # Check to see if it's an anhydride
         anhydride_pattern = Chem.MolFromSmarts("C(=O)O[C](=O)")
         if mol.HasSubstructMatch(anhydride_pattern):
             return False, "Molecule contains an anhydride, not a butyrate ester"
