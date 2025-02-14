@@ -1,26 +1,56 @@
 """
 Classifies: CHEBI:46722 carbonate ester
 """
-Based on the previous program and the outcomes, it seems that the program is doing a reasonably good job at identifying carbonate esters. The high F1 score of 0.99 and accuracy of 0.99 suggest that the program is correctly classifying most instances.
+"""
+Classifies: CHEBI:33575 carbonate ester
+"""
+from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
-However, there are a few false positives and false negatives that need to be addressed.
+def is_carbonate_ester(smiles: str):
+    """
+    Determines if a molecule is a carbonate ester based on its SMILES string.
+    A carbonate ester is a carbonic acid derivative where the hydrogen atoms
+    are replaced by organyl groups.
 
-False Positives:
-The false positives seem to be molecules that contain some structural features similar to carbonate esters but do not meet the full criteria of being a carbonate ester. For example:
+    Args:
+        smiles (str): SMILES string of the molecule
 
-- `cefpodoxime proxetil`: This molecule contains a carbonyl group and an ether group, but not the -O-C(=O)-O- pattern characteristic of carbonate esters.
-- `Phenochalasin B`: This molecule contains a lactone ring, which might be misidentified as a carbonate ester group.
-- Other false positives may contain carbonyl groups or ester groups, but not the specific carbonate ester functional group.
-
-To address these false positives, we could add additional checks to ensure that the detected -O-C(=O)-O- pattern is specifically a carbonate ester and not just a combination of other functional groups. This could involve checking the connectivity of the atoms, ensuring that the carbonyl carbon is connected to two oxygen atoms, and that those oxygen atoms are not part of other functional groups like lactones or anhydrides.
-
-False Negatives:
-The false negatives seem to be molecules that do contain the carbonate ester functional group but are being missed by the program. These include:
-
-- `azilsartan medoxomil`: This molecule contains a carbonate ester group, but it is likely being missed due to its complex structure.
-- `Pleurone`: This is a relatively simple molecule containing a carbonate ester group, but it is being missed for some reason.
-- `adefovir pivoxil`: This is another complex molecule with a carbonate ester group that is being missed.
-
-To address these false negatives, we could try to improve the pattern matching by considering different resonance structures or alternative SMARTS patterns for the carbonate ester group. Additionally, we could consider breaking down the molecule into smaller fragments and checking for the presence of the carbonate ester group in each fragment.
-
-Overall, the program seems to be doing a good job, but there is room for improvement in handling complex structures and edge cases. If the false positives and false negatives are not critical for your application, you could choose to accept the current performance. However, if high accuracy is required, further refinements to the program may be necessary.
+    Returns:
+        bool: True if molecule is a carbonate ester, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Look for carbonate ester pattern (-O-C(=O)-O-) in SMARTS
+    carbonate_ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])[OX2]")
+    matches = mol.GetSubstructMatches(carbonate_ester_pattern)
+    
+    if not matches:
+        return False, "No carbonate ester group found"
+    
+    # Check that the carbonate ester group is not part of other functional groups
+    for match in matches:
+        c_atom = mol.GetAtomWithIdx(match[1])
+        o1_atom = mol.GetAtomWithIdx(match[0])
+        o2_atom = mol.GetAtomWithIdx(match[2])
+        
+        # Check that carbonyl carbon is not part of amide, ester, or anhydride
+        if c_atom.GetTotalNumHs() == 0 and any(nb.GetAtomicNum() == 7 for nb in c_atom.GetNeighbors()):
+            continue  # Amide
+        if any(nb.GetAtomicNum() == 8 and nb.GetTotalNumHs() == 0 for nb in c_atom.GetNeighbors()):
+            continue  # Ester or anhydride
+        
+        # Check that oxygens are not part of ether, alcohol, or other functional groups
+        if any(nb.GetAtomicNum() == 8 for nb in o1_atom.GetNeighbors()) or o1_atom.GetTotalNumHs() > 0:
+            continue
+        if any(nb.GetAtomicNum() == 8 for nb in o2_atom.GetNeighbors()) or o2_atom.GetTotalNumHs() > 0:
+            continue
+        
+        return True, "Contains carbonate ester group (-O-C(=O)-O-)"
+    
+    return False, "Identified groups are not carbonate esters"
