@@ -19,11 +19,12 @@ def is_6_aminopurines(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the SMARTS pattern for the 6-aminopurine (adenine) moiety
-    adenine_smarts = Chem.MolFromSmarts("n1cnc2c(n1)nc([NH2])n2")
-
-    if adenine_smarts is None:
-        return False, "Invalid SMARTS string"
+    # Define the SMARTS pattern for the 6-aminopurine moiety
+    # 'c1nc2c(n1)ncn2[NH2]'
+    # This specifies a 6-membered ring with 2 nitrogens, fused to a 5-membered ring with 2 nitrogens
+    # and an amino group at position 6 of the 6 membered ring.
+    
+    adenine_smarts = Chem.MolFromSmarts("c1nc2c(n1)ncn2[NH2]")
 
     # Check for the presence of the 6-aminopurine substructure
     if mol.HasSubstructMatch(adenine_smarts):
