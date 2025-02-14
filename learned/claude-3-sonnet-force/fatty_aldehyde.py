@@ -26,28 +26,29 @@ def is_fatty_aldehyde(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for aldehyde functional group (-C=O)
-    aldehyde_pattern = Chem.MolFromSmarts("[CH3][CX3](=[OX1])")
+    # Look for aldehyde functional group (-CHO) at the end of a carbon chain
+    aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)[#6]")
     if not mol.HasSubstructMatch(aldehyde_pattern):
         return False, "No aldehyde group found"
     
-    # Look for long carbon chain
-    chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
-    chain_matches = mol.GetSubstructMatches(chain_pattern)
-    if not chain_matches:
-        return False, "No long carbon chain found"
+    aldehyde_atom = mol.GetSubstructMatch(aldehyde_pattern)[0]
+    aldehyde_carbon = mol.GetAtomWithIdx(aldehyde_atom)
     
     # Check if aldehyde is at the end of the chain
-    aldehyde_atom = mol.GetSubstructMatch(aldehyde_pattern)[0]
-    end_atom = None
-    for match in chain_matches:
-        if aldehyde_atom in match:
-            end_atom = match[0] if match[0] != aldehyde_atom else match[-1]
-            break
-    if end_atom is None or mol.GetAtomWithIdx(end_atom).GetDegree() > 1:
+    if aldehyde_carbon.GetDegree() > 2:
         return False, "Aldehyde group not at the end of the chain"
     
-    # Check for unsaturations in the carbon chain
-    unsaturated = any(bond.GetBondType() == Chem.BondType.DOUBLE for bond in mol.GetBonds())
+    # Check for carbon chain
+    carbon_chain = []
+    curr_atom = aldehyde_carbon
+    while curr_atom.GetAtomicNum() == 6:
+        carbon_chain.append(curr_atom.GetIdx())
+        neighbors = [nb for nb in curr_atom.GetNeighbors() if nb.GetAtomicNum() == 6]
+        if len(neighbors) == 0:
+            break
+        curr_atom = neighbors[0]
     
-    return True, "Contains aldehyde group at the end of a long carbon chain" + (", unsaturated" if unsaturated else "")
+    if len(carbon_chain) < 2:
+        return False, "No carbon chain found"
+    
+    return True, "Aldehyde group at the end of a carbon chain"
