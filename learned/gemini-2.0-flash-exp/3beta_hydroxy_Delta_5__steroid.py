@@ -21,23 +21,19 @@ def is_3beta_hydroxy_Delta_5__steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for the steroid core (simplified)
-    # The exact positions are handled in the other SMARTS queries
-    steroid_core_pattern = Chem.MolFromSmarts("[C]1[C][C][C]2[C]1[C]([C])[C]3[C]2[C][C][C]4[C]3[C][C]4")
+    # Define SMARTS pattern for the steroid core (generalized)
+    steroid_core_pattern = Chem.MolFromSmarts("[C]12[C][C]([C])[C]([C])[C]1[C]3[C]([C])[C][C]4[C]2[C][C]3[C]4")
     if not mol.HasSubstructMatch(steroid_core_pattern):
         return False, "Steroid core not found"
 
     # Define SMARTS pattern for the 3-beta-hydroxyl group
-    # We use [C@H] to specify the stereo configuration of the 3 position hydrogen
-    # which needs to be on the opposite side of the beta hydroxyl group.
-    beta_hydroxy_pattern = Chem.MolFromSmarts("[C@H]1[C]([OH])[C]([C])[C]2[C]1[C]([C])[C]3[C]2[C][C][C]4[C]3[C][C]4")
+    beta_hydroxy_pattern = Chem.MolFromSmarts("[C@H]1[C]([OH])[C]")
 
     if not mol.HasSubstructMatch(beta_hydroxy_pattern):
           return False, "No 3-beta hydroxyl group found"
 
     # Define SMARTS pattern for the double bond between C5 and C6
-    # Use [C]=C
-    delta5_bond_pattern = Chem.MolFromSmarts("[C]1[C]([C]=[C])[C]([C])[C]2[C]1[C]([C])[C]3[C]2[C][C][C]4[C]3[C][C]4")
+    delta5_bond_pattern = Chem.MolFromSmarts("[C]1[C](=[C])[C]")
     if not mol.HasSubstructMatch(delta5_bond_pattern):
          return False, "No double bond between C5 and C6"
 
