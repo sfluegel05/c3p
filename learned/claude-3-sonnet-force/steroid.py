@@ -12,8 +12,8 @@ def is_steroid(smiles: str):
     """
     Determines if a molecule is a steroid based on its SMILES string.
     A steroid is defined as any compound based on the cyclopenta[a]phenanthrene carbon skeleton,
-    with methyl groups at C-10 and C-13 being preferred, and an alkyl group at C-17 being
-    common but not required. Ring expansions, contractions, and bond scissions are allowed.
+    partially or completely hydrogenated, with ring expansions, contractions, and bond scissions
+    allowed. Methyl groups at C-10 and C-13 are common, and an alkyl group at C-17 is often present.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -28,21 +28,10 @@ def is_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for cyclopenta[a]phenanthrene backbone (simplified pattern)
-    backbone_pattern = Chem.MolFromSmiles("C12C=CC=C3C4=CC=CC=C4C2CCC31")
+    # Look for cyclopenta[a]phenanthrene backbone (more flexible pattern)
+    backbone_pattern = Chem.MolFromSmarts("[C&r5,r6]1[C&r5,r6]2[C&r5,r6]3[C&r5,r6]4[C&r5,r6]5[C&r5,r6]6[C&r5,r6]7[C&r5,r6]8[C&r5,r6]9[C&r5,r6]%91%81%71%61%51%41%31%21%11")
     if not mol.HasSubstructMatch(backbone_pattern):
         return False, "No cyclopenta[a]phenanthrene backbone found"
-    
-    # Check for methyl groups at C-10 and C-13 (preferred but not required)
-    c10_pattern = Chem.MolFromSmiles("C[C@]12C=CC=C3C4=CC=CC=C4C2CCC31")
-    c13_pattern = Chem.MolFromSmiles("C[C@@]12C=CC=C3C4=CC=CC=C4C2CC[C@@]31C")
-    c10_match = mol.HasSubstructMatch(c10_pattern)
-    c13_match = mol.HasSubstructMatch(c13_pattern)
-    methyl_groups_present = c10_match and c13_match
-    
-    # Check for alkyl group at C-17 (common but not required)
-    c17_pattern = Chem.MolFromSmiles("C[C@@]12C=CC=C3C4=CC=CC=C4C2CC[C@@]31CC")
-    c17_match = mol.HasSubstructMatch(c17_pattern)
     
     # Consider additional features
     mol_weight = rdMolDescriptors.CalcExactMolWt(mol)
@@ -50,11 +39,7 @@ def is_steroid(smiles: str):
     cyclopentane_rings = sum(1 for ring in mol.GetRingInfo().AtomRings() if len(ring) == 5)
     cyclohexane_rings = sum(1 for ring in mol.GetRingInfo().AtomRings() if len(ring) == 6)
     
-    if methyl_groups_present and c17_match and mol_weight > 200 and hydroxyl_groups > 0 and (cyclopentane_rings > 0 or cyclohexane_rings > 0):
-        return True, "Contains cyclopenta[a]phenanthrene backbone with methyl groups at C-10 and C-13, alkyl group at C-17, molecular weight > 200 Da, at least one hydroxyl group, and at least one cyclopentane or cyclohexane ring"
-    elif methyl_groups_present and mol_weight > 200 and hydroxyl_groups > 0 and (cyclopentane_rings > 0 or cyclohexane_rings > 0):
-        return True, "Contains cyclopenta[a]phenanthrene backbone with methyl groups at C-10 and C-13, molecular weight > 200 Da, at least one hydroxyl group, and at least one cyclopentane or cyclohexane ring"
-    elif mol_weight > 200 and hydroxyl_groups > 0 and (cyclopentane_rings > 0 or cyclohexane_rings > 0):
-        return True, "Contains cyclopenta[a]phenanthrene backbone, molecular weight > 200 Da, at least one hydroxyl group, and at least one cyclopentane or cyclohexane ring"
+    if mol_weight > 200 and hydroxyl_groups > 0 and (cyclopentane_rings > 0 or cyclohexane_rings > 0):
+        return True, "Contains cyclopenta[a]phenanthrene backbone (with possible ring expansions, contractions, or bond scissions), molecular weight > 200 Da, at least one hydroxyl group, and at least one cyclopentane or cyclohexane ring"
     else:
         return False, "Does not meet the criteria for a steroid"
