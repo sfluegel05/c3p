@@ -2,7 +2,6 @@
 Classifies: CHEBI:18303 phosphatidyl-L-serine
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_phosphatidyl_L_serine(smiles: str):
     """
@@ -22,13 +21,13 @@ def is_phosphatidyl_L_serine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for glycerol backbone with phosphorus and serine esterification
-    structural_pattern = Chem.MolFromSmarts("OC[C@H](O[P](=O)(O)OC[C@H](N)C(=O)O)COP(O)(=O)O")
+    # Look for glycerol backbone with phosphorus and serine esterification allowing stereochemistry variation
+    structural_pattern = Chem.MolFromSmarts("OCC(O[P](=O)(O)OCC(N)C(=O)O)COP(O)(=O)O")
     
     if not mol.HasSubstructMatch(structural_pattern):
         return False, "No phosphatidyl-L-serine backbone structure detected"
-
-    # Find fatty acid chains (long carbon chains attached to structure not part of the backbone)
+    
+    # Find ester groups connected with carbon chains, accounting for potential variations
     ester_pattern = Chem.MolFromSmarts("C(=O)O[C@H]C")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
 
