@@ -27,27 +27,15 @@ def is_wax_ester(smiles: str):
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) != 1:
         return False, f"Found {len(ester_matches)} ester groups, must have exactly one"
-
+    
     # Check for glycerol backbone (C-C-C with 3 oxygens attached). If present, its not a wax ester
     glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
     if mol.HasSubstructMatch(glycerol_pattern):
         return False, "Glycerol backbone detected; not a wax ester"
 
-    # Fatty acid chain (long chain attached to carbonyl carbon, *excluding* carboxylic acids)
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3][CX3](=[OX1])!-[OX2H1]") # Added !-[OX2H1] to exclude COOH
-    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
-    if len(fatty_acid_matches) == 0:
-        return False, "Missing fatty acid chain"
-    
-     # Fatty alcohol chain (long chain attached to ester oxygen)
-    fatty_alcohol_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[OX2][CX3](=[OX1])")
-    fatty_alcohol_matches = mol.GetSubstructMatches(fatty_alcohol_pattern)
-    if len(fatty_alcohol_matches) == 0:
-        return False, "Missing fatty alcohol chain"
-
     # Count rotatable bonds to verify long chains
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 10:
+    if n_rotatable < 8: # Reduced requirement for short chains such as octyl palmitate
         return False, "Chains too short to be fatty acid and fatty alcohol"
 
     # Check molecular weight - wax esters typically >300 Da
@@ -57,7 +45,7 @@ def is_wax_ester(smiles: str):
 
     # Count carbons
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 16:
+    if c_count < 10: # Reduced number of carbons
       return False, "Too few carbons for a wax ester"
     
     # Count oxygens
