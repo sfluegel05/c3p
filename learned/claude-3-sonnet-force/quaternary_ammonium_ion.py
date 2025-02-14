@@ -7,7 +7,6 @@ A derivative of ammonium, NH4(+), in which all four of the hydrogens bonded to n
 have been replaced with univalent (usually organyl) groups.
 """
 from rdkit import Chem
-from rdkit.Chem import rdqueries
 
 def is_quaternary_ammonium_ion(smiles: str):
     """
@@ -26,18 +25,15 @@ def is_quaternary_ammonium_ion(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define quaternary N+ pattern
-    quat_n = rdqueries.AtomIsPositivelyCharged() & rdqueries.AtomIsAliphaticNitrogen()
+    # Find nitrogen atoms with 4 substituents
+    quat_n_candidates = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7 and atom.GetDegree() == 4]
     
-    # Check for quaternary N+ with 4 substituents
-    quat_n_matches = mol.GetSubstructMatches(quat_n)
+    for candidate in quat_n_candidates:
+        # Check if nitrogen has a formal charge of +1
+        if candidate.GetFormalCharge() == 1:
+            # Check if the sum of formal charges of substituents is -1
+            neighbor_charges = sum(mol.GetAtomWithIdx(neighbor_idx).GetFormalCharge() for neighbor_idx in candidate.GetNeighbors())
+            if neighbor_charges == -1:
+                return True, "Contains a positively charged quaternary nitrogen with 4 substituents"
     
-    if not quat_n_matches:
-        return False, "No quaternary nitrogen found"
-    
-    for match in quat_n_matches:
-        atom = mol.GetAtomWithIdx(match)
-        if sum(1 for _ in atom.GetNeighbors()) != 4:
-            return False, "Quaternary nitrogen does not have 4 substituents"
-    
-    return True, "Contains a positively charged quaternary nitrogen with 4 substituents"
+    return False, "No quaternary ammonium ion found"
