@@ -26,53 +26,63 @@ def is_sphingoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Find primary amine nitrogen atoms (degree 2 nitrogen with no charge)
+    # Find primary amine nitrogen atoms (degree 1 nitrogen with no charge)
     amine_atoms = [atom for atom in mol.GetAtoms()
-                   if atom.GetAtomicNum() == 7 and atom.GetDegree() == 2 and atom.GetFormalCharge() == 0]
+                   if atom.GetAtomicNum() == 7 and atom.GetDegree() == 1 and atom.GetFormalCharge() == 0]
     if not amine_atoms:
         return False, "No primary amino group found"
 
     for amine_atom in amine_atoms:
-        # Get the carbon atom attached to the amine nitrogen (C2)
-        neighbors = [nbr for nbr in amine_atom.GetNeighbors() if nbr.GetAtomicNum() == 6]
-        if not neighbors:
-            continue  # No carbon attached to nitrogen
-        c2_atom = neighbors[0]
+        n_idx = amine_atom.GetIdx()
 
-        # Initialize variables for chain traversal
+        # Get the carbon atom attached to the amine nitrogen (C2)
+        c2_atoms = [nbr for nbr in amine_atom.GetNeighbors() if nbr.GetAtomicNum() == 6]
+        if not c2_atoms:
+            continue  # No carbon attached to nitrogen
+        c2_atom = c2_atoms[0]
+        c2_idx = c2_atom.GetIdx()
+
+        # Check for hydroxyl groups on carbons adjacent to C2 (C1 and C3)
+        has_adjacent_hydroxyl = False
+        
+        # Get neighbors of C2 atom
+        c2_neighbors = c2_atom.GetNeighbors()
+        for atom in c2_neighbors:
+            if atom.GetAtomicNum() == 6 and atom.GetIdx() != n_idx:  # Exclude nitrogen
+                # Check if this carbon has a hydroxyl group
+                for nbr in atom.GetNeighbors():
+                    if nbr.GetAtomicNum() == 8 and nbr.GetDegree() == 1:
+                        has_adjacent_hydroxyl = True
+                        break
+            if has_adjacent_hydroxyl:
+                break
+
+        if not has_adjacent_hydroxyl:
+            continue  # No hydroxyl group adjacent to amino group
+
+        # Now, check the aliphatic chain length starting from C2
         visited = set()
         chain_atoms = []
 
         def traverse_chain(atom):
-            if atom.GetAtomicNum() != 6:
-                return
             if atom.GetIdx() in visited:
                 return
             visited.add(atom.GetIdx())
+            if atom.GetAtomicNum() != 6:
+                return
             chain_atoms.append(atom)
             for nbr in atom.GetNeighbors():
-                if nbr.GetAtomicNum() == 6 and nbr.GetBondBetweenAtoms(atom.GetIdx(), nbr.GetIdx()).IsInRing() == False:
+                bond = mol.GetBondBetweenAtoms(atom.GetIdx(), nbr.GetIdx())
+                if bond.IsInRing():
+                    continue  # Skip ring structures
+                if nbr.GetAtomicNum() == 6 and nbr.GetIdx() != amine_atom.GetIdx():
                     traverse_chain(nbr)
 
-        # Traverse the chain starting from c2_atom
         traverse_chain(c2_atom)
         chain_length = len(chain_atoms)
 
         if chain_length < 12:
-            continue  # Chain too short, try next amine
-
-        # Check for hydroxyl groups attached to carbons adjacent to c2_atom
-        has_hydroxyl = False
-        for nbr in c2_atom.GetNeighbors():
-            if nbr.GetAtomicNum() == 6 and nbr.GetIdx() != amine_atom.GetIdx():
-                for nbr2 in nbr.GetNeighbors():
-                    if nbr2.GetAtomicNum() == 8 and nbr2.GetDegree() == 1:
-                        has_hydroxyl = True
-                        break
-                if has_hydroxyl:
-                    break
-        if not has_hydroxyl:
-            continue  # No hydroxyl group adjacent to amino group
+            continue  # Chain too short to be sphingoid
 
         # If all checks passed
         return True, "Molecule matches sphingoid structural features"
