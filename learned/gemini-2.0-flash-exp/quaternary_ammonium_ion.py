@@ -27,24 +27,20 @@ def is_quaternary_ammonium_ion(smiles: str):
             if atom.GetFormalCharge() == 1:
                 # Check number of bonds
                 if len(atom.GetBonds()) == 4:
-                    # Check if all bonds are single bonds and non hydrogen
+                    # Check if all bonds are to non hydrogen
                     all_non_h_bonds = True
                     for bond in atom.GetBonds():
-                        if bond.GetBondType() != Chem.BondType.SINGLE:
-                                all_non_h_bonds = False
-                                break
                         neighbor = bond.GetOtherAtom(atom)
                         if neighbor.GetAtomicNum() == 1:
-                                all_non_h_bonds = False
-                                break
+                            all_non_h_bonds = False
+                            break
                     if all_non_h_bonds:
-                        return True, "Positively charged nitrogen with four single bonds to non-hydrogen atoms found."
+                         return True, "Positively charged nitrogen with four bonds to non-hydrogen atoms found."
                     else:
-                         continue # Try next nitrogen
-
+                        continue # Try next nitrogen
                 else:
-                     continue #Try next nitrogen
+                    continue # Try next nitrogen
             else:
                 continue #Try next nitrogen
     
-    return False, "No positively charged nitrogen with four single bonds to non-hydrogen atoms found."
+    return False, "No positively charged nitrogen with four bonds to non-hydrogen atoms found."
