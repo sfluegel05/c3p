@@ -21,40 +21,40 @@ def is_non_proteinogenic_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 1. Basic amino acid structure check: N-C-C(=O)-O and a sidechain
-    alpha_carbon_pattern = Chem.MolFromSmarts("[NX3][CX4]([H])[CX3](=[OX1])[OX2]")
+    # 1. Basic amino acid structure check: N-C-C(=O)-O
+    alpha_carbon_pattern = Chem.MolFromSmarts("[NX3;H2,H1][CX4;H1]([H])[CX3](=[OX1])[OX2;H1,H0]")
     if not mol.HasSubstructMatch(alpha_carbon_pattern):
         return False, "Missing basic amino acid structure"
 
-    # 2. List of SMILES for the 20 standard proteinogenic amino acids (L-forms, and also D for Asp and Glu)
-    canonical_amino_acids_smiles = [
-        "N[C@@H](C)C(O)=O",  # Alanine
-        "N[C@@H](CC(C)=O)C(O)=O", # Asparagine
-        "N[C@@H](CC(=O)O)C(O)=O", # Aspartic acid
-        "N[C@@H](Cc1c[nH]cn1)C(O)=O",  # Histidine
-        "N[C@@H](Cc1ccccc1)C(O)=O",  # Phenylalanine
-        "N[C@@H](CS)C(O)=O", # Cysteine
-        "N[C@@H](CC(=O)N)C(O)=O", # Glutamine
-        "N[C@@H](CCC(=O)O)C(O)=O", # Glutamic acid
-        "N[C@@H](C(C)C)C(O)=O", # Valine
-        "N[C@@H](CCCNC(=N)N)C(O)=O", # Arginine
-        "N[C@@H](CO)C(O)=O", # Serine
-        "N[C@@H]([C@@H](O)C)C(O)=O",  # Threonine
-        "N[C@@H](CCSC)C(O)=O",  # Methionine
-        "N[C@@H](C(C)CC)C(O)=O", # Leucine
-        "N[C@@H](C(C)(C)C)C(O)=O",  # Isoleucine
-        "N[C@@H](Cc1c[nH]c2ccccc12)C(O)=O", # Tryptophan
-        "N[C@@H](Cc1ccc(O)cc1)C(O)=O",  # Tyrosine
-        "N1C[C@@H]2[C@H](C[C@@H]1C(O)=O)NC2",  # Proline
-        "N[C@H](CC(O)=O)C(O)=O", # D-aspartic acid
-        "N[C@H](CCC(O)=O)C(O)=O" # D-glutamic acid
+    # 2. Check if it is a standard proteinogenic amino acid
+    # Use SMARTS to match each of the standard amino acid sidechains
+    # Explicitly account for L and D forms (where appropriate).
+    proteinogenic_amino_acids_smarts = [
+        "[NX3;H2,H1][C@H]([CH3])[CX3](=[OX1])[OX2;H1,H0]",  # L-Alanine
+        "[NX3;H2,H1][C@@H](CC(=O)N)[CX3](=[OX1])[OX2;H1,H0]",  # L-Asparagine
+        "[NX3;H2,H1][C@H](CC(=O)O)[CX3](=[OX1])[OX2;H1,H0]",  # L-Aspartic acid
+        "[NX3;H2,H1][C@@H](CC(=O)O)[CX3](=[OX1])[OX2;H1,H0]",  # D-Aspartic acid
+        "[NX3;H2,H1][C@H](Cc1c[nH]cn1)[CX3](=[OX1])[OX2;H1,H0]",  # L-Histidine
+        "[NX3;H2,H1][C@@H](Cc1ccccc1)[CX3](=[OX1])[OX2;H1,H0]",  # L-Phenylalanine
+        "[NX3;H2,H1][C@H](CS)[CX3](=[OX1])[OX2;H1,H0]",  # L-Cysteine
+        "[NX3;H2,H1][C@@H](CC(=O)N)[CX3](=[OX1])[OX2;H1,H0]",  # L-Glutamine
+        "[NX3;H2,H1][C@H](CCC(=O)O)[CX3](=[OX1])[OX2;H1,H0]",  # L-Glutamic acid
+        "[NX3;H2,H1][C@@H](CCC(=O)O)[CX3](=[OX1])[OX2;H1,H0]",  # D-Glutamic acid
+        "[NX3;H2,H1][C@H](C(C)C)[CX3](=[OX1])[OX2;H1,H0]",  # L-Valine
+        "[NX3;H2,H1][C@H](CCCNC(=N)N)[CX3](=[OX1])[OX2;H1,H0]", # L-Arginine
+        "[NX3;H2,H1][C@H](CO)[CX3](=[OX1])[OX2;H1,H0]",  # L-Serine
+        "[NX3;H2,H1][C@H]([C@@H](O)C)[CX3](=[OX1])[OX2;H1,H0]",  # L-Threonine
+        "[NX3;H2,H1][C@H](CCSC)[CX3](=[OX1])[OX2;H1,H0]",  # L-Methionine
+        "[NX3;H2,H1][C@H](C(C)CC)[CX3](=[OX1])[OX2;H1,H0]",  # L-Leucine
+        "[NX3;H2,H1][C@H](C(C)(C)C)[CX3](=[OX1])[OX2;H1,H0]",  # L-Isoleucine
+        "[NX3;H2,H1][C@H](Cc1c[nH]c2ccccc12)[CX3](=[OX1])[OX2;H1,H0]", # L-Tryptophan
+        "[NX3;H2,H1][C@H](Cc1ccc(O)cc1)[CX3](=[OX1])[OX2;H1,H0]",  # L-Tyrosine
+        "N1[C@@H]2[C@H](C[C@@H]1C(=O)O)N[CH2]2",  # L-Proline
     ]
-    
-    # Canonical check. Convert to canonical SMILES for better comparison
-    canonical_smiles = [Chem.MolToSmiles(Chem.MolFromSmiles(s)) for s in canonical_amino_acids_smiles]
-    input_smiles = Chem.MolToSmiles(mol)
 
-    if input_smiles in canonical_smiles:
-        return False, "It is a standard proteinogenic amino acid."
-    
+    for smarts in proteinogenic_amino_acids_smarts:
+        pattern = Chem.MolFromSmarts(smarts)
+        if mol.HasSubstructMatch(pattern):
+            return False, "It is a standard proteinogenic amino acid."
+
     return True, "It is a non-proteinogenic amino acid."
