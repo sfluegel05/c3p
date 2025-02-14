@@ -23,10 +23,15 @@ def is_mineral_nutrient(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for presence of a metal atom
-    metal_atoms = [atom.GetAtomicNum() for atom in mol.GetAtoms() if atom.GetAtomicNum() in [3, 4, 11, 12, 13, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 55, 56, 57, 58, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 87, 88, 89, 90, 91, 92]]
+    # Define common mineral nutrient metals (alkali, alkaline earth, common transition metals)
+    mineral_metals = [3, 11, 12, 19, 20, 25, 26, 29, 30, 37, 38, 55, 56] # Li, Na, Mg, K, Ca, Mn, Fe, Cu, Zn, Rb, Sr, Cs, Ba
+
+    #Check if metals are present
+    metal_atoms = [atom.GetAtomicNum() for atom in mol.GetAtoms() if atom.GetAtomicNum() in mineral_metals]
+    
+    #If metals are absent, check if common counterions (halides, etc) and common minerals are present.
     if not metal_atoms:
-        #If no metal, check for common counterions (halides, etc) and common minerals.
+        
         halide_pattern = Chem.MolFromSmarts("[F-,Cl-,Br-,I-]")
         sulfate_pattern = Chem.MolFromSmarts("[O-]S([O-])(=O)=O")
         phosphate_pattern = Chem.MolFromSmarts("[O-]P([O-])([O-])=O")
@@ -34,27 +39,30 @@ def is_mineral_nutrient(smiles: str):
         nitrate_pattern = Chem.MolFromSmarts("[O-][N+]([O-])=O")
         silicate_pattern = Chem.MolFromSmarts("[O-][Si]([O-])([O-])[O-]")
         hydroxide_pattern = Chem.MolFromSmarts("[OH-]")
+        oxide_pattern = Chem.MolFromSmarts("[O--]")
+        sulfide_pattern = Chem.MolFromSmarts("[S--]")
 
         if not (mol.HasSubstructMatch(halide_pattern) or mol.HasSubstructMatch(sulfate_pattern) or
                 mol.HasSubstructMatch(phosphate_pattern) or mol.HasSubstructMatch(carbonate_pattern) or
                 mol.HasSubstructMatch(nitrate_pattern) or mol.HasSubstructMatch(silicate_pattern) or
-                mol.HasSubstructMatch(hydroxide_pattern) ):
+                mol.HasSubstructMatch(hydroxide_pattern) or mol.HasSubstructMatch(oxide_pattern) or
+                mol.HasSubstructMatch(sulfide_pattern) ):
 
-           return False, "No metal, halide, or other common mineral found"
+           return False, "No metal, or common mineral ions found"
+   
+    #Check for 'small' organic fragments (less than 5 non-H atoms)
+    organic_pattern = Chem.MolFromSmarts("[#6]") #check for carbons to see if there is an organic part
+    if mol.HasSubstructMatch(organic_pattern):
+         for frag in Chem.GetMolFrags(mol, asMols=True):
+            if frag.HasSubstructMatch(Chem.MolFromSmarts("[#6]")): #If this fragment is organic
+               num_non_h_atoms = sum(1 for atom in frag.GetAtoms() if atom.GetAtomicNum() != 1)
+               if num_non_h_atoms > 5: #If this organic fragment is too large
+                 return False, "Contains large organic fragments, not typical for a mineral nutrient"
 
-    # Check for carbon-hydrogen bonds, but allow for acetate, formate, or other small organic salts
-    carbon_hydrogen_pattern = Chem.MolFromSmarts("[CH]")
+    # Check for charge balance of the entire molecule.
+    total_charge = Chem.GetFormalCharge(mol)
+    if total_charge != 0:
+        return False, "Overall charge is not neutral"
 
-    if mol.HasSubstructMatch(carbon_hydrogen_pattern):
-        acetate_pattern = Chem.MolFromSmarts("CC([O-])=O")
-        formate_pattern = Chem.MolFromSmarts("[H]C([O-])=O")
-
-        if not (mol.HasSubstructMatch(acetate_pattern) or mol.HasSubstructMatch(formate_pattern)):
-          return False, "Contains C-H bonds that are not from small salts"
-    
-    # Basic validation of size: Mineral Nutrients are often salts, but not large organics.
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt > 700:
-        return False, "Molecular weight too high for a mineral nutrient"
 
     return True, "Contains metal ions and/or typical mineral ions"
