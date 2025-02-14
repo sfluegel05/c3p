@@ -28,9 +28,12 @@ def is_organic_sulfide(smiles: str):
     if not sulfur_atoms:
         return False, "No sulfur atom found"
     
-    # Check for sulfur bonded to two carbons
-    sulfide_pattern = Chem.MolFromSmarts("[CX4,CX3][S][CX4,CX3]") # Modified SMARTS to allow for sp2/sp3 carbons
-    if not mol.HasSubstructMatch(sulfide_pattern):
-         return False, "Sulfur is not bonded to two carbon atoms."
-     
-    return True, "Has the structure R-S-R' (R and R' not hydrogen)"
+    for sulfur_atom in sulfur_atoms:
+        carbon_neighbors = 0
+        for neighbor in sulfur_atom.GetNeighbors():
+          if neighbor.GetSymbol() == 'C':
+            carbon_neighbors += 1
+        if carbon_neighbors >= 2:
+          return True, "Has the structure R-S-R' (R and R' not hydrogen)"
+    
+    return False, "Sulfur is not bonded to at least two carbon atoms."
