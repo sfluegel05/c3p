@@ -22,18 +22,18 @@ def is_inositol_phosphoceramide(smiles: str):
         return False, "Invalid SMILES string"
 
     # 1. Ceramide Identification
-    # Look for amide bond (C(=O)N)
+    # Look for amide bond (C(=O)N), 2 hydroxyls and a carbon chain (sphingosine)
     amide_pattern = Chem.MolFromSmarts("C(=O)N")
     amide_matches = mol.GetSubstructMatches(amide_pattern)
     if not amide_matches:
         return False, "No amide bond found, not a ceramide"
 
-    # Identify the sphingosine backbone (at least 2 carbons with a hydroxyl each
+    # Identify the sphingosine backbone
     sphingosine_pattern = Chem.MolFromSmarts("[CX4](O)[CX4](O)")
     sphingosine_matches = mol.GetSubstructMatches(sphingosine_pattern)
     if not sphingosine_matches:
-        return False, "No sphingosine backbone found"
-
+      return False, "No sphingosine backbone found"
+    
     # 2. Phosphate group
     phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)O")
     phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
@@ -41,21 +41,28 @@ def is_inositol_phosphoceramide(smiles: str):
         return False, "No phosphate group found"
 
     # 3. Inositol Identification
-    # Look for a 6-membered ring with at least 5 oxygens attached to the carbons
-    inositol_pattern = Chem.MolFromSmarts("[CX4]1[CX4][CX4][CX4][CX4][CX4]1") #basic ring, we assume it will be an inositol due to other checks
+    # Look for the inositol ring with 6 hydroxyls
+    inositol_pattern = Chem.MolFromSmarts("[C]1([O])[C]([O])[C]([O])[C]([O])[C]([O])[C]1[O]")
     inositol_matches = mol.GetSubstructMatches(inositol_pattern)
     if not inositol_matches:
         return False, "No inositol ring found"
-
-    # 4. Verify phosphodiester linkage
-    # Combined pattern to look for the linkage:
-    # inositol -O-P(=O)(O)-O-Ceramide
-    linkage_pattern = Chem.MolFromSmarts("[CX4]1[CX4][CX4][CX4][CX4][CX4]1[OX2][P](=[OX1])([OX2])[OX2][CX4,CX3]([OX2])[CX4,CX3]([OX2])") # This is more permissive, it does not assume the N is bonded to the ceramide part.
     
-    linkage_matches = mol.GetSubstructMatches(linkage_pattern)
-    if not linkage_matches:
-       return False, "Phosphate is not linked to inositol and ceramide via phosphodiester bond"
-    
+    # 4. Verify linkage
+    # Check if phosphate links to inositol
+    # And check if phosphate also links to the ceramide (via C-O-P)
+    inositol_phos_pattern = Chem.MolFromSmarts("[C]1([O])[C]([O])[C]([O])[C]([O])[C]([O])[C]1[O][OP](=O)(O)[OX2][CX4]")
+    inositol_phos_matches = mol.GetSubstructMatches(inositol_phos_pattern)
+    if not inositol_phos_matches:
+        return False, "Phosphate is not directly linked to inositol"
 
+    ceramide_phos_pattern = Chem.MolFromSmarts("[NX3][CX4]([OX2])[CX4][OX2][P](=[OX1])([OX2])")
+    ceramide_phos_matches = mol.GetSubstructMatches(ceramide_phos_pattern)
+    if not ceramide_phos_matches:
+      return False, "Phosphate is not directly linked to ceramide"
+
+    #5. Optional: check for mannose
+    mannose_pattern = Chem.MolFromSmarts("OC[C@@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)O1")
+    mannose_matches = mol.GetSubstructMatches(mannose_pattern)
+    
     # If all checks pass, return True
     return True, "Structure contains ceramide, inositol, and phosphate group with correct linkage"
