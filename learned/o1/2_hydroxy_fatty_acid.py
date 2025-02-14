@@ -5,7 +5,6 @@ Classifies: CHEBI:10283 2-hydroxy fatty acid
 Classifies: CHEBI:136568 2-hydroxy fatty acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_2_hydroxy_fatty_acid(smiles: str):
     """
@@ -25,14 +24,18 @@ def is_2_hydroxy_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for 2-hydroxy fatty acid
-    # Carboxylic acid group connected to a carbon with hydroxy group (alpha carbon)
-    pattern = Chem.MolFromSmarts('[CX3](=O)[OX1H1][CH](O)[C,c]')
-    if pattern is None:
-        return False, "Invalid SMARTS pattern"
+    # Define SMARTS pattern for carboxylic acid group
+    carboxy_pattern = Chem.MolFromSmarts('[CX3](=O)[OX1H]')
+    carboxy_matches = mol.GetSubstructMatches(carboxy_pattern)
 
-    # Check for substructure match
-    if mol.HasSubstructMatch(pattern):
-        return True, "Matches 2-hydroxy fatty acid structure"
+    if not carboxy_matches:
+        return False, "No carboxylic acid group found"
+    
+    # Define SMARTS pattern for alpha-hydroxy group adjacent to carboxylic acid
+    alpha_hydroxy_pattern = Chem.MolFromSmarts('[CX3](=O)[OX1H]-[CX4]-[OX2H]')
+    alpha_hydroxy_matches = mol.GetSubstructMatches(alpha_hydroxy_pattern)
+    
+    if alpha_hydroxy_matches:
+        return True, "Contains carboxylic acid group with hydroxy on alpha carbon (2-hydroxy fatty acid)"
     else:
-        return False, "Does not match 2-hydroxy fatty acid structure"
+        return False, "No hydroxy group found on alpha carbon adjacent to carboxylic acid group"
