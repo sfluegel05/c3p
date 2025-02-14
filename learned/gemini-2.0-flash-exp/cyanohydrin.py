@@ -8,6 +8,7 @@ def is_cyanohydrin(smiles: str):
     """
     Determines if a molecule is a cyanohydrin based on its SMILES string.
     A cyanohydrin has a carbon atom connected to both a hydroxyl group and a cyano group.
+    The carbon atom is derived from an aldehyde or ketone carbonyl.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,8 +22,9 @@ def is_cyanohydrin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for a cyanohydrin core structure: C connected to -OH and -C#N
-    cyanohydrin_core = Chem.MolFromSmarts("[C]([OH1])[C#N]")
+    # SMARTS pattern for a cyanohydrin core structure: C connected to -OH and -C#N.
+    # The carbon can be tertiary or quaternary, and this is enforced with [CH0,CH1,CH2].
+    cyanohydrin_core = Chem.MolFromSmarts("[CH0,CH1,CH2]([OH1])([C#N])")
     
     if cyanohydrin_core is None:
       return False, "Invalid SMARTS pattern for cyanohydrin core"
