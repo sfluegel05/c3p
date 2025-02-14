@@ -21,48 +21,33 @@ def is_glycosaminoglycan(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 1. Define a pattern for a monosaccharide ring (5 or 6 membered) with a hemiacetal/ketal.
-    monosaccharide_pattern = Chem.MolFromSmarts("[C1][O][C]([C])([C])[C][C]1") # 5 or 6 membered ring.  This pattern captures the hemiacetal carbon and its neighbours (simplification)
-    monosaccharide_matches = mol.GetSubstructMatches(monosaccharide_pattern)
-    
-    #If no monosaccharide pattern is detected, it cannot be a GAG
-    if len(monosaccharide_matches) == 0:
-        return False, "No monosaccharide ring detected"
+    # 1. Check for presence of aminomonosaccharide rings using SMARTS patterns that include rings and nitrogens
+    amino_sugar_pattern1 = Chem.MolFromSmarts("[C1][O][C]([C])[C][C][C]1[NX3]") # 6-membered ring with N
+    amino_sugar_pattern2 = Chem.MolFromSmarts("[C1][O][C]([C])[C][C]1[NX3]")  # 5-membered ring with N
+    amino_sugar_pattern3 = Chem.MolFromSmarts("[C1][O][C]([C])[C][C][C]1[NX3][CX3](=[OX1])") # 6-membered ring with N-acetyl
+    amino_sugar_pattern4 = Chem.MolFromSmarts("[C1][O][C]([C])[C][C]1[NX3][CX3](=[OX1])")  # 5-membered ring with N-acetyl
 
-    # 2. Check for amino groups (NH2, NHR, or N-acetylated) *on or adjacent to* the monosaccharide rings
-    amino_pattern = Chem.MolFromSmarts("[NX3;H2,H1;!$(N-[CX4]=O)]") #NH2 or NHR, excluding amide nitrogens
-    n_acetyl_pattern = Chem.MolFromSmarts("[NX3;!H0]-[CX3](=[OX1])-[CX4]")# N-acetyl group
+    amino_sugar_matches1 = mol.GetSubstructMatches(amino_sugar_pattern1)
+    amino_sugar_matches2 = mol.GetSubstructMatches(amino_sugar_pattern2)
+    amino_sugar_matches3 = mol.GetSubstructMatches(amino_sugar_pattern3)
+    amino_sugar_matches4 = mol.GetSubstructMatches(amino_sugar_pattern4)
 
-    amino_matches = []
-    for match in monosaccharide_matches:
-       for atom_index in match: # check atoms in each monosaccharide
-            monosaccharide_atom = mol.GetAtomWithIdx(atom_index)
-            for neighbor in monosaccharide_atom.GetNeighbors():
-                if neighbor.Match(amino_pattern) or neighbor.Match(n_acetyl_pattern):
-                    amino_matches.append(neighbor.GetIdx())
+    if not (amino_sugar_matches1 or amino_sugar_matches2 or amino_sugar_matches3 or amino_sugar_matches4):
+        return False, "No aminomonosaccharide unit detected."
 
-    if len(amino_matches) == 0:
-        return False, f"No amino groups or N-acetylated amino groups detected on or adjacent to monosaccharide ring(s)."
+    # 2. Check for glycosidic linkages between two ring carbons.
+    glycosidic_link_pattern = Chem.MolFromSmarts("[CX4;R]-[OX2]-[CX4;R]") # Carbon of ring linked to oxygen linked to another carbon ring
 
-    # 3. Check for at least one glycosidic linkage (C-O-C) connected to at least one of the monosaccharide units.
-    glycosidic_link_pattern = Chem.MolFromSmarts("[CX4]-[OX2]-[CX4]")
     glycosidic_matches = mol.GetSubstructMatches(glycosidic_link_pattern)
     
-    has_glycosidic = False
-    for match in glycosidic_matches:
-        for atom_index in match:
-          glycosidic_atom = mol.GetAtomWithIdx(atom_index)
-          for monosaccharide_match in monosaccharide_matches:
-              for mono_atom_index in monosaccharide_match:
-                  mono_atom = mol.GetAtomWithIdx(mono_atom_index)
-                  if glycosidic_atom.IsInRing() and (glycosidic_atom.GetIdx() in [x.GetIdx() for x in mono_atom.GetNeighbors()]):
-                    has_glycosidic = True
-                    break
-              if has_glycosidic:
-                  break
-        if has_glycosidic:
-            break;
-    if not has_glycosidic:
-       return False, "No glycosidic linkage detected, connected to a monosaccharide unit"
+    if len(glycosidic_matches) == 0:
+         return False, "No glycosidic linkage between rings detected."
 
-    return True, "Contains monosaccharide units, glycosidic bonds, and amino groups on or adjacent to monosaccharides."
+
+    # 3. Minimal molecular weight check - GAGs are polysaccharides
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 300:
+        return False, "Molecular weight too low for a polysaccharide"
+
+
+    return True, "Contains aminomonosaccharide units linked by glycosidic bonds."
