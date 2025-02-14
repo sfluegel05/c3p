@@ -10,7 +10,8 @@ def is_secondary_ammonium_ion(smiles: str):
     """
     Determines if a molecule is a secondary ammonium ion based on its SMILES string.
     A secondary ammonium ion is obtained by protonation of a secondary amine,
-    resulting in a nitrogen atom with a +1 formal charge bonded to two carbon atoms and one hydrogen atom.
+    resulting in a nitrogen atom with a +1 formal charge bonded to two substituents
+    (any atoms) and two hydrogen atoms.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -36,12 +37,12 @@ def is_secondary_ammonium_ion(smiles: str):
             num_H = atom.GetTotalNumHs()
             # Get the degree (number of neighboring atoms)
             degree = atom.GetDegree()
-            # Check that nitrogen has one hydrogen and is connected to three atoms in total
-            if num_H == 1 and degree == 3:
-                # Count the number of carbon neighbors
-                carbon_neighbors = sum(1 for neighbor in atom.GetNeighbors() if neighbor.GetAtomicNum() == 6)
-                # Check if there are exactly two carbon neighbors
-                if carbon_neighbors == 2:
+            # Check that nitrogen has two hydrogens and is connected to two other atoms
+            if num_H == 2 and degree == 4:
+                # Count the number of non-hydrogen neighbors
+                non_H_neighbors = sum(1 for neighbor in atom.GetNeighbors() if neighbor.GetAtomicNum() > 1)
+                # Check if there are exactly two non-hydrogen neighbors
+                if non_H_neighbors == 2:
                     has_secondary_ammonium = True
                     break  # Stop after finding one instance
     
