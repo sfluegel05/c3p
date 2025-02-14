@@ -32,8 +32,14 @@ def is_metal_atom(smiles: str):
     # Get the atom
     atom = mol.GetAtomWithIdx(0)
     atomic_num = atom.GetAtomicNum()
+    formal_charge = atom.GetFormalCharge()
 
-    # List of atomic numbers of metal elements
+    # Check if the atom is neutral
+    if formal_charge != 0:
+        element_symbol = atom.GetSymbol()
+        return False, f"Atom is charged: {element_symbol}{formal_charge:+}"
+
+    # List of atomic numbers of metal elements (excluding metalloids)
     metal_atomic_numbers = set([
         # Alkali metals
         3,   # Lithium (Li)
@@ -55,16 +61,26 @@ def is_metal_atom(smiles: str):
         89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103,
         # Transition metals
         21, 22, 23, 24, 25, 26, 27, 28, 29, 30,  # Sc to Zn
-        39, 40, 41, 42, 43, 44, 45, 46, 47, 48,  # Y to Cd
+        39, 40, 41, 42, 44, 45, 46, 47, 48,      # Y to Cd (excluding Tc)
         72, 73, 74, 75, 76, 77, 78, 79, 80,      # Hf to Hg
         104,105,106,107,108,109,110,111,112,     # Rf to Cn
         # Post-transition metals
         13, 31, 49, 50, 81, 82, 83, 113, 114, 115, 116, # Al, Ga, In, Sn, Tl, Pb, Bi, Nh, Fl, Mc, Lv
-        # Metalloids (some may not consider these metals)
-        5, 14, 32, 33, 51, 52, 84, # B, Si, Ge, As, Sb, Te, Po
-        # Others
-        56, 87, 88, # Ba, Fr, Ra
     ])
+
+    # Exclude metalloids (atomic numbers of metalloids)
+    metalloid_atomic_numbers = set([
+        5,   # Boron (B)
+        14,  # Silicon (Si)
+        32,  # Germanium (Ge)
+        33,  # Arsenic (As)
+        51,  # Antimony (Sb)
+        52,  # Tellurium (Te)
+        84,  # Polonium (Po)
+    ])
+
+    # Remove metalloids from the metals set if they were included
+    metal_atomic_numbers -= metalloid_atomic_numbers
 
     # Check if the atomic number is in the set of metals
     if atomic_num in metal_atomic_numbers:
@@ -94,7 +110,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 0,
+    'attempt': 1,
     'success': True,
     'best': True,
     'error': '',
