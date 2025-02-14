@@ -22,14 +22,14 @@ def is_fatty_aldehyde(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for aldehyde group (C=O)
-    aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=[OX1])[H]")
+    aldehyde_pattern = Chem.MolFromSmarts("[CX3](=[OX1])")
     aldehyde_matches = mol.GetSubstructMatches(aldehyde_pattern)
     if len(aldehyde_matches) != 1:
         return False, f"Found {len(aldehyde_matches)} aldehyde groups, need exactly 1"
 
 
     # Check for terminal aldehyde: connected to only one other carbon
-    aldehyde_carbon = mol.GetSubstructMatches(Chem.MolFromSmarts("[CX3H1](=[OX1])"))[0][0]
+    aldehyde_carbon = mol.GetSubstructMatches(Chem.MolFromSmarts("[CX3](=[OX1])"))[0][0]
     if len(mol.GetAtomWithIdx(aldehyde_carbon).GetNeighbors()) != 1:
         return False, "Aldehyde group is not terminal"
 
