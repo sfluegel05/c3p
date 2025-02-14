@@ -20,26 +20,22 @@ def is_long_chain_fatty_alcohol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for a terminal alcohol attached to a carbon chain
-    # The [CX4] indicates a carbon with 4 bonds (sp3 hybridized)
+    # Check for a single terminal alcohol group
+    # The [CH2X4,CHX4] specifies the carbon must be sp3 hybridized to prevent aromatic or other types of OH groups
     terminal_alcohol_pattern = Chem.MolFromSmarts("[CH2X4,CHX4][OX2H]")
-    
-    # Check for the substructure using a loop to ensure single alcohol
-    matches = mol.GetSubstructMatches(terminal_alcohol_pattern)
-    if len(matches) != 1:
-      return False, f"Molecule has {len(matches)} terminal alcohol groups, it should have exactly 1"
+    alcohol_matches = mol.GetSubstructMatches(terminal_alcohol_pattern)
+    if len(alcohol_matches) != 1:
+        return False, f"Molecule has {len(alcohol_matches)} terminal alcohol groups, should have exactly 1."
 
-    # Count the number of carbons
-    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
 
-    # Check if the chain length is within the range of C13-C22
-    if carbon_count < 13 or carbon_count > 22:
-        return False, f"Molecule has {carbon_count} carbons, should be between 13 and 22"
+    # Define SMARTS for a linear alkyl chain attached to the terminal alcohol, with 12 to 21 carbons.
+    # This covers C13 to C22.
+    # The ~[CH2X4] means that the chain can contain any number of CH2 groups
+    # The {11,20} denotes the range for the number of repetition of the preceding atom pattern.
+    chain_smarts = "[CH2X4,CHX4]([OX2H])~[CH2X4]{11,20}[CH3X4]"
+    chain_pattern = Chem.MolFromSmarts(chain_smarts)
 
-    # Check for long alkyl chain
-    chain_pattern = Chem.MolFromSmarts("C[C,CH2,CH]") # This pattern defines a chain of C, CH and CH2.
-    chain_matches = mol.GetSubstructMatches(chain_pattern)
-    if len(chain_matches) < 10:
-      return False, "The chain is too short to qualify as a fatty alcohol."
+    if not mol.HasSubstructMatch(chain_pattern):
+      return False, f"Molecule does not have a linear alkyl chain (C13-C22) with a terminal alcohol."
 
     return True, "Molecule is a long-chain fatty alcohol (C13-C22) with one alcohol group at the end of the chain."
