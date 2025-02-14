@@ -5,96 +5,90 @@ from rdkit import Chem
 
 def is_monoacyl_sn_glycerol_3_phosphate(smiles: str):
     """
-    Determines if a molecule is a monoacyl-sn-glycerol 3-phosphate based on its SMILES string.
-    A monoacyl-sn-glycerol 3-phosphate is a glycerol backbone with a single acyl chain 
-    attached via an ester bond at position 1 or 2, and a phosphate group at position 3.
+    Determines if a molecule is a monoacyl-sn-glycerol 3-phosphate or diacyl-sn-glycerol 3-phosphate
+    based on its SMILES string.
+    The molecule should have a glycerol backbone with a phosphate group at position 3,
+    one or two acyl chains attached via ester linkages at positions 1 and/or 2,
+    and no additional substitutions on the phosphate group.
 
     Args:
         smiles (str): SMILES string of the molecule.
 
     Returns:
-        bool: True if molecule is a monoacyl-sn-glycerol 3-phosphate, False otherwise
+        bool: True if molecule matches the criteria, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define phosphate attachment pattern: carbon connected via oxygen to phosphate group
-    phosphate_attachment_pattern = Chem.MolFromSmarts("[C][O][P](=O)(O)O")
-    phosphate_matches = mol.GetSubstructMatches(phosphate_attachment_pattern)
-    if not phosphate_matches:
-        return False, "No glycerol phosphate backbone found"
+    # Define the glycerol phosphate backbone pattern
+    # Glycerol backbone with phosphate group at position 3
+    glycerol_phosphate_pattern = Chem.MolFromSmarts("""
+    [C@@H](O)[C@@H](O)[C@@H](O[P](=O)(O)O)
+    """)
+    if glycerol_phosphate_pattern is None:
+        return False, "Invalid SMARTS pattern for glycerol phosphate"
+
+    matches = mol.GetSubstructMatches(glycerol_phosphate_pattern)
+    if not matches:
+        # Try matching without stereochemistry
+        glycerol_phosphate_pattern = Chem.MolFromSmarts("""
+        [C](O)[C](O)[C](O[P](=O)(O)O)
+        """)
+        matches = mol.GetSubstructMatches(glycerol_phosphate_pattern)
+        if not matches:
+            return False, "No glycerol phosphate backbone found"
+
+    # For each match, check for acyl chains and phosphate substitutions
+    for match in matches:
+        c1_idx = match[0]
+        c2_idx = match[1]
+        c3_idx = match[2]
+        phosphate_o_idx = match[3]
+        phosphate_p_idx = match[4]
+
+        # Ensure phosphate group is not substituted
+        phosphate_atom = mol.GetAtomWithIdx(phosphate_p_idx)
+        phosphate_neighbors = phosphate_atom.GetNeighbors()
+        non_oxygen_neighbors = [a for a in phosphate_neighbors if a.GetAtomicNum() != 8]
+        if len(non_oxygen_neighbors) > 0:
+            # Phosphate is substituted
+            continue
+
+        # Check acyl chains at positions 1 and 2
+        acyl_positions = 0
+        hydroxyl_positions = 0
+        for idx in [c1_idx, c2_idx]:
+            carbon = mol.GetAtomWithIdx(idx)
+            ester_found = False
+            hydroxyl_found = False
+            for bond in carbon.GetBonds():
+                neighbor = bond.GetOtherAtom(carbon)
+                if neighbor.GetAtomicNum() == 8 and bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
+                    # Check if oxygen is part of an ester or hydroxyl
+                    oxygen = neighbor
+                    connected_atoms = [a.GetAtomicNum() for a in oxygen.GetNeighbors()]
+                    if connected_atoms.count(6) > 1:
+                        # Part of an ether linkage, not expected here
+                        continue
+                    elif any(bond.GetBondType() == Chem.rdchem.BondType.DOUBLE and
+                             a.GetAtomicNum() == 6 for a in oxygen.GetNeighbors() for bond in a.GetBonds()):
+                        # Part of an ester linkage
+                        ester_found = True
+                        break
+                    elif len(oxygen.GetNeighbors()) == 1:
+                        # Hydroxyl group
+                        hydroxyl_found = True
+            if ester_found:
+                acyl_positions += 1
+            elif hydroxyl_found:
+                hydroxyl_positions +=1
+
+        # Valid if we have one or two acyl chains and remaining positions are hydroxyls
+        if acyl_positions >= 1 and acyl_positions + hydroxyl_positions == 2:
+            return True, "Molecule matches monoacyl-sn-glycerol 3-phosphate structure"
     
-    # Loop over phosphate matches
-    for match in phosphate_matches:
-        # match contains [C][O][P]
-        c3_idx = match[0]
-        o3_idx = match[1]
-        p_idx = match[2]
-        c3_atom = mol.GetAtomWithIdx(c3_idx)
-        
-        # Get neighbors of C3 besides O3
-        c3_neighbors = [nbr.GetIdx() for nbr in c3_atom.GetNeighbors() if nbr.GetIdx() != o3_idx and nbr.GetAtomicNum() == 6]
-        if len(c3_neighbors) < 1:
-            continue  # Cannot find C2
-        c2_idx = c3_neighbors[0]
-        c2_atom = mol.GetAtomWithIdx(c2_idx)
-        
-        # Get neighbors of C2 besides C3
-        c2_neighbors = [nbr.GetIdx() for nbr in c2_atom.GetNeighbors() if nbr.GetIdx() != c3_idx and nbr.GetAtomicNum() == 6]
-        if len(c2_neighbors) < 1:
-            continue  # Cannot find C1
-        c1_idx = c2_neighbors[0]
-        c1_atom = mol.GetAtomWithIdx(c1_idx)
-        
-        # Now check for ester linkage at C1 or C2
-        # For each of C1 and C2, check if connected to an ester
-        def has_ester_linkage(c_idx):
-            atom = mol.GetAtomWithIdx(c_idx)
-            for bond in atom.GetBonds():
-                nbr = bond.GetOtherAtom(atom)
-                if nbr.GetAtomicNum() == 8 and bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
-                    o_atom = nbr
-                    # Check if oxygen is connected to a carbonyl carbon (C=O)
-                    for obond in o_atom.GetBonds():
-                        o_nbr = obond.GetOtherAtom(o_atom)
-                        if o_nbr.GetIdx() == c_idx:
-                            continue
-                        if o_nbr.GetAtomicNum() == 6 and obond.GetBondType() == Chem.rdchem.BondType.SINGLE:
-                            # Check for double bond (C=O)
-                            carbonyl_carbon = o_nbr
-                            has_c_double_o = False
-                            for cbond in carbonyl_carbon.GetBonds():
-                                if cbond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-                                    o_double = cbond.GetOtherAtom(carbonyl_carbon)
-                                    if o_double.GetAtomicNum() == 8:
-                                        has_c_double_o = True
-                                        break
-                            if has_c_double_o:
-                                return True
-            return False
-        
-        def has_hydroxyl(c_idx):
-            atom = mol.GetAtomWithIdx(c_idx)
-            for bond in atom.GetBonds():
-                nbr = bond.GetOtherAtom(atom)
-                if nbr.GetAtomicNum() == 8 and bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
-                    if len(nbr.GetNeighbors()) == 1:
-                        return True
-            return False
-        
-        ester_positions = []
-        hydroxyl_positions = []
-        for c_idx in [c1_idx, c2_idx]:
-            if has_ester_linkage(c_idx):
-                ester_positions.append(c_idx)
-            elif has_hydroxyl(c_idx):
-                hydroxyl_positions.append(c_idx)
-        
-        if len(ester_positions) == 1 and len(hydroxyl_positions) == 1:
-            return True, "Contains glycerol backbone with phosphate group at position 3, and single acyl chain attached via ester linkage at position 1 or 2"
-    
-    return False, "Does not match monoacyl-sn-glycerol 3-phosphate structure"
+    return False, "Molecule does not match the required structure"
