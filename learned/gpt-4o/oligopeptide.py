@@ -21,8 +21,9 @@ def is_oligopeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Update the SMARTS pattern for a peptide bond: N-C(=O)
-    peptide_bond_pattern = Chem.MolFromSmarts("N-C(=O)")
+    # Update the SMARTS pattern to detect peptide bonds more accurately.
+    # Pattern for peptide bonds: can be N-C(=O) bonded in a context of C-C(=O)-N-C
+    peptide_bond_pattern = Chem.MolFromSmarts("C(=O)N")
     if peptide_bond_pattern is None:
         return False, "Unable to create SMARTS pattern for peptide bond"
 
@@ -31,7 +32,7 @@ def is_oligopeptide(smiles: str):
     num_peptide_bonds = len(peptide_bond_matches)
 
     # Check if the number of peptide bonds corresponds to an oligopeptide
-    if 1 <= num_peptide_bonds < 20:
+    if 2 <= num_peptide_bonds < 20:
         return True, f"Contains {num_peptide_bonds} peptide bonds, consistent with an oligopeptide"
     elif num_peptide_bonds >= 20:
         return False, f"Contains {num_peptide_bonds} peptide bonds, too many for an oligopeptide"
