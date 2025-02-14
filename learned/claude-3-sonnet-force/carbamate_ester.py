@@ -1,24 +1,56 @@
 """
 Classifies: CHEBI:23003 carbamate ester
 """
-Upon reviewing the previous code and the outcomes, it appears that the current approach of solely looking for the carbamate functional group pattern (-O-C(=O)-N-) is not sufficient to accurately classify carbamate esters. While this pattern is present in carbamate esters, it can also be found in other chemical classes, leading to false positives.
+"""
+Classifies: CHEBI:35669 carbamate ester
+'Any ester of carbamic acid or its N-substituted derivatives.'
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-To improve the classification, we need to incorporate additional checks and constraints to ensure that the identified functional group is indeed a carbamate ester and not just a substructure present in other chemical classes.
+def is_carbamate_ester(smiles: str):
+    """
+    Determines if a molecule is a carbamate ester based on its SMILES string.
 
-Here are some potential improvements:
+    Args:
+        smiles (str): SMILES string of the molecule
 
-1. **Check for ester linkage**: In addition to the carbamate functional group, we should verify that the nitrogen atom is linked to an alkoxy or aryloxy group, forming an ester.
+    Returns:
+        bool: True if molecule is a carbamate ester, False otherwise
+        str: Reason for classification
+    """
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-2. **Check for substitution on nitrogen**: Carbamate esters often have substituted nitrogen atoms, so we could look for substituents like alkyl, aryl, or acyl groups attached to the nitrogen.
+    # Look for carbamate functional group (-O-C(=O)-N-)
+    carbamate_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])[NX3]")
+    carbamate_matches = mol.GetSubstructMatches(carbamate_pattern)
 
-3. **Exclude certain substructures**: Some false positives, like pyridostigmine, could be excluded by checking for specific substructures that are not allowed in carbamate esters.
+    if not carbamate_matches:
+        return False, "No carbamate functional group found"
 
-4. **Molecular weight and atom count restrictions**: We could apply filters based on molecular weight and atom counts to exclude molecules that are too small or too large to be carbamate esters.
+    # Check for ester linkage on nitrogen
+    ester_pattern = Chem.MolFromSmarts("[NX3][OX2][CX3]")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
 
-5. **Additional structural constraints**: Explore other structural constraints or patterns that are specific to carbamate esters and not present in other chemical classes.
+    if not ester_matches:
+        return False, "Carbamate nitrogen not esterified"
 
-6. **Use machine learning models**: As an alternative approach, we could train a machine learning model on a labeled dataset of carbamate esters and non-carbamate esters to learn the relevant features and patterns for accurate classification.
+    # Check for allowed substituents on nitrogen
+    allowed_substituents = ["C", "c", "O", "N", "S", "P", "F", "Cl", "Br", "I"]
+    n_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7]
 
-When dealing with complex chemical classes, it is often necessary to incorporate multiple checks and constraints to improve the accuracy of the classification. Additionally, carefully analyzing the false positives and false negatives can provide valuable insights into the weaknesses of the current approach and guide the development of better classification strategies.
+    for n_atom in n_atoms:
+        substituents = [mol.GetAtomWithIdx(idx).GetSymbol() for idx in [mol.GetBondWithAtomAsIndex(n_atom.GetIdx(), i).GetOtherAtomIdx(n_atom.GetIdx()) for i in range(n_atom.GetNumExplicitNeighbors())]]
+        if any(sub not in allowed_substituents for sub in substituents):
+            return False, "Disallowed substituent on carbamate nitrogen"
 
-It's important to note that the benchmark dataset itself may contain errors or inconsistencies, so it's essential to use your chemical knowledge and judgment to evaluate the classifications and make necessary adjustments if warranted.
+    # Exclude molecules too small to be carbamate esters
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 100:
+        return False, "Molecular weight too low for carbamate ester"
+
+    return True, "Contains carbamate functional group with ester linkage and allowed substituents"
