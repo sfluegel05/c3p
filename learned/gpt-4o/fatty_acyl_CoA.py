@@ -28,13 +28,13 @@ def is_fatty_acyl_CoA(smiles: str):
     if not mol.HasSubstructMatch(thioester_pattern):
         return False, "No thioester linkage found"
 
-    # SMARTS pattern for the fatty acyl chain, looking for a long carbon chain
-    fatty_acyl_pattern = Chem.MolFromSmarts("[C;!R][C;!R][C;!R][C;!R][C;!R]")  # At least 5 carbon chain
+    # Enhanced SMARTS pattern for a fatty acyl chain, allowing for unsaturations
+    fatty_acyl_pattern = Chem.MolFromSmarts("C(=O)[C;!R][C;!R][C;!R][C;!R][C;!R]")  # At least a few carbons beyond the carbonyl
     if not mol.HasSubstructMatch(fatty_acyl_pattern):
         return False, "No suitable fatty acyl chain found"
 
-    # SMARTS pattern for coenzyme A structure
-    coa_pattern = Chem.MolFromSmarts("OP(=O)(O)COP(=O)(O)OC1C(O)C(O[C@@H]1COP(=O)(O)OP(O)(O)=O)n2cnc3c(ncnc3N)n2")
+    # Simplified SMARTS pattern for coenzyme A structure, focusing on essential features
+    coa_pattern = Chem.MolFromSmarts("C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n2cnc3c(N)ncnc23")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No CoA structure found"
 
