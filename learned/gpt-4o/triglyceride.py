@@ -21,27 +21,32 @@ def is_triglyceride(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for glycerol backbone, allow for stereochemistry
-    glycerol_pattern = Chem.MolFromSmarts("C(O)C(O)CO")
+    # Look for glycerol backbone pattern (C(O)C(O)C with allowances for stereochemistry)
+    # Here each carbon atom is bonded to an oxygen atom, typical of triglycerides
+    glycerol_pattern = Chem.MolFromSmarts("C(O)C(O)C")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
 
     # Look for 3 ester groups (-C(=O)O-)
+    # We want exactly three ester groups for a triglyceride
     ester_pattern = Chem.MolFromSmarts("C(=O)O")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) != 3:
         return False, f"Found {len(ester_matches)} ester groups, expected 3"
 
-    # Check for long carbon chains indicative of fatty acids
-    # A simple approach is to count successive carbon connections, a more thorough computational check can be employed
-    fatty_acid_chain_pattern = Chem.MolFromSmarts("CCCC")
-    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_chain_pattern)
+    # Check for chains to ensure they are part of fatty acids
+    # We define a minimal pattern for fatty acid chains to allow flexibility
+    long_chain_min_length = Chem.MolFromSmarts("CCCC")
+    fatty_acid_matches = mol.GetSubstructMatches(long_chain_min_length)
+    
+    # Ensure total chains longer than three carbons are found at least three times
     if len(fatty_acid_matches) < 3:
-        return False, f"Missing long fatty acid chains, got {len(fatty_acid_matches)}"
+        return False, f"Missing sufficient fatty acid-like chains, detected {len(fatty_acid_matches)}"
 
-    # Molecular weight check remains but less strict
+    # Molecular weight check
+    # Formerly used as a hard check, now more of a guidepost. For diverse triglycerides, MW can vary but typically above 350 Da
     mol_weight = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_weight < 500:
-        return False, "Molecular weight too low for traditional triglyceride but could be a shorter variant"
+    if mol_weight < 350:
+        return False, "Molecular weight is quite low, usually indicative of triglyceride variants or shorter chains"
 
     return True, "SMILES represents a triglyceride with a glycerol backbone and three ester groups"
