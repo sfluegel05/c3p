@@ -24,39 +24,52 @@ def is_galactosylceramide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS for alpha and beta galactopyranose
+    # Define SMARTS for alpha and beta galactopyranose (C1 position specified)
     alpha_galactose_pattern = Chem.MolFromSmarts("[C@H]1([C@@H]([C@H]([C@H]([C@H](O1)CO)O)O)O)")
     beta_galactose_pattern = Chem.MolFromSmarts("[C@@H]1([C@@H]([C@H]([C@H]([C@H](O1)CO)O)O)O)")
     
     #Check for a galactopyranose moiety.
     if not (mol.HasSubstructMatch(alpha_galactose_pattern) or mol.HasSubstructMatch(beta_galactose_pattern)):
             return False, "No alpha or beta galactose moiety found"
+    
+    # SMARTS for sphingosine/sphinganine backbone including double bond variation and hydroxyl groups
+    # Includes the characteristic 2-amino-1,3-diol
+    sphingosine_core = Chem.MolFromSmarts("[C@H]([C@H](O)[C@H]([C])O)NC(=O)")  
+    phytosphingosine_core = Chem.MolFromSmarts("[C@H]([C@H](O)[C@H]([C])(O)O)NC(=O)")
 
-    # SMARTS for sphingosine/sphinganine backbone (including double bond variation)
-    ceramide_backbone_pattern_unsaturated = Chem.MolFromSmarts("[C,C@H]([C@H]([C,C@H])O)NC(=O)")
-    ceramide_backbone_pattern_saturated = Chem.MolFromSmarts("[C,C@H]([C@H]([C,C@H]([C])([C]))O)NC(=O)")
+    if not (mol.HasSubstructMatch(sphingosine_core) or mol.HasSubstructMatch(phytosphingosine_core)):
+        return False, "No sphingosine/phytosphingosine backbone found"
+
+    # Targeted glycosidic bond check: Oxygen between galactose C1 and ceramide backbone carbon
+    # This enforces connectivity between the two, ensuring a galactosyl-ceramide bond is detected.
     
-    if not (mol.HasSubstructMatch(ceramide_backbone_pattern_unsaturated) or mol.HasSubstructMatch(ceramide_backbone_pattern_saturated)):
-        return False, "No ceramide backbone found"
-        
-    # Check for glycosidic bond (C-O-C) connecting galactose to ceramide
-    glycosidic_bond_pattern = Chem.MolFromSmarts("[OX2][CX4]")
+    galactose_c1_pattern = Chem.MolFromSmarts("[C:1][OH1][C@H]([C@H]([C@H]([C@H](O[*:2])CO)O)O)O")
+    glycosidic_bond_pattern = Chem.MolFromSmarts("[C:2][OX2][C:3]") # C:2 must be ceramide carbon
     
-    glycosidic_matches = mol.GetSubstructMatches(glycosidic_bond_pattern)
+    galactose_matches = mol.GetSubstructMatches(galactose_c1_pattern)
+    if not galactose_matches:
+        return False, "No glycosidic bond present between galactose and ceramide"
+
+    glycosidic_bond_present = False
+    for gal_match in galactose_matches:
+        gal_c1 = gal_match[0]
+        for atom in mol.GetAtomWithIdx(gal_c1).GetNeighbors():
+            if atom.GetAtomicNum() == 8: # Oxygen
+                for ceramide_neighbor in atom.GetNeighbors():
+                        if ceramide_neighbor.HasSubstructMatch(sphingosine_core) or ceramide_neighbor.HasSubstructMatch(phytosphingosine_core):
+                            glycosidic_bond_present = True
+                            break
+        if glycosidic_bond_present:
+            break
+            
+    if not glycosidic_bond_present:
+      return False, "No glycosidic bond present between galactose and ceramide"
     
-    if not glycosidic_matches:
-        return False, "No glycosidic bond present"
-    
-    # Fatty acid chain length check
+    # Fatty acid chain check
     fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
     fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
     if not fatty_acid_matches:
         return False, "Missing fatty acid chain"
-
-
-    # Molecular weight check.
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 400:
-         return False, "Molecular weight too low for galactosylceramide"
     
+
     return True, "Contains a galactose moiety linked to a ceramide backbone."
