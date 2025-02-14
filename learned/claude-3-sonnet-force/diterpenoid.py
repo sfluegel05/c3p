@@ -1,26 +1,62 @@
 """
 Classifies: CHEBI:23849 diterpenoid
 """
-Reasoning step:
+"""
+Classifies: CHEBI:35924 diterpenoid
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-The previous program attempted to classify diterpenoids based on several criteria, including molecular weight, core structure, functional groups, ring systems, and atom counts. However, the outcomes suggest that the program struggled to accurately identify diterpenoids, with several false negatives and potentially some false positives.
+def is_diterpenoid(smiles: str):
+    """
+    Determines if a molecule is a diterpenoid based on its SMILES string.
+    A diterpenoid is any terpenoid derived from a diterpene, which may have undergone
+    rearrangements or modifications of the C20 skeleton, such as the removal of methyl groups.
 
-One potential issue with the program is the reliance on SMARTS patterns to identify the core structure and functional groups. While SMARTS patterns can be useful, they may not capture the full complexity and diversity of diterpenoid structures. Additionally, the SMARTS pattern for the core structure ([C&r5,r6,r7]) may be too broad and could match non-diterpenoid structures.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-Another issue is the use of broad ranges for molecular weight, atom counts, and ring sizes. While these ranges were intended to be more relaxed, they may still be too restrictive or not specific enough for diterpenoids.
+    Returns:
+        bool: True if molecule is a diterpenoid, False otherwise
+        str: Reason for classification
+    """
 
-To improve the program, a more comprehensive approach that considers the unique structural features of diterpenoids may be necessary. Here are some potential improvements:
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-1. **Analyze known diterpenoid structures**: Examine a diverse set of known diterpenoid structures to identify common structural patterns, substructures, and functional groups. This analysis can inform the development of more specific SMARTS patterns or other structural filters.
+    # Check molecular weight range (typically 280-360 Da for diterpenoids)
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 280 or mol_wt > 360:
+        return False, f"Molecular weight {mol_wt:.2f} outside typical diterpenoid range"
 
-2. **Incorporate substructure matching**: Instead of relying solely on SMARTS patterns, consider using substructure matching to identify common diterpenoid substructures or scaffolds. This approach may be more flexible and capture a wider range of diterpenoid structures.
+    # Check for diterpenoid backbone (C20 skeleton)
+    diterpenoid_backbone = Chem.MolFromSmarts("[C&r5,r6,r7,r8]")
+    if not mol.HasSubstructMatch(diterpenoid_backbone):
+        return False, "No diterpenoid backbone found"
 
-3. **Refine molecular descriptors**: Rather than using broad ranges for molecular descriptors like molecular weight and atom counts, consider analyzing the distributions of these descriptors for known diterpenoids and non-diterpenoids. This could help identify more precise ranges or thresholds for classification.
+    # Look for typical functional groups (hydroxy, carbonyl, ether, ester, etc.)
+    functional_groups = Chem.MolFromSmarts("[OH,O,C(=O)O,COC]")
+    if not mol.HasSubstructMatch(functional_groups):
+        return False, "No typical diterpenoid functional groups found"
 
-4. **Utilize machine learning**: If a sufficiently large and diverse dataset of diterpenoids and non-diterpenoids is available, consider training a machine learning model to classify compounds based on their molecular representations (e.g., fingerprints, descriptors) or even the raw SMILES strings.
+    # Check for ring systems (bicyclic or tricyclic)
+    ring_info = mol.GetRingInfo()
+    if not any(len(ring) >= 5 for ring in ring_info.BondRings()):
+        return False, "No ring systems found"
 
-5. **Combine multiple criteria**: Incorporate multiple criteria, such as substructure matching, functional group identification, ring system analysis, and molecular descriptor filtering, into a more comprehensive classification approach. This could involve combining the results of multiple filters or using a weighted scoring system.
+    # Count carbon, hydrogen, and oxygen atoms
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    h_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 1)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
 
-6. **Handle outliers and exceptions**: Diterpenoids are a diverse class, and there may be exceptions or outliers that do not strictly follow the typical structural patterns. Consider incorporating mechanisms to handle these exceptions or allowing for user input to manually classify edge cases.
+    if c_count < 20 or c_count > 25:
+        return False, f"Carbon count {c_count} outside typical diterpenoid range"
+    if h_count < 24 or h_count > 40:
+        return False, f"Hydrogen count {h_count} outside typical diterpenoid range"
+    if o_count < 1 or o_count > 5:
+        return False, f"Oxygen count {o_count} outside typical diterpenoid range"
 
-It's important to note that the benchmark used for this task may not be perfect, and there could be systematic mistakes or inconsistencies. If the classifications made by the program align with your understanding of diterpenoids and the provided definition, it may be reasonable to disregard some of the outliers, as long as the reasoning is well-justified.
+    return True, "Molecule matches diterpenoid structural features"
