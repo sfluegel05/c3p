@@ -1,26 +1,56 @@
 """
 Classifies: CHEBI:65061 2,5-diketopiperazines
 """
-The previous program seems to be a reasonable attempt at classifying 2,5-diketopiperazines, but there are a few potential issues that may have led to the low performance:
+"""
+Classifies: CHEBI:38308 2,5-diketopiperazines
+"""
+from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
-1. **Overly Strict Definition of the Core Structure**: The core pattern defined as `"C1NC(=O)CN(C)C1=O"` may be too strict and not account for all possible variations of the piperazine-2,5-dione core. For example, it does not allow for non-carbon substituents on the piperazine ring, which may be present in some 2,5-diketopiperazines.
+def is_2_5_diketopiperazine(smiles: str):
+    """
+    Determines if a molecule is a 2,5-diketopiperazine based on its SMILES string.
+    A 2,5-diketopiperazine is a piperazinone with a piperazine-2,5-dione skeleton.
 
-2. **Potentially Incorrect Substituent Pattern**: The substituent pattern `"[C;R]1[N;R](C(=O)N[C;R]([C;R](=O)[C;R]([N;R]1[C;R]))[C;R])([C;R])[C;R]"` may not accurately capture the allowed substituents on the piperazine ring. It assumes that all substituents must be carbon-based, which may not be the case for all 2,5-diketopiperazines.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Lack of Additional Structural Checks**: The program only checks for the core structure and the substituent pattern but does not include additional checks for other structural features that may be present in 2,5-diketopiperazines. For example, it does not consider the presence of additional rings or specific functional groups that are common in this class of compounds.
+    Returns:
+        bool: True if molecule is a 2,5-diketopiperazine, False otherwise
+        str: Reason for classification
+    """
 
-4. **Potential Stereochemistry Issues**: The program attempts to consider stereochemistry by embedding and optimizing the molecule, but this may not always be successful, leading to potential misclassifications.
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-To improve the program, here are some suggestions:
+    # Check for piperazine ring with two carbonyls at positions 2 and 5
+    piperazine_pattern = Chem.MolFromSmarts("C1NC(=O)CN(C1=O)C")
+    if not mol.HasSubstructMatch(piperazine_pattern):
+        return False, "No piperazine-2,5-dione core found"
 
-1. **Broaden the Core Structure Definition**: Instead of using a strict SMARTS pattern, consider using a more flexible approach to identify the piperazine-2,5-dione core. This could involve searching for specific atom types, bond orders, and ring structures.
+    # Check for reasonable number of rings (diketopiperazines usually have 1-3 rings)
+    n_rings = rdMolDescriptors.CalcNumRings(mol)
+    if n_rings < 1 or n_rings > 3:
+        return False, f"Unusual number of rings ({n_rings}) for a diketopiperazine"
 
-2. **Refine the Substituent Pattern**: Analyze the examples provided and identify common patterns or substructures of the substituents on the piperazine ring. Use this information to create a more accurate SMARTS pattern or a set of patterns that capture the allowed substituents.
+    # Check for common functional groups like esters, ethers, amides
+    allowed_fgroups = ["C(=O)O", "C-O-C", "C(=O)N"]
+    fgroup_patterns = [Chem.MolFromSmarts(p) for p in allowed_fgroups]
+    has_allowed_fgroup = any(mol.HasSubstructMatch(p) for p in fgroup_patterns)
+    if not has_allowed_fgroup:
+        return False, "No common functional groups found for diketopiperazines"
 
-3. **Include Additional Structural Checks**: Identify other structural features or substructures that are characteristic of 2,5-diketopiperazines and incorporate them into the classification logic. This could involve additional SMARTS patterns or other RDKit functionality.
+    # Check for reasonable molecular weight range (typically 200-800 Da)
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 200 or mol_wt > 800:
+        return False, f"Molecular weight ({mol_wt:.2f} Da) outside typical range for diketopiperazines"
 
-4. **Handle Stereochemistry More Robustly**: Instead of relying on conformational analysis, consider using RDKit's functionality to enumerate and check all possible stereoisomers of the molecule. This may provide a more reliable way to handle stereochemistry.
+    # Enumerate stereoisomers and check core structure on each
+    isomers = list(Chem.EnumerateStereoisomers(mol))
+    for isomer in isomers:
+        if isomer.HasSubstructMatch(piperazine_pattern):
+            return True, "Contains piperazine-2,5-dione core with allowed substituents"
 
-5. **Analyze False Positives and False Negatives**: If possible, examine the specific molecules that were misclassified (false positives and false negatives) and use this information to refine the classification logic further.
-
-It's important to note that the classification problem may be challenging, and it might be necessary to strike a balance between precision and recall based on the specific requirements of the task. Additionally, if you believe that the benchmark data contains systematic mistakes, you can justify your approach based on your understanding of the chemical class and provide a clear rationale for your decisions.
+    return False, "No stereoisomer matched the piperazine-2,5-dione core"
