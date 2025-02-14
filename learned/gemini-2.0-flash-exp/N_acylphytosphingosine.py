@@ -23,17 +23,17 @@ def is_N_acylphytosphingosine(smiles: str):
         return False, "Invalid SMILES string"
     
     # 1. Check for phytosphingosine backbone using SMARTS
-    #   - The pattern checks for C-C(O)-C(O)-C(N)-C(O) where the N atom is connected to two Hydrogens (to identify the NH2 group), and carbon chain
+    #   - The pattern checks for C-C(O)-C(O)-C(N)-C(O) where the N atom is connected to three other atoms (to identify the N in the chain)
     #   - The 3 chiral centers are not enforced. This avoids errors in molecules that have stereoisomers or unspecified stereocenters.
-    phytosphingosine_pattern = Chem.MolFromSmarts("[CH2X4][CHX4]([OX2])[CHX4]([OX2])[CHX4]([NH2X2])[CHX4]([OX2])") 
+    phytosphingosine_pattern = Chem.MolFromSmarts("[CH2X4][CHX4]([OX2])[CHX4]([OX2])[CHX4]([NX3])[CHX4]([OX2])") 
     if not mol.HasSubstructMatch(phytosphingosine_pattern):
        return False, "Phytosphingosine backbone not found"
 
     # 2. Check for amide linkage (-C(=O)N-)
     amide_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[NX3]")
     amide_matches = mol.GetSubstructMatches(amide_pattern)
-    if len(amide_matches) != 1:
-        return False, f"Found {len(amide_matches)} amide linkages, need exactly 1"
+    if len(amide_matches) < 1:
+        return False, "No amide linkage found"
     
     #3. Check for fatty acyl chain
     #   -  Looking for a long carbon chain connected to the carbonyl of the amide linkage
@@ -41,7 +41,7 @@ def is_N_acylphytosphingosine(smiles: str):
     fatty_acyl_matches = mol.GetSubstructMatches(fatty_acyl_pattern)
     
     if len(fatty_acyl_matches) < 1:
-      return False, f"Fatty acyl chain not found"
+      return False, "Fatty acyl chain not found"
 
     # Count rotatable bonds to verify long chains
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
