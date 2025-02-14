@@ -19,11 +19,10 @@ def is_flavones(smiles: str):
     # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return (None, "Invalid SMILES string")
 
-    # Define a broader and more flexible SMARTS pattern for a flavone core structure
-    # This pattern includes variable attachments for characteristic flavone substitutions
-    flavone_pattern = Chem.MolFromSmarts("c1cc(-c2ccoc2=O)cc1 |c:c:c:c:c:c__||c:c:o:c:3|")
+    # Define a SMARTS pattern for the generalized flavone nucleus, flexible for common substitutions
+    flavone_pattern = Chem.MolFromSmarts("c1(c2ccc(cc2)-c2ccoc2=O)ccc(c1)")
 
     # Check if the molecule matches the flavone pattern
     if not mol.HasSubstructMatch(flavone_pattern):
