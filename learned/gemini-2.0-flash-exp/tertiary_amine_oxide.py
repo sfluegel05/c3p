@@ -40,15 +40,25 @@ def is_tertiary_amine_oxide(smiles: str):
     neighbors = nitrogen_atom.GetNeighbors()
 
     # Ensure the neighbors bonded to nitrogen are carbon, and not the oxygen which has already been verified.
-    carbon_count = 0
+    carbon_neighbors = []
     for neighbor in neighbors:
         if neighbor.GetIdx() != oxygen_atom.GetIdx(): # Ensure we are not evaluating the oxygen again.
-             if neighbor.GetAtomicNum() == 6:
-                 carbon_count +=1 # Keep track of the number of carbon neighbours.
-             else:
-                 return False, "Nitrogen not bonded to three carbon atoms."
-    if carbon_count != 3:
+            if neighbor.GetAtomicNum() == 6:
+                carbon_neighbors.append(neighbor)
+            else:
+                return False, "Nitrogen not bonded to three carbon atoms."
+    if len(carbon_neighbors) != 3:
         return False, "Nitrogen not bonded to three carbon atoms."
 
+    # Check that the carbon neighbours are connected to a complex organic group, and not just hydrogen atoms.
+    for carbon_neighbor in carbon_neighbors:
+        neighbor_atoms = carbon_neighbor.GetNeighbors()
+        is_organic = False
+        for neighbor_atom in neighbor_atoms:
+            if neighbor_atom.GetIdx() != nitrogen_atom.GetIdx(): # Avoid checking back towards the central N atom
+                if neighbor_atom.GetAtomicNum() != 1:
+                    is_organic = True
+        if not is_organic:
+             return False, "Nitrogen is not bonded to three organic groups"
 
     return True, "Tertiary amine oxide detected"
