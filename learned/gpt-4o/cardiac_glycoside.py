@@ -2,12 +2,13 @@
 Classifies: CHEBI:83970 cardiac glycoside
 """
 from rdkit import Chem
-from rdkit.Chem import Lipinski
 
 def is_cardiac_glycoside(smiles: str):
     """
     Determines if a molecule is a cardiac glycoside based on its SMILES string.
-
+    Cardiac glycosides typically have a steroid skeleton with a lactone ring
+    plus sugar residues.
+    
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -15,29 +16,33 @@ def is_cardiac_glycoside(smiles: str):
         bool: True if molecule is a cardiac glycoside, False otherwise
         str: Reason for classification
     """
-    
     # Parse the SMILES string into a molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define the typical steroid backbone with four fused rings
-    steroid_pattern = Chem.MolFromSmarts('C1CCC2C3CCC4=CC(CC4C3CCC21)C')
+    
+    # More general steroid backbone definition, accommodating cardiac glycosides
+    steroid_pattern = Chem.MolFromSmarts('C1CCC2C3C=CCC4C=CCCC4C3CC2C1')
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
-
-    # Define a lactone ring attached to the steroid backbone
-    lactone_pattern = Chem.MolFromSmarts('C1=CC(=O)OC1')
-    if not mol.HasSubstructMatch(lactone_pattern):
+    
+    # Detect a range of lactone ring formations
+    lactone_patterns = [
+        Chem.MolFromSmarts('OC1=CCCCC1'),  # Adaptable lactone structure
+        Chem.MolFromSmarts('C1=COC(=O)C1') # Common lactone forms
+    ]
+    lactone_found = any(mol.HasSubstructMatch(pattern) for pattern in lactone_patterns)
+    if not lactone_found:
         return False, "No lactone ring found"
-
-    # Check for sugar moieties (glycosidic bonds)
-    sugar_pattern = Chem.MolFromSmarts('[OH]C(C[OH])O')
+    
+    # Extended pattern to identify sugar moieties
+    sugar_pattern = Chem.MolFromSmarts('[CX4H1,CX4H2]O[CX4H1,CX4H2]') 
     if not mol.HasSubstructMatch(sugar_pattern):
         return False, "No sugar moieties found"
-
-    # Check that the molecule has at least one sugar attachment to a steroid scaffold
-    if not Lipinski.NumHDonors(mol) >= 3:
-        return False, "Insufficient potential sugar attachments"
-
-    return True, "Contains steroid backbone with lactone ring and glycosidic bond characteristic of cardiac glycosides"
+    
+    # Check for more than one sugar-related attachment to ensure complexity
+    sugar_attachments = len(mol.GetSubstructMatches(sugar_pattern))
+    if sugar_attachments < 2:
+        return False, "Insufficient sugar attachments"
+    
+    return True, "Contains steroid backbone, lactone ring, and glycosidic bonds characteristic of cardiac glycosides."
