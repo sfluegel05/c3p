@@ -22,43 +22,22 @@ def is_alpha_amino_acid_zwitterion(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for zwitterionic alpha-amino acid.
-    # The pattern is:
-    #   - [NX3;H2,H3+] (nitrogen with 2 or 3 hydrogens) - an amino group
-    #   - [CX4] (a carbon with four bonds, this is the alpha carbon)
-    #   - [CX3](=[OX1])[OX2-] a carboxylate group.
-    # We specify direct bonds to the alpha carbon
-    zwitterion_pattern = Chem.MolFromSmarts("[NX3;H2,H3+][CX4][CX3](=[OX1])[OX2-]")
+    # Check for the basic substructure of zwitterion
+    zwitterion_pattern = Chem.MolFromSmarts("[CH]([NH3+])C([O-])=O")
+    if not mol.HasSubstructMatch(zwitterion_pattern):
+        return False, "Missing zwitterionic alpha-amino acid core structure"
 
-    # Get substructure matches
-    matches = mol.GetSubstructMatches(zwitterion_pattern)
-
-    # Check if at least one substructure is found
-    if not matches:
-          return False, "Missing zwitterionic alpha-amino acid core structure"
+    # Verify that there is at least one [NH3+] and one [O-]
+    nh3_pattern = Chem.MolFromSmarts("[NH3+]")
+    o_minus_pattern = Chem.MolFromSmarts("[O-]")
+    if not mol.HasSubstructMatch(nh3_pattern) or not mol.HasSubstructMatch(o_minus_pattern):
+        return False, "Missing either positively charged nitrogen or negatively charged oxygen"
 
 
-    # Additionally check that the matching alpha carbon has ONLY an amino and carboxyl group, not some additional groups on the alpha carbon,
-    # for example, a phospho group. For this, we need to get the indices of the matched atoms and check if other atoms are directly attached.
-    # Loop through each match
-    for match in matches:
-         alpha_carbon_idx = match[1] # index of the central carbon
-         alpha_carbon = mol.GetAtomWithIdx(alpha_carbon_idx)
-         
-         # Get neighbors, and check that only the nitrogen and carboxyl are attached. Other neighbors must be hydrogens
-         neighbors = [neighbor.GetIdx() for neighbor in alpha_carbon.GetNeighbors()]
-         if len(neighbors) != 4: #if less or more than four bonds
-             return False, "Too many or too few atoms bonded to the alpha carbon."
-
-         # Check for the attached Nitrogen
-         n_idx = match[0]
-         if n_idx not in neighbors:
-              return False, "Nitrogen not correctly attached to the alpha carbon"
-              
-         # Check for the attached carbon of the carboxylic group
-         c_idx = match[2]
-         if c_idx not in neighbors:
-              return False, "Carboxylate not correctly attached to the alpha carbon"
+    # Exclude peptides (more than one alpha aminoacid)
+    zwitterion_count = len(mol.GetSubstructMatches(zwitterion_pattern))
+    if zwitterion_count > 1:
+        return False, "Molecule contains multiple alpha-amino acid units (possibly a peptide)"
 
 
     return True, "Molecule contains the zwitterionic alpha-amino acid structure"
